@@ -37,6 +37,7 @@ ID_BASE = {
     'checkbox': 21000, 'radiogroup': 94000, 'radiobutton': 22000,
     'subitem': 24000, 'imageanim': 160000,
     'circlebar': 130000, 'diagram': 60000, 'digitalclock': 93000,
+    'slidewindow': 30000,
 }
 
 # HTML class 关键字 → FlyThings 控件类型
@@ -55,6 +56,7 @@ CLASS_MAP = {
     'diagram': ('diagram', 'wave', 'chart'),
     'digitalclock': ('digitalclock', 'clock', 'time'),
     'imageanim': ('imageanim', 'anim', 'gif'),
+    'slidewindow': ('slidewindow', 'slide', 'launcher'),
 }
 
 # 对齐：left/center/right → alignment（36 左中 / 37 居中 / 38 右中）
@@ -542,6 +544,11 @@ class HtmlToJson:
             self._append_wave(ctx, node)
             return
 
+        # 在 slidewindow 容器内：子 div.item 收进父容器 items（每个图标项）
+        if ctx.stack and ctx.stack[-1].get('__slidewindow') and tag == 'div':
+            self._append_slideitem(ctx, node)
+            return
+
         # listview/radiogroup 内的纯容器 div（.item/.subitem/.row 或无任何控件 class）：
         # 展开其子节点逐个生成 subItem/radiobutton，不把包裹层本身当控件吞掉内部内容
         if ctx.stack and ctx.stack[-1].get('__listview') and tag == 'div':
@@ -580,6 +587,14 @@ class HtmlToJson:
         # 波形图（diagram）容器：子 div.wave 收进 infos 数组（UIlayoutDemo/diagram.ftu 校准）
         if typ == 'diagram':
             self._open_diagram(ctx, node)
+            for ch in node.children:
+                self._walk(ctx, ch)
+            ctx.stack.pop()
+            return
+
+        # 滑动窗口（slidewindow）容器：Android 主页式，子 div.item 收进 items 数组（UIlayoutDemo/main.ftu 校准）
+        if typ == 'slidewindow':
+            self._open_slidewindow(ctx, node)
             for ch in node.children:
                 self._walk(ctx, ch)
             ctx.stack.pop()
@@ -700,6 +715,58 @@ class HtmlToJson:
         key = ctx.key('diagram')
         ctx.root[key] = c
         ctx.stack.append(c)
+
+    def _open_slidewindow(self, ctx, node):
+        """滑动窗口（Android 主页式，UIlayoutDemo/main.ftu 校准）：
+        cols/rows 每页行列 + iconSize 图标尺寸 + iconTextAlignment 文字对齐 + iconTextPadding/padding 间距 +
+        dragMaxDis 最大拖动距离 + edgeEffect 边缘效果 + orientation 方向 + rollSpeed 滚动速度 + items[] 图标项数组。
+        子 div.item 每条收进 items（picTab 两态图 + text 文字）。
+        """
+        attrs = node.attrs
+        cap = self._caption(ctx, 'slidewindow', attrs)
+        pos = self._pos(attrs)
+        c = {'beepEnable': True, 'caption': cap,
+             'cols': int(_num(_attr(attrs, 'data-cols'), 4)),
+             'rows': int(_num(_attr(attrs, 'data-rows'), 2)),
+             'dragMaxDis': int(_num(_attr(attrs, 'data-drag-max'), 200)),
+             'edgeEffect': int(_num(_attr(attrs, 'data-edge-effect'), 1)),
+             'iconSize': {'width': int(_num(_attr(attrs, 'data-icon-w'), 128)),
+                          'height': int(_num(_attr(attrs, 'data-icon-h'), 128))},
+             'iconTextAlignment': int(_num(_attr(attrs, 'data-icon-align'), 41)),
+             'iconTextPadding': {'bottom': int(_num(_attr(attrs, 'data-icon-pad-b'), 5)),
+                                 'left': 0, 'right': 0, 'top': 0},
+             'id': ctx.nid('slidewindow'),
+             'orientation': int(_num(_attr(attrs, 'data-orientation'), 0)),
+             'padding': {'paddingBottom': int(_num(_attr(attrs, 'data-pad-b'), 8)),
+                         'paddingLeft': 0, 'paddingRight': 0, 'paddingTop': 0},
+             'position': pos,
+             'rollSpeed': int(_num(_attr(attrs, 'data-roll-speed'), 999)),
+             'fontSize': 22,
+             '__container': True, '__slidewindow': True, 'items': []}
+        fs = self._font_size(attrs)
+        if fs:
+            c['fontSize'] = fs
+        key = ctx.key('slidewindow')
+        ctx.root[key] = c
+        ctx.stack.append(c)
+
+    def _append_slideitem(self, ctx, node):
+        """slidewindow 内的子 div.item → 追加一个图标项到 items（picTab 两态图 + text）。"""
+        attrs = node.attrs
+        item = {'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0xFFFFFF},
+                'picTab': {}, 'text': ''}
+        pic0 = _attr(attrs, 'data-pic') or _attr(attrs, 'data-pic0') or _attr(attrs, 'data-src')
+        pic1 = _attr(attrs, 'data-pic1')
+        if pic0:
+            item['picTab']['pic0'] = pic0 if '/' in pic0 else 'images/' + pic0
+        if pic1:
+            item['picTab']['pic1'] = pic1 if '/' in pic1 else 'images/' + pic1
+        elif pic0:
+            item['picTab']['pic1'] = item['picTab']['pic0']
+        text = re.sub(r'\s+', ' ', node.text).strip()
+        if text:
+            item['text'] = text
+        ctx.stack[-1]['items'].append(item)
 
     def _append_wave(self, ctx, node):
         """diagram 内的子 div.wave → 追加一条波形配置到父容器 infos。

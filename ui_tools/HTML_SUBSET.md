@@ -75,6 +75,7 @@ PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 | `div.card` / `div.window` / `div.panel` | ZKWindow 容器 | 子控件嵌套其内（相对坐标）；data-pic 背景图、data-bg 纯色背景；**默认 visible:false（初始隐藏，代码 showWindow 弹出）** |
 | `div.modal` / `div.dialog` | ZKWindow 弹窗 | 自动 modal:true + visible:false + 最后定义（最上层）；data-hide-timeout 自动隐藏秒数（模态 8 实测）；data-bg 纯色背景（无图时） |
 | `div.list` | ZKListView | data-cols/data-rows/data-row-spacing/data-col-spacing；子项为 subItem（见下） |
+| `div.slidewindow` / `div.slide` / `div.launcher` | ZKSlideWindow 滑动窗口（Android 主页式） | data-cols/data-rows 每页行列、data-icon-w/h 图标尺寸、data-icon-align 文字对齐、data-icon-pad-b/data-pad-b 间距、data-drag-max 拖动距离、data-edge-effect 边缘效果、data-orientation 方向、data-roll-speed 滚动速度；子 div.item 每个图标项（data-pic/data-pic1 两态图 + 文字） |
 | `div.checkbox` | ZKCheckBox | data-checked="1" 勾选；**padding 三件套**：data-icon-w/h 图标尺寸、data-pad 图标与文字间隙、data-pic/data-pic2 两态图（pic0 未选/pic2 选中，自动生成 iconPosition+textPosition）；无图时 data-bg/data-bg2 + data-color/data-color2 选中变色 |
 | `div.radio` / `div.radiogroup` | ZKRadioGroup | 子项自动进 radiobuttons 数组 |
 | `div.icon` / `img` | ZKTextView(带背景图) | data-pic / src 图标；空文本 |
@@ -101,6 +102,10 @@ PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 | `data-track/data-fill` | seekbar 轨道图/填充图 | data-track="bar_track.9.png" |
 | `data-cols/data-rows` | listview 列/行 | data-cols="1" data-rows="5" |
 | `data-row-spacing` / `data-col-spacing` | listview 行/列间距 | data-row-spacing="4" |
+| `data-icon-w` / `data-icon-h` | slidewindow 图标尺寸 | data-icon-w="128" data-icon-h="128" |
+| `data-icon-align` | slidewindow 图标文字对齐（41 底部） | data-icon-align="41" |
+| `data-icon-pad-b` / `data-pad-b` | slidewindow 文字/容器下间距 | data-icon-pad-b="5" data-pad-b="8" |
+| `data-drag-max` / `data-edge-effect` / `data-roll-speed` | slidewindow 拖动距离/边缘效果/滚动速度 | data-drag-max="200" |
 | `data-checked` | checkbox 勾选 | data-checked="1" |
 | `data-pic0`~`data-pic4` | button 多态图（正常/按下/选中/选中按下/无效） | data-pic0="btn_normal.png" data-pic1="btn_pressed.png" |
 | `data-bgpic` | button 背景图（backgroundPic 单图） | data-bgpic="btn_bg.png" |
