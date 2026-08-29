@@ -24,9 +24,10 @@ import fix_tools as ftx
 import i18n_tools as itx
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.4.3-open'
+MCP_VERSION = '0.4.4-open'
 MCP_BUILD = '2026-08-29'
 MCP_FEATURES = [
+    '2026-08-29: 控件能力全面校准（实测校准）——TextView 全能力（charsetTab 字符图/滚动/选中态 color2，text 不支持多行）/ CheckBox padding 三件套+两态图 pic2 选中 / Button 图片按钮自动去底色+五态图+背景图按钮 / CircleBar 圆形进度（clockwise 逆时针/有效图裁剪扇形）/ Diagram 波形（style 0折线1曲线/eraseSpace 刷新间距/region 绘图区）/ DigitalClock 时间格式 HH hh MM SS+冒号闪烁 / EditText 密码掩码 isPassword+提示色 / ImageAnim 动图 playFile+loopCount / ListView 行距+subItem 头像背景图 / Window 模态+自动隐藏+window 嵌套 / SlideWindow 图标滑动（items[] 两态图）/ ScrollWindow 滚动（dragMaxDis=内容尺寸）/ PageWindow 翻页（页面 window 叠放）/ 系统栏 topmost 悬浮+透明背景+局部悬浮块',
     '2026-08-29: 多国语言 i18n 工具升级——add_language 添加新语言（三段式文件名 xx_XX-语言名.tr 官方规范）/ export 带项目语境专业翻译提示（术语如 CAN BUS 不译公共汽车）/ setTextTr+updateLocalesCode API 对齐官方文档',
     '2026-08-29: 新增多国语言 i18n 工具——scan 诊断（语言文件/key 对齐/布局 @key 引用完整性）/ export 导出待翻译清单 / import 写回生成 .tr / refactor 布局硬编码文本转 @key；翻译文件为 i18n/*.tr（Android strings.xml 同款），代码取词 LANGUAGEMANAGER->getValue()',
     '2026-08-29: 新增 flythings_fix_project 自动修复工具——9 条基础规则：二维码控件(FT-001)/SeekBar 9-patch 黑框(FT-002)/SeekBar 尺寸(FT-003)/fui 缓存(FT-004)/INIT_UI_TIMERS 适配 FUN_BUILD(FT-005)/多 Window 可见性(FT-006)/部署顺序(FT-007)/超采样(FT-008)/TextView 尺寸(FT-009)',
