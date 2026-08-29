@@ -37,7 +37,7 @@ ID_BASE = {
     'checkbox': 21000, 'radiogroup': 94000, 'radiobutton': 22000,
     'subitem': 24000, 'imageanim': 160000,
     'circlebar': 130000, 'diagram': 60000, 'digitalclock': 93000,
-    'slidewindow': 30000,
+    'slidewindow': 30000, 'scrollwindow': 32000,
 }
 
 # HTML class 关键字 → FlyThings 控件类型
@@ -57,6 +57,7 @@ CLASS_MAP = {
     'digitalclock': ('digitalclock', 'clock', 'time'),
     'imageanim': ('imageanim', 'anim', 'gif'),
     'slidewindow': ('slidewindow', 'slide', 'launcher'),
+    'scrollwindow': ('scrollwindow', 'scrollwin', 'scroll'),
 }
 
 # 对齐：left/center/right → alignment（36 左中 / 37 居中 / 38 右中）
@@ -600,6 +601,14 @@ class HtmlToJson:
             ctx.stack.pop()
             return
 
+        # 滚动窗口（scrollwindow）容器：滚动内容 window 嵌套其内（UIlayoutDemo/setting.ftu 校准）
+        if typ == 'scrollwindow':
+            self._open_scrollwindow(ctx, node)
+            for ch in node.children:
+                self._walk(ctx, ch)
+            ctx.stack.pop()
+            return
+
         # 叶子控件
         self._leaf(ctx, node, typ)
 
@@ -663,8 +672,7 @@ class HtmlToJson:
             if eff.get('backgroundPic'):
                 c['backgroundPic'] = eff['backgroundPic']
         c['__container'] = True
-        key = ctx.key('window')
-        ctx.root[key] = c
+        key = ctx.add('window', c)   # 支持嵌套（scrollwindow 内嵌 window、window 内嵌 window）
         ctx.stack.append(c)
 
     def _open_listview(self, ctx, node):
@@ -688,8 +696,7 @@ class HtmlToJson:
             c['rowSpacing'] = rs
         if cs is not None:
             c['colSpacing'] = cs
-        key = ctx.key('listview')
-        ctx.root[key] = c
+        key = ctx.add('listview', c)   # 支持嵌套（listview 在 window 内）
         ctx.stack.append(c)
 
     def _open_diagram(self, ctx, node):
@@ -712,8 +719,7 @@ class HtmlToJson:
         bg = _attr(attrs, 'data-bgpic') or _attr(attrs, 'data-background-pic') or _attr(attrs, 'data-bg')
         if bg and not bg.startswith('#'):
             c['backgroundPic'] = bg if '/' in bg else 'images/' + bg
-        key = ctx.key('diagram')
-        ctx.root[key] = c
+        key = ctx.add('diagram', c)   # 支持嵌套
         ctx.stack.append(c)
 
     def _open_slidewindow(self, ctx, node):
@@ -746,8 +752,30 @@ class HtmlToJson:
         fs = self._font_size(attrs)
         if fs:
             c['fontSize'] = fs
-        key = ctx.key('slidewindow')
-        ctx.root[key] = c
+        key = ctx.add('slidewindow', c)   # 支持嵌套
+        ctx.stack.append(c)
+
+    def _open_scrollwindow(self, ctx, node):
+        """滚动窗口（UIlayoutDemo/setting.ftu 校准）：
+        dragMaxDis 最大拖动距离 + orientation 滑动方向（垂直/水平） + edgeEffect 边界效果（拖拽/无/循环）。
+        滚动内容 = 内嵌的普通 window（尺寸=dragMaxDis，如 ScrollWin 2400），window 内再嵌面板。
+        """
+        attrs = node.attrs
+        cap = self._caption(ctx, 'scrollwindow', attrs)
+        c = {'beepEnable': True, 'caption': cap,
+             'id': ctx.nid('scrollwindow'),
+             'position': self._pos(attrs)}
+        dmd = parse_px(_attr(attrs, 'data-drag-max'))
+        if dmd is not None:
+            c['dragMaxDis'] = dmd
+        ori = parse_px(_attr(attrs, 'data-orientation'))
+        if ori is not None:
+            c['orientation'] = ori
+        ee = parse_px(_attr(attrs, 'data-edge-effect'))
+        if ee is not None:
+            c['edgeEffect'] = ee
+        c['__container'] = True
+        key = ctx.add('scrollwindow', c)   # 支持嵌套（滚动内容 window 嵌进来）
         ctx.stack.append(c)
 
     def _append_slideitem(self, ctx, node):
@@ -791,8 +819,7 @@ class HtmlToJson:
         c = {'caption': cap, 'id': ctx.nid('radiogroup'),
              'position': self._pos(attrs),
              '__container': True, '__radiogroup': True, 'radiobuttons': []}
-        key = ctx.key('radiogroup')
-        ctx.root[key] = c
+        key = ctx.add('radiogroup', c)   # 支持嵌套（radiogroup 在 window 内）
         ctx.stack.append(c)
 
     # ---------- 叶子 ----------
