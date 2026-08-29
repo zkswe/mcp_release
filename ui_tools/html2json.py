@@ -38,6 +38,8 @@ ID_BASE = {
     'subitem': 24000, 'imageanim': 160000,
     'circlebar': 130000, 'diagram': 60000, 'digitalclock': 93000,
     'slidewindow': 30000, 'scrollwindow': 32000, 'pagewindow': 31000,
+    'slidetext': 51000, 'cameraview': 97000, 'painter': 52000,
+    'pointer': 90000, 'qrcode': 92000, 'videoview': 95000,
 }
 
 # HTML class 关键字 → FlyThings 控件类型
@@ -59,6 +61,12 @@ CLASS_MAP = {
     'slidewindow': ('slidewindow', 'slide', 'launcher'),
     'scrollwindow': ('scrollwindow', 'scrollwin', 'scroll'),
     'pagewindow': ('pagewindow', 'page', 'pager'),
+    'slidetext': ('slidetext', 'candidate', 'cand'),
+    'cameraview': ('cameraview', 'camera'),
+    'painter': ('painter', 'canvas', 'draw'),
+    'pointer': ('pointer', 'gauge', 'dial'),
+    'qrcode': ('qrcode', 'qr'),
+    'videoview': ('videoview', 'video'),
 }
 
 # 对齐：left/center/right → alignment（36 左中 / 37 居中 / 38 右中）
@@ -96,12 +104,12 @@ def parse_px(v):
 
 
 def _num(v, default=0):
-    """数值属性（可带 px/小数）：data-step="10" / "10.0" / "5px"；整数返回 int，小数返回 float。"""
+    """数值属性（可带 px/小数/负数）：data-step="10" / "10.0" / "5px" / "-120"；整数返回 int，小数返回 float。"""
     if v is None:
         return default
     try:
         s = str(v).strip()
-        m = re.match(r'^([\d.]+)(?:px?)?$', s)
+        m = re.match(r'^(-?[\d.]+)(?:px?)?$', s)
         if not m:
             return default
         f = float(m.group(1))
@@ -541,6 +549,11 @@ class HtmlToJson:
 
         typ = _detect_type(tag, classes)
 
+        # 在 radiogroup 容器内：子 div.radio 收进父容器 radiobuttons（RadioGroupDemo 校准）
+        if ctx.stack and ctx.stack[-1].get('__radiogroup') and typ == 'radiogroup':
+            self._leaf(ctx, node, 'radiobutton')
+            return
+
         # 在 diagram 容器内：子 div.wave 收进父容器 infos（每条波形配置）
         if ctx.stack and ctx.stack[-1].get('__diagram') and typ == 'diagram':
             self._append_wave(ctx, node)
@@ -893,17 +906,35 @@ class HtmlToJson:
             spic = _attr(attrs, 'data-pic') or _attr(attrs, 'data-bgpic') or _attr(attrs, 'data-src') or _attr(attrs, 'src')
             if spic:
                 si['backgroundPic'] = spic if '/' in spic else 'images/' + spic
+            # charsetTab 字符图（NetDemo WiFi 信号档位校准）：data-charset='[{"char":48,"pic":"a.png","size":{"width":26,"height":24}},...]'
+            cs = _attr(attrs, 'data-charset')
+            if cs:
+                try:
+                    parsed = json.loads(cs)
+                    if isinstance(parsed, list):
+                        si['charsetTab'] = parsed
+                except Exception:
+                    pass
             ctx.stack[-1]['item']['subItem'].append(si)
             return
 
         # 在 radiogroup 内 → radiobutton
         if ctx.stack and ctx.stack[-1].get('__radiogroup'):
+            # radiobutton（RadioGroupDemo 校准）：两态圆图 picTab{pic0,pic2} + iconPosition + 选中色 color2
             rb = {'alignment': 38, 'caption': cap, 'checked': False,
                   'bgColorTab': {'color0': to_dec(_attr(attrs, 'data-bg')) or 0x9FA05F,
                                  'color2': to_dec(_attr(attrs, 'data-bg2')) or 0x55736C},
                   'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0xEEF2F6},
                   'id': ctx.nid('radiobutton'),
                   'position': pos}
+            rp0 = _attr(attrs, 'data-pic') or _attr(attrs, 'data-pic0') or _attr(attrs, 'data-src')
+            rp2 = _attr(attrs, 'data-pic2')
+            if rp0:
+                rb['picTab'] = {'pic0': rp0 if '/' in rp0 else 'images/' + rp0,
+                                'pic2': (rp2 if '/' in rp2 else 'images/' + rp2) if rp2 else (rp0 if '/' in rp0 else 'images/' + rp0)}
+                rb['iconPosition'] = {'left': 0, 'top': 0,
+                                      'width': int(_num(_attr(attrs, 'data-icon-w'), 20)),
+                                      'height': int(_num(_attr(attrs, 'data-icon-h'), 20))}
             if text:
                 rb['text'] = text
             if str(_attr(attrs, 'data-checked') or '').strip() in ('1', 'true'):
@@ -1017,6 +1048,9 @@ class HtmlToJson:
                 c['textType'] = 1
             if str(_attr(attrs, 'data-password') or '').strip() in ('1', 'true'):
                 c['isPassword'] = True
+                pc = _attr(attrs, 'data-password-char')
+                if pc:
+                    c['passwordChar'] = pc
             hint = _attr(attrs, 'data-hint')
             if hint:
                 c['hintText'] = hint
@@ -1041,6 +1075,20 @@ class HtmlToJson:
                 c['backgroundPic'] = track if '/' in track else 'images/' + track
             if fill:
                 c['progressPic'] = fill if '/' in fill else 'images/' + fill
+            ori = parse_px(_attr(attrs, 'data-orientation'))
+            if ori is not None:
+                c['orientation'] = ori
+            # thumb 滑块（SeekBarDemo 校准）：normalPic + pressedPic 按下态 + size
+            tn = _attr(attrs, 'data-thumb')
+            tp = _attr(attrs, 'data-thumb-pressed')
+            ts = parse_px(_attr(attrs, 'data-thumb-size'))
+            if tn or tp or ts:
+                thumb = {'size': {'height': ts or 24, 'width': ts or 24}}
+                if tn:
+                    thumb['normalPic'] = tn if '/' in tn else 'images/' + tn
+                if tp:
+                    thumb['pressedPic'] = tp if '/' in tp else 'images/' + tp
+                c['thumb'] = thumb
         elif typ == 'checkbox':
             # padding 配置（UIlayoutDemo/checkbox.ftu 校准）：
             #  iconPosition = 图标锚点（控件内 left:0 top:0，尺寸默认=控件高，可用 data-icon-w/h 指定）
@@ -1113,12 +1161,85 @@ class HtmlToJson:
             beat = _attr(attrs, 'data-beat')
             if beat is not None:
                 c['beat'] = str(beat).strip() in ('1', 'true')
-            col = to_dec(_attr(attrs, 'data-color'))
+            # clockColor 数字颜色（ScreensaverDemo 校准）；colorTab 兼容旧写法
+            col = to_dec(_attr(attrs, 'data-color')) or to_dec(_attr(attrs, 'data-clock-color'))
             if col:
-                c['colorTab'] = {'color0': col}
+                c['clockColor'] = col
             bgc = self._bg_color(attrs)
             if bgc:
                 c['bgColorTab'] = {'color0': bgc}
+        elif typ == 'slidetext':
+            # 候选字滑动条（ImeDemo/UserIme 校准）：textBgColor 文字背景色，输入法候选词用
+            c = {'caption': cap, 'id': ctx.nid('slidetext'),
+                 'touchable': False, 'position': pos}
+            fs = self._font_size(attrs)
+            if fs:
+                c['fontSize'] = fs
+            tbg = to_dec(_attr(attrs, 'data-text-bg'))
+            if tbg:
+                c['textBgColor'] = tbg
+            col = to_dec(_attr(attrs, 'data-color'))
+            if col:
+                c['colorTab'] = {'color0': col}
+            if text:
+                c['text'] = text
+        elif typ == 'cameraview':
+            # 摄像头预览（CameraDemo 校准）：autoPreview 自动预览 + formatSize 采集格式
+            c = {'caption': cap, 'id': ctx.nid('cameraview'),
+                 'touchable': False, 'position': pos}
+            if str(_attr(attrs, 'data-auto-preview') or '1').strip() in ('1', 'true'):
+                c['autoPreview'] = True
+            fw = parse_px(_attr(attrs, 'data-format-w'))
+            fh = parse_px(_attr(attrs, 'data-format-h'))
+            if fw and fh:
+                c['formatSize'] = {'width': fw, 'height': fh}
+        elif typ == 'painter':
+            # 画布（PainterDemo 校准）：触摸绘制，代码 paint() 刷新
+            c = {'caption': cap, 'id': ctx.nid('painter'),
+                 'touchable': False, 'position': pos}
+        elif typ == 'pointer':
+            # 仪表盘指针（PointerDemo/clockDemo 校准）：pointerPic 指针图 + fixedPoint 固定点 + rotationPoint 旋转中心
+            c = {'caption': cap, 'id': ctx.nid('pointer'),
+                 'touchable': False, 'position': pos}
+            pp = _attr(attrs, 'data-pointer-pic')
+            if pp:
+                c['pointerPic'] = pp if '/' in pp else 'images/' + pp
+            bg = _attr(attrs, 'data-bgpic') or _attr(attrs, 'data-background-pic')
+            if bg:
+                c['backgroundPic'] = bg if '/' in bg else 'images/' + bg
+            psw = parse_px(_attr(attrs, 'data-pointer-w'))
+            psh = parse_px(_attr(attrs, 'data-pointer-h'))
+            if psw and psh:
+                c['pointerSize'] = {'width': psw, 'height': psh}
+            sa = _num(_attr(attrs, 'data-start-angle'))
+            if sa is not None:
+                c['startAngle'] = sa
+            rs = _num(_attr(attrs, 'data-rotate-speed'))
+            if rs is not None:
+                c['rotateSpeed'] = rs
+            if str(_attr(attrs, 'data-clockwise') or '1').strip() in ('1', 'true'):
+                c['clockwise'] = True
+            if str(_attr(attrs, 'data-animatable') or '1').strip() in ('1', 'true'):
+                c['animatable'] = True
+        elif typ == 'qrcode':
+            # 二维码（QRCodeDemo 校准）：codeStr 初始内容，代码 loadQRCode(text) 动态生成
+            c = {'caption': cap, 'id': ctx.nid('qrcode'),
+                 'touchable': False, 'position': pos}
+            cs = _attr(attrs, 'data-code')
+            if cs:
+                c['codeStr'] = cs
+            bgc = to_dec(_attr(attrs, 'data-bg'))
+            if bgc:
+                c['backgroundColor'] = bgc
+        elif typ == 'videoview':
+            # 视频播放（VideoViewDemo/VideoPlayerDemo 校准）：defaultVolume 默认音量 + loopPlayback 循环
+            c = {'caption': cap, 'id': ctx.nid('videoview'),
+                 'touchable': True, 'position': pos}
+            dv = parse_px(_attr(attrs, 'data-volume'))
+            if dv is not None:
+                c['defaultVolume'] = dv
+            if str(_attr(attrs, 'data-loop') or '').strip() in ('1', 'true'):
+                c['loopPlayback'] = True
         elif typ == 'icon':
             c = {'alignment': 36, 'caption': cap,
                  'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0xEEF2F6},

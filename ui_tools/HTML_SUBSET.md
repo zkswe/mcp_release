@@ -72,6 +72,12 @@ PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 | `div.circlebar` | ZKCircleBar 圆形进度 | data-bg 背景图（不裁剪）、data-fill 有效图（按进度裁剪扇形）、data-max/data-max-angle/data-start-angle、data-clockwise="0/1"（⚠️ false=逆时针） |
 | `div.diagram` / `div.wave` | ZKDiagram 波形图 | 坐标 data-x-min/x-max/y-min/y-max；背景 data-bgpic；子 div.wave 每条波形（data-color 线色/data-pen-width/data-step/data-style 0折线1曲线/data-erase 刷新间距/data-antialias） |
 | `div.digitalclock` / `div.clock` / `div.time` | ZKDigitalClock 数字时钟 | data-format 时间格式（HH 24小时制/hh 12小时制/MM 分钟/SS 秒/yyyy-MM-dd 日期/EEEE 星期）、data-beat="1" 冒号闪烁、自动实时刷新系统时间 |
+| `div.slidetext` / `div.candidate` | ZKSlideText 候选字滑动条 | data-text-bg 文字背景色（输入法候选词用） |
+| `div.cameraview` / `div.camera` | ZKCameraView 摄像头预览 | data-auto-preview 自动预览、data-format-w/h 采集格式 |
+| `div.painter` / `div.canvas` | ZKPainter 画布 | 触摸绘制，代码 paint() 刷新 |
+| `div.pointer` / `div.gauge` | ZKPointer 仪表盘指针 | data-pointer-pic 指针图、data-bgpic 表盘、data-pointer-w/h、data-start-angle（可负）、data-rotate-speed、data-clockwise、data-animatable |
+| `div.qrcode` / `div.qr` | ZKQRCode 二维码 | data-code 初始内容，代码 loadQRCode() 动态生成 |
+| `div.videoview` / `div.video` | ZKVideoView 视频播放 | data-volume 默认音量、data-loop 循环播放 |
 | `div.card` / `div.window` / `div.panel` | ZKWindow 容器 | 子控件嵌套其内（相对坐标）；data-pic 背景图、data-bg 纯色背景；**默认 visible:false（初始隐藏，代码 showWindow 弹出）** |
 | `div.modal` / `div.dialog` | ZKWindow 弹窗 | 自动 modal:true + visible:false + 最后定义（最上层）；data-hide-timeout 自动隐藏秒数（模态 8 实测）；data-bg 纯色背景（无图时） |
 > ⚠️ **系统栏（navibar/statusbar）**：类似 Android 状态栏/导航栏的悬浮窗口，根节点加 `data-topmost="1"`（悬浮最上层）+
@@ -127,6 +133,16 @@ PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 | `data-pen-width` / `data-step` / `data-style` | diagram 波形线宽/步进/样式（0折线1曲线） | data-style="0" |
 | `data-erase` / `data-antialias` | diagram 刷新间距/平滑 | data-erase="20" data-antialias="1" |
 | `data-format` | digitalclock 时间格式（HH 24小时/hh 12小时/MM 分/SS 秒/yyyy-MM-dd 日期/EEEE 星期） | data-format="HH:MM:SS" |
+| `data-text-bg` | slidetext 候选字文字背景色 | data-text-bg="#FFFFFF" |
+| `data-format-w` / `data-format-h` | cameraview 采集格式尺寸 | data-format-w="640" data-format-h="480" |
+| `data-pointer-pic` / `data-bgpic` | pointer 指针图/表盘背景 | data-pointer-pic="pointer.png" |
+| `data-start-angle` | pointer 起始角度（可为负） | data-start-angle="-120" |
+| `data-code` | qrcode 初始内容 | data-code="www.zkswe.com" |
+| `data-volume` / `data-loop` | videoview 默认音量/循环 | data-volume="5" data-loop="1" |
+| `data-thumb-pressed` | seekbar 滑块按下态图 | data-thumb-pressed="yb_pressed.png" |
+| `data-orientation` | seekbar 垂直方向（1=垂直） | data-orientation="1" |
+| `data-password-char` | edittext 密码掩码字符 | data-password-char="*" |
+| `data-clock-color` | digitalclock 数字颜色 | data-clock-color="#FFFFFF" |
 | `data-beat` | digitalclock 冒号闪烁 | data-beat="1" |
 | `data-password` | edittext 密码掩码 | data-password="1" |
 | `data-hint-color` | edittext 提示文字色 | data-hint-color="#959595" |
