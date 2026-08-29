@@ -21,11 +21,13 @@ import html2json as h2j
 import json2html as j2h
 import gen_res as h2j_genres
 import fix_tools as ftx
+import i18n_tools as itx
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.4.1-open'
+MCP_VERSION = '0.4.2-open'
 MCP_BUILD = '2026-08-29'
 MCP_FEATURES = [
+    '2026-08-29: 新增多国语言 i18n 工具——scan 诊断（语言文件/key 对齐/布局 @key 引用完整性）/ export 导出待翻译清单 / import 写回生成 .tr / refactor 布局硬编码文本转 @key；翻译文件为 i18n/*.tr（Android strings.xml 同款），代码取词 LANGUAGEMANAGER->getValue()',
     '2026-08-29: 新增 flythings_fix_project 自动修复工具——9 条基础规则：二维码控件(FT-001)/SeekBar 9-patch 黑框(FT-002)/SeekBar 尺寸(FT-003)/fui 缓存(FT-004)/INIT_UI_TIMERS 适配 FUN_BUILD(FT-005)/多 Window 可见性(FT-006)/部署顺序(FT-007)/超采样(FT-008)/TextView 尺寸(FT-009)',
     ' 扩充 NTP/包管理(FT-010~014)：semver 版本对齐 registry/新依赖先 install/NTP 不阻塞 UI/TZ 时区/包 id 查 registry；',
     ' 扩充 HTML 转图(FT-020~023)：语义图标转 PNG/渐变圆角背景/资源尺寸匹配/4 阶段自检；',
@@ -327,6 +329,33 @@ def flythings_fix_project(project_root: str, kb_id: str = '', apply: bool = Fals
     return json.dumps(ftx.flythings_fix_project(project_root, kb_id, apply), ensure_ascii=False)
 
 
+def flythings_i18n_scan(project_root: str) -> str:
+    """诊断项目多语言（i18n）现状：i18n/*.tr 语言文件、key 对齐、布局 @key 引用完整性。
+    项目做多语言时先调用；返回 JSON：languages/keysPerLanguage/缺失 key/引用缺失。
+    多语言机制：翻译文件 i18n/<语言>.tr（Android strings.xml 同款），布局 text 写 @key，
+    代码取词 LANGUAGEMANAGER->getValue("key")。"""
+    return json.dumps(itx.flythings_i18n_scan(project_root), ensure_ascii=False)
+
+
+def flythings_i18n_export(project_root: str, lang: str = 'zh_CN', keys: str = '') -> str:
+    """导出指定语言（缺省 zh_CN）的 key→文本清单（JSON），供翻译后 import 写回。
+    keys 可选：逗号分隔的 key 子集；缺省导出全部。返回 entries 键值对。"""
+    return json.dumps(itx.flythings_i18n_export(project_root, lang, keys), ensure_ascii=False)
+
+
+def flythings_i18n_import(project_root: str, lang: str, translations: str, merge: bool = True) -> str:
+    """将翻译结果写回项目 i18n/<lang>.tr（生成新语言文件或更新已有）。
+    translations 为 JSON 对象 {"key": "翻译文本"}；merge=True 与已有内容合并，False 整体覆盖。"""
+    return json.dumps(itx.flythings_i18n_import(project_root, lang, translations, merge), ensure_ascii=False)
+
+
+def flythings_i18n_refactor(project_root: str, lang: str = 'zh_CN', dry_run: bool = True) -> str:
+    """把布局 json 里写死的非空文本控件替换为 @key 引用（多语言改造辅助）。
+    dry_run=True 只预览不改文件；False 执行替换并写入指定语言 .tr。
+    纯数字/时间占位文本自动跳过。"""
+    return json.dumps(itx.flythings_i18n_refactor(project_root, lang, dry_run), ensure_ascii=False)
+
+
 # 注册辅助：把上面全部工具注册到任意 FastMCP 实例
 def register_all(mcp):
     mcp.tool()(flythings_get_version)
@@ -346,6 +375,10 @@ def register_all(mcp):
     mcp.tool()(flythings_check_project_deps)
     mcp.tool()(flythings_generate_ui_assets)
     mcp.tool()(flythings_fix_project)
+    mcp.tool()(flythings_i18n_scan)
+    mcp.tool()(flythings_i18n_export)
+    mcp.tool()(flythings_i18n_import)
+    mcp.tool()(flythings_i18n_refactor)
     mcp.tool()(flythings_list_packages)
     mcp.tool()(flythings_query_package)
     mcp.tool()(flythings_recommend_manifest)
