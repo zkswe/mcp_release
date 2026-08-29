@@ -626,9 +626,18 @@ class HtmlToJson:
         c = {'beepEnable': True, 'caption': cap,
              'id': ctx.nid('window'),
              'position': self._pos(attrs)}
+        # 窗口默认初始隐藏（visible:false），代码 showWindow 弹出（UIlayoutDemo/window.ftu 校准）
+        c['visible'] = False
         if modal:
             c['modal'] = True
-            c['visible'] = False
+        # hideTimeOut：模态自动隐藏秒数（模态 8 秒实测；-1 不自动隐藏）
+        hto = parse_px(_attr(attrs, 'data-hide-timeout'))
+        if hto is not None:
+            c['hideTimeOut'] = hto
+        # 纯色背景（WindowDrag 无背景图用 backgroundColor 6323852 实测）
+        bgc = self._bg_color(attrs)
+        if bgc:
+            c['backgroundColor'] = bgc
         pic = _attr(attrs, 'data-pic')
         if pic:
             c['backgroundPic'] = pic if '/' in pic else 'images/' + pic

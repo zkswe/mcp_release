@@ -72,8 +72,8 @@ PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 | `div.circlebar` | ZKCircleBar 圆形进度 | data-bg 背景图（不裁剪）、data-fill 有效图（按进度裁剪扇形）、data-max/data-max-angle/data-start-angle、data-clockwise="0/1"（⚠️ false=逆时针） |
 | `div.diagram` / `div.wave` | ZKDiagram 波形图 | 坐标 data-x-min/x-max/y-min/y-max；背景 data-bgpic；子 div.wave 每条波形（data-color 线色/data-pen-width/data-step/data-style 0折线1曲线/data-erase 刷新间距/data-antialias） |
 | `div.digitalclock` / `div.clock` / `div.time` | ZKDigitalClock 数字时钟 | data-format 时间格式（HH 24小时制/hh 12小时制/MM 分钟/SS 秒/yyyy-MM-dd 日期/EEEE 星期）、data-beat="1" 冒号闪烁、自动实时刷新系统时间 |
-| `div.card` / `div.window` / `div.panel` | ZKWindow 容器 | 子控件嵌套其内（相对坐标）；data-pic 背景图 |
-| `div.modal` / `div.dialog` | ZKWindow 弹窗 | 自动 modal:true + visible:false + 最后定义（最上层） |
+| `div.card` / `div.window` / `div.panel` | ZKWindow 容器 | 子控件嵌套其内（相对坐标）；data-pic 背景图、data-bg 纯色背景；**默认 visible:false（初始隐藏，代码 showWindow 弹出）** |
+| `div.modal` / `div.dialog` | ZKWindow 弹窗 | 自动 modal:true + visible:false + 最后定义（最上层）；data-hide-timeout 自动隐藏秒数（模态 8 实测）；data-bg 纯色背景（无图时） |
 | `div.list` | ZKListView | data-cols/data-rows/data-row-spacing/data-col-spacing；子项为 subItem（见下） |
 | `div.checkbox` | ZKCheckBox | data-checked="1" 勾选；**padding 三件套**：data-icon-w/h 图标尺寸、data-pad 图标与文字间隙、data-pic/data-pic2 两态图（pic0 未选/pic2 选中，自动生成 iconPosition+textPosition）；无图时 data-bg/data-bg2 + data-color/data-color2 选中变色 |
 | `div.radio` / `div.radiogroup` | ZKRadioGroup | 子项自动进 radiobuttons 数组 |
@@ -119,6 +119,7 @@ PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 | `data-hint-color` | edittext 提示文字色 | data-hint-color="#959595" |
 | `data-loop` / `data-interval` | imageanim 循环次数（0=无限）/帧间隔 | data-loop="1" |
 | `data-play-file` / `data-gif` | imageanim GIF 路径（缺省自动加 image/ 前缀） | data-src="test.gif" |
+| `data-hide-timeout` | window/modal 自动隐藏秒数（-1 不自动隐藏） | data-hide-timeout="8" |
 
 ## listview 子项写法
 子项控件**直接写在 `div.list` 容器内**即生成 subItem（每个子控件一个 subItem）：
