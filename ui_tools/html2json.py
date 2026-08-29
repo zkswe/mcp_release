@@ -37,7 +37,7 @@ ID_BASE = {
     'checkbox': 21000, 'radiogroup': 94000, 'radiobutton': 22000,
     'subitem': 24000, 'imageanim': 160000,
     'circlebar': 130000, 'diagram': 60000, 'digitalclock': 93000,
-    'slidewindow': 30000, 'scrollwindow': 32000,
+    'slidewindow': 30000, 'scrollwindow': 32000, 'pagewindow': 31000,
 }
 
 # HTML class 关键字 → FlyThings 控件类型
@@ -58,6 +58,7 @@ CLASS_MAP = {
     'imageanim': ('imageanim', 'anim', 'gif'),
     'slidewindow': ('slidewindow', 'slide', 'launcher'),
     'scrollwindow': ('scrollwindow', 'scrollwin', 'scroll'),
+    'pagewindow': ('pagewindow', 'page', 'pager'),
 }
 
 # 对齐：left/center/right → alignment（36 左中 / 37 居中 / 38 右中）
@@ -609,6 +610,14 @@ class HtmlToJson:
             ctx.stack.pop()
             return
 
+        # 翻页窗口（pagewindow）容器：页面 window 嵌套其内（PageWindowDemo-New/main.ftu 校准）
+        if typ == 'pagewindow':
+            self._open_pagewindow(ctx, node)
+            for ch in node.children:
+                self._walk(ctx, ch)
+            ctx.stack.pop()
+            return
+
         # 叶子控件
         self._leaf(ctx, node, typ)
 
@@ -642,10 +651,17 @@ class HtmlToJson:
         }
         if bg is not None:
             root['backgroundColor'] = bg
-        # 根 position：默认全屏；statusbar/navibar 悬浮块可用 data-x/y/w/h 指定局部区域（UIlayoutDemo 校准）
-        pos = self._pos(attrs)
-        if pos.get('width') and pos.get('height'):
-            root['position'] = pos
+        # 根 position：默认全屏；只有显式写 data-x/y/w/h（或 data-left/top/width/height / style 定位）
+        # 才作为局部悬浮块（statusbar/navibar 校准），否则强制全屏（PageWindowDemo 回归验证）
+        def _has_pos_attr(a):
+            for k in ('data-x', 'data-y', 'data-w', 'data-h',
+                      'data-left', 'data-top', 'data-width', 'data-height'):
+                if _attr(a, k):
+                    return True
+            st = _attr(a, 'style') or ''
+            return bool(re.search(r'(?:^|;)\s*(left|top|width|height)\s*:', st))
+        if _has_pos_attr(attrs):
+            root['position'] = self._pos(attrs)
         else:
             root['position'] = {'height': H, 'left': 0, 'top': 0, 'width': W}
         ctx.root = root
@@ -783,6 +799,32 @@ class HtmlToJson:
             c['edgeEffect'] = ee
         c['__container'] = True
         key = ctx.add('scrollwindow', c)   # 支持嵌套（滚动内容 window 嵌进来）
+        ctx.stack.append(c)
+
+    def _open_pagewindow(self, ctx, node):
+        """翻页窗口（PageWindowDemo-New/main.ftu 校准）：
+        dragMaxDis 最大拖动距离 + orientation 滑动方向 + edgeEffect 边界效果 + rollSpeed 滚动速度。
+        页面 = 多个同尺寸 window 叠放（Window1/2/3 各 400×260），代码 turnToNextPage/turnToPrevPage 翻页。
+        """
+        attrs = node.attrs
+        cap = self._caption(ctx, 'pagewindow', attrs)
+        c = {'beepEnable': True, 'caption': cap,
+             'id': ctx.nid('pagewindow'),
+             'position': self._pos(attrs)}
+        dmd = parse_px(_attr(attrs, 'data-drag-max'))
+        if dmd is not None:
+            c['dragMaxDis'] = dmd
+        ori = parse_px(_attr(attrs, 'data-orientation'))
+        if ori is not None:
+            c['orientation'] = ori
+        ee = parse_px(_attr(attrs, 'data-edge-effect'))
+        if ee is not None:
+            c['edgeEffect'] = ee
+        rs = parse_px(_attr(attrs, 'data-roll-speed'))
+        if rs is not None:
+            c['rollSpeed'] = rs
+        c['__container'] = True
+        key = ctx.add('pagewindow', c)   # 支持嵌套（页面 window 嵌进来）
         ctx.stack.append(c)
 
     def _append_slideitem(self, ctx, node):

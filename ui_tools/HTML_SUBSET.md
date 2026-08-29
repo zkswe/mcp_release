@@ -79,6 +79,7 @@ PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 | `div.list` | ZKListView | data-cols/data-rows/data-row-spacing/data-col-spacing；子项为 subItem（见下） |
 | `div.slidewindow` / `div.slide` / `div.launcher` | ZKSlideWindow 滑动窗口（Android 主页式） | data-cols/data-rows 每页行列、data-icon-w/h 图标尺寸、data-icon-align 文字对齐、data-icon-pad-b/data-pad-b 间距、data-drag-max 拖动距离、data-edge-effect 边缘效果、data-orientation 方向、data-roll-speed 滚动速度；子 div.item 每个图标项（data-pic/data-pic1 两态图 + 文字） |
 | `div.scrollwindow` / `div.scrollwin` / `div.scroll` | ZKScrollWindow 滚动窗口 | data-drag-max 最大拖动距离（=滚动内容尺寸）、data-orientation 滑动方向（0水平/1垂直）、data-edge-effect 边界效果；滚动内容=内嵌普通 window（尺寸=dragMaxDis） |
+| `div.pagewindow` / `div.page` / `div.pager` | ZKPageWindow 翻页窗口 | data-drag-max 拖动距离、data-orientation 方向、data-edge-effect 边界、data-roll-speed 滚动速度；页面=多个同尺寸 window 叠放（代码 turnToNextPage/turnToPrevPage 翻页） |
 | `div.checkbox` | ZKCheckBox | data-checked="1" 勾选；**padding 三件套**：data-icon-w/h 图标尺寸、data-pad 图标与文字间隙、data-pic/data-pic2 两态图（pic0 未选/pic2 选中，自动生成 iconPosition+textPosition）；无图时 data-bg/data-bg2 + data-color/data-color2 选中变色 |
 | `div.radio` / `div.radiogroup` | ZKRadioGroup | 子项自动进 radiobuttons 数组 |
 | `div.icon` / `img` | ZKTextView(带背景图) | data-pic / src 图标；空文本 |
@@ -112,6 +113,7 @@ PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 | `data-drag-max` | scrollwindow 最大拖动距离（=滚动内容尺寸，如 2400） | data-drag-max="2400" |
 | `data-orientation` | scrollwindow 滑动方向（0水平/1垂直） | data-orientation="1" |
 | `data-edge-effect` | scrollwindow 边界效果（拖拽/无/循环） | data-edge-effect="0" |
+| `data-roll-speed` | pagewindow 滚动速度 | data-roll-speed="30" |
 | `data-checked` | checkbox 勾选 | data-checked="1" |
 | `data-pic0`~`data-pic4` | button 多态图（正常/按下/选中/选中按下/无效） | data-pic0="btn_normal.png" data-pic1="btn_pressed.png" |
 | `data-bgpic` | button 背景图（backgroundPic 单图） | data-bgpic="btn_bg.png" |
