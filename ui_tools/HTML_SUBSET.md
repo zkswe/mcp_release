@@ -71,7 +71,7 @@ PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 | `div.card` / `div.window` / `div.panel` | ZKWindow 容器 | 子控件嵌套其内（相对坐标）；data-pic 背景图 |
 | `div.modal` / `div.dialog` | ZKWindow 弹窗 | 自动 modal:true + visible:false + 最后定义（最上层） |
 | `div.list` | ZKListView | data-cols/data-rows；子项为 subItem（见下） |
-| `div.checkbox` | ZKCheckBox | data-checked="1" 勾选、data-bg/data-bg2 两态色 |
+| `div.checkbox` | ZKCheckBox | data-checked="1" 勾选；**padding 三件套**：data-icon-w/h 图标尺寸、data-pad 图标与文字间隙、data-pic/data-pic2 两态图（pic0 未选/pic2 选中，自动生成 iconPosition+textPosition）；无图时 data-bg/data-bg2 + data-color/data-color2 选中变色 |
 | `div.radio` / `div.radiogroup` | ZKRadioGroup | 子项自动进 radiobuttons 数组 |
 | `div.icon` / `img` | ZKTextView(带背景图) | data-pic / src 图标；空文本 |
 
@@ -97,6 +97,10 @@ PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 | `data-track/data-fill` | seekbar 轨道图/填充图 | data-track="bar_track.9.png" |
 | `data-cols/data-rows` | listview 列/行 | data-cols="1" data-rows="5" |
 | `data-checked` | checkbox 勾选 | data-checked="1" |
+| `data-pic` / `data-pic2` | checkbox 两态图（未选中/选中） | data-pic="cb_off.png" data-pic2="cb_on.png" |
+| `data-icon-w` / `data-icon-h` | checkbox 图标尺寸（缺省=控件高） | data-icon-w="48" |
+| `data-pad` | checkbox 图标与文字间隙（缺省 6px，自动算 textPosition） | data-pad="8" |
+| `data-color2` / `data-bg2` | checkbox 无图时选中态色 | data-color2="#FF0000" |
 
 ## listview 子项写法
 子项控件**直接写在 `div.list` 容器内**即生成 subItem（每个子控件一个 subItem）：

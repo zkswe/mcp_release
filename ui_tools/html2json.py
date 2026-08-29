@@ -758,12 +758,32 @@ class HtmlToJson:
             if fill:
                 c['progressPic'] = fill if '/' in fill else 'images/' + fill
         elif typ == 'checkbox':
-            c = {'alignment': 38, 'caption': cap, 'checked': False,
+            # padding 配置（UIlayoutDemo/checkbox.ftu 校准）：
+            #  iconPosition = 图标锚点（控件内 left:0 top:0，尺寸默认=控件高，可用 data-icon-w/h 指定）
+            #  textPosition = 文本区（left = 图标宽 + padding(6~8)，top:0，宽=控件宽-图标宽-padding）
+            #  有图两态：picTab{pic0: 未选中, pic2: 选中}（注意选中是 pic2 不是 pic1！）
+            #  无图变色：bgColorTab{color0,color2} + colorTab{color0,color2}（color2=选中态）
+            cw, ch = pos.get('width', 100), pos.get('height', 40)
+            iw = int(_attr(attrs, 'data-icon-w') or ch)
+            ih = int(_attr(attrs, 'data-icon-h') or ch)
+            pad = int(_attr(attrs, 'data-pad') or 6)
+            c = {'alignment': 36, 'caption': cap, 'checked': False,
                  'bgColorTab': {'color0': to_dec(_attr(attrs, 'data-bg')) or 0x607A84,
                                 'color2': to_dec(_attr(attrs, 'data-bg2')) or 0x55736C},
-                 'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0xEEF2F6},
-                 'iconPosition': pos, 'id': ctx.nid('checkbox'),
-                 'position': pos}
+                 'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0xEEF2F6,
+                              'color2': to_dec(_attr(attrs, 'data-color2')) or 0xFFFFFF},
+                 'iconPosition': {'left': 0, 'top': 0, 'width': iw, 'height': ih},
+                 'id': ctx.nid('checkbox'),
+                 'position': pos,
+                 'textPosition': {'left': iw + pad, 'top': 0,
+                                  'width': max(cw - iw - pad, 10), 'height': ch}}
+            # 两态图（优先）：pic0=未选中 pic2=选中；data-pic/data-pic2 或 data-src/data-src2
+            pic0 = _attr(attrs, 'data-pic') or _attr(attrs, 'data-pic0') or _attr(attrs, 'data-src')
+            pic2 = _attr(attrs, 'data-pic2') or _attr(attrs, 'data-src2')
+            if pic0:
+                c['picTab'] = {'pic0': pic0 if '/' in pic0 else 'images/' + pic0,
+                               'pic2': (pic2 if '/' in pic2 else 'images/' + pic2) if pic2 else (pic0 if '/' in pic0 else 'images/' + pic0)}
+                c.pop('bgColorTab', None)  # 有图不用底色
             if text:
                 c['text'] = text
             if str(_attr(attrs, 'data-checked') or '').strip() in ('1', 'true'):
