@@ -68,6 +68,8 @@ PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 | `div.btn` / `button` | ZKButton | data-bg 底色、data-fs；**图片按钮铁律**：有图（data-pic/data-pic0~4 多态图、data-bgpic 背景图）自动去底色（图片叠色效果错乱）；纯文字才用底色。data-pic0 正常/1 按下/2 选中/3 选中按下/4 无效；data-icon-w/h + data-pad 图标 padding |
 | `div.input` / `input` | ZKEditText | data-num="1" 数字键盘、data-hint 提示、data-bg 底色 |
 | `div.bar` / `div.seekbar` | ZKSeekBar 进度条 | data-max 最大值、data-value 当前值、data-track/data-fill 轨道/填充图 |
+| `div.circlebar` | ZKCircleBar 圆形进度 | data-bg 背景图（不裁剪）、data-fill 有效图（按进度裁剪扇形）、data-max/data-max-angle/data-start-angle、data-clockwise="0/1"（⚠️ false=逆时针） |
+| `div.diagram` / `div.wave` | ZKDiagram 波形图 | 坐标 data-x-min/x-max/y-min/y-max；背景 data-bgpic；子 div.wave 每条波形（data-color 线色/data-pen-width/data-step/data-style 0折线1曲线/data-erase 刷新间距/data-antialias） |
 | `div.card` / `div.window` / `div.panel` | ZKWindow 容器 | 子控件嵌套其内（相对坐标）；data-pic 背景图 |
 | `div.modal` / `div.dialog` | ZKWindow 弹窗 | 自动 modal:true + visible:false + 最后定义（最上层） |
 | `div.list` | ZKListView | data-cols/data-rows；子项为 subItem（见下） |
@@ -102,6 +104,12 @@ PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 | `data-icon-w` / `data-icon-h` | checkbox/button 图标尺寸（缺省=控件高） | data-icon-w="48" |
 | `data-pad` | checkbox 图标与文字间隙（缺省 6px，自动算 textPosition） | data-pad="8" |
 | `data-color2` / `data-bg2` | checkbox 无图时选中态色 | data-color2="#FF0000" |
+| `data-clockwise` | circlebar 方向（⚠️ false=逆时针，0/1） | data-clockwise="0" |
+| `data-max-angle` / `data-start-angle` | circlebar 最大/起始角度 | data-max-angle="360" data-start-angle="80" |
+| `data-fill` | circlebar 有效图 / seekbar 填充图 | data-fill="circle_valid.png" |
+| `data-x-min/x-max/y-min/y-max` | diagram 坐标轴范围 | data-x-max="100" |
+| `data-pen-width` / `data-step` / `data-style` | diagram 波形线宽/步进/样式（0折线1曲线） | data-style="0" |
+| `data-erase` / `data-antialias` | diagram 刷新间距/平滑 | data-erase="20" data-antialias="1" |
 
 ## listview 子项写法
 子项控件**直接写在 `div.list` 容器内**即生成 subItem（每个子控件一个 subItem）：

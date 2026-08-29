@@ -36,6 +36,7 @@ ID_BASE = {
     'seekbar': 91000, 'window': 110000, 'listview': 80000,
     'checkbox': 21000, 'radiogroup': 94000, 'radiobutton': 22000,
     'subitem': 24000, 'imageanim': 53000,
+    'circlebar': 130000, 'diagram': 60000,
 }
 
 # HTML class 关键字 → FlyThings 控件类型
@@ -50,6 +51,8 @@ CLASS_MAP = {
     'checkbox': ('checkbox', 'check', 'cb'),
     'radiogroup': ('radio', 'radiogroup', 'rg'),
     'icon': ('icon', 'img', 'image', 'pic'),
+    'circlebar': ('circlebar', 'circular', 'ring'),
+    'diagram': ('diagram', 'wave', 'chart'),
 }
 
 # 对齐：left/center/right → alignment（36 左中 / 37 居中 / 38 右中）
@@ -84,6 +87,21 @@ def parse_px(v):
     # 兼容裸数字（data-x="16"）与带单位（data-x="16px"）两种写法
     m = re.match(r'^([\d.]+)(?:px?)?$', str(v).strip())
     return int(float(m.group(1))) if m else None
+
+
+def _num(v, default=0):
+    """数值属性（可带 px/小数）：data-step="10" / "10.0" / "5px"；整数返回 int，小数返回 float。"""
+    if v is None:
+        return default
+    try:
+        s = str(v).strip()
+        m = re.match(r'^([\d.]+)(?:px?)?$', s)
+        if not m:
+            return default
+        f = float(m.group(1))
+        return int(f) if f == int(f) else f
+    except Exception:
+        return default
 
 
 def _style_pos(style):
@@ -517,6 +535,11 @@ class HtmlToJson:
 
         typ = _detect_type(tag, classes)
 
+        # 在 diagram 容器内：子 div.wave 收进父容器 infos（每条波形配置）
+        if ctx.stack and ctx.stack[-1].get('__diagram') and typ == 'diagram':
+            self._append_wave(ctx, node)
+            return
+
         # listview/radiogroup 内的纯容器 div（.item/.subitem/.row 或无任何控件 class）：
         # 展开其子节点逐个生成 subItem/radiobutton，不把包裹层本身当控件吞掉内部内容
         if ctx.stack and ctx.stack[-1].get('__listview') and tag == 'div':
@@ -539,6 +562,22 @@ class HtmlToJson:
         # 单选组（radiogroup）
         if typ == 'radiogroup':
             self._open_radiogroup(ctx, node)
+            for ch in node.children:
+                self._walk(ctx, ch)
+            ctx.stack.pop()
+            return
+
+        # 波形图（diagram）容器：子 div.wave 收进 infos 数组（UIlayoutDemo/diagram.ftu 校准）
+        if typ == 'diagram':
+            self._open_diagram(ctx, node)
+            for ch in node.children:
+                self._walk(ctx, ch)
+            ctx.stack.pop()
+            return
+
+        # 波形图（diagram）容器：子 div.wave 收进 infos 数组（UIlayoutDemo/diagram.ftu 校准）
+        if typ == 'diagram':
+            self._open_diagram(ctx, node)
             for ch in node.children:
                 self._walk(ctx, ch)
             ctx.stack.pop()
@@ -620,6 +659,47 @@ class HtmlToJson:
         key = ctx.key('listview')
         ctx.root[key] = c
         ctx.stack.append(c)
+
+    def _open_diagram(self, ctx, node):
+        """波形图：backgroundPic 背景图 + xAxisRange/yAxisRange 坐标范围 + region 绘图区 + infos[] 波形配置。
+        子 div.wave 每条收进 infos（penColor/penWidth/step/style/antialias/eraseSpace/xScale/yScale）。
+        style: 0=折线 1=曲线（UIlayoutDemo/diagram.ftu 校准）；eraseSpace=刷新间距。
+        """
+        attrs = node.attrs
+        cap = self._caption(ctx, 'diagram', attrs)
+        pos = self._pos(attrs)
+        c = {'caption': cap, 'id': ctx.nid('diagram'),
+             'touchable': False, 'position': pos,
+             'xAxisRange': {'lower': _num(_attr(attrs, 'data-x-min'), 0),
+                            'upper': _num(_attr(attrs, 'data-x-max'), 100)},
+             'yAxisRange': {'lower': _num(_attr(attrs, 'data-y-min'), 0),
+                            'upper': _num(_attr(attrs, 'data-y-max'), 100)},
+             'region': {'left': 0, 'top': 0, 'width': pos.get('width', 300),
+                        'height': pos.get('height', 300)},
+             '__container': True, '__diagram': True, 'infos': []}
+        bg = _attr(attrs, 'data-bgpic') or _attr(attrs, 'data-background-pic') or _attr(attrs, 'data-bg')
+        if bg and not bg.startswith('#'):
+            c['backgroundPic'] = bg if '/' in bg else 'images/' + bg
+        key = ctx.key('diagram')
+        ctx.root[key] = c
+        ctx.stack.append(c)
+
+    def _append_wave(self, ctx, node):
+        """diagram 内的子 div.wave → 追加一条波形配置到父容器 infos。
+        style: 0=折线 1=曲线；eraseSpace=刷新间距；antialias=平滑。
+        """
+        attrs = node.attrs
+        cap = self._caption(ctx, 'wave', attrs)
+        info = {'caption': cap,
+                'penColor': to_dec(_attr(attrs, 'data-color')) or 0xFFFFFF,
+                'penWidth': _num(_attr(attrs, 'data-pen-width'), 2),
+                'step': _num(_attr(attrs, 'data-step'), 10.0),
+                'style': _num(_attr(attrs, 'data-style'), 1),
+                'eraseSpace': _num(_attr(attrs, 'data-erase'), 20),
+                'antialias': str(_attr(attrs, 'data-antialias') or '').strip() in ('1', 'true'),
+                'xScale': _num(_attr(attrs, 'data-x-scale'), 1.0),
+                'yScale': _num(_attr(attrs, 'data-y-scale'), 1.0)}
+        ctx.stack[-1]['infos'].append(info)
 
     def _open_radiogroup(self, ctx, node):
         attrs = node.attrs
@@ -808,6 +888,33 @@ class HtmlToJson:
                 c['text'] = text
             if str(_attr(attrs, 'data-checked') or '').strip() in ('1', 'true'):
                 c['checked'] = True
+        elif typ == 'circlebar':
+            # 圆形进度条（UIlayoutDemo/circlebar.ftu 校准）：backgroundPic 背景图（不裁剪）+
+            #   progressPic 有效图（按进度裁剪扇形）+ progressPicPos 有效图位置 + max/maxAngle/startAngle + clockwise
+            # ⚠️ clockwise: false = 逆时针（demo 曾反，沛哥 17:17 确认）
+            cw, ch = pos.get('width', 200), pos.get('height', 200)
+            c = {'beepEnable': True, 'caption': cap,
+                 'id': ctx.nid('circlebar'), 'max': 100, 'maxAngle': 360,
+                 'position': pos}
+            mx = _num(_attr(attrs, 'data-max'))
+            if mx:
+                c['max'] = int(mx)
+            ma = _num(_attr(attrs, 'data-max-angle'))
+            if ma:
+                c['maxAngle'] = int(ma)
+            sa = _num(_attr(attrs, 'data-start-angle'))
+            if sa:
+                c['startAngle'] = int(sa)
+            cw_ = _attr(attrs, 'data-clockwise')
+            if cw_ is not None:
+                c['clockwise'] = str(cw_).strip() in ('1', 'true')
+            bg = _attr(attrs, 'data-bgpic') or _attr(attrs, 'data-background-pic') or _attr(attrs, 'data-bg')
+            fill = _attr(attrs, 'data-fill') or _attr(attrs, 'data-progress-pic')
+            if bg and not bg.startswith('#'):
+                c['backgroundPic'] = bg if '/' in bg else 'images/' + bg
+            if fill:
+                c['progressPic'] = fill if '/' in fill else 'images/' + fill
+                c['progressPicPos'] = {'left': 0, 'top': 0, 'width': cw, 'height': ch}
         elif typ == 'icon':
             c = {'alignment': 36, 'caption': cap,
                  'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0xEEF2F6},
