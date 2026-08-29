@@ -35,7 +35,7 @@ ID_BASE = {
     'textview': 50000, 'button': 20000, 'edittext': 51000,
     'seekbar': 91000, 'window': 110000, 'listview': 80000,
     'checkbox': 21000, 'radiogroup': 94000, 'radiobutton': 22000,
-    'subitem': 24000, 'imageanim': 53000,
+    'subitem': 24000, 'imageanim': 160000,
     'circlebar': 130000, 'diagram': 60000, 'digitalclock': 93000,
 }
 
@@ -54,6 +54,7 @@ CLASS_MAP = {
     'circlebar': ('circlebar', 'circular', 'ring'),
     'diagram': ('diagram', 'wave', 'chart'),
     'digitalclock': ('digitalclock', 'clock', 'time'),
+    'imageanim': ('imageanim', 'anim', 'gif'),
 }
 
 # 对齐：left/center/right → alignment（36 左中 / 37 居中 / 38 右中）
@@ -773,16 +774,30 @@ class HtmlToJson:
                 c['backgroundPic'] = eff['backgroundPic']
                 c.pop('bgColorTab', None)   # 有图不用底色（透明角图会透底色）
             if eff.get('imageanim'):
-                # loading → 动图控件（imageanim__N, ZKImageAnim）
+                # loading → 动图控件（imageanim__N, ZKImageAnim）：demo json 用 playFile 字段（设备自动播放）
                 typ = 'imageanim'
                 c = {'caption': cap, 'id': ctx.nid('imageanim'),
                      'loopCount': 0, 'position': pos}
                 af = eff.get('anim_file') or ''
                 if af:
+                    c['playFile'] = af
                     ctx.warnings.append(
                         f'<{node.tag} class="{_attr(attrs, "class") or ""}"> loading 动图已生成 '
-                        f'{af}（imageanim 控件）；请在 logic.cc onUI_init 调用 '
-                        f'm{cap}Ptr->play("{af}") 播放（循环次数由 json loopCount 控制）')
+                        f'{af}（imageanim 控件，playFile 已写入 json，设备自动播放；循环次数由 loopCount 控制，'
+                        f'代码可用 m{cap}Ptr->play("{af}") 重播）')
+        elif typ == 'imageanim':
+            # 显式动图控件（UIlayoutDemo/imageanim.ftu 校准）：playFile GIF + loopCount（0=无限循环）
+            c = {'caption': cap, 'id': ctx.nid('imageanim'),
+                 'loopCount': 0, 'position': pos}
+            af = _attr(attrs, 'data-src') or _attr(attrs, 'data-play-file') or _attr(attrs, 'data-gif') or _attr(attrs, 'src')
+            if af:
+                c['playFile'] = af if '/' in af else 'image/' + af
+            lc = _num(_attr(attrs, 'data-loop'))
+            if lc is not None:
+                c['loopCount'] = int(lc)
+            fi = _num(_attr(attrs, 'data-interval'))
+            if fi:
+                c['frameInterval'] = int(fi)
         elif typ == 'button':
             # 图片按钮铁律（UIlayoutDemo/button.ftu 校准）：有按键图片（picTab/backgroundPic）时不开背景色，
             #  否则图片叠在颜色上效果与预想不同；仅纯文字按钮才用 bgColorTab/colorTab 多态色
@@ -837,9 +852,14 @@ class HtmlToJson:
                 c['fontSize'] = fs
             if str(_attr(attrs, 'data-num') or '').strip() in ('1', 'true'):
                 c['textType'] = 1
+            if str(_attr(attrs, 'data-password') or '').strip() in ('1', 'true'):
+                c['isPassword'] = True
             hint = _attr(attrs, 'data-hint')
             if hint:
                 c['hintText'] = hint
+            hc = to_dec(_attr(attrs, 'data-hint-color'))
+            if hc:
+                c['hintTextColor'] = hc
             if text:
                 c['text'] = text
         elif typ == 'seekbar':

@@ -66,7 +66,8 @@ PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 | `div.screen` | 根节点 | 必须；分辨率 data-res="WxH"（也支持 data-width/data-height 或 style 宽高），背景 data-bg / data-background（默认 #0E131A） |
 | `div.text` / `p` / `span` | ZKTextView | 字号 data-fs（也认 data-font-size/data-fontSize/内联 font-size）、文字色 data-color、背景 data-bg/data-background、对齐 data-align |
 | `div.btn` / `button` | ZKButton | data-bg 底色、data-fs；**图片按钮铁律**：有图（data-pic/data-pic0~4 多态图、data-bgpic 背景图）自动去底色（图片叠色效果错乱）；纯文字才用底色。data-pic0 正常/1 按下/2 选中/3 选中按下/4 无效；data-icon-w/h + data-pad 图标 padding |
-| `div.input` / `input` | ZKEditText | data-num="1" 数字键盘、data-hint 提示、data-bg 底色 |
+| `div.input` / `input` | ZKEditText | data-num="1" 数字键盘、data-hint 提示、data-hint-color 提示色、data-password="1" 密码掩码、data-bg 底色、预填文本=div 内容 |
+| `div.imageanim` / `div.anim` / `div.gif` | ZKImageAnim 动图 | data-src/data-play-file GIF 路径（自动加 image/ 前缀）、data-loop 循环次数（0=无限）、data-interval 帧间隔；生成 playFile 字段设备自动播放 |
 | `div.bar` / `div.seekbar` | ZKSeekBar 进度条 | data-max 最大值、data-value 当前值、data-track/data-fill 轨道/填充图 |
 | `div.circlebar` | ZKCircleBar 圆形进度 | data-bg 背景图（不裁剪）、data-fill 有效图（按进度裁剪扇形）、data-max/data-max-angle/data-start-angle、data-clockwise="0/1"（⚠️ false=逆时针） |
 | `div.diagram` / `div.wave` | ZKDiagram 波形图 | 坐标 data-x-min/x-max/y-min/y-max；背景 data-bgpic；子 div.wave 每条波形（data-color 线色/data-pen-width/data-step/data-style 0折线1曲线/data-erase 刷新间距/data-antialias） |
@@ -113,6 +114,10 @@ PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 | `data-erase` / `data-antialias` | diagram 刷新间距/平滑 | data-erase="20" data-antialias="1" |
 | `data-format` | digitalclock 时间格式（HH 24小时/hh 12小时/MM 分/SS 秒/yyyy-MM-dd 日期/EEEE 星期） | data-format="HH:MM:SS" |
 | `data-beat` | digitalclock 冒号闪烁 | data-beat="1" |
+| `data-password` | edittext 密码掩码 | data-password="1" |
+| `data-hint-color` | edittext 提示文字色 | data-hint-color="#959595" |
+| `data-loop` / `data-interval` | imageanim 循环次数（0=无限）/帧间隔 | data-loop="1" |
+| `data-play-file` / `data-gif` | imageanim GIF 路径（缺省自动加 image/ 前缀） | data-src="test.gif" |
 
 ## listview 子项写法
 子项控件**直接写在 `div.list` 容器内**即生成 subItem（每个子控件一个 subItem）：
