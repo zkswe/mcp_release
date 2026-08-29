@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>示例：除湿控制器</title>
+</head>
+<body>
+<div class="screen" data-res="480x272" data-bg="#0E131A">
+  <!-- 顶栏 -->
+  <div class="text" data-x="10" data-y="4" data-w="200" data-h="24" data-fs="14" data-color="#EEF2F6">分体式除湿控制器</div>
+  <div class="btn" data-caption="BtnRename" data-x="318" data-y="5" data-w="52" data-h="24" data-fs="11" data-bg="#374457">重命名</div>
+  <div class="btn" data-caption="BtnCtrlId" data-x="376" data-y="5" data-w="94" data-h="24" data-fs="12" data-bg="#374457">ID 1</div>
+
+  <!-- 底部大按钮 -->
+  <div class="btn" data-caption="BtnSettings" data-x="8" data-y="212" data-w="464" data-h="52" data-fs="20" data-bg="#2F6DF6">参数设置</div>
+
+  <!-- 设备卡片（window 容器） -->
+  <div class="card" data-caption="DevCard1" data-x="8" data-y="42" data-w="149" data-h="118" data-pic="card.9.png">
+    <div class="text" data-caption="TextDev1Name" data-x="8" data-y="6" data-w="100" data-h="16" data-fs="11">1#环网柜</div>
+    <div class="text" data-caption="TextDev1Hum" data-x="6" data-y="24" data-w="137" data-h="30" data-fs="22" data-align="center">52%RH</div>
+    <div class="bar" data-caption="SeekDev1" data-x="16" data-y="58" data-w="117" data-h="5" data-max="100" data-value="52" data-track="bar_track.9.png" data-fill="bar_fill.9.png"></div>
+    <div class="text" data-caption="TextDev1Temp" data-x="20" data-y="70" data-w="123" data-h="16" data-fs="11" data-color="#9AA7B8" data-align="center">22.5 C</div>
+    <div class="text" data-caption="TextDev1Status" data-x="26" data-y="92" data-w="117" data-h="18" data-fs="12" data-color="#2ECC71" data-align="center">运行中</div>
+  </div>
+
+  <!-- 输入弹窗（modal，最后定义=最上层） -->
+  <div class="modal" data-caption="WinNumPad" data-x="80" data-y="46" data-w="320" data-h="180">
+    <div class="text" data-caption="TextNumTitle" data-x="12" data-y="10" data-w="180" data-h="18" data-fs="14">输入控制器ID</div>
+    <div class="input" data-caption="EditNumInput" data-x="12" data-y="36" data-w="296" data-h="40" data-num="1"></div>
+    <div class="text" data-caption="TextNumHint" data-x="12" data-y="88" data-w="296" data-h="14" data-fs="11" data-color="#9AA7B8" data-align="center">最多 12 位数字</div>
+    <div class="btn" data-caption="BtnNumCancel" data-x="12" data-y="116" data-w="100" data-h="40" data-bg="#374457">取消</div>
+    <div class="btn" data-caption="BtnNumOk" data-x="208" data-y="116" data-w="100" data-h="40" data-bg="#2F6DF6">确定</div>
+  </div>
+
+  <!-- 列表（listview） -->
+  <div class="list" data-caption="ListView1" data-x="8" data-y="130" data-w="300" data-h="76" data-cols="1" data-rows="2">
+    <div class="text" data-caption="SubItemName" data-x="10" data-y="0" data-w="120" data-h="24">子项名称</div>
+  </div>
+
+  <!-- 勾选 -->
+  <div class="checkbox" data-caption="Checkbox1" data-x="330" data-y="130" data-w="120" data-h="30" data-checked="1">启用</div>
+
+  <!-- 图标 -->
+  <img class="icon" data-caption="ImgStatus" data-x="340" data-y="5" data-w="20" data-h="20" src="images/dot_g.png">
+</div>
+</body>
+</html>

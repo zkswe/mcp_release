@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>自动转图测试：渐变/阴影/圆角/emoji/loading</title>
+</head>
+<body>
+<div class="screen" data-res="480x272" data-bg="#0E131A">
+  <!-- 1. 渐变背景 textview -->
+  <div class="text" data-caption="GradTitle" data-x="10" data-y="4" data-w="300" data-h="30" data-fs="16"
+       style="background: linear-gradient(to right, #1E2735, #2F6DF6); border-radius: 6px; color: #FFFFFF;">渐变标题条</div>
+
+  <!-- 2. 渐变圆角卡片（window 容器自动转背景图） -->
+  <div class="card" data-caption="GradCard" data-x="10" data-y="44" data-w="220" data-h="100"
+       style="background: linear-gradient(180deg, #1E2735 0%, #0E131A 100%); border-radius: 10px; box-shadow: 0 4 8 rgba(0,0,0,0.5);">
+    <div class="text" data-caption="TextInCard" data-x="12" data-y="10" data-w="180" data-h="20" data-fs="13">卡片内容</div>
+  </div>
+
+  <!-- 3. 渐变按钮（自动转 picTab） -->
+  <div class="btn" data-caption="BtnGrad" data-x="250" data-y="44" data-w="120" data-h="40" data-fs="14"
+       style="background: linear-gradient(to right, #2F6DF6, #42C9FF); border-radius: 8px; color: #FFFFFF;">渐变按钮</div>
+
+  <!-- 4. emoji 图标 textview（自动转 PNG 图标） -->
+  <div class="text" data-caption="IconEmoji" data-x="10" data-y="160" data-w="48" data-h="48" style="font-size: 32px;">🔋</div>
+
+  <!-- 5. loading 动画（自动转序列帧 imageanim） -->
+  <div class="text loading" data-caption="ImgLoading" data-x="80" data-y="160" data-w="48" data-h="48"
+       style="animation: spin 1s infinite; color: #42C9FF;"></div>
+
+  <!-- 6. 普通控件不转图 -->
+  <div class="text" data-caption="TextPlain" data-x="10" data-y="230" data-w="200" data-h="20" data-fs="12" data-color="#9AA7B8">普通文本</div>
+  <div class="btn" data-caption="BtnPlain" data-x="300" data-y="220" data-w="100" data-h="36" data-fs="12" data-bg="#374457">普通按钮</div>
+</div>
+</body>
+</html>

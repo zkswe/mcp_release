@@ -1,0 +1,357 @@
+{
+  "backgroundColor": 922394,
+  "beepEnable": true,
+  "id": 0,
+  "resolution": {
+    "height": 272,
+    "width": 480
+  },
+  "topmost": false,
+  "position": {
+    "height": 272,
+    "left": 0,
+    "top": 0,
+    "width": 480
+  },
+  "textview__1": {
+    "alignment": 36,
+    "caption": "TextView1",
+    "colorTab": {
+      "color0": 15659766
+    },
+    "id": 50001,
+    "position": {
+      "height": 40,
+      "left": 0,
+      "top": 0,
+      "width": 100
+    },
+    "touchable": false,
+    "text": "分体式除湿控制器"
+  },
+  "button__2": {
+    "alignment": 37,
+    "caption": "BtnRename",
+    "bgColorTab": {
+      "color0": 3621975
+    },
+    "colorTab": {
+      "color0": 15659766
+    },
+    "id": 20001,
+    "position": {
+      "height": 40,
+      "left": 0,
+      "top": 0,
+      "width": 100
+    },
+    "text": "重命名"
+  },
+  "button__3": {
+    "alignment": 37,
+    "caption": "BtnCtrlId",
+    "bgColorTab": {
+      "color0": 3621975
+    },
+    "colorTab": {
+      "color0": 15659766
+    },
+    "id": 20002,
+    "position": {
+      "height": 40,
+      "left": 0,
+      "top": 0,
+      "width": 100
+    },
+    "text": "ID 1"
+  },
+  "button__4": {
+    "alignment": 37,
+    "caption": "BtnSettings",
+    "bgColorTab": {
+      "color0": 3108342
+    },
+    "colorTab": {
+      "color0": 15659766
+    },
+    "id": 20003,
+    "position": {
+      "height": 40,
+      "left": 0,
+      "top": 0,
+      "width": 100
+    },
+    "text": "参数设置"
+  },
+  "window__5": {
+    "beepEnable": true,
+    "caption": "DevCard1",
+    "id": 110001,
+    "position": {
+      "height": 40,
+      "left": 0,
+      "top": 0,
+      "width": 100
+    },
+    "backgroundPic": "images/card.9.png",
+    "textview__6": {
+      "alignment": 36,
+      "caption": "TextDev1Name",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "id": 50002,
+      "position": {
+        "height": 40,
+        "left": 0,
+        "top": 0,
+        "width": 100
+      },
+      "touchable": false,
+      "text": "1#环网柜"
+    },
+    "textview__7": {
+      "alignment": 37,
+      "caption": "TextDev1Hum",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "id": 50003,
+      "position": {
+        "height": 40,
+        "left": 0,
+        "top": 0,
+        "width": 100
+      },
+      "touchable": false,
+      "text": "52%RH"
+    },
+    "seekbar__8": {
+      "caption": "SeekDev1",
+      "defProgress": 0,
+      "id": 91001,
+      "max": 100,
+      "orientation": 0,
+      "touchable": false,
+      "position": {
+        "height": 40,
+        "left": 0,
+        "top": 0,
+        "width": 100
+      },
+      "backgroundPic": "images/bar_track.9.png",
+      "progressPic": "images/bar_fill.9.png"
+    },
+    "textview__9": {
+      "alignment": 37,
+      "caption": "TextDev1Temp",
+      "colorTab": {
+        "color0": 10135480
+      },
+      "id": 50004,
+      "position": {
+        "height": 40,
+        "left": 0,
+        "top": 0,
+        "width": 100
+      },
+      "touchable": false,
+      "text": "22.5 C"
+    },
+    "textview__10": {
+      "alignment": 37,
+      "caption": "TextDev1Status",
+      "colorTab": {
+        "color0": 3066993
+      },
+      "id": 50005,
+      "position": {
+        "height": 40,
+        "left": 0,
+        "top": 0,
+        "width": 100
+      },
+      "touchable": false,
+      "text": "运行中"
+    }
+  },
+  "window__11": {
+    "beepEnable": true,
+    "caption": "WinNumPad",
+    "id": 110002,
+    "position": {
+      "height": 40,
+      "left": 0,
+      "top": 0,
+      "width": 100
+    },
+    "modal": true,
+    "visible": false,
+    "textview__12": {
+      "alignment": 36,
+      "caption": "TextNumTitle",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "id": 50006,
+      "position": {
+        "height": 40,
+        "left": 0,
+        "top": 0,
+        "width": 100
+      },
+      "touchable": false,
+      "text": "输入控制器ID"
+    },
+    "edittext__13": {
+      "alignment": 37,
+      "beepEnable": true,
+      "caption": "EditNumInput",
+      "bgColorTab": {
+        "color0": 16777215
+      },
+      "colorTab": {
+        "color0": 0
+      },
+      "hintTextColor": 0,
+      "id": 51001,
+      "position": {
+        "height": 40,
+        "left": 0,
+        "top": 0,
+        "width": 100
+      },
+      "textType": 1
+    },
+    "textview__14": {
+      "alignment": 37,
+      "caption": "TextNumHint",
+      "colorTab": {
+        "color0": 10135480
+      },
+      "id": 50007,
+      "position": {
+        "height": 40,
+        "left": 0,
+        "top": 0,
+        "width": 100
+      },
+      "touchable": false,
+      "text": "最多 12 位数字"
+    },
+    "button__15": {
+      "alignment": 37,
+      "caption": "BtnNumCancel",
+      "bgColorTab": {
+        "color0": 3621975
+      },
+      "colorTab": {
+        "color0": 15659766
+      },
+      "id": 20004,
+      "position": {
+        "height": 40,
+        "left": 0,
+        "top": 0,
+        "width": 100
+      },
+      "text": "取消"
+    },
+    "button__16": {
+      "alignment": 37,
+      "caption": "BtnNumOk",
+      "bgColorTab": {
+        "color0": 3108342
+      },
+      "colorTab": {
+        "color0": 15659766
+      },
+      "id": 20005,
+      "position": {
+        "height": 40,
+        "left": 0,
+        "top": 0,
+        "width": 100
+      },
+      "text": "确定"
+    }
+  },
+  "listview__17": {
+    "beepEnable": true,
+    "caption": "ListView1",
+    "cols": 1,
+    "rows": 5,
+    "id": 80001,
+    "position": {
+      "height": 40,
+      "left": 0,
+      "top": 0,
+      "width": 100
+    },
+    "colSpacing": 0,
+    "rowSpacing": 1,
+    "orientation": 1,
+    "item": {
+      "text": "ListItem",
+      "subItem": [
+        {
+          "alignment": 37,
+          "caption": "SubItemName",
+          "id": 24001,
+          "colorTab": {
+            "color0": 15659766
+          },
+          "position": {
+            "height": 40,
+            "left": 0,
+            "top": 0,
+            "width": 100
+          },
+          "text": "子项名称"
+        }
+      ]
+    }
+  },
+  "checkbox__18": {
+    "alignment": 38,
+    "caption": "Checkbox1",
+    "checked": true,
+    "bgColorTab": {
+      "color0": 6322820,
+      "color2": 5600108
+    },
+    "colorTab": {
+      "color0": 15659766
+    },
+    "iconPosition": {
+      "height": 40,
+      "left": 0,
+      "top": 0,
+      "width": 100
+    },
+    "id": 21001,
+    "position": {
+      "height": 40,
+      "left": 0,
+      "top": 0,
+      "width": 100
+    },
+    "text": "启用"
+  },
+  "textview__19": {
+    "alignment": 36,
+    "caption": "ImgStatus",
+    "colorTab": {
+      "color0": 15659766
+    },
+    "id": 50008,
+    "position": {
+      "height": 40,
+      "left": 0,
+      "top": 0,
+      "width": 100
+    },
+    "touchable": false,
+    "backgroundPic": "images/dot_g.png"
+  }
+}
