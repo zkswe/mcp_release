@@ -74,7 +74,7 @@ PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 | `div.digitalclock` / `div.clock` / `div.time` | ZKDigitalClock 数字时钟 | data-format 时间格式（HH 24小时制/hh 12小时制/MM 分钟/SS 秒/yyyy-MM-dd 日期/EEEE 星期）、data-beat="1" 冒号闪烁、自动实时刷新系统时间 |
 | `div.card` / `div.window` / `div.panel` | ZKWindow 容器 | 子控件嵌套其内（相对坐标）；data-pic 背景图 |
 | `div.modal` / `div.dialog` | ZKWindow 弹窗 | 自动 modal:true + visible:false + 最后定义（最上层） |
-| `div.list` | ZKListView | data-cols/data-rows；子项为 subItem（见下） |
+| `div.list` | ZKListView | data-cols/data-rows/data-row-spacing/data-col-spacing；子项为 subItem（见下） |
 | `div.checkbox` | ZKCheckBox | data-checked="1" 勾选；**padding 三件套**：data-icon-w/h 图标尺寸、data-pad 图标与文字间隙、data-pic/data-pic2 两态图（pic0 未选/pic2 选中，自动生成 iconPosition+textPosition）；无图时 data-bg/data-bg2 + data-color/data-color2 选中变色 |
 | `div.radio` / `div.radiogroup` | ZKRadioGroup | 子项自动进 radiobuttons 数组 |
 | `div.icon` / `img` | ZKTextView(带背景图) | data-pic / src 图标；空文本 |
@@ -100,6 +100,7 @@ PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 | `data-max/data-value` | seekbar 最大值/当前值 | data-max="100" data-value="52" |
 | `data-track/data-fill` | seekbar 轨道图/填充图 | data-track="bar_track.9.png" |
 | `data-cols/data-rows` | listview 列/行 | data-cols="1" data-rows="5" |
+| `data-row-spacing` / `data-col-spacing` | listview 行/列间距 | data-row-spacing="4" |
 | `data-checked` | checkbox 勾选 | data-checked="1" |
 | `data-pic0`~`data-pic4` | button 多态图（正常/按下/选中/选中按下/无效） | data-pic0="btn_normal.png" data-pic1="btn_pressed.png" |
 | `data-bgpic` | button 背景图（backgroundPic 单图） | data-bgpic="btn_bg.png" |

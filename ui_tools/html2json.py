@@ -650,7 +650,7 @@ class HtmlToJson:
              'id': ctx.nid('listview'),
              'position': self._pos(attrs),
              'colSpacing': 0, 'rowSpacing': 1, 'orientation': 1,
-             'item': {'text': 'ListItem', 'subItem': []},
+             'item': {'caption': 'item', 'text': 'ListItem', 'subItem': []},
              '__container': True, '__listview': True}
         cols = parse_px(_attr(attrs, 'data-cols'))
         rows = parse_px(_attr(attrs, 'data-rows'))
@@ -658,6 +658,12 @@ class HtmlToJson:
             c['cols'] = cols
         if rows:
             c['rows'] = rows
+        rs = parse_px(_attr(attrs, 'data-row-spacing'))
+        cs = parse_px(_attr(attrs, 'data-col-spacing'))
+        if rs is not None:
+            c['rowSpacing'] = rs
+        if cs is not None:
+            c['colSpacing'] = cs
         key = ctx.key('listview')
         ctx.root[key] = c
         ctx.stack.append(c)
@@ -722,7 +728,9 @@ class HtmlToJson:
 
         # 在 listview 内 → subItem
         if ctx.stack and ctx.stack[-1].get('__listview'):
-            si = {'alignment': 37, 'caption': cap, 'id': ctx.nid('subitem'),
+            # subItem 子项（UIlayoutDemo/listview.ftu 校准）：支持背景图（头像等图片子项）+ 对齐 + 字号/颜色
+            si = {'alignment': ALIGN.get((_attr(attrs, 'data-align') or 'center').lower(), 37),
+                  'caption': cap, 'id': ctx.nid('subitem'),
                   'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0xEEF2F6},
                   'position': pos}
             fs = self._font_size(attrs)
@@ -730,6 +738,9 @@ class HtmlToJson:
                 si['fontSize'] = fs
             if text:
                 si['text'] = text
+            spic = _attr(attrs, 'data-pic') or _attr(attrs, 'data-bgpic') or _attr(attrs, 'data-src') or _attr(attrs, 'src')
+            if spic:
+                si['backgroundPic'] = spic if '/' in spic else 'images/' + spic
             ctx.stack[-1]['item']['subItem'].append(si)
             return
 
