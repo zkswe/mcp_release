@@ -136,6 +136,8 @@ def flythings_build_ui_flow(project_root: str, with_launch: bool = True, device:
     先在电脑执行 adb connect <设备IP> 完成配对再重试。
     ⚠️ fun launch 不支持 -s 参数（带参数有其他问题），设备选择由 fun 自动完成，禁止替用户猜测 IP。
     传入项目根目录。改过 json 必须 pack，否则设备仍跑旧 ftu。
+    ⚠️⚠️ src/activity/ 目录（mainActivity.cpp/h）由 IDE 编译时自动生成，构建流程已自动处理；
+    禁止手动创建/修改该目录文件，业务代码只写 src/logic/*.cc。
     """
     return json.dumps(pt.flythings_build_ui_flow(project_root, with_launch, device), ensure_ascii=False)
 
@@ -259,6 +261,8 @@ def flythings_generate_manifest(features: str, platform: str = 'F133') -> str:
 def flythings_attach_cli_tools(project_root: str, with_fyx: bool = True) -> str:
     """复制 fui.exe（→项目 ui/）与 fun.exe（→项目根目录）到项目，随项目交付。
     生成后用 fun.exe build 编译、launch 推送，无需客户导入 IDE。
+    ⚠️⚠️ src/activity/ 目录（mainActivity.cpp/h）由 IDE 编译时自动生成，禁止创建/修改；
+    业务代码只写 src/logic/*.cc。
     """
     return json.dumps(pt.flythings_attach_cli_tools(project_root, with_fyx), ensure_ascii=False)
 
@@ -268,6 +272,9 @@ def flythings_create_project(project_root: str, platform: str, resolution: str,
     """从 HelloWord Demo 复制骨架创建 FlyThings 项目，自动替换工程名/分辨率/平台。
     传入目标项目根目录、平台（F133/F135/Z21）与分辨率（如 800x480）。
     ⚠️ platform/resolution 必填且必须来自用户明确提供，未指定时先询问，禁止猜测或用默认值。
+    ⚠️⚠️ src/activity/ 目录（mainActivity.cpp/h）由 IDE 编译时根据 ftu 自动生成，
+    禁止创建/修改/覆盖该目录任何文件！业务代码只能写 src/logic/*.cc；
+    mXXXPtr 控件指针 / ID_MAIN_* 宏 / 回调表 / findControlByID 初始化全部由 IDE 自动生成，禁止手写。
     """
     return json.dumps(pt.flythings_create_project(project_root, platform, resolution,
                                                   app_name, with_cli, force), ensure_ascii=False)

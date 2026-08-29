@@ -335,7 +335,7 @@ def flythings_read_json(json_path):
 # ---------------- 工具 2: project spec ----------------
 _PROJECT_SPEC = {
     "directoryRules": {
-        "activity": "IDE生成目录，禁止修改",
+        "activity": "IDE生成目录（mainActivity.cpp/h 由 IDE 编译时根据 ftu 自动生成），禁止创建/修改/覆盖；业务代码只写 src/logic/*.cc",
         "logic": "用户唯一代码目录",
         "core": "独立模块目录"
     },
