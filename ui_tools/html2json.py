@@ -240,6 +240,9 @@ class _DomParser(HTMLParser):
             self.root = node
         if tag not in VOID_TAGS:
             self.stack.append(node)
+        elif tag == 'br' and self.stack:
+            # ⛔ FlyThings textview 不支持 \n 多行：<br> 折叠为空格（避免文字粘连）
+            self.stack[-1].text += ' '
 
     def handle_startendtag(self, tag, attrs):
         # 自闭合 <xxx/>：挂到当前父节点，不入栈

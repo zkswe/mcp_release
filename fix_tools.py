@@ -1846,6 +1846,73 @@ def _verify_ft023(root):
         return True, ['自检脚本已就位（交付前运行）']
     return False, ['缺少 tools/verify_pipeline.py']
 
+
+# ============ FT-024: text 禁止换行符（设备不支持 \n 多行）============
+_RULE_FT024 = {
+    'kb_id': 'FT-024', 'priority': 'high',
+    'name': '文本控件 text 禁止含换行符（\\n 多行设备不支持）',
+    'root_cause': 'FlyThings textview/button 的 text 不渲染 \\n，json 里写换行设备只显示部分/异常（UIlayoutDemo TvRow 校准）。'
+                  '多行内容应拆多个 textview 上下排列。',
+    'user_patterns': ['文本换行显示不全', 'json 里写了 \\n 设备不显示第二行', '多行文字挤成一坨'],
+    'anti_patterns': ['用 \\n 硬拼多行文本', '依赖 HTML <br> 转多行'],
+}
+
+
+def _detect_ft024(root):
+    """检测 ui/*.json 中所有 text 含真实换行符（\n）的控件。"""
+    issues = []
+    for jp in _ui_jsons(root):
+        data = _load_json(jp)
+        if '__error__' in data:
+            continue
+        for key, val in _iter_controls(data):
+            text = val.get('text') if isinstance(val, dict) else None
+            if isinstance(text, str) and '\n' in text:
+                issues.append({
+                    'file': os.path.relpath(jp, root),
+                    'ctrl': key,
+                    'caption': val.get('caption', ''),
+                    'text': text,
+                    'msg': f'{key}({val.get("caption", "")}) 的 text 含换行符，设备不渲染多行 → 拆多个 textview 或折叠为空格',
+                })
+    return issues
+
+
+def _fix_ft024(root, issues):
+    """自动把换行符折叠为空格（保证设备正常渲染单行）；多行布局需人工拆控件。"""
+    fixes, notes = [], []
+    if not issues:
+        return fixes, notes, True
+    by_file = {}
+    for it in issues:
+        by_file.setdefault(it['file'], []).append(it)
+    for rel, items in by_file.items():
+        jp = os.path.join(root, rel)
+        data = _load_json(jp)
+        if '__error__' in data:
+            continue
+        changed = False
+        for it in items:
+            for key, val in _iter_controls(data):
+                if key != it['ctrl']:
+                    continue
+                if isinstance(val.get('text'), str) and '\n' in val['text']:
+                    val['text'] = re.sub(r'\s+', ' ', val['text']).strip()
+                    changed = True
+                    fixes.append(f'{rel} {key}: 换行符已折叠为空格（设备不支持多行）')
+        if changed:
+            with open(jp, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+    notes.append('如需真正多行：拆成多个 textview 上下排列（各自 setText），或用两个 36 对齐的 textview 拼一行')
+    return fixes, notes, True
+
+
+def _verify_ft024(root):
+    issues = _detect_ft024(root)
+    if not issues:
+        return True, ['所有文本控件无换行符']
+    return False, [i['msg'] for i in issues[:5]]
+
 # ============ 规则注册表 ============
 RULES = [
     {'meta': _RULE_FT001, 'detect': _detect_ft001, 'fix': _fix_ft001, 'verify': _verify_ft001},
@@ -1866,6 +1933,7 @@ RULES = [
     {'meta': _RULE_FT021, 'detect': _detect_ft021, 'fix': _fix_ft021, 'verify': _verify_ft021},
     {'meta': _RULE_FT022, 'detect': _detect_ft022, 'fix': _fix_ft022, 'verify': _verify_ft022},
     {'meta': _RULE_FT023, 'detect': _detect_ft023, 'fix': _fix_ft023, 'verify': _verify_ft023},
+    {'meta': _RULE_FT024, 'detect': _detect_ft024, 'fix': _fix_ft024, 'verify': _verify_ft024},
 ]
 
 
