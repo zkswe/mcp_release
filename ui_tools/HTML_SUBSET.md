@@ -70,6 +70,7 @@ PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 | `div.bar` / `div.seekbar` | ZKSeekBar 进度条 | data-max 最大值、data-value 当前值、data-track/data-fill 轨道/填充图 |
 | `div.circlebar` | ZKCircleBar 圆形进度 | data-bg 背景图（不裁剪）、data-fill 有效图（按进度裁剪扇形）、data-max/data-max-angle/data-start-angle、data-clockwise="0/1"（⚠️ false=逆时针） |
 | `div.diagram` / `div.wave` | ZKDiagram 波形图 | 坐标 data-x-min/x-max/y-min/y-max；背景 data-bgpic；子 div.wave 每条波形（data-color 线色/data-pen-width/data-step/data-style 0折线1曲线/data-erase 刷新间距/data-antialias） |
+| `div.digitalclock` / `div.clock` / `div.time` | ZKDigitalClock 数字时钟 | data-format 时间格式（HH 24小时制/hh 12小时制/MM 分钟/SS 秒/yyyy-MM-dd 日期/EEEE 星期）、data-beat="1" 冒号闪烁、自动实时刷新系统时间 |
 | `div.card` / `div.window` / `div.panel` | ZKWindow 容器 | 子控件嵌套其内（相对坐标）；data-pic 背景图 |
 | `div.modal` / `div.dialog` | ZKWindow 弹窗 | 自动 modal:true + visible:false + 最后定义（最上层） |
 | `div.list` | ZKListView | data-cols/data-rows；子项为 subItem（见下） |
@@ -110,6 +111,8 @@ PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 | `data-x-min/x-max/y-min/y-max` | diagram 坐标轴范围 | data-x-max="100" |
 | `data-pen-width` / `data-step` / `data-style` | diagram 波形线宽/步进/样式（0折线1曲线） | data-style="0" |
 | `data-erase` / `data-antialias` | diagram 刷新间距/平滑 | data-erase="20" data-antialias="1" |
+| `data-format` | digitalclock 时间格式（HH 24小时/hh 12小时/MM 分/SS 秒/yyyy-MM-dd 日期/EEEE 星期） | data-format="HH:MM:SS" |
+| `data-beat` | digitalclock 冒号闪烁 | data-beat="1" |
 
 ## listview 子项写法
 子项控件**直接写在 `div.list` 容器内**即生成 subItem（每个子控件一个 subItem）：

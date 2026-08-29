@@ -36,7 +36,7 @@ ID_BASE = {
     'seekbar': 91000, 'window': 110000, 'listview': 80000,
     'checkbox': 21000, 'radiogroup': 94000, 'radiobutton': 22000,
     'subitem': 24000, 'imageanim': 53000,
-    'circlebar': 130000, 'diagram': 60000,
+    'circlebar': 130000, 'diagram': 60000, 'digitalclock': 93000,
 }
 
 # HTML class 关键字 → FlyThings 控件类型
@@ -53,6 +53,7 @@ CLASS_MAP = {
     'icon': ('icon', 'img', 'image', 'pic'),
     'circlebar': ('circlebar', 'circular', 'ring'),
     'diagram': ('diagram', 'wave', 'chart'),
+    'digitalclock': ('digitalclock', 'clock', 'time'),
 }
 
 # 对齐：left/center/right → alignment（36 左中 / 37 居中 / 38 右中）
@@ -915,6 +916,26 @@ class HtmlToJson:
             if fill:
                 c['progressPic'] = fill if '/' in fill else 'images/' + fill
                 c['progressPicPos'] = {'left': 0, 'top': 0, 'width': cw, 'height': ch}
+        elif typ == 'digitalclock':
+            # 数字时钟（UIlayoutDemo/digitalclock.ftu 校准）：format 时间格式 + beat 冒号闪烁，自动实时刷新系统时间
+            # format 大小写含义：HH=24小时制 hh=12小时制 MM=分钟 SS=秒 yyyy-MM-dd=日期 EEEE=星期
+            c = {'caption': cap, 'id': ctx.nid('digitalclock'),
+                 'touchable': False, 'position': pos}
+            fs = self._font_size(attrs)
+            if fs:
+                c['fontSize'] = fs
+            fmt = _attr(attrs, 'data-format')
+            if fmt:
+                c['format'] = fmt
+            beat = _attr(attrs, 'data-beat')
+            if beat is not None:
+                c['beat'] = str(beat).strip() in ('1', 'true')
+            col = to_dec(_attr(attrs, 'data-color'))
+            if col:
+                c['colorTab'] = {'color0': col}
+            bgc = self._bg_color(attrs)
+            if bgc:
+                c['bgColorTab'] = {'color0': bgc}
         elif typ == 'icon':
             c = {'alignment': 36, 'caption': cap,
                  'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0xEEF2F6},
