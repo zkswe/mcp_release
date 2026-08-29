@@ -631,17 +631,24 @@ class HtmlToJson:
                 style_pos = _style_pos(_attr(attrs, 'style') or '')
                 if style_pos.get('width') and style_pos.get('height'):
                     W, H = style_pos['width'], style_pos['height']
-        # 背景色：data-background 与 data-bg 互为别名
+        # 背景色：data-background 与 data-bg 互为别名；不写则透明（不设 backgroundColor，navibar/statusbar 校准）
         bg = to_dec(_attr(attrs, 'data-background'))
         if bg is None:
             bg = to_dec(_attr(attrs, 'data-bg'))
-        if bg is None:
-            bg = 0x0E131A
-        ctx.root = {
-            'backgroundColor': bg, 'beepEnable': True, 'id': 0,
-            'resolution': {'height': H, 'width': W}, 'topmost': False,
-            'position': {'height': H, 'left': 0, 'top': 0, 'width': W},
+        root = {
+            'beepEnable': True, 'id': 0,
+            'resolution': {'height': H, 'width': W},
+            'topmost': str(_attr(attrs, 'data-topmost') or '').strip() in ('1', 'true'),
         }
+        if bg is not None:
+            root['backgroundColor'] = bg
+        # 根 position：默认全屏；statusbar/navibar 悬浮块可用 data-x/y/w/h 指定局部区域（UIlayoutDemo 校准）
+        pos = self._pos(attrs)
+        if pos.get('width') and pos.get('height'):
+            root['position'] = pos
+        else:
+            root['position'] = {'height': H, 'left': 0, 'top': 0, 'width': W}
+        ctx.root = root
 
     # ---------- 容器 ----------
     def _open_window(self, ctx, node, modal):

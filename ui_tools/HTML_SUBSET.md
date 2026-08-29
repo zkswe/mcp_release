@@ -74,6 +74,8 @@ PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 | `div.digitalclock` / `div.clock` / `div.time` | ZKDigitalClock 数字时钟 | data-format 时间格式（HH 24小时制/hh 12小时制/MM 分钟/SS 秒/yyyy-MM-dd 日期/EEEE 星期）、data-beat="1" 冒号闪烁、自动实时刷新系统时间 |
 | `div.card` / `div.window` / `div.panel` | ZKWindow 容器 | 子控件嵌套其内（相对坐标）；data-pic 背景图、data-bg 纯色背景；**默认 visible:false（初始隐藏，代码 showWindow 弹出）** |
 | `div.modal` / `div.dialog` | ZKWindow 弹窗 | 自动 modal:true + visible:false + 最后定义（最上层）；data-hide-timeout 自动隐藏秒数（模态 8 实测）；data-bg 纯色背景（无图时） |
+> ⚠️ **系统栏（navibar/statusbar）**：类似 Android 状态栏/导航栏的悬浮窗口，根节点加 `data-topmost="1"`（悬浮最上层）+
+> 不写 `data-bg`（背景透明）；statusbar 可用 `data-x/y/w/h` 指定局部悬浮块（如 100×41 电量显示），navibar 全屏叠弹窗。
 | `div.list` | ZKListView | data-cols/data-rows/data-row-spacing/data-col-spacing；子项为 subItem（见下） |
 | `div.slidewindow` / `div.slide` / `div.launcher` | ZKSlideWindow 滑动窗口（Android 主页式） | data-cols/data-rows 每页行列、data-icon-w/h 图标尺寸、data-icon-align 文字对齐、data-icon-pad-b/data-pad-b 间距、data-drag-max 拖动距离、data-edge-effect 边缘效果、data-orientation 方向、data-roll-speed 滚动速度；子 div.item 每个图标项（data-pic/data-pic1 两态图 + 文字） |
 | `div.scrollwindow` / `div.scrollwin` / `div.scroll` | ZKScrollWindow 滚动窗口 | data-drag-max 最大拖动距离（=滚动内容尺寸）、data-orientation 滑动方向（0水平/1垂直）、data-edge-effect 边界效果；滚动内容=内嵌普通 window（尺寸=dragMaxDis） |
@@ -129,6 +131,8 @@ PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 | `data-loop` / `data-interval` | imageanim 循环次数（0=无限）/帧间隔 | data-loop="1" |
 | `data-play-file` / `data-gif` | imageanim GIF 路径（缺省自动加 image/ 前缀） | data-src="test.gif" |
 | `data-hide-timeout` | window/modal 自动隐藏秒数（-1 不自动隐藏） | data-hide-timeout="8" |
+| `data-topmost` | 根节点悬浮标记（1=最上层，系统栏/导航栏用） | data-topmost="1" |
+| `data-x/y/w/h` | 根节点局部悬浮块（statusbar 电量显示等，缺省全屏） | data-x="615" data-y="25" data-w="100" data-h="41" |
 
 ## listview 子项写法
 子项控件**直接写在 `div.list` 容器内**即生成 subItem（每个子控件一个 subItem）：
