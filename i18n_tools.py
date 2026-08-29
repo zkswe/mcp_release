@@ -1,17 +1,24 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""FlyThings 多国语言（i18n）工具：scan 诊断 / export 导出待翻译 / import 写回生成 .tr。
+"""FlyThings 多国语言（i18n）工具：scan 诊断 / export 导出待翻译 / import 写回生成 .tr /
+add_language 添加新语言 / refactor 布局文本转 @key。
 
-机制（SampleUI-New 实测，2026-08-29 沉淀）：
-- 翻译文件 = 项目根目录 i18n/<语言代码>.tr，Android strings.xml 同款 XML：
+机制（官方 i18n.html + SampleUI-New 实测，2026-08-29 沉淀）：
+- 翻译文件 = 项目根目录 i18n/<语言>.tr，Android strings.xml 同款 XML：
     <?xml version="1.0" encoding="utf-8"?>
     <resources>
         <string name="about_me">关于我们</string>
     </resources>
+- 文件名三段式：xx_XX-语言名.tr（语言代号 2 小写 + 地区代号 2 大写 + 语言名显示在切换列表），
+  如 fr_FR-法语.tr / es_ES-西班牙语.tr / ru_RU-俄语.tr；默认四种语言 zh_CN/en_US/ja_JP/ko_KR
 - 布局 json/ftu 文本控件 text 写 @key（如 "@about_me"），运行时按当前语言自动解析
-- 代码动态取词：LANGUAGEMANAGER->getValue("key")（easyui 包 manager/LanguageManager.h）
-- 语言切换：LANGUAGEMANAGER->setCurrentCode("zh_CN"/"en_US")
+- 代码动态翻译：setTextTr("key")（不带@）；拼接取词：LANGUAGEMANAGER->getValue("key")
+  （easyui 包 manager/LanguageManager.h）
+- 语言切换：EASYUICONTEXT->updateLocalesCode("zh_CN") 或 openActivity("LanguageSettingActivity")
+- 换行转义：\n 或 &#x000A;；多语言需字体支持（默认精简字体，建议 font_cut_tool 自定义字体）
 
-本工具只做文件读写与诊断，翻译内容由调用方 AI 提供（MCP 零远程依赖）。
+本工具只做文件读写与诊断，翻译内容由调用方 AI 提供（MCP 零远程依赖）；
+翻译要求专业：结合项目语境（如车载项目 CAN BUS 保持行业术语，不直译公共汽车）。
 """
 import io, os, re, glob, json
 import xml.etree.ElementTree as ET
@@ -25,7 +32,7 @@ def _i18n_dir(project_root):
 
 
 def _list_tr_files(project_root):
-    """返回 [(语言代码, 文件路径)]，按文件名排序。"""
+    """返回 [(语言标识, 文件路径)]，按文件名排序。语言标识=文件名去 .tr（含三段式 xx_XX-语言名）。"""
     d = _i18n_dir(project_root)
     if not os.path.isdir(d):
         return []
@@ -35,6 +42,13 @@ def _list_tr_files(project_root):
             lang = f[:-3]
             out.append((lang, os.path.join(d, f)))
     return out
+
+
+def _tr_display_name(lang_id):
+    """语言标识 → 显示名：'fr_FR-法语' → '法语'；'zh_CN' → 'zh_CN'。"""
+    if '-' in lang_id:
+        return lang_id.split('-', 1)[1]
+    return lang_id
 
 
 def _parse_tr(path):
@@ -145,23 +159,25 @@ def flythings_i18n_scan(project_root: str) -> str:
             'ok': True,
             'hasI18n': True,
             'languages': [lang for lang, _ in files],
+            'languageDisplayNames': {lang: _tr_display_name(lang) for lang, _ in files},
             'keysPerLanguage': {lang: len(m) for lang, m in all_maps.items()},
             'keyAligned': not missing,
             'missingKeysPerLanguage': missing,
             'layoutRefCount': len(layout_keys),
             'layoutRefMissingInTr': ref_missing,
             'trKeysUnusedByLayout': unused,
-            'suggestion': 'key 对齐或引用有缺时：export 导出 → 翻译 → import 写回。',
+            'suggestion': 'key 对齐或引用有缺时：export 导出 → 翻译 → import 写回；新增语言用 add_language。',
         }, ensure_ascii=False)
     except Exception as e:
         return json.dumps({'ok': False, 'error': str(e)}, ensure_ascii=False)
 
 
 # ========== 2. export：导出待翻译清单 ==========
-def flythings_i18n_export(project_root: str, lang: str = 'zh_CN', keys: str = '') -> str:
+def flythings_i18n_export(project_root: str, lang: str = 'zh_CN', keys: str = '', context: str = '') -> str:
     """导出指定语言（缺省 zh_CN）的 key→文本清单（JSON），供翻译后 import 写回。
     keys 参数可选：逗号分隔的 key 子集，缺省导出全部。
-    若该语言 .tr 不存在，返回空清单（从源语言复制 key 骨架）。
+    context 参数可选：项目语境描述（如"车载充电桩项目"），返回 translationGuide 提示 AI 专业翻译
+    （术语如 CAN BUS 保持行业译法，不直译公共汽车）。
     """
     try:
         files = _list_tr_files(project_root)
@@ -170,12 +186,80 @@ def flythings_i18n_export(project_root: str, lang: str = 'zh_CN', keys: str = ''
         if keys.strip():
             wanted = [k.strip() for k in keys.split(',') if k.strip()]
             base = {k: base.get(k, '') for k in wanted}
+        guide = _translation_guide(context)
         return json.dumps({
             'ok': True,
             'lang': lang,
             'count': len(base),
             'entries': base,
+            'translationGuide': guide,
             'hint': '翻译 entries 的 value 后，调用 flythings_i18n_import 写回生成/更新 .tr 文件。',
+        }, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({'ok': False, 'error': str(e)}, ensure_ascii=False)
+
+
+def _translation_guide(context: str) -> str:
+    """生成专业翻译提示（结合项目语境）。"""
+    parts = [
+        '翻译要求：',
+        '1. 术语必须结合项目行业语境（不要按字面直译）；',
+        '2. 单位/编号/占位符（%d、%s、CAN、OBD、TCP、MQTT 等）保持原样；',
+        '3. 译文长度控制：德文等语言会比中文长 30-50%，避免超控件溢出；',
+        '4. 状态/操作类短词用行业惯例（如 Start/Stop/OK/Cancel）。',
+    ]
+    if context.strip():
+        parts.insert(1, f'项目语境：{context.strip()}。专业术语按该行业标准译法（如车载项目 CAN BUS 不译成公共汽车）。')
+    return '\n'.join(parts)
+
+
+# ========== 2.5 add_language：添加新语言 ==========
+def flythings_i18n_add_language(project_root: str, lang: str, lang_name: str, base_lang: str = 'zh_CN', context: str = '') -> str:
+    """添加新语言：从基础语言（缺省 zh_CN）复制 key 骨架，生成 i18n/<lang>-<lang_name>.tr 待翻译文件。
+    lang 为语言代码（如 fr_FR，2 小写+2 大写），lang_name 为语言名（如 法语，显示在切换列表）。
+    返回待翻译清单（key→基础语言原文）+ 专业翻译提示；翻译后调用 flythings_i18n_import 写回。
+    ⚠️ 新语言文件名必须 xx_XX-语言名.tr 三段式（官方规范），勿用两段式。
+    """
+    try:
+        # 校验语言代码格式 xx_XX
+        if not re.fullmatch(r'[a-z]{2}_[A-Z]{2}', lang or ''):
+            return json.dumps({'ok': False, 'error': f'语言代码格式应为 xx_XX（如 fr_FR），收到: {lang}'}, ensure_ascii=False)
+        if not lang_name or not lang_name.strip():
+            return json.dumps({'ok': False, 'error': 'lang_name 必填（如 法语/俄语，显示在语言切换列表）'}, ensure_ascii=False)
+
+        files = _list_tr_files(project_root)
+        maps = {lang_: _parse_tr(p) for lang_, p in files}
+        if lang not in maps:
+            base = maps.get(base_lang, {})
+            if not base:
+                return json.dumps({'ok': False, 'error': f'基础语言 {base_lang} 不存在，无法复制 key 骨架'}, ensure_ascii=False)
+            # 复制骨架：值先用基础语言原文占位，待 AI 翻译
+            entries = dict(base)
+        else:
+            entries = maps[lang]
+            return json.dumps({'ok': False, 'error': f'语言 {lang} 已存在（{lang_name}），如需更新请用 import'}, ensure_ascii=False)
+
+        file_name = f'{lang}-{lang_name.strip()}.tr'
+        d = _i18n_dir(project_root)
+        os.makedirs(d, exist_ok=True)
+        path = os.path.join(d, file_name)
+        if os.path.exists(path):
+            return json.dumps({'ok': False, 'error': f'文件已存在: {file_name}'}, ensure_ascii=False)
+
+        # 先写出占位文件（值=基础语言原文），AI 翻译后 import 覆盖
+        _write_tr(path, entries)
+        guide = _translation_guide(context)
+        return json.dumps({
+            'ok': True,
+            'action': '新建',
+            'lang': f'{lang}-{lang_name.strip()}',
+            'file': path,
+            'count': len(entries),
+            'baseLang': base_lang,
+            'entries': entries,
+            'translationGuide': guide,
+            'nextHint': f'翻译 entries 的 value 为{lang_name.strip()}后，调用 flythings_i18n_import(project_root, "{lang}-{lang_name.strip()}", 翻译结果JSON) 写回；'
+                        '注意：新语言需将内置界面翻译文本（docs.flythings.cn/src/zh_CN.tr）并入并翻译，内置界面才能正常显示。',
         }, ensure_ascii=False)
     except Exception as e:
         return json.dumps({'ok': False, 'error': str(e)}, ensure_ascii=False)
@@ -215,7 +299,8 @@ def flythings_i18n_import(project_root: str, lang: str, translations: str, merge
             'file': path,
             'count': len(entries),
             'action': '更新' if existed else '新建',
-            'nextHint': '改布局引用 @key 或代码 LANGUAGEMANAGER->getValue() 后重新编译部署。',
+            'nextHint': '改布局引用 @key、代码 setTextTr("key") 或 LANGUAGEMANAGER->getValue() 后重新编译部署；'
+                        '切换语言用 EASYUICONTEXT->updateLocalesCode("code")。',
         }, ensure_ascii=False)
     except Exception as e:
         return json.dumps({'ok': False, 'error': str(e)}, ensure_ascii=False)
