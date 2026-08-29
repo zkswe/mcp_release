@@ -336,7 +336,7 @@ def flythings_read_json(json_path):
 _PROJECT_SPEC = {
     "directoryRules": {
         "activity": "IDE生成目录（mainActivity.cpp/h 由 IDE 编译时根据 ftu 自动生成），禁止创建/修改/覆盖；业务代码只写 src/logic/*.cc",
-        "logic": "用户唯一代码目录",
+        "logic": "UI与业务的关联层（回调里取控件指针/刷界面/调业务对象），不做复杂逻辑；复杂功能拆独立 C++ 类放自建目录（core/modules/business 等）并在 logic include+调用",
         "core": "独立模块目录"
     },
     "generationRules": {
@@ -356,6 +356,7 @@ _PROJECT_SPEC = {
         "新建项目应从 IDE 模板创建（flythings_create_project），勿手搭骨架",
         "工程文件 .project/.cproject/.settings 是 IDE 必需，缺失则项目无法编译",
         "Manifest 用新格式 <manifest platform=\"...\">（旧 <Manifest> 格式 IDE 不认）",
+        "代码层架构：logic/*.cc 只做 UI 与业务的关联操作（取控件指针/setText/调业务对象）；复杂功能开发成独立 C++ 类放自建目录（src/core/、src/modules/ 等），在 logic include+调用；新增 .cc/.h 无需导入 IDE，fun build 自动编译",
         "src/uart 为系统模板：UartContext/ProtocolSender 勿改，只改 ProtocolData.h 与 ProtocolParser.cpp 协议部分",
         "json 布局用 fui pack 生成 ftu（ui/ 下已附带 fui.exe）；编译推送用 fun.exe build / fun.exe launch（项目根目录已附带 fun.exe）",
         "⚠️ 交付流程：项目生成后直接用 fun.exe build 编译、fun.exe launch 推送设备，无需客户手动导入 FlyThings IDE 编译烧录",
