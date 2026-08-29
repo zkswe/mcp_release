@@ -65,7 +65,7 @@ PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 |---|---|---|
 | `div.screen` | 根节点 | 必须；分辨率 data-res="WxH"（也支持 data-width/data-height 或 style 宽高），背景 data-bg / data-background（默认 #0E131A） |
 | `div.text` / `p` / `span` | ZKTextView | 字号 data-fs（也认 data-font-size/data-fontSize/内联 font-size）、文字色 data-color、背景 data-bg/data-background、对齐 data-align |
-| `div.btn` / `button` | ZKButton | data-bg 底色、data-pic 背景图（pic0）、data-fs |
+| `div.btn` / `button` | ZKButton | data-bg 底色、data-fs；**图片按钮铁律**：有图（data-pic/data-pic0~4 多态图、data-bgpic 背景图）自动去底色（图片叠色效果错乱）；纯文字才用底色。data-pic0 正常/1 按下/2 选中/3 选中按下/4 无效；data-icon-w/h + data-pad 图标 padding |
 | `div.input` / `input` | ZKEditText | data-num="1" 数字键盘、data-hint 提示、data-bg 底色 |
 | `div.bar` / `div.seekbar` | ZKSeekBar 进度条 | data-max 最大值、data-value 当前值、data-track/data-fill 轨道/填充图 |
 | `div.card` / `div.window` / `div.panel` | ZKWindow 容器 | 子控件嵌套其内（相对坐标）；data-pic 背景图 |
@@ -97,8 +97,9 @@ PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 | `data-track/data-fill` | seekbar 轨道图/填充图 | data-track="bar_track.9.png" |
 | `data-cols/data-rows` | listview 列/行 | data-cols="1" data-rows="5" |
 | `data-checked` | checkbox 勾选 | data-checked="1" |
-| `data-pic` / `data-pic2` | checkbox 两态图（未选中/选中） | data-pic="cb_off.png" data-pic2="cb_on.png" |
-| `data-icon-w` / `data-icon-h` | checkbox 图标尺寸（缺省=控件高） | data-icon-w="48" |
+| `data-pic0`~`data-pic4` | button 多态图（正常/按下/选中/选中按下/无效） | data-pic0="btn_normal.png" data-pic1="btn_pressed.png" |
+| `data-bgpic` | button 背景图（backgroundPic 单图） | data-bgpic="btn_bg.png" |
+| `data-icon-w` / `data-icon-h` | checkbox/button 图标尺寸（缺省=控件高） | data-icon-w="48" |
 | `data-pad` | checkbox 图标与文字间隙（缺省 6px，自动算 textPosition） | data-pad="8" |
 | `data-color2` / `data-bg2` | checkbox 无图时选中态色 | data-color2="#FF0000" |
 

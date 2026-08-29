@@ -703,6 +703,8 @@ class HtmlToJson:
                         f'{af}（imageanim 控件）；请在 logic.cc onUI_init 调用 '
                         f'm{cap}Ptr->play("{af}") 播放（循环次数由 json loopCount 控制）')
         elif typ == 'button':
+            # 图片按钮铁律（UIlayoutDemo/button.ftu 校准）：有按键图片（picTab/backgroundPic）时不开背景色，
+            #  否则图片叠在颜色上效果与预想不同；仅纯文字按钮才用 bgColorTab/colorTab 多态色
             c = {'alignment': ALIGN.get((_attr(attrs, 'data-align') or 'center').lower(), 37),
                  'caption': cap,
                  'bgColorTab': {'color0': self._bg_color(attrs) or 0x374457},
@@ -714,17 +716,35 @@ class HtmlToJson:
                 c['fontSize'] = fs
             if text:
                 c['text'] = text
-            pic = _attr(attrs, 'data-pic')
-            if pic:
-                c['picTab'] = {'pic0': pic if '/' in pic else 'images/' + pic}
+            # 多态图（demo 五态）：pic0 正常 / pic1 按下 / pic2 选中 / pic3 选中按下 / pic4 无效
+            pic0 = _attr(attrs, 'data-pic') or _attr(attrs, 'data-pic0') or _attr(attrs, 'data-src')
+            pics = {}
+            for k in ('pic0', 'pic1', 'pic2', 'pic3', 'pic4'):
+                v = _attr(attrs, 'data-' + k)
+                if v:
+                    pics[k] = v if '/' in v else 'images/' + v
+            if pic0:
+                pics.setdefault('pic0', pic0 if '/' in pic0 else 'images/' + pic0)
+            if pics:
+                c['picTab'] = pics
             else:
-                # 自动转图：渐变/阴影 → 按钮背景图（picTab 单态，无 pressed 时用同一张）
-                eff = self._effect_assets(ctx, node, pos.get('width', 100), pos.get('height', 40), cap)
-                if eff.get('backgroundPic'):
-                    c['picTab'] = {'pic0': eff['backgroundPic'], 'pic1': eff['backgroundPic']}
-                    c.pop('bgColorTab', None)
-            if 'picTab' in c:
-                c.pop('bgColorTab', None)   # 图片按钮不放底色（透明角会透出按钮底色）
+                # 背景图按钮：backgroundPic 单图（BtnBgPic demo），有图也去底色
+                bgpic = _attr(attrs, 'data-bgpic') or _attr(attrs, 'data-background-pic')
+                if bgpic:
+                    c['backgroundPic'] = bgpic if '/' in bgpic else 'images/' + bgpic
+                else:
+                    # 自动转图：渐变/阴影 → 按钮背景图（picTab 单态，无 pressed 时用同一张）
+                    eff = self._effect_assets(ctx, node, pos.get('width', 100), pos.get('height', 40), cap)
+                    if eff.get('backgroundPic'):
+                        c['picTab'] = {'pic0': eff['backgroundPic'], 'pic1': eff['backgroundPic']}
+            if 'picTab' in c or 'backgroundPic' in c:
+                c.pop('bgColorTab', None)   # 图片按钮不放底色（透明角会透出底色，图片叠色效果错乱）
+            # 图标按钮 padding（Button1 demo）：data-icon-w/h 图标尺寸 + data-pad 间隙 → iconPosition
+            if _attr(attrs, 'data-icon-w') or _attr(attrs, 'data-icon-h'):
+                cw, ch = pos.get('width', 100), pos.get('height', 40)
+                iw = int(_attr(attrs, 'data-icon-w') or ch)
+                ih = int(_attr(attrs, 'data-icon-h') or ch)
+                c['iconPosition'] = {'left': 0, 'top': 0, 'width': iw, 'height': ih}
         elif typ == 'edittext':
             c = {'alignment': 37, 'beepEnable': True, 'caption': cap,
                  'bgColorTab': {'color0': self._bg_color(attrs) or 0xFFFFFF},
