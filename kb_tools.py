@@ -26,26 +26,20 @@ import fix_tools as ftx
 MCP_VERSION = '0.4.1-open'
 MCP_BUILD = '2026-08-29'
 MCP_FEATURES = [
-    '2026-08-29: 新增 flythings_fix_project 自动修复工具（fix.log 知识库 FT-001~FT-023，沛哥交付）——'
-    ' 9 条基础规则：二维码控件(FT-001)/SeekBar 9-patch 黑框(FT-002)/SeekBar 尺寸(FT-003)/fui 缓存(FT-004)/'
-    ' INIT_UI_TIMERS 宏 FUN_BUILD(FT-005)/多 Window 可见性(FT-006)/部署顺序(FT-007)/超采样(FT-008)/TextView 尺寸(FT-009)；'
-    ' 扩充 NTP/包管理(FT-010~014)：semver 版本对齐 registry/新依赖先 install/NTP 不阻塞 UI/TZ 时区/包 id 查 registry；'
-    ' 扩充 HTML 转图(FT-020~023)：语义图标转 PNG/渐变圆角背景/资源尺寸匹配/4 阶段自检；'
+    '2026-08-29: 新增 flythings_fix_project 自动修复工具——9 条基础规则：二维码控件(FT-001)/SeekBar 9-patch 黑框(FT-002)/SeekBar 尺寸(FT-003)/fui 缓存(FT-004)/INIT_UI_TIMERS 适配 FUN_BUILD(FT-005)/多 Window 可见性(FT-006)/部署顺序(FT-007)/超采样(FT-008)/TextView 尺寸(FT-009)',
+    ' 扩充 NTP/包管理(FT-010~014)：semver 版本对齐 registry/新依赖先 install/NTP 不阻塞 UI/TZ 时区/包 id 查 registry；',
+    ' 扩充 HTML 转图(FT-020~023)：语义图标转 PNG/渐变圆角背景/资源尺寸匹配/4 阶段自检；',
     ' detect(apply=False) + fix(apply=True) + verify 三阶段',
-    '2026-08-29: HTML 原型支持 JS 交互设计（沛哥建议）——第一套效果稿直接写 JS（点击弹窗/页面切换/tab/数据模拟），'
-    '客户浏览器里直接点得动，前期确认效率翻倍；转换器自动忽略 script/onclick，JS 只服务预览确认不转 json',
-    '2026-08-29: HTML→json 自动转图（沛哥要求）——style 里 linear-gradient/box-shadow/border-radius/animation'
-    ' 自动生成图片资源（渐变/阴影/emoji/loading GIF），不再只 warning',
-    '2026-08-29: 图片资源生成铁律（羊了个羊实战）——图片尺寸与控件一致/圆角四角真透明/透明角按钮不设底色/'
-    'picTab 两态图/alignment 实测 37=居中 36=靠左 38=靠右',
-    '2026-08-28: 包检索走离线 catalog；版本取最新；manifest 过滤传递依赖；html2json 支持 font-size/背景色/'
-    '分辨率/列表展开；fun launch 多设备自动连；validate 宏回调桩与 cacert.pem 检查',
+    '2026-08-29: HTML 原型支持 JS 交互设计——效果稿直接写 JS（点击弹窗/页面切换/tab/数据模拟），浏览器可直接点击预览，转换器自动忽略 script/onclick',
+    '2026-08-29: HTML→json 自动转图——style 里 linear-gradient/box-shadow/border-radius/animation 自动生成图片资源（渐变/阴影/emoji/loading GIF），不再仅警告',
+    '2026-08-29: 图片资源生成规范——图片尺寸与控件一致/圆角四角真透明/透明角按钮不设底色/picTab 两态图',
+    '2026-08-28: 包检索走离线 catalog/版本取最新/manifest 过滤传递依赖/html2json 支持 font-size/背景色/分辨率/列表展开/fun launch 多设备自动连/validate 宏回调校验/cacert.pem 检查',
     'FlyThings_mcp_open: 完全开源版本，本地部署零远程依赖、零 API Key',
-    '检索完全本地：内置 bge-small-zh 模型（免 Key），不可用时自动 BM25 关键词兑底',
+    '检索完全本地：内置 bge-small-zh 模型（免 Key），不可用时自动 BM25 关键词兜底',
     'create_project: 从 HelloWord Demo 复制骨架，平台/分辨率必填询问',
     'validate_project: 规范检查 + 平台探测 + json/ftu 时间戳防呆 + 空白项目判定',
     'build_ui_flow: fui pack → fun install → fun build → fun launch 一键交付',
-    'html_to_json / json_to_html / generate_ui_preview: HTML 原型 ↔ json 布局 ↔ 客户预览',
+    'html_to_json / json_to_html / generate_ui_preview: HTML 原型 → json 布局 → 预览',
     'package 全家桶: list/query/search/api/resolve/manifest 依赖管理',
     'search: wiki 118 篇文档 RAG 检索（本地向量 + BM25 双模式）',
     'flythings_edit_ftu: 布局编辑——set 改属性/remove 删控件/add 复制新增/set_root 改根',
