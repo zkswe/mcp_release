@@ -24,7 +24,7 @@ import fix_tools as ftx
 import i18n_tools as itx
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.4.5-open'
+MCP_VERSION = '0.4.6-open'
 MCP_BUILD = '2026-08-29'
 MCP_FEATURES = [
     '2026-08-29: 控件能力全面校准（实测校准）——TextView 全能力（charsetTab 字符图/滚动/选中态 color2，text 不支持多行）/ CheckBox padding 三件套+两态图 pic2 选中 / Button 图片按钮自动去底色+五态图+背景图按钮 / CircleBar 圆形进度（clockwise 逆时针/有效图裁剪扇形）/ Diagram 波形（style 0折线1曲线/eraseSpace 刷新间距/region 绘图区）/ DigitalClock 时间格式 HH hh MM SS+冒号闪烁 / EditText 密码掩码 isPassword+提示色 / ImageAnim 动图 playFile+loopCount / ListView 行距+subItem 头像背景图 / Window 模态+自动隐藏+window 嵌套 / SlideWindow 图标滑动（items[] 两态图）/ ScrollWindow 滚动（dragMaxDis=内容尺寸）/ PageWindow 翻页（页面 window 叠放）/ 系统栏 topmost 悬浮+透明背景+局部悬浮块',
