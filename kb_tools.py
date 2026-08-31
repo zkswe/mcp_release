@@ -25,9 +25,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.6.1-open'
+MCP_VERSION = '0.6.2-open'
 MCP_BUILD = '2026-08-31'
 MCP_FEATURES = [
+    '2026-09-01: fun sim 模拟器功能禁止使用（未开放暂不支持，devflow/fun_sim_unsupported.md；模拟器验证走本地 QEMU sim/ 方案）',
     '2026-08-31: 修复 .cc 误用规范——手写 .cc 不会被编译（Makefile 只编 %.cpp %.c，.cc 是 IDE 按页面生成的 logic 专属）；新增业务代码一律用 .cpp/.h；validate_project 新增 manual_cc_file 检查',
     '2026-08-31: flythings_gen_ui_test 架构升级——通用触摸工具预编译各平台 ELF 存 bin_tools/{platform}/ui_test（z21/z20/t113/f133），测试项目只生成数据脚本不再现场编译（traverse 生成 tap/swipe 脚本 + monkey 直接命令），后续 busybox 等通用工具同方式，tools 不膨胀',
     '2026-08-31: iconPosition 铁律入库（checkbox.md/controls.md——控件尺寸与图片尺寸不匹配时必须显式设 iconPosition，否则图片按 position 拉伸变形）',
