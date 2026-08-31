@@ -356,7 +356,7 @@ _PROJECT_SPEC = {
         "新建项目应从 IDE 模板创建（flythings_create_project），勿手搭骨架",
         "工程文件 .project/.cproject/.settings 是 IDE 必需，缺失则项目无法编译",
         "Manifest 用新格式 <manifest platform=\"...\">（旧 <Manifest> 格式 IDE 不认）",
-        "代码层架构：logic/*.cc 只做 UI 与业务的关联操作（取控件指针/setText/调业务对象）；复杂功能开发成独立 C++ 类放自建目录（src/core/、src/modules/ 等），在 logic include+调用；新增 .cc/.h 无需导入 IDE，fun build 自动编译",
+        "代码层架构：logic/*.cc 只做 UI 与业务的关联操作（取控件指针/setText/调业务对象）；复杂功能开发成独立 C++ 类放自建目录（src/core/、src/modules/ 等），在 logic include+调用；新增业务代码一律用 .cpp/.h（独立编译单元，fun build 自动编译），禁止新建 .cc 文件——.cc 是 IDE 按页面生成的 logic 专属（仅 mainLogic.cc 等），靠 mainActivity.cpp #include 进编译单元，手写 .cc 不会被编译（Makefile 只编 %.cpp %.c）",
         "src/uart 为系统模板：UartContext/ProtocolSender 勿改，只改 ProtocolData.h 与 ProtocolParser.cpp 协议部分",
         "json 布局用 fui pack 生成 ftu（ui/ 下已附带 fui.exe）；编译推送用 fun.exe build / fun.exe launch（项目根目录已附带 fun.exe）",
         "⚠️ 交付流程：项目生成后直接用 fun.exe build 编译、fun.exe launch 推送设备，无需客户手动导入 FlyThings IDE 编译烧录",
@@ -511,6 +511,23 @@ def flythings_validate_project(root):
             defined_cbs = set(re.findall(r'(on(?:\w+Click|\w+Changed|\w+Touch|\w+Timer)_\w+)\s*\(', text))
     else:
         warnings.append({'file': 'src/logic', 'type': 'missing_dir', 'msg': 'src/logic 目录不存在'})
+
+    # 1.1 ⚠️ 手写 .cc 检查（沛哥 2026-08-31）：.cc 是 IDE 按页面生成的 logic 专属（xxxLogic.cc，
+    #     靠 mainActivity.cpp #include 进编译单元）；Makefile 只编译 %.cpp %.c，手写 .cc 不会被编译。
+    #     新增业务代码一律用 .cpp/.h，禁止新建 .cc 模拟 logic.cc。
+    for _r2, _dirs2, _files2 in os.walk(src):
+        for fn in _files2:
+            if not fn.endswith('.cc'):
+                continue
+            full = os.path.join(_r2, fn)
+            rel = os.path.relpath(full, root).replace('\\', '/')
+            # IDE 生成规律：logic 目录下 xxxLogic.cc（mainLogic.cc 等，对应页面）
+            if os.path.dirname(full).replace('\\', '/').endswith('/logic') \
+                    and re.match(r'^\w*Logic\.cc$', fn):
+                continue  # 合法 IDE 生成
+            errors.append({'file': rel, 'type': 'manual_cc_file',
+                           'msg': f'{rel} 是手写 .cc 文件：.cc 是 IDE 按页面生成的 logic 专属（xxxLogic.cc），'
+                                  f'Makefile 只编译 %.cpp %.c，手写 .cc 不会被编译；新增业务代码请用 .cpp/.h'})
 
     # 1.5 IDE 工程文件（缺失则 IDE 打不开/无法编译）
     for ef, desc in (('.project', '.project 工程文件'), ('.cproject', '.cproject 工程配置'),
