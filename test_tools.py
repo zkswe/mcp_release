@@ -22,7 +22,7 @@ import json, os, re, subprocess, shutil
 
 _BASE = os.path.dirname(os.path.abspath(__file__))
 BIN_TOOLS_DIR = os.path.join(_BASE, 'bin_tools')
-SUPPORTED_PLATFORMS = ('z21', 'z20', 't113', 'f133')
+SUPPORTED_PLATFORMS = ('z21', 'z20', 't113', 'f133', 'v85x')
 
 # 可交互控件类型（touchable=true 时生成点击）
 INTERACTIVE_TYPES = ('button', 'checkbox', 'radiogroup', 'edittext', 'seekbar',
