@@ -24,9 +24,10 @@ import fix_tools as ftx
 import i18n_tools as itx
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.5.3-open'
+MCP_VERSION = '0.5.4-open'
 MCP_BUILD = '2026-08-31'
 MCP_FEATURES = [
+    '2026-08-31: 触摸注入实现方法重写（test/adb-input-autotest.md，核心是 event.c 的 /dev/input 协议序列，可编 bin 或嵌代码模块跨平台复用）',
     '2026-08-31: adb 触摸注入/录制自动化测试工具入库（test/adb-input-autotest.md，仅自动化测试/触摸注入/adb 触摸/录制回放/Monkey 关键词触发，不影响常规需求）',
     '2026-08-31: 游戏机/Knob 补充确认（芯片 SSD201/202+T113 等 FlyThings 平台均支持、ROM 客户自备授权、旋钮节点可自动扫描）',
     '2026-08-31: 游戏机方案 + Knob 旋钮入库（game/game-knob.md，仅游戏机/RetroArch/libretro/模拟器/游戏列表/ROM/旋钮/Knob 关键词触发，不影响常规需求）',
