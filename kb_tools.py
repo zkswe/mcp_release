@@ -24,9 +24,10 @@ import fix_tools as ftx
 import i18n_tools as itx
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.5.1-open'
+MCP_VERSION = '0.5.2-open'
 MCP_BUILD = '2026-08-31'
 MCP_FEATURES = [
+    '2026-08-31: 游戏机/Knob 补充确认（芯片 SSD201/202+T113 等 FlyThings 平台均支持、ROM 客户自备授权、旋钮节点可自动扫描）',
     '2026-08-31: 游戏机方案 + Knob 旋钮入库（game/game-knob.md，仅游戏机/RetroArch/libretro/模拟器/游戏列表/ROM/旋钮/Knob 关键词触发，不影响常规需求）',
     '2026-08-31: Z20 智能家居面板语音方案入库（voice/z20-aiui-voice.md，仅语音控制/AIUI/讯飞/唤醒词/智能家居面板/语音助手 关键词触发，不影响常规需求）',
     '2026-08-31: T113 车载互联平台补充商务/授权 FAQ（OTP 双模式烧录/有线互联占 USB adb/zk_h264_player 硬件解码通用/蓝牙模块选型/lylink 商务对接流程）',
