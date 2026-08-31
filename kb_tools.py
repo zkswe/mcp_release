@@ -24,9 +24,10 @@ import fix_tools as ftx
 import i18n_tools as itx
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.5.4-open'
+MCP_VERSION = '0.5.5-open'
 MCP_BUILD = '2026-08-31'
 MCP_FEATURES = [
+    '2026-08-31: 新增 flythings_create_bin_project 工具——fun create --type bin 创建可执行程序项目并编译出直接可运行的 ELF 二进制（zkgui/bin/staticLibrary/sharedLibrary 4 种类型；产物 .fun/{平台}/{项目名}，adb push+chmod+x 直接跑）',
     '2026-08-31: 触摸注入实现方法重写（test/adb-input-autotest.md，核心是 event.c 的 /dev/input 协议序列，可编 bin 或嵌代码模块跨平台复用）',
     '2026-08-31: adb 触摸注入/录制自动化测试工具入库（test/adb-input-autotest.md，仅自动化测试/触摸注入/adb 触摸/录制回放/Monkey 关键词触发，不影响常规需求）',
     '2026-08-31: 游戏机/Knob 补充确认（芯片 SSD201/202+T113 等 FlyThings 平台均支持、ROM 客户自备授权、旋钮节点可自动扫描）',
@@ -267,6 +268,25 @@ def flythings_generate_manifest(features: str, platform: str = 'F133') -> str:
     return json.dumps(pkgtools.flythings_generate_manifest(flist, platform), ensure_ascii=False)
 
 
+def flythings_create_bin_project(project_root: str, project_name: str = '', platform: str = 'z21',
+                                 app_version: str = '1.0.0', description: str = '',
+                                 with_build: bool = True) -> str:
+    """创建「可执行程序」项目（fun create --type bin）并编译为直接可运行的 ELF 二进制。
+
+    - 项目类型 4 选 1：zkgui（UI应用）/ bin（可执行程序）/ staticLibrary / sharedLibrary
+    - bin 项目结构极简：fun.json（"type": "executable"）+ src/main.cpp（标准 int main()）
+    - 编译：fun build → 产物 .fun/{platform}/{项目名}，ELF 魔数验证
+    - 部署：adb push + chmod +x 直接跑（无 zkgui 宿主，不能启动 UI 应用）
+    - 非交互：自动传 --app-version/--description 跳过向导；目录非空直接报错（防覆盖询问卡死）
+
+    用户要「编译出可直接执行的二进制/bin 程序/执行程序（非 UI 应用）」时调用。
+    platform 默认 z21（支持 z20/t113/f133 等）；project_name 缺省取目录名。
+    """
+    return json.dumps(pt.flythings_create_bin_project(
+        project_root, project_name, platform, app_version, description, with_build),
+        ensure_ascii=False)
+
+
 def flythings_attach_cli_tools(project_root: str, with_fyx: bool = True) -> str:
     """复制 fui.exe（→项目 ui/）与 fun.exe（→项目根目录）到项目，随项目交付。
     生成后用 fun.exe build 编译、launch 推送，无需客户导入 IDE。
@@ -398,6 +418,7 @@ def register_all(mcp):
     mcp.tool()(flythings_json_to_html)
     mcp.tool()(flythings_attach_cli_tools)
     mcp.tool()(flythings_create_project)
+    mcp.tool()(flythings_create_bin_project)
     mcp.tool()(flythings_check_project_deps)
     mcp.tool()(flythings_generate_ui_assets)
     mcp.tool()(flythings_fix_project)

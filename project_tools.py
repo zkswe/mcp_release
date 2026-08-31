@@ -702,6 +702,80 @@ def flythings_fui_pack(json_path):
 
 
 
+# ---------------- 工具 4.5: 创建可执行程序项目 (fun create --type bin) -------------
+def _is_elf(path):
+    """检测文件是否为 ELF 可执行文件（魔数 \x7fELF）。"""
+    try:
+        with open(path, 'rb') as f:
+            return f.read(4) == b'\x7fELF'
+    except Exception:
+        return False
+
+
+def flythings_create_bin_project(project_root, project_name='', platform='z21',
+                                 app_version='1.0.0', description='', with_build=True):
+    """创建「可执行程序」类型项目（fun create --type bin）并编译为直接可运行的 ELF 二进制。
+
+    - 项目类型 4 选 1：zkgui（UI应用）/ bin（可执行程序）/ staticLibrary / sharedLibrary
+    - bin 项目结构极简：fun.json（"type": "executable"）+ src/main.cpp（标准 int main()）
+    - 编译：fun build → 产物 .fun/{platform}/{项目名}，ELF 魔数验证
+    - 部署：adb push + chmod +x 直接跑（无 zkgui 宿主，不能启动 UI 应用）
+    - 非交互：自动传 --app-version/--description 跳过向导；目录非空直接报错（防覆盖询问卡死）
+
+    传入项目根目录（可不存在，自动创建）、平台（默认 z21，支持 z20/t113/f133 等）、
+    项目名（缺省取目录名）。返回创建结果 + 编译日志 + 产物路径与 ELF 验证。
+    """
+    root = os.path.abspath(project_root)
+    name = (project_name or os.path.basename(root)).strip()
+    if not re.match(r'^[A-Za-z][A-Za-z0-9_]*$', name):
+        return {"success": False,
+                "error": f"项目名不合法: {name!r}（应字母开头，仅字母/数字/下划线）"}
+    if os.path.isdir(root) and os.listdir(root):
+        return {"success": False,
+                "error": f"目录非空: {root}（bin 项目需在空目录创建，防止覆盖询问卡死）"}
+    os.makedirs(root, exist_ok=True)
+    # 1. 创建（非交互：显式传 app-version/description 跳过向导）
+    args = [FUN_EXE, 'create', '--name', name, '--platform', platform,
+            '--type', 'bin', '--app-version', app_version or '1.0.0']
+    if description:
+        args += ['--description', description]
+    args += ['.']
+    try:
+        r = subprocess.run(args, cwd=root, capture_output=True, text=True, timeout=120,
+                           stdin=subprocess.DEVNULL,  # ⚠️ 防继承 MCP stdio 管道挂起
+                           encoding='utf-8', errors='replace')
+    except Exception as e:
+        return {"success": False, "error": f"fun create 执行失败: {e}"}
+    create_ok = r.returncode == 0
+    create_log = ((r.stdout or '') + (r.stderr or ''))[-600:]
+    result = {"success": create_ok, "projectRoot": root, "name": name,
+              "platform": platform, "type": "bin", "createLog": create_log}
+    if not create_ok:
+        result["error"] = f"fun create 失败(rc={r.returncode}): {create_log}"
+        return result
+    # 2. 编译
+    if with_build:
+        rb = subprocess.run([FUN_EXE, 'build'], cwd=root, capture_output=True, text=True,
+                            timeout=600, stdin=subprocess.DEVNULL,
+                            encoding='utf-8', errors='replace')
+        build_ok = rb.returncode == 0
+        result["buildSuccess"] = build_ok
+        result["buildLog"] = ((rb.stdout or '') + (rb.stderr or ''))[-800:]
+        if not build_ok:
+            result["error"] = f"fun build 失败(rc={rb.returncode}): {result['buildLog']}"
+            return result
+    # 3. 产物定位 + ELF 验证
+    out = os.path.join(root, '.fun', platform, name)
+    exists = os.path.isfile(out)
+    result.update({
+        "outputPath": out if exists else None,
+        "outputSize": os.path.getsize(out) if exists else 0,
+        "isElfExecutable": _is_elf(out) if exists else False,
+        "deployHint": f"adb push {out} /tmp/ && adb shell chmod +x /tmp/{name} && adb shell /tmp/{name}",
+    })
+    return result
+
+
 # ---------------- 工具 5: 附带 CLI 工具到项目 -------------
 def flythings_attach_cli_tools(project_root, with_fyx=True):
     """将 fui.exe（→ui/）和 fun.exe（→项目根）复制到新建项目目录，随项目分发给用户。
