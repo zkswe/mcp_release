@@ -25,9 +25,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.5.8-open'
+MCP_VERSION = '0.5.9-open'
 MCP_BUILD = '2026-08-31'
 MCP_FEATURES = [
+    '2026-08-31: iconPosition 铁律入库（checkbox.md/controls.md——控件尺寸与图片尺寸不匹配时必须显式设 iconPosition，否则图片按 position 拉伸变形）',
     '2026-08-31: 新增 flythings_gen_ui_test 工具——解析 UI json 坐标生成自动化测试项目（traverse 遍历控件验收含资源缺失检查 / monkey 压测 / custom 自定义；ask 先问用户三种验收方式，纯代码不依赖 AI 省 token）',
     '2026-08-31: 自动化测试闭环修正（logd 分析优先，raw fb 抓屏非必要不用，图片解析难）',
     '2026-08-31: 全自动化测试闭环补充（test/adb-input-autotest.md，input 注入 + logcat 分析 + cat /dev/fb0 或 /dev/disp/fb0 framebuffer 抓屏，按 fb 像素格式解析比对 UI）',
