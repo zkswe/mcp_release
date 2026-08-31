@@ -22,11 +22,13 @@ import json2html as j2h
 import gen_res as h2j_genres
 import fix_tools as ftx
 import i18n_tools as itx
+import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.5.7-open'
+MCP_VERSION = '0.5.8-open'
 MCP_BUILD = '2026-08-31'
 MCP_FEATURES = [
+    '2026-08-31: 新增 flythings_gen_ui_test 工具——解析 UI json 坐标生成自动化测试项目（traverse 遍历控件验收含资源缺失检查 / monkey 压测 / custom 自定义；ask 先问用户三种验收方式，纯代码不依赖 AI 省 token）',
     '2026-08-31: 自动化测试闭环修正（logd 分析优先，raw fb 抓屏非必要不用，图片解析难）',
     '2026-08-31: 全自动化测试闭环补充（test/adb-input-autotest.md，input 注入 + logcat 分析 + cat /dev/fb0 或 /dev/disp/fb0 framebuffer 抓屏，按 fb 像素格式解析比对 UI）',
     '2026-08-31: 新增 flythings_create_bin_project 工具——fun create --type bin 创建可执行程序项目并编译出直接可运行的 ELF 二进制（zkgui/bin/staticLibrary/sharedLibrary 4 种类型；产物 .fun/{平台}/{项目名}，adb push+chmod+x 直接跑）',
@@ -289,6 +291,26 @@ def flythings_create_bin_project(project_root: str, project_name: str = '', plat
         ensure_ascii=False)
 
 
+def flythings_gen_ui_test(project_root: str, test_type: str = 'ask', output_dir: str = '',
+                          platform: str = 'z21', with_build: bool = True,
+                          monkey_count: int = 500) -> str:
+    """根据 UI json 布局生成自动化测试项目（纯代码，不依赖 AI，省 token）。
+
+    ui/*.json 已含全部控件坐标（position left/top/width/height）与可交互信息
+    （touchable/visible），直接解析生成可编译的 bin 测试项目：
+      ask      - 询问用户三种验收方式（默认，返回选项让用户选）
+      traverse - 遍历控件验收：所有可交互控件逐个点击+滑动 + 图片资源缺失检查 + logcat 配合
+      monkey   - 压测 MonkeyTest：随机 tap/swipe 指定次数，发现潜在隐患
+      custom   - 自定义验收：按用户输入要求生成（差异化逻辑走 AI，此模式仅返回提示）
+
+    用户提出「自动化测试 / 验收 / 遍历控件 / 压测 / Monkey」等需求时调用；
+    默认先问用户选哪种验收方式，避免 AI 参与重复生成（省 token）。
+    """
+    return json.dumps(tt.flythings_gen_ui_test(
+        project_root, test_type, output_dir, platform, with_build, monkey_count),
+        ensure_ascii=False)
+
+
 def flythings_attach_cli_tools(project_root: str, with_fyx: bool = True) -> str:
     """复制 fui.exe（→项目 ui/）与 fun.exe（→项目根目录）到项目，随项目交付。
     生成后用 fun.exe build 编译、launch 推送，无需客户导入 IDE。
@@ -421,6 +443,7 @@ def register_all(mcp):
     mcp.tool()(flythings_attach_cli_tools)
     mcp.tool()(flythings_create_project)
     mcp.tool()(flythings_create_bin_project)
+    mcp.tool()(flythings_gen_ui_test)
     mcp.tool()(flythings_check_project_deps)
     mcp.tool()(flythings_generate_ui_assets)
     mcp.tool()(flythings_fix_project)
