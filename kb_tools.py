@@ -24,9 +24,10 @@ import fix_tools as ftx
 import i18n_tools as itx
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.5.5-open'
+MCP_VERSION = '0.5.6-open'
 MCP_BUILD = '2026-08-31'
 MCP_FEATURES = [
+    '2026-08-31: 全自动化测试闭环补充（test/adb-input-autotest.md，input 注入 + logcat 分析 + cat /dev/fb0 或 /dev/disp/fb0 framebuffer 抓屏，按 fb 像素格式解析比对 UI）',
     '2026-08-31: 新增 flythings_create_bin_project 工具——fun create --type bin 创建可执行程序项目并编译出直接可运行的 ELF 二进制（zkgui/bin/staticLibrary/sharedLibrary 4 种类型；产物 .fun/{平台}/{项目名}，adb push+chmod+x 直接跑）',
     '2026-08-31: 触摸注入实现方法重写（test/adb-input-autotest.md，核心是 event.c 的 /dev/input 协议序列，可编 bin 或嵌代码模块跨平台复用）',
     '2026-08-31: adb 触摸注入/录制自动化测试工具入库（test/adb-input-autotest.md，仅自动化测试/触摸注入/adb 触摸/录制回放/Monkey 关键词触发，不影响常规需求）',
