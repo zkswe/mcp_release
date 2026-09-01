@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """FlyThings MCP 一键配置：自动检测运行方式（exe 优先），生成 AI 工具配置文件。
 用法：在任意目录运行  python 本文件路径/configure.py  （或双击 setup.bat）
 生成的 .mcp.json 等配置写入当前工作目录（建议在你的项目根目录运行）。
@@ -72,7 +72,7 @@ def main():
         print(json.dumps(cfg, ensure_ascii=False, indent=2))
     print()
     print('  完成！请在 AI 工具中重新打开/刷新项目。')
-    print('  验证：问 AI「MCP 版本是多少？」应返回 flythings-kb 0.2.4（22 个工具）。')
+    print('  验证：问 AI「MCP 版本是多少？」应返回 flythings-kb-open 0.6.9-open（32 个工具）。')
     print('=' * 56)
     input('  按回车退出...')
 

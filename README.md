@@ -23,7 +23,7 @@
 🔥 **核心优势**：
 - 🚀 **FlyThings 专属配置**：内置本地向量模型（bge-small-zh），知识检索完全离线，AI开发效率及Token消耗极低
 - 🏭 **全流程开箱即用**：编译工具链（fui/fun）与项目模板已内置，创建项目 → 布局 → 编译 → 推送一气呵成
-- 🧠 **25 个工具**：知识检索、项目创建、布局转换、依赖管理、规范校验全都有
+- 🧠 **32 个工具**：知识检索、项目创建、布局转换、依赖管理、规范校验、自动修复、多语言、自动化测试全都有
 - 📦 **一条命令安装**：`pip install mcp onnxruntime tokenizers`，AI 工具指一下路径就能用
 
 🎯 **适用场景**：
@@ -131,7 +131,7 @@ pip install mcp onnxruntime tokenizers
 
 > **MCP 版本是多少？**
 
-应返回：`flythings-kb-open 0.4.1-open`，包含 25 个工具。
+应返回：`flythings-kb-open 0.6.9-open`，包含 32 个工具。
 
 ---
 
@@ -165,10 +165,16 @@ pip install mcp onnxruntime tokenizers
 | `flythings_build_ui_flow` | fui pack → fun install → fun build → fun launch 一键交付 |
 | `flythings_validate_project` | 项目规范全检（时间戳防呆/依赖/框架约定） |
 | `flythings_html_to_json` / `json_to_html` | HTML 原型 ↔ FTU 布局 |
-| `flythings_generate_ui_preview` | HTML 预览稿（或 FlyThings IDE 预览/编辑 ftu） |
+| `flythings_generate_ui_preview` / `json_to_html` | HTML 预览稿（或 FlyThings IDE 预览/编辑 ftu） |
 | `flythings_read_ftu` / `read_json` | 布局文件解析 |
 | `flythings_*package*` | 依赖包查询/版本/API/Manifest/依赖解析 |
 | `flythings_attach_cli_tools` | 附带 fui/fun 到项目 |
+| `flythings_edit_ftu` | 布局编辑（set/remove/add/set_root） |
+| `flythings_fix_project` | 自动修复（FT-001~024 规则库） |
+| `flythings_i18n_*` | 多语言（scan/export/import/refactor） |
+| `flythings_gen_ui_test` | 自动化测试（traverse/monkey/custom） |
+| `flythings_generate_ui_assets` | 生成 UI 图片资源（AI/emoji/线条三级降级） |
+| `flythings_create_bin_project` | 创建可执行程序项目（ELF 二进制） |
 
 ---
 
@@ -182,13 +188,13 @@ flythings-mcp-open/
 ├── package_tools.py       # 依赖包生态
 ├── rag_search.py          # 知识库检索（本地向量 + BM25）
 ├── embed_local.py         # 本地向量模型封装（bge-small-zh）
-├── ui_preview.py          # UI 预览生成
 ├── rag_index.json         # 知识库索引（本地模型预计算）
 ├── package_catalog.json   # 包版本目录
+├── CHANGELOG.md           # 版本迭代记录（每次发布在此追加）
 ├── models/bge-small-zh/   # ★ 本地向量模型（onnx + tokenizer）
 ├── toolchain/             # ★ 编译工具链（fui.exe + fun.exe）
 ├── templates/             # ★ 项目模板（HelloWord_F133/F135/Z21/T113/V85X/Z20）
-├── ui_tools/              # 布局转换工具（HTML↔FTU）
+├── ui_tools/              # 布局转换/预览工具（html2json/json2html/check_all/gen_res）
 ├── install.bat            # 一键安装依赖
 └── README.md              # 本文档
 ```
@@ -200,7 +206,7 @@ flythings-mcp-open/
 | 问题 | 解决 |
 |------|------|
 | `ModuleNotFoundError: mcp / onnxruntime / tokenizers` | 执行 `pip install mcp onnxruntime tokenizers` |
-| 工具列表 < 22 | 检查配置文件 command/args 路径是否正确 |
+| 工具列表 < 32 | 检查配置文件 command/args 路径是否正确 |
 | 检索结果不准 | 本地模型首次使用会自动加载；确认 `models/bge-small-zh/` 存在 |
 | 想换知识库/重建索引 | `python rebuild_index_local.py <wiki目录>` 重新生成 rag_index.json |
 | 杀毒软件拦截 | 添加信任（内含可执行文件 toolchain/） |

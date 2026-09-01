@@ -2,7 +2,8 @@
 """FlyThings_mcp_open: 全套 MCP 工具定义（stdio 本地部署，完全开放）。
 
 每个工具都是普通函数，返回 str/JSON 字符串；由 mcp_server.py（stdio）注册。
-⚠️ 开源版：检索完全本地化（自备 DASHSCOPE_API_KEY），不依赖任何远程 MCP 服务。
+✅ 开源版：检索完全本地化（内置 bge-small-zh 向量模型，免 API Key，
+不可用时自动降级 BM25），不依赖任何远程 MCP 服务。
 """
 import html.parser  # PyInstaller 打包需要（html2json 运行时导入，静态分析漏收）
 import json, os, sys
@@ -11,7 +12,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import rag_search as rs
 import project_tools as pt
 import package_tools as pkgtools
-import ui_preview as up
 UI_TOOLS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ui_tools')
 if getattr(sys, 'frozen', False):  # PyInstaller 打包：ui_tools 随包进 _MEIPASS
     UI_TOOLS = os.path.join(sys._MEIPASS, 'ui_tools')
@@ -25,50 +25,19 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.6.8-open'
+MCP_VERSION = '0.6.9-open'
 MCP_BUILD = '2026-09-01'
 MCP_FEATURES = [
-    '2026-09-01: UI 控件 Layout 全量检查（沛哥要求）——basedemo 35 个官方 demo 批量抽取 21 种控件真实 json 字段逐控件核对；html2json 修复 6 处缺口：circlebar(+文字 textColor/textSize/textType/unit +滑块 thumb +touchRange)/cameraview(+cvbs/mirror)/videoview(+rotation)/listview(+autoRollback/cycleEnable/dragMaxDis/edgeEffect/hasScrollbar)/slidewindow(+backgroundPic/iconMaxSize)/文字控件通用(+bold/italic/roll* 文字滚动)；检查报告入库（knowledge/uicontrols/layout-audit.md：21 控件对照表+字段+修复清单+id 段）',
-    '2026-09-01: 图片资源路径铁律修复（致命问题）——自动生成的图片统一输出到 <项目>/resources/images/，json 布局引用 images/xxx.png（相对 resources 目录，与设备/ftu 加载一致）；html2json 自动转图（渐变/阴影/emoji/loading）不再输出到 json 同目录 images/（设备找不到图），output_json 在 <项目>/ui/ 下时自动定位 resources/images/；gen_ui_assets 返回 path 改为 images/xxx.png（另附 absolutePath），AI 直接填 backgroundPic/picTab 不写绝对路径；顺修 color list 未转 tuple 导致图标生成失败',
-    '2026-09-01: 移除 check_all 文本换行误报检查——textview text 支持 \\n 多行（配合 rowSpace 行间距），\'\n\' 不再报错',
-    '2026-09-01: 电子价签 ESL 通用技术入库（esl/tag-esl.md）——一套代码多平台：Manifest enableOnPlatforms 分组依赖 + accessKey 私有包 + #ifdef __PLATFORM_XXX__ 三件套；HTML 内容渲染体系（Cron 轮播/资源缓存/断电恢复/代渲染图片）；自研 BlueZ GATT Server 思路（L2CAP ATT 监听 + HCI 广播 + 粘包 + 生命周期省电）；OTA 整包升级等工程要点（涉密细节不收录）',
-    '2026-09-01: html2json 文本清洗——剥离 emoji/特殊符号（表情/技术符号/箭头/几何图形/带圈数字全范围），纯 emoji 图标自动转 PNG，混合文本保留文字；check_all 特殊字符检查同步升级',
-    '2026-09-01: 模拟器功能开放版不支持（fun sim 禁止 + QEMU 不对外，devflow/fun_sim_unsupported.md；交付/验证一律真机 fun build + fun launch）',
-    '2026-08-31: 修复 .cc 误用规范——手写 .cc 不会被编译（Makefile 只编 %.cpp %.c，.cc 是 IDE 按页面生成的 logic 专属）；新增业务代码一律用 .cpp/.h；validate_project 新增 manual_cc_file 检查',
-    '2026-08-31: flythings_gen_ui_test 架构升级——通用触摸工具预编译各平台 ELF 存 bin_tools/{platform}/ui_test（z21/z20/t113/f133），测试项目只生成数据脚本不再现场编译（traverse 生成 tap/swipe 脚本 + monkey 直接命令），后续 busybox 等通用工具同方式，tools 不膨胀',
-    '2026-08-31: iconPosition 铁律入库（checkbox.md/controls.md——控件尺寸与图片尺寸不匹配时必须显式设 iconPosition，否则图片按 position 拉伸变形）',
-    '2026-08-31: 新增 flythings_gen_ui_test 工具——解析 UI json 坐标生成自动化测试项目（traverse 遍历控件验收含资源缺失检查 / monkey 压测 / custom 自定义；ask 先问用户三种验收方式，纯代码不依赖 AI 省 token）',
-    '2026-08-31: 自动化测试闭环修正（logd 分析优先，raw fb 抓屏非必要不用，图片解析难）',
-    '2026-08-31: 全自动化测试闭环补充（test/adb-input-autotest.md，input 注入 + logcat 分析 + cat /dev/fb0 或 /dev/disp/fb0 framebuffer 抓屏，按 fb 像素格式解析比对 UI）',
-    '2026-08-31: 新增 flythings_create_bin_project 工具——fun create --type bin 创建可执行程序项目并编译出直接可运行的 ELF 二进制（zkgui/bin/staticLibrary/sharedLibrary 4 种类型；产物 .fun/{平台}/{项目名}，adb push+chmod+x 直接跑）',
-    '2026-08-31: 触摸注入实现方法重写（test/adb-input-autotest.md，核心是 event.c 的 /dev/input 协议序列，可编 bin 或嵌代码模块跨平台复用）',
-    '2026-08-31: adb 触摸注入/录制自动化测试工具入库（test/adb-input-autotest.md，仅自动化测试/触摸注入/adb 触摸/录制回放/Monkey 关键词触发，不影响常规需求）',
-    '2026-08-31: 游戏机/Knob 补充确认（芯片 SSD201/202+T113 等 FlyThings 平台均支持、ROM 客户自备授权、旋钮节点可自动扫描）',
-    '2026-08-31: 游戏机方案 + Knob 旋钮入库（game/game-knob.md，仅游戏机/RetroArch/libretro/模拟器/游戏列表/ROM/旋钮/Knob 关键词触发，不影响常规需求）',
-    '2026-08-31: Z20 智能家居面板语音方案入库（voice/z20-aiui-voice.md，仅语音控制/AIUI/讯飞/唤醒词/智能家居面板/语音助手 关键词触发，不影响常规需求）',
-    '2026-08-31: T113 车载互联平台补充商务/授权 FAQ（OTP 双模式烧录/有线互联占 USB adb/zk_h264_player 硬件解码通用/蓝牙模块选型/lylink 商务对接流程）',
-    '2026-08-31: T113 车载互联平台入库（t113-car/t113-car-link.md，仅 CarPlay/AndroidAuto/HiCar/CarLife/手机互联/车载蓝牙音乐/倒车影像 关键词触发，不影响常规需求）',
-    '2026-08-31: Z20 SIP 对讲方案入库（voip/z20-sip-voip.md，仅 SIP 对讲/voip 组件/楼宇对讲/门禁呼叫/内置 Web 管理页 关键词触发，不影响常规需求）',
-    '2026-08-29: 控件能力全面校准（实测校准）——TextView 全能力（charsetTab 字符图/滚动/选中态 color2，text 不支持多行）/ CheckBox padding 三件套+两态图 pic2 选中 / Button 图片按钮自动去底色+五态图+背景图按钮 / CircleBar 圆形进度（clockwise 逆时针/有效图裁剪扇形）/ Diagram 波形（style 0折线1曲线/eraseSpace 刷新间距/region 绘图区）/ DigitalClock 时间格式 HH hh MM SS+冒号闪烁 / EditText 密码掩码 isPassword+提示色 / ImageAnim 动图 playFile+loopCount / ListView 行距+subItem 头像背景图 / Window 模态+自动隐藏+window 嵌套 / SlideWindow 图标滑动（items[] 两态图）/ ScrollWindow 滚动（dragMaxDis=内容尺寸）/ PageWindow 翻页（页面 window 叠放）/ 系统栏 topmost 悬浮+透明背景+局部悬浮块',
-    '2026-08-29: 多国语言 i18n 工具升级——add_language 添加新语言（三段式文件名 xx_XX-语言名.tr 官方规范）/ export 带项目语境专业翻译提示（术语如 CAN BUS 不译公共汽车）/ setTextTr+updateLocalesCode API 对齐官方文档',
-    '2026-08-29: 新增多国语言 i18n 工具——scan 诊断（语言文件/key 对齐/布局 @key 引用完整性）/ export 导出待翻译清单 / import 写回生成 .tr / refactor 布局硬编码文本转 @key；翻译文件为 i18n/*.tr（Android strings.xml 同款），代码取词 LANGUAGEMANAGER->getValue()',
-    '2026-08-29: 新增 flythings_fix_project 自动修复工具——9 条基础规则：二维码控件(FT-001)/SeekBar 9-patch 黑框(FT-002)/SeekBar 尺寸(FT-003)/fui 缓存(FT-004)/INIT_UI_TIMERS 适配 FUN_BUILD(FT-005)/多 Window 可见性(FT-006)/部署顺序(FT-007)/超采样(FT-008)/TextView 尺寸(FT-009)',
-    ' 扩充 NTP/包管理(FT-010~014)：semver 版本对齐 registry/新依赖先 install/NTP 不阻塞 UI/TZ 时区/包 id 查 registry；',
-    ' 扩充 HTML 转图(FT-020~023)：语义图标转 PNG/渐变圆角背景/资源尺寸匹配/4 阶段自检；',
-    ' detect(apply=False) + fix(apply=True) + verify 三阶段',
-    '2026-08-29: HTML 原型支持 JS 交互设计——效果稿直接写 JS（点击弹窗/页面切换/tab/数据模拟），浏览器可直接点击预览，转换器自动忽略 script/onclick',
-    '2026-08-29: HTML→json 自动转图——style 里 linear-gradient/box-shadow/border-radius/animation 自动生成图片资源（渐变/阴影/emoji/loading GIF），不再仅警告',
-    '2026-08-29: 图片资源生成规范——图片尺寸与控件一致/圆角四角真透明/透明角按钮不设底色/picTab 两态图',
-    '2026-08-28: 包检索走离线 catalog/版本取最新/manifest 过滤传递依赖/html2json 支持 font-size/背景色/分辨率/列表展开/fun launch 多设备自动连/validate 宏回调校验/cacert.pem 检查',
-    'FlyThings_mcp_open: 完全开源版本，本地部署零远程依赖、零 API Key',
-    '检索完全本地：内置 bge-small-zh 模型（免 Key），不可用时自动 BM25 关键词兜底',
-    'create_project: 从 HelloWord Demo 复制骨架，平台/分辨率必填询问',
-    'validate_project: 规范检查 + 平台探测 + json/ftu 时间戳防呆 + 空白项目判定',
-    'build_ui_flow: fui pack → fun install → fun build → fun launch 一键交付',
-    'html_to_json / json_to_html / generate_ui_preview: HTML 原型 → json 布局 → 预览',
-    'package 全家桶: list/query/search/api/resolve/manifest 依赖管理',
-    'search: wiki 118 篇文档 RAG 检索（本地向量 + BM25 双模式）',
-    'flythings_edit_ftu: 布局编辑——set 改属性/remove 删控件/add 复制新增/set_root 改根',
+    '2026-09-01: UI 控件 Layout 全量检查——basedemo 35 个官方 demo 抽取 21 种控件逐字段核对，html2json 修复 circlebar/cameraview/videoview/listview/slidewindow/文字滚动 6 处缺口；报告入库 knowledge/uicontrols/layout-audit.md',
+    '2026-09-01: 图片资源路径铁律——自动生成图片统一输出 <项目>/resources/images/，json 引用 images/xxx.png（相对 resources，与设备加载一致）；gen_ui_assets 返回相对路径',
+    '2026-09-01: ESL 电子价签方案入库（esl/tag-esl.md）——一套代码多平台（enableOnPlatforms+accessKey+#ifdef 三件套）、HTML 渲染体系、BlueZ GATT Server 思路、OTA 要点',
+    '2026-09-01: html2json 文本清洗——剥离 emoji/特殊符号，纯 emoji 自动转 PNG；模拟器开放版不支持（fun sim 禁止，真机 fun build+launch 交付）',
+    '2026-08-31: 自动化测试闭环——flythings_gen_ui_test（traverse/monkey/custom）+ adb 触摸注入（/dev/input 协议）+ logcat/fb 抓屏分析；预编译 ui_test ELF 随包分发（bin_tools/{平台}/）',
+    '2026-08-31: 修复 .cc 误用规范——手写 .cc 不参与编译（Makefile 只编 %.cpp %.c），新增业务代码一律 .cpp/.h；validate_project 新增 manual_cc_file 检查',
+    '2026-08-31: 方案库扩充——游戏机+Knob 旋钮、Z20 语音（AIUI）、T113 车载互联、Z20 SIP 对讲等方案知识入库（关键词触发）',
+    '2026-08-29: 控件能力实测校准 + i18n 多语言工具（scan/export/import/refactor）+ fix_project 自动修复（FT-001~024）+ HTML 原型 JS 交互与自动转图',
+    '2026-08-28: 包检索离线 catalog + 版本 semver 取最新 + manifest 依赖递归补齐',
+    'open 版：完全本地部署零远程依赖——内置 bge-small-zh 向量模型（免 Key，不可用自动降级 BM25）+ fui/fun 工具链 + HelloWord 模板 + 32 个工具全家桶（项目创建/布局转换/预览/包管理/规范校验/修复/i18n/测试）',
 ]
 
 
@@ -171,7 +140,22 @@ def flythings_generate_ui_preview(project_root: str, output_dir: str = '') -> st
     不生成图片/截图），确认 OK 后才允许 fui pack / 写逻辑 / 交付（未确认禁止开工）。
     无 UI 设计稿时：先建 json 布局 → 预览确认 → pack。
     """
-    return json.dumps(up.flythings_generate_ui_preview(project_root, output_dir), ensure_ascii=False)
+    r = j2h.json2html(project_root, output_dir)
+    if isinstance(r, dict) and r.get('success'):
+        for f in r.get('files', []):
+            jp = os.path.join(project_root, 'ui', f.get('json', ''))
+            if os.path.isfile(jp):
+                try:
+                    with open(jp, encoding='utf-8-sig') as fh:
+                        data = json.load(fh)
+                    f['controls'] = sum(1 for k, v in data.items()
+                                         if isinstance(v, dict) and '__' in k)
+                except Exception:
+                    pass
+        r['projectRoot'] = project_root
+        r['outputDir'] = output_dir or os.path.join(project_root, 'ui')
+        r['note'] = 'html 为客户预览稿；设备端仍用 fui pack 生成的 ftu，两者同源于 json'
+    return json.dumps(r, ensure_ascii=False)
 
 
 def flythings_html_to_json(input_html: str, output_json: str = '', res: str = '') -> str:

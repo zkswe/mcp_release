@@ -822,3 +822,300 @@ def flythings_attach_cli_tools(project_root, with_fyx=True):
             results.append({"file": "fun.exe", "status": "failed", "error": str(e)})
     ok = all(r.get('status') in ('copied', 'skipped') for r in results)
     return {"success": ok, "projectRoot": project_root, "files": results}
+
+
+# ---------------- 工具 4.6: 编辑 json/ftu 布局 ----------------
+def _find_control(data, target):
+    """按 caption（优先）或控件 key 查找控件。返回 (key, value)。"""
+    for key, val in data.items():
+        if not isinstance(val, dict) or '__' not in key:
+            continue
+        if val.get('caption') == target or key == target:
+            return key, val
+    return None, None
+
+
+def _apply_edits(data, ops):
+    """应用编辑操作到 json 布局。ops 为操作列表。返回 (success, report)。
+    支持操作：
+      set      {"op":"set", "target":"caption或key", "props":{...}}  修改控件属性
+      remove   {"op":"remove", "target":"caption或key"}            删除控件
+      add      {"op":"add", "template":"caption或key", "newKey":"textview__4", "props":{...}}  复制模板控件新增并改属性
+      set_root {"op":"set_root", "props":{"backgroundColor":"#FFFFFF"}}  修改根属性（resolution/position/backgroundColor 等）
+    """
+    report = []
+    for op in ops:
+        if not isinstance(op, dict):
+            report.append(f'[跳过] 非法操作: {op}')
+            continue
+        kind = op.get('op')
+        if kind == 'set':
+            key, val = _find_control(data, op.get('target', ''))
+            if val is None:
+                report.append(f'[失败] 未找到控件: {op.get("target")}')
+                continue
+            props = op.get('props') or {}
+            changed = [p for p in props if val.get(p) != props[p]]
+            val.update(props)
+            report.append(f'[OK] 修改 {key}: {changed if changed else "无变化"}')
+        elif kind == 'remove':
+            key, _ = _find_control(data, op.get('target', ''))
+            if key is None:
+                report.append(f'[失败] 未找到控件: {op.get("target")}')
+                continue
+            data.pop(key, None)
+            report.append(f'[OK] 删除 {key}')
+        elif kind == 'add':
+            tkey, tval = _find_control(data, op.get('template', ''))
+            if tval is None:
+                report.append(f'[失败] 模板控件不存在: {op.get("template")}')
+                continue
+            new_key = op.get('newKey', '')
+            if not new_key:
+                report.append('[失败] 缺少 newKey')
+                continue
+            if new_key in data:
+                report.append(f'[失败] key 已存在: {new_key}')
+                continue
+            import copy as _copy
+            new_val = _copy.deepcopy(tval)
+            new_val.update(op.get('props') or {})
+            data[new_key] = new_val
+            report.append(f'[OK] 新增 {new_key}（基于 {tkey}）')
+        elif kind == 'set_root':
+            props = op.get('props') or {}
+            changed = [p for p in props if data.get(p) != props[p]]
+            data.update(props)
+            report.append(f'[OK] 修改根节点: {changed if changed else "无变化"}')
+        else:
+            report.append(f'[跳过] 未知操作: {kind}')
+    return True, report
+
+
+def flythings_edit_json(json_path, operations):
+    """编辑 json 布局文件（控件属性/增删/根属性），保存回原文件。
+    operations 为 JSON 数组字符串，如：
+    [{"op":"set","target":"按钮标题","props":{"x":100,"y":200,"text":"新文本"}}]
+    返回编辑报告。改完 json 后需 fui pack 生成 ftu（或直接编辑 ftu 用 flythings_edit_ftu）。"""
+    if not os.path.isfile(json_path):
+        return {"success": False, "error": f"json 文件不存在: {json_path}"}
+    if isinstance(operations, str):
+        try:
+            ops = json.loads(operations)
+        except Exception as e:
+            return {"success": False, "error": f"operations 不是合法 JSON: {e}"}
+    else:
+        ops = operations or []
+    try:
+        with open(json_path, encoding='utf-8-sig') as f:
+            data = json.load(f)
+    except Exception as e:
+        return {"success": False, "error": f"json 解析失败: {e}"}
+    ok, report = _apply_edits(data, ops)
+    with open(json_path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    return {"success": ok, "jsonPath": json_path, "report": report,
+            "controlsCount": sum(1 for k, v in data.items() if isinstance(v, dict) and '__' in k)}
+
+
+def flythings_edit_ftu(ftu_path, operations, output_ftu=''):
+    """编辑 ftu 布局：自动应用编辑到 json 后 pack 回 ftu（默认覆盖原文件，或 output_ftu 指定新文件）。
+    operations 为 JSON 数组字符串，支持 set/remove/add/set_root（见 _apply_edits）。
+    ⚠️ 布局以 json 为源：优先直接编辑同目录已有 json 再 pack 回 ftu；无 json 时报错。
+    客户说「把这个按钮往右移/改文本/换颜色/删掉某控件/复制一个控件」时调用。"""
+    if not os.path.isfile(ftu_path):
+        return {"success": False, "error": f"ftu 文件不存在: {ftu_path}"}
+    src_dir = os.path.dirname(os.path.abspath(ftu_path)) or '.'
+    base = os.path.splitext(os.path.basename(ftu_path))[0]
+    json_path = os.path.join(src_dir, base + '.json')
+    if not os.path.isfile(json_path):
+        return {"success": False,
+                "error": f"缺少同目录 {base}.json（布局以 json 为源，请先提供 json 布局再编辑）"}
+    ed = flythings_edit_json(json_path, operations)
+    if not ed['success']:
+        return ed
+    r = _run_fui('pack', src_dir)
+    if not r['success']:
+        return {"success": False, "error": f"fui pack 失败: {r.get('stderr') or r.get('stdout')}",
+                "report": ed['report']}
+    new_ftu = os.path.join(src_dir, base + '.ftu')
+    dst = os.path.abspath(output_ftu) if output_ftu else os.path.abspath(ftu_path)
+    if os.path.abspath(new_ftu) != dst:
+        shutil.copy2(new_ftu, dst)
+    return {"success": True, "ftuPath": dst, "report": ed['report'],
+            "controlsCount": ed.get('controlsCount'), "syncedJson": True}
+
+
+# ---------------- 工具 6: UI 构建流程（pack → build → launch）----------------
+def flythings_build_ui_flow(project_root, with_launch=True, device=''):
+    """FlyThings UI 构建流程（关键步骤，不可跳过）：
+    ① 检查 ui/*.json 与 *.ftu 修改时间一致性
+       - json 比 ftu 新 = 改过 json 没重新打包
+       - ftu 比 json 新超 30 秒 = 开发者/IDE 直接改过 ftu → 先 unpack 同步 json 再继续
+    ② 有改动才 fui pack <ui目录>（设备实际加载的是 FTU 而非 JSON）
+    ③ fun install 同步 Manifest 依赖（每次 build 前执行，Manifest 变更自动拉取新依赖）
+    ④ fun build 编译 C++ 代码
+    ⑤ fun build 通过后直接 fun launch 推送设备并启动（默认，with_launch=False 可跳过）
+    ⚠️ launch 失败（无 adb 设备）时返回 needDeviceInput=true，此时必须询问用户接入方式：
+       1) USB 接入：将设备通过 USB 连电脑，然后重试本工具；
+       2) 网络接入：让用户提供设备 IP（如 192.168.1.100），用 device='<ip>' 重试（走 fun launch -s <ip>）。
+       禁止替用户猜测 IP。
+    ⚠️ 常见错误：修改 JSON 后直接 launch 忘记 pack，设备上仍运行旧版 FTU 布局；
+    开发者改过 ftu 时若直接改 json 会覆盖其修改（必须先 unpack ftu 同步）。
+    传入项目根目录完整路径。返回每步结果与最终时间戳校验。"""
+    if not os.path.isdir(project_root):
+        return {"success": False, "error": f"项目目录不存在: {project_root}"}
+    ui_dir = os.path.join(project_root, 'ui')
+    if not os.path.isdir(ui_dir):
+        return {"success": False, "error": f"ui 目录不存在: {ui_dir}"}
+
+    steps = []
+
+    # ① 时间戳检查（含开发者修改检测：ftu 比 json 新超 30s）
+    ts_before = _ui_timestamp_check(project_root)
+    dev_modified = ts_before['devModified']
+    stale = ts_before['stale'] + [{'json': j} for j in ts_before['missing']]
+    steps.append({"step": "check_timestamps",
+                  "stale": ts_before['stale'], "missing": ts_before['missing'],
+                  "devModified": dev_modified,
+                  "needPack": bool(stale or dev_modified)})
+
+    # ①.5 开发者改过 ftu → 先 unpack ftu 同步 json（以 ftu 为真源）
+    if dev_modified:
+        sync = _sync_ftu_to_json(project_root)
+        steps.append({"step": "sync ftu→json", "success": not sync['failed'],
+                      "synced": sync['synced'], "failed": sync['failed']})
+        if sync['failed']:
+            return {"success": False, "steps": steps,
+                    "error": f"unpack ftu 同步 json 失败: {sync['failed'][0]['error']}"}
+
+    # ② fui pack（有 stale/missing/devModified 才执行；没有则跳过并说明）
+    if stale or dev_modified:
+        r = _run_fui('pack', ui_dir)
+        steps.append({"step": "fui pack", "success": r['success'],
+                      "detail": (r.get('stderr') or r.get('stdout') or '')[-400:]})
+        if not r['success']:
+            return {"success": False, "steps": steps,
+                    "error": "fui pack 失败（json 布局可能不合法）"}
+    else:
+        steps.append({"step": "fui pack", "success": True, "skipped": "json 与 ftu 时间戳一致，无需重新打包"})
+
+    # ③ fun install（同步 Manifest 依赖，Manifest 变更后自动拉取新包）
+    ri = _run_fun('install', project_root)
+    steps.append({"step": "fun install", "success": ri['success'],
+                  "detail": (ri.get('stderr') or ri.get('stdout') or ri.get('error') or '')[-400:]})
+    # ⚠️ install 失败不阻断：依赖可能已装过（离线/无变更场景），继续 build 让真实错误暴露
+    if not ri['success']:
+        steps[-1]['note'] = 'fun install 失败但继续 build（依赖可能已就绪）；若 build 报缺依赖请检查 Manifest/网络'
+
+    # ④ fun build（编译）
+    rb = _run_fun('build', project_root)
+    steps.append({"step": "fun build", "success": rb['success'],
+                  "detail": (rb.get('stderr') or rb.get('stdout') or rb.get('error') or '')[-500:]})
+    if not rb['success']:
+        return {"success": False, "steps": steps,
+                "error": rb.get('error') or "fun build 失败"}
+
+    # ⑤ fun launch（build 通过后直接推送启动；失败→询问设备接入方式）
+    if with_launch:
+        rl = _run_fun('launch', project_root, device=device)
+        steps.append({"step": "fun launch", "success": rl['success'],
+                      "device": device or '(自动发现 USB 设备)',
+                      "detail": (rl.get('stderr') or rl.get('stdout') or rl.get('error') or '')[-400:]})
+        if not rl['success']:
+            return {"success": False, "steps": steps,
+                    "needDeviceInput": True,
+                    "message": "fun launch 失败：未检测到可用的 adb 设备（或设备未连接）。"
+                                "请询问用户接入方式："
+                                "1) USB 接入：将设备通过 USB 连接到电脑后重试本工具；"
+                                "2) 网络接入：请用户提供设备 IP（如 192.168.1.100），"
+                                "用 device='<ip>' 重新调用（将执行 fun launch -s <ip>）。",
+                    "error": rl.get('error') or (rl.get('stderr') or rl.get('stdout') or '')[-300:]}
+    else:
+        steps.append({"step": "fun launch", "success": True, "skipped": "未请求推送（with_launch=False）"})
+
+    # 最终时间戳校验（打包后 json 不应比 ftu 新）
+    ts_after = _ui_timestamp_check(project_root)
+    steps.append({"step": "verify_timestamps",
+                  "stale": ts_after['stale'], "missing": ts_after['missing'],
+                  "ok": ts_after['ok']})
+    return {"success": True, "projectRoot": project_root, "steps": steps,
+            "finalCheck": {"stale": ts_after['stale'], "missing": ts_after['missing']}}
+
+
+# ---------------- 工具 7: 从 IDE 模板创建项目骨架 -------------
+def flythings_create_project(project_root, platform=None, resolution=None,
+                             app_name='', with_cli=True, force=False):
+    """从 HelloWord 基础 Demo 项目复制骨架创建完整 FlyThings 项目。
+    - 模板源：包内 templates/HelloWord_<平台>（或 IDE 安装目录）
+    - 自动替换：工程名 / 分辨率（.settings prefs + ftu 内嵌）/ 平台（Manifest.xml）
+    - 附带 fui.exe + fun.exe（with_cli=True），交付用 fun.exe build + launch，无需客户导入 IDE
+    传入目标项目根目录完整路径、平台（F133/F135/Z21）与分辨率（如 800x480）。
+
+    ⚠️⚠️ 硬性要求：platform 与 resolution 必须由用户明确提供，禁止猜测或使用默认值。
+    若用户未指定硬件平台（F133/F135/Z21）或屏幕分辨率（如 800x480），
+    本工具会直接返回错误，拒绝创建——必须先向用户询问这两个参数再调用。
+    """
+    if not platform or not str(platform).strip():
+        return {"success": False, "error": "缺少硬件平台：请先向用户询问平台（F133/F135/Z21），禁止猜测"}
+    if not resolution or not str(resolution).strip():
+        return {"success": False, "error": "缺少屏幕分辨率：请先向用户询问分辨率（如 800x480、480x272），禁止猜测"}
+    if not re.fullmatch(r'\d+\s*[xX]\s*\d+', str(resolution).strip()):
+        return {"success": False, "error": f"分辨率格式错误: {resolution}（应为 WxH，如 800x480、480x272）"}
+    root = os.path.abspath(project_root)
+    if os.path.isdir(root) and any(os.listdir(root)) and not force:
+        return {"success": False, "error": f"目标目录非空: {root}（如需覆盖请传 force=True）"}
+    plat = platform.upper()
+    tpl_plat = PLATFORM_ALIASES.get(plat, plat)
+    tpl = _template_dir(tpl_plat)
+    if not tpl or not os.path.isdir(tpl):
+        return {"success": False, "error": f"无 {platform} 的 IDE 空白模板（可用: {', '.join(IDE_TEMPLATES)}，或包内 templates/）"}
+    os.makedirs(root, exist_ok=True)
+    # 1. 复制模板全部文件（跳过 Release 编译产物）
+    for name in os.listdir(tpl):
+        if name in ('Release',):
+            continue
+        s = os.path.join(tpl, name)
+        d = os.path.join(root, name)
+        if os.path.isdir(s):
+            shutil.copytree(s, d, dirs_exist_ok=True)
+        else:
+            shutil.copy2(s, d)
+    # 2. 替换工程名（.project / .cproject）
+    tpl_name = os.path.basename(tpl)
+    new_name = app_name.strip() or os.path.basename(root)
+    for fn in ('.project', '.cproject'):
+        p = os.path.join(root, fn)
+        if os.path.isfile(p):
+            txt = open(p, encoding='utf-8', errors='replace').read()
+            txt = txt.replace(tpl_name, new_name)
+            open(p, 'w', encoding='utf-8').write(txt)
+    # 3. 更新 .settings 分辨率
+    prefs = os.path.join(root, '.settings', 'com.zksw.flythings.easyui.prefs')
+    if os.path.isfile(prefs):
+        txt = open(prefs, encoding='utf-8', errors='replace').read()
+        txt = re.sub(r'(?m)^resolution=.*$', f'resolution={resolution}', txt)
+        open(prefs, 'w', encoding='utf-8').write(txt)
+    # 3.5 更新 ui/*.ftu 内嵌分辨率（ftu 里也含 resolution，必须 unpack→改 json→pack 回）
+    ftu_res = _rewrite_ftu_resolution(root, resolution)
+    res_norm = re.sub(r'\s*[xX]\s*', 'x', str(resolution).strip())
+    # 4. 更新 Manifest 平台（新格式）
+    mf = os.path.join(root, 'Manifest.xml')
+    if os.path.isfile(mf):
+        txt = open(mf, encoding='utf-8', errors='replace').read()
+        txt = re.sub(r'<manifest platform="[^"]*"', f'<manifest platform="{plat}"', txt)
+        txt = re.sub(r'enableOnPlatforms="[^"]*"', f'enableOnPlatforms="{plat}"', txt)
+        open(mf, 'w', encoding='utf-8').write(txt)
+    # 5. 附带 CLI 工具
+    cli = {"skipped": True}
+    if with_cli:
+        cli = flythings_attach_cli_tools(root, with_fyx=True)
+    return {"success": True, "projectRoot": root, "platform": plat,
+            "resolution": res_norm, "fromTemplate": tpl,
+            "ftuResolution": ftu_res, "cliTools": cli, "notes": [
+                "控件指针/ID宏由 IDE 编译时自动生成，logic.cc 直接使用 mXXXPtr，禁止手写定义",
+                "src/uart 为系统模板：只改 ProtocolData.h / ProtocolParser.cpp 的协议解析",
+                "ui/ 下放 json+ftu，用 fui pack 生成 ftu（已附带 fui.exe）",
+                "logic.cc 必须保留 REGISTER_ACTIVITY_TIMER_TAB（空表也行）",
+                "⚠️ 交付：项目生成后直接用 fun.exe build 编译、fun.exe launch 推送设备，"
+                "无需客户手动导入 FlyThings IDE 编译烧录（fun.exe 已附带在项目根目录）"]}
