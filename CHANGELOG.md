@@ -1,7 +1,22 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.10-open**（2026-09-01）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.11-open**（2026-09-02）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.7.11-open (2026-09-02) — 一句话需求→线框→美化流程入库（沛哥定规）
+
+**流程**：用户一句话产品需求（如「我想设计一个医疗口腔内窥镜」）→
+① 功能拆解（功能清单 + 客户确认清单）→ ② 页面层级设计（页面树，page-id）→
+③ 单 HTML 多 .screen 线框图（data-page/data-page-name/data-note/data-goto 标注，AI 后续按此分页）→
+④ 用户确认（线框 + 确认清单，多轮沟通带标注定位修改）→
+⑤ UI 美化 3+ 套风格（医疗蓝/纯净白/深色/暖色）→ ⑥ 风格选择 → ⑦ 美化稿预览确认 →
+⑧ html2json 按 data-page 分页 → preview → pack → build_ui_flow 交付。
+
+**沛哥决策**：① 需要确认清单 ② 文字输入（不做语音）③ 单 HTML 多页面 data-page 区分 ④ 3+ 套风格。
+
+**入库**：新建 `knowledge/devflow/prototype-flow.md`（完整流程 + 标注规范 + 风格方案表）；重建 rag_index。
 
 ---
 
