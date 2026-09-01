@@ -1,7 +1,21 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.6-open**（2026-09-01）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.7-open**（2026-09-01）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.7.7-open (2026-09-01) — SlideWindow 图标布局铁律入库（沛哥定规）
+
+**定规**：SlideWindow 图标布局三要素——
+① `iconSize` 必须按**实际图片尺寸**（非控件平分格子大小；默认 128 会导致图标位置不对/拉伸）
+② `padding` = 图标相对平分格子边界的留白 ③ `iconTextPadding` = 图标配套文字的 padding
+
+**入库 + 修复**
+- 新建 `knowledge/uicontrols/slidewindow-fields.md`（字段表 + 布局铁律 + html2json 写法 + 常见坑）
+- html2json：未显式指定 data-icon-w/h 时自动读 items 首张图标图实际尺寸回填 iconSize（读不到 warning 提示）
+- 验证：显式指定保留；自动回填 60x60 成功；缺图 warning 正常
+- 重建 rag_index
 
 ---
 

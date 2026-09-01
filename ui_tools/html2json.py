@@ -513,7 +513,67 @@ class HtmlToJson:
                             _clean(x)
         if ctx.root:
             _clean(ctx.root)
+            self._fix_slidewindow_icon_size(ctx.root)
         return ctx.root, ctx.warnings
+
+    def _fix_slidewindow_icon_size(self, root):
+        """SlideWindow 图标布局铁律（沛哥 2026-09-01）：iconSize 必须按实际图片尺寸，
+        不是控件平分格子大小（默认 128 会导致图标位置不对/拉伸）。
+        HTML 未显式指定 data-icon-w/h 时，尝试从 items 首张图片读实际尺寸回填；
+        读不到则保留默认并 warning 提示。padding 语义：padding=图标相对平分格子边界，
+        iconTextPadding=配套文字 padding（文档：knowledge/uicontrols/slidewindow-fields.md）。"""
+        try:
+            from PIL import Image as _PImage
+        except Exception:
+            _PImage = None
+
+        def _img_size(pic_ref):
+            """json 引用 images/xxx.png（相对 resources）→ asset_dir 下真实文件 → (w,h)。"""
+            if not pic_ref:
+                return None
+            base = os.path.basename(str(pic_ref).replace('\\', '/'))
+            cands = []
+            if self.asset_dir:
+                cands.append(os.path.join(self.asset_dir, base))
+                cands.append(os.path.join(self.asset_dir, 'images', base))
+            if not cands:
+                return None
+            for p in cands:
+                if os.path.isfile(p) and _PImage:
+                    try:
+                        with _PImage.open(p) as im:
+                            return im.size
+                    except Exception:
+                        continue
+            return None
+
+        for key, val in list(root.items()):
+            if not (isinstance(val, dict) and key.startswith('slidewindow__')):
+                continue
+            items = val.get('items') or []
+            if not items:
+                continue
+            # 用户显式指定过 data-icon-w/h 则跳过
+            if val.get('__icon_explicit'):
+                continue
+            # 取首张图标图读实际尺寸
+            pic0 = None
+            for it in items:
+                pt = it.get('picTab') or {}
+                if pt.get('pic0'):
+                    pic0 = pt['pic0']
+                    break
+            sz = _img_size(pic0)
+            if sz:
+                val['iconSize'] = {'width': sz[0], 'height': sz[1]}
+                self.ctx.warnings.append(
+                    f'slidewindow {val.get("caption", key)}: iconSize 未显式指定，已按实际图片尺寸 '
+                    f'{sz[0]}x{sz[1]} 回填（SlideWindow 铁律：iconSize=图片实际尺寸，非平分格子大小；'
+                    f'可显式 data-icon-w/h 指定）')
+            else:
+                self.ctx.warnings.append(
+                    f'slidewindow {val.get("caption", key)}: iconSize 未指定且读不到图片实际尺寸'
+                    f'（{pic0 or "无图片"}），默认 128 可能导致图标位置不对；请按实际图片尺寸填 data-icon-w/h')
 
     @staticmethod
     def _find_screen(node):
@@ -824,6 +884,9 @@ class HtmlToJson:
              'rollSpeed': int(_num(_attr(attrs, 'data-roll-speed'), 999)),
              'fontSize': 22,
              '__container': True, '__slidewindow': True, 'items': []}
+        # 用户显式指定过图标尺寸 → 后处理不覆盖（_fix_slidewindow_icon_size 用）
+        if _attr(attrs, 'data-icon-w') or _attr(attrs, 'data-icon-h'):
+            c['__icon_explicit'] = True
         fs = self._font_size(attrs)
         if fs:
             c['fontSize'] = fs
