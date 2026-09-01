@@ -1356,16 +1356,27 @@ def html2json(input_html, output_json=None, res=None, asset_dir=None):
     """受限 HTML → json 布局。返回 {success, jsonPath, resolution, controls, warnings}。
 
     asset_dir：CSS 效果（渐变/阴影/emoji/loading）自动转图输出目录；
-    缺省 = output_json 同目录 images/（即 ui/images/，json 引用 images/xxx.png）。
+    缺省自动定位到项目 resources/images/（json 引用 images/xxx.png 相对 resources 目录，与设备加载一致）：
+      - output_json 位于 <项目>/ui/ 下 → asset_dir = <项目>/resources/images/
+      - 其它位置 → 回退 json 同目录 images/ 并警告（提示手动挪图或显式传 asset_dir）
     不传 output_json 且不传 asset_dir 时不做自动转图（纯布局转换）。"""
     if not os.path.isfile(input_html):
         return {'success': False, 'error': f'html 文件不存在: {input_html}'}
     with open(input_html, encoding='utf-8-sig') as f:
         text = f.read()
+    warnings = []
     if asset_dir is None and output_json:
-        asset_dir = os.path.join(os.path.dirname(os.path.abspath(output_json)), 'images')
+        out_dir = os.path.dirname(os.path.abspath(output_json))
+        if os.path.basename(out_dir) == 'ui':
+            # <项目>/ui/main.json → 图片输出到 <项目>/resources/images/
+            asset_dir = os.path.join(os.path.dirname(out_dir), 'resources', 'images')
+        else:
+            asset_dir = os.path.join(out_dir, 'images')
+            warnings.append('output_json 不在 <项目>/ui/ 目录下，自动转图输出到 json 同目录 images/；'
+                            '建议把图片移到项目 resources/images/ 后 json 引用 images/xxx.png（相对 resources）')
     conv = HtmlToJson(res=res, asset_dir=asset_dir)
-    data, warnings = conv.convert(text)
+    data, w2 = conv.convert(text)
+    warnings += w2
     if data is None:
         return {'success': False, 'error': '未找到 <div class="screen"> 根节点（受限 HTML 必须从 screen 容器开始）'}
 
@@ -1379,7 +1390,8 @@ def html2json(input_html, output_json=None, res=None, asset_dir=None):
     return {'success': True, 'jsonPath': output_json,
             'resolution': f"{resv.get('width')}x{resv.get('height')}",
             'controls': count, 'warnings': warnings,
-            'generatedAssets': conv.gen_count}
+            'generatedAssets': conv.gen_count,
+            'assetDir': asset_dir}
 
     if output_json:
         os.makedirs(os.path.dirname(os.path.abspath(output_json)), exist_ok=True)

@@ -25,9 +25,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.6.6-open'
+MCP_VERSION = '0.6.7-open'
 MCP_BUILD = '2026-09-01'
 MCP_FEATURES = [
+    '2026-09-01: 图片资源路径铁律修复（致命问题）——自动生成的图片统一输出到 <项目>/resources/images/，json 布局引用 images/xxx.png（相对 resources 目录，与设备/ftu 加载一致）；html2json 自动转图（渐变/阴影/emoji/loading）不再输出到 json 同目录 images/（设备找不到图），output_json 在 <项目>/ui/ 下时自动定位 resources/images/；gen_ui_assets 返回 path 改为 images/xxx.png（另附 absolutePath），AI 直接填 backgroundPic/picTab 不写绝对路径；顺修 color list 未转 tuple 导致图标生成失败',
     '2026-09-01: 移除 check_all 文本换行误报检查——textview text 支持 \\n 多行（配合 rowSpace 行间距），\'\n\' 不再报错',
     '2026-09-01: 电子价签 ESL 通用技术入库（esl/tag-esl.md）——一套代码多平台：Manifest enableOnPlatforms 分组依赖 + accessKey 私有包 + #ifdef __PLATFORM_XXX__ 三件套；HTML 内容渲染体系（Cron 轮播/资源缓存/断电恢复/代渲染图片）；自研 BlueZ GATT Server 思路（L2CAP ATT 监听 + HCI 广播 + 粘包 + 生命周期省电）；OTA 整包升级等工程要点（涉密细节不收录）',
     '2026-09-01: html2json 文本清洗——剥离 emoji/特殊符号（表情/技术符号/箭头/几何图形/带圈数字全范围），纯 emoji 图标自动转 PNG，混合文本保留文字；check_all 特殊字符检查同步升级',
@@ -200,11 +201,13 @@ def flythings_html_to_json(input_html: str, output_json: str = '', res: str = ''
       点击弹窗/页面切换/tab 切换/列表滚动/数据模拟/动效触发等，让客户在浏览器里直接"点得动"，
       前期效果确认和修改效率翻倍。转换器自动忽略 <script> 标签和 onclick 等交互属性（实测验证），
       JS 只服务于浏览器预览确认，不转 json；FlyThings 端交互逻辑由 logic.cc 实现（json 布局 + 回调）。
-    - ✅ CSS 效果自动转图（2026-08-29 沛哥要求）：style 里出现 linear-gradient/box-shadow/border-radius/
+    - ✅ CSS 效果自动转图（2026-08-29 沛哥要求 + 2026-09-01 路径修复）：style 里出现 linear-gradient/box-shadow/border-radius/
       animation 等效果时自动生成图片资源（不再只 warning）——渐变→grad_*.png（backgroundPic）、
       阴影+圆角→shadow_*/gradshadow_*.png（渐变阴影自动合成）、emoji 文本→emoji_*.png 图标、
       class=loading/spinner 或 animation:spin→loading_*.gif（12 帧）+ imageanim 控件（warning 提示
-      logic.cc 里 mXXXPtr->play()）。图片输出到 json 同目录 images/，返回 generatedAssets 计数。
+      logic.cc 里 mXXXPtr->play()）。图片自动输出到 <项目>/resources/images/（output_json 在 <项目>/ui/ 下时自动识别；
+      json 引用路径 images/xxx.png 相对 resources 目录，与设备加载一致；非 ui/ 目录结构回退 json 同目录 images/ 并警告）。
+      返回 generatedAssets 计数 + assetDir 实际输出目录。
 
     ⚠️ 客户发说明书/参考照片/需求文档时不能直接转 json：先按 skill §7.0 引导分析
     提炼 UI 需求清单 → 用户确认 → 再写受限 HTML → 才调本工具。
@@ -368,6 +371,10 @@ def flythings_generate_ui_assets(project_root: str, assets: str) -> str:
          需要透背景的图片按钮（瓦片/槽位/图标钮）不放 bgColorTab；纯文字按钮才用底色。
       ④ 功能按钮尽量用图片按钮：picTab{pic0: normal, pic1: pressed(_p 后缀)} 两态图。
       ⑤ 生成后必须检查四角 alpha：img.getpixel((2,2))[3] == 0 才算合格。
+      ⑥ 路径规范（2026-09-01 沛哥要求）：自动生成的图片一律放 <项目>/resources/images/，
+         json 布局引用路径写 images/xxx.png（相对 resources 目录，与设备/ftu 加载一致）；
+         返回的 path 字段就是 images/xxx.png，直接填 json 的 backgroundPic / picTab.pic0 / picTab.pic1，
+         不要写绝对路径，也不要带 resources/ 前缀。
 
     assets 为 JSON 数组字符串，每项：
       {"name": "icon_ok.png", "size": 128,

@@ -422,12 +422,16 @@ def gen_ui_assets(project_root, assets):
         if isinstance(color, str) and color.startswith('#'):
             h = color.lstrip('#')
             color = (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16), 255)
+        if isinstance(color, list) and len(color) >= 3:  # [r,g,b] / [r,g,b,a] → tuple
+            color = tuple(int(c) for c in color[:4])
         try:
             path, method = gen_icon(out, name, size,
                                     prompt=str(a.get('prompt', '') or ''),
                                     emoji=str(a.get('emoji', '') or ''),
                                     color=color, kind=str(a.get('kind', 'check') or 'check'))
-            results.append({'index': i, 'name': name, 'path': path,
+            # path: 相对 resources 的引用路径（images/xxx.png，json 布局直接引用）
+            results.append({'index': i, 'name': name, 'path': 'images/' + name,
+                            'absolutePath': path,
                             'method': method, 'size': size, 'success': True})
         except Exception as e:
             results.append({'index': i, 'name': name, 'success': False, 'error': str(e)})
