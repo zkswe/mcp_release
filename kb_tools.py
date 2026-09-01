@@ -25,9 +25,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.6.7-open'
+MCP_VERSION = '0.6.8-open'
 MCP_BUILD = '2026-09-01'
 MCP_FEATURES = [
+    '2026-09-01: UI 控件 Layout 全量检查（沛哥要求）——basedemo 35 个官方 demo 批量抽取 21 种控件真实 json 字段逐控件核对；html2json 修复 6 处缺口：circlebar(+文字 textColor/textSize/textType/unit +滑块 thumb +touchRange)/cameraview(+cvbs/mirror)/videoview(+rotation)/listview(+autoRollback/cycleEnable/dragMaxDis/edgeEffect/hasScrollbar)/slidewindow(+backgroundPic/iconMaxSize)/文字控件通用(+bold/italic/roll* 文字滚动)；检查报告入库（knowledge/uicontrols/layout-audit.md：21 控件对照表+字段+修复清单+id 段）',
     '2026-09-01: 图片资源路径铁律修复（致命问题）——自动生成的图片统一输出到 <项目>/resources/images/，json 布局引用 images/xxx.png（相对 resources 目录，与设备/ftu 加载一致）；html2json 自动转图（渐变/阴影/emoji/loading）不再输出到 json 同目录 images/（设备找不到图），output_json 在 <项目>/ui/ 下时自动定位 resources/images/；gen_ui_assets 返回 path 改为 images/xxx.png（另附 absolutePath），AI 直接填 backgroundPic/picTab 不写绝对路径；顺修 color list 未转 tuple 导致图标生成失败',
     '2026-09-01: 移除 check_all 文本换行误报检查——textview text 支持 \\n 多行（配合 rowSpace 行间距），\'\n\' 不再报错',
     '2026-09-01: 电子价签 ESL 通用技术入库（esl/tag-esl.md）——一套代码多平台：Manifest enableOnPlatforms 分组依赖 + accessKey 私有包 + #ifdef __PLATFORM_XXX__ 三件套；HTML 内容渲染体系（Cron 轮播/资源缓存/断电恢复/代渲染图片）；自研 BlueZ GATT Server 思路（L2CAP ATT 监听 + HCI 广播 + 粘包 + 生命周期省电）；OTA 整包升级等工程要点（涉密细节不收录）',

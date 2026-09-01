@@ -755,6 +755,22 @@ class HtmlToJson:
             c['rowSpacing'] = rs
         if cs is not None:
             c['colSpacing'] = cs
+        # 滚动/循环属性（listViewDemo 校准）：autoRollback 自动回滚 + cycleEnable 循环 + dragMaxDis/edgeEffect + hasScrollbar
+        ar = _attr(attrs, 'data-auto-rollback')
+        if ar is not None:
+            c['autoRollback'] = str(ar).strip() in ('1', 'true')
+        cy = _attr(attrs, 'data-cycle')
+        if cy is not None:
+            c['cycleEnable'] = str(cy).strip() in ('1', 'true')
+        dmd = parse_px(_attr(attrs, 'data-drag-max'))
+        if dmd is not None:
+            c['dragMaxDis'] = dmd
+        ee = parse_px(_attr(attrs, 'data-edge-effect'))
+        if ee is not None:
+            c['edgeEffect'] = ee
+        sb = _attr(attrs, 'data-scrollbar')
+        if sb is not None:
+            c['hasScrollbar'] = str(sb).strip() in ('1', 'true')
         key = ctx.add('listview', c)   # 支持嵌套（listview 在 window 内）
         ctx.stack.append(c)
 
@@ -811,6 +827,13 @@ class HtmlToJson:
         fs = self._font_size(attrs)
         if fs:
             c['fontSize'] = fs
+        # 背景图 + 图标最大尺寸（SlideWindowDemo 校准）
+        bgp = _attr(attrs, 'data-bgpic') or _attr(attrs, 'data-background-pic')
+        if bgp:
+            c['backgroundPic'] = bgp if '/' in bgp else 'images/' + bgp
+        imx = parse_px(_attr(attrs, 'data-icon-max'))
+        if imx:
+            c['iconMaxSize'] = {'width': imx, 'height': imx}
         key = ctx.add('slidewindow', c)   # 支持嵌套
         ctx.stack.append(c)
 
@@ -980,6 +1003,7 @@ class HtmlToJson:
                 c['bgColorTab'] = {'color0': bgc}
             if text:
                 c['text'] = text
+            self._text_extra(c, attrs)
             # 自动转图：CSS 效果（渐变/阴影/emoji/loading）→ backgroundPic
             eff = self._effect_assets(ctx, node, pos.get('width', 100), pos.get('height', 40), cap)
             if eff.get('use_emoji'):
@@ -1058,6 +1082,7 @@ class HtmlToJson:
                 iw = int(_attr(attrs, 'data-icon-w') or ch)
                 ih = int(_attr(attrs, 'data-icon-h') or ch)
                 c['iconPosition'] = {'left': 0, 'top': 0, 'width': iw, 'height': ih}
+            self._text_extra(c, attrs)
         elif typ == 'edittext':
             c = {'alignment': 37, 'beepEnable': True, 'caption': cap,
                  'bgColorTab': {'color0': self._bg_color(attrs) or 0xFFFFFF},
@@ -1082,6 +1107,7 @@ class HtmlToJson:
                 c['hintTextColor'] = hc
             if text:
                 c['text'] = text
+            self._text_extra(c, attrs)
         elif typ == 'seekbar':
             c = {'caption': cap, 'defProgress': 0, 'id': ctx.nid('seekbar'),
                  'max': 100, 'orientation': 0, 'touchable': False,
@@ -1143,6 +1169,7 @@ class HtmlToJson:
                 c['text'] = text
             if str(_attr(attrs, 'data-checked') or '').strip() in ('1', 'true'):
                 c['checked'] = True
+            self._text_extra(c, attrs)
         elif typ == 'circlebar':
             # 圆形进度条（UIlayoutDemo/circlebar.ftu 校准）：backgroundPic 背景图（不裁剪）+
             #   progressPic 有效图（按进度裁剪扇形）+ progressPicPos 有效图位置 + max/maxAngle/startAngle + clockwise
@@ -1170,6 +1197,32 @@ class HtmlToJson:
             if fill:
                 c['progressPic'] = fill if '/' in fill else 'images/' + fill
                 c['progressPicPos'] = {'left': 0, 'top': 0, 'width': cw, 'height': ch}
+            # 中间文字（CircleBarDemo 校准）：textColor/textSize/textType/unit
+            tc = to_dec(_attr(attrs, 'data-text-color'))
+            if tc:
+                c['textColor'] = tc
+            tsz = parse_px(_attr(attrs, 'data-text-size'))
+            if tsz:
+                c['textSize'] = tsz
+            tt = _num(_attr(attrs, 'data-text-type'))
+            if tt is not None:
+                c['textType'] = int(tt)
+            u = _attr(attrs, 'data-unit')
+            if u:
+                c['unit'] = u
+            # thumb 滑块（可拖拽）+ touchRange 触摸范围（CircleBarDemo 校准）
+            tn = _attr(attrs, 'data-thumb')
+            ts = parse_px(_attr(attrs, 'data-thumb-size'))
+            if tn or ts:
+                thumb = {'size': {'width': ts or 0, 'height': ts or 0}}
+                if tn:
+                    thumb['normalPic'] = tn if '/' in tn else 'images/' + tn
+                c['thumb'] = thumb
+            tr = _attr(attrs, 'data-touch-range')  # "lower,upper"
+            if tr:
+                parts = str(tr).split(',')
+                if len(parts) == 2 and _num(parts[0]) is not None and _num(parts[1]) is not None:
+                    c['touchRange'] = {'lower': _num(parts[0]), 'upper': _num(parts[1])}
         elif typ == 'digitalclock':
             # 数字时钟（UIlayoutDemo/digitalclock.ftu 校准）：format 时间格式 + beat 冒号闪烁，自动实时刷新系统时间
             # format 大小写含义：HH=24小时制 hh=12小时制 MM=分钟 SS=秒 yyyy-MM-dd=日期 EEEE=星期
@@ -1206,8 +1259,9 @@ class HtmlToJson:
                 c['colorTab'] = {'color0': col}
             if text:
                 c['text'] = text
+            self._text_extra(c, attrs)
         elif typ == 'cameraview':
-            # 摄像头预览（CameraDemo 校准）：autoPreview 自动预览 + formatSize 采集格式
+            # 摄像头预览（CameraDemo 校准）：autoPreview 自动预览 + formatSize 采集格式 + cvbs + mirror 镜像
             c = {'caption': cap, 'id': ctx.nid('cameraview'),
                  'touchable': False, 'position': pos}
             if str(_attr(attrs, 'data-auto-preview') or '1').strip() in ('1', 'true'):
@@ -1216,6 +1270,13 @@ class HtmlToJson:
             fh = parse_px(_attr(attrs, 'data-format-h'))
             if fw and fh:
                 c['formatSize'] = {'width': fw, 'height': fh}
+            if str(_attr(attrs, 'data-cvbs') or '').strip() in ('1', 'true'):
+                c['cvbs'] = True
+            else:
+                c['cvbs'] = False
+            mv = _num(_attr(attrs, 'data-mirror'))
+            if mv is not None:
+                c['mirror'] = int(mv)
         elif typ == 'painter':
             # 画布（PainterDemo 校准）：触摸绘制，代码 paint() 刷新
             c = {'caption': cap, 'id': ctx.nid('painter'),
@@ -1267,7 +1328,7 @@ class HtmlToJson:
             if bgc:
                 c['backgroundColor'] = bgc
         elif typ == 'videoview':
-            # 视频播放（VideoViewDemo/VideoPlayerDemo 校准）：defaultVolume 默认音量 + loopPlayback 循环
+            # 视频播放（VideoViewDemo/VideoPlayerDemo 校准）：defaultVolume 默认音量 + loopPlayback 循环 + rotation 旋转
             c = {'caption': cap, 'id': ctx.nid('videoview'),
                  'touchable': True, 'position': pos}
             dv = parse_px(_attr(attrs, 'data-volume'))
@@ -1275,6 +1336,9 @@ class HtmlToJson:
                 c['defaultVolume'] = dv
             if str(_attr(attrs, 'data-loop') or '').strip() in ('1', 'true'):
                 c['loopPlayback'] = True
+            rot = parse_px(_attr(attrs, 'data-rotation'))
+            if rot is not None:
+                c['rotation'] = rot
         elif typ == 'icon':
             c = {'alignment': 36, 'caption': cap,
                  'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0xEEF2F6},
@@ -1325,6 +1389,30 @@ class HtmlToJson:
             if pv is not None:
                 return pv
         return None
+
+    def _text_extra(self, c, attrs):
+        """文字控件通用属性（basedemo 实测）：bold/italic 粗斜体 + 文字滚动 roll* 系列。
+        roll：data-roll 开关 + data-roll-direction 方向 + data-roll-step 步长 + data-roll-interval 间隔。"""
+        b = _attr(attrs, 'data-bold')
+        if b is not None:
+            c['bold'] = str(b).strip() in ('1', 'true')
+        it = _attr(attrs, 'data-italic')
+        if it is not None:
+            c['italic'] = str(it).strip() in ('1', 'true')
+        re_ = _attr(attrs, 'data-roll')
+        if re_ is not None:
+            c['rollEnable'] = str(re_).strip() in ('1', 'true')
+        rd = _attr(attrs, 'data-roll-direction')
+        if rd is not None:
+            rdv = str(rd).strip()
+            c['rollDirection'] = int(rdv) if rdv.isdigit() else rdv
+        rs_ = parse_px(_attr(attrs, 'data-roll-step'))
+        if rs_ is not None:
+            c['rollStep'] = rs_
+        ri = parse_px(_attr(attrs, 'data-roll-interval'))
+        if ri is not None:
+            c['rollIntervalTime'] = ri
+        return c
 
     def _bg_color(self, attrs):
         """背景色：data-bg / data-background / 内联 background 都认。"""
