@@ -31,6 +31,17 @@
 | `flythings_html_to_json`（CSS 效果自动转图：渐变 grad_*/阴影 shadow_*/gradshadow_*/emoji 图标/loading GIF） | output_json 在 `<项目>/ui/` 下时自动定位 `resources/images/`；其它位置回退 json 同目录 images/ 并 warning | 返回 `generatedAssets` 计数 + `assetDir` 实际目录 |
 | 手动切图（设计稿切 PNG/.9.png） | 同样放 `<项目>/resources/images/` | json 引用 `images/xxx.png` |
 
+## 各控件图片字段对照（易错点，2026-09-01 沛哥实战）
+
+| 控件 | 图片字段 | 说明 |
+|------|---------|------|
+| button | `picTab{pic0,pic1,pic2}` | normal / pressed(_p) / selected 两到三态图 |
+| slidewindow | `picTab{pic0,pic1}` | 图标两态图 |
+| textview / window / 其它 | `backgroundPic` | 单背景图 |
+| **pointer** | `backgroundPic`(表盘) + **`pointerPic`**(指针) | ⚠️ **没有 picTab**！指针图用 `pointerPic`，写成 picTab.pic0 IDE 识别不到；另有 `pointerSize`/`startAngle`/`rotateSpeed`/`clockwise`/`animatable`，旋转圆心由 fixedPoint(指针固定点)+rotationPoint(旋转中心) 决定 |
+| qrcode | `codeStr` | 二维码内容是文本不是图 |
+| checkbox | `pic2`/两态图 | 选中态图 |
+
 ## 常见坑
 
 - 生成图片后**没写进 json**（只 warning 不生效）：检查控件是否被后处理覆盖、按钮是否应走 picTab
