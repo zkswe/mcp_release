@@ -48,16 +48,16 @@ def main():
     if not embed_local.available():
         print('模型不可用，请先确认 models/bge-small-zh/ 存在')
         sys.exit(1)
-    files = []
+    files = []  # (path, root)
     for root in collect_roots():
         for r, _, fnames in os.walk(root):
             for fn in fnames:
                 if fn.endswith('.md'):
-                    files.append(os.path.join(r, fn))
+                    files.append((os.path.join(r, fn), root))
     print(f'{len(files)} md files from {len(collect_roots())} roots', flush=True)
     chunks = []
-    for f in sorted(files):
-        rel = os.path.relpath(f, WIKI_ROOT).replace('\\', '/')
+    for f, froot in sorted(files):
+        rel = os.path.relpath(f, froot).replace('\\', '/')
         for i, c in enumerate(chunk_md(f)):
             chunks.append({'id': f'{rel}#{i}', 'path': rel, 'text': c})
     print(f'{len(chunks)} chunks', flush=True)
