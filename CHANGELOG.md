@@ -1,7 +1,19 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.8-open**（2026-09-01）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.9-open**（2026-09-01）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.7.9-open (2026-09-01) — SlideWindow 布局定规修正（沛哥 21:59 纠正）
+
+**纠正 v0.7.8 的错误表述**：「绝对布局需按实际微调」是错的——
+- json 的 position（left/top/width/height）**直接来自 HTML 原型的 data-x/y/w/h**，本来就是绝对布局，坐标明确
+- **HTML 效果确认后 → json 坐标即准确 → 不需要（也不该）再微调**
+- 若交付后还要调位置 = **前期 HTML 效果没确认好**——正确流程：HTML 布局 → json2html/generate_ui_preview 出预览稿确认 → 确认 OK 才 fui pack / 写逻辑 / 交付
+- padding/iconTextPadding 同理：HTML 阶段（data-pad-b/data-icon-pad-b）调好，确认后即定稿
+
+**文档**：slidewindow-fields.md 铁律 5 已重写；重建 rag_index。
 
 ---
 

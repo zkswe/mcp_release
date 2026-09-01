@@ -40,10 +40,11 @@
 4. **iconTextPadding = 图标配套文字的 padding**
    - 是 icon 配套文本（caption 文字）相对图标的位置偏移（通常 bottom=文字在图标下方间距）
    - 调整它改变文字与图标的距离，不是改图标位置
-5. **默认值只是起点，FlyThings 绝对布局要按实际微调（沛哥 21:52 补充）**
-   - 默认 paddingBottom=8 / iconTextPadding bottom=5 没问题，但 FlyThings 是绝对布局（left/top 像素定位），
-     布局出来后必须根据实际显示效果微调 padding / iconTextPadding / iconSize 使图标落在期望位置
-   - 改完 json 要 fui pack 重出 ftu 再看设备效果（绝对布局不自动重排）
+5. **坐标由 HTML 原型绝对定位确定，确认好即无需微调（沛哥 21:59 纠正）**
+   - json 的 position（left/top/width/height）直接来自 HTML 原型的 data-x/y/w/h，是**绝对布局**，坐标明确
+   - HTML 效果确认后 → json 坐标即准确 → **不需要再微调**（也不该微调）
+   - ⚠️ 若交付后还要调位置，说明**前期 HTML 效果没确认好**——正确流程：HTML 布局 → json2html/generate_ui_preview 出预览稿给用户确认 → 确认 OK 才 fui pack / 写逻辑 / 交付
+   - padding/iconTextPadding 同理：在 HTML 阶段（data-pad-b/data-icon-pad-b）调好，确认后即定稿
 
 ## html2json HTML 写法
 
