@@ -1,7 +1,19 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.0-open**（2026-09-01）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.1-open**（2026-09-01）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.7.1-open (2026-09-01) — 圆角抗锯齿修复（FT-008 落地 gen_res.py）
+
+**问题**：FT-008（SS=2 + LANCZOS 超采样）规则此前只用于修复客户项目脚本（_gen_scripts 扫描注入），
+MCP 自己的 gen_res.py 所有圆角绘制仍是 1x 二值 α 锯齿。
+
+**修复**
+- 新增超采样辅助：`_aa_rounded_rect` / `_aa_mask` / `_aa_outline`（SS=2 倍画布绘制 → LANCZOS 缩回）
+- `rounded_rect` / `rounded_card` / `gen_gradient` / `gen_gradient_stops` / `gen_shadow_card` 全部改走超采样
+- 验证：五类资源边缘 α 均出现中间过渡值（13~25 个），不再二值 0/255；to_9patch 四边 marker（FT-009）不受影响
 
 ---
 

@@ -36,6 +36,35 @@ def save(img, out_dir, name):
     return p
 
 
+# ---------- 超采样抗锯齿（FT-008：SS 倍画布绘制 → LANCZOS 缩回） ----------
+SS = 2  # 超采样倍率：1× 直接画 rounded_rectangle/ellipse 只输出二值 α（0/255）锯齿
+
+
+def _aa_rounded_rect(w, h, radius, fill, border=None, border_w=1, ss=SS):
+    """超采样圆角矩形：SS 倍画布绘制 → LANCZOS 缩回，圆角边缘 α 平滑过渡。"""
+    img = Image.new("RGBA", (w * ss, h * ss), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle([0, 0, w * ss - 1, h * ss - 1], radius=radius * ss, fill=fill,
+                        outline=border, width=border_w * ss)
+    return img.resize((w, h), Image.LANCZOS)
+
+
+def _aa_mask(w, h, radius, ss=SS):
+    """超采样圆角 mask：SS 倍画 mask → LANCZOS 缩回，α 过渡平滑（配合 putalpha）。"""
+    m = Image.new('L', (w * ss, h * ss), 0)
+    ImageDraw.Draw(m).rounded_rectangle([0, 0, w * ss - 1, h * ss - 1],
+                                        radius=radius * ss, fill=255)
+    return m.resize((w, h), Image.LANCZOS)
+
+
+def _aa_outline(w, h, radius, color, width=1, ss=SS):
+    """超采样圆角描边层（透明底 + 仅描边），供叠加到渐变/填充底上。"""
+    img = Image.new("RGBA", (w * ss, h * ss), (0, 0, 0, 0))
+    ImageDraw.Draw(img).rounded_rectangle([0, 0, w * ss - 1, h * ss - 1],
+                                          radius=radius * ss, outline=color, width=width * ss)
+    return img.resize((w, h), Image.LANCZOS)
+
+
 def to_9patch(img, radius, out_dir, name):
     """普通图 → .9.png：四周扩 1px 透明边，四边黑线标记（FT-009 规则）。
     规则（沛哥 2026-09-01）：
@@ -73,12 +102,8 @@ def to_9patch(img, radius, out_dir, name):
 
 
 def rounded_rect(w, h, radius, fill, border=None, border_w=1):
-    """圆角矩形（透明底）→ 供 to_9patch / 直接保存"""
-    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    d.rounded_rectangle([0, 0, w - 1, h - 1], radius=radius, fill=fill,
-                        outline=border, width=border_w)
-    return img
+    """圆角矩形（透明底，FT-008 超采样抗锯齿）→ 供 to_9patch / 直接保存"""
+    return _aa_rounded_rect(w, h, radius, fill, border, border_w)
 
 
 def gen_btn9(out_dir, name, w, h, radius, fill, border=None, pressed=None):
@@ -105,10 +130,8 @@ def gen_gradient(out_dir, name, w, h, color_from, color_to, horizontal=True, to9
         else:
             d.line([(0, i), (w, i)], fill=c)
     if radius > 0:
-        # 圆角 mask 裁剪：清掉弧线外角落（渐变是整矩形画的，必须裁）
-        mask = Image.new('L', (w, h), 0)
-        ImageDraw.Draw(mask).rounded_rectangle([0, 0, w - 1, h - 1], radius=radius, fill=255)
-        img.putalpha(mask)
+        # 圆角 mask 裁剪（FT-008 超采样抗锯齿）：清掉弧线外角落，边缘 α 平滑
+        img.putalpha(_aa_mask(w, h, radius))
     if to9:
         return to_9patch(img, radius, out_dir, name)
     return save(img, out_dir, name)
@@ -128,19 +151,17 @@ def rounded_card(out_dir, name, w, h, radius, color_from, color_to, border=None,
         t = i / max(1, h - 1)
         c = tuple(int(color_from[k] + (color_to[k] - color_from[k]) * t) for k in range(3)) + (255,)
         d.line([(0, i), (w, i)], fill=c)
-    # 圆角 mask 裁剪
-    mask = Image.new('L', (w, h), 0)
-    ImageDraw.Draw(mask).rounded_rectangle([0, 0, w - 1, h - 1], radius=radius, fill=255)
-    img.putalpha(mask)
-    # 描边
+    # 圆角 mask 裁剪（FT-008 超采样抗锯齿）
+    img.putalpha(_aa_mask(w, h, radius))
+    # 描边（超采样描边层，避免 outline 二值锯齿）
     if border:
-        ImageDraw.Draw(img).rounded_rectangle(
-            [0, 0, w - 1, h - 1], radius=radius, outline=border, width=border_w)
-    # 顶部高光
+        img.alpha_composite(_aa_outline(w, h, radius, border, border_w))
+    # 顶部高光（圆角小，直接画可接受；用超采样描边层方式合成）
     if highlight:
-        ImageDraw.Draw(img).rounded_rectangle(
-            [highlight[0], highlight[1], w - highlight[2], highlight[3]],
-            radius=max(4, radius // 2), fill=(255, 255, 255, highlight[4]))
+        hl = _aa_rounded_rect(w - highlight[0] - highlight[2],
+                              h - highlight[1] - highlight[3],
+                              max(4, radius // 2), (255, 255, 255, highlight[4]))
+        img.alpha_composite(hl, (highlight[0], highlight[1]))
     return save(img, out_dir, name)
 
 
@@ -174,9 +195,7 @@ def gen_gradient_stops(out_dir, name, w, h, stops, horizontal=True, radius=0, to
         else:
             d.line([(0, i), (w, i)], fill=c)
     if radius > 0:
-        mask = Image.new('L', (w, h), 0)
-        ImageDraw.Draw(mask).rounded_rectangle([0, 0, w - 1, h - 1], radius=radius, fill=255)
-        img.putalpha(mask)
+        img.putalpha(_aa_mask(w, h, radius))  # FT-008 超采样抗锯齿
     if to9:
         return to_9patch(img, radius, out_dir, name)
     return save(img, out_dir, name)
@@ -201,17 +220,15 @@ def gen_shadow_card(out_dir, name, w, h, radius, fill, shadow=None, border=None,
         if blur > 0:
             sh = sh.filter(ImageFilter.GaussianBlur(blur))
         img.alpha_composite(sh)
-        # 主体卡片
+        # 主体卡片（FT-008 超采样抗锯齿：局部 w×h 圆角矩形超采样后贴到 pad 位置）
         body = Image.new('RGBA', (cw, ch), (0, 0, 0, 0))
-        ImageDraw.Draw(body).rounded_rectangle(
-            [pad, pad, pad + w - 1, pad + h - 1], radius=radius, fill=fill,
-            outline=border, width=border_w)
+        body_patch = _aa_rounded_rect(w, h, radius, fill, border, border_w)
+        body.paste(body_patch, (pad, pad), body_patch)
         img.alpha_composite(body)
-        # 二次圆角裁剪：清掉阴影残影
+        # 二次圆角裁剪（FT-008 超采样局部 mask）：清掉阴影残影
+        mw, mh = w + 2 * blur + 2, h + 2 * blur + 2
         mask = Image.new('L', (cw, ch), 0)
-        ImageDraw.Draw(mask).rounded_rectangle(
-            [pad - blur - 1, pad - blur - 1, pad + w + blur, pad + h + blur],
-            radius=radius + blur, fill=255)
+        mask.paste(_aa_mask(mw, mh, radius + blur), (pad - blur - 1, pad - blur - 1))
         img.putalpha(mask)
         # 裁掉多余透明边（阴影下/右延伸）
         bbox = img.getbbox()

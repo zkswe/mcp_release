@@ -25,9 +25,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.7.0-open'
+MCP_VERSION = '0.7.1-open'
 MCP_BUILD = '2026-09-01'
 MCP_FEATURES = [
+    '2026-09-01: 圆角抗锯齿修复（FT-008 落地到 gen_res.py）——rounded_rect/rounded_card/gen_gradient/gen_gradient_stops/gen_shadow_card 全部改 SS=2 超采样 + LANCZOS 缩回（新增 _aa_rounded_rect/_aa_mask/_aa_outline），消除 1x 二值 α 圆角锯齿；边缘 α 过渡值验证通过；to_9patch 四边 marker 规则（FT-009）不受影响',
     '2026-09-01: FT-009 .9.png 生成规则入库（knowledge/uicontrols/nine-patch-rule.md）——①marker 纯黑不透明 (0,0,0,255) ②top/left 只画中间拉伸段排除倒角 ③right/bottom 黑线与拉伸区同宽 ④1px 贴边 ⑤marker 最后绘制不被 alpha 覆盖；gen_res.to_9patch 修复（补 right/bottom 黑线）',
     '2026-09-01: UI 控件 Layout 全量检查——basedemo 35 个官方 demo 抽取 21 种控件逐字段核对，html2json 修复 circlebar/cameraview/videoview/listview/slidewindow/文字滚动 6 处缺口；报告入库 knowledge/uicontrols/layout-audit.md',
     '2026-09-01: 图片资源路径铁律——自动生成图片统一输出 <项目>/resources/images/，json 引用 images/xxx.png（相对 resources，与设备加载一致）；gen_ui_assets 返回相对路径',
