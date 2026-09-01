@@ -26,3 +26,17 @@
 
 - 所有用 MCP 的 AI 助手（Trae/Cursor/Kimi/Claude/OpenClaw 等）一律遵守
 - 遇到知识库查不到的控件细节：标注"知识库未收录"，问沛哥或查官方文档，**不猜、不套用其他框架**
+
+## 边界澄清：不影响什么（2026-09-01 沛哥确认）
+
+本规则只管「控件用法/字段/API 知识从哪来」，**不限制需求理解与逻辑参考**：
+
+- ✅ **HTML 理解/转换不受影响**：HTML/CSS 是通用 Web 标准，不是 GUI 框架控件知识；
+  html2json 转换走 MCP 内置 HTML_SUBSET 规范（div.input→edittext、data-hint→hintText 等映射已在 MCP 内），照常工作
+- ✅ **参考其他框架代码的「业务逻辑」不受影响**：Android 工程/其它代码里的业务流程、数据结构、算法
+  （MQTT 收发、列表数据组装、定时逻辑等）属于需求理解，可以借鉴参考
+- ❌ 受影响（规则本意）：把其他框架的**控件字段名/API**直接套用到 FlyThings——
+  如 `android:hint`→FlyThings 是 `hintText`、RecyclerView.Adapter→`obtainListItemData_XXX` 回调、
+  `android:gravity`→`alignment` 位标志；控件实现细节必须查 MCP/官方
+
+> 一句话边界：**需求逻辑随便参考，控件实现只查 MCP/官方。**
