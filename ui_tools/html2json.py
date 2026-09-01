@@ -1244,6 +1244,18 @@ class HtmlToJson:
                 c['clockwise'] = True
             if str(_attr(attrs, 'data-animatable') or '1').strip() in ('1', 'true'):
                 c['animatable'] = True
+            # fixedPoint 指针固定点 / rotationPoint 旋转点（PointerDemo/clockDemo 实测：
+            # 缺这两个坐标指针会绕错圆心转；格式 "x,y"，如 data-rotation-point="197,209"）
+            fp = _attr(attrs, 'data-fixed-point')
+            if fp:
+                parts = fp.split(',')
+                if len(parts) == 2 and _num(parts[0]) is not None and _num(parts[1]) is not None:
+                    c['fixedPoint'] = {'x': _num(parts[0]), 'y': _num(parts[1])}
+            rp = _attr(attrs, 'data-rotation-point')
+            if rp:
+                parts = rp.split(',')
+                if len(parts) == 2 and _num(parts[0]) is not None and _num(parts[1]) is not None:
+                    c['rotationPoint'] = {'x': _num(parts[0]), 'y': _num(parts[1])}
         elif typ == 'qrcode':
             # 二维码（QRCodeDemo 校准）：codeStr 初始内容，代码 loadQRCode(text) 动态生成
             c = {'caption': cap, 'id': ctx.nid('qrcode'),

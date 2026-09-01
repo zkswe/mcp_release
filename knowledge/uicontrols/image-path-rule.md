@@ -38,7 +38,13 @@
 | button | `picTab{pic0,pic1,pic2}` | normal / pressed(_p) / selected 两到三态图 |
 | slidewindow | `picTab{pic0,pic1}` | 图标两态图 |
 | textview / window / 其它 | `backgroundPic` | 单背景图 |
-| **pointer** | `backgroundPic`(表盘) + **`pointerPic`**(指针) | ⚠️ **没有 picTab**！指针图用 `pointerPic`，写成 picTab.pic0 IDE 识别不到；另有 `pointerSize`/`startAngle`/`rotateSpeed`/`clockwise`/`animatable`，旋转圆心由 fixedPoint(指针固定点)+rotationPoint(旋转中心) 决定 |
+| **pointer** | `backgroundPic`(表盘) + **`pointerPic`**(指针) | ⚠️ **没有 picTab**！指针图用 `pointerPic`，写成 picTab.pic0 IDE 识别不到；还有 `pointerSize`/`startAngle`/`rotateSpeed`/`clockwise`/`animatable` |
+
+**Pointer 控件坐标三件套（PointerDemo/clockDemo 实测，缺了指针绕错圆心转）**：
+- `rotationPoint` `{x,y}`：旋转点（控件内旋转圆心，表盘中心）
+- `fixedPoint` `{x,y}`：指针固定点（指针图内的旋转支点，可超出图片范围实现游标效果）
+- `pointerSize` `{width,height}`：指针图实际尺寸
+- 时钟多指针：多个 Pointer 控件共用同一 position + rotationPoint，各自 pointerPic/pointerSize/fixedPoint；表盘图 backgroundPic 只需放一个控件上，其它留空 |
 | qrcode | `codeStr` | 二维码内容是文本不是图 |
 | checkbox | `pic2`/两态图 | 选中态图 |
 
