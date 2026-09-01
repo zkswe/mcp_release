@@ -37,21 +37,38 @@ def save(img, out_dir, name):
 
 
 def to_9patch(img, radius, out_dir, name):
-    """普通图 → .9.png：四周扩 1px 透明边，top/left 黑线标记拉伸区（圆角之间直线段）"""
+    """普通图 → .9.png：四周扩 1px 透明边，四边黑线标记（FT-009 规则）。
+    规则（沛哥 2026-09-01）：
+      1) marker 纯黑不透明 (0,0,0,255)
+      2) top/left 只画中间拉伸段（排除 radius 倒角区）
+      3) right/bottom 黑线宽度与拉伸区同宽
+      4) 线宽 1px 紧贴边缘
+      5) marker 在所有绘图完成后最后绘制，不被后续 alpha 覆盖
+    """
     w, h = img.size
     out = Image.new("RGBA", (w + 2, h + 2), (0, 0, 0, 0))
     out.paste(img, (1, 1))
     d = ImageDraw.Draw(out)
     x0, x1 = 1 + radius, w - radius
     y0, y1 = 1 + radius, h - radius
+    black = (0, 0, 0, 255)
     if x1 > x0:
-        d.line([(x0, 0), (x1, 0)], fill=(0, 0, 0, 255), width=1)
+        d.line([(x0, 0), (x1, 0)], fill=black, width=1)
     else:
-        d.point((1 + w // 2, 0), fill=(0, 0, 0, 255))
+        d.point((1 + w // 2, 0), fill=black)
     if y1 > y0:
-        d.line([(0, y0), (0, y1)], fill=(0, 0, 0, 255), width=1)
+        d.line([(0, y0), (0, y1)], fill=black, width=1)
     else:
-        d.point((0, 1 + h // 2), fill=(0, 0, 0, 255))
+        d.point((0, 1 + h // 2), fill=black)
+    # 规则3：right/bottom 黑线与拉伸区同宽（内容区标记）
+    if y1 > y0:
+        d.line([(w + 1, y0), (w + 1, y1)], fill=black, width=1)
+    else:
+        d.point((w + 1, 1 + h // 2), fill=black)
+    if x1 > x0:
+        d.line([(x0, h + 1), (x1, h + 1)], fill=black, width=1)
+    else:
+        d.point((1 + w // 2, h + 1), fill=black)
     return save(out, out_dir, name)
 
 

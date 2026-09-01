@@ -1,7 +1,24 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.6.9-open**（2026-09-01）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.0-open**（2026-09-01）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.7.0-open (2026-09-01) — FT-009 .9.png 生成规则入库 + 修复
+
+**新规则入库（沛哥定）**
+- `knowledge/uicontrols/nine-patch-rule.md`：stretchable 圆角图片（.9.png）生成五条必守规则：
+  ① marker 线纯黑不透明 `(0,0,0,255)` ② top/left 只画中间拉伸段（排除 radius 倒角区）
+  ③ right/bottom 黑线宽度与拉伸区同宽 ④ 线宽 1px 紧贴边缘 ⑤ marker 最后绘制不被后续 alpha 覆盖。
+- 附 Pillow 标准实现 + 验证方法 + 常见坑（含 SeekBar 禁用 9-patch 提醒，联动 FT-002）。
+
+**代码修复**
+- `ui_tools/gen_res.py` `to_9patch`：原实现只画 top/left（缺 right/bottom 内容区标记）→ 按规则补全四边 marker，
+  验证通过：四边起点/终点纯黑 (0,0,0,255)、倒角区无黑线、right/bottom 与 top/left 拉伸段同宽。
+
+**发布**
+- 版本 0.6.9 → 0.7.0-open；MCP_FEATURES 新增条目；重建 rag_index。
 
 ---
 
