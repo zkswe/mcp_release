@@ -50,7 +50,7 @@
 |------|--------|------|--------|
 | button | 20000 | slidewindow | 30000 |
 | scrollwindow | 32000 | pagewindow | 31000 |
-| textview | 50000 | edittext | 60000 |
+| textview | 50000 | edittext | 51000 |
 | window | 110000 | listview | 70000 |
 | checkbox | 80000 | radiogroup | 81000 |
 | pointer | 90000 | circlebar | 130000 |

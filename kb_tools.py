@@ -25,9 +25,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.7.2-open'
+MCP_VERSION = '0.7.3-open'
 MCP_BUILD = '2026-09-01'
 MCP_FEATURES = [
+    '2026-09-01: EditText JSON 字段规范入库（knowledge/uicontrols/edittext-fields.md，沛哥要求，MCP 原先查不到）——完整字段表（text/hintText/hintTextColor/textType/isPassword/passwordChar/fontSize/colorTab/bgColorTab/beepEnable/bold/italic/roll*）+ onEditTextChanged 回调 + html2json HTML 写法（data-hint/data-num/data-password/data-password-char）+ 常见坑；修正 layout-audit id 段笔误（edittext 51000 不是 60000）',
     '2026-09-01: 圆角抗锯齿方案重做（沛哥反馈超采样导致倒角变宽）——弃用 SS 超采样+LANCZOS 缩回（像素网格取整偏移 1px，radius 接近钳制上限时校准也救不回）；改「1x 直画 + α 高斯羽化（sigma=0.5）」：几何轮廓（α>=128）与 1x 直画逐像素一致（倒角宽度不变），弧线 α 平滑过渡（抗锯齿）；实验 r=2..20×4 组尺寸全过',
     '2026-09-01: 圆角抗锯齿修复（FT-008 落地到 gen_res.py）——rounded_rect/rounded_card/gen_gradient/gen_gradient_stops/gen_shadow_card 全部改 SS=2 超采样 + LANCZOS 缩回（新增 _aa_rounded_rect/_aa_mask/_aa_outline），消除 1x 二值 α 圆角锯齿；边缘 α 过渡值验证通过；to_9patch 四边 marker 规则（FT-009）不受影响',
     '2026-09-01: FT-009 .9.png 生成规则入库（knowledge/uicontrols/nine-patch-rule.md）——①marker 纯黑不透明 (0,0,0,255) ②top/left 只画中间拉伸段排除倒角 ③right/bottom 黑线与拉伸区同宽 ④1px 贴边 ⑤marker 最后绘制不被 alpha 覆盖；gen_res.to_9patch 修复（补 right/bottom 黑线）',

@@ -1,7 +1,20 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.2-open**（2026-09-01）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.3-open**（2026-09-01）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.7.3-open (2026-09-01) — EditText JSON 字段规范入库
+
+**背景（沛哥要求）**：MCP 查询不到 EditText 字段规范——规范散在本地 references 与 layout-audit 里，knowledge 无专门文档。
+
+**入库**
+- 新建 `knowledge/uicontrols/edittext-fields.md`：完整 JSON 字段表（text/hintText/hintTextColor/textType/isPassword/
+  passwordChar/fontSize/colorTab/bgColorTab/beepEnable/bold/italic/roll*）、onEditTextChanged 回调、
+  html2json HTML 写法（data-hint/data-num/data-password/data-password-char）、常见坑（isPassword 必须配 passwordChar 等）
+- 修正 layout-audit.md id 段笔误：edittext 60000 → **51000**（60000 是 diagram 的；html2json/check_all/controls.md 均 51000）
+- 重建 rag_index
 
 ---
 
