@@ -36,33 +36,44 @@ def save(img, out_dir, name):
     return p
 
 
-# ---------- 超采样抗锯齿（FT-008：SS 倍画布绘制 → LANCZOS 缩回） ----------
-SS = 2  # 超采样倍率：1× 直接画 rounded_rectangle/ellipse 只输出二值 α（0/255）锯齿
+# ---------- 抗锯齿（FT-008）----------
+# 2026-09-01 沛哥反馈：超采样（SS 倍画布绘制 → LANCZOS 缩回）会引入像素网格取整偏移，
+# 导致圆角倒角视觉变宽 1px（且 radius 接近钳制上限时动态校准也救不回）。
+# 改为「1x 直画 + α 高斯羽化」：几何轮廓（α>=128）与 1x 直画逐像素一致（倒角宽度不变），
+# 弧线处 α 平滑过渡（抗锯齿），直线段保持硬边（直线不需要 AA）。
+# 实验验证：r=2..20 × 多组尺寸，几何全部一致；sigma=0.5 过渡 3-4px 平滑不糊。
+_AA_SIGMA = 0.5  # α 羽化强度：过渡带宽度（0.5≈3-4px，视觉平滑不糊）
 
 
-def _aa_rounded_rect(w, h, radius, fill, border=None, border_w=1, ss=SS):
-    """超采样圆角矩形：SS 倍画布绘制 → LANCZOS 缩回，圆角边缘 α 平滑过渡。"""
-    img = Image.new("RGBA", (w * ss, h * ss), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    d.rounded_rectangle([0, 0, w * ss - 1, h * ss - 1], radius=radius * ss, fill=fill,
-                        outline=border, width=border_w * ss)
-    return img.resize((w, h), Image.LANCZOS)
+def _aa_rounded_rect(w, h, radius, fill, border=None, border_w=1, ss=None):
+    """圆角矩形（FT-008 抗锯齿）：1x 直画保证几何与修复前完全一致（倒角宽度不变），
+    α 通道高斯羽化平滑弧线边缘。供 to_9patch / 直接保存。"""
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    ImageDraw.Draw(img).rounded_rectangle([0, 0, w - 1, h - 1], radius=radius, fill=fill,
+                                          outline=border, width=border_w)
+    return _feather_alpha(img)
 
 
-def _aa_mask(w, h, radius, ss=SS):
-    """超采样圆角 mask：SS 倍画 mask → LANCZOS 缩回，α 过渡平滑（配合 putalpha）。"""
-    m = Image.new('L', (w * ss, h * ss), 0)
-    ImageDraw.Draw(m).rounded_rectangle([0, 0, w * ss - 1, h * ss - 1],
-                                        radius=radius * ss, fill=255)
-    return m.resize((w, h), Image.LANCZOS)
+def _feather_alpha(img, sigma=_AA_SIGMA):
+    """α 通道高斯羽化：只模糊 alpha（几何轮廓 128 阈值不变），RGB 不动。"""
+    alpha = img.getchannel('A').filter(ImageFilter.GaussianBlur(sigma))
+    img.putalpha(alpha)
+    return img
 
 
-def _aa_outline(w, h, radius, color, width=1, ss=SS):
-    """超采样圆角描边层（透明底 + 仅描边），供叠加到渐变/填充底上。"""
-    img = Image.new("RGBA", (w * ss, h * ss), (0, 0, 0, 0))
-    ImageDraw.Draw(img).rounded_rectangle([0, 0, w * ss - 1, h * ss - 1],
-                                          radius=radius * ss, outline=color, width=width * ss)
-    return img.resize((w, h), Image.LANCZOS)
+def _aa_mask(w, h, radius, ss=None):
+    """圆角 mask（FT-008 抗锯齿）：1x 直画 + α 羽化，几何与 1x 一致，边缘平滑。"""
+    m = Image.new('L', (w, h), 0)
+    ImageDraw.Draw(m).rounded_rectangle([0, 0, w - 1, h - 1], radius=radius, fill=255)
+    return m.filter(ImageFilter.GaussianBlur(_AA_SIGMA))
+
+
+def _aa_outline(w, h, radius, color, width=1, ss=None):
+    """圆角描边层（透明底 + 仅描边，FT-008 抗锯齿），供叠加到渐变/填充底上。"""
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    ImageDraw.Draw(img).rounded_rectangle([0, 0, w - 1, h - 1],
+                                          radius=radius, outline=color, width=width)
+    return _feather_alpha(img)
 
 
 def to_9patch(img, radius, out_dir, name):
