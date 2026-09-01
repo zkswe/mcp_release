@@ -278,55 +278,18 @@ def _parse_ui_json(json_path):
             "controls": controls, "idMapping": id_mapping}
 
 
-# ---------------- 工具 1: read_ftu ----------------
-def flythings_read_ftu(ftu_path):
-    """解析 .ftu 文件，返回 JSON 结构（resolution/controls/idMapping）。
-    优化：ftu 同目录已有更新的同名 .json 时直接读 json（跳过 fui.exe 启动，防卡顿）。
-    ⚠️ 新版 fui.exe 仅支持 pack（json→ftu），不支持 unpack：若目录下无同名 json，
-    无法从 ftu 反解析布局，直接报错提示（不再尝试 unpack）。"""
-    if not os.path.isfile(ftu_path):
-        return {"success": False, "error": f"ftu 文件不存在: {ftu_path}"}
-    d = os.path.dirname(os.path.abspath(ftu_path)) or '.'
-    base = os.path.splitext(os.path.basename(ftu_path))[0]
-    json_path = os.path.join(d, base + '.json')
-    # 优先用已有 json（json 不旧于 ftu 时直接解析，无需启动 fui.exe）
-    if os.path.isfile(json_path) and os.path.getmtime(json_path) >= os.path.getmtime(ftu_path):
-        try:
-            info = _parse_ui_json(json_path)
-            if info.get('success'):
-                info['source'] = 'json'
-                return info
-        except Exception:
-            pass
-    # json 缺失或旧于 ftu：新版 fui.exe 不支持 unpack → 降级提示
-    if not _fui_supports_unpack():
-        if os.path.isfile(json_path):
-            info = _parse_ui_json(json_path)
-            if info.get('success'):
-                info['source'] = 'json'
-                info['warning'] = 'json 旧于 ftu（当前 fui.exe 不支持 unpack，无法从 ftu 反解析，返回旧 json 仅供参考）'
-                return info
-        return {"success": False,
-                "error": f"当前 fui.exe 仅支持 pack（json→ftu），不支持 unpack，无法从 ftu 反解析布局。"
-                         f"请提供同目录的 {base}.json 文件，或换用支持 unpack 的旧版 fui.exe"}
-    tmp = tempfile.mkdtemp(prefix='ftu_read_')
-    try:
-        shutil.copy2(ftu_path, tmp)
-        r = _run_fui('unpack', tmp)
-        if not r['success']:
-            return {"success": False, "error": f"fui unpack 失败: {r.get('stderr') or r.get('stdout')}"}
-        for fn in sorted(os.listdir(tmp)):
-            if fn.endswith('.json'):
-                info = _parse_ui_json(os.path.join(tmp, fn))
-                info['source'] = 'ftu'
-                return info
-        return {"success": False, "error": "fui unpack 后未找到 json"}
-    finally:
-        shutil.rmtree(tmp, ignore_errors=True)
-
-
+# ---------------- 工具 1: read_json ----------------
 def flythings_read_json(json_path):
-    """解析 .json 布局文件，返回结构化信息。"""
+    """解析 .json 布局文件，返回结构化信息。
+    ⚠️ 传入 .ftu 时提示：新版 fui.exe 仅支持 pack（json→ftu）不支持 unpack，无法从 ftu 反解析；
+    请提供同目录 .json 布局，或让客户重新设计/用 IDE 打开 ftu 另存 json。
+    """
+    if json_path.lower().endswith('.ftu'):
+        return {"success": False,
+                "error": f"{os.path.basename(json_path)} 是 ftu 布局（二进制），无法直接解析。"
+                         f"新版 fui.exe 仅支持 pack（json→ftu）不支持 unpack，无法从 ftu 反解析 json。"
+                         f"请提供同目录的 {os.path.splitext(os.path.basename(json_path))[0]}.json 布局文件，"
+                         f"或重新设计界面（ftu 由 IDE 编辑生成 json）"}
     if not os.path.isfile(json_path):
         return {"success": False, "error": f"json 文件不存在: {json_path}"}
     return _parse_ui_json(json_path)

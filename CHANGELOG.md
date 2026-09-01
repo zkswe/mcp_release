@@ -1,7 +1,19 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.4-open**（2026-09-01）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.5-open**（2026-09-01）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.7.5-open (2026-09-01) — 移除 flythings_read_ftu（沛哥确认）
+
+**背景**：新版 fui.exe 仅支持 pack（json→ftu）不支持 unpack，read_ftu 在无同目录 json 时必失败，
+实际只是 read_json 的包装。沛哥确认删除，只保留 read_json。
+
+**改动**
+- 删除 `flythings_read_ftu` 工具（kb_tools 定义+注册 / project_tools 实现）
+- `flythings_read_json` 增强：传入 .ftu 时友好提示——提供同目录 json / 重新设计界面 / IDE 打开 ftu 另存 json
+- 工具数 32 → 31；README 同步
 
 ---
 

@@ -166,7 +166,7 @@ pip install mcp onnxruntime tokenizers
 | `flythings_validate_project` | 项目规范全检（时间戳防呆/依赖/框架约定） |
 | `flythings_html_to_json` / `json_to_html` | HTML 原型 ↔ FTU 布局 |
 | `flythings_generate_ui_preview` / `json_to_html` | HTML 预览稿（或 FlyThings IDE 预览/编辑 ftu） |
-| `flythings_read_ftu` / `read_json` | 布局文件解析 |
+| `flythings_read_json` | 布局文件解析（json；ftu 需提供同目录 json） |
 | `flythings_*package*` | 依赖包查询/版本/API/Manifest/依赖解析 |
 | `flythings_attach_cli_tools` | 附带 fui/fun 到项目 |
 | `flythings_edit_ftu` | 布局编辑（set/remove/add/set_root） |

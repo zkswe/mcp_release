@@ -25,9 +25,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.7.4-open'
+MCP_VERSION = '0.7.5-open'
 MCP_BUILD = '2026-09-01'
 MCP_FEATURES = [
+    '2026-09-01: 移除 flythings_read_ftu（沛哥确认）——新版 fui.exe 仅支持 pack 不支持 unpack，read_ftu 无 json 时必失败，只是 read_json 的包装；只保留 read_json，传 .ftu 时友好提示（提供同目录 json / 重新设计 / IDE 另存 json）；工具数 32→31',
     '2026-09-01: 控件用法检索边界定规（沛哥）——AI 检索控件用法/字段/API 只允许 MCP 内置知识库（flythings_search/knowledge）或官方 developer.flythings.cn，禁止从其他渠道/其他 GUI 框架（Qt/Android/Flutter/emWin 等）检索，防知识错乱；入库 knowledge/uicontrols/retrieval-boundary.md',
     '2026-09-01: EditText JSON 字段规范入库（knowledge/uicontrols/edittext-fields.md，沛哥要求，MCP 原先查不到）——完整字段表（text/hintText/hintTextColor/textType/isPassword/passwordChar/fontSize/colorTab/bgColorTab/beepEnable/bold/italic/roll*）+ onEditTextChanged 回调 + html2json HTML 写法（data-hint/data-num/data-password/data-password-char）+ 常见坑；修正 layout-audit id 段笔误（edittext 51000 不是 60000）',
     '2026-09-01: 圆角抗锯齿方案重做（沛哥反馈超采样导致倒角变宽）——弃用 SS 超采样+LANCZOS 缩回（像素网格取整偏移 1px，radius 接近钳制上限时校准也救不回）；改「1x 直画 + α 高斯羽化（sigma=0.5）」：几何轮廓（α>=128）与 1x 直画逐像素一致（倒角宽度不变），弧线 α 平滑过渡（抗锯齿）；实验 r=2..20×4 组尺寸全过',
@@ -80,13 +81,11 @@ def flythings_search(query: str, k: int = 3) -> str:
         return f"search error: {e}"
 
 
-def flythings_read_ftu(ftu_path: str) -> str:
-    """解析 .ftu 布局文件为 JSON（分辨率、控件列表、caption→id 映射）。传入 ftu 完整路径。"""
-    return json.dumps(pt.flythings_read_ftu(ftu_path), ensure_ascii=False)
-
-
 def flythings_read_json(json_path: str) -> str:
-    """解析 .json 布局文件为 JSON（分辨率、控件列表、caption→id 映射）。传入 json 完整路径。"""
+    """解析 .json 布局文件为 JSON（分辨率、控件列表、caption→id 映射）。传入 json 完整路径。
+    ⚠️ 传入 .ftu 时返回错误提示：新版 fui.exe 仅支持 pack（json→ftu）不支持 unpack，
+    无法从 ftu 反解析；请提供同目录 .json 布局，或重新设计界面（IDE 编辑 ftu 生成 json）。
+    （flythings_read_ftu 已移除——无 unpack 能力时它只是 read_json 的包装）"""
     return json.dumps(pt.flythings_read_json(json_path), ensure_ascii=False)
 
 
@@ -434,7 +433,6 @@ def flythings_i18n_refactor(project_root: str, lang: str = 'zh_CN', dry_run: boo
 def register_all(mcp):
     mcp.tool()(flythings_get_version)
     mcp.tool()(flythings_search)
-    mcp.tool()(flythings_read_ftu)
     mcp.tool()(flythings_read_json)
     mcp.tool()(flythings_get_project_spec)
     mcp.tool()(flythings_validate_project)
