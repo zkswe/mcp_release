@@ -1,7 +1,18 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.5-open**（2026-09-01）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.6-open**（2026-09-01）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.7.6-open (2026-09-01) — validate_project 去噪（沛哥确认）
+
+**清理 3 处冗余**
+1. 删 `src/activity 目录缺失` warning：新建模板项目未编译时 activity 不存在是正常状态，属误报
+2. 删 `cacert_ok`「HTTPS 证书已就位（仅提示）」warning：正常配置报 warning 是噪音（缺证书已报 error 足够）
+3. 删 `defined_cbs` 死代码（赋值后从未被读取）
+
+**验证**：模块导入 OK；空白项目/不存在目录冒烟通过；其余检查项不变。
 
 ---
 

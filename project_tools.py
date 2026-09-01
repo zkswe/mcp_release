@@ -466,8 +466,6 @@ def flythings_validate_project(root):
                                    'msg': f'宏生成回调 {m.group(0)[:44].strip()}...：fun build 无法识别宏展开的回调，'
                                           f'会向 logic.cc 追加同名桩导致重定义编译错误；请显式定义每个回调函数，禁止宏批量生成'})
                     break  # 每个文件只报一次
-            # 已存在的回调函数名单（供提示用）
-            defined_cbs = set(re.findall(r'(on(?:\w+Click|\w+Changed|\w+Touch|\w+Timer)_\w+)\s*\(', text))
     else:
         warnings.append({'file': 'src/logic', 'type': 'missing_dir', 'msg': 'src/logic 目录不存在'})
 
@@ -576,9 +574,6 @@ def flythings_validate_project(root):
                                'msg': '使用 curl/curl-cxx 请求 HTTPS 但 resources/cacert.pem 缺失：'
                                       'Z21 上 mbedtls 缺 CA 证书不会优雅报错，而是进程崩溃被看门狗反复拉起。'
                                       '必须从 curl 包或系统导出 cacert.pem 放入 resources/'})
-            else:
-                warnings.append({'file': 'resources/cacert.pem', 'type': 'cacert_ok',
-                                 'msg': 'HTTPS 证书已就位（仅提示：证书过期会表现为握手失败，注意维护）'})
 
     # 2. activity 目录（不应含用户业务代码特征）
     # ⚠️ 模板 mainActivity.cpp 本身含 REGISTER_ACTIVITY_TIMER_TAB 系统代码，不能用它做特征；
@@ -601,9 +596,6 @@ def flythings_validate_project(root):
                         or 'onEditTextChanged_' in text):
                     warnings.append({'file': f'src/activity/{fn}', 'type': 'illegal_code',
                                      'msg': f'{fn} 无 IDE 生成标记但含业务代码特征，疑似手改（禁止修改 activity 目录）'})
-    else:
-        warnings.append({'file': 'src/activity', 'type': 'missing_dir',
-                         'msg': 'src/activity 目录不存在（IDE 编译后自动生成；若项目新建自模板则正常）'})
 
     # 3. ui json/ftu 配对 + 时间戳校验（防改 json 忘 pack）
     if os.path.isdir(ui):

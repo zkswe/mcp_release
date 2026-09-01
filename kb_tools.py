@@ -25,9 +25,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.7.5-open'
+MCP_VERSION = '0.7.6-open'
 MCP_BUILD = '2026-09-01'
 MCP_FEATURES = [
+    '2026-09-01: validate_project 去噪（沛哥确认）——删 3 处：①activity 目录缺失 warning（新建模板项目未编译时正常，误报）②cacert.pem 已就位 warning（正常配置噪音，缺证书已报 error 足够）③defined_cbs 死代码（赋值后从未读取）',
     '2026-09-01: 移除 flythings_read_ftu（沛哥确认）——新版 fui.exe 仅支持 pack 不支持 unpack，read_ftu 无 json 时必失败，只是 read_json 的包装；只保留 read_json，传 .ftu 时友好提示（提供同目录 json / 重新设计 / IDE 另存 json）；工具数 32→31',
     '2026-09-01: 控件用法检索边界定规（沛哥）——AI 检索控件用法/字段/API 只允许 MCP 内置知识库（flythings_search/knowledge）或官方 developer.flythings.cn，禁止从其他渠道/其他 GUI 框架（Qt/Android/Flutter/emWin 等）检索，防知识错乱；入库 knowledge/uicontrols/retrieval-boundary.md',
     '2026-09-01: EditText JSON 字段规范入库（knowledge/uicontrols/edittext-fields.md，沛哥要求，MCP 原先查不到）——完整字段表（text/hintText/hintTextColor/textType/isPassword/passwordChar/fontSize/colorTab/bgColorTab/beepEnable/bold/italic/roll*）+ onEditTextChanged 回调 + html2json HTML 写法（data-hint/data-num/data-password/data-password-char）+ 常见坑；修正 layout-audit id 段笔误（edittext 51000 不是 60000）',
