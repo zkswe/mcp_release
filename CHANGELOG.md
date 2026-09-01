@@ -1,7 +1,20 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.7-open**（2026-09-01）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.8-open**（2026-09-01）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.7.8-open (2026-09-01) — SlideWindow 图标布局补充（沛哥 21:52 定规）
+
+**两条补充定规**
+1. **同一 slidewindow 所有图标尺寸必须一致**：生成图标时统一尺寸（如全部 60×60），
+   不一致会导致位置错乱。html2json 已加 items 图片尺寸一致性检查——不一致 → warning 提示统一后重转
+2. **默认 padding 值没问题，但 FlyThings 绝对布局需按实际微调**：默认 paddingBottom=8 /
+   iconTextPadding bottom=5 只是起点，绝对布局（left/top 像素定位）下必须根据实际显示效果
+   微调 padding / iconTextPadding / iconSize 使图标落在期望位置，改后重新 fui pack 看设备效果
+
+**验证**：尺寸一致回填 60×60 正常；尺寸不一致（60+80）warning 正确。文档 slidewindow-fields.md 同步补充。
 
 ---
 

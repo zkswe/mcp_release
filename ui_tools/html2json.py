@@ -556,24 +556,38 @@ class HtmlToJson:
             # 用户显式指定过 data-icon-w/h 则跳过
             if val.get('__icon_explicit'):
                 continue
-            # 取首张图标图读实际尺寸
-            pic0 = None
+            # 读全部图标图实际尺寸（沛哥 2026-09-01：同一 slidewindow 所有图标尺寸必须一致）
+            sizes = []
             for it in items:
                 pt = it.get('picTab') or {}
                 if pt.get('pic0'):
-                    pic0 = pt['pic0']
-                    break
-            sz = _img_size(pic0)
-            if sz:
-                val['iconSize'] = {'width': sz[0], 'height': sz[1]}
+                    sz = _img_size(pt['pic0'])
+                    if sz:
+                        sizes.append(sz)
+            if not sizes:
+                self.ctx.warnings.append(
+                    f'slidewindow {val.get("caption", key)}: iconSize 未指定且读不到图片实际尺寸'
+                    f'（items 无图或文件缺失），默认 128 可能导致图标位置不对；请按实际图片尺寸填 data-icon-w/h')
+                continue
+            # 一致性检查：所有图标尺寸应一致（不一致 → 生成时按最大/统一尺寸出图，否则位置错乱）
+            uniq = sorted(set(sizes))
+            if len(uniq) > 1:
+                self.ctx.warnings.append(
+                    f'slidewindow {val.get("caption", key)}: items 图标尺寸不一致 '
+                    f'{["%dx%d" % s for s in uniq]}——同一滑动窗口所有图标必须同尺寸'
+                    f'（iconSize 按实际图片尺寸，图标位置按平分格子计算）；请统一图标图片尺寸后重转')
+            # 用首张图尺寸回填 iconSize（一致场景 = 唯一尺寸）
+            w0, h0 = uniq[0]
+            val['iconSize'] = {'width': w0, 'height': h0}
+            if len(uniq) == 1:
                 self.ctx.warnings.append(
                     f'slidewindow {val.get("caption", key)}: iconSize 未显式指定，已按实际图片尺寸 '
-                    f'{sz[0]}x{sz[1]} 回填（SlideWindow 铁律：iconSize=图片实际尺寸，非平分格子大小；'
+                    f'{w0}x{h0} 回填（SlideWindow 铁律：iconSize=图片实际尺寸，非平分格子大小；'
                     f'可显式 data-icon-w/h 指定）')
             else:
                 self.ctx.warnings.append(
-                    f'slidewindow {val.get("caption", key)}: iconSize 未指定且读不到图片实际尺寸'
-                    f'（{pic0 or "无图片"}），默认 128 可能导致图标位置不对；请按实际图片尺寸填 data-icon-w/h')
+                    f'slidewindow {val.get("caption", key)}: 暂按首图尺寸 {w0}x{h0} 回填 iconSize，'
+                    f'请统一图标尺寸后重转')
 
     @staticmethod
     def _find_screen(node):

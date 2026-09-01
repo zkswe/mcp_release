@@ -31,12 +31,19 @@
    - `iconSize.width/height` 必须填**图片真实像素**（如 60×60 的 png 就写 60×60），
      填大了/填小了图标会拉伸变形或位置偏移
    - ❌ 常见错：以为 iconSize = 格子大小（控件宽/cols），导致图标被拉伸、位置不对
-2. **padding = 图标相对平分格子区域的内边距**
+2. **同一 slidewindow 的所有图标尺寸必须一致（沛哥 21:52 补充）**
+   - 生成图标时保证所有 items 的图片尺寸统一（如全部 60×60），不一致会导致位置错乱
+   - html2json 已加一致性检查：items 图片尺寸不一致 → warning 提示统一尺寸后重转
+3. **padding = 图标相对平分格子区域的内边距**
    - 平分格子是 iconSize 的基准，padding 描述**实际图标相对于平分后格子边界的留白**
    - paddingTop/Bottom/Left/Right 控制图标在格子内距各边界的距离（图标比格子小多少/偏移多少）
-3. **iconTextPadding = 图标配套文字的 padding**
+4. **iconTextPadding = 图标配套文字的 padding**
    - 是 icon 配套文本（caption 文字）相对图标的位置偏移（通常 bottom=文字在图标下方间距）
    - 调整它改变文字与图标的距离，不是改图标位置
+5. **默认值只是起点，FlyThings 绝对布局要按实际微调（沛哥 21:52 补充）**
+   - 默认 paddingBottom=8 / iconTextPadding bottom=5 没问题，但 FlyThings 是绝对布局（left/top 像素定位），
+     布局出来后必须根据实际显示效果微调 padding / iconTextPadding / iconSize 使图标落在期望位置
+   - 改完 json 要 fui pack 重出 ftu 再看设备效果（绝对布局不自动重排）
 
 ## html2json HTML 写法
 
