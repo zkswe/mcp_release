@@ -35,6 +35,11 @@
   html2json 转换走 MCP 内置 HTML_SUBSET 规范（div.input→edittext、data-hint→hintText 等映射已在 MCP 内），照常工作
 - ✅ **参考其他框架代码的「业务逻辑」不受影响**：Android 工程/其它代码里的业务流程、数据结构、算法
   （MQTT 收发、列表数据组装、定时逻辑等）属于需求理解，可以借鉴参考
+- ✅ **「提交 Android/LVGL 代码 → 用 FlyThings 实现同样功能」不受影响**（沛哥 2026-09-01 确认）：
+  ① 照常读懂参考代码的功能/交互/数据结构/布局意图（列表点击弹窗、长按删除等）
+  ② 翻译时用 FlyThings 控件实现同样功能，控件字段/API **查 MCP/官方**拿准确写法
+  ③ 不照搬其他框架的字段/API（`android:hint`/`lv_label_set_text()`/`LV_EVENT_CLICKED` 等），
+     替换为 FlyThings 的 `hintText`/`setText()`/`onButtonClick_XXX`
 - ❌ 受影响（规则本意）：把其他框架的**控件字段名/API**直接套用到 FlyThings——
   如 `android:hint`→FlyThings 是 `hintText`、RecyclerView.Adapter→`obtainListItemData_XXX` 回调、
   `android:gravity`→`alignment` 位标志；控件实现细节必须查 MCP/官方
