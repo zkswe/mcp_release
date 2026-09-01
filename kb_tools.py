@@ -25,9 +25,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.7.9-open'
+MCP_VERSION = '0.7.10-open'
 MCP_BUILD = '2026-09-01'
 MCP_FEATURES = [
+    '2026-09-01: 检索边界补充（沛哥 22:09）——禁止解析 easyui 库源码/头文件分析控件用法（预编译闭源库，源码解析拿不到 json 字段/回调语义，浪费时间）；直接参考 wiki 实现不绕路，文档没有标「未收录」问沛哥',
     '2026-09-01: SlideWindow 布局定规修正（沛哥 21:59 纠正）——json 坐标来自 HTML 原型绝对定位，确认好即无需微调；若交付后还要调位置 = 前期 HTML 效果没确认好（正确流程：HTML → 预览确认 → 才 pack/交付）；删掉 v0.7.8 错误的「绝对布局需微调」表述',
     '2026-09-01: SlideWindow 图标布局补充（沛哥 21:52 定规）——①同一 slidewindow 所有图标尺寸必须一致（html2json 已加 items 尺寸一致性检查，不一致 warning）②默认 padding 值没问题，但 FlyThings 绝对布局需按实际显示微调 padding/iconTextPadding/iconSize 位置',
     '2026-09-01: SlideWindow 图标布局铁律（沛哥定规）——iconSize 必须按实际图片尺寸（非平分格子大小，默认 128 会导致图标位置不对）；padding=图标相对平分格子边界，iconTextPadding=配套文字 padding；入库 knowledge/uicontrols/slidewindow-fields.md；html2json 自动读首张图标图实际尺寸回填 iconSize（显式 data-icon-w/h 不覆盖，读不到 warning）',

@@ -14,6 +14,10 @@
 - ❌ 用通用 web 搜索查「XXX 控件怎么用」——返回的是其他框架的答案
 - ❌ 参考 Qt/Android/Flutter/emWin/AWTK/LVGL 等框架的控件属性/事件/回调写法套用到 FlyThings
 - ❌ 从非官方博客/论坛/代码片段库推断 FlyThings 控件字段（除非明确标注 FlyThings 平台）
+- ❌ **解析 easyui 库源码/头文件（ZKXXX 类实现）分析控件用法（沛哥 2026-09-01 补充）**——
+  不分析库代码、不绕路，直接参考对应 wiki 实现（knowledge/uicontrols/ 或 wiki/flythings/ 文档）
+  - easyui 是预编译闭源库，源码解析拿不到控件 json 字段/回调语义，只会浪费时间
+  - 控件用法/字段/回调以 wiki + knowledge 文档为准，文档没有就标注「未收录」问沛哥
 
 ## 原因
 

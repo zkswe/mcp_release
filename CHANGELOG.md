@@ -1,7 +1,17 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.9-open**（2026-09-01）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.10-open**（2026-09-01）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.7.10-open (2026-09-01) — 检索边界补充：禁止解析 easyui 库源码（沛哥 22:09）
+
+**补充规则**：AI 分析控件用法时**禁止解析 easyui 库源码/头文件（ZKXXX 类实现）**——
+easyui 是预编译闭源库，源码解析拿不到控件 json 字段/回调语义，浪费时间绕路；
+直接参考 wiki 实现（knowledge/uicontrols/ 或 wiki/flythings/），文档没有标注「未收录」问沛哥。
+
+**入库**：retrieval-boundary.md「禁止的行为」新增一条；MEMORY.md 铁律 1 同步；重建 rag_index。
 
 ---
 
