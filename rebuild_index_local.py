@@ -48,16 +48,26 @@ def main():
     if not embed_local.available():
         print('模型不可用，请先确认 models/bge-small-zh/ 存在')
         sys.exit(1)
-    files = []  # (path, root)
-    for root in collect_roots():
+    files = []  # (rel_path, abs_path)
+    known = set()  # knowledge 内已有相对路径（如 esl/tag-esl.md），wiki 同名文档跳过避免重复
+    if os.path.isdir(KNOWLEDGE_DIR):
+        for r, _, fnames in os.walk(KNOWLEDGE_DIR):
+            for fn in fnames:
+                if fn.endswith('.md'):
+                    rel = os.path.relpath(os.path.join(r, fn), KNOWLEDGE_DIR).replace('\\', '/')
+                    known.add(rel)
+                    files.append(('knowledge/' + rel, os.path.join(r, fn)))
+    for root in [rt for rt in collect_roots() if os.path.abspath(rt) != os.path.abspath(KNOWLEDGE_DIR)]:
         for r, _, fnames in os.walk(root):
             for fn in fnames:
                 if fn.endswith('.md'):
-                    files.append((os.path.join(r, fn), root))
-    print(f'{len(files)} md files from {len(collect_roots())} roots', flush=True)
+                    rel = os.path.relpath(os.path.join(r, fn), root).replace('\\', '/')
+                    if rel in known:
+                        continue  # knowledge 发布版优先，跳过本地同名
+                    files.append((rel, os.path.join(r, fn)))
+    print(f'{len(files)} md files ({len(known)} knowledge, deduped)', flush=True)
     chunks = []
-    for f, froot in sorted(files):
-        rel = os.path.relpath(f, froot).replace('\\', '/')
+    for rel, f in sorted(files):
         for i, c in enumerate(chunk_md(f)):
             chunks.append({'id': f'{rel}#{i}', 'path': rel, 'text': c})
     print(f'{len(chunks)} chunks', flush=True)
