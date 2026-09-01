@@ -29,7 +29,7 @@ MCP_VERSION = '0.6.6-open'
 MCP_BUILD = '2026-09-01'
 MCP_FEATURES = [
     '2026-09-01: 移除 check_all 文本换行误报检查——textview text 支持 \\n 多行（配合 rowSpace 行间距），\'\n\' 不再报错',
-    '2026-09-01: 电子价签 ESL 方案入库（esl/tag-esl.md）——一套代码 Z20/T113EMMC 双平台：Manifest enableOnPlatforms 分组依赖 + accessKey 私有包 + #ifdef __PLATFORM_XXX__ 三件套；HTML 渲染体系（tag 包 RenderService/Cron 轮播/StorageRegistry/webview）；自研 BlueZ GATT Server（L2CAP ATT 监听 + HCI 广播 + aic_btusb 驱动 + 粘包 + WiFi 联动省电）；xun 云平台（HMAC-SHA256 签名 Tag- 头/主从 frpc RPC 转发 zlib 压缩/MQTT+AMQP 双通道/批量回执）；OTA 整包 imgmerge 合 boot.img',
+    '2026-09-01: 电子价签 ESL 通用技术入库（esl/tag-esl.md）——一套代码多平台：Manifest enableOnPlatforms 分组依赖 + accessKey 私有包 + #ifdef __PLATFORM_XXX__ 三件套；HTML 内容渲染体系（Cron 轮播/资源缓存/断电恢复/代渲染图片）；自研 BlueZ GATT Server 思路（L2CAP ATT 监听 + HCI 广播 + 粘包 + 生命周期省电）；OTA 整包升级等工程要点（涉密细节不收录）',
     '2026-09-01: html2json 文本清洗——剥离 emoji/特殊符号（表情/技术符号/箭头/几何图形/带圈数字全范围），纯 emoji 图标自动转 PNG，混合文本保留文字；check_all 特殊字符检查同步升级',
     '2026-09-01: 模拟器功能开放版不支持（fun sim 禁止 + QEMU 不对外，devflow/fun_sim_unsupported.md；交付/验证一律真机 fun build + fun launch）',
     '2026-08-31: 修复 .cc 误用规范——手写 .cc 不会被编译（Makefile 只编 %.cpp %.c，.cc 是 IDE 按页面生成的 logic 专属）；新增业务代码一律用 .cpp/.h；validate_project 新增 manual_cc_file 检查',
