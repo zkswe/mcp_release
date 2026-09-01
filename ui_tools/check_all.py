@@ -32,6 +32,18 @@ BLACKLIST = set('⌫℃■●‹－＋–…→★◆▶▷①')
 failures = []
 
 
+def _is_bad_char(c):
+    """设备裁剪字库外的字符：黑名单特殊符号 + emoji 范围。"""
+    if c in BLACKLIST:
+        return True
+    o = ord(c)
+    return (0x1F000 <= o <= 0x1FAFF) or (0x2600 <= o <= 0x27BF) or \
+        (0x2300 <= o <= 0x23FF) or (0x2190 <= o <= 0x21FF) or \
+        (0x25A0 <= o <= 0x25FF) or (0x2460 <= o <= 0x24FF) or \
+        (0x2100 <= o <= 0x214F) or (0x2B00 <= o <= 0x2BFF) or \
+        o in (0xFE0F, 0x200D)
+
+
 def log(ok, msg):
     print(('  [PASS] ' if ok else '  [FAIL] ') + msg)
     if not ok:
@@ -85,11 +97,11 @@ def main(project_root):
     print('== 3. 特殊字符（emoji/字库外字符）==')
     for f in PAGES:
         txt = open(os.path.join(root, f), encoding='utf-8').read()
-        bad = sorted(set(c for c in txt if c in BLACKLIST))
+        bad = sorted(set(c for c in txt if _is_bad_char(c)))
         log(not bad, '%s 特殊字符 %s' % (f, bad if bad else '无'))
     for f in LOGICS:
         txt = open(os.path.join(root, f), encoding='utf-8').read()
-        bad = sorted(set(c for c in txt if c in BLACKLIST))
+        bad = sorted(set(c for c in txt if _is_bad_char(c)))
         log(not bad, '%s 特殊字符 %s' % (f, bad if bad else '无'))
 
     print('== 3.1 文本换行（textview text 不支持 \n 多行，2026-08-29 校准）==')

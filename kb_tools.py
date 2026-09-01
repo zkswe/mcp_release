@@ -25,9 +25,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.6.3-open'
-MCP_BUILD = '2026-08-31'
+MCP_VERSION = '0.6.4-open'
+MCP_BUILD = '2026-09-01'
 MCP_FEATURES = [
+    '2026-09-01: html2json 文本清洗——剥离 emoji/特殊符号（表情/技术符号/箭头/几何图形/带圈数字全范围），纯 emoji 图标自动转 PNG，混合文本保留文字；check_all 特殊字符检查同步升级',
     '2026-09-01: 模拟器功能开放版不支持（fun sim 禁止 + QEMU 不对外，devflow/fun_sim_unsupported.md；交付/验证一律真机 fun build + fun launch）',
     '2026-08-31: 修复 .cc 误用规范——手写 .cc 不会被编译（Makefile 只编 %.cpp %.c，.cc 是 IDE 按页面生成的 logic 专属）；新增业务代码一律用 .cpp/.h；validate_project 新增 manual_cc_file 检查',
     '2026-08-31: flythings_gen_ui_test 架构升级——通用触摸工具预编译各平台 ELF 存 bin_tools/{platform}/ui_test（z21/z20/t113/f133），测试项目只生成数据脚本不再现场编译（traverse 生成 tap/swipe 脚本 + monkey 直接命令），后续 busybox 等通用工具同方式，tools 不膨胀',

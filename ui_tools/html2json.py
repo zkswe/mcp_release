@@ -237,9 +237,32 @@ def _parse_gradient(expr):
 
 
 def _is_emoji(ch):
-    """粗略判断字符是否 emoji（补充平面/符号区）。"""
+    """判断字符是否 emoji/特殊符号（设备裁剪字库不支持，全范围覆盖）：
+    表情物品 1F000-1FAFF / 杂项符号 2600-27BF / 技术符号 2300-23FF /
+    箭头 2190-21FF / 几何图形 25A0-25FF / 带圈数字 2460-24FF /
+    字母符号 2100-214F / 杂项箭头 2B00-2BFF / 变体选择符 FE0F / ZWJ 200D"""
     o = ord(ch)
-    return (o >= 0x1F000 and o <= 0x1FAFF) or (o >= 0x2600 and o <= 0x27BF) or o in (0x2B50, 0x2B55, 0x2764, 0xFE0F)
+    return (0x1F000 <= o <= 0x1FAFF) or (0x2600 <= o <= 0x27BF) or \
+        (0x2300 <= o <= 0x23FF) or (0x2190 <= o <= 0x21FF) or \
+        (0x25A0 <= o <= 0x25FF) or (0x2460 <= o <= 0x24FF) or \
+        (0x2100 <= o <= 0x214F) or (0x2B00 <= o <= 0x2BFF) or \
+        o in (0xFE0F, 0x200D)
+
+
+# 设备裁剪字库黑名单（铁律 1：禁 emoji/特殊符号，文本只用汉字+ASCII+基础符号 / % # - _ 空格）
+_TEXT_BLACKLIST = set('⌫℃■●‹－＋–…→★◆▶▷①')
+
+
+def _clean_text(s):
+    """剥离 emoji 与黑名单特殊符号，只保留汉字+ASCII+基础符号（/ % # - _ 空格）。"""
+    if not s:
+        return s
+    out = []
+    for ch in s:
+        if ch in _TEXT_BLACKLIST or _is_emoji(ch):
+            continue
+        out.append(ch)
+    return re.sub(r'\s+', ' ', ''.join(out)).strip()
 
 
 # ---------- DOM 树节点 ----------
@@ -425,10 +448,10 @@ class HtmlToJson:
                 except Exception:
                     pass
 
-        # 3. emoji 图标 → PNG（文本含 emoji，转图标 textview）
-        text = re.sub(r'\s+', ' ', node.text).strip()
-        if text and any(_is_emoji(ch) for ch in text):
-            emoji_ch = next((ch for ch in text if _is_emoji(ch)), '\u2b50')
+        # 3. emoji 图标 → PNG（仅纯 emoji 文本转图标 textview；混合文本由 _leaf/_clean_text 剥离 emoji 保留文字）
+        raw_text = re.sub(r'\s+', ' ', node.text).strip()
+        if raw_text and not _clean_text(raw_text) and any(_is_emoji(ch) for ch in raw_text):
+            emoji_ch = next((ch for ch in raw_text if _is_emoji(ch)), '\u2b50')
             size = max(w, h)
             name = f'emoji_{cap or ctx.n}_{self.gen_count}.png'
 
@@ -853,7 +876,7 @@ class HtmlToJson:
             item['picTab']['pic1'] = pic1 if '/' in pic1 else 'images/' + pic1
         elif pic0:
             item['picTab']['pic1'] = item['picTab']['pic0']
-        text = re.sub(r'\s+', ' ', node.text).strip()
+        text = _clean_text(node.text)
         if text:
             item['text'] = text
         ctx.stack[-1]['items'].append(item)
@@ -889,7 +912,7 @@ class HtmlToJson:
         attrs = node.attrs
         cap = self._caption(ctx, typ, attrs)
         pos = self._pos(attrs)
-        text = re.sub(r'\s+', ' ', node.text).strip()
+        text = _clean_text(node.text)
 
         # 在 listview 内 → subItem
         if ctx.stack and ctx.stack[-1].get('__listview'):
@@ -1053,7 +1076,7 @@ class HtmlToJson:
                     c['passwordChar'] = pc
             hint = _attr(attrs, 'data-hint')
             if hint:
-                c['hintText'] = hint
+                c['hintText'] = _clean_text(hint)
             hc = to_dec(_attr(attrs, 'data-hint-color'))
             if hc:
                 c['hintTextColor'] = hc
@@ -1247,6 +1270,20 @@ class HtmlToJson:
             pic = _attr(attrs, 'data-pic') or _attr(attrs, 'src')
             if pic:
                 c['backgroundPic'] = pic if '/' in pic else 'images/' + pic
+            else:
+                # 纯 emoji 文本 → PNG 图标（设备字库不支持 emoji，转图片显示）
+                raw_text = re.sub(r'\s+', ' ', node.text).strip()
+                if raw_text and not _clean_text(raw_text) and any(_is_emoji(ch) for ch in raw_text):
+                    emoji_ch = next((ch for ch in raw_text if _is_emoji(ch)), '\u2b50')
+                    size = max(pos.get('width', 100), pos.get('height', 100))
+                    name = f'emoji_{cap or ctx.n}_{self.gen_count}.png'
+
+                    def _e(d, _n=name, _s=size, _c=emoji_ch):
+                        return gr.emoji_icon(d, _n, _s, _c)
+
+                    pic2 = self._gen_asset(_e)
+                    if pic2:
+                        c['backgroundPic'] = pic2
             typ = 'textview'
         else:
             c = {'caption': cap, 'id': ctx.nid('textview'), 'position': pos}
