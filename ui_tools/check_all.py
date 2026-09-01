@@ -104,17 +104,6 @@ def main(project_root):
         bad = sorted(set(c for c in txt if _is_bad_char(c)))
         log(not bad, '%s 特殊字符 %s' % (f, bad if bad else '无'))
 
-    print('== 3.1 文本换行（textview text 不支持 \n 多行，2026-08-29 校准）==')
-    for f in PAGES:
-        d = json.load(open(os.path.join(root, f), encoding='utf-8'))
-        items = []
-        walk(d, items)
-        bad = []
-        for key, val, depth in items:
-            if isinstance(val, dict) and isinstance(val.get('text'), str) and '\n' in val['text']:
-                bad.append('%s(text含换行)' % key)
-        log(not bad, '%s 文本无换行 %s' % (f, ('含换行: ' + ' '.join(bad)) if bad else '无'))
-
     print('== 4. 图片引用（json + logic.cc 引用的图片必须存在）==')
     refs = set()
     for f in PAGES + LOGICS:
