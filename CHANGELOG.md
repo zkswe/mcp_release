@@ -1,7 +1,18 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.3-open**（2026-09-01）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.4-open**（2026-09-01）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.7.4-open (2026-09-01) — 控件用法检索边界定规（沛哥）
+
+**定规**：AI 检索 FlyThings 控件用法/字段/API 时**只允许两个来源**：
+① MCP 内置知识库（flythings_search / knowledge/uicontrols/ 文档）② 官方文档站 developer.flythings.cn。
+禁止从其他渠道检索（通用 web 搜索、Qt/Android/Flutter/emWin/AWTK/LVGL 等其他 GUI 框架、非官方博客/论坛）——
+防止混入其他框架控件用法导致知识错乱；查不到的标注「未收录」不猜不套用。
+
+**入库**：新建 `knowledge/uicontrols/retrieval-boundary.md`；重建 rag_index。
 
 ---
 
