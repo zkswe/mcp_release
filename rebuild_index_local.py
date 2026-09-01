@@ -11,6 +11,20 @@ import embed_local
 
 WIKI_ROOT = sys.argv[1] if len(sys.argv) > 1 else r'C:\Users\zkswe\.openclaw\workspace\wiki\flythings'
 OUT = sys.argv[2] if len(sys.argv) > 2 else os.path.join(BASE, 'rag_index.json')
+KNOWLEDGE_DIR = os.path.join(BASE, 'knowledge')  # 随仓库分发的实践知识文档（可公开部分）
+
+
+def collect_roots():
+    """索引根目录：显式参数 / 本地完整 wiki（官方文档+PDF 等内部资料，不进仓库）
+    + 仓库内 knowledge/（实践知识文档，随 Gitee 分发，clone 后可重建索引）。"""
+    roots = []
+    if len(sys.argv) > 1 and os.path.isdir(sys.argv[1]):
+        roots.append(os.path.abspath(sys.argv[1]))
+    elif os.path.isdir(WIKI_ROOT):
+        roots.append(WIKI_ROOT)
+    if os.path.isdir(KNOWLEDGE_DIR):
+        roots.append(KNOWLEDGE_DIR)
+    return roots
 
 
 def chunk_md(path):
@@ -35,11 +49,12 @@ def main():
         print('模型不可用，请先确认 models/bge-small-zh/ 存在')
         sys.exit(1)
     files = []
-    for root, _, fnames in os.walk(WIKI_ROOT):
-        for fn in fnames:
-            if fn.endswith('.md'):
-                files.append(os.path.join(root, fn))
-    print(f'{len(files)} md files', flush=True)
+    for root in collect_roots():
+        for r, _, fnames in os.walk(root):
+            for fn in fnames:
+                if fn.endswith('.md'):
+                    files.append(os.path.join(r, fn))
+    print(f'{len(files)} md files from {len(collect_roots())} roots', flush=True)
     chunks = []
     for f in sorted(files):
         rel = os.path.relpath(f, WIKI_ROOT).replace('\\', '/')
