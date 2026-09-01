@@ -281,15 +281,11 @@ def _parse_ui_json(json_path):
 # ---------------- 工具 1: read_json ----------------
 def flythings_read_json(json_path):
     """解析 .json 布局文件，返回结构化信息。
-    ⚠️ 传入 .ftu 时提示：新版 fui.exe 仅支持 pack（json→ftu）不支持 unpack，无法从 ftu 反解析；
-    请提供同目录 .json 布局，或让客户重新设计/用 IDE 打开 ftu 另存 json。
+    ⚠️ 传入 .ftu 时提示：ftu 为加密文件无法解析，可提供设计文件 / AI 重新设计界面 / 采用 HTML 布局。
     """
     if json_path.lower().endswith('.ftu'):
         return {"success": False,
-                "error": f"{os.path.basename(json_path)} 是 ftu 布局（二进制），无法直接解析。"
-                         f"新版 fui.exe 仅支持 pack（json→ftu）不支持 unpack，无法从 ftu 反解析 json。"
-                         f"请提供同目录的 {os.path.splitext(os.path.basename(json_path))[0]}.json 布局文件，"
-                         f"或重新设计界面（ftu 由 IDE 编辑生成 json）"}
+                "error": "由于 ftu 为加密文件无法解析，您可以提供您的设计文件或者采用 AI 重新设计界面或者采用 HTML 布局。"}
     if not os.path.isfile(json_path):
         return {"success": False, "error": f"json 文件不存在: {json_path}"}
     return _parse_ui_json(json_path)

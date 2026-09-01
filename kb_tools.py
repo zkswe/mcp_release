@@ -83,8 +83,7 @@ def flythings_search(query: str, k: int = 3) -> str:
 
 def flythings_read_json(json_path: str) -> str:
     """解析 .json 布局文件为 JSON（分辨率、控件列表、caption→id 映射）。传入 json 完整路径。
-    ⚠️ 传入 .ftu 时返回错误提示：新版 fui.exe 仅支持 pack（json→ftu）不支持 unpack，
-    无法从 ftu 反解析；请提供同目录 .json 布局，或重新设计界面（IDE 编辑 ftu 生成 json）。
+    ⚠️ 传入 .ftu 时返回错误提示：ftu 为加密文件无法解析，可提供设计文件 / AI 重新设计界面 / 采用 HTML 布局。
     （flythings_read_ftu 已移除——无 unpack 能力时它只是 read_json 的包装）"""
     return json.dumps(pt.flythings_read_json(json_path), ensure_ascii=False)
 
