@@ -25,9 +25,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.7.13-open'
+MCP_VERSION = '0.7.14-open'
 MCP_BUILD = '2026-09-02'
 MCP_FEATURES = [
+    '2026-09-02: T113 倒车摄像头格式参数表入库（沛哥要求，来源 T113CarSystem_PND 实测）——AHD/TVI 720P/1080P + CVBS PAL/NTSC + DM5885 逐行/隔行完整分辨率/帧率表（TVI 标 25/30 实际 24/29）；切换流程 stopPreview→setFormatSize+setFrameRate→setenv ZKCAMERA_DI_ENABLE→startPreview；/dev/video0=AHD /dev/video4=CVBS；无信号连续 2 次才提示；含完整代码；入库 knowledge/t113-car/ahd-camera-format.md',
     '2026-09-02: ImageAnim 动图控件字段规范入库（沛哥定规）——动图控件只支持 GIF/WebP 两种格式；动图控件≠文本帧动画（禁止用 PNG 帧图/逐帧切换方式实现动图）；平台限制 Z20/Z21/T113/T113STDCXX/T113EMMC/Z261/V85X（F133 不支持）；实测 json 字段仅 caption/id/loopCount/playFile/position（修正 layout-audit 误写的 frameInterval）；入库 knowledge/uicontrols/imageanim-fields.md',
     '2026-09-02: 流程文档修正（沛哥补充）——医疗口腔内窥镜仅为示例，流程适用于任何产品；美化风格不套固定模板，按实际产品行业/场景定制（医疗→科技蓝/纯净白/深色，消费→明亮暖色，工业→高对比大控件等）',
     '2026-09-02: 一句话需求→线框→美化流程入库（沛哥定规，knowledge/devflow/prototype-flow.md）——功能拆解+确认清单→页面树(page-id)→单HTML多screen线框（data-page/data-note/data-goto 标注，AI 按此分页）→确认→3+套风格美化→html2json 分页转换；文字输入不做语音',

@@ -1,7 +1,21 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.13-open**（2026-09-02）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.14-open**（2026-09-02）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.7.14-open (2026-09-02) — T113 倒车摄像头格式参数表入库（沛哥要求）
+
+**收录内容**（来源：git 收录工程 `temp_car/public/t113/T113CarSystem_PND/jni/logic/` 实测）：
+1. **完整格式参数表**：AHD/TVI 720P/1080P（分辨率+帧率）、CVBS PAL/NTSC、DM5885 逐行/隔行——12 种格式全表
+2. **对应代码**：cam_info_t 结构 + _s_cam_info_tab[] 表 + 切换流程（stopPreview→setFormatSize+setFrameRate→setenv ZKCAMERA_DI_ENABLE→startPreview）+ 摄像头初始化 + 设置页保存 + setting 接口
+
+**关键知识点**：
+- TVI 标 25/30 实际帧率 24/29（易踩坑）；CVBS/DM5885 隔行才使能 ZKCAMERA_DI_ENABLE 奇偶合并
+- 摄像头节点：AHD=/dev/video0、CVBS=/dev/video4；无信号回调连续 2 次才提示
+
+**入库**：新建 `knowledge/t113-car/ahd-camera-format.md`（知识点+完整代码）；wiki 源 t113-car-link.md 倒车段补全格式表；references/kb 同步；重建 rag_index。
 
 ---
 
