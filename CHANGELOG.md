@@ -1,7 +1,21 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.12-open**（2026-09-02）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.13-open**（2026-09-02）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.7.13-open (2026-09-02) — ImageAnim 动图控件字段规范入库（沛哥定规）
+
+**两点定规**：
+1. **动图控件只支持 GIF 和 WebP 两种格式**——playFile 只能指 .gif/.webp，其他格式不显示（硬限制）
+2. **动图控件 ≠ 文本帧动画，禁止混用**——动图控件直接播放 gif/webp 文件（json 一个 playFile）；文本帧动画是 textview + setBackgroundPic() 逐帧切 PNG；❌ 禁止在动图控件里用 PNG 帧图/逐帧切换方式实现，也不要为播放 gif 建 textview 切图
+
+**字段校准（实测）**：ImageAnimDemo-New/main.json + UIlayoutDemo/imageanim.json 两 demo 核对——json 字段仅 `caption/id/loopCount/playFile/position` 五项；**修正 layout-audit.md 误写的 frameInterval**（实测 json 无此字段）。
+
+**平台限制**：只支持 Z20/Z21/T113/T113STDCXX/T113EMMC/Z261/V85X；**F133 不支持动图控件**（只能 textview 帧动画）。
+
+**入库**：新建 `knowledge/uicontrols/imageanim-fields.md`（字段表 + html2json 写法 + 代码操作 + 常见坑）；修正 layout-audit.md；重建 rag_index。
 
 ---
 

@@ -19,7 +19,7 @@
 | 10 | circlebar | CircleBarDemo (2) | progressPic/progressPicPos/clockwise/maxAngle | ✅ | +textColor/textSize/textType/unit/thumb/touchRange |
 | 11 | diagram | DiagramDemo (3) | xAxisRange/yAxisRange/region/infos[]（wave 子项） | ✅ 完整 | — |
 | 12 | digitalclock | DigitalClockDemo (6) | format/beat/clockColor | ✅ 完整 | — |
-| 13 | imageanim | ImageAnimDemo (3) | playFile/loopCount/frameInterval | ✅ 完整 | — |
+| 13 | imageanim | ImageAnimDemo (3) | playFile/loopCount（实测无 frameInterval，详见 imageanim-fields.md） | ✅ 完整 | — |
 | 14 | painter | PainterDemo (1) | 触摸绘制，代码 paint() | ✅ | — |
 | 15 | qrcode | QRCodeDemo (3) | codeStr/backgroundColor/padding | ✅ | — |
 | 16 | radiogroup | RadioGroupDemo (1) | radiobuttons[]（picTab 两态+checked） | ✅ 完整 | — |
