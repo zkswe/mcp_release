@@ -1,7 +1,16 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.14-open**（2026-09-02）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.15-open**（2026-09-02）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.7.15-open (2026-09-02) — FT-007 废弃：部署统一只用 fun launch（沛哥定规）
+
+**废弃 FT-007 手动部署顺序规则**：
+1. 删除 fix_tools.py 中 FT-007 检测/修复/验证（先 adb push images 再 kill zkgui + deploy_order.md 生成），修复规则 19→18 条
+2. 部署流程统一只用 **fun launch**（fun launch 内部已正确部署程序+资源+ftu 并启动，无需手动 push + kill zkgui）
+3. kb_tools.py docstring / fix_tools.py docstring 同步标注 FT-007 已废弃
 
 ---
 

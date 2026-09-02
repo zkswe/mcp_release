@@ -25,9 +25,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.7.14-open'
+MCP_VERSION = '0.7.15-open'
 MCP_BUILD = '2026-09-02'
 MCP_FEATURES = [
+    '2026-09-02: FT-007 废弃（沛哥定规）——删除“手动 adb push images + kill zkgui”部署顺序规则（fix_tools.py 移除 FT-007 检测/修复/验证 + deploy_order.md 生成），部署统一只用 fun launch；修复规则 19→18 条',
     '2026-09-02: T113 倒车摄像头格式参数表入库（沛哥要求，来源 T113CarSystem_PND 实测）——AHD/TVI 720P/1080P + CVBS PAL/NTSC + DM5885 逐行/隔行完整分辨率/帧率表（TVI 标 25/30 实际 24/29）；切换流程 stopPreview→setFormatSize+setFrameRate→setenv ZKCAMERA_DI_ENABLE→startPreview；/dev/video0=AHD /dev/video4=CVBS；无信号连续 2 次才提示；含完整代码；入库 knowledge/t113-car/ahd-camera-format.md',
     '2026-09-02: ImageAnim 动图控件字段规范入库（沛哥定规）——动图控件只支持 GIF/WebP 两种格式；动图控件≠文本帧动画（禁止用 PNG 帧图/逐帧切换方式实现动图）；平台限制 Z20/Z21/T113/T113STDCXX/T113EMMC/Z261/V85X（F133 不支持）；实测 json 字段仅 caption/id/loopCount/playFile/position（修正 layout-audit 误写的 frameInterval）；入库 knowledge/uicontrols/imageanim-fields.md',
     '2026-09-02: 流程文档修正（沛哥补充）——医疗口腔内窥镜仅为示例，流程适用于任何产品；美化风格不套固定模板，按实际产品行业/场景定制（医疗→科技蓝/纯净白/深色，消费→明亮暖色，工业→高对比大控件等）',
@@ -389,7 +390,7 @@ def flythings_fix_project(project_root: str, kb_id: str = '', apply: bool = Fals
 
     9 条规则覆盖：二维码控件(FT-001)/SeekBar 9-patch 黑框(FT-002)/SeekBar 尺寸匹配(FT-003)/
     fui generated 缓存(FT-004)/INIT_UI_TIMERS 宏(FT-005)/多 Window 可见性(FT-006)/
-    部署顺序(FT-007)/Pillow 超采样抗锯齿(FT-008)/TextView 最小尺寸(FT-009)。
+    Pillow 超采样抗锯齿(FT-008)/TextView 最小尺寸(FT-009)（FT-007 已废弃：部署统一用 fun launch，不再手动 push+kill zkgui）。
 
     传入项目根目录完整路径。
     - kb_id 传 'FT-001' 等只处理该条；留空处理全部 9 条；

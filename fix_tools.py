@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 """FlyThings 自动修复工具（fix.log 规则库驱动，2026-08-29 沛哥交付）。
 
-18 条高频问题修复规则（FT-001 ~ FT-014 + FT-020 ~ FT-023）：
+18 条高频问题修复规则（FT-001 ~ FT-006 + FT-008 ~ FT-014 + FT-020 ~ FT-024）：
   FT-001  二维码必须用 ZKQRCode 控件（zk_qrcode）+ loadQRCode()，TextView 占位不生成 QR
   FT-002  ZKSeekBar 不解析 9-patch，marker 像素画成黑框 → Pic 字段改普通 .png
   FT-003  ZKSeekBar 3 张图尺寸必须与控件 position 严格相等（不自动缩放）
   FT-004  改 main.json 必须清 .fun/<plat>/generated 缓存再 fui pack，否则 mPtr 缺失
   FT-005  Z21 + fun.exe 的宏是 FUN_BUILD（不是 FYX_BUILD），INIT_UI_TIMERS 被错误宏保护会空展开
   FT-006  多 Window 架构必须父+子 Window 显式 visible:false，onUI_show 只 showWindow 首屏
-  FT-007  部署顺序：先 adb push images 再 kill zkgui，否则资源加载竞争失败
   FT-008  Pillow 圆角必须超采样（SS=2 + LANCZOS），1x 直接画是二值 α 锯齿
   FT-009  TextView/Button 硬裁剪不省略，宽高须满足最小尺寸公式
+  （FT-007 已于 2026-09-02 废弃：手动 push images + kill zkgui 的部署顺序不再需要，部署统一用 fun launch）
 
 每条规则 = detect(项目) 诊断 → fix(项目) 修复 → verify(项目) 验证。
 入口：flythings_fix_project(project_root, kb_id='', apply=False)
@@ -681,72 +681,6 @@ def _verify_ft006(root):
     if os.path.isfile(doc):
         return True, ['架构规范文档已就位（拆 Activity 需人工实现）']
     return False, ['缺少架构规范文档（tools/activity_architecture.md）']
-
-# ============ FT-007 部署顺序（先 push 后 kill）============
-_RULE_FT007 = {
-    'kb_id': 'FT-007', 'priority': 'critical',
-    'name': '部署顺序：先 adb push images，再 kill zkgui',
-    'root_cause': '若先 kill zkgui 后 push images，init 会在 <3s 内自动拉起 zkgui，'
-                  'onUI_init 读资源时图片还没复制完 → 随机 load image fail。',
-    'user_patterns': ['随机 load image file /tmp/ui/images fail', '重启一次就好', '第一次按钮是方的再 kill 就正常', '一半图片加载失败一半正常'],
-    'anti_patterns': ['fun launch 同时另开窗口 push images（并行必竞争）', 'kill 后 sleep 3s 就认为能读图'],
-}
-
-def _detect_ft007(root):
-    issues = []
-    img_count = sum(len(glob.glob(os.path.join(d, '*.png'))) for d in _img_dirs(root))
-    if img_count >= 10:
-        issues.append({
-            'file': '部署流程',
-            'msg': f'项目含 {img_count} 张图片资源，部署时必须严格按顺序：'
-                   f'① adb push resources/images/. /tmp/ui/images/（阻塞完成）'
-                   f'② ps 找 zkgui PID → kill -9 ③ sleep 12s ④ 验证 logcat 无 load image fail。'
-                   f'先 kill 后 push 会导致 zkgui 被 init 拉起时读图失败',
-        })
-    return issues
-
-def _fix_ft007(root, issues):
-    fixes, notes = [], []
-    if not issues:
-        return fixes, notes, True
-    doc = os.path.join(root, 'tools', 'deploy_order.md')
-    os.makedirs(os.path.dirname(doc), exist_ok=True)
-    content = """# 部署顺序（FT-007 铁律：先 push 后 kill）
-
-资源加载竞争失败（随机 load image fail / 重启一次就好）的根因是部署顺序错误：
-先 kill zkgui → 后 push images 时，init 会在 <3s 内自动拉起 zkgui，onUI_init 读图时一半图片还没到位。
-
-## 正确顺序（不可颠倒）
-```bash
-# 1. 先推送图片（阻塞等待完成）
-adb push resources/images/. /tmp/ui/images/
-
-# 2. 再杀 UI 进程（让 init 以新资源拉起）
-adb shell "ps | grep zkgui"   # 找到 PID
-adb shell kill -9 <PID>
-
-# 3. 等待重启完成
-sleep 12
-
-# 4. 验证：新 PID 的 logcat 里不应出现 load image fail
-adb logcat | grep "load image file"
-```
-
-## 反模式
-- fun launch 同时另开窗口 push images（并行必竞争）
-- kill zkgui 后只 sleep 3s 就认为能读图（40+ 张图需要 1-2s 推送时间）
-"""
-    open(doc, 'w', encoding='utf-8').write(content)
-    fixes.append(f'已生成 {os.path.relpath(doc, root)}（部署顺序说明）')
-    notes.append('FT-007 为设备侧部署时序问题，无法在本机验证；按说明顺序部署后 '
-                 '检查新 PID logcat 无 "load image file .* fail" 即修复')
-    return fixes, notes, True
-
-def _verify_ft007(root):
-    doc = os.path.join(root, 'tools', 'deploy_order.md')
-    if os.path.isfile(doc):
-        return True, ['部署顺序说明已就位（真机验证需看 logcat）']
-    return False, ['缺少部署顺序说明（tools/deploy_order.md）']
 
 # ============ FT-008 Pillow 超采样抗锯齿 ============
 _RULE_FT008 = {
@@ -1921,7 +1855,6 @@ RULES = [
     {'meta': _RULE_FT004, 'detect': _detect_ft004, 'fix': _fix_ft004, 'verify': _verify_ft004},
     {'meta': _RULE_FT005, 'detect': _detect_ft005, 'fix': _fix_ft005, 'verify': _verify_ft005},
     {'meta': _RULE_FT006, 'detect': _detect_ft006, 'fix': _fix_ft006, 'verify': _verify_ft006},
-    {'meta': _RULE_FT007, 'detect': _detect_ft007, 'fix': _fix_ft007, 'verify': _verify_ft007},
     {'meta': _RULE_FT008, 'detect': _detect_ft008, 'fix': _fix_ft008, 'verify': _verify_ft008},
     {'meta': _RULE_FT009, 'detect': _detect_ft009, 'fix': _fix_ft009, 'verify': _verify_ft009},
     {'meta': _RULE_FT010, 'detect': _detect_ft010, 'fix': _fix_ft010, 'verify': _verify_ft010},
