@@ -1,7 +1,34 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.11.0-open**（2026-09-03）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.12.0-open**（2026-09-03）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.12.0-open (2026-09-03) — package.properties / EasyUI.cfg 工程配置机制入库（屏幕旋转适配）
+
+**新建 knowledge/devflow/package-properties-easyui-cfg.md（沛哥讲解机制定规 + mark_cv201 双工程实测）**
+来源：CV201_PND（1600×600，rotateScreen:270）vs CV201_PND_1024_600（1024×600，无 rotateScreen）对比 +
+沛哥提供 EasyUI.cfg 标准 JSON 格式；全 workspace 13 工程横向统计 + ConfigManager.h + 代码消费链查证。
+
+核心机制（沛哥 2026-09-03 定规）：
+- **编译工具自动生成完整 EasyUI.cfg**（默认 JSON：baud/defBrightness/font/languageCode/languagePath/
+  resPath/rotateScreen/rotateTouch/screensaverTimeOut/startupLibPath/startupTouchCalib/touchDev/uart/
+  zkdebug，debug=/mnt/extsd 与 release=/res 两套路径）
+- 工程根目录 package.properties 的 EasyUI.cfg={...} **是覆盖层**：写哪个字段优先采用哪个，
+  不需要特殊处理的字段不用写（不整段照抄）
+- 与 .settings/com.zksw.flythings.easyui.prefs（IDE 属性）并存时 **package.properties 优先**
+- enable.font.location=true 是独立开关（font/ 目录自定义字体，非 EasyUI.cfg 覆盖层）
+
+字段表（文档内）含 rotateScreen 0/90/180/270 + rotateTouch（触摸坐标旋转，F133 工程惯例成套 270+270
++gfxMode:1+ninePatchAccel:true）；watchDogEnable 等其它字段以编译工具生成为准，需要才覆盖。
+
+核心经验：**屏幕旋转跟随设备物理安装方向，不是 UI 决定**（同 1600×600：lib_uav_camera 不转、
+CV201_PND 转 270；T113 PND 竖装横显同款 rotateScreen:270）；改方向只改 package.properties 不碰
+.ftu/代码；代码侧 CONFIGMANAGER->getScreenRotate() 读取（link 投屏 disp_rot_e=getScreenRotate()/90、
+V85X 摄像头 setRotation 跟随）；mark_cv201 倒车 get_camera_rot() 是摄像头画面另一路参数勿混淆。
+
+**同步**：rag_index 重建；版本 0.11.0→0.12.0-open。
 
 ---
 
