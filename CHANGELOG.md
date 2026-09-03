@@ -1,7 +1,26 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.13.0-open**（2026-09-03）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.14.0-open**（2026-09-03）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.14.0-open (2026-09-03) — 自定义字库修正：fun 流程权威规则（font/ + enable.font.location，非 .prefs）
+
+**重写 knowledge/devflow/custom-font-config.md（沛哥 20:51 纠正 v0.13 方向错误）**
+⚠️ v0.13.0 按 KlipperF133 写入的「改 .prefs font 字段」是 IDE 视角，**fun 流程不适用、不需要**。
+
+fun build/launch 流程换字库标准 4 步（沛哥定规，AI 引导「换库」直接照做，禁止绕 IDE 属性）：
+① 项目根建 font/ 文件夹拷入 ttf（仅支持 ttf）② package.properties 加 enable.font.location=true
+（新模板已内置，没有才补）③ 单字体→自动全局默认、代码零改动；多字体按文件名 ASCII 排序最靠前为默认、
+个别控件 setFontFamily("文件名不含后缀") 指定（easyui≥2.2.0）④ 完成，不动 .prefs/IDE 属性。
+
+机制：字库是运行时资源不参与编译，fun launch 随资源推送；Z20/Z21/H500S/T113/V85X 及后续平台系统内置
+fzcircle.ttf（思源黑体裁剪版），项目 font/ 存在字体后完全使用项目字体；字库不含 emoji/特殊符号
+（■●⌫℃▲▼），布局文本只用汉字+ASCII+基础符号，图标转 PNG。实测样例：mark_cv201 根 font/sans.ttf
++ enable.font.location=true。
+
+**同步**：rag_index 重建；版本 0.13.0→0.14.0-open。
 
 ---
 
