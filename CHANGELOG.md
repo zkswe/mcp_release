@@ -1,10 +1,18 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.15.0-open**（2026-09-03）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.16.0-open**（2026-09-03）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
 
 ---
 
+## v0.16.0-open (2026-09-03) — 图标抗锯齿根治（沛哥反馈 png 仍有锯齿）
+**根因不是提示词约束，是渲染管线三处缺陷（程序化定位）**：
+- ① iconfont 图标超采样只有 4 倍：小尺寸（20-40px）斜线阶梯仍可见 → **提高到 8 倍**（SS 画布 + LANCZOS 缩回，A/B 实验 ss16 最优、ss8 已接近）
+- ② PIL line 端点是平头（butt cap），Feather 风格应为圆头 → 所有线段/折线/圆弧端点**补圆头 round cap**（斜线端点毛刺/缺口感的来源）
+- ③ assets 兜底图标 icon_circle/line_icon/frames_loading/frames_loading_gif **此前 1x 直画，0% 抗锯齿必锯齿** → 全部改为超采样渲染（量化：AA 占比 0%→39%）
+- 回归：46 图标 + 15 中文别名 + pressed 两态 + 非正方 canvas + 8 种线条兜底共 **115 项全过**；修复后 80px 平滑放大目检「斜线平滑无锯齿、端点圆润无毛刺、符合高清显示标准」
+
+---
 ## v0.15.0-open (2026-09-03) — 图标优先规范落地：HTML 生成强制用 iconfont 矢量线框图标，禁止按钮+文字糊弄
 **沛哥定规：生成 UI 时常用操作（返回/播放/暂停/上一首/下一首/设置/搜索/删除/刷新/确认/关闭/加减/音量/主页/菜单等）必须用图标表达，禁止用「按钮+文字」！**
 - ★ gen_res.py 新增 **46 个 iconfont 风格矢量线框图标库**：back/forward/up/down/close/check/plus/minus/menu/more/search/home/list/play/pause/stop/prev/next/power/volume/mute/delete/edit/share/download/upload/user/lock/info/warning/camera/clock/calendar/bell/mic/location/mail/eye/video/phone/settings/refresh/wifi/bluetooth/heart/star（Feather 同款 24 网格坐标 + 数学采样抗锯齿 + 中文别名，形状程序化验证）；按钮自动 normal+pressed 两态（_p 提亮），非正方画布自动居中

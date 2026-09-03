@@ -254,45 +254,54 @@ def gen_shadow_card(out_dir, name, w, h, radius, fill, shadow=None, border=None,
 
 
 def icon_circle(out_dir, name, size, color, kind="check"):
-    """圆形图标（外圈 + 内部符号：check/charging/wifi/alert），emoji 替代方案"""
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    """圆形图标（外圈 + 内部符号：check/charging/wifi/alert）。
+    2026-09-03 修复：超采样抗锯齿（此前 1x 直画锯齿明显）。"""
+    S = size * _G_SS
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    m = size // 10
-    d.ellipse([m, m, size - m - 1, size - m - 1], outline=color, width=max(2, m))
-    cx, cy = size // 2, size // 2
+    m = S // 10
+    d.ellipse([m, m, S - m - 1, S - m - 1], outline=color, width=max(2, m))
+    cx, cy = S // 2, S // 2
     if kind == "check":
-        d.line([(cx - size // 4, cy), (cx - size // 12, cy + size // 5),
-                (cx + size // 3, cy - size // 4)], fill=color, width=max(3, m), joint="curve")
+        pts = [(cx - S // 4, cy), (cx - S // 12, cy + S // 5),
+               (cx + S // 3, cy - S // 4)]
+        d.line(pts, fill=color, width=max(3, m), joint="curve")
+        _round_cap(d, pts[0], max(3, m) / 2.0, color)
+        _round_cap(d, pts[-1], max(3, m) / 2.0, color)
     elif kind == "charging":
-        pts = [(cx + size // 16, cy - size // 4), (cx - size // 5, cy + size // 12),
-               (cx - size // 24, cy + size // 12), (cx - size // 8, cy + size // 4),
-               (cx + size // 5, cy - size // 12), (cx + size // 24, cy - size // 12)]
+        pts = [(cx + S // 16, cy - S // 4), (cx - S // 5, cy + S // 12),
+               (cx - S // 24, cy + S // 12), (cx - S // 8, cy + S // 4),
+               (cx + S // 5, cy - S // 12), (cx + S // 24, cy - S // 12)]
         d.polygon(pts, fill=color)
     elif kind == "wifi":
-        for r, wdt in ((size // 3, m), (size // 5, m), (size // 8, m)):
+        for r, wdt in ((S // 3, m), (S // 5, m), (S // 8, m)):
             d.arc([cx - r, cy - r, cx + r, cy + r], start=210, end=330, fill=color, width=wdt)
-        d.ellipse([cx - m, cy + size // 8, cx + m, cy + size // 8 + 2 * m], fill=color)
+        d.ellipse([cx - m, cy + S // 8, cx + m, cy + S // 8 + 2 * m], fill=color)
     elif kind == "alert":
-        pts = [(cx, cy - size // 3), (cx - size // 4, cy + size // 4), (cx + size // 4, cy + size // 4)]
+        pts = [(cx, cy - S // 3), (cx - S // 4, cy + S // 4), (cx + S // 4, cy + S // 4)]
         d.polygon(pts, fill=color)
-        d.rectangle([cx - m // 2, cy - size // 10, cx + m // 2, cy + size // 12], fill=(255, 255, 255, 255))
+        d.rectangle([cx - m // 2, cy - S // 10, cx + m // 2, cy + S // 12], fill=(255, 255, 255, 255))
+    img = img.resize((size, size), Image.LANCZOS)
     return save(img, out_dir, name)
 
 
 def frames_loading(out_dir, prefix, size, color, n=12, ring_r=None, width=None):
     """loading 旋转序列帧：n 张 PNG（size×size，圆环缺口旋转），配合 imageanim 动图控件
-    循环次数 ≤0 无限循环。命名 <prefix>_00.png .. <prefix>_NN.png"""
-    cx = cy = size // 2
-    ring_r = ring_r or size // 3
-    width = width or max(3, size // 16)
+    循环次数 ≤0 无限循环。命名 <prefix>_00.png .. <prefix>_NN.png
+    2026-09-03 修复：超采样抗锯齿。"""
+    S = size * _G_SS
+    cx = cy = S // 2
+    ring_r = (ring_r or S // 3)
+    width = width or max(3, S // 16)
     paths = []
     for i in range(n):
-        img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
         d = ImageDraw.Draw(img)
         start = -90 + i * (360 // n)
         end = start + 300  # 缺口 60°
         d.arc([cx - ring_r, cy - ring_r, cx + ring_r, cy + ring_r],
               start=start, end=end, fill=color, width=width)
+        img = img.resize((size, size), Image.LANCZOS)
         paths.append(save(img, out_dir, "%s_%02d.png" % (prefix, i)))
     return paths
 
@@ -300,19 +309,21 @@ def frames_loading(out_dir, prefix, size, color, n=12, ring_r=None, width=None):
 def frames_loading_gif(out_dir, name, size, color, n=12, duration=80, ring_r=None, width=None):
     """loading 旋转动画 → GIF（imageanim 动图控件 play(file) 直接加载）。
     ZKImageAnim::play 播放的是 GIF/WebP 动画文件（非序列帧目录）；
-    序列帧 PNG 用 Pillow save_all 打包成 GIF，循环次数 0 = 无限循环。"""
-    cx = cy = size // 2
-    ring_r = ring_r or size // 3
-    width = width or max(3, size // 16)
+    序列帧 PNG 用 Pillow save_all 打包成 GIF，循环次数 0 = 无限循环。
+    2026-09-03 修复：超采样抗锯齿。"""
+    S = size * _G_SS
+    cx = cy = S // 2
+    ring_r = ring_r or S // 3
+    width = width or max(3, S // 16)
     frames = []
     for i in range(n):
-        img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
         d = ImageDraw.Draw(img)
         start = -90 + i * (360 // n)
         end = start + 300
         d.arc([cx - ring_r, cy - ring_r, cx + ring_r, cy + ring_r],
               start=start, end=end, fill=color, width=width)
-        frames.append(img)
+        frames.append(img.resize((size, size), Image.LANCZOS))
     os.makedirs(out_dir, exist_ok=True)
     p = os.path.join(out_dir, name)
     frames[0].save(p, save_all=True, append_images=frames[1:],
@@ -390,32 +401,36 @@ _LINE_KINDS = ('check', 'charging', 'wifi', 'alert', 'circle', 'square', 'star',
 
 
 def line_icon(out_dir, name, size, color, kind='check'):
-    """纯线条/几何兜底（无 AI 无 emoji 字体时仍能出图）"""
+    """纯线条/几何兜底（无 AI 无 emoji 字体时仍能出图）。
+    2026-09-03 修复：超采样抗锯齿（此前 1x 直画锯齿明显）。"""
     if kind in ('check', 'charging', 'wifi', 'alert'):
         return icon_circle(out_dir, name, size, color, kind)
-    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    S = size * _G_SS
+    img = Image.new('RGBA', (S, S), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    m = size // 5
-    cx = cy = size // 2
+    m = S // 5
+    cx = cy = S // 2
     if kind == 'circle':
-        d.ellipse([m, m, size - m, size - m], outline=color, width=max(2, size // 12))
+        d.ellipse([m, m, S - m, S - m], outline=color, width=max(2, S // 12))
     elif kind == 'square':
-        d.rounded_rectangle([m, m, size - m, size - m], radius=size // 10,
-                            outline=color, width=max(2, size // 12))
+        d.rounded_rectangle([m, m, S - m, S - m], radius=S // 10,
+                            outline=color, width=max(2, S // 12))
     elif kind == 'star':
-        import math
+        import math as _m2
         pts = []
         for i in range(10):
             ang = -90 + i * 36
-            rr = size // 3 if i % 2 == 0 else size // 7
-            pts.append((cx + rr * math.cos(math.radians(ang)),
-                        cy + rr * math.sin(math.radians(ang))))
-        d.polygon(pts, outline=color, width=max(2, size // 16))
+            rr = S // 3 if i % 2 == 0 else S // 7
+            pts.append((cx + rr * _m2.cos(_m2.radians(ang)),
+                        cy + rr * _m2.sin(_m2.radians(ang))))
+        d.polygon(pts, outline=color, width=max(2, S // 16))
     elif kind == 'heart':
-        d.ellipse([cx - size // 4, cy - size // 4, cx, cy + size // 4], outline=color, width=max(2, size // 14))
-        d.ellipse([cx, cy - size // 4, cx + size // 4, cy + size // 4], outline=color, width=max(2, size // 14))
-        d.line([(cx - size // 4, cy + size // 10), (cx, cy + size // 3), (cx + size // 4, cy + size // 10)],
-               fill=color, width=max(2, size // 14))
+        wdt = max(2, S // 14)
+        d.ellipse([cx - S // 4, cy - S // 4, cx, cy + S // 4], outline=color, width=wdt)
+        d.ellipse([cx, cy - S // 4, cx + S // 4, cy + S // 4], outline=color, width=wdt)
+        d.line([(cx - S // 4, cy + S // 10), (cx, cy + S // 3), (cx + S // 4, cy + S // 10)],
+               fill=color, width=wdt)
+    img = img.resize((size, size), Image.LANCZOS)
     return save(img, out_dir, name)
 
 
@@ -490,7 +505,13 @@ def gen_ui_assets(project_root, assets):
 # 24 网格坐标（Feather 风格），ss=4 超采样 + LANCZOS 缩回抗锯齿；描边=STROKE(2 单位)。
 
 _G_STROKE = 2.0          # 24 网格上描边宽度（Feather 同款）
-_G_SS = 4                # 超采样倍数（画 4 倍再缩回，线条抗锯齿）
+_G_SS = 8                # 超采样倍数（画 8 倍再 LANCZOS 缩回；2026-09-03 沛哥反馈锯齿，4→8）
+
+
+def _round_cap(d, p, r, color):
+    """线段端点补圆（round cap）：PIL line 端点是平头，斜线端点呈毛刺/缺口。
+    Feather 风格图标端点为圆头，在超采样画布上给每条开放线段两端补实心圆。"""
+    d.ellipse([p[0] - r, p[1] - r, p[0] + r, p[1] + r], fill=color)
 
 
 def _glyph_render(ops, size, color):
@@ -506,14 +527,20 @@ def _glyph_render(ops, size, color):
     d = ImageDraw.Draw(img)
     k = S / 24.0
     w = max(2, int(round(_G_STROKE * k)))
+    cap_r = w / 2.0
     for op in ops:
         t = op[0]
         if t == 'l':
             (x1, y1), (x2, y2) = op[1]
-            d.line([(x1 * k, y1 * k), (x2 * k, y2 * k)], fill=color, width=w)
+            p1, p2 = (x1 * k, y1 * k), (x2 * k, y2 * k)
+            d.line([p1, p2], fill=color, width=w)
+            _round_cap(d, p1, cap_r, color)   # 圆头端点（去毛刺）
+            _round_cap(d, p2, cap_r, color)
         elif t == 'pl':
             pts = [(x * k, y * k) for x, y in op[1]]
             d.line(pts, fill=color, width=w, joint='curve')
+            _round_cap(d, pts[0], cap_r, color)   # 折线首尾圆头
+            _round_cap(d, pts[-1], cap_r, color)
         elif t == 'poly':
             pts = [(x * k, y * k) for x, y in op[1]]
             d.line(pts + [pts[0]], fill=color, width=w, joint='curve')
@@ -538,6 +565,11 @@ def _glyph_render(ops, size, color):
             cx, cy, r, a0, a1 = op[1]
             d.arc([(cx - r) * k, (cy - r) * k, (cx + r) * k, (cy + r) * k],
                   start=a0, end=a1, fill=color, width=w)
+            # arc 两端补圆头（PIL 角度体系：0=3点，顺时针，端点坐标同 arc 计算）
+            for a_deg in (a0, a1):
+                a = _math.radians(a_deg)
+                ep = ((cx + r * _math.cos(a)) * k, (cy + r * _math.sin(a)) * k)
+                _round_cap(d, ep, cap_r, color)
     img = img.resize((size, size), Image.LANCZOS)
     return img
 

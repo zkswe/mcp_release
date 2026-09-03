@@ -24,9 +24,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.15.0-open'
+MCP_VERSION = '0.16.0-open'
 MCP_BUILD = '2026-09-03'
 MCP_FEATURES = [
+    '2026-09-03: 图标抗锯齿根治（沛哥反馈 png 仍有锯齿，非提示词问题，是渲染管线缺陷）——①iconfont 超采样 4→8 倍（LANCZOS 缩回，斜线小尺寸阶梯消除）②所有线段/折线/圆弧端点补圆头 round cap（PIL 默认平头 butt，斜线端点毛刺缺口感来源）③assets 兜底图标 icon_circle/line_icon/frames_loading/frames_loading_gif 全部改为超采样渲染（此前 1x 直画 0% 抗锯齿必锯齿）；回归：46 图标 + 15 中文别名 + pressed 两态 + 非正方 canvas + 8 种线条兜底共 115 项全过；AA 占比量化：兜底图标 0%→39%',
     '2026-09-03: 图标优先规范落地（沛哥定规：生成 UI 时常用操作必须用图标，禁止按钮+文字糊弄）——HTML_SUBSET 新增「图标优先」章节 + 转换链路全通：gen_res 新增 46 个 iconfont 风格矢量线框图标库（back/forward/up/down/close/check/plus/minus/menu/more/search/home/list/play/pause/stop/prev/next/power/volume/mute/delete/edit/share/download/upload/user/lock/info/warning/camera/clock/calendar/bell/mic/location/mail/eye/video/phone/settings/refresh/wifi/bluetooth/heart/star，Feather 同款 24 网格 + 数学采样抗锯齿 + 中文别名）；html2json 识别 data-icon="/icon-xxx/iconfont class → 自动生成 PNG（图标按钮自动 normal+pressed 两态 picTab，纯图标自动 backgroundPic，data-color 配色、非正方控件画布居中不变形）；json2html 预览图片 base64 内联（preview.html 单文件独立显示不破图）；kb_tools/HTML_SUBSET 描述引导 AI 优先图标；图标词表 46 个见 HTML_SUBSET',
     '2026-09-03: 自定义字库修正（沛哥纠正 v0.13 方向错误，fun 流程权威规则）——重写 knowledge/devflow/custom-font-config.md：**fun build/launch 换字库 = ①项目根建 font/ 拷 ttf ②package.properties 加 enable.font.location=true（新模板已内置）③单字体自动全局默认零代码；多字体 ASCII 排序最前为默认、个别控件 setFontFamily(文件名不带后缀)（easyui≥2.2.0）④完成**；字库运行时资源不参与编译随 fun launch 推送；Z20/Z21/H500S/T113/V85X 内置 fzcircle.ttf（思源黑体裁剪），项目 font/ 有字体后完全用项目字体；字库无 emoji/特殊符号文本只用基础符号图标转 PNG；⚠️ 改 .prefs font 字段是 IDE 视角 fun 流程不用，AI 引导「换库」直接 4 步禁止绕 IDE 属性；实测 mark_cv201 font/sans.ttf + enable.font.location=true',
     '2026-09-03: 自定义字库配置入库（沛哥讲解 + KlipperF133 实测）——新建 knowledge/devflow/custom-font-config.md：**全局默认字库替换=改 .prefs 的 font 字段**（.settings/com.zksw.flythings.easyui.prefs 的 easyui.cfg.debug/release 两份 JSON 都加 "font" 指向自定义 ttf，实测 KlipperF133 debug=/mnt/extsd/ui/KaiTi.ttf release=/res/ui/KaiTi.ttf 与 resPath 对应；ttf 放 resources/ 打包到 ui 目录；默认模板无 font 字段=内置 fzcircle.ttf 思源黑体裁剪；仅支持 ttf；IDE 对应项目属性→字体）；**多字体混排=enable.font.location=true + font/ 目录 + setFontFamily**（mark_cv201 font/sans.ttf 用此法，参数=文件名不带 .ttf，easyui 2.2.0+，多字体 ASCII 排序最前作默认）；package.properties 覆盖层可配 font（冒号分 debug:release 两路径）',
