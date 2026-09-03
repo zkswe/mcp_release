@@ -1,7 +1,30 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.8.0-open**（2026-09-03）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.8.1-open**（2026-09-03）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.8.1-open (2026-09-03) — V85X USB Device 模式（ADB/U盘存储）知识入库
+
+**来源**：内网 git.com/AppGroup/xdv 仓库 xdv23（+兄弟项目 xdv200300 同源）实测
+（V85XEMMC 平台，AW_V853 芯片红外热像仪，usb_monitor.cpp，ZKSWE Develop Team 2023）。
+
+**背景**：沛哥提示该工程涉及 V85x 平台「MTP」功能；查知识库确认 USB device 存储模式未收录，学习入库。
+
+**技术定界**：客户口径「MTP」在该工程 = USB 连电脑当存储设备（电脑读设备内照片/视频），
+实现是 **configfs usb_gadget + mass_storage（U盘/UMS 模式）**，与 **functionfs（ADB 调试）** 双档共用一套 gadget 配置器；
+非 MTP 协议栈。
+
+**收录要点**（新建 knowledge/v85x/usb-gadget-storage.md）：
+1. 双档差异表：ADB（ffs.adb，VID/PID 0x18D1/0xD002）vs U盘（mass_storage.usb0 暴露 mmcblk0p1，0x1F3A/0x1000）vs NONE
+2. V85X/全志 usbc0 OTG 角色切换：/sys/devices/platform/soc/usbc0/{otg_role, usb_device, usb_host, usb_null}，**读节点即切换**（fopen/fread 文件 IO），与 Z21（cat soc0/soc/soc:usbotg/usb_host|usb_device）路径/方式不同
+3. configfs gadget 完整配置序列（8 步顺序）：mount configfs → g1 strings（manufacturer/product/serialnumber）→ configs/c.1（bmAttributes 0xc0 / MaxPower 500）→ unlink 旧 symlink → 切角色 → VID/PID + function → symlink 挂 config → ctl.restart adbd → 枚举 /sys/class/udc 写 g1/UDC
+4. 应用集成：开机 set_usb_config（Settings.dev ? ADB : STORAGE，开发样机 adb / 量产 U盘）；SystemProperties app.usb.cfg 防重复配置；GPIO_USBIN_DET 插拔检测；相册路径 /mnt/storage/photo|video
+5. EMMC FAT32 管理：edge/fat32（base::fat32::{format_fat32fs, mount_vfat, umount, checkAndMount, getBlockSize}），Main.cpp onEasyUIInit checkAndMount(mmcblk0p1 → /mnt/storage)
+6. 坑位：换档必须 unlink 两个旧 symlink；configfs 未挂先 mount；整分区暴露与设备端写入抢数据（量产按 dev 开关取舍）；UDC 未绑定电脑不识别；functionfs uid/gid=2000
+
+**同步**：references/kb/v85x-usb.md（速查）+ MEMORY.md 分类表登记；重建 rag_index；版本 0.8.0→0.8.1-open。
 
 ---
 

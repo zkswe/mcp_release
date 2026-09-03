@@ -24,9 +24,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.8.0-open'
+MCP_VERSION = '0.8.1-open'
 MCP_BUILD = '2026-09-03'
 MCP_FEATURES = [
+    '2026-09-03: V85X USB Device 模式知识入库（xdv23/xdv200300 实测，knowledge/v85x/usb-gadget-storage.md）——客户口径「MTP」= USB 连电脑当存储设备，实现是 configfs usb_gadget + mass_storage（U盘模式）+ functionfs（ADB 调试）双档切换；V85X OTG 角色切换路径 /sys/devices/platform/soc/usbc0/{otg_role,usb_device,usb_host,usb_null}（读节点即切换，vs Z21 soc0/soc/soc:usbotg）；gadget 完整配置序列（configfs mount→g1 strings→configs/c.1→function→symlink→VID/PID→UDC）；EMMC FAT32 管理 edge/fat32（checkAndMount mmcblk0p1→/mnt/storage）+ 相册存储路径约定；含坑位（换档 unlink 旧 symlink/configfs 先 mount/整分区暴露抢数据/UDC 绑定）',
     '2026-09-03: 移除 fix_tools.py 独立修复工具（沛哥定规：历史遗留，修复能力应前移到创建功能点）——check_all.py 交付全检新增 5 项（SeekBar 禁用 9-patch / 图片尺寸==position / text 禁换行 / INIT_UI_TIMERS 不被 FYX_BUILD 保护 / TextView 最小尺寸）；html2json 生成端内化 FT-009 最小尺寸自动扩宽（超容器告警）+ FT-006 多全屏 window 告警（页面级拆多 Activity）；包版本/依赖 install/时间戳自检此前已内化（flythings_add_package + build_ui_flow + check_all）；fix_tools.py + fix.log 归档 memory/backup；工具数 31→30',
     '2026-09-02: FT-007 废弃（沛哥定规）——删除“手动 adb push images + kill zkgui”部署顺序规则（fix_tools.py 移除 FT-007 检测/修复/验证 + deploy_order.md 生成），部署统一只用 fun launch；修复规则 19→18 条',
     '2026-09-02: T113 倒车摄像头格式参数表入库（沛哥要求，来源 T113CarSystem_PND 实测）——AHD/TVI 720P/1080P + CVBS PAL/NTSC + DM5885 逐行/隔行完整分辨率/帧率表（TVI 标 25/30 实际 24/29）；切换流程 stopPreview→setFormatSize+setFrameRate→setenv ZKCAMERA_DI_ENABLE→startPreview；/dev/video0=AHD /dev/video4=CVBS；无信号连续 2 次才提示；含完整代码；入库 knowledge/t113-car/ahd-camera-format.md',
