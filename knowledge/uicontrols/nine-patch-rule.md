@@ -64,5 +64,6 @@ def to_9patch(img, radius, out_dir, name):
 - 圆角后 putalpha 裁剪 → marker 被 alpha 清掉（必须先裁完再画 marker）
 - 9-patch 黑线画进倒角弧线内 → 圆角拉伸变形
 
-> ⚠️ 注意：fix_tools.py 的 FT-002 规定 **ZKSeekBar 不解析 9-patch**（marker 会画成黑框），
-> SeekBar 背景一律用普通 .png，禁止 .9.png；本规则适用于按钮/卡片/面板/轨道等支持 9-patch 的控件。
+> ⚠️ 注意：**ZKSeekBar 不解析 9-patch**（marker 会画成黑框），
+> SeekBar 背景一律用普通 .png，禁止 .9.png（check_all.py 交付全检第 10 项强制校验）；
+> 本规则适用于按钮/卡片/面板/轨道等支持 9-patch 的控件。

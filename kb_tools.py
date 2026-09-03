@@ -20,14 +20,14 @@ if UI_TOOLS not in sys.path:
 import html2json as h2j
 import json2html as j2h
 import gen_res as h2j_genres
-import fix_tools as ftx
 import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.7.15-open'
-MCP_BUILD = '2026-09-02'
+MCP_VERSION = '0.8.0-open'
+MCP_BUILD = '2026-09-03'
 MCP_FEATURES = [
+    '2026-09-03: 移除 fix_tools.py 独立修复工具（沛哥定规：历史遗留，修复能力应前移到创建功能点）——check_all.py 交付全检新增 5 项（SeekBar 禁用 9-patch / 图片尺寸==position / text 禁换行 / INIT_UI_TIMERS 不被 FYX_BUILD 保护 / TextView 最小尺寸）；html2json 生成端内化 FT-009 最小尺寸自动扩宽（超容器告警）+ FT-006 多全屏 window 告警（页面级拆多 Activity）；包版本/依赖 install/时间戳自检此前已内化（flythings_add_package + build_ui_flow + check_all）；fix_tools.py + fix.log 归档 memory/backup；工具数 31→30',
     '2026-09-02: FT-007 废弃（沛哥定规）——删除“手动 adb push images + kill zkgui”部署顺序规则（fix_tools.py 移除 FT-007 检测/修复/验证 + deploy_order.md 生成），部署统一只用 fun launch；修复规则 19→18 条',
     '2026-09-02: T113 倒车摄像头格式参数表入库（沛哥要求，来源 T113CarSystem_PND 实测）——AHD/TVI 720P/1080P + CVBS PAL/NTSC + DM5885 逐行/隔行完整分辨率/帧率表（TVI 标 25/30 实际 24/29）；切换流程 stopPreview→setFormatSize+setFrameRate→setenv ZKCAMERA_DI_ENABLE→startPreview；/dev/video0=AHD /dev/video4=CVBS；无信号连续 2 次才提示；含完整代码；入库 knowledge/t113-car/ahd-camera-format.md',
     '2026-09-02: ImageAnim 动图控件字段规范入库（沛哥定规）——动图控件只支持 GIF/WebP 两种格式；动图控件≠文本帧动画（禁止用 PNG 帧图/逐帧切换方式实现动图）；平台限制 Z20/Z21/T113/T113STDCXX/T113EMMC/Z261/V85X（F133 不支持）；实测 json 字段仅 caption/id/loopCount/playFile/position（修正 layout-audit 误写的 frameInterval）；入库 knowledge/uicontrols/imageanim-fields.md',
@@ -385,23 +385,6 @@ def flythings_generate_ui_assets(project_root: str, assets: str) -> str:
     return json.dumps(h2j_genres.gen_ui_assets(project_root, assets), ensure_ascii=False)
 
 
-def flythings_fix_project(project_root: str, kb_id: str = '', apply: bool = False) -> str:
-    """按修复知识库（fix.log FT-001~FT-009）自动诊断并修复 FlyThings 项目。
-
-    9 条规则覆盖：二维码控件(FT-001)/SeekBar 9-patch 黑框(FT-002)/SeekBar 尺寸匹配(FT-003)/
-    fui generated 缓存(FT-004)/INIT_UI_TIMERS 宏(FT-005)/多 Window 可见性(FT-006)/
-    Pillow 超采样抗锯齿(FT-008)/TextView 最小尺寸(FT-009)（FT-007 已废弃：部署统一用 fun launch，不再手动 push+kill zkgui）。
-
-    传入项目根目录完整路径。
-    - kb_id 传 'FT-001' 等只处理该条；留空处理全部 9 条；
-    - apply=False（默认）仅诊断（dry-run），返回每个规则命中/未命中与修复计划；
-    - apply=True 执行修复，并逐条 verify 验证。
-    遇到「二维码没显示/SeekBar 黑边/进度条对不齐/新控件指针缺失/定时器不触发/
-    多窗口堆叠/随机加载图片失败/圆角锯齿/文字截断」等问题时调用。
-    """
-    return json.dumps(ftx.flythings_fix_project(project_root, kb_id, apply), ensure_ascii=False)
-
-
 def flythings_i18n_scan(project_root: str) -> str:
     """诊断项目多语言（i18n）现状：i18n/*.tr 语言文件、key 对齐、布局 @key 引用完整性。
     项目做多语言时先调用；返回 JSON：languages/keysPerLanguage/缺失 key/引用缺失。
@@ -457,7 +440,6 @@ def register_all(mcp):
     mcp.tool()(flythings_gen_ui_test)
     mcp.tool()(flythings_check_project_deps)
     mcp.tool()(flythings_generate_ui_assets)
-    mcp.tool()(flythings_fix_project)
     mcp.tool()(flythings_i18n_scan)
     mcp.tool()(flythings_i18n_add_language)
     mcp.tool()(flythings_i18n_export)

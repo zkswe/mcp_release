@@ -1529,6 +1529,110 @@ class HtmlToJson:
         return ctx.name(typ)
 
 
+def _walk_ctrls(d, top=False, out=None):
+    """递归产出全部控件 (key, value)；top=True 只产出顶层（window__ 等）。"""
+    if out is None:
+        out = []
+    for k, v in d.items():
+        if isinstance(v, dict) and '__' in k:
+            out.append((k, v))
+            if not top:
+                _walk_ctrls(v, top=False, out=out)
+    return out
+
+
+def _finalize_layout(data, warnings):
+    """生成收尾规范（fix.log 规则前移内化，2026-09-03）：
+    - FT-009：textview/button 宽高自动扩到最小尺寸公式（超容器则告警不扩）
+    - FT-006：顶层多个互斥全屏 window → 告警（页面级应拆多 Activity）
+    原地修改 data，把需人工处理的问题追加到 warnings。
+    """
+    res = data.get('resolution') or {}
+    rw = res.get('width') or 0
+
+    def min_size(text, fs, align):
+        wsum = 0.0
+        for ch in text:
+            if ord(ch) > 0x2E7F:      # CJK/全角
+                wsum += 1.0
+            elif re.match(r'[\w\d()\[\]{}]', ch):
+                wsum += 0.55
+            else:
+                wsum += 0.6
+        mw = int(wsum * fs * 1.1) + 16
+        if align == 37:               # CENTER 补余量
+            mw += 8
+        return mw, int(fs * 1.25)
+
+    def parent_w(key):
+        root_w = rw
+
+        def find(dd, k, parent=None):
+            for kk, vv in dd.items():
+                if not isinstance(vv, dict):
+                    continue
+                if kk == k:
+                    return parent
+                if '__' in kk:
+                    r = find(vv, k, vv if kk.startswith('window__') else parent)
+                    if r is not None:
+                        return r
+            return None
+
+        p = find(data, key)
+        if p is not None and p.get('position'):
+            return p['position'].get('width', root_w) or root_w
+        return root_w
+
+    # ---- FT-009 最小尺寸（防文本截断：FlyThings 按 rect 硬裁剪不 ellipsize）----
+    for key, val in _walk_ctrls(data):
+        if not key.startswith(('textview__', 'button__')):
+            continue
+        text = str(val.get('text', ''))
+        fs = val.get('fontSize') or 0
+        pos = val.get('position') or {}
+        if not text or not fs or not pos.get('width') or not pos.get('height'):
+            continue
+        mw, mh = min_size(text, fs, val.get('alignment', 0))
+        nw, nh = pos['width'], pos['height']
+        if pos['width'] < mw:
+            nw = mw
+        if pos['height'] < mh:
+            nh = mh
+        if (nw, nh) == (pos['width'], pos['height']):
+            continue
+        cw = parent_w(key)
+        if nw > pos['width'] and pos.get('left', 0) + nw > cw:
+            warnings.append(f'{key}({val.get("caption", "")}) 文本“{text[:10]}”字号 {fs} '
+                            f'需最小宽 {mw}px，但扩宽会超出容器({cw}px)——需手动调位置/字号或拆行')
+            nw = pos['width']  # 宽度让位人工处理；高度不足仍自动扩（不挤占水平空间）
+        pos['width'], pos['height'] = nw, nh
+
+    # ---- FT-006 页面级多全屏 window（互斥页面应拆多 Activity，不堆单 json）----
+    screen_area = rw * (res.get('height') or 0)
+    top_wins = [(k, v) for k, v in _walk_ctrls(data, top=True)
+                if k.startswith('window__') and v.get('position')]
+    if screen_area and len(top_wins) >= 2:
+        pages = [(k, v) for k, v in top_wins
+                 if (v['position'].get('width') or 0) * (v['position'].get('height') or 0) >= screen_area * 0.6]
+        hits = []
+        for i in range(len(pages)):
+            for j in range(i + 1, len(pages)):
+                a, b = pages[i][1]['position'], pages[j][1]['position']
+                ix = max(0, min(a['left'] + a['width'], b['left'] + b['width']) - max(a['left'], b['left']))
+                iy = max(0, min(a['top'] + a['height'], b['top'] + b['height']) - max(a['top'], b['top']))
+                inter = ix * iy
+                small = min(a['width'] * a['height'], b['width'] * b['height'])
+                if small and inter / small > 0.3:
+                    hits.append((pages[i][0], pages[j][0]))
+        if hits:
+            names = ' / '.join(sorted({k for pair in hits for k in pair}))
+            warnings.append(f'检测到页面级互斥全屏 Window（{names}）：页面级页面应拆多个 Activity '
+                            f'用 Intent 跳转（onUI_intent / openActivity），不要单 json 堆全屏 Window '
+                            f'做 visible 状态机；功能窗口内的局部内容才用 Window 嵌套')
+    return data
+
+
 def html2json(input_html, output_json=None, res=None, asset_dir=None):
     """受限 HTML → json 布局。返回 {success, jsonPath, resolution, controls, warnings}。
 
@@ -1556,6 +1660,7 @@ def html2json(input_html, output_json=None, res=None, asset_dir=None):
     warnings += w2
     if data is None:
         return {'success': False, 'error': '未找到 <div class="screen"> 根节点（受限 HTML 必须从 screen 容器开始）'}
+    _finalize_layout(data, warnings)  # 收尾规范：FT-009 最小尺寸 / FT-006 多全屏 window 告警
 
     if output_json:
         os.makedirs(os.path.dirname(os.path.abspath(output_json)), exist_ok=True)
@@ -1569,17 +1674,6 @@ def html2json(input_html, output_json=None, res=None, asset_dir=None):
             'controls': count, 'warnings': warnings,
             'generatedAssets': conv.gen_count,
             'assetDir': asset_dir}
-
-    if output_json:
-        os.makedirs(os.path.dirname(os.path.abspath(output_json)), exist_ok=True)
-        with open(output_json, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-
-    resv = data.get('resolution', {})
-    count = sum(1 for k, v in data.items() if isinstance(v, dict) and '__' in k)
-    return {'success': True, 'jsonPath': output_json,
-            'resolution': f"{resv.get('width')}x{resv.get('height')}",
-            'controls': count, 'warnings': warnings}
 
 
 if __name__ == '__main__':

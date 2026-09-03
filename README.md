@@ -170,7 +170,6 @@ pip install mcp onnxruntime tokenizers
 | `flythings_*package*` | 依赖包查询/版本/API/Manifest/依赖解析 |
 | `flythings_attach_cli_tools` | 附带 fui/fun 到项目 |
 | `flythings_edit_ftu` | 布局编辑（set/remove/add/set_root） |
-| `flythings_fix_project` | 自动修复（FT-001~024 规则库） |
 | `flythings_i18n_*` | 多语言（scan/export/import/refactor） |
 | `flythings_gen_ui_test` | 自动化测试（traverse/monkey/custom） |
 | `flythings_generate_ui_assets` | 生成 UI 图片资源（AI/emoji/线条三级降级） |
@@ -183,7 +182,7 @@ pip install mcp onnxruntime tokenizers
 ```
 flythings-mcp-open/
 ├── mcp_server.py          # 入口（stdio MCP server）
-├── kb_tools.py            # 工具定义（22 个）
+├── kb_tools.py            # 工具定义（30 个）
 ├── project_tools.py       # 项目/编译/交付
 ├── package_tools.py       # 依赖包生态
 ├── rag_search.py          # 知识库检索（本地向量 + BM25）

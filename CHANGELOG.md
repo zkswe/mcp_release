@@ -1,7 +1,32 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.7.15-open**（2026-09-02）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.8.0-open**（2026-09-03）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.8.0-open (2026-09-03) — 移除 fix_tools.py 独立修复工具，修复能力前移到创建功能点（沛哥定规）
+
+**背景**：fix_tools.py（90KB，FT-001~FT-024 共 18 条 detect/fix/verify 规则）是历史遗留的「事后打补丁」工具——
+规则根源是各创建环节没做对。本次逐一审计规则 ↔ 源头功能点，已内化的保留，缺失的补进对应创建/校验功能点，
+然后移除 fix_tools.py 独立入口（不再有「生成后跑一遍修复」的路径）。
+
+**源头功能点审计结论（24 条规则去向）**：
+1. **早已内化，无需处理**：
+   - FT-004（json/ftu 时间戳防呆）→ project_tools._ui_timestamp_check + flythings_build_ui_flow ①②
+   - FT-008（圆角抗锯齿）→ gen_res.py 内置 _aa_rounded_rect/_aa_mask/_aa_outline（1x 直画 + α 羽化）
+   - FT-010/011/014（包版本查 registry + 改依赖先 fun install）→ flythings_add_package 闭环（registry→catalog→online 自动取版本 + 自动 install）+ build_ui_flow 每次 build 前 fun install
+   - FT-020（HTML 语义图标/emoji 自动转 PNG）→ html2json icon 分支自动转图 + qrcode__ 控件支持
+   - FT-021（渐变/圆角背景转 backgroundPic + 删除底色字段）→ html2json _effect_assets + gen_res.gen_gradient_stops
+   - FT-022 生成端（资源按 position 尺寸生成）→ html2json 自动转图传控件 position 尺寸
+   - FT-023（端到端自检）→ ui_tools/check_all.py 通用一键全检（9 项，比原 4 阶段更全）
+   - FT-024（text 禁换行）→ html2json _clean_text / <br> 折叠为空格
+2. **本次补进源头功能点**：
+   - **check_all.py 交付全检新增 5 项**（第 10~14 项）：SeekBar 禁用 9-patch（原 FT-002）/ 图片尺寸==控件 position（原 FT-003/022 校验端）/ text 禁换行符（原 FT-024 校验端）/ INIT_UI_TIMERS 不被 FYX_BUILD 保护（原 FT-005）/ TextView/Button 最小尺寸公式（原 FT-009 校验端）
+   - **html2json.py 生成端内化**：FT-009 最小尺寸自动扩宽（超容器告警不扩）+ FT-006 多全屏互斥 window 告警（页面级应拆多 Activity）；顺带清理 html2json() 主函数 return 后历史死代码
+3. **删除/归档**：fix_tools.py + fix.log 归档至 memory/backup_20260903_fix_tools/（不物理删除）；kb_tools.py 移除 import/入口/注册，工具数 31→30；README 工具表同步
+
+**工具数**：31 → 30（移除 flythings_fix_project）
 
 ---
 

@@ -31,6 +31,58 @@ if not FUI:
 BLACKLIST = set('⌫℃■●‹－＋–…→★◆▶▷①')
 failures = []
 
+try:
+    from PIL import Image as _Image
+    _HAS_PIL = True
+except Exception:
+    _HAS_PIL = False
+
+
+SEEKBAR_PIC_FIELDS = ('progressPic', 'secondaryProgressPic', 'backgroundPic', 'thumbPic')
+
+
+def _all_controls(d, out=None):
+    """递归产出全部控件 (key, value)（含 window 嵌套）。"""
+    if out is None:
+        out = []
+    for k, v in d.items():
+        if isinstance(v, dict) and '__' in k:
+            out.append((k, v))
+            _all_controls(v, out)
+    return out
+
+
+def _pic_path(root, ref):
+    """json 引用 images/xxx.png → 真实文件路径（resources/images 或 ui/images）。"""
+    if not ref:
+        return None
+    base = os.path.basename(ref)
+    for d in ('resources', 'ui'):
+        p = os.path.join(root, d, 'images', base)
+        if os.path.isfile(p):
+            return p
+    return None
+
+
+def _text_min_size(text, font_size, align):
+    """FT-009 最小尺寸公式：中文/全角=1.0，英数括号=0.55，符号=0.6，ceil+10% 余量。"""
+    if not text:
+        return 0, 0
+    import re as _re
+    wsum = 0.0
+    for ch in text:
+        if ord(ch) > 0x2E7F:
+            wsum += 1.0
+        elif _re.match(r'[\w\d()\[\]{}]', ch):
+            wsum += 0.55
+        else:
+            wsum += 0.6
+    min_w = int(wsum * font_size * 1.1) + 16
+    if align == 37:  # CENTER 补余量
+        min_w += 8
+    min_h = int(font_size * 1.25)
+    return min_w, min_h
+
 
 def _is_bad_char(c):
     """设备裁剪字库外的字符：黑名单特殊符号 + emoji 范围。"""
@@ -248,6 +300,97 @@ def main(project_root):
         for jf in PAGES:
             ftu = os.path.join(ui, os.path.splitext(os.path.basename(jf))[0] + '.ftu')
             log(os.path.isfile(ftu), '%s pack 成功 → %s' % (os.path.basename(jf), os.path.basename(ftu)))
+
+    print('== 10. SeekBar 禁用 9-patch（ZKSeekBar 不解析 marker，会显示黑框）==')
+    for f in PAGES:
+        d = json.load(open(os.path.join(root, f), encoding='utf-8'))
+        bad = []
+        for k, v in _all_controls(d):
+            if not k.startswith('seekbar__'):
+                continue
+            for fld in SEEKBAR_PIC_FIELDS:
+                pv = v.get(fld, '')
+                if isinstance(pv, str) and pv.lower().endswith('.9.png'):
+                    bad.append('%s.%s 用了 %s' % (k, fld, pv))
+        log(not bad, '%s SeekBar 9-patch %s' % (f, '；'.join(bad) if bad else '无'))
+
+    print('== 11. 图片尺寸必须与控件 position 严格相等（FlyThings 不缩放普通 PNG）==')
+    if not _HAS_PIL:
+        log(True, '无 PIL，跳过图片尺寸核对（仅检查引用存在性）')
+    for f in PAGES:
+        d = json.load(open(os.path.join(root, f), encoding='utf-8'))
+        bad = []
+        for k, v in _all_controls(d):
+            pos = v.get('position') or {}
+            pw, ph = pos.get('width'), pos.get('height')
+            if not pw or not ph:
+                continue
+            refs = []
+            for fld in SEEKBAR_PIC_FIELDS:
+                pv = v.get(fld)
+                if isinstance(pv, str):
+                    refs.append((fld, pv))
+            if isinstance(v.get('backgroundPic'), str):
+                refs.append(('backgroundPic', v['backgroundPic']))
+            pt_ = v.get('picTab') or {}
+            for fld in ('pic0', 'pic1'):
+                pv = pt_.get(fld)
+                if isinstance(pv, str):
+                    refs.append(('picTab.%s' % fld, pv))
+            for fld, ref in refs:
+                if ref.lower().endswith('.9.png'):
+                    continue  # 9-patch 可拉伸，尺寸不要求等于 position
+                p = _pic_path(root, ref)
+                if not p:
+                    continue  # 缺失已在第 4 项报
+                try:
+                    with _Image.open(p) as im:
+                        w, h = im.size
+                    if (w, h) != (pw, ph):
+                        bad.append('%s.%s %s %dx%d != position %dx%d' % (k, fld, os.path.basename(ref), w, h, pw, ph))
+                except Exception:
+                    pass
+        log(not bad, '%s 图片尺寸 %s' % (f, '；'.join(bad) if bad else '全部匹配'))
+
+    print('== 12. text 禁止含换行符（设备不渲染 \\n 多行）==')
+    for f in PAGES:
+        d = json.load(open(os.path.join(root, f), encoding='utf-8'))
+        bad = []
+        for k, v in _all_controls(d):
+            t = v.get('text')
+            if isinstance(t, str) and ('\n' in t or '\r' in t):
+                bad.append('%s(%s) 含换行' % (k, v.get('caption', '')))
+        log(not bad, '%s text 换行 %s' % (f, '；'.join(bad) if bad else '无'))
+
+    print('== 13. INIT_UI_TIMERS 不被 FYX_BUILD 保护（fun 工具链宏是 FUN_BUILD）==')
+    for f in LOGICS:
+        code = open(os.path.join(root, f), encoding='utf-8').read()
+        idx = code.find('INIT_UI_TIMERS')
+        bad = False
+        if idx >= 0:
+            m = re.findall(r'#if(n?def|ndef)\s+(\w+)', code[:idx])
+            if m and m[-1][1] == 'FYX_BUILD':
+                bad = True
+        log(not bad, '%s TIMER 宏保护' % f)
+
+    print('== 14. TextView/Button 最小尺寸（防文本截断）==')
+    for f in PAGES:
+        d = json.load(open(os.path.join(root, f), encoding='utf-8'))
+        bad = []
+        for k, v in _all_controls(d):
+            if not k.startswith(('textview__', 'button__')):
+                continue
+            text = str(v.get('text', ''))
+            fs = v.get('fontSize') or 0
+            pos = v.get('position') or {}
+            if not text or not fs or not pos.get('width'):
+                continue
+            min_w, min_h = _text_min_size(text, fs, v.get('alignment', 0))
+            if pos['width'] < min_w or pos['height'] < min_h:
+                bad.append('%s(%s) 文本“%s”需 >= %dx%d，当前 %dx%d'
+                           % (k, v.get('caption', ''), text[:8], min_w, min_h,
+                              pos['width'], pos['height']))
+        log(not bad, '%s 最小尺寸 %s' % (f, '；'.join(bad) if bad else '满足'))
 
     print()
     if failures:
