@@ -1,7 +1,24 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.8.1-open**（2026-09-03）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.8.2-open**（2026-09-03）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.8.2-open (2026-09-03) — V85X USB 存储双介质差异补入（沛哥验证 xdv200300）
+
+**沛哥提示**：兄弟项目 xdv200300 有新的暴露路径（应为 /mnt/extsd），验证是否存在。
+
+**验证结论**：存在，且机制已完全摸清——xdv200300 新增 **TF 卡存储方案**：
+1. config.h 新增 `EMMC_BLOCK_BOOT=/dev/block/mmcblk0boot0`（EMMC 存在性探针）、
+   `TFCARD_BLOCK=/dev/block/mmcblk1`、`TFCARD_MOUNT_POINT=/mnt/extsd`
+2. Main.cpp 挂载双分支：mmcblk0boot0 存在 → checkAndMount(mmcblk0p1→/mnt/storage)；否则 → checkAndMount(mmcblk1→/mnt/extsd)
+3. usb_monitor.cpp STORAGE 档（lun.0/file）同一探针二选一：EMMC 存在暴露 mmcblk0p1，否则暴露 **TF 卡 mmcblk1**；xdv23 固定暴露 mmcblk0p1（无分支）
+4. ⚠️ 口径澄清：mass_storage lun.0/file 暴露的是**块设备**（不接受挂载路径），
+   `/mnt/extsd` 是 TF 卡在设备内的挂载点而非暴露源；电脑看到的是 TF 卡文件系统内容
+
+**更新**：knowledge/v85x/usb-gadget-storage.md 新增 §1.5 双介质差异表 + references/kb/v85x-usb.md 同步；
+重建 rag_index；版本 0.8.1→0.8.2-open。
 
 ---
 

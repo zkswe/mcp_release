@@ -4,6 +4,7 @@
 > 客户/产品口径说的「MTP 功能」在 FlyThings V85X 工程里通常指 **USB 连电脑当存储设备**，
 > 实现是 Linux **configfs usb_gadget + mass_storage**（UMS/U 盘模式，非 MTP 协议栈）；
 > 另一档是 **ADB 调试模式**（functionfs）。两档共用一个 gadget 配置器，按开关切换。
+> ⚠️ xdv23 与 xdv200300 的存储介质策略不同（xdv23 只暴露内置 EMMC；xdv200300 支持 TF 卡方案），见 §1.5。
 
 ## 1. 两种配置一句话
 
@@ -12,6 +13,26 @@
 | `E_USB_CONFIG_ADB` | adb 设备（调试） | functionfs `ffs.adb` | `0x18D1/0xD002` |
 | `E_USB_CONFIG_STORAGE` | U 盘（拷照片/视频） | mass_storage 暴露 EMMC 分区 | `0x1F3A/0x1000` |
 | `E_USB_CONFIG_NONE` | 无（仅充电） | 无 function，角色回 host | `0x1F3A/0x1001` |
+
+## 1.5 双介质差异（xdv23 vs xdv200300，沛哥 2026-09-03 验证）
+
+xdv200300 在 xdv23 基础上新增 **TF 卡作为存储/暴露介质**（适配无内置 EMMC 的硬件变体）：
+
+| 宏 | xdv23 | xdv200300 |
+|----|-------|-----------|
+| `STORAGE_BLOCK` | /dev/block/mmcblk0p1 | /dev/block/mmcblk0p1 |
+| `STORAGE_MOUNT_POINT` | /mnt/storage | /mnt/storage |
+| `EMMC_BLOCK_BOOT`（探针） | 无 | /dev/block/mmcblk0boot0 |
+| `TFCARD_BLOCK` | 无 | /dev/block/mmcblk1 |
+| `TFCARD_MOUNT_POINT` | 无 | /mnt/extsd |
+
+- **挂载**（Main.cpp onEasyUIInit，双分支一致）：`base::exists(/dev/block/mmcblk0boot0)`
+  为真 → `checkAndMount(mmcblk0p1 → /mnt/storage)`（EMMC）；否则 → `checkAndMount(mmcblk1 → /mnt/extsd)`（TF 卡）
+- **USB 暴露**（usb_monitor.cpp `E_USB_CONFIG_STORAGE` 档，同一探针二选一写 `lun.0/file`）：
+  EMMC 存在 → 暴露 `mmcblk0p1`；否则 → 暴露 **`/dev/block/mmcblk1`（TF 卡）**
+- ⚠️ **口径澄清**：暴露给电脑的是**块设备**（mass_storage 的 `lun.0/file` 只接受块设备/镜像文件，不接受挂载路径），
+  不是把 `/mnt/extsd` 这个字符串暴露出去；`/mnt/extsd` 只是 TF 卡在设备内的**挂载点**，
+  电脑端看到的是 TF 卡文件系统内容（照片/视频目录）。
 
 ## 2. OTG 角色切换（V85X/全志 usbc0 sysfs）
 
