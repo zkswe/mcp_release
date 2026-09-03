@@ -43,6 +43,62 @@ JS 只服务于浏览器预览确认，不转 json；FlyThings 端的交互逻�
 **切图工具**：`tools/ui_tools/gen_res.py`（Pillow 脚本）可按 CSS 设计稿参数生成
 PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 
+## 🎯 图标优先（iconfont 矢量线框，沛哥 2026-09-03 定规）
+
+**生成 UI 时常用操作必须用图标表达，禁止用「按钮+文字」糊弄**。返回/播放/暂停/上一首/下一首/
+设置/搜索/删除/刷新/确认/关闭/加减/音量/主页/菜单等通用操作，HTML 里写 `data-icon`（或
+iconfont class），转换器**自动生成 iconfont 风格矢量线框 PNG**（描边线性图标，单色可配），
+设备端显示真图标；图片不受设备裁剪字库限制。
+
+### 写法（三种等效）
+```html
+<!-- ① 图标按钮（推荐：可点击，自动生成 normal+pressed 两态图 picTab） -->
+<div class="btn" data-icon="play" data-x="216" data-y="176" data-w="48" data-h="48" data-caption="BtnPlay"></div>
+<div class="btn" data-icon="返回" data-x="10" data-y="10" data-w="40" data-h="40" data-caption="BtnBack" data-color="#EEF2F6"></div>
+
+<!-- ② 纯展示图标（textview 背景图，不可点；要可点请用 ① 的 btn） -->
+<div class="icon" data-icon="wifi" data-x="430" data-y="8" data-w="20" data-h="20"></div>
+
+<!-- ③ iconfont class 风格（效果稿里视觉同义，转换器同样识别） -->
+<i class="iconfont icon-volume" data-x="30" data-y="200" data-w="24" data-h="24"></i>
+```
+
+### 规则
+- **data-icon 值**：英文名或中文别名都认（`play`/`播放`/`返回`/`back`...，见下表），自动映射规范名。
+- **data-color**：线框颜色 `#RRGGBB`（默认 `#D8E2F0` 浅灰蓝，深色主题友好）；图标按钮按下态自动提亮。
+- **尺寸**：控件建议正方形（data-w == data-h）；PNG 与控件同尺寸、线框居中（非正方自动居中不变形）。
+- **caption**：图标按钮同样要 data-caption（回调命名用），不要往图标按钮里写文字；
+  需要文字说明 → 图标按钮旁另加 `div.text`。
+- **覆盖**：若同时给了 data-pic/data-pic0 等显式图，以显式图为准（data-icon 忽略）。
+- 未收录的图标名 → warning 提示（列出可用名）；自备图仍用 data-pic 老办法。
+
+### 常用图标词表（46 个，中文别名自动映射）
+| 操作 | data-icon | 操作 | data-icon |
+|---|---|---|---|
+| 返回/左箭头 | back | 前进/右箭头 | forward |
+| 上/下 | up / down | 上一首 | prev |
+| 下一首 | next | 播放 | play |
+| 暂停 | pause | 停止 | stop |
+| 设置/齿轮 | settings | 搜索 | search |
+| 刷新 | refresh | 主页/首页 | home |
+| 删除 | delete | 编辑/改名 | edit |
+| 确认/对勾 | check | 关闭/取消 | close |
+| 加/新增 | plus | 减 | minus |
+| 菜单 | menu | 更多 | more |
+| 列表 | list | 音量 | volume |
+| 静音 | mute | 电源 | power |
+| 下载 | download | 上传 | upload |
+| 分享 | share | 用户/我的 | user |
+| 锁定 | lock | 信息/详情 | info |
+| 警告/告警 | warning | 相机/拍照 | camera |
+| 时间/时钟 | clock | 日历/日期 | calendar |
+| 通知/铃铛 | bell | 麦克风/语音 | mic |
+| 定位/位置 | location | 邮件/邮箱 | mail |
+| 预览/眼睛 | eye | 录像/摄像 | video |
+| 电话/拨打 | phone | WiFi/无线 | wifi |
+| 蓝牙 | bluetooth | 收藏/星标 | star |
+| 喜欢/心 | heart | 更多可用名 | gen_res.glyph_list() |
+
 ## 结构骨架
 ```html
 <div class="screen" data-res="480x272" data-bg="#0E131A">

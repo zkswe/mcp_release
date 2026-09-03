@@ -53,7 +53,7 @@ CLASS_MAP = {
     'listview': ('list', 'listview', 'lv'),
     'checkbox': ('checkbox', 'check', 'cb'),
     'radiogroup': ('radio', 'radiogroup', 'rg'),
-    'icon': ('icon', 'img', 'image', 'pic'),
+    'icon': ('icon', 'img', 'image', 'pic', 'iconfont'),
     'circlebar': ('circlebar', 'circular', 'ring'),
     'diagram': ('diagram', 'wave', 'chart'),
     'digitalclock': ('digitalclock', 'clock', 'time'),
@@ -141,8 +141,51 @@ def _classes(attrs):
     return set((_attr(attrs, 'class') or '').split())
 
 
-def _detect_type(tag, classes):
-    """HTML 标签 + class → FlyThings 控件类型。"""
+# iconfont 图标语义提取（2026-09-03 沛哥定规：图标优先）
+# HTML 写法：data-icon="play" 或 class="iconfont icon-play" / class="icon icon-play"
+_ICON_CLASS_RE = re.compile(r'^icon-(.+)$')
+
+
+def _glyph_from_attrs(attrs):
+    """从 data-icon 或 icon-xxx class 提取图标语义名；无则返回 None。
+    规范：返回/播放/暂停/设置/搜索/删除等常用操作必须用图标（data-icon），
+    禁止纯文字按钮糊弄；图标名与中文别名映射见 gen_res（back/返回/play/播放...）。"""
+    v = _attr(attrs, 'data-icon')
+    if v:
+        v = str(v).strip()
+        if v:
+            return v
+    for k in _classes(attrs):
+        m = _ICON_CLASS_RE.match(k)
+        if m and m.group(1):
+            return m.group(1)
+    return None
+
+
+def _color_int_rgba(cint, default=None):
+    """十进制颜色 int → (r,g,b,255)；失败返回 default。"""
+    if cint is None:
+        return default
+    try:
+        cint = int(cint)
+        if 0 <= cint <= 0xFFFFFF:
+            return ((cint >> 16) & 0xFF, (cint >> 8) & 0xFF, cint & 0xFF, 255)
+    except Exception:
+        pass
+    return default
+
+
+def _detect_type(tag, classes, attrs=None):
+    """HTML 标签 + class → FlyThings 控件类型。
+    2026-09-03 扩展：btn/button 类 + data-icon/iconfont → button（图标按钮，生成两态图）；
+    纯 iconfont/icon-xxx → icon（图标 textview）。"""
+    has_btn = bool(classes & set(CLASS_MAP['button'])) or tag == 'button'
+    has_icon = bool(classes & set(CLASS_MAP['icon'])) or any(k.startswith('icon-') for k in classes)
+    if attrs is not None and _glyph_from_attrs(attrs):
+        if has_btn:
+            return 'button'
+        if has_icon:
+            return 'icon'
     for typ, keys in CLASS_MAP.items():
         for k in keys:
             if k in classes:
@@ -153,7 +196,7 @@ def _detect_type(tag, classes):
         return 'edittext'
     if tag == 'img':
         return 'icon'
-    if tag in ('p', 'span', 'h1', 'h2', 'h3', 'label', 'div'):
+    if tag in ('p', 'span', 'h1', 'h2', 'h3', 'label', 'div', 'i'):
         return 'textview'
     if tag in ('ul', 'ol'):
         return 'listview'
@@ -373,6 +416,38 @@ class HtmlToJson:
         except Exception as e:
             self.ctx.warnings.append(f'自动转图失败: {e}')
             return None
+
+    # ---------- iconfont 图标自动落图（2026-09-03 沛哥定规：图标优先）----------
+    def _icon_png(self, ctx, glyph, cw, ch, color_int=None, pressed=False):
+        """data-icon 语义图标 → PNG（iconfont 风格矢量线框，居中于控件画布）。
+        glyph: 英文/中文名（back/返回...）；cw/ch: 控件尺寸（PNG 同尺寸，图标居中不变形）；
+        color_int: 十进制描边色或 None(默认浅色)；pressed=True 生成按下态（按钮 picTab pic1）。
+        未收录/不可用返回 None 并 warning。"""
+        cw, ch = max(1, int(cw or 0)), max(1, int(ch or 0))
+        size = min(cw, ch)
+        if not (_HAS_GEN_RES and self.asset_dir):
+            ctx.warnings.append(
+                f'data-icon="{glyph}" 自动转图不可用（缺 gen_res/Pillow 或未指定 asset_dir），请给 data-pic 自备图')
+            return None
+        gname = gr.glyph_canonical(glyph)
+        if not gname:
+            avail = ', '.join(gr.glyph_list())
+            ctx.warnings.append(
+                f'图标 "{glyph}" 未收录（可用：{avail}）；给 data-pic 自备图或换用列表内名字')
+            return None
+        col = _color_int_rgba(color_int, (0xD8, 0xE2, 0xF0, 255))
+        hexs = '%02X%02X%02X' % tuple(int(v) for v in col[:3])
+        name = 'icon_%s_%dx%d_%s%s.png' % (gname, cw, ch, hexs,
+                                           '_p' if pressed else '')
+
+        def _g(d, _n=name, _g2=gname, _s=size, _c=col, _p=pressed, _cv=(cw, ch)):
+            return gr.glyph_icon(d, _n, _g2, size=int(_s), color=_c, pressed=_p, canvas=_cv)
+
+        return self._gen_asset(_g)
+
+    def _icon_color(self, attrs):
+        """图标描边色：data-color → 十进制 int；缺省 None（gen_res 用默认浅色）。"""
+        return to_dec(_attr(attrs, 'data-color'))
 
     def _effect_assets(self, ctx, node, w, h, cap):
         """检测 style/data 里的 CSS 效果并自动生成图片资源。
@@ -646,7 +721,7 @@ class HtmlToJson:
             ctx.stack.pop()
             return
 
-        typ = _detect_type(tag, classes)
+        typ = _detect_type(tag, classes, node.attrs)
 
         # 在 radiogroup 容器内：子 div.radio 收进父容器 radiobuttons（RadioGroupDemo 校准）
         if ctx.stack and ctx.stack[-1].get('__radiogroup') and typ == 'radiogroup':
@@ -1031,6 +1106,14 @@ class HtmlToJson:
             spic = _attr(attrs, 'data-pic') or _attr(attrs, 'data-bgpic') or _attr(attrs, 'data-src') or _attr(attrs, 'src')
             if spic:
                 si['backgroundPic'] = spic if '/' in spic else 'images/' + spic
+            else:
+                # iconfont 图标自动生成（2026-09-03 图标优先）：subItem 里放 data-icon/icon-xxx 同样落图
+                glyph = _glyph_from_attrs(attrs)
+                if glyph is not None:
+                    cw, ch = pos.get('width', 100), pos.get('height', 40)
+                    png = self._icon_png(ctx, glyph, cw, ch, self._icon_color(attrs), pressed=False)
+                    if png:
+                        si['backgroundPic'] = png
             # charsetTab 字符图（NetDemo WiFi 信号档位校准）：data-charset='[{"char":48,"pic":"a.png","size":{"width":26,"height":24}},...]'
             cs = _attr(attrs, 'data-charset')
             if cs:
@@ -1141,9 +1224,26 @@ class HtmlToJson:
                     pics[k] = v if '/' in v else 'images/' + v
             if pic0:
                 pics.setdefault('pic0', pic0 if '/' in pic0 else 'images/' + pic0)
+            # iconfont 图标按钮（2026-09-03 沛哥定规：图标优先）：
+            # data-icon="play" / class="btn iconfont icon-play" / class="btn icon-play"
+            # 无显式多态图时 → 自动生成 normal+pressed 两态 PNG 作 picTab（透明底线框图标按钮）
+            glyph = _glyph_from_attrs(attrs)
+            if not pics and glyph is not None:
+                cw, ch = pos.get('width', 100), pos.get('height', 40)
+                col = self._icon_color(attrs)
+                p0 = self._icon_png(ctx, glyph, cw, ch, col, pressed=False)
+                p1 = self._icon_png(ctx, glyph, cw, ch, col, pressed=True)
+                if p0:
+                    c['picTab'] = {'pic0': p0, 'pic1': p1 or p0}
+                    c.pop('bgColorTab', None)
+                    if text:
+                        ctx.warnings.append(
+                            f'<{node.tag} class="{_attr(attrs, "class") or ""}"> data-icon 图标按钮已忽略文字「{text}」'
+                            f'（图标按钮纯图标；需文字说明请相邻加 div.text 或用纯文字按钮）')
+                        c.pop('text', None)
             if pics:
                 c['picTab'] = pics
-            else:
+            elif 'picTab' not in c:
                 # 背景图按钮：backgroundPic 单图（BtnBgPic demo），有图也去底色
                 bgpic = _attr(attrs, 'data-bgpic') or _attr(attrs, 'data-background-pic')
                 if bgpic:
@@ -1426,19 +1526,28 @@ class HtmlToJson:
             if pic:
                 c['backgroundPic'] = pic if '/' in pic else 'images/' + pic
             else:
-                # 纯 emoji 文本 → PNG 图标（设备字库不支持 emoji，转图片显示）
-                raw_text = re.sub(r'[ \t\r\f\v]+', ' ', node.text).strip()
-                if raw_text and not _clean_text(raw_text) and any(_is_emoji(ch) for ch in raw_text):
-                    emoji_ch = next((ch for ch in raw_text if _is_emoji(ch)), '\u2b50')
-                    size = max(pos.get('width', 100), pos.get('height', 100))
-                    name = f'emoji_{cap or ctx.n}_{self.gen_count}.png'
+                # iconfont 图标自动生成（2026-09-03 沛哥定规：图标优先）：
+                # data-icon="play" / class="iconfont icon-play" / class="icon icon-play" → PNG 图标 textview
+                glyph = _glyph_from_attrs(attrs)
+                if glyph is not None:
+                    cw, ch = pos.get('width', 100), pos.get('height', 40)
+                    png = self._icon_png(ctx, glyph, cw, ch, self._icon_color(attrs), pressed=False)
+                    if png:
+                        c['backgroundPic'] = png
+                if 'backgroundPic' not in c:
+                    # 纯 emoji 文本 → PNG 图标（设备字库不支持 emoji，转图片显示）
+                    raw_text = re.sub(r'[ \t\r\f\v]+', ' ', node.text).strip()
+                    if raw_text and not _clean_text(raw_text) and any(_is_emoji(ch) for ch in raw_text):
+                        emoji_ch = next((ch for ch in raw_text if _is_emoji(ch)), '\u2b50')
+                        size = max(pos.get('width', 100), pos.get('height', 100))
+                        name = f'emoji_{cap or ctx.n}_{self.gen_count}.png'
 
-                    def _e(d, _n=name, _s=size, _c=emoji_ch):
-                        return gr.emoji_icon(d, _n, _s, _c)
+                        def _e(d, _n=name, _s=size, _c=emoji_ch):
+                            return gr.emoji_icon(d, _n, _s, _c)
 
-                    pic2 = self._gen_asset(_e)
-                    if pic2:
-                        c['backgroundPic'] = pic2
+                        pic2 = self._gen_asset(_e)
+                        if pic2:
+                            c['backgroundPic'] = pic2
             typ = 'textview'
         else:
             c = {'caption': cap, 'id': ctx.nid('textview'), 'position': pos}

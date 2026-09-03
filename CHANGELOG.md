@@ -1,10 +1,19 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.14.0-open**（2026-09-03）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.15.0-open**（2026-09-03）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
 
 ---
 
+## v0.15.0-open (2026-09-03) — 图标优先规范落地：HTML 生成强制用 iconfont 矢量线框图标，禁止按钮+文字糊弄
+**沛哥定规：生成 UI 时常用操作（返回/播放/暂停/上一首/下一首/设置/搜索/删除/刷新/确认/关闭/加减/音量/主页/菜单等）必须用图标表达，禁止用「按钮+文字」！**
+- ★ gen_res.py 新增 **46 个 iconfont 风格矢量线框图标库**：back/forward/up/down/close/check/plus/minus/menu/more/search/home/list/play/pause/stop/prev/next/power/volume/mute/delete/edit/share/download/upload/user/lock/info/warning/camera/clock/calendar/bell/mic/location/mail/eye/video/phone/settings/refresh/wifi/bluetooth/heart/star（Feather 同款 24 网格坐标 + 数学采样抗锯齿 + 中文别名，形状程序化验证）；按钮自动 normal+pressed 两态（_p 提亮），非正方画布自动居中
+- ★ html2json.py 识别 `data-icon="play"` / `class="iconfont icon-play"` / `class="btn icon-play"` → 自动生成 PNG 落 json：图标按钮→picTab{pic0,pic1} 两态图，纯图标→textview backgroundPic；未收录名 warning 列出可用表
+- ★ json2html.py 预览图片 base64 内联（preview.html 单文件独立显示，ui/ 下不破图）
+- ★ HTML_SUBSET.md + kb_tools 工具描述新增「🎯 图标优先」引导：46 个图标词表（中文别名自动映射）+ 写法示例（btn data-icon / icon data-icon / i.iconfont icon-xxx）
+- 工具链验证：端到端测试通过（HTML 图标→html2json→json 引用→json2html 内联显示）
+
+---
 ## v0.14.0-open (2026-09-03) — 自定义字库修正：fun 流程权威规则（font/ + enable.font.location，非 .prefs）
 
 **重写 knowledge/devflow/custom-font-config.md（沛哥 20:51 纠正 v0.13 方向错误）**

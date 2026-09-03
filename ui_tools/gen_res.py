@@ -484,6 +484,367 @@ def gen_ui_assets(project_root, assets):
             'note': 'method: ai=AI生图 / emoji=本地emoji渲染 / line=线条几何兜底'}
 
 
+# ---------- iconfont 风格矢量线框图标库（2026-09-03 沛哥定规：图标优先）----------
+# 用途：返回/播放/暂停/设置/搜索/删除等常用操作必须用图标（禁止纯文字按钮糊弄），
+# HTML 里写 data-icon="play"（或 class="iconfont icon-play"）→ 转换器调 glyph_icon 自动生成 PNG。
+# 24 网格坐标（Feather 风格），ss=4 超采样 + LANCZOS 缩回抗锯齿；描边=STROKE(2 单位)。
+
+_G_STROKE = 2.0          # 24 网格上描边宽度（Feather 同款）
+_G_SS = 4                # 超采样倍数（画 4 倍再缩回，线条抗锯齿）
+
+
+def _glyph_render(ops, size, color):
+    """ops 图标指令 → RGBA Image（size×size）。
+    op 格式: ('l',[(x1,y1),(x2,y2)]) 线 / ('pl',[...]) 折线(曲线连接)
+             ('poly',[...]) 闭合多边形(描边) / ('fill',[...]) 填充多边形
+             ('c',(cx,cy,r)) 圆描边 / ('fc',(cx,cy,r)) 实心圆
+             ('rect',(x,y,w,h,r)) 圆角矩形描边 / ('frect',(x,y,w,h,r)) 实心
+             ('arc',(cx,cy,r,a0,a1)) 圆弧描边（PIL 角度：0=3点,顺时针,270=12点）
+    """
+    S = size * _G_SS
+    img = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    k = S / 24.0
+    w = max(2, int(round(_G_STROKE * k)))
+    for op in ops:
+        t = op[0]
+        if t == 'l':
+            (x1, y1), (x2, y2) = op[1]
+            d.line([(x1 * k, y1 * k), (x2 * k, y2 * k)], fill=color, width=w)
+        elif t == 'pl':
+            pts = [(x * k, y * k) for x, y in op[1]]
+            d.line(pts, fill=color, width=w, joint='curve')
+        elif t == 'poly':
+            pts = [(x * k, y * k) for x, y in op[1]]
+            d.line(pts + [pts[0]], fill=color, width=w, joint='curve')
+        elif t == 'fill':
+            d.polygon([(x * k, y * k) for x, y in op[1]], fill=color)
+        elif t == 'c':
+            cx, cy, r = op[1]
+            d.ellipse([(cx - r) * k, (cy - r) * k, (cx + r) * k, (cy + r) * k],
+                      outline=color, width=w)
+        elif t == 'fc':
+            cx, cy, r = op[1]
+            d.ellipse([(cx - r) * k, (cy - r) * k, (cx + r) * k, (cy + r) * k], fill=color)
+        elif t == 'rect':
+            x, y, ww, hh, r = op[1]
+            d.rounded_rectangle([x * k, y * k, (x + ww) * k, (y + hh) * k],
+                                radius=r * k, outline=color, width=w)
+        elif t == 'frect':
+            x, y, ww, hh, r = op[1]
+            d.rounded_rectangle([x * k, y * k, (x + ww) * k, (y + hh) * k],
+                                radius=r * k, fill=color)
+        elif t == 'arc':
+            cx, cy, r, a0, a1 = op[1]
+            d.arc([(cx - r) * k, (cy - r) * k, (cx + r) * k, (cy + r) * k],
+                  start=a0, end=a1, fill=color, width=w)
+    img = img.resize((size, size), Image.LANCZOS)
+    return img
+
+
+# ---- 复杂图标用专用函数（三角函数/循环），简单图标用 ops 数据 ----
+# 2026-09-03 重写：全部数学采样绘制，绕开 PIL arc 方向歧义（θ 增大=屏幕顺时针，
+# 视觉角= -θ）；心形用解析曲线采样（两圆+三角拼接有断点）。
+import math as _math
+
+
+def _gear(size, color):
+    """设置齿轮（8 齿梯形 + 厚环 + 中心孔）"""
+    S = size * _G_SS
+    img = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    k = S / 24.0
+    w = max(2, int(round(_G_STROKE * k)))
+    cx = cy = 12.0
+    pts = []
+    # 先画 8 齿（内 6.8 → 外 9.6，齿宽 4.4 弧单位，梯形外侧略窄）
+    for i in range(8):
+        a = _math.radians(i * 45 - 90)
+        c, s = _math.cos(a), _math.sin(a)
+        # 齿中心方向两侧展开：顶边（外）窄、底边（内）宽
+        pa = _math.radians(i * 45 - 90 + 3.4)
+        pb = _math.radians(i * 45 - 90 - 3.4)
+        ca, sa = _math.cos(pa), _math.sin(pa)
+        cb, sb = _math.cos(pb), _math.sin(pb)
+        # 底角（内圈 6.8 处，角宽 5.2°）
+        pa2 = _math.radians(i * 45 - 90 + 5.2)
+        pb2 = _math.radians(i * 45 - 90 - 5.2)
+        c2a, s2a = _math.cos(pa2), _math.sin(pa2)
+        c2b, s2b = _math.cos(pb2), _math.sin(pb2)
+        pts += [(cx + 6.8 * c2a, cy + 6.8 * s2a), (cx + 9.6 * ca, cy + 9.6 * sa),
+                (cx + 9.6 * cb, cy + 9.6 * sb), (cx + 6.8 * c2b, cy + 6.8 * s2b)]
+    d.polygon([(x * k, y * k) for x, y in pts], fill=color)          # 齿（梯形实心）
+    # 齿根环（覆盖齿底，形成圆形齿盘）
+    d.ellipse([(cx - 7.0) * k, (cy - 7.0) * k, (cx + 7.0) * k, (cy + 7.0) * k],
+              fill=color)
+    # 中心孔（镂空：用透明色重绘不现实，改为画小圆同底色会穿帮 → 用 alpha 0 不可行；
+    # 标准做法：齿盘画完后中心挖孔用源底透明：画孔=同尺寸透明不可得，改用「细环+内圆描边」视觉镂空：
+    # 实际方案：中心孔直接在齿盘填充前预留 —— 先画环再画孔色覆盖不可取；
+    # 采用 draw 两次：第一次填充齿+盘，第二次用 (0,0,0,0) 圆做 alpha 挖孔）
+    hole = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    ImageDraw.Draw(hole).ellipse(
+        [(cx - 3.3) * k, (cy - 3.3) * k, (cx + 3.3) * k, (cy + 3.3) * k], fill=(0, 0, 0, 255))
+    img.paste((0, 0, 0, 0), (0, 0), hole)   # 挖中心孔（真透明）
+    # 中心孔描边（齿轮轴感）
+    d = ImageDraw.Draw(img)
+    d.ellipse([(cx - 3.3) * k, (cy - 3.3) * k, (cx + 3.3) * k, (cy + 3.3) * k],
+              outline=color, width=max(2, w // 2))
+    img = img.resize((size, size), Image.LANCZOS)
+    return img
+
+
+def _refresh(size, color):
+    """刷新/旋转箭头（逆时针 ↺，Feather rotate-ccw 同构）"""
+    S = size * _G_SS
+    img = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    k = S / 24.0
+    w = max(2, int(round(_G_STROKE * k)))
+    cx = cy = 12.0
+    r = 8.4
+    # 弧：数学角 135°→405°（y 上正），留顶口 45°~135°（缺口朝上偏左，箭头补位）
+    pts = []
+    for ang in range(135, 406, 3):
+        a = _math.radians(ang)
+        pts.append((cx + r * _math.cos(a), cy - r * _math.sin(a)))  # y 翻转为图像坐标
+    d.line([(x * k, y * k) for x, y in pts], fill=color, width=w, joint='curve')
+    # 箭头：弧末端（ang=45°）切线方向继续指，形成逆时针指示
+    ae = _math.radians(45.0)
+    pe = (cx + r * _math.cos(ae), cy - r * _math.sin(ae))      # 弧终点
+    tang = (-_math.sin(ae), -_math.cos(ae))                     # CCW 切线（图像坐标）
+    tip = (pe[0] + tang[0] * 3.6, pe[1] + tang[1] * 3.6)
+    # 箭头尾边：径向方向（垂直于切线）向两侧展开
+    rad = (_math.cos(ae), -_math.sin(ae))
+    b1 = (pe[0] + rad[0] * 2.1, pe[1] + rad[1] * 2.1)
+    b2 = (pe[0] - rad[0] * 2.1, pe[1] - rad[1] * 2.1)
+    d.polygon([(b1[0] * k, b1[1] * k), (b2[0] * k, b2[1] * k), (tip[0] * k, tip[1] * k)],
+              fill=color)
+    img = img.resize((size, size), Image.LANCZOS)
+    return img
+
+
+def _wifi(size, color):
+    S = size * _G_SS
+    img = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    k = S / 24.0
+    w = max(2, int(round(_G_STROKE * k)))
+    for rr in (9.2, 6.6, 4.0):
+        pts = []
+        for ang in range(195, 346, 3):
+            a = _math.radians(ang)
+            pts.append((12 + rr * _math.cos(a), 13.2 - rr * _math.sin(a)))
+        d.line([(x * k, y * k) for x, y in pts], fill=color, width=w, joint='curve')
+    d.ellipse([(11.0 - w * 0.45) * k, (20.4 - w * 0.45) * k,
+               (11.0 + w * 0.45) * k, (20.4 + w * 0.45) * k], fill=color)
+    d.ellipse([9.6 * k, 18.4 * k, 14.4 * k, 23.2 * k], fill=color)
+    img = img.resize((size, size), Image.LANCZOS)
+    return img
+
+
+def _heart(size, color):
+    """心形：经典解析曲线采样（无拼接断点，天然对称）"""
+    S = size * _G_SS
+    img = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    k = S / 24.0
+    # 参数曲线（数学 y 上正），尖角在底部：
+    # x=16sin^3 t, y=13cos t-5cos2t-2cos3t-cos4t （x∈[-16,16]，y 实际范围 ~[-17,6]）
+    raw = []
+    for i in range(0, 720, 3):
+        t = _math.radians(i * 0.5)
+        x = 16 * _math.sin(t) ** 3
+        y = 13 * _math.cos(t) - 5 * _math.cos(2 * t) - 2 * _math.cos(3 * t) - _math.cos(4 * t)
+        raw.append((x, -y))   # 翻转为图像坐标（尖角向下）
+    # 动态归一化到 24 网格留边 2 单位（防顶部超界裁剪，2026-09-03 修复）
+    xs = [p[0] for p in raw]; ys = [p[1] for p in raw]
+    x0, x1, y0, y1 = min(xs), max(xs), min(ys), max(ys)
+    span = max(x1 - x0, y1 - y0)
+    # 等比缩放至 20 单位并居中于 (12,12)
+    pts = [(2 + (p[0] - x0) / span * 20, 2 + (p[1] - y0) / span * 20) for p in raw]
+    d.polygon([(px * k, py * k) for px, py in pts], fill=color)
+    img = img.resize((size, size), Image.LANCZOS)
+    return img
+
+
+def _star(size, color):
+    S = size * _G_SS
+    img = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    k = S / 24.0
+    pts = []
+    for i in range(10):
+        a = _math.radians(-90 + i * 36)
+        r = 10.2 if i % 2 == 0 else 4.3
+        pts.append((12 + r * _math.cos(a), 12 + r * _math.sin(a)))
+    d.polygon([(x * k, y * k) for x, y in pts], fill=color)
+    img = img.resize((size, size), Image.LANCZOS)
+    return img
+
+
+def _bluetooth(size, color):
+    """蓝牙：Feather 官方两段折线（24 网格原坐标，无溢出）"""
+    S = size * _G_SS
+    img = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    k = S / 24.0
+    w = max(2, int(round(_G_STROKE * k)))
+    p1 = [(6.5, 6.5), (17.5, 17.5), (12, 23)]
+    p2 = [(12, 1), (17.5, 6.5), (6.5, 17.5)]
+    d.line([(x * k, y * k) for x, y in p1], fill=color, width=w, joint='curve')
+    d.line([(x * k, y * k) for x, y in p2], fill=color, width=w, joint='curve')
+    img = img.resize((size, size), Image.LANCZOS)
+    return img
+
+
+# ---- 图标指令表（24 网格坐标，Feather 同款比例）----
+_GLYPHS = {
+    'back':      [('l', [(19, 12), (5, 12)]), ('pl', [(12, 5), (5, 12), (12, 19)])],
+    'forward':   [('l', [(5, 12), (19, 12)]), ('pl', [(12, 5), (19, 12), (12, 19)])],
+    'up':        [('l', [(12, 19), (12, 5)]), ('pl', [(19, 12), (12, 5), (5, 12)])],
+    'down':      [('l', [(12, 5), (12, 19)]), ('pl', [(5, 12), (12, 19), (19, 12)])],
+    'close':     [('l', [(18, 6), (6, 18)]), ('l', [(6, 6), (18, 18)])],
+    'check':     [('pl', [(20, 6), (9, 17), (4, 12)])],
+    'plus':      [('l', [(12, 5), (12, 19)]), ('l', [(5, 12), (19, 12)])],
+    'minus':     [('l', [(5, 12), (19, 12)])],
+    'menu':      [('l', [(3, 6), (21, 6)]), ('l', [(3, 12), (21, 12)]), ('l', [(3, 18), (21, 18)])],
+    'more':      [('fc', (5.5, 12, 1.7)), ('fc', (12, 12, 1.7)), ('fc', (18.5, 12, 1.7))],
+    'search':    [('c', (11, 11, 7.4)), ('l', [(16.6, 16.6), (21, 21)])],
+    'home':      [('pl', [(3, 10.5), (12, 3.2), (21, 10.5)]),
+                  ('pl', [(5.5, 9.7), (5.5, 20), (18.5, 20), (18.5, 9.7)]),
+                  ('pl', [(10.2, 20), (10.2, 14), (13.8, 14), (13.8, 20)])],
+    'list':      [('fc', (4, 6, 1.3)), ('l', [(8, 6), (20, 6)]), ('fc', (4, 12, 1.3)),
+                  ('l', [(8, 12), (20, 12)]), ('fc', (4, 18, 1.3)), ('l', [(8, 18), (20, 18)])],
+    'play':      [('fill', [(5, 4), (5, 20), (19.5, 12)])],
+    'pause':     [('frect', (6, 5, 4, 14, 0.8)), ('frect', (14, 5, 4, 14, 0.8))],
+    'stop':      [('frect', (6, 6, 12, 12, 1.2))],
+    'prev':      [('frect', (5, 5, 3, 14, 0.8)), ('fill', [(19, 5), (19, 19), (8.5, 12)])],
+    'next':      [('frect', (16, 5, 3, 14, 0.8)), ('fill', [(5, 5), (5, 19), (15.5, 12)])],
+    'power':     [('l', [(12, 3), (12, 12)]), ('arc', (12, 12, 9, 135, 405))],
+    'volume':    [('fill', [(11, 5), (11, 9), (6, 9), (6, 15), (11, 15), (11, 19)]),
+                  ('arc', (12.5, 12, 4.5, -45, 45)), ('arc', (14, 12, 7.5, -45, 45))],
+    'mute':      [('fill', [(11, 5), (11, 9), (6, 9), (6, 15), (11, 15), (11, 19)]),
+                  ('l', [(15.5, 8.5), (20.5, 15.5)]), ('l', [(20.5, 8.5), (15.5, 15.5)])],
+    'delete':    [('pl', [(3, 6.5), (21, 6.5)]), ('pl', [(8, 6.5), (8.5, 4.5), (15.5, 4.5), (16, 6.5)]),
+                  ('pl', [(6.5, 6.5), (7.3, 20), (16.7, 20), (17.5, 6.5)]),
+                  ('l', [(10, 10), (10, 16.5)]), ('l', [(14, 10), (14, 16.5)])],
+    'edit':      [('l', [(17.2, 3.2), (20.8, 6.8)]), ('pl', [(15.2, 6.2), (5.5, 15.9), (4.2, 19.8), (8.1, 18.5),
+                                                       (17.8, 8.8)]), ('l', [(17.8, 8.8), (20.8, 6.8)])],
+    'share':     [('fc', (18, 5.5, 2)), ('fc', (6.5, 12.5, 2)), ('fc', (18, 18.5, 2)),
+                  ('l', [(16.4, 7), (8.1, 11.5)]), ('l', [(8.1, 13.5), (16.4, 17)])],
+    'download':  [('pl', [(4, 14), (4, 18.5), (20, 18.5), (20, 14)]), ('pl', [(12, 3), (12, 14.5)]),
+                  ('pl', [(7, 9.5), (12, 14.5), (17, 9.5)])],
+    'upload':    [('pl', [(4, 14), (4, 18.5), (20, 18.5), (20, 14)]), ('pl', [(12, 20.5), (12, 9)]),
+                  ('pl', [(7, 13.5), (12, 8.5), (17, 13.5)])],
+    'user':      [('c', (12, 7.5, 4.2)), ('arc', (5.5, 11.5, 7.5, 200, 340))],
+    'lock':      [('rect', (5.5, 10.5, 13, 9.5, 2)), ('arc', (12, 8.5, 4.6, 180, 360)), ('fc', (12, 15, 1.6))],
+    'info':      [('c', (12, 12, 9)), ('l', [(12, 11.5), (12, 16.5)]), ('fc', (12, 8, 1.3))],
+    'warning':   [('fill', [(12, 3.5), (21, 20), (3, 20)]), ('l', [(12, 9.5), (12, 14.5)]), ('fc', (12, 17.3, 1.3))],
+    'camera':    [('pl', [(3, 8), (3, 17.5), (21, 17.5), (21, 8), (15.5, 8), (14, 5.5), (10, 5.5), (8.5, 8), (3, 8)]),
+                  ('c', (12, 12.6, 3.6))],
+    'clock':     [('c', (12, 12, 9)), ('pl', [(12, 7), (12, 12), (15.5, 14.5)])],
+    'calendar':  [('rect', (3, 4.5, 18, 15.5, 2)), ('l', [(3, 9.5), (21, 9.5)]),
+                  ('l', [(8, 2.5), (8, 6)]), ('l', [(16, 2.5), (16, 6)])],
+    'bell':      [('arc', (12, 13.5, 8.5, 195, 345)), ('pl', [(4.5, 16.5), (19.5, 16.5)]),
+                  ('pl', [(9.2, 20), (14.8, 20)]), ('fc', (12, 5.2, 1.2))],
+    'mic':       [('rect', (9.2, 3, 5.6, 11, 2.6)), ('pl', [(12, 14), (12, 18)]),
+                  ('arc', (12, 17, 4.6, 0, 180))],
+    'location':  [('fill', [(12, 2.5), (19.5, 12.5), (12, 21.5), (4.5, 12.5)]),
+                  ('fc', (12, 11.5, 2.6))],
+    'mail':      [('rect', (3, 6, 18, 12, 1.5)), ('pl', [(4, 7.2), (12, 13), (20, 7.2)])],
+    'eye':       [('arc', (12, 12, 8.5, 195, 345)), ('arc', (12, 12, 8.5, 15, 165)), ('fc', (12, 12, 2.6))],
+    'video':     [('rect', (2.5, 6.5, 13, 11, 1.5)), ('fill', [(16.5, 9), (21, 12), (16.5, 15)])],
+    'phone':     [('pl', [(7, 3.5), (5.2, 5.3), (5.2, 6.5), (5.4, 9.3), (7.5, 12.8), (11.2, 16.5), (14.7, 18.6),
+                          (17.5, 18.8), (18.7, 18.8), (20.5, 17), (20.5, 14.6), (16.9, 12.5), (14.5, 13.2),
+                          (12.9, 13.2), (10.8, 11.1), (10.8, 9.5), (11.5, 7.1), (9.4, 3.5), (7, 3.5)])],
+}
+
+# 别名：中文/同义词 → 规范英文名（HTML data-icon 可写中文）
+_GLYPH_ALIAS = {
+    '返回': 'back', 'back': 'back', 'left': 'back', 'arrow-left': 'back', 'arrow_left': 'back', 'prev': 'prev',
+    '前进': 'forward', 'right': 'forward', 'arrow-right': 'forward', 'next': 'next', '下一首': 'next',
+    '上': 'up', 'arrow-up': 'up', '向上': 'up', '下': 'down', 'arrow-down': 'down', '向下': 'down',
+    '关闭': 'close', '叉': 'close', 'x': 'close', '取消': 'close',
+    '确定': 'check', '对勾': 'check', 'ok': 'check', '勾': 'check',
+    '加': 'plus', 'add': 'plus', '新增': 'plus', '减': 'minus', 'remove': 'minus',
+    '菜单': 'menu', '更多': 'more', '搜索': 'search', '查': 'search',
+    '主页': 'home', '首页': 'home', '返回主页': 'home',
+    '列表': 'list', '播放': 'play', '暂停': 'pause', '停止': 'stop', '上一首': 'prev', '上一曲': 'prev',
+    '重播': 'refresh', '刷新': 'refresh', 'refresh': 'refresh', '旋转': 'refresh', 'reload': 'refresh',
+    '电源': 'power', '开机': 'power', '音量': 'volume', 'vol': 'volume', '静音': 'mute', 'mute': 'mute',
+    '删除': 'delete', 'trash': 'delete', '垃圾桶': 'delete', '编辑': 'edit', '改名': 'edit', 'pencil': 'edit',
+    '分享': 'share', '下载': 'download', '上传': 'upload', '用户': 'user', '人': 'user', '我的': 'user',
+    '锁': 'lock', '锁定': 'lock', '信息': 'info', 'i': 'info', '详情': 'info',
+    '警告': 'warning', '告警': 'warning', 'alert': 'warning', '拍照': 'camera', '相机': 'camera',
+    '时间': 'clock', '时钟': 'clock', '日历': 'calendar', '日期': 'calendar', '通知': 'bell', '铃铛': 'bell',
+    '麦克风': 'mic', '语音': 'mic', '定位': 'location', '位置': 'location', '邮件': 'mail', '邮箱': 'mail',
+    '眼睛': 'eye', '预览': 'eye', '录像': 'video', '摄像': 'video', '电话': 'phone', '拨打': 'phone',
+    '设置': 'settings', 'gear': 'settings', 'wifi': 'wifi', '无线': 'wifi', '蓝牙': 'bluetooth', 'bt': 'bluetooth',
+    '收藏': 'star', '星标': 'star', '喜欢': 'heart', '心': 'heart', 'favorite': 'heart',
+}
+
+
+def _glyph_draw(glyph, size, color):
+    """glyph(规范英文名) → RGBA Image；未收录抛 KeyError。"""
+    glyph = _GLYPH_ALIAS.get(str(glyph).strip().lower(), str(glyph).strip())
+    if glyph == 'settings':
+        return _gear(size, color)
+    if glyph == 'refresh':
+        return _refresh(size, color)
+    if glyph == 'wifi':
+        return _wifi(size, color)
+    if glyph == 'heart':
+        return _heart(size, color)
+    if glyph == 'star':
+        return _star(size, color)
+    if glyph == 'bluetooth':
+        return _bluetooth(size, color)
+    ops = _GLYPHS.get(glyph)
+    if ops is None:
+        raise KeyError(glyph)
+    return _glyph_render(ops, size, color)
+
+
+def glyph_list():
+    """全部可用图标名（规范英文名，用于转换器 warning 提示）"""
+    return sorted(_GLYPHS.keys()) + ['settings', 'refresh', 'wifi', 'heart', 'star', 'bluetooth']
+
+
+def glyph_canonical(name):
+    """图标名（英文/中文别名）→ 规范英文名；未收录返回 None。
+    转换器用：校验 data-icon 是否收录 + 生成规范文件名（避免中文/别名进文件名）。"""
+    s = str(name or '').strip().lower()
+    g = _GLYPH_ALIAS.get(s, s)
+    if g in _GLYPHS or g in ('settings', 'refresh', 'wifi', 'heart', 'star', 'bluetooth'):
+        return g
+    return None
+
+
+def glyph_icon(out_dir, name, glyph, size=48, color=None, pressed=False, canvas=None):
+    """iconfont 风格矢量线框图标 → PNG。
+    glyph: 英文名或中文别名（back/返回/play/播放...）；color: (r,g,b,a) 或 None(默认浅色)；
+    pressed=True 生成按下态（图标同形 + 高亮提亮，供按钮 picTab pic1）。
+    canvas=(cw,ch) 可选：输出非正方形画布（控件非正方时用），图标 size 居中不变形。
+    返回相对 resources 引用路径 images/<name>.png。未收录抛 KeyError（调用方给 warning）。
+    """
+    if color is None:
+        color = (0xD8, 0xE2, 0xF0, 255)   # 默认浅灰蓝（深色主题友好）
+    else:
+        color = tuple(int(c) for c in color[:4])
+    img = _glyph_draw(glyph, size, color)
+    if pressed:
+        # 按下态：颜色提亮 35%（深底主题按钮点击反馈）
+        pcol = tuple(int(min(255, c + (255 - c) * 0.35)) for c in color[:3]) + (color[3],)
+        img = _glyph_draw(glyph, size, pcol)
+    if canvas:
+        cw, ch = int(canvas[0]), int(canvas[1])
+        if (cw, ch) != (int(size), int(size)):
+            base = Image.new('RGBA', (cw, ch), (0, 0, 0, 0))
+            base.paste(img, ((cw - int(size)) // 2, (ch - int(size)) // 2), img)
+            img = base
+    return save(img, out_dir, name)
+
+
 # ---------- 示例 GEN 配置（按项目实际 CSS 设计稿修改后执行） ----------
 def main():
     if len(sys.argv) < 2:

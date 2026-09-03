@@ -24,9 +24,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.14.0-open'
+MCP_VERSION = '0.15.0-open'
 MCP_BUILD = '2026-09-03'
 MCP_FEATURES = [
+    '2026-09-03: 图标优先规范落地（沛哥定规：生成 UI 时常用操作必须用图标，禁止按钮+文字糊弄）——HTML_SUBSET 新增「图标优先」章节 + 转换链路全通：gen_res 新增 46 个 iconfont 风格矢量线框图标库（back/forward/up/down/close/check/plus/minus/menu/more/search/home/list/play/pause/stop/prev/next/power/volume/mute/delete/edit/share/download/upload/user/lock/info/warning/camera/clock/calendar/bell/mic/location/mail/eye/video/phone/settings/refresh/wifi/bluetooth/heart/star，Feather 同款 24 网格 + 数学采样抗锯齿 + 中文别名）；html2json 识别 data-icon="/icon-xxx/iconfont class → 自动生成 PNG（图标按钮自动 normal+pressed 两态 picTab，纯图标自动 backgroundPic，data-color 配色、非正方控件画布居中不变形）；json2html 预览图片 base64 内联（preview.html 单文件独立显示不破图）；kb_tools/HTML_SUBSET 描述引导 AI 优先图标；图标词表 46 个见 HTML_SUBSET',
     '2026-09-03: 自定义字库修正（沛哥纠正 v0.13 方向错误，fun 流程权威规则）——重写 knowledge/devflow/custom-font-config.md：**fun build/launch 换字库 = ①项目根建 font/ 拷 ttf ②package.properties 加 enable.font.location=true（新模板已内置）③单字体自动全局默认零代码；多字体 ASCII 排序最前为默认、个别控件 setFontFamily(文件名不带后缀)（easyui≥2.2.0）④完成**；字库运行时资源不参与编译随 fun launch 推送；Z20/Z21/H500S/T113/V85X 内置 fzcircle.ttf（思源黑体裁剪），项目 font/ 有字体后完全用项目字体；字库无 emoji/特殊符号文本只用基础符号图标转 PNG；⚠️ 改 .prefs font 字段是 IDE 视角 fun 流程不用，AI 引导「换库」直接 4 步禁止绕 IDE 属性；实测 mark_cv201 font/sans.ttf + enable.font.location=true',
     '2026-09-03: 自定义字库配置入库（沛哥讲解 + KlipperF133 实测）——新建 knowledge/devflow/custom-font-config.md：**全局默认字库替换=改 .prefs 的 font 字段**（.settings/com.zksw.flythings.easyui.prefs 的 easyui.cfg.debug/release 两份 JSON 都加 "font" 指向自定义 ttf，实测 KlipperF133 debug=/mnt/extsd/ui/KaiTi.ttf release=/res/ui/KaiTi.ttf 与 resPath 对应；ttf 放 resources/ 打包到 ui 目录；默认模板无 font 字段=内置 fzcircle.ttf 思源黑体裁剪；仅支持 ttf；IDE 对应项目属性→字体）；**多字体混排=enable.font.location=true + font/ 目录 + setFontFamily**（mark_cv201 font/sans.ttf 用此法，参数=文件名不带 .ttf，easyui 2.2.0+，多字体 ASCII 排序最前作默认）；package.properties 覆盖层可配 font（冒号分 debug:release 两路径）',
     '2026-09-03: package.properties/EasyUI.cfg 工程配置机制入库（沛哥定规 + mark_cv201 双工程实测）——新建 knowledge/devflow/package-properties-easyui-cfg.md：编译工具自动生成完整 EasyUI.cfg（baud/defBrightness/font/languageCode/languagePath/resPath/rotateScreen/rotateTouch/screensaverTimeOut/startupLibPath/touchDev/uart/zkdebug，debug=/mnt/extsd release=/res）；package.properties 的 EasyUI.cfg={} 为覆盖层写哪个字段优先采用哪个，不需特殊处理不用写，且优先于 .prefs(IDE 属性)；enable.font.location 是独立开关；**何时用覆盖：正常（屏/触摸方向一致）发 .prefs 即可，只有硬件屏幕需旋转而触摸不需旋转等特殊场景才写 package.properties 只覆盖 rotateScreen**（CV201_PND 只配 270 不配 rotateTouch 正例）；代码 CONFIGMANAGER->getScreenRotate() 消费；倒车 get_camera_rot() 是摄像头画面另一路参数',
@@ -188,6 +189,16 @@ def flythings_html_to_json(input_html: str, output_json: str = '', res: str = ''
     - 控件映射：div.text/p/span→textview；div.btn/button→button；div.input/input→edittext；
       div.bar/seekbar→seekbar；div.card/window/panel→window 容器（子控件相对坐标）；div.modal/dialog→弹窗（modal+隐藏）；
       div.list/listview→listview（子项见下）；div.checkbox→checkbox；div.radio/radiogroup→radiogroup；div.icon/img→图标 textview。
+    - 🎯 图标优先（沛哥 2026-09-03 定规，生成 UI 时必守）：常用操作（返回/播放/暂停/上一首/下一首/设置/搜索/删除/
+      刷新/确认/关闭/加减/音量/主页/菜单等）必须用图标表达，禁止用「按钮+文字」糊弄！写法：
+      ① 图标按钮 <div class="btn" data-icon="play" data-x.. data-y.. data-w.. data-h.. data-caption="BtnPlay">
+      ② 纯展示图标 <div class="icon" data-icon="wifi" ...>（或 <i class="iconfont icon-volume">，等价识别）
+      转换器自动生成 iconfont 风格矢量线框 PNG：图标按钮自动 normal+pressed 两态 picTab，纯图标自动 backgroundPic；
+      data-color 可配线框颜色（#RRGGBB，缺省浅灰蓝）；控件建议正方形；未收录图标名给 warning。
+      46 个内置图标词表见 HTML_SUBSET（back/forward/up/down/close/check/plus/minus/menu/more/search/home/list/
+      play/pause/stop/prev/next/power/volume/mute/delete/edit/share/download/upload/user/lock/info/warning/camera/
+      clock/calendar/bell/mic/location/mail/eye/video/phone/settings/refresh/wifi/bluetooth/heart/star，中文别名
+      如 data-icon="播放"/"返回" 也认）；需要自备图时仍用 data-pic。
     - 定位：data-x/data-y/data-w/data-h（或 data-left/top/width/height、style left/top/width/height）。
     - 字号：data-fs / data-font-size / data-fontSize / 内联 style="font-size:NNpx" 都认。
     - 颜色：data-color 文字色、data-bg 或 data-background 背景色（textview/button/edittext 均支持背景）。

@@ -28,6 +28,32 @@ def _color(intval, default='#888888'):
         return default
 
 
+def _inline_image(pic, base_dir=''):
+    """图片引用 → data URI 内联（预览稿单文件可独立显示，图标 PNG 都很小）。
+    json 引用 images/xxx.png（相对 resources 目录），而 preview.html 在 ui/ 下：
+    直接 url 会破图，所以按 json 所在目录推导真实资源路径（ui/images、../resources/images、
+    同级 images），找到且 <300KB → base64 内联；找不到/过大 → 返回 None（保留原相对引用）。"""
+    if not pic or pic.startswith(('http://', 'https://', 'data:')):
+        return None
+    base = os.path.basename(str(pic).replace('\\', '/'))
+    cands = []
+    if base_dir:
+        cands += [os.path.join(base_dir, 'images', base),        # <json同目录>/images/
+                  os.path.join(base_dir, base),                  # <json同目录>/
+                  os.path.join(os.path.dirname(base_dir), 'resources', 'images', base)]  # <项目>/resources/images/
+        cands += [os.path.join(os.path.dirname(base_dir), base)]  # <项目>/
+    try:
+        for p in cands:
+            if os.path.isfile(p) and os.path.getsize(p) < 300 * 1024:
+                with open(p, 'rb') as f:
+                    import base64 as _b64
+                    b = _b64.b64encode(f.read()).decode('ascii')
+                return 'data:image/png;base64,' + b
+    except Exception:
+        pass
+    return None
+
+
 def _align_class(alignment):
     a = int(alignment or 0)
     cls = []
@@ -55,20 +81,24 @@ def _text_of(ctrl):
     return ctrl.get('text') or ctrl.get('caption') or ''
 
 
-def _bg_image(ctrl, field='backgroundPic'):
+def _bg_image(ctrl, field='backgroundPic', base_dir=''):
     pic = ctrl.get(field)
     if not pic:
         return ''
+    uri = _inline_image(pic, base_dir)
+    if uri:
+        return (f"background-image:url('{uri}');"
+                f"background-size:100% 100%;background-repeat:no-repeat;")
     return (f"background-image:url('{_esc(pic)}');"
             f"background-size:100% 100%;background-repeat:no-repeat;")
 
 
 # ---------- 控件渲染 ----------
-def _render_control(key, ctrl, depth=0):
+def _render_control(key, ctrl, depth=0, base_dir=''):
     ctype = key.split('__')[0]
     pos = ctrl.get('position', {})
     style = _pos_style(pos)
-    bg = _bg_image(ctrl)
+    bg = _bg_image(ctrl, 'backgroundPic', base_dir)
     color = _color(ctrl.get('colorTab', {}).get('color0') if isinstance(ctrl.get('colorTab'), dict) else None)
     align = _align_class(ctrl.get('alignment'))
     visible = ctrl.get('visible', True)
@@ -81,7 +111,7 @@ def _render_control(key, ctrl, depth=0):
         inner = []
         for k2, v2 in ctrl.items():
             if isinstance(v2, dict) and '__' in k2 and k2 != key:
-                inner.append(_render_control(k2, v2, depth + 1))
+                inner.append(_render_control(k2, v2, depth + 1, base_dir))
         bgcolor = _color(ctrl.get('backgroundColor'))
         return (f'<div class="ctrl window {align}" data-caption="{cap}" '
                 f'style="{style}background-color:{bgcolor};{bg}">' + ''.join(inner) + '</div>')
@@ -97,7 +127,9 @@ def _render_control(key, ctrl, depth=0):
         if ptab:
             p0 = ptab.get('pic0', '')
             if p0:
-                pbg = (f"background-image:url('{_esc(p0)}');"
+                uri = _inline_image(p0, base_dir)
+                ref = uri if uri else _esc(p0)
+                pbg = (f"background-image:url('{ref}');"
                        f"background-size:100% 100%;background-repeat:no-repeat;")
         else:
             bct = ctrl.get('bgColorTab') if isinstance(ctrl.get('bgColorTab'), dict) else None
@@ -111,8 +143,9 @@ def _render_control(key, ctrl, depth=0):
         prog = ctrl.get('defProgress', 0)
         mx = ctrl.get('max', 100) or 1
         pct = min(100, max(0, int(prog) * 100 // mx))
-        fill = _bg_image(ctrl, 'progressPic')
-        return (f'<div class="ctrl seekbar" data-caption="{cap}" style="{style}{_bg_image(ctrl)}" '
+        fill = _bg_image(ctrl, 'progressPic', base_dir)
+        track = _bg_image(ctrl, 'backgroundPic', base_dir)
+        return (f'<div class="ctrl seekbar" data-caption="{cap}" style="{style}{track}" '
                 f'data-progress="{pct}"><div class="seekbar-fill" style="width:{pct}%;{fill}"></div></div>')
 
     if ctype == 'listview':
@@ -165,9 +198,10 @@ def _json_to_html(json_path, html_path):
     bgcolor = _color(data.get('backgroundColor'), '#202020')
 
     body = []
+    base_dir = os.path.dirname(os.path.abspath(json_path))
     for k, v in data.items():
         if isinstance(v, dict) and '__' in k:
-            body.append(_render_control(k, v))
+            body.append(_render_control(k, v, base_dir=base_dir))
 
     html = f"""<!DOCTYPE html>
 <html lang="zh">
