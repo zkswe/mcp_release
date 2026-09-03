@@ -20,8 +20,14 @@
 - 与 .settings/com.zksw.flythings.easyui.prefs（IDE 属性）并存时 **package.properties 优先**
 - enable.font.location=true 是独立开关（font/ 目录自定义字体，非 EasyUI.cfg 覆盖层）
 
-字段表（文档内）含 rotateScreen 0/90/180/270 + rotateTouch（触摸坐标旋转，F133 工程惯例成套 270+270
-+gfxMode:1+ninePatchAccel:true）；watchDogEnable 等其它字段以编译工具生成为准，需要才覆盖。
+**何时用 package.properties 覆盖（沛哥 20:12 补充定规）**：正常情况（屏幕与触摸方向一致/都不转）
+**发 .prefs 配置即可**，不用写 package.properties；只有需要特殊处理覆盖时才用——典型场景 =
+**某些硬件屏幕需要旋转、触摸不需要旋转**（方向不一致），此时只覆盖 rotateScreen、rotateTouch 不写/
+保持默认（mark_cv201 CV201_PND 正例：只配 rotateScreen:270 不配 rotateTouch）；
+同值成套的常规旋转（F133 工程 rotateScreen:270+rotateTouch:270）走 .prefs 就够。
+
+字段表（文档内）含 rotateScreen 0/90/180/270 + rotateTouch（触摸坐标旋转）；watchDogEnable 等其它字段
+以编译工具生成为准，需要才覆盖。
 
 核心经验：**屏幕旋转跟随设备物理安装方向，不是 UI 决定**（同 1600×600：lib_uav_camera 不转、
 CV201_PND 转 270；T113 PND 竖装横显同款 rotateScreen:270）；改方向只改 package.properties 不碰

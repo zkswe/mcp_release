@@ -39,7 +39,7 @@
 | `languagePath` | string | 多语言翻译 .tr 文件路径（debug=/mnt/extsd/tr/，release=/res/tr/） |
 | `resPath` | string | UI 资源路径（debug=/mnt/extsd/ui/，release=/res/ui/） |
 | `rotateScreen` | int | **屏幕旋转 0/90/180/270**（内容旋转到正常方向） |
-| `rotateTouch` | int | 触摸坐标旋转，一般与 rotateScreen 同值成套 |
+| `rotateTouch` | int | 触摸坐标旋转；**正常与 rotateScreen 同值成套；若硬件屏幕需转、触摸不需转则留默认不配** |
 | `screensaverTimeOut` | int | 屏保超时秒，-1 = 禁止屏保 |
 | `startupLibPath` | string | GUI 运行库路径（libzkgui.so） |
 | `startupTouchCalib` | bool | 启动是否做触摸校准 |
@@ -47,6 +47,14 @@
 | `uart` | string | 串口设备名（ttyS1） |
 | `zkdebug` | bool | 调试开关 |
 | `watchDogEnable` | bool | 看门狗开关（F133 工程普遍 false，mark_cv201 也配 false）——完整默认以编译工具生成为准，需要改才在 package.properties 覆盖 |
+
+## ⚠️ 何时用 package.properties 覆盖（沛哥 2026-09-03 补充定规）
+
+- **正常情况（屏幕与触摸方向一致 / 都不转）→ 发 IDE 配置 .prefs 即可，不用写 package.properties**
+- **需要特殊处理覆盖时才用 package.properties**：典型场景 = **某些硬件屏幕需要旋转、而触摸不需要旋转**
+  （两者方向不一致），这时只覆盖 rotateScreen 写旋转值，rotateTouch 不写/保持默认，触摸坐标不跟着转
+  —— mark_cv201 CV201_PND 正是此例：只配 `rotateScreen:270` 不配 rotateTouch
+- 同值成套的常规旋转（F133 工程 rotateScreen:270+rotateTouch:270）走 .prefs 就够，不必进 package.properties
 
 ## mark_cv201 实测案例（同代码双屏方向适配）
 
@@ -69,7 +77,8 @@ ERotation rot = (ERotation)(CONFIGMANAGER->getScreenRotate() / 90);          // 
 ## 常见坑 / 使用规则
 
 - **想改设备显示方向 → 只改 package.properties 的 rotateScreen，不要动 .ftu/代码**（编译工具自动合并生效）
-- rotateScreen 改了触摸对不上 → 同步配 rotateTouch（F133 工程成套 270+270 的原因）
+- **屏幕转、触摸不转的硬件 → package.properties 只配 rotateScreen，不写 rotateTouch**；
+  **两者同值成套的常规旋转走 .prefs 即可**（F133 工程成套 270+270 存 .prefs）
 - **只需要覆盖用到的字段**，其余不写（自动用编译默认），不要整段 JSON 照抄覆盖
 - 改完重新编译打包，设备上生成/更新的 EasyUI.cfg 在 resPath 对应目录（boot_from_sd 升级包同样携带 EasyUI.cfg）
 - 调字体 → package.properties 加 `enable.font.location=true` + 工程 font/ 目录放字体 + 代码 `setFontFamily`（不是 EasyUI.cfg 覆盖层的事，注意区分）
