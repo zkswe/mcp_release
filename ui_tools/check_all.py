@@ -352,17 +352,7 @@ def main(project_root):
                     pass
         log(not bad, '%s 图片尺寸 %s' % (f, '；'.join(bad) if bad else '全部匹配'))
 
-    print('== 12. text 禁止含换行符（设备不渲染 \\n 多行）==')
-    for f in PAGES:
-        d = json.load(open(os.path.join(root, f), encoding='utf-8'))
-        bad = []
-        for k, v in _all_controls(d):
-            t = v.get('text')
-            if isinstance(t, str) and ('\n' in t or '\r' in t):
-                bad.append('%s(%s) 含换行' % (k, v.get('caption', '')))
-        log(not bad, '%s text 换行 %s' % (f, '；'.join(bad) if bad else '无'))
-
-    print('== 13. INIT_UI_TIMERS 不被 FYX_BUILD 保护（fun 工具链宏是 FUN_BUILD）==')
+    print('== 12. INIT_UI_TIMERS 不被 FYX_BUILD 保护（fun 工具链宏是 FUN_BUILD）==')
     for f in LOGICS:
         code = open(os.path.join(root, f), encoding='utf-8').read()
         idx = code.find('INIT_UI_TIMERS')
@@ -373,7 +363,7 @@ def main(project_root):
                 bad = True
         log(not bad, '%s TIMER 宏保护' % f)
 
-    print('== 14. TextView/Button 最小尺寸（防文本截断）==')
+    print('== 13. TextView/Button 最小尺寸（防文本截断）==')
     for f in PAGES:
         d = json.load(open(os.path.join(root, f), encoding='utf-8'))
         bad = []

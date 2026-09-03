@@ -262,7 +262,8 @@ def _clean_text(s):
         if ch in _TEXT_BLACKLIST or _is_emoji(ch):
             continue
         out.append(ch)
-    return re.sub(r'\s+', ' ', ''.join(out)).strip()
+    # \n（来自 <br>）保留为换行；其余空白折叠为单空格
+    return re.sub(r'[ \t\r\f\v]+', ' ', ''.join(out)).strip()
 
 
 # ---------- DOM 树节点 ----------
@@ -296,8 +297,8 @@ class _DomParser(HTMLParser):
         if tag not in VOID_TAGS:
             self.stack.append(node)
         elif tag == 'br' and self.stack:
-            # ⛔ FlyThings textview 不支持 \n 多行：<br> 折叠为空格（避免文字粘连）
-            self.stack[-1].text += ' '
+            # <br> → '\n' 换行（textview 支持 \n 多行，沛哥 2026-09-03 纠正 FT-024）
+            self.stack[-1].text += '\n'
 
     def handle_startendtag(self, tag, attrs):
         # 自闭合 <xxx/>：挂到当前父节点，不入栈
@@ -318,7 +319,8 @@ class _DomParser(HTMLParser):
 
     def handle_data(self, data):
         if self.stack and self.stack[-1].tag not in ('style', 'script'):
-            self.stack[-1].text += data
+            # HTML 文本节点空白折叠（源码换行/缩进 → 单空格）；<br> 已在 handle_starttag 转 '\n'，不受影响
+            self.stack[-1].text += re.sub(r'\s+', ' ', data)
 
 
 # ---------- 转换上下文 ----------
@@ -449,7 +451,7 @@ class HtmlToJson:
                     pass
 
         # 3. emoji 图标 → PNG（仅纯 emoji 文本转图标 textview；混合文本由 _leaf/_clean_text 剥离 emoji 保留文字）
-        raw_text = re.sub(r'\s+', ' ', node.text).strip()
+        raw_text = re.sub(r'[ \t\r\f\v]+', ' ', node.text).strip()
         if raw_text and not _clean_text(raw_text) and any(_is_emoji(ch) for ch in raw_text):
             emoji_ch = next((ch for ch in raw_text if _is_emoji(ch)), '\u2b50')
             size = max(w, h)
@@ -1425,7 +1427,7 @@ class HtmlToJson:
                 c['backgroundPic'] = pic if '/' in pic else 'images/' + pic
             else:
                 # 纯 emoji 文本 → PNG 图标（设备字库不支持 emoji，转图片显示）
-                raw_text = re.sub(r'\s+', ' ', node.text).strip()
+                raw_text = re.sub(r'[ \t\r\f\v]+', ' ', node.text).strip()
                 if raw_text and not _clean_text(raw_text) and any(_is_emoji(ch) for ch in raw_text):
                     emoji_ch = next((ch for ch in raw_text if _is_emoji(ch)), '\u2b50')
                     size = max(pos.get('width', 100), pos.get('height', 100))

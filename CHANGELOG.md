@@ -1,7 +1,43 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.9.0-open**（2026-09-03）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.10.0-open**（2026-09-03）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.10.0-open (2026-09-03) — 自定义控件实现方法入库 + GUI 差距盘点 + FT-024 纠正
+
+**① 新建 knowledge/devflow/custom-widget.md（自定义控件实现方法，沛哥要求先记录方法后续再实现）**
+来源：内部私有仓库 guoxs/lib-ext_widgets 拆解（F136/F133，8 个自研控件：AlbumListView/ImageBoxView/
+FrameImageView/ImageEditView/RotateImageView/SliceProgressBar/PullWidget + BaseView 基类）。
+
+核心方法（一句话）：
+- **控件 = 继承 ZKBase → `create(Json::Value())` 纯代码实例化 → new 到 ftu 容器 Window 上**
+  （不进 ftu/IDE，纯 C++ 类；onUI_init new / onUI_quit delete）
+- 两条路线：组合式（内部 new ZKButton 当通用矩形拼装，进度条/列表）vs 自绘式（重写 `onDraw(ZKCanvas*)`
+  + bitmap_t 内存画布 + Region 脏区）
+- 控件不带业务：外观用 Attr 结构 build() 一次配置；数据/事件走函数指针适配器（setDataAdapter/
+  setClickListener）；obtain 回调禁耗时
+- 手势：onTouchEvent（DOWN/MOVE/UP）+ VelocityTracker 惯性 + 定时器回弹 + event::multi_touch 双指缩放
+- 异步：解码/加载丢 MessageQueueThread；图片显示优先子按钮 setBackgroundBmp/Pic
+- 附 8 控件能力表（做新控件前先查可抄） + 新控件开发 10 步 checklist
+
+**② 新建 knowledge/devflow/gui-controls-gap.md（现代化 GUI 控件差距盘点，沛哥 19:14 要求）**
+现有家底：内置 21 控件 + 自研 8 控件。真缺（按优先级）：
+富文本 RichTextView（**最高优先**，缺自动折行/样式混排/嵌图/滚动）/ 通用图表 ChartView / 表格 TableView /
+下拉选择 ComboBox / 滚轮 WheelPicker / 轻提示-角标-菊花（Toast/Snackbar/Badge/Spinner）。
+可代不算缺：轮播（ImageBoxView）/跑马灯（SlideText）/下拉面板（PullWidget）/双指缩放（自研）/动图/弹窗等。
+
+**③ FT-024 纠正（沛哥 19:27-19:35 确认：textview 实际支持 \n 换行）**
+- 背景：v0.8.0 前 FT-024（2026-08-29）认定「textview 不渲染 \n、json 写换行异常」——**误判/误泛化**；
+  实际代码 setText 与 json/ftu 布局 text 写 \n 均正常多行渲染
+- html2json.py：`<br>` 折叠空格 → **转 '\n'**；handle_data 增加 HTML 文本节点空白折叠（源码换行缩进→单空格，
+  避免意外换行）；_clean_text 及两处 raw_text 只折叠空格类、保留 \n（冒烟：`第一行<br>第二行` → text=`第一行\n第二行` ✓）
+- check_all.py：**删除第 12 项「text 禁换行」误报检查**（13/14 重编号 12/13）
+- HTML_SUBSET.md 第 8 条改写：支持 \n，`<br>` 转 \n，源码缩进仍折叠，换行请显式写 `<br>`
+- knowledge/devflow/gui-controls-gap.md 富文本描述同步修正（缺口=折行/样式/嵌图/滚动，非换行）
+
+**同步**：rag_index 重建；版本 0.9.0→0.10.0-open。
 
 ---
 

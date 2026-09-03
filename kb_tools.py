@@ -24,9 +24,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.9.0-open'
+MCP_VERSION = '0.10.0-open'
 MCP_BUILD = '2026-09-03'
 MCP_FEATURES = [
+    '2026-09-03: 自定义控件实现方法入库（沛哥要求记录方法，后续按需实现；来源 guoxs lib-ext_widgets 私有库拆解）+ GUI 控件差距盘点 + FT-024 纠正——新建 knowledge/devflow/custom-widget.md（控件=继承 ZKBase + create(Json::Value()) 纯代码创建 + 挂 ftu 容器；组合式(子控件拼) vs 自绘式(onDraw+bitmap_t)；Attr 配置 + 适配器回调驱动；onTouchEvent 手势/惯性/多指；MessageQueueThread 异步；8 控件能力表 + 10 步开发 checklist）；新建 knowledge/devflow/gui-controls-gap.md（富文本/通用图表/表格/下拉选择/滚轮/轻提示等缺口清单，富文本最高优先）；**FT-024 纠正（沛哥确认）**：textview 实际支持 \n 换行（代码+json 均支持），html2json <br> 改为转 \n、文本节点 HTML 空白折叠、_clean_text 保留 \n；check_all 删除「text 禁换行」误报项；HTML_SUBSET.md 第 8 条改写',
     '2026-09-03: V85X USB 摄像头（UVC）通用接入知识入库（沛哥指定 LearningProject/mark_cv201 CV201_PND 实测，模块私有协议层不入库）+ USB 存储文档重构「EMMC/TF 卡双介质」主线——新建 knowledge/v85x/uvc-usb-camera.md（inotify+uvcvideo 发现/3s 延时枚举、SharedVideoDevice(REAR)+setUvc(true)+DEVICE_ID_AUTO 注册、mpi::Task 取流保活、双路预览布局 layer0+layer4、Recorder 双路录像、mpi::Snapshot 拍照 200ms 防抖、50 帧状态机防抖+断连重建）；usb-gadget-storage.md 重构为双介质主线（介质探针 mmcblk0boot0 × USB 档位 ADB/U盘 正交，挂载与 lun.0/file 同一探针二选一，口径：暴露块设备非挂载点）',
     '2026-09-03: V85X USB 存储双介质差异补入（沛哥验证 xdv200300 兄弟项目）——xdv200300 新增 TF 卡方案：EMMC_BLOCK_BOOT=mmcblk0boot0 探针 + TFCARD_BLOCK=mmcblk1 + TFCARD_MOUNT_POINT=/mnt/extsd；挂载与 USB 暴露（usb_monitor STORAGE 档 lun.0/file）都用同一探针二选一（EMMC 存在→mmcblk0p1，否则→mmcblk1/TF 卡）；口径澄清：暴露给电脑的是块设备不是 /mnt/extsd 字符串（挂载点）；usb-gadget-storage.md 新增 §1.5',
     '2026-09-03: V85X USB Device 模式知识入库（xdv23/xdv200300 实测，knowledge/v85x/usb-gadget-storage.md）——客户口径「MTP」= USB 连电脑当存储设备，实现是 configfs usb_gadget + mass_storage（U盘模式）+ functionfs（ADB 调试）双档切换；V85X OTG 角色切换路径 /sys/devices/platform/soc/usbc0/{otg_role,usb_device,usb_host,usb_null}（读节点即切换，vs Z21 soc0/soc/soc:usbotg）；gadget 完整配置序列（configfs mount→g1 strings→configs/c.1→function→symlink→VID/PID→UDC）；EMMC FAT32 管理 edge/fat32（checkAndMount mmcblk0p1→/mnt/storage）+ 相册存储路径约定；含坑位（换档 unlink 旧 symlink/configfs 先 mount/整分区暴露抢数据/UDC 绑定）',
