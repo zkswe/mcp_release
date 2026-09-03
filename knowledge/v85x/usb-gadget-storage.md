@@ -1,136 +1,201 @@
-# V85X USB Device 模式（ADB / U盘存储）
+# V85X USB Device 存储（ADB / U盘 + EMMC / TF 卡双介质）
 
 > 来源：xdv23 / xdv200300 项目实测（V85XEMMC 平台，AW_V853 芯片，ZKSWE Develop Team 2023 usb_monitor.cpp）。
-> 客户/产品口径说的「MTP 功能」在 FlyThings V85X 工程里通常指 **USB 连电脑当存储设备**，
-> 实现是 Linux **configfs usb_gadget + mass_storage**（UMS/U 盘模式，非 MTP 协议栈）；
-> 另一档是 **ADB 调试模式**（functionfs）。两档共用一个 gadget 配置器，按开关切换。
-> ⚠️ xdv23 与 xdv200300 的存储介质策略不同（xdv23 只暴露内置 EMMC；xdv200300 支持 TF 卡方案），见 §1.5。
+> 沛哥定界（2026-09-03）：客户/产品口径说的「MTP 功能」= **USB 连电脑当存储设备拷照片/视频**，
+> 实现是 Linux **configfs usb_gadget + mass_storage**（UMS/U 盘模式，非 MTP 协议栈）。
+> 本文把两条知识线统一成一条主线：**数据介质双选（EMMC 分区 / TF 卡）** × **USB 档位（ADB 调试 / U盘存储）**。
 
-## 1. 两种配置一句话
+## 0. 概念框架：介质与档位是两个正交维度
 
-| 配置 | 电脑看到 | 实现 | VID/PID |
-|------|---------|------|---------|
-| `E_USB_CONFIG_ADB` | adb 设备（调试） | functionfs `ffs.adb` | `0x18D1/0xD002` |
-| `E_USB_CONFIG_STORAGE` | U 盘（拷照片/视频） | mass_storage 暴露 EMMC 分区 | `0x1F3A/0x1000` |
-| `E_USB_CONFIG_NONE` | 无（仅充电） | 无 function，角色回 host | `0x1F3A/0x1001` |
+```
+                ┌─ 介质（数据放哪）─────────────┐
+  硬件变体 ──→   │  A. 内置 EMMC：mmcblk0p1       │
+                │     挂载 /mnt/storage          │
+                │  B. TF 卡：   mmcblk1          │
+                │     挂载 /mnt/extsd            │
+                └──────────────┬──────────────┘
+                               │ 探针：/dev/block/mmcblk0boot0 是否存在
+                               ▼
+                ┌─ USB 档位（连电脑暴露成什么）──┐
+  开发/量产 ──→  │  ADB 调试（functionfs ffs.adb）│
+                │  U盘存储（mass_storage）        │ ← 暴露源 = 当前介质块设备
+                │  NONE（仅充电）                 │
+                └──────────────────────────────┘
+```
 
-## 1.5 双介质差异（xdv23 vs xdv200300，沛哥 2026-09-03 验证）
+- **介质**：拍照/录像存哪块存储（EMMC 版 xdv23 / TF 卡版 xdv200300 无内置 EMMC 时的存储载体）
+- **USB 档位**：USB 连电脑时 gadget 暴露成什么；U盘档要把「当前介质」的块设备写进 `lun.0/file`
 
-xdv200300 在 xdv23 基础上新增 **TF 卡作为存储/暴露介质**（适配无内置 EMMC 的硬件变体）：
+## 1. 存储介质双选（双介质主线）
 
-| 宏 | xdv23 | xdv200300 |
-|----|-------|-----------|
-| `STORAGE_BLOCK` | /dev/block/mmcblk0p1 | /dev/block/mmcblk0p1 |
-| `STORAGE_MOUNT_POINT` | /mnt/storage | /mnt/storage |
-| `EMMC_BLOCK_BOOT`（探针） | 无 | /dev/block/mmcblk0boot0 |
-| `TFCARD_BLOCK` | 无 | /dev/block/mmcblk1 |
-| `TFCARD_MOUNT_POINT` | 无 | /mnt/extsd |
+### 1.1 块设备 / 挂载点 / 用途
 
-- **挂载**（Main.cpp onEasyUIInit，双分支一致）：`base::exists(/dev/block/mmcblk0boot0)`
-  为真 → `checkAndMount(mmcblk0p1 → /mnt/storage)`（EMMC）；否则 → `checkAndMount(mmcblk1 → /mnt/extsd)`（TF 卡）
-- **USB 暴露**（usb_monitor.cpp `E_USB_CONFIG_STORAGE` 档，同一探针二选一写 `lun.0/file`）：
-  EMMC 存在 → 暴露 `mmcblk0p1`；否则 → 暴露 **`/dev/block/mmcblk1`（TF 卡）**
-- ⚠️ **口径澄清**：暴露给电脑的是**块设备**（mass_storage 的 `lun.0/file` 只接受块设备/镜像文件，不接受挂载路径），
-  不是把 `/mnt/extsd` 这个字符串暴露出去；`/mnt/extsd` 只是 TF 卡在设备内的**挂载点**，
-  电脑端看到的是 TF 卡文件系统内容（照片/视频目录）。
+| 宏 | 值 | 用途 |
+|----|----|------|
+| `STORAGE_BLOCK` | `/dev/block/mmcblk0p1` | 内置 EMMC 数据分区 |
+| `STORAGE_MOUNT_POINT` | `/mnt/storage` | EMMC 挂载点（相册 ALBUMPATH） |
+| `EMMC_BLOCK_BOOT` | `/dev/block/mmcblk0boot0` | **介质探针**：存在 = 有内置 EMMC |
+| `TFCARD_BLOCK` | `/dev/block/mmcblk1` | TF 卡块设备 |
+| `TFCARD_MOUNT_POINT` | `/mnt/extsd` | TF 卡挂载点 |
 
-## 2. OTG 角色切换（V85X/全志 usbc0 sysfs）
+```c
+#define STORAGE_BLOCK       "/dev/block/mmcblk0p1"
+#define STORAGE_MOUNT_POINT "/mnt/storage"
+#define EMMC_BLOCK_BOOT     "/dev/block/mmcblk0boot0"   // xdv200300 起新增
+#define TFCARD_BLOCK        "/dev/block/mmcblk1"        // xdv200300 起新增
+#define TFCARD_MOUNT_POINT  "/mnt/extsd"
+```
 
-路径与 Z21（`soc0/soc/soc:usbotg`）不同，V85X 是 platform soc 下的 usbc0：
+### 1.2 启动挂载（Main.cpp onEasyUIInit，双分支）
+
+```cpp
+base::mkdirs(STORAGE_MOUNT_POINT);
+if (base::exists(EMMC_BLOCK_BOOT)) {                       // 有内置 EMMC
+    NO_EXCEPTION(base::fat32::checkAndMount(STORAGE_BLOCK, STORAGE_MOUNT_POINT)); // → /mnt/storage
+} else {                                                   // 纯 TF 卡硬件变体
+    NO_EXCEPTION(base::fat32::checkAndMount(TFCARD_BLOCK, TFCARD_MOUNT_POINT));   // → /mnt/extsd
+}
+```
+
+同一块硬件跑两套产品 = 只用这套探针分支；媒体目录约定：
+- EMMC 版：照片 `/mnt/storage/photo`、录像 `/mnt/storage/video`
+- TF 卡版：照片/录像落在 `/mnt/extsd` 下（挂载点不同，上层路径按介质常量拼）
+
+### 1.3 介质约定与产品测试
+
+- TF 卡/外置卡还承载产测：`/mnt/extsd/product_test.ini` 存在 → 启动进 TestActivity
+- updater 备份等也走 `/mnt/extsd/update.img.backup`（双介质通用约定）
+
+## 2. USB 档位（ADB / U盘 / NONE）
+
+### 2.1 档位表
+
+| 档 | 电脑看到 | function | VID/PID | 介质无关？ |
+|----|---------|----------|---------|-----------|
+| `E_USB_CONFIG_ADB` | adb 设备 | functionfs `ffs.adb` | `0x18D1/0xD002` | ✅ 与介质无关 |
+| `E_USB_CONFIG_STORAGE` | U 盘 | mass_storage.usb0 | `0x1F3A/0x1000` | ❌ 暴露源 = 当前介质块设备 |
+| `E_USB_CONFIG_NONE` | 无（仅充电） | 无 | `0x1F3A/0x1001` | ✅ |
+
+### 2.2 U盘档暴露源：复用介质探针二选一（usb_monitor.cpp STORAGE 档）
+
+```cpp
+case E_USB_CONFIG_STORAGE:
+    _write_content(USB_VID, "0x1F3A");
+    _write_content(USB_PID, "0x1000");
+    if (!base::exists(USB_GADGET_FUN_MASS)) {
+        base::mkdirs(USB_GADGET_FUN_MASS);
+        _write_content(USB_GADGET_FUN_MASS "/lun.0/inquiry_string", "zkswe");
+    }
+    symlink(USB_GADGET_FUN_MASS, USB_GADGET_C1_F1);
+    if (base::exists("/dev/block/mmcblk0boot0")) {          // 与 Main.cpp 同一探针
+        _write_content(USB_GADGET_FUN_MASS "/lun.0/file", USB_STORAGE_BLOCK);  // EMMC
+    } else {
+        _write_content(USB_GADGET_FUN_MASS "/lun.0/file", USB_TFCARD_BLOCK);   // TF 卡
+    }
+    break;
+```
+
+⚠️ **口径**：`lun.0/file` 只接受**块设备/镜像文件**（不接受挂载路径），所以暴露的是
+`/dev/block/mmcblk0p1` 或 `/dev/block/mmcblk1`，**不是** `/mnt/extsd` 这个字符串；
+`/mnt/extsd` 只是 TF 卡在设备内的挂载点。电脑端看到的是当前介质文件系统内容（照片/视频）。
+
+### 2.3 档位选择与防重
+
+```cpp
+// 开机（mainLogic.cc）：开发样机 adb、量产 U盘
+sys::set_usb_config(Settings::instance().dev ? E_USB_CONFIG_ADB : E_USB_CONFIG_STORAGE);
+
+// 防重复配置：SystemProperties app.usb.cfg 记录当前档，相同直接 return
+SystemProperties::getInt("app.usb.cfg", &cur, E_USB_CONFIG_NONE);
+if (cur == target) return;
+SystemProperties::setInt("app.usb.cfg", target);
+```
+
+USB 插入/充电检测：GPIO（xdv23 用 `GPIO_260` = `GPIO_USBIN_DET`，1=插入）。
+
+## 3. OTG 角色切换（V85X/全志 usbc0 sysfs）
+
+路径与 Z21（`soc0/soc/soc:usbotg`）不同，V85X 是 platform soc 下 usbc0，**读节点即切换**：
 
 ```
 /sys/devices/platform/soc/usbc0/otg_role   # 读当前角色：usb_device / usb_host
-/sys/devices/platform/soc/usbc0/usb_device # 读它 = 切到 device 模式
-/sys/devices/platform/soc/usbc0/usb_host   # 读它 = 切到 host 模式
+/sys/devices/platform/soc/usbc0/usb_device # 读它 = 切 device 模式
+/sys/devices/platform/soc/usbc0/usb_host   # 读它 = 切 host 模式
 /sys/devices/platform/soc/usbc0/usb_null   # 读它 = 空角色
 ```
 
-切换 = fopen/fread 目标节点（读即触发内核切换），不是写。封装：
-
 ```cpp
-usb_mode_e get_usb_mode() {           // 读 otg_role 内容比对 usb_device/usb_host
+usb_mode_e get_usb_mode() {            // 读 otg_role 内容比对
     char buf[32]; _read(USB_OTG_ROLE, buf, sizeof(buf)); ...
 }
-void set_usb_mode(usb_mode_e mode) {  // 相同则跳过；否则读 usb_null 再读目标节点
+void set_usb_mode(usb_mode_e mode) {   // 相同跳过；先读 usb_null 清角色再读目标节点
     if (get_usb_mode() == mode) return;
-    char buf[32]; _read(USB_NULL, buf, sizeof(buf));   // 先清空角色
+    char buf[32]; _read(USB_NULL, buf, sizeof(buf));
     if (mode == E_USB_MODE_DEVICE) _read(USB_DEVICE, buf, sizeof(buf));
     else if (mode == E_USB_MODE_HOST) _read(USB_HOST, buf, sizeof(buf));
 }
 ```
 
-## 3. configfs usb_gadget 完整配置序列（顺序不可乱）
+## 4. configfs usb_gadget 配置序列（8 步，顺序不可乱）
 
 ```cpp
-#define KERNEL_CONFIG      "/sys/kernel/config/"
-#define USB_GADGET         KERNEL_CONFIG "usb_gadget/"
-#define USB_GADGET_G1      USB_GADGET "g1/"
-#define USB_GADGET_G1_SUB  USB_GADGET_G1 "strings/0x409/"
-#define USB_GADGET_G1_C1   USB_GADGET_G1 "configs/c.1/"
-#define USB_GADGET_FUN_FFS USB_GADGET_G1 "functions/ffs.adb"
-#define USB_GADGET_C1_FFS  USB_GADGET_G1_C1 "ffs.adb"
+#define KERNEL_CONFIG       "/sys/kernel/config/"
+#define USB_GADGET          KERNEL_CONFIG "usb_gadget/"
+#define USB_GADGET_G1       USB_GADGET "g1/"
+#define USB_GADGET_G1_SUB   USB_GADGET_G1 "strings/0x409/"
+#define USB_GADGET_G1_C1    USB_GADGET_G1 "configs/c.1/"
+#define USB_GADGET_FUN_FFS  USB_GADGET_G1 "functions/ffs.adb"
+#define USB_GADGET_C1_FFS   USB_GADGET_G1_C1 "ffs.adb"
 #define USB_GADGET_FUN_MASS USB_GADGET_G1 "functions/mass_storage.usb0"
-#define USB_GADGET_C1_F1   USB_GADGET_G1_C1 "f1"
-#define USB_VID            USB_GADGET_G1 "idVendor"
-#define USB_PID            USB_GADGET_G1 "idProduct"
-#define USB_FFS_ADB        "/dev/usb-ffs/adb"
-#define USB_STORAGE_BLOCK  "/dev/block/mmcblk0p1"
+#define USB_GADGET_C1_F1    USB_GADGET_G1_C1 "f1"
+#define USB_FFS_ADB         "/dev/usb-ffs/adb"
 ```
 
-1. **首次挂 configfs**：`/sys/kernel/config` 不存在 `usb_gadget/` 时
+1. **挂 configfs**：`/sys/kernel/config` 下无 `usb_gadget/` 时
    `mount("none", "/sys/kernel/config", "configfs", MS_SILENT, NULL)`
-2. **g1 描述**：mkdirs `strings/0x409` → 写 `manufacturer=zkswe`、`product=flythings`、`serialnumber=20080411`
-3. **configs/c.1**：mkdirs `configs/c.1/strings/0x409` → 写 `bmAttributes=0xc0`（自供电）、`MaxPower=500`
+2. **g1 描述**：mkdirs `strings/0x409` → `manufacturer=zkswe`、`product=flythings`、`serialnumber=20080411`
+3. **configs/c.1**：mkdirs `configs/c.1/strings/0x409` → `bmAttributes=0xc0`（自供电）、`MaxPower=500`
 4. **清旧绑定**：`unlink(configs/c.1/ffs.adb)` + `unlink(configs/c.1/f1)`（两档互斥，先拆干净）
 5. **切角色**：ADB/STORAGE → device；NONE → host
-6. **按档建 function + 挂 config**：
-   - ADB：写 VID/PID → mkdirs `functions/ffs.adb` → `symlink(functions/ffs.adb, configs/c.1/ffs.adb)`
-     → `/dev/usb-ffs/adb` 不存在时 mkdirs + `mount("adb", /dev/usb-ffs/adb, "functionfs", MS_SILENT, "uid=2000,gid=2000")`
-   - STORAGE：写 VID/PID → mkdirs `functions/mass_storage.usb0` + 写 `lun.0/inquiry_string=zkswe`
-     → `symlink(mass_storage.usb0, configs/c.1/f1)` → **`lun.0/file=/dev/block/mmcblk0p1`**（关键：暴露哪个块设备）
+6. **建 function + 挂 config**：
+   - ADB：写 VID/PID → mkdirs `functions/ffs.adb` → `symlink(ffs.adb, configs/c.1/ffs.adb)`
+     → `/dev/usb-ffs/adb` 不存在则 mkdirs + `mount("adb", ..., "functionfs", MS_SILENT, "uid=2000,gid=2000")`
+   - STORAGE：写 VID/PID → mkdirs `mass_storage.usb0` + `lun.0/inquiry_string=zkswe`
+     → `symlink(mass_storage.usb0, configs/c.1/f1)` → `lun.0/file` = 介质块设备（见 §2.2 双分支）
 7. **重启 adbd**：`SystemProperties::setString("ctl.restart", "adbd")`
-8. **绑定 UDC**：枚举 `/sys/class/udc` 第一个目录名 → 写入 `g1/UDC`
+8. **绑定 UDC**：枚举 `/sys/class/udc` 第一个目录名 → 写 `g1/UDC`
 
-## 4. 应用集成（xdv23 实测）
-
-- **开机默认档**：mainLogic.cc 初始化
-  `sys::set_usb_config(Settings::instance().dev ? E_USB_CONFIG_ADB : E_USB_CONFIG_STORAGE)`——
-  开发样机 dev=1 走 adb；量产走 U 盘模式（插 USB 电脑直接读 EMMC 里的照片视频）
-- **防重复配置**：`SystemProperties` 属性 `app.usb.cfg`（getInt/setInt）记录当前档，
-  相同直接 return——防止重复 mount/symlink/adbd 重启
-- **充电/USB 插入检测**：GPIO（xdv23 用 `GPIO_260`，`GPIO_USBIN_DET`，1=插入）
-- 存储目录约定：`ALBUMPATH = /mnt/storage`，照片 `/mnt/storage/photo`、录像 `/mnt/storage/video`，
-  U 盘模式下电脑打开设备看到的就是这个 FAT32 分区内容
-
-## 5. EMMC 分区 FAT32 管理（edge/fat32，项目自带实现）
+## 5. EMMC/TF 分区 FAT32 管理（edge/fat32 项目自带实现）
 
 ```cpp
 namespace base { namespace fat32 {
-  bool format_fat32fs(const char *block);              // newfs_msdos 格式化（变成 FAT32）
+  bool format_fat32fs(const char *block);                            // newfs_msdos 格式化
   std::string mount_vfat(const char* dev, const char* mount_point);
   bool umount(const char *mount_point);
-  void checkAndMount(const std::string& block, const std::string& mount_point); // 缺分区先格式化再挂
+  void checkAndMount(const std::string& block, const std::string& mount_point); // 非 FAT32 先格式化再挂
   int getBlockSize(const std::string& mount_point);
 }}
 ```
 
-Main.cpp `onEasyUIInit`：`mkdirs(/mnt/storage)` + `NO_EXCEPTION(base::fat32::checkAndMount("/dev/block/mmcblk0p1", "/mnt/storage"))`。
-即 FlyThings app 可自行把 EMMC 分区格式化为 FAT32 并挂载做媒体存储（配合 U 盘模式给电脑读）。
+FlyThings app 自己把介质块设备格式化为 FAT32 并挂载（EMMC 分区 / TF 卡都适用），
+配合 U盘档给电脑读。相册浏览/删除走挂载点下目录（photo/video）。
 
 ## 6. 平台差异备忘
 
 - **Z21**（soc0 路径，shell 一行切换）：`cat /sys/devices/soc0/soc/soc:usbotg/usb_host|usb_device`
-- **V85X/V85XEMMC**（platform/soc/usbc0 路径，文件 IO 切换）：本文 2/3 节
-- 两平台都是 **configfs gadget** 思路，V85X 的 usb_monitor.cpp 是完整可抄实现（g1/mass_storage/ffs.adb 全套）
+- **V85X/V85XEMMC**（platform/soc/usbc0 路径，文件 IO 切换）：本文 3/4 节
+- V85X 的 usb_monitor.cpp 是完整可抄实现（g1/mass_storage/ffs.adb + 介质双分支全套）
 
 ## 7. 坑与注意
 
-1. **mass_storage 与 adb 互斥**：换档必须先 unlink 旧 symlink，两个都要拆（残留 symlink 会导致新档不生效）
+1. **mass_storage 与 adb 互斥**：换档必须先 unlink 两个旧 symlink，残留会导致新档不生效
 2. **configfs 未挂载**：直接 mkdirs 会失败，先 `mount none configfs`
-3. **暴露整分区有风险**：`lun.0/file` 指向整个 `/dev/block/mmcblk0p1`，若系统同时挂载使用中
-   （/mnt/storage 读写相册），电脑端操作可能与设备端抢数据——量产取舍：默认 U 盘模式但相册写入
-   只发生在拍照/录像时刻；要更稳可切档前 umount（业务层控制）
-4. **UDC 绑定时机**：function 挂好后必须写 `g1/UDC` 才枚举到电脑；枚举不到先看
+3. **暴露整分区 vs 设备端写入抢数据**：U盘档暴露的是整块介质（mmcblk0p1 / mmcblk1），
+   若设备端同时挂载读写相册会抢——量产取舍：默认 U盘模式但写入只在拍照/录像瞬间；
+   要更稳可切档前 umount（业务层控制）
+4. **UDC 绑定时机**：function 挂好后必须写 `g1/UDC` 才被电脑枚举；枚举不到先看
    `/sys/class/udc` 是否有控制器（无 = 内核没开 gadget/驱动问题）
-5. ADB 档的 functionfs 挂载 uid/gid=2000 是 adbd 服务用户；`ctl.restart adbd` 走
-   `SystemProperties`（init 属性服务），不是 system()
+5. **探针一致性**：Main.cpp 挂载与 usb_monitor 暴露源必须用同一探针（mmcblk0boot0），
+   两处不一致会出现「设备端写 A 介质、电脑读 B 介质」的错乱
+6. ADB 档 functionfs 挂载 uid/gid=2000 是 adbd 服务用户；`ctl.restart adbd` 走
+   SystemProperties（init 属性服务），不是 system()

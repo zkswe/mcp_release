@@ -1,7 +1,37 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.8.2-open**（2026-09-03）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.9.0-open**（2026-09-03）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.9.0-open (2026-09-03) — V85X UVC 摄像头接入入库 + USB 存储双介质文档重构（沛哥指定）
+
+**① 新建 knowledge/v85x/uvc-usb-camera.md（补「V85x USB 摄像头接入」空缺）**
+来源：沛哥指定 `LearningProject/mark_cv201` → CV201_PND（+CV201_PND_1024_600 同架构验证）
+（V85X/AW_V853 + aw-dvr 3.9.12）。场景：V85X 主机 USB 接入 UVC 摄像头，与内置 ISP 前摄双路并存。
+
+收录（**通用骨架，沛哥指示：模块私有协议层不入库**）：
+1. UVC 设备发现：inotify /dev（IN_CREATE/IN_DELETE + video\d* 正则）→ 延时 ~3s 枚举 →
+   扫 /dev/video0..12 `VIDIOC_QUERYCAP` 且 `driver=="uvcvideo"` 命中；多节点防重、只认自己记录节点
+2. 打开初始化：`VIDIOC_G_FMT` 读默认分辨率 → CameraHelper.Init(w,h) 幂等；
+   **MPP 注册关键**：FRONT setIsp(true) + REAR `setUvc(true).setId(DEVICE_ID_AUTO)`（UVC 走后路通道）
+3. fd 来源：`mpi::SharedVideoDevice(REAR).getFileDescriptor()`
+4. **取流保活**：UvcCameraDetection : mpi::Task<>（SharedVideoDevice + wait()），停久断流（关键坑）
+5. 双路预览布局：FRONT 内置 layer0 全屏 + UVC REAR layer4 半屏拉伸，VIEW_TYPE 显隐组合
+6. 录像：RecorderParameters.settings[FRONT]+[REAR]（有 UVC 才加 REAR 路），同套 Recorder
+7. **拍照走 mpi::Snapshot**：`mpi::Snapshot::instance().takePicture(names, {})` + 200ms 防抖
+   （⚠️ 不是 Recorder::takePicture）
+8. 状态机通用设计：连接/断开/异常 + 50 帧防抖切换 + 回调集 + 恢复后 resetCameraPreview 重建预览
+
+**② knowledge/v85x/usb-gadget-storage.md 重构为「双介质」主线**（沛哥 2026-09-03 指示整合）
+把 v0.8.1（USB 双档）+ v0.8.2（xdv200300 TF 卡）合并成单一主线：
+介质（EMMC 分区 mmcblk0p1→/mnt/storage / TF 卡 mmcblk1→/mnt/extsd，探针 mmcblk0boot0）×
+USB 档位（ADB / U盘 / NONE）两个正交维度；挂载（Main.cpp）与 UVC 档暴露源（lun.0/file）
+同一探针二选一；口径澄清：暴露的是块设备不是 /mnt/extsd 挂载点字符串。
+
+**同步**：references/kb/v85x-uvc-camera.md（速查）+ MEMORY.md 分类表；重建 rag_index；
+版本 0.8.2→0.9.0-open。
 
 ---
 
