@@ -1,7 +1,33 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.10.0-open**（2026-09-03）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.11.0-open**（2026-09-03）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.11.0-open (2026-09-03) — cameraview(ZKCameraView) 相机预览控件 ftu/json 字段规范入库
+
+**新建 knowledge/uicontrols/cameraview-fields.md（沛哥指定学习 LearningProject/mark_cv201 倒车影像工程）**
+来源：CV201_PND（1600×600）+ CV201_PND_1024_600（1024×600）双分辨率 fui unpack 实测校准（V85X/AW_V853）。
+
+核心铁律：
+- **实时摄像头预览用 cameraview；播放文件/回放/拉流用 videoview，禁止混用**
+  （cameraview=ZKCameraView 接 /dev/video 实时预览/拍照/多通道；videoview=ZKVideoView 播文件，
+  loopPlayback/defaultVolume 是 videoview 字段。mark_cv201 分工：reverse=倒车 cameraview，
+  reverse2 回放/Dvr/lylinkview=videoview）
+- cameraview 必须嵌 window 容器内（window → cameraview + painter overlay），不做顶层裸控件
+- formatSize 是视频源分辨率（如 640×480）不是控件大小；控件铺满窗口，等比裁剪适配用代码 setCropPosition
+
+json 字段（实测）：autoPreview:true(自动预览关键)/backgroundColor/caption/cvbs:false(数字源)/
+formatSize{640,480}/id 97001 段/mirror:0(EMirror)/touchable:false/position 全屏；
+同容器配 painter(id 52001) 画倒车轨迹线。不同分辨率工程结构一致只改 resolution+position。
+
+代码用法（reverseLogic.cc onUI_init 实测顺序）：setErrorCodeCallback(无信号检测 E_CAMERA_STATUS_CODE_
+NO_SIGNAL/HAS_SIGNAL，计数≥2 才提示防抖) → setDevPath → setFormatSize → setFrameRate → setRotation
+(0/90/180/270) → setMirror(EMirror) → setChannel；防拉伸：按控件宽高比算 setCropPosition(cp)，
+旋转 90/270 swap l/t/w/h；页面退出防同开冲突：onUI_hide WAIT(!isPreviewing(),100,30)；onUI_quit 反注册回调。
+
+**同步**：rag_index 重建；版本 0.10.0→0.11.0-open。
 
 ---
 
