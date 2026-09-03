@@ -1,7 +1,29 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.12.0-open**（2026-09-03）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.13.0-open**（2026-09-03）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.13.0-open (2026-09-03) — 自定义字库配置入库（改 .prefs font 字段替换全局默认字库）
+
+**新建 knowledge/devflow/custom-font-config.md（沛哥 20:43 讲解 + KlipperF133 实测 + mark_cv201 对照）**
+
+两条路先分清：
+- **全局默认字库替换（整 UI 换字体，不用代码）= 改 .prefs 的 font 字段**（沛哥定规）：
+  `.settings/com.zksw.flythings.easyui.prefs` 里 easyui.cfg.debug 与 easyui.cfg.release 两份 JSON 都加
+  "font" 字段指向自定义 ttf（实测 KlipperF133：debug=/mnt/extsd/ui/KaiTi.ttf、release=/res/ui/KaiTi.ttf，
+  与同 JSON resPath 对应）；ttf 放工程 resources/ 编译打包到设备 ui 目录；默认模板 .prefs 无 font 字段
+  = 用内置 fzcircle.ttf（思源黑体裁剪），写了 = 全系统换自定义字库；IDE 对应：项目属性→字体→取消默认
+  导入新 ttf（仅支持 ttf）
+- **多字体混排（控件级指定）= enable.font.location=true + font/ 目录 + setFontFamily**（wiki font_setting.md，
+  mark_cv201 font/sans.ttf 用此法；easyui 2.2.0+；setFontFamily 参数=文件名不带 .ttf；多字体按 ASCII 排序
+  最前作默认）
+
+补充：package.properties 覆盖层也可配 font（F133UhaleAlbum 实测冒号分隔 debug:release 两路径）。
+坑：全局换字体别写 setFontFamily；.prefs 改 font 不生效查 debug/release 双改 + ttf 打包路径。
+
+**同步**：rag_index 重建；版本 0.12.0→0.13.0-open。
 
 ---
 
