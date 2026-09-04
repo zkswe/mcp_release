@@ -417,11 +417,14 @@ class HtmlToJson:
             self.ctx.warnings.append(f'自动转图失败: {e}')
             return None
 
-    # ---------- iconfont 图标自动落图（2026-09-03 沛哥定规：图标优先）----------
-    def _icon_png(self, ctx, glyph, cw, ch, color_int=None, pressed=False):
-        """data-icon 语义图标 → PNG（iconfont 风格矢量线框，居中于控件画布）。
+    # ---------- data-icon 图标自动落图（图标优先；2026-09-04 默认 emoji 彩色，风格 HTML 阶段定）----------
+    def _icon_png(self, ctx, glyph, cw, ch, color_int=None, pressed=False, style='emoji'):
+        """data-icon 语义图标 → PNG（居中于控件画布）。
         glyph: 英文/中文名（back/返回...）；cw/ch: 控件尺寸（PNG 同尺寸，图标居中不变形）；
-        color_int: 十进制描边色或 None(默认浅色)；pressed=True 生成按下态（按钮 picTab pic1）。
+        style: 'emoji'(默认 彩色 4x 超采样)/'line'(iconfont 矢量线框)/'ai'(AI 生图)，
+        HTML 里用 data-icon-style 选择，HTML 原型预览即可确认最终风格；
+        color_int: 仅 line 风格的十进制描边色（emoji/ai 自带颜色忽略）；
+        pressed=True 生成按下态（按钮 picTab pic1；emoji/ai 压暗 20%，line 提亮 35%）。
         未收录/不可用返回 None 并 warning。"""
         cw, ch = max(1, int(cw or 0)), max(1, int(ch or 0))
         size = min(cw, ch)
@@ -436,18 +439,29 @@ class HtmlToJson:
                 f'图标 "{glyph}" 未收录（可用：{avail}）；给 data-pic 自备图或换用列表内名字')
             return None
         col = _color_int_rgba(color_int, (0xD8, 0xE2, 0xF0, 255))
-        hexs = '%02X%02X%02X' % tuple(int(v) for v in col[:3])
-        name = 'icon_%s_%dx%d_%s%s.png' % (gname, cw, ch, hexs,
-                                           '_p' if pressed else '')
+        if style == 'line':
+            hexs = '%02X%02X%02X' % tuple(int(v) for v in col[:3])
+            name = 'icon_%s_%dx%d_line_%s%s.png' % (gname, cw, ch, hexs,
+                                                    '_p' if pressed else '')
+        else:
+            name = 'icon_%s_%dx%d_%s%s.png' % (gname, cw, ch, style,
+                                               '_p' if pressed else '')
 
-        def _g(d, _n=name, _g2=gname, _s=size, _c=col, _p=pressed, _cv=(cw, ch)):
-            return gr.glyph_icon(d, _n, _g2, size=int(_s), color=_c, pressed=_p, canvas=_cv)
+        def _g(d, _n=name, _g2=gname, _s=size, _c=col, _p=pressed, _cv=(cw, ch), _st=style):
+            return gr.glyph_icon_ex(d, _n, _g2, size=int(_s), color=_c, pressed=_p,
+                                    canvas=_cv, style=_st)
 
         return self._gen_asset(_g)
 
     def _icon_color(self, attrs):
-        """图标描边色：data-color → 十进制 int；缺省 None（gen_res 用默认浅色）。"""
+        """图标描边色（仅 line 风格）：data-color → 十进制 int；缺省 None（gen_res 用默认浅色）。"""
         return to_dec(_attr(attrs, 'data-color'))
+
+    def _icon_style(self, attrs):
+        """图标风格：data-icon-style="emoji|line|ai"，缺省 emoji（2026-09-04 定规：
+        图标风格在 HTML 原型阶段选定并预览确认）。非法值回退 emoji。"""
+        s = str(_attr(attrs, 'data-icon-style') or 'emoji').strip().lower()
+        return s if s in ('emoji', 'line', 'ai') else 'emoji'
 
     def _effect_assets(self, ctx, node, w, h, cap):
         """检测 style/data 里的 CSS 效果并自动生成图片资源。
@@ -1111,7 +1125,7 @@ class HtmlToJson:
                 glyph = _glyph_from_attrs(attrs)
                 if glyph is not None:
                     cw, ch = pos.get('width', 100), pos.get('height', 40)
-                    png = self._icon_png(ctx, glyph, cw, ch, self._icon_color(attrs), pressed=False)
+                    png = self._icon_png(ctx, glyph, cw, ch, self._icon_color(attrs), pressed=False, style=self._icon_style(attrs))
                     if png:
                         si['backgroundPic'] = png
             # charsetTab 字符图（NetDemo WiFi 信号档位校准）：data-charset='[{"char":48,"pic":"a.png","size":{"width":26,"height":24}},...]'
@@ -1231,8 +1245,8 @@ class HtmlToJson:
             if not pics and glyph is not None:
                 cw, ch = pos.get('width', 100), pos.get('height', 40)
                 col = self._icon_color(attrs)
-                p0 = self._icon_png(ctx, glyph, cw, ch, col, pressed=False)
-                p1 = self._icon_png(ctx, glyph, cw, ch, col, pressed=True)
+                p0 = self._icon_png(ctx, glyph, cw, ch, col, pressed=False, style=self._icon_style(attrs))
+                p1 = self._icon_png(ctx, glyph, cw, ch, col, pressed=True, style=self._icon_style(attrs))
                 if p0:
                     c['picTab'] = {'pic0': p0, 'pic1': p1 or p0}
                     c.pop('bgColorTab', None)
@@ -1531,7 +1545,7 @@ class HtmlToJson:
                 glyph = _glyph_from_attrs(attrs)
                 if glyph is not None:
                     cw, ch = pos.get('width', 100), pos.get('height', 40)
-                    png = self._icon_png(ctx, glyph, cw, ch, self._icon_color(attrs), pressed=False)
+                    png = self._icon_png(ctx, glyph, cw, ch, self._icon_color(attrs), pressed=False, style=self._icon_style(attrs))
                     if png:
                         c['backgroundPic'] = png
                 if 'backgroundPic' not in c:

@@ -1,7 +1,17 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.16.0-open**（2026-09-03）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.17.0-open**（2026-09-04）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.17.0-open (2026-09-04) — data-icon 图标默认风格改为 emoji 彩色，风格在 HTML 原型阶段选定
+**V553 项目反馈：强制线框风格不适用所有产品（医疗白底 UI 需要彩色图标），且风格应在 HTML 出效果稿时就确认下来，而不是转换后才发现。**
+- ★ gen_res.py 新增 `_GLYPH_EMOJI` 映射表：46 个图标中 39 个有彩色 emoji 字形（带 VS16 强制彩色呈现）；menu/more/power/share/bluetooth 等无对应彩色 emoji 的自动降级线框，不断链
+- ★ gen_res.py 新增 `_emoji_img()` / `emoji_icon_ss()`：emoji **4x 超采样**渲染（3 倍画布居中修顶部裁切 + bbox 裁剪 + 最长边 86% 画布适配 + LANCZOS 缩回），替代 1x 直画的旧 `emoji_icon`（旧函数保留兼容）
+- ★ gen_res.py 新增 `glyph_icon_ex(style=)` 统一入口：`emoji`（默认）/ `line`（iconfont 矢量线框，等价 glyph_icon）/ `ai`（AI 生图，失败降级 emoji → 线框）；按下态 emoji/ai 压暗 20%、line 提亮 35%；非正方 canvas 居中语义与 glyph_icon 一致；`ai_icon` 重构出 `_ai_img` 复用
+- ★ html2json.py 支持 `data-icon-style="emoji|line|ai"`（缺省 emoji，非法值回退 emoji）；生成文件名带风格标识（`icon_play_24x24_emoji.png` / `icon_play_24x24_line_1E88E5.png`），同控件不同风格不冲突
+- ★ HTML_SUBSET.md 图标章节改写：「图标优先」保留（仍禁止按钮+文字），风格三选一在 HTML 原型阶段写明，preview.html 预览即最终效果
 
 ---
 

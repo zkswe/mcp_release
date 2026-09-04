@@ -43,18 +43,23 @@ JS 只服务于浏览器预览确认，不转 json；FlyThings 端的交互逻�
 **切图工具**：`tools/ui_tools/gen_res.py`（Pillow 脚本）可按 CSS 设计稿参数生成
 PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 
-## 🎯 图标优先（iconfont 矢量线框，沛哥 2026-09-03 定规）
+## 🎯 图标优先（风格在 HTML 阶段选定，2026-09-04 定规）
 
 **生成 UI 时常用操作必须用图标表达，禁止用「按钮+文字」糊弄**。返回/播放/暂停/上一首/下一首/
 设置/搜索/删除/刷新/确认/关闭/加减/音量/主页/菜单等通用操作，HTML 里写 `data-icon`（或
-iconfont class），转换器**自动生成 iconfont 风格矢量线框 PNG**（描边线性图标，单色可配），
-设备端显示真图标；图片不受设备裁剪字库限制。
+iconfont class），转换器**自动生成图标 PNG**，设备端显示真图标；图片不受设备裁剪字库限制。
+
+**图标风格用 `data-icon-style` 在 HTML 原型阶段选定（HTML 预览即可确认最终效果）**：
+- `emoji`（**缺省默认**）：彩色 emoji 图标（本地 emoji 字体 4x 超采样渲染，抗锯齿）；
+  未映射的图标名（menu/more/power/share/bluetooth 等）自动降级线框
+- `line`：iconfont 矢量线框（8x 超采样，单色描边，配 `data-color`）
+- `ai`：AI 生图（需 OPENAI_API_KEY），失败自动降级 emoji → 线框
 
 ### 写法（三种等效）
 ```html
 <!-- ① 图标按钮（推荐：可点击，自动生成 normal+pressed 两态图 picTab） -->
 <div class="btn" data-icon="play" data-x="216" data-y="176" data-w="48" data-h="48" data-caption="BtnPlay"></div>
-<div class="btn" data-icon="返回" data-x="10" data-y="10" data-w="40" data-h="40" data-caption="BtnBack" data-color="#EEF2F6"></div>
+<div class="btn" data-icon="返回" data-icon-style="line" data-x="10" data-y="10" data-w="40" data-h="40" data-caption="BtnBack" data-color="#EEF2F6"></div>
 
 <!-- ② 纯展示图标（textview 背景图，不可点；要可点请用 ① 的 btn） -->
 <div class="icon" data-icon="wifi" data-x="430" data-y="8" data-w="20" data-h="20"></div>
@@ -65,8 +70,10 @@ iconfont class），转换器**自动生成 iconfont 风格矢量线框 PNG**（
 
 ### 规则
 - **data-icon 值**：英文名或中文别名都认（`play`/`播放`/`返回`/`back`...，见下表），自动映射规范名。
-- **data-color**：线框颜色 `#RRGGBB`（默认 `#D8E2F0` 浅灰蓝，深色主题友好）；图标按钮按下态自动提亮。
-- **尺寸**：控件建议正方形（data-w == data-h）；PNG 与控件同尺寸、线框居中（非正方自动居中不变形）。
+- **data-icon-style**：`emoji`（默认）/ `line` / `ai`；整页建议统一风格，混用需谨慎。
+- **data-color**：仅 `line` 风格的线框颜色 `#RRGGBB`（默认 `#D8E2F0` 浅灰蓝）；emoji/ai 自带颜色忽略此项。
+- **按下态**：图标按钮自动生成两态图——emoji/ai 压暗 20%，line 提亮 35%。
+- **尺寸**：控件建议正方形（data-w == data-h）；PNG 与控件同尺寸、图标居中（非正方自动居中不变形）。
 - **caption**：图标按钮同样要 data-caption（回调命名用），不要往图标按钮里写文字；
   需要文字说明 → 图标按钮旁另加 `div.text`。
 - **覆盖**：若同时给了 data-pic/data-pic0 等显式图，以显式图为准（data-icon 忽略）。

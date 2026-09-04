@@ -368,8 +368,98 @@ def emoji_icon(out_dir, name, size, ch):
     return save(canvas, out_dir, name)
 
 
-def ai_icon(out_dir, name, size, prompt):
-    """OpenAI gpt-image-2 生图（透明背景 PNG）。无 key/网络失败抛异常，由调用方降级。"""
+# ---------- data-icon 语义图标：emoji 彩色优先（2026-09-04 定规：风格在 HTML 原型阶段选定） ----------
+# 图标规范名 → emoji 字形（带 VS16 强制彩色呈现）；menu/more/power/share/bluetooth 等
+# 无对应彩色 emoji 的不收录，调用方自动降级线框。
+_GLYPH_EMOJI = {
+    'back': '⬅️', 'forward': '➡️', 'up': '⬆️', 'down': '⬇️',
+    'close': '❌', 'check': '✅', 'plus': '➕', 'minus': '➖',
+    'search': '🔍', 'home': '🏠', 'list': '📋',
+    'play': '▶️', 'pause': '⏸️', 'stop': '⏹️', 'prev': '⏮️', 'next': '⏭️',
+    'volume': '🔊', 'mute': '🔇', 'delete': '🗑️',
+    'edit': '✏️', 'download': '📥', 'upload': '📤',
+    'user': '👤', 'lock': '🔒', 'info': 'ℹ️', 'warning': '⚠️',
+    'camera': '📷', 'clock': '🕐', 'calendar': '📅', 'bell': '🔔',
+    'mic': '🎤', 'location': '📍', 'mail': '✉️', 'eye': '👁️',
+    'video': '🎥', 'phone': '📞', 'settings': '⚙️',
+    'refresh': '🔄', 'wifi': '📶', 'heart': '❤️', 'star': '⭐',
+}
+
+
+def _emoji_img(size, ch):
+    """emoji 彩色字形 → RGBA Image：4x 超采样 + 3 倍画布居中（修顶部裁切）+
+    bbox 裁剪 + 最长边缩至 86% 画布（四周留白，各图标视觉大小一致）+ LANCZOS 缩回。"""
+    fp = _emoji_font()
+    if not fp:
+        raise RuntimeError('未找到彩色 emoji 字体（seguiemj.ttf / NotoColorEmoji.ttf）')
+    SS = 4
+    S = size * SS
+    big = Image.new('RGBA', (S * 3, S * 3), (0, 0, 0, 0))
+    d = ImageDraw.Draw(big)
+    f = ImageFont.truetype(fp, int(S * 0.82))
+    d.text((S, S), ch, font=f, embedded_color=True)
+    bbox = big.getbbox()
+    if bbox:
+        big = big.crop(bbox)
+    w, h = big.size
+    target = int(S * 0.86)
+    scale = target / max(w, h)
+    w2, h2 = max(1, int(w * scale)), max(1, int(h * scale))
+    big = big.resize((w2, h2), Image.LANCZOS)
+    canvas = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    canvas.paste(big, ((S - w2) // 2, (S - h2) // 2), big)
+    return canvas.resize((size, size), Image.LANCZOS)
+
+
+def emoji_icon_ss(out_dir, name, size, ch):
+    """emoji 彩色图标（4x 超采样抗锯齿版）；旧 emoji_icon 为 1x 直画，保留兼容。"""
+    return save(_emoji_img(size, ch), out_dir, name)
+
+
+def _paste_canvas(img, size, canvas):
+    """非正方控件画布：图标 size 居中不变形（与 glyph_icon 的 canvas 语义一致）。"""
+    if canvas and (int(canvas[0]), int(canvas[1])) != (int(size), int(size)):
+        cw, chh = int(canvas[0]), int(canvas[1])
+        base = Image.new('RGBA', (cw, chh), (0, 0, 0, 0))
+        base.paste(img, ((cw - int(size)) // 2, (chh - int(size)) // 2), img)
+        img = base
+    return img
+
+
+def glyph_icon_ex(out_dir, name, glyph, size=48, color=None, pressed=False, canvas=None,
+                  style='emoji'):
+    """data-icon 语义图标统一入口（2026-09-04：默认 emoji 彩色，风格在 HTML 原型阶段选定）。
+    style:
+      'emoji'（默认）查 _GLYPH_EMOJI 映射 + 本地彩色 emoji 字体 4x 超采样渲染，
+              未映射/无字体自动降级线框
+      'line'  iconfont 矢量线框（8x 超采样，等价 glyph_icon）
+      'ai'    AI 生图（需 OPENAI_API_KEY），失败降级 emoji → 线框
+    pressed 按下态：emoji/ai 整体压暗 20%，线框提亮 35%。
+    canvas=(cw,ch) 非正方控件画布，图标 size 居中不变形。返回保存路径。"""
+    g = glyph_canonical(glyph)
+    img = None
+    if style == 'ai':
+        try:
+            img = _ai_img(size, '%s icon, flat modern UI icon, single centered'
+                          % (g or glyph))
+        except Exception:
+            img = None   # 降级 emoji → 线框
+    if img is None and style in ('emoji', 'ai'):
+        ech = _GLYPH_EMOJI.get(g or '') or _GLYPH_EMOJI.get(str(glyph).strip().lower())
+        if ech and _emoji_font():
+            img = _emoji_img(size, ech)
+    if img is not None:
+        if pressed:
+            r, gg, b, a = img.split()
+            dark = Image.merge('RGB', [c.point(lambda v: int(v * 0.8)) for c in (r, gg, b)])
+            img = Image.merge('RGBA', (*dark.split(), a))
+        return save(_paste_canvas(img, size, canvas), out_dir, name)
+    return glyph_icon(out_dir, name, glyph, size=size, color=color, pressed=pressed,
+                      canvas=canvas)
+
+
+def _ai_img(size, prompt):
+    """OpenAI gpt-image-2 生图 → RGBA Image（不保存）。无 key/网络失败抛异常。"""
     import base64
     import urllib.request
     key = os.environ.get('OPENAI_API_KEY', '').strip()
@@ -392,8 +482,12 @@ def ai_icon(out_dir, name, size, prompt):
     if not b64:
         raise RuntimeError('AI 生图响应无 b64_json')
     img = Image.open(io.BytesIO(base64.b64decode(b64))).convert('RGBA')
-    img = img.resize((size, size), Image.LANCZOS)
-    return save(img, out_dir, name)
+    return img.resize((size, size), Image.LANCZOS)
+
+
+def ai_icon(out_dir, name, size, prompt):
+    """OpenAI gpt-image-2 生图（透明背景 PNG）。无 key/网络失败抛异常，由调用方降级。"""
+    return save(_ai_img(size, prompt), out_dir, name)
 
 
 # 线条/几何兜底图标：kind → 内部形状（check/charging/wifi/alert + 补充）
