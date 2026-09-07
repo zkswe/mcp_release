@@ -1,10 +1,29 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.19.0-open**（2026-09-07）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.20.0-open**（2026-09-07）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
 
 ---
 
+## v0.20.0-open (2026-09-07) — USB HOST 外设接入客户场景入库（沛哥：USB HOST devices / 主从切换都参考跨平台对照回复）
+**沛哥补充**：客户问题涉及 **USB HOST 外设接入**（U盘/摄像头/键鼠读不到）与 **主从切换** 时，
+回复口径统一参考 `hardware/usb-otg-switch.md` 这份跨平台对照（不只是「怎么切」命令）。
+
+**改动**：
+- ★ usb-otg-switch.md 标题与检索导引扩展：纳入「USB HOST 外设接入」「U盘插上没反应」「USB host devices」等问法
+- ★ 新增 **「USB HOST 外设接入（客户场景）」节**：
+  - U盘/TF 存储：官方口径（wiki tf_usb）插 TF→自动挂 `/mnt/extsd`、U盘→`/mnt/usb1|usb2|usb3`；
+    工程实测（CV201_PND / T113CarSystem_PND `media_context.cpp` 存储表）另有 OTG 口挂 `/mnt/usbotg`；
+    监听拔插：`base::MountNotification`（base-utility ≥9.0.0）/ `MediaMountListener : MountMonitor::IMountListener`，
+    查询 `MOUNTMONITOR->isMounted()`；客户「U盘读不到」排查顺序：①otg_role 确认 host ②ls 挂载点 ③确认哪个口 ④监听事件
+  - USB 摄像头（UVC）→ 指向 `v85x/uvc-usb-camera.md`（V85X 完整接入知识）；T113/Z21 未收录不编造
+  - USB 键鼠（HID）→ **标「未收录」**，问沛哥/查官方文档，不猜
+- ★ kb-first-analysis 铁律 6 扩写：host 外设接入（U盘挂载/摄像头/键鼠）+ 主从切换同属跨平台问题，
+  未指定平台先给对照+问平台，禁止默认按命中第一平台答
+- 索引重建：878 chunks（22 knowledge）验证——
+  「U盘插上没反应」「/mnt/usb1 usbotg」「Z21 键鼠 USB 支持吗」「T113 U盘挂载」等客户问法全命中跨平台文档
+
+---
 ## v0.19.0-open (2026-09-07) — 跨平台 USB OTG 切换对照：不带平台名提问不默认 V85X
 **沛哥追问**：「用户不指定 V85x 的时候能识别到这个 OTG 切换问题吗？还有 Z21、T113 平台」——
 只让 v85x 文档可命中不够：不带平台名提问时 AI 应意识到 OTG/ADB/U盘 切换是**跨平台共性操作**，

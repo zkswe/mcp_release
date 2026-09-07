@@ -1,7 +1,8 @@
-# USB OTG / ADB / U盘 模式切换（跨平台对照：V85X / T113 / Z21）
+# USB OTG / ADB / U盘 模式切换 + HOST 外设接入（跨平台对照：V85X / T113 / Z21）
 
-> 🔍 **检索导引（命中条件）**：用户问「**如何切换 USB OTG**」「**USB OTG 怎么切换**」「**怎么切到 ADB 模式**」「**怎么切 U盘 模式**」「**USB 连电脑当 U盘拷文件**」「**设备读节点切 USB 模式 / host device 切换**」
-> **且没有指定平台**（没说 V85X / T113 / Z21）→ **本篇就是答案**：这是跨平台共性操作，各平台 sysfs 路径不同，
+> 🔍 **检索导引（命中条件）**：用户问「**如何切换 USB OTG**」「**USB OTG 怎么切换**」「**怎么切到 ADB 模式**」「**怎么切 U盘 模式**」「**USB 连电脑当 U盘拷文件**」「**设备读节点切 USB 模式 / host device 切换 / 主从切换**」
+> 或问「**USB HOST 外设接入**」「**U盘插上没反应/读不到**」「**USB 摄像头/键鼠 接入**」「**USB host devices**」
+> **且没有指定平台**（没说 V85X / T113 / Z21）→ **本篇就是答案**：切换与 host 外设接入是跨平台共性场景，各平台 sysfs 路径不同，
 > **回答必须给出 V85X / T113 / Z21 三条路径对照并请用户确认平台，禁止默认按某一个平台答**。
 > 详细 configfs 序列见 `v85x/usb-gadget-storage.md`（V85X/T113 代码同款）。
 
@@ -66,6 +67,27 @@ function（ffs.adb 或 mass_storage）→ symlink 挂 config → 枚举 `/sys/cl
 
 `lun.0/file` 只认**块设备**（mmcblk0p1 内置 EMMC / mmcblk1 TF 卡，按介质探针二选一），不是挂载路径。
 
+## USB HOST 外设接入（客户场景：U盘/摄像头/键鼠读不到）
+
+> host 角色（已 `cat usb_host`）下插入外设，系统自动挂载/枚举；客户报「插上没反应」先查这节。
+
+### 1. U盘/TF（存储外设）→ 自动挂载点 + MountMonitor 监听
+
+- 官方口径（wiki system/tf_usb.md）：插 **TF 卡自动挂 `/mnt/extsd`**；插 **U盘自动挂 `/mnt/usb1` / `/mnt/usb2` / `/mnt/usb3`**（按实际 USB 口）；工程实测（CV201_PND / T113CarSystem_PND `media_context.cpp` 存储表）：
+  `E_STORAGE_TYPE_USB1 → "/mnt/usb1"`、`E_STORAGE_TYPE_USB2 → "/mnt/usbotg"`（OTG 口当 host 用时 U盘挂 `/mnt/usbotg`）
+- 文件路径 = 挂载目录 + 自身目录（如 `/mnt/usb1/test.txt`）；读写前先确认已挂载
+- **监听拔插**：`#include <base/base.h>`（Manifest 需 base-utility ≥9.0.0），
+  `base::MountNotification mn_usb1("/mnt/usb1", cb)` 或工程里 `MediaMountListener : MountMonitor::IMountListener`（E_MOUNT_STATUS_MOUNTED/UNMOUNTING）；查询 `MOUNTMONITOR->isMounted("/mnt/usb1")`
+- 客户「U盘读不到」排查顺序：① 确认角色是 host（`cat .../otg_role`）② 确认挂载点出现（`ls /mnt/usb1`）③ 看是哪个口（usb1/usb2/usbotg）④ 监听事件是否触发
+
+### 2. USB 摄像头（UVC）→ V85X 有完整接入知识
+
+V85X host 接入 UVC 摄像头（发现/取流/录像/拍照）→ 见 `knowledge/v85x/uvc-usb-camera.md`（inotify 发现 /dev/video + uvcvideo + mpi 注册双路预览）。T113/Z21 未收录摄像头接入细节（未实测，不编造）。
+
+### 3. USB 键鼠（HID）→ 未收录
+
+知识库暂无 USB HID 键鼠接入文档（是否支持/如何读取未实测）。客户问到时标「未收录」，问沛哥或查官方文档，不猜。
+
 ## 坑
 
 1. 换档先 unlink 两个旧 symlink，残留导致新档不生效
@@ -76,6 +98,7 @@ function（ffs.adb 或 mass_storage）→ symlink 挂 config → 枚举 `/sys/cl
 
 ## 来源
 
-- V85X：CV201_PND / xdv23 / xdv200300 `src/system/usb_monitor.cpp`（实测）
-- T113：`temp_car/public/t113/T113CarSystem_PND/jni/system/usb_monitor.cpp`（实测，2026-09-07 沛哥提醒核对）
+- V85X：CV201_PND / xdv23 / xdv200300 `src/system/usb_monitor.cpp` + `src/media/media_context.cpp`（实测）
+- T113：`temp_car/public/t113/T113CarSystem_PND/jni/system/usb_monitor.cpp` + `jni/media/media_context.cpp`（实测，2026-09-07 沛哥提醒核对）
 - Z21/Z210：官方 wiki `hardware/z210_core_board.md`「USB功能/切换USB模式」
+- U盘挂载/监听：官方 wiki `system/tf_usb.md`（TF→/mnt/extsd，U盘→/mnt/usb1|2|3，MountNotification/MountMonitor）
