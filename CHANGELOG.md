@@ -1,13 +1,34 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.23.1-open**（2026-09-07）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.24.0-open**（2026-09-07）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
 
 
 
 ---
 
-## v0.23.1-open (2026-09-07) — V85X 显示分层权威口径补充（沛哥答疑三点）
+## v0.24.0-open (2026-09-07) — 恢复 ImageAnimView 可复用知识 + 清理"不收录"声明（沛哥定规）
+**沛哥定规**（2026-09-07 21:59）：① 范围=**全部**——可复用能力知识不锁死，用户需要用到这些功能时都能开发；
+② **不收录部分直接不体现即可**——不留"不收录/自有技术"声明字样，文档只保留可复用通用内容。
+
+**背景**：v0.22.1 曾按早期理解移除 ImageAnimView 帧动画知识，现恢复（该技术为 ZKSWE 自研通用能力，可跨项目复用）。
+
+**改动**：
+- ★ 恢复 **knowledge/devflow/frame-image-anim-bin.md**（v0.22.0 原版 125 行完整恢复）：
+  自研帧动画控件 ImageAnimView/FrameImageView 机制（ZKBIN=zlib+QOI 帧文件 / region.bin=ZKREG 相邻帧差异表 /
+  脏矩形局部 invalidate / 异步线程解码 / play(角度) 帧号即角度 + 开机扫针）+ 选型表 + 坑位 7 条；
+  与 IDE imageanim 动图控件(GIF/WebP) 区分说明保留
+- ★ knowledge/t113-car/dashboard-can-arch.md 还原 ImageAnimView 引用：
+  顶部"细节未收录"提示删除并指向 frame-image-anim-bin.md；表格 BMW 行恢复「自研 ImageAnimView 帧动画」；
+  §3 帧号即角度补回说明；§5 差异表 BMW 行恢复；§6 参考文件索引补回帧动画文档
+- ★ knowledge/v85x/uvc-usb-camera.md 头部转正：去"草稿（待入库）"标记、
+  去"定制模块私有协议层…不收录"声明 → 改为「本文为通用 UVC 接入链路，任意 UVC 摄像头产品可复用」
+- 全库复查：无"不收录/不入库/待入库/自有技术"残留（仅保留 uicontrols/retrieval-boundary 的检索边界规则文档）
+- kb_tools.py → v0.24.0-open + MCP_FEATURES 头条
+- 索引重建验证：「帧动画 ImageAnimView」「UVC 接入 预览录像拍照」检索命中
+
+ (2026-09-07) — V85X 显示分层权威口径补充（沛哥答疑三点）
 **沛哥答疑**（追问 CV201_PND UVC 流程"数据流如何放到图层"时确认）：
 1. **VI→VO 是内部处理，不需要关心**——取流→VI→VO 视频层的数据搬运由 mpi/aw-dvr 内部完成，应用层只配置 CameraParam
 2. **UI 层在最顶上**，其下 disp 视频层按 **4、3、2、1** 顺序叠放
