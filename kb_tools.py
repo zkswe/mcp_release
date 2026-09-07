@@ -24,9 +24,11 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.18.0-open'
+MCP_VERSION = '0.19.0-open'
 MCP_BUILD = '2026-09-07'
 MCP_FEATURES = [
+    '2026-09-07: 跨平台 USB OTG 切换对照入库（沛哥提醒：还有 Z21/T113 平台，不带平台名提问不能默认 V85X 答）——①新增 knowledge/hardware/usb-otg-switch.md：V85X(/sys/devices/platform/soc/usbc0/)、T113(/sys/devices/platform/soc@3000000/soc@3000000:usbc0@0/ 带 reg 地址实测)、Z21(/sys/devices/soc0/soc/soc:usbotg/) 三平台路径/节点/shell/代码/configfs 对照表 + 高频问法检索导引 ②kb-first-analysis 新增铁律 6：跨平台硬件操作（OTG/GPIO/串口/路径类）用户未指定平台时，回答必须给多平台对照表+请用户确认平台，禁止默认按命中第一的平台答（v85x 文档块多常霸榜）③索引重建 874 chunks 验证：不带平台名 OTG/ADB/U盘 问法跨平台文档进 top2-3
+',
     '2026-09-07: RAG 混合检索修复 + V85X USB OTG 知识增强（沛哥反馈：搜『V85x 如何切换 USB OTG』纯向量命中 Z21 通用文档，v85x 专项文档查不到）——①rag_search 改向量+BM25 双路 RRF 融合（向量抓语义、BM25 抓专名/缩写精确命中，V85x/USB/OTG 等混合查询大幅提升）②usb-gadget-storage.md 标题/首块加 OTG/切换检索导引 + §3 标题含 host/device ③新增 knowledge/v85x/usb-otg-mode-switch.md 直达速查（一句话结论+四种 cat 命令+代码切换+Z21 对照表）④索引重建 863 chunks 验证通过 ⑤新增 knowledge/devflow/kb-first-analysis.md 开发先检索铁律（沛哥定规：AI 开发必须先 flythings_search/读 knowledge 再动手，禁止先试错后查、禁止套其他 GUI 框架，查不到标「未收录」问沛哥）',
     '2026-09-04: data-icon 图标默认风格改为 emoji 彩色（V553 项目反馈线框风格不适用医疗白底 UI；风格应在 HTML 原型阶段选定）——gen_res 新增 _GLYPH_EMOJI 映射表（39/46 图标有彩色 emoji，menu/more/power/share/bluetooth 等无对应的自动降级线框）+ _emoji_img/emoji_icon_ss（4x 超采样 + 3 倍画布居中修顶部裁切 + bbox 裁剪 86% 适配，替代 1x 直画的 emoji_icon）+ glyph_icon_ex 统一入口（style=emoji 默认/line/ai，emoji/ai 按下态压暗 20%、线框提亮 35%，非正方 canvas 居中）；html2json 支持 data-icon-style="emoji|line|ai"（非法值回退 emoji），HTML_SUBSET 图标章节改写为「风格在 HTML 阶段选定，预览即最终效果」',
     '2026-09-03: 图标抗锯齿根治（沛哥反馈 png 仍有锯齿，非提示词问题，是渲染管线缺陷）——①iconfont 超采样 4→8 倍（LANCZOS 缩回，斜线小尺寸阶梯消除）②所有线段/折线/圆弧端点补圆头 round cap（PIL 默认平头 butt，斜线端点毛刺缺口感来源）③assets 兜底图标 icon_circle/line_icon/frames_loading/frames_loading_gif 全部改为超采样渲染（此前 1x 直画 0% 抗锯齿必锯齿）；回归：46 图标 + 15 中文别名 + pressed 两态 + 非正方 canvas + 8 种线条兜底共 115 项全过；AA 占比量化：兜底图标 0%→39%',

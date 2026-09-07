@@ -1,10 +1,29 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.18.0-open**（2026-09-07）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.19.0-open**（2026-09-07）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
 
 ---
 
+## v0.19.0-open (2026-09-07) — 跨平台 USB OTG 切换对照：不带平台名提问不默认 V85X
+**沛哥追问**：「用户不指定 V85x 的时候能识别到这个 OTG 切换问题吗？还有 Z21、T113 平台」——
+只让 v85x 文档可命中不够：不带平台名提问时 AI 应意识到 OTG/ADB/U盘 切换是**跨平台共性操作**，
+V85X/T113/Z21 路径各不相同，答错平台就误导。
+
+**改动**：
+- ★ 新增 **knowledge/hardware/usb-otg-switch.md 跨平台对照**（新开 hardware 分类目录）：
+  三平台路径/节点/shell/代码/configfs 对照表 + 坑 + 来源标注；
+  首块植入高频问法检索导引（如何切换 USB OTG/怎么切 ADB/切 U盘/USB 连电脑拷文件…），
+  并写明「未指定平台 → 必须给三平台对照 + 请用户确认平台，禁止默认按某一平台答」。
+  - V85X：`/sys/devices/platform/soc/usbc0/`（CV201_PND/xdv23 实测，4 节点）
+  - T113：`/sys/devices/platform/soc@3000000/soc@3000000:usbc0@0/`（⚠️ 带 reg 地址，T113CarSystem_PND 实测）
+  - Z21：`/sys/devices/soc0/soc/soc:usbotg/`（wiki 官方文档，仅 usb_host/usb_device 两节点）
+- ★ kb-first-analysis.md 新增**铁律 6**：跨平台硬件操作（OTG/GPIO/串口/路径类）用户未指定平台时，
+  回答必须给多平台对照表 + 请用户确认平台；禁止默认按检索命中第一的平台答（v85x 文档块多常霸榜）。
+- 索引重建：874 chunks（21 knowledge）验证通过——不带平台名 OTG/ADB/U盘 问法跨平台文档进 top2-3，
+  「怎么切到 ADB 模式」「usbotg 路径平台区别」跨平台文档 top1。
+
+---
 ## v0.18.0-open (2026-09-07) — RAG 混合检索修复：V85X USB OTG 专项文档可检索命中
 **沛哥反馈**：搜「V85x 如何切换 USB OTG / V85x USB OTG 切换 host device」时纯向量检索
 命中 Z21 通用文档（z210_core_board），`knowledge/v85x/usb-gadget-storage.md` 专项文档查不到

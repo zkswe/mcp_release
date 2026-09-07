@@ -22,6 +22,10 @@
    也禁止解析 easyui 闭源库源码猜 json 字段/回调语义（详见 uicontrols/retrieval-boundary.md）。
 5. **检索接入检查**：若检索结果明显缺失 practice 知识（knowledge/ 文档一条都不出），
    先确认 MCP 服务接的是 open 版（tools/FlyThings_mcp_open），不是遗留 rag 服务。
+6. **跨平台硬件操作必须先给对照/问平台**（沛哥 2026-09-07 补）：USB OTG/ADB/U盘 切换、GPIO、
+   串口、路径类问题，用户没指定平台时（V85X/T113/Z21 路径不同）→ 检索命中
+   knowledge/hardware/usb-otg-switch.md 之类的对照文档，回答给**多平台对照表 + 请用户确认平台**，
+   禁止默认按检索命中的第一个平台答（v85x 文档块多常霸榜，不代表用户用的是 V85X）。
 
 ## 原因
 
