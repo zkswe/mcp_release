@@ -30,20 +30,26 @@ UI 上只需要添加一个 videoView 控件——不需要写任何关联代码
    - 控件自动生成的 `onVideoViewPlayerMessageListener_XXX` 回调也可不填（没人播报不了状态，不影响透出）
 4. 摄像头画面由用户侧逻辑（V4L2/系统服务/第三方出图层等）打开维护，输出进 Video 层即可
 
-## 3. 原理与要点
+## 3. 原理与要点（沛哥 2026-09-07 补充权威口径）
 
-- **videoView = UI 层给 Video 层开的透明窗口**：UI 是独立一层，Video 层内容在下面；
-  videoView 控件区域不画不透明背景 → 透明 → Video 层画面从该区域透出显示
+**显示分层结构（沛哥 2026-09-07 权威口径）**：
+- **UI 层在最顶上**，其下为 disp 视频层，**底层按 4、3、2、1 顺序叠放**（layer 编号即 disp 硬件层号）
+- videoView 控件在 UI 层画的区域不填充不透明内容 → 透明 → 下层 disp 视频层画面从该区域透出显示
+- **VI→VO 是内部处理，不需要关心**：摄像头取流 → VI → VO 视频层的数据搬运由 mpi/aw-dvr 内部完成，应用层只配置 CameraParam{viewbox/display/layer/visible} 即可
+
+**要点**：
+- **videoView = UI 层给下层 disp 视频层开的透明窗口**：UI 独立一层（最顶），视频层内容在下面透出
 - 画面区域完全由 videoView 的 position（left/top/width/height）决定，不随控件背景图/文字影响
-- 用户自己的出图代码与 FlyThings UI **互不感知**：出图侧无需知道 UI 结构，UI 侧无需知道出图细节
+- 用户自己的出图代码与 FlyThings UI **互不感知**：出图侧只需把帧送进 VI（mpi 内部送到 VO），UI 侧只需放透明 videoView
 - 想隐藏画面：把该 videoView `setVisible(false)` 或移出可视区即可（透出随控件显隐/位置走）
 
 ## 4. 坑位清单
 
-1. **别画不透明背景**：videoView 区域内不要放不透明的图片/底色覆盖，否则 Video 层被 UI 层挡住透不出来
+1. **别画不透明背景**：videoView 区域内不要放不透明的图片/底色覆盖，否则下层 disp 视频层被 UI 层挡住透不出来
 2. **别当场景 A/B 套代码**：这是"用户自维护出图"专用场景；若走 FlyThings 播放链路却只放控件不 play，画面也不会自己来
-3. **平台限定**：本条为 V85X 平台经验（Video 层与 UI 分层叠加）；其他平台（F133/T113/Z20）摄像头显示按各自链路处理，不要直接套用
+3. **平台限定**：本条为 V85X 平台经验（UI 最顶 + disp 视频层 4321 分层叠加）；其他平台（F133/T113/Z20）摄像头显示按各自链路处理，不要直接套用
 4. 若透出区域大小/位置不对 → 改 videoView 的 position，不是改出图侧
+5. **layer 不要乱改**：disp 硬件层号由摄像头出厂绑定（FrontCamera→layer0 / RearCamera→layer4 之类），应用层 setupCameraPreview 只切 visible/viewbox/display
 
 ## 5. 参考
 

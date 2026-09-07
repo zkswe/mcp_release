@@ -24,9 +24,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.23.0-open'
+MCP_VERSION = '0.23.1-open'
 MCP_BUILD = '2026-09-07'
 MCP_FEATURES = [
+    '2026-09-07: V85X 显示分层权威口径补充（沛哥答疑）——①VI→VO 是内部处理不需关心（取流→VI→VO 数据搬运由 mpi/aw-dvr 内部完成，应用只配 CameraParam）；②UI 层在最顶上，disp 视频层按 4、3、2、1 叠在其下；③layer 编号 = disp 硬件层号（FrontCamera→layer0 / UVC RearCamera→layer4 工程绑定）；videoview-transparent-window.md 原理节更新为权威口径 + uvc-usb-camera.md 头部补口径说明；索引重建验证「videoView 透明 视频层」「disp 硬件层」命中',
     '2026-09-07: V85X 摄像头自维护出图 → videoView 零代码透出视频层（沛哥知识补充）——新增 knowledge/v85x/videoview-transparent-window.md：V85X 摄像头画面由用户自己打开维护（不走 FlyThings 预览/播放链路，内容直接输出到 Video 层）时，UI 只需放一个 videoView 控件（轮播=否，非轮播=仅创建视频渲染区域，官方口径佐证），零关联代码，画面自动从控件区域透出；场景区分表（cameraview 预览 / videoview 播文件 / videoview 透明窗口），要点：位置尺寸即画面区域、勿画不透明背景遮挡 Video 层、平台限定 V85X；索引重建验证「摄像头画面自己出图 videoView 透明」命中',
     '2026-09-07: T113 车载仪表 CAN 应用架构入库（沛哥安排学习 DashBoard_T113 整车代码 BMW/Comaro/Jeep 三套工程提炼）——新增 knowledge/t113-car/dashboard-can-arch.md：SocketCAN(can0 500k ip link 配置) → can::parseProtocol 解析表(0x1FFF00xx 扩展帧 ID) → 全局 DashboardData + CanDataCb 回调页面订阅/退订 → 字段 diff 后刷新 UI；含三套工程差异对照（BMW 预渲染帧图驱动 / Comaro TweenCpp+CircleBar / Jeep setTargetAngle+老 m_can 回调）、灯 4 态(500/1000ms 闪烁)、方控边沿、故障码 0x1A52/0x1A55、温度双表查；⚠️ BMW 指针帧序列控件内部实现（ZKBIN/QOI/region 格式）属工程自有技术不入库；索引重建验证「仪表盘 CAN」「车速转速指针」命中',
     '2026-09-07: V85X JPEG 解码/录像编码用法入库（沛哥定规：只记录怎么用，aw-dvr 闭源转码内部不深挖；编码/解码两场景分开处理）——新增 knowledge/v85x/jpeg-decode-record.md：解码场景（JpegViewer 照片显示 + jpegdecode.h 取像素 NV21/RGB565/缩放）+ 编码场景（mpi::Recorder 录制，格式口径：带编码器默认 mp4/ts 两档，客户要 AVI 等提示大文件格式确认后再做；Recorder 参数/起停/UVC MJPEG 全链路/拍照走 Snapshot）；含坑位（Recorder 与预览互斥/UVC 持续读流保活）；索引重建 890 chunks 验证「V853 JPEG 硬件解码」「MJPEG 录制 mp4」命中',

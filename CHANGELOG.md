@@ -1,12 +1,26 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.23.0-open**（2026-09-07）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.23.1-open**（2026-09-07）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
 
 
 ---
 
-## v0.23.0-open (2026-09-07) — V85X 摄像头自维护出图 → videoView 零代码透出视频层（沛哥知识补充）
+## v0.23.1-open (2026-09-07) — V85X 显示分层权威口径补充（沛哥答疑三点）
+**沛哥答疑**（追问 CV201_PND UVC 流程"数据流如何放到图层"时确认）：
+1. **VI→VO 是内部处理，不需要关心**——取流→VI→VO 视频层的数据搬运由 mpi/aw-dvr 内部完成，应用层只配置 CameraParam
+2. **UI 层在最顶上**，其下 disp 视频层按 **4、3、2、1** 顺序叠放
+3. **layer 编号 = disp 硬件层号**（不是 mpi 逻辑层）——工程绑定 FrontCamera→layer0、UVC RearCamera→layer4
+
+**改动**：
+- ★ `knowledge/v85x/videoview-transparent-window.md` 原理节重写为权威口径：
+  显示分层结构（UI 顶 + disp 视频层 4321 在下）+ VI→VO 内部处理说明 + 坑位补「layer 不要乱改」
+- ★ `knowledge/v85x/uvc-usb-camera.md` 头部补「显示分层权威口径」注释块（UI 顶 / layer=disp 硬件层 / VI→VO 内部）
+- kb_tools.py → v0.23.1-open + MCP_FEATURES 头条
+- 索引重建验证：「videoView 透明 视频层」「disp 硬件层」检索命中
+
+ (2026-09-07) — V85X 摄像头自维护出图 → videoView 零代码透出视频层（沛哥知识补充）
 **沛哥知识补充**：V85X 类型的摄像头，如果显示内容由**用户自己打开摄像头并维护出图**（不走 FlyThings 预览/播放链路），
 **UI 只需要添加一个 videoView 控件，不需要写任何关联代码**——只需在 UI 层开一个透明区域给 Video 层，画面即可透出。
 

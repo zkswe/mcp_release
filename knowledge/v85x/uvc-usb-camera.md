@@ -22,6 +22,11 @@ USB UVC 摄像头（免驱，uvcvideo 驱动）
 `VIDEO_DEVICE_REAR` = **UVC 外接**（setUvc(true)，layer4 半屏/叠加）——后路通道让给 UVC。
 `CameraHelper::isUvcCameraConnected()` 由状态机 NORMAL 决定（见 §5）。
 
+> 📐 显示分层权威口径（沛哥 2026-09-07 补充）：
+> ① **UI 层在最顶上**，disp 视频层按 **4、3、2、1** 叠在 UI 下方；
+> ② **layer 编号 = disp 硬件层号**（不是 mpi 逻辑层）——FrontCamera→layer0、UVC RearCamera→layer4 是工程绑定；
+> ③ **VI→VO 是内部处理，不需要关心**：取流→VI→VO 视频层的数据搬运由 mpi/aw-dvr 内部完成，应用只配 CameraParam。
+
 ## 1. UVC 设备发现（inotify + uvcvideo 驱动匹配）
 
 ```cpp
