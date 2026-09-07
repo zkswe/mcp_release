@@ -1,11 +1,25 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.22.1-open**（2026-09-07）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.23.0-open**（2026-09-07）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
 
 ---
 
-## v0.22.1-open (2026-09-07) — 修正：移除 ImageAnimView 帧动画知识（沛哥：自有技术不入库）
+## v0.23.0-open (2026-09-07) — V85X 摄像头自维护出图 → videoView 零代码透出视频层（沛哥知识补充）
+**沛哥知识补充**：V85X 类型的摄像头，如果显示内容由**用户自己打开摄像头并维护出图**（不走 FlyThings 预览/播放链路），
+**UI 只需要添加一个 videoView 控件，不需要写任何关联代码**——只需在 UI 层开一个透明区域给 Video 层，画面即可透出。
+
+**改动**：
+- ★ 新增 **knowledge/v85x/videoview-transparent-window.md**：
+  - 场景区分表：A. cameraview 实时预览（内置链路） / B. videoview 播文件回放 / C. **用户自维护出图 → videoview 当透明渲染窗口（本知识点）**——禁止套错
+  - 操作极简：UI 放 videoView（轮播=否）→ 位置/尺寸即画面区域 → **logic.cc 零代码**（不 play 不设源），用户侧出图代码与 UI 互不感知
+  - 原理：videoView = UI 层给 Video 层开的透明窗口，控件区域不画不透明背景 → Video 层画面透出
+  - 坑位：别画不透明背景遮挡 Video 层、别当场景 A/B 套代码、平台限定 V85X
+  - 官方口径佐证：video 控件「轮播类型=否」= 仅创建视频渲染区域（wiki uicontrols/video.md）
+- 索引重建验证：「摄像头画面自己出图 videoView 透明」「videoView 不写代码显示摄像头」检索命中
+
+ (2026-09-07) — 修正：移除 ImageAnimView 帧动画知识（沛哥：自有技术不入库）
 **沛哥指示**：v0.22.0 中新增的 `knowledge/devflow/frame-image-anim-bin.md`（自研 ImageAnimView/FrameImageView 帧序列控件详解，
 ZKBIN/QOI/region.bin 内部格式与脏矩形机制）属工程自有技术，**不进 open 版知识库公开交付**。
 
