@@ -1,10 +1,27 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.20.0-open**（2026-09-07）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.21.0-open**（2026-09-07）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
 
 ---
 
+## v0.21.0-open (2026-09-07) — V85X JPEG 解码 / 录像编码用法入库（编码解码两场景分开）
+**沛哥定规**：MJPEG 转码录制内部（aw-dvr 闭源）没有源码就不用管，**只记录怎么用**；
+V85x 带编码器录制默认 **mp4/ts 两种格式**，客户要其他格式（如 AVI）提示大文件格式确认后再做；
+**编码、解码两个不同场景区分去处理**。
+
+**改动**：
+- ★ 新增 **knowledge/v85x/jpeg-decode-record.md**（V853 JPEG 硬件解码 + MJPEG 录像编码用法，场景分两块）：
+  - **① 解码场景**：`mpi::JpegViewer`（照片显示到指定屏幕区域，DvrPlayLogic 实测用法）；
+    `jpegdecode.h`（libcedarc C API 取像素：NV21/NV12/YU12/YV12/RGB565 输出 + 1/2/4/8 缩放）
+  - **② 编码（录制）场景**：`mpi::Recorder` 用法（RecordingSettings 字段 + start/stop/state/elapseTime/isLocked），
+    UVC MJPEG 摄像头全链路（注册 REAR setUvc(true) → SharedVideoDevice 保活 → 双路 settings[FRONT]+[REAR] → USB 断开先 stop 再重建）；
+    **格式口径：带编码器默认 mp4/ts 两档（FileFormat{JPEG,TS,MP4}），客户要 AVI 等 → 提示大文件格式，确认后再说**；
+    拍照走 `mpi::Snapshot`（非 Recorder::takePicture），闭环 Recorder(录)↔Snapshot(拍)↔JpegViewer(看)
+  - 坑位：Recorder 与预览互斥（拔插/切流先 stop）、UVC 必须持续读流保活、显示照片先停视频、闭源转码内部不深挖
+- 索引重建：890 chunks（23 knowledge）验证——「V853 JPEG 硬件解码」「MJPEG 摄像头录制 mp4」「录像格式 mp4 ts avi」命中 top1-2
+
+---
 ## v0.20.0-open (2026-09-07) — USB HOST 外设接入客户场景入库（沛哥：USB HOST devices / 主从切换都参考跨平台对照回复）
 **沛哥补充**：客户问题涉及 **USB HOST 外设接入**（U盘/摄像头/键鼠读不到）与 **主从切换** 时，
 回复口径统一参考 `hardware/usb-otg-switch.md` 这份跨平台对照（不只是「怎么切」命令）。

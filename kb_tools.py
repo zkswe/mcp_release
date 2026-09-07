@@ -24,9 +24,11 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.20.0-open'
+MCP_VERSION = '0.21.0-open'
 MCP_BUILD = '2026-09-07'
 MCP_FEATURES = [
+    '2026-09-07: V85X JPEG 解码/录像编码用法入库（沛哥定规：只记录怎么用，aw-dvr 闭源转码内部不深挖；编码/解码两场景分开处理）——新增 knowledge/v85x/jpeg-decode-record.md：解码场景（JpegViewer 照片显示 + jpegdecode.h 取像素 NV21/RGB565/缩放）+ 编码场景（mpi::Recorder 录制，格式口径：带编码器默认 mp4/ts 两档，客户要 AVI 等提示大文件格式确认后再做；Recorder 参数/起停/UVC MJPEG 全链路/拍照走 Snapshot）；含坑位（Recorder 与预览互斥/UVC 持续读流保活）；索引重建 890 chunks 验证「V853 JPEG 硬件解码」「MJPEG 录制 mp4」命中
+',
     '2026-09-07: USB host 外设接入客户场景入库（沛哥：客户问题涉及 USB HOST devices 与主从切换都参考跨平台对照回复）——usb-otg-switch.md 新增「USB HOST 外设接入」节：U盘/TF 自动挂载点（/mnt/extsd + /mnt/usb1|usb2|usb3 官方；/mnt/usbotg 工程实测 CV201_PND/T113CarSystem_PND media_context.cpp）+ MountNotification/MountMonitor 监听 API + 「U盘读不到」排查顺序；USB 摄像头（UVC）→ 指向 v85x/uvc-usb-camera.md；USB 键鼠（HID）标「未收录不猜」；标题/检索导引加入 host 外设问法；kb-first-analysis 铁律 6 扩为含 host 外设接入/主从切换；索引重建 878 chunks 验证：U盘读不到/挂载点/usbotg/键鼠 问法全命中跨平台文档
 ',
     '2026-09-07: 跨平台 USB OTG 切换对照入库（沛哥提醒：还有 Z21/T113 平台，不带平台名提问不能默认 V85X 答）——①新增 knowledge/hardware/usb-otg-switch.md：V85X(/sys/devices/platform/soc/usbc0/)、T113(/sys/devices/platform/soc@3000000/soc@3000000:usbc0@0/ 带 reg 地址实测)、Z21(/sys/devices/soc0/soc/soc:usbotg/) 三平台路径/节点/shell/代码/configfs 对照表 + 高频问法检索导引 ②kb-first-analysis 新增铁律 6：跨平台硬件操作（OTG/GPIO/串口/路径类）用户未指定平台时，回答必须给多平台对照表+请用户确认平台，禁止默认按命中第一的平台答（v85x 文档块多常霸榜）③索引重建 874 chunks 验证：不带平台名 OTG/ADB/U盘 问法跨平台文档进 top2-3
