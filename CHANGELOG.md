@@ -1,7 +1,17 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.25.1-open**（2026-09-07）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.25.2-open**（2026-09-07）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.25.2-open (2026-09-07) — 自研帧动画知识移出 open 版（保留本地）
+**沛哥指示**：ImageAnimView/FrameImageView（ZKBIN+QOI+region 脏矩形机制）依赖自研 ZKBIN 打包工具链，open 用户缺失工具无法使用 → open 版 MCP 删除，知识保留本地（references/kb/frame-image-anim-bin.md，4 行说明头 + 125 行完整原版）。
+
+**改动**：
+- 删除 knowledge/devflow/frame-image-anim-bin.md（git 历史 v0.22.0 有完整原版可追溯）
+- dashboard-can-arch.md 还原 v0.22.1 无 ImageAnimView 版：6 处引用全部清除（顶部说明/BMW 行/帧号即角度/差异表指针行/进出场动画行/参考索引），恢复「细节未收录」口径，CAN 架构知识完整保留
+- 重建 rag_index + kb_tools.py → v0.25.2-open + MCP_FEATURES 头条
 
 ---
 
