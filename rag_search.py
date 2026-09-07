@@ -16,6 +16,7 @@ WIKI_ROOT = os.path.join(_BASE, 'wiki', 'flythings')
 
 data = json.load(open(IDX, encoding='utf-8'))
 CHUNKS = data['chunks']
+_BY_ID = {c['id']: c for c in CHUNKS}  # RRF 融合用 id 映射（模块级建一次）
 
 _embedder = None  # None=未尝试加载, False=不可用, 模块=可用
 
@@ -58,14 +59,38 @@ def _bm25_search(q, k):
 
 
 def search(q, k=3):
-    """检索：本地模型向量优先，模型不可用自动降级 BM25 关键词。"""
+    """检索：向量 + BM25 混合融合（RRF），模型不可用时自动降级纯 BM25。
+
+    2026-09-07 修改：原纯向量模式对「自然语言 + 缩写/专名混合查询」偏弱
+    （如『V85x 如何切换 USB OTG』——向量命中 Z21 通用文档，BM25 才能命中
+    v85x/usb-gadget-storage）。现改为两路 top-N 经 RRF 融合，双向互补：
+    向量抓语义近邻、BM25 抓关键词精确命中，专名/缩写查询命中率显著提升。
+    """
     emb = _get_embedder()
     if emb is not None:
         try:
             qv = emb.embed(q)
-            scored = sorted(((cos(qv, c['embedding']), c) for c in CHUNKS),
-                            key=lambda x: x[0], reverse=True)
-            return scored[:k]
+            vec = sorted(((cos(qv, c['embedding']), c) for c in CHUNKS),
+                         key=lambda x: x[0], reverse=True)[:_TOPN]
+            kw = _bm25_search(q, _TOPN)
+            if not kw:
+                return vec[:k]
+            return _rrf_fuse(vec, kw, k)
         except Exception:
             pass  # 模型推理失败 → BM25 兜底
     return _bm25_search(q, k)
+
+
+_TOPN = 40  # 混合融合：两路各取前 40 再 RRF
+_K = 60  # RRF 平滑常数
+
+
+def _rrf_fuse(vec, kw, k):
+    """Reciprocal Rank Fusion：两路 (score, chunk) 列表按 chunk id 合并重排。
+    返回 (融合分, chunk)，分数为 RRF 分（非相似度，仅用于排序展示）。"""
+    rank = {}
+    for lst in (vec, kw):
+        for i, (_, c) in enumerate(lst):
+            rank[c['id']] = rank.get(c['id'], 0.0) + 1.0 / (_K + i + 1)
+    ids = sorted(rank, key=lambda x: rank[x], reverse=True)[:k]
+    return [(rank[i], _BY_ID[i]) for i in ids]

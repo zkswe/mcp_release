@@ -1,4 +1,10 @@
-# V85X USB Device 存储（ADB / U盘 + EMMC / TF 卡双介质）
+# V85X USB OTG 切换与 Device 存储（ADB / U盘 + EMMC / TF 卡双介质）
+
+> 🔍 **检索导引**：本文回答「V85X / V85XEMMC 如何切换 USB OTG、切 host / device 模式、切 ADB / U盘 模式、
+> USB 连电脑当 U盘拷文件（客户口径 MTP）」——**读节点即切换**：
+> `/sys/devices/platform/soc/usbc0/` 下 `cat usb_host`（切 host/U盘）、`cat usb_device`（切 device/ADB）、
+> `cat usb_null`（断开）、`cat otg_role`（查当前角色）。切换代码与完整 configfs 序列见 §3/§4。
+> 同款工程代码：CV201_PND / xdv23 / xdv200300 的 `usb_monitor.cpp`（`sys::change_usb_mode()`）。
 
 > 来源：xdv23 / xdv200300 项目实测（V85XEMMC 平台，AW_V853 芯片，ZKSWE Develop Team 2023 usb_monitor.cpp）。
 > 沛哥定界（2026-09-03）：客户/产品口径说的「MTP 功能」= **USB 连电脑当存储设备拷照片/视频**，
@@ -113,7 +119,7 @@ SystemProperties::setInt("app.usb.cfg", target);
 
 USB 插入/充电检测：GPIO（xdv23 用 `GPIO_260` = `GPIO_USBIN_DET`，1=插入）。
 
-## 3. OTG 角色切换（V85X/全志 usbc0 sysfs）
+## 3. OTG 角色切换：切 USB host/device（V85X/全志 usbc0 sysfs，读节点即切换）
 
 路径与 Z21（`soc0/soc/soc:usbotg`）不同，V85X 是 platform soc 下 usbc0，**读节点即切换**：
 

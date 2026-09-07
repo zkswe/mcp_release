@@ -1,10 +1,33 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.17.0-open**（2026-09-04）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.18.0-open**（2026-09-07）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
 
 ---
 
+## v0.18.0-open (2026-09-07) — RAG 混合检索修复：V85X USB OTG 专项文档可检索命中
+**沛哥反馈**：搜「V85x 如何切换 USB OTG / V85x USB OTG 切换 host device」时纯向量检索
+命中 Z21 通用文档（z210_core_board），`knowledge/v85x/usb-gadget-storage.md` 专项文档查不到
+（向量语义偏 + 文档标题/首块无 OTG/切换关键词）。
+
+**三处修复（检索端 + 文档端 + 索引）**：
+- ★ rag_search.py 检索策略升级：**纯向量 → 向量 + BM25 双路 RRF 融合**（两路各取 top40，
+  RRF 平滑常数 K=60 重排）。向量抓语义近邻、BM25 抓专名/缩写精确命中，
+  「V85x/USB/OTG/host/device」等混合查询命中率显著提升；BM25 兜底路径不变。
+  by_id 映射模块级建一次，无每次检索重建开销。
+- ★ usb-gadget-storage.md 文档增强：标题改为「V85X USB OTG 切换与 Device 存储」；
+  首块加 🔍 检索导引（一句话：读 /sys/devices/platform/soc/usbc0/ 节点即切换 + cat 四条命令）；
+  §3 标题含 host/device 关键词。
+- ★ 新增 **knowledge/v85x/usb-otg-mode-switch.md** 直达速查（问答式）：
+  一句话结论 + 切 ADB/切 U盘/断开/查当前四种 cat 命令 + 代码切换（usb_monitor.cpp 同款）
+  + V85X vs Z21 路径对照表；细节指向 usb-gadget-storage.md 避免双份维护。
+- ★ 新增 **knowledge/devflow/kb-first-analysis.md 开发先检索铁律**（沛哥 2026-09-07 定规）：
+  AI 做 FlyThings 开发必须先用 MCP 知识库（flythings_search = wiki + knowledge）检索分析再动手；
+  禁止先试错后查（顺序反了浪费迭代）；查不到 ≠ 没收录（换词/读 knowledge 目录）；
+  禁止套其他 GUI 框架/解析 easyui 源码猜字段；检索接入异常先检查 MCP 连的是不是 open 版。
+- 索引重建：863 chunks（20 knowledge）本地 bge 全量嵌入，4 组回归查询 v85x 文档均进前列。
+
+---
 ## v0.17.0-open (2026-09-04) — data-icon 图标默认风格改为 emoji 彩色，风格在 HTML 原型阶段选定
 **V553 项目反馈：强制线框风格不适用所有产品（医疗白底 UI 需要彩色图标），且风格应在 HTML 出效果稿时就确认下来，而不是转换后才发现。**
 - ★ gen_res.py 新增 `_GLYPH_EMOJI` 映射表：46 个图标中 39 个有彩色 emoji 字形（带 VS16 强制彩色呈现）；menu/more/power/share/bluetooth 等无对应彩色 emoji 的自动降级线框，不断链
