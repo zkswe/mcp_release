@@ -1,10 +1,46 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.24.0-open**（2026-09-07）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.25.0-open**（2026-09-07）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
 
+---
 
+## v0.25.0-open (2026-09-07) — 冷门控件字段文档批量入库（git.com 全库学习产出）
+**背景**：沛哥要求拉取公司内网 git.com 全部代码学习，扫盲 FlyThings 控件盲区；本轮把实测字段/用法沉淀进 uicontrols。
 
+**新增知识文档（knowledge/uicontrols/，全部 fui unpack 实测 + SDK 头文件校准，非猜测）**：
+- pointer-fields.md：指针控件（rotationPoint/fixedPoint 双坐标定圆心、animatable+rotateSpeed 自动动画 vs 线程驱动、clockDemo 表针换算）
+- circlebar-fields.md：圆形进度条（有效图扇形裁剪、textType 0/1/2、触摸拖动监听、产品只读用法）
+- digitalclock-fields.md：数字时钟（纯属性显示、beat 冒号跳动、TimeHelper 改系统时间）
+- slidetext-fields.md：滑动文本（拼音输入法候选词条 setTextList/onTextUnitClick 实测）
+- qrcode-fields.md：二维码（loadQRCode 传字符串/JSON，价签 SN 码场景）
+- radiogroup-checkbox-fields.md：单选组/复选框（radiobuttons 子项 ID 宏选中、选中图是 pic2、监听器）
+- diagram-fields.md：波形图（统一 SZKPoint；setData 全量 vs addData 增量/step/eraseSpace 语义；style 0折线 1曲线）
+- videoview-fields.md：视频（轮播模式 loopPlayback=true 自动读 UI名_video_list.txt；API 模式 play/seek/setVolume/消息监听）
+- pagewindow-fields.md：多页窗口（onPageChange/turnToNextPage，与 slidewindow/scrollwindow 区分）
+- listview-fields.md：列表（三回调+id=被点 subitem ID（沛哥确认）；无 subitem 数量限制；删除行套路）
+- cross-thread-ui-rule.md：跨线程操作 UI 规则（沛哥确认：所有控件支持跨线程，框架内部处理）
+- slidewindow-fields.md 补充：宫格翻页语义（cols×rows=每页格数，11 项=1 页 8 + 3 翻页，沛哥确认）
+
+**代码操作汇总**：basedemo 35 个全控件 Demo（projects/basedemo-new_z20_1024_600/）逐个学习；KaiduZ9S 拼音输入法、Advertising 视频轮播、lib-ai 音频波形等产品实例验证。
+
+---
+
+## v0.24.1-open (2026-09-07) — 修复 search 首次调用 30s+ 超时（embedding 启动预热）
+**沛哥反馈**：提交给用户的 open 版 MCP search 全部失败（卡死/超时）。
+
+**根因**（协议层逐级打点 + 对照实验定位）：
+- `flythings_search` 在 stdio MCP server（mcp.run() 事件循环）内**首次**调用时，
+  embed() 首次加载 onnxruntime session 实测耗时 **30.2s**（cos 排序/BM25/RRF 融合合计仅 0.07s），
+  超过客户端工具超时 → 每次新会话/新进程第一次 search 必失败。
+- 排除项：索引/模型文件完好（922 chunks 正常中文）；独立进程直调、各 import 组合、
+  子线程首次加载全部 <0.3s；仅 mcp.run() 运行环境内首次加载异常慢。
+
+**改动**：
+- ★ mcp_server.py：mcp.run() 前预热 embedding（embed_local.embed 一次，~0.2s；
+  模型缺失/加载失败静默跳过，自动降级 BM25）——session 就绪后检索全程 0.07s 秒回
+- kb_tools.py → v0.24.1-open + MCP_FEATURES 头条
+- 验证：真实 mcp_server.py stdio 协议层连续双调用均 0.07s 返回（修复前首次 30s+ 超时）
 
 ---
 

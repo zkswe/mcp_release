@@ -24,9 +24,11 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.24.0-open'
+MCP_VERSION = '0.25.0-open'
 MCP_BUILD = '2026-09-07'
 MCP_FEATURES = [
+    '2026-09-07: 冷门控件字段文档批量入库（git.com 全库学习产出，沛哥确认 3 点：listview 点击 id=被点 subitem 的 ID / slidewindow cols×rows=每页格数 11 项=1页8+3 翻页 / 所有控件支持跨线程操作）——新增 uicontrols 文档 11 篇：pointer（双坐标定圆心+animatable 自动动画）、circlebar（有效图扇形裁剪+触摸监听）、digitalclock（纯属性+TimeHelper 改系统时间）、slidetext（输入法候选词条）、qrcode（loadQRCode 传 JSON）、radiogroup-checkbox（pic2 选中图+子项 ID 宏）、diagram（统一 SZKPoint+setData/addData 双模式）、videoview（轮播 loopPlayback 读 UI名_video_list.txt / API 双模式）、pagewindow（多页容器）、listview（三回调+无 subitem 数量限制）、cross-thread-ui-rule；全部 fui unpack 实测 + f133 easyui 2.9.0 SDK 头文件校准，非猜测；v0.25.0-open',
+    '2026-09-07: 修复 search 首次调用 30s+ 超时（沛哥反馈 open 版 search 全失败）——mcp_server.py 启动预热 embedding：run() 事件循环内首次加载 onnxruntime session 实测 30.2s 超客户端超时，预热 ~0.2s 后检索全程 0.07s 秒回；失败静默降级 BM25',
     '2026-09-07: 恢复 ImageAnimView 帧动画可复用知识 + 清理不收录声明（沛哥：知识可复用不锁死，用户需要时都能开发；不收录部分直接不体现，不留声明字样）——恢复 knowledge/devflow/frame-image-anim-bin.md（自研帧动画控件 ImageAnimView/FrameImageView：ZKBIN+QOI+region 脏矩形机制，指针/扫针用法），dashboard-can-arch.md 还原 ImageAnimView 引用，uvc-usb-camera.md 头部转正为通用 UVC 接入（去草稿/去不收录声明）；索引重建验证「帧动画 ImageAnimView」「UVC 接入 预览录像拍照」命中',
     '2026-09-07: V85X 显示分层权威口径补充（沛哥答疑）——①VI→VO 是内部处理不需关心（取流→VI→VO 数据搬运由 mpi/aw-dvr 内部完成，应用只配 CameraParam）；②UI 层在最顶上，disp 视频层按 4、3、2、1 叠在其下；③layer 编号 = disp 硬件层号（FrontCamera→layer0 / UVC RearCamera→layer4 工程绑定）；videoview-transparent-window.md 原理节更新为权威口径 + uvc-usb-camera.md 头部补口径说明；索引重建验证「videoView 透明 视频层」「disp 硬件层」命中',
     '2026-09-07: V85X 摄像头自维护出图 → videoView 零代码透出视频层（沛哥知识补充）——新增 knowledge/v85x/videoview-transparent-window.md：V85X 摄像头画面由用户自己打开维护（不走 FlyThings 预览/播放链路，内容直接输出到 Video 层）时，UI 只需放一个 videoView 控件（轮播=否，非轮播=仅创建视频渲染区域，官方口径佐证），零关联代码，画面自动从控件区域透出；场景区分表（cameraview 预览 / videoview 播文件 / videoview 透明窗口），要点：位置尺寸即画面区域、勿画不透明背景遮挡 Video 层、平台限定 V85X；索引重建验证「摄像头画面自己出图 videoView 透明」命中',
