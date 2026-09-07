@@ -1,7 +1,24 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.25.0-open**（2026-09-07）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.25.1-open**（2026-09-07）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.25.1-open (2026-09-07) — 清理 knowledge 与 wiki 重复副本（去冗余）
+**沛哥要求**：整理 open 版 MCP 多余反复内容。
+
+**冗余检测结论**：
+- knowledge/ 3 个文件与 wiki/flythings 字节完全相同（当初入库时直接复制）→ RAG 索引双份、检索重复命中：
+  esl/tag-esl.md、uicontrols/image-path-rule.md、uicontrols/scrollwindow-layout.md
+- layout-audit.md 两版 98% 相似但**非字节相同**：knowledge 版含实测校准（edittext id 段 51000 vs wiki 60000、imageanim 实测无 frameInterval）→ **保留 knowledge 实测版，不删**
+- wiki 官方源自身重复（multimedia/video.md == uicontrols/video.md、devflow callback/naming 重复块）→ 属官方 wiki 全量镜像，不动
+- 新增 11 篇 *-fields.md 与 wiki 同名文档内容互补（覆盖率 0~10%）→ 非冗余 ✅
+
+**改动**：
+- 删除 knowledge/ 3 个重复副本（wiki 保留唯一一份）
+- 重建 rag_index.json（980 chunks 不变属预期：wiki 全量为主，重复副本去除后检索不再双份命中）
+- kb_tools.py → v0.25.1-open + MCP_FEATURES 头条
 
 ---
 

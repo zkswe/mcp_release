@@ -24,9 +24,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.25.0-open'
+MCP_VERSION = '0.25.1-open'
 MCP_BUILD = '2026-09-07'
 MCP_FEATURES = [
+    '2026-09-07: 清理冗余（沛哥要求整理 open 版多余反复内容）——删除 knowledge/ 与 wiki 字节完全相同的 3 个重复副本（esl/tag-esl.md、uicontrols/image-path-rule.md、uicontrols/scrollwindow-layout.md），wiki 保留唯一一份，检索不再双份命中；layout-audit.md 两版非字节相同（knowledge 含实测校准 edittext id 51000/imageanim 无 frameInterval）保留 knowledge 版；wiki 官方源自身重复不动；v0.25.1-open',
     '2026-09-07: 冷门控件字段文档批量入库（git.com 全库学习产出，沛哥确认 3 点：listview 点击 id=被点 subitem 的 ID / slidewindow cols×rows=每页格数 11 项=1页8+3 翻页 / 所有控件支持跨线程操作）——新增 uicontrols 文档 11 篇：pointer（双坐标定圆心+animatable 自动动画）、circlebar（有效图扇形裁剪+触摸监听）、digitalclock（纯属性+TimeHelper 改系统时间）、slidetext（输入法候选词条）、qrcode（loadQRCode 传 JSON）、radiogroup-checkbox（pic2 选中图+子项 ID 宏）、diagram（统一 SZKPoint+setData/addData 双模式）、videoview（轮播 loopPlayback 读 UI名_video_list.txt / API 双模式）、pagewindow（多页容器）、listview（三回调+无 subitem 数量限制）、cross-thread-ui-rule；全部 fui unpack 实测 + f133 easyui 2.9.0 SDK 头文件校准，非猜测；v0.25.0-open',
     '2026-09-07: 修复 search 首次调用 30s+ 超时（沛哥反馈 open 版 search 全失败）——mcp_server.py 启动预热 embedding：run() 事件循环内首次加载 onnxruntime session 实测 30.2s 超客户端超时，预热 ~0.2s 后检索全程 0.07s 秒回；失败静默降级 BM25',
     '2026-09-07: 恢复 ImageAnimView 帧动画可复用知识 + 清理不收录声明（沛哥：知识可复用不锁死，用户需要时都能开发；不收录部分直接不体现，不留声明字样）——恢复 knowledge/devflow/frame-image-anim-bin.md（自研帧动画控件 ImageAnimView/FrameImageView：ZKBIN+QOI+region 脏矩形机制，指针/扫针用法），dashboard-can-arch.md 还原 ImageAnimView 引用，uvc-usb-camera.md 头部转正为通用 UVC 接入（去草稿/去不收录声明）；索引重建验证「帧动画 ImageAnimView」「UVC 接入 预览录像拍照」命中',
