@@ -2,16 +2,17 @@
 
 > 2026-09-07 沛哥安排：学习整车代码后提炼入库（来源：`projects/LearningProject/DashBoard_T113/`，BMW/Comaro/Jeep(Pointer) 三套仪表工程，ZKSWE Develop Team 编写）。
 > 适用：T113 平台 CAN 仪表盘（车速/转速/档位/故障灯/保养），想抄架构先看这篇。
+> ⚠️ 本文只收录 CAN 应用架构；指针动画具体实现（BMW 预渲染帧序列等）属工程自有技术，细节未收录。
 
 ## 0. 一句话架构
 
-**CAN 收线程（SocketCAN，can0 500k）→ `can::parseProtocol(can_frame)` 查 ID 表逐位解包 → 更新全局 `DashboardData` → 遍历注册回调 `CanDataCb` 通知页面 → 页面差异比较后刷新 UI（指针走帧动画/缓动）。**
+**CAN 收线程（SocketCAN，can0 500k）→ `can::parseProtocol(can_frame)` 查 ID 表逐位解包 → 更新全局 `DashboardData` → 遍历注册回调 `CanDataCb` 通知页面 → 页面差异比较后刷新 UI。**
 
 三套工程同源（作者一致），但动画方案与协议分组不同：
 
 | 工程 | 车型/风格 | CAN 封装 | 指针动画方案 | 灯状态 | 备注 |
 |------|----------|---------|-------------|--------|------|
-| BMW | 宝马多模式(mode1-6)+HDMI | `can/socket_can.{h,cpp}` + `can/context.{h,cpp}`（新版） | **自研 ImageAnimView 帧动画**（ZKBIN 帧 bin 序列，`play(角度)`） | 4 态：OFF/FLICKER_500/FLICKER_1000/ON | 最多，带多语言/zkota/HDMI 投屏/保养 8 组 |
+| BMW | 宝马多模式(mode1-6)+HDMI | `can/socket_can.{h,cpp}` + `can/context.{h,cpp}`（新版） | 指针帧图驱动（预渲染方案，细节未收录） | 4 态：OFF/FLICKER_500/FLICKER_1000/ON | 最多，带多语言/zkota/HDMI 投屏/保养 8 组 |
 | Comaro | 科迈罗(?) | 同 BMW 新版 socket_can+context | **TweenCpp 缓动**（60fps 定时器步进 alpha/位移）+ CircleBar/刻度灯 | 3 态：OFF/ON/FLICKER | 灯分组与 BMW 不同（故障/警告/提示分开） |
 | Jeep/Pointer | 牧马人指针仪表 | 老版 `m_can/getcan` 全局单例回调 | **标准指针控件** `mPointXXXPtr->setTargetAngle(角度)` | — | ID 段 switch 分发，逻辑直接收 canData |
 
@@ -93,7 +94,7 @@ typedef enum { LIGHT_OFF=0, LIGHT_FLICKER_500, LIGHT_FLICKER_1000, LIGHT_ON } li
 - 瞬时油耗：`instanatFuel*0.1`；里程类（trip/odo）`*0.1` km
 - 温度：`0xFFFF` 无效 → 显示 `--`；**摄氏/华氏两套查表**（`water_temp[2][9]`，华氏档值 +80~等偏移），水温图按温度区间选 `SequenceDiagram/%d_%d.png`（9 段 × 每段内 6 级插值）
 - 单位切换（km/h↔mph、°C↔°F、km↔mile）由 `0x1FFF0093` 单位帧驱动，页面收到 unit 变化调公共转换函数整体重刷（pubSettings.cpp `set_speed_value/set_range/set_trip...`）
-- **帧号即角度**：`_s_target_angle_speed = speed + 30`（30=表底零位），`_s_target_angle_RPM = rpm*2 + 30`（量程缩放）——ImageAnimView 一帧一张指针图（见帧动画文档）
+- **帧号即角度**：`_s_target_angle_speed = speed + 30`（30=表底零位），`_s_target_angle_RPM = rpm*2 + 30`（量程缩放）
 
 ## 4. 页面组织（BMW 示例）
 
@@ -109,13 +110,12 @@ typedef enum { LIGHT_OFF=0, LIGHT_FLICKER_500, LIGHT_FLICKER_1000, LIGHT_ON } li
 | CAN 封装 | socket_can 新版 | 同 BMW | m_can/getcan 老版单例 + 收回调 `onCanReadCallback(canData, canID)` |
 | 协议分派 | 解析表 ProcFun | 解析表（0x10 故障/0x12 警告/0x14 提示**分开**） | logic 内按 canID 段 if 分派（<=0x1FFF0014 灯 / 0x50-0x61 行驶 / 0x90-0x95 车辆信息 / 0xC0 驾驶辅助 / 0x30 方控） |
 | 档位枚举 | P/R/N/D/S/DS/M/L/C + gearLevel | P/N/R/D/S/M/A | 按车型 |
-| 指针 | ImageAnimView 帧动画 play(角度) | CircleBar setProgress + 刻度分段点亮（9 段转速灯/7 段车速灯）| 标准指针控件 setTargetAngle(角度) |
-| 进/出场动画 | 帧动画扫针（0→30 逐帧） | TweenCpp：dashboard alpha 淡入、左右条 backEaseOut 滑入、指针自检走一圈 | 定时器 + setPosition/alpha |
+| 指针 | 预渲染指针帧图驱动（自研，细节未收录） | CircleBar setProgress + 刻度分段点亮（9 段转速灯/7 段车速灯）| 标准指针控件 setTargetAngle(角度) |
+| 进/出场动画 | 扫针入场（0→30 逐帧） | TweenCpp：dashboard alpha 淡入、左右条 backEaseOut 滑入、指针自检走一圈 | 定时器 + setPosition/alpha |
 | 额外 | zkota OTA、HDMI 检测(libusb)、保养 8 组、速度警报 | turnmode/drivemode 多视图 | 指南针/转向系统等专题页 |
 
 ## 6. 参考文件索引
 
 - BMW/Comaro：`jni/can/socket_can.{h,cpp}`（收发）、`jni/can/context.{h,cpp}`（解析表+DashboardData+回调）、`jni/logic/main*Logic.cc`（页面订阅与刷新）、`jni/logic/pubSettings.{h,cpp}`（公共显示/单位换算/闪烁灯）
 - Jeep/Pointer：`jni/m_can/getcan.cpp + canCallBack.cpp`（老回调）、`jni/logic/*Logic.cc`（ID 段分派）
-- 帧动画控件详解 → 见 `devflow/frame-image-anim-bin.md`（ImageAnimView/FrameImageView：ZKBIN+QOI+region.bin 脏矩形机制）
 - ⚠️ 以上为工程实测方法；具体车型协议以车厂 DBC/协议文档为准，仪表代码抄**架构模式**不抄字节定义。

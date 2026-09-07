@@ -1,10 +1,22 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.22.0-open**（2026-09-07）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.22.1-open**（2026-09-07）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
 ---
 
-## v0.22.0-open (2026-09-07) — T113 车载仪表 CAN 架构 + 自研帧动画控件入库（沛哥安排：学习 DashBoard_T113 整车代码提炼）
+## v0.22.1-open (2026-09-07) — 修正：移除 ImageAnimView 帧动画知识（沛哥：自有技术不入库）
+**沛哥指示**：v0.22.0 中新增的 `knowledge/devflow/frame-image-anim-bin.md`（自研 ImageAnimView/FrameImageView 帧序列控件详解，
+ZKBIN/QOI/region.bin 内部格式与脏矩形机制）属工程自有技术，**不进 open 版知识库公开交付**。
+
+**改动**：
+- 删除 **knowledge/devflow/frame-image-anim-bin.md**（ImageAnimView 自研帧序列控件知识全部移除）
+- dashboard-can-arch.md 同步清理：BMW 指针方案改为中性表述「预渲染帧图驱动（细节未收录）」，
+  去掉 ImageAnimView/ZKBIN/帧动画扫针等实现细节引用，文档顶部加「只收录 CAN 架构，指针动画细节未收录」提示
+- kb_tools.py：v0.22.0 → **v0.22.1-open**，MCP_FEATURES 头条重写（只描述 CAN 架构入库 + 不入库说明）
+- 索引重建验证：「仪表盘 CAN」「车速转速指针」命中
+
+ (2026-09-07) — T113 车载仪表 CAN 架构 + 自研帧动画控件入库（沛哥安排：学习 DashBoard_T113 整车代码提炼）
 **沛哥工作安排**：学习整车代码（BMW/Comaro/Jeep 三套 T113 仪表工程，ZKSWE Develop Team 编写）后提炼知识库交付 MCP。
 整车代码位置：`projects/LearningProject/DashBoard_T113/`（BMW 帧动画在 `BMW/jni/ui/ImageAnimView.{h,cpp}`，实测确认作者=ZKSWE Develop Team，自家技术可入库）。
 
@@ -13,14 +25,9 @@
   - 架构一句话：CAN 收线程(SocketCAN can0 500k) → `can::parseProtocol` 查 **ID 解析表**(0x1FFF00xx 扩展帧) → 逐位解包写全局 `DashboardData` → 遍历 `CanDataCb` 回调通知 → 页面字段 diff 后刷新
   - 可抄模式：ProcFun 解析表驱动、CanDataCb 函数指针结构体 + 页面级 add_cb/remove_cb 订阅退订、回调内字段级 diff、灯 4 态(FLICKER_500/1000 定时器翻转)、方控边沿检测、故障码 0x1A52 加/0x1A55 删
   - 换算陷阱：speed 0xFFFF/rpm 655 无效值回零位、温度华氏/摄氏双查表、帧号即角度(speed+30 / rpm*2+30)
-  - 三套工程差异对照表（BMW 帧动画 / Comaro TweenCpp+CircleBar / Jeep setTargetAngle + 老 m_can 回调 + ID 段 switch）
-- ★ 新增 **knowledge/devflow/frame-image-anim-bin.md**（自研帧动画控件 ImageAnimView/FrameImageView 机制详解）：
-  - **帧资源格式**：`N.bin` = magic `ZKBIN` + uncompr_size + zlib(QOI 图像)；`region.bin` = magic `ZKREG` + w/h/count + 相邻帧差异区域表（实测 region count 0xAA=170）
-  - **实现机制**：canvas 双缓冲(setBackgroundBmp) + play(index) 异步消息队列解码 + 脏矩形合并(旧帧→新帧区间 region 并集) + 局部 invalidate + 相同帧短路
-  - 指针用法：play(角度) 帧号即角度；MyThread 分级步进逼近 + 开机扫针动画(10ms 定时器 0→30 帧)
-  - ⚠️ **与 IDE 自带 imageanim 动图控件(GIF/WebP, uicontrols/imageanim-fields.md) 完全不是一回事，禁止混用**（imageanim=官方 json 控件；ImageAnimView=自研代码级帧序列控件）
-  - 通用版 FrameImageView(lib-ext_widgets 2025-11) 差异 + 选型表 + 坑位 7 条
-- 索引重建验证：「仪表盘 CAN」「车速转速指针」「帧动画 ImageAnimView」检索命中
+  - 三套工程差异对照表（BMW 预渲染帧图驱动 / Comaro TweenCpp+CircleBar / Jeep setTargetAngle + 老 m_can 回调 + ID 段 switch）
+- ⚠️ BMW 指针预渲染帧序列控件的内部实现（ZKBIN/QOI/region 格式）属工程自有技术，**不入库**（沛哥 2026-09-07 指示，frame-image-anim-bin.md 已移除）
+- 索引重建验证：「仪表盘 CAN」「车速转速指针」检索命中
 
 ---
 ## v0.21.0-open (2026-09-07) — V85X JPEG 解码 / 录像编码用法入库（编码解码两场景分开）
