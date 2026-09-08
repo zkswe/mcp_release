@@ -43,23 +43,18 @@ JS 只服务于浏览器预览确认，不转 json；FlyThings 端的交互逻�
 **切图工具**：`tools/ui_tools/gen_res.py`（Pillow 脚本）可按 CSS 设计稿参数生成
 PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 
-## 🎯 图标优先（风格在 HTML 阶段选定，2026-09-04 定规）
+## 🎯 图标优先（iconfont 矢量线框，沛哥 2026-09-03 定规）
 
 **生成 UI 时常用操作必须用图标表达，禁止用「按钮+文字」糊弄**。返回/播放/暂停/上一首/下一首/
 设置/搜索/删除/刷新/确认/关闭/加减/音量/主页/菜单等通用操作，HTML 里写 `data-icon`（或
-iconfont class），转换器**自动生成图标 PNG**，设备端显示真图标；图片不受设备裁剪字库限制。
-
-**图标风格用 `data-icon-style` 在 HTML 原型阶段选定（HTML 预览即可确认最终效果）**：
-- `emoji`（**缺省默认**）：彩色 emoji 图标（本地 emoji 字体 4x 超采样渲染，抗锯齿）；
-  未映射的图标名（menu/more/power/share/bluetooth 等）自动降级线框
-- `line`：iconfont 矢量线框（8x 超采样，单色描边，配 `data-color`）
-- `ai`：AI 生图（需 OPENAI_API_KEY），失败自动降级 emoji → 线框
+iconfont class），转换器**自动生成 iconfont 风格矢量线框 PNG**（描边线性图标，单色可配），
+设备端显示真图标；图片不受设备裁剪字库限制。
 
 ### 写法（三种等效）
 ```html
 <!-- ① 图标按钮（推荐：可点击，自动生成 normal+pressed 两态图 picTab） -->
 <div class="btn" data-icon="play" data-x="216" data-y="176" data-w="48" data-h="48" data-caption="BtnPlay"></div>
-<div class="btn" data-icon="返回" data-icon-style="line" data-x="10" data-y="10" data-w="40" data-h="40" data-caption="BtnBack" data-color="#EEF2F6"></div>
+<div class="btn" data-icon="返回" data-x="10" data-y="10" data-w="40" data-h="40" data-caption="BtnBack" data-color="#EEF2F6"></div>
 
 <!-- ② 纯展示图标（textview 背景图，不可点；要可点请用 ① 的 btn） -->
 <div class="icon" data-icon="wifi" data-x="430" data-y="8" data-w="20" data-h="20"></div>
@@ -70,10 +65,8 @@ iconfont class），转换器**自动生成图标 PNG**，设备端显示真图�
 
 ### 规则
 - **data-icon 值**：英文名或中文别名都认（`play`/`播放`/`返回`/`back`...，见下表），自动映射规范名。
-- **data-icon-style**：`emoji`（默认）/ `line` / `ai`；整页建议统一风格，混用需谨慎。
-- **data-color**：仅 `line` 风格的线框颜色 `#RRGGBB`（默认 `#D8E2F0` 浅灰蓝）；emoji/ai 自带颜色忽略此项。
-- **按下态**：图标按钮自动生成两态图——emoji/ai 压暗 20%，line 提亮 35%。
-- **尺寸**：控件建议正方形（data-w == data-h）；PNG 与控件同尺寸、图标居中（非正方自动居中不变形）。
+- **data-color**：线框颜色 `#RRGGBB`（默认 `#D8E2F0` 浅灰蓝，深色主题友好）；图标按钮按下态自动提亮。
+- **尺寸**：控件建议正方形（data-w == data-h）；PNG 与控件同尺寸、线框居中（非正方自动居中不变形）。
 - **caption**：图标按钮同样要 data-caption（回调命名用），不要往图标按钮里写文字；
   需要文字说明 → 图标按钮旁另加 `div.text`。
 - **覆盖**：若同时给了 data-pic/data-pic0 等显式图，以显式图为准（data-icon 忽略）。
@@ -250,6 +243,13 @@ iconfont class），转换器**自动生成图标 PNG**，设备端显示真图�
    textview/button 的 text 含 `\n` 可正常渲染多行（代码 setText 与 json 布局均支持）。HTML 里的 `<br>` 由转换器转成 `\n`（换行）；
    HTML 文本节点的普通换行/缩进仍折叠为单行（源码排版不产生意外换行，换行请用 `<br>` 显式写）。
    长文本也可用多个 `div.text` 上下排列，或后续富文本控件自动折行。
+9. **输出字段全集显式化 v2（沛哥 2026-09-08）**：html2json 生成 json 时每个控件输出本类型**必写字段全集（含默认值）**，不做缺省省略——防版本不匹配。
+   **基准 = `projects/SampleUI-New/ui/1024x600` 每类型 100% 交集**（模板见 `references/kb/controls.md`「字段全集显式化」表；check_all #14 验缺键）。
+   转换器已内建：textview 恒带 touchable/alignment/colorTab/fontSize；button 恒带 touchable:true/picTab/text；window 恒带
+   backgroundColor/hideTimeOut/modal/touchable/visible（不含 beepEnable）；edittext 恒带 bold/textType/text/fontSize（不含 beepEnable）；
+   seekbar 恒带 backgroundColor/thumb/touchable/visible；qrcode 恒带 touchable:true/padding:10/visible；videoview 按 SampleUI
+   （touchable:true 无 beepEnable）；listview 恒带 touchable:true/hasScrollbar/backgroundColor 等。
+   ⚠️ beepEnable 不强制（交互控件默认支持）；交互控件 touchable 显式 true，容器/纯显示 false。
 
 ## ⚠️ 切图 / 图片资源铁律（2026-08-29 羊了个羊实战教训）
 1. **图片尺寸必须与 json 控件尺寸一致**（瓦片 76×76 控件 → 76×76 图；槽位 72×72 → 72×72 图），

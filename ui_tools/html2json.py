@@ -417,14 +417,11 @@ class HtmlToJson:
             self.ctx.warnings.append(f'自动转图失败: {e}')
             return None
 
-    # ---------- data-icon 图标自动落图（图标优先；2026-09-04 默认 emoji 彩色，风格 HTML 阶段定）----------
-    def _icon_png(self, ctx, glyph, cw, ch, color_int=None, pressed=False, style='emoji'):
-        """data-icon 语义图标 → PNG（居中于控件画布）。
+    # ---------- iconfont 图标自动落图（2026-09-03 沛哥定规：图标优先）----------
+    def _icon_png(self, ctx, glyph, cw, ch, color_int=None, pressed=False):
+        """data-icon 语义图标 → PNG（iconfont 风格矢量线框，居中于控件画布）。
         glyph: 英文/中文名（back/返回...）；cw/ch: 控件尺寸（PNG 同尺寸，图标居中不变形）；
-        style: 'emoji'(默认 彩色 4x 超采样)/'line'(iconfont 矢量线框)/'ai'(AI 生图)，
-        HTML 里用 data-icon-style 选择，HTML 原型预览即可确认最终风格；
-        color_int: 仅 line 风格的十进制描边色（emoji/ai 自带颜色忽略）；
-        pressed=True 生成按下态（按钮 picTab pic1；emoji/ai 压暗 20%，line 提亮 35%）。
+        color_int: 十进制描边色或 None(默认浅色)；pressed=True 生成按下态（按钮 picTab pic1）。
         未收录/不可用返回 None 并 warning。"""
         cw, ch = max(1, int(cw or 0)), max(1, int(ch or 0))
         size = min(cw, ch)
@@ -439,29 +436,18 @@ class HtmlToJson:
                 f'图标 "{glyph}" 未收录（可用：{avail}）；给 data-pic 自备图或换用列表内名字')
             return None
         col = _color_int_rgba(color_int, (0xD8, 0xE2, 0xF0, 255))
-        if style == 'line':
-            hexs = '%02X%02X%02X' % tuple(int(v) for v in col[:3])
-            name = 'icon_%s_%dx%d_line_%s%s.png' % (gname, cw, ch, hexs,
-                                                    '_p' if pressed else '')
-        else:
-            name = 'icon_%s_%dx%d_%s%s.png' % (gname, cw, ch, style,
-                                               '_p' if pressed else '')
+        hexs = '%02X%02X%02X' % tuple(int(v) for v in col[:3])
+        name = 'icon_%s_%dx%d_%s%s.png' % (gname, cw, ch, hexs,
+                                           '_p' if pressed else '')
 
-        def _g(d, _n=name, _g2=gname, _s=size, _c=col, _p=pressed, _cv=(cw, ch), _st=style):
-            return gr.glyph_icon_ex(d, _n, _g2, size=int(_s), color=_c, pressed=_p,
-                                    canvas=_cv, style=_st)
+        def _g(d, _n=name, _g2=gname, _s=size, _c=col, _p=pressed, _cv=(cw, ch)):
+            return gr.glyph_icon(d, _n, _g2, size=int(_s), color=_c, pressed=_p, canvas=_cv)
 
         return self._gen_asset(_g)
 
     def _icon_color(self, attrs):
-        """图标描边色（仅 line 风格）：data-color → 十进制 int；缺省 None（gen_res 用默认浅色）。"""
+        """图标描边色：data-color → 十进制 int；缺省 None（gen_res 用默认浅色）。"""
         return to_dec(_attr(attrs, 'data-color'))
-
-    def _icon_style(self, attrs):
-        """图标风格：data-icon-style="emoji|line|ai"，缺省 emoji（2026-09-04 定规：
-        图标风格在 HTML 原型阶段选定并预览确认）。非法值回退 emoji。"""
-        s = str(_attr(attrs, 'data-icon-style') or 'emoji').strip().lower()
-        return s if s in ('emoji', 'line', 'ai') else 'emoji'
 
     def _effect_assets(self, ctx, node, w, h, cap):
         """检测 style/data 里的 CSS 效果并自动生成图片资源。
@@ -871,12 +857,17 @@ class HtmlToJson:
     def _open_window(self, ctx, node, modal):
         attrs = node.attrs
         cap = self._caption(ctx, 'window', attrs)
-        c = {'beepEnable': True, 'caption': cap,
-             'id': ctx.nid('window'),
-             'position': self._pos(attrs)}
-        # 窗口默认初始隐藏（visible:false），代码 showWindow 弹出（UIlayoutDemo/window.ftu 校准）
-        c['visible'] = False
+        pos = self._pos(attrs)
+        # 字段全集 v2（SampleUI-New 基准 2026-09-08）：window 必写
+        #   backgroundColor/hideTimeOut/modal/touchable/visible 含默认也显式（-1/false）；beepEnable 不强制（沛哥）
+        c = {'backgroundColor': -1, 'caption': cap,
+             'hideTimeOut': -1, 'id': ctx.nid('window'),
+             'modal': False,
+             'position': pos,
+             'touchable': False, 'visible': True}
+        # 弹窗（modal）默认隐藏；普通卡片/容器窗口默认可见
         if modal:
+            c['visible'] = False
             c['modal'] = True
         # hideTimeOut：模态自动隐藏秒数（模态 8 秒实测；-1 不自动隐藏）
         hto = parse_px(_attr(attrs, 'data-hide-timeout'))
@@ -891,7 +882,6 @@ class HtmlToJson:
             c['backgroundPic'] = pic if '/' in pic else 'images/' + pic
         else:
             # 自动转图：CSS 效果（渐变/阴影/emoji）→ 背景图
-            pos = c['position']
             eff = self._effect_assets(ctx, node, pos.get('width', 100), pos.get('height', 40), cap)
             if eff.get('backgroundPic'):
                 c['backgroundPic'] = eff['backgroundPic']
@@ -902,11 +892,21 @@ class HtmlToJson:
     def _open_listview(self, ctx, node):
         attrs = node.attrs
         cap = self._caption(ctx, 'listview', attrs)
-        c = {'beepEnable': True, 'caption': cap, 'cols': 1, 'rows': 5,
-             'id': ctx.nid('listview'),
-             'position': self._pos(attrs),
+        # listview.item 子结构 v2.1（SampleUI item 17 键 100%，不含 id）：补安全默认键；
+        # ⚠️ position 必写（沛哥 2026-09-08）：行高 = lv高/rows - rowSpacing（公式见函数尾）；iconPosition/textPosition 布局键条件写
+        item = {'alignment': 37, 'backgroundColor': -1, 'bgColorTab': {'color0': -1},
+                'bold': False, 'caption': 'item',
+                'colorTab': {'color0': 16777215}, 'fontSize': 16,
+                'italic': False, 'longClickIntervalTime': -1, 'longClickTimeOut': -1,
+                'picTab': {}, 'text': 'ListItem',
+                'touchable': True, 'visible': True, 'subItem': []}
+        c = {'autoRollback': False, 'backgroundColor': -1, 'caption': cap,   # SampleUI listview 必写键（去 beepEnable）
+             'cols': 1, 'cycleEnable': False, 'dragMaxDis': 0, 'edgeEffect': 0,
+             'hasScrollbar': True, 'id': ctx.nid('listview'),
+             'rows': 5, 'position': self._pos(attrs),
              'colSpacing': 0, 'rowSpacing': 1, 'orientation': 1,
-             'item': {'caption': 'item', 'text': 'ListItem', 'subItem': []},
+             'touchable': True, 'visible': True,
+             'item': item,
              '__container': True, '__listview': True}
         cols = parse_px(_attr(attrs, 'data-cols'))
         rows = parse_px(_attr(attrs, 'data-rows'))
@@ -936,6 +936,14 @@ class HtmlToJson:
         sb = _attr(attrs, 'data-scrollbar')
         if sb is not None:
             c['hasScrollbar'] = str(sb).strip() in ('1', 'true')
+        # ⚠️ item.position 必写（沛哥 2026-09-08）
+        # 行高公式 = lv高/rows 均分 - rowSpacing（basedemo-new_z20_1024_600 验证：164/4-5=36✓ 437/3-5≈140✓ 424/5-0=84✓；
+        # SampleUI 216x275 rows5→55 同吻合）；item 宽 = lv 宽
+        _lvp = c['position']
+        _ih = int(_lvp.get('height', 0) / max(c.get('rows') or 5, 1)) - (c.get('rowSpacing') or 0)
+        item['position'] = {'left': 0, 'top': 0,
+                            'width': _lvp.get('width', 100),
+                            'height': max(_ih, 1)}
         key = ctx.add('listview', c)   # 支持嵌套（listview 在 window 内）
         ctx.stack.append(c)
 
@@ -947,8 +955,9 @@ class HtmlToJson:
         attrs = node.attrs
         cap = self._caption(ctx, 'diagram', attrs)
         pos = self._pos(attrs)
-        c = {'caption': cap, 'id': ctx.nid('diagram'),
-             'touchable': False, 'position': pos,
+        c = {'backgroundColor': -1, 'caption': cap, 'id': ctx.nid('diagram'),
+             'touchable': True, 'visible': True,   # SampleUI diagram touchable 主 true
+             'position': pos,
              'xAxisRange': {'lower': _num(_attr(attrs, 'data-x-min'), 0),
                             'upper': _num(_attr(attrs, 'data-x-max'), 100)},
              'yAxisRange': {'lower': _num(_attr(attrs, 'data-y-min'), 0),
@@ -971,7 +980,7 @@ class HtmlToJson:
         attrs = node.attrs
         cap = self._caption(ctx, 'slidewindow', attrs)
         pos = self._pos(attrs)
-        c = {'beepEnable': True, 'caption': cap,
+        c = {'caption': cap,
              'cols': int(_num(_attr(attrs, 'data-cols'), 4)),
              'rows': int(_num(_attr(attrs, 'data-rows'), 2)),
              'dragMaxDis': int(_num(_attr(attrs, 'data-drag-max'), 200)),
@@ -987,7 +996,8 @@ class HtmlToJson:
                          'paddingLeft': 0, 'paddingRight': 0, 'paddingTop': 0},
              'position': pos,
              'rollSpeed': int(_num(_attr(attrs, 'data-roll-speed'), 999)),
-             'fontSize': 22,
+             'fontSize': 22, 'backgroundColor': -1,
+             'touchable': True, 'visible': True,
              '__container': True, '__slidewindow': True, 'items': []}
         # 用户显式指定过图标尺寸 → 后处理不覆盖（_fix_slidewindow_icon_size 用）
         if _attr(attrs, 'data-icon-w') or _attr(attrs, 'data-icon-h'):
@@ -1012,8 +1022,10 @@ class HtmlToJson:
         """
         attrs = node.attrs
         cap = self._caption(ctx, 'scrollwindow', attrs)
-        c = {'beepEnable': True, 'caption': cap,
+        c = {'caption': cap,
+             'dragMaxDis': 200, 'edgeEffect': 1,
              'id': ctx.nid('scrollwindow'),
+             'orientation': 0,
              'position': self._pos(attrs)}
         dmd = parse_px(_attr(attrs, 'data-drag-max'))
         if dmd is not None:
@@ -1035,8 +1047,10 @@ class HtmlToJson:
         """
         attrs = node.attrs
         cap = self._caption(ctx, 'pagewindow', attrs)
-        c = {'beepEnable': True, 'caption': cap,
+        c = {'caption': cap,
+             'dragMaxDis': 200, 'edgeEffect': 1,
              'id': ctx.nid('pagewindow'),
+             'orientation': 0, 'rollSpeed': 60,
              'position': self._pos(attrs)}
         dmd = parse_px(_attr(attrs, 'data-drag-max'))
         if dmd is not None:
@@ -1085,6 +1099,7 @@ class HtmlToJson:
                 'style': _num(_attr(attrs, 'data-style'), 1),
                 'eraseSpace': _num(_attr(attrs, 'data-erase'), 20),
                 'antialias': str(_attr(attrs, 'data-antialias') or '').strip() in ('1', 'true'),
+                'visible': True,   # SampleUI diagram.infos[] 必写 visible（100% True）
                 'xScale': _num(_attr(attrs, 'data-x-scale'), 1.0),
                 'yScale': _num(_attr(attrs, 'data-y-scale'), 1.0)}
         ctx.stack[-1]['infos'].append(info)
@@ -1092,8 +1107,10 @@ class HtmlToJson:
     def _open_radiogroup(self, ctx, node):
         attrs = node.attrs
         cap = self._caption(ctx, 'radiogroup', attrs)
-        c = {'caption': cap, 'id': ctx.nid('radiogroup'),
+        # basedemo radiogroup 7 键 100%：backgroundColor/touchable/visible 含默认显式；radiobuttons[] 内嵌子项
+        c = {'backgroundColor': -1, 'caption': cap, 'id': ctx.nid('radiogroup'),
              'position': self._pos(attrs),
+             'touchable': False, 'visible': True,
              '__container': True, '__radiogroup': True, 'radiobuttons': []}
         key = ctx.add('radiogroup', c)   # 支持嵌套（radiogroup 在 window 内）
         ctx.stack.append(c)
@@ -1108,9 +1125,18 @@ class HtmlToJson:
         # 在 listview 内 → subItem
         if ctx.stack and ctx.stack[-1].get('__listview'):
             # subItem 子项（UIlayoutDemo/listview.ftu 校准）：支持背景图（头像等图片子项）+ 对齐 + 字号/颜色
+            # subItem v2（SampleUI subitem 19 键 100%）：补安全默认键；iconPosition/textPosition/backgroundPic 条件写
+            # （引擎缺省 icon/text 区 = position/控件区，历史验证 OK；有 backgroundPic 时用 backgroundPic 显示）
             si = {'alignment': ALIGN.get((_attr(attrs, 'data-align') or 'center').lower(), 37),
-                  'caption': cap, 'id': ctx.nid('subitem'),
+                  'backgroundColor': -1, 'bgColorTab': {'color0': -1},
+                  'bold': False, 'caption': cap,
                   'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0xEEF2F6},
+                  'fontFamily': 0,
+                  'fontSize': self._font_size(attrs) or 16,
+                  'id': ctx.nid('subitem'),
+                  'italic': False, 'longClickIntervalTime': -1, 'longClickTimeOut': -1,
+                  'picTab': {}, 'text': text if text else '',
+                  'touchable': True, 'visible': True,
                   'position': pos}
             fs = self._font_size(attrs)
             if fs:
@@ -1125,7 +1151,7 @@ class HtmlToJson:
                 glyph = _glyph_from_attrs(attrs)
                 if glyph is not None:
                     cw, ch = pos.get('width', 100), pos.get('height', 40)
-                    png = self._icon_png(ctx, glyph, cw, ch, self._icon_color(attrs), pressed=False, style=self._icon_style(attrs))
+                    png = self._icon_png(ctx, glyph, cw, ch, self._icon_color(attrs), pressed=False)
                     if png:
                         si['backgroundPic'] = png
             # charsetTab 字符图（NetDemo WiFi 信号档位校准）：data-charset='[{"char":48,"pic":"a.png","size":{"width":26,"height":24}},...]'
@@ -1143,12 +1169,17 @@ class HtmlToJson:
         # 在 radiogroup 内 → radiobutton
         if ctx.stack and ctx.stack[-1].get('__radiogroup'):
             # radiobutton（RadioGroupDemo 校准）：两态圆图 picTab{pic0,pic2} + iconPosition + 选中色 color2
-            rb = {'alignment': 38, 'caption': cap, 'checked': False,
+            # basedemo radiobutton 全字段（23 键 100%）：补安全默认键（fontFamily/roll*/iconPosition/textPosition 按需）
+            rb = {'alignment': 38, 'backgroundColor': -1,
+                  'bold': False, 'caption': cap, 'checked': False,
+                  'fontSize': self._font_size(attrs) or 16,
+                  'italic': False, 'touchable': True,
                   'bgColorTab': {'color0': to_dec(_attr(attrs, 'data-bg')) or 0x9FA05F,
                                  'color2': to_dec(_attr(attrs, 'data-bg2')) or 0x55736C},
                   'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0xEEF2F6},
                   'id': ctx.nid('radiobutton'),
-                  'position': pos}
+                  'position': pos,
+                  'visible': True}
             rp0 = _attr(attrs, 'data-pic') or _attr(attrs, 'data-pic0') or _attr(attrs, 'data-src')
             rp2 = _attr(attrs, 'data-pic2')
             if rp0:
@@ -1157,8 +1188,7 @@ class HtmlToJson:
                 rb['iconPosition'] = {'left': 0, 'top': 0,
                                       'width': int(_num(_attr(attrs, 'data-icon-w'), 20)),
                                       'height': int(_num(_attr(attrs, 'data-icon-h'), 20))}
-            if text:
-                rb['text'] = text
+            rb['text'] = text if text else ''   # basedemo radiobutton 100% 写 text（空串合法）
             if str(_attr(attrs, 'data-checked') or '').strip() in ('1', 'true'):
                 rb['checked'] = True
             ctx.stack[-1]['radiobuttons'].append(rb)
@@ -1169,11 +1199,9 @@ class HtmlToJson:
             c = {'alignment': ALIGN.get((_attr(attrs, 'data-align') or 'left').lower(), 36),
                  'caption': cap,
                  'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0xEEF2F6},
+                 'fontSize': self._font_size(attrs) or 16,   # SampleUI textview fontSize 100% 必写（默认 16）
                  'id': ctx.nid('textview'),
                  'position': pos, 'touchable': False}
-            fs = self._font_size(attrs)
-            if fs:
-                c['fontSize'] = fs
             bgc = self._bg_color(attrs)
             if bgc:
                 c['bgColorTab'] = {'color0': bgc}
@@ -1218,12 +1246,16 @@ class HtmlToJson:
         elif typ == 'button':
             # 图片按钮铁律（UIlayoutDemo/button.ftu 校准）：有按键图片（picTab/backgroundPic）时不开背景色，
             #  否则图片叠在颜色上效果与预想不同；仅纯文字按钮才用 bgColorTab/colorTab 多态色
+            # ⚠️ 2026-09-05 修正：无底色且无文字的按钮（透明热区，覆盖卡片/图片上当点击区）不写 bgColorTab，
+            #    避免默认底色 0x374457 遮住下层内容；有 data-bg 或纯文字按钮才设底色（text 由 _leaf 预先解析）
+            bgc = self._bg_color(attrs)
             c = {'alignment': ALIGN.get((_attr(attrs, 'data-align') or 'center').lower(), 37),
                  'caption': cap,
-                 'bgColorTab': {'color0': self._bg_color(attrs) or 0x374457},
                  'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0xEEF2F6},
                  'id': ctx.nid('button'),
-                 'position': pos}
+                 'position': pos, 'touchable': True}   # SampleUI button touchable 恒 true（沛哥：交互控件显式 true）
+            if bgc or text:
+                c['bgColorTab'] = {'color0': bgc or 0x374457}
             fs = self._font_size(attrs)
             if fs:
                 c['fontSize'] = fs
@@ -1245,8 +1277,8 @@ class HtmlToJson:
             if not pics and glyph is not None:
                 cw, ch = pos.get('width', 100), pos.get('height', 40)
                 col = self._icon_color(attrs)
-                p0 = self._icon_png(ctx, glyph, cw, ch, col, pressed=False, style=self._icon_style(attrs))
-                p1 = self._icon_png(ctx, glyph, cw, ch, col, pressed=True, style=self._icon_style(attrs))
+                p0 = self._icon_png(ctx, glyph, cw, ch, col, pressed=False)
+                p1 = self._icon_png(ctx, glyph, cw, ch, col, pressed=True)
                 if p0:
                     c['picTab'] = {'pic0': p0, 'pic1': p1 or p0}
                     c.pop('bgColorTab', None)
@@ -1275,18 +1307,20 @@ class HtmlToJson:
                 iw = int(_attr(attrs, 'data-icon-w') or ch)
                 ih = int(_attr(attrs, 'data-icon-h') or ch)
                 c['iconPosition'] = {'left': 0, 'top': 0, 'width': iw, 'height': ih}
+            c.setdefault('picTab', {})   # SampleUI button 必写 picTab（无图 {} 合法）
+            c.setdefault('text', '')     # SampleUI button 必写 text（空串合法）
             self._text_extra(c, attrs)
         elif typ == 'edittext':
-            c = {'alignment': 37, 'beepEnable': True, 'caption': cap,
+            c = {'alignment': 37, 'bold': False, 'caption': cap,   # SampleUI edittext 必写 bold（去 beepEnable，沛哥）
                  'bgColorTab': {'color0': self._bg_color(attrs) or 0xFFFFFF},
                  'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0},
+                 'fontSize': self._font_size(attrs) or 16,   # SampleUI edittext fontSize 100% 必写（默认 16）
                  'hintTextColor': 0, 'id': ctx.nid('edittext'),
                  'position': pos}
-            fs = self._font_size(attrs)
-            if fs:
-                c['fontSize'] = fs
             if str(_attr(attrs, 'data-num') or '').strip() in ('1', 'true'):
                 c['textType'] = 1
+            else:
+                c['textType'] = 0   # SampleUI edittext textType 100% 必写（0=全文本）
             if str(_attr(attrs, 'data-password') or '').strip() in ('1', 'true'):
                 c['isPassword'] = True
                 pc = _attr(attrs, 'data-password-char')
@@ -1298,13 +1332,12 @@ class HtmlToJson:
             hc = to_dec(_attr(attrs, 'data-hint-color'))
             if hc:
                 c['hintTextColor'] = hc
-            if text:
-                c['text'] = text
+            c['text'] = text if text else ''   # SampleUI edittext 必写 text（空串合法）
             self._text_extra(c, attrs)
         elif typ == 'seekbar':
-            c = {'caption': cap, 'defProgress': 0, 'id': ctx.nid('seekbar'),
-                 'max': 100, 'orientation': 0, 'touchable': False,
-                 'position': pos}
+            c = {'backgroundColor': -1, 'caption': cap, 'defProgress': 0,   # SampleUI seekbar 必写 backgroundColor/visible
+                 'id': ctx.nid('seekbar'), 'max': 100, 'orientation': 0,
+                 'position': pos, 'touchable': False, 'visible': True}
             mx = parse_px(_attr(attrs, 'data-max'))
             val = parse_px(_attr(attrs, 'data-value'))
             if mx:
@@ -1325,12 +1358,14 @@ class HtmlToJson:
             tp = _attr(attrs, 'data-thumb-pressed')
             ts = parse_px(_attr(attrs, 'data-thumb-size'))
             if tn or tp or ts:
+                c['touchable'] = True   # 可拖滑块（SampleUI seekbar 交互控件 touchable:true）
                 thumb = {'size': {'height': ts or 24, 'width': ts or 24}}
                 if tn:
                     thumb['normalPic'] = tn if '/' in tn else 'images/' + tn
                 if tp:
                     thumb['pressedPic'] = tp if '/' in tp else 'images/' + tp
                 c['thumb'] = thumb
+            c.setdefault('thumb', {'size': {'width': 0, 'height': 0}})   # SampleUI seekbar 必写 thumb（空=无滑块）
         elif typ == 'checkbox':
             # padding 配置（UIlayoutDemo/checkbox.ftu 校准）：
             #  iconPosition = 图标锚点（控件内 left:0 top:0，尺寸默认=控件高，可用 data-icon-w/h 指定）
@@ -1341,7 +1376,11 @@ class HtmlToJson:
             iw = int(_attr(attrs, 'data-icon-w') or ch)
             ih = int(_attr(attrs, 'data-icon-h') or ch)
             pad = int(_attr(attrs, 'data-pad') or 6)
-            c = {'alignment': 36, 'caption': cap, 'checked': False,
+            # basedemo checkbox 全字段（23 键 100%）：补安全默认键（fontFamily/roll* 从宽不写）
+            c = {'alignment': 36, 'backgroundColor': -1,
+                 'bold': False, 'caption': cap, 'checked': False,
+                 'fontSize': self._font_size(attrs) or 16,
+                 'italic': False, 'touchable': True,
                  'bgColorTab': {'color0': to_dec(_attr(attrs, 'data-bg')) or 0x607A84,
                                 'color2': to_dec(_attr(attrs, 'data-bg2')) or 0x55736C},
                  'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0xEEF2F6,
@@ -1350,7 +1389,8 @@ class HtmlToJson:
                  'id': ctx.nid('checkbox'),
                  'position': pos,
                  'textPosition': {'left': iw + pad, 'top': 0,
-                                  'width': max(cw - iw - pad, 10), 'height': ch}}
+                                  'width': max(cw - iw - pad, 10), 'height': ch},
+                 'visible': True}
             # 两态图（优先）：pic0=未选中 pic2=选中；data-pic/data-pic2 或 data-src/data-src2
             pic0 = _attr(attrs, 'data-pic') or _attr(attrs, 'data-pic0') or _attr(attrs, 'data-src')
             pic2 = _attr(attrs, 'data-pic2') or _attr(attrs, 'data-src2')
@@ -1358,8 +1398,8 @@ class HtmlToJson:
                 c['picTab'] = {'pic0': pic0 if '/' in pic0 else 'images/' + pic0,
                                'pic2': (pic2 if '/' in pic2 else 'images/' + pic2) if pic2 else (pic0 if '/' in pic0 else 'images/' + pic0)}
                 c.pop('bgColorTab', None)  # 有图不用底色
-            if text:
-                c['text'] = text
+            # basedemo checkbox/radiobutton 均 100% 写 text → 恒写（空串合法）
+            c['text'] = text if text else ''
             if str(_attr(attrs, 'data-checked') or '').strip() in ('1', 'true'):
                 c['checked'] = True
             self._text_extra(c, attrs)
@@ -1368,9 +1408,14 @@ class HtmlToJson:
             #   progressPic 有效图（按进度裁剪扇形）+ progressPicPos 有效图位置 + max/maxAngle/startAngle + clockwise
             # ⚠️ clockwise: false = 逆时针（demo 曾反，沛哥 17:17 确认）
             cw, ch = pos.get('width', 200), pos.get('height', 200)
-            c = {'beepEnable': True, 'caption': cap,
-                 'id': ctx.nid('circlebar'), 'max': 100, 'maxAngle': 360,
-                 'position': pos}
+            # SampleUI circlebar 必写键（去 beepEnable）：backgroundColor/clockwise/startAngle/touchable/visible 含默认显式
+            c = {'backgroundColor': -1, 'caption': cap,
+                 'clockwise': True, 'id': ctx.nid('circlebar'),
+                 'max': 100, 'maxAngle': 360,
+                 'progressPicPos': {'left': 0, 'top': 0, 'width': 0, 'height': 0},
+                 'position': pos, 'startAngle': 0,
+                 'touchable': True, 'touchRange': {'lower': 0, 'upper': 0},
+                 'visible': True}
             mx = _num(_attr(attrs, 'data-max'))
             if mx:
                 c['max'] = int(mx)
@@ -1419,11 +1464,13 @@ class HtmlToJson:
         elif typ == 'digitalclock':
             # 数字时钟（UIlayoutDemo/digitalclock.ftu 校准）：format 时间格式 + beat 冒号闪烁，自动实时刷新系统时间
             # format 大小写含义：HH=24小时制 hh=12小时制 MM=分钟 SS=秒 yyyy-MM-dd=日期 EEEE=星期
-            c = {'caption': cap, 'id': ctx.nid('digitalclock'),
-                 'touchable': False, 'position': pos}
-            fs = self._font_size(attrs)
-            if fs:
-                c['fontSize'] = fs
+            # SampleUI digitalclock 必写键：backgroundColor/beat/clockColor/fontSize/format/touchable/visible
+            c = {'backgroundColor': -1, 'beat': False, 'caption': cap,
+                 'clockColor': 16777215, 'format': 'HH:MM',
+                 'fontSize': self._font_size(attrs) or 32,
+                 'id': ctx.nid('digitalclock'),
+                 'touchable': False, 'visible': True,
+                 'position': pos}
             fmt = _attr(attrs, 'data-format')
             if fmt:
                 c['format'] = fmt
@@ -1455,10 +1502,14 @@ class HtmlToJson:
             self._text_extra(c, attrs)
         elif typ == 'cameraview':
             # 摄像头预览（CameraDemo 校准）：autoPreview 自动预览 + formatSize 采集格式 + cvbs + mirror 镜像
-            c = {'caption': cap, 'id': ctx.nid('cameraview'),
-                 'touchable': False, 'position': pos}
-            if str(_attr(attrs, 'data-auto-preview') or '1').strip() in ('1', 'true'):
-                c['autoPreview'] = True
+            # SampleUI cameraview 必写键：backgroundColor/autoPreview/cvbs/formatSize/mirror/touchable/visible
+            c = {'backgroundColor': 0, 'caption': cap, 'cvbs': False,
+                 'formatSize': {'width': 640, 'height': 480},
+                 'id': ctx.nid('cameraview'),
+                 'mirror': 0, 'position': pos,
+                 'touchable': False, 'visible': True}
+            auto = str(_attr(attrs, 'data-auto-preview') or '1').strip() in ('1', 'true')
+            c['autoPreview'] = auto   # 默认 true 自动预览，data-auto-preview="0" 关闭
             fw = parse_px(_attr(attrs, 'data-format-w'))
             fh = parse_px(_attr(attrs, 'data-format-h'))
             if fw and fh:
@@ -1472,12 +1523,16 @@ class HtmlToJson:
                 c['mirror'] = int(mv)
         elif typ == 'painter':
             # 画布（PainterDemo 校准）：触摸绘制，代码 paint() 刷新
-            c = {'caption': cap, 'id': ctx.nid('painter'),
-                 'touchable': False, 'position': pos}
+            c = {'backgroundColor': -1, 'caption': cap,
+                 'id': ctx.nid('painter'),
+                 'position': pos, 'touchable': False, 'visible': True}
         elif typ == 'pointer':
             # 仪表盘指针（PointerDemo/clockDemo 校准）：pointerPic 指针图 + fixedPoint 固定点 + rotationPoint 旋转中心
-            c = {'caption': cap, 'id': ctx.nid('pointer'),
-                 'touchable': False, 'position': pos}
+            # SampleUI pointer 必写键含默认：rotateSpeed 1/startAngle 0/backgroundColor -1/visible（图与点位仍条件）
+            c = {'backgroundColor': -1, 'caption': cap,
+                 'id': ctx.nid('pointer'), 'rotateSpeed': 1,
+                 'startAngle': 0, 'position': pos,
+                 'touchable': False, 'visible': True}
             pp = _attr(attrs, 'data-pointer-pic')
             if pp:
                 c['pointerPic'] = pp if '/' in pp else 'images/' + pp
@@ -1494,10 +1549,9 @@ class HtmlToJson:
             rs = _num(_attr(attrs, 'data-rotate-speed'))
             if rs is not None:
                 c['rotateSpeed'] = rs
-            if str(_attr(attrs, 'data-clockwise') or '1').strip() in ('1', 'true'):
-                c['clockwise'] = True
-            if str(_attr(attrs, 'data-animatable') or '1').strip() in ('1', 'true'):
-                c['animatable'] = True
+            # clockwise/animatable 恒写（SampleUI pointer 默认 true）
+            c['clockwise'] = str(_attr(attrs, 'data-clockwise') or '1').strip() in ('1', 'true')
+            c['animatable'] = str(_attr(attrs, 'data-animatable') or '1').strip() in ('1', 'true')
             # fixedPoint 指针固定点 / rotationPoint 旋转点（PointerDemo/clockDemo 实测：
             # 缺这两个坐标指针会绕错圆心转；格式 "x,y"，如 data-rotation-point="197,209"）
             fp = _attr(attrs, 'data-fixed-point')
@@ -1512,8 +1566,11 @@ class HtmlToJson:
                     c['rotationPoint'] = {'x': _num(parts[0]), 'y': _num(parts[1])}
         elif typ == 'qrcode':
             # 二维码（QRCodeDemo 校准）：codeStr 初始内容，代码 loadQRCode(text) 动态生成
-            c = {'caption': cap, 'id': ctx.nid('qrcode'),
-                 'touchable': False, 'position': pos}
+            # SampleUI qrcode touchable:true + 沛哥口径 padding 默认各边 10
+            c = {'backgroundColor': 16777215, 'caption': cap,
+                 'id': ctx.nid('qrcode'), 'padding': 10,
+                 'touchable': True, 'visible': True,
+                 'position': pos}
             cs = _attr(attrs, 'data-code')
             if cs:
                 c['codeStr'] = cs
@@ -1522,19 +1579,24 @@ class HtmlToJson:
                 c['backgroundColor'] = bgc
         elif typ == 'videoview':
             # 视频播放（VideoViewDemo/VideoPlayerDemo 校准）：defaultVolume 默认音量 + loopPlayback 循环 + rotation 旋转
-            c = {'caption': cap, 'id': ctx.nid('videoview'),
-                 'touchable': True, 'position': pos}
+            # SampleUI videoview 全键（无 beepEnable；loopPlayback 默认 false；touchable:true）
+            c = {'backgroundColor': 0, 'caption': cap, 'defaultVolume': 5,
+                 'id': ctx.nid('videoview'),
+                 'loopPlayback': False, 'rotation': 0,
+                 'position': pos, 'touchable': True, 'visible': True}
             dv = parse_px(_attr(attrs, 'data-volume'))
             if dv is not None:
                 c['defaultVolume'] = dv
-            if str(_attr(attrs, 'data-loop') or '').strip() in ('1', 'true'):
-                c['loopPlayback'] = True
+            lp = _attr(attrs, 'data-loop')
+            if lp is not None:
+                c['loopPlayback'] = str(lp).strip() in ('1', 'true')
             rot = parse_px(_attr(attrs, 'data-rotation'))
             if rot is not None:
                 c['rotation'] = rot
         elif typ == 'icon':
             c = {'alignment': 36, 'caption': cap,
                  'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0xEEF2F6},
+                 'fontSize': self._font_size(attrs) or 16,
                  'id': ctx.nid('textview'), 'position': pos, 'touchable': False}
             pic = _attr(attrs, 'data-pic') or _attr(attrs, 'src')
             if pic:
@@ -1545,7 +1607,7 @@ class HtmlToJson:
                 glyph = _glyph_from_attrs(attrs)
                 if glyph is not None:
                     cw, ch = pos.get('width', 100), pos.get('height', 40)
-                    png = self._icon_png(ctx, glyph, cw, ch, self._icon_color(attrs), pressed=False, style=self._icon_style(attrs))
+                    png = self._icon_png(ctx, glyph, cw, ch, self._icon_color(attrs), pressed=False)
                     if png:
                         c['backgroundPic'] = png
                 if 'backgroundPic' not in c:
@@ -1564,7 +1626,11 @@ class HtmlToJson:
                             c['backgroundPic'] = pic2
             typ = 'textview'
         else:
-            c = {'caption': cap, 'id': ctx.nid('textview'), 'position': pos}
+            # 未知类型兑底 → textview 全字段（SampleUI 基准）
+            c = {'alignment': 36, 'caption': cap,
+                 'colorTab': {'color0': 0xEEF2F6},
+                 'fontSize': self._font_size(attrs) or 16,
+                 'id': ctx.nid('textview'), 'position': pos, 'touchable': False}
             typ = 'textview'
 
         ctx.add(typ, c)

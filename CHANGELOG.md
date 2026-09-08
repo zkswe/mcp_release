@@ -1,7 +1,21 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.2-open**（2026-09-08）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.3-open**（2026-09-08）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.3-open (2026-09-08) — json 字段全集显式化 v2.1（SampleUI-New 双源基准，每控件必写字段）
+**沛哥定规**：json 布局字段做缺省省略 → 引擎版本默认漂移 → 版本不匹配异常；必须全集显式（-1/0/false/字号均写）。
+**基准**：projects/SampleUI-New/ui/1024x600（42 json、新 IDE 全量序列化）每类型 100% 交集 = 必选；basedemo-new_z20_1024_600（35 demo/44 json ftu 反解）交叉复验 + 补齐 SampleUI 缺的类型（pagewindow/scrollwindow/checkbox/radiogroup/imageanim/slidetext）。
+**口径 5 条（沛哥）**：①beepEnable 不强制（废除恒带 true）②交互控件 touchable 显式 true、容器/纯显示 false ③qrcode 恒写 padding:10 ④videoview 按 SampleUI（无 beepEnable/loopPlayback false/touchable true）⑤-1=0xFFFFFFFF 有意义非噪音。
+**改动**：
+- 新增 knowledge/uicontrols/json-field-mandatory.md：21 类控件必写键全集表 + 子结构模板（listview.item 17 键含 position / subItem / diagram.infos 10 键含 visible / slidewindow.items / radiobuttons）+ 双源复验结论
+- ⚠️ listview.item.position 必写（沛哥）：行高公式 itemH=int(lv高/rows)-rowSpacing、itemW=lv宽（basedemo 验证：164/4-5=36、437/3-5≈140、424/5-0=84；SampleUI 216x275 rows5→55）
+- ui_tools/html2json.py：全部控件按全集输出——去恒带 beepEnable；button touchable true+picTab{}+text""；textview/edittext fontSize 16；window 8 键（backgroundColor/hideTimeOut -1 等）；listview 17 键 + item.position 自动算；subItem 17 键；checkbox/radiogroup/radiobutton 按 basedemo 补齐；diagram.infos 补 visible:true；qrcode padding 10+touchable true；videoview 按 SampleUI；digitalclock/cameraview/painter/pointer 补齐
+- ui_tools/check_all.py：#14 模板 v2.1——listitem 含 position、checkbox/radiogroup/radiobutton/imageanim(playFile) 升级；子结构检查覆盖 item/subItem/infos[]/items[]/radiobuttons[]
+- ui_tools/HTML_SUBSET.md：铁律 #9 v2
+- 回归：examples + listview/radiogroup/checkbox 合成测试 → 字段检查 PASS + fui pack 成功
 
 ---
 

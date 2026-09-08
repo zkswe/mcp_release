@@ -40,6 +40,68 @@ except Exception:
 
 SEEKBAR_PIC_FIELDS = ('progressPic', 'secondaryProgressPic', 'backgroundPic', 'thumbPic')
 
+# ⚠️ 控件必写字段全集模板（沛哥 2026-09-08 定规 v2）
+# 口径：以 projects/SampleUI-New/ui/1024x600（42 json、新 IDE 全量序列化）为准——
+#   扫描每类型所有控件 100% 共有的字段 = 必选；值含默认(-1/0/false/字号16)也显式写，不做缺省省略（防版本漂移）。
+# 补充口径（沛哥）：beepEnable 不强制（交互控件默认支持）；交互控件 touchable 显式 true（button/listview/seekbar 可拖/
+#   qrcode/videoview/diagram/slidewindow/subitem），容器/纯显示显式 false（window/painter/cameraview）；qrcode 恒写 padding:10；
+#   videoview 按 SampleUI。生成器产出必须全部满足；手写 json 缺键时按模板补默认值。
+# ⚠️ 例外：条件字段 text/图片路径等按设计（无值可写空串/缺省）；SampleUI 无样例类型（pagewindow/scrollwindow/checkbox/
+#   radiogroup/slidetext/imageanim）暂沿用 demo 基准或从宽。
+CTRL_FIELD_TEMPLATES = {
+    'textview':     ['id', 'caption', 'position', 'alignment', 'colorTab', 'fontSize', 'touchable'],
+    'button':       ['id', 'caption', 'position', 'alignment', 'colorTab', 'picTab', 'text', 'touchable'],
+    'window':       ['id', 'caption', 'position', 'backgroundColor', 'hideTimeOut', 'modal', 'touchable', 'visible'],
+    'edittext':     ['id', 'caption', 'position', 'alignment', 'bgColorTab', 'bold', 'colorTab',
+                     'fontSize', 'hintTextColor', 'text', 'textType'],
+    'seekbar':      ['id', 'caption', 'position', 'backgroundColor', 'backgroundPic', 'defProgress', 'max',
+                     'orientation', 'progressPic', 'thumb', 'touchable', 'visible'],
+    'listview':     ['id', 'caption', 'position', 'autoRollback', 'backgroundColor', 'cols', 'cycleEnable',
+                     'dragMaxDis', 'edgeEffect', 'hasScrollbar', 'rows', 'touchable', 'visible',
+                     'orientation', 'colSpacing', 'rowSpacing', 'item'],
+    'circlebar':    ['id', 'caption', 'position', 'backgroundColor', 'clockwise', 'max', 'maxAngle',
+                     'progressPic', 'progressPicPos', 'startAngle', 'textColor', 'textSize', 'textType',
+                     'thumb', 'touchRange', 'touchable', 'unit', 'visible'],
+    'slidewindow':  ['id', 'caption', 'position', 'backgroundColor', 'cols', 'fontSize', 'iconSize', 'items',
+                     'padding', 'rollSpeed', 'rows', 'touchable', 'visible'],
+    'digitalclock': ['id', 'caption', 'position', 'backgroundColor', 'beat', 'clockColor', 'fontSize',
+                     'format', 'touchable', 'visible'],
+    'qrcode':       ['id', 'caption', 'position', 'backgroundColor', 'codeStr', 'touchable', 'visible', 'padding'],
+    'videoview':    ['id', 'caption', 'position', 'backgroundColor', 'defaultVolume', 'loopPlayback',
+                     'rotation', 'touchable', 'visible'],
+    'cameraview':   ['id', 'caption', 'position', 'autoPreview', 'backgroundColor', 'cvbs', 'formatSize',
+                     'mirror', 'touchable', 'visible'],
+    'painter':      ['id', 'caption', 'position', 'backgroundColor', 'touchable', 'visible'],
+    'pointer':      ['id', 'caption', 'position', 'animatable', 'backgroundColor', 'backgroundPic', 'clockwise',
+                     'fixedPoint', 'pointerPic', 'pointerSize', 'rotateSpeed', 'rotationPoint', 'startAngle',
+                     'touchable', 'visible'],
+    'diagram':      ['id', 'caption', 'position', 'backgroundColor', 'infos', 'touchable', 'visible',
+                     'xAxisRange', 'yAxisRange', 'region'],
+    'pagewindow':   ['id', 'caption', 'position', 'dragMaxDis', 'orientation', 'edgeEffect', 'rollSpeed'],
+    'scrollwindow': ['id', 'caption', 'position', 'dragMaxDis', 'orientation', 'edgeEffect'],
+    'radiogroup':   ['id', 'caption', 'position', 'backgroundColor', 'touchable', 'visible', 'radiobuttons'],
+    'radiobutton':  ['id', 'caption', 'position', 'alignment', 'checked', 'colorTab', 'bgColorTab',
+                     'backgroundColor', 'bold', 'fontSize', 'italic', 'text', 'touchable', 'visible'],
+    'checkbox':     ['id', 'caption', 'position', 'alignment', 'checked', 'colorTab', 'bgColorTab',
+                     'backgroundColor', 'bold', 'fontSize', 'iconPosition', 'italic', 'text',
+                     'touchable', 'textPosition', 'visible'],
+    'imageanim':    ['id', 'caption', 'position', 'loopCount', 'playFile'],
+    'slidetext':    ['id', 'caption', 'position', 'touchable'],
+    # ---- 带子内容的子结构模板（SampleUI + basedemo-new_z20_1024_600 双源验证，2026-09-08）----
+    # item.position 必写（沛哥）：行高 = lv高/rows - rowSpacing（html2json 已自动算）；iconPosition/textPosition 布局键条件写
+    'listitem':     ['caption', 'alignment', 'backgroundColor', 'bgColorTab', 'bold', 'colorTab',
+                     'fontSize', 'italic', 'longClickIntervalTime', 'longClickTimeOut', 'picTab',
+                     'position', 'text', 'touchable', 'visible', 'subItem'],
+    'subitem':      ['id', 'caption', 'position', 'alignment', 'backgroundColor', 'bgColorTab',
+                     'bold', 'colorTab', 'fontFamily', 'fontSize', 'italic',
+                     'longClickIntervalTime', 'longClickTimeOut', 'picTab', 'text',
+                     'touchable', 'visible'],
+    'wave':         ['caption', 'penColor', 'penWidth', 'step', 'style', 'eraseSpace',
+                     'antialias', 'visible', 'xScale', 'yScale'],
+    'slideitem':    ['colorTab', 'picTab', 'text'],
+}
+_CTRL_KEY_RE = re.compile(r'^([a-z]+)__\d+$')
+
 
 def _all_controls(d, out=None):
     """递归产出全部控件 (key, value)（含 window 嵌套）。"""
@@ -381,6 +443,41 @@ def main(project_root):
                            % (k, v.get('caption', ''), text[:8], min_w, min_h,
                               pos['width'], pos['height']))
         log(not bad, '%s 最小尺寸 %s' % (f, '；'.join(bad) if bad else '满足'))
+
+    print('== 14. 控件字段全集（必写键齐全，沛哥 2026-09-08：字段全显式防版本不匹配）==')
+    for f in PAGES:
+        d = json.load(open(os.path.join(root, f), encoding='utf-8'))
+        missing = []
+
+        def chk(ctrl_key, c, tpl_key):
+            for fld in CTRL_FIELD_TEMPLATES.get(tpl_key, []):
+                if fld not in c:
+                    missing.append('%s.%s' % (ctrl_key, fld))
+
+        for k, v in _all_controls(d):
+            m = _CTRL_KEY_RE.match(k)
+            if m:
+                chk(k, v, m.group(1))
+            # 数组/嵌套子结构（SampleUI 1024x600 子结构 100% 键）：
+            #   radiogroup.radiobuttons / listview.item+subItem / diagram.infos / slidewindow.items
+            if k.startswith('radiogroup__'):
+                for rb in v.get('radiobuttons') or []:
+                    chk(k + '.rb', rb, 'radiobutton')
+            if k.startswith('listview__'):
+                item = v.get('item')
+                if isinstance(item, dict):
+                    chk(k + '.item', item, 'listitem')
+                    for si in item.get('subItem') or []:
+                        chk(k + '.sub', si, 'subitem')
+            if k.startswith('diagram__'):
+                for w in v.get('infos') or []:
+                    if isinstance(w, dict):
+                        chk(k + '.wave', w, 'wave')
+            if k.startswith('slidewindow__'):
+                for it in v.get('items') or []:
+                    if isinstance(it, dict):
+                        chk(k + '.item', it, 'slideitem')
+        log(not missing, '%s 字段全集 %s' % (f, '；'.join(missing[:15]) if missing else '齐全'))
 
     print()
     if failures:
