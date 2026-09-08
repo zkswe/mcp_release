@@ -1,7 +1,22 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.5-open**（2026-09-08）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.6-open**（2026-09-08）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.6-open (2026-09-08) — 全控件深度阅读（35 官方 Demo 源码精读 → 代码 API 知识）
+**沛哥要求**：深度阅读基础 Demo，形成对 FlyThings OS 所有控件的深度理解。
+**执行**：basedemo-new_z20_1024_600 35 工程（~7200 行 logic）5 路并行逐源码精读，原始笔记 130KB 归档 workspace/references/demo-read-2026-09-08/group{A,B,C,D,E}.md（证据均引源码原文）。
+**新增知识 2 篇**：
+- devflow/activity-code-skeleton.md：生成器代码骨架——activity 壳（static mXXXPtr + #include logic.cc）/回调分发表语义 （**true=拦截 false=走默认，logic 模板注释写反**）/生命周期钩子/定时器（静态表 + registerUserTimer 动态起停改）/
+  串口协议模板（UartContext 读线程 16KB 拼接缓冲+帧头对齐粘包处理+registerProtocolDataUpdateListener 订阅；双串口=双实例+uart_from）/
+  SysApp 三槽位（REGISTER_SYSAPP STATUSBAR/SCREENSAVER/IME BaseApp 范式）/多语言 .tr+@key+setTextTr+updateLocalesCode/平台编译宏/常用能力速查
+- uicontrols/widget-code-api.md：21 控件代码 API 速查（回调签名/触发时机/实测坑）——
+  seekbar 自定义 ISeekBarChangeListener 三回调拿拖拽起止（Activity 分发只有 onProgressChanged）、ZKVideoView(VIDEO_ 前缀) vs ZKMediaPlayer 两套消息枚举、videoview 轮播 _video_list.txt+off-by-one、camera 拍照四回调+jpg+sync、
+  pointer/clock 角度坐标系与浮点 ==360 回绕坑、diagram setData 全量/addData 局部双刷新、painter 绘图 API 全集（无触摸手绘/需 onUI_show 重绘）、
+  listview 删除漏 refreshListView 官方坑、IME 集成范本（onInitIME/doneIMETextUpdate/候选 slidetext）、wifi/lte/softap/ethernet Manager+Listener、
+  imageanim/qrcode/radiogroup/checkbox/pagewindow/slidewindow 等
 
 ---
 
