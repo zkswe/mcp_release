@@ -38,6 +38,53 @@ except Exception:
     _HAS_PIL = False
 
 
+_CTRL_KEY_RE = re.compile(r'^([a-z]+)__\d+$')
+# 层级矩阵实证（SampleUI 1024x600 + basedemo-new_z20_1024_600，86 json 无越界）：
+# pagewindow/scrollwindow → 只装 window；window → 万能容器（可嵌 window 深嵌套，实证嵌 textview/button/
+# edittext/listview/seekbar/window/qrcode/digitalclock/slidetext/slidewindow）；叶子无子键；数组子结构归属固定
+_LEAF_CTRL = {'textview', 'button', 'edittext', 'seekbar', 'circlebar', 'checkbox', 'slidetext',
+              'cameraview', 'painter', 'pointer', 'digitalclock', 'qrcode', 'videoview', 'imageanim'}
+_ARR_OWNER = {'radiobuttons': 'radiogroup', 'items': 'slidewindow', 'infos': 'diagram', 'subItem': 'listview'}
+# 结构容器：子内容只能走结构键（item/radiobuttons/items/infos），禁止直接平铺 __N 控件键
+_STRUCT_ONLY = {'listview': 'item', 'radiogroup': 'radiobuttons', 'slidewindow': 'items', 'diagram': 'infos'}
+
+
+def _layer_problems(d):
+    """控件层级合法性检查：返回问题列表（空=合法）。"""
+    problems = []
+
+    def scan(node, path=''):
+        if not isinstance(node, dict):
+            return
+        for k, v in node.items():
+            if not isinstance(v, dict):
+                continue
+            m = _CTRL_KEY_RE.match(k)
+            if not m:
+                continue
+            t = m.group(1)
+            sub = [ck for ck in v if _CTRL_KEY_RE.match(ck)]
+            if t in ('pagewindow', 'scrollwindow'):
+                if not any(ck.startswith('window__') for ck in sub):
+                    problems.append('%s.%s 缺 window 子内容（pagewindow/scrollwindow 必须嵌套 window）' % (path, k))
+                elif any(not ck.startswith('window__') for ck in sub):
+                    problems.append('%s.%s 含非 window 子键（pagewindow/scrollwindow 只装 window）' % (path, k))
+            if t in _STRUCT_ONLY:
+                # listview/radiogroup/slidewindow/diagram 子内容只能走结构键，平铺控件键非法
+                if sub:
+                    problems.append('%s.%s 平铺子控件键 %s（%s 子内容只能放 %s 内）'
+                                    % (path, k, sub[:3], t, _STRUCT_ONLY[t]))
+            if t in _LEAF_CTRL and sub:
+                problems.append('%s.%s 叶子控件含子控件键 %s' % (path, k, sub[:3]))
+            for ak, owner in _ARR_OWNER.items():
+                if ak in v and t != owner:
+                    problems.append('%s.%s 数组 %s 只能出现在 %s 内' % (path, k, ak, owner))
+            scan(v, path + '/' + k)
+
+    scan(d)
+    return problems
+
+
 SEEKBAR_PIC_FIELDS = ('progressPic', 'secondaryProgressPic', 'backgroundPic', 'thumbPic')
 
 # ⚠️ 控件必写字段全集模板（沛哥 2026-09-08 定规 v2）
@@ -200,13 +247,12 @@ def main(project_root):
               and d['position'].get('height') == d['resolution'].get('height'))
         log(ok, '%s 根节点' % f)
 
-    print('== 2. 嵌套深度（window 子控件必须嵌套，深度 >= 1）==')
+    print('== 2. 层级合法性（SampleUI+basedemo 双源矩阵实证，2026-09-08）==\n'
+          '      pagewindow/scrollwindow 只装 window；叶子无子键；数组子结构归属固定）')
     for f in PAGES:
         d = json.load(open(os.path.join(root, f), encoding='utf-8'))
-        items = []
-        walk(d, items)
-        has_child = any(it[0] == 1 for it in items)
-        log(has_child, '%s 嵌套（存在 window 内子控件）' % f)
+        problems = _layer_problems(d)
+        log(not problems, '%s 层级 %s' % (f, '；'.join(problems[:6]) if problems else '合法'))
 
     print('== 3. 特殊字符（emoji/字库外字符）==')
     for f in PAGES:

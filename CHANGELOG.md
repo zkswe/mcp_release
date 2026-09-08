@@ -1,7 +1,23 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.3-open**（2026-09-08）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.4-open**（2026-09-08）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.4-open (2026-09-08) — 控件层级检讨（容器→子内容矩阵，双源实证）
+**沛哥问「控件层级问题有检讨吗」**：此前只有零散结论（Z序=书写顺序/window 嵌套/pagewindow 叠放/listview 结构），缺系统矩阵与合法性校验。
+**矩阵实证**：扫描 86 json（SampleUI-New/ui/1024x600 42 + basedemo-new_z20_1024_600 35 demo/44 ftu 反解）容器→直接子内容分布，零越界：
+- 根层：全部 21 类控件均允许
+- window = 万能容器（textview 147/button 128/edittext 16/listview 8/seekbar 7/window 5 深嵌套/qrcode/digitalclock/slidetext/slidewindow）
+- pagewindow/scrollwindow = 只装 window（页面叠放/滚动内容，basedemo 实证）
+- listview/radiogroup/slidewindow/diagram = 只走结构键（item/radiobuttons/items/infos），禁止平铺 __N 控件键
+- 叶子 14 类控件不得含子控件；数组子结构归属固定（subItem→listview.item 等）
+**改动**：
+- 新增 knowledge/uicontrols/json-layer-rules.md（层级矩阵 + 6 条规则要点，检索词含 层级/嵌套/容器/父子/结构键）
+- ui_tools/check_all.py：#2「嵌套深度」升级为「层级合法性」（_layer_problems）：缺 window 子页/装非 window、结构容器平铺控件键、
+  叶子控件生子、数组子结构错位 4 类非法全部拦截；86 真实 json 全过 0 误报
+- 回归：合法用例 PASS + 4 类非法用例 FAIL 正确
 
 ---
 
