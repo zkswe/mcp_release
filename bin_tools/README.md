@@ -9,10 +9,37 @@
 
 | 工具 | 用途 | 平台 |
 |------|------|------|
-| `ui_test` | 触摸注入/自动化测试（tap/swipe/long/monkey/run 脚本） | z21 / z20 / t113 / f133 / v85x |
+| `ui_test` | 触摸注入/自动化测试（tap/swipe/long/monkey/run 脚本，**单点协议**适配老屏） | z21 / z20 / t113 / f133 / v85x |
+| `mt_test` | **MT 协议**触摸注入（适配 gt9xx 等 ABS_MT_* 多点屏；接口对齐 ui_test，2026-09-08 新增，**源码见** `knowledge/devflow/touch-inject-autotest.md` 附录） | z21 / z20 / t113 / v85x（f133/f135 待 WSL 编译） |
 | `busybox` | 设备调试工具箱（网络/系统/Shell 全开，2026-09-08 新增） | z21 / z20 / t113 / f133 / f135 / v85x |
 
 全部 ELF 已验证魔数 `7F 45 4C 46`，直接 `adb push` 即可运行（无需宿主 zkgui）。
+
+## 🔧 触摸协议速判（ui_test 还是 mt_test？）
+
+注入前先判断设备触摸屏是单点协议还是 **MT Type-A 协议**，用错协议 → 驱动丢弃坐标 → FlyThings 收到恒 `x=0 y=0`：
+
+```bash
+# 方法 1：能力位（设备 root 后）
+adb shell "cat /sys/devices/virtual/input/input*/capabilities/abs | xxd | head -1"
+# 找 ABS code 53(0x35)=ABS_MT_POSITION_X → 有则 MT；只 0/1=ABS_X/ABS_Y → 单点
+
+# 方法 2：getevent -p（如果有）
+adb shell getevent -p /dev/input/eventN
+# 看 ABS 列表有没有 ABS_MT_POSITION_X/Y
+
+# 方法 3：试注入一次，看 FlyThings 日志
+adb shell ui_test /dev/input/eventN tap 100 100   # 单点协议
+adb shell mt_test /dev/input/eventN tap 100 100   # MT 协议
+# FlyThings 收到坐标非 0 = 协议对；恒 0 = 协议错
+```
+
+| 屏幕类型 | 典型驱动 | 工具 |
+|---|---|---|
+| 单点（旧电阻屏/部分电容） | ili210x、ADS7846 等 | `ui_test` |
+| MT Type-A 多点（**gt9xx 主流**） | gt9xx、Goodix 系列 | `mt_test` |
+
+V553 实测（2026-09-08）：`/dev/input/event0` = gt9xx MT Type-A，`ui_test` 注入坐标恒 0，改 `mt_test` 后坐标正确。
 
 ## 🔧 busybox 调用方法（设备没 ifconfig/ping 等工具时用它）
 
@@ -72,6 +99,37 @@ adb shell /data/ui_test /dev/input/event1 monkey 1024 600 500
 抬起: ABS_PRESSURE=0 → BTN_TOUCH=0 → EV_SYN
 ```
 ⚠️ EV_SYN 必须发，否则内核不提交事件；滑动禁止跳终点（会被识别为无效/抖动）。
+
+## 🎯 mt_test 调用方法（MT Type-A 协议版，gt9xx 等多点屏用）
+
+```
+用法: mt_test <设备节点> <命令> [参数]   # 命令与 ui_test 完全一致
+
+  tap x y                    # 点击
+  swipe x1 y1 x2 y2          # 滑动
+  long x y ms                # 长按
+  monkey <w> <h> <count>     # 随机压测
+  run <script.txt>           # 跑脚本（同 ui_test 格式）
+```
+
+### 协议铁律（MT Type-A）
+```
+按下: EV_ABS ABS_MT_TRACKING_ID(递增) → ABS_MT_POSITION_X/Y → ABS_MT_TOUCH_MAJOR
+     → EV_KEY BTN_TOUCH=1 → EV_SYN
+移动: EV_ABS ABS_MT_POSITION_X/Y 逐点 → EV_SYN
+抬起: ABS_MT_TRACKING_ID=-1 → BTN_TOUCH=0 → EV_SYN
+```
+
+部署：
+```bash
+# 选对应平台 push
+adb push bin_tools/v85x/mt_test /tmp/mt_test
+adb shell chmod +x /tmp/mt_test
+# 设备节点按 getevent 确认（MT 屏是 ABS_MT_* 那路）
+adb shell /tmp/mt_test /dev/input/event0 tap 100 100
+```
+
+**与 ui_test 的核心区别**：mt_test 用 `ABS_MT_POSITION_X/Y + ABS_MT_TRACKING_ID` 多点协议，ui_test 用 `ABS_X/Y + ABS_PRESSURE` 单点协议。**用错协议 → 驱动丢弃坐标 → FlyThings 收到恒 0**（具体判定见上方"协议速判"）。
 
 ## 🔧 新增平台/工具流程
 1. 新平台：`fun create --type bin --platform <新平台>` + 放源码 `src/main.cpp`（ui_test 源码由工具链维护）

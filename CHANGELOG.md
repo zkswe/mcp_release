@@ -1,7 +1,28 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.1-open**（2026-09-08）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.2-open**（2026-09-08）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.2-open (2026-09-08) — 补 MT Type-A 触摸注入工具 mt_test + 协议速判坑位
+**沛哥反馈**：V85X 项目调试时用现成 `ui_test` 注入触摸，FlyThings 收到坐标恒 0。
+**根因（V85X gt9xx 实测）**：
+- 设备触摸屏 `/dev/input/event0` = gt9xx，**MT Type-A 协议**（MODALIAS `ra30,32,35,36,39` = ABS_MT_TOUCH_MAJOR/WIDTH_MAJOR/POSITION_X/POSITION_Y/TRACKING_ID），不订阅单点协议 ABS_X(0)/ABS_Y(1)
+- `ui_test` 是单点协议（ABS_X/ABS_Y + ABS_PRESSURE + BTN_TOUCH）→ 坐标被驱动丢弃 → FlyThings `x=0 y=0`
+- v0.27.1 知识里只写了 MT 序列，没点破"现成 ui_test 就是单点、遇 MT 屏会失效"这个坑 → 后续 AI 调试还会踩
+
+**改动**：
+- 新增 `bin_tools/{v85x,t113,z20,z21}/mt_test`（MT Type-A 协议版，接口对齐 ui_test：tap/swipe/long/monkey/run）：
+  - ARMv7 musl 版（v85x + t113）：72432 字节，工具链 `arm-unknown-linux-musleabihf-gcc-6.4.1 -static`
+  - ARMv7 glibc 版（z20 + z21）：4,770,968 字节（glibc 静态链拉进 NSS，体积是 musl 的 66 倍），工具链 `arm-pc-linux-gnueabihf-gcc-8.3.0 -static`
+  - RISC-V 64 musl 版（f133/f135）：暂缓（wsl.exe 被 Program Blacklist 拦截，独立 Xuantie 工具链未在本机）
+- 源码来自 V553 项目 `tools/mt_test.c`（同步后项目侧删除，源已在知识里说明；产物进 MCP bin_tools）
+- `bin_tools/README.md`：工具表加 `mt_test` 行（标注平台 + 协议）；新增"触摸协议速判"章节（能力位 EVIOCGABS / getevent -p / 试注入判据）；新增 mt_test 调用方法节
+- `knowledge/devflow/touch-inject-autotest.md`：首选路径工具表分列 `ui_test`（单点）和 `mt_test`（MT Type-A）；新增"关键坑"小节点破 ui_test 单点协议在 gt9xx 失效；协议铁律加第 2 条 MT 完整序列 + 第 6 条"协议用错 → 坐标恒 0"判据
+- 部署命令示例：`adb push bin_tools/v85x/mt_test /tmp/mt_test && adb shell chmod +x /tmp/mt_test`
+
+**自动化测试闭环（不变）**：`adb logcat` 日志判定（首选）> raw fb 抓屏（备选）
 
 ---
 
