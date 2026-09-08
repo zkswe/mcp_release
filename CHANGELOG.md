@@ -1,7 +1,37 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.26.0-open**（2026-09-08）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.0-open**（2026-09-08）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.0-open (2026-09-08) — i18n 翻译推送工具入库（修 fun launch 盲点）
+**沛哥要求**：把"i18n/*.tr 转 *.json + 推送到设备"的能力整合进 MCP 流程；同时确认 fun launch 推送范围盲点（只推 ftu/images/font/lib/cfg，**不推 i18n**——CHANGELOG 2026-09-02 沛哥定规"部署统一 fun launch"是针对代码+资源，i18n 仍需显式推送），AI 改完翻译后必须调本工具。
+
+**根因（V553 项目实测，2026-09-08）**：
+- 设备 zkgui 实际加载翻译是 `/tmp/tr/<lang>.json`（DEBUG 模式），不是 .tr（XML）
+- fun launch 推送范围：ftu/images/font/lib/cfg，**不包含 i18n 的 .tr/.json**
+- 后果：AI 改完 .tr 后 fun launch 部署，设备仍跑旧翻译 → logcat 刷 `not found value` 警告，部分文案显示原始 key 而非翻译
+- 本地开发脚本版（V553 项目）`E:\AICODE\trae\V553\tools\tr2json.py`（同日先落地）逻辑同源
+
+**改动**：
+- `i18n_tools.py` 新增 `flythings_i18n_to_json(project_root, langs='', push=True, device='')`：
+  - 解析 .tr（ElementTree，XML 实体自动解码）→ 序列化为 json（tab 缩进+无空格冒号+末尾无换行，**与设备端逐字节一致**）
+  - 推送：`subprocess.run(['adb', '-s', device, 'push', local, '/tmp/tr/...'])`；自动 adb 设备检测（无设备/多设备未指定/指定设备不在/均给出明确 adbStatus）
+  - 生产固件翻译打包到 /res/，传 `push=False` 只生成不推送
+  - `stdin=subprocess.DEVNULL` 防 MCP stdio 管道挂起（与 _run_fun/_run_fui 一致）
+- `kb_tools.py` 加 `flythings_i18n_to_json` 包装函数（docstring 顶部加"fun launch 不推 i18n"警告 + 完整工作流）+ `register_all` 注册（MCP 工具数 32 → 33）
+- `i18n_tools.py` 顶部 docstring 加"设备端加载格式"小节，标注本工具与 fun launch 的职责分界
+- MCP_FEATURES `i18n_tools` 摘要更新为 6 工具
+
+**用法（AI 流程标准动作）**：
+```
+1. flythings_i18n_import / add_language / refactor  → 改 i18n/*.tr（XML 源）
+2. flythings_i18n_to_json(project_root)            → 转 json + push 到 /tmp/tr/
+3. adb shell "setprop ctl.stop zkswe && setprop ctl.start zkswe"   → DEBUG 模式重启加载
+```
+
+**V553 保留**：`tools/tr2json.py` 保留作为本地开发脚本（开发者手动用，逻辑同源）；MCP 工具给 AI 流程用。
 
 ---
 

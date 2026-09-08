@@ -78,7 +78,7 @@ MCP_FEATURES = [
     '2026-08-31: 方案库扩充——游戏机+Knob 旋钮、Z20 语音（AIUI）、T113 车载互联、Z20 SIP 对讲等方案知识入库（关键词触发）',
     '2026-08-29: 控件能力实测校准 + i18n 多语言工具（scan/export/import/refactor）+ fix_project 自动修复（FT-001~024）+ HTML 原型 JS 交互与自动转图',
     '2026-08-28: 包检索离线 catalog + 版本 semver 取最新 + manifest 依赖递归补齐',
-    'open 版：完全本地部署零远程依赖——内置 bge-small-zh 向量模型（免 Key，不可用自动降级 BM25）+ fui/fun 工具链 + HelloWord 模板 + 32 个工具全家桶（项目创建/布局转换/预览/包管理/规范校验/修复/i18n/测试）',
+    'open 版：完全本地部署零远程依赖——内置 bge-small-zh 向量模型（免 Key，不可用自动降级 BM25）+ fui/fun 工具链 + HelloWord 模板 + 33 个工具全家桶（项目创建/布局转换/预览/包管理/规范校验/修复/i18n scan/export/import/add_language/refactor/to_json/测试）',
 ]
 
 
@@ -461,6 +461,20 @@ def flythings_i18n_refactor(project_root: str, lang: str = 'zh_CN', dry_run: boo
     return json.dumps(itx.flythings_i18n_refactor(project_root, lang, dry_run), ensure_ascii=False)
 
 
+def flythings_i18n_to_json(project_root: str, langs: str = '', push: bool = True, device: str = '') -> str:
+    """把 i18n/*.tr 转为 i18n/*.json（设备 zkgui 实际加载格式），并可推送到设备 /tmp/tr/。
+
+    ⚠️ **fun launch 不推 i18n**（只推 ftu/images/font/lib/cfg）—— 改完翻译后必须显式调本工具，
+    否则设备仍跑旧翻译（logcat 刷 'not found value' 警告）。本工具生成 json 与设备端逐字节一致
+    （tab 缩进+无空格冒号+末尾无换行），默认自动 adb push 到 /tmp/tr/；多设备需传 device=IP。
+    生产固件翻译打包到 /res/，无需推送（push=False）。
+
+    完整流程：flythings_i18n_import / add_language / refactor 改 .tr → 本工具转 json + push →
+    adb shell "setprop ctl.stop zkswe && setprop ctl.start zkswe"（DEBUG 模式重启加载）。
+    """
+    return json.dumps(itx.flythings_i18n_to_json(project_root, langs, push, device), ensure_ascii=False)
+
+
 # 注册辅助：把上面全部工具注册到任意 FastMCP 实例
 def register_all(mcp):
     mcp.tool()(flythings_get_version)
@@ -485,6 +499,7 @@ def register_all(mcp):
     mcp.tool()(flythings_i18n_export)
     mcp.tool()(flythings_i18n_import)
     mcp.tool()(flythings_i18n_refactor)
+    mcp.tool()(flythings_i18n_to_json)
     mcp.tool()(flythings_list_packages)
     mcp.tool()(flythings_query_package)
     mcp.tool()(flythings_recommend_manifest)

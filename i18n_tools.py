@@ -19,8 +19,16 @@ add_language 添加新语言 / refactor 布局文本转 @key。
 
 本工具只做文件读写与诊断，翻译内容由调用方 AI 提供（MCP 零远程依赖）；
 翻译要求专业：结合项目语境（如车载项目 CAN BUS 保持行业术语，不直译公共汽车）。
+
+设备端加载格式（2026-09-08 实测，V553 项目）：
+- zkgui 实际加载的是 i18n/<lang>.json（不是 .tr），路径 /tmp/tr/<lang>.json（DEBUG）。
+- fun launch 只推 ftu/images/font/lib/cfg，**不推 i18n 的 .tr/.json**（CHANGELOG 2026-09-02
+  沛哥定规"部署统一 fun launch"是针对代码+资源，i18n 仍需本工具显式推送）。
+- 改完翻译（import / add_language / refactor 改 .tr）后必须调 flythings_i18n_to_json
+  转 json 并推送，否则设备仍跑旧翻译（logcat 刷 'not found value' 警告）。
+- 生产固件把 json 打包到 /res/，不需要推送（无需调用本工具的 push 步骤）。
 """
-import io, os, re, glob, json
+import io, os, re, glob, json, subprocess
 import xml.etree.ElementTree as ET
 
 TR_HEADER = '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n'
@@ -371,3 +379,174 @@ def flythings_i18n_refactor(project_root: str, lang: str = 'zh_CN', dry_run: boo
         }, ensure_ascii=False)
     except Exception as e:
         return json.dumps({'ok': False, 'error': str(e)}, ensure_ascii=False)
+
+
+# ========== 6. to_json：tr → json 转换 + 推送设备 ==========
+# 关键背景（2026-09-08 实测，V553 项目；详见模块顶部 docstring）：
+#   fun launch 只推 ftu/images/font/lib/cfg，不推 i18n。设备 zkgui 加载的是
+#   /tmp/tr/<lang>.json（不是 .tr）。改完翻译后必须显式调本工具把 .tr 转 .json
+#   并 adb push 到设备 /tmp/tr/，否则设备仍跑旧翻译。
+#   本地开发脚本版见 E:\AICODE\trae\V553\tools\tr2json.py（V553 项目），逻辑同源。
+
+def _tr_to_json(tr_path):
+    """解析 .tr（XML）→ 有序 dict {key: value}。XML 实体由 ElementTree 自动解码。"""
+    tree = ET.parse(tr_path)
+    root = tree.getroot()
+    out = {}
+    for s in root.findall('string'):
+        name = s.get('name')
+        if name:
+            out[name] = s.text or ''
+    return out
+
+
+def _dump_json(data):
+    """序列化为 json 文本（tab 缩进+无空格冒号+末尾无换行），与设备端格式逐字节一致。"""
+    items = list(data.items())
+    lines = ['{']
+    for i, (k, v) in enumerate(items):
+        comma = ',' if i < len(items) - 1 else ''
+        lines.append('\t%s:%s%s' % (
+            json.dumps(k, ensure_ascii=False),
+            json.dumps(v, ensure_ascii=False),
+            comma))
+    lines.append('}')
+    return '\n'.join(lines)
+
+
+def _push_to_device(local_path, device, target_dir='/tmp/tr/'):
+    """adb push 单文件到设备指定目录。返回 (success, detail)。"""
+    target = os.path.join(target_dir, os.path.basename(local_path)).replace('\\', '/')
+    try:
+        r = subprocess.run(['adb', '-s', device, 'push', local_path, target],
+                           capture_output=True, text=True, timeout=30,
+                           stdin=subprocess.DEVNULL, encoding='utf-8', errors='replace')
+        ok = r.returncode == 0 and '1 file pushed' in (r.stdout or '')
+        detail = (r.stdout or r.stderr or '').strip()[-200:]
+        return ok, detail
+    except subprocess.TimeoutExpired:
+        return False, 'adb push 超时（30s）'
+    except FileNotFoundError:
+        return False, 'adb 不在 PATH（fun 工具链应自带；可单独装 Android platform-tools）'
+    except Exception as e:
+        return False, f'adb push 异常: {e}'
+
+
+def flythings_i18n_to_json(project_root: str, langs: str = '', push: bool = True, device: str = '') -> str:
+    """把 i18n/*.tr 转为 i18n/*.json（设备 zkgui 实际加载格式），并可推送到设备 /tmp/tr/。
+
+    ⚠️ 关键背景：**fun launch 不推 i18n**（只推 ftu/images/font/lib/cfg）。
+       改完翻译（import / add_language / refactor）后必须显式调本工具，
+       否则设备仍跑旧翻译（logcat 刷 'not found value' 警告）。
+       本工具生成的 json 与设备端 zkgui 加载格式**逐字节一致**（tab 缩进+无空格冒号+末尾无换行）。
+
+    Args:
+        project_root: 项目根目录（含 i18n/）
+        langs: 逗号分隔的语言列表（如 'zh_CN,en_US'，默认全部 .tr）；支持三段式 'fr_FR-法语'
+        push: True 转换后自动 adb push 到设备 /tmp/tr/（设备 DEBUG 模式 /tmp 路径；
+              生产固件把 json 打包到 /res/，设 False 只生成不推送）
+        device: 设备 IP/序列号（多设备时指定；不传则用 adb 唯一可见设备；多设备未指定则报错）
+
+    Returns:
+        JSON {ok, converted[{lang, trPath, jsonPath, count}], pushed[{lang, success, detail, target}],
+              skipped[{lang, reason}], adbStatus, device, nextHint}
+        ok=True 仅当所有 requested 转换/推送均成功；adbStatus 描述 adb 子系统状态。
+    """
+    try:
+        d = _i18n_dir(project_root)
+        if not os.path.isdir(d):
+            return json.dumps({'ok': False, 'error': f'i18n/ 目录不存在: {d}'}, ensure_ascii=False)
+
+        wanted = None
+        if langs.strip():
+            wanted = set(x.strip() for x in langs.split(',') if x.strip())
+        trs = [(lang, path) for lang, path in _list_tr_files(project_root)
+               if wanted is None or lang in wanted]
+        if not trs:
+            return json.dumps({
+                'ok': False,
+                'error': f'没有匹配的 .tr 文件（langs={langs!r}，i18n 目录有 {_list_tr_files(project_root)}）',
+            }, ensure_ascii=False)
+
+        # 1. 转换
+        converted = []
+        for lang, tr_path in trs:
+            data = _tr_to_json(tr_path)
+            json_path = tr_path[:-3] + '.json'
+            with io.open(json_path, 'w', encoding='utf-8', newline='') as f:
+                f.write(_dump_json(data))
+            converted.append({'lang': lang, 'trPath': tr_path, 'jsonPath': json_path, 'count': len(data)})
+
+        # 2. 推送
+        pushed = []
+        adb_status = 'skipped'
+        device_used = device
+        if push:
+            # adb 设备检测
+            try:
+                r = subprocess.run(['adb', 'devices'], capture_output=True, text=True, timeout=10,
+                                   stdin=subprocess.DEVNULL, encoding='utf-8', errors='replace')
+                if r.returncode != 0:
+                    adb_status = 'adb_failed'
+                    for c in converted:
+                        pushed.append({'lang': c['lang'], 'success': False, 'detail': f'adb 不可用: {(r.stderr or "")[:200]}'})
+                else:
+                    lines = r.stdout.strip().splitlines()
+                    devs = [l.split('\t')[0] for l in lines if '\tdevice' in l and not l.startswith('List')]
+                    if not devs:
+                        adb_status = 'no_device'
+                        for c in converted:
+                            pushed.append({'lang': c['lang'], 'success': False,
+                                           'detail': '无可用 adb 设备（adb devices 为空）'})
+                    elif device and device not in devs:
+                        adb_status = 'device_not_found'
+                        for c in converted:
+                            pushed.append({'lang': c['lang'], 'success': False,
+                                           'detail': f'指定设备 {device!r} 不在 adb 列表: {devs}'})
+                    else:
+                        device_used = device or devs[0]
+                        if len(devs) > 1 and not device:
+                            adb_status = 'multi_device_ambiguous'
+                            for c in converted:
+                                pushed.append({'lang': c['lang'], 'success': False,
+                                               'detail': f'检测到多设备 {devs}，未指定 device；请传 device=IP'})
+                        else:
+                            adb_status = 'ok'
+                            for c in converted:
+                                ok, detail = _push_to_device(c['jsonPath'], device_used)
+                                pushed.append({
+                                    'lang': c['lang'], 'success': ok, 'detail': detail,
+                                    'target': f'/tmp/tr/{os.path.basename(c["jsonPath"])}',
+                                })
+            except FileNotFoundError:
+                adb_status = 'adb_not_found'
+                for c in converted:
+                    pushed.append({'lang': c['lang'], 'success': False, 'detail': 'adb 不在 PATH'})
+            except subprocess.TimeoutExpired:
+                adb_status = 'adb_timeout'
+                for c in converted:
+                    pushed.append({'lang': c['lang'], 'success': False, 'detail': 'adb devices 超时（10s）'})
+
+        # 总体 ok：转换默认全成功；推送看是否全成功
+        all_pushed_ok = (not push) or all(p['success'] for p in pushed)
+        next_hint = ''
+        if push and all_pushed_ok:
+            next_hint = ('json 已推送到设备 /tmp/tr/，DEBUG 模式下需重启 zkswe 服务才会重新加载：'
+                         'adb shell "setprop ctl.stop zkswe && setprop ctl.start zkswe"。'
+                         '生产固件把翻译打包到 /res/，升级固件时生效。')
+        elif push and not all_pushed_ok:
+            next_hint = '部分推送失败：检查 adbStatus/各 lang 的 detail；修复后重跑本工具。'
+        else:
+            next_hint = '仅生成本地 json，未推送（push=False）。生产固件走 /res/ 路径，无需推送。'
+
+        return json.dumps({
+            'ok': all_pushed_ok,
+            'converted': converted,
+            'pushed': pushed,
+            'adbStatus': adb_status,
+            'device': device_used,
+            'nextHint': next_hint,
+        }, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({'ok': False, 'error': str(e)}, ensure_ascii=False)
+
