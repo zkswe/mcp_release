@@ -186,3 +186,19 @@ class UvcCameraDetection: public mpi::Task<> {
 - 录像产物仅 **mp4 / ts**（H.264 封装）；JPEG 仅用于照片场景（Snapshot 拍照 → 相册 → JpegViewer 回看）
 - 回放：视频 → ZKVideoView::play(file)；照片 → mpi::JpegViewer::start(file, rect)（先停视频再显示，成对 stop）
 - 详细解码/录制 API 见同目录 `jpeg-decode-record.md`
+
+## 8. 全链路验证流程（实测基准，2026-09-08 CV201PND 板 1280x720 JPEG UVC）
+
+> 六步验证法，每步有明确日志判据；落地 JPEG UVC 功能后照此自测，可定位绿屏/黑屏断在哪个环节：
+
+| 步骤 | 动作 | 成功日志判据 |
+|------|------|-------------|
+| ① 探测 | ENUM_FMT + S_FMT 锁 MJPEG | `default fmt = MJPG 1280x720`、`S_FMT MJPEG ok -> 1280x720` |
+| ② 预览 | 注册 REAR UVC + 保活 + RearCamera | `find uvc /dev/video0`、`rear camera fps 29.3`（接近摄像头帧率=取流正常） |
+| ③ 拍照 | Snapshot(REAR) | `image .../photo/Rear/*.jpg`、文件 >0 字节 |
+| ④ 录像 | Recorder 录 mp4（尺寸=协商值，frame_rate 25） | `rear venc fps 25.0`（编码持续出帧）、文件实时增长 |
+| ⑤ 停止 | 先 Recorder::stop 再停预览 | `MPP_EVENT_RECORD_DONE`、`done <路径>`、文件 12s≈29MB |
+| ⑥ 回放 | videoview play 最新文件 | `media play ok`（demux/vdec/vo/clock 全 success）、播完无绿屏 |
+
+- **绿屏排查第一看文件大小**：0 字节 = 取流/保活断（VENC 无数据），不是编码参数问题；正常文件应有 ftyp+avcC+moov
+- **frame_rate 必须 15~60**（aw-dvr 校验，0 会抛异常），UVC 25/30fps 就写 25/30

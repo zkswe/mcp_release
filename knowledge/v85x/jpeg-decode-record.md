@@ -125,6 +125,18 @@ UVC MJPEG 摄像头 (/dev/videoX)
 4. **录像格式别承诺 mp4/ts 以外**：客户要 AVI 等 → 提示大文件格式，确认后再做
 5. **aw-dvr 内部转码实现不深挖**（闭源预编译）；按上面 API 用即可，遇到异常看 mpi::Exception 信息
 6. JpegViewer 分辨率/区域用 `Rectangle{left,top,w,h}` 指定屏幕显示区
+7. **`RecordingSettings.frame_rate` 必须在 15~60**（2026-09-08 实测，设 0 会抛
+   `frame rate must be betwen 15 ~ 60`）：UVC 摄像头实际 25/30fps 就写 25/30，别写 0 表示不限
+8. **录像文件 0 字节 = 绿屏直接原因（实测实锤）**：取流断（日志 `get video frame timeout` /
+   `rear camera fps 0.2`）→ VENC 无数据（`VideoRecorder: VENC no stream`）→ 录出 **0 字节 mp4** →
+   播放器解不出画面 = 绿屏。排查录像问题先 `ls -la` 看文件大小：**0 字节 = 取流/保活断**，不是编码参数问题
+9. **录像成功日志判读**（正常链路特征，2026-09-08 CV201PND 实测）：
+   - `rear camera fps 29.3`（取流帧率正常，≈ 摄像头帧率）
+   - `rear venc fps 25.0`（编码器持续出帧）
+   - `MPP_EVENT_RECORD_DONE` + `done <路径>`（停止时正常封口）
+   - 文件大小正常（12s 720p ≈ 29MB），`ftyp isom + avcC + moov` 齐全
+   - 回放 `media play ok`（demux/vdec/vo/clock 全 success）= 不绿屏；播放器能放完不绿 = 通过
+10. **拍照验证闭环**：Snapshot 产物在 `photo/Rear/*.jpg`，回看用 JpegViewer；拍照文件大小正常即通过
 
 ## 依赖与来源
 

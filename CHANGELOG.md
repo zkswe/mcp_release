@@ -1,7 +1,21 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.9-open**（2026-09-08）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.10-open**（2026-09-08）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.10-open (2026-09-08) — JPEG UVC 实测证据入库（绿屏=0字节文件实锤 / frame_rate 15~60 / 六步验证法）
+**背景**：v0.27.9 发布后搭建独立测试工程 `projects/UvcJpegTest_V85X`，在 CV201PND 板（V85X、1600×600、单路 USB UVC MJPEG 1280×720）真机实测 JPEG UVC 预览/拍照/录像/回放全链路，六步全通；同时对比发现设备上旧 AI 工具程序的失败现场，绿屏/黑屏根因实锤。
+**实测结论（入库）**：
+- **绿屏直接原因 = 录像文件 0 字节**（旧程序日志：`get video frame timeout` / `rear camera fps 0.2` → `VideoRecorder: VENC no stream` → 录出 0 字节 mp4 → 播放器解不出画面=绿屏）；排查录像问题先 `ls -la` 看文件大小，0 字节 = 取流/保活断，不是编码参数问题
+- **黑屏 = 取流/保活链路断**（REAR FPS≈0）；边录边看正常时 rear camera fps≈29、venc fps≈25
+- **`RecordingSettings.frame_rate` 必须在 15~60**（设 0 抛 `frame rate must be betwen 15 ~ 60`），UVC 25/30fps 就写 25/30
+- **录像成功日志判据**：`rear camera fps 29.3` / `rear venc fps 25.0` / `MPP_EVENT_RECORD_DONE`+`done <路径>` / 文件大小正常（12s 720p≈29MB）/ 回放 `media play ok`（demux/vdec/vo/clock 全 success）
+**改动**：
+- knowledge/v85x/jpeg-decode-record.md：坑新增 7~10——frame_rate 15~60、0 字节文件排查、录像成功日志判读（正常链路特征）、拍照验证闭环（photo/Rear/*.jpg）
+- knowledge/v85x/uvc-usb-camera.md：新增 **§8 全链路验证流程**（六步验证法表：①探测②预览③拍照④录像⑤停止⑥回放，每步成功日志判据）+ 绿屏排查第一看文件大小 + frame_rate 口径
+- 版本 0.27.9 → 0.27.10-open
 
 ---
 
