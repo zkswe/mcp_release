@@ -1,7 +1,21 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.8-open**（2026-09-08）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.9-open**（2026-09-08）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.9-open (2026-09-08) — UVC 知识分层：新增跨平台通用层（V85X 绑定实现分离）
+**沛哥定规**：V85X 平台 UVC/USB 摄像头统一按 v0.27.8 通用形态走；**通用 UVC 层沉淀为跨平台知识**，可适配 T113 / F133 / Z20 / Z21（平台无关逻辑直接复用，绑定层按各平台媒体栈实现）。
+**改动**：
+- **新增 knowledge/hardware/uvc-camera-generic.md（跨平台通用 UVC 层）**：检索导引=未指定平台的 UVC/USB 摄像头问题；
+  内容=前置条件（USB Host + uvcvideo 驱动）/ inotify 发现（uvcvideo 匹配）/ V4L2 打开与格式协商（ENUM_FMT+S_FMT，JPEG 必做）/
+  持续取流保活铁律 / 热插拔状态机 / JPEG(MJPEG) UVC 落地必查清单（绿屏黑屏防坑：格式协商/尺寸对齐/互斥顺序/保活/格式口径）/
+  **平台绑定对照表**（V85X=已收录 aw-dvr/mpi:: 绑定篇；T113/F133/Z20/Z21=通用层可用、绑定层未实测不编造，待补录）
+- knowledge/v85x/uvc-usb-camera.md：标题改「（V85X 平台绑定实现）」+ 头部加检索导引（未指定平台→先读硬件通用篇）与分层说明，
+  明确本文=V85X aw-dvr/mpi:: 绑定层，平台无关逻辑在 hardware/uvc-camera-generic.md
+- knowledge/v85x/jpeg-decode-record.md：头部加硬件通用篇引用（JPEG/MJPEG 平台无关接入）
+- 版本 0.27.8 → 0.27.9-open
 
 ---
 

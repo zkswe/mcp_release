@@ -24,9 +24,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.8-open'
+MCP_VERSION = '0.27.9-open'
 MCP_BUILD = '2026-09-08'
 MCP_FEATURES = [
+    '2026-09-08: UVC 知识分层 v0.27.9（沛哥定规：V85X 平台 UVC/USB 摄像头统一按通用形态；通用 UVC 层沉淀为跨平台知识，可适配 T113/F133/Z20/Z21）——新增 knowledge/hardware/uvc-camera-generic.md（平台无关通用 UVC 层：前置条件 USB Host+uvcvideo / inotify 发现 / V4L2 格式协商 ENUM_FMT+S_FMT / 取流保活 / 状态机 / JPEG(MJPEG) 落地必查清单 / 平台绑定对照表 V85X 已收录、T113/F133/Z20/Z21 绑定层未实测不编造）；v85x/uvc-usb-camera.md 改「V85X 平台绑定实现」+ 检索导引分流（未指定平台→通用篇）；v85x/jpeg-decode-record.md 头部补通用篇引用；v0.27.9-open',
     '2026-09-08: UVC 摄像头知识去工程化 v0.27.8（沛哥定规：更新后不体现内部工程名，只保留通用 UVC 摄像头知识；外部 AI 落地 JPEG UVC 时出现录制绿屏/录制中黑屏，根因=格式协商缺失/录像尺寸错配/录像预览互斥顺序/保活缺失）——uvc-usb-camera.md 新增 §7 通用 JPEG(MJPEG) UVC 落地必查清单（①ENUM_FMT+S_FMT 锁 MJPEG，摄像头默认可能 YUYV，不协商=绿屏 ②RecordingSettings.size(REAR)=UVC 实际分辨率，不照抄 1080P/720P 档 ③开始录像不停预览/保活，切流/拔插/进回放前才 Recorder::stop+RearCamera::stop ④SharedVideoDevice(REAR) 保活录像期间不停 ⑤录像仅 mp4/ts，JPEG 仅照片场景 Snapshot→JpegViewer）；jpeg-decode-record.md 去除全部工程路径引用改职责描述；v0.27.8-open',
     '2026-09-08: PNG 生成管线规范显式化 v0.27.7（方案 A，沛哥定规：新 AI 客户端按规范转 png 仍默认锯齿，根因=抗锯齿只做在 gen_res 内部，规范没显式约束 AI 生成方式）——HTML_SUBSET 切图铁律新增 #8（PNG 生成只走三条路：html2json 自动转图 / generate_ui_assets / gen_res 公开函数，禁止 AI 自绘 1x 直画/外部生图直出小图交付）+ #9（防锯齿五要素：尺寸==position、≥4x 超采样 LANCZOS 或 α 羽化 sigma≈0.5、端点 round cap、圆角四角 alpha=0、check_all 校验）；generate_ui_assets 描述同步加 ⑦；v0.27.7-open',
     '2026-09-08: 全控件深度阅读 v0.27.6（沛哥要求：深度读基础 Demo 形成对 FlyThings 所有控件的深度理解）——basedemo-new_z20_1024_600 35 工程源码逐行精读（5 子代理并行，产出 130KB 原始笔记归档 workspace/references/demo-read-2026-09-08/）→ 新增 2 篇知识：①devflow/activity-code-skeleton.md（生成器骨架：activity 壳+#include logic/回调分发表语义 true=吞 false=默认（模板注释写反）/生命周期/定时器静态表+动态 register-unregister-reset/串口协议模板（UartContext 读线程 16KB 拼接+帧头对齐粘包处理+listener 订阅）/SysApp 三槽位（STATUSBAR/SCREENSAVER/IME）/多语言/平台编译宏）②uicontrols/widget-code-api.md（21 控件代码 API 速查：回调签名/触发时机/坑——自定义 ISeekBarChangeListener 三回调拿拖拽起止、ZKVideoView vs ZKMediaPlayer 两套消息枚举、camera 拍照四回调+jpg、pointer/clock 角度坐标系+浮点回绕坑、diagram setData/addData 双刷新、painter 绘图 API 全集、IME 集成范本、wifi/lte/softap/ethernet Manager+Listener、listview 删除漏 refresh 官方坑）；v0.27.6-open',
