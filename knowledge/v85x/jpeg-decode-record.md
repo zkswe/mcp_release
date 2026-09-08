@@ -84,7 +84,7 @@ mpi::RecorderParameters p;
 p.settings[mpi::VIDEO_DEVICE_FRONT] = s;              // 内置 ISP 摄像头
 p.settings[mpi::VIDEO_DEVICE_REAR]  = s2;             // UVC（有才加）
 
-// 起停（DvrLogic 录按钮）
+// 起停（录制页录按钮）
 mpi::Recorder::instance().start(p);
 mpi::Recorder::instance().stop();
 mpi::Recorder::instance().state();       // UNSTARTED/RECORDING/EXCEPTION
