@@ -24,9 +24,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.4-open'
+MCP_VERSION = '0.27.5-open'
 MCP_BUILD = '2026-09-08'
 MCP_FEATURES = [
+    '2026-09-08: Button 长按/循环重复机制收录 v0.27.5（沛哥确认学习：长按触发时间/循环重复时间通过 UI 属性表可配）——json 字段 longClickTimeOut（长按事件触发时间 ms，>0 启用，默认 -1 不启用）+ longClickIntervalTime（长按循环触发间隔 ms，>0 长按期间反复触发，-1 单次）；实测：ButtonDemo LongButton 1000/1000（1s 触发+1s 循环连发）、ImeDemo 删除键 600/-1（快启单次）；代码 ZKBase::ILongClickListener::onLongClick + setLongClickListener（onUI_init 注册/onUI_quit 注销，匿名 namespace）；新增 knowledge/uicontrols/button-fields.md（button 全字段频率表 + 长按三件套 + 图片按钮铁律）；v0.27.5-open',
     '2026-09-08: 控件层级检讨 v0.27.4（沛哥问“控件层级有检讨吗”——此前只有零散结论（Z序/window嵌套/pagewindow叠放/listview结构），缺系统矩阵）——扫描 86 json（SampleUI 1024x600 + basedemo-new_z20_1024_600）容器→子内容矩阵实证零越界：window 万能容器（可深嵌 window）；pagewindow/scrollwindow 只装 window；listview/radiogroup/slidewindow/diagram 只走结构键（item/radiobuttons/items/infos）禁止平铺控件键；叶子 14 类不得生子；数组子结构归属固定；新增 knowledge/uicontrols/json-layer-rules.md；check_all #2 升级层级合法性检查（_layer_problems：缺 window 子页/平铺/叶子生子/数组错位 4 类非法全拦截，86 真实 json 0 误报）；v0.27.4-open',
     '2026-09-08: json 字段全集显式化 v2.1（沛哥定规：字段缺省省略→引擎版本默认漂移→版本不匹配异常；以 SampleUI-New/ui/1024x600 每类型 100% 交集=必选，basedemo-new_z20_1024_600 交叉复验+补缺）——口径：beepEnable 不强制（废除恒带 true）/交互控件 touchable 显式 true（容器纯显示 false）/qrcode 恒写 padding 10/videoview 按 SampleUI/-1=0xFFFFFFFF 有意义非噪音；新增 knowledge/uicontrols/json-field-mandatory.md（21 类必写键全集表 + 子结构模板：listview.item 17 键含 position/subItem/diagram.infos 含 visible/slidewindow.items/radiobuttons）；⚠️ item.position 必写，行高公式 itemH=int(lv高/rows)-rowSpacing（basedemo 验证 164/4-5=36 等）；html2json 全部控件按全集输出+item 行高自动算；check_all #14 模板 v2.1（listitem 含 position + checkbox/radiogroup/radiobutton/imageanim 升级 + item/subItem/infos[]/items[]/radiobuttons[] 子结构检查）；v0.27.3-open',
     '2026-09-08: 补 MT Type-A 触摸注入工具 mt_test + 协议速判坑位（沛哥 V85X 实测 ui_test 单点协议在 gt9xx 注入坐标恒 0）——根因：设备 MODALIAS ra30,32,35,36,39=ABS_MT_*，不订阅单点 ABS_X/Y → 新增 bin_tools/{v85x,t113,z20,z21}/mt_test（ARMv7 musl 72KB + ARMv7 glibc 4.5MB，接口对齐 ui_test：tap/swipe/long/monkey/run；RISC-V 暂缓待 WSL）；bin_tools/README 加 mt_test 工具表行+「触摸协议速判」节（EVIOCGABS 能力位/getevent -p/试注入判据+协议用错→坐标恒0）；touch-inject-autotest.md 分列 ui_test(单点) vs mt_test(MT) 工具表+关键坑点破+协议铁律加 MT 序列+坐标恒0判据；v0.27.2-open',

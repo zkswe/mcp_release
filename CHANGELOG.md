@@ -1,7 +1,19 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.4-open**（2026-09-08）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.5-open**（2026-09-08）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.5-open (2026-09-08) — Button 长按/循环重复机制收录（长按时间/重复时间 UI 可配）
+**沛哥确认学习**：按键长按模式的时间、循环重复时间通过 UI（IDE 属性表）可配置。
+**机制（官方 wiki button.md + 真源实证）**：
+- IDE 属性表两属性（单位 ms）：「长按事件触发时间」→ json `longClickTimeOut`；「长按事件循环触发间隔时间」→ json `longClickIntervalTime`
+- 默认两键 -1（不启用长按）；>0 启用；interval >0 = 长按不松手时循环重复触发 onLongClick，-1 = 仅触发一次
+- 代码：ZKBase::ILongClickListener::onLongClick(ZKBase*) + setLongClickListener（onUI_init 注册 / onUI_quit 注销，匿名 namespace 防冲突）；点击是 IClickListener::onClick
+- 实测：ButtonDemo-New LongButton 1000/1000（1s 触发 + 1s 循环连发，官方示例同款）；ImeDemo-New 删除键 600/-1（600ms 快启单次）
+- 适用：button / listview item.subItem / item（ZKBase 体系，subItem/listitem 模板已含两键）
+**改动**：新增 knowledge/uicontrols/button-fields.md（button JSON 字段频率表 + 长按三件套 + 典型场景 + 图片按钮铁律）
 
 ---
 
