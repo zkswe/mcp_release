@@ -1,11 +1,23 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.0-open**（2026-09-08）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.1-open**（2026-09-08）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
 
 ---
 
-## v0.27.0-open (2026-09-08) — i18n 翻译推送工具入库（修 fun launch 盲点）
+## v0.27.1-open (2026-09-08) — 补触摸注入/UI 自动化测试检索缺口（AI 调试不会用现成工具）
+**沛哥反馈**：adb-input-autotest.md 是不是 MCP 检索不到？AI 工具调试时没调用现成 input/ui_test 工具干活。
+
+**根因（检索链路排查）**：
+- MCP 检索范围 = wiki/flythings/ + knowledge/（open 版仓库内）；references/kb/ 是本地私有 KB，不在索引内
+- MCP 命中 wiki/test/adb-input-autotest.md 是 8-31 老版（86 行，只有 event.c 实现原理，开头标注「不是现成工具产物」）
+- 9-08 沛哥补充的「现成 input 命令行工具（bin/h500s/input、bin/z21/input 已编译，直接 push 用）」只写在 references 最新版（128 行）→ AI 检索不到 → 不知道有现成 ui_test / flythings_gen_ui_test → 调试不调用
+
+**改动**：
+- 新增 knowledge/devflow/touch-inject-autotest.md：以「先调现成工具」为主线——首选 flythings_gen_ui_test（traverse/monkey/custom/ask）+ bin_tools/{平台}/ui_test ELF（tap/swipe/long/monkey/run + 部署命令 + 平台表）；event.c 原理降级为「定制/移植才需要」参考；协议铁律（EV_SYN 必发/滑动逐像素/时间戳必填）；自动化闭环判定优先级（logd > raw fb 抓屏）
+- wiki/test/adb-input-autotest.md 同步为 9-08 最新版（128 行，含现成工具说明），消除旧版「非现成工具」误导
+- 重建 rag_index + kb_tools.py → v0.27.1-open + MCP_FEATURES 头条
+ (2026-09-08) — i18n 翻译推送工具入库（修 fun launch 盲点）
 **沛哥要求**：把"i18n/*.tr 转 *.json + 推送到设备"的能力整合进 MCP 流程；同时确认 fun launch 推送范围盲点（只推 ftu/images/font/lib/cfg，**不推 i18n**——CHANGELOG 2026-09-02 沛哥定规"部署统一 fun launch"是针对代码+资源，i18n 仍需显式推送），AI 改完翻译后必须调本工具。
 
 **根因（V553 项目实测，2026-09-08）**：
