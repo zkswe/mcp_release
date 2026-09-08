@@ -24,9 +24,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.26.0-open'
+MCP_VERSION = '0.27.0-open'
 MCP_BUILD = '2026-09-08'
 MCP_FEATURES = [
+    '2026-09-08: i18n 翻译推送工具入库（沛哥：V553 实测 fun launch 不推 i18n 盲点）——新增 flythings_i18n_to_json（.tr→.json 序列化与设备逐字节一致 + adb push /tmp/tr/；设备 DEBUG 实际加载 /tmp/tr/<lang>.json，生产固件 /res/ 用 push=False）；flythings_build_ui_flow 描述顶部加「fun launch 不推 i18n」警告；AI 改完翻译必须调本工具否则设备跑旧翻译；v0.27.0-open',
     '2026-09-08: BusyBox 调试工具库入库（沛哥：设备系统没 busybox/ifconfig 等工具，要预编译分发）——新增 bin_tools/{f133,f135,z20,z21,t113,v85x}/busybox（v1.36.1 全静态 ELF，网络工具 ifconfig/ip/ping/netstat/route/telnet/nc/wget 全开，adb push 即用，与 ui_test 同架构）；bin_tools/README 工具表+调用方法；新增 knowledge/devflow/busybox-debug-library.md 检索导引；v0.26.0-open',
     '2026-09-08: 部署/调试场景别名映射（沛哥反馈：客户端 AI 收「AI 应用调试全量推送」时检索不到 build_ui_flow 描述而自造 deploy_debug.sh）——flythings_build_ui_flow docstring 头部加「场景别名」段（编译/构建/调试/全量推送/部署/部署到设备/跑一下/AI 自定义编译/自主编译验证 一律本工具，禁止自创脚本路径）；新增 knowledge/devflow/deploy-scene-map.md（用户话语→唯一动作表 + 坑源说明）；v0.26.0-open',
     '2026-09-07: 自研帧动画知识移出 open 版（沛哥指示：ImageAnimView/FrameImageView ZKBIN+QOI+region 机制依赖自研 ZKBIN 工具链，open 用户缺工具无法使用）——删除 knowledge/devflow/frame-image-anim-bin.md，知识保留本地 references/kb/frame-image-anim-bin.md（125 行完整原版）；dashboard-can-arch.md 还原 v0.22.1 无 ImageAnimView 版（6 处引用全清，CAN 架构保留）；v0.25.2-open',
@@ -78,7 +79,7 @@ MCP_FEATURES = [
     '2026-08-31: 方案库扩充——游戏机+Knob 旋钮、Z20 语音（AIUI）、T113 车载互联、Z20 SIP 对讲等方案知识入库（关键词触发）',
     '2026-08-29: 控件能力实测校准 + i18n 多语言工具（scan/export/import/refactor）+ fix_project 自动修复（FT-001~024）+ HTML 原型 JS 交互与自动转图',
     '2026-08-28: 包检索离线 catalog + 版本 semver 取最新 + manifest 依赖递归补齐',
-    'open 版：完全本地部署零远程依赖——内置 bge-small-zh 向量模型（免 Key，不可用自动降级 BM25）+ fui/fun 工具链 + HelloWord 模板 + 33 个工具全家桶（项目创建/布局转换/预览/包管理/规范校验/修复/i18n scan/export/import/add_language/refactor/to_json/测试）',
+    'open 版：完全本地部署零远程依赖——内置 bge-small-zh 向量模型（免 Key，不可用自动降级 BM25）+ fui/fun 工具链 + HelloWord 模板 + 31 个工具全家桶（项目创建/布局转换/预览/包管理/规范校验/修复/i18n scan/export/import/add_language/refactor/to_json/测试）',
 ]
 
 

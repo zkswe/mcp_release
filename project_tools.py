@@ -843,7 +843,7 @@ def _apply_edits(data, ops):
     return True, report
 
 
-def flythings_edit_json(json_path, operations):
+def _edit_json(json_path, operations):
     """编辑 json 布局文件（控件属性/增删/根属性），保存回原文件。
     operations 为 JSON 数组字符串，如：
     [{"op":"set","target":"按钮标题","props":{"x":100,"y":200,"text":"新文本"}}]
@@ -882,7 +882,7 @@ def flythings_edit_ftu(ftu_path, operations, output_ftu=''):
     if not os.path.isfile(json_path):
         return {"success": False,
                 "error": f"缺少同目录 {base}.json（布局以 json 为源，请先提供 json 布局再编辑）"}
-    ed = flythings_edit_json(json_path, operations)
+    ed = _edit_json(json_path, operations)
     if not ed['success']:
         return ed
     r = _run_fui('pack', src_dir)

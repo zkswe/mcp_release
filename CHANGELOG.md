@@ -20,7 +20,7 @@
   - 推送：`subprocess.run(['adb', '-s', device, 'push', local, '/tmp/tr/...'])`；自动 adb 设备检测（无设备/多设备未指定/指定设备不在/均给出明确 adbStatus）
   - 生产固件翻译打包到 /res/，传 `push=False` 只生成不推送
   - `stdin=subprocess.DEVNULL` 防 MCP stdio 管道挂起（与 _run_fun/_run_fui 一致）
-- `kb_tools.py` 加 `flythings_i18n_to_json` 包装函数（docstring 顶部加"fun launch 不推 i18n"警告 + 完整工作流）+ `register_all` 注册（MCP 工具数 32 → 33）
+- `kb_tools.py` 加 `flythings_i18n_to_json` 包装函数（docstring 顶部加"fun launch 不推 i18n"警告 + 完整工作流）+ `register_all` 注册（MCP 工具数 30 → 31）
 - `i18n_tools.py` 顶部 docstring 加"设备端加载格式"小节，标注本工具与 fun launch 的职责分界
 - MCP_FEATURES `i18n_tools` 摘要更新为 6 工具
 
@@ -32,6 +32,8 @@
 ```
 
 **V553 保留**：`tools/tr2json.py` 保留作为本地开发脚本（开发者手动用，逻辑同源）；MCP 工具给 AI 流程用。
+
+**发布修正（2026-09-08 下午，沛哥检讨确认）**：①MCP_VERSION 同步 0.27.0-open（010b4e4 提交漏递增，此前仍 0.26.0-open，客户端查版本会误判落后）；②MCP_FEATURES 顶部补 v0.27.0 摘要条目；③工具数口径核实为 30→31（实际注册 register_all 31 个；README/MCP_FEATURES 原写 32/33 均不符，已统一）；④`flythings_edit_json` 为 edit_ftu 内部辅助（从未注册），改名 `_edit_json` 去 `flythings_` 前缀消除歧义。
 
 ---
 

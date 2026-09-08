@@ -23,7 +23,7 @@
 🔥 **核心优势**：
 - 🚀 **FlyThings 专属配置**：内置本地向量模型（bge-small-zh），知识检索完全离线，AI开发效率及Token消耗极低
 - 🏭 **全流程开箱即用**：编译工具链（fui/fun）与项目模板已内置，创建项目 → 布局 → 编译 → 推送一气呵成
-- 🧠 **32 个工具**：知识检索、项目创建、布局转换、依赖管理、规范校验、自动修复、多语言、自动化测试全都有
+- 🧠 **31 个工具**：知识检索、项目创建、布局转换、依赖管理、规范校验、自动修复、多语言、自动化测试全都有
 - 📦 **一条命令安装**：`pip install mcp onnxruntime tokenizers`，AI 工具指一下路径就能用
 
 🎯 **适用场景**：
@@ -131,7 +131,7 @@ pip install mcp onnxruntime tokenizers
 
 > **MCP 版本是多少？**
 
-应返回：`flythings-kb-open 0.6.9-open`，包含 32 个工具。
+应返回：`flythings-kb-open 0.27.0-open`，包含 31 个工具。
 
 ---
 
@@ -182,7 +182,7 @@ pip install mcp onnxruntime tokenizers
 ```
 flythings-mcp-open/
 ├── mcp_server.py          # 入口（stdio MCP server）
-├── kb_tools.py            # 工具定义（30 个）
+├── kb_tools.py            # 工具定义与注册（31 个）
 ├── project_tools.py       # 项目/编译/交付
 ├── package_tools.py       # 依赖包生态
 ├── rag_search.py          # 知识库检索（本地向量 + BM25）
@@ -205,7 +205,7 @@ flythings-mcp-open/
 | 问题 | 解决 |
 |------|------|
 | `ModuleNotFoundError: mcp / onnxruntime / tokenizers` | 执行 `pip install mcp onnxruntime tokenizers` |
-| 工具列表 < 32 | 检查配置文件 command/args 路径是否正确 |
+| 工具列表 < 31 | 检查配置文件 command/args 路径是否正确 |
 | 检索结果不准 | 本地模型首次使用会自动加载；确认 `models/bge-small-zh/` 存在 |
 | 想换知识库/重建索引 | `python rebuild_index_local.py <wiki目录>` 重新生成 rag_index.json |
 | 杀毒软件拦截 | 添加信任（内含可执行文件 toolchain/） |
