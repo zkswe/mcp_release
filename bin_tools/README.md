@@ -10,8 +10,29 @@
 | 工具 | 用途 | 平台 |
 |------|------|------|
 | `ui_test` | 触摸注入/自动化测试（tap/swipe/long/monkey/run 脚本） | z21 / z20 / t113 / f133 / v85x |
+| `busybox` | 设备调试工具箱（网络/系统/Shell 全开，2026-09-08 新增） | z21 / z20 / t113 / f133 / f135 / v85x |
 
 全部 ELF 已验证魔数 `7F 45 4C 46`，直接 `adb push` 即可运行（无需宿主 zkgui）。
+
+## 🔧 busybox 调用方法（设备没 ifconfig/ping 等工具时用它）
+
+```bash
+# 选对应平台 push（f133/f135=RISC-V，z20/z21=ARM glibc，t113/v85x=ARM musl）
+adb push bin_tools/z21/busybox /tmp/busybox
+adb shell chmod 777 /tmp/busybox
+
+# 前缀式调用（busybox <命令>）
+adb shell /tmp/busybox ifconfig                # 查 IP
+adb shell /tmp/busybox ping -c 3 192.168.1.1   # 连通性
+adb shell /tmp/busybox netstat -tulnp          # 端口监听
+adb shell /tmp/busybox ps w / top / free / dmesg
+
+# 软链成常规命令（可选）
+adb shell "for c in ifconfig ip ping netstat route ps; do ln -sf /tmp/busybox /tmp/$c; done"
+```
+
+> BusyBox v1.36.1，全平台 CONFIG_STATIC=y 静态链接（push 即用零依赖）。
+> 重编：`wsl bash ../../scripts/bb_build_all.sh all`（源码/坑位见 `tools/busybox/README.md`，构建必须 WSL 原生盘）。
 
 ## 🎯 ui_test 调用方法
 

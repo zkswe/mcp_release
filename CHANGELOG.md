@@ -1,7 +1,24 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.25.2-open**（2026-09-07）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.26.0-open**（2026-09-08）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.26.0-open (2026-09-08) — BusyBox 调试工具库入库 + 部署/调试场景别名映射
+**沛哥安排**：设备系统内没有 busybox / ifconfig 等调试工具，需要像 input（ui_test）一样电脑端预编译各平台静态 busybox，放 bin_tools/{平台}/ 随 MCP 分发，adb push 即用；后续调试工具直接从对应平台目录找。
+
+**改动（BusyBox 工具库）**：
+- 新增 bin_tools/{f133,f135,z20,z21,t113,v85x}/busybox：BusyBox v1.36.1 全静态 ELF（CONFIG_STATIC=y，零依赖 push 即用），网络工具全开（ifconfig/ip/ping/ping6/netstat/route/arp/telnet/telnetd/nc/wget/httpd/nslookup/hostname/udhcpc...）
+- 平台映射：f133/f135=RISC-V 64 musl（Xuantie-900）、z20/z21=ARMv7 glibc（arm-linux-gnueabihf）、t113/v85x=ARMv7 musl（sunxi）；qemu 实测运行 OK
+- bin_tools/README.md 工具表新增 busybox 行 + 调用方法节
+- 新增 knowledge/devflow/busybox-debug-library.md（检索导引：搜「busybox/调试工具/设备没 ifconfig」命中）
+- 重编脚本与坑位（fun/toolchains 是 Windows exe 无法 WSL 派生 cc1、构建必须 WSL 原生盘）保留本地 tools/busybox/README.md，不入库
+
+**改动（部署场景别名，沛哥 09-08 反馈：客户端 AI 收「AI 应用调试全量推送」时自造 deploy_debug.sh）**：
+- flythings_build_ui_flow docstring 头部加「场景别名」段：编译/构建/调试/全量推送/部署/部署到设备/跑一下/AI 自定义编译/自主编译验证 → 一律本工具，禁止自创脚本路径
+- 新增 knowledge/devflow/deploy-scene-map.md（用户话语→唯一动作映射表 + 坑源 + 历史依据）
+- 重建 rag_index + kb_tools.py → v0.26.0-open + MCP_FEATURES 头条
 
 ---
 

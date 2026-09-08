@@ -24,9 +24,11 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.25.2-open'
-MCP_BUILD = '2026-09-07'
+MCP_VERSION = '0.26.0-open'
+MCP_BUILD = '2026-09-08'
 MCP_FEATURES = [
+    '2026-09-08: BusyBox 调试工具库入库（沛哥：设备系统没 busybox/ifconfig 等工具，要预编译分发）——新增 bin_tools/{f133,f135,z20,z21,t113,v85x}/busybox（v1.36.1 全静态 ELF，网络工具 ifconfig/ip/ping/netstat/route/telnet/nc/wget 全开，adb push 即用，与 ui_test 同架构）；bin_tools/README 工具表+调用方法；新增 knowledge/devflow/busybox-debug-library.md 检索导引；v0.26.0-open',
+    '2026-09-08: 部署/调试场景别名映射（沛哥反馈：客户端 AI 收「AI 应用调试全量推送」时检索不到 build_ui_flow 描述而自造 deploy_debug.sh）——flythings_build_ui_flow docstring 头部加「场景别名」段（编译/构建/调试/全量推送/部署/部署到设备/跑一下/AI 自定义编译/自主编译验证 一律本工具，禁止自创脚本路径）；新增 knowledge/devflow/deploy-scene-map.md（用户话语→唯一动作表 + 坑源说明）；v0.26.0-open',
     '2026-09-07: 自研帧动画知识移出 open 版（沛哥指示：ImageAnimView/FrameImageView ZKBIN+QOI+region 机制依赖自研 ZKBIN 工具链，open 用户缺工具无法使用）——删除 knowledge/devflow/frame-image-anim-bin.md，知识保留本地 references/kb/frame-image-anim-bin.md（125 行完整原版）；dashboard-can-arch.md 还原 v0.22.1 无 ImageAnimView 版（6 处引用全清，CAN 架构保留）；v0.25.2-open',
     '2026-09-07: 清理冗余（沛哥要求整理 open 版多余反复内容）——删除 knowledge/ 与 wiki 字节完全相同的 3 个重复副本（esl/tag-esl.md、uicontrols/image-path-rule.md、uicontrols/scrollwindow-layout.md），wiki 保留唯一一份，检索不再双份命中；layout-audit.md 两版非字节相同（knowledge 含实测校准 edittext id 51000/imageanim 无 frameInterval）保留 knowledge 版；wiki 官方源自身重复不动；v0.25.1-open',
     '2026-09-07: 冷门控件字段文档批量入库（git.com 全库学习产出，沛哥确认 3 点：listview 点击 id=被点 subitem 的 ID / slidewindow cols×rows=每页格数 11 项=1页8+3 翻页 / 所有控件支持跨线程操作）——新增 uicontrols 文档 11 篇：pointer（双坐标定圆心+animatable 自动动画）、circlebar（有效图扇形裁剪+触摸监听）、digitalclock（纯属性+TimeHelper 改系统时间）、slidetext（输入法候选词条）、qrcode（loadQRCode 传 JSON）、radiogroup-checkbox（pic2 选中图+子项 ID 宏）、diagram（统一 SZKPoint+setData/addData 双模式）、videoview（轮播 loopPlayback 读 UI名_video_list.txt / API 双模式）、pagewindow（多页容器）、listview（三回调+无 subitem 数量限制）、cross-thread-ui-rule；全部 fui unpack 实测 + f133 easyui 2.9.0 SDK 头文件校准，非猜测；v0.25.0-open',
@@ -157,7 +159,12 @@ def flythings_edit_ftu(ftu_path: str, operations: str, output_ftu: str = '') -> 
 
 
 def flythings_build_ui_flow(project_root: str, with_launch: bool = True, device: str = '') -> str:
-    """UI 构建流程：① json/ftu 时间戳一致性检查（以 json 为源，改过 json 自动重新 pack）
+    """⚠️ 场景别名（编译部署类意图一律本工具，禁止自造命令；不限触发入口）：
+    ① 用户口语：「编译/构建/调试/全量推送/部署/部署到设备/推送到设备/跑一下/运行到真机」；
+    ② 自定义功能/自动化流程触发：客户端「AI 应用调试」「自定义编译」等按钮/动作，凡意图是「把项目编译并部署到真机调试」→ 一律调本工具；
+    ③ AI 自主决策：写完/改完代码后主动编译验证、调试看效果，同样调本工具。
+    内部 fun launch 完成程序+资源+ftu 全量推送并启动；⚠️ 不存在 tools/deploy_debug.sh 之类的额外部署脚本，禁止 AI 自创脚本/命令路径。
+    UI 构建流程：① json/ftu 时间戳一致性检查（以 json 为源，改过 json 自动重新 pack）
     ② fui pack ③ fun install 同步依赖 ④ fun build ⑤ build 通过后直接 fun launch 推送启动（with_launch=False 可跳过）。
     ⚠️ launch 失败（无 adb 设备）时返回 needDeviceInput=true，必须询问用户接入方式：
     1) USB 接入：设备 USB 连电脑，确认 adb devices 可见后重试；2) 网络接入：

@@ -1,0 +1,38 @@
+# 部署/调试场景 → 工具动作映射（禁止自造部署命令）
+
+> 铁律：FlyThings 全量部署/推送的唯一入口是 **`flythings_build_ui_flow`（内部 fun launch）**，
+> **不存在任何 `tools/deploy_debug.sh` / deploy_debug.sh 之类的额外部署脚本**。
+> AI 在任意客户端里收到「调试/全量推送/部署」类请求时，必须调用 MCP 工具，禁止自创 shell 脚本或命令路径。
+
+## 用户话语 → 唯一动作
+
+⚠️ **不限触发入口**：以下映射对**任何入口**都成立——用户口语、客户端自定义功能按钮（如「AI 应用调试」「自定义编译」）、AI 写完/改完代码后自主编译验证调试。
+只要意图是「把项目编译并部署到真机调试」，一律调 `flythings_build_ui_flow`，禁止自造脚本。
+
+| 用户说（口语/场景） | AI 应调用的工具 | 说明 |
+|---|---|---|
+| 编译 / 构建 / 编译推送 | `flythings_build_ui_flow` | fui pack → fun install → fun build |
+| **调试 / 应用调试** | `flythings_build_ui_flow`（with_launch 默认 true） | 编译后直接推送真机看效果 |
+| **全量推送 / 部署 / 部署到设备 / 推送到设备** | `flythings_build_ui_flow` | fun launch = 程序+资源+ftu **全量**推送并启动 |
+| 跑一下 / 运行到真机 / 更新到设备 | `flythings_build_ui_flow` | 同上 |
+| **AI 自定义编译功能调试**（客户端按钮/动作/自动化流程） | `flythings_build_ui_flow` | 功能入口无论叫什么，落地动作仍是它 |
+| **AI 自主编译验证**（改完代码主动编译调试看效果） | `flythings_build_ui_flow` | 同上 |
+
+⚠️ 没有「增量推送 vs 全量推送」两种模式：**fun launch 本身就是全量推送**（程序+资源+ftu 一起部署），
+不需要 adb push 单文件、不需要 kill zkgui、不需要中间脚本。
+
+## 为什么会有这个文档（坑源）
+
+2026-09-08 沛哥反馈：客户端 AI 收到「AI 应用调试全量推送」时，工具列表里没有叫「调试/部署」的工具，
+`build_ui_flow` 描述又只写「UI 构建流程」，AI 检索不到映射 → **自造了 `tools/deploy_debug.sh` 动作**（幻觉）。
+结论：用户话语与真实动作的绑定必须**显式写进工具描述 + 知识库**，否则模型会发明不存在的命令。
+
+- 工具描述侧的绑定：`flythings_build_ui_flow` docstring 头部已加「场景别名」段落（v0.25.x 起）。
+- 检索侧本文件即答案：搜「调试」「全量推送」「部署」「deploy」都能命中这里，命中即指向 build_ui_flow。
+
+## 历史依据
+
+- v0.7.15-open (2026-09-02) FT-007 废弃（沛哥定规）：删除「手动 adb push images + kill zkgui」部署顺序规则，
+  **部署统一只用 fun launch**（fun launch 内部已正确部署程序+资源+ftu 并启动）。
+- fun launch 设备选择自动完成；无 adb 设备时 build_ui_flow 返回 needDeviceInput=true，
+  询问用户 USB/网络接入方式，**禁止替用户猜测 IP、禁止绕开工具手写 adb 命令**。
