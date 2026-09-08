@@ -269,6 +269,20 @@ iconfont class），转换器**自动生成 iconfont 风格矢量线框 PNG**（
    - `38` = 靠右垂直居中
    HTML 的 `data-align="center"` → 37（html2json 已正确映射，勿改）
 7. 渐变底 PNG 生成必须检查四角 alpha：`img.getpixel((2,2))[3] == 0` 才算合格。
+8. **PNG 生成管线铁律（2026-09-08 沛哥定规：新 AI 客户端按规范转 png 仍默认锯齿 → 规范显式约束）**：
+   AI 需要图片资源时**只能走三条路，禁止自创**：
+   ① CSS 效果（渐变/圆角/阴影/emoji/图标/loading）→ 写进 HTML 由 html2json 自动转图（内置抗锯齿管线）；
+   ② 图标资源 → `flythings_generate_ui_assets`（内置三级降级 + 超采样抗锯齿）；
+   ③ 必须自绘的自定义图 → 用 gen_res.py 公开函数（rounded_card / gen_gradient / gen_shadow_card /
+      emoji_icon_ss / glyph_icon_ex / line_icon / frames_loading_gif…，全部内置抗锯齿）。
+   **禁止**：AI 用自身 image 生成能力直出小尺寸 png 交付（大图缩小边缘/斜线必锯齿）、
+   禁止自写 Pillow/绘图代码 1x 直画圆角/斜线/圆弧（1x 二值 alpha 无抗锯齿，PIL 默认 butt 线帽斜线端点出毛刺）。
+9. **PNG 防锯齿五要素（生成后逐条自查，任一不满足重新生成或换工具路径）**：
+   ① 像素尺寸与控件 position 严格相等（FlyThings 普通 PNG 不缩放；大图缩小必须交给工具 LANCZOS）；
+   ② 斜线/曲线/圆角必须 ≥4x 超采样绘制后 LANCZOS 缩回，或 α 通道高斯羽化过渡（sigma≈0.5），禁止 1x 直画；
+   ③ 线段端点加 round cap（PIL 默认 butt 平头 → 斜线端点毛刺缺口）；
+   ④ 圆角/异形图弧线外角落 alpha 必须 =0（真透明），阴影模糊溢出须再裁一次圆角清残影；
+   ⑤ 全部生成后跑 check_all 校验（#11 图片尺寸 == position、四角 alpha 检查）。
 
 ## 示例
 `tools/ui_tools/examples/` 下有完整示例（screen + 顶栏 + 卡片 + 弹窗 + 进度条 + 列表）。

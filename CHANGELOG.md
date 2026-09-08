@@ -1,7 +1,26 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.6-open**（2026-09-08）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.7-open**（2026-09-08）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.7-open (2026-09-08) — PNG 生成管线规范显式化（方案 A：只补铁律条目，不加新 tool）
+**沛哥反馈**：新 AI 客户端拿到 MCP 按规范转出的 png 默认仍有锯齿，问是规范没显式说明处理方式还是缺 tool。
+**根因分析**：抗锯齿全部做在 gen_res.py 内部（圆角 α 羽化 sigma=0.5、图标/线条 4~8x 超采样 + LANCZOS、round cap），
+html2json 自动转图与 generate_ui_assets 走该管线无锯齿；但规范文档（HTML_SUBSET 切图铁律、工具描述）此前只显式写了
+尺寸 1:1、圆角四角 alpha=0、路径规范，**没有一句话说明「PNG 必须按什么管线生成、禁止什么做法」**——
+AI 客户端只要不乖乖走工具链（自写 1x 直画、用自身 image 能力直出小图），锯齿就进来了，规范拦不住。
+**定规（沛哥 2026-09-08）**：采用方案 A——只补规范铁律条目显式化，暂不做后处理 tool。
+**改动**：
+- HTML_SUBSET.md「切图 / 图片资源铁律」新增 #8 PNG 生成管线铁律（AI 需要图片只能走三条路：CSS 效果→html2json
+  自动转图 / 图标→generate_ui_assets / 自绘→gen_res 公开函数，全内置抗锯齿；禁止 AI 自绘 1x 直画圆角/斜线/圆弧、
+  禁止自身 image 能力直出小图交付）+ #9 PNG 防锯齿五要素（①尺寸==控件 position ②≥4x 超采样+LANCZOS 或 α 羽化
+  sigma≈0.5，禁 1x 直画 ③端点 round cap ④圆角四角 alpha=0、阴影溢出重裁 ⑤生成后跑 check_all #11+四角 alpha）；
+  同步到 workspace tools/ui_tools/HTML_SUBSET.md
+- kb_tools.py flythings_generate_ui_assets 工具描述新增 ⑦ PNG 生成管线铁律（AI 直读入口同步）；
+  flythings_html_to_json 描述 CSS 转图段加「禁止 AI 自绘 1x 直画/外部生图直出小图」警告
+- 版本 0.27.6 → 0.27.7-open
 
 ---
 

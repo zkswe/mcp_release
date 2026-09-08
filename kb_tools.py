@@ -24,9 +24,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.6-open'
+MCP_VERSION = '0.27.7-open'
 MCP_BUILD = '2026-09-08'
 MCP_FEATURES = [
+    '2026-09-08: PNG 生成管线规范显式化 v0.27.7（方案 A，沛哥定规：新 AI 客户端按规范转 png 仍默认锯齿，根因=抗锯齿只做在 gen_res 内部，规范没显式约束 AI 生成方式）——HTML_SUBSET 切图铁律新增 #8（PNG 生成只走三条路：html2json 自动转图 / generate_ui_assets / gen_res 公开函数，禁止 AI 自绘 1x 直画/外部生图直出小图交付）+ #9（防锯齿五要素：尺寸==position、≥4x 超采样 LANCZOS 或 α 羽化 sigma≈0.5、端点 round cap、圆角四角 alpha=0、check_all 校验）；generate_ui_assets 描述同步加 ⑦；v0.27.7-open',
     '2026-09-08: 全控件深度阅读 v0.27.6（沛哥要求：深度读基础 Demo 形成对 FlyThings 所有控件的深度理解）——basedemo-new_z20_1024_600 35 工程源码逐行精读（5 子代理并行，产出 130KB 原始笔记归档 workspace/references/demo-read-2026-09-08/）→ 新增 2 篇知识：①devflow/activity-code-skeleton.md（生成器骨架：activity 壳+#include logic/回调分发表语义 true=吞 false=默认（模板注释写反）/生命周期/定时器静态表+动态 register-unregister-reset/串口协议模板（UartContext 读线程 16KB 拼接+帧头对齐粘包处理+listener 订阅）/SysApp 三槽位（STATUSBAR/SCREENSAVER/IME）/多语言/平台编译宏）②uicontrols/widget-code-api.md（21 控件代码 API 速查：回调签名/触发时机/坑——自定义 ISeekBarChangeListener 三回调拿拖拽起止、ZKVideoView vs ZKMediaPlayer 两套消息枚举、camera 拍照四回调+jpg、pointer/clock 角度坐标系+浮点回绕坑、diagram setData/addData 双刷新、painter 绘图 API 全集、IME 集成范本、wifi/lte/softap/ethernet Manager+Listener、listview 删除漏 refresh 官方坑）；v0.27.6-open',
     '2026-09-08: Button 长按/循环重复机制收录 v0.27.5（沛哥确认学习：长按触发时间/循环重复时间通过 UI 属性表可配）——json 字段 longClickTimeOut（长按事件触发时间 ms，>0 启用，默认 -1 不启用）+ longClickIntervalTime（长按循环触发间隔 ms，>0 长按期间反复触发，-1 单次）；实测：ButtonDemo LongButton 1000/1000（1s 触发+1s 循环连发）、ImeDemo 删除键 600/-1（快启单次）；代码 ZKBase::ILongClickListener::onLongClick + setLongClickListener（onUI_init 注册/onUI_quit 注销，匿名 namespace）；新增 knowledge/uicontrols/button-fields.md（button 全字段频率表 + 长按三件套 + 图片按钮铁律）；v0.27.5-open',
     '2026-09-08: 控件层级检讨 v0.27.4（沛哥问“控件层级有检讨吗”——此前只有零散结论（Z序/window嵌套/pagewindow叠放/listview结构），缺系统矩阵）——扫描 86 json（SampleUI 1024x600 + basedemo-new_z20_1024_600）容器→子内容矩阵实证零越界：window 万能容器（可深嵌 window）；pagewindow/scrollwindow 只装 window；listview/radiogroup/slidewindow/diagram 只走结构键（item/radiobuttons/items/infos）禁止平铺控件键；叶子 14 类不得生子；数组子结构归属固定；新增 knowledge/uicontrols/json-layer-rules.md；check_all #2 升级层级合法性检查（_layer_problems：缺 window 子页/平铺/叶子生子/数组错位 4 类非法全拦截，86 真实 json 0 误报）；v0.27.4-open',
@@ -240,6 +241,8 @@ def flythings_html_to_json(input_html: str, output_json: str = '', res: str = ''
       渐变/复杂背景/阴影/描边 → 切 PNG 或 .9.png 用 data-pic 引用；emoji/iconfont → 转 PNG 图标；
       loading/旋转/粒子动效 → 序列帧 PNG 或 GIF（imageanim 动图控件，循环次数 ≤0 无限循环）；
       按钮两态 normal+pressed（_p 后缀）→ picTab{pic0,pic1}。
+      ⚠️ 图片一律由转换器自动转图（内置抗锯齿管线），**禁止 AI 自绘 1x 直画 png 或用外部生图能力直出小图交付**
+      （1x 二值 alpha / 大图缩小边缘必锯齿；防锯齿铁律见 HTML_SUBSET「切图 / 图片资源铁律」#8 #9）。
       转换器对 style 中的效果属性（linear-gradient/box-shadow/border-radius/animation 等）
       自动输出 warning 提示转图，不会硬转。
     - ✅ JS 交互设计（2026-08-29 沛哥建议）：第一套 HTML 效果稿建议直接写 JS 交互——
@@ -420,6 +423,14 @@ def flythings_generate_ui_assets(project_root: str, assets: str) -> str:
          json 布局引用路径写 images/xxx.png（相对 resources 目录，与设备/ftu 加载一致）；
          返回的 path 字段就是 images/xxx.png，直接填 json 的 backgroundPic / picTab.pic0 / picTab.pic1，
          不要写绝对路径，也不要带 resources/ 前缀。
+      ⑦ PNG 生成管线铁律（2026-09-08 沛哥定规，方案 A 显式化）：AI/客户端需要图片时
+         禁止自写绘制代码 1x 直画、禁止用外部生图能力直出小图交付（1x 二值 alpha 无抗锯齿、
+         大图缩小边缘必锯齿）；**只走三条路**——CSS 效果交 html2json 自动转图（内置抗锯齿）/ 本工具生成 /
+         gen_res 公开函数（rounded_card / gen_gradient / gen_shadow_card / emoji_icon_ss /
+         glyph_icon_ex / line_icon / frames_loading_gif，全部内置抗锯齿）。
+         PNG 防锯齿五要素：尺寸 == 控件 position / ≥4x 超采样 + LANCZOS 缩回或 α 羽化（sigma≈0.5）/ 端点 round cap /
+         圆角四角 alpha=0 / 生成后跑 check_all 校验（#11 图片尺寸 + 四角 alpha）。
+         完整规范见 HTML_SUBSET.md「切图 / 图片资源铁律」#8 #9。
 
     assets 为 JSON 数组字符串，每项：
       {"name": "icon_ok.png", "size": 128,
