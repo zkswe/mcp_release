@@ -1,7 +1,25 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.7-open**（2026-09-08）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.8-open**（2026-09-08）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.8-open (2026-09-08) — UVC 摄像头知识去工程化（纯通用形态）+ 通用 JPEG(MJPEG) UVC 落地必查清单
+**沛哥反馈**：MCP 能力被外部 AI 工具落地开发 JPEG UVC 摄像头时出现「录制文件播放绿屏」「录制中摄像头图像黑掉」两类异常。
+**定规（沛哥 2026-09-08）**：知识库更新后**不体现内部工程（CV201 类项目名/路径），只保留通用 UVC 摄像头知识**，供任意产品/外部工具直接复用。
+**改动**：
+- knowledge/v85x/uvc-usb-camera.md：头部来源去工程化（改为「V85X 平台通用实测」）；坑 #5 改为「通用 JPEG UVC 必须显式协商格式（不能只 G_FMT 读宽高）」；
+  **新增 §7 通用 JPEG(MJPEG) UVC 摄像头落地必查清单**（绿屏/黑屏防坑）：
+  ① §7.1 格式协商——aw-dvr UVC 默认 capture_pixel_format=V4L2_PIX_FMT_MJPEG、内部 JPEG→NV21 解码 SDK 处理；
+     接入必须 ENUM_FMT 确认 MJPEG + S_FMT 锁定（摄像头默认可能 YUYV，不协商=绿屏），用 S_FMT 实际返回宽高 Init；
+  ② §7.2 录像分辨率对齐——RecordingSettings.size（REAR）必须=UVC 实际分辨率，不能照抄内置摄像头 1080P/720P 档（尺寸错配=绿屏）；
+  ③ §7.3 录像与预览互斥顺序——**开始录像不要停预览/保活**（边录边看常态）；切流/拔插/进回放前才 Recorder::stop+RearCamera::stop（顺序反=黑屏）；
+  ④ §7.4 UVC 保活——SharedVideoDevice(REAR) 持续读流任务录像期间也不能停（停了=黑屏）；
+  ⑤ §7.5 格式口径——录像仅 mp4/ts（H.264），JPEG 仅用于照片（Snapshot→JpegViewer）；回放视频 ZKVideoView/照片 JpegViewer
+- knowledge/v85x/jpeg-decode-record.md：来源/标题/工程实测/代码位全部去 CV201 工程引用（DvrLogic/DvrPlayLogic/camera_helper/src 路径 →
+  职责描述），仅保留 API 用法与坑（JpegViewer 照片显示 / jpegdecode.h 取像素 / Recorder 录制 mp4-ts / Snapshot 拍照 / 回放分流）
+- 版本 0.27.7 → 0.27.8-open
 
 ---
 

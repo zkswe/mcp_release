@@ -2,7 +2,7 @@
 
 > 🔍 **检索导引**：V853/V85X「**JPEG 硬件解码**」「**MJPEG 摄像头转码录制 mp4**」「**UVC 摄像头录像**」「**照片显示**」「**录像格式 mp4/ts/avi**」「**DVR 录制/拍照**」问题。
 > 沛哥 2026-09-07 定规：**只记录怎么用**；aw-dvr/aw-mpp 预编译闭源内部（MJPEG→H264 转码实现）不解析不深挖。
-> 来源：CV201_PND（mark_cv201）实测 + aw-dvr 3.13.12 / aw-mpp 2.0.2 头文件。
+> 来源：V85X 平台通用实测 + aw-dvr 3.13.12 / aw-mpp 2.0.2 头文件（2026-09-08 去工程化，纯通用形态）。
 
 ## 场景总览（两个方向分开处理）
 
@@ -17,7 +17,7 @@
 
 ## ① 解码场景（JPEG 显示/取像素）
 
-### 1.1 照片显示：mpi::JpegViewer（推荐，DvrPlayLogic 实测）
+### 1.1 照片显示：mpi::JpegViewer（推荐，回放页实测）
 
 ```cpp
 #include <mpi/case/jpeg_viewer.h>
@@ -34,7 +34,7 @@ jpeg_viewer->start(file, {pos.mLeft, pos.mTop, pos.mWidth, pos.mHeight});
 jpeg_viewer->stop();
 ```
 
-DvrPlayLogic 分流：`FILE_TYPE_PHOTO`（jpg/jpeg/png/bmp）→ JpegViewer 显示；
+回放页分流：`FILE_TYPE_PHOTO`（jpg/jpeg/png/bmp）→ JpegViewer 显示；
 `FILE_TYPE_VIDEO` → `mVideoView1Ptr->play(file)`。切换前 `mVideoView1Ptr->stop()` + `jpeg_viewer->stop()` 都调。
 
 ### 1.2 取像素：jpegdecode.h（libcedarc C API，要裸数据时）
@@ -65,7 +65,7 @@ void JpegDecoderDestory(JpegDecoder* v);
   确认客户是否接受再走 AVI 方案，不默认承诺
 - 设备端回放/取文件按格式类型筛：`Recorder::getFiles((mpi::FileFormat)type, view, lock, ...)`
 
-### 2.2 mpi::Recorder 用法（DvrLogic/camera_helper 实测）
+### 2.2 mpi::Recorder 用法（录制页实测）
 
 ```cpp
 #include <mpi/case/recorder.h>
@@ -92,7 +92,7 @@ mpi::Recorder::instance().elapseTime();  // 当前段已录毫秒
 mpi::Recorder::instance().isLocked();    // 锁定文件（紧急录像）
 ```
 
-### 2.3 UVC MJPEG 摄像头 → Recorder（CV201_PND 全链路，怎么用）
+### 2.3 UVC MJPEG 摄像头 → Recorder（通用全链路，怎么用）
 
 ```
 UVC MJPEG 摄像头 (/dev/videoX)
@@ -102,12 +102,12 @@ UVC MJPEG 摄像头 (/dev/videoX)
  → USB 断开：先 Recorder::stop() + RearCamera::stop() 再重建（MPP 互斥）
 ```
 
-代码位：
-- 注册：`src/uvc/camera_helper.cpp`（FRONT setIsp(true).setId(0)；REAR setUvc(true).setId(DEVICE_ID_AUTO)）
-- 参数：`camera_helper.cpp` makeRecorderParam()（duration/audio/bitrate 12Mbps/25fps/720P|1080P）
-- 起停：`src/logic/DvrLogic.cc`（录按钮 → start/stop）
-- 断流：`src/uvc/uvc_camera.cpp`（状态机 USB_DISCONNECTED → stop record + stop camera + 重建）
-- 保活：`src/uvc/uvc_camera_detection.cpp`（SharedVideoDevice 循环 wait()）
+代码位（职责描述，具体文件按各自工程组织）：
+- 注册：UVC 接入模块（FRONT setIsp(true).setId(0)；REAR setUvc(true).setId(DEVICE_ID_AUTO)）
+- 参数：构造 RecorderParameters（duration/audio/bitrate 12Mbps/25fps/720P|1080P，REAR 尺寸=UVC 实际分辨率）
+- 起停：录制页录按钮 → `Recorder::start(param)` / `Recorder::stop()`
+- 断流：UVC 状态机 USB_DISCONNECTED → stop record + stop camera + 重建
+- 保活：取流任务（SharedVideoDevice(REAR) 循环 wait()）
 
 ### 2.4 拍照（不属于录像，但同 MPP 体系）
 
@@ -130,5 +130,5 @@ UVC MJPEG 摄像头 (/dev/videoX)
 - 依赖包：aw-dvr（mpi::Recorder/JpegViewer/Camera/VO/Snapshot）、aw-mpp（MPP 底层）
 - 头文件：`~/.fuse/registry/public/v85x/aw-dvr/3.13.12/include/mpi/case/{recorder,config,jpeg_viewer,camera}.h`、
   `aw-mpp/2.0.2/.../mm_common.h`（MEDIA_FILE_FORMAT_E）
-- 工程实测：CV201_PND `src/{logic/DvrLogic,DvrPlayLogic}.cc`、`src/uvc/*.cpp`、`src/media/media_context.cpp`
+- 工程实测：V85X 平台 DVR 类工程（录制页/回放页逻辑、UVC 接入模块、存储模块）
 - 平台：V85X（AW_V853/AWCHIP=AW_V853）；其他平台 DVR 封装不同（无 aw-dvr，走 ZKCameraView）
