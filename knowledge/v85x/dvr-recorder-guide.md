@@ -36,17 +36,19 @@
 <compiler><macro>AWCHIP=AW_V853</macro></compiler>
 <dependencies enableOnPlatforms="V85X">
   <package id="easyui" version="..."/>
-  <package id="aw-middleware" version="0.0.0"/>
-  <package id="aw-system" version="0.0.0"/>
-  <package id="aw-isp" version="0.0.0"/>
-  <package id="aw-dvr" version="<最新版>" accessKey="0000000000000000000000000000000000000000"/>
+  <!-- 勿加 aw-middleware：旧包头文件冲突且无 UVC backend（V553 实证）；aw-mpp 由 aw-dvr 传递依赖带入 -->
+  <package id="aw-dvr" version="3.13.12" accessKey="0000000000000000000000000000000000000000"/>
+  <!-- accessKey 发布版默认全 0 占位（40 位），实际 key 向平台方获取后替换；真实 key 不进公开仓库
+       aw-dvr 版本必须与设备 runtime 的 aw-mpp 配套（见 v85x/aw-dvr-runtime-compat.md）：
+       runtime aw-mpp 2.0.2 对应 aw-dvr 3.13.12；4.0.1 需 aw-mpp 3.0.0-pre2 装不上，勿用 -->
   <!-- ⚠️ accessKey 发布版默认全 0 占位（40 位），实际 key 向平台方获取后替换；真实 key 不进公开仓库 -->
   <package id="base-utility" version="4.0.2"/>
   <package id="ini" version="0.0.1"/> <package id="freetype" version="2.2.5"/>
   <package id="ntp" version="0.1.0"/>  <!-- 按需 -->
 </dependencies>
 ```
-- **aw-dvr = 核心 MPP 封装（`mpi::` 命名空间，accessKey 私有包）**，registry 在 package.flythings.cn；**新工程直接用最新版**（版本向下兼容，不锁老工程旧版）
+- **aw-dvr = 核心 MPP 封装（`mpi::` 命名空间，accessKey 私有包）**，registry 在 package.flythings.cn
+- **版本不是越新越好**：aw-dvr 必须与设备 runtime 的 aw-mpp 配套（4.0.1 需 aw-mpp 3.0.0-pre2，设备 runtime 2.0.2 装不上）；**V85X runtime aw-mpp 2.0.2 → 用 aw-dvr 3.13.12**（当前实测全适配组合）；版本×runtime 兼容矩阵与 dlopen 排障见 `v85x/aw-dvr-runtime-compat.md`
 - ⚠️ aw-* 系列仅 V85X；T113 分支无 MPP 依赖
 - 头文件：`<mpi/case/recorder.h>` `<mpi/case/front_camera.h>` `<mpi/case/rear_camera.h>` `<mpi/case/jpeg_viewer.h>` `<mpi/module/vo.h>` `<mpi/case/shared_video_device.h>`；异常走 `mpi::Exception`
 
@@ -201,7 +203,7 @@ stop() / pause() / resume() / seekTo(ms); getDuration() / getCurrentPosition();
 
 ## 11. 开发顺序自检清单（做完逐项打勾）
 
-1. [ ] Manifest：platform=V85X + AWCHIP + aw-dvr 最新版（accessKey 已配）
+1. [ ] Manifest：platform=V85X + AWCHIP + aw-dvr **与 runtime 配套的版本**（默认 3.13.12，勿用 4.0.1；accessKey 已配）
 2. [ ] 屏幕方向：rotateScreen 与硬件一致；改过 package.properties 已 clean 重编
 3. [ ] UI：videoView `visible:true` + `rotation` 用枚举 0-3；画面区域无不透明遮挡
 4. [ ] 摄像头：探测到设备；预览 disp 层 enable；方向正确

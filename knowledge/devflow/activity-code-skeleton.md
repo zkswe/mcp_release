@@ -19,6 +19,19 @@
 `onCreate()`：逐个 `findControlByID` 取指针 → `onUI_init()`（logic 实现：注册控件监听器/初始化文案/串口 listener）→ `EASYUICONTEXT->registerGlobalTouchListener(this)` → `registerProtocolDataUpdateListener(onProtocolDataUpdate)` → `rigesterActivityTimer()`。析构对称：unregisterGlobalTouchListener / unregisterProtocolDataUpdateListener / `onUI_quit()` / 指针置 NULL。
 logic 钩子：onUI_init / onUI_show(≈onResume) / onUI_hide(≈onPause) / onUI_intent / onUI_quit / onUI_Timer(id)。**onUI_quit 里必须反注册一切 setXxxListener(NULL)/removeListener，否则悬垂**（长按/触摸/拍照/播放器/网络监听都是静态长生命周期对象 + 成对注册注销）。
 
+### 3-1 导航 × 回调触发矩阵（释放逻辑放哪？关键！）
+
+| 导航事件 | 当前页回调 | 说明/实证 |
+|------|------|------|
+| `goBack()` / 返回键销毁当前页 | **只走 `onUI_quit`，不经 `onUI_hide`** | ⚠️ 日志实证（多工程）：释放放 onUI_hide = 永不执行 → 播放器/VO/摄像头资源残留（典型事故：播放页残留 VO dev0 → 回预览 0xa00f8042） |
+| `openActivity()` 新页覆盖当前页 | `onUI_hide`（后 `onUI_show` 回来） | hide 后页面还在，会再 show；不是销毁 |
+| 覆盖页关闭回到本页 | `onUI_show` | 与 hide 配对 |
+| `closeActivity()` / `goHome()` 销毁 | `onUI_quit`（同 goBack 销毁语义） | 按销毁处理 |
+
+**铁律：媒体/硬件资源（播放器/摄像头/VO/监听）的释放放 `onUI_quit`；`onUI_hide` 只做「被覆盖」场景的暂停/让位，禁止在 hide 做一次性资源释放**（goBack 销毁不经 hide，放了=永不执行；且 hide 后还会 show 回来，释放了没法恢复）。
+
+> ⚠️ 部分回调语义（openActivity 压栈 vs 覆盖细节）随版本可能有差异；拿不准时按「销毁→onUI_quit、覆盖→onUI_hide」二分先写对，再用 logcat 验证。
+
 ## 4. 定时器
 - 静态表：`static S_ACTIVITY_TIMEER REGISTER_ACTIVITY_TIMER_TAB[] = {{id, 毫秒}, ...};`（**id 全工程唯一**，静态与动态共用 id 空间）→ 页面打开即生效。
 - 动态控制（mainActivity.cpp 包装）：`mActivityPtr->registerUserTimer(id, ms) / unregisterUserTimer(id) / resetUserTimer(id, 新ms)`（改已在跑的定时器=变速）。

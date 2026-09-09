@@ -1,7 +1,21 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.14-open**（2026-09-09）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.15-open**（2026-09-09）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.15-open (2026-09-09) — V553 踩坑入库 ②③：页面生命周期触发矩阵 + aw-dvr×runtime 兼容矩阵（含旧策略修正）
+**背景**：V553 UVC 相机项目（AI 通过 MCP 开发）基本功能验证，沛哥转来踩坑修改意见 ②③，并要求**先检讨正确性再入库**。检讨结果：②缺口属实（activity-code-skeleton 只有钩子列表无触发矩阵）；③主体属实且**揪出知识库旧策略误导**（v85x-mpp.md/dvr-recorder-guide 写"新工程直接用最新版 aw-dvr"→ V553 照此选 4.0.1 才踩 dlopen 坑）。
+**② 页面生命周期触发矩阵（activity-code-skeleton.md 新增 §3-1）**：
+- 实证铁律：**goBack/返回销毁当前页只走 onUI_quit、不经 onUI_hide**（多工程日志实证）——释放放 onUI_hide = 永不执行（今天 VO 残留事故的代码根因）；openActivity 覆盖 → onUI_hide（会再 show 回来）；closeActivity/goHome 销毁 → onUI_quit
+- 铁律：媒体/硬件资源释放放 onUI_quit；onUI_hide 只做被覆盖场景的暂停/让位
+**③ aw-dvr × runtime 兼容（新增 knowledge/v85x/aw-dvr-runtime-compat.md + 修正 dvr-recorder-guide §2 / references v85x-mpp.md 版本策略）**：
+- 矩阵：aw-dvr 3.13.12 ↔ aw-mpp 2.0.2 ✅ 全适配（当前实测组合）；4.0.1 需 aw-mpp 3.0.0-pre2 ❌ runtime 2.0.2 装不上（dlopen 失败引专属符号）；3.9.12 ⚠️ 能跑不能录 UVC（V553 试错链，待复核）
+- 配套事实（V553 Manifest 注释实证）：aw-mpp 由 aw-dvr 传递依赖带入勿显式加；**勿加 aw-middleware**（旧包头冲突+无 UVC backend）；libmpp_uvc.so 由 aw-mpp-uvc 提供
+- **旧策略修正**："直接用最新版" → "aw-dvr 必须与设备 runtime 的 aw-mpp 配套，runtime 2.0.2 → 3.13.12"（Manifest 示例去 aw-middleware/aw-system/aw-isp 误导项）
+- dlopen 失败 SOP：readelf -d NEEDED → 比对设备库 → readelf -Ws UND 找版本专属符号 → 换 SDK 或升 runtime
+**改动**：activity-code-skeleton.md §3-1 矩阵；新建 v85x/aw-dvr-runtime-compat.md；dvr-recorder-guide.md Manifest 示例/版本策略/自检清单；wiki 同步（devflow+v85x）；版本 0.27.14 → 0.27.15-open
 
 ---
 
