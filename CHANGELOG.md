@@ -1,7 +1,17 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.17-open**（2026-09-09）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.18-open**（2026-09-09）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.18-open (2026-09-09) — MCP 知识库结构化整理（沛哥确认：平台化治理消重复啰嗦）
+**背景**：沛哥指示整理 MCP 查重复啰嗦、平台化/结构化治理。审计发现：①knowledge ↔ wiki 双份 44 篇（28 字节相同 = rag 双命中、16 漂移不一致）②MCP_FEATURES 70 条 25.8KB 全史（违反"只留精华"约定）③工具 31 个无重复、CHANGELOG 长史为设计保留。
+**改动**：
+- **A 内容唯一化**：删除 wiki/flythings 下 44 篇 knowledge 实践文档副本（漂移 16 对核对均 knowledge 新）；实践知识唯一放 knowledge/（随 Gitee + AI 检索主源），wiki/flythings 只留官方镜像 129 篇；rag 去重重建
+- **B MCP_FEATURES 精简**：70 条 25.8KB → 27 条（0.27.18 + 0.27.10~0.27.17 近期 + 早期能力概括 2 条），完整史以 CHANGELOG 为准
+- **C 治理机制固化**：新增 knowledge/README.md（治理规范：practice 文档只放 knowledge 禁复制 wiki/新增文档流程/红线）；新增 scripts/check_duplicate.py（双份检测工具，规范要求双份=0）
+- 版本 0.27.17 → 0.27.18-open
 
 ---
 
