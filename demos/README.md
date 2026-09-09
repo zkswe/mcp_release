@@ -14,7 +14,7 @@
 
 1. **命名**：`<功能>-<形态>-<平台>`（如 `dvr-uvc-recorder-v85x`、`esl-html-f133`）；平台不同名放同目录
 2. **必备文件**：
-   - `Manifest.xml`：真实平台依赖；⚠️ **accessKey 私有包一律占位** `REPLACE_WITH_ACCESS_KEY_FROM_ZKSWE`（README 说明向平台方获取），禁止把真实 key 提交公开仓库
+   - `Manifest.xml`：真实平台依赖；⚠️ **accessKey 私有包一律全 0 占位发布**（`accessKey="0000000000000000000000000000000000000000"`，40 位全 0），README 说明向平台方获取后替换，**真实 key 禁止进公开仓库**
    - `ui/*.json` + 编译产物 ftu 齐（json 是源，README 写明改布局需 fui pack）
    - `src/`：业务代码只写 `logic/`；`activity/` 目录由构建自动生成不手改
    - `package.properties`：工程级配置（旋转/字库等）写清楚用途

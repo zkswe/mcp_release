@@ -39,7 +39,8 @@
   <package id="aw-middleware" version="0.0.0"/>
   <package id="aw-system" version="0.0.0"/>
   <package id="aw-isp" version="0.0.0"/>
-  <package id="aw-dvr" version="<最新版>" accessKey="<私有包 accessKey，向平台方获取>"/>
+  <package id="aw-dvr" version="<最新版>" accessKey="0000000000000000000000000000000000000000"/>
+  <!-- ⚠️ accessKey 发布版默认全 0 占位（40 位），实际 key 向平台方获取后替换；真实 key 不进公开仓库 -->
   <package id="base-utility" version="4.0.2"/>
   <package id="ini" version="0.0.1"/> <package id="freetype" version="2.2.5"/>
   <package id="ntp" version="0.1.0"/>  <!-- 按需 -->

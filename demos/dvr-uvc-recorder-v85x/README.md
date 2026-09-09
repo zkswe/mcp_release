@@ -19,7 +19,7 @@
 
 ## 🚀 三步跑起来
 
-1. **替换 accessKey**：`Manifest.xml` 里 aw-dvr 的 `accessKey="REPLACE_WITH_ACCESS_KEY_FROM_ZKSWE"` 换成实际 key（aw-dvr 是 accessKey 私有包，key 向平台方获取）
+1. **替换 accessKey**：`Manifest.xml` 里 aw-dvr 的 `accessKey="0000...0000"`（发布版默认全 0 占位）替换成实际 key（aw-dvr 是 accessKey 私有包，key 向平台方获取；全 0 拉不到包）
 2. **拉依赖**：`fun install`（需要 fun/fui 工具链，IDE 自带或项目内放置）
 3. **编译部署**：改过 json 先 `cd ui && fui.exe pack main.json` → `fun build` → `fun launch`（设备 adb 在线）
 
