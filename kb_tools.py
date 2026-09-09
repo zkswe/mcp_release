@@ -24,9 +24,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.15-open'
+MCP_VERSION = '0.27.16-open'
 MCP_BUILD = '2026-09-09'
 MCP_FEATURES = [
+    '2026-09-09: 部署可靠性 v0.27.16（④ V553 踩坑：fun launch 网络超时静默/推送中断误推旧固件；沛哥指示 timeout 就 retry 5 次、不自写 push 脚本校验、信任 fun 差分）——_run_fun 加 retries 参数（失败/超时自动重试间隔 2s，返回含 retried）；flythings_build_ui_flow 的 fun launch 传 retries=5（网络抖动自愈），5 次仍失败才 needDeviceInput 询问设备接入；未自写任何 push/校验脚本；kb_tools 工具描述同步；v0.27.16-open',
     '2026-09-09: V553 踩坑 ②③ 入库 v0.27.15（沛哥要求先检讨正确性：②缺口属实 ③主体属实且揪出旧策略误导——"直接用最新版 aw-dvr"致 V553 选 4.0.1 踩 dlopen 坑，已修正）——②activity-code-skeleton.md 新增 §3-1 导航×回调触发矩阵：**goBack/返回销毁只走 onUI_quit、不经 onUI_hide**（日志实证；释放放 onUI_hide=永不执行=VO 残留事故代码根因）；openActivity 覆盖→onUI_hide；铁律=媒体/硬件资源释放放 onUI_quit、hide 只做被覆盖暂停 ③新增 v85x/aw-dvr-runtime-compat.md：版本×runtime 矩阵（3.13.12↔aw-mpp 2.0.2 ✅ 全适配当前实测组合 / 4.0.1 需 aw-mpp 3.0.0-pre2 ❌ runtime 2.0.2 装不上 / 3.9.12 ⚠️能跑不能录 UVC 待复核）；勿加 aw-middleware（旧包头冲突+无 UVC backend）；libmpp_uvc.so 由 aw-mpp-uvc 提供；dlopen 失败 SOP=readelf -d NEEDED→比对设备库→readelf -Ws UND 找版本专属符号→换 SDK 或升 runtime；dvr-recorder-guide Manifest 示例/版本策略/自检清单同步修正；v0.27.15-open',
     '2026-09-09: VO dev0 抢占冲突排障知识入库 v0.27.14（V553 UVC 相机项目实证：从独立播放页返回预览页图像出不来，logcat 反复 0xa00f8042 AW_MPI_VO_Enable error；此坑全库 0 命中——disp 层知识只到 layer 级没到 VO dev 级）——①错误码实锤 0xa00f8042=EN_ERR_VO_DEV_HAS_ENABLED（aw-mpp mm_comm_vo.h，VO 设备已被 enable；0x41=DEV_NOT_ENABLE 常态忽略）②架构事实：easyui ZKVideoView(zkmedia/CedarX) 与 mpi 预览(aw-dvr RearCamera) **共用 VO dev0**，播放器退出/播放页销毁后 VO dev0 不自动释放 → mpi enable 报 HAS_ENABLED；触发条件=播放页独立 Activity 走销毁路径，videoview 常驻同页无此问题 ③解法：mpi 预览启动前 **raw AW_MPI_VO_Disable(0)** 强制让位拿返回码（⚠️ mpi::VO 包装类 disable 吞异常/不返回真实码，必须 raw API）；Disable 失败 sleep 300-500ms 重试 2-3 次（播放器异步释放~400ms）；兜底 enable 失败 Disable+延时重试循环 ④排查顺序 disp 层(releaseLayer)→VO dev(0xa00f8042→raw Disable)→UI 透出(videoView visible)；display-layer-debug.md 新增 §4 VO dev0 抢占冲突（§4-7 顺延 §5-8）；v0.27.14-open',
     '2026-09-09: demos 案例库上线 v0.27.13（沛哥拍板方案 B：验证全功能 demo 带着走，AI 照抄避免反复 try 浪费 token；后续可批量做）——①新增 demos/README.md 案例库规范：demo=已真机验证可编译可运行的功能闭环（源码级 <100KB）；命名 <功能>-<形态>-<平台>；必备 Manifest/ui json+ftu/src 只写 logic/package.properties/README 三件套；红线：accessKey 占位 REPLACE_WITH_ACCESS_KEY_FROM_ZKSWE 禁止真实 key 进公开仓库、不提交 .fun/exe/.vscode、去工程化、闭环宁缺毋滥；knowledge 头部加 demo 指引 ②首个案例 demos/dvr-uvc-recorder-v85x/：V85X+1600x600 竖装屏(rotateScreen270)+USB UVC(JPEG/MJPEG) DVR 全链路参考工程（探测协商/预览/拍照/录像/停止/回放 + releaseLayer + 保活 + videoView 透明窗 rotation:3），真机全链路验证过，内置 AHD/TVI 双路改法见 README ③dvr-recorder-guide.md 头部加 demo 指引；v0.27.13-open',
@@ -182,7 +183,8 @@ def flythings_build_ui_flow(project_root: str, with_launch: bool = True, device:
     内部 fun launch 完成程序+资源+ftu 全量推送并启动；⚠️ 不存在 tools/deploy_debug.sh 之类的额外部署脚本，禁止 AI 自创脚本/命令路径。
     UI 构建流程：① json/ftu 时间戳一致性检查（以 json 为源，改过 json 自动重新 pack）
     ② fui pack ③ fun install 同步依赖 ④ fun build ⑤ build 通过后直接 fun launch 推送启动（with_launch=False 可跳过）。
-    ⚠️ launch 失败（无 adb 设备）时返回 needDeviceInput=true，必须询问用户接入方式：
+    ⚠️ fun launch 网络推送失败/超时会**自动重试 5 次**（间隔 2s，覆盖网络抖动；信任 fun 差分推送，不自写 push 脚本校验）；
+    5 次仍失败（无 adb 设备/网络中断）时返回 needDeviceInput=true，必须询问用户接入方式：
     1) USB 接入：设备 USB 连电脑，确认 adb devices 可见后重试；2) 网络接入：
     先在电脑执行 adb connect <设备IP> 完成配对再重试。
     ⚠️ fun launch 不支持 -s 参数（带参数有其他问题），设备选择由 fun 自动完成，禁止替用户猜测 IP。

@@ -1,7 +1,18 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.15-open**（2026-09-09）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.16-open**（2026-09-09）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.16-open (2026-09-09) — 部署可靠性：fun launch 失败/超时自动重试 5 次（④，V553 实证）
+**背景**：V553 踩坑意见④（工具侧，无覆盖）：fun launch 网络超时静默、推送中断误推旧固件跑错版本；沛哥指示：timeout 就 retry 5 次，不要自写 push 脚本校验（fun 本身支持差分）。
+**改动**（project_tools.py + kb_tools.py）：
+- `_run_fun` 加 `retries` 参数：失败（returncode≠0/超时）自动重试，间隔 2s，返回含 `retried` 次数；build 类本地命令 retries=1 不变
+- `flythings_build_ui_flow` fun launch 传 `retries=5`（网络抖动/推送中断自愈）；5 次仍失败才返回 needDeviceInput 询问设备接入，message 注明已重试
+- 信任 fun 差分推送能力，**未自写任何 push/产物校验脚本**（遵守沛哥定规）
+- kb_tools.py 工具描述同步（AI 可见：launch 自动重试 5 次）
+- 版本 0.27.15 → 0.27.16-open（工具代码同步进 release 需发布窗口，见 PUBLISH.md）
 
 ---
 

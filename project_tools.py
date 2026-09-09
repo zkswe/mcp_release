@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """FlyThings project tools: ftu read, project spec, validation, fui/fun integration."""
-import json, os, re, shutil, subprocess, tempfile
+import json, os, re, shutil, subprocess, tempfile, time
 
 # ---------- 工具链路径（可配置 + 自动探测）----------
 # 优先级：环境变量 FLYTHINGS_FUN_DIR（用户显式指定，最高）> 包内 toolchain（随包分发）> 标准安装目录
@@ -88,26 +88,41 @@ def _run_fui(cmd, target_dir):
 
 
 # ---------------- fun.exe 基础（build/launch）----------------
-def _run_fun(cmd, project_dir, device=''):
+def _run_fun(cmd, project_dir, device='', retries=1, timeout=600):
     """执行 fun.exe 命令（build/launch 等），在项目根目录运行。
     fun.exe 与 fui.exe 同目录（D:/zkswe/fun/ 或自动探测）。
+    launch 走网络推送（adb over wifi），网络抖动/推送中断会失败——retries>1 时
+    自动重试（间隔 2s），覆盖「网络超时静默/误推旧固件」场景；信任 fun 差分能力，
+    不自写 push 脚本校验产物。build 类本地命令 retries 保持 1（无需重试）。
     ⚠️ fun launch 不支持 -s 参数（带参数有其他问题），device 参数保留仅供 build_ui_flow 兼容，不追加到命令。"""
     if not os.path.isdir(project_dir):
-        return {"success": False, "error": f"项目目录不存在: {project_dir}"}
+        return {"success": False, "error": "项目目录不存在: %s" % project_dir}
     if not os.path.isfile(FUN_EXE):
-        return {"success": False, "error": f"fun.exe 未找到（工具目录: {_tool_dir()}）。"
-                f"请设置环境变量 FLYTHINGS_FUN_DIR 指向含 fun.exe/fui.exe 的目录，"
-                f"或将其安装到 D:\\zkswe\\fun\\。"}
+        return {"success": False, "error": "fun.exe 未找到（工具目录: %s）。"
+                "请设置环境变量 FLYTHINGS_FUN_DIR 指向含 fun.exe/fui.exe 的目录，"
+                "或将其安装到 D:\zkswe\fun\。" % _tool_dir()}
     args = [FUN_EXE, cmd]
-    try:
-        r = subprocess.run(args, cwd=project_dir,
-                           capture_output=True, text=True, timeout=600,
-                           stdin=subprocess.DEVNULL,  # ⚠️ 防 fun.exe 继承 MCP stdio 管道挂起
-                           encoding='utf-8', errors='replace')
-        return {"success": r.returncode == 0, "returncode": r.returncode,
-                "stdout": (r.stdout or '')[-800:], "stderr": (r.stderr or '')[-800:]}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
+    last = None
+    for attempt in range(1, max(1, retries) + 1):
+        try:
+            r = subprocess.run(args, cwd=project_dir,
+                               capture_output=True, text=True, timeout=timeout,
+                               stdin=subprocess.DEVNULL,
+                               encoding='utf-8', errors='replace')
+            if r.returncode == 0:
+                return {"success": True, "returncode": 0, "retried": attempt - 1,
+                        "stdout": (r.stdout or '')[-800:], "stderr": (r.stderr or '')[-800:]}
+            last = {"success": False, "returncode": r.returncode, "retried": attempt - 1,
+                    "stdout": (r.stdout or '')[-800:], "stderr": (r.stderr or '')[-800:]}
+        except subprocess.TimeoutExpired:
+            last = {"success": False, "error": "fun %s 执行超时（>%ss）" % (cmd, timeout), "retried": attempt - 1}
+        except Exception as e:
+            last = {"success": False, "error": str(e), "retried": attempt - 1}
+        if attempt < retries:
+            time.sleep(2)  # 网络抖动自愈间隔
+    last['error'] = last.get('error') or (last.get('stderr') or last.get('stdout') or '')[-300:]
+    last['message'] = "fun %s 失败，已自动重试 %d 次" % (cmd, max(1, retries))
+    return last
 
 
 def _rewrite_ftu_resolution(project_root, resolution):
@@ -969,14 +984,14 @@ def flythings_build_ui_flow(project_root, with_launch=True, device=''):
 
     # ⑤ fun launch（build 通过后直接推送启动；失败→询问设备接入方式）
     if with_launch:
-        rl = _run_fun('launch', project_root, device=device)
+        rl = _run_fun('launch', project_root, device=device, retries=5)
         steps.append({"step": "fun launch", "success": rl['success'],
                       "device": device or '(自动发现 USB 设备)',
                       "detail": (rl.get('stderr') or rl.get('stdout') or rl.get('error') or '')[-400:]})
         if not rl['success']:
             return {"success": False, "steps": steps,
                     "needDeviceInput": True,
-                    "message": "fun launch 失败：未检测到可用的 adb 设备（或设备未连接）。"
+                    "message": "fun launch 失败（已自动重试 5 次仍失败）：未检测到可用的 adb 设备（或设备未连接/网络推送中断）。"
                                 "请询问用户接入方式："
                                 "1) USB 接入：将设备通过 USB 连接到电脑后重试本工具；"
                                 "2) 网络接入：请用户提供设备 IP（如 192.168.1.100），"
