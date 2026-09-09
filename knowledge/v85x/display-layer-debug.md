@@ -90,7 +90,46 @@ void releaseLayer() {
 - 摄像头自维护出图（mpi 层输出到 disp）时 videoView **零关联代码**：不 play/不设源，纯透出窗口
 - 预览 + 回放共用一个全屏 videoView 可行：预览时它透明透出 disp 视频层；回放时它作为播放器播文件
 
-## 4. 屏幕旋转配置（rotateScreen = 硬件方向适配，值由屏幕安装方向决定）
+## 4. VO dev0 抢占冲突：播放器退出不释放 → 预览 enable 报 0xa00f8042
+
+**现象**：独立播放页（ZKVideoView 播录像）退出后回预览页，预览启动失败无图像；logcat 反复：
+```
+E/dvr: [camera.cpp:136 doTask] base::Exception: 0xa00f8042 AW_MPI_VO_Enable(id_) error(0xa00f8042)
+E/dvr: at enable(vo.cpp:29)
+```
+程序自检 rebuild（`preview disp layer missing, rebuild preview`）多次仍失败。
+
+**错误码定位（aw-mpp `mm_comm_vo.h`）**：
+| 错误码 | 枚举 | 含义 |
+|--------|------|------|
+| `0xa00f8042` | EN_ERR_VO_DEV_HAS_ENABLED | VO 设备已被 enable（抢占冲突，本坑） |
+| `0xa00f8041` | EN_ERR_VO_DEV_NOT_ENABLE | VO 设备未 enable（常态/非错误，忽略） |
+| `0xa00f8043` | EN_ERR_VO_DEV_HAS_BINDED | 已绑定 |
+（前缀 `0xa00f` = AW_MPI 错误模块，低字节即 VO 错误枚举）
+
+**架构事实**：easyui ZKVideoView（zkmedia/CedarX 播放器）与 mpi 预览（aw-dvr RearCamera）**共用 VO dev0**；播放器退出/播放页销毁后 VO dev0 **不自动释放** → mpi 预览 enable 同一 dev → HAS_ENABLED。
+- ⚠️ **触发条件**：播放页是独立 Activity、走销毁路径（onUI_quit/goBack）才触发；videoview 常驻同一页面不销毁播放器实例时无此问题
+- disp layer 级知识（§2 releaseLayer ch0/layer1）只到层，**VO dev 级是另一层**：disp layer enable 正常但 VO enable 失败
+
+**解法**：mpi 预览启动前 **raw `AW_MPI_VO_Disable(0)` 强制让位**（必须拿返回码）：
+```cpp
+#include <mpi_vo.h>   // AW_MPI_VO_Enable/Disable raw API
+int voRet = AW_MPI_VO_Disable(0);      // 播放器残留 enable dev0 → 强制 disable
+if (voRet != 0) LOGD("VO_Disable(0) ret=0x%x", voRet);   // 非0=dev0 正被占/状态异常，重试
+```
+⚠️ **坑**：mpi::VO 包装类（mpi::VO::disable()）可能**吞异常/不返回真实码**——必须用 raw API（AW_MPI_VO_Disable）拿返回码判断，别依赖包装。
+- 调用时机：`mpi::initializeSystem()` 之后、`RearCamera::setParam`（内部 enable VO）之前
+- 播放器 stop 到 VO 让位是异步的（播放线程 exit 后 ~400ms）：Disable 失败 → sleep 300-500ms 重试 2-3 次
+- 兜底：预览 enable 失败（HAS_ENABLED）→ Disable(0) + 延时 + 重试循环（5×300ms），接住播放器释放慢场景
+
+**预览启动失败无图像排查顺序**（层→VO→透出）：
+1. disp 层：`cat /sys/class/disp/disp/attr/sys`（层 enable？）→ releaseLayer 释放残留（§2）
+2. VO dev：logcat 见 `0xa00f8042` → raw `AW_MPI_VO_Disable(0)` 让位（本节）
+3. UI 透出：videoView 是否 visible（§3）
+
+参考：`v85x-mpp.md` MPP 互斥铁律（预览/录像/回放切页前停干净对端；回放 50ms 延迟 init VO 防抢占——本坑是反向：**回放退出→预览**）。
+
+## 5. 屏幕旋转配置（rotateScreen = 硬件方向适配，值由屏幕安装方向决定）
 
 **错屏机制**：UI 逻辑分辨率（1600×600 横）与物理屏方向（600×1600 竖装）不匹配时，不旋转则 UI 宽 1600 > 物理宽 600，布局/视频内容溢出到屏幕外 = 错屏/花屏。rotateScreen 让 UI 旋转后完整落在屏内——**取值跟随硬件物理安装方向**（同代码双屏工程：横装屏不写/0、竖装屏转 270），与 UI 分辨率无关、与代码无关，只改 package.properties 覆盖层即可生效。
 
@@ -100,7 +139,7 @@ void releaseLayer() {
 - EasyUI.cfg 由 **fun launch** 本地准备阶段合并生成（`.fun/<平台>/launch/EasyUI.cfg`），launch 时随部署推送；设备端 `/tmp/EasyUI.cfg` 可 cat 验证 `rotateScreen: 270 / rotateTouch: 0`
 - 生效后 disp sys 的 UI 层 crop 应从异常（如 `[0,1600,...]`）恢复为 `[0,0,600,1600]` 全屏正常值
 
-## 5. 回放旋转：ZKVideoView rotation 是枚举不是角度！
+## 6. 回放旋转：ZKVideoView rotation 是枚举不是角度！
 
 ```cpp
 // easyui 头文件 ZKVideoView.h 权威注释：
@@ -112,14 +151,14 @@ void setRotation(int val);
 - 回放 mp4 横视频（1280×720）在竖屏 UI 上播，rotation=3 后与预览方向一致
 - 若改了 rotation 仍不对：检查是否复用 videoView 的预览透出区域被 rotation 影响，或参考同平台产品回放页（mpi::VO 初始化时序：播放前 stop 预览链路 + 延迟 50ms 初始化 VO 避免 MPP 冲突——详见 `v85x-mpp.md`）
 
-## 6. 设备侧调试技巧（无 screencap/input 的精简系统）
+## 7. 设备侧调试技巧（无 screencap/input 的精简系统）
 
 - **抓屏**：设备常无 `screencap`；可用 fb dump 分析：`busybox dd if=/dev/fb0 bs=<行字节> count=1` 拉头部 → 解析像素（32bpp BGRA，看 alpha 判 UI 层透明与否）
 - **触摸注入**：设备常无 `input` 命令；用交叉工具链静态编译小工具（`-static`，open /dev/input/eventX 写 EV_ABS/EV_KEY/EV_SYN 序列）即可 tap；⚠️ 触摸设备节点要查 `/proc/bus/input/devices`（gt9xx 触摸可能是 **event0**，EasyUI.cfg 写的 touchDev 可能不准）
 - **坐标映射**：旋转屏注入 tap 前先小样本试探（注入后看 logcat 按钮回调日志反推命中）
 - 网络 adb：`adb connect <设备IP>:5555`；电脑与设备需同网段
 
-## 7. 参考
+## 8. 参考
 - `v85x/videoview-transparent-window.md`（videoView 透出机制权威口径）
 - `v85x-mpp.md`（mpi:: 摄像头/回放 API、MPP 冲突时序）
 - `devflow/package-properties-easyui-cfg.md`（package.properties / EasyUI.cfg 机制、rotateScreen 定规）

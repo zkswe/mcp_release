@@ -1,7 +1,21 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.13-open**（2026-09-09）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.14-open**（2026-09-09）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.14-open (2026-09-09) — VO dev0 抢占冲突排障知识入库（播放器→预览 0xa00f8042，V553 实证）
+**背景**：V553 UVC 相机项目（AI 通过 MCP 开发）基本功能验证后总结踩坑：从独立播放页返回预览页图像出不来——logcat 反复 `0xa00f8042 AW_MPI_VO_Enable(id_) error`；排查发现该坑**全库 0 命中**（disp 层知识只覆盖到 layer 级，没到 VO dev 级），耗时最长失败尝试最多。
+**结论（入库）**：
+- 错误码实锤：`0xa00f8042` = **EN_ERR_VO_DEV_HAS_ENABLED**（aw-mpp mm_comm_vo.h，VO 设备已被 enable）；`0x41`=DEV_NOT_ENABLE（常态忽略）
+- **架构事实**：easyui ZKVideoView（zkmedia/CedarX 播放器）与 mpi 预览（aw-dvr RearCamera）**共用 VO dev0**，播放器退出/播放页销毁后 VO dev0 **不自动释放** → mpi 预览 enable 同一 dev 报 HAS_ENABLED
+- **触发条件**：播放页=独立 Activity 走销毁路径（onUI_quit/goBack）才触发；videoview 常驻同页（播放器实例不销毁）无此问题
+- **解法**：mpi 预览启动前 **raw `AW_MPI_VO_Disable(0)`** 强制让位并拿返回码（⚠️ mpi::VO 包装类 disable 可能吞异常/不返回真实码，必须 raw API）；Disable 失败（播放器异步释放 ~400ms）→ sleep 300-500ms 重试 2-3 次；预览 enable 失败兜底 Disable+延时重试循环
+- 排查顺序：disp 层(releaseLayer) → VO dev(0xa00f8042→raw Disable) → UI 透出(videoView visible)
+**改动**：
+- knowledge/v85x/display-layer-debug.md 新增「§4 VO dev0 抢占冲突」（错误码定位表/架构事实/解法/排查顺序，原 §4-7 顺延 §5-8）；wiki/flythings/v85x 同步
+- 版本 0.27.13 → 0.27.14-open
 
 ---
 
