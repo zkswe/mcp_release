@@ -1,7 +1,17 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.11-open**（2026-09-09）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.12-open**（2026-09-09）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.12-open (2026-09-09) — DVR 录制功能端到端 Playbook + TF 录制卡格式化要求入库（解决碎片化漏环节）
+**背景**：沛哥提出「外部开发者同步 MCP 后要能准确无误开发类似 DVR 录制功能、AI 不走弯路」——盘点发现 open 库知识是碎片主题文档，缺**端到端功能链串联**；且 TF 卡格式化要求（FAT32+64KB 簇）只在本地未入 open 库。
+**改动**：
+- 新增 knowledge/v85x/dvr-recorder-guide.md（**DVR 开发 Playbook**）：端到端 12 节——文档地图（防漏环节）/前置 4 问/Manifest 依赖（aw-dvr accessKey 私有包最新版策略）/三层架构/屏幕方向（rotateScreen 硬件适配）/UI（videoView 可见透明窗 + rotation 枚举）/摄像头（内置 mpi 双路 + UVC JPEG）/录像（产品级+UVC 简化两形态参数、frame_rate 15~60、尺寸对齐）/拍照回放（VO 延迟初始化）/存储 / 排障日志判据表（黑屏/绿屏/0 字节/一直提示格式化/回放方向）/8 项自检清单
+- 新增 knowledge/v85x/tfcard-format-requirement.md（**TF 录制卡格式化要求独立文档**）：FAT32+64KB 簇(65536)+OEM=zkswe（zkrecovery -F 32 -O zkswe -c 128 -b 65536）；校验 statfs f_bsize==65536，不符弹「SD卡文件系统不符合要求」；挂载失败 5 次自动强制重格；电脑 FAT32(簇≤32KB)/exFAT/NTFS 一律判不符；统一格式化流程 formatTfcardProcess（停录→umount→重格→重挂→可选续录）；常量/双介质探针/排障
+- 两文档同步 wiki/flythings/v85x/
+- 版本 0.27.11 → 0.27.12-open
 
 ---
 
