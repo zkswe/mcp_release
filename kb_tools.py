@@ -24,9 +24,10 @@ import i18n_tools as itx
 import test_tools as tt
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.18-open'
+MCP_VERSION = '0.27.19-open'
 MCP_BUILD = '2026-09-09'
 MCP_FEATURES = [
+    '2026-09-09: package API 识别规则定规 v0.27.19（沛哥 21:42：AI 对 FlyThings package 只允许通过头文件识别 API，不要猜也不要反编译二进制浪费时间，不会就是不会；标准 C/C++/Linux 开发按标准+开源社区参考）——retrieval-boundary.md 新增「Package API 识别规则」：package C++ API（类/方法/枚举/注释）只读包内头文件（aw-dvr mpi/*.h、easyui control/*.h）；禁猜（读不出标未收录问官方）/禁反编译（objdump 禁止，readelf 仅排障用）；两层区分：头文件能确认的（签名/枚举/注释）读头文件、表达不了的（控件 json 字段/回调语义）走 wiki/knowledge（与 09-01 easyui 条款不冲突）；标准 C/C++/Linux（socket/pthread/v4l2/std 等非 FlyThings 私有 API）按标准+开源社区参考不受限；v0.27.19-open',
     '2026-09-09: MCP 知识库结构化整理 v0.27.18（沛哥确认：平台化/结构化治理，消重复啰嗦）——①content 唯一化：删除 wiki/flythings 下 44 篇 knowledge 实践文档副本（28 字节相同双命中 + 16 漂移），实践知识唯一放 knowledge/（随 Gitee+检索主源），wiki 只留官方镜像 129 篇；rag 去重重建 ②MCP_FEATURES 精简 70 条 25.8KB → 近期精华+能力概括（完整史在 CHANGELOG）③治理机制固化：knowledge/README.md 治理规范（新增文档只改 knowledge 禁复制 wiki/命名/流程红线）+ scripts/check_duplicate.py 双份检测工具',
     '2026-09-09: 异步资源释放反模式入库 v0.27.17（⑥ V553 实证：UI 回调固定 sleep 等媒体资源释放=空等永不释放资源，浪费 4 小时）——cross-thread-ui-rule.md 新增「异步资源释放反模式」：UI 回调（onUI_quit/hide/Timer）禁止固定 sleep 等资源释放（卡 UI 线程+时序脆弱）；先确认资源会不会释放/由谁释放，再选三选一：①官方回调/轮询确认（stop 完成回调/线程退出标志/资源可用轮询）②raw 层强制回收（AW_MPI_VO_Disable 拿返回码，见 v85x/display-layer-debug.md §4）③接受重建（确认不需要就重建通路不空等）；实例=播放页退出→预览 VO 冲突 0xa00f8042（错误 sleep 等让位，正确 raw VO_Disable 或 enable 轮询重试）；固定 sleep 仅已知释放时长上限+无回调可用时兜底且注释；v0.27.17-open',
     '2026-09-09: 部署可靠性 v0.27.16（④ V553 踩坑：fun launch 网络超时静默/推送中断误推旧固件；沛哥指示 timeout 就 retry 5 次、不自写 push 脚本校验、信任 fun 差分）——_run_fun 加 retries 参数（失败/超时自动重试间隔 2s，返回含 retried）；flythings_build_ui_flow 的 fun launch 传 retries=5（网络抖动自愈），5 次仍失败才 needDeviceInput 询问设备接入；未自写任何 push/校验脚本；kb_tools 工具描述同步；v0.27.16-open',

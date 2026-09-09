@@ -1,7 +1,18 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.18-open**（2026-09-09）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.19-open**（2026-09-09）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.19-open (2026-09-09) — package API 识别规则定规（沛哥 21:42：只从头文件识别，禁猜禁反编译，不会就是不会）
+**定规**：AI 对 FlyThings 提供的 package（预编译闭源库）只允许通过**头文件**识别 API（官方接口声明）；不要猜也不要反编译二进制浪费时间；不会就是不会（标未收录问官方）。标准 C/C++/Linux 开发按标准来，可参考开源资料社区。
+**入库**（knowledge/uicontrols/retrieval-boundary.md 新增「Package API 识别规则」节）：
+- package C++ API（类/方法/枚举/注释）→ 只读包内头文件（aw-dvr mpi/*.h、easyui control/*.h）
+- 禁猜：读不出 → 标未收录问官方；禁反编译：objdump/反编译禁止，readelf 仅排障用（dlopen SOP 例外）
+- 两层区分：头文件能确认的（API 签名/枚举/注释）读头文件；表达不了的（控件 json 字段/回调语义）走 wiki/knowledge——与 2026-09-01 easyui 条款不冲突
+- 标准 C/C++/Linux（socket/pthread/v4l2/std 等非 FlyThings 私有 API）按标准 + 开源社区参考，不受限
+- 版本 0.27.18 → 0.27.19-open
 
 ---
 
