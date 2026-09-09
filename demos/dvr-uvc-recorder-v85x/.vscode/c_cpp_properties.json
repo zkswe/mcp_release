@@ -1,0 +1,10 @@
+{
+    "configurations": [
+        {
+            "name": "FlyThings Project Configuration",
+            "intelliSenseMode": "linux-gcc-arm",
+            "compileCommands": "${workspaceFolder}/.fun/compile_commands.json"
+        }
+    ],
+    "version": 4
+}

@@ -1,7 +1,17 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.12-open**（2026-09-09）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.13-open**（2026-09-09）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.13-open (2026-09-09) — demos 案例库上线：DVR 录制功能参考工程（验证全功能 demo 带着走）
+**背景**：沛哥拍板方案 B——做验证全功能的 demo 案例带着走（代码+xml），方便 AI 快速参考开发避免踩坑反复 try 浪费 token；并定调后续可批量做类似 demo 案例。
+**改动**：
+- 新增 demos/ 案例库 + 规范（demos/README.md）：每个 demo = 已真机验证可编译可运行的功能闭环（源码级交付 <100KB）；命名 <功能>-<形态>-<平台>；必备 Manifest（accessKey 占位红线）/ui json+ftu/src 只写 logic/package.properties/README 三件套（三步跑起来/功能与预期表/关键坑位别回退）；红线：不提交 .fun/exe/.vscode、去工程化、跑得通的闭环宁缺毋滥；知识联动：knowledge 文档头部加 demo 指引
+- 新增 demos/dvr-uvc-recorder-v85x/（**首个案例**）：V85X + 1600×600 竖装屏(rotateScreen 270) + USB UVC(JPEG/MJPEG) 摄像头 DVR 全链路参考工程——ui/main.json（videoView 全屏可见透明窗 rotation:3）+ src/logic/mainLogic.cc（探测协商/预览/拍照/录像/停止/回放 + releaseLayer + UvcKeepAlive 保活）+ Manifest（aw-dvr accessKey 占位）+ package.properties；**真机全链路验证过**（绿屏/黑屏/图层/方向坑位均已修）；内置 AHD/TVI 双路改法见 README
+- knowledge/v85x/dvr-recorder-guide.md 头部加 demo 指引（AI 检索知识→同仓 demos 现成实现）
+- 版本 0.27.12 → 0.27.13-open
 
 ---
 
