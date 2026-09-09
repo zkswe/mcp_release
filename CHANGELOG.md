@@ -8,7 +8,7 @@
 ## v0.27.11-open (2026-09-09) — V85X 显示分层调试入库（错屏/无图像/回放方向三连坑闭环 + releaseLayer 代码）
 **背景**：V85X 竖屏（600×1600）+ 横 UI（1600×600）+ UVC 摄像头工程实测（预览/录像/回放链路）：①竖屏错屏→rotateScreen 270 ②预览无图像→UI 层不透明盖住视频层、videoView 藏坑 ③回放画面没旋转→rotation 枚举写错。三坑全部实锤修复，沉淀为可复用排查套路 + 工具代码。
 **结论（入库）**：
-- **错屏 → 屏幕旋转**：`package.properties` 写 `EasyUI.cfg={"rotateScreen": 270}`（触摸不转=不写 rotateTouch）；⚠️ 改后 `fun build` 报 `ninja: no work to do`——**必须 `fun clean` 全量重编**；EasyUI.cfg 由 fun launch 本地合并生成（.fun/<平台>/launch/EasyUI.cfg），设备端 /tmp/EasyUI.cfg 可验证 rotateScreen:270/rotateTouch:0
+- **错屏 = UI 布局超出屏幕**：横 UI（1600×600）在竖装屏（600×1600）上，不旋转时 UI 宽 1600 > 物理宽 600，内容溢出屏外=错屏；**rotateScreen 是硬件物理方向适配**（取值由屏幕安装方向决定，非 UI 分辨率/代码决定）→ `package.properties` 写 `EasyUI.cfg={"rotateScreen": 270}`（触摸不转=不写 rotateTouch）；⚠️ 改后 `fun build` 报 `ninja: no work to do`——**必须 `fun clean` 全量重编**；EasyUI.cfg 由 fun launch 本地合并生成（.fun/<平台>/launch/EasyUI.cfg），设备端 /tmp/EasyUI.cfg 可验证 rotateScreen:270/rotateTouch:0
 - **无图像根因 = UI 层（z=16 最顶）不透明背景盖住 disp 视频层（z=1）**：摄像头出流正常（rear camera fps 30）+ 视频层 enable 有 addr，但屏幕没画面；UI 必须放 **`visible:true` 的 videoView 透明窗口**（position=画面区域，摄像头自维护出图时零关联代码）——**visible:false 是最常见坑**，控件隐藏时 UI 层不透出、视频层白跑
 - **ZKVideoView rotation 是枚举不是角度**：`0/1/2/3 = 0°/90°/180°/270°`（顺时针，头文件注释权威），json 写 `"rotation": 270` 是无效值被忽略毫无效果，竖屏回放写 `"rotation": 3`
 - **releaseLayer 工具代码入库**：启动早期关闭除 UI 层(ch2/layer0)外所有 enabled disp 层，防残留图层错屏/叠加；include 坑：直接 `#include <video/sunxi_display2.h>` 缺 s32/u32 定义编译报错，必须用 aw-mpp `<vo/hwdisplay.h>`（先 typedef 再包含，DISP_LAYER_GET_CONFIG=0x48 在内）

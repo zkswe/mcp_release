@@ -7,8 +7,8 @@
 ## 0. 一句话
 
 V85X 竖屏工程调试「错屏 / 无图像 / 回放方向不对」四板斧，按顺序查：
-1. **屏幕旋转**：`package.properties` 配 `EasyUI.cfg={"rotateScreen": 270}`（触摸不转=不写 rotateTouch）→ **必须 clean 全量重编**（ninja 不感知 package.properties 改动），EasyUI.cfg 由 fun launch 阶段合并生成
-2. **图层释放**：启动早期调 `releaseLayer()` 关掉残留 disp 层（保留 UI 层），防错屏/层叠
+1. **屏幕旋转（硬件方向适配）**：**错屏根因 = UI 布局尺寸超出物理屏**——横 UI（1600×600）用在竖装屏（600×1600）上，不旋转时 UI 宽 1600 超过物理宽 600，界面/视频内容画到屏幕外 = 错屏。rotateScreen 是**针对硬件物理安装方向的适配**（值由屏幕怎么装决定，不是 UI 分辨率决定），把 UI 旋转 270° 后完整映射进屏内 → `package.properties` 配 `EasyUI.cfg={"rotateScreen": 270}`（触摸不转=不写 rotateTouch）→ **必须 clean 全量重编**（ninja 不感知 package.properties 改动），EasyUI.cfg 由 fun launch 阶段合并生成
+2. **图层释放**：启动早期调 `releaseLayer()` 关掉残留 disp 层（保留 UI 层），防残留层叠加干扰画面
 3. **无图像**：UI 层（z=16 最顶）不透明背景盖住 disp 视频层（z=1）→ UI 上必须有**可见的 videoView 透明窗口**（`visible:true` + position=画面区域），下层视频才透出
 4. **回放方向**：ZKVideoView 的 `rotation` 是**枚举不是角度**：0/1/2/3 = 0°/90°/180°/270°（顺时针），写 `3` 才是 270°
 
@@ -90,7 +90,9 @@ void releaseLayer() {
 - 摄像头自维护出图（mpi 层输出到 disp）时 videoView **零关联代码**：不 play/不设源，纯透出窗口
 - 预览 + 回放共用一个全屏 videoView 可行：预览时它透明透出 disp 视频层；回放时它作为播放器播文件
 
-## 4. 屏幕旋转配置（竖屏 600×1600 + 横 UI 1600×600）
+## 4. 屏幕旋转配置（rotateScreen = 硬件方向适配，值由屏幕安装方向决定）
+
+**错屏机制**：UI 逻辑分辨率（1600×600 横）与物理屏方向（600×1600 竖装）不匹配时，不旋转则 UI 宽 1600 > 物理宽 600，布局/视频内容溢出到屏幕外 = 错屏/花屏。rotateScreen 让 UI 旋转后完整落在屏内——**取值跟随硬件物理安装方向**（同代码双屏工程：横装屏不写/0、竖装屏转 270），与 UI 分辨率无关、与代码无关，只改 package.properties 覆盖层即可生效。
 
 - 工程根 `package.properties` 写：`EasyUI.cfg={"rotateScreen": 270}`
 - **触摸不旋转 = 只写 rotateScreen，不写 rotateTouch**（rotateTouch 保持默认 0）——某些硬件"屏幕转、触摸不转"（见 `devflow/package-properties-easyui-cfg.md`）
