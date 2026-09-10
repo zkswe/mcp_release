@@ -68,7 +68,18 @@ lv->refreshListView(); // ⚠ 不能省
 - [ ] `radiogroup`/`checkbox` 等交互容器 `touchable=true`
 - [ ] 列表里所有 `setSelection()` 后面都跟了 `refreshListView()`
 - [ ] **实机**逐项验证：从控件**边缘起手**拖动 / 点首行 / 点末行 / 跨页返回再进入
-- [ ] 有条件的跑自动审计：把"装饰件压住可触摸控件"的检查并入 `check_all.py`
+- [x] **自动审计已实现**（2026-09-10，`check_all.py` #15 / #16，报 WARN 交人工审批 —— 见下）
+
+### 自动审计：check_all #15 / #16（WARN 需人工审批，不影响交付判定）
+
+| 项 | 查什么 | 判定 |
+|----|--------|------|
+| **#15**（json 静态） | **同层**中后定义（z 更高）且 `touchable=false` 的控件压在 `touchable=true` 控件之上 | **[WARN]** 提示装饰件需 `setTouchable(false)+setTouchPass(true)`；重叠<4px 的微小交叠不计（降噪）；上层为 `modal` 容器时提示“拦截可能是有意的” |
+| **#16**（代码静态） | logic.cc 里有 `X->setTouchable(false)` 但同对象无 `setTouchPass(true)` | **[WARN]** 若该控件确实压在可触摸控件之上，必须补穿透 |
+
+- 两项都只 **WARN**：不计入 `failures`、不影响 PASS/FAIL 与退出码，由用户/沛哥逐条审批。
+- 实测噪声（175 个真实 json）：命中 14 文件 / 17 处；负向用例（装饰件移开 + 补穿透）0 命中。
+- 局限：#15 只能看 json 层叠与 `touchable`，**查不到运行期才设的 `setTouchPass`**，所以最终仍需实机验证（清单第 4 条）。
 
 ## 相关
 

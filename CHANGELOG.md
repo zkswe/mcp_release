@@ -1,7 +1,37 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.24-open**（2026-09-10）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.25-open**（2026-09-10）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.25-open (2026-09-10) — 遮挡自动审计（check_all #15/#16，只报 WARN 交人工审批）
+
+**背景**：沛哥定规——touch-events.md 自检清单第五条「把装饰件压住可触摸控件的检查并入 check_all.py」，“报 warning 让用户审批”。
+
+**`ui_tools/check_all.py` 新增两项检查（均只 WARN，不计入 failures、不影响 PASS/FAIL 与退出码）**
+- **#15 json 静态遮挡**：同层兄弟中「后定义（z 更高）且 `touchable=false`」的控件压在「`touchable=true`」控件之上 →
+  WARN 提示装饰件需运行期 `setTouchable(false)+setTouchPass(true)`（touch-events.md §1）；
+  细节：仅统计双方 `visible`；重叠任一轴 <4px 不计（降噪，1px 条带点不到）；上层为 `modal` 容器时加注「拦截可能是有意的」；每页最多列 8 条，超出汇总
+- **#16 代码静态**：`X->setTouchable(false)` 出现但同对象无 `setTouchPass(true)` → WARN
+- 新增 `warn()` 助手 + `warnings` 汇总，结尾打印「[!] N 条 WARN 需人工审批」且**不改变退出码**
+- 新增内部工具 `_rect` / `_overlap(min_axis=4)` / `_deco_blockers`
+- 双份同步（MCP 内 + `tools/ui_tools/`，sha1 一致）
+
+**验证（三用例实跑，fixture = listViewDemo-New 副本）**
+| 用例 | #15 | #16 | FAIL 数 |
+|------|-----|-----|--------|
+| baseline | PASS | PASS | 2（该 demo 既有） |
+| positive（装饰件压 listview + 缺 setTouchPass） | WARN ×1 | WARN ×1 | **2（未增加）** |
+| negative（装饰件移开 + 补 setTouchPass） | PASS | PASS | 2 |
+
+**噪声实测**：175 个真实项目 json → 命中 14 文件 / 17 处（典型命中：textview 标签压在 button/pointer/listview 上）。
+
+**文档**：touch-events.md §5 自检清单第五条改为已实现 + 新增「自动审计：check_all #15/#16」小节（含局限：json 层看不到运行期 setTouchPass，仍需实机验证）。
+
+**索引**：`rebuild_index_local.py` 重建；`scripts/smoke.py` 自检全过。
+
+**版本 0.27.24 → 0.27.25-open**
 
 ---
 

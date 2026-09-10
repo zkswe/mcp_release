@@ -4,6 +4,8 @@
 依次执行：根节点 / 嵌套深度 / 特殊字符 / 图片引用 / 回调 / 指针 / 定时器表 / 括号 /
 开发者修改检测（ftu 比 json 新>30s 自动同步）+ fui pack 成功。
 全部 PASS 才允许交付。任何 FAIL 都会给出具体文件与原因。
+第 15/16 项为 **WARN（需人工审批，不影响 PASS/FAIL）**：装饰件压在可触摸控件之上、
+setTouchable(false) 未配套 setTouchPass(true)（沛哥 2026-09-10，见 knowledge/uicontrols/touch-events.md）。
 """
 import glob
 import json
@@ -30,6 +32,7 @@ if not FUI:
 
 BLACKLIST = set('⌫℃■●‹－＋–…→★◆▶▷①')
 failures = []
+warnings = []
 
 try:
     from PIL import Image as _Image
@@ -211,11 +214,66 @@ def log(ok, msg):
         failures.append(msg)
 
 
+def warn(msg):
+    """WARN：不参与 PASS/FAIL 判定，输出给用户审批（沛哥 2026-09-10）。"""
+    print('  [WARN] ' + msg)
+    warnings.append(msg)
+
+
 def walk(d, out, depth=0):
     for k, v in d.items():
         if isinstance(v, dict) and '__' in k:
             out.append((depth, k, v.get('caption', '')))
             walk(v, out, depth + 1)
+
+
+def _rect(v):
+    p = v.get('position') or {}
+    l, t, w, h = p.get('left'), p.get('top'), p.get('width'), p.get('height')
+    if None in (l, t, w, h):
+        return None
+    return (l, t, l + w, t + h)
+
+
+def _overlap(a, b, min_axis=4):
+    """相交面积；任一轴重叠 < min_axis px 视为无效（手指/鼠标实际点不到 1px 条带，降噪）。"""
+    x = min(a[2], b[2]) - max(a[0], b[0])
+    y = min(a[3], b[3]) - max(a[1], b[1])
+    if x < min_axis or y < min_axis:
+        return 0
+    return x * y
+
+
+def _deco_blockers(d):
+    """同层兄弟中「后定义（z 更高）且 touchable=false」的控件压住 touchable=true 的控件。
+
+    对应 touch-events.md §1：touchable=false 不等于穿透，仍会吃掉下层触摸（下层拖不动/点不响应）。
+    返回 [(装饰件键, 被压控件 caption/键, 重叠面积, 是否 modal 容器)]；仅统计双方 visible 的情况。
+    """
+    found = []
+
+    def scan(node):
+        kids = [(k, v) for k, v in node.items()
+                if isinstance(v, dict) and _CTRL_KEY_RE.match(k)]
+        for j in range(len(kids)):
+            kj, vj = kids[j]
+            if vj.get('touchable') is not False or vj.get('visible') is False:
+                continue
+            for i in range(j):
+                ki, vi = kids[i]
+                if vi.get('touchable') is not True or vi.get('visible') is False:
+                    continue
+                rj, ri = _rect(vj), _rect(vi)
+                if not rj or not ri:
+                    continue
+                ov = _overlap(rj, ri)
+                if ov > 0:
+                    found.append((kj, vi.get('caption') or ki, ov, bool(vj.get('modal'))))
+        for k, v in kids:
+            scan(v)
+
+    scan(d)
+    return found
 
 
 def main(project_root):
@@ -525,7 +583,39 @@ def main(project_root):
                         chk(k + '.item', it, 'slideitem')
         log(not missing, '%s 字段全集 %s' % (f, '；'.join(missing[:15]) if missing else '齐全'))
 
+    print('== 15. 装饰件遮挡可触摸控件（WARN 需人工审批，不影响交付判定）==\n'
+          '      口径：同层后定义（z 更高）且 touchable=false 的控件压在 touchable=true 控件之上 →\n'
+          '      装饰件必须运行期 setTouchable(false)+setTouchPass(true)，否则下层拖不动/点不响应（touch-events.md §1））')
+    for f in PAGES:
+        d = json.load(open(os.path.join(root, f), encoding='utf-8'))
+        found = _deco_blockers(d)
+        if not found:
+            print('  [PASS] %s 无装饰件遮挡' % f)
+            continue
+        for kj, kcap, ov, modal in found[:8]:
+            warn('%s 装饰件 %s 压在 %s 之上（重叠 %dpx²，touchable=false）%s → 需 setTouchable(false)+setTouchPass(true)，'
+                 '否则下层拖不动/点不响应'
+                 % (f, kj, kcap, ov, '（modal 容器：拦截可能是有意的）' if modal else ''))
+        if len(found) > 8:
+            warn('%s 另有 %d 处同类遮挡，未逐条列出' % (f, len(found) - 8))
+
+    print('== 16. 代码层 setTouchable(false) 是否配套 setTouchPass(true)（WARN）==')
+    for f in LOGICS:
+        code2 = re.sub(r'//[^\n]*', '', open(os.path.join(root, f), encoding='utf-8').read())
+        hits = set(re.findall(r'([A-Za-z_]\w*)\s*->\s*setTouchable\s*\(\s*false\s*\)', code2))
+        miss = [v for v in sorted(hits)
+                if not re.search(re.escape(v) + r'\s*->\s*setTouchPass\s*\(\s*true\s*\)', code2)]
+        if miss:
+            warn('%s 有 setTouchable(false) 但未见同对象 setTouchPass(true)：%s → 若该控件压在可触摸控件之上，必须补 setTouchPass(true)'
+                 % (f, '、'.join(miss)))
+        else:
+            print('  [PASS] %s 触摸穿透配套' % f)
+
     print()
+    if warnings:
+        print('[!] %d 条 WARN 需人工审批（不影响 PASS/FAIL；逐条确认是否需 setTouchPass(true) 或调整层叠顺序）：' % len(warnings))
+        for w in warnings:
+            print('   -', w)
     if failures:
         print('[X] %d 项 FAIL，修复后再交付：' % len(failures))
         for f in failures:
