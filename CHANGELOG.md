@@ -1,7 +1,45 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.19-open**（2026-09-09）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.20-open**（2026-09-10）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.20-open (2026-09-10) — UI 可视化编辑 + 像素验收（沛哥：指哪打哪 + 属性可改 + 预览要出图）
+
+**背景**：AI 做出来的 UI 布局有图标锯齿、位置不对、切图不对，靠嘴描述"往左一点"沟通成本高；
+且预览页图片全丢（资源路径解析 bug），无法用来确认效果。
+
+**新增 3 个 MCP 工具**：
+- `flythings_ui_editor` — ui/*.json → 可视化编辑器（<ui>/_edit/<name>.edit.html，单文件、图片内联、双击即用）
+  - 点选/拖动/8 手柄缩放；方向键 1px（Shift 10px）；网格吸附 1/2/5/10；Ctrl+Z 撤销
+  - **指哪打哪**：Alt+点穿透选中下层控件（全屏透明 button 遮挡场景）；选中框左上 ✥ 绿块可拖（遮罩下也能拖）
+  - **属性全部可编辑**：按控件原始 json 动态列出字段（text 多行框 / fontSize / colorTab.color0 颜色拾取器 /
+    backgroundPic / picTab.pic0~pic4 / visible / touchable…），改完画布即时生效；id 只读（IDE 生成，改了对不上生成代码）
+  - 控件列表可搜 key/caption 定位；「显示隐藏」把 visible:false 弹窗显示成幽灵框摆位；深链接 #button__2 打开即选中
+  - 预检红黄标：图片尺寸≠控件尺寸（图>控件=红：设备不缩放会被裁切；大控件配小图=黄）；文本明显超框=黄
+    （阈值 1.35 倍，基准工程零误报优先）
+- `flythings_ui_edit_apply` — 变更 JSON（`changes` 几何 + `props` 属性）写回 ui/*.json，默认接着 `fui pack` 出 ftu
+  - 安全：写回前自动备份 `<name>.json.bak`；格式一致性自检（原文件不能无损还原成标准 2 空格缩进则拒写，防整文件重排）；坐标取整 + 屏幕边界钳制
+- `flythings_ui_diff` — 像素 diff，**0 token 纯本地算法**：输出差异清单（区域坐标/尺寸/面积/最大色差）+ 可选标注图，
+  不把整屏图丢给视觉模型（整屏走模型是千级 token/次）
+  - 默认抑制假报警：容差 ±2、±1px 抖动补偿（邻域最优匹配）、对比前高斯模糊 0.7、面积/bbox 噪声块过滤
+  - 主力用法 = 回归对比：改动前截图 vs 改动后截图，同渲染器零噪声，"改 A 碰坏 B"逐块列出
+  - 需要语义判断时只把差异区域裁小图给模型，不要整屏
+
+**修 bug（影响所有预览/预览确认流程）**：`json2html` 图片路径解析
+- 旧实现只按 basename 找 `resources/images/`，而 FlyThings 引用是**相对 resources、可带子目录**的路径
+  （`audio/horn.png`、`dvr/record.png`、`window/base_rectangle.png`）→ 预览大面积丢图，
+  且 ui_editor 的"图片尺寸≠控件尺寸"预检因找不到图而形同虚设
+- 新增 `find_asset()`：`<项目>/resources/<引用>` → `resources/images/…` → json 同目录 → 项目根，再退 `.9.png` 变体；
+  data URI 按扩展名给 mime；按钮 picTab 缺 pic0 时回退取第一个有值的状态图（之前只填 pic2 的按钮预览全空白）
+
+**实测**：CV201_PND 20 页全量生成；178 个图片引用解析出 117 个（剩 61 个是项目里真没有的图，
+如整个 `recording/` 目录不存在）；预检从 231 条噪声收敛到 6 条（3 红 3 黄）；
+变更 JSON 写回 json + pack ftu 全链路通过（几何 + text/fontSize/colorTab 均正确落盘）；
+像素 diff 实测：1px 位移+每像素 ±2 抖动 → PASS，控件位移 6~8px → 精确列出差异块。
+
+**版本 0.27.19 → 0.27.20-open**
 
 ---
 

@@ -28,30 +28,71 @@ def _color(intval, default='#888888'):
         return default
 
 
-def _inline_image(pic, base_dir=''):
-    """图片引用 → data URI 内联（预览稿单文件可独立显示，图标 PNG 都很小）。
-    json 引用 images/xxx.png（相对 resources 目录），而 preview.html 在 ui/ 下：
-    直接 url 会破图，所以按 json 所在目录推导真实资源路径（ui/images、../resources/images、
-    同级 images），找到且 <300KB → base64 内联；找不到/过大 → 返回 None（保留原相对引用）。"""
-    if not pic or pic.startswith(('http://', 'https://', 'data:')):
+# 图片引用 → 真实文件（FlyThings 引用相对 resources 目录，可带子目录，如 audio/horn.png）
+_MIME = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+         '.gif': 'image/gif', '.bmp': 'image/bmp', '.webp': 'image/webp'}
+
+
+def find_asset(pic, base_dir=''):
+    """定位图片资源真实路径。按顺序找：<项目>/resources/<引用>、<项目>/resources/<basename>、
+    <json同目录>[/images]/…、<项目>/<引用>；再退一步试 .9.png 九宫格变体。
+    （2026-09-10 修：旧实现只按 basename 找 resources/images/，带子目录的引用
+      如 audio/horn.png、dvr/record.png 全部找不到 → 预览丢图、尺寸预检漏报）"""
+    if not pic or str(pic).startswith(('http://', 'https://', 'data:')):
         return None
-    base = os.path.basename(str(pic).replace('\\', '/'))
-    cands = []
+    rel = str(pic).replace('\\', '/').lstrip('/')
+    base = os.path.basename(rel)
+    roots = []
     if base_dir:
-        cands += [os.path.join(base_dir, 'images', base),        # <json同目录>/images/
-                  os.path.join(base_dir, base),                  # <json同目录>/
-                  os.path.join(os.path.dirname(base_dir), 'resources', 'images', base)]  # <项目>/resources/images/
-        cands += [os.path.join(os.path.dirname(base_dir), base)]  # <项目>/
-    try:
-        for p in cands:
-            if os.path.isfile(p) and os.path.getsize(p) < 300 * 1024:
-                with open(p, 'rb') as f:
-                    import base64 as _b64
-                    b = _b64.b64encode(f.read()).decode('ascii')
-                return 'data:image/png;base64,' + b
-    except Exception:
-        pass
+        proj = os.path.dirname(os.path.abspath(base_dir))
+        roots = [os.path.join(proj, 'resources'),
+                 os.path.join(proj, 'resources', 'images'),
+                 base_dir,
+                 os.path.join(base_dir, 'images'),
+                 proj]
+    cands = []
+    for r in roots:
+        cands += [os.path.join(r, rel), os.path.join(r, base)]
+        if rel.startswith('images/'):
+            cands.append(os.path.join(r, rel[len('images/'):]))
+    for c in cands:
+        if os.path.isfile(c):
+            return os.path.abspath(c)
+    for c in cands:
+        stem, ext = os.path.splitext(c)
+        for alt in (stem + '.9' + ext, c + '.9.png'):
+            if os.path.isfile(alt):
+                return os.path.abspath(alt)
     return None
+
+
+def pic_size(pic, base_dir=''):
+    """图片真实像素尺寸（定位不到 / 不是图片 → None）。"""
+    p = find_asset(pic, base_dir)
+    if not p:
+        return None
+    try:
+        from PIL import Image
+        return Image.open(p).size
+    except Exception:
+        return None
+
+
+def _inline_image(pic, base_dir='', max_kb=600):
+    """图片引用 → data URI 内联（预览稿单文件独立显示）。找不到/过大 → None（保留原相对引用）。"""
+    p = find_asset(pic, base_dir)
+    if not p:
+        return None
+    try:
+        if os.path.getsize(p) > max_kb * 1024:
+            return None
+        mime = _MIME.get(os.path.splitext(p)[1].lower(), 'image/png')
+        import base64 as _b64
+        with open(p, 'rb') as f:
+            b = _b64.b64encode(f.read()).decode('ascii')
+        return f'data:{mime};base64,' + b
+    except Exception:
+        return None
 
 
 def _align_class(alignment):
@@ -94,7 +135,20 @@ def _bg_image(ctrl, field='backgroundPic', base_dir=''):
 
 
 # ---------- 控件渲染 ----------
-def _render_control(key, ctrl, depth=0, base_dir=''):
+def _da(key, ctrl, ctype, edit=False):
+    """data-* 标记（调试/可视化编辑器用）：data-key 便于定位控件、data-type 控件类型。"""
+    cap = _esc(ctrl.get('caption', ''))
+    cls = ' editable' if edit else ''
+    vis = 'false' if ctrl.get('visible') is False else 'true'
+    return (f'data-key="{key}" data-type="{ctype}" data-cap="{cap}" '
+            f'data-visible="{vis}" data-edit="{cls.strip()}"')
+
+
+# 属性面板可改字段（json 里 position 的四个分量）
+POS_FIELDS = ('left', 'top', 'width', 'height')
+
+
+def _render_control(key, ctrl, depth=0, base_dir='', edit=False):
     ctype = key.split('__')[0]
     pos = ctrl.get('position', {})
     style = _pos_style(pos)
@@ -111,21 +165,30 @@ def _render_control(key, ctrl, depth=0, base_dir=''):
         inner = []
         for k2, v2 in ctrl.items():
             if isinstance(v2, dict) and '__' in k2 and k2 != key:
-                inner.append(_render_control(k2, v2, depth + 1, base_dir))
+                inner.append(_render_control(k2, v2, depth + 1, base_dir, edit))
         bgcolor = _color(ctrl.get('backgroundColor'))
         return (f'<div class="ctrl window {align}" data-caption="{cap}" '
+                f'{_da(key, ctrl, ctype, edit)} '
                 f'style="{style}background-color:{bgcolor};{bg}">' + ''.join(inner) + '</div>')
 
     if ctype == 'textview':
+        txt = ctrl.get('text')
+        label = _esc(txt) if txt else ''  # 空文本不显示 caption（图标 textview 不叠字）
         return (f'<div class="ctrl textview {align} {touchable}" data-caption="{cap}" '
+                f'{_da(key, ctrl, ctype, edit)} '
                 f'style="{style}color:{color};font-size:{ctrl.get("fontSize", 16)}px;{bg}">'
-                f'{_esc(_text_of(ctrl))}</div>')
+                f'{label}</div>')
 
     if ctype == 'button':
         pbg = ''
         ptab = ctrl.get('picTab') if isinstance(ctrl.get('picTab'), dict) else None
         if ptab:
-            p0 = ptab.get('pic0', '')
+            # 部分控件只填了非 0 状态图（如只给 pic2）→ 预览取第一个有值的状态，别显示空白
+            p0 = ''
+            for _k in ('pic0', 'pic1', 'pic2', 'pic3', 'pic4'):
+                if ptab.get(_k):
+                    p0 = ptab[_k]
+                    break
             if p0:
                 uri = _inline_image(p0, base_dir)
                 ref = uri if uri else _esc(p0)
@@ -135,9 +198,14 @@ def _render_control(key, ctrl, depth=0, base_dir=''):
             bct = ctrl.get('bgColorTab') if isinstance(ctrl.get('bgColorTab'), dict) else None
             if bct:
                 pbg = f'background-color:{_color(bct.get("color0"))};'
+        txt = ctrl.get('text')
+        label = _esc(txt) if txt else ''  # 无文字不显示 caption；图片/热区按钮不叠字
+        if not pbg:
+            pbg = 'background-color:transparent;'  # 透明热区按钮：去掉 CSS 默认灰底，露出下层
         return (f'<div class="ctrl button {align} {touchable}" data-caption="{cap}" '
+                f'{_da(key, ctrl, ctype, edit)} '
                 f'style="{style}color:{color};font-size:{ctrl.get("fontSize", 18)}px;{pbg}">'
-                f'{_esc(_text_of(ctrl))}</div>')
+                f'{label}</div>')
 
     if ctype == 'seekbar':
         prog = ctrl.get('defProgress', 0)
@@ -145,7 +213,8 @@ def _render_control(key, ctrl, depth=0, base_dir=''):
         pct = min(100, max(0, int(prog) * 100 // mx))
         fill = _bg_image(ctrl, 'progressPic', base_dir)
         track = _bg_image(ctrl, 'backgroundPic', base_dir)
-        return (f'<div class="ctrl seekbar" data-caption="{cap}" style="{style}{track}" '
+        return (f'<div class="ctrl seekbar" data-caption="{cap}" {_da(key, ctrl, ctype, edit)} '
+                f'style="{style}{track}" '
                 f'data-progress="{pct}"><div class="seekbar-fill" style="width:{pct}%;{fill}"></div></div>')
 
     if ctype == 'listview':
@@ -165,13 +234,13 @@ def _render_control(key, ctrl, depth=0, base_dir=''):
         for _r in range(min(rows, 8)):
             for _c in range(cols):
                 cells.append(f'<div class="lv-cell" style="width:{iw}px;height:{ih}px;">{"".join(sub)}</div>')
-        return (f'<div class="ctrl listview" data-caption="{cap}" style="{style}">'
+        return (f'<div class="ctrl listview" data-caption="{cap}" {_da(key, ctrl, ctype, edit)} style="{style}">'
                 f'<div class="lv-grid" style="grid-template-columns:repeat({cols}, {iw}px);'
                 f'gap:{ctrl.get("colSpacing", 0)}px {ctrl.get("rowSpacing", 0)}px;">{"".join(cells)}</div></div>')
 
     if ctype == 'checkbox':
         checked = '☑' if ctrl.get('checked') else '☐'
-        return (f'<div class="ctrl checkbox {align}" data-caption="{cap}" '
+        return (f'<div class="ctrl checkbox {align}" data-caption="{cap}" {_da(key, ctrl, ctype, edit)} '
                 f'style="{style}color:{color};font-size:{ctrl.get("fontSize", 16)}px;">'
                 f'{checked} {_esc(_text_of(ctrl))}</div>')
 
@@ -183,14 +252,17 @@ def _render_control(key, ctrl, depth=0, base_dir=''):
                       f"width:{rp.get('width', 60)}px;height:{rp.get('height', 24)}px;")
             rmark = '●' if rb.get('checked') else '○'
             inner.append(f'<div class="radio-item" style="{rstyle}">{rmark} {_esc(rb.get("text", ""))}</div>')
-        return (f'<div class="ctrl radiogroup" data-caption="{cap}" style="{style}">{"".join(inner)}</div>')
+        return (f'<div class="ctrl radiogroup" data-caption="{cap}" {_da(key, ctrl, ctype, edit)} '
+                f'style="{style}">{"".join(inner)}</div>')
 
     # 未知控件：兜底盒子
-    return (f'<div class="ctrl {ctype}" data-caption="{cap}" style="{style}{bg}">{_esc(_text_of(ctrl))}</div>')
+    return (f'<div class="ctrl {ctype}" data-caption="{cap}" {_da(key, ctrl, ctype, edit)} '
+            f'style="{style}{bg}">{_esc(_text_of(ctrl))}</div>')
 
 
 # ---------- 主转换 ----------
-def _json_to_html(json_path, html_path):
+def _json_to_html(json_path, html_path, edit=False, extra_css='', extra_js='',
+                  wrapper_open='', wrapper_close=''):
     with open(json_path, encoding='utf-8-sig') as f:
         data = json.load(f)
     res = data.get('resolution', {})
@@ -201,7 +273,7 @@ def _json_to_html(json_path, html_path):
     base_dir = os.path.dirname(os.path.abspath(json_path))
     for k, v in data.items():
         if isinstance(v, dict) and '__' in k:
-            body.append(_render_control(k, v, base_dir=base_dir))
+            body.append(_render_control(k, v, base_dir=base_dir, edit=edit))
 
     html = f"""<!DOCTYPE html>
 <html lang="zh">
@@ -236,6 +308,7 @@ def _json_to_html(json_path, html_path):
   .toolbar {{ max-width:{W}px; margin:0 auto 12px; color:#ccc; font-size:13px;
              display:flex; justify-content:space-between; }}
   .toolbar span {{ color:#8f8; }}
+{extra_css}
 </style>
 </head>
 <body>
@@ -243,9 +316,10 @@ def _json_to_html(json_path, html_path):
     <div>🖥 UI 预览（客户确认稿）· <span>{os.path.basename(json_path)}</span></div>
     <div>分辨率 {W} x {H} · 与设备端 ftu 同源</div>
   </div>
-  <div class="device">
+  {wrapper_open}<div class="device">
 {chr(10).join(body)}
-  </div>
+  </div>{wrapper_close}
+{extra_js}
 </body>
 </html>"""
     with open(html_path, 'w', encoding='utf-8') as f:

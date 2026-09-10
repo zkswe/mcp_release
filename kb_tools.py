@@ -22,11 +22,25 @@ import json2html as j2h
 import gen_res as h2j_genres
 import i18n_tools as itx
 import test_tools as tt
+# UI 可视化编辑 / 像素验收（2026-09-10 起）：缺依赖时降级为对应工具报错，不影响其它工具
+try:
+    import ui_editor as uied
+except Exception:
+    uied = None
+try:
+    import ui_edit_apply as uia
+except Exception:
+    uia = None
+try:
+    import ui_diff as udf
+except Exception:
+    udf = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.19-open'
-MCP_BUILD = '2026-09-09'
+MCP_VERSION = '0.27.20-open'
+MCP_BUILD = '2026-09-10'
 MCP_FEATURES = [
+    '2026-09-10: UI 可视化编辑 + 像素验收入 open 版 v0.27.20（沛哥：布局调整要「指哪打哪」，预览里的文字/属性都要能改，图片资源要能加载）——新增 3 个工具：① flythings_ui_editor：ui/*.json → 单文件可拖拽编辑器（拖/缩放/Alt+点穿透选中下层/属性栏列出全部字段含 text·fontSize·colorTab·picTab 四状态图，改完画布即时生效，id 只读；内置图片尺寸≠控件尺寸红黄标）② flythings_ui_edit_apply：变更 JSON（changes 几何 + props 属性）写回 ui/*.json（自动 .bak + 格式自检）并 pack ftu ③ flythings_ui_diff：像素 diff 0 token，容差±2 + ±1px 抖动补偿 + 高斯模糊 + 噪声块过滤，输出差异清单/标注图（回归对比专治改 A 碰坏 B）；顺带修 json2html 图片路径解析（支持 audio/xxx.png 这类带子目录的相对 resources 引用，之前只按 basename 找 resources/images/ 导致预览丢图、尺寸预检形同虚设）；v0.27.20-open',
     '2026-09-09: package API 识别规则定规 v0.27.19（沛哥 21:42：AI 对 FlyThings package 只允许通过头文件识别 API，不要猜也不要反编译二进制浪费时间，不会就是不会；标准 C/C++/Linux 开发按标准+开源社区参考）——retrieval-boundary.md 新增「Package API 识别规则」：package C++ API（类/方法/枚举/注释）只读包内头文件（aw-dvr mpi/*.h、easyui control/*.h）；禁猜（读不出标未收录问官方）/禁反编译（objdump 禁止，readelf 仅排障用）；两层区分：头文件能确认的（签名/枚举/注释）读头文件、表达不了的（控件 json 字段/回调语义）走 wiki/knowledge（与 09-01 easyui 条款不冲突）；标准 C/C++/Linux（socket/pthread/v4l2/std 等非 FlyThings 私有 API）按标准+开源社区参考不受限；v0.27.19-open',
     '2026-09-09: MCP 知识库结构化整理 v0.27.18（沛哥确认：平台化/结构化治理，消重复啰嗦）——①content 唯一化：删除 wiki/flythings 下 44 篇 knowledge 实践文档副本（28 字节相同双命中 + 16 漂移），实践知识唯一放 knowledge/（随 Gitee+检索主源），wiki 只留官方镜像 129 篇；rag 去重重建 ②MCP_FEATURES 精简 70 条 25.8KB → 近期精华+能力概括（完整史在 CHANGELOG）③治理机制固化：knowledge/README.md 治理规范（新增文档只改 knowledge 禁复制 wiki/命名/流程红线）+ scripts/check_duplicate.py 双份检测工具',
     '2026-09-09: 异步资源释放反模式入库 v0.27.17（⑥ V553 实证：UI 回调固定 sleep 等媒体资源释放=空等永不释放资源，浪费 4 小时）——cross-thread-ui-rule.md 新增「异步资源释放反模式」：UI 回调（onUI_quit/hide/Timer）禁止固定 sleep 等资源释放（卡 UI 线程+时序脆弱）；先确认资源会不会释放/由谁释放，再选三选一：①官方回调/轮询确认（stop 完成回调/线程退出标志/资源可用轮询）②raw 层强制回收（AW_MPI_VO_Disable 拿返回码，见 v85x/display-layer-debug.md §4）③接受重建（确认不需要就重建通路不空等）；实例=播放页退出→预览 VO 冲突 0xa00f8042（错误 sleep 等让位，正确 raw VO_Disable 或 enable 轮询重试）；固定 sleep 仅已知释放时长上限+无回调可用时兜底且注释；v0.27.17-open',
@@ -464,6 +478,129 @@ def flythings_i18n_to_json(project_root: str, langs: str = '', push: bool = True
 
 
 # 注册辅助：把上面全部工具注册到任意 FastMCP 实例
+def flythings_ui_editor(project_root: str, output_dir: str = '') -> str:
+    """把 ui/*.json 生成「可视化编辑器」网页：拖控件就改布局，不用嘴描述"往左一点"。
+
+    ⚠️ 定位（UI 微调闭环第二步）：① AI 生成/改 json 布局 → ② 本工具出编辑器给用户拖 →
+    ③ 用户点「复制变更 JSON」→ ④ flythings_ui_edit_apply 写回 json + pack ftu。
+    预览与设备同源（都来自 json），改完即所得。
+
+    输出：每个 json → <项目>/ui/_edit/<name>.edit.html（ui 目录递归扫描），单文件 HTML
+    （图片 base64 内联，含 audio/xxx.png 这类带子目录的相对 resources 引用），双击即用。
+
+    页面能力：
+    - 点选 / 拖动 / 8 手柄缩放；方向键 1px（Shift 10px）；网格吸附 1/2/5/10
+    - Alt+点 = 穿透选中下层控件（专治全屏透明 button 压住其它控件）
+    - 选中框左上 ✥ 绿块可拖 = 被遮罩压住的控件也能拖
+    - 控件列表可搜 key / caption；「显示隐藏」把 visible:false 的弹窗显示成虚线幽灵框
+    - 属性栏列出该控件全部字段：text（多行）/ fontSize / colorTab.color0（颜色拾取器）/
+      backgroundPic / picTab.pic0~pic4（正常/按下/选中/选中按下/无效）/ visible / touchable…
+      改完画布即时生效；id 只读（IDE 生成）
+    - 预检红黄标：图片尺寸≠控件尺寸（红=图比控件大会被裁切；黄=大控件配小图）、文本明显超框
+    - 深链接 <name>.edit.html#button__2 打开即选中该控件
+
+    output_dir 缺省 <项目>/ui/_edit
+    """
+    if uied is None:
+        return json.dumps({'success': False, 'error': 'ui_editor 不可用（缺 ui_tools/ui_editor.py 或 Pillow）'},
+                          ensure_ascii=False)
+    try:
+        r = uied.make_editor(project_root, output_dir)
+    except Exception as e:
+        return json.dumps({'success': False, 'error': str(e)}, ensure_ascii=False)
+    if isinstance(r, dict) and r.get('success'):
+        r['projectRoot'] = project_root
+        r['note'] = ('在浏览器打开 *.edit.html 拖动/改属性；改完点「复制变更 JSON」或「下载变更 JSON」，'
+                     '把内容交给 flythings_ui_edit_apply 写回 json 并 pack ftu')
+        for f in r.get('files', []):
+            if f.get('html'):
+                f['open'] = f['html']
+    return json.dumps(r, ensure_ascii=False)
+
+
+def flythings_ui_edit_apply(project_root: str, changes: str, pack: bool = True) -> str:
+    """把 ui_editor 导出的「变更 JSON」写回 ui/*.json，默认接着 pack 成 ftu。
+
+    changes：可直接传 JSON 文本（用户从编辑器复制过来的），也可传文件路径。
+    结构：
+        {"file": "main.json", "resolution": "1600x600",
+         "changes": {"button__1": {"left": 130, "top": 60, "width": 150, "height": 54}},
+         "props":   {"textview__4": {"text": "新文字", "fontSize": 22,
+                                     "colorTab": {"color0": 16711680}}}}
+    控件路径：顶层 "button__1"；嵌套 window 内 "window__2/button__3"。
+    changes = 几何（position 四项）；props = 其它属性（深合并写回）；两者都可省。
+
+    安全：① 写回前自动备份 <name>.json.bak；② 格式一致性自检（原文件必须能被
+    json.dumps(indent=2, ensure_ascii=False) 无损还原，否则拒绝写入以免整文件重排）；
+    ③ 坐标取整 + 不越出屏幕。pack=True 时调 fui pack 生成同名 ftu。
+    """
+    if uia is None:
+        return json.dumps({'success': False, 'error': 'ui_edit_apply 不可用'}, ensure_ascii=False)
+    text = (changes or '').strip()
+    tmp = ''
+    try:
+        if not text:
+            return json.dumps({'success': False, 'error': 'changes 为空'}, ensure_ascii=False)
+        if not text.startswith('{'):
+            if not os.path.isfile(text):
+                return json.dumps({'success': False, 'error': 'changes 既不是 JSON 文本也不是文件路径'},
+                                  ensure_ascii=False)
+            with open(text, encoding='utf-8-sig') as f:
+                ch = json.load(f)
+        else:
+            ch = json.loads(text)
+        r = uia.apply_changes(ch, project=project_root, dry_run=False)
+        if r.get('success') and pack:
+            r['pack'] = uia.pack(r['json'], project_root)
+        r['note'] = '变更已写回 json' + ('（含 ftu 重新打包）' if r.get('pack') else '') + \
+                    '；备份在同目录 <name>.json.bak'
+        return json.dumps(r, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({'success': False, 'error': str(e)}, ensure_ascii=False)
+    finally:
+        if tmp and os.path.isfile(tmp):
+            try:
+                os.remove(tmp)
+            except Exception:
+                pass
+
+
+def flythings_ui_diff(image_a: str, image_b: str, tolerance: int = 2, shift: int = 1,
+                      min_area: int = 4, blur: float = 0.7, noise_bbox: int = 10,
+                      out_png: str = '', out_json: str = '', show_noise: bool = False) -> str:
+    """两张同尺寸截图的像素级对比（0 token，纯本地算法）——UI 验收 / 回归对比。
+
+    输出的**是差异清单（数字）不是图**，所以不吃 token：区域坐标 / 尺寸 / 面积 / 最大色差。
+    典型用法：改布局前截一张、改后截一张，两张丢进来 → 只有预期差异才算过；
+    「改 A 碰坏 B」会被逐块列出来。跨渲染器（HTML 预览 vs 设备截图）只当骨架参考，
+    字体磨边噪声靠下面的阈值压。
+
+    抑制假报警的默认参数（沛哥 2026-09-10 定）：
+    - tolerance=2：单通道 |Δ|<=2 视为相同
+    - shift=1：±1px 抖动补偿（每像素在邻域找最优匹配，"看着像差异其实只是抖动"不算）
+    - blur=0.7：对比前高斯模糊，抹掉字体抗锯齿噪声
+    - min_area=4 + noise_bbox=10：小于 4px 的斑点和 bbox<=10x10 的小碎块归入 noise 不计入主清单
+      （要连小碎块一起看，传 show_noise=True）
+    out_png 给出标注图路径（红框=主差异，黄框=噪声）；out_json 存差异清单；缺省只返回清单。
+    """
+    if udf is None:
+        return json.dumps({'success': False, 'error': 'ui_diff 不可用（缺 numpy/Pillow）'},
+                          ensure_ascii=False)
+    try:
+        for p in (image_a, image_b):
+            if not os.path.isfile(p):
+                return json.dumps({'success': False, 'error': f'图片不存在: {p}'}, ensure_ascii=False)
+        r = udf.diff_images(image_a, image_b, tol=int(tolerance), shift=int(shift),
+                            min_area=int(min_area), open_k=3, out_png=out_png,
+                            out_json=out_json, blur=float(blur),
+                            noise_bbox=int(noise_bbox), show_noise=bool(show_noise))
+        r['note'] = ('identical=true 表示无差异；regions 为真实差异块（坐标/面积/最大色差），'
+                     'noise 为已忽略的抗锯齿/文字磨边小碎块')
+        return json.dumps(r, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({'success': False, 'error': str(e)}, ensure_ascii=False)
+
+
 def register_all(mcp):
     mcp.tool()(flythings_get_version)
     mcp.tool()(flythings_search)
@@ -476,6 +613,9 @@ def register_all(mcp):
     mcp.tool()(flythings_generate_ui_preview)
     mcp.tool()(flythings_html_to_json)
     mcp.tool()(flythings_json_to_html)
+    mcp.tool()(flythings_ui_editor)
+    mcp.tool()(flythings_ui_edit_apply)
+    mcp.tool()(flythings_ui_diff)
     mcp.tool()(flythings_attach_cli_tools)
     mcp.tool()(flythings_create_project)
     mcp.tool()(flythings_create_bin_project)
