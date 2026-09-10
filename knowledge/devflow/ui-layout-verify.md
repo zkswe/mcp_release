@@ -27,8 +27,45 @@ HTML 交互原型 → flythings_html_to_json → ui/*.json（唯一源）
 | 段 | 手段 | 成本 | 用途 |
 |----|------|------|------|
 | 1 | `flythings_generate_ui_preview` / `flythings_ui_editor` | 秒级、0 token | 看结构、相对关系，确认交互 |
-| 2 | `flythings_build_ui_flow` 推真机 + 截图 | 一次编译 | 像素真相，最终验收 |
+| 2 | `flythings_build_ui_flow` 推真机 + **`flythings_device_screenshot` 抓屏** | 一次编译 + 几秒 | 像素真相，最终验收 |
 | 3 | `flythings_ui_diff` 对比两张截图 | 0 token | 回归/验收，差异可视化 |
+
+## 2-1 真机截图怎么拿（`flythings_device_screenshot`，一行搞定）
+
+⚠️ **要设备上的画面，直接调这个工具，不要自己手搓 adb / dd / cat /sys/class/graphics**。
+设备侧探测（有没有 screencap、busybox 在哪、fb 是几 bpp、要不要按 pan 偏移）工具内部全做完了，
+而且踩过的坑都在里面；手搓的结果往往是**抓到旧帧**或者**等几分钟传不完**。
+
+```
+flythings_device_screenshot()                       # 默认：当前设备 → screenshots/device_600x1600_<时间>.png
+flythings_device_screenshot(scale=0.5)             # 长宽各半，省 AI token
+flythings_device_screenshot(fmt='jpg', quality=85) # jpg / bmp
+flythings_device_screenshot(device='192.168.0.117:5555')  # 多设备指定
+flythings_device_screenshot(pixel='rgba')          # 颜色红蓝互换时
+```
+
+典型用法（**回归验收**，0 token 对比）：
+
+```
+1. 改前：flythings_device_screenshot(out='before.png')
+2. 改代码 → flythings_build_ui_flow(project_root, with_launch=True) 推真机
+3. 改后：flythings_device_screenshot(out='after.png')
+4. flythings_ui_diff('before.png', 'after.png')   # 差异清单 + 标注图
+5. 只看某块差异的语义时，才把差异区小图裁出来给视觉模型
+```
+
+参数：`device, out, fmt(png/jpg/bmp), scale, quality, fb, pixel, width, height, offset_y, flip, rotate, name, timeout`；
+返回 `{success, path, width, height, format, sizeBytes, device, method, screenInfo{...offsetY,pan}, pixelOrder, readHint}`。
+调完把 **path** 交给看图能力，**不要把 raw/整文件丢给模型**。
+
+设备侧实现要点（AI 不需要重做，但排障要懂）：
+
+- 设备 rootfs 多为裁剪版：**没有 screencap / dd / head**，`adb exec-out` 也可能不通（patched adbd）；
+  链路 = 设备侧 `busybox dd if=<fb> bs=<stride> skip=<panY> count=<h> | busybox gzip -1 > /tmp/x` + `adb pull`。
+  裸 raw 一大就慢（600×1600×4≈7.7MB，WiFi 上几分钟）；gzip 后 ~37KB、0.3 秒。设备上没 busybox 会自动退化全量 cat（会提示先 push 一个 busybox）。
+- fb 参数问 sysfs：`modes`(可见分辨率) / `virtual_size`(可能是 2 倍 OVERALLOC) / `stride` / `bits_per_pixel`；**必须按 stride 逐行取**。
+- **双缓冲页翻转**：读 `/sys/class/graphics/fb0/pan`（如 `0,1600`）按 yoffset 抓，否则抓到的是**上一帧**（旧画面也可能是完整 UI，肉眼难发现）；工具已在抓后二次确认 pan 未变。
+- 32bpp 内存序 BGRA（小端 ARGB8888）；颜色反了就 `pixel='rgba'`。
 
 ## 3. 可视化编辑器（`flythings_ui_editor`）
 
@@ -144,7 +181,7 @@ json 同目录 → 项目根 → 再退 `.9.png` 九宫格变体；data URI 按�
 
 1. `flythings_ui_editor` 生成编辑器，先看**红标**（图片尺寸不匹配优先修——那是锯齿/糊的根因）
 2. 拖 / 改属性 → 复制变更 JSON → `flythings_ui_edit_apply`（写回 + pack）
-3. `flythings_build_ui_flow` 推真机截图，与上一版截图 `flythings_ui_diff` 对比：
+3. `flythings_build_ui_flow` 推真机，`flythings_device_screenshot` 抓屏，与上一版截图 `flythings_ui_diff` 对比：
    **只允许出现预期差异**，其余视为回归
 4. 需要"这块到底是什么毛病"的判断时，只裁差异区域的小图给视觉模型
 

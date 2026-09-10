@@ -3,9 +3,23 @@
 用法：在任意目录运行  python 本文件路径/configure.py  （或双击 setup.bat）
 生成的 .mcp.json 等配置写入当前工作目录（建议在你的项目根目录运行）。
 """
-import json, os, sys
+import json, os, re, sys
 
 BASE = os.path.dirname(os.path.abspath(__file__))
+
+
+def tool_meta():
+    """从 kb_tools.py 直接读版本号与工具数（单一事实源，避免文档漂移）。"""
+    ver, cnt = '?', '?'
+    try:
+        src = open(os.path.join(BASE, 'kb_tools.py'), encoding='utf-8').read()
+        m = re.search(r"MCP_VERSION\s*=\s*['\"]([^'\"]+)", src)
+        if m:
+            ver = m.group(1)
+        cnt = len(re.findall(r'mcp\.tool\(\)\(', src))
+    except Exception:
+        pass
+    return ver, cnt
 
 
 def detect_command():
@@ -71,8 +85,9 @@ def main():
     if choice == '0':
         print(json.dumps(cfg, ensure_ascii=False, indent=2))
     print()
+    ver, cnt = tool_meta()
     print('  完成！请在 AI 工具中重新打开/刷新项目。')
-    print('  验证：问 AI「MCP 版本是多少？」应返回 flythings-kb-open 0.6.9-open（32 个工具）。')
+    print(f'  验证：问 AI「MCP 版本是多少？」应返回 flythings-kb-open {ver}\uff08{cnt} 个工具）。')
     print('=' * 56)
     input('  按回车退出...')
 

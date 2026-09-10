@@ -1,7 +1,39 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.21-open**（2026-09-10）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.22-open**（2026-09-10）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.22-open (2026-09-10) — 真机抓屏工具 + 「设备侧动作先查工具」规则
+
+**新增工具 `flythings_device_screenshot`（真机抓屏 → PNG/JPG/BMP）**
+- 能力：把设备当前显示的画面抓成图片，交给视觉模型分析，或交给 `flythings_ui_diff` 做 0 token 回归验收
+- 参数：`device, out, fmt(png/jpg/bmp), scale, quality, fb, pixel, width, height, offset_y, flip, rotate, name, timeout`
+- 返回 JSON：`path/width/height/format/sizeBytes/device/method/screenInfo{offsetX,offsetY,pan}/pixelOrder/elapsedSec/readHint`
+
+**为什么要包成工具（踩过的坑全在里面）**
+1. 设备 rootfs 多为裁剪版：**无 screencap / dd / head**，`adb exec-out` 也可能不通（patched adbd 无 shell v2）
+2. 抓屏链路 = 设备侧 `busybox dd if=<fb> bs=<stride> skip=<panY> count=<h> | busybox gzip -1 > /tmp/x` + `adb pull`
+   （实测 600×1600 裸 raw 7.68MB，WiFi 直拉要 4 分钟+；gzip 后 ~37KB / 0.3s）；无 busybox 时自动退化全量 cat 并提示 push 一个
+3. fb 参数一律问 sysfs：`modes`(可见分辨率) / `virtual_size`(可能 2×OVERALLOC) / `stride` / `bits_per_pixel`；**必须按 stride 逐行取**
+4. **双缓冲页翻转**：读 `/sys/class/graphics/fb0/pan`（如 `0,1600`）按 yoffset 抓，否则抓到的是**上一帧**；抓完二次确认 pan 未变，翻了自动重抓
+5. 32bpp 内存序 BGRA（小端 ARGB8888）：按 alpha 字节位置自动判通道序，颜色反了可传 `pixel='rgba'`
+
+**知识入库 / 行为修复（沛哥：AI 要截图却先自己探测一轮，能否修复）**
+- 新增规则 **「设备侧动作规则」**（`knowledge/uicontrols/retrieval-boundary.md`）：
+  要设备上的东西（画面/屏参/文件/触摸）**先查 MCP 工具，禁止现场手搓 adb/dd/sysfs 探测**；附能力对照表与执行顺序
+- `knowledge/devflow/ui-layout-verify.md` 新增 **§2-1 真机截图怎么拿**：一行调用示例 + 回归验收流程 + 设备侧实现要点
+- 本地零成本意图闸门（flythings-intent-gate）注入内容新增 **「设备侧动作」段**（截图/触摸/编译/设备命令直接给工具名），
+  并新增截图/抓屏关键词规则；`catalog.json` 重新生成（35 ops）
+
+**配置一致性修复（自检发现漂移）**
+- `README.md`：31 个工具 / 0.27.2-open → **35 个工具 / 0.27.22-open**，工具表补 4 个新工具，FAQ 同步
+- `configure.py`：版本与工具数改为**从 kb_tools.py 动态读取**（单一事实源，不再有硬编码过期）
+- `mcp_server.py`：入口 docstring 能力数 34 → 35
+- 新增 `scripts/smoke.py`：本地自检（版本/工具数/签名/依赖/目录一致性/catalog），非 0 退出码即失败
+
+**版本 0.27.21 → 0.27.22-open**
 
 ---
 

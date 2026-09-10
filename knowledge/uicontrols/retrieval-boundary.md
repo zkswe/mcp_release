@@ -29,6 +29,28 @@
   - 头文件表达不了的 = **控件 json 字段/回调语义/内部实现** → 走 wiki/knowledge（上文规则），没有就标未收录
 - **标准 C/C++/Linux 开发不受限**：socket/pthread/v4l2/文件系统/std 库等**非 FlyThings 私有 API**，按 POSIX/C/C++ 标准开发，可参考开源资料与社区（Linux man/开源项目/技术社区）
 
+## 设备侧动作规则（沛哥 2026-09-10 定规，源于真实案例）
+
+**要设备上的东西（画面/屏参/文件/触摸），先查 MCP 工具，禁止现场手搓探测命令。**
+
+真实案例：AI 需要设备端截图，没有直接调工具，而是自己开一轮探测——adb 试 `exec-out`、`screencap`、sysfs 逐个读、
+裸拉 framebuffer……结果耗时且差点拿到旧帧。正确做法是先看工具目录（`flythings_kb(op="list")`）。
+
+| 设备侧需求 | 直接用 | 不要做 |
+|-----------|--------|--------|
+| 抓当前屏幕 → png/jpg/bmp | `flythings_device_screenshot()` | ❌ 手搓 `adb exec-out screencap` / `cat /dev/fb0` / 自己找 busybox / 自己读 pan |
+| 触摸注入 / 自动点击 / 压测 | `flythings_gen_ui_test(project_root, test_type)`（生成脚本 + `bin_tools/<平台>/ui_test`） | ❌ 现场写 input 注入脚本 |
+| 编译 + 推真机 | `flythings_build_ui_flow(project_root, device)` | ❌ 自造 fun/fuse/adb push 命令 |
+| 设备上跑网络/系统命令 | `tools/busybox/bin/<平台>/busybox`（push 即用） | ❌ 假设设备有 dd/head/uname/screencap |
+| 设备依赖包/API | `flythings_list_packages` / `get_package_api` | ❌ 自己翻设备 rootfs |
+
+**顺序**：① `flythings_kb(op="list")` 看有没有现成 op → ② 有就直接调（参数拿不准先看 docstring）
+→ ③ 工具不存在或失败，才做设备侧探测，并把结论回灌成新工具/新知识。
+
+**原因**：设备 rootfs 是裁剪版（常见无 screencap/dd/head），且 framebuffer 有双缓冲、
+stride、bpp、字节序、慢链路等一堆坑（详见 `devflow/ui-layout-verify.md` §2-1）；
+这些坑已经被工具吃掉，AI 重新探一遍 = 白烧 token + 高风险抓错。
+
 ## 原因
 
 - FlyThings 控件字段是私有格式（json/FTU），与主流 GUI 框架完全不同：

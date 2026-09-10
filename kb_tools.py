@@ -35,11 +35,16 @@ try:
     import ui_diff as udf
 except Exception:
     udf = None
+try:
+    import device_screenshot as dss
+except Exception:
+    dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.21-open'
+MCP_VERSION = '0.27.22-open'
 MCP_BUILD = '2026-09-10'
 MCP_FEATURES = [
+    '2026-09-10: 真机抓屏工具入库 v0.27.22（沛哥：从设备取图的能力 AI 不知道，直接给明确指令）——新增 flythings_device_screenshot：把设备当前显示的画面抓成 png/jpg/bmp 给 AI 看（视觉分析）或给 ui_diff 做像素验收。要点：①设备 rootfs 裁剪版**没有 screencap/dd/head**，`adb exec-out` 也不可用（patched adbd 无 shell v2 → error: closed），唯一链路=设备侧 `busybox dd ... | busybox gzip -1 > /tmp/x` + `adb pull`（实测 600x1600 裸 raw 7.68MB 经 WiFi pull 要 4 分钟+，gzip 后只有 37KB、0.3 秒）（无 busybox 时退化 cat + pull 并提示）②fb 参数必须问 sysfs（modes=可见分辨率 / virtual_size 可能是 2 倍 OVERALLOC / stride / bits_per_pixel），可见高≠文件行数，必须按 stride 逐行取 ③**双缓冲页翻转坑**：palette 必须读 `/sys/class/graphics/fb0/pan` 的 yoffset 并 `dd skip=<yoffset>`，否则抓到的是上一帧旧画面（本机实测 pan=0,1600，pan 取值靠前一半就是旧屏）④32bpp 内存序 BGRA（小端 ARGB8888），按 alpha 字节位置自动判通道序，红蓝互换可传 pixel=rgba ⑤输出支持 fmt=png/jpg/bmp + scale 缩放 + quality；v0.27.22-open',
     '2026-09-10: UI 布局可视化编辑 + 像素验收工作流入库 v0.27.21（knowledge/devflow/ui-layout-verify.md；配套 v0.27.20 的 flythings_ui_editor / ui_edit_apply / ui_diff）——要点：json 是唯一真相（设备加载 ftu，ftu 由 json pack，手写 HTML 预览=第二份真相必然漂移；json2html 也只是近似，像素真相只有真机截图）；三段式验收（预览→真机截图→像素 diff）；编辑器指哪打哪（Alt+点穿透下层、✥绿块拖遮罩下控件、属性栏按原 json 动态出字段、id 只读、visible:false 幽灵框）；变更写回三条安全（.bak / 格式自检 / 边界钳制）；像素 diff 默认容差±2+抖动补偿+模糊+噪声块过滤，主力是回归对比（改前截图 vs 改后截图），分层省钱 L1 像素(0 token)→L2 只裁差异区小图给模型→L3 人工看标注图；图片引用是相对 resources 可带子目录的路径（audio/horn.png），只按 basename 找 resources/images 会大面积丢图；现象→根因排查表（锯齿/位置/切图/丢图/裁字）；v0.27.21-open',
     '2026-09-10: UI 可视化编辑 + 像素验收入 open 版 v0.27.20（沛哥：布局调整要「指哪打哪」，预览里的文字/属性都要能改，图片资源要能加载）——新增 3 个工具：① flythings_ui_editor：ui/*.json → 单文件可拖拽编辑器（拖/缩放/Alt+点穿透选中下层/属性栏列出全部字段含 text·fontSize·colorTab·picTab 四状态图，改完画布即时生效，id 只读；内置图片尺寸≠控件尺寸红黄标）② flythings_ui_edit_apply：变更 JSON（changes 几何 + props 属性）写回 ui/*.json（自动 .bak + 格式自检）并 pack ftu ③ flythings_ui_diff：像素 diff 0 token，容差±2 + ±1px 抖动补偿 + 高斯模糊 + 噪声块过滤，输出差异清单/标注图（回归对比专治改 A 碰坏 B）；顺带修 json2html 图片路径解析（支持 audio/xxx.png 这类带子目录的相对 resources 引用，之前只按 basename 找 resources/images/ 导致预览丢图、尺寸预检形同虚设）；v0.27.20-open',
     '2026-09-09: package API 识别规则定规 v0.27.19（沛哥 21:42：AI 对 FlyThings package 只允许通过头文件识别 API，不要猜也不要反编译二进制浪费时间，不会就是不会；标准 C/C++/Linux 开发按标准+开源社区参考）——retrieval-boundary.md 新增「Package API 识别规则」：package C++ API（类/方法/枚举/注释）只读包内头文件（aw-dvr mpi/*.h、easyui control/*.h）；禁猜（读不出标未收录问官方）/禁反编译（objdump 禁止，readelf 仅排障用）；两层区分：头文件能确认的（签名/枚举/注释）读头文件、表达不了的（控件 json 字段/回调语义）走 wiki/knowledge（与 09-01 easyui 条款不冲突）；标准 C/C++/Linux（socket/pthread/v4l2/std 等非 FlyThings 私有 API）按标准+开源社区参考不受限；v0.27.19-open',
@@ -602,6 +607,53 @@ def flythings_ui_diff(image_a: str, image_b: str, tolerance: int = 2, shift: int
         return json.dumps({'success': False, 'error': str(e)}, ensure_ascii=False)
 
 
+def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png', scale: float = 1.0,
+                               quality: int = 90, fb: str = '/dev/fb0', pixel: str = 'auto',
+                               width: int = 0, height: int = 0, offset_y: int = -1,
+                               flip: str = '', rotate: int = 0, name: str = '',
+                               timeout: int = 180) -> str:
+    """从**设备真机**抓当前屏幕 → PNG / JPG / BMP，交给视觉模型看或用 flythings_ui_diff 做像素验收。
+
+    **什么时候用**（AI 自己判）：要确认设备上实际显示成什么样 —— 布局对不对、图标有没有锯齿、切图对不对、
+    颜色/文字是否正常、改完要不要验收、用户说“我屏幕上看到的是…”而你手上没有截图。
+    三段式验收的第二步：预览(秒级) → **本工具抓真机截图(像素真相)** → flythings_ui_diff 比对。
+
+    **怎么用**（默认参数就够了）：
+      ① 抓一张：flythings_device_screenshot()                        → screenshots/device_600x1600_*.png
+      ② 省 token：scale=0.5（长宽各半）或 fmt='jpg', quality=85
+      ③ 多设备：device='192.168.0.117:5555'（先 `adb connect <IP>:5555`）
+      ④ 抓完把返回的 path 交给看图能力分析；**不要把 raw/文件本身丢给模型**。
+      ⑤ 改前抓一张存好，改后再抓一张 → flythings_ui_diff(改前, 改后) 0 token 出差异清单。
+
+    **输出**：
+      {success, path, width, height, format, sizeBytes, device, method, screenInfo{width,height,virtualHeight,bpp,stride,modes,offsetY,pan}, pixelOrder, readHint}
+
+    **实现要点（踩过的坑，别改错）**：
+    - 设备 rootfs 是裁剪版：**没有 screencap / dd / head**，`adb exec-out` 也不通（patched adbd 无 shell v2）；
+      唯一可靠链路 = 设备侧 `busybox dd if=<fb> bs=<stride> skip=<pan.y> count=<height> | busybox gzip -1 > /tmp/x`
+      + `adb pull`。裸 raw 7.68MB 经 WiFi pull 要 4 分钟+，gzip 后只剩 ~37KB、0.3 秒（画面平坦色块多压缩比极高）；
+      设备上没有 busybox 时自动退化 `cat <fb> > /tmp/x` + pull（慢，返回里会提示先 push 一个 busybox）。
+    - fb 参数一律问 sysfs：`modes`(=可见分辨率，如 U:600x1600p-50) / `virtual_size`(可能是 2 倍，OVERALLOC) /
+      `stride` / `bits_per_pixel`。可见高 ≠ 文件行数，必须按 stride 逐行取，否则下半张图是脏数据。
+    - **双缓冲页翻转（最容易抓错）**：读 `/sys/class/graphics/fb0/pan`（如 "0,1600" = 当前显示 yoffset=1600），
+      抓图必须 skip=<yoffset>；否则抓到的是上一帧（旧画面仍可能是完整的 UI，肉眼很难发现抓错了）。
+      本工具 offset_y=-1 自动读 pan，并在抓图后二次确认 pan 未变（翻了就重抓一次）。
+    - 32bpp 内存序是 BGRA（小端 ARGB8888）；本工具按 alpha 字节位置自动判通道序（末字节≈0xFF→BGRA）。
+      若颜色红蓝互换，传 pixel='rgba' 重抓；其他可选 bgra/rgba/argb/abgr/rgb565/bgr565/rgb888/bgr888。
+    - 匹配参数：width/height 可覆盖（sysfs 读不到时）、flip='v|h|both'、rotate=90/180/270、offset_y 手动指定。
+    """
+    if dss is None:
+        return json.dumps({'success': False, 'error': 'device_screenshot 不可用（缺 ui_tools/device_screenshot.py 或 Pillow）'},
+                          ensure_ascii=False)
+    try:
+        r = dss.capture(device=device, out=out, fmt=fmt, scale=scale, quality=quality, fb=fb,
+                        pixel=pixel, width=width, height=height, offset_y=offset_y,
+                        flip=flip, rotate=rotate, name=name, timeout=timeout)
+    except Exception as e:
+        return json.dumps({'success': False, 'error': str(e)}, ensure_ascii=False)
+    return json.dumps(r, ensure_ascii=False)
+
+
 def register_all(mcp):
     mcp.tool()(flythings_get_version)
     mcp.tool()(flythings_search)
@@ -617,6 +669,7 @@ def register_all(mcp):
     mcp.tool()(flythings_ui_editor)
     mcp.tool()(flythings_ui_edit_apply)
     mcp.tool()(flythings_ui_diff)
+    mcp.tool()(flythings_device_screenshot)
     mcp.tool()(flythings_attach_cli_tools)
     mcp.tool()(flythings_create_project)
     mcp.tool()(flythings_create_bin_project)
