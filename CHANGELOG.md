@@ -1,7 +1,40 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.23-open**（2026-09-10）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.24-open**（2026-09-10）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.24-open (2026-09-10) — 触摸/遮挡知识定稿（沛哥实机验证全文替换草稿）
+
+**背景**：沛哥报障「控件点不动 / 列表拖不动 / 点了没选中」，V85X + EasyUI 2.9.0 实机逐条验证产出；
+沛哥直接把全文发来，替换早前墨羽按要点自拟的草稿（v0.27.23 新增）。
+
+**`knowledge/uicontrols/touch-events.md` 全文更新（触控事件与遮挡 / touchable / touchPass / 谁吃掉了我的点击）**
+1. **`touchable=false` 不等于触摸穿透（最容易搞错的一条）**：只表示「这个控件自己不响应点击」，**照样挡住矩形范围内的下层控件** →
+   下层收不到 `DOWN`，既不能拖动也不触发点击；症状=列表**能显示能看但拖不动**、点某行没反应；
+   最容易犯的是**压在可触摸控件之上的装饰件**（渐隐/渐变遮罩、选中高亮色带、徽标红点、纯图标层、半透明蒙层）
+2. **正解**：装饰件除 `touchable=false` 外，运行期还要 `pCtrl->setTouchable(false); pCtrl->setTouchPass(true);`
+   （ZKBase 触摸穿透，事件落到下层），在 `onUI_init()` 对这批装饰件统一设置最省事；
+   ⚠️ **touchPass 没有对应的 json 字段（不是 json 键），必须写代码**；
+   层叠顺序（json 后定义在上层）决定“渐隐层要盖住滚动文字”时它必在上层 → 必须穿透，否则列表就废了
+3. **交互容器（radiogroup 等）`touchable` 必须 true**：非触摸容器会把**整棵子树**从触摸分发里剪掉，子项写 true 也没用；
+   实测 radiogroup=false → radiobuttons 全部点不动（语言设置页完全无法选语言）
+4. **`ZKListView::setSelection()` 之后必须 `refreshListView()`**：setSelection 只改**滚动位置**、不触发重排+重绘 →
+   “行位置与选中样式错位”（中心行是新值、选中样式画到相邻行 = 像没选中）；
+   定位线索：进页面时对、交互后错 → 比对两条路径，通常一条带了 refresh 另一条漏了
+5. **排查顺序（别跳步）**：先看日志（事件到没到控件/回调进没进，只到“页面级全局触摸监听”不算）→ 再看像素
+   （抓屏要按 `pan` 取当前显示的那页缓冲，读错帧会得出相反结论）→ 两者都可能骗人（日志只证明逻辑跑了、像素可能读错缓冲）
+6. **实测对照表**（同一固件，只开关 setTouchPass；控件=listview 顶/底各 42px 渐隐层）：
+   渐隐覆盖区拖动：穿透关 = 0% 像素变化 / 穿透开 = 正常滚动；渐隐覆盖区点行：无回调 / 正常触发；未覆盖中间条带：两者都正常
+7. **自检清单** 5 条：装饰件 setTouchPass(true) / 交互容器 touchable=true / setSelection 后跟 refreshListView /
+   **实机**逐项验证（边缘起手拖动、点首行、点末行、跳页返回再进）/ 有条件把“装饰件压住可触摸控件”并入 check_all.py
+
+**同时**：`knowledge/uicontrols/widget-code-api.md` 新增「ZKBase 通用」段（`setTouchable` / **`setTouchPass`** / `setTouchListener` / `setLongClickListener` 注册与注销时机 + 穿透必设提醒）。
+
+**索引**：`rebuild_index_local.py` 重建；`scripts/smoke.py` 自检全过。
+
+**版本 0.27.23 → 0.27.24-open**
 
 ---
 

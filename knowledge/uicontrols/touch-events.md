@@ -1,52 +1,79 @@
-# 触摸事件与 touchable 语义（「点了没反应」排查手册）
+# 触摸事件与遮挡（touchable / touchPass / 谁吃掉了我的点击）
 
-> 2026-09-10 沛哥定规（项目实测发现：生成的 radiogroup 带 `touchable: false` → 单选组整组点不动，会产生**可用性错误代码**）。
-> 检索词：触摸/touchable/点击没反应/点不动/事件不触发/穿透/radiogroup 点不了/setSelection 不刷新/层叠遮挡。
-> 配套：`json-field-mandatory.md`（字段全集）、`json-layer-rules.md`（层级/层叠）、`radiogroup-checkbox-fields.md`。
+> 2026-09-10 沛哥报障「控件点不动 / 列表拖不动 / 点了没选中」定位产出，V85X + EasyUI 2.9.0 实机逐条验证。
+> 检索词：触摸/点击无效/点不动/拖不动/滑动/穿透/遮挡/touchable/touchPass/setTouchPass/单选点不了。
 
-## 铁律
+## 1. `touchable=false` **不等于**触摸穿透（最容易搞错的一条）
 
-1. **touchable ≠ 穿透开关**：`touchable` 只决定「这个控件收不收触摸」。
-   想实现「点击穿透到下层」**不要**靠把 touchable 设 false——尤其交互控件，设 false 直接导致自身**点不动**（回调不触发）。
-   穿透/遮挡由**层叠顺序与层级结构**决定（见第 4 条与 `json-layer-rules.md`）。
-2. **交互控件必须 `touchable: true`**：button / listview / 可拖 seekbar(有 thumb) / qrcode / videoview / diagram / circlebar / slidewindow / subitem。
-3. **⚠️ radiogroup 是例外——容器也必须 `touchable: true`**（沛哥 2026-09-10 修正）：
-   `json-field-mandatory.md` 的「容器显式 false」口径**不适用于 radiogroup**；写 false 时整组收不到触摸，表现为**单选按钮点了没反应 / 选中态不切换**。
-   （radiogroup 子项 radiobutton 本身也带 touchable true。）
-4. **容器/纯显示控件 `touchable: false`**：window（非交互面板）/painter/textview/cameraview/digitalclock。
-   **但容器若需要拦住下层触摸**（遮罩、弹窗背景拦截点击）→ 该类面板才设 `true`（弹窗 modal 背景用 true 是有意为之，不是 bug）。
-5. **层叠顺序决定谁收到触摸**：json 中**后定义的控件在上层**；上层控件 `touchable: true` 会先截走触摸。
-   排查「点不动」时，先看是不是被上层全屏（透明）面板挡住了。
-6. **选中态不是数据分析，改完要刷新**：
-   - listview：`setSelection(idx)` 之后**必须** `refreshListView()`（否则视觉/状态不更新）
-   - radiogroup：选某项用子项 ID 宏 `setCheckedID(ID_MAIN_RadioButtonN)`（用行号/序号无效）
-7. **回调名必须对得上控件 caption**：`onButtonClick_XXX` / `onCheckedChanged_RadioGroup1` 中的 XXX 必须与 json 里控件 `caption` 一致，否则事件发出去了也没人接。
+`touchable` 只表示"**这个控件自己**不响应点击"，它**照样会挡住**矩形范围内的下层控件：
+下层收不到 `DOWN`，于是既不能拖动、也不会触发点击。
 
-## 「点了没反应」排查顺序（从 json 到代码，逐层排除）
+- 症状：列表**能显示、能看**，但**拖不动**；点某一行**没反应**。
+- 谁最容易犯：**压在可触摸控件之上的"装饰件"** —— 渐隐/渐变遮罩、选中高亮色带、
+  徽标红点、纯图标层、半透明蒙层。
+- **正解**：装饰件除 `touchable=false` 外，还要运行期调
+ ```cpp
+ pCtrl->setTouchable(false);
+ pCtrl->setTouchPass(true); // ZKBase：触摸穿透，事件落到下层控件
+ ```
+ 在 `onUI_init()` 里对这批装饰件**统一设置**最省事。
+- ⚠ **没有对应的 json 字段**（`touchPass` 不是 json 键），必须写代码。
 
-| 步 | 查什么 | 判定 |
-|----|--------|------|
-| 1 | 目标控件 json 的 `touchable` | 交互控件（含 radiogroup）必须是 `true`；是 false → 就是这里，改了重编译 |
-| 2 | 是否被上层遮挡 | 看 json 顺序，后定义的控件在上层；上层透明但 `touchable: true` 的面板会截走触摸 |
-| 3 | 控件是否真在当前显示的 window/Activity 内 | 嵌套 window / 弹窗（modal）里的控件，父层没显示时点不到 |
-| 4 | 回调是否注册且命名匹配 | `caption` 与 `onXXX_<caption>` 名字不一致 = 没接上；编译日志一般无报错，容易被忽略 |
-| 5 | 状态类操作是否漏刷新 | listview `setSelection` → 漏 `refreshListView()`；radiogroup 用 ID 宏而非序号 |
-| 6 | 以上都对仍无响应 | 用 `flythings_device_screenshot` 抓真机图确认控件在屏幕上的实际位置/遮挡，再结合 `adb logcat` 看是否有事件日志 |
+**层叠顺序**：json 书写顺序 = 层叠顺序（后定义在上层，见 `json-layer-rules.md`）。
+所以"渐隐层要盖住滚动文字"就注定它在上层 —— **它必须穿透，否则列表就废了**。
 
-## 自检清单（生成 json 后逐条过）
+**实测对照**（同一固件，只开关 `setTouchPass`；控件为 listview 顶/底各 42px 的渐隐层）：
 
-- [ ] 所有交互控件 `touchable: true`（button / listview / 可拖 seekbar / qrcode / videoview / diagram / circlebar / slidewindow / subitem）
-- [ ] **radiogroup `touchable: true`**（例外项，最容易漏——生成器已修正）
-- [ ] 容器/纯显示 `touchable: false`（window 非交互 / painter / textview / cameraview / digitalclock）
-- [ ] 需要拦截下层触摸的遮罩/弹窗面板 `touchable: true`（有意设置）
-- [ ] 没有被上层 `touchable: true` 的全屏面板挡住目标控件（层叠顺序）
-- [ ] listview `setSelection(idx)` 后跟 `refreshListView()`
-- [ ] radiogroup 用子项 ID 宏 `setCheckedID(ID_XXX_RadioButtonN)`（不用序号）
-- [ ] 回调函数名与控件 `caption` 完全一致
+| 操作 | 穿透关闭 | 穿透开启 |
+|---|---|---|
+| 在渐隐覆盖区拖动 | 0% 像素变化（拖不动） | 正常滚动 |
+| 在渐隐覆盖区点某行 | 无回调（触摸没到列表） | 正常触发 |
+| 在未覆盖的中间条带拖动 | 正常 | 正常 |
+
+## 2. `radiogroup` 等**交互容器**的 `touchable` 必须 `true`
+
+非触摸**容器**会把**整棵子树**从触摸分发里剪掉 —— 子项写 `touchable=true` 也没用。
+
+- 实测：`radiogroup.touchable=false` → 其 `radiobuttons` **全部点不动**（语言设置页完全无法选语言）；改 `true` 后正常。
+- 因此 `radiogroup` 是"容器显式 false"通用口径的**例外**，必须写 `true`。
+- 补充（2026-09-10 录入）：选中某项用子项 ID 宏 `setCheckedID(ID_MAIN_RadioButtonN)`，**不要用序号/行号**（与字段表一致，见 `radiogroup-checkbox-fields.md`）。
+
+## 3. `ZKListView::setSelection()` 之后必须 `refreshListView()`
+
+`setSelection()` 只改**滚动位置**，不触发**重排 + 重绘** → 会出现
+**"行位置与选中样式错位"**：中心行显示的是新值，但"选中样式"（大字号/变色/加粗）
+被画到相邻行上 → 用户看到"点了上/下行，高亮却跑到别的行"＝像没选中。
+
+```cpp
+lv->setSelection(idx);
+lv->refreshListView(); // ⚠ 不能省
+```
+- 凡是"数据/选中项驱动样式"的列表（`obtainListItemData` 里按 `sel` 改字号颜色）都会踩。
+- **定位线索**：如果"进页面时是对的、交互后是错的"，就去比对两条路径 —— 通常一条带了
+ `refreshListView()`、另一条漏了。
+
+## 4. 排查顺序（别跳步）
+
+1. **先看日志**：事件到底有没有到控件？回调有没有进？（给关键路径打 `LOGD`）
+ —— 只到"页面级全局触摸监听"不算到控件。
+ 补充（2026-09-10 录入）：事件到了但"没人接"时，检查回调函数名是否与控件 `caption` 完全一致
+ （`onButtonClick_<caption>` / `onCheckedChanged_<caption>`），名字不匹配编译不报错、但点了没反应。
+2. **再看像素**：视觉对不对？（注意：抓屏要按 `pan` 取当前显示的那一页缓冲，
+ 否则读到上一帧会得出相反结论）
+3. 两者都可能骗人：**日志只证明逻辑跑了，像素可能读错缓冲**。
+
+## 5. 自检清单（改完 UI 必跑）
+
+- [ ] 每个"压在可触摸控件之上的装饰件"都设了 `setTouchPass(true)`
+- [ ] `radiogroup`/`checkbox` 等交互容器 `touchable=true`
+- [ ] 列表里所有 `setSelection()` 后面都跟了 `refreshListView()`
+- [ ] **实机**逐项验证：从控件**边缘起手**拖动 / 点首行 / 点末行 / 跨页返回再进入
+- [ ] 有条件的跑自动审计：把"装饰件压住可触摸控件"的检查并入 `check_all.py`
 
 ## 相关
 
+- 层级与层叠顺序 → `json-layer-rules.md`（第 7 条：层叠顺序决定谁收到触摸）
 - 字段全集与默认值 → `json-field-mandatory.md`（radiogroup 行已标注 true 例外）
-- 层级与层叠顺序 → `json-layer-rules.md` 第 7 条
-- radiogroup/checkbox 字段与代码操作 → `radiogroup-checkbox-fields.md`
-- 真机确认画面 → `devflow/ui-layout-verify.md` §2-1（`flythings_device_screenshot`）
+- radiogroup / checkbox 字段与代码操作 → `radiogroup-checkbox-fields.md`
+- listview 回调与刷新 → `listview-fields.md`（铁律 7）
+- 真机确认画面（按 pan 取活帧） → `devflow/ui-layout-verify.md` §2-1

@@ -131,7 +131,7 @@ pip install mcp onnxruntime tokenizers
 
 > **MCP 版本是多少？**
 
-应返回：`flythings-kb-open 0.27.23-open`，包含 35 个工具。
+应返回：`flythings-kb-open 0.27.24-open`，包含 35 个工具。
 
 ---
 
