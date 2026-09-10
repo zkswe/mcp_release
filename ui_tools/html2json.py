@@ -1108,9 +1108,11 @@ class HtmlToJson:
         attrs = node.attrs
         cap = self._caption(ctx, 'radiogroup', attrs)
         # basedemo radiogroup 7 键 100%：backgroundColor/touchable/visible 含默认显式；radiobuttons[] 内嵌子项
+        # touchable 必须 True（沛哥 2026-09-10 修正）：radiogroup 是「容器显式 false」口径的例外——
+        # 写 False 会让整组收不到触摸、点了没反应（单选组点不动）。详见 knowledge/uicontrols/touch-events.md
         c = {'backgroundColor': -1, 'caption': cap, 'id': ctx.nid('radiogroup'),
              'position': self._pos(attrs),
-             'touchable': False, 'visible': True,
+             'touchable': True, 'visible': True,
              '__container': True, '__radiogroup': True, 'radiobuttons': []}
         key = ctx.add('radiogroup', c)   # 支持嵌套（radiogroup 在 window 内）
         ctx.stack.append(c)

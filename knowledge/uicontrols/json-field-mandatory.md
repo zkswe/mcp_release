@@ -10,6 +10,7 @@
 ## 沛哥 5 条口径（2026-09-08）
 1. **beepEnable 不强制**：交互控件默认支持，废除「恒带 beepEnable:true」规范（两源 edittext/window 均证实非必写）
 2. **touchable 交互控件显式 true**：button/listview/可拖 seekbar(有 thumb)/qrcode/videoview/diagram/subitem/slidewindow/circlebar；容器与纯显示显式 **false**（window/painter/textview/cameraview/digitalclock 主 false）
+   - ⚠️ **例外：radiogroup 虽是容器，也必须 `touchable: true`**（2026-09-10 修正）。写 false 会让整组**收不到触摸、点了没反应**（单选组点不动）；生成器/手写 json 均按 true。详见 `uicontrols/touch-events.md`
 3. **qrcode 恒写 padding:10**（各边默认 10；SampleUI 无 padding 键、basedemo 亦无，按沛哥口径写）
 4. **videoview 按 SampleUI**：无 beepEnable；键 backgroundColor 0/caption/defaultVolume 5/id/loopPlayback false/position/rotation 0/touchable true/visible true
 5. **必选 = 扫描 SampleUI 每类型控件 100% 共有的字段（交集）**；值含默认全部显式
@@ -33,7 +34,7 @@
 | pointer | id/caption/position/animatable/backgroundColor/backgroundPic/clockwise/fixedPoint/pointerPic/pointerSize/rotateSpeed/rotationPoint/startAngle/touchable/visible | rotateSpeed 1；startAngle 0；clockwise/animatable true；图/点位按设计有才写 |
 | diagram | id/caption/position/backgroundColor/infos/region/touchable/visible/xAxisRange/yAxisRange | touchable true 主；region=position；infos[] 见子结构 |
 | checkbox | id/caption/position/alignment/checked/colorTab/bgColorTab/backgroundColor/bold/fontSize/iconPosition/italic/text/touchable/textPosition/visible | basedemo 23 键全字段折衷；text 恒写 |
-| radiogroup | id/caption/position/backgroundColor/touchable/visible/radiobuttons | touchable false；radiobuttons[] 子项见下 |
+| radiogroup | id/caption/position/backgroundColor/touchable/visible/radiobuttons | **touchable true**（⚠️ 是「容器显式 false」通用口径的**例外**，2026-09-10 修正）；radiobuttons[] 子项见下 |
 | radiobutton | id/caption/position/alignment/checked/colorTab/bgColorTab/backgroundColor/bold/fontSize/italic/text/touchable/visible | basedemo 23 键全字段折衷；checked false |
 | pagewindow | id/caption/position/dragMaxDis/orientation/edgeEffect/rollSpeed | 200/0/1/60；SampleUI 无样例，basedemo+demo 验证（无 beepEnable） |
 | scrollwindow | id/caption/position/dragMaxDis/orientation/edgeEffect | 200/0/1；同上（无 beepEnable） |

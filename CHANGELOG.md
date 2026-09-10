@@ -1,7 +1,38 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.22-open**（2026-09-10）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.23-open**（2026-09-10）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.23-open (2026-09-10) — 触摸语义修正（radiogroup touchable / setSelection 刷新 / 层叠收触摸）
+
+**背景**：项目 UI 实现过程中发现的问题，前两项会产生错误代码（优先级最高）。
+
+**① radiogroup `touchable` 必须 `true`（会产生错误代码）**
+- `knowledge/uicontrols/json-field-mandatory.md`：
+  - 「沛哥 5 条口径」第 2 条（touchable）补例外说明：**radiogroup 虽是容器也必须 true**，写 false 会让整组收不到触摸、点了没反应
+  - 每类型必写键表中 radiogroup 行：`touchable false` → **`touchable true`**，并标注这是「容器显式 false」通用口径的**例外**
+- `ui_tools/html2json.py`：`_open_radiogroup` 模板 `'touchable': False` → **`'touchable': True`**，加注释说明原因（双份同步：MCP 内 + `tools/ui_tools/`）
+
+**② 新增 `knowledge/uicontrols/touch-events.md`（触摸事件与 touchable 语义 ·「点了没反应」排查手册）**
+- 铁律：touchable ≠ 穿透开关（只管收不收触摸，不靠它实现穿透）；交互控件必须 true；**radiogroup 例外必须 true**；
+  容器/纯显示 false（window/painter/textview/cameraview/digitalclock），需拦截下层触摸的遮罩/弹窗才故意 true
+- 六步排查顺序：touchable → 是否被上层遮挡（层叠）→ 是否在当前显示 window/Activity → 回调名是否匹配 caption → 状态类是否漏刷新 → 真机截图 + logcat
+- 自检清单 8 项（含 radiogroup 例外、setSelection→refresh、ID 宏不用序号）
+
+**③ `listview-fields.md` 铁律 7：`setSelection(idx)` 后必须 `refreshListView()`**
+- setSelection 只改选中态，不重新拉数据/不重绘，漏刷新 = 界面看不到变化；代码示例同步
+
+**④ `json-layer-rules.md` 新增第 7 条：层叠顺序决定谁收到触摸**
+- json 后定义者在上层，上层 `touchable: true` 先截走触摸；「点了没反应」优先查是否被上层全屏透明面板/遮罩挡住
+
+**⑤ `radiogroup-checkbox-fields.md`：`touchable` 单独拎出来说明**
+- 核心铁律加第 5 条 + 字段表单独一行（必须 true、为什么不适用「容器 false」口径、生成器已修正）
+
+**索引**：`rebuild_index_local.py` 重建；`scripts/smoke.py` 自检全过。
+
+**版本 0.27.22 → 0.27.23-open**
 
 ---
 

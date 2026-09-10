@@ -24,6 +24,9 @@
 4. **pagewindow/scrollwindow 必须含 window 子页面**，且只装 window（装 textview 等 = 非法）。
 5. **叶子控件不能生子**（textview 内含 button 等 = 非法）。
 6. Z 序与层级正交：json 书写顺序 = 层叠顺序（后定义在上层）；层级（谁嵌谁）由结构键/嵌套决定。
+7. **层叠顺序决定谁收到触摸**（沛哥 2026-09-10）：上层控件若 `touchable: true` 会**先截走触摸**，下层即使 touchable=true 也收不到——
+   「点了没反应」优先查是不是被上层（常是全屏透明面板/遮罩 window）挡住了；要穿透就不要让上层 `touchable: true`
+   （注意：radiogroup 必须 true，见 `touch-events.md`）。
 
 ## 相关
 - 子结构字段全集（item 17 键含 position / subItem / infos 含 visible）见 `json-field-mandatory.md`

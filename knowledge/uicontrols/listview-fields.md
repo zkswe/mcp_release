@@ -15,6 +15,8 @@
 4. 删除行套路：数据容器 erase → 更新计数 → refreshListView（listViewDemo 实测）。
 5. 资源路径用 `CONFIGMANAGER->getResFilePath("pic/xxx.jpg")` 拼（相对 resources）。
 6. 另一种编程式用法：`setListAdapter(AbsListAdapter)` + `setItemClickListener`（NetDemo/New 风格），与命名回调二选一。
+7. **`setSelection(idx)` 之后必须 `refreshListView()`**（沛哥 2026-09-10）：setSelection 只改选中态，
+   不重新拉行数据/不重绘，漏刷新 = 界面上看不到变化（高亮/滚动位置不更新）。改数据（erase/新增）同理，改完一律 refresh。
 
 ## JSON 字段表（ftu 实测校准）
 
@@ -49,6 +51,10 @@ static void onListItemClick_ListView1(ZKListView *p, int index, int id) {
     else if (id == ID_MAIN_SubSetlectBtn) { /* 点选择钮 */ }
     else if (id == ID_MAIN_SubDeleteBtn) { vData.erase(...); refreshListView(); }
 }
+
+// 选中某行：setSelection 后必须 refreshListView（否则界面不更新）
+p->setSelection(2);
+p->refreshListView();
 ```
 
 ## 样例代码
