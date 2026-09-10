@@ -37,9 +37,10 @@ except Exception:
     udf = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.20-open'
+MCP_VERSION = '0.27.21-open'
 MCP_BUILD = '2026-09-10'
 MCP_FEATURES = [
+    '2026-09-10: UI 布局可视化编辑 + 像素验收工作流入库 v0.27.21（knowledge/devflow/ui-layout-verify.md；配套 v0.27.20 的 flythings_ui_editor / ui_edit_apply / ui_diff）——要点：json 是唯一真相（设备加载 ftu，ftu 由 json pack，手写 HTML 预览=第二份真相必然漂移；json2html 也只是近似，像素真相只有真机截图）；三段式验收（预览→真机截图→像素 diff）；编辑器指哪打哪（Alt+点穿透下层、✥绿块拖遮罩下控件、属性栏按原 json 动态出字段、id 只读、visible:false 幽灵框）；变更写回三条安全（.bak / 格式自检 / 边界钳制）；像素 diff 默认容差±2+抖动补偿+模糊+噪声块过滤，主力是回归对比（改前截图 vs 改后截图），分层省钱 L1 像素(0 token)→L2 只裁差异区小图给模型→L3 人工看标注图；图片引用是相对 resources 可带子目录的路径（audio/horn.png），只按 basename 找 resources/images 会大面积丢图；现象→根因排查表（锯齿/位置/切图/丢图/裁字）；v0.27.21-open',
     '2026-09-10: UI 可视化编辑 + 像素验收入 open 版 v0.27.20（沛哥：布局调整要「指哪打哪」，预览里的文字/属性都要能改，图片资源要能加载）——新增 3 个工具：① flythings_ui_editor：ui/*.json → 单文件可拖拽编辑器（拖/缩放/Alt+点穿透选中下层/属性栏列出全部字段含 text·fontSize·colorTab·picTab 四状态图，改完画布即时生效，id 只读；内置图片尺寸≠控件尺寸红黄标）② flythings_ui_edit_apply：变更 JSON（changes 几何 + props 属性）写回 ui/*.json（自动 .bak + 格式自检）并 pack ftu ③ flythings_ui_diff：像素 diff 0 token，容差±2 + ±1px 抖动补偿 + 高斯模糊 + 噪声块过滤，输出差异清单/标注图（回归对比专治改 A 碰坏 B）；顺带修 json2html 图片路径解析（支持 audio/xxx.png 这类带子目录的相对 resources 引用，之前只按 basename 找 resources/images/ 导致预览丢图、尺寸预检形同虚设）；v0.27.20-open',
     '2026-09-09: package API 识别规则定规 v0.27.19（沛哥 21:42：AI 对 FlyThings package 只允许通过头文件识别 API，不要猜也不要反编译二进制浪费时间，不会就是不会；标准 C/C++/Linux 开发按标准+开源社区参考）——retrieval-boundary.md 新增「Package API 识别规则」：package C++ API（类/方法/枚举/注释）只读包内头文件（aw-dvr mpi/*.h、easyui control/*.h）；禁猜（读不出标未收录问官方）/禁反编译（objdump 禁止，readelf 仅排障用）；两层区分：头文件能确认的（签名/枚举/注释）读头文件、表达不了的（控件 json 字段/回调语义）走 wiki/knowledge（与 09-01 easyui 条款不冲突）；标准 C/C++/Linux（socket/pthread/v4l2/std 等非 FlyThings 私有 API）按标准+开源社区参考不受限；v0.27.19-open',
     '2026-09-09: MCP 知识库结构化整理 v0.27.18（沛哥确认：平台化/结构化治理，消重复啰嗦）——①content 唯一化：删除 wiki/flythings 下 44 篇 knowledge 实践文档副本（28 字节相同双命中 + 16 漂移），实践知识唯一放 knowledge/（随 Gitee+检索主源），wiki 只留官方镜像 129 篇；rag 去重重建 ②MCP_FEATURES 精简 70 条 25.8KB → 近期精华+能力概括（完整史在 CHANGELOG）③治理机制固化：knowledge/README.md 治理规范（新增文档只改 knowledge 禁复制 wiki/命名/流程红线）+ scripts/check_duplicate.py 双份检测工具',
