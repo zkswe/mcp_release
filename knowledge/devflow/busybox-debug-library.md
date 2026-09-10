@@ -38,3 +38,24 @@ adb shell /tmp/busybox telnet <ip> / nc -l -p 5555
 
 源码/坑位在本地 `tools/busybox/README.md`（不入库）；MCP 侧只分发 ELF。
 重编：WSL 内 `wsl bash scripts/bb_build_all.sh all`（构建必须 WSL 原生盘，Windows exe 工具链无法派生 cc1）。
+
+## 设备端没有的常用命令 → 用 busybox applet（别写“设备不支持”）
+
+裁剪 rootfs 常见缺失：`grep / sed / head / tail / dd / md5sum / df / find / wc / xxd / vi`。
+**不是设备不支持，是没装**——push 一个 busybox 上述全有（applet 列表见上）。
+
+```bash
+adb push bin_tools/v85x/busybox /tmp/busybox && adb shell chmod 777 /tmp/busybox
+A=/tmp/busybox
+$A dd if=/dev/fb0 bs=2400 count=1600 | $A gzip -1 > /tmp/x.gz   # 抓帧（设备无 dd/gzip 时）
+$A md5sum /tmp/ui/images/*.png | $A head                        # 校验图到底推上去没
+$A df -h /tmp                                                   # 抓帧前先看 /tmp 空间
+$A grep -n "onUI_show" /tmp/log.txt; $A tail -50 /tmp/log.txt
+$A find / -name "*.ftu" 2>/dev/null | $A head
+```
+
+- 抓帧三条纪律：① 抓前 `df -h /tmp`（**空间不足会静默截断**，图看着对其实少了一截）
+  ② 图片有没有部署用 `md5sum` 比对，不要靠肉眼 ③ **`fun launch` 会清 `/tmp`** → push 的工具/抓的帧要在同一次会话里用完。
+- `cat` 是设备内置的（不需要 busybox）；`adb exec-out` 不可用（`error: closed`）→ 一律
+  `adb shell "…" > 本地文件` 或 `adb pull`。
+- 设备上跑多步时把 `A=/tmp/busybox` 存成变量，命令短且不易敲错。

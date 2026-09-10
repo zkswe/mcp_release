@@ -1,7 +1,31 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.28-open**（2026-09-10）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.29-open**（2026-09-10）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.29-open (2026-09-10) — 抓帧读图/像素级坑补缺（外部 skill 比对后的“必要项”）
+
+**背景**：外部 skill `flythings-device-screenshot` 与知识库逐条比对结果 = **30 条：已覆盖 27 / 真缺 3 / 弱覆盖若干**。**沛哥 21:31**：“必要的做好入库就好了” → 只补必要项，不整篇搬。
+
+**新增 `knowledge/devflow/pixel-analysis-ai.md`**
+- **省 token 四层阶梯**：L1 结构化读数 → L2 程序化读图 → L3 `ui_diff` 像素 diff → L4 视觉模型（只给“差异区小图”，不给整屏）
+- **方法一：1 字符 = 1 像素分类图**（块降采样成字符画；背景 `.`、亮 `#`、高饱 `R/G/B/Y/C/M`、灰 `:`；整片 `.` = 没内容，意外白块 = 丢图）
+- **方法二：文字暗带 bands 检测**（逐行非背景像素计数 → band 数 = 实际行数；判换行是否生效 / 文字溢出裁字 / 空文本；与 `check_all._text_min_size()` 静态校验互补）
+- **坐标换算**：`rotate='auto'` 输出已是逻辑方向 → **缺省不用换算**；要换算就用同一个 rotate 函数（`img.rotate(-rotateScreen, expand=True)`），不手推矩阵；触摸注入按 `rotateTouch`
+- **像素级渲染坑表**：滑块被裁成扁方（控件高 < 图高）/ 滑块暗环（图自带描边环）/ 半透明图贴纯色底发脏（烘底 或 button+picTab）/ 圆角四角发黑（烘页面底色）/ listview·item 黑块（删 `backgroundColor`+`bgColorTab`）
+
+**`busybox-debug-library.md` 新增「设备端没有的常用命令 → 用 busybox applet」**
+- `grep / sed / head / tail / dd / md5sum / df / find / wc / xxd / vi` 不是“设备不支持”，是没装（push 一个 busybox 全有）
+- 抓帧三条纪律：① 抓前 `df -h /tmp`（**空间不足会静默截断**）② 图片是否部署用 `md5sum` 比对，不靠肉眼 ③ **`fun launch` 会清 `/tmp`**
+
+**`touch-inject-autotest.md` 新增「抓帧时机」**
+- **注入 + 抓帧放在同一次 adb 调用里**；**多档 sleep 差分**（0.15s / 0.4s / 1.0s）出“变化中的元素”
+- **`hasScrollbar` 滚动条约 0.6s 淡出、颜色逐帧变** → 过了窗口期整条消失，会误判“没生效”
+- 结论：单张静止帧不足以判定交互结果（要么多帧差分，要么以日志为主）
+
+**未入库（不属于必要项）**：V553 的设备专属几何（600×3200 BGRA / 页内 x119..599 / 25 转置+翻转）—— 已被 v0.27.28 的“读工程 `rotateScreen`、不猜”替代为通则；其余弱覆盖已有相应章节过。
 
 ---
 

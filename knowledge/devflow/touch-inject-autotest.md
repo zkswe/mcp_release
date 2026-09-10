@@ -231,3 +231,13 @@ arm-pc-linux-gnueabihf-gcc -static -O2 mt_test.c -o mt_test         # 4.5MB（gl
 # RISC-V 64 musl（f133 + f135）— 待 WSL 解封后用玄铁 Xuantie 工具链
 riscv64-unknown-linux-musl-gcc -static -O2 mt_test.c -o mt_test
 ```
+
+## 🔁 抓帧时机：静止帧会漏掉瞬时元素（实测教训）
+
+- **注入 + 抓帧放在同一次 adb 调用里**（`… && 抓帧命令`），否则中间的网络往返把瞬时状态等没了。
+- **多档 sleep 差分**：同一次操作后分别抓 3~4 张（如 0.15s / 0.4s / 1.0s）→ diff 出“变化中的元素”：
+  瞬时元素（滚动条、Toast、按压态、动画）只在其中一两张出现，单张看不到。
+- **`hasScrollbar` 滚动条约 0.6 秒淡出**、颜色**逐帧变化** → 想抓它必须在滚动结束后 0.6s 内抓，
+  且判据看**色阶**（不是固定灰值）；过了窗口期整条消失 → 会误判“滚动条没生效”。
+- 页面切换类测试：先 `logcat` 看到 `onUI_show` 再抓帧（导航×回调矩阵见 activity-code-skeleton.md）。
+- 结论：**单张静止帧不足以判定交互结果**——要么多帧差分，要么以日志为主、像素为辅（两者都会骗人）。
