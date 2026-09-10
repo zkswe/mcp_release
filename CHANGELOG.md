@@ -1,7 +1,33 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.27-open**（2026-09-10）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.28-open**（2026-09-10）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.28-open (2026-09-10) — 抓屏方向：按**项目工程**的 rotateScreen 取图（不猜）
+
+**背景**：外部 skill（`flythings-device-screenshot`，`agent_created`）的并入审阅中，其中「V553 几何 + 转置/翻转」一条，助手的初始方案是硬编设备几何 → **沛哥定规（2026-09-10 21:24）**：
+
+> “入库的 B 方案根据实际项目旋转角度取图就可以了。不用猜。”
+
+→ 角度只有一个权威来源：**项目工程自己的 `EasyUI.cfg`**（`<项目>/.fun/<平台>/launch/EasyUI.cfg`，设备上 = `/res/etc/EasyUI.cfg`）的 `rotateScreen`（0/90/180/270）；`rotateTouch` 是触摸角度（**可与之不同**）。
+
+**`ui_tools/device_screenshot.py`**
+- 新增 `_parse_easyui_cfg(text)`：解析 `rotateScreen` / `rotateTouch` / `resPath` / `startupLibPath` / `touchDev` / `languageCode` / `font`
+- `screen_info()`：cat 链读到 **10 段**（新增 `fb0/rotate` + `/sys/class/disp/disp/attr/sys` + `/res/etc/EasyUI.cfg` + `/etc/EasyUI.cfg`）；新增 `_parse_dispsys(text)`（图层 `fb/crop/frame` 几何；修了 `fb[480, 800; 240, 400; …]` 里**分号**导致匹配失败的 bug）；返回新增 `rotateScreen` / `rotateTouch` / `easyuiCfg` / `cfgSource` / `layers` / `uiLayer`
+- `capture()`：**`rotate` 缺省改为 `'auto'`** → 优先用 `rotateScreen`，拿不到才退化 `fb0/rotate`；新增 `crop='' | 'auto' | 'x,y,w,h'`（`auto` = 按 UI 图层 `frame` 裁逻辑分辨率；裁切在 flip/rotate **之前**，映射 `fx=frame_x+offsetX`、`fy=frame_y−pan_y`）；返回值新增 `rotateDeg` / **`rotateSource`** / `crop` / `uiLayer`
+- CLI：`--rotate` 接受 `auto`（缺省），新增 `--crop`
+- MCP 包装 `flythings_device_screenshot`：签名 `rotate: str = 'auto'` + 新增 `crop`，docstring 写明“**方向只认项目工程配置**”及三条❌反例
+
+**实测证据（V85X DVR 板 `192.168.0.117:5555`，`/res/etc/EasyUI.cfg` → `rotateScreen=270, rotateTouch=0`）**
+
+| 抓法 | 结果 |
+|---|---|
+| `rotate=0`（原样 fb） | 600×1600，文字**侧躺/倒立**（错） |
+| `rotate='auto'`（读工程 rotateScreen=270） | 1600×600，文字**正立**（✅ 与用户实际看到的一致） |
+
+**`knowledge/devflow/ui-layout-verify.md` §2-1** 新增 **§2-1-1 取图方向/角度：读项目工程的配置，不要猜**：工程内路径 / `rotateScreen` / `rotateTouch` 表 + 本机实测 + 三条❌反例（不拿 `fb0/rotate` 当首选，本机它=0 与工程角度不一致；不硬编某台设备的转置翻转组合；不从 disp 图层几何反推方向——本机那个 480×800 图层是**视频/DVR 层**不是应用 UI 层）；并链到 `package-properties-easyui-cfg.md`。
 
 ---
 

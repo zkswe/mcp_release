@@ -41,9 +41,10 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.27-open'
+MCP_VERSION = '0.27.28-open'
 MCP_BUILD = '2026-09-10'
 MCP_FEATURES = [
+    '2026-09-10: 抓屏方向按**项目工程**的 rotateScreen 取图，不猜 v0.27.28（沛哥定规：“入库的 B 方案根据实际项目旋转角度取图就可以了。不用猜。”）——flythings_device_screenshot 的 `rotate` 缺省改为 **`auto`**：读项目工程 `<项目>/.fun/<平台>/launch/EasyUI.cfg`（设备上 = `/res/etc/EasyUI.cfg`）的 `rotateScreen`（0/90/180/270）自动转正，拿不到才退化 `fb0/rotate`；返回值新增 `rotateSource` 可自证，screenInfo 带 `rotateScreen`/`rotateTouch`（触摸角度可不同）。新增 `crop=''|auto|x,y,w,h`（auto=按 disp 图层 frame 裁逻辑分辨率）。实测（V85X DVR 板，rotateScreen=270）：rotate=0 → 文字侧躺（错）；rotate=auto → 1600×600 文字正立（✅）。❌反例：不拿 fb0/rotate 当首选（本机它=0 与工程角度不一致）、不硬编某台设备的转置/翻转组合、不从 disp 图层几何反推方向（本机 480×800 层是视频/DVR 层）；knowledge/devflow/ui-layout-verify.md 新增 §2-1-1；v0.27.28-open',
     '2026-09-10: check_all #15 新增「故意遮挡」评估 v0.27.27（沛哥：“方案一也要评估一种可能就是故意遮挡”）——WARN 分两类：**[可能有意遮挡]**（线索任一命中：modal=true / 遮挡件是容器类 window·painter·scrollwindow·pagewindow / 几乎完全覆盖被压控件≥90% / 遮挡件整屏尺寸）与 **[疑似误压]**（以上都不满足，小装饰件压住可触摸控件一角）；可能有意→提示“确认是故意挡（禁用态/蒙层/防盗点）则忽略本条”，不再无差别要求改代码；一律仍只 WARN（不入 failures、不影响 PASS/FAIL 与退出码）。新内部函数 `_deco_hint`。实测 175 个真实 json 17 处命中 → 可能有意 7 / 疑似误压 10；v0.27.27-open',
     '2026-09-10: check_all #15/#16 WARN 升级为“可粘贴修复代码” v0.27.26（沛哥确认扫描命中真实存在、修复方案就是代码补 setTouchPass）——#15 的 WARN 现在给出装饰件 caption 推导出的指针名与完整修复行（`m<Caption>Ptr->setTouchable(false); m<Caption>Ptr->setTouchPass(true);`）并提示写在 onUI_init；#16 直接列出 `m<X>->setTouchPass(true);`；修完再跑即 WARN 消失（已用 fixture 正/负向用例实测）；v0.27.26-open',
     '2026-09-10: 遮挡自动审计入库 v0.27.25（沛哥定规：check_all 自检清单第五条，“报 warning 让用户审批”）——**check_all.py 新增 #15/#16，两顶均只报 WARN**（不计入 failures、不影响 PASS/FAIL 与退出码，交用户逐条审批）：①**#15 json 静态**：同层中后定义（z 更高）且 touchable=false 的控件压在 touchable=true 控件之上 → WARN（提示装饰件需运行期 setTouchable(false)+setTouchPass(true)，见 touch-events.md §1；重叠<4px 的微小交叠不计以障噪；上层为 modal 容器时提示“拦截可能是有意的”）②**#16 代码静态**：logic.cc 里 X->setTouchable(false) 但同对象无 setTouchPass(true) → WARN；局限：#15 查不到运行期才设的 setTouchPass，最终仍需实机验证；实测噪声（175 真实 json）=14 文件/17 处命中，负向用例（装饰件移开+补穿透）0 命中；双份同步（MCP 内 + tools/ui_tools/）；v0.27.25-open',
@@ -615,7 +616,7 @@ def flythings_ui_diff(image_a: str, image_b: str, tolerance: int = 2, shift: int
 def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png', scale: float = 1.0,
                                quality: int = 90, fb: str = '/dev/fb0', pixel: str = 'auto',
                                width: int = 0, height: int = 0, offset_y: int = -1,
-                               flip: str = '', rotate: int = 0, name: str = '',
+                               flip: str = '', rotate: str = 'auto', crop: str = '', name: str = '',
                                timeout: int = 180) -> str:
     """从**设备真机**抓当前屏幕 → PNG / JPG / BMP，交给视觉模型看或用 flythings_ui_diff 做像素验收。
 
@@ -629,9 +630,16 @@ def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png
       ③ 多设备：device='192.168.0.117:5555'（先 `adb connect <IP>:5555`）
       ④ 抓完把返回的 path 交给看图能力分析；**不要把 raw/文件本身丢给模型**。
       ⑤ 改前抓一张存好，改后再抓一张 → flythings_ui_diff(改前, 改后) 0 token 出差异清单。
+      ⑥ 方向不对（文字侧躺/倒立）：**不用自己试角度**——缺省 rotate='auto' 会读**项目工程 EasyUI.cfg
+         的 rotateScreen**（设备上 /res/etc/EasyUI.cfg）自动转正；返回值里 rotateSource 可自证。
+         要看触摸对应的角度用 screenInfo.rotateTouch（两者可不同）。
+      ⑦ 只要“应用自己的画面”（不要四周黑边/面板留白）：crop='auto' 会按 disp 图层 frame 裁出逻辑分辨率区域
+         （仅在存在唯一非全屏图层时生效，否则不裁并在 crop 字段里说明）。
 
     **输出**：
-      {success, path, width, height, format, sizeBytes, device, method, screenInfo{width,height,virtualHeight,bpp,stride,modes,offsetY,pan}, pixelOrder, readHint}
+      {success, path, width, height, format, sizeBytes, device, method,
+       screenInfo{width,height,virtualHeight,bpp,stride,modes,offsetY,pan,rotate,rotateScreen,rotateTouch},
+       uiLayer, pixelOrder, rotateDeg, rotateSource, crop, readHint}
 
     **实现要点（踩过的坑，别改错）**：
     - 设备 rootfs 是裁剪版：**没有 screencap / dd / head**，`adb exec-out` 也不通（patched adbd 无 shell v2）；
@@ -645,7 +653,15 @@ def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png
       本工具 offset_y=-1 自动读 pan，并在抓图后二次确认 pan 未变（翻了就重抓一次）。
     - 32bpp 内存序是 BGRA（小端 ARGB8888）；本工具按 alpha 字节位置自动判通道序（末字节≈0xFF→BGRA）。
       若颜色红蓝互换，传 pixel='rgba' 重抓；其他可选 bgra/rgba/argb/abgr/rgb565/bgr565/rgb888/bgr888。
-    - 匹配参数：width/height 可覆盖（sysfs 读不到时）、flip='v|h|both'、rotate=90/180/270、offset_y 手动指定。
+    - 匹配参数：width/height 可覆盖（sysfs 读不到时）、flip='v|h|both'、rotate='auto'|0|90|180|270、
+      crop=''|'auto'|'x,y,w,h'、offset_y 手动指定。
+    - **方向/角度只认项目工程配置**（沛哥 2026-09-10 定规）：
+      `<项目>/.fun/<平台>/launch/EasyUI.cfg`（设备上 = /res/etc/EasyUI.cfg）里的 `rotateScreen`（0/90/180/270）
+      = 屏幕/取图角度，`rotateTouch` = 触摸角度（**可以与之不同**）。
+      实测（V85X DVR 板）：rotateScreen=270 时 fb 里内容侧躺，按 270 转后文字正立。
+      ❌ 不要拿 /sys/class/graphics/fb0/rotate 当首选（本机它=0，与工程角度不一致，看起像不用转其实要转）；
+      ❌ 不要把某台设备的“转置+翻转”组合硬编成通则（那是那台设备那个角度的结果）；
+      ❌ 不要从 /sys/class/disp/disp/attr/sys 的图层几何反推方向（它只说明某层占哪块，不告诉你屏幕角度）。
     """
     if dss is None:
         return json.dumps({'success': False, 'error': 'device_screenshot 不可用（缺 ui_tools/device_screenshot.py 或 Pillow）'},
@@ -653,7 +669,7 @@ def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png
     try:
         r = dss.capture(device=device, out=out, fmt=fmt, scale=scale, quality=quality, fb=fb,
                         pixel=pixel, width=width, height=height, offset_y=offset_y,
-                        flip=flip, rotate=rotate, name=name, timeout=timeout)
+                        flip=flip, rotate=rotate, crop=crop, name=name, timeout=timeout)
     except Exception as e:
         return json.dumps({'success': False, 'error': str(e)}, ensure_ascii=False)
     return json.dumps(r, ensure_ascii=False)

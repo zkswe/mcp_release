@@ -141,6 +141,47 @@ def _parse_modes(text):
     return 0, 0
 
 
+def _parse_dispsys(text):
+    """从 /sys/class/disp/disp/attr/sys 解析各图层几何。
+
+    每层：{'fb': (w, h), 'crop': (x, y, w, h), 'frame': (x, y, w, h)}
+    权威信息源：**UI 图层的 fb 尺寸 = 本项目逻辑分辨率**，frame = 它在面板上的位置
+    （不用猜设备几何，sysfs 里就有）。
+    """
+    def nums(s):
+        return [int(v) for v in re.findall(r'-?\d+', s or '')]
+    layers = []
+    for m in re.finditer(r'fb\[\s*([\d,;\s]+?)\]\s*crop\[\s*([\d,;\s]+?)\]\s*frame\[\s*([\d,;\s]+?)\]',
+                         text or ''):
+        fbn, crn, frn = nums(m.group(1)), nums(m.group(2)), nums(m.group(3))
+        if len(fbn) >= 2 and len(crn) >= 4 and len(frn) >= 4:
+            layers.append({'fb': tuple(fbn[:2]), 'crop': tuple(crn[:4]),
+                           'frame': tuple(frn[:4])})
+    return layers
+
+
+def _parse_easyui_cfg(text):
+    """解析**项目工程**的 EasyUI.cfg（设备上 /res/etc/EasyUI.cfg）。
+
+    工程内位置：<项目>/.fun/<平台>/launch/EasyUI.cfg —— 这是取图方向的
+    权威来源，**不用猜、不要从 fb0/rotate 或图层几何反推**：
+      rotateScreen : 屏幕/取图角度（0/90/180/270）
+      rotateTouch  : 触摸角度（**可以与之不同**，注入触摸测试时要按它换算）
+    """
+    out = {}
+    for k in ('rotateScreen', 'rotateTouch', 'resPath', 'startupLibPath', 'touchDev',
+              'languageCode', 'font'):
+        m = re.search(r'"%s"\s*:\s*"([^"]*)"|\"%s\"\s*:\s*([-\w./]+)' % (k, k), text or '')
+        if m:
+            out[k] = (m.group(1) or m.group(2) or '').strip()
+    for k in ('rotateScreen', 'rotateTouch'):
+        try:
+            out[k] = int(out[k])
+        except Exception:
+            pass
+    return out
+
+
 def screen_info(device='', fb='/dev/fb0', adb=''):
     """读 sysfs 得到可见分辨率 / bpp / stride / virtual。返回 dict（含 raw 每行字节、可见字节数）。"""
     adb = adb or find_adb()
@@ -155,10 +196,22 @@ def screen_info(device='', fb='/dev/fb0', adb=''):
            f'cat {g}/bits_per_pixel 2>/dev/null; echo "|"; '
            f'cat {g}/stride 2>/dev/null; echo "|"; '
            f'cat {g}/name 2>/dev/null; echo "|"; '
-           f'cat {g}/pan 2>/dev/null')
+           f'cat {g}/pan 2>/dev/null; echo "|"; '
+           f'cat {g}/rotate 2>/dev/null; echo "|"; '
+           f'cat /sys/class/disp/disp/attr/sys 2>/dev/null; echo "|"; '
+           f'cat /res/etc/EasyUI.cfg 2>/dev/null; echo "|"; '
+           f'cat /etc/EasyUI.cfg 2>/dev/null')
     out = _sh(adb, dev, cmd)
-    parts = (out.split('|') + ['', '', '', '', '', ''])[:6]
-    modes, vsize, bpp_s, stride_s, name, pan = [p.strip() for p in parts]
+    parts = (out.split('|') + [''] * 10)[:10]
+    (modes, vsize, bpp_s, stride_s, name, pan, rot_s, disp_sys,
+     cfg_res_etc, cfg_etc) = [p.strip() for p in parts]
+    cfg_txt = cfg_res_etc or cfg_etc
+    cfg = _parse_easyui_cfg(cfg_txt)
+    cfg_src = '/res/etc/EasyUI.cfg' if cfg_res_etc else ('/etc/EasyUI.cfg' if cfg_etc else '')
+    try:
+        rotate = int(rot_s)
+    except Exception:
+        rotate = 0
     ox = oy = 0
     if ',' in pan:
         try:
@@ -186,12 +239,21 @@ def screen_info(device='', fb='/dev/fb0', adb=''):
     if not stride:
         stride = w * bpp // 8
     size = _sh(adb, dev, f'cat {g}/virtual_size >/dev/null 2>&1; echo 0')
+    layers = _parse_dispsys(disp_sys)
+    cands = [L for L in layers if L['fb'] != (w, h)] if w and h else []
+    ui_layer = cands[0] if len(cands) == 1 else None
     return {
         'success': True, 'device': dev, 'fb': fb, 'fbName': name,
         'width': w, 'height': h,               # 可见分辨率（要用的）
         'virtualWidth': vw, 'virtualHeight': vh,
         'bpp': bpp, 'stride': stride,
         'offsetX': ox, 'offsetY': oy, 'pan': pan,
+        'rotate': rotate,                      # fb0/rotate（可能为 0，**不是**取图角度的首选）
+        'rotateScreen': cfg.get('rotateScreen'),   # 项目工程 EasyUI.cfg：取图角度的权威来源
+        'rotateTouch': cfg.get('rotateTouch'),     # 触摸角度（可与 rotateScreen 不同）
+        'easyuiCfg': cfg, 'cfgSource': cfg_src,
+        'layers': layers,                      # disp attr sys 各图层几何（参考，不是角度来源）
+        'uiLayer': ui_layer,                   # 唯一“非全屏尺寸”图层 = 项目 UI 层
         'visibleBytes': stride * h,
         'modes': modes,
         'note': ('virtualHeight 是 height 的 %d 倍（FBDEV_OVERALLOC）——**双缓冲**：'
@@ -310,8 +372,8 @@ def decode_raw(data, width, height, stride, bpp, pixel='auto'):
 # ---------------------------------------------------------------- 抓屏主流程
 
 def capture(device='', out='', fmt='png', scale=1.0, quality=90, fb='/dev/fb0',
-            width=0, height=0, pixel='auto', flip='', rotate=0, offset_y=-1,
-            timeout=180, keep_raw=False, name='', adb='', _retry=False):
+            width=0, height=0, pixel='auto', flip='', rotate='auto', offset_y=-1,
+            crop='', timeout=180, keep_raw=False, name='', adb='', _retry=False):
     """抓设备当前屏 → 本地图片。返回 dict（success/path/尺寸/来源/参数…）。
 
     out      : 输出文件全路径；缺省 screenshots/device_<W>x<H>_<名>_<时间>.<fmt>
@@ -320,7 +382,11 @@ def capture(device='', out='', fmt='png', scale=1.0, quality=90, fb='/dev/fb0',
     fb       : framebuffer 节点（默认 /dev/fb0，部分平台 /dev/disp/fb0、/dev/graphics/fb0）
     pixel    : auto / bgra / rgba / argb / abgr / rgb565 / bgr565 / rgb888 / bgr888（红蓝反了就换）
     offset_y : 抓第几行开始的可见窗口；-1=自动读 sysfs 的 pan（双缓冲时必须看它，否则抓到旧帧）
-    flip     : '' / v / h / both   rotate: 0/90/180/270
+    flip     : '' / v / h / both
+    rotate   : 'auto'（缺省）= 读 /sys/class/graphics/fb0/rotate 按**设备实际角度**转；也可显式 0/90/180/270
+               —— 方向以设备自己声明的角度为准，不猜、不写死某台设备
+    crop     : '' / 'auto' / 'x,y,w,h'。'auto' = 按 /sys/class/disp/disp/attr/sys 里 UI 图层的 frame
+               裁出**项目逻辑分辨率**（只对唯一“非全屏尺寸”图层生效，否则不裁并说明）
     """
     if Image is None:
         return {'success': False, 'error': '缺 Pillow（pip install Pillow），无法解码 framebuffer'}
@@ -340,6 +406,20 @@ def capture(device='', out='', fmt='png', scale=1.0, quality=90, fb='/dev/fb0',
     stride = info['stride'] or (w * info['bpp'] // 8)
     bpp = info['bpp']
     oy = int(info.get('offsetY', 0)) if int(offset_y) < 0 else int(offset_y)
+    # 旋转角度：缺省 'auto' → **优先读项目工程 EasyUI.cfg 的 rotateScreen**（设备上 /res/etc/EasyUI.cfg），
+    #          拿不到才退化用 fb0/rotate。方向以项目自己声明的角度为准，不猜、不写死设备几何。
+    rot_src = 'explicit'
+    if str(rotate).lower() in ('auto', ''):
+        rs = info.get('rotateScreen')
+        if isinstance(rs, int):
+            rot, rot_src = rs, 'EasyUI.cfg rotateScreen'
+        else:
+            rot, rot_src = int(info.get('rotate', 0) or 0), 'fb0/rotate(fallback)'
+    else:
+        try:
+            rot = int(rotate)
+        except Exception:
+            rot, rot_src = 0, 'bad(%s)' % rotate
 
     # ---- 1) 设备侧导出（必须压缩 + 必须按 pan 偏移读！实测裸 raw 7.7MB 经 WiFi pull 要 4 分钟+，
     #         busybox dd(skip=oy) + gzip 后只剩 ~37KB，0.3 秒传完）
@@ -420,8 +500,26 @@ def capture(device='', out='', fmt='png', scale=1.0, quality=90, fb='/dev/fb0',
         img = img.transpose(Image.FLIP_TOP_BOTTOM)
     if flip in ('h', 'horizontal', 'both'):
         img = img.transpose(Image.FLIP_LEFT_RIGHT)
-    if rotate in (90, 180, 270):
-        img = img.rotate(-rotate, expand=True)
+    crop_used = ''
+    if str(crop).lower() == 'auto':                       # 按 UI 图层裁出项目逻辑分辨率
+        L = info.get('uiLayer')
+        if L:
+            fx, fy, fw, fh = L['frame']
+            fx = max(0, fx + int(info.get('offsetX', 0)))  # frame = 面板坐标；本图已按 pan 切过
+            fy = max(0, fy - oy)
+            img = img.crop((fx, fy, fx + fw, fy + fh))
+            crop_used = '%d,%d,%d,%d(uiLayer %dx%d)' % (fx, fy, fw, fh, L['fb'][0], L['fb'][1])
+        else:
+            crop_used = 'auto-未裁切(disp sys 未找到唯一非全屏图层，请显式传 crop=x,y,w,h)'
+    elif crop:
+        try:
+            cx, cy, cw, ch = [int(v) for v in str(crop).replace(' ', '').split(',')[:4]]
+            img = img.crop((cx, cy, cx + cw, cy + ch))
+            crop_used = '%d,%d,%d,%d' % (cx, cy, cw, ch)
+        except Exception:
+            crop_used = 'bad(%s)' % crop
+    if rot in (90, 180, 270):
+        img = img.rotate(-rot, expand=True)
     if scale and float(scale) != 1.0:
         nw, nh = max(1, int(img.width * float(scale))), max(1, int(img.height * float(scale)))
         img = img.resize((nw, nh), Image.LANCZOS)
@@ -452,8 +550,11 @@ def capture(device='', out='', fmt='png', scale=1.0, quality=90, fb='/dev/fb0',
         'format': fmt, 'sizeBytes': os.path.getsize(path),
         'device': dev, 'source': 'framebuffer(' + fb + ')', 'method': method,
         'screenInfo': {k: info[k] for k in ('width', 'height', 'virtualHeight', 'bpp', 'stride',
-                                            'modes', 'offsetY', 'pan')},
+                                            'modes', 'offsetY', 'pan', 'rotate', 'rotateScreen',
+                                            'rotateTouch')},
+        'uiLayer': info.get('uiLayer'),
         'pixelOrder': used_pixel,
+        'rotateDeg': rot, 'rotateSource': rot_src, 'crop': crop_used,
         'scale': scale, 'elapsedSec': round(time.time() - t0, 2),
         'readHint': ('把该文件路径交给视觉模型/看图工具分析（不要把 raw 丢给模型）；'
                      '两张截图对比用 flythings_ui_diff（0 token 出差异清单）。'
@@ -476,7 +577,10 @@ def main():
     ap.add_argument('--offset-y', type=int, default=-1,
                     help='可见窗口起始行；-1=自动读 sysfs 的 pan（双缓冲设备必用，否则抓到旧帧）')
     ap.add_argument('--flip', default='', choices=['', 'v', 'h', 'both'])
-    ap.add_argument('--rotate', type=int, default=0, choices=[0, 90, 180, 270])
+    ap.add_argument('--rotate', default='auto',
+                    help="缺省 auto=读 /sys/class/graphics/fb0/rotate 按设备实际角度转；也可 0/90/180/270")
+    ap.add_argument('--crop', default='',
+                    help="'' / auto / x,y,w,h；auto=按 disp attr sys 的 UI 图层 frame 裁出项目逻辑分辨率")
     ap.add_argument('--keep-raw', action='store_true')
     ap.add_argument('--info', action='store_true', help='只打印屏幕参数，不抓图')
     ap.add_argument('--timeout', type=int, default=180)
@@ -488,7 +592,7 @@ def main():
     r = capture(device=args.device, out=args.out, fmt=args.fmt, scale=args.scale,
                 quality=args.quality, fb=args.fb, width=args.width, height=args.height,
                 pixel=args.pixel, flip=args.flip, rotate=args.rotate, offset_y=args.offset_y,
-                timeout=args.timeout, keep_raw=args.keep_raw, name=args.name)
+                crop=args.crop, timeout=args.timeout, keep_raw=args.keep_raw, name=args.name)
     print(json.dumps(r, ensure_ascii=False, indent=2))
     return 0 if r.get('success') else 1
 

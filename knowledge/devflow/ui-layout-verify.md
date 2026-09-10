@@ -42,6 +42,8 @@ flythings_device_screenshot(scale=0.5)             # 长宽各半，省 AI token
 flythings_device_screenshot(fmt='jpg', quality=85) # jpg / bmp
 flythings_device_screenshot(device='192.168.0.117:5555')  # 多设备指定
 flythings_device_screenshot(pixel='rgba')          # 颜色红蓝互换时
+flythings_device_screenshot(rotate='auto')         # 缺省值：按**项目工程** EasyUI.cfg 的 rotateScreen 转（出来就是正立的）
+flythings_device_screenshot(crop='auto')           # 按 disp 图层 frame 裁出「项目逻辑分辨率」区域（非全屏图层唯一时）
 ```
 
 典型用法（**回归验收**，0 token 对比）：
@@ -54,9 +56,33 @@ flythings_device_screenshot(pixel='rgba')          # 颜色红蓝互换时
 5. 只看某块差异的语义时，才把差异区小图裁出来给视觉模型
 ```
 
-参数：`device, out, fmt(png/jpg/bmp), scale, quality, fb, pixel, width, height, offset_y, flip, rotate, name, timeout`；
-返回 `{success, path, width, height, format, sizeBytes, device, method, screenInfo{...offsetY,pan}, pixelOrder, readHint}`。
+参数：`device, out, fmt(png/jpg/bmp), scale, quality, fb, pixel, width, height, offset_y, flip, rotate, crop, name, timeout`；
+返回 `{success, path, width, height, format, sizeBytes, device, method, screenInfo{...offsetY,pan,rotate,rotateScreen,rotateTouch}, uiLayer, pixelOrder, rotateDeg, rotateSource, crop, readHint}`。
 调完把 **path** 交给看图能力，**不要把 raw/整文件丢给模型**。
+
+### 2-1-1 取图方向/角度：读**项目工程**的配置，不要猜（❗踩过坑）
+
+角度只有一个权威来源：**项目工程自己的 `EasyUI.cfg`**。
+
+| 东西 | 位置 / 字段 |
+|---|---|
+| 工程内 | `<项目>/.fun/<平台>/launch/EasyUI.cfg`（打包时进 `.fun`/`imgout`，设备上 = `/res/etc/EasyUI.cfg`） |
+| 取图/屏幕角度 | `"rotateScreen"`（0 / 90 / 180 / 270） |
+| 触摸角度 | `"rotateTouch"`（**可与 rotateScreen 不同！注入触摸测试要按它换算**） |
+
+本机实测（V85X DVR 板 `192.168.0.117:5555`，`/res/etc/EasyUI.cfg` → `rotateScreen=270, rotateTouch=0`）：
+
+- 不转 → fb 里的内容**侧躺/倒立**（文字方向错）；按 **270 转** → 文字正立。代码：`img.rotate(-rotateScreen, expand=True)`。
+- 工具 `rotate='auto'`（缺省）就是读它；返回值带 `rotateSource: 'EasyUI.cfg rotateScreen'` 可自证。
+
+❌ **不要做的事**：
+
+- 不要拿 `/sys/class/graphics/fb0/rotate` 当首选（本机它 = `0`，与工程角度**不一致** → 看起像不用转，实际要转 270）。它只作为拿不到 EasyUI.cfg 时的退化。
+- 不要把某台设备的转置/翻转组合硬编成通则（如“某型号必须 TRANSPOSE+FLIP_TOP_BOTTOM”）——那是**那台设备那个角度**的结果；换角度/换板子就不对了。角度唯一决定变换。
+- 不要从 disp 图层几何去**反推**方向（`/sys/class/disp/disp/attr/sys` 只用来定位“UI 图层占哪块”，不告诉你屏幕角度；本机那个 480×800 图层是**视频/DVR 层**，不是应用 UI 层）。
+
+> `rotateScreen` / `rotateTouch` 的完整字段语义、package.properties 覆盖规则、代码消费链
+> （`CONFIGMANAGER->getScreenRotate()`）→ 见 `package-properties-easyui-cfg.md`。
 
 设备侧实现要点（AI 不需要重做，但排障要懂）：
 
