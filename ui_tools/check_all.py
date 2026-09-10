@@ -6,6 +6,8 @@
 全部 PASS 才允许交付。任何 FAIL 都会给出具体文件与原因。
 第 15/16 项为 **WARN（需人工审批，不影响 PASS/FAIL）**：装饰件压在可触摸控件之上、
 setTouchable(false) 未配套 setTouchPass(true)（沛哥 2026-09-10，见 knowledge/uicontrols/touch-events.md）。
+WARN 分两类意图：#15 会先评估「可能故意遮挡」（modal / 容器遮罩 / 整屏 / 完全覆盖 → 本就有意，忽略），
+其余才是「疑似误压」；WARN 永远只是给人工审批的清单，不自动修。
 """
 import glob
 import json
@@ -248,7 +250,8 @@ def _deco_blockers(d):
     """同层兄弟中「后定义（z 更高）且 touchable=false」的控件压住 touchable=true 的控件。
 
     对应 touch-events.md §1：touchable=false 不等于穿透，仍会吃掉下层触摸（下层拖不动/点不响应）。
-    返回 [(装饰件键, 装饰件 caption, 被压控件 caption/键, 重叠面积, 是否 modal 容器)]；仅统计双方 visible。
+    返回 [(装饰件键, 装饰件控件, 被压控件键, 被压控件, 重叠面积)]；仅统计双方 visible。
+    （是否「故意遮挡」由 _deco_hint 单独评估，本函数只找几何上的遮挡关系。）
     """
     found = []
 
@@ -268,13 +271,40 @@ def _deco_blockers(d):
                     continue
                 ov = _overlap(rj, ri)
                 if ov > 0:
-                    found.append((kj, vj.get('caption') or '', vi.get('caption') or ki, ov,
-                                  bool(vj.get('modal'))))
+                    found.append((kj, vj, ki, vi, ov))
         for k, v in kids:
             scan(v)
 
     scan(d)
     return found
+
+
+# 容器/画布类控件：压在可触摸控件上的常见形态是「遮罩层/蒙层」（而非装饰件误压）
+_DECO_CONTAINER = {'window', 'painter', 'scrollwindow', 'pagewindow'}
+
+
+def _deco_hint(deco_key, deco, covered, res=None):
+    """评估遮挡是否可能「故意」——返回 (possibly_intentional, [线索...])。
+
+    故意遮挡的常见形态（沛哥 2026-09-10 提醒）：弹窗/蒙层本来就该吃掉下层触摸，不是 bug。
+    线索：modal 弹窗 / 遮挡件是容器类（常见遮罩）/ 几乎完全覆盖被压控件 / 遮挡件整屏尺寸。
+    """
+    t = deco_key.split('__')[0]
+    hints = []
+    if deco.get('modal'):
+        hints.append('modal=true（弹窗拦截）')
+    if t in _DECO_CONTAINER:
+        hints.append('%s 容器（常见遮罩/蒙层）' % t)
+    d, c = _rect(deco), _rect(covered)
+    if d and c:
+        ov = _overlap(d, c)
+        carea = max(1, (c[2] - c[0]) * (c[3] - c[1]))
+        ratio = ov / carea
+        if ratio >= 0.9:
+            hints.append('几乎完全覆盖被压控件（%.0f%%）' % (ratio * 100))
+        if res and res[0] and res[1] and (d[2] - d[0]) >= res[0] and (d[3] - d[1]) >= res[1]:
+            hints.append('遮挡件为整屏尺寸（全局遮罩）')
+    return (bool(hints), hints)
 
 
 def main(project_root):
@@ -584,21 +614,34 @@ def main(project_root):
                         chk(k + '.item', it, 'slideitem')
         log(not missing, '%s 字段全集 %s' % (f, '；'.join(missing[:15]) if missing else '齐全'))
 
-    print('== 15. 装饰件遮挡可触摸控件（WARN 需人工审批，不影响交付判定）==\n'
-          '      口径：同层后定义（z 更高）且 touchable=false 的控件压在 touchable=true 控件之上 →\n'
-          '      装饰件必须运行期 setTouchable(false)+setTouchPass(true)，否则下层拖不动/点不响应（touch-events.md §1））')
+    print('== 15. 装饰件遮挡可触摸控件（WARN 需人工审批；含「可能故意遮挡」评估）==\n'
+          '      口径：同层后定义（z 更高）且 touchable=false 的控件压在 touchable=true 控件之上。\n'
+          '      两类可能：① 误压（装饰件/布局失误）→ 需运行期 setTouchPass(true)；\n'
+          '      ② 故意遮挡（蒙层/禁用态/防盗点：modal 弹窗、容器遮罩、整屏遮罩、完全覆盖）→ 本就有意，忽略。')
     for f in PAGES:
         d = json.load(open(os.path.join(root, f), encoding='utf-8'))
         found = _deco_blockers(d)
         if not found:
             print('  [PASS] %s 无装饰件遮挡' % f)
             continue
-        for kj, kdcap, kcap, ov, modal in found[:8]:
+        _r = d.get('resolution') or {}
+        res = (_r.get('width'), _r.get('height')) if _r.get('width') else None
+        for kj, vj, ki, vi, ov in found[:8]:
+            kdcap = vj.get('caption') or ''
+            kcap = vi.get('caption') or ki
             ppt = 'm%sPtr' % kdcap if kdcap else kj
-            warn('%s 装饰件 %s(%s) 压在 %s 之上（重叠 %dpx2，touchable=false）%s → 修复：字段或 onUI_init 中 %s->setTouchable(false); %s->setTouchPass(true);'
-                 '（否则下层拖不动/点不响应，touch-events.md 1）'
-                 % (f, kj, kdcap or '-', kcap, ov,
-                    '（modal 容器：拦截可能是有意的）' if modal else '', ppt, ppt))
+            c = _rect(vi)
+            ratio = 100.0 * ov / max(1, (c[2] - c[0]) * (c[3] - c[1])) if c else 0
+            detail = ('%s 装饰件 %s(%s) 压在 %s 之上（重叠 %dpx2 = 被压控件的 %.0f%%，touchable=false）'
+                      % (f, kj, kdcap or '-', kcap, ov, ratio))
+            probably, hints = _deco_hint(kj, vj, vi, res)
+            if probably:
+                warn('%s [可能有意遮挡：%s] → 若确认是故意挡（禁用态/蒙层/防盗点）忽略本条；'
+                     '若确需下层可交互，再补 %s->setTouchable(false); %s->setTouchPass(true);'
+                     % (detail, '、'.join(hints), ppt, ppt))
+            else:
+                warn('%s [疑似误压] → 修复：onUI_init 中 %s->setTouchable(false); %s->setTouchPass(true);'
+                     '（否则下层拖不动/点不响应，touch-events.md 1）' % (detail, ppt, ppt))
         if len(found) > 8:
             warn('%s 另有 %d 处同类遮挡，未逐条列出' % (f, len(found) - 8))
 
@@ -616,7 +659,8 @@ def main(project_root):
 
     print()
     if warnings:
-        print('[!] %d 条 WARN 需人工审批（不影响 PASS/FAIL；逐条确认是否需 setTouchPass(true) 或调整层叠顺序）：' % len(warnings))
+        print('[!] %d 条 WARN 需人工审批（不影响 PASS/FAIL；逐条判断是「误压」还是「故意遮挡」，'
+              '故意遮挡可忽略；需交互则补 setTouchPass(true) 或调整层叠顺序）：' % len(warnings))
         for w in warnings:
             print('   -', w)
     if failures:

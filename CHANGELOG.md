@@ -1,7 +1,37 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.26-open**（2026-09-10）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.27-open**（2026-09-10）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.27-open (2026-09-10) — check_all #15 新增「故意遮挡」评估
+
+**背景**：沛哥提醒「方案一（装饰件遮挡审计）也要评估一种可能就是故意遮挡」——蒙层/禁用态/防盗点本来就该吃掉触摸，不能无差别当成 bug 要求改代码。
+
+**`ui_tools/check_all.py`**
+- `_deco_blockers()` 改为返回 `(装饰件键, 装饰件控件, 被压控件键, 被压控件, 重叠面积)`（便于调用方做意图评估）
+- 新增 `_deco_hint(deco_key, deco, covered, res)` → `(possibly_intentional, [线索])`，线索：
+  ① `modal=true` ② 遮挡件是容器类 `window`/`painter`/`scrollwindow`/`pagewindow` ③ 几乎完全覆盖被压控件（≥90%）④ 遮挡件为整屏尺寸
+- **#15 WARN 分两类输出**：
+  - `[可能有意遮挡：<线索>]` → 「若确认是故意挡（禁用态/蒙层/防盗点）忽略本条；若确需下层可交互，再补 …」
+  - `[疑似误压]` → 直接给可粘贴修复行 `mXxxPtr->setTouchable(false); mXxxPtr->setTouchPass(true);`
+  - 两者重叠量都换算成「占被压控件的百分比」一并打出
+- 仍为 WARN：不入 `failures`、不影响 PASS/FAIL 与退出码；结尾汇总文字同步改为「逐条判断是误压还是故意遮挡」
+- 双份同步（MCP 内 + `tools/ui_tools/`）
+
+**验证（fixture = listViewDemo-New 副本，三用例）**
+| 用例 | #15 | #16 | FAIL 数 |
+|------|-----|-----|--------|
+| pos：小装饰件 textview 压 listview（无 modal/非容器） | **[疑似误压]** ×1 | WARN ×1 | 2（未增加） |
+| mask：整屏 window 遮罩盖全页 | **[可能有意遮挡：window 容器、覆盖 100%、整屏尺寸]** | PASS | 2 |
+| neg：装饰件移开 + 代码补 setTouchPass(true) | PASS | PASS | 2 |
+
+**真实项目分类实测**（175 个 json）：命中 14 文件 / 17 处 → **可能有意 7 处、疑似误压 10 处**。
+
+**文档**：touch-events.md「自动审计」小节新增「故意遮挡 vs 误压」判别表。
+
+**版本 0.27.26 → 0.27.27-open**
 
 ---
 

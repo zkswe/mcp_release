@@ -41,9 +41,10 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.26-open'
+MCP_VERSION = '0.27.27-open'
 MCP_BUILD = '2026-09-10'
 MCP_FEATURES = [
+    '2026-09-10: check_all #15 新增「故意遮挡」评估 v0.27.27（沛哥：“方案一也要评估一种可能就是故意遮挡”）——WARN 分两类：**[可能有意遮挡]**（线索任一命中：modal=true / 遮挡件是容器类 window·painter·scrollwindow·pagewindow / 几乎完全覆盖被压控件≥90% / 遮挡件整屏尺寸）与 **[疑似误压]**（以上都不满足，小装饰件压住可触摸控件一角）；可能有意→提示“确认是故意挡（禁用态/蒙层/防盗点）则忽略本条”，不再无差别要求改代码；一律仍只 WARN（不入 failures、不影响 PASS/FAIL 与退出码）。新内部函数 `_deco_hint`。实测 175 个真实 json 17 处命中 → 可能有意 7 / 疑似误压 10；v0.27.27-open',
     '2026-09-10: check_all #15/#16 WARN 升级为“可粘贴修复代码” v0.27.26（沛哥确认扫描命中真实存在、修复方案就是代码补 setTouchPass）——#15 的 WARN 现在给出装饰件 caption 推导出的指针名与完整修复行（`m<Caption>Ptr->setTouchable(false); m<Caption>Ptr->setTouchPass(true);`）并提示写在 onUI_init；#16 直接列出 `m<X>->setTouchPass(true);`；修完再跑即 WARN 消失（已用 fixture 正/负向用例实测）；v0.27.26-open',
     '2026-09-10: 遮挡自动审计入库 v0.27.25（沛哥定规：check_all 自检清单第五条，“报 warning 让用户审批”）——**check_all.py 新增 #15/#16，两顶均只报 WARN**（不计入 failures、不影响 PASS/FAIL 与退出码，交用户逐条审批）：①**#15 json 静态**：同层中后定义（z 更高）且 touchable=false 的控件压在 touchable=true 控件之上 → WARN（提示装饰件需运行期 setTouchable(false)+setTouchPass(true)，见 touch-events.md §1；重叠<4px 的微小交叠不计以障噪；上层为 modal 容器时提示“拦截可能是有意的”）②**#16 代码静态**：logic.cc 里 X->setTouchable(false) 但同对象无 setTouchPass(true) → WARN；局限：#15 查不到运行期才设的 setTouchPass，最终仍需实机验证；实测噪声（175 真实 json）=14 文件/17 处命中，负向用例（装饰件移开+补穿透）0 命中；双份同步（MCP 内 + tools/ui_tools/）；v0.27.25-open',
     '2026-09-10: 触摸/遮挡知识定稿 v0.27.24（沛哥提供实机验证全文，替换墨羽草稿）——knowledge/uicontrols/touch-events.md（V85X + EasyUI 2.9.0 实机逐条验证）：①**touchable=false ≠ 触摸穿透**（只表示自己**不响应点击**，照样挡住矩形范围内的下层控件：下层收不到 DOWN → 既不能拖也不触发点击；症状=列表能看但拖不动/点行没反应；最容易犯=压住可触摸控件上的**装饰件**：渐隐/渐变遮罩、选中高亮色带、徽标红点、纯图标层、半透明蒙层）②正解=运行期 `pCtrl->setTouchable(false); pCtrl->setTouchPass(true);`（ZKBase 触摸穿透，事件落到下层），onUI_init 里统一设置最省事；⚠**touchPass 不是 json 键、没有 json 字段，必须写代码**③radiogroup 等**交互容器** touchable 必须 true——非触摸容器会把**整棵子树**从触摸分发里剪掉（子项写 true 也没用；实测 radiogroup=false → radiobuttons 全部点不动）④`ZKListView::setSelection()` 只改**滚动位置**、不触发重排+重绘 → 必须跟 `refreshListView()`，否则“行位置与选中样式错位”（高亮画到相邻行=像没选中；定位线索=进页面对/交互后错→比对两条路径哪条漏了 refresh）⑤排查顺序：**先日志**（事件到没到控件/回调进没进，只到页面级全局监听不算）**再像素**（抓屏要按 pan 取当前显示页缓冲，读错帧会得出相反结论），两者都可能骗人⑥实测对照表（渐隐层拖动：穿透关=0% 像素变化/穿透开=正常滚动）；另 widget-code-api.md 新增 ZKBase 通用段（setTouchable/setTouchPass/监听器注册）；v0.27.24-open',
