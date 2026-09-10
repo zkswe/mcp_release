@@ -248,7 +248,7 @@ def _deco_blockers(d):
     """同层兄弟中「后定义（z 更高）且 touchable=false」的控件压住 touchable=true 的控件。
 
     对应 touch-events.md §1：touchable=false 不等于穿透，仍会吃掉下层触摸（下层拖不动/点不响应）。
-    返回 [(装饰件键, 被压控件 caption/键, 重叠面积, 是否 modal 容器)]；仅统计双方 visible 的情况。
+    返回 [(装饰件键, 装饰件 caption, 被压控件 caption/键, 重叠面积, 是否 modal 容器)]；仅统计双方 visible。
     """
     found = []
 
@@ -268,7 +268,8 @@ def _deco_blockers(d):
                     continue
                 ov = _overlap(rj, ri)
                 if ov > 0:
-                    found.append((kj, vi.get('caption') or ki, ov, bool(vj.get('modal'))))
+                    found.append((kj, vj.get('caption') or '', vi.get('caption') or ki, ov,
+                                  bool(vj.get('modal'))))
         for k, v in kids:
             scan(v)
 
@@ -592,10 +593,12 @@ def main(project_root):
         if not found:
             print('  [PASS] %s 无装饰件遮挡' % f)
             continue
-        for kj, kcap, ov, modal in found[:8]:
-            warn('%s 装饰件 %s 压在 %s 之上（重叠 %dpx²，touchable=false）%s → 需 setTouchable(false)+setTouchPass(true)，'
-                 '否则下层拖不动/点不响应'
-                 % (f, kj, kcap, ov, '（modal 容器：拦截可能是有意的）' if modal else ''))
+        for kj, kdcap, kcap, ov, modal in found[:8]:
+            ppt = 'm%sPtr' % kdcap if kdcap else kj
+            warn('%s 装饰件 %s(%s) 压在 %s 之上（重叠 %dpx2，touchable=false）%s → 修复：字段或 onUI_init 中 %s->setTouchable(false); %s->setTouchPass(true);'
+                 '（否则下层拖不动/点不响应，touch-events.md 1）'
+                 % (f, kj, kdcap or '-', kcap, ov,
+                    '（modal 容器：拦截可能是有意的）' if modal else '', ppt, ppt))
         if len(found) > 8:
             warn('%s 另有 %d 处同类遮挡，未逐条列出' % (f, len(found) - 8))
 
@@ -606,8 +609,8 @@ def main(project_root):
         miss = [v for v in sorted(hits)
                 if not re.search(re.escape(v) + r'\s*->\s*setTouchPass\s*\(\s*true\s*\)', code2)]
         if miss:
-            warn('%s 有 setTouchable(false) 但未见同对象 setTouchPass(true)：%s → 若该控件压在可触摸控件之上，必须补 setTouchPass(true)'
-                 % (f, '、'.join(miss)))
+            warn('%s 有 setTouchable(false) 但未见同对象 setTouchPass(true)：%s → 修复：在该控件设置处补 %s'
+                 % (f, '、'.join(miss), ' ；'.join('%s->setTouchPass(true);' % v for v in miss)))
         else:
             print('  [PASS] %s 触摸穿透配套' % f)
 

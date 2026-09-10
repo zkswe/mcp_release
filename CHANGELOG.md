@@ -1,7 +1,27 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.25-open**（2026-09-10）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.26-open**（2026-09-10）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.26-open (2026-09-10) — WARN 升级为「可粘贴修复代码」
+
+**背景**：沛哥确认「扫描命中的遮挡确实存在，解决方案就是代码补 `setTouchPass`」——告警不该只报问题，应直接给出修复动作。
+
+**`ui_tools/check_all.py`**
+- `_deco_blockers()` 返回值增加**装饰件 caption**（原来 `(键, 被压 caption, 面积, modal)` → 现为 `(键, 装饰件 caption, 被压 caption, 面积, modal)`）
+- **#15 WARN** 改为：`装饰件 textview__99(TextView1) 压在 CityListView 之上（重叠 4800px2，touchable=false）→ 修复：字段或 onUI_init 中 mTextView1Ptr->setTouchable(false); mTextView1Ptr->setTouchPass(true);`
+  （指针名由 caption 推导，可直接粘贴；modal 容器仍加注「拦截可能是有意的」）
+- **#16 WARN** 改为：`... 未见同对象 setTouchPass(true)：mTextView1Ptr → 修复：在该控件设置处补 mTextView1Ptr->setTouchPass(true);`
+- 仍为 WARN：不入 `failures`、不影响 PASS/FAIL 与退出码
+- 双份同步（MCP 内 + `tools/ui_tools/`）
+
+**验证（fixture = listViewDemo-New 副本，正/负向两用例）**
+- 正向（装饰件压 listview + 缺 setTouchPass）→ 两条 WARN 均带出正确指针名与修复行；FAIL 数与 baseline 一致（2，未增加）
+- 负向（装饰件移开 + 补 setTouchPass）→ 0 条 WARN
+
+**版本 0.27.25 → 0.27.26-open**
 
 ---
 
