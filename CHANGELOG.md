@@ -1,7 +1,39 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.29-open**（2026-09-10）。
+> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.30-open**（2026-09-11）。
 > 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+
+---
+
+## v0.27.30-open (2026-09-11) — html2json 阴影转图：三个叠加真 bug 连修（「图==控件」1:1 达标）
+
+**背景**：沛哥用新 UI skill（`flythings-ui-dev`）做农历布局 demo，转 json 时弹出「含 CSS 效果（阴影、圆角）…请切图后用 data-pic 引用」，问「这是什么错误？」。表面是一句警告，实际是**三个叠加缺陷**，其中两个会把图默默丢掉。
+
+### ① box-shadow 单位解析失败 + 异常静默吞掉（真因）
+- `_effect_assets()` 阴影分支：`ox, oy, blur = int(float(parts[0])), int(float(parts[1]))...` **没去 px 单位** → `float('4px')` 抛 `ValueError: could not convert string to float: '4px'`
+- 外层 `except Exception: pass` **静默吞掉** → 阴影图一张不生成（`generatedAssets` 只剩图标），同时 `_warn_css_effects()` 照样输出「工具转不了，请自己切图」→ **误导用户以为要手工切图**
+- 修：新增 `_px_num()`（px/em/rem/pt/%/无单位）+ `_shadow_spec()`（inset/outset 忽略、4 值 spread、色值写在任意位置）解析；失败改抛明确 warning（类型+原因），不再静默
+- 附带：`_warn_css_effects()` 有 `data-pic` 时直接返回；box-shadow 能成功转图时不再误报「阴影/圆角」
+
+### ② 阴影图尺寸不可预测 → 「图==控件」永远不成立
+- `gen_res.gen_shadow_card()` 末尾 `img.crop(img.getbbox())` 会裁掉透明边 → 240×160 画布变成 **234×154**，与控件尺寸对不上（违反 check_all #11，也违反铁律 9①）
+- 修：`gen_shadow_card(..., crop=False)` 保留完整画布 → 尺寸恒为 `卡体 + 2*pad`（`pad = max(2, blur + max(|ox|,|oy|))`），卡体左上角恒在 `(pad, pad)`（html2json 调用时传 `crop=False`）
+- html2json 侧自动对位：检测到 `pad` → `_grow(pos, pad)` 外扩控件盒（left/top -= pad，w/h += 2pad）+ `_pos()` 给**子控件坐标补偿 +pad**（遇 `__listview` 停止累加，行内 subItem 相对行坐标）+ **window 底色改回页面底色**（卡体填充已烘焙进图；底色若留原白，外扩透明阴影区会被填满，阴影与圆角都看不出来）
+- 作者零手改：可见卡片主体仍精确落在设计坐标（实测农历卡片 `window 372,50,624×500` → 可见卡体 `392,70,584×460`）
+
+### ③ 阴影 alpha 被 mask 覆盖 → 硬黑描边
+- `gen_shadow_card` 末尾 `img.putalpha(mask)` **替换**了 alpha → 10% 透明黑的柔和阴影被压成 **alpha=255 不透明**，卡片四周出现一圈硬黑描边（视觉模型判为「粗黑描边」，阴影柔化全丢）
+- 修：改用 `ImageChops.multiply(img.getchannel('A'), mask)` **相乘**（边缘 alpha 实测 4~6/255，渐变正常）
+
+### 实测验收（农历 demo）
+- 7 张图 png 尺寸 == 控件尺寸，**0 mismatch / 0 missing**（`shadow_WinMonth 624×500` / `shadow_StampJieqi 96×96` / `shadow_TodayPill 90×76` / 4×`icon_48×48`）
+- 像素级复核：卡片左缘扫描 `米色(245,241,234) → 阴影渐变(240→234) → 卡体纯白(255)`，无硬边
+- 新增自检脚本 `temp/verify_demo_assets.py`（遍历 json 的 backgroundPic/picTab 全部引用 → 比对 PNG 实际尺寸 vs position）
+
+### 教训
+- **`except Exception: pass` + 配套 warning 文案是双重陷阱**：工具静默失败时，那句「请自己切图」把问题指向用户的操作方式而不是工具的 bug——排查时先怀疑工具
+- **视觉模型能抓像素工具看不见的语义问题**（“粗黑描边” → 反推 alpha 被覆盖）；但它也会被预览页自带页框骗（`.device` 2px 边框＋深色页底被误读为“粗黑边框”）→ **抓图要先把预览页 chrome 覆盖掉再抓**
+- 双份同步：`tools/ui_tools/` 与 `tools/FlyThings_mcp_open/ui_tools/`（注意 `gen_res.py` 曾在 MCP 侧单独演进过 emoji 图标功能，**只能移植改动、不能整文件覆盖**）
 
 ---
 

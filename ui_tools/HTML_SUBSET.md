@@ -27,13 +27,16 @@ JS 只服务于浏览器预览确认，不转 json；FlyThings 端的交互逻�
 | 渐变背景 / 复杂背景图 | 切图 → 普通 PNG 或 .9.png，`data-pic` 引用 |
 | 圆角 / 可拉伸背景（卡片/按钮/轨道/输入框） | 切图 → **.9.png 九宫格**（top/left 1px 黑线标拉伸区），`data-pic` 引用 |
 | emoji / iconfont / 特殊符号图标 | **转 PNG 图标**（设备字库裁剪不支持 emoji，图片不受字库限制），`data-pic`/`src` 引用 |
-| 阴影 / 描边 / 毛玻璃 | 切图（效果画进图片），`data-pic` 引用 |
+| 阴影 / 描边 / 毛玻璃 | **`box-shadow` 自动转图**（2026-09-11 修复后可靠，见下）；描边/毛玻璃等复杂效果切图（效果画进图片），`data-pic` 引用 |
 | loading / 旋转 / 3D / 粒子动效 | **序列帧 PNG 或 GIF** → ZKImageView 动图控件（imageanim，支持 Z20/Z21/T113/V85X 等平台，循环次数 ≤0 无限循环）；静态图则用控件切换 |
 | 鼠标 hover / 点击态 | 两态图：normal + pressed（`_p` 后缀），按钮 `picTab{pic0,pic1}` |
 
 **转换器行为（2026-08-29 升级：自动转图）**：style 里出现 `linear-gradient/box-shadow/border-radius/animation` 等效果属性时，转换器**自动生成图片资源**（不再只 warning）：
 - `linear-gradient(...)` → 自动生成渐变 PNG（`images/grad_*.png`），控件加 `backgroundPic`
 - `box-shadow` + 圆角 → 自动生成阴影卡片图（`images/shadow_*.png` / `gradshadow_*.png`），渐变+阴影自动合成
+  - **单位容错**：`px/em/rem/%/无单位` 均可，`inset` 忽略，支持 4 值 spread（2026-09-11 前只认裸数字，写 `4px` 直接解析失败且被静默吞掉 → 图不生成）
+  - **图尺寸 == 控件尺寸（1:1，check_all #11）**：阴影图画布 = 卡体 + `2*pad`（`pad = max(2, blur + max(|ox|,|oy|))`，保留完整画布不裁透明边），html2json 自动把**控件盒外扩 pad**、**子控件坐标补偿 +pad**、并把 **window 底色改回页面底色**（卡体填充已烘焙进图；底色若留原白色会填满透明阴影区，阴影与圆角都看不出来）。作者不用手改坐标，也别自己算。
+  - **阴影 alpha 必须与圆角 mask 相乘**（`ImageChops.multiply`，不能 `putalpha` 覆盖）：覆盖会把 10% 透明黑压成不透明 → 卡片四周一圈硬黑描边（2026-09-11 修正）
 - `border-radius` → 自动生成圆角图（四角真透明，可叠背景）
 - 文本含 emoji → 自动转 emoji PNG 图标（`images/emoji_*.png`），控件变图标 textview（设备字库不支持 emoji）
 - `class="loading"/"spinner"` 或 `animation: spin` → 自动生成 loading GIF（`images/loading_*.gif`，12 帧循环）+ imageanim 控件；并在 warning 中提示 logic.cc 里 `mXXXPtr->play("images/loading_*.gif")`
@@ -255,7 +258,9 @@ iconfont class），转换器**自动生成 iconfont 风格矢量线框 PNG**（
 1. **图片尺寸必须与 json 控件尺寸一致**（瓦片 76×76 控件 → 76×76 图；槽位 72×72 → 72×72 图），
    不要生成大图让控件缩放，也不要小图拉伸。
 2. **圆角卡片图四角必须真透明（alpha=0）**：渐变/填充底是整矩形画的，圆角只是描边轮廓，
-   所以渐变画完后必须用圆角 mask 裁剪（putalpha）清掉弧线外角落；
+   所以渐变画完后必须用圆角 mask 裁剪清掉弧线外角落——**用 `ImageChops.multiply` 与已有 alpha 相乘**，
+   ⚠️ **不能 `img.putalpha(mask)` 直接覆盖**（覆盖会把半透明阴影的 alpha 全压成 255 → 卡片四周一圈硬黑描边，
+   阴影柔化全丢；2026-09-11 实测踩坑）；
    阴影模糊（GaussianBlur）会溢出到弧线外，最后整体再裁一次圆角清掉残影。
    工具：`gen_res.rounded_card()` / `gen_gradient(..., radius=r)` 已内置裁剪。
 3. **用透明角图片的按钮不要设 `bgColorTab`**：透明角会透出按钮底色而不是窗口背景。

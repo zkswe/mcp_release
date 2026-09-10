@@ -212,11 +212,13 @@ def gen_gradient_stops(out_dir, name, w, h, stops, horizontal=True, radius=0, to
     return save(img, out_dir, name)
 
 
-def gen_shadow_card(out_dir, name, w, h, radius, fill, shadow=None, border=None, border_w=1):
+def gen_shadow_card(out_dir, name, w, h, radius, fill, shadow=None, border=None, border_w=1, crop=True):
     """带阴影的圆角卡片（CSS box-shadow 自动转图用）。
     shadow: (offset_x, offset_y, blur, (r,g,b,a))；阴影先画（超出卡片边缘 blur 模糊），
     最后整体圆角 mask 裁剪清掉残影（阴影模糊会溢出到弧线外，必须二次裁剪）。
-    返回卡片图（含阴影区域，画布尺寸 = w+2*offset+2*blur）。
+    crop=True（默认）：裁掉多余透明边，图尺寸不定（历史行为）；
+    crop=False：保完整画布 → 尺寸恒为 (w+2*pad) x (h+2*pad)（pad=max(2, blur+max(|ox|,|oy|))），
+    主体卡片左上角恰好落在 (pad, pad) —— html2json 靠这个确定性把控件盒外扩，保证「图==控件」。
     """
     if shadow:
         ox, oy, blur, sc = shadow
@@ -237,14 +239,19 @@ def gen_shadow_card(out_dir, name, w, h, radius, fill, shadow=None, border=None,
         body.paste(body_patch, (pad, pad), body_patch)
         img.alpha_composite(body)
         # 二次圆角裁剪（FT-008 超采样局部 mask）：清掉阴影残影
+        # ⚠️ 2026-09-11 修：必须与已有 alpha **相乘**，不能直接 putalpha 覆盖 ——
+        # 覆盖会把阴影的 alpha 渐变（10% 透明黑）压成 255 不透明 → 卡片四周出现一圈硬黑边
+        # （视觉验收表现为“粗黑描边”，阴影柔化全丢）。
         mw, mh = w + 2 * blur + 2, h + 2 * blur + 2
         mask = Image.new('L', (cw, ch), 0)
         mask.paste(_aa_mask(mw, mh, radius + blur), (pad - blur - 1, pad - blur - 1))
-        img.putalpha(mask)
-        # 裁掉多余透明边（阴影下/右延伸）
-        bbox = img.getbbox()
-        if bbox:
-            img = img.crop(bbox)
+        from PIL import ImageChops
+        img.putalpha(ImageChops.multiply(img.getchannel('A'), mask))
+        # 裁掉多余透明边（阴影下/右延伸）；crop=False 时保留完整画布 → 尺寸可预测（图==控件）
+        if crop:
+            bbox = img.getbbox()
+            if bbox:
+                img = img.crop(bbox)
         return save(img, out_dir, name)
     return save(rounded_rect(w, h, radius, fill, border, border_w), out_dir, name)
     """状态点（实心圆，普通 PNG）"""
