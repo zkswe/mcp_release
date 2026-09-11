@@ -23,8 +23,9 @@
 🔥 **核心优势**：
 - 🚀 **FlyThings 专属配置**：内置本地向量模型（bge-small-zh），知识检索完全离线，AI开发效率及Token消耗极低
 - 🏭 **全流程开箱即用**：编译工具链（fui/fun）与项目模板已内置，创建项目 → 布局 → 编译 → 推送一气呵成
-- 🧠 **36 个工具**：知识检索、项目创建、布局转换、依赖管理、规范校验、自动修复、多语言、自动化测试、UI 可视化编辑与真机截图全都有
-- 📦 **一条命令安装**：`pip install mcp onnxruntime tokenizers`，AI 工具指一下路径就能用
+- 🧠 **36 个工具**：知识检索、项目创建、布局转换、依赖管理、规范校验、自动修复、多语言、自动化测试、UI 可视化编辑、真机截图与产物核对全都有
+- 📦 **一条命令安装**：`pip install -r requirements.lock`（已锁定实测通过的版本组合），AI 工具指一下路径就能用
+- ✅ **发布前置闸门**：38 项契约用例 + 30 项冒烟 + 一致性校验（版本/工具数/平台/索引/隐私）一键跑，见 [`tests/`](tests/README.md)
 
 🎯 **适用场景**：
 - ✅ Trae/Cursor /Kimi AI + FlyThings IDE：人机共创，AI负责整体开发，FlyThings IDE 可视化实现人工调优细节调整。       
@@ -93,10 +94,11 @@ git clone https://gitee.com/Kwolve/fly-things-os_-mcp.git
 **2. 安装依赖**
 
 ```bash
-pip install mcp onnxruntime tokenizers
+pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp / onnxruntime / tokenizers / Pillow）
 ```
 
-> 需要 Python 3.10+。Windows 用户也可以双击 `install.bat` 一键安装。
+> 需要 Python 3.10+。Windows 用户也可以双击 `install.bat` 一键安装（装完自动跑一次离线自检）。
+> 想自己拉最新版也行：`pip install mcp onnxruntime tokenizers Pillow`（不锁定，风险自负）。
 
 **3. 配置到 AI 工具（stdio）**
 
@@ -131,16 +133,16 @@ pip install mcp onnxruntime tokenizers
 
 > **MCP 版本是多少？**
 
-应返回：`flythings-kb-open 0.27.32-open`，包含 36 个工具。
+应返回：`flythings-kb-open 0.27.33-open`，包含 36 个工具。
 
 ---
 
 ## ✨ 核心特性
 
 ### 🧠 完全本地知识检索
-- **内置 bge-small-zh 向量模型**（22MB），118 篇 wiki 文档索引随包分发
+- **内置 bge-small-zh 向量模型**（22MB），随包分发 128 篇 wiki 官方镜像 + 49 篇实践知识（`knowledge/`，共 177 篇去重索引）
 - 检索**不需要任何 API Key**，完全离线
-- 模型不可用时自动降级 **BM25 关键词检索**，永不失联
+- 模型不可用时自动降级 **BM25 关键词检索**（并在返回体 `warnings` 里显式说明已降级），永不失联
 
 ### 🏭 全流程开发
 - **创建项目**：从内置 HelloWord 模板（F133/F135/Z21/T113/V85X/Z20）一键创建
@@ -174,7 +176,7 @@ pip install mcp onnxruntime tokenizers
 | `flythings_gen_ui_test` | 自动化测试（traverse/monkey/custom） |
 | `flythings_ui_editor` / `ui_edit_apply` | UI 可视化拖拽编辑 → 变更写回 json + pack ftu |
 | `flythings_ui_diff` | 截图像素对比（0 token 验收 / 回归对比） |
-| `flythings_verify_assets` | **产物核对**（json 引用的图片是否存在 + PNG 尺寸 == 控件 position，与 check_all #17 同源） |
+| `flythings_verify_assets` | **产物核对**（json 引用的图片是否存在 + 自动生成图 PNG 尺寸 == 控件 position；支持 `ui/*.json` 与 `ui/<分辨率>/*.json`；与 check_all #17 同源） |
 | `flythings_device_screenshot` | **真机抓屏 → PNG/JPG/BMP**（裁剪设备免 adb 摸索，直接出图给 AI 分析） |
 | `flythings_generate_ui_assets` | 生成 UI 图片资源（AI/emoji/线条三级降级） |
 | `flythings_create_bin_project` | 创建可执行程序项目（ELF 二进制） |
@@ -185,22 +187,43 @@ pip install mcp onnxruntime tokenizers
 
 ```
 flythings-mcp-open/
-├── mcp_server.py          # 入口（stdio MCP server）
-├── kb_tools.py            # 工具定义与注册（35 个）
+├── mcp_server.py          # 入口（stdio MCP server，单入口分发器）
+├── kb_tools.py            # 工具定义与注册（36 个）+ OP_NAMES 清单（唯一来源）
 ├── project_tools.py       # 项目/编译/交付
 ├── package_tools.py       # 依赖包生态
+├── platforms.py           # 平台矩阵唯一来源（模板/bin_tools/别名）
 ├── rag_search.py          # 知识库检索（本地向量 + BM25）
 ├── embed_local.py         # 本地向量模型封装（bge-small-zh）
 ├── rag_index.json         # 知识库索引（本地模型预计算）
 ├── package_catalog.json   # 包版本目录
+├── tools_manifest.json    # 工具/平台/知识规模快照（机器可读，由 scripts/gen_manifest.py 生成）
+├── pyproject.toml         # 打包/依赖声明 + console_scripts 入口
+├── requirements.lock      # 已验证依赖组合（pin）
 ├── CHANGELOG.md           # 历史迭代记录（截至 v0.27.30，已冻结；版本史见 MCP_FEATURES）
+├── scripts/               # 自检与闸门（smoke / check_consistency / gen_manifest / lint_silent_except / sync_ui_tools / ci）
+├── tests/                 # 契约用例（离线，38 项；见 tests/README.md）
 ├── models/bge-small-zh/   # ★ 本地向量模型（onnx + tokenizer）
 ├── toolchain/             # ★ 编译工具链（fui.exe + fun.exe）
 ├── templates/             # ★ 项目模板（HelloWord_F133/F135/Z21/T113/V85X/Z20）
 ├── ui_tools/              # 布局转换/预览工具（html2json/json2html/check_all/gen_res）
-├── install.bat            # 一键安装依赖
+├── install.bat            # 一键安装依赖（装完跑离线自检）
 └── README.md              # 本文档
 ```
+
+> ⚠️ `ui_tools/` 在本机工作区另有一份副本（给非 MCP 流程/人肉用的 `tools/ui_tools/`）。
+> **唯一来源是仓库内的 `flythings-mcp-open/ui_tools/`**；改完跑 `python scripts/sync_ui_tools.py --apply` 同步，
+> `scripts/check_consistency.py` 会校验两份哈希一致。
+
+---
+
+## 🧰 CLI 名词表（别搞混 fun / fui / fyx / fuse）
+
+| 名字 | 是什么 |
+|------|--------|
+| `fun` | FlyThings 工程工具：`create / install / build / launch`，状态与产物在 `<项目>/.fun/<平台>/` |
+| `fui` | FTU 布局工具：**当前内置版本只支持 `pack`（json → ftu）**；`unpack` 是空壳（调用报通用错误），别依赖 |
+| `fyx` | 旧版打包/发布 CLI 名（历史遗留，等价于 `fun` 的早期名） |
+| `fuse` | 本机工作区的引擎 CLI（`projects/fuse.exe`），**不在本仓库内**，与本 MCP 无关 |
 
 ---
 
@@ -208,10 +231,12 @@ flythings-mcp-open/
 
 | 问题 | 解决 |
 |------|------|
-| `ModuleNotFoundError: mcp / onnxruntime / tokenizers` | 执行 `pip install mcp onnxruntime tokenizers` |
+| `ModuleNotFoundError: mcp / onnxruntime / tokenizers` | 执行 `pip install -r requirements.lock` |
 | 工具列表 < 36 | 检查配置文件 command/args 路径是否正确 |
 | 抓屏工具报“找不到 adb” | 装 Android platform-tools 或设环境变量 `ADB`（抓屏需要 adb；编译/预览不需要） |
 | 检索结果不准 | 本地模型首次使用会自动加载；确认 `models/bge-small-zh/` 存在 |
+| 返回体里出现 `warnings` | 正常，**要看**：降级（BM25）、自动转图、手绘图被拉伸等信息都在里面，不是报错 |
+| 改动后想自检 | `python scripts/check_consistency.py --with-tests`（版本/工具数/平台/索引/隐私 + 38 项契约用例） |
 | 想换知识库/重建索引 | `python rebuild_index_local.py <wiki目录>` 重新生成 rag_index.json |
 | 杀毒软件拦截 | 添加信任（内含可执行文件 toolchain/） |
 

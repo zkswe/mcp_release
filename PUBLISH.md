@@ -61,9 +61,16 @@ git checkout master -- <保留清单> # 或按 §3 增量同步
 # ② 按 §3 剔除清单清理（git rm）+ 保留文档去工程化
 # ③ 重建 release 索引（⚠️ 空目录技巧，勿编入本地 wiki 内部文档）
 python rebuild_index_local.py <存在的空目录>   # → rag_index.json 只含保留 knowledge
-# ④ 测试验证
-python -c "import ast; ast.parse(open('kb_tools.py',encoding='utf-8').read())"  # 语法
-#   可选：python mcp_server.py 冒烟 / rag 检索抽查
+# ④ 测试验证（v0.27.33 起：一条命令的发布前置闸门）
+python scripts/check_consistency.py --with-tests
+#   = 版本/工具数/平台矩阵/知识索引/隐私 + 静默 except + 双份 ui_tools 哈希
+#     + gen_manifest 新鲜度 + smoke 30 项 + tests/ 契约用例 38 项
+#   带设备时再加：python scripts/smoke.py --screenshot --device <设备IP>
+#   CI 同口径：sh scripts/ci.sh（Windows：scripts\ci.bat）
+# ⓪ 改了 op/平台/依赖/版本时先补齐生成物：
+python scripts/gen_manifest.py        # tools_manifest.json
+python scripts/gen_gate_catalog.py    # 意图闸门 catalog.json
+python scripts/sync_ui_tools.py --apply   # ui_tools 双份同步（源 = 本仓库）
 # ⑤ 干净性扫描（必须 0 命中）
 #   词表：89afac(真实key) | aw-dvr | aw-mpp | voip | tuyaoscxx | uvc-camera | lylink
 #         | CV201_PND | mark_cv201 | UvcJpegTest | xdv23 | T113CarSystem | KlipperF133
@@ -79,7 +86,10 @@ git ls-tree -r --name-only release/master | grep -E "knowledge/v85x|demos/|bin_t
 
 ## 5. 版本号与版本史
 
-- 版本号递增只发生在 master：`kb_tools.py` MCP_VERSION + `MCP_FEATURES` 顶部新条 + `README.md` 版本号
+- 版本号递增只发生在 master：`kb_tools.py` MCP_VERSION + `MCP_FEATURES` 顶部新条 + `README.md` 版本号 + `pyproject.toml`（`version` = 数字部分、`[tool.flythings].mcp_version` = 带 `-open`）
+  —— 四处必须一致，`scripts/check_consistency.py` 会卡住不一致的提交
+- 工具数也是机器校验项（`kb_tools.OP_NAMES` = mcp_server docstring = README 三处 = 闸门 catalog = `tools_manifest.json`）
+  —— 新增/删除 op 后必须重跑 `gen_manifest.py` + `gen_gate_catalog.py`，否则闸门 FAIL
 - ⛔ **CHANGELOG.md 自 v0.27.31（2026-09-11）起冻结为历史归档**（沛哥：「changelog 不需要提交」）
   —— 不再追加新节、不进任何提交/发布；版本史唯一来源 = `MCP_FEATURES`（`compact=False` 取全量）+ `README.md`
 - release 同步时：`kb_tools.py` 版本照 master（内容为裁剪版）；**CHANGELOG.md 不带**（历史留内部 git）

@@ -1,0 +1,19 @@
+# FlyThings MCP (open) —— 已验证依赖组合
+#
+# 用法：pip install -r requirements.lock
+#
+# 本文件 pin 的是「实测通过 smoke（离线 30 项 + 真机抓屏）+ 真机闭环」的组合，
+# 不是「最新版」。升级任何一项后请重跑：
+#   python scripts/smoke.py
+#   python scripts/check_consistency.py
+#
+# 已验证组合（2026-09-11 / Windows x64 / CPython 3.13.13）：
+#   mcp 1.29.0 · onnxruntime 1.29.0 · tokenizers 0.23.1 · Pillow 12.2.0 · numpy 2.5.1
+#
+# ⚠️ 不要依赖 FastMCP 私有属性（v0.27.32 起已改为自建 OPS 注册表）；
+#    mcp SDK 大版本升级前先跑上面的 smoke 再放行。
+mcp==1.29.0
+onnxruntime==1.29.0
+tokenizers==0.23.1
+Pillow==12.2.0
+numpy==2.5.1

@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flythings-mcp-open"
+# ⚠️ PEP440 不接受 "-open" 后缀：这里只放数字部分；唯一真相是 kb_tools.MCP_VERSION，
+#    scripts/check_consistency.py 会校验两者一致（0.27.33-open <-> 0.27.33）。
+version = "0.27.33"
+description = "FlyThings 开发能力 MCP 服务器（open 版）：单入口 36 个 op，覆盖建工程→布局→资源→编译→部署→验收→i18n"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.9,<2",
+    "onnxruntime>=1.17",
+    "tokenizers>=0.15",
+    "Pillow>=10",
+    "numpy>=1.24",
+]
+
+[project.scripts]
+flythings-mcp = "mcp_server:main"
+
+[project.urls]
+Homepage = "https://gitee.com/Kwolve/fly-things-os_-mcp"
+Documentation = "https://developer.flythings.cn/"
+
+[tool.flythings]
+# 与 kb_tools.MCP_VERSION 保持一致（由 scripts/check_consistency.py 校验）
+mcp_version = "0.27.33-open"
+# 依赖组合的唯一真相是 requirements.lock（本文件的 dependencies 只给 pip 解析用范围）
+verified_python = "3.13.13"
+
+[tool.setuptools]
+py-modules = [
+    "mcp_server",
+    "kb_tools",
+    "project_tools",
+    "package_tools",
+    "i18n_tools",
+    "rag_search",
+    "embed_local",
+    "configure",
+]

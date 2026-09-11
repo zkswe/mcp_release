@@ -1,0 +1,469 @@
+{
+  "schema": 1,
+  "generatedBy": "scripts/gen_manifest.py",
+  "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY 表后重新生成，勿手改本文件",
+  "version": "0.27.33-open",
+  "build": "2026-09-11",
+  "toolCount": 36,
+  "cli": {
+    "fun": "FlyThings 工程工具（create/install/build/launch，<项目>/.fun/<平台>/ 下）",
+    "fui": "FTU 布局工具——当前内置版本只支持 pack（json → ftu）；unpack 是空壳（调用报通用错误），不要依赖",
+    "fyx": "旧版打包/发布 CLI 名（历史遗留，等价于 fun 的早期名）",
+    "fuse": "本机 workspace 的引擎 CLI（projects/fuse.exe，非本仓库内置）"
+  },
+  "platforms": [
+    {
+      "platform": "F133",
+      "arch": "riscv32",
+      "template": "HelloWord_F133",
+      "binTool": "f133",
+      "note": "RISC-V，工具链与其他平台不可混用，严禁混入 glibc"
+    },
+    {
+      "platform": "F135",
+      "arch": "arm",
+      "template": "HelloWord_F135",
+      "binTool": "f135",
+      "note": "ARM"
+    },
+    {
+      "platform": "T113",
+      "arch": "arm",
+      "template": "HelloWord_T113",
+      "binTool": "t113",
+      "note": "ARM，车载互联常用"
+    },
+    {
+      "platform": "V85X",
+      "arch": "arm",
+      "template": "HelloWord_V85X",
+      "binTool": "v85x",
+      "note": "ARM，摄像头/DVR 常用"
+    },
+    {
+      "platform": "Z20",
+      "arch": "arm",
+      "template": "HelloWord_Z20",
+      "binTool": "z20",
+      "note": "ARM"
+    },
+    {
+      "platform": "Z21",
+      "arch": "arm",
+      "template": "HelloWord_Z21",
+      "binTool": "z21",
+      "note": "ARM"
+    }
+  ],
+  "ops": [
+    {
+      "op": "flythings_add_package",
+      "brief": "把 package 添加进项目 Manifest.xml 并执行 fun install 拉取依赖（添加包闭环流程）。",
+      "args": [
+        "project_root",
+        "package",
+        "version",
+        "platform",
+        "with_install"
+      ],
+      "risk": "write",
+      "category": "package"
+    },
+    {
+      "op": "flythings_attach_cli_tools",
+      "brief": "复制 fui.exe（→项目 ui/）与 fun.exe（→项目根目录）到项目，随项目交付。",
+      "args": [
+        "project_root",
+        "with_fyx"
+      ],
+      "risk": "write",
+      "category": "project"
+    },
+    {
+      "op": "flythings_build_ui_flow",
+      "brief": "⚠️ 场景别名（编译部署类意图一律本工具，禁止自造命令；不限触发入口）：",
+      "args": [
+        "project_root",
+        "with_launch",
+        "device"
+      ],
+      "risk": "device",
+      "category": "build"
+    },
+    {
+      "op": "flythings_check_project_deps",
+      "brief": "扫描项目 include 的三方库与 Manifest 声明对比，返回缺失依赖。",
+      "args": [
+        "project_root",
+        "platform"
+      ],
+      "risk": "read",
+      "category": "project"
+    },
+    {
+      "op": "flythings_create_bin_project",
+      "brief": "创建「可执行程序」项目（fun create --type bin）并编译为直接可运行的 ELF 二进制。",
+      "args": [
+        "project_root",
+        "project_name",
+        "platform",
+        "app_version",
+        "description",
+        "with_build"
+      ],
+      "risk": "write",
+      "category": "project"
+    },
+    {
+      "op": "flythings_create_project",
+      "brief": "从 HelloWord Demo 复制骨架创建 FlyThings 项目，自动替换工程名/分辨率/平台。",
+      "args": [
+        "project_root",
+        "platform",
+        "resolution",
+        "app_name",
+        "with_cli",
+        "force"
+      ],
+      "risk": "write",
+      "category": "project"
+    },
+    {
+      "op": "flythings_device_screenshot",
+      "brief": "从**设备真机**抓当前屏幕 → PNG / JPG / BMP，交给视觉模型看或用 flythings_ui_diff 做像素验收。",
+      "args": [
+        "device",
+        "out",
+        "fmt",
+        "scale",
+        "quality",
+        "fb",
+        "pixel",
+        "width",
+        "height",
+        "offset_y",
+        "flip",
+        "rotate",
+        "crop",
+        "name",
+        "timeout"
+      ],
+      "risk": "device",
+      "category": "device"
+    },
+    {
+      "op": "flythings_edit_ftu",
+      "brief": "编辑 ftu 布局：自动应用编辑到 json 后 pack 回 ftu。",
+      "args": [
+        "ftu_path",
+        "operations",
+        "output_ftu",
+        "overwrite"
+      ],
+      "risk": "write",
+      "category": "layout"
+    },
+    {
+      "op": "flythings_fui_pack",
+      "brief": "将 json 布局打包为 ftu（设备实际加载的是 ftu）。返回 ftu 路径、控件数、分辨率。",
+      "args": [
+        "json_path"
+      ],
+      "risk": "write",
+      "category": "layout"
+    },
+    {
+      "op": "flythings_gen_ui_test",
+      "brief": "根据 UI json 布局生成自动化测试项目（纯代码，不依赖 AI，省 token）。",
+      "args": [
+        "project_root",
+        "test_type",
+        "output_dir",
+        "platform",
+        "with_build",
+        "monkey_count"
+      ],
+      "risk": "device",
+      "category": "device"
+    },
+    {
+      "op": "flythings_generate_manifest",
+      "brief": "按功能需求生成完整 Manifest.xml（依赖递归补齐）。features 为逗号分隔关键词，",
+      "args": [
+        "features",
+        "platform"
+      ],
+      "risk": "write",
+      "category": "package"
+    },
+    {
+      "op": "flythings_generate_ui_assets",
+      "brief": "生成 UI 图片资源（图标/牌面/按钮背景等），输出到 <项目>/resources/images/。",
+      "args": [
+        "project_root",
+        "assets"
+      ],
+      "risk": "write",
+      "category": "assets"
+    },
+    {
+      "op": "flythings_generate_ui_preview",
+      "brief": "将项目 ui/*.json 生成 HTML 预览页（客户确认 UI 用，每个 json 生成同名 .preview.html）。",
+      "args": [
+        "project_root",
+        "output_dir"
+      ],
+      "risk": "write",
+      "category": "layout"
+    },
+    {
+      "op": "flythings_get_package_api",
+      "brief": "获取 package 的头文件路径、类方法签名、使用示例。传入包名与可选版本。",
+      "args": [
+        "package_id",
+        "platform",
+        "version"
+      ],
+      "risk": "read",
+      "category": "package"
+    },
+    {
+      "op": "flythings_get_project_spec",
+      "brief": "返回 FlyThings 项目结构化规范（目录规则、生成规则、注意事项）。编写/修改项目代码前调用。",
+      "args": [],
+      "risk": "read",
+      "category": "layout"
+    },
+    {
+      "op": "flythings_get_version",
+      "brief": "返回 MCP 版本号、工具数量与近期关键特性。用户问「MCP 版本是多少 / 是不是最新的」时调用。",
+      "args": [
+        "compact"
+      ],
+      "risk": "read",
+      "category": "kbase"
+    },
+    {
+      "op": "flythings_html_to_json",
+      "brief": "受限 HTML 交互原型 → ui/*.json 布局。",
+      "args": [
+        "input_html",
+        "output_json",
+        "res"
+      ],
+      "risk": "write",
+      "category": "layout"
+    },
+    {
+      "op": "flythings_i18n_add_language",
+      "brief": "添加新语言：从基础语言（缺省 zh_CN）复制 key 骨架，生成 i18n/<lang>-<lang_name>.tr 待翻译文件。",
+      "args": [
+        "project_root",
+        "lang",
+        "lang_name",
+        "base_lang",
+        "context"
+      ],
+      "risk": "write",
+      "category": "i18n"
+    },
+    {
+      "op": "flythings_i18n_export",
+      "brief": "导出指定语言（缺省 zh_CN）的 key→文本清单（JSON），供翻译后 import 写回。",
+      "args": [
+        "project_root",
+        "lang",
+        "keys",
+        "context"
+      ],
+      "risk": "write",
+      "category": "i18n"
+    },
+    {
+      "op": "flythings_i18n_import",
+      "brief": "将翻译结果写回项目 i18n/<lang>.tr（生成新语言文件或更新已有）。",
+      "args": [
+        "project_root",
+        "lang",
+        "translations",
+        "merge"
+      ],
+      "risk": "write",
+      "category": "i18n"
+    },
+    {
+      "op": "flythings_i18n_refactor",
+      "brief": "把布局 json 里写死的非空文本控件替换为 @key 引用（多语言改造辅助）。",
+      "args": [
+        "project_root",
+        "lang",
+        "dry_run"
+      ],
+      "risk": "write",
+      "category": "i18n"
+    },
+    {
+      "op": "flythings_i18n_scan",
+      "brief": "诊断项目多语言（i18n）现状：i18n/*.tr 语言文件、key 对齐、布局 @key 引用完整性。",
+      "args": [
+        "project_root"
+      ],
+      "risk": "read",
+      "category": "i18n"
+    },
+    {
+      "op": "flythings_i18n_to_json",
+      "brief": "把 i18n/*.tr 转为 i18n/*.json（设备 zkgui 实际加载格式），并可推送到设备 /tmp/tr/。",
+      "args": [
+        "project_root",
+        "langs",
+        "push",
+        "device"
+      ],
+      "risk": "write",
+      "category": "i18n"
+    },
+    {
+      "op": "flythings_json_to_html",
+      "brief": "json 布局 → HTML 预览稿（客户确认 UI 用，只交付 .preview.html 文件本身，不生成图片/截图）。",
+      "args": [
+        "target",
+        "output_dir"
+      ],
+      "risk": "write",
+      "category": "layout"
+    },
+    {
+      "op": "flythings_list_packages",
+      "brief": "列出依赖包生态（platform 如 F133/Z20，留空列全部），含功能描述与版本。写代码前调用。",
+      "args": [
+        "platform"
+      ],
+      "risk": "read",
+      "category": "package"
+    },
+    {
+      "op": "flythings_query_package",
+      "brief": "查询依赖包在指定平台的可用版本。传入包名（如 mqtt-cxx）与平台。",
+      "args": [
+        "package",
+        "platform"
+      ],
+      "risk": "read",
+      "category": "package"
+    },
+    {
+      "op": "flythings_read_json",
+      "brief": "解析 .json 布局文件为 JSON（分辨率、控件列表、caption→id 映射）。传入 json 完整路径。",
+      "args": [
+        "json_path"
+      ],
+      "risk": "read",
+      "category": "layout"
+    },
+    {
+      "op": "flythings_recommend_manifest",
+      "brief": "按功能需求推荐 Manifest.xml 依赖配置。features 为逗号分隔关键词，如 'mqtt,json,蓝牙'。",
+      "args": [
+        "features",
+        "platform"
+      ],
+      "risk": "read",
+      "category": "package"
+    },
+    {
+      "op": "flythings_resolve_dependencies",
+      "brief": "递归解析 package 依赖树并检测冲突。packages 为 JSON 数组字符串，",
+      "args": [
+        "packages",
+        "platform"
+      ],
+      "risk": "read",
+      "category": "package"
+    },
+    {
+      "op": "flythings_search",
+      "brief": "在 FlyThings 知识库（wiki 官方镜像 + knowledge 实践文档）中检索相关文档片段（完全本地，零 Key）。",
+      "args": [
+        "query",
+        "k"
+      ],
+      "risk": "read",
+      "category": "kbase"
+    },
+    {
+      "op": "flythings_search_package",
+      "brief": "按功能关键词搜索可用 package（mqtt/json/http/ssl/ble/ota/audio 等）。",
+      "args": [
+        "keyword",
+        "platform"
+      ],
+      "risk": "read",
+      "category": "package"
+    },
+    {
+      "op": "flythings_ui_diff",
+      "brief": "两张同尺寸截图的像素级对比（0 token，纯本地算法）——UI 验收 / 回归对比。",
+      "args": [
+        "image_a",
+        "image_b",
+        "tolerance",
+        "shift",
+        "min_area",
+        "blur",
+        "noise_bbox",
+        "out_png",
+        "out_json",
+        "show_noise"
+      ],
+      "risk": "write",
+      "category": "ui-visual"
+    },
+    {
+      "op": "flythings_ui_edit_apply",
+      "brief": "把 ui_editor 导出的「变更 JSON」写回 ui/*.json（**默认不 pack、可先 dry_run 预览**）。",
+      "args": [
+        "project_root",
+        "changes",
+        "pack",
+        "dry_run"
+      ],
+      "risk": "write",
+      "category": "ui-visual"
+    },
+    {
+      "op": "flythings_ui_editor",
+      "brief": "把 ui/*.json 生成「可视化编辑器」网页：拖控件就改布局，不用嘴描述\"往左一点\"。",
+      "args": [
+        "project_root",
+        "output_dir"
+      ],
+      "risk": "write",
+      "category": "ui-visual"
+    },
+    {
+      "op": "flythings_validate_project",
+      "brief": "检查项目是否符合 FlyThings 规范，返回 errors/warnings。生成代码后调用。",
+      "args": [
+        "project_root"
+      ],
+      "risk": "read",
+      "category": "layout"
+    },
+    {
+      "op": "flythings_verify_assets",
+      "brief": "核对「json 声明 vs 磁盘产物」：图片引用是否存在 + 自动生成图 PNG 尺寸是否 == 控件 position。",
+      "args": [
+        "project_root"
+      ],
+      "risk": "read",
+      "category": "layout"
+    }
+  ],
+  "docs": {
+    "knowledgeFiles": 49,
+    "wikiFiles": 128,
+    "ragChunks": 1161,
+    "ragPaths": 177
+  }
+}

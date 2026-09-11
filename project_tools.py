@@ -2,6 +2,8 @@
 """FlyThings project tools: ftu read, project spec, validation, fui/fun integration."""
 import json, os, re, shutil, subprocess, tempfile, time
 
+import platforms as _platforms  # 平台矩阵唯一来源（新增/调整平台只改 platforms.py）
+
 # ---------- 工具链路径（可配置 + 自动探测）----------
 # 优先级：环境变量 FLYTHINGS_FUN_DIR（用户显式指定，最高）> 包内 toolchain（随包分发）> 标准安装目录
 _BASE = os.path.dirname(os.path.abspath(__file__))
@@ -50,10 +52,8 @@ def _template_dir(plat):
     if os.path.isdir(pkg):
         return pkg
     return IDE_TEMPLATES.get(plat, '')
-PLATFORM_ALIASES = {
-    'F133EMMC': 'F133', 'F136': 'F135', 'V85X': 'V85X', 'V85XEMMC': 'V85X',
-    'T113': 'T113', 'T113EMMC': 'T113', 'T113STDCXX': 'T113', 'Z20': 'Z20',
-}
+# 平台别名表改由 platforms.py 提供（v0.27.32 起单一来源）；保留同名常量供旧调用方兼容
+PLATFORM_ALIASES = {a: n for n, m in _platforms.PLATFORMS.items() for a in m.get('alias', ())}
 
 
 # ---------------- fui 基础 ----------------
@@ -100,7 +100,7 @@ def _run_fun(cmd, project_dir, device='', retries=1, timeout=600):
     if not os.path.isfile(FUN_EXE):
         return {"success": False, "error": "fun.exe 未找到（工具目录: %s）。"
                 "请设置环境变量 FLYTHINGS_FUN_DIR 指向含 fun.exe/fui.exe 的目录，"
-                "或将其安装到 D:\zkswe\fun\。" % _tool_dir()}
+                "或将其安装到 D:\\zkswe\\fun\\。" % _tool_dir()}
     args = [FUN_EXE, cmd]
     last = None
     for attempt in range(1, max(1, retries) + 1):
@@ -695,7 +695,7 @@ def _is_elf(path):
         return False
 
 
-def flythings_create_bin_project(project_root, project_name='', platform='z21',
+def flythings_create_bin_project(project_root, project_name='', platform='f133',
                                  app_version='1.0.0', description='', with_build=True):
     """创建「可执行程序」类型项目（fun create --type bin）并编译为直接可运行的 ELF 二进制。
 
@@ -705,9 +705,15 @@ def flythings_create_bin_project(project_root, project_name='', platform='z21',
     - 部署：adb push + chmod +x 直接跑（无 zkgui 宿主，不能启动 UI 应用）
     - 非交互：自动传 --app-version/--description 跳过向导；目录非空直接报错（防覆盖询问卡死）
 
-    传入项目根目录（可不存在，自动创建）、平台（默认 z21，支持 z20/t113/f133 等）、
-    项目名（缺省取目录名）。返回创建结果 + 编译日志 + 产物路径与 ELF 验证。
+    传入项目根目录（可不存在，自动创建）、平台（默认 f133；大小写不敏感，支持 f133/f135/
+    t113/v85x/z20/z21，未知平台会报错并列出支持项）、项目名（缺省取目录名）。
+    返回创建结果 + 编译日志 + 产物路径与 ELF 验证。
     """
+    try:
+        # 出口统一小写（fun.exe / 产物目录 .fun/<小写平台>/ 的既有约定）
+        platform = _platforms.bin_tool_dir(platform or _platforms.DEFAULT_PLATFORM)
+    except ValueError as e:
+        return {"success": False, "error": str(e)}
     root = os.path.abspath(project_root)
     name = (project_name or os.path.basename(root)).strip()
     if not re.match(r'^[A-Za-z][A-Za-z0-9_]*$', name):
@@ -1057,11 +1063,15 @@ def flythings_create_project(project_root, platform=None, resolution=None,
     root = os.path.abspath(project_root)
     if os.path.isdir(root) and any(os.listdir(root)) and not force:
         return {"success": False, "error": f"目标目录非空: {root}（如需覆盖请传 force=True）"}
-    plat = platform.upper()
-    tpl_plat = PLATFORM_ALIASES.get(plat, plat)
-    tpl = _template_dir(tpl_plat)
+    try:
+        plat = _platforms.validate(platform)   # 大小写/别名归一；未知平台报错并列出支持项
+    except ValueError as e:
+        return {"success": False, "error": str(e)}
+    tpl = _template_dir(plat)
     if not tpl or not os.path.isdir(tpl):
-        return {"success": False, "error": f"无 {platform} 的 IDE 空白模板（可用: {', '.join(IDE_TEMPLATES)}，或包内 templates/）"}
+        return {"success": False,
+                "error": f"无 {platform} 的 IDE 空白模板（支持平台: {', '.join(_platforms.supported())}，"
+                         f"或包内 templates/）"}
     os.makedirs(root, exist_ok=True)
     # 1. 复制模板全部文件（跳过 Release 编译产物）
     for name in os.listdir(tpl):

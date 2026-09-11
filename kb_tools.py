@@ -6,6 +6,7 @@
 不可用时自动降级 BM25），不依赖任何远程 MCP 服务。
 """
 import html.parser  # PyInstaller 打包需要（html2json 运行时导入，静态分析漏收）
+import inspect
 import json, os, re, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -49,9 +50,10 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.32-open'
+MCP_VERSION = '0.27.33-open'
 MCP_BUILD = '2026-09-11'
 MCP_FEATURES = [
+    '2026-09-11: 第三批（P1 架构与交付纪律）v0.27.33——①**单一事实来源**：新增 `tools_manifest.json`（工具/平台/知识规模快照）+ `scripts/gen_manifest.py`（op/参数取自 OP_NAMES+签名；风险分级 read/write/device 与分类表是唯一一处人工维护，缺登记直接报错）；`--check` 进闸门防漂移 ②**发布前置闸门 `scripts/check_consistency.py`（首次真正存在——此前 pyproject/requirements.lock/platforms.py 都在引用它但文件缺失）**：版本四方一致（MCP_VERSION / pyproject×2 / README）、工具数六方一致（OP_NAMES / mcp_server / README×3 / 闸门 catalog / manifest）、平台矩阵对着真实模板与 bin_tools 目录、rag_index 覆盖+新鲜度（顺手查出 README 篇数漂移 118 → 实际 128）、委派 smoke/sync_ui_tools/gen_manifest（不重复造检测）；无本地完整 wiki 的机器自动跳过 wiki 相关项，可进 CI ③**tests/ 契约用例 38 项（离线）**：分发器/错误码/每个 op envelope、平台矩阵、布局安全（pack 确定性、**edit_ftu 默认不覆盖**、ui_edit_apply dry_run 不写盘/默认不 pack）、html2json **黄金样例 1:1**（v0.27.30 阴影三连防回归）、verify_assets 真假阳性、fui 能力声明与实际一致 + json↔ftu 往返 ④**CI**：`scripts/ci.sh` / `ci.bat` / `.github/workflows/ci.yml`（compileall + 用例 + 闸门；CI_DEVICE 可选真机抓屏）⑤**修 verify_assets 三个真问题（v0.27.32 加的产物核对器实际不可用）**：a) 只认扁平 `ui/*.json` → 分层 `ui/<分辨率>/*.json` 工程（基准 SampleUI-New 42 页 / ShowcaseAlbum-F133 / WebViewDemo）pages=0 却 ok=true（**静默假阴性**）；b) 把「手绘图尺寸 != 控件盒」当 FAIL → 官方基准工程 149 处误报（引擎本就会拉伸：navi/fh.png 44×26 放 72×40 按钮里），改按铁律 #9 只对 `resources/images/` 自动生成图强校验 1:1，手绘图归 `stretched[]` 仅提示；c) 0 页时补 warnings（不静默）⑥**html2json 误导提示修正**：能自动转图的效果（线性渐变/阴影+圆角/loading 动画）不再喊「无法硬转、请切图」（实测会把 AI 送去白做一轮手工切图），改说「已自动转成图片（尺寸 == 控件盒，json 已引用 images/*.png）」；真转不了的（径向渐变/文字阴影/变换/滤镜/透明度）保留原指引 ⑦**参数写错回 BAD_PARAMS + 正确签名**（原被 _envwrap 归成 TOOL_RAISED，AI 拿不到签名只能猜）；check_all 同样修分层布局扫描（`ui/<分辨率>/` 工程不再以「ui/ 下没有 json 布局」直接退出）⑧工具链名词口径（fun / fui / fyx / fuse）写进 manifest 与 README，写明**当前内置 fui.exe 只支持 pack、unpack 是空壳**；顺手修 project_tools 里 Windows 路径提示文案的非法转义（SyntaxWarning，路径写作正斜杠或双反斜杠）；v0.27.33-open',
     '2026-09-11: 第二批（P0 收尾）v0.27.32——①**新增 op flythings_verify_assets(project_root)**：把「json 声明 vs 磁盘产物」机器化核对（图片引用是否存在 + PNG 尺寸是否 == 控件 position，.9.png 除外），返回 missing/mismatch/unresolved 明细；同一实现接进 check_all 第 17 项（把原先靠人肉跑的 temp/verify_demo_assets.py 固化——v0.27.30 阴影丢图事故就是「产物没人核对」）②**新增 scripts/lint_silent_except.py**：AST 扫描 except...pass 静默吞异常，历史基线 + 白名单（必须写理由）两层，未登记的新站点即 FAIL；smoke 第 9 项改为调用本脚本（单一实现，不再两处各写一套）③**破坏性默认值收口**：flythings_ui_edit_apply 默认 pack=False（要 pack 显式传 true）并新增 dry_run（只回变更预览、不写盘）；flythings_build_ui_flow 默认 with_launch=False（不再默认推真机）；写操作统一回显 affectedFiles 与 .bak 路径 ④隐私脱敏补漏：重建 rag_index.json（旧索引残留真机内网 IP）、CHANGELOG.md 内真机 IP 改 <设备IP> 并重新纳入 smoke 隐私扫描范围；v0.27.32-open',
     '2026-09-11: 第一批设计检讨修复（P0）v0.27.31——①**get_version 瘦身**：原默认返回 MCP_FEATURES 全部 39 条 20,045 字符（约 1.25 万 token，问一句「版本多少」被迫吃掉整部变更史）→ 改为默认 compact=True 只回 mcpName/version/build/toolCount/近期 3 条，全量需显式 compact=False；同时删掉 checkHint 里写死的过期文案「与 0.3.0 比对」②**flythings_search 未命中带检索边界**：原回裸文本 "no results found"（AI 最容易转身去 web 猜、混入其它框架用法）→ 改回 JSON envelope {ok,hits:[],notice,warnings}，notice 明确「知识库未收录该主题，禁止用 Qt/Android/LVGL/emWin/AWTK 等其它 GUI 框架类推，请查官方文档 developer.flythings.cn 或转人工确认」；docstring 去掉写死的「wiki 118 篇」（实际 129 篇，数字不再手写）；向量模型不可用时在 warnings 里显式声明已降级 BM25 ③**统一返回契约 envelope**：35 个工具返回值在注册前统一经 _envwrap 归一化为 {ok, op, warnings[], error{code,msg,hint,retryable}}（保留原键向后兼容；非 JSON 文本收进 data.text），不再「有的回 success 有的回 ok、错误只有一句字符串」④**edit_ftu 默认不覆盖原 ftu**：原默认原地覆盖 → 新参数 overwrite=False 缺省生成 <name>.edited.ftu 并还原原文件，改动的 json 与原 ftu 都留 .bak，返回 overwriteOriginal/backup/affectedFiles/hint，要覆盖必须显式 overwrite=true 或 output_ftu ⑤**写操作回显 affectedFiles**（edit_ftu / ui_edit_apply / fui_pack / i18n_import）⑥**发布前置检查进 smoke.py**：新增双份 ui_tools 哈希一致性、本机路径/内网 IP/真实 accessKey 泄露扫描、静默 except 基线、意图闸门 catalog 参数漂移 4 项检查 ⑦**隐私清理**：撤掉 check_duplicate.py / rebuild_index_local.py / package_tools.py 里写死的本机绝对路径（形如 C:/Users/<用户>/...）与文档中的真机内网 IP 改占位符 ⑧**CHANGELOG.md 自本版起冻结为历史归档**（沛哥 2026-09-11：「changelog 不需要提交」）——不再追加新节、不进提交/发布，版本史唯一来源 = MCP_FEATURES（compact=False 全量）+ README，smoke 也不再校验 CHANGELOG；v0.27.31-open',
     '2026-09-11: html2json 阴影转图三连修（沛哥实测反馈「这是什么错误？」→ 挖出三个叠加真 bug）v0.27.30——①**box-shadow 单位解析**：原 `int(float(parts[1]))` 遇 `4px` 抛 ValueError 且被 `except Exception: pass` 静默吞掉 → 阴影图一张不生成、只甩一句「含 CSS 效果…请切图用 data-pic」（误导提示）；改为 `_px_num/_shadow_spec`（px/em/rem/%/无单位、inset 忽略、4 值 spread、色值任意位置）+ 失败写明确 warning（不再静默）②**图==控件 1:1**：`gen_res.gen_shadow_card` 新增 `crop=False` 保留完整画布（尺寸恒 = 卡体 + 2*pad，pad=max(2,blur+max(|ox|,|oy|))，卡体恒在 (pad,pad)，不再 getbbox 裁到 234×154）；html2json 检测到 pad → 自动 `_grow` 控件盒 + `_pos()` 给子控件补偿 +pad（遇 listview 行内 subItem 停止累加）+ **window 底色改回页面底色**（否则外扩透明阴影区被控件底色填满，阴影渐变与圆角都读不出来）③**阴影 alpha 必须与圆角 mask 相乘**（`ImageChops.multiply`）：原 `putalpha(mask)` 覆盖把 10% 透明黑压成不透明 → 卡片四周一圈硬黑描边（视觉模型判为「粗黑描边」，阴影柔化全丢）。实测：农历 demo 7 图全 OK（png 尺寸 == 控件尺寸，0 mismatch / 0 missing），阴影边缘 alpha 4~6/255 柔和渐变；`HTML_SUBSET.md` 四处同步（单位容错 / 1:1 规则 / mask 相乘 / 文档修正）；v0.27.30-open',
@@ -727,12 +729,18 @@ def flythings_ui_diff(image_a: str, image_b: str, tolerance: int = 2, shift: int
 
 
 def flythings_verify_assets(project_root: str) -> str:
-    """核对「json 声明 vs 磁盘产物」：图片引用是否存在 + PNG 尺寸是否 == 控件 position。
+    """核对「json 声明 vs 磁盘产物」：图片引用是否存在 + 自动生成图 PNG 尺寸是否 == 控件 position。
 
-    ⚠️ 生成/改完图片资源后必跑（FlyThings 不缩放普通 PNG，图与控件盒不等即错位/裁切；
-    v0.27.30 阴影丢图事故就是「产物没人核对」）。
-    返回 missing[]（引用了但文件缺失）/ mismatch[]（尺寸 != position，.9.png 除外）/
-    unresolved[]（运行时格式化引用等跳过项）；与 check_all 第 17 项同一实现。
+    ⚠️ 生成/改完图片资源后必跑（v0.27.30 阴影丢图事故就是「产物没人核对」）。
+    布局支持 ui/*.json 与 ui/<分辨率>/*.json 两种真实工程布局（v0.27.33 前只认扁平一层，
+    分层工程会「0 页却报 ok」）。
+    返回：
+      - missing[]  引用了但文件不存在 → 真问题
+      - mismatch[] 自动生成图（resources/images/，铁律 #9）尺寸 != position → 真问题
+      - stretched[]手绘图尺寸 != 控件盒 → 仅提示（引擎会拉伸，导航图标/背景图常态）
+      - unresolved[]运行时格式化引用 / 读图失败等跳过项
+      - warnings[] 0 页等「其实没核对到东西」的情况
+    与 check_all 第 17 项同一实现。
     """
     if chk_all is None:
         return json.dumps({'ok': False, 'error': 'check_all 模块不可用（缺 ui_tools/check_all.py）'},
@@ -741,8 +749,9 @@ def flythings_verify_assets(project_root: str) -> str:
         r = chk_all.verify_assets(project_root)
     except Exception as e:
         return json.dumps({'ok': False, 'error': 'verify_assets 失败: %s' % e}, ensure_ascii=False)
-    r['hint'] = ('missing → 补图或改 json 引用（图片放 resources/images/，引用写 images/xxx.png）；'
-                 'mismatch → 重新出图，使 PNG 尺寸严格 == 控件 position')
+    r['hint'] = ('missing → 补图或改 json 引用（自动生成图片放 resources/images/，引用写 images/xxx.png）；'
+                 'mismatch → 重新出图，使 PNG 尺寸严格 == 控件 position；'
+                 'stretched 一般无需处理（手绘图由引擎拉伸到控件盒）')
     return json.dumps(r, ensure_ascii=False)
 
 
@@ -859,12 +868,35 @@ def normalize_result(op, raw):
     return json.dumps(out, ensure_ascii=False)
 
 
+def _sig_args(fn) -> list:
+    """函数签名参数名（给 BAD_PARAMS 回显用）。"""
+    import inspect as _i
+    try:
+        return [p.name for p in _i.signature(fn).parameters.values()
+                if p.name not in ('ctx', 'self')]
+    except (TypeError, ValueError):
+        return []
+
+
 def _envwrap(name, fn):
-    """工具级包装：统一 envelope + 内部异常不再静默（转为可机读 error 返回）。"""
+    """工具级包装：统一 envelope + 内部异常不再静默（转为可机读 error 返回）。
+
+    参数绑定错误（少传/写错参数名）单独识别为 **BAD_PARAMS** 并附正确签名：
+    否则会被下面的 except 归成 TOOL_RAISED，AI 拿不到签名就得猜参数（v0.27.33 修）。
+    """
     import functools
 
     @functools.wraps(fn)
     def wrapper(*a, **kw):
+        try:
+            inspect.signature(fn).bind(*a, **kw)      # 只做绑定校验，不执行
+        except TypeError as e:
+            return json.dumps(
+                {'ok': False, 'op': name,
+                 'error': _err_obj('BAD_PARAMS', '%s: %s' % (type(e).__name__, e),
+                                   '本 op 正确签名: %s(%s)'
+                                   % (name, ', '.join(_sig_args(fn))), True),
+                 'warnings': []}, ensure_ascii=False)
         try:
             return normalize_result(name, fn(*a, **kw))
         except Exception as e:
@@ -882,40 +914,57 @@ for _n in _tool_names():
     globals()[_n] = _envwrap(_n, globals()[_n])
 
 
+# ── op 注册清单（唯一来源）──────────────────────────────────────────────
+# register_all 与 mcp_server 的分发器共用本清单；新增 op 只需：
+#   ① 在 kb_tools 里定义 flythings_xxx 函数  ② 把名字加进 OP_NAMES
+#   ③ 跑 scripts/check_consistency.py（校验 OP_NAMES == 模块内全部 flythings_* 函数）
+OP_NAMES = (
+    'flythings_get_version',
+    'flythings_search',
+    'flythings_read_json',
+    'flythings_get_project_spec',
+    'flythings_validate_project',
+    'flythings_fui_pack',
+    'flythings_edit_ftu',
+    'flythings_build_ui_flow',
+    'flythings_generate_ui_preview',
+    'flythings_html_to_json',
+    'flythings_json_to_html',
+    'flythings_ui_editor',
+    'flythings_ui_edit_apply',
+    'flythings_ui_diff',
+    'flythings_verify_assets',
+    'flythings_device_screenshot',
+    'flythings_attach_cli_tools',
+    'flythings_create_project',
+    'flythings_create_bin_project',
+    'flythings_gen_ui_test',
+    'flythings_check_project_deps',
+    'flythings_generate_ui_assets',
+    'flythings_i18n_scan',
+    'flythings_i18n_add_language',
+    'flythings_i18n_export',
+    'flythings_i18n_import',
+    'flythings_i18n_refactor',
+    'flythings_i18n_to_json',
+    'flythings_list_packages',
+    'flythings_query_package',
+    'flythings_recommend_manifest',
+    'flythings_add_package',
+    'flythings_search_package',
+    'flythings_get_package_api',
+    'flythings_resolve_dependencies',
+    'flythings_generate_manifest',
+)
+
+
 def register_all(mcp):
-    mcp.tool()(flythings_get_version)
-    mcp.tool()(flythings_search)
-    mcp.tool()(flythings_read_json)
-    mcp.tool()(flythings_get_project_spec)
-    mcp.tool()(flythings_validate_project)
-    mcp.tool()(flythings_fui_pack)
-    mcp.tool()(flythings_edit_ftu)
-    mcp.tool()(flythings_build_ui_flow)
-    mcp.tool()(flythings_generate_ui_preview)
-    mcp.tool()(flythings_html_to_json)
-    mcp.tool()(flythings_json_to_html)
-    mcp.tool()(flythings_ui_editor)
-    mcp.tool()(flythings_ui_edit_apply)
-    mcp.tool()(flythings_ui_diff)
-    mcp.tool()(flythings_verify_assets)
-    mcp.tool()(flythings_device_screenshot)
-    mcp.tool()(flythings_attach_cli_tools)
-    mcp.tool()(flythings_create_project)
-    mcp.tool()(flythings_create_bin_project)
-    mcp.tool()(flythings_gen_ui_test)
-    mcp.tool()(flythings_check_project_deps)
-    mcp.tool()(flythings_generate_ui_assets)
-    mcp.tool()(flythings_i18n_scan)
-    mcp.tool()(flythings_i18n_add_language)
-    mcp.tool()(flythings_i18n_export)
-    mcp.tool()(flythings_i18n_import)
-    mcp.tool()(flythings_i18n_refactor)
-    mcp.tool()(flythings_i18n_to_json)
-    mcp.tool()(flythings_list_packages)
-    mcp.tool()(flythings_query_package)
-    mcp.tool()(flythings_recommend_manifest)
-    mcp.tool()(flythings_add_package)
-    mcp.tool()(flythings_search_package)
-    mcp.tool()(flythings_get_package_api)
-    mcp.tool()(flythings_resolve_dependencies)
-    mcp.tool()(flythings_generate_manifest)
+    """把全部 op 注册到 MCP server；返回已注册函数列表（smoke / 一致性检查用）。"""
+    fns = []
+    for name in OP_NAMES:
+        fn = globals().get(name)
+        if callable(fn) is False:
+            raise RuntimeError('OP_NAMES 里的 op 未定义: ' + name)
+        mcp.tool()(fn)
+        fns.append(fn)
+    return fns

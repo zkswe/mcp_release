@@ -4,7 +4,7 @@ echo ============================================
 echo  FlyThings MCP Open - 依赖安装
 echo ============================================
 echo.
-echo [1/2] 检查 Python...
+echo [1/3] 检查 Python...
 python --version 2>nul
 if %errorlevel% neq 0 (
     echo   未检测到 Python，请先安装 Python 3.10+：
@@ -13,12 +13,18 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 echo.
-echo [2/2] 安装依赖（mcp + 本地向量模型推理）...
-pip install mcp onnxruntime tokenizers
+echo [2/3] 安装依赖（requirements.lock = 已验证版本组合，可复现）...
+pip install -r "%~dp0requirements.lock"
 if %errorlevel% neq 0 (
     echo   安装失败，请检查网络后重试
     pause
     exit /b 1
+)
+echo.
+echo [3/3] 自检（离线 smoke，不连真机）...
+python "%~dp0scripts\smoke.py"
+if %errorlevel% neq 0 (
+    echo   ⚠️ 自检未全绿，请把上面的输出发给维护者；依赖已装好，仍可继续配置。
 )
 echo.
 echo ============================================

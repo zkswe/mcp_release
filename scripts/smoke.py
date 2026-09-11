@@ -123,10 +123,12 @@ def main():
     check(bool(re.match(r'^\d+\.\d+\.\d+-open$', str(ver))), 'MCP_VERSION format', str(ver))
     print('       version=%s build=%s' % (ver, build))
 
-    # ---- 2) 注册工具
-    src = io.open(os.path.join(BASE, 'kb_tools.py'), encoding='utf-8').read()
-    names = re.findall(r'mcp\.tool\(\)\((\w+)\)', src)
-    check(len(names) > 0, 'register_all tool count', str(len(names)))
+    # ---- 2) 注册工具（清单唯一来源 = kb_tools.OP_NAMES，避免手写列表漂移）
+    names = list(getattr(k, 'OP_NAMES', []))
+    dyn = list(k._tool_names())
+    same_as_module = sorted(names) == dyn
+    check(bool(names) and same_as_module, 'register_all tool count',
+          '%d  (OP_NAMES == 模块内 flythings_* 函数: %s)' % (len(names), same_as_module))
     bad = []
     for n in names:
         f = getattr(k, n, None)

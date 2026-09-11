@@ -740,24 +740,59 @@ class HtmlToJson:
         ('transform', '变换/旋转'), ('filter', '滤镜'), ('opacity', '透明度'),
     )
 
+    def _convertible_effects(self, node, style, hit):
+        """本次会被 gen_res 自动烘焙成图的效果名（与 _effect_assets 同一套条件）。
+
+        为什么要算（v0.27.33 修「误导提示」）：转图能力可用时，线性渐变/阴影+圆角/loading 动画
+        本来就会自动出图并写进 json（实测 grad_/shadow_/loading_*.png + backgroundPic/playFile），
+        旧文案却一律喊「无法硬转，请切图」——让 AI 以为转图失败了、白做一轮手工切图。
+        """
+        if not (_HAS_GEN_RES and getattr(self, 'asset_dir', None)):
+            return set()
+        cls = _classes(node.attrs)
+        out = set()
+        # 线性渐变 → gen_res 渐变图（径向渐变不支持，实测不转）
+        if 'linear-gradient' in style and 'radial-gradient' not in style:
+            out.add('线性渐变')
+        # 卡片阴影 + 圆角 → 一并烘焙成带外描的 PNG（文字阴影不在其中）
+        if _shadow_spec(style):
+            out.add('圆角')
+            if 'text-shadow' not in style:
+                out.add('阴影')
+        # loading/spinner 式动画 → 序列帧 GIF（imageanim）
+        if ('loading' in cls or 'spinner' in cls or
+                (re.search(r'animation\s*:', style) and
+                 ('spin' in style or 'rotate' in style or 'loading' in style))):
+            out.add('动画')
+        return {h for h in hit if h in out}
+
     def _warn_css_effects(self, ctx, node):
-        """检测 style 里的 CSS 效果属性：FlyThings 无 CSS 引擎，不硬转，
-        提示转图片（PNG/.9.png/序列帧/GIF）后用 data-pic 引用（转图 + 控件）。"""
+        """检测 style 里的 CSS 效果属性：能自动转图的说明「已转图」，转不了的提示切图。
+
+        两类分开说：
+          - 已转图（渐变/阴影+圆角/loading 动画）→ 信息提示，避免 AI 白做手工切图
+          - 转不了（径向渐变/文字阴影/变换/滤镜/透明度/过渡）→ 保留「请切图 + data-pic」指引
+        """
         if _attr(node.attrs, 'data-pic'):
             return   # 作者已按规范切图（data-pic）引用，效果就在图里，不必再提示
         style = _attr(node.attrs, 'style') or ''
         if not style:
             return
         hit = [name for pat, name in self._CSS_EFFECT_PATTERNS if pat in style]
-        # 自动转图能力可用时，box-shadow 是**能转**的（阴影+圆角一并烘焙成 PNG）→ 不再误报
-        if hit and _HAS_GEN_RES and getattr(self, 'asset_dir', None) and _shadow_spec(style):
-            if 'text-shadow' not in style:
-                hit = [h for h in hit if h != '阴影']
-            hit = [h for h in hit if h != '圆角']
-        if hit:
-            cls = _attr(node.attrs, 'class') or ''
+        if not hit:
+            return
+        conv = self._convertible_effects(node, style, hit)
+        rest = [h for h in hit if h not in conv]
+        cls = _attr(node.attrs, 'class') or ''
+        if conv:
             ctx.warnings.append(
-                f'<{node.tag} class="{cls}"> 含 CSS 效果（{"、".join(hit)}）：'
+                f'<{node.tag} class="{cls}"> 的 CSS 效果（{"、".join(sorted(conv))}）**已自动转成图片**'
+                f'（PNG/序列帧，尺寸 == 控件盒，json 已引用 images/*.png）；FlyThings 没有 CSS 引擎，'
+                f'改外观请改图或控件属性，不要指望写 CSS 生效。'
+                f'（若该控件类型没生成对应图，再用 data-pic 自备图（PNG，尺寸 == 控件盒））')
+        if rest:
+            ctx.warnings.append(
+                f'<{node.tag} class="{cls}"> 含 CSS 效果（{"、".join(rest)}）：'
                 f'FlyThings 不支持 CSS，无法硬转；请切图（PNG/.9.png/序列帧/GIF）后 '
                 f'用 data-pic 引用（效果转图片 + 控件组合实现）')
 

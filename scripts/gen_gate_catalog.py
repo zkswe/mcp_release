@@ -14,7 +14,6 @@ import ast
 import io
 import json
 import os
-import re
 import sys
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -22,10 +21,28 @@ DEFAULT_OUT = os.path.join(os.path.dirname(BASE), 'flythings_intent_gate', 'cata
 
 
 def collect():
-    """按 register_all 的注册名单收集 op + 首行简介 + 参数名（顺序与实现一致）。"""
+    """按 kb_tools.OP_NAMES 收集 op + 首行简介 + 参数名（单一来源）。
+
+    v0.27.32 起 register_all 改为遍历 OP_NAMES（不再逐行 mcp.tool()(...)），
+    所以清单从 OP_NAMES 常量读，且会校验「清单 vs 模块内 flythings_* 函数定义」一致。
+    """
     src = io.open(os.path.join(BASE, 'kb_tools.py'), encoding='utf-8').read()
     tree = ast.parse(src)
-    registered = set(re.findall(r'mcp\.tool\(\)\((\w+)\)', src))
+    registered = set()
+    for n in tree.body:
+        if isinstance(n, ast.Assign):
+            for t in n.targets:
+                if isinstance(t, ast.Name) and t.id == 'OP_NAMES':
+                    registered = {e.value for e in n.value.elts}
+    if not registered:
+        raise SystemExit('kb_tools.OP_NAMES not found (generator relies on it as single source)')
+    defined = {n.name for n in tree.body
+               if isinstance(n, ast.FunctionDef) and n.name.startswith('flythings_')
+               and n.name != 'flythings_kb'}
+    missing = sorted(registered - defined)
+    extra = sorted(defined - registered)
+    if missing or extra:
+        raise SystemExit('OP_NAMES vs 函数定义不一致  missing=%s extra=%s' % (missing, extra))
     ops = []
     for n in tree.body:
         if not isinstance(n, ast.FunctionDef) or n.name not in registered:
