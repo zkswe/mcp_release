@@ -41,17 +41,72 @@ def cos(a, b):
         math.sqrt(sum(x * x for x in a)) * math.sqrt(sum(x * x for x in b)) + 1e-12)
 
 
+_ASCII_RE = re.compile(r'[a-z0-9_#+.\-]{2,}')
+_CJK_RE = re.compile(r'[\u3400-\u9fff]+')
+
+
+def query_tokens(q):
+    """查询切词（**单一实现**：BM25 与 kb_tools 的覆盖率判定共用）。
+
+    ASCII 词取 ≥2 字符；中文用**字级 bigram**。
+    为何必须 bigram（检讨报告 §3.7）：原 BM25 把整段连续中文当一个 token，
+    『Z20 屏幕截图怎么抓』会切出 '屏幕截图怎么抓' 这种超长 token，
+    只有正文原样出现才命中 → 模型不可用降级 BM25 时召回明显掉。
+    """
+    ql = (q or '').lower()
+    toks = set(_ASCII_RE.findall(ql))
+    for run in _CJK_RE.findall(ql):
+        if len(run) == 1:
+            toks.add(run)
+        else:
+            toks.update(run[i:i + 2] for i in range(len(run) - 1))
+    return toks
+
+
+_BM25_K1 = 1.5
+_BM25_B = 0.75
+_DF = {}      # token -> 文档频次缓存（索引在进程内不变，可长期复用）
+
+
+def _df_of(t):
+    v = _DF.get(t)
+    if v is None:
+        v = sum(1 for c in CHUNKS if t in c['text'].lower())
+        _DF[t] = v
+    return v
+
+
 def _bm25_search(q, k):
-    """关键词检索兜底（本地模型不可用时）：词频 + 长度加权打分。"""
-    tokens = [t for t in re.findall(r'[\w\u4e00-\u9fff]+', q.lower()) if len(t) > 1]
-    if not tokens:
+    """BM25 关键词检索：字级 bigram + IDF + 长度归一 + 路径/标题加权。
+
+    相比原实现（裸词频计数，无 IDF/长度归一），评分口径向标准 BM25 靠齐，
+    并对「命中文件名/目录名」与「命中首段标题」加权——实践中这两个信号的
+    准确率远高于正文里偶然出现一次。
+    """
+    toks = sorted(query_tokens(q))
+    if not toks:
         return []
+    n = len(CHUNKS)
+    avgdl = sum(len(c['text']) for c in CHUNKS) / float(max(1, n))
     scored = []
     for c in CHUNKS:
-        text_l = c['text'].lower()
+        tl = c['text'].lower()
+        dl = len(tl)
+        head = tl[:120]
+        path = (c.get('path') or '').lower()
         score = 0.0
-        for t in set(tokens):
-            score += text_l.count(t) * (1.0 + math.log1p(len(t)))
+        for t in toks:
+            tf = tl.count(t)
+            if not tf:
+                continue
+            df = _df_of(t)
+            idf = math.log(1.0 + (n - df + 0.5) / (df + 0.5))
+            score += idf * (tf * (_BM25_K1 + 1)) / \
+                (tf + _BM25_K1 * (1 - _BM25_B + _BM25_B * dl / avgdl))
+            if t in path:
+                score += idf * 2.0
+            if t in head:
+                score += idf * 0.5
         if score > 0:
             scored.append((score, c))
     scored.sort(key=lambda x: x[0], reverse=True)

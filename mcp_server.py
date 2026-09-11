@@ -2,8 +2,17 @@
 """MCP server (stdio, fastmcp): FlyThings knowledge base full toolset.
 
 OpenClaw 注册入口。工具定义见 kb_tools.py。
+
 ⚠️ 分发器走**自建 OPS 注册表**（kb_tools.OP_NAMES），不反射 FastMCP 私有属性
 （`mcp._tool_manager._tools` 是内部结构，SDK 一升级就炸）。
+
+工具面模式（v0.27.34，环境变量 FLYTHINGS_MCP_MODE，默认 dispatcher）：
+  - `dispatcher`（默认）：**只暴露 1 个工具** flythings_kb（op="list" 取目录）——schema 开销最小，
+    推荐所有客户端用（外部工具目录由意图闸门/README 提供）；
+  - `all`：1 个分发器 + 36 个独立工具（老配置兼容，客户端可直接调 flythings_search 这类名字）；
+  - `flat`：只注册 36 个独立工具（等价 mcp_server_flat.py，给需要独立 schema 的客户端）。
+⚠️ 默认值从“全注册”改为“只分发器”是**行为变更**（v0.27.34）：如你的客户端/提示词直接调用
+flat 工具名，设 FLYTHINGS_MCP_MODE=all 即可恢复原行为。
 """
 import os, sys, json, inspect
 
@@ -11,8 +20,14 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from mcp.server.fastmcp import FastMCP
 import kb_tools
 
+MODE = (os.environ.get('FLYTHINGS_MCP_MODE') or 'dispatcher').strip().lower()
+if MODE not in ('dispatcher', 'all', 'flat'):
+    MODE = 'dispatcher'
+
 mcp = FastMCP("flythings-kb")
-kb_tools.register_all(mcp)
+# 'dispatcher'：不注册独立工具（只有下面的 flythings_kb）；'all' / 'flat'：注册 36 个独立工具
+if MODE in ('all', 'flat'):
+    kb_tools.register_all(mcp)
 
 # {op 名 -> 已统一 envelope 包装的函数}；与注册清单同源，无私有属性反射
 OPS = {}
@@ -58,7 +73,6 @@ def _env_err(code, msg, hint='', retryable=False) -> str:
                       ensure_ascii=False)
 
 
-@mcp.tool()
 async def flythings_kb(op: str = "list", args: str = "{}") -> str:
     """FlyThings 开发能力统一入口（36 个能力合一的单入口）。
 
@@ -108,6 +122,11 @@ async def flythings_kb(op: str = "list", args: str = "{}") -> str:
 def main():
     """console_scripts 入口（pyproject.toml: flythings-mcp = mcp_server:main）。"""
     mcp.run()
+
+
+# 注册分发器（MODE=flat 时不注册：那种模式语义 =「只要 36 个独立工具」，见 mcp_server_flat.py）
+if MODE != 'flat':
+    mcp.tool()(flythings_kb)
 
 
 # 预热本地 embedding 模型（2026-09-07 实测修复）

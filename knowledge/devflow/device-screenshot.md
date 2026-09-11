@@ -1,0 +1,104 @@
+# 真机抓屏（device_screenshot）实现要点与踩坑
+
+> 检索导引：抓真机截图 / 抓屏 / 屏幕没图 / 抓到的画面是旧的 / 颜色红蓝互换 / 文字侧躺倒立 /
+> 取图角度 rotateScreen / fb0 参数 / 双缓冲 pan / 设备没有 screencap 时命中。
+> 用途：`flythings_device_screenshot` 的完整口径（该工具 docstring 只保留要点，踩坑细节在这里）。
+
+## 1. 什么时候用
+
+要确认设备上**实际显示成什么样**：布局对不对、图标有没有锯齿、切图对不对、颜色/文字是否正常、
+改完要不要验收、用户说「我屏幕上看到的是……」而你手上没有截图。
+
+三段式验收的第二步：预览（秒级）→ **本工具抓真机截图（像素真相）** → `flythings_ui_diff` 比对。
+
+## 2. 默认用法（默认参数就够了）
+
+| 需求 | 做法 |
+|------|------|
+| 抓一张 | `flythings_device_screenshot()` → `screenshots/device_600x1600_*.png` |
+| 省 token | `scale=0.5`（长宽各半）或 `fmt='jpg', quality=85` |
+| 多设备 | `device='<设备IP>:5555'`（先 `adb connect <IP>:5555`） |
+| 分析画面 | 把返回的 `path` 交给看图能力；**不要把 raw/文件本身丢给模型** |
+| 改前改后验收 | 改前抓一张存好，改后再抓一张 → `flythings_ui_diff(改前, 改后)` 0 token 出差异清单 |
+| 方向不对 | **不用自己试角度**：缺省 `rotate='auto'` 会读项目工程 `EasyUI.cfg` 的 `rotateScreen` 自动转正（返回值 `rotateSource` 可自证）；触摸角度看 `screenInfo.rotateTouch`（可与显示不同） |
+| 只要应用画面（去黑边） | `crop='auto'` 按 disp 图层 frame 裁出逻辑分辨率区域（仅存在唯一非全屏图层时生效，否则不裁并在 `crop` 字段说明） |
+
+## 3. 实现要点（踩过的坑，别改错）
+
+### 3.1 取流链路
+
+设备 rootfs 是裁剪版：**没有 `screencap` / `dd` / `head`**，`adb exec-out` 也不通
+（patched adbd 无 shell v2）。唯一可靠链路：
+
+```
+设备侧：busybox dd if=<fb> bs=<stride> skip=<pan.y> count=<height> | busybox gzip -1 > /tmp/x
+主机侧：adb pull
+```
+
+- 裸 raw 7.68MB 经 WiFi pull 要 4 分钟+；gzip 后只剩 ~37KB、0.3 秒（画面平坦色块多，压缩比极高）
+- 设备上没有 busybox 时自动退化 `cat <fb> > /tmp/x` + pull（慢，返回里会提示先 push 一个 busybox）
+
+### 3.2 fb 参数
+
+一律问 sysfs：
+
+| 文件 | 内容 |
+|------|------|
+| `modes` | 可见分辨率（如 `U:600x1600p-50`） |
+| `virtual_size` | 可能是可见高的 2 倍（OVERALLOC 双缓冲） |
+| `stride` | 行字节数 |
+| `bits_per_pixel` | 位深 |
+
+⚠️ **可见高 ≠ 文件行数**，必须按 stride 逐行取，否则下半张图是脏数据。
+
+### 3.3 双缓冲页翻转（最容易抓错）
+
+读 `/sys/class/graphics/fb0/pan`（如 `"0,1600"` = 当前显示 yoffset=1600），
+抓图必须 `skip=<yoffset>`；否则抓到的是上一帧——**旧画面仍可能是完整 UI，肉眼很难发现抓错了**。
+
+`offset_y=-1` 会自动读 pan，并在抓图后二次确认 pan 未变（翻了就重抓一次）。
+
+### 3.4 通道序
+
+32bpp 内存序是 **BGRA**（小端 ARGB8888）。工具按 alpha 字节位置自动判通道序
+（末字节 ≈0xFF → BGRA）。
+
+- 若颜色红蓝互换，传 `pixel='rgba'` 重抓
+- 其他可选：`bgra` / `rgba` / `argb` / `abgr` / `rgb565` / `bgr565` / `rgb888` / `bgr888`
+
+### 3.5 其他匹配参数
+
+`width` / `height` 可覆盖（sysfs 读不到时）、`flip='v|h|both'`、`rotate='auto'|0|90|180|270`、
+`crop=''|'auto'|'x,y,w,h'`、`offset_y` 手动指定。
+
+### 3.6 方向/角度只认项目工程配置（沛哥 2026-09-10 定规）
+
+`<项目>/.fun/<平台>/launch/EasyUI.cfg`（设备上 = `/res/etc/EasyUI.cfg`）里：
+
+- `rotateScreen`（0/90/180/270）= 屏幕/取图角度
+- `rotateTouch` = 触摸角度（**可以与之不同**）
+
+实测（V85X DVR 板）：`rotateScreen=270` 时 fb 里内容侧躺，按 270 转后文字正立。
+
+❌ **不要**拿 `/sys/class/graphics/fb0/rotate` 当首选（本机它 = 0，与工程角度不一致，看着像不用转其实要转）
+❌ **不要**把某台设备的「转置 + 翻转」组合硬编成通则（那是那台设备那个角度的结果）
+❌ **不要**从 `/sys/class/disp/disp/attr/sys` 的图层几何反推方向（它只说明某层占哪块，不告诉你屏幕角度）
+
+## 4. 返回字段
+
+```json
+{"success": true, "path": "...", "width": 600, "height": 1600, "format": "png",
+ "sizeBytes": 12345, "device": "...", "method": "busybox-cat-gzip",
+ "screenInfo": {"width": 600, "height": 1600, "virtualHeight": 3200, "bpp": 32,
+                "stride": 2400, "modes": "...", "offsetY": 1600, "pan": "0,1600",
+                "rotate": 0, "rotateScreen": 270, "rotateTouch": 270},
+ "uiLayer": "...", "pixelOrder": "bgra", "rotateDeg": 270, "rotateSource": "project-cfg",
+ "crop": "", "readHint": ""}
+```
+
+## 5. 相关
+
+- 像素级读图/省 token 阶梯、1 字符=1 像素分类图、文字暗带检测 → `pixel-analysis-ai.md`
+- 触摸注入与抓帧时机（注入 + 抓帧同一次 adb 调用、多档 sleep 差分）→ `touch-inject-autotest.md`
+- 屏幕方向（rotateScreen 权威来源）→ `ui-layout-verify.md` §2-1-1
+- 设备缺命令（grep/sed/dd…）→ 用 busybox → `busybox-debug-library.md`

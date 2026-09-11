@@ -25,7 +25,8 @@
 - 🏭 **全流程开箱即用**：编译工具链（fui/fun）与项目模板已内置，创建项目 → 布局 → 编译 → 推送一气呵成
 - 🧠 **36 个工具**：知识检索、项目创建、布局转换、依赖管理、规范校验、自动修复、多语言、自动化测试、UI 可视化编辑、真机截图与产物核对全都有
 - 📦 **一条命令安装**：`pip install -r requirements.lock`（已锁定实测通过的版本组合），AI 工具指一下路径就能用
-- ✅ **发布前置闸门**：38 项契约用例 + 30 项冒烟 + 一致性校验（版本/工具数/平台/索引/隐私）一键跑，见 [`tests/`](tests/README.md)
+- ✅ **发布前置闸门**：50 项契约用例 + 30 项冒烟 + 一致性校验（版本/工具数/平台/索引/隐私）一键跑，见 [`tests/`](tests/README.md)
+- 🪶 **schema 集约**：工具 docstring 合计 ≤ 12,000 字符（单个 ≤ 900），长尾细节全放可检索的知识库——不拿上下文烧钱
 
 🎯 **适用场景**：
 - ✅ Trae/Cursor /Kimi AI + FlyThings IDE：人机共创，AI负责整体开发，FlyThings IDE 可视化实现人工调优细节调整。       
@@ -127,13 +128,24 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 
 > 如果 `python` 不在 PATH，用完整路径（如 `C:/Users/<你>/AppData/Local/Programs/Python/Python313/python.exe`）。
 
+**工具面三模式（按客户端选一个，别同时配）**
+
+| 模式 | 怎么配 | 客户端看到什么 | 何时用 |
+|------|--------|----------------|--------|
+| `dispatcher`（默认） | 就指 `mcp_server.py` | **1 个工具** `flythings_kb`（op="list" 取目录） | 推荐：schema 开销最小；配合意图闸门/README 工具表 |
+| `all` | `FLYTHINGS_MCP_MODE=all` | 1 个分发器 + 36 个独立工具 | 你的提示词/客户端直接调 `flythings_search` 这类名字（旧配置兼容） |
+| `flat` | 指 `mcp_server_flat.py`（或 `FLYTHINGS_MCP_MODE=flat`） | 36 个独立工具（无分发器） | 需要每个工具独立 schema/参数提示的客户端（Trae / Cursor / Claude Desktop） |
+
+> ⚠️ 默认从“全注册”改为“只分发器”是 v0.27.34 的**行为变更**；受影响就设 `FLYTHINGS_MCP_MODE=all` 恢复。
+> `flat` 模式的代价：36 份 schema 常驻上下文（≈1 万 token/session）。
+
 **4. 验证**
 
 在 AI 工具中问：
 
 > **MCP 版本是多少？**
 
-应返回：`flythings-kb-open 0.27.33-open`，包含 36 个工具。
+应返回：`flythings-kb-open 0.27.34-open`，包含 36 个工具。
 
 ---
 
@@ -142,7 +154,9 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 ### 🧠 完全本地知识检索
 - **内置 bge-small-zh 向量模型**（22MB），随包分发 128 篇 wiki 官方镜像 + 49 篇实践知识（`knowledge/`，共 177 篇去重索引）
 - 检索**不需要任何 API Key**，完全离线
-- 模型不可用时自动降级 **BM25 关键词检索**（并在返回体 `warnings` 里显式说明已降级），永不失联
+- 向量 + BM25 双路 **RRF 融合**（中文按**字级 bigram** 切词 + IDF + 路径/标题加权，实测 top-3 命中 10/10）
+- 返回体带 `retrieval` / `degraded` / `quality`（ok | low_confidence | no_hit）/ `source`（实践 or 官方镜像），低置信与未收录会给明确提示
+- 模型不可用时自动降级 **BM25**（并在 `warnings` 里显式说明），永不失联
 
 ### 🏭 全流程开发
 - **创建项目**：从内置 HelloWord 模板（F133/F135/Z21/T113/V85X/Z20）一键创建
@@ -177,7 +191,7 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 | `flythings_ui_editor` / `ui_edit_apply` | UI 可视化拖拽编辑 → 变更写回 json + pack ftu |
 | `flythings_ui_diff` | 截图像素对比（0 token 验收 / 回归对比） |
 | `flythings_verify_assets` | **产物核对**（json 引用的图片是否存在 + 自动生成图 PNG 尺寸 == 控件 position；支持 `ui/*.json` 与 `ui/<分辨率>/*.json`；与 check_all #17 同源） |
-| `flythings_device_screenshot` | **真机抓屏 → PNG/JPG/BMP**（裁剪设备免 adb 摸索，直接出图给 AI 分析） |
+| `flythings_device_screenshot` | **真机抓屏 → PNG/JPG/BMP**（裁剪设备免 adb 摸索，直接出图给 AI 分析；进阶参数可统一走 `advanced` JSON） |
 | `flythings_generate_ui_assets` | 生成 UI 图片资源（AI/emoji/线条三级降级） |
 | `flythings_create_bin_project` | 创建可执行程序项目（ELF 二进制） |
 

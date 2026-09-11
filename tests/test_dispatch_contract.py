@@ -110,5 +110,52 @@ class TestManifestFreshness(unittest.TestCase):
         self.assertEqual(rc, 0, 'tools_manifest.json 与代码/风险表不一致：python scripts/gen_manifest.py')
 
 
+class TestToolSurfaceModes(unittest.TestCase):
+    """工具面三种模式（v0.27.34）：默认只 1 个分发器（省 token），all / flat 才注册独立工具。"""
+
+    SNIP = ("import sys,json,asyncio;sys.path.insert(0,%r);import mcp_server as m;"
+            "ts=asyncio.run(m.mcp.list_tools());"
+            "print(json.dumps({'mode':m.MODE,'n':len(ts),'names':sorted(t.name for t in ts)}))")
+
+    def _probe(self, mode=None):
+        env = dict(os.environ)
+        env.pop('FLYTHINGS_MCP_MODE', None)
+        if mode:
+            env['FLYTHINGS_MCP_MODE'] = mode
+        r = subprocess.run([sys.executable, '-X', 'utf8', '-c', self.SNIP % U.BASE],
+                           capture_output=True, text=True, env=env, cwd=U.BASE)
+        self.assertTrue(r.stdout.strip(), '子进程无输出: %s' % (r.stderr or '')[-200:])
+        return json.loads(r.stdout.strip().splitlines()[-1])
+
+    def test_default_is_dispatcher_only(self):
+        d = self._probe()
+        self.assertEqual(d['mode'], 'dispatcher')
+        self.assertEqual(d['names'], ['flythings_kb'],
+                         '默认模式应只暴露 1 个入口（36 份 schema 常驻≈1 万 token 的回归）')
+
+    def test_all_mode_keeps_backward_compat(self):
+        import kb_tools
+        d = self._probe('all')
+        self.assertEqual(d['n'], len(kb_tools.OP_NAMES) + 1)
+        self.assertIn('flythings_kb', d['names'])
+        self.assertIn('flythings_search', d['names'])
+
+    def test_flat_mode_and_flat_server(self):
+        import kb_tools
+        d = self._probe('flat')
+        self.assertEqual(sorted(d['names']), sorted(kb_tools.OP_NAMES))
+        self.assertEqual(d['n'], len(kb_tools.OP_NAMES))
+        r = subprocess.run([sys.executable, '-X', 'utf8', '-c',
+                            ("import sys,json,asyncio;sys.path.insert(0,%r);"
+                             "import mcp_server_flat as f;ts=asyncio.run(f.mcp.list_tools());"
+                             "print(json.dumps(sorted(t.name for t in ts)))" % U.BASE)],
+                           capture_output=True, text=True, cwd=U.BASE)
+        self.assertEqual(json.loads(r.stdout.strip().splitlines()[-1]), sorted(kb_tools.OP_NAMES),
+                         'mcp_server_flat.py 必须恰好注册 36 个独立工具')
+
+    def test_unknown_mode_falls_back_to_dispatcher(self):
+        self.assertEqual(self._probe('not-a-mode')['mode'], 'dispatcher')
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

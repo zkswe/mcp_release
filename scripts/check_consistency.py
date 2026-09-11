@@ -261,6 +261,30 @@ def stage_index():
         print('       (skip README wiki count: %s not present)' % WIKI_ROOT)
 
 
+# docstring 预算（v0.27.34 起进门禁）：工具 schema 每次会话都进上下文，膨胀 = 持续燃烧 token。
+# 口径：单个 op ≤ 900 字符；全体合计 ≤ 12000 字符。长尾细节要求搬进 knowledge/（可检索）。
+DOC_PER_OP_MAX = 900
+DOC_TOTAL_MAX = 12000
+
+
+def stage_docstring_budget():
+    tree = ast.parse(_read(os.path.join(BASE, 'kb_tools.py')))
+    sizes = []
+    for n in tree.body:
+        if isinstance(n, ast.FunctionDef) and n.name.startswith('flythings_') \
+                and n.name != 'flythings_kb':
+            sizes.append((len(ast.get_docstring(n) or ''), n.name))
+        elif isinstance(n, ast.AsyncFunctionDef) and n.name == 'flythings_kb':
+            sizes.append((len(ast.get_docstring(n) or ''), n.name))
+    total = sum(s for s, _ in sizes)
+    over = [(s, n) for s, n in sizes if s > DOC_PER_OP_MAX]
+    check(not over, 'docstring per-op <= %d chars' % DOC_PER_OP_MAX,
+          'ok' if not over else '; '.join('%s=%d' % (n, s) for s, n in sorted(over, reverse=True)[:5]))
+    check(total <= DOC_TOTAL_MAX, 'docstring total <= %d chars' % DOC_TOTAL_MAX,
+          '%d chars in %d ops' % (total, len(sizes)))
+    print('       (长尾细节请放 knowledge/：docstring 只留要点 + 检索关键词)')
+
+
 def stage_deliverables(with_tests):
     for f in ('pyproject.toml', 'requirements.lock', 'install.bat', 'LICENSE',
               'scripts/smoke.py', 'scripts/sync_ui_tools.py', 'scripts/gen_manifest.py',
@@ -302,6 +326,7 @@ def main():
     stage_tool_count()
     stage_platforms()
     stage_index()
+    stage_docstring_budget()
     stage_deliverables(a.with_tests)
     stage_delegated(a.skip_smoke, a.with_tests)
     fails = [r for r in RESULT if not r[0]]

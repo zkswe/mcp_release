@@ -7,7 +7,7 @@
 """
 import html.parser  # PyInstaller 打包需要（html2json 运行时导入，静态分析漏收）
 import inspect
-import json, os, re, sys
+import json, math, os, re, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import rag_search as rs
@@ -50,9 +50,10 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.33-open'
+MCP_VERSION = '0.27.34-open'
 MCP_BUILD = '2026-09-11'
 MCP_FEATURES = [
+    '2026-09-11: 第四批（P2 上下文与检索质量）v0.27.34——①**docstring 瘦身 38%**（16,595 → ~10,200 字符）：长尾细节全部搬进可检索的知识库（新增 `knowledge/devflow/html-subset-quickref.md` 原型规范、`device-screenshot.md` 抓屏实现要点与踩坑、`ui-asset-rules.md` 图片资源铁律与抗锯齿管线、`ui-editor-usage.md` 编辑器用法），docstring 只留要点 + 检索关键词；**字数预算进门禁**（单 op ≤ 900 字符、全体 ≤ 12,000，超了 check_consistency 直接 FAIL） ②**工具面三模式**（`FLYTHINGS_MCP_MODE`）：默认 `dispatcher` 只暴露 1 个 `flythings_kb`（schema 开销最小，省 ~1 万 token/session），`all` = 分发器 + 36 独立工具（老配置兼容），`flat` = 只要 36 独立工具（新增 `mcp_server_flat.py`，给 Trae/Cursor/Claude Desktop 这类需要独立 schema 的客户端）；⚠️ 默认票是**行为变更**，受影响设 `FLYTHINGS_MCP_MODE=all` 恢复 ③**device_screenshot 参数分层**：fb/pixel/width/height/offset_y/flip/rotate/crop/name/timeout 可统一走 `advanced` JSON（已显式传的同名参数优先，旧客户端零影响；未知键/非法 JSON 回 BAD_ARGS + 可选项清单） ④**BM25 中文检索实质提升**：原实现把整段连续中文当一个 token（『Z20 屏幕截图怎么抓』→ 超长 token 只靠原文命中，降级时召回差）→ 改**字级 bigram**（与覆盖率判定共用同一套切词，单一实现）+ IDF + 长度归一 + 路径/标题加权；实测（10 条真实问法）top1 5→9、top3 7→10 ⑤**检索返回质量标记**：hits 带 `source`（实践/官方镜像），返回体带 `retrieval` / `degraded` / `quality`（ok | low_confidence | no_hit），**低置信也带上「禁其他 GUI 框架类推 + 查官方站」的检索边界提醒**（否则 AI 拿沾边片段当依据或转身去 web 猜）；覆盖率改 IDF 加权（否则中文 bigram 全是常见二字组合，会把未收录误判成命中） ⑥新增 `tests/test_search_quality.py`（切词/召回/质量标记）与工具面模式用例，契约用例 38 → 50 项；v0.27.34-open',
     '2026-09-11: 第三批（P1 架构与交付纪律）v0.27.33——①**单一事实来源**：新增 `tools_manifest.json`（工具/平台/知识规模快照）+ `scripts/gen_manifest.py`（op/参数取自 OP_NAMES+签名；风险分级 read/write/device 与分类表是唯一一处人工维护，缺登记直接报错）；`--check` 进闸门防漂移 ②**发布前置闸门 `scripts/check_consistency.py`（首次真正存在——此前 pyproject/requirements.lock/platforms.py 都在引用它但文件缺失）**：版本四方一致（MCP_VERSION / pyproject×2 / README）、工具数六方一致（OP_NAMES / mcp_server / README×3 / 闸门 catalog / manifest）、平台矩阵对着真实模板与 bin_tools 目录、rag_index 覆盖+新鲜度（顺手查出 README 篇数漂移 118 → 实际 128）、委派 smoke/sync_ui_tools/gen_manifest（不重复造检测）；无本地完整 wiki 的机器自动跳过 wiki 相关项，可进 CI ③**tests/ 契约用例 38 项（离线）**：分发器/错误码/每个 op envelope、平台矩阵、布局安全（pack 确定性、**edit_ftu 默认不覆盖**、ui_edit_apply dry_run 不写盘/默认不 pack）、html2json **黄金样例 1:1**（v0.27.30 阴影三连防回归）、verify_assets 真假阳性、fui 能力声明与实际一致 + json↔ftu 往返 ④**CI**：`scripts/ci.sh` / `ci.bat` / `.github/workflows/ci.yml`（compileall + 用例 + 闸门；CI_DEVICE 可选真机抓屏）⑤**修 verify_assets 三个真问题（v0.27.32 加的产物核对器实际不可用）**：a) 只认扁平 `ui/*.json` → 分层 `ui/<分辨率>/*.json` 工程（基准 SampleUI-New 42 页 / ShowcaseAlbum-F133 / WebViewDemo）pages=0 却 ok=true（**静默假阴性**）；b) 把「手绘图尺寸 != 控件盒」当 FAIL → 官方基准工程 149 处误报（引擎本就会拉伸：navi/fh.png 44×26 放 72×40 按钮里），改按铁律 #9 只对 `resources/images/` 自动生成图强校验 1:1，手绘图归 `stretched[]` 仅提示；c) 0 页时补 warnings（不静默）⑥**html2json 误导提示修正**：能自动转图的效果（线性渐变/阴影+圆角/loading 动画）不再喊「无法硬转、请切图」（实测会把 AI 送去白做一轮手工切图），改说「已自动转成图片（尺寸 == 控件盒，json 已引用 images/*.png）」；真转不了的（径向渐变/文字阴影/变换/滤镜/透明度）保留原指引 ⑦**参数写错回 BAD_PARAMS + 正确签名**（原被 _envwrap 归成 TOOL_RAISED，AI 拿不到签名只能猜）；check_all 同样修分层布局扫描（`ui/<分辨率>/` 工程不再以「ui/ 下没有 json 布局」直接退出）⑧工具链名词口径（fun / fui / fyx / fuse）写进 manifest 与 README，写明**当前内置 fui.exe 只支持 pack、unpack 是空壳**；顺手修 project_tools 里 Windows 路径提示文案的非法转义（SyntaxWarning，路径写作正斜杠或双反斜杠）；v0.27.33-open',
     '2026-09-11: 第二批（P0 收尾）v0.27.32——①**新增 op flythings_verify_assets(project_root)**：把「json 声明 vs 磁盘产物」机器化核对（图片引用是否存在 + PNG 尺寸是否 == 控件 position，.9.png 除外），返回 missing/mismatch/unresolved 明细；同一实现接进 check_all 第 17 项（把原先靠人肉跑的 temp/verify_demo_assets.py 固化——v0.27.30 阴影丢图事故就是「产物没人核对」）②**新增 scripts/lint_silent_except.py**：AST 扫描 except...pass 静默吞异常，历史基线 + 白名单（必须写理由）两层，未登记的新站点即 FAIL；smoke 第 9 项改为调用本脚本（单一实现，不再两处各写一套）③**破坏性默认值收口**：flythings_ui_edit_apply 默认 pack=False（要 pack 显式传 true）并新增 dry_run（只回变更预览、不写盘）；flythings_build_ui_flow 默认 with_launch=False（不再默认推真机）；写操作统一回显 affectedFiles 与 .bak 路径 ④隐私脱敏补漏：重建 rag_index.json（旧索引残留真机内网 IP）、CHANGELOG.md 内真机 IP 改 <设备IP> 并重新纳入 smoke 隐私扫描范围；v0.27.32-open',
     '2026-09-11: 第一批设计检讨修复（P0）v0.27.31——①**get_version 瘦身**：原默认返回 MCP_FEATURES 全部 39 条 20,045 字符（约 1.25 万 token，问一句「版本多少」被迫吃掉整部变更史）→ 改为默认 compact=True 只回 mcpName/version/build/toolCount/近期 3 条，全量需显式 compact=False；同时删掉 checkHint 里写死的过期文案「与 0.3.0 比对」②**flythings_search 未命中带检索边界**：原回裸文本 "no results found"（AI 最容易转身去 web 猜、混入其它框架用法）→ 改回 JSON envelope {ok,hits:[],notice,warnings}，notice 明确「知识库未收录该主题，禁止用 Qt/Android/LVGL/emWin/AWTK 等其它 GUI 框架类推，请查官方文档 developer.flythings.cn 或转人工确认」；docstring 去掉写死的「wiki 118 篇」（实际 129 篇，数字不再手写）；向量模型不可用时在 warnings 里显式声明已降级 BM25 ③**统一返回契约 envelope**：35 个工具返回值在注册前统一经 _envwrap 归一化为 {ok, op, warnings[], error{code,msg,hint,retryable}}（保留原键向后兼容；非 JSON 文本收进 data.text），不再「有的回 success 有的回 ok、错误只有一句字符串」④**edit_ftu 默认不覆盖原 ftu**：原默认原地覆盖 → 新参数 overwrite=False 缺省生成 <name>.edited.ftu 并还原原文件，改动的 json 与原 ftu 都留 .bak，返回 overwriteOriginal/backup/affectedFiles/hint，要覆盖必须显式 overwrite=true 或 output_ftu ⑤**写操作回显 affectedFiles**（edit_ftu / ui_edit_apply / fui_pack / i18n_import）⑥**发布前置检查进 smoke.py**：新增双份 ui_tools 哈希一致性、本机路径/内网 IP/真实 accessKey 泄露扫描、静默 except 基线、意图闸门 catalog 参数漂移 4 项检查 ⑦**隐私清理**：撤掉 check_duplicate.py / rebuild_index_local.py / package_tools.py 里写死的本机绝对路径（形如 C:/Users/<用户>/...）与文档中的真机内网 IP 改占位符 ⑧**CHANGELOG.md 自本版起冻结为历史归档**（沛哥 2026-09-11：「changelog 不需要提交」）——不再追加新节、不进提交/发布，版本史唯一来源 = MCP_FEATURES（compact=False 全量）+ README，smoke 也不再校验 CHANGELOG；v0.27.31-open',
@@ -138,29 +139,38 @@ NO_HIT_NOTICE = (
 def _query_tokens(q):
     """查询词元：英文/数字词（≥2）+ 中文二元组（BM25 的整串切词对中文几乎不命中）。"""
     q = (q or '').lower()
-    toks = set(t for t in re.findall(r'[a-z0-9_#+.\-]{2,}', q))
-    for run in re.findall(r'[\u4e00-\u9fff]+', q):
-        if len(run) == 1:
-            toks.add(run)
-        else:
-            toks.update(run[i:i + 2] for i in range(len(run) - 1))
-    return toks
+    return rs.query_tokens(q)      # 单一实现：切词口径与 BM25 完全一致（v0.27.34）
 
 
 def _best_coverage(q, texts):
-    """命中片段对查询词元的最大覆盖率（0 = 完全没沾边）。
+    """命中片段对查询词元的最大覆盖率（**IDF 加权**，0 = 完全没沾边）。
 
-    为什么需要它：rag_search 的向量路总是返回 top-40 再融合，任何 query（包括
+    为什么要它：rag_search 的向量路总是返回 top-40 再融合，任何 query（包括
     完全不相关）都会有“命中”——仅靠空列表判不出未命中，必须看词覆盖度。
+
+    为什么 IDF 加权（v0.27.34）：中文改用字级 bigram 后，「不存在」「主题」这类常见
+    二字组合在语料里到处都是，不加权会让任何 query 都显得“高覆盖”，把「知识库未收录」
+    误判成命中（→ AI 转身去 web 猜，正是检索边界规则要防的）。
+    口径：df ≥ 30% 语料的过泛词元权重记 0；分母 = 词元 IDF 和，分子 = 命中词元 IDF 和。
     """
     toks = _query_tokens(q)
     if not toks:
         return 1.0
+    n = len(rs.CHUNKS) or 1
+    weights = {}
+    total = 0.0
+    for t in toks:
+        df = rs._df_of(t)
+        w = 0.0 if df >= 0.3 * n else math.log(1.0 + (n - df + 0.5) / (df + 0.5))
+        weights[t] = w
+        total += w
+    if total <= 0:
+        return 1.0        # query 全是过泛词元（无判别力）→ 无从判定，不误报「未收录」
     best = 0.0
-    for t in texts:
-        tl = (t or '').lower()
-        best = max(best, sum(1 for x in toks if x in tl) / float(len(toks)))
-    return best
+    for t2 in texts:
+        tl = (t2 or '').lower()
+        best = max(best, sum(w for t, w in weights.items() if w > 0 and t in tl))
+    return best / total
 
 
 def flythings_search(query: str, k: int = 3) -> str:
@@ -184,15 +194,29 @@ def flythings_search(query: str, k: int = 3) -> str:
                                      'hint': '重试一次；仍失败检查 rag_index.json 与模型文件是否完整',
                                      'retryable': True},
                            'warnings': warnings}, ensure_ascii=False)
-    hits = [{'path': c['path'], 'score': round(float(s), 4), 'text': c['text']}
+    hits = [{'path': c['path'], 'score': round(float(s), 4), 'text': c['text'],
+             'source': 'knowledge（实践）' if (c.get('path') or '').startswith('knowledge/')
+                       else 'wiki（官方镜像）'}
             for s, c in top]
     cover = _best_coverage(query, [c['text'] for _, c in top])
     out = {'ok': True, 'op': 'flythings_search', 'query': query, 'count': len(hits),
-           'hits': hits, 'coverage': round(cover, 3), 'warnings': warnings}
-    if not hits or cover == 0.0:
-        # 空命中，或命中片段里连一个查询词/字对都没出现 → 按「知识库未收录」处理
+           'hits': hits, 'coverage': round(cover, 3), 'warnings': warnings,
+           'retrieval': 'bm25' if degraded else 'vector+bm25(RRF)',
+           'degraded': bool(degraded)}
+    if not hits or cover < 0.1:
+        # 空命中，或查询词元（IDF 加权后）几乎没沾到 → 按「知识库未收录」处理
         out['quality'] = 'no_hit'
         out['notice'] = NO_HIT_NOTICE
+    elif cover < 0.4:
+        # 低置信：向量路对任何 query 都会返回 top-N，必须标出来，并同样带上检索边界提醒
+        # （否则 AI 会拿着「沾边但不对」的片段当依据，或转身去 web 猜其他框架用法）
+        out['quality'] = 'low_confidence'
+        out['notice'] = ('低置信命中（查询词元加权覆盖率 %.2f）：片段可能只是话题相近；'
+                         '结论前请打开 path 对应文档核对，或换更具体的问法。'
+                         '若确认未收录：禁止用 Qt/Android/LVGL/emWin/AWTK 等其它 GUI 框架类推，'
+                         '请查官方文档 developer.flythings.cn 或转人工确认。' % cover)
+    else:
+        out['quality'] = 'ok'
     return json.dumps(out, ensure_ascii=False)
 
 
@@ -306,58 +330,20 @@ def flythings_generate_ui_preview(project_root: str, output_dir: str = '') -> st
 
 
 def flythings_html_to_json(input_html: str, output_json: str = '', res: str = '') -> str:
-    """受限 HTML 交互原型 → ui/*.json 布局。
+    """受限 HTML 交互原型 → ui/*.json 布局（CSS 效果自动转图，产物尺寸 == 控件盒）。
 
-    ⚠️ 规范内嵌（HTML_SUBSET，无需另找文档）：
-    - 结构：<div class="screen" data-res="WxH" data-bg="#RRGGBB"> 为根（也可用 data-width/data-height 或 style 宽高替代 data-res；
-      data-background 与 data-bg 互为别名；缺省分辨率 480x272，建议显式传 res 参数或写 data-res）。
-    - 控件映射：div.text/p/span→textview；div.btn/button→button；div.input/input→edittext；
-      div.bar/seekbar→seekbar；div.card/window/panel→window 容器（子控件相对坐标）；div.modal/dialog→弹窗（modal+隐藏）；
-      div.list/listview→listview（子项见下）；div.checkbox→checkbox；div.radio/radiogroup→radiogroup；div.icon/img→图标 textview。
-    - 🎯 图标优先（沛哥 2026-09-03 定规，生成 UI 时必守）：常用操作（返回/播放/暂停/上一首/下一首/设置/搜索/删除/
-      刷新/确认/关闭/加减/音量/主页/菜单等）必须用图标表达，禁止用「按钮+文字」糊弄！写法：
-      ① 图标按钮 <div class="btn" data-icon="play" data-x.. data-y.. data-w.. data-h.. data-caption="BtnPlay">
-      ② 纯展示图标 <div class="icon" data-icon="wifi" ...>（或 <i class="iconfont icon-volume">，等价识别）
-      转换器自动生成 iconfont 风格矢量线框 PNG：图标按钮自动 normal+pressed 两态 picTab，纯图标自动 backgroundPic；
-      data-color 可配线框颜色（#RRGGBB，缺省浅灰蓝）；控件建议正方形；未收录图标名给 warning。
-      46 个内置图标词表见 HTML_SUBSET（back/forward/up/down/close/check/plus/minus/menu/more/search/home/list/
-      play/pause/stop/prev/next/power/volume/mute/delete/edit/share/download/upload/user/lock/info/warning/camera/
-      clock/calendar/bell/mic/location/mail/eye/video/phone/settings/refresh/wifi/bluetooth/heart/star，中文别名
-      如 data-icon="播放"/"返回" 也认）；需要自备图时仍用 data-pic。
-    - 定位：data-x/data-y/data-w/data-h（或 data-left/top/width/height、style left/top/width/height）。
-    - 字号：data-fs / data-font-size / data-fontSize / 内联 style="font-size:NNpx" 都认。
-    - 颜色：data-color 文字色、data-bg 或 data-background 背景色（textview/button/edittext 均支持背景）。
-    - 命名：data-caption 指定控件名（C 标识符）；缺省自动 TextView1/Button1...。
-    - listview 子项：子控件直接写在 list 容器内即生成 subItem；若用 <div class="item"> 包裹，
-      转换器会展开包裹层、逐个生成 subItem（不会吞掉内部控件）。
-    - 铁律：Z 序=书写顺序（弹窗最后）；文本只用汉字+ASCII+基础符号（/ % # - _ 空格），禁 emoji；
-      进度条用 div.bar；输入框用 div.input（系统键盘）；颜色一律 #RRGGBB 6 位。
-    - ⚠️ CSS 效果不硬转：HTML 原型允许任意效果（emoji/iconfont/CSS 渐变阴影圆角/粒子/3D 动效），
-      但 FlyThings 无 CSS 引擎，转 json 时效果一律转图片 + 控件组合实现：
-      渐变/复杂背景/阴影/描边 → 切 PNG 或 .9.png 用 data-pic 引用；emoji/iconfont → 转 PNG 图标；
-      loading/旋转/粒子动效 → 序列帧 PNG 或 GIF（imageanim 动图控件，循环次数 ≤0 无限循环）；
-      按钮两态 normal+pressed（_p 后缀）→ picTab{pic0,pic1}。
-      ⚠️ 图片一律由转换器自动转图（内置抗锯齿管线），**禁止 AI 自绘 1x 直画 png 或用外部生图能力直出小图交付**
-      （1x 二值 alpha / 大图缩小边缘必锯齿；防锯齿铁律见 HTML_SUBSET「切图 / 图片资源铁律」#8 #9）。
-      转换器对 style 中的效果属性（linear-gradient/box-shadow/border-radius/animation 等）
-      自动输出 warning 提示转图，不会硬转。
-    - ✅ JS 交互设计（2026-08-29 沛哥建议）：第一套 HTML 效果稿建议直接写 JS 交互——
-      点击弹窗/页面切换/tab 切换/列表滚动/数据模拟/动效触发等，让客户在浏览器里直接"点得动"，
-      前期效果确认和修改效率翻倍。转换器自动忽略 <script> 标签和 onclick 等交互属性（实测验证），
-      JS 只服务于浏览器预览确认，不转 json；FlyThings 端交互逻辑由 logic.cc 实现（json 布局 + 回调）。
-    - ✅ CSS 效果自动转图（2026-08-29 沛哥要求 + 2026-09-01 路径修复）：style 里出现 linear-gradient/box-shadow/border-radius/
-      animation 等效果时自动生成图片资源（不再只 warning）——渐变→grad_*.png（backgroundPic）、
-      阴影+圆角→shadow_*/gradshadow_*.png（渐变阴影自动合成）、emoji 文本→emoji_*.png 图标、
-      class=loading/spinner 或 animation:spin→loading_*.gif（12 帧）+ imageanim 控件（warning 提示
-      logic.cc 里 mXXXPtr->play()）。图片自动输出到 <项目>/resources/images/（output_json 在 <项目>/ui/ 下时自动识别；
-      json 引用路径 images/xxx.png 相对 resources 目录，与设备加载一致；非 ui/ 目录结构回退 json 同目录 images/ 并警告）。
-      返回 generatedAssets 计数 + assetDir 实际输出目录。
+    ⚠️ 写原型前先读知识库「HTML_SUBSET 原型规范」（检索：HTML_SUBSET / 控件映射 / data-icon 图标 /
+    CSS 效果转图 / JS 交互稿）：控件映射表、data-* 属性、46 个内置图标词、文本与布局铁律、
+    自动转图清单、JS 交互稿做法都在那里；这里只留要点——
+    根节点 <div class="screen" data-res="WxH" data-bg="#RRGGBB">；定位 data-x/y/w/h；字号 data-fs；
+    data-caption 命名；data-pic 自备图；**图标优先**（常用操作必须用图标，禁止「按钮+文字」糊弄）；
+    文本只用汉字+ASCII+基础符号（禁 emoji）；Z 序 = 书写顺序。
 
-    ⚠️ 客户发说明书/参考照片/需求文档时不能直接转 json：先按 skill §7.0 引导分析
-    提炼 UI 需求清单 → 用户确认 → 再写受限 HTML → 才调本工具。
-    ⚠️ 转换后必须先 json2html/generate_ui_preview 出预览稿给用户确认（只交付 .preview.html
-    文件本身，不生成图片/截图），确认 OK 后才允许 fui pack / 写逻辑 / 交付（未确认禁止开工）。
-    output_json 缺省为 html 同名 .json；res 可覆盖分辨率（如 "800x480"）。
+    ⚠️ 工作流红线：客户说明书/参考照片不能直接转 json（先提炼 UI 需求清单给用户确认）；
+    转换后必须先出预览稿给用户确认（只交付 .preview.html 本身），确认 OK 才允许 pack / 写逻辑 / 交付。
+    ⚠️ 效果一律转图片 + 控件组合：渐变/阴影+圆角/emoji/loading 自动出图到 <项目>/resources/images/，
+    json 引用写 images/xxx.png；**禁止 AI 自绘 1x png 或外部生图直出小图**。
+    output_json 缺省 html 同名 .json；res 可覆盖分辨率（如 "800x480"）。
     """
     return json.dumps(h2j.html2json(input_html, output_json or None, res or None), ensure_ascii=False)
 
@@ -495,46 +481,17 @@ def flythings_check_project_deps(project_root: str, platform: str = 'F133') -> s
 
 
 def flythings_generate_ui_assets(project_root: str, assets: str) -> str:
-    """生成 UI 图片资源（图标/牌面/按钮背景等），输出到 <项目>/resources/images/。
+    """生成 UI 图片资源（图标/牌面/按钮背景等）→ <项目>/resources/images/（json 引用写 images/xxx.png）。
 
-    ⚠️ 三级降级策略（任何环境都能出图）：
-      ① AI 生图（配置了 OPENAI_API_KEY 且网络可达 → gpt-image-2 透明底，最精致）
-      ② 本地 emoji 渲染（Windows seguiemj.ttf / Linux NotoColorEmoji → 卡通风，羊了个羊同款）
-      ③ 线条/几何兜底（Pillow 画圆/方/星/心/对勾等 → 无 AI 无 emoji 字体也能出）
-    最终用户（客户）没有 AI 能力时自动降级，无需任何外部依赖。
+    assets 为 JSON 数组字符串，每项：{name, size, prompt, emoji, color, kind}
+    —— name 必填（自动补 .png）；prompt 有则优先 AI 生图，失败用 emoji，再不行用 color/kind 线条兜底；
+    kind 可选 check/charging/wifi/alert/circle/square/star/heart；返回每项实际方式 method(ai/emoji/line)。
+    三级降级（AI 生图 → 本地 emoji → 线条兜底）保证客户无 AI 能力也能出图。
 
-    ⚠️ 图片资源铁律（2026-08-29 羊了个羊实战，务必遵守）：
-      ① 图片尺寸必须与 json 控件尺寸一致（瓦片 76×76 控件 → 76×76 图；槽位 72×72 → 72×72 图），
-         不要生成大图让控件缩放，也不要小图拉伸。
-      ② 圆角卡片图四角必须真透明（alpha=0）：渐变/填充底是整矩形画的，圆角只是描边轮廓，
-         必须用圆角 mask 裁剪（putalpha）清掉弧线外角落；阴影模糊（GaussianBlur）会溢出到弧线外，
-         最后整体再裁一次圆角清掉残影。
-         通用函数 gen_res.rounded_card()（渐变+圆角+描边+高光）已内置裁剪；
-         gen_res.gen_gradient(..., radius=r) 也已修复（radius>0 自动裁圆角）。
-      ③ 用透明角图片的按钮不要设 bgColorTab：透明角会透出按钮底色而不是窗口背景，
-         需要透背景的图片按钮（瓦片/槽位/图标钮）不放 bgColorTab；纯文字按钮才用底色。
-      ④ 功能按钮尽量用图片按钮：picTab{pic0: normal, pic1: pressed(_p 后缀)} 两态图。
-      ⑤ 生成后必须检查四角 alpha：img.getpixel((2,2))[3] == 0 才算合格。
-      ⑥ 路径规范（2026-09-01 沛哥要求）：自动生成的图片一律放 <项目>/resources/images/，
-         json 布局引用路径写 images/xxx.png（相对 resources 目录，与设备/ftu 加载一致）；
-         返回的 path 字段就是 images/xxx.png，直接填 json 的 backgroundPic / picTab.pic0 / picTab.pic1，
-         不要写绝对路径，也不要带 resources/ 前缀。
-      ⑦ PNG 生成管线铁律（2026-09-08 沛哥定规，方案 A 显式化）：AI/客户端需要图片时
-         禁止自写绘制代码 1x 直画、禁止用外部生图能力直出小图交付（1x 二值 alpha 无抗锯齿、
-         大图缩小边缘必锯齿）；**只走三条路**——CSS 效果交 html2json 自动转图（内置抗锯齿）/ 本工具生成 /
-         gen_res 公开函数（rounded_card / gen_gradient / gen_shadow_card / emoji_icon_ss /
-         glyph_icon_ex / line_icon / frames_loading_gif，全部内置抗锯齿）。
-         PNG 防锯齿五要素：尺寸 == 控件 position / ≥4x 超采样 + LANCZOS 缩回或 α 羽化（sigma≈0.5）/ 端点 round cap /
-         圆角四角 alpha=0 / 生成后跑 check_all 校验（#11 图片尺寸 + 四角 alpha）。
-         完整规范见 HTML_SUBSET.md「切图 / 图片资源铁律」#8 #9。
-
-    assets 为 JSON 数组字符串，每项：
-      {"name": "icon_ok.png", "size": 128,
-       "prompt": "cute white cartoon sheep, game icon",   ← 有则优先 AI 生图
-       "emoji": "🐑",                                      ← AI 失败后用它
-       "color": "#42C9FF" 或 [r,g,b,a], "kind": "check"} ← 线条兜底参数
-    kind 可选：check/charging/wifi/alert/circle/square/star/heart。
-    name 必填（自动补 .png）；返回每项实际生成方式（method: ai/emoji/line）。
+    ⚠️ 图片资源铁律（尺寸 == 控件盒、圆角四角 alpha=0、透明角图不配 bgColorTab、功能按钮用 picTab 两态、
+    生成后查四角 alpha、PNG 防锯齿五要素、**禁止 1x 直画/外部生图直出小图**）+
+    三条合法出图路径见知识库「UI 图片资源铁律与 PNG 抗锯齿管线」，检索：图片资源铁律 / 抗锯齿 /
+    圆角四角发黑 / 走哪条路出图。
     """
     return json.dumps(h2j_genres.gen_ui_assets(project_root, assets), ensure_ascii=False)
 
@@ -598,27 +555,15 @@ def flythings_i18n_to_json(project_root: str, langs: str = '', push: bool = True
 
 # 注册辅助：把上面全部工具注册到任意 FastMCP 实例
 def flythings_ui_editor(project_root: str, output_dir: str = '') -> str:
-    """把 ui/*.json 生成「可视化编辑器」网页：拖控件就改布局，不用嘴描述"往左一点"。
+    """把 ui/*.json 生成「可视化编辑器」网页：拖控件就改布局（输出 <项目>/ui/_edit/<name>.edit.html）。
 
-    ⚠️ 定位（UI 微调闭环第二步）：① AI 生成/改 json 布局 → ② 本工具出编辑器给用户拖 →
-    ③ 用户点「复制变更 JSON」→ ④ flythings_ui_edit_apply 写回 json + pack ftu。
-    预览与设备同源（都来自 json），改完即所得。
+    闭环第二步：AI 出/改 json → 本工具出编辑器给用户拖 → 用户点「复制变更 JSON」→
+    flythings_ui_edit_apply 写回 json + pack ftu。预览与设备同源（都来自 json），改完即所得。
 
-    输出：每个 json → <项目>/ui/_edit/<name>.edit.html（ui 目录递归扫描），单文件 HTML
-    （图片 base64 内联，含 audio/xxx.png 这类带子目录的相对 resources 引用），双击即用。
-
-    页面能力：
-    - 点选 / 拖动 / 8 手柄缩放；方向键 1px（Shift 10px）；网格吸附 1/2/5/10
-    - Alt+点 = 穿透选中下层控件（专治全屏透明 button 压住其它控件）
-    - 选中框左上 ✥ 绿块可拖 = 被遮罩压住的控件也能拖
-    - 控件列表可搜 key / caption；「显示隐藏」把 visible:false 的弹窗显示成虚线幽灵框
-    - 属性栏列出该控件全部字段：text（多行）/ fontSize / colorTab.color0（颜色拾取器）/
-      backgroundPic / picTab.pic0~pic4（正常/按下/选中/选中按下/无效）/ visible / touchable…
-      改完画布即时生效；id 只读（IDE 生成）
-    - 预检红黄标：图片尺寸≠控件尺寸（红=图比控件大会被裁切；黄=大控件配小图）、文本明显超框
-    - 深链接 <name>.edit.html#button__2 打开即选中该控件
-
-    output_dir 缺省 <项目>/ui/_edit
+    页面能力（点选/拖动/8 手柄缩放、方向键微调、网格吸附、Alt+点穿透选中下层、被遮罩控件也能拖、
+    控件列表搜索、visible:false 幽灵框、属性栏列出全部字段、图片尺寸预检红黄标、深链接 #button__2）
+    见知识库「UI 可视化编辑器 用法与能力」，检索：可视化编辑器 / Alt 点穿透 / 属性栏 / 拖完怎么回 json。
+    output_dir 缺省 <项目>/ui/_edit。
     """
     if uied is None:
         return json.dumps({'success': False, 'error': 'ui_editor 不可用（缺 ui_tools/ui_editor.py 或 Pillow）'},
@@ -755,63 +700,66 @@ def flythings_verify_assets(project_root: str) -> str:
     return json.dumps(r, ensure_ascii=False)
 
 
-def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png', scale: float = 1.0,
-                               quality: int = 90, fb: str = '/dev/fb0', pixel: str = 'auto',
+# device_screenshot 的进阶参数默认值（v0.27.34：这些键也可统一走 advanced JSON，
+# 已显式传的同名参数优先 —— 参数分层的判定基准）
+_DSS_ADV_DEFAULTS = {'fb': '/dev/fb0', 'pixel': 'auto', 'width': 0, 'height': 0, 'offset_y': -1,
+                     'flip': '', 'rotate': 'auto', 'crop': '', 'name': '', 'timeout': 180}
+
+
+def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png', scale: float = 1.0,                               quality: int = 90, fb: str = '/dev/fb0', pixel: str = 'auto',
                                width: int = 0, height: int = 0, offset_y: int = -1,
                                flip: str = '', rotate: str = 'auto', crop: str = '', name: str = '',
-                               timeout: int = 180) -> str:
+                               timeout: int = 180, advanced: str = '') -> str:
     """从**设备真机**抓当前屏幕 → PNG / JPG / BMP，交给视觉模型看或用 flythings_ui_diff 做像素验收。
 
-    **什么时候用**（AI 自己判）：要确认设备上实际显示成什么样 —— 布局对不对、图标有没有锯齿、切图对不对、
-    颜色/文字是否正常、改完要不要验收、用户说“我屏幕上看到的是…”而你手上没有截图。
-    三段式验收的第二步：预览(秒级) → **本工具抓真机截图(像素真相)** → flythings_ui_diff 比对。
+    何时用：要确认设备上实际显示成什么样（布局对不对、图标锯齿、切图、颜色/文字、改完验收、
+    用户说"我屏幕上看到的是..."而你没有截图）。三段式验收第二步：预览 → 本工具（像素真相）→ ui_diff 比对。
 
-    **怎么用**（默认参数就够了）：
-      ① 抓一张：flythings_device_screenshot()                        → screenshots/device_600x1600_*.png
-      ② 省 token：scale=0.5（长宽各半）或 fmt='jpg', quality=85
-      ③ 多设备：device='<设备IP>:5555'（先 `adb connect <IP>:5555`）
-      ④ 抓完把返回的 path 交给看图能力分析；**不要把 raw/文件本身丢给模型**。
-      ⑤ 改前抓一张存好，改后再抓一张 → flythings_ui_diff(改前, 改后) 0 token 出差异清单。
-      ⑥ 方向不对（文字侧躺/倒立）：**不用自己试角度**——缺省 rotate='auto' 会读**项目工程 EasyUI.cfg
-         的 rotateScreen**（设备上 /res/etc/EasyUI.cfg）自动转正；返回值里 rotateSource 可自证。
-         要看触摸对应的角度用 screenInfo.rotateTouch（两者可不同）。
-      ⑦ 只要“应用自己的画面”（不要四周黑边/面板留白）：crop='auto' 会按 disp 图层 frame 裁出逻辑分辨率区域
-         （仅在存在唯一非全屏图层时生效，否则不裁并在 crop 字段里说明）。
+    常用（默认参数就够）：默认即抓一张；scale=0.5 或 fmt='jpg', quality=85 省 token；
+    多设备传 device='<设备IP>:5555'（先 adb connect）；方向缺省 rotate='auto' 会读项目工程 EasyUI.cfg
+    的 rotateScreen 自动转正（rotateSource 可自证；触摸角度看 screenInfo.rotateTouch，可与显示不同）；
+    只要应用画面（去黑边）用 crop='auto'。⚠️ 抓完把返回的 path 交给看图能力，不要把 raw/文件本身丢给模型。
 
-    **输出**：
-      {success, path, width, height, format, sizeBytes, device, method,
-       screenInfo{width,height,virtualHeight,bpp,stride,modes,offsetY,pan,rotate,rotateScreen,rotateTouch},
-       uiLayer, pixelOrder, rotateDeg, rotateSource, crop, readHint}
+    ⚠️ 进阶参数（fb / pixel / width / height / offset_y / flip / rotate / crop / name / timeout）
+    **推荐统一走 advanced**（JSON 字符串，如 advanced='{"crop":"auto","pixel":"rgba"}'）；
+    同名显式参数优先于 advanced（旧客户端不受影响）。
 
-    **实现要点（踩过的坑，别改错）**：
-    - 设备 rootfs 是裁剪版：**没有 screencap / dd / head**，`adb exec-out` 也不通（patched adbd 无 shell v2）；
-      唯一可靠链路 = 设备侧 `busybox dd if=<fb> bs=<stride> skip=<pan.y> count=<height> | busybox gzip -1 > /tmp/x`
-      + `adb pull`。裸 raw 7.68MB 经 WiFi pull 要 4 分钟+，gzip 后只剩 ~37KB、0.3 秒（画面平坦色块多压缩比极高）；
-      设备上没有 busybox 时自动退化 `cat <fb> > /tmp/x` + pull（慢，返回里会提示先 push 一个 busybox）。
-    - fb 参数一律问 sysfs：`modes`(=可见分辨率，如 U:600x1600p-50) / `virtual_size`(可能是 2 倍，OVERALLOC) /
-      `stride` / `bits_per_pixel`。可见高 ≠ 文件行数，必须按 stride 逐行取，否则下半张图是脏数据。
-    - **双缓冲页翻转（最容易抓错）**：读 `/sys/class/graphics/fb0/pan`（如 "0,1600" = 当前显示 yoffset=1600），
-      抓图必须 skip=<yoffset>；否则抓到的是上一帧（旧画面仍可能是完整的 UI，肉眼很难发现抓错了）。
-      本工具 offset_y=-1 自动读 pan，并在抓图后二次确认 pan 未变（翻了就重抓一次）。
-    - 32bpp 内存序是 BGRA（小端 ARGB8888）；本工具按 alpha 字节位置自动判通道序（末字节≈0xFF→BGRA）。
-      若颜色红蓝互换，传 pixel='rgba' 重抓；其他可选 bgra/rgba/argb/abgr/rgb565/bgr565/rgb888/bgr888。
-    - 匹配参数：width/height 可覆盖（sysfs 读不到时）、flip='v|h|both'、rotate='auto'|0|90|180|270、
-      crop=''|'auto'|'x,y,w,h'、offset_y 手动指定。
-    - **方向/角度只认项目工程配置**（沛哥 2026-09-10 定规）：
-      `<项目>/.fun/<平台>/launch/EasyUI.cfg`（设备上 = /res/etc/EasyUI.cfg）里的 `rotateScreen`（0/90/180/270）
-      = 屏幕/取图角度，`rotateTouch` = 触摸角度（**可以与之不同**）。
-      实测（V85X DVR 板）：rotateScreen=270 时 fb 里内容侧躺，按 270 转后文字正立。
-      ❌ 不要拿 /sys/class/graphics/fb0/rotate 当首选（本机它=0，与工程角度不一致，看起像不用转其实要转）；
-      ❌ 不要把某台设备的“转置+翻转”组合硬编成通则（那是那台设备那个角度的结果）；
-      ❌ 不要从 /sys/class/disp/disp/attr/sys 的图层几何反推方向（它只说明某层占哪块，不告诉你屏幕角度）。
+    ⚠️ 实现要点（设备没有 screencap/dd、必须按 stride 取、双缓冲 pan 页翻转抓错帧、
+    32bpp BGRA 通道序、角度只认工程配置 + 三个反面做法）见知识库「真机抓屏 实现要点与踩坑」，
+    检索：抓屏 / 双缓冲 pan / 颜色红蓝互换 / 取图角度 rotateScreen。
     """
     if dss is None:
         return json.dumps({'success': False, 'error': 'device_screenshot 不可用（缺 ui_tools/device_screenshot.py 或 Pillow）'},
                           ensure_ascii=False)
+    # 参数分层（v0.27.34）：fb/pixel/width/height/offset_y/flip/rotate/crop/name/timeout 可统一走 advanced
+    # （JSON 对象字符串）；**已显式传的同名参数优先**（旧客户端不受影响）。
+    params = {'fb': fb, 'pixel': pixel, 'width': width, 'height': height, 'offset_y': offset_y,
+              'flip': flip, 'rotate': rotate, 'crop': crop, 'name': name, 'timeout': timeout}
+    if advanced and str(advanced).strip():
+        try:
+            adv = json.loads(advanced)
+        except Exception as e:
+            return json.dumps({'ok': False, 'op': 'flythings_device_screenshot',
+                               'error': {'code': 'BAD_ARGS', 'msg': 'advanced 不是合法 JSON: %s' % e,
+                                         'hint': 'advanced 传 JSON 对象字符串（如 {"crop": "auto"}）',
+                                         'retryable': True}, 'warnings': []}, ensure_ascii=False)
+        if not isinstance(adv, dict):
+            return json.dumps({'ok': False, 'op': 'flythings_device_screenshot',
+                               'error': {'code': 'BAD_ARGS', 'msg': 'advanced 必须是 JSON 对象',
+                                         'hint': '可选键: %s' % ', '.join(sorted(params)),
+                                         'retryable': True}, 'warnings': []}, ensure_ascii=False)
+        unknown = sorted(k for k in adv if k not in params)
+        if unknown:
+            return json.dumps({'ok': False, 'op': 'flythings_device_screenshot',
+                               'error': {'code': 'BAD_ARGS',
+                                         'msg': 'advanced 含未知键: %s' % ', '.join(unknown),
+                                         'hint': '可选键: %s' % ', '.join(sorted(params)),
+                                         'retryable': True}, 'warnings': []}, ensure_ascii=False)
+        for k, v in adv.items():
+            if params[k] == _DSS_ADV_DEFAULTS[k]:     # 未显式指定 → advanced 生效
+                params[k] = v
     try:
-        r = dss.capture(device=device, out=out, fmt=fmt, scale=scale, quality=quality, fb=fb,
-                        pixel=pixel, width=width, height=height, offset_y=offset_y,
-                        flip=flip, rotate=rotate, crop=crop, name=name, timeout=timeout)
+        r = dss.capture(device=device, out=out, fmt=fmt, scale=scale, quality=quality, **params)
     except Exception as e:
         return json.dumps({'success': False, 'error': str(e)}, ensure_ascii=False)
     return json.dumps(r, ensure_ascii=False)
