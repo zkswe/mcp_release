@@ -40,7 +40,7 @@
 | `demos/` | 参考工程依赖私有包（aw-dvr），不开放 |
 | 私有/方案依赖包名 | package_catalog.json 剔除：aw-* / voip / tuyaoscxx / uvc-camera / lylink* / xunfei-aiui |
 | devflow 内部规范 | kb-first-analysis（内部检索铁律）、gui-controls-gap（内部盘点） |
-| CHANGELOG 完整内部迭代史 | release 版换公开简版 Release Notes |
+| CHANGELOG 完整内部迭代史 | release 不要带 CHANGELOG.md（自 v0.27.31 起冻结，内容不过发布；内部历史看 master git log） |
 | kb_tools.py MCP_FEATURES | 精简为公开能力摘要（内部条目只在 master） |
 | 内部工程名/路径 | CV201_PND/mark_cv201/UvcJpegTest/KlipperF133/xdv23/T113CarSystem_PND/guoxs/lib 等一律清除 |
 | accessKey 真实值 | 一律全 0 占位 `0000000000000000000000000000000000000000`（真实 key 只在本机/内部 Manifest） |
@@ -77,11 +77,13 @@ git ls-tree -r --name-only release/master | grep -E "knowledge/v85x|demos/|bin_t
 # ⑧ memory 记录
 ```
 
-## 5. 版本号与 CHANGELOG
+## 5. 版本号与版本史
 
-- 版本号递增只发生在 master（kb_tools.py MCP_VERSION + CHANGELOG.md 顶部新节）
-- release 同步时：kb_tools.py 版本照 master（内容为裁剪版），CHANGELOG.md 用公开简版（版本号一致，历史留内部）
-- release 版 CHANGELOG 头部注明「本仓库为公开版，内容为内部版公开裁剪集」
+- 版本号递增只发生在 master：`kb_tools.py` MCP_VERSION + `MCP_FEATURES` 顶部新条 + `README.md` 版本号
+- ⛔ **CHANGELOG.md 自 v0.27.31（2026-09-11）起冻结为历史归档**（沛哥：「changelog 不需要提交」）
+  —— 不再追加新节、不进任何提交/发布；版本史唯一来源 = `MCP_FEATURES`（`compact=False` 取全量）+ `README.md`
+- release 同步时：`kb_tools.py` 版本照 master（内容为裁剪版）；**CHANGELOG.md 不带**（历史留内部 git）
+- 自检 `scripts/smoke.py` 已不再校验 CHANGELOG（避免代码与冻结档案脱节）
 
 ## 6. 常见坑（实战教训 2026-09-09）
 

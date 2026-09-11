@@ -23,7 +23,7 @@
 🔥 **核心优势**：
 - 🚀 **FlyThings 专属配置**：内置本地向量模型（bge-small-zh），知识检索完全离线，AI开发效率及Token消耗极低
 - 🏭 **全流程开箱即用**：编译工具链（fui/fun）与项目模板已内置，创建项目 → 布局 → 编译 → 推送一气呵成
-- 🧠 **35 个工具**：知识检索、项目创建、布局转换、依赖管理、规范校验、自动修复、多语言、自动化测试、UI 可视化编辑与真机截图全都有
+- 🧠 **36 个工具**：知识检索、项目创建、布局转换、依赖管理、规范校验、自动修复、多语言、自动化测试、UI 可视化编辑与真机截图全都有
 - 📦 **一条命令安装**：`pip install mcp onnxruntime tokenizers`，AI 工具指一下路径就能用
 
 🎯 **适用场景**：
@@ -131,7 +131,7 @@ pip install mcp onnxruntime tokenizers
 
 > **MCP 版本是多少？**
 
-应返回：`flythings-kb-open 0.27.29-open`，包含 35 个工具。
+应返回：`flythings-kb-open 0.27.32-open`，包含 36 个工具。
 
 ---
 
@@ -174,6 +174,7 @@ pip install mcp onnxruntime tokenizers
 | `flythings_gen_ui_test` | 自动化测试（traverse/monkey/custom） |
 | `flythings_ui_editor` / `ui_edit_apply` | UI 可视化拖拽编辑 → 变更写回 json + pack ftu |
 | `flythings_ui_diff` | 截图像素对比（0 token 验收 / 回归对比） |
+| `flythings_verify_assets` | **产物核对**（json 引用的图片是否存在 + PNG 尺寸 == 控件 position，与 check_all #17 同源） |
 | `flythings_device_screenshot` | **真机抓屏 → PNG/JPG/BMP**（裁剪设备免 adb 摸索，直接出图给 AI 分析） |
 | `flythings_generate_ui_assets` | 生成 UI 图片资源（AI/emoji/线条三级降级） |
 | `flythings_create_bin_project` | 创建可执行程序项目（ELF 二进制） |
@@ -192,7 +193,7 @@ flythings-mcp-open/
 ├── embed_local.py         # 本地向量模型封装（bge-small-zh）
 ├── rag_index.json         # 知识库索引（本地模型预计算）
 ├── package_catalog.json   # 包版本目录
-├── CHANGELOG.md           # 版本迭代记录（每次发布在此追加）
+├── CHANGELOG.md           # 历史迭代记录（截至 v0.27.30，已冻结；版本史见 MCP_FEATURES）
 ├── models/bge-small-zh/   # ★ 本地向量模型（onnx + tokenizer）
 ├── toolchain/             # ★ 编译工具链（fui.exe + fun.exe）
 ├── templates/             # ★ 项目模板（HelloWord_F133/F135/Z21/T113/V85X/Z20）
@@ -208,7 +209,7 @@ flythings-mcp-open/
 | 问题 | 解决 |
 |------|------|
 | `ModuleNotFoundError: mcp / onnxruntime / tokenizers` | 执行 `pip install mcp onnxruntime tokenizers` |
-| 工具列表 < 35 | 检查配置文件 command/args 路径是否正确 |
+| 工具列表 < 36 | 检查配置文件 command/args 路径是否正确 |
 | 抓屏工具报“找不到 adb” | 装 Android platform-tools 或设环境变量 `ADB`（抓屏需要 adb；编译/预览不需要） |
 | 检索结果不准 | 本地模型首次使用会自动加载；确认 `models/bge-small-zh/` 存在 |
 | 想换知识库/重建索引 | `python rebuild_index_local.py <wiki目录>` 重新生成 rag_index.json |

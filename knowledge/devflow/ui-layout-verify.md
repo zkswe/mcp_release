@@ -40,7 +40,7 @@ HTML 交互原型 → flythings_html_to_json → ui/*.json（唯一源）
 flythings_device_screenshot()                       # 默认：当前设备 → screenshots/device_600x1600_<时间>.png
 flythings_device_screenshot(scale=0.5)             # 长宽各半，省 AI token
 flythings_device_screenshot(fmt='jpg', quality=85) # jpg / bmp
-flythings_device_screenshot(device='192.168.0.117:5555')  # 多设备指定
+flythings_device_screenshot(device='<设备IP>:5555')  # 多设备指定
 flythings_device_screenshot(pixel='rgba')          # 颜色红蓝互换时
 flythings_device_screenshot(rotate='auto')         # 缺省值：按**项目工程** EasyUI.cfg 的 rotateScreen 转（出来就是正立的）
 flythings_device_screenshot(crop='auto')           # 按 disp 图层 frame 裁出「项目逻辑分辨率」区域（非全屏图层唯一时）
@@ -70,7 +70,7 @@ flythings_device_screenshot(crop='auto')           # 按 disp 图层 frame 裁�
 | 取图/屏幕角度 | `"rotateScreen"`（0 / 90 / 180 / 270） |
 | 触摸角度 | `"rotateTouch"`（**可与 rotateScreen 不同！注入触摸测试要按它换算**） |
 
-本机实测（V85X DVR 板 `192.168.0.117:5555`，`/res/etc/EasyUI.cfg` → `rotateScreen=270, rotateTouch=0`）：
+本机实测（V85X DVR 板 `<设备IP>:5555`，`/res/etc/EasyUI.cfg` → `rotateScreen=270, rotateTouch=0`）：
 
 - 不转 → fb 里的内容**侧躺/倒立**（文字方向错）；按 **270 转** → 文字正立。代码：`img.rotate(-rotateScreen, expand=True)`。
 - 工具 `rotate='auto'`（缺省）就是读它；返回值带 `rotateSource: 'EasyUI.cfg rotateScreen'` 可自证。

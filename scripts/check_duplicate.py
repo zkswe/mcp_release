@@ -12,7 +12,7 @@ sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 BASE = os.path.dirname(os.path.abspath(__file__))
 OPEN = os.path.dirname(BASE)                     # tools/FlyThings_mcp_open
 KNOWLEDGE = os.path.join(OPEN, 'knowledge')
-WIKI = r'C:\Users\zkswe\.openclaw\workspace\wiki\flythings'
+WIKI = os.path.join(os.path.expanduser('~'), '.openclaw', 'workspace', 'wiki', 'flythings')
 
 
 def _hash(p):

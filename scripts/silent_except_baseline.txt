@@ -1,0 +1,17 @@
+# 静默 except 基线（except 体只剩 pass/continue）。键 = 相对路径#片段哈希。
+# 新增站点即 FAIL；要么改代码把失败写进 warnings[]，要么在 scripts/silent_except_whitelist.txt 登记并写理由。
+# 重建：python scripts/lint_silent_except.py --update-baseline
+i18n_tools.py#b462cc14d4  # i18n_tools.py:93 | except Exception: pass
+i18n_tools.py#d393a3af3d  # i18n_tools.py:334 | except Exception: continue
+kb_tools.py#b462cc14d4  # kb_tools.py:298 | except Exception: pass
+mcp_server.py#b462cc14d4  # mcp_server.py:86 | except Exception: pass
+package_tools.py#b462cc14d4  # package_tools.py:279 | except Exception: pass
+package_tools.py#d393a3af3d  # package_tools.py:398 | except Exception: continue
+project_tools.py#d393a3af3d  # project_tools.py:606 | except Exception: continue
+rag_search.py#b462cc14d4  # rag_search.py:79 | except Exception: pass
+scripts/smoke.py#d393a3af3d  # scripts/smoke.py:87 | except Exception: continue
+ui_tools/check_all.py#b462cc14d4  # ui_tools/check_all.py:635 | except Exception: pass
+ui_tools/device_screenshot.py#b462cc14d4  # ui_tools/device_screenshot.py:472 | except Exception: pass
+ui_tools/gen_res.py#b462cc14d4  # ui_tools/gen_res.py:553 | except Exception: pass
+ui_tools/html2json.py#b462cc14d4  # ui_tools/html2json.py:1243 | except Exception: pass
+ui_tools/html2json.py#d393a3af3d  # ui_tools/html2json.py:679 | except Exception: continue

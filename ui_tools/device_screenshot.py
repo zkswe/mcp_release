@@ -3,7 +3,7 @@
 """
 device_screenshot.py — 从设备真机抓屏，转成 PNG / JPG / BMP 交给 AI 分析
 
-【为什么不能用 screencap】（2026-09-10 真机实测 192.168.0.117）
+【为什么不能用 screencap】（2026-09-10 真机实测）
 - FlyThings 设备 rootfs 是裁剪版：**没有 screencap / dd / head / uname**，只有 cat/ls/echo；
 - `adb exec-out cat /dev/fb0` 也**不可用**（patched adbd 无 shell v2 → "error: closed"）。
 - 所以唯一可靠链路：设备侧 `cat /dev/fb0 > /tmp/fb.raw` → `adb pull` → 本地解析。
@@ -25,7 +25,7 @@ device_screenshot.py — 从设备真机抓屏，转成 PNG / JPG / BMP 交给 A
     python device_screenshot.py --scale 0.5 --fmt jpg      # 缩小一半存 JPG（省 token）
     python device_screenshot.py --out D:/shot.png --pixel rgba
     python device_screenshot.py --info                     # 只打印屏幕参数，不抓图
-    python device_screenshot.py --device 192.168.0.117:5555 --name main_page
+    python device_screenshot.py --device <设备IP>:5555 --name main_page
 """
 
 import argparse

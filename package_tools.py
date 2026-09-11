@@ -5,8 +5,8 @@ import json, os, re, sys, urllib.request, xml.etree.ElementTree as ET
 REGISTRY_CANDIDATES = [
     # 本地包注册表（多目录合并：不同工具链/历史下载可能分散存放，全扫不漏包）
     os.environ.get('FLYTHINGS_REGISTRY', ''),      # 环境变量显式指定（最高优先）
-    r'C:\Users\zkswe\.fun\registry\public',     # MCP 默认注册表（f133/z21 基础包）
-    r'C:\Users\zkswe\.fuse\registry\public',    # 历史注册表（f133 全量 30+ 包：ntp/curl/mqtt-cxx 等）
+    os.path.join(os.path.expanduser('~'), '.fun', 'registry', 'public'),     # MCP 默认注册表（f133/z21 基础包）
+    os.path.join(os.path.expanduser('~'), '.fuse', 'registry', 'public'),    # 历史注册表（f133 全量 30+ 包：ntp/curl/mqtt-cxx 等）
     r'C:\zkswe\fun\registry\public',             # fun.exe 工具链自带注册表
 ]
 

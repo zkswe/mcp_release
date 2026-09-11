@@ -76,7 +76,7 @@
 - CLI：`--rotate` 接受 `auto`（缺省），新增 `--crop`
 - MCP 包装 `flythings_device_screenshot`：签名 `rotate: str = 'auto'` + 新增 `crop`，docstring 写明“**方向只认项目工程配置**”及三条❌反例
 
-**实测证据（V85X DVR 板 `192.168.0.117:5555`，`/res/etc/EasyUI.cfg` → `rotateScreen=270, rotateTouch=0`）**
+**实测证据（V85X DVR 板 `<设备IP>:5555`，`/res/etc/EasyUI.cfg` → `rotateScreen=270, rotateTouch=0`）**
 
 | 抓法 | 结果 |
 |---|---|

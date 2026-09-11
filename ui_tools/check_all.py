@@ -167,9 +167,17 @@ def _all_controls(d, out=None):
 
 
 def _pic_path(root, ref):
-    """json 引用 images/xxx.png → 真实文件路径（resources/images 或 ui/images）。"""
+    """json 引用 → 真实文件路径。
+
+    先按 ref 原样相对 resources 找（支持 audio/xxx.png 这类带子目录的引用，
+    ui-layout-verify.md §图片引用），再退化到按 basename 在 resources/images 或
+    ui/images 里找（历史作品常只写 images/xxx.png）。
+    """
     if not ref:
         return None
+    exact = os.path.join(root, 'resources', ref.replace('/', os.sep))
+    if os.path.isfile(exact):
+        return exact
     base = os.path.basename(ref)
     for d in ('resources', 'ui'):
         p = os.path.join(root, d, 'images', base)
@@ -305,6 +313,85 @@ def _deco_hint(deco_key, deco, covered, res=None):
         if res and res[0] and res[1] and (d[2] - d[0]) >= res[0] and (d[3] - d[1]) >= res[1]:
             hints.append('遮挡件为整屏尺寸（全局遮罩）')
     return (bool(hints), hints)
+
+
+# ---------------- 资源产物核对（json 声明 → 文件存在 + PNG 尺寸 == 控件 position）----------------
+# 「产物 vs 声明」机器化（原为 temp/verify_demo_assets.py 人肉脚本，v0.27.32 固化）：
+# 单一实现，check_all #17 与 MCP op flythings_verify_assets 共用，禁止再各写一份。
+_PIC_REF_FIELDS = ('backgroundPic', 'progressPic', 'secondaryProgressPic', 'thumbPic')
+
+
+def _ctrl_pic_refs(v):
+    """控件内全部图片引用 [(字段名, 引用)]：backgroundPic / seekbar 四图 / picTab.pic0~picN。"""
+    out = []
+    for fld in _PIC_REF_FIELDS:
+        pv = v.get(fld)
+        if isinstance(pv, str) and pv:
+            out.append((fld, pv))
+    pt_ = v.get('picTab')
+    if isinstance(pt_, dict):
+        for fld, pv in pt_.items():
+            if isinstance(pv, str) and pv:
+                out.append(('picTab.%s' % fld, pv))
+    return out
+
+
+def verify_assets(project_root):
+    """核对「json 声明 vs 磁盘产物」：引用文件是否存在 + PNG 尺寸是否 == 控件 position。
+
+    为什么必须机器化：FlyThings 不缩放普通 PNG，图与控件盒不等即错位/裁切；
+    v0.27.30 的阴影三连 bug 正是「图没生成也没人发现」，靠人肉目测漏掉了。
+
+    返回可 JSON 序列化的 dict：
+      ok / pages / refCount / missing[] / mismatch[] / unresolved[] / noPil
+      - missing   ：字段引用了图片但文件不存在
+      - mismatch  ：文件存在但 PNG 尺寸 != position（.9.png 除外，9-patch 可拉伸）
+      - unresolved：带 %s 格式化前缀 / json 解析失败 / 读图失败（仅提示，不计 FAIL）
+    """
+    root = os.path.abspath(project_root)
+    ui = os.path.join(root, 'ui')
+    res = {'ok': True, 'projectRoot': root, 'pages': 0, 'refCount': 0,
+           'missing': [], 'mismatch': [], 'unresolved': [], 'noPil': not _HAS_PIL}
+    if not os.path.isdir(ui):
+        res['ok'] = False
+        res['error'] = 'ui 目录不存在: %s' % ui
+        return res
+    pages = sorted(glob.glob(os.path.join(ui, '*.json')))
+    res['pages'] = len(pages)
+    for p in pages:
+        page = os.path.relpath(p, root).replace('\\', '/')
+        try:
+            d = json.load(open(p, encoding='utf-8'))
+        except Exception as e:
+            res['unresolved'].append({'page': page, 'ref': '-', 'why': 'json 解析失败: %s' % e})
+            continue
+        for key, v in _all_controls(d):
+            pos = v.get('position') or {}
+            pw, ph = pos.get('width'), pos.get('height')
+            for fld, ref in _ctrl_pic_refs(v):
+                if '%s' in ref:
+                    res['unresolved'].append({'page': page, 'control': key, 'field': fld,
+                                              'ref': ref, 'why': '运行时格式化引用，跳过逐控件核对'})
+                    continue
+                res['refCount'] += 1
+                fp = _pic_path(root, ref)
+                if not fp:
+                    res['missing'].append({'page': page, 'control': key, 'field': fld, 'ref': ref})
+                    continue
+                if ref.lower().endswith('.9.png') or not _HAS_PIL or not pw or not ph:
+                    continue
+                try:
+                    with _Image.open(fp) as im:
+                        w, h = im.size
+                except Exception as e:
+                    res['unresolved'].append({'page': page, 'control': key, 'field': fld,
+                                              'ref': ref, 'why': 'PIL 读取失败: %s' % e})
+                    continue
+                if (w, h) != (pw, ph):
+                    res['mismatch'].append({'page': page, 'control': key, 'field': fld, 'ref': ref,
+                                            'png': [w, h], 'position': [pw, ph]})
+    res['ok'] = not (res.get('error') or res['missing'] or res['mismatch'])
+    return res
 
 
 def main(project_root):
@@ -656,6 +743,25 @@ def main(project_root):
                  % (f, '、'.join(miss), ' ；'.join('%s->setTouchPass(true);' % v for v in miss)))
         else:
             print('  [PASS] %s 触摸穿透配套' % f)
+
+    print('== 17. 资源产物核对（引用存在 + PNG 尺寸 == 控件 position）==')
+    va = verify_assets(root)
+    if va.get('error'):
+        log(False, '产物核对 %s' % va['error'])
+    else:
+        log(not va['missing'], '图片引用存在性（%d 个页面 / %d 处引用）%s'
+            % (va['pages'], va['refCount'],
+               '全部存在' if not va['missing'] else '缺 %d 个：%s'
+               % (len(va['missing']), '；'.join('%s %s' % (m['control'], m['field']) for m in va['missing'][:6]))))
+        log(not va['mismatch'], 'PNG 尺寸 == 控件 position %s'
+            % ('全部匹配' if not va['mismatch'] else '不匹配 %d 处：%s'
+               % (len(va['mismatch']),
+                  '；'.join('%s.%s %dx%d != %dx%d'
+                            % (m['control'], m['field'], m['png'][0], m['png'][1],
+                               m['position'][0], m['position'][1]) for m in va['mismatch'][:6]))))
+        if va['unresolved']:
+            print('  [NOTE] %d 处跳过（运行时格式化引用/读图失败），见 flythings_verify_assets 明细'
+                  % len(va['unresolved']))
 
     print()
     if warnings:

@@ -6,7 +6,7 @@
 不可用时自动降级 BM25），不依赖任何远程 MCP 服务。
 """
 import html.parser  # PyInstaller 打包需要（html2json 运行时导入，静态分析漏收）
-import json, os, sys
+import json, os, re, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import rag_search as rs
@@ -36,14 +36,24 @@ try:
 except Exception:
     udf = None
 try:
+    import check_all as chk_all
+    from check_all import verify_assets as _verify_assets
+    if not callable(_verify_assets):
+        raise ImportError('verify_assets missing')
+except Exception:
+    chk_all = None
+
+try:
     import device_screenshot as dss
 except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.30-open'
+MCP_VERSION = '0.27.32-open'
 MCP_BUILD = '2026-09-11'
 MCP_FEATURES = [
+    '2026-09-11: 第二批（P0 收尾）v0.27.32——①**新增 op flythings_verify_assets(project_root)**：把「json 声明 vs 磁盘产物」机器化核对（图片引用是否存在 + PNG 尺寸是否 == 控件 position，.9.png 除外），返回 missing/mismatch/unresolved 明细；同一实现接进 check_all 第 17 项（把原先靠人肉跑的 temp/verify_demo_assets.py 固化——v0.27.30 阴影丢图事故就是「产物没人核对」）②**新增 scripts/lint_silent_except.py**：AST 扫描 except...pass 静默吞异常，历史基线 + 白名单（必须写理由）两层，未登记的新站点即 FAIL；smoke 第 9 项改为调用本脚本（单一实现，不再两处各写一套）③**破坏性默认值收口**：flythings_ui_edit_apply 默认 pack=False（要 pack 显式传 true）并新增 dry_run（只回变更预览、不写盘）；flythings_build_ui_flow 默认 with_launch=False（不再默认推真机）；写操作统一回显 affectedFiles 与 .bak 路径 ④隐私脱敏补漏：重建 rag_index.json（旧索引残留真机内网 IP）、CHANGELOG.md 内真机 IP 改 <设备IP> 并重新纳入 smoke 隐私扫描范围；v0.27.32-open',
+    '2026-09-11: 第一批设计检讨修复（P0）v0.27.31——①**get_version 瘦身**：原默认返回 MCP_FEATURES 全部 39 条 20,045 字符（约 1.25 万 token，问一句「版本多少」被迫吃掉整部变更史）→ 改为默认 compact=True 只回 mcpName/version/build/toolCount/近期 3 条，全量需显式 compact=False；同时删掉 checkHint 里写死的过期文案「与 0.3.0 比对」②**flythings_search 未命中带检索边界**：原回裸文本 "no results found"（AI 最容易转身去 web 猜、混入其它框架用法）→ 改回 JSON envelope {ok,hits:[],notice,warnings}，notice 明确「知识库未收录该主题，禁止用 Qt/Android/LVGL/emWin/AWTK 等其它 GUI 框架类推，请查官方文档 developer.flythings.cn 或转人工确认」；docstring 去掉写死的「wiki 118 篇」（实际 129 篇，数字不再手写）；向量模型不可用时在 warnings 里显式声明已降级 BM25 ③**统一返回契约 envelope**：35 个工具返回值在注册前统一经 _envwrap 归一化为 {ok, op, warnings[], error{code,msg,hint,retryable}}（保留原键向后兼容；非 JSON 文本收进 data.text），不再「有的回 success 有的回 ok、错误只有一句字符串」④**edit_ftu 默认不覆盖原 ftu**：原默认原地覆盖 → 新参数 overwrite=False 缺省生成 <name>.edited.ftu 并还原原文件，改动的 json 与原 ftu 都留 .bak，返回 overwriteOriginal/backup/affectedFiles/hint，要覆盖必须显式 overwrite=true 或 output_ftu ⑤**写操作回显 affectedFiles**（edit_ftu / ui_edit_apply / fui_pack / i18n_import）⑥**发布前置检查进 smoke.py**：新增双份 ui_tools 哈希一致性、本机路径/内网 IP/真实 accessKey 泄露扫描、静默 except 基线、意图闸门 catalog 参数漂移 4 项检查 ⑦**隐私清理**：撤掉 check_duplicate.py / rebuild_index_local.py / package_tools.py 里写死的本机绝对路径（形如 C:/Users/<用户>/...）与文档中的真机内网 IP 改占位符 ⑧**CHANGELOG.md 自本版起冻结为历史归档**（沛哥 2026-09-11：「changelog 不需要提交」）——不再追加新节、不进提交/发布，版本史唯一来源 = MCP_FEATURES（compact=False 全量）+ README，smoke 也不再校验 CHANGELOG；v0.27.31-open',
     '2026-09-11: html2json 阴影转图三连修（沛哥实测反馈「这是什么错误？」→ 挖出三个叠加真 bug）v0.27.30——①**box-shadow 单位解析**：原 `int(float(parts[1]))` 遇 `4px` 抛 ValueError 且被 `except Exception: pass` 静默吞掉 → 阴影图一张不生成、只甩一句「含 CSS 效果…请切图用 data-pic」（误导提示）；改为 `_px_num/_shadow_spec`（px/em/rem/%/无单位、inset 忽略、4 值 spread、色值任意位置）+ 失败写明确 warning（不再静默）②**图==控件 1:1**：`gen_res.gen_shadow_card` 新增 `crop=False` 保留完整画布（尺寸恒 = 卡体 + 2*pad，pad=max(2,blur+max(|ox|,|oy|))，卡体恒在 (pad,pad)，不再 getbbox 裁到 234×154）；html2json 检测到 pad → 自动 `_grow` 控件盒 + `_pos()` 给子控件补偿 +pad（遇 listview 行内 subItem 停止累加）+ **window 底色改回页面底色**（否则外扩透明阴影区被控件底色填满，阴影渐变与圆角都读不出来）③**阴影 alpha 必须与圆角 mask 相乘**（`ImageChops.multiply`）：原 `putalpha(mask)` 覆盖把 10% 透明黑压成不透明 → 卡片四周一圈硬黑描边（视觉模型判为「粗黑描边」，阴影柔化全丢）。实测：农历 demo 7 图全 OK（png 尺寸 == 控件尺寸，0 mismatch / 0 missing），阴影边缘 alpha 4~6/255 柔和渐变；`HTML_SUBSET.md` 四处同步（单位容错 / 1:1 规则 / mask 相乘 / 文档修正）；v0.27.30-open',
     '2026-09-10: 抓帧读图与像素级坑入库 v0.27.29（沛哥：“必要的做好入库就好了”；来源=外部 skill `flythings-device-screenshot` 与知识库逐条比对 30 条：已覆盖 27 / 真缺 3 / 弱覆盖若干，只补必要的）——①新增 `knowledge/devflow/pixel-analysis-ai.md`：**省 token 四层阶梯**（结构化读数→程序化读图→ui_diff→视觉模型只裁差异区小图）；**方法一 1 字符=1 像素分类图**（8×16 块降采样，背景="." 亮=“#” 高饱=R/G/B/Y/C/M，整片 "."=没内容、意外白块=丢图）；**方法二 文字暗带 bands 检测**（逐行非背景像素计数→band 数=行数，判换行/溢出裁字/空文本，与 check_all `_text_min_size()` 静态校验互补）；**坐标换算缺省不用**（rotate=\'auto\' 输出已是逻辑方向；要换算就用同一个 rotate 函数，不手推矩阵；触摸注入按 `rotateTouch` 换算）；**像素级渲染坑表**（滑块被裁扁=控件高<图高、暗环=图自带描边环、半透明图贴纯色底发脏=烘底或 button+picTab、圆角四角发黑=烘页面底色、listview/item 黑块=删 backgroundColor+bgColorTab）②`busybox-debug-library.md` 新增「设备端没有的常用命令 → busymbox applet」：grep/sed/head/tail/dd/md5sum/df/find/wc/xxd/vi 都不是“设备不支持”而是没装；抓帧三条纪律（df -h /tmp 防静默截断 / md5sum 校验图部署 / fun launch 会清 /tmp）③`touch-inject-autotest.md` 新增「抓帧时机」：注入+抓帧同一次 adb 调用、多档 sleep 差分、hasScrollbar 滚动条~0.6s 淡出且颜色逐帧变、静止单帧不足以判定交互；另 ui-layout-verify.md §2-1-1（上一版）提供方向权威来源；v0.27.29-open',
     '2026-09-10: 抓屏方向按**项目工程**的 rotateScreen 取图，不猜 v0.27.28（沛哥定规：“入库的 B 方案根据实际项目旋转角度取图就可以了。不用猜。”）——flythings_device_screenshot 的 `rotate` 缺省改为 **`auto`**：读项目工程 `<项目>/.fun/<平台>/launch/EasyUI.cfg`（设备上 = `/res/etc/EasyUI.cfg`）的 `rotateScreen`（0/90/180/270）自动转正，拿不到才退化 `fb0/rotate`；返回值新增 `rotateSource` 可自证，screenInfo 带 `rotateScreen`/`rotateTouch`（触摸角度可不同）。新增 `crop=''|auto|x,y,w,h`（auto=按 disp 图层 frame 裁逻辑分辨率）。实测（V85X DVR 板，rotateScreen=270）：rotate=0 → 文字侧躺（错）；rotate=auto → 1600×600 文字正立（✅）。❌反例：不拿 fb0/rotate 当首选（本机它=0 与工程角度不一致）、不硬编某台设备的转置/翻转组合、不从 disp 图层几何反推方向（本机 480×800 层是视频/DVR 层）；knowledge/devflow/ui-layout-verify.md 新增 §2-1-1；v0.27.28-open',
@@ -81,44 +91,107 @@ MCP_FEATURES = [
     '2026-09-07: 清理冗余（沛哥要求整理 open 版多余反复内容）——删除 knowledge/ 与 wiki 字节完全相同的 3 个重复副本（esl/tag-esl.md、uicontrols/image-path-rule.md、uicontrols/scrollwindow-layout.md），wiki 保留唯一一份，检索不再双份命中；layout-audit.md 两版非字节相同（knowledge 含实测校准 edittext id 51000/imageanim 无 frameInterval）保留 knowledge 版；wiki 官方源自身重复不动；v0.25.1-open',
     '2026-09-07: 冷门控件字段文档批量入库（git.com 全库学习产出，沛哥确认 3 点：listview 点击 id=被点 subitem 的 ID / slidewindow cols×rows=每页格数 11 项=1页8+3 翻页 / 所有控件支持跨线程操作）——新增 uicontrols 文档 11 篇：pointer（双坐标定圆心+animatable 自动动画）、circlebar（有效图扇形裁剪+触摸监听）、digitalclock（纯属性+TimeHelper 改系统时间）、slidetext（输入法候选词条）、qrcode（loadQRCode 传 JSON）、radiogroup-checkbox（pic2 选中图+子项 ID 宏）、diagram（统一 SZKPoint+setData/addData 双模式）、videoview（轮播 loopPlayback 读 UI名_video_list.txt / API 双模式）、pagewindow（多页容器）、listview（三回调+无 subitem 数量限制）、cross-thread-ui-rule；全部 fui unpack 实测 + f133 easyui 2.9.0 SDK 头文件校准，非猜测；v0.25.0-open',
     '2026-09-01: SlideWindow 布局定规修正（沛哥 21:59 纠正）——json 坐标来自 HTML 原型绝对定位，确认好即无需微调；若交付后还要调位置 = 前期 HTML 效果没确认好（正确流程：HTML → 预览确认 → 才 pack/交付）；删掉 v0.7.8 错误的「绝对布局需微调」表述',
-    '早期迭代（0.27.10 之前，完整史见 CHANGELOG.md）：基础控件字段/代码 API 全覆盖（uicontrols 22 篇：button/listview/window/slidewindow/pagewindow/cameraview/videoview/circlebar/diagram/edittext 等，字段全集显式化+层级规则）；devflow 工程机制（package.properties/EasyUI.cfg rotateScreen、自定义字库/控件、i18n 多语言工具链、原型流程、自动化测试 touch-inject/ui_test）；RAG 检索基建（bge-small-zh 本地向量+BM25 混合、检索边界定规、去工程化）',
+    '早期迭代（0.27.10 之前，完整史传 compact=False 取全量）：基础控件字段/代码 API 全覆盖（uicontrols 22 篇：button/listview/window/slidewindow/pagewindow/cameraview/videoview/circlebar/diagram/edittext 等，字段全集显式化+层级规则）；devflow 工程机制（package.properties/EasyUI.cfg rotateScreen、自定义字库/控件、i18n 多语言工具链、原型流程、自动化测试 touch-inject/ui_test）；RAG 检索基建（bge-small-zh 本地向量+BM25 混合、检索边界定规、去工程化）',
     '平台知识分层：通用层（hardware/uvc-camera-generic 跨平台 UVC、usb-otg-switch 跨平台 OTG）与平台绑定层分离；V85X 深度知识（aw-dvr 版本兼容、VO/disp 层调试、UVC JPEG 链路）仅内部版；方案类（车载/涂鸦/SIP/ESL）仅内部版',
 
 ]
 
 
-def flythings_get_version() -> str:
-    """返回 MCP 版本号、工具数量与关键特性。用户问「MCP 版本是多少 / 是不是最新的」时调用。
-    """
+def _tool_names() -> list:
+    """本模块内已注册的工具函数名（单一来源，禁止手写数量）。"""
     import inspect as _i
-    tools = [n for n, _ in _i.getmembers(sys.modules[__name__], _i.isfunction)
-             if n.startswith('flythings_')]
-    return json.dumps({
+    return sorted(n for n, _ in _i.getmembers(sys.modules[__name__], _i.isfunction)
+                  if n.startswith('flythings_') and n != 'flythings_kb')
+
+
+def flythings_get_version(compact: bool = True) -> str:
+    """返回 MCP 版本号、工具数量与近期关键特性。用户问「MCP 版本是多少 / 是不是最新的」时调用。
+    compact=True（默认）只回版本摘要 + 近期 3 条；要看完整能力史才传 compact=False（较长，勿默认拉取）。
+    """
+    tools = _tool_names()
+    out = {
         'mcpName': 'flythings-kb-open',
         'version': MCP_VERSION,
         'build': MCP_BUILD,
         'toolCount': len(tools),
-        'tools': sorted(tools),
-        'features': MCP_FEATURES,
-        'checkHint': '在 AI 工具中问 AI：MCP 版本是多少？返回 version 与 0.3.0 比对即可确认是否最新',
-    }, ensure_ascii=False)
+        'tools': tools,
+        'checkHint': 'version 即当前安装版本；与官方最新发布号 vX.Y.Z-open 比对即可确认是否最新',
+    }
+    if compact:
+        out['recent'] = MCP_FEATURES[:3]
+        out['note'] = '完整能力史传 compact=False（默认只回近期 3 条以省 token）'
+    else:
+        out['features'] = MCP_FEATURES
+    return json.dumps(out, ensure_ascii=False)
+
+
+# 检索边界（对应 knowledge/uicontrols/retrieval-boundary.md）：未命中时必须明确告知，
+# 否则 AI 会转身用通用 web 搜索 / 其它 GUI 框架类推，导致 FlyThings 知识错乱。
+NO_HIT_NOTICE = (
+    '知识库未收录该主题。禁止用其它 GUI 框架（Qt/Android/Flutter/emWin/AWTK/LVGL 等）'
+    '的控件用法类推 FlyThings；请查官方文档 developer.flythings.cn，或转人工/沛哥确认后入库。'
+)
+
+
+def _query_tokens(q):
+    """查询词元：英文/数字词（≥2）+ 中文二元组（BM25 的整串切词对中文几乎不命中）。"""
+    q = (q or '').lower()
+    toks = set(t for t in re.findall(r'[a-z0-9_#+.\-]{2,}', q))
+    for run in re.findall(r'[\u4e00-\u9fff]+', q):
+        if len(run) == 1:
+            toks.add(run)
+        else:
+            toks.update(run[i:i + 2] for i in range(len(run) - 1))
+    return toks
+
+
+def _best_coverage(q, texts):
+    """命中片段对查询词元的最大覆盖率（0 = 完全没沾边）。
+
+    为什么需要它：rag_search 的向量路总是返回 top-40 再融合，任何 query（包括
+    完全不相关）都会有“命中”——仅靠空列表判不出未命中，必须看词覆盖度。
+    """
+    toks = _query_tokens(q)
+    if not toks:
+        return 1.0
+    best = 0.0
+    for t in texts:
+        tl = (t or '').lower()
+        best = max(best, sum(1 for x in toks if x in tl) / float(len(toks)))
+    return best
 
 
 def flythings_search(query: str, k: int = 3) -> str:
-    """在 FlyThings 知识库（wiki 118 篇文档）中检索相关文档片段（完全本地，零 Key）。
+    """在 FlyThings 知识库（wiki 官方镜像 + knowledge 实践文档）中检索相关文档片段（完全本地，零 Key）。
     遇到 FlyThings 开发问题（控件/API/布局/FTU/回调/编译/平台差异等）时调用。query 用中文描述。
-    内置 bge-small-zh 本地模型做向量检索，模型不可用时自动降级 BM25 关键词检索。"""
+    内置 bge-small-zh 本地模型做向量检索，模型不可用时自动降级 BM25（返回里会显式提示）。
+    """
     kk = max(1, min(int(k), 8))
+    warnings = []
+    try:
+        degraded = rs._get_embedder() is None
+    except Exception:
+        degraded = True
+    if degraded:
+        warnings.append('本地向量模型不可用，已降级 BM25 关键词检索（召回可能变差）')
     try:
         top = rs.search(query, kk)
-        if not top:
-            return "no results found"
-        parts = []
-        for s, c in top:
-            parts.append(f"===== {c['path']} (similarity {s:.3f}) =====\n{c['text']}")
-        return '\n\n'.join(parts)
     except Exception as e:
-        return f"search error: {e}"
+        return json.dumps({'ok': False, 'op': 'flythings_search', 'query': query,
+                           'error': {'code': 'SEARCH_FAILED', 'msg': str(e),
+                                     'hint': '重试一次；仍失败检查 rag_index.json 与模型文件是否完整',
+                                     'retryable': True},
+                           'warnings': warnings}, ensure_ascii=False)
+    hits = [{'path': c['path'], 'score': round(float(s), 4), 'text': c['text']}
+            for s, c in top]
+    cover = _best_coverage(query, [c['text'] for _, c in top])
+    out = {'ok': True, 'op': 'flythings_search', 'query': query, 'count': len(hits),
+           'hits': hits, 'coverage': round(cover, 3), 'warnings': warnings}
+    if not hits or cover == 0.0:
+        # 空命中，或命中片段里连一个查询词/字对都没出现 → 按「知识库未收录」处理
+        out['quality'] = 'no_hit'
+        out['notice'] = NO_HIT_NOTICE
+    return json.dumps(out, ensure_ascii=False)
 
 
 def flythings_read_json(json_path: str) -> str:
@@ -143,15 +216,35 @@ def flythings_validate_project(project_root: str) -> str:
     return json.dumps(pt.flythings_validate_project(project_root), ensure_ascii=False)
 
 
+def _with_files(obj, *paths):
+    """给写操作返回体补 affectedFiles（去重、去空、绝对路径）。"""
+    if not isinstance(obj, dict):
+        return obj
+    files = []
+    for p in list(obj.get('affectedFiles') or []) + list(paths):
+        if not p:
+            continue
+        ap = os.path.abspath(p)
+        if ap not in files:
+            files.append(ap)
+    if files:
+        obj['affectedFiles'] = files
+    return obj
+
+
 def flythings_fui_pack(json_path: str) -> str:
     """将 json 布局打包为 ftu（设备实际加载的是 ftu）。返回 ftu 路径、控件数、分辨率。"""
-    return json.dumps(pt.flythings_fui_pack(json_path), ensure_ascii=False)
+    r = pt.flythings_fui_pack(json_path)
+    return json.dumps(_with_files(r, r.get('ftuPath')), ensure_ascii=False)
 
 
 
 
-def flythings_edit_ftu(ftu_path: str, operations: str, output_ftu: str = '') -> str:
-    """编辑 ftu 布局：自动应用编辑到 json 后 pack 回 ftu（默认覆盖原文件，或 output_ftu 指定新文件）。
+def flythings_edit_ftu(ftu_path: str, operations: str, output_ftu: str = '',
+                       overwrite: bool = False) -> str:
+    """编辑 ftu 布局：自动应用编辑到 json 后 pack 回 ftu。
+    ⚠️ 默认 **不覆盖**原 ftu（overwrite=False）→ 生成同目录 <name>.edited.ftu 并还原原文件；
+    确认效果后再传 overwrite=True 覆盖原 ftu（或 output_ftu 指定目标）。原 ftu 与 json 都会留 .bak。
     operations 为 JSON 数组字符串，支持：
     set      {"op":"set","target":"caption或key","props":{"x":100,"y":200,"text":"新文本"}}
     remove   {"op":"remove","target":"caption或key"}
@@ -160,17 +253,20 @@ def flythings_edit_ftu(ftu_path: str, operations: str, output_ftu: str = '') -> 
     客户说「把这个按钮往右移/改文本/换颜色/删掉某控件/复制一个控件」时调用。
     布局修改以 ftu 为目标（json 为内部中间文件自动处理）；改界面布局也可直接编辑 HTML 原型后重新转换。
     ⚠️ 布局以 json 为源：优先直接编辑同目录已有 json 再 pack 回 ftu；无 json 时报错。"""
-    return json.dumps(pt.flythings_edit_ftu(ftu_path, operations, output_ftu), ensure_ascii=False)
+    r = pt.flythings_edit_ftu(ftu_path, operations, output_ftu, overwrite)
+    return json.dumps(_with_files(r, r.get('ftuPath'), r.get('jsonPath'), r.get('backup')),
+                      ensure_ascii=False)
 
 
-def flythings_build_ui_flow(project_root: str, with_launch: bool = True, device: str = '') -> str:
+def flythings_build_ui_flow(project_root: str, with_launch: bool = False, device: str = '') -> str:
     """⚠️ 场景别名（编译部署类意图一律本工具，禁止自造命令；不限触发入口）：
     ① 用户口语：「编译/构建/调试/全量推送/部署/部署到设备/推送到设备/跑一下/运行到真机」；
     ② 自定义功能/自动化流程触发：客户端「AI 应用调试」「自定义编译」等按钮/动作，凡意图是「把项目编译并部署到真机调试」→ 一律调本工具；
     ③ AI 自主决策：写完/改完代码后主动编译验证、调试看效果，同样调本工具。
     内部 fun launch 完成程序+资源+ftu 全量推送并启动；⚠️ 不存在 tools/deploy_debug.sh 之类的额外部署脚本，禁止 AI 自创脚本/命令路径。
     UI 构建流程：① json/ftu 时间戳一致性检查（以 json 为源，改过 json 自动重新 pack）
-    ② fui pack ③ fun install 同步依赖 ④ fun build ⑤ build 通过后直接 fun launch 推送启动（with_launch=False 可跳过）。
+    ② fui pack ③ fun install 同步依赖 ④ fun build ⑤ **默认到此为止（不推真机）**；
+    要推设备必须显式 with_launch=True（用户明确说「推到设备/跑一下」时才传）。
     ⚠️ fun launch 网络推送失败/超时会**自动重试 5 次**（间隔 2s，覆盖网络抖动；信任 fun 差分推送，不自写 push 脚本校验）；
     5 次仍失败（无 adb 设备/网络中断）时返回 needDeviceInput=true，必须询问用户接入方式：
     1) USB 接入：设备 USB 连电脑，确认 adb devices 可见后重试；2) 网络接入：
@@ -467,7 +563,14 @@ def flythings_i18n_export(project_root: str, lang: str = 'zh_CN', keys: str = ''
 def flythings_i18n_import(project_root: str, lang: str, translations: str, merge: bool = True) -> str:
     """将翻译结果写回项目 i18n/<lang>.tr（生成新语言文件或更新已有）。
     translations 为 JSON 对象 {"key": "翻译文本"}；merge=True 与已有内容合并，False 整体覆盖。"""
-    return json.dumps(itx.flythings_i18n_import(project_root, lang, translations, merge), ensure_ascii=False)
+    r = itx.flythings_i18n_import(project_root, lang, translations, merge)
+    try:
+        r2 = json.loads(r) if isinstance(r, str) else r
+    except Exception:
+        return r if isinstance(r, str) else json.dumps(r, ensure_ascii=False)
+    if isinstance(r2, dict):
+        _with_files(r2, r2.get('path'), r2.get('trPath'))
+    return json.dumps(r2, ensure_ascii=False)
 
 
 def flythings_i18n_refactor(project_root: str, lang: str = 'zh_CN', dry_run: bool = True) -> str:
@@ -532,8 +635,9 @@ def flythings_ui_editor(project_root: str, output_dir: str = '') -> str:
     return json.dumps(r, ensure_ascii=False)
 
 
-def flythings_ui_edit_apply(project_root: str, changes: str, pack: bool = True) -> str:
-    """把 ui_editor 导出的「变更 JSON」写回 ui/*.json，默认接着 pack 成 ftu。
+def flythings_ui_edit_apply(project_root: str, changes: str, pack: bool = False,
+                            dry_run: bool = False) -> str:
+    """把 ui_editor 导出的「变更 JSON」写回 ui/*.json（**默认不 pack、可先 dry_run 预览**）。
 
     changes：可直接传 JSON 文本（用户从编辑器复制过来的），也可传文件路径。
     结构：
@@ -543,10 +647,12 @@ def flythings_ui_edit_apply(project_root: str, changes: str, pack: bool = True) 
                                      "colorTab": {"color0": 16711680}}}}
     控件路径：顶层 "button__1"；嵌套 window 内 "window__2/button__3"。
     changes = 几何（position 四项）；props = 其它属性（深合并写回）；两者都可省。
+    ⚠️ 破坏性默认值收口（v0.27.32）：pack 默认 False（确认布局无误后再显式传 pack=True）；
+    dry_run=True 只回「将要改什么」的预览（不写盘、不 pack）。
 
     安全：① 写回前自动备份 <name>.json.bak；② 格式一致性自检（原文件必须能被
     json.dumps(indent=2, ensure_ascii=False) 无损还原，否则拒绝写入以免整文件重排）；
-    ③ 坐标取整 + 不越出屏幕。pack=True 时调 fui pack 生成同名 ftu。
+    ③ 坐标取整 + 不越出屏幕；④ 返回 affectedFiles 与 .bak 路径，便于回滚/审计。
     """
     if uia is None:
         return json.dumps({'success': False, 'error': 'ui_edit_apply 不可用'}, ensure_ascii=False)
@@ -563,12 +669,17 @@ def flythings_ui_edit_apply(project_root: str, changes: str, pack: bool = True) 
                 ch = json.load(f)
         else:
             ch = json.loads(text)
-        r = uia.apply_changes(ch, project=project_root, dry_run=False)
-        if r.get('success') and pack:
+        r = uia.apply_changes(ch, project=project_root, dry_run=bool(dry_run))
+        if r.get('success') and pack and not dry_run:
             r['pack'] = uia.pack(r['json'], project_root)
-        r['note'] = '变更已写回 json' + ('（含 ftu 重新打包）' if r.get('pack') else '') + \
-                    '；备份在同目录 <name>.json.bak'
-        return json.dumps(r, ensure_ascii=False)
+        if dry_run:
+            r['note'] = ('dry_run：仅预览，未写盘；确认后传 dry_run=False 写回' +
+                         '（要接着 pack 再传 pack=True）')
+        else:
+            r['note'] = '变更已写回 json' + ('（含 ftu 重新打包）' if r.get('pack') else
+                                             '（未 pack：布局确认后传 pack=True）') + \
+                        '；备份在同目录 <name>.json.bak'
+        return json.dumps(_with_files(r, r.get('json'), r.get('backup')), ensure_ascii=False)
     except Exception as e:
         return json.dumps({'success': False, 'error': str(e)}, ensure_ascii=False)
     finally:
@@ -615,6 +726,26 @@ def flythings_ui_diff(image_a: str, image_b: str, tolerance: int = 2, shift: int
         return json.dumps({'success': False, 'error': str(e)}, ensure_ascii=False)
 
 
+def flythings_verify_assets(project_root: str) -> str:
+    """核对「json 声明 vs 磁盘产物」：图片引用是否存在 + PNG 尺寸是否 == 控件 position。
+
+    ⚠️ 生成/改完图片资源后必跑（FlyThings 不缩放普通 PNG，图与控件盒不等即错位/裁切；
+    v0.27.30 阴影丢图事故就是「产物没人核对」）。
+    返回 missing[]（引用了但文件缺失）/ mismatch[]（尺寸 != position，.9.png 除外）/
+    unresolved[]（运行时格式化引用等跳过项）；与 check_all 第 17 项同一实现。
+    """
+    if chk_all is None:
+        return json.dumps({'ok': False, 'error': 'check_all 模块不可用（缺 ui_tools/check_all.py）'},
+                          ensure_ascii=False)
+    try:
+        r = chk_all.verify_assets(project_root)
+    except Exception as e:
+        return json.dumps({'ok': False, 'error': 'verify_assets 失败: %s' % e}, ensure_ascii=False)
+    r['hint'] = ('missing → 补图或改 json 引用（图片放 resources/images/，引用写 images/xxx.png）；'
+                 'mismatch → 重新出图，使 PNG 尺寸严格 == 控件 position')
+    return json.dumps(r, ensure_ascii=False)
+
+
 def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png', scale: float = 1.0,
                                quality: int = 90, fb: str = '/dev/fb0', pixel: str = 'auto',
                                width: int = 0, height: int = 0, offset_y: int = -1,
@@ -629,7 +760,7 @@ def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png
     **怎么用**（默认参数就够了）：
       ① 抓一张：flythings_device_screenshot()                        → screenshots/device_600x1600_*.png
       ② 省 token：scale=0.5（长宽各半）或 fmt='jpg', quality=85
-      ③ 多设备：device='192.168.0.117:5555'（先 `adb connect <IP>:5555`）
+      ③ 多设备：device='<设备IP>:5555'（先 `adb connect <IP>:5555`）
       ④ 抓完把返回的 path 交给看图能力分析；**不要把 raw/文件本身丢给模型**。
       ⑤ 改前抓一张存好，改后再抓一张 → flythings_ui_diff(改前, 改后) 0 token 出差异清单。
       ⑥ 方向不对（文字侧躺/倒立）：**不用自己试角度**——缺省 rotate='auto' 会读**项目工程 EasyUI.cfg
@@ -677,6 +808,80 @@ def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png
     return json.dumps(r, ensure_ascii=False)
 
 
+# ===== 统一返回契约（v0.27.31）=====
+# 所有工具返回值统一为 {ok, op, warnings[], error{code,msg,hint,retryable}}；
+# 保留原有键（success / error 文本 / 业务字段）向后兼容，非 JSON 纯文本收进 data.text。
+# 目的：宿主 AI 能机读判定「成功/失败/是否可重试」，不再出现有的回 success、有的回 ok、
+# 错误只有一句字符串（MCP isError 永为 false）的情况。
+
+def _err_obj(code, msg, hint='', retryable=False):
+    return {'code': code or 'ERROR', 'msg': str(msg), 'hint': hint, 'retryable': bool(retryable)}
+
+
+def normalize_result(op, raw):
+    """把任意工具返回值归一化为统一 envelope（幂等，重复归一不再变）。"""
+    if not isinstance(raw, str):
+        try:
+            raw = json.dumps(raw, ensure_ascii=False, default=str)
+        except Exception:
+            raw = json.dumps({'data': str(raw)}, ensure_ascii=False)
+    try:
+        obj = json.loads(raw)
+    except Exception:
+        return json.dumps({'ok': True, 'op': op, 'data': {'text': raw}, 'warnings': []},
+                          ensure_ascii=False)
+    if not isinstance(obj, dict):
+        return json.dumps({'ok': True, 'op': op, 'data': obj, 'warnings': []}, ensure_ascii=False)
+    out = dict(obj)
+    ok = out.get('ok')
+    if not isinstance(ok, bool):
+        if 'success' in out:
+            ok = bool(out['success'])
+        else:
+            ok = not any(k in out for k in ('error', 'errors', 'fail'))
+        out['ok'] = ok
+    err = out.get('error')
+    if not ok:
+        if isinstance(err, dict):
+            out['error'] = _err_obj(err.get('code'), err.get('msg') or err.get('message') or err,
+                                    err.get('hint', ''), err.get('retryable', False))
+        elif isinstance(err, str):
+            out['error'] = _err_obj(out.get('code'), err, out.get('hint', ''),
+                                    out.get('retryable', False))
+        elif err is None:
+            out['error'] = _err_obj(out.get('code'),
+                                    out.get('message') or out.get('msg') or 'unknown error',
+                                    out.get('hint', ''), out.get('retryable', False))
+    elif isinstance(err, str):
+        out.pop('error', None)  # ok=True 时的残留错误字符串清掉，避免误判
+    out.setdefault('warnings', [])
+    out.setdefault('op', op)
+    return json.dumps(out, ensure_ascii=False)
+
+
+def _envwrap(name, fn):
+    """工具级包装：统一 envelope + 内部异常不再静默（转为可机读 error 返回）。"""
+    import functools
+
+    @functools.wraps(fn)
+    def wrapper(*a, **kw):
+        try:
+            return normalize_result(name, fn(*a, **kw))
+        except Exception as e:
+            return json.dumps(
+                {'ok': False, 'op': name,
+                 'error': _err_obj('TOOL_RAISED', '%s: %s' % (type(e).__name__, e),
+                                   'v0.27.31 起工具内部异常不再静默；请把本消息连同 op 反馈给官方',
+                                   False),
+                 'warnings': []}, ensure_ascii=False)
+    return wrapper
+
+
+# 注册前统一包装（两条路径——flythings_kb 分发器与独立工具——返回同一契约）
+for _n in _tool_names():
+    globals()[_n] = _envwrap(_n, globals()[_n])
+
+
 def register_all(mcp):
     mcp.tool()(flythings_get_version)
     mcp.tool()(flythings_search)
@@ -692,6 +897,7 @@ def register_all(mcp):
     mcp.tool()(flythings_ui_editor)
     mcp.tool()(flythings_ui_edit_apply)
     mcp.tool()(flythings_ui_diff)
+    mcp.tool()(flythings_verify_assets)
     mcp.tool()(flythings_device_screenshot)
     mcp.tool()(flythings_attach_cli_tools)
     mcp.tool()(flythings_create_project)

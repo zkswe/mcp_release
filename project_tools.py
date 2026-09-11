@@ -878,14 +878,21 @@ def _edit_json(json_path, operations):
     except Exception as e:
         return {"success": False, "error": f"json 解析失败: {e}"}
     ok, report = _apply_edits(data, ops)
+    bak = json_path + '.bak'
+    try:
+        shutil.copy2(json_path, bak)  # v0.27.31：写回前先备份 json，失败则不写入
+    except Exception as e:
+        return {"success": False, "error": f"json 备份失败（未写入任何修改）: {e}"}
     with open(json_path, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-    return {"success": ok, "jsonPath": json_path, "report": report,
+    return {"success": ok, "jsonPath": json_path, "jsonBackup": bak, "report": report,
             "controlsCount": sum(1 for k, v in data.items() if isinstance(v, dict) and '__' in k)}
 
 
-def flythings_edit_ftu(ftu_path, operations, output_ftu=''):
-    """编辑 ftu 布局：自动应用编辑到 json 后 pack 回 ftu（默认覆盖原文件，或 output_ftu 指定新文件）。
+def flythings_edit_ftu(ftu_path, operations, output_ftu='', overwrite=False):
+    """编辑 ftu 布局：自动应用编辑到 json 后 pack 回 ftu。
+    ⚠️ 默认不覆盖原 ftu（overwrite=False）：pack 产物落到 <name>.edited.ftu，原 ftu 原样还原；
+    确认效果后再传 overwrite=True 覆盖原 ftu（或 output_ftu 指定目标）。原 ftu 与 json 都留 .bak。
     operations 为 JSON 数组字符串，支持 set/remove/add/set_root（见 _apply_edits）。
     ⚠️ 布局以 json 为源：优先直接编辑同目录已有 json 再 pack 回 ftu；无 json 时报错。
     客户说「把这个按钮往右移/改文本/换颜色/删掉某控件/复制一个控件」时调用。"""
@@ -897,6 +904,12 @@ def flythings_edit_ftu(ftu_path, operations, output_ftu=''):
     if not os.path.isfile(json_path):
         return {"success": False,
                 "error": f"缺少同目录 {base}.json（布局以 json 为源，请先提供 json 布局再编辑）"}
+    orig_ftu = os.path.abspath(ftu_path)
+    ftu_bak = orig_ftu + '.bak'
+    try:
+        shutil.copy2(orig_ftu, ftu_bak)  # 无论是否覆盖都先备份原 ftu（可回滚）
+    except Exception as e:
+        return {"success": False, "error": f"原 ftu 备份失败（未做任何修改）: {e}"}
     ed = _edit_json(json_path, operations)
     if not ed['success']:
         return ed
@@ -904,16 +917,29 @@ def flythings_edit_ftu(ftu_path, operations, output_ftu=''):
     if not r['success']:
         return {"success": False, "error": f"fui pack 失败: {r.get('stderr') or r.get('stdout')}",
                 "report": ed['report']}
-    new_ftu = os.path.join(src_dir, base + '.ftu')
-    dst = os.path.abspath(output_ftu) if output_ftu else os.path.abspath(ftu_path)
-    if os.path.abspath(new_ftu) != dst:
-        shutil.copy2(new_ftu, dst)
-    return {"success": True, "ftuPath": dst, "report": ed['report'],
-            "controlsCount": ed.get('controlsCount'), "syncedJson": True}
+    packed = os.path.join(src_dir, base + '.ftu')
+    if output_ftu:
+        target = os.path.abspath(output_ftu)
+    elif overwrite:
+        target = orig_ftu
+    else:
+        target = os.path.join(src_dir, base + '.edited.ftu')
+    if os.path.abspath(packed) != target:
+        shutil.copy2(packed, target)
+    overwrote = bool(overwrite) and target == orig_ftu
+    if not overwrote:
+        # pack 已把原 ftu 覆盖，这里还原，保证「默认不覆盖」真的成立
+        shutil.copy2(ftu_bak, orig_ftu)
+    return {"success": True, "ftuPath": target, "overwriteOriginal": overwrote,
+            "backup": ftu_bak, "jsonPath": json_path, "jsonBackup": ed.get('jsonBackup'),
+            "report": ed['report'], "controlsCount": ed.get('controlsCount'), "syncedJson": True,
+            "hint": (f"已覆盖原 ftu（备份 {os.path.basename(ftu_bak)}，回滚=拷回该文件）" if overwrote
+                     else f"默认不覆盖原 ftu：修改结果在 {os.path.basename(target)}；"
+                          f"确认无误后传 overwrite=True 覆盖原文件")}
 
 
 # ---------------- 工具 6: UI 构建流程（pack → build → launch）----------------
-def flythings_build_ui_flow(project_root, with_launch=True, device=''):
+def flythings_build_ui_flow(project_root, with_launch=False, device=''):
     """FlyThings UI 构建流程（关键步骤，不可跳过）：
     ① 检查 ui/*.json 与 *.ftu 修改时间一致性
        - json 比 ftu 新 = 改过 json 没重新打包
@@ -921,10 +947,10 @@ def flythings_build_ui_flow(project_root, with_launch=True, device=''):
     ② 有改动才 fui pack <ui目录>（设备实际加载的是 FTU 而非 JSON）
     ③ fun install 同步 Manifest 依赖（每次 build 前执行，Manifest 变更自动拉取新依赖）
     ④ fun build 编译 C++ 代码
-    ⑤ fun build 通过后直接 fun launch 推送设备并启动（默认，with_launch=False 可跳过）
+    ⑤ **默认到此为止（不推真机）**；只有用户明确说「推到设备 / 跑一下看效果」时才传 with_launch=True
     ⚠️ launch 失败（无 adb 设备）时返回 needDeviceInput=true，此时必须询问用户接入方式：
        1) USB 接入：将设备通过 USB 连电脑，然后重试本工具；
-       2) 网络接入：让用户提供设备 IP（如 192.168.1.100），用 device='<ip>' 重试（走 fun launch -s <ip>）。
+       2) 网络接入：让用户提供设备 IP（如 <设备IP>），用 device='<ip>' 重试（走 fun launch -s <ip>）。
        禁止替用户猜测 IP。
     ⚠️ 常见错误：修改 JSON 后直接 launch 忘记 pack，设备上仍运行旧版 FTU 布局；
     开发者改过 ftu 时若直接改 json 会覆盖其修改（必须先 unpack ftu 同步）。
@@ -998,7 +1024,7 @@ def flythings_build_ui_flow(project_root, with_launch=True, device=''):
                                 "用 device='<ip>' 重新调用（将执行 fun launch -s <ip>）。",
                     "error": rl.get('error') or (rl.get('stderr') or rl.get('stdout') or '')[-300:]}
     else:
-        steps.append({"step": "fun launch", "success": True, "skipped": "未请求推送（with_launch=False）"})
+        steps.append({"step": "fun launch", "success": True, "skipped": "未请求推送（with_launch=False，默认不推真机）"})
 
     # 最终时间戳校验（打包后 json 不应比 ftu 新）
     ts_after = _ui_timestamp_check(project_root)
