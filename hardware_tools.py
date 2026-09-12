@@ -197,7 +197,7 @@ def _platform_overview(cat, platform=''):
             'summary': meta.get('summary', ''),
             'chips': meta.get('chips') or [],
             'differences': meta.get('differences') or [],
-            'platformMissing': meta.get('missing') or [],
+            'platformOptional': meta.get('optional') or [],
             'modelCount': len(models),
             'models': models,
         })
@@ -205,7 +205,7 @@ def _platform_overview(cat, platform=''):
 
 
 def _next_steps(entry, platform):
-    """拿到硬件后的落地建议（分辨率 → 建工程；按键值 → 按键处理）。"""
+    """拿到硬件后的落地建议（预设参数可直接用，不用再问再查）。"""
     steps = []
     sc = entry.get('screen') or {}
     res = sc.get('resolution') or ''
@@ -215,10 +215,36 @@ def _next_steps(entry, platform):
         steps.append('建工程按此分辨率：flythings_create_project(platform="%s", resolution="%s")'
                      % (platform or '<平台>', res))
     if entry.get('keys'):
-        steps.append('按键值来自 /dev/input 事件 code，UI 侧按 code 分发（不要拿字号/位置猜键值）')
+        k = entry['keys']
+        steps.append('按键值 %s 直接用（/dev/input 事件 code），不用试'
+                     % ', '.join(str(v) for v in (k.get('values') or [])))
     if (entry.get('dataStatus') or '') != 'complete':
-        steps.append('本型号字段未填全（见 missing[]）——需要就照实告诉用户缺什么，禁止按同系列型号外推')
+        steps.append('其余参数未入库不影响开工（有平台 + 分辨率即可）；'
+                     '真要用到具体接口/差异时再补库，不必为它停下来核对')
     return steps
+
+
+def _preset(entry, platform):
+    """预设参数：开工直接照抄的一组值（平台/分辨率/方向/按键），省掉后续逐个确认。"""
+    sc = entry.get('screen') or {}
+    res = sc.get('resolution') or ''
+    if not res and sc.get('width') and sc.get('height'):
+        res = '%sx%s' % (sc['width'], sc['height'])
+    pre = {'platform': platform or '', 'resolution': res}
+    if sc.get('orientation'):
+        pre['orientation'] = sc['orientation']
+    if sc.get('interface'):
+        pre['display'] = sc['interface']
+    if entry.get('keys'):
+        pre['keys'] = entry['keys'].get('values') or []
+    pre['note'] = ('有具体型号就按这组预设参数开工（不用再问分辨率/按键）；'
+                   '没有具体型号时，确认平台 + 分辨率即可，其余按需再问')
+    return pre
+
+
+# 没有具体型号（或型号未收录）时的一句话准则：平台 + 分辨率就够开工。
+WHEN_UNKNOWN = ('没有具体型号时不必卡在这里：确认**平台 + 分辨率**就能建工程/写 UI，'
+                '其余参数按需再问/再补库（预设知识只为省掉反复核对，不是开工前置条件）。')
 
 
 def query(model='', platform=''):
@@ -255,8 +281,10 @@ def query(model='', platform=''):
                 'platforms': plats,
                 'fields': ('每个型号：model/summary/dataStatus/aliases；'
                            '取单型号规格传 model=<型号>'),
-                'note': ('平台差异化与待补字段分别在 platforms[].differences / platformMissing；'
-                         '型号详情含 screen/keys/specs/differences/missing/source'),
+                'whenNoModel': WHEN_UNKNOWN,
+                'note': ('平台差异化与可选补充分别在 platforms[].differences / optional[]；'
+                         '型号详情含 screen/keys/specs/differences/optional/source，'
+                         '并自带 preset（开工直接照抄的平台+分辨率(+按键)）'),
                 'warnings': warn}
 
     want = _norm(model)
@@ -275,10 +303,11 @@ def query(model='', platform=''):
         return {'ok': True, 'mode': 'model',
                 'platform': pname,
                 'model': mname,
+                'preset': _preset(entry, pname),
                 'hardware': hw,
                 'platformSummary': meta.get('summary', ''),
                 'platformDifferences': meta.get('differences') or [],
-                'platformMissing': meta.get('missing') or [],
+                'platformOptional': meta.get('optional') or [],
                 'nextSteps': _next_steps(entry, pname),
                 'warnings': warn}
     if len(hits) > 1:
@@ -298,10 +327,13 @@ def query(model='', platform=''):
     return {'ok': False, 'mode': 'not_found',
             'query': str(model),
             'error': {'code': 'MODEL_NOT_FOUND',
-                      'msg': '硬件库未收录型号 %r' % model,
-                      'hint': ('**不要按同系列/命名规则外推规格**——请让用户确认型号，'
-                               '或让沛哥把该型号加进 hardware_catalog.json'),
+                      'msg': '硬件库未收录型号 %r（不挡开发）' % model,
+                      'hint': WHEN_UNKNOWN + ' 型号名可能有出入，先看 suggestions；'
+                              '确认要补这个型号时告诉沛哥加进 hardware_catalog.json',
                       'retryable': True},
+            'fallback': {'platform': plat or '',
+                         'need': ['平台', '分辨率'],
+                         'advice': '按平台 + 分辨率开工即可；不猜规格（避免同系列外推出错）'},
             'suggestions': sug,
             'available': avail,
             'warnings': warn}
@@ -313,13 +345,15 @@ def build_markdown(cat=None):
     """由硬件库生成 knowledge/hardware/hardware-models.md 全文（单一事实来源的派生）。"""
     if cat is None:
         cat, _ = load()
-    L = ['# 硬件型号库（平台 → 型号 → 规格）', '',
+    L = ['# 硬件型号库（平台 → 型号 → 规格 / 预设参数）', '',
          '> 检索关键词：型号 / 硬件 / 平台型号 / 屏幕分辨率 / 按键值 / PocketDisplay4 / '
          'SW80480070D / SV50PD / 86盒 / 串口屏 / 价签 / 选型',
+         '> 用法：**有具体型号** → 按该型号的预设参数开工（平台/分辨率/按键直接照抄）；'
+         '**没有具体型号** → 确认平台 + 分辨率即可建工程，其余按需再问。',
          '> 本文档由 `scripts/gen_hardware_doc.py` 从 `hardware_catalog.json` 生成，**勿手改**'
          '（改 json 后重跑生成器 + `rebuild_index_local.py`）。',
          '> 查询用工具：`flythings_hardware_info(model, platform)`；'
-         '未收录型号会返回候选清单而不是猜规格。', '']
+         '未收录型号会返回候选与「平台 + 分辨率即可」的开工建议，不猜规格。', '' ]
     plats = cat.get('platforms', {})
     L.append('## 平台总览')
     L.append('')
@@ -342,8 +376,8 @@ def build_markdown(cat=None):
             L.append('- 常见主控：%s' % ' / '.join(meta['chips']))
         for d in (meta.get('differences') or []):
             L.append('- 平台差异·%s：%s' % (d.get('topic', ''), d.get('detail', '')))
-        for m in (meta.get('missing') or []):
-            L.append('- ⚠️ 待补：%s' % m)
+        for m in (meta.get('optional') or []):
+            L.append('- 可选补充（非阻塞）：%s' % m)
         L.append('')
         for mname in sorted(meta.get('models') or {}):
             e = meta['models'][mname] or {}
@@ -380,8 +414,8 @@ def build_markdown(cat=None):
                 L.append('- %s：%s' % (sk, sv))
             for d in (e.get('differences') or []):
                 L.append('- 差异·%s：%s' % (d.get('topic', ''), d.get('detail', '')))
-            for m in (e.get('missing') or []):
-                L.append('- ⚠️ 待补：%s' % m)
+            for m in (e.get('optional') or []):
+                L.append('- 可选补充（非阻塞，按需补）：%s' % m)
             if e.get('source'):
                 L.append('- 数据来源：%s' % e['source'])
             L.append('- 数据状态：%s' % e.get('dataStatus', ''))

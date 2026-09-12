@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "note": "硬件型号库（唯一事实来源，人工维护）。改完跑：python scripts/gen_hardware_doc.py（生成 knowledge/hardware/hardware-models.md，可检索）→ python rebuild_index_local.py。字段：platforms.<平台>.models.<型号>，平台名必须是 platforms.py 里的规范名（F133/F135/T113/V85X/Z20/Z21）。dataStatus：complete=规格书完整 / partial=部分字段待补 / pending=仅登记型号。missing[] 明确列出待补项（禁止 AI 编造，缺就照实说）。",
+  "note": "硬件型号库（唯一事实来源，人工维护）。定位（沛哥 2026-09-12）：**预设参数**，让后期开发少问少核。有具体型号 → 按该型号的 screen/keys/specs 直接开工（工具会给出 preset）；没有具体型号 → 确认平台 + 分辨率就能建工程，不必等数据补全。改完跑：python scripts/gen_hardware_doc.py（生成 knowledge/hardware/hardware-models.md，可检索）→ python rebuild_index_local.py。字段：platforms.<平台>.models.<型号>，平台名必须是 platforms.py 里的规范名（F133/F135/T113/V85X/Z20/Z21）。dataStatus：complete=规格书完整 / partial=部分参数 / pending=仅登记型号（**都不是开工阻塞**）。optional[] = 可选补充项（有则更方便，没有不影响开工；禁止 AI 拿同系列型号外推填坑）。",
   "updated": "2026-09-12",
   "platforms": {
     "V85X": {
       "summary": "全志 V85x 系列（A7，视频编码 1080p）——摄像头/DVR/手持便携类产品常用",
       "chips": ["V553", "V851S", "V851S3", "V853"],
-      "missing": ["平台差异化说明（沛哥将补充：与 Z21/V853 等在屏幕方向、按键、TF 卡格式等方面的差异）"],
+      "optional": ["平台差异化说明（沛哥将补充：与 Z21/V853 等在屏幕方向、按键、TF 卡格式等方面的差异；有了就不用每次核查）"],
       "differences": [],
       "models": {
         "PocketDisplay4": {
@@ -29,8 +29,8 @@
           },
           "specs": {},
           "differences": [],
-          "missing": [
-            "CPU/内存/存储/接口等整机规格",
+          "optional": [
+            "整机其余规格（CPU/内存/存储/接口）——有则更省事，没有也能开工",
             "屏幕接口类型（RGB / MIPI）与触摸方式",
             "三个按键的物理位置与丝印",
             "V85X 平台差异化说明（屏幕方向 rotateScreen / TF 卡格式等）"
@@ -42,7 +42,7 @@
     "Z21": {
       "summary": "A7 双核 1.0GHz + 内置 64MB DDR2——串口屏/广告机/86盒主力平台",
       "chips": ["SSD212", "SSD210", "T113-S3"],
-      "missing": ["平台差异化说明（沛哥将补充）"],
+      "optional": ["平台差异化说明（沛哥将补充；没有也不影响开工）"],
       "differences": [],
       "models": {
         "SV50PD": {
@@ -87,7 +87,7 @@
           "screenNote": "按官方《产品规格型号说明》命名规则推导：SW+宽+高+尺寸+版本，SW80 480 070 D = 7 寸 800×480；同系列 SW80480070D-CK 规格书标 800×480 / 1024×600 可选、Z21X 平台（A7 双核 1.2GHz）",
           "specs": {},
           "differences": [],
-          "missing": [
+          "optional": [
             "CPU/内存/接口配置（请提供规格书或确认）",
             "型号后缀 _C 的确切含义（电容触摸？版本？）",
             "与 SW80480070D-CK 系列是否同一产品"
@@ -108,8 +108,8 @@
           "screenNote": "依据：本地硬件索引把「SV50PD-10600070-C」记为 7 寸 1024×600，且 SV50PD 目录下有 SW10600070D_C(sv50pd).pdf（疑为 SV50PD 核心板 + 1024×600 屏的整机型号）。待沛哥确认后转 complete",
           "specs": {},
           "differences": [],
-          "missing": [
-            "确认分辨率与屏幕尺寸",
+          "optional": [
+            "确认分辨率与屏幕尺寸（已按命名规则/同名规格书推导）",
             "确认是否基于 SV50PD 核心板（即是否等同 SV50PD-10600070-C）",
             "CPU/内存/接口等完整规格"
           ],
@@ -173,7 +173,7 @@
     "Z20": {
       "summary": "A7 双核 1.2GHz + 内置 128MB DDR3——86 盒高配/语音面板/电子价签常用平台",
       "chips": ["SSD201", "SSD202", "SSD202D"],
-      "missing": ["平台差异化说明（沛哥将补充）"],
+      "optional": ["平台差异化说明（沛哥将补充；没有也不影响开工）"],
       "differences": [],
       "models": {
         "SW48480040D1": {

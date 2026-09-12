@@ -52,6 +52,8 @@ class TestHardwareCatalog(unittest.TestCase):
         self.assertIn('V85X', names)
         self.assertIn('Z21', names)
         self.assertTrue(r['modelCount'] >= 3)
+        # 无具体型号时的一句话准则必须在（防 AI 把「未收录」当阻塞）
+        self.assertIn('分辨率', r['whenNoModel'])
 
     def test_op_platform_filter(self):
         r = U.jcall('flythings_hardware_info', {'platform': 'z21'})
@@ -69,6 +71,10 @@ class TestHardwareCatalog(unittest.TestCase):
         self.assertEqual(hw_['screen']['height'], 800)
         self.assertEqual(hw_['keys']['values'], [105, 103, 108])
         self.assertTrue(r['nextSteps']), '命中后必须给出落地建议'
+        # 预设参数：开工直接照抄（平台/分辨率/方向/按键），省掉后续反复核对
+        self.assertEqual(r['preset']['platform'], 'V85X')
+        self.assertEqual(r['preset']['resolution'], '480x800')
+        self.assertEqual(r['preset']['keys'], [105, 103, 108])
 
     def test_op_model_match_is_loose_and_alias_aware(self):
         """忽略大小写/连字符/下划线 + 别名（SW80480070D_C == sw80480070dc）。"""
@@ -89,7 +95,9 @@ class TestHardwareCatalog(unittest.TestCase):
         self.assertNotIn('hardware', r)
         self.assertIn('available', r)
         self.assertIn('Z21', r['available'])
-        self.assertIn('不要', json.dumps(r['error'], ensure_ascii=False))
+        # 定位（沛哥 2026-09-12）：没型号不卡流程——必须给「平台 + 分辨率就能开工」的 fallback
+        self.assertEqual(r['fallback']['need'], ['平台', '分辨率'])
+        self.assertTrue(r['fallback']['advice'])
 
     def test_op_unknown_platform_rejected(self):
         r = U.jcall('flythings_hardware_info', {'platform': 'NOPE'})
