@@ -25,7 +25,7 @@
 - 🏭 **全流程开箱即用**：编译工具链（fui/fun）与项目模板已内置，创建项目 → 布局 → 编译 → 推送一气呵成
 - 🧠 **34 个工具**：知识检索、硬件型号库、项目创建、布局转换、依赖管理、规范校验、自动修复、多语言、自动化测试、UI 可视化编辑、真机截图与产物核对全都有
 - 📦 **一条命令安装**：`pip install -r requirements.lock`（已锁定实测通过的版本组合），AI 工具指一下路径就能用
-- ✅ **发布前置闸门**：95 项契约用例 + 30 项冒烟 + 一致性校验（版本/工具数/平台/索引/隐私）一键跑，见 [`tests/`](tests/README.md)
+- ✅ **发布前置闸门**：122 项契约用例 + 30 项冒烟 + 一致性校验（版本/工具数/平台/索引/隐私）一键跑，见 [`tests/`](tests/README.md)
 - 🪶 **schema 集约**：工具 docstring 合计 ≤ 12,000 字符（单个 ≤ 900），长尾细节全放可检索的知识库——不拿上下文烧钱
 
 🎯 **适用场景**：
@@ -145,7 +145,7 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 
 > **MCP 版本是多少？**
 
-应返回：`flythings-kb-open 0.27.40-open`，包含 34 个工具。
+应返回：`flythings-kb-open 0.27.41-open`，包含 34 个工具。
 
 ---
 
@@ -271,7 +271,7 @@ flythings-mcp-open/
 | 抓屏工具报“找不到 adb” | 装 Android platform-tools 或设环境变量 `ADB`（抓屏需要 adb；编译/预览不需要） |
 | 检索结果不准 | 本地模型首次使用会自动加载；确认 `models/bge-small-zh/` 存在 |
 | 返回体里出现 `warnings` | 正常，**要看**：降级（BM25）、自动转图、手绘图被拉伸等信息都在里面，不是报错 |
-| 改动后想自检 | `python scripts/check_consistency.py --with-tests`（版本/工具数/平台/索引/隐私 + 95 项契约用例） |
+| 改动后想自检 | `python scripts/check_consistency.py --with-tests`（版本/工具数/平台/索引/隐私 + 122 项契约用例） |
 | 想换知识库/重建索引 | `python rebuild_index_local.py <wiki目录>` 重新生成 rag_index.json |
 | 杀毒软件拦截 | 添加信任（内含可执行文件 toolchain/） |
 

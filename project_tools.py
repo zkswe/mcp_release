@@ -35,7 +35,11 @@ FUI_EXE = _tool_path('fui.exe')
 FUN_EXE = _tool_path('fun.exe')
 
 # IDE 空白模板（新建项目骨架来源，保证框架约定天然正确）
-# 优先用包内 templates/（分发包内置，客户无需装 IDE）；其次 IDE 安装目录
+# 优先用包内 templates/（分发包内置，客户无需装 IDE）；其次 IDE 安装目录。
+# ⚠️ 下面只是「默认探测起点」，不是平台白名单：`_template_dir` 会先在包内 templates/
+# 里找，再按目录扫描 IDE workspace（大小写/命名差异也能认出来），最后才用这张表。
+# 可用环境变量 FLYTHINGS_IDE_WORKSPACE 指向非默认安装目录。
+IDE_WORKSPACE = os.environ.get('FLYTHINGS_IDE_WORKSPACE', r'C:\zkswe\FlyThingsPreview\bin\workspace')
 IDE_TEMPLATES = {
     'F133': r'C:\zkswe\FlyThingsPreview\bin\workspace\HelloWord_F133',
     'F135': r'C:\zkswe\FlyThingsPreview\bin\workspace\HelloWord_F135',
@@ -46,12 +50,41 @@ IDE_TEMPLATES = {
 }
 
 
+def _scan_ide_templates():
+    """按真实目录扫 IDE workspace，返回 {规范平台名: 目录}。
+
+    为什么扫而不是只靠 IDE_TEMPLATES：那张表写死了本机路径与大小写
+    （Helloword_V85x vs HelloWord_V85X），换机器/改目录名就“没模板”，
+    而真实能力应该看目录里到底有什么。
+    """
+    found = {}
+    try:
+        if not os.path.isdir(IDE_WORKSPACE):
+            return found
+        for name in sorted(os.listdir(IDE_WORKSPACE)):
+            d = os.path.join(IDE_WORKSPACE, name)
+            if not os.path.isdir(d):
+                continue
+            for plat in _platforms.supported():
+                key = name.lower().replace('_', '').replace('-', '')
+                # 只认 HelloWord*<平台> 形态，避免误抓同目录下别人的工程
+                if key.startswith('helloword') and key.endswith(plat.lower()):
+                    found.setdefault(plat, d)
+    except OSError:
+        return found
+    return found
+
+
 def _template_dir(plat):
-    """模板目录：包内 templates/HelloWord_<plat> 优先，其次 IDE 安装目录。"""
+    """模板目录：包内 templates/HelloWord_<plat> 优先 → IDE workspace 实扫 → 硬编码表兜底。"""
     pkg = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates', 'HelloWord_' + plat)
     if os.path.isdir(pkg):
         return pkg
-    return IDE_TEMPLATES.get(plat, '')
+    hit = _scan_ide_templates().get(plat)
+    if hit:
+        return hit
+    legacy = IDE_TEMPLATES.get(plat, '')
+    return legacy if legacy and os.path.isdir(legacy) else legacy
 # 平台别名表改由 platforms.py 提供（v0.27.32 起单一来源）；保留同名常量供旧调用方兼容
 PLATFORM_ALIASES = {a: n for n, m in _platforms.PLATFORMS.items() for a in m.get('alias', ())}
 
@@ -414,8 +447,10 @@ def flythings_validate_project(root):
 
     ⚠️ 空白项目判定：工作目录 ui/ 下没有 .ftu 即视为空白项目（无需再去读 json），
     返回 isEmptyProject=true，此时不再做任何检查，直接向用户询问硬件平台
-    （F133/F135/Z21）与屏幕分辨率（如 800x480），然后调用 flythings_create_project
-    创建项目；禁止到其他目录检索 json/ftu 文件。
+    与屏幕分辨率（如 800x480），然后调用 flythings_create_project 创建项目；
+    禁止到其他目录检索 json/ftu 文件。
+    （待询问的平台清单不在这里写死：用 platforms.py 的 supported()，
+    不要在提示文案里手写枚举——那就成了第二份平台真相。）
     若 projectInfo.platform 或 projectInfo.resolution 为 null（非空白项目但缺 Manifest/ui 布局），
     同样必须停下来向用户询问这两个选项，禁止自行猜测或用默认值继续。
     """
@@ -427,9 +462,11 @@ def flythings_validate_project(root):
                 "projectInfo": project_info,
                 "needUserInput": {'platform': not project_info['platform'],
                                    'resolution': not project_info['resolution']},
+                "supportedPlatforms": _platforms.supported(),
                 "hint": '空白项目（ui 目录无 .ftu 布局，无需再读取 json）：'
-                        '直接向用户询问硬件平台（F133/F135/Z21）与屏幕分辨率（如 800x480），'
-                        '然后调用 flythings_create_project 创建；禁止去其他目录检索 json/ftu。',
+                        '直接向用户询问硬件平台（%s）与屏幕分辨率（如 800x480），'
+                        '然后调用 flythings_create_project 创建；'
+                        '禁止去其他目录检索 json/ftu。' % '/'.join(_platforms.supported()),
                 "errors": [], "warnings": []}
     errors, warnings = [], []
     src = os.path.join(root, 'src')
@@ -439,7 +476,8 @@ def flythings_validate_project(root):
     if need_user['platform'] or need_user['resolution']:
         warnings.append({'file': 'project', 'type': 'unknown_platform_resolution',
                          'msg': '无法确认硬件平台与屏幕分辨率（缺 Manifest 平台属性或 ui 布局/设置），'
-                                '需要向用户询问平台（F133/F135/Z21）与分辨率（如 800x480）'})
+                                '需要向用户询问平台（%s）与分辨率（如 800x480）'
+                                % '/'.join(_platforms.supported())})
 
     # 1. logic 层
     logic_dir = os.path.join(src, 'logic')
@@ -696,7 +734,8 @@ def _is_elf(path):
         return False
 
 
-def flythings_create_bin_project(project_root, project_name='', platform='f133',
+def flythings_create_bin_project(project_root, project_name='',
+                                 platform=_platforms.DEFAULT_BIN_PLATFORM,
                                  app_version='1.0.0', description='', with_build=True):
     """创建「可执行程序」类型项目（fun create --type bin）并编译为直接可运行的 ELF 二进制。
 
@@ -706,13 +745,13 @@ def flythings_create_bin_project(project_root, project_name='', platform='f133',
     - 部署：adb push + chmod +x 直接跑（无 zkgui 宿主，不能启动 UI 应用）
     - 非交互：自动传 --app-version/--description 跳过向导；目录非空直接报错（防覆盖询问卡死）
 
-    传入项目根目录（可不存在，自动创建）、平台（默认 f133；大小写不敏感，支持 f133/f135/
-    t113/v85x/z20/z21，未知平台会报错并列出支持项）、项目名（缺省取目录名）。
+    传入项目根目录（可不存在，自动创建）、平台（默认同 `platforms.DEFAULT_BIN_PLATFORM`；
+    大小写不敏感，别名可归一，未知平台会报错并列出支持项）、项目名（缺省取目录名）。
     返回创建结果 + 编译日志 + 产物路径与 ELF 验证。
     """
     try:
         # 出口统一小写（fun.exe / 产物目录 .fun/<小写平台>/ 的既有约定）
-        platform = _platforms.bin_tool_dir(platform or _platforms.DEFAULT_PLATFORM)
+        platform = _platforms.bin_tool_dir(platform or _platforms.DEFAULT_BIN_PLATFORM)
     except ValueError as e:
         return {"success": False, "error": str(e)}
     root = os.path.abspath(project_root)
@@ -1196,14 +1235,17 @@ def flythings_create_project(project_root, platform=None, resolution=None,
     - 模板源：包内 templates/HelloWord_<平台>（或 IDE 安装目录）
     - 自动替换：工程名 / 分辨率（.settings prefs + ftu 内嵌）/ 平台（Manifest.xml）
     - 附带 fui.exe + fun.exe（with_cli=True），交付用 fun.exe build + launch，无需客户导入 IDE
-    传入目标项目根目录完整路径、平台（F133/F135/Z21）与分辨率（如 800x480）。
+    传入目标项目根目录完整路径、平台（用 platforms.py 的 supported() 取，别手写枚举）
+    与分辨率（如 800x480）。
 
     ⚠️⚠️ 硬性要求：platform 与 resolution 必须由用户明确提供，禁止猜测或使用默认值。
-    若用户未指定硬件平台（F133/F135/Z21）或屏幕分辨率（如 800x480），
+    若用户未指定硬件平台或屏幕分辨率（如 800x480），
     本工具会直接返回错误，拒绝创建——必须先向用户询问这两个参数再调用。
     """
     if not platform or not str(platform).strip():
-        return {"success": False, "error": "缺少硬件平台：请先向用户询问平台（F133/F135/Z21），禁止猜测"}
+        return {"success": False,
+                "error": "缺少硬件平台：请先向用户询问平台（%s），禁止猜测"
+                         % '/'.join(_platforms.supported())}
     if not resolution or not str(resolution).strip():
         return {"success": False, "error": "缺少屏幕分辨率：请先向用户询问分辨率（如 800x480、480x272），禁止猜测"}
     if not re.fullmatch(r'\d+\s*[xX]\s*\d+', str(resolution).strip()):

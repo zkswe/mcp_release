@@ -11,6 +11,7 @@ import io
 import json, math, os, re, shutil, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import platforms as _platforms   # 平台唯一来源：默认值/平台清单/包生态键都从这里取
 import rag_search as rs
 import project_tools as pt
 import package_tools as pkgtools
@@ -52,9 +53,10 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.40-open'
+MCP_VERSION = '0.27.41-open'
 MCP_BUILD = '2026-09-12'
 MCP_FEATURES = [
+    '2026-09-12: 平台判定收成「按真实条件」单一入口 v0.27.41（沛哥：检讨 pause-touch 那类「按状态/代理信号判定，而非按真实条件判定」的问题）——①**平台真相由三套收成一套**：`platforms.py` 新增包生态命名空间 `PACKAGE_KEYS`/`PACKAGE_ALIASES`（f136->F135、v85xemmc、t113stdcxx、历史 v853/v552/v553）+ 仅包生态平台 `PACKAGE_ONLY`（z6s/z261/z235x/h500s/a33nor），并新增 `package_key()`/`resolve()`/`package_keys()`；`package_tools.PLATFORM_ALIAS`（原来只认 v85x 家族，F133EMMC/F136/T113STDCXX 全不认）与 `test_tools.SUPPORTED_PLATFORMS`（手抄元组）改为引用 platforms.py ②**不再按平台名字符串白名单拦能力**：`test_tools._platform_elf` 改为解析后**按 bin_tools 目录里真实存在的文件**判定；`hardware_tools` 区分「真实平台但硬件库未登记」（新错误码 PLATFORM_NOT_IN_HARDWARE_LIB）与「完全不认识」（旧行为一律回「未知平台」，把 z6s/f136emmc 这类真平台说成不存在）③**建工程报错不骗人**：`validate()` 对仅包生态平台明确回「有依赖包、无 IDE 模板/工具链，无法建工程」+ 可建工程清单；未知名字补「相近的已知平台」④**默认平台可见化**：新增 `DEFAULT_BIN_PLATFORM="Z21"`（原 create_bin_project/gen_ui_test 签名里写死的 z21），其余默认值统一引用 `DEFAULT_PLATFORM`；docstring/提示里手写的「F133/F135/Z21」枚举改为运行时由 supported() 生成 ⑤**去静默**：`hardware_tools._known_platform` 校验器不可用时返回 None 并写进 warnings（原 `except Exception: return True` 属静默矞报）⑥**闸门加防回归**：`check_consistency` 新增平台单一来源校验（副本身份 + package_catalog 键全覆盖 + 源码里禁止再出现手写平台枚举），`gen_manifest` 平台表带 packageKey/buildable；新增 `tests/test_platform_resolution.py` 契约用例；v0.27.41-open',
     '2026-09-12: 统一触摸注入工具 `touch` v0.27.40（沛哥实测反馈：老 input 单点协议写死 + 节点要人工传 + IC/节点一变就注入不了，AI 只能反复 try）——新增 `bin_tools/{平台}/touch`（f133/f135/z20/z21/t113/v85x 全平台静态 ELF，源码 `tools/touch_inject/`）：①自动扫 /dev/input/event*，按 EVIOCGBIT 能力位挑触摸节点（名字含 touch/ts/gt9/panel 加分，keyboard/button/accel 扣分）②自动判协议：ABS_MT_SLOT=MT-B / ABS_MT_POSITION_X=MT-A / 否则单点，`--proto` 可手动覆盖 ③命令 tap/swipe/long/monkey/run/record/play + list/info（`list` 一次看清节点+协议，彻底替代「试注入看是否恒 0」的 try 流程）④MT 屏若同时声明 ABS_X/Y 就一并上报（兼容读单点轴的上层）、压力值按 EVIOCGABS 量程取中、tap 默认 down→up 间隔 40ms ⑤重编 `scripts/touch_build_all.sh`（WSL 全平台，静态 strip：RISC-V 66KB / musl 61KB / glibc 470KB）+ x86 自测脚本；MCP 侧 `flythings_gen_ui_test` 优先选 touch、deployHint 去掉硬编码 /dev/input/event1、平台矩阵补 f135、ui_test/mt_test 降为兼容保留；知识库 `knowledge/devflow/touch-inject-autotest.md` 与 bin_tools/README 改写为 touch 首选；v0.27.40-open',
     '2026-09-12: 固化升级出包 v0.27.39（沛哥：用户意图是「升级进设备」而不是调试时，要能打 update.img 刷进去）——新增 `flythings_pack_upgrade(project_root, out_path, release_version, ab, with_build, dry_run)`（工具数 33 → 34）：fun install →（可选）fun build → fun pack 出 update.img（默认 .fun/<平台>/update.img，-o 可改；--release-version 版本号；--ab 出 AB 系统 OTA 包），返回产物路径/大小/时间 + 四种落地刷法（TF卡 FAT32 根目录 / ADB setprop sys.zkupgrade.* / zkautoupgrade 插卡自动升级 / HTTP OTA 与局域网批量升级）；**意图分流**：调试=build_ui_flow（fun launch 临时推送，掉电即失），固化=pack_upgrade（update.img 掉电保留），deploy-scene-map.md 与两个 docstring 双向绑定防幻觉；已实测根因级坑：`FATAL sign error: exit status 0xc0000135` = fsimg.exe 是 32 位、系统缺 32 位 VC++ 运行时（msvcp140.dll/vcruntime140.dll），`package xxx not found in local` = 依赖未装需先 fun install —— 工具据此返回可执行 hint；⚠️ 打包需 Windows 装 VC++ x86 运行库（本机待装，故未跑通端到端出包）；知识库补 knowledge/devflow/upgrade-pack-image.md（CLI 出包全流程 + 与 IDE「路径配置→编译」对照）；v0.27.39-open',
     '2026-09-12: 硬件型号库（`flythings_hardware_info`）v0.27.38（沛哥：加个硬件文档模块，用户能快速选到自己手上的硬件，按平台/型号区分）——①新增唯一事实来源 `hardware_catalog.json`（平台 → 型号 → 屏幕/按键/接口规格 + 平台与型号差异化 + dataStatus/待补字段），工具只读它；配套 `scripts/gen_hardware_doc.py` 生成可检索文档 `knowledge/hardware/hardware-models.md`（带 --check，进一致性闸门，防「json 改了文档没跟」）②新增只读 op `flythings_hardware_info(model, platform)`：model 留空=列平台+已登记型号（platform 可过滤）；给型号=回 screen（分辨率/方向，可直接喂 create_project）/keys（按键值=/dev/input code，如 PocketDisplay4 的 105/103/108 = KEY_LEFT/UP/DOWN）/specs/differences（型号级差异，如 86 盒 Z6/Z20/Z21 三平台对比、价签 SSD201 vs SSD202 单双屏）/missing/source；**未收录型号回 MODEL_NOT_FOUND + 近似候选 + 平台型号清单，明确禁止按同系列外推规格**（查不到不编造）③型号匹配宽松（忽略大小写/连字符/下划线，支持别名）④首批入库：V85X=PocketDisplay4（4 寸 480×800 + 3 键值），Z21=SV50PD/SW80480070D_C/SW10600070D_C/SW48854050E1/SW48480040E，Z20=SW48480040D1/SW8001280101D-JQ/D1-JQ；工具数 32 → 33；⑤**定位（沛哥 2026-09-12 17:42 明确）：这是「预设参数」库，目的是让后期开发少问少核** —— 有具体型号就按返回的 `preset`（平台/分辨率/方向/按键）直接开工；**没有具体型号则确认平台 + 分辨率即可**，不必等数据补全；缺参数不叫「待补警告」而是 `optional[]`（非阻塞）；未收录型号回 `MODEL_NOT_FOUND` 时额外给 `fallback`（平台 + 分辨率就够开工），不卡流程、也不拿同系列外推填坑；v0.27.38-open',
@@ -259,8 +261,8 @@ def flythings_get_project_spec() -> str:
 def flythings_validate_project(project_root: str) -> str:
     """检查项目是否符合 FlyThings 规范，返回 errors/warnings。生成代码后调用。
     空白项目判定：工作目录 ui/ 下无 .ftu 即视为空白（无需再去读 json），返回
-    isEmptyProject=true；此时直接询问用户平台（F133/F135/Z21）与分辨率后调用
-    create_project，禁止去其他目录检索 json/ftu。
+    isEmptyProject=true；此时直接询问用户平台与分辨率（平台清单用 supported() 取，
+    不要在文案里手写枚举）后调用 create_project，禁止去其他目录检索 json/ftu。
     ⚠️ 若 projectInfo.platform/resolution 为 null，必须先向用户询问，禁止猜测。
     """
     return json.dumps(pt.flythings_validate_project(project_root), ensure_ascii=False)
@@ -404,12 +406,12 @@ def flythings_list_packages(platform: str = '') -> str:
     return json.dumps(pkgtools.flythings_list_packages(platform or None), ensure_ascii=False)
 
 
-def flythings_query_package(package: str, platform: str = 'F133') -> str:
+def flythings_query_package(package: str, platform: str = _platforms.DEFAULT_PLATFORM) -> str:
     """查询依赖包在指定平台的可用版本。传入包名（如 mqtt-cxx）与平台。"""
     return json.dumps(pkgtools.flythings_query_package(package, platform), ensure_ascii=False)
 
 
-def flythings_manifest(features: str, platform: str = 'F133', project_root: str = '',
+def flythings_manifest(features: str, platform: str = _platforms.DEFAULT_PLATFORM, project_root: str = '',
                        dry_run: bool = True) -> str:
     """按功能需求准备 Manifest.xml 依赖配置（**默认只推荐、不写盘**）。
     features 为逗号分隔关键词（如 'mqtt,json,蓝牙'）。
@@ -472,24 +474,24 @@ def flythings_add_package(project_root: str, package: str, version: str = '',
 
 
 
-def flythings_package_search(keyword: str, platform: str = 'F133') -> str:
+def flythings_package_search(keyword: str, platform: str = _platforms.DEFAULT_PLATFORM) -> str:
     """按功能关键词搜索可用 package（mqtt/json/http/ssl/ble/ota/audio 等）。"""
     return json.dumps(pkgtools.flythings_search_package(keyword, platform), ensure_ascii=False)
 
 
-def flythings_get_package_api(package_id: str, platform: str = 'F133', version: str = '') -> str:
+def flythings_get_package_api(package_id: str, platform: str = _platforms.DEFAULT_PLATFORM, version: str = '') -> str:
     """获取 package 的头文件路径、类方法签名、使用示例。传入包名与可选版本。"""
     return json.dumps(pkgtools.flythings_get_package_api(package_id, platform, version or None), ensure_ascii=False)
 
 
-def flythings_resolve_dependencies(packages: str, platform: str = 'F133') -> str:
+def flythings_resolve_dependencies(packages: str, platform: str = _platforms.DEFAULT_PLATFORM) -> str:
     """递归解析 package 依赖树并检测冲突。packages 为 JSON 数组字符串，
     如 '[{"id":"mqtt-cxx","version":"3.2.0"}]'。返回依赖树、解析结果与冲突建议。
     """
     return json.dumps(pkgtools.flythings_resolve_dependencies(packages, platform), ensure_ascii=False)
 
 
-def flythings_create_bin_project(project_root: str, project_name: str = '', platform: str = 'z21',
+def flythings_create_bin_project(project_root: str, project_name: str = '', platform: str = _platforms.DEFAULT_BIN_PLATFORM,
                                  app_version: str = '1.0.0', description: str = '',
                                  with_build: bool = True) -> str:
     """创建「可执行程序」项目（fun create --type bin）并编译为直接可运行的 ELF 二进制。
@@ -509,7 +511,7 @@ def flythings_create_bin_project(project_root: str, project_name: str = '', plat
 
 
 def flythings_gen_ui_test(project_root: str, test_type: str = 'ask', output_dir: str = '',
-                          platform: str = 'z21', with_build: bool = True,
+                          platform: str = _platforms.DEFAULT_BIN_PLATFORM, with_build: bool = True,
                           monkey_count: int = 500) -> str:
     """根据 UI json 布局生成自动化测试项目（纯代码，不依赖 AI，省 token）。
 
@@ -540,7 +542,7 @@ def flythings_attach_cli_tools(project_root: str, with_fyx: bool = True) -> str:
 def flythings_create_project(project_root: str, platform: str, resolution: str,
                              app_name: str = '', with_cli: bool = True, force: bool = False) -> str:
     """从 HelloWord Demo 复制骨架创建 FlyThings 项目，自动替换工程名/分辨率/平台。
-    传入目标项目根目录、平台（F133/F135/Z21）与分辨率（如 800x480）。
+    传入目标项目根目录、平台（可建工程的口径，由 platforms.py 统一提供）与分辨率（如 800x480）。
     ⚠️ platform/resolution 必填且必须来自用户明确提供，未指定时先询问，禁止猜测或用默认值。
     ⚠️⚠️ src/activity/ 目录（mainActivity.cpp/h）由 IDE 编译时根据 ftu 自动生成，
     禁止创建/修改/覆盖该目录任何文件！业务代码只能写 src/logic/*.cc；
@@ -550,7 +552,7 @@ def flythings_create_project(project_root: str, platform: str, resolution: str,
                                                   app_name, with_cli, force), ensure_ascii=False)
 
 
-def flythings_check_project_deps(project_root: str, platform: str = 'F133') -> str:
+def flythings_check_project_deps(project_root: str, platform: str = _platforms.DEFAULT_PLATFORM) -> str:
     """扫描项目 include 的三方库与 Manifest 声明对比，返回缺失依赖。
     需要三方能力（MQTT/HTTP/JSON/蓝牙/SSL 等）时先调用。
     """

@@ -56,14 +56,18 @@ def load(force=False):
         warn.append('hardware_catalog.json 缺 platforms 对象')
         cat['platforms'] = {}
     else:
-        bad = [k for k in plats if not _known_platform(k)]
+        bad = [k for k in plats if _known_platform(k) is False]
         if bad:
             warn.append('hardware_catalog.json 里出现未知平台名 %s——'
                         '平台名必须取 platforms.py 的规范名（%s）'
                         % (','.join(sorted(bad)), ','.join(_platform_names())))
+        warn.extend(_VALIDATOR_WARN)     # 校验器坏掉时如实报，不当成「校验通过」
     _CACHE['cat'] = cat
     _CACHE['warn'] = warn
     return cat, warn
+
+
+_VALIDATOR_WARN = []          # 平台校验器不可用时的如实记录（不静默、不假装通过）
 
 
 def _platform_names():
@@ -71,15 +75,24 @@ def _platform_names():
         import platforms as pl
         return pl.supported()
     except Exception as e:               # 平台模块异常不吞：照实标未校验
+        _VALIDATOR_WARN.append(
+            'platforms.py 不可用（%s: %s）——平台名未校验，按原样放行'
+            % (type(e).__name__, e))
         return ['<platforms.py 不可用: %s>' % e]
 
 
 def _known_platform(name):
+    """平台名是否符合 platforms.py 规范。
+
+    True = 已知；False = 确定是未知名字；**None = 校验器不可用（未校验）**。
+    旧实现这里是 `except Exception: return True`——把「没校验」说成「通过」，
+    属于静默瞒报：平台模块一旦坏掉，脏平台名会被当成合法数据放行。
+    """
     try:
         import platforms as pl
         return bool(pl.normalize(name))
     except Exception:
-        return True                      # 校验器不可用时不做平台名拦截
+        return None
 
 
 def normalize_platform(name):
@@ -272,6 +285,25 @@ def query(model='', platform=''):
     cat, warn = load()
     plat = normalize_platform(platform)
     if plat is None:
+        # 区分「真实平台但硬件库没登记」与「完全不认识」：
+        # 一律回「未知平台」等于把 z6s/z261 这类真平台判成不存在（AI 会去瞎猜）。
+        pkg_only = None
+        try:
+            import platforms as pl
+            _info = pl.resolve(platform)
+            pkg_only = _info if (_info and _info.get('packageOnly')) else None
+        except Exception:
+            pkg_only = None
+        if pkg_only:
+            return {'ok': False, 'mode': 'bad_platform',
+                    'error': {'code': 'PLATFORM_NOT_IN_HARDWARE_LIB',
+                              'msg': '平台 %s 是真实平台（%s），但硬件库还没登记它的型号'
+                                     % (pkg_only['canonical'],
+                                        pkg_only.get('note') or '仅依赖包生态'),
+                              'hint': '硬件库已登记的平台：%s（不编造未登记平台的规格）'
+                                      % ', '.join(sorted(cat.get('platforms', {}))),
+                              'retryable': True},
+                    'warnings': warn}
         return {'ok': False, 'mode': 'bad_platform',
                 'error': {'code': 'BAD_PLATFORM',
                           'msg': '未知平台 %r' % platform,

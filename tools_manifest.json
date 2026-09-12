@@ -2,7 +2,7 @@
   "schema": 1,
   "generatedBy": "scripts/gen_manifest.py",
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY 表后重新生成，勿手改本文件",
-  "version": "0.27.40-open",
+  "version": "0.27.41-open",
   "build": "2026-09-12",
   "toolCount": 34,
   "cli": {
@@ -17,6 +17,8 @@
       "arch": "riscv32",
       "template": "HelloWord_F133",
       "binTool": "f133",
+      "packageKey": "f133",
+      "buildable": true,
       "note": "RISC-V，工具链与其他平台不可混用，严禁混入 glibc"
     },
     {
@@ -24,6 +26,8 @@
       "arch": "arm",
       "template": "HelloWord_F135",
       "binTool": "f135",
+      "packageKey": "f136",
+      "buildable": true,
       "note": "ARM"
     },
     {
@@ -31,6 +35,8 @@
       "arch": "arm",
       "template": "HelloWord_T113",
       "binTool": "t113",
+      "packageKey": "t113",
+      "buildable": true,
       "note": "ARM，车载互联常用"
     },
     {
@@ -38,6 +44,8 @@
       "arch": "arm",
       "template": "HelloWord_V85X",
       "binTool": "v85x",
+      "packageKey": "v85x",
+      "buildable": true,
       "note": "ARM，摄像头/DVR 常用"
     },
     {
@@ -45,6 +53,8 @@
       "arch": "arm",
       "template": "HelloWord_Z20",
       "binTool": "z20",
+      "packageKey": "z20",
+      "buildable": true,
       "note": "ARM"
     },
     {
@@ -52,7 +62,54 @@
       "arch": "arm",
       "template": "HelloWord_Z21",
       "binTool": "z21",
+      "packageKey": "z21",
+      "buildable": true,
       "note": "ARM"
+    },
+    {
+      "platform": "Z6S",
+      "arch": "",
+      "template": "",
+      "binTool": "",
+      "packageKey": "z6s",
+      "buildable": false,
+      "note": "仅依赖包生态（package_catalog 里 1 个包）"
+    },
+    {
+      "platform": "Z261",
+      "arch": "",
+      "template": "",
+      "binTool": "",
+      "packageKey": "z261",
+      "buildable": false,
+      "note": "仅依赖包生态（60 个包）"
+    },
+    {
+      "platform": "Z235X",
+      "arch": "",
+      "template": "",
+      "binTool": "",
+      "packageKey": "z235x",
+      "buildable": false,
+      "note": "仅依赖包生态（17 个包）"
+    },
+    {
+      "platform": "H500S",
+      "arch": "",
+      "template": "",
+      "binTool": "",
+      "packageKey": "h500s",
+      "buildable": false,
+      "note": "仅依赖包生态（16 个包）"
+    },
+    {
+      "platform": "A33NOR",
+      "arch": "",
+      "template": "",
+      "binTool": "",
+      "packageKey": "a33nor",
+      "buildable": false,
+      "note": "仅依赖包生态（13 个包）"
     }
   ],
   "ops": [

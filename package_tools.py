@@ -2,6 +2,8 @@
 """FlyThings package ecosystem tools: search, API docs, dependency resolution, manifest generation."""
 import json, os, re, sys, urllib.request, xml.etree.ElementTree as ET
 
+import platforms as _platforms  # 平台解析唯一来源（包生态键也在这里，别再各写一份）
+
 REGISTRY_CANDIDATES = [
     # 本地包注册表（多目录合并：不同工具链/历史下载可能分散存放，全扫不漏包）
     os.environ.get('FLYTHINGS_REGISTRY', ''),      # 环境变量显式指定（最高优先）
@@ -117,8 +119,10 @@ SEARCH_KEYWORDS = {
     '数据库': 'sqlite', 'json解析': 'json',
 }
 
-# 平台别名规范化（V853 属于 V85x 家族，package 平台名为 v85x）
-PLATFORM_ALIAS = {'v853': 'v85x', 'v85x': 'v85x', 'v552': 'v85x', 'v553': 'v85x'}
+# 平台别名表改由 platforms.py 提供（v0.27.41 起单一来源）；保留同名常量供旧调用方兼容。
+# 以前这里只认 v85x 家族（缺 F133EMMC / F136 / T113STDCXX 等），与建工程侧的
+# platforms.PLATFORMS 不是同一套 → 同一个平台名，包查询认、建工程不认。
+PLATFORM_ALIAS = _platforms.PACKAGE_ALIASES
 
 # 离线目录（全平台包快照，catalog_builder.py 生成；相对本文件所在目录，便于分发；PyInstaller 打包后取 _MEIPASS）
 _BASE = sys._MEIPASS if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
@@ -153,8 +157,11 @@ _version_cache = {}
 
 
 def _norm_platform(platform):
-    p = str(platform or '').strip().lower()
-    return PLATFORM_ALIAS.get(p, p)
+    """平台名 → 包生态键（单一来源：platforms.package_key）。
+
+    宽容：认不出来就原样小写（让查询按真实键去查，查不到自然回空），
+    不再用白名单拦截——那会把 f136emmc/z261 这类真实平台错误地吞掉。"""
+    return _platforms.package_key(platform)
 
 
 def _ver_key(v):

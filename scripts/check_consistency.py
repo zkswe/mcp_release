@@ -179,6 +179,119 @@ def stage_platforms():
           str(pl.DEFAULT_PLATFORM))
 
 
+def stage_platform_single_source():
+    """平台单一来源防回归（v0.27.41 起）。
+
+    背景：platforms.py 自称「唯一真相」，但 package_tools / test_tools 各留了一份平台表
+    （前者只认 v85x 家族，不认 F133EMMC/F136/T113STDCXX；后者手抄小写元组），
+    且 package_catalog.json 里 16 个平台键有 5 个在 platforms.py 里根本不存在
+    → 「同一个平台名，包查询认、建工程不认」。这道闸门盯住四件事：
+      1. 副本必须是**引用**而不是再抄一份（对象身份级校验，不是值相等）；
+      2. package_catalog.json 的每个平台键都能被 platforms 解析（不再有“无主”平台名）；
+      3. 源码里不许再出现字面量平台表（PLATFORMS/SUPPORTED_PLATFORMS/... = {...}）；
+      4. 工具签名里的平台默认值不许写死字面量（要走 DEFAULT_PLATFORM / DEFAULT_BIN_PLATFORM）。
+    """
+    import platforms as pl
+    fails = []
+
+    # 1) 副本身份
+    try:
+        import package_tools as pk
+        if getattr(pk, 'PLATFORM_ALIAS', None) is not pl.PACKAGE_ALIASES:
+            fails.append('package_tools.PLATFORM_ALIAS 不是 platforms.PACKAGE_ALIASES（又被抄了一份）')
+    except Exception as e:
+        fails.append('import package_tools: %r' % e)
+    try:
+        import test_tools as tt
+        want = tuple(p.lower() for p in pl.supported())
+        if tuple(getattr(tt, 'SUPPORTED_PLATFORMS', ())) != want:
+            fails.append('test_tools.SUPPORTED_PLATFORMS != platforms.supported() 小写化')
+    except Exception as e:
+        fails.append('import test_tools: %r' % e)
+    check(not fails, 'platform single source (identity)', '; '.join(fails) if fails else 'ok')
+
+    # 2) 包生态键全覆盖
+    catp = os.path.join(BASE, 'package_catalog.json')
+    if not os.path.isfile(catp):
+        check(False, 'package_catalog.json exists', catp)
+    else:
+        unres, total = [], 0
+        try:
+            keys = sorted(json.loads(_read(catp)).keys())
+            total = len(keys)
+            for k in keys:
+                if not pl.resolve(k):
+                    unres.append(k)
+        except Exception as e:
+            unres.append('parse:%r' % e)
+        check(not unres, 'package_catalog keys resolvable',
+              ('未登记: %s' % ','.join(unres)) if unres else '%d keys ok' % total)
+
+    # 3) 源码里的字面量平台表（推导式从 platforms.py 派生是合法的，不算副本）
+    kw = ('PLATFORMS', 'SUPPORTED_PLATFORMS', 'PLATFORM_ALIAS', 'PLATFORM_ALIASES',
+          'PACKAGE_ALIASES', 'PACKAGE_KEYS')
+    lit = re.compile(r'^\s*(?:%s)\s*=\s*[\[({]' % '|'.join(kw))
+    pnames = set(pl.PLATFORMS) | set(pl.PACKAGE_ONLY) | set(pl.package_keys()) \
+        | set(pl.PACKAGE_ALIASES)
+    quoted = ["'%s'" % n for n in pnames] + ['"%s"' % n for n in pnames]
+    hits = []
+    for fn in sorted(os.listdir(BASE)):
+        if not fn.endswith('.py') or fn == 'platforms.py':
+            continue
+        lines = _read(os.path.join(BASE, fn)).splitlines()
+        for i, line in enumerate(lines, 1):
+            if not lit.match(line) or ' for ' in line:
+                continue
+            blk = '\n'.join(lines[i - 1:i + 15])
+            if any(q in blk for q in quoted):
+                hits.append('%s:%d' % (fn, i))
+    check(not hits, 'no literal platform table in .py',
+          ('重抄了平台表: %s' % ','.join(hits[:5])) if hits else 'ok')
+
+    # 4) 工具签名里的平台默认值必须走 platforms.py 常量
+    #    （位置参数默认值只能对齐到参数表末尾那几个，不能把全部 defaults 混着看）
+    hard = []
+    tree = ast.parse(_read(os.path.join(BASE, 'kb_tools.py')))
+
+    def _is_literal_platform(node):
+        return (isinstance(node, ast.Constant) and isinstance(node.value, str)
+                and bool(node.value.strip()))
+
+    for n in tree.body:
+        if not isinstance(n, ast.FunctionDef):
+            continue
+        args, defs = n.args.args, n.args.defaults
+        for a, d in zip(args[len(args) - len(defs):], defs) if defs else []:
+            if a.arg == 'platform' and _is_literal_platform(d):
+                hard.append('%s(platform=%r)' % (n.name, d.value))
+        for a, d in zip(n.args.kwonlyargs, n.args.kw_defaults):
+            if a.arg == 'platform' and _is_literal_platform(d):
+                hard.append('%s(platform=%r)' % (n.name, d.value))
+    check(not hard, 'platform defaults via platforms.py',
+          ('写死默认平台: %s' % ','.join(hard[:5])) if hard else 'ok')
+
+    # 5) 关键语义（真实平台不再被判为“不存在”）
+    sem = []
+    try:
+        if pl.package_key('F135') != 'f136':
+            sem.append('package_key(F135)!=f136')
+        if pl.package_key('F133EMMC') != 'f133emmc':
+            sem.append('package_key(F133EMMC)!=f133emmc')
+        r = pl.resolve('z6s')
+        if not (r and r.get('packageOnly') and not r.get('buildable')):
+            sem.append('resolve(z6s) 未标 packageOnly')
+        try:
+            pl.validate('z6s')
+            sem.append("validate('z6s') 未报错")
+        except ValueError as e:
+            if '模板' not in str(e):
+                sem.append('validate(z6s) 未说明缺模板')
+    except Exception as e:
+        sem.append('exc %r' % e)
+    check(not sem, 'platform semantics (alias/package-only)',
+          ','.join(sem) if sem else 'ok')
+
+
 def _expected_md_sets():
     """按 rebuild_index_local.py 的口径推导索引应包含的文档集合（相对路径，'/' 分隔）。"""
     kb_dir = os.path.join(BASE, 'knowledge')
@@ -314,6 +427,13 @@ def stage_delegated(skip_smoke, with_tests):
         rc, out = _run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', '-q'])
         tail = [l for l in out.strip().splitlines() if l.strip()][-1:]
         check(rc == 0, 'delegated: tests/ unittest', (tail[0] if tail else 'rc=%d' % rc)[:70])
+        # 用例数不许手写漂移（README 写 95 而实跳 122 过就不对了）
+        m = re.search(r'^Ran (\d+) tests', out, re.M)
+        rd = _read(os.path.join(BASE, 'README.md'))
+        n = re.search(r'(\d+)\s*项契约用例', rd)
+        check(bool(m) and bool(n) and int(m.group(1)) == int(n.group(1)),
+              'README test count matches real run（--with-tests）',
+              'README=%s real=%s' % (n.group(1) if n else '?', m.group(1) if m else '?'))
 
 
 def main():
@@ -328,6 +448,7 @@ def main():
     stage_versions()
     stage_tool_count()
     stage_platforms()
+    stage_platform_single_source()
     stage_index()
     stage_docstring_budget()
     stage_deliverables(a.with_tests)

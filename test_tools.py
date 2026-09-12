@@ -26,9 +26,13 @@
 """
 import json, os, re, subprocess, shutil
 
+import platforms as _platforms  # 平台名唯一来源（别在这里再抄一份白名单）
+
 _BASE = os.path.dirname(os.path.abspath(__file__))
 BIN_TOOLS_DIR = os.path.join(_BASE, 'bin_tools')
-SUPPORTED_PLATFORMS = ('z21', 'z20', 't113', 'f133', 'v85x', 'f135')
+# 可跑 UI 测试的平台 = platforms.py 里可建工程的平台（小写化），单一来源。
+# 以前这里手抄一份 ('z21','z20',...) 元组，与 platforms.py 漂移了也没人知道。
+SUPPORTED_PLATFORMS = tuple(p.lower() for p in _platforms.supported())
 
 # 可交互控件类型（touchable=true 时生成点击）
 INTERACTIVE_TYPES = ('button', 'checkbox', 'radiogroup', 'edittext', 'seekbar',
@@ -39,14 +43,16 @@ SWIPE_TYPES = ('seekbar', 'slidewindow', 'scrollwindow', 'pagewindow')
 
 
 def _platform_elf(platform):
-    """返回预编译触摸注入 ELF 路径。
+    """返回预编译触摸注入 ELF 路径（**按真实文件探测**，不是按平台名白名单）。
 
-    优先统一工具 bin_tools/{platform}/touch（自动识别节点+协议）；
-    没有该平台 touch 时退回老的 ui_test。
+    解析（支持别名/大小写）→ 取 bin_tools 目录名 → 真的存在 touch 才用，
+    其次退回老的 ui_test；两边都没有就回 None（调用方据此报「未预编译」，
+    并把真实可用平台列出来，而不是笼统地说平台不支持）。
     """
-    p = platform.lower()
-    if p not in SUPPORTED_PLATFORMS:
+    info = _platforms.resolve(platform)
+    if not info or not info.get('buildable'):
         return None
+    p = info['binTool']
     for name in ('touch', 'ui_test'):
         elf = os.path.join(BIN_TOOLS_DIR, p, name)
         if os.path.isfile(elf):
@@ -194,7 +200,9 @@ def flythings_gen_ui_test(project_root, test_type='ask', output_dir='',
     if not elf:
         return {'success': False,
                 'error': '平台 %s 未预编译触摸注入工具（可用: %s）'
-                         % (platform, '/'.join(SUPPORTED_PLATFORMS))}
+                         % (platform, '/'.join(SUPPORTED_PLATFORMS)),
+                'hint': '平台名支持别名/大小写（如 F133EMMC -> F133）；'
+                        '若确实是新平台，按 bin_tools/README「新增平台/工具流程」补预编译 ELF'} 
 
     pages, err = _parse_ui_jsons(root)
     if err:
