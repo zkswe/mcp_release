@@ -2,6 +2,15 @@
   "schema": 1,
   "note": "硬件型号库（唯一事实来源，人工维护）。定位（沛哥 2026-09-12）：**预设参数**，让后期开发少问少核。有具体型号 → 按该型号的 screen/keys/specs 直接开工（工具会给出 preset）；没有具体型号 → 确认平台 + 分辨率就能建工程，不必等数据补全。改完跑：python scripts/gen_hardware_doc.py（生成 knowledge/hardware/hardware-models.md，可检索）→ python rebuild_index_local.py。字段：platforms.<平台>.models.<型号>，平台名必须是 platforms.py 里的规范名（F133/F135/T113/V85X/Z20/Z21）。dataStatus：complete=规格书完整 / partial=部分参数 / pending=仅登记型号（**都不是开工阻塞**）。optional[] = 可选补充项（有则更方便，没有不影响开工；禁止 AI 拿同系列型号外推填坑）。",
   "updated": "2026-09-12",
+  "namingRules": {
+    "structure": "SW + 宽 + 高 + 尺寸 + 平台/版本字母 [+ 可选后缀]",
+    "example": "SW80480070A_CWM = 7 寸 800×480，电容触摸 + WIFI + 多媒体版（官方《产品规格型号说明》示例）",
+    "platformLetter": {
+      "D": "Z21 平台（沛哥 2026-09-12 确认，如 SW80480070D_C）"
+    },
+    "lettersNote": "字母是**产品线内**的平台/版本代号，不能跳产品线套用：4 寸 86 盒线里 D1 = Z20、E = Z21（86 盒规格书 V3.0），与「D = Z21」不是同一套。新字母先问沛哥确认再入库。",
+    "limit": "型号名只能看出平台/分辨率线索，**具体规格以规格书为准**（不要按命名外推接口、内存、容量）"
+  },
   "platforms": {
     "V85X": {
       "summary": "全志 V85x 系列（A7，视频编码 1080p）——摄像头/DVR/手持便携类产品常用",
@@ -85,6 +94,10 @@
             "orientation": "landscape"
           },
           "screenNote": "按官方《产品规格型号说明》命名规则推导：SW+宽+高+尺寸+版本，SW80 480 070 D = 7 寸 800×480；同系列 SW80480070D-CK 规格书标 800×480 / 1024×600 可选、Z21X 平台（A7 双核 1.2GHz）",
+          "naming": {
+            "letter": "D",
+            "meaning": "Z21 平台（沛哥 2026-09-12 确认）"
+          },
           "specs": {},
           "differences": [],
           "optional": [
@@ -92,7 +105,7 @@
             "型号后缀 _C 的确切含义（电容触摸？版本？）",
             "与 SW80480070D-CK 系列是否同一产品"
           ],
-          "source": "命名规则（官方《产品规格型号说明》）+ hardwarespec/SW80480070D-CK系列型.pdf"
+          "source": "命名规则（官方《产品规格型号说明》）+ 平台字母 D=Z21（沛哥确认）+ hardwarespec/SW80480070D-CK系列型.pdf"
         },
         "SW10600070D_C": {
           "aliases": ["SW10600070D-C"],

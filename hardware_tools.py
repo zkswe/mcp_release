@@ -282,6 +282,7 @@ def query(model='', platform=''):
                 'fields': ('每个型号：model/summary/dataStatus/aliases；'
                            '取单型号规格传 model=<型号>'),
                 'whenNoModel': WHEN_UNKNOWN,
+                'namingRules': cat.get('namingRules') or {},
                 'note': ('平台差异化与可选补充分别在 platforms[].differences / optional[]；'
                          '型号详情含 screen/keys/specs/differences/optional/source，'
                          '并自带 preset（开工直接照抄的平台+分辨率(+按键)）'),
@@ -305,6 +306,7 @@ def query(model='', platform=''):
                 'model': mname,
                 'preset': _preset(entry, pname),
                 'hardware': hw,
+                'namingRules': cat.get('namingRules') or {},
                 'platformSummary': meta.get('summary', ''),
                 'platformDifferences': meta.get('differences') or [],
                 'platformOptional': meta.get('optional') or [],
@@ -355,6 +357,21 @@ def build_markdown(cat=None):
          '> 查询用工具：`flythings_hardware_info(model, platform)`；'
          '未收录型号会返回候选与「平台 + 分辨率即可」的开工建议，不猜规格。', '' ]
     plats = cat.get('platforms', {})
+    nr = cat.get('namingRules') or {}
+    if nr:
+        L.append('## 型号命名规则（看型号名时参考）')
+        L.append('')
+        if nr.get('structure'):
+            L.append('- 结构：%s' % nr['structure'])
+        if nr.get('example'):
+            L.append('- 示例：%s' % nr['example'])
+        for k, v in (nr.get('platformLetter') or {}).items():
+            L.append('- 平台/版本字母 %s：%s' % (k, v))
+        if nr.get('lettersNote'):
+            L.append('- ⚠️ 适用范围：%s' % nr['lettersNote'])
+        if nr.get('limit'):
+            L.append('- 使用边界：%s' % nr['limit'])
+        L.append('')
     L.append('## 平台总览')
     L.append('')
     L.append('| 平台 | 型号数 | 已登记型号 | 平台定位 |')
@@ -387,6 +404,10 @@ def build_markdown(cat=None):
                 L.append('- 形态：%s' % e['kind'])
             if e.get('aliases'):
                 L.append('- 别名：%s' % ' / '.join(e['aliases']))
+            nm = e.get('naming') or {}
+            if nm:
+                L.append('- 型号命名：字母 %s = %s'
+                         % (nm.get('letter', ''), nm.get('meaning', '')))
             if _brief(e):
                 L.append('- 摘要：%s' % _brief(e))
             sc = e.get('screen') or {}
