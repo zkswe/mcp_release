@@ -171,9 +171,117 @@
 - 音频：LINE OUT + 按键蜂鸣器 ×1
 - 扩展存储：TF 卡
 - 开发环境：FlyThings IDE
-- **默认参数（开发直接照抄）**：uartDefaultBaud=115200；upgrade=TF 卡升级（FAT32）；platform=Z21；display=RGB888 50Pin 通用接口屏；maxResolution=1280x720；uart=3 路；gpio=9；i2c=TWI x2；spi=1；pwm=1；adc=1；usb=OTG x1；ethernet=EPHY x1（外接变压器座子）；storage=TF 卡；audio=LINE OUT + 按键蜂鸣器；power=3.8~5.2V
+- **默认参数（开发直接照抄）**：uartDefaultBaud=115200；upgrade=TF 卡升级（FAT32）；platform=Z21；display=RGB888 50Pin 通用接口屏；maxResolution=1280x720；uart=UART1 / UART2 / UART3（U3 带 CTS/RTS）；gpio=GPIO0~GPIO8（9 路；PA0-PA7 可复用 ETH0_*，详见 pinGroups）；i2c=I2C0 / I2C1（10PIN 座子另引 3.3V 电平 I2C）；spi=SPI（CS/CLK/MOSI/MISO）；pwm=PWM3；adc=SRA0；usb=OTG x1；ethernet=ETHY（RN/RP/TN/TP，外接变压器座子）；storage=TF 卡；audio=LINE OUT + 按键蜂鸣器；power=5V（4.2-5.4V @2A），板载 3.8~5.2V 工作范围；lcdBus=RGB888（B7-B0 / G7-G0 / R7-R0 + DCLK/DE/VSYNC/HSYNC）；touch=电容触摸（CTP：I2C + INT + RST）；A1=TP-INT、B1=TP-RST；temp=工作 -20~80℃，储存 -30~90℃
 - 资料：`wiki/flythings/datasheet/board/SV50PD核心板规格书V3.0-20210813.pdf`
 - 资料：`hardwarespec/SV50PD/SV50PD核心板规格书V3.0-20210813.pdf`
+
+#### 管脚定义 · 44PIN 邮票孔 + 插针口（共用）
+
+| PIN | 名称 | 默认功能 | IO | 复用 | 备注 |
+|---|---|---|---|---|---|
+| 1 | ID | USB-ID | I/O |  | 与 MICRO 座是同一个 USB 口 |
+| 2 | DM | USB-DM | I/O |  |  |
+| 3 | DP | USB-DP | I/O |  |  |
+| 4 | GND | GND | P |  |  |
+| 5 | PA0 | GPIO0 | I/O | ETH0_MDI |  |
+| 6 | PA1 | GPIO1 | I/O | ETH0_MDC |  |
+| 7 | PA2 | GPIO2 | I/O | ETH0_COL |  |
+| 8 | PA3 | GPIO3 | I/O | ETH0_RXD0 |  |
+| 9 | PA4 | GPIO4 | I/O | ETH0_RXD1 |  |
+| 10 | PA5 | GPIO5 | I/O | ETH0_TX_CLK |  |
+| 11 | PA6 | GPIO6 | I/O | ETH0_TXD0 |  |
+| 12 | PA7 | GPIO7 | I/O | ETH0_TXD1 |  |
+| 13 | R | LINE OUT R | A |  |  |
+| 14 | L | LINE OUT L | A |  |  |
+| 15 | CS | SPI-CS | I/O |  |  |
+| 16 | CLK | SPI-CLK | I/O |  |  |
+| 17 | SI | SPI-MOSI | I/O |  |  |
+| 18 | SO | SPI-MISO | I/O |  |  |
+| 19 | SCL0 | I2C_SCL0 | I/O |  |  |
+| 20 | SDA0 | I2C_SDA0 | I/O |  |  |
+| 21 | SCL1 | I2C_SCL1 | I/O |  |  |
+| 22 | SDA1 | I2C_SDA1 | I/O |  |  |
+| 23 | PWM3 | PWM3 | I/O |  |  |
+| 24 | TX1 | UART1_TX | I/O |  |  |
+| 25 | RX1 | UART1_RX | I/O |  |  |
+| 26 | TX2 | UART2_TX | I/O |  |  |
+| 27 | RX2 | UART2_RX | I/O |  |  |
+| 28 | U3-TX | UART3_TX | I/O |  |  |
+| 29 | U3-RX | UART3_RX | I/O |  |  |
+| 30 | U3-CTS | UART3_CTS | I/O |  |  |
+| 31 | U3-RTS | UART3_RTS | I/O |  |  |
+| 32 | W-EN | WIFI-POW-EN | I/O |  |  |
+| 33 | RN | ETHY-RN | I/O |  |  |
+| 34 | RP | ETHY-RP | I/O |  |  |
+| 35 | TN | ETHY-TN | I/O |  |  |
+| 36 | TP | ETHY-TP | I/O |  |  |
+| 37 | LED0 |  | O |  |  |
+| 38 | LED1 |  | O |  |  |
+| 39 | SRA0 | ADC | I/O |  |  |
+| 40 | PA-EN | PA-EN | I/O |  |  |
+| 41 | PA8 | GPIO8 | I/O |  |  |
+| 42 | GND | GND | P |  |  |
+| 43 | 5V | 5V 电源输入 | P |  |  |
+| 44 | 5V | 5V 电源输入 | P |  |  |
+| A1 | INT | TP-INT | I/O |  |  |
+| B1 | TP-RST | TP-RST | I/O |  |  |
+
+
+#### 管脚定义 · 10PIN 1.0mm 座子（电源/串口）
+
+| PIN | 名称 | 默认功能 | IO | 备注 |
+|---|---|---|---|---|
+| 1-3 | 5V | DC 5V 电源 | P | 输入范围 4.2-5.4V @ 2A |
+| 4 | RX2 | UART2-RX |  | UART2，做屏幕调试/通信串口 |
+| 5 | RX1 | UART1-RX |  | UART1，做屏幕调试/通信串口 |
+| 6 | TX1 | UART1-TX |  | UART1，做屏幕调试/通信串口 |
+| 7 | TX2 | UART2-TX |  | UART2，做屏幕调试/通信串口 |
+| 8-10 | GND | GND | P |  |
+
+
+#### 管脚定义 · 6PIN 0.5mm CTP 座子（电容触摸）
+
+| PIN | 名称 | 默认功能 | 备注 |
+|---|---|---|---|
+| 1 | CTP-RST |  | 触摸复位 |
+| 2 | CTP-VCC |  | 触摸供电 3.3V |
+| 3 | GND |  | 地 |
+| 4 | CTP-INT |  | 触摸中断 |
+| 5 | CTP-SDA | I2C-SDA | I2C 数据，3.3V 电平 |
+| 6 | CTP-SCL | I2C-SCL | I2C 时钟，3.3V 电平 |
+
+
+#### 管脚定义 · 50PIN 0.5mm RGB-LCD 接口
+
+| PIN | 名称 | 默认功能 | IO |
+|---|---|---|---|
+| 1-2 | LEDA | 背光阳极 | P |
+| 3-4 | LED- | 背光阴极 | P |
+| 5 | GND | 电源地 | P |
+| 6 | VCOM | LCD Common Voltage | P |
+| 7 | VCC-LCD | LCD 电源输出（3.0V） | P |
+| 8 | MODE | DE / SYNC 模式选择 | O |
+| 9 | DE | DE 模式时高有效使能数据输出 | O |
+| 10 | VSYNC | 场同步输出（并行 RGB） | O |
+| 11 | HSYNC | 行同步输出（并行 RGB） | O |
+| 12-19 | B7-B0 | 蓝色数据输出 | O |
+| 20-27 | G7-G0 | 绿色数据输出 | O |
+| 28-35 | R7-R0 | 红色数据输出 | O |
+| 36 | GND | 电源地 | P |
+| 37 | DCLK | 输出数据时钟 | O |
+| 38 | GND | 电源地 | P |
+| 39 | L/R | 水平翻转 | O |
+| 40 | U/D | 垂直翻转 | O |
+| 41 | VGH | TFT Gate On Voltage | P |
+| 42 | VGL | TFT Gate Off Voltage | P |
+| 43 | AVDD | 模拟电路电源 | P |
+| 44 | LCD-RST | LCD 复位脚 | O |
+| 45 | NC | 空脚 |  |
+| 46 | VCOM | LCD Common Voltage | P |
+| 47 | DITHE | Dithering 使能控制 | O |
+| 48 | GND | 电源地 | P |
+| 49-50 | NC | 空脚 |  |
+
 - 可选补充（非阻塞，按需补）：开发板整机出厂配屏分辨率（若有默认配屏请给：常见 7 寸 800×480 / 1024×600）
 - 数据来源：SV50PD 核心板规格书 V3.0（2021-08-13）
 - 数据状态：complete

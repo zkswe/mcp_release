@@ -459,6 +459,28 @@ def build_markdown(cat=None):
                          % '；'.join('%s=%s' % (k, v) for k, v in mdef.items()))
             for rf in (e.get('docRefs') or []):
                 L.append('- 资料：`%s`' % rf)
+            for g in (e.get('pinGroups') or []):
+                pins = g.get('pins') or []
+                if not pins:
+                    continue
+                cols = ('pin', 'name', 'default', 'io', 'alt', 'note')
+                head = {'pin': 'PIN', 'name': '名称', 'default': '默认功能',
+                        'io': 'IO', 'alt': '复用', 'note': '备注'}
+                use = [k for k in cols if any(p.get(k) for p in pins)]
+                L.append('')
+                L.append('#### 管脚定义 · %s' % g.get('name', ''))
+                L.append('')
+                L.append('| ' + ' | '.join(head[k] for k in use) + ' |')
+                L.append('|' + '---|' * len(use))
+                for pin in pins:
+                    cells = []
+                    for k in use:
+                        v = pin.get(k)
+                        if isinstance(v, list):
+                            v = ' / '.join(str(x) for x in v)
+                        cells.append(str(v if v is not None else ''))
+                    L.append('| ' + ' | '.join(cells) + ' |')
+                L.append('')
             for d in (e.get('differences') or []):
                 L.append('- 差异·%s：%s' % (d.get('topic', ''), d.get('detail', '')))
             for m in (e.get('optional') or []):

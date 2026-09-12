@@ -126,17 +126,20 @@
             "platform": "Z21",
             "display": "RGB888 50Pin 通用接口屏",
             "maxResolution": "1280x720",
-            "uart": "3 路",
-            "gpio": 9,
-            "i2c": "TWI x2",
-            "spi": 1,
-            "pwm": 1,
-            "adc": 1,
+            "uart": "UART1 / UART2 / UART3（U3 带 CTS/RTS）",
+            "gpio": "GPIO0~GPIO8（9 路；PA0-PA7 可复用 ETH0_*，详见 pinGroups）",
+            "i2c": "I2C0 / I2C1（10PIN 座子另引 3.3V 电平 I2C）",
+            "spi": "SPI（CS/CLK/MOSI/MISO）",
+            "pwm": "PWM3",
+            "adc": "SRA0",
             "usb": "OTG x1",
-            "ethernet": "EPHY x1（外接变压器座子）",
+            "ethernet": "ETHY（RN/RP/TN/TP，外接变压器座子）",
             "storage": "TF 卡",
             "audio": "LINE OUT + 按键蜂鸣器",
-            "power": "3.8~5.2V"
+            "power": "5V（4.2-5.4V @2A），板载 3.8~5.2V 工作范围",
+            "lcdBus": "RGB888（B7-B0 / G7-G0 / R7-R0 + DCLK/DE/VSYNC/HSYNC）",
+            "touch": "电容触摸（CTP：I2C + INT + RST）；A1=TP-INT、B1=TP-RST",
+            "temp": "工作 -20~80℃，储存 -30~90℃"
           },
           "optional": [
             "开发板整机出厂配屏分辨率（若有默认配屏请给：常见 7 寸 800×480 / 1024×600）"
@@ -144,6 +147,550 @@
           "docRefs": [
             "wiki/flythings/datasheet/board/SV50PD核心板规格书V3.0-20210813.pdf",
             "hardwarespec/SV50PD/SV50PD核心板规格书V3.0-20210813.pdf"
+          ],
+          "pinGroups": [
+            {
+              "name": "44PIN 邮票孔 + 插针口（共用）",
+              "pins": [
+                {
+                  "pin": "1",
+                  "name": "ID",
+                  "default": "USB-ID",
+                  "io": "I/O",
+                  "note": "与 MICRO 座是同一个 USB 口"
+                },
+                {
+                  "pin": "2",
+                  "name": "DM",
+                  "default": "USB-DM",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "3",
+                  "name": "DP",
+                  "default": "USB-DP",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "4",
+                  "name": "GND",
+                  "default": "GND",
+                  "io": "P"
+                },
+                {
+                  "pin": "5",
+                  "name": "PA0",
+                  "default": "GPIO0",
+                  "io": "I/O",
+                  "alt": [
+                    "ETH0_MDI"
+                  ]
+                },
+                {
+                  "pin": "6",
+                  "name": "PA1",
+                  "default": "GPIO1",
+                  "io": "I/O",
+                  "alt": [
+                    "ETH0_MDC"
+                  ]
+                },
+                {
+                  "pin": "7",
+                  "name": "PA2",
+                  "default": "GPIO2",
+                  "io": "I/O",
+                  "alt": [
+                    "ETH0_COL"
+                  ]
+                },
+                {
+                  "pin": "8",
+                  "name": "PA3",
+                  "default": "GPIO3",
+                  "io": "I/O",
+                  "alt": [
+                    "ETH0_RXD0"
+                  ]
+                },
+                {
+                  "pin": "9",
+                  "name": "PA4",
+                  "default": "GPIO4",
+                  "io": "I/O",
+                  "alt": [
+                    "ETH0_RXD1"
+                  ]
+                },
+                {
+                  "pin": "10",
+                  "name": "PA5",
+                  "default": "GPIO5",
+                  "io": "I/O",
+                  "alt": [
+                    "ETH0_TX_CLK"
+                  ]
+                },
+                {
+                  "pin": "11",
+                  "name": "PA6",
+                  "default": "GPIO6",
+                  "io": "I/O",
+                  "alt": [
+                    "ETH0_TXD0"
+                  ]
+                },
+                {
+                  "pin": "12",
+                  "name": "PA7",
+                  "default": "GPIO7",
+                  "io": "I/O",
+                  "alt": [
+                    "ETH0_TXD1"
+                  ]
+                },
+                {
+                  "pin": "13",
+                  "name": "R",
+                  "default": "LINE OUT R",
+                  "io": "A"
+                },
+                {
+                  "pin": "14",
+                  "name": "L",
+                  "default": "LINE OUT L",
+                  "io": "A"
+                },
+                {
+                  "pin": "15",
+                  "name": "CS",
+                  "default": "SPI-CS",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "16",
+                  "name": "CLK",
+                  "default": "SPI-CLK",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "17",
+                  "name": "SI",
+                  "default": "SPI-MOSI",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "18",
+                  "name": "SO",
+                  "default": "SPI-MISO",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "19",
+                  "name": "SCL0",
+                  "default": "I2C_SCL0",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "20",
+                  "name": "SDA0",
+                  "default": "I2C_SDA0",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "21",
+                  "name": "SCL1",
+                  "default": "I2C_SCL1",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "22",
+                  "name": "SDA1",
+                  "default": "I2C_SDA1",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "23",
+                  "name": "PWM3",
+                  "default": "PWM3",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "24",
+                  "name": "TX1",
+                  "default": "UART1_TX",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "25",
+                  "name": "RX1",
+                  "default": "UART1_RX",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "26",
+                  "name": "TX2",
+                  "default": "UART2_TX",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "27",
+                  "name": "RX2",
+                  "default": "UART2_RX",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "28",
+                  "name": "U3-TX",
+                  "default": "UART3_TX",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "29",
+                  "name": "U3-RX",
+                  "default": "UART3_RX",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "30",
+                  "name": "U3-CTS",
+                  "default": "UART3_CTS",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "31",
+                  "name": "U3-RTS",
+                  "default": "UART3_RTS",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "32",
+                  "name": "W-EN",
+                  "default": "WIFI-POW-EN",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "33",
+                  "name": "RN",
+                  "default": "ETHY-RN",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "34",
+                  "name": "RP",
+                  "default": "ETHY-RP",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "35",
+                  "name": "TN",
+                  "default": "ETHY-TN",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "36",
+                  "name": "TP",
+                  "default": "ETHY-TP",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "37",
+                  "name": "LED0",
+                  "io": "O"
+                },
+                {
+                  "pin": "38",
+                  "name": "LED1",
+                  "io": "O"
+                },
+                {
+                  "pin": "39",
+                  "name": "SRA0",
+                  "default": "ADC",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "40",
+                  "name": "PA-EN",
+                  "default": "PA-EN",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "41",
+                  "name": "PA8",
+                  "default": "GPIO8",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "42",
+                  "name": "GND",
+                  "default": "GND",
+                  "io": "P"
+                },
+                {
+                  "pin": "43",
+                  "name": "5V",
+                  "default": "5V 电源输入",
+                  "io": "P"
+                },
+                {
+                  "pin": "44",
+                  "name": "5V",
+                  "default": "5V 电源输入",
+                  "io": "P"
+                },
+                {
+                  "pin": "A1",
+                  "name": "INT",
+                  "default": "TP-INT",
+                  "io": "I/O"
+                },
+                {
+                  "pin": "B1",
+                  "name": "TP-RST",
+                  "default": "TP-RST",
+                  "io": "I/O"
+                }
+              ]
+            },
+            {
+              "name": "10PIN 1.0mm 座子（电源/串口）",
+              "pins": [
+                {
+                  "pin": "1-3",
+                  "name": "5V",
+                  "default": "DC 5V 电源",
+                  "io": "P",
+                  "note": "输入范围 4.2-5.4V @ 2A"
+                },
+                {
+                  "pin": "4",
+                  "name": "RX2",
+                  "default": "UART2-RX",
+                  "note": "UART2，做屏幕调试/通信串口"
+                },
+                {
+                  "pin": "5",
+                  "name": "RX1",
+                  "default": "UART1-RX",
+                  "note": "UART1，做屏幕调试/通信串口"
+                },
+                {
+                  "pin": "6",
+                  "name": "TX1",
+                  "default": "UART1-TX",
+                  "note": "UART1，做屏幕调试/通信串口"
+                },
+                {
+                  "pin": "7",
+                  "name": "TX2",
+                  "default": "UART2-TX",
+                  "note": "UART2，做屏幕调试/通信串口"
+                },
+                {
+                  "pin": "8-10",
+                  "name": "GND",
+                  "default": "GND",
+                  "io": "P"
+                }
+              ]
+            },
+            {
+              "name": "6PIN 0.5mm CTP 座子（电容触摸）",
+              "pins": [
+                {
+                  "pin": "1",
+                  "name": "CTP-RST",
+                  "note": "触摸复位"
+                },
+                {
+                  "pin": "2",
+                  "name": "CTP-VCC",
+                  "note": "触摸供电 3.3V"
+                },
+                {
+                  "pin": "3",
+                  "name": "GND",
+                  "note": "地"
+                },
+                {
+                  "pin": "4",
+                  "name": "CTP-INT",
+                  "note": "触摸中断"
+                },
+                {
+                  "pin": "5",
+                  "name": "CTP-SDA",
+                  "default": "I2C-SDA",
+                  "note": "I2C 数据，3.3V 电平"
+                },
+                {
+                  "pin": "6",
+                  "name": "CTP-SCL",
+                  "default": "I2C-SCL",
+                  "note": "I2C 时钟，3.3V 电平"
+                }
+              ]
+            },
+            {
+              "name": "50PIN 0.5mm RGB-LCD 接口",
+              "pins": [
+                {
+                  "pin": "1-2",
+                  "name": "LEDA",
+                  "default": "背光阳极",
+                  "io": "P"
+                },
+                {
+                  "pin": "3-4",
+                  "name": "LED-",
+                  "default": "背光阴极",
+                  "io": "P"
+                },
+                {
+                  "pin": "5",
+                  "name": "GND",
+                  "default": "电源地",
+                  "io": "P"
+                },
+                {
+                  "pin": "6",
+                  "name": "VCOM",
+                  "default": "LCD Common Voltage",
+                  "io": "P"
+                },
+                {
+                  "pin": "7",
+                  "name": "VCC-LCD",
+                  "default": "LCD 电源输出（3.0V）",
+                  "io": "P"
+                },
+                {
+                  "pin": "8",
+                  "name": "MODE",
+                  "default": "DE / SYNC 模式选择",
+                  "io": "O"
+                },
+                {
+                  "pin": "9",
+                  "name": "DE",
+                  "default": "DE 模式时高有效使能数据输出",
+                  "io": "O"
+                },
+                {
+                  "pin": "10",
+                  "name": "VSYNC",
+                  "default": "场同步输出（并行 RGB）",
+                  "io": "O"
+                },
+                {
+                  "pin": "11",
+                  "name": "HSYNC",
+                  "default": "行同步输出（并行 RGB）",
+                  "io": "O"
+                },
+                {
+                  "pin": "12-19",
+                  "name": "B7-B0",
+                  "default": "蓝色数据输出",
+                  "io": "O"
+                },
+                {
+                  "pin": "20-27",
+                  "name": "G7-G0",
+                  "default": "绿色数据输出",
+                  "io": "O"
+                },
+                {
+                  "pin": "28-35",
+                  "name": "R7-R0",
+                  "default": "红色数据输出",
+                  "io": "O"
+                },
+                {
+                  "pin": "36",
+                  "name": "GND",
+                  "default": "电源地",
+                  "io": "P"
+                },
+                {
+                  "pin": "37",
+                  "name": "DCLK",
+                  "default": "输出数据时钟",
+                  "io": "O"
+                },
+                {
+                  "pin": "38",
+                  "name": "GND",
+                  "default": "电源地",
+                  "io": "P"
+                },
+                {
+                  "pin": "39",
+                  "name": "L/R",
+                  "default": "水平翻转",
+                  "io": "O"
+                },
+                {
+                  "pin": "40",
+                  "name": "U/D",
+                  "default": "垂直翻转",
+                  "io": "O"
+                },
+                {
+                  "pin": "41",
+                  "name": "VGH",
+                  "default": "TFT Gate On Voltage",
+                  "io": "P"
+                },
+                {
+                  "pin": "42",
+                  "name": "VGL",
+                  "default": "TFT Gate Off Voltage",
+                  "io": "P"
+                },
+                {
+                  "pin": "43",
+                  "name": "AVDD",
+                  "default": "模拟电路电源",
+                  "io": "P"
+                },
+                {
+                  "pin": "44",
+                  "name": "LCD-RST",
+                  "default": "LCD 复位脚",
+                  "io": "O"
+                },
+                {
+                  "pin": "45",
+                  "name": "NC",
+                  "default": "空脚"
+                },
+                {
+                  "pin": "46",
+                  "name": "VCOM",
+                  "default": "LCD Common Voltage",
+                  "io": "P"
+                },
+                {
+                  "pin": "47",
+                  "name": "DITHE",
+                  "default": "Dithering 使能控制",
+                  "io": "O"
+                },
+                {
+                  "pin": "48",
+                  "name": "GND",
+                  "default": "电源地",
+                  "io": "P"
+                },
+                {
+                  "pin": "49-50",
+                  "name": "NC",
+                  "default": "空脚"
+                }
+              ]
+            }
           ]
         },
         "SW48854050E1": {
