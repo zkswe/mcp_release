@@ -9,13 +9,18 @@
 
 | 工具 | 用途 | 平台 |
 |------|------|------|
-| `ui_test` | 触摸注入/自动化测试（tap/swipe/long/monkey/run 脚本，**单点协议**适配老屏） | z21 / z20 / t113 / f133 / v85x |
-| `mt_test` | **MT 协议**触摸注入（适配 gt9xx 等 ABS_MT_* 多点屏；接口对齐 ui_test，2026-09-08 新增，**源码见** `knowledge/devflow/touch-inject-autotest.md` 附录） | z21 / z20 / t113 / v85x（f133/f135 待 WSL 编译） |
+| **`touch`** ⭐ | **统一触摸注入（推荐）**：自动扫描触摸节点 + 自动判协议（单点 / MT-A / MT-B），**部署命令不带 `/dev/input/eventN`**；命令 tap/swipe/long/monkey/run/record/play + list/info。2026-09-12 新增，源码 `tools/touch_inject/` | z21 / z20 / t113 / f133 / f135 / v85x |
+| `ui_test` | 触摸注入/自动化测试（tap/swipe/long/monkey/run 脚本，**单点协议**适配老屏）——**兼容保留**，需人工给节点 | z21 / z20 / t113 / f133 / v85x |
+| `mt_test` | **MT-A 协议**触摸注入（适配 gt9xx 等 ABS_MT_* 多点屏）——**兼容保留**，需人工给节点 | z21 / z20 / t113 / v85x（f133/f135 待 WSL 编译） |
 | `busybox` | 设备调试工具箱（网络/系统/Shell 全开，2026-09-08 新增） | z21 / z20 / t113 / f133 / f135 / v85x |
 
 全部 ELF 已验证魔数 `7F 45 4C 46`，直接 `adb push` 即可运行（无需宿主 zkgui）。
 
-## 🔧 触摸协议速判（ui_test 还是 mt_test？）
+## 🔧 触摸协议速判（**先用 `touch`，它会自己判**）
+
+> ⭐ **首选 `touch`**：不传设备节点，自动扫 `/dev/input` 找触摸节点、自动判协议（MT-B / MT-A / 单点）。
+> 先跑一条 `adb shell /data/touch list` 就能看到节点+协议清单——**不用再"试注入一次看是否恒 0"**。
+> 下面这套手动速判方法保留给：`touch` 在该平台缺失、或需要人工核验时用。
 
 注入前先判断设备触摸屏是单点协议还是 **MT Type-A 协议**，用错协议 → 驱动丢弃坐标 → FlyThings 收到恒 `x=0 y=0`：
 
@@ -36,10 +41,11 @@ adb shell mt_test /dev/input/eventN tap 100 100   # MT 协议
 
 | 屏幕类型 | 典型驱动 | 工具 |
 |---|---|---|
-| 单点（旧电阻屏/部分电容） | ili210x、ADS7846 等 | `ui_test` |
-| MT Type-A 多点（**gt9xx 主流**） | gt9xx、Goodix 系列 | `mt_test` |
+| 单点（旧电阻屏/部分电容） | ili210x、ADS7846 等 | `touch`（自动） / `ui_test` |
+| MT Type-A 多点（**gt9xx 主流**） | gt9xx、Goodix 系列 | `touch`（自动） / `mt_test` |
+| MT Type-B 多点（slot 协议） | 部分新驱动 | `touch`（自动） |
 
-V553 实测（2026-09-08）：`/dev/input/event0` = gt9xx MT Type-A，`ui_test` 注入坐标恒 0，改 `mt_test` 后坐标正确。
+V553 实测（2026-09-08）：`/dev/input/event0` = gt9xx MT Type-A，`ui_test` 注入坐标恒 0，改 `mt_test` 后坐标正确 —— 当时只能靠试；**现在 `touch` 会自己判成 MT-A**。
 
 ## 🔧 busybox 调用方法（设备没 ifconfig/ping 等工具时用它）
 
@@ -61,7 +67,36 @@ adb shell "for c in ifconfig ip ping netstat route ps; do ln -sf /tmp/busybox /t
 > BusyBox v1.36.1，全平台 CONFIG_STATIC=y 静态链接（push 即用零依赖）。
 > 重编：`wsl bash ../../scripts/bb_build_all.sh all`（源码/坑位见 `tools/busybox/README.md`，构建必须 WSL 原生盘）。
 
-## 🎯 ui_test 调用方法
+## 🎯 touch 调用方法（⭐ 首选，自动识别节点+协议）
+
+```
+用法: touch [设备节点] <命令> [参数]        # 设备节点可省略（自动识别）
+
+  list                       # 列出 /dev/input 全部设备 + 协议判定（排查第一步）
+  info [dev]                 # 选中设备的能力位/量程/协议详情
+  tap x y [-r n]             # 点击
+  swipe x1 y1 x2 y2 [-r n]   # 滑动
+  long x y ms                # 长按
+  monkey w h count [--no-swipe]  # 随机压测
+  run <script.txt>           # 跑脚本（tap/swipe/long/delay/hold）
+  record <file> / play <file> [-r n] [-s speed]   # 录制/回放
+
+选项: -d/--dev 指定节点 | --proto single|a|b 手动覆盖 | --hold ms 按下保持
+      --scale 屏幕坐标→ABS 量程换算 | -q 少打印
+```
+
+### 部署运行（示例 z20）
+```bash
+adb push bin_tools/z20/touch /data/touch && adb shell chmod +x /data/touch
+adb shell /data/touch list                       # 先看节点+协议
+adb shell /data/touch tap 100 200                # 直接注入，无需 eventN
+adb shell /data/touch run /data/ui_test_script.txt
+# 运行同时 adb logcat 观察 [TOUCH] 与业务日志
+```
+> 自动判协议：`ABS_MT_SLOT` → MT-B；`ABS_MT_POSITION_X` → MT-A；否则单点。
+> 源码/自测/重编：`tools/touch_inject/`（`wsl bash scripts/touch_build_all.sh all`）。
+
+## 🎯 ui_test 调用方法（兼容保留，需人工给节点）
 
 ```
 用法: ui_test <设备节点> <命令> [参数]
@@ -100,7 +135,7 @@ adb shell /data/ui_test /dev/input/event1 monkey 1024 600 500
 ```
 ⚠️ EV_SYN 必须发，否则内核不提交事件；滑动禁止跳终点（会被识别为无效/抖动）。
 
-## 🎯 mt_test 调用方法（MT Type-A 协议版，gt9xx 等多点屏用）
+## 🎯 mt_test 调用方法（兼容保留；MT Type-A 协议，gt9xx 等多点屏用）
 
 ```
 用法: mt_test <设备节点> <命令> [参数]   # 命令与 ui_test 完全一致

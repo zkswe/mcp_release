@@ -1,12 +1,15 @@
-# 触摸注入/UI 自动化测试：先调现成 ui_test 工具（禁止先造轮子）
+# 触摸注入/UI 自动化测试：先调现成 `touch` 工具（禁止先造轮子）
 
 > 2026-09-08 入库（补 knowledge 检索缺口：此前只有 wiki 老版 event.c 原理，AI 不知道有现成工具）。
+> **2026-09-12 升级（沛哥实测反馈）：老 input / ui_test / mt_test 存三个硬伤——单点协议写死、
+> 节点要人工传、节点或 IC 一变就注入失败 → AI 只能反复 try。已新建统一工具 `touch`
+> （自动扫节点 + 自动判协议）并全平台编译。**
 > 定位：用户要「自动化测试 / 遍历验收 / 压测 / 自动点击 / 模拟触摸 / 滑动验证 UI」时，
-> **先调 MCP 工具 `flythings_gen_ui_test` + 预编译 `ui_test` ELF（bin_tools/{平台}/ui_test）**，
-> 常规自动化**无需重新编译、无需抄代码**；event.c 原理只在定制/移植新平台时参考。
+> **先调 MCP 工具 `flythings_gen_ui_test` + 预编译 `touch` ELF（bin_tools/{平台}/touch）**，
+> 常规自动化**无需重新编译、无需抄代码、无需猜节点与协议**；event.c 原理只在定制/移植新平台时参考。
 
 ## 🔑 关键词索引
-**触摸注入 / 模拟触摸 / 自动化测试 / 自动点击 / tap / swipe / monkey / 压测 / 遍历验收 / ui_test / input 事件 / /dev/input / 触摸协议 / EV_SYN**
+**触摸注入 / 模拟触摸 / 自动化测试 / 自动点击 / tap / swipe / monkey / 压测 / 遍历验收 / touch / ui_test / mt_test / input 事件 / /dev/input / 触摸协议 / EV_SYN / 坐标恒 0 / 节点自动识别**
 
 ## ✅ 首选路径（现成工具，MCP 已分发）
 
@@ -18,8 +21,53 @@
 - `ask`      - 默认先问用户选哪种
 返回 `deployHint`（push ELF + 脚本 + 运行命令），按提示执行即可。
 
-### 2. 预编译工具：`bin_tools/{平台}/ui_test` 或 `mt_test`（按屏幕协议选）
+### 2. 预编译工具：`bin_tools/{平台}/touch` ⭐ 首选（2026-09-12 新增）
 
+> **一句话：不传节点、不选协议，`touch` 自己搞定。** 取代 ui_test/mt_test 二选一的试错。
+>
+> **为什么会有这个工具**：老 `input`（LearningProject/input）只实现单点协议（ABS_X/Y +
+> ABS_PRESSURE + BTN_TOUCH），事件节点要人工传 `/dev/input/eventX`，且只预编译了 h500s/z21
+> 两个老二进制 → 碰到 gt9xx 这类 MT 屏或节点编号不同的板子就注入失败（坐标恒 0），
+> AI 只能反复换节点/试协议。`touch` 把这三件事全做成自动的。
+
+```bash
+# 0. 部署（平台目录按实际选）
+adb push bin_tools/z20/touch /data/touch && adb shell chmod +x /data/touch
+
+# 1. 排查第一步：list（列出 /dev/input 全部设备 + 协议判定）
+adb shell /data/touch list
+#   ★ /dev/input/event0  gt9xx-ts  proto=MT-A  mtX=0..799 mtY=0..1279 BTN_TOUCH
+#     /dev/input/event1  gpio-keys （子设备，自动排除）
+adb shell /data/touch info            # 能力位/量程/协议详情
+
+# 2. 正常注入（节点/协议都不用传）
+adb shell /data/touch tap 100 200
+adb shell /data/touch swipe 100 600 700 600
+adb shell /data/touch run /data/ui_test_script.txt
+adb shell /data/touch monkey 800 1280 500
+```
+
+**自动识别逻辑**：遍历 `/dev/input/event*` → `EVIOCGBIT` 能力位筛（必须有 EV_ABS + 坐标轴；
+名字含 touch/ts/gt9/panel 加分，含 keyboard/button/accel 扣分）→ `ABS_MT_SLOT` = MT-B，
+`ABS_MT_POSITION_X` = MT-A，否则单点 → 注入时 MT 屏若同时声明 ABS_X/Y 就一并上报（兼容读单点轴的上层）。
+
+**选项**：`-d/--dev` 指定节点、`--proto single|a|b` 手动覆盖、`--hold ms`（tap 按下→抬起，默认 40）、
+`--scale`（屏幕坐标→ABS 量程换算）、`--no-swipe`、`record/play` 录制回放。
+
+**能解决什么**：
+- 节点编号不同（event0/1/2…）→ 自动扫，不用 getevent 猜
+- IC/协议不同（单点 / MT-A / MT-B）→ 自动判，**不会再有「坐标恒 0」死循环**
+- 平台缺 ELF → 已全平台编好（f133/f135/z20/z21/t113/v85x）
+
+源码/自测/重编：`tools/touch_inject/`（`wsl bash scripts/touch_build_all.sh all`；
+`list`/CLI/降级路径有 x86 自测脚本，真机行为需设备验证）。
+
+---
+
+### 3. 兼容保留：`ui_test`（单点）/ `mt_test`（MT Type-A）
+
+> 仅在 `touch` 缺该平台 ELF、或需要人工核验协议时用；**新工作不要再用它们**。
+>
 > **⛔ 关键坑（2026-09-08 补，沛哥 V553 实测）**：`ui_test` 是**单点协议**
 > （ABS_X/ABS_Y + BTN_TOUCH），只适配老电阻屏/单点电容屏。**V85X 设备的
 > gt9xx 是 MT Type-A 协议**（MODALIAS `ra30,32,35,36,39` = ABS_MT_TOUCH_MAJOR
@@ -29,7 +77,7 @@
 > 解决：MT Type-A 屏改用 `mt_test`（`ABS_MT_POSITION_X/Y + ABS_MT_TRACKING_ID`）。
 > 接口与 ui_test 完全一致（tap/swipe/long/monkey/run），直接换工具名即可。
 
-**协议速判**（注入前必看）：
+**协议速判**（注入前必看；**首选直接 `touch list` 一步到位**）：
 ```bash
 # 方法 1：读能力位
 adb shell "cat /sys/devices/virtual/input/input*/capabilities/abs | xxd"
@@ -42,12 +90,13 @@ adb shell mt_test /dev/input/event0 tap 100 100
 # FlyThings 收到坐标非 0 = 协议对；恒 0 = 协议错，换另一个
 ```
 
-已编译平台：
+**工具清单**（前两行兼容保留）：
 
 | 工具 | 协议 | 平台 |
 |------|------|------|
+| `touch` ⭐ | **自动**（单点/MT-A/MT-B） | z21 / z20 / t113 / f133 / f135 / v85x |
 | `ui_test` | 单点 | z21 / z20 / t113 / f133 / v85x |
-| `mt_test` | MT Type-A | z21 / z20 / t113 / v85x（f133/f135 待 WSL 编译） |
+| `mt_test` | MT Type-A | z21 / z20 / t113 / v85x |
 > 更全的调试工具箱（ifconfig/ping/netstat 等网络/系统命令）→ 同目录 `busybox`（见 busybox-debug-library.md）。
 
 ## 🔬 底层原理（event.c 精要，定制/移植才需要）
@@ -67,7 +116,7 @@ write(fd, &event, sizeof(event));   // fd = open(dev, O_WRONLY)
 3. **EV_SYN 必须发**，否则内核不提交事件——最容易漏的坑
 4. **滑动逐像素/插值过渡**，禁止一次跳终点（被识别为无效/抖动），每步跟 EV_SYN
 5. 时间戳 `gettimeofday` 必须填
-6. **协议用错 → 坐标恒 0**：注入后 FlyThings 收到 `(0, 0)` 几乎都是协议不匹配，先按"协议速判"切换 ui_test ↔ mt_test
+6. **协议用错 → 坐标恒 0**：注入后 FlyThings 收到 `(0, 0)` 几乎都是协议不匹配。**首选用 `touch`（自动判协议，直接绕开这个坑）**；若在用 ui_test/mt_test，才按上面"协议速判"切换。
 
 ### 移植新平台（ui_test 没有的平台）
 1. 确认触摸节点：`scandir("/dev/input")` + `EVIOCGNAME`（含 touch/ts）或 evtest/getevent
