@@ -303,6 +303,9 @@ def stage_delegated(skip_smoke, with_tests):
     rc, out = _run([sys.executable, os.path.join(SUB, 'gen_manifest.py'), '--check'])
     check(rc == 0, 'delegated: gen_manifest --check',
           'ok' if rc == 0 else out.strip().splitlines()[-1][:70])
+    rc, out = _run([sys.executable, os.path.join(SUB, 'gen_hardware_doc.py'), '--check'])
+    check(rc == 0, 'delegated: gen_hardware_doc --check',
+          'ok' if rc == 0 else out.strip().splitlines()[-1][:70])
     if not skip_smoke:
         rc, out = _run([sys.executable, os.path.join(SUB, 'smoke.py')])
         last = [l for l in out.strip().splitlines() if l.startswith('total=')]

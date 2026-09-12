@@ -442,6 +442,8 @@ def build_markdown(cat=None):
                     L.append('- 屏幕：%s' % '，'.join(str(b) for b in bits))
             if e.get('screenNote'):
                 L.append('- 屏幕判定依据：%s' % e['screenNote'])
+            if e.get('labelNote'):
+                L.append('- %s' % e['labelNote'])
             k = e.get('keys') or {}
             if k:
                 codes = k.get('linuxKeyCodes') or []
