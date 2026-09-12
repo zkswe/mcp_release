@@ -15,7 +15,7 @@
 
 ```
 HTML 交互原型 → flythings_html_to_json → ui/*.json（唯一源）
-                                        ├─ flythings_generate_ui_preview / flythings_ui_editor（看/改）
+                                        ├─ flythings_ui_preview / flythings_ui_editor（看/改）
                                         └─ flythings_fui_pack → .ftu → 设备
 ```
 
@@ -26,7 +26,7 @@ HTML 交互原型 → flythings_html_to_json → ui/*.json（唯一源）
 
 | 段 | 手段 | 成本 | 用途 |
 |----|------|------|------|
-| 1 | `flythings_generate_ui_preview` / `flythings_ui_editor` | 秒级、0 token | 看结构、相对关系，确认交互 |
+| 1 | `flythings_ui_preview` / `flythings_ui_editor` | 秒级、0 token | 看结构、相对关系，确认交互 |
 | 2 | `flythings_build_ui_flow` 推真机 + **`flythings_device_screenshot` 抓屏** | 一次编译 + 几秒 | 像素真相，最终验收 |
 | 3 | `flythings_ui_diff` 对比两张截图 | 0 token | 回归/验收，差异可视化 |
 

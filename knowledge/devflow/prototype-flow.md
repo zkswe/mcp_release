@@ -125,7 +125,7 @@ home（首页/主入口）
 
 1. 选中风格美化稿 → 客户预览确认细节（按钮态/间距/图标）
 2. `flythings_html_to_json` → `ui/*.json`（**按 data-page 分页生成多个 json，每页一个**）
-3. `flythings_generate_ui_preview` 出预览稿
+3. `flythings_ui_preview` 出预览稿
 4. `flythings_fui_pack` → ftu；`flythings_build_ui_flow` → build + launch
 5. 交付
 

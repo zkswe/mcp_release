@@ -58,7 +58,7 @@ class TestBM25Recall(unittest.TestCase):
 
 class TestSearchResultQuality(unittest.TestCase):
     def test_hits_carry_source_and_retrieval(self):
-        r = U.jcall('flythings_search', {'query': '抓屏 双缓冲 pan 抓到旧画面', 'k': 3})
+        r = U.jcall('flythings_knowledge_search', {'query': '抓屏 双缓冲 pan 抓到旧画面', 'k': 3})
         self.assertTrue(r['ok'], r)
         self.assertIn(r.get('retrieval'), ('bm25', 'vector+bm25(RRF)'))
         self.assertIn('degraded', r)
@@ -69,19 +69,19 @@ class TestSearchResultQuality(unittest.TestCase):
 
     def test_unrelated_query_not_silently_passed(self):
         """未收录/不沾边的 query 必须带「检索边界」提醒（不能只回一堆沾边片段）。"""
-        r = U.jcall('flythings_search', {'query': 'zzzqqq 完全不存在的主题 xxyy', 'k': 3})
+        r = U.jcall('flythings_knowledge_search', {'query': 'zzzqqq 完全不存在的主题 xxyy', 'k': 3})
         self.assertTrue(r['ok'])
         self.assertIn(r.get('quality'), ('no_hit', 'low_confidence'))
         self.assertIn('developer.flythings.cn', r.get('notice', ''))
 
     def test_pure_nonsense_is_no_hit(self):
-        r = U.jcall('flythings_search', {'query': 'zzzqqq xxyy wwvv', 'k': 3})
+        r = U.jcall('flythings_knowledge_search', {'query': 'zzzqqq xxyy wwvv', 'k': 3})
         self.assertTrue(r['ok'])
         self.assertEqual(r.get('quality'), 'no_hit')
         self.assertIn('developer.flythings.cn', r.get('notice', ''))
 
     def test_k_is_clamped(self):
-        r = U.jcall('flythings_search', {'query': '抓屏', 'k': 99})
+        r = U.jcall('flythings_knowledge_search', {'query': '抓屏', 'k': 99})
         self.assertTrue(r['ok'])
         self.assertLessEqual(len(r['hits']), 8)
 

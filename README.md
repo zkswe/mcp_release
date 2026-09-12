@@ -23,7 +23,7 @@
 🔥 **核心优势**：
 - 🚀 **FlyThings 专属配置**：内置本地向量模型（bge-small-zh），知识检索完全离线，AI开发效率及Token消耗极低
 - 🏭 **全流程开箱即用**：编译工具链（fui/fun）与项目模板已内置，创建项目 → 布局 → 编译 → 推送一气呵成
-- 🧠 **36 个工具**：知识检索、项目创建、布局转换、依赖管理、规范校验、自动修复、多语言、自动化测试、UI 可视化编辑、真机截图与产物核对全都有
+- 🧠 **34 个工具**：知识检索、项目创建、布局转换、依赖管理、规范校验、自动修复、多语言、自动化测试、UI 可视化编辑、真机截图与产物核对全都有
 - 📦 **一条命令安装**：`pip install -r requirements.lock`（已锁定实测通过的版本组合），AI 工具指一下路径就能用
 - ✅ **发布前置闸门**：50 项契约用例 + 30 项冒烟 + 一致性校验（版本/工具数/平台/索引/隐私）一键跑，见 [`tests/`](tests/README.md)
 - 🪶 **schema 集约**：工具 docstring 合计 ≤ 12,000 字符（单个 ≤ 900），长尾细节全放可检索的知识库——不拿上下文烧钱
@@ -44,12 +44,12 @@
 > **示例 2：技术问题咨询**
 > FlyThings 里 ZKListView 怎么用 adapter 模式做列表数据绑定？
 >
-> AI 会调用 `flythings_search` 检索内置知识库（本地向量模型），给你官方文档答案
+> AI 会调用 `flythings_knowledge_search` 检索内置知识库（本地向量模型），给你官方文档答案
 
 > **示例 3：布局原型到界面**
 > 帮我画一个俄罗斯方块的游戏主界面 HTML 原型，生成 HTML 预览确认
 >
-> AI 会调用 `flythings_generate_ui_preview` 出预览稿供你确认（也可以直接用 FlyThings IDE 预览/编辑 ftu 文件）
+> AI 会调用 `flythings_ui_preview` 出预览稿供你确认（也可以直接用 FlyThings IDE 预览/编辑 ftu 文件）
 
 > **示例 4：编译交付**
 > 布局改好了，帮我编译并推送到设备
@@ -133,7 +133,7 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 | 模式 | 怎么配 | 客户端看到什么 | 何时用 |
 |------|--------|----------------|--------|
 | `dispatcher`（默认） | 就指 `mcp_server.py` | **1 个工具** `flythings_kb`（op="list" 取目录） | 推荐：schema 开销最小；配合意图闸门/README 工具表 |
-| `all` | `FLYTHINGS_MCP_MODE=all` | 1 个分发器 + 36 个独立工具 | 你的提示词/客户端直接调 `flythings_search` 这类名字（旧配置兼容） |
+| `all` | `FLYTHINGS_MCP_MODE=all` | 1 个分发器 + 34 个独立工具 | 你的提示词/客户端直接调 `flythings_knowledge_search` 这类名字（旧配置兼容） |
 | `flat` | 指 `mcp_server_flat.py`（或 `FLYTHINGS_MCP_MODE=flat`） | 36 个独立工具（无分发器） | 需要每个工具独立 schema/参数提示的客户端（Trae / Cursor / Claude Desktop） |
 
 > ⚠️ 默认从“全注册”改为“只分发器”是 v0.27.34 的**行为变更**；受影响就设 `FLYTHINGS_MCP_MODE=all` 恢复。
@@ -145,7 +145,7 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 
 > **MCP 版本是多少？**
 
-应返回：`flythings-kb-open 0.27.35-open`，包含 36 个工具。
+应返回：`flythings-kb-open 0.27.36-open`，包含 34 个工具。
 
 ---
 
@@ -175,18 +175,19 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 
 | 工具 | 能力 |
 |------|------|
-| `flythings_search` | 知识库检索（本地向量 + BM25 双模式） |
+| `flythings_knowledge_search` | 知识库检索（本地向量 + BM25 双模式，带 quality/source 标记） |
 | `flythings_get_version` | 版本信息 |
 | `flythings_create_project` | 从模板创建项目（平台/分辨率） |
 | `flythings_build_ui_flow` | fui pack → fun install → fun build → fun launch 一键交付 |
 | `flythings_validate_project` | 项目规范全检（时间戳防呆/依赖/框架约定） |
-| `flythings_html_to_json` / `json_to_html` | HTML 原型 ↔ FTU 布局 |
-| `flythings_generate_ui_preview` / `json_to_html` | HTML 预览稿（或 FlyThings IDE 预览/编辑 ftu） |
+| `flythings_html_to_json` / `flythings_ui_preview` | HTML 原型 ↔ json 布局（转换 / 预览确认稿；预览支持整屏 window 多页工程的页面切换条 + `#window__N` 直达） |
 | `flythings_read_json` | 布局文件解析（json；ftu 需提供同目录 json） |
-| `flythings_*package*` | 依赖包查询/版本/API/Manifest/依赖解析 |
+| `flythings_package_search` / `flythings_query_package` / `flythings_get_package_api` | 依赖包检索 / 版本 / 头文件级 API |
+| `flythings_manifest` | Manifest 依赖配置（**默认 dry_run 只推荐**；给 project_root + dry_run=False 才写盘） |
+| `flythings_add_package` / `flythings_resolve_dependencies` / `flythings_check_project_deps` | 加包 + fun install / 递归解析依赖 / 代码 include 对账 |
 | `flythings_attach_cli_tools` | 附带 fui/fun 到项目 |
 | `flythings_edit_ftu` | 布局编辑（set/remove/add/set_root） |
-| `flythings_i18n_*` | 多语言（scan/export/import/refactor） |
+| `flythings_i18n_*` | 多语言（scan/add_language/export/import/refactor/to_json） |
 | `flythings_gen_ui_test` | 自动化测试（traverse/monkey/custom） |
 | `flythings_ui_editor` / `ui_edit_apply` | UI 可视化拖拽编辑 → 变更写回 json + pack ftu |
 | `flythings_ui_diff` | 截图像素对比（0 token 验收 / 回归对比） |
@@ -195,6 +196,22 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 | `flythings_generate_ui_assets` | 生成 UI 图片资源（AI/emoji/线条三级降级） |
 | `flythings_create_bin_project` | 创建可执行程序项目（ELF 二进制） |
 
+### 📦 resources / prompts（MCP 原生原语）
+
+除工具外，服务端还暴露：
+
+| 原语 | 地址 / 名称 | 用途 |
+|------|-------------|------|
+| resource | `flythings://catalog/knowledge` | 知识库目录（分类 → 文档清单） |
+| resource | `flythings://knowledge/<分类>/<文件>.md` | 直接读整篇知识文档（如 `devflow/device-screenshot.md`） |
+| resource | `flythings://tools` | 工具清单 + 风险分级（read/write/device） |
+| resource | `flythings://version` | 版本 / 构建日 / 工具数 / 近期特性 |
+| prompt | `flythings-new-project` / `ui-from-prototype` / `ui-verify` / `deploy-debug` / `package-deps` | 常用流程模板（自带安全默认提醒） |
+
+> 工具合并（v0.27.36，旧名不再提供）：`search`→`flythings_knowledge_search`、`search_package`→`flythings_package_search`、
+> `generate_ui_preview`+`json_to_html`→`flythings_ui_preview`、`recommend_manifest`+`generate_manifest`→`flythings_manifest`；
+> 调旧名会收到 `OP_RENAMED` 错误并直接告诉你新名字（不是隐式别名）。
+
 ---
 
 ## 📁 项目结构
@@ -202,7 +219,7 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 ```
 flythings-mcp-open/
 ├── mcp_server.py          # 入口（stdio MCP server，单入口分发器）
-├── kb_tools.py            # 工具定义与注册（36 个）+ OP_NAMES 清单（唯一来源）
+├── kb_tools.py            # 工具定义与注册（34 个）+ OP_NAMES 清单（唯一来源）
 ├── project_tools.py       # 项目/编译/交付
 ├── package_tools.py       # 依赖包生态
 ├── platforms.py           # 平台矩阵唯一来源（模板/bin_tools/别名）
@@ -246,7 +263,7 @@ flythings-mcp-open/
 | 问题 | 解决 |
 |------|------|
 | `ModuleNotFoundError: mcp / onnxruntime / tokenizers` | 执行 `pip install -r requirements.lock` |
-| 工具列表 < 36 | 检查配置文件 command/args 路径是否正确 |
+| 工具列表 < 34 | 检查配置文件 command/args 路径是否正确 |
 | 抓屏工具报“找不到 adb” | 装 Android platform-tools 或设环境变量 `ADB`（抓屏需要 adb；编译/预览不需要） |
 | 检索结果不准 | 本地模型首次使用会自动加载；确认 `models/bge-small-zh/` 存在 |
 | 返回体里出现 `warnings` | 正常，**要看**：降级（BM25）、自动转图、手绘图被拉伸等信息都在里面，不是报错 |

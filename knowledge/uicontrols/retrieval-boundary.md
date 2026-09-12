@@ -5,7 +5,7 @@
 
 ## 允许的来源（二选一）
 
-1. **MCP 内置知识库**：`flythings_search`（本地向量 + BM25）检索 `knowledge/` 与本地 `wiki/flythings/` 文档；
+1. **MCP 内置知识库**：`flythings_knowledge_search`（本地向量 + BM25）检索 `knowledge/` 与本地 `wiki/flythings/` 文档；
    字段规范以 `knowledge/uicontrols/*.md`（layout-audit / edittext-fields / image-path-rule / nine-patch-rule / scrollwindow-layout 等）为准
 2. **官方文档站**：`https://developer.flythings.cn/`（控件/API/回调官方说明）
 

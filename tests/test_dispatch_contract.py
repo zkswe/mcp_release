@@ -41,18 +41,28 @@ class TestDispatcherErrors(unittest.TestCase):
 
     def test_unknown_op_candidates(self):
         r = U.jcall('flythings_searc')
-        self.assertIn('flythings_search', r.get('candidates', []))
+        self.assertIn('flythings_knowledge_search', r.get('candidates', []))
+
+    def test_renamed_op_reports_new_name(self):
+        """v0.27.36 合并/改名的 6 个旧名：必须回 OP_RENAMED + 新名（不执行，不留隐式别名）。"""
+        import kb_tools
+        for old, new in kb_tools.RENAMED.items():
+            r = U.jcall(old, {'query': 'x'})
+            self.assertFalse(r['ok'], old)
+            self.assertEqual(r['error']['code'], 'OP_RENAMED', old)
+            self.assertIn(new, r['error']['hint'], old)
+            self.assertNotIn(old, kb_tools.OP_NAMES, '%s 不该再留在清单里' % old)
 
     def test_bad_json_args(self):
         r = json.loads(U.call('flythings_get_version', None))
         self.assertTrue(r['ok'])                      # 空 args 合法
         for raw in ('{oops', '{oops'):
-            r = json.loads(U.call('flythings_search', raw))
+            r = json.loads(U.call('flythings_knowledge_search', raw))
             self.assertFalse(r['ok'])
             self.assertEqual(r['error']['code'], 'BAD_ARGS')
 
     def test_non_object_args(self):
-        raw = U.call('flythings_search', json.dumps([1, 2]))
+        raw = U.call('flythings_knowledge_search', json.dumps([1, 2]))
         r = json.loads(raw)
         self.assertFalse(r['ok'])
         self.assertEqual(r['error']['code'], 'BAD_ARGS')
@@ -138,7 +148,7 @@ class TestToolSurfaceModes(unittest.TestCase):
         d = self._probe('all')
         self.assertEqual(d['n'], len(kb_tools.OP_NAMES) + 1)
         self.assertIn('flythings_kb', d['names'])
-        self.assertIn('flythings_search', d['names'])
+        self.assertIn('flythings_knowledge_search', d['names'])
 
     def test_flat_mode_and_flat_server(self):
         import kb_tools

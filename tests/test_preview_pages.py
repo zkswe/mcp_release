@@ -46,7 +46,7 @@ class PreviewBase(unittest.TestCase):
         doc.update(controls)
         jp = os.path.join(self.ui, name)
         U.write(jp, json.dumps(doc, ensure_ascii=False, indent=2))
-        r = U.jcall('flythings_json_to_html', {'target': self.tmp})
+        r = U.jcall('flythings_ui_preview', {'target': self.tmp})
         self.assertTrue(r['ok'], r)
         hp = jp[:-5] + '.preview.html'
         self.assertTrue(os.path.isfile(hp), '预览稿未生成: %s' % r)

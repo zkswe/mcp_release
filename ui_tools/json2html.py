@@ -545,6 +545,26 @@ def _siblings_of(ui_dir, out_dir, files):
     return out
 
 
+def _ui_json_pages(ui_dir):
+    """ui 布局 json 清单：同时支持 ui/*.json 与 ui/<分辨率>/*.json（工程布局不一致）。
+
+    原实现只 listdir(ui) 顶层 → 分层工程（如基准 SampleUI-New 的 ui/1024x600/*.json）
+    会得到 0 页，预览静默出空列表（v0.27.36 修，与 check_all._ui_pages 同一口径）。
+    返回 [(相对路径, 绝对路径)]，按相对路径排序。
+    """
+    out = []
+    for name in sorted(os.listdir(ui_dir)):
+        p = os.path.join(ui_dir, name)
+        if name.endswith('.json') and os.path.isfile(p):
+            out.append((name, p))
+        elif os.path.isdir(p):
+            for sub in sorted(os.listdir(p)):
+                sp = os.path.join(p, sub)
+                if sub.endswith('.json') and os.path.isfile(sp):
+                    out.append((name + '/' + sub, sp))
+    return out
+
+
 def json2html(target, output_dir=''):
     """target 为项目根目录或单个 json 文件路径。返回 {"success", "files": [...]}。"""
     if os.path.isdir(target):
@@ -554,26 +574,29 @@ def json2html(target, output_dir=''):
         out_dir = output_dir or ui_dir
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
-        files = sorted(os.listdir(ui_dir))
-        sibs = _siblings_of(ui_dir, out_dir, files)
         results = []
-        for fn in files:
-            if not fn.endswith('.json'):
-                continue
-            jp = os.path.join(ui_dir, fn)
-            hp = os.path.join(out_dir, fn[:-5] + '.preview.html')
+        for rel, jp in _ui_json_pages(ui_dir):
+            sub = os.path.dirname(rel)                     # '' 或 '1024x600'
+            odir = os.path.join(out_dir, sub) if sub else out_dir
+            os.makedirs(odir, exist_ok=True)
+            base = os.path.basename(rel)
+            # 兄弟页只在同一个目录内互链（不同分辨率的 json 不串页）
+            siblings = [os.path.basename(x) for x, _ in _ui_json_pages(os.path.dirname(jp))]
+            sibs = _siblings_of(os.path.dirname(jp), odir, siblings)
+            hp = os.path.join(odir, base[:-5] + '.preview.html')
             try:
                 W, H = _json_to_html(jp, hp, siblings=sibs)
-                results.append({"json": fn, "html": hp, "resolution": f"{W}x{H}"})
+                results.append({"json": rel, "html": hp, "resolution": f"{W}x{H}"})
             except Exception as e:
-                results.append({"json": fn, "html": None, "error": str(e)})
-        return {"success": all(r.get('html') for r in results), "files": results}
+                results.append({"json": rel, "html": None, "error": str(e)})
+        return {"success": bool(results) and all(r.get('html') for r in results),
+                "files": results}
     elif os.path.isfile(target):
         out_dir = output_dir or os.path.dirname(os.path.abspath(target))
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
         hp = os.path.join(out_dir, os.path.splitext(os.path.basename(target))[0] + '.preview.html')
-        # 单文件模式：只链已有同名 .preview.html 的邻居，避免死链接
+    # 单文件模式：只链同目录已有同名 .preview.html 的邻居，避免死链接
         sibs = []
         jdir = os.path.dirname(os.path.abspath(target))
         if os.path.isdir(jdir):

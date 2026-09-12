@@ -2,9 +2,9 @@
   "schema": 1,
   "generatedBy": "scripts/gen_manifest.py",
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY 表后重新生成，勿手改本文件",
-  "version": "0.27.35-open",
+  "version": "0.27.36-open",
   "build": "2026-09-12",
-  "toolCount": 36,
+  "toolCount": 34,
   "cli": {
     "fun": "FlyThings 工程工具（create/install/build/launch，<项目>/.fun/<平台>/ 下）",
     "fui": "FTU 布局工具——当前内置版本只支持 pack（json → ftu）；unpack 是空壳（调用报通用错误），不要依赖",
@@ -188,16 +188,6 @@
       "category": "device"
     },
     {
-      "op": "flythings_generate_manifest",
-      "brief": "按功能需求生成完整 Manifest.xml（依赖递归补齐）。features 为逗号分隔关键词，",
-      "args": [
-        "features",
-        "platform"
-      ],
-      "risk": "write",
-      "category": "package"
-    },
-    {
       "op": "flythings_generate_ui_assets",
       "brief": "生成 UI 图片资源（图标/牌面/按钮背景等）→ <项目>/resources/images/（json 引用写 images/xxx.png）。",
       "args": [
@@ -206,16 +196,6 @@
       ],
       "risk": "write",
       "category": "assets"
-    },
-    {
-      "op": "flythings_generate_ui_preview",
-      "brief": "将项目 ui/*.json 生成 HTML 预览页（客户确认 UI 用；整屏 window 多页工程自带页面切换条 + #window__N 直达某页）。",
-      "args": [
-        "project_root",
-        "output_dir"
-      ],
-      "risk": "write",
-      "category": "layout"
     },
     {
       "op": "flythings_get_package_api",
@@ -325,19 +305,41 @@
       "category": "i18n"
     },
     {
-      "op": "flythings_json_to_html",
-      "brief": "json 布局 → HTML 预览稿（客户确认 UI 用，只交付 .preview.html；整屏 window 多页工程自带页面切换条 + #window__N 直达）。",
+      "op": "flythings_knowledge_search",
+      "brief": "在 FlyThings 知识库（wiki 官方镜像 + knowledge 实践文档）中检索相关文档片段（完全本地，零 Key）。",
       "args": [
-        "target",
-        "output_dir"
+        "query",
+        "k"
       ],
-      "risk": "write",
-      "category": "layout"
+      "risk": "read",
+      "category": "kbase"
     },
     {
       "op": "flythings_list_packages",
       "brief": "列出依赖包生态（platform 如 F133/Z20，留空列全部），含功能描述与版本。写代码前调用。",
       "args": [
+        "platform"
+      ],
+      "risk": "read",
+      "category": "package"
+    },
+    {
+      "op": "flythings_manifest",
+      "brief": "按功能需求准备 Manifest.xml 依赖配置（**默认只推荐、不写盘**）。",
+      "args": [
+        "features",
+        "platform",
+        "project_root",
+        "dry_run"
+      ],
+      "risk": "write",
+      "category": "package"
+    },
+    {
+      "op": "flythings_package_search",
+      "brief": "按功能关键词搜索可用 package（mqtt/json/http/ssl/ble/ota/audio 等）。",
+      "args": [
+        "keyword",
         "platform"
       ],
       "risk": "read",
@@ -363,40 +365,10 @@
       "category": "layout"
     },
     {
-      "op": "flythings_recommend_manifest",
-      "brief": "按功能需求推荐 Manifest.xml 依赖配置。features 为逗号分隔关键词，如 'mqtt,json,蓝牙'。",
-      "args": [
-        "features",
-        "platform"
-      ],
-      "risk": "read",
-      "category": "package"
-    },
-    {
       "op": "flythings_resolve_dependencies",
       "brief": "递归解析 package 依赖树并检测冲突。packages 为 JSON 数组字符串，",
       "args": [
         "packages",
-        "platform"
-      ],
-      "risk": "read",
-      "category": "package"
-    },
-    {
-      "op": "flythings_search",
-      "brief": "在 FlyThings 知识库（wiki 官方镜像 + knowledge 实践文档）中检索相关文档片段（完全本地，零 Key）。",
-      "args": [
-        "query",
-        "k"
-      ],
-      "risk": "read",
-      "category": "kbase"
-    },
-    {
-      "op": "flythings_search_package",
-      "brief": "按功能关键词搜索可用 package（mqtt/json/http/ssl/ble/ota/audio 等）。",
-      "args": [
-        "keyword",
         "platform"
       ],
       "risk": "read",
@@ -441,6 +413,16 @@
       ],
       "risk": "write",
       "category": "ui-visual"
+    },
+    {
+      "op": "flythings_ui_preview",
+      "brief": "json 布局 / 整个项目 → HTML 预览稿（客户确认 UI 用；只交付 .preview.html，不产图片/截图）。",
+      "args": [
+        "target",
+        "output_dir"
+      ],
+      "risk": "write",
+      "category": "layout"
     },
     {
       "op": "flythings_validate_project",

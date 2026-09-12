@@ -7,7 +7,8 @@
 """
 import html.parser  # PyInstaller 打包需要（html2json 运行时导入，静态分析漏收）
 import inspect
-import json, math, os, re, sys
+import io
+import json, math, os, re, shutil, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import rag_search as rs
@@ -50,9 +51,10 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.35-open'
+MCP_VERSION = '0.27.36-open'
 MCP_BUILD = '2026-09-12'
 MCP_FEATURES = [
+    '2026-09-12: 第五批（P2 收尾）v0.27.36——①**工具直接合并（36 → 34 个，旧名不再提供）**：`search`→`knowledge_search`、`search_package`→`package_search`（区分语料）；`generate_ui_preview` + `json_to_html` → **`ui_preview(target)`**（target 传项目目录或单个 json，同一实现）；`recommend_manifest` + `generate_manifest` → **`manifest(features, platform, project_root, dry_run=True)`**（默认只推荐不写盘；写盘要 project_root + dry_run=False，写前 .bak 并回显 affectedFiles）；调旧名回 `OP_RENAMED` + 新名（**只是错误提示，不执行，不留隐性别名**）②**新增 MCP 原生原语（`mcp_extras.py`，默认入口与 flat 入口共用）**：4 个 resources（`flythings://catalog/knowledge` 知识库目录 / `flythings://knowledge/<分类>/<文件>.md` 与 `/<文件>.md` 读整篇文档（白名单校验防穿越）/ `flythings://tools` 工具清单+风险分级 / `flythings://version`）+ 5 个 prompts（new-project / ui-from-prototype / ui-verify / deploy-debug / package-deps，均自带「确认前不 pack、不推真机」安全默认）；⚠️ FastMCP 的 URI 模板只匹配单段路径，所以分类文档与根目录文档用两个模板 ③**顺手修**：json2html 项目模式只扫扁平 `ui/*.json` → 分层 `ui/<分辨率>/*.json` 工程预览**静默出 0 页**（基准 SampleUI-New 就中招；与 v0.27.33 修的 check_all 同类问题，这次是预览侧）——现改为两种布局都扫（分分辨率不串页）；dispatcher 未知 op 的候选打分改进（合并/改名的旧名直接给新名）④契约用例 70 → 78 项（新增工具合并契约与 resources/prompts 契约）；v0.27.36-open',
     '2026-09-12: 多整屏 window 预览切页 v0.27.35（AI 反馈实测复现：官方推荐的「整屏 window + showWnd() 切页」架构下，.preview.html 把所有 visible=false 窗口 display:none，客户确认稿只能看到首页 → 等于失效）——json2html 预览页新增：①**页面切换条**：列出全部整屏 window 的 caption，点页签 = 显示该页/隐藏其余整屏窗口（默认页 = json 里首个 visible!=false 的整屏窗口，与 logic.cc 首屏对齐）②**hash 直达** `xxx.preview.html#window__29`（也认 `#29` 简写），便于把具体页面链接单发给客户 ③**「显示隐藏」开关**：visible=false 的控件/窗口以 35% 透明 + 橙色虚线幽灵框叠显，与 flythings_ui_editor 的 .ed-ghost 行为对齐 ④同一项目多 json 时额外出「项目页面」跳转行（单文件模式只链已有 .preview.html 的邻居，不出死链接）⑤左右方向键翻页；整屏判定 = 顶层 window 尺寸 ≥ 分辨率（±4px）；只在「有 ≥2 个整屏窗口 / 有 visible=false 控件 / 同项目多 json」时出条，单页无隐藏工程预览零变化；ui_editor（edit=True）不受影响；⑥**工具描述带上这条提示**（防 AI 选错/看漏）：`flythings_generate_ui_preview` 与 `flythings_json_to_html` 的 docstring 首行+提示行写明「整屏 window 多页工程自带页面切换条 + `#window__N` 直达 + 显示隐藏幽灵框」，并说明「只看到首页 = 该 json 确实只有一个整屏窗口」（不再建议改用 ui_editor 绕路）；双份 ui_tools 已同步；v0.27.35-open',
     '2026-09-11: 第四批（P2 上下文与检索质量）v0.27.34——①**docstring 瘦身 38%**（16,595 → ~10,200 字符）：长尾细节全部搬进可检索的知识库（新增 `knowledge/devflow/html-subset-quickref.md` 原型规范、`device-screenshot.md` 抓屏实现要点与踩坑、`ui-asset-rules.md` 图片资源铁律与抗锯齿管线、`ui-editor-usage.md` 编辑器用法），docstring 只留要点 + 检索关键词；**字数预算进门禁**（单 op ≤ 900 字符、全体 ≤ 12,000，超了 check_consistency 直接 FAIL） ②**工具面三模式**（`FLYTHINGS_MCP_MODE`）：默认 `dispatcher` 只暴露 1 个 `flythings_kb`（schema 开销最小，省 ~1 万 token/session），`all` = 分发器 + 36 独立工具（老配置兼容），`flat` = 只要 36 独立工具（新增 `mcp_server_flat.py`，给 Trae/Cursor/Claude Desktop 这类需要独立 schema 的客户端）；⚠️ 默认票是**行为变更**，受影响设 `FLYTHINGS_MCP_MODE=all` 恢复 ③**device_screenshot 参数分层**：fb/pixel/width/height/offset_y/flip/rotate/crop/name/timeout 可统一走 `advanced` JSON（已显式传的同名参数优先，旧客户端零影响；未知键/非法 JSON 回 BAD_ARGS + 可选项清单） ④**BM25 中文检索实质提升**：原实现把整段连续中文当一个 token（『Z20 屏幕截图怎么抓』→ 超长 token 只靠原文命中，降级时召回差）→ 改**字级 bigram**（与覆盖率判定共用同一套切词，单一实现）+ IDF + 长度归一 + 路径/标题加权；实测（10 条真实问法）top1 5→9、top3 7→10 ⑤**检索返回质量标记**：hits 带 `source`（实践/官方镜像），返回体带 `retrieval` / `degraded` / `quality`（ok | low_confidence | no_hit），**低置信也带上「禁其他 GUI 框架类推 + 查官方站」的检索边界提醒**（否则 AI 拿沾边片段当依据或转身去 web 猜）；覆盖率改 IDF 加权（否则中文 bigram 全是常见二字组合，会把未收录误判成命中） ⑥新增 `tests/test_search_quality.py`（切词/召回/质量标记）与工具面模式用例，契约用例 38 → 50 项；v0.27.34-open',
     '2026-09-11: 第三批（P1 架构与交付纪律）v0.27.33——①**单一事实来源**：新增 `tools_manifest.json`（工具/平台/知识规模快照）+ `scripts/gen_manifest.py`（op/参数取自 OP_NAMES+签名；风险分级 read/write/device 与分类表是唯一一处人工维护，缺登记直接报错）；`--check` 进闸门防漂移 ②**发布前置闸门 `scripts/check_consistency.py`（首次真正存在——此前 pyproject/requirements.lock/platforms.py 都在引用它但文件缺失）**：版本四方一致（MCP_VERSION / pyproject×2 / README）、工具数六方一致（OP_NAMES / mcp_server / README×3 / 闸门 catalog / manifest）、平台矩阵对着真实模板与 bin_tools 目录、rag_index 覆盖+新鲜度（顺手查出 README 篇数漂移 118 → 实际 128）、委派 smoke/sync_ui_tools/gen_manifest（不重复造检测）；无本地完整 wiki 的机器自动跳过 wiki 相关项，可进 CI ③**tests/ 契约用例 38 项（离线）**：分发器/错误码/每个 op envelope、平台矩阵、布局安全（pack 确定性、**edit_ftu 默认不覆盖**、ui_edit_apply dry_run 不写盘/默认不 pack）、html2json **黄金样例 1:1**（v0.27.30 阴影三连防回归）、verify_assets 真假阳性、fui 能力声明与实际一致 + json↔ftu 往返 ④**CI**：`scripts/ci.sh` / `ci.bat` / `.github/workflows/ci.yml`（compileall + 用例 + 闸门；CI_DEVICE 可选真机抓屏）⑤**修 verify_assets 三个真问题（v0.27.32 加的产物核对器实际不可用）**：a) 只认扁平 `ui/*.json` → 分层 `ui/<分辨率>/*.json` 工程（基准 SampleUI-New 42 页 / ShowcaseAlbum-F133 / WebViewDemo）pages=0 却 ok=true（**静默假阴性**）；b) 把「手绘图尺寸 != 控件盒」当 FAIL → 官方基准工程 149 处误报（引擎本就会拉伸：navi/fh.png 44×26 放 72×40 按钮里），改按铁律 #9 只对 `resources/images/` 自动生成图强校验 1:1，手绘图归 `stretched[]` 仅提示；c) 0 页时补 warnings（不静默）⑥**html2json 误导提示修正**：能自动转图的效果（线性渐变/阴影+圆角/loading 动画）不再喊「无法硬转、请切图」（实测会把 AI 送去白做一轮手工切图），改说「已自动转成图片（尺寸 == 控件盒，json 已引用 images/*.png）」；真转不了的（径向渐变/文字阴影/变换/滤镜/透明度）保留原指引 ⑦**参数写错回 BAD_PARAMS + 正确签名**（原被 _envwrap 归成 TOOL_RAISED，AI 拿不到签名只能猜）；check_all 同样修分层布局扫描（`ui/<分辨率>/` 工程不再以「ui/ 下没有 json 布局」直接退出）⑧工具链名词口径（fun / fui / fyx / fuse）写进 manifest 与 README，写明**当前内置 fui.exe 只支持 pack、unpack 是空壳**；顺手修 project_tools 里 Windows 路径提示文案的非法转义（SyntaxWarning，路径写作正斜杠或双反斜杠）；v0.27.33-open',
@@ -174,10 +176,11 @@ def _best_coverage(q, texts):
     return best / total
 
 
-def flythings_search(query: str, k: int = 3) -> str:
+def flythings_knowledge_search(query: str, k: int = 3) -> str:
     """在 FlyThings 知识库（wiki 官方镜像 + knowledge 实践文档）中检索相关文档片段（完全本地，零 Key）。
     遇到 FlyThings 开发问题（控件/API/布局/FTU/回调/编译/平台差异等）时调用。query 用中文描述。
     内置 bge-small-zh 本地模型做向量检索，模型不可用时自动降级 BM25（返回里会显式提示）。
+    （v0.27.36 由 flythings_search 改名：与 flythings_package_search 区分语料）
     """
     kk = max(1, min(int(k), 8))
     warnings = []
@@ -190,7 +193,7 @@ def flythings_search(query: str, k: int = 3) -> str:
     try:
         top = rs.search(query, kk)
     except Exception as e:
-        return json.dumps({'ok': False, 'op': 'flythings_search', 'query': query,
+        return json.dumps({'ok': False, 'op': 'flythings_knowledge_search', 'query': query,
                            'error': {'code': 'SEARCH_FAILED', 'msg': str(e),
                                      'hint': '重试一次；仍失败检查 rag_index.json 与模型文件是否完整',
                                      'retryable': True},
@@ -200,7 +203,7 @@ def flythings_search(query: str, k: int = 3) -> str:
                        else 'wiki（官方镜像）'}
             for s, c in top]
     cover = _best_coverage(query, [c['text'] for _, c in top])
-    out = {'ok': True, 'op': 'flythings_search', 'query': query, 'count': len(hits),
+    out = {'ok': True, 'op': 'flythings_knowledge_search', 'query': query, 'count': len(hits),
            'hits': hits, 'coverage': round(cover, 3), 'warnings': warnings,
            'retrieval': 'bm25' if degraded else 'vector+bm25(RRF)',
            'degraded': bool(degraded)}
@@ -306,17 +309,18 @@ def flythings_build_ui_flow(project_root: str, with_launch: bool = False, device
     return json.dumps(pt.flythings_build_ui_flow(project_root, with_launch, device), ensure_ascii=False)
 
 
-def flythings_generate_ui_preview(project_root: str, output_dir: str = '') -> str:
-    """将项目 ui/*.json 生成 HTML 预览页（客户确认 UI 用；整屏 window 多页工程自带页面切换条 + #window__N 直达某页）。
-    ⚠️ 整屏 window 多页工程（visible=false + showWnd() 切页）：预览稿顶部自带「页面切换条」，列出全部整屏窗口，点页签即切页（默认页 = 首个 visible!=false 的整屏窗口）；URL 加 #window__N（简写 #N）直达某页，可直接把某页链接发客户；半屏弹窗等隐藏控件用「显示隐藏」开关看幽灵框。「只看到首页」= 该 json 确实只有一个整屏窗口（有切换条才会被判定为多页工程）。
-    ⚠️ 流程约束：HTML 布局出来后必须先本工具出预览给用户确认（只交付 .preview.html 文件，
-    不生成图片/截图），确认 OK 后才允许 fui pack / 写逻辑 / 交付（未确认禁止开工）。
-    无 UI 设计稿时：先建 json 布局 → 预览确认 → pack。
+def flythings_ui_preview(target: str, output_dir: str = '') -> str:
+    """json 布局 / 整个项目 → HTML 预览稿（客户确认 UI 用；只交付 .preview.html，不产图片/截图）。
+    target 可以是项目根目录（全部 ui/*.json）或单个 json 文件路径 —— 合并了原 generate_ui_preview 与 json_to_html。
+    ⚠️ 整屏 window 多页工程（visible=false + showWnd() 切页）自带「页面切换条」+ `#window__N`（简写 `#N`）
+    直达某页 + 「显示隐藏」幽灵框（默认页 = 首个 visible!=false 的整屏窗口）；只看到首页 = 该 json 确实只有一个整屏窗口。
+    ⚠️ 流程：布局出来后必须先出预览给用户确认，确认 OK 才允许 fui pack / 写逻辑 / 交付（未确认禁止开工）。
     """
-    r = j2h.json2html(project_root, output_dir)
-    if isinstance(r, dict) and r.get('success'):
+    is_dir = os.path.isdir(target)
+    r = j2h.json2html(target, output_dir)
+    if is_dir and isinstance(r, dict) and r.get('success'):
         for f in r.get('files', []):
-            jp = os.path.join(project_root, 'ui', f.get('json', ''))
+            jp = os.path.join(target, 'ui', f.get('json', ''))
             if os.path.isfile(jp):
                 try:
                     with open(jp, encoding='utf-8-sig') as fh:
@@ -325,8 +329,8 @@ def flythings_generate_ui_preview(project_root: str, output_dir: str = '') -> st
                                          if isinstance(v, dict) and '__' in k)
                 except Exception:
                     pass
-        r['projectRoot'] = project_root
-        r['outputDir'] = output_dir or os.path.join(project_root, 'ui')
+        r['projectRoot'] = target
+        r['outputDir'] = output_dir or os.path.join(target, 'ui')
         r['note'] = 'html 为客户预览稿；设备端仍用 fui pack 生成的 ftu，两者同源于 json'
     return json.dumps(r, ensure_ascii=False)
 
@@ -350,15 +354,6 @@ def flythings_html_to_json(input_html: str, output_json: str = '', res: str = ''
     return json.dumps(h2j.html2json(input_html, output_json or None, res or None), ensure_ascii=False)
 
 
-def flythings_json_to_html(target: str, output_dir: str = '') -> str:
-    """json 布局 → HTML 预览稿（客户确认 UI 用，只交付 .preview.html；整屏 window 多页工程自带页面切换条 + #window__N 直达）。
-    ⚠️ 整屏 window 多页工程（visible=false + showWnd() 切页）：预览稿自带「页面切换条」+ #window__N 直达 + 「显示隐藏」幽灵框（默认页 = 首个 visible!=false 的整屏窗口）。
-    target 为项目根目录（全部 ui/*.json）或单个 json 文件路径。
-    ⚠️ HTML 布局出来后必须先调本工具出预览稿给用户确认，确认后才开工（pack/写逻辑）。
-    """
-    return json.dumps(j2h.json2html(target, output_dir), ensure_ascii=False)
-
-
 def flythings_list_packages(platform: str = '') -> str:
     """列出依赖包生态（platform 如 F133/Z20，留空列全部），含功能描述与版本。写代码前调用。"""
     return json.dumps(pkgtools.flythings_list_packages(platform or None), ensure_ascii=False)
@@ -369,10 +364,52 @@ def flythings_query_package(package: str, platform: str = 'F133') -> str:
     return json.dumps(pkgtools.flythings_query_package(package, platform), ensure_ascii=False)
 
 
-def flythings_recommend_manifest(features: str, platform: str = 'F133') -> str:
-    """按功能需求推荐 Manifest.xml 依赖配置。features 为逗号分隔关键词，如 'mqtt,json,蓝牙'。"""
+def flythings_manifest(features: str, platform: str = 'F133', project_root: str = '',
+                       dry_run: bool = True) -> str:
+    """按功能需求准备 Manifest.xml 依赖配置（**默认只推荐、不写盘**）。
+    features 为逗号分隔关键词（如 'mqtt,json,蓝牙'）。
+    - dry_run=True（默认，= 原 recommend_manifest）：只回推荐与递归补齐建议，不动任何文件
+    - dry_run=False（= 原 generate_manifest 的写盘形态）：把生成的 Manifest.xml 写入
+      <project_root>/Manifest.xml（原文件先备份 .bak，返回 affectedFiles）
+    已知包名要直接加进项目时用 flythings_add_package。
+    """
     flist = [f.strip() for f in str(features).split(',') if f.strip()]
-    return json.dumps(pkgtools.flythings_recommend_manifest(flist, platform), ensure_ascii=False)
+    if dry_run:
+        r = pkgtools.flythings_generate_manifest(flist, platform)
+        if isinstance(r, dict):
+            r['dryRun'] = True
+            r['hint'] = ('dry_run=True 只推荐不写盘；确认后用 dry_run=False + project_root 写入 Manifest.xml，'
+                         '或逐个用 flythings_add_package 追加并 fun install')
+        return json.dumps(r, ensure_ascii=False)
+    if not project_root:
+        return json.dumps({'ok': False, 'op': 'flythings_manifest',
+                           'error': {'code': 'BAD_PARAMS',
+                                     'msg': 'dry_run=False 时必须提供 project_root',
+                                     'hint': '先 dry_run=True 看推荐，确认后传 project_root 写入',
+                                     'retryable': True}, 'warnings': []}, ensure_ascii=False)
+    gen = pkgtools.flythings_generate_manifest(flist, platform)
+    if not (isinstance(gen, dict) and gen.get('success') and gen.get('manifest')):
+        return json.dumps({'ok': False, 'op': 'flythings_manifest',
+                           'error': {'code': 'GENERATE_FAILED',
+                                     'msg': '生成 Manifest 失败: %s' % (gen.get('error') if isinstance(gen, dict) else gen),
+                                     'hint': '', 'retryable': False}, 'warnings': []}, ensure_ascii=False)
+    root = os.path.abspath(project_root)
+    if not os.path.isdir(root):
+        return json.dumps({'ok': False, 'op': 'flythings_manifest',
+                           'error': {'code': 'NO_PROJECT', 'msg': '项目目录不存在: %s' % root,
+                                     'hint': '', 'retryable': False}, 'warnings': []}, ensure_ascii=False)
+    target = os.path.join(root, 'Manifest.xml')
+    backup = ''
+    if os.path.isfile(target):
+        backup = target + '.bak'
+        shutil.copy2(target, backup)      # 写前必备份（破坏性默认值收口）
+    io.open(target, 'w', encoding='utf-8', newline='\n').write(gen['manifest'])
+    out = dict(gen)
+    out.update({'dryRun': False, 'manifestPath': target, 'backup': backup,
+                'affectedFiles': [target] + ([backup] if backup else []),
+                'hint': 'Manifest 已写盘；依赖拉取请接着调 flythings_add_package（with_install=True）'
+                        '或项目内 fun install'})
+    return json.dumps(out, ensure_ascii=False)
 def flythings_add_package(project_root: str, package: str, version: str = '',
                           platform: str = '', with_install: bool = True) -> str:
     """把 package 添加进项目 Manifest.xml 并执行 fun install 拉取依赖（添加包闭环流程）。
@@ -390,7 +427,7 @@ def flythings_add_package(project_root: str, package: str, version: str = '',
 
 
 
-def flythings_search_package(keyword: str, platform: str = 'F133') -> str:
+def flythings_package_search(keyword: str, platform: str = 'F133') -> str:
     """按功能关键词搜索可用 package（mqtt/json/http/ssl/ble/ota/audio 等）。"""
     return json.dumps(pkgtools.flythings_search_package(keyword, platform), ensure_ascii=False)
 
@@ -405,14 +442,6 @@ def flythings_resolve_dependencies(packages: str, platform: str = 'F133') -> str
     如 '[{"id":"mqtt-cxx","version":"3.2.0"}]'。返回依赖树、解析结果与冲突建议。
     """
     return json.dumps(pkgtools.flythings_resolve_dependencies(packages, platform), ensure_ascii=False)
-
-
-def flythings_generate_manifest(features: str, platform: str = 'F133') -> str:
-    """按功能需求生成完整 Manifest.xml（依赖递归补齐）。features 为逗号分隔关键词，
-    如 'mqtt,json,http_download,ssl_mqtt'。
-    """
-    flist = [f.strip() for f in str(features).split(',') if f.strip()]
-    return json.dumps(pkgtools.flythings_generate_manifest(flist, platform), ensure_ascii=False)
 
 
 def flythings_create_bin_project(project_root: str, project_name: str = '', platform: str = 'z21',
@@ -871,16 +900,15 @@ for _n in _tool_names():
 #   ③ 跑 scripts/check_consistency.py（校验 OP_NAMES == 模块内全部 flythings_* 函数）
 OP_NAMES = (
     'flythings_get_version',
-    'flythings_search',
+    'flythings_knowledge_search',
     'flythings_read_json',
     'flythings_get_project_spec',
     'flythings_validate_project',
     'flythings_fui_pack',
     'flythings_edit_ftu',
     'flythings_build_ui_flow',
-    'flythings_generate_ui_preview',
+    'flythings_ui_preview',
     'flythings_html_to_json',
-    'flythings_json_to_html',
     'flythings_ui_editor',
     'flythings_ui_edit_apply',
     'flythings_ui_diff',
@@ -900,13 +928,23 @@ OP_NAMES = (
     'flythings_i18n_to_json',
     'flythings_list_packages',
     'flythings_query_package',
-    'flythings_recommend_manifest',
+    'flythings_manifest',
     'flythings_add_package',
-    'flythings_search_package',
+    'flythings_package_search',
     'flythings_get_package_api',
     'flythings_resolve_dependencies',
-    'flythings_generate_manifest',
 )
+
+# 已合并/改名的 op（v0.27.36，沛哥：工具直接合并，不留别名）——
+# 分发器遇到它们时回 OP_RENAMED + 新名字（**只是错误提示，不执行**，不会变成隐性别名）。
+RENAMED = {
+    'flythings_search': 'flythings_knowledge_search',
+    'flythings_generate_ui_preview': 'flythings_ui_preview',
+    'flythings_json_to_html': 'flythings_ui_preview',
+    'flythings_recommend_manifest': 'flythings_manifest',
+    'flythings_generate_manifest': 'flythings_manifest',
+    'flythings_search_package': 'flythings_package_search',
+}
 
 
 def register_all(mcp):

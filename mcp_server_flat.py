@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""MCP server (stdio) — **flat 模式**：36 个 op 各自注册为独立工具（无分发器）。
+"""MCP server (stdio) — **flat 模式**：34 个 op 各自注册为独立工具（无分发器）。
 
 给哪类客户端用：Trae / Cursor / Claude Desktop 这类**需要每个工具独立 schema**、
-或者你不会（也不想）配置工具白名单的场景——它们能直接在工具面板里看到 `flythings_search`
-`flythings_build_ui_flow` 等 36 个工具，参数提示由 schema 提供。
+或者你不会（也不想）配置工具白名单的场景——它们能直接在工具面板里看到 `flythings_knowledge_search`
+`flythings_build_ui_flow` 等 34 个工具，参数提示由 schema 提供。
 
-代价：36 份 schema 常驻上下文（≈1 万 token/session）。想省 token 就用默认入口
+代价：34 份 schema 常驻上下文（约 1 万 token/session）。想省 token 就用默认入口
 `mcp_server.py`（只暴露 1 个 `flythings_kb`，op="list" 取目录）。
 
 配置（`.mcp.json`）：
@@ -23,9 +23,11 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from mcp.server.fastmcp import FastMCP
 import kb_tools
+import mcp_extras
 
 mcp = FastMCP("flythings-kb-flat")
 REGISTERED = kb_tools.register_all(mcp)     # 36 个独立工具（不含 flythings_kb 分发器）
+mcp_extras.register(mcp)                    # resources + prompts（与默认入口同一实现）
 
 
 def main():

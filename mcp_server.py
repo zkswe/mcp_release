@@ -9,8 +9,8 @@ OpenClaw 注册入口。工具定义见 kb_tools.py。
 工具面模式（v0.27.34，环境变量 FLYTHINGS_MCP_MODE，默认 dispatcher）：
   - `dispatcher`（默认）：**只暴露 1 个工具** flythings_kb（op="list" 取目录）——schema 开销最小，
     推荐所有客户端用（外部工具目录由意图闸门/README 提供）；
-  - `all`：1 个分发器 + 36 个独立工具（老配置兼容，客户端可直接调 flythings_search 这类名字）；
-  - `flat`：只注册 36 个独立工具（等价 mcp_server_flat.py，给需要独立 schema 的客户端）。
+  - `all`：1 个分发器 + 34 个独立工具（老配置兼容，客户端可直接调 `flythings_knowledge_search` 这类名字）；
+  - `flat`：只注册 34 个独立工具（等价 mcp_server_flat.py，给需要独立 schema 的客户端）。
 ⚠️ 默认值从“全注册”改为“只分发器”是**行为变更**（v0.27.34）：如你的客户端/提示词直接调用
 flat 工具名，设 FLYTHINGS_MCP_MODE=all 即可恢复原行为。
 """
@@ -19,6 +19,7 @@ import os, sys, json, inspect
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from mcp.server.fastmcp import FastMCP
 import kb_tools
+import mcp_extras
 
 MODE = (os.environ.get('FLYTHINGS_MCP_MODE') or 'dispatcher').strip().lower()
 if MODE not in ('dispatcher', 'all', 'flat'):
@@ -28,6 +29,8 @@ mcp = FastMCP("flythings-kb")
 # 'dispatcher'：不注册独立工具（只有下面的 flythings_kb）；'all' / 'flat'：注册 36 个独立工具
 if MODE in ('all', 'flat'):
     kb_tools.register_all(mcp)
+# resources + prompts（与工具面模式无关，两种 server 共用同一实现 mcp_extras）
+mcp_extras.register(mcp)
 
 # {op 名 -> 已统一 envelope 包装的函数}；与注册清单同源，无私有属性反射
 OPS = {}
@@ -57,13 +60,31 @@ def _catalog() -> str:
 
 
 def _suggest(op: str, limit: int = 5) -> list:
-    """未知 op 时的可机读候选（全名子串 → 单词级匹配）。"""
+    """未知名 op 的可机读候选：①合并/改名的旧名 → 直接给新名 ②按名字片段打分排序。"""
     key = (op or '').lower()
-    hits = [n for n in sorted(OPS) if key and key in n]
-    if not hits:
-        toks = [t for t in key.replace('-', '_').split('_') if len(t) > 2]
-        hits = [n for n in sorted(OPS) if any(t in n for t in toks)]
-    return hits[:limit]
+    out = []
+    try:
+        import kb_tools as _kb
+        if key in getattr(_kb, 'RENAMED', {}):
+            out.append(_kb.RENAMED[key])
+    except Exception:
+        pass
+    toks = [t for t in key.replace('-', '_').split('_') if len(t) > 2 and t != 'flythings']
+    scored = []
+    for n in sorted(OPS):
+        score = 0
+        if key and (key in n or n in key):
+            score += 3
+        score += sum(2 for t in toks if t in n)
+        if score:
+            scored.append((-score, len(n), n))
+    scored.sort()
+    for _, _, n in scored:
+        if n not in out:
+            out.append(n)
+        if len(out) >= limit:
+            break
+    return out[:limit]
 
 
 def _env_err(code, msg, hint='', retryable=False) -> str:
@@ -74,7 +95,7 @@ def _env_err(code, msg, hint='', retryable=False) -> str:
 
 
 async def flythings_kb(op: str = "list", args: str = "{}") -> str:
-    """FlyThings 开发能力统一入口（36 个能力合一的单入口）。
+    """FlyThings 开发能力统一入口（34 个能力合一的单入口）。
 
     ⚠️ 仅在用户意图属于「FlyThings 软件开发」时调用：UI 布局/控件/json/ftu、
     工程创建与编译部署、依赖包/Manifest、多语言 i18n、知识库检索、UI 预览与像素验收、
@@ -87,6 +108,18 @@ async def flythings_kb(op: str = "list", args: str = "{}") -> str:
         return _catalog()
     fn = OPS.get(op)
     if fn is None:
+        try:
+            import kb_tools as _kb
+            renamed = _kb.RENAMED.get(op)
+        except Exception:
+            renamed = None
+        if renamed:
+            return json.dumps({"ok": False,
+                               "error": {"code": "OP_RENAMED",
+                                         "msg": "op %s 已在 v0.27.36 合并/改名为 %s" % (op, renamed),
+                                         "hint": "直接改用 %s（旧名不再提供）" % renamed,
+                                         "retryable": False}},
+                              ensure_ascii=False)
         return json.dumps({"ok": False,
                            "error": {"code": "UNKNOWN_OP",
                                      "msg": "unknown op: %s" % op,
@@ -131,7 +164,7 @@ if MODE != 'flat':
 
 # 预热本地 embedding 模型（2026-09-07 实测修复）
 # ⚠️ run() 事件循环内首次加载 onnxruntime session 实测耗时 30s+，
-# 超过客户端工具超时 → flythings_search 首次调用必失败（表现为 search 卡死/超时）。
+# 超过客户端工具超时 → 首次检索调用必失败（表现为 search 卡死/超时）。
 # 启动前预热仅 ~0.2s，session 就绪后检索全程 <0.1s。
 # 模型缺失/加载失败时跳过，检索自动降级 BM25，不影响启动。
 try:

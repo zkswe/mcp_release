@@ -11,7 +11,7 @@
 
 ## 铁律（顺序不可反）
 
-1. **动手前先检索**：`flythings_search`（MCP 知识库 = wiki 官方文档 + knowledge/ 实践文档）
+1. **动手前先检索**：`flythings_knowledge_search`（MCP 知识库 = wiki 官方文档 + knowledge/ 实践文档）
    或官方 developer.flythings.cn。命中片段 → 按知识分析，禁止自己猜 API/字段/流程。
 2. **禁止先试后查**：不许"先试编译/试回调/试 json 字段，报错再回来查"——顺序反了，
    浪费迭代。先检索、先读文档，再写代码。
