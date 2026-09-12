@@ -1229,6 +1229,25 @@ def flythings_pack_upgrade(project_root, out_path='', release_version='', ab=Fal
     }
 
 # ---------------- 工具 7: 从 IDE 模板创建项目骨架 -------------
+def _project_names_in_files(root):
+    """取出模板里**真实**的旧工程名（不是目录名）。
+
+    旧工程名只出现在这些位置：.project 的 <name>、.cproject 的
+    name="/XXX(/Release|/Debug)" 工作区路径、<project id="XXX.flythings..."> 前缀。
+    """
+    names = set()
+    pj = os.path.join(root, '.project')
+    if os.path.isfile(pj):
+        txt = open(pj, encoding='utf-8', errors='replace').read()
+        names |= {m.strip() for m in re.findall(r'<name>\s*([^<]+?)\s*</name>', txt)}
+    cj = os.path.join(root, '.cproject')
+    if os.path.isfile(cj):
+        txt = open(cj, encoding='utf-8', errors='replace').read()
+        names |= set(re.findall(r'name="/([^/"]+)', txt))
+        names |= set(re.findall(r'<project id="([^."]+)\.', txt))
+    return {n for n in names if n.strip()}
+
+
 def flythings_create_project(project_root, platform=None, resolution=None,
                              app_name='', with_cli=True, force=False):
     """从 HelloWord 基础 Demo 项目复制骨架创建完整 FlyThings 项目。
@@ -1274,14 +1293,26 @@ def flythings_create_project(project_root, platform=None, resolution=None,
         else:
             shutil.copy2(s, d)
     # 2. 替换工程名（.project / .cproject）
+    #    ⚠️ 只替换模板「目录名」是不够的：模板内容里的真实工程名常与目录名不一致
+    #    （HelloWord_V85X 目录里 .project 写 Helloword_V85x、.cproject 残留 template_z20_smarthome；
+    #      HelloWord_T113 目录里写 HelloWord_T113Nor）——只按目录名替换会漏改或半改
+    #    （T113 会剩下 "Nor" 尾巴），新工程名仍挂着模板残留。
+    #    改为：从模板文件内容读出真实旧名（含目录名兜底），长的先替换。
     tpl_name = os.path.basename(tpl)
     new_name = app_name.strip() or os.path.basename(root)
+    old_names = ({tpl_name} | _project_names_in_files(root)) - {new_name}
     for fn in ('.project', '.cproject'):
         p = os.path.join(root, fn)
-        if os.path.isfile(p):
-            txt = open(p, encoding='utf-8', errors='replace').read()
-            txt = txt.replace(tpl_name, new_name)
-            open(p, 'w', encoding='utf-8').write(txt)
+        if not os.path.isfile(p):
+            continue
+        txt = open(p, encoding='utf-8', errors='replace').read()
+        for old in sorted(old_names, key=len, reverse=True):
+            if old:
+                txt = txt.replace(old, new_name)
+        if fn == '.project':   # 兜底：<name> 字段必须就是新工程名
+            txt = re.sub(r'<name>[^<]*</name>', '<name>%s</name>' % new_name,
+                         txt, count=1)
+        open(p, 'w', encoding='utf-8').write(txt)
     # 3. 更新 .settings 分辨率
     prefs = os.path.join(root, '.settings', 'com.zksw.flythings.easyui.prefs')
     if os.path.isfile(prefs):

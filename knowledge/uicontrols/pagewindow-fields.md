@@ -16,6 +16,7 @@
 | `caption`/`id` | 控件名/id（实测 30000+ 段） |
 | 子 `window__N` | 每页一个子窗口（页内容），并排排布 |
 | `orientation` | 0 水平翻页 / 1 垂直（如支持） |
+| `dragMaxDis`/`edgeEffect`/`rollSpeed` | 滑动参数：dragMaxDis=**行程**（200 实测）、edgeEffect=1、rollSpeed=60；手感取值规范见 `scroll-drag-interaction-spec.md` |
 | 其余通用 | touchable/visible/position |
 
 ## 代码操作（PageWindowDemo 实测）

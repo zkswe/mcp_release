@@ -74,3 +74,4 @@
 - html2json.py：生成器已按本表输出（含 item.position 自动算）；check_all.py #14 校验
 - 历史省略式 json（IDE 手工/旧生成器）跑 check_all #14 会提示缺键，按本表补默认即可
 - 检索边界：控件 json 字段以本文件 + knowledge/uicontrols/*-fields.md + 官方文档站为准
+- ⚠️ **滑动/拖拽字段取值**（`dragMaxDis`/`edgeEffect`/`autoRollback`/`rollSpeed`，listview/scrollwindow/pagewindow/slidewindow 共用）：本表只定「必写 + 默认值」，**手感取值规范见 `scroll-drag-interaction-spec.md`**（listview 的 dragMaxDis 填手感值 ≤ 一行高，禁止填列表高度）

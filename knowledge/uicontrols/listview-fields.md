@@ -27,11 +27,28 @@
 | `orientation` | 0 纵向（列表）/ 1 横向 |
 | `rowSpacing`/`colSpacing` | 行列间距 |
 | `edgeEffect` | 0 无 / 1 拖拽回弹 / 2 渐隐 |
-| `dragMaxDis` | 最大拖距 |
+| `dragMaxDis` | **越界拖拽上限（overscroll）**——行程由项数决定，跟它无关。要回弹手感填 50；无越界填 0；**禁止填列表高度**（详见 §dragMaxDis 取值） |
 | `autoRollback` | 滑动停止自动回弹对齐 |
 | `cycleEnable` | 循环列表 |
 | `hasScrollbar` | 滚动条显示 |
 | `item` | 行模板（内含各 subitem 定义） |
+
+## dragMaxDis 取值（越界拖拽上限，2026-09-12 沛哥定规）
+
+> `dragMaxDis` **不是**「列表能滚多远」，而是**手指越过内容边界后，内容还允许被继续拽出去的最大距离**。
+> 填成列表高度 → 一次拖拽把整屏列表拽出去，松手才回弹 → **交互不合格**。
+> 完整规范（含 edgeEffect/autoRollback 配合、分辨率换算、验收清单）：`scroll-drag-interaction-spec.md`。
+
+| 场景 | edgeEffect | dragMaxDis | autoRollback |
+|------|-----------|-----------|--------------|
+| 数据浏览列表（不用回弹） | 0 | **0** | false |
+| 菜单/设置列表、循环选择器 | 1 | **50** | true |
+| 长数据列表 | 0 或 1 | **0 或 50** | false |
+
+- **硬约束**：listview 的 `dragMaxDis` < 控件可视高（≥ 即不合格），基准 ≤ 一行高（50 @1024×600）。
+- `0` = 关闭越界拖出（配 `edgeEffect:0`）；`edgeEffect:1 + dragMaxDis:0` 是自相矛盾的配法。
+- 循环列表（`cycleEnable:true`）本身无边界，越界拖拽用基准 50，别开大。
+- 分辨率换算：基准 50 @1024×600 ≈ 屏高 8%，其他分辨率 `round(scale×50)` 下限 24。
 
 ## 代码示例（listViewDemo 实测）
 

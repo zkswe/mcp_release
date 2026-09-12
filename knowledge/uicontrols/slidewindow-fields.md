@@ -21,7 +21,7 @@
 | `iconTextPadding` | {top/bottom/left/right} | **图标配套文字（caption 文本）的 padding 位置**（文字相对图标的位置） |
 | `iconTextAlignment` | int | 文字对齐（41 实测默认） |
 | `fontSize` | int | 图标文字字号 |
-| `dragMaxDis` | int | 最大拖动距离（200 实测） |
+| `dragMaxDis` | int | 最大拖动距离 = **行程**（200 实测，长内容可填内容尺寸）；手感取值规范见 `scroll-drag-interaction-spec.md` |
 | `edgeEffect` | int | 边缘效果（1 实测） |
 | `orientation` | int | 0=水平滑动（默认）/ 1=垂直 |
 | `rollSpeed` | int | 滚动速度（999 实测） |
