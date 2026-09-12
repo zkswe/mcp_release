@@ -589,8 +589,10 @@ def flythings_i18n_to_json(project_root: str, langs: str = '', push: bool = True
 def flythings_ui_editor(project_root: str, output_dir: str = '') -> str:
     """把 ui/*.json 生成「可视化编辑器」网页：拖控件就改布局（输出 <项目>/ui/_edit/<name>.edit.html）。
 
-    闭环第二步：AI 出/改 json → 本工具出编辑器给用户拖 → 用户点「复制变更 JSON」→
-    flythings_ui_edit_apply 写回 json + pack ftu。预览与设备同源（都来自 json），改完即所得。
+    闭环第二步：AI 出/改 json → 本工具出编辑器给用户拖 → 用户点「复制 AI 指令」
+    （自带工程路径 + 目标 json + 变更 JSON 的一段话）直接粘给 AI，或「复制变更 JSON」拿纯 json →
+    flythings_ui_edit_apply 写回 json + pack ftu。页面是本地静态文件、无回传通道，只能复制粘贴。
+    预览与设备同源（都来自 json），改完即所得。
 
     页面能力（点选/拖动/8 手柄缩放、方向键微调、网格吸附、Alt+点穿透选中下层、被遮罩控件也能拖、
     控件列表搜索、visible:false 幽灵框、属性栏列出全部字段、图片尺寸预检红黄标、深链接 #button__2）
@@ -606,8 +608,10 @@ def flythings_ui_editor(project_root: str, output_dir: str = '') -> str:
         return json.dumps({'success': False, 'error': str(e)}, ensure_ascii=False)
     if isinstance(r, dict) and r.get('success'):
         r['projectRoot'] = project_root
-        r['note'] = ('在浏览器打开 *.edit.html 拖动/改属性；改完点「复制变更 JSON」或「下载变更 JSON」，'
-                     '把内容交给 flythings_ui_edit_apply 写回 json 并 pack ftu')
+        r['note'] = ('在浏览器打开 *.edit.html 拖动/改属性；改完点「复制 AI 指令」，把指令（自带工程路径 + '
+                     '目标 json + 变更 JSON）直接粘给 AI，AI 用 flythings_ui_edit_apply 写回 json'
+                     '（默认不动 ftu，要 ftu 就说 pack）；只想要纯 json 就点「复制变更 JSON」/「下载变更 JSON」。'
+                     '⚠️ 页面是本地静态文件、没有回传通道，必须复制粘贴给 AI')
         for f in r.get('files', []):
             if f.get('html'):
                 f['open'] = f['html']

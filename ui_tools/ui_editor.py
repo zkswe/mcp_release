@@ -14,7 +14,9 @@
     · 方向键微调 1px（Shift 加速 10px，网格可切 1/2/5/10）
     · Ctrl+Z 撤销 / Ctrl+Y 重做
     · 右侧面板列出所有改动（前值→新值）
-    · 「复制变更 JSON」→ 粘到对话里即可，或「下载变更 JSON」存文件
+    · 「复制 AI 指令」→ 直接粘给 AI（自带项目路径 + 变更 JSON + 写回要求），AI 用
+      flythings_ui_edit_apply 写回；只想要 json 自己改就点「复制变更 JSON」/「下载变更 JSON」
+      （edit.html 是本地静态文件，页面内没有回传通道，必须复制粘贴给 AI）
 写回：
     python tools/ui_tools/ui_edit_apply.py <变更JSON> --project <项目根> [--pack]
 
@@ -248,13 +250,19 @@ EDIT_JS = r"""
     '<div id="ed-tree-body"></div></div>' +
     '<h3>改动清单 <span id="ed-cnt">0</span> 处</h3><div class="ed-list" id="ed-list">（未改动）</div>' +
     '<div class="ed-bar" style="margin-top:8px">' +
-      '<button class="pri" data-a="copy">复制变更 JSON</button>' +
+      '<button class="pri" data-a="copyai">复制 AI 指令</button>' +
+      '<button data-a="copy">复制变更 JSON</button>' +
       '<button data-a="dl">下载变更 JSON</button>' +
       '<button data-a="dlfull">下载完整 json</button>' +
       '<button data-a="reset">还原</button>' +
     '</div>' +
+    '<div class="ed-hint" id="ed-howto">落地方式：点 <b>「复制 AI 指令」</b> → 直接粘给 AI；' +
+    '指令里已带工程路径 + 目标 json + 变更 JSON，AI 用 <b>flythings_ui_edit_apply</b> 写回 json' +
+    '（默认不动 ftu，要 ftu 就说 pack）。<br>' +
+    '本页是本地静态文件，页面内没有给 AI 的回传通道，只能复制粘贴；' +
+    '只想要 json 自己改就点「复制变更 JSON」/「下载变更 JSON」。</div>' +
     '<h3>预检问题 <span id="ed-ic">0</span> 条</h3><div class="ed-issues" id="ed-issues"></div>' +
-    '<textarea class="ed-out" id="ed-out" readonly placeholder="点「复制变更 JSON」，或直接粘到聊天里"></textarea>' +
+    '<textarea class="ed-out" id="ed-out" readonly placeholder="点「复制 AI 指令」粘给 AI；或点「复制变更 JSON」拿纯 json"></textarea>' +
     '<div class="ed-hint">点控件=选中 · 拖动=移动 · 拖左上绿块=移动（被遮罩压住也能拖）· ' +
     'Alt+点=穿透选中下层 · 几何/属性都能直接改（改文字即时生效）· 方向键 1px · Ctrl+Z 撤销</div>';
   document.querySelector('.ed-wrap').appendChild(panel);
@@ -647,6 +655,22 @@ EDIT_JS = r"""
     sync();
   }
   function sync(){ document.getElementById('ed-out').value=JSON.stringify(payload(),null,2); }
+  function flash(btn, txt){ if(!btn) return; var old=btn.textContent;
+    btn.textContent=txt; setTimeout(function(){ btn.textContent=old; },1400); }
+  // 给用户的「一句话落地指令」：自带工程路径 + 目标 json + 变更 JSON，粘给 AI 即用
+  function aiPrompt(){
+    var lines=[];
+    lines.push('请把我这轮 UI 改动写回工程（用工具 flythings_ui_edit_apply）。');
+    lines.push('项目根目录：' + (META.projectRoot || '(未知，请用工程实际路径)'));
+    lines.push('目标 json：' + (META.jsonRel || META.json) + '（分辨率 ' + META.res + '）');
+    lines.push('变更语义：changes = 位置/尺寸；props = 属性（文字/颜色/字号/对齐/图片/可见性等）。');
+    lines.push('工具默认只写回 json、不动 ftu；需要 ftu 请显式 pack；写回会自动生成 .bak。');
+    lines.push('变更 JSON：');
+    lines.push(JSON.stringify(payload(),null,2));
+    return lines.join('\n');
+  }
+  window.__edAiPrompt = aiPrompt;  // 供自动化/契约测试取用
+  window.__edPayload = payload;
   function payload(){
     var o={file:META.json, resolution:META.res};
     if(Object.keys(changes).length) o.changes=changes;
@@ -776,9 +800,16 @@ EDIT_JS = r"""
       t.select(); var ok=false;
       try{ ok=document.execCommand('copy'); }catch(err){}
       t.setAttribute('readonly','readonly');
-      var btn=e.target, old=btn.textContent;
-      btn.textContent = ok? '已复制 ✓' : '请手动 Ctrl+C';
-      setTimeout(function(){ btn.textContent=old; },1200);
+      flash(e.target, ok? '已复制 ✓' : '请手动 Ctrl+C');
+    }
+    if(a==='copyai'){
+      if(!Object.keys(changes).length && !Object.keys(props).length){ flash(e.target,'暂无改动'); return; }
+      var t3=document.getElementById('ed-out'), back=t3.value;
+      t3.removeAttribute('readonly'); t3.value=aiPrompt(); t3.select();
+      var ok3=false; try{ ok3=document.execCommand('copy'); }catch(err){}
+      t3.setAttribute('readonly','readonly');
+      if(ok3){ t3.value=back; flash(e.target,'已复制 ✓ 粘给 AI'); }
+      else { flash(e.target,'已填入下方文本框，请 Ctrl+C'); }  // 复制失败也别让指令丢了
     }
     if(a==='dl'){ download(META.json.replace(/\.json$/,'')+'.changes.json',
       JSON.stringify(payload(),null,2)); }
@@ -873,6 +904,15 @@ EDIT_JS = r"""
 """
 
 
+def _rel_json(jp, proj_root):
+    """json 相对工程根的路径（AI 侧按这个路径写回最直观）；跑到工程外就退回文件名。"""
+    try:
+        rel = os.path.relpath(os.path.abspath(jp), proj_root).replace('\\', '/')
+    except Exception:
+        rel = os.path.basename(jp)
+    return rel if not rel.startswith('..') else os.path.basename(jp)
+
+
 def make_editor(target, out_html=''):
     """target: 项目根目录 或 单个 json 文件。返回 {"success", "files":[{json, html, ...}]}"""
     if os.path.isdir(target) and os.path.isdir(os.path.join(target, 'ui')):
@@ -882,12 +922,15 @@ def make_editor(target, out_html=''):
             dirs[:] = [d for d in dirs if d not in ('.git', '__pycache__')]
             jsons += [os.path.join(root, f) for f in sorted(files) if f.endswith('.json')]
         jsons.sort()
+        proj_root_abs = os.path.abspath(target)
         # 默认输出到 <ui>/_edit/，不把生成物混进 ui/ 目录（单个 json 则同目录生成）
         out_html = out_html or os.path.join(ui_root, '_edit')
         out_dir = out_html
     elif os.path.isfile(target):
         jsons = [target]
         out_dir = out_html or os.path.dirname(os.path.abspath(target))
+        _jd = os.path.dirname(os.path.abspath(target))
+        proj_root_abs = os.path.dirname(_jd) if os.path.basename(_jd) == 'ui' else _jd
     else:
         return {'success': False, 'error': f'路径不存在或项目无 ui/ 目录: {target}'}
 
@@ -916,6 +959,8 @@ def make_editor(target, out_html=''):
                         for c in [ctrl] if isinstance(ctrl, dict)}
             meta = {
                 'json': os.path.basename(jp),
+                'jsonRel': _rel_json(jp, proj_root_abs),
+                'projectRoot': proj_root_abs,
                 'res': f"{r.get('width', 0)}x{r.get('height', 0)}",
                 'issues': [{'path': p, 'cap': c, 'level': l, 'msg': m} for p, c, l, m in issues],
                 'full': data,
