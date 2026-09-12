@@ -26,6 +26,7 @@
 
 - 平台定位：全志 V85x 系列（A7，视频编码 1080p）——摄像头/DVR/手持便携类产品常用
 - 常见主控：V553 / V851S / V851S3 / V853
+- 平台默认参数：tfcardFormat=FAT32 + 64KB 簇（OEM=zkswe）——录制类必查，电脑格的卡判不符；displayLayer=UI 层要留 visible:true 的 videoView 透明窗，视频层才透得出
 - 可选补充（非阻塞）：平台差异化说明（沛哥将补充：与 Z21/V853 等在屏幕方向、按键、TF 卡格式等方面的差异；有了就不用每次核查）
 
 ### PocketDisplay4（V85X）
@@ -36,6 +37,7 @@
 - 屏幕：尺寸(寸)=4，宽=480，高=800，分辨率=480x800，方向=portrait，说明=4 寸 480×800（竖屏）
 - 按键：3 个，按键值 105(KEY_LEFT), 103(KEY_UP), 108(KEY_DOWN)
   - 按键值 = /dev/input 事件里的 code（Linux input-event-codes）。105/103/108 按标准头文件为 KEY_LEFT / KEY_UP / KEY_DOWN（物理丝印与 UI 功能对应关系待真机核对）
+- **默认参数（开发直接照抄）**：tfcardFormat=FAT32 + 64KB 簇（OEM=zkswe）——录制类必查，电脑格的卡判不符；displayLayer=UI 层要留 visible:true 的 videoView 透明窗，视频层才透得出；resolution=480x800；orientation=portrait；keys=[105, 103, 108]
 - 可选补充（非阻塞，按需补）：整机其余规格（CPU/内存/存储/接口）——有则更省事，没有也能开工
 - 可选补充（非阻塞，按需补）：屏幕接口类型（RGB / MIPI）与触摸方式
 - 可选补充（非阻塞，按需补）：三个按键的物理位置与丝印
@@ -47,6 +49,7 @@
 
 - 平台定位：A7 双核 1.2GHz + 内置 128MB DDR3——86 盒高配/语音面板/电子价签常用平台
 - 常见主控：SSD201 / SSD202 / SSD202D
+- 平台默认参数：uartDefaultBaud=115200；upgrade=U 盘 / TF 卡升级
 - 可选补充（非阻塞）：平台差异化说明（沛哥将补充；没有也不影响开工）
 
 ### SW10600070D_C（Z20）
@@ -57,6 +60,9 @@
 - 摘要：7 寸 1024x600 横屏；串口屏 / 工控整机（待确认）
 - 屏幕：尺寸(寸)=7，宽=1024，高=600，分辨率=1024x600，方向=landscape
 - 屏幕判定依据：依据：本地硬件索引把「SV50PD-10600070-C」记为 7 寸 1024×600，且 SV50PD 目录下有 SW10600070D_C(sv50pd).pdf（疑为 SV50PD 核心板 + 1024×600 屏的整机型号）。待沛哥确认后转 complete
+- **默认参数（开发直接照抄）**：uartDefaultBaud=115200；upgrade=U 盘 / TF 卡升级；resolution=1024x600；orientation=landscape
+- 资料：`wiki/flythings/datasheet/board/SW10600070D_C(sv50pd).pdf`
+- 资料：`wiki/flythings/datasheet/board/SV50PD核心板规格书V3.0-20210813.pdf`
 - 可选补充（非阻塞，按需补）：确认是否基于 SV50PD 核心板（型号字母 D 指 Z20 平台，与 SV50PD 目录同名规格书的平台对应关系待确认）
 - 可选补充（非阻塞，按需补）：确认是否基于 SV50PD 核心板（即是否等同 SV50PD-10600070-C）
 - 可选补充（非阻塞，按需补）：CPU/内存/接口等完整规格
@@ -76,6 +82,7 @@
 - 供电：AC 220V / DC 9-24V
 - OTA：支持
 - 开机：3 秒
+- **默认参数（开发直接照抄）**：uartDefaultBaud=115200；upgrade=U 盘 / TF 卡升级；resolution=480x480 / 720x720；voice=内嵌在线语音 SDK + 双麦硬件降噪；relay=最多 3 路（10A）；wired=RS485 + 百兆以太网；power=AC 220V / DC 9-24V；boot=3 秒开机
 - 差异·同系列三平台差异：Z6 版 SW48480040B1（ARM9 600MHz，480×480，最低成本）/ Z20 版本型号（1.2GHz+128M DDR3，480×480 或 720×720，带在线语音）/ Z21 版 SW48480040E（1.0GHz，480×480）
 - 数据来源：4 寸 86 盒系列规格书 V3.0（2025-05-20）
 - 数据状态：complete
@@ -96,6 +103,7 @@
 - 供电：9-24V 宽压，不分正负极
 - PCBA 尺寸：70 × 66.6 × 1.2 mm
 - 顶屏能力：单屏
+- **默认参数（开发直接照抄）**：uartDefaultBaud=115200；upgrade=U 盘 / TF 卡升级；resolution=800x1280；orientation=portrait；display=MIPI 10.1 寸竖屏；wifi=WiFi6 + BLE5.2 配网（组网模式）；power=9-24V 宽压，不分正负极；screens=1
 - 差异·同款双型号差异：SW8001280101D-JQ = SSD201（1.0GHz / 64MB DDR3 / 仅单屏）；SW8001280101D1-JQ = SSD202（1.2GHz / 128MB DDR3 / 支持双屏异显）
 - 数据来源：SW8001280101-SSD20X 平台价签 PCBA 规格 V1.0（2024-07-25）
 - 数据状态：complete
@@ -112,6 +120,7 @@
 - 供电：9-24V 宽压，不分正负极
 - PCBA 尺寸：70 × 66.6 × 1.2 mm
 - 顶屏能力：支持双屏（双屏异显）
+- **默认参数（开发直接照抄）**：uartDefaultBaud=115200；upgrade=U 盘 / TF 卡升级；resolution=800x1280；orientation=portrait；display=MIPI 10.1 寸竖屏；wifi=WiFi6 + BLE5.2 配网（组网模式）；power=9-24V 宽压，不分正负极；screens=2
 - 差异·同款双型号差异：与 SW8001280101D-JQ 硬件同板，差别只在主控（SSD202 1.2GHz / 128MB DDR3）与双屏能力
 - 数据来源：SW8001280101-SSD20X 平台价签 PCBA 规格 V1.0（2024-07-25）
 - 数据状态：complete
@@ -124,6 +133,8 @@
 - 摘要：7 寸 800x480 横屏；串口屏 / 工控整机（待确认）
 - 屏幕：尺寸(寸)=7，宽=800，高=480，分辨率=800x480，方向=landscape
 - 屏幕判定依据：按官方《产品规格型号说明》命名规则推导：SW+宽+高+尺寸+版本，SW80 480 070 D = 7 寸 800×480；型号字母 D = Z20 平台（沛哥确认）。同系列 SW80480070D-CK 规格书标 800×480 / 1024×600 可选
+- **默认参数（开发直接照抄）**：uartDefaultBaud=115200；upgrade=U 盘 / TF 卡升级；resolution=800x480；orientation=landscape
+- 资料：`wiki/flythings/datasheet/board/SW80480070D-CK系列型.pdf`
 - 可选补充（非阻塞，按需补）：CPU/内存/接口配置（请提供规格书或确认）
 - 可选补充（非阻塞，按需补）：型号后缀 _C 的确切含义（电容触摸？版本？）
 - 可选补充（非阻塞，按需补）：与 SW80480070D-CK 系列是否同一产品
@@ -135,13 +146,14 @@
 
 - 平台定位：A7 双核 1.0GHz + 内置 64MB DDR2——串口屏/广告机/86盒主力平台
 - 常见主控：SSD212 / SSD210 / T113-S3
+- 平台默认参数：uartDefaultBaud=115200；upgrade=TF 卡升级（FAT32）
 - 可选补充（非阻塞）：平台差异化说明（沛哥将补充；没有也不影响开工）
 
 ### SV50PD（Z21）
 
-- 形态：核心板（邮票半孔 + XH2.54 插针双接口）
+- 形态：Z21 平台开发板 / 核心板（邮票半孔 + XH2.54 插针双接口）
 - 别名：SV50PD核心板
-- 摘要：无自带屏：50Pin RGB888 通用接口屏，最大支持 1280×720 及以下；核心板（邮票半孔 + XH2.54 插针双接口）
+- 摘要：无自带屏：50Pin RGB888 通用接口屏，最大支持 1280×720 及以下；Z21 平台开发板 / 核心板（邮票半孔 + XH2.54 插针双接口）
 - 屏幕：说明=无自带屏：50Pin RGB888 通用接口屏，最大支持 1280×720 及以下
 - CPU：ARM 双核 A7 1200MHz
 - 内存：64MB DDR2
@@ -159,6 +171,10 @@
 - 音频：LINE OUT + 按键蜂鸣器 ×1
 - 扩展存储：TF 卡
 - 开发环境：FlyThings IDE
+- **默认参数（开发直接照抄）**：uartDefaultBaud=115200；upgrade=TF 卡升级（FAT32）；platform=Z21；display=RGB888 50Pin 通用接口屏；maxResolution=1280x720；uart=3 路；gpio=9；i2c=TWI x2；spi=1；pwm=1；adc=1；usb=OTG x1；ethernet=EPHY x1（外接变压器座子）；storage=TF 卡；audio=LINE OUT + 按键蜂鸣器；power=3.8~5.2V
+- 资料：`wiki/flythings/datasheet/board/SV50PD核心板规格书V3.0-20210813.pdf`
+- 资料：`hardwarespec/SV50PD/SV50PD核心板规格书V3.0-20210813.pdf`
+- 可选补充（非阻塞，按需补）：开发板整机出厂配屏分辨率（若有默认配屏请给：常见 7 寸 800×480 / 1024×600）
 - 数据来源：SV50PD 核心板规格书 V3.0（2021-08-13）
 - 数据状态：complete
 
@@ -177,6 +193,7 @@
 - 传感器：可选光感 / 人体测距
 - OTA：支持
 - 开机：3 秒
+- **默认参数（开发直接照抄）**：uartDefaultBaud=115200；upgrade=TF 卡升级（FAT32）；resolution=480x480；relay=最多 3 路（10A)；wired=RS485 + 百兆以太网；wireless=内置 WiFi，可扩 Zigbee / Bluetooth / 离线语音模块；audio=内置 1W 功放喇叭；power=AC 220V / DC 9-24V；storage=内置 DDR + 16M Flash + 128M SD Nand；sensor=光感 / 人体测距（可选）；boot=3 秒开机
 - 差异·同系列三平台差异：同款 4 寸 86 盒有 Z6（SW48480040B1，480×480）/ Z20（SW48480040D1）/ Z21（SW48480040E）三个平台版本；Z20 版支持 720×720 与在线语音 SDK + 双麦降噪，Z21 版为 480×480 且无在线语音
 - 数据来源：4 寸 86 盒系列规格书 V3.0（2025-05-20）
 - 数据状态：complete
@@ -193,5 +210,6 @@
 - 音频：默认蜂鸣器（SPK 二选一）
 - RTC：选配
 - 电源：DC 5V / 1000mA
+- **默认参数（开发直接照抄）**：uartDefaultBaud=115200；upgrade=TF 卡升级（FAT32）；resolution=480x854；orientation=portrait；touch=电容触摸；uart=2 路（默认 115200）；usb=下载调试，默认 Host；rtc=选配；power=DC 5V / 1000mA
 - 数据来源：Z21 5 寸串口屏规格书 V1.0（2025-07-25）
 - 数据状态：complete

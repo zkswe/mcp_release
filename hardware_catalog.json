@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "note": "硬件型号库（唯一事实来源，人工维护）。定位（沛哥 2026-09-12）：**预设参数**，让后期开发少问少核。有具体型号 → 按该型号的 screen/keys/specs 直接开工（工具会给出 preset）；没有具体型号 → 确认平台 + 分辨率就能建工程，不必等数据补全。改完跑：python scripts/gen_hardware_doc.py（生成 knowledge/hardware/hardware-models.md，可检索）→ python rebuild_index_local.py。字段：platforms.<平台>.models.<型号>，平台名必须是 platforms.py 里的规范名（F133/F135/T113/V85X/Z20/Z21）。dataStatus：complete=规格书完整 / partial=部分参数 / pending=仅登记型号（**都不是开工阻塞**）。optional[] = 可选补充项（有则更方便，没有不影响开工；禁止 AI 拿同系列型号外推填坑）。",
+  "note": "硬件型号库（唯一事实来源，人工维护）。定位（沛哥 2026-09-12）：**预设参数**，让后期开发少问少核（沛哥 2026-09-12 明确：所谓「平台差异」= 具体型号的默认参数，开发直接照抄不用猜）。有具体型号 → 按该型号的 screen/keys/specs 直接开工（工具会给出 preset）；没有具体型号 → 确认平台 + 分辨率就能建工程，不必等数据补全。改完跑：python scripts/gen_hardware_doc.py（生成 knowledge/hardware/hardware-models.md，可检索）→ python rebuild_index_local.py。字段：platforms.<平台>.models.<型号>，平台名必须是 platforms.py 里的规范名（F133/F135/T113/V85X/Z20/Z21）。dataStatus：complete=规格书完整 / partial=部分参数 / pending=仅登记型号（**都不是开工阻塞**）。optional[] = 可选补充项（有则更方便，没有不影响开工；禁止 AI 拿同系列型号外推填坑）。 defaults（平台级/型号级）= 默认参数；differences = 选型/差异说明；工具把平台级 + 型号级 defaults 合并成 preset 返回。",
   "updated": "2026-09-12",
   "namingRules": {
     "structure": "SW + 宽 + 高 + 尺寸 + 平台/版本字母 [+ 可选后缀]",
@@ -64,8 +64,21 @@
             "三个按键的物理位置与丝印",
             "V85X 平台差异化说明（屏幕方向 rotateScreen / TF 卡格式等）"
           ],
-          "source": "沛哥 2026-09-12 口述"
+          "source": "沛哥 2026-09-12 口述",
+          "defaults": {
+            "resolution": "480x800",
+            "orientation": "portrait",
+            "keys": [
+              105,
+              103,
+              108
+            ]
+          }
         }
+      },
+      "defaults": {
+        "tfcardFormat": "FAT32 + 64KB 簇（OEM=zkswe）——录制类必查，电脑格的卡判不符",
+        "displayLayer": "UI 层要留 visible:true 的 videoView 透明窗，视频层才透得出"
       }
     },
     "Z21": {
@@ -84,7 +97,7 @@
           "aliases": [
             "SV50PD核心板"
           ],
-          "kind": "核心板（邮票半孔 + XH2.54 插针双接口）",
+          "kind": "Z21 平台开发板 / 核心板（邮票半孔 + XH2.54 插针双接口）",
           "dataStatus": "complete",
           "screen": {
             "note": "无自带屏：50Pin RGB888 通用接口屏，最大支持 1280×720 及以下"
@@ -108,7 +121,30 @@
             "开发环境": "FlyThings IDE"
           },
           "differences": [],
-          "source": "SV50PD 核心板规格书 V3.0（2021-08-13）"
+          "source": "SV50PD 核心板规格书 V3.0（2021-08-13）",
+          "defaults": {
+            "platform": "Z21",
+            "display": "RGB888 50Pin 通用接口屏",
+            "maxResolution": "1280x720",
+            "uart": "3 路",
+            "gpio": 9,
+            "i2c": "TWI x2",
+            "spi": 1,
+            "pwm": 1,
+            "adc": 1,
+            "usb": "OTG x1",
+            "ethernet": "EPHY x1（外接变压器座子）",
+            "storage": "TF 卡",
+            "audio": "LINE OUT + 按键蜂鸣器",
+            "power": "3.8~5.2V"
+          },
+          "optional": [
+            "开发板整机出厂配屏分辨率（若有默认配屏请给：常见 7 寸 800×480 / 1024×600）"
+          ],
+          "docRefs": [
+            "wiki/flythings/datasheet/board/SV50PD核心板规格书V3.0-20210813.pdf",
+            "hardwarespec/SV50PD/SV50PD核心板规格书V3.0-20210813.pdf"
+          ]
         },
         "SW48854050E1": {
           "kind": "5 寸串口屏整机",
@@ -131,7 +167,16 @@
             "电源": "DC 5V / 1000mA"
           },
           "differences": [],
-          "source": "Z21 5 寸串口屏规格书 V1.0（2025-07-25）"
+          "source": "Z21 5 寸串口屏规格书 V1.0（2025-07-25）",
+          "defaults": {
+            "resolution": "480x854",
+            "orientation": "portrait",
+            "touch": "电容触摸",
+            "uart": "2 路（默认 115200）",
+            "usb": "下载调试，默认 Host",
+            "rtc": "选配",
+            "power": "DC 5V / 1000mA"
+          }
         },
         "SW48480040E": {
           "kind": "4 寸 86 盒智能面板（Z21 版）",
@@ -161,8 +206,23 @@
               "detail": "同款 4 寸 86 盒有 Z6（SW48480040B1，480×480）/ Z20（SW48480040D1）/ Z21（SW48480040E）三个平台版本；Z20 版支持 720×720 与在线语音 SDK + 双麦降噪，Z21 版为 480×480 且无在线语音"
             }
           ],
-          "source": "4 寸 86 盒系列规格书 V3.0（2025-05-20）"
+          "source": "4 寸 86 盒系列规格书 V3.0（2025-05-20）",
+          "defaults": {
+            "resolution": "480x480",
+            "relay": "最多 3 路（10A)",
+            "wired": "RS485 + 百兆以太网",
+            "wireless": "内置 WiFi，可扩 Zigbee / Bluetooth / 离线语音模块",
+            "audio": "内置 1W 功放喇叭",
+            "power": "AC 220V / DC 9-24V",
+            "storage": "内置 DDR + 16M Flash + 128M SD Nand",
+            "sensor": "光感 / 人体测距（可选）",
+            "boot": "3 秒开机"
+          }
         }
+      },
+      "defaults": {
+        "uartDefaultBaud": 115200,
+        "upgrade": "TF 卡升级（FAT32）"
       }
     },
     "Z20": {
@@ -203,7 +263,15 @@
               "detail": "Z6 版 SW48480040B1（ARM9 600MHz，480×480，最低成本）/ Z20 版本型号（1.2GHz+128M DDR3，480×480 或 720×720，带在线语音）/ Z21 版 SW48480040E（1.0GHz，480×480）"
             }
           ],
-          "source": "4 寸 86 盒系列规格书 V3.0（2025-05-20）"
+          "source": "4 寸 86 盒系列规格书 V3.0（2025-05-20）",
+          "defaults": {
+            "resolution": "480x480 / 720x720",
+            "voice": "内嵌在线语音 SDK + 双麦硬件降噪",
+            "relay": "最多 3 路（10A）",
+            "wired": "RS485 + 百兆以太网",
+            "power": "AC 220V / DC 9-24V",
+            "boot": "3 秒开机"
+          }
         },
         "SW8001280101D-JQ": {
           "kind": "10.1 寸彩色电子价签 PCBA（单屏）",
@@ -235,7 +303,15 @@
               "detail": "SW8001280101D-JQ = SSD201（1.0GHz / 64MB DDR3 / 仅单屏）；SW8001280101D1-JQ = SSD202（1.2GHz / 128MB DDR3 / 支持双屏异显）"
             }
           ],
-          "source": "SW8001280101-SSD20X 平台价签 PCBA 规格 V1.0（2024-07-25）"
+          "source": "SW8001280101-SSD20X 平台价签 PCBA 规格 V1.0（2024-07-25）",
+          "defaults": {
+            "resolution": "800x1280",
+            "orientation": "portrait",
+            "display": "MIPI 10.1 寸竖屏",
+            "wifi": "WiFi6 + BLE5.2 配网（组网模式）",
+            "power": "9-24V 宽压，不分正负极",
+            "screens": 1
+          }
         },
         "SW8001280101D1-JQ": {
           "kind": "10.1 寸彩色电子价签 PCBA（支持双屏）",
@@ -263,7 +339,15 @@
               "detail": "与 SW8001280101D-JQ 硬件同板，差别只在主控（SSD202 1.2GHz / 128MB DDR3）与双屏能力"
             }
           ],
-          "source": "SW8001280101-SSD20X 平台价签 PCBA 规格 V1.0（2024-07-25）"
+          "source": "SW8001280101-SSD20X 平台价签 PCBA 规格 V1.0（2024-07-25）",
+          "defaults": {
+            "resolution": "800x1280",
+            "orientation": "portrait",
+            "display": "MIPI 10.1 寸竖屏",
+            "wifi": "WiFi6 + BLE5.2 配网（组网模式）",
+            "power": "9-24V 宽压，不分正负极",
+            "screens": 2
+          }
         },
         "SW80480070D_C": {
           "aliases": [
@@ -292,7 +376,14 @@
             "与 SW80480070D-CK 系列是否同一产品",
             "与 SW80480070D-CK 系列规格书写「Z21X 平台」的出入（D=Z20，待确认同款性/是否旧标注）"
           ],
-          "source": "命名规则（官方《产品规格型号说明》）+ 平台字母 D=Z20（沛哥确认）+ hardwarespec/SW80480070D-CK系列型.pdf"
+          "source": "命名规则（官方《产品规格型号说明》）+ 平台字母 D=Z20（沛哥确认）+ hardwarespec/SW80480070D-CK系列型.pdf",
+          "defaults": {
+            "resolution": "800x480",
+            "orientation": "landscape"
+          },
+          "docRefs": [
+            "wiki/flythings/datasheet/board/SW80480070D-CK系列型.pdf"
+          ]
         },
         "SW10600070D_C": {
           "aliases": [
@@ -319,8 +410,20 @@
           "naming": {
             "letter": "D",
             "meaning": "Z20 平台（沛哥 2026-09-12 确认：D=Z20、E=Z21）"
-          }
+          },
+          "defaults": {
+            "resolution": "1024x600",
+            "orientation": "landscape"
+          },
+          "docRefs": [
+            "wiki/flythings/datasheet/board/SW10600070D_C(sv50pd).pdf",
+            "wiki/flythings/datasheet/board/SV50PD核心板规格书V3.0-20210813.pdf"
+          ]
         }
+      },
+      "defaults": {
+        "uartDefaultBaud": 115200,
+        "upgrade": "U 盘 / TF 卡升级"
       }
     }
   }

@@ -151,12 +151,13 @@ def _brief(entry):
     return '；'.join(p for p in out if p)
 
 
-def _pack_entry(platform, name, entry):
+def _pack_entry(platform, name, entry, plat_meta=None):
     """条目 → 对外返回结构（原样带出，另加可读摘要字段，不丢原始字段）。"""
     out = dict(entry)
     out['platform'] = platform
     out['model'] = name
     out['summary'] = _brief(entry)
+    out['defaults'] = _merged_defaults(entry, plat_meta)
     res = (entry.get('screen') or {}).get('resolution') or ''
     if not res:
         w, h = (entry.get('screen') or {}).get('width'), (entry.get('screen') or {}).get('height')
@@ -196,6 +197,7 @@ def _platform_overview(cat, platform=''):
             'platform': pname,
             'summary': meta.get('summary', ''),
             'chips': meta.get('chips') or [],
+            'defaults': meta.get('defaults') or {},
             'differences': meta.get('differences') or [],
             'platformOptional': meta.get('optional') or [],
             'modelCount': len(models),
@@ -224,20 +226,33 @@ def _next_steps(entry, platform):
     return steps
 
 
-def _preset(entry, platform):
-    """预设参数：开工直接照抄的一组值（平台/分辨率/方向/按键），省掉后续逐个确认。"""
+def _merged_defaults(entry, plat_meta=None):
+    """合并默认参数：平台级 defaults 打底，型号级覆盖（沛哥：「平台差异」= 型号默认参数，开箱可照抄）。"""
+    d = {}
+    for src in ((plat_meta or {}).get('defaults') or {}, entry.get('defaults') or {}):
+        if isinstance(src, dict):
+            d.update(src)
+    return d
+
+
+def _preset(entry, platform, plat_meta=None):
+    """预设参数：开工直接照抄的一组值（平台级 + 型号级默认参数，开发不用猜）。"""
+    pre = _merged_defaults(entry, plat_meta)
     sc = entry.get('screen') or {}
     res = sc.get('resolution') or ''
     if not res and sc.get('width') and sc.get('height'):
         res = '%sx%s' % (sc['width'], sc['height'])
-    pre = {'platform': platform or '', 'resolution': res}
+    if platform:
+        pre['platform'] = platform
+    if res:
+        pre['resolution'] = res
     if sc.get('orientation'):
         pre['orientation'] = sc['orientation']
     if sc.get('interface'):
         pre['display'] = sc['interface']
     if entry.get('keys'):
         pre['keys'] = entry['keys'].get('values') or []
-    pre['note'] = ('有具体型号就按这组预设参数开工（不用再问分辨率/按键）；'
+    pre['note'] = ('有具体型号就按这组默认参数开工（分辨率/方向/按键等不用再猜）；'
                    '没有具体型号时，确认平台 + 分辨率即可，其余按需再问')
     return pre
 
@@ -299,15 +314,16 @@ def query(model='', platform=''):
     hits = exact or loose
     if len(hits) == 1:
         pname, mname, entry = hits[0]
-        hw = _pack_entry(pname, mname, entry)
         meta = (cat.get('platforms', {}).get(pname) or {})
+        hw = _pack_entry(pname, mname, entry, meta)
         return {'ok': True, 'mode': 'model',
                 'platform': pname,
                 'model': mname,
-                'preset': _preset(entry, pname),
+                'preset': _preset(entry, pname, meta),
                 'hardware': hw,
                 'namingRules': cat.get('namingRules') or {},
                 'platformSummary': meta.get('summary', ''),
+                'platformDefaults': meta.get('defaults') or {},
                 'platformDifferences': meta.get('differences') or [],
                 'platformOptional': meta.get('optional') or [],
                 'nextSteps': _next_steps(entry, pname),
@@ -391,6 +407,10 @@ def build_markdown(cat=None):
             L.append('- 平台定位：%s' % meta['summary'])
         if meta.get('chips'):
             L.append('- 常见主控：%s' % ' / '.join(meta['chips']))
+        pdef = meta.get('defaults') or {}
+        if pdef:
+            L.append('- 平台默认参数：%s'
+                     % '；'.join('%s=%s' % (k, v) for k, v in pdef.items()))
         for d in (meta.get('differences') or []):
             L.append('- 平台差异·%s：%s' % (d.get('topic', ''), d.get('detail', '')))
         for m in (meta.get('optional') or []):
@@ -433,6 +453,12 @@ def build_markdown(cat=None):
                     L.append('  - %s' % k['note'])
             for sk, sv in (e.get('specs') or {}).items():
                 L.append('- %s：%s' % (sk, sv))
+            mdef = _merged_defaults(e, meta)
+            if mdef:
+                L.append('- **默认参数（开发直接照抄）**：%s'
+                         % '；'.join('%s=%s' % (k, v) for k, v in mdef.items()))
+            for rf in (e.get('docRefs') or []):
+                L.append('- 资料：`%s`' % rf)
             for d in (e.get('differences') or []):
                 L.append('- 差异·%s：%s' % (d.get('topic', ''), d.get('detail', '')))
             for m in (e.get('optional') or []):
