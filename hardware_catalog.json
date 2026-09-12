@@ -3,14 +3,34 @@
   "note": "硬件型号库（唯一事实来源，人工维护）。定位（沛哥 2026-09-12）：**预设参数**，让后期开发少问少核（沛哥 2026-09-12 明确：所谓「平台差异」= 具体型号的默认参数，开发直接照抄不用猜）。有具体型号 → 按该型号的 screen/keys/specs 直接开工（工具会给出 preset）；没有具体型号 → 确认平台 + 分辨率就能建工程，不必等数据补全。改完跑：python scripts/gen_hardware_doc.py（生成 knowledge/hardware/hardware-models.md，可检索）→ python rebuild_index_local.py。字段：platforms.<平台>.models.<型号>，平台名必须是 platforms.py 里的规范名（F133/F135/T113/V85X/Z20/Z21）。dataStatus：complete=规格书完整 / partial=部分参数 / pending=仅登记型号（**都不是开工阻塞**）。optional[] = 可选补充项（有则更方便，没有不影响开工；禁止 AI 拿同系列型号外推填坑）。 defaults（平台级/型号级）= 默认参数；differences = 选型/差异说明；工具把平台级 + 型号级 defaults 合并成 preset 返回。",
   "updated": "2026-09-12",
   "namingRules": {
-    "structure": "SW + 宽 + 高 + 尺寸 + 平台/版本字母 [+ 可选后缀]",
+    "structure": "SW + 分辨率 + 尺寸 + 平台字母 + 选配位 + _后缀（依据 7 寸串口屏规格书 V1.0 第 4 节）",
     "example": "SW80480070A_CWM = 7 寸 800×480，电容触摸 + WIFI + 多媒体版（官方《产品规格型号说明》示例）",
     "platformLetter": {
       "D": "Z20 平台（沛哥 2026-09-12 确认）",
       "E": "Z21 平台（沛哥 2026-09-12 确认）"
     },
     "lettersNote": "字母可跨产品线套用：4 寸 86 盒线 SW48480040B1=Z6 / D1=Z20 / E=Z21（86 盒规格书 V3.0）与 D=Z20、E=Z21 一致；其他字母（A/B/C 等）未确认，先问沛哥再入库。",
-    "limit": "型号名只能看出平台/分辨率线索，**具体规格以规格书为准**（不要按命名外推接口、内存、容量）"
+    "limit": "型号名只能看出平台/分辨率线索，**具体规格以规格书为准**（不要按命名外推接口、内存、容量）",
+    "decode": {
+      "resolution": {
+        "80480": "800*480",
+        "10600": "1024*600"
+      },
+      "size": {
+        "070": "7 寸",
+        "050": "5 寸"
+      },
+      "option": {
+        "M": "多媒体功能",
+        "W": "WiFi 功能"
+      },
+      "suffix": {
+        "C": "电容触摸",
+        "R": "电阻触摸",
+        "TC": "电容触摸 + 铁框（整机型）"
+      }
+    },
+    "docConflict": "7 寸串口屏规格书 V1.0（2021）第 4 节命名表写「D: Z21」，与现行口径 D=Z20 / E=Z21 不一致；以沛哥口径为准，旧文档涉及的型号（如 SW80480070D_C）归属待确认。"
   },
   "platforms": {
     "V85X": {
@@ -765,6 +785,66 @@
             "sensor": "光感 / 人体测距（可选）",
             "boot": "3 秒开机"
           }
+        },
+        "SW10600070E_C": {
+          "aliases": [
+            "SW10600070E-C",
+            "SW10600070D_C",
+            "SW10600070D-C"
+          ],
+          "kind": "7 寸串口屏整机（高清 1024×600，电容触摸；与 SV50PD 同系列资料）",
+          "dataStatus": "complete",
+          "screen": {
+            "inch": 7,
+            "width": 1024,
+            "height": 600,
+            "resolution": "1024x600",
+            "orientation": "landscape",
+            "colors": "24bit / 16.7M 色",
+            "brightness": "250 cd/m2",
+            "touch": "GT911 电容触摸（P+G 材质）",
+            "rotate": "支持 0/90/180/270 度旋转"
+          },
+          "screenNote": "规格书 V1.0 第 3 节：7 寸 1024*600 24bit 16.7M 色，亮度 250cd/m²，GT911 电容触摸 P+G。⚠️ 该 PDF 的标题页与型号表写作 SW10600070D_C（沛哥 2026-09-12 确认真实型号为 SW10600070E_C）",
+          "specs": {
+            "CPU": "ARM 双核 A7 1200MHz",
+            "RAM": "64MB",
+            "存储": "16M SPI Nor Flash",
+            "供电": "DC 5V / 1A（接口电压范围 4.5-5.4V@1A）",
+            "串口": "UART0 / UART1 / UART2（TTL 3.3V，波特率 1200~921600bps）",
+            "TF 卡": "FAT32",
+            "USB": "支持 UVC 摄像头 / AVIN 输入设备",
+            "外设": "SPI 接口、KEY ADC",
+            "开发环境": "FlyThings IDE",
+            "尺寸": "121.9(宽) × 74.7(高) × 14.5(厚) mm，净重 120g",
+            "工作温度": "-10~60℃",
+            "存储温度": "-20~70℃"
+          },
+          "differences": [],
+          "optional": [
+            "与规格书写法差异：该 PDF 标题页/型号表写 SW10600070D_C，且第 4 节命名表写「D: Z21」——与现行口径（D=Z20 / E=Z21）不一致，待确认是旧文档笔误还是旧版命名（现按沛哥口径 E=Z21 入库）",
+            "同系列另一型号 SW10600070D_TC（7 寸高清电容屏带铁框）是否也要入库"
+          ],
+          "source": "SW10600070E_C 规格书 V1.0（2021-03-20，文档内写作 D_C）+ 平台字母 E=Z21（沛哥确认）",
+          "naming": {
+            "letter": "E",
+            "meaning": "Z21 平台（沛哥 2026-09-12 确认：D=Z20、E=Z21）"
+          },
+          "defaults": {
+            "resolution": "1024x600",
+            "orientation": "landscape",
+            "display": "7 寸 1024x600 24bit 16.7M 色，亮度 250cd/m2",
+            "touch": "GT911 电容触摸（P+G）",
+            "uart": "UART0 / UART1 / UART2（TTL 3.3V，默认 115200）",
+            "baudRange": "1200~921600 bps",
+            "power": "DC 5V / 1A",
+            "storage": "16M SPI Nor Flash + TF 卡（FAT32）",
+            "ram": "64MB"
+          },
+          "docRefs": [
+            "wiki/flythings/datasheet/board/SW10600070D_C(sv50pd).pdf",
+            "wiki/flythings/datasheet/board/SV50PD核心板规格书V3.0-20210813.pdf"
+          ]
         }
       },
       "defaults": {
@@ -921,7 +1001,8 @@
             "CPU/内存/接口配置（请提供规格书或确认）",
             "型号后缀 _C 的确切含义（电容触摸？版本？）",
             "与 SW80480070D-CK 系列是否同一产品",
-            "与 SW80480070D-CK 系列规格书写「Z21X 平台」的出入（D=Z20，待确认同款性/是否旧标注）"
+            "与 SW80480070D-CK 系列规格书写「Z21X 平台」的出入（D=Z20，待确认同款性/是否旧标注）",
+            "命名表出入：7 寸串口屏规格书写「D: Z21」，现行口径 D=Z20 —— 若该型号实际属 Z21（同 SW80480070E_C 那条线），需从 Z20 挪回 Z21"
           ],
           "source": "命名规则（官方《产品规格型号说明》）+ 平台字母 D=Z20（沛哥确认）+ hardwarespec/SW80480070D-CK系列型.pdf",
           "defaults": {
@@ -930,41 +1011,6 @@
           },
           "docRefs": [
             "wiki/flythings/datasheet/board/SW80480070D-CK系列型.pdf"
-          ]
-        },
-        "SW10600070D_C": {
-          "aliases": [
-            "SW10600070D-C"
-          ],
-          "kind": "串口屏 / 工控整机（待确认）",
-          "dataStatus": "pending",
-          "screen": {
-            "inch": 7,
-            "width": 1024,
-            "height": 600,
-            "resolution": "1024x600",
-            "orientation": "landscape"
-          },
-          "screenNote": "依据：本地硬件索引把「SV50PD-10600070-C」记为 7 寸 1024×600，且 SV50PD 目录下有 SW10600070D_C(sv50pd).pdf（疑为 SV50PD 核心板 + 1024×600 屏的整机型号）。待沛哥确认后转 complete",
-          "specs": {},
-          "differences": [],
-          "optional": [
-            "确认是否基于 SV50PD 核心板（型号字母 D 指 Z20 平台，与 SV50PD 目录同名规格书的平台对应关系待确认）",
-            "确认是否基于 SV50PD 核心板（即是否等同 SV50PD-10600070-C）",
-            "CPU/内存/接口等完整规格"
-          ],
-          "source": "本地硬件索引（HARDWARE_INDEX.md）+ SV50PD 目录规格书文件名",
-          "naming": {
-            "letter": "D",
-            "meaning": "Z20 平台（沛哥 2026-09-12 确认：D=Z20、E=Z21）"
-          },
-          "defaults": {
-            "resolution": "1024x600",
-            "orientation": "landscape"
-          },
-          "docRefs": [
-            "wiki/flythings/datasheet/board/SW10600070D_C(sv50pd).pdf",
-            "wiki/flythings/datasheet/board/SV50PD核心板规格书V3.0-20210813.pdf"
           ]
         }
       },
