@@ -36,6 +36,7 @@ DEFAULT_OUT = os.path.join(BASE, 'tools_manifest.json')
 RISK = {
     'flythings_get_version': 'read',
     'flythings_knowledge_search': 'read',
+    'flythings_hardware_info': 'read',
     'flythings_read_json': 'read',
     'flythings_get_project_spec': 'read',
     'flythings_validate_project': 'read',
@@ -72,6 +73,7 @@ RISK = {
 CATEGORY = {
     'flythings_get_version': 'kbase',
     'flythings_knowledge_search': 'kbase',
+    'flythings_hardware_info': 'kbase',
     'flythings_read_json': 'layout',
     'flythings_get_project_spec': 'layout',
     'flythings_validate_project': 'layout',

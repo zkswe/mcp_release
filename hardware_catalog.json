@@ -1,0 +1,270 @@
+{
+  "schema": 1,
+  "note": "硬件型号库（唯一事实来源，人工维护）。改完跑：python scripts/gen_hardware_doc.py（生成 knowledge/hardware/hardware-models.md，可检索）→ python rebuild_index_local.py。字段：platforms.<平台>.models.<型号>，平台名必须是 platforms.py 里的规范名（F133/F135/T113/V85X/Z20/Z21）。dataStatus：complete=规格书完整 / partial=部分字段待补 / pending=仅登记型号。missing[] 明确列出待补项（禁止 AI 编造，缺就照实说）。",
+  "updated": "2026-09-12",
+  "platforms": {
+    "V85X": {
+      "summary": "全志 V85x 系列（A7，视频编码 1080p）——摄像头/DVR/手持便携类产品常用",
+      "chips": ["V553", "V851S", "V851S3", "V853"],
+      "missing": ["平台差异化说明（沛哥将补充：与 Z21/V853 等在屏幕方向、按键、TF 卡格式等方面的差异）"],
+      "differences": [],
+      "models": {
+        "PocketDisplay4": {
+          "aliases": ["PD4", "PocketDisplay-4", "Pocket Display 4"],
+          "kind": "手持/便携整机（形态待确认）",
+          "dataStatus": "partial",
+          "screen": {
+            "inch": 4,
+            "width": 480,
+            "height": 800,
+            "resolution": "480x800",
+            "orientation": "portrait",
+            "note": "4 寸 480×800（竖屏）"
+          },
+          "keys": {
+            "count": 3,
+            "values": [105, 103, 108],
+            "linuxKeyCodes": ["KEY_LEFT", "KEY_UP", "KEY_DOWN"],
+            "note": "按键值 = /dev/input 事件里的 code（Linux input-event-codes）。105/103/108 按标准头文件为 KEY_LEFT / KEY_UP / KEY_DOWN（物理丝印与 UI 功能对应关系待真机核对）"
+          },
+          "specs": {},
+          "differences": [],
+          "missing": [
+            "CPU/内存/存储/接口等整机规格",
+            "屏幕接口类型（RGB / MIPI）与触摸方式",
+            "三个按键的物理位置与丝印",
+            "V85X 平台差异化说明（屏幕方向 rotateScreen / TF 卡格式等）"
+          ],
+          "source": "沛哥 2026-09-12 口述"
+        }
+      }
+    },
+    "Z21": {
+      "summary": "A7 双核 1.0GHz + 内置 64MB DDR2——串口屏/广告机/86盒主力平台",
+      "chips": ["SSD212", "SSD210", "T113-S3"],
+      "missing": ["平台差异化说明（沛哥将补充）"],
+      "differences": [],
+      "models": {
+        "SV50PD": {
+          "aliases": ["SV50PD核心板"],
+          "kind": "核心板（邮票半孔 + XH2.54 插针双接口）",
+          "dataStatus": "complete",
+          "screen": {
+            "note": "无自带屏：50Pin RGB888 通用接口屏，最大支持 1280×720 及以下"
+          },
+          "specs": {
+            "CPU": "ARM 双核 A7 1200MHz",
+            "内存": "64MB DDR2",
+            "存储": "16M SPI NorFlash",
+            "屏幕接口": "RGB888 50Pin，最大 1280×720",
+            "尺寸": "65 × 56.3 × 1.2 mm",
+            "串口": "UART ×3",
+            "GPIO": "×9",
+            "I2C": "TWI ×2",
+            "SPI": "×1",
+            "PWM": "×1",
+            "ADC": "×1",
+            "USB": "OTG ×1",
+            "以太网": "EPHY ×1（外接变压器座子）",
+            "音频": "LINE OUT + 按键蜂鸣器 ×1",
+            "扩展存储": "TF 卡",
+            "开发环境": "FlyThings IDE"
+          },
+          "differences": [],
+          "source": "SV50PD 核心板规格书 V3.0（2021-08-13）"
+        },
+        "SW80480070D_C": {
+          "aliases": ["SW80480070D-C", "SW80480070D"],
+          "kind": "串口屏 / 工控整机（待确认）",
+          "dataStatus": "partial",
+          "screen": {
+            "inch": 7,
+            "width": 800,
+            "height": 480,
+            "resolution": "800x480",
+            "orientation": "landscape"
+          },
+          "screenNote": "按官方《产品规格型号说明》命名规则推导：SW+宽+高+尺寸+版本，SW80 480 070 D = 7 寸 800×480；同系列 SW80480070D-CK 规格书标 800×480 / 1024×600 可选、Z21X 平台（A7 双核 1.2GHz）",
+          "specs": {},
+          "differences": [],
+          "missing": [
+            "CPU/内存/接口配置（请提供规格书或确认）",
+            "型号后缀 _C 的确切含义（电容触摸？版本？）",
+            "与 SW80480070D-CK 系列是否同一产品"
+          ],
+          "source": "命名规则（官方《产品规格型号说明》）+ hardwarespec/SW80480070D-CK系列型.pdf"
+        },
+        "SW10600070D_C": {
+          "aliases": ["SW10600070D-C"],
+          "kind": "串口屏 / 工控整机（待确认）",
+          "dataStatus": "pending",
+          "screen": {
+            "inch": 7,
+            "width": 1024,
+            "height": 600,
+            "resolution": "1024x600",
+            "orientation": "landscape"
+          },
+          "screenNote": "依据：本地硬件索引把「SV50PD-10600070-C」记为 7 寸 1024×600，且 SV50PD 目录下有 SW10600070D_C(sv50pd).pdf（疑为 SV50PD 核心板 + 1024×600 屏的整机型号）。待沛哥确认后转 complete",
+          "specs": {},
+          "differences": [],
+          "missing": [
+            "确认分辨率与屏幕尺寸",
+            "确认是否基于 SV50PD 核心板（即是否等同 SV50PD-10600070-C）",
+            "CPU/内存/接口等完整规格"
+          ],
+          "source": "本地硬件索引（HARDWARE_INDEX.md）+ SV50PD 目录规格书文件名"
+        },
+        "SW48854050E1": {
+          "kind": "5 寸串口屏整机",
+          "dataStatus": "complete",
+          "screen": {
+            "inch": 5,
+            "width": 480,
+            "height": 854,
+            "resolution": "480x854",
+            "orientation": "portrait",
+            "touch": "电容触摸"
+          },
+          "specs": {
+            "CPU": "ARM Cortex-A7 双核 1GHz",
+            "存储": "16M NorFlash",
+            "UART": "×2（默认 115200）",
+            "USB": "下载调试，默认 Host",
+            "音频": "默认蜂鸣器（SPK 二选一）",
+            "RTC": "选配",
+            "电源": "DC 5V / 1000mA"
+          },
+          "differences": [],
+          "source": "Z21 5 寸串口屏规格书 V1.0（2025-07-25）"
+        },
+        "SW48480040E": {
+          "kind": "4 寸 86 盒智能面板（Z21 版）",
+          "dataStatus": "complete",
+          "screen": {
+            "inch": 4,
+            "width": 480,
+            "height": 480,
+            "resolution": "480x480",
+            "orientation": "landscape"
+          },
+          "specs": {
+            "平台": "Z21",
+            "继电器": "最多 3 路（10A）",
+            "有线通讯": "RS485 + 百兆以太网",
+            "无线": "内置 WiFi 模块，可扩展 Zigbee/Bluetooth/离线语音模块",
+            "音频": "内置 1W 功放小喇叭",
+            "供电": "AC 220V 强电 / DC 9-24V 弱电",
+            "存储": "主控内置 DDR + 外挂 16M Flash + 128M SD Nand",
+            "传感器": "可选光感 / 人体测距",
+            "OTA": "支持",
+            "开机": "3 秒"
+          },
+          "differences": [
+            {
+              "topic": "同系列三平台差异",
+              "detail": "同款 4 寸 86 盒有 Z6（SW48480040B1，480×480）/ Z20（SW48480040D1）/ Z21（SW48480040E）三个平台版本；Z20 版支持 720×720 与在线语音 SDK + 双麦降噪，Z21 版为 480×480 且无在线语音"
+            }
+          ],
+          "source": "4 寸 86 盒系列规格书 V3.0（2025-05-20）"
+        }
+      }
+    },
+    "Z20": {
+      "summary": "A7 双核 1.2GHz + 内置 128MB DDR3——86 盒高配/语音面板/电子价签常用平台",
+      "chips": ["SSD201", "SSD202", "SSD202D"],
+      "missing": ["平台差异化说明（沛哥将补充）"],
+      "differences": [],
+      "models": {
+        "SW48480040D1": {
+          "kind": "4 寸 86 盒智能面板（Z20 版）",
+          "dataStatus": "complete",
+          "screen": {
+            "inch": 4,
+            "width": 480,
+            "height": 480,
+            "resolution": "480x480 / 720x720",
+            "orientation": "landscape"
+          },
+          "specs": {
+            "平台": "Z20（A7 双核 1.2GHz，内置 128MB DDR3）",
+            "语音": "支持内嵌在线语音 SDK + 双麦硬件降噪",
+            "存储": "主控内置 DDR + 外挂 16M Flash + 128M SD Nand",
+            "继电器": "最多 3 路（10A）",
+            "有线通讯": "RS485 + 百兆以太网",
+            "供电": "AC 220V / DC 9-24V",
+            "OTA": "支持",
+            "开机": "3 秒"
+          },
+          "differences": [
+            {
+              "topic": "同系列三平台差异",
+              "detail": "Z6 版 SW48480040B1（ARM9 600MHz，480×480，最低成本）/ Z20 版本型号（1.2GHz+128M DDR3，480×480 或 720×720，带在线语音）/ Z21 版 SW48480040E（1.0GHz，480×480）"
+            }
+          ],
+          "source": "4 寸 86 盒系列规格书 V3.0（2025-05-20）"
+        },
+        "SW8001280101D-JQ": {
+          "kind": "10.1 寸彩色电子价签 PCBA（单屏）",
+          "dataStatus": "complete",
+          "screen": {
+            "inch": 10.1,
+            "width": 800,
+            "height": 1280,
+            "resolution": "800x1280",
+            "orientation": "portrait",
+            "interface": "MIPI"
+          },
+          "specs": {
+            "CPU": "SSD201（Cortex-A7 双核 1.0GHz）",
+            "DRAM": "CPU 内置 DDR3 64MB",
+            "存储": "128M SD NAND",
+            "WiFi": "2.4G USB WiFi6 模组（40Mbps，支持 50 台以上设备）+ BLE5.2 配网",
+            "USB": "micro USB（支持 U 盘升级）",
+            "UART": "1 路 TTL 3.3V（选配）",
+            "以太网": "外接 RJ45-100M（选配）",
+            "音频": "Audio line out（支持 1W 喇叭，选配）",
+            "供电": "9-24V 宽压，不分正负极",
+            "PCBA 尺寸": "70 × 66.6 × 1.2 mm",
+            "顶屏能力": "单屏"
+          },
+          "differences": [
+            {
+              "topic": "同款双型号差异",
+              "detail": "SW8001280101D-JQ = SSD201（1.0GHz / 64MB DDR3 / 仅单屏）；SW8001280101D1-JQ = SSD202（1.2GHz / 128MB DDR3 / 支持双屏异显）"
+            }
+          ],
+          "source": "SW8001280101-SSD20X 平台价签 PCBA 规格 V1.0（2024-07-25）"
+        },
+        "SW8001280101D1-JQ": {
+          "kind": "10.1 寸彩色电子价签 PCBA（支持双屏）",
+          "dataStatus": "complete",
+          "screen": {
+            "inch": 10.1,
+            "width": 800,
+            "height": 1280,
+            "resolution": "800x1280",
+            "orientation": "portrait",
+            "interface": "MIPI"
+          },
+          "specs": {
+            "CPU": "SSD202（Cortex-A7 双核 1.2GHz）",
+            "DRAM": "CPU 内置 DDR3 128MB",
+            "存储": "128M SD NAND",
+            "WiFi": "2.4G USB WiFi6 模组 + BLE5.2 配网",
+            "供电": "9-24V 宽压，不分正负极",
+            "PCBA 尺寸": "70 × 66.6 × 1.2 mm",
+            "顶屏能力": "支持双屏（双屏异显）"
+          },
+          "differences": [
+            {
+              "topic": "同款双型号差异",
+              "detail": "与 SW8001280101D-JQ 硬件同板，差别只在主控（SSD202 1.2GHz / 128MB DDR3）与双屏能力"
+            }
+          ],
+          "source": "SW8001280101-SSD20X 平台价签 PCBA 规格 V1.0（2024-07-25）"
+        }
+      }
+    }
+  }
+}

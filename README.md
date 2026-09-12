@@ -23,7 +23,7 @@
 🔥 **核心优势**：
 - 🚀 **FlyThings 专属配置**：内置本地向量模型（bge-small-zh），知识检索完全离线，AI开发效率及Token消耗极低
 - 🏭 **全流程开箱即用**：编译工具链（fui/fun）与项目模板已内置，创建项目 → 布局 → 编译 → 推送一气呵成
-- 🧠 **32 个工具**：知识检索、项目创建、布局转换、依赖管理、规范校验、自动修复、多语言、自动化测试、UI 可视化编辑、真机截图与产物核对全都有
+- 🧠 **33 个工具**：知识检索、硬件型号库、项目创建、布局转换、依赖管理、规范校验、自动修复、多语言、自动化测试、UI 可视化编辑、真机截图与产物核对全都有
 - 📦 **一条命令安装**：`pip install -r requirements.lock`（已锁定实测通过的版本组合），AI 工具指一下路径就能用
 - ✅ **发布前置闸门**：95 项契约用例 + 30 项冒烟 + 一致性校验（版本/工具数/平台/索引/隐私）一键跑，见 [`tests/`](tests/README.md)
 - 🪶 **schema 集约**：工具 docstring 合计 ≤ 12,000 字符（单个 ≤ 900），长尾细节全放可检索的知识库——不拿上下文烧钱
@@ -133,11 +133,11 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 | 模式 | 怎么配 | 客户端看到什么 | 何时用 |
 |------|--------|----------------|--------|
 | `dispatcher`（默认） | 就指 `mcp_server.py` | **1 个工具** `flythings_kb`（op="list" 取目录） | 推荐：schema 开销最小；配合意图闸门/README 工具表 |
-| `all` | `FLYTHINGS_MCP_MODE=all` | 1 个分发器 + 32 个独立工具 | 你的提示词/客户端直接调 `flythings_knowledge_search` 这类名字（旧配置兼容） |
-| `flat` | 指 `mcp_server_flat.py`（或 `FLYTHINGS_MCP_MODE=flat`） | 32 个独立工具（无分发器） | 需要每个工具独立 schema/参数提示的客户端（Trae / Cursor / Claude Desktop） |
+| `all` | `FLYTHINGS_MCP_MODE=all` | 1 个分发器 + 33 个独立工具 | 你的提示词/客户端直接调 `flythings_knowledge_search` 这类名字（旧配置兼容） |
+| `flat` | 指 `mcp_server_flat.py`（或 `FLYTHINGS_MCP_MODE=flat`） | 33 个独立工具（无分发器） | 需要每个工具独立 schema/参数提示的客户端（Trae / Cursor / Claude Desktop） |
 
 > ⚠️ 默认从“全注册”改为“只分发器”是 v0.27.34 的**行为变更**；受影响就设 `FLYTHINGS_MCP_MODE=all` 恢复。
-> `flat` 模式的代价：32 份 schema 常驻上下文（≈1 万 token/session）。
+> `flat` 模式的代价：33 份 schema 常驻上下文（≈1 万 token/session）。
 
 **4. 验证**
 
@@ -145,7 +145,7 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 
 > **MCP 版本是多少？**
 
-应返回：`flythings-kb-open 0.27.37-open`，包含 32 个工具。
+应返回：`flythings-kb-open 0.27.38-open`，包含 33 个工具。
 
 ---
 
@@ -176,6 +176,7 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 | 工具 | 能力 |
 |------|------|
 | `flythings_knowledge_search` | 知识库检索（本地向量 + BM25 双模式，带 quality/source 标记） |
+| `flythings_hardware_info` | **硬件型号库**（platform/model → 屏幕分辨率·方向、按键值（/dev/input code）、接口规格、型号/平台差异化、待补字段；未收录只给候选不猜规格；表见 `knowledge/hardware/hardware-models.md`） |
 | `flythings_get_version` | 版本信息 |
 | `flythings_create_project` | 从模板创建项目（平台/分辨率） |
 | `flythings_build_ui_flow` | fui pack → fun install → fun build → fun launch 一键交付 |
@@ -219,10 +220,12 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 ```
 flythings-mcp-open/
 ├── mcp_server.py          # 入口（stdio MCP server，单入口分发器）
-├── kb_tools.py            # 工具定义与注册（32 个）+ OP_NAMES 清单（唯一来源）
+├── kb_tools.py            # 工具定义与注册（33 个）+ OP_NAMES 清单（唯一来源）
 ├── project_tools.py       # 项目/编译/交付
 ├── package_tools.py       # 依赖包生态
 ├── platforms.py           # 平台矩阵唯一来源（模板/bin_tools/别名）
+├── hardware_tools.py      # 硬件型号库读取/查询/文档生成（单一来源 = hardware_catalog.json）
+├── hardware_catalog.json  # 硬件型号库（平台 → 型号 → 屏幕/按键/规格 + 平台差异化，人工维护）
 ├── rag_search.py          # 知识库检索（本地向量 + BM25）
 ├── embed_local.py         # 本地向量模型封装（bge-small-zh）
 ├── rag_index.json         # 知识库索引（本地模型预计算）
@@ -263,7 +266,7 @@ flythings-mcp-open/
 | 问题 | 解决 |
 |------|------|
 | `ModuleNotFoundError: mcp / onnxruntime / tokenizers` | 执行 `pip install -r requirements.lock` |
-| 工具列表 < 32 | 检查配置文件 command/args 路径是否正确 |
+| 工具列表 < 33 | 检查配置文件 command/args 路径是否正确 |
 | 抓屏工具报“找不到 adb” | 装 Android platform-tools 或设环境变量 `ADB`（抓屏需要 adb；编译/预览不需要） |
 | 检索结果不准 | 本地模型首次使用会自动加载；确认 `models/bge-small-zh/` 存在 |
 | 返回体里出现 `warnings` | 正常，**要看**：降级（BM25）、自动转图、手绘图被拉伸等信息都在里面，不是报错 |

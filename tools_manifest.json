@@ -2,9 +2,9 @@
   "schema": 1,
   "generatedBy": "scripts/gen_manifest.py",
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY 表后重新生成，勿手改本文件",
-  "version": "0.27.37-open",
+  "version": "0.27.38-open",
   "build": "2026-09-12",
-  "toolCount": 32,
+  "toolCount": 33,
   "cli": {
     "fun": "FlyThings 工程工具（create/install/build/launch，<项目>/.fun/<平台>/ 下）",
     "fui": "FTU 布局工具——当前内置版本只支持 pack（json → ftu）；unpack 是空壳（调用报通用错误），不要依赖",
@@ -225,6 +225,16 @@
       "category": "kbase"
     },
     {
+      "op": "flythings_hardware_info",
+      "brief": "查硬件型号库：按平台/型号拿到分辨率、按键值、接口规格与平台差异化。",
+      "args": [
+        "model",
+        "platform"
+      ],
+      "risk": "read",
+      "category": "kbase"
+    },
+    {
       "op": "flythings_html_to_json",
       "brief": "受限 HTML 交互原型 → ui/*.json 布局（CSS 效果自动转图，产物尺寸 == 控件盒）。",
       "args": [
@@ -428,9 +438,9 @@
     }
   ],
   "docs": {
-    "knowledgeFiles": 53,
+    "knowledgeFiles": 54,
     "wikiFiles": 128,
-    "ragChunks": 1201,
-    "ragPaths": 181
+    "ragChunks": 1215,
+    "ragPaths": 182
   }
 }

@@ -95,7 +95,7 @@ def _env_err(code, msg, hint='', retryable=False) -> str:
 
 
 async def flythings_kb(op: str = "list", args: str = "{}") -> str:
-    """FlyThings 开发能力统一入口（32 个能力合一的单入口）。
+    """FlyThings 开发能力统一入口（33 个能力合一的单入口）。
 
     ⚠️ 仅在用户意图属于「FlyThings 软件开发」时调用：UI 布局/控件/json/ftu、
     工程创建与编译部署、依赖包/Manifest、多语言 i18n、知识库检索、UI 预览与像素验收、
