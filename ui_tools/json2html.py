@@ -11,6 +11,14 @@
 示例：
     python tools/ui_tools/json2html.py projects/MyApp
     python tools/ui_tools/json2html.py ui/main.json out_preview/
+
+多页面（整屏 window + showWnd() 架构，v0.27.35）：
+    json 里多个整屏 window、部分 visible=false 时，预览页顶部自动生成「页面切换条」：
+      · 点页签 = 显示该整屏窗口、隐藏其余整屏窗口（默认页 = json 里首个 visible!=false 的整屏窗口）
+      · 链接支持 hash 直达：xxx.preview.html#window__29（也认 #29 简写）
+      · 「显示隐藏」勾选框：visible=false 的控件/窗口以 35% 透明 + 橙色虚线幽灵框叠显
+        （与 flythings_ui_editor 的 ghost 行为对齐）
+      · 左右方向键翻页；同一项目多个 json 时另有「项目页面」跳转行
 """
 import base64, json, os, re, sys
 
@@ -96,17 +104,19 @@ def _inline_image(pic, base_dir='', max_kb=600):
 
 
 def _align_class(alignment):
+    """FlyThings alignment(int) → CSS 对齐类（水平和垂直都显式给，不靠 CSS 缺省）。
+
+    位定义（设备实测校准：references/kb/controls.md 2026-08-29 + 2026-09-12 复核）：
+      bit0-1 = 水平 0=左 1=中 2=右；bit2-3 = 垂直 0=顶 1=中 2=底；
+      bit4/5（16/32）是引擎附加标志位，不影响对齐语义。
+    于是：36=左中 / 37=中中 / 38=右中 / 33=中顶 / 41=中底 / 40=左底 / 0=左顶。
+    ⚠️ 旧实现把 bit0 当“靠左”、又忽略 bit2，导致 37（居中）被画成靠左、33/41 垂直方向丢失
+    ——2026-09-12 沛哥报的「edit.html 文字对齐显示不对」即此。
+    """
     a = int(alignment or 0)
-    cls = []
-    if a & 16:
-        cls.append('al-hc')
-    if a & 32:
-        cls.append('al-vc')
-    if a & 1:
-        cls.append('al-l')
-    if a & 2:
-        cls.append('al-r')
-    return ' '.join(cls)
+    h = {0: 'al-hl', 1: 'al-hc', 2: 'al-hr'}.get(a & 3, 'al-hl')
+    v = {0: 'al-vt', 1: 'al-vc', 2: 'al-vb'}.get((a >> 2) & 3, 'al-vt')
+    return h + ' ' + v
 
 
 def _esc(s):
@@ -120,6 +130,181 @@ def _pos_style(pos):
 
 def _text_of(ctrl):
     return ctrl.get('text') or ctrl.get('caption') or ''
+
+
+# ---------- 多整屏窗口预览支持（v0.27.35）----------
+# 背景：官方推荐的「整屏 window + showWnd() 切页」架构下，旧预览把所有 visible=false
+# 的窗口都 display:none，客户确认稿只能看到首页 → 等于失效。
+_SCREEN_TOL = 4          # 整屏判定容差（px）
+
+
+def _screen_windows(data, W, H):
+    """顶层整屏 window 列表 → [(key, caption, visible)]，用于生成页面切换条。
+    非数值 width/height 直接跳过（不抛错也不静默吞异常，无 except 站点）。"""
+    out = []
+    for k, v in data.items():
+        if not (isinstance(v, dict) and '__' in k and k.split('__')[0] == 'window'):
+            continue
+        pos = v.get('position') or {}
+        w, h = pos.get('width', 0), pos.get('height', 0)
+        if isinstance(w, bool) or isinstance(h, bool):
+            continue
+        if not isinstance(w, (int, float)) or not isinstance(h, (int, float)):
+            continue
+        if w >= W - _SCREEN_TOL and h >= H - _SCREEN_TOL:
+            out.append((k, v.get('caption') or '', v.get('visible', True) is not False))
+    return out
+
+
+def _hidden_count(data):
+    """递归统计 visible=false 的控件数（决定是否给幽灵框开关）。"""
+    n = 0
+
+    def walk(o):
+        nonlocal n
+        if isinstance(o, dict):
+            for k, v in o.items():
+                if isinstance(v, dict) and '__' in k:
+                    if v.get('visible') is False:
+                        n += 1
+                    walk(v)
+    walk(data)
+    return n
+
+
+def _page_bar(pages, default_key, siblings, hidden_n, self_html='', json_name=''):
+    """页面切换条 HTML（页签 + 幽灵框开关 + 项目内其它 json 跳转）。"""
+    rows = []
+    if len(pages) >= 2:
+        btns, default_label = [], ''
+        for key, cap, vis in pages:
+            label = _esc(cap) or _esc(key)
+            if key == default_key:
+                default_label = label
+            cls = 'pg-btn on' if key == default_key else 'pg-btn'
+            if not vis:
+                cls += ' off'
+            btns.append(f'<a class="{cls}" href="#{key}" data-win="{key}" '
+                        f'title="{_esc(key)}">{label}</a>')
+        tip = '点页签切页 · 链接加 #window__N 可直达 · 左右方向键翻页'
+        rows.append('<div class="pgnav" id="pg-nav">'
+                    f'<span class="pg-label">页面 {len(pages)}</span>' + ''.join(btns) +
+                    f'<span class="pg-tip">{tip}（默认页：{default_label}）</span>'
+                    + (_ghost_toggle(hidden_n, inline=True) if hidden_n else '') +
+                    '</div>')
+    elif hidden_n:
+        rows.append('<div class="pgnav" id="pg-nav">' + _ghost_toggle(hidden_n) + '</div>')
+    if siblings and len(siblings) > 1:
+        links = []
+        for jn, hn in siblings:
+            cls = 'pg-btn sib on' if hn == self_html else 'pg-btn sib'
+            links.append(f'<a class="{cls}" href="{_esc(hn)}" title="{_esc(jn)}">'
+                         f'{_esc(os.path.splitext(jn)[0])}</a>')
+        rows.append('<div class="pgnav pgnav-sib"><span class="pg-label">项目页面</span>'
+                    + ''.join(links) + '</div>')
+    if not rows:
+        return ''
+    return '\n  '.join(rows)
+
+
+def _ghost_toggle(hidden_n, inline=False):
+    """幽灵框开关（visible=false 的控件 / 整屏窗口以 35% 虚线框叠显）。"""
+    style = ' style="margin-left:auto;"' if inline else ''
+    return (f'<label class="pg-ghost-toggle"{style}>'
+            f'<input type="checkbox" id="pg-ghost"> 显示隐藏'
+            f'<span class="pg-tip">（本 json 有 {hidden_n} 个 visible=false 控件）</span>'
+            f'</label>')
+
+
+# 多窗口预览所需 CSS（.pg-ghost 视觉与 ui_editor 的 .ed-ghost 对齐）
+PREVIEW_CSS = """
+  .pgnav { max-width:__W__px; margin:0 auto 8px; display:flex; flex-wrap:wrap; gap:6px;
+           align-items:center; font-size:13px; color:#aaa; }
+  .pgnav .pg-label { color:#8ab4f8; margin-right:2px; }
+  .pgnav .pg-tip { color:#777; font-size:12px; }
+  .pgnav a.pg-btn { color:#cfd6e4; text-decoration:none; background:#3a3f4b;
+                    border:1px solid #555e70; border-radius:14px; padding:3px 12px; }
+  .pgnav a.pg-btn:hover { filter:brightness(1.3); }
+  .pgnav a.pg-btn.on { background:#4a90d9; border-color:#7ab6f0; color:#fff; }
+  .pgnav a.pg-btn.off { opacity:.5; }
+  .pgnav .pg-ghost-toggle { display:flex; align-items:center; gap:4px; cursor:pointer; }
+  .ctrl.pg-ghost { opacity:.35 !important; outline:1px dashed #ff9f43 !important; }
+"""
+
+
+# 页面切换 / hash 直达 / 幽灵框逻辑（纯原生 JS，无依赖；默认页由 py 侧注入）
+# 注：自带 <script> 标签，与 ui_editor 的 EDIT_JS 一致（模板直接拼 {extra_js}{pages_js}）
+PREVIEW_JS = """
+<script>
+(function(){
+  var dev=document.querySelector('.device');
+  if(!dev) return;
+  var all=Array.prototype.slice.call(dev.querySelectorAll('.ctrl[data-key]'));
+  var W=dev.offsetWidth, H=dev.offsetHeight;
+  var wins=all.filter(function(el){
+    if(el.dataset.topwin!=='1') return false;
+    var w=parseFloat(el.dataset.w||0), h=parseFloat(el.dataset.h||0);
+    return w>=W-4 && h>=H-4;                 // 整屏窗口 = 页面
+  });
+  var nav=document.getElementById('pg-nav');
+  var links=nav?Array.prototype.slice.call(nav.querySelectorAll('a[data-win]')):[];
+  var box=document.getElementById('pg-ghost');
+  var ghostOn=false, active='';
+  function findWin(k){ for(var i=0;i<wins.length;i++){ if(wins[i].dataset.key===k) return wins[i]; } return null; }
+  function pageOf(el){                        // 控件所属的整屏窗口
+    var n=el;
+    while(n && n!==dev){
+      if(n.dataset && n.dataset.topwin==='1' && wins.indexOf(n)>=0) return n.dataset.key;
+      n=n.parentElement;
+    }
+    return '';
+  }
+  function fromHash(){
+    var h=location.hash.replace(/^#/,'');
+    try{ h=decodeURIComponent(h); }catch(e){}
+    if(!h) return '';
+    if(findWin(h)) return h;
+    if(/^[0-9]+$/.test(h) && findWin('window__'+h)) return 'window__'+h;
+    return '';
+  }
+  function apply(){
+    all.forEach(function(el){
+      var hid=el.dataset.visible==='false';
+      var isTopWin=el.dataset.topwin==='1' && wins.indexOf(el)>=0;
+      var pg=pageOf(el), off;
+      if(isTopWin){ off=(el.dataset.key!==active) && !ghostOn; }
+      else if(pg && pg!==active){ off=!ghostOn; }
+      else { off=hid && !ghostOn; }
+      el.style.display=off?'none':'';
+      if(ghostOn && (hid || (isTopWin && el.dataset.key!==active))){
+        el.classList.add('pg-ghost');
+      } else { el.classList.remove('pg-ghost'); }
+    });
+    links.forEach(function(a){ a.classList.toggle('on', a.dataset.win===active); });
+  }
+  function setActive(k, fromHash){
+    if(!k && wins.length) return;
+    active=k;
+    apply();
+    if(!fromHash && location.hash.replace(/^#/,'')!==k){ location.hash=k; }
+  }
+  active=fromHash() || __DEFAULT_WIN__;   // 默认页（py 侧注入 JS 字面量）
+  apply();
+  links.forEach(function(a){
+    a.addEventListener('click', function(e){ e.preventDefault(); setActive(a.dataset.win,false); });
+  });
+  window.addEventListener('hashchange', function(){ var k=fromHash(); if(k) setActive(k,true); });
+  if(box){ box.addEventListener('change', function(){ ghostOn=box.checked; apply(); }); }
+  document.addEventListener('keydown', function(e){
+    if(!wins.length || (e.key!=='ArrowLeft' && e.key!=='ArrowRight')) return;
+    var keys=wins.map(function(w){ return w.dataset.key; });
+    var i=keys.indexOf(active), n=keys.length;
+    var j=(e.key==='ArrowRight')?(i+1+n)%n:(i-1+n)%n;
+    setActive(keys[j],false);
+  });
+})();
+</script>
+"""
 
 
 def _bg_image(ctrl, field='backgroundPic', base_dir=''):
@@ -154,7 +339,7 @@ def _render_control(key, ctrl, depth=0, base_dir='', edit=False):
     style = _pos_style(pos)
     bg = _bg_image(ctrl, 'backgroundPic', base_dir)
     color = _color(ctrl.get('colorTab', {}).get('color0') if isinstance(ctrl.get('colorTab'), dict) else None)
-    align = _align_class(ctrl.get('alignment'))
+    align = _align_class(ctrl.get('alignment')) if 'alignment' in ctrl else ''
     visible = ctrl.get('visible', True)
     if not visible:
         style += 'display:none;'
@@ -167,8 +352,11 @@ def _render_control(key, ctrl, depth=0, base_dir='', edit=False):
             if isinstance(v2, dict) and '__' in k2 and k2 != key:
                 inner.append(_render_control(k2, v2, depth + 1, base_dir, edit))
         bgcolor = _color(ctrl.get('backgroundColor'))
+        # 顶层窗口（depth==0）标记为页面候选，多整屏 window 架构下预览页靠它切页
+        top = (f'data-topwin="1" data-w="{pos.get("width", 0)}" '
+               f'data-h="{pos.get("height", 0)}" ') if depth == 0 else ''
         return (f'<div class="ctrl window {align}" data-caption="{cap}" '
-                f'{_da(key, ctrl, ctype, edit)} '
+                f'{top}{_da(key, ctrl, ctype, edit)} '
                 f'style="{style}background-color:{bgcolor};{bg}">' + ''.join(inner) + '</div>')
 
     if ctype == 'textview':
@@ -262,7 +450,7 @@ def _render_control(key, ctrl, depth=0, base_dir='', edit=False):
 
 # ---------- 主转换 ----------
 def _json_to_html(json_path, html_path, edit=False, extra_css='', extra_js='',
-                  wrapper_open='', wrapper_close=''):
+                  wrapper_open='', wrapper_close='', siblings=None):
     with open(json_path, encoding='utf-8-sig') as f:
         data = json.load(f)
     res = data.get('resolution', {})
@@ -274,6 +462,21 @@ def _json_to_html(json_path, html_path, edit=False, extra_css='', extra_js='',
     for k, v in data.items():
         if isinstance(v, dict) and '__' in k:
             body.append(_render_control(k, v, base_dir=base_dir, edit=edit))
+
+    # ---- 多整屏窗口：页面切换条 + hash 直达 + 幽灵框开关（v0.27.35）----
+    pages_bar, pages_css, pages_js = '', '', ''
+    if not edit:
+        pages = _screen_windows(data, W, H)
+        hidden_n = _hidden_count(data)
+        default_key = next((k for k, _c, vis in pages if vis),
+                           pages[0][0] if pages else '')
+        if len(pages) >= 2 or hidden_n or (siblings and len(siblings) > 1):
+            pages_bar = _page_bar(pages, default_key, siblings, hidden_n,
+                                  self_html=os.path.basename(html_path),
+                                  json_name=os.path.basename(json_path))
+            pages_js = PREVIEW_JS.replace('__DEFAULT_WIN__', json.dumps(default_key))
+        if pages_bar:
+            pages_css = PREVIEW_CSS.replace('__W__', str(W))
 
     html = f"""<!DOCTYPE html>
 <html lang="zh">
@@ -287,15 +490,19 @@ def _json_to_html(json_path, html_path, edit=False, extra_css='', extra_js='',
             margin:0 auto; border:2px solid #555; border-radius:6px; overflow:hidden;
             box-shadow:0 8px 30px rgba(0,0,0,.6); }}
   .ctrl {{ position:absolute; overflow:hidden; }}
-  .textview {{ display:flex; align-items:center; }}
+  .textview {{ display:flex; align-items:flex-start; }}
   .button {{ display:flex; align-items:center; justify-content:center; cursor:pointer;
             border-radius:4px; background:#3a3f4b; }}
   .button:hover {{ filter:brightness(1.3); }}
   .window {{ border:1px dashed rgba(255,255,255,.25); }}
+  /* alignment 十进制位 → 对齐类：bit0-1 水平(0左1中2右) / bit2-3 垂直(0顶1中2底)；
+     写全 H+V 两类，避免 .button 的默认居中把 36/33/41 之类画错 */
+  .al-hl {{ justify-content:flex-start; text-align:left; }}
   .al-hc {{ justify-content:center; text-align:center; }}
+  .al-hr {{ justify-content:flex-end; text-align:right; }}
+  .al-vt {{ align-items:flex-start; }}
   .al-vc {{ align-items:center; }}
-  .al-l {{ justify-content:flex-start; }}
-  .al-r {{ justify-content:flex-end; }}
+  .al-vb {{ align-items:flex-end; }}
   .seekbar {{ background:#333; border-radius:3px; }}
   .seekbar-fill {{ height:100%; background:#4a90d9; border-radius:3px; }}
   .listview {{ border:1px dashed rgba(255,255,255,.2); overflow:auto; }}
@@ -308,7 +515,7 @@ def _json_to_html(json_path, html_path, edit=False, extra_css='', extra_js='',
   .toolbar {{ max-width:{W}px; margin:0 auto 12px; color:#ccc; font-size:13px;
              display:flex; justify-content:space-between; }}
   .toolbar span {{ color:#8f8; }}
-{extra_css}
+{extra_css}{pages_css}
 </style>
 </head>
 <body>
@@ -316,10 +523,11 @@ def _json_to_html(json_path, html_path, edit=False, extra_css='', extra_js='',
     <div>🖥 UI 预览（客户确认稿）· <span>{os.path.basename(json_path)}</span></div>
     <div>分辨率 {W} x {H} · 与设备端 ftu 同源</div>
   </div>
+  {pages_bar}
   {wrapper_open}<div class="device">
 {chr(10).join(body)}
   </div>{wrapper_close}
-{extra_js}
+{extra_js}{pages_js}
 </body>
 </html>"""
     with open(html_path, 'w', encoding='utf-8') as f:
@@ -328,6 +536,15 @@ def _json_to_html(json_path, html_path, edit=False, extra_css='', extra_js='',
 
 
 # ---------- 对外工具 ----------
+def _siblings_of(ui_dir, out_dir, files):
+    """同目录其它 json → 预览页跳转用 [(json 名, html 名)]（同项目多 json 分页架构）。"""
+    out = []
+    for fn in files:
+        if fn.endswith('.json'):
+            out.append((fn, fn[:-5] + '.preview.html'))
+    return out
+
+
 def json2html(target, output_dir=''):
     """target 为项目根目录或单个 json 文件路径。返回 {"success", "files": [...]}。"""
     if os.path.isdir(target):
@@ -338,6 +555,7 @@ def json2html(target, output_dir=''):
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
         files = sorted(os.listdir(ui_dir))
+        sibs = _siblings_of(ui_dir, out_dir, files)
         results = []
         for fn in files:
             if not fn.endswith('.json'):
@@ -345,7 +563,7 @@ def json2html(target, output_dir=''):
             jp = os.path.join(ui_dir, fn)
             hp = os.path.join(out_dir, fn[:-5] + '.preview.html')
             try:
-                W, H = _json_to_html(jp, hp)
+                W, H = _json_to_html(jp, hp, siblings=sibs)
                 results.append({"json": fn, "html": hp, "resolution": f"{W}x{H}"})
             except Exception as e:
                 results.append({"json": fn, "html": None, "error": str(e)})
@@ -355,8 +573,18 @@ def json2html(target, output_dir=''):
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
         hp = os.path.join(out_dir, os.path.splitext(os.path.basename(target))[0] + '.preview.html')
+        # 单文件模式：只链已有同名 .preview.html 的邻居，避免死链接
+        sibs = []
+        jdir = os.path.dirname(os.path.abspath(target))
+        if os.path.isdir(jdir):
+            for fn in sorted(os.listdir(jdir)):
+                if not fn.endswith('.json'):
+                    continue
+                cand = os.path.join(out_dir, fn[:-5] + '.preview.html')
+                if fn == os.path.basename(target) or os.path.isfile(cand):
+                    sibs.append((fn, fn[:-5] + '.preview.html'))
         try:
-            W, H = _json_to_html(target, hp)
+            W, H = _json_to_html(target, hp, siblings=sibs)
             return {"success": True, "files": [{"json": os.path.basename(target),
                                                 "html": hp, "resolution": f"{W}x{H}"}]}
         except Exception as e:

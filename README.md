@@ -145,7 +145,7 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 
 > **MCP 版本是多少？**
 
-应返回：`flythings-kb-open 0.27.34-open`，包含 36 个工具。
+应返回：`flythings-kb-open 0.27.35-open`，包含 36 个工具。
 
 ---
 
@@ -161,7 +161,7 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 ### 🏭 全流程开发
 - **创建项目**：从内置 HelloWord 模板（F133/F135/Z21/T113/V85X/Z20）一键创建
 - **布局设计**：HTML 原型 → FTU 布局 → 一键打包
-- **预览确认**：HTML 预览稿，或直接用 FlyThings IDE 预览/编辑 ftu 文件
+- **预览确认**：HTML 预览稿，或直接用 FlyThings IDE 预览/编辑 ftu 文件（多整屏 window 工程自动出「页面切换条」+ `#window__N` hash 直达 + 「显示隐藏」幽灵框）
 - **编译交付**：内置 fui/fun 工具链，`build_ui_flow` 一键编译推送
 - **规范校验**：`validate_project` 全量检查工程规范性
 

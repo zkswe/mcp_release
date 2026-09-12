@@ -468,11 +468,30 @@ EDIT_JS = r"""
     renderList();
   }
 
-  // 画布即时生效（改文字/颜色/字号/图片/可见，立刻看到）
+  // 对齐类：与 py 端 _align_class 同一套位定义（bit0-1 水平 0左1中2右 / bit2-3 垂直 0顶1中2底）
+  function alignCls(val){
+    var a=parseInt(val,10)||0;
+    var h={0:'al-hl',1:'al-hc',2:'al-hr'}[a&3]||'al-hl';
+    var v={0:'al-vt',1:'al-vc',2:'al-vb'}[(a>>2)&3]||'al-vt';
+    return h+' '+v;
+  }
+  function applyAlign(el, val){
+    ALIGN_CLS.forEach(function(c){ el.classList.remove(c); });
+    alignCls(val).split(' ').forEach(function(c){ if(c) el.classList.add(c); });
+    if(el.dataset.type==='button'){   // 文字按钮的默认居中会被对齐类盖掉，按类重算
+      var c2=el.classList;
+      el.style.justifyContent = c2.contains('al-hc')?'center':(c2.contains('al-hr')?'flex-end':'flex-start');
+      el.style.alignItems = c2.contains('al-vc')?'center':(c2.contains('al-vb')?'flex-end':'flex-start');
+    }
+  }
+  var ALIGN_CLS=['al-hl','al-hc','al-hr','al-vt','al-vc','al-vb','al-l','al-r'];
+
+  // 画布即时生效（改文字/颜色/字号/图片/可见/对齐，立刻看到）
   function liveSync(el, keys, val){
     var k=keys[keys.length-1], t=el.dataset.type||'';
     if(k==='text' && (t==='textview'||t==='button'||t==='checkbox')){ el.textContent=(val===undefined?'':val); }
     else if(k==='fontSize'){ el.style.fontSize=(val||0)+'px'; }
+    else if(k==='alignment'){ applyAlign(el, val); }
     else if(k==='backgroundColor'){ el.style.backgroundColor=int2hex(val); }
     else if(keys[0]==='colorTab' && k==='color0'){ el.style.color=int2hex(val); }
     else if(k==='bold'){ el.style.fontWeight=val?'bold':''; }
@@ -505,6 +524,7 @@ EDIT_JS = r"""
       if(cur.bold!==undefined) el.style.fontWeight=cur.bold?'bold':'';
       if(cur.italic!==undefined) el.style.fontStyle=cur.italic?'italic':'';
       if(cur.text!==undefined && (t==='textview'||t==='button'||t==='checkbox')) el.textContent=cur.text;
+      if(cur.alignment!==undefined) applyAlign(el, cur.alignment);
       if(cur.backgroundColor!==undefined) el.style.backgroundColor=int2hex(cur.backgroundColor);
       el.style.display='';   // 再按 visible / ghost 规则收一遍
       if(cur.visible===false || el.dataset.visible==='false'){
