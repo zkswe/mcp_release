@@ -15,7 +15,14 @@ add_language 添加新语言 / refactor 布局文本转 @key。
 - 代码动态翻译：setTextTr("key")（不带@）；拼接取词：LANGUAGEMANAGER->getValue("key")
   （easyui 包 manager/LanguageManager.h）
 - 语言切换：EASYUICONTEXT->updateLocalesCode("zh_CN") 或 openActivity("LanguageSettingActivity")
-- 换行转义：\n 或 &#x000A;；多语言需字体支持（默认精简字体，建议 font_cut_tool 自定义字体）
+  ⚠️ 只有 updateLocalesCode 会立即刷新**已打开页面**的文案
+  （内部 = LanguageManager::setCurrentCode + 遍历 ActivityStack 调 BaseApp::updateLocales）。
+  只调 LANGUAGEMANAGER->setCurrentCode 不会刷新在屏控件文本，用户要「退出重进」才看到新语言。
+- 换行转义：.tr 里写 `\n`（官方 i18n 文档），转 .json 时必须还原成**真实换行符**；
+  框架取值不做反斜杠还原，设备端 zk_gdi_draw_text 按 0x0A 切行。
+  多语言需字体支持（默认精简字体，建议 font_cut_tool 自定义字体）；
+  ⚠️ 精简字库常缺 `&`、`@` 等 ASCII 符号 → 文案里禁用（用 "and" / 空格 代替），
+  否则设备上该字符空白或出乱码。改文案后建议核对字库 cmap 覆盖。
 
 本工具只做文件读写与诊断，翻译内容由调用方 AI 提供（MCP 零远程依赖）；
 翻译要求专业：结合项目语境（如车载项目 CAN BUS 保持行业术语，不直译公共汽车）。
@@ -30,6 +37,7 @@ add_language 添加新语言 / refactor 布局文本转 @key。
 """
 import io, os, re, glob, json, subprocess
 import xml.etree.ElementTree as ET
+from xml.sax.saxutils import unescape as _xml_unescape
 
 TR_HEADER = '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n'
 TR_FOOTER = '</resources>\n'
@@ -37,6 +45,38 @@ TR_FOOTER = '</resources>\n'
 
 def _i18n_dir(project_root):
     return os.path.join(project_root, 'i18n')
+
+
+# ---------------------------------------------------------------- 换行转义
+# .tr（源）按官方文档写 `\n`；.json（设备读）必须是真实换行符。
+# 实证（2026-09-10 反汇编 v85x easyui 2.9.0 libeasyui.so）：
+#   LanguageManager::getValue 直接 Json::Value::asString() 返回，不做反斜杠还原；
+#   分行发生在 zk_gdi_draw_text，按字节 0x0A(LF) 切行（strchr(p, '\n')）。
+#   ⇒ .json 里留字面 `\n`（JSON 写作 \\n）设备会原样显示 "\n" 文字，不换行。
+#   本地同源脚本：<项目>/tools/tr2json.py。
+_ESCAPE_MAP = {'n': '\n', 'r': '\r', 't': '\t', '\\': '\\', '"': '"', "'": "'"}
+_UNESCAPE_MAP = {'\n': '\\n', '\r': '\\r', '\t': '\\t', '\\': '\\\\'}
+
+
+def _unescape_tr(text):
+    """`\\n`(2 字符) -> 真实换行;`\\t` -> TAB;`\\\\` -> 反斜杠。其余 `\\x` 原样保留。"""
+    if '\\' not in text:
+        return text
+    out, i, n = [], 0, len(text)
+    while i < n:
+        c = text[i]
+        if c == '\\' and i + 1 < n and text[i + 1] in _ESCAPE_MAP:
+            out.append(_ESCAPE_MAP[text[i + 1]])
+            i += 2
+        else:
+            out.append(c)
+            i += 1
+    return ''.join(out)
+
+
+def _escape_tr(text):
+    """真实换行/TAB/反斜杠 -> `\\n` / `\\t` / `\\\\`，保证 .tr 单行可读。"""
+    return ''.join(_UNESCAPE_MAP.get(c, c) for c in text)
 
 
 def _list_tr_files(project_root):
@@ -83,29 +123,26 @@ def _parse_tr(path):
                         cut = min(indents)
                         lines = [l[cut:] if len(l) >= cut else l for l in lines]
                     text = '\n'.join(lines)
-                out[name] = text
+                out[name] = _unescape_tr(text)
     except Exception:
-        # 容错：正则兜底
+        # 容错：正则兜底（XML 实体需手动还原）
         try:
             t = io.open(path, encoding='utf-8').read()
             for m in re.finditer(r'<string name="([^"]+)">(.*?)</string>', t, re.S):
-                out[m.group(1)] = m.group(2).strip()
+                out[m.group(1)] = _unescape_tr(_xml_unescape(m.group(2).strip()))
         except Exception:
             pass
     return out
 
 
 def _write_tr(path, entries):
-    """写 .tr 文件。entries: {key: text}，保持插入序；XML 转义特殊字符。"""
+    """写 .tr 文件。entries: {key: text}，保持插入序；换行写 `\\n` 转义、XML 转义特殊字符。"""
     lines = [TR_HEADER]
     for k, v in entries.items():
         text = (v or '').replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-        # 多行文本：保留换行与 tab 缩进
-        if '\n' in text:
-            indented = text.replace('\n', '\n\t\t')
-            lines.append(f'\t<string name="{k}">\n\t\t{indented}\n\t</string>\n')
-        else:
-            lines.append(f'\t<string name="{k}">{text}</string>\n')
+        # 真实换行 -> `\n` 转义（保证单行；设备端 .json 才用真实换行）
+        text = _escape_tr(text)
+        lines.append(f'\t<string name="{k}">{text}</string>\n')
     lines.append(TR_FOOTER)
     io.open(path, 'w', encoding='utf-8', newline='\n').write(''.join(lines))
 
@@ -389,14 +426,15 @@ def flythings_i18n_refactor(project_root: str, lang: str = 'zh_CN', dry_run: boo
 #   本地开发脚本版见 E:\AICODE\trae\V553\tools\tr2json.py（V553 项目），逻辑同源。
 
 def _tr_to_json(tr_path):
-    """解析 .tr（XML）→ 有序 dict {key: value}。XML 实体由 ElementTree 自动解码。"""
+    """解析 .tr（XML）→ 有序 dict {key: value}。XML 实体由 ElementTree 自动解码；
+    之后把 `\\n` / `\\t` 等反斜杠转义还原为真实字符（设备端按 0x0A 切行）。"""
     tree = ET.parse(tr_path)
     root = tree.getroot()
     out = {}
     for s in root.findall('string'):
         name = s.get('name')
         if name:
-            out[name] = s.text or ''
+            out[name] = _unescape_tr(s.text or '')
     return out
 
 
