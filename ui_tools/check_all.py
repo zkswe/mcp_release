@@ -8,6 +8,8 @@
 setTouchable(false) 未配套 setTouchPass(true)（沛哥 2026-09-10，见 knowledge/uicontrols/touch-events.md）。
 WARN 分两类意图：#15 会先评估「可能故意遮挡」（modal / 容器遮罩 / 整屏 / 完全覆盖 → 本就有意，忽略），
 其余才是「疑似误压」；WARN 永远只是给人工审批的清单，不自动修。
+第 18 项 = **设计令牌漂移检测**（沛哥 2026-09-12）：DESIGN.md 是冻结的视觉真相，json 里的颜色/字号
+应当来自令牌；出现令牌外的值 = 漂移。无 DESIGN.md 或令牌表未填全 → NOTE 跳过（不 FAIL，兼容存量工程）。
 """
 import glob
 import json
@@ -451,6 +453,167 @@ def verify_assets(project_root):
     return res
 
 
+# ---------------- 设计令牌漂移检测（DESIGN.md 令牌 vs json 实际值，沛哥 2026-09-12）----------------
+# 口径：DESIGN.md 是「冻结的视觉真相」——json 里的颜色/字号应当来自令牌，不应当出现模板外的值。
+# 结构值例外（不经令牌）：0（透明）/ -1（未设）/ 16777215（纯白，平台默认文本色）；
+# 显式豁免：在 DESIGN.md 里写一行「漂移豁免: #RRGGBB 18 24」即视为已批准（便于单点例外留痕）。
+_HEX_RE = re.compile(r'#[0-9A-Fa-f]{6}\b')
+_NUM_RE = re.compile(r'(?<![\w.])-?\d+(?![\w.])')
+_COLOR_SEC_HINT = ('色彩令牌', '色彩', 'color token')
+_FONT_SEC_HINT = ('字号阶梯', '字号')
+_SPACE_SEC_HINT = ('间距梯度', '间距')
+_HERO_HINT = ('hero', 'Hero', 'HERO')
+_EXEMPT_HINT = ('漂移豁免', '令牌豁免')
+_STRUCT_COLORS = {0, -1, 16777215}
+_COLOR_FIELDS = ('backgroundColor', 'textColor', 'clockColor', 'penColor', 'hintTextColor',
+                 'borderColor', 'progressColor')
+
+
+def _hexstr(v):
+    return '#%06X' % (v & 0xFFFFFF)
+
+
+def _md_sections(text):
+    """按 '## ' 标题切分 DESIGN.md → {标题: 正文}。"""
+    out = {}
+    cur = ''
+    buf = []
+    for line in text.splitlines():
+        if line.startswith('## '):
+            if cur:
+                out[cur] = '\n'.join(buf)
+            cur = line[3:].strip()
+            buf = []
+        else:
+            buf.append(line)
+    if cur:
+        out[cur] = '\n'.join(buf)
+    return out
+
+
+def _parse_design_tokens(text):
+    """解析 DESIGN.md → (colors, fonts, spacing, exempt)，空集合表示该项未填。"""
+    secs = _md_sections(text)
+    colors, fonts, spacing, exempt = set(), set(), set(), set()
+    for title, body in secs.items():
+        if any(h in title for h in _COLOR_SEC_HINT):
+            for m in _HEX_RE.finditer(body):
+                colors.add(int(m.group(0)[1:], 16))
+        if any(h in title for h in _FONT_SEC_HINT):
+            for row in body.splitlines():
+                if not row.strip().startswith('|'):
+                    continue
+                for n in _NUM_RE.findall(row):
+                    v = int(n)
+                    if 8 <= v <= 400:
+                        fonts.add(v)
+        if any(h in title for h in _SPACE_SEC_HINT):
+            for row in body.splitlines():
+                for n in _NUM_RE.findall(row):
+                    v = int(n)
+                    if 0 < v <= 400:
+                        spacing.add(v)
+    for line in text.splitlines():
+        if any(h in line for h in _HERO_HINT):
+            for n in _NUM_RE.findall(line):
+                v = int(n)
+                if 8 <= v <= 400:
+                    fonts.add(v)
+        if any(h in line for h in _EXEMPT_HINT):
+            for m in _HEX_RE.finditer(line):
+                colors.add(int(m.group(0)[1:], 16))
+            for n in _NUM_RE.findall(line):
+                exempt.add(int(n))
+    return colors | exempt, fonts | exempt, spacing, exempt
+
+
+def _collect_json_colors_fonts(node, out_colors, out_fonts, path=''):
+    """递归收集 json 里的颜色字段与字号（控件键下的 color* / fontSize / textSize）。"""
+    if isinstance(node, dict):
+        for k, v in node.items():
+            p = ('%s.%s' % (path, k)) if path else k
+            if isinstance(v, dict):
+                _collect_json_colors_fonts(v, out_colors, out_fonts, p)
+            elif isinstance(v, list):
+                for i, it in enumerate(v):
+                    _collect_json_colors_fonts(it, out_colors, out_fonts, '%s[%d]' % (p, i))
+            elif isinstance(v, int) and not isinstance(v, bool):
+                if k in _COLOR_FIELDS or (k.startswith('color') and k[5:].isdigit()):
+                    out_colors.append((_ctrl_path(p), k, v))
+                elif k in ('fontSize', 'textSize'):
+                    out_fonts.append((_ctrl_path(p), k, v))
+    return out_colors, out_fonts
+
+
+def _ctrl_path(p):
+    """把 'tv位置.子键.字段' 压成 '控件键.字段'，便于报错定位。"""
+    parts = p.split('.')
+    for i in range(len(parts) - 1):
+        if _CTRL_KEY_RE.match(parts[i]):
+            return '%s.%s' % (parts[i], parts[-1])
+    return p
+
+
+def _sibling_gaps(node, out, path='root'):
+    """同容器内相邻同级控件的纵向间距（用于间距梯度核对），返回 [(gap, 容器路径)]。"""
+    if not isinstance(node, dict):
+        return out
+    items = []
+    for k, v in node.items():
+        if isinstance(v, dict) and _CTRL_KEY_RE.match(k):
+            r = _rect(v)
+            if r:
+                items.append((r[1], r[3], k))
+    items.sort()
+    for i in range(1, len(items)):
+        gap = items[i][0] - items[i - 1][1]
+        if gap > 0:
+            out.append((gap, path))
+    for k, v in node.items():
+        if isinstance(v, dict) and '__' in k:
+            _sibling_gaps(v, out, k)
+    return out
+
+
+def verify_design_tokens(project_root):
+    """DESIGN.md 令牌 vs json 实际值（漂移检测）。返回 {status, note, colors, fonts, gaps, scanned, tokens, ok}。"""
+    res = {'status': 'ok', 'note': '', 'colors': [], 'fonts': [], 'gaps': {},
+           'scanned': 0, 'tokens': {}, 'ok': True}
+    md = os.path.join(project_root, 'DESIGN.md')
+    if not os.path.isfile(md):
+        res['status'] = 'skip'
+        res['note'] = ('未见 DESIGN.md（新项目第一版视觉应当有：见 skill flythings-ui-dev / '
+                       'templates/DESIGN.md）；存量工程可忽略')
+        return res
+    text = open(md, encoding='utf-8').read()
+    colors, fonts, spacing, _exempt = _parse_design_tokens(text)
+    if len(colors) < 2 or not fonts:
+        res['status'] = 'incomplete'
+        res['note'] = ('DESIGN.md 令牌表未填全（解析到 颜色 %d 个 / 字号 %d 个），跳过漂移检测；'
+                       '按 templates/DESIGN.md 填「色彩令牌 + 字号阶梯」后再跑' % (len(colors), len(fonts)))
+        return res
+    allowed_c = colors | _STRUCT_COLORS
+    ui = os.path.join(project_root, 'ui')
+    for f in _ui_pages(project_root):
+        rel = 'ui/' + os.path.relpath(f, ui).replace('\\', '/')
+        d = json.load(open(f, encoding='utf-8'))
+        got_c, got_f = _collect_json_colors_fonts(d, [], [])
+        for ctrl, fld, v in got_c:
+            if v not in allowed_c:
+                res['colors'].append((rel, ctrl, fld, v))
+        for ctrl, fld, v in got_f:
+            if v not in fonts:
+                res['fonts'].append((rel, ctrl, fld, v))
+        if spacing:
+            for gap, where in _sibling_gaps(d, []):
+                res['gaps'][gap] = res['gaps'].get(gap, 0) + 1
+        res['scanned'] += 1
+    res['gaps'] = dict(sorted((g, c) for g, c in res['gaps'].items() if g not in spacing))
+    res['tokens'] = {'colors': sorted(colors), 'fonts': sorted(fonts), 'spacing': sorted(spacing)}
+    res['ok'] = not res['colors'] and not res['fonts']
+    return res
+
+
 def main(project_root):
     root = os.path.abspath(project_root)
     if not os.path.isdir(root):
@@ -827,6 +990,27 @@ def main(project_root):
         if va['unresolved']:
             print('  [NOTE] %d 处跳过（运行时格式化引用/读图失败），见 flythings_verify_assets 明细'
                   % len(va['unresolved']))
+
+    print('== 18. 设计令牌漂移检测（DESIGN.md 令牌 vs json 实际值；沛哥 2026-09-12）==\n'
+          '      口径：DESIGN.md 冻结视觉真相，json 颜色/字号应来自令牌；结构值例外 0/-1/16777215；\n'
+          '      单项例外写一行「漂移豁免: #RRGGBB 18」留痕。无 DESIGN.md / 令牌表未填 → NOTE 跳过。')
+    dt = verify_design_tokens(root)
+    if dt['status'] in ('skip', 'incomplete'):
+        print('  [NOTE] 跳过：%s' % dt['note'])
+    else:
+        tk = dt.get('tokens') or {}
+        log(dt['ok'], '令牌漂移 色值 %d 处 / 字号 %d 处（%d 页；令牌：色 %d / 字 %d）%s'
+            % (len(dt['colors']), len(dt['fonts']), dt['scanned'],
+               len(tk.get('colors', [])), len(tk.get('fonts', [])),
+               '，全部在令牌内' if dt['ok'] else '：'
+               + '；'.join('%s %s.%s=%s' % (p, c, fld, _hexstr(v))
+                           for p, c, fld, v in dt['colors'][:6])
+               + '；'.join('%s %s.%s=%d' % (p, c, fld, v)
+                           for p, c, fld, v in dt['fonts'][:4])))
+        if dt['gaps']:
+            warn('间距梯度外的纵向间距 %d 种（芯距/对齐可能正常，请人工确认；间距梯度=%s）：%s'
+                 % (len(dt['gaps']), ','.join(str(s) for s in tk.get('spacing', [])),
+                    '、'.join('%dpx×%d' % (g, c) for g, c in list(dt['gaps'].items())[:8])))
 
     print()
     if warnings:

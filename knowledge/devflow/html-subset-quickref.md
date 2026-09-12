@@ -130,3 +130,4 @@ warning 会要求切图后用 `data-pic` 引用。
 - 图片资源铁律与 PNG 抗锯齿管线 → `ui-asset-rules.md`
 - json 字段全集/层级规则 → `uicontrols/json-field-mandatory.md`、`uicontrols/json-layer-rules.md`
 - 布局产物核对（图尺寸 == 控件盒）→ `flythings_verify_assets` / check_all 第 17 项
+- 设计令牌漂移（`DESIGN.md` 令牌 vs json 色值/字号）→ check_all 第 18 项

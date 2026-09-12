@@ -145,7 +145,7 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 
 > **MCP 版本是多少？**
 
-应返回：`flythings-kb-open 0.27.42-open`，包含 34 个工具。
+应返回：`flythings-kb-open 0.27.43-open`，包含 34 个工具。
 
 ---
 
@@ -193,6 +193,7 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 | `flythings_gen_ui_test` | 自动化测试（traverse/monkey/custom） |
 | `flythings_ui_visual` | **UI 可视化三合一**（action="editor" 可拖拽编辑网页 / action="edit_apply" 变更写回 json + pack ftu / action="diff" 截图像素对比 0 token 验收；传 action="list" 看各动作参数） |
 | `flythings_verify_assets` | **产物核对**（json 引用的图片是否存在 + 自动生成图 PNG 尺寸 == 控件 position；支持 `ui/*.json` 与 `ui/<分辨率>/*.json`；与 check_all #17 同源） |
+| （仅 check_all） | **#18 设计令牌漂移检测**（`DESIGN.md` 令牌 vs json 实际色值/字号；令牌外的值 = FAIL；无 DESIGN.md / 令牌表未填 → NOTE 跳过；单点例外写「漂移豁免: #RRGGBB 18」） |
 | `flythings_device_screenshot` | **真机抓屏 → PNG/JPG/BMP**（裁剪设备免 adb 摸索，直接出图给 AI 分析；进阶参数可统一走 `advanced` JSON） |
 | `flythings_generate_ui_assets` | 生成 UI 图片资源（AI/emoji/线条三级降级） |
 | `flythings_create_bin_project` | 创建可执行程序项目（ELF 二进制） |

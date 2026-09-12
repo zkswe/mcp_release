@@ -69,6 +69,13 @@
 跑 `flythings_verify_assets`（或 `check_all` 第 17 项）：引用存在 + **自动生成图尺寸严格 == 控件 position**
 （`missing` / `mismatch` = FAIL；手绘图被引擎拉伸记 `stretched` 仅提示）。
 
+若项目有 `DESIGN.md`（新项目第一版视觉应当有）：`check_all` **第 18 项设计令牌漂移检测** 会自动核对
+json 里的颜色/字号是否都落在 DESIGN.md 令牌内。口径：
+- 令牌外的色值/字号 = **FAIL**（漂移；结构值 0 / -1 / 16777215 例外）
+- 无 `DESIGN.md` 或令牌表未填全 → **NOTE 跳过**（兼容存量工程）
+- 单点例外在 DESIGN.md 写一行 `漂移豁免: #RRGGBB 18` 留痕（比改代码好溯源）
+- 间距梯度外的纵向间距 → **WARN**（对齐/芯距可能正常，人工确认）
+
 ## 5. 相关
 
 - HTML 原型侧的效果转图与属性写法 → `html-subset-quickref.md`
