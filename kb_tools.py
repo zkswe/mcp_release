@@ -52,9 +52,10 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.38-open'
+MCP_VERSION = '0.27.39-open'
 MCP_BUILD = '2026-09-12'
 MCP_FEATURES = [
+    '2026-09-12: 固化升级出包 v0.27.39（沛哥：用户意图是「升级进设备」而不是调试时，要能打 update.img 刷进去）——新增 `flythings_pack_upgrade(project_root, out_path, release_version, ab, with_build, dry_run)`（工具数 33 → 34）：fun install →（可选）fun build → fun pack 出 update.img（默认 .fun/<平台>/update.img，-o 可改；--release-version 版本号；--ab 出 AB 系统 OTA 包），返回产物路径/大小/时间 + 四种落地刷法（TF卡 FAT32 根目录 / ADB setprop sys.zkupgrade.* / zkautoupgrade 插卡自动升级 / HTTP OTA 与局域网批量升级）；**意图分流**：调试=build_ui_flow（fun launch 临时推送，掉电即失），固化=pack_upgrade（update.img 掉电保留），deploy-scene-map.md 与两个 docstring 双向绑定防幻觉；已实测根因级坑：`FATAL sign error: exit status 0xc0000135` = fsimg.exe 是 32 位、系统缺 32 位 VC++ 运行时（msvcp140.dll/vcruntime140.dll），`package xxx not found in local` = 依赖未装需先 fun install —— 工具据此返回可执行 hint；⚠️ 打包需 Windows 装 VC++ x86 运行库（本机待装，故未跑通端到端出包）；知识库补 knowledge/devflow/upgrade-pack-image.md（CLI 出包全流程 + 与 IDE「路径配置→编译」对照）；v0.27.39-open',
     '2026-09-12: 硬件型号库（`flythings_hardware_info`）v0.27.38（沛哥：加个硬件文档模块，用户能快速选到自己手上的硬件，按平台/型号区分）——①新增唯一事实来源 `hardware_catalog.json`（平台 → 型号 → 屏幕/按键/接口规格 + 平台与型号差异化 + dataStatus/待补字段），工具只读它；配套 `scripts/gen_hardware_doc.py` 生成可检索文档 `knowledge/hardware/hardware-models.md`（带 --check，进一致性闸门，防「json 改了文档没跟」）②新增只读 op `flythings_hardware_info(model, platform)`：model 留空=列平台+已登记型号（platform 可过滤）；给型号=回 screen（分辨率/方向，可直接喂 create_project）/keys（按键值=/dev/input code，如 PocketDisplay4 的 105/103/108 = KEY_LEFT/UP/DOWN）/specs/differences（型号级差异，如 86 盒 Z6/Z20/Z21 三平台对比、价签 SSD201 vs SSD202 单双屏）/missing/source；**未收录型号回 MODEL_NOT_FOUND + 近似候选 + 平台型号清单，明确禁止按同系列外推规格**（查不到不编造）③型号匹配宽松（忽略大小写/连字符/下划线，支持别名）④首批入库：V85X=PocketDisplay4（4 寸 480×800 + 3 键值），Z21=SV50PD/SW80480070D_C/SW10600070D_C/SW48854050E1/SW48480040E，Z20=SW48480040D1/SW8001280101D-JQ/D1-JQ；工具数 32 → 33；⑤**定位（沛哥 2026-09-12 17:42 明确）：这是「预设参数」库，目的是让后期开发少问少核** —— 有具体型号就按返回的 `preset`（平台/分辨率/方向/按键）直接开工；**没有具体型号则确认平台 + 分辨率即可**，不必等数据补全；缺参数不叫「待补警告」而是 `optional[]`（非阻塞）；未收录型号回 `MODEL_NOT_FOUND` 时额外给 `fallback`（平台 + 分辨率就够开工），不卡流程、也不拿同系列外推填坑；v0.27.38-open',
     '2026-09-12: UI 可视化组收口为单入口 v0.27.37（沛哥：ui-visual 做个 action 入口）——`flythings_ui_editor` + `flythings_ui_edit_apply` + `flythings_ui_diff` → **`flythings_ui_visual(action, ...)`**（工具数 34 → 32）：action="editor" 出可拖拽编辑器网页、action="edit_apply" 把变更 JSON 写回 json、action="diff" 出截图像素差异清单；每个 action 只收自己的参数，**传了别家参数回 `visualNote` 明确提醒（不静默忽略）**，缺必填参数回 BAD_PARAMS + 本 action 正确参数清单，action="list" 回三动作参数表；三个旧名调进分发器回 OP_RENAMED，hint 里带「该用哪个 action」（RENAMED_HINT）；文档（README/knowledge/ui_tools 的「复制 AI 指令」文案/意图闸门）与契约用例同步；v0.27.37-open',
     '2026-09-12: 第五批（P2 收尾）v0.27.36——①**工具直接合并（36 → 34 个，旧名不再提供）**：`search`→`knowledge_search`、`search_package`→`package_search`（区分语料）；`generate_ui_preview` + `json_to_html` → **`ui_preview(target)`**（target 传项目目录或单个 json，同一实现）；`recommend_manifest` + `generate_manifest` → **`manifest(features, platform, project_root, dry_run=True)`**（默认只推荐不写盘；写盘要 project_root + dry_run=False，写前 .bak 并回显 affectedFiles）；调旧名回 `OP_RENAMED` + 新名（**只是错误提示，不执行，不留隐性别名**）②**新增 MCP 原生原语（`mcp_extras.py`，默认入口与 flat 入口共用）**：4 个 resources（`flythings://catalog/knowledge` 知识库目录 / `flythings://knowledge/<分类>/<文件>.md` 与 `/<文件>.md` 读整篇文档（白名单校验防穿越）/ `flythings://tools` 工具清单+风险分级 / `flythings://version`）+ 5 个 prompts（new-project / ui-from-prototype / ui-verify / deploy-debug / package-deps，均自带「确认前不 pack、不推真机」安全默认）；⚠️ FastMCP 的 URI 模板只匹配单段路径，所以分类文档与根目录文档用两个模板 ③**顺手修**：json2html 项目模式只扫扁平 `ui/*.json` → 分层 `ui/<分辨率>/*.json` 工程预览**静默出 0 页**（基准 SampleUI-New 就中招；与 v0.27.33 修的 check_all 同类问题，这次是预览侧）——现改为两种布局都扫（分分辨率不串页）；dispatcher 未知 op 的候选打分改进（合并/改名的旧名直接给新名）④契约用例 70 → 78 项（新增工具合并契约与 resources/prompts 契约）；v0.27.36-open',
@@ -308,23 +309,48 @@ def flythings_edit_ftu(ftu_path: str, operations: str, output_ftu: str = '',
 
 def flythings_build_ui_flow(project_root: str, with_launch: bool = False, device: str = '') -> str:
     """⚠️ 场景别名（编译部署类意图一律本工具，禁止自造命令；不限触发入口）：
-    ① 用户口语：「编译/构建/调试/全量推送/部署/部署到设备/推送到设备/跑一下/运行到真机」；
-    ② 自定义功能/自动化流程触发：客户端「AI 应用调试」「自定义编译」等按钮/动作，凡意图是「把项目编译并部署到真机调试」→ 一律调本工具；
+    ① 用户口语：「编译/构建/调试/全量推送/部署/部署到设备/推送到设备/跑一下」；
+    ② 客户端按钮/自动化流程（「AI 应用调试」「自定义编译」等）凡意图是「编译并部署到真机调试」→ 一律调本工具；
     ③ AI 自主决策：写完/改完代码后主动编译验证、调试看效果，同样调本工具。
-    内部 fun launch 完成程序+资源+ftu 全量推送并启动；⚠️ 不存在 tools/deploy_debug.sh 之类的额外部署脚本，禁止 AI 自创脚本/命令路径。
+    ⚠️ 固化/升级/出 update.img/交付/量产 → 用 flythings_pack_upgrade（本工具=调试推送，掉电即失）。
+    内部 fun launch 完成程序+资源+ftu 全量推送并启动；⚠️ 不存在 deploy_debug.sh 之类额外脚本，禁止自造命令。
     UI 构建流程：① json/ftu 时间戳一致性检查（以 json 为源，改过 json 自动重新 pack）
     ② fui pack ③ fun install 同步依赖 ④ fun build ⑤ **默认到此为止（不推真机）**；
     要推设备必须显式 with_launch=True（用户明确说「推到设备/跑一下」时才传）。
     ⚠️ fun launch 网络推送失败/超时会**自动重试 5 次**（间隔 2s，覆盖网络抖动；信任 fun 差分推送，不自写 push 脚本校验）；
-    5 次仍失败（无 adb 设备/网络中断）时返回 needDeviceInput=true，必须询问用户接入方式：
+    5 次仍失败（无 adb 设备/网络中断）返回 needDeviceInput=true，必须询问用户接入方式：
     1) USB 接入：设备 USB 连电脑，确认 adb devices 可见后重试；2) 网络接入：
     先在电脑执行 adb connect <设备IP> 完成配对再重试。
-    ⚠️ fun launch 不支持 -s 参数（带参数有其他问题），设备选择由 fun 自动完成，禁止替用户猜测 IP。
+    ⚠️ fun launch 不支持 -s 参数，设备选择由 fun 自动完成，禁止猜 IP。
     传入项目根目录。改过 json 必须 pack，否则设备仍跑旧 ftu。
     ⚠️⚠️ src/activity/ 目录（mainActivity.cpp/h）由 IDE 编译时自动生成，构建流程已自动处理；
     禁止手动创建/修改该目录文件，业务代码只写 src/logic/*.cc。
     """
     return json.dumps(pt.flythings_build_ui_flow(project_root, with_launch, device), ensure_ascii=False)
+
+
+def flythings_pack_upgrade(project_root: str, out_path: str = '', release_version: str = '',
+                           ab: bool = False, with_build: bool = False,
+                           dry_run: bool = False) -> str:
+    """⚠️ 场景别名（固化升级类意图一律本工具，禁止自造命令；不限触发入口）：
+    ① 用户口语：「打包升级包/出升级包/生成 update.img/固化/固化升级/刷进设备/烧到机器里/
+       出货版本/量产版本/发布版本/TF卡升级包/OTA 包/整机升级」；
+    ② 与「调试/跑一下/推送到设备」**语义不同**：那是 flythings_build_ui_flow（fun launch
+       临时推送，掉电即失）；要**固化到设备、掉电保留**，必须本工具出 update.img；
+    ③ AI 自主决策：用户说要交付/发布/量产一份可升级的版本时，调本工具，不要调 launch。
+    流程：① fun install 同步依赖 → ②（可选 with_build=True）fun build → ③ fun pack
+      （out_path→-o；release_version→--release-version；ab=True→--ab 出 AB 系统 OTA 包）。
+    产物默认 `.fun/<平台>/update.img`，返回路径/大小/时间 + 三种刷法（TF卡/ADB/远程批量）。
+    dry_run=True 只回命令计划不执行（写操作默认安全）。
+    ⚠️ Windows 常见坑：`FATAL sign error: exit status 0xc0000135` = 缺 32 位 VC++ 运行时
+      （fsimg.exe 是 32 位，装 VC++ 2015-2022 Redistributable x86）；
+      `package xxx not found in local` = 依赖未装，先 fun install。
+    传项目根目录；细节见 knowledge/devflow/upgrade-pack-image.md。
+    """
+    return json.dumps(pt.flythings_pack_upgrade(project_root, out_path, release_version,
+                                                ab, with_build, dry_run),
+                      ensure_ascii=False)
+
 
 
 def flythings_ui_preview(target: str, output_dir: str = '') -> str:
@@ -1027,6 +1053,7 @@ OP_NAMES = (
     'flythings_fui_pack',
     'flythings_edit_ftu',
     'flythings_build_ui_flow',
+    'flythings_pack_upgrade',
     'flythings_ui_preview',
     'flythings_html_to_json',
     'flythings_ui_visual',

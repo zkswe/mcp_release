@@ -65,6 +65,7 @@ RISK = {
     'flythings_add_package': 'write',
     'flythings_manifest': 'write',
     'flythings_build_ui_flow': 'device',
+    'flythings_pack_upgrade': 'write',
     'flythings_device_screenshot': 'device',
     'flythings_gen_ui_test': 'device',
 }
@@ -88,6 +89,7 @@ CATEGORY = {
     'flythings_create_bin_project': 'project',
     'flythings_attach_cli_tools': 'project',
     'flythings_build_ui_flow': 'build',
+    'flythings_pack_upgrade': 'build',
     'flythings_generate_ui_assets': 'assets',
     'flythings_i18n_scan': 'i18n',
     'flythings_i18n_add_language': 'i18n',

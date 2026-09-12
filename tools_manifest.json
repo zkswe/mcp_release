@@ -2,9 +2,9 @@
   "schema": 1,
   "generatedBy": "scripts/gen_manifest.py",
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY 表后重新生成，勿手改本文件",
-  "version": "0.27.38-open",
+  "version": "0.27.39-open",
   "build": "2026-09-12",
-  "toolCount": 33,
+  "toolCount": 34,
   "cli": {
     "fun": "FlyThings 工程工具（create/install/build/launch，<项目>/.fun/<平台>/ 下）",
     "fui": "FTU 布局工具——当前内置版本只支持 pack（json → ftu）；unpack 是空壳（调用报通用错误），不要依赖",
@@ -346,6 +346,20 @@
       "category": "package"
     },
     {
+      "op": "flythings_pack_upgrade",
+      "brief": "⚠️ 场景别名（固化升级类意图一律本工具，禁止自造命令；不限触发入口）：",
+      "args": [
+        "project_root",
+        "out_path",
+        "release_version",
+        "ab",
+        "with_build",
+        "dry_run"
+      ],
+      "risk": "write",
+      "category": "build"
+    },
+    {
       "op": "flythings_package_search",
       "brief": "按功能关键词搜索可用 package（mqtt/json/http/ssl/ble/ota/audio 等）。",
       "args": [
@@ -438,9 +452,9 @@
     }
   ],
   "docs": {
-    "knowledgeFiles": 54,
+    "knowledgeFiles": 55,
     "wikiFiles": 128,
-    "ragChunks": 1225,
-    "ragPaths": 182
+    "ragChunks": 1236,
+    "ragPaths": 183
   }
 }

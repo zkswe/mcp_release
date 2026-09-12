@@ -88,20 +88,21 @@ def _run_fui(cmd, target_dir):
 
 
 # ---------------- fun.exe 基础（build/launch）----------------
-def _run_fun(cmd, project_dir, device='', retries=1, timeout=600):
+def _run_fun(cmd, project_dir, device='', retries=1, timeout=600, extra=None):
     """执行 fun.exe 命令（build/launch 等），在项目根目录运行。
     fun.exe 与 fui.exe 同目录（D:/zkswe/fun/ 或自动探测）。
     launch 走网络推送（adb over wifi），网络抖动/推送中断会失败——retries>1 时
     自动重试（间隔 2s），覆盖「网络超时静默/误推旧固件」场景；信任 fun 差分能力，
     不自写 push 脚本校验产物。build 类本地命令 retries 保持 1（无需重试）。
-    ⚠️ fun launch 不支持 -s 参数（带参数有其他问题），device 参数保留仅供 build_ui_flow 兼容，不追加到命令。"""
+    ⚠️ fun launch 不支持 -s 参数（带参数有其他问题），device 参数保留仅供 build_ui_flow 兼容，不追加到命令。
+    extra: 追加到命令后的参数列表（如 fun pack -o <path>），默认 None。"""
     if not os.path.isdir(project_dir):
         return {"success": False, "error": "项目目录不存在: %s" % project_dir}
     if not os.path.isfile(FUN_EXE):
         return {"success": False, "error": "fun.exe 未找到（工具目录: %s）。"
                 "请设置环境变量 FLYTHINGS_FUN_DIR 指向含 fun.exe/fui.exe 的目录，"
                 "或将其安装到 D:\\zkswe\\fun\\。" % _tool_dir()}
-    args = [FUN_EXE, cmd]
+    args = [FUN_EXE, cmd] + list(extra or [])
     last = None
     for attempt in range(1, max(1, retries) + 1):
         try:
@@ -1040,6 +1041,153 @@ def flythings_build_ui_flow(project_root, with_launch=False, device=''):
     return {"success": True, "projectRoot": project_root, "steps": steps,
             "finalCheck": {"stale": ts_after['stale'], "missing": ts_after['missing']}}
 
+
+# ---------------- 工具: 制作升级包（固化升级 update.img）----------------
+# ⚠️ 场景别名（固化升级类意图一律本工具，禁止自造命令）：
+#   用户口语：「打包升级包 / 出升级包 / 生成 update.img / 固化 / 固化升级 / 刷进设备 /
+#   出货版本 / 量产版本 / 发布版本 / 烧到机器里 / TF卡升级包 / OTA 包 / 整机升级」。
+#   与「调试/跑一下/推送到设备」（build_ui_flow + with_launch）语义**不同**：
+#   调试 = fun launch 临时推送（掉电即失）；固化 = fun pack 出 update.img（掉电保留）。
+#
+# 产物与落地（详见 knowledge/devflow/upgrade-pack-image.md）：
+#   ① TF 卡：FAT32 卡根目录放 update.img → 插卡上电 → 升级界面勾选升级
+#   ② ADB：adb push update.img /tmp → setprop sys.zkupgrade.flag 255 →
+#      setprop sys.zkupgrade.dir /tmp → setprop ctl.restart zkswe
+#   ③ 远程/批量：HTTP 下发 update.img 或局域网批量升级工具
+PACK_ERR_HINTS = (
+    ('sign error', '',
+     '打包/签名步骤的 fsimg.exe 是 32 位程序，系统缺 32 位 VC++ 运行时（msvcp140.dll / '
+     'vcruntime140.dll；报错码 0xc0000135=找不到 DLL、0xc000007b=位数不匹配都属此类）。'
+     'Windows 装「Visual C++ 2015-2022 Redistributable (x86)」后重试；'
+     '或把 32 位 msvcp140.dll + vcruntime140.dll 放到 fsimg.exe 同级目录。'),
+    ('not found in local', '',
+     '依赖包未安装：先执行 fun install（本工具已默认先跑 install）后再 pack。'),
+)
+
+
+def _pack_hint(text):
+    """把 pack 失败输出映射成可执行提示。"""
+    low = (text or '').lower()
+    for k1, k2, hint in PACK_ERR_HINTS:
+        if k1 in low and (not k2 or k2.lower() in low):
+            return hint
+    return ''
+
+
+def _find_update_img(project_root, out_path, platform):
+    """定位 pack 产物 update.img：显式 -o 优先，其次 fun 默认输出位置。"""
+    cands = []
+    if out_path:
+        p = out_path if os.path.isabs(out_path) else os.path.join(project_root, out_path)
+        cands.append(p)
+    else:
+        cands.append(os.path.join(project_root, 'out', 'update.img'))
+        if platform:
+            cands.append(os.path.join(project_root, '.fun', platform, 'update.img'))
+        fun_dir = os.path.join(project_root, '.fun')
+        if os.path.isdir(fun_dir):
+            for d in sorted(os.listdir(fun_dir)):
+                cands.append(os.path.join(fun_dir, d, 'update.img'))
+    for p in cands:
+        if os.path.isfile(p):
+            return p
+    return ''
+
+
+def flythings_pack_upgrade(project_root, out_path='', release_version='', ab=False,
+                           with_build=False, dry_run=False):
+    """制作升级包 update.img（固化升级用，区别于调试推送）。
+    ⚠️ 场景别名（固化升级类意图一律本工具，禁止自造脚本/命令）：
+      用户口语：「打包升级包/出升级包/生成 update.img/固化/固化升级/刷进设备/出货版本/
+      量产版本/发布版本/烧到机器里/TF卡升级包/OTA 包/整机升级」。
+    ⚠️ 与「调试/跑一下/推送到设备」语义不同：那是 build_ui_flow（fun launch 临时推送，
+      掉电即失，不固化）；要固化到设备、掉电保留，必须本工具出 update.img。
+    流程：① fun install 同步依赖 → ②（可选 with_build=True）fun build →
+      ③ fun pack（-o 指定输出，--release-version 指定版本号，--ab 出 AB 系统 OTA 包）。
+    产物：默认 .fun/<平台>/update.img（-o 可改）；返回路径/大小/时间与三种刷法说明。
+    dry_run=True 只回命令计划不执行（写操作默认安全）。
+    ⚠️ Windows 常见坑：`FATAL sign error: exit status 0xc0000135 / 0xc000007b` = 缺 32 位
+      VC++ 运行时（fsimg.exe 是 32 位）；`package xxx not found in local` = 先 fun install。
+    """
+    if not os.path.isdir(project_root):
+        return {"success": False, "error": "项目目录不存在: %s" % project_root}
+    if not os.path.isdir(os.path.join(project_root, 'ui')) and \
+            not os.path.isfile(os.path.join(project_root, 'Manifest.xml')):
+        return {"success": False,
+                "error": "不是 fun 工程根目录（缺 ui/ 且缺 Manifest.xml）: %s" % project_root}
+
+    info = _detect_project_info(project_root)
+    platform = info.get('platform') or ''
+    extra = []
+    if platform:
+        extra += ['-p', platform]
+    if release_version:
+        extra += ['--release-version', str(release_version)]
+    if ab:
+        extra.append('--ab')
+    if out_path:
+        extra += ['-o', out_path]
+    cmdline = 'fun pack' + ('' if not extra else ' ' + ' '.join(extra))
+
+    if dry_run:
+        return {"success": True, "dryRun": True, "projectRoot": project_root,
+                "platform": platform, "command": cmdline,
+                "plan": ["fun install",
+                         ("fun build" if with_build else "fun build（跳过，with_build=False）"),
+                         cmdline],
+                "output": out_path or ('.fun/%s/update.img' % (platform or '<platform>')),
+                "note": "dry_run 只回计划不执行；确认后传 dry_run=False 出包"}
+
+    steps = []
+    ri = _run_fun('install', project_root, timeout=900)
+    steps.append({"step": "fun install", "success": ri['success'],
+                  "detail": (ri.get('stderr') or ri.get('stdout') or ri.get('error') or '')[-400:]})
+
+    if with_build:
+        rb = _run_fun('build', project_root, timeout=1800)
+        steps.append({"step": "fun build", "success": rb['success'],
+                      "detail": (rb.get('stderr') or rb.get('stdout') or rb.get('error') or '')[-500:]})
+        if not rb['success']:
+            return {"success": False, "steps": steps, "error": rb.get('error') or "fun build 失败"}
+
+    rp = _run_fun('pack', project_root, timeout=1800, extra=extra)
+    out_text = (rp.get('stderr') or '') + (rp.get('stdout') or '')
+    steps.append({"step": "fun pack", "success": rp['success'], "command": cmdline,
+                  "detail": out_text[-500:]})
+
+    img = _find_update_img(project_root, out_path, platform)
+    if not rp['success'] and not img:
+        hint = _pack_hint(out_text) or _pack_hint(rp.get('error') or '')
+        res = {"success": False, "steps": steps, "platform": platform,
+               "command": cmdline, "error": rp.get('error') or out_text[-300:]}
+        if hint:
+            res['hint'] = hint
+        return res
+
+    size = os.path.getsize(img) if img else 0
+    return {
+        "success": bool(img),
+        "projectRoot": project_root,
+        "platform": platform,
+        "command": cmdline,
+        "steps": steps,
+        "updateImg": img,
+        "sizeBytes": size,
+        "sizeMB": round(size / 1048576.0, 2),
+        "modified": (time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime(img)))
+                     if img else ''),
+        "howToFlash": [
+            "TF卡（最常用）：卡格式化 FAT32，根目录放 update.img → 插卡重新上电 → "
+            "升级界面勾选项目点升级；升级完及时拔卡防重复升级",
+            "ADB 固化：adb push update.img /tmp/update.img && adb shell setprop "
+            "sys.zkupgrade.flag 255 && adb shell setprop sys.zkupgrade.dir /tmp && "
+            "adb shell setprop ctl.restart zkswe",
+            "插卡自动升级：卡根目录再放无后缀文件 zkautoupgrade（内容=延时秒数）自动升级；"
+            "zkrebootdelay 控制升级完延时重启",
+            "远程/批量：设备端 HTTP 下载 update.img 走 OTA；局域网批量升级工具（Z20/Z21/Z261）",
+        ],
+        "note": "update.img 是固化升级包（掉电保留）；调试推送请用 build_ui_flow（fun launch）",
+    }
 
 # ---------------- 工具 7: 从 IDE 模板创建项目骨架 -------------
 def flythings_create_project(project_root, platform=None, resolution=None,

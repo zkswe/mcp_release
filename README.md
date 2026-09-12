@@ -23,7 +23,7 @@
 🔥 **核心优势**：
 - 🚀 **FlyThings 专属配置**：内置本地向量模型（bge-small-zh），知识检索完全离线，AI开发效率及Token消耗极低
 - 🏭 **全流程开箱即用**：编译工具链（fui/fun）与项目模板已内置，创建项目 → 布局 → 编译 → 推送一气呵成
-- 🧠 **33 个工具**：知识检索、硬件型号库、项目创建、布局转换、依赖管理、规范校验、自动修复、多语言、自动化测试、UI 可视化编辑、真机截图与产物核对全都有
+- 🧠 **34 个工具**：知识检索、硬件型号库、项目创建、布局转换、依赖管理、规范校验、自动修复、多语言、自动化测试、UI 可视化编辑、真机截图与产物核对全都有
 - 📦 **一条命令安装**：`pip install -r requirements.lock`（已锁定实测通过的版本组合），AI 工具指一下路径就能用
 - ✅ **发布前置闸门**：95 项契约用例 + 30 项冒烟 + 一致性校验（版本/工具数/平台/索引/隐私）一键跑，见 [`tests/`](tests/README.md)
 - 🪶 **schema 集约**：工具 docstring 合计 ≤ 12,000 字符（单个 ≤ 900），长尾细节全放可检索的知识库——不拿上下文烧钱
@@ -133,11 +133,11 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 | 模式 | 怎么配 | 客户端看到什么 | 何时用 |
 |------|--------|----------------|--------|
 | `dispatcher`（默认） | 就指 `mcp_server.py` | **1 个工具** `flythings_kb`（op="list" 取目录） | 推荐：schema 开销最小；配合意图闸门/README 工具表 |
-| `all` | `FLYTHINGS_MCP_MODE=all` | 1 个分发器 + 33 个独立工具 | 你的提示词/客户端直接调 `flythings_knowledge_search` 这类名字（旧配置兼容） |
-| `flat` | 指 `mcp_server_flat.py`（或 `FLYTHINGS_MCP_MODE=flat`） | 33 个独立工具（无分发器） | 需要每个工具独立 schema/参数提示的客户端（Trae / Cursor / Claude Desktop） |
+| `all` | `FLYTHINGS_MCP_MODE=all` | 1 个分发器 + 34 个独立工具 | 你的提示词/客户端直接调 `flythings_knowledge_search` 这类名字（旧配置兼容） |
+| `flat` | 指 `mcp_server_flat.py`（或 `FLYTHINGS_MCP_MODE=flat`） | 34 个独立工具（无分发器） | 需要每个工具独立 schema/参数提示的客户端（Trae / Cursor / Claude Desktop） |
 
 > ⚠️ 默认从“全注册”改为“只分发器”是 v0.27.34 的**行为变更**；受影响就设 `FLYTHINGS_MCP_MODE=all` 恢复。
-> `flat` 模式的代价：33 份 schema 常驻上下文（≈1 万 token/session）。
+> `flat` 模式的代价：34 份 schema 常驻上下文（≈1 万 token/session）。
 
 **4. 验证**
 
@@ -145,7 +145,7 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 
 > **MCP 版本是多少？**
 
-应返回：`flythings-kb-open 0.27.38-open`，包含 33 个工具。
+应返回：`flythings-kb-open 0.27.39-open`，包含 34 个工具。
 
 ---
 
@@ -180,6 +180,7 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 | `flythings_get_version` | 版本信息 |
 | `flythings_create_project` | 从模板创建项目（平台/分辨率） |
 | `flythings_build_ui_flow` | fui pack → fun install → fun build → fun launch 一键交付 |
+| `flythings_pack_upgrade` | **固化升级出包 update.img**（fun install → 可选 fun build → fun pack；默认 `.fun/<平台>/update.img`，可指定 `out_path`/`release_version`/`ab`；返回路径·大小·四种刷法：TF卡 / ADB setprop / zkautoupgrade / HTTP OTA 与批量升级。⚠️ 与 `build_ui_flow` 语义不同：那是调试推送掉电即失，**要固化必须本工具**） |
 | `flythings_validate_project` | 项目规范全检（时间戳防呆/依赖/框架约定） |
 | `flythings_html_to_json` / `flythings_ui_preview` | HTML 原型 ↔ json 布局（转换 / 预览确认稿；预览支持整屏 window 多页工程的页面切换条 + `#window__N` 直达） |
 | `flythings_read_json` | 布局文件解析（json；ftu 需提供同目录 json） |
@@ -220,7 +221,7 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 ```
 flythings-mcp-open/
 ├── mcp_server.py          # 入口（stdio MCP server，单入口分发器）
-├── kb_tools.py            # 工具定义与注册（33 个）+ OP_NAMES 清单（唯一来源）
+├── kb_tools.py            # 工具定义与注册（34 个）+ OP_NAMES 清单（唯一来源）
 ├── project_tools.py       # 项目/编译/交付
 ├── package_tools.py       # 依赖包生态
 ├── platforms.py           # 平台矩阵唯一来源（模板/bin_tools/别名）
@@ -266,7 +267,7 @@ flythings-mcp-open/
 | 问题 | 解决 |
 |------|------|
 | `ModuleNotFoundError: mcp / onnxruntime / tokenizers` | 执行 `pip install -r requirements.lock` |
-| 工具列表 < 33 | 检查配置文件 command/args 路径是否正确 |
+| 工具列表 < 34 | 检查配置文件 command/args 路径是否正确 |
 | 抓屏工具报“找不到 adb” | 装 Android platform-tools 或设环境变量 `ADB`（抓屏需要 adb；编译/预览不需要） |
 | 检索结果不准 | 本地模型首次使用会自动加载；确认 `models/bge-small-zh/` 存在 |
 | 返回体里出现 `warnings` | 正常，**要看**：降级（BM25）、自动转图、手绘图被拉伸等信息都在里面，不是报错 |

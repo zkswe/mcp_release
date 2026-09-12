@@ -21,6 +21,19 @@
 ⚠️ 没有「增量推送 vs 全量推送」两种模式：**fun launch 本身就是全量推送**（程序+资源+ftu 一起部署），
 不需要 adb push 单文件、不需要 kill zkgui、不需要中间脚本。
 
+## ⚠️ 反例：固化升级**不是**本工具（另一条唯一入口）
+
+「部署」这个词有两种语义，**必须按意图分流**，别都塞给 `build_ui_flow`：
+
+| 用户说（口语/场景） | AI 应调用的工具 | 说明 |
+|---|---|---|
+| 调试 / 跑一下 / 看效果 / 全量推送（**临时**） | `flythings_build_ui_flow`（with_launch=True） | `fun launch` 推送到设备运行，**掉电即失，不固化** |
+| **固化 / 固化升级 / 升级进设备 / 出升级包 / 生成 update.img / 出货版本 / 量产版本 / 发布版本 / 烧到机器里 / TF卡升级包 / OTA 包** | **`flythings_pack_upgrade`** | `fun pack` 出 `update.img`，刷进设备**掉电保留**；返回 TF卡/ADB/自动升级/远程批量四种刷法 |
+
+判据一句话：**掉电后还要在 → 固化（pack_upgrade）；只是看效果 → 调试（build_ui_flow）**。
+完整流程（含 TF 卡 FAT32、ADB setprop、zkautoupgrade、批量升级、刷机卡区别）见
+`knowledge/devflow/upgrade-pack-image.md`。
+
 ## 为什么会有这个文档（坑源）
 
 2026-09-08 沛哥反馈：客户端 AI 收到「AI 应用调试全量推送」时，工具列表里没有叫「调试/部署」的工具，
