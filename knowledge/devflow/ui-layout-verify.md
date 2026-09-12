@@ -1,9 +1,12 @@
 # UI 布局可视化编辑与像素验收（json 为源 · 拖拽微调 · 0 token 校验）
 
+> ⚠️ v0.27.37 起三个 op 合并为 `flythings_ui_visual(action=...)`：`"editor"` / `"edit_apply"` / `"diff"`
+> （旧名 `flythings_ui_editor` / `flythings_ui_edit_apply` / `flythings_ui_diff` 不再提供）。
+
 > 命中条件：UI 布局做完需要"看得见、拖得动、验得了"时——用户说布局位置不对 / 图标锯齿 /
 > 切图不对 / 预览丢图 / 想直接改文字和属性 / 要验收或回归对比 / 不想靠嘴描述"往左一点"。
-> 工具：`flythings_ui_editor`（出可拖拽编辑器）→ `flythings_ui_edit_apply`（写回 + pack ftu）→
-> `flythings_ui_diff`（像素 diff）。
+> 工具：`flythings_ui_visual(action="editor")`（出可拖拽编辑器）→ `flythings_ui_visual(action="edit_apply")`（写回 + pack ftu）→
+> `flythings_ui_visual(action="diff")`（像素 diff）。
 
 ## 1. 铁律：json 是唯一真相
 
@@ -15,7 +18,7 @@
 
 ```
 HTML 交互原型 → flythings_html_to_json → ui/*.json（唯一源）
-                                        ├─ flythings_ui_preview / flythings_ui_editor（看/改）
+                                        ├─ flythings_ui_preview / flythings_ui_visual(action="editor")（看/改）
                                         └─ flythings_fui_pack → .ftu → 设备
 ```
 
@@ -26,9 +29,9 @@ HTML 交互原型 → flythings_html_to_json → ui/*.json（唯一源）
 
 | 段 | 手段 | 成本 | 用途 |
 |----|------|------|------|
-| 1 | `flythings_ui_preview` / `flythings_ui_editor` | 秒级、0 token | 看结构、相对关系，确认交互 |
+| 1 | `flythings_ui_preview` / `flythings_ui_visual(action="editor")` | 秒级、0 token | 看结构、相对关系，确认交互 |
 | 2 | `flythings_build_ui_flow` 推真机 + **`flythings_device_screenshot` 抓屏** | 一次编译 + 几秒 | 像素真相，最终验收 |
-| 3 | `flythings_ui_diff` 对比两张截图 | 0 token | 回归/验收，差异可视化 |
+| 3 | `flythings_ui_visual(action="diff")` 对比两张截图 | 0 token | 回归/验收，差异可视化 |
 
 ## 2-1 真机截图怎么拿（`flythings_device_screenshot`，一行搞定）
 
@@ -52,7 +55,7 @@ flythings_device_screenshot(crop='auto')           # 按 disp 图层 frame 裁�
 1. 改前：flythings_device_screenshot(out='before.png')
 2. 改代码 → flythings_build_ui_flow(project_root, with_launch=True) 推真机
 3. 改后：flythings_device_screenshot(out='after.png')
-4. flythings_ui_diff('before.png', 'after.png')   # 差异清单 + 标注图
+4. flythings_ui_visual(action="diff", image_a="before.png", image_b="after.png")   # 差异清单 + 标注图
 5. 只看某块差异的语义时，才把差异区小图裁出来给视觉模型
 ```
 
@@ -119,7 +122,7 @@ logic.cc 里用 `showWnd()/hideWnd()` 切页」（弹窗、设置页、二级页
 - 半屏窗口、弹窗（如 400×200）**不算页面**，它们归「显示隐藏」开关管。
 - 预览仍是**近似渲染**（第 1 节铁律）：切页只解决「看得到哪一页」，像素真相还得真机截图。
 
-## 3. 可视化编辑器（`flythings_ui_editor`）
+## 3. 可视化编辑器（`flythings_ui_visual(action="editor")`）
 
 每个 `ui/*.json` → `<项目>/ui/_edit/<name>.edit.html`：**单文件、图片 base64 内联、双击即用**，
 不需要装环境、不需要起服务。ui 目录递归扫描（多分辨率子目录也能出）。
@@ -160,7 +163,7 @@ logic.cc 里用 `showWnd()/hideWnd()` 切页」（弹窗、设置页、二级页
 `charsetTab`（自有尺寸）、`.9.png`（本来就要拉伸）、全透明占位图（`transparency.png` 类技巧）。
 阈值取"宁可漏报不误报"，基准工程要求零误报。
 
-## 4. 变更写回（`flythings_ui_edit_apply`）
+## 4. 变更写回（`flythings_ui_visual(action="edit_apply")`）
 
 用户在编辑器里改完 → 「复制变更 JSON」→ 传回 → 写回 json 并 **pack 成 ftu**：
 
@@ -184,7 +187,7 @@ logic.cc 里用 `showWnd()/hideWnd()` 切页」（弹窗、设置页、二级页
    否则拒写（防止把 IDE 格式的整个文件重排，产生巨大 diff）
 3. 坐标取整 + 不越出屏幕边界；宽度/高度至少 1px
 
-## 5. 像素 diff（`flythings_ui_diff`，0 token）
+## 5. 像素 diff（`flythings_ui_visual(action="diff")`，0 token）
 
 输出的**是差异清单（数字）而不是图**——所以不吃 token：区域坐标 / 尺寸 / 面积 / 最大色差。
 把整屏图丢给视觉模型是千级 token/次，迭代十轮就上万，没必要。
@@ -232,9 +235,9 @@ json 同目录 → 项目根 → 再退 `.9.png` 九宫格变体；data URI 按�
 
 ## 8. 改完布局的检查顺序
 
-1. `flythings_ui_editor` 生成编辑器，先看**红标**（图片尺寸不匹配优先修——那是锯齿/糊的根因）
-2. 拖 / 改属性 → 复制变更 JSON → `flythings_ui_edit_apply`（写回 + pack）
-3. `flythings_build_ui_flow` 推真机，`flythings_device_screenshot` 抓屏，与上一版截图 `flythings_ui_diff` 对比：
+1. `flythings_ui_visual(action="editor")` 生成编辑器，先看**红标**（图片尺寸不匹配优先修——那是锯齿/糊的根因）
+2. 拖 / 改属性 → 复制变更 JSON → `flythings_ui_visual(action="edit_apply")`（写回 + pack）
+3. `flythings_build_ui_flow` 推真机，`flythings_device_screenshot` 抓屏，与上一版截图 `flythings_ui_visual(action="diff")` 对比：
    **只允许出现预期差异**，其余视为回归
 4. 需要"这块到底是什么毛病"的判断时，只裁差异区域的小图给视觉模型
 

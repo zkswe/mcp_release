@@ -98,14 +98,16 @@ class TestUiEditApplySafety(unittest.TestCase):
 
     def test_dry_run_does_not_write(self):
         before = io.open(self.page, encoding='utf-8').read()
-        r = U.jcall('flythings_ui_edit_apply',
-                    {'project_root': self.tmp, 'changes': self.changes, 'dry_run': True})
+        r = U.jcall('flythings_ui_visual',
+                    {'action': 'edit_apply', 'project_root': self.tmp,
+                     'changes': self.changes, 'dry_run': True})
         self.assertTrue(r['ok'], r)
         self.assertEqual(io.open(self.page, encoding='utf-8').read(), before, 'dry_run 写盘了')
         self.assertFalse(os.path.exists(self.page + '.bak'), 'dry_run 不该留 .bak')
 
     def test_write_creates_backup_and_no_pack_by_default(self):
-        r = U.jcall('flythings_ui_edit_apply', {'project_root': self.tmp, 'changes': self.changes})
+        r = U.jcall('flythings_ui_visual', {'action': 'edit_apply', 'project_root': self.tmp,
+                                            'changes': self.changes})
         self.assertTrue(r['ok'], r)
         self.assertTrue(os.path.isfile(self.page + '.bak'))
         d = json.loads(io.open(self.page, encoding='utf-8').read())

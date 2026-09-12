@@ -107,7 +107,7 @@ class TestEditorUnaffected(PreviewBase):
         # 先有 json（编辑器默认输出到 <ui>/_edit/，故断言用返回体里的真实路径）
         self.preview('main.json', {'window__1': win(1, '第一页'),
                                    'window__2': win(2, '第二页', vis=False)})
-        r = U.jcall('flythings_ui_editor', {'project_root': self.tmp})
+        r = U.jcall('flythings_ui_visual', {'action': 'editor', 'project_root': self.tmp})
         self.assertTrue(r['ok'], r)
         self.assertTrue(r['files'], r)
         hp = r['files'][0]['html']

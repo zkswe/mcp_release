@@ -15,7 +15,7 @@
     · Ctrl+Z 撤销 / Ctrl+Y 重做
     · 右侧面板列出所有改动（前值→新值）
     · 「复制 AI 指令」→ 直接粘给 AI（自带项目路径 + 变更 JSON + 写回要求），AI 用
-      flythings_ui_edit_apply 写回；只想要 json 自己改就点「复制变更 JSON」/「下载变更 JSON」
+      flythings_ui_visual(action="edit_apply") 写回；只想要 json 自己改就点「复制变更 JSON」/「下载变更 JSON」
       （edit.html 是本地静态文件，页面内没有回传通道，必须复制粘贴给 AI）
 写回：
     python tools/ui_tools/ui_edit_apply.py <变更JSON> --project <项目根> [--pack]
@@ -257,7 +257,7 @@ EDIT_JS = r"""
       '<button data-a="reset">还原</button>' +
     '</div>' +
     '<div class="ed-hint" id="ed-howto">落地方式：点 <b>「复制 AI 指令」</b> → 直接粘给 AI；' +
-    '指令里已带工程路径 + 目标 json + 变更 JSON，AI 用 <b>flythings_ui_edit_apply</b> 写回 json' +
+    '指令里已带工程路径 + 目标 json + 变更 JSON，AI 用 <b>flythings_ui_visual</b>（action="edit_apply"）写回 json' +
     '（默认不动 ftu，要 ftu 就说 pack）。<br>' +
     '本页是本地静态文件，页面内没有给 AI 的回传通道，只能复制粘贴；' +
     '只想要 json 自己改就点「复制变更 JSON」/「下载变更 JSON」。</div>' +
@@ -660,7 +660,7 @@ EDIT_JS = r"""
   // 给用户的「一句话落地指令」：自带工程路径 + 目标 json + 变更 JSON，粘给 AI 即用
   function aiPrompt(){
     var lines=[];
-    lines.push('请把我这轮 UI 改动写回工程（用工具 flythings_ui_edit_apply）。');
+    lines.push('请把我这轮 UI 改动写回工程（用工具 flythings_ui_visual，action="edit_apply"）。');
     lines.push('项目根目录：' + (META.projectRoot || '(未知，请用工程实际路径)'));
     lines.push('目标 json：' + (META.jsonRel || META.json) + '（分辨率 ' + META.res + '）');
     lines.push('变更语义：changes = 位置/尺寸；props = 属性（文字/颜色/字号/对齐/图片/可见性等）。');

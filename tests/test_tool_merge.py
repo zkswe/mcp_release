@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-"""工具合并契约（v0.27.36，沛哥：直接合并、不留别名）。
+"""工具合并契约（v0.27.36 起，沛哥：直接合并、不留别名）。
 
 合并内容：
   flythings_generate_ui_preview + flythings_json_to_html  → flythings_ui_preview(target)
   flythings_recommend_manifest + flythings_generate_manifest → flythings_manifest(features, platform, project_root, dry_run=True)
   flythings_search → flythings_knowledge_search；flythings_search_package → flythings_package_search
+  v0.27.37：flythings_ui_editor + flythings_ui_edit_apply + flythings_ui_diff → flythings_ui_visual(action)
 
 钉住：①旧名不在清单里、调旧名回 OP_RENAMED + 新名（不执行）②合并后的两种入参形态都要能用
 ③manifest 默认 dry_run 不写盘、写盘必留 .bak ④预览对目录与单文件都出稿。
@@ -24,11 +25,13 @@ class TestMergedNames(unittest.TestCase):
         import kb_tools
         names = set(kb_tools.OP_NAMES)
         for new in ('flythings_ui_preview', 'flythings_manifest',
-                    'flythings_knowledge_search', 'flythings_package_search'):
+                    'flythings_knowledge_search', 'flythings_package_search',
+                    'flythings_ui_visual'):
             self.assertIn(new, names)
         for old in ('flythings_search', 'flythings_search_package', 'flythings_json_to_html',
                     'flythings_generate_ui_preview', 'flythings_recommend_manifest',
-                    'flythings_generate_manifest'):
+                    'flythings_generate_manifest', 'flythings_ui_editor',
+                    'flythings_ui_edit_apply', 'flythings_ui_diff'):
             self.assertNotIn(old, names, '%s 应已合并/改名' % old)
         self.assertEqual(len(kb_tools.OP_NAMES), len(set(kb_tools.OP_NAMES)))
         # 清单数 = manifest 里的 op 数（合并后必须同步重新生成 manifest）

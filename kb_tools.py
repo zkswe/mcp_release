@@ -51,9 +51,10 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.36-open'
+MCP_VERSION = '0.27.37-open'
 MCP_BUILD = '2026-09-12'
 MCP_FEATURES = [
+    '2026-09-12: UI 可视化组收口为单入口 v0.27.37（沛哥：ui-visual 做个 action 入口）——`flythings_ui_editor` + `flythings_ui_edit_apply` + `flythings_ui_diff` → **`flythings_ui_visual(action, ...)`**（工具数 34 → 32）：action="editor" 出可拖拽编辑器网页、action="edit_apply" 把变更 JSON 写回 json、action="diff" 出截图像素差异清单；每个 action 只收自己的参数，**传了别家参数回 `visualNote` 明确提醒（不静默忽略）**，缺必填参数回 BAD_PARAMS + 本 action 正确参数清单，action="list" 回三动作参数表；三个旧名调进分发器回 OP_RENAMED，hint 里带「该用哪个 action」（RENAMED_HINT）；文档（README/knowledge/ui_tools 的「复制 AI 指令」文案/意图闸门）与契约用例同步；v0.27.37-open',
     '2026-09-12: 第五批（P2 收尾）v0.27.36——①**工具直接合并（36 → 34 个，旧名不再提供）**：`search`→`knowledge_search`、`search_package`→`package_search`（区分语料）；`generate_ui_preview` + `json_to_html` → **`ui_preview(target)`**（target 传项目目录或单个 json，同一实现）；`recommend_manifest` + `generate_manifest` → **`manifest(features, platform, project_root, dry_run=True)`**（默认只推荐不写盘；写盘要 project_root + dry_run=False，写前 .bak 并回显 affectedFiles）；调旧名回 `OP_RENAMED` + 新名（**只是错误提示，不执行，不留隐性别名**）②**新增 MCP 原生原语（`mcp_extras.py`，默认入口与 flat 入口共用）**：4 个 resources（`flythings://catalog/knowledge` 知识库目录 / `flythings://knowledge/<分类>/<文件>.md` 与 `/<文件>.md` 读整篇文档（白名单校验防穿越）/ `flythings://tools` 工具清单+风险分级 / `flythings://version`）+ 5 个 prompts（new-project / ui-from-prototype / ui-verify / deploy-debug / package-deps，均自带「确认前不 pack、不推真机」安全默认）；⚠️ FastMCP 的 URI 模板只匹配单段路径，所以分类文档与根目录文档用两个模板 ③**顺手修**：json2html 项目模式只扫扁平 `ui/*.json` → 分层 `ui/<分辨率>/*.json` 工程预览**静默出 0 页**（基准 SampleUI-New 就中招；与 v0.27.33 修的 check_all 同类问题，这次是预览侧）——现改为两种布局都扫（分分辨率不串页）；dispatcher 未知 op 的候选打分改进（合并/改名的旧名直接给新名）④契约用例 70 → 78 项（新增工具合并契约与 resources/prompts 契约）；v0.27.36-open',
     '2026-09-12: 多整屏 window 预览切页 v0.27.35（AI 反馈实测复现：官方推荐的「整屏 window + showWnd() 切页」架构下，.preview.html 把所有 visible=false 窗口 display:none，客户确认稿只能看到首页 → 等于失效）——json2html 预览页新增：①**页面切换条**：列出全部整屏 window 的 caption，点页签 = 显示该页/隐藏其余整屏窗口（默认页 = json 里首个 visible!=false 的整屏窗口，与 logic.cc 首屏对齐）②**hash 直达** `xxx.preview.html#window__29`（也认 `#29` 简写），便于把具体页面链接单发给客户 ③**「显示隐藏」开关**：visible=false 的控件/窗口以 35% 透明 + 橙色虚线幽灵框叠显，与 flythings_ui_editor 的 .ed-ghost 行为对齐 ④同一项目多 json 时额外出「项目页面」跳转行（单文件模式只链已有 .preview.html 的邻居，不出死链接）⑤左右方向键翻页；整屏判定 = 顶层 window 尺寸 ≥ 分辨率（±4px）；只在「有 ≥2 个整屏窗口 / 有 visible=false 控件 / 同项目多 json」时出条，单页无隐藏工程预览零变化；ui_editor（edit=True）不受影响；⑥**工具描述带上这条提示**（防 AI 选错/看漏）：`flythings_generate_ui_preview` 与 `flythings_json_to_html` 的 docstring 首行+提示行写明「整屏 window 多页工程自带页面切换条 + `#window__N` 直达 + 显示隐藏幽灵框」，并说明「只看到首页 = 该 json 确实只有一个整屏窗口」（不再建议改用 ui_editor 绕路）；双份 ui_tools 已同步；v0.27.35-open',
     '2026-09-11: 第四批（P2 上下文与检索质量）v0.27.34——①**docstring 瘦身 38%**（16,595 → ~10,200 字符）：长尾细节全部搬进可检索的知识库（新增 `knowledge/devflow/html-subset-quickref.md` 原型规范、`device-screenshot.md` 抓屏实现要点与踩坑、`ui-asset-rules.md` 图片资源铁律与抗锯齿管线、`ui-editor-usage.md` 编辑器用法），docstring 只留要点 + 检索关键词；**字数预算进门禁**（单 op ≤ 900 字符、全体 ≤ 12,000，超了 check_consistency 直接 FAIL） ②**工具面三模式**（`FLYTHINGS_MCP_MODE`）：默认 `dispatcher` 只暴露 1 个 `flythings_kb`（schema 开销最小，省 ~1 万 token/session），`all` = 分发器 + 36 独立工具（老配置兼容），`flat` = 只要 36 独立工具（新增 `mcp_server_flat.py`，给 Trae/Cursor/Claude Desktop 这类需要独立 schema 的客户端）；⚠️ 默认票是**行为变更**，受影响设 `FLYTHINGS_MCP_MODE=all` 恢复 ③**device_screenshot 参数分层**：fb/pixel/width/height/offset_y/flip/rotate/crop/name/timeout 可统一走 `advanced` JSON（已显式传的同名参数优先，旧客户端零影响；未知键/非法 JSON 回 BAD_ARGS + 可选项清单） ④**BM25 中文检索实质提升**：原实现把整段连续中文当一个 token（『Z20 屏幕截图怎么抓』→ 超长 token 只靠原文命中，降级时召回差）→ 改**字级 bigram**（与覆盖率判定共用同一套切词，单一实现）+ IDF + 长度归一 + 路径/标题加权；实测（10 条真实问法）top1 5→9、top3 7→10 ⑤**检索返回质量标记**：hits 带 `source`（实践/官方镜像），返回体带 `retrieval` / `degraded` / `quality`（ok | low_confidence | no_hit），**低置信也带上「禁其他 GUI 框架类推 + 查官方站」的检索边界提醒**（否则 AI 拿沾边片段当依据或转身去 web 猜）；覆盖率改 IDF 加权（否则中文 bigram 全是常见二字组合，会把未收录误判成命中） ⑥新增 `tests/test_search_quality.py`（切词/召回/质量标记）与工具面模式用例，契约用例 38 → 50 项；v0.27.34-open',
@@ -585,13 +586,15 @@ def flythings_i18n_to_json(project_root: str, langs: str = '', push: bool = True
     return json.dumps(itx.flythings_i18n_to_json(project_root, langs, push, device), ensure_ascii=False)
 
 
-# 注册辅助：把上面全部工具注册到任意 FastMCP 实例
-def flythings_ui_editor(project_root: str, output_dir: str = '') -> str:
+# ── UI 可视化三合一（v0.27.37，沛哥：ui-visual 组做成一个带 action 的入口）──────────────
+# 旧 op flythings_ui_editor / flythings_ui_edit_apply / flythings_ui_diff 已并入
+# flythings_ui_visual(action=...)（见 RENAMED）；下面是三个动作的内层实现，不再单独注册。
+def _ui_editor(project_root: str, output_dir: str = '') -> str:
     """把 ui/*.json 生成「可视化编辑器」网页：拖控件就改布局（输出 <项目>/ui/_edit/<name>.edit.html）。
 
     闭环第二步：AI 出/改 json → 本工具出编辑器给用户拖 → 用户点「复制 AI 指令」
     （自带工程路径 + 目标 json + 变更 JSON 的一段话）直接粘给 AI，或「复制变更 JSON」拿纯 json →
-    flythings_ui_edit_apply 写回 json + pack ftu。页面是本地静态文件、无回传通道，只能复制粘贴。
+    flythings_ui_visual(action="edit_apply") 写回 json + pack ftu。页面是本地静态文件、无回传通道，只能复制粘贴。
     预览与设备同源（都来自 json），改完即所得。
 
     页面能力（点选/拖动/8 手柄缩放、方向键微调、网格吸附、Alt+点穿透选中下层、被遮罩控件也能拖、
@@ -609,7 +612,7 @@ def flythings_ui_editor(project_root: str, output_dir: str = '') -> str:
     if isinstance(r, dict) and r.get('success'):
         r['projectRoot'] = project_root
         r['note'] = ('在浏览器打开 *.edit.html 拖动/改属性；改完点「复制 AI 指令」，把指令（自带工程路径 + '
-                     '目标 json + 变更 JSON）直接粘给 AI，AI 用 flythings_ui_edit_apply 写回 json'
+                     '目标 json + 变更 JSON）直接粘给 AI，AI 用 flythings_ui_visual(action="edit_apply") 写回 json'
                      '（默认不动 ftu，要 ftu 就说 pack）；只想要纯 json 就点「复制变更 JSON」/「下载变更 JSON」。'
                      '⚠️ 页面是本地静态文件、没有回传通道，必须复制粘贴给 AI')
         for f in r.get('files', []):
@@ -618,8 +621,8 @@ def flythings_ui_editor(project_root: str, output_dir: str = '') -> str:
     return json.dumps(r, ensure_ascii=False)
 
 
-def flythings_ui_edit_apply(project_root: str, changes: str, pack: bool = False,
-                            dry_run: bool = False) -> str:
+def _ui_edit_apply(project_root: str, changes: str, pack: bool = False,
+                   dry_run: bool = False) -> str:
     """把 ui_editor 导出的「变更 JSON」写回 ui/*.json（**默认不 pack、可先 dry_run 预览**）。
 
     changes：可直接传 JSON 文本（用户从编辑器复制过来的），也可传文件路径。
@@ -673,9 +676,9 @@ def flythings_ui_edit_apply(project_root: str, changes: str, pack: bool = False,
                 pass
 
 
-def flythings_ui_diff(image_a: str, image_b: str, tolerance: int = 2, shift: int = 1,
-                      min_area: int = 4, blur: float = 0.7, noise_bbox: int = 10,
-                      out_png: str = '', out_json: str = '', show_noise: bool = False) -> str:
+def _ui_diff(image_a: str, image_b: str, tolerance: int = 2, shift: int = 1,
+             min_area: int = 4, blur: float = 0.7, noise_bbox: int = 10,
+             out_png: str = '', out_json: str = '', show_noise: bool = False) -> str:
     """两张同尺寸截图的像素级对比（0 token，纯本地算法）——UI 验收 / 回归对比。
 
     输出的**是差异清单（数字）不是图**，所以不吃 token：区域坐标 / 尺寸 / 面积 / 最大色差。
@@ -707,6 +710,101 @@ def flythings_ui_diff(image_a: str, image_b: str, tolerance: int = 2, shift: int
         return json.dumps(r, ensure_ascii=False)
     except Exception as e:
         return json.dumps({'success': False, 'error': str(e)}, ensure_ascii=False)
+
+
+# ── 合并后的唯一入口（v0.27.37）──────────────────────────────────────────
+# 三动作合一：editor（原 ui_editor）/ edit_apply（原 ui_edit_apply）/ diff（原 ui_diff）。
+# 每个 action 只接受自己的参数；传了别家的参数会回 visualNote 提醒（不静默忽略）。
+UI_VISUAL_ACTIONS = ('editor', 'edit_apply', 'diff')
+UI_VISUAL_ARGS = {
+    'editor': ('project_root', 'output_dir'),
+    'edit_apply': ('project_root', 'changes', 'pack', 'dry_run'),
+    'diff': ('image_a', 'image_b', 'tolerance', 'shift', 'min_area', 'blur',
+             'noise_bbox', 'out_png', 'out_json', 'show_noise'),
+}
+UI_VISUAL_REQUIRED = {'editor': ('project_root',),
+                      'edit_apply': ('project_root', 'changes'),
+                      'diff': ('image_a', 'image_b')}
+_UI_VISUAL_DEFAULTS = {'project_root': '', 'output_dir': '', 'changes': '', 'pack': False,
+                       'dry_run': False, 'image_a': '', 'image_b': '', 'tolerance': 2,
+                       'shift': 1, 'min_area': 4, 'blur': 0.7, 'noise_bbox': 10,
+                       'out_png': '', 'out_json': '', 'show_noise': False}
+
+
+def _ui_visual_bad(msg, hint):
+    """三合一入口的参数错误：给可机读 BAD_PARAMS + 本 action 的正确参数清单。"""
+    return json.dumps({'ok': False, 'op': 'flythings_ui_visual',
+                       'error': _err_obj('BAD_PARAMS', msg, hint, True),
+                       'warnings': []}, ensure_ascii=False)
+
+
+def _ui_visual_note(raw, note):
+    """给内层结果补一条 visualNote（不改内层语义；解析不了就原样回）。"""
+    if not note:
+        return raw
+    try:
+        d = json.loads(raw)
+    except ValueError:
+        return raw
+    if isinstance(d, dict):
+        d['visualNote'] = note
+        return json.dumps(d, ensure_ascii=False)
+    return raw
+
+
+def flythings_ui_visual(action: str = 'list', project_root: str = '', output_dir: str = '',
+                        changes: str = '', pack: bool = False, dry_run: bool = False,
+                        image_a: str = '', image_b: str = '', tolerance: int = 2,
+                        shift: int = 1, min_area: int = 4, blur: float = 0.7,
+                        noise_bbox: int = 10, out_png: str = '', out_json: str = '',
+                        show_noise: bool = False) -> str:
+    """UI 可视化三合一入口（action 选动作；旧 ui_editor / ui_edit_apply / ui_diff 已并入本 op）。
+
+    - action="editor"：ui/*.json → 可拖拽编辑器网页（<项目>/ui/_edit/<name>.edit.html）。必填
+      project_root；可选 output_dir。用户拖完点「复制 AI 指令」粘给 AI——页面是本地静态文件、
+      无回传通道，只能复制粘贴。控件/页面能力见知识库「UI 可视化编辑器 用法与能力」。
+    - action="edit_apply"：编辑器导出的变更 JSON 写回 ui/*.json。必填 project_root、changes
+      （JSON 文本或文件路径）；pack 默认 False（不动 ftu）；dry_run=True 只预览不写盘。
+      结构 {"file","resolution","changes":{控件路径:{left,top,width,height}},"props":{控件路径:{...}}}；
+      控件路径顶层 "button__1"、嵌套 "window__2/button__3"；写回前自动 .bak，格式不一致拒绝写。
+    - action="diff"：两张同尺寸截图像素级对比（0 token 差异清单，不是图）。必填 image_a、image_b；
+      tolerance=2 / shift=1（±1px 抖动）/ blur=0.7（字磨边）/ min_area=4 / noise_bbox=10 压假报警，
+      show_noise 连小碎块一起看，out_png 出标注图、out_json 存清单。跨渲染器（HTML 预览 vs 真机截图）
+      只当骨架参考。
+
+    action 传 list（或省略）只回各 action 的必填参数。
+    """
+    act = str(action or '').strip().lower().replace('-', '_')
+    if act in ('', 'list', 'help', '?'):
+        return json.dumps({'success': True, 'op': 'flythings_ui_visual',
+                           'actions': {k: {'args': list(v),
+                                           'required': list(UI_VISUAL_REQUIRED[k])}
+                                       for k, v in UI_VISUAL_ARGS.items()},
+                           'hint': ('action 取 editor / edit_apply / diff；'
+                                    '旧 ui_editor / ui_edit_apply / ui_diff 已并入本 op')},
+                          ensure_ascii=False)
+    if act not in UI_VISUAL_ACTIONS:
+        return _ui_visual_bad('unknown action: %s' % action,
+                              'action 取 editor / edit_apply / diff（传 action="list" 看参数）')
+    given = {'project_root': project_root, 'output_dir': output_dir, 'changes': changes,
+             'pack': pack, 'dry_run': dry_run, 'image_a': image_a, 'image_b': image_b,
+             'tolerance': tolerance, 'shift': shift, 'min_area': min_area, 'blur': blur,
+             'noise_bbox': noise_bbox, 'out_png': out_png, 'out_json': out_json,
+             'show_noise': show_noise}
+    miss = [k for k in UI_VISUAL_REQUIRED[act] if not str(given[k] or '').strip()]
+    if miss:
+        return _ui_visual_bad('action=%s 缺必填参数: %s' % (act, ', '.join(miss)),
+                              '本 action 参数: %s(%s)' % (act, ', '.join(UI_VISUAL_ARGS[act])))
+    ignored = [k for k in given
+               if k not in UI_VISUAL_ARGS[act] and given[k] != _UI_VISUAL_DEFAULTS[k]]
+    note = ('action=%s 用不到这些参数，已忽略: %s（各 action 参数见 action="list"）'
+            % (act, ', '.join(ignored))) if ignored else ''
+    if act == 'editor':
+        return _ui_visual_note(_ui_editor(project_root, output_dir), note)
+    if act == 'edit_apply':
+        return _ui_visual_note(_ui_edit_apply(project_root, changes, pack, dry_run), note)
+    return _ui_visual_note(_ui_diff(image_a, image_b, tolerance, shift, min_area, blur,
+                                    noise_bbox, out_png, out_json, show_noise), note)
 
 
 def flythings_verify_assets(project_root: str) -> str:
@@ -746,7 +844,7 @@ def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png
                                width: int = 0, height: int = 0, offset_y: int = -1,
                                flip: str = '', rotate: str = 'auto', crop: str = '', name: str = '',
                                timeout: int = 180, advanced: str = '') -> str:
-    """从**设备真机**抓当前屏幕 → PNG / JPG / BMP，交给视觉模型看或用 flythings_ui_diff 做像素验收。
+    """从**设备真机**抓当前屏幕 → PNG / JPG / BMP，交给视觉模型看或用 flythings_ui_visual(action="diff") 做像素验收。
 
     何时用：要确认设备上实际显示成什么样（布局对不对、图标锯齿、切图、颜色/文字、改完验收、
     用户说"我屏幕上看到的是..."而你没有截图）。三段式验收第二步：预览 → 本工具（像素真相）→ ui_diff 比对。
@@ -913,9 +1011,7 @@ OP_NAMES = (
     'flythings_build_ui_flow',
     'flythings_ui_preview',
     'flythings_html_to_json',
-    'flythings_ui_editor',
-    'flythings_ui_edit_apply',
-    'flythings_ui_diff',
+    'flythings_ui_visual',
     'flythings_verify_assets',
     'flythings_device_screenshot',
     'flythings_attach_cli_tools',
@@ -939,7 +1035,7 @@ OP_NAMES = (
     'flythings_resolve_dependencies',
 )
 
-# 已合并/改名的 op（v0.27.36，沛哥：工具直接合并，不留别名）——
+# 已合并/改名的 op（v0.27.36 起，沛哥：工具直接合并，不留别名）——
 # 分发器遇到它们时回 OP_RENAMED + 新名字（**只是错误提示，不执行**，不会变成隐性别名）。
 RENAMED = {
     'flythings_search': 'flythings_knowledge_search',
@@ -948,6 +1044,15 @@ RENAMED = {
     'flythings_recommend_manifest': 'flythings_manifest',
     'flythings_generate_manifest': 'flythings_manifest',
     'flythings_search_package': 'flythings_package_search',
+    'flythings_ui_editor': 'flythings_ui_visual',
+    'flythings_ui_edit_apply': 'flythings_ui_visual',
+    'flythings_ui_diff': 'flythings_ui_visual',
+}
+
+# 合并后带 action 的入口：旧名 → 该用哪个 action（分发器把它拼进 OP_RENAMED 的 hint）。
+RENAMED_HINT = {
+    'flythings_ui_visual': ('action 取 editor（原 ui_editor）/ edit_apply（原 ui_edit_apply）'
+                            '/ diff（原 ui_diff）'),
 }
 
 

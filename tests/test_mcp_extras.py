@@ -99,7 +99,7 @@ class TestPrompts(unittest.TestCase):
         self.assertIn('C:/demo', txt)
         self.assertIn('flythings_ui_preview', txt)
         self.assertIn('flythings_device_screenshot', txt)
-        self.assertIn('flythings_ui_diff', txt)
+        self.assertIn('flythings_ui_visual', txt)
 
     def test_missing_args_tell_to_ask(self):
         g = asyncio.run(_server().get_prompt('flythings-deploy-debug', {}))

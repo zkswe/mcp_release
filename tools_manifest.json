@@ -2,9 +2,9 @@
   "schema": 1,
   "generatedBy": "scripts/gen_manifest.py",
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY 表后重新生成，勿手改本文件",
-  "version": "0.27.36-open",
+  "version": "0.27.37-open",
   "build": "2026-09-12",
-  "toolCount": 34,
+  "toolCount": 32,
   "cli": {
     "fun": "FlyThings 工程工具（create/install/build/launch，<项目>/.fun/<平台>/ 下）",
     "fui": "FTU 布局工具——当前内置版本只支持 pack（json → ftu）；unpack 是空壳（调用报通用错误），不要依赖",
@@ -130,7 +130,7 @@
     },
     {
       "op": "flythings_device_screenshot",
-      "brief": "从**设备真机**抓当前屏幕 → PNG / JPG / BMP，交给视觉模型看或用 flythings_ui_diff 做像素验收。",
+      "brief": "从**设备真机**抓当前屏幕 → PNG / JPG / BMP，交给视觉模型看或用 flythings_ui_visual(action=\"diff\") 做像素验收。",
       "args": [
         "device",
         "out",
@@ -375,9 +375,25 @@
       "category": "package"
     },
     {
-      "op": "flythings_ui_diff",
-      "brief": "两张同尺寸截图的像素级对比（0 token，纯本地算法）——UI 验收 / 回归对比。",
+      "op": "flythings_ui_preview",
+      "brief": "json 布局 / 整个项目 → HTML 预览稿（客户确认 UI 用；只交付 .preview.html，不产图片/截图）。",
       "args": [
+        "target",
+        "output_dir"
+      ],
+      "risk": "write",
+      "category": "layout"
+    },
+    {
+      "op": "flythings_ui_visual",
+      "brief": "UI 可视化三合一入口（action 选动作；旧 ui_editor / ui_edit_apply / ui_diff 已并入本 op）。",
+      "args": [
+        "action",
+        "project_root",
+        "output_dir",
+        "changes",
+        "pack",
+        "dry_run",
         "image_a",
         "image_b",
         "tolerance",
@@ -391,38 +407,6 @@
       ],
       "risk": "write",
       "category": "ui-visual"
-    },
-    {
-      "op": "flythings_ui_edit_apply",
-      "brief": "把 ui_editor 导出的「变更 JSON」写回 ui/*.json（**默认不 pack、可先 dry_run 预览**）。",
-      "args": [
-        "project_root",
-        "changes",
-        "pack",
-        "dry_run"
-      ],
-      "risk": "write",
-      "category": "ui-visual"
-    },
-    {
-      "op": "flythings_ui_editor",
-      "brief": "把 ui/*.json 生成「可视化编辑器」网页：拖控件就改布局（输出 <项目>/ui/_edit/<name>.edit.html）。",
-      "args": [
-        "project_root",
-        "output_dir"
-      ],
-      "risk": "write",
-      "category": "ui-visual"
-    },
-    {
-      "op": "flythings_ui_preview",
-      "brief": "json 布局 / 整个项目 → HTML 预览稿（客户确认 UI 用；只交付 .preview.html，不产图片/截图）。",
-      "args": [
-        "target",
-        "output_dir"
-      ],
-      "risk": "write",
-      "category": "layout"
     },
     {
       "op": "flythings_validate_project",

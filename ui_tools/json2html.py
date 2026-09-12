@@ -17,7 +17,7 @@
       · 点页签 = 显示该整屏窗口、隐藏其余整屏窗口（默认页 = json 里首个 visible!=false 的整屏窗口）
       · 链接支持 hash 直达：xxx.preview.html#window__29（也认 #29 简写）
       · 「显示隐藏」勾选框：visible=false 的控件/窗口以 35% 透明 + 橙色虚线幽灵框叠显
-        （与 flythings_ui_editor 的 ghost 行为对齐）
+        （与 flythings_ui_visual(action="editor") 的 ghost 行为对齐）
       · 左右方向键翻页；同一项目多个 json 时另有「项目页面」跳转行
 """
 import base64, json, os, re, sys

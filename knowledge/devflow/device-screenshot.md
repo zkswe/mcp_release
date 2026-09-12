@@ -9,7 +9,7 @@
 要确认设备上**实际显示成什么样**：布局对不对、图标有没有锯齿、切图对不对、颜色/文字是否正常、
 改完要不要验收、用户说「我屏幕上看到的是……」而你手上没有截图。
 
-三段式验收的第二步：预览（秒级）→ **本工具抓真机截图（像素真相）** → `flythings_ui_diff` 比对。
+三段式验收的第二步：预览（秒级）→ **本工具抓真机截图（像素真相）** → `flythings_ui_visual(action="diff")` 比对。
 
 ## 2. 默认用法（默认参数就够了）
 
@@ -19,7 +19,7 @@
 | 省 token | `scale=0.5`（长宽各半）或 `fmt='jpg', quality=85` |
 | 多设备 | `device='<设备IP>:5555'`（先 `adb connect <IP>:5555`） |
 | 分析画面 | 把返回的 `path` 交给看图能力；**不要把 raw/文件本身丢给模型** |
-| 改前改后验收 | 改前抓一张存好，改后再抓一张 → `flythings_ui_diff(改前, 改后)` 0 token 出差异清单 |
+| 改前改后验收 | 改前抓一张存好，改后再抓一张 → `flythings_ui_visual(action="diff", image_a=改前, image_b=改后)` 0 token 出差异清单 |
 | 方向不对 | **不用自己试角度**：缺省 `rotate='auto'` 会读项目工程 `EasyUI.cfg` 的 `rotateScreen` 自动转正（返回值 `rotateSource` 可自证）；触摸角度看 `screenInfo.rotateTouch`（可与显示不同） |
 | 只要应用画面（去黑边） | `crop='auto'` 按 disp 图层 frame 裁出逻辑分辨率区域（仅存在唯一非全屏图层时生效，否则不裁并在 `crop` 字段说明） |
 

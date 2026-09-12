@@ -557,7 +557,7 @@ def capture(device='', out='', fmt='png', scale=1.0, quality=90, fb='/dev/fb0',
         'rotateDeg': rot, 'rotateSource': rot_src, 'crop': crop_used,
         'scale': scale, 'elapsedSec': round(time.time() - t0, 2),
         'readHint': ('把该文件路径交给视觉模型/看图工具分析（不要把 raw 丢给模型）；'
-                     '两张截图对比用 flythings_ui_diff（0 token 出差异清单）。'
+                     '两张截图对比用 flythings_ui_visual(action="diff")（0 token 出差异清单）。'
                      '颜色红蓝互换 → 重抓时传 pixel=rgba（或 bgra）。'),
     }
 

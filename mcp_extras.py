@@ -135,7 +135,7 @@ def _version_doc():
 
 # ---------------- prompts 模板 ----------------
 
-_SAFETY = ('安全默认：改布局先出预览稿给用户确认；`flythings_ui_edit_apply` 先 dry_run；'
+_SAFETY = ('安全默认：改布局先出预览稿给用户确认；`flythings_ui_visual(action="edit_apply")` 先 dry_run；'
            '`flythings_fui_pack` / `flythings_build_ui_flow` 默认不 pack、不推真机，'
            '要 pack / 要上设备必须显式确认后传参。')
 
@@ -181,7 +181,7 @@ PROMPTS = {
                  '多整屏 window 工程自带页面切换条 + `#window__N` 直达）\n'
                  '3. 真机像素真相：`flythings_device_screenshot`（方向 rotate=\'auto\'，'
                  '按项目工程 rotateScreen；改前先抓一张）\n'
-                 '4. 对比：`flythings_ui_diff`（0 token 差异清单；只看差异区小图给视觉模型）\n'
+                 '4. 对比：`flythings_ui_visual(action="diff")`（0 token 差异清单；只看差异区小图给视觉模型）\n'
                  '5. 结论：给用户「改了什么/像素差异/是否可交付」，别把整屏原图丢给模型\n\n' + _SAFETY),
     },
     'flythings-deploy-debug': {

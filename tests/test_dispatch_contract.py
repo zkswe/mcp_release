@@ -141,7 +141,7 @@ class TestToolSurfaceModes(unittest.TestCase):
         d = self._probe()
         self.assertEqual(d['mode'], 'dispatcher')
         self.assertEqual(d['names'], ['flythings_kb'],
-                         '默认模式应只暴露 1 个入口（36 份 schema 常驻≈1 万 token 的回归）')
+                         '默认模式应只暴露 1 个入口（32 份 schema 常驻≈1 万 token 的回归）')
 
     def test_all_mode_keeps_backward_compat(self):
         import kb_tools
@@ -161,7 +161,7 @@ class TestToolSurfaceModes(unittest.TestCase):
                              "print(json.dumps(sorted(t.name for t in ts)))" % U.BASE)],
                            capture_output=True, text=True, cwd=U.BASE)
         self.assertEqual(json.loads(r.stdout.strip().splitlines()[-1]), sorted(kb_tools.OP_NAMES),
-                         'mcp_server_flat.py 必须恰好注册 36 个独立工具')
+                         'mcp_server_flat.py 必须恰好注册 32 个独立工具')
 
     def test_unknown_mode_falls_back_to_dispatcher(self):
         self.assertEqual(self._probe('not-a-mode')['mode'], 'dispatcher')

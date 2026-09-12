@@ -4,7 +4,7 @@
 背景（2026-09-12 钟工反馈）：edit.html 是本地静态文件，**没有回传通道**，
 用户改完只能复制粘贴给 AI。所以页面必须：
   ① 有「复制 AI 指令」按钮，且说明文案写清「复制粘贴给 AI」这条落地方式；
-  ② 复制出来的指令要自带 **工程路径 + 目标 json + 变更 JSON**（AI 拿到即可 flythings_ui_edit_apply）；
+  ② 复制出来的指令要自带 **工程路径 + 目标 json + 变更 JSON**（AI 拿到即可 flythings_ui_visual(action="edit_apply")）；
   ③ 没有改动时不给空指令（按钮提示「暂无改动」）；
   ④ 工具返回的 note 同步更新这条口径。
 DOM 级实跑（拖动→点按钮→读剪贴板/文本框）在 temp/al_test/probe3.py，这里只钉住产物内容。
@@ -46,7 +46,7 @@ class EditHtmlAiPrompt(unittest.TestCase):
         _util.cleanup(self.tmp)
 
     def _gen(self):
-        r = _util.jcall('flythings_ui_editor', {'project_root': self.tmp})
+        r = _util.jcall('flythings_ui_visual', {'action': 'editor', 'project_root': self.tmp})
         self.assertTrue(r.get('success'), r)
         html = r['files'][0]['html']
         with io.open(html, encoding='utf-8') as f:
@@ -56,7 +56,8 @@ class EditHtmlAiPrompt(unittest.TestCase):
         _r, doc = self._gen()
         self.assertIn('data-a="copyai"', doc)
         self.assertIn('复制 AI 指令', doc)
-        self.assertIn('flythings_ui_edit_apply', doc)
+        self.assertIn('flythings_ui_visual', doc)
+        self.assertIn('edit_apply', doc)
         self.assertIn('回传通道', doc)          # 明说「必须复制粘贴」
         self.assertIn('__edAiPrompt', doc)     # 可被测/被自动化取用
 
@@ -66,7 +67,7 @@ class EditHtmlAiPrompt(unittest.TestCase):
         # 直接从源码里取 aiPrompt 的模板行，确认字段齐全（DOM 实跑见 probe3.py）
         self.assertIn('projectRoot', doc)
         self.assertIn('jsonRel', doc)
-        for needle in ('项目根目录', '目标 json', '变更 JSON', 'flythings_ui_edit_apply'):
+        for needle in ('项目根目录', '目标 json', '变更 JSON', 'flythings_ui_visual', 'edit_apply'):
             self.assertIn(needle, doc)
         # META 里必须真的带上工程根（否则指令里的路径是空的）
         self.assertIn('C:', doc) if os.name == 'nt' else self.assertIn('/tmp', doc)
@@ -79,7 +80,7 @@ class EditHtmlAiPrompt(unittest.TestCase):
         self.assertEqual(meta['jsonRel'], 'ui/main.json')
 
     def test_tool_note_mentions_copy_ai(self):
-        r = _util.jcall('flythings_ui_editor', {'project_root': self.tmp})
+        r = _util.jcall('flythings_ui_visual', {'action': 'editor', 'project_root': self.tmp})
         self.assertIn('复制 AI 指令', r.get('note', ''))
 
 
