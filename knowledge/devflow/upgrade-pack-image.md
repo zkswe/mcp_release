@@ -63,11 +63,17 @@ adb shell setprop ctl.restart zkswe
 系统开不了机、需要系统新功能/修 bug 时，用官方 SD 刷机包 + 电脑端刷机工具制作刷机卡，
 格式化整机（不是应用升级包）；刷机包找官方群共享，注意机器背面标签对型号。
 
-## 三、实测坑（本机 2026-09-12 复现）
+## 三、实测坑（本机 2026-09-12 复现 + 修复验证）
+
+> 验证记录（2026-09-12）：装 **VC++ 2015-2022 Redistributable (x86)** 后，
+> `C:\zkswe\fun\tools\fsimg.exe` 可正常启动（该 exe 实为签名工具 `fssign`，
+> 用法 `fssign [-i <name:path>]... -p <platform> -o <file>`），
+> 端到端出包成功：`fun pack -p V85X` → `.fun/v85x/update.img`（84.6 KB，LunarCalendarDemo）。
+> 结论：**Windows 上做固化升级，VC++ x86 运行库是硬前置**。
 
 | 现象 | 根因 | 处理 |
 |---|---|---|
-| `FATAL sign error: exit status 0xc0000135` | 打包/签名用的 `fsimg.exe` 是 **32 位**程序，系统只装了 x64 VC++ 运行时（缺 32 位 `msvcp140.dll` / `vcruntime140.dll`） | Windows 装「Visual C++ 2015-2022 Redistributable **(x86)**」后重试；或把 32 位这两个 dll 放到 fun 工具目录旁的 `fsimg.exe` 同级 |
+| `FATAL sign error: exit status 0xc0000135`（或 `0xc000007b`） | 打包/签名用的 `fsimg.exe` 是 **32 位**程序，系统只装了 x64 VC++ 运行时（缺 32 位 `msvcp140.dll` / `vcruntime140.dll`）；0xc0000135=找不到 DLL，0xc000007b=位数不匹配 | **已修复**：装「Visual C++ 2015-2022 Redistributable **(x86)**」（需管理员，装完 `C:\Windows\SysWOW64\msvcp140.dll` 存在即 OK）；无管理员权限时退路是把 32 位这两个 dll 放到 `C:\zkswe\fun\tools\`（`fsimg.exe` 同级） |
 | `FATAL generate error: package ini@0.0.1 not found in local` | 工程依赖没装（`fun install` 未跑或没跑完） | 先 `fun install` 再 pack |
 | 出包成功但设备没变化 | 把 update.img 放在了卡的非根目录，或卡不是 FAT32 | 卡格式化 FAT32，文件放根目录，插卡重上电 |
 
