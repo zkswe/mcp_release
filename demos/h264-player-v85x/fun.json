@@ -1,0 +1,7 @@
+{
+  "name": "h264player-v85x",
+  "version": "1.0.0",
+  "platform": "v85x",
+  "description": "V85X 硬件 H264 播放验证工具（h264_player_* / 官方 awh264player 包）：喂 H264 Annex-B ES，打印解码回调与内存占用",
+  "type": "executable"
+}

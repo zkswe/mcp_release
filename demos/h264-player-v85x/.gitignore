@@ -1,0 +1,7 @@
+Release/
+.fun/
+.fun-lock.json
+.deps.lock
+.vscode/
+obj/
+*.exe
