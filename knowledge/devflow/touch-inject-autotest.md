@@ -99,7 +99,9 @@ adb shell mt_test /dev/input/event0 tap 100 100
 | `mt_test` | MT Type-A | z21 / z20 / t113 / v85x |
 > 更全的调试工具箱（ifconfig/ping/netstat 等网络/系统命令）→ 同目录 `busybox`（见 busybox-debug-library.md）。
 >
-> `touch` 常用：`touch list` / `touch info` / `touch [-d /dev/input/eventN] tap x y`；选项 `--proto single|a|b`、`--hold <ms>`、`--scale`、`--screen WxH`、`-v`（打印探测失败原因，`TOUCH_DEBUG=1` 同效）。
+> `touch` 常用：**先 `touch check [x y]`**（一条命令自检：节点/协议/量程落点结论，给坐标则再注一次 tap；退出码 0=可用 / 3=无节点 / 4=有风险）、`touch list` / `touch info` / `touch [-d /dev/input/eventN] tap x y`；
+> 触摸之外：`key <code> [ms]`（物理键，需 -d）· `sweep <from> <to> [ms]`（扫键码）· `raw t:c:v …`（原始事件）；
+> 选项 `--proto single|a|b`、`--hold <ms>`、`--scale`、`--screen WxH`、`-v`（打印探测失败原因，`TOUCH_DEBUG=1` 同效）。
 
 ## 🖥 V85X 真机实录（2026-09-14，两块屏两种协议——都是"单点工具必死"）
 
