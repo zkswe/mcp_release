@@ -170,6 +170,9 @@ Z21 整机（`<Z21-IP>`，`Zkswe_SSD21X_SPINOR`，做**中心**）。
 
 ### 0.4 统一门面 `zk::ble` 与两个后端（2026-09-14 落地）
 
+> 注：本节提到的 `src/zk_ble.cpp` / `src/zk_ble_gatt.cpp` / `src/zkble_*.h` 自 v0.2.1 起**不再随本仓发布**，
+> 已移到内部私有目录（模块只发布 `include/` + `lib/`）；这里保留结构说明，因为**后端矩阵与行为口径照着它对**。
+
 钟工：「蓝牙部分都统一按照我们昨天定义的新 API，参考微信的方式」→ 组件收口成**一个 API 面 + 两个平台后端**：
 
 | | btstack 后端 | gatt 后端 |
@@ -285,6 +288,40 @@ Z21 整机（`<Z21-IP>`，`Zkswe_SSD21X_SPINOR`，做**中心**）。
 
 **本轮未覆盖（如实标注）**：自定义 128 位（非 base）uuid 折回分支未上机；`peripheral::setDeviceName` 未上机；
 断开后二次重连闭环未跑；多中心并发/扫描期间角色切换未回归。
+
+---
+
+### 0.6 静态库矩阵与构建口径（2026-09-14 起：只发头 + 库）
+
+钟工：「验证好了后把你的程序做成静态库+头文件发布给到 open 版本 MCP 里面。不释放源码了」→ 组件发布形态改为：
+
+```
+components/ble/
+├─ include/zk/zk_ble.h        ← 唯一对外头（公开 API 契约）
+├─ lib/<平台>/libzkble.a      ← 按平台构建的静态库
+└─ lib/BUILD_INFO.md          ← 构建凭据（工具链/依赖版本/符号数/大小/sha256）
+```
+
+| 平台 | 后端 | 编译器 | libc | 工程侧需声明的包 | 库大小 | 公开 API |
+|---|---|---|---|---|---|---|
+| f133 | btstack | `riscv64-unknown-linux-musl-g++`（Xuantie 900 V2.10.2） | musl | `btstack 1.7.2` + `easyui 2.9.0` | 408 KB | 30/30 |
+| v85x | btstack | `arm-unknown-linux-musleabihf-g++` | musl | `btstack` + `easyui 2.9.0` | 118 KB | 30/30 |
+| z20 | gatt | `arm-pc-linux-gnueabihf-g++` 8.3.0 | glibc | `gatt 1.0.0` | 179 KB | 30/30 |
+| z21 | gatt | 同上 | glibc | `gatt 1.0.0` | 179 KB | 30/30 |
+| t113 / t113emmc | gatt | （待构建） | musl | `gatt 1.0.0` | — | — |
+
+**口径与坑（都是实测）**
+- **不拿别的平台的头凑库**：t113/t113emmc 本地没有 `gatt 1.0.0` 包（工具链自带注册表也无），
+  而 `gatt/hci.h`、`gatt/gatt-db.h` 里有大量**结构体定义**（ABI 相关），跨平台头若不一致会埋雷——
+  所以宁可不发布那两个平台的库，也不猜。内部装好对应平台包后重跑私有构建脚本即得。
+- **z20 与 z21 的 `libzkble.a` 逐字节相同**（sha256 一致）：两个平台的 `gatt 1.0.0` **17 个头文件 md5 逐一相同**（已核对），
+  同一编译器/同一头文件 → 产物相同。两份都放是为了让工程按平台取，不依赖"知道它们一样"这种隐含知识。
+- **V85X 的库是用本地 `btstack 1.7.2` 头构建的**（本机注册表没有 1.8.0）；包站上 V85X 是 1.8.0。
+  头文件 ABI 未变（本模块只用到 HCI/GAP/GATT 基础声明），但**要严谨就用 1.8.0 重跑一次构建脚本**（装包后一条命令）。
+- **符号自检不用 `nm`**：Windows 版 binutils 的 `nm` 缺 `liblto_plugin-0.dll`，一调就报错；
+  改用 `scripts/verify_lib_symbols.py`（**纯 Python 解析 ar + ELF 符号表**，无外部依赖，任何机器可跑，也方便外部 AI 自己核）。
+- 构建脚本（私有）：`private/components-ble/scripts/build_libs.ps1`（一次出四平台库 + 刷新 `lib/BUILD_INFO.md`），
+  源文件侧编译自检 `compile_check.sh` / `compile_check_gatt.sh` 也一并存放在私有目录。
 
 ---
 

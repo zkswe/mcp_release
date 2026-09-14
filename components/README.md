@@ -23,7 +23,11 @@ components/
 没有 `example/` 的模块，等于让下一个人从零猜调用姿势。
 
 **两种模块形态**（都算合格）：
-- **代码型**（默认）：`include/ + src/ + example/`，对外命名空间 `zk::<模块>`；
+- **源码型**（默认）：`include/ + src/ + example/`，对外命名空间 `zk::<模块>`；
+- **二进制型**（源码不外发时用）：`include/ + lib/<平台>/ + lib/BUILD_INFO.md + example/`，
+  对外仍只是 `include/zk/zk_<模块>.h`；**源码私有维护**，但必须给“构建凭据”（每个平台库用什么工具链/
+  依赖版本构建、符号数、sha256），并提供**机器可跑的符号自检脚本**（对照头文件里的公开 API）。
+  取库时按目标平台取，**不许拿别的平台的头凑**（ABI 不一致会埋雷）；工具链/libc 必须在 BUILD_INFO 里写清。
 - **资产/工具型**（如 `fonts/`）：无 `include/src`，四件套对应为 `README.md + platforms.md + scripts/（可复现的生成/检查脚本）+ 产物目录（字体/资源）`，
   使用方式写成"一条命令"（体检/投递/生成），不要求调用方写代码。
 
@@ -84,5 +88,5 @@ components/
 
 | 模块 | 说明 | 平台 | 版本 |
 |---|---|---|---|
-| [`ble/`](ble/README.md) | BLE 门面 `zk::ble`：把蓝牙收拾成 wxapi 那种（**一个 API 面、两个后端**：中心扫描/连接/GATT + 外设广播/GATT 服务/notify） | 中心：F133、V85X（btstack）；双角色：Z20/Z21/T113EMMC（gatt，真机跑通） | 0.2.0 |
+| [`ble/`](ble/README.md) | BLE 门面 `zk::ble`：把蓝牙收拾成 wxapi 那种（**一个 API 面、两个后端**：中心扫描/连接/GATT + 外设广播/GATT 服务/notify）。**二进制型**：只发头 + `lib/<平台>/libzkble.a`（源码私有） | 中心：f133、v85x（btstack）；双角色：z20、z21（gatt，真机跑通）；t113/t113emmc 待补库 | 0.2.1 |
 | [`fonts/`](fonts/README.md) | 字库模块（资产型）：思源黑体三版（常用中文872KB/全中文7.4MB/多国语言10.5MB）+ 设备字体自检（缺中文自动投递） | 全平台（已在 V85X 实测） | 0.1.0 |

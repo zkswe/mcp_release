@@ -146,7 +146,7 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 
 > **MCP 版本是多少？**
 
-应返回：`flythings-kb-open 0.27.58-open`，包含 34 个工具。
+应返回：`flythings-kb-open 0.27.59-open`，包含 34 个工具。
 
 ---
 

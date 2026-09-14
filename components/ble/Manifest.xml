@@ -1,39 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  components/ble —— 包引用声明（Manifest 片段）
+  components/ble —— 引用声明（**头文件 + 静态库**：源码不随本仓发布）
 
-  用法（两种，二选一）：
-  A) 源码引入（推荐先用这种，见 README「怎么把它接进工程」）
-     把 components/ble 的 include/ 与 src/ 加进工程构建，编译即用；
-     工程自己的 Manifest.xml 仍需按平台声明下面 **对应后端** 的底层依赖。
-  B) 作为依赖包发布（模块定型后）
-     把 components/ble 按平台编译成 include/lib，注册进包仓库，
-     再在自己的 Manifest.xml 里写：<package id="zkble" version="0.2.0"></package>
+  本模块的交付物：
+    include/zk/zk_ble.h          唯一对外头（公开 API 契约）
+    lib/<平台>/libzkble.a        按平台构建的静态库（f133 / v85x / z20 / z21）
+    lib/BUILD_INFO.md            构建凭据（工具链 / 依赖版本 / 符号数 / sha256）
 
-  注意 1：版本必须锁死（btstack 的 HID/ATT 表按版本生成、gatt 是 BlueZ 用户态 ABI），不要用 ^ 浮动。
-  注意 2：**同一平台只声明一个后端**（btstack 与 gatt 后端代码互斥，见 src/zkble_backend.h）。
-  注意 3：本模块**不依赖 easyui / zknet / base-utility**（读系统属性直接走 /data/property，
-          日志可经 setLogHook 挂到业务自己的日志系统）。别照抄老模板往里塞一堆没用的包。
+  接进工程（手工引入，推荐）：
+    1) 拷 include/zk/ 到工程（如 src/zk/）；
+    2) 拷 lib/<目标平台>/libzkble.a 到工程（如 src/dependencies/lib/）；
+    3) 构建里链接 libzkble.a，并按下表声明**该平台的底层包**；
+    4) 工具链/libc 必须与 lib/BUILD_INFO.md 记录的一致（f133/v85x=musl，z20/z21=glibc）。
+
+  注：本模块目前**不在依赖包仓库里**，所以下面不写 <package id="zkble">；
+      将来若注册进包仓库，工程里就只需一行：
+        <package id="zkble" version="0.2.1"></package>
+      （版本写死，不要用 ^ 浮动：底层 ABI 一变，编出来的东西就不可复现。）
 -->
 <manifest>
 
-  <!-- ============================================================ btstack 后端（F133 / V85X） -->
+  <!-- ============================================================ btstack 后端：F133 / V85X -->
   <platform name="F133">
     <dependencies>
-      <package id="btstack" version="1.7.2"></package>   <!-- BLE 协议栈（BLE-only 构建）；唯一直接依赖 -->
+      <package id="btstack"      version="1.7.2"></package>   <!-- BLE 协议栈（BLE-only 构建） -->
+      <package id="easyui"       version="2.9.0"></package>   <!-- SystemProperties（读 persist.wifi.module） -->
+      <package id="base-utility" version="10.10.2"></package> <!-- 可选：基础设施 -->
+      <package id="log"          version="1.0.0"></package>   <!-- 可选 -->
+      <package id="zkhardware"   version="1.0.0"></package>   <!-- 可选 -->
     </dependencies>
   </platform>
 
   <platform name="V85X">
     <dependencies>
-      <package id="btstack" version="1.8.0"></package>   <!-- V85X 的 btstack 比 F133 新（1.8.0） -->
+      <!-- 本机 lib/v85x 是用 1.7.2 头构建的；工程若声明 1.8.0，请让维护者用 1.8.0 重跑构建脚本后换库 -->
+      <package id="btstack"      version="1.8.0"></package>
+      <package id="easyui"       version="2.9.0"></package>
+      <package id="base-utility" version="10.10.2"></package>
+      <package id="log"          version="1.0.0"></package>
+      <package id="zkhardware"   version="1.0.0"></package>
     </dependencies>
   </platform>
 
-  <!-- ============================================================ gatt 后端（Z20 / Z21 / T113 / T113EMMC） -->
-  <!-- 只依赖 gatt 1.0.0（BlueZ 用户态 GATT 库）+ pthread；不需要 easyui/zknet/base-utility。
-       运行期还要 hciconfig / hcitool 两个工具：产品化请放进升级包的 /res/bin；
-       开发期可用本模块的工具路径候选链（/res/bin → /data/bin → /tmp/bin → /usr/bin → /bin）先跑。 -->
+  <!-- ============================================================ gatt 后端：Z20 / Z21 -->
+  <!-- 只依赖 gatt 1.0.0（BlueZ 用户态 GATT 库）+ pthread + libc；不需要 easyui/zknet/base-utility。
+       运行期还要 hciconfig / hcitool：产品化请放进升级包 /res/bin；
+       开发期可用库内的工具路径候选链（/res/bin → /data/bin → /tmp/bin → /usr/bin → /bin）。 -->
   <platform name="Z20">
     <dependencies>
       <package id="gatt" version="1.0.0"></package>
@@ -46,16 +58,9 @@
     </dependencies>
   </platform>
 
-  <platform name="T113">
-    <dependencies>
-      <package id="gatt" version="1.0.0"></package>
-    </dependencies>
-  </platform>
-
-  <platform name="T113EMMC">
-    <dependencies>
-      <package id="gatt" version="1.0.0"></package>
-    </dependencies>
-  </platform>
+  <!-- ============================================================ 待补（未构建库） -->
+  <!-- T113 / T113EMMC：本机没有该平台的 gatt 1.0.0 包，未构建 libzkble.a。
+       不拿 z20/z21 的头凑（gatt/hci.h、gatt-db.h 含 ABI 相关结构体定义）。
+       内部装好对应平台包后重跑私有构建脚本即可产出。 -->
 
 </manifest>
