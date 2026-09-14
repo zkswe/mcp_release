@@ -146,7 +146,7 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 
 > **MCP 版本是多少？**
 
-应返回：`flythings-kb-open 0.27.61-open`，包含 34 个工具（另含 `binTools` 字段：设备端预编译工具 touch/busybox/ui_test/mt_test/zkshot，在 `bin_tools/<平台>/` 下，**不是 op、不占 op 名额**）。
+应返回：`flythings-kb-open 0.27.62-open`，包含 34 个工具（另含 `binTools` 字段：设备端预编译工具 touch/busybox/ui_test/mt_test/zkshot，在 `bin_tools/<平台>/` 下，**不是 op、不占 op 名额**）。
 
 ---
 

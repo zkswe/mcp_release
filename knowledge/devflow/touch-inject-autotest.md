@@ -115,6 +115,14 @@ adb shell mt_test /dev/input/event0 tap 100 100
 
 **宿主侧小贴士**：USB 设备在 `adb devices` 里消失/`offline` 时，先清掉所有 adb 进程再起（Windows：`taskkill /IM adb.exe /F` → `adb start-server`）——IDE 自带 adb 会抢占 5037 并留陈旧状态；SPINOR 实测就这样从"完全看不到"恢复成 `device`，**不用拔插**。
 
+**✅ 2026-09-14 实测验收（axs_ts / MT-B 板，同一 USB 位）：** 用我们自己的 `touch` 跑通——
+`tap 58 160` → 应用日志 `touch action=1 (58,160)` → `action=2 (58,160)`；
+`swipe 240 600 240 250 24 12` → 一串 `action=3`（240,279→255 插值）+ `action=2 (240,250)`；
+`raw 3:57:1 3:53:100 … 1:330:1 0:0:0` → `action=1 (100,100)`。
+即：**MT-B 三铁律 + 「量程 0..0 不算可用」两条对齐后，我们的工具在这块屏上也能点**，不必依赖工程内自研注入器（`pginj.c`）。
+
+**工具面已对齐工程内 `pginj.c` 的能力：** `touch [dev] key <code> [ms]`（物理键注入）· `sweep <from> <to> [ms]`（扫键码区间找真实键值）· `raw t:c:v [t:c:v ...]`（原始事件逃生口，末尾一次 SYN）；健注入不要求触摸节点（`gpio-keys` 之类没 ABS 也能用），但需 `-d` 指定节点（不自动挑触摸节点）。
+
 ## 🔬 底层原理（event.c 精要，定制/移植才需要）
 
 直接读写 `/dev/input/eventX` 注入 `struct input_event`，App 收到与真人触摸完全一样的输入（不依赖被测代码）。
