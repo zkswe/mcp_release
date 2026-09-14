@@ -9,7 +9,7 @@
 | Demo | 平台 | 功能闭环 | 状态 | 配套知识 |
 |------|------|---------|------|---------|
 | `dvr-uvc-recorder-v85x` | V85X | UVC 摄像头 探测/预览/拍照/录像/停止/回放 + 图层释放 + 竖屏旋转 | ✅ 真机全链路验证 | `knowledge/v85x/dvr-recorder-guide.md` |
-| `h264-player-v85x` | V85X | 硬件 H264 解码（bin 工具）：env + dlopen 加载库 + `init_ex` 缩放解码 + 解码回调 + Annex-B 按 AU 喂帧 + 内存采样 | ✅ 编译通过未上机 | `knowledge/v85x/h264-player-usage.md` |
+| `h264-player-v85x` | V85X | 硬件 H264 解码（bin 工具）：env + dlopen 加载库 + `init_ex` 缩放解码 + 解码回调 + Annex-B 按 AU 喂帧 + 内存采样 | ✅ 真机解码验收（V851 640×480）+ 编译通过 | `knowledge/v85x/h264-player-usage.md` |
 
 ## 🆕 新增 demo 的规范（照此执行，保证质量与可维护）
 

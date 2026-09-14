@@ -1,7 +1,9 @@
 # h264-player-v85x — V85X 硬件 H264 播放验证工具（bin 工程）
 
-> **状态：✅ 编译通过（未上机）** —— `fun build -p v85x` rc=0，产出 ELF 18KB。
-> 真机播放验收请按下面"验证点"表跑一遍再下结论。
+> **状态：✅ 编译通过 + ✅ 真机解码验收（V851 / 640×480：`init_ex -> 0`、解码回调 18 次、`crop(0,0,640,480) fmt=5`）**
+> 验证环境：`Zkswe_V85X_SPINOR`（480×800）。带显示层的业务验收（透明窗口/图层释放）请在目标工程里跑。
+> 固化链路已实测到出包环节（见 `knowledge/v85x/h264-player-usage.md` §7.1）：`fun pack` 会把 `lib-no-link/*.so` 放进
+> `.fun/<平台>/imgout/lib/` → 镜像 `lib/` → 设备 `/res/lib/`；**刷机侧待验**（刷 update.img 会整体覆盖 `/res`）。
 > 配套知识：`knowledge/v85x/h264-player-usage.md`（原理 + 坑 + 两条路线的选法）。
 
 ## 这个 demo 解决什么
@@ -50,7 +52,7 @@ h264play <file.h264> <srcW> <srcH> [rot=0|90|180|270] [scale=1|2|4] [seconds=10]
 
 | 看什么 | 期望 | 对不上的话 |
 |---|---|---|
-| `[dl] 已加载 …` | 打印实际用的路径（`/tmp` 或 `/res/lib`） | 库没推到、或名字不对 → 先解决加载 |
+| `[dl] 已加载 …` + **`[dl] 实际文件 …`** | 第二行给出**真实命中的文件**（`/tmp/...` 还是 `/res/lib/...`）——判“固化生效没有”看这行，别只看“ls 有文件”（同名前库可能体积不同：官方包 17528 / 参考工程那份 21624） | 库没推到、或名字不对 → 先解决加载 |
 | `[mem] 起播前 MemAvailable` | **≥ 3 MB** | 低于 3MB 必挂；被 OOM 杀过要**重启板子**（内存不会自己回来） |
 | `h264_player_init_ex(...,flag=0x…) -> 0` | 返回 0 | 非 0：先查 VBVSIZE 是否在**dlopen 之前**设过 |
 | `[cb] 解码回调 #1 …` | **回调在涨** | 一帧不涨：数据里没有 SPS/PPS/IDR，或喂的是 TS 不是 ES |
@@ -59,6 +61,14 @@ h264play <file.h264> <srcW> <srcH> [rot=0|90|180|270] [scale=1|2|4] [seconds=10]
 | 屏上有画面 | 显示区有图像 | 黑屏但回调在涨 → UI 层缺透明窗口 / 残留图层未释放（见 `knowledge/v85x/display-layer-debug.md`） |
 
 内存档位实测参考（720p，V851s 56MB 内存）：不缩放 **2.6MB** ⚠️ / 1/2（`scale=2`）**4.1MB** ⭐ / 1/4（`scale=4`）**6.5MB** ✅。
+
+## 实测记录（2026-09-14，V851 480×800）
+
+| 场景 | 结果 |
+|---|---|
+| 不推库（靠 `/res/lib` 里已有的那份 21624） | ✅ `init_ex -> 0`，解码回调 17 次 |
+| 把官方包那份（17528）推到 `/tmp` | ✅ dlopen **命中 `/tmp/libawh264player.so`**（`/tmp` 在 ld 路径最前，遮蔽 `/res`），解码回调 18 次 |
+| `fun pack` 出包（zkgui 工程） | ✅ `.fun/v85x/imgout/lib/` 里出现了 `lib-no-link/` 下的库；⚠️ bin 工程不能 pack（`FATAL libzkgui.so not found`） |
 
 ## 为什么不去把包声明成依赖（而是 dlopen + lib-no-link）
 
