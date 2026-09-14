@@ -668,6 +668,29 @@ def _scan_src(root, markers):
     return hits, unread
 
 
+def _count_src(root, markers):
+    """统计标记在 src/ 下出现次数（用字符计数，不看文件数）。读失败的文件跳过（已在 _scan_src 侧报）。"""
+    total = {}
+    src = os.path.join(root, 'src')
+    if not os.path.isdir(src):
+        return total
+    for dirpath, dirnames, filenames in os.walk(src):
+        dirnames[:] = [d for d in dirnames if d not in _SRC_SKIP_DIRS]
+        for fn in filenames:
+            if os.path.splitext(fn)[1].lower() not in ('.c', '.cc', '.cpp', '.h', '.hpp'):
+                continue
+            try:
+                txt = open(os.path.join(dirpath, fn), encoding='utf-8', errors='replace').read()
+            except OSError as e:
+                print('  [NOTE] 读取失败跳过统计：%s (%s)' % (fn, e.__class__.__name__))
+            else:
+                for mk in markers:
+                    n = txt.count(mk)
+                    if n:
+                        total[mk] = total.get(mk, 0) + n
+    return total
+
+
 def check_v85x_release_layer(root):
     """V85X 视频解码返回后是否做了图层释放（返回 dict: status/ok/detail/note）。"""
     plat = _manifest_platform(root)
@@ -688,9 +711,15 @@ def check_v85x_release_layer(root):
         fmt_hits = _scan_src(root, ('DISP_FORMAT_ARGB_8888', 'DISP_FORMAT_BGRA_5551'))[0]
         unsafe = sorted(set(fmt_hits.get('DISP_FORMAT_ARGB_8888', []))
                         & set(fmt_hits.get('DISP_FORMAT_BGRA_5551', [])))
-        return {'status': 'ok', 'ok': True, 'unsafe': unsafe,
-                'detail': '已做（解码用法 %s；释放实现 %s）'
-                          % ('、'.join(dec_files[:3]), '、'.join(rel_files[:3]))}
+        # 2026-09-14 沛哥：用到视频图层的产品「启动第一次初始化」必须先释放图层（崩溃重启残留 -> 屏幕永久性异常）
+        # → 实现存在不代表调到了：名字只出现 1 次（只有定义、没启动路径调用）就提醒。
+        name_cnt = sum(_count_src(root, ('release_layer', 'releaseLayer', 'ReleaseLayer')).values())
+        nocall = name_cnt <= 1
+        return {'status': 'ok', 'ok': True, 'unsafe': unsafe, 'nocall': nocall,
+                'detail': '已做（解码用法 %s；释放实现 %s）%s'
+                          % ('、'.join(dec_files[:3]), '、'.join(rel_files[:3]),
+                             '；⚠️ 释放函数名只出现 %d 次（疑似只定义未调用/未在启动初始化路径调用）'
+                             % name_cnt if nocall else '')}
     miss = sorted(set(dec_unread + rel_unread))
     return {'status': 'ok', 'ok': False,
             'detail': '缺失！平台 %s + 视频解码（%s）但未见 disp 图层释放 → '
@@ -1107,6 +1136,12 @@ def main(project_root):
         print('  [NOTE] 跳过：%s' % rl['note'])
     else:
         log(rl['ok'], 'V85X 图层释放 %s' % rl['detail'])
+        if rl.get('nocall'):
+            warn('V85X 图层释放：src/ 里释放函数名只出现一次（疑似只定义未调用）——\n'
+                 '          沛哥 2026-09-14 定：用到视频图层的产品**启动第一次初始化就必须先释放图层**，\n'
+                 '          否则程序崩溃/重启后残留的系统级 disp 图层不会被清理 → **屏幕永久性异常**\n'
+                 '          （真机实测：杀进程重启后残留黑层仍在）。修复：在启动初始化路径里调一次释放\n'
+                 '          函数（如 sys::hw::init() / onUI_init），详见 knowledge/v85x/display-layer-debug.md §2-0/§2-1-3')
         if rl.get('unsafe'):
             warn('V85X 图层释放用「格式区间（DISP_FORMAT_ARGB_8888 ~ DISP_FORMAT_BGRA_5551）判定 UI 层」'
                  '（%s）→ 2026-09-14 V851 真机实测会漏关残留层：RGB_888(0x08) 落在区间内被误判为 UI 层、'

@@ -53,9 +53,10 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.54-open'
+MCP_VERSION = '0.27.55-open'
 MCP_BUILD = '2026-09-14'
 MCP_FEATURES = [
+    '2026-09-14: 「启动首次初始化必须先释放图层」定规 + 崩溃重启残留实测 v0.27.55-open（沛哥：用到视频图层的产品，上来第一次初始化要先释放图层，否则程序崩溃重启后系统级图层没释放 → **屏幕永久性异常**）——①doc §2-0 改成双时机：**首要=启动首次初始化**，其次=视频解码返回后，写清 disp 图层是**系统级状态、不随进程退出而清理** → 不释放则每次重启都残留 = 永久异常；②§2-1-3 真机实测（V851 480×800）：造残留黑层 → kill zkgui（init.rc 自动拉起新进程）→ **黑层仍在** → 释放后恢复（证据链完整）；③`check_all #19` 再增补：释放函数名在 src 里只出现 1 次（疑似只定义未调用 / 没在启动路径调）→ WARN 提醒在启动初始化里调一次。',
     '2026-09-14: V85X 图层释放**真机验证（V851）+ 判据纠错** v0.27.54-open（沛哥：USB 上挂的 V851 先验证再发布）——用 `fun create --type bin` 写小工具在 Zkswe_V85X_SPINOR（480×800）实测：①**口径确认**：残留层真造得出，按 **ch/lyr（跳过 UI ch2/lyr0）** 判定能正确关掉、UI 层无损；②**判据纠错（打破参考工程写法）**：「格式区间 ARGB_8888~BGRA_5551 = UI 层」**会漏关**——`RGB_888(0x08)` 落在该区间被误判、**COLOR 模式层读出的 `fb.format` 就是 color 低字节**，结果黑层留在最上面 = **一直黑屏**；doc §2-1-1 改口径（按 ch/lyr，要保险再限定 `mode == LAYER_MODE_BUFFER`）；③**验收陷阱**：黑屏期间 `device_screenshot`（读 fb0）仍然是正常 UI（黑层在 disp 合成器上，两次抓图 diff 0 差异）→ **不能靠 fb0 判黑屏**，要看 `disp/attr/sys` 层清单；④`check_all #19` 增补：源码用格式区间判据 → WARN 提醒改 ch/lyr（参考工程已命中）。',
     '2026-09-14: V85X 视频解码返回后必须 releaseLayer（防黑屏）v0.27.53-open（沛哥：参考扩展屏 AP+P2P 工程把这个知识点明确下去；平台匹配时开发与 check 验收都必须做）——①`knowledge/v85x/display-layer-debug.md` 新增 §2-0 必做场景：V85X（V853/V851/V553）上**视频解码返回后**（解码结束/播放器退出/返回 UI）必须释放残留 disp 层，否则**黑屏**；参考实现 `sys::hw::init()` 里 `_release_layer()`（**按格式跳过 ARGB_8888~BGRA_5551 的 UI/OSD 层**，比写死 ch/layer 稳；`/tmp/zk_boot_anim` 做开机动画保护）。②`check_all` 第 19 项机器核验：平台 V85X + src 有视频解码用法却无释放实现（`/dev/disp`+`DISP_LAYER_GET/SET_CONFIG`/`releaseLayer`/`hwdisplay.h`）→ FAIL；非匹配平台或未用解码 → NOTE 跳过（不误报）。',
     '2026-09-14: fun 工具链口径纠正（fuse → fun）v0.27.52-open（沛哥：fuse 命令行已换成 fun 了，文档没更新吗？）——新增 `knowledge/devflow/cli-fun-toolchain.md`：命令行统一 **fun.exe**（fuse 是旧名），连带改名：构建宏 `FUSE_BUILD`→**`FUN_BUILD`**、产物 `.fuse/`→**`.fun/平台/`**、注册表 `~/.fuse`→**`~/.fun`**（`FUSE_HOME_PATH` 与生成的 CMake 路径仍用老名）；命令表新增 **`fun sim`**；⚠️ **暂时发布的 MCP 不支持 sim**（`_run_fun` 显式拒绝 + 文档标 CLI-only）。老工程迁移一行：`#if defined(FUSE_BUILD) || defined(FUN_BUILD)`（否则 fun build 跳过 UI 绑定宏 → 满屏未声明错，实测复现）。',
