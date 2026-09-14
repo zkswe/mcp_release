@@ -141,7 +141,8 @@ UVC MJPEG 摄像头 (/dev/videoX)
 ## 依赖与来源
 
 - 依赖包：aw-dvr（mpi::Recorder/JpegViewer/Camera/VO/Snapshot）、aw-mpp（MPP 底层）
-- 头文件：`~/.fuse/registry/public/v85x/aw-dvr/3.13.12/include/mpi/case/{recorder,config,jpeg_viewer,camera}.h`、
+- 头文件：`~/.fun/registry/public/v85x/aw-dvr/3.13.12/include/mpi/case/{recorder,config,jpeg_viewer,camera}.h`、
+  （旧工具链时代是 `~/.fuse/registry/...`，两套注册表并存；CLI 已由 fuse 更名 fun，见 `devflow/cli-fun-toolchain.md`）
   `aw-mpp/2.0.2/.../mm_common.h`（MEDIA_FILE_FORMAT_E）
 - 工程实测：V85X 平台 DVR 类工程（录制页/回放页逻辑、UVC 接入模块、存储模块）
 - 平台：V85X（AW_V853/AWCHIP=AW_V853）；其他平台 DVR 封装不同（无 aw-dvr，走 ZKCameraView）

@@ -146,14 +146,14 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 
 > **MCP 版本是多少？**
 
-应返回：`flythings-kb-open 0.27.50-open`，包含 34 个工具。
+应返回：`flythings-kb-open 0.27.54-open`，包含 34 个工具。
 
 ---
 
 ## ✨ 核心特性
 
 ### 🧠 完全本地知识检索
-- **内置 bge-small-zh 向量模型**（22MB），随包分发 128 篇 wiki 官方镜像 + 49 篇实践知识（`knowledge/`，共 177 篇去重索引）
+- **内置 bge-small-zh 向量模型**（22MB），随包分发 128 篇 wiki 官方镜像 + 51 篇实践知识（`knowledge/`，共 179 篇去重索引）
 - 检索**不需要任何 API Key**，完全离线
 - 向量 + BM25 双路 **RRF 融合**（中文按**字级 bigram** 切词 + IDF + 路径/标题加权，实测 top-3 命中 10/10）
 - 返回体带 `retrieval` / `degraded` / `quality`（ok | low_confidence | no_hit）/ `source`（实践 or 官方镜像），低置信与未收录会给明确提示

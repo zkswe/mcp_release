@@ -614,6 +614,94 @@ def verify_design_tokens(project_root):
     return res
 
 
+# ---------------- 19. V85X：视频解码返回后必须 releaseLayer（防黑屏）----------------
+# 沛哥 2026-09-14 定：平台匹配（V85X 系 disp 分层平台）时，视频解码返回后必须释放残留 disp 层，
+# 否则残留视频层不关 → 屏幕黑屏；**开发与 check 验收都必须做这个**。
+# 参考实现：knowledge/v85x/display-layer-debug.md §2（/dev/disp + DISP_LAYER_GET/SET_CONFIG，
+# 只关非 UI 层（跳过 ARGB 格式层），有开机动画时用 /tmp/zk_boot_anim 存在性保护）。
+_VIDEO_DECODE_MARKERS = (
+    'zk_h264_player_', 'h264_player.h', 'vdecoder.h', 'VideoDecoder',
+    'mi_vdec', 'CedarX', 'sunxi_display2',
+)
+_LAYER_RELEASE_MARKERS = (
+    'DISP_LAYER_SET_CONFIG', 'DISP_LAYER_GET_CONFIG', '/dev/disp',
+    'release_layer', 'releaseLayer', 'ReleaseLayer', 'hwdisplay.h',
+)
+_SRC_SKIP_DIRS = ('dependencies', 'lib-no-link', '.fun', '.fuse', 'Release', 'build')
+
+
+def _manifest_platform(root):
+    """读 Manifest.xml 的 platform 属性（找不到返回空串）。"""
+    p = os.path.join(root, 'Manifest.xml')
+    if not os.path.isfile(p):
+        return ''
+    try:
+        m = re.search(r'<manifest\b[^>]*\bplatform\s*=\s*"([^"]+)"',
+                      open(p, encoding='utf-8', errors='replace').read())
+        return m.group(1).strip().upper() if m else ''
+    except Exception:
+        return ''
+
+
+def _scan_src(root, markers):
+    """扫 src/ 下级源码里出现过的标记 → {marker: [相对文件...]}。
+    读不了的文件不静默吞：记入返回体第二个元素（调用方可提示）。"""
+    hits, unread = {}, []
+    src = os.path.join(root, 'src')
+    if not os.path.isdir(src):
+        return hits, unread
+    for dirpath, dirnames, filenames in os.walk(src):
+        dirnames[:] = [d for d in dirnames if d not in _SRC_SKIP_DIRS]
+        for fn in filenames:
+            if os.path.splitext(fn)[1].lower() not in ('.c', '.cc', '.cpp', '.h', '.hpp'):
+                continue
+            fp = os.path.join(dirpath, fn)
+            rel = os.path.relpath(fp, root).replace('\\', '/')
+            try:
+                txt = open(fp, encoding='utf-8', errors='replace').read()
+            except OSError as e:
+                unread.append('%s(%s)' % (rel, e.__class__.__name__))
+            else:
+                for mk in markers:
+                    if mk in txt:
+                        hits.setdefault(mk, []).append(rel)
+    return hits, unread
+
+
+def check_v85x_release_layer(root):
+    """V85X 视频解码返回后是否做了图层释放（返回 dict: status/ok/detail/note）。"""
+    plat = _manifest_platform(root)
+    if not plat:
+        return {'status': 'skip', 'note': 'Manifest.xml 无 platform 属性，无法判定平台'}
+    if 'V85X' not in plat and 'V853' not in plat and 'V851' not in plat and 'V553' not in plat:
+        return {'status': 'skip', 'note': '平台 %s 非 V85X 系（disp 分层平台不适用）' % plat}
+    dec, dec_unread = _scan_src(root, _VIDEO_DECODE_MARKERS)
+    rel, rel_unread = _scan_src(root, _LAYER_RELEASE_MARKERS)
+    if not dec:
+        extra = '（%d 个源码文件读取失败：%s）' % (len(dec_unread), '、'.join(dec_unread[:3])) if dec_unread else ''
+        return {'status': 'skip', 'note': '平台 %s，但 src/ 未见视频解码用法（无需图层释放）%s' % (plat, extra)}
+    dec_files = sorted(set(f for v in dec.values() for f in v))
+    if rel:
+        rel_files = sorted(set(f for v in rel.values() for f in v))
+        # 2026-09-14 V851 真机实测：用「格式区间（ARGB_8888~BGRA_5551）判 UI 层」会漏关残留层
+        # （RGB_888=0x08 落在区间内被误判；COLOR 层 fb.format 读出来就是 color 低字节）→ 提醒改 ch/lyr。
+        fmt_hits = _scan_src(root, ('DISP_FORMAT_ARGB_8888', 'DISP_FORMAT_BGRA_5551'))[0]
+        unsafe = sorted(set(fmt_hits.get('DISP_FORMAT_ARGB_8888', []))
+                        & set(fmt_hits.get('DISP_FORMAT_BGRA_5551', [])))
+        return {'status': 'ok', 'ok': True, 'unsafe': unsafe,
+                'detail': '已做（解码用法 %s；释放实现 %s）'
+                          % ('、'.join(dec_files[:3]), '、'.join(rel_files[:3]))}
+    miss = sorted(set(dec_unread + rel_unread))
+    return {'status': 'ok', 'ok': False,
+            'detail': '缺失！平台 %s + 视频解码（%s）但未见 disp 图层释放 → '
+                      '残留视频层不关会黑屏。修复：视频解码返回后关闭除 UI 层外的 disp 层'
+                      '（open("/dev/disp") + DISP_LAYER_GET_CONFIG/SET_CONFIG 置 enable=0，'
+                      '跳过 ARGB 格式的 UI 层；有开机动画时用 /tmp/zk_boot_anim 存在性保护），'
+                      '可直接复用 knowledge/v85x/display-layer-debug.md §2 的实现%s'
+                      % (plat, '、'.join(dec_files[:3]),
+                         '（%d 个源码文件读取失败，建议人工复核：%s）' % (len(miss), '、'.join(miss[:3])) if miss else '')}
+
+
 def main(project_root):
     root = os.path.abspath(project_root)
     if not os.path.isdir(root):
@@ -1011,6 +1099,22 @@ def main(project_root):
             warn('间距梯度外的纵向间距 %d 种（芯距/对齐可能正常，请人工确认；间距梯度=%s）：%s'
                  % (len(dt['gaps']), ','.join(str(s) for s in tk.get('spacing', [])),
                     '、'.join('%dpx×%d' % (g, c) for g, c in list(dt['gaps'].items())[:8])))
+
+    print('== 19. V85X 视频解码返回后必须 releaseLayer（防黑屏；沛哥 2026-09-14 定：\n'
+          '      平台匹配时开发与 check 验收都必须做，参考 knowledge/v85x/display-layer-debug.md §2）==')
+    rl = check_v85x_release_layer(root)
+    if rl['status'] == 'skip':
+        print('  [NOTE] 跳过：%s' % rl['note'])
+    else:
+        log(rl['ok'], 'V85X 图层释放 %s' % rl['detail'])
+        if rl.get('unsafe'):
+            warn('V85X 图层释放用「格式区间（DISP_FORMAT_ARGB_8888 ~ DISP_FORMAT_BGRA_5551）判定 UI 层」'
+                 '（%s）→ 2026-09-14 V851 真机实测会漏关残留层：RGB_888(0x08) 落在区间内被误判为 UI 层、'
+                 'COLOR 模式层读出的 fb.format 就是 color 低字节 → 黑层/残留层留在最上面 = 一直黑屏。'
+                 '修复：改按 ch/layer 跳过 UI 层（if (ch == UI_LYCHN && lyl == UI_LYLAY) continue;），'
+                 '要双重保险就限定 mode == LAYER_MODE_BUFFER 后才看 format。'
+                 '详见 knowledge/v85x/display-layer-debug.md §2-1-1'
+                 % '、'.join(rl['unsafe'][:3]))
 
     print()
     if warnings:

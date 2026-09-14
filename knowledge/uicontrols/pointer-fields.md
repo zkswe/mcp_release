@@ -1,7 +1,7 @@
 # Pointer 指针仪表控件 JSON 字段规范
 
 > 2026-09-07 git.com 全库学习 + basedemo/PointerDemo-New + f133 easyui 2.9.0 SDK 头文件校准（fui unpack 实测字段 + ZKPointer.h 源码，非猜测）。
-> 适用平台：全平台（fuse 新工程同样适用）。
+> 适用平台：全平台（fun 新工程（原 fuse）同样适用）。
 
 ## 核心铁律
 

@@ -136,6 +136,14 @@ def _run_fun(cmd, project_dir, device='', retries=1, timeout=600, extra=None):
                 "请设置环境变量 FLYTHINGS_FUN_DIR 指向含 fun.exe/fui.exe 的目录，"
                 "或将其安装到 D:\\zkswe\\fun\\。" % _tool_dir()}
     args = [FUN_EXE, cmd] + list(extra or [])
+    # ⚠️ 沛哥 2026-09-14 定：暂时发布的 MCP 不支持 `fun sim`（模拟器运行）——
+    # 工具面不暴露该能力，这里再显式拦住，避免 AI 自行调用/文档误报“支持”。
+    if cmd == 'sim':
+        return {"success": False,
+                "error": "MCP 暂不支持 fun sim（模拟器运行）",
+                "hint": "要推真机调试用 flythings_build_ui_flow（fun launch）；"
+                        "要出图验证用 flythings_device_screenshot；"
+                        "模拟器请在本地命令行手动跑 fun sim。"}
     last = None
     for attempt in range(1, max(1, retries) + 1):
         try:

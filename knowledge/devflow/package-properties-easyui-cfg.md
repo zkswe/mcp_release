@@ -85,6 +85,7 @@ ERotation rot = (ERotation)(CONFIGMANAGER->getScreenRotate() / 90);          // 
 
 ## 相关
 
+- `devflow/dynamic-screen-rotation.md`：**运行时**旋转（`setScreenRotate` + `Activity::relayout` 换两套 ftu），与本文的编译期静态旋转互补；要 easyui ≥ 2.9.0
 - wiki `font/font_setting.md`：enable.font.location + 多字体完整流程
 - wiki `devflow/new_project.md`：创建项目时"屏幕旋转"选项（IDE 向导对应字段）
 - references/kb/t113-car-link.md：T113 PND 竖装横显先例

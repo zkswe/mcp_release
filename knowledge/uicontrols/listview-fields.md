@@ -5,7 +5,7 @@
 
 ## 核心铁律
 
-1. **三回调 + 一刷新**（老工程命名 / fuse 同构）：
+1. **三回调 + 一刷新**（老工程命名 / fun 新工程（原 fuse）同构）：
    - `getListItemCount_XXX(const ZKListView*)` → 返回总行数
    - `obtainListItemData_XXX(pListView, pListItem, index)` → 填第 index 行内容（**禁止耗时代码**，滚动逐行调）
    - `onListItemClick_XXX(pListView, index, id)` → **id = 被点击 subitem 的控件 ID**（沛哥确认），用于区分同一行里点了标题/按钮/删除钮
