@@ -25,7 +25,7 @@
 - 🏭 **全流程开箱即用**：编译工具链（fui/fun）与项目模板已内置，创建项目 → 布局 → 编译 → 推送一气呵成
 - 🧠 **34 个工具**：知识检索、硬件型号库、项目创建、布局转换、依赖管理、规范校验、自动修复、多语言、自动化测试、UI 可视化编辑、真机截图与产物核对全都有
 - 📦 **一条命令安装**：`pip install -r requirements.lock`（已锁定实测通过的版本组合），AI 工具指一下路径就能用
-- ✅ **发布前置闸门**：133 项契约用例 + 30 项冒烟 + 一致性校验（版本/工具数/平台/索引/隐私）一键跑，见 [`tests/`](tests/README.md)
+- ✅ **发布前置闸门**：137 项契约用例 + 30 项冒烟 + 一致性校验（版本/工具数/平台/索引/隐私）一键跑，见 [`tests/`](tests/README.md)
 - 🪶 **schema 集约**：工具 docstring 合计 ≤ 12,000 字符（单个 ≤ 900），长尾细节全放可检索的知识库——不拿上下文烧钱
 
 🎯 **适用场景**：
@@ -146,7 +146,7 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 
 > **MCP 版本是多少？**
 
-应返回：`flythings-kb-open 0.27.59-open`，包含 34 个工具。
+应返回：`flythings-kb-open 0.27.60-open`，包含 34 个工具（另含 `binTools` 字段：设备端预编译工具 touch/busybox/ui_test/mt_test/zkshot，在 `bin_tools/<平台>/` 下，**不是 op、不占 op 名额**）。
 
 ---
 
@@ -252,7 +252,7 @@ flythings-mcp-open/
 ├── requirements.lock      # 已验证依赖组合（pin）
 ├── CHANGELOG.md           # 历史迭代记录（截至 v0.27.30，已冻结；版本史见 MCP_FEATURES）
 ├── scripts/               # 自检与闸门（smoke / check_consistency / gen_manifest / lint_silent_except / sync_ui_tools / ci）
-├── tests/                 # 契约用例（离线，129 项；见 tests/README.md）
+├── tests/                 # 契约用例（离线，137 项；见 tests/README.md）
 ├── models/bge-small-zh/   # ★ 本地向量模型（onnx + tokenizer）
 ├── toolchain/             # ★ 编译工具链（fui.exe + fun.exe）
 ├── templates/             # ★ 项目模板（HelloWord_F133/F135/Z21/T113/V85X/Z20）

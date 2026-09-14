@@ -10,6 +10,8 @@ resources：
   flythings://knowledge/<分类>/<文件>.md   分类目录下的文档（如 devflow/device-screenshot.md）
   flythings://knowledge/<文件>.md          knowledge/ 根目录的文档（如 README.md）
   flythings://tools                 工具清单（op / 风险分级 / 一句话简介；来自 tools_manifest.json）
+                                    + 「设备端预编译工具」一节：bin_tools/<平台>/ 下的 touch / busybox /
+                                    ui_test / mt_test / zkshot（**不是 op**，数 op 看不到）
   flythings://version               版本 / 构建日 / 工具数 / 近期特性
 
   ⚠️ FastMCP 的 URI 模板参数只匹配单段路径（内部把 {x} 换成 [^/]+），所以分类文档与
@@ -85,6 +87,38 @@ def _safe_knowledge_path(path):
     return full
 
 
+def _bin_tools_section():
+    """「设备端预编译工具」一节（bin_tools/，**不是 op**）。
+
+    2026-09-14（钟工反馈）：外部 AI 数完 34 个 op 就断言「这版没有 touch 注入」——实际 touch
+    自 v0.27.40 起一直在 bin_tools/<平台>/ 下。工具清单只列 op，必须显式补这一节。
+    """
+    root = os.path.join(BASE, 'bin_tools')
+    if not os.path.isdir(root):
+        return ''
+    try:
+        import kb_tools
+        brief = dict(getattr(kb_tools, 'BIN_TOOL_BRIEF', {}) or {})
+    except ImportError:
+        brief = {}
+    lines = ['', '## 设备端预编译工具（bin_tools/，**不是 op**，不占 op 名额）', '',
+             '> 路径：`<MCP 安装目录>/bin_tools/<平台>/<工具>`，`adb push` 即用（无需宿主 zkgui）；',
+             '> 触摸注入 / UI 自动化测试先调 `flythings_gen_ui_test`（内部就用 `touch`）+ '
+             '`flythings_knowledge_search("触摸注入")`，不要自己造轮子。', '']
+    for plat in sorted(os.listdir(root)):
+        d = os.path.join(root, plat)
+        if not os.path.isdir(d):
+            continue
+        files = sorted(f for f in os.listdir(d)
+                       if os.path.isfile(os.path.join(d, f)) and not f.startswith('.'))
+        if not files:
+            continue
+        lines.append('- **%s**: %s' % (plat, '; '.join(
+            '`%s`%s' % (f, (' — ' + brief[f]) if f in brief else '') for f in files)))
+    lines.append('')
+    return '\n'.join(lines)
+
+
 def _tools_doc():
     """工具清单（来自 manifest；文件缺失/损坏时回退代码清单，并在文档里说明原因——不静默降级）。"""
     note = ''
@@ -108,7 +142,7 @@ def _tools_doc():
                                  % (o.get('op'), o.get('risk'),
                                     ', '.join(o.get('args') or []) or '无参数', o.get('brief', '')))
                 lines.append('')
-            return '\n'.join(lines)
+            return '\n'.join(lines) + _bin_tools_section()
         if not note:
             note = 'tools_manifest.json 结构异常（缺 ops），已回退到代码清单。'
     else:
@@ -120,7 +154,7 @@ def _tools_doc():
         fn = getattr(kb_tools, n, None)
         brief = ((getattr(fn, '__doc__', '') or '').strip().splitlines() or [''])[0]
         lines.append('- `%s` — %s' % (n, brief[:80]))
-    return '\n'.join(lines)
+    return '\n'.join(lines) + _bin_tools_section()
 
 
 def _version_doc():

@@ -125,5 +125,46 @@ class TestBothServersRegisterExtras(unittest.TestCase):
         self.assertEqual(d['prompts'], 5)
 
 
+class TestBinToolsSurface(unittest.TestCase):
+    """「能力不止 op」：bin_tools 设备端工具必须在**工具面**可发现。
+
+    2026-09-14 钟工反馈的回退位：外部 AI 数完 34 个 op 就断言「这版没有 touch 注入」——
+    实际 touch 自 v0.27.40 起一直在 bin_tools/<平台>/ 下，只是当时工具面没有任何出口。
+    三条出口各钉一条用例：get_version.binTools / flythings://tools 一节 / 分发器 docstring。
+    """
+
+    def test_get_version_exposes_bin_tools(self):
+        import kb_tools
+        d = json.loads(kb_tools.flythings_get_version())
+        bt = d.get('binTools') or {}
+        self.assertTrue(bt, 'flythings_get_version 缺 binTools 字段')
+        self.assertIn('touch', bt.get('brief', {}), 'binTools.brief 缺 touch 说明')
+        self.assertTrue(any('touch' in fs for fs in bt.get('byPlatform', {}).values()),
+                        'binTools.byPlatform 里没有任何平台带 touch ELF')
+        self.assertIn('不是 op', bt.get('note', ''), 'binTools.note 必须明说不是 op')
+
+    def test_bin_tools_are_not_ops(self):
+        """touch/busybox 是设备端 ELF，不能被当成 op（防后来人又去数 op 找触摸注入）。"""
+        import kb_tools
+        d = json.loads(kb_tools.flythings_get_version())
+        for name in ('touch', 'busybox', 'ui_test', 'mt_test'):
+            self.assertNotIn(name, d['tools'])
+            self.assertNotIn(name, kb_tools.OP_NAMES)
+            self.assertNotIn('flythings_' + name, d['tools'])
+
+    def test_tools_resource_lists_bin_tools(self):
+        txt = _text('flythings://tools')
+        self.assertIn('设备端预编译工具', txt)
+        self.assertIn('bin_tools', txt)
+        self.assertIn('不是 op', txt)
+        self.assertIn('touch', txt)
+
+    def test_dispatcher_docstring_points_to_bin_tools(self):
+        import mcp_server
+        doc = mcp_server.flythings_kb.__doc__ or ''
+        self.assertIn('bin_tools', doc)
+        self.assertIn('binTools', doc)
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -103,6 +103,11 @@ async def flythings_kb(op: str = "list", args: str = "{}") -> str:
 
     用法：先传 op="list" 取全部可用操作及其参数名，再用 op=<操作名> + args='{"参数": 值}'
     （args 传 JSON 字符串；部分客户端只支持对象，也可直接传 dict）。
+
+    ⚠️ 能力不止这 34 个 op：设备端预编译工具（touch 触摸注入 / busybox / ui_test / mt_test /
+    zkshot）在 `<MCP 安装目录>/bin_tools/<平台>/` 下，**不是 op、不占 op 名额**——
+    只数 op 会漏掉触摸注入这类能力；看 flythings_get_version 的 binTools 字段或
+    flythings://tools 资源的「设备端预编译工具」一节。
     """
     if op in ("", "list", "help", "?"):
         return _catalog()

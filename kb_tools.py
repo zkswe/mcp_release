@@ -53,9 +53,10 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.59-open'
+MCP_VERSION = '0.27.60-open'
 MCP_BUILD = '2026-09-14'
 MCP_FEATURES = [
+    '2026-09-14: 「能力不止 op」——bin_tools 设备端工具补齐发现入口 v0.27.60-open（钟工反馈：其他 AI 数完 34 个 op 就断言「这版没有触摸注入」，实际 touch 自 v0.27.40 起一直在 bin_tools/）——根因不是能力缺失，是**发现性缺失**：工具面没有任何出口暴露 bin_tools（get_version 字段里没有、flythings://tools 资源里 bin_tools 出现 0 次），只看 op 清单的 AI 有理由得出错误结论。三处补口：①`flythings_get_version` 新增 **`binTools` 字段**（note + dir + byPlatform + brief + usage）：按平台扫 `<MCP>/bin_tools/<平台>/` 列出 touch/busybox/ui_test/mt_test/zkshot，并明写「**不是 op、不占 op 名额**」+ 触摸注入用法（push → chmod → `touch list` 看节点与协议）；②MCP 资源 `flythings://tools` 末尾补「## 设备端预编译工具（bin_tools/，不是 op，不占 op 名额）」一节（按平台逐工具 + brief，manifest 缺失回退代码清单时同样补）；③分发器入口 `flythings_kb` docstring 加一条⚠️提醒（能力不止 34 个 op，设备端工具在 bin_tools/）。不新增/不重命名任何 op（仍 34），op 数六方与 manifest 不变。',
     '2026-09-14: BLE 组件改为「头文件 + 静态库」发布（不释放源码）v0.27.59-open（钟工：「验证好了后把你的程序做成静态库+头文件发布给到 open 版本 MCP 里面。不释放源码了」）——①`components/ble` 交付物收成三件：`include/zk/zk_ble.h`（唯一对外头）+ `lib/{f133,v85x,z20,z21}/libzkble.a` + `lib/BUILD_INFO.md`（构建凭据：每平台工具链/libc/依赖包版本/公开符号数/大小/sha256）；**`src/` 与源码侧脚本已移出仓库**（内部私有 `private/components-ble/`）；②新增 **`scripts/verify_lib_symbols.py`**：纯 Python 解析 `ar`+ELF 符号表核对每个平台库是否导出全部 30 个公开 API，**不用 `nm`**（Windows 版 binutils 的 `nm` 缺 `liblto_plugin-0.dll` 一调就报错）；实测 4 平台全 30/30；③两个后端保持一套 API：btstack（f133 408KB / v85x 118KB）+ gatt（z20/z21 各 179KB，主从双角色）；④口径写进 `components/ble/platforms.md` §0.6 + README §4：**工具链/libc 必须与库一致**（f133/v85x=musl、z20/z21=glibc）、**不许拿别的平台的头凑库**（`gatt/hci.h`、`gatt-db.h` 含 ABI 相关结构体）——因此 T113/T113EMMC 库本轮**不发布**（本机无该平台 `gatt 1.0.0` 包），如实标注待补；⑤z20 与 z21 的库 sha256 相同（两平台 gatt 17 个头 md5 逐一相同，已核）；v85x 库用本地 `btstack 1.7.2` 头构建（包站为 1.8.0，装包后重跑脚本即可）；⑥`components/README.md` 新增「二进制型」模块形态规范（必须给构建凭据 + 机器可跑的符号自检）。',
     '2026-09-14: BLE 统一门面 v0.2（一个 API 面 + 两个后端，组件级真机跑通）v0.27.58-open（钟工：「蓝牙部分都统一按照昨天定义的新 API，参考微信的方式」）——①`components/ble` 收口：对外只有 `zk/zk_ble.h`（`zk::ble`），**中心侧照微信 wxapi**（openAdapter/startDiscovery/onDeviceFound/connect/getServices/readValue/writeValue/subscribe/onValueChange）、**外设侧照 Android GattServer**（`peripheral::start(PeripheralConfig)` + `onWriteRequest` + `notify` + `setDeviceName`），平台差异一律走 `getCapabilities()`/`backendName()` 能力门控 + `ERR_UNSUPPORTED` 人话 hint（不假装能用）；②**两个后端**：btstack（F133 1.7.2 / V85X 1.8.0，串口 HCI+H5）与 **gatt（Z20/Z21/T113/T113EMMC，AIC USB 模组 + BlueZ 用户态 GATT 1.0.0，主从双角色）**；`src/zkble_backend.h` 自动判定（显式 `-DZKBLE_BACKEND_GATT` / `-DZKBLE_BACKEND_BTSTACK` 优先），两个 `.cpp` 用 `#if` 互斥、同平台只编一个；公共层 `src/zkble_common.h`（日志/AD 解析/扫描过滤/DeviceCache/回调/Waiter）+ 公共 TU `zkble_public.cpp`；③新增能力：`Config.connect_retry` / `reset_before_retry`（Z20/Z21 控制器残留链路 → 自动重试 + 重试前复位，实测第 1 次 ETIMEDOUT、复位后第 2 次成功）；④**组件级真机验证**（不用 demo 代码，只用公开 API 的 bin 工程 `projects/zkble_comp_srv`(Z20 外设) / `zkble_comp_cli`(Z21 中心)）：扫描 → 连接 → `svc fff0` / `chr fff1(0x09)` / `chr fff2(0x06)` → 订阅 ok → `readValue len=5` → `writeValue code=0` → `notify_count=4`；外设 `peripheral::start code=0` + 收 `WRITE char=fff2 data=50494e47`(PING) + `NOTIFY`×4 + 断开后广播自动恢复；⑤真机拓出并修掉的三个 bug（知识性，已写进 platforms.md §0.5）：BlueZ `bt_uuid_to_string()` **成功时返回 0**（原判 `<=0` 当失败 → uuid 全空）、`gatt_db_service_add_characteristic()` 返回的是**特征值属性**而非声明属性 0x2803（取 value_handle 要用 `gatt_db_attribute_get_handle()`）、**控制器已在广播 enable 状态时改参数返 status=12 Command Disallowed**（处置：设参数前恒发一次 `LE Set Advertise Enable(0)`，被拒则复位控制器 + 重试一次，不静默）；⑥编译自检双脚本（`compile_check.sh`=F133/btstack、`compile_check_gatt.sh`=Z20/Z21/gatt）均 rc=0，并叠了一层链接校验（只依赖 gatt + pthread + libc）。未覆盖项（128 位非 base uuid 折回、改名路径、二次重连闭环）在组件 platforms.md §0.5 如实标注。',
     '2026-09-14: 纠正「Z20/Z21 没有中心侧包」——`gatt` 包 **主从双角色** v0.27.57-open（钟工指路 `git.com/AppGroup/Sample`，本仓核对）——①`components/ble/platforms.md` §0.2 表补 `gatt 1.0.0`（Z20/Z21/T113/T113EMMC/V85X 均有；本机 `fun install` 实测拉到 z21 那份，19 头含 `gatt-client.h`+`gatt-server.h`）；②新增 §0.3「主从双角色」：`BleClientDemo`（中心：scan_start/connect + 事件回调，含私有协议测距机）/ `BleServerDemo`（外设：server_start + `_char*_read/write_cb` 自定义 GATT 表），共同前置=Manifest 声明 `gatt` + 把 `hciconfig`/`hcitool` 放进 `src/dependencies/bin/`（BT 走 AIC USB 模组 `aic_btusb.ko`，非串口 HCI）；③实测：两 demo 复制后 `fun install`+`fun build -p Z21` **均出 libzkgui.so**（需把 demo 老依赖 `easyui 2.2.0`/`base-utility 10.1.3` 提到 `2.6.0`/`10.9.3`，否则新模板报 `hasTimerRegistration` 缺失）；④结论修正：Z20/Z21 后端**可做双角色**，`ble` 包 = 开箱外设服务，`gatt` = 底层库（中心+外设）；⑤**已用两台整机（Z20 做外设 × Z21 做中心）跑通主从对传**：扫描→连接→服务发现→订阅 CCCD→断开自动恢复广播全程有日志（bin 工具 `projects/zbble_srv` / `projects/zbble_cli`，因 `fun launch` 在多设备下报 `more than one device/emulator` 而改 adb push 跑；Z21 `/res` 只读无 `/res/bin` 需工具路径兜底）。',
@@ -134,9 +135,63 @@ def _tool_names() -> list:
                   if n.startswith('flythings_') and n != 'flythings_kb')
 
 
+# ========== 设备端预编译工具（bin_tools/，**不是 op**，不占 op 名额）==========
+# 2026-09-14（钟工反馈）：外部 AI 数完 34 个 op 就断言「MCP 这版没有触摸注入」——
+# 实际 touch 自 v0.27.40 起一直在 bin_tools/<平台>/ 下，只是不占 op 名额、工具面没有任何出口。
+# 修法：把 bin_tools 暴露成 flythings_get_version 的 binTools 字段 + flythings://tools 资源一节。
+BIN_TOOLS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bin_tools')
+if getattr(sys, 'frozen', False):          # PyInstaller 打包：随包进 _MEIPASS
+    BIN_TOOLS = os.path.join(sys._MEIPASS, 'bin_tools')
+
+BIN_TOOL_BRIEF = {
+    'touch': '统一触摸注入：自动扫 /dev/input 节点 + 自动判协议（单点/MT-A/MT-B）；'
+             'tap/swipe/long/monkey/run/record/play + list/info；部署不带 /dev/input/eventN',
+    'busybox': '设备调试工具箱（网络/系统/Shell applet 全开，静态链接）',
+    'ui_test': '触摸注入 / 自动化测试（单点协议，兼容保留，需人工传节点）',
+    'mt_test': 'MT-A 协议触摸注入（兼容保留，需人工传节点）',
+    'zkshot': 'SigmaStar（z20/z21）视频层抓帧，配合 flythings_device_screenshot(layer="video")',
+}
+
+
+def _bin_tools() -> dict:
+    """扫 bin_tools/<平台>/ 下的设备端 ELF → {平台: [工具名,...]}（缺失时返回空 dict，不报错）。"""
+    out = {}
+    if not os.path.isdir(BIN_TOOLS):
+        return out
+    for plat in sorted(os.listdir(BIN_TOOLS)):
+        d = os.path.join(BIN_TOOLS, plat)
+        if not os.path.isdir(d):
+            continue
+        files = sorted(f for f in os.listdir(d)
+                       if os.path.isfile(os.path.join(d, f)) and not f.startswith('.'))
+        if files:
+            out[plat] = files
+    return out
+
+
+def _bin_tools_field() -> dict:
+    """binTools 字段（工具面唯一出口：让「数 op」的 AI 也能发现设备端工具）。"""
+    by_plat = _bin_tools()
+    if not by_plat:
+        return {}
+    used = {f for fs in by_plat.values() for f in fs}
+    return {
+        'note': '设备端预编译 ELF（随 MCP 发布，adb push 即用）——**它们不是 op、不占 op 名额**，'
+                '所以只数 op 清单会漏掉；触摸注入/自动化测试先看 touch，不要自己造轮子',
+        'dir': BIN_TOOLS.replace('\\', '/'),
+        'byPlatform': by_plat,
+        'brief': {k: v for k, v in sorted(BIN_TOOL_BRIEF.items()) if k in used},
+        'usage': '触摸：adb push bin_tools/<平台>/touch /data/touch && chmod 777；再 '
+                 '`adb shell /data/touch list` 看节点+协议，tap/swipe/long/monkey/run/play 同工具；'
+                 '知识库：knowledge/devflow/touch-inject-autotest.md',
+    }
+
+
 def flythings_get_version(compact: bool = True) -> str:
     """返回 MCP 版本号、工具数量与近期关键特性。用户问「MCP 版本是多少 / 是不是最新的」时调用。
     compact=True（默认）只回版本摘要 + 近期 3 条；要看完整能力史才传 compact=False（较长，勿默认拉取）。
+    另回 `binTools` 字段：设备端预编译工具（touch 触摸注入 / busybox / ui_test / mt_test / zkshot）
+    放在 bin_tools/<平台>/ 下，**不是 op、不占 op 名额**，数 op 清单看不到它们。
     """
     tools = _tool_names()
     out = {
@@ -147,6 +202,9 @@ def flythings_get_version(compact: bool = True) -> str:
         'tools': tools,
         'checkHint': 'version 即当前安装版本；与官方最新发布号 vX.Y.Z-open 比对即可确认是否最新',
     }
+    bt = _bin_tools_field()
+    if bt:
+        out['binTools'] = bt
     if compact:
         out['recent'] = MCP_FEATURES[:3]
         out['note'] = '完整能力史传 compact=False（默认只回近期 3 条以省 token）'
