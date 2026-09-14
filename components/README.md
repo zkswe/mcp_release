@@ -84,5 +84,5 @@ components/
 
 | 模块 | 说明 | 平台 | 版本 |
 |---|---|---|---|
-| [`ble/`](ble/README.md) | BLE 门面 `zk::ble`：把 btstack 收拾成 wxapi 那种（扫描/连接/GATT/诊断） | F133、V85X（当前 BLE-only） | 0.1.0 |
+| [`ble/`](ble/README.md) | BLE 门面 `zk::ble`：把蓝牙收拾成 wxapi 那种（**一个 API 面、两个后端**：中心扫描/连接/GATT + 外设广播/GATT 服务/notify） | 中心：F133、V85X（btstack）；双角色：Z20/Z21/T113EMMC（gatt，真机跑通） | 0.2.0 |
 | [`fonts/`](fonts/README.md) | 字库模块（资产型）：思源黑体三版（常用中文872KB/全中文7.4MB/多国语言10.5MB）+ 设备字体自检（缺中文自动投递） | 全平台（已在 V85X 实测） | 0.1.0 |

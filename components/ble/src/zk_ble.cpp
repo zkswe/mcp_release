@@ -1,5 +1,8 @@
 /*
- * zk_ble.cpp —— BLE 门面实现（btstack 1.7.2，BLE-only 构建）
+ * zk_ble.cpp —— BLE 门面实现 · **btstack 后端**（F133 btstack 1.7.2 / V85X 1.8.0，BLE-only 构建）
+ *
+ * 一个 API 面、两个后端：本文件只在「btstack 后端」时编译（见 zkble_backend.h 的选择规则）；
+ * Z20/Z21/T113 的 gatt 后端在 src/zk_ble_gatt.cpp，两个后端共用 src/zkble_common.h。
  *
  * 线程模型（照本仓验证过的范本：projects/BTHomeTempHum-F133、V851ExtendedScreen_ap_p2p）：
  *   · btstack 的 run loop 独占一条线程，且 btstack 的所有 API 只在它里面调；
@@ -7,7 +10,10 @@
  *   · 需要"同步语义"的接口（connect/read/write/subscribe）→ 业务线程用 条件变量+超时 等结果；
  *   · 上电（sysfs）与预初始化（hciattach）都在 BT 线程里、btstack 初始化之前做。
  */
-#include "zk/zk_ble.h"
+#include "zkble_backend.h"      // 后端选择（本文件：!#ZKBLE_IS_GATT 时才有内容）
+#include "zkble_common.h"       // 公共层：日志/工具/设备缓存/回调/等待槽
+
+#if ZKBLE_IS_BTSTACK
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,28 +40,6 @@ extern "C" {
 #include "btstack/ble/le_device_db_tlv.h"
 }
 
-#define ZKBLE_VERSION "0.1.0"
-
-// 日志：默认 printf；应用可 setLogHook() 挂到自己的日志系统
-namespace {
-std::function<void(const std::string&)> g_log_hook;
-}
-
-static void zkbleLog(const char* fmt, ...) {
-    char buf[512];
-    va_list ap;
-    va_start(ap, fmt);
-    vsnprintf(buf, sizeof(buf), fmt, ap);
-    va_end(ap);
-    if (g_log_hook) {
-        g_log_hook(std::string(buf));
-    } else {
-        printf("[zkble] %s\n", buf);
-    }
-}
-
-#define ZKBLE_LOG(fmt, ...) zkbleLog(fmt, ##__VA_ARGS__)
-
 namespace zk {
 namespace ble {
 
@@ -69,27 +53,7 @@ const char* kPowerNodes[] = {
     NULL,
 };
 
-uint32_t monotonicMs() {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (uint32_t)((uint32_t)ts.tv_sec * 1000u + (uint32_t)ts.tv_nsec / 1000000u);
-}
-
-bool exists(const char* path) {
-    return access(path, F_OK) == 0;
-}
-
-std::string bytesToHex(const uint8_t* data, size_t len) {
-    static const char* kHex = "0123456789abcdef";
-    std::string out;
-    out.reserve(len * 2);
-    for (size_t i = 0; i < len; i++) {
-        out.push_back(kHex[(data[i] >> 4) & 0x0F]);
-        out.push_back(kHex[data[i] & 0x0F]);
-    }
-    return out;
-}
-
+// btstack 专用：12 位小端 uuid128 → 字符串
 std::string uuidToStr(uint16_t uuid16, const uint8_t* uuid128) {
     char buf[40] = {0};
     if (uuid16 != 0) {
@@ -102,62 +66,6 @@ std::string uuidToStr(uint16_t uuid16, const uint8_t* uuid128) {
     }
     return std::string(buf);
 }
-
-// 把 "fcd2"（16 位）或 32 字符 128 位 uuid 统一成小写无横线形式
-std::string normalizeUuid(const std::string& in) {
-    std::string s;
-    for (char c : in) {
-        if (c == '-' || c == ':' || c == ' ') continue;
-        if (c >= 'A' && c <= 'Z') c = (char)(c - 'A' + 'a');
-        s.push_back(c);
-    }
-    return s;
-}
-
-// 同步等待槽：btstack 线程 signal，业务线程带超时 wait
-struct Waiter {
-    pthread_mutex_t m;
-    pthread_cond_t c;
-    bool done;
-    int status;              // 0 = OK
-    std::string msg;
-    Waiter() : done(false), status(0) {
-        pthread_mutex_init(&m, NULL);
-        pthread_cond_init(&c, NULL);
-    }
-    void reset() {
-        pthread_mutex_lock(&m);
-        done = false;
-        status = 0;
-        msg.clear();
-        pthread_mutex_unlock(&m);
-    }
-    void signal(int st, const std::string& text = std::string()) {
-        pthread_mutex_lock(&m);
-        done = true;
-        status = st;
-        msg = text;
-        pthread_cond_broadcast(&c);
-        pthread_mutex_unlock(&m);
-    }
-    bool wait(int timeout_ms) {
-        struct timespec ts;
-        clock_gettime(CLOCK_REALTIME, &ts);
-        ts.tv_sec += timeout_ms / 1000;
-        ts.tv_nsec += (long)(timeout_ms % 1000) * 1000000L;
-        if (ts.tv_nsec >= 1000000000L) {
-            ts.tv_sec += 1;
-            ts.tv_nsec -= 1000000000L;
-        }
-        pthread_mutex_lock(&m);
-        while (!done) {
-            if (pthread_cond_timedwait(&c, &m, &ts) == ETIMEDOUT) break;
-        }
-        const bool ok = done;
-        pthread_mutex_unlock(&m);
-        return ok;
-    }
-};
 
 // 传输参数按模组分支决定（可被 Config 显式覆盖）：
 //   8733bs（Realtek）：H5 + 偶校验 8E1 + 无流控（实测）
@@ -183,13 +91,9 @@ LinkParams resolveLinkParams(const Config& cfg, bool needs_preinit) {
 }
 
 // ============================================================ 内部状态
-struct CachedDevice {
-    DeviceInfo info;
-    uint8_t addr_type = 0;
-};
-
+// 设备缓存/等待槽/回调分发都在 zkble_common.h（两个后端共用）
 struct GattJob {
-    Waiter* waiter = NULL;
+    internal::Waiter* waiter = NULL;
     std::vector<gatt_client_service_t> raw_services;
     size_t index = 0;
     std::vector<Service> result;
@@ -226,19 +130,20 @@ struct Impl {
     pthread_t thread;
     bool thread_started = false;
 
-    Waiter open_waiter;
-    Waiter conn_waiter;
-    Waiter op_waiter;
+    internal::Waiter open_waiter;
+    internal::Waiter conn_waiter;
+    internal::Waiter op_waiter;
 
     bool discovering = false;
     bool scan_pending = false;
     ScanOptions scan_opts;
-    std::vector<CachedDevice> devices;
+    internal::DeviceCache devices;      // 扫描缓存（线程安全，见 zkble_common.h）
 
     // 连接态（单连接模型：v1 够用，多连接后续扩展）
     std::string conn_id;
     hci_con_handle_t conn_handle = HCI_CON_HANDLE_INVALID;
     std::vector<Service> services;
+    int connect_attempts = 0;      // 含自动重试的尝试次数（getDiag 报告）
 
     GattJob job;
     btstack_timer_source_t scan_stop_timer;
@@ -265,7 +170,7 @@ void setError(int code, const std::string& msg) {
 // ============================================================ sysfs / 属性
 int findPowerNode(std::string& out) {
     for (int i = 0; kPowerNodes[i]; i++) {
-        if (exists(kPowerNodes[i])) {
+        if (internal::fileExists(kPowerNodes[i])) {
             out = kPowerNodes[i];
             return 0;
         }
@@ -299,34 +204,6 @@ int btEnable(int on) {
     return 0;
 }
 
-// 读系统属性：直接读 /data/property/<key>（不依赖 easyui，bin 工程也能用）
-std::string readProp(const char* key) {
-    std::string path = std::string("/data/property/") + key;
-    FILE* pf = fopen(path.c_str(), "r");
-    if (!pf) return std::string();
-    char buf[128] = {0};
-    const size_t n = fread(buf, 1, sizeof(buf) - 1, pf);
-    fclose(pf);
-    if (n == 0) return std::string();
-    for (size_t i = 0; i < n; i++) {
-        if (buf[i] == '\n' || buf[i] == '\r' || buf[i] == ' ') { buf[i] = '\0'; break; }
-    }
-    return std::string(buf);
-}
-
-// 按平台探测默认串口（不写死一条）
-std::string defaultUart() {
-    static const char* kCandidates[] = {
-        "/dev/ttyS1",     // F133 实测
-        "/dev/ttyS2",     // V85X 实测
-        NULL,
-    };
-    for (int i = 0; kCandidates[i]; i++) {
-        if (exists(kCandidates[i])) return std::string(kCandidates[i]);
-    }
-    return std::string();
-}
-
 // ============================================================ btstack 侧
 void packetHandler(uint8_t packet_type, uint16_t channel, uint8_t* packet, uint16_t size);
 void opCompleteHandler(uint8_t packet_type, uint16_t channel, uint8_t* packet, uint16_t size);
@@ -335,14 +212,10 @@ void scanStopTimerHandler(btstack_timer_source_t* ts);
 
 btstack_packet_callback_registration_t g_hci_cb;
 btstack_tlv_posix_t g_tlv_ctx;
-OnAdapterStateChange g_cb_adapter;
-OnDeviceFound g_cb_device;
-OnConnectionChange g_cb_conn;
-OnValueChange g_cb_value;
 std::map<uint16_t, gatt_client_notification_t> g_notifications;   // value_handle -> listener
 
+// 状态变化广播（回调注册表在公共层）
 void fireAdapterState() {
-    if (!g_cb_adapter) return;
     Impl& I = impl();
     AdapterState st;
     pthread_mutex_lock(&I.mtx);
@@ -350,7 +223,7 @@ void fireAdapterState() {
     st.discovering = I.discovering;
     st.power_on = I.powered;
     pthread_mutex_unlock(&I.mtx);
-    g_cb_adapter(st);
+    internal::fireAdapterState(st);
 }
 
 // 投递任务到 run loop 线程。注意：注册结构体必须活到被执行完，故用环形池（不 malloc）。
@@ -415,11 +288,9 @@ void cmdConnect(void*) {
     std::string id;
     pthread_mutex_lock(&I.mtx);
     id = g_connect_id;
-    addr_type = 0;
-    for (size_t i = 0; i < I.devices.size(); i++) {
-        if (I.devices[i].info.id == id) { addr_type = I.devices[i].addr_type; break; }
-    }
     pthread_mutex_unlock(&I.mtx);
+    internal::CachedDevice cd;
+    if (I.devices.find(id, cd)) addr_type = cd.addr_type;
 
     if (sscanf_bd_addr(id.c_str(), addr) != 1) {
         I.conn_waiter.signal(-1, "设备地址解析失败: " + id);
@@ -597,7 +468,7 @@ void notifyHandler(uint8_t packet_type, uint16_t channel, uint8_t* packet, uint1
         ? gatt_event_notification_get_value(packet)
         : gatt_event_indication_get_value(packet);
 
-    if (!g_cb_value) return;
+    if (!internal::cbValueRef()) return;
     Impl& I = impl();
     Value out;
     pthread_mutex_lock(&I.mtx);
@@ -613,7 +484,7 @@ void notifyHandler(uint8_t packet_type, uint16_t channel, uint8_t* packet, uint1
     }
     pthread_mutex_unlock(&I.mtx);
     out.data.assign((const char*)v, len);
-    g_cb_value(out);
+    internal::fireValueChange(out);
 }
 
 // ---- 广播上报
@@ -627,58 +498,29 @@ void handleAdvReport(uint8_t* packet) {
     gap_event_advertising_report_get_address(packet, addr);
     const uint8_t addr_type = gap_event_advertising_report_get_address_type(packet);
 
-    CachedDevice cd;
+    internal::CachedDevice cd;
     cd.addr_type = addr_type;
     char id[24] = {0};
     snprintf(id, sizeof(id), "%02X:%02X:%02X:%02X:%02X:%02X",
              addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
     cd.info.id = id;
     cd.info.rssi = rssi;
-    cd.info.last_seen_ms = monotonicMs();
+    cd.info.last_seen_ms = internal::monotonicMs();
     cd.info.connectable = (adv_type == 0x00 || adv_type == 0x01);
-    cd.info.adv_data_hex = bytesToHex(ad, ad_len);
 
-    // 解析 AD：名字 + Service Data
-    ad_context_t ctx;
-    ad_iterator_init(&ctx, ad_len, ad);
-    while (ad_iterator_has_more(&ctx)) {
-        const uint8_t type = ad_iterator_get_data_type(&ctx);
-        const uint8_t len = ad_iterator_get_data_len(&ctx);
-        const uint8_t* d = ad_iterator_get_data(&ctx);
-        if (type == 0x08 || type == 0x09) {
-            cd.info.name.assign((const char*)d, len);
-        } else if (type == 0x16 && len >= 2) {
-            cd.info.service_data_hex = bytesToHex(d, len);
-        }
-        ad_iterator_next(&ctx);
-    }
+    // AD 解析（名字 / Service Data / 完整 AD hex）在公共层，两个后端同一套口径
+    internal::parseAdFields(ad, ad_len, cd.info.name, cd.info.service_data_hex, cd.info.adv_data_hex);
 
     ScanOptions opts;
     pthread_mutex_lock(&I.mtx);
     opts = I.scan_opts;
-    bool dup = false;
-    for (size_t i = 0; i < I.devices.size(); i++) {
-        if (I.devices[i].info.id == cd.info.id) {
-            I.devices[i] = cd;
-            dup = true;
-            break;
-        }
-    }
-    if (!dup) I.devices.push_back(cd);
     pthread_mutex_unlock(&I.mtx);
 
-    if (!opts.name_prefix.empty() && cd.info.name.compare(0, opts.name_prefix.size(), opts.name_prefix) != 0) return;
-    if (!opts.service_uuid.empty()) {
-        // Service Data 前两字节是小端 UUID，hex 里是反序的（FCD2 → "d2fc"）
-        std::string want = normalizeUuid(opts.service_uuid);
-        if (want.size() >= 4) {
-            std::string head = want.substr(0, 4);
-            std::string le = std::string() + head[2] + head[3] + head[0] + head[1];
-            if (cd.info.service_data_hex.compare(0, 4, le) != 0) return;
-        }
-    }
-    if (dup && !opts.allow_duplicates) return;
-    if (g_cb_device) g_cb_device(cd.info);
+    const bool is_new = I.devices.upsert(cd);          // 先入缓存（不过滤），保证 getDevices() 拿到全量
+
+    if (!internal::matchScanFilter(cd.info, opts)) return;
+    if (!is_new && !opts.allow_duplicates) return;
+    internal::fireDeviceFound(cd.info);
 }
 
 // ---- HCI 事件总入口
@@ -728,7 +570,7 @@ void packetHandler(uint8_t packet_type, uint16_t channel, uint8_t* packet, uint1
             pthread_mutex_unlock(&I.mtx);
             ZKBLE_LOG("connected handle=0x%04x", I.conn_handle);
             I.conn_waiter.signal(0);
-            if (g_cb_conn) g_cb_conn(g_connect_id, true);
+            internal::fireConnectionChange(g_connect_id, true);
         } else {
             I.conn_waiter.signal(-1, "连接失败 status=" + std::to_string(status));
         }
@@ -746,7 +588,7 @@ void packetHandler(uint8_t packet_type, uint16_t channel, uint8_t* packet, uint1
         I.op_waiter.signal(-1, "链路已断");
         I.conn_waiter.signal(-1, "链路已断");
         ZKBLE_LOG("disconnected");
-        if (g_cb_conn) g_cb_conn(id, false);
+        internal::fireConnectionChange(id, false);
         return;
     }
 }
@@ -848,8 +690,8 @@ void* btThread(void*) {
 
 uint16_t findValueHandle(const std::string& service_uuid, const std::string& char_uuid) {
     Impl& I = impl();
-    const std::string su = normalizeUuid(service_uuid);
-    const std::string cu = normalizeUuid(char_uuid);
+    const std::string su = internal::normalizeUuid(service_uuid);
+    const std::string cu = internal::normalizeUuid(char_uuid);
     for (size_t i = 0; i < I.services.size(); i++) {
         if (!su.empty() && I.services[i].uuid != su) continue;
         for (size_t j = 0; j < I.services[i].characteristics.size(); j++) {
@@ -864,16 +706,10 @@ uint16_t findValueHandle(const std::string& service_uuid, const std::string& cha
 }  // namespace
 
 // ============================================================ 公开接口
-std::string version() {
-    return std::string(ZKBLE_VERSION);
-}
+// 注：version / setLogHook / on* / offAll 在 zkble_common.h 里 inline 实现（两个后端共用）
 
 void setPreinitHook(PreinitHook hook) {
     impl().preinit = hook;
-}
-
-void setLogHook(LogHook hook) {
-    g_log_hook = hook;
 }
 
 Result openAdapter(const Config& cfg) {
@@ -881,11 +717,11 @@ Result openAdapter(const Config& cfg) {
     if (I.opened) return Result::ok_("已经打开");
 
     I.cfg = cfg;
-    I.chip = cfg.module.empty() ? readProp("persist.wifi.module") : cfg.module;
+    I.chip = cfg.module.empty() ? internal::readProp("persist.wifi.module") : cfg.module;
     if (I.chip.empty()) I.chip = "未知（persist.wifi.module 读不到）";
     I.needs_preinit = (I.chip.find("8733") != std::string::npos);
 
-    I.uart = cfg.uart.empty() ? defaultUart() : cfg.uart;
+    I.uart = cfg.uart.empty() ? internal::defaultUart() : cfg.uart;
     if (I.uart.empty()) {
         I.hint = "找不到蓝牙串口：节点不存在（F133 期望 /dev/ttyS1，V85X 期望 /dev/ttyS2）";
         setError(ERR_IO, I.hint);
@@ -979,18 +815,12 @@ Result stopDiscovery() {
 
 Result getDevices(std::vector<DeviceInfo>& out) {
     Impl& I = impl();
-    out.clear();
-    pthread_mutex_lock(&I.mtx);
-    for (size_t i = 0; i < I.devices.size(); i++) out.push_back(I.devices[i].info);
-    pthread_mutex_unlock(&I.mtx);
+    I.devices.snapshot(out);
     return Result::ok_();
 }
 
 Result clearDevices() {
-    Impl& I = impl();
-    pthread_mutex_lock(&I.mtx);
-    I.devices.clear();
-    pthread_mutex_unlock(&I.mtx);
+    impl().devices.clear();
     return Result::ok_();
 }
 
@@ -1005,20 +835,30 @@ Result connect(const std::string& device_id, int timeout_ms) {
         usleep(150 * 1000);
     }
     g_connect_id = device_id;
-    I.conn_waiter.reset();
-    sendCmd(cmdConnect, NULL);
-
     const int t = timeout_ms > 0 ? timeout_ms : I.cfg.op_timeout_ms;
-    if (!I.conn_waiter.wait(t)) {
+    // 连接重试（与 gatt 后端同口径：平台差异在库内吃掉，业务不写重试循环）
+    const int max_attempts = (I.cfg.connect_retry > 0 ? I.cfg.connect_retry : 0) + 1;
+    I.connect_attempts = 0;
+    std::string last_msg;
+    for (int attempt = 1; attempt <= max_attempts; attempt++) {
+        I.connect_attempts = attempt;
+        I.conn_waiter.reset();
+        sendCmd(cmdConnect, NULL);
+        const bool got = I.conn_waiter.wait(t);
+        if (got && I.conn_waiter.status == 0) {
+            if (attempt > 1) ZKBLE_LOG("connect ok after %d attempts", attempt);
+            return Result::ok_(attempt > 1 ? "已连接（重试后成功）" : "已连接");
+        }
+        last_msg = got ? I.conn_waiter.msg : std::string("连接超时");
+        ZKBLE_LOG("connect attempt %d/%d failed: %s", attempt, max_attempts, last_msg.c_str());
         sendCmd(cmdDisconnect, NULL);
-        setError(ERR_TIMEOUT, "连接超时: " + device_id);
-        return Result::err(ERR_TIMEOUT, "连接超时: " + device_id + "（设备在广播吗？/ 距离 / connectable？）");
+        if (attempt < max_attempts) usleep(300 * 1000);
     }
-    if (I.conn_waiter.status != 0) {
-        setError(ERR_DISCONNECTED, I.conn_waiter.msg);
-        return Result::err(ERR_DISCONNECTED, I.conn_waiter.msg);
-    }
-    return Result::ok_("已连接");
+
+    I.hint = "连接失败（已试 " + std::to_string(max_attempts) + " 次）：" + last_msg +
+             " ｜ 查：设备在广播吗 / 距离 / connectable / 对端是否还在广播";
+    setError(ERR_DISCONNECTED, last_msg);
+    return Result::err(ERR_DISCONNECTED, last_msg + "（已重试 " + std::to_string(max_attempts) + " 次，看 getDiag().hint）");
 }
 
 Result disconnect(const std::string& device_id) {
@@ -1068,7 +908,7 @@ Result getCharacteristics(const std::string& device_id,
     std::vector<Service> svcs;
     Result r = getServices(device_id, svcs);
     if (!r.ok()) return r;
-    const std::string want = normalizeUuid(service_uuid);
+    const std::string want = internal::normalizeUuid(service_uuid);
     for (size_t i = 0; i < svcs.size(); i++) {
         if (want.empty() || svcs[i].uuid == want) {
             out = svcs[i].characteristics;
@@ -1169,33 +1009,37 @@ Result deleteBonding(const std::string& device_id) {
     return Result::ok_();
 }
 
-// ---- 外设模式（二期，先给出明确答复而不是假装能用）
+// ---- 外设模式：btstack 后端不做外设 —— 能力门控 + 指路（不假装能用）
 namespace peripheral {
-Result start(const Config&) {
+Result start(const PeripheralConfig&) {
     return Result::err(ERR_UNSUPPORTED,
-        "外设/HID 模式在二期实现（hids_device + 广播）；当前版本只做中心侧");
+        "本后端（btstack：F133/V85X）没有外设侧：V85X 做 HID/触摸上报请用 blehid 包（开箱即用）；"
+        "要自定义 GATT 服务/Z20/Z21 外设请用 gatt 后端（本模块 peripheral::start 就可用）");
 }
-Result stop() { return Result::err(ERR_UNSUPPORTED, "二期"); }
-Result setDeviceName(const std::string&) { return Result::err(ERR_UNSUPPORTED, "二期"); }
-Result sendInputReport(const std::string&) { return Result::err(ERR_UNSUPPORTED, "二期"); }
-Result isConnected(bool& out) { out = false; return Result::err(ERR_UNSUPPORTED, "二期"); }
+Result stop() { return Result::err(ERR_UNSUPPORTED, "本后端不支持外设模式（见 peripheral::start 的 hint）"); }
+Result setDeviceName(const std::string&) { return Result::err(ERR_UNSUPPORTED, "本后端不支持外设模式"); }
+Result notify(const std::string&, const std::string&) { return Result::err(ERR_UNSUPPORTED, "本后端不支持外设模式"); }
+Result isConnected(bool& out) { out = false; return Result::err(ERR_UNSUPPORTED, "本后端不支持外设模式"); }
 }  // namespace peripheral
 
-// ---- 回调
-void onAdapterStateChange(OnAdapterStateChange cb) { g_cb_adapter = cb; }
-void onDeviceFound(OnDeviceFound cb) { g_cb_device = cb; }
-void onConnectionChange(OnConnectionChange cb) { g_cb_conn = cb; }
-void onValueChange(OnValueChange cb) { g_cb_value = cb; }
-void offAll() {
-    g_cb_adapter = NULL;
-    g_cb_device = NULL;
-    g_cb_conn = NULL;
-    g_cb_value = NULL;
+// ---- 能力/后端名（跨平台早知道，别等调用失败才知道）
+std::string backendName() { return "btstack"; }
+
+Result getCapabilities(Capabilities& out) {
+    out.central = true;
+    out.peripheral = false;      // 外设侧走 blehid（V85X）/ gatt 后端（Z20/Z21）
+    out.notify = false;
+    out.bonded_db = true;        // btstack + TLV 落盘（Config.tlv_path）
+    out.backend = "btstack";
+    out.note = "F133 btstack 1.7.2 / V85X btstack 1.8.0：串口 HCI（H5）中心侧；"
+               "V85X 预初始化（RTL8733BS）必须 setPreinitHook() 挂项目侧 rtk_init";
+    return Result::ok_();
 }
 
 Result getDiag(Diag& out) {
     Impl& I = impl();
     pthread_mutex_lock(&I.mtx);
+    out.backend = "btstack";
     out.chip = I.chip;
     out.uart = I.uart;
     out.baud = I.baud;
@@ -1205,7 +1049,8 @@ Result getDiag(Diag& out) {
     out.hci_state = I.hci_state;
     out.hci_events = I.hci_events;
     out.transport_sent = I.transport_sent;
-    out.devices_seen = (int)I.devices.size();
+    out.devices_seen = I.devices.size();
+    out.connect_attempts = I.connect_attempts;
     out.last_error = I.last_error;
     out.last_error_msg = I.last_error_msg;
     out.hint = I.hint;
@@ -1215,3 +1060,5 @@ Result getDiag(Diag& out) {
 
 }  // namespace ble
 }  // namespace zk
+
+#endif  // ZKBLE_IS_BTSTACK
