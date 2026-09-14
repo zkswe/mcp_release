@@ -96,6 +96,40 @@
  "crop": "", "readHint": ""}
 ```
 
+## 4.1 视频层抓帧（仅 SigmaStar：Z20/Z21，`layer='video'`）
+
+> 背景：Z20/Z21 上**视频是 MI 硬件图层**，`/dev/fb0` 只是 UI(OSD) 层 —— 屏上在放视频时，
+> 拓 fb0 得到的是黑的（Z20 实测 800x1280 只得 4KB 全黑，仅右下角一个 Wi-Fi 图标）。
+> 沛哥 2026-09-13：「你如果可以把视频图层抓出来更好了，这样子就可以更好确认问题。」
+
+**怎么做**：`flythings_device_screenshot(layer='video')` → 内部用 `zkshot`（`tools/zkshot/`，成品在 `bin_tools/{z20,z21}/zkshot`）
+从 **vdec 输出口**取一帧 → 按帧格式解码落盘：
+
+```
+MI_SYS_Init()
+MI_SYS_SetChnOutputPortDepth(vdec chn0 port0, userDepth=1, bufQDepth=2)
+MI_SYS_ChnOutputPortGetBuf(&port, &info, &h)     // 取一帧
+MI_SYS_Mmap(info.stFrameData.phyAddr[0], size)   // 物理地址映射
+fwrite → Munmap → PutBuf
+```
+
+返回体带 `frame{width,height,fmt,fmtName,stride}`，可直接核对（Z20 实测 `384x448 fmt=11 → yuv420sp(NV12)`，
+尺寸与 `384*448*1.5=258048` 对得上）。
+
+**三条硬约束（踩过）**
+1. `MI_DISP_GetScreenFrame()` **不能用**：那是给“拥有显示层的进程”的，**跨进程只回空帧**
+   （layer 0/1 都试过、补 `MI_SYS_Init` 也没用）→ 必须从 **vdec 输出口**取。
+2. **按设备实际符号写**：设备 `libmi_sys.so` 只导出**非 Pa 版**（`MI_SYS_ChnOutputPortGetBuf/PutBuf`）；
+   用 `...GetBufPa`（IDE 包里的库有、设备没）会 `symbol lookup error`。
+   上手先看一眼：`strings /lib/libmi_sys.so | grep MI_SYS_`。
+3. **帧格式不是固定的**：`fmt` 值→格式见 `E_MI_SYS_PixelFormat_e`（11=NV12、0=YUYV422、1/2/3=ARGB/ABGR/BGRA8888、4=RGB565）；
+   解码器遇到不支持的 fmt 会**明确报错**（不静默当黑屏）。
+
+**边界**
+- 视频层分辨率**独立于屏**（Z20 视频 384x448，屏 800x1280）；要“叠回 UI”得读 mi_disp 的 input port attr 拿屏上位置
+  （`cat /proc/mi_modules/mi_disp/mi_disp0` 能看到端口被 `mi_vdec` 绑定）—— 当前工具只给**视频帧本身**，不合成。
+- **V85X 不适用**（Allwinner disp 分层，视频层要经 `/dev/disp` ioctl 拿）；Z21 **无硬件解码器**（软解 ffmpeg），沛哥定：暂不处理。
+
 ## 5. 相关
 
 - 像素级读图/省 token 阶梯、1 字符=1 像素分类图、文字暗带检测 → `pixel-analysis-ai.md`

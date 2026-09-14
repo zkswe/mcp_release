@@ -369,11 +369,266 @@ def decode_raw(data, width, height, stride, bpp, pixel='auto'):
     return Image.frombytes('RGB', (width, height), bytes(out)), pixel
 
 
+# ---------------------------------------------------------------- busybox 选取/推送
+
+MONTHS3 = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
+
+
+def _local_busybox_candidates():
+    """本仓自带的 busybox（随 MCP 发布在 bin_tools/；工作区另有一份 tools/busybox/bin/）"""
+    import glob
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # MCP 根
+    pats = [os.path.join(root, 'bin_tools', '*', 'busybox'),
+            os.path.join(root, '..', 'busybox', 'bin', '*', 'busybox'),
+            os.path.join(root, '..', 'tools', 'busybox', 'bin', '*', 'busybox')]
+    found = []
+    for p in pats:
+        found.extend(sorted(glob.glob(p)))
+    return [p for p in found if os.path.isfile(p)]
+
+
+def _remote_size(adb, dev, path):
+    """远程文件体积（多种设备实际格式都要能解）：
+      · wc -c / stat -c %s（最准，但设备常缺 applet）
+      · ls -l 两种日期格式：`Sep 13 04:01`（英文月）与 `1970-01-01 01:10`（ISO）
+    回归：V85X 的 ls 打 ISO 日期，旧版“月份锤点”会解成 0 → 误判压缩失败（真机踩到）。
+    """
+    for cmd in (f'wc -c < {path} 2>/dev/null', f'stat -c %s {path} 2>/dev/null'):
+        out = _sh(adb, dev, cmd)
+        try:
+            n = int(out.strip())
+            if n >= 0:
+                return n
+        except Exception:
+            pass
+    out = _sh(adb, dev, f'ls -l {path} 2>/dev/null')
+    # ① 体积后面紧跟“英文月”或“ISO 日期”或“HH:MM”
+    m = re.search(r'(\d+)\s+(?:[A-Z][a-z]{2}\s+\d|\d{4}-\d{2}-\d{2}|\d{2}:\d{2})', out)
+    if m:
+        return int(m.group(1))
+    # ② 兜底：文件名前面的最后一个纯数字字段
+    toks = out.split()
+    for t in reversed(toks[:-1]):
+        if t.isdigit():
+            return int(t)
+    return 0
+
+
+def _has_gzip(adb, dev, cand):
+    """探测：这个 busybox 能不能真压缩。
+
+    设备自带 busybox 常是裁剪版（有 echo、没 gzip）——旧版只测 `echo ok` 就选中它，
+    结果 `gzip: applet not found` → 远程文件 0 字节（SSD20X/21X 真机踩到）。
+    """
+    out = _sh(adb, dev, f'{cand} gzip -1 </dev/null >/dev/null 2>&1; echo rc=$?')
+    return 'rc=0' in out
+
+
+def _pick_busybox(adb, dev, notes):
+    """选一个**真带 gzip** 的 busybox；设备上没有就自动从本仓推一个到 /tmp/busybox"""
+    for cand in ('/tmp/busybox', 'busybox', '/data/busybox', '/bin/busybox', '/usr/bin/busybox'):
+        if _has_gzip(adb, dev, cand):
+            return cand
+    pushed = []
+    for local in _local_busybox_candidates():
+        a = [adb] + (['-s', dev] if dev else []) + ['push', local, '/tmp/busybox']
+        rc, _, _ = _run(a, timeout=120)
+        if rc != 0:
+            continue
+        plate = os.path.basename(os.path.dirname(local))
+        pushed.append(plate)
+        _sh(adb, dev, 'chmod 777 /tmp/busybox')
+        if _has_gzip(adb, dev, '/tmp/busybox'):
+            notes.append('设备上没有带 gzip 的 busybox（自带的是裁剪版），已自动推送本仓 %s 版到 /tmp/busybox' % plate)
+            return '/tmp/busybox'
+    notes.append('设备上没有带 gzip 的 busybox（自带 busybox 缺 gzip applet），本仓 busybox 也没能推上去'
+                 '（试过: %s）。可手动 `adb push tools/busybox/bin/<平台>/busybox /tmp/` 后重试。'
+                 % (','.join(pushed) or '无可用文件'))
+    return ''
+
+
+# ---------------------------------------------------------------- SigmaStar MI：视频层抓帧（zkshot）
+
+# E_MI_SYS_PixelFormat_e → 名称（设备侧 zkshot 会回报 fmt 值）
+MI_FMT = {
+    0: 'yuyv422', 1: 'argb8888', 2: 'abgr8888', 3: 'bgra8888',
+    4: 'rgb565', 5: 'argb1555', 6: 'argb4444',
+    10: 'yuv422sp', 11: 'yuv420sp',
+}
+
+
+def _local_zkshot_candidates():
+    """本仓自带的 zkshot 成品（MCP bin_tools/ 与工作区 tools/zkshot/bin/）"""
+    import glob
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # MCP 根
+    pats = [os.path.join(root, 'bin_tools', '*', 'zkshot'),
+            os.path.join(root, '..', 'zkshot', 'bin', '*', 'zkshot'),
+            os.path.join(root, '..', 'tools', 'zkshot', 'bin', '*', 'zkshot')]
+    found = []
+    for p in pats:
+        found.extend(sorted(glob.glob(p)))
+    return [p for p in found if os.path.isfile(p)]
+
+
+def _ensure_zkshot(adb, dev, notes):
+    """设备上有 zkshot 就用；没有就推一个（z20/z21 成品同 ABI，可混用）"""
+    for cand in ('/tmp/zkshot', '/data/zkshot'):
+        if _sh(adb, dev, f'test -x {cand} && echo yes') == 'yes':
+            return cand
+    for local in _local_zkshot_candidates():
+        a = [adb] + (['-s', dev] if dev else []) + ['push', local, '/tmp/zkshot']
+        rc, _, _ = _run(a, timeout=120)
+        if rc != 0:
+            continue
+        plate = os.path.basename(os.path.dirname(local))
+        _sh(adb, dev, 'chmod 777 /tmp/zkshot')
+        if 'usage' in _sh(adb, dev, '/tmp/zkshot 2>&1 | head -1'):
+            notes.append('设备上没有 zkshot，已推送本仓 %s 成品到 /tmp/zkshot' % plate)
+            return '/tmp/zkshot'
+    notes.append('设备上没有 zkshot，本仓也没有可用的成品（tools/zkshot/bin/<平台>/zkshot）；'
+                 '或跑 tools/zkshot/build/build_all.sh 重新生成')
+    return ''
+
+
+def decode_frame(raw, w, h, stride, fmt):
+    """按 MI 帧格式解成 PIL Image（fmt 见 MI_FMT）。不支持的格式明确报错，不静默。"""
+    name = MI_FMT.get(int(fmt))
+    if name is None:
+        raise ValueError('暂不支持的 MI 帧格式 fmt=%s（已知：%s）' % (fmt, sorted(MI_FMT)))
+
+    if name == 'yuv420sp':                                   # NV12：Y 平面 + 交错 UV
+        n = W_ = w
+        y = raw[:w * h]
+        uv = raw[w * h:w * h * 3 // 2]
+        buf = bytearray(w * h * 3)
+        for j in range(h):
+            row = j * stride
+            for i in range(w):
+                k = j * w + i
+                q = ((j // 2) * (w // 2) + (i // 2)) * 2
+                buf[k * 3] = y[j * stride + i] if (j * stride + i) < len(y) else 0
+                buf[k * 3 + 1] = uv[q] if q < len(uv) else 128
+                buf[k * 3 + 2] = uv[q + 1] if q + 1 < len(uv) else 128
+        return Image.frombytes('YCbCr', (w, h), bytes(buf)).convert('RGB'), 'yuv420sp->rgb'
+
+    if name == 'yuyv422':                                    # YUYV：每2像素共享 U/V
+        buf = bytearray(w * h * 3)
+        for j in range(h):
+            base = j * stride
+            for i in range(0, w - 1, 2):
+                p = base + i * 2
+                if p + 3 >= len(raw):
+                    break
+                y0, u, y1, v = raw[p], raw[p + 1], raw[p + 2], raw[p + 3]
+                for k, Y in ((i, y0), (i + 1, y1)):
+                    o = (j * w + k) * 3
+                    buf[o], buf[o + 1], buf[o + 2] = Y, u, v
+        return Image.frombytes('YCbCr', (w, h), bytes(buf)).convert('RGB'), 'yuyv422->rgb'
+
+    if name in ('bgra8888', 'argb8888', 'abgr8888'):          # 32bit：按 stride 逐行取
+        order = {'bgra8888': 'BGRA', 'argb8888': 'ARGB', 'abgr8888': 'ABGR'}[name]
+        rows = b''.join(raw[j * stride:j * stride + w * 4] for j in range(h))
+        return Image.frombytes('RGBA' if order in ('BGRA', 'ARGB') else 'RGBA', (w, h),
+                               _to_rgba(rows, order)), '%s->rgb' % name
+
+    # rgb565
+    buf = bytearray(w * h * 3)
+    for j in range(h):
+        base = j * stride
+        for i in range(w):
+            p = base + i * 2
+            if p + 1 >= len(raw):
+                break
+            v = raw[p] | (raw[p + 1] << 8)
+            o = (j * w + i) * 3
+            buf[o] = ((v >> 11) & 0x1F) * 255 // 31
+            buf[o + 1] = ((v >> 5) & 0x3F) * 255 // 63
+            buf[o + 2] = (v & 0x1F) * 255 // 31
+    return Image.frombytes('RGB', (w, h), bytes(buf)), 'rgb565->rgb'
+
+
+def _to_rgba(rows, order):
+    """32bit 通道序 → RGBA 字节序（PIL 的 RGBA 字节序是 R,G,B,A）"""
+    out = bytearray(len(rows))
+    for i in range(0, len(rows), 4):
+        b0, b1, b2, b3 = rows[i], rows[i + 1], rows[i + 2], rows[i + 3]
+        if order == 'BGRA':
+            out[i], out[i + 1], out[i + 2], out[i + 3] = b2, b1, b0, b3
+        elif order == 'ARGB':
+            out[i], out[i + 1], out[i + 2], out[i + 3] = b1, b2, b3, b0
+        else:                                                # ABGR
+            out[i], out[i + 1], out[i + 2], out[i + 3] = b3, b2, b1, b0
+    return bytes(out)
+
+
+def capture_mi_video(device='', out='', fmt='png', scale=1.0, quality=90,
+                     timeout=180, name='', adb=''):
+    """SigmaStar（Z20/Z21）视频层抓帧：zkshot 从 vdec 输出口取一帧 → 本地解码落盘。"""
+    if Image is None:
+        return {'success': False, 'error': '缺 Pillow（pip install Pillow），无法解码帧'}
+    adb = adb or find_adb()
+    dev, err = pick_device(adb, device)
+    if not dev:
+        return {'success': False, 'error': err}
+    notes = []
+    remote = '/tmp/.fyshot_video.raw'
+    local_raw = os.path.join(os.environ.get('TEMP', os.getcwd()), f'.fyshotvideo_{os.getpid()}.raw')
+
+    zk = _ensure_zkshot(adb, dev, notes)
+    if not zk:
+        return {'success': False, 'method': 'zkshot-vdec', 'warnings': notes,
+                'error': '拿不到 zkshot（设备与本仓都没有可用成品）'}
+    outp = _sh(adb, dev, f'{zk} {remote} vdec 0 0 2>&1', timeout=timeout)
+    m = re.search(r'W=(\d+)\s+H=(\d+)\s+fmt=(-?\d+)\s+stride0=(\d+)', outp or '')
+    if not m:
+        notes.append('zkshot 输出无法解析: %s' % (outp or '').replace('\n', ' ')[:160])
+        return {'success': False, 'method': 'zkshot-vdec', 'warnings': notes,
+                'error': 'zkshot 取帧失败（见 warnings）'}
+    w, h, fmtv, stride = (int(x) for x in m.groups())
+    if w <= 0 or h <= 0:
+        return {'success': False, 'method': 'zkshot-vdec', 'warnings': notes,
+                'error': 'zkshot 取到空帧（app 当前可能没在解码/播放）'}
+    rc, _, errs = _run([adb] + (['-s', dev] if dev else []) + ['pull', remote, local_raw], timeout=timeout)
+    if rc != 0 or not os.path.isfile(local_raw):
+        return {'success': False, 'method': 'zkshot-vdec', 'warnings': notes,
+                'error': 'pull 视频帧失败: %s' % (errs or '')[:200]}
+    raw = open(local_raw, 'rb').read()
+    try:
+        img, conv = decode_frame(raw, w, h, stride, fmtv)
+    except Exception as e:
+        return {'success': False, 'method': 'zkshot-vdec', 'warnings': notes,
+                'error': '解码失败: %s' % e, 'rawBytes': len(raw),
+                'frame': {'width': w, 'height': h, 'fmt': fmtv, 'stride': stride}}
+    if scale and float(scale) != 1.0:
+        img = img.resize((max(1, int(w * float(scale))), max(1, int(h * float(scale)))))
+    if not out:
+        out = os.path.join('screenshots', 'video_%s_%dx%d.%s' % (name or time.strftime('%H%M%S'),
+                                                                  img.width, img.height, fmt))
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
+    if fmt == 'jpg':
+        img.convert('RGB').save(out, quality=quality)
+    elif fmt == 'bmp':
+        img.save(out)
+    else:
+        img.save(out)
+    try:
+        os.remove(local_raw)
+        _sh(adb, dev, f'rm -f {remote}')
+    except Exception:
+        pass
+    return {'success': True, 'path': out, 'width': img.width, 'height': img.height,
+            'method': 'zkshot-vdec', 'frame': {'width': w, 'height': h, 'fmt': fmtv,
+                                               'fmtName': MI_FMT.get(fmtv, str(fmtv)), 'stride': stride},
+            'pixelOrder': conv, 'rawBytes': len(raw), 'warnings': notes,
+            'note': '视频层帧（非整屏）：想叠回 UI 需要读 mi_disp input port attr 拿屏上位置'}
+
+
 # ---------------------------------------------------------------- 抓屏主流程
 
 def capture(device='', out='', fmt='png', scale=1.0, quality=90, fb='/dev/fb0',
             width=0, height=0, pixel='auto', flip='', rotate='auto', offset_y=-1,
-            crop='', timeout=180, keep_raw=False, name='', adb='', _retry=False):
+            crop='', layer='ui', timeout=180, keep_raw=False, name='', adb='', _retry=False):
     """抓设备当前屏 → 本地图片。返回 dict（success/path/尺寸/来源/参数…）。
 
     out      : 输出文件全路径；缺省 screenshots/device_<W>x<H>_<名>_<时间>.<fmt>
@@ -390,6 +645,10 @@ def capture(device='', out='', fmt='png', scale=1.0, quality=90, fb='/dev/fb0',
     """
     if Image is None:
         return {'success': False, 'error': '缺 Pillow（pip install Pillow），无法解码 framebuffer'}
+    # 视频层（SigmaStar MI：走 zkshot 从 vdec 输出口取帧）
+    if str(layer).lower() in ('video', 'mi', 'vdec'):
+        return capture_mi_video(device=device, out=out, fmt=fmt, scale=scale, quality=quality,
+                                timeout=timeout, name=name, adb=adb)
     t0 = time.time()
     adb = adb or find_adb()
     if not adb:
@@ -426,36 +685,36 @@ def capture(device='', out='', fmt='png', scale=1.0, quality=90, fb='/dev/fb0',
     remote = '/tmp/.fyshot.bin'
     local_raw = os.path.join(os.environ.get('TEMP', os.getcwd()),
                              f'.fyshot_{os.getpid()}.bin')
-    bb = ''
-    for cand in ('busybox', '/tmp/busybox', '/data/busybox', '/usr/bin/busybox'):
-        if 'ok' in _sh(adb, dev, f'{cand} echo ok 2>/dev/null'):
-            bb = cand
-            break
-    method = 'cat-full'
     need = stride * h
+    notes = []
+    # ★ busybox 必须**真带 gzip** 才算可用（旧版只测 echo，选到裁剪版 busybox → 0 字节）
+    bb = _pick_busybox(adb, dev, notes)
+    method = ''
     if bb:
         _sh(adb, dev, f'{bb} dd if={fb} bs={stride} skip={oy} count={h} 2>/dev/null | '
-                      f'{bb} gzip -1 > {remote}', timeout=120)
-        sz = _sh(adb, dev, f'{bb} ls -l {remote}')
-        try:
-            fsz = int(sz.split()[4]) if sz else 0
-        except Exception:
-            fsz = 0
-        if 0 < fsz < need / 2:              # 压缩过了才算成功（未压缩的 raw 更大）
+                      f'{bb} gzip -1 > {remote} 2>&1', timeout=180)
+        fsz = _remote_size(adb, dev, remote)
+        if 0 < fsz < need / 2:               # 压缩成功（压缩后必远小于裸帧）
             method = 'busybox-dd-gzip'
-        else:                                # 没压成功 → 整片 gzip（本地再按 oy 切）
-            _sh(adb, dev, f'{bb} cat {fb} | {bb} gzip -1 > {remote}', timeout=120)
-            method = 'busybox-cat-gzip'
-    if method == 'cat-full':
-        _sh(adb, dev, f'cat {fb} > {remote}; ls -l {remote}', timeout=120)
+        else:
+            notes.append('%s dd|gzip 未产出压缩流（%d 字节）' % (bb, fsz))
+    pull_timeout = timeout
+    if not method:
+        # 无压缩通道 → 退化：只读「可见那一帧」的裸数据（慢一点但必成，不依赖 gzip）
+        dd = f'dd if={fb} bs={stride} skip={oy} count={h} 2>/dev/null > {remote}'
+        _sh(adb, dev, (f'{bb} ' + dd) if bb else dd, timeout=300)
+        fsz = _remote_size(adb, dev, remote)
+        method = 'raw-visible-frame'
+        if fsz < need:
+            notes.append('裸帧只读到 %d/%d 字节' % (fsz, need))
+        pull_timeout = max(timeout, 30 + need // 20000)   # 裸数据大 → 按体积放宽 pull 超时
     a = [adb] + (['-s', dev] if dev else []) + ['pull', remote, local_raw]
-    rc, outp, errs = _run(a, timeout=timeout)
+    rc, outp, errs = _run(a, timeout=pull_timeout)
     if rc != 0 or not os.path.isfile(local_raw):
-        return {'success': False, 'method': method,
+        return {'success': False, 'method': method, 'warnings': notes,
                 'error': f'adb pull 失败: {(errs or outp).strip()[:300]}',
-                'hint': ('确认设备可达、/tmp 可写。裸 framebuffer 很大（600x1600x4≈7.7MB），'
-                         'WiFi 上 pull 要几分钟；**设备上放个 busybox**（tools/busybox/bin/<平台>/busybox）'
-                         '可走 dd+gzip 压缩通道，实测 37KB/0.3s。')}
+                'hint': ('确认设备可达、/tmp 可写。裸 framebuffer 很大（800x1280x4≈4MB/帧），'
+                         'WiFi 上 pull 较慢；**设备上放个带 gzip 的 busybox** 可走 dd+gzip 压缩通道。')}
 
     with open(local_raw, 'rb') as f:
         data = f.read()

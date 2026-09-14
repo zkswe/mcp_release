@@ -12,7 +12,7 @@ python scripts/check_consistency.py --with-tests
 ```
 
 依赖：只用标准库 + 仓库已有依赖（Pillow 缺失时图像相关用例自动 skip）。**不连真机**。
-当前规模：**122 项**（1 项按环境 skip）。
+当前规模：**133 项**（1 项按环境 skip）。
 
 ## 用例分布
 

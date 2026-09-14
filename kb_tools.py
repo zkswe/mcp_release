@@ -53,9 +53,13 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.45-open'
+MCP_VERSION = '0.27.50-open'
 MCP_BUILD = '2026-09-13'
 MCP_FEATURES = [
+    '2026-09-14: 视频层抓帧 zkshot + 抓屏 layer=video v0.27.50-open（沛哥：把视频图层抓出来，Z20 与 USB 的 V85X 一起验证）——①**新增 `zkshot`（SigmaStar MI 平台视频层抓帧）**：这些平台**视频是 MI 硬件图层**、`/dev/fb0` 只是 UI(OSD) 层 → 抓 fb0 时视频区是黑的（Z20 实测 800x1280 只抓到 4KB 全黑，而屏上在播视频）；`MI_DISP_GetScreenFrame()` **跨进程只回空帧**（该 API 归“拥有显示层的进程”，layer 0/1 都试过、补 MI_SYS_Init 也没用），改走 **vdec 输出口取帧**：`MI_SYS_Init` → `MI_SYS_SetChnOutputPortDepth(vdec chn0 port0, user=1, que=2)` → `MI_SYS_ChnOutputPortGetBuf` → `MI_SYS_Mmap(phyAddr)` → dump → `PutBuf`；Z20 实测取到 **384x448 fmt=11(NV12) 的真实视频帧**（转 RGB 后颜色正常）。⚠️ 设备 `libmi_sys.so` **只导出非 Pa 版**（用 `...GetBufPa` 直接 symbol lookup error）。②**工具面**：`flythings_device_screenshot(layer="video")`（仅 SigmaStar）——自动推 zkshot → 取帧 → 按 fmt 解码（NV12/YUYV422/32bit/RGB565）落盘，返回 `frame{width,height,fmt,fmtName,stride}`；缺 zkshot 会自动从 bin_tools 推送，拿不到明确报错（不静默）。③**入仓**：`tools/zkshot/{src/zkshot.c, build/build_all.sh, bin/{z20,z21}/zkshot, README.md}`（照 touch 工具形态），成品同步到 MCP `bin_tools/{z20,z21}/zkshot`。④**配套收口**：抓屏 `_remote_size` 再修一处（V85X 的 `ls -l` 打 ISO 日期 `1970-01-01 01:10`，旧“月份锚点”解成 0 → 误判压缩失败白退化成裸帧）；新增 7 条离线回归（gzip 探测/体积解析/NV12 解码/视频层路由）。⑤范围：V85X 视频层机制不同（Allwinner disp 分层，需 `/dev/disp` ioctl），另排；Z21 无硬解（软解 ffmpeg），暂不处理。',
+    '2026-09-13: 抓屏修复第二批（ISO 日期解析）v0.27.49-open——`_remote_size` 解析设备侧 `ls -l` 体积时用“英文月份”做锚点，**V85X 实测其 ls 打的是 ISO 日期**（`-rw-rw-rw- 0 0 69416 1970-01-01 01:10 x.bin`）→ 解成 0 → “gzip 已压到 69KB”被误判为未压缩，白退化成裸帧读取（多传 1.5MB，慢且费流量）。改：`wc -c` → `stat -c %s` → 正则三连（英文月 / ISO 日期 / HH:MM）+ 兜底“文件名前最后一个纯数字字段”；新增 2 条回归用例（ISO 格式、stat 回退）。实测修后 V85X/Z20 均走 `busybox-dd-gzip`（live 工具复验通过）。⚠️ 教训：设备侧 `ls/wc/stat` 的**输出格式与 applet 有无**都因平台而异，解析必须多路兜底、不能只按一种格式写。',
+    '2026-09-13: 抓屏在 SSD20X/21X 失败修复 v0.27.48-open（沛哥：Z20/Z21 抓屏失败这个修复掉）——根因（真机插桩定位）：busybox 候选探测只测 `echo ok`，而**设备自带 /bin/busybox 是裁剪版：有 echo、没有 gzip**→ 选到它 → `gzip: applet not found` → 远程文件 0 字节 → 报「raw 数据不足…实际 0 字节」把真因吞了（Z20 800x1280 / Z21 1024x600 均复现）。修法四条：①**探测必须验证 gzip 真能用**（`gzip -1 </dev/null; echo rc=$?`，不再用 echo 当判据）；②**自动推送**：设备上没有带 gzip 的 busybox 时，从本仓 bin_tools/<平台>/busybox 逐个试推到 /tmp/busybox 再用（notes 里说明推了哪版）；③**退化通道**：实在没有压缩通道就只读「可见那一帧」的裸数据（dd skip=oy count=h，按体积放宽 pull 超时），保证必成；④**远程体积解析稳健化**（wc -c 优先，ls -l 用月份锚点兼容 busybox/系统两种字段数）+ 失败不再吞真因。顺带：新增 tests/test_device_screenshot_probe.py（5 条离线回归：有 echo 无 gzip 不许选中 / /tmp/busybox 有 gzip 要选中 / 两种 ls 格式与 wc -c 的体积解析）。实测：修后 Z20(800x1280) 与 Z21(1024x600) 均抓到有效 PNG（method=busybox-dd-gzip）。⚠️ live 工具仍走旧代码，需重启 MCP 服务生效（进程内缓存旧模块）。',
+    '2026-09-13: 组件化落地（components 随 MCP 发布）+ 字库自检入库 v0.27.47-open（沛哥定：组件放在随 MCP 发布的代码路径下，其他 AI 才能收到；蓝牙/射频底层经验不入库、旧档已删；字体经验保留；暂不抽依赖包，做成组件代码模块方便 AI 直接用到代码里）——①**新增 `components/` 目录（随 MCP 发布）**：`components/README.md` 定组件规范（一个模块一个目录 + **四件套硬要求**【落地 README / platforms.md 平台说明 / Manifest.xml package 引用 / 可直接调代码】+ 两种形态【代码型 include+src+example，对外 `zk::<模块>`；资产/工具型 README+platforms+scripts+产物】+ 8 条代码规范 + 工程侧两坑【fun.json 优先于 Manifest.xml；type="executable" 才出 ELF】）；②**首两个模块**：`components/ble/`（BLE 门面 `zk::ble` v0.1：openAdapter/扫描/连接/GATT 读写订阅/诊断 getDiag；上电与 Realtek hciattach、H5+偶校验、run loop 线程、TLV 全在组件内部，对外不出现任何 btstack 类型；V85X 真机跑通 20 设备）+ `components/fonts/`（思源黑体三版 common 872KB / full 7.39MB / multi 10.5MB + 设备字体自检 device_font_check.py：getprop + 字体体积 <200KB ⇒ 大概率只有英文 → --apply 自动投递进工程）；③**字库口径入库**（devflow/custom-font-config.md）：项目 font/ 会由工具链自动写进 EasyUI.cfg 的 font 键（launch 与 pack 都做）→ **不要手改 .prefs 的 font 键**；固化会整体替换 /res → 字库必须随包走（否则汉字变方块）；④**知识库瘦身（定位定死：底层过程不入库）**：删除蓝牙/射频底层 bring-up 与 RF 模组电源两篇（用户与 AI 只需上层概念 + 直接用组件；实现细节留在组件自带文档），upgrade-pack-image.md / hardware_catalog 相应行同步收敛；⑤真机证据：V85X SPINOR（8733bs）app 固化后开机自启 → HCI WORKING → 扫描 20 设备（含自家价签），汉字正常。',
     '2026-09-13: 页面架构 + src 业务域目录命名规范入库 v0.27.45-open（沛哥确认判断正确后定规）——①新增 `knowledge/devflow/page-architecture-spec.md`：**ftu vs 同 ftu 内多窗口决策规范**（此前全库只有零散事实描述、检索 low_confidence）——口径：ftu=Activity=独立编译单元（独立生命周期/返回栈），window=同 Activity 内显隐（零切换成本/共享控件指针与状态）→ 决策清单 4 步（跨业务域？需独立生命周期/返回栈/大页面？并列内容区？需盖整屏？）+ 三形态对比表（A 独立 ftu / B 整屏 window+showWnd / C pagewindow·slidewindow·scrollwindow 容器）+ 辅助判据（要不要返回语义 / 要不要共享状态指针 / 媒体硬件资源生命周期按 onUI_quit）+ 5 条常见错法反例（二级页都开新 ftu、跨域硬塞一个 ftu、visible 初值没管、装饰件没穿透、多整屏 window 预览只见首页）+ 自检清单 ②**src 目录命名定规**：按业务域**直接建在 src/ 下**（`src/network/*.cpp .h`、`src/media/*.cpp .h`），**不设 core/modules 中间分层**；域名为小写英文单数名词（禁 core/common/misc 这类无域含义名，真共用才另起 common/）；文件=域内一个职责类（大驼峰、与文件名一致）；一律 .cpp/.h 禁 .cc；include 用相对 src/ 路径 ③`flythings_get_project_spec` 同步改口径：directoryRules 的 `core` 键改 `domain`（业务域目录）、caveats 里「放自建目录（src/core/、src/modules/ 等）」改为业务域目录 + 原文里的 core 分层提法全清，并新增「页面架构」caveat 指向本规范 ④与既有文档互链：activity-code-skeleton §3-1（资源释放走 onUI_quit）、touch-events（装饰件 setTouchable(false)+setTouchPass(true)）、ui-layout-verify §2-2（多整屏 window 预览切页）。',
     '2026-09-13: RTL8733BS 蓝牙 bring-up 实践入库 v0.27.44-open（沛哥转交 AI 长跑验收记录，要求「按实际情况确认处理」）——新增 `knowledge/hardware/bt-rtl8733bs-bringup.md`：①**两个前置条件**：BT 必须先在 sysfs 上电（`state_bt` 0→50ms→1→300ms ×2 轮，且被 `persist.wifi.module==8733bs` 前置门挡住，不匹配就走 AIC 分支=完全静默）+ **必须先跑 Realtek hciattach 预初始化**（H5 同步握手 → 读 ROM → 下补丁固件 → 115200 切 1500000），做完才应答标准 HCI ②**电源控制流程与接口单列一节（硬件关联，沛哥特别点名）**：节点与语义（`state_bt` / `state_wifi`，combo 模组上两个独立开关；多候选路径 + `access()` 存在性判断；纯 sysfs 文件读写，不走 ioctl/gpio）+ 调用时机与链路（btstack 初始化前、同一 BT 线程内；前置门不匹配走 AIC 分支=不碰电源不下固件）+ 写后**回读确认 on/off**（100×30ms）+ 失败必须返回 -1 由上层退出（否则一路静默，日志要往前找 rtk 报错）+ 现场排查 6 步 + 复用注意（路径随枚举变、无独立 reset GPIO、断电后等待要秒级）——实测曾卡在 `state_bt` 几小时，必须留档 ③**传输必须是 H5 + 偶校验 8E1 + 无流控**，H4/8N1 必失败；预初始化前判活看厂商命令 `0xFC6D`，判"芯片有没有回"只看事件码 `0x01~0x5F`（`0x6E` 是 btstack 本地的 TRANSPORT_PACKET_SENT，不算回应）④**线程铁律**：btstack 的 run loop init / data source 注册 / TLV / `hci_init` 必须在同一条 BT 线程内做完（违反 = 静默卡 `INITIALIZING`，连 tick 都没有），跨线程走 socketpair data source；`hci_add_event_handler` 必须在 `hci_init` 之后 ⑤**入库前逐条机器核对**并修正三处："必须自研 uart/SLIP" → 改为先查当前 btstack 构建的 frame/parity 能力（v85x btstack 1.7.2 已声明 `set_parity` + 四个 frame 回调 + 自带 slip_wrapper，优先用配置项）；版本锁定在 **Manifest.xml** 不是 fun.json；原稿头注的源工程归属不入库 ⑥固件随应用打包（`src/dependencies/bin/firmware/rtlbt/` → `/res/bin/firmware/rtlbt/`，运行时候选链 /res → /data → /tmp）、TLV 落 `/data`、"抓包重放学遥控器不成立"（BT HID 走加密链路，正解是本机做 hci 主机建映射）⑦未复核项（设备/PC 侧观察）在文档 §7 显式标注，不冒充机检结论。',
     '2026-09-12: check_all 新增 #18 设计令牌漂移检测 v0.27.43-open（沛哥「取」impeccable doctor 思路：让交付物自己变脏能被机器发现）——①**口径**：`DESIGN.md` 是冻结的视觉真相，json 里的颜色/字号应当来自令牌，出现令牌外的值 = 漂移（FAIL）。②**解析**：按 `##` 切节——色彩令牌节取 `#RRGGBB`、字号阶梯节取 8–400 整数、间距梯度节取正整数；另支持全文行内 `hero` 例外与「漂移豁免: #RRGGBB 18」显式豁免（留痕，便于单点例外）。③**结构值例外**：0（透明）/ -1（未设）/ 16777215（纯白）不经令牌。④**兼容存量**：无 `DESIGN.md` 或令牌表未填全 → NOTE 跳过（不 FAIL，老工程不受影响）。⑤**实现**：新增 `verify_design_tokens()`（与 #18 同源），间距梯度外的纵向间距记 WARN（人工确认，不阻断）。⑥**目标**：让「改一处令牌 = 全局一致」可机检，把 impeccable 的 detector/doctor 思路落到嵌入式 json 上。',
@@ -888,13 +892,13 @@ def flythings_verify_assets(project_root: str) -> str:
 # device_screenshot 的进阶参数默认值（v0.27.34：这些键也可统一走 advanced JSON，
 # 已显式传的同名参数优先 —— 参数分层的判定基准）
 _DSS_ADV_DEFAULTS = {'fb': '/dev/fb0', 'pixel': 'auto', 'width': 0, 'height': 0, 'offset_y': -1,
-                     'flip': '', 'rotate': 'auto', 'crop': '', 'name': '', 'timeout': 180}
+                     'flip': '', 'rotate': 'auto', 'crop': '', 'layer': 'ui', 'name': '', 'timeout': 180}
 
 
 def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png', scale: float = 1.0,                               quality: int = 90, fb: str = '/dev/fb0', pixel: str = 'auto',
                                width: int = 0, height: int = 0, offset_y: int = -1,
                                flip: str = '', rotate: str = 'auto', crop: str = '', name: str = '',
-                               timeout: int = 180, advanced: str = '') -> str:
+                               timeout: int = 180, advanced: str = '', layer: str = 'ui') -> str:
     """从**设备真机**抓当前屏幕 → PNG / JPG / BMP，交给视觉模型看或用 flythings_ui_visual(action="diff") 做像素验收。
 
     何时用：要确认设备上实际显示成什么样（布局对不对、图标锯齿、切图、颜色/文字、改完验收、
@@ -905,9 +909,10 @@ def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png
     的 rotateScreen 自动转正（rotateSource 可自证；触摸角度看 screenInfo.rotateTouch，可与显示不同）；
     只要应用画面（去黑边）用 crop='auto'。⚠️ 抓完把返回的 path 交给看图能力，不要把 raw/文件本身丢给模型。
 
-    ⚠️ 进阶参数（fb / pixel / width / height / offset_y / flip / rotate / crop / name / timeout）
+    ⚠️ 进阶参数（fb / pixel / width / height / offset_y / flip / rotate / crop / layer / name / timeout）
     **推荐统一走 advanced**（JSON 字符串，如 advanced='{"crop":"auto","pixel":"rgba"}'）；
     同名显式参数优先于 advanced（旧客户端不受影响）。
+    ⚠️ layer="video"（仅 SigmaStar）：抓**视频层**帧（fb0 只有 UI）——细节见知识库「真机抓屏」。
 
     ⚠️ 实现要点（设备没有 screencap/dd、必须按 stride 取、双缓冲 pan 页翻转抓错帧、
     32bpp BGRA 通道序、角度只认工程配置 + 三个反面做法）见知识库「真机抓屏 实现要点与踩坑」，
@@ -919,7 +924,7 @@ def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png
     # 参数分层（v0.27.34）：fb/pixel/width/height/offset_y/flip/rotate/crop/name/timeout 可统一走 advanced
     # （JSON 对象字符串）；**已显式传的同名参数优先**（旧客户端不受影响）。
     params = {'fb': fb, 'pixel': pixel, 'width': width, 'height': height, 'offset_y': offset_y,
-              'flip': flip, 'rotate': rotate, 'crop': crop, 'name': name, 'timeout': timeout}
+              'flip': flip, 'rotate': rotate, 'crop': crop, 'layer': layer, 'name': name, 'timeout': timeout}
     if advanced and str(advanced).strip():
         try:
             adv = json.loads(advanced)

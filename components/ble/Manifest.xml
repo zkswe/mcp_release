@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  components/ble —— 包引用声明（Manifest 片段）
+
+  用法（两种，二选一）：
+  A) 源码引入（推荐先用这种，见 README「怎么把它接进工程」）
+     把 components/ble 拷到工程 src/ 下（或 add_subdirectory），编译即用；
+     工程自己的 Manifest.xml 仍需声明下面这些底层依赖。
+  B) 作为依赖包发布（模块定型后）
+     把 components/ble 按平台编译成 include/lib，注册进包仓库，
+     再在自己的 Manifest.xml 里写：<package id="zkble" version="0.1.0"></package>
+
+  注意：btstack 版本必须锁死（HID/ATT 表按版本生成），不要用 ^ 浮动。
+-->
+<manifest platform="F133">
+  <dependencies enableOnPlatforms="F133,V85X">
+    <!-- 本模块直接依赖 -->
+    <package id="btstack"      version="1.7.2"></package>   <!-- BLE 协议栈（BLE-only 构建） -->
+    <package id="easyui"       version="2.9.0"></package>   <!-- SystemProperties（读 persist.wifi.module） -->
+    <package id="base-utility" version="10.10.2"></package> <!-- 基础设施（可选） -->
+    <package id="log"          version="1.0.0"></package>
+    <package id="zkhardware"   version="1.0.0"></package>
+  </dependencies>
+</manifest>

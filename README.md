@@ -25,7 +25,7 @@
 - 🏭 **全流程开箱即用**：编译工具链（fui/fun）与项目模板已内置，创建项目 → 布局 → 编译 → 推送一气呵成
 - 🧠 **34 个工具**：知识检索、硬件型号库、项目创建、布局转换、依赖管理、规范校验、自动修复、多语言、自动化测试、UI 可视化编辑、真机截图与产物核对全都有
 - 📦 **一条命令安装**：`pip install -r requirements.lock`（已锁定实测通过的版本组合），AI 工具指一下路径就能用
-- ✅ **发布前置闸门**：122 项契约用例 + 30 项冒烟 + 一致性校验（版本/工具数/平台/索引/隐私）一键跑，见 [`tests/`](tests/README.md)
+- ✅ **发布前置闸门**：133 项契约用例 + 30 项冒烟 + 一致性校验（版本/工具数/平台/索引/隐私）一键跑，见 [`tests/`](tests/README.md)
 - 🪶 **schema 集约**：工具 docstring 合计 ≤ 12,000 字符（单个 ≤ 900），长尾细节全放可检索的知识库——不拿上下文烧钱
 
 🎯 **适用场景**：
@@ -63,6 +63,7 @@
 - [快速开始](#-快速开始)
 - [核心特性](#-核心特性)
 - [可用工具列表](#-可用工具列表)
+- [可复用组件（components/）](#-可复用组件components)
 - [项目结构](#-项目结构)
 - [常见问题](#-常见问题)
 - [开源协议](#-开源协议)
@@ -145,7 +146,7 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 
 > **MCP 版本是多少？**
 
-应返回：`flythings-kb-open 0.27.45-open`，包含 34 个工具。
+应返回：`flythings-kb-open 0.27.50-open`，包含 34 个工具。
 
 ---
 
@@ -217,6 +218,20 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 
 ---
 
+## 🔧 可复用组件（components/）
+
+`components/` 里放**能直接拿进工程用的代码/资产**（随本 MCP 一起发布，AI 可直接取用）：
+
+| 模块 | 是什么 | 怎么用 |
+|---|---|---|
+| `components/ble/` | BLE 门面 `zk::ble`（用法像微信 `wx.*`）：`openAdapter / startDiscovery / onDeviceFound / connect / getServices / readValue / writeValue / subscribe / getDiag` | 把 `include/ + src/` 拷进工程 `src/`，工程声明 `btstack` 依赖（见模块 `Manifest.xml`）；上电/预初始化/H5/线程/TLV 全在组件内部 |
+| `components/fonts/` | 思源黑体三版（常用中文 872KB / 全中文 7.39MB / 多国语言 10.5MB）+ 设备字体自检 | 体检：`python components/fonts/scripts/device_font_check.py`；缺中文就 `--apply --project <工程>` 自动投递 |
+
+模块规范（四件套、代码尺子、package 引用）见 `components/README.md`；
+详细口径可检索：`knowledge/devflow/reusable-components.md`。
+
+---
+
 ## 📁 项目结构
 
 ```
@@ -237,11 +252,15 @@ flythings-mcp-open/
 ├── requirements.lock      # 已验证依赖组合（pin）
 ├── CHANGELOG.md           # 历史迭代记录（截至 v0.27.30，已冻结；版本史见 MCP_FEATURES）
 ├── scripts/               # 自检与闸门（smoke / check_consistency / gen_manifest / lint_silent_except / sync_ui_tools / ci）
-├── tests/                 # 契约用例（离线，95 项；见 tests/README.md）
+├── tests/                 # 契约用例（离线，129 项；见 tests/README.md）
 ├── models/bge-small-zh/   # ★ 本地向量模型（onnx + tokenizer）
 ├── toolchain/             # ★ 编译工具链（fui.exe + fun.exe）
 ├── templates/             # ★ 项目模板（HelloWord_F133/F135/Z21/T113/V85X/Z20）
 ├── ui_tools/              # 布局转换/预览工具（html2json/json2html/check_all/gen_res）
+├── components/            # ★ 可复用组件（随 MCP 一起发布，AI 可直接取用）
+│   ├── README.md          #   组件规范：四件套 + 两种形态 + 代码规范
+│   ├── ble/               #   BLE 门面 zk::ble（扫描/连接/GATT/诊断；底层脏活全在组件内）
+│   └── fonts/             #   思源黑体三版 + 设备字体自检（缺中文自动投递）
 ├── install.bat            # 一键安装依赖（装完跑离线自检）
 └── README.md              # 本文档
 ```
@@ -272,7 +291,7 @@ flythings-mcp-open/
 | 抓屏工具报“找不到 adb” | 装 Android platform-tools 或设环境变量 `ADB`（抓屏需要 adb；编译/预览不需要） |
 | 检索结果不准 | 本地模型首次使用会自动加载；确认 `models/bge-small-zh/` 存在 |
 | 返回体里出现 `warnings` | 正常，**要看**：降级（BM25）、自动转图、手绘图被拉伸等信息都在里面，不是报错 |
-| 改动后想自检 | `python scripts/check_consistency.py --with-tests`（版本/工具数/平台/索引/隐私 + 122 项契约用例） |
+| 改动后想自检 | `python scripts/check_consistency.py --with-tests`（版本/工具数/平台/索引/隐私 + 133 项契约用例） |
 | 想换知识库/重建索引 | `python rebuild_index_local.py <wiki目录>` 重新生成 rag_index.json |
 | 杀毒软件拦截 | 添加信任（内含可执行文件 toolchain/） |
 

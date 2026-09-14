@@ -63,6 +63,27 @@ adb shell setprop ctl.restart zkswe
 系统开不了机、需要系统新功能/修 bug 时，用官方 SD 刷机包 + 电脑端刷机工具制作刷机卡，
 格式化整机（不是应用升级包）；刷机包找官方群共享，注意机器背面标签对型号。
 
+### 6) ⚠️ 固化会**整体替换目标机的 `/res`** —— 应用资源必须随包走（2026-09-13 真机踩实）
+
+`update.img` 里装的是你自己工程的 `/res` 内容，刷上去后**原 app 在 `/res` 下的东西全部消失**。
+实测（V85X SPINOR + RTL8733BS）三个真故障，都属于这一类：
+
+| 现象 | 根因 | 修法 |
+|---|---|---|
+| 汉字全变方块（英文正常） | 原 app 自带中文字体，`/res/font` 被清空 → 回退到 `/etc/font/fzcircle.ttf`（21KB，只有英文） | 工程 `font/*.ttf`（工具链自动写 EasyUI.cfg 的 `font` 键，见 `devflow/custom-font-config.md`） |
+
+**动手前先自问**：原 app 在 `/res` 下带了哪些“运行期才需要”的东西？（字库 / 配置文件 / 二进制工具）→ 全部搬进自己工程。
+> 硬件层面的东西（如 BT 补丁固件）已收进组件，用户/AI 不需要关心（见 `components/`）。
+
+**刷机后的核验手法**
+```bash
+# 装上去的是不是自己的 app
+adb shell "busybox strings /res/lib/libzkgui.so | grep -i <你自己的关键字>"
+# 关键资源在不在
+adb shell "ls -l /res/font /res/bin/firmware/rtlbt; cat /res/etc/EasyUI.cfg"
+# 界面验收：直接抓屏交给视觉模型（不要手搓 fb0）
+```
+
 ## 三、实测坑（本机 2026-09-12 复现 + 修复验证）
 
 > 验证记录（2026-09-12）：装 **VC++ 2015-2022 Redistributable (x86)** 后，

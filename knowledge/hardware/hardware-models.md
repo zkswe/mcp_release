@@ -37,14 +37,12 @@
 - 屏幕：尺寸(寸)=4，宽=480，高=800，分辨率=480x800，方向=portrait，说明=4 寸 480×800（竖屏）
 - 按键：3 个，按键值 105(KEY_LEFT), 103(KEY_UP), 108(KEY_DOWN)
   - 按键值 = /dev/input 事件里的 code（Linux input-event-codes）。105/103/108 按标准头文件为 KEY_LEFT / KEY_UP / KEY_DOWN（物理丝印与 UI 功能对应关系待真机核对）
-- RF 模组电源：WiFi/BT 模组**不自动上电**，必须软件写 sysfs 节点才能开：BT 用 state_bt、WiFi 用 state_wifi（路径 /sys/devices/platform/soc*/soc@*:netRF/）——蓝牙串口无回应当首选排查此项；代码里唯一开它的地方是 rtk_init()→bt_enable()，且被 persist.wifi.module==8733bs 前置门挡住；详见 knowledge/hardware/pocketdisplay4-rf-power.md
 - **默认参数（开发直接照抄）**：tfcardFormat=FAT32 + 64KB 簇（OEM=zkswe）——录制类必查，电脑格的卡判不符；displayLayer=UI 层要留 visible:true 的 videoView 透明窗，视频层才透得出；resolution=480x800；orientation=portrait；keys=[105, 103, 108]
-- 资料：`knowledge/hardware/pocketdisplay4-rf-power.md`
 - 可选补充（非阻塞，按需补）：整机其余规格（CPU/内存/存储/接口）——有则更省事，没有也能开工
 - 可选补充（非阻塞，按需补）：屏幕接口类型（RGB / MIPI）与触摸方式
 - 可选补充（非阻塞，按需补）：三个按键的物理位置与丝印
 - 可选补充（非阻塞，按需补）：V85X 平台差异化说明（屏幕方向 rotateScreen / TF 卡格式等）
-- 数据来源：沛哥 2026-09-12 口述；RF 模组电源控制（state_bt/state_wifi + persist.wifi.module 前置门）2026-09-13 真机联调确认
+- 数据来源：沛哥 2026-09-12 口述
 - 数据状态：partial
 
 ## Z20
