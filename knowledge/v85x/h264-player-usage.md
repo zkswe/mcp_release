@@ -239,15 +239,17 @@ typedef struct {                       // 解码回调给的帧
 | `fun pack` 把 `lib-no-link/*.so` 放哪 | ✅ 出包中间产物 `.fun/<平台>/imgout/lib/` 里出现了 `lib-no-link/` 下的库（本次放了官方包那份 + 一个临时标记库，两个都在） |
 | 镜像格式/体积 | `ZKSWEV1.0-180127`，空工程约 68KB |
 | ⚠️ bin 工程能不能 pack | **不能**：`fun pack` 对 `type="executable"` 报 `FATAL libzkgui.so not found, please build project first` ⇒ **固化只适用于 zkgui 工程** |
-| **ADB 固化完整序列（实测可用）** | `adb push update.img /tmp/` → `setprop sys.zkupgrade.dir /tmp` → `setprop sys.zkupgrade.flag 255` → **`setprop ctl.restart zkswe`** → 整机重启后升级生效 |
+| **ADB 固化完整序列（实测可用）** | `adb push update.img /tmp/` → `setprop sys.zkupgrade.dir /tmp` → `setprop sys.zkupgrade.flag 255` → **`setprop ctl.restart zkswe`**（**只重启应用**） → 应用重启后读属性执行升级，**升级流程自己触发整机重启**后生效 |
 | 刷完 `/res` 是否真变 | ✅ **整体被替换**（逐项核对）：`libawh264player.so` **21624 → 17528**、`libzkgui.so` 体积变、`/res/ui` 只剩新工程的页（`main.ftu` 162B）、带进去的标记库 `libzzmarker.so`(12345) 也在 |
 | 固化后运行时能否找到 | ✅ 不推库直接跑：dlopen **实际命中 `/res/lib/libawh264player.so`**，解码回调 21 次 |
 | `/tmp` 遮蔽 `/res` | ✅ 实测：把同名库推到 `/tmp` 后 dlopen **真的命中 `/tmp/libawh264player.so`**（`/tmp` 在 `LD_LIBRARY_PATH` 最前） |
 | ⚠️ **别被 "/res 已有这个库" 误导** | 实测某板 `/res/lib/libawh264player.so` = **21624 B**，而官方包那份是 **17528 B** ⇒ 它是**参考工程 `lib-no-link/` 里那份**固化上去的，**不是官方包的 build**。⇒ 判"固化生效了没"要**比体积/sha256**，不能只看"ls 有文件" |
 
-**⚠️ 两个会让小白误判"固化了没生效"的点**：
-1. **`ctl.restart zkswe` 会连带整机重启**（adbd 会断）—— 升级是重启后才应用的，**得等够**再查；看早了看到的还是旧 `/res`（本次先误判过一次）。
-2. **`/tmp` 是 tmpfs，重启就清空** ⇒ push 镜像、setprop、restart 必须在**同一轮**里做完；过后别拿"/tmp 里没文件了"当失败依据。
+**⚠️ 关于“重启”与“看早了”的纠正（2026-09-14 受控实测）**：
+1. **`ctl.restart zkswe` 只重启应用，不重启系统** —— 单跑它（不带任何升级属性）实测：app pid 变化（719→887）、`/proc/uptime` **连续**（249.89 → 270.10，未归零）、`/tmp` 原样保留（标记文件读回正常）。**别把“设备重启”归因于它。**
+2. 带升级属性时设备确实会重启（adbd 断、`/tmp` 被清空），那是**升级流程发起的**（`/lib/libzkupgrade.so` 里有 `android_reboot`）；升级是**重启后**才应用的 ⇒ **要等够再查**，看早了看到的还是旧 `/res`。
+3. ⚠️ **未做单变量 A/B**：生效那轮用的是 `dir + flag(255) + force(1)`，**`force` / `flag` 的必需性未分离验证**（如实标注，别当结论）。
+4. **`/tmp` 是 tmpfs，重启即清空** ⇒ push 镜像、setprop、restart 必须在**同一轮**做完；过后别拿“/tmp 里没文件了”当失败依据。
 
 ---
 
@@ -341,3 +343,6 @@ typedef struct {                       // 解码回调给的帧
 - 2026-09-14 三补：**ADB 固化全流程真机跑通**（push → `sys.zkupgrade.dir/flag` → **`ctl.restart zkswe`** → 等整机重启）；
   刷后 `/res` 整体替换已逐项核对（库体积 21624→17528、libzkgui、`/res/ui` 只剩新工程页、标记库到位），
   且 **dlopen 实际命中 `/res/lib`** + 解码回调 21 次 ⇒ **固化后的运行时可见性与功能均已验收**。
+- 2026-09-14 四补（**纠正自己的错误结论**）：把 §7.1 “`ctl.restart zkswe` 会连带整机重启”改成实测口径——
+  受控单跑实测它**只重启应用**（app pid 变、`/proc/uptime` 连续、`/tmp` 不清）；带升级属性时的系统重启是**升级流程**发起的（`android_reboot`）；
+  并标注 `force`/`flag` 必需性**未做单变量 A/B**。
