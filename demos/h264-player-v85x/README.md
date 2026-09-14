@@ -1,9 +1,9 @@
 # h264-player-v85x — V85X 硬件 H264 播放验证工具（bin 工程）
 
-> **状态：✅ 编译通过 + ✅ 真机解码验收（V851 / 640×480：`init_ex -> 0`、解码回调 18 次、`crop(0,0,640,480) fmt=5`）**
+> **状态：✅ 编译通过 + ✅ 真机解码验收（V851 / 640×480：`init_ex -> 0`、解码回调 18~21 次、`crop(0,0,640,480) fmt=5`）**
+> **✅ 固化验收**：本包里的 `.so` 经 `fun pack` → `update.img` → ADB 刷入，`/res/lib` 实测从 21624 变成 17528，
+> 且不推库直接跑命中 `/res/lib/libawh264player.so`（详见 `knowledge/v85x/h264-player-usage.md` §7.1）。
 > 验证环境：`Zkswe_V85X_SPINOR`（480×800）。带显示层的业务验收（透明窗口/图层释放）请在目标工程里跑。
-> 固化链路已实测到出包环节（见 `knowledge/v85x/h264-player-usage.md` §7.1）：`fun pack` 会把 `lib-no-link/*.so` 放进
-> `.fun/<平台>/imgout/lib/` → 镜像 `lib/` → 设备 `/res/lib/`；**刷机侧待验**（刷 update.img 会整体覆盖 `/res`）。
 > 配套知识：`knowledge/v85x/h264-player-usage.md`（原理 + 坑 + 两条路线的选法）。
 
 ## 这个 demo 解决什么
@@ -69,6 +69,7 @@ h264play <file.h264> <srcW> <srcH> [rot=0|90|180|270] [scale=1|2|4] [seconds=10]
 | 不推库（靠 `/res/lib` 里已有的那份 21624） | ✅ `init_ex -> 0`，解码回调 17 次 |
 | 把官方包那份（17528）推到 `/tmp` | ✅ dlopen **命中 `/tmp/libawh264player.so`**（`/tmp` 在 ld 路径最前，遮蔽 `/res`），解码回调 18 次 |
 | `fun pack` 出包（zkgui 工程） | ✅ `.fun/v85x/imgout/lib/` 里出现了 `lib-no-link/` 下的库；⚠️ bin 工程不能 pack（`FATAL libzkgui.so not found`） |
+| **ADB 固化 + 刷后验收** | ✅ `push update.img /tmp/` → `setprop sys.zkupgrade.dir /tmp` + `flag 255` → **`setprop ctl.restart zkswe`** → 整机重启后：`/res/lib/libawh264player.so` **21624 → 17528**、`/res/ui` 只剩新工程页；不推库直接跑 → `[dl] 实际文件 /res/lib/libawh264player.so` + 解码回调 21 次 |
 
 ## 为什么不去把包声明成依赖（而是 dlopen + lib-no-link）
 

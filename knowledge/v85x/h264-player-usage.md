@@ -231,6 +231,24 @@ typedef struct {                       // 解码回调给的帧
 **验收判据**：`ls /res/lib/libawh264player.so` 在（V85X 包内那份约 17KB 级）且
 `grep awh264player /proc/<pid>/maps` 命中；固化后要求 maps 里是 **`/res/lib/...` 而不是 `/tmp/...`**。
 
+### 7.1 ✅ 固化链路实测（2026-09-14，V851 真机 + 本机出包，已端到端跑通）
+
+| 环节 | 实测结果 |
+|---|---|
+| `/res` 是什么 | `/dev/block/mtdblock3` → **squashfs，`ro`**（2.1MB 小分区，100% 满）⇒ **不能直接写，只能靠刷 `update.img` 更新** |
+| `fun pack` 把 `lib-no-link/*.so` 放哪 | ✅ 出包中间产物 `.fun/<平台>/imgout/lib/` 里出现了 `lib-no-link/` 下的库（本次放了官方包那份 + 一个临时标记库，两个都在） |
+| 镜像格式/体积 | `ZKSWEV1.0-180127`，空工程约 68KB |
+| ⚠️ bin 工程能不能 pack | **不能**：`fun pack` 对 `type="executable"` 报 `FATAL libzkgui.so not found, please build project first` ⇒ **固化只适用于 zkgui 工程** |
+| **ADB 固化完整序列（实测可用）** | `adb push update.img /tmp/` → `setprop sys.zkupgrade.dir /tmp` → `setprop sys.zkupgrade.flag 255` → **`setprop ctl.restart zkswe`** → 整机重启后升级生效 |
+| 刷完 `/res` 是否真变 | ✅ **整体被替换**（逐项核对）：`libawh264player.so` **21624 → 17528**、`libzkgui.so` 体积变、`/res/ui` 只剩新工程的页（`main.ftu` 162B）、带进去的标记库 `libzzmarker.so`(12345) 也在 |
+| 固化后运行时能否找到 | ✅ 不推库直接跑：dlopen **实际命中 `/res/lib/libawh264player.so`**，解码回调 21 次 |
+| `/tmp` 遮蔽 `/res` | ✅ 实测：把同名库推到 `/tmp` 后 dlopen **真的命中 `/tmp/libawh264player.so`**（`/tmp` 在 `LD_LIBRARY_PATH` 最前） |
+| ⚠️ **别被 "/res 已有这个库" 误导** | 实测某板 `/res/lib/libawh264player.so` = **21624 B**，而官方包那份是 **17528 B** ⇒ 它是**参考工程 `lib-no-link/` 里那份**固化上去的，**不是官方包的 build**。⇒ 判"固化生效了没"要**比体积/sha256**，不能只看"ls 有文件" |
+
+**⚠️ 两个会让小白误判"固化了没生效"的点**：
+1. **`ctl.restart zkswe` 会连带整机重启**（adbd 会断）—— 升级是重启后才应用的，**得等够**再查；看早了看到的还是旧 `/res`（本次先误判过一次）。
+2. **`/tmp` 是 tmpfs，重启就清空** ⇒ push 镜像、setprop、restart 必须在**同一轮**里做完；过后别拿"/tmp 里没文件了"当失败依据。
+
 ---
 
 ## 8. 显示：它是 disp 硬件视频层，不是控件
@@ -309,8 +327,7 @@ typedef struct {                       // 解码回调给的帧
    包内那份 `.so`（17528）已在 V851 真机上跑通**解码链路**（`init_ex -> 0` + 解码回调 18 次）；
    带显示层的业务验收（透明窗口/图层释放配合）仍建议在目标工程里跑一遍。
 2. `h264_multi_player_*` 多实例：**未实测**。
-3. 固化后 `/res/lib/libawh264player.so` 的自动加载：打包侧 ✅ 已实测（§7.1）；
-   **刷机侧待验**（刷 `update.img` 会整体覆盖 `/res`，需在可回滚/可复现的前提下做）。
+3. 固化后 `/res/lib/libawh264player.so` 的自动加载：✅ **已真机验收**（打包侧 + 刷机侧全通，见 §7.1）。
 4. 各平台（f133/f136/t113）的 `awh264player` 包：**仅查到版本号**，未实测。
 
 ## 14. 变更记录
@@ -321,3 +338,6 @@ typedef struct {                       // 解码回调给的帧
 - 2026-09-14 补：**固化链路实测（§7.1）**——`/res` = `mtdblock3` 只读 squashfs（只能刷 update.img 更新）；
   `fun pack` 中间产物 `.fun/<平台>/imgout/lib/` 含 `lib-no-link/*.so`；bin 工程不能 pack；
   “/res 已有同名库（21624）≠ 官方包那份（17528）”的体积判据；`/tmp` 遮蔽 `/res` 的真机实证。
+- 2026-09-14 三补：**ADB 固化全流程真机跑通**（push → `sys.zkupgrade.dir/flag` → **`ctl.restart zkswe`** → 等整机重启）；
+  刷后 `/res` 整体替换已逐项核对（库体积 21624→17528、libzkgui、`/res/ui` 只剩新工程页、标记库到位），
+  且 **dlopen 实际命中 `/res/lib`** + 解码回调 21 次 ⇒ **固化后的运行时可见性与功能均已验收**。
