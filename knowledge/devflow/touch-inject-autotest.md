@@ -98,6 +98,22 @@ adb shell mt_test /dev/input/event0 tap 100 100
 | `ui_test` | 单点 | z21 / z20 / t113 / f133 / v85x |
 | `mt_test` | MT Type-A | z21 / z20 / t113 / v85x |
 > 更全的调试工具箱（ifconfig/ping/netstat 等网络/系统命令）→ 同目录 `busybox`（见 busybox-debug-library.md）。
+>
+> `touch` 常用：`touch list` / `touch info` / `touch [-d /dev/input/eventN] tap x y`；选项 `--proto single|a|b`、`--hold <ms>`、`--scale`、`--screen WxH`、`-v`（打印探测失败原因，`TOUCH_DEBUG=1` 同效）。
+
+## 🖥 V85X 真机实录（2026-09-14，两块屏两种协议——都是"单点工具必死"）
+
+| 板子 | 触摸节点 | IC | 协议 | `ABS_X/Y` | 结论 |
+|------|---------|----|------|-----------|------|
+| Zkswe_V85X_SPINOR（480×800） | `/dev/input/event0` | gt9xx | **MT-A**（48/50/53/54/57，无 SLOT） | **不存在** | `ui_test` 完全点不动；`touch` 自动判 MT-A ✅ |
+| V851s（480×800，学习机 PocketGame） | `/dev/input/event4` | axs_ts | **MT-B**（有 SLOT+TRACKING_ID） | **范围 0..0** | MT-A 写法（老 `pginj`/`mt_test` 发 `SYN_MT_REPORT`）→ 整帧作废；按上面 2b 三条修后全通 |
+
+**三条必须知道的坑（都踩过）**：
+1. **`ABS_X/Y` 可能压根不存在**（V85X 两块屏都这样）：单点轴工具在这类屏上不是"偏"，是**完全点不动**（写了也被钳成 0）。判据：`touch info` 看 `ABS_X=0 ABS_Y=0` + `MT_POSITION_X=1`。
+2. **声明的 MT 量程 ≠ 屏幕尺寸**：SPINOR 实测 `mtX=0..1024 mtY=0..600`、屏却 480×800，但**实际 raw == 屏幕 1:1**（注入 (437,32) 精准命中右上角按钮，状态栏 `已停止扫描`→`扫描中`）。所以**别想当然加 `--scale`**：`touch` 已加防护（两轴比例差 >2 倍就警告并取消换算）；确需换算用 `--screen WxH` 指定真实尺寸。
+3. **`EVIOCGBIT` 成功时不一定返回 0**：SPINOR 这颗内核返回**拷贝字节数（实测 4）**。写 `if (ioctl(...) == 0)` 会让能力探测永远失败 → `touch list` 报 "no input device found"（v0.27.61 修成 `>= 0`）。**移植任何 evdev 工具都按 `>= 0` 判成功。**
+
+**宿主侧小贴士**：USB 设备在 `adb devices` 里消失/`offline` 时，先清掉所有 adb 进程再起（Windows：`taskkill /IM adb.exe /F` → `adb start-server`）——IDE 自带 adb 会抢占 5037 并留陈旧状态；SPINOR 实测就这样从"完全看不到"恢复成 `device`，**不用拔插**。
 
 ## 🔬 底层原理（event.c 精要，定制/移植才需要）
 
@@ -113,6 +129,10 @@ write(fd, &event, sizeof(event));   // fd = open(dev, O_WRONLY)
 ### ⛔ 协议铁律
 1. **单点按下序列**：`EV_ABS ABS_X/Y → EV_ABS ABS_PRESSURE(100) → EV_KEY BTN_TOUCH=1 → EV_SYN`；抬起 = PRESSURE=0 → BTN_TOUCH=0 → EV_SYN
 2. **MT Type-A 序列**：`EV_ABS ABS_MT_TRACKING_ID(递增) → ABS_MT_POSITION_X/Y → ABS_MT_TOUCH_MAJOR → EV_KEY BTN_TOUCH=1 → EV_SYN`；抬起 = `ABS_MT_TRACKING_ID=-1 → BTN_TOUCH=0 → EV_SYN`
+2b. **MT Type-B 三条（有 `ABS_MT_SLOT` 的屏，别拿 A 的写法套）**：
+   - **绝不能发 `SYN_MT_REPORT`**：那是 type-A 的点位分隔符，B 设备上发它**整帧作废**（`dd` 能抓到事件、应用日志一行都没有）
+   - **`BTN_TOUCH` 必须与位置同帧**：只发 MT 位置时框架给 DOWN+MOVE、**永远不给 UP** → 之后所有注入退化成 MOVE（现象像"时灵时不灵"）
+   - **抬起帧同帧带 `TRACKING_ID=-1` + `BTN_TOUCH=0`**：缺了会留"幽灵手指"（判据：日志里只有 `action=3/2` 没有 `action=1`；再点一次或重启应用可恢复）
 3. **EV_SYN 必须发**，否则内核不提交事件——最容易漏的坑
 4. **滑动逐像素/插值过渡**，禁止一次跳终点（被识别为无效/抖动），每步跟 EV_SYN
 5. 时间戳 `gettimeofday` 必须填
