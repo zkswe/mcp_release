@@ -1,0 +1,823 @@
+{
+  "generated": 1789489016,
+  "generator": "components/icons/scripts/gen_icons.py",
+  "count": 51,
+  "items": [
+    {
+      "png": "ic_control_arrow-left.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_control_arrow-left.png",
+      "size": "22x16",
+      "w": 22,
+      "h": 16,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.arrow-left",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_svg_rocket.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_svg_rocket.png",
+      "size": "48",
+      "w": 48,
+      "h": 48,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "rocket",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler(adhoc)"
+    },
+    {
+      "png": "ic_system_settings_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_system_settings_off.png",
+      "size": "56",
+      "w": 56,
+      "h": 56,
+      "color": [
+        0,
+        122,
+        255
+      ],
+      "icon": "system.settings",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_settings_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_system_settings_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.settings",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_wifi.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_system_wifi.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.wifi",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_clear-high_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_clear-high_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.clear-high",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_clear-high_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_clear-high_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.clear-high",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_clear_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_clear_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.clear",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_clear_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_clear_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.clear",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_cloud-fog.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_cloud-fog.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.cloud-fog",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_cloudy_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_cloudy_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.cloudy",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_cloudy_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_cloudy_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.cloudy",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_droplet_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_droplet_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.droplet",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_droplet_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_droplet_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.droplet",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_hail_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_hail_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.hail",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_hail_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_hail_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.hail",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_haze-moon.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_haze-moon.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.haze-moon",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_haze.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_haze.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.haze",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_mist.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_mist.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.mist",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_moon-cloud_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_moon-cloud_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.moon-cloud",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_moon-cloud_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_moon-cloud_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.moon-cloud",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_moon-rain_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_moon-rain_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.moon-rain",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_moon-rain_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_moon-rain_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.moon-rain",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_moon-stars.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_moon-stars.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.moon-stars",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_moon_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_moon_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.moon",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_moon_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_moon_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.moon",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_partly-cloudy_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_partly-cloudy_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.partly-cloudy",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_partly-cloudy_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_partly-cloudy_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.partly-cloudy",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_rain-sun_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_rain-sun_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.rain-sun",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_rain-sun_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_rain-sun_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.rain-sun",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_rain.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_rain.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.rain",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_rainbow.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_rainbow.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.rainbow",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_shower_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_shower_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.shower",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_shower_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_shower_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.shower",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_sleet_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_sleet_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.sleet",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_sleet_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_sleet_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.sleet",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_snow.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_snow.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.snow",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_snowflake.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_snowflake.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.snowflake",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_storm.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_storm.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.storm",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_sunrise_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_sunrise_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.sunrise",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_sunrise_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_sunrise_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.sunrise",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_sunset_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_sunset_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.sunset",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_sunset_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_sunset_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.sunset",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_temp-snow.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_temp-snow.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.temp-snow",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_temp-sun.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_temp-sun.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.temp-sun",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_thunder-sun_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_thunder-sun_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.thunder-sun",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_thunder-sun_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_thunder-sun_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.thunder-sun",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_thunder.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_thunder.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.thunder",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_umbrella_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_umbrella_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.umbrella",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_umbrella_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_umbrella_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.umbrella",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_wind.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\_report\\ic_weather_wind.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.wind",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    }
+  ]
+}

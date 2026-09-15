@@ -1,0 +1,340 @@
+{
+  "beepEnable": true,
+  "id": 0,
+  "resolution": {
+    "width": 800,
+    "height": 480
+  },
+  "topmost": false,
+  "backgroundColor": 1185310,
+  "position": {
+    "left": 0,
+    "top": 0,
+    "width": 800,
+    "height": 480
+  },
+  "textview__1": {
+    "caption": "ImgWeatherBig",
+    "id": 50001,
+    "position": {
+      "left": 40,
+      "top": 26,
+      "width": 56,
+      "height": 56
+    },
+    "colorTab": {
+      "color0": 16777215
+    },
+    "fontSize": 16,
+    "alignment": 36,
+    "touchable": false,
+    "backgroundPic": "images/ic_weather_partly-cloudy_on.png"
+  },
+  "textview__2": {
+    "caption": "ImgWeatherRain",
+    "id": 50002,
+    "position": {
+      "left": 112,
+      "top": 44,
+      "width": 22,
+      "height": 22
+    },
+    "colorTab": {
+      "color0": 16777215
+    },
+    "fontSize": 16,
+    "alignment": 36,
+    "touchable": false,
+    "backgroundPic": "images/ic_weather_rain.png"
+  },
+  "textview__3": {
+    "caption": "ImgWeatherSnow",
+    "id": 50003,
+    "position": {
+      "left": 142,
+      "top": 44,
+      "width": 22,
+      "height": 22
+    },
+    "colorTab": {
+      "color0": 16777215
+    },
+    "fontSize": 16,
+    "alignment": 36,
+    "touchable": false,
+    "backgroundPic": "images/ic_weather_snow.png"
+  },
+  "textview__4": {
+    "caption": "ImgWeatherWind",
+    "id": 50004,
+    "position": {
+      "left": 172,
+      "top": 44,
+      "width": 22,
+      "height": 22
+    },
+    "colorTab": {
+      "color0": 16777215
+    },
+    "fontSize": 16,
+    "alignment": 36,
+    "touchable": false,
+    "backgroundPic": "images/ic_weather_wind.png"
+  },
+  "textview__5": {
+    "caption": "ImgWifi",
+    "id": 50005,
+    "position": {
+      "left": 640,
+      "top": 30,
+      "width": 22,
+      "height": 22
+    },
+    "colorTab": {
+      "color0": 16777215
+    },
+    "fontSize": 16,
+    "alignment": 36,
+    "touchable": false,
+    "backgroundPic": "images/ic_system_wifi.png"
+  },
+  "textview__6": {
+    "caption": "ImgBattery",
+    "id": 50006,
+    "position": {
+      "left": 672,
+      "top": 30,
+      "width": 22,
+      "height": 22
+    },
+    "colorTab": {
+      "color0": 16777215
+    },
+    "fontSize": 16,
+    "alignment": 36,
+    "touchable": false,
+    "backgroundPic": "images/ic_system_battery-3_on.png"
+  },
+  "textview__7": {
+    "caption": "ImgSignal",
+    "id": 50007,
+    "position": {
+      "left": 704,
+      "top": 30,
+      "width": 22,
+      "height": 22
+    },
+    "colorTab": {
+      "color0": 16777215
+    },
+    "fontSize": 16,
+    "alignment": 36,
+    "touchable": false,
+    "backgroundPic": "images/ic_system_signal.png"
+  },
+  "textview__8": {
+    "caption": "ImgBack",
+    "id": 50008,
+    "position": {
+      "left": 24,
+      "top": 130,
+      "width": 22,
+      "height": 22
+    },
+    "colorTab": {
+      "color0": 16777215
+    },
+    "fontSize": 16,
+    "alignment": 36,
+    "touchable": false,
+    "backgroundPic": "images/ic_control_arrow-left.png"
+  },
+  "textview__9": {
+    "caption": "ImgLight",
+    "id": 50009,
+    "position": {
+      "left": 60,
+      "top": 200,
+      "width": 32,
+      "height": 32
+    },
+    "colorTab": {
+      "color0": 16777215
+    },
+    "fontSize": 16,
+    "alignment": 36,
+    "touchable": false,
+    "backgroundPic": "images/ic_device_bulb_on.png"
+  },
+  "textview__10": {
+    "caption": "ImgFan",
+    "id": 50010,
+    "position": {
+      "left": 108,
+      "top": 200,
+      "width": 32,
+      "height": 32
+    },
+    "colorTab": {
+      "color0": 16777215
+    },
+    "fontSize": 16,
+    "alignment": 36,
+    "touchable": false,
+    "backgroundPic": "images/ic_device_windmill_on.png"
+  },
+  "textview__11": {
+    "caption": "ImgAc",
+    "id": 50011,
+    "position": {
+      "left": 156,
+      "top": 200,
+      "width": 32,
+      "height": 32
+    },
+    "colorTab": {
+      "color0": 16777215
+    },
+    "fontSize": 16,
+    "alignment": 36,
+    "touchable": false,
+    "backgroundPic": "images/ic_device_air-conditioning.png"
+  },
+  "textview__12": {
+    "caption": "ImgTv",
+    "id": 50012,
+    "position": {
+      "left": 204,
+      "top": 200,
+      "width": 32,
+      "height": 32
+    },
+    "colorTab": {
+      "color0": 16777215
+    },
+    "fontSize": 16,
+    "alignment": 36,
+    "touchable": false,
+    "backgroundPic": "images/ic_device_tv_on.png"
+  },
+  "button__13": {
+    "caption": "BtnToggleOff",
+    "id": 20001,
+    "position": {
+      "left": 480,
+      "top": 196,
+      "width": 44,
+      "height": 44
+    },
+    "colorTab": {
+      "color0": 16777215
+    },
+    "fontSize": 16,
+    "alignment": 37,
+    "touchable": true,
+    "text": "",
+    "picTab": {
+      "pic0": "images/ic_control_toggle-left_off.png"
+    }
+  },
+  "button__14": {
+    "caption": "BtnToggleOn",
+    "id": 20002,
+    "position": {
+      "left": 560,
+      "top": 196,
+      "width": 44,
+      "height": 44
+    },
+    "colorTab": {
+      "color0": 16777215
+    },
+    "fontSize": 16,
+    "alignment": 37,
+    "touchable": true,
+    "text": "",
+    "picTab": {
+      "pic0": "images/ic_control_toggle-right_on.png"
+    }
+  },
+  "button__15": {
+    "caption": "BtnCheck",
+    "id": 20003,
+    "position": {
+      "left": 480,
+      "top": 264,
+      "width": 22,
+      "height": 22
+    },
+    "colorTab": {
+      "color0": 16777215
+    },
+    "fontSize": 16,
+    "alignment": 37,
+    "touchable": true,
+    "text": "",
+    "picTab": {
+      "pic0": "images/ic_control_checkbox.png"
+    }
+  },
+  "button__16": {
+    "caption": "BtnCheckOn",
+    "id": 20004,
+    "position": {
+      "left": 520,
+      "top": 264,
+      "width": 22,
+      "height": 22
+    },
+    "colorTab": {
+      "color0": 16777215
+    },
+    "fontSize": 16,
+    "alignment": 37,
+    "touchable": true,
+    "text": "",
+    "picTab": {
+      "pic0": "images/ic_control_square-check_on.png"
+    }
+  },
+  "button__17": {
+    "caption": "BtnStar",
+    "id": 20005,
+    "position": {
+      "left": 560,
+      "top": 250,
+      "width": 44,
+      "height": 44
+    },
+    "colorTab": {
+      "color0": 16777215
+    },
+    "fontSize": 16,
+    "alignment": 37,
+    "touchable": true,
+    "text": "",
+    "picTab": {
+      "pic0": "images/ic_system_star_on.png"
+    }
+  },
+  "button__18": {
+    "caption": "BtnMore",
+    "id": 20006,
+    "position": {
+      "left": 660,
+      "top": 130,
+      "width": 22,
+      "height": 22
+    },
+    "colorTab": {
+      "color0": 16777215
+    },
+    "fontSize": 16,
+    "alignment": 37,
+    "touchable": true,
+    "text": "",
+    "picTab": {
+      "pic0": "images/ic_system_more_on.png"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" data-base-stroke="7">
+  <line x1="10" y1="84" x2="90" y2="84" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M24,84 L24.063,82.186 24.253,80.381 24.568,78.594 25.007,76.833 25.568,75.107 26.248,73.425 27.043,71.794 27.951,70.222 28.966,68.718 30.083,67.288 31.297,65.939 32.603,64.678 33.993,63.512 35.461,62.445 37,61.483 38.602,60.631 40.26,59.893 41.966,59.273 43.71,58.772 45.485,58.395 47.282,58.142 49.093,58.016 50.907,58.016 52.718,58.142 54.515,58.395 56.29,58.772 58.034,59.273 59.74,59.893 61.398,60.631 63,61.483 64.539,62.445 66.007,63.512 67.397,64.678 68.703,65.939 69.917,67.288 71.034,68.718 72.049,70.222 72.957,71.794 73.752,73.425 74.432,75.107 74.993,76.833 75.432,78.594 75.747,80.381 75.937,82.186 76,84" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="50" y1="46" x2="50" y2="34" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="24" y1="52" x2="17" y2="45" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="76" y1="52" x2="83" y2="45" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

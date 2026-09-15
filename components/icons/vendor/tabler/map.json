@@ -1,0 +1,1865 @@
+{
+  "vendor": "tabler",
+  "version": "3.46.0",
+  "icons": [
+    {
+      "name": "arrow-down",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "arrow-down",
+      "outline": "icons/arrow-down.svg",
+      "filled": null,
+      "note": "下箭头"
+    },
+    {
+      "name": "arrow-left",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "arrow-left",
+      "outline": "icons/arrow-left.svg",
+      "filled": null,
+      "note": "左箭头"
+    },
+    {
+      "name": "arrow-right",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "arrow-right",
+      "outline": "icons/arrow-right.svg",
+      "filled": null,
+      "note": "右箭头"
+    },
+    {
+      "name": "arrow-up",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "arrow-up",
+      "outline": "icons/arrow-up.svg",
+      "filled": null,
+      "note": "上箭头"
+    },
+    {
+      "name": "check",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "check",
+      "outline": "icons/check.svg",
+      "filled": "icons-filled/check.svg",
+      "note": "对勾"
+    },
+    {
+      "name": "checkbox",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "checkbox",
+      "outline": "icons/checkbox.svg",
+      "filled": null,
+      "note": "复选框"
+    },
+    {
+      "name": "chevron-down",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "chevron-down",
+      "outline": "icons/chevron-down.svg",
+      "filled": "icons-filled/chevron-down.svg",
+      "note": "下折角"
+    },
+    {
+      "name": "chevron-left",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "chevron-left",
+      "outline": "icons/chevron-left.svg",
+      "filled": null,
+      "note": "左折角"
+    },
+    {
+      "name": "chevron-right",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "chevron-right",
+      "outline": "icons/chevron-right.svg",
+      "filled": "icons-filled/chevron-right.svg",
+      "note": "右折角"
+    },
+    {
+      "name": "chevron-up",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "chevron-up",
+      "outline": "icons/chevron-up.svg",
+      "filled": null,
+      "note": "上折角"
+    },
+    {
+      "name": "circle",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "circle",
+      "outline": "icons/circle.svg",
+      "filled": "icons-filled/circle.svg",
+      "note": "圆"
+    },
+    {
+      "name": "circle-check",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "circle-check",
+      "outline": "icons/circle-check.svg",
+      "filled": "icons-filled/circle-check.svg",
+      "note": "圆勾选"
+    },
+    {
+      "name": "circle-dot",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "circle-dot",
+      "outline": "icons/circle-dot.svg",
+      "filled": "icons-filled/circle-dot.svg",
+      "note": "单选"
+    },
+    {
+      "name": "close",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "x",
+      "outline": "icons/x.svg",
+      "filled": "icons-filled/x.svg",
+      "note": "关闭"
+    },
+    {
+      "name": "loader",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "loader-2",
+      "outline": "icons/loader-2.svg",
+      "filled": null,
+      "note": "加载"
+    },
+    {
+      "name": "minus",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "minus",
+      "outline": "icons/minus.svg",
+      "filled": null,
+      "note": "减"
+    },
+    {
+      "name": "plus",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "plus",
+      "outline": "icons/plus.svg",
+      "filled": "icons-filled/plus.svg",
+      "note": "加"
+    },
+    {
+      "name": "progress",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "progress",
+      "outline": "icons/progress.svg",
+      "filled": null,
+      "note": "进度"
+    },
+    {
+      "name": "selector",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "selector",
+      "outline": "icons/selector.svg",
+      "filled": null,
+      "note": "选择器"
+    },
+    {
+      "name": "sliders",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "adjustments-horizontal",
+      "outline": "icons/adjustments-horizontal.svg",
+      "filled": "icons-filled/adjustments-horizontal.svg",
+      "note": "滑块"
+    },
+    {
+      "name": "square",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "square",
+      "outline": "icons/square.svg",
+      "filled": "icons-filled/square.svg",
+      "note": "方框"
+    },
+    {
+      "name": "square-check",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "square-check",
+      "outline": "icons/square-check.svg",
+      "filled": "icons-filled/square-check.svg",
+      "note": "勾选"
+    },
+    {
+      "name": "switch-2",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "switch-2",
+      "outline": "icons/switch-2.svg",
+      "filled": null,
+      "note": "拨动开关"
+    },
+    {
+      "name": "switch-3",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "switch-3",
+      "outline": "icons/switch-3.svg",
+      "filled": null,
+      "note": "拨动开关-2"
+    },
+    {
+      "name": "toggle-left",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "toggle-left",
+      "outline": "icons/toggle-left.svg",
+      "filled": "icons-filled/toggle-left.svg",
+      "note": "开关-关"
+    },
+    {
+      "name": "toggle-right",
+      "category": "control",
+      "source": "vendor:tabler",
+      "tabler": "toggle-right",
+      "outline": "icons/toggle-right.svg",
+      "filled": "icons-filled/toggle-right.svg",
+      "note": "开关-开"
+    },
+    {
+      "name": "air-conditioning",
+      "category": "device",
+      "source": "vendor:tabler",
+      "tabler": "air-conditioning",
+      "outline": "icons/air-conditioning.svg",
+      "filled": null,
+      "note": "空调"
+    },
+    {
+      "name": "bath",
+      "category": "device",
+      "source": "vendor:tabler",
+      "tabler": "bath",
+      "outline": "icons/bath.svg",
+      "filled": "icons-filled/bath.svg",
+      "note": "卫浴"
+    },
+    {
+      "name": "bed",
+      "category": "device",
+      "source": "vendor:tabler",
+      "tabler": "bed",
+      "outline": "icons/bed.svg",
+      "filled": "icons-filled/bed.svg",
+      "note": "床"
+    },
+    {
+      "name": "bulb",
+      "category": "device",
+      "source": "vendor:tabler",
+      "tabler": "bulb",
+      "outline": "icons/bulb.svg",
+      "filled": "icons-filled/bulb.svg",
+      "note": "灯(泡)"
+    },
+    {
+      "name": "bulb-off",
+      "category": "device",
+      "source": "vendor:tabler",
+      "tabler": "bulb-off",
+      "outline": "icons/bulb-off.svg",
+      "filled": null,
+      "note": "灯关"
+    },
+    {
+      "name": "cctv",
+      "category": "device",
+      "source": "vendor:tabler",
+      "tabler": "device-cctv",
+      "outline": "icons/device-cctv.svg",
+      "filled": "icons-filled/device-cctv.svg",
+      "note": "摄像头"
+    },
+    {
+      "name": "device-speaker",
+      "category": "device",
+      "source": "vendor:tabler",
+      "tabler": "device-speaker",
+      "outline": "icons/device-speaker.svg",
+      "filled": "icons-filled/device-speaker.svg",
+      "note": "智能音箱"
+    },
+    {
+      "name": "door",
+      "category": "device",
+      "source": "vendor:tabler",
+      "tabler": "door",
+      "outline": "icons/door.svg",
+      "filled": null,
+      "note": "门"
+    },
+    {
+      "name": "fire-extinguisher",
+      "category": "device",
+      "source": "vendor:tabler",
+      "tabler": "fire-extinguisher",
+      "outline": "icons/fire-extinguisher.svg",
+      "filled": null,
+      "note": "灭火器"
+    },
+    {
+      "name": "fridge",
+      "category": "device",
+      "source": "vendor:tabler",
+      "tabler": "fridge",
+      "outline": "icons/fridge.svg",
+      "filled": null,
+      "note": "冰箱"
+    },
+    {
+      "name": "lamp",
+      "category": "device",
+      "source": "vendor:tabler",
+      "tabler": "lamp",
+      "outline": "icons/lamp.svg",
+      "filled": null,
+      "note": "台灯"
+    },
+    {
+      "name": "microwave",
+      "category": "device",
+      "source": "vendor:tabler",
+      "tabler": "microwave",
+      "outline": "icons/microwave.svg",
+      "filled": "icons-filled/microwave.svg",
+      "note": "微波炉"
+    },
+    {
+      "name": "plug",
+      "category": "device",
+      "source": "vendor:tabler",
+      "tabler": "plug",
+      "outline": "icons/plug.svg",
+      "filled": null,
+      "note": "插座"
+    },
+    {
+      "name": "plug-connected",
+      "category": "device",
+      "source": "vendor:tabler",
+      "tabler": "plug-connected",
+      "outline": "icons/plug-connected.svg",
+      "filled": null,
+      "note": "插座已接"
+    },
+    {
+      "name": "robot",
+      "category": "device",
+      "source": "vendor:tabler",
+      "tabler": "robot",
+      "outline": "icons/robot.svg",
+      "filled": null,
+      "note": "机器人"
+    },
+    {
+      "name": "sofa",
+      "category": "device",
+      "source": "vendor:tabler",
+      "tabler": "sofa",
+      "outline": "icons/sofa.svg",
+      "filled": null,
+      "note": "沙发"
+    },
+    {
+      "name": "solar-panel",
+      "category": "device",
+      "source": "vendor:tabler",
+      "tabler": "solar-panel",
+      "outline": "icons/solar-panel.svg",
+      "filled": null,
+      "note": "太阳能"
+    },
+    {
+      "name": "thermometer",
+      "category": "device",
+      "source": "vendor:tabler",
+      "tabler": "thermometer",
+      "outline": "icons/thermometer.svg",
+      "filled": null,
+      "note": "温度计"
+    },
+    {
+      "name": "tv",
+      "category": "device",
+      "source": "vendor:tabler",
+      "tabler": "device-tv",
+      "outline": "icons/device-tv.svg",
+      "filled": "icons-filled/device-tv.svg",
+      "note": "电视"
+    },
+    {
+      "name": "vacuum",
+      "category": "device",
+      "source": "vendor:tabler",
+      "tabler": "vacuum-cleaner",
+      "outline": "icons/vacuum-cleaner.svg",
+      "filled": null,
+      "note": "扫地机"
+    },
+    {
+      "name": "wash-machine",
+      "category": "device",
+      "source": "vendor:tabler",
+      "tabler": "wash-machine",
+      "outline": "icons/wash-machine.svg",
+      "filled": null,
+      "note": "洗衣机"
+    },
+    {
+      "name": "windmill",
+      "category": "device",
+      "source": "vendor:tabler",
+      "tabler": "windmill",
+      "outline": "icons/windmill.svg",
+      "filled": "icons-filled/windmill.svg",
+      "note": "风扇/风机"
+    },
+    {
+      "name": "window",
+      "category": "device",
+      "source": "vendor:tabler",
+      "tabler": "window",
+      "outline": "icons/window.svg",
+      "filled": null,
+      "note": "窗"
+    },
+    {
+      "name": "access-point",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "access-point",
+      "outline": "icons/access-point.svg",
+      "filled": null,
+      "note": "接入点"
+    },
+    {
+      "name": "access-point-off",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "access-point-off",
+      "outline": "icons/access-point-off.svg",
+      "filled": null,
+      "note": "接入点断开"
+    },
+    {
+      "name": "alarm",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "alarm",
+      "outline": "icons/alarm.svg",
+      "filled": "icons-filled/alarm.svg",
+      "note": "闹钟"
+    },
+    {
+      "name": "battery",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "battery",
+      "outline": "icons/battery.svg",
+      "filled": "icons-filled/battery.svg",
+      "note": "电池"
+    },
+    {
+      "name": "battery-0",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "battery",
+      "outline": "icons/battery.svg",
+      "filled": "icons-filled/battery.svg",
+      "note": "电量空"
+    },
+    {
+      "name": "battery-1",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "battery-1",
+      "outline": "icons/battery-1.svg",
+      "filled": "icons-filled/battery-1.svg",
+      "note": "电池 1 格"
+    },
+    {
+      "name": "battery-100",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "battery-4",
+      "outline": "icons/battery-4.svg",
+      "filled": "icons-filled/battery-4.svg",
+      "note": "电量满"
+    },
+    {
+      "name": "battery-2",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "battery-2",
+      "outline": "icons/battery-2.svg",
+      "filled": "icons-filled/battery-2.svg",
+      "note": "电池 2 格"
+    },
+    {
+      "name": "battery-25",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "battery-1",
+      "outline": "icons/battery-1.svg",
+      "filled": "icons-filled/battery-1.svg",
+      "note": "电量 25%"
+    },
+    {
+      "name": "battery-3",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "battery-3",
+      "outline": "icons/battery-3.svg",
+      "filled": "icons-filled/battery-3.svg",
+      "note": "电池 3 格"
+    },
+    {
+      "name": "battery-4",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "battery-4",
+      "outline": "icons/battery-4.svg",
+      "filled": "icons-filled/battery-4.svg",
+      "note": "电池满"
+    },
+    {
+      "name": "battery-50",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "battery-2",
+      "outline": "icons/battery-2.svg",
+      "filled": "icons-filled/battery-2.svg",
+      "note": "电量 50%"
+    },
+    {
+      "name": "battery-75",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "battery-3",
+      "outline": "icons/battery-3.svg",
+      "filled": "icons-filled/battery-3.svg",
+      "note": "电量 75%"
+    },
+    {
+      "name": "battery-charging",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "battery-charging",
+      "outline": "icons/battery-charging.svg",
+      "filled": null,
+      "note": "充电中"
+    },
+    {
+      "name": "battery-off",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "battery-off",
+      "outline": "icons/battery-off.svg",
+      "filled": null,
+      "note": "电池断开"
+    },
+    {
+      "name": "battery-v-0",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "battery-vertical",
+      "outline": "icons/battery-vertical.svg",
+      "filled": "icons-filled/battery-vertical.svg",
+      "note": "竖电池空"
+    },
+    {
+      "name": "battery-v-100",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "battery-vertical-4",
+      "outline": "icons/battery-vertical-4.svg",
+      "filled": "icons-filled/battery-vertical-4.svg",
+      "note": "竖电池满"
+    },
+    {
+      "name": "battery-v-25",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "battery-vertical-1",
+      "outline": "icons/battery-vertical-1.svg",
+      "filled": "icons-filled/battery-vertical-1.svg",
+      "note": "竖电池 25%"
+    },
+    {
+      "name": "battery-v-50",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "battery-vertical-2",
+      "outline": "icons/battery-vertical-2.svg",
+      "filled": "icons-filled/battery-vertical-2.svg",
+      "note": "竖电池 50%"
+    },
+    {
+      "name": "battery-v-75",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "battery-vertical-3",
+      "outline": "icons/battery-vertical-3.svg",
+      "filled": "icons-filled/battery-vertical-3.svg",
+      "note": "竖电池 75%"
+    },
+    {
+      "name": "bell",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "bell",
+      "outline": "icons/bell.svg",
+      "filled": "icons-filled/bell.svg",
+      "note": "铃铛"
+    },
+    {
+      "name": "bell-off",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "bell-off",
+      "outline": "icons/bell-off.svg",
+      "filled": null,
+      "note": "静音"
+    },
+    {
+      "name": "bluetooth",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "bluetooth",
+      "outline": "icons/bluetooth.svg",
+      "filled": null,
+      "note": "蓝牙"
+    },
+    {
+      "name": "bluetooth-conn",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "bluetooth-connected",
+      "outline": "icons/bluetooth-connected.svg",
+      "filled": null,
+      "note": "蓝牙已连"
+    },
+    {
+      "name": "bluetooth-off",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "bluetooth-off",
+      "outline": "icons/bluetooth-off.svg",
+      "filled": null,
+      "note": "蓝牙关闭"
+    },
+    {
+      "name": "bluetooth-x",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "bluetooth-x",
+      "outline": "icons/bluetooth-x.svg",
+      "filled": null,
+      "note": "蓝牙异常"
+    },
+    {
+      "name": "bolt",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "bolt",
+      "outline": "icons/bolt.svg",
+      "filled": "icons-filled/bolt.svg",
+      "note": "闪电"
+    },
+    {
+      "name": "broadcast",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "broadcast",
+      "outline": "icons/broadcast.svg",
+      "filled": null,
+      "note": "广播"
+    },
+    {
+      "name": "broadcast-off",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "broadcast-off",
+      "outline": "icons/broadcast-off.svg",
+      "filled": null,
+      "note": "广播关闭"
+    },
+    {
+      "name": "calendar",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "calendar",
+      "outline": "icons/calendar.svg",
+      "filled": "icons-filled/calendar.svg",
+      "note": "日历"
+    },
+    {
+      "name": "camera",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "camera",
+      "outline": "icons/camera.svg",
+      "filled": "icons-filled/camera.svg",
+      "note": "相机"
+    },
+    {
+      "name": "cell-signal-1",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "cell-signal-1",
+      "outline": "icons/cell-signal-1.svg",
+      "filled": null,
+      "note": "蜂窝信号 1 格"
+    },
+    {
+      "name": "cell-signal-2",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "cell-signal-2",
+      "outline": "icons/cell-signal-2.svg",
+      "filled": null,
+      "note": "蜂窝信号 2 格"
+    },
+    {
+      "name": "cell-signal-3",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "cell-signal-3",
+      "outline": "icons/cell-signal-3.svg",
+      "filled": null,
+      "note": "蜂窝信号 3 格"
+    },
+    {
+      "name": "cell-signal-4",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "cell-signal-4",
+      "outline": "icons/cell-signal-4.svg",
+      "filled": null,
+      "note": "蜂窝信号 4 格"
+    },
+    {
+      "name": "cell-signal-5",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "cell-signal-5",
+      "outline": "icons/cell-signal-5.svg",
+      "filled": null,
+      "note": "蜂窝信号 5 格"
+    },
+    {
+      "name": "cell-signal-off",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "cell-signal-off",
+      "outline": "icons/cell-signal-off.svg",
+      "filled": null,
+      "note": "蜂窝无信号"
+    },
+    {
+      "name": "clock",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "clock",
+      "outline": "icons/clock.svg",
+      "filled": "icons-filled/clock.svg",
+      "note": "时钟"
+    },
+    {
+      "name": "compass",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "compass",
+      "outline": "icons/compass.svg",
+      "filled": "icons-filled/compass.svg",
+      "note": "指南针"
+    },
+    {
+      "name": "device-mobile",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "device-mobile",
+      "outline": "icons/device-mobile.svg",
+      "filled": "icons-filled/device-mobile.svg",
+      "note": "手机"
+    },
+    {
+      "name": "download",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "download",
+      "outline": "icons/download.svg",
+      "filled": "icons-filled/download.svg",
+      "note": "下载"
+    },
+    {
+      "name": "eye",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "eye",
+      "outline": "icons/eye.svg",
+      "filled": "icons-filled/eye.svg",
+      "note": "显示"
+    },
+    {
+      "name": "eye-off",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "eye-off",
+      "outline": "icons/eye-off.svg",
+      "filled": null,
+      "note": "隐藏"
+    },
+    {
+      "name": "filter",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "filter",
+      "outline": "icons/filter.svg",
+      "filled": "icons-filled/filter.svg",
+      "note": "筛选"
+    },
+    {
+      "name": "fingerprint",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "fingerprint",
+      "outline": "icons/fingerprint.svg",
+      "filled": null,
+      "note": "指纹"
+    },
+    {
+      "name": "flame",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "flame",
+      "outline": "icons/flame.svg",
+      "filled": "icons-filled/flame.svg",
+      "note": "火焰"
+    },
+    {
+      "name": "gauge",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "gauge",
+      "outline": "icons/gauge.svg",
+      "filled": "icons-filled/gauge.svg",
+      "note": "仪表"
+    },
+    {
+      "name": "grid",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "layout-grid",
+      "outline": "icons/layout-grid.svg",
+      "filled": "icons-filled/layout-grid.svg",
+      "note": "网格"
+    },
+    {
+      "name": "heart",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "heart",
+      "outline": "icons/heart.svg",
+      "filled": "icons-filled/heart.svg",
+      "note": "收藏"
+    },
+    {
+      "name": "home",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "home",
+      "outline": "icons/home.svg",
+      "filled": "icons-filled/home.svg",
+      "note": "主页"
+    },
+    {
+      "name": "info",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "info-circle",
+      "outline": "icons/info-circle.svg",
+      "filled": "icons-filled/info-circle.svg",
+      "note": "信息"
+    },
+    {
+      "name": "list",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "list",
+      "outline": "icons/list.svg",
+      "filled": "icons-filled/list.svg",
+      "note": "列表"
+    },
+    {
+      "name": "lock",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "lock",
+      "outline": "icons/lock.svg",
+      "filled": "icons-filled/lock.svg",
+      "note": "锁"
+    },
+    {
+      "name": "lock-open",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "lock-open",
+      "outline": "icons/lock-open.svg",
+      "filled": null,
+      "note": "解锁"
+    },
+    {
+      "name": "mail",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "mail",
+      "outline": "icons/mail.svg",
+      "filled": "icons-filled/mail.svg",
+      "note": "邮件"
+    },
+    {
+      "name": "map-pin",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "map-pin",
+      "outline": "icons/map-pin.svg",
+      "filled": "icons-filled/map-pin.svg",
+      "note": "定位"
+    },
+    {
+      "name": "menu",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "menu-2",
+      "outline": "icons/menu-2.svg",
+      "filled": "icons-filled/menu-2.svg",
+      "note": "菜单"
+    },
+    {
+      "name": "microphone",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "microphone",
+      "outline": "icons/microphone.svg",
+      "filled": "icons-filled/microphone.svg",
+      "note": "麦克风"
+    },
+    {
+      "name": "more",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "dots",
+      "outline": "icons/dots.svg",
+      "filled": "icons-filled/dots.svg",
+      "note": "更多"
+    },
+    {
+      "name": "more-vertical",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "dots-vertical",
+      "outline": "icons/dots-vertical.svg",
+      "filled": "icons-filled/dots-vertical.svg",
+      "note": "更多(竖)"
+    },
+    {
+      "name": "music",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "music",
+      "outline": "icons/music.svg",
+      "filled": null,
+      "note": "音乐"
+    },
+    {
+      "name": "navigation",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "navigation",
+      "outline": "icons/navigation.svg",
+      "filled": "icons-filled/navigation.svg",
+      "note": "导航"
+    },
+    {
+      "name": "network-off",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "network-off",
+      "outline": "icons/network-off.svg",
+      "filled": null,
+      "note": "网络断开"
+    },
+    {
+      "name": "pause",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "player-pause",
+      "outline": "icons/player-pause.svg",
+      "filled": "icons-filled/player-pause.svg",
+      "note": "暂停"
+    },
+    {
+      "name": "pencil",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "pencil",
+      "outline": "icons/pencil.svg",
+      "filled": "icons-filled/pencil.svg",
+      "note": "编辑"
+    },
+    {
+      "name": "phone",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "phone",
+      "outline": "icons/phone.svg",
+      "filled": "icons-filled/phone.svg",
+      "note": "电话"
+    },
+    {
+      "name": "photo",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "photo",
+      "outline": "icons/photo.svg",
+      "filled": "icons-filled/photo.svg",
+      "note": "图片"
+    },
+    {
+      "name": "play",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "player-play",
+      "outline": "icons/player-play.svg",
+      "filled": "icons-filled/player-play.svg",
+      "note": "播放"
+    },
+    {
+      "name": "power",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "power",
+      "outline": "icons/power.svg",
+      "filled": null,
+      "note": "电源"
+    },
+    {
+      "name": "radar",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "radar",
+      "outline": "icons/radar.svg",
+      "filled": "icons-filled/radar.svg",
+      "note": "雷达"
+    },
+    {
+      "name": "refresh",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "refresh",
+      "outline": "icons/refresh.svg",
+      "filled": null,
+      "note": "刷新"
+    },
+    {
+      "name": "router",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "router",
+      "outline": "icons/router.svg",
+      "filled": null,
+      "note": "路由"
+    },
+    {
+      "name": "router-off",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "router-off",
+      "outline": "icons/router-off.svg",
+      "filled": null,
+      "note": "路由器断开"
+    },
+    {
+      "name": "rss",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "rss",
+      "outline": "icons/rss.svg",
+      "filled": null,
+      "note": "RSS/信号源"
+    },
+    {
+      "name": "search",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "search",
+      "outline": "icons/search.svg",
+      "filled": "icons-filled/search.svg",
+      "note": "搜索"
+    },
+    {
+      "name": "sensor",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "photo-sensor",
+      "outline": "icons/photo-sensor.svg",
+      "filled": null,
+      "note": "传感器"
+    },
+    {
+      "name": "sensor-2",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "photo-sensor-2",
+      "outline": "icons/photo-sensor-2.svg",
+      "filled": null,
+      "note": "传感器 2"
+    },
+    {
+      "name": "sensor-3",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "photo-sensor-3",
+      "outline": "icons/photo-sensor-3.svg",
+      "filled": null,
+      "note": "传感器 3"
+    },
+    {
+      "name": "settings",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "settings",
+      "outline": "icons/settings.svg",
+      "filled": "icons-filled/settings.svg",
+      "note": "设置"
+    },
+    {
+      "name": "share",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "share",
+      "outline": "icons/share.svg",
+      "filled": null,
+      "note": "分享"
+    },
+    {
+      "name": "shield",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "shield",
+      "outline": "icons/shield.svg",
+      "filled": "icons-filled/shield.svg",
+      "note": "防护"
+    },
+    {
+      "name": "shield-check",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "shield-check",
+      "outline": "icons/shield-check.svg",
+      "filled": "icons-filled/shield-check.svg",
+      "note": "防护已启"
+    },
+    {
+      "name": "signal",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "antenna-bars-5",
+      "outline": "icons/antenna-bars-5.svg",
+      "filled": null,
+      "note": "信号"
+    },
+    {
+      "name": "signal-1",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "antenna-bars-1",
+      "outline": "icons/antenna-bars-1.svg",
+      "filled": null,
+      "note": "信号 1 格"
+    },
+    {
+      "name": "signal-2",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "antenna-bars-2",
+      "outline": "icons/antenna-bars-2.svg",
+      "filled": null,
+      "note": "信号 2 格"
+    },
+    {
+      "name": "signal-2g",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "signal-2g",
+      "outline": "icons/signal-2g.svg",
+      "filled": null,
+      "note": "2G"
+    },
+    {
+      "name": "signal-3",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "antenna-bars-3",
+      "outline": "icons/antenna-bars-3.svg",
+      "filled": null,
+      "note": "信号 3 格"
+    },
+    {
+      "name": "signal-3g",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "signal-3g",
+      "outline": "icons/signal-3g.svg",
+      "filled": null,
+      "note": "3G"
+    },
+    {
+      "name": "signal-4",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "antenna-bars-4",
+      "outline": "icons/antenna-bars-4.svg",
+      "filled": null,
+      "note": "信号 4 格"
+    },
+    {
+      "name": "signal-4g",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "signal-4g",
+      "outline": "icons/signal-4g.svg",
+      "filled": null,
+      "note": "4G"
+    },
+    {
+      "name": "signal-4g-plus",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "signal-4g-plus",
+      "outline": "icons/signal-4g-plus.svg",
+      "filled": null,
+      "note": "4G+"
+    },
+    {
+      "name": "signal-5",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "antenna-bars-5",
+      "outline": "icons/antenna-bars-5.svg",
+      "filled": null,
+      "note": "信号 5 格"
+    },
+    {
+      "name": "signal-5g",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "signal-5g",
+      "outline": "icons/signal-5g.svg",
+      "filled": null,
+      "note": "5G"
+    },
+    {
+      "name": "signal-6g",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "signal-6g",
+      "outline": "icons/signal-6g.svg",
+      "filled": null,
+      "note": "6G"
+    },
+    {
+      "name": "signal-lte",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "signal-lte",
+      "outline": "icons/signal-lte.svg",
+      "filled": null,
+      "note": "LTE"
+    },
+    {
+      "name": "signal-off",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "antenna-bars-off",
+      "outline": "icons/antenna-bars-off.svg",
+      "filled": null,
+      "note": "无信号"
+    },
+    {
+      "name": "speaker",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "speakerphone",
+      "outline": "icons/speakerphone.svg",
+      "filled": null,
+      "note": "扬声器"
+    },
+    {
+      "name": "star",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "star",
+      "outline": "icons/star.svg",
+      "filled": "icons-filled/star.svg",
+      "note": "星标"
+    },
+    {
+      "name": "trash",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "trash",
+      "outline": "icons/trash.svg",
+      "filled": "icons-filled/trash.svg",
+      "note": "删除"
+    },
+    {
+      "name": "upload",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "upload",
+      "outline": "icons/upload.svg",
+      "filled": null,
+      "note": "上传"
+    },
+    {
+      "name": "user",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "user",
+      "outline": "icons/user.svg",
+      "filled": "icons-filled/user.svg",
+      "note": "用户"
+    },
+    {
+      "name": "users",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "users",
+      "outline": "icons/users.svg",
+      "filled": null,
+      "note": "多用户"
+    },
+    {
+      "name": "video",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "video",
+      "outline": "icons/video.svg",
+      "filled": "icons-filled/video.svg",
+      "note": "视频"
+    },
+    {
+      "name": "volume",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "volume",
+      "outline": "icons/volume.svg",
+      "filled": null,
+      "note": "音量"
+    },
+    {
+      "name": "volume-off",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "volume-off",
+      "outline": "icons/volume-off.svg",
+      "filled": null,
+      "note": "静音"
+    },
+    {
+      "name": "warning",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "alert-triangle",
+      "outline": "icons/alert-triangle.svg",
+      "filled": "icons-filled/alert-triangle.svg",
+      "note": "警告"
+    },
+    {
+      "name": "wifi",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "wifi",
+      "outline": "icons/wifi.svg",
+      "filled": null,
+      "note": "WiFi"
+    },
+    {
+      "name": "wifi-0",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "wifi-0",
+      "outline": "icons/wifi-0.svg",
+      "filled": null,
+      "note": "WiFi 无信号"
+    },
+    {
+      "name": "wifi-1",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "wifi-1",
+      "outline": "icons/wifi-1.svg",
+      "filled": null,
+      "note": "WiFi 1 格"
+    },
+    {
+      "name": "wifi-2",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "wifi-2",
+      "outline": "icons/wifi-2.svg",
+      "filled": null,
+      "note": "WiFi 2 格"
+    },
+    {
+      "name": "wifi-full",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "wifi",
+      "outline": "icons/wifi.svg",
+      "filled": null,
+      "note": "WiFi 满格"
+    },
+    {
+      "name": "wifi-off",
+      "category": "system",
+      "source": "vendor:tabler",
+      "tabler": "wifi-off",
+      "outline": "icons/wifi-off.svg",
+      "filled": null,
+      "note": "WiFi 断开"
+    },
+    {
+      "name": "car",
+      "category": "vehicle",
+      "source": "vendor:tabler",
+      "tabler": "car",
+      "outline": "icons/car.svg",
+      "filled": "icons-filled/car.svg",
+      "note": "汽车"
+    },
+    {
+      "name": "engine",
+      "category": "vehicle",
+      "source": "vendor:tabler",
+      "tabler": "engine",
+      "outline": "icons/engine.svg",
+      "filled": "icons-filled/engine.svg",
+      "note": "引擎"
+    },
+    {
+      "name": "motorbike",
+      "category": "vehicle",
+      "source": "vendor:tabler",
+      "tabler": "motorbike",
+      "outline": "icons/motorbike.svg",
+      "filled": "icons-filled/motorbike.svg",
+      "note": "摩托"
+    },
+    {
+      "name": "road",
+      "category": "vehicle",
+      "source": "vendor:tabler",
+      "tabler": "road",
+      "outline": "icons/road.svg",
+      "filled": null,
+      "note": "道路"
+    },
+    {
+      "name": "scooter",
+      "category": "vehicle",
+      "source": "vendor:tabler",
+      "tabler": "scooter-electric",
+      "outline": "icons/scooter-electric.svg",
+      "filled": null,
+      "note": "电动车"
+    },
+    {
+      "name": "steering-wheel",
+      "category": "vehicle",
+      "source": "vendor:tabler",
+      "tabler": "steering-wheel",
+      "outline": "icons/steering-wheel.svg",
+      "filled": "icons-filled/steering-wheel.svg",
+      "note": "方向盘"
+    },
+    {
+      "name": "traffic-light",
+      "category": "vehicle",
+      "source": "vendor:tabler",
+      "tabler": "traffic-lights",
+      "outline": "icons/traffic-lights.svg",
+      "filled": null,
+      "note": "红绿灯"
+    },
+    {
+      "name": "clear",
+      "category": "weather",
+      "source": "vendor:tabler",
+      "tabler": "sun",
+      "outline": "icons/sun.svg",
+      "filled": "icons-filled/sun.svg",
+      "note": "晴"
+    },
+    {
+      "name": "clear-high",
+      "category": "weather",
+      "source": "vendor:tabler",
+      "tabler": "sun-high",
+      "outline": "icons/sun-high.svg",
+      "filled": "icons-filled/sun-high.svg",
+      "note": "晴(强)"
+    },
+    {
+      "name": "cloud-fog",
+      "category": "weather",
+      "source": "vendor:tabler",
+      "tabler": "cloud-fog",
+      "outline": "icons/cloud-fog.svg",
+      "filled": null,
+      "note": "雾"
+    },
+    {
+      "name": "cloudy",
+      "category": "weather",
+      "source": "vendor:tabler",
+      "tabler": "cloud",
+      "outline": "icons/cloud.svg",
+      "filled": "icons-filled/cloud.svg",
+      "note": "多云/阴"
+    },
+    {
+      "name": "droplet",
+      "category": "weather",
+      "source": "vendor:tabler",
+      "tabler": "droplet",
+      "outline": "icons/droplet.svg",
+      "filled": "icons-filled/droplet.svg",
+      "note": "水滴"
+    },
+    {
+      "name": "hail",
+      "category": "weather",
+      "source": "vendor:tabler:compose",
+      "compose": [
+        {
+          "tabler": "cloud-snow",
+          "dx": 0.0,
+          "dy": -0.1,
+          "scale": 0.85
+        },
+        {
+          "tabler": "droplets",
+          "dx": 0.1,
+          "dy": 0.22,
+          "scale": 0.7
+        }
+      ],
+      "note": "冰雹(近似)"
+    },
+    {
+      "name": "haze",
+      "category": "weather",
+      "source": "vendor:tabler",
+      "tabler": "haze",
+      "outline": "icons/haze.svg",
+      "filled": null,
+      "note": "霾"
+    },
+    {
+      "name": "haze-moon",
+      "category": "weather",
+      "source": "vendor:tabler",
+      "tabler": "haze-moon",
+      "outline": "icons/haze-moon.svg",
+      "filled": null,
+      "note": "夜间霾"
+    },
+    {
+      "name": "mist",
+      "category": "weather",
+      "source": "vendor:tabler",
+      "tabler": "mist",
+      "outline": "icons/mist.svg",
+      "filled": null,
+      "note": "薄雾"
+    },
+    {
+      "name": "moon",
+      "category": "weather",
+      "source": "vendor:tabler",
+      "tabler": "moon",
+      "outline": "icons/moon.svg",
+      "filled": "icons-filled/moon.svg",
+      "note": "月"
+    },
+    {
+      "name": "moon-cloud",
+      "category": "weather",
+      "source": "vendor:tabler:compose",
+      "compose": [
+        {
+          "tabler": "moon",
+          "dx": -0.16,
+          "dy": -0.18,
+          "scale": 0.62
+        },
+        {
+          "tabler": "cloud",
+          "dx": 0.1,
+          "dy": 0.14,
+          "scale": 0.85
+        }
+      ],
+      "note": "多云夜"
+    },
+    {
+      "name": "moon-rain",
+      "category": "weather",
+      "source": "vendor:tabler:compose",
+      "compose": [
+        {
+          "tabler": "moon",
+          "dx": -0.16,
+          "dy": -0.18,
+          "scale": 0.62
+        },
+        {
+          "tabler": "cloud-rain",
+          "dx": 0.1,
+          "dy": 0.14,
+          "scale": 0.85
+        }
+      ],
+      "note": "雨夜"
+    },
+    {
+      "name": "moon-stars",
+      "category": "weather",
+      "source": "vendor:tabler",
+      "tabler": "moon-stars",
+      "outline": "icons/moon-stars.svg",
+      "filled": null,
+      "note": "月+星"
+    },
+    {
+      "name": "partly-cloudy",
+      "category": "weather",
+      "source": "vendor:tabler:compose",
+      "compose": [
+        {
+          "tabler": "sun",
+          "dx": -0.16,
+          "dy": -0.18,
+          "scale": 0.62
+        },
+        {
+          "tabler": "cloud",
+          "dx": 0.1,
+          "dy": 0.14,
+          "scale": 0.85
+        }
+      ],
+      "note": "多云(晴间多云)= 太阳+云"
+    },
+    {
+      "name": "rain",
+      "category": "weather",
+      "source": "vendor:tabler",
+      "tabler": "cloud-rain",
+      "outline": "icons/cloud-rain.svg",
+      "filled": null,
+      "note": "雨"
+    },
+    {
+      "name": "rain-sun",
+      "category": "weather",
+      "source": "vendor:tabler:compose",
+      "compose": [
+        {
+          "tabler": "sun",
+          "dx": -0.16,
+          "dy": -0.18,
+          "scale": 0.62
+        },
+        {
+          "tabler": "cloud-rain",
+          "dx": 0.1,
+          "dy": 0.14,
+          "scale": 0.85
+        }
+      ],
+      "note": "太阳雨"
+    },
+    {
+      "name": "rainbow",
+      "category": "weather",
+      "source": "vendor:tabler",
+      "tabler": "rainbow",
+      "outline": "icons/rainbow.svg",
+      "filled": null,
+      "note": "彩虹"
+    },
+    {
+      "name": "shower",
+      "category": "weather",
+      "source": "vendor:tabler",
+      "tabler": "droplets",
+      "outline": "icons/droplets.svg",
+      "filled": "icons-filled/droplets.svg",
+      "note": "阵雨"
+    },
+    {
+      "name": "sleet",
+      "category": "weather",
+      "source": "vendor:tabler:compose",
+      "compose": [
+        {
+          "tabler": "snowflake",
+          "dx": -0.14,
+          "dy": -0.14,
+          "scale": 0.6
+        },
+        {
+          "tabler": "droplets",
+          "dx": 0.12,
+          "dy": 0.16,
+          "scale": 0.82
+        }
+      ],
+      "note": "雨夹雪"
+    },
+    {
+      "name": "snow",
+      "category": "weather",
+      "source": "vendor:tabler",
+      "tabler": "cloud-snow",
+      "outline": "icons/cloud-snow.svg",
+      "filled": null,
+      "note": "雪"
+    },
+    {
+      "name": "snowflake",
+      "category": "weather",
+      "source": "vendor:tabler",
+      "tabler": "snowflake",
+      "outline": "icons/snowflake.svg",
+      "filled": null,
+      "note": "雪花"
+    },
+    {
+      "name": "storm",
+      "category": "weather",
+      "source": "vendor:tabler",
+      "tabler": "cloud-storm",
+      "outline": "icons/cloud-storm.svg",
+      "filled": null,
+      "note": "暴风雨"
+    },
+    {
+      "name": "sunrise",
+      "category": "weather",
+      "source": "vendor:tabler",
+      "tabler": "sunrise",
+      "outline": "icons/sunrise.svg",
+      "filled": "icons-filled/sunrise.svg",
+      "note": "日出"
+    },
+    {
+      "name": "sunset",
+      "category": "weather",
+      "source": "vendor:tabler",
+      "tabler": "sunset",
+      "outline": "icons/sunset.svg",
+      "filled": "icons-filled/sunset.svg",
+      "note": "日落"
+    },
+    {
+      "name": "temp-snow",
+      "category": "weather",
+      "source": "vendor:tabler",
+      "tabler": "temperature-snow",
+      "outline": "icons/temperature-snow.svg",
+      "filled": null,
+      "note": "低温"
+    },
+    {
+      "name": "temp-sun",
+      "category": "weather",
+      "source": "vendor:tabler",
+      "tabler": "temperature-sun",
+      "outline": "icons/temperature-sun.svg",
+      "filled": null,
+      "note": "高温"
+    },
+    {
+      "name": "thunder",
+      "category": "weather",
+      "source": "vendor:tabler",
+      "tabler": "cloud-bolt",
+      "outline": "icons/cloud-bolt.svg",
+      "filled": null,
+      "note": "雷"
+    },
+    {
+      "name": "thunder-sun",
+      "category": "weather",
+      "source": "vendor:tabler:compose",
+      "compose": [
+        {
+          "tabler": "sun",
+          "dx": -0.16,
+          "dy": -0.18,
+          "scale": 0.62
+        },
+        {
+          "tabler": "cloud-bolt",
+          "dx": 0.1,
+          "dy": 0.14,
+          "scale": 0.85
+        }
+      ],
+      "note": "雷阵雨(晴)"
+    },
+    {
+      "name": "umbrella",
+      "category": "weather",
+      "source": "vendor:tabler",
+      "tabler": "umbrella",
+      "outline": "icons/umbrella.svg",
+      "filled": "icons-filled/umbrella.svg",
+      "note": "雨伞"
+    },
+    {
+      "name": "wind",
+      "category": "weather",
+      "source": "vendor:tabler",
+      "tabler": "wind",
+      "outline": "icons/wind.svg",
+      "filled": null,
+      "note": "风"
+    }
+  ]
+}

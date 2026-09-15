@@ -1,0 +1,8 @@
+source: @tabler/icons (npm)
+version: 3.46.0
+url: https://registry.npmjs.org/@tabler/icons/-/icons-3.46.0.tgz
+sha256(tarball): 6d727ad0489854d2d7d07ba9baa6476af7ee415aaa2eba1adc0deab48556852b
+vendored_at: 2026-09-16 00:05
+mode: FULL set (excluding brand-* logos: 376)
+outline: 4754 files / filled: 1019 files
+license: MIT (see LICENSE) - graphics unmodified except monochrome tint + uniform scale

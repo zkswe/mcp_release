@@ -1,0 +1,295 @@
+{
+  "generated": 1789488847,
+  "generator": "components/icons/scripts/gen_icons.py",
+  "count": 18,
+  "items": [
+    {
+      "png": "ic_control_arrow-left.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\example\\app\\resources\\images\\ic_control_arrow-left.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.arrow-left",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_checkbox.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\example\\app\\resources\\images\\ic_control_checkbox.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.checkbox",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_square-check_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\example\\app\\resources\\images\\ic_control_square-check_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.square-check",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_toggle-left_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\example\\app\\resources\\images\\ic_control_toggle-left_off.png",
+      "size": "44",
+      "w": 44,
+      "h": 44,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.toggle-left",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_toggle-right_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\example\\app\\resources\\images\\ic_control_toggle-right_on.png",
+      "size": "44",
+      "w": 44,
+      "h": 44,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.toggle-right",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_air-conditioning.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\example\\app\\resources\\images\\ic_device_air-conditioning.png",
+      "size": "32",
+      "w": 32,
+      "h": 32,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.air-conditioning",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_bulb_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\example\\app\\resources\\images\\ic_device_bulb_on.png",
+      "size": "32",
+      "w": 32,
+      "h": 32,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.bulb",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_tv_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\example\\app\\resources\\images\\ic_device_tv_on.png",
+      "size": "32",
+      "w": 32,
+      "h": 32,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.tv",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_windmill_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\example\\app\\resources\\images\\ic_device_windmill_on.png",
+      "size": "32",
+      "w": 32,
+      "h": 32,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.windmill",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_battery-3_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\example\\app\\resources\\images\\ic_system_battery-3_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.battery-3",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_more_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\example\\app\\resources\\images\\ic_system_more_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.more",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_signal.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\example\\app\\resources\\images\\ic_system_signal.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.signal",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_star_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\example\\app\\resources\\images\\ic_system_star_on.png",
+      "size": "44",
+      "w": 44,
+      "h": 44,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.star",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_wifi.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\example\\app\\resources\\images\\ic_system_wifi.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.wifi",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_partly-cloudy_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\example\\app\\resources\\images\\ic_weather_partly-cloudy_on.png",
+      "size": "56",
+      "w": 56,
+      "h": 56,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.partly-cloudy",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_rain.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\example\\app\\resources\\images\\ic_weather_rain.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.rain",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_snow.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\example\\app\\resources\\images\\ic_weather_snow.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.snow",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_wind.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\example\\app\\resources\\images\\ic_weather_wind.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.wind",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    }
+  ]
+}

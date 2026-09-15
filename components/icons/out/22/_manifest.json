@@ -1,0 +1,3975 @@
+{
+  "generated": 1789488793,
+  "generator": "components/icons/scripts/gen_icons.py",
+  "count": 248,
+  "items": [
+    {
+      "png": "ic_control_arrow-down.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_arrow-down.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.arrow-down",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_arrow-left.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_arrow-left.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.arrow-left",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_arrow-right.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_arrow-right.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.arrow-right",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_arrow-up.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_arrow-up.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.arrow-up",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_check_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_check_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.check",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_check_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_check_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.check",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_checkbox.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_checkbox.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.checkbox",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_chevron-down_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_chevron-down_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.chevron-down",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_chevron-down_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_chevron-down_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.chevron-down",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_chevron-left.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_chevron-left.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.chevron-left",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_chevron-right_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_chevron-right_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.chevron-right",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_chevron-right_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_chevron-right_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.chevron-right",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_chevron-up.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_chevron-up.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.chevron-up",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_circle-check_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_circle-check_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.circle-check",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_circle-check_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_circle-check_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.circle-check",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_circle-dot_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_circle-dot_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.circle-dot",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_circle-dot_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_circle-dot_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.circle-dot",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_circle_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_circle_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.circle",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_circle_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_circle_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.circle",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_close_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_close_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.close",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_close_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_close_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.close",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_loader.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_loader.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.loader",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_minus.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_minus.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.minus",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_plus_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_plus_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.plus",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_plus_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_plus_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.plus",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_progress.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_progress.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.progress",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_selector.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_selector.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.selector",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_sliders_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_sliders_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.sliders",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_sliders_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_sliders_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.sliders",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_square-check_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_square-check_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.square-check",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_square-check_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_square-check_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.square-check",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_square_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_square_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.square",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_square_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_square_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.square",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_switch-2.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_switch-2.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.switch-2",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_switch-3.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_switch-3.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.switch-3",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_toggle-left_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_toggle-left_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.toggle-left",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_toggle-left_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_toggle-left_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.toggle-left",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_toggle-right_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_toggle-right_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.toggle-right",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_control_toggle-right_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_control_toggle-right_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "control.toggle-right",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_air-conditioning.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_air-conditioning.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.air-conditioning",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_bath_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_bath_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.bath",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_bath_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_bath_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.bath",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_bed_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_bed_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.bed",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_bed_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_bed_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.bed",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_bulb-off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_bulb-off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.bulb-off",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_bulb_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_bulb_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.bulb",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_bulb_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_bulb_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.bulb",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_cctv_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_cctv_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.cctv",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_cctv_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_cctv_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.cctv",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_device-speaker_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_device-speaker_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.device-speaker",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_device-speaker_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_device-speaker_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.device-speaker",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_door.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_door.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.door",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_fire-extinguisher.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_fire-extinguisher.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.fire-extinguisher",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_fridge.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_fridge.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.fridge",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_lamp.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_lamp.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.lamp",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_microwave_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_microwave_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.microwave",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_microwave_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_microwave_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.microwave",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_plug-connected.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_plug-connected.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.plug-connected",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_plug.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_plug.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.plug",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_robot.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_robot.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.robot",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_sofa.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_sofa.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.sofa",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_solar-panel.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_solar-panel.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.solar-panel",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_thermometer.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_thermometer.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.thermometer",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_tv_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_tv_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.tv",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_tv_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_tv_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.tv",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_vacuum.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_vacuum.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.vacuum",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_wash-machine.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_wash-machine.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.wash-machine",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_windmill_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_windmill_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.windmill",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_windmill_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_windmill_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.windmill",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_device_window.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_device_window.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "device.window",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_access-point.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_access-point.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.access-point",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_alarm_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_alarm_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.alarm",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_alarm_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_alarm_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.alarm",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_battery-1_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_battery-1_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.battery-1",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_battery-1_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_battery-1_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.battery-1",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_battery-2_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_battery-2_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.battery-2",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_battery-2_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_battery-2_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.battery-2",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_battery-3_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_battery-3_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.battery-3",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_battery-3_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_battery-3_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.battery-3",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_battery-4_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_battery-4_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.battery-4",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_battery-4_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_battery-4_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.battery-4",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_battery-charging.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_battery-charging.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.battery-charging",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_battery_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_battery_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.battery",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_battery_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_battery_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.battery",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_bell-off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_bell-off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.bell-off",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_bell_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_bell_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.bell",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_bell_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_bell_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.bell",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_bluetooth-conn.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_bluetooth-conn.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.bluetooth-conn",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_bluetooth.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_bluetooth.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.bluetooth",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_bolt_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_bolt_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.bolt",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_bolt_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_bolt_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.bolt",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_calendar_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_calendar_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.calendar",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_calendar_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_calendar_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.calendar",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_camera_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_camera_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.camera",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_camera_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_camera_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.camera",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_clock_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_clock_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.clock",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_clock_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_clock_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.clock",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_compass_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_compass_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.compass",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_compass_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_compass_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.compass",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_device-mobile_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_device-mobile_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.device-mobile",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_device-mobile_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_device-mobile_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.device-mobile",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_download_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_download_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.download",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_download_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_download_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.download",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_eye-off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_eye-off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.eye-off",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_eye_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_eye_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.eye",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_eye_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_eye_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.eye",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_filter_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_filter_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.filter",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_filter_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_filter_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.filter",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_fingerprint.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_fingerprint.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.fingerprint",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_flame_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_flame_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.flame",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_flame_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_flame_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.flame",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_gauge_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_gauge_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.gauge",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_gauge_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_gauge_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.gauge",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_grid_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_grid_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.grid",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_grid_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_grid_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.grid",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_heart_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_heart_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.heart",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_heart_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_heart_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.heart",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_home_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_home_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.home",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_home_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_home_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.home",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_info_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_info_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.info",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_info_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_info_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.info",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_list_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_list_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.list",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_list_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_list_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.list",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_lock-open.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_lock-open.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.lock-open",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_lock_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_lock_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.lock",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_lock_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_lock_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.lock",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_mail_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_mail_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.mail",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_mail_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_mail_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.mail",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_map-pin_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_map-pin_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.map-pin",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_map-pin_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_map-pin_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.map-pin",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_menu_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_menu_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.menu",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_menu_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_menu_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.menu",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_microphone_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_microphone_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.microphone",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_microphone_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_microphone_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.microphone",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_more-vertical_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_more-vertical_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.more-vertical",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_more-vertical_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_more-vertical_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.more-vertical",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_more_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_more_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.more",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_more_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_more_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.more",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_music.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_music.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.music",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_navigation_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_navigation_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.navigation",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_navigation_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_navigation_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.navigation",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_pause_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_pause_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.pause",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_pause_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_pause_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.pause",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_pencil_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_pencil_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.pencil",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_pencil_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_pencil_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.pencil",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_phone_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_phone_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.phone",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_phone_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_phone_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.phone",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_photo_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_photo_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.photo",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_photo_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_photo_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.photo",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_play_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_play_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.play",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_play_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_play_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.play",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_power.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_power.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.power",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_refresh.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_refresh.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.refresh",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_router.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_router.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.router",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_search_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_search_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.search",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_search_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_search_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.search",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_settings_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_settings_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.settings",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_settings_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_settings_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.settings",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_share.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_share.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.share",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_shield-check_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_shield-check_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.shield-check",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_shield-check_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_shield-check_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.shield-check",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_shield_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_shield_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.shield",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_shield_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_shield_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.shield",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_signal.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_signal.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.signal",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_speaker.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_speaker.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.speaker",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_star_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_star_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.star",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_star_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_star_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.star",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_trash_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_trash_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.trash",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_trash_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_trash_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.trash",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_upload.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_upload.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.upload",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_user_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_user_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.user",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_user_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_user_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.user",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_users.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_users.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.users",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_video_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_video_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.video",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_video_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_video_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.video",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_volume-off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_volume-off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.volume-off",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_volume.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_volume.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.volume",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_warning_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_warning_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.warning",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_warning_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_warning_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.warning",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_wifi-off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_wifi-off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.wifi-off",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_system_wifi.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_system_wifi.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "system.wifi",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_vehicle_car_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_vehicle_car_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "vehicle.car",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_vehicle_car_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_vehicle_car_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "vehicle.car",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_vehicle_cruise_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_vehicle_cruise_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "vehicle.cruise",
+      "style": "ios",
+      "state": "off",
+      "source": "selfdrawn"
+    },
+    {
+      "png": "ic_vehicle_cruise_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_vehicle_cruise_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "vehicle.cruise",
+      "style": "ios",
+      "state": "on",
+      "source": "selfdrawn"
+    },
+    {
+      "png": "ic_vehicle_engine_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_vehicle_engine_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "vehicle.engine",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_vehicle_engine_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_vehicle_engine_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "vehicle.engine",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_vehicle_headlight_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_vehicle_headlight_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "vehicle.headlight",
+      "style": "ios",
+      "state": "off",
+      "source": "selfdrawn"
+    },
+    {
+      "png": "ic_vehicle_headlight_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_vehicle_headlight_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "vehicle.headlight",
+      "style": "ios",
+      "state": "on",
+      "source": "selfdrawn"
+    },
+    {
+      "png": "ic_vehicle_high-beam_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_vehicle_high-beam_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "vehicle.high-beam",
+      "style": "ios",
+      "state": "off",
+      "source": "selfdrawn"
+    },
+    {
+      "png": "ic_vehicle_high-beam_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_vehicle_high-beam_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "vehicle.high-beam",
+      "style": "ios",
+      "state": "on",
+      "source": "selfdrawn"
+    },
+    {
+      "png": "ic_vehicle_motorbike_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_vehicle_motorbike_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "vehicle.motorbike",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_vehicle_motorbike_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_vehicle_motorbike_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "vehicle.motorbike",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_vehicle_road.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_vehicle_road.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "vehicle.road",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_vehicle_scooter.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_vehicle_scooter.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "vehicle.scooter",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_vehicle_steering-wheel_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_vehicle_steering-wheel_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "vehicle.steering-wheel",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_vehicle_steering-wheel_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_vehicle_steering-wheel_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "vehicle.steering-wheel",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_vehicle_traffic-light.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_vehicle_traffic-light.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "vehicle.traffic-light",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_vehicle_turn-left_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_vehicle_turn-left_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "vehicle.turn-left",
+      "style": "ios",
+      "state": "off",
+      "source": "selfdrawn"
+    },
+    {
+      "png": "ic_vehicle_turn-left_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_vehicle_turn-left_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "vehicle.turn-left",
+      "style": "ios",
+      "state": "on",
+      "source": "selfdrawn"
+    },
+    {
+      "png": "ic_vehicle_turn-right_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_vehicle_turn-right_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "vehicle.turn-right",
+      "style": "ios",
+      "state": "off",
+      "source": "selfdrawn"
+    },
+    {
+      "png": "ic_vehicle_turn-right_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_vehicle_turn-right_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "vehicle.turn-right",
+      "style": "ios",
+      "state": "on",
+      "source": "selfdrawn"
+    },
+    {
+      "png": "ic_weather_clear-high_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_clear-high_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.clear-high",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_clear-high_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_clear-high_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.clear-high",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_clear_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_clear_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.clear",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_clear_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_clear_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.clear",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_cloud-fog.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_cloud-fog.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.cloud-fog",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_cloudy_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_cloudy_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.cloudy",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_cloudy_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_cloudy_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.cloudy",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_droplet_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_droplet_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.droplet",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_droplet_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_droplet_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.droplet",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_hail_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_hail_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.hail",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_hail_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_hail_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.hail",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_haze-moon.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_haze-moon.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.haze-moon",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_haze.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_haze.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.haze",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_mist.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_mist.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.mist",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_moon-cloud_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_moon-cloud_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.moon-cloud",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_moon-cloud_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_moon-cloud_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.moon-cloud",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_moon-rain_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_moon-rain_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.moon-rain",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_moon-rain_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_moon-rain_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.moon-rain",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_moon-stars.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_moon-stars.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.moon-stars",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_moon_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_moon_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.moon",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_moon_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_moon_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.moon",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_partly-cloudy_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_partly-cloudy_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.partly-cloudy",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_partly-cloudy_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_partly-cloudy_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.partly-cloudy",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_rain-sun_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_rain-sun_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.rain-sun",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_rain-sun_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_rain-sun_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.rain-sun",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_rain.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_rain.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.rain",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_rainbow.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_rainbow.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.rainbow",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_shower_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_shower_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.shower",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_shower_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_shower_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.shower",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_sleet_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_sleet_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.sleet",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_sleet_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_sleet_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.sleet",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_snow.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_snow.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.snow",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_snowflake.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_snowflake.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.snowflake",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_storm.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_storm.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.storm",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_sunrise_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_sunrise_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.sunrise",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_sunrise_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_sunrise_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.sunrise",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_sunset_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_sunset_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.sunset",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_sunset_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_sunset_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.sunset",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_temp-snow.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_temp-snow.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.temp-snow",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_temp-sun.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_temp-sun.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.temp-sun",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_thunder-sun_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_thunder-sun_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.thunder-sun",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_thunder-sun_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_thunder-sun_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.thunder-sun",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler:compose"
+    },
+    {
+      "png": "ic_weather_thunder.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_thunder.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.thunder",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_umbrella_off.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_umbrella_off.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.umbrella",
+      "style": "tabler",
+      "state": "off",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_umbrella_on.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_umbrella_on.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.umbrella",
+      "style": "tabler",
+      "state": "on",
+      "source": "vendor:tabler"
+    },
+    {
+      "png": "ic_weather_wind.png",
+      "path": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\components\\icons\\out\\22\\ic_weather_wind.png",
+      "size": "22",
+      "w": 22,
+      "h": 22,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "icon": "weather.wind",
+      "style": "tabler",
+      "state": "",
+      "source": "vendor:tabler"
+    }
+  ]
+}

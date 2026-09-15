@@ -90,3 +90,4 @@ components/
 |---|---|---|---|
 | [`ble/`](ble/README.md) | BLE 门面 `zk::ble`：把蓝牙收拾成 wxapi 那种（**一个 API 面、两个后端**：中心扫描/连接/GATT + 外设广播/GATT 服务/notify）。**二进制型**：只发头 + `lib/<平台>/libzkble.a`（源码私有） | 中心：f133、v85x（btstack）；双角色：z20、z21（gatt，真机跑通）；t113/t113emmc 待补库 | 0.2.1 |
 | [`fonts/`](fonts/README.md) | 字库模块（资产型）：思源黑体三版（常用中文872KB/全中文7.4MB/多国语言10.5MB）+ 设备字体自检（缺中文自动投递） | 全平台（已在 V85X 实测） | 0.1.0 |
+| [`icons/`](icons/README.md) | 图标模块（资产型）：收录 **Tabler Icons 3.46.0（MIT）152 个语义图标**（天气 30/开关选项 26/系统 66/智能家居 23/两轮车 7，含 7 条 compose 组合）+ 自绘两轮车仪表 5 个；手写 SVG 与 vendor SVG → 一条命令生成任意分辨率单色 PNG（严格 N×N，支持 `--size WxH`、`--vendor-name`、`--svg`、两态自动配对；自带生成清单+质检） | 全平台（纯 PNG 资源） | 0.2.0 |

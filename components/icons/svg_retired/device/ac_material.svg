@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" data-base-stroke="1.75">
+  <line x1="12" y1="12" x2="12" y2="3.6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="12" y1="7.38" x2="9.749" y2="5.622" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="12" y1="7.38" x2="14.251" y2="5.622" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="12" y1="12" x2="19.275" y2="7.8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="16.001" y1="9.69" x2="16.399" y2="6.862" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="16.001" y1="9.69" x2="18.649" y2="10.76" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="12" y1="12" x2="19.275" y2="16.2" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="16.001" y1="14.31" x2="18.649" y2="13.24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="16.001" y1="14.31" x2="16.399" y2="17.138" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="12" y1="12" x2="12" y2="20.4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="12" y1="16.62" x2="14.251" y2="18.378" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="12" y1="16.62" x2="9.749" y2="18.378" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="12" y1="12" x2="4.725" y2="16.2" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="7.999" y1="14.31" x2="7.601" y2="17.138" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="7.999" y1="14.31" x2="5.351" y2="13.24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="12" y1="12" x2="4.725" y2="7.8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="7.999" y1="9.69" x2="5.351" y2="10.76" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="7.999" y1="9.69" x2="7.601" y2="6.862" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
