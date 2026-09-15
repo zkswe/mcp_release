@@ -121,13 +121,32 @@ def _run_fui(cmd, target_dir):
 
 
 # ---------------- fun.exe 基础（build/launch）----------------
+def _adb_online_devices():
+    """列出「当前在线（state=device）」的 adb 设备；adb 不可用/无设备回 []。
+    仅用于多设备歧义提示（拉不到不报错，不阻断流程）。"""
+    try:
+        r = subprocess.run(['adb', 'devices'], capture_output=True, text=True,
+                           timeout=10, stdin=subprocess.DEVNULL)
+        out = r.stdout or ''
+    except Exception:
+        return []
+    devs = []
+    for line in out.splitlines()[1:]:
+        parts = line.split()
+        if len(parts) >= 2 and parts[1] == 'device':
+            devs.append(parts[0])
+    return devs
+
+
 def _run_fun(cmd, project_dir, device='', retries=1, timeout=600, extra=None):
     """执行 fun.exe 命令（build/launch 等），在项目根目录运行。
     fun.exe 与 fui.exe 同目录（D:/zkswe/fun/ 或自动探测）。
     launch 走网络推送（adb over wifi），网络抖动/推送中断会失败——retries>1 时
     自动重试（间隔 2s），覆盖「网络超时静默/误推旧固件」场景；信任 fun 差分能力，
     不自写 push 脚本校验产物。build 类本地命令 retries 保持 1（无需重试）。
-    ⚠️ fun launch 不支持 -s 参数（带参数有其他问题），device 参数保留仅供 build_ui_flow 兼容，不追加到命令。
+    ⚠️ fun launch **支持** `-s <serial|IP>`（2026-09-16 实测修正；旧注「不支持 -s」作废）：
+    device 非空时追加 `-s <device>`；device 为空且检测到多台在线设备时，回 warnings
+    （多设备下 fun 静默取 adb 列表第一个 → 可能推错设备，症状是 launch 成功但界面不变）。
     extra: 追加到命令后的参数列表（如 fun pack -o <path>），默认 None。"""
     if not os.path.isdir(project_dir):
         return {"success": False, "error": "项目目录不存在: %s" % project_dir}
@@ -144,6 +163,16 @@ def _run_fun(cmd, project_dir, device='', retries=1, timeout=600, extra=None):
                 "hint": "要推真机调试用 flythings_build_ui_flow（fun launch）；"
                         "要出图验证用 flythings_device_screenshot；"
                         "模拟器请在本地命令行手动跑 fun sim。"}
+    warnings = []
+    if cmd == 'launch':
+        if device:
+            args += ['-s', str(device)]
+        else:
+            devs = _adb_online_devices()
+            if len(devs) > 1:
+                warnings.append(
+                    '检测到 %d 台在线 adb 设备 %s，未指定 device：fun 会静默取列表第一个，'
+                    '可能推错设备（建议传 device=\'<serial|IP>\'）' % (len(devs), devs))
     last = None
     for attempt in range(1, max(1, retries) + 1):
         try:
@@ -153,8 +182,10 @@ def _run_fun(cmd, project_dir, device='', retries=1, timeout=600, extra=None):
                                encoding='utf-8', errors='replace')
             if r.returncode == 0:
                 return {"success": True, "returncode": 0, "retried": attempt - 1,
+                        "warnings": warnings,
                         "stdout": (r.stdout or '')[-800:], "stderr": (r.stderr or '')[-800:]}
             last = {"success": False, "returncode": r.returncode, "retried": attempt - 1,
+                    "warnings": warnings,
                     "stdout": (r.stdout or '')[-800:], "stderr": (r.stderr or '')[-800:]}
         except subprocess.TimeoutExpired:
             last = {"success": False, "error": "fun %s 执行超时（>%ss）" % (cmd, timeout), "retried": attempt - 1}

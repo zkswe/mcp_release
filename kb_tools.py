@@ -53,9 +53,10 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.67-open'
+MCP_VERSION = '0.27.68-open'
 MCP_BUILD = '2026-09-16'
 MCP_FEATURES = [
+    '2026-09-16: 多设备设备选择修正 + 知识入库 v0.27.68-open（沛哥报「fun launch 在同时连着 WiFi adb 时静默失败：adb 看到 2 个设备就报 more than one device/emulator、fun 把输出吞了 → 资源没推上去、设备仍跑旧 ftu；改了 ui 加控件、build 通过、launch 看着成功但界面不变，极易误判成框架不支持该控件」；验收后**现象方向成立、机制描述要改**）——①**实测机制（扫 fun.exe 字符串 + 伪造 adb host server 抓包）**：fun launch 走 fun 自带 Go adb 客户端（`pkg/adb` → 直连 adb host server `127.0.0.1:5037`：`host:version`/`host:devices`/`host:transport <serial>`/`shell:`/`sync:`），**不 shell 出 adb 二进制**（全二进制只有 `adb -s %s shell chmod 777 %s` 与 `adb -s %s shell %s` 两处，**都带 `-s`**）→ fun **根本不会**报 adb 的 `more than one device/emulator`，也就没有「吞 adb 输出」；②**真实行为：多设备时 fun 不报错/不警告/不询问，按 `adb devices` 列表顺序取第一个**（实测两种顺序各跑一次：WiFi 在前推 WiFi、把另一台放前面就推那台；pty 交互模式一样），唯一拦点是平台校验（`shell:getprop \'ro.product.model\'` 对比项目平台，不匹配才 `FATAL platform not match`；push 真出错也 `FATAL` + exit 1）；③**MCP 侧真 bug 修复**：`project_tools._run_fun` 原先**把 device 参数丢掉**（注释「fun launch 不支持 -s」），而 `build_ui_flow` docstring 又叫 AI「传 device=IP 重试（走 fun launch -s）」→ 文档与实现不符，多设备时会静默推错设备；现改：`cmd==\'launch\'` 且 device 非空时**追加 `-s <serial|IP>`**（实测可用），device 为空且检测到 **>1 台在线设备**时在返回体里给 `warnings`（不静默）；`kb_tools.flythings_build_ui_flow` docstring 同步改正「不支持 -s」；④**判据实测**：单设备 `fun launch` 后设备 `/tmp/ui/main.ftu` 与本地 `ui/main.ftu` **字节+md5 完全一致**（1419 B / `FDC802FF232328DD5395EB433F8BA223`；launch 前是旧 app 的 1755 B），设备侧无 md5sum 用已推 /tmp/busybox、`ls` 不认 `head`；⑤**知识入库**：`knowledge/devflow/cli-fun-toolchain.md` 新增 §7「多设备（USB + WiFi adb）时的设备选择陷阱」（机制/危害/正确做法/判据命令/WiFi adb 用法）+ §3 命令表改正 `-s` 行 + 检索词补充；⑥**复现手法留档**：真机只有单台可达时，可用**伪造 adb host server（127.0.0.1:5037，报 2 台设备）**抓 fun 发的每条请求（注意 Windows `SO_REUSEADDR` 允许多进程同绑 5037 → 排查前先 `netstat -ano | findstr 5037` 杀干净）。',
     '2026-09-16: 图标库（Tabler MIT）入库 v0.27.67-open（钟工：「把 UI 设计常用的图标全下进来，免得后期还需要处理」；起因：AI 生成的界面切图风格/比例反复不一致，每次都要人回来确认）——新增资产型模块 `components/icons/`（**随包发布**，其他 AI 可直接取）：①**选型定论**——Apple **SF Symbols 许可禁止再分发**（不能进发布包）、Google Material Symbols 虽 Apache-2.0 但观感偏“谷歌”，最终定 **Tabler Icons（MIT）**为唯一图标源（24 网格 + 2px 圆头圆角线框最接近 iOS，且每图带 `-filled` 成对变体 = 现成 on/off 两态）；②**收录规模**——vendor 全量 `icons/` 4754 outline + `icons-filled/` 1019 filled（4.0MB，**排除 376 个 `brand-*` 品牌 logo**，商标风险不入包）；语义表 198 条（含分级/制式：`wifi-0/1/2`、`signal-1..5`、`cell-signal-1..5`、`2G/3G/4G/4G+/5G/6G/LTE`、`battery-0/25/50/75/100`、竖版电量、蓝牙/路由/网络断开、broadcast/radar/rss/sensor），catalog **203 图标 / 305 产物**；③**唯一入口 `scripts/gen_icons.py`**：`--vendor-name <语义名> --size N|WxH --color R,G,B --out <项目>/resources/images`（**像素尺寸严格 == 控件盒**，颜色**烘焙**进 PNG——FlyThings 无 tint API），名字兜底支持 Tabler 原名（`weather.sun`/`--tabler antenna-bars-3`），另有 `--svg` / `--svg-dir` / `--list-vendor [分类]` / `--vendor-set common|all` / `--sheet`；④**小尺寸策略（实测）**——生成器用“半像素对齐线宽 + α 对比度整形（0.40/0.60）+ 去雀斑”，22px 中间值像素 ≤ 9.7%、不发虚 → **≥22px 用 outline、≤20px 用 filled**；⑤**合规**——唯一第三方义务 = 保留 `vendor/tabler/LICENSE`（MIT，tarball sha256 已登记 `VERSION.txt`），图形只做「单色化 + 等比缩放」未改路径；⑥知识库新增 `knowledge/devflow/icon-library.md`（选型依据 / 命令 / 铁律呼应 / 小尺寸策略 / 合规 / 坑），模块四件套 + `THIRD-PARTY.md` + `selfcheck.py`（命名/尺寸严格/透明度/清单/可渲染）齐备，`selfcheck` PASS 744 张。\n',
     '2026-09-15: 设计稿字体对齐入库 v0.27.66-open（沛哥："字体应该更新为设计一样的，这个应该说明到 MCP 里面，不然做出来的效果跟实际效果差异很大"）——`knowledge/devflow/custom-font-config.md` 新增「设计稿字体对齐」一节，全是 Z21 真机实测：①**还原设计稿前必须先换字体**（布局坐标全对但字形/字重不对，是还原度最大落差）；②多字体**按文件名 ASCII 升序，排最前的是全局默认**——默认字体必须是含中文的那个，否则**汉字全变方框**（实测：Poppins 当默认 → 豆腐块）；个别控件要拉丁几何体用 `setFontFamily("Poppins-SemiBold")`（不含 .ttf）；③**Z21 低内存坑**：投 2.5MB 级中文字体 → 黑屏 + 反复重启，换 872KB 的 `zkswe-hans-common.ttf` 立即恢复；`fun launch` 每换一次字体往 `/tmp/font/` 写一份且旧的不删，tmpfs 到 ~72% 使用率应用就起不来（上传前先 rm 旧字体）；④字号按设计稿给足，塞不下拆行不要缩字号。\n',
 
@@ -404,10 +405,9 @@ def flythings_build_ui_flow(project_root: str, with_launch: bool = False, device
     ② fui pack ③ fun install 同步依赖 ④ fun build ⑤ **默认到此为止（不推真机）**；
     要推设备必须显式 with_launch=True（用户明确说「推到设备/跑一下」时才传）。
     ⚠️ fun launch 网络推送失败/超时会**自动重试 5 次**（间隔 2s，覆盖网络抖动；信任 fun 差分推送，不自写 push 脚本校验）；
-    5 次仍失败（无 adb 设备/网络中断）返回 needDeviceInput=true，必须询问用户接入方式：
-    1) USB 接入：设备 USB 连电脑，确认 adb devices 可见后重试；2) 网络接入：
-    先在电脑执行 adb connect <设备IP> 完成配对再重试。
-    ⚠️ fun launch 不支持 -s 参数，设备选择由 fun 自动完成，禁止猜 IP。
+    5 次仍失败返回 needDeviceInput=true，必须询问用户接入方式：
+    1) USB：确认 adb devices 可见后重试；2) 网络：先 adb connect <设备IP> 再重试。
+    ⚠️ 多设备（USB+WiFi adb）必须传 device='<serial|IP>'（走 fun launch -s）；不传则 fun 静默取列表第一个 → 可能推错设备。
     传入项目根目录。改过 json 必须 pack，否则设备仍跑旧 ftu。
     ⚠️⚠️ src/activity/ 目录（mainActivity.cpp/h）由 IDE 编译时自动生成，构建流程已自动处理；
     禁止手动创建/修改该目录文件，业务代码只写 src/logic/*.cc。
