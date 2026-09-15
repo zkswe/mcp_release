@@ -17,6 +17,29 @@
 6. 另一种编程式用法：`setListAdapter(AbsListAdapter)` + `setItemClickListener`（NetDemo/New 风格），与命名回调二选一。
 7. **`setSelection(idx)` 之后必须 `refreshListView()`**（沛哥 2026-09-10）：setSelection 只改选中态，
    不重新拉行数据/不重绘，漏刷新 = 界面上看不到变化（高亮/滚动位置不更新）。改数据（erase/新增）同理，改完一律 refresh。
+8. **刷完要主动决定「停在哪一行」**（2026-09-16 实测，**日志/监控列表必踩**）：`refreshListView()` 只让数据重排重绘，
+   **滚动位置不变**。日志/进度这类「只看最新」的列表不主动跳行 → 屏幕上永远是最早的旧行，
+   看起来像"数据不更新"。顺序不能反：
+   ```cpp
+   p->setSelection(count - 1);   // 先跳到最后一行
+   p->refreshListView();         // 再刷新（顺序反了可能不重绘）
+   ```
+   ⚠️ 数据浏览型列表（用户手动翻页）**不要**强制跟随，会打断阅读——只在「最新即有用」的列表上做。
+
+## ⚠️ 两个高频坑（2026-09-16 实测：html2json 生成 + Z21 日志列表）
+
+### 坑 1：`item.text` 默认 `"ListItem"` → 每一行常显一个 ListItem
+- **现象**：列表每行末尾多一个英文 `ListItem`（跟数据无关、刷新不掉）。
+- **原因**：行模板（`item`）自带默认文本；`html2json` 老版本照抄控件默认值，写死 `"text": "ListItem"`。
+- **修法**：json 里 `item.text` 写 `""`；`html2json` 自 2026-09-16 起默认输出空串
+  （MCP 源 + `tools/ui_tools/` 两份已同步 `sync_ui_tools.py`）。
+- **手写 json 自检**：`grep '"text": "ListItem"' ui/*.json` 应为空。
+
+### 坑 2：刷新后不跟最新行 → 一直显示旧数据
+- **现象**：数据在涨，屏幕上却一直是几分钟前的行；误以为"刷新失效"。
+- **原因**：`refreshListView()` 不改变滚动偏移（见核心铁律 #8）。
+- **修法**：`setSelection(count-1)` → `refreshListView()`（先跳行再刷新）。
+- **判据**：截图里可见行的**时间戳/序号必须递增且末行是最新**；若停在旧值 → 没做跟随。
 
 ## JSON 字段表（ftu 实测校准）
 
@@ -31,7 +54,7 @@
 | `autoRollback` | 滑动停止自动回弹对齐 |
 | `cycleEnable` | 循环列表 |
 | `hasScrollbar` | 滚动条显示 |
-| `item` | 行模板（内含各 subitem 定义） |
+| `item` | 行模板（内含各 subitem 定义）；**`item.text` 默认值必须写 `""`**（默认 `ListItem` 会每行常显，见「两个高频坑」） |
 
 ## dragMaxDis 取值（越界拖拽上限，2026-09-12 沛哥定规）
 

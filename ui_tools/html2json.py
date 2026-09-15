@@ -1010,7 +1010,8 @@ class HtmlToJson:
                 'bold': False, 'caption': 'item',
                 'colorTab': {'color0': 16777215}, 'fontSize': 16,
                 'italic': False, 'longClickIntervalTime': -1, 'longClickTimeOut': -1,
-                'picTab': {}, 'text': 'ListItem',
+                'picTab': {}, 'text': '',
+                # ⚠️ 2026-09-16：item.text 默认留空（原来是 'ListItem'，会导致列表每行常显一个 "ListItem"）
                 'touchable': True, 'visible': True, 'subItem': []}
         c = {'autoRollback': False, 'backgroundColor': -1, 'caption': cap,   # SampleUI listview 必写键（去 beepEnable）
              'cols': 1, 'cycleEnable': False, 'dragMaxDis': 0, 'edgeEffect': 0,
