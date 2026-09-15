@@ -44,6 +44,11 @@ if BASE not in sys.path:
 
 RESULT = []
 WIKI_ROOT = os.path.join(os.path.expanduser('~'), '.openclaw', 'workspace', 'wiki', 'flythings')
+# 公开版口径（2026-09-15 起）：release 分支带 scripts/release_scope.json 与 release_gate.py，
+# 本闸门据此切两处口径（master 没有该文件 → 行为完全不变）：
+#   ① rag 索引只收 knowledge/（公开版不带本机 wiki）；
+#   ② 额外委派 release_gate.py 做公开边界校验（剔除路径 / demo 黑名单 / 词表 / 隐私）。
+RELEASE_SCOPE = os.path.isfile(os.path.join(SUB, 'release_scope.json'))
 
 
 def check(ok, name, detail=''):
@@ -304,7 +309,7 @@ def _expected_md_sets():
                     known.add(rel)
                     expected.add('knowledge/' + rel)
     wiki_count = 0
-    if os.path.isdir(WIKI_ROOT):
+    if os.path.isdir(WIKI_ROOT) and not RELEASE_SCOPE:
         for r, _, fs in os.walk(WIKI_ROOT):
             for f in fs:
                 if f.endswith('.md'):
@@ -313,7 +318,7 @@ def _expected_md_sets():
                         continue
                     expected.add(rel)
                     wiki_count += 1
-    return expected, wiki_count, os.path.isdir(WIKI_ROOT)
+    return expected, wiki_count, os.path.isdir(WIKI_ROOT) and not RELEASE_SCOPE
 
 
 def stage_index():
@@ -328,14 +333,19 @@ def stage_index():
         missing = sorted(exp - have)
         stale = sorted(have - exp)
         detail = 'missing=%d stale=%d (rebuild: python rebuild_index_local.py)'
+        detail_args = (len(missing), len(stale))
     else:
-        # 无本地完整 wiki 的机器（fresh clone / CI）：只能验「仓库内 knowledge/ 都被索引到了」，
+        # 无本地完整 wiki 的机器（fresh clone / CI / 公开版）：只能验「仓库内 knowledge/ 都被索引到了」，
         # 索引里多出来的 wiki 文档不当地漂移（那是发布时在本机建的）
         kb_only = {p for p in exp if p.startswith('knowledge/')}
         missing = sorted(kb_only - have)
         stale = []
-        detail = 'missing=%d (wiki 不在本机，跳过 stale 对比)'
-    check(not missing and not stale, 'rag index covers disk docs', detail % (len(missing), len(stale)))
+        if RELEASE_SCOPE:
+            detail = 'missing=%d（公开版口径：索引只收 knowledge/，不含本机 wiki）'
+        else:
+            detail = 'missing=%d (wiki 不在本机，跳过 stale 对比)'
+        detail_args = (len(missing),)
+    check(not missing and not stale, 'rag index covers disk docs', detail % detail_args)
     if missing:
         print('       missing: %s' % ', '.join(missing[:5]))
     if stale:
@@ -410,6 +420,12 @@ def stage_deliverables(with_tests):
 
 
 def stage_delegated(skip_smoke, with_tests):
+    gate = os.path.join(SUB, 'release_gate.py')
+    if RELEASE_SCOPE and os.path.isfile(gate):
+        rc, out = _run([sys.executable, gate])
+        tail = [l for l in out.strip().splitlines() if l.startswith('total=')]
+        check(rc == 0, 'delegated: release_gate.py (公开边界)',
+              tail[0] if tail else 'rc=%d' % rc)
     rc, out = _run([sys.executable, os.path.join(SUB, 'sync_ui_tools.py'), '--check'])
     check(rc == 0, 'delegated: sync_ui_tools --check',
           'ok' if rc == 0 else out.strip().splitlines()[-1][:70])
