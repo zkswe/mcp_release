@@ -83,6 +83,42 @@ python components/fonts/scripts/device_font_check.py --apply \
 
 汉字正常 = 无方块；用 `flythings_device_screenshot` 看图确认（不要手搓 fb0）。
 
+## ⭐ 设计稿字体对齐（2026-09-15 沛哥定规：**照设计稿做 UI 必须先换字体**）
+
+> **背景（沛哥原话）**："字体应该更新为设计一样的。这个应该说明到 MCP 里面，不然做出来的效果跟实际效果差异很大。"
+> 症状：布局坐标全对，但**字形/字重与设计稿差一大截**（设计稿是几何无衬线粗体，设备默认是普通细体）——这是"还原度"最大的单项落差，比坐标误差显眼得多。
+
+### A. 结论（一句）
+**动手还原设计稿（尤其 AI 出的高保真渲染图）前，先把设计字体投进工程 `font/`，再去做布局；字体是地基不是收尾。**
+
+### B. 字体怎么选（本机现成资源）
+
+| 用途 | 文件 | 来源 |
+|---|---|---|
+| **中文（默认字体必须选它）** | `zkswe-hans-common.ttf`（872 KB，思源黑体常用字 3755 + 标点 + ASCII） | `components/fonts/fonts/` |
+| 中文（生僻字/多语言） | `zkswe-hans-full.ttf`（7.4 MB）/ `zkswe-hans-multi.ttf`（10.5 MB） | 同上 |
+| 拉丁 / 数字（几何无衬线，接近设计稿数字） | `Poppins-SemiBold.ttf` / `Poppins-Bold.ttf`（GILROY 等几何体同理） | `projects/inSightOS3/app/resources/fonts/` 等 |
+
+### C. 落地 4 步（fun 流程）
+1. `<项目>/font/` 放 ttf（**文件名决定默认**，见 §D）
+2. `package.properties`：`enable.font.location=true`
+3. `fun build -p <平台>` + `fun launch`（字库随资源推送，`/tmp/font/` 或 `/res/font/`）
+4. **真机截图 vs 设计图对照验收**（`flythings_device_screenshot` + 视觉对比）；不合就换字重再验
+
+### D. ⚠️ 多字体排序铁律（本机 2026-09-15 实测踩坑）
+- 多字体按**文件名 ASCII 升序，最靠前的 = 全局默认字体**。
+- **默认字体必须是含中文的那个**：把 2.5 MB 的纯中文名放前面没事，但若让 **Poppins 排在前面当默认 → 汉字全部变方框**；反过来若默认是 CJK 体，拉丁/数字也会用它（字形尚可，但不如几何体贴近设计稿）。
+- 想"中文用思源、数字用 Poppins"：**默认放大写靠前的含中文体**（如 `Han-Sans-common.ttf`），再对个别控件 `setFontFamily("Poppins-SemiBold")`（easyui ≥ 2.2.0，当前模板 2.6.0 支持；参数**不含 .ttf 后缀**）。
+- 文件名只是资源名，可重命名以控制排序（例：`Han-Sans-common.ttf` < `Poppins-SemiBold.ttf`）。
+
+### E. ⚠️ 低内存平台（Z21 36MB RAM / tmpfs 13.9MB）字体坑（实测）
+- 投 **2.5 MB 级中文字体**（如 HarmonyOS_Sans_SC_Medium）后应用**黑屏 + 反复重启**；换成 872 KB 的 `zkswe-hans-common.ttf` 立即恢复。→ **Z21/Z20 优先用 `common` 档思源黑体**，别上 MB 级大字体。
+- `fun launch` 每换一次字体就往 `/tmp/font/` 写一份，**旧字体不自动删**：堆到 tmpfs 使用率 ~72%（剩 3.9 MB）时应用起不来。→ 上传前 `adb shell rm -f /tmp/font/<旧字体>`，`df /tmp` 确认余量。
+- 排查口径：屏幕全黑 + logcat 里 zkgui 反复换 pid（重启循环）= 资源/内存问题，先查 `/tmp` 余量与字体体积，别急着改 UI。
+
+### F. 字号也要按设计稿给足
+- 设计稿数字常是**粗体大号**；设备换了字重后同样的 `fontSize` 观感会偏细/偏窄 → 按设计稿实测字号给值，塞不下就**拆行/放宽盒子**，不要为塞下而缩字号（缩了就没有设计稿的层级感）。
+
 ## 相关
 
 - MEMORY.md 铁律「设备字库是裁剪字库」（emoji/特殊符号不支持）
