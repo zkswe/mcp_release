@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>zk::ui_v1::Calendar 示例（Z21 1024x600）</title></head>
+<body>
+<div class="screen" data-res="1024x600" data-bg="#F5F7FA">
+
+  <!-- ============ 顶栏 ============ -->
+  <div class="window" data-x="0" data-y="0" data-w="1024" data-h="56" data-caption="WinTopBar" data-bg="#FFFFFF">
+    <div class="text" data-x="20" data-y="6" data-w="700" data-h="20" data-fs="15" data-color="#212121">components/ui_v1/Calendar &nbsp; 日历选择器（42 个 textview 承载日号 + 触摸反算命中）</div>
+    <div class="text" data-x="20" data-y="30" data-w="980" data-h="20" data-fs="14" data-color="#455A64" data-caption="TvStatus">ready</div>
+  </div>
+
+  <!-- ============ 主页 ============ -->
+  <div class="window" data-x="0" data-y="56" data-w="1024" data-h="544" data-caption="WinMain" data-bg="#F5F7FA">
+
+    <div class="btn"  data-x="60" data-y="120" data-w="240" data-h="64" data-fs="18" data-bg="#2196F3" data-color="#FFFFFF" data-caption="BtnOpenCal">打开日历</div>
+
+    <div class="text" data-x="60" data-y="212" data-w="320" data-h="24" data-fs="15" data-color="#455A64">已选日期（点日号 / OK 回填）</div>
+    <div class="input" data-x="60" data-y="240" data-w="240" data-h="48" data-fs="16" data-caption="EtDate"></div>
+
+    <div class="btn"  data-x="60" data-y="330" data-w="240" data-h="56" data-fs="17" data-bg="#607D8B" data-color="#FFFFFF" data-caption="BtnToday">跳到今天</div>
+
+    <div class="text" data-x="340" data-y="120" data-w="640" data-h="400" data-fs="15" data-color="#455A64" data-caption="TvPickedLog">日历用法：点「打开日历」-> 点日号选中（回调回填输入框）-> &lt; &gt; 翻月 -> OK 关窗</div>
+  </div>
+
+  <!-- ============ 日历弹窗 ============
+       platform 实测（Z21 easyui 2.6.0）：modal 窗口**不画自己的底色**（里面普通 window 的底色也不画），
+       但**按钮的底色会画** -> 用一张铺满的「卡片按钮」当白底（touchable 由代码关掉，见 mainLogic.cc）。 -->
+  <div class="modal" data-x="162" data-y="40" data-w="700" data-h="520" data-caption="WinCal" data-bg="#FFFFFF">
+
+    <div class="btn" data-x="0" data-y="0" data-w="700" data-h="520" data-bg="#FFFFFF" data-touchable="0" data-caption="BtnCalCard"></div>
+
+    <!-- 月份行：< 标题 > -->
+    <div class="btn"  data-x="20"  data-y="16" data-w="72" data-h="44" data-fs="22" data-bg="#ECEFF1" data-color="#212121" data-caption="BtnCalPrev">&lt;</div>
+    <div class="text" data-x="104" data-y="20" data-w="492" data-h="36" data-fs="20" data-color="#212121" data-align="center" data-caption="TvCalTitle">2026-09</div>
+    <div class="btn"  data-x="608" data-y="16" data-w="72" data-h="44" data-fs="22" data-bg="#ECEFF1" data-color="#212121" data-caption="BtnCalNext">&gt;</div>
+
+    <!-- 表头（业务摆，组件不管） -->
+    <div class="text" data-x="28"  data-y="74" data-w="88" data-h="22" data-fs="14" data-color="#90A4AE" data-align="center">一</div>
+    <div class="text" data-x="116" data-y="74" data-w="88" data-h="22" data-fs="14" data-color="#90A4AE" data-align="center">二</div>
+    <div class="text" data-x="204" data-y="74" data-w="88" data-h="22" data-fs="14" data-color="#90A4AE" data-align="center">三</div>
+    <div class="text" data-x="292" data-y="74" data-w="88" data-h="22" data-fs="14" data-color="#90A4AE" data-align="center">四</div>
+    <div class="text" data-x="380" data-y="74" data-w="88" data-h="22" data-fs="14" data-color="#90A4AE" data-align="center">五</div>
+    <div class="text" data-x="468" data-y="74" data-w="88" data-h="22" data-fs="14" data-color="#90A4AE" data-align="center">六</div>
+    <div class="text" data-x="556" data-y="74" data-w="88" data-h="22" data-fs="14" data-color="#90A4AE" data-align="center">日</div>
+
+    <!-- 42 个日号格（行优先 7 列 × 6 行；坐标 = 28+col*88 , 100+row*44） -->
+    <div class="text" data-x="28"  data-y="100" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD1"></div>
+    <div class="text" data-x="116" data-y="100" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD2"></div>
+    <div class="text" data-x="204" data-y="100" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD3"></div>
+    <div class="text" data-x="292" data-y="100" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD4"></div>
+    <div class="text" data-x="380" data-y="100" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD5"></div>
+    <div class="text" data-x="468" data-y="100" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD6"></div>
+    <div class="text" data-x="556" data-y="100" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD7"></div>
+
+    <div class="text" data-x="28"  data-y="144" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD8"></div>
+    <div class="text" data-x="116" data-y="144" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD9"></div>
+    <div class="text" data-x="204" data-y="144" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD10"></div>
+    <div class="text" data-x="292" data-y="144" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD11"></div>
+    <div class="text" data-x="380" data-y="144" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD12"></div>
+    <div class="text" data-x="468" data-y="144" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD13"></div>
+    <div class="text" data-x="556" data-y="144" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD14"></div>
+
+    <div class="text" data-x="28"  data-y="188" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD15"></div>
+    <div class="text" data-x="116" data-y="188" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD16"></div>
+    <div class="text" data-x="204" data-y="188" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD17"></div>
+    <div class="text" data-x="292" data-y="188" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD18"></div>
+    <div class="text" data-x="380" data-y="188" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD19"></div>
+    <div class="text" data-x="468" data-y="188" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD20"></div>
+    <div class="text" data-x="556" data-y="188" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD21"></div>
+
+    <div class="text" data-x="28"  data-y="232" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD22"></div>
+    <div class="text" data-x="116" data-y="232" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD23"></div>
+    <div class="text" data-x="204" data-y="232" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD24"></div>
+    <div class="text" data-x="292" data-y="232" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD25"></div>
+    <div class="text" data-x="380" data-y="232" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD26"></div>
+    <div class="text" data-x="468" data-y="232" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD27"></div>
+    <div class="text" data-x="556" data-y="232" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD28"></div>
+
+    <div class="text" data-x="28"  data-y="276" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD29"></div>
+    <div class="text" data-x="116" data-y="276" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD30"></div>
+    <div class="text" data-x="204" data-y="276" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD31"></div>
+    <div class="text" data-x="292" data-y="276" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD32"></div>
+    <div class="text" data-x="380" data-y="276" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD33"></div>
+    <div class="text" data-x="468" data-y="276" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD34"></div>
+    <div class="text" data-x="556" data-y="276" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD35"></div>
+
+    <div class="text" data-x="28"  data-y="320" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD36"></div>
+    <div class="text" data-x="116" data-y="320" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD37"></div>
+    <div class="text" data-x="204" data-y="320" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD38"></div>
+    <div class="text" data-x="292" data-y="320" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD39"></div>
+    <div class="text" data-x="380" data-y="320" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD40"></div>
+    <div class="text" data-x="468" data-y="320" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD41"></div>
+    <div class="text" data-x="556" data-y="320" data-w="88" data-h="38" data-fs="18" data-align="center" data-bg="#FFFFFF" data-caption="TvCalD42"></div>
+
+    <!-- 弹窗内状态行（证明「选中 + 回填」同时可见） -->
+    <div class="text" data-x="28" data-y="364" data-w="644" data-h="24" data-fs="15" data-color="#455A64" data-caption="TvCalLog">已选：（未选）</div>
+    <div class="text" data-x="28" data-y="390" data-w="644" data-h="20" data-fs="13" data-color="#90A4AE" data-caption="TvCalHint">点日号选中；&lt; &gt; 翻月；OK 关窗回主界面</div>
+
+    <div class="btn" data-x="28"  data-y="414" data-w="264" data-h="52" data-fs="18" data-bg="#2196F3" data-color="#FFFFFF" data-caption="BtnCalOk">OK</div>
+    <div class="btn" data-x="308" data-y="414" data-w="264" data-h="52" data-fs="18" data-bg="#ECEFF1" data-color="#212121" data-caption="BtnCalCancel">取消</div>
+  </div>
+</div>
+</body>
+</html>

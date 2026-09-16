@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>zk::ui_v1::TabView 示例（Z21 1024x600）</title></head>
+<body>
+<div class="screen" data-res="1024x600" data-bg="#F5F7FA">
+
+  <!-- ============ 顶栏：页签按钮 + 下划线标记（标记与页签按钮同父，组件按页签矩形反算位置） ============ -->
+  <div class="window" data-x="0" data-y="0" data-w="1024" data-h="64" data-caption="WinTopBar" data-bg="#FFFFFF">
+    <div class="text"  data-x="20"  data-y="4"  data-w="360" data-h="18" data-fs="13" data-color="#9E9E9E">components/ui_v1/_mapping/TabView &nbsp; 滑动切页 + 页签高亮双向同步</div>
+    <div class="btn"   data-x="20"  data-y="24" data-w="180" data-h="36" data-fs="16" data-color="#2196F3" data-caption="BtnTab0">Page 0</div>
+    <div class="btn"   data-x="212" data-y="24" data-w="180" data-h="36" data-fs="16" data-color="#616161" data-caption="BtnTab1">Page 1</div>
+    <div class="text"  data-x="420" data-y="30" data-w="580" data-h="24" data-fs="14" data-color="#455A64" data-caption="TvLog">onPageChanged: ready</div>
+    <div class="text"  data-x="20"  data-y="60" data-w="180" data-h="4"  data-bg="#2196F3" data-caption="TvTabMark"></div>
+  </div>
+
+  <!-- ============ 页容器：手感参数 = TabView 默认值（dragMaxDis=200 / edgeEffect=1 / rollSpeed=60 / orientation=0） ============ -->
+  <div class="pagewindow" data-x="0" data-y="64" data-w="1024" data-h="536" data-caption="PwPages"
+       data-drag-max="200" data-edge-effect="1" data-roll-speed="60" data-orientation="0">
+
+    <!-- 第 0 页 -->
+    <div class="window" data-x="0" data-y="0" data-w="1024" data-h="536" data-caption="Page0" data-bg="#F5F7FA">
+      <div class="text" data-x="40" data-y="36" data-w="900" data-h="56" data-fs="40" data-color="#2196F3" data-caption="TvPage0Title">第 0 页</div>
+      <div class="text" data-x="40" data-y="104" data-w="920" data-h="24" data-fs="16" data-color="#607D8B">手指在屏幕上左右滑动 = 翻页；顶部页签的高亮与下划线会跟着走</div>
+      <div class="btn"  data-x="40"  data-y="160" data-w="180" data-h="56" data-fs="18" data-bg="#2196F3" data-color="#FFFFFF" data-caption="BtnCount0">点我 +1</div>
+      <div class="text" data-x="240" data-y="176" data-w="240" data-h="28" data-fs="20" data-color="#212121" data-caption="TvCount0">0</div>
+      <div class="text" data-x="40" data-y="240" data-w="920" data-h="24" data-fs="14" data-color="#9E9E9E">（这个按钮用来证明：页内的业务控件照常收得到触摸，翻页手势不会吃掉点击）</div>
+    </div>
+
+    <!-- 第 1 页 -->
+    <div class="window" data-x="0" data-y="0" data-w="1024" data-h="536" data-caption="Page1" data-bg="#F5F7FA">
+      <div class="text" data-x="40" data-y="36" data-w="900" data-h="56" data-fs="40" data-color="#F44336" data-caption="TvPage1Title">第 1 页</div>
+      <div class="text" data-x="40" data-y="104" data-w="920" data-h="24" data-fs="16" data-color="#607D8B">滑回左边 = 回第 0 页；点顶部 Page 0 / Page 1 也能切（两条路径同一个回调）</div>
+      <div class="btn"  data-x="40"  data-y="160" data-w="180" data-h="56" data-fs="18" data-bg="#F44336" data-color="#FFFFFF" data-caption="BtnCount1">点我 +1</div>
+      <div class="text" data-x="240" data-y="176" data-w="240" data-h="28" data-fs="20" data-color="#212121" data-caption="TvCount1">0</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

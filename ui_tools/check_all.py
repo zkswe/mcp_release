@@ -335,13 +335,58 @@ def _deco_hint(deco_key, deco, covered, res=None):
     return (bool(hints), hints)
 
 
-# ---------------- 资源产物核对（json 声明 → 文件存在 + PNG 尺寸 == 控件 position）----------------
+# ---------------- 资源产物核对（json 声明 → 文件存在 + PNG 尺寸 == 盒子）----------------
 # 「产物 vs 声明」机器化（原为 temp/verify_demo_assets.py 人肉脚本，v0.27.32 固化）：
 # 单一实现，check_all #17 与 MCP op flythings_verify_assets 共用，禁止再各写一份。
+#
+# 尺寸核对的**盒子来源**（图片铁律 #1「图片尺寸必须与控件尺寸一致」对下列盒子一律成立）：
+#   ① 控件 position（backgroundPic / picTab.picN / progressPic / ...）——主盒；
+#   ② `thumb.size`（SeekBar/CircleBar 滑块的**自有尺寸**子盒，thumb.normalPic/pressedPic）；
+#      （v0.27.75 补：原先只核 ①，thumb 是核对盲区 —— 实测案例 sk_thumb.png 31×31 vs
+#       thumb.size 30×30 一路 PASS，真机上滑块圆钮与轨道错位/发糊）
+#   ③ `iconPosition` 这类「布局键」是**位置**不是盒子，不参与（它无 width/height）。
 _PIC_REF_FIELDS = ('backgroundPic', 'progressPic', 'secondaryProgressPic', 'thumbPic')
+
+# thumb 子盒里的图片字段（SeekBar 滑块两态；CircleBar 同构）
+_THUMB_PIC_FIELDS = ('normalPic', 'pressedPic')
 
 # 自动生成图统一放 <项目>/resources/images/（MEMORY 铁律 #9），json 引用写 images/xxx.png
 _AUTO_ASSET_DIR = 'images'
+
+
+def _thumb_box(v):
+    """控件 `thumb` 子盒尺寸 (w, h)；未给 / 为 0 → None（盒子未知，跳过+warning，不误报）。
+
+    实测格式（projects/**/ui/*.json 53 处 thumb 全为 dict）：`thumb.size = {width, height}`；
+    兼容简写 `size = 24`（老 json / 手写稿）。size 全 0（basedemo 空 thumb）= 无滑块 → None。
+    """
+    th = v.get('thumb')
+    if not isinstance(th, dict):
+        return None
+    sz = th.get('size')
+    if isinstance(sz, dict):
+        tw, thh = sz.get('width'), sz.get('height')
+    elif isinstance(sz, (int, float)) and not isinstance(sz, bool):
+        tw = thh = int(sz)                       # 简写：thumb.size = 24
+    else:
+        return None
+    if not tw or not thh:
+        return None
+    return (int(tw), int(thh))
+
+
+def _thumb_pic_refs(v):
+    """thumb 子盒的图片引用 [(字段, 引用, 盒子尺寸或 None)] —— 供 #11 与 verify_assets 共用。
+
+    为什么单独一个入口：thumb 的盒子**不是**控件 position（图片铁律 #1 对 thumb 同样成立，
+    但盒子来源是 thumb.size）；两处若各写一套「什么时候比、比什么」就是两套口径。
+    """
+    th = v.get('thumb')
+    if not isinstance(th, dict):
+        return []
+    box = _thumb_box(v)
+    return [('thumb.%s' % fld, th[fld], box) for fld in _THUMB_PIC_FIELDS
+            if isinstance(th.get(fld), str) and th[fld]]
 
 
 def _is_auto_generated(ref):
@@ -376,31 +421,40 @@ def _ctrl_pic_refs(v):
 
 
 def verify_assets(project_root):
-    """核对「json 声明 vs 磁盘产物」：引用文件是否存在 + PNG 尺寸是否 == 控件 position。
+    """核对「json 声明 vs 磁盘产物」：引用文件是否存在 + PNG 尺寸是否 == 盒子。
 
-    为什么必须机器化：FlyThings 不缩放普通 PNG，图与控件盒不等即错位/裁切；
+    为什么必须机器化：FlyThings 不缩放普通 PNG，图与盒子不等即错位/裁切；
     v0.27.30 的阴影三连 bug 正是「图没生成也没人发现」，靠人肉目测漏掉了。
+
+    盒子（铁律 #1 的作用对象）：
+      - 控件 position：backgroundPic / progressPic / secondaryProgressPic / thumbPic / picTab.*
+      - **thumb.size**：thumb.normalPic / thumb.pressedPic（滑块自有尺寸，v0.27.75 补；
+        此前是核对盲区 —— 实测 31×31 图配 thumb.size 30×30 一路 PASS）
 
     返回可 JSON 序列化的 dict：
       ok / pages / refCount / missing[] / mismatch[] / stretched[] / unresolved[] / warnings[] / noPil
+      （另有 skippedNoBox[]：盒子尺寸未知而跳过核对的引用，供上层显示 NOTE）
       - missing   ：字段引用了图片但文件不存在 → FAIL
       - mismatch  ：**自动生成图**（resources/images/，铁律 #9）尺寸 != position → FAIL
-                    （.9.png 除外，9-patch 可拉伸）
-      - stretched ：手绘图尺寸 != 控件盒 → 仅提示（引擎会拉伸，基准工程 SampleUI-New 也这么用）
+                    （.9.png 除外，9-patch 可拉伸）；thumb 子盒（thumb.size）同口径：
+                    自动生成的 thumb 图尺寸 != thumb.size → FAIL（v0.27.75 补的核对盲区）
+      - stretched ：手绘图尺寸 != 盒子 → 仅提示（引擎会拉伸，基准工程 SampleUI-New 的
+                    导航图与手绘 thumb 都这么用）
       - unresolved：带 %s 格式化前缀 / json 解析失败 / 读图失败（仅提示）
-      - warnings  ：0 页等「其实什么都没核」的情况会写这里（不静默）
+      - warnings  ：0 页、thumb 无 size（跳过核对）等「其实没核」的情况会写这里（不静默）
     """
     root = os.path.abspath(project_root)
     ui = os.path.join(root, 'ui')
     res = {'ok': True, 'projectRoot': root, 'pages': 0, 'refCount': 0,
            'missing': [], 'mismatch': [], 'stretched': [], 'unresolved': [], 'warnings': [],
-           'noPil': not _HAS_PIL}
+           'skippedNoBox': [], 'noPil': not _HAS_PIL}
     if not os.path.isdir(ui):
         res['ok'] = False
         res['error'] = 'ui 目录不存在: %s' % ui
         return res
     pages = _ui_pages(root)
     res['pages'] = len(pages)
+    _nobox = []          # 盒子缺失而跳过的引用（聚合上报）
     if not pages:
         # 不静默：0 页时 ok=true 会让人以为「核对过了」——其实什么都没看
         res['warnings'].append('ui/ 下没找到布局 json（支持 ui/*.json 与 ui/<分辨率>/*.json），'
@@ -415,7 +469,11 @@ def verify_assets(project_root):
         for key, v in _all_controls(d):
             pos = v.get('position') or {}
             pw, ph = pos.get('width'), pos.get('height')
-            for fld, ref in _ctrl_pic_refs(v):
+            refs = [(_fld, _ref, (pw, ph) if (pw and ph) else None, 'position')
+                    for _fld, _ref in _ctrl_pic_refs(v)]
+            # thumb 自有尺寸子盒：盒子来自 thumb.size（铁律 #1 同样成立，v0.27.75 补）
+            refs += [(fld, ref, box, 'thumb.size') for fld, ref, box in _thumb_pic_refs(v)]
+            for fld, ref, box, box_from in refs:
                 if '%s' in ref:
                     res['unresolved'].append({'page': page, 'control': key, 'field': fld,
                                               'ref': ref, 'why': '运行时格式化引用，跳过逐控件核对'})
@@ -425,7 +483,12 @@ def verify_assets(project_root):
                 if not fp:
                     res['missing'].append({'page': page, 'control': key, 'field': fld, 'ref': ref})
                     continue
-                if ref.lower().endswith('.9.png') or not _HAS_PIL or not pw or not ph:
+                if ref.lower().endswith('.9.png') or not _HAS_PIL:
+                    continue
+                if not box:
+                    # 盒子未知（控件无 position / thumb 无 size）→ 跳过核对，但**不静默**
+                    # （聚合到一条 warning，避免刷屏；thumb 无 size 属 json 缺字段，见铁律 #1 说明）
+                    _nobox.append('%s.%s(%s)' % (key, fld, box_from))
                     continue
                 try:
                     with _Image.open(fp) as im:
@@ -434,14 +497,27 @@ def verify_assets(project_root):
                     res['unresolved'].append({'page': page, 'control': key, 'field': fld,
                                               'ref': ref, 'why': 'PIL 读取失败: %s' % e})
                     continue
-                if (w, h) != (pw, ph):
+                if (w, h) != tuple(box):
                     row = {'page': page, 'control': key, 'field': fld, 'ref': ref,
-                           'png': [w, h], 'position': [pw, ph]}
-                    if _is_auto_generated(ref):
+                           'png': [w, h], 'box': list(box), 'boxFrom': box_from,
+                           'position': [pw, ph]}
+                    # thumb 子盒（盒子来自 json 的 thumb.size）与控件盒同口径：
+                    # 自动生成图（resources/images/，铁律 #9）必须严格 == 盒子 → FAIL；
+                    # 手绘 thumb（官方基准工程 SampleUI-New 的 slider_/jdt_ht.png = 35×34
+                    # 而 thumb.size 33×35）引擎会拉伸 → 仅提示，不当 FAIL（基准工程零误报）。
+                    if box_from == 'thumb.size':
+                        (res['mismatch'] if _is_auto_generated(ref)
+                         else res['stretched']).append(row)
+                    elif _is_auto_generated(ref):
                         res['mismatch'].append(row)      # 自动生成图必须 1:1 → FAIL
                     else:
                         res['stretched'].append(row)     # 手绘图引擎会拉伸 → 仅提示
     res['ok'] = not (res.get('error') or res['missing'] or res['mismatch'])
+    res['skippedNoBox'] = list(_nobox)      # 机器可读：盒子未知而跳过的引用
+    if _nobox:
+        res['warnings'].append(
+            '盒子尺寸未知（控件无 position / thumb 无 size）而跳过尺寸核对 %d 处：%s%s'
+            % (len(_nobox), '、'.join(_nobox[:5]), ' …' if len(_nobox) > 5 else ''))
     if res['stretched']:
         res['warnings'].append(
             '%d 处手绘图尺寸 != 控件盒（引擎会拉伸，通常正常，仅供确认；'
@@ -936,7 +1012,8 @@ def main(project_root):
                     bad.append('%s.%s 用了 %s' % (k, fld, pv))
         log(not bad, '%s SeekBar 9-patch %s' % (f, '；'.join(bad) if bad else '无'))
 
-    print('== 11. 图片尺寸必须与控件 position 严格相等（FlyThings 不缩放普通 PNG）==')
+    print('== 11. 图片尺寸必须与盒子严格相等（控件 position；thumb 子盒用 thumb.size）==\n'
+          '       FlyThings 不缩放普通 PNG；thumb 滑块是「自有尺寸」子盒，盒子=thumb.size（铁律 #1）。')
     if not _HAS_PIL:
         log(True, '无 PIL，跳过图片尺寸核对（仅检查引用存在性）')
     for f in PAGES:
@@ -945,31 +1022,37 @@ def main(project_root):
         for k, v in _all_controls(d):
             pos = v.get('position') or {}
             pw, ph = pos.get('width'), pos.get('height')
-            if not pw or not ph:
-                continue
             refs = []
-            for fld in SEEKBAR_PIC_FIELDS:
-                pv = v.get(fld)
-                if isinstance(pv, str):
-                    refs.append((fld, pv))
-            if isinstance(v.get('backgroundPic'), str):
-                refs.append(('backgroundPic', v['backgroundPic']))
-            pt_ = v.get('picTab') or {}
-            for fld in ('pic0', 'pic1'):
-                pv = pt_.get(fld)
-                if isinstance(pv, str):
-                    refs.append(('picTab.%s' % fld, pv))
-            for fld, ref in refs:
-                if ref.lower().endswith('.9.png'):
-                    continue  # 9-patch 可拉伸，尺寸不要求等于 position
+            if pw and ph:
+                for fld in SEEKBAR_PIC_FIELDS:
+                    pv = v.get(fld)
+                    if isinstance(pv, str):
+                        refs.append((fld, pv))
+                if isinstance(v.get('backgroundPic'), str):
+                    refs.append(('backgroundPic', v['backgroundPic']))
+                pt_ = v.get('picTab') or {}
+                for fld in ('pic0', 'pic1'):
+                    pv = pt_.get(fld)
+                    if isinstance(pv, str):
+                        refs.append(('picTab.%s' % fld, pv))
+            # thumb 自有尺寸子盒：盒子 = thumb.size（与 verify_assets 同一份 helper，不另写一套口径）
+            checks = [(fld, ref, (pw, ph), 'position') for fld, ref in refs]
+            checks += [(fld, ref, box, 'thumb.size') for fld, ref, box in _thumb_pic_refs(v)]
+            for fld, ref, box, box_from in checks:
+                if ref.lower().endswith('.9.png') or not box:
+                    continue  # 9-patch 可拉伸；盒子未知（无 position / thumb 无 size）→ 交 #17 报 warning
+                if box_from == 'thumb.size' and not _is_auto_generated(ref):
+                    continue  # 手绘 thumb 引擎会拉伸（基准工程 SampleUI-New 写法）→ #17 记 stretched
                 p = _pic_path(root, ref)
                 if not p:
                     continue  # 缺失已在第 4 项报
                 try:
                     with _Image.open(p) as im:
                         w, h = im.size
-                    if (w, h) != (pw, ph):
-                        bad.append('%s.%s %s %dx%d != position %dx%d' % (k, fld, os.path.basename(ref), w, h, pw, ph))
+                    if (w, h) != tuple(box):
+                        bad.append('%s.%s %s %dx%d != %s %dx%d'
+                                   % (k, fld, os.path.basename(ref), w, h,
+                                      box_from, box[0], box[1]))
                 except Exception:
                     pass
         log(not bad, '%s 图片尺寸 %s' % (f, '；'.join(bad) if bad else '全部匹配'))
@@ -1082,7 +1165,8 @@ def main(project_root):
         else:
             print('  [PASS] %s 触摸穿透配套' % f)
 
-    print('== 17. 资源产物核对（引用存在 + 自动生成图 PNG 尺寸 == 控件 position）==')
+    print('== 17. 资源产物核对（引用存在 + 自动生成图 PNG 尺寸 == 控件 position；\n'
+          '       thumb 子盒 PNG 尺寸 == thumb.size，即铁律 #1）==')
     va = verify_assets(root)
     if va.get('error'):
         log(False, '产物核对 %s' % va['error'])
@@ -1091,22 +1175,30 @@ def main(project_root):
             % (va['pages'], va['refCount'],
                '全部存在' if not va['missing'] else '缺 %d 个：%s'
                % (len(va['missing']), '；'.join('%s %s' % (m['control'], m['field']) for m in va['missing'][:6]))))
-        log(not va['mismatch'], 'PNG 尺寸 == 控件 position（自动生成图）%s'
+        log(not va['mismatch'], 'PNG 尺寸 == 盒子（自动生成图 / thumb.size 声明）%s'
             % ('全部匹配' if not va['mismatch'] else '不匹配 %d 处：%s'
                % (len(va['mismatch']),
-                  '；'.join('%s.%s %dx%d != %dx%d'
+                  '；'.join('%s.%s %dx%d != %s %dx%d'
                             % (m['control'], m['field'], m['png'][0], m['png'][1],
-                               m['position'][0], m['position'][1]) for m in va['mismatch'][:6]))))
+                               m.get('boxFrom', 'position'),
+                               (m.get('box') or m.get('position'))[0],
+                               (m.get('box') or m.get('position'))[1]) for m in va['mismatch'][:6]))))
         if va.get('stretched'):
-            print('  [NOTE] %d 处手绘图尺寸 != 控件盒（引擎会拉伸，通常正常）：%s'
+            print('  [NOTE] %d 处图尺寸 != 盒子（引擎会拉伸，通常正常；其中 thumb.size 盒子只对\n'
+                  '         手绘 thumb 适用）：%s'
                   % (len(va['stretched']),
-                     '；'.join('%s.%s %dx%d != %dx%d'
+                     '；'.join('%s.%s %dx%d != %s %dx%d'
                                % (m['control'], m['field'], m['png'][0], m['png'][1],
-                                  m['position'][0], m['position'][1])
+                                  m.get('boxFrom', 'position'),
+                                  (m.get('box') or m.get('position') or [0, 0])[0],
+                                  (m.get('box') or m.get('position') or [0, 0])[1])
                                for m in va['stretched'][:5])))
         if va['unresolved']:
             print('  [NOTE] %d 处跳过（运行时格式化引用/读图失败），见 flythings_verify_assets 明细'
                   % len(va['unresolved']))
+        if va.get('skippedNoBox'):
+            print('  [NOTE] %d 处因盒子尺寸未知（控件无 position / thumb 无 size）跳过尺寸核对：%s'
+                  % (len(va['skippedNoBox']), '、'.join(va['skippedNoBox'][:5])))
 
     print('== 18. 设计令牌漂移检测（DESIGN.md 令牌 vs json 实际值；沛哥 2026-09-12）==\n'
           '      口径：DESIGN.md 冻结视觉真相，json 颜色/字号应来自令牌；结构值例外 0/-1/16777215；\n'

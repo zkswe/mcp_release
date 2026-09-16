@@ -31,6 +31,15 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import json2html as J2H  # noqa: E402
+# thumb 子盒尺寸解析／自动生成图判定：单一实现在 check_all（#11/#17/verify_assets 同一份口径），
+# 不另抄一套（缺 check_all 时退化为「不预检 thumb 子盒」，不影响其它预检）
+try:
+    from check_all import _thumb_box, _is_auto_generated  # noqa: E402
+except Exception:
+    _thumb_box = None
+
+    def _is_auto_generated(ref):        # 退化：只认 images/ 前缀（铁律 #9）
+        return (ref or '').replace('\\', '/').lstrip('./').split('/')[0].lower() == 'images'
 
 
 # ---------- 图片资源收集（预览显图 + "切图不对"预检）----------
@@ -80,38 +89,59 @@ def _is_transparent(path):
 
 def _preflight(data, base_dir, pics=None):
     """图片尺寸/文本溢出预检 → [(path, caption, level, msg)]；pics = {引用: (w,h)}。
-    只校验「按控件尺寸画」的图（backgroundPic / picTab.picN）；thumb/progressPic/
-    charsetTab 等自有尺寸的图不参与（避开假警报）。"""
+    盒子来源：控件尺寸（backgroundPic / picTab.picN）与 **thumb 自有尺寸子盒 thumb.size**
+    （thumb.normalPic / pressedPic）——图片铁律 #1 对两者都成立。
+    口径：按控件尺寸画的图 → 超过控件盒 = 红 / 大控件配小图 = 黄；thumb 子盒是 json
+    明写的尺寸（盒 = thumb.size）→ **只要不等就红**（与 check_all #11/#17、
+    flythings_verify_assets 的 mismatch 同一判定，v0.27.75 补）。
+    ``.9.png``（本来就要拉伸）与全透明占位图不参与（避开假警报）。"""
     pics = pics or _collect_pics(data, base_dir)
     out = []
     for path, key, ctrl in _iter_controls(data, base_dir):
         pos = ctrl.get('position') or {}
         w, h = pos.get('width'), pos.get('height')
         ctype = key.split('__')[0]
-        refs = []
+        refs = []                                    # (字段, 引用, 盒子, 是否严格)
         if isinstance(ctrl.get('backgroundPic'), str) and ctrl['backgroundPic'].strip():
-            refs.append(('backgroundPic', ctrl['backgroundPic']))
+            refs.append(('backgroundPic', ctrl['backgroundPic'], (w, h), False))
         pt = ctrl.get('picTab')
         if isinstance(pt, dict):
             for k2 in ('pic0', 'pic1', 'pic2', 'pic3', 'pic4'):
                 if isinstance(pt.get(k2), str) and pt[k2].strip():
-                    refs.append((f'picTab.{k2}', pt[k2]))
-        for field, pic in refs:
+                    refs.append((f'picTab.{k2}', pt[k2], (w, h), False))
+        _th = ctrl.get('thumb')
+        _box = _thumb_box(ctrl) if _thumb_box else None
+        if _box and isinstance(_th, dict):
+            for _k2 in ('normalPic', 'pressedPic'):
+                if isinstance(_th.get(_k2), str) and _th[_k2].strip():
+                    refs.append((f'thumb.{_k2}', _th[_k2], _box, True))
+        for field, pic, box, strict in refs:
             sz = pics.get(pic)
             if sz is None:
                 continue
+            bw, bh = box
+            if not bw or not bh:
+                continue                     # 控件没写 position / thumb 没写 size → 不预检
             real = J2H.find_asset(pic, base_dir) or ''
-            if real.endswith('.9.png') or not w or not h:
+            if real.endswith('.9.png'):
                 continue                      # 九宫格图本来就要拉伸
-            if sz[0] == w and sz[1] == h:
+            if sz[0] == bw and sz[1] == bh:
                 continue
-            if sz[0] > w or sz[1] > h:
+            if strict:
+                # thumb 子盒（盒 = thumb.size）：只对**自动生成图**报红（与 check_all #11/#17、
+                # verify_assets 同一口径）；手绘 thumb 引擎会拉伸（基准工程 SampleUI-New 就是
+                # 手绘且差 1~2px）→ 不报，保「基准工程零误报」校准目标。
+                if _is_auto_generated(pic):
+                    out.append((path, ctrl.get('caption', ''), 'error',
+                                f'{field} 图 {sz[0]}x{sz[1]} != thumb.size {bw}x{bh}'
+                                '（json 明写的盒子，设备不缩放普通 PNG）'))
+            elif sz[0] > bw or sz[1] > bh:
                 out.append((path, ctrl.get('caption', ''), 'error',
-                            f'{field} 图 {sz[0]}x{sz[1]} > 控件 {w}x{h}'
+                            f'{field} 图 {sz[0]}x{sz[1]} > 控件 {bw}x{bh}'
                             '（设备不缩放普通 PNG，会裁切/错位）'))
-            elif w > 100 and h > 100 and not _is_transparent(real):
+            elif bw > 100 and bh > 100 and not _is_transparent(real):
                 out.append((path, ctrl.get('caption', ''), 'warn',
-                            f'{field} 图 {sz[0]}x{sz[1]} < 控件 {w}x{h}（大控件配小图，会留边/拉糊）'))
+                            f'{field} 图 {sz[0]}x{sz[1]} < 控件 {bw}x{bh}（大控件配小图，会留边/拉糊）'))
         # 文本溢出：粗估（CJK 1.0em / ASCII 0.55em）。阈值放宽到 1.35 倍，
         # 宁可漏报不误报——SampleUI-New 基准工程零告警是校准目标（2026-09-10）。
         if ctype in ('textview', 'button') and not ctrl.get('rollEnable'):

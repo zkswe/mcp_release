@@ -37,6 +37,9 @@
 - **定位**：`data-x` / `data-y` / `data-w` / `data-h`（或 `data-left/top/width/height`、`style` left/top/width/height）
 - **字号**：`data-fs` / `data-font-size` / `data-fontSize` / 内联 `style="font-size:NNpx"` 都认
 - **颜色**：`data-color` 文字色；`data-bg` 或 `data-background` 背景色（textview/button/edittext 均支持背景）
+  - ⚠️ **纯黑 `#000000` 会被当「未设置」**：转换器对 `data-color` / `data-bg` 用 `to_dec(...) or 默认值` 取值，
+    而 `#000000` = 0 是 falsy → 被替换成默认色（文字 `0xEEF2F6`、按钮底 `0x374457`、窗口底 `0xFFFFFF` 等）。
+    **要纯黑请写 `#010101`**（或改判定逻辑，另议）。深色底 / 黑字最容易踩（2026-09-16 实测）。
 - **命名**：`data-caption` 指定控件名（C 标识符）；缺省自动 `TextView1` / `Button1` …
 - **自备图**：`data-pic`（引用自己切好的 PNG / .9.png / 序列帧 GIF）
 
@@ -102,6 +105,11 @@ style 里出现 `linear-gradient` / `box-shadow` / `border-radius` / `animation`
 ⚠️ **图片一律由转换器自动转图（内置抗锯齿管线），禁止 AI 自绘 1x 直画 png，
 或用外部生图能力直出小图交付**（1x 二值 alpha / 大图缩小边缘必锯齿）。
 防锯齿铁律见 `ui-asset-rules.md`（本目录）。
+
+**出图档位（v0.27.76 起）**：CSS 效果出图**一律走 SS（`ss=4` = 每像素 16 子采样）**，不再保留
+1x + α 羽化那条路 —— 药丸（`border-radius:999px`）/ 正圆（`50%`）/ 圆钮 这类强曲率形状
+过去会有肉眼可见锯齿（药丸实测边界误差 mean 35.4/255 → 现在 5.3）。
+`border-radius` 现在认 `px` / 无单位 / **`%`**（`50%` → 正圆；旧实现只认 px，会出方角）。
 
 ### 7.2 转不了的效果（会提示切图）
 

@@ -111,5 +111,7 @@ components/
 
 - `components/ble/`（BLE 门面 `zk::ble`：上层直接调；上电/预初始化/线程/TLV 全在组件内部）
 - `components/fonts/`（思源黑体三版 + 设备字体自检）
+- `components/icons/`（Tabler 图标库：语义图标 → 任意分辨率单色 PNG，两条命令出图）
+- `components/ui_v1/`（**框架基线目录，文档型**：当前这代 FlyThings IDE + easyui 的跨框架**控件映射唯一权威表** + 逻辑映射 + 缺口五级处置 + 候选组件登记；**跨框架控件映射查这里**）
 - `devflow/custom-font-config.md`（字库机制 + 设备字体自检使用口径）
 - `devflow/upgrade-pack-image.md`（固化出包与刷机；⚠️ 会整体替换 `/res`）

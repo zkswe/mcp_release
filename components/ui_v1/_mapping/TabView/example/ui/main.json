@@ -1,0 +1,331 @@
+{
+  "beepEnable": true,
+  "id": 0,
+  "resolution": {
+    "height": 600,
+    "width": 1024
+  },
+  "topmost": false,
+  "backgroundColor": 16119802,
+  "position": {
+    "height": 600,
+    "left": 0,
+    "top": 0,
+    "width": 1024
+  },
+  "window__1": {
+    "backgroundColor": 16777215,
+    "caption": "WinTopBar",
+    "hideTimeOut": -1,
+    "id": 110001,
+    "modal": false,
+    "position": {
+      "height": 64,
+      "left": 0,
+      "top": 0,
+      "width": 1024
+    },
+    "touchable": false,
+    "visible": true,
+    "textview__2": {
+      "alignment": 36,
+      "caption": "TextView1",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 13,
+      "id": 50001,
+      "position": {
+        "height": 18,
+        "left": 20,
+        "top": 4,
+        "width": 412
+      },
+      "touchable": false,
+      "text": "components/ui_v1/_mapping/TabView 滑动切页 + 页签高亮双向同步"
+    },
+    "button__3": {
+      "alignment": 37,
+      "caption": "BtnTab0",
+      "colorTab": {
+        "color0": 2201331
+      },
+      "id": 20001,
+      "position": {
+        "height": 36,
+        "left": 20,
+        "top": 24,
+        "width": 180
+      },
+      "touchable": true,
+      "bgColorTab": {
+        "color0": 3621975
+      },
+      "fontSize": 16,
+      "text": "Page 0",
+      "picTab": {}
+    },
+    "button__4": {
+      "alignment": 37,
+      "caption": "BtnTab1",
+      "colorTab": {
+        "color0": 6381921
+      },
+      "id": 20002,
+      "position": {
+        "height": 36,
+        "left": 212,
+        "top": 24,
+        "width": 180
+      },
+      "touchable": true,
+      "bgColorTab": {
+        "color0": 3621975
+      },
+      "fontSize": 16,
+      "text": "Page 1",
+      "picTab": {}
+    },
+    "textview__5": {
+      "alignment": 36,
+      "caption": "TvLog",
+      "colorTab": {
+        "color0": 4545124
+      },
+      "fontSize": 14,
+      "id": 50002,
+      "position": {
+        "height": 24,
+        "left": 420,
+        "top": 30,
+        "width": 580
+      },
+      "touchable": false,
+      "text": "onPageChanged: ready"
+    },
+    "textview__6": {
+      "alignment": 36,
+      "caption": "TvTabMark",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 16,
+      "id": 50003,
+      "position": {
+        "height": 4,
+        "left": 20,
+        "top": 60,
+        "width": 180
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 2201331
+      }
+    }
+  },
+  "pagewindow__7": {
+    "caption": "PwPages",
+    "dragMaxDis": 200,
+    "edgeEffect": 1,
+    "id": 31001,
+    "orientation": 0,
+    "rollSpeed": 60,
+    "position": {
+      "height": 536,
+      "left": 0,
+      "top": 64,
+      "width": 1024
+    },
+    "window__8": {
+      "backgroundColor": 16119802,
+      "caption": "Page0",
+      "hideTimeOut": -1,
+      "id": 110002,
+      "modal": false,
+      "position": {
+        "height": 536,
+        "left": 0,
+        "top": 0,
+        "width": 1024
+      },
+      "touchable": false,
+      "visible": true,
+      "textview__9": {
+        "alignment": 36,
+        "caption": "TvPage0Title",
+        "colorTab": {
+          "color0": 2201331
+        },
+        "fontSize": 40,
+        "id": 50004,
+        "position": {
+          "height": 56,
+          "left": 40,
+          "top": 36,
+          "width": 900
+        },
+        "touchable": false,
+        "text": "第 0 页"
+      },
+      "textview__10": {
+        "alignment": 36,
+        "caption": "TextView2",
+        "colorTab": {
+          "color0": 6323595
+        },
+        "fontSize": 16,
+        "id": 50005,
+        "position": {
+          "height": 24,
+          "left": 40,
+          "top": 104,
+          "width": 920
+        },
+        "touchable": false,
+        "text": "手指在屏幕上左右滑动 = 翻页；顶部页签的高亮与下划线会跟着走"
+      },
+      "button__11": {
+        "alignment": 37,
+        "caption": "BtnCount0",
+        "colorTab": {
+          "color0": 16777215
+        },
+        "id": 20003,
+        "position": {
+          "height": 56,
+          "left": 40,
+          "top": 160,
+          "width": 180
+        },
+        "touchable": true,
+        "bgColorTab": {
+          "color0": 2201331
+        },
+        "fontSize": 18,
+        "text": "点我 +1",
+        "picTab": {}
+      },
+      "textview__12": {
+        "alignment": 36,
+        "caption": "TvCount0",
+        "colorTab": {
+          "color0": 2171169
+        },
+        "fontSize": 20,
+        "id": 50006,
+        "position": {
+          "height": 28,
+          "left": 240,
+          "top": 176,
+          "width": 240
+        },
+        "touchable": false,
+        "text": "0"
+      },
+      "textview__13": {
+        "alignment": 36,
+        "caption": "TextView3",
+        "colorTab": {
+          "color0": 10395294
+        },
+        "fontSize": 14,
+        "id": 50007,
+        "position": {
+          "height": 24,
+          "left": 40,
+          "top": 240,
+          "width": 920
+        },
+        "touchable": false,
+        "text": "（这个按钮用来证明：页内的业务控件照常收得到触摸，翻页手势不会吃掉点击）"
+      }
+    },
+    "window__14": {
+      "backgroundColor": 16119802,
+      "caption": "Page1",
+      "hideTimeOut": -1,
+      "id": 110003,
+      "modal": false,
+      "position": {
+        "height": 536,
+        "left": 0,
+        "top": 0,
+        "width": 1024
+      },
+      "touchable": false,
+      "visible": true,
+      "textview__15": {
+        "alignment": 36,
+        "caption": "TvPage1Title",
+        "colorTab": {
+          "color0": 16007990
+        },
+        "fontSize": 40,
+        "id": 50008,
+        "position": {
+          "height": 56,
+          "left": 40,
+          "top": 36,
+          "width": 900
+        },
+        "touchable": false,
+        "text": "第 1 页"
+      },
+      "textview__16": {
+        "alignment": 36,
+        "caption": "TextView4",
+        "colorTab": {
+          "color0": 6323595
+        },
+        "fontSize": 16,
+        "id": 50009,
+        "position": {
+          "height": 24,
+          "left": 40,
+          "top": 104,
+          "width": 920
+        },
+        "touchable": false,
+        "text": "滑回左边 = 回第 0 页；点顶部 Page 0 / Page 1 也能切（两条路径同一个回调）"
+      },
+      "button__17": {
+        "alignment": 37,
+        "caption": "BtnCount1",
+        "colorTab": {
+          "color0": 16777215
+        },
+        "id": 20004,
+        "position": {
+          "height": 56,
+          "left": 40,
+          "top": 160,
+          "width": 180
+        },
+        "touchable": true,
+        "bgColorTab": {
+          "color0": 16007990
+        },
+        "fontSize": 18,
+        "text": "点我 +1",
+        "picTab": {}
+      },
+      "textview__18": {
+        "alignment": 36,
+        "caption": "TvCount1",
+        "colorTab": {
+          "color0": 2171169
+        },
+        "fontSize": 20,
+        "id": 50010,
+        "position": {
+          "height": 28,
+          "left": 240,
+          "top": 176,
+          "width": 240
+        },
+        "touchable": false,
+        "text": "0"
+      }
+    }
+  }
+}

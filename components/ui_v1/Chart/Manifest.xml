@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  components/ui_v1/Chart —— package 引用声明
+
+  本模块的交付物：
+    include/zk/zk_chart.h     唯一对外头（zk::ui_v1::Chart）
+    src/zk_chart.cpp          实现（**源码型**：随本仓库分发）
+    example/                  最小可跑工程（Z21 真机验收过）
+
+  两种引用方式：
+
+  A) 源码引入（推荐，改动最快）
+     1) 拷 include/zk/*.h  → <工程>/src/zk/
+     2) 拷 src/*.cpp       → <工程>/src/zk/          （fun build 自动把 src/** 加进编译单元，实测）
+     3) 在 <工程>/Manifest.xml 里声明下面这份「本模块依赖的底层包」
+
+  B) 依赖包引用（本模块定型后，注册进包仓库时）
+     <package id="ui_v1_chart" version="0.1.0"></package>   <!-- 版本写死，不用 ^ 浮动 -->
+     注意：本模块目前**不在依赖包仓库里**，以上只是将来形态的说明。
+-->
+<manifest>
+
+  <!-- ============================================================ Z21（已真机验收） -->
+  <platform name="Z21">
+    <dependencies enableOnPlatforms="Z21">
+      <package id="easyui"       version="^2.6.0"/>   <!-- ZKPainter（画布）/ ZKTextView（刻度文字） -->
+      <package id="log"          version="0.0.0"/>
+      <package id="zkhardware"   version="0.0.0"/>
+      <package id="zknet"        version="0.0.0"/>
+      <package id="base-utility" version="^10.9.3"/>
+    </dependencies>
+  </platform>
+
+  <!-- ============================================================ F133（仅编译通过，未上机） -->
+  <platform name="F133">
+    <dependencies enableOnPlatforms="F133">
+      <package id="easyui"       version="^2.9.0"/>
+      <package id="log"          version="0.0.0"/>
+      <package id="zkhardware"   version="0.0.0"/>
+      <package id="zknet"        version="0.0.0"/>
+      <package id="base-utility" version="^10.9.3"/>
+    </dependencies>
+  </platform>
+
+  <!-- ============================================================ 其它平台 -->
+  <!-- Z20 / T113 / V85X：easyui 版本按各平台 registry 选。
+       ZKPainter 的 11 个公开 API 已逐个核对 z21/2.6.0、f133/2.9.0、v85x/2.3.0、z20/3.0.0、t113emmc/2.9.0，完全一致。 -->
+
+</manifest>

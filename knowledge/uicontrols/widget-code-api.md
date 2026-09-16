@@ -77,7 +77,18 @@
 - 数据坐标系=轴范围逻辑值（0..100 刻度非像素），越界裁剪；index 对应 json infos[] 顺序
 
 ## ZKPainter（PainterDemo）
-- 状态式画笔：`setLineWidth(px)/setSourceColor(0xRRGGBB)` 后画：`drawRect(x,y,w,h,r)/drawArc(外接矩形,startAng,sweepAng)/fillArc/drawTriangle/fillTriangle/drawLines(SZKPoint*,n)/drawCurve(SZKPoint*,n)`
+- 状态式画笔：`setLineWidth(px)/setSourceColor(0xRRGGBB)` 后画：`drawRect(x,y,w,h,r)/drawArc(...)/fillArc/drawTriangle/fillTriangle/drawLines(SZKPoint*,n)/drawCurve(SZKPoint*,n)`
+- ⚠️ **`drawArc` 实参口径存疑（两套记录冲突，待官方/沛哥确认，勿当定论）**：
+  - 既有文档/笔记写 `drawArc(外接矩形, startAng, sweepAng)`；
+  - **Z21（easyui 2.6.0）真机实测**按 `(cx, cy, rx, ry, start, sweep)`（圆心 + 半径）写**渲染正确**
+    （按格子填色，无残影）；可复现调用点：`projects/EasyDevice-Z21/src/logic/mainLogic.cc`。
+  - 两种写法用前先按项目平台跑一次小图自证，别照抄。
+- **`fillRect` / `erase` 实测可用（Z21，同上调用点）**：`fillRect` 填矩形、`erase` 清屏
+  （清屏后无残影，适合做数据刷新前的整块重画）——官方 demo 未演示，故补记。
+- **z 序（2026-09-16 Z21 真机实测，静态检查发现不了）**：json 里**后定义 = z 更高**。
+  painter 自带不透明底（`erase()`/铺底色），所以**叠在它上面的刻度数字/文字必须写在 painter 之后**；
+  写在前面会被整块盖住（图形正常、字全不见，`check_all`/本地预览都发现不了）。案例复现：
+  `projects/translate/lvgl-widgets-uiv1/gen_html.py`（c4/c5 把 painter 挪到刻度 textview 之前修好）。
 - 控件相对坐标（0,0=画布左上）；⚠️ 官方 demo 只在 onUI_init 画一次、touchable=false——翻页回来不会自动重画（要做 onUI_show 重绘）；触摸手绘需自己拦 touch 换算坐标增量画
 
 ## ZKImageAnim（ImageAnimDemo）

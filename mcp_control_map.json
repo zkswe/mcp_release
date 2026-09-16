@@ -1,0 +1,2718 @@
+{
+ "schema": 1,
+ "version": 1,
+ "updated": "2026-09-16",
+ "note": "跨框架控件映射的机读索引（配合 op flythings_map_control）。一级口径：**有平台对应控件 → 走映射能力（本文件）**；**平台真缺的能力 → 走自定义控件包 components/ui_v1/**。人工维护，来源 = components/ui_v1/control-map.md + gap-list.md + knowledge/devflow/gui-controls-gap.md + knowledge/uicontrols/*-fields.md（**冲突以 KB 为准**）。改完重建索引并跑闸门。",
+ "levels": {
+  "L1": "等价：有对应自带控件，语义+行为 1:1（平台固有差异如系统键盘/设备字库计入 L1）",
+  "L2": "组合：无单一控件，但 2+ 自带控件/容器组合 + logic 侧聚合即可无能力丢失",
+  "L3": "自绘：平台真缺该能力，必须 ZKPainter 自绘（文字一律 textview 叠加）；ref 指向 components/ui_v1/<包>",
+  "L4": "降级：语义保留但交互体验或观感明确降低（手势/动画/动态样式/惯性/平滑…）；notes 给替代建议",
+  "L5": "不支持：平台无对应能力且无合理替代；notes 明说不支持并给替代建议"
+ },
+ "sourceLabels": {
+  "lvgl": "LVGL（v8/v9）",
+  "qt": "Qt Widgets（Qt5/6）",
+  "android": "Android View / Material",
+  "miniprogram": "微信小程序",
+  "emwin": "emWin / SEGGER",
+  "mfc": "MFC（Windows）"
+ },
+ "jsonTemplateRule": "json 片段 = 可直接粘贴进 ui/*.json 的片段：键名 = 控件类型__序号，字段按 knowledge/uicontrols/json-field-mandatory.md 的「每类型必写键全集」显式写出（默认值也写），caption 用规范命名（Tv/Btn/Lv/Sk/Rg/Pw/... 前缀）。",
+ "targets": {
+  "window": {
+   "caption": "WinCard",
+   "ptr": "mWinCardPtr (ZKWindow)",
+   "json": "{\"window__1\":{\"id\":110001,\"caption\":\"WinCard\",\"position\":{\"left\":40,\"top\":120,\"width\":400,\"height\":240},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}",
+   "note": "容器/卡片/面板；圆角走 border-radius（html2json 自动转图）"
+  },
+  "window_modal": {
+   "caption": "WinDialog",
+   "ptr": "mWinDialogPtr (ZKWindow)",
+   "json": "{\"window__1\":{\"id\":110002,\"caption\":\"WinDialog\",\"position\":{\"left\":112,\"top\":100,\"width\":800,\"height\":400},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+   "note": "弹窗/对话框：modal=true 拦底层点击；showWnd()/hideWnd()/isWndShow()"
+  },
+  "button": {
+   "caption": "BtnSubmit",
+   "ptr": "mBtnSubmitPtr (ZKButton)",
+   "json": "{\"button__1\":{\"id\":20001,\"caption\":\"BtnSubmit\",\"position\":{\"left\":40,\"top\":400,\"width\":200,\"height\":56},\"alignment\":37,\"colorTab\":{\"color0\":16777215},\"bgColorTab\":{\"color0\":2201331},\"fontSize\":18,\"picTab\":{},\"text\":\"提交\",\"touchable\":true}}",
+   "note": "回调 bool onButtonClick_BtnSubmit(ZKButton*)；长按另配 longClickTimeOut/longClickIntervalTime + setLongClickListener"
+  },
+  "button_pic": {
+   "caption": "BtnIcon",
+   "ptr": "mBtnIconPtr (ZKButton)",
+   "json": "{\"button__2\":{\"id\":20002,\"caption\":\"BtnIcon\",\"position\":{\"left\":40,\"top\":400,\"width\":72,\"height\":40},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"picTab\":{\"pic0\":\"images/btn_n.9.png\",\"pic1\":\"images/btn_p.9.png\"},\"text\":\"\",\"touchable\":true}}",
+   "note": "两态/多态图 picTab{pic0..pic4}；透明角图不要写 bgColorTab"
+  },
+  "switch_button": {
+   "caption": "BtnSwitch",
+   "ptr": "mBtnSwitchPtr (ZKButton)",
+   "json": "{\"button__3\":{\"id\":20003,\"caption\":\"BtnSwitch\",\"position\":{\"left\":600,\"top\":120,\"width\":88,\"height\":48},\"alignment\":37,\"picTab\":{\"pic0\":\"images/sw_off.png\",\"pic1\":\"images/sw_off_p.png\",\"pic2\":\"images/sw_on.png\"},\"text\":\"\",\"touchable\":true}}",
+   "note": "开关/复选：pic0 关 / pic1 按下 / pic2 开 + setSelected()；⚠️ fun 不为 checkbox__ 生成宏/指针/回调"
+  },
+  "textview": {
+   "caption": "TvTitle",
+   "ptr": "mTvTitlePtr (ZKTextView)",
+   "json": "{\"textview__1\":{\"id\":50001,\"caption\":\"TvTitle\",\"position\":{\"left\":40,\"top\":40,\"width\":400,\"height\":32},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"fontSize\":24,\"touchable\":false,\"text\":\"标题\"}}",
+   "note": "setText 支持 \\n 多行；不自动折行；alignment 36 左中 37 居中"
+  },
+  "textview_icon": {
+   "caption": "TvIconMail",
+   "ptr": "mTvIconMailPtr (ZKTextView)",
+   "json": "{\"textview__2\":{\"id\":50002,\"caption\":\"TvIconMail\",\"position\":{\"left\":40,\"top\":40,\"width\":24,\"height\":24},\"alignment\":37,\"backgroundPic\":\"images/icon_mail_24x24_2196F3.png\",\"colorTab\":{\"color0\":16777215},\"fontSize\":16,\"touchable\":false,\"text\":\"\"}}",
+   "note": "图标=Solid 图标字体缺失 → 用 Tabler PNG（components/icons）；图尺寸必须 == 控件盒"
+  },
+  "image": {
+   "caption": "TvPhoto",
+   "ptr": "mTvPhotoPtr (ZKTextView)",
+   "json": "{\"textview__3\":{\"id\":50003,\"caption\":\"TvPhoto\",\"position\":{\"left\":40,\"top\":80,\"width\":320,\"height\":180},\"alignment\":37,\"backgroundPic\":\"images/photo_320x180.png\",\"colorTab\":{\"color0\":16777215},\"fontSize\":16,\"touchable\":false,\"text\":\"\"}}",
+   "note": "图片统一走 textview + backgroundPic；resources/images/ 自动生成图尺寸必须 == 控件盒"
+  },
+  "edittext": {
+   "caption": "EtName",
+   "ptr": "mEtNamePtr (ZKEditText)",
+   "json": "{\"edittext__1\":{\"id\":40001,\"caption\":\"EtName\",\"position\":{\"left\":40,\"top\":120,\"width\":320,\"height\":48},\"alignment\":36,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"hintTextColor\":8421504,\"text\":\"\",\"textType\":0}}",
+   "note": "系统内置键盘自动弹出（源自制键盘丢弃）；回调 onEditTextChanged_EtName(const std::string&) 每键一次"
+  },
+  "listview": {
+   "caption": "LvFiles",
+   "ptr": "mLvFilesPtr (ZKListView)",
+   "json": "{\"listview__1\":{\"id\":60001,\"caption\":\"LvFiles\",\"position\":{\"left\":20,\"top\":120,\"width\":984,\"height\":420},\"autoRollback\":false,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":false,\"dragMaxDis\":1,\"edgeEffect\":50,\"hasScrollbar\":true,\"orientation\":1,\"rows\":6,\"rowSpacing\":2,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"\",\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"position\":{\"left\":0,\"top\":0,\"width\":984,\"height\":68},\"text\":\"\",\"touchable\":true,\"visible\":true,\"subItem\":[{\"id\":61001,\"caption\":\"TvRowName\",\"position\":{\"left\":16,\"top\":16,\"width\":600,\"height\":36},\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontFamily\":0,\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"text\":\"\",\"touchable\":true,\"visible\":true}]}}}",
+   "note": "三回调：getListItemCount_/obtainListItemData_（禁耗时）/onListItemClick_；行自身 setText(\"\") 否则与 subItem 叠字；数据变了必须 refreshListView()"
+  },
+  "seekbar": {
+   "caption": "SkSpeed",
+   "ptr": "mSkSpeedPtr (ZKSeekBar)",
+   "json": "{\"seekbar__1\":{\"id\":33001,\"caption\":\"SkSpeed\",\"position\":{\"left\":40,\"top\":200,\"width\":400,\"height\":40},\"backgroundColor\":-1,\"backgroundPic\":\"images/sk_track_400x40.png\",\"defProgress\":0,\"max\":100,\"orientation\":0,\"progressPic\":\"images/sk_fill_400x40.png\",\"thumb\":\"images/sk_thumb_24x24.png\",\"touchable\":true,\"visible\":true}}",
+   "note": "回调 onProgressChanged_SkSpeed(ZKSeekBar*,int)；背景禁 .9.png、尺寸==position；拿拖拽起止要换 ISeekBarChangeListener"
+  },
+  "progressbar": {
+   "caption": "SkProgress",
+   "ptr": "mSkProgressPtr (ZKSeekBar)",
+   "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":\"\",\"touchable\":false,\"visible\":true}}",
+   "note": "只读进度条 = seekbar + touchable:false；代码 setProgress(int)"
+  },
+  "radiogroup": {
+   "caption": "RgGender",
+   "ptr": "mRgGenderPtr (ZKRadioGroup)",
+   "json": "{\"radiogroup__1\":{\"id\":70001,\"caption\":\"RgGender\",\"position\":{\"left\":40,\"top\":160,\"width\":400,\"height\":128},\"backgroundColor\":-1,\"touchable\":true,\"visible\":true,\"radiobuttons\":[{\"id\":71001,\"caption\":\"RbMale\",\"position\":{\"left\":16,\"top\":12,\"width\":180,\"height\":40},\"alignment\":36,\"checked\":false,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"backgroundColor\":-1,\"bold\":false,\"fontSize\":16,\"italic\":false,\"text\":\"男\",\"touchable\":true,\"visible\":true}]}}",
+   "note": "⚠️ touchable 必须 true（容器例外）；回调 onCheckedChanged_RgGender(ZKRadioGroup*,int checkedID) 给的是选中项控件 ID"
+  },
+  "scrollwindow": {
+   "caption": "SwPanel",
+   "ptr": "mSwPanelPtr (ZKScrollWindow)",
+   "json": "{\"scrollwindow__1\":{\"id\":32001,\"caption\":\"SwPanel\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":536},\"dragMaxDis\":1200,\"orientation\":1,\"edgeEffect\":0,\"window__2\":{\"id\":110003,\"caption\":\"WinContent\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":1200},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}}",
+   "note": "dragMaxDis = 行程/内容尺寸（另一口径为 内容-视口，以实测为准）；嵌套 window 即内容"
+  },
+  "pagewindow": {
+   "caption": "PwPages",
+   "ptr": "mPwPagesPtr (ZKPageWindow)",
+   "json": "{\"pagewindow__1\":{\"id\":31001,\"caption\":\"PwPages\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":536},\"dragMaxDis\":200,\"orientation\":0,\"edgeEffect\":1,\"rollSpeed\":60,\"window__2\":{\"id\":110004,\"caption\":\"Page0\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":536},\"backgroundColor\":16119802,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true},\"window__3\":{\"id\":110005,\"caption\":\"Page1\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":536},\"backgroundColor\":16119802,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}}",
+   "note": "自带左右滑动切页；IPageChangeListener::onPageChange(pw,page)（page 从 0 起）；手感 dragMaxDis/edgeEffect/rollSpeed/orientation 只能在 json 设"
+  },
+  "slidewindow": {
+   "caption": "SlwLauncher",
+   "ptr": "mSlwLauncherPtr (ZKSlideWindow)",
+   "json": "{\"slidewindow__1\":{\"id\":30001,\"caption\":\"SlwLauncher\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":480},\"backgroundColor\":-1,\"cols\":4,\"fontSize\":12,\"iconSize\":{\"width\":128,\"height\":128},\"items\":[{\"colorTab\":{\"color0\":2171169},\"picTab\":{\"pic0\":\"images/ic_app1.png\",\"pic1\":\"images/ic_app1_p.png\"},\"text\":\"应用一\"}],\"padding\":{\"bottom\":8},\"rollSpeed\":199,\"rows\":2,\"touchable\":true,\"visible\":true}}",
+   "note": "宫格轮播；回调 onSlideItemClick_SlwLauncher(ZKSlideWindow*,int index)（跨屏全局下标）"
+  },
+  "painter": {
+   "caption": "PtChart",
+   "ptr": "mPtChartPtr (ZKPainter)",
+   "json": "{\"painter__1\":{\"id\":35001,\"caption\":\"PtChart\",\"position\":{\"left\":40,\"top\":120,\"width\":944,\"height\":320},\"backgroundColor\":16777215,\"touchable\":false,\"visible\":true}}",
+   "note": "自绘：setLineWidth/setSourceColor + drawRect/drawArc/drawLines/drawCurve/fillRect/erase；无文字 API、不自动重绘"
+  },
+  "diagram": {
+   "caption": "DgmWave",
+   "ptr": "mDgmWavePtr (ZKDiagram)",
+   "json": "{\"diagram__1\":{\"id\":34001,\"caption\":\"DgmWave\",\"position\":{\"left\":40,\"top\":120,\"width\":944,\"height\":240},\"backgroundColor\":16777215,\"region\":{\"left\":0,\"top\":0,\"width\":944,\"height\":240},\"touchable\":true,\"visible\":true,\"xAxisRange\":100,\"yAxisRange\":100,\"infos\":[{\"caption\":\"Wave0\",\"penColor\":2201331,\"penWidth\":2,\"step\":2,\"style\":0,\"eraseSpace\":4,\"antialias\":true,\"visible\":true,\"xScale\":1,\"yScale\":1}]}}",
+   "note": "实时波形专用（x 自动推进 + 单值追加）：addData(idx,y)/setData(idx,points,n)；数据坐标=轴范围逻辑值"
+  },
+  "circlebar": {
+   "caption": "CbRing",
+   "ptr": "mCbRingPtr (ZKCircleBar)",
+   "json": "{\"circlebar__1\":{\"id\":36001,\"caption\":\"CbRing\",\"position\":{\"left\":400,\"top\":140,\"width\":224,\"height\":224},\"backgroundColor\":-1,\"clockwise\":true,\"max\":100,\"maxAngle\":360,\"progressPic\":\"images/ring_220x220_2196F3.png\",\"progressPicPos\":0,\"startAngle\":0,\"textColor\":2171169,\"textSize\":24,\"textType\":0,\"thumb\":\"\",\"touchRange\":0,\"touchable\":false,\"unit\":\"%\",\"visible\":true}}",
+   "note": "单环进度：setProgress(0..max)；按进度裁有效图（每种色一份图）；无拖拽回调"
+  },
+  "pointer": {
+   "caption": "PtrGauge",
+   "ptr": "mPtrGaugePtr (ZKPointer)",
+   "json": "{\"pointer__1\":{\"id\":37001,\"caption\":\"PtrGauge\",\"position\":{\"left\":380,\"top\":140,\"width\":264,\"height\":264},\"animatable\":true,\"backgroundColor\":-1,\"backgroundPic\":\"images/gauge_bg_264x264.png\",\"clockwise\":true,\"fixedPoint\":{\"x\":33,\"y\":132},\"pointerPic\":\"images/needle_200x20.png\",\"pointerSize\":{\"width\":200,\"height\":20},\"rotateSpeed\":1,\"rotationPoint\":{\"x\":132,\"y\":132},\"startAngle\":0,\"touchable\":false,\"visible\":true}}",
+   "note": "表针：唯一 API setTargetAngle(deg)；需 rotationPoint(控件系圆心) + fixedPoint(图系铰点) + 表盘底图"
+  },
+  "digitalclock": {
+   "caption": "DcClock",
+   "ptr": "mDcClockPtr (ZKDigitalClock)",
+   "json": "{\"digitalclock__1\":{\"id\":38001,\"caption\":\"DcClock\",\"position\":{\"left\":40,\"top\":24,\"width\":240,\"height\":48},\"backgroundColor\":-1,\"beat\":false,\"clockColor\":16777215,\"fontSize\":32,\"format\":\"HH:MM\",\"touchable\":false,\"visible\":true}}",
+   "note": "零代码自走时；format/beat/clockColor 在 json 里配"
+  },
+  "imageanim": {
+   "caption": "IaLoading",
+   "ptr": "mIaLoadingPtr (ZKImageAnim)",
+   "json": "{\"imageanim__1\":{\"id\":39001,\"caption\":\"IaLoading\",\"position\":{\"left\":480,\"top\":280,\"width\":64,\"height\":64},\"loopCount\":0,\"playFile\":\"images/loading.gif\"}}",
+   "note": "playFile + loopCount；⚠️ F133 不支持动图（见 ui_v1/platforms.md）"
+  },
+  "qrcode": {
+   "caption": "QrCode",
+   "ptr": "mQrCodePtr (ZKQRCode)",
+   "json": "{\"qrcode__1\":{\"id\":41001,\"caption\":\"QrCode\",\"position\":{\"left\":400,\"top\":160,\"width\":224,\"height\":224},\"backgroundColor\":16777215,\"codeStr\":\"https://developer.flythings.cn\",\"padding\":10,\"touchable\":true,\"visible\":true}}",
+   "note": "唯一 API loadQRCode(const char* utf8)（每次全量重生成）；padding 恒 10"
+  },
+  "videoview": {
+   "caption": "VvPlayer",
+   "ptr": "mVvPlayerPtr (ZKVideoView)",
+   "json": "{\"videoview__1\":{\"id\":42001,\"caption\":\"VvPlayer\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":536},\"backgroundColor\":0,\"defaultVolume\":5,\"loopPlayback\":false,\"rotation\":0,\"touchable\":true,\"visible\":true}}",
+   "note": "setVideoPlayerMessageListener + E_MSGTYPE_VIDEO_PLAY_STARTED/COMPLETED/ERROR（与 ZKMediaPlayer 的枚举不是一套）"
+  },
+  "cameraview": {
+   "caption": "CvCamera",
+   "ptr": "mCvCameraPtr (ZKCameraView)",
+   "json": "{\"cameraview__1\":{\"id\":43001,\"caption\":\"CvCamera\",\"position\":{\"left\":0,\"top\":64,\"width\":640,\"height\":480},\"autoPreview\":true,\"backgroundColor\":0,\"cvbs\":false,\"formatSize\":\"640x480\",\"mirror\":0,\"touchable\":false,\"visible\":true}}",
+   "note": "拍照四回调 IPictureCallback（纯虚必实现，仅 jpg）；End 后 sync() 落盘"
+  },
+  "slidetext": {
+   "caption": "StMarquee",
+   "ptr": "mStMarqueePtr (ZKSlideText)",
+   "json": "{\"slidetext__1\":{\"id\":44001,\"caption\":\"StMarquee\",\"position\":{\"left\":0,\"top\":24,\"width\":420,\"height\":40},\"touchable\":false}}",
+   "note": "跑马灯；rollEnable/rollDirection/rollIntervalTime/rollStep"
+  },
+  "toast": {
+   "caption": "WinToast",
+   "ptr": "mWinToastPtr (ZKWindow)",
+   "json": "{\"window__9\":{\"id\":110009,\"caption\":\"WinToast\",\"position\":{\"left\":312,\"top\":460,\"width\":400,\"height\":80},\"backgroundColor\":2171169,\"hideTimeOut\":2000,\"modal\":false,\"touchable\":false,\"visible\":false,\"textview__1\":{\"id\":50010,\"caption\":\"TvToast\",\"position\":{\"left\":0,\"top\":0,\"width\":400,\"height\":80},\"alignment\":37,\"colorTab\":{\"color0\":16777215},\"fontSize\":18,\"touchable\":false,\"text\":\"\"}}}",
+   "note": "轻提示：小 window + hideTimeOut 2~3s + showWnd()；不占焦点"
+  },
+  "picker": {
+   "caption": "BtnPicker",
+   "ptr": "mBtnPickerPtr (ZKButton) + mWinPickerPtr",
+   "json": "{\"button__10\":{\"id\":20010,\"caption\":\"BtnPicker\",\"position\":{\"left\":40,\"top\":160,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":16,\"picTab\":{},\"text\":\"请选择\",\"touchable\":true},\"window__11\":{\"id\":110011,\"caption\":\"WinPicker\",\"position\":{\"left\":112,\"top\":200,\"width\":800,\"height\":300},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+   "note": "下拉选择：按钮 + modal window（listview/按钮组）；降级点：无滚轮惯性、无多列联动、展开位变居中模态"
+  },
+  "calendar": {
+   "caption": "BtnDate",
+   "ptr": "mBtnDatePtr (ZKButton) + mWinCalendarPtr",
+   "json": "{\"button__20\":{\"id\":20020,\"caption\":\"BtnDate\",\"position\":{\"left\":40,\"top\":220,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":16,\"picTab\":{},\"text\":\"2026-09-16\",\"touchable\":true},\"window__21\":{\"id\":110021,\"caption\":\"WinCalendar\",\"position\":{\"left\":112,\"top\":60,\"width\":800,\"height\":480},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+   "note": "日期选择：按钮 + modal window（7×6=42 个 textview 承载日号 + 触摸反算命中格）；painter 无文字 API"
+  },
+  "stepper": {
+   "caption": "BtnStepMinus/TvStepValue/BtnStepPlus",
+   "ptr": "mBtnStepMinusPtr / mTvStepValuePtr / mBtnStepPlusPtr",
+   "json": "{\"button__30\":{\"id\":20030,\"caption\":\"BtnStepMinus\",\"position\":{\"left\":40,\"top\":280,\"width\":48,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":24,\"picTab\":{},\"text\":\"-\",\"touchable\":true},\"textview__31\":{\"id\":50031,\"caption\":\"TvStepValue\",\"position\":{\"left\":96,\"top\":280,\"width\":120,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":20,\"touchable\":false,\"text\":\"0\"},\"button__32\":{\"id\":20032,\"caption\":\"BtnStepPlus\",\"position\":{\"left\":224,\"top\":280,\"width\":48,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":24,\"picTab\":{},\"text\":\"+\",\"touchable\":true}}",
+   "note": "数值步进：两个按钮 + 数值 textview"
+  },
+  "tablegrid": {
+   "caption": "TvThName/TvThValue/LvTable",
+   "ptr": "mTvThNamePtr / mLvTablePtr",
+   "json": "{\"textview__40\":{\"id\":50040,\"caption\":\"TvThName\",\"position\":{\"left\":20,\"top\":80,\"width\":400,\"height\":40},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":15790320},\"fontSize\":16,\"touchable\":false,\"text\":\"名称\"},\"textview__41\":{\"id\":50041,\"caption\":\"TvThValue\",\"position\":{\"left\":420,\"top\":80,\"width\":584,\"height\":40},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":15790320},\"fontSize\":16,\"touchable\":false,\"text\":\"数值\"},\"listview__42\":{\"id\":60042,\"caption\":\"LvTable\",\"position\":{\"left\":20,\"top\":120,\"width\":984,\"height\":420},\"autoRollback\":false,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":false,\"dragMaxDis\":1,\"edgeEffect\":50,\"hasScrollbar\":true,\"orientation\":1,\"rows\":6,\"rowSpacing\":2,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"\",\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"position\":{\"left\":0,\"top\":0,\"width\":984,\"height\":68},\"text\":\"\",\"touchable\":true,\"visible\":true,\"subItem\":[{\"id\":61001,\"caption\":\"TvRowName\",\"position\":{\"left\":16,\"top\":16,\"width\":600,\"height\":36},\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontFamily\":0,\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"text\":\"\",\"touchable\":true,\"visible\":true}]}}}",
+   "note": "表格：textview 表头 + listview 网格（列宽手工对齐）"
+  },
+  "refresher": {
+   "caption": "BtnRefresh",
+   "ptr": "mBtnRefreshPtr (ZKButton)",
+   "json": "{\"button__50\":{\"id\":20050,\"caption\":\"BtnRefresh\",\"position\":{\"left\":20,\"top\":80,\"width\":160,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":16777215},\"bgColorTab\":{\"color0\":2201331},\"fontSize\":16,\"picTab\":{},\"text\":\"刷新\",\"touchable\":true},\"textview__51\":{\"id\":50051,\"caption\":\"TvRefreshState\",\"position\":{\"left\":200,\"top\":92,\"width\":400,\"height\":24},\"alignment\":36,\"colorTab\":{\"color0\":8421504},\"fontSize\":14,\"touchable\":false,\"text\":\"\"}}",
+   "note": "下拉刷新替代：按钮触发 + 定时器状态机 IDLE→PULLING→REFRESHING→DONE；手势/下拉动画丢弃"
+  },
+  "badge": {
+   "caption": "WinBadge",
+   "ptr": "mWinBadgePtr (ZKWindow) + mTvBadgeNumPtr",
+   "json": "{\"window__60\":{\"id\":110060,\"caption\":\"WinBadge\",\"position\":{\"left\":160,\"top\":96,\"width\":24,\"height\":24},\"backgroundColor\":15680580,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true,\"textview__61\":{\"id\":50061,\"caption\":\"TvBadgeNum\",\"position\":{\"left\":0,\"top\":0,\"width\":24,\"height\":24},\"alignment\":37,\"colorTab\":{\"color0\":16777215},\"fontSize\":12,\"touchable\":false,\"text\":\"0\"}}}",
+   "note": "角标：小 window + 数字 textview；跟随目标控件坐标手工对齐"
+  },
+  "pseudo3d": {
+   "caption": "TvPseudo3D",
+   "ptr": "mTvPseudo3DPtr (ZKTextView)",
+   "json": "{\"textview__70\":{\"id\":50070,\"caption\":\"TvPseudo3D\",\"position\":{\"left\":312,\"top\":120,\"width\":400,\"height\":400},\"alignment\":37,\"backgroundPic\":\"images/seq_frame_000.png\",\"colorTab\":{\"color0\":16777215},\"fontSize\":16,\"touchable\":false,\"text\":\"\"}}",
+   "note": "伪 3D：序列帧 PNG 定时器切 backgroundPic；图尺寸必须 == 控件盒"
+  },
+  "chart": {
+   "caption": "PtChart",
+   "ptr": "mPtChartPtr (ZKPainter)",
+   "json": "{\"painter__1\":{\"id\":35001,\"caption\":\"PtChart\",\"position\":{\"left\":40,\"top\":120,\"width\":944,\"height\":320},\"backgroundColor\":16777215,\"touchable\":false,\"visible\":true},\"textview__2\":{\"id\":50080,\"caption\":\"TvChartYMax\",\"position\":{\"left\":8,\"top\":112,\"width\":60,\"height\":20},\"alignment\":38,\"colorTab\":{\"color0\":8421504},\"fontSize\":12,\"touchable\":false,\"text\":\"100\"}}",
+   "note": "图表：painter 自绘 + textview 刻度（painter 无文字 API）；改数据必须显式重绘"
+  },
+  "richtext": {
+   "caption": "TvArticle",
+   "ptr": "mTvArticlePtr (ZKTextView)",
+   "json": "{\"textview__1\":{\"id\":50090,\"caption\":\"TvArticle\",\"position\":{\"left\":40,\"top\":80,\"width\":944,\"height\":480},\"alignment\":33,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"touchable\":false,\"text\":\"第一段（手动 \\n 换行）\\n第二段\"}}",
+   "note": "富文本替代：textview + 手动 \\n（无自动折行/段内样式/图文混排）"
+  },
+  "wheelpicker": {
+   "caption": "",
+   "ptr": "",
+   "json": "",
+   "note": "滚轮选择器平台无对应能力（无滚轮惯性/多列联动）"
+  },
+  "timer_anim": {
+   "caption": "",
+   "ptr": "REGISTER_ACTIVITY_TIMER_TAB / onUI_Timer(id)",
+   "json": "",
+   "note": "动画/定时器：定时器 tick 内自算缓动；无 CSS 引擎"
+  },
+  "layout_abs": {
+   "caption": "",
+   "ptr": "",
+   "json": "",
+   "note": "布局：平台无 flex/grid 引擎，一律绝对定位（position 四项）"
+  },
+  "theme": {
+   "caption": "",
+   "ptr": "",
+   "json": "",
+   "note": "主题：无 theme 引擎/无系统主题事件；应用内换色 = static 主色 + 逐控件 setTextColor() + painter 重绘"
+  },
+  "no_support": {
+   "caption": "",
+   "ptr": "",
+   "json": "",
+   "note": "平台无对应能力且无合理替代 → 明说不支持，给替代建议"
+  }
+ },
+ "sources": {
+  "lvgl": [
+   {
+    "name": "lv_obj",
+    "aliases": [
+     "lv_screen",
+     "screen"
+    ],
+    "target": "window",
+    "level": "L1",
+    "json": "{\"window__1\":{\"id\":110001,\"caption\":\"WinCard\",\"position\":{\"left\":40,\"top\":120,\"width\":400,\"height\":240},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}",
+    "notes": "屏幕/容器根节点；整屏 window = 同 ftu 多页显隐，独立 *.ftu = 独立生命周期/返回栈",
+    "ref": ""
+   },
+   {
+    "name": "lv_label",
+    "aliases": [
+     "label"
+    ],
+    "target": "textview",
+    "level": "L1",
+    "json": "{\"textview__1\":{\"id\":50001,\"caption\":\"TvTitle\",\"position\":{\"left\":40,\"top\":40,\"width\":400,\"height\":32},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"fontSize\":24,\"touchable\":false,\"text\":\"标题\"}}",
+    "notes": "支持 \\n，不自动折行（超宽自己插 \\n）",
+    "ref": ""
+   },
+   {
+    "name": "lv_btn",
+    "aliases": [
+     "lv_button"
+    ],
+    "target": "button",
+    "level": "L1",
+    "json": "{\"button__1\":{\"id\":20001,\"caption\":\"BtnSubmit\",\"position\":{\"left\":40,\"top\":400,\"width\":200,\"height\":56},\"alignment\":37,\"colorTab\":{\"color0\":16777215},\"bgColorTab\":{\"color0\":2201331},\"fontSize\":18,\"picTab\":{},\"text\":\"提交\",\"touchable\":true}}",
+    "notes": "两态/多态图 picTab；纯色三态 bgColorTab",
+    "ref": ""
+   },
+   {
+    "name": "lv_imagebutton",
+    "aliases": [
+     "lv_imgbtn"
+    ],
+    "target": "button_pic",
+    "level": "L1",
+    "json": "{\"button__2\":{\"id\":20002,\"caption\":\"BtnIcon\",\"position\":{\"left\":40,\"top\":400,\"width\":72,\"height\":40},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"picTab\":{\"pic0\":\"images/btn_n.9.png\",\"pic1\":\"images/btn_p.9.png\"},\"text\":\"\",\"touchable\":true}}",
+    "notes": "picTab{pic0 正常, pic1 按下}），透明角图不写 bgColorTab",
+    "ref": ""
+   },
+   {
+    "name": "lv_textarea",
+    "aliases": [
+     "textarea"
+    ],
+    "target": "edittext",
+    "level": "L1",
+    "json": "{\"edittext__1\":{\"id\":40001,\"caption\":\"EtName\",\"position\":{\"left\":40,\"top\":120,\"width\":320,\"height\":48},\"alignment\":36,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"hintTextColor\":8421504,\"text\":\"\",\"textType\":0}}",
+    "notes": "系统内置键盘自动弹出",
+    "ref": ""
+   },
+   {
+    "name": "lv_keyboard",
+    "aliases": [
+     "keyboard"
+    ],
+    "target": "edittext",
+    "level": "L1",
+    "json": "{\"edittext__1\":{\"id\":40001,\"caption\":\"EtName\",\"position\":{\"left\":40,\"top\":120,\"width\":320,\"height\":48},\"alignment\":36,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"hintTextColor\":8421504,\"text\":\"\",\"textType\":0}}",
+    "notes": "源自制键盘一律丢弃（平台 IME 更完整，含中文）",
+    "ref": ""
+   },
+   {
+    "name": "lv_switch",
+    "aliases": [
+     "switch"
+    ],
+    "target": "switch_button",
+    "level": "L2",
+    "json": "{\"button__3\":{\"id\":20003,\"caption\":\"BtnSwitch\",\"position\":{\"left\":600,\"top\":120,\"width\":88,\"height\":48},\"alignment\":37,\"picTab\":{\"pic0\":\"images/sw_off.png\",\"pic1\":\"images/sw_off_p.png\",\"pic2\":\"images/sw_on.png\"},\"text\":\"\",\"touchable\":true}}",
+    "notes": "两态按钮 + setSelected()；iOS 式拖拽过渡动画丢弃（降级点写进包 README）",
+    "ref": ""
+   },
+   {
+    "name": "lv_checkbox",
+    "aliases": [
+     "checkbox"
+    ],
+    "target": "switch_button",
+    "level": "L2",
+    "json": "{\"button__3\":{\"id\":20003,\"caption\":\"BtnSwitch\",\"position\":{\"left\":600,\"top\":120,\"width\":88,\"height\":48},\"alignment\":37,\"picTab\":{\"pic0\":\"images/sw_off.png\",\"pic1\":\"images/sw_off_p.png\",\"pic2\":\"images/sw_on.png\"},\"text\":\"\",\"touchable\":true}}",
+    "notes": "⚠️ fun 不为 checkbox__ 生成宏/指针/回调 → 一律两态 button__N",
+    "ref": ""
+   },
+   {
+    "name": "lv_slider",
+    "aliases": [
+     "slider"
+    ],
+    "target": "seekbar",
+    "level": "L1",
+    "json": "{\"seekbar__1\":{\"id\":33001,\"caption\":\"SkSpeed\",\"position\":{\"left\":40,\"top\":200,\"width\":400,\"height\":40},\"backgroundColor\":-1,\"backgroundPic\":\"images/sk_track_400x40.png\",\"defProgress\":0,\"max\":100,\"orientation\":0,\"progressPic\":\"images/sk_fill_400x40.png\",\"thumb\":\"images/sk_thumb_24x24.png\",\"touchable\":true,\"visible\":true}}",
+    "notes": "背景禁 .9.png；尺寸==position；背景拖拽会与父容器手势冲突",
+    "ref": ""
+   },
+   {
+    "name": "lv_bar",
+    "aliases": [
+     "bar",
+     "progress bar"
+    ],
+    "target": "progressbar",
+    "level": "L2",
+    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":\"\",\"touchable\":false,\"visible\":true}}",
+    "notes": "平台无独立 progressbar → seekbar + touchable:false",
+    "ref": ""
+   },
+   {
+    "name": "lv_arc",
+    "aliases": [
+     "arc"
+    ],
+    "target": "circlebar",
+    "level": "L1",
+    "json": "{\"circlebar__1\":{\"id\":36001,\"caption\":\"CbRing\",\"position\":{\"left\":400,\"top\":140,\"width\":224,\"height\":224},\"backgroundColor\":-1,\"clockwise\":true,\"max\":100,\"maxAngle\":360,\"progressPic\":\"images/ring_220x220_2196F3.png\",\"progressPicPos\":0,\"startAngle\":0,\"textColor\":2171169,\"textSize\":24,\"textType\":0,\"thumb\":\"\",\"touchRange\":0,\"touchable\":false,\"unit\":\"%\",\"visible\":true}}",
+    "notes": "单值环形进度 = circlebar（按进度裁图，每种色一份有效图）",
+    "ref": ""
+   },
+   {
+    "name": "lv_scale",
+    "aliases": [
+     "scale"
+    ],
+    "target": "pointer",
+    "level": "L1",
+    "json": "{\"pointer__1\":{\"id\":37001,\"caption\":\"PtrGauge\",\"position\":{\"left\":380,\"top\":140,\"width\":264,\"height\":264},\"animatable\":true,\"backgroundColor\":-1,\"backgroundPic\":\"images/gauge_bg_264x264.png\",\"clockwise\":true,\"fixedPoint\":{\"x\":33,\"y\":132},\"pointerPic\":\"images/needle_200x20.png\",\"pointerSize\":{\"width\":200,\"height\":20},\"rotateSpeed\":1,\"rotationPoint\":{\"x\":132,\"y\":132},\"startAngle\":0,\"touchable\":false,\"visible\":true}}",
+    "notes": "表针：setTargetAngle(deg) + 表盘底图 + rotationPoint/fixedPoint",
+    "ref": ""
+   },
+   {
+    "name": "lv_meter",
+    "aliases": [
+     "meter"
+    ],
+    "target": "pointer",
+    "level": "L1",
+    "json": "{\"pointer__1\":{\"id\":37001,\"caption\":\"PtrGauge\",\"position\":{\"left\":380,\"top\":140,\"width\":264,\"height\":264},\"animatable\":true,\"backgroundColor\":-1,\"backgroundPic\":\"images/gauge_bg_264x264.png\",\"clockwise\":true,\"fixedPoint\":{\"x\":33,\"y\":132},\"pointerPic\":\"images/needle_200x20.png\",\"pointerSize\":{\"width\":200,\"height\":20},\"rotateSpeed\":1,\"rotationPoint\":{\"x\":132,\"y\":132},\"startAngle\":0,\"touchable\":false,\"visible\":true}}",
+    "notes": "同上；分区彩色刻度/多环刻度平台没有 → 走自绘（见 lv_arc 多环条目）",
+    "ref": ""
+   },
+   {
+    "name": "lv_arc(多环/三段饼)",
+    "aliases": [
+     "multi arc",
+     "pie",
+     "donut"
+    ],
+    "target": "chart",
+    "level": "L3",
+    "json": "{\"painter__1\":{\"id\":35001,\"caption\":\"PtChart\",\"position\":{\"left\":40,\"top\":120,\"width\":944,\"height\":320},\"backgroundColor\":16777215,\"touchable\":false,\"visible\":true},\"textview__2\":{\"id\":50080,\"caption\":\"TvChartYMax\",\"position\":{\"left\":8,\"top\":112,\"width\":60,\"height\":20},\"alignment\":38,\"colorTab\":{\"color0\":8421504},\"fontSize\":12,\"touchable\":false,\"text\":\"100\"}}",
+    "notes": "平台只有单环 circlebar，无法多环叠加/三段切割 → ZKPainter 自绘",
+    "ref": "components/ui_v1/Chart"
+   },
+   {
+    "name": "lv_chart",
+    "aliases": [
+     "chart",
+     "lv_chart 折线",
+     "lv_chart 柱状"
+    ],
+    "target": "chart",
+    "level": "L3",
+    "json": "{\"painter__1\":{\"id\":35001,\"caption\":\"PtChart\",\"position\":{\"left\":40,\"top\":120,\"width\":944,\"height\":320},\"backgroundColor\":16777215,\"touchable\":false,\"visible\":true},\"textview__2\":{\"id\":50080,\"caption\":\"TvChartYMax\",\"position\":{\"left\":8,\"top\":112,\"width\":60,\"height\":20},\"alignment\":38,\"colorTab\":{\"color0\":8421504},\"fontSize\":12,\"touchable\":false,\"text\":\"100\"}}",
+    "notes": "★平台真缺图表控件：painter 自绘网格/折线/柱/环 + textview 刻度；残留降级点：无高亮气泡/无平滑曲线",
+    "ref": "components/ui_v1/Chart"
+   },
+   {
+    "name": "lv_chart(实时滚动波形)",
+    "aliases": [
+     "realtime chart",
+     "waveform"
+    ],
+    "target": "diagram",
+    "level": "L1",
+    "json": "{\"diagram__1\":{\"id\":34001,\"caption\":\"DgmWave\",\"position\":{\"left\":40,\"top\":120,\"width\":944,\"height\":240},\"backgroundColor\":16777215,\"region\":{\"left\":0,\"top\":0,\"width\":944,\"height\":240},\"touchable\":true,\"visible\":true,\"xAxisRange\":100,\"yAxisRange\":100,\"infos\":[{\"caption\":\"Wave0\",\"penColor\":2201331,\"penWidth\":2,\"step\":2,\"style\":0,\"eraseSpace\":4,\"antialias\":true,\"visible\":true,\"xScale\":1,\"yScale\":1}]}}",
+    "notes": "x 自动推进 + 单值追加的实时波形用 ZKDiagram 就够，不必自绘",
+    "ref": ""
+   },
+   {
+    "name": "lv_tabview",
+    "aliases": [
+     "tabview",
+     "tab view"
+    ],
+    "target": "pagewindow",
+    "level": "L1",
+    "json": "{\"pagewindow__1\":{\"id\":31001,\"caption\":\"PwPages\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":536},\"dragMaxDis\":200,\"orientation\":0,\"edgeEffect\":1,\"rollSpeed\":60,\"window__2\":{\"id\":110004,\"caption\":\"Page0\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":536},\"backgroundColor\":16119802,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true},\"window__3\":{\"id\":110005,\"caption\":\"Page1\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":536},\"backgroundColor\":16119802,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}}",
+    "notes": "★tab 类统一走 pagewindow（自带滑动切页 + onPageChange）+ 按钮组页签；禁止「多整屏 window + 按钮」拼（丢手势）",
+    "ref": "components/ui_v1/_mapping/TabView"
+   },
+   {
+    "name": "lv_tileview",
+    "aliases": [
+     "tileview"
+    ],
+    "target": "slidewindow",
+    "level": "L1",
+    "json": "{\"slidewindow__1\":{\"id\":30001,\"caption\":\"SlwLauncher\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":480},\"backgroundColor\":-1,\"cols\":4,\"fontSize\":12,\"iconSize\":{\"width\":128,\"height\":128},\"items\":[{\"colorTab\":{\"color0\":2171169},\"picTab\":{\"pic0\":\"images/ic_app1.png\",\"pic1\":\"images/ic_app1_p.png\"},\"text\":\"应用一\"}],\"padding\":{\"bottom\":8},\"rollSpeed\":199,\"rows\":2,\"touchable\":true,\"visible\":true}}",
+    "notes": "宫格轮播；回调 index 是跨屏全局下标",
+    "ref": ""
+   },
+   {
+    "name": "lv_img",
+    "aliases": [
+     "img",
+     "image"
+    ],
+    "target": "image",
+    "level": "L1",
+    "json": "{\"textview__3\":{\"id\":50003,\"caption\":\"TvPhoto\",\"position\":{\"left\":40,\"top\":80,\"width\":320,\"height\":180},\"alignment\":37,\"backgroundPic\":\"images/photo_320x180.png\",\"colorTab\":{\"color0\":16777215},\"fontSize\":16,\"touchable\":false,\"text\":\"\"}}",
+    "notes": "textview + backgroundPic；自动生成图尺寸必须 == 控件盒",
+    "ref": ""
+   },
+   {
+    "name": "lv_gif",
+    "aliases": [
+     "gif"
+    ],
+    "target": "imageanim",
+    "level": "L1",
+    "json": "{\"imageanim__1\":{\"id\":39001,\"caption\":\"IaLoading\",\"position\":{\"left\":480,\"top\":280,\"width\":64,\"height\":64},\"loopCount\":0,\"playFile\":\"images/loading.gif\"}}",
+    "notes": "⚠️ F133 不支持动图（Z20/Z21/T113/V85X 支持）",
+    "ref": ""
+   },
+   {
+    "name": "lv_canvas",
+    "aliases": [
+     "canvas"
+    ],
+    "target": "painter",
+    "level": "L1",
+    "json": "{\"painter__1\":{\"id\":35001,\"caption\":\"PtChart\",\"position\":{\"left\":40,\"top\":120,\"width\":944,\"height\":320},\"backgroundColor\":16777215,\"touchable\":false,\"visible\":true}}",
+    "notes": "painter 不自动重绘：改数据后显式重画；drawArc 实参口径以目标平台实测为准",
+    "ref": ""
+   },
+   {
+    "name": "lv_msgbox",
+    "aliases": [
+     "msgbox",
+     "messagebox"
+    ],
+    "target": "window_modal",
+    "level": "L1",
+    "json": "{\"window__1\":{\"id\":110002,\"caption\":\"WinDialog\",\"position\":{\"left\":112,\"top\":100,\"width\":800,\"height\":400},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+    "notes": "modal=true + showWnd()/hideWnd()；hideTimeOut 可定时自动关",
+    "ref": ""
+   },
+   {
+    "name": "lv_dropdown",
+    "aliases": [
+     "dropdown",
+     "roller?"
+    ],
+    "target": "picker",
+    "level": "L4",
+    "json": "{\"button__10\":{\"id\":20010,\"caption\":\"BtnPicker\",\"position\":{\"left\":40,\"top\":160,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":16,\"picTab\":{},\"text\":\"请选择\",\"touchable\":true},\"window__11\":{\"id\":110011,\"caption\":\"WinPicker\",\"position\":{\"left\":112,\"top\":200,\"width\":800,\"height\":300},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+    "notes": "组合可行但无滚轮惯性/多列联动，展开位从「框下」变「居中模态」→ 取差为 L4",
+    "ref": "components/ui_v1/components.md §2（映射项）"
+   },
+   {
+    "name": "lv_roller",
+    "aliases": [
+     "roller",
+     "wheel"
+    ],
+    "target": "wheelpicker",
+    "level": "L5",
+    "json": "",
+    "notes": "滚轮选择器平台无对应能力；替代 = 步进按钮组 / picker 模态列表",
+    "ref": "components/ui_v1/components.md（计划 WheelPicker/）"
+   },
+   {
+    "name": "lv_calendar",
+    "aliases": [
+     "calendar"
+    ],
+    "target": "calendar",
+    "level": "L4",
+    "json": "{\"button__20\":{\"id\":20020,\"caption\":\"BtnDate\",\"position\":{\"left\":40,\"top\":220,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":16,\"picTab\":{},\"text\":\"2026-09-16\",\"touchable\":true},\"window__21\":{\"id\":110021,\"caption\":\"WinCalendar\",\"position\":{\"left\":112,\"top\":60,\"width\":800,\"height\":480},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+    "notes": "42 个 textview 承载日号 + 触摸反算命中格；无「今天」高亮、无年/月下拉；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内** textview 底色实测画不出；普通容器里可画）**",
+    "ref": "components/ui_v1/Calendar"
+   },
+   {
+    "name": "lv_spinbox",
+    "aliases": [
+     "spinbox"
+    ],
+    "target": "stepper",
+    "level": "L2",
+    "json": "{\"button__30\":{\"id\":20030,\"caption\":\"BtnStepMinus\",\"position\":{\"left\":40,\"top\":280,\"width\":48,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":24,\"picTab\":{},\"text\":\"-\",\"touchable\":true},\"textview__31\":{\"id\":50031,\"caption\":\"TvStepValue\",\"position\":{\"left\":96,\"top\":280,\"width\":120,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":20,\"touchable\":false,\"text\":\"0\"},\"button__32\":{\"id\":20032,\"caption\":\"BtnStepPlus\",\"position\":{\"left\":224,\"top\":280,\"width\":48,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":24,\"picTab\":{},\"text\":\"+\",\"touchable\":true}}",
+    "notes": "两个按钮 + 数值 textview",
+    "ref": ""
+   },
+   {
+    "name": "lv_qrcode",
+    "aliases": [
+     "qrcode"
+    ],
+    "target": "qrcode",
+    "level": "L1",
+    "json": "{\"qrcode__1\":{\"id\":41001,\"caption\":\"QrCode\",\"position\":{\"left\":400,\"top\":160,\"width\":224,\"height\":224},\"backgroundColor\":16777215,\"codeStr\":\"https://developer.flythings.cn\",\"padding\":10,\"touchable\":true,\"visible\":true}}",
+    "notes": "loadQRCode(utf8) 每次全量重生成",
+    "ref": ""
+   },
+   {
+    "name": "lv_obj(可滚动)",
+    "aliases": [
+     "scrollable",
+     "lv_obj scroll"
+    ],
+    "target": "scrollwindow",
+    "level": "L1",
+    "json": "{\"scrollwindow__1\":{\"id\":32001,\"caption\":\"SwPanel\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":536},\"dragMaxDis\":1200,\"orientation\":1,\"edgeEffect\":0,\"window__2\":{\"id\":110003,\"caption\":\"WinContent\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":1200},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}}",
+    "notes": "内容 window 可大于视口整体拖动；纯结构用法零代码",
+    "ref": ""
+   },
+   {
+    "name": "lv_anim",
+    "aliases": [
+     "anim",
+     "animation"
+    ],
+    "target": "timer_anim",
+    "level": "L4",
+    "json": "",
+    "notes": "定时器 tick 自算缓动；无 CSS 引擎（动态样式/圆角插值/滤镜不支持）",
+    "ref": ""
+   },
+   {
+    "name": "lv_theme_default_init",
+    "aliases": [
+     "theme"
+    ],
+    "target": "theme",
+    "level": "L5",
+    "json": "",
+    "notes": "无 theme 引擎/无系统主题事件；应用内换色 ≈L2，系统主题联动不支持",
+    "ref": ""
+   },
+   {
+    "name": "lv_obj_set_flex_flow",
+    "aliases": [
+     "flex",
+     "grid"
+    ],
+    "target": "layout_abs",
+    "level": "L5",
+    "json": "",
+    "notes": "平台无 flex/grid 引擎；替代 = 转换器按源语义层级手工排绝对坐标",
+    "ref": ""
+   },
+   {
+    "name": "lv_label(富文本混排)",
+    "aliases": [
+     "rich text",
+     "span"
+    ],
+    "target": "richtext",
+    "level": "L3",
+    "json": "{\"textview__1\":{\"id\":50090,\"caption\":\"TvArticle\",\"position\":{\"left\":40,\"top\":80,\"width\":944,\"height\":480},\"alignment\":33,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"touchable\":false,\"text\":\"第一段（手动 \\n 换行）\\n第二段\"}}",
+    "notes": "textview 无自动折行/段内样式/图文混排 → 需自绘（未开发的 RichText/ 包）",
+    "ref": "components/ui_v1/components.md（计划 RichText/）"
+   }
+  ],
+  "qt": [
+   {
+    "name": "QWidget",
+    "aliases": [
+     "widget"
+    ],
+    "target": "window",
+    "level": "L1",
+    "json": "{\"window__1\":{\"id\":110001,\"caption\":\"WinCard\",\"position\":{\"left\":40,\"top\":120,\"width\":400,\"height\":240},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}",
+    "notes": "整屏 window 或独立 *.ftu",
+    "ref": ""
+   },
+   {
+    "name": "QPushButton",
+    "aliases": [
+     "pushbutton",
+     "button"
+    ],
+    "target": "button",
+    "level": "L1",
+    "json": "{\"button__1\":{\"id\":20001,\"caption\":\"BtnSubmit\",\"position\":{\"left\":40,\"top\":400,\"width\":200,\"height\":56},\"alignment\":37,\"colorTab\":{\"color0\":16777215},\"bgColorTab\":{\"color0\":2201331},\"fontSize\":18,\"picTab\":{},\"text\":\"提交\",\"touchable\":true}}",
+    "notes": "回调 onButtonClick_<caption>",
+    "ref": ""
+   },
+   {
+    "name": "QToolButton",
+    "aliases": [
+     "toolbutton"
+    ],
+    "target": "button_pic",
+    "level": "L1",
+    "json": "{\"button__2\":{\"id\":20002,\"caption\":\"BtnIcon\",\"position\":{\"left\":40,\"top\":400,\"width\":72,\"height\":40},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"picTab\":{\"pic0\":\"images/btn_n.9.png\",\"pic1\":\"images/btn_p.9.png\"},\"text\":\"\",\"touchable\":true}}",
+    "notes": "图标按钮 → picTab 两态图",
+    "ref": ""
+   },
+   {
+    "name": "QLabel",
+    "aliases": [
+     "label"
+    ],
+    "target": "textview",
+    "level": "L1",
+    "json": "{\"textview__1\":{\"id\":50001,\"caption\":\"TvTitle\",\"position\":{\"left\":40,\"top\":40,\"width\":400,\"height\":32},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"fontSize\":24,\"touchable\":false,\"text\":\"标题\"}}",
+    "notes": "支持 \\n，不自动折行",
+    "ref": ""
+   },
+   {
+    "name": "QLineEdit",
+    "aliases": [
+     "lineedit"
+    ],
+    "target": "edittext",
+    "level": "L1",
+    "json": "{\"edittext__1\":{\"id\":40001,\"caption\":\"EtName\",\"position\":{\"left\":40,\"top\":120,\"width\":320,\"height\":48},\"alignment\":36,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"hintTextColor\":8421504,\"text\":\"\",\"textType\":0}}",
+    "notes": "系统内置键盘",
+    "ref": ""
+   },
+   {
+    "name": "QTextEdit",
+    "aliases": [
+     "textedit"
+    ],
+    "target": "richtext",
+    "level": "L3",
+    "json": "{\"textview__1\":{\"id\":50090,\"caption\":\"TvArticle\",\"position\":{\"left\":40,\"top\":80,\"width\":944,\"height\":480},\"alignment\":33,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"touchable\":false,\"text\":\"第一段（手动 \\n 换行）\\n第二段\"}}",
+    "notes": "富文本真缺 → 短期 textview + 手动 \\n；长期自绘",
+    "ref": "components/ui_v1/components.md（计划 RichText/）"
+   },
+   {
+    "name": "QPlainTextEdit",
+    "aliases": [
+     "plaintextedit"
+    ],
+    "target": "richtext",
+    "level": "L3",
+    "json": "{\"textview__1\":{\"id\":50090,\"caption\":\"TvArticle\",\"position\":{\"left\":40,\"top\":80,\"width\":944,\"height\":480},\"alignment\":33,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"touchable\":false,\"text\":\"第一段（手动 \\n 换行）\\n第二段\"}}",
+    "notes": "同上",
+    "ref": "components/ui_v1/components.md（计划 RichText/）"
+   },
+   {
+    "name": "QCheckBox",
+    "aliases": [
+     "checkbox"
+    ],
+    "target": "switch_button",
+    "level": "L2",
+    "json": "{\"button__3\":{\"id\":20003,\"caption\":\"BtnSwitch\",\"position\":{\"left\":600,\"top\":120,\"width\":88,\"height\":48},\"alignment\":37,\"picTab\":{\"pic0\":\"images/sw_off.png\",\"pic1\":\"images/sw_off_p.png\",\"pic2\":\"images/sw_on.png\"},\"text\":\"\",\"touchable\":true}}",
+    "notes": "两态按钮；⚠️ checkbox__ 当前生成器不支持",
+    "ref": ""
+   },
+   {
+    "name": "QRadioButton",
+    "aliases": [
+     "radiobutton"
+    ],
+    "target": "radiogroup",
+    "level": "L1",
+    "json": "{\"radiogroup__1\":{\"id\":70001,\"caption\":\"RgGender\",\"position\":{\"left\":40,\"top\":160,\"width\":400,\"height\":128},\"backgroundColor\":-1,\"touchable\":true,\"visible\":true,\"radiobuttons\":[{\"id\":71001,\"caption\":\"RbMale\",\"position\":{\"left\":16,\"top\":12,\"width\":180,\"height\":40},\"alignment\":36,\"checked\":false,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"backgroundColor\":-1,\"bold\":false,\"fontSize\":16,\"italic\":false,\"text\":\"男\",\"touchable\":true,\"visible\":true}]}}",
+    "notes": "单选组回调给选中项控件 ID",
+    "ref": ""
+   },
+   {
+    "name": "QSlider",
+    "aliases": [
+     "slider"
+    ],
+    "target": "seekbar",
+    "level": "L1",
+    "json": "{\"seekbar__1\":{\"id\":33001,\"caption\":\"SkSpeed\",\"position\":{\"left\":40,\"top\":200,\"width\":400,\"height\":40},\"backgroundColor\":-1,\"backgroundPic\":\"images/sk_track_400x40.png\",\"defProgress\":0,\"max\":100,\"orientation\":0,\"progressPic\":\"images/sk_fill_400x40.png\",\"thumb\":\"images/sk_thumb_24x24.png\",\"touchable\":true,\"visible\":true}}",
+    "notes": "背景禁 .9.png；尺寸==position",
+    "ref": ""
+   },
+   {
+    "name": "QProgressBar",
+    "aliases": [
+     "progressbar"
+    ],
+    "target": "progressbar",
+    "level": "L2",
+    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":\"\",\"touchable\":false,\"visible\":true}}",
+    "notes": "seekbar + touchable:false",
+    "ref": ""
+   },
+   {
+    "name": "QComboBox",
+    "aliases": [
+     "combobox"
+    ],
+    "target": "picker",
+    "level": "L4",
+    "json": "{\"button__10\":{\"id\":20010,\"caption\":\"BtnPicker\",\"position\":{\"left\":40,\"top\":160,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":16,\"picTab\":{},\"text\":\"请选择\",\"touchable\":true},\"window__11\":{\"id\":110011,\"caption\":\"WinPicker\",\"position\":{\"left\":112,\"top\":200,\"width\":800,\"height\":300},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+    "notes": "按钮 + modal window 列表；无滚轮惯性/多列联动",
+    "ref": "components/ui_v1/components.md §2（映射项）"
+   },
+   {
+    "name": "QListWidget",
+    "aliases": [
+     "listwidget",
+     "listview"
+    ],
+    "target": "listview",
+    "level": "L1",
+    "json": "{\"listview__1\":{\"id\":60001,\"caption\":\"LvFiles\",\"position\":{\"left\":20,\"top\":120,\"width\":984,\"height\":420},\"autoRollback\":false,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":false,\"dragMaxDis\":1,\"edgeEffect\":50,\"hasScrollbar\":true,\"orientation\":1,\"rows\":6,\"rowSpacing\":2,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"\",\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"position\":{\"left\":0,\"top\":0,\"width\":984,\"height\":68},\"text\":\"\",\"touchable\":true,\"visible\":true,\"subItem\":[{\"id\":61001,\"caption\":\"TvRowName\",\"position\":{\"left\":16,\"top\":16,\"width\":600,\"height\":36},\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontFamily\":0,\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"text\":\"\",\"touchable\":true,\"visible\":true}]}}}",
+    "notes": "三回调；行自身 setText(\"\")",
+    "ref": ""
+   },
+   {
+    "name": "QListView",
+    "aliases": [
+     "qlistview"
+    ],
+    "target": "listview",
+    "level": "L1",
+    "json": "{\"listview__1\":{\"id\":60001,\"caption\":\"LvFiles\",\"position\":{\"left\":20,\"top\":120,\"width\":984,\"height\":420},\"autoRollback\":false,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":false,\"dragMaxDis\":1,\"edgeEffect\":50,\"hasScrollbar\":true,\"orientation\":1,\"rows\":6,\"rowSpacing\":2,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"\",\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"position\":{\"left\":0,\"top\":0,\"width\":984,\"height\":68},\"text\":\"\",\"touchable\":true,\"visible\":true,\"subItem\":[{\"id\":61001,\"caption\":\"TvRowName\",\"position\":{\"left\":16,\"top\":16,\"width\":600,\"height\":36},\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontFamily\":0,\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"text\":\"\",\"touchable\":true,\"visible\":true}]}}}",
+    "notes": "同上（无 view 复用回收）",
+    "ref": ""
+   },
+   {
+    "name": "QTableView",
+    "aliases": [
+     "tableview",
+     "qtableview"
+    ],
+    "target": "tablegrid",
+    "level": "L2",
+    "json": "{\"textview__40\":{\"id\":50040,\"caption\":\"TvThName\",\"position\":{\"left\":20,\"top\":80,\"width\":400,\"height\":40},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":15790320},\"fontSize\":16,\"touchable\":false,\"text\":\"名称\"},\"textview__41\":{\"id\":50041,\"caption\":\"TvThValue\",\"position\":{\"left\":420,\"top\":80,\"width\":584,\"height\":40},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":15790320},\"fontSize\":16,\"touchable\":false,\"text\":\"数值\"},\"listview__42\":{\"id\":60042,\"caption\":\"LvTable\",\"position\":{\"left\":20,\"top\":120,\"width\":984,\"height\":420},\"autoRollback\":false,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":false,\"dragMaxDis\":1,\"edgeEffect\":50,\"hasScrollbar\":true,\"orientation\":1,\"rows\":6,\"rowSpacing\":2,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"\",\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"position\":{\"left\":0,\"top\":0,\"width\":984,\"height\":68},\"text\":\"\",\"touchable\":true,\"visible\":true,\"subItem\":[{\"id\":61001,\"caption\":\"TvRowName\",\"position\":{\"left\":16,\"top\":16,\"width\":600,\"height\":36},\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontFamily\":0,\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"text\":\"\",\"touchable\":true,\"visible\":true}]}}}",
+    "notes": "textview 表头 + listview 网格；列宽手工对齐",
+    "ref": ""
+   },
+   {
+    "name": "QTableWidget",
+    "aliases": [
+     "tablewidget"
+    ],
+    "target": "tablegrid",
+    "level": "L2",
+    "json": "{\"textview__40\":{\"id\":50040,\"caption\":\"TvThName\",\"position\":{\"left\":20,\"top\":80,\"width\":400,\"height\":40},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":15790320},\"fontSize\":16,\"touchable\":false,\"text\":\"名称\"},\"textview__41\":{\"id\":50041,\"caption\":\"TvThValue\",\"position\":{\"left\":420,\"top\":80,\"width\":584,\"height\":40},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":15790320},\"fontSize\":16,\"touchable\":false,\"text\":\"数值\"},\"listview__42\":{\"id\":60042,\"caption\":\"LvTable\",\"position\":{\"left\":20,\"top\":120,\"width\":984,\"height\":420},\"autoRollback\":false,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":false,\"dragMaxDis\":1,\"edgeEffect\":50,\"hasScrollbar\":true,\"orientation\":1,\"rows\":6,\"rowSpacing\":2,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"\",\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"position\":{\"left\":0,\"top\":0,\"width\":984,\"height\":68},\"text\":\"\",\"touchable\":true,\"visible\":true,\"subItem\":[{\"id\":61001,\"caption\":\"TvRowName\",\"position\":{\"left\":16,\"top\":16,\"width\":600,\"height\":36},\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontFamily\":0,\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"text\":\"\",\"touchable\":true,\"visible\":true}]}}}",
+    "notes": "同上",
+    "ref": ""
+   },
+   {
+    "name": "QTabWidget",
+    "aliases": [
+     "tabwidget"
+    ],
+    "target": "pagewindow",
+    "level": "L1",
+    "json": "{\"pagewindow__1\":{\"id\":31001,\"caption\":\"PwPages\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":536},\"dragMaxDis\":200,\"orientation\":0,\"edgeEffect\":1,\"rollSpeed\":60,\"window__2\":{\"id\":110004,\"caption\":\"Page0\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":536},\"backgroundColor\":16119802,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true},\"window__3\":{\"id\":110005,\"caption\":\"Page1\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":536},\"backgroundColor\":16119802,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}}",
+    "notes": "★走 pagewindow + 按钮组页签（自带滑动切页）；禁止多整屏 window 拼",
+    "ref": "components/ui_v1/_mapping/TabView"
+   },
+   {
+    "name": "QTabBar",
+    "aliases": [
+     "tabbar"
+    ],
+    "target": "pagewindow",
+    "level": "L2",
+    "json": "{\"pagewindow__1\":{\"id\":31001,\"caption\":\"PwPages\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":536},\"dragMaxDis\":200,\"orientation\":0,\"edgeEffect\":1,\"rollSpeed\":60,\"window__2\":{\"id\":110004,\"caption\":\"Page0\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":536},\"backgroundColor\":16119802,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true},\"window__3\":{\"id\":110005,\"caption\":\"Page1\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":536},\"backgroundColor\":16119802,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}}",
+    "notes": "页签条 = N 个 button__N（setSelected 走 bgColorTab.color2/picTab）+ onPageChange 回设",
+    "ref": "components/ui_v1/_mapping/TabView"
+   },
+   {
+    "name": "QStackedWidget",
+    "aliases": [
+     "stackedwidget"
+    ],
+    "target": "pagewindow",
+    "level": "L1",
+    "json": "{\"pagewindow__1\":{\"id\":31001,\"caption\":\"PwPages\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":536},\"dragMaxDis\":200,\"orientation\":0,\"edgeEffect\":1,\"rollSpeed\":60,\"window__2\":{\"id\":110004,\"caption\":\"Page0\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":536},\"backgroundColor\":16119802,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true},\"window__3\":{\"id\":110005,\"caption\":\"Page1\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":536},\"backgroundColor\":16119802,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}}",
+    "notes": "多页显隐容器 → pagewindow（pagewindow 页顺序即 index）",
+    "ref": "components/ui_v1/_mapping/TabView"
+   },
+   {
+    "name": "QScrollArea",
+    "aliases": [
+     "scrollarea"
+    ],
+    "target": "scrollwindow",
+    "level": "L1",
+    "json": "{\"scrollwindow__1\":{\"id\":32001,\"caption\":\"SwPanel\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":536},\"dragMaxDis\":1200,\"orientation\":1,\"edgeEffect\":0,\"window__2\":{\"id\":110003,\"caption\":\"WinContent\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":1200},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}}",
+    "notes": "纵向；横向滚动容器平台无（L4）",
+    "ref": ""
+   },
+   {
+    "name": "QScrollBar",
+    "aliases": [
+     "scrollbar"
+    ],
+    "target": "progressbar",
+    "level": "L4",
+    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":\"\",\"touchable\":false,\"visible\":true}}",
+    "notes": "无独立滚动条控件；用只读 seekbar 表达进度（交互靠容器自带滚动）",
+    "ref": ""
+   },
+   {
+    "name": "QCalendarWidget",
+    "aliases": [
+     "calendarwidget",
+     "calendar"
+    ],
+    "target": "calendar",
+    "level": "L4",
+    "json": "{\"button__20\":{\"id\":20020,\"caption\":\"BtnDate\",\"position\":{\"left\":40,\"top\":220,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":16,\"picTab\":{},\"text\":\"2026-09-16\",\"touchable\":true},\"window__21\":{\"id\":110021,\"caption\":\"WinCalendar\",\"position\":{\"left\":112,\"top\":60,\"width\":800,\"height\":480},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+    "notes": "42 个 textview + 触摸反算；无今天高亮/年月下拉；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内** textview 底色实测画不出；普通容器里可画）**",
+    "ref": "components/ui_v1/Calendar"
+   },
+   {
+    "name": "QDateTimeEdit",
+    "aliases": [
+     "datetimeedit"
+    ],
+    "target": "calendar",
+    "level": "L4",
+    "json": "{\"button__20\":{\"id\":20020,\"caption\":\"BtnDate\",\"position\":{\"left\":40,\"top\":220,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":16,\"picTab\":{},\"text\":\"2026-09-16\",\"touchable\":true},\"window__21\":{\"id\":110021,\"caption\":\"WinCalendar\",\"position\":{\"left\":112,\"top\":60,\"width\":800,\"height\":480},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+    "notes": "同上（时间部分用步进按钮组）；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内** textview 底色实测画不出；普通容器里可画）**（日期部分；**时间部分仍缺**，见计划 `TimePicker/` / `WheelPicker/`）",
+    "ref": "components/ui_v1/Calendar"
+   },
+   {
+    "name": "QTimeEdit",
+    "aliases": [
+     "timeedit"
+    ],
+    "target": "wheelpicker",
+    "level": "L5",
+    "json": "",
+    "notes": "时间滚轮选择平台无对应能力；替代 = 步进按钮组 / 模态列表",
+    "ref": "components/ui_v1/components.md（计划 WheelPicker/）"
+   },
+   {
+    "name": "QSpinBox",
+    "aliases": [
+     "spinbox"
+    ],
+    "target": "stepper",
+    "level": "L2",
+    "json": "{\"button__30\":{\"id\":20030,\"caption\":\"BtnStepMinus\",\"position\":{\"left\":40,\"top\":280,\"width\":48,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":24,\"picTab\":{},\"text\":\"-\",\"touchable\":true},\"textview__31\":{\"id\":50031,\"caption\":\"TvStepValue\",\"position\":{\"left\":96,\"top\":280,\"width\":120,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":20,\"touchable\":false,\"text\":\"0\"},\"button__32\":{\"id\":20032,\"caption\":\"BtnStepPlus\",\"position\":{\"left\":224,\"top\":280,\"width\":48,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":24,\"picTab\":{},\"text\":\"+\",\"touchable\":true}}",
+    "notes": "两个按钮 + 数值 textview",
+    "ref": ""
+   },
+   {
+    "name": "QDial",
+    "aliases": [
+     "dial"
+    ],
+    "target": "pointer",
+    "level": "L1",
+    "json": "{\"pointer__1\":{\"id\":37001,\"caption\":\"PtrGauge\",\"position\":{\"left\":380,\"top\":140,\"width\":264,\"height\":264},\"animatable\":true,\"backgroundColor\":-1,\"backgroundPic\":\"images/gauge_bg_264x264.png\",\"clockwise\":true,\"fixedPoint\":{\"x\":33,\"y\":132},\"pointerPic\":\"images/needle_200x20.png\",\"pointerSize\":{\"width\":200,\"height\":20},\"rotateSpeed\":1,\"rotationPoint\":{\"x\":132,\"y\":132},\"startAngle\":0,\"touchable\":false,\"visible\":true}}",
+    "notes": "表针 + 表盘底图",
+    "ref": ""
+   },
+   {
+    "name": "QChart",
+    "aliases": [
+     "qchart",
+     "qcustomplot"
+    ],
+    "target": "chart",
+    "level": "L3",
+    "json": "{\"painter__1\":{\"id\":35001,\"caption\":\"PtChart\",\"position\":{\"left\":40,\"top\":120,\"width\":944,\"height\":320},\"backgroundColor\":16777215,\"touchable\":false,\"visible\":true},\"textview__2\":{\"id\":50080,\"caption\":\"TvChartYMax\",\"position\":{\"left\":8,\"top\":112,\"width\":60,\"height\":20},\"alignment\":38,\"colorTab\":{\"color0\":8421504},\"fontSize\":12,\"touchable\":false,\"text\":\"100\"}}",
+    "notes": "★平台真缺 → painter 自绘 + textview 刻度",
+    "ref": "components/ui_v1/Chart"
+   },
+   {
+    "name": "QMessageBox",
+    "aliases": [
+     "qmessagebox",
+     "dialog"
+    ],
+    "target": "window_modal",
+    "level": "L1",
+    "json": "{\"window__1\":{\"id\":110002,\"caption\":\"WinDialog\",\"position\":{\"left\":112,\"top\":100,\"width\":800,\"height\":400},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+    "notes": "modal window + 按钮",
+    "ref": ""
+   },
+   {
+    "name": "QDialog",
+    "aliases": [
+     "qdialog"
+    ],
+    "target": "window_modal",
+    "level": "L1",
+    "json": "{\"window__1\":{\"id\":110002,\"caption\":\"WinDialog\",\"position\":{\"left\":112,\"top\":100,\"width\":800,\"height\":400},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+    "notes": "同上；hideTimeOut 可自动关",
+    "ref": ""
+   },
+   {
+    "name": "QToolTip",
+    "aliases": [
+     "tooltip"
+    ],
+    "target": "toast",
+    "level": "L2",
+    "json": "{\"window__9\":{\"id\":110009,\"caption\":\"WinToast\",\"position\":{\"left\":312,\"top\":460,\"width\":400,\"height\":80},\"backgroundColor\":2171169,\"hideTimeOut\":2000,\"modal\":false,\"touchable\":false,\"visible\":false,\"textview__1\":{\"id\":50010,\"caption\":\"TvToast\",\"position\":{\"left\":0,\"top\":0,\"width\":400,\"height\":80},\"alignment\":37,\"colorTab\":{\"color0\":16777215},\"fontSize\":18,\"touchable\":false,\"text\":\"\"}}}",
+    "notes": "小 window + hideTimeOut",
+    "ref": ""
+   },
+   {
+    "name": "QVideoWidget",
+    "aliases": [
+     "videowidget",
+     "qmediaplayer"
+    ],
+    "target": "videoview",
+    "level": "L1",
+    "json": "{\"videoview__1\":{\"id\":42001,\"caption\":\"VvPlayer\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":536},\"backgroundColor\":0,\"defaultVolume\":5,\"loopPlayback\":false,\"rotation\":0,\"touchable\":true,\"visible\":true}}",
+    "notes": "videoview 与 ZKMediaPlayer 消息枚举两套，别混",
+    "ref": ""
+   },
+   {
+    "name": "QCamera",
+    "aliases": [
+     "qcamera",
+     "qcameraviewfinder"
+    ],
+    "target": "cameraview",
+    "level": "L1",
+    "json": "{\"cameraview__1\":{\"id\":43001,\"caption\":\"CvCamera\",\"position\":{\"left\":0,\"top\":64,\"width\":640,\"height\":480},\"autoPreview\":true,\"backgroundColor\":0,\"cvbs\":false,\"formatSize\":\"640x480\",\"mirror\":0,\"touchable\":false,\"visible\":true}}",
+    "notes": "拍照四回调（仅 jpg）",
+    "ref": ""
+   },
+   {
+    "name": "QLCDNumber",
+    "aliases": [
+     "lcdnumber"
+    ],
+    "target": "digitalclock",
+    "level": "L1",
+    "json": "{\"digitalclock__1\":{\"id\":38001,\"caption\":\"DcClock\",\"position\":{\"left\":40,\"top\":24,\"width\":240,\"height\":48},\"backgroundColor\":-1,\"beat\":false,\"clockColor\":16777215,\"fontSize\":32,\"format\":\"HH:MM\",\"touchable\":false,\"visible\":true}}",
+    "notes": "零代码自走时；也可 textview 自己格式化",
+    "ref": ""
+   },
+   {
+    "name": "QPropertyAnimation",
+    "aliases": [
+     "propertyanimation",
+     "qanim"
+    ],
+    "target": "timer_anim",
+    "level": "L4",
+    "json": "",
+    "notes": "定时器 tick 内自算缓动；无属性插值引擎",
+    "ref": ""
+   },
+   {
+    "name": "QTimer",
+    "aliases": [
+     "qtimer"
+    ],
+    "target": "timer_anim",
+    "level": "L1",
+    "json": "",
+    "notes": "REGISTER_ACTIVITY_TIMER_TAB + onUI_Timer(id)",
+    "ref": ""
+   },
+   {
+    "name": "QVBoxLayout",
+    "aliases": [
+     "layout",
+     "qlayout"
+    ],
+    "target": "layout_abs",
+    "level": "L5",
+    "json": "",
+    "notes": "无布局引擎 → 绝对坐标（data-x/y/w/h）",
+    "ref": ""
+   },
+   {
+    "name": "QGridLayout",
+    "aliases": [
+     "gridlayout"
+    ],
+    "target": "layout_abs",
+    "level": "L5",
+    "json": "",
+    "notes": "同上",
+    "ref": ""
+   },
+   {
+    "name": "QWebEngineView",
+    "aliases": [
+     "webengine",
+     "qwebview"
+    ],
+    "target": "no_support",
+    "level": "L4",
+    "json": "",
+    "notes": "easyui 控件面无 webview；平台另有 WebViewDemo（独立包），需要走非控件通道",
+    "ref": ""
+   },
+   {
+    "name": "QGraphicsView",
+    "aliases": [
+     "graphicsview",
+     "qgraphicsscene"
+    ],
+    "target": "painter",
+    "level": "L1",
+    "json": "{\"painter__1\":{\"id\":35001,\"caption\":\"PtChart\",\"position\":{\"left\":40,\"top\":120,\"width\":944,\"height\":320},\"backgroundColor\":16777215,\"touchable\":false,\"visible\":true}}",
+    "notes": "自绘画布 → painter",
+    "ref": ""
+   },
+   {
+    "name": "QSystemTrayIcon",
+    "aliases": [
+     "trayicon",
+     "qsystemtrayicon"
+    ],
+    "target": "no_support",
+    "level": "L5",
+    "json": "",
+    "notes": "HMI 无系统托盘概念；替代 = 常驻状态栏 window",
+    "ref": ""
+   }
+  ],
+  "android": [
+   {
+    "name": "Button",
+    "aliases": [
+     "materialbutton",
+     "appcompatbutton"
+    ],
+    "target": "button",
+    "level": "L1",
+    "json": "{\"button__1\":{\"id\":20001,\"caption\":\"BtnSubmit\",\"position\":{\"left\":40,\"top\":400,\"width\":200,\"height\":56},\"alignment\":37,\"colorTab\":{\"color0\":16777215},\"bgColorTab\":{\"color0\":2201331},\"fontSize\":18,\"picTab\":{},\"text\":\"提交\",\"touchable\":true}}",
+    "notes": "两态图 picTab / 纯色 bgColorTab",
+    "ref": ""
+   },
+   {
+    "name": "TextView",
+    "aliases": [
+     "appcompattextview"
+    ],
+    "target": "textview",
+    "level": "L1",
+    "json": "{\"textview__1\":{\"id\":50001,\"caption\":\"TvTitle\",\"position\":{\"left\":40,\"top\":40,\"width\":400,\"height\":32},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"fontSize\":24,\"touchable\":false,\"text\":\"标题\"}}",
+    "notes": "支持 \\n，不自动折行",
+    "ref": ""
+   },
+   {
+    "name": "EditText",
+    "aliases": [
+     "textinputedittext",
+     "textinputlayout"
+    ],
+    "target": "edittext",
+    "level": "L1",
+    "json": "{\"edittext__1\":{\"id\":40001,\"caption\":\"EtName\",\"position\":{\"left\":40,\"top\":120,\"width\":320,\"height\":48},\"alignment\":36,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"hintTextColor\":8421504,\"text\":\"\",\"textType\":0}}",
+    "notes": "系统内置键盘；hintText/isPassword 字段对应",
+    "ref": ""
+   },
+   {
+    "name": "ImageView",
+    "aliases": [
+     "appcompatimageview"
+    ],
+    "target": "image",
+    "level": "L1",
+    "json": "{\"textview__3\":{\"id\":50003,\"caption\":\"TvPhoto\",\"position\":{\"left\":40,\"top\":80,\"width\":320,\"height\":180},\"alignment\":37,\"backgroundPic\":\"images/photo_320x180.png\",\"colorTab\":{\"color0\":16777215},\"fontSize\":16,\"touchable\":false,\"text\":\"\"}}",
+    "notes": "textview + backgroundPic（图尺寸必须 == 控件盒）",
+    "ref": ""
+   },
+   {
+    "name": "ImageButton",
+    "aliases": [
+     "imagebutton"
+    ],
+    "target": "button_pic",
+    "level": "L1",
+    "json": "{\"button__2\":{\"id\":20002,\"caption\":\"BtnIcon\",\"position\":{\"left\":40,\"top\":400,\"width\":72,\"height\":40},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"picTab\":{\"pic0\":\"images/btn_n.9.png\",\"pic1\":\"images/btn_p.9.png\"},\"text\":\"\",\"touchable\":true}}",
+    "notes": "picTab 两态图",
+    "ref": ""
+   },
+   {
+    "name": "CheckBox",
+    "aliases": [
+     "materialcheckbox"
+    ],
+    "target": "switch_button",
+    "level": "L2",
+    "json": "{\"button__3\":{\"id\":20003,\"caption\":\"BtnSwitch\",\"position\":{\"left\":600,\"top\":120,\"width\":88,\"height\":48},\"alignment\":37,\"picTab\":{\"pic0\":\"images/sw_off.png\",\"pic1\":\"images/sw_off_p.png\",\"pic2\":\"images/sw_on.png\"},\"text\":\"\",\"touchable\":true}}",
+    "notes": "两态按钮；⚠️ checkbox__ 生成器不支持",
+    "ref": ""
+   },
+   {
+    "name": "Switch",
+    "aliases": [
+     "switchcompat",
+     "materialswitch",
+     "toggleswitch"
+    ],
+    "target": "switch_button",
+    "level": "L2",
+    "json": "{\"button__3\":{\"id\":20003,\"caption\":\"BtnSwitch\",\"position\":{\"left\":600,\"top\":120,\"width\":88,\"height\":48},\"alignment\":37,\"picTab\":{\"pic0\":\"images/sw_off.png\",\"pic1\":\"images/sw_off_p.png\",\"pic2\":\"images/sw_on.png\"},\"text\":\"\",\"touchable\":true}}",
+    "notes": "两态图点击切换；iOS 拖拽过渡丢弃",
+    "ref": ""
+   },
+   {
+    "name": "RadioButton",
+    "aliases": [
+     "materialradiobutton"
+    ],
+    "target": "radiogroup",
+    "level": "L1",
+    "json": "{\"radiogroup__1\":{\"id\":70001,\"caption\":\"RgGender\",\"position\":{\"left\":40,\"top\":160,\"width\":400,\"height\":128},\"backgroundColor\":-1,\"touchable\":true,\"visible\":true,\"radiobuttons\":[{\"id\":71001,\"caption\":\"RbMale\",\"position\":{\"left\":16,\"top\":12,\"width\":180,\"height\":40},\"alignment\":36,\"checked\":false,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"backgroundColor\":-1,\"bold\":false,\"fontSize\":16,\"italic\":false,\"text\":\"男\",\"touchable\":true,\"visible\":true}]}}",
+    "notes": "单选组，回调给控件 ID",
+    "ref": ""
+   },
+   {
+    "name": "RadioGroup",
+    "aliases": [
+     "radiogroup"
+    ],
+    "target": "radiogroup",
+    "level": "L1",
+    "json": "{\"radiogroup__1\":{\"id\":70001,\"caption\":\"RgGender\",\"position\":{\"left\":40,\"top\":160,\"width\":400,\"height\":128},\"backgroundColor\":-1,\"touchable\":true,\"visible\":true,\"radiobuttons\":[{\"id\":71001,\"caption\":\"RbMale\",\"position\":{\"left\":16,\"top\":12,\"width\":180,\"height\":40},\"alignment\":36,\"checked\":false,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"backgroundColor\":-1,\"bold\":false,\"fontSize\":16,\"italic\":false,\"text\":\"男\",\"touchable\":true,\"visible\":true}]}}",
+    "notes": "radiogroup__N + radiobuttons[]；⚠️ touchable 必须 true",
+    "ref": ""
+   },
+   {
+    "name": "SeekBar",
+    "aliases": [
+     "appcompatseekbar",
+     "slider"
+    ],
+    "target": "seekbar",
+    "level": "L1",
+    "json": "{\"seekbar__1\":{\"id\":33001,\"caption\":\"SkSpeed\",\"position\":{\"left\":40,\"top\":200,\"width\":400,\"height\":40},\"backgroundColor\":-1,\"backgroundPic\":\"images/sk_track_400x40.png\",\"defProgress\":0,\"max\":100,\"orientation\":0,\"progressPic\":\"images/sk_fill_400x40.png\",\"thumb\":\"images/sk_thumb_24x24.png\",\"touchable\":true,\"visible\":true}}",
+    "notes": "背景禁 .9.png；尺寸==position",
+    "ref": ""
+   },
+   {
+    "name": "ProgressBar",
+    "aliases": [
+     "progressbar 水平"
+    ],
+    "target": "progressbar",
+    "level": "L2",
+    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":\"\",\"touchable\":false,\"visible\":true}}",
+    "notes": "seekbar + touchable:false",
+    "ref": ""
+   },
+   {
+    "name": "ProgressBar(圆形/菊花)",
+    "aliases": [
+     "circularprogress",
+     "spinner"
+    ],
+    "target": "circlebar",
+    "level": "L2",
+    "json": "{\"circlebar__1\":{\"id\":36001,\"caption\":\"CbRing\",\"position\":{\"left\":400,\"top\":140,\"width\":224,\"height\":224},\"backgroundColor\":-1,\"clockwise\":true,\"max\":100,\"maxAngle\":360,\"progressPic\":\"images/ring_220x220_2196F3.png\",\"progressPicPos\":0,\"startAngle\":0,\"textColor\":2171169,\"textSize\":24,\"textType\":0,\"thumb\":\"\",\"touchRange\":0,\"touchable\":false,\"unit\":\"%\",\"visible\":true}}",
+    "notes": "圆环进度用 circlebar；旋转菊花用 imageanim 帧图（F133 不支持动图）",
+    "ref": ""
+   },
+   {
+    "name": "Spinner",
+    "aliases": [
+     "materialspinner",
+     "dropdown"
+    ],
+    "target": "picker",
+    "level": "L4",
+    "json": "{\"button__10\":{\"id\":20010,\"caption\":\"BtnPicker\",\"position\":{\"left\":40,\"top\":160,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":16,\"picTab\":{},\"text\":\"请选择\",\"touchable\":true},\"window__11\":{\"id\":110011,\"caption\":\"WinPicker\",\"position\":{\"left\":112,\"top\":200,\"width\":800,\"height\":300},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+    "notes": "按钮 + modal window；无滚轮惯性、展开位变模态",
+    "ref": "components/ui_v1/components.md §2（映射项）"
+   },
+   {
+    "name": "ListView",
+    "aliases": [
+     "abslistview"
+    ],
+    "target": "listview",
+    "level": "L1",
+    "json": "{\"listview__1\":{\"id\":60001,\"caption\":\"LvFiles\",\"position\":{\"left\":20,\"top\":120,\"width\":984,\"height\":420},\"autoRollback\":false,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":false,\"dragMaxDis\":1,\"edgeEffect\":50,\"hasScrollbar\":true,\"orientation\":1,\"rows\":6,\"rowSpacing\":2,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"\",\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"position\":{\"left\":0,\"top\":0,\"width\":984,\"height\":68},\"text\":\"\",\"touchable\":true,\"visible\":true,\"subItem\":[{\"id\":61001,\"caption\":\"TvRowName\",\"position\":{\"left\":16,\"top\":16,\"width\":600,\"height\":36},\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontFamily\":0,\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"text\":\"\",\"touchable\":true,\"visible\":true}]}}}",
+    "notes": "三回调；行自身 setText(\"\")",
+    "ref": ""
+   },
+   {
+    "name": "RecyclerView",
+    "aliases": [
+     "recyclerview 列表",
+     "rv"
+    ],
+    "target": "listview",
+    "level": "L1",
+    "json": "{\"listview__1\":{\"id\":60001,\"caption\":\"LvFiles\",\"position\":{\"left\":20,\"top\":120,\"width\":984,\"height\":420},\"autoRollback\":false,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":false,\"dragMaxDis\":1,\"edgeEffect\":50,\"hasScrollbar\":true,\"orientation\":1,\"rows\":6,\"rowSpacing\":2,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"\",\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"position\":{\"left\":0,\"top\":0,\"width\":984,\"height\":68},\"text\":\"\",\"touchable\":true,\"visible\":true,\"subItem\":[{\"id\":61001,\"caption\":\"TvRowName\",\"position\":{\"left\":16,\"top\":16,\"width\":600,\"height\":36},\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontFamily\":0,\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"text\":\"\",\"touchable\":true,\"visible\":true}]}}}",
+    "notes": "listview 等价（getItemCount→getListItemCount_*；onBindViewHolder→obtainListItemData_*）；**不做 view 复用回收**（item 每次现填，禁耗时），setSelection 只改滚动位置、数据变了必须 refreshListView()",
+    "ref": "components/ui_v1/components.md §2（映射项）"
+   },
+   {
+    "name": "GridView",
+    "aliases": [
+     "gridview"
+    ],
+    "target": "listview",
+    "level": "L2",
+    "json": "{\"listview__1\":{\"id\":60001,\"caption\":\"LvFiles\",\"position\":{\"left\":20,\"top\":120,\"width\":984,\"height\":420},\"autoRollback\":false,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":false,\"dragMaxDis\":1,\"edgeEffect\":50,\"hasScrollbar\":true,\"orientation\":1,\"rows\":6,\"rowSpacing\":2,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"\",\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"position\":{\"left\":0,\"top\":0,\"width\":984,\"height\":68},\"text\":\"\",\"touchable\":true,\"visible\":true,\"subItem\":[{\"id\":61001,\"caption\":\"TvRowName\",\"position\":{\"left\":16,\"top\":16,\"width\":600,\"height\":36},\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontFamily\":0,\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"text\":\"\",\"touchable\":true,\"visible\":true}]}}}",
+    "notes": "listview 设 cols/rows 出网格",
+    "ref": ""
+   },
+   {
+    "name": "ScrollView",
+    "aliases": [
+     "scrollview",
+     "nestedscrollview"
+    ],
+    "target": "scrollwindow",
+    "level": "L1",
+    "json": "{\"scrollwindow__1\":{\"id\":32001,\"caption\":\"SwPanel\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":536},\"dragMaxDis\":1200,\"orientation\":1,\"edgeEffect\":0,\"window__2\":{\"id\":110003,\"caption\":\"WinContent\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":1200},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}}",
+    "notes": "内容 window 大于视口",
+    "ref": ""
+   },
+   {
+    "name": "HorizontalScrollView",
+    "aliases": [
+     "horizontalscrollview"
+    ],
+    "target": "no_support",
+    "level": "L4",
+    "json": "",
+    "notes": "无横向滚动容器（丢滑动/惯性/回弹）；替代 = N 个横排按钮 setSelected() 选一态",
+    "ref": ""
+   },
+   {
+    "name": "ViewPager",
+    "aliases": [
+     "viewpager2",
+     "pager"
+    ],
+    "target": "pagewindow",
+    "level": "L1",
+    "json": "{\"pagewindow__1\":{\"id\":31001,\"caption\":\"PwPages\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":536},\"dragMaxDis\":200,\"orientation\":0,\"edgeEffect\":1,\"rollSpeed\":60,\"window__2\":{\"id\":110004,\"caption\":\"Page0\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":536},\"backgroundColor\":16119802,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true},\"window__3\":{\"id\":110005,\"caption\":\"Page1\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":536},\"backgroundColor\":16119802,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}}",
+    "notes": "★pagewindow 自带滑动切页 + onPageChange；禁止多整屏 window 拼",
+    "ref": "components/ui_v1/_mapping/TabView"
+   },
+   {
+    "name": "TabLayout",
+    "aliases": [
+     "tablayout",
+     "tabitem"
+    ],
+    "target": "pagewindow",
+    "level": "L2",
+    "json": "{\"pagewindow__1\":{\"id\":31001,\"caption\":\"PwPages\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":536},\"dragMaxDis\":200,\"orientation\":0,\"edgeEffect\":1,\"rollSpeed\":60,\"window__2\":{\"id\":110004,\"caption\":\"Page0\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":536},\"backgroundColor\":16119802,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true},\"window__3\":{\"id\":110005,\"caption\":\"Page1\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":536},\"backgroundColor\":16119802,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}}",
+    "notes": "页签条 = 按钮组 + onPageChange 回设选中态（下划线用 textview 色带）",
+    "ref": "components/ui_v1/_mapping/TabView"
+   },
+   {
+    "name": "BottomNavigationView",
+    "aliases": [
+     "bottomnav",
+     "navigationbar"
+    ],
+    "target": "button_pic",
+    "level": "L2",
+    "json": "{\"button__2\":{\"id\":20002,\"caption\":\"BtnIcon\",\"position\":{\"left\":40,\"top\":400,\"width\":72,\"height\":40},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"picTab\":{\"pic0\":\"images/btn_n.9.png\",\"pic1\":\"images/btn_p.9.png\"},\"text\":\"\",\"touchable\":true}}",
+    "notes": "N 个图标按钮 + setSelected() 表达选中态",
+    "ref": ""
+   },
+   {
+    "name": "DrawerLayout",
+    "aliases": [
+     "drawerlayout",
+     "navigationview"
+    ],
+    "target": "no_support",
+    "level": "L4",
+    "json": "",
+    "notes": "无侧滑抽屉；替代 = 自研 PullWidget 下拉面板（无侧滑手势/遮罩动画）",
+    "ref": ""
+   },
+   {
+    "name": "DatePicker",
+    "aliases": [
+     "datepickerdialog"
+    ],
+    "target": "calendar",
+    "level": "L4",
+    "json": "{\"button__20\":{\"id\":20020,\"caption\":\"BtnDate\",\"position\":{\"left\":40,\"top\":220,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":16,\"picTab\":{},\"text\":\"2026-09-16\",\"touchable\":true},\"window__21\":{\"id\":110021,\"caption\":\"WinCalendar\",\"position\":{\"left\":112,\"top\":60,\"width\":800,\"height\":480},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+    "notes": "42 个 textview + 触摸反算命中格；无今天高亮/年月下拉；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内** textview 底色实测画不出；普通容器里可画）**",
+    "ref": "components/ui_v1/Calendar"
+   },
+   {
+    "name": "TimePicker",
+    "aliases": [
+     "timepickerdialog"
+    ],
+    "target": "wheelpicker",
+    "level": "L5",
+    "json": "",
+    "notes": "滚轮/时钟盘选择平台无能力；替代 = 步进按钮组 / 模态列表",
+    "ref": "components/ui_v1/components.md（计划 WheelPicker/）"
+   },
+   {
+    "name": "NumberPicker",
+    "aliases": [
+     "numberpicker"
+    ],
+    "target": "stepper",
+    "level": "L2",
+    "json": "{\"button__30\":{\"id\":20030,\"caption\":\"BtnStepMinus\",\"position\":{\"left\":40,\"top\":280,\"width\":48,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":24,\"picTab\":{},\"text\":\"-\",\"touchable\":true},\"textview__31\":{\"id\":50031,\"caption\":\"TvStepValue\",\"position\":{\"left\":96,\"top\":280,\"width\":120,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":20,\"touchable\":false,\"text\":\"0\"},\"button__32\":{\"id\":20032,\"caption\":\"BtnStepPlus\",\"position\":{\"left\":224,\"top\":280,\"width\":48,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":24,\"picTab\":{},\"text\":\"+\",\"touchable\":true}}",
+    "notes": "数值用步进按钮组；滚轮交互不支持",
+    "ref": "components/ui_v1/components.md §2（映射项）"
+   },
+   {
+    "name": "AlertDialog",
+    "aliases": [
+     "materialalertdialog",
+     "dialog"
+    ],
+    "target": "window_modal",
+    "level": "L1",
+    "json": "{\"window__1\":{\"id\":110002,\"caption\":\"WinDialog\",\"position\":{\"left\":112,\"top\":100,\"width\":800,\"height\":400},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+    "notes": "modal window + 按钮组",
+    "ref": ""
+   },
+   {
+    "name": "Toast",
+    "aliases": [
+     "androidtoast"
+    ],
+    "target": "toast",
+    "level": "L2",
+    "json": "{\"window__9\":{\"id\":110009,\"caption\":\"WinToast\",\"position\":{\"left\":312,\"top\":460,\"width\":400,\"height\":80},\"backgroundColor\":2171169,\"hideTimeOut\":2000,\"modal\":false,\"touchable\":false,\"visible\":false,\"textview__1\":{\"id\":50010,\"caption\":\"TvToast\",\"position\":{\"left\":0,\"top\":0,\"width\":400,\"height\":80},\"alignment\":37,\"colorTab\":{\"color0\":16777215},\"fontSize\":18,\"touchable\":false,\"text\":\"\"}}}",
+    "notes": "小 window + hideTimeOut 2~3s",
+    "ref": ""
+   },
+   {
+    "name": "Snackbar",
+    "aliases": [
+     "materialsnackbar"
+    ],
+    "target": "toast",
+    "level": "L2",
+    "json": "{\"window__9\":{\"id\":110009,\"caption\":\"WinToast\",\"position\":{\"left\":312,\"top\":460,\"width\":400,\"height\":80},\"backgroundColor\":2171169,\"hideTimeOut\":2000,\"modal\":false,\"touchable\":false,\"visible\":false,\"textview__1\":{\"id\":50010,\"caption\":\"TvToast\",\"position\":{\"left\":0,\"top\":0,\"width\":400,\"height\":80},\"alignment\":37,\"colorTab\":{\"color0\":16777215},\"fontSize\":18,\"touchable\":false,\"text\":\"\"}}}",
+    "notes": "同上（无底部浮动条能力，位置需手工对齐）",
+    "ref": ""
+   },
+   {
+    "name": "PopupWindow",
+    "aliases": [
+     "popupwindow"
+    ],
+    "target": "window_modal",
+    "level": "L2",
+    "json": "{\"window__1\":{\"id\":110002,\"caption\":\"WinDialog\",\"position\":{\"left\":112,\"top\":100,\"width\":800,\"height\":400},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+    "notes": "modal window（展开动画/锚点定位丢弃）",
+    "ref": ""
+   },
+   {
+    "name": "Toolbar",
+    "aliases": [
+     "actionbar",
+     "appbarlayout"
+    ],
+    "target": "window",
+    "level": "L2",
+    "json": "{\"window__1\":{\"id\":110001,\"caption\":\"WinCard\",\"position\":{\"left\":40,\"top\":120,\"width\":400,\"height\":240},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}",
+    "notes": "整屏 window 顶部自拼标题栏（返回按钮 + 标题 textview）",
+    "ref": ""
+   },
+   {
+    "name": "CardView",
+    "aliases": [
+     "materialcardview"
+    ],
+    "target": "window",
+    "level": "L2",
+    "json": "{\"window__1\":{\"id\":110001,\"caption\":\"WinCard\",\"position\":{\"left\":40,\"top\":120,\"width\":400,\"height\":240},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}",
+    "notes": "window + border-radius（html2json 自动转圆角图）",
+    "ref": ""
+   },
+   {
+    "name": "Chip",
+    "aliases": [
+     "chipgroup",
+     "materialchip"
+    ],
+    "target": "button_pic",
+    "level": "L2",
+    "json": "{\"button__2\":{\"id\":20002,\"caption\":\"BtnIcon\",\"position\":{\"left\":40,\"top\":400,\"width\":72,\"height\":40},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"picTab\":{\"pic0\":\"images/btn_n.9.png\",\"pic1\":\"images/btn_p.9.png\"},\"text\":\"\",\"touchable\":true}}",
+    "notes": "两态按钮组表达选中；无 ripple/动画",
+    "ref": ""
+   },
+   {
+    "name": "FloatingActionButton",
+    "aliases": [
+     "fab"
+    ],
+    "target": "button_pic",
+    "level": "L2",
+    "json": "{\"button__2\":{\"id\":20002,\"caption\":\"BtnIcon\",\"position\":{\"left\":40,\"top\":400,\"width\":72,\"height\":40},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"picTab\":{\"pic0\":\"images/btn_n.9.png\",\"pic1\":\"images/btn_p.9.png\"},\"text\":\"\",\"touchable\":true}}",
+    "notes": "圆形图片按钮（用预渲染 PNG）",
+    "ref": ""
+   },
+   {
+    "name": "RatingBar",
+    "aliases": [
+     "ratingbar"
+    ],
+    "target": "button_pic",
+    "level": "L2",
+    "json": "{\"button__2\":{\"id\":20002,\"caption\":\"BtnIcon\",\"position\":{\"left\":40,\"top\":400,\"width\":72,\"height\":40},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"picTab\":{\"pic0\":\"images/btn_n.9.png\",\"pic1\":\"images/btn_p.9.png\"},\"text\":\"\",\"touchable\":true}}",
+    "notes": "N 个星星图片按钮表达评分（无拖拽评分）",
+    "ref": ""
+   },
+   {
+    "name": "AutoCompleteTextView",
+    "aliases": [
+     "autocompletetextview"
+    ],
+    "target": "picker",
+    "level": "L4",
+    "json": "{\"button__10\":{\"id\":20010,\"caption\":\"BtnPicker\",\"position\":{\"left\":40,\"top\":160,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":16,\"picTab\":{},\"text\":\"请选择\",\"touchable\":true},\"window__11\":{\"id\":110011,\"caption\":\"WinPicker\",\"position\":{\"left\":112,\"top\":200,\"width\":800,\"height\":300},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+    "notes": "按钮 + modal 列表，输入联想丢弃",
+    "ref": "components/ui_v1/components.md §2（映射项）"
+   },
+   {
+    "name": "SearchView",
+    "aliases": [
+     "searchview"
+    ],
+    "target": "edittext",
+    "level": "L1",
+    "json": "{\"edittext__1\":{\"id\":40001,\"caption\":\"EtName\",\"position\":{\"left\":40,\"top\":120,\"width\":320,\"height\":48},\"alignment\":36,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"hintTextColor\":8421504,\"text\":\"\",\"textType\":0}}",
+    "notes": "edittext + 搜索按钮（无内建图标区）",
+    "ref": ""
+   },
+   {
+    "name": "WebView",
+    "aliases": [
+     "webview"
+    ],
+    "target": "no_support",
+    "level": "L4",
+    "json": "",
+    "notes": "easyui 控件面无 webview；平台另有 WebViewDemo（独立包），非控件通道",
+    "ref": ""
+   },
+   {
+    "name": "VideoView",
+    "aliases": [
+     "videoview",
+     "exoplayer",
+     "playerview"
+    ],
+    "target": "videoview",
+    "level": "L1",
+    "json": "{\"videoview__1\":{\"id\":42001,\"caption\":\"VvPlayer\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":536},\"backgroundColor\":0,\"defaultVolume\":5,\"loopPlayback\":false,\"rotation\":0,\"touchable\":true,\"visible\":true}}",
+    "notes": "videoview + 消息枚举（与播放器 API 两套）",
+    "ref": ""
+   },
+   {
+    "name": "SurfaceView",
+    "aliases": [
+     "surfaceview",
+     "textureview"
+    ],
+    "target": "no_support",
+    "level": "L5",
+    "json": "",
+    "notes": "不暴露原生图形缓冲；真渲染/图层合成仅 V85X（disp 分层）验证过",
+    "ref": ""
+   },
+   {
+    "name": "SwipeRefreshLayout",
+    "aliases": [
+     "swiperefreshlayout",
+     "pulltorefresh"
+    ],
+    "target": "refresher",
+    "level": "L4",
+    "json": "{\"button__50\":{\"id\":20050,\"caption\":\"BtnRefresh\",\"position\":{\"left\":20,\"top\":80,\"width\":160,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":16777215},\"bgColorTab\":{\"color0\":2201331},\"fontSize\":16,\"picTab\":{},\"text\":\"刷新\",\"touchable\":true},\"textview__51\":{\"id\":50051,\"caption\":\"TvRefreshState\",\"position\":{\"left\":200,\"top\":92,\"width\":400,\"height\":24},\"alignment\":36,\"colorTab\":{\"color0\":8421504},\"fontSize\":14,\"touchable\":false,\"text\":\"\"}}",
+    "notes": "按钮触发 + 定时器状态机；下拉手势/动画丢弃",
+    "ref": "components/ui_v1/components.md §2（映射项）"
+   },
+   {
+    "name": "ItemTouchHelper",
+    "aliases": [
+     "itemtouchhelper",
+     "drag sort"
+    ],
+    "target": "no_support",
+    "level": "L5",
+    "json": "",
+    "notes": "长按拖拽排序/侧滑删除不支持；替代 = 上/下移按钮 + 删除按钮",
+    "ref": "components/ui_v1/gap-list.md G-17（替代：上/下移按钮 + 删除按钮）"
+   },
+   {
+    "name": "ConstraintLayout",
+    "aliases": [
+     "linearlayout",
+     "framelayout",
+     "relativelayout"
+    ],
+    "target": "layout_abs",
+    "level": "L5",
+    "json": "",
+    "notes": "无布局引擎 → 绝对坐标（转换器按源语义层级手工排）",
+    "ref": ""
+   },
+   {
+    "name": "PopupMenu",
+    "aliases": [
+     "popupmenu",
+     "optionsmenu"
+    ],
+    "target": "picker",
+    "level": "L4",
+    "json": "{\"button__10\":{\"id\":20010,\"caption\":\"BtnPicker\",\"position\":{\"left\":40,\"top\":160,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":16,\"picTab\":{},\"text\":\"请选择\",\"touchable\":true},\"window__11\":{\"id\":110011,\"caption\":\"WinPicker\",\"position\":{\"left\":112,\"top\":200,\"width\":800,\"height\":300},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+    "notes": "按钮 + modal 列表（无锚点弹出）",
+    "ref": "components/ui_v1/components.md §2（映射项）"
+   }
+  ],
+  "miniprogram": [
+   {
+    "name": "view",
+    "aliases": [
+     "div"
+    ],
+    "target": "window",
+    "level": "L1",
+    "json": "{\"window__1\":{\"id\":110001,\"caption\":\"WinCard\",\"position\":{\"left\":40,\"top\":120,\"width\":400,\"height\":240},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}",
+    "notes": "容器 = window__N（可嵌套）",
+    "ref": ""
+   },
+   {
+    "name": "text",
+    "aliases": [
+     "text 文本"
+    ],
+    "target": "textview",
+    "level": "L1",
+    "json": "{\"textview__1\":{\"id\":50001,\"caption\":\"TvTitle\",\"position\":{\"left\":40,\"top\":40,\"width\":400,\"height\":32},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"fontSize\":24,\"touchable\":false,\"text\":\"标题\"}}",
+    "notes": "支持 \\n，不自动折行",
+    "ref": ""
+   },
+   {
+    "name": "label",
+    "aliases": [
+     "label 标签"
+    ],
+    "target": "textview",
+    "level": "L1",
+    "json": "{\"textview__1\":{\"id\":50001,\"caption\":\"TvTitle\",\"position\":{\"left\":40,\"top\":40,\"width\":400,\"height\":32},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"fontSize\":24,\"touchable\":false,\"text\":\"标题\"}}",
+    "notes": "同上（form 取值见逻辑映射）",
+    "ref": ""
+   },
+   {
+    "name": "button",
+    "aliases": [
+     "button 按钮"
+    ],
+    "target": "button",
+    "level": "L1",
+    "json": "{\"button__1\":{\"id\":20001,\"caption\":\"BtnSubmit\",\"position\":{\"left\":40,\"top\":400,\"width\":200,\"height\":56},\"alignment\":37,\"colorTab\":{\"color0\":16777215},\"bgColorTab\":{\"color0\":2201331},\"fontSize\":18,\"picTab\":{},\"text\":\"提交\",\"touchable\":true}}",
+    "notes": "open-type 系列能力平台无（导航走 EASYUICONTEXT）",
+    "ref": ""
+   },
+   {
+    "name": "input",
+    "aliases": [
+     "input 输入框"
+    ],
+    "target": "edittext",
+    "level": "L1",
+    "json": "{\"edittext__1\":{\"id\":40001,\"caption\":\"EtName\",\"position\":{\"left\":40,\"top\":120,\"width\":320,\"height\":48},\"alignment\":36,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"hintTextColor\":8421504,\"text\":\"\",\"textType\":0}}",
+    "notes": "系统内置键盘；bindinput→onEditTextChanged_*",
+    "ref": ""
+   },
+   {
+    "name": "textarea",
+    "aliases": [
+     "textarea"
+    ],
+    "target": "richtext",
+    "level": "L2",
+    "json": "{\"textview__1\":{\"id\":50090,\"caption\":\"TvArticle\",\"position\":{\"left\":40,\"top\":80,\"width\":944,\"height\":480},\"alignment\":33,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"touchable\":false,\"text\":\"第一段（手动 \\n 换行）\\n第二段\"}}",
+    "notes": "多行文本用 textview + 手动 \\n；自动折行/字数统计需自绘",
+    "ref": "components/ui_v1/components.md（计划 RichText/）"
+   },
+   {
+    "name": "image",
+    "aliases": [
+     "image 图片"
+    ],
+    "target": "image",
+    "level": "L1",
+    "json": "{\"textview__3\":{\"id\":50003,\"caption\":\"TvPhoto\",\"position\":{\"left\":40,\"top\":80,\"width\":320,\"height\":180},\"alignment\":37,\"backgroundPic\":\"images/photo_320x180.png\",\"colorTab\":{\"color0\":16777215},\"fontSize\":16,\"touchable\":false,\"text\":\"\"}}",
+    "notes": "textview + backgroundPic；mode 缩放平台不支持（按尺寸出图）",
+    "ref": ""
+   },
+   {
+    "name": "icon",
+    "aliases": [
+     "icon 图标"
+    ],
+    "target": "textview_icon",
+    "level": "L1",
+    "json": "{\"textview__2\":{\"id\":50002,\"caption\":\"TvIconMail\",\"position\":{\"left\":40,\"top\":40,\"width\":24,\"height\":24},\"alignment\":37,\"backgroundPic\":\"images/icon_mail_24x24_2196F3.png\",\"colorTab\":{\"color0\":16777215},\"fontSize\":16,\"touchable\":false,\"text\":\"\"}}",
+    "notes": "图标=T abler PNG 切图（设备字库无 Symbol 码位）",
+    "ref": ""
+   },
+   {
+    "name": "navigator",
+    "aliases": [
+     "navigator"
+    ],
+    "target": "window",
+    "level": "L1",
+    "json": "{\"window__1\":{\"id\":110001,\"caption\":\"WinCard\",\"position\":{\"left\":40,\"top\":120,\"width\":400,\"height\":240},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}",
+    "notes": "openActivity/closeActivity（页栈 ≤2）；多页用整屏 window/pagewindow",
+    "ref": ""
+   },
+   {
+    "name": "scroll-view(纵向)",
+    "aliases": [
+     "scrollview",
+     "scroll-view scroll-y"
+    ],
+    "target": "scrollwindow",
+    "level": "L1",
+    "json": "{\"scrollwindow__1\":{\"id\":32001,\"caption\":\"SwPanel\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":536},\"dragMaxDis\":1200,\"orientation\":1,\"edgeEffect\":0,\"window__2\":{\"id\":110003,\"caption\":\"WinContent\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":1200},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}}",
+    "notes": "内容 window 大于视口",
+    "ref": ""
+   },
+   {
+    "name": "scroll-view(横向)",
+    "aliases": [
+     "scroll-view scroll-x"
+    ],
+    "target": "no_support",
+    "level": "L4",
+    "json": "",
+    "notes": "无横向滚动容器（丢滑动/惯性/回弹）；替代 = N 个横排按钮 setSelected() 选一态",
+    "ref": ""
+   },
+   {
+    "name": "swiper",
+    "aliases": [
+     "swiper 轮播",
+     "swiper-item"
+    ],
+    "target": "slidewindow",
+    "level": "L1",
+    "json": "{\"slidewindow__1\":{\"id\":30001,\"caption\":\"SlwLauncher\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":480},\"backgroundColor\":-1,\"cols\":4,\"fontSize\":12,\"iconSize\":{\"width\":128,\"height\":128},\"items\":[{\"colorTab\":{\"color0\":2171169},\"picTab\":{\"pic0\":\"images/ic_app1.png\",\"pic1\":\"images/ic_app1_p.png\"},\"text\":\"应用一\"}],\"padding\":{\"bottom\":8},\"rollSpeed\":199,\"rows\":2,\"touchable\":true,\"visible\":true}}",
+    "notes": "宫格轮播；回调 index 跨屏全局下标",
+    "ref": ""
+   },
+   {
+    "name": "swiper+tab(页签页)",
+    "aliases": [
+     "tab",
+     "tabbar",
+     "custom-tab-bar"
+    ],
+    "target": "pagewindow",
+    "level": "L1",
+    "json": "{\"pagewindow__1\":{\"id\":31001,\"caption\":\"PwPages\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":536},\"dragMaxDis\":200,\"orientation\":0,\"edgeEffect\":1,\"rollSpeed\":60,\"window__2\":{\"id\":110004,\"caption\":\"Page0\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":536},\"backgroundColor\":16119802,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true},\"window__3\":{\"id\":110005,\"caption\":\"Page1\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":536},\"backgroundColor\":16119802,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}}",
+    "notes": "★pagewindow 自带滑动切页 + onPageChange，页签用按钮组",
+    "ref": "components/ui_v1/_mapping/TabView"
+   },
+   {
+    "name": "picker(mode=selector)",
+    "aliases": [
+     "picker"
+    ],
+    "target": "picker",
+    "level": "L4",
+    "json": "{\"button__10\":{\"id\":20010,\"caption\":\"BtnPicker\",\"position\":{\"left\":40,\"top\":160,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":16,\"picTab\":{},\"text\":\"请选择\",\"touchable\":true},\"window__11\":{\"id\":110011,\"caption\":\"WinPicker\",\"position\":{\"left\":112,\"top\":200,\"width\":800,\"height\":300},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+    "notes": "按钮 + modal window 列表；无滚轮惯性/多列联动，展开位变模态",
+    "ref": "components/ui_v1/components.md §2（映射项）"
+   },
+   {
+    "name": "picker(mode=date/time)",
+    "aliases": [
+     "picker date",
+     "picker time",
+     "mode=date"
+    ],
+    "target": "calendar",
+    "level": "L4",
+    "json": "{\"button__20\":{\"id\":20020,\"caption\":\"BtnDate\",\"position\":{\"left\":40,\"top\":220,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":16,\"picTab\":{},\"text\":\"2026-09-16\",\"touchable\":true},\"window__21\":{\"id\":110021,\"caption\":\"WinCalendar\",\"position\":{\"left\":112,\"top\":60,\"width\":800,\"height\":480},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+    "notes": "42 个 textview + 触摸反算命中格；时间部分用步进按钮组；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内** textview 底色实测画不出；普通容器里可画）**（日期部分；**时间部分仍缺**，见计划 `TimePicker/` / `WheelPicker/`）",
+    "ref": "components/ui_v1/Calendar"
+   },
+   {
+    "name": "picker-view",
+    "aliases": [
+     "picker-view",
+     "picker-view-column"
+    ],
+    "target": "wheelpicker",
+    "level": "L5",
+    "json": "",
+    "notes": "滚轮选择器（含联动惯性）平台无能力；替代 = 步进按钮组 / 模态列表",
+    "ref": "components/ui_v1/components.md（计划 WheelPicker/）"
+   },
+   {
+    "name": "radio-group / radio",
+    "aliases": [
+     "radio"
+    ],
+    "target": "radiogroup",
+    "level": "L1",
+    "json": "{\"radiogroup__1\":{\"id\":70001,\"caption\":\"RgGender\",\"position\":{\"left\":40,\"top\":160,\"width\":400,\"height\":128},\"backgroundColor\":-1,\"touchable\":true,\"visible\":true,\"radiobuttons\":[{\"id\":71001,\"caption\":\"RbMale\",\"position\":{\"left\":16,\"top\":12,\"width\":180,\"height\":40},\"alignment\":36,\"checked\":false,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"backgroundColor\":-1,\"bold\":false,\"fontSize\":16,\"italic\":false,\"text\":\"男\",\"touchable\":true,\"visible\":true}]}}",
+    "notes": "radiogroup__N；回调给选中项控件 ID",
+    "ref": ""
+   },
+   {
+    "name": "checkbox-group / checkbox",
+    "aliases": [
+     "checkbox"
+    ],
+    "target": "switch_button",
+    "level": "L2",
+    "json": "{\"button__3\":{\"id\":20003,\"caption\":\"BtnSwitch\",\"position\":{\"left\":600,\"top\":120,\"width\":88,\"height\":48},\"alignment\":37,\"picTab\":{\"pic0\":\"images/sw_off.png\",\"pic1\":\"images/sw_off_p.png\",\"pic2\":\"images/sw_on.png\"},\"text\":\"\",\"touchable\":true}}",
+    "notes": "N 个两态按钮 + logic 侧 collectFormValue() 聚合；无 group 容器",
+    "ref": "components/ui_v1/components.md §2（映射项）"
+   },
+   {
+    "name": "switch",
+    "aliases": [
+     "switch 开关"
+    ],
+    "target": "switch_button",
+    "level": "L2",
+    "json": "{\"button__3\":{\"id\":20003,\"caption\":\"BtnSwitch\",\"position\":{\"left\":600,\"top\":120,\"width\":88,\"height\":48},\"alignment\":37,\"picTab\":{\"pic0\":\"images/sw_off.png\",\"pic1\":\"images/sw_off_p.png\",\"pic2\":\"images/sw_on.png\"},\"text\":\"\",\"touchable\":true}}",
+    "notes": "两态图点击切换；拖拽过渡丢弃",
+    "ref": ""
+   },
+   {
+    "name": "slider",
+    "aliases": [
+     "slider 滑块",
+     "show-value"
+    ],
+    "target": "seekbar",
+    "level": "L1",
+    "json": "{\"seekbar__1\":{\"id\":33001,\"caption\":\"SkSpeed\",\"position\":{\"left\":40,\"top\":200,\"width\":400,\"height\":40},\"backgroundColor\":-1,\"backgroundPic\":\"images/sk_track_400x40.png\",\"defProgress\":0,\"max\":100,\"orientation\":0,\"progressPic\":\"images/sk_fill_400x40.png\",\"thumb\":\"images/sk_thumb_24x24.png\",\"touchable\":true,\"visible\":true}}",
+    "notes": "show-value 数值气泡平台无 → 并列 textview 常驻数值",
+    "ref": ""
+   },
+   {
+    "name": "progress",
+    "aliases": [
+     "progress 进度条"
+    ],
+    "target": "progressbar",
+    "level": "L2",
+    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":\"\",\"touchable\":false,\"visible\":true}}",
+    "notes": "seekbar + touchable:false",
+    "ref": ""
+   },
+   {
+    "name": "form",
+    "aliases": [
+     "form"
+    ],
+    "target": "window",
+    "level": "L2",
+    "json": "{\"window__1\":{\"id\":110001,\"caption\":\"WinCard\",\"position\":{\"left\":40,\"top\":120,\"width\":400,\"height\":240},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}",
+    "notes": "无表单容器：logic 侧逐控件取值/聚合（collectFormValue）",
+    "ref": "components/ui_v1/components.md §2（映射项）"
+   },
+   {
+    "name": "rich-text",
+    "aliases": [
+     "rich-text nodes"
+    ],
+    "target": "richtext",
+    "level": "L3",
+    "json": "{\"textview__1\":{\"id\":50090,\"caption\":\"TvArticle\",\"position\":{\"left\":40,\"top\":80,\"width\":944,\"height\":480},\"alignment\":33,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"touchable\":false,\"text\":\"第一段（手动 \\n 换行）\\n第二段\"}}",
+    "notes": "★真缺：textview 无自动折行/段内样式/图文混排 → 自绘",
+    "ref": "components/ui_v1/components.md（计划 RichText/）"
+   },
+   {
+    "name": "video",
+    "aliases": [
+     "video 视频"
+    ],
+    "target": "videoview",
+    "level": "L1",
+    "json": "{\"videoview__1\":{\"id\":42001,\"caption\":\"VvPlayer\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":536},\"backgroundColor\":0,\"defaultVolume\":5,\"loopPlayback\":false,\"rotation\":0,\"touchable\":true,\"visible\":true}}",
+    "notes": "消息枚举与 ZKMediaPlayer 两套，别混",
+    "ref": ""
+   },
+   {
+    "name": "camera",
+    "aliases": [
+     "camera 相机"
+    ],
+    "target": "cameraview",
+    "level": "L1",
+    "json": "{\"cameraview__1\":{\"id\":43001,\"caption\":\"CvCamera\",\"position\":{\"left\":0,\"top\":64,\"width\":640,\"height\":480},\"autoPreview\":true,\"backgroundColor\":0,\"cvbs\":false,\"formatSize\":\"640x480\",\"mirror\":0,\"touchable\":false,\"visible\":true}}",
+    "notes": "拍照四回调（仅 jpg）",
+    "ref": ""
+   },
+   {
+    "name": "canvas",
+    "aliases": [
+     "canvas 画布"
+    ],
+    "target": "painter",
+    "level": "L1",
+    "json": "{\"painter__1\":{\"id\":35001,\"caption\":\"PtChart\",\"position\":{\"left\":40,\"top\":120,\"width\":944,\"height\":320},\"backgroundColor\":16777215,\"touchable\":false,\"visible\":true}}",
+    "notes": "painter 不自动重绘；无文字 API",
+    "ref": ""
+   },
+   {
+    "name": "movable-view",
+    "aliases": [
+     "movable-view",
+     "movable-area"
+    ],
+    "target": "no_support",
+    "level": "L4",
+    "json": "",
+    "notes": "可拖拽元素无内建能力；替代 = 自己接管触摸 + setPosition 位移（无惯性）",
+    "ref": ""
+   },
+   {
+    "name": "cover-view",
+    "aliases": [
+     "cover-view"
+    ],
+    "target": "window",
+    "level": "L2",
+    "json": "{\"window__1\":{\"id\":110001,\"caption\":\"WinCard\",\"position\":{\"left\":40,\"top\":120,\"width\":400,\"height\":240},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}",
+    "notes": "用普通 window 覆盖（平台无独立覆盖层概念，注意层级顺序）",
+    "ref": ""
+   },
+   {
+    "name": "map",
+    "aliases": [
+     "map 地图"
+    ],
+    "target": "no_support",
+    "level": "L5",
+    "json": "",
+    "notes": "无地图控件；替代 = 静态地图图片 + 手工坐标换算",
+    "ref": ""
+   },
+   {
+    "name": "web-view",
+    "aliases": [
+     "web-view"
+    ],
+    "target": "no_support",
+    "level": "L4",
+    "json": "",
+    "notes": "easyui 控件面无 webview；平台另有 WebViewDemo（独立包）",
+    "ref": ""
+   },
+   {
+    "name": "refresher-enabled",
+    "aliases": [
+     "refresher",
+     "enablePullDownRefresh"
+    ],
+    "target": "refresher",
+    "level": "L4",
+    "json": "{\"button__50\":{\"id\":20050,\"caption\":\"BtnRefresh\",\"position\":{\"left\":20,\"top\":80,\"width\":160,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":16777215},\"bgColorTab\":{\"color0\":2201331},\"fontSize\":16,\"picTab\":{},\"text\":\"刷新\",\"touchable\":true},\"textview__51\":{\"id\":50051,\"caption\":\"TvRefreshState\",\"position\":{\"left\":200,\"top\":92,\"width\":400,\"height\":24},\"alignment\":36,\"colorTab\":{\"color0\":8421504},\"fontSize\":14,\"touchable\":false,\"text\":\"\"}}",
+    "notes": "按钮触发 + 定时器状态机；下拉手势/动画丢弃",
+    "ref": "components/ui_v1/components.md §2（映射项）"
+   },
+   {
+    "name": "keyboard-accessory",
+    "aliases": [
+     "keyboard-accessory"
+    ],
+    "target": "edittext",
+    "level": "L1",
+    "json": "{\"edittext__1\":{\"id\":40001,\"caption\":\"EtName\",\"position\":{\"left\":40,\"top\":120,\"width\":320,\"height\":48},\"alignment\":36,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"hintTextColor\":8421504,\"text\":\"\",\"textType\":0}}",
+    "notes": "系统 IME 自带候选条（源自制键盘条丢弃）",
+    "ref": ""
+   },
+   {
+    "name": "editor",
+    "aliases": [
+     "editor 富文本编辑"
+    ],
+    "target": "richtext",
+    "level": "L3",
+    "json": "{\"textview__1\":{\"id\":50090,\"caption\":\"TvArticle\",\"position\":{\"left\":40,\"top\":80,\"width\":944,\"height\":480},\"alignment\":33,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"touchable\":false,\"text\":\"第一段（手动 \\n 换行）\\n第二段\"}}",
+    "notes": "自绘富文本编辑（平台无）",
+    "ref": "components/ui_v1/components.md（计划 RichText/）"
+   },
+   {
+    "name": "wx.showToast",
+    "aliases": [
+     "showtoast",
+     "toast"
+    ],
+    "target": "toast",
+    "level": "L2",
+    "json": "{\"window__9\":{\"id\":110009,\"caption\":\"WinToast\",\"position\":{\"left\":312,\"top\":460,\"width\":400,\"height\":80},\"backgroundColor\":2171169,\"hideTimeOut\":2000,\"modal\":false,\"touchable\":false,\"visible\":false,\"textview__1\":{\"id\":50010,\"caption\":\"TvToast\",\"position\":{\"left\":0,\"top\":0,\"width\":400,\"height\":80},\"alignment\":37,\"colorTab\":{\"color0\":16777215},\"fontSize\":18,\"touchable\":false,\"text\":\"\"}}}",
+    "notes": "小 window + hideTimeOut 2~3s",
+    "ref": "components/ui_v1/components.md（计划 BadgeToast/）"
+   },
+   {
+    "name": "wx.showLoading",
+    "aliases": [
+     "showloading",
+     "loading"
+    ],
+    "target": "imageanim",
+    "level": "L2",
+    "json": "{\"imageanim__1\":{\"id\":39001,\"caption\":\"IaLoading\",\"position\":{\"left\":480,\"top\":280,\"width\":64,\"height\":64},\"loopCount\":0,\"playFile\":\"images/loading.gif\"}}",
+    "notes": "定时器逐帧换 PNG（菊花）；⚠️ F133 不支持动图 → 用帧图定时器",
+    "ref": "components/ui_v1/components.md（计划 BadgeToast/）"
+   },
+   {
+    "name": "enable-flex",
+    "aliases": [
+     "flex",
+     "display-flex"
+    ],
+    "target": "layout_abs",
+    "level": "L5",
+    "json": "",
+    "notes": "无 flex/grid 引擎 → 转换器按源语义层级手工排绝对坐标",
+    "ref": ""
+   },
+   {
+    "name": "wxs + setStyle",
+    "aliases": [
+     "wxs",
+     "dynamic style"
+    ],
+    "target": "no_support",
+    "level": "L4",
+    "json": "",
+    "notes": "无 CSS 引擎/无动态样式；替代 = 状态文本 + 只读进度条",
+    "ref": ""
+   },
+   {
+    "name": "this.animate(scrollSource)",
+    "aliases": [
+     "animate",
+     "scroll animation"
+    ],
+    "target": "timer_anim",
+    "level": "L4",
+    "json": "",
+    "notes": "触摸位移 → 数值联动（无插值/无滚动驱动动画）",
+    "ref": ""
+   }
+  ],
+  "emwin": [
+   {
+    "name": "WM_HBKWIN / WINDOW",
+    "aliases": [
+     "window",
+     "wm_hbkwindow"
+    ],
+    "target": "window",
+    "level": "L1",
+    "json": "{\"window__1\":{\"id\":110001,\"caption\":\"WinCard\",\"position\":{\"left\":40,\"top\":120,\"width\":400,\"height\":240},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}",
+    "notes": "整屏 window 或独立 *.ftu",
+    "ref": ""
+   },
+   {
+    "name": "FRAMEWIN",
+    "aliases": [
+     "framewin 标题窗口"
+    ],
+    "target": "window",
+    "level": "L1",
+    "json": "{\"window__1\":{\"id\":110001,\"caption\":\"WinCard\",\"position\":{\"left\":40,\"top\":120,\"width\":400,\"height\":240},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}",
+    "notes": "window + 自拼标题栏（标题 textview + 关闭按钮）",
+    "ref": ""
+   },
+   {
+    "name": "BUTTON",
+    "aliases": [
+     "button"
+    ],
+    "target": "button",
+    "level": "L1",
+    "json": "{\"button__1\":{\"id\":20001,\"caption\":\"BtnSubmit\",\"position\":{\"left\":40,\"top\":400,\"width\":200,\"height\":56},\"alignment\":37,\"colorTab\":{\"color0\":16777215},\"bgColorTab\":{\"color0\":2201331},\"fontSize\":18,\"picTab\":{},\"text\":\"提交\",\"touchable\":true}}",
+    "notes": "两态图 picTab；回调 onButtonClick_*",
+    "ref": ""
+   },
+   {
+    "name": "TEXT",
+    "aliases": [
+     "text 文本"
+    ],
+    "target": "textview",
+    "level": "L1",
+    "json": "{\"textview__1\":{\"id\":50001,\"caption\":\"TvTitle\",\"position\":{\"left\":40,\"top\":40,\"width\":400,\"height\":32},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"fontSize\":24,\"touchable\":false,\"text\":\"标题\"}}",
+    "notes": "支持 \\n，不自动折行",
+    "ref": ""
+   },
+   {
+    "name": "EDIT",
+    "aliases": [
+     "edit 输入框"
+    ],
+    "target": "edittext",
+    "level": "L1",
+    "json": "{\"edittext__1\":{\"id\":40001,\"caption\":\"EtName\",\"position\":{\"left\":40,\"top\":120,\"width\":320,\"height\":48},\"alignment\":36,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"hintTextColor\":8421504,\"text\":\"\",\"textType\":0}}",
+    "notes": "系统内置键盘（源自制键盘丢弃）",
+    "ref": ""
+   },
+   {
+    "name": "MULTIEDIT",
+    "aliases": [
+     "multiedit"
+    ],
+    "target": "richtext",
+    "level": "L3",
+    "json": "{\"textview__1\":{\"id\":50090,\"caption\":\"TvArticle\",\"position\":{\"left\":40,\"top\":80,\"width\":944,\"height\":480},\"alignment\":33,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"touchable\":false,\"text\":\"第一段（手动 \\n 换行）\\n第二段\"}}",
+    "notes": "多行/自动折行/富样式需自绘；短期 textview + \\n",
+    "ref": "components/ui_v1/components.md（计划 RichText/）"
+   },
+   {
+    "name": "CHECKBOX",
+    "aliases": [
+     "checkbox"
+    ],
+    "target": "switch_button",
+    "level": "L2",
+    "json": "{\"button__3\":{\"id\":20003,\"caption\":\"BtnSwitch\",\"position\":{\"left\":600,\"top\":120,\"width\":88,\"height\":48},\"alignment\":37,\"picTab\":{\"pic0\":\"images/sw_off.png\",\"pic1\":\"images/sw_off_p.png\",\"pic2\":\"images/sw_on.png\"},\"text\":\"\",\"touchable\":true}}",
+    "notes": "两态按钮；⚠️ checkbox__ 生成器不支持",
+    "ref": ""
+   },
+   {
+    "name": "RADIO",
+    "aliases": [
+     "radio"
+    ],
+    "target": "radiogroup",
+    "level": "L1",
+    "json": "{\"radiogroup__1\":{\"id\":70001,\"caption\":\"RgGender\",\"position\":{\"left\":40,\"top\":160,\"width\":400,\"height\":128},\"backgroundColor\":-1,\"touchable\":true,\"visible\":true,\"radiobuttons\":[{\"id\":71001,\"caption\":\"RbMale\",\"position\":{\"left\":16,\"top\":12,\"width\":180,\"height\":40},\"alignment\":36,\"checked\":false,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"backgroundColor\":-1,\"bold\":false,\"fontSize\":16,\"italic\":false,\"text\":\"男\",\"touchable\":true,\"visible\":true}]}}",
+    "notes": "radiogroup__N + radiobuttons[]",
+    "ref": ""
+   },
+   {
+    "name": "SLIDER",
+    "aliases": [
+     "slider"
+    ],
+    "target": "seekbar",
+    "level": "L1",
+    "json": "{\"seekbar__1\":{\"id\":33001,\"caption\":\"SkSpeed\",\"position\":{\"left\":40,\"top\":200,\"width\":400,\"height\":40},\"backgroundColor\":-1,\"backgroundPic\":\"images/sk_track_400x40.png\",\"defProgress\":0,\"max\":100,\"orientation\":0,\"progressPic\":\"images/sk_fill_400x40.png\",\"thumb\":\"images/sk_thumb_24x24.png\",\"touchable\":true,\"visible\":true}}",
+    "notes": "背景禁 .9.png；尺寸==position",
+    "ref": ""
+   },
+   {
+    "name": "PROGBAR",
+    "aliases": [
+     "progbar",
+     "progressbar"
+    ],
+    "target": "progressbar",
+    "level": "L2",
+    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":\"\",\"touchable\":false,\"visible\":true}}",
+    "notes": "seekbar + touchable:false",
+    "ref": ""
+   },
+   {
+    "name": "SCROLLBAR",
+    "aliases": [
+     "scrollbar"
+    ],
+    "target": "progressbar",
+    "level": "L4",
+    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":\"\",\"touchable\":false,\"visible\":true}}",
+    "notes": "无独立滚动条控件；容器自带滚动，进度可只读 seekbar 表达",
+    "ref": ""
+   },
+   {
+    "name": "LISTBOX",
+    "aliases": [
+     "listbox"
+    ],
+    "target": "listview",
+    "level": "L1",
+    "json": "{\"listview__1\":{\"id\":60001,\"caption\":\"LvFiles\",\"position\":{\"left\":20,\"top\":120,\"width\":984,\"height\":420},\"autoRollback\":false,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":false,\"dragMaxDis\":1,\"edgeEffect\":50,\"hasScrollbar\":true,\"orientation\":1,\"rows\":6,\"rowSpacing\":2,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"\",\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"position\":{\"left\":0,\"top\":0,\"width\":984,\"height\":68},\"text\":\"\",\"touchable\":true,\"visible\":true,\"subItem\":[{\"id\":61001,\"caption\":\"TvRowName\",\"position\":{\"left\":16,\"top\":16,\"width\":600,\"height\":36},\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontFamily\":0,\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"text\":\"\",\"touchable\":true,\"visible\":true}]}}}",
+    "notes": "三回调；行自身 setText(\"\")",
+    "ref": ""
+   },
+   {
+    "name": "LISTWHEEL",
+    "aliases": [
+     "listwheel"
+    ],
+    "target": "wheelpicker",
+    "level": "L5",
+    "json": "",
+    "notes": "滚轮选择器平台无能力；替代 = 步进按钮组 / 模态列表",
+    "ref": "components/ui_v1/components.md（计划 WheelPicker/）"
+   },
+   {
+    "name": "DROPDOWN",
+    "aliases": [
+     "dropdown"
+    ],
+    "target": "picker",
+    "level": "L4",
+    "json": "{\"button__10\":{\"id\":20010,\"caption\":\"BtnPicker\",\"position\":{\"left\":40,\"top\":160,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":16,\"picTab\":{},\"text\":\"请选择\",\"touchable\":true},\"window__11\":{\"id\":110011,\"caption\":\"WinPicker\",\"position\":{\"left\":112,\"top\":200,\"width\":800,\"height\":300},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+    "notes": "按钮 + modal window；无滚轮惯性/多列联动",
+    "ref": "components/ui_v1/components.md §2（映射项）"
+   },
+   {
+    "name": "SPINBOX",
+    "aliases": [
+     "spinbox"
+    ],
+    "target": "stepper",
+    "level": "L2",
+    "json": "{\"button__30\":{\"id\":20030,\"caption\":\"BtnStepMinus\",\"position\":{\"left\":40,\"top\":280,\"width\":48,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":24,\"picTab\":{},\"text\":\"-\",\"touchable\":true},\"textview__31\":{\"id\":50031,\"caption\":\"TvStepValue\",\"position\":{\"left\":96,\"top\":280,\"width\":120,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":20,\"touchable\":false,\"text\":\"0\"},\"button__32\":{\"id\":20032,\"caption\":\"BtnStepPlus\",\"position\":{\"left\":224,\"top\":280,\"width\":48,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":24,\"picTab\":{},\"text\":\"+\",\"touchable\":true}}",
+    "notes": "两个按钮 + 数值 textview",
+    "ref": ""
+   },
+   {
+    "name": "GRAPH",
+    "aliases": [
+     "graph 曲线"
+    ],
+    "target": "chart",
+    "level": "L3",
+    "json": "{\"painter__1\":{\"id\":35001,\"caption\":\"PtChart\",\"position\":{\"left\":40,\"top\":120,\"width\":944,\"height\":320},\"backgroundColor\":16777215,\"touchable\":false,\"visible\":true},\"textview__2\":{\"id\":50080,\"caption\":\"TvChartYMax\",\"position\":{\"left\":8,\"top\":112,\"width\":60,\"height\":20},\"alignment\":38,\"colorTab\":{\"color0\":8421504},\"fontSize\":12,\"touchable\":false,\"text\":\"100\"}}",
+    "notes": "★平台真缺通用图表 → painter 自绘 + textview 刻度；实时波形可用 diagram",
+    "ref": "components/ui_v1/Chart"
+   },
+   {
+    "name": "HEADER",
+    "aliases": [
+     "header"
+    ],
+    "target": "tablegrid",
+    "level": "L2",
+    "json": "{\"textview__40\":{\"id\":50040,\"caption\":\"TvThName\",\"position\":{\"left\":20,\"top\":80,\"width\":400,\"height\":40},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":15790320},\"fontSize\":16,\"touchable\":false,\"text\":\"名称\"},\"textview__41\":{\"id\":50041,\"caption\":\"TvThValue\",\"position\":{\"left\":420,\"top\":80,\"width\":584,\"height\":40},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":15790320},\"fontSize\":16,\"touchable\":false,\"text\":\"数值\"},\"listview__42\":{\"id\":60042,\"caption\":\"LvTable\",\"position\":{\"left\":20,\"top\":120,\"width\":984,\"height\":420},\"autoRollback\":false,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":false,\"dragMaxDis\":1,\"edgeEffect\":50,\"hasScrollbar\":true,\"orientation\":1,\"rows\":6,\"rowSpacing\":2,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"\",\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"position\":{\"left\":0,\"top\":0,\"width\":984,\"height\":68},\"text\":\"\",\"touchable\":true,\"visible\":true,\"subItem\":[{\"id\":61001,\"caption\":\"TvRowName\",\"position\":{\"left\":16,\"top\":16,\"width\":600,\"height\":36},\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontFamily\":0,\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"text\":\"\",\"touchable\":true,\"visible\":true}]}}}",
+    "notes": "textview 表头 + listview 网格（列宽手工对齐）",
+    "ref": ""
+   },
+   {
+    "name": "ICONVIEW",
+    "aliases": [
+     "iconview"
+    ],
+    "target": "slidewindow",
+    "level": "L1",
+    "json": "{\"slidewindow__1\":{\"id\":30001,\"caption\":\"SlwLauncher\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":480},\"backgroundColor\":-1,\"cols\":4,\"fontSize\":12,\"iconSize\":{\"width\":128,\"height\":128},\"items\":[{\"colorTab\":{\"color0\":2171169},\"picTab\":{\"pic0\":\"images/ic_app1.png\",\"pic1\":\"images/ic_app1_p.png\"},\"text\":\"应用一\"}],\"padding\":{\"bottom\":8},\"rollSpeed\":199,\"rows\":2,\"touchable\":true,\"visible\":true}}",
+    "notes": "宫格轮播；index 跨屏全局下标",
+    "ref": ""
+   },
+   {
+    "name": "IMAGE",
+    "aliases": [
+     "image"
+    ],
+    "target": "image",
+    "level": "L1",
+    "json": "{\"textview__3\":{\"id\":50003,\"caption\":\"TvPhoto\",\"position\":{\"left\":40,\"top\":80,\"width\":320,\"height\":180},\"alignment\":37,\"backgroundPic\":\"images/photo_320x180.png\",\"colorTab\":{\"color0\":16777215},\"fontSize\":16,\"touchable\":false,\"text\":\"\"}}",
+    "notes": "textview + backgroundPic（图尺寸必须 == 控件盒）",
+    "ref": ""
+   },
+   {
+    "name": "SWIPELIST",
+    "aliases": [
+     "swipelist"
+    ],
+    "target": "listview",
+    "level": "L4",
+    "json": "{\"listview__1\":{\"id\":60001,\"caption\":\"LvFiles\",\"position\":{\"left\":20,\"top\":120,\"width\":984,\"height\":420},\"autoRollback\":false,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":false,\"dragMaxDis\":1,\"edgeEffect\":50,\"hasScrollbar\":true,\"orientation\":1,\"rows\":6,\"rowSpacing\":2,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"\",\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"position\":{\"left\":0,\"top\":0,\"width\":984,\"height\":68},\"text\":\"\",\"touchable\":true,\"visible\":true,\"subItem\":[{\"id\":61001,\"caption\":\"TvRowName\",\"position\":{\"left\":16,\"top\":16,\"width\":600,\"height\":36},\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontFamily\":0,\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"text\":\"\",\"touchable\":true,\"visible\":true}]}}}",
+    "notes": "无侧滑操作；替代 = 行内按钮（删除/编辑）+ refreshListView()",
+    "ref": ""
+   },
+   {
+    "name": "MESSAGEBOX",
+    "aliases": [
+     "messagebox"
+    ],
+    "target": "window_modal",
+    "level": "L1",
+    "json": "{\"window__1\":{\"id\":110002,\"caption\":\"WinDialog\",\"position\":{\"left\":112,\"top\":100,\"width\":800,\"height\":400},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+    "notes": "modal window + 按钮组；hideTimeOut 可自动关",
+    "ref": ""
+   },
+   {
+    "name": "MENU",
+    "aliases": [
+     "menu"
+    ],
+    "target": "picker",
+    "level": "L4",
+    "json": "{\"button__10\":{\"id\":20010,\"caption\":\"BtnPicker\",\"position\":{\"left\":40,\"top\":160,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":16,\"picTab\":{},\"text\":\"请选择\",\"touchable\":true},\"window__11\":{\"id\":110011,\"caption\":\"WinPicker\",\"position\":{\"left\":112,\"top\":200,\"width\":800,\"height\":300},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+    "notes": "按钮 + modal 列表（无多级菜单/锚点弹出）",
+    "ref": "components/ui_v1/components.md §2（映射项）"
+   },
+   {
+    "name": "KNOB",
+    "aliases": [
+     "knob"
+    ],
+    "target": "pointer",
+    "level": "L1",
+    "json": "{\"pointer__1\":{\"id\":37001,\"caption\":\"PtrGauge\",\"position\":{\"left\":380,\"top\":140,\"width\":264,\"height\":264},\"animatable\":true,\"backgroundColor\":-1,\"backgroundPic\":\"images/gauge_bg_264x264.png\",\"clockwise\":true,\"fixedPoint\":{\"x\":33,\"y\":132},\"pointerPic\":\"images/needle_200x20.png\",\"pointerSize\":{\"width\":200,\"height\":20},\"rotateSpeed\":1,\"rotationPoint\":{\"x\":132,\"y\":132},\"startAngle\":0,\"touchable\":false,\"visible\":true}}",
+    "notes": "表针 + 表盘底图（setTargetAngle）",
+    "ref": ""
+   },
+   {
+    "name": "QRCODE",
+    "aliases": [
+     "qrcode",
+     "wm_qrcode"
+    ],
+    "target": "qrcode",
+    "level": "L1",
+    "json": "{\"qrcode__1\":{\"id\":41001,\"caption\":\"QrCode\",\"position\":{\"left\":400,\"top\":160,\"width\":224,\"height\":224},\"backgroundColor\":16777215,\"codeStr\":\"https://developer.flythings.cn\",\"padding\":10,\"touchable\":true,\"visible\":true}}",
+    "notes": "loadQRCode(utf8) 全量重生成",
+    "ref": ""
+   },
+   {
+    "name": "TIMER",
+    "aliases": [
+     "wdm_timer",
+     "timer"
+    ],
+    "target": "timer_anim",
+    "level": "L1",
+    "json": "",
+    "notes": "REGISTER_ACTIVITY_TIMER_TAB + onUI_Timer(id)",
+    "ref": ""
+   },
+   {
+    "name": "KEYBOARD",
+    "aliases": [
+     "keyboard"
+    ],
+    "target": "edittext",
+    "level": "L1",
+    "json": "{\"edittext__1\":{\"id\":40001,\"caption\":\"EtName\",\"position\":{\"left\":40,\"top\":120,\"width\":320,\"height\":48},\"alignment\":36,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"hintTextColor\":8421504,\"text\":\"\",\"textType\":0}}",
+    "notes": "系统 IME（源自制键盘丢弃）",
+    "ref": ""
+   },
+   {
+    "name": "WIDGET(自定义控件)",
+    "aliases": [
+     "custom widget",
+     "wm_user"
+    ],
+    "target": "painter",
+    "level": "L1",
+    "json": "{\"painter__1\":{\"id\":35001,\"caption\":\"PtChart\",\"position\":{\"left\":40,\"top\":120,\"width\":944,\"height\":320},\"backgroundColor\":16777215,\"touchable\":false,\"visible\":true}}",
+    "notes": "自绘入口 = ZKPainter（不自动重绘；无文字 API）",
+    "ref": ""
+   },
+   {
+    "name": "ANIM",
+    "aliases": [
+     "anim"
+    ],
+    "target": "timer_anim",
+    "level": "L4",
+    "json": "",
+    "notes": "定时器 tick 自算缓动；无动画引擎",
+    "ref": ""
+   },
+   {
+    "name": "TREEVIEW",
+    "aliases": [
+     "treeview"
+    ],
+    "target": "no_support",
+    "level": "L5",
+    "json": "",
+    "notes": "无树控件；替代 = 分层列表（多页/pagewindow）或列表 + 缩进表达层级",
+    "ref": ""
+   }
+  ],
+  "mfc": [
+   {
+    "name": "CDialogEx",
+    "aliases": [
+     "cdialog",
+     "dialog"
+    ],
+    "target": "window_modal",
+    "level": "L1",
+    "json": "{\"window__1\":{\"id\":110002,\"caption\":\"WinDialog\",\"position\":{\"left\":112,\"top\":100,\"width\":800,\"height\":400},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+    "notes": "modal window + 按钮组；showWnd/hideWnd",
+    "ref": ""
+   },
+   {
+    "name": "CFormView",
+    "aliases": [
+     "cformview",
+     "cview"
+    ],
+    "target": "window",
+    "level": "L1",
+    "json": "{\"window__1\":{\"id\":110001,\"caption\":\"WinCard\",\"position\":{\"left\":40,\"top\":120,\"width\":400,\"height\":240},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}",
+    "notes": "整屏 window（无文档/视图框架概念）",
+    "ref": ""
+   },
+   {
+    "name": "CButton(BS_PUSHBUTTON)",
+    "aliases": [
+     "cbutton push",
+     "pushbutton"
+    ],
+    "target": "button",
+    "level": "L1",
+    "json": "{\"button__1\":{\"id\":20001,\"caption\":\"BtnSubmit\",\"position\":{\"left\":40,\"top\":400,\"width\":200,\"height\":56},\"alignment\":37,\"colorTab\":{\"color0\":16777215},\"bgColorTab\":{\"color0\":2201331},\"fontSize\":18,\"picTab\":{},\"text\":\"提交\",\"touchable\":true}}",
+    "notes": "两态图/纯色底；回调 onButtonClick_*",
+    "ref": ""
+   },
+   {
+    "name": "CButton(BS_AUTOCHECKBOX)",
+    "aliases": [
+     "checkbox",
+     "bs_autocheckbox"
+    ],
+    "target": "switch_button",
+    "level": "L2",
+    "json": "{\"button__3\":{\"id\":20003,\"caption\":\"BtnSwitch\",\"position\":{\"left\":600,\"top\":120,\"width\":88,\"height\":48},\"alignment\":37,\"picTab\":{\"pic0\":\"images/sw_off.png\",\"pic1\":\"images/sw_off_p.png\",\"pic2\":\"images/sw_on.png\"},\"text\":\"\",\"touchable\":true}}",
+    "notes": "两态按钮；⚠️ checkbox__ 生成器不支持",
+    "ref": ""
+   },
+   {
+    "name": "CButton(BS_AUTORADIOBUTTON)",
+    "aliases": [
+     "radiobutton",
+     "bs_autoradiobutton"
+    ],
+    "target": "radiogroup",
+    "level": "L1",
+    "json": "{\"radiogroup__1\":{\"id\":70001,\"caption\":\"RgGender\",\"position\":{\"left\":40,\"top\":160,\"width\":400,\"height\":128},\"backgroundColor\":-1,\"touchable\":true,\"visible\":true,\"radiobuttons\":[{\"id\":71001,\"caption\":\"RbMale\",\"position\":{\"left\":16,\"top\":12,\"width\":180,\"height\":40},\"alignment\":36,\"checked\":false,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"backgroundColor\":-1,\"bold\":false,\"fontSize\":16,\"italic\":false,\"text\":\"男\",\"touchable\":true,\"visible\":true}]}}",
+    "notes": "radiogroup__N；回调给选中项控件 ID",
+    "ref": ""
+   },
+   {
+    "name": "CStatic",
+    "aliases": [
+     "cstatic"
+    ],
+    "target": "textview",
+    "level": "L1",
+    "json": "{\"textview__1\":{\"id\":50001,\"caption\":\"TvTitle\",\"position\":{\"left\":40,\"top\":40,\"width\":400,\"height\":32},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"fontSize\":24,\"touchable\":false,\"text\":\"标题\"}}",
+    "notes": "支持 \\n，不自动折行；SS_BITMAP 场合走 image",
+    "ref": ""
+   },
+   {
+    "name": "CEdit",
+    "aliases": [
+     "cedit"
+    ],
+    "target": "edittext",
+    "level": "L1",
+    "json": "{\"edittext__1\":{\"id\":40001,\"caption\":\"EtName\",\"position\":{\"left\":40,\"top\":120,\"width\":320,\"height\":48},\"alignment\":36,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"hintTextColor\":8421504,\"text\":\"\",\"textType\":0}}",
+    "notes": "系统内置键盘；EM_ 消息对应字段/回调",
+    "ref": ""
+   },
+   {
+    "name": "CRichEditCtrl",
+    "aliases": [
+     "richeditctrl",
+     "richedit"
+    ],
+    "target": "richtext",
+    "level": "L3",
+    "json": "{\"textview__1\":{\"id\":50090,\"caption\":\"TvArticle\",\"position\":{\"left\":40,\"top\":80,\"width\":944,\"height\":480},\"alignment\":33,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"touchable\":false,\"text\":\"第一段（手动 \\n 换行）\\n第二段\"}}",
+    "notes": "富文本真缺 → 自绘（短期 textview + \\n）",
+    "ref": "components/ui_v1/components.md（计划 RichText/）"
+   },
+   {
+    "name": "CListBox",
+    "aliases": [
+     "clistbox",
+     "listbox"
+    ],
+    "target": "listview",
+    "level": "L1",
+    "json": "{\"listview__1\":{\"id\":60001,\"caption\":\"LvFiles\",\"position\":{\"left\":20,\"top\":120,\"width\":984,\"height\":420},\"autoRollback\":false,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":false,\"dragMaxDis\":1,\"edgeEffect\":50,\"hasScrollbar\":true,\"orientation\":1,\"rows\":6,\"rowSpacing\":2,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"\",\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"position\":{\"left\":0,\"top\":0,\"width\":984,\"height\":68},\"text\":\"\",\"touchable\":true,\"visible\":true,\"subItem\":[{\"id\":61001,\"caption\":\"TvRowName\",\"position\":{\"left\":16,\"top\":16,\"width\":600,\"height\":36},\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontFamily\":0,\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"text\":\"\",\"touchable\":true,\"visible\":true}]}}}",
+    "notes": "三回调",
+    "ref": ""
+   },
+   {
+    "name": "CListCtrl(LVS_REPORT)",
+    "aliases": [
+     "clistctrl",
+     "listctrl report"
+    ],
+    "target": "tablegrid",
+    "level": "L2",
+    "json": "{\"textview__40\":{\"id\":50040,\"caption\":\"TvThName\",\"position\":{\"left\":20,\"top\":80,\"width\":400,\"height\":40},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":15790320},\"fontSize\":16,\"touchable\":false,\"text\":\"名称\"},\"textview__41\":{\"id\":50041,\"caption\":\"TvThValue\",\"position\":{\"left\":420,\"top\":80,\"width\":584,\"height\":40},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":15790320},\"fontSize\":16,\"touchable\":false,\"text\":\"数值\"},\"listview__42\":{\"id\":60042,\"caption\":\"LvTable\",\"position\":{\"left\":20,\"top\":120,\"width\":984,\"height\":420},\"autoRollback\":false,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":false,\"dragMaxDis\":1,\"edgeEffect\":50,\"hasScrollbar\":true,\"orientation\":1,\"rows\":6,\"rowSpacing\":2,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"\",\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"position\":{\"left\":0,\"top\":0,\"width\":984,\"height\":68},\"text\":\"\",\"touchable\":true,\"visible\":true,\"subItem\":[{\"id\":61001,\"caption\":\"TvRowName\",\"position\":{\"left\":16,\"top\":16,\"width\":600,\"height\":36},\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontFamily\":0,\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"text\":\"\",\"touchable\":true,\"visible\":true}]}}}",
+    "notes": "textview 表头 + listview 网格；列宽手工对齐",
+    "ref": ""
+   },
+   {
+    "name": "CTreeCtrl",
+    "aliases": [
+     "ctreectrl",
+     "tree"
+    ],
+    "target": "no_support",
+    "level": "L5",
+    "json": "",
+    "notes": "无树控件；替代 = 多页/pagewindow 分组或列表缩进表达层级",
+    "ref": ""
+   },
+   {
+    "name": "CComboBox",
+    "aliases": [
+     "ccombobox",
+     "combobox"
+    ],
+    "target": "picker",
+    "level": "L4",
+    "json": "{\"button__10\":{\"id\":20010,\"caption\":\"BtnPicker\",\"position\":{\"left\":40,\"top\":160,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":16,\"picTab\":{},\"text\":\"请选择\",\"touchable\":true},\"window__11\":{\"id\":110011,\"caption\":\"WinPicker\",\"position\":{\"left\":112,\"top\":200,\"width\":800,\"height\":300},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+    "notes": "按钮 + modal window；无滚轮惯性/多列联动",
+    "ref": "components/ui_v1/components.md §2（映射项）"
+   },
+   {
+    "name": "CSliderCtrl",
+    "aliases": [
+     "csliderctrl",
+     "slider"
+    ],
+    "target": "seekbar",
+    "level": "L1",
+    "json": "{\"seekbar__1\":{\"id\":33001,\"caption\":\"SkSpeed\",\"position\":{\"left\":40,\"top\":200,\"width\":400,\"height\":40},\"backgroundColor\":-1,\"backgroundPic\":\"images/sk_track_400x40.png\",\"defProgress\":0,\"max\":100,\"orientation\":0,\"progressPic\":\"images/sk_fill_400x40.png\",\"thumb\":\"images/sk_thumb_24x24.png\",\"touchable\":true,\"visible\":true}}",
+    "notes": "背景禁 .9.png；尺寸==position",
+    "ref": ""
+   },
+   {
+    "name": "CProgressCtrl",
+    "aliases": [
+     "cprogressctrl",
+     "progress"
+    ],
+    "target": "progressbar",
+    "level": "L2",
+    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":\"\",\"touchable\":false,\"visible\":true}}",
+    "notes": "seekbar + touchable:false",
+    "ref": ""
+   },
+   {
+    "name": "CSpinButtonCtrl",
+    "aliases": [
+     "cspinbuttonctrl",
+     "spin"
+    ],
+    "target": "stepper",
+    "level": "L2",
+    "json": "{\"button__30\":{\"id\":20030,\"caption\":\"BtnStepMinus\",\"position\":{\"left\":40,\"top\":280,\"width\":48,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":24,\"picTab\":{},\"text\":\"-\",\"touchable\":true},\"textview__31\":{\"id\":50031,\"caption\":\"TvStepValue\",\"position\":{\"left\":96,\"top\":280,\"width\":120,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":20,\"touchable\":false,\"text\":\"0\"},\"button__32\":{\"id\":20032,\"caption\":\"BtnStepPlus\",\"position\":{\"left\":224,\"top\":280,\"width\":48,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":24,\"picTab\":{},\"text\":\"+\",\"touchable\":true}}",
+    "notes": "两个按钮 + 数值 textview",
+    "ref": ""
+   },
+   {
+    "name": "CScrollBar",
+    "aliases": [
+     "cscrollbar"
+    ],
+    "target": "no_support",
+    "level": "L4",
+    "json": "",
+    "notes": "无独立滚动条（丢拖动）；替代 = 容器自带滚动 + 只读 seekbar 显示进度",
+    "ref": ""
+   },
+   {
+    "name": "CTabCtrl",
+    "aliases": [
+     "ctabctrl",
+     "tabctrl"
+    ],
+    "target": "pagewindow",
+    "level": "L1",
+    "json": "{\"pagewindow__1\":{\"id\":31001,\"caption\":\"PwPages\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":536},\"dragMaxDis\":200,\"orientation\":0,\"edgeEffect\":1,\"rollSpeed\":60,\"window__2\":{\"id\":110004,\"caption\":\"Page0\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":536},\"backgroundColor\":16119802,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true},\"window__3\":{\"id\":110005,\"caption\":\"Page1\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":536},\"backgroundColor\":16119802,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}}",
+    "notes": "★pagewindow 自带滑动切页 + 按钮组页签",
+    "ref": "components/ui_v1/_mapping/TabView"
+   },
+   {
+    "name": "CPropertySheet",
+    "aliases": [
+     "cpropertysheet",
+     "cpropertypage"
+    ],
+    "target": "pagewindow",
+    "level": "L1",
+    "json": "{\"pagewindow__1\":{\"id\":31001,\"caption\":\"PwPages\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":536},\"dragMaxDis\":200,\"orientation\":0,\"edgeEffect\":1,\"rollSpeed\":60,\"window__2\":{\"id\":110004,\"caption\":\"Page0\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":536},\"backgroundColor\":16119802,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true},\"window__3\":{\"id\":110005,\"caption\":\"Page1\",\"position\":{\"left\":0,\"top\":0,\"width\":1024,\"height\":536},\"backgroundColor\":16119802,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}}",
+    "notes": "属性页 = pagewindow 多页 + 页签按钮组",
+    "ref": "components/ui_v1/_mapping/TabView"
+   },
+   {
+    "name": "CDateTimeCtrl",
+    "aliases": [
+     "cdatetimectrl",
+     "datetimepicker"
+    ],
+    "target": "calendar",
+    "level": "L4",
+    "json": "{\"button__20\":{\"id\":20020,\"caption\":\"BtnDate\",\"position\":{\"left\":40,\"top\":220,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":16,\"picTab\":{},\"text\":\"2026-09-16\",\"touchable\":true},\"window__21\":{\"id\":110021,\"caption\":\"WinCalendar\",\"position\":{\"left\":112,\"top\":60,\"width\":800,\"height\":480},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+    "notes": "42 个 textview + 触摸反算；无今天高亮/年月下拉；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内** textview 底色实测画不出；普通容器里可画）**（日期部分；**时间部分仍缺**，见计划 `TimePicker/` / `WheelPicker/`）",
+    "ref": "components/ui_v1/Calendar"
+   },
+   {
+    "name": "CMonthCalCtrl",
+    "aliases": [
+     "cmonthcalctrl",
+     "monthcalendar"
+    ],
+    "target": "calendar",
+    "level": "L4",
+    "json": "{\"button__20\":{\"id\":20020,\"caption\":\"BtnDate\",\"position\":{\"left\":40,\"top\":220,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":16,\"picTab\":{},\"text\":\"2026-09-16\",\"touchable\":true},\"window__21\":{\"id\":110021,\"caption\":\"WinCalendar\",\"position\":{\"left\":112,\"top\":60,\"width\":800,\"height\":480},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+    "notes": "同上；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内** textview 底色实测画不出；普通容器里可画）**",
+    "ref": "components/ui_v1/Calendar"
+   },
+   {
+    "name": "CAnimateCtrl",
+    "aliases": [
+     "canimatectrl",
+     "animate"
+    ],
+    "target": "imageanim",
+    "level": "L1",
+    "json": "{\"imageanim__1\":{\"id\":39001,\"caption\":\"IaLoading\",\"position\":{\"left\":480,\"top\":280,\"width\":64,\"height\":64},\"loopCount\":0,\"playFile\":\"images/loading.gif\"}}",
+    "notes": "playFile + loopCount；⚠️ F133 不支持动图",
+    "ref": ""
+   },
+   {
+    "name": "CStatusBar",
+    "aliases": [
+     "cstatusbar",
+     "statusbar"
+    ],
+    "target": "window",
+    "level": "L2",
+    "json": "{\"window__1\":{\"id\":110001,\"caption\":\"WinCard\",\"position\":{\"left\":40,\"top\":120,\"width\":400,\"height\":240},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":false,\"touchable\":false,\"visible\":true}}",
+    "notes": "顶部/底部状态条 = 整屏 window + textview",
+    "ref": ""
+   },
+   {
+    "name": "CToolBar",
+    "aliases": [
+     "ctoolbar",
+     "toolbar"
+    ],
+    "target": "button_pic",
+    "level": "L2",
+    "json": "{\"button__2\":{\"id\":20002,\"caption\":\"BtnIcon\",\"position\":{\"left\":40,\"top\":400,\"width\":72,\"height\":40},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"picTab\":{\"pic0\":\"images/btn_n.9.png\",\"pic1\":\"images/btn_p.9.png\"},\"text\":\"\",\"touchable\":true}}",
+    "notes": "图标按钮组（N 个 button__N）",
+    "ref": ""
+   },
+   {
+    "name": "CToolTipCtrl",
+    "aliases": [
+     "ctooltipctrl",
+     "tooltip"
+    ],
+    "target": "toast",
+    "level": "L2",
+    "json": "{\"window__9\":{\"id\":110009,\"caption\":\"WinToast\",\"position\":{\"left\":312,\"top\":460,\"width\":400,\"height\":80},\"backgroundColor\":2171169,\"hideTimeOut\":2000,\"modal\":false,\"touchable\":false,\"visible\":false,\"textview__1\":{\"id\":50010,\"caption\":\"TvToast\",\"position\":{\"left\":0,\"top\":0,\"width\":400,\"height\":80},\"alignment\":37,\"colorTab\":{\"color0\":16777215},\"fontSize\":18,\"touchable\":false,\"text\":\"\"}}}",
+    "notes": "小 window + hideTimeOut",
+    "ref": ""
+   },
+   {
+    "name": "CMFCPropertyGridCtrl",
+    "aliases": [
+     "mfcpropertygrid",
+     "propertygrid"
+    ],
+    "target": "tablegrid",
+    "level": "L2",
+    "json": "{\"textview__40\":{\"id\":50040,\"caption\":\"TvThName\",\"position\":{\"left\":20,\"top\":80,\"width\":400,\"height\":40},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":15790320},\"fontSize\":16,\"touchable\":false,\"text\":\"名称\"},\"textview__41\":{\"id\":50041,\"caption\":\"TvThValue\",\"position\":{\"left\":420,\"top\":80,\"width\":584,\"height\":40},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":15790320},\"fontSize\":16,\"touchable\":false,\"text\":\"数值\"},\"listview__42\":{\"id\":60042,\"caption\":\"LvTable\",\"position\":{\"left\":20,\"top\":120,\"width\":984,\"height\":420},\"autoRollback\":false,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":false,\"dragMaxDis\":1,\"edgeEffect\":50,\"hasScrollbar\":true,\"orientation\":1,\"rows\":6,\"rowSpacing\":2,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"\",\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"position\":{\"left\":0,\"top\":0,\"width\":984,\"height\":68},\"text\":\"\",\"touchable\":true,\"visible\":true,\"subItem\":[{\"id\":61001,\"caption\":\"TvRowName\",\"position\":{\"left\":16,\"top\":16,\"width\":600,\"height\":36},\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontFamily\":0,\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"text\":\"\",\"touchable\":true,\"visible\":true}]}}}",
+    "notes": "textview 表头 + listview 网格；分组靠多页/缩进",
+    "ref": ""
+   },
+   {
+    "name": "CDC/OnDrawItem(自绘)",
+    "aliases": [
+     "cdc",
+     "ondrawitem",
+     "ownerdraw"
+    ],
+    "target": "painter",
+    "level": "L1",
+    "json": "{\"painter__1\":{\"id\":35001,\"caption\":\"PtChart\",\"position\":{\"left\":40,\"top\":120,\"width\":944,\"height\":320},\"backgroundColor\":16777215,\"touchable\":false,\"visible\":true}}",
+    "notes": "自绘入口 = ZKPainter（不自动重绘；无文字 API）",
+    "ref": ""
+   },
+   {
+    "name": "CBitmap/CImage",
+    "aliases": [
+     "cbitmap",
+     "cimage",
+     "picture"
+    ],
+    "target": "image",
+    "level": "L1",
+    "json": "{\"textview__3\":{\"id\":50003,\"caption\":\"TvPhoto\",\"position\":{\"left\":40,\"top\":80,\"width\":320,\"height\":180},\"alignment\":37,\"backgroundPic\":\"images/photo_320x180.png\",\"colorTab\":{\"color0\":16777215},\"fontSize\":16,\"touchable\":false,\"text\":\"\"}}",
+    "notes": "textview + backgroundPic（图尺寸必须 == 控件盒）",
+    "ref": ""
+   },
+   {
+    "name": "CWebBrowser2",
+    "aliases": [
+     "webbrowser",
+     "iwebbrowser2"
+    ],
+    "target": "no_support",
+    "level": "L4",
+    "json": "",
+    "notes": "easyui 控件面无 webview；平台另有 WebViewDemo（独立包）",
+    "ref": ""
+   },
+   {
+    "name": "CWnd::SetTimer",
+    "aliases": [
+     "settimer",
+     "timer"
+    ],
+    "target": "timer_anim",
+    "level": "L1",
+    "json": "",
+    "notes": "REGISTER_ACTIVITY_TIMER_TAB + onUI_Timer(id)",
+    "ref": ""
+   },
+   {
+    "name": "CSplitterWnd",
+    "aliases": [
+     "csplitterwnd",
+     "splitter"
+    ],
+    "target": "layout_abs",
+    "level": "L5",
+    "json": "",
+    "notes": "无分割/布局引擎 → 绝对坐标；区域分隔用 window 手工摆",
+    "ref": ""
+   }
+  ]
+ }
+}

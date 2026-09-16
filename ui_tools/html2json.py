@@ -14,6 +14,8 @@
 - window 子控件嵌套其内（相对坐标）；弹窗 modal:true + visible:false
 - Z 序 = HTML 文档顺序（后定义在上层，弹窗最后）
 - 空文本不写 text 字段；edittext 自动 beepEnable/hintTextColor
+- ⚠️ 纯黑 #000000 会被当「未设置」（data-color/data-bg 走 `to_dec(...) or 默认值`，0 是 falsy）
+  → 要纯黑写 #010101（详细见 knowledge/devflow/html-subset-quickref.md）
 """
 import html as html_lib
 import json
@@ -29,6 +31,11 @@ try:
 except Exception:
     gr = None
     _HAS_GEN_RES = False
+
+# CSS 效果自动出图档位（钟工 2026-09-16 拍板）：**一律走 SS**，不再保留 1x + α 羽化那条路。
+# SS_DEFAULT = 4 = 每像素 16 子采样（SS mask / SS 圆角 / SS 阴影层全部走这个档）。
+# 手写调用（gen_res.rounded_rect / ss=0 默认）行为不变 —— 这里只影响 html2json 出的图。
+_CSS_SS = getattr(gr, 'SS_DEFAULT', 4) if _HAS_GEN_RES else 4
 
 # ---------- ID 分区（SKILL §2.3 沛哥版） ----------
 ID_BASE = {
@@ -197,6 +204,29 @@ def _shadow_spec(style):
             col = c
             break
     return (int(nums[0]), int(nums[1]), int(abs(nums[2])), col or (0, 0, 0, 80))
+
+
+def _radius_px(style, w, h, default=0):
+    """CSS border-radius → 圆角像素（单一 radius，按 min(w,h)//2 钳制 → 药丸/正圆自动生效）。
+
+    支持 px / 无单位 / **%（50% → 正圆/药丸）**；`8px 8px 0 0` 这类多值取第一段；
+    解析不到返回 default（渐变分支 0 / 阴影分支 8，历史默认不变）。
+    ⚠️ 2026-09-16（v0.27.76）：旧实现只认「数字+px」正则 → `border-radius:50%` / 无单位
+    一律认不出 → 该出圆的地方出方角（SS 也就无从生效）。与「CSS 效果出图一律 SS」同批收口。
+    """
+    m = re.search(r'border-radius\s*:\s*([^;]+)', style or '')
+    raw = m.group(1).strip().split()[0] if (m and m.group(1).strip()) else ''
+    if not raw:
+        v = default
+    elif raw.endswith('%'):
+        try:
+            v = float(raw[:-1]) / 100.0 * min(w, h)
+        except ValueError:
+            v = default
+    else:
+        num = _px_num(raw)
+        v = default if num is None else num
+    return max(0, min(int(round(v)), min(w, h) // 2))
 
 
 def _shadow_pad(ox, oy, blur):
@@ -516,14 +546,14 @@ class HtmlToJson:
         if gm:
             horizontal, stops = _parse_gradient(gm.group(1))
             if len(stops) >= 2:
-                radius = 0
-                rm = re.search(r'border-radius\s*:\s*(\d+)px', style)
-                if rm:
-                    radius = min(int(rm.group(1)), min(w, h) // 2)
+                # border-radius：px / 无单位 / %（50% → 正圆/药丸）；无声明 = 0（不裁剪）
+                radius = _radius_px(style, w, h, 0)
                 name = f'grad_{cap or ctx.n}_{self.gen_count}.png'
 
                 def _g(d, _n=name, _w=w, _h=h, _st=stops, _hz=horizontal, _r=radius):
-                    return gr.gen_gradient_stops(d, _n, _w, _h, _st, horizontal=_hz, radius=_r)
+                    # 圆角裁剪一律走 SS（_CSS_SS=4；不再用 1x + α 羽化）
+                    return gr.gen_gradient_stops(d, _n, _w, _h, _st, horizontal=_hz, radius=_r,
+                                                 ss=_CSS_SS)
 
                 pic = self._gen_asset(_g)
                 if pic:
@@ -536,9 +566,8 @@ class HtmlToJson:
                 try:
                     ox, oy, blur, sc = sh_spec
                     pad = _shadow_pad(ox, oy, blur)
-                    rm = re.search(r'border-radius\s*:\s*(\d+)px', style)
-                    radius = int(rm.group(1)) if rm else 8
-                    radius = min(radius, min(w, h) // 2)
+                    # border-radius：px / 无单位 / %（50% → 正圆）；无声明时沿用历史默认 8
+                    radius = _radius_px(style, w, h, 8)
                     fill = _css_color(re.search(r'background(?:-color)?\s*:\s*([^;]+)', style).group(1).strip()) \
                         if re.search(r'background(?:-color)?\s*:\s*([^;]+)', style) else (0x1E, 0x27, 0x35, 255)
                     # 渐变+阴影：阴影叠加到渐变底上（渐变优先，保留视觉层次）
@@ -547,15 +576,19 @@ class HtmlToJson:
 
                         def _gs(d, _n=name, _w=w, _h=h, _r=radius, _sh=(ox, oy, blur, sc),
                                 _gm=gm):
-                            # 重画渐变底 + 阴影合成
+                            # 重画渐变底 + 阴影合成（SS：底 mask 与阴影层 alpha 都走超采样）
                             _hz, _st = _parse_gradient(_gm.group(1))
-                            base = gr.gen_gradient_stops(d, _n, _w, _h, _st, horizontal=_hz, radius=_r)
+                            base = gr.gen_gradient_stops(d, _n, _w, _h, _st, horizontal=_hz,
+                                                         radius=_r, ss=_CSS_SS)
                             # 在渐变图上叠加阴影（从 grad 图复制合成）
-                            from PIL import Image as _Image, ImageDraw as _Draw
+                            from PIL import Image as _Image
+                            from PIL import ImageChops as _ImageChops
                             img = _Image.open(base).convert('RGBA')
-                            sh = _Image.new('RGBA', img.size, (0, 0, 0, 0))
-                            _Draw.Draw(sh).rounded_rectangle(
-                                [0, 0, img.size[0] - 1, img.size[1] - 1], radius=_r, fill=sc)
+                            sh = _Image.new('RGBA', img.size, sc)
+                            # SS 版圆角 mask，只缩放 alpha（不能用 paste(color, mask)：
+                            # RGB 会被一起按 mask 缩小 → 边界发黑（暗边 halo）
+                            _m = gr.ss_shape_mask(img.size[0], img.size[1], _r, _CSS_SS)
+                            sh.putalpha(_ImageChops.multiply(sh.getchannel('A'), _m))
                             if blur > 0:
                                 from PIL import ImageFilter as _F
                                 sh = sh.filter(_F.GaussianBlur(blur))
@@ -570,7 +603,9 @@ class HtmlToJson:
                         def _s(d, _n=name, _w=w, _h=h, _r=radius, _f=fill, _sh=(ox, oy, blur, sc)):
                             # crop=False：保留完整画布 → 尺寸恒为 (w+2pad)x(h+2pad)，
                             # 主体卡落在 (pad, pad)，调用方 _grow 后「图==控件」精确对位
-                            return gr.gen_shadow_card(d, _n, _w, _h, _r, _f, shadow=_sh, crop=False)
+                            # ss=_CSS_SS：阴影层/主体圆角层/二次裁剪 mask 全走 SS
+                            return gr.gen_shadow_card(d, _n, _w, _h, _r, _f, shadow=_sh,
+                                                      crop=False, ss=_CSS_SS)
 
                         pic = self._gen_asset(_s)
                         if pic:

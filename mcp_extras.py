@@ -90,7 +90,7 @@ def _safe_knowledge_path(path):
 def _bin_tools_section():
     """「设备端预编译工具」一节（bin_tools/，**不是 op**）。
 
-    2026-09-14（钟工反馈）：外部 AI 数完 34 个 op 就断言「这版没有 touch 注入」——实际 touch
+    2026-09-14（钟工反馈）：外部 AI 数完 op 个数就断言「这版没有 touch 注入」——实际 touch
     自 v0.27.40 起一直在 bin_tools/<平台>/ 下。工具清单只列 op，必须显式补这一节。
     """
     root = os.path.join(BASE, 'bin_tools')

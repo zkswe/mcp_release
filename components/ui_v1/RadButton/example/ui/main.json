@@ -1,0 +1,756 @@
+{
+  "beepEnable": true,
+  "id": 0,
+  "resolution": {
+    "height": 600,
+    "width": 1024
+  },
+  "topmost": false,
+  "backgroundColor": 16119802,
+  "position": {
+    "height": 600,
+    "left": 0,
+    "top": 0,
+    "width": 1024
+  },
+  "window__1": {
+    "backgroundColor": 16777215,
+    "caption": "WinTopBar",
+    "hideTimeOut": -1,
+    "id": 110001,
+    "modal": false,
+    "position": {
+      "height": 56,
+      "left": 0,
+      "top": 0,
+      "width": 1024
+    },
+    "touchable": false,
+    "visible": true,
+    "textview__2": {
+      "alignment": 36,
+      "caption": "TextView1",
+      "colorTab": {
+        "color0": 2171169
+      },
+      "fontSize": 15,
+      "id": 50001,
+      "position": {
+        "height": 20,
+        "left": 20,
+        "top": 6,
+        "width": 900
+      },
+      "touchable": false,
+      "text": "components/ui_v1/RadButton ZKPainter 自绘带倒角按钮（同半径同尺寸，上下两排只看边缘）"
+    },
+    "textview__3": {
+      "alignment": 36,
+      "caption": "TvStatus",
+      "colorTab": {
+        "color0": 4545124
+      },
+      "fontSize": 14,
+      "id": 50002,
+      "position": {
+        "height": 20,
+        "left": 20,
+        "top": 30,
+        "width": 900
+      },
+      "touchable": false,
+      "text": "ready"
+    }
+  },
+  "window__4": {
+    "backgroundColor": 16119802,
+    "caption": "WinMain",
+    "hideTimeOut": -1,
+    "id": 110002,
+    "modal": false,
+    "position": {
+      "height": 544,
+      "left": 0,
+      "top": 56,
+      "width": 1024
+    },
+    "touchable": false,
+    "visible": true,
+    "textview__5": {
+      "alignment": 36,
+      "caption": "TextView2",
+      "colorTab": {
+        "color0": 2171169
+      },
+      "fontSize": 15,
+      "id": 50003,
+      "position": {
+        "height": 22,
+        "left": 24,
+        "top": 6,
+        "width": 640
+      },
+      "touchable": false,
+      "text": "平台原生 fillRect(radius) —— HARD 硬边（对照组）"
+    },
+    "painter__6": {
+      "backgroundColor": -1,
+      "caption": "PtHard4",
+      "id": 52001,
+      "position": {
+        "height": 56,
+        "left": 24,
+        "top": 32,
+        "width": 200
+      },
+      "touchable": false,
+      "visible": true
+    },
+    "painter__7": {
+      "backgroundColor": -1,
+      "caption": "PtHard8",
+      "id": 52002,
+      "position": {
+        "height": 56,
+        "left": 240,
+        "top": 32,
+        "width": 200
+      },
+      "touchable": false,
+      "visible": true
+    },
+    "painter__8": {
+      "backgroundColor": -1,
+      "caption": "PtHard14",
+      "id": 52003,
+      "position": {
+        "height": 56,
+        "left": 456,
+        "top": 32,
+        "width": 200
+      },
+      "touchable": false,
+      "visible": true
+    },
+    "textview__9": {
+      "alignment": 36,
+      "caption": "TextView3",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50004,
+      "position": {
+        "height": 18,
+        "left": 24,
+        "top": 90,
+        "width": 200
+      },
+      "touchable": false,
+      "text": "HARD r=4"
+    },
+    "textview__10": {
+      "alignment": 36,
+      "caption": "TextView4",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50005,
+      "position": {
+        "height": 18,
+        "left": 240,
+        "top": 90,
+        "width": 200
+      },
+      "touchable": false,
+      "text": "HARD r=8"
+    },
+    "textview__11": {
+      "alignment": 36,
+      "caption": "TextView5",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50006,
+      "position": {
+        "height": 18,
+        "left": 456,
+        "top": 90,
+        "width": 200
+      },
+      "touchable": false,
+      "text": "HARD r=14"
+    },
+    "textview__12": {
+      "alignment": 36,
+      "caption": "TextView6",
+      "colorTab": {
+        "color0": 2171169
+      },
+      "fontSize": 15,
+      "id": 50007,
+      "position": {
+        "height": 22,
+        "left": 24,
+        "top": 116,
+        "width": 850
+      },
+      "touchable": false,
+      "text": "RadButton MODE_AA —— 逐像素覆盖率 + 混底色（默认；三档半径与上一行一一对应，都无边框便于像素比对）"
+    },
+    "painter__13": {
+      "backgroundColor": -1,
+      "caption": "PtAa4",
+      "id": 52004,
+      "position": {
+        "height": 56,
+        "left": 24,
+        "top": 142,
+        "width": 200
+      },
+      "touchable": false,
+      "visible": true
+    },
+    "painter__14": {
+      "backgroundColor": -1,
+      "caption": "PtAa8",
+      "id": 52005,
+      "position": {
+        "height": 56,
+        "left": 240,
+        "top": 142,
+        "width": 200
+      },
+      "touchable": false,
+      "visible": true
+    },
+    "painter__15": {
+      "backgroundColor": -1,
+      "caption": "PtAa14",
+      "id": 52006,
+      "position": {
+        "height": 56,
+        "left": 456,
+        "top": 142,
+        "width": 200
+      },
+      "touchable": false,
+      "visible": true
+    },
+    "textview__16": {
+      "alignment": 36,
+      "caption": "TextView7",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50008,
+      "position": {
+        "height": 18,
+        "left": 24,
+        "top": 200,
+        "width": 200
+      },
+      "touchable": false,
+      "text": "AA r=4"
+    },
+    "textview__17": {
+      "alignment": 36,
+      "caption": "TextView8",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50009,
+      "position": {
+        "height": 18,
+        "left": 240,
+        "top": 200,
+        "width": 200
+      },
+      "touchable": false,
+      "text": "AA r=8"
+    },
+    "textview__18": {
+      "alignment": 36,
+      "caption": "TextView9",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50010,
+      "position": {
+        "height": 18,
+        "left": 456,
+        "top": 200,
+        "width": 200
+      },
+      "touchable": false,
+      "text": "AA r=14"
+    },
+    "textview__19": {
+      "alignment": 36,
+      "caption": "TextView10",
+      "colorTab": {
+        "color0": 2171169
+      },
+      "fontSize": 15,
+      "id": 50011,
+      "position": {
+        "height": 22,
+        "left": 24,
+        "top": 226,
+        "width": 700
+      },
+      "touchable": false,
+      "text": "四态（点下面按钮；每个框各管一件事，互不干预）"
+    },
+    "painter__20": {
+      "backgroundColor": -1,
+      "caption": "PtStCur",
+      "id": 52007,
+      "position": {
+        "height": 64,
+        "left": 24,
+        "top": 252,
+        "width": 240
+      },
+      "touchable": false,
+      "visible": true
+    },
+    "painter__21": {
+      "backgroundColor": -1,
+      "caption": "PtStToggle",
+      "id": 52008,
+      "position": {
+        "height": 64,
+        "left": 280,
+        "top": 252,
+        "width": 130
+      },
+      "touchable": false,
+      "visible": true
+    },
+    "painter__22": {
+      "backgroundColor": -1,
+      "caption": "PtStPress",
+      "id": 52009,
+      "position": {
+        "height": 64,
+        "left": 420,
+        "top": 252,
+        "width": 130
+      },
+      "touchable": false,
+      "visible": true
+    },
+    "painter__23": {
+      "backgroundColor": -1,
+      "caption": "PtStDisabled",
+      "id": 52010,
+      "position": {
+        "height": 64,
+        "left": 560,
+        "top": 252,
+        "width": 130
+      },
+      "touchable": false,
+      "visible": true
+    },
+    "textview__24": {
+      "alignment": 36,
+      "caption": "TvStCur",
+      "colorTab": {
+        "color0": 4545124
+      },
+      "fontSize": 14,
+      "id": 50012,
+      "position": {
+        "height": 20,
+        "left": 24,
+        "top": 320,
+        "width": 240
+      },
+      "touchable": false,
+      "text": "当前：NORMAL"
+    },
+    "textview__25": {
+      "alignment": 36,
+      "caption": "TextView11",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50013,
+      "position": {
+        "height": 20,
+        "left": 280,
+        "top": 320,
+        "width": 130
+      },
+      "touchable": false,
+      "text": "选中（无边框）"
+    },
+    "textview__26": {
+      "alignment": 36,
+      "caption": "TextView12",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50014,
+      "position": {
+        "height": 20,
+        "left": 420,
+        "top": 320,
+        "width": 130
+      },
+      "touchable": false,
+      "text": "按住（2px 边框）"
+    },
+    "textview__27": {
+      "alignment": 36,
+      "caption": "TextView13",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50015,
+      "position": {
+        "height": 20,
+        "left": 560,
+        "top": 320,
+        "width": 130
+      },
+      "touchable": false,
+      "text": "DISABLED（静态）"
+    },
+    "button__28": {
+      "alignment": 37,
+      "caption": "BtnCycle",
+      "colorTab": {
+        "color0": 16777215
+      },
+      "id": 20001,
+      "position": {
+        "height": 48,
+        "left": 24,
+        "top": 348,
+        "width": 130
+      },
+      "touchable": true,
+      "bgColorTab": {
+        "color0": 2201331
+      },
+      "fontSize": 15,
+      "text": "切换状态",
+      "picTab": {}
+    },
+    "button__29": {
+      "alignment": 37,
+      "caption": "BtnToggle",
+      "colorTab": {
+        "color0": 16777215
+      },
+      "id": 20002,
+      "position": {
+        "height": 48,
+        "left": 280,
+        "top": 348,
+        "width": 130
+      },
+      "touchable": true,
+      "bgColorTab": {
+        "color0": 1668818
+      },
+      "fontSize": 15,
+      "text": "选中/取消",
+      "picTab": {}
+    },
+    "button__30": {
+      "alignment": 37,
+      "caption": "BtnPress",
+      "colorTab": {
+        "color0": 16777215
+      },
+      "id": 20003,
+      "position": {
+        "height": 48,
+        "left": 420,
+        "top": 348,
+        "width": 130
+      },
+      "touchable": true,
+      "bgColorTab": {
+        "color0": 870305
+      },
+      "fontSize": 15,
+      "text": "按住=按下态",
+      "picTab": {}
+    },
+    "button__31": {
+      "alignment": 37,
+      "caption": "BtnRadius",
+      "colorTab": {
+        "color0": 16777215
+      },
+      "id": 20004,
+      "position": {
+        "height": 48,
+        "left": 560,
+        "top": 348,
+        "width": 130
+      },
+      "touchable": true,
+      "bgColorTab": {
+        "color0": 6323595
+      },
+      "fontSize": 15,
+      "text": "换半径",
+      "picTab": {}
+    },
+    "textview__32": {
+      "alignment": 36,
+      "caption": "TvLog",
+      "colorTab": {
+        "color0": 4545124
+      },
+      "fontSize": 14,
+      "id": 50016,
+      "position": {
+        "height": 76,
+        "left": 24,
+        "top": 404,
+        "width": 666
+      },
+      "touchable": false,
+      "text": "点按钮看日志：每次状态切换都会写这里"
+    },
+    "textview__33": {
+      "alignment": 36,
+      "caption": "TextView14",
+      "colorTab": {
+        "color0": 2171169
+      },
+      "fontSize": 15,
+      "id": 50017,
+      "position": {
+        "height": 22,
+        "left": 700,
+        "top": 6,
+        "width": 300
+      },
+      "touchable": false,
+      "text": "painter 原生能力探针"
+    },
+    "painter__34": {
+      "backgroundColor": -1,
+      "caption": "PtProbe",
+      "id": 52011,
+      "position": {
+        "height": 200,
+        "left": 700,
+        "top": 32,
+        "width": 300
+      },
+      "touchable": false,
+      "visible": true
+    },
+    "textview__35": {
+      "alignment": 36,
+      "caption": "TextView15",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50018,
+      "position": {
+        "height": 18,
+        "left": 700,
+        "top": 236,
+        "width": 300
+      },
+      "touchable": false,
+      "text": "fillRect · fillArc · drawRect"
+    },
+    "textview__36": {
+      "alignment": 36,
+      "caption": "TextView16",
+      "colorTab": {
+        "color0": 2171169
+      },
+      "fontSize": 15,
+      "id": 50019,
+      "position": {
+        "height": 22,
+        "left": 700,
+        "top": 262,
+        "width": 300
+      },
+      "touchable": false,
+      "text": "切图路线：.9.png 九宫格拉伸"
+    },
+    "button__37": {
+      "alignment": 37,
+      "caption": "BtnImg",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "id": 20005,
+      "position": {
+        "height": 56,
+        "left": 700,
+        "top": 288,
+        "width": 300
+      },
+      "touchable": true,
+      "picTab": {
+        "pic0": "images/rad_9p.9.png"
+      },
+      "text": ""
+    },
+    "textview__38": {
+      "alignment": 36,
+      "caption": "TextView17",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50020,
+      "position": {
+        "height": 18,
+        "left": 700,
+        "top": 350,
+        "width": 300
+      },
+      "touchable": false,
+      "text": "资产 200x56 r=14 盒子 300x56（拉伸保角）"
+    },
+    "textview__39": {
+      "alignment": 36,
+      "caption": "TextView18",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50021,
+      "position": {
+        "height": 18,
+        "left": 700,
+        "top": 372,
+        "width": 300
+      },
+      "touchable": false,
+      "text": "Asset-Hard: 同半径的位图版本（若有）"
+    },
+    "textview__40": {
+      "alignment": 36,
+      "caption": "TvNote",
+      "colorTab": {
+        "color0": 4545124
+      },
+      "fontSize": 13,
+      "id": 50022,
+      "position": {
+        "height": 40,
+        "left": 700,
+        "top": 396,
+        "width": 300
+      },
+      "touchable": false,
+      "text": "结论见 platforms.md"
+    },
+    "textview__41": {
+      "alignment": 36,
+      "caption": "TextView19",
+      "colorTab": {
+        "color0": 2171169
+      },
+      "fontSize": 14,
+      "id": 50023,
+      "position": {
+        "height": 18,
+        "left": 24,
+        "top": 486,
+        "width": 660
+      },
+      "touchable": false,
+      "text": "自带触摸 + 开关语义（onTouch 自接管：PILL 药丸开关 / RECT 倒角开关）"
+    },
+    "painter__42": {
+      "backgroundColor": -1,
+      "caption": "PtSwPill",
+      "id": 52012,
+      "position": {
+        "height": 36,
+        "left": 24,
+        "top": 506,
+        "width": 110
+      },
+      "touchable": false,
+      "visible": true
+    },
+    "painter__43": {
+      "backgroundColor": -1,
+      "caption": "PtSwPillDis",
+      "id": 52013,
+      "position": {
+        "height": 36,
+        "left": 144,
+        "top": 506,
+        "width": 110
+      },
+      "touchable": false,
+      "visible": true
+    },
+    "painter__44": {
+      "backgroundColor": -1,
+      "caption": "PtTouchRect",
+      "id": 52014,
+      "position": {
+        "height": 36,
+        "left": 264,
+        "top": 506,
+        "width": 200
+      },
+      "touchable": false,
+      "visible": true
+    },
+    "textview__45": {
+      "alignment": 36,
+      "caption": "TvTouchLog",
+      "colorTab": {
+        "color0": 4545124
+      },
+      "fontSize": 11,
+      "id": 50024,
+      "position": {
+        "height": 34,
+        "left": 476,
+        "top": 506,
+        "width": 290
+      },
+      "touchable": false,
+      "text": "ready"
+    },
+    "textview__46": {
+      "alignment": 36,
+      "caption": "TextView20",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 11,
+      "id": 50025,
+      "position": {
+        "height": 34,
+        "left": 772,
+        "top": 506,
+        "width": 232
+      },
+      "touchable": false,
+      "text": "pill / disabled / rect"
+    }
+  }
+}

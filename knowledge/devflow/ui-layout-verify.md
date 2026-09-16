@@ -4,7 +4,8 @@
 > （旧名 `flythings_ui_editor` / `flythings_ui_edit_apply` / `flythings_ui_diff` 不再提供）。
 
 > 命中条件：UI 布局做完需要"看得见、拖得动、验得了"时——用户说布局位置不对 / 图标锯齿 /
-> 切图不对 / 预览丢图 / 想直接改文字和属性 / 要验收或回归对比 / 不想靠嘴描述"往左一点"。
+> 切图不对 / 预览丢图 / 想直接改文字和属性 / 要验收或回归对比 / 不想靠嘴描述"往左一点" /
+> **图片与控件尺寸对不上（含滑块 thumb.size）**。
 > 工具：`flythings_ui_visual(action="editor")`（出可拖拽编辑器）→ `flythings_ui_visual(action="edit_apply")`（写回 + pack ftu）→
 > `flythings_ui_visual(action="diff")`（像素 diff）。
 
@@ -156,12 +157,25 @@ logic.cc 里用 `showWnd()/hideWnd()` 切页」（弹窗、设置页、二级页
 | 级别 | 触发条件 | 说明 |
 |------|----------|------|
 | 红 | 图片尺寸 > 控件尺寸 | 设备不缩放普通 PNG，会被裁切/错位 |
+| 红 | 自动生成 thumb 图 != `thumb.size`（v0.27.75） | 滑块自有尺寸子盒对不上 → 真机上滑块与轨道错位 |
 | 黄 | 大控件（>100px）配小图 | 会留边或拉糊 |
 | 黄 | 文本估算宽度 > 控件宽 × 1.35，或字号 > 控件高 | 设备端会裁字 |
 
-只校验"按控件尺寸画"的图（`backgroundPic` / `picTab.picN`），跳过 `thumb` / `progressPic` /
-`charsetTab`（自有尺寸）、`.9.png`（本来就要拉伸）、全透明占位图（`transparency.png` 类技巧）。
-阈值取"宁可漏报不误报"，基准工程要求零误报。
+只校验“按控件尺寸画”的图（`backgroundPic` / `picTab.picN`）→ 超过控件盒 = 红，大控件配小图 = 黄；跳过
+`.9.png`（本来就要拉伸）、全透明占位图（`transparency.png` 类技巧）。
+阈值取“宁可漏报不误报”，基准工程要求零误报。
+
+**thumb 滑块（自有尺寸子盒）不在这里报，但**不**等于不核**（v0.27.75 去掉了旧说法“跳过 thumb”，它会
+真出事：案例 `sk_thumb.png` 31×31 配 `thumb.size` 30×30 一路 PASS，真机上滑块与轨道对不上）：
+
+| 面 | 盒子 | 口径 |
+|----|------|------|
+| 编辑器预检（本节） | `thumb.size` | **自动生成图**（`resources/images/`）失配 → 红标（修图，别改 json 盒子） |
+| `check_all` #11 / #17 / `verify_assets` | `thumb.size` | 自动生成图失配 → `mismatch[]` = **FAIL** |
+| 同上 | `thumb.size` | 手绘 thumb 失配 → 仅 `stretched[]` 提示：官方基准工程 `SampleUI-New` 就是手绘 `slider_/jdt_ht.png` 35×34 vs `thumb.size` 33×35（引擎会拉伸） |
+| 同上 | — | `thumb` 没写 `size` → 跳过 + `skippedNoBox[]`/warning（不误报） |
+
+完整口径与量化数字（形状分类出图 / 抗锯齿档位）见 `ui-asset-rules.md` §2 铁律 #1 与 #8。
 
 ## 4. 变更写回（`flythings_ui_visual(action="edit_apply")`）
 

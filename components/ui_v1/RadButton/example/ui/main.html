@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>zk::ui_v1::RadButton 示例（Z21 1024x600）</title></head>
+<body>
+<div class="screen" data-res="1024x600" data-bg="#F5F7FA">
+
+  <!-- ============ 顶栏 ============ -->
+  <div class="window" data-x="0" data-y="0" data-w="1024" data-h="56" data-caption="WinTopBar" data-bg="#FFFFFF">
+    <div class="text" data-x="20" data-y="6" data-w="900" data-h="20" data-fs="15" data-color="#212121">components/ui_v1/RadButton &nbsp; ZKPainter 自绘带倒角按钮（同半径同尺寸，上下两排只看边缘）</div>
+    <div class="text" data-x="20" data-y="30" data-w="900" data-h="20" data-fs="14" data-color="#455A64" data-caption="TvStatus">ready</div>
+  </div>
+
+  <div class="window" data-x="0" data-y="56" data-w="1024" data-h="544" data-caption="WinMain" data-bg="#F5F7FA">
+
+    <!-- ---------- ① HARD：平台原生 fillRect(l,t,w,h,radius) ---------- -->
+    <div class="text"    data-x="24"  data-y="6"   data-w="640" data-h="22" data-fs="15" data-color="#212121">① 平台原生 fillRect(radius) —— HARD 硬边（对照组）</div>
+    <div class="painter" data-x="24"  data-y="32"  data-w="200" data-h="56" data-caption="PtHard4"></div>
+    <div class="painter" data-x="240" data-y="32"  data-w="200" data-h="56" data-caption="PtHard8"></div>
+    <div class="painter" data-x="456" data-y="32"  data-w="200" data-h="56" data-caption="PtHard14"></div>
+    <div class="text" data-x="24"  data-y="90" data-w="200" data-h="18" data-fs="12" data-color="#9E9E9E">HARD r=4</div>
+    <div class="text" data-x="240" data-y="90" data-w="200" data-h="18" data-fs="12" data-color="#9E9E9E">HARD r=8</div>
+    <div class="text" data-x="456" data-y="90" data-w="200" data-h="18" data-fs="12" data-color="#9E9E9E">HARD r=14</div>
+
+    <!-- ---------- ② AA：本包默认 MODE_AA ---------- -->
+    <div class="text"    data-x="24"  data-y="116" data-w="760" data-h="22" data-fs="15" data-color="#212121">② RadButton MODE_AA —— 逐像素覆盖率 + 混底色（默认；三档半径与上一行一一对应，都无边框便于像素比对）</div>
+    <div class="painter" data-x="24"  data-y="142" data-w="200" data-h="56" data-caption="PtAa4"></div>
+    <div class="painter" data-x="240" data-y="142" data-w="200" data-h="56" data-caption="PtAa8"></div>
+    <div class="painter" data-x="456" data-y="142" data-w="200" data-h="56" data-caption="PtAa14"></div>
+    <div class="text" data-x="24"  data-y="200" data-w="200" data-h="18" data-fs="12" data-color="#9E9E9E">AA r=4</div>
+    <div class="text" data-x="240" data-y="200" data-w="200" data-h="18" data-fs="12" data-color="#9E9E9E">AA r=8</div>
+    <div class="text" data-x="456" data-y="200" data-w="200" data-h="18" data-fs="12" data-color="#9E9E9E">AA r=14</div>
+
+    <!-- ---------- ③ 四态 ---------- -->
+    <div class="text"    data-x="24"  data-y="226" data-w="700" data-h="22" data-fs="15" data-color="#212121">③ 四态（点下面按钮；每个框各管一件事，互不干预）</div>
+    <div class="painter" data-x="24"  data-y="252" data-w="240" data-h="64" data-caption="PtStCur"></div>
+    <div class="painter" data-x="280" data-y="252" data-w="130" data-h="64" data-caption="PtStToggle"></div>
+    <div class="painter" data-x="420" data-y="252" data-w="130" data-h="64" data-caption="PtStPress"></div>
+    <div class="painter" data-x="560" data-y="252" data-w="130" data-h="64" data-caption="PtStDisabled"></div>
+    <div class="text" data-x="24"  data-y="320" data-w="240" data-h="20" data-fs="14" data-color="#455A64" data-caption="TvStCur">当前：NORMAL</div>
+    <div class="text" data-x="280" data-y="320" data-w="130" data-h="20" data-fs="12" data-color="#9E9E9E">选中（无边框）</div>
+    <div class="text" data-x="420" data-y="320" data-w="130" data-h="20" data-fs="12" data-color="#9E9E9E">按住（2px 边框）</div>
+    <div class="text" data-x="560" data-y="320" data-w="130" data-h="20" data-fs="12" data-color="#9E9E9E">DISABLED（静态）</div>
+
+    <!-- ---------- 交互按钮（RadButton 不接管触摸：命中全在这排 ZKButton 上） ---------- -->
+    <div class="btn" data-x="24"  data-y="348" data-w="130" data-h="48" data-fs="15" data-bg="#2196F3" data-color="#FFFFFF" data-caption="BtnCycle">切换状态</div>
+    <div class="btn" data-x="280" data-y="348" data-w="130" data-h="48" data-fs="15" data-bg="#1976D2" data-color="#FFFFFF" data-caption="BtnToggle">选中/取消</div>
+    <div class="btn" data-x="420" data-y="348" data-w="130" data-h="48" data-fs="15" data-bg="#0D47A1" data-color="#FFFFFF" data-caption="BtnPress">按住=按下态</div>
+    <div class="btn" data-x="560" data-y="348" data-w="130" data-h="48" data-fs="15" data-bg="#607D8B" data-color="#FFFFFF" data-caption="BtnRadius">换半径</div>
+
+    <div class="text" data-x="24" data-y="404" data-w="666" data-h="76" data-fs="14" data-color="#455A64" data-caption="TvLog">点按钮看日志：每次状态切换都会写这里</div>
+
+    <!-- ---------- ④ painter 原生能力探针 ---------- -->
+    <div class="text"    data-x="700" data-y="6"   data-w="300" data-h="22" data-fs="15" data-color="#212121">④ painter 原生能力探针</div>
+    <div class="painter" data-x="700" data-y="32"  data-w="300" data-h="200" data-caption="PtProbe"></div>
+    <div class="text" data-x="700" data-y="236" data-w="300" data-h="18" data-fs="12" data-color="#9E9E9E">fillRect · fillArc · drawRect</div>
+
+    <!-- ---------- ⑤ 切图路线（.9.png 9-patch 拉伸） ---------- -->
+    <div class="text" data-x="700" data-y="262" data-w="300" data-h="22" data-fs="15" data-color="#212121">⑤ 切图路线：.9.png 九宫格拉伸</div>
+    <div class="btn" data-x="700" data-y="288" data-w="300" data-h="56" data-pic="rad_9p.9.png" data-caption="BtnImg"></div>
+    <div class="text" data-x="700" data-y="350" data-w="300" data-h="18" data-fs="12" data-color="#9E9E9E">资产 200x56 r=14 → 盒子 300x56（拉伸保角）</div>
+    <div class="text" data-x="700" data-y="372" data-w="300" data-h="18" data-fs="12" data-color="#9E9E9E">Asset-Hard: 同半径的位图版本（若有）</div>
+    <div class="text" data-x="700" data-y="396" data-w="300" data-h="40" data-fs="13" data-color="#455A64" data-caption="TvNote">结论见 platforms.md</div>
+
+    <!-- ---------- ⑥ 自带触摸 + 开关语义（钟工 2026-09-16 晚：radButton 自己接触摸，当带倒角的开关用） ----------
+         · 三个 painter 全走包内 onTouch：DOWN 命中→按下态；MOVE 移出→取消；UP 界内→翻转 + 回调
+         · 左=PILL 药丸开关（轨色开/关可配 + 圆钮）；中=PILL 禁用态；右=RECT 倒角开关（选中=深蓝）
+         · 这几块下面**没有平台按钮**（不像 ⑤ 的切图按钮），命中完全由包负责 -->
+    <div class="text" data-x="24" data-y="486" data-w="660" data-h="18" data-fs="14" data-color="#212121">⑥ 自带触摸 + 开关语义（onTouch 自接管：PILL 药丸开关 / RECT 倒角开关）</div>
+    <div class="painter" data-x="24"  data-y="506" data-w="110" data-h="36" data-caption="PtSwPill"></div>
+    <div class="painter" data-x="144" data-y="506" data-w="110" data-h="36" data-caption="PtSwPillDis"></div>
+    <div class="painter" data-x="264" data-y="506" data-w="200" data-h="36" data-caption="PtTouchRect"></div>
+    <div class="text" data-x="476" data-y="506" data-w="290" data-h="34" data-fs="11" data-color="#455A64" data-caption="TvTouchLog">ready</div>
+    <div class="text" data-x="772" data-y="506" data-w="232" data-h="34" data-fs="11" data-color="#9E9E9E">pill / disabled / rect</div>
+  </div>
+</div>
+</body>
+</html>

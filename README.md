@@ -23,9 +23,9 @@
 🔥 **核心优势**：
 - 🚀 **FlyThings 专属配置**：内置本地向量模型（bge-small-zh），知识检索完全离线，AI开发效率及Token消耗极低
 - 🏭 **全流程开箱即用**：编译工具链（fui/fun）与项目模板已内置，创建项目 → 布局 → 编译 → 推送一气呵成
-- 🧠 **34 个工具**：知识检索、硬件型号库、项目创建、布局转换、依赖管理、规范校验、自动修复、多语言、自动化测试、UI 可视化编辑、真机截图与产物核对全都有
+- 🧠 **35 个工具**：知识检索、**跨框架控件映射**、硬件型号库、项目创建、布局转换、依赖管理、规范校验、自动修复、多语言、自动化测试、UI 可视化编辑、真机截图与产物核对全都有
 - 📦 **一条命令安装**：`pip install -r requirements.lock`（已锁定实测通过的版本组合），AI 工具指一下路径就能用
-- ✅ **发布前置闸门**：137 项契约用例 + 30 项冒烟 + 一致性校验（版本/工具数/平台/索引/隐私）一键跑，见 [`tests/`](tests/README.md)
+- ✅ **发布前置闸门**：164 项契约用例 + 30 项冒烟 + 一致性校验（版本/工具数/平台/索引/隐私）一键跑，见 [`tests/`](tests/README.md)
 - 🪶 **schema 集约**：工具 docstring 合计 ≤ 12,000 字符（单个 ≤ 900），长尾细节全放可检索的知识库——不拿上下文烧钱
 
 🎯 **适用场景**：
@@ -134,11 +134,11 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 | 模式 | 怎么配 | 客户端看到什么 | 何时用 |
 |------|--------|----------------|--------|
 | `dispatcher`（默认） | 就指 `mcp_server.py` | **1 个工具** `flythings_kb`（op="list" 取目录） | 推荐：schema 开销最小；配合意图闸门/README 工具表 |
-| `all` | `FLYTHINGS_MCP_MODE=all` | 1 个分发器 + 34 个独立工具 | 你的提示词/客户端直接调 `flythings_knowledge_search` 这类名字（旧配置兼容） |
-| `flat` | 指 `mcp_server_flat.py`（或 `FLYTHINGS_MCP_MODE=flat`） | 34 个独立工具（无分发器） | 需要每个工具独立 schema/参数提示的客户端（Trae / Cursor / Claude Desktop） |
+| `all` | `FLYTHINGS_MCP_MODE=all` | 1 个分发器 + 35 个独立工具 | 你的提示词/客户端直接调 `flythings_knowledge_search` 这类名字（旧配置兼容） |
+| `flat` | 指 `mcp_server_flat.py`（或 `FLYTHINGS_MCP_MODE=flat`） | 35 个独立工具（无分发器） | 需要每个工具独立 schema/参数提示的客户端（Trae / Cursor / Claude Desktop） |
 
 > ⚠️ 默认从“全注册”改为“只分发器”是 v0.27.34 的**行为变更**；受影响就设 `FLYTHINGS_MCP_MODE=all` 恢复。
-> `flat` 模式的代价：34 份 schema 常驻上下文（≈1 万 token/session）。
+> `flat` 模式的代价：35 份 schema 常驻上下文（≈1 万 token/session）。
 
 **4. 验证**
 
@@ -146,14 +146,14 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 
 > **MCP 版本是多少？**
 
-应返回：`flythings-kb-open 0.27.69-open`，包含 34 个工具（另含 `binTools` 字段：设备端预编译工具 touch/busybox/ui_test/mt_test/zkshot，在 `bin_tools/<平台>/` 下，**不是 op、不占 op 名额**）。
+应返回：`flythings-kb-open 0.27.76-open`，包含 35 个工具（另含 `binTools` 字段：设备端预编译工具 touch/busybox/ui_test/mt_test/zkshot，在 `bin_tools/<平台>/` 下，**不是 op、不占 op 名额**）。
 
 ---
 
 ## ✨ 核心特性
 
 ### 🧠 完全本地知识检索
-- **内置 bge-small-zh 向量模型**（22MB），随包分发 128 篇 wiki 官方镜像 + 51 篇实践知识（`knowledge/`，共 179 篇去重索引）
+- **内置 bge-small-zh 向量模型**（22MB），随包分发 128 篇 wiki 官方镜像 + 65 篇实践知识（`knowledge/`，共 193 篇去重索引）
 - 检索**不需要任何 API Key**，完全离线
 - 向量 + BM25 双路 **RRF 融合**（中文按**字级 bigram** 切词 + IDF + 路径/标题加权，实测 top-3 命中 10/10）
 - 返回体带 `retrieval` / `degraded` / `quality`（ok | low_confidence | no_hit）/ `source`（实践 or 官方镜像），低置信与未收录会给明确提示
@@ -178,6 +178,7 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 |------|------|
 | `flythings_knowledge_search` | 知识库检索（本地向量 + BM25 双模式，带 quality/source 标记） |
 | `flythings_hardware_info` | **硬件型号库**（platform/model → 屏幕分辨率·方向、按键值（/dev/input code）、接口规格、型号/平台差异化、待补字段；未收录只给候选不猜规格；表见 `knowledge/hardware/hardware-models.md`） |
+| `flythings_map_control` | **跨框架控件映射**（源控件 → 我们的控件，一次对上）：`query` 传源框架控件名/别名（忽略大小写与下划线/连字符），`source` 可选（lvgl/qt/android/miniprogram/emwin/mfc）。命中回 `target`/`level`（L1 等价～L5 不支持）/`notes`/**可直接粘进 `ui/*.json` 的片段**/`ref`（L3 指向 `components/ui_v1/<包>`）/`control`（caption+指针）；未命中回 `NO_HIT` + 候选 + 「缺口五级」处置。数据：`mcp_control_map.json`（六框架 212 条）；口径：**有对应控件走映射，平台真缺才做 ui_v1 自定义控件包** |
 | `flythings_get_version` | 版本信息 |
 | `flythings_create_project` | 从模板创建项目（平台/分辨率） |
 | `flythings_build_ui_flow` | fui pack → fun install → fun build → fun launch 一键交付 |
@@ -226,6 +227,7 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 |---|---|---|
 | `components/ble/` | BLE 门面 `zk::ble`（用法像微信 `wx.*`）：`openAdapter / startDiscovery / onDeviceFound / connect / getServices / readValue / writeValue / subscribe / getDiag` | 把 `include/ + src/` 拷进工程 `src/`，工程声明 `btstack` 依赖（见模块 `Manifest.xml`）；上电/预初始化/H5/线程/TLV 全在组件内部 |
 | `components/fonts/` | 思源黑体三版（常用中文 872KB / 全中文 7.39MB / 多国语言 10.5MB）+ 设备字体自检 | 体检：`python components/fonts/scripts/device_font_check.py`；缺中文就 `--apply --project <工程>` 自动投递 |
+| `components/ui_v1/` | **本代 UI 目录（口径 2026-09-16 修正）：只放「FlyThings 没有的能力」的自定义控件包** —— `ui_v1/<源控件名>/`（四件套 + `example/` + 真机证据），已落 **`Chart/`**（图表集合 `zk::ui_v1::Chart`：LINE/BAR/RING/GAUGE 自绘 + textview 刻度）；**有一一映射的控件走「映射能力」**（`mcp_control_map.json` + op `flythings_map_control`），不在此目录；有平台对应控件但接线值得留的叫 **映射参考**（`ui_v1/_mapping/TabView/`，基于 `pagewindow`）；级别口径/缺口编号/平台事实在 `control-map.md`/`gap-list.md`/`platforms.md` | ① 要转别家界面 → 先跑 op `flythings_map_control(query="lv_slider")`（一次拿 target + 级别 + 可直接粘的 json 片段）；② 映射表命中缺失/真缺能力 → 看 `components/ui_v1/components.md` 三段（已实现自定义控件 / 映射项 / 计划）与 `knowledge/uicontrols/control-mapping-capability.md`；③ 直接用包 → 拷 `components/ui_v1/<控件名>/{include,src}/` 进工程 `src/zk/`（`fun build` 会自动编 `src/**`），照 `example/` 接线 |
 
 模块规范（四件套、代码尺子、package 引用）见 `components/README.md`；
 详细口径可检索：`knowledge/devflow/reusable-components.md`。
@@ -237,7 +239,9 @@ pip install -r requirements.lock      # 已锁定实测通过的组合（含 mcp
 ```
 flythings-mcp-open/
 ├── mcp_server.py          # 入口（stdio MCP server，单入口分发器）
-├── kb_tools.py            # 工具定义与注册（34 个）+ OP_NAMES 清单（唯一来源）
+├── rag_index.json        # ★ 检索索引（1390 块；改 knowledge/ 后跑 rebuild_index_local.py）
+├── mcp_control_map.json  # ★ 跨框架控件映射机读数据（六框架 212 条 + targets，配 op flythings_map_control）
+├── kb_tools.py            # 工具定义与注册（35 个）+ OP_NAMES 清单（唯一来源）
 ├── project_tools.py       # 项目/编译/交付
 ├── package_tools.py       # 依赖包生态
 ├── platforms.py           # 平台矩阵唯一来源（模板/bin_tools/别名）
@@ -252,7 +256,7 @@ flythings-mcp-open/
 ├── requirements.lock      # 已验证依赖组合（pin）
 ├── CHANGELOG.md           # 历史迭代记录（截至 v0.27.30，已冻结；版本史见 MCP_FEATURES）
 ├── scripts/               # 自检与闸门（smoke / check_consistency / gen_manifest / lint_silent_except / sync_ui_tools / ci）
-├── tests/                 # 契约用例（离线，137 项；见 tests/README.md）
+├── tests/                 # 契约用例（离线，164 项；见 tests/README.md）
 ├── models/bge-small-zh/   # ★ 本地向量模型（onnx + tokenizer）
 ├── toolchain/             # ★ 编译工具链（fui.exe + fun.exe）
 ├── templates/             # ★ 项目模板（HelloWord_F133/F135/Z21/T113/V85X/Z20）
@@ -260,7 +264,12 @@ flythings-mcp-open/
 ├── components/            # ★ 可复用组件（随 MCP 一起发布，AI 可直接取用）
 │   ├── README.md          #   组件规范：四件套 + 两种形态 + 代码规范
 │   ├── ble/               #   BLE 门面 zk::ble（扫描/连接/GATT/诊断；底层脏活全在组件内）
-│   └── fonts/             #   思源黑体三版 + 设备字体自检（缺中文自动投递）
+│   ├── fonts/             #   思源黑体三版 + 设备字体自检（缺中文自动投递）
+│   ├── icons/             #   Tabler 图标（MIT）+ 两轮车仪表（生成任意分辨率单色 PNG）
+│   └── ui_v1/             #   本代 UI 目录：★只放「FlyThings 没有的能力」的自定义控件包
+│       ├── Chart/         #     自定义控件包：ZKPainter 自绘折线/柱/环/仪表 + textview 刻度（Z21 已验收）
+│       ├── _mapping/      #     映射参考（有平台对应控件、不算控件包）：TabView→pagewindow 接线（Z21 已验收）
+│       └── components.md  #     状态表三段：已实现自定义控件 / 映射项 / 计划中的自定义控件
 ├── install.bat            # 一键安装依赖（装完跑离线自检）
 └── README.md              # 本文档
 ```
@@ -287,11 +296,11 @@ flythings-mcp-open/
 | 问题 | 解决 |
 |------|------|
 | `ModuleNotFoundError: mcp / onnxruntime / tokenizers` | 执行 `pip install -r requirements.lock` |
-| 工具列表 < 34 | 检查配置文件 command/args 路径是否正确 |
+| 工具列表 < 35 | 检查配置文件 command/args 路径是否正确 |
 | 抓屏工具报“找不到 adb” | 装 Android platform-tools 或设环境变量 `ADB`（抓屏需要 adb；编译/预览不需要） |
 | 检索结果不准 | 本地模型首次使用会自动加载；确认 `models/bge-small-zh/` 存在 |
 | 返回体里出现 `warnings` | 正常，**要看**：降级（BM25）、自动转图、手绘图被拉伸等信息都在里面，不是报错 |
-| 改动后想自检 | `python scripts/check_consistency.py --with-tests`（版本/工具数/平台/索引/隐私 + 133 项契约用例） |
+| 改动后想自检 | `python scripts/check_consistency.py --with-tests`（版本/工具数/平台/索引/隐私 + 164 项契约用例） |
 | 想换知识库/重建索引 | `python rebuild_index_local.py <wiki目录>` 重新生成 rag_index.json |
 | 杀毒软件拦截 | 添加信任（内含可执行文件 toolchain/） |
 

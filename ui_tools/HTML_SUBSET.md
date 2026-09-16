@@ -38,6 +38,12 @@ JS 只服务于浏览器预览确认，不转 json；FlyThings 端的交互逻�
   - **图尺寸 == 控件尺寸（1:1，check_all #11）**：阴影图画布 = 卡体 + `2*pad`（`pad = max(2, blur + max(|ox|,|oy|))`，保留完整画布不裁透明边），html2json 自动把**控件盒外扩 pad**、**子控件坐标补偿 +pad**、并把 **window 底色改回页面底色**（卡体填充已烘焙进图；底色若留原白色会填满透明阴影区，阴影与圆角都看不出来）。作者不用手改坐标，也别自己算。
   - **阴影 alpha 必须与圆角 mask 相乘**（`ImageChops.multiply`，不能 `putalpha` 覆盖）：覆盖会把 10% 透明黑压成不透明 → 卡片四周一圈硬黑描边（2026-09-11 修正）
 - `border-radius` → 自动生成圆角图（四角真透明，可叠背景）
+  - **写法容错（v0.27.76）**：`px` / 无单位 / **`%`**（`50%` → 正圆/药丸）均认，多值取第一段，
+    按 `min(w,h)/2` 钳制（旧实现只认「数字+px」→ `50%`/无单位会出方角）
+  - **出图档位 = SS（v0.27.76）**：CSS 效果出图**一律走超采样 `ss=4`（每像素 16 子采样）**，
+    不再用「1x 直画 + α 羽化」（药丸/正圆这类强曲率旧路实测边界误差 mean 35.4/255 → 现 5.3）；
+    手写调 `gen_res` 时按形状选（强曲率 `rounded_rect_ss` / 大半径卡片 `rounded_rect`），
+    详见 `knowledge/devflow/ui-asset-rules.md` 铁律 #8
 - 文本含 emoji → 自动转 emoji PNG 图标（`images/emoji_*.png`），控件变图标 textview（设备字库不支持 emoji）
 - `class="loading"/"spinner"` 或 `animation: spin` → 自动生成 loading GIF（`images/loading_*.gif`，12 帧循环）+ imageanim 控件；并在 warning 中提示 logic.cc 里 `mXXXPtr->play("images/loading_*.gif")`
 - 图片输出到 json 同目录 `images/`（即 ui/images/），json 引用 `images/xxx.png`；生成数量在返回的 `generatedAssets` 字段

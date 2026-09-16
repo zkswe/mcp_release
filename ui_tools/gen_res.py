@@ -62,7 +62,10 @@ def _feather_alpha(img, sigma=_AA_SIGMA):
 
 
 def _aa_mask(w, h, radius, ss=None):
-    """圆角 mask（FT-008 抗锯齿）：1x 直画 + α 羽化，几何与 1x 一致，边缘平滑。"""
+    """圆角 mask（FT-008 抗锯齿）：1x 直画 + α 羽化，几何与 1x 一致，边缘平滑。
+
+    ⚠️ 强曲率（radius ≈ min(w,h)/2：圆 / 药丸 / 细圆条）下本 mask 的边界误差
+    mean 21~44/255 → 要出这类形状请用 `rounded_rect_ss`（FT-010）。"""
     m = Image.new('L', (w, h), 0)
     ImageDraw.Draw(m).rounded_rectangle([0, 0, w - 1, h - 1], radius=radius, fill=255)
     return m.filter(ImageFilter.GaussianBlur(_AA_SIGMA))
@@ -78,6 +81,8 @@ def _aa_outline(w, h, radius, color, width=1, ss=None):
 
 def to_9patch(img, radius, out_dir, name):
     """普通图 → .9.png：四周扩 1px 透明边，四边黑线标记（FT-009 规则）。
+    ⚠️ 只处理「标记」，不负责抗锯齿：底色图请先按形状选函数（大圆角 `rounded_rect` /
+    强曲率 `rounded_rect_ss`，见 FT-010），本函数再打 marker。
     规则（沛哥 2026-09-01）：
       1) marker 纯黑不透明 (0,0,0,255)
       2) top/left 只画中间拉伸段（排除 radius 倒角区）
@@ -113,22 +118,171 @@ def to_9patch(img, radius, out_dir, name):
 
 
 def rounded_rect(w, h, radius, fill, border=None, border_w=1):
-    """圆角矩形（透明底，FT-008 超采样抗锯齿）→ 供 to_9patch / 直接保存"""
+    """圆角矩形（透明底，FT-008 超采样抗锯齿）→ 供 to_9patch / 直接保存
+
+    ⚠️ 强曲率形状（圆钮/药丸/细圆条）请改用 `rounded_rect_ss`（见 FT-010 说明）。"""
     return _aa_rounded_rect(w, h, radius, fill, border, border_w)
 
 
-def gen_btn9(out_dir, name, w, h, radius, fill, border=None, pressed=None):
-    """按钮两态 .9.png：normal + _p（pressed 边框高亮，还原 CSS :active）"""
+# ---------- 抗锯齿（FT-010，2026-09-16）----------
+# 背景：FT-008 的「1x 直画 + α 羽化 σ0.5」在**大半径卡片**够用，但在**强曲率**形状
+# （圆 / 圆钮 / 药丸 / 细圆条）上远不够。用 16x 超采样覆盖率当理想值逐像素对比
+# （本机 Pillow 12.2.0 / numpy 2.5.1；边界带 = 理想 α 介于 4~251 的像素；单位 /255；
+#  复现口径见 knowledge/devflow/ui-asset-rules.md §2 铁律 #8）：
+#     形状                  FT-008 mean/p95     rounded_rect_ss(ss=4)   ss=8
+#     药丸 80x40 r20           35.4 /  97.9          5.3 / 22.7        1.4 / 3.8
+#     圆   30x30 r15           40.9 / 102.0          3.7 / 11.0        1.2 / 4.0
+#     圆钮 31x31 r15           42.0 / 105.0          6.3 / 17.0          —  /  —
+#     细圆条 200x8 r4          21.0 /  43.0          3.2 /  6.0        1.8 / 3.0
+#     大卡片 300x180 r16       43.9 / 153.0         10.0 / 22.0          —  /  —
+#   → 强曲率必须 ≥4x 超采样 + LANCZOS 缩回（小尺寸强曲率可用 ss=8，p95 <4）；
+#     大半径卡片两条路都能用，但 FT-008 的几何与 1x 直画逐像素一致（FT-008 的修复目的：
+#     倒角宽度不漂），**故大卡片仍默认走 FT-008**，只把新函数给强曲率用，老调用者不受影响。
+# 实测案例：LVGL 迁移案例（projects/translate/lvgl-widgets-uiv1，Z21/F133/F136）
+# SeekBar 圆钮 sk_thumb + 开关药丸 sw_on/sw_off。
+#
+# 2026-09-16 钟工拍板（v0.27.76，上条的「大卡片仍默认走 FT-008」只对**手写调用**有效）：
+#   html2json（CSS 效果自动出图）一律走 SS（SS_DEFAULT = 4，每像素 16 子采样）；
+#   gen_gradient / gen_gradient_stops / gen_shadow_card / rounded_card / gen_btn9
+#   都加了可选的 `ss=0`（**默认 0 = 老口径，默认行为逐字节不变**）；
+#   `rounded_rect` 默认（FT-008）保持不变，仅手写调用按形状选：强曲率 rounded_rect_ss /
+#   大半径卡片 rounded_rect。
+# 缩回前必须 **alpha 预乘**，否则透明像素的 RGB（黑）渗进边界 → 暗边（halo）。
+def _ss_down(big, w, h):
+    """超采样画布（RGBA）→ LANCZOS 缩回；带 alpha 预乘 / 反预乘（防暗边）。
+
+    numpy 为 lock 里钉死的依赖（requirements.lock: numpy==2.5.1），下面的显式预乘是
+    **不依赖 Pillow 内部实现**的写法（老 Pillow 的 RGBA resize 不预乘 → 暗边）。
+    无 numpy 时退化为直缩：Pillow 12.2.0 实测其 RGBA resize 内部已按 alpha 预乘
+    （与手工预乘结果逐像素 0 差，半透明底边界 G/B 通道均为 0 → 无暗边），故可安全退化。
+    """
+    try:
+        import numpy as np
+    except ImportError:                 # 无 numpy：直缩（见 docstring，实测无暗边）
+        return big.resize((w, h), Image.LANCZOS)
+    a = np.asarray(big).astype(np.float64)
+    al = a[..., 3:4] / 255.0
+    pm = np.clip(a[..., :3] * al + 0.5, 0, 255).astype(np.uint8)
+    pm_s = np.asarray(Image.fromarray(pm, 'RGB').resize((w, h), Image.LANCZOS)).astype(np.float64)
+    al_s = np.asarray(big.getchannel('A').resize((w, h), Image.LANCZOS)).astype(np.float64)
+    rgb = np.clip(pm_s * 255.0 / np.maximum(al_s[..., None], 1.0), 0, 255)
+    return Image.fromarray(np.concatenate([rgb, al_s[..., None]], axis=2).astype(np.uint8), 'RGBA')
+
+
+# 超采样画布像素上限：防「大图 + 高档位」把内存吃爆（默认 1024x600 ss=4 = 9.8M px，安全）。
+_SS_MAX_PX = 40 * 1000 * 1000
+
+# html2json（CSS 效果自动出图）统一档位 —— 钟工 2026-09-16 拍板：CSS 效果一律走 SS，
+# 不再保留「1x + α 羽化」那条路（固定本地脚本工作，不额外耗 token）。
+# ⚠️ `rounded_rect` 的默认行为（FT-008：1x 直画 + α 羽化 σ0.5）**保持不变**，
+# 只有 ①html2json 自动出图 ②调用方显式 `rounded_rect_ss`/`ss>0` 时才走超采样。
+SS_DEFAULT = 4
+
+
+def _ss_fit(w, h, ss, label='SS'):
+    """把 ss 降到「画布不超 _SS_MAX_PX」的最大档（≥2）；降档时打一行 NOTE（不静默）。"""
+    ss = max(2, int(ss))
+    while ss > 2 and w * ss * h * ss > _SS_MAX_PX:
+        ss -= 1
+        print('  [NOTE] %s: %dx%d 画布过大，ss 自动降到 %d（防内存爆）' % (label, w, h, ss))
+    return ss
+
+
+def _ss_rounded_rect(w, h, radius, fill, border=None, border_w=1, ss=4):
+    """圆角矩形（SS 画布绘制 → 预乘 LANCZOS 缩回）。
+
+    共用方：rounded_rect_ss / gen_btn9(ss>0) / gen_shadow_card(ss>0) 主体 / rounded_card 高光层。
+    """
+    ss = _ss_fit(w, h, ss, 'SS')
+    wd = max(1, int(border_w * ss)) if border else 1
+    big = Image.new('RGBA', (w * ss, h * ss), (0, 0, 0, 0))
+    ImageDraw.Draw(big).rounded_rectangle([0, 0, w * ss - 1, h * ss - 1], radius=radius * ss,
+                                          fill=fill, outline=border, width=wd)
+    return _ss_down(big, w, h)
+
+
+def _ss_mask(w, h, radius, ss=4):
+    """圆角 mask（L 模式，0~255 = 理想覆盖率）：SS 画布二值 → LANCZOS 缩回。
+
+    给「渐变/阴影裁剪层」用（`_aa_mask` 的 SS 版）。L 单通道无需预乘。
+    用于 putalpha 时**替换** alpha（底图本来全不透明，安全）；用于已有 alpha 的图层时
+    必须 ImageChops.multiply（见 ss_shape_mask docstring）。
+    """
+    ss = _ss_fit(w, h, ss, 'SS mask')
+    big = Image.new('L', (w * ss, h * ss), 0)
+    ImageDraw.Draw(big).rounded_rectangle([0, 0, w * ss - 1, h * ss - 1],
+                                          radius=radius * ss, fill=255)
+    return big.resize((w, h), Image.LANCZOS)
+
+
+def _ss_outline(w, h, radius, color, width=1, ss=4):
+    """圆角描边层（透明底 + 仅描边）——`_aa_outline` 的 SS 版，供 rounded_card(ss>0)。"""
+    ss = _ss_fit(w, h, ss, 'SS outline')
+    wd = max(1, int(width * ss))
+    big = Image.new('RGBA', (w * ss, h * ss), (0, 0, 0, 0))
+    ImageDraw.Draw(big).rounded_rectangle([0, 0, w * ss - 1, h * ss - 1], radius=radius * ss,
+                                          outline=color, width=wd)
+    return _ss_down(big, w, h)
+
+
+def ss_shape_mask(w, h, radius, ss=4):
+    """**公开**：SS 版圆角 mask（L 模式，形状外=0 / 内=255 / 边界=理想覆盖率）。
+
+    给「自己画合成层的调用方」用（如 html2json 的渐变+阴影叠加层）。用法铁律：
+      给目标层套形状时用 `ImageChops.multiply(layer.getchannel('A'), mask)` **缩放 alpha**，
+      别用 `paste(color_layer, mask)`（那会把 RGB 一起按 mask 缩小 → 边界发黑 = 暗边 halo）。
+    """
+    return _ss_mask(w, h, radius, ss)
+
+
+def rounded_rect_ss(w, h, radius, fill, border=None, border_w=1, ss=4):
+    """圆角矩形 / 圆 / 药丸（≥ss 倍超采样 + LANCZOS 缩回）——**强曲率形状用这个**。
+
+    与 rounded_rect 的分工（2026-09-16 实测口径，数字见模块头 FT-010 注释）：
+      - `rounded_rect`（1x 直画 + α 羽化 σ0.5）：几何与 1x 直画逐像素一致（倒角宽度不漂），
+        适合**大半径卡片**圆角 → 强曲率下边界误差 mean 21~44/255、p95 43~153/255；
+      - **本函数**（SS + LANCZOS）：圆 / 圆钮 / 药丸 / 细圆条等强曲率形状 →
+        边界误差 mean 3~6/255、p95 11~23/255 （ss=8 时 p95 <4）→ 设备上才不发锯齿。
+    参数：radius 同 PIL（> min(w,h)/2 自动按药丸/正圆钳制）；border/border_w 同 rounded_rect；
+         ss≥2（画布过大会自动降档并打一行提示，不静默）。
+    设备端验证：LVGL 迁移案例 Z21/F133/F136 的 SeekBar 圆钮 + 开关药丸（2026-09-16）。
+    """
+    ss = max(2, int(ss))
+    while ss > 2 and w * ss * h * ss > _SS_MAX_PX:
+        ss -= 1
+        print('  [NOTE] rounded_rect_ss: %dx%d 画布过大，ss 自动降到 %d（防内存爆）' % (w, h, ss))
+    wd = max(1, int(border_w * ss)) if border else 1
+    big = Image.new('RGBA', (w * ss, h * ss), (0, 0, 0, 0))
+    ImageDraw.Draw(big).rounded_rectangle([0, 0, w * ss - 1, h * ss - 1], radius=radius * ss,
+                                          fill=fill, outline=border, width=wd)
+    return _ss_down(big, w, h)
+
+
+def gen_btn9(out_dir, name, w, h, radius, fill, border=None, pressed=None, ss=0):
+    """按钮两态 .9.png：normal + _p（pressed 边框高亮，还原 CSS :active）
+
+    ss>0：两态底图走 SS（`_ss_rounded_rect`，药丸/强曲率按钮不发锯）；
+    ss=0（默认）：仍走 `rounded_rect`（FT-008：1x 直画 + α 羽化）—— 默认行为不变。
+    """
     if border is None:
         border = fill
     if pressed is None:
         pressed = tuple(min(255, c + 60) for c in fill[:3]) + (fill[3],)
-    to_9patch(rounded_rect(w, h, radius, fill, border), radius, out_dir, name + ".9.png")
-    to_9patch(rounded_rect(w, h, radius, fill, pressed), radius, out_dir, name + "_p.9.png")
+
+    def _base(f):
+        if ss > 0:
+            return _ss_rounded_rect(w, h, radius, f, border, 1, ss)
+        return rounded_rect(w, h, radius, f, border)
+
+    to_9patch(_base(fill), radius, out_dir, name + ".9.png")
+    to_9patch(_base(pressed), radius, out_dir, name + "_p.9.png")
 
 
-def gen_gradient(out_dir, name, w, h, color_from, color_to, horizontal=True, to9=False, radius=0):
+def gen_gradient(out_dir, name, w, h, color_from, color_to, horizontal=True, to9=False, radius=0, ss=0):
     """CSS linear-gradient → PNG（可选转 .9.png 圆角九宫格）
+    ⚠️ 圆角裁剪：ss>0 走 SS mask（理想覆盖率，html2json 一律走这条）；ss=0（默认）走
+    FT-008 mask（1x + α 羽化）：大半径卡片没问题，**radius 接近 min(w,h)/2（药丸/正圆）
+    时会有肉眼可见锯齿**——这类形状改用 `rounded_rect_ss` 出底图（FT-010）。
     ⚠️ radius>0 且非 to9 时也会用圆角 mask 裁剪四角透明（否则弧线外是实心色块，
     叠放/透背景时会露出方角——2026-08-29 羊了个羊瓦片坑）"""
     img = Image.new("RGBA", (w, h))
@@ -141,16 +295,18 @@ def gen_gradient(out_dir, name, w, h, color_from, color_to, horizontal=True, to9
         else:
             d.line([(0, i), (w, i)], fill=c)
     if radius > 0:
-        # 圆角 mask 裁剪（FT-008 超采样抗锯齿）：清掉弧线外角落，边缘 α 平滑
-        img.putalpha(_aa_mask(w, h, radius))
+        # 圆角 mask 裁剪：清掉弧线外角落，边缘 α 平滑
+        # ss>0 → SS mask（理想覆盖率）；ss=0 → FT-008（1x 直画 + α 羽化，几何不漂）
+        img.putalpha(_ss_mask(w, h, radius, ss) if ss > 0 else _aa_mask(w, h, radius))
     if to9:
         return to_9patch(img, radius, out_dir, name)
     return save(img, out_dir, name)
 
 
 def rounded_card(out_dir, name, w, h, radius, color_from, color_to, border=None,
-                 border_w=2, highlight=None, size=None):
+                 border_w=2, highlight=None, size=None, ss=0):
     """圆角卡片图（渐变底 + 可选描边/高光），四角真透明。
+    ss>0 走 SS（底 mask / 描边层 / 高光层全走）；ss=0（默认）= FT-008 老口径。
     ⚠️ 尺寸参数 size 与 json 控件尺寸保持一致（默认 w×h）。
     教训（2026-08-29）：渐变/填充不能直接画满矩形，必须圆角 mask 裁剪；
     阴影模糊会溢出到弧线外，最后整体再裁一次圆角清掉残影。"""
@@ -162,25 +318,31 @@ def rounded_card(out_dir, name, w, h, radius, color_from, color_to, border=None,
         t = i / max(1, h - 1)
         c = tuple(int(color_from[k] + (color_to[k] - color_from[k]) * t) for k in range(3)) + (255,)
         d.line([(0, i), (w, i)], fill=c)
-    # 圆角 mask 裁剪（FT-008 超采样抗锯齿）
-    img.putalpha(_aa_mask(w, h, radius))
+    # 圆角 mask 裁剪（ss>0 → SS；ss=0 → FT-008 1x + α 羽化）
+    img.putalpha(_ss_mask(w, h, radius, ss) if ss > 0 else _aa_mask(w, h, radius))
     # 描边（超采样描边层，避免 outline 二值锯齿）
     if border:
-        img.alpha_composite(_aa_outline(w, h, radius, border, border_w))
+        img.alpha_composite(_ss_outline(w, h, radius, border, border_w, ss) if ss > 0
+                            else _aa_outline(w, h, radius, border, border_w))
     # 顶部高光（圆角小，直接画可接受；用超采样描边层方式合成）
     if highlight:
-        hl = _aa_rounded_rect(w - highlight[0] - highlight[2],
-                              h - highlight[1] - highlight[3],
-                              max(4, radius // 2), (255, 255, 255, highlight[4]))
+        _hw, _hh = w - highlight[0] - highlight[2], h - highlight[1] - highlight[3]
+        _hr = max(4, radius // 2)
+        hl = (_ss_rounded_rect(_hw, _hh, _hr, (255, 255, 255, highlight[4]), ss=ss)
+              if ss > 0 else
+              _aa_rounded_rect(_hw, _hh, _hr, (255, 255, 255, highlight[4])))
         img.alpha_composite(hl, (highlight[0], highlight[1]))
     return save(img, out_dir, name)
 
 
-def gen_gradient_stops(out_dir, name, w, h, stops, horizontal=True, radius=0, to9=False):
+def gen_gradient_stops(out_dir, name, w, h, stops, horizontal=True, radius=0, to9=False, ss=0):
     """多色标线性渐变（CSS linear-gradient 自动转图用）。
     stops: [(pos_0to1, (r,g,b,a)), ...]，至少 2 个色标；
     按 pos 线性插值逐行/逐列绘制。
     ⚠️ radius>0 时用圆角 mask 裁剪四角透明（透背景叠放不露方角）。
+    ⚠️ ss>0 走 SS mask（**html2json 一律走这条**，形状分类见 knowledge/devflow/ui-asset-rules.md）；
+    ss=0（默认）走 FT-008（1x + α 羽化）：**强曲率（radius≈min(w,h)/2 的药丸/圆）**下
+    边界误差 mean 21~44/255 → 手写调用请改用 `rounded_rect_ss` 或传 ss>0（FT-010）。
     """
     if len(stops) < 2:
         stops = stops + [(1.0, stops[-1][1])] if stops else [(0.0, (0, 0, 0, 255)), (1.0, (255, 255, 255, 255))]
@@ -206,14 +368,18 @@ def gen_gradient_stops(out_dir, name, w, h, stops, horizontal=True, radius=0, to
         else:
             d.line([(0, i), (w, i)], fill=c)
     if radius > 0:
-        img.putalpha(_aa_mask(w, h, radius))  # FT-008 超采样抗锯齿
+        # ss>0 → SS mask（理想覆盖率）；ss=0 → FT-008（1x + α 羽化，几何逐像素不漂）
+        img.putalpha(_ss_mask(w, h, radius, ss) if ss > 0 else _aa_mask(w, h, radius))
     if to9:
         return to_9patch(img, radius, out_dir, name)
     return save(img, out_dir, name)
 
 
-def gen_shadow_card(out_dir, name, w, h, radius, fill, shadow=None, border=None, border_w=1, crop=True):
+def gen_shadow_card(out_dir, name, w, h, radius, fill, shadow=None, border=None, border_w=1,
+                    crop=True, ss=0):
     """带阴影的圆角卡片（CSS box-shadow 自动转图用）。
+    ss>0：阴影层 / 主体圆角层 / 二次裁剪 mask 全走 SS（html2json 一律走这条）；
+    ss=0（默认）：全走 FT-008（1x + α 羽化）—— 默认行为逐字节不变。
     shadow: (offset_x, offset_y, blur, (r,g,b,a))；阴影先画（超出卡片边缘 blur 模糊），
     最后整体圆角 mask 裁剪清掉残影（阴影模糊会溢出到弧线外，必须二次裁剪）。
     crop=True（默认）：裁掉多余透明边，图尺寸不定（历史行为）；
@@ -227,16 +393,36 @@ def gen_shadow_card(out_dir, name, w, h, radius, fill, shadow=None, border=None,
         img = Image.new('RGBA', (cw, ch), (0, 0, 0, 0))
         # 阴影圆角矩形（高斯模糊）
         sh = Image.new('RGBA', (cw, ch), (0, 0, 0, 0))
-        ImageDraw.Draw(sh).rounded_rectangle(
-            [pad + ox, pad + oy, pad + ox + w - 1, pad + oy + h - 1],
-            radius=radius, fill=sc)
+        if ss > 0:
+            # SS：阴影矩形画在 ss 画布上 → LANCZOS 缩回当覆盖率 mask，再只缩放 alpha
+            # （不能用 paste(color, mask)：RGB 会被一起按 mask 缩小 → 边界发黑）
+            _s = _ss_fit(cw, ch, ss, 'SS shadow')
+            sbig = Image.new('L', (cw * _s, ch * _s), 0)
+            ImageDraw.Draw(sbig).rounded_rectangle(
+                [(pad + ox) * _s, (pad + oy) * _s,
+                 (pad + ox + w) * _s - 1, (pad + oy + h) * _s - 1],
+                radius=radius * _s, fill=255)
+            smask = sbig.resize((cw, ch), Image.LANCZOS)
+            sh = Image.new('RGBA', (cw, ch), sc)
+            from PIL import ImageChops as _IC
+            sh.putalpha(_IC.multiply(sh.getchannel('A'), smask))
+        else:
+            ImageDraw.Draw(sh).rounded_rectangle(
+                [pad + ox, pad + oy, pad + ox + w - 1, pad + oy + h - 1],
+                radius=radius, fill=sc)
         if blur > 0:
             sh = sh.filter(ImageFilter.GaussianBlur(blur))
         img.alpha_composite(sh)
-        # 主体卡片（FT-008 超采样抗锯齿：局部 w×h 圆角矩形超采样后贴到 pad 位置）
+        # 主体卡片（ss>0 → SS；ss=0 → FT-008：局部 w×h 圆角矩形后贴到 pad 位置）
         body = Image.new('RGBA', (cw, ch), (0, 0, 0, 0))
-        body_patch = _aa_rounded_rect(w, h, radius, fill, border, border_w)
-        body.paste(body_patch, (pad, pad), body_patch)
+        body_patch = (_ss_rounded_rect(w, h, radius, fill, border, border_w, ss) if ss > 0
+                      else _aa_rounded_rect(w, h, radius, fill, border, border_w))
+        if ss > 0:
+            # 真 source-over：半透明边界像素不会被「paste 当 mask」把 α 再乘一次
+            # （paste(patch, patch) 会把 α 压成 α²/255 → 边界发虚/发暗）
+            body.alpha_composite(body_patch, (pad, pad))
+        else:
+            body.paste(body_patch, (pad, pad), body_patch)
         img.alpha_composite(body)
         # 二次圆角裁剪（FT-008 超采样局部 mask）：清掉阴影残影
         # ⚠️ 2026-09-11 修：必须与已有 alpha **相乘**，不能直接 putalpha 覆盖 ——
@@ -244,7 +430,8 @@ def gen_shadow_card(out_dir, name, w, h, radius, fill, shadow=None, border=None,
         # （视觉验收表现为“粗黑描边”，阴影柔化全丢）。
         mw, mh = w + 2 * blur + 2, h + 2 * blur + 2
         mask = Image.new('L', (cw, ch), 0)
-        mask.paste(_aa_mask(mw, mh, radius + blur), (pad - blur - 1, pad - blur - 1))
+        mask.paste(_ss_mask(mw, mh, radius + blur, ss) if ss > 0
+                   else _aa_mask(mw, mh, radius + blur), (pad - blur - 1, pad - blur - 1))
         from PIL import ImageChops
         img.putalpha(ImageChops.multiply(img.getchannel('A'), mask))
         # 裁掉多余透明边（阴影下/右延伸）；crop=False 时保留完整画布 → 尺寸可预测（图==控件）
@@ -253,7 +440,8 @@ def gen_shadow_card(out_dir, name, w, h, radius, fill, shadow=None, border=None,
             if bbox:
                 img = img.crop(bbox)
         return save(img, out_dir, name)
-    return save(rounded_rect(w, h, radius, fill, border, border_w), out_dir, name)
+    return save(_ss_rounded_rect(w, h, radius, fill, border, border_w, ss) if ss > 0
+                else rounded_rect(w, h, radius, fill, border, border_w), out_dir, name)
     """状态点（实心圆，普通 PNG）"""
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     ImageDraw.Draw(img).ellipse([0, 0, size - 1, size - 1], fill=color)

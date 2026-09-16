@@ -92,6 +92,90 @@ class TestHtmlToJsonGolden(unittest.TestCase):
         self.assertGreater(r['refCount'], 0, 'refCount=0 说明页面没被扫到（分层布局漏页回归）')
 
 
+class TestThumbBoxSize(unittest.TestCase):
+    """thumb 子盒（滑块自有尺寸）：盒子 = thumb.size，铁律 #1 对它同样成立。
+
+    为什么钉死（v0.27.75，钟工 2026-09-16 反馈「滑块圆钮有锯齿、图片和控件尺寸对不上」）：
+    案例 projects/translate/lvgl-widgets-uiv1 的 sk_thumb.png 曾 31×31 而 json 写 thumb.size
+    30×30，verify_assets / check_all #11 #17 一律 PASS（thumb 是核对盲区）→ 真机上滑块错位。
+    """
+
+    def setUp(self):
+        self.tmp = U.project()
+        self.pages = os.path.join(self.tmp, 'ui', '1024x600')
+        os.makedirs(self.pages, exist_ok=True)
+
+    def tearDown(self):
+        U.cleanup(self.tmp)
+
+    def _page(self, thumb, pngs=None):
+        """thumb：写进 seekbar 的 thumb 子结构；pngs：{相对路径: (w,h)} 实际产物。"""
+        page = {'id': 0, 'title': 'x', 'resolution': {'width': 480, 'height': 272},
+                'position': {'left': 0, 'top': 0, 'width': 480, 'height': 272},
+                'seekbar__1': {'type': 'seekbar', 'caption': 'S', 'id': 50002,
+                               'position': {'left': 10, 'top': 40, 'width': 200, 'height': 37},
+                               'thumb': thumb, 'touchable': True}}
+        U.write(os.path.join(self.pages, 'main.json'), json.dumps(page, ensure_ascii=False))
+        for rel, size in (pngs or {}).items():
+            full = os.path.join(self.tmp, 'resources', rel)
+            os.makedirs(os.path.dirname(full), exist_ok=True)
+            if HAS_PIL:
+                Image.new('RGBA', size, (255, 255, 255, 255)).save(full)
+
+    @unittest.skipUnless(HAS_PIL, 'needs Pillow')
+    def test_thumb_size_match_is_ok(self):
+        self._page({'size': {'width': 30, 'height': 30}, 'normalPic': 'images/sk_thumb.png'},
+                   {'images/sk_thumb.png': (30, 30)})
+        r = U.jcall('flythings_verify_assets', {'project_root': self.tmp})
+        self.assertTrue(r['ok'], r)
+        self.assertEqual(r['mismatch'], [])
+        self.assertEqual(r['refCount'], 1, 'thumb 引用没被计入核对（漏核回归）')
+
+    @unittest.skipUnless(HAS_PIL, 'needs Pillow')
+    def test_thumb_size_mismatch_is_fail(self):
+        """31×31 图 vs thumb.size 30×30 → mismatch（案例原 bug 的回归钉子）。"""
+        self._page({'size': {'width': 30, 'height': 30}, 'normalPic': 'images/sk_thumb.png'},
+                   {'images/sk_thumb.png': (31, 31)})
+        r = U.jcall('flythings_verify_assets', {'project_root': self.tmp})
+        self.assertFalse(r['ok'])
+        self.assertEqual(len(r['mismatch']), 1, r)
+        m = r['mismatch'][0]
+        self.assertEqual(m['field'], 'thumb.normalPic')
+        self.assertEqual(m['png'], [31, 31])
+        self.assertEqual(m['box'], [30, 30])
+        self.assertEqual(m['boxFrom'], 'thumb.size')
+
+    @unittest.skipUnless(HAS_PIL, 'needs Pillow')
+    def test_thumb_pressed_pic_checked_too(self):
+        self._page({'size': {'width': 24, 'height': 24},
+                    'normalPic': 'images/knob.png', 'pressedPic': 'images/knob_p.png'},
+                   {'images/knob.png': (24, 24), 'images/knob_p.png': (26, 26)})
+        r = U.jcall('flythings_verify_assets', {'project_root': self.tmp})
+        self.assertEqual([m['field'] for m in r['mismatch']], ['thumb.pressedPic'], r)
+
+    @unittest.skipUnless(HAS_PIL, 'needs Pillow')
+    def test_thumb_hand_drawn_only_stretched(self):
+        """手绘 thumb（官方基准工程 SampleUI-New 的 slider_/jdt_ht.png 就是 35×34 vs
+        thumb.size 33×35）引擎会拉伸 → 只记 stretched，不 FAIL（基准工程零误报）。"""
+        self._page({'size': {'width': 30, 'height': 30}, 'normalPic': 'knob/knob.png'},
+                   {'knob/knob.png': (44, 26)})
+        r = U.jcall('flythings_verify_assets', {'project_root': self.tmp})
+        self.assertTrue(r['ok'], r)
+        self.assertEqual(r['mismatch'], [])
+        self.assertEqual(len(r['stretched']), 1, r)
+        self.assertEqual(r['stretched'][0]['boxFrom'], 'thumb.size')
+        self.assertEqual(r['stretched'][0]['box'], [30, 30])
+
+    def test_thumb_without_size_warns_not_fails(self):
+        """无 size 字段（盒子未知）→ 跳过 + 上报，不许误报 FAIL。"""
+        self._page({'normalPic': 'images/sk_thumb.png'}, {'images/sk_thumb.png': (31, 31)})
+        r = U.jcall('flythings_verify_assets', {'project_root': self.tmp})
+        self.assertTrue(r['ok'], r)
+        self.assertEqual(r['mismatch'], [])
+        self.assertEqual(len(r.get('skippedNoBox', [])), 1, r)
+        self.assertTrue(any('thumb' in w or '盒子尺寸未知' in w for w in r.get('warnings', [])), r)
+
+
 class TestVerifyAssetsSemantics(unittest.TestCase):
     """verify_assets 的三种判定：missing=Fail、自动生成图 mismatch=Fail、手绘图 stretched=Note。"""
 

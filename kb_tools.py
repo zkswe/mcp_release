@@ -53,9 +53,18 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.69-open'
+MCP_VERSION = '0.27.76-open'
 MCP_BUILD = '2026-09-16'
 MCP_FEATURES = [
+'2026-09-16: **html2json 的 CSS 出图一律走 SS + 修 `border-radius:50%` 认不出** v0.27.76-open（钟工拍板三条口径）——①html2json 处理 CSS 效果（渐变/圆角/阴影）出图**一律 SS（`ss=4` = 每像素 16 子采样）**，**不再保留 1x + α 羽化那条路**（固定本地脚本的工作，不额外耗 token）：`gen_gradient`/`gen_gradient_stops`/`gen_shadow_card`/`rounded_card`/`gen_btn9` 加可选 `ss=0`（`SS_DEFAULT=4`），新增 `_ss_mask`/`_ss_rounded_rect`/`_ss_outline` + 公开 `ss_shape_mask`（自画合成层用 `ImageChops.multiply` 只缩 alpha，禁 `paste(color,mask)` → 防暗边）。②**`gen_res.rounded_rect` 默认行为不变**（FT-008：1x 直画 + α 羽化 σ0.5）——SS 仅在 ①html2json 出图 ②调用方显式 `rounded_rect_ss`/`ss>0` 时生效；`ss=0` 路径与改动前**逐字节相同**（机器比对）。③**顺带修真 bug**：`border-radius` 旧解析只认「数字+px」→ `50%`/无单位认不出（实测 48×48 圆形 corner α=255 方形）→ 新增 `_radius_px()`（px/无单位/%，按 min(w,h)/2 钳制）。**实测**（理想 = 同算法 16x；边界带 mean/p95，单位 /255）：药丸渐变 80×40 35.4/97.9→**5.3/22.8**、正圆 48×48 31.7/74.0→**4.0/8.0**、圆角渐变卡 r16 43.9/153.0→**10.0/22.0**、阴影片 α-max 170→**20**、阴影药丸 125→**23**；暗边回归 ≤4/255。用例 158→**164**（`tests/test_html2json_ss.py`）；口径入库 `knowledge/devflow/ui-asset-rules.md` #8 + `html-subset-quickref.md` §7.1；证据 `temp/html2json_ss/`。',
+'2026-09-16: **切图抗锯齿档位 + thumb 尺寸核对盲区收口** v0.27.75-open（钟工：「滑块圆钮/开关有锯齿，图片和控件尺寸对不上」）——①**强曲率形状出图口径（FT-010）**：`gen_res.rounded_rect_ss(w,h,radius,fill,border=None,border_w=1,ss=4)`（≥4x 超采样 + LANCZOS + alpha 预乘，专给圆/圆钮/药丸/细圆条）；以 16x 超采样覆盖率当理想值实测（边界带 mean/p95，单位 /255）：药丸 35.4/97.9→5.3/22.7、圆 40.9/102→3.7/11、圆钮 42/105→6.3/17、细圆条 21/43→3.2/6，ss=8 时 p95<4；大半径卡片继续 `rounded_rect`（1x+α 羽化，轮廓与 1x 直画逐像素一致）→ **默认行为逐字节未变**（28 组输入 sha256 全同），`_aa_mask`/`gen_gradient`/`to_9patch` 补了分工说明。②**thumb 尺寸核对盲区**：`verify_assets`/`check_all` #11 #17 原先只比控件 position，滑块 `thumb` 子盒（自有尺寸）从不核对 → `sk_thumb.png` 31×31 配 `thumb.size` 30×30 一路 PASS。现盒子来源 = position **+** `thumb.size`：自动生成 thumb 图失配 → `mismatch[]`=FAIL，手绘 thumb（官方基准工程 SampleUI-New 35×34 vs 33×35）→ 仅 `stretched[]`，`thumb` 无 `size` → 跳过 + `skippedNoBox[]`；编辑器预检同口径。③实测：案例 `lvgl-widgets-uiv1` 三平台 check_all 全 PASS、0 mismatch；反例（thumb 改 25×25）#11/#17 双报 FAIL；全仓 95 工程只多 1 处真失配（旧案例 `lvgl-widgets/f133` 待重出图）。④口径入库 `knowledge/devflow/ui-asset-rules.md` 铁律 #8/#9 并同步 `ui-layout-verify.md`；用例 148→158。',
+'2026-09-16: **LVGL 案例按 ui_v1 重迁 + 组件包补全（Calendar 新包 / Chart 0.2.1）+ Z21 真机验收** v0.27.74-open（钟工：「lvgl 这套 Demo 再次迁移一次，优先 FlyThings 控件 + 自定义控件补全能力，自定义控件最终落到通用组件包」）——①新案例 `projects/translate/lvgl-widgets-uiv1/`（开发工作区）：TRANSLATE.md 按五级口径重写（每行挂 `mcp_control_map.json` 的 `level/notes/ref`），v1 的 5 处手写自绘全部换成组件包（`Chart` LINE/BAR/RING/SEGMENT/GAUGE、`TabView` 切页、`Calendar` 日历），开关改两态 `button__N`（绕 `checkbox__` 工具链缺陷），logic 826→746 行；双平台 `fun build` + `check_all` 全 PASS；②新包 **`components/ui_v1/Calendar/`**（四件套 + `example/` + 6 张 Z21 证据）：42 textview 日号网格 + 容器原点 + `getPosition()` 触摸反算 + 翻月/选中/标记/今天，不装触摸监听；③`Chart` **0.2.1**：新增**分段环** `setRingSegments()`（权重归一 / 段间 2° / 最多 8 段，`RING` 外返回非 0）+ **修 `drawGrid()` Y 刻度值序 bug**（槽位 0 原本画在最下线却写 max → 数字上下颠倒、图形是对的）；④Z21 九项交互全过：切页/点页签 + 下划线互斥 420px↔0px、滑块跟手 87%、开关两态、调色盘换色（`PtLine` 38,911 px 变红）、性别 modal、日历选中并回填、环/仪表动画；⑤平台事实：`div.modal` **内** textview 底色画不出（`bgColorTab`/`setBackgroundColor`/`setBgStatusColor` 三条路），**普通容器里能画**（反例：顶栏下划线 420 px 实心蓝）——先前「ZKTextView 画不出底色」的结论**已收窄到弹窗内**；painter 与刻度 textview 有 **z 序**要求（json 里 painter 必须写在先，否则整列刻度被不透明底盖住，静态检查发现不了）；⑥`mcp_control_map.json` 里 7 条日历族（lvgl/qt/android/miniprogram/emwin/mfc）`ref` 指向真包路径。⑦新增知识：`knowledge/uicontrols/widget-code-api.md` 的 `ZKPainter` 段补 **z 序**口径（json 后定义 = z 更高，painter 要写在叠加文字之前，否则整列刻度被不透明底盖住；静态检查与本地预览都发现不了）。',
+'2026-09-16: **控件映射能力（机读索引 + MCP op）+ ui_v1 口径收口** v0.27.73-open（钟工修正口径：**有一一映射的控件走「映射能力」，不写散文**；`components/ui_v1/` **只放「FlyThings 没有的能力」的自定义控件包**）——①新增仓库根 `mcp_control_map.json`（★跨框架控件映射机读索引，**212 条**：lvgl 32 / qt 40 / android 43 / miniprogram 38 / emwin 29 / mfc 30；每条 = `name/aliases/target/level/json（可直接粘，字段全集显式）/notes/ref`）+ `targets` 41 项（我们侧控件的 caption/指针/片段）；L3 必须给 `ref` 指向 `components/ui_v1/<包>`，L4/L5 在 notes 给替代建议；②新增 MCP op **`flythings_map_control(query, source=\'\')`**（工具数 34→35）：控件名/别名模糊匹配（忽略大小写与下划线/连字符，可限定框架），命中回 `level/notes/json/ref/control`（+`alsoMatched`），未命中回 **`NO_HIT`** + candidates + 「缺口五级」处置与 ui_v1 指针，source 写错回 `BAD_SOURCE`；③口径收口：`TabView` **迁出控件包** → `components/ui_v1/_mapping/TabView/`（此类**有平台对应控件 pagewindow**，只作映射参考：json 片段 + 手感参数 200/1/60/0 + 高亮双向同步 + Z21 证据；带 `_mapping/README.md`）；`components.md` 改**三段**（已实现自定义控件 `Chart` / 映射项 / 计划中的自定义控件 Calendar·TimePicker·WheelPicker·RichText·TableGrid·BadgeToast·Pseudo3D）；`ui_v1/README.md` 目录约定写死「有对应控件的映射项不进 `<源控件名>/`」+ 「建包前先证明平台真缺」；④新增知识 `knowledge/uicontrols/control-mapping-capability.md`（op 用法/覆盖范围/命中不到怎么办/与 ui_v1 分工/「有对应控件就直接用」的 json+代码示例），`framework-control-mapping.md` / `control-map.md` / `gap-list.md` 补机读入口指针。',
+
+
+    '2026-09-16: **ui_v1 从「映射表」改成「能用的控件包」——首批 2 个包（TabView / Chart），Z21 真机验收** v0.27.72-open（钟工：控件差异做成控件，一源控件一目录）——①`components/ui_v1/<源控件名>/` = 控件包（`README.md` 替代谁/接口/限制/验收 + `platforms.md` 逐平台实测 + `Manifest.xml` + `include/zk/` + `src/` + `example/`（最小可跑工程 + `evidence/*.png`））；基线文档保留作索引；②**TabView**（页签页容器，基于 `pagewindow`）：滑动切页 + 页签高亮/下划线双向同步（真源 = getCurrentPage，幂等）+ onPageChanged + 手感默认值 200/1/60/0（无运行时 setter → 默认值 + 自检）+ 不接管触摸；③**Chart**（ZKPainter 自绘）：LINE/BAR/RING/GAUGE + 网格刻度（textview 池同父）+ 混色近似 alpha；setSeries/appendPoint/setAxisRange/setRingPercent/setGaugeZones/attachLabels/setStyle/refresh（**改数据必须 refresh**）；④**Z21 验收**：TabView 滑动后 `page=1 (当前页=1 OK)`、下划线 x 20-199→212-391、页签蓝/灰互换、页内按钮点 3 次计数 0→3；Chart `ui_diff` 换数据 28 处/39,489 px、追加点只折线变 12,599 px；⑤新平台事实：`fun build` 自动编 `src/**/*.cpp`；Z21 `/res` 只读 + `/data` 满 → 只部署 `/tmp`；**残留 `zkshot` 会把 zkgui 卡在 D 状态（黑屏、kill -9 无效、只能重启）**，抓屏只用 framebuffer；⑥`components.md` 改两段（已实现 2 / 计划 13，目录名用源控件名）。',
+        '2026-09-16: 跨框架控件映射对齐 + ui_v1 基线 v0.27.71-open（钟工：对齐一下控件然后入库；把 LVGL 有的控件我们替代的放 components 目录新建 UI 目录）——①新建 `components/ui_v1/`（本代框架基线 = FlyThings IDE + easyui + 受限 HTML→json→ftu；将来新方案另开 `ui_v2/`）：`README.md`/`platforms.md`/**`control-map.md`（★控件映射权威表）**/`logic-map.md`/`gap-list.md`（G-01~G-36 + 五级处置 + 3D 策略 + T1~T12）/`components.md`/`examples/README.md`；②缺口统一五级 `L1 等价/L2 组合/L3 自绘/L4 降级/L5 不支持`（旧案例 A/B/C/D 按换算表逐条映射；并列取差、自绘记 L3）；③★tab 类控件（`lv_tabview`/`ViewPager+TabLayout`/`swiper+tab`/`QTabWidget`）一律走 `pagewindow`（ZKPageWindow，自带滑动切页 + `onPageChange`），**禁止**「多个整屏 window + 按钮」拼（丢手势滑动）；④3D 写死：Z21/F133 无 GPU/无硬解 → 一律伪 3D/2.5D，真 3D 仅 V85X（disp 分层）验证过；⑤工具链/平台事实进表（`fun` 不为 `checkbox__` 生成宏/指针/回调；设备侧 `libeasyui.so` 无 `getAbsolutePosition()`（用了整屏黑）；`fun launch`(Windows) 把 `resources/images/*` 推成字面平铺名；listview 行文本要 `setText("")` 否则与 subItem 叠字；`html2json` 把 `#000000` 当未设置）；⑥知识库只放摘要 + 指针（`knowledge/uicontrols/framework-control-mapping.md`）。',
+        '2026-09-16: 平台通用性三坑入库 v0.27.70-open（均实机核实）——①**双缓冲/pan 偏移 → 抓屏抓到上一帧**（平台通用，重点）：应用已重绘但抓到的是**上一帧**；判据 = `device_screenshot` 返回 `screenInfo.virtualHeight ≈ 2 × height` 且 `pan` 非 0（实测 Z21 = 1024x600/virtual 1200、F133 = 800x1280/virtual 2560）；对策 = 抓屏前后读 `fb0/pan`（或连抓两次比 md5，不一致重抓）、触摸 `touch long x y 250` 触发重绘后再抓、像素 diff 前先确认拿的是新帧；**这是抓图/验收侧问题，不要为此改应用逻辑**；②`html2json` 把 `#000000` 当「未设置」（`data-color`/`data-bg` 走 `to_dec(...) or 默认值`，0 是 falsy）→ **要纯黑请写 `#010101`**；③ZKPainter `drawArc` 实参口径存疑（既有文档写「外接矩形+起止角」，本次按 `(cx,cy,rx,ry,start,sweep)` 在 Z21(easyui 2.6.0) 真机渲染正确）→ 标「待官方/沛哥确认」，用前小图自证。落点：`knowledge/devflow/device-screenshot.md` §3.3-1、`devflow/html-subset-quickref.md` §4、`uicontrols/widget-code-api.md` §ZKPainter。',
     '2026-09-16: ListView 两个高频坑 + 设备部署体积预算 知识入库 v0.27.69-open（Z21 真机实测）——① html2json 生成的 listview item.text 默认写死 "ListItem" → 列表每行末尾常显一个 ListItem（已改为默认空串，两份 ui_tools 已同步）；② refreshListView() 不改变滚动位置 → 日志/监控类列表必须 setSelection(count-1) 后再刷新（顺序不能反），否则屏幕永远停在最早那几行、看起来“数据不更新”；另入库「小内存设备部署体积预算」：/tmp 是 tmpfs 吃 RAM（Z21 仅 36MB，撑爆会 OOM 杀 zkgui 导致设备重启）、字库按工程用字裁剪（新增 ui_tools/font_subset_by_project.py，872KB→84KB）、设备重启会清空 /tmp（含 EasyUI.cfg）必须整包 fun launch、adb push 后需 chmod',
     '2026-09-16: 多设备设备选择修正 + 知识入库 v0.27.68-open（沛哥报「fun launch 在同时连着 WiFi adb 时静默失败：adb 看到 2 个设备就报 more than one device/emulator、fun 把输出吞了 → 资源没推上去、设备仍跑旧 ftu；改了 ui 加控件、build 通过、launch 看着成功但界面不变，极易误判成框架不支持该控件」；验收后**现象方向成立、机制描述要改**）——①**实测机制（扫 fun.exe 字符串 + 伪造 adb host server 抓包）**：fun launch 走 fun 自带 Go adb 客户端（`pkg/adb` → 直连 adb host server `127.0.0.1:5037`：`host:version`/`host:devices`/`host:transport <serial>`/`shell:`/`sync:`），**不 shell 出 adb 二进制**（全二进制只有 `adb -s %s shell chmod 777 %s` 与 `adb -s %s shell %s` 两处，**都带 `-s`**）→ fun **根本不会**报 adb 的 `more than one device/emulator`，也就没有「吞 adb 输出」；②**真实行为：多设备时 fun 不报错/不警告/不询问，按 `adb devices` 列表顺序取第一个**（实测两种顺序各跑一次：WiFi 在前推 WiFi、把另一台放前面就推那台；pty 交互模式一样），唯一拦点是平台校验（`shell:getprop \'ro.product.model\'` 对比项目平台，不匹配才 `FATAL platform not match`；push 真出错也 `FATAL` + exit 1）；③**MCP 侧真 bug 修复**：`project_tools._run_fun` 原先**把 device 参数丢掉**（注释「fun launch 不支持 -s」），而 `build_ui_flow` docstring 又叫 AI「传 device=IP 重试（走 fun launch -s）」→ 文档与实现不符，多设备时会静默推错设备；现改：`cmd==\'launch\'` 且 device 非空时**追加 `-s <serial|IP>`**（实测可用），device 为空且检测到 **>1 台在线设备**时在返回体里给 `warnings`（不静默）；`kb_tools.flythings_build_ui_flow` docstring 同步改正「不支持 -s」；④**判据实测**：单设备 `fun launch` 后设备 `/tmp/ui/main.ftu` 与本地 `ui/main.ftu` **字节+md5 完全一致**（1419 B / `FDC802FF232328DD5395EB433F8BA223`；launch 前是旧 app 的 1755 B），设备侧无 md5sum 用已推 /tmp/busybox、`ls` 不认 `head`；⑤**知识入库**：`knowledge/devflow/cli-fun-toolchain.md` 新增 §7「多设备（USB + WiFi adb）时的设备选择陷阱」（机制/危害/正确做法/判据命令/WiFi adb 用法）+ §3 命令表改正 `-s` 行 + 检索词补充；⑥**复现手法留档**：真机只有单台可达时，可用**伪造 adb host server（127.0.0.1:5037，报 2 台设备）**抓 fun 发的每条请求（注意 Windows `SO_REUSEADDR` 允许多进程同绑 5037 → 排查前先 `netstat -ano | findstr 5037` 杀干净）。',
     '2026-09-16: 图标库（Tabler MIT）入库 v0.27.67-open（钟工：「把 UI 设计常用的图标全下进来，免得后期还需要处理」；起因：AI 生成的界面切图风格/比例反复不一致，每次都要人回来确认）——新增资产型模块 `components/icons/`（**随包发布**，其他 AI 可直接取）：①**选型定论**——Apple **SF Symbols 许可禁止再分发**（不能进发布包）、Google Material Symbols 虽 Apache-2.0 但观感偏“谷歌”，最终定 **Tabler Icons（MIT）**为唯一图标源（24 网格 + 2px 圆头圆角线框最接近 iOS，且每图带 `-filled` 成对变体 = 现成 on/off 两态）；②**收录规模**——vendor 全量 `icons/` 4754 outline + `icons-filled/` 1019 filled（4.0MB，**排除 376 个 `brand-*` 品牌 logo**，商标风险不入包）；语义表 198 条（含分级/制式：`wifi-0/1/2`、`signal-1..5`、`cell-signal-1..5`、`2G/3G/4G/4G+/5G/6G/LTE`、`battery-0/25/50/75/100`、竖版电量、蓝牙/路由/网络断开、broadcast/radar/rss/sensor），catalog **203 图标 / 305 产物**；③**唯一入口 `scripts/gen_icons.py`**：`--vendor-name <语义名> --size N|WxH --color R,G,B --out <项目>/resources/images`（**像素尺寸严格 == 控件盒**，颜色**烘焙**进 PNG——FlyThings 无 tint API），名字兜底支持 Tabler 原名（`weather.sun`/`--tabler antenna-bars-3`），另有 `--svg` / `--svg-dir` / `--list-vendor [分类]` / `--vendor-set common|all` / `--sheet`；④**小尺寸策略（实测）**——生成器用“半像素对齐线宽 + α 对比度整形（0.40/0.60）+ 去雀斑”，22px 中间值像素 ≤ 9.7%、不发虚 → **≥22px 用 outline、≤20px 用 filled**；⑤**合规**——唯一第三方义务 = 保留 `vendor/tabler/LICENSE`（MIT，tarball sha256 已登记 `VERSION.txt`），图形只做「单色化 + 等比缩放」未改路径；⑥知识库新增 `knowledge/devflow/icon-library.md`（选型依据 / 命令 / 铁律呼应 / 小尺寸策略 / 合规 / 坑），模块四件套 + `THIRD-PARTY.md` + `selfcheck.py`（命名/尺寸严格/透明度/清单/可渲染）齐备，`selfcheck` PASS 744 张。\n',
@@ -329,6 +338,140 @@ def flythings_hardware_info(model: str = '', platform: str = '') -> str:
     完整型号表另见知识库 knowledge/hardware/hardware-models.md。
     """
     return json.dumps(hw.query(model, platform), ensure_ascii=False)
+
+
+# ========== 跨框架控件映射能力（2026-09-16，钟工口径：有一一映射的控件走「映射能力」，不写散文）==========
+# 数据唯一来源：mcp_control_map.json（人工维护；来源 = components/ui_v1/control-map.md + gap-list.md
+# + knowledge/devflow/gui-controls-gap.md + knowledge/uicontrols/*-fields.md，**冲突以 KB 为准**）。
+# 分工：**有平台对应控件 → 本 op（机读索引 + 可粘贴 json 片段）；平台真缺的能力 → components/ui_v1/<包>**。
+_CONTROL_MAP_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mcp_control_map.json')
+if getattr(sys, 'frozen', False):          # PyInstaller 打包：随包进 _MEIPASS
+    _CONTROL_MAP_PATH = os.path.join(sys._MEIPASS, 'mcp_control_map.json')
+_CM_CACHE = {}
+
+
+def _control_map():
+    """读 mcp_control_map.json（带缓存）。文件缺失/坏掉时回 (None, 原因)，不静默。"""
+    if 'err' in _CM_CACHE:
+        return None, _CM_CACHE['err']
+    if 'data' in _CM_CACHE:
+        return _CM_CACHE['data'], ''
+    try:
+        data = json.loads(io.open(_CONTROL_MAP_PATH, encoding='utf-8').read())
+    except Exception as e:
+        _CM_CACHE['err'] = 'mcp_control_map.json 读取失败（%s: %s）' % (type(e).__name__, e)
+        return None, _CM_CACHE['err']
+    _CM_CACHE['data'] = data
+    return data, ''
+
+
+def _cm_norm(s):
+    """控件名归一：小写 + 去下划线/连字符/点/空格/括号（模糊匹配口径，与用户写法无关）。"""
+    s = (s or '').lower()
+    for ch in '_-./\\ ()[]（）·':
+        s = s.replace(ch, '')
+    return s
+
+
+def _cm_score(q, name, aliases):
+    """打分：精确 100 / 前缀 80 / 子串 60 / 词元包含 40；别名按同名列一起算（取最高）。"""
+    if not q:
+        return 0
+    best = 0
+    for cand in [name] + list(aliases or []):
+        n = _cm_norm(cand)
+        if not n:
+            continue
+        if q == n:
+            best = max(best, 100)
+        elif n.startswith(q) or q.startswith(n):
+            best = max(best, 80)
+        elif q in n:
+            best = max(best, 60 + min(10, len(q)))
+        elif len(q) >= 4 and any(t and t in n for t in [q[:4]]):
+            best = max(best, 40)
+    return best
+
+
+def flythings_map_control(query: str, source: str = '') -> str:
+    """跨框架控件映射：输入源框架控件名 → 一次对上我们的控件（等价级别 + 可直接粘的 json 片段）。
+
+    什么时候用：拿到 LVGL/Qt/Android/小程序/emWin/MFC 工程或设计稿，要转到 FlyThings 时。
+    - query：源控件名（或别名），忽略大小写与下划线/连字符，如 lv_slider / RecyclerView /
+      QCalendarWidget / lv_tabview / swiper
+    - source：可选，只在该框架内找（lvgl / qt / android / miniprogram / emwin / mfc）
+    命中返回：source、name、target（我们的控件）、level（L1 等价/L2 组合/L3 自绘/L4 降级/L5 不支持）、
+    notes（坑与降级点）、json（可直接粘进 ui/*.json 的片段，字段全集显式）、ref（L3 指向
+    components/ui_v1/<包>）、control（目标控件的 caption/指针/用法）。
+    未命中回 NO_HIT + candidates + 「缺口五级」处置建议（自绘/降级要先去 ui_v1 登记）。
+    口径：**有对应控件就用本映射**；**平台真缺的能力才做自定义控件包**（components/ui_v1/）。
+    """
+    data, err = _control_map()
+    if data is None:
+        return json.dumps({'ok': False, 'op': 'flythings_map_control',
+                           'error': _err_obj('DATA_MISSING', err, '确认 mcp_control_map.json 随包分发', False),
+                           'warnings': [err]}, ensure_ascii=False)
+    sources = data.get('sources') or {}
+    targets = data.get('targets') or {}
+    labels = data.get('sourceLabels') or {}
+    src = (source or '').strip().lower()
+    if src and src not in sources:
+        cands = sorted(sources.keys())
+        return json.dumps({'ok': False, 'op': 'flythings_map_control',
+                           'error': _err_obj('BAD_SOURCE', '未知 source: %s' % source,
+                                             'source 取 ' + ' / '.join(cands) + '（留空 = 全框架搜）', True),
+                           'sources': cands, 'warnings': []}, ensure_ascii=False)
+    q = _cm_norm(query)
+    if not q:
+        return json.dumps({'ok': False, 'op': 'flythings_map_control',
+                           'error': _err_obj('BAD_PARAMS', 'query 为空',
+                                             '传源框架控件名，如 query="lv_slider"（可带 source="lvgl"）', True),
+                           'warnings': []}, ensure_ascii=False)
+    hits = []
+    for sname, arr in sources.items():
+        if src and sname != src:
+            continue
+        for e in arr or []:
+            sc = _cm_score(q, e.get('name', ''), e.get('aliases'))
+            if sc > 0:
+                hits.append((sc, sname, e))
+    if not hits:
+        names = sorted({e.get('name', '') for a in sources.values() for e in (a or [])})
+        near = [n for n in names if q[:3] and q[:3] in _cm_norm(n)][:5] if len(q) >= 3 else []
+        msg = '映射表里没有「%s」%s' % (query, ('（限定 %s）' % src) if src else '')
+        hint = ('先判是不是「平台真缺的能力」：去 components/ui_v1/components.md 看计划/已实现的自定义控件包'
+                '（Chart 已实现；Calendar/TimePicker/WheelPicker/RichText/TableGrid/BadgeToast/Pseudo3D 计划中），'
+                '再按「缺口五级」处置：L1 等价 / L2 组合 / L3 自绘（须在 ui_v1/gap-list.md 登记编号）/ '
+                'L4 降级（写明降级点）/ L5 不支持（明说 + 给替代），**不要临场发明**')
+        return json.dumps({'ok': False, 'op': 'flythings_map_control', 'query': query,
+                           'error': _err_obj('NO_HIT', msg, hint, False),
+                           'candidates': near,
+                           'gapPolicy': {'levels': data.get('levels') or {},
+                                         'mapForExisting': 'platform 有对应控件 → 用本 op（flythings_map_control）',
+                                         'packForMissing': 'platform 真缺 → components/ui_v1/<源控件名>/（四件套 + example + 真机证据）',
+                                         'docs': 'components/ui_v1/control-map.md（权威表）/ gap-list.md（G-01~G-36 + T1~T12）/ '
+                                                 'components.md（状态表）/ knowledge/uicontrols/control-mapping-capability.md'},
+                           'warnings': []}, ensure_ascii=False)
+    hits.sort(key=lambda x: (-x[0], len(x[2].get('name', '')), x[1]))
+    sc, sname, e = hits[0]
+    tgt = e.get('target', '')
+    meta = targets.get(tgt) or {}
+    out = {'ok': True, 'op': 'flythings_map_control', 'query': query, 'score': sc,
+           'source': sname, 'sourceLabel': labels.get(sname, sname),
+           'name': e.get('name', ''), 'target': tgt, 'level': e.get('level', ''),
+           'levelName': (data.get('levels') or {}).get(e.get('level', ''), ''),
+           'notes': e.get('notes', ''), 'json': e.get('json', ''), 'ref': e.get('ref', ''),
+           'control': {'caption': meta.get('caption', ''), 'ptr': meta.get('ptr', ''),
+                       'note': meta.get('note', '')},
+           'warnings': []}
+    if sc < 100:
+        out['warnings'].append('模糊命中（score=%d）——确认是否你要的控件；要精确匹配请用源控件原名' % sc)
+    if len(hits) > 1:
+        out['alsoMatched'] = [{'source': s, 'name': x.get('name', ''), 'target': x.get('target', ''),
+                               'level': x.get('level', '')} for _, s, x in hits[1:5]]
+    if e.get('level') in ('L3', 'L4', 'L5'):
+        out['gapHint'] = '该控件不是等价映射：先看 components/ui_v1/gap-list.md 的处置与编号，别现场发明'
+    return json.dumps(out, ensure_ascii=False)
 
 
 def flythings_read_json(json_path: str) -> str:
@@ -938,18 +1081,21 @@ def flythings_ui_visual(action: str = 'list', project_root: str = '', output_dir
 
 
 def flythings_verify_assets(project_root: str) -> str:
-    """核对「json 声明 vs 磁盘产物」：图片引用是否存在 + 自动生成图 PNG 尺寸是否 == 控件 position。
+    """核对「json 声明 vs 磁盘产物」：图片引用是否存在 + PNG 尺寸是否 == 盒子。
 
     ⚠️ 生成/改完图片资源后必跑（v0.27.30 阴影丢图事故就是「产物没人核对」）。
+    盒子来源（图片铁律 #1）：控件 position（backgroundPic/picTab/...）**以及** thumb 自有尺寸
+    子盒 thumb.size（v0.27.75 补：此前 31×31 图配 30×30 会一路 PASS）；thumb 无 size → 跳过+warning。
     布局支持 ui/*.json 与 ui/<分辨率>/*.json 两种真实工程布局（v0.27.33 前只认扁平一层，
     分层工程会「0 页却报 ok」）。
     返回：
       - missing[]  引用了但文件不存在 → 真问题
-      - mismatch[] 自动生成图（resources/images/，铁律 #9）尺寸 != position → 真问题
+      - mismatch[] 自动生成图（铁律 #9）尺寸 != position，或 thumb 图 != thumb.size → 真问题
       - stretched[]手绘图尺寸 != 控件盒 → 仅提示（引擎会拉伸，导航图标/背景图常态）
       - unresolved[]运行时格式化引用 / 读图失败等跳过项
+      - skippedNoBox[] 盒子未知（无 position / thumb 无 size）而跳过
       - warnings[] 0 页等「其实没核对到东西」的情况
-    与 check_all 第 17 项同一实现。
+    与 check_all 第 11/17 项同一实现。
     """
     if chk_all is None:
         return json.dumps({'ok': False, 'error': 'check_all 模块不可用（缺 ui_tools/check_all.py）'},
@@ -959,7 +1105,7 @@ def flythings_verify_assets(project_root: str) -> str:
     except Exception as e:
         return json.dumps({'ok': False, 'error': 'verify_assets 失败: %s' % e}, ensure_ascii=False)
     r['hint'] = ('missing → 补图或改 json 引用（自动生成图片放 resources/images/，引用写 images/xxx.png）；'
-                 'mismatch → 重新出图，使 PNG 尺寸严格 == 控件 position；'
+                 'mismatch → 重新出图，使 PNG 尺寸严格 == 盒子（position 或 thumb.size）；'
                  'stretched 一般无需处理（手绘图由引擎拉伸到控件盒）')
     return json.dumps(r, ensure_ascii=False)
 
@@ -1135,6 +1281,7 @@ OP_NAMES = (
     'flythings_get_version',
     'flythings_knowledge_search',
     'flythings_hardware_info',
+    'flythings_map_control',
     'flythings_read_json',
     'flythings_get_project_spec',
     'flythings_validate_project',

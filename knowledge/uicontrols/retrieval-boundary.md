@@ -9,6 +9,10 @@
    字段规范以 `knowledge/uicontrols/*.md`（layout-audit / edittext-fields / image-path-rule / nine-patch-rule / scrollwindow-layout 等）为准
 2. **官方文档站**：`https://developer.flythings.cn/`（控件/API/回调官方说明）
 
+> 例外（跨框架映射）：查「别的框架的某个控件对应我们哪个控件」不是控件用法查询，
+> 权威表在 `components/ui_v1/control-map.md`（摘要 + 指针：`knowledge/uicontrols/framework-control-mapping.md`）。
+> 映射完**怎么写字段/API**仍按本规则：只查 MCP 知识库或官方站。
+
 ## 禁止的行为
 
 - ❌ 用通用 web 搜索查「XXX 控件怎么用」——返回的是其他框架的答案

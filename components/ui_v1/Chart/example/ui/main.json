@@ -1,0 +1,646 @@
+{
+  "beepEnable": true,
+  "id": 0,
+  "resolution": {
+    "height": 600,
+    "width": 1024
+  },
+  "topmost": false,
+  "backgroundColor": 16119802,
+  "position": {
+    "height": 600,
+    "left": 0,
+    "top": 0,
+    "width": 1024
+  },
+  "window__1": {
+    "backgroundColor": 16777215,
+    "caption": "WinTopBar",
+    "hideTimeOut": -1,
+    "id": 110001,
+    "modal": false,
+    "position": {
+      "height": 56,
+      "left": 0,
+      "top": 0,
+      "width": 1024
+    },
+    "touchable": false,
+    "visible": true,
+    "textview__2": {
+      "alignment": 36,
+      "caption": "TextView1",
+      "colorTab": {
+        "color0": 2171169
+      },
+      "fontSize": 15,
+      "id": 50001,
+      "position": {
+        "height": 20,
+        "left": 20,
+        "top": 6,
+        "width": 751
+      },
+      "touchable": false,
+      "text": "components/ui_v1/Chart 折线 / 柱状 / 环形 / 仪表（ZKPainter 自绘 + textview 刻度）"
+    },
+    "textview__3": {
+      "alignment": 36,
+      "caption": "TvStatus",
+      "colorTab": {
+        "color0": 4545124
+      },
+      "fontSize": 14,
+      "id": 50002,
+      "position": {
+        "height": 20,
+        "left": 20,
+        "top": 30,
+        "width": 700
+      },
+      "touchable": false,
+      "text": "ready"
+    },
+    "button__4": {
+      "alignment": 37,
+      "caption": "BtnNext",
+      "colorTab": {
+        "color0": 16777215
+      },
+      "id": 20001,
+      "position": {
+        "height": 44,
+        "left": 740,
+        "top": 6,
+        "width": 130
+      },
+      "touchable": true,
+      "bgColorTab": {
+        "color0": 2201331
+      },
+      "fontSize": 15,
+      "text": "换一批数据",
+      "picTab": {}
+    },
+    "button__5": {
+      "alignment": 37,
+      "caption": "BtnAppend",
+      "colorTab": {
+        "color0": 16777215
+      },
+      "id": 20002,
+      "position": {
+        "height": 44,
+        "left": 882,
+        "top": 6,
+        "width": 130
+      },
+      "touchable": true,
+      "bgColorTab": {
+        "color0": 6323595
+      },
+      "fontSize": 15,
+      "text": "追加一个点",
+      "picTab": {}
+    }
+  },
+  "window__6": {
+    "backgroundColor": 16119802,
+    "caption": "WinMain",
+    "hideTimeOut": -1,
+    "id": 110002,
+    "modal": false,
+    "position": {
+      "height": 544,
+      "left": 0,
+      "top": 56,
+      "width": 1024
+    },
+    "touchable": false,
+    "visible": true,
+    "textview__7": {
+      "alignment": 36,
+      "caption": "TextView2",
+      "colorTab": {
+        "color0": 2171169
+      },
+      "fontSize": 16,
+      "id": 50003,
+      "position": {
+        "height": 24,
+        "left": 24,
+        "top": 8,
+        "width": 300
+      },
+      "touchable": false,
+      "text": "折线图（Chart::LINE）"
+    },
+    "painter__8": {
+      "backgroundColor": -1,
+      "caption": "PtLine",
+      "id": 52001,
+      "position": {
+        "height": 200,
+        "left": 24,
+        "top": 38,
+        "width": 476
+      },
+      "touchable": false,
+      "visible": true
+    },
+    "textview__9": {
+      "alignment": 36,
+      "caption": "TvLineY0",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50004,
+      "position": {
+        "height": 16,
+        "left": 26,
+        "top": 34,
+        "width": 37
+      },
+      "touchable": false,
+      "text": "100"
+    },
+    "textview__10": {
+      "alignment": 36,
+      "caption": "TvLineY1",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50005,
+      "position": {
+        "height": 16,
+        "left": 26,
+        "top": 68,
+        "width": 30
+      },
+      "touchable": false,
+      "text": "80"
+    },
+    "textview__11": {
+      "alignment": 36,
+      "caption": "TvLineY2",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50006,
+      "position": {
+        "height": 16,
+        "left": 26,
+        "top": 102,
+        "width": 30
+      },
+      "touchable": false,
+      "text": "60"
+    },
+    "textview__12": {
+      "alignment": 36,
+      "caption": "TvLineY3",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50007,
+      "position": {
+        "height": 16,
+        "left": 26,
+        "top": 136,
+        "width": 30
+      },
+      "touchable": false,
+      "text": "40"
+    },
+    "textview__13": {
+      "alignment": 36,
+      "caption": "TvLineY4",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50008,
+      "position": {
+        "height": 16,
+        "left": 26,
+        "top": 170,
+        "width": 30
+      },
+      "touchable": false,
+      "text": "20"
+    },
+    "textview__14": {
+      "alignment": 36,
+      "caption": "TvLineY5",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50009,
+      "position": {
+        "height": 16,
+        "left": 26,
+        "top": 204,
+        "width": 30
+      },
+      "touchable": false,
+      "text": "0"
+    },
+    "textview__15": {
+      "alignment": 36,
+      "caption": "TextView3",
+      "colorTab": {
+        "color0": 2171169
+      },
+      "fontSize": 16,
+      "id": 50010,
+      "position": {
+        "height": 24,
+        "left": 532,
+        "top": 8,
+        "width": 304
+      },
+      "touchable": false,
+      "text": "分组柱状（Chart::BAR · 双系列）"
+    },
+    "painter__16": {
+      "backgroundColor": -1,
+      "caption": "PtBar",
+      "id": 52002,
+      "position": {
+        "height": 200,
+        "left": 532,
+        "top": 38,
+        "width": 468
+      },
+      "touchable": false,
+      "visible": true
+    },
+    "textview__17": {
+      "alignment": 36,
+      "caption": "TvBarY0",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50011,
+      "position": {
+        "height": 16,
+        "left": 534,
+        "top": 34,
+        "width": 37
+      },
+      "touchable": false,
+      "text": "100"
+    },
+    "textview__18": {
+      "alignment": 36,
+      "caption": "TvBarY1",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50012,
+      "position": {
+        "height": 16,
+        "left": 534,
+        "top": 68,
+        "width": 30
+      },
+      "touchable": false,
+      "text": "80"
+    },
+    "textview__19": {
+      "alignment": 36,
+      "caption": "TvBarY2",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50013,
+      "position": {
+        "height": 16,
+        "left": 534,
+        "top": 102,
+        "width": 30
+      },
+      "touchable": false,
+      "text": "60"
+    },
+    "textview__20": {
+      "alignment": 36,
+      "caption": "TvBarY3",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50014,
+      "position": {
+        "height": 16,
+        "left": 534,
+        "top": 136,
+        "width": 30
+      },
+      "touchable": false,
+      "text": "40"
+    },
+    "textview__21": {
+      "alignment": 36,
+      "caption": "TvBarY4",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50015,
+      "position": {
+        "height": 16,
+        "left": 534,
+        "top": 170,
+        "width": 30
+      },
+      "touchable": false,
+      "text": "20"
+    },
+    "textview__22": {
+      "alignment": 36,
+      "caption": "TvBarY5",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50016,
+      "position": {
+        "height": 16,
+        "left": 534,
+        "top": 204,
+        "width": 30
+      },
+      "touchable": false,
+      "text": "0"
+    },
+    "textview__23": {
+      "alignment": 36,
+      "caption": "TextView4",
+      "colorTab": {
+        "color0": 2171169
+      },
+      "fontSize": 16,
+      "id": 50017,
+      "position": {
+        "height": 24,
+        "left": 24,
+        "top": 262,
+        "width": 300
+      },
+      "touchable": false,
+      "text": "同心环（Chart::RING）"
+    },
+    "painter__24": {
+      "backgroundColor": -1,
+      "caption": "PtRing",
+      "id": 52003,
+      "position": {
+        "height": 180,
+        "left": 24,
+        "top": 292,
+        "width": 180
+      },
+      "touchable": false,
+      "visible": true
+    },
+    "textview__25": {
+      "alignment": 36,
+      "caption": "TvRing0",
+      "colorTab": {
+        "color0": 2201331
+      },
+      "fontSize": 15,
+      "id": 50018,
+      "position": {
+        "height": 24,
+        "left": 216,
+        "top": 300,
+        "width": 140
+      },
+      "touchable": false,
+      "text": "0%"
+    },
+    "textview__26": {
+      "alignment": 36,
+      "caption": "TvRing1",
+      "colorTab": {
+        "color0": 6323595
+      },
+      "fontSize": 15,
+      "id": 50019,
+      "position": {
+        "height": 24,
+        "left": 216,
+        "top": 332,
+        "width": 140
+      },
+      "touchable": false,
+      "text": "0%"
+    },
+    "textview__27": {
+      "alignment": 36,
+      "caption": "TvRing2",
+      "colorTab": {
+        "color0": 16007990
+      },
+      "fontSize": 15,
+      "id": 50020,
+      "position": {
+        "height": 24,
+        "left": 216,
+        "top": 364,
+        "width": 140
+      },
+      "touchable": false,
+      "text": "0%"
+    },
+    "textview__28": {
+      "alignment": 36,
+      "caption": "TextView5",
+      "colorTab": {
+        "color0": 2171169
+      },
+      "fontSize": 16,
+      "id": 50021,
+      "position": {
+        "height": 24,
+        "left": 392,
+        "top": 262,
+        "width": 300
+      },
+      "touchable": false,
+      "text": "仪表盘（Chart::GAUGE）"
+    },
+    "painter__29": {
+      "backgroundColor": -1,
+      "caption": "PtGauge",
+      "id": 52004,
+      "position": {
+        "height": 200,
+        "left": 392,
+        "top": 292,
+        "width": 250
+      },
+      "touchable": false,
+      "visible": true
+    },
+    "textview__30": {
+      "alignment": 36,
+      "caption": "TvGaugeMin",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50022,
+      "position": {
+        "height": 16,
+        "left": 394,
+        "top": 470,
+        "width": 34
+      },
+      "touchable": false,
+      "text": "0"
+    },
+    "textview__31": {
+      "alignment": 36,
+      "caption": "TvGaugeMax",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 12,
+      "id": 50023,
+      "position": {
+        "height": 16,
+        "left": 602,
+        "top": 470,
+        "width": 40
+      },
+      "touchable": false,
+      "text": "100"
+    },
+    "textview__32": {
+      "alignment": 36,
+      "caption": "TvGaugeVal",
+      "colorTab": {
+        "color0": 10395294
+      },
+      "fontSize": 16,
+      "id": 50024,
+      "position": {
+        "height": 20,
+        "left": 472,
+        "top": 430,
+        "width": 80
+      },
+      "touchable": false,
+      "text": "0"
+    },
+    "textview__33": {
+      "alignment": 36,
+      "caption": "TvLog",
+      "colorTab": {
+        "color0": 4545124
+      },
+      "fontSize": 14,
+      "id": 50025,
+      "position": {
+        "height": 44,
+        "left": 664,
+        "top": 290,
+        "width": 336
+      },
+      "touchable": false,
+      "text": "改数据后要 refresh()"
+    },
+    "textview__34": {
+      "alignment": 36,
+      "caption": "TextView6",
+      "colorTab": {
+        "color0": 2171169
+      },
+      "fontSize": 16,
+      "id": 50026,
+      "position": {
+        "height": 24,
+        "left": 664,
+        "top": 340,
+        "width": 346
+      },
+      "touchable": false,
+      "text": "分段环（setRingSegments）"
+    },
+    "painter__35": {
+      "backgroundColor": -1,
+      "caption": "PtSegRing",
+      "id": 52005,
+      "position": {
+        "height": 168,
+        "left": 664,
+        "top": 368,
+        "width": 168
+      },
+      "touchable": false,
+      "visible": true
+    },
+    "textview__36": {
+      "alignment": 36,
+      "caption": "TvSeg0",
+      "colorTab": {
+        "color0": 2201331
+      },
+      "fontSize": 15,
+      "id": 50027,
+      "position": {
+        "height": 24,
+        "left": 844,
+        "top": 364,
+        "width": 180
+      },
+      "touchable": false,
+      "text": "内环 2 段"
+    },
+    "textview__37": {
+      "alignment": 36,
+      "caption": "TvSeg1",
+      "colorTab": {
+        "color0": 5025616
+      },
+      "fontSize": 15,
+      "id": 50028,
+      "position": {
+        "height": 24,
+        "left": 844,
+        "top": 394,
+        "width": 180
+      },
+      "touchable": false,
+      "text": "中环 3 段"
+    },
+    "textview__38": {
+      "alignment": 36,
+      "caption": "TvSeg2",
+      "colorTab": {
+        "color0": 16007990
+      },
+      "fontSize": 15,
+      "id": 50029,
+      "position": {
+        "height": 24,
+        "left": 844,
+        "top": 424,
+        "width": 180
+      },
+      "touchable": false,
+      "text": "外环 5 段"
+    }
+  }
+}

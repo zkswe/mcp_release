@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>zk::ui_v1::Chart 示例（Z21 1024x600）</title></head>
+<body>
+<div class="screen" data-res="1024x600" data-bg="#F5F7FA">
+
+  <!-- ============ 顶栏 ============ -->
+  <div class="window" data-x="0" data-y="0" data-w="1024" data-h="56" data-caption="WinTopBar" data-bg="#FFFFFF">
+    <div class="text" data-x="20" data-y="6" data-w="520" data-h="20" data-fs="15" data-color="#212121">components/ui_v1/Chart &nbsp; 折线 / 柱状 / 环形 / 仪表（ZKPainter 自绘 + textview 刻度）</div>
+    <div class="text" data-x="20" data-y="30" data-w="700" data-h="20" data-fs="14" data-color="#455A64" data-caption="TvStatus">ready</div>
+    <div class="btn"  data-x="740" data-y="6"  data-w="130" data-h="44" data-fs="15" data-bg="#2196F3" data-color="#FFFFFF" data-caption="BtnNext">换一批数据</div>
+    <div class="btn"  data-x="882" data-y="6"  data-w="130" data-h="44" data-fs="15" data-bg="#607D8B" data-color="#FFFFFF" data-caption="BtnAppend">追加一个点</div>
+  </div>
+
+  <div class="window" data-x="0" data-y="56" data-w="1024" data-h="544" data-caption="WinMain" data-bg="#F5F7FA">
+
+    <!-- ---------- 折线图：painter + 6 个 Y 刻度文字（与 painter 同父，坐标由组件算） ---------- -->
+    <div class="text"   data-x="24"  data-y="8"   data-w="300" data-h="24" data-fs="16" data-color="#212121">折线图（Chart::LINE）</div>
+    <div class="painter" data-x="24" data-y="38"  data-w="476" data-h="200" data-caption="PtLine"></div>
+    <div class="text" data-x="26"  data-y="34" data-w="30" data-h="16" data-fs="12" data-color="#9E9E9E" data-caption="TvLineY0">100</div>
+    <div class="text" data-x="26"  data-y="68" data-w="30" data-h="16" data-fs="12" data-color="#9E9E9E" data-caption="TvLineY1">80</div>
+    <div class="text" data-x="26"  data-y="102" data-w="30" data-h="16" data-fs="12" data-color="#9E9E9E" data-caption="TvLineY2">60</div>
+    <div class="text" data-x="26"  data-y="136" data-w="30" data-h="16" data-fs="12" data-color="#9E9E9E" data-caption="TvLineY3">40</div>
+    <div class="text" data-x="26"  data-y="170" data-w="30" data-h="16" data-fs="12" data-color="#9E9E9E" data-caption="TvLineY4">20</div>
+    <div class="text" data-x="26"  data-y="204" data-w="30" data-h="16" data-fs="12" data-color="#9E9E9E" data-caption="TvLineY5">0</div>
+
+    <!-- ---------- 分组柱状：painter + 6 个 Y 刻度文字 ---------- -->
+    <div class="text"   data-x="532" data-y="8"   data-w="300" data-h="24" data-fs="16" data-color="#212121">分组柱状（Chart::BAR · 双系列）</div>
+    <div class="painter" data-x="532" data-y="38" data-w="468" data-h="200" data-caption="PtBar"></div>
+    <div class="text" data-x="534" data-y="34" data-w="30" data-h="16" data-fs="12" data-color="#9E9E9E" data-caption="TvBarY0">100</div>
+    <div class="text" data-x="534" data-y="68" data-w="30" data-h="16" data-fs="12" data-color="#9E9E9E" data-caption="TvBarY1">80</div>
+    <div class="text" data-x="534" data-y="102" data-w="30" data-h="16" data-fs="12" data-color="#9E9E9E" data-caption="TvBarY2">60</div>
+    <div class="text" data-x="534" data-y="136" data-w="30" data-h="16" data-fs="12" data-color="#9E9E9E" data-caption="TvBarY3">40</div>
+    <div class="text" data-x="534" data-y="170" data-w="30" data-h="16" data-fs="12" data-color="#9E9E9E" data-caption="TvBarY4">20</div>
+    <div class="text" data-x="534" data-y="204" data-w="30" data-h="16" data-fs="12" data-color="#9E9E9E" data-caption="TvBarY5">0</div>
+
+    <!-- ---------- 环形：painter + 3 个环文字（RING 模式只写文字，位置由 json 定） ---------- -->
+    <div class="text"   data-x="24"  data-y="262" data-w="300" data-h="24" data-fs="16" data-color="#212121">同心环（Chart::RING）</div>
+    <div class="painter" data-x="24" data-y="292" data-w="180" data-h="180" data-caption="PtRing"></div>
+    <div class="text" data-x="216" data-y="300" data-w="140" data-h="24" data-fs="15" data-color="#2196F3" data-caption="TvRing0">0%</div>
+    <div class="text" data-x="216" data-y="332" data-w="140" data-h="24" data-fs="15" data-color="#607D8B" data-caption="TvRing1">0%</div>
+    <div class="text" data-x="216" data-y="364" data-w="140" data-h="24" data-fs="15" data-color="#F44336" data-caption="TvRing2">0%</div>
+
+    <!-- ---------- 仪表：painter + 3 个文字（0=下限 1=上限 2=当前值） ---------- -->
+    <div class="text"   data-x="392" data-y="262" data-w="300" data-h="24" data-fs="16" data-color="#212121">仪表盘（Chart::GAUGE）</div>
+    <div class="painter" data-x="392" data-y="292" data-w="250" data-h="200" data-caption="PtGauge"></div>
+    <div class="text" data-x="394" data-y="470" data-w="34" data-h="16" data-fs="12" data-color="#9E9E9E" data-caption="TvGaugeMin">0</div>
+    <div class="text" data-x="602" data-y="470" data-w="40" data-h="16" data-fs="12" data-color="#9E9E9E" data-caption="TvGaugeMax">100</div>
+    <div class="text" data-x="472" data-y="430" data-w="80" data-h="20" data-fs="16" data-color="#9E9E9E" data-caption="TvGaugeVal">0</div>
+
+    <div class="text" data-x="664" data-y="290" data-w="336" data-h="44" data-fs="14" data-color="#455A64" data-caption="TvLog">改数据后要 refresh()</div>
+
+    <!-- ---------- 分段环：一个环切成多段（内 2 段 / 中 3 段 / 外 5 段，v0.2.0 新增） ---------- -->
+    <div class="text"   data-x="664" data-y="340" data-w="346" data-h="24" data-fs="16" data-color="#212121">分段环（setRingSegments）</div>
+    <div class="painter" data-x="664" data-y="368" data-w="168" data-h="168" data-caption="PtSegRing"></div>
+    <div class="text" data-x="844" data-y="364" data-w="180" data-h="24" data-fs="15" data-color="#2196F3" data-caption="TvSeg0">内环 2 段</div>
+    <div class="text" data-x="844" data-y="394" data-w="180" data-h="24" data-fs="15" data-color="#4CAF50" data-caption="TvSeg1">中环 3 段</div>
+    <div class="text" data-x="844" data-y="424" data-w="180" data-h="24" data-fs="15" data-color="#F44336" data-caption="TvSeg2">外环 5 段</div>
+  </div>
+</div>
+</body>
+</html>

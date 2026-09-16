@@ -1,0 +1,1265 @@
+{
+  "beepEnable": true,
+  "id": 0,
+  "resolution": {
+    "height": 600,
+    "width": 1024
+  },
+  "topmost": false,
+  "backgroundColor": 16119802,
+  "position": {
+    "height": 600,
+    "left": 0,
+    "top": 0,
+    "width": 1024
+  },
+  "window__1": {
+    "backgroundColor": 16777215,
+    "caption": "WinTopBar",
+    "hideTimeOut": -1,
+    "id": 110001,
+    "modal": false,
+    "position": {
+      "height": 56,
+      "left": 0,
+      "top": 0,
+      "width": 1024
+    },
+    "touchable": false,
+    "visible": true,
+    "textview__2": {
+      "alignment": 36,
+      "caption": "TextView1",
+      "colorTab": {
+        "color0": 2171169
+      },
+      "fontSize": 15,
+      "id": 50001,
+      "position": {
+        "height": 20,
+        "left": 20,
+        "top": 6,
+        "width": 701
+      },
+      "touchable": false,
+      "text": "components/ui_v1/Calendar 日历选择器（42 个 textview 承载日号 + 触摸反算命中）"
+    },
+    "textview__3": {
+      "alignment": 36,
+      "caption": "TvStatus",
+      "colorTab": {
+        "color0": 4545124
+      },
+      "fontSize": 14,
+      "id": 50002,
+      "position": {
+        "height": 20,
+        "left": 20,
+        "top": 30,
+        "width": 980
+      },
+      "touchable": false,
+      "text": "ready"
+    }
+  },
+  "window__4": {
+    "backgroundColor": 16119802,
+    "caption": "WinMain",
+    "hideTimeOut": -1,
+    "id": 110002,
+    "modal": false,
+    "position": {
+      "height": 544,
+      "left": 0,
+      "top": 56,
+      "width": 1024
+    },
+    "touchable": false,
+    "visible": true,
+    "button__5": {
+      "alignment": 37,
+      "caption": "BtnOpenCal",
+      "colorTab": {
+        "color0": 16777215
+      },
+      "id": 20001,
+      "position": {
+        "height": 64,
+        "left": 60,
+        "top": 120,
+        "width": 240
+      },
+      "touchable": true,
+      "bgColorTab": {
+        "color0": 2201331
+      },
+      "fontSize": 18,
+      "text": "打开日历",
+      "picTab": {}
+    },
+    "textview__6": {
+      "alignment": 36,
+      "caption": "TextView2",
+      "colorTab": {
+        "color0": 4545124
+      },
+      "fontSize": 15,
+      "id": 50003,
+      "position": {
+        "height": 24,
+        "left": 60,
+        "top": 212,
+        "width": 320
+      },
+      "touchable": false,
+      "text": "已选日期（点日号 / OK 回填）"
+    },
+    "edittext__7": {
+      "alignment": 37,
+      "bold": false,
+      "caption": "EtDate",
+      "bgColorTab": {
+        "color0": 16777215
+      },
+      "colorTab": {
+        "color0": 0
+      },
+      "fontSize": 16,
+      "hintTextColor": 0,
+      "id": 51001,
+      "position": {
+        "height": 48,
+        "left": 60,
+        "top": 240,
+        "width": 240
+      },
+      "textType": 0,
+      "text": ""
+    },
+    "button__8": {
+      "alignment": 37,
+      "caption": "BtnToday",
+      "colorTab": {
+        "color0": 16777215
+      },
+      "id": 20002,
+      "position": {
+        "height": 56,
+        "left": 60,
+        "top": 330,
+        "width": 240
+      },
+      "touchable": true,
+      "bgColorTab": {
+        "color0": 6323595
+      },
+      "fontSize": 17,
+      "text": "跳到今天",
+      "picTab": {}
+    },
+    "textview__9": {
+      "alignment": 36,
+      "caption": "TvPickedLog",
+      "colorTab": {
+        "color0": 4545124
+      },
+      "fontSize": 15,
+      "id": 50004,
+      "position": {
+        "height": 400,
+        "left": 340,
+        "top": 120,
+        "width": 677
+      },
+      "touchable": false,
+      "text": "日历用法：点「打开日历」-> 点日号选中（回调回填输入框）-> < > 翻月 -> OK 关窗"
+    }
+  },
+  "window__10": {
+    "backgroundColor": 16777215,
+    "caption": "WinCal",
+    "hideTimeOut": -1,
+    "id": 110003,
+    "modal": true,
+    "position": {
+      "height": 520,
+      "left": 162,
+      "top": 40,
+      "width": 700
+    },
+    "touchable": false,
+    "visible": false,
+    "button__11": {
+      "alignment": 37,
+      "caption": "BtnCalCard",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "id": 20003,
+      "position": {
+        "height": 520,
+        "left": 0,
+        "top": 0,
+        "width": 700
+      },
+      "touchable": true,
+      "bgColorTab": {
+        "color0": 16777215
+      },
+      "picTab": {},
+      "text": ""
+    },
+    "button__12": {
+      "alignment": 37,
+      "caption": "BtnCalPrev",
+      "colorTab": {
+        "color0": 2171169
+      },
+      "id": 20004,
+      "position": {
+        "height": 44,
+        "left": 20,
+        "top": 16,
+        "width": 72
+      },
+      "touchable": true,
+      "bgColorTab": {
+        "color0": 15527921
+      },
+      "fontSize": 22,
+      "text": "<",
+      "picTab": {}
+    },
+    "textview__13": {
+      "alignment": 37,
+      "caption": "TvCalTitle",
+      "colorTab": {
+        "color0": 2171169
+      },
+      "fontSize": 20,
+      "id": 50005,
+      "position": {
+        "height": 36,
+        "left": 104,
+        "top": 20,
+        "width": 492
+      },
+      "touchable": false,
+      "text": "2026-09"
+    },
+    "button__14": {
+      "alignment": 37,
+      "caption": "BtnCalNext",
+      "colorTab": {
+        "color0": 2171169
+      },
+      "id": 20005,
+      "position": {
+        "height": 44,
+        "left": 608,
+        "top": 16,
+        "width": 72
+      },
+      "touchable": true,
+      "bgColorTab": {
+        "color0": 15527921
+      },
+      "fontSize": 22,
+      "text": ">",
+      "picTab": {}
+    },
+    "textview__15": {
+      "alignment": 37,
+      "caption": "TextView3",
+      "colorTab": {
+        "color0": 9479342
+      },
+      "fontSize": 14,
+      "id": 50006,
+      "position": {
+        "height": 22,
+        "left": 28,
+        "top": 74,
+        "width": 88
+      },
+      "touchable": false,
+      "text": "一"
+    },
+    "textview__16": {
+      "alignment": 37,
+      "caption": "TextView4",
+      "colorTab": {
+        "color0": 9479342
+      },
+      "fontSize": 14,
+      "id": 50007,
+      "position": {
+        "height": 22,
+        "left": 116,
+        "top": 74,
+        "width": 88
+      },
+      "touchable": false,
+      "text": "二"
+    },
+    "textview__17": {
+      "alignment": 37,
+      "caption": "TextView5",
+      "colorTab": {
+        "color0": 9479342
+      },
+      "fontSize": 14,
+      "id": 50008,
+      "position": {
+        "height": 22,
+        "left": 204,
+        "top": 74,
+        "width": 88
+      },
+      "touchable": false,
+      "text": "三"
+    },
+    "textview__18": {
+      "alignment": 37,
+      "caption": "TextView6",
+      "colorTab": {
+        "color0": 9479342
+      },
+      "fontSize": 14,
+      "id": 50009,
+      "position": {
+        "height": 22,
+        "left": 292,
+        "top": 74,
+        "width": 88
+      },
+      "touchable": false,
+      "text": "四"
+    },
+    "textview__19": {
+      "alignment": 37,
+      "caption": "TextView7",
+      "colorTab": {
+        "color0": 9479342
+      },
+      "fontSize": 14,
+      "id": 50010,
+      "position": {
+        "height": 22,
+        "left": 380,
+        "top": 74,
+        "width": 88
+      },
+      "touchable": false,
+      "text": "五"
+    },
+    "textview__20": {
+      "alignment": 37,
+      "caption": "TextView8",
+      "colorTab": {
+        "color0": 9479342
+      },
+      "fontSize": 14,
+      "id": 50011,
+      "position": {
+        "height": 22,
+        "left": 468,
+        "top": 74,
+        "width": 88
+      },
+      "touchable": false,
+      "text": "六"
+    },
+    "textview__21": {
+      "alignment": 37,
+      "caption": "TextView9",
+      "colorTab": {
+        "color0": 9479342
+      },
+      "fontSize": 14,
+      "id": 50012,
+      "position": {
+        "height": 22,
+        "left": 556,
+        "top": 74,
+        "width": 88
+      },
+      "touchable": false,
+      "text": "日"
+    },
+    "textview__22": {
+      "alignment": 37,
+      "caption": "TvCalD1",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50013,
+      "position": {
+        "height": 38,
+        "left": 28,
+        "top": 100,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__23": {
+      "alignment": 37,
+      "caption": "TvCalD2",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50014,
+      "position": {
+        "height": 38,
+        "left": 116,
+        "top": 100,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__24": {
+      "alignment": 37,
+      "caption": "TvCalD3",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50015,
+      "position": {
+        "height": 38,
+        "left": 204,
+        "top": 100,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__25": {
+      "alignment": 37,
+      "caption": "TvCalD4",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50016,
+      "position": {
+        "height": 38,
+        "left": 292,
+        "top": 100,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__26": {
+      "alignment": 37,
+      "caption": "TvCalD5",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50017,
+      "position": {
+        "height": 38,
+        "left": 380,
+        "top": 100,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__27": {
+      "alignment": 37,
+      "caption": "TvCalD6",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50018,
+      "position": {
+        "height": 38,
+        "left": 468,
+        "top": 100,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__28": {
+      "alignment": 37,
+      "caption": "TvCalD7",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50019,
+      "position": {
+        "height": 38,
+        "left": 556,
+        "top": 100,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__29": {
+      "alignment": 37,
+      "caption": "TvCalD8",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50020,
+      "position": {
+        "height": 38,
+        "left": 28,
+        "top": 144,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__30": {
+      "alignment": 37,
+      "caption": "TvCalD9",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50021,
+      "position": {
+        "height": 38,
+        "left": 116,
+        "top": 144,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__31": {
+      "alignment": 37,
+      "caption": "TvCalD10",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50022,
+      "position": {
+        "height": 38,
+        "left": 204,
+        "top": 144,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__32": {
+      "alignment": 37,
+      "caption": "TvCalD11",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50023,
+      "position": {
+        "height": 38,
+        "left": 292,
+        "top": 144,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__33": {
+      "alignment": 37,
+      "caption": "TvCalD12",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50024,
+      "position": {
+        "height": 38,
+        "left": 380,
+        "top": 144,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__34": {
+      "alignment": 37,
+      "caption": "TvCalD13",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50025,
+      "position": {
+        "height": 38,
+        "left": 468,
+        "top": 144,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__35": {
+      "alignment": 37,
+      "caption": "TvCalD14",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50026,
+      "position": {
+        "height": 38,
+        "left": 556,
+        "top": 144,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__36": {
+      "alignment": 37,
+      "caption": "TvCalD15",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50027,
+      "position": {
+        "height": 38,
+        "left": 28,
+        "top": 188,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__37": {
+      "alignment": 37,
+      "caption": "TvCalD16",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50028,
+      "position": {
+        "height": 38,
+        "left": 116,
+        "top": 188,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__38": {
+      "alignment": 37,
+      "caption": "TvCalD17",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50029,
+      "position": {
+        "height": 38,
+        "left": 204,
+        "top": 188,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__39": {
+      "alignment": 37,
+      "caption": "TvCalD18",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50030,
+      "position": {
+        "height": 38,
+        "left": 292,
+        "top": 188,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__40": {
+      "alignment": 37,
+      "caption": "TvCalD19",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50031,
+      "position": {
+        "height": 38,
+        "left": 380,
+        "top": 188,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__41": {
+      "alignment": 37,
+      "caption": "TvCalD20",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50032,
+      "position": {
+        "height": 38,
+        "left": 468,
+        "top": 188,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__42": {
+      "alignment": 37,
+      "caption": "TvCalD21",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50033,
+      "position": {
+        "height": 38,
+        "left": 556,
+        "top": 188,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__43": {
+      "alignment": 37,
+      "caption": "TvCalD22",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50034,
+      "position": {
+        "height": 38,
+        "left": 28,
+        "top": 232,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__44": {
+      "alignment": 37,
+      "caption": "TvCalD23",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50035,
+      "position": {
+        "height": 38,
+        "left": 116,
+        "top": 232,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__45": {
+      "alignment": 37,
+      "caption": "TvCalD24",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50036,
+      "position": {
+        "height": 38,
+        "left": 204,
+        "top": 232,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__46": {
+      "alignment": 37,
+      "caption": "TvCalD25",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50037,
+      "position": {
+        "height": 38,
+        "left": 292,
+        "top": 232,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__47": {
+      "alignment": 37,
+      "caption": "TvCalD26",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50038,
+      "position": {
+        "height": 38,
+        "left": 380,
+        "top": 232,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__48": {
+      "alignment": 37,
+      "caption": "TvCalD27",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50039,
+      "position": {
+        "height": 38,
+        "left": 468,
+        "top": 232,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__49": {
+      "alignment": 37,
+      "caption": "TvCalD28",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50040,
+      "position": {
+        "height": 38,
+        "left": 556,
+        "top": 232,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__50": {
+      "alignment": 37,
+      "caption": "TvCalD29",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50041,
+      "position": {
+        "height": 38,
+        "left": 28,
+        "top": 276,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__51": {
+      "alignment": 37,
+      "caption": "TvCalD30",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50042,
+      "position": {
+        "height": 38,
+        "left": 116,
+        "top": 276,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__52": {
+      "alignment": 37,
+      "caption": "TvCalD31",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50043,
+      "position": {
+        "height": 38,
+        "left": 204,
+        "top": 276,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__53": {
+      "alignment": 37,
+      "caption": "TvCalD32",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50044,
+      "position": {
+        "height": 38,
+        "left": 292,
+        "top": 276,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__54": {
+      "alignment": 37,
+      "caption": "TvCalD33",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50045,
+      "position": {
+        "height": 38,
+        "left": 380,
+        "top": 276,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__55": {
+      "alignment": 37,
+      "caption": "TvCalD34",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50046,
+      "position": {
+        "height": 38,
+        "left": 468,
+        "top": 276,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__56": {
+      "alignment": 37,
+      "caption": "TvCalD35",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50047,
+      "position": {
+        "height": 38,
+        "left": 556,
+        "top": 276,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__57": {
+      "alignment": 37,
+      "caption": "TvCalD36",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50048,
+      "position": {
+        "height": 38,
+        "left": 28,
+        "top": 320,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__58": {
+      "alignment": 37,
+      "caption": "TvCalD37",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50049,
+      "position": {
+        "height": 38,
+        "left": 116,
+        "top": 320,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__59": {
+      "alignment": 37,
+      "caption": "TvCalD38",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50050,
+      "position": {
+        "height": 38,
+        "left": 204,
+        "top": 320,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__60": {
+      "alignment": 37,
+      "caption": "TvCalD39",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50051,
+      "position": {
+        "height": 38,
+        "left": 292,
+        "top": 320,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__61": {
+      "alignment": 37,
+      "caption": "TvCalD40",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50052,
+      "position": {
+        "height": 38,
+        "left": 380,
+        "top": 320,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__62": {
+      "alignment": 37,
+      "caption": "TvCalD41",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50053,
+      "position": {
+        "height": 38,
+        "left": 468,
+        "top": 320,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__63": {
+      "alignment": 37,
+      "caption": "TvCalD42",
+      "colorTab": {
+        "color0": 15659766
+      },
+      "fontSize": 18,
+      "id": 50054,
+      "position": {
+        "height": 38,
+        "left": 556,
+        "top": 320,
+        "width": 88
+      },
+      "touchable": false,
+      "bgColorTab": {
+        "color0": 16777215
+      }
+    },
+    "textview__64": {
+      "alignment": 36,
+      "caption": "TvCalLog",
+      "colorTab": {
+        "color0": 4545124
+      },
+      "fontSize": 15,
+      "id": 50055,
+      "position": {
+        "height": 24,
+        "left": 28,
+        "top": 364,
+        "width": 644
+      },
+      "touchable": false,
+      "text": "已选：（未选）"
+    },
+    "textview__65": {
+      "alignment": 36,
+      "caption": "TvCalHint",
+      "colorTab": {
+        "color0": 9479342
+      },
+      "fontSize": 13,
+      "id": 50056,
+      "position": {
+        "height": 20,
+        "left": 28,
+        "top": 390,
+        "width": 644
+      },
+      "touchable": false,
+      "text": "点日号选中；< > 翻月；OK 关窗回主界面"
+    },
+    "button__66": {
+      "alignment": 37,
+      "caption": "BtnCalOk",
+      "colorTab": {
+        "color0": 16777215
+      },
+      "id": 20006,
+      "position": {
+        "height": 52,
+        "left": 28,
+        "top": 414,
+        "width": 264
+      },
+      "touchable": true,
+      "bgColorTab": {
+        "color0": 2201331
+      },
+      "fontSize": 18,
+      "text": "OK",
+      "picTab": {}
+    },
+    "button__67": {
+      "alignment": 37,
+      "caption": "BtnCalCancel",
+      "colorTab": {
+        "color0": 2171169
+      },
+      "id": 20007,
+      "position": {
+        "height": 52,
+        "left": 308,
+        "top": 414,
+        "width": 264
+      },
+      "touchable": true,
+      "bgColorTab": {
+        "color0": 15527921
+      },
+      "fontSize": 18,
+      "text": "取消",
+      "picTab": {}
+    }
+  }
+}

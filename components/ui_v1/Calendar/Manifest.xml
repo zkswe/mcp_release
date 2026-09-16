@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  components/ui_v1/Calendar —— package 引用声明
+
+  本模块的交付物：
+    include/zk/zk_calendar.h     唯一对外头（zk::ui_v1::Calendar）
+    src/zk_calendar.cpp          实现（**源码型**：随本仓库分发，无第三方依赖）
+    example/                     最小可跑工程（Z21 真机验收过，含 6 张真机证据）
+
+  两种引用方式：
+
+  A) 源码引入（推荐，改动最快）
+     1) 拷 include/zk/*.h  → <工程>/src/zk/
+     2) 拷 src/*.cpp       → <工程>/src/zk/          （fun build 自动把 src/** 加进编译单元，实测）
+     3) 在 <工程>/Manifest.xml 里声明下面这份「本模块依赖的底层包」
+
+  B) 依赖包引用（本模块定型后，注册进包仓库时）
+     <package id="ui_v1_calendar" version="0.1.0"></package>   <!-- 版本写死，不用 ^ 浮动 -->
+     注意：本模块目前**不在依赖包仓库里**，以上只是将来形态的说明。
+
+  使用方还需要做的两件事（组件代替不了）：
+    ① ui json 里摆 7×6 = 42 个日号 textview（行优先）+ 1 个标题 + 2 个翻月按钮；
+    ② activity 触摸事件里用 dayAt()/cellAt() 反算命中（见 README §2 的 6 行模板）。
+-->
+<manifest>
+
+  <!-- ============================================================ Z21（已真机验收） -->
+  <platform name="Z21">
+    <dependencies enableOnPlatforms="Z21">
+      <package id="easyui"       version="^2.6.0"/>   <!-- ZKTextView（日号/标题）/ ZKButton（翻月） -->
+      <package id="log"          version="0.0.0"/>
+      <package id="zkhardware"   version="0.0.0"/>
+      <package id="zknet"        version="0.0.0"/>
+      <package id="base-utility" version="^10.9.3"/>
+    </dependencies>
+  </platform>
+
+  <!-- ============================================================ F133（仅编译口径，未上机） -->
+  <platform name="F133">
+    <dependencies enableOnPlatforms="F133">
+      <package id="easyui"       version="^2.9.0"/>
+      <package id="log"          version="0.0.0"/>
+      <package id="zkhardware"   version="0.0.0"/>
+      <package id="zknet"        version="0.0.0"/>
+      <package id="base-utility" version="^10.9.3"/>
+    </dependencies>
+  </platform>
+
+  <!-- ============================================================ 其它平台 -->
+  <!-- Z20 / T113 / V85X：easyui 版本按各平台 registry 选。
+       本组件只用到 ZKTextView（setText/setTextColor/setBold/setPosition）
+       + ZKButton + ZKBase::getPosition() —— 5 个平台的头文件面已逐个核对一致。
+       ⚠️ 上机前仍需确认：getParent()/getAbsolutePosition() 是否导出（别用）、textview 底色是否画得出。 -->
+
+</manifest>
