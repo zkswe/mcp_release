@@ -7,6 +7,8 @@
 > **0.1.1（2026-09-16 晚）**：修「药丸圆钮外围露出方角」—— 钮从「铺底盒 + 圆角矩形」改成**图层叠加**
 > （逐像素 `mix(mix(track, Style::bg, 1-P), knob, K)`，`P=0` 的像素不画 → 方角被药丸轮廓裁掉）。
 > 真机数字：理想轮廓外的纯药丸色像素 **6/个钮 → 0**（`z21/evidence/zzc_*`、STATUS §12）。
+> **本包对外证据**：`example/evidence/13–19`（8× 左右对照 / 严格口径 diff / 上机前本地渲染桩）+ `FIX_metric.log`、`FIX_local_check.log`；
+> 修前帧与 `zzc_*` 全量 20 张在案例工程 `projects/translate/lvgl-widgets-uiv1/z21/evidence/`。
 ---
 
 ## 0. 先回答「为什么必须有这个包」（平台真缺的证据）

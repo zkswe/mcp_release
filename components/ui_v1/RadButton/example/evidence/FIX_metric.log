@@ -1,0 +1,32 @@
+# zzc_metric.log — 药丸圆钮方角修复：修前/修后「理想轮廓外药丸色像素」指标（同一脚本口径）
+# 脚本：temp/radbutton_case/zzc_metric.py（几何 = 16x16 超采样理想药丸；track = 实心区众数色）
+# PURE  = 三通道与 track 最大差 <= 12 且 理想覆盖率 < 0.30  → 最干净判据（AA 像素不可能这么纯）
+# NEAR  = 离 track 比离 cardBg 更近 且 覆盖率 < 0.30
+# LOOSE = 饱和度 max-min > 40 且 覆盖率 < 0.30（会连带算上药丸自身 AA 像素）
+
+== 修前（上一轮 zzb_* 真机帧，旧代码）==
+  METRIC BEFORE/06_switch_team_on team  PURE=6 NEAR=6 LOOSE=18 (track=#2196F3)
+  METRIC BEFORE/06_switch_team_on hard  PURE=6 NEAR=6 LOOSE=0 (track=#B0BEC5)
+  METRIC BEFORE/07_switch_team_off team  PURE=6 NEAR=6 LOOSE=0 (track=#B0BEC5)
+  METRIC BEFORE/07_switch_team_off hard  PURE=6 NEAR=6 LOOSE=0 (track=#B0BEC5)
+  METRIC BEFORE/12_switch_hard_on team  PURE=6 NEAR=6 LOOSE=0 (track=#B0BEC5)
+  METRIC BEFORE/12_switch_hard_on hard  PURE=6 NEAR=6 LOOSE=18 (track=#2196F3)
+  METRIC BEFORE/13_switch_hard_off team  PURE=6 NEAR=6 LOOSE=0 (track=#B0BEC5)
+  METRIC BEFORE/13_switch_hard_off hard  PURE=6 NEAR=6 LOOSE=0 (track=#B0BEC5)
+
+== 修后（本轮 zzc_* 真机帧，修复代码）==
+  METRIC AFTER/team_on    team  PURE=0 NEAR=0 LOOSE=16 (track=#2196F3)
+  METRIC AFTER/team_on    hard  PURE=0 NEAR=0 LOOSE=0 (track=#B0BEC5)
+  METRIC AFTER/team_off   team  PURE=0 NEAR=0 LOOSE=0 (track=#B0BEC5)
+  METRIC AFTER/team_off   hard  PURE=0 NEAR=0 LOOSE=0 (track=#B0BEC5)
+  METRIC AFTER/hard_on    team  PURE=0 NEAR=0 LOOSE=0 (track=#B0BEC5)
+  METRIC AFTER/hard_on    hard  PURE=0 NEAR=0 LOOSE=16 (track=#2196F3)
+  METRIC AFTER/hard_off   team  PURE=0 NEAR=0 LOOSE=0 (track=#B0BEC5)
+  METRIC AFTER/hard_off   hard  PURE=0 NEAR=0 LOOSE=0 (track=#B0BEC5)
+
+== LOOSE 口径为什么 18 -> 16（不是没修干净）==
+  LOOSE 像素 C:\Users\zkswe\.openclaw\workspace\projects\translate\lvgl-widgets-uiv1\z21\evidence\zzb_06_switch_team_on.png team: 18 个  [(9, 0, (196, 227, 252)), (46, 0, (196, 227, 252)), (4, 3, (186, 222, 251)), (51, 3, (33, 150, 243)), (52, 3, (33, 150, 243)), (3, 4, (186, 222, 251)), (52, 4, (33, 150, 243)), (0, 9, (196, 227, 252)), (55, 9, (196, 227, 252)), (0, 18, (196, 227, 252)), (55, 18, (19
+  LOOSE 像素 C:\Users\zkswe\.openclaw\workspace\projects\translate\lvgl-widgets-uiv1\z21\evidence\zzc_02_switch_team_on.png team: 16 个  [(9, 0, (196, 227, 252)), (46, 0, (196, 227, 252)), (4, 3, (186, 222, 251)), (51, 3, (186, 222, 251)), (3, 4, (186, 222, 251)), (52, 4, (186, 222, 251)), (0, 9, (196, 227, 252)), (55, 9, (196, 227, 252)), (0, 18, (196, 227, 252)), (55, 18, (196, 227, 252)), (3, 23, 
+  蓝药丸 18 = 12 个药丸自身 AA 像素（#C4E3FC/#BADEFF，几何使然）+ 6 个纯 #2196F3 方角像素
+  蓝药丸 16 = 12 个同上 + 原来那 6 个位置现在也是覆盖率决定的浅色 AA（#BADEFF）→ 方角没了
+  灰药丸（#B0BEC5 饱和度 21 < 40）本来就进不了 LOOSE 口径，所以看 PURE 才准：6 -> 0

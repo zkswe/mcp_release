@@ -1,0 +1,43 @@
+{
+  "success": true,
+  "identical": true,
+  "a": "zzb_06_switch_team_on.png",
+  "b": "zzc_02_switch_team_on.png",
+  "sizeA": "1024x600",
+  "sizeB": "1024x600",
+  "sizeMismatch": false,
+  "params": {
+    "tolerance": 2,
+    "shiftCompensate": 1,
+    "minArea": 4,
+    "openKernel": 3,
+    "box": null,
+    "blur": 0.7,
+    "noiseBbox": 10
+  },
+  "regionCount": 0,
+  "diffPixelsInRegions": 0,
+  "regions": [],
+  "noiseCount": 2,
+  "noise": [
+    {
+      "x": 714,
+      "y": 454,
+      "w": 4,
+      "h": 4,
+      "area": 15,
+      "maxDelta": 27,
+      "meanDelta": 10.47
+    },
+    {
+      "x": 714,
+      "y": 474,
+      "w": 4,
+      "h": 4,
+      "area": 15,
+      "maxDelta": 27,
+      "meanDelta": 10.47
+    }
+  ],
+  "annotated": "C:\\Users\\zkswe\\.openclaw\\workspace\\projects\\translate\\lvgl-widgets-uiv1\\z21\\evidence\\zzc_12_diff_team_on_before_after.png"
+}

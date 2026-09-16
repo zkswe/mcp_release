@@ -70,6 +70,24 @@ fun build -p Z21
 | `11_diff_pressed_vs_selected.png` | `ui_diff(02,03)`：15 处差异 / 11,238 px（只多变了切换盒） |
 | `12_diff_initial_vs_radius28.png` | `ui_diff(01,05)`：33 处差异 / 29,622 px（②行半径 + ③两盒状态） |
 
+### 追加：0.1.1「药丸圆钮外露方角」修复对照（Z21 同一台，2026-09-16 22:0x）
+
+| 文件 | 一句话 |
+|---|---|
+| `13_pill_corner_before_after_zoom8x_team_on.png` | 8× LANCZOS 左右对照（56×28 药丸钮）：左「修前=钮外露方角」/ 右「修后=圆滑无角」 |
+| `14_pill_corner_before_after_zoom8x_team_off.png` | 同上，开关 OFF 档 |
+| `15_pill_corner_after_zoom8x_all_four.png` | 修后四帧（Team/Hard × on/off）8× 总览 |
+| `16_diff_before_after_team_on.png` | `ui_diff(修前, 修后)` 默认口径：整帧原始差 **24 px**（每个钮 12 px = 6 个方角 + 6 个钮缘 AA 基准修正 Δ≤10/255） |
+| `17_diff_STRICT_before_after_team_off.png` | 严格口径 `--open 0 --min-area 1 --shift 0`：**4 处 / 66 px**——默认降噪会把它抹成「0 处差异」，看这个 |
+| `18_local_render_zoom8x_before_after_on.png` | 上机**前**的本地渲染桩（WSL）+ 独立 16× 参考模型：修前复现 PURE=6（位置与设备逐点一致）→ 修后 PURE=0 |
+| `19_device_after_switch_team_on.png` | 修后设备帧（Team ON），md5 `5b8a03e6f3b6` |
+| `FIX_metric.log` | 修前/修后**同一口径**指标：PURE（主判据）**6/钮 → 0**、NEAR 6 → 0、LOOSE 18 → 16（16 = 12 个药丸自身 AA + 4，逐像素已解释） |
+| `FIX_local_check.log` | 本地自检：桩渲染 / 参考模型 / `fillRect` 调用数 542→496（无性能退化）/ `aa_ideal` / `check_all` 全 PASS |
+| `FIX_diff_strict_team_on.json` | 严格口径 diff 的机读结果 |
+
+> 修前帧（`zzb_*`）与 `zzc_*` 全量 20 张在案例工程 `projects/translate/lvgl-widgets-uiv1/z21/evidence/`（`STATUS.md` §12 是同轮逐项报告）；
+> 本目录只留对外证据。`MODE_HARD` 路径**未修**（按要求保留对照，该档仍会露方角）。
+
 > 放大图**必须用 LANCZOS**（`PIL`），NEAREST 放大必然看着有台阶、会误判。
 
 ## 复现数字
