@@ -4,7 +4,8 @@
 > 2026-09-17 补充 §6（`setInvalid` 是禁用不是重绘）/ §7（嵌套 window 的卡片内部点不动）——
 > 两节均来自真机案例 `projects/translate/tdesign-miniprogram`（同一个「点哪都没反应」的两个真根因）。
 > 检索词：触摸/点击无效/点不动/拖不动/滑动/穿透/遮挡/touchable/touchPass/setTouchPass/单选点不了/
-> setInvalid/禁用控件/强制重绘/invalidate/嵌套 window/遮罩抢触摸/卡片里的按钮点不动/扁平化。
+> setInvalid/禁用控件/强制重绘/invalidate/嵌套 window/遮罩抢触摸/卡片里的按钮点不动/扁平化/
+> data-touchable 不生效/真禁用只能改 json。
 
 ## 1. `touchable=false` **不等于**触摸穿透（最容易搞错的一条）
 

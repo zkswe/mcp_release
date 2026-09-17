@@ -1,6 +1,6 @@
 # HTML 原型 → json 规范速查（HTML_SUBSET）
 
-> 检索导引：写「受限 HTML 原型 / 原型转 json / 控件映射 / data-* 属性 / data-icon 图标 / CSS 效果转图 / JS 交互稿 / data-bgpic 丢失 / backgroundPic 没生成 / 底图没画出来」时命中。
+> 检索导引：写「受限 HTML 原型 / 原型转 json / 控件映射 / data-* 属性 / data-touchable 不生效 / data-icon 图标 / CSS 效果转图 / JS 交互稿 / data-bgpic 丢失 / backgroundPic 没生成 / 底图没画出来 / 容器默认可见盖住页面」时命中。
 > 用途：`flythings_html_to_json` 的完整口径（该工具 docstring 只保留要点，长尾在这里）。
 > 实现规范（工具开发用）：仓库 `ui_tools/HTML_SUBSET.md`；本页是 AI 生成原型时的口径，内容以本页为准。
 
