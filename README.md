@@ -23,7 +23,7 @@
 帮我克隆并安装 https://gitee.com/Kwolve/fly-things-os_-mcp 项目
 ```
 
-AI 会自动完成：克隆项目 → 安装依赖 → 引导配置 → 完成。
+AI 会自动完成：克隆项目 → 按 `requirements.lock` 安装依赖（该文件是已锁定、实测通过的版本组合）→ 引导配置 → 完成。
 
 > 需要 Python 3.10+。Windows 也可双击 `install.bat` 一键装依赖（装完自动跑一次离线自检）；
 > 双击 `setup.bat` 可交互生成配置（等价于 `python configure.py`）。
