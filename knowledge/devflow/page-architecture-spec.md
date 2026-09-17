@@ -67,7 +67,7 @@ src/
 1. **一级子目录 = 业务域**（network / media / storage / ui-config …），域名用**小写英文单数名词**，不用 `core`、`common`、`misc`、`utils` 这类无域含义的名字（真有两个域共用的东西，才另起 `common/`，并写明归属）。
 2. **不在 `src/` 下先分 `core/`/`modules/` 再分业务域**（两层壳只会让 include 路径变长、归属变模糊）。
 3. **文件 = 业务域内的一个职责类**：`<职责>.cpp` + `<职责>.h` 成对；类名用大驼峰，与文件名一致（`NetworkManager` ↔ `NetworkManager.cpp/.h`）。
-4. **一律 `.cpp`/`.h`**：新增业务代码禁止建 `.cc`（`.cc` 是 IDE 按页面生成的 logic 专属，靠 `mainActivity.cpp` `#include` 进编译单元；Makefile 只编 `%.cpp %.c`，手写 `.cc` 根本不编译）。
+4. **一律 `.cpp`/`.h`**：新增业务代码禁止建 `.cc`（`.cc` 是 IDE 按页面生成的 logic 专属）。**两套编译体系别混**：IDE 里 `.cc` 靠 `mainActivity.cpp` `#include` 进编译单元（Makefile 只编 `%.cpp %.c`）；**`fun build` 里 `src/activity/*` 不参与编译，`src/logic/*.cc` 直接被编译，业务 `src/**/*.cpp` 被扫描收进编译单元** —— **不要改 `.fun/<平台>/CMakeLists.txt`**（fun 自动生成、会覆盖）。详见 `cli-fun-toolchain.md` §4.5。
 5. **`src/logic/*.cc` 只做关联层**：取控件指针 / `setText` / 调业务对象；复杂逻辑放业务域目录里的类，logic 只 include + 调用。
 6. **include 路径**：业务模块头文件用相对 `src/` 的路径（如 `#include "network/NetworkManager.h"`），不要写绝对路径。
 7. **资源与代码分开**：图片等资源仍放 `resources/`（自动生成图放 `resources/images/`，json 引用写 `images/xxx.png`），业务域目录只放代码。

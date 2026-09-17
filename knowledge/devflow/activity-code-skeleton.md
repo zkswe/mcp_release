@@ -3,6 +3,13 @@
 > 2026-09-08 basedemo-new_z20_1024_600（35 工程）逐源码深读。所有 Demo 共用同一套生成器骨架，理解它=理解一切控件如何被代码驱动。
 > 检索词：activity 骨架/回调表/生命周期/logic.cc/定时器/串口模板/SysApp/REGISTER_ACTIVITY。
 
+
+## 0. ⚠️ 先看：两套编译体系（2026-09-17 纠偏）
+
+- **IDE 体系**：`src/activity/<name>Activity.cpp` 参与编译，它 `#include` 同名 logic（`logic/<name>Logic.cc`）。
+- **`fun build`（命令行，推荐）**：**`src/activity/*` 完全不参与编译**；fun 直接把 `src/logic/*.cc`、`src/**/*.cpp` 与**自己生成的** `generated/{event,event_dispatcher,ui_main}.cpp` 编成 `libzkgui.so`（编译宏 `FUN_BUILD=1`）。
+- 所以：改 activity 对 fun 构建**无效**；**不要改 `.fun/<平台>/CMakeLists.txt`**（fun 自动生成、会被覆盖）。细节见 `cli-fun-toolchain.md` §4.5。
+
 ## 1. 代码组织（生成器骨架）
 - **src/activity/mainActivity.cpp 是"壳"**：顶部定义 `static ZKXxx* mXXXPtr`（控件全局指针，与 ftu 的 caption 对应）→ `REGISTER_ACTIVITY(mainActivity);` → `#include "logic/mainLogic.cc"` 把用户逻辑**文本包含**进来 → logic 里可直接裸用 mXXXPtr/mActivityPtr，无需自己 findControl（但要改监听才用 findControlByID 或直接在 onCreate 已配好）。
 - 控件 ID 宏：`src/activity/*Activity.h` 里 `#define ID_MAIN_<caption> <json id>`；子项（listview subItem）宏 `ID_MAIN_SubItemXxx`。
