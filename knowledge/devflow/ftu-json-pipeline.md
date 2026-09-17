@@ -14,7 +14,7 @@
 | ftu 是什么 | `<项目>/ui/*.ftu` = **设备实际加载的布局文件**（FlyThings 的 UI 二进制/打包格式） |
 | 能直接看吗 | **不能当文本看**：实测文件头带 `ZKSW` 标记、内容是二进制（`git diff`、文本编辑器都读不懂） |
 | 谁读它 | 设备侧 zkgui 读 **ftu**，不读 json；`fun launch` 把 `ui/main.ftu` 推到设备 `/tmp/ui/main.ftu`（实测设备侧与本文件字节数 + md5 完全一致） |
-| 一个 ftu 顶什么 | **一个 ftu = 一个界面 = 一个 Activity**（IDE 按 ftu 生成 `<name>Activity` + `<name>Logic.cc`；页面划分口径见 `page-architecture-spec.md` §0） |
+| 一个 ftu 顶什么 | **一个 ftu = 一个 Activity = 一个独立编译单元**（IDE 按 ftu 生成 `<name>Activity` + `<name>Logic.cc`）；但**页面 ≠ ftu**：一个 ftu 里通常放**多个整屏 window（= 多个页面）**，用 `showWnd()/hideWnd()` 切换。**默认单 Activity**（`main.ftu` + `mainActivity` + `mainLogic.cc`），只有跨业务域/需独立返回栈才拆新 ftu（口径见 `page-architecture-spec.md` §0/§2） |
 | ftu 从哪来 | 由**同目录同名 json** `pack` 而来：`ui/main.json` --fui pack--> `ui/main.ftu` |
 | 模板里就有 json 吗 | **没有**。模板只带 IDE 产出的 `ui/main.ftu`（实测 162–164 B）；我们的工作流第一步是生成 `ui/main.json`（HTML 原型 → `flythings_html_to_json`），之后 json 才是源 |
 

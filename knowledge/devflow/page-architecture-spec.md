@@ -1,9 +1,13 @@
 # 页面架构规范：ftu vs 同 ftu 内多窗口 + src 业务域目录命名
 
 > 2026-09-13 沛哥定规（确认「跨业务域/独立生命周期 → 独立 ftu；同业务域内的页签/弹窗/二级页 → 同 ftu 内整屏 window」判断正确后入库）。
-> 检索词：页面架构/ftu 划分/多窗口/showWnd/整屏 window/二级页/弹窗/目录命名/业务域/src 目录/network media/.cpp .h。
+> 检索词：页面架构/ftu 划分/多窗口/showWnd/整屏 window/二级页/弹窗/目录命名/业务域/src 目录/network media/.cpp .h/单 Activity/多 Activity/一个工程几个 Activity/一个工程几个 ftu/多个页面怎么放/页面放一个 ftu 还是多个。
 
 ## 0. 一句话口径
+
+**默认口径（先看这条，最容易误读）：一个工程默认只有 **一个 Activity**（`ui/main.ftu` + `src/activity/mainActivity.*` + `src/logic/mainLogic.cc`）。
+**同一个业务域里的多个页面 = 同一个 ftu 内的多个整屏 window，用 `showWnd()/hideWnd()` 切换** —— 不要为每个页面新建 ftu/Activity（那样会变成多 Activity：Activity 数量、返回栈、跨页状态都要自己管）。
+拆新 ftu（= 新 Activity）只有三个理由：**跨业务域 / 需独立生命周期与返回栈 / 超大页面**。
 
 **ftu = Activity = 一个独立编译单元（IDE 按 ftu 生成 activity+logic，独立生命周期与返回栈）；window = 同一 Activity 内的显隐（零切换成本、共享控件指针与状态）。**
 所以划分依据是**业务域与生命周期**，不是"页面看起来像不像一页"。

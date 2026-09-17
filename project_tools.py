@@ -405,7 +405,7 @@ _PROJECT_SPEC = {
         "Manifest 用新格式 <manifest platform=\"...\">（旧 <Manifest> 格式 IDE 不认）",
         "代码层架构：logic/*.cc 只做 UI 与业务的关联操作（取控件指针/setText/调业务对象）；复杂功能开发成独立 C++ 类放**业务域目录**，在 logic include+调用；新增业务代码一律用 .cpp/.h（独立编译单元，fun build 自动编译），禁止新建 .cc 文件——.cc 是 IDE 按页面生成的 logic 专属（仅 mainLogic.cc 等），靠 mainActivity.cpp #include 进编译单元，手写 .cc 不会被编译（Makefile 只编 %.cpp %.c）",
         "src 目录命名（2026-09-13 沛哥定规）：按业务域直接建在 src/ 下，不设 core/modules 中间分层——如 src/network/NetworkManager.cpp+.h、src/media/MediaPlayer.cpp+.h、src/storage/ConfigStore.cpp+.h；域名为小写英文单数名词，文件=域内一个职责类（大驼峰，与文件名一致）；include 用相对 src/ 路径（#include \"network/NetworkManager.h\"）",
-        "页面架构（2026-09-13 定规）：ftu=Activity=独立编译单元（独立生命周期/返回栈），window=同 Activity 内显隐（零切换成本/共享指针）——跨业务域、需独立生命周期或返回栈、大页面 → 独立 ftu（openActivity）；同一业务域内的页签/二级页/弹窗/整屏遮挡 → 同 ftu 内多个整屏 window + showWnd/hideWnd；并列内容区翻页 → pagewindow/slidewindow/scrollwindow 容器。详见知识库 devflow/page-architecture-spec.md",
+        "页面架构（2026-09-13 定规；**默认口径先看这条**）：**一个工程默认只有一个 Activity**（ui/main.ftu + src/activity/mainActivity.* + src/logic/mainLogic.cc）——**多个页面不是多个 ftu/Activity**，同一业务域内的页面/页签/二级页/弹窗/整屏遮挡 → **同一个 ftu 里的多个整屏 window + showWnd/hideWnd 切换**；只有跨业务域、需独立生命周期或返回栈、超大页面才拆独立 ftu（openActivity）；并列内容区翻页 → pagewindow/slidewindow/scrollwindow 容器。底层关系：ftu=Activity=独立编译单元（独立生命周期/返回栈），window=同 Activity 内显隐（零切换成本/共享指针）。详见知识库 devflow/page-architecture-spec.md",
         "src/uart 为系统模板：UartContext/ProtocolSender 勿改，只改 ProtocolData.h 与 ProtocolParser.cpp 协议部分",
         "json 布局用 fui pack 生成 ftu（ui/ 下已附带 fui.exe）；编译推送用 fun.exe build / fun.exe launch（项目根目录已附带 fun.exe）",
         "⚠️ 交付流程：项目生成后直接用 fun.exe build 编译、fun.exe launch 推送设备，无需客户手动导入 FlyThings IDE 编译烧录",
