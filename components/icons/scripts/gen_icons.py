@@ -4,9 +4,17 @@
 把矢量源（vendor 收录的 Tabler SVG + 少量自绘图标）按需渲染成任意分辨率的**单色烘焙 PNG**
 （RGB 恒等于 --color，alpha = 覆盖率；8× 超采样 + BOX 面积平均降采样 + α 整形 = 边缘干净）。
 
+图标源是**按需加载**的（2026-09-17 起）：vendor 的 SVG 不再是 5777 个散件，而是打成
+`vendor/tabler-3.46.0.pack.tgz`（见 `scripts/make_pack.py`）。`--vendor-name` / `--svg` /
+`--set` / `--sheet` 的**用法与输出完全不变**——读取层自己决定从哪儿取（散件 / 缓存 /
+归档按需解 / 可选远端），细节见本文件「图标来源解析」一节与模块 `README.md` §2。
+
 用法：
     # 0) 看有哪些图标（含 vendor 与自绘）
     python scripts/gen_icons.py --list
+    python scripts/gen_icons.py --list-tabler           # Tabler 原生名全量（index.json）
+    python scripts/gen_icons.py --pack-info             # 图标来源/cache/pack 状态
+    python scripts/gen_icons.py --list-tabler wifi      # 子串过滤（不依赖散件）
 
     # 1) 按语义名出图（**最常用**：不用记 tabler 文件名）
     python scripts/gen_icons.py --vendor-name wifi --size 22 --color 255,255,255 --out out/22
@@ -38,11 +46,15 @@
 
 import argparse
 import glob
+import hashlib
 import json
 import os
 import re
 import sys
+import tarfile
+import tempfile
 import time
+import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -123,25 +135,251 @@ def resolve_target(cat, token):
         raise SystemExit('未找到图标 %r（用 --list / --list-vendor 看全部名字；'
                          'Tabler 原生名也可直接传，如 weather.sun / cloud-rain）' % token)
     if len(hits) > 1:
+        # 同名多义（如 wifi 既指 system.wifi，也是 system.wifi-full 的别名）时，
+        # **精确名优先**：icon 同名 > 语义全名同名 > 仍分不消才报错（文档里的
+        # `--vendor-name wifi` 就靠这条命中 system.wifi）。
+        for key in ('icon', 'name'):
+            exact = [h for h in hits if str(h.get(key, '')).lower() == t]
+            if len(exact) == 1:
+                return exact[0], style
         raise SystemExit('%r 匹配到多个：%s' % (token, [h['name'] for h in hits]))
     return hits[0], style
 
 
 # --------------------------------------------------------------------------- #
-# Tabler 原生名兜底（不在语义表里也能出图）
+# 图标来源解析（按需加载）——2026-09-17 方案 A「单归档 + 按需解，离线优先」
+#
+# 背景：vendor(tabler) 的 5777 个 SVG 原先作为散件入库（3.95 MB / 5777 文件，git 里噪音
+# 极大），而 99% 的用法只用到其中几个 glyph。现在它们打成一份归档
+# `vendor/tabler-3.46.0.pack.tgz`（`scripts/make_pack.py` 生成，内容 = icons/*.svg +
+# icons-filled/*.svg + map.json；index.json / LICENSE / VERSION.txt 仍在归档外）。
+#
+# 读取层把**逻辑路径**（catalog.json / map.json 里写的
+# 'vendor/tabler/icons/<glyph>.svg'）解析成一个真实文件，优先级：
+#   ① 本地缓存目录：默认 out/.icons-cache/（env FLYTHINGS_ICONS_CACHE 覆盖；该目录
+#      已进 .gitignore），命中即用；
+#   ② pack 归档：tarfile 随机读，**只解出这次真正用到的那几个** SVG，解出的写进 ①；
+#   ③ 远端 npm tarball：**默认关闭**，需显式 --fetch-remote（或 env
+#      FLYTHINGS_ICONS_FETCH_REMOTE=1）才按 catalog.json 的 sources.vendor.url 拉取、
+#      按登记的 sha256 校验后缓存（env FLYTHINGS_ICONS_PACK 可指定别的归档）。
+# 自绘线（svg/）与任何磁盘上真实存在的路径，行为与改动前完全一致（散件优先）。
 # --------------------------------------------------------------------------- #
 VENDOR_DIR = os.path.join(ROOT, 'vendor', 'tabler')
+PACK_PREFIX = 'vendor/tabler/'                 # 逻辑前缀 → 归档内相对名
+PACK_GLOB = 'tabler-*.pack.tgz'
 _VENDOR_INDEX = None
+_CACHE_DIR = None
+_PACK = None
+_REMOTE = {'flag': False}      # --fetch-remote 开关（默认关闭）
+
+
+def _cache_candidates():
+    """缓存目录候选：env 覆盖 → out/.icons-cache → 临时目录（装目录不可写时兜底）。"""
+    d = os.environ.get('FLYTHINGS_ICONS_CACHE') or os.path.join(ROOT, 'out', '.icons-cache')
+    return [os.path.abspath(d), os.path.join(tempfile.gettempdir(), 'flythings-icons-cache')]
+
+
+def cache_dir(create=True):
+    """本地缓存根（解出来的 SVG 落在这里，路径与归档内一致）。
+
+    目录不可写时不静默降级：所有候选都不可写就把失败原因带进报错。
+    """
+    global _CACHE_DIR
+    if _CACHE_DIR and (os.path.isdir(_CACHE_DIR) or not create):
+        return _CACHE_DIR
+    cands = _cache_candidates()
+    if not create:
+        return cands[0]
+    errs = []
+    for d in cands:
+        try:
+            os.makedirs(d, exist_ok=True)
+            probe = os.path.join(d, '.write-probe')
+            with open(probe, 'w') as f:
+                f.write('1')
+            os.remove(probe)
+        except OSError as e:
+            errs.append('%s(%s)' % (d, e.strerror or e))
+            continue
+        _CACHE_DIR = d
+        return d
+    raise SystemExit('图标缓存目录都不可写（FLYTHINGS_ICONS_CACHE 可指定别的目录）：%s'
+                     % '；'.join(errs))
+
+
+def pack_path():
+    """要用的归档：env FLYTHINGS_ICONS_PACK 优先，否则 vendor/ 下最新的 *.pack.tgz。"""
+    p = os.environ.get('FLYTHINGS_ICONS_PACK')
+    if p:
+        return os.path.abspath(p) if os.path.isfile(p) else None
+    cands = sorted(glob.glob(os.path.join(ROOT, 'vendor', PACK_GLOB)))
+    return cands[-1] if cands else None
+
+
+def pack_info():
+    """→ {'path':..,'members':{归档内名: 字节}}；无归档时 path=None。"""
+    global _PACK
+    if _PACK is None:
+        p = pack_path()
+        if not p:
+            _PACK = {'path': None, 'members': {}}
+        else:
+            with tarfile.open(p, 'r:gz') as tar:
+                _PACK = {'path': p,
+                         'members': {m.name: m.size for m in tar.getmembers() if m.isfile()}}
+    return _PACK
+
+
+def _pack_member(rel):
+    rel = str(rel).replace('\\', '/')
+    return rel[len(PACK_PREFIX):] if rel.startswith(PACK_PREFIX) else None
+
+
+def is_loose(rel):
+    return os.path.isfile(os.path.join(ROOT, str(rel).replace('\\', '/').replace('/', os.sep)))
+
+
+def source_available(rel):
+    """逻辑路径能不能拿到（磁盘散件 或 缓存 或 归档）——不触发解包写盘。"""
+    rel = str(rel).replace('\\', '/')
+    if is_loose(rel):
+        return True
+    m = _pack_member(rel)
+    if not m:
+        return False
+    if os.path.isfile(os.path.join(cache_dir(create=False), m.replace('/', os.sep))):
+        return True
+    return m in pack_info()['members']
+
+
+def _sha256(path):
+    h = hashlib.sha256()
+    with open(path, 'rb') as f:
+        for b in iter(lambda: f.read(1 << 20), b''):
+            h.update(b)
+    return h.hexdigest()
+
+
+def _vendor_source_meta():
+    """catalog.json 里登记的 vendor 来源（url / sha256），供远端拉取用。"""
+    try:
+        v = load_catalog()['sources']['vendor']
+        return v.get('url'), v.get('sha256')
+    except Exception:                                             # noqa: BLE001
+        return None, None
+
+
+def remote_enabled(fetch=False):
+    return bool(fetch or _REMOTE['flag']
+                or os.environ.get('FLYTHINGS_ICONS_FETCH_REMOTE') not in (None, '', '0'))
+
+
+def ensure_remote_tarball(force=False):
+    """③ 远端：拉 npm tarball 到缓存并校验 sha256（离线优先；命中缓存不重复下载）。"""
+    url, sha = _vendor_source_meta()
+    if not url:
+        raise SystemExit('catalog.json 里没有 sources.vendor.url，无法远端拉取')
+    d = os.path.join(cache_dir(), '_remote')
+    os.makedirs(d, exist_ok=True)
+    name = os.path.basename(url.split('?')[0]) or 'icons.tgz'
+    dst = os.path.join(d, name)
+    if os.path.isfile(dst) and os.path.getsize(dst) > 0 and not force:
+        if not sha or _sha256(dst) == sha:
+            return dst
+        print('  缓存 tarball 的 sha256 与 catalog 登记不符 → 重新下载')
+    print('  拉取 %s' % url)
+    try:
+        with urllib.request.urlopen(url, timeout=180) as r, open(dst, 'wb') as f:
+            while True:
+                b = r.read(1 << 20)
+                if not b:
+                    break
+                f.write(b)
+    except Exception as e:                               # noqa: BLE001
+        raise SystemExit('远端拉取失败（%s）：%s' % (url, e))
+    if sha and _sha256(dst) != sha:
+        raise SystemExit('npm tarball sha256 与 catalog 登记不符（%s ≠ %s）' % (_sha256(dst), sha))
+    return dst
+
+
+def _extract_member(archive, member, dst, prefix=''):
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    tmp = dst + '.part'
+    with tarfile.open(archive, 'r:gz') as tar:
+        try:
+            f = tar.extractfile(prefix + member)
+        except KeyError:
+            f = None
+        if f is None:
+            raise SystemExit('归档里没有 %s：%s' % (prefix + member, archive))
+        with f, open(tmp, 'wb') as w:
+            while True:
+                b = f.read(1 << 16)
+                if not b:
+                    break
+                w.write(b)
+    os.replace(tmp, dst)
+    return dst
+
+
+def resolve_source(rel, fetch=False):
+    """逻辑路径 → 磁盘真实路径（按需从缓存/归档取；远端默认关闭）。"""
+    rel = str(rel).replace('\\', '/').strip('/')
+    p = os.path.join(ROOT, rel.replace('/', os.sep))
+    if os.path.isfile(p):                       # 散件优先（自绘线 / 尚未归档的路径）
+        return p
+    m = _pack_member(rel)
+    cached = os.path.join(cache_dir(create=False), m.replace('/', os.sep)) if m else None
+    if cached and os.path.isfile(cached):       # ① 缓存
+        return cached
+    if m:                                       # ② 归档按需解
+        if m in pack_info()['members']:
+            return _extract_member(pack_info()['path'], m, cached)
+        if remote_enabled(fetch):               # ③ 远端（默认关闭）
+            tgz = ensure_remote_tarball()
+            return _extract_member(tgz, m, cached, prefix='package/')
+    raise SystemExit('拿不到矢量源：%s（磁盘散件/缓存/归档都没有；'
+                     '用 --pack-info 看来源，或 --fetch-remote 显式联网拉取）' % rel)
+
+
+def source_text(rel):
+    """读逻辑路径的文本（index.json / map.json 这类清单也走这里）。"""
+    with open(resolve_source(rel), encoding='utf-8') as f:
+        return f.read()
+
+
+def source_json(rel):
+    return json.loads(source_text(rel))
+
+
+def list_svgs(rel_dir):
+    """列出某逻辑目录下的 .svg（磁盘散件优先；否则从归档/缓存列名，不整包解）。"""
+    rel_dir = str(rel_dir).replace('\\', '/').strip('/')
+    d = os.path.join(ROOT, rel_dir.replace('/', os.sep))
+    if os.path.isdir(d):
+        return ['%s/%s' % (rel_dir, f) for f in sorted(os.listdir(d))
+                if f.lower().endswith('.svg')]
+    m0 = _pack_member(rel_dir + '/')
+    if m0 is None:
+        return []
+    names = set(k for k in pack_info()['members']
+                if k.startswith(m0) and k.lower().endswith('.svg'))
+    cdir = os.path.join(cache_dir(create=False), m0.replace('/', os.sep))
+    if os.path.isdir(cdir):
+        names |= {m0 + f for f in os.listdir(cdir) if f.lower().endswith('.svg')}
+    return ['%s%s' % (PACK_PREFIX, n) for n in sorted(names)]
 
 
 def vendor_index():
     global _VENDOR_INDEX
     if _VENDOR_INDEX is None:
-        with open(os.path.join(VENDOR_DIR, 'index.json'), encoding='utf-8') as f:
-            _VENDOR_INDEX = json.load(f)['icons']
+        _VENDOR_INDEX = source_json('vendor/tabler/index.json')['icons']
     return _VENDOR_INDEX
 
 
+# --------------------------------------------------------------------------- #
+# Tabler 原生名兜底（不在语义表里也能出图）
+# --------------------------------------------------------------------------- #
 def vendor_entry(tabler, category='vendor'):
     """按 Tabler 原生名造一个条目（outline→_off；有 filled 则 filled→_on）。"""
     idx = vendor_index()
@@ -170,10 +408,9 @@ def vendor_adhoc(token):
         head, tail = t.split('.', 1)
     if tail in vendor_index():
         return vendor_entry(tail, head or 'vendor')
-    with open(os.path.join(VENDOR_DIR, 'map.json'), encoding='utf-8') as f:
-        for it in json.load(f).get('icons', []):
-            if it.get('name') == tail and (not head or it.get('category') == head):
-                return vendor_entry(it['tabler'], it.get('category') or head or 'vendor')
+    for it in source_json('vendor/tabler/map.json').get('icons', []):
+        if it.get('name') == tail and (not head or it.get('category') == head):
+            return vendor_entry(it['tabler'], it.get('category') or head or 'vendor')
     return None
 
 
@@ -258,8 +495,7 @@ def render_variant(variant, state, size, color, ss=8, canvas=None):
         canvas_img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
         for part in variant['parts'][state]:
             sub = max(4, int(round(size * part['scale'])))
-            img = svgmini.render_file(os.path.join(ROOT, part['svg'].replace('/', os.sep)),
-                                      sub, color, ss=ss)
+            img = svgmini.render_file(resolve_source(part['svg']), sub, color, ss=ss)
             dx = int(round(part['dx'] * size))
             dy = int(round(part['dy'] * size))
             canvas_img.alpha_composite(img, ((size - sub) // 2 + dx, (size - sub) // 2 + dy))
@@ -269,10 +505,7 @@ def render_variant(variant, state, size, color, ss=8, canvas=None):
             return base
         return canvas_img
     rel = variant['svg'][state] if state in variant.get('svg', {}) else list(variant['svg'].values())[0]
-    path = os.path.join(ROOT, rel.replace('/', os.sep))
-    if not os.path.isfile(path):
-        raise SystemExit('缺少矢量源：%s' % rel)
-    return svgmini.render_file(path, size, color, ss=ss, canvas=canvas)
+    return svgmini.render_file(resolve_source(rel), size, color, ss=ss, canvas=canvas)
 
 
 def render_one(job, size, color, ss=8, canvas=None):
@@ -332,9 +565,63 @@ def make_sheet(jobs, size, out_path, color=(255, 255, 255), ss=8, cols=None,
 # --------------------------------------------------------------------------- #
 # CLI
 # --------------------------------------------------------------------------- #
+def pack_status():
+    """图标来源一览（人读 + --pack-info）。"""
+    pk = pack_info()
+    cache = cache_dir(create=False)
+    n_cache = sum(len(fs) for _, _, fs in os.walk(cache)) if os.path.isdir(cache) else 0
+    loose = os.path.isdir(os.path.join(VENDOR_DIR, 'icons'))
+    return dict(pack=pk['path'], packEntries=len(pk['members']),
+                packBytes=os.path.getsize(pk['path']) if pk['path'] else 0,
+                packSha256=_sha256(pk['path']) if pk['path'] else '',
+                cache=cache, cacheFiles=n_cache, looseSvgDir=loose,
+                remoteEnabled=remote_enabled())
+
+
+def print_pack_status():
+    s = pack_status()
+    print('图标来源（按需加载；① 缓存 → ② 归档 → ③ 远端）')
+    print('  ① 缓存目录  %s（%d 个文件；FLYTHINGS_ICONS_CACHE 可覆盖，已 gitignore）'
+          % (s['cache'], s['cacheFiles']))
+    if s['pack']:
+        print('  ② 归档      %s' % os.path.relpath(s['pack'], ROOT).replace(os.sep, '/'))
+        print('              条目 %d，%d 字节（%.2f MB），sha256 %s'
+              % (s['packEntries'], s['packBytes'], s['packBytes'] / 1048576.0, s['packSha256']))
+    else:
+        print('  ② 归档      无（vendor/*.pack.tgz 不存在；可跑 scripts/make_pack.py 生成）')
+    print('  ③ 远端       %s（catalog.json 的 npm URL；--fetch-remote 或 '
+          'FLYTHINGS_ICONS_FETCH_REMOTE=1 开启）' % ('开启' if s['remoteEnabled'] else '关闭'))
+    print('  磁盘散件     %s'
+          % ('存在 vendor/tabler/icons/（散件优先，会盖过归档）' if s['looseSvgDir'] else '无（已按方案 A 收进归档）'))
+
+
+def list_tabler(flt=None):
+    """Tabler 原生名全量（数据源 = index.json，不依赖散件）。"""
+    idx = vendor_index()
+    flt = (flt or '').strip().lower()
+    n = 0
+    for k in sorted(idx):
+        if flt and flt not in k:
+            continue
+        print('%-40s %-14s %s' % (k, idx[k].get('category', ''),
+                                  'filled' if idx[k].get('filled') else ''))
+        n += 1
+    print('共 %d 个 Tabler 原生名（index.json；过滤 %r）；直接传即可：'
+          '--vendor-name <名> / --tabler <名> / --svg vendor/tabler/icons/<名>.svg'
+          % (n, flt))
+    return 0
+
+
 def build_parser():
     p = argparse.ArgumentParser(description='FlyThings 图标资产库生成器')
     p.add_argument('--list', action='store_true', help='列出全部图标（名字/分类/风格/状态）')
+    p.add_argument('--list-tabler', dest='list_tabler', nargs='?', const='', default=None,
+                   help='列出 Tabler 原生名（全量 4754，来自 vendor/tabler/index.json；'
+                        '可跟子串过滤，如 --list-tabler wifi）')
+    p.add_argument('--pack-info', dest='pack_info_flag', action='store_true',
+                   help='打印图标来源状态（磁盘散件 / 归档 / 缓存 / 远端）')
+    p.add_argument('--fetch-remote', dest='fetch_remote', action='store_true',
+                   help='允许联网：按 catalog.json 的 npm URL 拉取并缓存（默认关闭）')
     p.add_argument('--name', help='按语义名出图，如 weather.clear / wifi / wx_clear（旧名也能查）')
     p.add_argument('--vendor-name', dest='vendor_name',
                    help='按 vendor 语义名或 tabler 名出图（等价 --name，语义更明确）')
@@ -363,8 +650,22 @@ def build_parser():
 
 def main(argv):
     args = build_parser().parse_args(argv)
+    if args.fetch_remote:
+        _REMOTE['flag'] = True                      # ③ 远端拉取：默认关闭，显式开关
+        if list(argv) == ['--fetch-remote']:        # 单独用 = 预取并缓存（不进渲染流程）
+            tgz = ensure_remote_tarball()
+            print('远端 tarball 已缓存：%s（%d 字节）' % (tgz, os.path.getsize(tgz)))
+            print_pack_status()
+            return 0
     cat = load_catalog()
     jobs_all = all_jobs(cat)
+
+    if args.pack_info_flag:                         # 来源状态
+        print_pack_status()
+        return 0
+
+    if args.list_tabler is not None:                # Tabler 原生名（index.json）
+        return list_tabler(args.list_tabler)
 
     if args.list:
         for it in cat['icons']:
@@ -386,13 +687,13 @@ def main(argv):
 
     jobs = []
     adhoc = None
-    if args.svg_dir:                                # 批量：目录下所有 .svg
-        d = args.svg_dir if os.path.isabs(args.svg_dir) else os.path.join(ROOT, args.svg_dir)
-        if not os.path.isdir(d):
-            raise SystemExit('找不到目录：%s' % args.svg_dir)
-        for fp in sorted(f for f in os.listdir(d) if f.lower().endswith('.svg')):
-            rel = os.path.relpath(os.path.join(d, fp), ROOT).replace(os.sep, '/')
-            stem = re.sub(r'[^a-z0-9-]+', '-', os.path.splitext(fp)[0].lower())
+    if args.svg_dir:                                # 批量：目录下所有 .svg（散件或归档）
+        rels = list_svgs(args.svg_dir)
+        if not rels:
+            raise SystemExit('找不到 SVG 目录：%s（磁盘上没有；归档里也没有这个前缀 '
+                             '—— --pack-info 看可用来源）' % args.svg_dir)
+        for rel in rels:
+            stem = re.sub(r'[^a-z0-9-]+', '-', os.path.splitext(os.path.basename(rel))[0].lower())
             jobs.append(dict(icon='vendor.%s' % stem, iconShort=stem, category='vendor',
                              style='tabler', state='',
                              variant=dict(kind='vendor', states=[''], svg={'': rel}),
@@ -419,16 +720,18 @@ def main(argv):
                 jobs = [j for j in jobs if j['state'] == args.state]
         else:
             jobs = [j for j in jobs_all if str(j.get('source', '')).startswith('vendor')]
-    elif args.svg:                                  # 直接渲染任意 SVG
-        rel = args.svg if os.path.isabs(args.svg) else os.path.join(ROOT, args.svg)
-        if not os.path.isfile(rel):
-            raise SystemExit('找不到 SVG：%s' % args.svg)
+    elif args.svg:                                  # 直接渲染任意 SVG（散件或归档内）
+        rel = args.svg.replace('\\', '/')
+        if os.path.isabs(args.svg):
+            rel = os.path.relpath(args.svg, ROOT).replace(os.sep, '/')
+        if not source_available(rel):
+            raise SystemExit('找不到 SVG：%s（磁盘散件/缓存/归档都没有；--pack-info 看来源）'
+                             % args.svg)
         stem = re.sub(r'[^a-z0-9-]+', '-', os.path.splitext(os.path.basename(rel))[0].lower())
-        adhoc = dict(variant=dict(kind='vendor', states=[''], svg={'': os.path.relpath(
-            rel, ROOT).replace(os.sep, '/')}),
-            state='', style='tabler', category='vendor', icon=stem,
-            png=args.out_name or ('ic_svg_%s.png' % stem), iconShort=stem,
-            source='vendor:tabler(adhoc)')
+        adhoc = dict(variant=dict(kind='vendor', states=[''], svg={'': rel}),
+                     state='', style='tabler', category='vendor', icon=stem,
+                     png=args.out_name or ('ic_svg_%s.png' % stem), iconShort=stem,
+                     source='vendor:tabler(adhoc)')
         jobs.append(adhoc)
     elif args.name or args.vendor_name:
         it, style0 = resolve_target(cat, args.name or args.vendor_name)

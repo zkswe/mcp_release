@@ -58,7 +58,7 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 > `python` 不在 PATH 时用完整路径（如 `C:/Users/<你>/AppData/Local/Programs/Python/Python313/python.exe`）。
 
 **4) 验证** —— 问 AI「**MCP 版本是多少？**」：
-应返回 `flythings-kb-open 0.27.81-open`，**35 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / mt_test / zkshot，
+应返回 `flythings-kb-open 0.27.82-open`，**35 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / mt_test / zkshot，
 在 `bin_tools/<平台>/` 下，**不是 op、不占 op 名额**）。
 
 > **工具面三模式（按客户端选一个，别同时配）**
@@ -93,6 +93,9 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 - `flythings_create_project` / `flythings_create_bin_project`：从内置模板建工程（F133/F135/Z21/Z20/T113/V85X/Z235X）
 - `flythings_attach_cli_tools`：把 `fui.exe`/`fun.exe` 复制进项目，客户不用装 IDE 也能编译部署
 - `flythings_validate_project`：工程规范全检（依赖 / 框架约定 / 时间戳防呆）
+- **工具链安装（Z235X）**：把 `z235x` 工具链放到 **`<fun 安装目录>/toolchains/z235x/`**
+  （目录名 = 平台小写键）；工具链**不随本包分发**，缺了 `fun build -p Z235X` 会报
+  `platform toolchain url must not be empty`——先放好再编译
 
 ### 📦 依赖包与 Manifest
 - 包检索 / 版本 / 头文件级 API（`package_search` / `query_package` / `get_package_api`）
@@ -108,7 +111,7 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 - 自动化测试：`flythings_gen_ui_test`（traverse / monkey / custom，真机触摸注入）
 
 ### 🧩 可复用组件（`components/`，随本 MCP 一起发布）
-- `ble/`（BLE 门面 `zk::ble`）、`fonts/`（思源黑体三版 + 设备字体自检）、`icons/`（Tabler 图标库 + 单色 PNG 生成）
+- `ble/`（BLE 门面 `zk::ble`）、`fonts/`（思源黑体三版 + 设备字体自检）、`icons/`（Tabler 图标库单归档 + 单色 PNG 按需生成）
 - `ui_v1/`：平台没有的能力做成自定义控件包（如 `Chart/` 图表、`Calendar/` 日历），含 example 与真机证据
 
 ### 🔌 MCP 原生原语
@@ -117,6 +120,6 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 
 ---
 
-当前版本 `0.27.81-open`（35 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
+当前版本 `0.27.82-open`（35 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
 
 MIT License · FlyThings Team · 深圳中科世为科技有限公司 · [developer.flythings.cn](https://developer.flythings.cn/)

@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" data-base-stroke="1.75">
-  <circle cx="18" cy="5.6" r="2.6" fill="currentColor"/>
-  <circle cx="6" cy="12" r="2.6" fill="currentColor"/>
-  <circle cx="18" cy="18.4" r="2.6" fill="currentColor"/>
-  <line x1="8.2" y1="10.8" x2="15.8" y2="6.9" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-  <line x1="8.2" y1="13.2" x2="15.8" y2="17.1" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>

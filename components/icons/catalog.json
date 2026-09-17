@@ -1,6 +1,6 @@
 {
   "module": "icons",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "FlyThings 图标资产库：vendor(tabler) 收录 + 少量自绘，单色烘焙 PNG，按需任意分辨率",
   "generatedBy": "scripts/gen_catalog.py（禁止手写 catalog.json）",
   "sources": {
@@ -12,7 +12,27 @@
       "sha256": "6d727ad0489854d2d7d07ba9baa6476af7ee415aaa2eba1adc0deab48556852b",
       "vendored_at": "2026-09-16 00:05",
       "map": "vendor/tabler/map.json",
-      "note": "图形未修改；只做单色化 + 等比缩放（见 THIRD-PARTY.md）"
+      "note": "图形未修改；只做单色化 + 等比缩放（见 THIRD-PARTY.md）",
+      "pack": {
+        "path": "vendor/tabler-3.46.0.pack.tgz",
+        "format": "tar.gz（确定性写入：mtime=0 / uid=gid=0；scripts/make_pack.py 生成）",
+        "entries": 5774,
+        "bytes": 455379,
+        "sha256": "a0ba69f224388e22790f04a0a157fb6207713511f7e308709a0166ebd8ec1c95",
+        "contents": [
+          "icons/*.svg",
+          "icons-filled/*.svg",
+          "map.json"
+        ],
+        "outsidePack": [
+          "index.json",
+          "LICENSE",
+          "VERSION.txt"
+        ],
+        "reader": "vendor 逻辑路径由 scripts/gen_icons.py 的「图标来源解析」按需取：① 缓存 → ② 归档随机读（只解用到的） → ③ 可选远端 npm tarball（默认关闭）",
+        "cache": "out/.icons-cache/（env FLYTHINGS_ICONS_CACHE 可覆盖；已 gitignore）",
+        "note": "归档只是打包形式，图形与许可义务不变（见 THIRD-PARTY.md）"
+      }
     },
     "selfdrawn": {
       "license": "project",
@@ -23,7 +43,7 @@
   "naming": {
     "png": "ic_<分类>_<名字>[_<风格>][_off|_on].png",
     "svg": "svg/<分类>/<名字>[_<风格>][_off|_on].svg（自绘）",
-    "vendorSvg": "vendor/tabler/{icons,icons-filled}/<glyph>.svg",
+    "vendorSvg": "vendor/tabler/{icons,icons-filled}/<glyph>.svg（**逻辑路径**：散件已收进 sources.vendor.pack 归档，按需解到 out/.icons-cache/）",
     "note": "风格后缀仅在该图标提供多种风格时出现（vendor 图标风格=tabler，无后缀）"
   },
   "render": {

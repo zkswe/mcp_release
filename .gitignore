@@ -18,3 +18,7 @@ screenshots/
 # example/ 里不放工具副本（用仓库 toolchain/ 或全局 fun.exe / fui.exe；否则整包多 38MB 冗余）
 **/example/fun.exe
 **/example/ui/fui.exe
+
+# 图标库生成物（可现场重建：components/icons/README.md §2/§6；
+# out/.icons-cache/ 是按需解包缓存，同样不进库）
+components/icons/out/

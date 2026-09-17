@@ -2,7 +2,7 @@
 
 > 一句话：**图标图形全部来自 Tabler Icons（MIT），本模块只做"单色化 + 等比缩放"，
 > 不改图形**；另有 5 个两轮车仪表图标为自绘（无第三方版权）。
-> 更新：2026-09-16（v0.2.0）
+> 更新：2026-09-17（v0.3.0，单归档；许可义务未变）
 
 ---
 
@@ -16,10 +16,10 @@
 | tarball sha256 | `6d727ad0489854d2d7d07ba9baa6476af7ee415aaa2eba1adc0deab48556852b` |
 | 许可 | **MIT**（原版 LICENSE 随资产一起放在 `vendor/tabler/LICENSE`） |
 | 收录时间 | 2026-09-16 00:05 |
-| 收录范围 | **全量镜像**：`vendor/tabler/icons/`（outline 4754 个）+ `vendor/tabler/icons-filled/`（filled 1019 个） |
-| **已排除** | **`brand-*` 品牌 logo 376 个 —— 一个都不收**（避免商标/品牌风险；已核验目录内 0 个 brand-*） |
-| 语义映射 | `vendor/tabler/map.json`：152 条（145 条单 glyph + 7 条 `compose` 组合） |
-| 源文件清单 | `vendor/tabler/index.json` |
+| 收录形态 | **单一归档** `vendor/tabler-3.46.0.pack.tgz`（455,379 B，sha256 `a0ba69f2…1c95`，条目 5774）—— 我侧打包，**内容未改**：`icons/*.svg`（outline 4754）+ `icons-filled/*.svg`（filled 1019）+ `map.json`；`LICENSE` / `index.json` / `VERSION.txt` 留在归档外随资产分发 |
+| **已排除** | **`brand-*` 品牌 logo 376 个 —— 一个都不收**（避免商标/品牌风险；已核验归档内 0 个 brand-*） |
+| 语义映射 | `vendor/tabler/map.json`（**在归档内**）：198 条（191 条单 glyph + 7 条 `compose` 组合） |
+| 源文件清单 | `vendor/tabler/index.json`（在归档外，供快速索引） |
 | 版本凭据 | `vendor/tabler/VERSION.txt`（版本/url/sha256/收录时间/统计） |
 
 **我们对图形做了什么**（这一点很关键）：
@@ -46,8 +46,10 @@
 定速巡航（闪电）—— Tabler 对应图形是细线风格，与仪表观感不匹配 |
 
 另有 **v0.1.0 的自绘集**（天气/开关选项/通用系统/智能家居，86 图标 × ios/material）：
-**已被 vendor 取代**，几何与产物留档在 `svg_retired/`（162 个 svg）与 `scripts/author_svg.py`，
-版权同为本项目自有；它们**不参与主线**，整目录删除不影响任何流程。
+**已被 vendor 取代**；几何与自绘表的唯一出处是 `scripts/author_svg.py`（保留），
+原留档目录 `svg_retired/`（162 个 svg）**已于 v0.3.0 移出仓库**——理由是实测可逐字节重生：
+`python scripts/author_svg.py` 能把它连同 `svg/` 一起重写出来（163 文件 sha256 全同），
+而 `gen_catalog.py` / `selfcheck.py` / `gen_icons.py` **都不读它**。版权同为本项目自有。
 
 ---
 
@@ -79,6 +81,9 @@ MIT 允许商用、允许修改、允许再分发（保留声明即可）；**�
 必须做齐四件事，缺一不收：
 1. `vendor/<来源>/LICENSE`（原样，不改）与 `VERSION.txt`（版本、url、sha256、收录时间、统计）；
 2. `vendor/<来源>/map.json`：语义名 → glyph 映射（供 `gen_catalog.py` 合并）；
+   若采用"单归档"形态（v0.3.0 起 vendor 线即如此）：svg + map.json 进
+   `vendor/<来源>-<版本>.pack.tgz`（`scripts/make_pack.py`），LICENSE / VERSION.txt /
+   索引 json 留在归档外，并在 `README.md` 写清读层与环境变量；
 3. `catalog.json` 中该条目的 `source` / `license` 字段由生成器自动写入（**禁止手写**）；
 4. 在本文件登记（来源/版本/许可/收录日期/文件清单/用途/排除项）。
 
@@ -87,12 +92,9 @@ MIT 允许商用、允许修改、允许再分发（保留声明即可）；**�
 
 ---
 
-## 6. 本目录下非本模块产物的文件（待主线处理）
+## 6. 本目录下非本模块产物的文件（已处理）
 
-`components/icons/fonts/` 下有 6 个 Google Material Icons 字体文件（Apache-2.0，~1.2 MB，
-时间戳 2026-09-15 23:44），**不是本模块产物、生成链路也不读它们**（`gen_icons.py` 只读
-`vendor/tabler/` 与 `svg/`）。建议二选一：
-
-- **删除**（推荐）：本模块走"vendor SVG + 生成器"路线，不需要图标字体（理由见 `platforms.md` §2.3）；
-- **迁出**：留作参考就迁到 `references/` 或 `third_party/material-icons/`，并按 §5 补齐
-  `LICENSE`/`NOTICE`（Apache-2.0 有 NOTICE 要求）。
+`components/icons/fonts/` 曾放过 6 个 Google Material Icons 字体文件（Apache-2.0），
+**v0.3.0 核实：该目录已不存在于仓库/工作区**（本模块走"vendor SVG + 生成器"路线，
+不需要图标字体，理由见 `platforms.md` §2.3）；若在历史版本或别的分支上又见到它，
+按下列二选一处理：删除（推荐）或迁到 `references/` 补齐 LICENSE/NOTICE。

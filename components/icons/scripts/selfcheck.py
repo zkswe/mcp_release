@@ -198,8 +198,9 @@ def check_catalog(rep):
             for parts in v.get('parts', {}).values():
                 paths += [p['svg'] for p in parts]
             for rel in paths:
-                if not os.path.isfile(os.path.join(ROOT, rel.replace('/', os.sep))):
-                    rep.fail('D', '%s 引用的矢量源不存在：%s' % (it['name'], rel))
+                if not gen_icons.source_available(rel):
+                    rep.fail('D', '%s 引用的矢量源不存在（磁盘散件/缓存/归档都没有）：%s'
+                             % (it['name'], rel))
             for st, f in v['files'].items():
                 if f not in valid:
                     rep.fail('D', '%s 的产物名 %s 不在产物集合里' % (it['name'], f))
@@ -219,6 +220,12 @@ def check_catalog(rep):
         rep.fail('D', 'catalog 引用的自绘 svg 不存在：%s' % p)
     rep.note('catalog: %d 个图标 / %d 张产物 / 自绘矢量源 %d（vendor 引用 %d）'
              % (len(cat['icons']), len(jobs), len(on_disk), len(vend_refs)))
+    st = gen_icons.pack_status()
+    rep.note('图标来源：归档 %s（%d 条目 / %.2f MB）｜缓存 %s（%d 文件）｜磁盘散件 %s'
+             % (os.path.basename(st['pack']) if st['pack'] else '无',
+                st['packEntries'], st['packBytes'] / 1048576.0,
+                os.path.relpath(st['cache'], ROOT).replace(os.sep, '/'), st['cacheFiles'],
+                '有' if st['looseSvgDir'] else '无'))
     return cat, jobs
 
 

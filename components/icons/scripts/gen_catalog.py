@@ -13,6 +13,11 @@
                                    states[], files{状态:文件名}}} / note
 另含 naming / palette / categories / legacyMap（旧工程名 → 新产物名）。
 
+单归档口径（v0.3.0）：vendor 的 SVG **散件已收进 `vendor/tabler-<版本>.pack.tgz`**
+（`scripts/make_pack.py` 生成），map.json 由 `gen_icons.py` 的「图标来源解析」按需从
+归档取——磁盘上不再要求有 `vendor/tabler/icons/*.svg`。产出里因此多了 `sources.vendor.pack`
+（归档路径/sha256/体积/条目数/缓存位置）。
+
 用法：
     python scripts/gen_catalog.py            # 写 catalog.json
     python scripts/gen_catalog.py --check    # 只校验（不写盘）
@@ -23,7 +28,6 @@ import json
 import os
 import re
 import sys
-
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
@@ -31,7 +35,7 @@ sys.path.insert(0, HERE)
 import gen_icons           # noqa: E402  （out_name 命名规则的唯一实现）
 import author_svg          # noqa: E402  （自绘图标表）
 
-VERSION = '0.2.0'
+VERSION = '0.3.0'
 VENDOR_DIR = os.path.join(ROOT, 'vendor', 'tabler')
 VENDOR_SIZES = [16, 20, 22, 24, 32, 44, 56]
 SELF_SIZES = [22, 24, 32, 44, 56]
@@ -174,8 +178,7 @@ def vendor_state_files(category, name, states):
 
 
 def build_vendor_entries(rep):
-    with io.open(os.path.join(VENDOR_DIR, 'map.json'), encoding='utf-8') as f:
-        m = json.load(f)
+    m = gen_icons.source_json('vendor/tabler/map.json')
     entries = []
     for it in m['icons']:
         cat, name = it['category'], it['name']
@@ -186,7 +189,7 @@ def build_vendor_entries(rep):
             for p in it['compose']:
                 for st, sub in (('off', 'icons'), ('on', 'icons-filled')):
                     rel = 'vendor/tabler/%s/%s.svg' % (sub, p['tabler'])
-                    if not os.path.isfile(os.path.join(ROOT, rel)):
+                    if not gen_icons.source_available(rel):
                         rel = 'vendor/tabler/icons/%s.svg' % p['tabler']
                     parts[st].append(dict(svg=rel, dx=p['dx'], dy=p['dy'], scale=p['scale']))
             variant = dict(kind='compose', states=states, parts=parts,
@@ -203,8 +206,8 @@ def build_vendor_entries(rep):
                            note=None if filled else 'Tabler 无 filled 变体 → 单态图（可加 --state 出 _off/_on）')
         for rel in (list(variant.get('svg', {}).values())
                     + [p['svg'] for ps in variant.get('parts', {}).values() for p in ps]):
-            if not os.path.isfile(os.path.join(ROOT, rel)):
-                rep.append('vendor 缺文件：%s → %s' % (it['name'], rel))
+            if not gen_icons.source_available(rel):
+                rep.append('vendor 缺矢量源：%s → %s（散件/缓存/归档都没有）' % (it['name'], rel))
         entries.append(dict(
             name='%s.%s' % (cat, name), category=cat, icon=name,
             source=it['source'], license='MIT',
@@ -275,21 +278,37 @@ def main(argv):
         rep.append('重名图标：%s' % dup)
     with io.open(os.path.join(VENDOR_DIR, 'VERSION.txt'), encoding='utf-8') as f:
         ver = dict(l.split(': ', 1) for l in f.read().strip().split('\n') if ': ' in l)
+    # 单归档口径（v0.3.0）：vendor 的 SVG 不再是散件，而是一份 pack.tgz（见 make_pack.py）
+    pk = gen_icons.pack_status()
+    vend = dict(name='tabler', version=ver.get('version'), license='MIT',
+                url=ver.get('url'), sha256=ver.get('sha256(tarball)'),
+                vendored_at=ver.get('vendored_at'), map='vendor/tabler/map.json',
+                note='图形未修改；只做单色化 + 等比缩放（见 THIRD-PARTY.md）')
+    if pk['pack']:
+        vend['pack'] = dict(
+            path=os.path.relpath(pk['pack'], ROOT).replace(os.sep, '/'),
+            format='tar.gz（确定性写入：mtime=0 / uid=gid=0；scripts/make_pack.py 生成）',
+            entries=pk['packEntries'], bytes=pk['packBytes'], sha256=pk['packSha256'],
+            contents=['icons/*.svg', 'icons-filled/*.svg', 'map.json'],
+            outsidePack=['index.json', 'LICENSE', 'VERSION.txt'],
+            reader='vendor 逻辑路径由 scripts/gen_icons.py 的「图标来源解析」按需取：'
+                   '① 缓存 → ② 归档随机读（只解用到的） → ③ 可选远端 npm tarball（默认关闭）',
+            cache='out/.icons-cache/（env FLYTHINGS_ICONS_CACHE 可覆盖；已 gitignore）',
+            note='归档只是打包形式，图形与许可义务不变（见 THIRD-PARTY.md）')
+    else:
+        vend['pack'] = None
     catalog = dict(
         module='icons', version=VERSION,
         description='FlyThings 图标资产库：vendor(tabler) 收录 + 少量自绘，单色烘焙 PNG，按需任意分辨率',
         generatedBy='scripts/gen_catalog.py（禁止手写 catalog.json）',
-        sources=dict(
-            vendor=dict(name='tabler', version=ver.get('version'), license='MIT',
-                        url=ver.get('url'), sha256=ver.get('sha256(tarball)'),
-                        vendored_at=ver.get('vendored_at'), map='vendor/tabler/map.json',
-                        note='图形未修改；只做单色化 + 等比缩放（见 THIRD-PARTY.md）'),
-            selfdrawn=dict(license='project', note='两轮车仪表一套（Tabler 风格不匹配）'),
-        ),
+        sources=dict(vendor=vend,
+                     selfdrawn=dict(license='project', note='两轮车仪表一套（Tabler 风格不匹配）')),
         designGrid=24,
         naming=dict(png='ic_<分类>_<名字>[_<风格>][_off|_on].png',
                     svg='svg/<分类>/<名字>[_<风格>][_off|_on].svg（自绘）',
-                    vendorSvg='vendor/tabler/{icons,icons-filled}/<glyph>.svg',
+                    vendorSvg='vendor/tabler/{icons,icons-filled}/<glyph>.svg'
+                              '（**逻辑路径**：散件已收进 sources.vendor.pack 归档，'
+                              '按需解到 out/.icons-cache/）',
                     note='风格后缀仅在该图标提供多种风格时出现（vendor 图标风格=tabler，无后缀）'),
         render=dict(twoState='有 filled 的 vendor 图标：off=outline、on=filled；'
                              '无 filled：单态（加 --state 可强制出 _off/_on 同名图）',

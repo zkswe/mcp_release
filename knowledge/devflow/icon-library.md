@@ -22,7 +22,8 @@
 | **Tabler Icons** | **MIT**（可商用可再分发） | ✅ **选定**。24×24 网格 + 2px 圆头圆角线框 → 观感最接近 iOS；5900+ 图标；**每图带 `-filled` 成对变体 = 现成 on/off 两态**；天气/家居长尾齐全 |
 
 - vendor 时**排除 376 个 `brand-*`**（Google/Apple/各家厂商 logo，商标风险，不进发布包）
-- 收录量：`icons/` **4754** outline + `icons-filled/` **1019** filled（4.0 MB）
+- 收录量：`icons/` **4754** outline + `icons-filled/` **1019** filled（解压 3.25 MB → 单归档
+  `vendor/tabler-3.46.0.pack.tgz` 455 KB，sha256 `a0ba69f2…1c95`）
 
 ---
 
@@ -50,6 +51,13 @@ python components/icons/scripts/gen_icons.py --vendor-set common --size 22 --out
 - 输出命名：`ic_<分类>_<语义名>[_off|_on].png`
 - 目录清单：`components/icons/catalog.json`（每条含中英 tags、`source`、是否有 filled）
 - 两态规则：**有 filled → `_on` 用 filled、`_off` 用 outline**；没有 filled 的语义只出 outline（例外清单见模块 README）
+- **矢量源在归档里，不在散件里**（v0.3.0 起）：vendor 的 5777 个 SVG 打包成
+  `components/icons/vendor/tabler-3.46.0.pack.tgz`（455 KB），生成时**按需解出用到的几个**
+  到 `components/icons/out/.icons-cache/`。所以：
+  - **不要再去 `grep`/浏览 `vendor/tabler/icons/*.svg`**（已不存在）；
+  - 查名字用 `--list` / `--list-vendor <分类>` / `--list-tabler <子串>`，或读 `catalog.json`；
+  - 查来源/缓存状态用 `--pack-info`；默认**完全离线**，不拉网。
+- 设备/产品包只带烘好的 PNG；归档不进设备（见模块 `platforms.md` §3）。
 
 ---
 
@@ -99,11 +107,13 @@ Tabler 的线宽是 2px@24 网格；缩到 **22px 时只剩 ~1.83px**。本套�
 | 图标糊成一团 | 控件 ≤20px 却用了 outline → 换 filled（本套 ≥22px outline 已整形，不发虚） |
 | 语义名写错/写中文描述 | 生成器按 `catalog.json` 的语义名解析，报错会提示相近候选 |
 | 想用 SF Symbols 那一套 | 许可禁止再分发；观感需求用 Tabler + 少量自绘满足 |
+| 找不到 `vendor/tabler/icons/xxx.svg` | v0.3.0 起散件已收进 `vendor/tabler-3.46.0.pack.tgz`（**正常，不是损坏**）：生成器会自动按需解到 `out/.icons-cache/`；要看清单用 `--list-tabler`，要看状态用 `--pack-info` |
 
 ---
 
 ## 7. 相关文件
 
 - 模块（随 MCP 发布）：`components/icons/`（`README.md` 用法 / `platforms.md` 平台与硬规则 / `THIRD-PARTY.md` 合规 / `catalog.json` 清单）
-- 资产：`components/icons/vendor/tabler/`（Tabler 3.46.0，MIT）+ `components/icons/svg/`（自绘兜底）
+- 资产：`components/icons/vendor/tabler-3.46.0.pack.tgz`（Tabler 3.46.0，MIT，单归档按需解）
+  + `components/icons/svg/`（自绘兜底）+ `vendor/tabler/{LICENSE,index.json,VERSION.txt}`（归档外）
 - 配套规范：`knowledge/devflow/ui-asset-rules.md`（图片路径与尺寸铁律）、`knowledge/devflow/design.md`（字库限制）
