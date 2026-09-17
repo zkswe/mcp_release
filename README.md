@@ -48,7 +48,7 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 > `python` 不在 PATH 时用完整路径（如 `C:/Users/<你>/AppData/Local/Programs/Python/Python313/python.exe`）。
 
 **3) 验证** —— 问 AI「**MCP 版本是多少？**」：
-应返回 `flythings-kb-open 0.27.85-open`，**35 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / mt_test / zkshot，
+应返回 `flythings-kb-open 0.27.86-open`，**35 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / mt_test / zkshot，
 在 `bin_tools/<平台>/` 下，**不是 op、不占 op 名额**）。
 
 > **工具面三模式（按客户端选一个，别同时配）**
@@ -88,6 +88,11 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 - **PC 端 adb 随包**：`tools/adb/adb.exe`（+ `AdbWinApi.dll`/`AdbWinUsbApi.dll`，≈6.1 MB），客户不必另装 Android SDK；
   全仓 adb 走单一入口 `adb_tools.resolve_adb()`（环境变量 `ADB`/`FLYTHINGS_ADB` → 随包 → PATH）；
   设备型号→平台对照见 `device_models.json`（排查：`python adb_tools.py`）
+- **字体自动体检 + 缺中文自动投递**（`flythings_build_ui_flow` **默认就做**）：有设备就扫设备字体（`/etc/font`、`/res/font`、`/system/font`），
+  没设备退化为工程侧自检（prefs 的 `font` 指向 + `font/` 里有没有可用字体）；判定**缺中文**就把 **`common` 档思源黑体**（872 KB）
+  投进工程 `font/`（**在 build 之前**完成，本次产物里就有），返回体 `fontCheck` 报 `missingChinese`/`maxFontBytes`/`advisedTier`/`delivered`/`deviceFonts`；
+  **要生僻字换 `font_tier='full'`、多语言/日韩换 `'multi'`**（自己裁字库只在要更小体积/自定义字符集时才需要），`font_check='off'` 可关；
+  只要结论不想动工程 → `flythings_check_project_deps`（默认**只报不投** + 一键修复命令）
 - `flythings_pack_upgrade`：固化升级包 `update.img`（TF 卡 / ADB setprop / zkautoupgrade / HTTP OTA 四种刷法）
 - **换开机 logo**：`boot_logo.JPG` → **MISC 分区**（跟 `update.img` **同一套升级机制与触发**；体积必须 ≤ MISC 分区大小 —— 本板 Z21 实测 512 KB，先量 `cat /proc/mtd`）→
   `python tools/make_boot_logo.py --size 1024x600 --out boot_logo.JPG`（生成 + 体积闸门）/ `python tools/set_boot_logo.py --image boot_logo.JPG --device <serial|IP:5555>`（**默认 dry-run**，`--yes` 才真触发）；
@@ -122,6 +127,6 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 
 ---
 
-当前版本 `0.27.85-open`（35 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
+当前版本 `0.27.86-open`（35 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
 
 MIT License · FlyThings Team · 深圳中科世为科技有限公司 · [developer.flythings.cn](https://developer.flythings.cn/)

@@ -53,9 +53,10 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.85-open'
+MCP_VERSION = '0.27.86-open'
 MCP_BUILD = '2026-09-17'
 MCP_FEATURES = [
+    '2026-09-17: **字体自动扫描接线：缺中文自动投递（设备侧优先，退化工程侧）** v0.27.86-open（钟工「现在做」）——①新增 `font_tools.py` 接线，判定阈值/三版清单/投递动作**单一来源** = `components/fonts/scripts/device_font_check.py`（`judge`/`TIERS`/`collect`/`apply_to_project`），adb 走 `adb_tools.resolve_adb()/ensure_busybox()`、设备门结果**复用**；`flythings_build_ui_flow` 新增 `font_check="auto"|"off"` + `font_tier="common"|"full"|"multi"`，在 **fun build 之前**插 `check_font`：有设备扫设备字体（`/etc/font`、`/res/font`、`/system/font`），无设备退化**工程侧 self-scan**（prefs 的 `font` 指向 + 工程 `font/`），缺中文（无字体 / 最大 < 200 KB）**默认自动投递 `common`** 进工程 `font/`；返回体 `fontCheck`：`missingChinese`/`maxFontBytes`/`advisedTier`/`delivered`（投没投+文件）/`deviceFonts`，无设备时 `note` 写清「未连设备，仅工程侧检查」，投递未完成进 `warnings` + 一键修复命令。②体检项并入 `check_project_deps`（交付前体检、与依赖同返回体）：新增 `device`/`font_check`/`font_tier`/`font_apply` 与 `fontCheck`/`fontIssues`，**默认只报不投**、传 `device=` 才扫设备。③修 `device_font_check.apply_to_project` 的 prefs 正则（真 prefs 转义写法下「改 prefs」以前实际没改成）。④文档口径写死（默认 `common`／生僻字 `full`／多语言 `multi`／自裁字库只在要更小体积或自定义字符集时）：README「② 功能说明」+ `knowledge/devflow/custom-font-config.md` §0.2 + `components/fonts/README.md` §0；检索词：设备字体自检/自动扫描字体/缺中文字库/font tier/投递字体。⑤实测（Z21 真机）：默认参数 `mode=device`、`deviceFonts` 5 条（871.9KB/818.6KB/Poppins×3）、`missingChinese=false`、**未触发投递**、`warnings=[]`，launch 与设备侧 md5 比对照常；`font_check="off"` → 无 `check_font` step；无设备分支自动投递成真、`fun launch` 后设备 `/tmp/EasyUI.cfg` 自动出现 font 键（投递确实生效）。⑥用例 200→**214**，门禁全绿。',
     '2026-09-17: **换开机 logo 入库（`boot_logo.JPG` → `MISC` 分区）** v0.27.85-open（钟工口径：与 `update.img` **同机制**）——①**知识**：`knowledge/devflow/upgrade-pack-image.md` 新增 **§三**（落点 = **MISC 分区**，非 logo 分区也非 `/res`；**上限 = MISC 分区大小**，本板 Z21 实测 `cat /proc/mtd` → `mtd4 MISC 0x80000 = 512 KB`，其它平台待确认；两种触发同 update.img —— TF 卡根目录 `boot_logo.JPG`（可与 update.img 并列）→ FAT32 → 插卡上电勾选，或 ADB `push` + `sys.zkupgrade.flag=255` + `sys.zkupgrade.dir` + `ctl.restart zkswe`，重启后生效；⚠️ 本板 `adb reboot` 后整板掉网需现场断电；「只放 logo 是否不碰 `/res`」**待真机验证**；检索词 开机 logo/boot_logo/MISC 分区/logo 512K/换开机图）；②**工具**：`tools/make_boot_logo.py`（生成 1024x600 深底品牌图，字体 env `FLYTHINGS_LOGO_FONT`+多候选回退，**生成即校验 ≤ MISC 上限**，超了降质/报错）+ `tools/set_boot_logo.py`（推设备触发升级，**默认 dry-run**、`--yes` 才发；前置校验 文件/JPG/体积≤MISC（在线读 `cat /proc/mtd`）/设备在线；adb 走 `adb_tools.resolve_adb()`）；③**接线**：`flythings_pack_upgrade` docstring + README 出包小节各加一行指向文档/脚本；④**实测**（真机 Z21，只读+dry-run，未触发升级）：`make_boot_logo` → 33,070 B（32.3 KB，上限 6.3%）通过；`set_boot_logo` → 设备在线 / 型号 Zkswe_SSD21X_SPINOR / Z21(confirmed) / `MISC=512KB` / 四条 dry-run 命令 / exit 0。',
     '2026-09-17: **ADB 随包 + launch 默认推设备 + 设备探测/安装提示** v0.27.84-open（钟工三项）——①`tools/adb/`（adb.exe 1.0.41/31.0.3-7562133 + 两个 WinApi DLL，≈6.1MB）+README；新增根 `adb_tools.py`：`resolve_adb()` = env ADB/FLYTHINGS_ADB → 随包 → PATH，**全仓 adb 硬编码 6 处→1 处**（project_tools、device_screenshot、i18n_tools×2、device_font_check 等）；②`build_ui_flow(with_launch)` 默认 **True**（build→探测→推送/运行，`with_launch=False` 只编译）；返回 `launched/pushed/device/model/platformMatch/deviceSync`（设备侧 ftu+so 字节/md5 vs 本地）+`staleOnDevice`（true ⇒ 设备上跑的还是旧版）；③探测不猜：0 台 → `needDeviceInput`+`installHint`（ADB 驱动 / USB 调试授权 / 网络 device=<IP>:5555）；多台 → 列 serial+model+匹配并要显式 device=；1 台且匹配 → 自动 `fun launch -s`；新增 `device_models.json`（Z21/Z20/V85X 实测；F133/F136 待确认）；④实测（三台真机 + 单台 Z21）：三台在线 → 多设备清单（不猜）；**单台自动选机 launch 成功**、设备侧 ftu 186B / libzkgui.so 277340B **字节+md5 与本地一致**；本地改过未推 → staleOnDevice=true；0 台 → installHint 到位；顺带修 3 个 adb 实测坑（`ls -l` 第 5 列才是字节 / 缺 md5sum 时用随仓 busybox 兜底取 md5 / **fun 多设备必 FATAL more than one device/emulator**，→ 修正「fun 静默取第一个」旧结论，见 cli-fun-toolchain.md §7）；用例 176→200，门禁全绿；细节 knowledge/devflow/adb-and-device-selection.md。',
     '2026-09-17: **依赖/install 诊断三项修补（A 体检 / B install 不再静默 / C 文档）** v0.27.83-open（钟工：客户只看到 `fatal error: base/functional.h: No such file or directory`，看不出「依赖没装」）——①**A**：`package_tools` 新增 `FRAMEWORK_DEPS`+`framework_dep_status()`，`check_project_deps` 出 `kind:"framework"` 缺失项与 `frameworkDeps`，`validate_project` 新增 `missing_framework_dependency`+fix（`flythings_add_package(...,\"base-utility\",with_install=True)` 或 Manifest 加 base-utility 后重跑 fun install）；**口径修正**：base-utility 移出 `BUILTIN_PKGS`（非模板自带，是 fun 生成的 generated/*.h 必需——旧检查就在这放过）；判定=精确头名（实读 generated/event_dispatcher.h）+前缀排除（base/ 非独占：base-http-client→base/http_*、base-json→base/json_*）；②**防误报**：Manifest 已声明 或 依赖已解析（.fun-lock.json/.deps.lock 有即算，实测 easyui 会带出）就 OK，bin 工程/无 base include 的非 UI 工程不报；③**B**：`build_ui_flow` install 失败→顶层 `warnings`**但不断**；build 前 `check_framework_deps` 缺包直接点「依赖未装/缺包」（含证据+fix），可解析时零 step 零 warning；build 失败含 `base/…No such file` 时翻成「依赖未装，不是代码错误」；④**C**：`cli-fun-toolchain.md` 新增 **§4.7 老工程升级：补 base-utility**（现象/根因/处置），`reusable-components.md` 交叉引用，检索词补 base/functional.h / 找不到 base utils / base-utility 缺失 / fun install 没生效；⑤**回归**：`create_project(Z235X,1024x600)→build_ui_flow` **9/9 成功**+`.fun/z235x/libzkgui.so`+**零 warning**；反例（删 Manifest 的 base-utility+清锁/.fun）真跑→顶层 warnings+step 点明缺包，ninja 实错 `generated/event_dispatcher.h:8:10: fatal error: base/functional.h: No such file or directory`（锁里仅 easyui/log/zkhardware/zknet，INCLUDES 无 base-utility）；用例 164→**176**（+12 条），门禁全绿。',
@@ -551,24 +552,27 @@ def flythings_edit_ftu(ftu_path: str, operations: str, output_ftu: str = '',
                       ensure_ascii=False)
 
 
-def flythings_build_ui_flow(project_root: str, with_launch: bool = True, device: str = '') -> str:
-    """⚠️ 场景别名（编译部署类意图一律本工具，禁止自造命令；不限触发入口）：
-    ① 口语：「编译/构建/调试/全量推送/部署/推送到设备/跑一下」；
-    ② 客户端按钮（「AI 应用调试」「自定义编译」）意图=编译部署真机调试 → 本工具；
-    ③ AI：写完/改完代码后主动编译验证、调试看效果。
-    ⚠️ 固化/升级/update.img/量产交付 → flythings_pack_upgrade（掉电保留）。
+def flythings_build_ui_flow(project_root: str, with_launch: bool = True, device: str = '',
+                            font_check: str = 'auto', font_tier: str = '') -> str:
+    """⚠️ 场景别名（编译部署类意图一律本工具，禁自造命令；不限入口）：
+    ① 口语：「编译/构建/调试/部署/推送到设备/跑一下」；
+    ② 客户端按钮（AI 应用调试/自定义编译）=编译部署真机调试 → 本工具；
+    ③ AI：写完/改完代码后主动编译验证。
+    ⚠️ 固化/升级/update.img → flythings_pack_upgrade（掉电保留）。
     流程：①时间戳检查（json 为源、改过自动 pack）②fui pack ③fun install ④fun build
     ⑤ **设备探测 + fun launch 推送运行（v0.27.84 起默认）**；只编译传 with_launch=False。
-    ⚠️ 探测不猜：0 台 → needDeviceInput+installHint（装 ADB 驱动/开 USB 调试并授权/改用
+    ⑥ 字体体检：缺中文自动投递 common 思源黑体（font_check='off' 关，font_tier 换版）。
+    ⚠️ 探测不猜：0 台 → needDeviceInput+installHint（装 ADB 驱动/开 USB 调试授权/
     device='<IP>:5555'）；多台 → 列 serial+model+平台匹配并要 device=；1 台且匹配 → 自动推。
     返回：launched/pushed/device/model/platformMatch + deviceSync（设备侧 /tmp/ui/*.ftu、
-    /tmp/lib/libzkgui.so 的字节/md5 是否与本地一致）+ staleOnDevice（true ⇒ 设备上跑的还是旧版）。
+    /tmp/lib/libzkgui.so 的字节/md5 是否与本地一致）+ staleOnDevice（true ⇒ 设备上还是旧版）。
     ⚠️ install 失败不阻断但给 warnings；launch 失败/超时重试 5 次。细节见
     knowledge/devflow/adb-and-device-selection.md。
-    传项目根目录；ftu=json 编译产物：改布局改 json 后 pack，禁手写/手改 ftu。
+    传项目根目录；ftu=json 编译产物：改 json 后 pack。
     ⚠️ src/activity/ 由 IDE 自动生成（禁手改），业务代码只写 src/logic/*.cc。
     """
-    return json.dumps(pt.flythings_build_ui_flow(project_root, with_launch, device), ensure_ascii=False)
+    return json.dumps(pt.flythings_build_ui_flow(project_root, with_launch, device,
+                                                 font_check, font_tier), ensure_ascii=False)
 
 
 def flythings_pack_upgrade(project_root: str, out_path: str = '', release_version: str = '',
@@ -790,12 +794,16 @@ def flythings_create_project(project_root: str, platform: str, resolution: str,
                                                   app_name, with_cli, force), ensure_ascii=False)
 
 
-def flythings_check_project_deps(project_root: str, platform: str = _platforms.DEFAULT_PLATFORM) -> str:
+def flythings_check_project_deps(project_root: str, platform: str = _platforms.DEFAULT_PLATFORM,
+                                device: str = '', font_check: str = 'auto', font_tier: str = '',
+                                font_apply: bool = False) -> str:
     """扫描项目 include 的三方库与 Manifest 声明对比，返回缺失依赖。
     需要三方能力（MQTT/HTTP/JSON/蓝牙/SSL 等）时先调用。
-    另含框架包体检（base 头文件↔base-utility，缺包必报）。
+    另含框架包体检（base 头文件↔base-utility）与字体体检（缺中文字库就报 fontIssues+
+    一键修复；默认只报不投，font_apply=True 才投递；传 device= 才扫设备字体）。
     """
-    return json.dumps(pkgtools.flythings_check_project_deps(project_root, platform), ensure_ascii=False)
+    return json.dumps(pkgtools.flythings_check_project_deps(
+        project_root, platform, device, font_check, font_tier, font_apply), ensure_ascii=False)
 
 
 def flythings_generate_ui_assets(project_root: str, assets: str) -> str:

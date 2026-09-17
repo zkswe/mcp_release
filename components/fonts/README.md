@@ -4,13 +4,25 @@
 > 本模块给出：① 思源黑体裁好的三个版本；② 一条命令体检设备、缺中文就自动把字体投进工程。
 > 立项：2026-09-13（沛哥：字体只有几十K/100多K 大概率只有英文 → 这时默认把思源黑体放进去；先把思源黑体裁成 常用中文/全中文/多国语言 三版）
 
+## 0. 默认口径（v0.27.86 起：**已接成自动动作，不用手动跑脚本**）
+
+- `flythings_build_ui_flow` 每次构建/部署前都会做**字体体检**：有设备就扫设备字体，没设备就退化为
+  工程侧 self-scan；判定**缺中文**就**默认投 `common` 档**进工程 `font/`（在 build 之前完成），
+  返回体 `fontCheck` 写清 `missingChinese` / `maxFontBytes` / `advisedTier` / `delivered` / `deviceFonts`。
+- ****档位怎么选**：**默认 `common`**；**要生僻字 → `full`**；**多语言/日韩 → `multi`**
+  （`flythings_build_ui_flow(font_tier='full'|'multi')`）。
+- ⚠️ **「自己裁字库」只在要更小体积 / 自定义字符集时才做**（§4）——日常场景直接用现成三版，
+  不要一上来就裁。
+- 关掉：`font_check='off'`；只想要结论：`flythings_check_project_deps`（默认只报不投，带一键修复命令）。
+- 本文的 CLI 用法（§2）是**不走 MCP 时的兑底**。权威口径见 `knowledge/devflow/custom-font-config.md` §0.2。
+
 ---
 
 ## 1. 三个版本（已裁好，直接可用）
 
 | 文件 | 体积 | 覆盖 | 什么时候用 |
 |---|---|---|---|
-| `zkswe-hans-common.ttf` | **872 KB** | GB2312 一级汉字 3755 + 中文标点 + 全角 + ASCII | **默认**：设备无中文字库、界面是常规中文 UI |
+| `zkswe-hans-common.ttf` | **872 KB** | GB2312 一级汉字 3755 + 中文标点 + 全角 + ASCII | **默认（缺中文时 AI 自动投这版，`font_tier='common'`）；低内存平台（Z21/Z20）也用它 |
 | `zkswe-hans-full.ttf` | **7.39 MB** | CJK 基本区 20902 + 扩展A 6582 + 标点/全角 | 需要生僻字（人名/地名/专业词） |
 | `zkswe-hans-multi.ttf` | **10.5 MB** | 全中文 + 扩展B + 拉丁/希腊/西里尔/假名/谚文 | 多国语言界面、日韩客户 |
 
@@ -64,6 +76,9 @@ flythings_pack_upgrade(project_root=..., release_version=...)   # 出 update.img
 ---
 
 ## 4. 重新裁剪（换源/换字表时）
+
+> ⚠️ **只在要更小体积 / 自定义字符集（行业术语、只留几十字）时才需要自己裁**；
+> 常规需求直接选 `common`/`full`/`multi` 三版（AI 默认就投 common）。
 
 ```bash
 pip install fonttools

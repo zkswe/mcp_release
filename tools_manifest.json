@@ -2,7 +2,7 @@
   "schema": 1,
   "generatedBy": "scripts/gen_manifest.py",
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY 表后重新生成，勿手改本文件",
-  "version": "0.27.85-open",
+  "version": "0.27.86-open",
   "build": "2026-09-17",
   "toolCount": 35,
   "cli": {
@@ -138,11 +138,13 @@
     },
     {
       "op": "flythings_build_ui_flow",
-      "brief": "⚠️ 场景别名（编译部署类意图一律本工具，禁止自造命令；不限触发入口）：",
+      "brief": "⚠️ 场景别名（编译部署类意图一律本工具，禁自造命令；不限入口）：",
       "args": [
         "project_root",
         "with_launch",
-        "device"
+        "device",
+        "font_check",
+        "font_tier"
       ],
       "risk": "device",
       "category": "build"
@@ -152,7 +154,11 @@
       "brief": "扫描项目 include 的三方库与 Manifest 声明对比，返回缺失依赖。",
       "args": [
         "project_root",
-        "platform"
+        "platform",
+        "device",
+        "font_check",
+        "font_tier",
+        "font_apply"
       ],
       "risk": "read",
       "category": "project"
@@ -522,7 +528,7 @@
   "docs": {
     "knowledgeFiles": 67,
     "wikiFiles": 128,
-    "ragChunks": 1438,
+    "ragChunks": 1441,
     "ragPaths": 195
   }
 }

@@ -47,17 +47,31 @@
 - 本机实测：app 工程放 `font/font.ttf` + `enable.font.location=true`，固化后 `/res/etc/EasyUI.cfg` 自动出现
   `"font": "/res/font/font.ttf"`，汉字正常显示 → **这就是 fun 流程的标准姿势**。
 
-### 0.2 设备字体自检（缺中文就自动投递）
+### 0.2 设备字体自检（缺中文就自动投递）—— v0.27.86 起**已接成自动动作**
 
-已做成工具（随 MCP 发布）：`components/fonts/scripts/device_font_check.py`
+**默认口径（先记这个，别一上来就自己裁字库）**：
+
+- **自动**：`flythings_build_ui_flow` 每次都会做字体体检 —— **有设备**就扫设备
+  （`/etc/font`、`/res/font`、`/system/font`、`/usr/share/fonts` 里字体体积）；**没设备**就退化为
+  工程侧 self-scan（prefs 的 `font` 指向在不在工程 `font/`、`font/` 里有没有可用字体）。
+  判定**缺中文**就**默认把 `common` 档思源黑体投进工程 `font/`**（并在 build **之前**完成，
+  本次构建/推送的产物里就有它），返回体 `fontCheck` 写清 `missingChinese`、`maxFontBytes`、
+  `advisedTier`、`delivered`（投没投/写了哪些文件）、`deviceFonts`（扫到的路径+体积）。
+- **档位**：默认 **`common`**（872 KB，GB2312 一级 3755 + 中文标点 + ASCII）；
+  **要生僻字换 `full`**（7.39 MB，CJK 20902 + 扩展A）；**多语言/日韩换 `multi`**（10.5 MB）——
+  传 `flythings_build_ui_flow(font_tier='full'|'multi')` 即换。**font tier 就这么选，不用改代码。**
+- **「自己裁字库」只在要更小体积 / 自定义字符集时才需要**（§4）；日常用现成三版即可。
+- **关掉**：`font_check='off'` —— 不做字体体检/投递（连 step 都不加）；
+- **只要结论、不想动工程**：`flythings_check_project_deps`（字段 `fontCheck` / `fontIssues`，
+  **默认只报不投** + 给一键修复命令；`font_apply=True` 才真投；传 `device='<ip>:5555'` 才扫设备字体）；
+- **命令行兑底**（不走 MCP 时）：
 
 ```bash
-python components/fonts/scripts/device_font_check.py          # 体检（出口码 1 = 缺中文）
-python components/fonts/scripts/device_font_check.py --apply \
-       --project projects/ZkBlePanel --tier common                       # 缺就投递进工程 font/
+python components/fonts/scripts/device_font_check.py --apply --project <工程根> --tier common
 ```
 
-判定口径（getprop 拿平台信息 + 读 `/etc/font` `/res/font` 等目录里**字体文件的体积**）：
+判定口径（getprop 拿平台信息 + 读 `/etc/font` `/res/font` 等目录里**字体文件的体积**；
+阈值与三版清单是**单一来源** = `components/fonts/scripts/device_font_check.py`，不许另写一套）：
 
 | 最大字体体积 | 判定 | 动作 |
 |---|---|---|
@@ -67,6 +81,26 @@ python components/fonts/scripts/device_font_check.py --apply \
 | > 1 MB | 已有中文 | 不动 |
 
 实测对照（V85X SPINOR）：`/etc/font/fzcircle.ttf` = **20.7 KB**（命中“只有英文”）；投递后 `/res/font/font.ttf` = 2.5 MB。
+
+**症状 → 一步**：界面汉字全变方块 → 别手搜着找字体文件，直接 `flythings_build_ui_flow`
+（默认就会扫+投触发）；想先看结论就先 `flythings_check_project_deps` 看 `fontCheck.advisedTier`。
+检索词：设备字体自检 / 自动扫描字体 / 缺中文字库 / font tier / 投递字体 / 汉字变方块。
+
+### 0.2.1 真机实测（v0.27.86，Z21 整机、网络 adb）
+
+| 场景 | 输入 | 返回体关键字段 | 结果 |
+|---|---|---|---|
+| **设备侧本就够** | `flythings_build_ui_flow(project_root)`（默认参数） | `fontCheck.mode=device`、`verdict=partial_cjk`、`maxFontBytes=892848`（871.9 KB）、`missingChinese=false`、`delivered.applied=false`、`deviceFonts` 5 条（`/res/font/zkswe-hans-common.ttf` 871.9KB、`/etc/font/fzcircle.ttf` 818.6KB、Poppins×3 ≈155KB）、`warnings=[]` | **未触发投递**（设备已有中文）；build/launch 照常（`launched=true`、设备侧 ftu/so md5 与本地一致） |
+| **可关** | `font_check='off'` | steps 里**没有** `check_font`、`fontCheck.enabled=false`、`warnings=[]` | 建编译照常，零字体动作 |
+| **无设备/工程侧缺字体** | `device='192.0.2.9:5555'`（不存在的 serial） | `mode=project`、`note=未连设备，仅工程侧检查…`、`verdict=project_no_font`、`missingChinese=true`、`delivered.applied=true`、`files=['font/zkswe-hans-common.ttf']`；warning 两条（设备不在线→跳过设备侧 + 已自动投递） | **自动投递生效**；`/tmp/font/zkswe-hans-common.ttf` = 892,848 B 跟工程一致 |
+
+**投递真的生效的证据**（关键，防“投了个没用的字体”）：投递后跑 `fun launch`，设备侧
+`/tmp/EasyUI.cfg` 自动出现 `"font": "/tmp/font/zkswe-hans-common.ttf"`（**由工具链从工程 `font/*.ttf`
+生成**，不用手改 prefs），且 `/tmp/font/` 下的字体字节与工程一致。
+
+> 口径补丁（本机实测）：**工程 `.settings` prefs 里没有 `font` 键时，投递不去凭空造这个键**（改了也是多余）；
+> 有 `font` 键则就指向投递进去的那份（v0.27.86 顺手修了 `device_font_check.apply_to_project`
+> 的单引号/转义不匹配 bug：原正则只认 `"font":"..."`，而真 prefs 是转义写法 `"font"\:"..."` → 以前改了等于没改）。
 
 ### 0.3 思源黑体三个版本（已裁好，直接可用）
 

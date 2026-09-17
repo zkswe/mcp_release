@@ -195,7 +195,10 @@ def apply_to_project(project, tier, font_name, dry_run=False):
     if os.path.isfile(prefs):
         with open(prefs, 'r', encoding='utf-8') as f:
             text = f.read()
-        new = re.sub(r'"font"\:"[^"]*"', '"font"\\:"/res/font/%s"' % font_name, text)
+        # ★ v0.27.86 修：兼容 prefs 里转义（"font"\:"x"）与非转义（"font":"x"）两种写法 ——
+        #   原正则只认未转义，而真 prefs 是转义，导致「改 prefs」实际没改成
+        new = re.sub(r'"font"\s*\\?\s*:\s*"[^"]*"', '"font"\\:"/res/font/%s"' % font_name,
+                     text)
         if new == text and '"font"' not in text:
             # 没有 font 键 → 挂在 uart 后面；没有 uart 就挂在 baud 后面
             for anchor in ('"uart"\\:"[^"]*"', '"baud"\\:"[^"]*"'):

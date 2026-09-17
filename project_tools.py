@@ -1172,7 +1172,8 @@ def _device_sync_check(project_root, serial, platform):
     return out
 
 
-def flythings_build_ui_flow(project_root, with_launch=True, device=''):
+def flythings_build_ui_flow(project_root, with_launch=True, device='',
+                           font_check='auto', font_tier=''):
     """FlyThings UI 构建流程（关键步骤，不可跳过）：
     ① 检查 ui/*.json 与 *.ftu 修改时间一致性
        - json 比 ftu 新 = 改过 json 没重新打包
@@ -1183,6 +1184,9 @@ def flythings_build_ui_flow(project_root, with_launch=True, device=''):
     ③.5 框架基础依赖体检（v0.27.83）：Manifest 未声明且未解析到 base-utility 时，在返回体点明
        「依赖未装/缺包」（fun 生成的 generated/*.h 固定 #include <base/functional.h>），
        不把 ninja 的 fatal error 丢给用户；能解析则不加任何 step/warning（正常路径零噪音）
+    ③.6 字体体检（v0.27.86）：扫设备字体（连不上退化工程侧 self-scan），缺中文**默认自动投递**
+       common 档思源黑体进工程 font/；font_check='off' 关，font_tier='full'/'multi' 换版；
+       细节见 knowledge/devflow/custom-font-config.md §0.2
     ④ fun build 编译 C++ 代码
     ⑤ 设备探测（adb devices -l + getprop 型号）→ fun launch 推送并运行
        —— **v0.27.84 起默认执行（with_launch=True）**，传 with_launch=False 可跳过（只编译不碰设备）。
@@ -1277,6 +1281,47 @@ def flythings_build_ui_flow(project_root, with_launch=True, device=''):
                       "evidence": fw['missing'][0]['evidence'],
                       "fix": fw['missing'][0]['fix']})
 
+    # ③.6 字体体检（v0.27.86）：设备侧优先（缺中文 → 默认自动投递 common）；无设备退化到
+    #      工程侧 self-scan；font_check='off' 时**不加任何字体 step**（开关显式关闭）。
+    #      设备探测提前到这里（字体体检要用），⑤ 复用同一结果 —— 不重复探 adb。
+    plat = project_info.get('platform') or ''
+    gate = _launch_gate(plat, device) if with_launch else None
+    font_fields = None
+    try:
+        import font_tools as ftools
+        font_status = ftools.font_preflight(
+            project_root, plat, device=device, font_check=font_check, font_tier=font_tier,
+            apply=True, allow_device=bool(with_launch or device),
+            known_online=(gate.get('devices') if gate else None))
+        font_fields = ftools.compact(font_status)
+        if font_status.get('enabled'):
+            delivered = font_status.get('delivered') or {}
+            steps.append({"step": "check_font", "success": not (
+                              font_status.get('missingChinese') and not delivered.get('applied')),
+                          "mode": font_status.get('mode'),
+                          "verdict": font_status.get('verdict'),
+                          "missingChinese": font_status.get('missingChinese'),
+                          "maxFontBytes": font_status.get('maxFontBytes'),
+                          "advisedTier": font_status.get('advisedTier'),
+                          "tier": font_status.get('tier'),
+                          "delivered": delivered,
+                          "deviceFonts": font_status.get('deviceFonts'),
+                          "note": font_status.get('note'),
+                          "detail": ('已自动投递 %s：%s' % (font_status.get('tier'),
+                                                           '、'.join(delivered.get('files') or []))
+                                     if delivered.get('applied') else
+                                     ('缺中文字库，未完成投递（见 warnings）'
+                                      if font_status.get('missingChinese') else
+                                      '%s已有中文字库（%s KB），无需投递'
+                                      % ('设备侧' if font_status.get('mode') == 'device'
+                                         else '工程侧', font_status.get('maxFontKB'))))})
+        for w in (font_status.get('warnings') or []):
+            warnings.append(w)
+    except Exception as e:                      # 字体体检出错不阻断构建（但明说）
+        warnings.append('字体体检异常（不阻断构建）: %s: %s' % (type(e).__name__, e))
+        font_fields = {'enabled': False, 'mode': 'error',
+                       'note': '字体体检异常，未见结论'}
+
     # ④ fun build（编译）
     rb = _run_fun('build', project_root)
     steps.append({"step": "fun build", "success": rb['success'],
@@ -1291,6 +1336,8 @@ def flythings_build_ui_flow(project_root, with_launch=True, device=''):
                     '（flythings_add_package(project_root, "base-utility", with_install=True)）。'
                     '详见 knowledge/devflow/cli-fun-toolchain.md §4.7')
         res = {"success": False, "steps": steps, "error": err}
+        if font_fields is not None:
+            res['fontCheck'] = font_fields
         if warnings:
             res['warnings'] = warnings
         return res
@@ -1301,8 +1348,7 @@ def flythings_build_ui_flow(project_root, with_launch=True, device=''):
     devinfo = {'serial': '', 'model': '', 'platformMatch': '', 'adb': '', 'adbSource': '',
                'needDeviceInput': False, 'installHint': '', 'deviceSync': None}
     if with_launch:
-        plat = project_info.get('platform') or ''
-        gate = _launch_gate(plat, device)
+        gate = gate or _launch_gate(plat, device)
         devinfo['serial'] = gate['serial']
         devinfo['model'] = gate['model']
         devinfo['platformMatch'] = gate['platformMatch']
@@ -1323,6 +1369,8 @@ def flythings_build_ui_flow(project_root, with_launch=True, device=''):
                    "adb": gate['adb'], "adbSource": gate['adbSource'],
                    "launched": False, "pushed": False, "staleOnDevice": False,
                    "error": gate['message']}
+            if font_fields is not None:
+                res['fontCheck'] = font_fields
             if warnings:
                 res['warnings'] = warnings
             return res
@@ -1360,6 +1408,8 @@ def flythings_build_ui_flow(project_root, with_launch=True, device=''):
                    "platformMatch": gate['platformMatch'],
                    "launched": False, "pushed": False,
                    "error": rl.get('error') or raw_out[-300:]}
+            if font_fields is not None:
+                res['fontCheck'] = font_fields
             if warnings:
                 res['warnings'] = warnings
             return res
@@ -1396,6 +1446,8 @@ def flythings_build_ui_flow(project_root, with_launch=True, device=''):
            "staleOnDevice": bool(devinfo['deviceSync'] and devinfo['deviceSync']['stale'])
            if devinfo['deviceSync'] else False,
            "launchSkipped": (not with_launch)}
+    if font_fields is not None:
+        res['fontCheck'] = font_fields
     if devinfo['deviceSync']:
         res['deviceSync'] = {
             'checked': devinfo['deviceSync']['checked'],

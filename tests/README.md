@@ -12,7 +12,7 @@ python scripts/check_consistency.py --with-tests
 ```
 
 依赖：只用标准库 + 仓库已有依赖（Pillow 缺失时图像相关用例自动 skip）。**不连真机**。
-当前规模：**200 项**（1 项按环境 skip）。
+当前规模：**214 项**（1 项按环境 skip）。
 
 ## 用例分布
 
@@ -29,6 +29,7 @@ python scripts/check_consistency.py --with-tests
 | `test_toolchain_capability.py` | `fui unpack` 能力声明与实际一致（声称能用必须真解出 json；声称不能用必须真解不出）、json→ftu→json 往返语义等价、无 unpack 且缺 json 源时 edit_ftu 必须明确报错 |
 | `test_deps_install_guard.py` | **依赖/install 诊断**（v0.27.83）：代码或 fun 生成的 `generated/*.h` 引用 `base/…` ＋ Manifest 未声明 `base-utility` → `check_project_deps`（`kind="framework"`）/ `validate_project`（`missing_framework_dependency`）必须报出并带可照做的 fix；**声明过或已被传递依赖解析（.fun-lock.json）→ 不许报**；UI 工程无 base 引用也要报、bin 工程（fun.json type=executable）不报；`base/http_*.h`（base-http-client）不算 base-utility；`build_ui_flow`：install 失败 → 顶层 warnings 且**不阻断** build、缺包 → build 前 `check_framework_deps` 直接点明、ninja 的 `base/function.h` 报错被翻译成「依赖未装/缺包」（本文件只盯依赖诊断，离线跑显式传 `with_launch=False`） |
 | `test_adb_resolve.py` | **adb 单一入口 + launch 默认推设备**（v0.27.84）：`resolve_adb()` 优先级（env `ADB`/`FLYTHINGS_ADB` > 随包 `tools/adb/adb.exe`（三件齐备）> PATH > 空串+提示）；`FLYTHINGS_ADB` 与 `ADB` 等价；`devices -l` 解析（带 model / 网络设备无 model / unauthorized）；网络设备用 `getprop` 补 model 并判平台；型号表口径（实测三条 → Z21/Z20/V85X 且必须带 `source`；F133/F136 串 **platform 留空 + todo，不许猜**；表里不许出现 IP）；`match_platform` 三态（未知 ≠ 不匹配）；0 台 → `needDeviceInput`+`installHint`（含 ADB 驱动 / USB 调试 / 网络接入）；多设备提示**不替你选机器**；`staleOnDevice` 判据（设备侧字节/md5 vs 本地，无 md5 时退化比字节；三个真机坑：`ls -l` 第 5 列才是字节 / 裁剪 rootfs 的 `wc -c` 返回空 / 缺 md5sum 走随仓 busybox 兜底）；`fun` 多设备硬失败（`more than one device/emulator`）hint 识别；`build_ui_flow` 默认 `with_launch=True`（两处签名）、1 台匹配 → `fun launch -s <serial>`、`with_launch=False` **不探测不推设备** |
+| `test_font_autoscan.py` | **字体自动扫描接线 + 缺中文自动投递**（v0.27.86）：`flythings_build_ui_flow` **默认**（`font_check='auto'`）就扫字体并把 `common` 档投进工程 `font/`（step 必须在 `fun build` **之前**、返回体写清写入了哪些文件）；`font_check='off'` → **零字体 step 且不写盘**；无设备退化工程侧 self-scan（`note` 写清「未连设备，仅工程侧检查」、**不碰 adb**）；prefs 的 `font` 指向缺失文件 → 报「引用是断的」；`check_project_deps` 默认**只报不投**（`font_apply=True` 才投）+ `fontCheck` 字段（`missingChinese`/`maxFontBytes`/`advisedTier`/`delivered`/`deviceFonts`）+ `fontIssues` 带一键修复命令；阈值/三版清单/投递动作**单一来源** = `device_font_check`（改 `CJK_SIZE_MIN_KB` 结论跟着变）；设备分支（假设备）扫到 `deviceFonts` 并自动投递、且**不重复探 adb** |
 
 > 工具 docstring 有字数预算（单 op ≤ 900 字符、全体 ≤ 12,000）——由 `scripts/check_consistency.py` 卡；
 > 长尾细节请写进 `knowledge/`（可检索），别塞回 docstring。

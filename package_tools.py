@@ -581,10 +581,14 @@ def framework_dep_status(project_root, platform=''):
             'hint': (missing[0]['hint'] if missing else '')}
 
 
-def flythings_check_project_deps(project_root, platform='F133'):
+def flythings_check_project_deps(project_root, platform='F133', device='',
+                                 font_check='auto', font_tier='', font_apply=False):
     """扫描项目代码 include 的三方库，与 Manifest.xml 已声明依赖对比，返回缺失依赖。
     新建/交付项目前调用，避免"用了三方库但没声明"导致编译失败。
-    另含**框架基础依赖**体检（v0.27.83）：base 头文件（含 fun 生成的 generated/*.h）→ 必须有 base-utility。"""
+    另含**框架基础依赖**体检（v0.27.83）：base 头文件（含 fun 生成的 generated/*.h）→ 必须有 base-utility。
+    另含**字体体检**（v0.27.86，`fontCheck` 字段）：缺中文字库 / prefs 引用断链 → `fontIssues` 给结论与
+    一键修复命令；默认**只报不投**（`font_apply=True` 才真投递；`flythings_build_ui_flow` 默认自动投递）。
+    传 `device='<serial|IP:5555>'` 时额外扫设备字体；不传则只做工程侧检查（不碰 adb）。"""
     root = os.path.abspath(project_root)
     src = os.path.join(root, 'src')
     if not os.path.isdir(src):
@@ -625,11 +629,53 @@ def flythings_check_project_deps(project_root, platform='F133'):
                         'kind': 'framework', 'declared': d['declared'], 'resolved': d['resolved'],
                         'evidence': d['evidence'], 'msg': d['msg'], 'hint': d['hint'],
                         'fix': d['fix']})
+    # 6. 字体体检（v0.27.86）：缺中文字库 / prefs 字体引用断链 → fontCheck + fontIssues
+    #    默认只报不投（font_apply=True 才投递）→ 本 op 默认仍是「只读体检」；
+    #    传 device= 才扫设备字体（不传就不碰 adb，离线可跑）。
+    font, font_issues = {}, []
+    try:
+        import font_tools as ftools
+        st = ftools.font_preflight(root, platform, device=device, font_check=font_check,
+                                   font_tier=font_tier, apply=bool(font_apply),
+                                   allow_device=bool(device))
+        font = ftools.compact(st)
+        font['warnings'] = st.get('warnings') or []
+        if st.get('missingChinese'):
+            tier = st.get('tier') or 'common'
+            fix = ftools.repair_command(root, tier)
+            where = ('设备侧扫描' if st.get('deviceScanned')
+                     else '工程侧检查（未连设备）')
+            font['repair'] = fix
+            font_issues.append({
+                'kind': 'font', 'verdict': st.get('verdict'),
+                'missingChinese': True, 'maxFontBytes': st.get('maxFontBytes'),
+                'advisedTier': tier,
+                'delivered': st.get('delivered'),
+                'msg': ('缺中文字库（%s）：判定=%s，最大字体 %s KB → 界面汉字会变方块；默认投 %s 档'
+                        % (where, st.get('verdict'), st.get('maxFontKB'), tier)),
+                'hint': ('直接跑 flythings_build_ui_flow（默认自动投递 common）或本 op 传 '
+                         'font_apply=True；命令行：' + fix)})
+        elif st.get('enabled') and st.get('verdict') in ('partial_cjk', 'project_partial_cjk'):
+            font_issues.append({'kind': 'font', 'verdict': st.get('verdict'),
+                                'missingChinese': False,
+                                'maxFontBytes': st.get('maxFontBytes'),
+                                'advisedTier': 'full',
+                                'msg': '字库只到「常用字」级别（%s KB）：有生僻字需求换 full 档'
+                                       % st.get('maxFontKB'),
+                                'hint': "flythings_build_ui_flow(font_tier='full')（生僻字）"
+                                        "或 font_tier='multi'（多语言/日韩）"})
+    except Exception as e:                      # 字体体检出错不影响依赖体检结果
+        font = {'enabled': False,
+                'error': '字体体检异常: %s: %s' % (type(e).__name__, e)}
+        font_issues.append({'kind': 'font', 'enabled': False,
+                            'msg': font['error'], 'hint': '见 font_tools.py'})
     return {'success': True, 'projectRoot': root, 'platform': platform,
             'declaredPackages': sorted(declared),
             'detectedIncludes': sorted(detected.keys()),
             'missingDependencies': missing,
-            'frameworkDeps': fw.get('deps', [])}
+            'frameworkDeps': fw.get('deps', []),
+            'fontCheck': font,
+            'fontIssues': font_issues}
 
 
 def flythings_list_packages(platform=None):
