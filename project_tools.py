@@ -1294,6 +1294,8 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
             apply=True, allow_device=bool(with_launch or device),
             known_online=(gate.get('devices') if gate else None))
         font_fields = ftools.compact(font_status)
+        if font_status.get('info'):
+            font_fields['info'] = font_status['info']   # info 不是 warning（不进 warnings）
         if font_status.get('enabled'):
             delivered = font_status.get('delivered') or {}
             steps.append({"step": "check_font", "success": not (
@@ -1306,15 +1308,23 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
                           "tier": font_status.get('tier'),
                           "delivered": delivered,
                           "deviceFonts": font_status.get('deviceFonts'),
+                          # 硬判据（v0.27.87）：source=cmap 时 coverage 才有数；size = 退回体积判据
+                          "source": font_status.get('source'),
+                          "cmapCoverageGB2312L1": font_status.get('cmapCoverageGB2312L1'),
+                          "checkedFont": font_status.get('checkedFont'),
+                          "probe": font_status.get('probe'),
                           "note": font_status.get('note'),
                           "detail": ('已自动投递 %s：%s' % (font_status.get('tier'),
                                                            '、'.join(delivered.get('files') or []))
                                      if delivered.get('applied') else
                                      ('缺中文字库，未完成投递（见 warnings）'
                                       if font_status.get('missingChinese') else
-                                      '%s已有中文字库（%s KB），无需投递'
+                                      '%s已有中文字库（%s KB%s），无需投递'
                                       % ('设备侧' if font_status.get('mode') == 'device'
-                                         else '工程侧', font_status.get('maxFontKB'))))})
+                                         else '工程侧', font_status.get('maxFontKB'),
+                                         '，GB2312 一级覆盖率 %s%%'
+                                         % font_status.get('cmapCoverageGB2312L1')
+                                         if font_status.get('source') == 'cmap' else '')))})
         for w in (font_status.get('warnings') or []):
             warnings.append(w)
     except Exception as e:                      # 字体体检出错不阻断构建（但明说）
@@ -1417,6 +1427,19 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
         pushed = True
         sync = _device_sync_check(project_root, gate['serial'], plat)
         devinfo['deviceSync'] = sync
+        # ⑤.5 字体部署后复查（v0.27.87）：本次投递过字体 → 回看设备侧字库现状
+        #      （轻量：只看名字/体积，不重拉 —— 字库要 pack_upgrade 固化才变）
+        if font_fields is not None and (font_fields.get('delivered') or {}).get('applied') \
+                and font_fields.get('mode') == 'device':
+            try:
+                ftools = __import__('font_tools')
+                after = ftools.recheck_after_deploy(
+                    gate['serial'], plat, project_root, font_fields.get('delivered') or {})
+                font_fields['deviceAfterDeploy'] = after
+                for w in (after.get('warnings') or []):
+                    warnings.append(w)
+            except Exception as e:            # 复查出错不改构建结论（但明说）
+                warnings.append('字体部署后复查异常：%s: %s' % (type(e).__name__, e))
         steps.append({"step": "verify_device_sync", "success": sync['allMatch'],
                       "device": gate['serial'],
                       "ftu": [{'name': c['name'], 'localBytes': c['localBytes'],

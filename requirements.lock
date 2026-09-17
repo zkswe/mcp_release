@@ -17,3 +17,8 @@ onnxruntime==1.29.0
 tokenizers==0.23.1
 Pillow==12.2.0
 numpy==2.5.1
+
+# v0.27.87 新增：字体硬判据（设备字体拉回本机读 cmap 算 GB2312 一级覆盖率）。
+# 本机实测组合：fontTools 4.65.0（Windows x64 / CPython 3.13.13）；
+# 缺它不影响构建：字体体检自动退回体积判据（source="size" + warnings 写明原因）。
+fontTools==4.65.0

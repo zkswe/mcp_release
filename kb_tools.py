@@ -53,9 +53,22 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.86-open'
+MCP_VERSION = '0.27.87-open'
 MCP_BUILD = '2026-09-17'
+# compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
+# （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
+COMPACT_FEATURE_CHARS = 700
+
+
+def _clip_feature(text, limit=None):
+    """compact 用：把长特性条目截断到 limit 字（尾巴标「…」+ 指路 compact=False）。"""
+    limit = COMPACT_FEATURE_CHARS if limit is None else limit
+    s = str(text or '')
+    if len(s) <= limit:
+        return s
+    return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+    '2026-09-17: **字体判定升级为 cmap 硬判据 + V85x 芯片别名补齐** v0.27.87-open（钟工拍板：用硬判据，比体积判据好；并问「V851/V851S/V851S3/V853S 这几个你适配了吗」）——**A 字体硬判据**：①`device_font_check.py` 新增 cmap 覆盖率判据（基准 = **GB2312 一级 3755 字**，用标准库 `gb2312` codec 现场推出；阈值 `CMAP_OK_MIN_PCT=90` / `CMAP_LOW_MIN_PCT=50`，拉取上限 `PROBE_MAX_BYTES=12MB`）；②`font_tools.hard_probe()`：挑设备最大 ttf/ttc **拉回 PC 临时目录（用完即删）** → fontTools 读 cmap → **≥90% → `ok`（不投）/ 50–90% → `low`（投 + warning 写明覆盖率）/ <50% → `missing`（投）**，字段 `source`(`cmap`|`size`)/`cmapCoverageGB2312L1`/`cmapCoveredChars`/`checkedFont`(路径+体积+mtime+md5)/`probe.cacheHit`；③兜底**不许静默**：体积超限 / fontTools 不可用 / 拉取或解析失败 → **退回体积判据**（`source="size"` + `warnings` 写明原因）；④结论按 `serial+目录/文件名+体积+ls 时间` 缓存到 `~/.fun/font-probe.json`（`FLYTHINGS_FONT_CACHE` 可覆盖）→ 不每次 build 都拉；⑤`fun launch` 成功后若刚投递过字体 → `fontCheck.deviceAfterDeploy` 回报设备侧字库现状与一致性（**要 `pack_upgrade` 固化才生效**，故只核名字/体积不重拉）；⑥`fontTools==4.65.0` 锁进 `requirements.lock`；⑦口径文档 `knowledge/devflow/custom-font-config.md` §0.2 + `components/fonts/README.md` §0/§3。**B V85x 别名**：⑧`platforms.PACKAGE_INPUT_ALIASES` 补 `v851 / v851s / v851s3 / v853s`（→ V85X）——修前 `resolve("V851S")=None`（当未知平台）且 `package_key("V851S")` 回 `v851s` 这种 **catalog 里不存在的键（查包必空）**；⑨`hardware_catalog.json` V85X 收齐 6 个主控（V553/V851/V851S/V851S3/V853/V853S）+ 新增 `chipEntries` 芯片级登记（有实测标 `partial` 并给依据来源；**无实测的 V851S3/V853S 如实标 `pending`+「待确认」，不臆造规格**）+ `chipsNote` 写死「V85x 家族统一归一到 V85X 平台，包键走 `v85x`/`v85xemmc`」；⑩`package_catalog.json` 的 `v85x`/`v85xemmc.chips` 补 `V851`；⑪`hardware_tools.normalize_platform` 补 `platforms.resolve` 兜底（修「芯片名查包认、hardware_info 却回 BAD_PLATFORM」的双口径；仅包生态平台仍走 `PLATFORM_NOT_IN_HARDWARE_LIB`）；⑫真机实测（V85X SPINOR 整机，网络 adb；多设备时 fun launch 硬失败 → 先 disconnect 另两台再跑）：`source=cmap` / `cmapCoverageGB2312L1=100.0`（3755/3755）/ `verdict=ok` / `checkedFont=/res/font/pocketgame.ttf`（1,093,608 B）/ 拉回耗时 1294 ms；同设备再跑 `probe.cacheHit=true` + `elapsedMs=6` + `pulledBytes=0`（缓存真生效）；设备字库只有 302 个一级汉字时（81,188 B 字体）→ `coverage=8.0%` / `verdict=missing` / 自动投递；完整 `flythings_build_ui_flow`：`ok/launched/pushed=true` + `staleOnDevice=false` + `deviceAfterDeploy.consistent=false`（明说需 `pack_upgrade` 固化）；另补一个诚实提醒：扫描结果为空时不把结论说得像板上真没字库（进 scanNote/warnings）。⑬用例 214→**239**（新增 `TestFontCmapHardProbe` 18 项 + `TestV85xFamilyAliases` 7 项，全部离线：仓库自带 ttf + fontTools 现场造字体当「假设备数据」），门禁全绿。',
     '2026-09-17: **字体自动扫描接线：缺中文自动投递（设备侧优先，退化工程侧）** v0.27.86-open（钟工「现在做」）——①新增 `font_tools.py` 接线，判定阈值/三版清单/投递动作**单一来源** = `components/fonts/scripts/device_font_check.py`（`judge`/`TIERS`/`collect`/`apply_to_project`），adb 走 `adb_tools.resolve_adb()/ensure_busybox()`、设备门结果**复用**；`flythings_build_ui_flow` 新增 `font_check="auto"|"off"` + `font_tier="common"|"full"|"multi"`，在 **fun build 之前**插 `check_font`：有设备扫设备字体（`/etc/font`、`/res/font`、`/system/font`），无设备退化**工程侧 self-scan**（prefs 的 `font` 指向 + 工程 `font/`），缺中文（无字体 / 最大 < 200 KB）**默认自动投递 `common`** 进工程 `font/`；返回体 `fontCheck`：`missingChinese`/`maxFontBytes`/`advisedTier`/`delivered`（投没投+文件）/`deviceFonts`，无设备时 `note` 写清「未连设备，仅工程侧检查」，投递未完成进 `warnings` + 一键修复命令。②体检项并入 `check_project_deps`（交付前体检、与依赖同返回体）：新增 `device`/`font_check`/`font_tier`/`font_apply` 与 `fontCheck`/`fontIssues`，**默认只报不投**、传 `device=` 才扫设备。③修 `device_font_check.apply_to_project` 的 prefs 正则（真 prefs 转义写法下「改 prefs」以前实际没改成）。④文档口径写死（默认 `common`／生僻字 `full`／多语言 `multi`／自裁字库只在要更小体积或自定义字符集时）：README「② 功能说明」+ `knowledge/devflow/custom-font-config.md` §0.2 + `components/fonts/README.md` §0；检索词：设备字体自检/自动扫描字体/缺中文字库/font tier/投递字体。⑤实测（Z21 真机）：默认参数 `mode=device`、`deviceFonts` 5 条（871.9KB/818.6KB/Poppins×3）、`missingChinese=false`、**未触发投递**、`warnings=[]`，launch 与设备侧 md5 比对照常；`font_check="off"` → 无 `check_font` step；无设备分支自动投递成真、`fun launch` 后设备 `/tmp/EasyUI.cfg` 自动出现 font 键（投递确实生效）。⑥用例 200→**214**，门禁全绿。',
     '2026-09-17: **换开机 logo 入库（`boot_logo.JPG` → `MISC` 分区）** v0.27.85-open（钟工口径：与 `update.img` **同机制**）——①**知识**：`knowledge/devflow/upgrade-pack-image.md` 新增 **§三**（落点 = **MISC 分区**，非 logo 分区也非 `/res`；**上限 = MISC 分区大小**，本板 Z21 实测 `cat /proc/mtd` → `mtd4 MISC 0x80000 = 512 KB`，其它平台待确认；两种触发同 update.img —— TF 卡根目录 `boot_logo.JPG`（可与 update.img 并列）→ FAT32 → 插卡上电勾选，或 ADB `push` + `sys.zkupgrade.flag=255` + `sys.zkupgrade.dir` + `ctl.restart zkswe`，重启后生效；⚠️ 本板 `adb reboot` 后整板掉网需现场断电；「只放 logo 是否不碰 `/res`」**待真机验证**；检索词 开机 logo/boot_logo/MISC 分区/logo 512K/换开机图）；②**工具**：`tools/make_boot_logo.py`（生成 1024x600 深底品牌图，字体 env `FLYTHINGS_LOGO_FONT`+多候选回退，**生成即校验 ≤ MISC 上限**，超了降质/报错）+ `tools/set_boot_logo.py`（推设备触发升级，**默认 dry-run**、`--yes` 才发；前置校验 文件/JPG/体积≤MISC（在线读 `cat /proc/mtd`）/设备在线；adb 走 `adb_tools.resolve_adb()`）；③**接线**：`flythings_pack_upgrade` docstring + README 出包小节各加一行指向文档/脚本；④**实测**（真机 Z21，只读+dry-run，未触发升级）：`make_boot_logo` → 33,070 B（32.3 KB，上限 6.3%）通过；`set_boot_logo` → 设备在线 / 型号 Zkswe_SSD21X_SPINOR / Z21(confirmed) / `MISC=512KB` / 四条 dry-run 命令 / exit 0。',
     '2026-09-17: **ADB 随包 + launch 默认推设备 + 设备探测/安装提示** v0.27.84-open（钟工三项）——①`tools/adb/`（adb.exe 1.0.41/31.0.3-7562133 + 两个 WinApi DLL，≈6.1MB）+README；新增根 `adb_tools.py`：`resolve_adb()` = env ADB/FLYTHINGS_ADB → 随包 → PATH，**全仓 adb 硬编码 6 处→1 处**（project_tools、device_screenshot、i18n_tools×2、device_font_check 等）；②`build_ui_flow(with_launch)` 默认 **True**（build→探测→推送/运行，`with_launch=False` 只编译）；返回 `launched/pushed/device/model/platformMatch/deviceSync`（设备侧 ftu+so 字节/md5 vs 本地）+`staleOnDevice`（true ⇒ 设备上跑的还是旧版）；③探测不猜：0 台 → `needDeviceInput`+`installHint`（ADB 驱动 / USB 调试授权 / 网络 device=<IP>:5555）；多台 → 列 serial+model+匹配并要显式 device=；1 台且匹配 → 自动 `fun launch -s`；新增 `device_models.json`（Z21/Z20/V85X 实测；F133/F136 待确认）；④实测（三台真机 + 单台 Z21）：三台在线 → 多设备清单（不猜）；**单台自动选机 launch 成功**、设备侧 ftu 186B / libzkgui.so 277340B **字节+md5 与本地一致**；本地改过未推 → staleOnDevice=true；0 台 → installHint 到位；顺带修 3 个 adb 实测坑（`ls -l` 第 5 列才是字节 / 缺 md5sum 时用随仓 busybox 兜底取 md5 / **fun 多设备必 FATAL more than one device/emulator**，→ 修正「fun 静默取第一个」旧结论，见 cli-fun-toolchain.md §7）；用例 176→200，门禁全绿；细节 knowledge/devflow/adb-and-device-selection.md。',
@@ -220,9 +233,9 @@ def _bin_tools_field() -> dict:
 
 def flythings_get_version(compact: bool = True) -> str:
     """返回 MCP 版本号、工具数量与近期关键特性。用户问「MCP 版本是多少 / 是不是最新的」时调用。
-    compact=True（默认）只回版本摘要 + 近期 3 条；要看完整能力史才传 compact=False（较长，勿默认拉取）。
-    另回 `binTools` 字段：设备端预编译工具（touch 触摸注入 / busybox / ui_test / mt_test / zkshot）
-    放在 bin_tools/<平台>/ 下，**不是 op、不占 op 名额**，数 op 清单看不到它们。
+    compact=True（默认）只回版本摘要 + 近期 3 条（每条 ≤700 字，防 token 炸弹）；完整能力史传 compact=False。
+    另回 `binTools` 字段（设备端预编译工具：touch / busybox / ui_test / mt_test / zkshot），
+    在 bin_tools/<平台>/ 下，**不是 op、不占名额**。
     """
     tools = _tool_names()
     out = {
@@ -237,8 +250,9 @@ def flythings_get_version(compact: bool = True) -> str:
     if bt:
         out['binTools'] = bt
     if compact:
-        out['recent'] = MCP_FEATURES[:3]
-        out['note'] = '完整能力史传 compact=False（默认只回近期 3 条以省 token）'
+        out['recent'] = [_clip_feature(f) for f in MCP_FEATURES[:3]]
+        out['note'] = ('完整能力史传 compact=False（默认只回近期 3 条、每条 ≤ %d 字以省 token）'
+                       % COMPACT_FEATURE_CHARS)
     else:
         out['features'] = MCP_FEATURES
     return json.dumps(out, ensure_ascii=False)

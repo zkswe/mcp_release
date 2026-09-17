@@ -107,6 +107,14 @@ class TestVersionTool(unittest.TestCase):
         self.assertLess(len(json.dumps(r, ensure_ascii=False)), 6000,
                         'compact 默认不该把整部变更史塞回来（token 炸弹回归）')
         self.assertNotIn('features', [k for k in r if k == 'features'] or [])
+        # v0.27.87：每条特性也要有限长（条目写长了同样会把默认返回体撑爆）
+        self.assertTrue(r['recent'])
+        for f in r['recent']:
+            self.assertLessEqual(len(f), kb_tools.COMPACT_FEATURE_CHARS + 20, f[:60])
+        long_ = [f for f in kb_tools.MCP_FEATURES if len(f) > kb_tools.COMPACT_FEATURE_CHARS]
+        self.assertTrue(long_, '假定至少有一条特性超过截断长度（否则本用例没盯住东西）')
+        self.assertTrue(any('compact=False' in f for f in r['recent']),
+                        '截断后要指路 compact=False')
 
     def test_full_history_on_request(self):
         r = U.jcall('flythings_get_version', {'compact': False})

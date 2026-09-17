@@ -180,5 +180,94 @@ class TestToolsNowAgreeOnRealPlatforms(unittest.TestCase):
         self.assertIn('z261', blob.lower())
 
 
+class TestV85xFamilyAliases(unittest.TestCase):
+    """V85x 芯片别名补齐（v0.27.87，钟工问「这几个你适配了吗」）。
+
+    实测当时：✅ V853/V553/V552/V85X → V85X；❌ **V851 / V851S / V851S3 / V853S → None**
+    （当未知平台），且 package_key() 会回 `v851s` 这种 catalog 里**不存在**的键 → 查包查空。
+    本用例钉死：这 6 个芯片名（含大小写混写）全部 → V85X 平台 + `v85x` 包键，
+    且 catalog 的 v85x/v85xemmc chips 已含这 5 个芯片（V851/V851S/V851S3/V853/V853S）。
+    """
+
+    FAMILY = ('V851', 'V851S', 'V851S3', 'V853S')
+    FIVE = ('V851', 'V851S', 'V851S3', 'V853', 'V853S')
+
+    def test_resolve_and_package_key(self):
+        for name in self.FAMILY + ('V853', 'V553', 'V552', 'V85X'):
+            for form in (name, name.lower(), name.upper(), name.title()):
+                r = pl.resolve(form)
+                self.assertIsNotNone(r, '%s 必须能 resolve（不能当未知平台）' % form)
+                self.assertEqual(r['canonical'], 'V85X', form)
+                self.assertTrue(r['buildable'], form)
+                self.assertEqual(pl.package_key(form), 'v85x', form)
+
+    def test_validate_accepts_chip_names(self):
+        """建工程口径也认（validate 不再把它们判为未知平台 → 建工程不会误拒）。"""
+        for form in ('V851', 'v851s', 'V851S3', 'V853S', 'V851S'):
+            self.assertEqual(pl.validate(form), 'V85X', form)
+            self.assertEqual(pl.template_dir_name(form), 'HelloWord_V85X', form)
+            self.assertEqual(pl.bin_tool_dir(form), 'v85x', form)
+            self.assertEqual(pl.arch(form), 'arm', form)
+
+    def test_emmc_variant_still_keeps_its_own_key(self):
+        """芯片名归一到 SPINOR 主键 `v85x`；显式 EMMC 变体仍保留 `v85xemmc`（保真）。"""
+        self.assertEqual(pl.package_key('V851S'), 'v85x')
+        self.assertEqual(pl.package_key('v85xemmc'), 'v85xemmc')
+        self.assertEqual(pl.package_key('V85XEMMC'), 'v85xemmc')
+
+    def test_chip_aliases_never_become_catalog_keys(self):
+        """芯片名**不是**包键：不许把 v851s 当真实包键（那会让查包命中空目录）。"""
+        for name in self.FAMILY:
+            self.assertNotIn(name.lower(), pl.package_keys(), name)
+            self.assertNotIn(name.lower(), pl.PACKAGE_KEY_ALIASES, name)
+            self.assertEqual(pl.PACKAGE_INPUT_ALIASES[name.lower()], 'V85X')
+
+    def test_package_catalog_chips_cover_family(self):
+        """包目录 v85x / v85xemmc 的 chips 必须已含这 5 个芯片（包生态认得它们）。"""
+        cat = _catalog()
+        if not cat:
+            self.skipTest('package_catalog.json 不在本机')
+        for key in ('v85x', 'v85xemmc'):
+            self.assertIn(key, cat, key)
+            chips = cat[key].get('chips') or []
+            for name in self.FIVE:
+                self.assertIn(name, chips, '%s.chips 缺 %s' % (key, name))
+
+    def test_hardware_catalog_chips_cover_family(self):
+        """硬件库 V85X.chips 同样收齐 6 个主控，且芯片级登记在册（待确认的如实标 pending）。"""
+        import hardware_tools as hw
+        cat, _warn = hw.load(force=True)
+        meta = (cat.get('platforms') or {}).get('V85X') or {}
+        chips = meta.get('chips') or []
+        for name in self.FIVE + ('V553',):
+            self.assertIn(name, chips, 'hardware_catalog V85X.chips 缺 %s' % name)
+        entries = meta.get('chipEntries') or {}
+        self.assertTrue(entries, 'V85X 缺芯片级登记 chipEntries')
+        for name in self.FIVE + ('V553',):
+            self.assertIn(name, entries, 'chipEntries 缺 %s' % name)
+            self.assertIn(entries[name].get('dataStatus'), ('complete', 'partial', 'pending'),
+                          '%s 的 dataStatus 非法' % name)
+        # 没有实测数据的两个：必须如实标 pending，不许臆造规格
+        self.assertEqual(entries['V851S3']['dataStatus'], 'pending')
+        self.assertEqual(entries['V853S']['dataStatus'], 'pending')
+        self.assertIn('待确认', entries['V851S3']['note'])
+        self.assertIn('待确认', entries['V853S']['note'])
+        # 平台与包键的写死口径必须在库里（文档/工具会带出去）
+        note = meta.get('chipsNote') or ''
+        self.assertIn('V85X', note)
+        self.assertIn('v85x', note)
+        self.assertIn('v85xemmc', note)
+
+    def test_hardware_info_exposes_chip_entries(self):
+        """工具返回体里能拿到主控登记（AI/客户查 V85X 时看到「哪个芯片实测过」）。"""
+        r = U.jcall('flythings_hardware_info', {'platform': 'V851S'})
+        self.assertTrue(r.get('ok'), r)
+        p85 = [p for p in r['platforms'] if p['platform'] == 'V85X']
+        self.assertTrue(p85, r['platforms'])
+        self.assertIn('V851S', p85[0]['chips'])
+        self.assertEqual(p85[0]['chipEntries']['V851S']['dataStatus'], 'partial')
+        self.assertIn('v85x', p85[0]['chipsNote'])
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

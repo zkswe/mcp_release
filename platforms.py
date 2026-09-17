@@ -89,7 +89,14 @@ PACKAGE_KEY_ALIASES = {
 
 # 只作入参归一用、**不对应任何真实包键**的历史写法（V85x 家族旧名，
 # 直接拿去查包会查空，必须先归一到 v85x）。
-PACKAGE_INPUT_ALIASES = {'v853': 'V85X', 'v552': 'V85X', 'v553': 'V85X'}
+#
+# ⚠️ V85x 家族写法收齐（v0.27.87，钟工问「这几个你适配了吗」）：
+#   **V851 / V851S / V851S3 / V853 / V853S / V553 / V552** 一律归一到 **V85X** 平台；
+#   包键统一走 **`v85x`（SPINOR）或 `v85xemmc`（EMMC）**（两个键在 package_catalog.json /
+#   注册表里真实存在），**不要拿 `v851s` 这种芯片名当平台键去查包**（查不到任何包）。
+PACKAGE_INPUT_ALIASES = {'v853': 'V85X', 'v552': 'V85X', 'v553': 'V85X',
+                         'v851': 'V85X', 'v851s': 'V85X', 'v851s3': 'V85X',
+                         'v853s': 'V85X'}
 
 # 兼容旧名：合并视图（package_tools.PLATFORM_ALIAS 引用的就是这个对象）
 PACKAGE_ALIASES = dict(PACKAGE_KEY_ALIASES)

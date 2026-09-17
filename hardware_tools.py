@@ -96,12 +96,27 @@ def _known_platform(name):
 
 
 def normalize_platform(name):
-    """把用户给的平台名归一（z21 → Z21）；空 = 全部平台；无法识别返回 None。"""
+    """把用户给的平台名归一（z21 → Z21；**V851S/V853S 等芯片名 → V85X**）；空 = 全部平台；
+    无法识别返回 None。
+
+    ⚠️ v0.27.87：原先只走 `platforms.normalize`（只认规范名+少数历史别名）→ `hardware_info(platform='V851S')`
+    回 BAD_PLATFORM「未知平台」，而同一串拿去查包却是认的（V85x 芯片名 → v85x 包键）——
+    这正是 v0.27.41 检讨过的「同一个平台名，包查询认、另一个工具不认」。现在补一道
+    `platforms.resolve`（认包生态变体 + 芯片名）作兑底。
+    仅包生态的平台（z6s/z261/h500s/a33nor）**仍回 None**：交给调用方的
+    PLATFORM_NOT_IN_HARDWARE_LIB 专用错误码说明「真平台、硬件库未登记」，不当未知平台。
+    """
     if name is None or str(name).strip() == '':
         return ''
     try:
         import platforms as pl
-        return pl.normalize(name)
+        got = pl.normalize(name)
+        if got:
+            return got
+        r = pl.resolve(name)
+        if r and r.get('canonical') in pl.PLATFORMS:
+            return r['canonical']
+        return None
     except Exception:
         return None
 
@@ -210,6 +225,9 @@ def _platform_overview(cat, platform=''):
             'platform': pname,
             'summary': meta.get('summary', ''),
             'chips': meta.get('chips') or [],
+            # v0.27.87：芯片级登记（"哪个芯片实测过/哪些只能待确认" + 平台与包键的绑定说明）
+            'chipsNote': meta.get('chipsNote', ''),
+            'chipEntries': meta.get('chipEntries') or {},
             'defaults': meta.get('defaults') or {},
             'differences': meta.get('differences') or [],
             'platformOptional': meta.get('optional') or [],
@@ -439,6 +457,21 @@ def build_markdown(cat=None):
             L.append('- 平台定位：%s' % meta['summary'])
         if meta.get('chips'):
             L.append('- 常见主控：%s' % ' / '.join(meta['chips']))
+        if meta.get('chipsNote'):
+            L.append('- 主控→平台/包键（写死口径）：%s' % meta['chipsNote'])
+        for cname in sorted(meta.get('chipEntries') or {}):
+            ce = (meta['chipEntries'] or {}).get(cname) or {}
+            bits = []
+            if ce.get('kind'):
+                bits.append(ce['kind'])
+            if ce.get('aliases'):
+                bits.append('别名 %s' % ' / '.join(ce['aliases']))
+            if ce.get('dataStatus'):
+                bits.append('数据状态=%s' % ce['dataStatus'])
+            L.append('- 主控 %s：%s%s'
+                     % (cname, '；'.join(bits) + '。' if bits else '', ce.get('note', '')))
+            if ce.get('source'):
+                L.append('  - 依据：%s' % ce['source'])
         pdef = meta.get('defaults') or {}
         if pdef:
             L.append('- 平台默认参数：%s'

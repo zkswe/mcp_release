@@ -48,7 +48,7 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 > `python` 不在 PATH 时用完整路径（如 `C:/Users/<你>/AppData/Local/Programs/Python/Python313/python.exe`）。
 
 **3) 验证** —— 问 AI「**MCP 版本是多少？**」：
-应返回 `flythings-kb-open 0.27.86-open`，**35 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / mt_test / zkshot，
+应返回 `flythings-kb-open 0.27.87-open`，**35 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / mt_test / zkshot，
 在 `bin_tools/<平台>/` 下，**不是 op、不占 op 名额**）。
 
 > **工具面三模式（按客户端选一个，别同时配）**
@@ -93,11 +93,17 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
   投进工程 `font/`（**在 build 之前**完成，本次产物里就有），返回体 `fontCheck` 报 `missingChinese`/`maxFontBytes`/`advisedTier`/`delivered`/`deviceFonts`；
   **要生僻字换 `font_tier='full'`、多语言/日韩换 `'multi'`**（自己裁字库只在要更小体积/自定义字符集时才需要），`font_check='off'` 可关；
   只要结论不想动工程 → `flythings_check_project_deps`（默认**只报不投** + 一键修复命令）
+- **字体判定用 cmap 硬判据**（v0.27.87，钟工拍板）：挑设备最大字体**拉回本机**读 cmap，以 **GB2312 一级 3755 字**算覆盖率 ——
+  **≥90% `ok`（不投）/ 50–90% `low`（投 + 写明覆盖率）/ <50% `missing`（投）**；字段 `source`/`cmapCoverageGB2312L1`/`checkedFont`；
+  超 12 MB 或 fontTools 不可用 → **退回体积判据**（`source="size"`，原因进 `warnings`）；结论缓存 `~/.fun/font-probe.json`（不会每次 build 都拉）；
+  `fun launch` 成功后若刚投递过字体 → `fontCheck.deviceAfterDeploy` 回报设备侧字库现状与一致性（**要固化才生效**，不白拉一次）
 - `flythings_pack_upgrade`：固化升级包 `update.img`（TF 卡 / ADB setprop / zkautoupgrade / HTTP OTA 四种刷法）
 - **换开机 logo**：`boot_logo.JPG` → **MISC 分区**（跟 `update.img` **同一套升级机制与触发**；体积必须 ≤ MISC 分区大小 —— 本板 Z21 实测 512 KB，先量 `cat /proc/mtd`）→
   `python tools/make_boot_logo.py --size 1024x600 --out boot_logo.JPG`（生成 + 体积闸门）/ `python tools/set_boot_logo.py --image boot_logo.JPG --device <serial|IP:5555>`（**默认 dry-run**，`--yes` 才真触发）；
   细节与待验证项见 `knowledge/devflow/upgrade-pack-image.md` §三
 - `flythings_create_project` / `flythings_create_bin_project`：从内置模板建工程（F133/F135/Z21/Z20/T113/V85X/Z235X）
+  - **V85x 芯片名也能直接当平台入参**（v0.27.87）：`V851 / V851S / V851S3 / V853 / V853S / V553 / V552`（含 `v851s` 这种大小写混写）
+    一律 resolve 成 **V85X**，包键走 **`v85x`（SPINOR）/ `v85xemmc`（EMMC）**；**芯片名不是包键**（拿 `v851s` 查包会查空）
 - `flythings_attach_cli_tools`：把 `fui.exe`/`fun.exe` 复制进项目，客户不用装 IDE 也能编译部署
 - `flythings_validate_project`：工程规范全检（依赖 / 框架约定 / 时间戳防呆）
 - **工具链安装（Z235X）**：把 `z235x` 工具链放到 **`<fun 安装目录>/toolchains/z235x/`**
@@ -127,6 +133,6 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 
 ---
 
-当前版本 `0.27.86-open`（35 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
+当前版本 `0.27.87-open`（35 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
 
 MIT License · FlyThings Team · 深圳中科世为科技有限公司 · [developer.flythings.cn](https://developer.flythings.cn/)

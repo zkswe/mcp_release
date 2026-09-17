@@ -47,7 +47,7 @@
 - 本机实测：app 工程放 `font/font.ttf` + `enable.font.location=true`，固化后 `/res/etc/EasyUI.cfg` 自动出现
   `"font": "/res/font/font.ttf"`，汉字正常显示 → **这就是 fun 流程的标准姿势**。
 
-### 0.2 设备字体自检（缺中文就自动投递）—— v0.27.86 起**已接成自动动作**
+### 0.2 设备字体自检（缺中文就自动投递）—— v0.27.86 接成自动动作，v0.27.87 判定升级为**硬判据**
 
 **默认口径（先记这个，别一上来就自己裁字库）**：
 
@@ -57,6 +57,24 @@
   判定**缺中文**就**默认把 `common` 档思源黑体投进工程 `font/`**（并在 build **之前**完成，
   本次构建/推送的产物里就有它），返回体 `fontCheck` 写清 `missingChinese`、`maxFontBytes`、
   `advisedTier`、`delivered`（投没投/写了哪些文件）、`deviceFonts`（扫到的路径+体积）。
+- **判定用硬判据（v0.27.87，钟工拍板：比体积判据好）**：挑设备上**最大的那个** ttf/ttc →
+  **拉回本机**（临时目录，用完即删）→ `fontTools.ttLib` 读它 cmap → 以 **GB2312 一级 3755 字**
+  为基准算覆盖率 `cmapCoverageGB2312L1`：
+
+| cmap 覆盖率（GB2312 一级） | verdict | 动作 |
+|---|---|---|
+| **≥ 90%** | `ok` | 中文字库可用，**不投递** |
+| **50–90%** | `low` | **投递** + warning 写明覆盖率 |
+| **< 50%** | `missing` | **投递** |
+
+- **兜底（不许静默）**：拉取体积 **> 12 MB**（`PROBE_MAX_BYTES`）、`fontTools` 不可用、
+  拉取失败、cmap 解析失败 → **退回体积判据**（`source="size"`，原因写进 `warnings`），
+  此时 `verdict` 用旧口径（`no_font`/`no_cjk`/`partial_cjk`/`has_cjk`）。
+- **成本控制**：结论按 `设备 serial + 目录/文件名 + 体积 + ls 时间` 缓存到 `~/.fun/font-probe.json`
+  （`FLYTHINGS_FONT_CACHE` 可改），命中就不重复拉；返回体 `probe.cacheHit` 能看出是不是缓存。
+- **部署后复查**（v0.27.87）：`fun launch` 成功后且本次投递过字体 → `fontCheck.deviceAfterDeploy`
+  回看「设备侧字库现状 + 与工程投递是否一致」；字库要 `fun pack_upgrade` 固化才变，
+  所以这里如实说「需固化才生效」，**不白花一次拉取**（与应用侧 `staleOnDevice` 凑成一个闭环）。
 - **档位**：默认 **`common`**（872 KB，GB2312 一级 3755 + 中文标点 + ASCII）；
   **要生僻字换 `full`**（7.39 MB，CJK 20902 + 扩展A）；**多语言/日韩换 `multi`**（10.5 MB）——
   传 `flythings_build_ui_flow(font_tier='full'|'multi')` 即换。**font tier 就这么选，不用改代码。**
@@ -64,7 +82,7 @@
 - **关掉**：`font_check='off'` —— 不做字体体检/投递（连 step 都不加）；
 - **只要结论、不想动工程**：`flythings_check_project_deps`（字段 `fontCheck` / `fontIssues`，
   **默认只报不投** + 给一键修复命令；`font_apply=True` 才真投；传 `device='<ip>:5555'` 才扫设备字体）；
-- **命令行兑底**（不走 MCP 时）：
+- **命令行兜底**（不走 MCP 时；默认也做硬判据，`--no-probe` 可退回体积判据）：
 
 ```bash
 python components/fonts/scripts/device_font_check.py --apply --project <工程根> --tier common
@@ -73,7 +91,7 @@ python components/fonts/scripts/device_font_check.py --apply --project <工程�
 判定口径（getprop 拿平台信息 + 读 `/etc/font` `/res/font` 等目录里**字体文件的体积**；
 阈值与三版清单是**单一来源** = `components/fonts/scripts/device_font_check.py`，不许另写一套）：
 
-| 最大字体体积 | 判定 | 动作 |
+| 最大字体体积（**仅作兑底**） | 判定 | 动作 |
 |---|---|---|
 | 无字体文件 | 无字库 | 投 `common` |
 | **< 200 KB**（几十K / 100多K） | **大概率只有英文** | 投 `common` |
@@ -84,7 +102,8 @@ python components/fonts/scripts/device_font_check.py --apply --project <工程�
 
 **症状 → 一步**：界面汉字全变方块 → 别手搜着找字体文件，直接 `flythings_build_ui_flow`
 （默认就会扫+投触发）；想先看结论就先 `flythings_check_project_deps` 看 `fontCheck.advisedTier`。
-检索词：设备字体自检 / 自动扫描字体 / 缺中文字库 / font tier / 投递字体 / 汉字变方块。
+检索词：设备字体自检 / 自动扫描字体 / 缺中文字库 / font tier / 投递字体 / 汉字变方块 /
+cmap 覆盖率 / GB2312 一级 / 硬判据 / font-probe 缓存。
 
 ### 0.2.1 真机实测（v0.27.86，Z21 整机、网络 adb）
 
@@ -112,6 +131,27 @@ python components/fonts/scripts/device_font_check.py --apply --project <工程�
 
 文件与重裁脚本：`components/fonts/`（`scripts/gen_font_subset.py`，可复现）。
 ⚠️ 重裁坑：**CN 变体思源黑体没有谚文**（谚文 0 个）→ 多国语言版必须用完整版源（`--src-multi`）。
+
+### 0.2.2 真机实测（v0.27.87，V85X SPINOR 整机、网络 adb）
+
+> 环境：本机 adb = 随包 `tools/adb/adb.exe`；**多设备在线时 `fun launch` 硬失败**（fun 的 Go adb 用旧式
+> `host:transport <serial>` 空格写——详见 `cli-fun-toolchain.md` §7），本次实测前先 `adb disconnect` 另两台、
+> 跑完再 `adb connect` 加回；设备报 `ro.product.model=Zkswe_V85X_SPINOR`（480×800）。
+> （本段不写具体内网地址：隐私扫描不允许——设备用 `device='<serial|IP:5555>'` 现查现传。）
+
+| 场景 | 关键字段（实测值） | 结果 |
+|---|---|---|
+| **设备字库够**（首次探测） | `mode=device`、`source=cmap`、`cmapCoverageGB2312L1=100.0`（3755/3755）、`verdict=ok`、`checkedFont=/res/font/pocketgame.ttf`（1,093,608 B = 1068 KB）、`missingChinese=false`、`delivered.applied=false`、`warnings=[]` | **未投递**；拉回 1 MB 字体耗时 **1294 ms**（`probe.elapsedMs`，正常） |
+| **缓存命中**（同设备立即再跑） | `probe.cacheHit=true`、`elapsedMs=6`、`pulledBytes=0`、`probedAt=2026-09-17 20:21:32` | **没再拉**（缓存键=serial+文件+体积+ls 时间，落 `~/.fun/font-probe.json`） |
+| **设备字库只有零星中文** | `checkedFont=/res/font/game.ttf`（81,188 B = 79.3 KB）、`cmapCoverageGB2312L1=8.0`（302/3755）、`verdict=missing`、`missingChinese=true` | 投递 `common` 进工程 `font/`（81 KB 的字体里面**真只有 302 个一级汉字**——数字比体积说明问题） |
+| **完整构建流程**（build_ui_flow，单设备在线） | `ok=true`、`launched=true`、`pushed=true`、`staleOnDevice=false`；`check_font` step 带 `source=cmap`/`cmapCoverageGB2312L1=8.0`/`checkedFont`；`delivered=[font/zkswe-hans-common.ttf]`；`deviceAfterDeploy.consistent=false` + note「需 `pack_upgrade` 固化才生效」 | 字体投递在 `fun build` **之前**；launch 后 `deviceSync` ftu/so md5 与本地一致；**字库待固化**与应用陈旧分开报 |
+| **V851S 入参** | `platforms.resolve('V851S') → {canonical: V85X, packageKey: v85x, buildable: true, template: HelloWord_V85X}`（`v851s3`/`V853S`/`V851` 同） | 修前是 `None`（被当未知平台）且 `package_key` 回 `v851s`（catalog 里不存在 → 查包必空） |
+
+> ⚠️ 实测中发现的一个**不属本轮改动**的现场变化，记下来供排查：同一块 V85X 板子
+> `/res/font` 的内容在本次会话中从 `pocketgame.ttf`（1 MB）变成了 `game.ttf`（81 KB，一级汉字仅 302 个）。
+> 我们的流程只向 `/tmp/font` 推 app 资源（`fun launch` 不碰 `/res`），且本机与仓库内**没有** `game.ttf`
+> 这个文件 → 应是另一路会话/人推上去的；结论：**这块板子当前 /res/font 的中文覆盖只有 8%**，
+> 拿它当「设备字库够」基准之前先重跑一次体检（现在 `verdict` 就是 `missing`）。
 
 ### 0.4 真机验收
 

@@ -15,17 +15,28 @@
 
 两条分支：
   ① **有设备**：扫 `/etc/font`、`/res/font`、`/system/font`、`/usr/share/fonts` 里字体体积，
-     判定缺中文（无字体 / 最大 < 200 KB）→ 默认投递 `common`（872 KB）进工程 `font/`；
+     挑出最大者；**v0.27.87 起优先「硬判据」**——把最大字体拉回 PC（临时目录，用完即删），
+     用 fontTools 读 cmap 算 **GB2312 一级 3755 字覆盖率**：≥90% → ok（不投递）/ 50–90% → low
+     （投递 + 写明覆盖率）/ <50% → missing（投递）；拉取超 12 MB、fontTools 不可用、拉取或解析
+     失败 → **退回体积判据**（source='size'，原因进 warnings，绝不静默）。结论按
+     `serial+目录/文件名+体积+ls 时间` 缓存到 `~/.fun/font-probe.json`（否则每次 build 都拉一遍）。
+     缺 → 默认投递 `common`（872 KB）进工程 `font/`；
   ② **无设备**：退化为工程侧 self-scan（prefs 的 `font` 指向的文件在不在工程 `font/`；
      工程 `font/` 里有没有可用字体）→ 缺就同样投递，并在 `note` 写清「未连设备，仅工程侧检查」。
+
+部署后复查（v0.27.87）：`fun launch` 成功后且本次投递过字体 → `recheck_after_deploy()` 回看
+  设备侧字体清单与工程投递是否一致，回答「设备侧中文字库现在可用吗 / 要不要固化」
+  （与应用侧的 `staleOnDevice` 合成闭环：app 陈旧 vs 字库待固化分开报）。
 
 开关：`font_check='auto'`（默认）/ `'off'`（完全不碰字体，零 step）；`font_tier='common'|'full'|'multi'`。
   默认 common；要生僻字换 full；多语言/日韩换 multi；**只有要更小体积/自定义字符集才需要自己裁字库**。
 """
 import importlib.util
+import json
 import os
 import re
 import sys
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
@@ -41,6 +52,9 @@ except Exception as e:                                   # adb 子系统不可�
 DFC_PATH = os.path.join(HERE, 'components', 'fonts', 'scripts', 'device_font_check.py')
 FONT_EXTS = ('.ttf', '.ttc', '.otf')
 PREFS_REL = os.path.join('.settings', 'com.zksw.flythings.easyui.prefs')
+# 硬判据缓存（v0.27.87）：避免每次 build 都把同一个字体从设备拉一遍（慢、烧流量、伤 flash 寿命）
+PROBE_CACHE_NAME = 'font-probe.json'
+PROBE_CACHE_VERSION = 1
 # 判定阈值只从 device_font_check 读（这里不复制数字）：CJK_SIZE_MIN_KB 等
 _DFC = {'mod': None, 'error': ''}
 
@@ -208,9 +222,18 @@ def device_scan(serial, platform=''):
     else:
         note = note or '随仓 busybox 未就绪 → 用设备自带 ls -l 解析体积（可能取不到）'
     info = dfc.collect(adb, serial, bool(busybox))
+    if not info['fonts']:
+        # v0.27.87 实测补的诚实提醒：扫不到字体时**不要把「无字库」说得像板上真的没有** ——
+        # 设备自带 ls -l 拿不到体积或目录没读到，同样会得到一个空列表（详见 custom-font-config.md §0.2.2）。
+        miss_note = ('设备侧字体目录**没解析出任何字体文件**——可能确实没字库，也可能是设备自带 '
+                     'ls -l 取不到体积（busybox 未就绪）→ 本条「无字库」结论存疑，'
+                     '建议重试或人工核对 /etc/font、/res/font')
+        note = (note + '；') if note else ''
+        note += miss_note
     v = dfc.judge(info)
     fonts = [{'dir': f['dir'], 'name': f['name'], 'sizeBytes': f['sizeBytes'],
-              'sizeKB': round(f['sizeBytes'] / 1024.0, 1)} for f in info['fonts']]
+              'sizeKB': round(f['sizeBytes'] / 1024.0, 1),
+              'mtimeText': f.get('mtimeText') or ''} for f in info['fonts']]
     props = info.get('props') or {}
     return {'mode': 'device', 'device': serial,
             'deviceModel': props.get('ro.product.model') or '',
@@ -221,6 +244,205 @@ def device_scan(serial, platform=''):
             'advisedTier': v['recommendTier'] or ('common' if v['needFont'] else ''),
             'thresholdKB': getattr(dfc, 'CJK_SIZE_MIN_KB', None),
             'scanNote': note}, ''
+
+
+# ---------------- 硬判据（cmap 覆盖率）+ 缓存（v0.27.87）----------------
+def probe_cache_path():
+    """探针结论缓存位置：`~/.fun/font-probe.json`（与依赖包注册表同一个 `.fun` 根）。
+
+    `FLYTHINGS_FONT_CACHE` 可覆盖（测试/多用户隔离用）；空串 = 不用缓存（每次都拉）。
+    """
+    env = os.environ.get('FLYTHINGS_FONT_CACHE')
+    if env is not None:
+        return env
+    return os.path.join(os.path.expanduser('~'), '.fun', PROBE_CACHE_NAME)
+
+
+def probe_cache_key(serial, font, platform=''):
+    """缓存键 = `serial + 目录/文件名 + 体积 + ls 时间文本`（与平台）。
+
+    为什么不直接拿 md5：算 md5 得先删拉（就没缓存意义了）。设备侧字体一变 ⇒ 体积或 ls 时间变。
+    拉回来后的 md5 仍会记进缓存条目（供人核对，不参与命中判定）。
+    """
+    parts = [str(serial or ''), str((font or {}).get('dir') or ''),
+             str((font or {}).get('name') or ''),
+             str((font or {}).get('sizeBytes') or 0),
+             str((font or {}).get('mtimeText') or ''), str(platform or '')]
+    return '|'.join(parts)
+
+
+def _cache_read(path=None):
+    """读缓存文件 → {'version','entries'}；读不到/坏了 → 空表（不报错、不静默丢结论）。"""
+    p = path if path is not None else probe_cache_path()
+    if not p or not os.path.isfile(p):
+        return {'version': PROBE_CACHE_VERSION, 'entries': {}}
+    text = _read(p)
+    if not text:
+        return {'version': PROBE_CACHE_VERSION, 'entries': {}}
+    try:
+        d = json.loads(text)
+    except ValueError:
+        return {'version': PROBE_CACHE_VERSION, 'entries': {}}
+    if not isinstance(d, dict) or d.get('version') != PROBE_CACHE_VERSION:
+        return {'version': PROBE_CACHE_VERSION, 'entries': {}}
+    d.setdefault('entries', {})
+    return d
+
+
+def _cache_write(data, path=None):
+    p = path if path is not None else probe_cache_path()
+    if not p:
+        return ''
+    try:
+        d = os.path.dirname(p)
+        if d and not os.path.isdir(d):
+            os.makedirs(d, exist_ok=True)
+        with open(p, 'w', encoding='utf-8', newline='\n') as f:
+            f.write(json.dumps(data, ensure_ascii=False, indent=1))
+        return p
+    except OSError:
+        return ''                     # 缓存写不了不是问题（不能因此中断体检）
+
+
+def hard_probe(serial, fonts, platform='', dfc=None, use_cache=True, cache_path=None,
+               adb=''):
+    """**硬判据主入口**：挑设备上最大的字体 → 拉回 PC → cmap 覆盖率 → verdict。
+
+    字段（调用方直接合并进 fontCheck）：
+      source='cmap' | 'size'，verdict='ok'|'low'|'missing'（cmap）或 None（size，保留体积判据），
+      cmapCoverageGB2312L1（百分数，size 分支为 None）、cmapCoveredChars/TotalChars、
+      checkedFont{path,name,sizeBytes,sizeKB,localMd5,mtime}、needFont、recommendedTier、
+      cacheHit、reason（size 分支的原因）、warnings（本环节自己产生的问题，非静默）。
+    超限 / fontTools 不可用 / 拉取失败 / 解析失败 → source='size' + warnings 写明原因。
+    """
+    mod = dfc or device_font_check()[0]
+    out = {'source': 'size', 'verdict': None, 'needFont': None, 'recommendedTier': None,
+           'cmapCoverageGB2312L1': None, 'cmapCoveredChars': None, 'cmapTotalChars': None,
+           'checkedFont': None, 'cacheHit': False, 'reason': '', 'warnings': [],
+           'elapsedMs': 0, 'pulledBytes': 0, 'probeCache': ''}
+    if mod is None:
+        out['reason'] = 'device_font_check 不可用 → 无法做 cmap 硬判据'
+        out['warnings'].append(out['reason'])
+        return out
+    flist = [f for f in (fonts or []) if f]
+    if not flist:
+        out['reason'] = '设备上一个字体文件都没有 → 无字体可探（保留体积判据的 no_font 结论）'
+        return out
+    biggest = sorted(flist, key=lambda f: -(int(f.get('sizeBytes') or 0)))[0]
+    out['checkedFont'] = {'path': (biggest.get('dir') or '') + '/' + (biggest.get('name') or ''),
+                          'name': biggest.get('name') or '',
+                          'sizeBytes': int(biggest.get('sizeBytes') or 0),
+                          'sizeKB': round((biggest.get('sizeBytes') or 0) / 1024.0, 1),
+                          'mtime': biggest.get('mtimeText') or ''}
+    # 拉取前的本地闸门（体积超限 / fontTools 不可用）—— 规则与文案都取自 device_font_check（单一来源）
+    block = mod.pre_pull_block(out['checkedFont']['sizeBytes']) \
+        if hasattr(mod, 'pre_pull_block') else ''
+    if block:
+        out['reason'] = block
+        out['warnings'].append('cmap 硬判据不可用，已退回**体积判据**：%s（source="size"）'
+                               % block)
+        return out
+    key = probe_cache_key(serial, biggest, platform)
+    t0 = time.time()
+    if use_cache:
+        cache = _cache_read(cache_path)
+        hit = (cache.get('entries') or {}).get(key)
+        if hit and hit.get('source') == 'cmap':
+            out.update({'source': 'cmap', 'verdict': hit.get('verdict'),
+                        'needFont': bool(hit.get('needFont')),
+                        'recommendedTier': hit.get('recommendedTier'),
+                        'cmapCoverageGB2312L1': hit.get('cmapCoverageGB2312L1'),
+                        'cmapCoveredChars': hit.get('cmapCoveredChars'),
+                        'cmapTotalChars': hit.get('cmapTotalChars'),
+                        'cacheHit': True, 'elapsedMs': int((time.time() - t0) * 1000),
+                        'probeCache': cache_path or probe_cache_path(),
+                        'probedAt': hit.get('probedAt')})
+            out['checkedFont']['localMd5'] = hit.get('localMd5') or ''
+            return out
+    probe = mod.probe_device_font(adb or _adb_path(), serial, biggest)
+    out['elapsedMs'] = int((time.time() - t0) * 1000)
+    out['pulledBytes'] = int(probe.get('localBytes') or 0)
+    out['reason'] = probe.get('reason') or ''
+    if probe.get('source') == 'cmap':
+        out.update({'source': 'cmap', 'verdict': probe.get('verdict'),
+                    'needFont': bool(probe.get('needFont')),
+                    'recommendedTier': probe.get('recommendTier'),
+                    'cmapCoverageGB2312L1': probe.get('coveragePct'),
+                    'cmapCoveredChars': probe.get('coveredChars'),
+                    'cmapTotalChars': probe.get('totalChars')})
+        out['checkedFont']['localMd5'] = probe.get('md5') or ''
+        if use_cache:
+            cache = _cache_read(cache_path)
+            cache.setdefault('entries', {})[key] = {
+                'source': 'cmap', 'verdict': probe.get('verdict'),
+                'needFont': bool(probe.get('needFont')),
+                'recommendedTier': probe.get('recommendTier'),
+                'cmapCoverageGB2312L1': probe.get('coveragePct'),
+                'cmapCoveredChars': probe.get('coveredChars'),
+                'cmapTotalChars': probe.get('totalChars'),
+                'localMd5': probe.get('md5') or '', 'localBytes': probe.get('localBytes'),
+                'serial': serial, 'font': out['checkedFont']['path'],
+                'probedAt': time.strftime('%Y-%m-%d %H:%M:%S'),
+                'platform': platform or ''}
+            out['probeCache'] = _cache_write(cache, cache_path)
+    else:
+        out['warnings'].append('cmap 硬判据不可用，已退回**体积判据**：%s（source="size"）'
+                               % (out['reason'] or '原因未知'))
+    return out
+
+
+def _adb_path():
+    """adb 可执行路径（adb 子系统不可用 → 空串，pull_font 会自己兜底找）。"""
+    if _adb is None:
+        return ''
+    try:
+        return _adb.resolve_adb() or ''
+    except Exception:
+        return ''
+
+
+def recheck_after_deploy(serial, platform, project_root, delivered, dfc=None):
+    """部署后复查（v0.27.87）：fun launch 成功后，回看「设备侧现在中文字库可用性 + 与工程是否一致」。
+
+    为什么**不**重算 cmap：字体是**资源/固件侧**的东西，`fun launch` 只推 app（`/tmp/lib`、`/tmp/ui`），
+    设备侧字库在 `pack_upgrade` 固化前不会变 —— 再拉一次只会白花一次传输。故这里只做轻量核验：
+    设备字体清单（体积判据）+ 投递文件的名字/体积是否已在设备上 ⇒ 给「需固化才生效」的实话。
+    与已有 `staleOnDevice`（app 侧文件比对）凑成闭环：**app 陈旧** vs **字库待固化** 分开报。
+    """
+    out = {'checked': False, 'consistent': None, 'deviceVerdict': '', 'deviceMaxFontKB': 0,
+           'deviceFontNames': [], 'projectFont': (delivered or {}).get('file') or '',
+           'projectFontSizeBytes': 0, 'note': '', 'warnings': []}
+    mod = dfc or device_font_check()[0]
+    if mod is None:
+        out['note'] = 'device_font_check 不可用，未复查'
+        return out
+    files = [f for f in ((delivered or {}).get('files') or []) if f.startswith('font/')]
+    name = files[0][len('font/'):] if files else ((delivered or {}).get('file') or '')
+    if not name:
+        out['note'] = '本次没有投递字体，无需复查'
+        return out
+    local = os.path.join(project_root, 'font', name)
+    out['projectFont'] = name
+    out['projectFontSizeBytes'] = os.path.getsize(local) if os.path.isfile(local) else 0
+    scan, err = device_scan(serial, platform)
+    if scan is None:
+        out['note'] = '设备字体复查失败：%s' % err
+        return out
+    out.update({'checked': True, 'deviceVerdict': scan.get('verdict'),
+                'deviceMaxFontKB': scan.get('maxFontKB'),
+                'deviceFontNames': [f['name'] for f in (scan.get('deviceFonts') or [])]})
+    same = [f for f in (scan.get('deviceFonts') or []) if f['name'] == name]
+    out['consistent'] = bool(same and same[0]['sizeBytes'] == out['projectFontSizeBytes'])
+    if out['consistent']:
+        out['note'] = ('设备侧已有 %s（%s KB）且与工程投递的一致（名字+体积）= 固化已生效'
+                       % (name, round(out['projectFontSizeBytes'] / 1024.0, 1)))
+    else:
+        out['note'] = ('设备侧当前字库 %s（最大 %s KB，判定=%s）：投递进的是**工程**，'
+                       '`fun launch` 只推 app、不推 font/ ⇒ 需要 `fun pack_upgrade` 固化后设备才生效'
+                       % ('、'.join(out['deviceFontNames']) or '无字体文件',
+                          scan.get('maxFontKB'), scan.get('verdict')))
+        out['warnings'].append(out['note'])
+    return out
 
 
 # ---------------- 投递（复用 device_font_check.apply_to_project）----------------
@@ -266,17 +488,21 @@ def deliver(project_root, tier, dfc):
 
 # ---------------- 对外：字体前置体检 ----------------
 def font_preflight(project_root, platform='', device='', font_check='auto',
-                   font_tier='', apply=True, allow_device=True, known_online=None):
+                   font_tier='', apply=True, allow_device=True, known_online=None,
+                   probe=True):
     """字体体检（构建/部署前置）→ 机读字段 + warnings。
 
     font_check='off' → {'enabled': False, ...}（零动作、零 step，调用方据此不加 step）；
     allow_device=False（如 with_launch=False 且未指定 device）→ 不碰 adb，只做工程侧 self-scan；
-    known_online=<调用方已探到的在线设备> → 不再重复 adb devices（build_ui_flow 复用设备门）。
+    known_online=<调用方已探到的在线设备> → 不再重复 adb devices（build_ui_flow 复用设备门）；
+    probe=False → 不做 cmap 硬判据（只体积判据；默认 True —— 硬判据更准，且结论带缓存不重复拉）。
     """
     res = {'enabled': True, 'mode': '', 'missingChinese': False, 'maxFontBytes': 0,
            'advisedTier': '', 'delivered': {'applied': False, 'files': []},
            'deviceFonts': [], 'projectFonts': [], 'warnings': [], 'note': '',
-           'deviceScanned': False, 'device': '', 'verdict': '', 'tier': ''}
+           'deviceScanned': False, 'device': '', 'verdict': '', 'tier': '',
+           # 硬判据字段（v0.27.87；未走设备分支时 source='size'，覆盖率 None）
+           'source': 'size', 'cmapCoverageGB2312L1': None, 'checkedFont': None}
     if is_off(font_check):
         return {'enabled': False, 'mode': 'off', 'missingChinese': None, 'maxFontBytes': 0,
                 'advisedTier': '', 'delivered': {'applied': False, 'files': []},
@@ -316,6 +542,29 @@ def font_preflight(project_root, platform='', device='', font_check='auto',
             res['deviceModel'] = scan.get('deviceModel', '')
             if scan.get('scanNote'):
                 res['warnings'].append('设备字体扫描：%s' % scan['scanNote'])
+            # ★ 硬判据（v0.27.87）：拉最大字体回 PC 算 cmap 覆盖率 → 覆盖体积判据的结论；
+            #   超限/无 fontTools/拉取失败/解析失败 → source='size'，保留体积结论 + warnings 写清原因
+            if probe:
+                hp = hard_probe(serial, scan.get('deviceFonts') or [], platform, dfc=dfc)
+                res['probe'] = {'source': hp['source'], 'cacheHit': hp['cacheHit'],
+                                'reason': hp['reason'], 'elapsedMs': hp['elapsedMs'],
+                                'pulledBytes': hp['pulledBytes'],
+                                'probeCache': hp.get('probeCache') or probe_cache_path(),
+                                'probedAt': hp.get('probedAt')}
+                res['source'] = hp['source']
+                res['checkedFont'] = hp['checkedFont']
+                res['cmapCoverageGB2312L1'] = hp['cmapCoverageGB2312L1']
+                res['cmapCoveredChars'] = hp['cmapCoveredChars']
+                res['cmapTotalChars'] = hp['cmapTotalChars']
+                res['cmapThresholds'] = {'okMinPct': getattr(dfc, 'CMAP_OK_MIN_PCT', None),
+                                         'lowMinPct': getattr(dfc, 'CMAP_LOW_MIN_PCT', None),
+                                         'maxProbeBytes': getattr(dfc, 'PROBE_MAX_BYTES', None)}
+                for w in hp['warnings']:
+                    res['warnings'].append(w)
+                if hp['source'] == 'cmap':
+                    res['verdict'] = hp['verdict']            # ok / low / missing
+                    res['missingChinese'] = bool(hp['needFont'])
+                    res['advisedTier'] = hp['recommendedTier'] or ''
     if not res['deviceScanned']:                      # 无设备 / 多台不猜 / 扫描失败 → 工程侧
         ps = _project_scan(project_root, dfc)
         res.update({'mode': ps['mode'], 'verdict': ps['verdict'],
@@ -339,8 +588,15 @@ def font_preflight(project_root, platform='', device='', font_check='auto',
         res['delivered'] = deliver(project_root, res['tier'], dfc)
         res['delivered']['file'] = dfc.TIERS.get(res['tier'], '')
         if res['deviceScanned']:
-            where = ('设备最大字体 %s KB（阈值 %s KB）'
-                     % (res.get('maxFontKB'), res.get('thresholdKB')))
+            if res.get('source') == 'cmap':
+                where = ('设备最大字体 %s 的 GB2312 一级覆盖率 %s%%（≥%s%% 才算 ok）'
+                         % ((res.get('checkedFont') or {}).get('name') or '?',
+                            res.get('cmapCoverageGB2312L1'),
+                            res.get('cmapThresholds', {}).get('okMinPct')))
+            else:
+                where = ('设备最大字体 %s KB（体积判据阈值 %s KB；%s）'
+                         % (res.get('maxFontKB'), res.get('thresholdKB'),
+                            res.get('probe', {}).get('reason') or 'cmap 硬判据未生效'))
         elif res['verdict'] == 'prefs_font_missing':
             where = '未连设备 + prefs 指向的字体在工程里不存在'
         elif res['verdict'] in ('project_no_font', 'project_no_cjk'):
@@ -359,12 +615,20 @@ def font_preflight(project_root, platform='', device='', font_check='auto',
                 % (where, res['verdict'], res['delivered']['reason'], repair_command(
                     project_root, res['tier'])))
     elif res['missingChinese']:
-        res['warnings'].append('缺中文字库（判定=%s）但 apply=False（只报不投）；修复：%s'
-                               % (res['verdict'], repair_command(project_root, res['tier'])))
+        res['warnings'].append('缺中文字库（判定=%s%s）但 apply=False（只报不投）；修复：%s'
+                               % (res['verdict'],
+                                  '，覆盖率 %s%%' % res.get('cmapCoverageGB2312L1')
+                                  if res.get('source') == 'cmap' else '',
+                                  repair_command(project_root, res['tier'])))
     elif res['verdict'] in ('partial_cjk', 'project_partial_cjk'):
         # 已有「常用字」级字库 = 推荐的 common 档 → **只作 info 不作 warning**（防默认档每次构建都刷噪音）
         res['info'] = ('字体 %s KB（%s）：默认档够用；有生僻字人名/地名换 full、多语言/日韩换 multi'
                        % (res.get('maxFontKB'), res['verdict']))
+    if res.get('source') == 'cmap' and not res['missingChinese'] and res['deviceScanned']:
+        res['info'] = ('设备中文字库可用：%s 的 GB2312 一级覆盖率 %s%%（阈值 ≥%s%%），无需投递'
+                       % ((res.get('checkedFont') or {}).get('name') or '?',
+                          res.get('cmapCoverageGB2312L1'),
+                          res.get('cmapThresholds', {}).get('okMinPct')))
     return res
 
 
@@ -386,7 +650,18 @@ def compact(status):
            'tier': status.get('tier'),
            'delivered': status.get('delivered'),
            'deviceFonts': status.get('deviceFonts'),
-           'verdict': status.get('verdict')}
+           'verdict': status.get('verdict'),
+           # 硬判据（v0.27.87）：source='cmap' 时覆盖率才有数；size = 退回体积判据
+           'source': status.get('source', 'size'),
+           'cmapCoverageGB2312L1': status.get('cmapCoverageGB2312L1'),
+           'checkedFont': status.get('checkedFont')}
+    if status.get('cmapThresholds'):
+        out['cmapThresholds'] = status['cmapThresholds']
+    if status.get('probe'):
+        out['probe'] = status['probe']
+    if status.get('cmapCoveredChars') is not None:
+        out['cmapCoveredChars'] = status.get('cmapCoveredChars')
+        out['cmapTotalChars'] = status.get('cmapTotalChars')
     if status.get('deviceScanSkipped'):
         out['deviceScanSkipped'] = status['deviceScanSkipped']
     if status.get('mode') == 'project':

@@ -640,19 +640,28 @@ def flythings_check_project_deps(project_root, platform='F133', device='',
                                    allow_device=bool(device))
         font = ftools.compact(st)
         font['warnings'] = st.get('warnings') or []
+        if st.get('info'):
+            font['info'] = st['info']
         if st.get('missingChinese'):
             tier = st.get('tier') or 'common'
             fix = ftools.repair_command(root, tier)
             where = ('设备侧扫描' if st.get('deviceScanned')
                      else '工程侧检查（未连设备）')
             font['repair'] = fix
+            # 硬判据（v0.27.87）：报出 GB2312 一级覆盖率（不看体积猜）
+            cov = ''
+            if st.get('source') == 'cmap':
+                cov = '，GB2312 一级覆盖率 %s%%（阈值 90%% 算 ok）' % st.get('cmapCoverageGB2312L1')
             font_issues.append({
                 'kind': 'font', 'verdict': st.get('verdict'),
                 'missingChinese': True, 'maxFontBytes': st.get('maxFontBytes'),
                 'advisedTier': tier,
+                'source': st.get('source'),
+                'cmapCoverageGB2312L1': st.get('cmapCoverageGB2312L1'),
+                'checkedFont': st.get('checkedFont'),
                 'delivered': st.get('delivered'),
-                'msg': ('缺中文字库（%s）：判定=%s，最大字体 %s KB → 界面汉字会变方块；默认投 %s 档'
-                        % (where, st.get('verdict'), st.get('maxFontKB'), tier)),
+                'msg': ('缺中文字库（%s）：判定=%s%s，最大字体 %s KB → 界面汉字会变方块；默认投 %s 档'
+                        % (where, st.get('verdict'), cov, st.get('maxFontKB'), tier)),
                 'hint': ('直接跑 flythings_build_ui_flow（默认自动投递 common）或本 op 传 '
                          'font_apply=True；命令行：' + fix)})
         elif st.get('enabled') and st.get('verdict') in ('partial_cjk', 'project_partial_cjk'):

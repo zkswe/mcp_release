@@ -33,12 +33,69 @@ import project_tools as pt
 DEV = {'serial': '192.0.2.9:5555', 'model': 'Zkswe_SSD21X_SPINOR',
        'platform': 'Z21', 'modelConfidence': 'confirmed', 'state': 'device'}
 PREFS_TXT = '{"uart"\\:"/dev/ttyS0","baud"\\:"115200","font"\\:"%s"}'
+# 仓库自带字体（当「设备上的字体」用 —— 离线，不联网）：common/full/multi 均覆盖 GB2312 一级 100%
+REPO_FONT_DIR = os.path.join(U.BASE, 'components', 'fonts', 'fonts')
+REPO_COMMON = os.path.join(REPO_FONT_DIR, 'zkswe-hans-common.ttf')
 
 
 def _dfc():
     mod, err = ft.device_font_check()
     assert mod is not None, err
     return mod
+
+
+def _fake_pull_from(src_path, calls=None):
+    """替掉 device_font_check.pull_font：把 `src_path` 当成「刚从设备拉回来的字体」。
+
+    只换 adb 那一步（网络边界），后面的 cmap 解析/判定/缓存/临时目录清理跑的是**真实现**。
+    """
+    def f(adb, serial, remote_path, dest_path, timeout=180):
+        if calls is not None:
+            calls.append(remote_path)
+        os.makedirs(os.path.dirname(dest_path) or '.', exist_ok=True)
+        shutil.copyfile(src_path, dest_path)
+        return True, 'unittest pull %s' % remote_path
+    return f
+
+
+def _synth_font(path, chars):
+    """用 fontTools 现场造一个「只含指定字符」的字体（离线；仓库没带拉丁字体故必须自己造）。"""
+    from fontTools.fontBuilder import FontBuilder
+    from fontTools.pens.ttGlyphPen import TTGlyphPen
+    fb = FontBuilder(1000, isTTF=True)
+    fb.setupGlyphOrder(['.notdef', 'A'])
+    fb.setupCharacterMap({ord(c): 'A' for c in chars})
+    fb.setupGlyf({'.notdef': TTGlyphPen(None).glyph(), 'A': TTGlyphPen(None).glyph()})
+    fb.setupHorizontalMetrics({'.notdef': (500, 0), 'A': (500, 0)})
+    fb.setupHorizontalHeader(ascent=800, descent=-200)
+    fb.setupNameTable({'familyName': 'ZkTest', 'styleName': 'Regular'})
+    fb.setupOS2()
+    fb.setupPost()
+    fb.save(path)
+    return path
+
+
+def _device_font_dict(path, name='devfont.ttf', dir_='/etc/font'):
+    """构造一条「设备 ls 到的字体」记录（体积用真实文件体积，免得与拉回来的对不上）。"""
+    return {'dir': dir_, 'name': name, 'sizeBytes': os.path.getsize(path),
+            'mtimeText': 'Jan 1 2026'}
+
+
+def _locale_testcase(testcase):
+    """把探测缓存指到临时文件（测试不许写用户真实 ~/.fun，也不许靠上一次跑的结果）。"""
+    import tempfile
+    cache = os.path.join(tempfile.mkdtemp(prefix='fontcache_'), 'font-probe.json')
+    old = os.environ.get('FLYTHINGS_FONT_CACHE')
+    os.environ['FLYTHINGS_FONT_CACHE'] = cache
+
+    def _restore():
+        if old is None:
+            os.environ.pop('FLYTHINGS_FONT_CACHE', None)
+        else:
+            os.environ['FLYTHINGS_FONT_CACHE'] = old
+        shutil.rmtree(os.path.dirname(cache), ignore_errors=True)
+    testcase.addCleanup(_restore)
+    return cache
 
 
 def _mk(root, prefs_font='', fonts=(), props='projectName=unittest\n'):
@@ -73,13 +130,30 @@ def _fake_device(collect_fonts):
         mock.patch.object(ft._adb, 'probe_devices',
                           lambda *a, **k: {'ok': True, 'online': [DEV], 'offline': [],
                                            'adb': 'adb', 'adbSource': 'unittest', 'count': 1}),
-        mock.patch.object(ft._adb, 'ensure_busybox', lambda *a, **k: ''),
+        mock.patch.object(ft._adb, 'ensure_busybox', lambda *a, **k: '/tmp/busybox_unittest'),
         mock.patch.object(_dfc(), 'collect',
                           lambda adb, serial, use_busybox:
                               {'props': {'ro.product.model': DEV['model']},
                                'fonts': list(collect_fonts), 'raw_dirs': {}}),
     ]
     return patches
+
+
+def _fake_device_branch(testcase, src_font, name='fzcircle.ttf', dir_='/etc/font'):
+    """设备分支全套假体：探测 / collect / **拉取** —— 离线，但 cmap 判定链走真实现。
+
+    返回 (calls, record)：calls = 拉取过的设备路径列表（用来证明缓存命中/超限不拉）。
+    """
+    calls = []
+    rec = _device_font_dict(src_font, name=name, dir_=dir_)
+    for p in _fake_device([rec]):
+        p.start()
+        testcase.addCleanup(p.stop)
+    pm = mock.patch.object(_dfc(), 'pull_font', _fake_pull_from(src_font, calls))
+    pm.start()
+    testcase.addCleanup(pm.stop)
+    _locale_testcase(testcase)
+    return calls, rec
 
 
 class TestCheckProjectDepsFontCheck(unittest.TestCase):
@@ -197,24 +271,32 @@ class TestCheckProjectDepsFontCheck(unittest.TestCase):
         self.assertIn('font/zkswe-hans-multi.ttf', de['files'])
         self.assertTrue(os.path.isfile(os.path.join(self.tmp, 'font', 'zkswe-hans-multi.ttf')))
 
-    def test_device_branch_scans_device_fonts(self):
-        """① 传 device= 时扫设备字体：deviceFonts 带路径+体积，缺中文 → 默认档 common。"""
+    def test_device_branch_cmap_missing_delivers(self):
+        """① 设备分支（**硬判据**）：设备最大字体只有拉丁 → cmap 覆盖率 0% → missing + 投递 common。
+
+        （仓库未带拉丁字体：用 fontTools 现场造一个——离线、不联网、不连真机。）
+        """
         _mk(self.tmp, prefs_font='/res/font/old.ttf', fonts=[('old.ttf', 20)])
-        for p in _fake_device([{'dir': '/etc/font', 'name': 'fzcircle.ttf', 'sizeBytes': 21200}]):
-            p.start()
-            self.addCleanup(p.stop)
+        latin = _synth_font(os.path.join(self.tmp, 'latin_only.ttf'), 'ABCabc0123')
+        calls, _rec = _fake_device_branch(self, latin)
         r = U.jcall('flythings_check_project_deps',
                     {'project_root': self.tmp, 'device': DEV['serial']})
         fc = r['fontCheck']
         self.assertEqual(fc['mode'], 'device')
         self.assertEqual(fc['device'], DEV['serial'])
-        self.assertEqual(fc['deviceFonts'][0]['name'], 'fzcircle.ttf')
-        self.assertEqual(fc['deviceFonts'][0]['sizeKB'], 20.7)
+        self.assertEqual(fc['source'], 'cmap', fc)
+        self.assertEqual(fc['cmapCoverageGB2312L1'], 0.0)
+        self.assertEqual(fc['cmapCoveredChars'], 0)
+        self.assertEqual(fc['cmapTotalChars'], 3755)
+        self.assertEqual(fc['verdict'], 'missing')
         self.assertTrue(fc['missingChinese'])
-        self.assertEqual(fc['verdict'], 'no_cjk')
+        self.assertEqual(fc['checkedFont']['name'], 'fzcircle.ttf')
+        self.assertTrue(fc['checkedFont']['sizeBytes'] > 0)
+        self.assertEqual(len(calls), 1, calls)
         msg = r['fontIssues'][0]['msg']
         self.assertIn('设备侧扫描', msg)
-        self.assertIn('no_cjk', msg)
+        self.assertIn('missing', msg)
+        self.assertIn('GB2312 一级覆盖率', msg)
 
 
 class TestBuildFlowFontStep(unittest.TestCase):
@@ -315,8 +397,13 @@ class TestBuildFlowFontStep(unittest.TestCase):
         self.assertTrue(os.path.isfile(os.path.join(self.tmp, 'font', 'zkswe-hans-full.ttf')))
 
     def test_device_branch_uses_gate_device(self):
-        """① 有设备（设备门已探到一台）→ 扫设备字体并在 build 前投递；不重复探 adb。"""
+        """① 有设备（设备门已探到一台）→ 硬判据拉字体算覆盖率 → 在 build 前投递；不重复探 adb。
+
+        同时钉住 v0.27.87 的**部署后复查**口子：deviceAfterDeploy 回答「字库要不要固化」。
+        """
         _mk(self.tmp, prefs_font='/res/font/old.ttf', fonts=[('old.ttf', 20)])
+        latin = _synth_font(os.path.join(self.tmp, 'latin_only.ttf'), 'ABCabc0123')
+        calls = []
         gate = {'needDeviceInput': False, 'serial': DEV['serial'], 'model': DEV['model'],
                 'platformMatch': 'match', 'installHint': '', 'message': '',
                 'devices': [DEV], 'offline': [], 'adb': 'adb', 'adbSource': 'unittest',
@@ -328,28 +415,339 @@ class TestBuildFlowFontStep(unittest.TestCase):
             return {'ok': True, 'online': [DEV], 'offline': [], 'adb': 'adb',
                     'adbSource': 'unittest', 'count': 1}
 
+        rec = _device_font_dict(latin, name='fzcircle.ttf')
         patches = [mock.patch.object(pt, '_launch_gate', lambda p, d: gate),
                    mock.patch.object(pt, '_device_sync_check',
                                      lambda root, s, p: {'checked': True, 'allMatch': True,
                                                          'stale': [], 'ftu': [], 'so': [],
                                                          'reason': ''}),
                    mock.patch.object(ft._adb, 'probe_devices', counting_probe),
-                   mock.patch.object(ft._adb, 'ensure_busybox', lambda *a, **k: '')]
-        patches += _fake_device([{'dir': '/etc/font', 'name': 'fzcircle.ttf',
-                                  'sizeBytes': 21200}])[2:3]
+                   mock.patch.object(ft._adb, 'ensure_busybox', lambda *a, **k: '/tmp/busybox_unittest'),
+                   mock.patch.object(_dfc(), 'pull_font', _fake_pull_from(latin, calls))]
+        patches += _fake_device([rec])[2:3]
         for p in patches:
             p.start()
             self.addCleanup(p.stop)
+        _locale_testcase(self)
         fn, seen = self._fake_fun()
         with mock.patch.object(pt, '_run_fun', fn):
             r = U.jcall('flythings_build_ui_flow', {'project_root': self.tmp})
         self.assertTrue(r['ok'], r)
-        self.assertEqual(r['fontCheck']['mode'], 'device')
-        self.assertEqual(r['fontCheck']['deviceFonts'][0]['name'], 'fzcircle.ttf')
-        self.assertTrue(r['fontCheck']['missingChinese'])
-        self.assertIn('font/zkswe-hans-common.ttf', r['fontCheck']['delivered']['files'])
+        fc = r['fontCheck']
+        self.assertEqual(fc['mode'], 'device')
+        self.assertEqual(fc['deviceFonts'][0]['name'], 'fzcircle.ttf')
+        self.assertEqual(fc['source'], 'cmap')
+        self.assertEqual(fc['cmapCoverageGB2312L1'], 0.0)
+        self.assertEqual(fc['verdict'], 'missing')
+        self.assertTrue(fc['missingChinese'])
+        self.assertIn('font/zkswe-hans-common.ttf', fc['delivered']['files'])
         self.assertEqual(probes['n'], 0, '设备门已探过 → 字体体检不该再探一次 adb')
         self.assertIn('launch', seen)
+        # 部署后复查：设备上还是没有该字体 → 必须说清「要 pack_upgrade 固化」
+        after = fc['deviceAfterDeploy']
+        self.assertTrue(after['checked'], after)
+        self.assertFalse(after['consistent'])
+        self.assertIn('pack_upgrade', after['note'])
+        self.assertTrue(any('固化' in w for w in r.get('warnings', [])), r.get('warnings'))
+        step = [s for s in r['steps'] if s['step'] == 'check_font'][0]
+        self.assertEqual(step['source'], 'cmap')
+        self.assertEqual(step['cmapCoverageGB2312L1'], 0.0)
+        self.assertEqual(step['checkedFont']['name'], 'fzcircle.ttf')
+        self.assertEqual(calls, ['/etc/font/fzcircle.ttf'], calls)
+
+
+class TestFontCmapHardProbe(unittest.TestCase):
+    """A. **硬判据（cmap 覆盖率）**（v0.27.87，钟工拍板：比体积判据好）
+
+    钉住：① 基准集 = GB2312 一级 3755 字；② 三档阈值 90/50；③ 三条 verdict + 投递与否；
+    ④ 缓存命中不重复拉；⑤ 超限 / fontTools 不可用 / 拉取失败 → **退回体积判据且写明原因**；
+    ⑥ 临时文件用完即删；⑦ 部署后复查（consistent / 要固化）；⑧ 仓库自带字体当真机字体的证据。
+    全程离线（不联网、不连真机）：只把 adb pull 那一步换成拷贝。
+    """
+
+    def setUp(self):
+        self.tmp = U.project()
+
+    def tearDown(self):
+        U.cleanup(self.tmp)
+
+    # ---- 基准集与阈值 ----
+    def test_gb2312_level1_basis_is_3755(self):
+        """基准集必须是 GB2312 一级 3755 字（不靠外部文件，用 codec 现场推）。"""
+        chars = _dfc().gb2312_level1()
+        self.assertEqual(len(chars), 3755)
+        self.assertEqual(len(set(chars)), 3755)
+        self.assertEqual(_dfc().CMAP_TOTAL_CHARS, 3755)
+        self.assertIn('一', chars)
+        self.assertIn('汉', chars)
+
+    def test_judge_cmap_thresholds(self):
+        """≥90% ok / 50–90% low / <50% missing（边界值逐条钉死）。"""
+        j = _dfc().judge_cmap
+        self.assertEqual(j(100.0)['verdict'], 'ok')
+        self.assertEqual(j(90.0)['verdict'], 'ok')
+        self.assertFalse(j(90.0)['needFont'])
+        self.assertIsNone(j(90.0)['recommendTier'])
+        self.assertEqual(j(89.9)['verdict'], 'low')
+        self.assertTrue(j(89.9)['needFont'])
+        self.assertEqual(j(50.0)['verdict'], 'low')
+        self.assertEqual(j(50.0)['recommendTier'], 'common')
+        self.assertEqual(j(49.9)['verdict'], 'missing')
+        self.assertEqual(j(0.0)['verdict'], 'missing')
+        self.assertTrue(j(0.0)['needFont'])
+        self.assertEqual(_dfc().CMAP_OK_MIN_PCT, 90.0)
+        self.assertEqual(_dfc().CMAP_LOW_MIN_PCT, 50.0)
+        self.assertEqual(_dfc().PROBE_MAX_BYTES, 12 * 1024 * 1024)
+
+    def test_repo_common_font_covers_basis(self):
+        """仓库自带三版字体都覆盖 GB2312 一级 100% → 投递 common 够用（阈值 90%）。"""
+        for tier in ('common', 'full', 'multi'):
+            p = os.path.join(REPO_FONT_DIR, 'zkswe-hans-%s.ttf' % tier)
+            pct, covered, total, err = _dfc().font_cmap_coverage(p)
+            self.assertEqual(err, '', err)
+            self.assertEqual(total, 3755)
+            self.assertEqual(covered, 3755, tier)
+            self.assertGreaterEqual(pct, 90.0)
+
+    def test_probe_font_direct_reasons(self):
+        """probe_font 的退回信号：文件不存在 / 超限 —— 必须带 reason，且 verdict=None。"""
+        miss = _dfc().probe_font(os.path.join(self.tmp, 'nope.ttf'))
+        self.assertEqual(miss['source'], 'size')
+        self.assertIsNone(miss['verdict'])
+        self.assertIn('不存在', miss['reason'])
+        big = _dfc().probe_font(REPO_COMMON, size_bytes=13 * 1024 * 1024)
+        self.assertEqual(big['source'], 'size')
+        self.assertIsNone(big['verdict'])
+        self.assertIn('PROBE_MAX_BYTES', big['reason'])
+
+    # ---- 三条 verdict（走 font_preflight 全链）----
+    def _preflight(self, src_font, name='devfont.ttf', platform='Z21', **kw):
+        _mk(self.tmp, prefs_font='/res/font/old.ttf')     # 投递要改 prefs：没它投不了（见 deliver）
+        calls, rec = _fake_device_branch(self, src_font, name=name)
+        st = ft.font_preflight(self.tmp, platform, device=DEV['serial'], **kw)
+        return st, calls, rec
+
+    def test_device_font_ok_no_delivery(self):
+        """仓库 common 字体当设备字体 → 覆盖率 100% → verdict=ok、**不投递**、零 warning。"""
+        st, calls, _rec = self._preflight(REPO_COMMON, name='source-han.ttf')
+        self.assertEqual(st['source'], 'cmap')
+        self.assertEqual(st['verdict'], 'ok')
+        self.assertEqual(st['cmapCoverageGB2312L1'], 100.0)
+        self.assertEqual(st['cmapCoveredChars'], 3755)
+        self.assertFalse(st['missingChinese'])
+        self.assertFalse(st['delivered']['applied'])
+        self.assertEqual(st['warnings'], [], st['warnings'])
+        self.assertIn('无需投递', st.get('info', ''))
+        self.assertEqual(st['checkedFont']['name'], 'source-han.ttf')
+        self.assertEqual(st['probe']['source'], 'cmap')
+        self.assertEqual(st['probe']['cacheHit'], False)
+        self.assertEqual(len(calls), 1, calls)
+        self.assertFalse(os.path.isdir(os.path.join(self.tmp, 'font')))
+
+    def test_device_font_low_delivers_with_coverage(self):
+        """50–90% → verdict=low：投递 + warning 写明覆盖率（不靠体积猜）。"""
+        mid = _synth_font(os.path.join(self.tmp, 'mid.ttf'), _dfc().gb2312_level1()[:2000])
+        st, _calls, _rec = self._preflight(mid, name='partial-hans.ttf',
+                                           font_check='auto')
+        self.assertEqual(st['source'], 'cmap')
+        self.assertEqual(st['verdict'], 'low')
+        self.assertAlmostEqual(st['cmapCoverageGB2312L1'], 53.3, places=1)
+        self.assertTrue(st['missingChinese'])
+        self.assertTrue(st['delivered']['applied'], st['delivered'])
+        self.assertEqual(st['tier'], 'common')
+        w = ' '.join(st['warnings'])
+        self.assertIn('low', w)
+        self.assertIn('53.3%', w)
+        self.assertIn('font/zkswe-hans-common.ttf', w)
+
+    def test_device_font_missing_delivers(self):
+        """<50%（只有拉丁）→ verdict=missing：投递 + warning 写明覆盖率 0%。"""
+        latin = _synth_font(os.path.join(self.tmp, 'latin.ttf'), 'ABCabc0123')
+        st, _calls, _rec = self._preflight(latin, name='latin-only.ttf')
+        self.assertEqual(st['source'], 'cmap')
+        self.assertEqual(st['verdict'], 'missing')
+        self.assertEqual(st['cmapCoverageGB2312L1'], 0.0)
+        self.assertTrue(st['delivered']['applied'], st['delivered'])
+        self.assertTrue(os.path.isfile(os.path.join(self.tmp, 'font',
+                                                    'zkswe-hans-common.ttf')))
+        w = ' '.join(st['warnings'])
+        self.assertIn('missing', w)
+        self.assertIn('0.0%', w)
+
+    # ---- 缓存 / 超限 / 降级 / 临时文件 ----
+    def test_probe_cache_hit_avoids_second_pull(self):
+        """第二次探测命中缓存：**不再拉取**、结论一致、缓存文件真存在（成本控制）。"""
+        cache = _locale_testcase(self)
+        calls = []
+        rec = _device_font_dict(REPO_COMMON, name='source-han.ttf')
+        with mock.patch.object(_dfc(), 'pull_font', _fake_pull_from(REPO_COMMON, calls)):
+            first = ft.hard_probe(DEV['serial'], [rec], 'Z21')
+            second = ft.hard_probe(DEV['serial'], [rec], 'Z21')
+        self.assertEqual(len(calls), 1, calls)
+        self.assertFalse(first['cacheHit'])
+        self.assertTrue(second['cacheHit'], second)
+        self.assertEqual(first['verdict'], second['verdict'])
+        self.assertEqual(second['cmapCoverageGB2312L1'], 100.0)
+        self.assertTrue(os.path.isfile(cache), cache)
+        data = json.load(open(cache, encoding='utf-8'))
+        self.assertEqual(data['version'], ft.PROBE_CACHE_VERSION)
+        self.assertEqual(len(data['entries']), 1)
+        entry = list(data['entries'].values())[0]
+        self.assertEqual(entry['verdict'], 'ok')
+        self.assertTrue(entry['localMd5'], entry)
+        self.assertEqual(cache, ft.probe_cache_path())
+        # 换个体积（设备侧字体被换过）→ 缓存键变 → 重新拉
+        calls2 = []
+        rec2 = dict(rec, sizeBytes=rec['sizeBytes'] + 1)
+        with mock.patch.object(_dfc(), 'pull_font', _fake_pull_from(REPO_COMMON, calls2)):
+            third = ft.hard_probe(DEV['serial'], [rec2], 'Z21')
+        self.assertEqual(len(calls2), 1, calls2)
+        self.assertFalse(third['cacheHit'])
+
+    def test_oversize_font_never_pulled_falls_back_to_size(self):
+        """拉取上限 12 MB：超了就**不拉**，退回体积判据（source=size + warning 写清原因）。"""
+        calls = []
+        rec = {'dir': '/res/font', 'name': 'huge.ttf', 'sizeBytes': 13 * 1024 * 1024,
+               'mtimeText': 'Jan 1 2026'}
+        with mock.patch.object(_dfc(), 'pull_font', _fake_pull_from(REPO_COMMON, calls)):
+            hp = ft.hard_probe(DEV['serial'], [rec], 'Z21')
+        self.assertEqual(calls, [], '超限不许拉（13MB 拖回来没意义）')
+        self.assertEqual(hp['source'], 'size')
+        self.assertIsNone(hp['verdict'])
+        self.assertIsNone(hp['cmapCoverageGB2312L1'])
+        self.assertIn('PROBE_MAX_BYTES', hp['reason'])
+        self.assertTrue(any('体积判据' in w for w in hp['warnings']), hp['warnings'])
+        self.assertEqual(hp['checkedFont']['name'], 'huge.ttf')
+
+    def test_oversize_in_preflight_keeps_size_verdict(self):
+        """端到端：超限时 fontCheck 的 verdict 仍是体积判据的结论（13MB → has_cjk）。"""
+        rec = {'dir': '/res/font', 'name': 'huge.ttf', 'sizeBytes': 13 * 1024 * 1024,
+               'mtimeText': 'Jan 1 2026'}
+        calls = []
+        for p in _fake_device([rec]):
+            p.start()
+            self.addCleanup(p.stop)
+        with mock.patch.object(_dfc(), 'pull_font', _fake_pull_from(REPO_COMMON, calls)):
+            st = ft.font_preflight(self.tmp, 'Z21', device=DEV['serial'])
+        self.assertEqual(st['source'], 'size')
+        self.assertEqual(st['verdict'], 'has_cjk')
+        self.assertFalse(st['missingChinese'])
+        self.assertEqual(st['cmapCoverageGB2312L1'], None)
+        self.assertTrue(any('退回' in w for w in st['warnings']), st['warnings'])
+        self.assertEqual(calls, [])
+
+    def test_fonttools_unavailable_falls_back_to_size(self):
+        """fontTools 不可用 → 退回体积判据，warning 必须点名 fontTools（绝不静默退）。"""
+        calls = []
+        rec = _device_font_dict(REPO_COMMON, name='source-han.ttf')
+        with mock.patch.object(_dfc(), 'pull_font', _fake_pull_from(REPO_COMMON, calls)), \
+                mock.patch.object(_dfc(), 'fonttools_error',
+                                  lambda: 'ImportError: no module named fontTools'):
+            hp = ft.hard_probe(DEV['serial'], [rec], 'Z21')
+        self.assertEqual(len(calls), 0, calls)
+        self.assertEqual(hp['source'], 'size')
+        self.assertIn('fontTools', hp['reason'])
+        self.assertTrue(any('fontTools' in w for w in hp['warnings']), hp['warnings'])
+
+    def test_pull_failure_falls_back_to_size(self):
+        """拉取失败（设备掉线/路径不对）→ 退回体积判据 + warning 写明拉取失败。"""
+        rec = _device_font_dict(REPO_COMMON, name='source-han.ttf')
+        with mock.patch.object(_dfc(), 'pull_font',
+                               lambda *a, **k: (False, 'error: device offline')):
+            hp = ft.hard_probe(DEV['serial'], [rec], 'Z21')
+        self.assertEqual(hp['source'], 'size')
+        self.assertIsNone(hp['verdict'])
+        self.assertIn('拉取失败', hp['reason'])
+        self.assertTrue(any('退回' in w for w in hp['warnings']), hp['warnings'])
+
+    def test_probe_temp_file_removed(self):
+        """临时目录用完即删：拉回来的字体不在临时目录里留存。"""
+        seen = {}
+
+        def spy(adb, serial, remote_path, dest_path, timeout=180):
+            seen['dest'] = dest_path
+            seen['dir'] = os.path.dirname(dest_path)
+            shutil.copyfile(REPO_COMMON, dest_path)
+            return True, 'spy'
+        _locale_testcase(self)
+        rec = _device_font_dict(REPO_COMMON, name='source-han.ttf')
+        with mock.patch.object(_dfc(), 'pull_font', spy):
+            ft.hard_probe(DEV['serial'], [rec], 'Z21')
+        self.assertIn('dest', seen)
+        self.assertFalse(os.path.exists(seen['dest']), seen['dest'])
+        self.assertFalse(os.path.isdir(seen['dir']), seen['dir'])
+        self.assertIn('font_probe_', seen['dir'])
+
+    def test_empty_device_scan_is_flagged_uncertain(self):
+        """扫描结果为空时**不要把结论说得像板上真的没字库**（v0.27.87 真机实测补）。
+
+        （实测背景：busybox 未就绪 + 设备自带 ls 解析不出来时，列表也是空的 → 会误报「无字库」
+        并触发投递；这里钉住「必须把存疑写进 scanNote/warnings」。）
+        """
+        _mk(self.tmp, prefs_font='/res/font/old.ttf')
+        calls, _rec = _fake_device_branch(self, REPO_COMMON)
+        for p in _fake_device([]):                    # 设备 ls 什么都没解析到
+            p.start()
+            self.addCleanup(p.stop)
+        st = ft.font_preflight(self.tmp, 'Z21', device=DEV['serial'])
+        self.assertEqual(st['source'], 'size')        # 没字体可探 → 硬判据无从下手
+        self.assertIn('没解析出任何字体', st.get('scanNote', ''))
+        self.assertTrue(any('没解析出任何字体' in w for w in st['warnings']), st['warnings'])
+        self.assertEqual(calls, [], calls)
+
+    def test_probe_uses_biggest_device_font(self):
+        """多个字体时只探最大的那个（成本控制：一次只拉一个文件）。"""
+        small = _synth_font(os.path.join(self.tmp, 'small.ttf'), 'ABC')
+        calls = []
+        fonts = [dict(_device_font_dict(small, name='small.ttf'), sizeBytes=10000),
+                 dict(_device_font_dict(REPO_COMMON, name='big.ttf'))]
+        _locale_testcase(self)
+        with mock.patch.object(_dfc(), 'pull_font', _fake_pull_from(REPO_COMMON, calls)):
+            hp = ft.hard_probe(DEV['serial'], fonts, 'Z21')
+        self.assertEqual(calls, ['/etc/font/big.ttf'], calls)
+        self.assertEqual(hp['checkedFont']['name'], 'big.ttf')
+        self.assertEqual(hp['verdict'], 'ok')
+
+    # ---- 部署后复查（与应用侧 staleOnDevice 凑闭环）----
+    def test_after_deploy_recheck_mismatch_needs_pack_upgrade(self):
+        """投递过字体但设备侧还是没有 → consistent=False + 明说「要 pack_upgrade 固化」。"""
+        _mk(self.tmp, prefs_font='/res/font/old.ttf')
+        delivered = {'applied': True, 'tier': 'common', 'file': 'zkswe-hans-common.ttf',
+                     'files': ['font/zkswe-hans-common.ttf', 'package.properties']}
+        scan = {'verdict': 'no_cjk', 'maxFontKB': 20.7,
+                'deviceFonts': [{'name': 'fzcircle.ttf', 'sizeBytes': 21200}]}
+        with mock.patch.object(ft, 'device_scan', lambda s, p='': (scan, '')):
+            out = ft.recheck_after_deploy(DEV['serial'], 'Z21', self.tmp, delivered)
+        self.assertTrue(out['checked'])
+        self.assertFalse(out['consistent'])
+        self.assertIn('pack_upgrade', out['note'])
+        self.assertEqual(out['deviceMaxFontKB'], 20.7)
+        self.assertEqual(out['projectFont'], 'zkswe-hans-common.ttf')
+        self.assertTrue(out['warnings'], out)
+
+    def test_after_deploy_recheck_consistent_after_flash(self):
+        """固化生效（设备侧字体名字+体积与工程投递一致）→ consistent=True、无 warning。"""
+        _mk(self.tmp, prefs_font='/res/font/old.ttf')
+        os.makedirs(os.path.join(self.tmp, 'font'), exist_ok=True)
+        shutil.copyfile(REPO_COMMON, os.path.join(self.tmp, 'font',
+                                                  'zkswe-hans-common.ttf'))
+        size = os.path.getsize(os.path.join(self.tmp, 'font', 'zkswe-hans-common.ttf'))
+        delivered = {'applied': True, 'tier': 'common', 'file': 'zkswe-hans-common.ttf',
+                     'files': ['font/zkswe-hans-common.ttf']}
+        scan = {'verdict': 'has_cjk', 'maxFontKB': round(size / 1024.0, 1),
+                'deviceFonts': [{'name': 'zkswe-hans-common.ttf', 'sizeBytes': size}]}
+        with mock.patch.object(ft, 'device_scan', lambda s, p='': (scan, '')):
+            out = ft.recheck_after_deploy(DEV['serial'], 'Z21', self.tmp, delivered)
+        self.assertTrue(out['consistent'])
+        self.assertEqual(out['warnings'], [])
+        self.assertIn('生效', out['note'])
+
+    def test_after_deploy_recheck_skipped_without_delivery(self):
+        """没投递过字体 → 不查设备（零动作，不白花一次扫描）。"""
+        out = ft.recheck_after_deploy(DEV['serial'], 'Z21', self.tmp,
+                                      {'applied': False, 'files': []})
+        self.assertFalse(out['checked'])
+        self.assertIn('无需复查', out['note'])
 
 
 if __name__ == '__main__':
