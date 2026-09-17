@@ -1,6 +1,6 @@
 # 滑动/拖拽手感规范：dragMaxDis / edgeEffect / autoRollback / rollSpeed
 
-> **检索命中条件**：问「dragMaxDis 什么意思 / 列表被拖出去 / 越界回弹 / 拖拽距离填多少 / edgeEffect 怎么配 / 列表滑动手感 / 循环列表拖拽 / 松手回弹」→ 本文。
+> **检索命中条件**：问「dragMaxDis 什么意思 / 列表被拖出去 / 越界回弹 / 拖拽距离填多少 / edgeEffect 怎么配 / 列表滑动手感 / 循环列表拖拽 / 松手回弹 / 拖动很卡」→ 本文。
 > 适用控件：`listview` / `scrollwindow` / `pagewindow` / `slidewindow`（四个控件共用同一批滑动字段）。
 > 2026-09-12 沛哥定规（起因：列表 `dragMaxDis` 按列表高度填 → 一次拖拽把整屏列表拽出去，交互不合格）→ 语义 + 取值规范入库。
 > **证据**：SampleUI-New(1024x600) 42 json + basedemo 官方示例（listViewDemo-New / ScrollWindowDemo-New / PageWindowDemo-New / SlideWindowDemo）+ 真实工程 json 统计（取值只落 4 档，见 §5）。
@@ -47,6 +47,9 @@
 - **R6 分辨率换算**：基准 50 @1024×600 ≈ 屏高 8%；其他分辨率 `round(scale × 50)`，下限 24（480×272 → 24；800×480 → 40；1280×800 → 67）。
 - **R7 手感验收（实机）**：拽到边界应 1-2 帧内「拽不动」并带阻尼；松手 200-300ms 内回弹归位；**任何情况下不允许整屏内容被拖离后长时间露底**。
 - **R8 别拿它做别的**：翻页用 `pagewindow`；下拉刷新自己做手势判定（`onXxxActivityTouchEvent` + 边缘判定），`dragMaxDis` 做不到。
+- **R9 回调重量也算手感**（2026-09-17 实测）：拖动回调里**禁止全量刷新**——同一页 4 条滑块只因回调重量不同，
+  拖动期的 CPU 就相差一个数量级（重回调 **73.8%** vs 轻回调 **7.1%**，快拖延迟 **383ms vs 169ms**）。
+  手感不对时先量「回调里写了几次控件」，再看字段取值。详见 `high-frequency-callback-perf.md`。
 
 ## 3. 症状 → 病因对照
 
@@ -56,6 +59,7 @@
 | 边缘毫无反馈、硬邦邦 | `edgeEffect:0`（或 `edgeEffect:1` 但 `dragMaxDis:0`） | 要回弹就 `edgeEffect:1 + 50` |
 | 列表停在不该停的位置 | 缺 `autoRollback:true`（或改数据后没 refresh） | 补 autoRollback / `refreshListView()` |
 | 滚动页滚不到底 | scrollwindow 的 `dragMaxDis` < 内容尺寸 | 填内容尺寸（实测与内嵌 window 尺寸一致） |
+| 同一个页面的同类控件，**有的顺有的卡** | 卡的那条回调里走了**全量刷新**（每次拖动 80+ 次 GUI 调用） | 回调只刷变化的那一个控件，见 `high-frequency-callback-perf.md` |
 
 ## 4. 验收清单（交付前打勾）
 
@@ -90,3 +94,4 @@
 - slidewindow / pagewindow 字段：`slidewindow-fields.md`、`pagewindow-fields.md`
 - HTML 属性映射：`ui_tools/HTML_SUBSET.md`（`data-drag-max` / `data-edge-effect` / `data-auto-rollback` / `data-roll-speed`）
 - 自定义手势（下拉刷新等）：`touch-events.md`
+- 拖动回调写得太多导致的卡顿（CPU 降一个数量级） → `high-frequency-callback-perf.md`

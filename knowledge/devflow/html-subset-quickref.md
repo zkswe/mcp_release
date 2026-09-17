@@ -1,6 +1,6 @@
 # HTML 原型 → json 规范速查（HTML_SUBSET）
 
-> 检索导引：写「受限 HTML 原型 / 原型转 json / 控件映射 / data-* 属性 / data-icon 图标 / CSS 效果转图 / JS 交互稿」时命中。
+> 检索导引：写「受限 HTML 原型 / 原型转 json / 控件映射 / data-* 属性 / data-icon 图标 / CSS 效果转图 / JS 交互稿 / data-bgpic 丢失 / backgroundPic 没生成 / 底图没画出来」时命中。
 > 用途：`flythings_html_to_json` 的完整口径（该工具 docstring 只保留要点，长尾在这里）。
 > 实现规范（工具开发用）：仓库 `ui_tools/HTML_SUBSET.md`；本页是 AI 生成原型时的口径，内容以本页为准。
 
@@ -42,6 +42,15 @@
     **要纯黑请写 `#010101`**（或改判定逻辑，另议）。深色底 / 黑字最容易踩（2026-09-16 实测）。
 - **命名**：`data-caption` 指定控件名（C 标识符）；缺省自动 `TextView1` / `Button1` …
 - **自备图**：`data-pic`（引用自己切好的 PNG / .9.png / 序列帧 GIF）
+  - ⚠️ **`div.text` 上的 `data-bgpic` 会被丢掉**（2026-09-17 实测）：转换器只在
+    `button` / `icon` / `seekbar` / `circlebar` / `diagram` / listview 子项等分支读
+    `data-bgpic`，**`textview` 分支不读它** → JSON 里那个节点**没有 `backgroundPic`**
+    （同一份 JSON 里 seekbar 的 textview 却有，极易看成「怎么别人就好」）。
+    现象是「卡片/底图压根没画出来」（案例：弹窗打开、变暗也对，就是**看不到白卡**）。
+    处置二选一：① 底图换用**支持承载的类型**（如 `div.icon` / `button`，或直接写 `data-pic` + 支持该属性的类型）；
+    ② **`patch_json` 反查 HTML 给该节点补 `backgroundPic`**（案例采用的括底做法：把原 HTML 的
+    `data-bgpic` 按 caption 回填到 json）。
+    注：`data-bg` / `data-background` 是**背景色**，不是图；要图不能用它们替代。
 
 ## 5. 图标优先（沛哥 2026-09-03 定规，生成 UI 时必守）
 
@@ -138,4 +147,6 @@ warning 会要求切图后用 `data-pic` 引用。
 - 图片资源铁律与 PNG 抗锯齿管线 → `ui-asset-rules.md`
 - json 字段全集/层级规则 → `uicontrols/json-field-mandatory.md`、`uicontrols/json-layer-rules.md`
 - 布局产物核对（图尺寸 == 控件盒）→ `flythings_verify_assets` / check_all 第 17 项
+  （⚠️ 只管 json **声明**的图；运行期 `setBackgroundPic` 的图查不到 → `uicontrols/text-box-height-rule.md` §4）
 - 设计令牌漂移（`DESIGN.md` 令牌 vs json 色值/字号）→ check_all 第 18 项
+- 归一化、转图、补丁的完整链路 → `ftu-json-pipeline.md`

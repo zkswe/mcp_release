@@ -402,7 +402,7 @@ _PROJECT_SPEC = {
         "禁止在 logic.cc 中定义 ID_MAIN_* 宏、static ZKxxx* 指针、new ZKxxx、findControlByID 初始化",
         "onUI_init() 时所有控件指针已由 IDE 初始化完毕，直接使用即可",
         "每个 logic.cc 必须包含 REGISTER_ACTIVITY_TIMER_TAB（不用定时器也保留空表）",
-        "setBackgroundBmp 只调一次，帧刷新用 setInvalid 交替",
+        "setBackgroundBmp 只调一次；帧刷新用 setInvalid(!isInvalid()) 交替——**仅限只读 textview**（button 等可交互控件会被置为无效态=禁用，见 knowledge/uicontrols/touch-events.md §6）",
         "obtainListItemData_XXX 禁止耗时代码（滚动时每行调用）",
         "设备字库不支持 emoji 和特殊字符（■ ● ⌫ ℃ 等）",
         "新建项目应从 IDE 模板创建（flythings_create_project），勿手搭骨架",
@@ -557,7 +557,7 @@ def flythings_validate_project(root):
                                  'msg': '缺少 REGISTER_ACTIVITY_TIMER_TAB（每个 logic.cc 必须有，不用定时器也保留空表）'})
             if len(re.findall(r'setBackgroundBmp', text)) > 1:
                 warnings.append({'file': f'src/logic/{fn}', 'type': 'bg_bmp_multi',
-                                 'msg': 'setBackgroundBmp 多次调用（应只调一次，帧刷新用 setInvalid）'})
+                                 'msg': 'setBackgroundBmp 多次调用（应只调一次；帧刷新用 setInvalid 交替——仅限只读 textview，交互控件会被禁用）'})
             # ⚠️ 宏批量生成回调（如 #define DEFINE_DAY_CB(i) void onButtonClick_BtnDay##i(...) 展开 42 个日期格）
             #     → fun build 扫描 ftu 回调时识别不到宏展开 → 向 logic.cc 追加显式桩 → 与宏展开重定义冲突
             # 检测：以 #define 开头（含 \ 续行）的宏体内含回调签名模式（onXxxClick/onXxxChanged/onXxxTouch/onXxxTimer）

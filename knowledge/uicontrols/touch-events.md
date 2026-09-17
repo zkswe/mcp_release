@@ -1,7 +1,10 @@
 # 触摸事件与遮挡（touchable / touchPass / 谁吃掉了我的点击）
 
 > 2026-09-10 沛哥报障「控件点不动 / 列表拖不动 / 点了没选中」定位产出，V85X + EasyUI 2.9.0 实机逐条验证。
-> 检索词：触摸/点击无效/点不动/拖不动/滑动/穿透/遮挡/touchable/touchPass/setTouchPass/单选点不了。
+> 2026-09-17 补充 §6（`setInvalid` 是禁用不是重绘）/ §7（嵌套 window 的卡片内部点不动）——
+> 两节均来自真机案例 `projects/translate/tdesign-miniprogram`（同一个「点哪都没反应」的两个真根因）。
+> 检索词：触摸/点击无效/点不动/拖不动/滑动/穿透/遮挡/touchable/touchPass/setTouchPass/单选点不了/
+> setInvalid/禁用控件/强制重绘/invalidate/嵌套 window/遮罩抢触摸/卡片里的按钮点不动/扁平化。
 
 ## 1. `touchable=false` **不等于**触摸穿透（最容易搞错的一条）
 
@@ -67,6 +70,8 @@ lv->refreshListView(); // ⚠ 不能省
 - [ ] 每个"压在可触摸控件之上的装饰件"都设了 `setTouchPass(true)`
 - [ ] `radiogroup`/`checkbox` 等交互容器 `touchable=true`
 - [ ] 列表里所有 `setSelection()` 后面都跟了 `refreshListView()`
+- [ ] 代码里**没有把 `setInvalid()` 当重绘用**（§6；禁用控件会让整屏点不动）
+- [ ] 弹层卡片**不是嵌套 window**：卡片底图与子控件扁平化、排在遮罩之后（§7）
 - [ ] **实机**逐项验证：从控件**边缘起手**拖动 / 点首行 / 点末行 / 跨页返回再进入
 - [x] **自动审计已实现**（2026-09-10，`check_all.py` #15 / #16，报 WARN 交人工审批 —— 见下）
 
@@ -90,6 +95,85 @@ WARN 分两类，**故意遮挡不是 bug，人工审批时直接忽略**：
 - 实测噪声（175 个真实 json，2026-09-10）：命中 14 文件 / 17 处 → **可能有意 7 处、疑似误压 10 处**；负向用例（装饰件移开 + 补穿透）0 命中。
 - 局限：#15 只能看 json 层叠与 `touchable`，**查不到运行期才设的 `setTouchPass`**，分类只是线索，最终仍需实机验证（清单第 4 条）。
 
+## 6. `setInvalid()` 是「禁用控件」，**不是**「强制重绘」（2026-09-17 案例实测）
+
+⛔ **最容易致命的一条**：`ZKBase::setInvalid(bool)` 的语义是**把控件置为无效状态**
+（`ZK_CONTROL_STATUS_INVALID` = 禁用），**不是**通用框架里「invalidate = 标脏重绘」那个意思。
+
+- 头文件事实（`references/easyui/*/include/control/ZKBase.h`）：
+  ```cpp
+  void setInvalid(bool isInvalid);   // @brief 设置无效状态
+  bool isInvalid() const;            // @brief 是否是无效状态
+  void invalidate(const LayoutPosition *dirty = NULL);   // @brief 重绘
+  ```
+  **只有带 `bool` 的版本，没有 `setInvalid()` 无参版本**——照「重绘」的直觉写根本编译不过。
+- 真机实测（案例 `projects/translate/tdesign-miniprogram`）：阶段 2 在 `showPage()` 里给 **13 个导航键**
+  都调了 `nav->setInvalid(true)`（本意是「强制重绘」），`showOv()` 给弹层也调了一处 →
+  **导航全部被禁用、整个案例「点哪都没反应」**。排查了大半天，且一度被误判成「触摸注入坏了 / 面板坏了」
+  （注入侧 `dd if=/dev/input/event0` 能证明事件确实写进了节点）。两处删掉后导航立刻全部复活。
+- **判据（30 秒定位）**：现象是「界面能看、但所有控件/整屏都不响应」时，**先 grep 代码里有没有 `setInvalid`**，
+  再去看注入和像素——顺序反了会白查一天。
+
+### 6.1 为什么「网上/示例里拿它刷帧」也会碰得上：它**确实会触发重绘**（但那不是它的语义）
+
+平台实践里真的存在「用 `setInvalid(!isInvalid())` 交替来刷帧」的写法，来源是**自定义帧缓冲**那条路：
+
+```cpp
+// 帧缓冲渲染（GameView / GIF 博客 / game-knob 示例 / setBackgroundBmp 自定义渲染引擎）
+mTextView->setBackgroundBmp(&bmp);          // 只调一次
+mTextView->setInvalid(!mTextView->isInvalid());   // 交替 → 控件重画 → 把新帧抖出来
+```
+
+**机理**：状态变了就要重画外观，于是**顺手把控件重绘了一遍**。所以：
+
+| 用在哪 | 后果 |
+|---|---|
+| **只读控件**（`textview`，本就不响应点击） | 重绘生效、**看不到副作用**——所以这个技巧“能用” |
+| **可交互控件**（`button` / `radiogroup` …） | **控件被禁用**（半个周期还带着“无效态”外观）→ 点不动 |
+
+⇒ 结论：**这是一个依赖“状态变更顺带重绘”的旁路技巧，不是重绘 API**。
+新代码**不要**用它做通用的“强制重绘”，尤其别用在可交互控件上；
+（`project_tools` 的 validate 提示、`flythings_blogs` 的 GIF 示例、`references/kb/controls.md`
+里那句「帧刷新用 setInvalid 交替」都**只限定在 `setBackgroundBmp` 的只读控件场景**。）
+
+### 6.2 真要用「重绘」：`invalidate()` 也有坑（旧设备可能**未导出**）
+
+- `ctrl->invalidate()`（或带脏区 `invalidate(&pos)`）才是「重绘」的正式 API；
+  **带脏区的版本在部分设备上没导出**：实测 `libeasyui.so` 旧于本机头文件时，用它会在 dlopen/链接时报
+  `undefined symbol: _ZN6ZKBase10invalidateEPK14LayoutPosition` → **整屏黑**（不是报错退出）。
+  真机/组件里用前先确认符号存在（组件侧记录见 `components/ui_v1/WheelPicker/README.md`）。
+- **大多数情况根本不需要手动重绘**：`setText` / `setTextColor` / `setBackgroundPic` / `setProgress`
+  这类内容变更**引擎本来就会重绘该控件**。
+- 「隐藏一个控件」不要靠重绘，用**换同尺寸透明占位图 + 文本置空**
+  （`setVisible(true)` 动态显示不重绘）。
+
+## 7. 嵌套 `window` 里的子控件点不动：被**同层更早定义**的 touchable 控件抢走触摸
+
+**现象**：弹窗/卡片**能正常打开、变暗也对**，但**卡片里面的按钮、条目点不动**
+（trigger 在页面上点的通，卡片内部一律没反应）。
+
+**根因**：卡片原来是**嵌套 `window`**（`window__N` 里再放一个 window 装卡片），而遮罩是**父窗口里
+同层的全屏 `button`（`touchable=true`）且定义在前**。触摸分发按「同层定义顺序」命中——视觉上卡片在上、
+不被变暗，但**命中上遮罩先把事件吃掉了**，卡片那一层根本收不到 `DOWN`。
+（本质是 §1 的镜像：§1 是「装饰件挡了拖拽」，这里是「遮罩挡了卡片内部」。）
+
+**修法（案例采用，实测有效）**：把卡片**扁平化到控件层**，同层按这个顺序排：
+
+```
+[遮罩 button]                  ← 吃空白区，点外部关闭
+[卡片底图 textview]            ← touchable=true，吃卡片空白区防误关
+[卡片内各控件 ……]             ← 定义在最后 = z 最高 = 先拿触摸
+```
+
+要点：
+
+- **不用嵌套 window 装卡片**；卡片底板用 `textview` + `backgroundPic`，子控件坐标改成**绝对坐标**
+  （生成器侧把原有相对坐标整体平移即可，案例用的是 `shift(html, dx, dy)` 这类整体平移写法）。
+- 卡片底图那层要 `touchable=true`：既吸收卡片空白区的点击（防止穿透到遮罩把弹窗关掉），
+  又因为排在遮罩之后而优先拿到触摸。
+- 改完验收：**卡片内每个按钮都点一遍**（案例：弹窗「确定/取消/X」+ action-sheet 六形态条目全部恢复，
+  check_all 静态检查对这类「跨层抢触摸」**看不出来**，只能真机点）。
+
 ## 相关
 
 - 层级与层叠顺序 → `json-layer-rules.md`（第 7 条：层叠顺序决定谁收到触摸）
@@ -97,3 +181,5 @@ WARN 分两类，**故意遮挡不是 bug，人工审批时直接忽略**：
 - radiogroup / checkbox 字段与代码操作 → `radiogroup-checkbox-fields.md`
 - listview 回调与刷新 → `listview-fields.md`（铁律 7）
 - 真机确认画面（按 pan 取活帧） → `devflow/ui-layout-verify.md` §2-1
+- 强制重绘 / 禁用语义（`invalidate` vs `setInvalid`） → 本文 §6；抓帧侧口径 `devflow/device-screenshot.md` §3.3-1
+- 高频回调只刷变化控件（拖动卡顿的真因） → `high-frequency-callback-perf.md`
