@@ -48,6 +48,7 @@
 | accessKey 真实值 | 一律全 0 占位 `0000000000000000000000000000000000000000`（真实 key 只在本机/内部 Manifest） |
 
 ### ⚠️ 边界说明
+- **安装说明/URL 必须指向公开仓**（2026-09-17 钟工纠错）：release 侧 README 的安装指引与 `pyproject.toml` 的 Homepage 一律写 `https://gitee.com/Kwolve/flythingsmcp_release`；内部仓名/URL（`fly-things-os_-mcp`）已登记进 `release_scope.json` 的禁词表，merge 时若被带回来会被 `release_gate.py` 拦下。
 - hardware 跨平台对照表含 V85X 路径列 = API 一部分（沛哥 12:22 拍板 hardware 可开放）；但 V85X **绑定实现/私有媒体栈**表述为「未收录于公开版，以平台方 SDK 为准」
 - bin_tools 含 v85x 平台 ELF = 通用调试工具（沛哥拍板 bin_tools 全开放）
 - 保留文档中指向已删文档的引用必须同步清理（否则客户检索到死链/暴露文档名）
