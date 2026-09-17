@@ -4,6 +4,15 @@ import json, os, re, shutil, subprocess, tempfile, time
 
 import platforms as _platforms  # 平台矩阵唯一来源（新增/调整平台只改 platforms.py）
 
+try:                      # adb 单一入口（v0.27.84）：PC 端 adb 解析 + 设备探测 + 型号→平台
+    import adb_tools as _adb
+    _ADB = _adb
+    _ADB_ERR = ''
+except Exception as _e:   # 不阻断（无 adb 也能 build；launch 时才需要）
+    _adb = None
+    _ADB = None
+    _ADB_ERR = repr(_e)
+
 # ---------- 工具链路径（可配置 + 自动探测）----------
 # 优先级：环境变量 FLYTHINGS_FUN_DIR（用户显式指定，最高）> 包内 toolchain（随包分发）> 标准安装目录
 _BASE = os.path.dirname(os.path.abspath(__file__))
@@ -122,20 +131,16 @@ def _run_fui(cmd, target_dir):
 
 # ---------------- fun.exe 基础（build/launch）----------------
 def _adb_online_devices():
-    """列出「当前在线（state=device）」的 adb 设备；adb 不可用/无设备回 []。
-    仅用于多设备歧义提示（拉不到不报错，不阻断流程）。"""
+    """列出「当前在线（state=device）」的 adb 设备 serial；adb 不可用/无设备回 []。
+    仅用于多设备歧义提示（拉不到不报错，不阻断流程）。
+    ⚠️ v0.27.84 起 adb 一律走 adb_tools.resolve_adb()（不再写死 'adb' 字面量）。"""
+    if _adb is None:
+        return []
     try:
-        r = subprocess.run(['adb', 'devices'], capture_output=True, text=True,
-                           timeout=10, stdin=subprocess.DEVNULL)
-        out = r.stdout or ''
+        devs, _err = _adb.list_devices_l()
     except Exception:
         return []
-    devs = []
-    for line in out.splitlines()[1:]:
-        parts = line.split()
-        if len(parts) >= 2 and parts[1] == 'device':
-            devs.append(parts[0])
-    return devs
+    return [d['serial'] for d in devs if d.get('state') == 'device']
 
 
 def _run_fun(cmd, project_dir, device='', retries=1, timeout=600, extra=None):
@@ -1033,7 +1038,139 @@ def flythings_edit_ftu(ftu_path, operations, output_ftu='', overwrite=False):
 
 
 # ---------------- 工具 6: UI 构建流程（pack → build → launch）----------------
-def flythings_build_ui_flow(project_root, with_launch=False, device=''):
+# ---- 设备门（v0.27.84）：决定「往哪台设备推」，不猜 -------------------------
+def _devices_brief(devs):
+    """给返回体用的设备列表（serial + model + 平台匹配情况，不泄漏 IP 以外信息）。"""
+    return [{'serial': d.get('serial'), 'model': d.get('model') or '',
+             'platform': d.get('platform') or '',
+             'platformConfidence': d.get('modelConfidence') or 'unknown',
+             'state': d.get('state') or 'device'} for d in (devs or [])]
+
+
+def _launch_gate(platform, device):
+    """设备探测 + 选机决策（0 台 / 多台 / 恰好 1 台，多台**不猜**）。
+    返回 {'needDeviceInput','serial','model','platformMatch','installHint','message',
+         'devices','offline','adb','adbSource','explicit','connectNote'}
+    """
+    g = {'needDeviceInput': False, 'serial': '', 'model': '', 'platformMatch': '',
+         'installHint': '', 'message': '', 'devices': [], 'offline': [],
+         'adb': '', 'adbSource': '', 'explicit': bool(device),
+         'connectNote': '', 'count': 0}
+    if _adb is None:
+        g['needDeviceInput'] = True
+        g['message'] = 'adb 子系统不可用（adb_tools 导入失败：%s）' % _ADB_ERR
+        g['installHint'] = ('把本包的 adb_tools.py 恢复（或设环境变量 ADB 指向 adb），'
+                            '再重试；adb 不可用时也可用 flythings_device_screenshot 先看设备是否可达。')
+        return g
+
+    def _probe():
+        try:
+            return _adb.probe_devices()
+        except Exception as e:                     # 探测自身出错不抛给上层
+            return {'ok': False, 'error': '设备探测异常: %r' % e, 'online': [], 'offline': [],
+                    'adb': '', 'adbSource': '', 'adbVersion': '', 'count': 0}
+
+    pr = _probe()
+    g['adb'] = pr.get('adb') or ''
+    g['adbSource'] = pr.get('adbSource') or ''
+    # 网络接入：用户给了 <ip>:5555 但不在列表里 → 先 connect 一次再探
+    if device and ':' in str(device) and not any(d.get('serial') == device for d in pr.get('online') or []):
+        try:
+            ok, txt = _adb.connect(device)
+            g['connectNote'] = 'adb connect %s → %s' % (device, txt or ('ok' if ok else 'failed'))
+            if ok:
+                pr = _probe()
+        except Exception as e:
+            g['connectNote'] = 'adb connect %s 异常: %r' % (device, e)
+    online = list(pr.get('online') or [])
+    g['devices'] = online
+    g['count'] = len(online)
+    g['offline'] = list(pr.get('offline') or [])
+
+    if not pr.get('ok'):
+        g['needDeviceInput'] = True
+        g['message'] = '设备探测失败：%s' % (pr.get('error') or '未知原因')
+        g['installHint'] = _adb.install_hint(platform, g['offline'], pr.get('error') or '')
+        return g
+
+    chosen = None
+    if device:
+        hit = [d for d in online if d.get('serial') == str(device)]
+        if not hit:
+            g['needDeviceInput'] = True
+            g['message'] = ('指定设备 %r 不在 adb 在线列表（当前在线：%s）；'
+                            '网络设备请确认已 adb connect，USB 设备请确认已插好并授权。'
+                            % (device, [d.get('serial') for d in online] or '无'))
+            g['installHint'] = _adb.install_hint(platform, g['offline'] + online)
+            return g
+        chosen = hit[0]
+    else:
+        if not online:
+            g['needDeviceInput'] = True
+            g['message'] = '未检测到可用的 FlyThings 设备（adb devices 里没有 state=device 的机器）'
+            g['installHint'] = _adb.install_hint(platform, g['offline'])
+            return g
+        if len(online) > 1:
+            g['needDeviceInput'] = True
+            g['message'] = ('检测到 %d 台在线设备：**不自动选择**（fun 在多设备下静默取列表第一个 → 可能推错设备）。'
+                            '请显式传 device=\'<serial|IP>\' 重试。' % len(online))
+            g['installHint'] = _adb.multi_device_hint(online, platform)
+            return g
+        chosen = online[0]
+
+    g['serial'] = chosen.get('serial') or ''
+    g['model'] = chosen.get('model') or ''
+    g['platformMatch'] = _adb.match_platform(g['model'], platform)
+    if g['platformMatch'] == 'mismatch' and not g['explicit']:
+        g['needDeviceInput'] = True
+        g['message'] = ('唯一在线设备 %s（model=%s）与工程平台 %s **不一致**：'
+                        'fun launch 会直接 FATAL platform not match。'
+                        '确认要推这台就显式传 device=\'%s\'（显式指定=你知情）'
+                        % (g['serial'], g['model'] or '未知', platform or '?', g['serial']))
+        g['installHint'] = _adb.install_hint(platform, online)
+        return g
+    return g
+
+
+def _device_sync_check(project_root, serial, platform):
+    """本地 vs 设备侧（/tmp）ftu / so 的字节与 md5 —— 判定 staleOnDevice。
+
+    设备侧路径来自 fun launch 的部署约定：UI 资源 → `/tmp/ui/`，库 → `/tmp/lib/`。
+    返回 {'checked':bool,'ftu':[...],'so':[...],'stale':[...],'allMatch':bool,'reason':''}
+    """
+    out = {'checked': False, 'ftu': [], 'so': [], 'stale': [], 'allMatch': False, 'reason': ''}
+    if _adb is None or not serial:
+        out['reason'] = 'adb 子系统不可用' if _adb is None else '无设备'
+        return out
+    ui_dir = os.path.join(project_root, 'ui')
+    names = []
+    if os.path.isdir(ui_dir):
+        names = sorted(f for f in os.listdir(ui_dir) if f.lower().endswith('.ftu'))
+    truncated = names[8:]
+    for f in names[:8]:
+        c = _adb.compare_with_device('', serial, os.path.join(ui_dir, f), '/tmp/ui/' + f)
+        c['name'] = f
+        c['kind'] = 'ftu'
+        out['ftu'].append(c)
+    key = _platforms.package_key(platform or '') if platform else ''
+    so_local = os.path.join(project_root, '.fun', key, 'libzkgui.so') if key else ''
+    if so_local and os.path.isfile(so_local):
+        c = _adb.compare_with_device('', serial, so_local, '/tmp/lib/libzkgui.so')
+        c['name'] = 'libzkgui.so'
+        c['kind'] = 'so'
+        out['so'].append(c)
+    out['checked'] = True
+    if truncated:
+        out['truncated'] = truncated
+    items = out['ftu'] + out['so']
+    out['stale'] = [c for c in items if not c.get('same')]
+    out['allMatch'] = bool(items) and not out['stale']
+    if not items:
+        out['reason'] = '本地没有可比对的 ftu/so（ui/*.ftu 为空？）'
+    return out
+
+
+def flythings_build_ui_flow(project_root, with_launch=True, device=''):
     """FlyThings UI 构建流程（关键步骤，不可跳过）：
     ① 检查 ui/*.json 与 *.ftu 修改时间一致性
        - json 比 ftu 新 = 改过 json 没重新打包
@@ -1045,10 +1182,14 @@ def flythings_build_ui_flow(project_root, with_launch=False, device=''):
        「依赖未装/缺包」（fun 生成的 generated/*.h 固定 #include <base/functional.h>），
        不把 ninja 的 fatal error 丢给用户；能解析则不加任何 step/warning（正常路径零噪音）
     ④ fun build 编译 C++ 代码
-    ⑤ **默认到此为止（不推真机）**；只有用户明确说「推到设备 / 跑一下看效果」时才传 with_launch=True
-    ⚠️ launch 失败（无 adb 设备）时返回 needDeviceInput=true，此时必须询问用户接入方式：
-       1) USB 接入：将设备通过 USB 连电脑，然后重试本工具；
-       2) 网络接入：让用户提供设备 IP（如 <设备IP>），用 device='<ip>' 重试（走 fun launch -s <ip>）。
+    ⑤ 设备探测（adb devices -l + getprop 型号）→ fun launch 推送并运行
+       —— **v0.27.84 起默认执行（with_launch=True）**，传 with_launch=False 可跳过（只编译不碰设备）。
+       探测规则（不猜）：0 台 → needDeviceInput + installHint；多台 → 列 serial/model + 平台匹配，
+       要求显式 device=；恰好 1 台且平台匹配 → 自动 launch。
+       返回体写清 launched/pushed/device/model/platformMatch，并比对设备侧 /tmp/ui/*.ftu 与
+       /tmp/lib/libzkgui.so 的字节+md5 → staleOnDevice=true 时明说「设备上跑的还是旧版」。
+    ⚠️ 失败时 needDeviceInput=true + installHint，必须询问接入方式：
+       1) USB：先确认装好 ADB 驱动、设备开 USB 调试并授权；2) 网络：用户给 IP 后用 device='<ip>:5555' 重试。
        禁止替用户猜测 IP。
     ⚠️ 常见错误：修改 JSON 后直接 launch 忘记 pack，设备上仍运行旧版 FTU 布局；
     开发者改过 ftu 时若直接改 json 会覆盖其修改（必须先 unpack ftu 同步）。
@@ -1152,26 +1293,87 @@ def flythings_build_ui_flow(project_root, with_launch=False, device=''):
             res['warnings'] = warnings
         return res
 
-    # ⑤ fun launch（build 通过后直接推送启动；失败→询问设备接入方式）
+    # ⑤ 设备探测 + fun launch（v0.27.84：默认执行）
+    launched = False
+    pushed = False
+    devinfo = {'serial': '', 'model': '', 'platformMatch': '', 'adb': '', 'adbSource': '',
+               'needDeviceInput': False, 'installHint': '', 'deviceSync': None}
     if with_launch:
-        rl = _run_fun('launch', project_root, device=device, retries=5)
+        plat = project_info.get('platform') or ''
+        gate = _launch_gate(plat, device)
+        devinfo['serial'] = gate['serial']
+        devinfo['model'] = gate['model']
+        devinfo['platformMatch'] = gate['platformMatch']
+        devinfo['adb'] = gate['adb']
+        devinfo['adbSource'] = gate['adbSource']
+        if gate['connectNote']:
+            steps.append({"step": "adb connect", "success": True, "detail": gate['connectNote']})
+        if gate['needDeviceInput']:
+            steps.append({"step": "device_probe", "success": False,
+                          "count": gate['count'], "devices": _devices_brief(gate['devices']),
+                          "offline": [d.get('serial') for d in gate['offline']],
+                          "detail": gate['message']})
+            res = {"success": False, "steps": steps,
+                   "needDeviceInput": True, "installHint": gate['installHint'],
+                   "message": gate['message'], "device": gate['serial'],
+                   "model": gate['model'], "platformMatch": gate['platformMatch'],
+                   "devices": _devices_brief(gate['devices']),
+                   "adb": gate['adb'], "adbSource": gate['adbSource'],
+                   "launched": False, "pushed": False, "staleOnDevice": False,
+                   "error": gate['message']}
+            if warnings:
+                res['warnings'] = warnings
+            return res
+        steps.append({"step": "device_probe", "success": True,
+                      "count": gate['count'], "devices": _devices_brief(gate['devices']),
+                      "chosen": gate['serial'], "model": gate['model'],
+                      "platformMatch": gate['platformMatch'],
+                      "adbSource": gate['adbSource']})
+        if gate['platformMatch'] == 'unknown':
+            warnings.append('设备型号无法比对平台（model=%s，%s）：'
+                            'fun launch 自己会做平台校验（不匹配会 FATAL platform not match），'
+                            '推错机器时请显式传 device=。'
+                            % (gate['model'] or '未知',
+                               '型号表未登记' if gate['model'] else '设备未回报 ro.product.model'))
+        # 平台：优先用接口给的；未指定时唯一设备也推（平台未知不拦，fun 自己校验）
+        rl = _run_fun('launch', project_root, device=gate['serial'], retries=5)
         steps.append({"step": "fun launch", "success": rl['success'],
-                      "device": device or '(自动发现 USB 设备)',
+                      "device": gate['serial'],
                       "detail": (rl.get('stderr') or rl.get('stdout') or rl.get('error') or '')[-400:]})
         if not rl['success']:
+            fail_msg = ('fun launch 失败（已自动重试 5 次）：设备 %s 推送未生效。'
+                        % (gate['serial'] or '?'))
             res = {"success": False, "steps": steps,
                    "needDeviceInput": True,
-                   "message": "fun launch 失败（已自动重试 5 次仍失败）：未检测到可用的 adb 设备（或设备未连接/网络推送中断）。"
-                               "请询问用户接入方式："
-                               "1) USB 接入：将设备通过 USB 连接到电脑后重试本工具；"
-                               "2) 网络接入：请用户提供设备 IP（如 192.168.1.100），"
-                               "用 device='<ip>' 重新调用（将执行 fun launch -s <ip>）。",
+                   "installHint": (_adb.install_hint(plat, gate['devices'])
+                                    if _adb is not None else ''),
+                   "message": fail_msg + ' 已知设备可能掉线/网络推送中断，请确认设备在线后重试。',
+                   "device": gate['serial'], "model": gate['model'],
+                   "platformMatch": gate['platformMatch'],
+                   "launched": False, "pushed": False,
                    "error": rl.get('error') or (rl.get('stderr') or rl.get('stdout') or '')[-300:]}
             if warnings:
                 res['warnings'] = warnings
             return res
+        launched = True
+        pushed = True
+        sync = _device_sync_check(project_root, gate['serial'], plat)
+        devinfo['deviceSync'] = sync
+        steps.append({"step": "verify_device_sync", "success": sync['allMatch'],
+                      "device": gate['serial'],
+                      "ftu": [{'name': c['name'], 'localBytes': c['localBytes'],
+                               'deviceBytes': c['deviceBytes'], 'same': c['same'],
+                               'reason': c['reason']} for c in sync['ftu']],
+                      "so": [{'name': c['name'], 'localBytes': c['localBytes'],
+                              'deviceBytes': c['deviceBytes'], 'same': c['same'],
+                              'reason': c['reason']} for c in sync['so']],
+                      "detail": sync['reason']})
+        if sync['stale']:
+            warnings.append(_adb.stale_hint(sync['stale']) if _adb is not None
+                            else '设备侧文件与本地不一致（adb 子系统不可用，未能给出明细）')
     else:
-        steps.append({"step": "fun launch", "success": True, "skipped": "未请求推送（with_launch=False，默认不推真机）"})
+        steps.append({"step": "fun launch", "success": True,
+                      "skipped": "with_launch=False：本次只编译不推设备（保守开关）"})
 
     # 最终时间戳校验（打包后 json 不应比 ftu 新）
     ts_after = _ui_timestamp_check(project_root)
@@ -1179,7 +1381,26 @@ def flythings_build_ui_flow(project_root, with_launch=False, device=''):
                   "stale": ts_after['stale'], "missing": ts_after['missing'],
                   "ok": ts_after['ok']})
     res = {"success": True, "projectRoot": project_root, "steps": steps,
-           "finalCheck": {"stale": ts_after['stale'], "missing": ts_after['missing']}}
+           "finalCheck": {"stale": ts_after['stale'], "missing": ts_after['missing']},
+           "launched": launched, "pushed": pushed,
+           "device": devinfo['serial'], "model": devinfo['model'],
+           "platformMatch": devinfo['platformMatch'],
+           "staleOnDevice": bool(devinfo['deviceSync'] and devinfo['deviceSync']['stale'])
+           if devinfo['deviceSync'] else False,
+           "launchSkipped": (not with_launch)}
+    if devinfo['deviceSync']:
+        res['deviceSync'] = {
+            'checked': devinfo['deviceSync']['checked'],
+            'allMatch': devinfo['deviceSync']['allMatch'],
+            'ftu': [{'name': c['name'], 'localBytes': c['localBytes'],
+                     'deviceBytes': c['deviceBytes'], 'localMd5': c['localMd5'],
+                     'deviceMd5': c['deviceMd5'], 'same': c['same'], 'reason': c['reason']}
+                    for c in devinfo['deviceSync']['ftu']],
+            'so': [{'name': c['name'], 'localBytes': c['localBytes'],
+                    'deviceBytes': c['deviceBytes'], 'localMd5': c['localMd5'],
+                    'deviceMd5': c['deviceMd5'], 'same': c['same'], 'reason': c['reason']}
+                   for c in devinfo['deviceSync']['so']],
+            'reason': devinfo['deviceSync']['reason']}
     if warnings:
         res['warnings'] = warnings
     return res

@@ -32,8 +32,10 @@ ANSI_RE = re.compile(r'\x1b\[[0-9;]*[A-Za-z]')   # busybox ls 可能带颜色转
 
 MONTHS = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
 
+# v0.27.84：没有显式指定时，adb 优先走仓库的 adb_tools.resolve_adb()
+# （环境变量 ADB/FLYTHINGS_ADB → 随包 tools/adb/adb.exe → PATH），本文件不再写死候选路径。
 ADB_CANDIDATES = [
-    os.path.join('tools', 'FlyThingsIDE', 'sdk', 'platform-tools', 'adb', 'adb.exe'),
+    os.path.join('tools', 'adb', 'adb.exe'),
     'adb',
 ]
 BUSYBOX_LOCAL = os.path.join('tools', 'busybox', 'bin', 'v85x', 'busybox')
@@ -58,8 +60,26 @@ TIERS = {
 
 
 def find_adb(explicit=None):
+    """adb 路径：显式参数 > adb_tools.resolve_adb()（环境变量 > 随包 > PATH）> 候选表 > 'adb'。"""
     if explicit:
         return explicit
+    cur = HERE
+    for _ in range(6):                      # 向上找仓库根的 adb_tools.py
+        if os.path.isfile(os.path.join(cur, 'adb_tools.py')):
+            if cur not in sys.path:
+                sys.path.insert(0, cur)
+            try:
+                import adb_tools as _at
+                p = _at.resolve_adb()
+                if p:
+                    return p
+            except Exception:
+                break
+            break
+        parent = os.path.dirname(cur)
+        if parent == cur:
+            break
+        cur = parent
     for c in ADB_CANDIDATES:
         if os.path.sep in c and os.path.isfile(c):
             return c

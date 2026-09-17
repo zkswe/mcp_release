@@ -35,7 +35,7 @@ fun pack -p v85x                        # 指定平台（否则取工程配置�
 
 ### 1) TF 卡升级（最常用）
 - TF 卡格式化为 **FAT32**（仅支持 FAT32；建议 ≤16G，过大有兼容性问题）；
-- 卡根目录放 `update.img`（可选再放 `boot_logo.JPG` 换开机 logo）；
+- 卡根目录放 `update.img`（可选再放 `boot_logo.JPG` 换开机 logo —— 落点/体积/坑见 **§三**）；
 - 插卡 → 重新上电 → 系统检测到升级文件弹出升级界面 → 勾选项目点「升级」；
 - ⚠️ 升级完成后**及时拔卡**，否则重启会反复升级。
 
@@ -84,7 +84,98 @@ adb shell "ls -l /res/font /res/bin/firmware/rtlbt; cat /res/etc/EasyUI.cfg"
 # 界面验收：直接抓屏交给视觉模型（不要手搓 fb0）
 ```
 
-## 三、实测坑（本机 2026-09-12 复现 + 修复验证）
+## 三、换开机 logo（`boot_logo.JPG` → MISC 分区）
+
+> 一句话口径（钟工 2026-09-17 给定）：**开机 logo 放 `boot_logo.JPG`，升级落点是 `MISC` 分区，
+> 升级方法与 `update.img` 完全一样**（同一套升级机制、同一套触发流程）。
+> 不是「logo 分区」，更不是 `/res`。
+
+### 1) 落点与体积上限（唯一硬约束）
+
+| 项 | 口径 |
+|----|------|
+| 落点分区 | **MISC**（本板 = `mtd4`） |
+| 体积上限 | **≤ MISC 分区大小**（本板 **512 KB**；换板子先量，别照抄） |
+| 文件格式 | **JPG**，文件名固定 **`boot_logo.JPG`** |
+| 分辨率 | 对应屏幕（Z21 = 1024×600） |
+| 生效时机 | **升级完成、重启后生效** |
+
+本板实测分区表（Z21，2026-09-17，`cat /proc/mtd`）：
+
+| 分区 | 名字 | 大小 |
+|---|---|---|
+| mtd0 | BOOT0 | 0x50000 |
+| mtd1 | KERNEL | 0x680000 |
+| mtd2 | res | 0x720000 |
+| mtd3 | config | 0x110000 |
+| **mtd4** | **MISC** | **0x80000 = 512 KB** |
+| mtd5 | data | 0x80000 |
+
+查法（**其它平台/机型务必先量**，512 KB 只对本板成立）：
+
+```sh
+adb shell "cat /proc/mtd"        # 找 MISC 那一行的 size（十六进制）
+```
+
+⚠️ 本板 `/res` 里**没有** logo 文件 —— logo 不在应用资源里：别往 `resources/images/` 放，
+也别指望跟 `fun pack` 一起打进 `/res`（`/res` 是应用资源分区，见 §二 6)）。
+
+### 2) 两种触发方式（与 `update.img` **同机制**）
+
+**① TF 卡（最常用）**
+- 卡格式化 **FAT32**（≤16G）；
+- 卡**根目录**放 `boot_logo.JPG`（**可与 `update.img` 并列**）；
+- 插卡 → 重新上电 → 弹升级界面 → 勾选项目后点「升级」；
+- ⚠️ 升级后**及时拔卡**，否则每次重启反复升级。
+
+**② ADB 固化（屏幕/卡座不便时）**
+```bash
+adb push boot_logo.JPG /tmp/boot_logo.JPG
+adb shell setprop sys.zkupgrade.flag 255
+adb shell setprop sys.zkupgrade.dir /tmp
+adb shell setprop ctl.restart zkswe
+```
+（与 `update.img` 的 ADB 固化完全同一套：`flag 255` = 该目录里有升级物，`dir` 指目录。）
+
+**③ 插卡自动升级（`zkautoupgrade`）/ ④ 远程 OTA（HTTP 下 `boot_logo.JPG` 到卡根目录）**
+同样适用，机制与 `update.img` 一致 —— 见 §二 3)、4)。
+
+### 3) ⚠️ 本板实测坑：`adb reboot` 后整板掉网
+
+本板（Z21，2026-09-17 实测）：`adb reboot` 之后**整板掉网**（WiFi/adb 都回不来），
+只能**现场断电重启**。所以：
+- 换 logo 真正危险的是**最后那一步重启** → 排好时机（现场有人能断电）再触发；
+- 平时**不要随手 `adb reboot`**；`fun launch` / `adb push` 不需要重启。
+
+### 4) 边界与待验证（**不作为结论**）
+
+| 说法 | 状态 |
+|------|------|
+| 只放 `boot_logo.JPG`（不放 `update.img`）时**只写 MISC、不替换 `/res`** | **待真机验证**：钟工口径是「同 `update.img` 机制」，本条尚未实测 |
+| 其它平台（F133 / Z20 / T113 / V85X / Z235X）的 MISC 分区大小 | **待确认**（本机只量到 Z21 = 512 KB） |
+| 升级界面里 logo 项与 app 项能否单独勾选 | **待确认** |
+
+### 5) 工具（本仓自带，可直接用）
+
+```bash
+# ① 生成：默认「深底 + 品牌字样」版式；**生成后自动校验 ≤ MISC 上限**，超了报错
+python tools/make_boot_logo.py --size 1024x600 --out boot_logo.JPG
+python tools/make_boot_logo.py --size 1024x600 --out boot_logo.JPG \
+    --text ZKSWE --sub "深圳中科世为科技" --tag "FlyThings OS"
+
+# ② 推设备并触发升级：**默认 dry-run（只打印命令）**，确认真要触发再加 --yes
+python tools/set_boot_logo.py --image boot_logo.JPG --device <serial|IP:5555>
+python tools/set_boot_logo.py --image boot_logo.JPG --device <IP>:5555 --dir /tmp --yes
+```
+
+`set_boot_logo.py` 触发前必做校验：文件存在 / 是 JPG / 体积 ≤ MISC 上限
+（能连设备就读 `cat /proc/mtd` 取**真实**上限）/ 设备在线；adb 走全仓单一入口
+`adb_tools.resolve_adb()`（环境变量 `ADB`/`FLYTHINGS_ADB` → 随包 `tools/adb/` → PATH）。
+
+> 检索词：开机 logo / boot_logo / boot_logo.JPG / MISC 分区 / logo 512K / 换开机图 /
+> 开机 LOGO 怎么换 / 升级界面里勾 logo / adb reboot 掉网
+
+## 四、实测坑（本机 2026-09-12 复现 + 修复验证）
 
 > 验证记录（2026-09-12）：装 **VC++ 2015-2022 Redistributable (x86)** 后，
 > `C:\zkswe\fun\tools\fsimg.exe` 可正常启动（该 exe 实为签名工具 `fssign`，
@@ -100,7 +191,7 @@ adb shell "ls -l /res/font /res/bin/firmware/rtlbt; cat /res/etc/EasyUI.cfg"
 
 > 工具侧已把前两条映射为可执行 `hint` 返回（`flythings_pack_upgrade` 的 `PACK_ERR_HINTS`）。
 
-## 四、排查用到的定位手法（可复用）
+## 五、排查用到的定位手法（可复用）
 
 - fun 的“家目录”由环境变量决定：本机 `FLYTHINGS_FUN_DIR` / `FUN_HOME_PATH` = `C:\zkswe\fun`，
   下载的打包工具落在 `C:\zkswe\fun\tools\`（`fsimg.exe`、`make-fs/make-fs.exe` 等）；

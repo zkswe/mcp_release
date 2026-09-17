@@ -53,9 +53,11 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.83-open'
+MCP_VERSION = '0.27.85-open'
 MCP_BUILD = '2026-09-17'
 MCP_FEATURES = [
+    '2026-09-17: **换开机 logo 入库（`boot_logo.JPG` → `MISC` 分区）** v0.27.85-open（钟工口径：与 `update.img` **同机制**）——①**知识**：`knowledge/devflow/upgrade-pack-image.md` 新增 **§三**（落点 = **MISC 分区**，非 logo 分区也非 `/res`；**上限 = MISC 分区大小**，本板 Z21 实测 `cat /proc/mtd` → `mtd4 MISC 0x80000 = 512 KB`，其它平台待确认；两种触发同 update.img —— TF 卡根目录 `boot_logo.JPG`（可与 update.img 并列）→ FAT32 → 插卡上电勾选，或 ADB `push` + `sys.zkupgrade.flag=255` + `sys.zkupgrade.dir` + `ctl.restart zkswe`，重启后生效；⚠️ 本板 `adb reboot` 后整板掉网需现场断电；「只放 logo 是否不碰 `/res`」**待真机验证**；检索词 开机 logo/boot_logo/MISC 分区/logo 512K/换开机图）；②**工具**：`tools/make_boot_logo.py`（生成 1024x600 深底品牌图，字体 env `FLYTHINGS_LOGO_FONT`+多候选回退，**生成即校验 ≤ MISC 上限**，超了降质/报错）+ `tools/set_boot_logo.py`（推设备触发升级，**默认 dry-run**、`--yes` 才发；前置校验 文件/JPG/体积≤MISC（在线读 `cat /proc/mtd`）/设备在线；adb 走 `adb_tools.resolve_adb()`）；③**接线**：`flythings_pack_upgrade` docstring + README 出包小节各加一行指向文档/脚本；④**实测**（真机 Z21，只读+dry-run，未触发升级）：`make_boot_logo` → 33,070 B（32.3 KB，上限 6.3%）通过；`set_boot_logo` → 设备在线 / 型号 Zkswe_SSD21X_SPINOR / Z21(confirmed) / `MISC=512KB` / 四条 dry-run 命令 / exit 0。',
+    '2026-09-17: **ADB 随包 + launch 默认推设备 + 设备探测/安装提示** v0.27.84-open（钟工三项）——①`tools/adb/`（adb.exe 1.0.41/31.0.3-7562133 + 两个 WinApi DLL，≈6.1MB）+README；新增根 `adb_tools.py`：`resolve_adb()` = env ADB/FLYTHINGS_ADB → 随包 → PATH，**全仓 adb 硬编码 6 处→1 处**（project_tools、device_screenshot、i18n_tools×2、device_font_check 等）；②`build_ui_flow(with_launch)` 默认 **True**（build→探测→推送/运行，`with_launch=False` 只编译）；返回 `launched/pushed/device/model/platformMatch/deviceSync`（设备侧 ftu+so 字节/md5 vs 本地）+`staleOnDevice`（true ⇒ 设备上跑的还是旧版）；③探测不猜：0 台 → `needDeviceInput`+`installHint`（ADB 驱动 / USB 调试授权 / 网络 device=<IP>:5555）；多台 → 列 serial+model+匹配并要显式 device=；1 台且匹配 → 自动 `fun launch -s`；新增 `device_models.json`（Z21/Z20/V85X 实测；F133/F136 待确认）；④实测三台真机探测判定正确 + 默认/关闭两分支；用例 176→197，门禁全绿；细节 knowledge/devflow/adb-and-device-selection.md。',
     '2026-09-17: **依赖/install 诊断三项修补（A 体检 / B install 不再静默 / C 文档）** v0.27.83-open（钟工：客户只看到 `fatal error: base/functional.h: No such file or directory`，看不出「依赖没装」）——①**A**：`package_tools` 新增 `FRAMEWORK_DEPS`+`framework_dep_status()`，`check_project_deps` 出 `kind:"framework"` 缺失项与 `frameworkDeps`，`validate_project` 新增 `missing_framework_dependency`+fix（`flythings_add_package(...,\"base-utility\",with_install=True)` 或 Manifest 加 base-utility 后重跑 fun install）；**口径修正**：base-utility 移出 `BUILTIN_PKGS`（非模板自带，是 fun 生成的 generated/*.h 必需——旧检查就在这放过）；判定=精确头名（实读 generated/event_dispatcher.h）+前缀排除（base/ 非独占：base-http-client→base/http_*、base-json→base/json_*）；②**防误报**：Manifest 已声明 或 依赖已解析（.fun-lock.json/.deps.lock 有即算，实测 easyui 会带出）就 OK，bin 工程/无 base include 的非 UI 工程不报；③**B**：`build_ui_flow` install 失败→顶层 `warnings`**但不断**；build 前 `check_framework_deps` 缺包直接点「依赖未装/缺包」（含证据+fix），可解析时零 step 零 warning；build 失败含 `base/…No such file` 时翻成「依赖未装，不是代码错误」；④**C**：`cli-fun-toolchain.md` 新增 **§4.7 老工程升级：补 base-utility**（现象/根因/处置），`reusable-components.md` 交叉引用，检索词补 base/functional.h / 找不到 base utils / base-utility 缺失 / fun install 没生效；⑤**回归**：`create_project(Z235X,1024x600)→build_ui_flow` **9/9 成功**+`.fun/z235x/libzkgui.so`+**零 warning**；反例（删 Manifest 的 base-utility+清锁/.fun）真跑→顶层 warnings+step 点明缺包，ninja 实错 `generated/event_dispatcher.h:8:10: fatal error: base/functional.h: No such file or directory`（锁里仅 easyui/log/zkhardware/zknet，INCLUDES 无 base-utility）；用例 164→**176**（+12 条），门禁全绿。',
     '2026-09-17: **图标库改「单归档 + 按需解」（components/icons 6801 文件/6.30 MB → 48 文件/1.63 MB）** v0.27.82-open（沛哥：目标 ≈10 文件 / ~1 MB；方案 A 离线优先）——①**打包**：vendor 的 5777 个 SVG 散件（3.95 MB）打成 `components/icons/vendor/tabler-3.46.0.pack.tgz`（**455,379 B / 0.43 MB**，sha256 `a0ba69f224388e22790f04a0a157fb6207713511f7e308709a0166ebd8ec1c95`，条目 5774 = icons 4754 + icons-filled 1019 + map.json；**确定性写入**同一输入必得同一 sha256），新增 `scripts/make_pack.py`（打归档 / `--verify` 核对 / `--from-npm` 从上游重建，实测与散件版 byte 级同 sha256）；`index.json`/`LICENSE`/`VERSION.txt` 留在归档外（索引 + MIT 合规）；②**读取层**（`gen_icons.py` 新增「图标来源解析」）：逻辑路径 → ① 缓存 `out/.icons-cache/`（env `FLYTHINGS_ICONS_CACHE`）→ ② 归档 tarfile 随机读**只解用到的那几个** → ③ 远方 npm tarball（**默认关闭**，`--fetch-remote` 显式开启，按 catalog 登记的 sha256 校验）；`--vendor-name`/`--svg`/`--set`/`--sheet` 用法与输出**完全不变**，新增 `--list-tabler`（原生名 4754，index.json）与 `--pack-info`（来源状态）；③**入库范围**：`out/` 817 个生成物 `git rm --cached` + 进 `.gitignore`（实测整目录删后 305×3 PNG + 7 sheet 全部重生，selfcheck 915 张 0 失败）；`svg_retired/` 163 文件移出仓库（`author_svg.py` 可逐字节重生，实测 163 文件 sha256 全同）；④`catalog.json` 重生成（0.3.0，203 图标/305 产物/198 条 vendor 语义含 7 条 compose，新增 `sources.vendor.pack` 字段 —— 禁止手写口径不变）；⑤顺带修 `--vendor-name wifi` 被 `system.wifi-full` 别名抢匹配（改为精确名优先，此前文档里的 `--vendor-name wifi` 例子实际会报「匹配到多个」）。模块文档已同步（README/platforms/THIRD-PARTY + `knowledge/devflow/icon-library.md`：不能再 grep 单个 svg，要查用 `--list*`/`catalog.json`）。',
     '2026-09-17: **Z235X 建工程→编译闭环打通（模板补 base-utility + 工具链目录口径）** v0.27.81-open（钟工给了 235x 工具链，实测跑通）——① `templates/HelloWord_Z235X/Manifest.xml` 补 `<package id="base-utility" version="^10.0.0"/>`：fun 生成的 generated/event_dispatcher.h 等会 #include <base/functional.h>，缺这条编译直接 fatal error（对比 Z21 模板本来就带 base-utility，这次是源头 IDE 工程缺）；② `knowledge/devflow/cli-fun-toolchain.md` 新增 §4.6「平台工具链放哪 + 模板依赖最低集」：工具链目录约定 = <fun 安装目录>/toolchains/<平台小写键>/（缺工具链时 fun build 会 panic platform toolchain url must not be empty，工具链不随包分发）；③ `platforms.py` 的 Z235X note 同步该口径。实测闭环：create_project(platform=Z235X) → 工具链解压到 toolchains/z235x → fun install（拉到 base-utility@10.11.0 + ext4@0.0.1）→ fun build -p Z235X 9/9 成功，产出 .fun/z235x/libzkgui.so（217,240 B）。bin_tools/z235x 设备端工具仍未编译（需要样机）。',
@@ -549,22 +551,21 @@ def flythings_edit_ftu(ftu_path: str, operations: str, output_ftu: str = '',
                       ensure_ascii=False)
 
 
-def flythings_build_ui_flow(project_root: str, with_launch: bool = False, device: str = '') -> str:
+def flythings_build_ui_flow(project_root: str, with_launch: bool = True, device: str = '') -> str:
     """⚠️ 场景别名（编译部署类意图一律本工具，禁止自造命令；不限触发入口）：
     ① 口语：「编译/构建/调试/全量推送/部署/推送到设备/跑一下」；
     ② 客户端按钮（「AI 应用调试」「自定义编译」）意图=编译部署真机调试 → 本工具；
-    ③ AI：写完/改完代码后主动编译验证、调试看效果，也调本工具。
-    ⚠️ 固化/升级/出 update.img/交付/量产 → 用 flythings_pack_upgrade（=调试推送，掉电即失）。
-    内部 fun launch 完成程序+资源+ftu 全量推送并启动（无额外脚本）。
-    UI 构建流程：① json/ftu 时间戳检查（以 json 为源，改过 json 自动重新 pack）
-    ② fui pack ③ fun install ④ fun build ⑤ **默认到此为止（不推真机）**；
-    要推设备必须显式传 with_launch=True。
-    ⚠️ install 失败不阻断 build，但顶层 warnings 点明；缺框架包在 build 前体检即报（cli-fun-toolchain.md §4.7）。
-    ⚠️ fun launch 失败/超时**自动重试 5 次**；
-    仍失败回 needDeviceInput=true，必须问接入方式：USB 重连重试 / 网络先 adb connect <IP>。
-    ⚠️ 多设备（USB+WiFi）必须传 device='<serial|IP>'（fun launch -s）；不传 fun 取第一个 → 可推错设备。
-    传入项目根目录。ftu=json 编译产物：改布局一律改 json 后 pack，不要手写/手改 ftu
-    （见 ftu-json-pipeline.md）。
+    ③ AI：写完/改完代码后主动编译验证、调试看效果。
+    ⚠️ 固化/升级/update.img/量产交付 → flythings_pack_upgrade（掉电保留）。
+    流程：①时间戳检查（json 为源、改过自动 pack）②fui pack ③fun install ④fun build
+    ⑤ **设备探测 + fun launch 推送运行（v0.27.84 起默认）**；只编译传 with_launch=False。
+    ⚠️ 探测不猜：0 台 → needDeviceInput+installHint（装 ADB 驱动/开 USB 调试并授权/改用
+    device='<IP>:5555'）；多台 → 列 serial+model+平台匹配并要 device=；1 台且匹配 → 自动推。
+    返回：launched/pushed/device/model/platformMatch + deviceSync（设备侧 /tmp/ui/*.ftu、
+    /tmp/lib/libzkgui.so 的字节/md5 是否与本地一致）+ staleOnDevice（true ⇒ 设备上跑的还是旧版）。
+    ⚠️ install 失败不阻断但给 warnings；launch 失败/超时重试 5 次。细节见
+    knowledge/devflow/adb-and-device-selection.md。
+    传项目根目录；ftu=json 编译产物：改布局改 json 后 pack，禁手写/手改 ftu。
     ⚠️ src/activity/ 由 IDE 自动生成（禁手改），业务代码只写 src/logic/*.cc。
     """
     return json.dumps(pt.flythings_build_ui_flow(project_root, with_launch, device), ensure_ascii=False)
@@ -574,19 +575,18 @@ def flythings_pack_upgrade(project_root: str, out_path: str = '', release_versio
                            ab: bool = False, with_build: bool = False,
                            dry_run: bool = False) -> str:
     """⚠️ 场景别名（固化升级类意图一律本工具，禁止自造命令；不限触发入口）：
-    ① 用户口语：「打包升级包/出升级包/生成 update.img/固化/固化升级/刷进设备/烧到机器里/
-       出货版本/量产版本/发布版本/TF卡升级包/OTA 包/整机升级」；
-    ② 与「调试/跑一下/推送到设备」**语义不同**：那是 flythings_build_ui_flow（fun launch
-       临时推送，掉电即失）；要**固化到设备、掉电保留**，必须本工具出 update.img；
-    ③ AI 自主决策：用户说要交付/发布/量产一份可升级的版本时，调本工具，不要调 launch。
-    流程：① fun install 同步依赖 → ②（可选 with_build=True）fun build → ③ fun pack
-      （out_path→-o；release_version→--release-version；ab=True→--ab 出 AB 系统 OTA 包）。
-    产物默认 `.fun/<平台>/update.img`，返回路径/大小/时间 + 三种刷法（TF卡/ADB/远程批量）。
+    ① 口语：「打包升级包/出升级包/生成 update.img/固化/刷进设备/烧到机器里/出货版本/
+       量产版本/TF卡升级包/OTA 包/整机升级」；
+    ② 与「调试/推送到设备」不同：那是 flythings_build_ui_flow（fun launch 临时推送，掉电即失）；
+    ③ AI 交付/发布/量产一份可升级版本 → 本工具。
+    流程：fun install →（可选 with_build）fun build → fun pack（out_path→-o；
+      release_version→--release-version；ab=True→--ab 出 AB 系统 OTA 包）。
+    产物 `.fun/<平台>/update.img`，返回路径/大小/时间 + 刷法（TF卡/ADB/远程批量）。
+    同机制可换开机 logo：`boot_logo.JPG` → **MISC 分区**（体积 ≤ MISC 大小），见
+      knowledge/devflow/upgrade-pack-image.md 与 tools/set_boot_logo.py。
     dry_run=True 只回命令计划不执行（写操作默认安全）。
-    ⚠️ Windows 常见坑：`FATAL sign error: exit status 0xc0000135` = 缺 32 位 VC++ 运行时
-      （fsimg.exe 是 32 位，装 VC++ 2015-2022 Redistributable x86）；
-      `package xxx not found in local` = 依赖未装，先 fun install。
-    传项目根目录；细节见 knowledge/devflow/upgrade-pack-image.md。
+    ⚠️ Windows：`FATAL sign error 0xc0000135` = 缺 32 位 VC++ 运行时；
+      `package xxx not found in local` = 依赖未装，先 fun install。传项目根目录。
     """
     return json.dumps(pt.flythings_pack_upgrade(project_root, out_path, release_version,
                                                 ab, with_build, dry_run),

@@ -1,0 +1,34 @@
+<div class="screen" data-res="1024x600" data-bg="#FFFFFF">
+  <div class="text" data-caption="TxtTitle" data-x="28" data-y="10" data-w="960" data-h="20" data-fs="16" data-color="#010101">components/ui_v1/WheelPicker —— 滚轮选择器（ZKPainter 自绘 + 惯性 + 吸附）</div>
+  <div class="text" data-caption="TxtHint" data-x="28" data-y="34" data-w="960" data-h="18" data-fs="13" data-color="#999999">在滚轮上拖动（松手有惯性 + 吸附）或直接点某一行；右侧是同一帧循环里的实测数据</div>
+
+  <div class="painter" data-caption="PtWheelA" data-x="28"  data-y="64" data-w="240" data-h="220"></div>
+  <div class="text" data-caption="RowA0" data-x="28" data-y="64"  data-w="240" data-h="40" data-fs="16" data-align="center" data-color="#666666"></div>
+  <div class="text" data-caption="RowA1" data-x="28" data-y="104" data-w="240" data-h="40" data-fs="16" data-align="center" data-color="#666666"></div>
+  <div class="text" data-caption="RowA2" data-x="28" data-y="144" data-w="240" data-h="40" data-fs="16" data-align="center" data-color="#666666"></div>
+  <div class="text" data-caption="RowA3" data-x="28" data-y="184" data-w="240" data-h="40" data-fs="16" data-align="center" data-color="#666666"></div>
+  <div class="text" data-caption="RowA4" data-x="28" data-y="224" data-w="240" data-h="40" data-fs="16" data-align="center" data-color="#666666"></div>
+
+  <div class="painter" data-caption="PtWheelB" data-x="300" data-y="64" data-w="240" data-h="220"></div>
+  <div class="text" data-caption="RowB0" data-x="300" data-y="64"  data-w="240" data-h="40" data-fs="16" data-align="center" data-color="#666666"></div>
+  <div class="text" data-caption="RowB1" data-x="300" data-y="104" data-w="240" data-h="40" data-fs="16" data-align="center" data-color="#666666"></div>
+  <div class="text" data-caption="RowB2" data-x="300" data-y="144" data-w="240" data-h="40" data-fs="16" data-align="center" data-color="#666666"></div>
+  <div class="text" data-caption="RowB3" data-x="300" data-y="184" data-w="240" data-h="40" data-fs="16" data-align="center" data-color="#666666"></div>
+  <div class="text" data-caption="RowB4" data-x="300" data-y="224" data-w="240" data-h="40" data-fs="16" data-align="center" data-color="#666666"></div>
+
+  <div class="btn" data-caption="BtnNext"  data-x="580" data-y="64"  data-w="200" data-h="44" data-fs="15" data-bg="#0052D9" data-color="#FFFFFF">下一项（动画）</div>
+  <div class="btn" data-caption="BtnPrev"  data-x="796" data-y="64"  data-w="200" data-h="44" data-fs="15" data-bg="#F3F3F3" data-color="#010101">上一项</div>
+  <div class="btn" data-caption="BtnFling" data-x="580" data-y="118" data-w="200" data-h="44" data-fs="15" data-bg="#F3F3F3" data-color="#010101">快速滚 40 项</div>
+  <div class="btn" data-caption="BtnStop"  data-x="796" data-y="118" data-w="200" data-h="44" data-fs="15" data-bg="#F3F3F3" data-color="#010101">立即停 / 吸附</div>
+
+  <div class="text" data-caption="TxtIndex" data-x="580" data-y="176" data-w="416" data-h="24" data-fs="15" data-color="#0052D9">index A=0  B=0</div>
+  <div class="text" data-caption="TxtPerf"  data-x="580" data-y="204" data-w="416" data-h="24" data-fs="14" data-color="#666666">frames 0  tick avg 0us  max 0us</div>
+  <div class="text" data-caption="TxtLog"   data-x="580" data-y="234" data-w="416" data-h="150" data-fs="13" data-color="#666666">事件日志：
+</div>
+  <div class="text" data-caption="TxtDbgA"  data-x="580" data-y="392" data-w="416" data-h="20" data-fs="12" data-color="#999999"></div>
+  <div class="text" data-caption="TxtDbgB"  data-x="580" data-y="414" data-w="416" data-h="20" data-fs="12" data-color="#999999"></div>
+
+  <div class="text" data-x="0" data-y="304" data-w="1024" data-h="1" data-bg="#E7E7E7"></div>
+  <div class="text" data-caption="TxtFoot" data-x="28" data-y="316" data-w="960" data-h="18" data-fs="13" data-color="#999999">性能口径：tick() 一次 = 「重排可见行 textview + 必要时重绘静态层」，宿主动画帧 16ms；数字来自包内 120 帧环形缓冲（setPerfHud 显示）</div>
+  <div class="text" data-caption="TxtFoot2" data-x="28" data-y="340" data-w="960" data-h="18" data-fs="13" data-color="#999999">联动演示：左轮吸附完成后，右轮的数据按左轮选中值重建（宿主 logic 侧接线，包本身只做单列）</div>
+</div>

@@ -166,14 +166,20 @@ class TestBuildFlowInstallGuard(unittest.TestCase):
         U.cleanup(self.tmp)
 
     def _flow(self, manifest=MF_WITH_BASE):
-        """造一个「时间戳一致（不触发 pack）」的工程 → 跑 build_ui_flow。"""
+        """造一个「时间戳一致（不触发 pack）」的工程 → 跑 build_ui_flow。
+
+        ⚠️ v0.27.84 起 `with_launch` 默认 True（build → 探测 → 推设备）。本文件盯的是
+        **install/依赖诊断**，与设备无关，所以显式传 `with_launch=False` 保持离线、
+        **不是**把断言放宽（新默认行为由 tests/test_adb_resolve.py 独立钉住）。
+        """
         _mk(self.tmp, manifest, with_ftu=True)
         page = os.path.join(self.tmp, 'ui', 'main.json')
         U.write(page, '{}')
         ftu = os.path.join(self.tmp, 'ui', 'main.ftu')
         # ftu 比 json 新 1 秒（<30s）→ 不 pack、也不误判「开发者改过 ftu」
         os.utime(ftu, (os.path.getmtime(page) + 1,) * 2)
-        return U.jcall('flythings_build_ui_flow', {'project_root': self.tmp})
+        return U.jcall('flythings_build_ui_flow',
+                       {'project_root': self.tmp, 'with_launch': False})
 
     def test_clean_project_has_no_warnings(self):
         """正例（模板新工程口径）：声明齐全 + 流程成功 → 顶层不许有 warnings。"""

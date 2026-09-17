@@ -453,10 +453,15 @@ def _dump_json(data):
 
 
 def _push_to_device(local_path, device, target_dir='/tmp/tr/'):
-    """adb push 单文件到设备指定目录。返回 (success, detail)。"""
+    """adb push 单文件到设备指定目录。返回 (success, detail)。
+    ⚠️ v0.27.84 起 adb 一律走 adb_tools.resolve_adb()（不再写死 'adb' 字面量）。"""
     target = os.path.join(target_dir, os.path.basename(local_path)).replace('\\', '/')
     try:
-        r = subprocess.run(['adb', '-s', device, 'push', local_path, target],
+        import adb_tools as _at
+        adb = _at.resolve_adb()
+        if not adb:
+            return False, _at.adb_missing_hint()
+        r = subprocess.run([adb, '-s', device, 'push', local_path, target],
                            capture_output=True, text=True, timeout=30,
                            stdin=subprocess.DEVNULL, encoding='utf-8', errors='replace')
         ok = r.returncode == 0 and '1 file pushed' in (r.stdout or '')
@@ -465,7 +470,7 @@ def _push_to_device(local_path, device, target_dir='/tmp/tr/'):
     except subprocess.TimeoutExpired:
         return False, 'adb push 超时（30s）'
     except FileNotFoundError:
-        return False, 'adb 不在 PATH（fun 工具链应自带；可单独装 Android platform-tools）'
+        return False, 'adb 不可执行（请检查 ADB 环境变量/随包 tools/adb/）'
     except Exception as e:
         return False, f'adb push 异常: {e}'
 
@@ -520,9 +525,13 @@ def flythings_i18n_to_json(project_root: str, langs: str = '', push: bool = True
         adb_status = 'skipped'
         device_used = device
         if push:
-            # adb 设备检测
+            # adb 设备检测（v0.27.84：走 adb_tools.resolve_adb()）
             try:
-                r = subprocess.run(['adb', 'devices'], capture_output=True, text=True, timeout=10,
+                import adb_tools as _at
+                adb_bin = _at.resolve_adb()
+                if not adb_bin:
+                    raise FileNotFoundError('adb not found')
+                r = subprocess.run([adb_bin, 'devices'], capture_output=True, text=True, timeout=10,
                                    stdin=subprocess.DEVNULL, encoding='utf-8', errors='replace')
                 if r.returncode != 0:
                     adb_status = 'adb_failed'
@@ -535,7 +544,8 @@ def flythings_i18n_to_json(project_root: str, langs: str = '', push: bool = True
                         adb_status = 'no_device'
                         for c in converted:
                             pushed.append({'lang': c['lang'], 'success': False,
-                                           'detail': '无可用 adb 设备（adb devices 为空）'})
+                                           'detail': '无可用 adb 设备（adb devices 为空）——'
+                                                     '检查 ADB 驱动/USB 调试授权，或用 device=\'<设备IP>:5555\' 走网络'})
                     elif device and device not in devs:
                         adb_status = 'device_not_found'
                         for c in converted:
@@ -559,7 +569,8 @@ def flythings_i18n_to_json(project_root: str, langs: str = '', push: bool = True
             except FileNotFoundError:
                 adb_status = 'adb_not_found'
                 for c in converted:
-                    pushed.append({'lang': c['lang'], 'success': False, 'detail': 'adb 不在 PATH'})
+                    pushed.append({'lang': c['lang'], 'success': False,
+                                   'detail': 'adb 不可用（设环境变量 ADB 或用随包 tools/adb/adb.exe）'})
             except subprocess.TimeoutExpired:
                 adb_status = 'adb_timeout'
                 for c in converted:

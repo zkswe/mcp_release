@@ -48,7 +48,7 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 > `python` 不在 PATH 时用完整路径（如 `C:/Users/<你>/AppData/Local/Programs/Python/Python313/python.exe`）。
 
 **3) 验证** —— 问 AI「**MCP 版本是多少？**」：
-应返回 `flythings-kb-open 0.27.83-open`，**35 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / mt_test / zkshot，
+应返回 `flythings-kb-open 0.27.84-open`，**35 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / mt_test / zkshot，
 在 `bin_tools/<平台>/` 下，**不是 op、不占 op 名额**）。
 
 > **工具面三模式（按客户端选一个，别同时配）**
@@ -78,8 +78,20 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 - **像素 diff**（`flythings_ui_visual(action="diff")`，±2 容差）→ 0 token 回归验收
 
 ### 🏭 编译 / 部署 / 出包
-- `flythings_build_ui_flow`：json/ftu 时间戳检查 → fui pack → fun install → fun build（**默认不推真机**，`with_launch=True` 才推）
+- `flythings_build_ui_flow`：json/ftu 时间戳检查 → fui pack → fun install → fun build →**设备探测 + fun launch 推送运行**
+  > ⚠️ **默认会推设备**（`with_launch` 缺省 True，v0.27.84 起）：build 后自动探测 `adb devices -l` ——
+  > 0 台 → `needDeviceInput=true` + `installHint`（要不要装 **ADB 驱动** / 开 USB 调试并授权 / 改用 `device='<IP>:5555'` 网络接入）；
+  > 多台 → 列出 serial+model+平台匹配情况，**不替你猜**，要求显式 `device=`；
+  > 恰好 1 台且平台匹配 → 自动 `fun launch -s <serial>`。
+  > 返回体含 `launched`/`pushed`/`device`/`model`/`deviceSync`（设备侧 ftu/so 字节+md5 与本地是否一致）与 `staleOnDevice`（true ⇒ 设备上跑的还是旧版）。
+  > **不想推设备（只编译）就显式传 `with_launch=False`。**
+- **PC 端 adb 随包**：`tools/adb/adb.exe`（+ `AdbWinApi.dll`/`AdbWinUsbApi.dll`，≈6.1 MB），客户不必另装 Android SDK；
+  全仓 adb 走单一入口 `adb_tools.resolve_adb()`（环境变量 `ADB`/`FLYTHINGS_ADB` → 随包 → PATH）；
+  设备型号→平台对照见 `device_models.json`（排查：`python adb_tools.py`）
 - `flythings_pack_upgrade`：固化升级包 `update.img`（TF 卡 / ADB setprop / zkautoupgrade / HTTP OTA 四种刷法）
+- **换开机 logo**：`boot_logo.JPG` → **MISC 分区**（跟 `update.img` **同一套升级机制与触发**；体积必须 ≤ MISC 分区大小 —— 本板 Z21 实测 512 KB，先量 `cat /proc/mtd`）→
+  `python tools/make_boot_logo.py --size 1024x600 --out boot_logo.JPG`（生成 + 体积闸门）/ `python tools/set_boot_logo.py --image boot_logo.JPG --device <serial|IP:5555>`（**默认 dry-run**，`--yes` 才真触发）；
+  细节与待验证项见 `knowledge/devflow/upgrade-pack-image.md` §三
 - `flythings_create_project` / `flythings_create_bin_project`：从内置模板建工程（F133/F135/Z21/Z20/T113/V85X/Z235X）
 - `flythings_attach_cli_tools`：把 `fui.exe`/`fun.exe` 复制进项目，客户不用装 IDE 也能编译部署
 - `flythings_validate_project`：工程规范全检（依赖 / 框架约定 / 时间戳防呆）
@@ -110,6 +122,6 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 
 ---
 
-当前版本 `0.27.83-open`（35 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
+当前版本 `0.27.85-open`（35 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
 
 MIT License · FlyThings Team · 深圳中科世为科技有限公司 · [developer.flythings.cn](https://developer.flythings.cn/)

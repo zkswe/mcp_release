@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "note": "设备 ro.product.model → FlyThings 平台规范名（platforms.py 的名字）。只放型号字符串，禁止写内网 IP / 主机名 / 序列号（隐私闸门会拦）。",
+  "usage": "adb_tools.lookup_model() / match_platform() 消费；build_ui_flow 用它判断「设备与工程平台是否匹配」（多设备时不许猜，见 multi_device_hint）。",
+  "sourceRule": "数据来源只能是**本仓已有资料/实测记录**（见每条 source 字段）；没实测的一律 platform=空 + confidence=todo，禁止臆造。",
+  "updated": "2026-09-17",
+  "models": {
+    "Zkswe_SSD21X_SPINOR": {
+      "platform": "Z21",
+      "confidence": "confirmed",
+      "source": "本仓实测记录：components/ble/platforms.md §主从联调（Z21 整机）、knowledge/devflow/device-deploy-budget.md（Z21 实测）",
+      "note": "Z21 整机（SigmaStar SSD21X）"
+    },
+    "Zkswe_SSD20X_SPINOR": {
+      "platform": "Z20",
+      "confidence": "confirmed",
+      "source": "本仓实测记录：components/ble/platforms.md §主从联调（Z20 整机做外设）",
+      "note": "Z20 整机（SigmaStar SSD20X）"
+    },
+    "Zkswe_V85X_SPINOR": {
+      "platform": "V85X",
+      "confidence": "confirmed",
+      "source": "本仓实测记录：components/fonts/platforms.md（实测板）、components/ble/platforms.md（adb devices -l 原始行）、knowledge/v85x/display-layer-debug.md、demos/h264-player-v85x/README.md",
+      "note": "V85X 整机（SPINOR，product=swaio，480x800）"
+    },
+    "Zkswe_F133_SPINOR": {
+      "platform": "",
+      "confidence": "todo",
+      "source": "钟工 2026-09-17 举例时提到的串；本仓（open）**无 F133 型号实测记录** → 待确认",
+      "note": "待确认：F133 板子型号串未入库核验，拿到真机后 `adb devices -l` + getprop ro.product.model 回填"
+    },
+    "Zkswe_F136_SPINOR": {
+      "platform": "",
+      "confidence": "todo",
+      "source": "钟工 2026-09-17 举例时提到的串；本仓（open）无 F136/F135 型号实测记录 → 待确认",
+      "note": "待确认：F135/F136 板子型号串未入库核验（若确认，平台写 F135 —— platforms.py 里 F136 归一为 F135）"
+    }
+  }
+}

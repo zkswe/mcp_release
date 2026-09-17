@@ -46,6 +46,7 @@ except Exception:  # pragma: no cover
 # ---------------------------------------------------------------- adb 定位
 
 _ADB_CANDIDATES = [
+    r'tools\adb\adb.exe',                  # 随包 adb（v0.27.84 起）
     r'tools\FlyThingsIDE\sdk\platform-tools\adb\adb.exe',
     r'sim\tools\adb.exe',
     r'sim\tools\platform-tools\adb.exe',
@@ -53,9 +54,51 @@ _ADB_CANDIDATES = [
 ]
 
 
+# ---------------------------------------------------------------- adb 定位（v0.27.84 收口）
+# ⚠️ 本模块不再自己写死 adb 路径：统一走仓库根 `adb_tools.resolve_adb()`，
+#    优先级 = 环境变量 ADB/FLYTHINGS_ADB → **随包 tools/adb/adb.exe** → PATH。
+#    （旧候选表里 sim/、qemu-openwrt/ 那几条本机路径已删；隐私闸门不看这类相对路径，
+#     但它们跟「随包分发」的口径不一致，留着只会漂移）。
+
+_ADB_TOOLS = None
+
+
+def _repo_adb_tools():
+    """向上逐级找仓库根的 adb_tools.py（本文件在 <repo>/ui_tools/ 下）。"""
+    global _ADB_TOOLS
+    if _ADB_TOOLS is not None:
+        return _ADB_TOOLS or None
+    cur = os.path.dirname(os.path.abspath(__file__))
+    for _ in range(4):
+        p = os.path.join(cur, 'adb_tools.py')
+        if os.path.isfile(p):
+            if cur not in sys.path:
+                sys.path.insert(0, cur)
+            try:
+                import importlib
+                _ADB_TOOLS = importlib.import_module('adb_tools')
+            except Exception:
+                _ADB_TOOLS = False
+            return _ADB_TOOLS or None
+        parent = os.path.dirname(cur)
+        if parent == cur:
+            break
+        cur = parent
+    _ADB_TOOLS = False
+    return None
+
+
 def find_adb():
-    """找 adb：环境变量 ADB > PATH > workspace 常见位置（向上逐级找）。返回路径或 None。"""
-    env = os.environ.get('ADB') or os.environ.get('ADB_PATH')
+    """找 adb：adb_tools.resolve_adb()（环境变量 ADB/FLYTHINGS_ADB > 随包 tools/adb/ > PATH）。
+
+    保留旧返回约定（路径或 None），所以调用方与用例（monkeypatch find_adb）无需改。
+    找不到仓库 adb_tools 时（单独拷走本文件用）退化到旧候选表，保证独立可用。
+    """
+    at = _repo_adb_tools()
+    if at is not None:
+        p = at.resolve_adb()
+        return p or None
+    env = os.environ.get('ADB') or os.environ.get('FLYTHINGS_ADB') or os.environ.get('ADB_PATH')
     if env and os.path.isfile(env):
         return env
     w = shutil.which('adb')
@@ -78,6 +121,15 @@ def find_adb():
                 break
             cur = parent
     return None
+
+
+def adb_missing_msg():
+    """找不到 adb 的统一文案（优先用仓库 adb_tools 的口径，保证全仓一句话）。"""
+    at = _repo_adb_tools()
+    if at is not None:
+        return at.adb_missing_hint()
+    return ('找不到 adb：设环境变量 ADB=<adb 完整路径>，或把 adb 放进 PATH，'
+            '或把随包 tools/adb/adb.exe 拷到能找到的位置。')
 
 
 def _run(args, timeout=60, binary=False):
@@ -186,7 +238,7 @@ def screen_info(device='', fb='/dev/fb0', adb=''):
     """读 sysfs 得到可见分辨率 / bpp / stride / virtual。返回 dict（含 raw 每行字节、可见字节数）。"""
     adb = adb or find_adb()
     if not adb:
-        return {'success': False, 'error': '找不到 adb（设环境变量 ADB 或装 Android platform-tools）'}
+        return {'success': False, 'error': adb_missing_msg()}
     dev, err = pick_device(adb, device)
     if not dev:
         return {'success': False, 'error': err}
@@ -652,7 +704,7 @@ def capture(device='', out='', fmt='png', scale=1.0, quality=90, fb='/dev/fb0',
     t0 = time.time()
     adb = adb or find_adb()
     if not adb:
-        return {'success': False, 'error': '找不到 adb（设环境变量 ADB 或装 Android platform-tools）'}
+        return {'success': False, 'error': adb_missing_msg()}
     dev, err = pick_device(adb, device)
     if not dev:
         return {'success': False, 'error': err}
