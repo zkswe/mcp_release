@@ -13,10 +13,14 @@
   3. 关键模块依赖：ui_editor/ui_edit_apply/ui_diff/device_screenshot 等是否可用
   4. 入口一致性：mcp_server 入口 docstring 工具数
   5. 文档漂移：README 的版本号/工具数是否等于真实值
+     （v0.27.77 起 README 精简为「一键安装 + 功能说明」，工具数改为**扫全部「N 个工具」提法对齐**，
+      不再要求固定的 FAQ / 项目结构句位；用例数/知识规模的承载处见 check_consistency.py）
      （CHANGELOG.md 自 v0.27.31 起**冻结为历史归档**，不再维护、不再校验——沛哥 2026-09-11 定）
   6. catalog.json（本地意图闸门）ops 数是否等于真实工具数
   7. 双份 ui_tools 副本 sha256 一致（tools/ui_tools/ ↔ tools/FlyThings_mcp_open/ui_tools/）
   8. 隐私/路径泄露扫描：本机绝对路径 / 内网真机 IP / DESKTOP 主机名 / 真实 accessKey
+     （v0.27.77 起只扫「可能被发布的内容」= git 的已跟踪 + 未忽略新文件；
+      `.fun/` 这类 .gitignore 忽略的构建产物（含本机绝对路径）不再误报；无 git 时回退全量扫）
   9. 静默 except lint（调用 scripts/lint_silent_except.py，v0.27.32 起单一实现）
  10. 意图闸门 catalog 参数漂移（调 scripts/gen_gate_catalog.py --check）
 退出码：0 = 全通过；1 = 有 FAIL。
@@ -65,36 +69,68 @@ _LEAK_ALLOW = [
 # 基线/白名单/违规判定全部在那里，smoke 只负责调用它（避免两处各写一套规则漂移）。
 
 
+def _scan_files():
+    """待扫描文件清单 [(相对路径, 绝对路径)]
+
+    v0.27.77：优先用 git 的「已跟踪 + 未忽略的新文件」清单（`git ls-files -z --cached
+    --others --exclude-standard`）= **可能被发布的内容**；否则 `.fun/` 这类构建产物
+    （.gitignore 已忽略，却带本机绝对路径/CMakeCache 主机信息）会把隐私扫描一路扫红。
+    git 不可用（无 git / 非仓库）时回退到 os.walk 全量扫描（保守，不漏）。
+    """
+    rels = None
+    try:
+        r = subprocess.run(['git', 'ls-files', '-z', '--cached', '--others',
+                            '--exclude-standard'], cwd=BASE,
+                           stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, timeout=60)
+        if r.returncode == 0:
+            rels = [x.decode('utf-8', 'replace') for x in r.stdout.split(b'\0') if x]
+    except Exception:
+        rels = None                 # 交给 os.walk 兜底
+    if rels is None:
+        rels = []
+        for root, dirs, files in os.walk(BASE):
+            dirs[:] = [d for d in dirs if d not in _SCAN_SKIP_DIRS]
+            for f in files:
+                rels.append(os.path.relpath(os.path.join(root, f), BASE))
+    out = []
+    for rel in rels:
+        rel = rel.replace('\\', '/')
+        parts = rel.split('/')
+        if any(d in _SCAN_SKIP_DIRS for d in parts[:-1]):
+            continue
+        f = parts[-1]
+        if not f.endswith(_SCAN_EXT) or f in ('rag_index.json', 'smoke.py'):
+            continue
+        p = os.path.join(BASE, rel)
+        if not os.path.isfile(p) or os.path.getsize(p) > 30 * 1024 * 1024:
+            continue
+        out.append((rel, p))
+    return out
+
+
 def scan_leaks():
     """返回 [(相对路径, 行号, 触发模式)]。
 
     跳过：
       - rag_index.json（发布前由 rebuild 重建，内容随 knowledge 同步）
       - smoke.py（本文件自身就写着识别用正则）
+      - git 忽略的文件（构建产物；见 _scan_files 说明）
     ⚠️ CHANGELOG.md 自 v0.27.32 起重新纳入扫描（已脱敏真机 IP；冻结归档也不能带设备信息）。
     """
     leaks = []
-    for root, dirs, files in os.walk(BASE):
-        dirs[:] = [d for d in dirs if d not in _SCAN_SKIP_DIRS]
-        for f in files:
-            if not f.endswith(_SCAN_EXT) or f in ('rag_index.json', 'smoke.py'):
-                continue
-            p = os.path.join(root, f)
-            if os.path.getsize(p) > 30 * 1024 * 1024:
-                continue
-            try:
-                txt = io.open(p, encoding='utf-8', errors='ignore').read()
-            except Exception:
-                continue
-            for i, line in enumerate(txt.splitlines(), 1):
-                for name, pat in _LEAK_PATTERNS:
-                    if pat.search(line) and not any(a.search(line) for a in _LEAK_ALLOW):
-                        leaks.append((os.path.relpath(p, BASE).replace('\\', '/'), i, name))
-                if re.search(r'accessKey|access_key', line, re.I):
-                    m = re.search(r'\b[0-9a-fA-F]{40}\b', line)
-                    if m and set(m.group(0).lower()) != {'0'}:
-                        leaks.append((os.path.relpath(p, BASE).replace('\\', '/'), i,
-                                      '真实 accessKey'))
+    for rel, p in _scan_files():
+        try:
+            txt = io.open(p, encoding='utf-8', errors='ignore').read()
+        except Exception:
+            continue
+        for i, line in enumerate(txt.splitlines(), 1):
+            for name, pat in _LEAK_PATTERNS:
+                if pat.search(line) and not any(a.search(line) for a in _LEAK_ALLOW):
+                    leaks.append((rel, i, name))
+            if re.search(r'accessKey|access_key', line, re.I):
+                m = re.search(r'\b[0-9a-fA-F]{40}\b', line)
+                if m and set(m.group(0).lower()) != {'0'}:
+                    leaks.append((rel, i, '真实 accessKey'))
     return leaks
 
 
@@ -157,13 +193,15 @@ def main():
 
     # ---- 5) 文档漂移
     rd = io.open(os.path.join(BASE, 'README.md'), encoding='utf-8').read()
-    m = re.search(r'\*\*(\d+)\s*个工具\*\*', rd)
-    check(bool(m) and int(m.group(1)) == len(names), 'README tool count',
-          '%s vs %d' % (m.group(1) if m else '?', len(names)))
+    # v0.27.77（README 精简为「一键安装 + 功能说明」）：不再要求固定的
+    # 「FAQ 工具列表 < N」句位，改为**扫全部「N 个工具」提法并全部对齐**（少写不报、写错必报）。
+    mentions = re.findall(r'(\d+)\s*个工具', rd)
+    bad = sorted({int(x) for x in mentions} - {len(names)})
+    check(bool(mentions) and not bad, 'README tool count (all mentions)',
+          'README=%s vs %d（%d 处提及）'
+          % (','.join(str(b) for b in bad) if bad else (mentions[0] if mentions else '?'),
+             len(names), len(mentions)))
     check(ver in rd, 'README mentions current version', str(ver))
-    m = re.search(r'\| 工具列表 <\s*(\d+)', rd)
-    check(bool(m) and int(m.group(1)) == len(names), 'README FAQ count',
-          '%s vs %d' % (m.group(1) if m else '?', len(names)))
     # CHANGELOG.md 自 v0.27.31 起冻结为历史归档（不再维护/不提交），版本史唯一来源 = MCP_FEATURES + README
     feats = getattr(k, 'MCP_FEATURES', [])
     check(bool(feats) and str(ver) in feats[0], 'MCP_FEATURES[0] mentions version',

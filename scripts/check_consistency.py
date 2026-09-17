@@ -8,12 +8,14 @@ kb_tools / mcp_server / catalog.json / README / MCP_FEATURES / CHANGELOG 六处�
 
   1. 版本号四方一致：kb_tools.MCP_VERSION = pyproject [tool.flythings].mcp_version
      = "v"+pyproject.project.version+"-open"，且 README 提到当前版本
-  2. 工具数六方一致：kb_tools.OP_NAMES = mcp_server docstring = README(2 处)
+  2. 工具数六方一致：kb_tools.OP_NAMES = mcp_server docstring = README(所有「N 个工具」提法)
      = 意图闸门 catalog.json = tools_manifest.json
+     （v0.27.77 起 README 精简为「一键安装 + 功能说明」，不再按固定句位查，改为扫全部提法对齐）
   3. 平台矩阵自洽：platforms.PLATFORMS 的模板目录 / bin_tools 目录真实存在；
      别名可归一；未知平台必须报错并列出支持项
   4. 知识索引新鲜度：rag_index.json 的文档集合 == 磁盘上 knowledge/(+wiki) 的 md 集合，
-     且索引不早于最新源文件；README 里写的「N 篇 wiki」必须等于真实篇数
+     且索引不早于最新源文件；wiki 篇数对着 tools_manifest.json 的 docs.wikiFiles 核
+     （README 精简后不再写该数字；若又写了则两处须一致）
   5. tools_manifest.json 与代码/表一致（委派 scripts/gen_manifest.py --check）
   6. 冒烟与纪律（委派单一实现）：scripts/smoke.py（隐私扫描 / 静默 except / 双份 ui_tools 哈希
      / 闸门 catalog 参数同步）、scripts/sync_ui_tools.py --check
@@ -116,16 +118,17 @@ def stage_tool_count():
     m = re.search(r'(\d+)\s*(?:个能力合一|个能力)', srv)
     check(bool(m) and int(m.group(1)) == len(names), 'mcp_server docstring count',
           '%s vs %d' % (m.group(1) if m else '?', len(names)))
+    # v0.27.77（钟工：README 精简为「一键安装 + 功能说明」）起：不再要求 README 里保留
+    # 「FAQ 工具列表 < N」与「# 工具定义与注册（N 个）」这两处固定句位（已随精简章节删除），
+    # 改为**扫出 README 里所有「N 个工具」提法并全部对齐**——少写不报警、写错任何一处必报警；
+    # 工具数的唯一真源仍是 kb_tools.OP_NAMES / tools_manifest.json。
     rd = _read(os.path.join(BASE, 'README.md'))
-    m = re.search(r'\*\*(\d+)\s*个工具\*\*', rd)
-    check(bool(m) and int(m.group(1)) == len(names), 'README tool count',
-          '%s vs %d' % (m.group(1) if m else '?', len(names)))
-    m = re.search(r'\|\s*工具列表\s*<\s*(\d+)', rd)
-    check(bool(m) and int(m.group(1)) == len(names), 'README FAQ count',
-          '%s vs %d' % (m.group(1) if m else '?', len(names)))
-    m = re.search(r'#\s*工具定义与注册（(\d+)\s*个）', rd)
-    check(bool(m) and int(m.group(1)) == len(names), 'README project-tree count',
-          '%s vs %d' % (m.group(1) if m else '?', len(names)))
+    mentions = re.findall(r'(\d+)\s*个工具', rd)
+    bad = sorted({int(x) for x in mentions} - {len(names)})
+    check(bool(mentions) and not bad, 'README tool count (all mentions)',
+          'README=%s vs %d（%d 处提及）'
+          % (','.join(str(b) for b in bad) if bad else (mentions[0] if mentions else '?'),
+             len(names), len(mentions)))
     gp = os.path.join(os.path.dirname(BASE), 'flythings_intent_gate', 'catalog.json')
     if os.path.isfile(gp):
         cnt = json.loads(_read(gp)).get('count')
@@ -376,12 +379,20 @@ def stage_index():
     else:
         print('       (skip freshness check: %s not present)' % WIKI_ROOT)
     if has_wiki:
+        # v0.27.77 起 README 精简，不再写「N 篇 wiki」：该事实改为对着
+        # tools_manifest.json（gen_manifest.py 生成的机器可读快照）的 docs.wikiFiles 核；
+        # README 若又重新写了该数字，两处口径必须一致（防再次手写漂移）。
         rd = _read(os.path.join(BASE, 'README.md'))
         m = re.search(r'(\d+)\s*篇\s*wiki', rd)
-        check(bool(m) and int(m.group(1)) == wiki_count, 'README wiki page count',
-              '%s vs %d' % (m.group(1) if m else '?', wiki_count))
+        mp = os.path.join(BASE, 'tools_manifest.json')
+        man = json.loads(_read(mp)).get('docs', {}).get('wikiFiles') \
+            if os.path.isfile(mp) else None
+        check(man == wiki_count and (not m or int(m.group(1)) == wiki_count),
+              'wiki page count (manifest/docs; README 若写则须一致)',
+              'manifest=%s README=%s real=%d'
+              % (man, m.group(1) if m else '（未写）', wiki_count))
     else:
-        print('       (skip README wiki count: %s not present)' % WIKI_ROOT)
+        print('       (skip wiki count: %s not present)' % WIKI_ROOT)
 
 
 # docstring 预算（v0.27.34 起进门禁）：工具 schema 每次会话都进上下文，膨胀 = 持续燃烧 token。
@@ -444,12 +455,18 @@ def stage_delegated(skip_smoke, with_tests):
         tail = [l for l in out.strip().splitlines() if l.strip()][-1:]
         check(rc == 0, 'delegated: tests/ unittest', (tail[0] if tail else 'rc=%d' % rc)[:70])
         # 用例数不许手写漂移（README 写 95 而实跳 122 过就不对了）
+        # v0.27.77 起主 README 精简（不再写用例数）：用例数的承载处改为 tests/README.md
+        # （它写「当前规模：**N 项**」）；主 README 若又写了该数量也一并核对。
         m = re.search(r'^Ran (\d+) tests', out, re.M)
-        rd = _read(os.path.join(BASE, 'README.md'))
-        n = re.search(r'(\d+)\s*项契约用例', rd)
-        check(bool(m) and bool(n) and int(m.group(1)) == int(n.group(1)),
-              'README test count matches real run（--with-tests）',
-              'README=%s real=%s' % (n.group(1) if n else '?', m.group(1) if m else '?'))
+        real = int(m.group(1)) if m else -1
+        nt = re.search(r'当前规模：\*\*(\d+)\s*项\*\*',
+                       _read(os.path.join(BASE, 'tests', 'README.md')))
+        nr = re.search(r'(\d+)\s*项契约用例', _read(os.path.join(BASE, 'README.md')))
+        check(bool(nt) and int(nt.group(1)) == real and (not nr or int(nr.group(1)) == real),
+              'test count matches real run（tests/README.md）',
+              'tests/README=%s README=%s real=%s'
+              % (nt.group(1) if nt else '?', nr.group(1) if nr else '（未写）',
+                 m.group(1) if m else '?'))
 
 
 def main():

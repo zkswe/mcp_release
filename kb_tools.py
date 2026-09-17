@@ -53,9 +53,10 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.76-open'
-MCP_BUILD = '2026-09-16'
+MCP_VERSION = '0.27.77-open'
+MCP_BUILD = '2026-09-17'
 MCP_FEATURES = [
+'2026-09-17: **ftu 口径收口（新增 knowledge/devflow/ftu-json-pipeline.md）+ 3 op 加指针 + README 精简** v0.27.77-open（钟工：客户检索「ftu 如何开发 / 怎么修改 ftu 布局文件」命中 3 条 wiki 镜像的 **IDE 口径**、quality=low_confidence(0.248)，而全库没有一篇讲 ftu 是什么/能否手改/能否逆向）——①**新文档**：ftu = 设备实际加载的布局（二进制，文件头 `ZKSW`；一 ftu = 一界面 = 一 Activity）；链路 `ui/*.json`（唯一源）→ fui pack → `ui/*.ftu` → fun launch(`/tmp/ui`)/fun pack(update.img)；**`fun build` 自己不做 json→ftu**（pack 由 fui 干，`build_ui_flow` 第②步按需跑）；正确改法四条（edit_apply / fui_pack / build_ui_flow / 命令行）；**区分 IDE 工作流（wiki 那几篇）与本 MCP 代码工作流（json 为源）**；禁手改五条理由 + `edit_ftu` 正确姿势（给变更→落 json→再 pack，不是改二进制）；逆向限制（内置 fui 只 pack、unpack 空壳）；resources 关系（json 写 `images/xxx.png`，落到设备 `resPath`=/tmp/ui）；8 条客户原话 FAQ。②**实测**（索引重建后 1412 chunks/194 篇）：『ftu 如何开发 怎么修改 ftu 布局文件』low_confidence(0.248，top5 里 3 条 wiki) → **ok(1.0)，top1 = 新文档**；『ftu 可以手写吗』『main.ftu 是什么文件』同样 → ok(1.0)。③**3 op 加最短指针**（fui_pack/edit_ftu/build_ui_flow）：「ftu 是 json 编译产物：改布局改 json 后 pack，不要手写/手改 ftu」+ 指向新文档；删掉 `edit_ftu` 里「布局修改以 ftu 为目标」的口径矛盾话并压缩冗余；docstring 11906 → **11987/12000**（单 op 最大 893）。④**README 精简**（钟工要求只留「一键安装 + 功能说明」）：188 行/21KB → 122 行/7.1KB，删目录/工具长表/组件表/项目结构/CLI 表/FAQ/样例，安装命令原样保留。⑤**门禁口径随之改**（check_consistency + smoke）：README 工具数改为「扫全部『N 个工具』提法对齐」，wiki 篇数对 `tools_manifest.json docs.wikiFiles` 核，用例数承载处改 `tests/README.md`；smoke 隐私扫描改为只扫 git 已跟踪 + 未忽略文件（`.fun/` 构建产物不再误报）。',
 '2026-09-16: **html2json 的 CSS 出图一律走 SS + 修 `border-radius:50%` 认不出** v0.27.76-open（钟工拍板三条口径）——①html2json 处理 CSS 效果（渐变/圆角/阴影）出图**一律 SS（`ss=4` = 每像素 16 子采样）**，**不再保留 1x + α 羽化那条路**（固定本地脚本的工作，不额外耗 token）：`gen_gradient`/`gen_gradient_stops`/`gen_shadow_card`/`rounded_card`/`gen_btn9` 加可选 `ss=0`（`SS_DEFAULT=4`），新增 `_ss_mask`/`_ss_rounded_rect`/`_ss_outline` + 公开 `ss_shape_mask`（自画合成层用 `ImageChops.multiply` 只缩 alpha，禁 `paste(color,mask)` → 防暗边）。②**`gen_res.rounded_rect` 默认行为不变**（FT-008：1x 直画 + α 羽化 σ0.5）——SS 仅在 ①html2json 出图 ②调用方显式 `rounded_rect_ss`/`ss>0` 时生效；`ss=0` 路径与改动前**逐字节相同**（机器比对）。③**顺带修真 bug**：`border-radius` 旧解析只认「数字+px」→ `50%`/无单位认不出（实测 48×48 圆形 corner α=255 方形）→ 新增 `_radius_px()`（px/无单位/%，按 min(w,h)/2 钳制）。**实测**（理想 = 同算法 16x；边界带 mean/p95，单位 /255）：药丸渐变 80×40 35.4/97.9→**5.3/22.8**、正圆 48×48 31.7/74.0→**4.0/8.0**、圆角渐变卡 r16 43.9/153.0→**10.0/22.0**、阴影片 α-max 170→**20**、阴影药丸 125→**23**；暗边回归 ≤4/255。用例 158→**164**（`tests/test_html2json_ss.py`）；口径入库 `knowledge/devflow/ui-asset-rules.md` #8 + `html-subset-quickref.md` §7.1；证据 `temp/html2json_ss/`。',
 '2026-09-16: **切图抗锯齿档位 + thumb 尺寸核对盲区收口** v0.27.75-open（钟工：「滑块圆钮/开关有锯齿，图片和控件尺寸对不上」）——①**强曲率形状出图口径（FT-010）**：`gen_res.rounded_rect_ss(w,h,radius,fill,border=None,border_w=1,ss=4)`（≥4x 超采样 + LANCZOS + alpha 预乘，专给圆/圆钮/药丸/细圆条）；以 16x 超采样覆盖率当理想值实测（边界带 mean/p95，单位 /255）：药丸 35.4/97.9→5.3/22.7、圆 40.9/102→3.7/11、圆钮 42/105→6.3/17、细圆条 21/43→3.2/6，ss=8 时 p95<4；大半径卡片继续 `rounded_rect`（1x+α 羽化，轮廓与 1x 直画逐像素一致）→ **默认行为逐字节未变**（28 组输入 sha256 全同），`_aa_mask`/`gen_gradient`/`to_9patch` 补了分工说明。②**thumb 尺寸核对盲区**：`verify_assets`/`check_all` #11 #17 原先只比控件 position，滑块 `thumb` 子盒（自有尺寸）从不核对 → `sk_thumb.png` 31×31 配 `thumb.size` 30×30 一路 PASS。现盒子来源 = position **+** `thumb.size`：自动生成 thumb 图失配 → `mismatch[]`=FAIL，手绘 thumb（官方基准工程 SampleUI-New 35×34 vs 33×35）→ 仅 `stretched[]`，`thumb` 无 `size` → 跳过 + `skippedNoBox[]`；编辑器预检同口径。③实测：案例 `lvgl-widgets-uiv1` 三平台 check_all 全 PASS、0 mismatch；反例（thumb 改 25×25）#11/#17 双报 FAIL；全仓 95 工程只多 1 处真失配（旧案例 `lvgl-widgets/f133` 待重出图）。④口径入库 `knowledge/devflow/ui-asset-rules.md` 铁律 #8/#9 并同步 `ui-layout-verify.md`；用例 148→158。',
 '2026-09-16: **LVGL 案例按 ui_v1 重迁 + 组件包补全（Calendar 新包 / Chart 0.2.1）+ Z21 真机验收** v0.27.74-open（钟工：「lvgl 这套 Demo 再次迁移一次，优先 FlyThings 控件 + 自定义控件补全能力，自定义控件最终落到通用组件包」）——①新案例 `projects/translate/lvgl-widgets-uiv1/`（开发工作区）：TRANSLATE.md 按五级口径重写（每行挂 `mcp_control_map.json` 的 `level/notes/ref`），v1 的 5 处手写自绘全部换成组件包（`Chart` LINE/BAR/RING/SEGMENT/GAUGE、`TabView` 切页、`Calendar` 日历），开关改两态 `button__N`（绕 `checkbox__` 工具链缺陷），logic 826→746 行；双平台 `fun build` + `check_all` 全 PASS；②新包 **`components/ui_v1/Calendar/`**（四件套 + `example/` + 6 张 Z21 证据）：42 textview 日号网格 + 容器原点 + `getPosition()` 触摸反算 + 翻月/选中/标记/今天，不装触摸监听；③`Chart` **0.2.1**：新增**分段环** `setRingSegments()`（权重归一 / 段间 2° / 最多 8 段，`RING` 外返回非 0）+ **修 `drawGrid()` Y 刻度值序 bug**（槽位 0 原本画在最下线却写 max → 数字上下颠倒、图形是对的）；④Z21 九项交互全过：切页/点页签 + 下划线互斥 420px↔0px、滑块跟手 87%、开关两态、调色盘换色（`PtLine` 38,911 px 变红）、性别 modal、日历选中并回填、环/仪表动画；⑤平台事实：`div.modal` **内** textview 底色画不出（`bgColorTab`/`setBackgroundColor`/`setBgStatusColor` 三条路），**普通容器里能画**（反例：顶栏下划线 420 px 实心蓝）——先前「ZKTextView 画不出底色」的结论**已收窄到弹窗内**；painter 与刻度 textview 有 **z 序**要求（json 里 painter 必须写在先，否则整列刻度被不透明底盖住，静态检查发现不了）；⑥`mcp_control_map.json` 里 7 条日历族（lvgl/qt/android/miniprogram/emwin/mfc）`ref` 指向真包路径。⑦新增知识：`knowledge/uicontrols/widget-code-api.md` 的 `ZKPainter` 段补 **z 序**口径（json 后定义 = z 更高，painter 要写在叠加文字之前，否则整列刻度被不透明底盖住；静态检查与本地预览都发现不了）。',
@@ -513,7 +514,9 @@ def _with_files(obj, *paths):
 
 
 def flythings_fui_pack(json_path: str) -> str:
-    """将 json 布局打包为 ftu（设备实际加载的是 ftu）。返回 ftu 路径、控件数、分辨率。"""
+    """将 json 布局打包为 ftu（设备实际加载的是 ftu）。返回 ftu 路径、控件数、分辨率。
+    ftu 是 json 布局的**编译产物**：改布局一律改 json 后 pack，不要手写/手改 ftu
+    （详见 knowledge/devflow/ftu-json-pipeline.md）。"""
     r = pt.flythings_fui_pack(json_path)
     return json.dumps(_with_files(r, r.get('ftuPath')), ensure_ascii=False)
 
@@ -531,8 +534,8 @@ def flythings_edit_ftu(ftu_path: str, operations: str, output_ftu: str = '',
     add      {"op":"add","template":"caption或key","newKey":"textview__4","props":{...}}
     set_root {"op":"set_root","props":{"backgroundColor":"#FFFFFF"}}
     客户说「把这个按钮往右移/改文本/换颜色/删掉某控件/复制一个控件」时调用。
-    布局修改以 ftu 为目标（json 为内部中间文件自动处理）；改界面布局也可直接编辑 HTML 原型后重新转换。
-    ⚠️ 布局以 json 为源：优先直接编辑同目录已有 json 再 pack 回 ftu；无 json 时报错。"""
+    ftu 是 json 的**编译产物**：本 op 的正确姿势 = 给变更 → 应用到同目录 json → 再 pack 回 ftu，
+    不是改二进制；改布局一律改 json 后 pack，不要手写/手改 ftu（详见 knowledge/devflow/ftu-json-pipeline.md）。"""
     r = pt.flythings_edit_ftu(ftu_path, operations, output_ftu, overwrite)
     return json.dumps(_with_files(r, r.get('ftuPath'), r.get('jsonPath'), r.get('backup')),
                       ensure_ascii=False)
@@ -540,21 +543,21 @@ def flythings_edit_ftu(ftu_path: str, operations: str, output_ftu: str = '',
 
 def flythings_build_ui_flow(project_root: str, with_launch: bool = False, device: str = '') -> str:
     """⚠️ 场景别名（编译部署类意图一律本工具，禁止自造命令；不限触发入口）：
-    ① 用户口语：「编译/构建/调试/全量推送/部署/部署到设备/推送到设备/跑一下」；
-    ② 客户端按钮/自动化流程（「AI 应用调试」「自定义编译」等）凡意图是「编译并部署到真机调试」→ 一律调本工具；
-    ③ AI 自主决策：写完/改完代码后主动编译验证、调试看效果，同样调本工具。
-    ⚠️ 固化/升级/出 update.img/交付/量产 → 用 flythings_pack_upgrade（本工具=调试推送，掉电即失）。
-    内部 fun launch 完成程序+资源+ftu 全量推送并启动；⚠️ 不存在 deploy_debug.sh 之类额外脚本，禁止自造命令。
-    UI 构建流程：① json/ftu 时间戳一致性检查（以 json 为源，改过 json 自动重新 pack）
-    ② fui pack ③ fun install 同步依赖 ④ fun build ⑤ **默认到此为止（不推真机）**；
-    要推设备必须显式 with_launch=True（用户明确说「推到设备/跑一下」时才传）。
-    ⚠️ fun launch 网络推送失败/超时会**自动重试 5 次**（间隔 2s，覆盖网络抖动；信任 fun 差分推送，不自写 push 脚本校验）；
-    5 次仍失败返回 needDeviceInput=true，必须询问用户接入方式：
-    1) USB：确认 adb devices 可见后重试；2) 网络：先 adb connect <设备IP> 再重试。
-    ⚠️ 多设备（USB+WiFi adb）必须传 device='<serial|IP>'（走 fun launch -s）；不传则 fun 静默取列表第一个 → 可能推错设备。
-    传入项目根目录。改过 json 必须 pack，否则设备仍跑旧 ftu。
-    ⚠️⚠️ src/activity/ 目录（mainActivity.cpp/h）由 IDE 编译时自动生成，构建流程已自动处理；
-    禁止手动创建/修改该目录文件，业务代码只写 src/logic/*.cc。
+    ① 口语：「编译/构建/调试/全量推送/部署/推送到设备/跑一下」；
+    ② 客户端按钮/自动化流程（「AI 应用调试」「自定义编译」）意图=编译并部署真机调试 → 本工具；
+    ③ AI：写完/改完代码后主动编译验证、调试看效果，也调本工具。
+    ⚠️ 固化/升级/出 update.img/交付/量产 → 用 flythings_pack_upgrade（=调试推送，掉电即失）。
+    内部 fun launch 完成程序+资源+ftu 全量推送并启动；⚠️ 无 deploy_debug.sh 等额外脚本。
+    UI 构建流程：① json/ftu 时间戳检查（以 json 为源，改过 json 自动重新 pack）
+    ② fui pack ③ fun install ④ fun build ⑤ **默认到此为止（不推真机）**；
+    要推设备必须显式 with_launch=True（用户说「推到设备/跑一下」时才传）。
+    ⚠️ fun launch 网络推送失败/超时**自动重试 5 次**（间隔 2s；信任 fun 差分推送）；
+    仍失败回 needDeviceInput=true，必须问接入方式：USB 确认 adb devices 后重试 / 网络先 adb connect <IP>。
+    ⚠️ 多设备（USB+WiFi）必须传 device='<serial|IP>'（fun launch -s）；不传 fun 取第一个 → 可推错设备。
+    传入项目根目录。ftu=json 编译产物：改布局一律改 json 后 pack，不要手写/手改 ftu
+    （详见 knowledge/devflow/ftu-json-pipeline.md）。
+    ⚠️⚠️ src/activity/（mainActivity.cpp/h）由 IDE 编译时自动生成，构建流程已处理；
+    禁手动改，业务代码只写 src/logic/*.cc。
     """
     return json.dumps(pt.flythings_build_ui_flow(project_root, with_launch, device), ensure_ascii=False)
 
