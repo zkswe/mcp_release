@@ -58,7 +58,7 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 > `python` 不在 PATH 时用完整路径（如 `C:/Users/<你>/AppData/Local/Programs/Python/Python313/python.exe`）。
 
 **4) 验证** —— 问 AI「**MCP 版本是多少？**」：
-应返回 `flythings-kb-open 0.27.77-open`，**35 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / mt_test / zkshot，
+应返回 `flythings-kb-open 0.27.78-open`，**35 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / mt_test / zkshot，
 在 `bin_tools/<平台>/` 下，**不是 op、不占 op 名额**）。
 
 > **工具面三模式（按客户端选一个，别同时配）**
@@ -90,7 +90,7 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 ### 🏭 编译 / 部署 / 出包
 - `flythings_build_ui_flow`：json/ftu 时间戳检查 → fui pack → fun install → fun build（**默认不推真机**，`with_launch=True` 才推）
 - `flythings_pack_upgrade`：固化升级包 `update.img`（TF 卡 / ADB setprop / zkautoupgrade / HTTP OTA 四种刷法）
-- `flythings_create_project` / `flythings_create_bin_project`：从内置模板建工程（F133/F135/Z21/Z20/T113/V85X）
+- `flythings_create_project` / `flythings_create_bin_project`：从内置模板建工程（F133/F135/Z21/Z20/T113/V85X/Z235X）
 - `flythings_attach_cli_tools`：把 `fui.exe`/`fun.exe` 复制进项目，客户不用装 IDE 也能编译部署
 - `flythings_validate_project`：工程规范全检（依赖 / 框架约定 / 时间戳防呆）
 
@@ -117,6 +117,6 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 
 ---
 
-当前版本 `0.27.77-open`（35 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
+当前版本 `0.27.78-open`（35 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
 
 MIT License · FlyThings Team · 深圳中科世为科技有限公司 · [developer.flythings.cn](https://developer.flythings.cn/)

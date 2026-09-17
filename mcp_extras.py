@@ -109,8 +109,10 @@ def _bin_tools_section():
         d = os.path.join(root, plat)
         if not os.path.isdir(d):
             continue
+        # 说明文件（README.md）不算设备端工具——bin_tools/z235x 目前只有占位说明
         files = sorted(f for f in os.listdir(d)
-                       if os.path.isfile(os.path.join(d, f)) and not f.startswith('.'))
+                       if os.path.isfile(os.path.join(d, f)) and not f.startswith('.')
+                       and not f.lower().endswith('.md'))
         if not files:
             continue
         lines.append('- **%s**: %s' % (plat, '; '.join(

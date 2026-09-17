@@ -7,7 +7,7 @@
 **新增或调整平台，只改本文件**（模板目录 + bin_tools 目录 + 别名都从这里读）。
 
 约定：
-- 平台名统一 **大写** 为规范形式（`F133` / `F135` / `T113` / `V85X` / `Z20` / `Z21`）；
+- 平台名统一 **大写** 为规范形式（`F133` / `F135` / `T113` / `V85X` / `Z20` / `Z21` / `Z235X`）；
 - 入参一律过 `validate()`，大小写混写（`z21`）与历史别名（`F133EMMC`）自动归一；
 - 目录名才是小写（`templates/HelloWord_Z21` 用规范名、`bin_tools/z21` 用小写键），
   分别用 `template_dir()` / `bin_tool_dir()` 取，**不要在业务代码里手写目录名**。
@@ -19,7 +19,7 @@
    `t113stdcxx` / `v85xemmc` / `v853`…）。**与规范名不是简单大小写关系**：
    `F135` 的包键是 `f136`，`V85X` 的包键是 `v85x`。
 3. **仅包生态平台** `PACKAGE_ONLY`：包生态里真实存在、但 MCP 没有模板/工具链
-   （`z6s` / `z261` / `z235x` / `h500s` / `a33nor`）。查询要认，建工程要**说清原因地**拒绝，
+   （`z6s` / `z261` / `h500s` / `a33nor`）。查询要认，建工程要**说清原因地**拒绝，
    不能当成「未知平台」（否则 AI/用户会以为平台不存在）。
 
 旧写法「按平台名字符串白名单判定能力」是错的（同一个平台名，包查询认、建工程不认）；
@@ -51,6 +51,10 @@ PLATFORMS = {
     'Z21': {
         'arch': 'arm', 'template': 'HelloWord_Z21', 'binTool': 'z21',
         'alias': (), 'note': 'ARM',
+    },
+    'Z235X': {
+        'arch': 'arm', 'template': 'HelloWord_Z235X', 'binTool': 'z235x',
+        'alias': (), 'note': 'ARM（SSD2355）；设备端预编译工具待补（bin_tools/z235x 仅占位说明）',
     },
 }
 
@@ -96,7 +100,6 @@ PACKAGE_ALIASES.update(PACKAGE_INPUT_ALIASES)
 PACKAGE_ONLY = {
     'Z6S': {'chips': [], 'note': '仅依赖包生态（package_catalog 里 1 个包）'},
     'Z261': {'chips': ['SSD261Q'], 'note': '仅依赖包生态（60 个包）'},
-    'Z235X': {'chips': ['SSD2355'], 'note': '仅依赖包生态（17 个包）'},
     'H500S': {'chips': [], 'note': '仅依赖包生态（16 个包）'},
     'A33NOR': {'chips': [], 'note': '仅依赖包生态（13 个包）'},
 }
