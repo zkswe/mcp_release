@@ -411,7 +411,7 @@ _PROJECT_SPEC = {
         "json 布局用 fui pack 生成 ftu（ui/ 下已附带 fui.exe）；编译推送用 fun.exe build / fun.exe launch（项目根目录已附带 fun.exe）",
         "⚠️ 交付流程：项目生成后直接用 fun.exe build 编译、fun.exe launch 推送设备，无需客户手动导入 FlyThings IDE 编译烧录",
         "需要三方能力（MQTT/HTTP/JSON/数据库/蓝牙/SSL/OTA/图片等）→ 先 flythings_package_search / flythings_manifest 检索现有 package，有包用包，禁止手写库或凭空 include",
-        "代码 include 了三方库头文件 → Manifest.xml 必须声明对应 package（validate_project 会检查缺失依赖）"
+        "代码 include 了三方库头文件 → Manifest.xml 必须声明对应 package（validate_project 会检查缺失依赖）；**框架基础包 base-utility 同理且更容易被漏**：代码或 fun 生成的 generated/*.h 里出现 `#include <base/...>`（典型 base/functional.h）→ Manifest 必须有 `<package id=\"base-utility\" version=\"^10.0.0\"/>`，缺了 fun build 直接 `fatal error: base/functional.h: No such file or directory`（老工程/自建工程高发）；用 flythings_add_package 加包后**必须重跑 fun install**，否则 include 路径不进 CMake",
         "GPIO 外设控制：代码能力非 UI 控件——#include \"utils/GpioHelper.h\"（zkhardware 包）；GpioHelper::input(pin) 读（1高/0低/-1失败）/ output(pin,val) 写（1高/0低）/ registerGpioListener 边沿监听；引脚名按平台不同（Z11:B_02/E_20、SV50PB:PIN7、SV50PC:PIN2、H500S:PG0、SV50PD:A0，头文件有宏）；模组需启用 gpio 功能并升级固件",
     ]
 }
@@ -624,11 +624,17 @@ def flythings_validate_project(root):
                                      'msg': f'src/uart/{uf} 缺失（系统模板文件，建议从 IDE 模板补齐）'})
 
     # 1.8 三方库依赖检查（代码 include 了三方库但 Manifest 未声明 → error）
+    #     含框架基础依赖（v0.27.83）：base 头文件（含 fun 生成的 generated/*.h）→ Manifest 必须有 base-utility
     try:
         import package_tools as pkgtools
         dep = pkgtools.flythings_check_project_deps(root)
         if dep.get('success'):
             for md in dep.get('missingDependencies', []):
+                if md.get('kind') == 'framework':
+                    # 框架基础包：msg/hint 更具体（老工程高发，别只说「加依赖」）
+                    errors.append({'file': 'Manifest.xml', 'type': 'missing_framework_dependency',
+                                   'msg': md.get('msg'), 'hint': md.get('fix')})
+                    continue
                 errors.append({'file': 'Manifest.xml', 'type': 'missing_dependency',
                                'msg': f"代码 include 了 {md['include']} 但 Manifest 未声明对应 package"
                                       f"（推荐: {', '.join(md['recommendedPackages'])}）"})
@@ -1034,6 +1040,10 @@ def flythings_build_ui_flow(project_root, with_launch=False, device=''):
        - ftu 比 json 新超 30 秒 = 开发者/IDE 直接改过 ftu → 先 unpack 同步 json 再继续
     ② 有改动才 fui pack <ui目录>（设备实际加载的是 FTU 而非 JSON）
     ③ fun install 同步 Manifest 依赖（每次 build 前执行，Manifest 变更自动拉取新依赖）
+       ⚠️ install 失败**不阻断**（离线/依赖已装场景），但会在返回体顶层给 `warnings` 明说原因
+    ③.5 框架基础依赖体检（v0.27.83）：Manifest 未声明且未解析到 base-utility 时，在返回体点明
+       「依赖未装/缺包」（fun 生成的 generated/*.h 固定 #include <base/functional.h>），
+       不把 ninja 的 fatal error 丢给用户；能解析则不加任何 step/warning（正常路径零噪音）
     ④ fun build 编译 C++ 代码
     ⑤ **默认到此为止（不推真机）**；只有用户明确说「推到设备 / 跑一下看效果」时才传 with_launch=True
     ⚠️ launch 失败（无 adb 设备）时返回 needDeviceInput=true，此时必须询问用户接入方式：
@@ -1048,6 +1058,7 @@ def flythings_build_ui_flow(project_root, with_launch=False, device=''):
     ui_dir = os.path.join(project_root, 'ui')
     if not os.path.isdir(ui_dir):
         return {"success": False, "error": f"ui 目录不存在: {ui_dir}"}
+    project_info = _detect_project_info(project_root)   # 平台（供框架依赖体检取包生态键）
 
     steps = []
 
@@ -1081,20 +1092,65 @@ def flythings_build_ui_flow(project_root, with_launch=False, device=''):
         steps.append({"step": "fui pack", "success": True, "skipped": "json 与 ftu 时间戳一致，无需重新打包"})
 
     # ③ fun install（同步 Manifest 依赖，Manifest 变更后自动拉取新包）
+    warnings = []
     ri = _run_fun('install', project_root)
+    install_out = (ri.get('stderr') or ri.get('stdout') or ri.get('error') or '')
     steps.append({"step": "fun install", "success": ri['success'],
-                  "detail": (ri.get('stderr') or ri.get('stdout') or ri.get('error') or '')[-400:]})
-    # ⚠️ install 失败不阻断：依赖可能已装过（离线/无变更场景），继续 build 让真实错误暴露
+                  "detail": install_out[-400:]})
+    # ⚠️ install 失败**不阻断**（依赖可能已装过：离线/无变更场景），但**不再静默**：
+    #    必须在返回体顶层给 warnings —— 否则用户只看到 ninja 的 `fatal error: base/functional.h:
+    #    No such file or directory`，会以为是代码问题，排查被带偏（2026-09-17 钟工反馈）。
     if not ri['success']:
-        steps[-1]['note'] = 'fun install 失败但继续 build（依赖可能已就绪）；若 build 报缺依赖请检查 Manifest/网络'
+        steps[-1]['note'] = ('fun install 失败但继续 build（依赖可能已就绪）；'
+                             '若 build 报缺依赖请检查 Manifest/网络')
+        warnings.append('fun install 失败（%s）：常见于 Manifest 缺 base-utility（代码/生成的 '
+                        'generated/*.h 引用 base 头文件）或改过 Manifest 未重装 → 请先 '
+                        'flythings_add_package(project_root, "base-utility", with_install=True) / '
+                        'fun install 再 build；详见 knowledge/devflow/cli-fun-toolchain.md §4.7'
+                        % ((install_out.strip().replace('\n', ' ')[:160])
+                           or '原因见 steps 里 fun install 的 detail'))
+
+    # ③.5 前置体检（build 前）：框架基础头能不能解析（不可解析就直接点明「依赖未装/缺包」，
+    #      不把 ninja 的编译错误丢给用户）；已能解析时**不加 step/warning**，正常路径零噪音。
+    fw = {}
+    try:
+        import package_tools as pkgtools
+        fw = pkgtools.framework_dep_status(project_root,
+                                           project_info.get('platform') or '')
+    except Exception as e:                      # 体检本身出错不阻断（不影响原流程）
+        fw = {'success': False, 'error': str(e)}
+    if fw.get('success') and fw.get('missing'):
+        for d in fw['missing']:
+            warnings.append('⚠️ 依赖未装/缺包：%s（%s；本地注册表证据：%s）—— 判定=%s；修复：%s'
+                            % (d['package'], d['why'],
+                               d['headerInRegistry'] or '本机注册表里也没找到该头文件',
+                               'Manifest 未声明且依赖未解析'
+                               if not (d['declared'] or d['resolved'])
+                               else '头文件不在 include 路径里',
+                               d['fix']))
+        steps.append({"step": "check_framework_deps", "success": False,
+                      "detail": fw['missing'][0]['msg'],
+                      "packages": [d['package'] for d in fw['missing']],
+                      "evidence": fw['missing'][0]['evidence'],
+                      "fix": fw['missing'][0]['fix']})
 
     # ④ fun build（编译）
     rb = _run_fun('build', project_root)
     steps.append({"step": "fun build", "success": rb['success'],
                   "detail": (rb.get('stderr') or rb.get('stdout') or rb.get('error') or '')[-500:]})
     if not rb['success']:
-        return {"success": False, "steps": steps,
-                "error": rb.get('error') or "fun build 失败"}
+        err = rb.get('error') or "fun build 失败"
+        bout = (rb.get('stderr') or '') + (rb.get('stdout') or '')
+        # 缺基础头导致的编译失败 → 翻译成「依赖未装/缺包」，不要把 ninja 原文丢给用户
+        if 'base/' in bout and 'No such file or directory' in bout:
+            err += ('\n——这是**依赖未装/缺包**（不是代码错误）：fun 生成的 generated/*.h 固定 '
+                    '#include <base/...>，Manifest 必须有 base-utility 且重跑过 fun install '
+                    '（flythings_add_package(project_root, "base-utility", with_install=True)）。'
+                    '详见 knowledge/devflow/cli-fun-toolchain.md §4.7')
+        res = {"success": False, "steps": steps, "error": err}
+        if warnings:
+            res['warnings'] = warnings
+        return res
 
     # ⑤ fun launch（build 通过后直接推送启动；失败→询问设备接入方式）
     if with_launch:
@@ -1103,14 +1159,17 @@ def flythings_build_ui_flow(project_root, with_launch=False, device=''):
                       "device": device or '(自动发现 USB 设备)',
                       "detail": (rl.get('stderr') or rl.get('stdout') or rl.get('error') or '')[-400:]})
         if not rl['success']:
-            return {"success": False, "steps": steps,
-                    "needDeviceInput": True,
-                    "message": "fun launch 失败（已自动重试 5 次仍失败）：未检测到可用的 adb 设备（或设备未连接/网络推送中断）。"
-                                "请询问用户接入方式："
-                                "1) USB 接入：将设备通过 USB 连接到电脑后重试本工具；"
-                                "2) 网络接入：请用户提供设备 IP（如 192.168.1.100），"
-                                "用 device='<ip>' 重新调用（将执行 fun launch -s <ip>）。",
-                    "error": rl.get('error') or (rl.get('stderr') or rl.get('stdout') or '')[-300:]}
+            res = {"success": False, "steps": steps,
+                   "needDeviceInput": True,
+                   "message": "fun launch 失败（已自动重试 5 次仍失败）：未检测到可用的 adb 设备（或设备未连接/网络推送中断）。"
+                               "请询问用户接入方式："
+                               "1) USB 接入：将设备通过 USB 连接到电脑后重试本工具；"
+                               "2) 网络接入：请用户提供设备 IP（如 192.168.1.100），"
+                               "用 device='<ip>' 重新调用（将执行 fun launch -s <ip>）。",
+                   "error": rl.get('error') or (rl.get('stderr') or rl.get('stdout') or '')[-300:]}
+            if warnings:
+                res['warnings'] = warnings
+            return res
     else:
         steps.append({"step": "fun launch", "success": True, "skipped": "未请求推送（with_launch=False，默认不推真机）"})
 
@@ -1119,8 +1178,11 @@ def flythings_build_ui_flow(project_root, with_launch=False, device=''):
     steps.append({"step": "verify_timestamps",
                   "stale": ts_after['stale'], "missing": ts_after['missing'],
                   "ok": ts_after['ok']})
-    return {"success": True, "projectRoot": project_root, "steps": steps,
-            "finalCheck": {"stale": ts_after['stale'], "missing": ts_after['missing']}}
+    res = {"success": True, "projectRoot": project_root, "steps": steps,
+           "finalCheck": {"stale": ts_after['stale'], "missing": ts_after['missing']}}
+    if warnings:
+        res['warnings'] = warnings
+    return res
 
 
 # ---------------- 工具: 制作升级包（固化升级 update.img）----------------
@@ -1271,23 +1333,54 @@ def flythings_pack_upgrade(project_root, out_path='', release_version='', ab=Fal
     }
 
 # ---------------- 工具 7: 从 IDE 模板创建项目骨架 -------------
+_IDE_BUILDER_IDS = (
+    'com.flythings.managedbuild.core.builder',
+    'org.eclipse.cdt.managedbuilder.core.genmakebuilder',
+    'org.eclipse.cdt.managedbuilder.core.ScannerConfigBuilder',
+)
+
+
 def _project_names_in_files(root):
     """取出模板里**真实**的旧工程名（不是目录名）。
 
     旧工程名只出现在这些位置：.project 的 <name>、.cproject 的
     name="/XXX(/Release|/Debug)" 工作区路径、<project id="XXX.flythings..."> 前缀。
-    """
+
+    ⚠️ .project 里除了工程名，"""
     names = set()
     pj = os.path.join(root, '.project')
     if os.path.isfile(pj):
         txt = open(pj, encoding='utf-8', errors='replace').read()
-        names |= {m.strip() for m in re.findall(r'<name>\s*([^<]+?)\s*</name>', txt)}
+        # ⚠️ 只取 <projectDescription> 下的第一个 <name>（= 工程名）。
+        #    <buildCommand><name> 里装的是 Eclipse Builder ID
+        #    （com.flythings.managedbuild.core.builder / org.eclipse.cdt.*），
+        #    它们不是工程名，一旦被当旧名替换掉，IDE 就认不出 builder ——
+        #    症状：编译无任何输出，CDT Build Console 空白（"没法编译"）。
+        m = re.search(r'<projectDescription>\s*<name>\s*([^<]+?)\s*</name>', txt)
+        if m:
+            names.add(m.group(1).strip())
     cj = os.path.join(root, '.cproject')
     if os.path.isfile(cj):
         txt = open(cj, encoding='utf-8', errors='replace').read()
         names |= set(re.findall(r'name="/([^/"]+)', txt))
         names |= set(re.findall(r'<project id="([^."]+)\.', txt))
     return {n for n in names if n.strip()}
+
+
+def _repair_project_builders(txt, tpl_txt):
+    """兜底：.project 的 buildSpec 必须用 Eclipse Builder ID。
+
+    历史 bug（2026-09-17 修复）：旧版 _project_names_in_files 把所有 <name> 都当旧工程名，
+    buildCommand 的 Builder ID 被替换成工程名 → IDE 无 builder → 编译无输出。
+    这里检测缺失就从模板原文恢复整个 <buildSpec> 段。
+    """
+    if all(b in txt for b in _IDE_BUILDER_IDS):
+        return txt
+    if tpl_txt:
+        m = re.search(r'<buildSpec>.*?</buildSpec>', tpl_txt, re.S)
+        if m:
+            return re.sub(r'<buildSpec>.*?</buildSpec>', m.group(0), txt, flags=re.S)
+    return txt
 
 
 def flythings_create_project(project_root, platform=None, resolution=None,
@@ -1354,6 +1447,11 @@ def flythings_create_project(project_root, platform=None, resolution=None,
         if fn == '.project':   # 兜底：<name> 字段必须就是新工程名
             txt = re.sub(r'<name>[^<]*</name>', '<name>%s</name>' % new_name,
                          txt, count=1)
+            # 兜底 2：Builder ID 不能被工程名覆盖（否则 IDE 编译无输出）
+            tpl_pj = os.path.join(tpl, '.project')
+            tpl_txt = (open(tpl_pj, encoding='utf-8', errors='replace').read()
+                       if os.path.isfile(tpl_pj) else '')
+            txt = _repair_project_builders(txt, tpl_txt)
         open(p, 'w', encoding='utf-8').write(txt)
     # 3. 更新 .settings 分辨率
     prefs = os.path.join(root, '.settings', 'com.zksw.flythings.easyui.prefs')

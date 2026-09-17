@@ -383,12 +383,208 @@ INCLUDE_PKG_MAP = [
 ]
 
 # 内置基础包（IDE/模板自带，无需显式声明也不算缺失）
-BUILTIN_PKGS = {'easyui', 'log', 'zkhardware', 'zknet', 'zkmedia', 'zkmisc', 'base-utility'}
+# ⚠️ 2026-09-17 口径修正：`base-utility` **不属于**此列——它不是模板/IDE 自动带的，而是「fun 生成的
+#    generated/*.h 固定引用 base 头文件」所必需。曾把它当内置包 → 「老工程 Manifest 缺 base-utility」
+#    被依赖检查放过，用户只看到 `fatal error: base/functional.h: No such file or directory`。
+BUILTIN_PKGS = {'easyui', 'log', 'zkhardware', 'zknet', 'zkmedia', 'zkmisc'}
+
+# ---------------- 框架基础依赖（v0.27.83）----------------
+# 包 ↔ 头文件判定表（只做有实测依据的，不臆造）：
+#   ① 证据（本机实测 2026-09-17）：`<项目>/.fun/<平台>/generated/event_{dispatcher,app}.{h,cpp}`
+#      固定 `#include <base/functional.h>` / `base/base.h` / `base/defer.h` / `base/exception.h`
+#      —— 这些文件由 fun 自己生成，任何 UI 工程第一次 build 都会出现 → 缺包必 fatal error。
+#   ② ⚠️ `base/` 前缀**不是 base-utility 独占**（本机注册表实扫）：base-http-client→`base/http_*.h`、
+#      base-json→`base/json_*.h`、easyui 3.0.0(Z20)→`base/fy_*.h`；故按「精确头名 + 前缀排除」判定。
+FRAMEWORK_DEPS = [
+    {'package': 'base-utility',
+     'headers': ('base/functional.h', 'base/base.h', 'base/defer.h', 'base/exception.h'),
+     'prefix': 'base/',
+     'excludePrefixes': ('base/http_', 'base/json_', 'base/fy_'),
+     'suggestedVersion': '^10.0.0',
+     'why': 'fun 生成的 generated/event_dispatcher.h 等固定 #include <base/functional.h>',
+     'fix': 'flythings_add_package(project_root, "base-utility", with_install=True)'
+            '（等价：Manifest.xml 加 <package id="base-utility" version="^10.0.0"/> 后重跑 fun install；'
+            '改过 Manifest 必须重装，否则新包的 include 路径不会进 CMake）'},
+]
+
+
+def _read_text(path):
+    """读文本（utf-8，容错）；失败回空串。"""
+    try:
+        with open(path, encoding='utf-8', errors='replace') as f:
+            return f.read()
+    except Exception:
+        return ''
+
+
+def _manifest_platform(root):
+    """Manifest.xml 的 platform 属性（读不到回空串）。"""
+    mf = os.path.join(root, 'Manifest.xml')
+    if not os.path.isfile(mf):
+        return ''
+    m = re.search(r'<manifest\s[^>]*platform=["\']([^"\']+)["\']', _read_text(mf))
+    return m.group(1) if m else ''
+
+
+def _declared_packages(root):
+    """Manifest.xml 里声明的 package id 集合。"""
+    mf = os.path.join(root, 'Manifest.xml')
+    if not os.path.isfile(mf):
+        return set()
+    return set(re.findall(r'<package\s+id="([^"]+)"', _read_text(mf)))
+
+
+def _resolved_packages(root):
+    """已**解析**（= 真装上、include 路径会进 CMake）的包集合 + 证据文件。
+
+    来源是工具生成物（非手写）：`.fun-lock.json`（fun install 写的锁文件）+ `.deps.lock`（IDE 版本锁）。
+    用途：避免「Manifest 没写、但被传递依赖装上了」的误报（实测：easyui 会带出 base-utility）。
+    返回 (set, [证据文件名])。"""
+    pkgs, ev = set(), []
+    fp = os.path.join(root, '.fun-lock.json')
+    if os.path.isfile(fp):
+        try:
+            data = json.loads(_read_text(fp))
+        except Exception:
+            data = {}
+        for _plat, items in (data.get('dependencies') or {}).items():
+            if not isinstance(items, dict):
+                continue
+            pkgs.update(k for k in items if isinstance(k, str))
+            for v in items.values():      # 条目里嵌的传递依赖
+                if isinstance(v, dict) and isinstance(v.get('dependencies'), dict):
+                    pkgs.update(k for k in v['dependencies'] if isinstance(k, str))
+        ev.append('.fun-lock.json')
+    dp = os.path.join(root, '.deps.lock')
+    if os.path.isfile(dp):
+        ids = re.findall(r'"id"\s*:\s*"([^"]+)"', _read_text(dp))
+        if ids:
+            pkgs.update(ids)
+            ev.append('.deps.lock')
+    return pkgs, ev
+
+
+def _registry_header_path(platform, pkg, header):
+    """本机包注册表里找 <注册表>/<平台键>/<包>/<版本>/include/<头文件>，返回命中的绝对路径（无则空串）。
+    只作**证据**（可解析的头文件长什么样），不决定判定（判定看 Manifest/锁，注册表里有不等于工程 include 路径里有）。"""
+    key = _norm_platform(platform or _platforms.DEFAULT_PLATFORM)
+    hits = []
+    for d in _registry_dirs():
+        pdir = os.path.join(d, key, pkg)
+        if not os.path.isdir(pdir):
+            continue
+        try:
+            vers = os.listdir(pdir)
+        except Exception:
+            continue
+        for ver in vers:
+            p = os.path.join(pdir, ver, 'include', *header.split('/'))
+            if os.path.isfile(p):
+                hits.append((_ver_key(ver), p))
+    return sorted(hits)[-1][1] if hits else ''
+
+
+def _is_framework_header(dep, inc):
+    """include 是否属于该框架包（精确头名优先；前缀匹配时排除其它包已占用的子前缀，如 base/http_*）。"""
+    low = (inc or '').strip().lower()
+    if low in dep['headers']:
+        return True
+    if not low.startswith(dep['prefix']):
+        return False
+    return not any(low.startswith(x) for x in dep['excludePrefixes'])
+
+
+def _framework_include_evidence(root, dep):
+    """找「代码」或「fun 生成的 generated/*.h」里对该框架包头文件的引用。返回 [{'file','include'}]。"""
+    roots = []
+    src = os.path.join(root, 'src')
+    if os.path.isdir(src):
+        roots.append(src)
+    fun_dir = os.path.join(root, '.fun')          # fun 生成物（generated/{event*,ui_main}.{h,cpp}）
+    if os.path.isdir(fun_dir):
+        try:
+            for plat in sorted(os.listdir(fun_dir)):
+                g = os.path.join(fun_dir, plat, 'generated')
+                if os.path.isdir(g):
+                    roots.append(g)
+        except Exception:
+            pass
+    out = []
+    for r in roots:
+        for base, _, files in os.walk(r):
+            for fn in files:
+                if not fn.endswith(('.h', '.hpp', '.c', '.cc', '.cpp')):
+                    continue
+                p = os.path.join(base, fn)
+                txt = _read_text(p)
+                if not txt:
+                    continue
+                for m in re.finditer(r'#\s*include\s*[<"]?([^">\n]+)[">]', txt):
+                    if _is_framework_header(dep, m.group(1)):
+                        out.append({'file': os.path.relpath(p, root).replace('\\', '/'),
+                                    'include': m.group(1).strip()})
+    return out
+
+
+def framework_dep_status(project_root, platform=''):
+    """框架基础依赖体检（v0.27.83）：包 ↔ 头文件 ↔ Manifest/依赖锁。
+
+    判定 `ok` = Manifest 已声明 **或** 依赖已解析（传递依赖装上也算 —— 不制造误报）。
+    判定 `required` = 代码/fun 生成的 generated/*.h 已引用该包头文件，或工程本身是 fun 会生成
+                     这些代码的 UI 工程（有 ui/*.ftu 且 fun.json 不是 executable）。
+    缺包时回 `missing[]`，每项带实测证据（file/include）、why 与可照做的 fix。
+    返回 {success, projectRoot, platform, ok, deps[], missing[], hint}。"""
+    root = os.path.abspath(project_root)
+    if not os.path.isdir(root):
+        return {'success': False, 'error': '项目目录不存在: %s' % root}
+    plat = _manifest_platform(root) or platform or _platforms.DEFAULT_PLATFORM
+    declared = _declared_packages(root)
+    resolved, res_ev = _resolved_packages(root)
+    ui_dir = os.path.join(root, 'ui')
+    has_ui = (os.path.isdir(ui_dir)
+              and any(f.endswith('.ftu') for f in os.listdir(ui_dir)))
+    is_bin = False                                # fun create --type bin：不出 UI 生成代码，不适用
+    fj = os.path.join(root, 'fun.json')
+    if os.path.isfile(fj):
+        try:
+            is_bin = json.loads(_read_text(fj)).get('type') == 'executable'
+        except Exception:
+            is_bin = False
+    deps, missing = [], []
+    for dep in FRAMEWORK_DEPS:
+        pkg = dep['package']
+        ev = _framework_include_evidence(root, dep)
+        required = bool(ev) or (has_ui and not is_bin)
+        d = {'package': pkg, 'required': required,
+             'declared': pkg in declared, 'resolved': pkg in resolved,
+             'resolvedEvidence': list(res_ev),
+             'evidence': ev[:5], 'evidenceCount': len(ev),
+             'headers': list(dep['headers']), 'why': dep['why'],
+             'headerInRegistry': _registry_header_path(plat, pkg, dep['headers'][0]),
+             'fix': dep['fix']}
+        d['ok'] = bool(d['declared'] or d['resolved'])
+        if required and not d['ok']:
+            first = ev[0] if ev else None
+            inc = first['include'] if first else dep['headers'][0]
+            where = ('%s（%s）' % (first['file'], inc) if first else
+                     'fun 生成的 generated/*.h（%s）' % dep['headers'][0])
+            d['include'] = inc
+            d['msg'] = ('框架基础依赖缺失：%s引用了 base 头文件，但 Manifest 未声明 %s'
+                        '（%s）→ fun build 会 fatal error: base/functional.h: No such file or directory'
+                        % (where, pkg, dep['why']))
+            d['hint'] = d['msg'] + '；修复：' + dep['fix']
+            missing.append(d)
+        deps.append(d)
+    return {'success': True, 'projectRoot': root, 'platform': plat,
+            'declaredPackages': sorted(declared), 'resolvedPackages': sorted(resolved),
+            'resolvedEvidence': res_ev, 'ok': not missing, 'deps': deps, 'missing': missing,
+            'hint': (missing[0]['hint'] if missing else '')}
 
 
 def flythings_check_project_deps(project_root, platform='F133'):
     """扫描项目代码 include 的三方库，与 Manifest.xml 已声明依赖对比，返回缺失依赖。
-    新建/交付项目前调用，避免"用了三方库但没声明"导致编译失败。"""
+    新建/交付项目前调用，避免"用了三方库但没声明"导致编译失败。
+    另含**框架基础依赖**体检（v0.27.83）：base 头文件（含 fun 生成的 generated/*.h）→ 必须有 base-utility。"""
     root = os.path.abspath(project_root)
     src = os.path.join(root, 'src')
     if not os.path.isdir(src):
@@ -414,14 +610,7 @@ def flythings_check_project_deps(project_root, platform='F133'):
             if any(p in low for p in pats):
                 detected.setdefault(inc, []).extend(pkgs)
     # 3. Manifest 已声明
-    declared = set()
-    mf = os.path.join(root, 'Manifest.xml')
-    if os.path.isfile(mf):
-        try:
-            mtext = open(mf, encoding='utf-8', errors='replace').read()
-        except Exception:
-            mtext = ''
-        declared = set(re.findall(r'<package\s+id="([^"]+)"', mtext))
+    declared = _declared_packages(root)
     # 4. 缺失依赖
     missing = []
     for inc, pkgs in sorted(detected.items()):
@@ -429,10 +618,18 @@ def flythings_check_project_deps(project_root, platform='F133'):
         if need and not any(p in declared for p in need):
             missing.append({'include': inc, 'recommendedPackages': need,
                             'hint': '在 Manifest.xml 添加依赖或移除该 include'})
+    # 5. 框架基础依赖（v0.27.83）：base 头文件（含 fun 生成的 generated/*.h）→ Manifest 必须有 base-utility
+    fw = framework_dep_status(root, platform)
+    for d in fw.get('missing', []):
+        missing.append({'include': d['include'], 'recommendedPackages': [d['package']],
+                        'kind': 'framework', 'declared': d['declared'], 'resolved': d['resolved'],
+                        'evidence': d['evidence'], 'msg': d['msg'], 'hint': d['hint'],
+                        'fix': d['fix']})
     return {'success': True, 'projectRoot': root, 'platform': platform,
             'declaredPackages': sorted(declared),
             'detectedIncludes': sorted(detected.keys()),
-            'missingDependencies': missing}
+            'missingDependencies': missing,
+            'frameworkDeps': fw.get('deps', [])}
 
 
 def flythings_list_packages(platform=None):

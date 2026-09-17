@@ -1,7 +1,7 @@
 # 🧰 fun 命令行工具链（原 fuse 更名）+ 宏/产物目录改名
 
 > 2026-09-14 沛哥指出「fuse 命令行已换成 fun，文档没更新」→ 本机逐项实测校准（`fun.exe v0.0.2+2609032137_b8f28e3`、宏 `FUN_BUILD`、产物 `.fun/<平台>/`）。
-> 检索词：fun.exe / fuse.exe / 命令行工具 / 工具链 / 编译命令 / fun build / fun install / fun launch / fun sim / FUN_BUILD / FUSE_BUILD / .fun / .fuse / 老工程迁移 / 注册表路径 / 多设备 / 设备选择 / -s / --device / WiFi adb / adb tcpip / adb connect / 推不上去 / more than one device / 旧 ftu / 界面没变。
+> 检索词：fun.exe / fuse.exe / 命令行工具 / 工具链 / 编译命令 / fun build / fun install / fun launch / fun sim / FUN_BUILD / FUSE_BUILD / .fun / .fuse / 老工程迁移 / 注册表路径 / 多设备 / 设备选择 / -s / --device / WiFi adb / adb tcpip / adb connect / 推不上去 / more than one device / 旧 ftu / 界面没变 / base/functional.h / 找不到 base utils / base-utility 缺失 / fun install 没生效 / 老工程升级补包。
 
 ## 1. 结论（一句话）
 
@@ -103,7 +103,7 @@ INIT_UI_EVENT_BINDINGS
 
 **模板 Manifest 的依赖最低集**：新平台模板除了 `easyui / log / zkhardware / zknet`，
 **必须带 `base-utility`**——`fun` 生成的 `generated/event_dispatcher.h` 等会 `#include <base/functional.h>`，
-缺这条会 `fatal error: base/functional.h: No such file or directory`。
+缺这条会 `fatal error: base/functional.h: No such file or directory`（**老工程升级的完整处置见 §4.7**）。
 参考写法（Z235X 模板已按此补齐）：`<package id="base-utility" version="^10.0.0"/>`；
 `fun install` 会从 `package.flythings.cn` 拉到实测可用版本（Z235X 实测 `base-utility@10.11.0` + `ext4@0.0.1`）。
 
@@ -111,6 +111,55 @@ INIT_UI_EVENT_BINDINGS
 1. `flythings_create_project(platform="Z235X")`（或 `fun create --platform=z235x`）→ 出工程；
 2. 工具链解压到 `toolchains/z235x`；
 3. `fun install`（拉 base-utility 等）→ `fun build -p Z235X` → **9/9 编译链接成功，产出 `.fun/z235x/libzkgui.so`（217,240 B）**。
+
+## 4.7 老工程升级：补 base-utility（2026-09-17 钟工实测；v0.27.83）
+
+**现象**：老工程（源头 IDE 工程 / 用户自建工程）用 `fun build` 编不过，报的是**编译错误**——
+
+```
+In file included from generated/event_dispatcher.cpp:1:
+fatal error: base/functional.h: No such file or directory
+compilation terminated.
+```
+
+**根因**：`fun` 生成的 `generated/{event_dispatcher,event_app}.{h,cpp}`、`ui_main.*` 里**固定**
+`#include <base/functional.h>`（还有 `base/base.h`/`base/defer.h`/`base/exception.h`），这些头文件
+归**依赖包 `base-utility`**；而 `base-utility` **不是模板/IDE 自动带的**——工程 `Manifest.xml` 不声明，
+include 路径就不会进 CMake（症状看起来像「框架头文件不存在」，其实只是**包没声明/没装**）。
+
+**处置（三步，顺序不能改）**：
+
+1. 工程 `Manifest.xml` 的 `<dependencies>` 里加一行：
+   ```xml
+   <package id="base-utility" version="^10.0.0"></package>
+   ```
+   （或直接 `flythings_add_package(project_root, "base-utility", with_install=True)`，它会写 Manifest 并跑 install）
+2. **重跑 `fun install`**；
+3. `fun build -p <平台>`。
+
+> ⚠️ **改过 `Manifest.xml` 必须重跑 `fun install`**，否则新包的 include/lib 路径**不会**进生成的
+> `.fun/<平台>/CMakeLists.txt`（加了也白加，报错一模一样）。这也解释了「加了包还是编不过」这一类假象。
+
+**判据（别靠猜）**：
+- 编过与否：`fun build -p <平台>` 出 `.fun/<平台>/libzkgui.so`；
+- 依赖到底装上没：看 `.fun-lock.json` 的 `dependencies.<平台小写键>.base-utility`（`fun install` 写的锁），
+  `C:\zkswe\fun\registry\public\<平台键>\base-utility\<版本>\include\base\functional.h` 应真实存在；
+- 头文件在不在编译命令行里：`.fun/<平台>/build.ninja` 的 `INCLUDES` 里应有 `<注册表>/<平台>/base-utility/<版本>/include`。
+
+**工具侧防护（v0.27.83，别只靠人眼）**：
+- `flythings_check_project_deps` / `flythings_validate_project`：代码或 fun 生成的 `generated/*.h` 出现
+  `#include <base/…>` 而 Manifest 未声明 base-utility（且依赖锁里也没解析到）→ 报
+  `missing_framework_dependency`，并给出可直接照做的 fix（`flythings_add_package` + `fun install`）；
+- `flythings_build_ui_flow`：`fun install` 失败不再静默（返回体顶层 `warnings`）；build 前先做一次
+  框架基础头体检，缺包就直接点明「依赖未装/缺包」（不把 ninja 的 `fatal error` 丢给用户）。
+- 判定口径（避免误报）：**Manifest 已声明 或 依赖已解析（传递依赖装上也算）**即视为 OK——
+  实测 `easyui` 有时会把 `base-utility` 带出来，这种情况不报。
+  ⚠️ `base/` 前缀**不是 base-utility 独占**：`base-http-client`→`base/http_*.h`、`base-json`→`base/json_*.h`、
+  `easyui 3.0.0(Z20)`→`base/fy_*.h`（本机注册表实扫），工具按「精确头名 + 前缀排除」判定。
+
+**同源现象（一起记）**：`fun build` 报 `找不到 base utils` / `base-utility 缺失` / `fun install 没生效` —— 同一条根因。
+
+---
 
 ## 5. 纪律与惯例
 

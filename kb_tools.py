@@ -53,9 +53,10 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.82-open'
+MCP_VERSION = '0.27.83-open'
 MCP_BUILD = '2026-09-17'
 MCP_FEATURES = [
+    '2026-09-17: **依赖/install 诊断三项修补（A 体检 / B install 不再静默 / C 文档）** v0.27.83-open（钟工：客户只看到 `fatal error: base/functional.h: No such file or directory`，看不出「依赖没装」）——①**A**：`package_tools` 新增 `FRAMEWORK_DEPS`+`framework_dep_status()`，`check_project_deps` 出 `kind:"framework"` 缺失项与 `frameworkDeps`，`validate_project` 新增 `missing_framework_dependency`+fix（`flythings_add_package(...,\"base-utility\",with_install=True)` 或 Manifest 加 base-utility 后重跑 fun install）；**口径修正**：base-utility 移出 `BUILTIN_PKGS`（非模板自带，是 fun 生成的 generated/*.h 必需——旧检查就在这放过）；判定=精确头名（实读 generated/event_dispatcher.h）+前缀排除（base/ 非独占：base-http-client→base/http_*、base-json→base/json_*）；②**防误报**：Manifest 已声明 或 依赖已解析（.fun-lock.json/.deps.lock 有即算，实测 easyui 会带出）就 OK，bin 工程/无 base include 的非 UI 工程不报；③**B**：`build_ui_flow` install 失败→顶层 `warnings`**但不断**；build 前 `check_framework_deps` 缺包直接点「依赖未装/缺包」（含证据+fix），可解析时零 step 零 warning；build 失败含 `base/…No such file` 时翻成「依赖未装，不是代码错误」；④**C**：`cli-fun-toolchain.md` 新增 **§4.7 老工程升级：补 base-utility**（现象/根因/处置），`reusable-components.md` 交叉引用，检索词补 base/functional.h / 找不到 base utils / base-utility 缺失 / fun install 没生效；⑤**回归**：`create_project(Z235X,1024x600)→build_ui_flow` **9/9 成功**+`.fun/z235x/libzkgui.so`+**零 warning**；反例（删 Manifest 的 base-utility+清锁/.fun）真跑→顶层 warnings+step 点明缺包，ninja 实错 `generated/event_dispatcher.h:8:10: fatal error: base/functional.h: No such file or directory`（锁里仅 easyui/log/zkhardware/zknet，INCLUDES 无 base-utility）；用例 164→**176**（+12 条），门禁全绿。',
     '2026-09-17: **图标库改「单归档 + 按需解」（components/icons 6801 文件/6.30 MB → 48 文件/1.63 MB）** v0.27.82-open（沛哥：目标 ≈10 文件 / ~1 MB；方案 A 离线优先）——①**打包**：vendor 的 5777 个 SVG 散件（3.95 MB）打成 `components/icons/vendor/tabler-3.46.0.pack.tgz`（**455,379 B / 0.43 MB**，sha256 `a0ba69f224388e22790f04a0a157fb6207713511f7e308709a0166ebd8ec1c95`，条目 5774 = icons 4754 + icons-filled 1019 + map.json；**确定性写入**同一输入必得同一 sha256），新增 `scripts/make_pack.py`（打归档 / `--verify` 核对 / `--from-npm` 从上游重建，实测与散件版 byte 级同 sha256）；`index.json`/`LICENSE`/`VERSION.txt` 留在归档外（索引 + MIT 合规）；②**读取层**（`gen_icons.py` 新增「图标来源解析」）：逻辑路径 → ① 缓存 `out/.icons-cache/`（env `FLYTHINGS_ICONS_CACHE`）→ ② 归档 tarfile 随机读**只解用到的那几个** → ③ 远方 npm tarball（**默认关闭**，`--fetch-remote` 显式开启，按 catalog 登记的 sha256 校验）；`--vendor-name`/`--svg`/`--set`/`--sheet` 用法与输出**完全不变**，新增 `--list-tabler`（原生名 4754，index.json）与 `--pack-info`（来源状态）；③**入库范围**：`out/` 817 个生成物 `git rm --cached` + 进 `.gitignore`（实测整目录删后 305×3 PNG + 7 sheet 全部重生，selfcheck 915 张 0 失败）；`svg_retired/` 163 文件移出仓库（`author_svg.py` 可逐字节重生，实测 163 文件 sha256 全同）；④`catalog.json` 重生成（0.3.0，203 图标/305 产物/198 条 vendor 语义含 7 条 compose，新增 `sources.vendor.pack` 字段 —— 禁止手写口径不变）；⑤顺带修 `--vendor-name wifi` 被 `system.wifi-full` 别名抢匹配（改为精确名优先，此前文档里的 `--vendor-name wifi` 例子实际会报「匹配到多个」）。模块文档已同步（README/platforms/THIRD-PARTY + `knowledge/devflow/icon-library.md`：不能再 grep 单个 svg，要查用 `--list*`/`catalog.json`）。',
     '2026-09-17: **Z235X 建工程→编译闭环打通（模板补 base-utility + 工具链目录口径）** v0.27.81-open（钟工给了 235x 工具链，实测跑通）——① `templates/HelloWord_Z235X/Manifest.xml` 补 `<package id="base-utility" version="^10.0.0"/>`：fun 生成的 generated/event_dispatcher.h 等会 #include <base/functional.h>，缺这条编译直接 fatal error（对比 Z21 模板本来就带 base-utility，这次是源头 IDE 工程缺）；② `knowledge/devflow/cli-fun-toolchain.md` 新增 §4.6「平台工具链放哪 + 模板依赖最低集」：工具链目录约定 = <fun 安装目录>/toolchains/<平台小写键>/（缺工具链时 fun build 会 panic platform toolchain url must not be empty，工具链不随包分发）；③ `platforms.py` 的 Z235X note 同步该口径。实测闭环：create_project(platform=Z235X) → 工具链解压到 toolchains/z235x → fun install（拉到 base-utility@10.11.0 + ext4@0.0.1）→ fun build -p Z235X 9/9 成功，产出 .fun/z235x/libzkgui.so（217,240 B）。bin_tools/z235x 设备端工具仍未编译（需要样机）。',
     '2026-09-17: **fun 编译单元口径纠偏（activity 不参与 fun 构建；不要改 CMakeLists）** v0.27.80-open（钟工第二次纠偏：AI 去改 CMakeLists 想影响构建）——实测证据：`.fun/<平台>/CMakeLists.txt` 由 fun 自动生成（文件头写明自动生成、勿手改），`add_library(zkgui SHARED ...)` 只收 `../../src/Main.cpp`、`../../src/logic/mainLogic.cc`、`../../src/uart/*.cpp` 与 fun 生成的 `generated/{event,event_dispatcher,ui_main}.cpp`；`.fun/<平台>/compile_commands.json` 共 8 个编译单元，**没有任何 `src/activity/*`**（编译宏 FUN_BUILD=1）。结论：**IDE 体系** activity 参与编译并由它 include logic.cc；**fun build 里 `src/activity/*` 完全不参与编译**，`src/logic/*.cc` 直接当编译单元，业务 `src/**/*.cpp` 由 fun 扫描收编——所以「改 activity / 改 CMakeLists 来修构建」都是错路。已改：① `project_tools.PROJECT_SPEC`（caveats 增两套编译体系 + 明确禁止改 `.fun/<平台>/CMakeLists.txt` + 修正手写 .cc 口径）；② `knowledge/devflow/cli-fun-toolchain.md` 新增 §4.5「编译单元口径（IDE vs fun）」含实测表与纪律；③ `knowledge/devflow/activity-code-skeleton.md` 新增 §0 两套编译体系；④ `knowledge/devflow/page-architecture-spec.md` §4-4 同步该口径。检索词已覆盖「fun 编译 activity / activity 不参与编译 / CMakeLists 要不要改 / 编译单元」。',
@@ -551,20 +552,20 @@ def flythings_edit_ftu(ftu_path: str, operations: str, output_ftu: str = '',
 def flythings_build_ui_flow(project_root: str, with_launch: bool = False, device: str = '') -> str:
     """⚠️ 场景别名（编译部署类意图一律本工具，禁止自造命令；不限触发入口）：
     ① 口语：「编译/构建/调试/全量推送/部署/推送到设备/跑一下」；
-    ② 客户端按钮/自动化流程（「AI 应用调试」「自定义编译」）意图=编译并部署真机调试 → 本工具；
+    ② 客户端按钮（「AI 应用调试」「自定义编译」）意图=编译部署真机调试 → 本工具；
     ③ AI：写完/改完代码后主动编译验证、调试看效果，也调本工具。
     ⚠️ 固化/升级/出 update.img/交付/量产 → 用 flythings_pack_upgrade（=调试推送，掉电即失）。
-    内部 fun launch 完成程序+资源+ftu 全量推送并启动；⚠️ 无 deploy_debug.sh 等额外脚本。
+    内部 fun launch 完成程序+资源+ftu 全量推送并启动（无额外脚本）。
     UI 构建流程：① json/ftu 时间戳检查（以 json 为源，改过 json 自动重新 pack）
     ② fui pack ③ fun install ④ fun build ⑤ **默认到此为止（不推真机）**；
-    要推设备必须显式 with_launch=True（用户说「推到设备/跑一下」时才传）。
-    ⚠️ fun launch 网络推送失败/超时**自动重试 5 次**（间隔 2s；信任 fun 差分推送）；
-    仍失败回 needDeviceInput=true，必须问接入方式：USB 确认 adb devices 后重试 / 网络先 adb connect <IP>。
+    要推设备必须显式传 with_launch=True。
+    ⚠️ install 失败不阻断 build，但顶层 warnings 点明；缺框架包在 build 前体检即报（cli-fun-toolchain.md §4.7）。
+    ⚠️ fun launch 失败/超时**自动重试 5 次**；
+    仍失败回 needDeviceInput=true，必须问接入方式：USB 重连重试 / 网络先 adb connect <IP>。
     ⚠️ 多设备（USB+WiFi）必须传 device='<serial|IP>'（fun launch -s）；不传 fun 取第一个 → 可推错设备。
     传入项目根目录。ftu=json 编译产物：改布局一律改 json 后 pack，不要手写/手改 ftu
-    （详见 knowledge/devflow/ftu-json-pipeline.md）。
-    ⚠️⚠️ src/activity/（mainActivity.cpp/h）由 IDE 编译时自动生成，构建流程已处理；
-    禁手动改，业务代码只写 src/logic/*.cc。
+    （见 ftu-json-pipeline.md）。
+    ⚠️ src/activity/ 由 IDE 自动生成（禁手改），业务代码只写 src/logic/*.cc。
     """
     return json.dumps(pt.flythings_build_ui_flow(project_root, with_launch, device), ensure_ascii=False)
 
@@ -792,6 +793,7 @@ def flythings_create_project(project_root: str, platform: str, resolution: str,
 def flythings_check_project_deps(project_root: str, platform: str = _platforms.DEFAULT_PLATFORM) -> str:
     """扫描项目 include 的三方库与 Manifest 声明对比，返回缺失依赖。
     需要三方能力（MQTT/HTTP/JSON/蓝牙/SSL 等）时先调用。
+    另含框架包体检（base 头文件↔base-utility，缺包必报）。
     """
     return json.dumps(pkgtools.flythings_check_project_deps(project_root, platform), ensure_ascii=False)
 

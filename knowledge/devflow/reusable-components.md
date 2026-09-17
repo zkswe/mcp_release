@@ -76,6 +76,12 @@ components/
 ⚠️ 工程侧两个坑：`fun.json` **优先于** `Manifest.xml`（依赖写 `fun.json`）；
 `type:"executable"` 才出可执行 ELF（否则出 `libzkgui.so`）。
 
+⚠️ 模块自己的 `Manifest.xml` 里声明底层包时，**框架基础包 `base-utility` 不能漏**：fun 生成的
+`generated/event_dispatcher.h` 等固定 `#include <base/functional.h>`（`base-http-client` 的 `base/http_*.h`、
+`base-json` 的 `base/json_*.h` 不算）。漏了工程侧表现是 `fatal error: base/functional.h: No such file or directory`，
+且**改 Manifest 后必须重跑 `fun install`**（include 路径才进 CMake）——
+详见 `cli-fun-toolchain.md` §4.7「老工程升级：补 base-utility」。
+
 ---
 
 ## 4. platforms.md 必须写什么
