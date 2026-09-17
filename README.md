@@ -25,21 +25,11 @@
 
 AI 会自动完成：克隆项目 → 安装依赖 → 引导配置 → 完成。
 
-**方式二：手动安装**
-
-```bash
-# 1) 获取代码
-git clone https://gitee.com/Kwolve/fly-things-os_-mcp.git
-
-# 2) 安装依赖（requirements.lock = 已锁定实测通过的版本组合）
-pip install -r requirements.lock      # 含 mcp / onnxruntime / tokenizers / Pillow
-```
-
 > 需要 Python 3.10+。Windows 也可双击 `install.bat` 一键装依赖（装完自动跑一次离线自检）；
 > 双击 `setup.bat` 可交互生成配置（等价于 `python configure.py`）。
 > 想自己拉最新版也行：`pip install mcp onnxruntime tokenizers Pillow`（不锁定，风险自负）。
 
-**3) 配置到 AI 工具（stdio）** —— 在**你的项目根目录**建 `.mcp.json`（Trae / Cursor / Kimi 均识别）：
+**2) 配置到 AI 工具（stdio）** —— 在**你的项目根目录**建 `.mcp.json`（Trae / Cursor / Kimi 均识别）：
 
 ```json
 {
@@ -57,7 +47,7 @@ pip install -r requirements.lock      # 含 mcp / onnxruntime / tokenizers / Pil
 Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude_desktop_config.json` 的 `mcpServers`。
 > `python` 不在 PATH 时用完整路径（如 `C:/Users/<你>/AppData/Local/Programs/Python/Python313/python.exe`）。
 
-**4) 验证** —— 问 AI「**MCP 版本是多少？**」：
+**3) 验证** —— 问 AI「**MCP 版本是多少？**」：
 应返回 `flythings-kb-open 0.27.83-open`，**35 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / mt_test / zkshot，
 在 `bin_tools/<平台>/` 下，**不是 op、不占 op 名额**）。
 
