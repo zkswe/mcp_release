@@ -20,8 +20,14 @@
 | `div.btn` / `button` | button |
 | `div.input` / `input` | edittext |
 | `div.bar` / `seekbar` | seekbar |
-| `div.card` / `window` / `panel` | window 容器（子控件相对坐标） |
-| `div.modal` / `dialog` | 弹窗（modal + 隐藏） |
+| `div.card` / `window` / `panel` / `win` | window 容器（子控件相对坐标；**默认可见**，见下表注） |
+| `div.modal` / `dialog` / `popup` | 弹窗（modal + **默认隐藏**） |
+
+⚠️ **容器窗口的初始可见性不同**（代码注释：弹窗 modal 默认隐藏；普通卡片/容器窗口**默认可见**）：
+`div.window` / `card` / `panel`（非 modal）生成出来就是 `visible=true`。用它们做「第二个页面」时，
+**它一生成就在屏幕上、会盖住后面定义的同层内容**，必须靠逻辑侧 `hideWnd()` 收起来。
+（案例真根因：一个非 modal window 忘了 hide → 表单页永远压在最上面 + 吃掉下半屏点击，
+一度被误判成「触摸注入坏了」。）
 | `div.list` / `listview` | listview（子项见 §3） |
 | `div.checkbox` | checkbox |
 | `div.radio` / `radiogroup` | radiogroup |
@@ -41,6 +47,11 @@
     而 `#000000` = 0 是 falsy → 被替换成默认色（文字 `0xEEF2F6`、按钮底 `0x374457`、窗口底 `0xFFFFFF` 等）。
     **要纯黑请写 `#010101`**（或改判定逻辑，另议）。深色底 / 黑字最容易踩（2026-09-16 实测）。
 - **命名**：`data-caption` 指定控件名（C 标识符）；缺省自动 `TextView1` / `Button1` …
+- ⚠️ **`data-touchable` 不解析**（2026-09-17 实测 + 代码核对）：转换器**根本没读**这个属性
+  —— `button` 恒 `touchable:true`、`textview` 恒 `false`、`window` 也不解析。
+  想**真禁用**某个控件、或让容器按你要的语义「吸收 / 穿透」点击，只能落到 **json**：
+  `patch_json` / `ui_edit_apply` 改 `touchable`，或运行期 `setTouchable()` / `setTouchPass()`
+  （语义与坑见 `uicontrols/touch-events.md`）。
 - **自备图**：`data-pic`（引用自己切好的 PNG / .9.png / 序列帧 GIF）
   - ⚠️ **`div.text` 上的 `data-bgpic` 会被丢掉**（2026-09-17 实测）：转换器只在
     `button` / `icon` / `seekbar` / `circlebar` / `diagram` / listview 子项等分支读
@@ -82,6 +93,8 @@
 
 - Z 序 = 书写顺序（弹窗写最后）
 - 文本只用**汉字 + ASCII + 基础符号**（`/ % # - _ 空格`），**禁 emoji**（设备字库是裁剪字库）
+- ⚠️ **HTML 里的换行/缩进会被折叠成空格**（不是 `\n`）：要多行文案就**拆成多个 textview**
+  （案例实测：在文本里写 `\n` 会被按整串算最小尺寸，撞 `check_all` 第 13 项最小尺寸判定）
 - 进度条用 `div.bar`；输入框用 `div.input`（系统键盘）
 - 颜色一律 `#RRGGBB` 6 位
 

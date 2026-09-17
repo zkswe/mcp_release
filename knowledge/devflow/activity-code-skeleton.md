@@ -1,7 +1,7 @@
 # FlyThings 工程代码骨架（35 官方 Demo 深度阅读提炼）
 
 > 2026-09-08 basedemo-new_z20_1024_600（35 工程）逐源码深读。所有 Demo 共用同一套生成器骨架，理解它=理解一切控件如何被代码驱动。
-> 检索词：activity 骨架/回调表/生命周期/logic.cc/定时器/串口模板/SysApp/REGISTER_ACTIVITY。
+> 检索词：activity 骨架/回调表/生命周期/logic.cc/定时器/串口模板/SysApp/REGISTER_ACTIVITY/check_all 括号不平衡/全检误报。
 
 
 ## 0. ⚠️ 先看：两套编译体系（2026-09-17 纠偏）
@@ -15,6 +15,19 @@
 - 控件 ID 宏：`src/activity/*Activity.h` 里 `#define ID_MAIN_<caption> <json id>`；子项（listview subItem）宏 `ID_MAIN_SubItemXxx`。
 - 类继承：Activity 多重继承各监听接口（ZKListView::AbsListAdapter、IItemClickListener、ZKRadioGroup::ICheckedChangeListener、ZKCheckBox::ICheckedChangeListener、ZKSeekBar::ISeekBarChangeListener、ZKVideoView 消息监听、ITextChangeListener…），`onCreate` 里 `setXxxListener(this)` + `findControlByID` 取指针。
 - **回调分发表**：生成器把 logic 里 static 回调登记进静态映射表（sButtonCallbackTab/SZKSeekBarCallbackTab/SEditTextInputCallbackTab/SVideoViewCallbackTab/SSlideWindowItemClickCallbackTab…），Activity 虚函数（onClick/onProgressChanged/onTextChanged/onVideoPlayerMessage/onTimer）只做"按控件 ID 查表分发"。
+
+## 1-1 logic.cc 静态全检的两个已知口径（书写前先知道，免得白查）
+
+`check_all` 对 logic.cc 的第 6 / 8 项是**字符级扫描**，不是真正的语法分析：
+
+- **#8 括号平衡**（实测实现，2026-09-17）：逐字符数 `(` / `)`，**只跳过双引号字符串**
+  （连字符串里的转义 `\"` 也不处理），**注释与字符字面量都计入**。
+  ⇒ **注释里写孤立的括号会误报「括号不平衡」FAIL**（例：`// 1) 先取指针`、`// 见上文（注`）；
+  书写纪律：注释里带上括号就写配对，或干脆不写。真怀疑时排除注释重数一遍，**先别急着改代码**。
+- **#6 指针核对**：`mXXXPtr` 必须在 json caption 集合里找得到；扫描前**只剔了 `//` 行注释**
+  （块注释 `/* */` 不剔）⇒ 块注释里写一个不存在的 `mFooPtr` 会被当成真引用报缺失。
+
+> 排查顺序：看到这两条 FAIL 先怀疑「注释写法」而不是「代码真的坏了」。
 
 ## 2. ⚠️ 按钮回调返回值语义（模板注释写反了，以壳代码为准）
 `Activity::onClick()` 分发代码：`if (回调(pBase)) return;` ——
