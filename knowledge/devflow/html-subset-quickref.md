@@ -1,6 +1,6 @@
 # HTML 原型 → json 规范速查（HTML_SUBSET）
 
-> 检索导引：写「受限 HTML 原型 / 原型转 json / 控件映射 / data-* 属性 / data-touchable 不生效 / data-icon 图标 / CSS 效果转图 / JS 交互稿 / data-bgpic 丢失 / backgroundPic 没生成 / 底图没画出来 / 容器默认可见盖住页面」时命中。
+> 检索导引：写「受限 HTML 原型 / 原型转 json / 控件映射 / data-* 属性 / data-touchable 不生效 / data-icon 图标 / CSS 效果转图 / JS 交互稿 / data-bgpic / div.text 底图 / backgroundPic 没生成 / 底图没画出来 / 卡片白卡看不到 / 容器默认可见盖住页面」时命中。
 > 用途：`flythings_html_to_json` 的完整口径（该工具 docstring 只保留要点，长尾在这里）。
 > 实现规范（工具开发用）：仓库 `ui_tools/HTML_SUBSET.md`；本页是 AI 生成原型时的口径，内容以本页为准。
 
@@ -53,15 +53,20 @@
   `patch_json` / `ui_edit_apply` 改 `touchable`，或运行期 `setTouchable()` / `setTouchPass()`
   （语义与坑见 `uicontrols/touch-events.md`）。
 - **自备图**：`data-pic`（引用自己切好的 PNG / .9.png / 序列帧 GIF）
-  - ⚠️ **`div.text` 上的 `data-bgpic` 会被丢掉**（2026-09-17 实测）：转换器只在
-    `button` / `icon` / `seekbar` / `circlebar` / `diagram` / listview 子项等分支读
-    `data-bgpic`，**`textview` 分支不读它** → JSON 里那个节点**没有 `backgroundPic`**
-    （同一份 JSON 里 seekbar 的 textview 却有，极易看成「怎么别人就好」）。
-    现象是「卡片/底图压根没画出来」（案例：弹窗打开、变暗也对，就是**看不到白卡**）。
-    处置二选一：① 底图换用**支持承载的类型**（如 `div.icon` / `button`，或直接写 `data-pic` + 支持该属性的类型）；
-    ② **`patch_json` 反查 HTML 给该节点补 `backgroundPic`**（案例采用的括底做法：把原 HTML 的
-    `data-bgpic` 按 caption 回填到 json）。
-    注：`data-bg` / `data-background` 是**背景色**，不是图；要图不能用它们替代。
+  - ✅ **`div.text` 上的 `data-bgpic` 已原生支持**（**v0.27.90-open 起**）：转换器把 `data-bgpic`
+    正常落成该节点的 `backgroundPic`（与 button / window / seekbar / circlebar 等分支同口径：
+    裸文件名补 `images/` 前缀，相对 resources 目录；有图就**不再写背景色**，与 button 的
+    「图片按钮不放底色」同规则，避免透明角图透出底色）。
+    - **历史**（v0.27.90 之前）：textview 分支**不读**这个属性 → JSON 里那节点**没有 `backgroundPic`**
+      （同一份 JSON 里 seekbar 的 textview 却有，极易看成「怎么别人就好」），现象是「卡片/底图
+      压根没画出来」（案例：弹窗打开、变暗也对，就是**看不到白卡**）；当时靠 `patch_json` 反查
+      HTML 按 caption 回填。
+    - **旧工程可照旧保留 `patch_json` 兜底** —— 现在它是**幂等**的（转换器已写出同样的值，兜底
+      覆写同值 / 只补缺的，重跑不产生差异）；不必为了这条专门改老工程。
+    - 实测口径（TDesign 迁移案例双平台）：HTML 里 `class="text"` + `data-bgpic` 共 87 个节点，
+      旧转换器直接落地 0/87（全靠兜底），新转换器 87/87，两条路径的 `caption→backgroundPic`
+      **语义等价（110 条全等）**。
+  - 注：`data-bg` / `data-background` 是**背景色**，不是图；要图不能用它们替代。
 
 ## 5. 图标优先（沛哥 2026-09-03 定规，生成 UI 时必守）
 
@@ -160,6 +165,7 @@ warning 会要求切图后用 `data-pic` 引用。
 - 图片资源铁律与 PNG 抗锯齿管线 → `ui-asset-rules.md`
 - json 字段全集/层级规则 → `uicontrols/json-field-mandatory.md`、`uicontrols/json-layer-rules.md`
 - 布局产物核对（图尺寸 == 控件盒）→ `flythings_verify_assets` / check_all 第 17 项
-  （⚠️ 只管 json **声明**的图；运行期 `setBackgroundPic` 的图查不到 → `uicontrols/text-box-height-rule.md` §4）
+  （⚠️ 只管 json **声明**的图；运行期 `setBackgroundPic` 的**字面量**图由 check_all 第 20 项核
+  （v0.27.90 起），运行时拼接的路径静态无解 → `uicontrols/text-box-height-rule.md` §4/§5）
 - 设计令牌漂移（`DESIGN.md` 令牌 vs json 色值/字号）→ check_all 第 18 项
 - 归一化、转图、补丁的完整链路 → `ftu-json-pipeline.md`

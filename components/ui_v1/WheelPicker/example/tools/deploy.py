@@ -72,6 +72,40 @@ def sh(cmd):
     return adb('shell', cmd)
 
 
+def _restart_app(pid):
+    """温和终止优先：`kill -TERM` → 等退出 → 仍在则回退 `kill -KILL`（init 会自动 respawn）。
+
+    为什么不直接 `kill -9`（v0.27.90）：现场多次 `kill -9 zkgui` 之后（以及 reboot 之后）
+    出现过整板掉网，**因果未定**（两条现象互相矛盾），所以只做无害的「优先温和」。
+    实现优先复用仓库 `adb_tools.restart_app()`（单一实现）；本文件被单独拷走时用等价的内联逻辑。
+    """
+    try:
+        cur = HERE
+        for _ in range(6):
+            if os.path.isfile(os.path.join(cur, 'adb_tools.py')):
+                if cur not in sys.path:
+                    sys.path.insert(0, cur)
+                import adb_tools as _at
+                r = _at.restart_app(ADB, DEV, 'zkgui')
+                print('    adb_tools.restart_app: %s' % r['detail'])
+                return
+            parent = os.path.dirname(cur)
+            if parent == cur:
+                break
+            cur = parent
+    except Exception as e:
+        print('    adb_tools.restart_app 不可用（%s），用内联温和终止' % e)
+    sh('kill -TERM ' + pid)
+    for _ in range(6):                       # 3s 内自己退出就不动 -KILL
+        time.sleep(0.5)
+        still = (sh('/tmp/busybox pidof zkgui').stdout or '').strip()
+        if not still:
+            print('    kill -TERM %s；已自行退出（未用 -KILL）' % pid)
+            return
+    sh('kill -KILL ' + pid)
+    print('    kill -TERM %s；3s 内未退出 → 回退 kill -KILL' % pid)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--no-reboot', action='store_true')
@@ -114,8 +148,8 @@ def main():
 
     pid = (sh('/tmp/busybox pidof zkgui').stdout or '').strip().split('\n')[0]
     if pid.isdigit():
-        sh('kill -9 ' + pid)
-        print('[3] killed zkgui %s (init respawn)' % pid)
+        _restart_app(pid)
+        print('[3] restart zkgui %s' % pid)
     time.sleep(6)
     out = sh('/tmp/busybox ps -o pid,args | /tmp/busybox grep -v grep | /tmp/busybox grep "/bin/zkgui"')
     print('[4] zkgui = %s' % (out.stdout or '').strip()[:60])

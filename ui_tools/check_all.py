@@ -10,6 +10,10 @@ WARN 分两类意图：#15 会先评估「可能故意遮挡」（modal / 容器
 其余才是「疑似误压」；WARN 永远只是给人工审批的清单，不自动修。
 第 18 项 = **设计令牌漂移检测**（沛哥 2026-09-12）：DESIGN.md 是冻结的视觉真相，json 里的颜色/字号
 应当来自令牌；出现令牌外的值 = 漂移。无 DESIGN.md 或令牌表未填全 → NOTE 跳过（不 FAIL，兼容存量工程）。
+第 20 项 = **运行期设图 vs 控件盒**（v0.27.90，补 #11/#17 的盲区）：扫 src/**/*.cc|*.cpp 里
+`mXXXPtr->setBackgroundPic("images/x.png")` 等字面量调用，把图片尺寸与目标控件 position 比；
+`resources/images/` 的自动生成图不等 = FAIL，手绘图不等 = 仅提示，`.9.png` 豁免。
+（运行时拼出来的路径静态无解 → 只计 `dynamic`，口径见 knowledge/uicontrols/text-box-height-rule.md §4/§5）
 """
 import glob
 import json
@@ -807,6 +811,167 @@ def check_v85x_release_layer(root):
                       % (plat, '、'.join(dec_files[:3]),
                          '（%d 个源码文件读取失败，建议人工复核：%s）' % (len(miss), '、'.join(miss[:3])) if miss else '')}
 
+# ---------------- 运行期设图 vs 控件盒（#20，v0.27.90） ----------------
+# 为什么要有（静态核对的已知盲区）：#11/#17 只看 json 里**声明**的 backgroundPic；
+#   运行期 mXXXPtr->setBackgroundPic("images/x.png") 设的图静态查不到 → 盒子配错也一路 PASS。
+#   真机事故：48x16 的三点图被放进了被抬高的 48x26 盒 → 引擎按盒拉伸 → 10x10 正圆变 10x16 竖椭圆。
+# 口径（与 #11/#17 同源，不另立一套）：
+#   · 图片尺寸 == 控件盒 → PASS；
+#   · 不等：`resources/images/` 下的**自动生成图**（铁律 #9）→ FAIL；
+#     手绘图（navi/、charge/ 等其它目录）→ stretched[] 仅提示（官方基准 SampleUI-New 的
+#     navi/fh.png 44x26 放进 72x40 按钮里是合法拉伸，绝不能 FAIL）；
+#   · `.9.png` 豁免（可拉伸）；文件不存在 → missing[]；
+#   · 变量名 → 控件：mXXXPtr → caption XXX（与第 6 项同口径，精确匹配）；映射不到 →
+#     unresolved[] 列出来（**不静默跳过**）；非字面量实参 → dynamic 计数（静态判不了，明说）。
+# 边界（为什么只扫字面量）：案例用 helper 逐帧换图（snprintf 拼路径再 setBackgroundPic(path)）、
+#   三元式 `mCdThemePtr->setBackgroundPic(a ? "images/a.png" : "images/b.png")`（两个字面量都查）；
+#   运行时拼出来的路径静态无从得知 → 只计 dynamic 数（明说，不假装查过）。
+# 口径与判据见 knowledge/uicontrols/text-box-height-rule.md §5、devflow/ui-layout-verify.md；
+# 案例实测（v0.27.90）：基准 4 工程 0 误报（SampleUI-New / ShowcaseAlbum-F133 / WebViewDemo /
+#   projects/translate/tdesign-miniprogram），构造反例（LdDots 盒高改回 26）→ 必报 FAIL。
+_SETPIC_CALL_RE = re.compile(r'\b([A-Za-z_]\w*)\s*->\s*(set[A-Za-z_]*Pic[A-Za-z_]*)\s*\(')
+_SETPIC_STR_RE = re.compile(r'"([^"\n]*)"')
+_SETPIC_PTR_RE = re.compile(r'^m([A-Za-z_]\w*)Ptr$')
+_IMG_EXT = ('.png', '.jpg', '.jpeg', '.bmp', '.gif')
+
+
+def _strip_comments_keep_lines(txt):
+    """去注释但**保持行号**（块注释换成等量换行），否则报出的行号会偏。"""
+    txt = re.sub(r'/\*.*?\*/', lambda m: '\n' * m.group(0).count('\n'), txt, flags=re.S)
+    return re.sub(r'//[^\n]*', '', txt)
+
+
+def _call_arg_text(txt, open_idx):
+    """取调用实参文本（括号平衡，跳过字符串字面量）；open_idx 指向 '('。"""
+    depth, i, n, instr = 0, open_idx, len(txt), False
+    while i < n:
+        ch = txt[i]
+        if instr:
+            if ch == '\\':
+                i += 2
+                continue
+            if ch == '"':
+                instr = False
+        elif ch == '"':
+            instr = True
+        elif ch == '(':
+            depth += 1
+        elif ch == ')':
+            depth -= 1
+            if depth == 0:
+                return txt[open_idx + 1:i]
+        i += 1
+    return txt[open_idx + 1:]
+
+
+def _is_img_literal(s):
+    """字面量像不像图片引用：含路径分隔符或图片后缀，且不是格式化串（%s 拼的静态判不了）。"""
+    if not s or '%' in s:
+        return False
+    low = s.lower()
+    return '/' in s or low.endswith(_IMG_EXT)
+
+
+def _caption_boxes(root):
+    """全部页面里 caption → [(页面名, 控件键, (w, h))]（同一 caption 可在多页出现）。
+
+    返回 (boxes, unreadable)：坏 json 读不出来的页面归入 unreadable（**不静默**，由调用方列出）。
+    """
+    out, bad = {}, []
+    for p in _ui_pages(root):
+        try:
+            with open(p, encoding='utf-8') as fh:
+                d = json.load(fh)
+        except Exception as e:                         # noqa: BLE001 —— 不静默：记入 unreadable 回报
+            bad.append('%s(%s)' % (os.path.basename(p), type(e).__name__))
+            continue
+        for k, v in _all_controls(d):
+            c = v.get('caption')
+            pos = v.get('position') or {}
+            if c and pos.get('width') and pos.get('height'):
+                out.setdefault(c, []).append(
+                    (os.path.basename(p), k, (pos['width'], pos['height'])))
+    return out, bad
+
+
+def check_runtime_setpic(project_root):
+    """扫 src/**/*.cc|*.cpp 的 set...Pic 字面量调用 → 与目标控件盒比对（#20 单一实现）。
+
+    返回可 JSON 序列化的 dict：
+      calls/dynamic/resolved/matched：调用数 / 静态判不了的 / 比过的字面量 / 尺寸匹配数
+      mismatch[]：images/ 自动生成图尺寸 != 控件盒（FAIL）
+      stretched[]：手绘图尺寸 != 控件盒（仅提示）
+      missing[]：字面量引用 images/ 但文件不存在（FAIL；第 4 项也会报）
+      unresolved[]：目标变量映射不到控件 / 非工程内引用（列出来，不静默跳过）
+      noPil：无 PIL 时只查引用存在性
+    """
+    root = os.path.abspath(project_root)
+    res = {'ok': True, 'calls': 0, 'dynamic': 0, 'resolved': 0, 'matched': 0,
+           'mismatch': [], 'stretched': [], 'missing': [], 'unresolved': [],
+           'noPil': not _HAS_PIL, 'files': 0}
+    files = sorted(set(glob.glob(os.path.join(root, 'src', '**', '*.cc'), recursive=True))
+                   | set(glob.glob(os.path.join(root, 'src', '**', '*.cpp'), recursive=True)))
+    res['files'] = len(files)
+    if not files:
+        return res
+    boxes, bad_pages = _caption_boxes(root)
+    if bad_pages:
+        res['unresolved'].append('页面 json 解析失败（未参与比对）：%s' % '、'.join(bad_pages[:4]))
+    for f in files:
+        try:
+            raw = open(f, encoding='utf-8', errors='replace').read()
+        except OSError as e:
+            res['unresolved'].append('%s 读取失败(%s)' % (f, e.strerror or e))
+            continue
+        txt = _strip_comments_keep_lines(raw)
+        rel = os.path.relpath(f, root).replace('\\', '/')
+        for m in _SETPIC_CALL_RE.finditer(txt):
+            var, fn = m.group(1), m.group(2)
+            line = txt.count('\n', 0, m.start()) + 1
+            args = _call_arg_text(txt, txt.index('(', m.end() - 1))
+            lits = [s for s in _SETPIC_STR_RE.findall(args) if _is_img_literal(s)]
+            res['calls'] += 1
+            if not lits:
+                res['dynamic'] += 1
+                continue                                   # 运行时拼的路径：静态判不了，只计数
+            cm = _SETPIC_PTR_RE.match(var)
+            cap = cm.group(1) if cm else None
+            if not cap or cap not in boxes:
+                res['unresolved'].append('%s:%d %s(%s)（变量名映射不到控件）' % (rel, line, fn, var))
+                continue
+            for ref in lits:
+                res['resolved'] += 1
+                p = _pic_path(root, ref)
+                if not p:
+                    if ref.replace('\\', '/').lstrip('./').split('/')[0].lower() == _AUTO_ASSET_DIR:
+                        res['missing'].append('%s:%d %s.%s 引用 %s 但文件不存在'
+                                              % (rel, line, cap, fn, ref))
+                    else:
+                        res['unresolved'].append('%s:%d %s.%s 引用 %s（非工程内路径，未比尺寸）'
+                                                 % (rel, line, cap, fn, ref))
+                    continue
+                if ref.lower().endswith('.9.png') or not _HAS_PIL:
+                    continue
+                try:
+                    with _Image.open(p) as im:
+                        wh = im.size
+                except Exception:
+                    res['unresolved'].append('%s:%d %s 读图失败 %s' % (rel, line, cap, ref))
+                    continue
+                bl = boxes[cap]
+                if any(wh == b[2] for b in bl):
+                    res['matched'] += 1                     # 至少有一个盒与图 1:1 → 对得上
+                    continue
+                item = {'file': rel, 'line': line, 'target': var, 'field': fn,
+                        'caption': cap, 'pic': ref.replace('\\', '/'), 'png': [wh[0], wh[1]],
+                        'boxes': ['%s %s %dx%d' % (b[0], b[1], b[2][0], b[2][1]) for b in bl]}
+                if ref.replace('\\', '/').lstrip('./').split('/')[0].lower() == _AUTO_ASSET_DIR:
+                    res['mismatch'].append(item)
+                else:
+                    res['stretched'].append(item)
+    res['ok'] = not (res['mismatch'] or res['missing'])
+    return res
+
 
 def main(project_root):
     root = os.path.abspath(project_root)
@@ -1243,6 +1408,49 @@ def main(project_root):
                  '要双重保险就限定 mode == LAYER_MODE_BUFFER 后才看 format。'
                  '详见 knowledge/v85x/display-layer-debug.md §2-1-1'
                  % '、'.join(rl['unsafe'][:3]))
+
+    print('== 20. 运行期 set...Pic 的图 vs 控件盒（v0.27.90；扫 src/**/*.cc|*.cpp）==\n'
+          '       口径与 #11/#17 同源：图尺寸应 == 控件盒；resources/images/ 的**自动生成图**不等 = FAIL，\n'
+          '       手绘图（其它目录）不等 = 仅提示（引擎本就拉伸）；.9.png 豁免；变量映射不到控件不静默跳过。')
+    sp = check_runtime_setpic(root)
+    if not sp['files']:
+        print('  [NOTE] src/ 下没有 .cc/.cpp（纯 UI 交付），跳过')
+    elif not sp['calls']:
+        print('  [NOTE] 未见 set...Pic 调用（运行期设图），跳过尺寸核对')
+    else:
+        log(not sp['missing'], '运行期设图引用存在性（%d 处调用 / %d 处静态字面量）%s'
+            % (sp['calls'], sp['resolved'],
+               '全部存在' if not sp['missing'] else '缺 %d 处：%s'
+               % (len(sp['missing']), '；'.join(sp['missing'][:4]))))
+        log(not sp['mismatch'], '运行期设图尺寸 == 控件盒 %s'
+            % ('全部匹配（%d 处比过）' % sp['matched'] if not sp['mismatch'] else
+               '不匹配 %d 处：%s'
+               % (len(sp['mismatch']),
+                  '；'.join('%s:%d %s(%s) %s %dx%d != 盒 %s'
+                            % (m['file'], m['line'], m['caption'], m['field'],
+                               os.path.basename(m['pic']), m['png'][0], m['png'][1],
+                               m['boxes'][0]) for m in sp['mismatch'][:4]))))
+        for m in sp['mismatch']:
+            warn('运行期设图被拉伸：%s:%d %s->%s("%s") 图 %dx%d，控件盒 %s → 引擎按盒拉伸\n'
+                 '          修法二选一：① 控件盒改回图尺寸（推荐，图==盒铁律）；② 重出同尺寸图\n'
+                 '          （案例：48x16 三点图放进 48x26 盒 → 正圆被拉成竖椭圆，'
+                 'knowledge/uicontrols/text-box-height-rule.md）'
+                 % (m['file'], m['line'], m['target'], m['field'], m['pic'],
+                    m['png'][0], m['png'][1], m['boxes'][0]))
+        if sp['stretched']:
+            print('  [NOTE] %d 处手绘图尺寸 != 控件盒（引擎会拉伸，通常正常）：%s'
+                  % (len(sp['stretched']),
+                     '；'.join('%s:%d %s %dx%d != %s'
+                               % (m['file'], m['line'], m['caption'], m['png'][0],
+                                  m['png'][1], m['boxes'][0]) for m in sp['stretched'][:4])))
+        if sp['unresolved']:
+            print('  [NOTE] %d 处未比尺寸（变量名映射不到控件 / 非工程内路径；不静默跳过，列表如下）：%s'
+                  % (len(sp['unresolved']), '；'.join(sp['unresolved'][:5])))
+        if sp['dynamic']:
+            print('  [NOTE] %d 处调用实参是变量/拼接（运行时才能知道用哪张图）→ 静态判不了，'
+                  '真机才会现形' % sp['dynamic'])
+        if sp['noPil']:
+            print('  [NOTE] 无 PIL，只核引用存在性，未比尺寸')
 
     print()
     if warnings:

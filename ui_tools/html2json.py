@@ -1355,6 +1355,13 @@ class HtmlToJson:
             bgc = self._bg_color(attrs)
             if bgc:
                 c['bgColorTab'] = {'color0': bgc}
+            # 静态底图 data-bgpic（v0.27.90）：textview 分支原**不读**该属性 → json 里没有
+            #   backgroundPic = 「弹窗白卡/药丸/图标压根没画出来」，只能靠案例侧反查 HTML 兜底。
+            #   现与 button/window/seekbar/circlebar 等分支同口径落地；有图同样去底色（透明角会透底色）。
+            bgp = _attr(attrs, 'data-bgpic') or _attr(attrs, 'data-background-pic')
+            if bgp and not str(bgp).startswith('#'):
+                c['backgroundPic'] = bgp if '/' in bgp else 'images/' + bgp
+                c.pop('bgColorTab', None)
             if text:
                 c['text'] = text
             self._text_extra(c, attrs)

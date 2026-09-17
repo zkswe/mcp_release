@@ -2,6 +2,7 @@
 
 > 实测来源：Z21（`Zkswe_SSD21X_SPINOR`）2026-09-16 —— 曾因部署体积把设备搞到 OOM 反复重启，表现像「WiFi 坏了」。
 > 适用：**内存 ≤ 64MB 的真机**（Z20/Z21 这类 SigmaStar 板子尤甚）。
+> 检索词：部署体积 / 内存预算 / OOM 杀 zkgui / 设备重启 / 整板掉网 / 温和终止 / kill -TERM / kill -9 / 重启应用进程。
 
 ## 1. 先量三个数
 
@@ -42,3 +43,18 @@ Z21 实测：`Mem total 36072 kB`（**36MB**）；`/tmp` = **tmpfs 13.6MB**（tm
   **只 push 单个文件会跑出厂 UI**（缺 `EasyUI.cfg` 时 zkgui 走默认资源路径，现象是"我的界面没出现"）。
 - `fun launch` 偶发 `FATAL read tcp 127.0.0.1:5037 i/o timeout` / `device offline`：重连（`adb connect <ip>:5555`）后重试即可，
   压测类程序反复断电 WiFi 时网络 adb 必然抖。
+
+## 5. 重启应用进程：温和终止优先（`kill -TERM` → 必要时才 `kill -KILL`）
+
+**口径（2026-09-17，钟工；⚠️ 因果未定，不当作已证实结论）**：
+
+- 现场疑似复现两类「整板掉网」：① 多次 `kill -9 zkgui` 之后；② deploy 脚本里的 `adb reboot` 之后。
+  **两条现象互相矛盾，因果关系未确证**（可能都是网络 adb / tmpfs / 供电抖动导致的偶发）。
+- 据此只做一个**无害的防御性改动**：重启应用进程一律 **`kill -TERM` 优先** —— 给 zkgui 一个正常收尾的机会
+  （关 fb / disp 图层 / 套接字），轮询等它退出（**约 3 秒**），仍活着才回退 `kill -KILL`。
+  行为等价（init 都会自动 respawn），不多花时间；日志要把「用了哪条、是否回退」打出来（可取证）。
+- 实现（单一来源）：MCP 侧 `adb_tools.restart_app(adb, serial, name='zkgui')`；
+  组件示例 `components/ui_v1/WheelPicker/example/tools/deploy.py`、案例侧 `deploy_z21.py` 同姿势。
+- **遇到掉网怎么处理**：按**现场断电重启**处理（先看设备电源/网线/WiFi，再 `adb connect`），
+  **不要**据此得出「kill -9 会掉网」或「reboot 会掉网」的结论，也不要拿它当改代码的依据。
+- 另：`adb reboot` 后 /tmp 是空的（tmpfs）→ 必须**整套重推**（见 §2/§4），且重启后要等网络 adb 重新上线。

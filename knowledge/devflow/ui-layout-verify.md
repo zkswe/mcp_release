@@ -177,6 +177,24 @@ logic.cc 里用 `showWnd()/hideWnd()` 切页」（弹窗、设置页、二级页
 
 完整口径与量化数字（形状分类出图 / 抗锯齿档位）见 `ui-asset-rules.md` §2 铁律 #1 与 #8。
 
+### 3-1 代码侧：运行期设的图也要核（v0.27.90 起，`check_all` 第 20 项）
+
+上一节核的都是 **json 里声明**的图；`mXXXPtr->setBackgroundPic("images/x.png")` 这类
+**运行期设图**以前是盲区（案例实测：48×16 三点图进了被抬高的 48×26 盒 → 引擎按盒拉伸 →
+正圆变竖椭圆，静态全检一路 PASS）。现在 `check_all` **第 20 项**补上：
+
+| 面 | 口径 |
+|----|------|
+| 扫描 | `<项目>/src/**/*.cc`｜`*.cpp` 里 `set…Pic("…")` 的**字面量**实参（去注释保行号；三元式多个字面量一并查） |
+| 目标 | `mXxxPtr` → caption `Xxx`（同第 6 项）；映射不到 → `unresolved[]` 列出，**不静默跳过** |
+| FAIL | `resources/images/` 的自动生成图 != 控件盒（同一 caption 在**任一页**对上就算对） |
+| NOTE | 手绘图（`navi/` 等）!= 盒子 → `stretched[]` 仅提示（官方基准 `navi/fh.png` 44×26 → 72×40 按钮是合法拉伸）；`.9.png` 豁免 |
+| NOTE | 实参是变量/拼接（运行时才知道用哪张图）→ 只计 `dynamic`（案例 `ldFrame()` 拼路径就是这类） |
+
+零误报核查：`SampleUI-New` / `ShowcaseAlbum-F133` / `WebViewDemo` / TDesign 迁移案例双平台
+在 v0.27.90 下 **0 新增 FAIL**；把案例 `LdDots` 盒高改回 26（旧值）**当场报出**。
+口径与边界详见 `uicontrols/text-box-height-rule.md` §4/§5。
+
 ## 4. 变更写回（`flythings_ui_visual(action="edit_apply")`）
 
 用户在编辑器里改完 → 「复制变更 JSON」→ 传回 → 写回 json 并 **pack 成 ftu**：

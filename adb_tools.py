@@ -29,6 +29,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BUNDLED_DIR = os.path.join(HERE, 'tools', 'adb')
@@ -130,6 +131,52 @@ def start_server(adb='', timeout=DEFAULT_TIMEOUT):
         return False
     rc, _, _ = _run([a, 'start-server'], timeout=timeout)
     return rc == 0
+
+
+def restart_app(adb, serial, name='zkgui', term_wait=3.0, extra_path='/tmp/busybox',
+                poll_interval=0.5):
+    """温和终止优先地重启应用进程（init 会自动拉起）：`kill -TERM` → 轮询等退出 → 仍在则 `kill -KILL`。
+
+    为什么不一上来 `kill -9`（v0.27.90 防御性修改，因果**未确证**）：
+      · 现场反馈：多次 `kill -9 zkgui` 之后（以及 deploy 的 `adb reboot` 之后）出现过整板掉网；
+        两条现象互相矛盾，**因果未定**（不是已确认的结论），所以只做「优先温和」这一无害的防御：
+        SIGTERM 让进程正常收尾（关 fb/图层/套接字）再退出，必要时才回退 -KILL，行为等价、不多花时间。
+      · 遇到掉网按现场断电重启处理（deploy-scene-map / device-deploy-budget §温和终止）。
+
+    返回可打的 dict：{found, pid, termSent, fallbackKill, exited, detail}
+    （日志要能取证：用了哪条、是否回退。）
+    """
+    res = {'found': False, 'pid': '', 'termSent': False, 'fallbackKill': False,
+           'exited': False, 'detail': ''}
+    bb = ''
+    if extra_path:
+        bb = (extra_path.rstrip('/') + '/') if sh(adb, serial, 'test -x %s && echo 1' % extra_path).strip() else ''
+    pid_cmd = ('%spidof %s' % (bb, name)) if bb else ('pidof %s' % name)
+    out = sh(adb, serial, pid_cmd)
+    pids = [p for p in (out or '').replace('\n', ' ').split() if p.isdigit()]
+    if not pids:
+        res['detail'] = '未找到 %s 进程（可能首启未拉起，或 pidof 不可用）' % name
+        return res
+    res['found'] = True
+    res['pid'] = pids[0]
+    res['termSent'] = True
+    sh(adb, serial, 'kill -TERM %s' % ' '.join(pids))
+    waited = 0.0
+    while waited < term_wait:
+        time.sleep(poll_interval)
+        waited += poll_interval
+        if not sh(adb, serial, '%spidof %s' % (bb, name)).strip():
+            res['exited'] = True
+            break
+    if not res['exited']:
+        res['fallbackKill'] = True
+        sh(adb, serial, 'kill -KILL %s' % ' '.join(pids))
+        time.sleep(poll_interval)
+        res['exited'] = not bool(sh(adb, serial, '%spidof %s' % (bb, name)).strip())
+    res['detail'] = ('kill -TERM %s%s' % (res['pid'],
+                                          '；%.1fs 内未退出 → 回退 kill -KILL' % term_wait
+                                          if res['fallbackKill'] else '；已自行退出（未用 -KILL）'))
+    return res
 
 
 def connect(target, adb='', timeout=DEFAULT_TIMEOUT):

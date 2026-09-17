@@ -51,8 +51,9 @@ seekbar 7 · edittext 6 · radiogroup 3 · circlebar 1）/ **236 张图**，双�
 ### 每阶段的固定仪式
 
 1. **离线先做完**：出图 → 生成 HTML → `html2json` → `patch_json` 补漏 → `fui pack` → `check_all`（0 FAIL）→ 双平台 `fun build`。
-2. **再碰设备**：部署（**`--no-reboot`**；部分板子 `adb reboot` 后会整板掉网）→ 同一 boot 内一口气跑完断言。
-3. **每套断言前清场**：`kill -9 zkgui` → init 自动拉起（不是 reboot）；**输入类用例会弹系统键盘**，
+2. **再碰设备**：部署（**`--no-reboot`**；部分板子 `adb reboot` 后会整板掉网，**因果未证** → `device-deploy-budget.md` §5）→ 同一 boot 内一口气跑完断言。
+3. **每套断言前清场**：重启应用进程（`kill -TERM` 优先，约 3s 内未退出才回退 `kill -KILL`）→ init 自动拉起
+   （不是 reboot）；**输入类用例会弹系统键盘**，
    必须在套件间收键盘，否则后续导航点击全落键盘上、假 FAIL 一片（`devflow/touch-inject-autotest.md`）。
 4. **证据落盘**：`<平台>/evidence/*.png` + 每套 `*_test.log` + 静态全检 log。
 5. **差异如实登记**（见 §4），不要「看起来一样」就过。
@@ -92,8 +93,8 @@ seekbar 7 · edittext 6 · radiogroup 3 · circlebar 1）/ **236 张图**，双�
 | 弹层卡片内部按钮点不动（遮罩抢触摸） | `uicontrols/touch-events.md` §7 |
 | `setInvalid` 当重绘用 → 整屏点不动 | `uicontrols/touch-events.md` §6 |
 | 拖动卡顿（回调全量刷新） | `uicontrols/high-frequency-callback-perf.md` |
-| `div.text` 上的 `data-bgpic` 丢失 | `devflow/html-subset-quickref.md` §4 |
-| 抬盒高把图拉变形（圆点变竖椭圆） | `uicontrols/text-box-height-rule.md` |
+| `div.text` 上的 `data-bgpic`（v0.27.90 起已原生支持；旧工程 `patch_json` 兜底幂等可留） | `devflow/html-subset-quickref.md` §4 |
+| 抬盒高把图拉变形（圆点变竖椭圆） | `uicontrols/text-box-height-rule.md`（静态检查 = `check_all` 第 20 项） |
 | 方块底图刷平卡片下圆角 | `uicontrols/nine-patch-rule.md` 进阶节 |
 | 定时器里顺序错了会慢 N 倍 | `devflow/activity-code-skeleton.md`（`onUI_Timer` 顺序） |
 | 键盘盖住界面 → 假 FAIL | `devflow/touch-inject-autotest.md` 键盘节 |

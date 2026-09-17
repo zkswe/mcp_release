@@ -129,7 +129,7 @@ iconfont class），转换器**自动生成 iconfont 风格矢量线框 PNG**（
 | HTML（tag + class） | FlyThings 控件 | 说明 |
 |---|---|---|
 | `div.screen` | 根节点 | 必须；分辨率 data-res="WxH"（也支持 data-width/data-height 或 style 宽高），背景 data-bg / data-background（默认 #0E131A） |
-| `div.text` / `p` / `span` | ZKTextView | 字号 data-fs（也认 data-font-size/data-fontSize/内联 font-size）、文字色 data-color、背景 data-bg/data-background、对齐 data-align |
+| `div.text` / `p` / `span` | ZKTextView | 字号 data-fs（也认 data-font-size/data-fontSize/内联 font-size）、文字色 data-color、背景 data-bg/data-background、对齐 data-align；**底图 data-bgpic**（v0.27.90 起落成 backgroundPic，有图不再写底色） |
 | `div.btn` / `button` | ZKButton | data-bg 底色、data-fs；**图片按钮铁律**：有图（data-pic/data-pic0~4 多态图、data-bgpic 背景图）自动去底色（图片叠色效果错乱）；纯文字才用底色。data-pic0 正常/1 按下/2 选中/3 选中按下/4 无效；data-icon-w/h + data-pad 图标 padding |
 | `div.input` / `input` | ZKEditText | data-num="1" 数字键盘、data-hint 提示、data-hint-color 提示色、data-password="1" 密码掩码、data-bg 底色、预填文本=div 内容 |
 | `div.imageanim` / `div.anim` / `div.gif` | ZKImageAnim 动图 | data-src/data-play-file GIF 路径（自动加 image/ 前缀）、data-loop 循环次数（0=无限）、data-interval 帧间隔；生成 playFile 字段设备自动播放 |
@@ -187,7 +187,7 @@ iconfont class），转换器**自动生成 iconfont 风格矢量线框 PNG**（
 | `data-roll-speed` | pagewindow 滚动速度 | data-roll-speed="30" |
 | `data-checked` | checkbox 勾选 | data-checked="1" |
 | `data-pic0`~`data-pic4` | button 多态图（正常/按下/选中/选中按下/无效） | data-pic0="btn_normal.png" data-pic1="btn_pressed.png" |
-| `data-bgpic` | button 背景图（backgroundPic 单图） | data-bgpic="btn_bg.png" |
+| `data-bgpic` | 背景图（backgroundPic 单图）：button / textview（**v0.27.90 起**）/ window / seekbar / circlebar / diagram / pointer 等 | data-bgpic="btn_bg.png" |
 | `data-icon-w` / `data-icon-h` | checkbox/button 图标尺寸（缺省=控件高） | data-icon-w="48" |
 | `data-pad` | checkbox 图标与文字间隙（缺省 6px，自动算 textPosition） | data-pad="8" |
 | `data-color2` / `data-bg2` | checkbox 无图时选中态色 | data-color2="#FF0000" |

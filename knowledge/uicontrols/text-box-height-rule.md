@@ -68,17 +68,28 @@ if not text or not fs or not pos.get('width') or not pos.get('height'):
 - 规则「图片尺寸 == 控件盒」（#11/#17）只看 **json 里声明的 `backgroundPic`**；
   运行期 `setBackgroundPic()` 设的图**静态查不到** → 被拉变形也不报（案例实测：一路 PASS）。
 - 规则「最小尺寸」（#13）只看**有文字**的控件——正是本规则的同一条思路，但它管不到「被多抬」。
-- 结论：**这一类的验收必须真机量像素**（案例做法：真机帧上量每个点的 w/h 比，见 §2 判据）。
+- **v0.27.90 已补**：`check_all` **第 20 项「运行期 set...Pic 的图 vs 控件盒」**（口径见 §5），
+  能静态抓到「字面量路径」的那一类；但**运行时拼出来的路径**（如案例的 `snprintf("images/%s_%02d.png")`
+  helper 逐帧换图）静态无解，仍只有 `dynamic` 计数 → 这类仍必须真机量像素（§2 判据）。
 
-## 5. 是否内建到 `ui_tools`（评估结论：暂不内建）
+## 5. 已内建到 `ui_tools`：`check_all` 第 20 项（v0.27.90-open 起）
 
-- ❌ 静态 json 检查**原理上看不到**运行期设图，无法判断「盒高配这张图对不对」；
-  加「无文字 text 盒高度」类 WARN 会把大量**合法**的固定尺寸盒判进去（噪声大、收益低）。
-- ✅ 真正能机器化的方向是**代码侧静态检查**（照 `check_all` #16 的路子）：扫 `logic.cc` 里
-  `setBackgroundPic("images/X.png")` / `setProgressPic(...)`，把 `X.png` 的 PNG 尺寸与**目标控件盒**比，
-  不一致就给 WARN（`.9.png` 豁免，与 #17 同口径）。案例这个坑（48×16 图 vs 48×26 盒）能一眼命中。
-- 该方向**本次未实现**（属于新增检查能力，需单独立项 + 用例）；本文先把口径与判据固化，
-  生成器侧按 §1/§3 自检即可。
+原评估「暂不内建」针对的是**静态 json 检查**（它原理上看不到运行期设图，硬加会把大量合法盒判进去）；
+真正能机器化的是**代码侧静态检查**，现已实现：`ui_tools/check_all.py`
+`check_runtime_setpic()`（第 20 项，与第 6 项同一套变量名口径）：
+
+| 项 | 口径 |
+|---|---|
+| 扫什么 | `<项目>/src/**/*.cc`（含 `logic.cc`）与 `*.cpp` 里 `mXXXPtr->set…Pic("…")` 的**字面量**实参 |
+| 目标控件 | 变量名 `mXxxPtr` → caption `Xxx`（精确匹配，同第 6 项）；映射不到 → `unresolved[]` 列出（**不静默跳过**） |
+| 比对 | 图片 PNG 尺寸 vs 控件 `position`；同一 caption 在**任一页面**的盒对上就算对（多页复用图防误报） |
+| 分级 | `resources/images/` 的**自动生成图**尺寸不等 → **FAIL**（铁律 #9/#11）；手绘图（`navi/` 等其它目录）不等 → `stretched[]` **仅提示**（官方基准 `navi/fh.png` 44×26 放 72×40 按钮是合法拉伸，**绝不 FAIL**）；`.9.png` **豁免**；文件不存在 → `missing[]` |
+| 判不了的 | 实参是变量/拼接（`setBackgroundPic(path)`）→ 只计 `dynamic` 条数（**明说**「静态判不了」，不假装查过）；非工程内路径（设备侧资源如 `CONFIGMANAGER->getResFilePath(...)`）→ `unresolved` |
+| 实测 | 基准 4 工程（SampleUI-New / ShowcaseAlbum-F133 / WebViewDemo / TDesign 案例双平台）**0 新增 FAIL**；案例这个坑（48×16 图 vs 48×26 盒）改回旧值**当场报出**（`48x16 != 盒 main.json textview__235 48x26`），盒高正确时 PASS |
+
+仍属盲区（写入文档，别当已覆盖）：**路径在运行时拼出来的**（案例 `ldFrame()` 走 `snprintf("images/%s_%02d.png", prefix, …)`）
+——静态无从得知用哪张图；带格式串的字面量（`"images/x_%02d.png"`）会被归到 `dynamic`/`unresolved` 而不是硬报。
+所以 **§2 的真机量像素判据仍是最终验收**。
 
 ## 6. 自查清单（改字号 / 改盒高前打勾）
 
@@ -89,6 +100,8 @@ if not text or not fs or not pos.get('width') or not pos.get('height'):
 - [ ] **运行期 `setBackgroundPic` 逐帧换图的盒没被抬**（圆点会被拉成竖椭圆）
 - [ ] 生成器与 `html2json` FT-009 同口径（「无文字跳过」）
 - [ ] 真机量像素验收（比例类判据，如每点 `w/h ∈ [0.8, 1.25]`），别只信静态全检
+- [ ] 跑过 `check_all` **第 20 项**（运行期 set...Pic 的图 vs 控件盒）：`mismatch[]` 必须为空；
+      若全是 `dynamic`/`unresolved`，说明静态没覆盖到——回到真机量像素那一条
 
 ## 相关
 
