@@ -32,7 +32,7 @@
 |------|------|
 | `fun install` | 安装配置里声明的**所有依赖**（`--project-dir` 可指项目；`-p` 指平台） |
 | `fun build -p F133` | 编译（`-p/--platform`、`-t/--target`、`-D` 预定义、`--cflags`、`--project-dir`、`--verbose`） |
-| `fun launch -p F133 [-s <serial\|IP>]` | 部署到设备并启动，**仅用于临时调试**（`-s/--device` **支持**：序号或 IP；**多设备时必须显式指定**，否则 fun 静默取列表第一个 → 见 §7；MCP 侧失败自动重试 5 次） |
+| `fun launch -p F133 [-s <serial\|IP>]` | 部署到设备并启动，**仅用于临时调试**（`-s/--device` 只支持合法语法，**多设备时本机实测反而必 FAIL**、单设备才稳 → 见 §7；MCP 侧失败自动重试 5 次） |
 | `fun sim` | **模拟器运行**（fuse 时代没有这条）。⚠️ **MCP 暂不提供/不代跑**（沛哥 2026-09-14 定，见 §6） |
 | `fun create [<starter>]` | 建工程（`--type bin` 出可执行程序工程） |
 | `fun add <package>` | 追加依赖包 |
@@ -169,7 +169,32 @@ include 路径就不会进 CMake（症状看起来像「框架头文件不存在
 - ⚠️ **`fun sim` 不在 MCP 能力面内**（沛哥 2026-09-14 定：「暂时发布的 mcp 不要支持 sim 功能」）：工具面不暴露该能力，`project_tools._run_fun` 里也**显式拒绝 `cmd == 'sim'`** 并返回正解 hint（推真机→`flythings_build_ui_flow`；出图→`flythings_device_screenshot`；要跑模拟器自己去本地命令行）。**AI 不要拿 `flythings_*` 工具去实现模拟器运行，也不要因这条向用户承诺 MCP 能跑模拟器。**
 - 抓帧/设备侧动作仍走 `flythings_device_screenshot`（内部已处理 rootfs 裁剪、pan 偏移、压缩链路）
 
-## 7. ⚠️ 多设备（USB + WiFi adb）时的设备选择陷阱（2026-09-16 实测）
+## 7. ⚠️ 多设备（USB + WiFi adb）时的设备选择陷阱（2026-09-16 实测，2026-09-17 复测修正）
+
+> ⚠️ **2026-09-17 复测推翻本节前半部分的机制描述**（原结论：多设备时 fun 静默取列表第一个）。
+> 复测环境：本机 adb host server = **platform-tools 1.0.41 / 31.0.3-7562133**（IDE 自带那份，pid 常驻 5037），
+> 三台设备同时在线；复测手法 = 裸 socket 直问 host server + `fun launch` 直接跑（不看表象看报文）。
+> **结论：多设备在线时 `fun launch` 不管带不带 `-s` 都直接 `FATAL "host:transport <serial>" FAIL: more than one device/emulator`
+> → 它是**硬失败**（不是静默推错设备）；只有恰好 1 台在线时才能推。**
+> 报文级证据（裸 socket，`%04x` 长度前缀，均对 127.0.0.1:5037）：
+>
+> | 请求 | 应答 |
+> |------|------|
+> | `host:transport 192.168.x.x:5555`（**空格**形式，fun 的写法） | `FAIL more than one device/emulator` |
+> | `host:transport`（不带 serial） | `FAIL more than one device/emulator` |
+> | `host:transport:<serial>`（**冒号**形式） | `OKAY` |
+>
+> 即 fun 的 Go adb 客户端用的是**旧式空格形式** service 串，现代 platform-tools 不认（serial 被当空气）
+> → 多设备时报「more than one」，单设备时靠 server 的「只有一台就用它」兜底成功。
+>
+> **正确做法（复测后的口径）**：要推某台先让 adb 列表只剩它 —— `adb disconnect <其它 ip>:5555`
+> （网络设备，可逆；推完 `adb connect` 加回来）或拔掉其它 USB；MCP 侧 `build_ui_flow` 已把
+> 这条写进多设备提示与失败 hint（`adb_tools.multi_device_hint` / `fun_multi_device_error`）。
+> 本机实测：单台在线时默认参数 `build_ui_flow` 自动选机 → `fun launch -s <serial>` 成功，
+> 设备侧 `/tmp/ui/main.ftu` 186 B、`/tmp/lib/libzkgui.so` 277340 B **字节+md5 与本地逐一致**。
+
+> 以下几段是 **2026-09-16 的原始记录**（保留作历史；其中「多设备静默取第一个」已被上面的复测推翻，
+> 其余（平台校验、判据命令、WiFi adb 用法）仍有效）。
 
 > 起因：沛哥报「fun launch 在同时连着 WiFi adb 时静默失败，改了 ui 加控件、build 通过、launch 看着成功，界面就是不画」。实测验收后**现象成立、机制要改**（不是 adb 报错被吞，见下）。
 

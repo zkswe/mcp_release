@@ -1148,14 +1148,16 @@ def _device_sync_check(project_root, serial, platform):
         names = sorted(f for f in os.listdir(ui_dir) if f.lower().endswith('.ftu'))
     truncated = names[8:]
     for f in names[:8]:
-        c = _adb.compare_with_device('', serial, os.path.join(ui_dir, f), '/tmp/ui/' + f)
+        c = _adb.compare_with_device('', serial, os.path.join(ui_dir, f), '/tmp/ui/' + f,
+                                     platform=platform)
         c['name'] = f
         c['kind'] = 'ftu'
         out['ftu'].append(c)
     key = _platforms.package_key(platform or '') if platform else ''
     so_local = os.path.join(project_root, '.fun', key, 'libzkgui.so') if key else ''
     if so_local and os.path.isfile(so_local):
-        c = _adb.compare_with_device('', serial, so_local, '/tmp/lib/libzkgui.so')
+        c = _adb.compare_with_device('', serial, so_local, '/tmp/lib/libzkgui.so',
+                                     platform=platform)
         c['name'] = 'libzkgui.so'
         c['kind'] = 'so'
         out['so'].append(c)
@@ -1343,15 +1345,21 @@ def flythings_build_ui_flow(project_root, with_launch=True, device=''):
         if not rl['success']:
             fail_msg = ('fun launch 失败（已自动重试 5 次）：设备 %s 推送未生效。'
                         % (gate['serial'] or '?'))
+            raw_out = (rl.get('stderr') or rl.get('stdout') or rl.get('error') or '')
+            mechanism = _adb.fun_multi_device_error(raw_out) if _adb is not None else ''
+            if mechanism:
+                fail_msg += ' ' + mechanism
+            else:
+                fail_msg += ' 已知设备可能掉线/网络推送中断，请确认设备在线后重试。'
             res = {"success": False, "steps": steps,
                    "needDeviceInput": True,
                    "installHint": (_adb.install_hint(plat, gate['devices'])
                                     if _adb is not None else ''),
-                   "message": fail_msg + ' 已知设备可能掉线/网络推送中断，请确认设备在线后重试。',
+                   "message": fail_msg,
                    "device": gate['serial'], "model": gate['model'],
                    "platformMatch": gate['platformMatch'],
                    "launched": False, "pushed": False,
-                   "error": rl.get('error') or (rl.get('stderr') or rl.get('stdout') or '')[-300:]}
+                   "error": rl.get('error') or raw_out[-300:]}
             if warnings:
                 res['warnings'] = warnings
             return res

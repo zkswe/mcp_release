@@ -175,6 +175,33 @@ class TestProbeAndHints(unittest.TestCase):
         self.assertIn('旧版', txt)
         self.assertIn('pack', txt)
 
+    def test_remote_file_info_uses_ls_l_column5(self):
+        """设备侧取数（真机踩到的 bug）：`ls -l` 第 1 个数字是硬链接数（恒为 1），
+        第 5 列才是字节数；且裁剪 rootfs 的 `wc -c` 返回空、没有 md5sum。"""
+        txt = ('-rw-rw-rw-    1 0        0              186 Sep 17  2026 main.ftu\n')
+        with mock.patch.object(at, 'sh', lambda a, s, cmd, timeout=15: txt), \
+                mock.patch.object(at, 'ensure_busybox', lambda a, s, p='', timeout=15: ''):
+            got = at.remote_file_info('', 'dev', '/tmp/ui/main.ftu')
+        self.assertEqual(got['size'], 186, got)          # 不是 1（硬链接数）
+        self.assertEqual(got['md5'], '')
+
+    def test_remote_file_info_wc_and_md5(self):
+        """有 wc/md5sum 的设备：裸数字 = 尺寸，32 位 hex = md5（两边都有时优先比 md5）。"""
+        md5 = 'A' * 32
+        txt = '186\n%s  main.ftu\n' % md5
+        with mock.patch.object(at, 'sh', lambda a, s, cmd, timeout=15: txt):
+            got = at.remote_file_info('', 'dev', '/tmp/ui/main.ftu')
+        self.assertEqual(got['size'], 186)
+        self.assertEqual(got['md5'], md5)
+
+    def test_fun_multi_device_error_recognized(self):
+        """fun 多设备硬失败的识别（2026-09-17 报文级实测）：要给出可照做的处置，不是笼统「掉线」。"""
+        out = ('font: \nFATAL "host:transport <serial>" FAIL: more than one device/emulator\n')
+        hint = at.fun_multi_device_error(out)
+        self.assertIn('disconnect', hint)
+        self.assertIn('host:transport', hint)
+        self.assertEqual(at.fun_multi_device_error('FATAL platform not match'), '')
+
     def test_compare_with_device_md5_and_size(self):
         """能拿 md5 比 md5；设备端没有 md5sum 时退化为比字节数（不假装一致）。"""
         import tempfile
@@ -183,11 +210,11 @@ class TestProbeAndHints(unittest.TestCase):
         U.write(p, 'x' * 32)
         md5 = at.local_md5(p)
         with mock.patch.object(at, 'remote_file_info',
-                               lambda a, s, path, timeout=15: {'size': 32, 'md5': md5, 'error': ''}):
+                               lambda a, s, path, platform='', timeout=15: {'size': 32, 'md5': md5, 'error': ''}):
             r = at.compare_with_device('', 'dev', p, '/tmp/ui/main.ftu')
         self.assertTrue(r['same'], r)
         with mock.patch.object(at, 'remote_file_info',
-                               lambda a, s, path, timeout=15: {'size': 31, 'md5': '', 'error': ''}):
+                               lambda a, s, path, platform='', timeout=15: {'size': 31, 'md5': '', 'error': ''}):
             r = at.compare_with_device('', 'dev', p, '/tmp/ui/main.ftu')
         self.assertFalse(r['same'])
         self.assertIn('字节', r['reason'])

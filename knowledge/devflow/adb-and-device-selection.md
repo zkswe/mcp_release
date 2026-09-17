@@ -60,10 +60,16 @@ build 通过 → 设备探测 → 推送/运行 → **比对设备侧产物**。
 | 探测结果 | 行为 |
 |----------|------|
 | 0 台 device | `needDeviceInput=true` + `installHint`（见下）+ 失败原因 |
-| 多台 | 列 serial / model / 平台匹配情况，**要求显式 `device=`**（fun 在多设备下静默取列表第一个 → 可能推错机器） |
+| 多台 | 列 serial / model / 平台匹配情况，**要求显式 `device=`**（多设备下 fun 会硬失败，见 §5 报文证据） |
 | 1 台且平台匹配 | 自动 `fun launch -s <serial>` |
 | 1 台但平台不一致 | 不推，报明原因（显式传 `device=` 才算「你知情」） |
 | 1 台但型号未知 | 照推 + `warnings`（fun 自己会做平台校验） |
+
+⚠️ **`device=` 也救不了多设备**（2026-09-17 实测）：本机 platform-tools 1.0.41/31.0.3 下，
+只要 adb 列表不只一台，`fun launch`（带不带 `-s`）都 `FATAL more than one device/emulator`
+—— 因为 fun 的 adb 客户端发的是旧式 `host:transport <serial>`（空格分隔），现代 server 不认，
+serial 被当空气（报文级证据见 `cli-fun-toolchain.md` §7）。处置：先把其它设备下线
+（`adb disconnect <其它serial>`，可逆）再推。
 
 `installHint`（0 台时给用户的照做清单）：① **ADB 驱动**（本包只带 adb 程序本身，
 Windows 上设备管理器带叹号 = 缺驱动）；② 设备侧开 **USB 调试**并在弹框授权
@@ -96,14 +102,36 @@ python adb_tools.py                              # 确认判定与预期一致
 把型号串按第 2 节格式补进 `device_models.json`（写 `source` = 实测日期与依据，
 `confidence="confirmed"`），并在本表同步一行。
 
-## 5. 实测记录（2026-09-17，本机三台在线真机）
+## 5. 实测记录（2026-09-17，本机真机）
 
+**探测/解析**
 - `tools/adb/adb.exe version` → `Android Debug Bridge version 1.0.41 / Version 31.0.3-7562133`；
 - `python adb_tools.py` → 三台在线全部正确判定（Z21 / Z20 / V85X，型号均由
   `devices -l` 的 `model:` 或 `getprop` 取到）；
-- 默认参数 `build_ui_flow`：build 通过 → 探测到多台 → `needDeviceInput=true` +
-  多设备清单（含平台匹配列），**未替用户选机器**；
-- `with_launch=False`：流程到 build 结束，返回体 `launchSkipped=true`、`device=""`，不碰设备。
+- 默认参数 `build_ui_flow`（三台在线）：build 通过 → 探测到多台 → `needDeviceInput=true` +
+  多设备清单（带平台匹配列），**未替用户选机器**；
+- `with_launch=False`：到 build 结束，`launchSkipped=true`、`device=""`，不碰设备。
+
+**单台在线 → 自动选机 + 推送 + 设备侧比对（Z21）**
+- `launched/pushed=true`，`device=<Z21 的 IP:5555>`，`model=Zkswe_SSD21X_SPINOR`，`platformMatch=match`；
+- `deviceSync`：`/tmp/ui/main.ftu` 本地 186 B / 设备 186 B、md5 两侧相同；
+  `/tmp/lib/libzkgui.so` 本地 277340 B / 设备 277340 B、md5 两侧相同 → `staleOnDevice=false`。
+
+**stale 判定（本地改过但没推）**
+- 本地 ftu 改到 187 B（设备仍 186 B）→ `staleOnDevice=true`，明细给出两边字节/md5 与 `reason=md5 不一致`，
+  `warnings` 里明说「设备上跑的还是旧版」+ 两个常见原因；还原后 `allMatch` 回到 true。
+
+**0 台设备分支（真实复现：临时断开全部设备）**
+- `ok=false`、`needDeviceInput=true`、`launched/pushed=false`、`device=""`、`staleOnDevice=false`、
+  `device_probe` step `success=false count=0`，`installHint` 原文给出「ADB 驱动 / USB 调试授权 / 网络接入」三条。
+
+**设备端取数踩到的 3 个坑（已修在 `adb_tools`）**
+1. `wc -c < file` 返回**空**（裁剪 rootfs）→ 尺寸只能靠 `ls -l`，且 **`ls -l` 第 1 个数字是硬链接数（恒为 1）**，
+   第 5 列才是字节数（旧写法把每个文件都报成 1 字节 = 假 stale，实测踩到）；
+2. 设备没有 `md5sum`、`busybox` 也不在 PATH → 用**随仓** `bin_tools/<平台>/busybox`
+   （优先复用设备上已有的 `/tmp/busybox`）拿到 md5，才做到「比 md5」而不是「比字节」；
+3. 多设备下 `fun launch` 硬失败（机制与处置见 §3 与 `cli-fun-toolchain.md` §7），
+   所以单台推送验证需要先 `adb disconnect` 其它设备（本次实测即如此，推完已连回）。
 
 ## 6. 待确认 / 未覆盖（诚实标注）
 
@@ -112,3 +140,9 @@ python adb_tools.py                              # 确认判定与预期一致
 - 其它平台的型号串（T113 / Z235X）同样**未登记** → 会走「平台未知」分支（照推 + warning）。
 - USB 接入口的 `installHint` 里「驱动没装」的判定**目前只能靠人工**（设备管理器），
   工具无法从 adb 侧区分「没插」「驱动没装」「没授权」——三者都表现为 0 台或 unauthorized。
+- **fun 与 adb server 的兼容性只在本机 platform-tools 1.0.41/31.0.3 上验证过**：
+  别的 adb server 版本（旧版 / 不同分发）报文解析可能不同，可能在多设备下行为不一样
+  —— 复测方法就写在 `cli-fun-toolchain.md` §7（裸 socket 问 5037，看 `host:transport` 是否被认）。
+- `deviceSync` 只比对 `ui/*.ftu`（最多 8 个）与 `libzkgui.so`：**图片/字体/i18n/配置没比**
+  （那些不是 ftu 时代同一问题，且体积大）；需要时可后续扩。
+- 设备侧被 launch 覆盖前的旧文件无备份（`fun launch` 语义就是调试推送）→ 要保留请用 `fun pack` 出 update.img。
