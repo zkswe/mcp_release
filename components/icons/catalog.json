@@ -1,6 +1,6 @@
 {
   "module": "icons",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "FlyThings 图标资产库：vendor(tabler) 收录 + 少量自绘，单色烘焙 PNG，按需任意分辨率",
   "generatedBy": "scripts/gen_catalog.py（禁止手写 catalog.json）",
   "sources": {
@@ -49,7 +49,8 @@
   "render": {
     "twoState": "有 filled 的 vendor 图标：off=outline、on=filled；无 filled：单态（加 --state 可强制出 _off/_on 同名图）",
     "compose": "先各自栅格化再 alpha 合成（描边不互相穿插）",
-    "stroke": "px = max(1, round(基准 × size / 网格 × 2) / 2)"
+    "stroke": "px = max(1, round(基准 × size / 网格 × 2) / 2)",
+    "antialias": "8× 超采样 + BOX 面积平均 = **真实覆盖率**（边缘灰度完整保留）；末尾只清「覆盖率 <0.08 且 8 邻域无内容」的孤立噪点。v0.3.1 起**默认不做** α 对比度整形（老口径 0.40/0.60 硬推会把小尺寸边缘量化成个位数级，已降为 opt-in：`gen_icons.py --snap`）"
   },
   "palette": {
     "white": [

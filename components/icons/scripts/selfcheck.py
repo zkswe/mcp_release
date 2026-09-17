@@ -4,12 +4,23 @@
 跑什么：
   A 命名     out/ 下每个 PNG 必须匹配 ic_<分类>_<名字>[_<风格>][_off|_on].png
   B 尺寸     每个 PNG 的像素尺寸必须**严格等于**生成时请求的尺寸（读 _manifest.json）
-  C 透明度   α 只允许 0/255 与少量抗锯齿中间值（中间值像素 ≤ 全图 15%）；
-             **不允许孤立半透明噪点**（每个 0<α<255 的像素至少有一个 8 邻域 α>0）
+  C 透明度   α 只允许 0/255 与真实抗锯齿中间值——中间值像素占比上限**随尺寸**给
+             （`mid_limit(size)`，见下文口径）；**不允许孤立半透明噪点**
+             （每个 0<α<255 的像素至少有一个 8 邻域 α>0）
+  C2 抗锯齿保真  抽样图标与 **16× 超采样理想覆盖率**对拍（边界带 mean/p95 上限）、
+             且中间值**灰度级数**不得塌成个位数级（防“α 对比度整形”式量化回归）
   D 目录     catalog.json ↔ svg/ 双向对齐；tags/sizes 非空；legacyMap 指向真实产物名
   E 可生成   catalog 里**每个** 图标×风格×状态 都能渲染成功（22px + 56px），且非空白
   F 尺寸混用 同一目录内不允许出现彼此不一致的"请求尺寸"（防手滑把 56 的图混进 22 目录）
   I 陈旧产物 out/ 下不允许出现 catalog 之外的 PNG（`demo/` 与 `_` 前缀目录豁免）
+
+**C 条口径（2026-09-17 重标定，钟工拍板去量化）**：渲染器从“α 对比度整形（<0.40/>0.60
+推到 0/255）”改为**真实覆盖率**（只清极小孤立噪点），于是“中间值像素占比”回归到抗锯齿
+应有的水平（边缘带 1 像素量级，图越小占比越高）——固定 15% 上限会把**正确**的抗锯齿
+判死（实测 305 产物：22px 最高 42.6%/中位 23.1%、24px 34.7%/16.7%、56px 16.1%/8.2%）。
+现改为 `mid_limit(size) = min(0.60, 10.5 / 边长)` → 22px 47.7%｜24px 43.8%｜56px 18.8%
+（= 实测最大值留 10~20% 余量）；它只防“糊”（羽化/灰雾），反向的“量化成硬阶梯”
+由 C2 看住。
 
 「本模块标准产物目录」= out/<尺寸>/（如 out/22、out/24、out/56）与 out/demo（颜色示例）。
 `_` 前缀目录（临时文件、并行任务的产物）不参与断言，也不被本脚本清理。
@@ -38,8 +49,20 @@ sys.path.insert(0, HERE)
 import gen_icons  # noqa: E402
 import svgmini    # noqa: E402
 NAME_RE = re.compile(r'^ic_([a-z0-9]+)_([a-z0-9-]+?)(?:_(ios|material))?(?:_(off|on))?\.png$')
-MID_LIMIT = 0.15          # 中间值像素占比上限（占全图）
+# C 条：中间值像素占比上限 = MID_LIMIT_PER_PX / 边长（封顶 MID_LIMIT_CEIL）。
+# 标定依据（全量 305 产物、真实覆盖率口径）：22px max 42.6% / 24px 34.7% / 56px 16.1%
+# → 10.5/边长 给 10~20% 余量；不可再收紧（会把正确抗锯齿判死）。
+MID_LIMIT_PER_PX = 10.5
+MID_LIMIT_CEIL = 0.60
+MID_LIMIT = 0.15          # 旧常量（v0.3.0 及更早的 22px 口径）；仅作向后兼容保留，不再参与断言
 EPS_COVER = 0.02          # 图标至少覆盖 2% 像素（防路径写坏了出全透明图）
+# C2 条：抗锯齿保真（抽样图标 × 多尺寸，对拍 16× 超采样理想覆盖率）
+AA_PROBE = ('bell', 'user', 'settings', 'wifi')      # vendor 原生名（Tabler）
+AA_PROBE_SIZES = (22, 48, 56)
+AA_REF_SS = 16
+AA_MEAN_MAX = 8.0         # 实测 ss=8 vs ss=16：mean ≤ 3.4（8 glyph × 3 尺寸）
+AA_P95_MAX = 32.0         # 实测 p95 ≤ 21、max ≤ 29
+AA_LEVELS_MIN = 12        # 实测最少 20 级（改前 0.40/0.60 硬整形只有 5~9 级）
 # 合法「极小图形」白名单（覆盖率天然 <2%）：Tabler 的 wifi-0 就是一个点（0 格 = 无信号）
 TINY_OK = {'ic_system_wifi-0.png': 0.003}
 
@@ -58,6 +81,11 @@ class Report(object):
 
     def note(self, msg):
         self.info.append(msg)
+
+
+def mid_limit(size):
+    """C 条：中间值像素占比上限（随尺寸）——小尺寸图标抗锯齿带占比天然更高。"""
+    return min(MID_LIMIT_CEIL, MID_LIMIT_PER_PX / float(max(1, int(size))))
 
 
 def alpha_stats(path):
@@ -154,9 +182,10 @@ def check_dir(out_dir, rep, expect_size=None, valid=None, skip=False):
             rep.warn('B', '%s 无法确定请求尺寸（缺 manifest 且未给 --size）' % base)
         elif (st['w'], st['h']) != want:
             rep.fail('B', '%s 尺寸 %dx%d ≠ 请求 %dx%d' % (base, st['w'], st['h'], want[0], want[1]))
-        if st['mid_ratio'] > MID_LIMIT:
-            rep.fail('C', '%s 抗锯齿中间值占比 %.1f%% > %.0f%%（%d/%d 像素）'
-                     % (base, 100 * st['mid_ratio'], 100 * MID_LIMIT, st['mid'], st['total']))
+        if st['mid_ratio'] > mid_limit(min(st['w'], st['h'])):
+            rep.fail('C', '%s 抗锯齿中间值占比 %.1f%% > %.1f%%（%d/%d 像素；上限随尺寸，见模块头）'
+                     % (base, 100 * st['mid_ratio'], 100 * mid_limit(min(st['w'], st['h'])),
+                        st['mid'], st['total']))
         if st['iso']:
             rep.fail('C', '%s 存在 %d 个孤立半透明像素（无 8 邻域不透明邻居）' % (base, st['iso']))
         tiny_floor = TINY_OK.get(base)
@@ -250,10 +279,53 @@ def check_render(rep, cat, jobs, sizes=(22, 56)):
             if cov < floor:
                 rep.fail('E', '%s @%dpx 覆盖 %.2f%%（空白/断图）' % (j['png'], size, 100 * cov))
             mid = ((a > 0) & (a < 255)).sum() / float(size * size)
-            if mid > MID_LIMIT:
-                rep.fail('C', '%s @%dpx 中间值占比 %.1f%% > %.0f%%'
-                         % (j['png'], size, 100 * mid, 100 * MID_LIMIT))
+            if mid > mid_limit(size):
+                rep.fail('C', '%s @%dpx 中间值占比 %.1f%% > %.1f%%'
+                         % (j['png'], size, 100 * mid, 100 * mid_limit(size)))
     rep.note('渲染自检：%d 个 图标×风格×状态 × %s' % (len(seen), list(sizes)))
+
+
+def check_aa_fidelity(rep):
+    """C2：抗锯齿保真——与 16× 超采样的“理想覆盖率”对拍 + 灰度级数下限。
+
+    为什么加这条：默认口径从“α 对比度整形（<0.40/>0.60 硬推）”换成“真实覆盖率”后，
+    数据上的“中间值占比”不再是越低越好，原来的 15% 硬上限无法再当质量闸——
+    真正要盯的是**一个都不许少**的边缘灰度（本轮修的回归：48px bell 只剩 9 级）。
+    两条判据都用实测标定（见 AA_MEAN_MAX / AA_P95_MAX / AA_LEVELS_MIN 注释）。
+    """
+    rows = []
+    for glyph in AA_PROBE:
+        rel = 'vendor/tabler/icons/%s.svg' % glyph
+        try:
+            txt = gen_icons.source_text(rel)
+        except Exception as e:                                   # noqa: BLE001
+            rep.warn('C', 'C2 跳过 %s（拿不到矢量源：%s）' % (glyph, e))
+            continue
+        for size in AA_PROBE_SIZES:
+            try:
+                a8 = np.asarray(svgmini.render_svg(txt, size, (255, 255, 255), ss=8)
+                                .getchannel('A')).astype(np.int16)
+                a16 = np.asarray(svgmini.render_svg(txt, size, (255, 255, 255), ss=AA_REF_SS)
+                                 .getchannel('A')).astype(np.int16)
+            except Exception as e:                               # noqa: BLE001
+                rep.fail('C', 'C2 %s @%dpx 渲染异常：%s' % (glyph, size, e))
+                continue
+            d = np.abs(a8 - a16)
+            mean = float(d.mean())
+            p95 = float(np.percentile(d[d > 0], 95)) if (d > 0).any() else 0.0
+            levels = len(set(a8.flatten().tolist()))
+            rows.append((glyph, size, mean, p95, levels))
+            if mean > AA_MEAN_MAX or p95 > AA_P95_MAX:
+                rep.fail('C', 'C2 %s @%dpx 边缘偏离理想覆盖率过大：mean %.1f > %.0f 或 p95 %.1f > %.0f'
+                         '（/255；查是否重开了 --snap / 羽化）'
+                         % (glyph, size, mean, AA_MEAN_MAX, p95, AA_P95_MAX))
+            if levels < AA_LEVELS_MIN:
+                rep.fail('C', 'C2 %s @%dpx 灰度只有 %d 级 < %d（边缘被量化/二值化）'
+                         % (glyph, size, levels, AA_LEVELS_MIN))
+    if rows:
+        rep.note('抗锯齿保真（vs %d× 理想覆盖率）：%s'
+                 % (AA_REF_SS, '；'.join('%s@%d mean %.1f/p95 %.1f/%d级' % r for r in rows[:4])))
+    return rows
 
 
 def main(argv):
@@ -291,6 +363,7 @@ def main(argv):
                            skip=os.path.basename(d).startswith(('demo', '_')))
     if not args.skip_render:
         check_render(rep, cat, jobs)
+        check_aa_fidelity(rep)
 
     ok = not rep.fails
     if args.json:

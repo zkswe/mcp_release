@@ -6,8 +6,13 @@
 > 用**一条命令**渲染成任意分辨率的**单色 PNG**——像素尺寸严格等于请求值，
 > 22px 不糊、56px 不细，两态（outline/filled）自动配对。
 >
-> 版本 **v0.3.0**（2026-09-17）｜形态：`components/` 规范里的**资产/工具型模块**（无 include/src）
-> ｜v0.2.0（2026-09-16，转向 vendor）｜v0.1.0（自绘 86 图标 ios/material 双调性）已被取代
+> 版本 **v0.3.1**（2026-09-17）｜形态：`components/` 规范里的**资产/工具型模块**（无 include/src）
+> ｜v0.3.0（2026-09-17，单归档 + 按需解）｜v0.2.0（2026-09-16，转向 vendor）
+> ｜v0.1.0（自绘 86 图标 ios/material 双调性）已被取代
+>
+> **v0.3.1 变更（抗锯齿去量化）**：图标默认走 **真实覆盖率**（8× 超采样 + BOX 面积平均），
+> 取消「α 对比度整形（<0.40/>0.60 硬推）」这个默认收尾（它把小尺寸边缘量化成个位数级
+> = 肉眼硬阶梯）；老口径降为 opt-in（`gen_icons.py --snap`）。
 >
 > **v0.3.0 变更（单归档 + 按需解）**：vendor 的 5777 个 SVG 散件收进一份归档
 > `vendor/tabler-3.46.0.pack.tgz`（455,379 B，sha256 `a0ba69f2…1c95`），`out/` 生成物退出
@@ -121,8 +126,9 @@ python scripts/gen_icons.py --sheet out/sheet_vendor_22.png --size 22 --set vend
    按钮 `"picTab": {"pic0": "images/ic_control_toggle-right_on.png"}`；
 3. **控件 `position` 宽高 == 图片像素尺寸**（22px → `"width":22,"height":22`），否则被拉伸。
 
-**小尺寸策略（实测）**：**≥22px 用 outline 即可**（本套用「半像素对齐线宽 + α 对比度整形 + 去雀斑」，
-22px 中间值像素 ≤ 9.7%、边缘不发虚）；**≤20px 建议用 filled**（实心更清楚）。
+**小尺寸策略（实测）**：**≥22px 用 outline 即可**（本套用「半像素对齐线宽 + 8× 超采样真实
+覆盖率 + 只清极弱孤立噪点」，22px 中间值像素中位 23.1%、边缘灰度中位 30 级、不发虚也无硬
+阶梯）；**≤20px 建议用 filled**（实心更清楚）。
 
 ---
 
@@ -142,9 +148,20 @@ python scripts/gen_icons.py --sheet out/sheet_vendor_22.png --size 22 --set vend
   | 44px | 3.5px |
   | 56px | 4.5px |
 
-- 抗锯齿：8× 超采样 → BOX 面积平均（=精确覆盖率）→ **α 对比度整形**（把 <0.40 / >0.60 的
-  覆盖率推到 0/255，中间保留亚像素位置）+ 去雀斑。实测 22px 中间值像素 ≤ 9.7%、
-  56px ≤ 2.8%（限值 15%），既干净又不发虚。
+- 抗锯齿：8× 超采样 → BOX 面积平均（= **真实覆盖率**，边缘灰度完整保留）→ 只清
+  「覆盖率 <0.08 且 8 邻域无内容」的孤立噪点。**默认不做 α 对比度整形**（v0.3.1 起）：
+  老口径把 <0.40 / >0.60 的覆盖率硬推到 0/255，实测会把小尺寸图标的边缘灰度**量化成个位数
+  级**（48px bell 只剩 9 级，肉眼就是硬阶梯），现已降为 opt-in `--snap`（仅在要"近二值"时开）。
+
+  | 尺寸 | 改前（snap 0.40/0.60） | 改后（真实覆盖率，默认） |
+  |---|---|---|
+  | 22px | 中间值中位 3.3%、灰度中位 **7 级** | 中间值中位 23.1%、灰度中位 **30 级** |
+  | 24px | 中间值中位 1.4%、灰度中位 **4 级** | 中间值中位 16.7%、灰度中位 **17 级** |
+  | 56px | 中间值中位 0.8%、灰度中位 **9 级** | 中间值中位 8.2%、灰度中位 **42 级** |
+
+  （全量 305 产物实测。「中间值占比」变高**不是变糊**——1 像素宽的边缘带在越小的图上占比
+  天然越高，这才是抗锯齿本来就该有的样子；默认口径与 16× 超采样"理想覆盖率"的偏差只有
+  mean ≤ 1.9 / p95 ≤ 18（/255），selfcheck 的 **C2 条**就盯这条，改回硬整形会当场报失败。）
 
 ### 3.2 两态（off / on）
 - **有 filled 变体的 vendor 图标**（79 个）：`off` = outline、`on` = filled，
@@ -419,13 +436,26 @@ python scripts/selfcheck.py --skip-render    # 跳过全量渲染自检（快）
 |---|---|
 | A | 命名符合 `ic_<分类>_<名字>[_<风格>][_off\|_on].png` |
 | B | 每个 PNG 的**像素尺寸严格等于**生成时请求的尺寸（读 `_manifest.json`） |
-| C | α 只含 0/255 与少量抗锯齿中间值（中间值 ≤ 全图 15%）；**无孤立半透明噪点** |
+| C | α 只含 0/255 与**真实抗锯齿中间值**：中间值像素占比 ≤ `mid_limit(size)`（= min(60%, 10.5/边长)，即 22px 47.7%｜24px 43.8%｜56px 18.8%；2026-09-17 用 305 产物实测重标定，只防"糊"）；**无孤立半透明噪点** |
+| C2 | **抗锯齿保真**：抽样图标（bell/user/settings/wifi @22/48/56）与 **16× 超采样"理想覆盖率"**对拍（边界带 mean ≤ 8、p95 ≤ 32，单位 /255），且中间值**灰度级数 ≥ 12**——防"对比度整形"式量化回归（改回硬整形实测报 21 条失败） |
 | D | `catalog.json` ↔ `svg/` ↔ `vendor/` 三方对齐（引用的源都存在——vendor 线走归档/缓存解析；tags/sizes/source 齐全） |
 | E | catalog 里每个 图标×风格×状态 都能渲染成功（22px+56px）且非空白（覆盖 ≥2%） |
 | F | 同一目录内不允许多种尺寸混放 |
 | I | out/ 下不允许出现 catalog 之外的陈旧 PNG（`demo/`、`_` 前缀目录豁免） |
 
 实测（`--all` 生成 22/24/56 后）：
+
+```
+=== selfcheck: components/icons ===
+  · out\22: 305 张，最差中间值占比 42.6%（ic_device_cctv_off.png），覆盖率区间 1.4%~80.2%
+  · out\24: 305 张，最差中间值占比 34.7%（ic_weather_sleet_off.png），覆盖率区间 1.4%~69.4%
+  · out\56: 305 张，最差中间值占比 16.1%（ic_system_router-off.png），覆盖率区间 0.9%~71.9%
+  · 抗锯齿保真（vs 16× 理想覆盖率）：bell@22 mean 1.9/p95 16.0/36级；bell@48 mean 0.9/p95 18.0/44级；
+    bell@56 mean 0.8/p95 17.0/52级；user@22 mean 1.8/p95 16.0/32级
+--- PASS：915 张 PNG，0 失败，0 警告
+```
+
+> 完整输出（含 catalog / 图标来源 / 渲染自检行）见 §9。
 
 
 ---
@@ -471,21 +501,28 @@ python scripts/selfcheck.py --skip-render    # 跳过全量渲染自检（快）
 ```
 === selfcheck: components/icons ===
   · catalog: 203 个图标 / 305 张产物 / 自绘矢量源 10（vendor 引用 269）
-  · 图标来源：归档 tabler-3.46.0.pack.tgz（5774 条目 / 0.43 MB）｜缓存 out/.icons-cache（269 文件）｜磁盘散件 无
+  · 图标来源：归档 tabler-3.46.0.pack.tgz（5774 条目 / 0.43 MB）｜缓存 out/.icons-cache（287 文件）｜磁盘散件 无
   · out\22: manifest 305 张（size=22x22, color=255,255,255）
-  · ic_system_wifi-0.png 属合法极小图形（覆盖率 0.62%，白名单）
-  · out\22: 305 张，最差中间值占比 9.7%（ic_device_wash-machine.png），覆盖率区间 0.6%~66.1%
+  · ic_system_wifi-0.png 属合法极小图形（覆盖率 1.45%，白名单）
+  · out\22: 305 张，最差中间值占比 42.6%（ic_device_cctv_off.png），覆盖率区间 1.4%~80.2%
   · out\24: manifest 305 张（size=24x24, color=255,255,255）
-  · out\24: 305 张，最差中间值占比 9.0%（ic_system_settings_off.png），覆盖率区间 0.7%~68.8%
+  · ic_system_wifi-0.png 属合法极小图形（覆盖率 1.39%，白名单）
+  · out\24: 305 张，最差中间值占比 34.7%（ic_weather_sleet_off.png），覆盖率区间 1.4%~69.4%
   · out\56: manifest 305 张（size=56x56, color=255,255,255）
-  · out\56: 305 张，最差中间值占比 2.8%（ic_system_settings_off.png），覆盖率区间 0.5%~66.7%
+  · ic_system_wifi-0.png 属合法极小图形（覆盖率 0.89%，白名单）
+  · out\56: 305 张，最差中间值占比 16.1%（ic_system_router-off.png），覆盖率区间 0.9%~71.9%
   · 渲染自检：305 个 图标×风格×状态 × [22, 56]
+  · 抗锯齿保真（vs 16× 理想覆盖率）：bell@22 mean 1.9/p95 16.0/36级；bell@48 mean 0.9/p95 18.0/44级；
+    bell@56 mean 0.8/p95 17.0/52级；user@22 mean 1.8/p95 16.0/32级
 --- PASS：915 张 PNG，0 失败，0 警告
 ```
 
-> 实测（2026-09-17，v0.3.0）：`out/` 整目录删掉后按 §2.1 重建 → 305×3 张 PNG + 7 张 sheet
-> 全部重生，selfcheck 915 张 0 失败；期间缓存从 0 长到 269 个文件（= 真正被用到的 SVG 数，
-> 其余 5500+ 个 glyph **一个都没解出来**）。
+> 实测（2026-09-17，v0.3.1，抗锯齿去量化口径）：`out/` 整目录删掉后按 §2.1 重建 → 305×3 张
+> PNG + 7 张 sheet 全部重生，selfcheck 915 张 **0 失败**；缓存从 0 长到 287 个文件（= 真正被用
+> 到的 SVG 数，其余 5500+ 个 glyph **一个都没解出来**）。
+
+> 实测（2026-09-17，v0.3.0）：单归档 + 按需解首次落地，`out/` 817 个生成物退出版本库；
+> gen_icons.py 的所有入口（`--list`/`--vendor-name`/`--svg`/`--set`/`--sheet`）行为与归档前一致。
 
 ---
 
@@ -493,6 +530,7 @@ python scripts/selfcheck.py --skip-render    # 跳过全量渲染自检（快）
 
 | 版本 | 日期 | 内容 |
 |---|---|---|
-| **0.3.0** | 2026-09-17 | **单归档 + 按需解，离线优先（方案 A）**：①vendor 的 5777 个 SVG 散件（3.95 MB）→ **1 个归档** `vendor/tabler-3.46.0.pack.tgz`（455,379 B，sha256 `a0ba69f2…1c95`，确定性可复现），`map.json` 收进归档，`index.json`/`LICENSE`/`VERSION.txt` 留在归档外；②`gen_icons.py` 新增**图标来源解析**（① 缓存 `out/.icons-cache/` → ② 归档随机读按需解 → ③ 可选远端 npm 拉取，**默认关闭**，需 `--fetch-remote`）——`--vendor-name`/`--svg`/`--set`/`--sheet` 用法与输出不变；③新增 `--list-tabler`（Tabler 原生名全量）与 `--pack-info`（来源状态）；④`out/` 817 个生成物 `git rm --cached` + 进 `.gitignore`（现场可重建，实测 305×3 + 7 sheet 全重生）；⑤`svg_retired/` 163 文件移出仓库（`author_svg.py` 可逐字节重生）；⑥新增 `scripts/make_pack.py`（打归档 / `--verify` / `--from-npm` 离线重建）；⑦修 `--vendor-name wifi` 被 `system.wifi-full` 别名抢匹配（改为精确名优先）。**仓库内 `components/icons/`：6801 文件 / 6.30 MB → 48 文件 / 1.63 MB** |
+| **0.3.1** | 2026-09-17 | **抗锯齿去量化（钟工拍板“修改”）**：48×48 载体图标肉眼看有硬阶梯 —— 根因不是超采样（图标走 SVG，8× 超采样 + BOX 面积平均已是精确覆盖率），而是收尾的 **α 对比度整形**把覆盖率 <0.40 推成 0、>0.60 推成 255，边缘灰度被量化成个位数级。①`svgmini.render_svg(..., snap=False)` 改为默认：**真实覆盖率** + 只清「覆盖率 <0.08 且 8 邻域无内容」的孤立噪点（老口径保留为 `snap=True`）；②`gen_icons.py` 新增 **`--snap`**（opt-in）贯穿 `--out`/`--sheet`/compose 全路径，`--ss` 不变；③`catalog.json` 的 `render.antialias` 写死新口径（`gen_catalog.py` 生成，模块版本 → 0.3.1）；④实测 A/B（全量 305 产物）：灰度中位数 22px **7 → 30 级**、24px **4 → 17 级**、56px **9 → 42 级**（bell@48：9 → 44 级），孤立噪点仍为 **0**；⑤selfcheck **C 条口径随尺寸重标定**（`mid_limit(size)= min(60%, 10.5/边长)`，依据实测 22px max 42.6% / 24px 34.7% / 56px 16.1%），并**新增 C2 条抗锯齿保真**（抽样图标对拍 16× 超采样理想覆盖率：mean ≤ 8、p95 ≤ 32（/255），灰度级数 ≥ 12 —— 改回硬整形会当场报 21 条失败）。 |
+| 0.3.0 | 2026-09-17 | **单归档 + 按需解，离线优先（方案 A）**：①vendor 的 5777 个 SVG 散件（3.95 MB）→ **1 个归档** `vendor/tabler-3.46.0.pack.tgz`（455,379 B，sha256 `a0ba69f2…1c95`，确定性可复现），`map.json` 收进归档，`index.json`/`LICENSE`/`VERSION.txt` 留在归档外；②`gen_icons.py` 新增**图标来源解析**（① 缓存 `out/.icons-cache/` → ② 归档随机读按需解 → ③ 可选远端 npm 拉取，**默认关闭**，需 `--fetch-remote`）——`--vendor-name`/`--svg`/`--set`/`--sheet` 用法与输出不变；③新增 `--list-tabler`（Tabler 原生名全量）与 `--pack-info`（来源状态）；④`out/` 817 个生成物 `git rm --cached` + 进 `.gitignore`（现场可重建，实测 305×3 + 7 sheet 全重生）；⑤`svg_retired/` 163 文件移出仓库（`author_svg.py` 可逐字节重生）；⑥新增 `scripts/make_pack.py`（打归档 / `--verify` / `--from-npm` 离线重建）；⑦修 `--vendor-name wifi` 被 `system.wifi-full` 别名抢匹配（改为精确名优先）。**仓库内 `components/icons/`：6801 文件 / 6.30 MB → 48 文件 / 1.63 MB** |①vendor 的 5777 个 SVG 散件（3.95 MB）→ **1 个归档** `vendor/tabler-3.46.0.pack.tgz`（455,379 B，sha256 `a0ba69f2…1c95`，确定性可复现），`map.json` 收进归档，`index.json`/`LICENSE`/`VERSION.txt` 留在归档外；②`gen_icons.py` 新增**图标来源解析**（① 缓存 `out/.icons-cache/` → ② 归档随机读按需解 → ③ 可选远端 npm 拉取，**默认关闭**，需 `--fetch-remote`）——`--vendor-name`/`--svg`/`--set`/`--sheet` 用法与输出不变；③新增 `--list-tabler`（Tabler 原生名全量）与 `--pack-info`（来源状态）；④`out/` 817 个生成物 `git rm --cached` + 进 `.gitignore`（现场可重建，实测 305×3 + 7 sheet 全重生）；⑤`svg_retired/` 163 文件移出仓库（`author_svg.py` 可逐字节重生）；⑥新增 `scripts/make_pack.py`（打归档 / `--verify` / `--from-npm` 离线重建）；⑦修 `--vendor-name wifi` 被 `system.wifi-full` 别名抢匹配（改为精确名优先）。**仓库内 `components/icons/`：6801 文件 / 6.30 MB → 48 文件 / 1.63 MB** |
 | 0.2.0 | 2026-09-16 | **转向 vendor**：收录 Tabler Icons 3.46.0（MIT）152 个语义图标（含 7 条 compose 组合），自绘只保留两轮车仪表 5 个；渲染器补齐 Tabler 真实口径（根属性继承、`S/T` 指令、**nonzero 绕序挖孔**、跳过透明包围盒、`A` 弧转采样）；新增 `--vendor-name` / `--svg` / `--size WxH` / compose alpha 合成 / 两态自动配对；`catalog.json` 改为 `gen_catalog.py` 生成（禁止手写）；selfcheck 增加"陈旧产物"断言（I） |
 | 0.1.0 | 2026-09-15 | 首版：自绘 86 图标（天气/开关选项/系统/设备）× ios+material，162 张产物。**已被 0.2.0 取代**，几何留档在 `svg_retired/` 与 `scripts/author_svg.py` |

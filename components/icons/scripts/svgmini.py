@@ -21,7 +21,14 @@
 
 渲染管线（与 ``temp/gen_wx_icons2.py`` 同思路，但输入是矢量而非位图遮罩）：
   设计网格用户单位 → 放大 ss 倍画布做**几何级**光栅化 → BOX 面积平均降采样（=精确覆盖率）
-  → α 对比度整形 + 去雀斑 → 按 ``--color`` 烘焙纯色（RGB 恒等于该颜色，只有 alpha 变化）。
+  → 去孤立噪点 →（**可选** ``snap=True``：α 对比度整形）→ 按 ``--color`` 烘焙纯色
+  （RGB 恒等于该颜色，只有 alpha 变化）。
+
+**2026-09-17 口径修正（钟工拍板）**：默认**不再做 α 对比度整形**，用 BOX 面积平均出来的
+**真实覆盖率**当 alpha，只清「极小覆盖率 + 孤立」的噪点。原因：0.40/0.60 硬推虽然让
+「中间值像素占比」这个指标好看，代价是**小尺寸图标的边缘灰度被量化成个位数级**——实测
+48px 的 bell 只剩 9 级（中间 7 级），肉眼看就是硬阶梯锯齿；同一张图不做整形是 44 级
+（中间 42 级）。老行为保留为显式开关 ``--snap``（见 ``gen_icons.py``）。
 """
 import math
 import re
@@ -37,7 +44,8 @@ _CUBIC_STEPS = 24      # 三次贝塞尔采样段数（8x 超采样下足够平�
 _QUAD_STEPS = 16
 _ARC_STEPS_PER_RAD = 16.0
 
-SNAP_LO, SNAP_HI = 0.40, 0.60     # α 对比度整形的过渡带（见 _snap_alpha）
+SNAP_LO, SNAP_HI = 0.40, 0.60     # α 对比度整形的过渡带（**仅 --snap 显式开启时**生效）
+NOISE_COVER = 0.08                # 默认路径：只清「覆盖率 < 该值 **且** 8 邻域无内容」的孤立点
 
 
 def _n_steps(pts, base):
@@ -386,21 +394,18 @@ def _elem_mask(el, k, S, stroke_base_ss, base_units):
 
 
 # --------------------------------------------------------------------------- #
-# 3. α 整形
+# 3. α 收尾：去孤立噪点（默认）+ 可选对比度整形
 # --------------------------------------------------------------------------- #
-def _snap_alpha(a, lo=None, hi=None):
-    """把"覆盖率"整形成"接近二值、但保留亚像素位置"的 alpha。
+def _despeckle(a, max_level=255):
+    """把"8 邻域无任何内容"的孤立半透明像素清零（**只清 ≤ max_level 的**）。
 
-    为什么：8× 超采样 + 面积平均给的是真实覆盖率，但一条细线的边缘像素大多落在 0.2~0.8，
-    中间值像素占比很高（22px 图标能到 20%+）：既显得"糊"，也会触发质检噪声。
-    只把 [lo,hi] 之外的覆盖率推到 0/255，[lo,hi] 内线性映射（0.5 → 0.5，边沿位置不失真），
-    过渡带 ≈0.2 像素 → 中间值像素减半以上，视觉依旧平滑（不是硬阈值二值化）。
-    最后去雀斑：把"8 邻域无内容"的孤立半透明像素清零。
+    max_level=255 → 老口径（任何孤立半透明都清）；默认路径用 max_level=20
+    （≈ 覆盖率 0.08），即**只清极弱离群点，绝不动真实边缘灰度**。
     """
-    c = np.asarray(a).astype(np.float32) / 255.0
-    lo = SNAP_LO if lo is None else lo
-    hi = SNAP_HI if hi is None else hi
-    al = np.round(np.clip((c - lo) / (hi - lo), 0.0, 1.0) * 255.0).astype(np.uint8)
+    al = np.asarray(a).astype(np.uint8).copy()
+    m = (al > 0) & (al < 255) & (al <= max_level)
+    if not m.any():
+        return al
     solid = al > 0
     nb = np.zeros_like(solid)
     for dy in (-1, 0, 1):
@@ -408,8 +413,29 @@ def _snap_alpha(a, lo=None, hi=None):
             if dx == 0 and dy == 0:
                 continue
             nb |= np.roll(np.roll(solid, dy, axis=0), dx, axis=1)
-    al[(al < 255) & solid & ~nb] = 0
+    al[m & ~nb] = 0
     return al
+
+
+def _clean_noise(a, floor=NOISE_COVER):
+    """默认路径的收尾：只清「覆盖率 < floor（0.08）且孤立」的像素。"""
+    return _despeckle(a, max_level=int(round(max(0.0, min(1.0, floor)) * 255.0)))
+
+
+def _snap_alpha(a, lo=None, hi=None):
+    """（**仅 --snap / snap=True**）把"覆盖率"整形成"接近二值、但保留亚像素位置"的 alpha。
+
+    历史口径（v0.3.0 及更早的默认值，2026-09-17 改为 opt-in）：把 [lo,hi] 之外的覆盖率推到
+    0/255，[lo,hi] 内线性映射（0.5 → 0.5，边沿位置不失真），过渡带 ≈0.2 像素。
+    代价（实测）：小尺寸图标的边缘灰度被量化到个位数级（48px bell 9 级 / user 5 级），
+    肉眼可见硬阶梯 → 只在对"接近二值"有硬要求的场合（如二值化到设备单色屏）才开。
+    最后沿用老口径去雀斑（任何孤立半透明像素）。
+    """
+    c = np.asarray(a).astype(np.float32) / 255.0
+    lo = SNAP_LO if lo is None else lo
+    hi = SNAP_HI if hi is None else hi
+    al = np.round(np.clip((c - lo) / (hi - lo), 0.0, 1.0) * 255.0).astype(np.uint8)
+    return _despeckle(al, 255)
 
 
 # --------------------------------------------------------------------------- #
@@ -420,11 +446,14 @@ _INHERIT = ('fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin
 
 
 def render_svg(svg_text, size, color=(255, 255, 255), ss=8, canvas=None, grid=None,
-               snap=True, stroke_px=None):
+               snap=False, stroke_px=None, noise_floor=NOISE_COVER):
     """SVG 文本 → RGBA 图。RGB 恒等于 color，alpha = 覆盖率。
 
     size    : 正方形边长（像素）；产出图严格 size×size
     canvas  : (w,h) 非正方形画布：按 min(w,h) 渲染后**等比居中留白**（禁止拉伸变形）
+    snap    : False（默认，2026-09-17 起）= 真实覆盖率 + 只清极弱孤立噪点；
+              True = 老口径 α 对比度整形（0.40/0.60 硬推，边缘灰度会被量化）
+    noise_floor: 默认路径的孤立噪点清理上限（覆盖率，0.08 = 只清极弱离群点）
     stroke_px: 直接指定基准线宽像素（不传则按基准单位换算 + 半像素对齐）
     线宽规则：基准 = 根节点 data-base-stroke，缺省取根节点 stroke-width，再缺省 1.75；
               px = max(1, round(基准 × size / 网格 × 2) / 2)
@@ -468,6 +497,8 @@ def render_svg(svg_text, size, color=(255, 255, 255), ss=8, canvas=None, grid=No
         (size, size), Image.BOX)
     if snap:
         alpha = Image.fromarray(_snap_alpha(alpha), 'L')
+    else:
+        alpha = Image.fromarray(_clean_noise(alpha, noise_floor), 'L')
     if canvas:
         cw, ch = int(canvas[0]), int(canvas[1])
         if (cw, ch) != (size, size):

@@ -2,7 +2,12 @@
 """gen_icons.py —— 图标生成器（**唯一入口**）
 
 把矢量源（vendor 收录的 Tabler SVG + 少量自绘图标）按需渲染成任意分辨率的**单色烘焙 PNG**
-（RGB 恒等于 --color，alpha = 覆盖率；8× 超采样 + BOX 面积平均降采样 + α 整形 = 边缘干净）。
+（RGB 恒等于 --color，alpha = 覆盖率；8× 超采样 + BOX 面积平均降采样 = **真实覆盖率**，
+边缘灰阶完整保留；只在末尾清»极小覆盖率 + 孤立«的噪点）。
+
+⚠️ **抗锯齿口径（2026-09-17 改）**：默认**不做** α 对比度整形；老口径（把 <0.40/>0.60 的
+覆盖率推到 0/255）会让小尺寸图标的边缘灰度被量化成个位数级（实测 48px bell 只剩 9 级、
+肉眼硬阶梯），已降为 **opt-in `--snap`**（只在需要"近二值"时用）。
 
 图标源是**按需加载**的（2026-09-17 起）：vendor 的 SVG 不再是 5777 个散件，而是打成
 `vendor/tabler-3.46.0.pack.tgz`（见 `scripts/make_pack.py`）。`--vendor-name` / `--svg` /
@@ -40,6 +45,9 @@
     --state off|on   只出某个状态（两态图标才有）
     --set X          X = 分类(weather/control/system/device/vehicle) / 风格(ios/material/tabler) / vendor / all
     输出命名         ic_<分类>_<名字>[_<风格>][_off|_on].png；同时写 `_manifest.json`
+
+    --ss N           超采样倍数（默认 8；越大边缘越贴近几何真值、越慢）
+    --snap           老口径：α 对比度整形（0.40/0.60 硬推 → 边缘灰度被量化；默认关）
 
 依赖：Python3 + Pillow + numpy（本仓库已有）；**不联网**。
 """
@@ -487,15 +495,19 @@ def _paint(img, color):
     return Image.fromarray(arr, 'RGBA')
 
 
-def render_variant(variant, state, size, color, ss=8, canvas=None):
-    """按 variant（vendor / compose / selfdrawn）渲染一张图。"""
+def render_variant(variant, state, size, color, ss=8, canvas=None, snap=False):
+    """按 variant（vendor / compose / selfdrawn）渲染一张图。
+
+    snap=False（默认，2026-09-17 起）= 真实覆盖率（只清极弱孤立噪点）；
+    snap=True = 老口径 α 对比度整形（0.40/0.60 硬推，小尺寸边缘会硬阶梯）。
+    """
     from PIL import Image
     kind = variant['kind']
     if kind == 'compose':
         canvas_img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
         for part in variant['parts'][state]:
             sub = max(4, int(round(size * part['scale'])))
-            img = svgmini.render_file(resolve_source(part['svg']), sub, color, ss=ss)
+            img = svgmini.render_file(resolve_source(part['svg']), sub, color, ss=ss, snap=snap)
             dx = int(round(part['dx'] * size))
             dy = int(round(part['dy'] * size))
             canvas_img.alpha_composite(img, ((size - sub) // 2 + dx, (size - sub) // 2 + dy))
@@ -505,11 +517,11 @@ def render_variant(variant, state, size, color, ss=8, canvas=None):
             return base
         return canvas_img
     rel = variant['svg'][state] if state in variant.get('svg', {}) else list(variant['svg'].values())[0]
-    return svgmini.render_file(resolve_source(rel), size, color, ss=ss, canvas=canvas)
+    return svgmini.render_file(resolve_source(rel), size, color, ss=ss, canvas=canvas, snap=snap)
 
 
-def render_one(job, size, color, ss=8, canvas=None):
-    return render_variant(job['variant'], job['state'], size, color, ss=ss, canvas=canvas)
+def render_one(job, size, color, ss=8, canvas=None, snap=False):
+    return render_variant(job['variant'], job['state'], size, color, ss=ss, canvas=canvas, snap=snap)
 
 
 def write_png(img, out_dir, name):
@@ -523,7 +535,7 @@ def write_png(img, out_dir, name):
 # contact sheet（审阅用）
 # --------------------------------------------------------------------------- #
 def make_sheet(jobs, size, out_path, color=(255, 255, 255), ss=8, cols=None,
-               cell=None, label=True):
+               cell=None, label=True, snap=False):
     from PIL import Image, ImageDraw, ImageFont
     n = len(jobs)
     if not n:
@@ -545,7 +557,7 @@ def make_sheet(jobs, size, out_path, color=(255, 255, 255), ss=8, cols=None,
         r, c = divmod(i, cols)
         x = pad + c * cell
         y = pad + r * (cell + lab_h)
-        img = render_one(j, size, color, ss=ss)
+        img = render_one(j, size, color, ss=ss, snap=snap)
         sheet.alpha_composite(img, (x + (cell - size) // 2, y + (cell - size) // 2))
         if label:
             txt = j['png'][:-4]
@@ -644,6 +656,9 @@ def build_parser():
     p.add_argument('--sheet', help='生成 contact sheet 到该 png（配合 --size/--set/--name）')
     p.add_argument('--cols', type=int, help='sheet 列数')
     p.add_argument('--ss', type=int, default=8, help='超采样倍数（默认 8）')
+    p.add_argument('--snap', action='store_true',
+                   help='老口径：α 对比度整形（把 <0.40/>0.60 的覆盖率推到 0/255，'
+                        '边缘灰度会被量化成个位数级）；默认关闭 = 真实覆盖率')
     p.add_argument('--json', action='store_true', help='以 JSON 输出结果摘要')
     return p
 
@@ -793,7 +808,7 @@ def main(argv):
     written = []
     if args.out:
         for j in jobs:
-            img = render_one(j, size, color, ss=args.ss, canvas=canvas)
+            img = render_one(j, size, color, ss=args.ss, canvas=canvas, snap=args.snap)
             p = write_png(img, os.path.abspath(args.out), j['png'])
             written.append(dict(png=j['png'], path=p, size=args.size, w=w, h=h,
                                 color=list(color), icon=j['icon'], style=j['style'],
@@ -818,7 +833,7 @@ def main(argv):
     sheet_path = None
     if args.sheet:
         sheet_path = make_sheet(jobs, size, os.path.abspath(args.sheet), color,
-                                ss=args.ss, cols=args.cols)
+                                ss=args.ss, cols=args.cols, snap=args.snap)
 
     if args.json:
         print(json.dumps(dict(count=len(written), size=args.size, color=list(color),

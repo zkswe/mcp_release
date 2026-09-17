@@ -71,20 +71,26 @@ python components/icons/scripts/gen_icons.py --vendor-set common --size 22 --out
 
 ---
 
-## 4. 小尺寸策略（实测，2026-09-16）
+## 4. 小尺寸策略（实测，2026-09-17 抗锯齿去量化后重测）
 
 Tabler 的线宽是 2px@24 网格；缩到 **22px 时只剩 ~1.83px**。本套生成器用
-「**半像素对齐线宽 + α 对比度整形（0.40/0.60 过渡带）+ 去雀斑**」处理，
-实测 **22px 中间值像素 ≤ 9.7%**、边缘不发虚：
+「**半像素对齐线宽 + 8× 超采样真实覆盖率 + 只清极弱孤立噪点**」处理——即
+alpha = BOX 面积平均出来的**真实覆盖率**（不做 α 对比度整形），边缘灰度完整（22px 中位
+30 级、56px 中位 42 级），既不硬阶梯也不糊：
 
 | 控件尺寸 | 用法 |
 |---|---|
-| **≥ 22px** | outline 即可（本套已整形，22px 不糊） |
+| **≥ 22px** | outline 即可（真实覆盖率抗锯齿，22px 不发虚、无硬阶梯） |
 | **≤ 20px** | 建议 filled（实心），密集图形（toggle/bell/bulb）更清楚 |
 | ≤ 16px | 未纳入默认清单，需要时 `--size 16` 自行确认 |
 
+> ⚙️ **老口径已降为 opt-in**：v0.3.1 前默认的「α 对比度整形（<0.40/>0.60 推 0/255）」会把
+> 小尺寸边缘灰度**量化成个位数级**（48px bell 只有 9 级 → 肉眼硬阶梯，这是 2026-09-17 修的 bug）。
+> 确实需要"近二值"时用 `python components/icons/scripts/gen_icons.py --snap ...`。
+>
 > ⚠️ 重要：设备端**不能靠字体渲染图标**（FlyThings 无 tint，小字号字形糊、像素对不齐）→ 图标一律烘 PNG。
-> 纪律复核：`python components/icons/scripts/selfcheck.py`（命名/尺寸严格/透明度/清单一致性/全量可渲染）。
+> 纪律复核：`python components/icons/scripts/selfcheck.py`（命名/尺寸严格/透明度【C 条：上限随尺寸】/
+> 抗锯齿保真【C2 条：对拍 16× 理想覆盖率】/ 清单一致性/全量可渲染）。
 
 ---
 
@@ -104,7 +110,8 @@ Tabler 的线宽是 2px@24 网格；缩到 **22px 时只剩 ~1.83px**。本套�
 | 想"运行时把图标换成另一个颜色" | 做不到（无 tint）；重新生成一张烘焙好颜色的图 |
 | 直接往工程里塞 SVG | FlyThings 不渲染 SVG → 必须烘成 PNG |
 | 图比控件盒大/小 | 引擎会拉伸 → 按控件盒尺寸生成（`--size WxH`） |
-| 图标糊成一团 | 控件 ≤20px 却用了 outline → 换 filled（本套 ≥22px outline 已整形，不发虚） |
+| 图标糊成一团 | 控件 ≤20px 却用了 outline → 换 filled（本套 ≥22px outline 已按真实覆盖率抗锯齿，不发虚） |
+| 图标边缘有硬阶梯 | 有人重开了 `--snap`（α 对比度整形，把边缘量化） → 去掉 `--snap` 重新生成 |
 | 语义名写错/写中文描述 | 生成器按 `catalog.json` 的语义名解析，报错会提示相近候选 |
 | 想用 SF Symbols 那一套 | 许可禁止再分发；观感需求用 Tabler + 少量自绘满足 |
 | 找不到 `vendor/tabler/icons/xxx.svg` | v0.3.0 起散件已收进 `vendor/tabler-3.46.0.pack.tgz`（**正常，不是损坏**）：生成器会自动按需解到 `out/.icons-cache/`；要看清单用 `--list-tabler`，要看状态用 `--pack-info` |

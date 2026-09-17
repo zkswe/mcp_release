@@ -35,7 +35,7 @@ sys.path.insert(0, HERE)
 import gen_icons           # noqa: E402  （out_name 命名规则的唯一实现）
 import author_svg          # noqa: E402  （自绘图标表）
 
-VERSION = '0.3.0'
+VERSION = '0.3.1'
 VENDOR_DIR = os.path.join(ROOT, 'vendor', 'tabler')
 VENDOR_SIZES = [16, 20, 22, 24, 32, 44, 56]
 SELF_SIZES = [22, 24, 32, 44, 56]
@@ -313,7 +313,11 @@ def main(argv):
         render=dict(twoState='有 filled 的 vendor 图标：off=outline、on=filled；'
                              '无 filled：单态（加 --state 可强制出 _off/_on 同名图）',
                     compose='先各自栅格化再 alpha 合成（描边不互相穿插）',
-                    stroke='px = max(1, round(基准 × size / 网格 × 2) / 2)'),
+                    stroke='px = max(1, round(基准 × size / 网格 × 2) / 2)',
+                    antialias='8× 超采样 + BOX 面积平均 = **真实覆盖率**（边缘灰度完整保留）；'
+                              '末尾只清「覆盖率 <0.08 且 8 邻域无内容」的孤立噪点。'
+                              'v0.3.1 起**默认不做** α 对比度整形（老口径 0.40/0.60 硬推会把小尺寸'
+                              '边缘量化成个位数级，已降为 opt-in：`gen_icons.py --snap`）'),
         palette=PALETTE,
         categories=CATEGORIES,
         counts=dict(icons=len(entries), vendor=len(vendor), selfdrawn=len(selfdrawn)),
