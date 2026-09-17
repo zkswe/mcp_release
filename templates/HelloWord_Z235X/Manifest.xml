@@ -7,5 +7,7 @@
         <package id="log" version="1.0.0"/>
         <package id="zkhardware" version="1.1.0"/>
         <package id="zknet" version="1.1.0"/>
+        <!-- 2026-09-17 实测补上：fun 生成的 generated/*.h 依赖 base/functional.h，缺这条会 fatal error: base/functional.h: No such file or directory -->
+        <package id="base-utility" version="^10.0.0"/>
     </dependencies>
 </manifest>

@@ -93,6 +93,25 @@ INIT_UI_EVENT_BINDINGS
 2. 不要靠"改 activity"来影响 fun 构建——fun 根本不编译它；activity 目录只在 IDE 体系里有意义。
 3. 回调/定时器注册在 fun 体系里由 `generated/event_dispatcher.cpp` 等生成代码接管（`REGISTER_ACTIVITY_TIMER_TAB` 仍按纪律写在 logic 里）。
 
+## 4.6 平台工具链放哪 + 模板依赖最低集（2026-09-17 Z235X 实测）
+
+**工具链目录约定**：`<fun 安装目录>/toolchains/<平台小写键>/`（例如 `C:/zkswe/fun/toolchains/z235x/`），
+目录内层级与其它平台一致：`bin/ include/ lib/ libexec/ share/` + 目标三元组目录（如 `arm-unknown-linux-gnueabihf/`）。
+
+- 缺工具链时 `fun build -p <平台>` 会直接 **panic：`platform toolchain url must not be empty`**（`core/platform.go:88`）——这不是工程问题，是平台工具链没装。
+- 工具链**不随 MCP/仓库分发**（体积大、有授权问题）：拿到压缩包后解压到上面的目录即可，`fun` 会立刻使用（实测 `fun build -p Z235X` 的编译命令会变成 `.../toolchains/z235x/bin/arm-unknown-linux-gnueabihf-gcc.exe`）。
+
+**模板 Manifest 的依赖最低集**：新平台模板除了 `easyui / log / zkhardware / zknet`，
+**必须带 `base-utility`**——`fun` 生成的 `generated/event_dispatcher.h` 等会 `#include <base/functional.h>`，
+缺这条会 `fatal error: base/functional.h: No such file or directory`。
+参考写法（Z235X 模板已按此补齐）：`<package id="base-utility" version="^10.0.0"/>`；
+`fun install` 会从 `package.flythings.cn` 拉到实测可用版本（Z235X 实测 `base-utility@10.11.0` + `ext4@0.0.1`）。
+
+**Z235X 建工程 → 编译闭环实测（2026-09-17）**
+1. `flythings_create_project(platform="Z235X")`（或 `fun create --platform=z235x`）→ 出工程；
+2. 工具链解压到 `toolchains/z235x`；
+3. `fun install`（拉 base-utility 等）→ `fun build -p Z235X` → **9/9 编译链接成功，产出 `.fun/z235x/libzkgui.so`（217,240 B）**。
+
 ## 5. 纪律与惯例
 
 - 工具侧动作优先走 MCP（`flythings_build_ui_flow` / `flythings_add_package` / `flythings_pack_upgrade`），**禁止手搓 fun/adb 命令**（MCP 已处理 retry、设备选择、i18n 盲点等）

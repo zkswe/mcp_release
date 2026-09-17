@@ -54,7 +54,7 @@ PLATFORMS = {
     },
     'Z235X': {
         'arch': 'arm', 'template': 'HelloWord_Z235X', 'binTool': 'z235x',
-        'alias': (), 'note': 'ARM（SSD2355）；设备端预编译工具待补（bin_tools/z235x 仅占位说明）',
+        'alias': (), 'note': 'ARM（SSD2355）；模板已带 base-utility（缺它 fun build 会 fatal error: base/functional.h）；编译需本地把工具链放到 <fun 安装目录>/toolchains/z235x（未随包分发，见 cli-fun-toolchain.md §4.6）；设备端预编译工具待补（bin_tools/z235x 仅占位说明）',
     },
 }
 

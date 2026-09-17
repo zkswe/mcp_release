@@ -2,7 +2,7 @@
   "schema": 1,
   "generatedBy": "scripts/gen_manifest.py",
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY 表后重新生成，勿手改本文件",
-  "version": "0.27.80-open",
+  "version": "0.27.81-open",
   "build": "2026-09-17",
   "toolCount": 35,
   "cli": {
@@ -73,7 +73,7 @@
       "binTool": "z235x",
       "packageKey": "z235x",
       "buildable": true,
-      "note": "ARM（SSD2355）；设备端预编译工具待补（bin_tools/z235x 仅占位说明）"
+      "note": "ARM（SSD2355）；模板已带 base-utility（缺它 fun build 会 fatal error: base/functional.h）；编译需本地把工具链放到 <fun 安装目录>/toolchains/z235x（未随包分发，见 cli-fun-toolchain.md §4.6）；设备端预编译工具待补（bin_tools/z235x 仅占位说明）"
     },
     {
       "platform": "Z6S",
@@ -522,7 +522,7 @@
   "docs": {
     "knowledgeFiles": 66,
     "wikiFiles": 128,
-    "ragChunks": 1415,
+    "ragChunks": 1417,
     "ragPaths": 194
   }
 }
