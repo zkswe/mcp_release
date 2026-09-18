@@ -7,7 +7,7 @@
 
 | 平台 | 可用性 | 前置条件 | 实测值 | 已知限制 |
 |---|---|---|---|---|
-| **Z21**（1024×600，36MB RAM，无 GPU） | ✅ **可用（真机验收）** | ① 工程 `Manifest.xml` 声明 easyui/log/base-utility；② 宿主提供 **≥ visibleRows 个 `textview`** 承载文字；③ `onUI_init` 里 `INIT_UI_TIMERS` + `REGISTER_ACTIVITY_TIMER_TAB = {{0,16}}`；④ `onmainActivityTouchEvent` 转发 `MotionEvent`；⑤ **滚轮放进带偏移的容器时必须 `setTouchOrigin(容器left, 容器top)`** | 两轮合计 `tick()` **avg 8~10 µs / max 12~26 µs**；单轮 avg 1~2 µs / max 4~6 µs；进程 CPU **0.7%**（静止）/ **18.4%**（连续甩动 10 次/5s，单核口径；0.2.0 加 36fps 布局上限后，优化前 26.2%）；`VmRSS 5824 kB`（26 控件工程）；**5 列同帧 tick（TDesign 案例，页面 window 内）**：整页 35 控件，联动/滚动/回填均验证 | ⚠ 触摸坐标是**父相对**（`getPosition()`）而事件是**屏幕绝对**：装在带偏移容器里必须 `setTouchOrigin()`，否则 hitTest 整列偏移、拖不动（0.1.0 阶段 4 真实踩到并已提供接口）；⚠ `setIndex(animate=true)` 不跟踪目标（“甩一下”语义）；多列同帧同步未做（联动仍是「停下后重建」） |
+| **Z21**（1024×600，36MB RAM，无 GPU） | ✅ **可用（真机验收）** | ① 工程 `Manifest.xml` 声明 easyui/log/base-utility；② 宿主提供 **≥ visibleRows 个 `textview`** 承载文字；③ `onUI_init` 里 `INIT_UI_TIMERS` + `REGISTER_ACTIVITY_TIMER_TAB = {{0,16}}`；④ `onmainActivityTouchEvent` 转发 `MotionEvent`；⑤ **滚轮放进带偏移的容器时必须 `setTouchOrigin(容器left, 容器top)`** | 两轮合计 `tick()` **avg 8~10 µs / max 12~26 µs**；单轮 avg 1~2 µs / max 4~6 µs；进程 CPU **0.7%**（静止）/ **~26%**（连续甩动 10 次/5s，单核口径；曾试 36fps 布局上限降到 18.4%，但出现文字重影 -> 已撤回）；`VmRSS 5824 kB`（26 控件工程）；**5 列同帧 tick（TDesign 案例，页面 window 内）**：整页 35 控件，联动/滚动/回填均验证 | ⚠ 触摸坐标是**父相对**（`getPosition()`）而事件是**屏幕绝对**：装在带偏移容器里必须 `setTouchOrigin()`，否则 hitTest 整列偏移、拖不动（0.1.0 阶段 4 真实踩到并已提供接口）；⚠ `setIndex(animate=true)` 不跟踪目标（“甩一下”语义）；多列同帧同步未做（联动仍是「停下后重建」） |
 | **F133** / F135 | ⚠ 仅编译（`fun build -p F136` 平台串 = RISC-V） | 同上 | **未上机** | 未验证 |
 | **Z20** | ⚠ 未验证 | 同上 | — | 未验证（Z20 字库/内存更紧，行池过大要评估） |
 | **T113** | ⚠ 未验证 | 同上 | — | 未验证 |

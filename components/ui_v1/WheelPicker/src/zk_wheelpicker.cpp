@@ -309,11 +309,10 @@ bool WheelPicker::tick() {
         im->dirtyStatic = false;
     }
 
-    /* ★ 帧率上限（~36fps）：拖动/滑行中文字布局最多每 28ms 一次，位置仍按真实 dt 积分。
-     *   本平台重绘成本主要在框架 blit（5 列文字池 + 滚轮区），降布局频率直接降 CPU。 */
-    const double LAYOUT_MIN_DT = 0.028;
-    if (im->dirtyText && (t0 - im->layoutT) >= LAYOUT_MIN_DT) {
-        im->layoutT = t0;
+    /* [!] 2026-09-18 16:26 钟工真机反馈「日期选择出现文字重影」——根因是这里曾加过
+     *   「布局帧率上限（~36fps）」：跳过布局帧时，该隐藏/该移动的行没被处理 -> 留残影。
+     *   已撤回（正确性 > CPU）；CPU 优化改用别的路子（只重绘被触摸那一列等）。 */
+    if (im->dirtyText) {
         const LayoutPosition &pos = im->painter->getPosition();
         const int w = pos.mWidth, h = pos.mHeight;
         const int rowH = mStyle.rowHeight;
