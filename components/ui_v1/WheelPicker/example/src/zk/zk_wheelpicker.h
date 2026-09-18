@@ -69,6 +69,16 @@ public:
     /** rows = 宿主工程里的 textview 指针数组（数量 ≥ visibleRows，本包只管挪位置/改文字/改颜色） */
     void attach(ZKPainter *painter, ZKTextView **rows, int rowCount);
     void setStyle(const Style &st);
+    /**
+     * @brief 触摸坐标原点补偿（**放在带偏移的容器里的宿主必须调**）。
+     *
+     * 为什么需要：`ZKPainter::getPosition()` 给的是**父相对坐标**，而触摸事件是**屏幕绝对坐标**。
+     * 滚轮直接挂在根节点上时两者相等（example 就是这种），但放进带偏移的容器（如页面 `window`，
+     * y=56）后：命中判定与「点某行选中」的相对偏移算错 -> 触摸落不到轮子上/选错行。
+     * （设备端 `ZKBase::getAbsolutePosition()` 未导出，属于 D20 同族限制，不能靠它补救。）
+     * 用法：`w.setTouchOrigin(containerPos.mLeft, containerPos.mTop);`
+     */
+    void setTouchOrigin(int originX, int originY);
     /** 数据（每行一条）。内部会做首尾夹取与重排。 */
     void setItems(const std::vector<std::string> &items);
     void setItems(const char *const *arr, int n);
@@ -90,7 +100,8 @@ public:
     void stop();
 
     /* ---------- 触摸：宿主在 onXXXTouchEvent 里转发 ---------- */
-    /** 命中判定用 painter 的 position；返回 true = 已消费（宿主 return true 吞掉） */
+    /** 命中判定用 painter 的 position（父相对）+ setTouchOrigin 补偿；
+     *  返回 true = 已消费（宿主 return true 吞掉） */
     bool onTouch(const MotionEvent &ev);
     /** 该点是否落在控件内（宿主可先判，再决定是否转发） */
     bool hitTest(int x, int y) const;

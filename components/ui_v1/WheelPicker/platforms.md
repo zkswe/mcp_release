@@ -7,7 +7,7 @@
 
 | 平台 | 可用性 | 前置条件 | 实测值 | 已知限制 |
 |---|---|---|---|---|
-| **Z21**（1024×600，36MB RAM，无 GPU） | ✅ **可用（真机验收）** | ① 工程 `Manifest.xml` 声明 easyui/log/base-utility；② 宿主提供 **≥ visibleRows 个 `textview`** 承载文字；③ `onUI_init` 里 `INIT_UI_TIMERS` + `REGISTER_ACTIVITY_TIMER_TAB = {{0,16}}`；④ `onmainActivityTouchEvent` 转发 `MotionEvent` | 两轮合计 `tick()` **avg 8~10 µs / max 12~26 µs**；单轮 avg 1~2 µs / max 4~6 µs；进程 CPU **0.4%**（静止）；`VmRSS 5824 kB`（26 控件工程） | ⚠ **未被触摸的那一列 `setItems()` 后可能残留一行旧像素**（平台按控件标脏、又无区域标脏 API，见 §2）；多列同帧同步未做 |
+| **Z21**（1024×600，36MB RAM，无 GPU） | ✅ **可用（真机验收）** | ① 工程 `Manifest.xml` 声明 easyui/log/base-utility；② 宿主提供 **≥ visibleRows 个 `textview`** 承载文字；③ `onUI_init` 里 `INIT_UI_TIMERS` + `REGISTER_ACTIVITY_TIMER_TAB = {{0,16}}`；④ `onmainActivityTouchEvent` 转发 `MotionEvent`；⑤ **滚轮放进带偏移的容器时必须 `setTouchOrigin(容器left, 容器top)`** | 两轮合计 `tick()` **avg 8~10 µs / max 12~26 µs**；单轮 avg 1~2 µs / max 4~6 µs；进程 CPU **0.7%**（静止）/ **18.4%**（连续甩动 10 次/5s，单核口径；0.2.0 加 36fps 布局上限后，优化前 26.2%）；`VmRSS 5824 kB`（26 控件工程）；**5 列同帧 tick（TDesign 案例，页面 window 内）**：整页 35 控件，联动/滚动/回填均验证 | ⚠ 触摸坐标是**父相对**（`getPosition()`）而事件是**屏幕绝对**：装在带偏移容器里必须 `setTouchOrigin()`，否则 hitTest 整列偏移、拖不动（0.1.0 阶段 4 真实踩到并已提供接口）；⚠ `setIndex(animate=true)` 不跟踪目标（“甩一下”语义）；多列同帧同步未做（联动仍是「停下后重建」） |
 | **F133** / F135 | ⚠ 仅编译（`fun build -p F136` 平台串 = RISC-V） | 同上 | **未上机** | 未验证 |
 | **Z20** | ⚠ 未验证 | 同上 | — | 未验证（Z20 字库/内存更紧，行池过大要评估） |
 | **T113** | ⚠ 未验证 | 同上 | — | 未验证 |
@@ -39,8 +39,16 @@ adb -s <dev> shell "/tmp/busybox strings /lib/libeasyui.so | /tmp/busybox grep -
 
 - **不需要出图**：无 PNG/.9.png 依赖（选中带/分隔线全自绘，文字走平台字体）。所以 `verify_assets` / 铁律 #9 的图片规则对本包不适用。
 - **不做自绘键盘、不接管键盘**；只接管落在滚轮盒内的触摸（`hitTest` 命中才消费，`return true` 让宿主吞掉）。
+- **触摸坐标系**（§2 符号之外的另一条实测结论）：本包用 `painter->getPosition()`（**父相对**）做命中判定与「点某行选中」的计算；
+  事件坐标是**屏幕绝对**。两者只在「滚轮直接挂根节点」时相等 —— 这也是 example 能跑的原因。
+  放进页面 `window`（本例 y=56）后必须 `setTouchOrigin(winPos.mLeft, winPos.mTop)`，否则整列命中区偏 56px（真机现象：看得见、拖不动）。
+  设备端 `ZKBase::getAbsolutePosition()` 未导出（D20 同族），包内不能自己换算，只能由宿主告知。
 - 字库：行文字走**设备字体**，受裁剪字库限制（不支持 emoji/特殊符号）→ 建议只放汉字/ASCII。
 - 帧循环是宿主定时器（16ms）；静止时 `tick()` 走快路径（实测可忽略），宿主也可按 `tick()` 返回值决定是否停表省电。
+- **内存（Z21 36MB 总内存，真机实测）**：滚轮本身不占大内存（painter 自绘 + 池里 textview），
+  但**宿主的底图别用整屏大 PNG**：本案例首版给 3 个弹层各出一张 1024x392 的卡片图，
+  解码 RGBA 各要 1.6MB/1.1MB/1.6MB -> 启动时连续 `MMA Alloc ... fail` 然后进程被 OOM kill
+  （现象：部署后 zkgui 不在了、屏幕黑）。改法：大底图一律走 **.9.png**（解码只占几十字节，引擎拉伸）。
 
 ## 4. 真机验收命令（Z21）
 

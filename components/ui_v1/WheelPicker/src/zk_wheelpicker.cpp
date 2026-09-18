@@ -14,7 +14,9 @@
  */
 #include "zk/zk_wheelpicker.h"
 
+#include <algorithm>
 #include <math.h>
+#include <vector>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -72,11 +74,17 @@ struct WheelPicker::Impl {
 
     double scroll;                    /* index 空间当前位置 */
     double vel;                       /* index/秒 */
+    int orgX, orgY;                   /* 触摸坐标原点补偿（父容器偏移；setTouchOrigin） */
     bool dragging;
     int lastY;
     double lastT;
     double downT;
     double downY;
+    double moveT;                     /* 上次 MOVE 时间（真实 dt 估速） */
+    double flingTarget;               /* 甩动目标行（NAN = 无） */
+    int lastDir;                      /* 最近一次拖动方向（+1 = index 增大） */
+    double downScroll;                /* DOWN 时的行号（落点基准） */
+    double layoutT;                   /* 上次文字层布局时间（帧率上限用） */
     bool dirtyStatic;                 /* 需要重画静态层 */
     bool dirtyText;                   /* 需要重排 textview */
     bool relayoutAll;                 /* 数据换过（setItems）-> 池全部重绑（文字必须重新 setText） */
@@ -89,8 +97,8 @@ struct WheelPicker::Impl {
     ZKTextView *hud;
     int hudTick;
 
-    Impl() : painter(0), scroll(0), vel(0), dragging(false), lastY(0), lastT(0),
-             downT(0), downY(0), dirtyStatic(true), dirtyText(true), relayoutAll(true),
+    Impl() : painter(0), scroll(0), vel(0), orgX(0), orgY(0), dragging(false), lastY(0), lastT(0),
+             downT(0), downY(0), dirtyStatic(true), moveT(0), flingTarget(NAN), lastDir(0), downScroll(0), layoutT(0), dirtyText(true), relayoutAll(true),
              rowSetChanged(false), settledFired(true),
              perfN(0), perfIdx(0), hud(0), hudTick(0) {
         memset(perf, 0, sizeof(perf));
@@ -128,8 +136,7 @@ void WheelPicker::attach(ZKPainter *painter, ZKTextView **rows, int rowCount) {
     mImpl->dirtyText = true;
 }
 
-void WheelPicker::setStyle(const Style &st) {
-    mStyle = st;
+void WheelPicker::setStyle(const Style &st) {    mStyle = st;
     if (mStyle.visibleRows < 1) mStyle.visibleRows = 1;
     if ((mStyle.visibleRows & 1) == 0) mStyle.visibleRows += 1;   /* 取奇数，保证有正中行 */
     if (mStyle.rowHeight < 8) mStyle.rowHeight = 8;
@@ -199,7 +206,14 @@ void WheelPicker::stop() {
 bool WheelPicker::hitTest(int x, int y) const {
     if (!mImpl->painter) return false;
     const LayoutPosition &p = mImpl->painter->getPosition();
-    return (x >= p.mLeft && x < p.mLeft + p.mWidth && y >= p.mTop && y < p.mTop + p.mHeight);
+    const int lx = x - mImpl->orgX;          /* 屏幕绝对坐标 -> 容器相对坐标（父相对 = 控件坐标系） */
+    const int ly = y - mImpl->orgY;
+    return (lx >= p.mLeft && lx < p.mLeft + p.mWidth && ly >= p.mTop && ly < p.mTop + p.mHeight);
+}
+
+void WheelPicker::setTouchOrigin(int originX, int originY) {
+    mImpl->orgX = originX;
+    mImpl->orgY = originY;
 }
 
 /* ---------------- 静态层：底色 + 选中带 + 分隔线（滚动中不重画） ---------------- */
@@ -242,6 +256,20 @@ bool WheelPicker::tick() {
     if (n > 0) {
         if (im->dragging) {
             animating = true;             /* 拖动中：位置由 onTouch 直接改，这里只负责重排 */
+        } else if (!(im->flingTarget != im->flingTarget)) {
+            /* ★ 甩动落点缓动（10/s），到点即 settle */
+            animating = true;
+            double d = im->flingTarget - im->scroll;
+            if (fabs(d) < 0.004) {
+                im->scroll = im->flingTarget;
+                im->flingTarget = NAN;
+                im->vel = 0;
+                im->dirtyText = true;
+            } else {
+                im->scroll += d * dClamp(dt * 10.0, 0.0, 1.0);
+                im->vel *= pow(0.25, dt);
+                im->dirtyText = true;
+            }
         } else if (fabs(im->vel) > 0.35) {
             animating = true;
             im->scroll += im->vel * dt;
@@ -281,8 +309,11 @@ bool WheelPicker::tick() {
         im->dirtyStatic = false;
     }
 
-    /* ---- 文字层：把池里的 textview 摆到正确位置 ---- */
-    if (im->dirtyText) {
+    /* ★ 帧率上限（~36fps）：拖动/滑行中文字布局最多每 28ms 一次，位置仍按真实 dt 积分。
+     *   本平台重绘成本主要在框架 blit（5 列文字池 + 滚轮区），降布局频率直接降 CPU。 */
+    const double LAYOUT_MIN_DT = 0.028;
+    if (im->dirtyText && (t0 - im->layoutT) >= LAYOUT_MIN_DT) {
+        im->layoutT = t0;
         const LayoutPosition &pos = im->painter->getPosition();
         const int w = pos.mWidth, h = pos.mHeight;
         const int rowH = mStyle.rowHeight;
@@ -304,16 +335,31 @@ bool WheelPicker::tick() {
             im->relayoutAll = false;
         }
 
-        /* 先把跑出窗口的释放回池 */
+                /* ★ 池位分配：按「离选中行的距离」由近到远（修「可见行空白 / 月列 7月不见」）
+         *   候选窗口是 2*half+3 个 item（visibleRows=5 时 7 个），而池只有 visibleRows 个槽；
+         *   旧实现按 item 升序先到先得 -> 窗口内总有 item 抢不到槽 -> 整行空白且随滚动乱跳。
+         *   现在槽位只发给「最近的 pool.size() 个 item」，不在集合里的槽释放。 */
+        std::vector<int> wanted;
+        for (int it = iClamp(lo, 0, iClamp(n - 1, 0, 1 << 30)); it <= hi && it < n; ++it) {
+            if (it >= 0) wanted.push_back(it);
+        }
+        std::sort(wanted.begin(), wanted.end(), [center](int a, int b) {
+            double da = fabs((double) a - center), db = fabs((double) b - center);
+            if (da != db) return da < db;
+            return a < b;                       /* 同距时偏向小 index，保证稳定 */
+        });
+        if ((int) wanted.size() > (int) im->pool.size()) wanted.resize(im->pool.size());
+        /* 释放：槽里的 item 不在 wanted -> 释放回池（旧位置必定留像素，标脏）*/
         for (size_t i = 0; i < im->pool.size(); ++i) {
             int it = im->poolItem[i];
-            if (it >= 0 && (it < lo || it > hi || it >= n)) {
+            if (it >= 0 && std::find(wanted.begin(), wanted.end(), it) == wanted.end()) {
                 im->poolItem[i] = -1;
-                im->rowSetChanged = true;      /* 释放 -> 旧位置必定留像素 */
-            }        }
-        /* 再给窗口内每个 item 找宿主（从池里取空闲的） */
-        for (int it = iClamp(lo, 0, iClamp(n - 1, 0, 1 << 30)); it <= hi && it < n; ++it) {
-            if (it < 0) continue;
+                im->rowSetChanged = true;
+            }
+        }
+        /* 分配：wanted 中还没有槽的，按距离由近到远取空闲槽（位置/文字留到下面摆位循环写）*/
+        for (size_t wi = 0; wi < wanted.size(); ++wi) {
+            int it = wanted[wi];
             bool has = false;
             for (size_t i = 0; i < im->pool.size(); ++i) {
                 if (im->poolItem[i] == it) { has = true; break; }
@@ -322,17 +368,14 @@ bool WheelPicker::tick() {
             for (size_t i = 0; i < im->pool.size(); ++i) {
                 if (im->poolItem[i] < 0) {
                     im->poolItem[i] = it;
-                    /* ★ 这里**不写文字**：文字必须等「可见性 + 位置」定了再写（见下面的摆位循环）。
-                     *   先前在分配阶段就 setText，会把文字画在控件的旧位置（json 初始位置），
-                     *   接着 setVisible(false) 又不会清像素 -> 永久残影（实测就是这个）。 */
                     im->poolY[i] = 1e9;
                     im->poolFade[i] = -1;
-                    im->rowSetChanged = true;  /* 换绑 -> 也要整块重绘 */
+                    im->rowSetChanged = true;
                     break;
                 }
             }
         }
-        /* 摆位置 + 文字色（伪 alpha 淡出） */
+/* 摆位置 + 文字色（伪 alpha 淡出） */
         const int fadeSteps = 20;
         for (size_t i = 0; i < im->pool.size(); ++i) {
             ZKTextView *tv = im->pool[i];
@@ -495,26 +538,31 @@ bool WheelPicker::onTouch(const MotionEvent &ev) {
 
     const int n = (int) mItems.size();
     const int action = ev.mActionStatus;
-    const int x = ev.mX, y = ev.mY;
+    const int x = ev.mX, y = ev.mY;                  /* 屏幕绝对坐标（hitTest 内部自己扣原点） */
+    const int lx = x - im->orgX, ly = y - im->orgY;  /* 容器相对坐标（与 painter 的 position 同系） */
+    (void) lx;
 
     if (action == MotionEvent::E_ACTION_DOWN) {
         if (!hitTest(x, y)) return false;
         const LayoutPosition &p = im->painter->getPosition();
         im->dragging = true;
         im->vel = 0;
-        im->lastY = y;
-        im->downY = y;
+        im->lastY = ly;
+        im->downY = ly;
         im->downT = nowSec();
         im->settledFired = false;
         mImpl->dirtyText = true;
+        im->moveT = 0;
+        im->flingTarget = NAN;
+        im->downScroll = im->scroll;
         (void) p;
         return true;
     }
 
     if (action == MotionEvent::E_ACTION_MOVE) {
         if (!im->dragging) return false;
-        int dy = y - im->lastY;
-        im->lastY = y;
+        int dy = ly - im->lastY;
+        im->lastY = ly;
         if (dy != 0) {
             double dScroll = -(double) dy / (double) mStyle.rowHeight;
             im->scroll += dScroll;
@@ -522,8 +570,15 @@ bool WheelPicker::onTouch(const MotionEvent &ev) {
             if (im->scroll < 0) im->scroll *= 0.55;
             else if (im->scroll > n - 1) im->scroll = (n - 1) + (im->scroll - (n - 1)) * 0.55;
             /* 速度：指数滑动平均（index/秒） */
-            double v = -dScroll / 0.016;
-            im->vel = im->vel * 0.6 + v * 0.4;
+            double tnow = nowSec();
+            double dtm = (im->moveT > 0) ? (tnow - im->moveT) : 0.016;
+            im->moveT = tnow;
+            if (dtm < 0.004) dtm = 0.004;
+            if (dtm > 0.060) dtm = 0.060;
+            double v = -dScroll / dtm;                 /* 真实 dt，不再假设 16ms */
+            im->lastDir = (dScroll > 0) ? 1 : -1;      /* 拖动方向 */
+            im->vel = fabs(im->vel * 0.45 + v * 0.55);   /* 速度取模 */
+            (void) 0;
             im->dirtyText = true;
         }
         return true;
@@ -533,7 +588,7 @@ bool WheelPicker::onTouch(const MotionEvent &ev) {
         if (!im->dragging) return false;
         im->dragging = false;
         double dt = nowSec() - im->downT;
-        int moved = (y > im->downY) ? (y - im->downY) : (im->downY - y);
+        int moved = (ly > im->downY) ? (ly - im->downY) : (im->downY - ly);
 
         if (action == MotionEvent::E_ACTION_CANCEL) {
             im->vel = 0;
@@ -541,15 +596,31 @@ bool WheelPicker::onTouch(const MotionEvent &ev) {
             /* 点击：直接选中点到的那一行 */
             const LayoutPosition &p = im->painter->getPosition();
             int cy = p.mHeight / 2;
-            double idx = im->scroll + (double) (y - p.mTop - cy) / (double) mStyle.rowHeight;
+            double idx = im->scroll + (double) (ly - p.mTop - cy) / (double) mStyle.rowHeight;
             im->vel = 0;
             im->scroll = dClamp(idx, 0.0, (double) (n - 1));
             im->settledFired = false;
-        } else if (fabs(im->vel) < 2.0) {
-            im->vel = 0;              /* 慢速松手 → 直接吸附，不给惯性 */
-            im->settledFired = false;
         } else {
-            im->settledFired = false; /* 快速松手 → 保持速度惯性 */
+            /* ★ 两路：快甩=真惯性滑行（不封顶）；慢拖=精准一档；微拖=回原行 */
+            double dragRows = im->scroll - im->downScroll;
+            double assign = (dragRows >= 0) ? 1.0 : -1.0;
+            double crossed = fabs(dragRows);
+            const double FLING_MIN = 8.0;          /* 行/秒：真甩动阈值（普通拖一格约 3~5 行/秒，不走这条）*/
+            if (fabs(im->vel) >= FLING_MIN) {
+                /* 甩动：保留速度，让 tick 里的惯性滑行走完自然减速（滑多远由速度决定）*/
+                im->flingTarget = NAN;
+                im->vel = fabs(im->vel) * assign;
+                if (fabs(im->vel) > 60.0) im->vel = 60.0 * assign;   /* 上限防飞太远 */
+            } else if (crossed >= 0.35) {
+                /* 慢拖过 1/3 行：精准进一档（基准 = DOWN 行号，不弹回）*/
+                im->flingTarget = dClamp(im->downScroll + assign, 0.0, (double) (n - 1));
+                im->vel = 0;
+            } else {
+                /* 微拖：回原行 */
+                im->flingTarget = dClamp(im->downScroll, 0.0, (double) (n - 1));
+                im->vel = 0;
+            }
+            im->settledFired = false;
         }
         im->dirtyText = true;
         return true;

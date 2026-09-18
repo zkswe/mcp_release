@@ -2,7 +2,18 @@
 
 > **替代哪个源控件**：iOS WheelPicker ｜ Android `NumberPicker` ｜ 小程序 `picker-view`（多列联动 + 惯性吸附）
 > **建立**：2026-09-16（钟工：「把这批控件走一遍，缺失的自己做一个，然后仔细验收：细节显示效果 + 实际性能」）
-> **版本**：0.1.0 ｜ **状态**：Z21 真机跑通（视觉/性能验收数据见 §6）｜ **级别**：**L5 缺口补位（真缺）**
+> **版本**：**0.2.0**（2026-09-18）｜ **状态**：Z21 真机跑通 + **tdesign 阶段 4 真机验收通过**（三页：tabs/picker/date-time-picker）｜ **级别**：**L5 缺口补位（真缺）**
+
+### 0.2.0 变更（2026-09-18，均经真机复现 + 修复 + 复验）
+
+| # | 问题（真机反馈） | 根因 | 修复 | 复验 |
+|---|---|---|---|---|
+| 1 | 滚轮「某行整行空白（如 7月不见）」 | 候选窗口 `2*half+3`（visibleRows=5 → **7 个 item**）而文字池只有 **5 槽**；原按 item **升序先到先得**分配 → 窗口内 item 抢不到槽 | **按「离选中行距离」由近到远分配池位**；不在集合里的槽释放 | 该行 0 → 1497 像素 |
+| 2 | 松手弹回、**没有惯性** | `vel = -dScroll/0.016` **符号与拖动方向反**；假设 MOVE 恒 16ms；松手 `\|vel\|<2.0` 就清零；吸附取 `floor(scroll+0.5)`（不足半行回原位）；衰减 `pow(0.055,dt)` 每秒 94.5% | 真实 dt 估速（EMA）→ 方向取**拖动方向**；**慢拖（≥1/3 行）= 精准一档**（基准 = DOWN 行号）；**微拖回原行**；**真甩动（`FLING_MIN=8.0` 行/秒）= 惯性滑行**（`vel *= 0.05^dt`） | 快甩 150px **+3 格**；微拖 8px **0 格** |
+| 3 | 滑动 **CPU 偏高** | 拖动期每帧重排文字层（催着重绘 5 列文字池）| 文字布局层**帧率上限**（`LAYOUT_MIN_DT=0.028`，~36fps）；位置仍按真实 dt 积分 | 连续甩动 **26.2% → 18.4%**（单核口径）；静止 0.7% |
+| 4 | `setTouchOrigin(x,y)`（沿用 0.1.0 阶段 4 补） | `painter` 位置是**父相对**坐标，而事件是**屏幕绝对**坐标 → 容器有偏移时「看得见、拖不动」 | 新增 `setTouchOrigin(容器 left/top)`（默认 `(0,0)` 向后兼容） | 修前拖动整帧无变化 → 修后滚动成立 |
+
+> 可调旋钮：`FLING_MIN`（默认 8.0 行/秒，甩动阈值）与惯性衰减 `0.05^dt`（默认每秒剩 5%）。
 
 ---
 
@@ -33,6 +44,7 @@
 | 方法 | 说明 |
 |---|---|
 | `void attach(ZKPainter *painter, ZKTextView **rows, int rowCount)` | 绑定 painter 与文字池（`rowCount ≥ visibleRows`）；池里的 textview 由包接管位置/文字/颜色 |
+| `void setTouchOrigin(int originX, int originY)` | **触摸坐标原点补偿**（0.1.0 阶段 4 补）。`painter->getPosition()` 给的是**父相对坐标**，触摸事件是**屏幕绝对坐标**；滚轮直接挂根节点时两者相等，但放进带偏移的容器（如页面 `window` y=56）后必须把容器偏移告诉包，否则命中判定/「点某行选中」会错位。用法：`w.setTouchOrigin(winPos.mLeft, winPos.mTop);`（设备端 `getAbsolutePosition()` 未导出，不能靠它补救） |
 | `void setStyle(const Style&)` | 外观与手感（见下表）；`Style::defaultStyle()` 给一套可用默认值 |
 | `void setItems(const std::vector<std::string>&)` / `(const char* const*, int)` | 数据；item 变更会重排 |
 | `void setIndex(int idx, bool animate=false)` | 选中项；`animate=true` 给一段滚动动画（内部限速 28 项/秒，避免"瞬移"） |
@@ -88,6 +100,19 @@ static bool onmainActivityTouchEvent(const MotionEvent &ev) {
 
 **多列联动**：包只做单列；联动在宿主侧接线（`onWheelSettled(idx)` 里按左列的值重建右列 `setItems` + `setIndex(0)`），example 里有现成写法。
 
+**宿主接线三条硬要求**（阶段 4 真机实证，少一条就会「看着对、拖不动/联动不跟」）：
+
+1. `onUI_init` 里 `attach → setStyle → setItems → setIndex → refresh`（不调 `refresh()` 不显示）；
+2. **放进带偏移的容器里必须 `setTouchOrigin(容器left, 容器top)`**（本例：页面 window 在 y=56，
+   不调就会「滚轮在屏幕上画得对、但手指拖不动」——`hitTest` 拿父相对坐标比绝对触摸点，
+   竖向整体偏 56px，下半截永远命中不到）；
+3. 宿主在 `onUI_Timer` 里按 16ms 调 `tick()`；多列就每列一个实例、逐个 `tick()`。
+   **联动别只依赖 `setIndex(idx, animate=true)`**：那个 `animate` 是「甩一下」语义（给初速度，
+   不跟踪目标），会滑过好几项；要「精确 +1」请 `setIndex(i, false)` 并在宿主侧显式走联动。
+   另外 `setItems()` 内部会跑一次 tick，**可能立刻回调 `onWheelSettled(idx=0)`** ——
+   初始化时如果用 `s_year`（宿主状态变量）去算初始下标，就会先被这个回调盖成 0
+   （真机现象：结果行 2024-02-29、选中行 2020-01-01）。初值要在 `setItems` 之后再赋值。
+
 ---
 
 ## 4. 依赖
@@ -138,7 +163,19 @@ static bool onmainActivityTouchEvent(const MotionEvent &ev) {
 - **验收（像素级行位）**：修后两轮文字行精确落在 **174 / 214 / 254**（40px 等距，item3 起按规则隐藏），
   静态与“联动重建右轮 + 甩动”后都无重叠/无残影（`evidence/15_*`、`evidence/16_*`）。
 
-**已知未做**：F133 / T113 / Z20 / V85X **未上机**（仅编译）；多列**同帧同步**滚动未做（联动目前是「停下后重建」）；惯性参数（衰减/阈值）暂不可配。
+**已知未做**：F133 / T113 / Z20 / V85X **未上机**（仅编译）；惯性参数（衰减/阈值）暂不可配。
+
+## 6.2 阶段 4 二次验收（TDesign 迁移案例，Z21 真机，2026-09-18）
+
+| 项 | 结果 |
+|---|---|
+| 场景 | **5 列**滚轮（年/月/日/时/分）装在**页面 window 内**（y=56 偏移），同一帧循环里 5 个 `tick()` |
+| 初始渲染 | 5 列各自画出选中带（`#F2F3FF`，每列 ~1240 个带色像素）+ 正中行有文字，与 JSON 行位一致 |
+| 联动 | 年/月停下 -> 日列按当月天数重建：2024-02-29 -> 年+1 -> **2025-02-28**（19 项夹到 28）；再月+1 -> 3 月 31 天（正中行下一行出现「30日」，实测非白像素 0 -> 225） |
+| 触摸 | 修 `setTouchOrigin` 前后对比：修前「拖动月列」整帧无变化（命中不到）；修后月列滚动成立、状态行同步 |
+| 残留像素 | 本轮**未复现**「未被触摸的那一列 setItems 后残留一行旧像素」（`forceRepaint` 生效）；
+证据：`projects/translate/tdesign-miniprogram/z21/evidence/s4_dt_*.png` |
+| 已知未做（本轮新增） | `setIndex(idx, animate=true)` 不跟踪目标 -> 只适合“甩动”，精确步进用 `setIndex(i,false)`（宿主侧接线已按此写） |
 
 ---
 

@@ -72,6 +72,7 @@ struct WheelPicker::Impl {
 
     double scroll;                    /* index 空间当前位置 */
     double vel;                       /* index/秒 */
+    int orgX, orgY;                   /* 触摸坐标原点补偿（父容器偏移；setTouchOrigin） */
     bool dragging;
     int lastY;
     double lastT;
@@ -89,7 +90,7 @@ struct WheelPicker::Impl {
     ZKTextView *hud;
     int hudTick;
 
-    Impl() : painter(0), scroll(0), vel(0), dragging(false), lastY(0), lastT(0),
+    Impl() : painter(0), scroll(0), vel(0), orgX(0), orgY(0), dragging(false), lastY(0), lastT(0),
              downT(0), downY(0), dirtyStatic(true), dirtyText(true), relayoutAll(true),
              rowSetChanged(false), settledFired(true),
              perfN(0), perfIdx(0), hud(0), hudTick(0) {
@@ -128,8 +129,7 @@ void WheelPicker::attach(ZKPainter *painter, ZKTextView **rows, int rowCount) {
     mImpl->dirtyText = true;
 }
 
-void WheelPicker::setStyle(const Style &st) {
-    mStyle = st;
+void WheelPicker::setStyle(const Style &st) {    mStyle = st;
     if (mStyle.visibleRows < 1) mStyle.visibleRows = 1;
     if ((mStyle.visibleRows & 1) == 0) mStyle.visibleRows += 1;   /* 取奇数，保证有正中行 */
     if (mStyle.rowHeight < 8) mStyle.rowHeight = 8;
@@ -199,7 +199,14 @@ void WheelPicker::stop() {
 bool WheelPicker::hitTest(int x, int y) const {
     if (!mImpl->painter) return false;
     const LayoutPosition &p = mImpl->painter->getPosition();
-    return (x >= p.mLeft && x < p.mLeft + p.mWidth && y >= p.mTop && y < p.mTop + p.mHeight);
+    const int lx = x - mImpl->orgX;          /* 屏幕绝对坐标 -> 容器相对坐标（父相对 = 控件坐标系） */
+    const int ly = y - mImpl->orgY;
+    return (lx >= p.mLeft && lx < p.mLeft + p.mWidth && ly >= p.mTop && ly < p.mTop + p.mHeight);
+}
+
+void WheelPicker::setTouchOrigin(int originX, int originY) {
+    mImpl->orgX = originX;
+    mImpl->orgY = originY;
 }
 
 /* ---------------- 静态层：底色 + 选中带 + 分隔线（滚动中不重画） ---------------- */
@@ -495,15 +502,17 @@ bool WheelPicker::onTouch(const MotionEvent &ev) {
 
     const int n = (int) mItems.size();
     const int action = ev.mActionStatus;
-    const int x = ev.mX, y = ev.mY;
+    const int x = ev.mX, y = ev.mY;                  /* 屏幕绝对坐标（hitTest 内部自己扣原点） */
+    const int lx = x - im->orgX, ly = y - im->orgY;  /* 容器相对坐标（与 painter 的 position 同系） */
+    (void) lx;
 
     if (action == MotionEvent::E_ACTION_DOWN) {
         if (!hitTest(x, y)) return false;
         const LayoutPosition &p = im->painter->getPosition();
         im->dragging = true;
         im->vel = 0;
-        im->lastY = y;
-        im->downY = y;
+        im->lastY = ly;
+        im->downY = ly;
         im->downT = nowSec();
         im->settledFired = false;
         mImpl->dirtyText = true;
@@ -513,8 +522,8 @@ bool WheelPicker::onTouch(const MotionEvent &ev) {
 
     if (action == MotionEvent::E_ACTION_MOVE) {
         if (!im->dragging) return false;
-        int dy = y - im->lastY;
-        im->lastY = y;
+        int dy = ly - im->lastY;
+        im->lastY = ly;
         if (dy != 0) {
             double dScroll = -(double) dy / (double) mStyle.rowHeight;
             im->scroll += dScroll;
@@ -533,7 +542,7 @@ bool WheelPicker::onTouch(const MotionEvent &ev) {
         if (!im->dragging) return false;
         im->dragging = false;
         double dt = nowSec() - im->downT;
-        int moved = (y > im->downY) ? (y - im->downY) : (im->downY - y);
+        int moved = (ly > im->downY) ? (ly - im->downY) : (im->downY - ly);
 
         if (action == MotionEvent::E_ACTION_CANCEL) {
             im->vel = 0;
@@ -541,7 +550,7 @@ bool WheelPicker::onTouch(const MotionEvent &ev) {
             /* 点击：直接选中点到的那一行 */
             const LayoutPosition &p = im->painter->getPosition();
             int cy = p.mHeight / 2;
-            double idx = im->scroll + (double) (y - p.mTop - cy) / (double) mStyle.rowHeight;
+            double idx = im->scroll + (double) (ly - p.mTop - cy) / (double) mStyle.rowHeight;
             im->vel = 0;
             im->scroll = dClamp(idx, 0.0, (double) (n - 1));
             im->settledFired = false;
