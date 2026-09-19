@@ -12,6 +12,8 @@
 > 例外（跨框架映射）：查「别的框架的某个控件对应我们哪个控件」不是控件用法查询，
 > 权威表在 `components/ui_v1/control-map.md`（摘要 + 指针：`knowledge/uicontrols/framework-control-mapping.md`）。
 > 映射完**怎么写字段/API**仍按本规则：只查 MCP 知识库或官方站。
+> 已收口的典型映射（可直接引用，不必再推理）：**`picker-view`/`lv_roller`/`TimePicker`/`NumberPicker`
+> → `listview` 组合（L2）**，字段配法见 `listview-wheel-picker.md`。
 
 ## 禁止的行为
 

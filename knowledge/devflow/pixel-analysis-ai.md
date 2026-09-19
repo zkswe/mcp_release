@@ -59,6 +59,7 @@
 | 图标边缘发黑/发脏 | 图是**半透明 PNG** 却贴在纯色底上 | **纯色底就烘底**（把底色烘进图）；真需要透明装饰件用 **button + picTab**（alpha 混合正确） |
 | 圆角背景**四角发黑** | 圆角图四角是透明像素，被渲成黑 | 圆角图**四角烘页面底色**（见 nine-patch-rule.md） |
 | listview / item / subItem 出现**黑块** | 填了 `backgroundColor` + `bgColorTab` | **删掉**这两个键 |
+| 浅色形状（浅色带/卡片）边界有**断续暗边/亮白点、圆角发毂齿** | 超采样缩回用了 `LANCZOS`（负瓣振铃）→ 反预乘后 RGB 越界；且低对比边界（只差单通道 12 级）靠肉眼/亮度阈值看不见 | 缩回换**面积平均（AREA/BOX）**，详见 `ui-asset-rules.md` 铁律 #10；用 `tools/qa/aa_audit.py --fail` 验（判 `resid_bad`） |
 
 ## 5. 相关
 

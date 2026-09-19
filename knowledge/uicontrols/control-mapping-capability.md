@@ -5,7 +5,7 @@
 > 别的框架的控件对应我们哪个控件 / 有对应控件就直接用 / 命中不到怎么办 / 缺口五级。
 >
 > 建立：2026-09-16（v0.27.73-open，钟工口径：「有对应控件的走映射能力，不写散文说明」）｜
-> **机读数据**：仓库根目录 `mcp_control_map.json`（六个源框架 212 条）｜
+> **机读数据**：仓库根目录 `mcp_control_map.json`（六个源框架 213 条）｜
 > **散文权威表**：`components/ui_v1/control-map.md`（级别判定与换算）＋ `components/ui_v1/gap-list.md`（缺口 G-01~G-36）
 
 ---
@@ -50,14 +50,14 @@ flythings_map_control(query, source='')
 （五级口径 + 「有对应控件走映射 / 真缺才建包」两条出路 + 文档指针）。`source` 写错回 `BAD_SOURCE`
 （并把可取值列出来）；`query` 为空回 `BAD_PARAMS`。
 
-## 3. 覆盖范围（六个源框架，212 条）
+## 3. 覆盖范围（六个源框架，213 条）
 
 | source | 条数 | 覆盖（举例） |
 |---|---|---|
 | `lvgl` | 32 | `lv_slider`、`lv_switch`、`lv_arc`、`lv_chart`、`lv_tabview`、`lv_calendar`、`lv_roller`、`lv_canvas`、`lv_anim`、`lv_obj_set_flex_flow`… |
 | `qt` | 40 | `QPushButton`、`QSlider`、`QComboBox`、`QTabWidget`、`QCalendarWidget`、`QTimeEdit`、`QChart`、`QScrollArea`、`QVBoxLayout`… |
 | `android` | 43 | `RecyclerView`、`SeekBar`、`Switch`、`TabLayout`、`ViewPager2`、`DatePicker`、`TimePicker`、`NumberPicker`、`SwipeRefreshLayout`、`ItemTouchHelper`… |
-| `miniprogram` | 38 | `view`、`input`、`swiper`、`picker`、`picker-view`、`radio-group`、`switch`、`slider`、`rich-text`、`refresher-enabled`、`wx.showToast`… |
+| `miniprogram` | 39 | `view`、`input`、`swiper`、`picker`、`picker-view`、`radio-group`、`switch`、`slider`、`rich-text`、`refresher-enabled`、`wx.showToast`… |
 | `emwin` | 29 | `WINDOW`、`FRAMEWIN`、`BUTTON`、`LISTBOX`、`LISTWHEEL`、`DROPDOWN`、`GRAPH`、`ICONVIEW`、`SWIPELIST`、`KNOB`、`QRCODE`… |
 | `mfc` | 30 | `CButton`、`CEdit`、`CListCtrl`、`CComboBox`、`CSliderCtrl`、`CTabCtrl`、`CDateTimeCtrl`、`CMonthCalCtrl`、`CAnimateCtrl`… |
 
@@ -85,7 +85,7 @@ flythings_map_control(query, source='')
 | | 映射能力（本文件） | 自定义控件包（`components/ui_v1/<源控件名>/`） | 映射参考（`components/ui_v1/_mapping/`） |
 |---|---|---|---|
 | 放什么 | 源控件 → 我们控件的机读索引 + 可直接粘的片段 | **平台真缺的能力**的实现（四件套 + `example/` + 真机证据） | **有平台控件**但接线细节值得留档（手感参数/双向同步/验收判据） |
-| 典型 | `lv_slider`→`seekbar`（L1）、`lv_tabview`→`pagewindow`（L1） | `Chart/`（L3 自绘）、计划 `Calendar/`、`TimePicker/`、`WheelPicker/`、`RichText/` | `_mapping/TabView/`（基于 `pagewindow`） |
+| 典型 | `lv_slider`→`seekbar`（L1）、`lv_tabview`→`pagewindow`（L1）、**`picker-view`/`lv_roller`/`TimePicker`（含时钟盘）/`NumberPicker`→`listview` 组合（L2）** | `Chart/`（L3 自绘）、`Calendar/`（L4）、`RadButton/`（L3）、计划 `RichText/` | `_mapping/TabView/`（基于 `pagewindow`） |
 | 不许 | 不许给「已有控件」再包一层当自定义控件 | 不许在无 L1/L2 判定前建包；不许文档先行（`example/` 必须真编译过） | 不许把「真缺能力」的实现塞这里（该进 `<源控件名>/`） |
 
 看板：`components/ui_v1/components.md`（三段状态表：**已实现自定义控件 / 映射项 / 计划中的自定义控件**）。
@@ -130,8 +130,10 @@ static void onUI_init() { mPwPagesPtr->setPageChangeListener(&s_listener); }
 
 **④ 真缺能力（L3/L4/L5）示例**：`flythings_map_control("lv_chart")` → `target=chart`、`level=L3`、
 `ref=components/ui_v1/Chart` ⇒ 不要自己从零画：**直接取 `components/ui_v1/Chart/`**（`include/zk/` + `src/`，
-照 `example/` 接线；改数据必须 `refresh()`）。计划中的（`Calendar/`、`TimePicker/`、`WheelPicker/`、
-`RichText/`、`TableGrid/`、`BadgeToast/`、`Pseudo3D/`）**还没有包**，走批次立项，期间按 `gap-list.md` 的过渡方案。
+照 `example/` 接线；改数据必须 `refresh()`）。计划中的（`RichText/`、`TableGrid/`、`BadgeToast/`、`Pseudo3D/`）**还没有包**，走批次立项，期间按 `gap-list.md` 的过渡方案；
+**滚轮选择器（`picker-view`/`lv_roller`/`WheelPicker`/`TimePicker` 含时钟盘/`NumberPicker`/`LISTWHEEL` 类）不是 L3/L4/L5**：2026-09-19 已改为 **L2**（`listview` 组合，
+口径见 `knowledge/uicontrols/listview-wheel-picker.md`，含 §6 时间选择/时钟盘），原自绘包 `components/ui_v1/WheelPicker/` **已移除**、`TimePicker/` **不做包**——查这类控件
+直接 `flythings_map_control("picker-view")` / `("TimePicker")` / `("clock dial")` / `("NumberPicker")` 拿 `target=listview` + `level=L2` + 可直接粘的片段。
 
 ## 7. 维护（加/改条目）
 

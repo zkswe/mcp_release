@@ -4,7 +4,7 @@
 > tabview / tab 页签 / pagewindow / 五级处置 / L1 L2 L3 L4 L5 / 缺口级别 / 3D 伪 3D / 控件对照表。
 >
 > **本文件只放摘要与关键口径**，避免与权威表两处漂移。**权威入口**：
-> - ★**机读映射（开发直接用这个）**：仓库根目录 `mcp_control_map.json`（六框架 212 条）+ MCP op
+> - ★**机读映射（开发直接用这个）**：仓库根目录 `mcp_control_map.json`（六框架 213 条）+ MCP op
 >   **`flythings_map_control(query, source)`**（一次对上我们的控件 + 级别 + 可直接粘的 json 片段；
 >   用法/命中不到怎么办：`knowledge/uicontrols/control-mapping-capability.md`）
 > - `components/ui_v1/control-map.md`（散文权威表：源控件 × 我们控件 × 级别 × 备注）
@@ -44,13 +44,16 @@
 | **页签 `lv_tabview`/`ViewPager`/`swiper`** | **`pagewindow__N`（ZKPageWindow）+ 页签按钮组**（接线留档 `ui_v1/_mapping/TabView/`） | L1/L2 |
 | 弹窗 `modal`/`Dialog`/`lv_msgbox` | `window__N`(`modal:true`) + `showWnd/hideWnd` | L1 |
 | 图表 `lv_chart`/MPAndroidChart/`QChart` | **`painter__N` 自绘** + 刻度文字用 `textview__N`（现成包 `ui_v1/Chart/`） | **L3** |
+| **滚轮选择器 `picker-view`/`lv_roller`/`LISTWHEEL`/`NumberPicker`/`TimePicker`（含时钟盘）** | **`listview__N` 组合**（`cycleEnable:true` + `edgeEffect:1`/`dragMaxDis`:50/`autoRollback:true`；正中行 = 选中行靠**数据侧平移**；**选中条挂静态装饰 `textview`**，不挂行） | **L2** |
 
 ## 3. 高频缺口（一句话版）
 
 - **下拉选择 / picker / Spinner / ComboBox** → 按钮 + `window`(modal) 列表（**L4**：无滚轮惯性、无多列联动）。
-- **日期/日历** → 按钮 + 模态日历（42 个 `textview` + 触摸反算；painter 无文字 API）（**L4**）。
+- **日期/日历/时间** → 日期：按钮 + 模态日历（42 个 `textview` + 触摸反算；painter 无文字 API）（**L4**，已落地 `ui_v1/Calendar/`）；
+  **时间：`TimePicker`（含时钟盘）/`QTimeEdit`/`picker mode=time` → `listview` 组合（L2）**（钟工 2026-09-19：TimePicker 走 listview 实现对应）。
 - **下拉刷新 / 滚动驱动动画 / CSS 动态样式 / 平滑滚动 / 横向滚动惯性** → 定时器 + 数值联动近似（**L4**）。
-- **flex/grid**、**WheelPicker**、**拖拽排序/侧滑删除**、**系统主题联动** → **L5（不支持）**，有替代建议。
+- **flex/grid**、**拖拽排序/侧滑删除**、**系统主题联动** → **L5（不支持）**，有替代建议。
+- **滚轮选择器（`WheelPicker`/`TimePicker` 类，含时钟盘）** → **不是 L5**：2026-09-19 已改为 **L2**（`listview` 组合，循环列表 + 数据侧平移定正中行 + 选中条挂静态层；口径 `knowledge/uicontrols/listview-wheel-picker.md`，含 §6 时间选择/时钟盘），原自绘包 `ui_v1/WheelPicker/` **已移除**、`ui_v1/TimePicker/` **不做包**（时钟盘的圆形排列观感需 12 方位按钮组或自绘 → **观感降级说明，不是能力缺失**）。
 - **3D**：Z21/F133 **无 GPU/无硬解 → 一律伪 3D/2.5D**（贴图 + 烘焙阴影 + 序列帧）；真 3D 仅 V85X（disp 分层）验证过。
 
 ## 4. 必须避开的工具链坑（写错就不亮/不编译，详见 `gap-list.md` §4）

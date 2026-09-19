@@ -75,3 +75,5 @@
 - 历史省略式 json（IDE 手工/旧生成器）跑 check_all #14 会提示缺键，按本表补默认即可
 - 检索边界：控件 json 字段以本文件 + knowledge/uicontrols/*-fields.md + 官方文档站为准
 - ⚠️ **滑动/拖拽字段取值**（`dragMaxDis`/`edgeEffect`/`autoRollback`/`rollSpeed`，listview/scrollwindow/pagewindow/slidewindow 共用）：本表只定「必写 + 默认值」，**手感取值规范见 `scroll-drag-interaction-spec.md`**（listview 的 dragMaxDis 填手感值 ≤ 一行高，禁止填列表高度）
+- ★ 循环选择器类控件（含时间列/钟面形态）：`listview-wheel-picker.md`
+  （行模板 `item.text:""`、装饰 `textview` 的必写字段与层序均以本表为准）

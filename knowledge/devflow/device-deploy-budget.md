@@ -54,7 +54,7 @@ Z21 实测：`Mem total 36072 kB`（**36MB**）；`/tmp` = **tmpfs 13.6MB**（tm
   （关 fb / disp 图层 / 套接字），轮询等它退出（**约 3 秒**），仍活着才回退 `kill -KILL`。
   行为等价（init 都会自动 respawn），不多花时间；日志要把「用了哪条、是否回退」打出来（可取证）。
 - 实现（单一来源）：MCP 侧 `adb_tools.restart_app(adb, serial, name='zkgui')`；
-  组件示例 `components/ui_v1/WheelPicker/example/tools/deploy.py`、案例侧 `deploy_z21.py` 同姿势。
+ 案例侧 `deploy_z21.py` 同姿势（原组件示例 `components/ui_v1/WheelPicker/example/tools/deploy.py` 随该自绘包 2026-09-19 一并移除）。
 - **遇到掉网怎么处理**：按**现场断电重启**处理（先看设备电源/网线/WiFi，再 `adb connect`），
   **不要**据此得出「kill -9 会掉网」或「reboot 会掉网」的结论，也不要拿它当改代码的依据。
 - 另：`adb reboot` 后 /tmp 是空的（tmpfs）→ 必须**整套重推**（见 §2/§4），且重启后要等网络 adb 重新上线。

@@ -79,6 +79,7 @@
 | listViewDemo-New / ListView1 | listview | 437 | 0 | 0 | false |
 | listViewDemo-New / CityListView | listview | 164 | 0 | 0 | false |
 | 真实工程 / 循环选择器组（月/日/时/分/年） | listview | 150 | — | 50 | true |
+| 案例 `tdesign-miniprogram` 日期页（5 列，可见 5 行；★ 2026-09-19 实测这套配法可做出滚轮） | listview | 180 | 1 | 50 | true（+cycleEnable） |
 | ScrollWindowDemo-New | scrollwindow | — | 1 | 200（= 内容尺寸） | — |
 | 真实工程 / 长内容滚动设置页 | scrollwindow | — | 1 | 1600（= 内容尺寸） | — |
 | PageWindowDemo-New | pagewindow | — | 1 | 200 | rollSpeed 60 |
@@ -88,7 +89,9 @@
 
 ## 6. 相关
 
-- listview 字段/回调：`listview-fields.md`
+- listview 字段/回调（含 `item.text` 必须 `""`）：`listview-fields.md`
+- ★ **用 listview 做滚轮选择器**（循环选择器档的完整配法 + 中心行对齐 + 三个真机坑）：`listview-wheel-picker.md`
+  （实测口径：`setSelection(i)` 只把第 i 项摆到列表盒第 1 行**且带动画**；程控定位改用「数据侧平移 + refreshListView()」）
 - 字段必写全集（含 dragMaxDis 默认值）：`json-field-mandatory.md`
 - 分层规则（scrollwindow 内容 = window 尺寸 = dragMaxDis）：`json-layer-rules.md`
 - slidewindow / pagewindow 字段：`slidewindow-fields.md`、`pagewindow-fields.md`

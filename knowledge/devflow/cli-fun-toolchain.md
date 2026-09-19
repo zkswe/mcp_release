@@ -24,7 +24,7 @@
 | `<项目>\fun.exe`、`<项目>\ui\fui.exe` | `flythings_attach_cli_tools` 复制过去，**随项目交付**（客户不用装 IDE） |
 | 环境变量 `FLYTHINGS_FUN_DIR` | MCP 解析工具目录的候选之一（`project_tools._tool_dir()`） |
 
-`fun` 管**编译/依赖/部署/出包**；`fui` 管 **json ↔ ftu**（本项目内置的 fui 只支持 `pack`，`unpack` 是空壳 → 逆向要厂家版 fui）。
+`fun` 管**编译/依赖/部署/出包**；`fui` 管 **json ↔ ftu**（`pack` / `unpack` 都支持：随包 fui 自 v0.27.91 起含 `unpack`，旧版只有 `pack`）。
 
 ## 3. 命令表（`fun.exe --help` 实测）
 

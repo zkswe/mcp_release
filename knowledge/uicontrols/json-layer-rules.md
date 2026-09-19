@@ -31,3 +31,21 @@
 ## 相关
 - 子结构字段全集（item 17 键含 position / subItem / infos 含 visible）见 `json-field-mandatory.md`
 - window 嵌套/弹窗结构见 `uicontrols/window` wiki；页面级多全屏 window 应拆多 Activity（非同一 json 堆叠）
+
+## 静态遮挡审计（v0.27.92：先看 json，别一上来截图）
+
+用户说「控件被盖住 / 点不到 / 位置不对 / 谁挡着谁」时先调 `flythings_layout_audit(project_root[, page])`，
+纯几何 0 token，返回 `pages[].findings[]`：
+
+| kind | 含义 | 典型修法 |
+|------|------|----------|
+| `fullscreen_layer` | 整屏层（position == resolution）；`touchable:true` 会吞整屏触摸 | 隐藏页用 `visible:false`；遮罩只盖需要拦的区域；装饰加 `touchPass:true` |
+| `touch_steal` | **同层更早定义**的 `touchable` 控件完整覆盖它 → 触摸按定义顺序先被拿走 | 遮挡物改 `touchable:false + touchPass:true`，或挪成子级/删掉 |
+| `covered_interactive` | 上层 `touchable` 控件完整盖住可交互控件 | 挪 position / 缩小遮挡层 |
+| `pass_through_missing` | 装饰件 `touchable:false` 但没 `touchPass:true`，与可点控件重叠 | 补 `touchPass:true` |
+| `overlap` | 同层两个盒子相交（后者在上层） | 确认是否故意叠放 |
+
+判据回顾：**z 序 = json 书写顺序（后定义在上层）**；**触摸按定义顺序先命中先定义的可点控件**（F133 实测：
+遮罩 button 压住卡片 window 时卡片内按钮点不动 → 卡片扁平化到控件层、排在遮罩之后）。
+改动前后对比用 `flythings_ui_visual(action="diff")`；视觉样式（颜色/字体/切图）仍要截图。
+检索词：控件被遮挡 / 点不到 / 谁挡着谁 / 控件覆盖 / 重叠 / 层级 / z 序 / touchPass / layout_audit。

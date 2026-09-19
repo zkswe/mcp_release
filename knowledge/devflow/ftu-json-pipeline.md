@@ -1,4 +1,4 @@
-# ftu 是什么：ftu 开发 / ftu 编辑 / ftu 修改 / ftu 格式 / ftu 逆向（UI 文件 main.ftu 与 json 的关系）
+# ftu 是什么：ftu 开发 / ftu 编辑 / ftu 修改 / ftu 格式 / ftu 逆向（ftu 转 json / unpack）（UI 文件 main.ftu 与 json 的关系）
 
 > 检索导引：客户或 AI 问「**ftu 如何开发** / ftu 怎么改 / **怎么修改 ftu 布局文件** / ftu 是什么格式 /
 > ftu 能不能手写手改 / ftu 能不能逆向成 json / **UI 文件**和 json 什么关系 / `main.ftu` 在哪 /
@@ -73,24 +73,32 @@ ui/*.ftu  ← 设备实际加载的是它
 2. **会被覆盖**：任何一次 `fui pack`（`flythings_fui_pack` / `build_ui_flow` 第②步 / `edit_apply`）
    都会用 json 重新生成 ftu，手改内容静默丢。
 3. **没有版本管理价值**：ftu 是二进制，`git diff` 看不懂、评审看不出来、冲突没法合。
-4. **格式不对外公开**：ftu 的字段/编码没有公开文档，手写等于逆向猜（且当前工具链不支持逆向，见 §6）。
+4. **格式不对外公开**：ftu 的字段/编码没有公开文档，手写等于逆向猜（要读 ftu 走 §6 的正规逆向路径，不要手写）。
 5. **`flythings_edit_ftu` 不是"改二进制"**：它是「给变更 → 应用到同目录 json → 再 pack 回 ftu」，
    默认 `overwrite=False`（生成 `<name>.edited.ftu` 且留 `.bak`，不覆盖原文件）；**同目录没有 json 就报错**
    ——这正是"json 为源"的强制约束。
-6. 工具已埋一致性检查：`ui/*.ftu` 比同名 json 新超 30 秒 → 判定"有人/IDE 直接改过 ftu"，
-   `flythings_build_ui_flow` 会先尝试 `unpack ftu 同步 json`，`flythings_validate_project` 会报
-   `dev_modified_ftu` 警告；json 比 ftu 新则报 `stale_ftu`（"改了 json 没重新 pack，设备仍跑旧版布局"）。
+6. 工具已埋一致性检查（**ftu→json 只在两种情形自动做**，2026-09-18 口径）：
+   - **只有 ftu 没有同名 json**（纯 IDE 工程/老工程）→ 直接 `unpack` 转出 json；
+   - **ftu 比 json 新「分钟级」**（≥60 秒 = 用户/IDE 直接编辑过 ftu，pack 正常时两者差 <1s）→ 先
+     `unpack ftu → 同步 json` 再继续（以 ftu 为真源）；
+   - 其余情况**不做** ftu→json（json 是布局源，只需 json→ftu）。
+   - ⚠️ **异常 ftu（不是合法 ftu/已损坏）反解析失败 → 明确报错并告知用户**（错误里带 `hint`：请提供对应 json 或重新导出该 ftu），**不静默跳过**、也不继续构建。`flythings_validate_project` 会分别报
+   `ftu_without_json` / `dev_modified_ftu` 警告；json 比 ftu 新则报 `stale_ftu`（"改了 json 没重新 pack，
+   设备仍跑旧版布局"）。
 
-## 6. 逆向/解析的限制（当前内置工具链）
+## 6. 逆向/解析：ftu → json（v0.27.91 起可用）
 
-- 本仓库内置的 `fui.exe` **只支持 `pack`（json → ftu）**；`unpack` 是空壳（调到会报通用错误）——
-  口径见 `tools_manifest.json` 的 `cli.fui` 与 `cli-fun-toolchain.md` §2。
-  工具代码里也是按能力探测写的：`project_tools._fui_supports_unpack()` 跑 `fui help` 看有没有 `unpack`。
-- 所以**当前无法从 ftu 反解析出 json**：拿到一个只有 ftu 的老工程，`dev_modified_ftu` 这类场景会被标
-  `skipped`（提示"以 json 为源重新 pack"）。真要 ftu→json，得找**厂家提供的支持 unpack 的 fui 版本**，
-  或手工在 IDE 里重建布局后重新导出。
-- `flythings_read_json` 读的是 **json**；只有 ftu 时需提供同目录 json。
-- 结论：**"ftu 逆向"在我们这套工具里不是可用路径**，别向客户承诺能解开 ftu。
+- 随包 `fui.exe` 自 **v0.27.91** 起**含 `unpack`**（`fui help` 里 pack/unpack 都在）：
+  `fui unpack <in.ftu> [out.json]`（不给输出就解到同目录同名 json），也可以传**目录**批量解。
+  工具代码按能力探测：`project_tools._fui_supports_unpack()` 跑 `fui help` 看有没有 `unpack`
+  —— 用旧版 fui（只含 pack）时会明确报「不含 unpack」，不会装做解开。
+- **正道走 op**：`flythings_fui_unpack(ftu_path, output_json='', overwrite=True)`
+  - 默认**覆盖**同目录同名 json（ftu 为真源）；要保留原 json 传 `overwrite=False` → 写 `<name>.unpacked.json`（已存在则追加序号）；
+  - 也可以 `output_json` 指定别的落盘路径；
+  - 返回 `jsonPath`（+ `controlsCount` / `resolution` / `overwritten` / `affectedFiles`），可直接交给 `flythings_read_json`。
+- 用在：只有 ftu 没 json 的老工程接手 / 核对设备侧布局 / IDE 直接改过 ftu 要回写到 json。
+- ⚠️ **逆向不等于改法**：改布局仍以 json 为源（改 json → pack），别养成「改 ftu → unpack → pack」的循环。
+- `flythings_read_json` 读的是 **json**；只给 ftu 时它会明确指路 `flythings_fui_unpack`（不再说「加密无法解析」）。
 
 ## 7. 和 resources / 图片资源的关系（哪个进 ftu，哪个不进）
 
@@ -112,10 +120,10 @@ ui/*.ftu  ← 设备实际加载的是它
 | ftu 要怎么编辑 / ftu 修改流程是什么 | 同上；可视化拖拽走 `flythings_ui_visual(action="editor")` → `edit_apply` |
 | 要不要学 ftu 文件格式 | **不用**。格式不对外公开、是二进制，业务上只需要知道"它是 json 的产物"（§1） |
 | 能不能手写 ftu / 能不能直接改 ftu | **不能**。会被下次 pack 覆盖、无版本管理价值，见 §5 五条理由 |
-| ftu 能逆向成 json 吗 | 当前内置 `fui.exe` **只支持 pack，不支持 unpack**，逆向不可用（§6） |
+| ftu 能逆向成 json 吗 | **能**（v0.27.91 起）：`flythings_fui_unpack`（默认覆盖同目录同名 json，ftu 为真源），详见 §6 |
 | main.ftu 是什么文件 / UI 文件和 json 什么关系 | `main.ftu` = `main.json` 编译出来的界面文件，设备加载它；一对一同名（§1、§2） |
 | 改了 json 为什么设备上没变 | 三连查：**没 pack**（`fui pack`）→ **没推**（`build_ui_flow(with_launch=True)` / `fun launch`）→ **设备在读旧 ftu / 推错了设备**（多设备必传 `-s`，见 `cli-fun-toolchain.md` §7） |
-| 我在 IDE 里直接改了 ftu，AI 再改 json 会不会冲突 | 会。IDE 改 ftu 后 ftu 比 json 新 → 工具报警告并要求先同步；要么统一走 json，要么统一走 IDE（§4） |
+| 我在 IDE 里直接改了 ftu，AI 再改 json 会不会冲突 | 不会丢：ftu 比 json 新「分钟级」时 build_ui_flow 会先 unpack 同步 json（以 ftu 为真源）；要么统一走 json，要么统一走 IDE（§4） |
 
 ## 9. 验证（实测记录）
 

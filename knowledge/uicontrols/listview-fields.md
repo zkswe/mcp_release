@@ -73,6 +73,24 @@
 - 循环列表（`cycleEnable:true`）本身无边界，越界拖拽用基准 50，别开大。
 - 分辨率换算：基准 50 @1024×600 ≈ 屏高 8%，其他分辨率 `round(scale×50)` 下限 24。
 
+## 滚轮选择器 / 居中选中（2026-09-19）
+
+> **完整口径**（字段配法 + 4 个真机坑 + 验收判据与数字）见 **`listview-wheel-picker.md`**，
+> 本文不重复。本节点三个**只属 listview 字段/回调**的事实（真机实测，官方文档未收录）：
+
+1. **引擎自己维护「当前项」选中态**：用户在列表上操作后，它把选中态打在**列表盒第 1 行**
+   （= `getFirstVisibleItemIndex()`）上，**会盖掉 `obtainListItemData` 里的 `setSelected`**。
+   -> 要自己做「正中行高亮」时，**别用引擎的态图**（`pic0/1/2` 留空、`color2/3` 置中色）；
+   选中感由宿主自画（选中条层次与文字色口径见 `listview-wheel-picker.md` §3 坑 4）。
+2. **行属性不会因为「中心行变了」而自动重刷**：引擎只在行「进入可视区」或 `refreshListView()` 时调
+   `obtainListItemData`。中心行一变就要 `refreshListView()`，否则会出现「滚完停住、高亮停在错行」。
+3. **`setSelection(i)` 把第 i 项摆到列表盒第 1 行（不是正中行），并且是带动画的**（调用后 `fi` 会连续跑好几帧）
+   -> 程序化定位（复位/取消/步进）不要用「调 setSelection + 立即回读 + 再调」的迭代校正（会越推越远），
+   用**数据侧平移** + `refreshListView()`（写法见 `listview-wheel-picker.md` §1）。
+
+其余**属于滚轮配法**的内容（中心行回读公式、选中条挂静态层、字段取值档、行数据数组取 2n、
+验收判据与像素数字）统一收在 **`listview-wheel-picker.md`**（§0~§4），本文不再重复。
+
 ## 代码示例（listViewDemo 实测）
 
 ```cpp
@@ -99,3 +117,6 @@ p->refreshListView();
 
 ## 样例代码
 listViewDemo-New（增删改查完整 demo：标题+选择钮+删除钮三 subitem）；NetDemo-New（setListAdapter 编程式）；git.com 各产品列表页（38+ 工程在用）。
+滚轮选择器：`projects/SampleUI-New` 的 `ListviewTimePicker`（3 行循环列表 + 点行选中；口径 `listview-wheel-picker.md`）+ 案例
+`projects/translate/tdesign-miniprogram`（5 列 176×180、可见 5 行、正中行 = 选中行 + **选中条挂静态背景层**，
+真机 `s4c_*` 30 项验收全 PASS）。

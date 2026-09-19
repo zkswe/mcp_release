@@ -67,6 +67,64 @@ _BM25_K1 = 1.5
 _BM25_B = 0.75
 _DF = {}      # token -> 文档频次缓存（索引在进程内不变，可长期复用）
 
+# ---- 中文口语 → 文档里的英文专名（只为 BM25 的「文件名/目录名加权」服务）----
+# 为何要它（2026-09-19 实测）：目标文档叫 listview-wheel-picker.md，而用户只会说「滚轮/转盘」；
+# BM25 对「命中路径」权重是 idf×2，但没有 token 就永远拿不到这份权重。
+# 只作用在 _bm25_search 内，**不动 query_tokens**（覆盖率判定与 BM25 必须共用同一套切词，
+# 否则 kb_tools 的 quality 标记会失真）。
+_ALIAS = {
+    '滚轮': ('wheel', 'roller'), '转盘': ('wheel',), '轮子': ('wheel',),
+    '轮选': ('wheel',), '选择器': ('picker',), '选择条': ('picker',),
+    '时钟盘': ('timepicker', 'dial'), '时间选择': ('timepicker', 'timeedit'),
+    '日期时间选择': ('timepicker', 'timeedit'),
+}
+
+
+def _alias_tokens(q):
+    ql = (q or '').lower()
+    out = set()
+    for k, vs in _ALIAS.items():
+        if k in ql:
+            out.update(vs)
+    return out
+
+
+# ---- 专名（rare term）优先：bge-small-zh 对英文控件名不敏感，靠 BM25 精确命中兜底 ----
+_RARE_MINLEN = 4          # 专名最短长度（z20/t113 这类 3 字符平台名太短，不参与）
+_RARE_DF_RATIO = 0.02     # 在 ≤2% 的 chunk 中出现 → 视为判别性专名
+
+
+def _rare_terms(q):
+    """查询里的判别性专名（如 qtimeedit / listwheel / numberpicker / pickerview）。
+
+    为何要它（2026-09-19 实测）：向量路把「英文控件名 + 中文问法」当普通语义，
+    常把通用文档排前（『QTimeEdit 怎么做』向量路 top3 全是 devflow 通用文档，
+    目标文档压根不在 top-40），BM25 路却能精确命中第 1；两路 RRF 融合后目标文档被挤到 #4。
+    → 在融合结果上把「含专名的片段」提前（**重排，不丢弃**，无召回损失）。
+    """
+    n = len(CHUNKS) or 1
+    out = []
+    for t in query_tokens(q):
+        if len(t) >= _RARE_MINLEN and t.isascii() and _df_of(t) <= _RARE_DF_RATIO * n:
+            out.append(t)
+    return out
+
+
+def _prefer_rare(fused, q):
+    """含专名的片段提前；无专名 / 专名无命中 → 原样返回（不改变原行为）。"""
+    rare = _rare_terms(q)
+    if not rare or not fused:
+        return fused
+
+    def _has(c):
+        t = (c.get('text') or '').lower()
+        return any(r in t or r in (c.get('path') or '').lower() for r in rare)
+
+    yes = [x for x in fused if _has(x[1])]
+    if not yes:
+        return fused
+    return yes + [x for x in fused if not _has(x[1])]
+
 
 def _df_of(t):
     v = _DF.get(t)
@@ -83,7 +141,7 @@ def _bm25_search(q, k):
     并对「命中文件名/目录名」与「命中首段标题」加权——实践中这两个信号的
     准确率远高于正文里偶然出现一次。
     """
-    toks = sorted(query_tokens(q))
+    toks = sorted(set(query_tokens(q)) | _alias_tokens(q))
     if not toks:
         return []
     n = len(CHUNKS)
@@ -120,6 +178,11 @@ def search(q, k=3):
     （如『V85x 如何切换 USB OTG』——向量命中 Z21 通用文档，BM25 才能命中
     v85x/usb-gadget-storage）。现改为两路 top-N 经 RRF 融合，双向互补：
     向量抓语义近邻、BM25 抓关键词精确命中，专名/缩写查询命中率显著提升。
+
+    2026-09-19 补充（钟工「检索质量优化」）：融合后再做一次**专名优先重排**
+    （见 `_prefer_rare`）—— 英文控件名这类判别性专名在向量路几乎不起作用，
+    必须在融合结果里把「含该专名的片段」提前；BM25 另加中文口语别名扩展
+    （`_alias_tokens`，如 滚轮→wheel/roller）以吃到「命中文件名」那份额外权重。
     """
     emb = _get_embedder()
     if emb is not None:
@@ -130,10 +193,11 @@ def search(q, k=3):
             kw = _bm25_search(q, _TOPN)
             if not kw:
                 return vec[:k]
-            return _rrf_fuse(vec, kw, k)
+            return _prefer_rare(_rrf_fuse(vec, kw, _TOPN), q)[:k]
         except Exception:
             pass  # 模型推理失败 → BM25 兜底
-    return _bm25_search(q, k)
+    # 降级路同样做专名优先（两路行为一致，便于回归用例在无模型机器上也全绿）
+    return _prefer_rare(_bm25_search(q, _TOPN), q)[:k]
 
 
 _TOPN = 40  # 混合融合：两路各取前 40 再 RRF

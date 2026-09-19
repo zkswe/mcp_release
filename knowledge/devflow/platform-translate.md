@@ -12,7 +12,7 @@
 
 | 要找什么 | 去哪 | 说明 |
 |---|---|---|
-| **控件 ↔ 控件** 对应（6 个框架） | `flythings_map_control(query, source='')` op / 仓库根 `mcp_control_map.json` | 212 条：lvgl 32 / qt 40 / android 43 / **miniprogram 38** / emwin 29 / mfc 30；每条含 `level` / `target` / **可直接粘的 `json` 片段** / `notes` / `ref` |
+| **控件 ↔ 控件** 对应（6 个框架） | `flythings_map_control(query, source='')` op / 仓库根 `mcp_control_map.json` | 213 条：lvgl 32 / qt 40 / android 43 / **miniprogram 39** / emwin 29 / mfc 30；每条含 `level` / `target` / **可直接粘的 `json` 片段** / `notes` / `ref` |
 | 平台**真缺**的能力（要自定义控件） | `components/ui_v1/`（一个源控件一个目录）+ `gap-list.md` G-xx | 有对应控件的**不进**控件包，只作映射参考（`_mapping/`） |
 | 缺口分级口径 | 五级 `L1 等价 / L2 组合 / L3 自绘 / L4 降级 / L5 不支持` | 与 `mcp_control_map.json` 的 `level` 同一套 |
 | 检索口 | `knowledge/uicontrols/control-mapping-capability.md`、`framework-control-mapping.md` | |

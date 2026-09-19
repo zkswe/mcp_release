@@ -142,7 +142,8 @@ mTextView->setInvalid(!mTextView->isInvalid());   // 交替 → 控件重画 →
 - `ctrl->invalidate()`（或带脏区 `invalidate(&pos)`）才是「重绘」的正式 API；
   **带脏区的版本在部分设备上没导出**：实测 `libeasyui.so` 旧于本机头文件时，用它会在 dlopen/链接时报
   `undefined symbol: _ZN6ZKBase10invalidateEPK14LayoutPosition` → **整屏黑**（不是报错退出）。
-  真机/组件里用前先确认符号存在（组件侧记录见 `components/ui_v1/WheelPicker/README.md`）。
+  真机/组件里用前先确认符号存在（案例侧记录：`projects/translate/tdesign-miniprogram` 的真机验证与
+ `gap-list.md` G-38 的头文件核对）。
 - **大多数情况根本不需要手动重绘**：`setText` / `setTextColor` / `setBackgroundPic` / `setProgress`
   这类内容变更**引擎本来就会重绘该控件**。
 - 「隐藏一个控件」不要靠重绘，用**换同尺寸透明占位图 + 文本置空**
@@ -181,6 +182,7 @@ mTextView->setInvalid(!mTextView->isInvalid());   // 交替 → 控件重画 →
 - 字段全集与默认值 → `json-field-mandatory.md`（radiogroup 行已标注 true 例外）
 - radiogroup / checkbox 字段与代码操作 → `radiogroup-checkbox-fields.md`
 - listview 回调与刷新 → `listview-fields.md`（铁律 7）
+- ★ 装饰件压在可触摸控件之上的陷阱（选中条为什么要 `setTouchPass(true)`） → `listview-wheel-picker.md` §3
 - 真机确认画面（按 pan 取活帧） → `devflow/ui-layout-verify.md` §2-1
 - 强制重绘 / 禁用语义（`invalidate` vs `setInvalid`） → 本文 §6；抓帧侧口径 `devflow/device-screenshot.md` §3.3-1
 - 高频回调只刷变化控件（拖动卡顿的真因） → `high-frequency-callback-perf.md`
