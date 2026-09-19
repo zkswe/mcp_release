@@ -77,8 +77,11 @@ components/ui_v1/
   需要接线细节就放 `_mapping/<源控件名>/`（如 `_mapping/TabView/`，基于平台 `pagewindow`）。
 - `<源控件名>/` 里的目录名必须是**源框架控件名**，且该能力**平台确实缺**
   （级别 L3 自绘 / L4 降级 / L5 不支持，且 `gap-list.md` 有编号）——如 `Calendar/`（日期选择器）、
-  `TimePicker/`、`WheelPicker/`、`RichText/`、`TableGrid/`、`Chart/`、`Pseudo3D/`。
+  `RichText/`、`TableGrid/`、`Chart/`、`Pseudo3D/`。
   判定口径：**平台有没有能 1:1 覆盖的控件**（有 → 映射；无 → 才建包）。
+  ⇒ 反例（已收口）：`WheelPicker/` 2026-09-19 **已移除**——滚轮改判 **L2（`listview` 组合）**，归第 2 段映射项，不再建包。
+  ⇒ 反例（已收口）：`TimePicker/` 2026-09-19 **不做包**——钟工口径「TimePicker 通过 listview 这个实现对应」，
+  **含时钟盘形态**；同样归第 2 段映射项第 13 行（`listview` / L2），口径 `knowledge/uicontrols/listview-wheel-picker.md` §6。
 
 **四件套沿用 `components/README.md`**（缺一不收）；与 `components/ble|fonts|icons` 的差别只在：
 ui_v1 的包**依赖 easyui 控件面**，所以 `platforms.md` 必须写清 **easyui 版本**与**控件可用性差异**。
@@ -106,7 +109,7 @@ ui_v1 的包**依赖 easyui 控件面**，所以 `platforms.md` 必须写清 **e
 
 | 文件 / 入口 | 内容 |
 |---|---|
-| `mcp_control_map.json`（仓库根目录） | 六个源框架（lvgl / qt / android / miniprogram / emwin / mfc）共 212 条常用控件映射：`name / aliases / target / level / json（可直接粘）/ notes / ref` + `targets`（目标控件：caption/指针/片段） |
+| `mcp_control_map.json`（仓库根目录） | 六个源框架（lvgl / qt / android / miniprogram / emwin / mfc）共 213 条常用控件映射：`name / aliases / target / level / json（可直接粘）/ notes / ref` + `targets`（目标控件：caption/指针/片段） |
 | MCP op `flythings_map_control(query, source)` | 按控件名/别名模糊匹配（忽略大小写与下划线/连字符），命中回级别 + 片段 + 指针；未命中回 `NO_HIT` + 候选 + 「缺口五级」处置建议 |
 | 能力说明 | `knowledge/uicontrols/control-mapping-capability.md` |
 

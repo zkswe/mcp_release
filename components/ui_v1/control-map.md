@@ -1,7 +1,7 @@
 # control-map.md — 跨框架控件映射（★ 散文权威表）
 
 > **口径修正（2026-09-16，钟工）**：**有一一映射的控件走「映射能力」，不写散文说明** —— 机读索引在仓库根目录
-> `mcp_control_map.json`（六个源框架 212 条，含 `level / json 可直接粘 / notes / ref`），查询入口是 MCP op
+> `mcp_control_map.json`（六个源框架 213 条，含 `level / json 可直接粘 / notes / ref`），查询入口是 MCP op
 > **`flythings_map_control(query, source)`**；本文件保留为**级别口径、缺口编号、平台事实的散文说明与索引**
 > （机读数据从这里 + KB 收口而来）。开发时**优先用 op**，本文用于人读与校对。
 >
@@ -102,8 +102,8 @@
 | 2.12 | 环形进度（单环）：`lv_arc`(单值)、环形 ProgressBar | `circlebar__N` / `ZKCircleBar` | L1 | L1 | `setProgress(0..max)`；按进度**裁有效图**成扇形（非转图），每种色要一份有效图；无拖拽回调 |
 | 2.13 | 表针 / 仪表指针：`lv_scale`+needle、`QDial` | `pointer__N` / `ZKPointer` | L1 | L1 | 唯一 API `setTargetAngle(deg)`；需 `rotationPoint`(控件系圆心)+`fixedPoint`(图系铰点)+表盘底图配套 |
 | 2.14 | 下拉选择 / 选项框：`picker`、`Spinner`、`QComboBox`、`lv_dropdown` | `button__N` + `window__N`(modal) + `listview__小`/按钮组 | **L4** | L3/D6、B/7 | 组合可行但**无滚轮惯性、无多列联动**，且展开位从「框下」变「居中模态」→ 取差为 L4（→ 候选组件 `picker`） |
-| 2.15 | 日期/时间选择：`picker mode=date/time`、`DatePicker`、`QDateTimeEdit`、`lv_calendar` | `button__N`/`edittext__N` + `window__N` 日历（**7×6 = 42 个 `textview__N`** 承载日号）+ activity 触摸事件反算命中格 | **L4** | B/8 | painter **无文字 API** → 网格数字必须 textview；降级点：无「今天」高亮、无年/月下拉跳转（只能逐月翻）→ 候选组件 `calendar` |
-| 2.16 | 数值步进：`stepper`、`QSpinBox`、`NumberPicker`(小) | 2 × `button__N`(+/-) + `textview__N` | L2 | — | 组合 |
+| 2.15 | 日期/时间选择（**日期部分**）：`picker mode=date`、`DatePicker`、`QDateTimeEdit`、`lv_calendar`、`CDateTimeCtrl` | `button__N`/`edittext__N` + `window__N` 日历（**7×6 = 42 个 `textview__N`** 承载日号）+ activity 触摸事件反算命中格（**已落地组件包 `components/ui_v1/Calendar/`**，Z21 真机验收） | **L4** | B/8 | painter **无文字 API** → 网格数字必须 textview；降级点：无「今天」高亮、无年/月下拉跳转（只能逐月翻）→ 候选组件 `calendar`（已落地）。**时间部分不在本行**：`TimePicker`（含时钟盘）/`QTimeEdit`/`picker mode=time` 一律走 2.24 的滚轮口径（**L2**，`listview` 组合），**没有「无对应能力」的例外** |
+| 2.16 | 数值步进（**无滚轮观感要求**时）：`stepper`、`QSpinBox`、`lv_spinbox`、`SPINBOX`、`CSpinButtonCtrl` | 2 × `button__N`(+/-) + `textview__N` | L2 | — | 组合；**`NumberPicker` 不在此行**——它是滚轮控件，2026-09-19 与 `TimePicker` 同族统一到 2.24（`listview` 组合 / L2） |
 | 2.17 | 图标字体 Symbol：`LV_SYMBOL_*`、Material Icons 字体 | `textview__N` + `data-icon="mail"`（html2json 自动转**线框 PNG**） | L1 | A | 设备字库无 Symbol 码位 → 一律走图标 PNG（`components/icons` Tabler，MIT） |
 | 2.18 | 图片：`image`、`lv_img`、`ImageView`、`QLabel`+pixmap | `textview__N` + `backgroundPic`，或 `imageview` | L1 | L1 | **铁律**：`resources/images/` 自动生成的 PNG 尺寸 **必须 == 控件盒**（`check_all #11/#17`） |
 | 2.19 | 动图 GIF/WebP：`lv_gif`、`image`(gif)、`AnimatedDrawable` | `imageanim__N` / `ZKImageAnim`（`playFile`+`loopCount`） | L1 | — | **平台有差异**：Z20/Z21/T113/V85X 支持，**F133 不支持**（见 `platforms.md`） |
@@ -111,7 +111,7 @@
 | 2.21 | 数字时钟 / 跑马灯：`digitalclock`、marquee、`lv_label`(long scroll) | `digitalclock__N` / `slidetext__N` | L1 | — | 时钟 **零代码自走时**（json `format/beat/clockColor`）；跑马灯走 `SlideText` |
 | 2.22 | 长按：`bindlongpress`、`OnLongClickListener`、`QToolButton`+timer | `ZKBase::ILongClickListener` + json `longClickTimeOut/longClickIntervalTime` | L1 | — | 注册 `setLongClickListener(&obj)`，`onUI_quit` 置 NULL |
 | 2.23 | 拖拽排序 / 滑动删除列表项 | 无 | **L5** | — | `gui-controls-gap` #9：`AlbumListView` 有长按但无换序/侧滑删；**替代建议** = 上/下移按钮 + 删除按钮（不假装能转） |
-| 2.24 | 滚轮选择器 WheelPicker（时间/数值联动） | 无 | **L5** | — | `gui-controls-gap` #5「真缺」；替代 = 步进按钮组 / `picker` 模态列表（→ 候选组件 `wheel_picker`，滚动惯性属自绘） |
+| 2.24 | 滚轮选择器 WheelPicker（时间/数值联动）：`picker-view`、`lv_roller`(`wheel`)、**`TimePicker`（滚轮 + 时钟盘两形态）**、**`NumberPicker`**、`QTimeEdit`、`LISTWHEEL` | `listview__N`（**循环列表** + 引擎惯性/回弹对齐）+ 数据侧平移定位（每列一个 listview）+ **选中条静态层**（listview 之前的装饰 `textview` 带底图） | **L2**（2026-09-19 改判，原 L5） | 钟工 2026-09-19 口径「这个滚轮效果你基于 ListView 改造吧。或者把他映射到 listView 里面」→ 一列 = 一个 `listview`：`cycleEnable/edgeEffect=1/dragMaxDis=50/autoRollback`；正中行 = 选中行靠**数据侧平移**（不能用引擎选中态，它会盖住宿主 `setSelected`）；回读 `getFirstVisibleItemIndex()/getFirstVisibleItemOffset()`。**选中条层次**（2026-09-19 12:00 钟工：「选中条放到背景图里面。这样子滚动以后选中条不会动」）：条挂**静态背景层**不挂行（挂行 -> 条跟着滚），行只负责文字色；装饰件 `touchable:false` + 运行期 `setTouchPass(true)`。口径 + 4 个真机坑：`knowledge/uicontrols/listview-wheel-picker.md`；定位/惯性/循环全是引擎的，**页面侧零自绘**；**原自绘包 `components/ui_v1/WheelPicker/` 已于 2026-09-19 移除**（钟工 A3 拍板，需求已并入本组合：淡出 = 按行距插值文字色）。**TimePicker 全族统一收口**（★钟工 2026-09-19 口径「TimePicker 通过 listview 这个实现对应」）：**滚轮形态与时钟盘形态都走本组合**，不再留「无对应能力」的例外——时钟盘的**数值/联动语义**由 listview 列承载（12 个方位值一列排布，回读中心行 → 时/分），**圆形排列观感**要用 12 方位按钮组或 ZKPainter 自绘才有（**这是观感降级说明，不是能力缺失**；非矩形/圆周布局属 L3 自绘，要做按 gap-list 编号立项） | G-23（同级）、G-37、G-38 | 案例 `projects/translate/tdesign-miniprogram` 日期页（Z21 真机 `z21/evidence/s4b_*` 24 项 = 条挂行上；**`s4c_*` 30 项 = 条挂静态层，现役**）；官方样例 `SampleUI-New/ListviewTimePicker` |
 
 ---
 
@@ -188,7 +188,7 @@
 
 ## 7. 相关文件
 
-- ★**机读映射索引**：`../../mcp_control_map.json`（212 条）+ MCP op **`flythings_map_control(query, source)`**
+- ★**机读映射索引**：`../../mcp_control_map.json`（213 条）+ MCP op **`flythings_map_control(query, source)`**
   （能力说明：`knowledge/uicontrols/control-mapping-capability.md`）
 - 逻辑映射（事件/定时器/列表/导航/状态）：`logic-map.md`
 - 缺口清单 + 五级处置 + 3D 策略 + 工具链坑：`gap-list.md`

@@ -1,8 +1,8 @@
 {
  "schema": 1,
- "version": 1,
- "updated": "2026-09-16",
- "note": "跨框架控件映射的机读索引（配合 op flythings_map_control）。一级口径：**有平台对应控件 → 走映射能力（本文件）**；**平台真缺的能力 → 走自定义控件包 components/ui_v1/**。人工维护，来源 = components/ui_v1/control-map.md + gap-list.md + knowledge/devflow/gui-controls-gap.md + knowledge/uicontrols/*-fields.md（**冲突以 KB 为准**）。改完重建索引并跑闸门。",
+ "version": 3,
+ "updated": "2026-09-19",
+ "note": "跨框架控件映射的机读索引（配合 op flythings_map_control）。一级口径：**有平台对应控件 → 走映射能力（本文件）**；**平台真缺的能力 → 走自定义控件包 components/ui_v1/**。人工维护，来源 = components/ui_v1/control-map.md + gap-list.md + knowledge/devflow/gui-controls-gap.md + knowledge/uicontrols/*-fields.md（**冲突以 KB 为准**）。改完重建索引并跑闸门。｜★版本 3（2026-09-19）：TimePicker 全族（含时钟盘形态）统一收口为 `target: listview` + `level: L2`，`NumberPicker` 由 `stepper` 改判 `listview`，小程序 `picker(mode=date/time)` 拆成 date/time 两条；表中不再有「时间/时钟盘无对应能力」的表述。",
  "levels": {
   "L1": "等价：有对应自带控件，语义+行为 1:1（平台固有差异如系统键盘/设备字库计入 L1）",
   "L2": "组合：无单一控件，但 2+ 自带控件/容器组合 + logic 侧聚合即可无能力丢失",
@@ -78,7 +78,7 @@
    "caption": "LvFiles",
    "ptr": "mLvFilesPtr (ZKListView)",
    "json": "{\"listview__1\":{\"id\":60001,\"caption\":\"LvFiles\",\"position\":{\"left\":20,\"top\":120,\"width\":984,\"height\":420},\"autoRollback\":false,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":false,\"dragMaxDis\":1,\"edgeEffect\":50,\"hasScrollbar\":true,\"orientation\":1,\"rows\":6,\"rowSpacing\":2,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"\",\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"position\":{\"left\":0,\"top\":0,\"width\":984,\"height\":68},\"text\":\"\",\"touchable\":true,\"visible\":true,\"subItem\":[{\"id\":61001,\"caption\":\"TvRowName\",\"position\":{\"left\":16,\"top\":16,\"width\":600,\"height\":36},\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontFamily\":0,\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"text\":\"\",\"touchable\":true,\"visible\":true}]}}}",
-   "note": "三回调：getListItemCount_/obtainListItemData_（禁耗时）/onListItemClick_；行自身 setText(\"\") 否则与 subItem 叠字；数据变了必须 refreshListView()"
+   "note": "三回调：getListItemCount_/obtainListItemData_（禁耗时）/onListItemClick_；行自身 setText(\"\") 否则与 subItem 叠字；数据变了必须 refreshListView()；**滚轮选择器（时间/数值/多列联动）的用法**（循环列表 + 数据侧平移定正中行 + 选中条挂静态层）见 knowledge/uicontrols/listview-wheel-picker.md"
   },
   "seekbar": {
    "caption": "SkSpeed",
@@ -235,12 +235,6 @@
    "ptr": "mTvArticlePtr (ZKTextView)",
    "json": "{\"textview__1\":{\"id\":50090,\"caption\":\"TvArticle\",\"position\":{\"left\":40,\"top\":80,\"width\":944,\"height\":480},\"alignment\":33,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"touchable\":false,\"text\":\"第一段（手动 \\n 换行）\\n第二段\"}}",
    "note": "富文本替代：textview + 手动 \\n（无自动折行/段内样式/图文混排）"
-  },
-  "wheelpicker": {
-   "caption": "",
-   "ptr": "",
-   "json": "",
-   "note": "滚轮选择器平台无对应能力（无滚轮惯性/多列联动）"
   },
   "timer_anim": {
    "caption": "",
@@ -539,11 +533,11 @@
      "roller",
      "wheel"
     ],
-    "target": "wheelpicker",
-    "level": "L5",
-    "json": "",
-    "notes": "滚轮选择器平台无对应能力；替代 = 步进按钮组 / picker 模态列表",
-    "ref": "components/ui_v1/components.md（计划 WheelPicker/）"
+    "target": "listview",
+    "level": "L2",
+    "json": "{\"textview__10\":{\"id\":50010,\"caption\":\"DyHourBand\",\"position\":{\"left\":28,\"top\":142,\"width\":176,\"height\":36},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":18,\"touchable\":false,\"text\":\"\",\"backgroundPic\":\"images/dy_band.png\"},\"listview__11\":{\"id\":60011,\"caption\":\"DyHourLv\",\"position\":{\"left\":28,\"top\":70,\"width\":176,\"height\":180},\"autoRollback\":true,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":true,\"dragMaxDis\":50,\"edgeEffect\":1,\"hasScrollbar\":false,\"orientation\":1,\"rows\":5,\"rowSpacing\":0,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"item\",\"alignment\":37,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":6710886,\"color1\":6710886,\"color2\":6710886,\"color3\":6710886,\"color4\":-1},\"fontSize\":18,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{\"pic0\":\"\",\"pic1\":\"\",\"pic2\":\"\"},\"position\":{\"left\":0,\"top\":0,\"width\":176,\"height\":36},\"text\":\"\",\"touchable\":true,\"visible\":true}}}",
+    "notes": "滚轮选择器 = **listview 组合（L2）**：一列 = 一个 `listview__N`（`cycleEnable:true` 循环 + `edgeEffect:1`/`dragMaxDis:50`/`autoRollback:true` 引擎惯性回弹对齐），**正中行 = 选中行靠数据侧平移**（`items[k]=label((k-ROT+shift) mod n)` + `refreshListView()`），中心行回读 `getFirstVisibleItemIndex()`/`getFirstVisibleItemOffset()`；**选中条挂 listview 之前的静态装饰 textview（backgroundPic），不挂行背景图**（挂行 -> 滚动时条跟着走）。不用引擎选中态（它会把选中态打在第 1 可见行、盖掉宿主 `setSelected`）。自绘包 `components/ui_v1/WheelPicker/` 已于 2026-09-19 移除（原用于逐像素 alpha 渐隐/行内非文字内容，其需求已并入本 listview 方案：文字色按行距插值 = 伪 alpha）。",
+    "ref": "knowledge/uicontrols/listview-wheel-picker.md（字段配法 + 正中行对齐 + 4 个真机坑 + 像素验收）；components/ui_v1/control-map.md 2.24（L2 改判）"
    },
    {
     "name": "lv_calendar",
@@ -893,7 +887,7 @@
     "target": "calendar",
     "level": "L4",
     "json": "{\"button__20\":{\"id\":20020,\"caption\":\"BtnDate\",\"position\":{\"left\":40,\"top\":220,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":16,\"picTab\":{},\"text\":\"2026-09-16\",\"touchable\":true},\"window__21\":{\"id\":110021,\"caption\":\"WinCalendar\",\"position\":{\"left\":112,\"top\":60,\"width\":800,\"height\":480},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
-    "notes": "同上（时间部分用步进按钮组）；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内** textview 底色实测画不出；普通容器里可画）**（日期部分；**时间部分仍缺**，见计划 `TimePicker/` / `WheelPicker/`）",
+    "notes": "同上（时间部分也可用步进按钮组——观感取舍，滚轮形态走 listview/L2）；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内** textview 底色实测画不出；普通容器里可画）**（日期部分；**时间部分 = `listview` 组合 / L2**，见 `knowledge/uicontrols/listview-wheel-picker.md`）",
     "ref": "components/ui_v1/Calendar"
    },
    {
@@ -901,11 +895,11 @@
     "aliases": [
      "timeedit"
     ],
-    "target": "wheelpicker",
-    "level": "L5",
-    "json": "",
-    "notes": "时间滚轮选择平台无对应能力；替代 = 步进按钮组 / 模态列表",
-    "ref": "components/ui_v1/components.md（计划 WheelPicker/）"
+    "target": "listview",
+    "level": "L2",
+    "json": "{\"textview__10\":{\"id\":50010,\"caption\":\"DyHourBand\",\"position\":{\"left\":28,\"top\":142,\"width\":176,\"height\":36},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":18,\"touchable\":false,\"text\":\"\",\"backgroundPic\":\"images/dy_band.png\"},\"listview__11\":{\"id\":60011,\"caption\":\"DyHourLv\",\"position\":{\"left\":28,\"top\":70,\"width\":176,\"height\":180},\"autoRollback\":true,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":true,\"dragMaxDis\":50,\"edgeEffect\":1,\"hasScrollbar\":false,\"orientation\":1,\"rows\":5,\"rowSpacing\":0,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"item\",\"alignment\":37,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":6710886,\"color1\":6710886,\"color2\":6710886,\"color3\":6710886,\"color4\":-1},\"fontSize\":18,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{\"pic0\":\"\",\"pic1\":\"\",\"pic2\":\"\"},\"position\":{\"left\":0,\"top\":0,\"width\":176,\"height\":36},\"text\":\"\",\"touchable\":true,\"visible\":true}}}",
+    "notes": "时间滚轮 = **listview 组合（L2）**：时/分/秒各一列 `listview__N`，`cycleEnable:true + edgeEffect:1 + dragMaxDis:50 + autoRollback:true`，正中行 = 选中行走数据侧平移，选中条挂静态装饰 textview（listview 之前，不挂行）；列间联动在 logic 侧聚合（中心行回读定时器 + 相邻列 `refreshListView()`）。不用自绘包（`components/ui_v1/WheelPicker/` 2026-09-19 已移除）。",
+    "ref": "knowledge/uicontrols/listview-wheel-picker.md（字段配法 + 正中行对齐 + 4 个真机坑 + 像素验收）；components/ui_v1/control-map.md 2.24（L2 改判）"
    },
    {
     "name": "QSpinBox",
@@ -1363,24 +1357,26 @@
    {
     "name": "TimePicker",
     "aliases": [
-     "timepickerdialog"
+     "timepickerdialog",
+     "clock dial",
+     "时钟盘"
     ],
-    "target": "wheelpicker",
-    "level": "L5",
-    "json": "",
-    "notes": "滚轮/时钟盘选择平台无能力；替代 = 步进按钮组 / 模态列表",
-    "ref": "components/ui_v1/components.md（计划 WheelPicker/）"
+    "target": "listview",
+    "level": "L2",
+    "json": "{\"textview__10\":{\"id\":50010,\"caption\":\"DyHourBand\",\"position\":{\"left\":28,\"top\":142,\"width\":176,\"height\":36},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":18,\"touchable\":false,\"text\":\"\",\"backgroundPic\":\"images/dy_band.png\"},\"listview__11\":{\"id\":60011,\"caption\":\"DyHourLv\",\"position\":{\"left\":28,\"top\":70,\"width\":176,\"height\":180},\"autoRollback\":true,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":true,\"dragMaxDis\":50,\"edgeEffect\":1,\"hasScrollbar\":false,\"orientation\":1,\"rows\":5,\"rowSpacing\":0,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"item\",\"alignment\":37,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":6710886,\"color1\":6710886,\"color2\":6710886,\"color3\":6710886,\"color4\":-1},\"fontSize\":18,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{\"pic0\":\"\",\"pic1\":\"\",\"pic2\":\"\"},\"position\":{\"left\":0,\"top\":0,\"width\":176,\"height\":36},\"text\":\"\",\"touchable\":true,\"visible\":true}}}",
+    "notes": "时间选择 = **listview 组合（L2）**（★钟工 2026-09-19 口径：TimePicker 走 listview 实现对应，两种形态都收口到这里，**不再留「无对应能力」的例外**）：①**滚轮形态**：时/分（12/24h）各一列 `listview__N`（`cycleEnable:true + edgeEffect:1 + dragMaxDis:50 + autoRollback:true`），正中行 = 选中行靠数据侧平移，选中条挂静态装饰 textview（listview 之前，不挂行）；②**时钟盘（clock dial）形态**：**数值/联动语义同样由 listview 组合承载**（12 个方位值按一列排布，回读中心行 → 时/分），**圆形排列观感**要用 12 方位按钮组或 ZKPainter 自绘才有 （**观感降级说明，不是能力缺失**；非矩形/圆周布局属 L3 自绘，要做就按 gap-list 编号立项）。不用自绘包（`components/ui_v1/WheelPicker/` 2026-09-19 已移除）。",
+    "ref": "knowledge/uicontrols/listview-wheel-picker.md（字段配法 + 正中行对齐 + 4 个真机坑 + 像素验收 + §6 时间选择/时钟盘）；components/ui_v1/control-map.md 2.24（滚轮 L2 改判） / 2.15（日期时间选择）"
    },
    {
     "name": "NumberPicker",
     "aliases": [
      "numberpicker"
     ],
-    "target": "stepper",
+    "target": "listview",
     "level": "L2",
-    "json": "{\"button__30\":{\"id\":20030,\"caption\":\"BtnStepMinus\",\"position\":{\"left\":40,\"top\":280,\"width\":48,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":24,\"picTab\":{},\"text\":\"-\",\"touchable\":true},\"textview__31\":{\"id\":50031,\"caption\":\"TvStepValue\",\"position\":{\"left\":96,\"top\":280,\"width\":120,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":20,\"touchable\":false,\"text\":\"0\"},\"button__32\":{\"id\":20032,\"caption\":\"BtnStepPlus\",\"position\":{\"left\":224,\"top\":280,\"width\":48,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":24,\"picTab\":{},\"text\":\"+\",\"touchable\":true}}",
-    "notes": "数值用步进按钮组；滚轮交互不支持",
-    "ref": "components/ui_v1/components.md §2（映射项）"
+    "json": "{\"textview__10\":{\"id\":50010,\"caption\":\"DyHourBand\",\"position\":{\"left\":28,\"top\":142,\"width\":176,\"height\":36},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":18,\"touchable\":false,\"text\":\"\",\"backgroundPic\":\"images/dy_band.png\"},\"listview__11\":{\"id\":60011,\"caption\":\"DyHourLv\",\"position\":{\"left\":28,\"top\":70,\"width\":176,\"height\":180},\"autoRollback\":true,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":true,\"dragMaxDis\":50,\"edgeEffect\":1,\"hasScrollbar\":false,\"orientation\":1,\"rows\":5,\"rowSpacing\":0,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"item\",\"alignment\":37,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":6710886,\"color1\":6710886,\"color2\":6710886,\"color3\":6710886,\"color4\":-1},\"fontSize\":18,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{\"pic0\":\"\",\"pic1\":\"\",\"pic2\":\"\"},\"position\":{\"left\":0,\"top\":0,\"width\":176,\"height\":36},\"text\":\"\",\"touchable\":true,\"visible\":true}}}",
+    "notes": "数值滚轮 = **listview 组合（L2）**（2026-09-19 与 `TimePicker` 同族统一收口）：一列 = 一个 `listview__N`（`cycleEnable:true + edgeEffect:1 + dragMaxDis:50 + autoRollback:true`），正中行 = 选中行走数据侧平移，选中条挂静态装饰 textview（listview 之前，不挂行）。**纯数值步进**（无滚轮观感要求）也可用步进按钮组（`targets.stepper`）——那是观感取舍，不是能力缺口。",
+    "ref": "knowledge/uicontrols/listview-wheel-picker.md（字段配法 + 正中行对齐 + 4 个真机坑 + 像素验收 + §6 时间选择/时钟盘）；components/ui_v1/control-map.md 2.24（滚轮 L2 改判） / 2.15（日期时间选择）"
    },
    {
     "name": "AlertDialog",
@@ -1752,17 +1748,28 @@
     "ref": "components/ui_v1/components.md §2（映射项）"
    },
    {
-    "name": "picker(mode=date/time)",
+    "name": "picker(mode=date)",
     "aliases": [
      "picker date",
-     "picker time",
      "mode=date"
     ],
     "target": "calendar",
     "level": "L4",
     "json": "{\"button__20\":{\"id\":20020,\"caption\":\"BtnDate\",\"position\":{\"left\":40,\"top\":220,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":16,\"picTab\":{},\"text\":\"2026-09-16\",\"touchable\":true},\"window__21\":{\"id\":110021,\"caption\":\"WinCalendar\",\"position\":{\"left\":112,\"top\":60,\"width\":800,\"height\":480},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
-    "notes": "42 个 textview + 触摸反算命中格；时间部分用步进按钮组；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内** textview 底色实测画不出；普通容器里可画）**（日期部分；**时间部分仍缺**，见计划 `TimePicker/` / `WheelPicker/`）",
+    "notes": "42 个 textview + 触摸反算命中格；时间部分用步进按钮组；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内** textview 底色实测画不出；普通容器里可画）**（日期部分；**时间部分 = `listview` 组合 / L2**，见 `knowledge/uicontrols/listview-wheel-picker.md`）",
     "ref": "components/ui_v1/Calendar"
+   },
+   {
+    "name": "picker(mode=time)",
+    "aliases": [
+     "picker time",
+     "mode=time"
+    ],
+    "target": "listview",
+    "level": "L2",
+    "json": "{\"textview__10\":{\"id\":50010,\"caption\":\"DyHourBand\",\"position\":{\"left\":28,\"top\":142,\"width\":176,\"height\":36},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":18,\"touchable\":false,\"text\":\"\",\"backgroundPic\":\"images/dy_band.png\"},\"listview__11\":{\"id\":60011,\"caption\":\"DyHourLv\",\"position\":{\"left\":28,\"top\":70,\"width\":176,\"height\":180},\"autoRollback\":true,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":true,\"dragMaxDis\":50,\"edgeEffect\":1,\"hasScrollbar\":false,\"orientation\":1,\"rows\":5,\"rowSpacing\":0,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"item\",\"alignment\":37,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":6710886,\"color1\":6710886,\"color2\":6710886,\"color3\":6710886,\"color4\":-1},\"fontSize\":18,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{\"pic0\":\"\",\"pic1\":\"\",\"pic2\":\"\"},\"position\":{\"left\":0,\"top\":0,\"width\":176,\"height\":36},\"text\":\"\",\"touchable\":true,\"visible\":true}}}",
+    "notes": "时间滚轮 = **listview 组合（L2）**（钟工 2026-09-19 口径：`picker mode=time` 走 listview 实现对应）：时/分各一列 `listview__N`（`cycleEnable:true + edgeEffect:1 + dragMaxDis:50 + autoRollback:true`），正中行 = 选中行走数据侧平移，选中条挂静态装饰 `textview`（`backgroundPic`、`touchable:false`，listview 之前，不挂行）；`bindchange` 等价物 = 宿主定时器轮询中心行。不用自绘包（`components/ui_v1/WheelPicker/` 2026-09-19 已移除）。",
+    "ref": "knowledge/uicontrols/listview-wheel-picker.md（字段配法 + 正中行对齐 + 4 个真机坑 + 像素验收 + §6 时间选择/时钟盘）；components/ui_v1/control-map.md 2.24（滚轮 L2 改判） / 2.15（日期时间选择）"
    },
    {
     "name": "picker-view",
@@ -1770,11 +1777,11 @@
      "picker-view",
      "picker-view-column"
     ],
-    "target": "wheelpicker",
-    "level": "L5",
-    "json": "",
-    "notes": "滚轮选择器（含联动惯性）平台无能力；替代 = 步进按钮组 / 模态列表",
-    "ref": "components/ui_v1/components.md（计划 WheelPicker/）"
+    "target": "listview",
+    "level": "L2",
+    "json": "{\"textview__10\":{\"id\":50010,\"caption\":\"DyHourBand\",\"position\":{\"left\":28,\"top\":142,\"width\":176,\"height\":36},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":18,\"touchable\":false,\"text\":\"\",\"backgroundPic\":\"images/dy_band.png\"},\"listview__11\":{\"id\":60011,\"caption\":\"DyHourLv\",\"position\":{\"left\":28,\"top\":70,\"width\":176,\"height\":180},\"autoRollback\":true,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":true,\"dragMaxDis\":50,\"edgeEffect\":1,\"hasScrollbar\":false,\"orientation\":1,\"rows\":5,\"rowSpacing\":0,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"item\",\"alignment\":37,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":6710886,\"color1\":6710886,\"color2\":6710886,\"color3\":6710886,\"color4\":-1},\"fontSize\":18,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{\"pic0\":\"\",\"pic1\":\"\",\"pic2\":\"\"},\"position\":{\"left\":0,\"top\":0,\"width\":176,\"height\":36},\"text\":\"\",\"touchable\":true,\"visible\":true}}}",
+    "notes": "滚轮选择器（含多列）= **listview 组合（L2）**：`picker-view-column` 一列一个 `listview__N`（`cycleEnable:true + edgeEffect:1 + dragMaxDis:50 + autoRollback:true`），正中行 = 选中行用**数据侧平移**；选中条挂 listview 之前的静态装饰 `textview`（`backgroundPic`，`touchable:false` + 运行期 `setTouchPass(true)`），**不挂行背景图**；`bindchange` 等价物 = 宿主定时器轮询中心行。不用自绘包（`components/ui_v1/WheelPicker/` 2026-09-19 已移除）。",
+    "ref": "knowledge/uicontrols/listview-wheel-picker.md（字段配法 + 正中行对齐 + 4 个真机坑 + 像素验收）；components/ui_v1/control-map.md 2.24（L2 改判）"
    },
    {
     "name": "radio-group / radio",
@@ -2167,11 +2174,11 @@
     "aliases": [
      "listwheel"
     ],
-    "target": "wheelpicker",
-    "level": "L5",
-    "json": "",
-    "notes": "滚轮选择器平台无能力；替代 = 步进按钮组 / 模态列表",
-    "ref": "components/ui_v1/components.md（计划 WheelPicker/）"
+    "target": "listview",
+    "level": "L2",
+    "json": "{\"textview__10\":{\"id\":50010,\"caption\":\"DyHourBand\",\"position\":{\"left\":28,\"top\":142,\"width\":176,\"height\":36},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":18,\"touchable\":false,\"text\":\"\",\"backgroundPic\":\"images/dy_band.png\"},\"listview__11\":{\"id\":60011,\"caption\":\"DyHourLv\",\"position\":{\"left\":28,\"top\":70,\"width\":176,\"height\":180},\"autoRollback\":true,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":true,\"dragMaxDis\":50,\"edgeEffect\":1,\"hasScrollbar\":false,\"orientation\":1,\"rows\":5,\"rowSpacing\":0,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"item\",\"alignment\":37,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":6710886,\"color1\":6710886,\"color2\":6710886,\"color3\":6710886,\"color4\":-1},\"fontSize\":18,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{\"pic0\":\"\",\"pic1\":\"\",\"pic2\":\"\"},\"position\":{\"left\":0,\"top\":0,\"width\":176,\"height\":36},\"text\":\"\",\"touchable\":true,\"visible\":true}}}",
+    "notes": "滚轮选择器 = **listview 组合（L2）**：一列 = 一个 `listview__N`（`cycleEnable:true + edgeEffect:1 + dragMaxDis:50 + autoRollback:true`），正中行 = 选中行走数据侧平移，选中条挂静态装饰 textview（listview 之前，不挂行）。不用自绘包（`components/ui_v1/WheelPicker/` 2026-09-19 已移除）。",
+    "ref": "knowledge/uicontrols/listview-wheel-picker.md（字段配法 + 正中行对齐 + 4 个真机坑 + 像素验收）；components/ui_v1/control-map.md 2.24（L2 改判）"
    },
    {
     "name": "DROPDOWN",
@@ -2576,7 +2583,7 @@
     "target": "calendar",
     "level": "L4",
     "json": "{\"button__20\":{\"id\":20020,\"caption\":\"BtnDate\",\"position\":{\"left\":40,\"top\":220,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":16,\"picTab\":{},\"text\":\"2026-09-16\",\"touchable\":true},\"window__21\":{\"id\":110021,\"caption\":\"WinCalendar\",\"position\":{\"left\":112,\"top\":60,\"width\":800,\"height\":480},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
-    "notes": "42 个 textview + 触摸反算；无今天高亮/年月下拉；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内** textview 底色实测画不出；普通容器里可画）**（日期部分；**时间部分仍缺**，见计划 `TimePicker/` / `WheelPicker/`）",
+    "notes": "42 个 textview + 触摸反算；无今天高亮/年月下拉；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内** textview 底色实测画不出；普通容器里可画）**（日期部分；**时间部分 = `listview` 组合 / L2**，见 `knowledge/uicontrols/listview-wheel-picker.md`）",
     "ref": "components/ui_v1/Calendar"
    },
    {

@@ -3,7 +3,7 @@
 > 「源框架有、FlyThings 没有（或不同）」的**唯一清单**：每条都给级别、处置、出处、证据。
 > 级别定义与换算规则见 `control-map.md` §0（L1 等价 / L2 组合 / L3 自绘 / L4 降级 / L5 不支持）。
 > **机读版**（开发优先用）：`../../mcp_control_map.json` + MCP op `flythings_map_control(query, source)`
-> （212 条、含级别与可直接粘的 json 片段）；本文件是缺口的散文清单与编号来源。
+> （213 条、含级别与可直接粘的 json 片段）；本文件是缺口的散文清单与编号来源。
 > 合并来源：`lvgl-widgets/TRANSLATE.md` §3（20 条）、`miniprogram-form-list/TRANSLATE.md` §3.1（D1~D22）
 > 与其 `README.md` §6（T1~T6）、`CANDIDATES.md` §三、`knowledge/devflow/gui-controls-gap.md`（9 条）。
 > 建立：2026-09-16（v0.27.71-open）
@@ -54,8 +54,8 @@
 | G-19 | iOS 风格开关：拖拽滑块 + 过渡动画 | 小程序 `switch` / LVGL `lv_switch` | **L4** | 两态图**点击**切换（无拖拽过渡） | D1（L2 旧） | 案例截图 `02_form_switch_on` |
 | G-20 | 无 `setEnabled` 真禁用态（源真不响应事件） | LVGL `LV_STATE_DISABLED` / Android `setEnabled(false)` | **L4** | **仅视觉灰**（`picTab.pic4` 只对有图按钮生效），逻辑上仍可点 → 要真禁用须在回调里自己拦 | LVGL §3-6（C） | 案例 `BtnInvite` |
 | G-21 | 无下拉选择控件（dropdown / ComboBox） | 小程序 `picker` / Android `Spinner` / Qt `QComboBox` / LVGL `lv_dropdown` | **L4** | 按钮 → `window`(modal) 列表（点选回写并关闭）；降级点：无滚轮惯性、无多列联动、展开位从「框下」变「居中模态」 | D6 / LVGL §3-7 / `gui-controls-gap` #4 | 案例截图 `06_form_picker_open` |
-| G-22 | 无日期/日历控件 | 小程序 `picker mode=date` / LVGL `lv_calendar` | **L4** | 按钮 + 模态日历（**7×6=42 个 `textview`** + activity 触摸事件反算命中格）；降级点：无「今天」高亮、无年/月下拉、只能逐月翻 | LVGL §3-8（B） | 案例 `WinCalendar` |
-| G-23 | 无滚轮选择器 WheelPicker（联动/惯性） | iOS WheelPicker / Android NumberPicker | **L5** | **明说不支持**；替代 = 步进按钮组 / `picker` 模态列表 | `gui-controls-gap` #5 | — |
+| G-22 | 无日期/日历控件（**日期部分**） | 小程序 `picker mode=date` / LVGL `lv_calendar` / Qt `QCalendarWidget` / MFC `CDateTimeCtrl` | **L4** | 按钮 + 模态日历（**7×6=42 个 `textview`** + activity 触摸事件反算命中格）；降级点：无「今天」高亮、无年/月下拉、只能逐月翻。**时间部分不归本缺口**：`TimePicker`（含时钟盘）/`picker mode=time`/`QTimeEdit`/`LISTWHEEL` 一律走 **G-23 的 `listview` 组合（L2）**——钟工 2026-09-19 口径「TimePicker 通过 listview 这个实现对应」，**不再有「时间无对应能力」的例外** | LVGL §3-8（B） | 案例 `WinCalendar` / `components/ui_v1/Calendar/`（Z21 真机） |
+| G-23 | 滚轮选择器 WheelPicker（联动/惯性）——**含 TimePicker 全族（滚轮 + 时钟盘）** | iOS WheelPicker / Android `NumberPicker`·**`TimePicker`** / 小程序 `picker-view`·`picker mode=time` / Qt `QTimeEdit` / emWin `LISTWHEEL` | **L2**（2026-09-19 由 L5 改判） | ★**一列 = 一个 `listview`**：`cycleEnable=true + edgeEffect=1 + dragMaxDis=50 + autoRollback=true`（循环列表 + 引擎惯性/回弹）。正中行 = 选中行用**数据侧平移**（`items[k]=label((k-ROT+shift) mod n)` + `refreshListView()`）—— **不能**用引擎选中态：用户拖过后它会把选中态打在列表盒第 1 行、盖掉宿主的 `setSelected`（真机现象：正中行 8 月、底带跑到 6 月）；中心行回读 `A = fi + (h/2 - off)/itemH`（定时器轮询）。**选中条（高亮带）挂「静态背景层」而不是行背景图**（2026-09-19 12:00 钟工口径；挂行 -> 滚动时条跟着行走）：listview **之前**一个装饰 `textview`（`backgroundPic` = 条图、图 == 盒、`touchable:false` + 运行期 `setTouchPass(true)`），选中感只剩正中行文字色。自绘包 `components/ui_v1/WheelPicker` **已于 2026-09-19 移除**（钟工 A3 拍板；旧路线曾用于逐像素 alpha 淡出 / 行内非文字内容，现并入本 listview 方案）。**TimePicker 全族统一收口**（★钟工 2026-09-19）：「TimePicker 通过 listview 实现对应」——**滚轮形态与时钟盘（clock dial）形态都归本行**：时钟盘的数值/联动语义由 listview 列承载（12 个方位值一列排布，回读中心行 → 时/分），**圆形排列观感**要用 12 方位按钮组或 ZKPainter 自绘才有（**观感降级说明，不是能力缺失**；圆周/非矩形布局属 L3 自绘，要做按本节编号立项）。`NumberPicker` 同步由 `stepper` 改判本行（`listview` / L2） | `gui-controls-gap` #5（旧「真缺」）；口径见 `knowledge/uicontrols/listview-wheel-picker.md` | 案例 `tdesign-miniprogram` 日期页：真机 `z21/evidence/s4b_*`+`s4b_test.log`（24 项，条挂行上）、**`s4c_*`+`s4c_test.log`（30 项，条挂静态层，现役）**；官方样例 `SampleUI-New/ListviewTimePicker` |
 | G-24 | 无 group 容器（多选/单选聚合、整表单取值） | 小程序 `radio-group`/`checkbox-group`/`form` | **L2** | N 个两态按钮 + logic 侧 `collectFormValue()` 聚合；无表单容器 → 提交时逐控件取值 | D2/D3/D4（L2 旧） | 案例截图 `05_form_submit_result` |
 | G-25 | slider 内建数值气泡（`show-value`） | 小程序 `show-value` / LVGL knob 自绘气泡 | **L4** | 并列常驻数值 `textview` | D5 / LVGL §3-9 | 案例截图 `04_form_slider_right` |
 | G-26 | 观感细节：图例色点、月份全称、展开位、调色盘位置/动画 | LVGL / 小程序 | **L4** | 彩色文字代替色点；月份 3 字母缩写；调色盘改弹窗（无宽度展开动画） | LVGL §3-10/11/13（B） | 案例 §3 |
@@ -64,16 +64,18 @@
 
 | # | 缺口 | 源框架 | 级别 | 处置 | 原级别 / 出处 | 证据 |
 |---|---|---|---|---|---|---|
-| G-27 | 列表**无到顶/到底回调** | 小程序 `bindscrolltoupper/lower` / Android `OnScrollListener` | **L4** | `on<Page>ActivityTouchEvent` 里按 `ev.mY` 与列表区上下界**近似**判定 | D2#（L2 旧） | 案例 `listLogic.cc` |
+| G-27 | 列表**无到顶/到底回调** | 小程序 `bindscrolltoupper/lower` / Android `OnScrollListener` | **L4** | `on<Page>ActivityTouchEvent` 里按 `ev.mY` 与列表区上下界**近似**判定；**精确态**用宿主定时器轮询 `getFirstVisibleItemIndex()/getFirstVisibleItemOffset()`（easyui 2.6.0/2.9.0 都有；案例 16ms 轮询做滚轮中心行） | D2#（L2 旧）；`uicontrols/listview-wheel-picker.md` §2 | 案例 `listLogic.cc`；`tdesign-miniprogram` 日期页 |
 | G-28 | 无滚动位置回调 | 小程序 `bindscroll` | **L4** | 触摸事件 `E_ACTION_MOVE` 算进度（只做轻量更新） | D3#（L2 旧） | 案例截图 `15_list_step`/`16_list_drag_anim` |
 | G-29 | 无下拉刷新手势（threshold/pulling/restore/abort） | 小程序 `refresher-*` / Android `SwipeRefreshLayout` | **L4** | 按钮触发 + 定时器状态机 `IDLE→PULLING→REFRESHING→DONE`（案例 2s 完成，源 3s） | D8（L4 旧） | 案例截图 `11_list_refreshing`/`12_list_refreshed` |
 | G-30 | 无 CSS 动态样式 / 无 `<wxs>` 改 style | 小程序 `<wxs>` + `setStyle` | **L4** | 状态文本 + 只读进度条代替动态样式 | D9（L4 旧） | 平台无 CSS 引擎 |
 | G-31 | 无滚动驱动动画（`scrollSource` + 属性插值） | 小程序 `this.animate(..., {scrollSource})` | **L4** | 触摸位移 → 数值联动（进度条 + 百分比文本），无插值 | D10（L4 旧） / §3-11 | 案例截图 `16_list_drag_anim` |
-| G-32 | 无平滑滚动动画（`scroll-into-view` 平滑） | 小程序 / Android `smoothScrollToPosition` | **L4** | `setSelection(index)` 直跳 | D14（L2 旧） | `uicontrols/listview-fields.md` |
+| G-32 | 无平滑滚动动画（`scroll-into-view` 平滑） | 小程序 / Android `smoothScrollToPosition` | **L4** | `setSelection(index)` 直跳（**2026-09-19 修正：真机实测 `setSelection` 是带滚动动画的**，它缺的是「滚到任意像素偏移」，且它只把第 i 项对齐到列表盒**第 1 行**）；程序化定位改用数据侧平移 + `refreshListView()` | D14（L2 旧）；`uicontrols/listview-wheel-picker.md` §1/§3 | `uicontrols/listview-fields.md` |
 | G-33 | 页面栈只支持 ≤2 | 小程序任意深度 push/pop / Android 栈 | **L4** | `openActivity/closeActivity`；多页场景用整屏 window 或 pagewindow 代替深栈 | D16（L2 旧） | 案例两页 |
 | G-34 | 无 theme 引擎 / 无系统主题事件 | LVGL `lv_theme_default_init` / 小程序 `wx.onThemeChange` / Qt QSS | **L5** | **明说不支持**系统主题联动；应用内换色可做（主色 static + 逐控件 `setTextColor` + painter 重绘） | D11（L5 旧）/ LVGL §2 | 案例固定单套令牌 |
 | G-35 | 动画缓动曲线（quadratic/overshoot…） | LVGL `lv_anim` / CSS `transition` | **L4** | 定时器 tick 内自算（可加缓动函数，性价比低）；默认线性 | LVGL §3-19（C） | 案例三角波 |
 | G-36 | 3D / 真渲染能力（GPU/GL） | OpenGL ES / Three.js / Scene3D | **L4** | **一律伪 3D/2.5D**（见 §3） | — | Z21/F133 无 GPU/无硬解 |
+| G-37 | 列表**无「把第 i 项摆到正中」的 API**（`setSelection(i)` 只对齐到列表盒**第 1 行**，且带动画） | Android `smoothScrollToPosition` + 自定义 center 对齐 / iOS `selectRow(at:animated:scrollPosition:.middle)` | **L4** | 数据侧平移（`items[k]=label((k-ROT+shift) mod n)`）+ `refreshListView()`；要「不动手指地换选中值」（复位/取消/步进）只能这样 | 2026-09-19 Z21 实测（案例日期页） | `uicontrols/listview-wheel-picker.md` §1；`tdesign-miniprogram` `s4b_test.log`（24 项）/ `s4c_test.log`（30 项，含静态条） |
+| G-38 | listview **引擎自维护「当前项」选中态**（会覆盖宿主 `setSelected`）；且**行属性不随中心行变化自动重刷**，也**没有单行重刷 API**（`ZKListView.h` 只有 `refreshListView()`，`setSelection(i)` 也不是） | — | **L4** | 选中视觉全部宿主自画：**静态选中条层**（listview 之前的装饰 `textview` + `backgroundPic`，见 G-23）+ `setTextStatusColor(0,色)` 画正中行文字色；json 里 `pic0/1/2` 留空、`color2/3` 置中色；中心行一变就 `refreshListView()` —— 「只刷变化行」做不到，降级为**全量重刷可视行**（≤rows 行，频次 = 每跨一行一次） | 2026-09-19 Z21 实测（真机现象：正中行 8 月、底带跑到第 1 行的 6 月）；头文件核对：同版本 `ZKListView.h` 只有 `refreshListView()` | `uicontrols/listview-wheel-picker.md` §3 坑 1/4；`uicontrols/listview-fields.md` |
 
 ---
 

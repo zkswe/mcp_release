@@ -2,13 +2,16 @@
 
 > **口径（★ 2026-09-16 钟工最终修正）**：跨框架控件分两类处置——
 > 1. **有一一映射的控件 → 走「映射能力」，不写散文**：机读索引 `mcp_control_map.json`（六个源框架
->    212 条）+ MCP op `flythings_map_control(query, source)`；此类**不建控件包**（要接线细节放 `_mapping/`）。
+>    213 条）+ MCP op `flythings_map_control(query, source)`；此类**不建控件包**（要接线细节放 `_mapping/`）。
 > 2. **FlyThings 没有的能力 → 才做成自定义控件包**：`components/ui_v1/<源控件名>/`（四件套 + `example/` + 真机证据）。
 >
 > 本文件是**状态表**，分三段：**① 已实现自定义控件包**（缺口控件，有源码 + 真机证据）／
 > **② 映射项**（已有平台控件 → 指向 op 与数据文件）／**③ 计划中的自定义控件**（平台真缺、还没做）。
 > 建立：2026-09-16（v0.27.71-open）｜ 本轮更新：2026-09-16（v0.27.73-open：TabView 迁出 ui_v1 → `_mapping/`，
-> 状态表改三段 + 新增「映射项」）
+> 状态表改三段 + 新增「映射项」）｜ **2026-09-19（v0.27.93-open：滚轮选择器由 L5 改判 L2 → 归第 2 段映射项
+> （`listview` 组合）；`WheelPicker/` 自绘包按钟工 A3 拍板移除）** ｜ **2026-09-19（v0.27.94-open：TimePicker 全族
+> （滚轮 + 时钟盘两形态、`NumberPicker`、`picker mode=time`）统一收口为 `listview`/L2 → 第 2 段第 13 行，
+> `TimePicker/` 计划包同步撤下；时钟盘的圆形观感属**降级说明**，不是能力缺失）**
 
 ---
 
@@ -28,7 +31,7 @@
 
 ## 2. 映射项（**有平台对应控件** → 走映射能力，不建包）
 
-> **权威数据**：`mcp_control_map.json`（机读，212 条）｜**查询入口**：MCP op `flythings_map_control(query, source)`；
+> **权威数据**：`mcp_control_map.json`（机读，213 条）｜**查询入口**：MCP op `flythings_map_control(query, source)`；
 > **平台对应控件的手感/接线留档**（仅当映射有细节值得留时）放 `_mapping/<源控件名>/`。
 > 这一段**不是待开发清单**：这些能力现在就能用（`target` 是已有控件 + 组合套路），不需要写自定义控件。
 
@@ -38,7 +41,7 @@
 | 2 | Tab 页签条：`TabLayout` / `tab` / `QTabBar` / 小程序 `custom-tab-bar` | N × `button__N`（`setSelected()` 走 `bgColorTab.color2`/`picTab`）+ `onPageChange` 回设选中态 | L2 | `flythings_map_control("TabLayout")` | 同上 |
 | 3 | 开关/复选：`lv_switch` / `switch` / `QCheckBox` / `CheckBox` / `BS_AUTOCHECKBOX` | **两态 `button__N`**（`picTab{pic0 关, pic1 按下, pic2 开}` + `setSelected()`）；⚠️ `fun` 不为 `checkbox__` 生成宏/指针/回调 | L2 | `flythings_map_control("lv_switch")` | — |
 | 4 | 复选组/单选组聚合：`checkbox-group` / `QButtonGroup` / `ChipGroup` | N 个两态按钮 + logic 侧 `collectFormValue()` 聚合（平台无 group 容器） | L2 | `flythings_map_control("checkbox-group")` | — |
-| 5 | 列表：`RecyclerView` / `lv_list` / `scroll-view` / `QListView` / `CListBox` / `SWIPELIST` | `listview__N`（三回调；行自身 `setText("")`；数据变了必须 `refreshListView()`）；**不做 view 复用回收** | L1(+L2) | `flythings_map_control("RecyclerView")` | — |
+| 5 | 列表：`RecyclerView` / `lv_list` / `scroll-view` / `QListView` / `CListBox` / `SWIPELIST` | `listview__N`（三回调；行自身 `setText("")`；数据变了必须 `refreshListView()`）；**不做 view 复用回收**；滚轮/居中选中用法见 `knowledge/uicontrols/listview-wheel-picker.md`（循环列表 + 引擎惯性/回弹，页面侧零自绘；**选中条要挂静态背景层，不挂行背景图**） | L1(+L2) | `flythings_map_control("RecyclerView")` | — |
 | 6 | 下拉选择：`lv_dropdown` / `picker` / `Spinner` / `QComboBox` / `DROPDOWN` | `button__N` + `window__N`(modal) 列表/按钮组；降级点：无滚轮惯性、无多列联动、展开位变居中模态 | **L4** | `flythings_map_control("QComboBox")` | — |
 | 7 | 下拉刷新：`refresher-enabled` / `SwipeRefreshLayout` | 按钮触发 + `REGISTER_ACTIVITY_TIMER_TAB` 状态机 `IDLE→PULLING→REFRESHING→DONE` | **L4** | `flythings_map_control("refresher-enabled")` | — |
 | 8 | 轻提示/角标/加载：`wx.showToast` / `Toast` / `Snackbar` / `Badge` / `Spinner` 菊花 | 小 `window__N` + `hideTimeOut` 2~3s + `showWnd()`；加载动画 = 定时器逐帧换 PNG | L2 | `flythings_map_control("Toast")` | — |
@@ -46,6 +49,7 @@
 | 10 | 表格网格：`table` / `QTableView` / `LISTBOX+HEADER` / `CListCtrl(report)` | `textview` 表头 + `listview` 网格（列宽手工对齐） | L2 | `flythings_map_control("QTableView")` | — |
 | 11 | 图片/图标：`lv_img` / `image` / `ImageView` / `icon` / `LV_SYMBOL_*` | `textview__N` + `backgroundPic`（图标走 `components/icons` Tabler PNG，尺寸必须 == 控件盒） | L1 | `flythings_map_control("ImageView")` | — |
 | 12 | 实时波形：`lv_chart`(滚动) / 示波类控件 | `diagram__N`（`addData/setData`，x 自动推进）——够用就别自绘（自绘的那部分是 `Chart/`） | L1 | `flythings_map_control("lv_chart")` | — |
+| 13 | 滚轮选择器：小程序 `picker-view` / `picker mode=time` / LVGL `lv_roller`(`wheel`) / Android `NumberPicker`·**`TimePicker`（滚轮 + 时钟盘）** / Qt `QTimeEdit` / emWin `LISTWHEEL` | **`listview__N` 组合**：`cycleEnable:true`（循环）+ `edgeEffect:1`/`dragMaxDis:50`/`autoRollback:true`（引擎惯性/回弹对齐）；**正中行 = 选中行靠数据侧平移**（不能用引擎选中态）；**选中条挂 listview 之前的静态装饰 `textview`（`backgroundPic`），不挂行背景图**。**时钟盘形态也归本行**（钟工 2026-09-19「TimePicker 通过 listview 实现对应」）：数值/联动语义由 listview 列承载，**圆形排列观感**需 12 方位按钮组或自绘（观感降级，非能力缺失） | **L2** | `flythings_map_control("picker-view")` / `("TimePicker")` / `("clock dial")` / `("NumberPicker")` | ★ `knowledge/uicontrols/listview-wheel-picker.md`（字段配法 + 4 个真机坑 + 像素验收 + §6 时间选择/时钟盘） |
 
 > **工具链侧（属 MCP op，不随控件包目录走）**：`CssEffectToImage`（`tools/ui_tools/gen_res.py` + `html2json`
 > 自动转圆角/阴影/渐变图，已可用）与 `TranslateLint`（扫残留源框架概念，防「假装能转」，待立项）。
@@ -60,8 +64,8 @@
 
 | # | 计划目录 | 源框架对应控件（各家） | 我们怎么做（自绘/组合路线） | 级别 | 接口草案（对外面） | 出处案例 | 出处缺口 |
 |---|---|---|---|---|---|---|---|
-| 1 | `TimePicker/` | Android `TimePicker` / `TimePickerDialog`；Qt `QTimeEdit`；小程序 `picker mode=time` | 时/分/秒三组步进按钮 + 数值 textview（12/24h 切换）；或自绘时钟盘（成本高，默认不做） | **L4** | `setTime(h,m,s)` / `getTime()` / `onTimePicked(cb)`；`setFormat(12\|24)` | 无（本轮由 Android/Qt 映射收口派生） | G-22 同族（时间） |
-| 2 | `WheelPicker/` | iOS WheelPicker；Android `NumberPicker` / `TimePicker` 滚轮；小程序 `picker-view`；`LISTWHEEL` | 无原生能力 → **自绘 + 手势**（`VelocityTracker` 惯性 + 定时器减速 + 回弹），或按钮步进降级 | **L5**（当前）/ 自绘可升 L3 | `setColumns(vector<vector<string>>)` / `onPicked(cols)` | 无（`gui-controls-gap` #5） | G-23 |
+| 1 | ~~`TimePicker/`~~ **已收口不做包**（2026-09-19 钟工口径「TimePicker 通过 listview 这个实现对应」） | Android `TimePicker` / `TimePickerDialog`（含**时钟盘**）；Qt `QTimeEdit`；小程序 `picker mode=time` | ★**2026-09-19 口径**：`TimePicker` 全族（滚轮 + 时钟盘两形态）**统一走平台 `listview` 组合**（循环列表 + 引擎惯性/回弹 + **数据侧平移**定正中行 + **选中条挂静态层**，L2）→ 已归第 2 段**映射项第 13 行**；时钟盘的**数值/联动语义**由 listview 列承载，**圆形排列观感**要 12 方位按钮组或 ZKPainter 自绘（**观感降级，不是能力缺失**；非矩形/圆周布局属 L3 自绘，要做按 gap-list 编号立项）。口径见 `knowledge/uicontrols/listview-wheel-picker.md` §6 | **已收口**（2026-09-19，改判 L2） | —（原草案 `setTime(h,m,s)` / `getTime()` / `onTimePicked(cb)` 不再需要，字段直接用 listview 片段） | —（由 Android/Qt/小程序映射收口派生） | G-22（时间部分）/ G-23 |
+| 2 | ~~`WheelPicker/`~~ **已移除**（2026-09-19 钟工 A3 拍板） | iOS WheelPicker；Android `NumberPicker` / `TimePicker` 滚轮；小程序 `picker-view`；emWin `LISTWHEEL` | ★**2026-09-19 口径**：常规滚轮**统一走平台 `listview` 组合**（循环列表 + 引擎惯性/回弹 + **数据侧平移**定正中行 + **选中条挂静态层**，L2）→ 已迁到第 2 段**映射项第 13 行**；口径 + 4 个真机坑见 `knowledge/uicontrols/listview-wheel-picker.md`。**自绘包已删**：历史上的自绘路线（painter 自绘 + 宿主 textview 池 + `VelocityTracker` 惯性 + 16ms `tick()`）曾用于**逐像素 alpha 渐隐 / 行内非文字内容 / 任意行数·非等分暗面**，这些需求现已并入 listview 方案（淡出 = 按行距插值**文字色**，等价伪 alpha） | **已移除**（2026-09-19） | —（原 `setColumns(vector<vector<string>>)` / `onPicked(cols)` 随包删除） | 案例 `tdesign-miniprogram` 日期页（改 listview） | G-23（2026-09-19 由 L5 改判 L2） |
 | 3 | `RichText/` | Android `Spannable`；Qt rich text；Web；小程序 `rich-text` / `editor`；emWin `MULTIEDIT`；MFC `CRichEditCtrl` | **自绘**（`onDraw` + 字宽测量逐字符折行 + 脏区局部刷新；图文混排按行内嵌图）；短期用 `textview` + 手动 `\n` | **L3** | `setSegments(vector<Segment{text,size,color,bold}>)` / `setAutoWrap(true)` / `scrollTo(line)` | 无（`gui-controls-gap` #1 提名） | G-14 |
 | 4 | `TableGrid/` | 小程序 `table`；Android `TableLayout`；Qt `QTableWidget`；emWin `HEADER` | 要**真表头 + 列定义 + 冻结列**时自绘（`textview` 表头 + `listview` 网格只够过渡，已归映射项） | L3（表头/列定义） | `setHeader(vector<string>)` / `setColsWidth(vector<int>)` / `setRows(vector<vector<string>>)` | 无（`gui-controls-gap` #3） | G-15 |
 | 5 | `BadgeToast/` | 小程序 `wx.showToast` / `wx.showLoading`；Android `Badge` / 角标 | 角标跟随控件（坐标联动 + 数字自适应宽度）、加载菊花帧图池（一次注册多实例复用） | L2 | `Toast::show(text, ms)` / `Loading::show()/hide()` / `Badge::attach(ctrl, n)` | 无（`gui-controls-gap` #6） | G-16 |
@@ -78,9 +82,9 @@
 | 优先级 | 组件 | 理由 |
 |---|---|---|
 | ~~P0~~ | ~~`pageview_tabbar`~~ | **已完成且归位**（映射项 → `_mapping/TabView/`，含真机证据） |
-| P0 | `Calendar`、`TimePicker` | 两个案例已手写实现过日历（有真机验证过的 42-textview + 触摸反算套路）；时间选择同族，一起做最省 |
+| P0 | `Calendar` | 两个案例已手写实现过日历（有真机验证过的 42-textview + 触摸反算套路）｜~~`TimePicker`~~ 2026-09-19 同族收口，**改判 L2 不建包**（走 listview 组合，见映射项第 13 行） |
 | P1 | `RichText`、`BadgeToast` | 自绘/小件，通用性最强（`gui-controls-gap` 排序一致） |
-| P2 | `TableGrid`、`WheelPicker`、`Pseudo3D` | 需要时再做（都有过渡方案） |
+| P2 | `TableGrid`、`Pseudo3D` | 需要时再做（都有过渡方案）；~~`WheelPicker`~~ 2026-09-19 拍板**不做包**（常规滚轮走 listview 组合，L2 映射项） |
 | ~~P3~~ | ~~`CssEffectToImage`、`TranslateLint`~~ | **不在本目录**：属工具链侧（MCP op），已有实现/待立项 |
 
 ---
@@ -100,7 +104,7 @@
 
 ## 5. 相关文件
 
-- ★ **机读映射数据**：`../../mcp_control_map.json`（212 条）+ op `flythings_map_control`
+- ★ **机读映射数据**：`../../mcp_control_map.json`（213 条）+ op `flythings_map_control`
 - 能力说明（这个 op 怎么用 / 命中不到怎么办）：`knowledge/uicontrols/control-mapping-capability.md`
 - 控件映射（散文权威表）：`control-map.md`　·　逻辑映射：`logic-map.md`
 - 缺口 + 级别 + 3D + 工具链坑：`gap-list.md`　·　平台口径：`platforms.md`

@@ -147,3 +147,95 @@ class TestMapControlOp(unittest.TestCase):
         self.assertIn('flythings_map_control', kb_tools.OP_NAMES)
         cat = U.jcall('list')
         self.assertIn('flythings_map_control', [o['op'] for o in cat['ops']])
+
+    # ---- 滚轮选择器口径（v0.27.93，钟工 2026-09-19 12:40 拍板：A1 映射表 L5→L2 / A3 去掉自绘包）----
+
+    def test_wheel_family_maps_to_listview_l2(self):
+        """滚轮族必须回 target=listview + level=L2（由 L5 改判），片段可直接粘且带 listview__ 键。"""
+        for q in ('picker-view', 'lv_roller', 'wheel', 'LISTWHEEL', 'QTimeEdit', 'TimePicker'):
+            r = U.jcall('flythings_map_control', {'query': q})
+            self.assertTrue(r['ok'], q)
+            self.assertEqual(r['target'], 'listview', q)
+            self.assertEqual(r['level'], 'L2', q)
+            json.loads(r['json'])                       # 片段可直接粘（契约）
+            self.assertIn('listview__', r['json'], q)
+            self.assertIn('listview-wheel-picker.md', r['ref'], q)
+
+    def test_wheelpicker_target_removed_no_dangling(self):
+        """A3：targets.wheelpicker（旧自绘包占位）已删，不许再有任何源条目指它（防悬空引用回归）。"""
+        d = _data()
+        self.assertNotIn('wheelpicker', d['targets'],
+                         'targets.wheelpicker 已于 2026-09-19 移除（自绘包不再存在）')
+        dangling = ['%s/%s' % (s, e['name']) for s, arr in d['sources'].items() for e in arr
+                    if e['target'] == 'wheelpicker']
+        self.assertEqual(dangling, [], 'target 已删，仍有悬空引用：%s' % dangling)
+
+    def test_wheel_snippet_carries_wheel_fields_and_static_band(self):
+        """片段必须带滚轮四件（cycleEnable/edgeEffect/dragMaxDis/autoRollback）+ 空行模板
+        + 静态选中条（装饰 textview + backgroundPic，且写在 listview 之前 = z 更低）。"""
+        raw = U.jcall('flythings_map_control', {'query': 'picker-view'})['json']
+        js = json.loads(raw)
+        lv = [k for k in js if k.startswith('listview__')]
+        tv = [k for k in js if k.startswith('textview__')]
+        self.assertTrue(lv and tv, '片段要同时含 listview 与装饰条 textview')
+        keys = list(js.keys())
+        self.assertLess(keys.index(tv[0]), keys.index(lv[0]),
+                        '装饰条必须写在 listview 之前（z 序 = json 书写顺序）')
+        for k in ('"cycleEnable":true', '"edgeEffect":1', '"dragMaxDis":50', '"autoRollback":true',
+                  '"hasScrollbar":false', '"text":""', '"backgroundPic"', '"touchable":false'):
+            self.assertIn(k, raw, '轮子片段缺 %s' % k)
+        self.assertEqual(js[lv[0]]['rows'], 5)
+        self.assertEqual(js[lv[0]]['item']['text'], '')      # 坑 1：行自身 text 必须留空
+        self.assertNotIn('subItem', js[lv[0]]['item'])
+
+    def test_wheel_doc_has_machine_readable_section(self):
+        """知识文档必须写「机读映射口径」（源控件 → target/level + 验证入口 + 自绘包已移除）。"""
+        p = os.path.join(SRC_DIR, 'knowledge', 'uicontrols', 'listview-wheel-picker.md')
+        t = io.open(p, encoding='utf-8').read()
+        for s in ('机读映射口径', 'flythings_map_control', 'L2', 'wheelpicker', 'targets.wheelpicker'):
+            self.assertIn(s, t, '文档缺 %s' % s)
+
+    # ---- TimePicker 全族统一 L2（v0.27.94，钟工 2026-09-19：「TimePicker 通过 listview 这个实现对应」）----
+
+    def test_timepicker_family_all_map_to_listview_l2(self):
+        """TimePicker 全族（**含时钟盘形态**）必须回 target=listview + level=L2，片段可直接粘。
+
+        上一轮把时钟盘形态如实标成「仍无对应能力」；钟工拍板：TimePicker 走 listview 实现对应，
+        不再留例外 —— 时钟盘只存在「观感降级」，不存在「能力缺失」。
+        """
+        for q in ('TimePicker', 'timepickerdialog', 'TimePickerDialog', 'clock dial', '时钟盘',
+                  'NumberPicker', 'numberpicker', 'QTimeEdit', 'timeedit', 'LISTWHEEL',
+                  'picker mode=time', 'picker time', 'mode=time'):
+            r = U.jcall('flythings_map_control', {'query': q})
+            self.assertTrue(r['ok'], q)
+            self.assertEqual(r['target'], 'listview', q)
+            self.assertEqual(r['level'], 'L2', q)
+            json.loads(r['json'])                       # 片段可直接粘（契约）
+            self.assertIn('listview__', r['json'], q)
+            self.assertIn('listview-wheel-picker.md', r['ref'], q)
+
+    def test_map_has_no_stale_no_capability_claim(self):
+        """全表不许再出现「时间/时钟盘无对应能力」「时间部分仍缺」或「计划 `TimePicker/`」类旧表述。"""
+        d = _data()
+        bad = []
+        for s, arr in d['sources'].items():
+            for e in arr:
+                blob = json.dumps(e, ensure_ascii=False)
+                for pat in ('仍无对应能力', '时间部分仍缺', '计划 `TimePicker/`',
+                            '计划 TimePicker'):
+                    if pat in blob:
+                        bad.append('%s/%s 含旧表述 %r' % (s, e['name'], pat))
+        self.assertEqual(bad, [], '旧表述残留：%s' % bad)
+
+    def test_clock_dial_written_as_downgrade_not_missing(self):
+        """时钟盘形态必须写成「观感降级」（圆形排列需 12 方位按钮或自绘），不得写成能力缺失。"""
+        r = U.jcall('flythings_map_control', {'query': 'TimePicker'})
+        n = r['notes']
+        self.assertIn('时钟盘', n)
+        self.assertIn('观感', n)
+        self.assertNotIn('仍无对应能力', n)
+
+    def test_map_version_ge_3_after_timepicker_closeout(self):
+        d = _data()
+        self.assertGreaterEqual(d['version'], 3,
+                                'TimePicker 全族收口后表版本应 ≥ 3（TimePicker 全族 + NumberPicker 改判 + 拆分）')
