@@ -620,11 +620,11 @@ class HtmlToJson:
         raw_text = re.sub(r'[ \t\r\f\v]+', ' ', node.text).strip()
         if raw_text and not _clean_text(raw_text) and any(_is_emoji(ch) for ch in raw_text):
             emoji_ch = next((ch for ch in raw_text if _is_emoji(ch)), '\u2b50')
-            size = max(w, h)
             name = f'emoji_{cap or ctx.n}_{self.gen_count}.png'
 
-            def _e(d, _n=name, _s=size, _c=emoji_ch):
-                return gr.emoji_icon(d, _n, _s, _c)
+            # [!] 2026-09-18：按**控件盒 (w,h)** 出图（不再 max(w,h) 出方图）——图 != 盒会把字形压扁/切掉
+            def _e(d, _n=name, _w=w, _h=h, _c=emoji_ch):
+                return gr.emoji_icon_box(d, _n, _w, _h, _c)
 
             pic = self._gen_asset(_e)
             if pic:

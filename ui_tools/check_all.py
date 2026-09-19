@@ -993,14 +993,36 @@ def main(project_root):
     if not LOGICS:
         print('[WARN] src/logic/ 下没有 logic.cc（纯 UI 交付可忽略；有交互则必须有）')
 
-    print('== 1. 根节点（id:0 + position 全屏 + resolution 一致）==')
+    print('== 1. 根节点（id:0 + position 全屏 + resolution 一致；\n'
+          '      topmost 系统栏/导航栏页例外：官方机制允许根为「局部悬浮块」，见 kb/controls.md）==')
     for f in PAGES:
         d = json.load(open(os.path.join(root, f), encoding='utf-8'))
-        ok = (d.get('id') == 0 and isinstance(d.get('position'), dict)
-              and isinstance(d.get('resolution'), dict)
-              and d['position'].get('left') == 0 and d['position'].get('top') == 0
-              and d['position'].get('width') == d['resolution'].get('width')
-              and d['position'].get('height') == d['resolution'].get('height'))
+        pos = d.get('position')
+        res_ = d.get('resolution')
+        ok = (d.get('id') == 0 and isinstance(pos, dict)
+              and isinstance(res_, dict)
+              and pos.get('left') == 0 and pos.get('top') == 0
+              and pos.get('width') == res_.get('width')
+              and pos.get('height') == res_.get('height'))
+        # topmost:true = 系统栏 statusbar / 导航栏 navibar（官方系统界面类型）。这类页面的根节点
+        # 就是「悬浮块本身」而非全屏：references/kb/controls.md 「系统栏 navibar/statusbar」
+        # （statusbar 实测局部悬浮块 100x41 @ 615,25；另一台设备 320x60 @ 650,10）。
+        # 反过来写全屏根会形成最上层全屏透明层，吞掉整屏触摸（F133 实测），
+        # 所以此处只要求：坐标全整数、块非空、且完整落在 resolution 之内（不做全屏要求）。
+        if not ok and d.get('topmost') is True and isinstance(pos, dict) \
+                and isinstance(res_, dict):
+            vals = (pos.get('left'), pos.get('top'),
+                    pos.get('width'), pos.get('height'))
+            if all(isinstance(v, int) for v in vals):
+                l, t, w, h = vals
+                ok = (d.get('id') == 0 and w > 0 and h > 0 and l >= 0 and t >= 0
+                      and l + w <= res_.get('width')
+                      and t + h <= res_.get('height'))
+            if ok:
+                log(True, '%s 根节点（topmost 系统栏局部悬浮块 %dx%d @ %d,%d，resolution %dx%d）'
+                    % (f, pos.get('width'), pos.get('height'), pos.get('left'),
+                       pos.get('top'), res_.get('width'), res_.get('height')))
+                continue
         log(ok, '%s 根节点' % f)
 
     print('== 2. 层级合法性（SampleUI+basedemo 双源矩阵实证，2026-09-08）==\n'
@@ -1137,15 +1159,24 @@ def main(project_root):
                     depth = 0
         log(bad == 0 and depth == 0, '%s 括号 %s' % (f, '平衡' if bad == 0 and depth == 0 else '不平衡'))
 
-    print('== 9. 开发者修改检测 + fui pack 成功生成 ftu ==')
-    # ① ftu 比 json 新超 30 秒 → 判定开发者/IDE 直接改过 ftu → 先同步 json 再 pack
+    print('== 9. ftu→json 自动同步（只两种情形）+ fui pack 成功生成 ftu ==')
+    # ① 只有 ftu 没有 json → 直接 unpack 转出 json（老工程/纯 IDE 工程）
+    for ftu_f in sorted(glob.glob(os.path.join(ui, '*.ftu'))):
+        jp0 = os.path.splitext(ftu_f)[0] + '.json'
+        if not os.path.isfile(jp0):
+            r0 = subprocess.run([FUI, 'unpack', ftu_f, jp0], capture_output=True, text=True)
+            log(r0.returncode == 0, '%s 只有 ftu → 自动转出 json' % os.path.basename(ftu_f))
+            if r0.returncode == 0:
+                ft0 = os.path.getmtime(ftu_f)
+                os.utime(jp0, (ft0, ft0))
+    # ② ftu 比 json 新「分钟级」(≥60 秒) → 用户/IDE 编辑过 ftu → 先同步 json 再 pack；其余不做反向
     for jf in PAGES:
         jp = os.path.join(root, jf)
         fp = os.path.join(ui, os.path.splitext(os.path.basename(jf))[0] + '.ftu')
         if os.path.isfile(fp) and os.path.isfile(jp):
             jt = os.path.getmtime(jp)
             ft = os.path.getmtime(fp)
-            if ft > jt + 30:
+            if ft > jt + 60:
                 print('  [WARN] %s ftu 比 json 新 %.0f 秒（开发者/IDE 改过 ftu，自动以 ftu 同步 json）'
                       % (os.path.basename(jf), ft - jt))
                 r = subprocess.run([FUI, 'unpack', ui], capture_output=True, text=True)

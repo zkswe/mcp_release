@@ -60,3 +60,35 @@ def project(tmp=None):
 def cleanup(path):
     import shutil
     shutil.rmtree(path, ignore_errors=True)
+
+
+_FTU_BYTES = {}
+
+
+def ftu_bytes():
+    """返回一个**真实合法**的 ftu 字节流（用随包 fui pack 一次性生成后缓存）。
+
+    背景：以前用例直接写 4 字节占位 `ZKSR` 充当 ftu；规则①「只有 ftu 没 json → 自动 unpack」
+    上线后，占位 ftu 会被判定为异常 ftu 并报错（这是期望行为），所以 fixture 得用真 ftu。
+    """
+    if 'v' in _FTU_BYTES:
+        return _FTU_BYTES['v']
+    data = b''
+    tmp = tempfile.mkdtemp(prefix='mcp_ftu_')
+    try:
+        import project_tools as pt
+        jp = os.path.join(tmp, 'main.json')
+        write(jp, json.dumps({'id': 0, 'resolution': {'width': 1024, 'height': 600},
+                              'position': {'left': 0, 'top': 0, 'width': 1024, 'height': 600}},
+                             ensure_ascii=False))
+        pt._run_fui('pack', tmp)
+        fp = os.path.join(tmp, 'main.ftu')
+        if os.path.isfile(fp):
+            data = io.open(fp, 'rb').read()
+    except Exception:
+        data = b''
+    finally:
+        import shutil as _sh
+        _sh.rmtree(tmp, ignore_errors=True)
+    _FTU_BYTES['v'] = data
+    return data

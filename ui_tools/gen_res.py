@@ -546,21 +546,15 @@ def _emoji_font():
 
 
 def emoji_icon(out_dir, name, size, ch):
-    """本地彩色 emoji 渲染 → 普通 PNG（无 AI 依赖，羊了个羊同款卡通风）"""
-    fp = _emoji_font()
-    if not fp:
-        raise RuntimeError('未找到彩色 emoji 字体（seguiemj.ttf / NotoColorEmoji.ttf）')
-    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    f = ImageFont.truetype(fp, int(size * 0.82))
-    d.text((0, 0), ch, font=f, embedded_color=True)
-    bbox = img.getbbox()
-    if bbox:
-        img = img.crop(bbox)
-    canvas = Image.new('RGBA', (size, size), (0, 0, 0, 0))
-    w, h = img.size
-    canvas.paste(img, ((size - w) // 2, (size - h) // 2), img)
-    return save(canvas, out_dir, name)
+    """emoji 彩色字形 -> 普通 PNG（无 AI 依赖）。
+
+    [!] 2026-09-18 钟工：「emoji 表情包转图片的时候切图不完整」。
+    根因：原实现在 1x 画布上从 (0,0) 直画再 bbox 裁剪 —— 彩色字形的 ascent 超出 size 时
+    **顶部/右侧会被画布边缘切掉**，且四周无留白，真机上就是「图标缺一块 / 贴边」。
+    现统一委托 `_emoji_img()`：**4x 超采样 + 3 倍画布居中 + bbox + 最长边缩到 86% + LANCZOS**，
+    与 `emoji_icon_ss()` 同口径（html2json 两处自动转图调用点一并受益，不再两套写法）。
+    """
+    return save(_emoji_img(size, ch), out_dir, name)
 
 
 # ---------- data-icon 语义图标：emoji 彩色优先（2026-09-04 定规：风格在 HTML 原型阶段选定） ----------
@@ -607,8 +601,20 @@ def _emoji_img(size, ch):
 
 
 def emoji_icon_ss(out_dir, name, size, ch):
-    """emoji 彩色图标（4x 超采样抗锯齿版）；旧 emoji_icon 为 1x 直画，保留兼容。"""
+    """emoji 彩色图标（4x 超采样抗锯齿版）。"""
     return save(_emoji_img(size, ch), out_dir, name)
+
+
+def emoji_icon_box(out_dir, name, w, h, ch):
+    """emoji 图标 -> 尺寸**恰好等于控件盒 (w,h)** 的 PNG。
+
+    [!] 2026-09-18 钟工：「emoji 表情包转图片的时候切图不完整」。
+    根因：html2json 原先按 `size = max(w, h)` 出**正方形**图，却挂在 (w, h) 的控件盒上
+    （图 != 盒，违反 assets 铁律）-> 扁盒里塞方图，字形被压扁/切掉，真机看着就是「切图不完整」。
+    本函数：字形按 **min(w,h)** 缩放（长宽比不拉伸）+ 居中铺在 (w,h) 透明画布 -> 图 == 盒。
+    """
+    m = max(1, min(int(w), int(h)))
+    return save(_paste_canvas(_emoji_img(m, ch), m, (w, h)), out_dir, name)
 
 
 def _paste_canvas(img, size, canvas):

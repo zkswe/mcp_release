@@ -39,6 +39,7 @@ RISK = {
     'flythings_hardware_info': 'read',
     'flythings_map_control': 'read',
     'flythings_read_json': 'read',
+    'flythings_layout_audit': 'read',
     'flythings_get_project_spec': 'read',
     'flythings_validate_project': 'read',
     'flythings_check_project_deps': 'read',
@@ -50,6 +51,7 @@ RISK = {
     'flythings_resolve_dependencies': 'read',
     'flythings_i18n_scan': 'read',
     'flythings_fui_pack': 'write',
+    'flythings_fui_unpack': 'write',
     'flythings_edit_ftu': 'write',
     'flythings_ui_preview': 'write',
     'flythings_html_to_json': 'write',
@@ -78,6 +80,7 @@ CATEGORY = {
     'flythings_hardware_info': 'kbase',
     'flythings_map_control': 'layout',
     'flythings_read_json': 'layout',
+    'flythings_layout_audit': 'layout',
     'flythings_get_project_spec': 'layout',
     'flythings_validate_project': 'layout',
     'flythings_check_project_deps': 'project',
@@ -86,6 +89,7 @@ CATEGORY = {
     'flythings_ui_preview': 'layout',
     'flythings_ui_visual': 'ui-visual',
     'flythings_fui_pack': 'layout',
+    'flythings_fui_unpack': 'layout',
     'flythings_edit_ftu': 'layout',
     'flythings_create_project': 'project',
     'flythings_create_bin_project': 'project',
@@ -113,7 +117,7 @@ CATEGORY = {
 # 命令行名词表（回应检讨 §2.4：仓库里 fun / fui / fyx / fuse 四种提法容易混）
 CLI_NAMES = {
     'fun': 'FlyThings 工程工具（create/install/build/launch，<项目>/.fun/<平台>/ 下）',
-    'fui': 'FTU 布局工具——当前内置版本只支持 pack（json → ftu）；unpack 是空壳（调用报通用错误），不要依赖',
+    'fui': 'FTU 布局工具：pack（json → ftu）/ unpack（ftu → json）双向下；随包 fui 自 v0.27.91 起含 unpack（旧版只有 pack）',
     'fyx': '旧版打包/发布 CLI 名（历史遗留，等价于 fun 的早期名）',
     'fuse': '本机 workspace 的引擎 CLI（projects/fuse.exe，非本仓库内置）',
 }

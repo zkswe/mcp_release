@@ -6,19 +6,21 @@
 ## 跑法
 
 ```bash
-python -m unittest discover -s tests -q     # 全部（约 2 秒）
-python scripts/ci.sh                        # CI 前置：compileall + 用例 + 一致性 + 冒烟
+python -m unittest discover -s tests -q     # 全部（约 12 秒）
+python scripts/check_retrieval.py           # 检索回归（16 条真实问法 + 11 条对照组，~4 秒；模型缺失时自动降级 BM25）
+python scripts/ci.sh                        # CI 前置：compileall + 用例 + 一致性 + 冒烟 + 检索回归
 python scripts/check_consistency.py --with-tests
 ```
 
 依赖：只用标准库 + 仓库已有依赖（Pillow 缺失时图像相关用例自动 skip）。**不连真机**。
-当前规模：**255 项**（1 项按环境 skip）。
+当前规模：**281 项**（1 项按环境 skip）。
 
 ## 用例分布
 
 | 文件 | 钉住什么 |
 |------|----------|
 | `test_dispatch_contract.py` | op 清单（分发器 = manifest = kb_tools.OP_NAMES）、未知 op 候选、`BAD_ARGS`/`BAD_PARAMS`（参数写错必须回正确签名）、每个非真机 op 空参调用必须回可解析 envelope、**工具面三模式**（默认只 1 个分发器 / `all` 兼容 / `flat` 与 `mcp_server_flat.py` 均 32 个）、`get_version` compact 不膨胀、manifest 新鲜度 |
+| `test_control_map.py` | **跨框架控件映射**（v0.27.73 / 滚轮族 v0.27.93 / **TimePicker 全族 v0.27.94**）：`mcp_control_map.json` 完整性（六源 / 条数 / 级别取值 / 片段可解析 / L1·L2 必给可粘 json）、op `flythings_map_control` 契约（命中形状 / 模糊大小写 / `source` 限定 / `NO_HIT` / `BAD_SOURCE` / `BAD_PARAMS`）、tab 类指向 `_mapping/TabView`、**滚轮族 + `TimePicker`（含时钟盘）/`NumberPicker`/`LISTWHEEL`/`QTimeEdit`/`picker mode=time` → `listview`+L2**、`targets.wheelpicker` 无悬空引用、**表里不许再有「时间/时钟盘无对应能力」类旧表述** |
 | `test_search_quality.py` | 检索：中文**字级 bigram** 切词（整段中文不得成为一个 token）、kb_tools 与 rag_search 共用同一套切词、8 条真实问法 BM25 top-3 命中、hits 带 `source`、返回体带 `retrieval`/`degraded`/`quality`、未收录与低置信必须带检索边界提醒、`k` 上限夹紧 |
 | `test_platform_matrix.py` | 平台唯一来源：模板/bin_tools 目录真实存在、别名归一、未知平台报错且列出全部支持项、默认平台有效；`test_platform_resolution.py` 另有 **V85x 芯片别名**（v0.27.87）：`V851/V851S/V851S3/V853S`（含 `v851s` 这类大小写混写）必须 `resolve`→`V85X` + `package_key`→`v85x`，且它们**不得**出现在 `package_keys()`/`PACKAGE_KEY_ALIASES`（芯片名不是包键）；`package_catalog` 的 `v85x`/`v85xemmc.chips` 与 `hardware_catalog.V85X`（含 `chipEntries`，无实测的如实 `pending`）都已收齐这 6 个主控 |
 | `test_layout_flow.py` | fui pack 确定性 + affectedFiles；**edit_ftu 默认不覆盖原 ftu**（原文件字节不变、留 .bak、产 `.edited.ftu`）；`flythings_ui_visual(action="edit_apply")` dry_run 不写盘 / 默认不 pack / 写盘留 .bak |
@@ -26,7 +28,7 @@ python scripts/check_consistency.py --with-tests
 | `test_gen_res_aa.py` | **切图抗锯齿档位**（v0.27.75）：FT-008 契约（`rounded_rect` 的 α≥128 轮廓 == 1x 直画，默认行为钉死）/ `rounded_rect_ss` 在强曲率上必须比 FT-008 准一半（对 16x 超采样理想值）/ ss 越高不更差 / 尺寸·四角透明·半径钳制 / 半透明底无暗边（alpha 预乘） |
 | `test_html2json_ss.py` | **html2json CSS 出图一律 SS**（v0.27.76）：`SS_DEFAULT`/`_CSS_SS` == 4；渐变药丸与阴影片在 SS 下必须显著优于老路（对 16x 理想值，阴影片比 α 最大偏差）；SS mask 不许引入暗边（边界 RGB 对列内基准）；`crop=False` 「图 == 控件盒」尺寸不受 SS 影响；`border-radius` 解析（`px`/无单位/`%`/多值/无声明默认）+ 端到端 `50%` 真出正圆（覆盖率 ≈ π/4） |
 | `test_ui_visual_merge.py` | ui-visual 三合一（`flythings_ui_visual(action)`）：action="list" 参数目录、未知 action / 缺必填参数 = BAD_PARAMS、editor/edit_apply/diff 三路路由、别家 action 的参数必须回 `visualNote`（不静默忽略）、三个旧名回 OP_RENAMED 且 hint 带该用哪个 action |
-| `test_toolchain_capability.py` | `fui unpack` 能力声明与实际一致（声称能用必须真解出 json；声称不能用必须真解不出）、json→ftu→json 往返语义等价、无 unpack 且缺 json 源时 edit_ftu 必须明确报错 |
+| `test_toolchain_capability.py` | `fui unpack` 能力声明与实际一致（声称能用必须真解出 json；声称不能用必须真解不出）、json→ftu→json 往返语义等价、无 unpack 且缺 json 源时 edit_ftu 必须明确报错；**`flythings_fui_unpack`（v0.27.91）**：默认**覆盖**同目录同名 json（ftu 为真源）、`overwrite=False` 保留 json 源（写 `.unpacked.json`、再解换序号）、非 `.ftu`/文件不存在报错、`output_json` 指定路径（父目录自动建）、`edit_ftu` 在缺 json 时自动 unpack 出编辑源（`unpackedSource`）；**ftu→json 自动同步三条规则**（09-18 口径）：只有 ftu 没 json → 直接转、ftu 比 json 新「分钟级」≥60s → 转同步、新几秒或 json 更新 → **不做**反向（阈值钉住 ≥60）；**异常 ftu（不能反解析）→ 必须报错并带 `hint` 告知用户**（不静默跳过） |
 | `test_deps_install_guard.py` | **依赖/install 诊断**（v0.27.83）：代码或 fun 生成的 `generated/*.h` 引用 `base/…` ＋ Manifest 未声明 `base-utility` → `check_project_deps`（`kind="framework"`）/ `validate_project`（`missing_framework_dependency`）必须报出并带可照做的 fix；**声明过或已被传递依赖解析（.fun-lock.json）→ 不许报**；UI 工程无 base 引用也要报、bin 工程（fun.json type=executable）不报；`base/http_*.h`（base-http-client）不算 base-utility；`build_ui_flow`：install 失败 → 顶层 warnings 且**不阻断** build、缺包 → build 前 `check_framework_deps` 直接点明、ninja 的 `base/function.h` 报错被翻译成「依赖未装/缺包」（本文件只盯依赖诊断，离线跑显式传 `with_launch=False`） |
 | `test_adb_resolve.py` | **adb 单一入口 + launch 默认推设备**（v0.27.84）：`resolve_adb()` 优先级（env `ADB`/`FLYTHINGS_ADB` > 随包 `tools/adb/adb.exe`（三件齐备）> PATH > 空串+提示）；`FLYTHINGS_ADB` 与 `ADB` 等价；`devices -l` 解析（带 model / 网络设备无 model / unauthorized）；网络设备用 `getprop` 补 model 并判平台；型号表口径（实测三条 → Z21/Z20/V85X 且必须带 `source`；F133/F136 串 **platform 留空 + todo，不许猜**；表里不许出现 IP）；`match_platform` 三态（未知 ≠ 不匹配）；0 台 → `needDeviceInput`+`installHint`（含 ADB 驱动 / USB 调试 / 网络接入）；多设备提示**不替你选机器**；`staleOnDevice` 判据（设备侧字节/md5 vs 本地，无 md5 时退化比字节；三个真机坑：`ls -l` 第 5 列才是字节 / 裁剪 rootfs 的 `wc -c` 返回空 / 缺 md5sum 走随仓 busybox 兜底）；`fun` 多设备硬失败（`more than one device/emulator`）hint 识别；`build_ui_flow` 默认 `with_launch=True`（两处签名）、1 台匹配 → `fun launch -s <serial>`、`with_launch=False` **不探测不推设备** |
 | `test_runtime_setpic.py` | **`check_all` 第 20 项「运行期 set...Pic 的图 vs 控件盒」**（v0.27.90）：尺寸相等 → ok；`images/` 自动生成图不等 → `mismatch` FAIL（钉住真机事故：48×16 图进 48×26 盒 → 正圆变竖椭圆）；手绘图（`navi/fh.png` 44×26 进 72×40）→ 仅 `stretched`；`.9.png` 豁免；文件不存在 → `missing`；变量映射不到控件 → `unresolved`（不静默跳过）；`setBackgroundPic(path)` / `snprintf` 拼路径 → 只计 `dynamic`；注释里的调用不算；三元式两个字面量都比；同一 caption 多页且有任一盒子对应就不报 |

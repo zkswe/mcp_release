@@ -4,7 +4,7 @@
 # 跑什么：
 #   1) 语法编译检查（python -m compileall，秒级，拦住低级语法错误）
 #   2) 发布前置一致性 + 契约用例 + 冒烟：python scripts/check_consistency.py --with-tests
-#      （内含 unittest 38 项、smoke 30+ 项、manifest 新鲜度、双份 ui_tools 哈希、隐私扫描、静默 except）
+#      （内含 unittest 全量用例、smoke、**检索回归 check_retrieval**、manifest 新鲜度、双份 ui_tools 哈希、隐私扫描、静默 except）
 # 可选：
 #   CI_DEVICE=<adb serial 或 ip:port>   → 追加真机抓屏冒烟（需要 adb 与设备，缺省不跑）
 #

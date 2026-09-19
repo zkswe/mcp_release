@@ -103,5 +103,75 @@ class TestFt010StrongCurvature(unittest.TestCase):
         self.assertLess(worst, 8, '边界混进了透明黑（halo），alpha 预乘没生效')
 
 
+@unittest.skipUnless(HAS_PIL, 'needs Pillow')
+class TestStraightAlphaEdge(unittest.TestCase):
+    """直通 α 边界契约（2026-09-19 钟工：「选中条边界有锯齿」入规）。
+
+    背景：浅色药丸/选中条（#F2F3FF）压浅底（#F3F3F3）时，边界只有 B 通道差 12 级；
+    只要边界 RGB 被污染（近黑=暗边 / 纯白=白点），8× 放大下就是「阶梯 + 脏边」。
+
+    两条契约：
+      ① **覆盖率口径（SS 二值 + AREA/BOX 面积平均缩回）**：直通 α 边界的 RGB 必须 == 填充色；
+      ② LANCZOS 路径的脏边**现状计数钉死**（`_ss_down` 改成面积平均后本用例会失败 → 请同步
+         更新期望值与 `references/kb/image-gen-standard.md` §1）。
+    参考：`tools/qa/aa_audit.py`（v2 判据与豁免口径）。
+    """
+
+    FILL = (242, 243, 255)
+
+    def _coverage_pill(self, w, h, radius, ss=16):
+        big = Image.new('L', (w * ss, h * ss), 0)
+        ImageDraw.Draw(big).rounded_rectangle([0, 0, w * ss - 1, h * ss - 1],
+                                              radius=radius * ss, fill=255)
+        cov = big.resize((w, h), Image.BOX)          # 面积平均：无负瓣
+        return Image.merge('RGBA', [Image.new('L', (w, h), c) for c in self.FILL] + [cov])
+
+    def _dirty(self, img, tol=6, vis=2.5):
+        """直通 α 脏边计数：部分透明像素 RGB 偏离填充色 > tol 且偏离×α/255 > vis。"""
+        n = 0
+        worst = 0
+        px = img.load()
+        for x in range(img.width):
+            for y in range(img.height):
+                r, g, b, a = px[x, y]
+                if not (5 < a < 250):
+                    continue
+                dev = max(abs(r - self.FILL[0]), abs(g - self.FILL[1]), abs(b - self.FILL[2]))
+                worst = max(worst, dev)
+                if dev > tol and dev * a / 255.0 > vis:
+                    n += 1
+        return n, worst
+
+    def test_coverage_path_edge_rgb_is_pure(self):
+        """① 覆盖率口径：直通 α 边界 RGB 必须 == 填充色（无暗边/白点）。"""
+        n, worst = self._dirty(self._coverage_pill(80, 40, 20))
+        self.assertEqual(n, 0, '覆盖率口径出现脏边 %d 个（最大偏离 %d）' % (n, worst))
+        self.assertLessEqual(worst, 1, '覆盖率口径边界 RGB 偏离 %d > 1 级' % worst)
+
+    def test_coverage_pill_composite_is_monotone_on_light_bg(self):
+        """①-补：合成到浅底后，边界只能在「底 ↔ 形色」之间（B 通道 243→255）。"""
+        img = self._coverage_pill(80, 40, 20)
+        bg = Image.new('RGBA', img.size, (243, 243, 243, 255))
+        comp = Image.alpha_composite(bg, img).convert('RGB').load()
+        worst = 0
+        for x in range(80):
+            for y in range(40):
+                b = comp[x, y][2]
+                worst = max(worst, max(0, 243 - b), max(0, b - 255))
+        self.assertEqual(worst, 0, '合成后边界越出「底↔形色」区间 %d 级（= 暗边/白点）' % worst)
+
+    def test_lanczos_path_ringing_is_documented(self):
+        """② 现状钉死：gen_res._ss_down 用 LANCZOS → 负瓣振铃 → 直通 α 边界被污染。
+
+        这不是「允许」，而是把已知偏差写成可复现的数字，避免下次又漏
+        （`_ss_down` 换成面积平均后本用例的 assertGreater 会失败 → 提醒一起更新口径）。
+        """
+        n, worst = self._dirty(GR.rounded_rect_ss(80, 40, 20, self.FILL + (255,), ss=8))
+        self.assertGreater(n, 0,
+                           'LANCZOS 路径已不再产生脏边？→ 说明 _ss_down 已改成面积平均，'
+                           '请更新本用例与 image-gen-standard.md §1')
+        self.assertGreater(worst, 6, '脏边最大偏离 %d（预期 >6）' % worst)
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

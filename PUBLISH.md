@@ -31,7 +31,7 @@
 | MCP 工具全家桶 | 建工程/布局/预览/依赖/校验/i18n/测试（python 代码保留平台支持） |
 | `models/` | bge-small-zh 开源向量模型（本地检索必需） |
 | `rag_index.json` | 只索引 release 保留文档（重建：空目录技巧，勿把本地 wiki 编入） |
-| `mcp_control_map.json` | 跨框架控件映射机读数据（六框架 212 条）+ op `flythings_map_control`（随工具集保留；不依赖内部知识文档） |
+| `mcp_control_map.json` | 跨框架控件映射机读数据（六框架 213 条）+ op `flythings_map_control`（随工具集保留；不依赖内部知识文档） |
 | `components/` | 可复用组件（ble 头+静态库 / fonts / icons / ui_v1：自定义控件包 + `_mapping` 映射参考） |
 
 ### ❌ 剔除（内部/方案/平台深度，绝不进 release）

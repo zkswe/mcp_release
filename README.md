@@ -48,15 +48,15 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 > `python` 不在 PATH 时用完整路径（如 `C:/Users/<你>/AppData/Local/Programs/Python/Python313/python.exe`）。
 
 **3) 验证** —— 问 AI「**MCP 版本是多少？**」：
-应返回 `flythings-kb-open 0.27.90-open`，**35 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / mt_test / zkshot，
+应返回 `flythings-kb-open 0.27.95-open`，**37 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / mt_test / zkshot，
 在 `bin_tools/<平台>/` 下，**不是 op、不占 op 名额**）。
 
 > **工具面三模式（按客户端选一个，别同时配）**
 > | 模式 | 怎么配 | 客户端看到什么 |
 > |------|--------|----------------|
 > | `dispatcher`（默认） | 只指 `mcp_server.py` | 只暴露分发器 `flythings_kb`（`op="list"` 取目录）—— schema 开销最小 |
-> | `all` | `FLYTHINGS_MCP_MODE=all` | 分发器 + 35 个独立工具（旧配置兼容） |
-> | `flat` | 指 `mcp_server_flat.py`（或 `FLYTHINGS_MCP_MODE=flat`） | 35 个独立工具，无分发器（Trae / Cursor / Claude Desktop 需要独立 schema 时用；代价 ≈ 1 万 token/session） |
+> | `all` | `FLYTHINGS_MCP_MODE=all` | 分发器 + 37 个独立工具（旧配置兼容） |
+> | `flat` | 指 `mcp_server_flat.py`（或 `FLYTHINGS_MCP_MODE=flat`） | 37 个独立工具，无分发器（Trae / Cursor / Claude Desktop 需要独立 schema 时用；代价 ≈ 1 万 token/session） |
 >
 > 默认从「全注册」改为「只分发器」是 v0.27.34 的**行为变更**；受影响就设 `FLYTHINGS_MCP_MODE=all` 恢复。
 
@@ -102,6 +102,9 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
   `python tools/make_boot_logo.py --size 1024x600 --out boot_logo.JPG`（生成 + 体积闸门）/ `python tools/set_boot_logo.py --image boot_logo.JPG --device <serial|IP:5555>`（**默认 dry-run**，`--yes` 才真触发）；
   细节与待验证项见 `knowledge/devflow/upgrade-pack-image.md` §三
 - `flythings_create_project` / `flythings_create_bin_project`：从内置模板建工程（F133/F135/Z21/Z20/T113/V85X/Z235X）
+  - **ftu 能反解析回 json 了**（v0.27.91，钟工：「fui 的 unpack 能力释放出去」）：随包 `toolchain/fui.exe` 换成支持 `unpack` 的版本，
+    新增 `flythings_fui_unpack`（**默认覆盖**同目录同名 json，ftu 为真源；要保留原 json 传 `overwrite=false`）；
+    `read_json` 传 `.ftu` 不再报「加密无法解析」——先 unpack 再读。
   - **V85x 芯片名也能直接当平台入参**（v0.27.87）：`V851 / V851S / V851S3 / V853 / V853S / V553 / V552`（含 `v851s` 这种大小写混写）
     一律 resolve 成 **V85X**，包键走 **`v85x`（SPINOR）/ `v85xemmc`（EMMC）**；**芯片名不是包键**（拿 `v851s` 查包会查空）
 - `flythings_attach_cli_tools`：把 `fui.exe`/`fun.exe` 复制进项目，客户不用装 IDE 也能编译部署
@@ -133,6 +136,6 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 
 ---
 
-当前版本 `0.27.90-open`（35 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
+当前版本 `0.27.95-open`（37 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
 
 MIT License · FlyThings Team · 深圳中科世为科技有限公司 · [developer.flythings.cn](https://developer.flythings.cn/)

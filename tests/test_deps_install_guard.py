@@ -44,7 +44,7 @@ def _mk(root, manifest, logic=None, with_ftu=True, lock=None, fun_json=None):
     if logic is not None:
         U.write(os.path.join(root, 'src', 'logic', 'mainLogic.cc'), logic)
     if with_ftu:
-        open(os.path.join(root, 'ui', 'main.ftu'), 'wb').write(b'ZKSR')   # 内容无关，存在即 UI 工程
+        open(os.path.join(root, 'ui', 'main.ftu'), 'wb').write(U.ftu_bytes() or b'ZKSR')   # 内容无关，存在即 UI 工程
     if lock:
         U.write(os.path.join(root, '.fun-lock.json'), json.dumps(lock, ensure_ascii=False))
     if fun_json:

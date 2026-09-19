@@ -102,7 +102,7 @@ def _mk(root, prefs_font='', fonts=(), props='projectName=unittest\n'):
     """最小工程骨架：ui/main.ftu + src + package.properties（可选 prefs / font/ 假字体）。"""
     os.makedirs(os.path.join(root, 'ui'), exist_ok=True)
     os.makedirs(os.path.join(root, 'src'), exist_ok=True)
-    open(os.path.join(root, 'ui', 'main.ftu'), 'wb').write(b'ZKSR')
+    open(os.path.join(root, 'ui', 'main.ftu'), 'wb').write(U.ftu_bytes() or b'ZKSR')
     open(os.path.join(root, 'src', 'Main.cpp'), 'w').write('int main() { return 0; }\n')
     if props is not None:
         U.write(os.path.join(root, 'package.properties'), props)

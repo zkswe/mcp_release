@@ -450,6 +450,13 @@ def stage_delegated(skip_smoke, with_tests):
         rc, out = _run([sys.executable, os.path.join(SUB, 'smoke.py')])
         last = [l for l in out.strip().splitlines() if l.startswith('total=')]
         check(rc == 0, 'delegated: smoke.py', last[0] if last else 'rc=%d' % rc)
+    # 检索质量回归（v0.27.94 起进门禁）：16 条真实问法必须一次命中权威文档 + 11 条对照组防调参副作用。
+    # 无需向量模型也能跑（自动降级 BM25，实测同样 16/16），耗时 ~4s。
+    rc, out = _run([sys.executable, os.path.join(SUB, 'check_retrieval.py')])
+    last = [l for l in out.strip().splitlines()
+            if l.startswith('[PASS]') or l.startswith('[FAIL]')]
+    check(rc == 0, 'delegated: check_retrieval.py',
+          (last[0] if last else 'rc=%d' % rc)[:70])
     if with_tests:
         rc, out = _run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', '-q'])
         tail = [l for l in out.strip().splitlines() if l.strip()][-1:]

@@ -207,8 +207,8 @@ def _rewrite_ftu_resolution(project_root, resolution):
     """重写 ui/*.ftu 内嵌的分辨率。
     ftu 里也含 resolution（根节点 resolution + position），只改 .settings prefs 不够，
     必须 unpack → 改 json 的 resolution/position → pack 回 ftu。
-    ⚠️ 新版 fui.exe 仅支持 pack（json→ftu）：改直接用同目录 json 改分辨率后 pack 回 ftu；
-    无 json 且 fui 不支持 unpack 时标记 failed（提示改用旧版 fui.exe 或手动处理）。
+    同目录已有 json 就直接改它（快）；没有 json 则按能力探测走 unpack（v0.27.91 起随包 fui 支持），
+    无 unpack 又无 json 时标记 failed（提示手动处理，不静默产空 ftu）。
     返回 {"updated": [ftu名], "failed": [{ftu, error}]}。
     """
     ui_dir = os.path.join(project_root, 'ui')
@@ -228,15 +228,15 @@ def _rewrite_ftu_resolution(project_root, resolution):
         tmp = tempfile.mkdtemp(prefix='ftu_res_')
         try:
             shutil.copy2(ftu_path, tmp)
-            # json 源：优先同目录已有 json；新版 fui.exe 无 unpack 时必需 json
+            # json 源：优先同目录已有 json；fui 无 unpack 时必需 json（有则直接改，省一步反向）
             src_json = os.path.join(ui_dir, base + '.json')
             if os.path.isfile(src_json):
                 shutil.copy2(src_json, tmp)
                 jf = os.path.join(tmp, base + '.json')
             elif not _fui_supports_unpack():
                 result["failed"].append({"ftu": fn,
-                                          "error": f"当前 fui.exe 仅支持 pack 且无 {base}.json 可改分辨率，"
-                                                   f"请换用支持 unpack 的旧版 fui.exe 或手动修改 json"})
+                                          "error": f"当前 fui.exe 不含 unpack 且无 {base}.json 可改分辨率，"
+                                                   f"请换用支持 unpack 的 fui.exe 或手动修改 json"})
                 continue
             else:
                 r = _run_fui('unpack', tmp)
@@ -269,18 +269,19 @@ def _rewrite_ftu_resolution(project_root, resolution):
 
 
 # ---------------- ui json/ftu 时间戳校验 ----------------
-def _ui_timestamp_check(project_root, dev_threshold=30):
+def _ui_timestamp_check(project_root, dev_threshold=60):
     """检查 ui 目录下 .json 与 .ftu 的修改时间一致性。
-    返回 {"stale": [{json, ftu, jsonTime, ftuTime}], "missing": [{json}],
-          "devModified": [{json, ftu, jsonTime, ftuTime}], "ok": [...]}。
+    返回 {"stale": [...], "missing": [{json}], "devModified": [...], "ftuOnly": [{ftu}], "ok": [...]}。
     stale = json 比 ftu 新（改过 json 没重新 pack）；missing = 有 json 无 ftu；
-    devModified = ftu 比 json 新超过 dev_threshold 秒（开发者/IDE 直接改过 ftu，
-    改 json 前必须先 unpack ftu 同步，否则会覆盖开发者的修改）。"""
+    ftuOnly = 只有 ftu 没有同名 json（老工程/IDE 工程 → 直接 unpack 转出 json）；
+    devModified = ftu 比 json 新超过 dev_threshold 秒（**分钟级** = 用户/IDE 直接用 IDE 编辑过 ftu，
+    要先 unpack 同步；fui pack 生成时两者差 <1s，所以分钟级差异必是人为）。"""
     ui_dir = os.path.join(project_root, 'ui')
-    result = {"stale": [], "missing": [], "devModified": [], "ok": []}
+    result = {"stale": [], "missing": [], "devModified": [], "ftuOnly": [], "ok": []}
     if not os.path.isdir(ui_dir):
         return result
-    for fn in sorted(os.listdir(ui_dir)):
+    names = sorted(os.listdir(ui_dir))
+    for fn in names:
         if not fn.endswith('.json'):
             continue
         jp = os.path.join(ui_dir, fn)
@@ -291,61 +292,78 @@ def _ui_timestamp_check(project_root, dev_threshold=30):
             if jt > ft + 1:  # json 比 ftu 新（容差 1 秒）
                 result["stale"].append({"json": fn, "ftu": fn[:-5] + '.ftu',
                                          "jsonTime": jt, "ftuTime": ft})
-            elif ft > jt + dev_threshold:  # ftu 比 json 新超 30s → 开发者/IDE 改过 ftu
+            elif ft > jt + dev_threshold:  # ftu 比 json 新「分钟级」→ 用户/IDE 编辑过 ftu
                 result["devModified"].append({"json": fn, "ftu": fn[:-5] + '.ftu',
                                                "jsonTime": jt, "ftuTime": ft})
             else:
                 result["ok"].append(fn)
         else:
             result["missing"].append(fn)
+    # 只有 ftu 没有同名 json（自动同步规则①：直接转出 json）
+    for fn in names:
+        if fn.endswith('.ftu') and not os.path.isfile(os.path.join(ui_dir, fn[:-4] + '.json')):
+            result["ftuOnly"].append(fn)
     return result
 
 
 def _sync_ftu_to_json(project_root):
-    """开发者/IDE 直接改过 ftu（ftu 比 json 新 >30s）时，先 unpack ftu 同步 json。
-    返回 {"synced": [{ftu}], "skipped": [...], "failed": [{ftu, error}]}。
-    以 ftu 为真源：unpack 出的 json 覆盖旧 json，后续修改 json 才不会丢开发者的改动。
-    ⚠️ 新版 fui.exe 仅支持 pack（json→ftu），不支持 unpack：无法从 ftu 反解析，
-    所有 devModified 标记为 skipped（提示以 json 为源重新 pack，开发者改动需手动同步）。"""
+    """ftu → json 的**自动**同步（2026-09-18 口径，只在这两种情况下做）：
+    ① 只有 ftu 没有同名 json（老工程/纯 IDE 工程）→ 直接 unpack 转出 json；
+    ② ftu 比 json 新**分钟级**（≥ dev_threshold=60s → 用户/IDE 编辑过 ftu）→ unpack 覆盖 json；
+    ③ 其余情况**不做 ftu→json**（json 是布局源，只需 json→ftu）。
+    返回 {"synced": [{ftu}], "syncedDetail": [{ftu, why}], "skipped": [...], "failed": [...]}。
+    """
     ui_dir = os.path.join(project_root, 'ui')
-    result = {"synced": [], "skipped": [], "failed": []}
+    result = {"synced": [], "syncedDetail": [], "skipped": [], "failed": []}
     if not os.path.isdir(ui_dir):
         return result
-    if not _fui_supports_unpack():
-        ts = _ui_timestamp_check(project_root)
-        for dm in ts.get('devModified', []):
-            result["skipped"].append({"ftu": dm['ftu'],
-                                       "reason": "当前 fui.exe 仅支持 pack，无法从 ftu 反解析 json；以 json 为源重新 pack（开发者对 ftu 的手改需手动同步到 json）"})
-        return result
     ts = _ui_timestamp_check(project_root)
-    for dm in ts.get('devModified', []):
-        ftu_name = dm['ftu']
+    todo = [{"ftu": f, "why": "ftuOnly：只有 ftu 没有 json"} for f in ts.get('ftuOnly', [])]
+    todo += [{"ftu": d['ftu'], "why": "devModified：ftu 比 json 新分钟级（用户/IDE 编辑过）"}
+             for d in ts.get('devModified', [])]
+    if not todo:
+        result["skipped"].append({"ftu": '*', "reason": "json 为源且不比 ftu 旧 → 不需要 ftu→json"})
+        return result
+    if not _fui_supports_unpack():
+        for t in todo:
+            result["skipped"].append({"ftu": t['ftu'],
+                                       "reason": "当前 fui.exe 不含 unpack，无法从 ftu 反解析 json；"
+                                                 "以 json 为源重新 pack（用户对 ftu 的编辑需手动同步到 json）"})
+        return result
+    for t in todo:
+        ftu_name = t['ftu']
         ftu_path = os.path.join(ui_dir, ftu_name)
         tmp = tempfile.mkdtemp(prefix='ftu_sync_')
         try:
             shutil.copy2(ftu_path, tmp)
             r = _run_fui('unpack', tmp)
             if not r['success']:
-                result["failed"].append({"ftu": ftu_name,
-                                          "error": (r.get('stderr') or r.get('stdout') or '')[-200:]})
+                # ⚠️ 异常 ftu（不是合法 ftu / 已损坏）→ 明确报错并告知用户，不静默跳过（钟工 2026-09-18 09:14）
+                result["failed"].append({
+                    "ftu": ftu_name, "why": t['why'],
+                    "error": ((r.get('stderr') or r.get('stdout') or '')[-200:] or 'unpack 失败').strip(),
+                    "hint": f"ui/{ftu_name} 不能反解析（不是合法 ftu 或文件已损坏）→ 无法转出 json；"
+                            f"请提供对应的 {ftu_name[:-4]}.json，或重新导出/修复这个 ftu"})
                 continue
             jf = os.path.join(tmp, ftu_name[:-4] + '.json')
             if not os.path.isfile(jf):
-                result["failed"].append({"ftu": ftu_name, "error": 'unpack 后未找到 json'})
+                result["failed"].append({
+                    "ftu": ftu_name, "why": t['why'], "error": 'unpack 返回成功但没产出 json',
+                    "hint": f"ui/{ftu_name} 反解析未产出 json（文件异常）；请提供 {ftu_name[:-4]}.json 或重新导出该 ftu"})
                 continue
             dst = os.path.join(ui_dir, ftu_name[:-4] + '.json')
-            shutil.copy2(jf, dst)  # ftu 为准，覆盖旧 json
-            # ⚠️ fui unpack 出的 json 的 mtime 是 ftu 内嵌的打包时间戳（旧），
+            shutil.copy2(jf, dst)  # ftu 为准，覆盖/创建同名 json
+            # ⚠️ unpack 出的 json 的 mtime 是 ftu 内嵌的打包时间戳（旧），
             # 不调整会继续误判 devModified → 把 json mtime 对齐到 ftu 文件时间
             ft_mtime = os.path.getmtime(ftu_path)
             os.utime(dst, (ft_mtime, ft_mtime))
             result["synced"].append(ftu_name)
+            result["syncedDetail"].append({"ftu": ftu_name, "why": t['why']})
         except Exception as e:
             result["failed"].append({"ftu": ftu_name, "error": str(e)})
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
     return result
-
 
 # ---------------- json 解析 ----------------
 def _parse_ui_json(json_path):
@@ -374,11 +392,13 @@ def _parse_ui_json(json_path):
 # ---------------- 工具 1: read_json ----------------
 def flythings_read_json(json_path):
     """解析 .json 布局文件，返回结构化信息。
-    ⚠️ 传入 .ftu 时提示：ftu 为加密文件无法解析，可提供设计文件 / AI 重新设计界面 / 采用 HTML 布局。
+    ⚠️ 传入 .ftu 时不再当「加密无法解析」：本 op 只读 json，请先用 flythings_fui_unpack 反解析。
     """
     if json_path.lower().endswith('.ftu'):
-        return {"success": False,
-                "error": "由于 ftu 为加密文件无法解析，您可以提供您的设计文件或者采用 AI 重新设计界面或者采用 HTML 布局。"}
+        return {"success": False, "isFtu": True,
+                "error": "本 op 只解析 json；ftu 是二进制布局（设备实际加载的文件），先反解析再读。",
+                "hint": "调 flythings_fui_unpack(ftu_path=...) 得到 jsonPath（默认覆盖同目录同名 json；"
+                        "要保留原 json 传 overwrite=false），再把 jsonPath 传给本 op"}
     if not os.path.isfile(json_path):
         return {"success": False, "error": f"json 文件不存在: {json_path}"}
     return _parse_ui_json(json_path)
@@ -413,7 +433,7 @@ _PROJECT_SPEC = {
         "页面架构（2026-09-13 定规；**默认口径先看这条**）：**一个工程默认只有一个 Activity**（ui/main.ftu + src/activity/mainActivity.* + src/logic/mainLogic.cc）——**多个页面不是多个 ftu/Activity**，同一业务域内的页面/页签/二级页/弹窗/整屏遮挡 → **同一个 ftu 里的多个整屏 window + showWnd/hideWnd 切换**；只有跨业务域、需独立生命周期或返回栈、超大页面才拆独立 ftu（openActivity）；并列内容区翻页 → pagewindow/slidewindow/scrollwindow 容器。底层关系：ftu=Activity=独立编译单元（独立生命周期/返回栈），window=同 Activity 内显隐（零切换成本/共享指针）。详见知识库 devflow/page-architecture-spec.md",
         "**不要改 .fun/<平台>/CMakeLists.txt**（fun 自动生成，文件头写着 Don't edit this file manually，下次 build 会覆盖；改它没有意义也不会生效）：要加源文件就放到 src/ 下（业务代码一律 .cpp/.h），fun 会把 src/**/*.cpp 与 src/logic/*.cc 收进编译单元",
         "src/uart 为系统模板：UartContext/ProtocolSender 勿改，只改 ProtocolData.h 与 ProtocolParser.cpp 协议部分",
-        "json 布局用 fui pack 生成 ftu（ui/ 下已附带 fui.exe）；编译推送用 fun.exe build / fun.exe launch（项目根目录已附带 fun.exe）",
+        "布局遮挡/点不到/谁压谁 → flythings_layout_audit（纯几何静态判定，先看 json 再截图）；json 布局用 fui pack 生成 ftu（ui/ 下已附带 fui.exe）；编译推送用 fun.exe build / fun.exe launch（项目根目录已附带 fun.exe）",
         "⚠️ 交付流程：项目生成后直接用 fun.exe build 编译、fun.exe launch 推送设备，无需客户手动导入 FlyThings IDE 编译烧录",
         "需要三方能力（MQTT/HTTP/JSON/数据库/蓝牙/SSL/OTA/图片等）→ 先 flythings_package_search / flythings_manifest 检索现有 package，有包用包，禁止手写库或凭空 include",
         "代码 include 了三方库头文件 → Manifest.xml 必须声明对应 package（validate_project 会检查缺失依赖）；**框架基础包 base-utility 同理且更容易被漏**：代码或 fun 生成的 generated/*.h 里出现 `#include <base/...>`（典型 base/functional.h）→ Manifest 必须有 `<package id=\"base-utility\" version=\"^10.0.0\"/>`，缺了 fun build 直接 `fatal error: base/functional.h: No such file or directory`（老工程/自建工程高发）；用 flythings_add_package 加包后**必须重跑 fun install**，否则 include 路径不进 CMake",
@@ -718,16 +738,20 @@ def flythings_validate_project(root):
             warnings.append({'file': f"ui/{s['json']}", 'type': 'stale_ftu',
                              'msg': f"{s['json']} 修改时间晚于 {s['ftu']}（改过 json 未重新 fui pack，"
                                     f"设备仍会运行旧版 ftu 布局）"})
-        # ftu 比 json 新超 30s → 开发者/IDE 直接改过 ftu（改 json 前必须先 unpack 同步）
+        # ftu 比 json 新「分钟级」= 用户/IDE 直接编辑过 ftu（build_ui_flow 会自动 unpack 同步 json）
         for d in ts.get('devModified', []):
             if _fui_supports_unpack():
-                msg = (f"{d['ftu']} 修改时间晚于 {d['json']} 超 30 秒（开发者/IDE 直接改过 ftu，"
-                       f"修改 json 前必须先 fui unpack 同步，否则会覆盖开发者改动）")
+                msg = (f"{d['ftu']} 修改时间晚于 {d['json']} 分钟级（用户/IDE 编辑过 ftu；"
+                       f"build_ui_flow 会先 fui unpack 同步 json 再继续，避免覆盖编辑）")
             else:
-                msg = (f"{d['ftu']} 修改时间晚于 {d['json']} 超 30 秒（开发者/IDE 直接改过 ftu；"
-                       f"当前 fui.exe 仅支持 pack 不支持 unpack，无法从 ftu 反解析——"
-                       f"如需保留开发者对 ftu 的改动，请手动同步到 json，或换用支持 unpack 的旧版 fui.exe）")
+                msg = (f"{d['ftu']} 修改时间晚于 {d['json']} 分钟级（用户/IDE 编辑过 ftu；"
+                       f"当前 fui.exe 不含 unpack，无法从 ftu 反解析——"
+                       f"如需保留对 ftu 的编辑，请手动同步到 json，或换用支持 unpack 的 fui.exe）")
             warnings.append({'file': f"ui/{d['ftu']}", 'type': 'dev_modified_ftu', 'msg': msg})
+        # 只有 ftu 没有同名 json（build_ui_flow 会自动转出 json）
+        for f in ts.get('ftuOnly', []):
+            warnings.append({'file': f"ui/{f}", 'type': 'ftu_without_json',
+                             'msg': f"{f} 没有同名 json（纯 ftu 工程）；build_ui_flow 会自动 fui unpack 转出 json"})
     else:
         warnings.append({'file': 'ui', 'type': 'missing_dir', 'msg': 'ui 目录不存在'})
 
@@ -775,6 +799,229 @@ def flythings_fui_pack(json_path):
             "controlsCount": count, "resolution": res,
             "detail": (r.get('stderr') or r.get('stdout')) if not r['success'] else None}
 
+
+def flythings_fui_unpack(ftu_path, output_json='', overwrite=True):
+    """ftu 反解析回 json（fui unpack；随包 fui 自 v0.27.91 起支持）。
+
+    ⚠️ 默认**覆盖**同目录同名 json（ftu 为真源）；要保留原 json 传 overwrite=False
+    （写到 <name>.unpacked.json，已存在则追加序号），或用 output_json 指定路径。
+    返回 {"success", "ftuPath", "jsonPath", "overwritten", "controlsCount", "resolution"}。
+    """
+    if not os.path.isfile(ftu_path):
+        return {"success": False, "error": f"ftu 文件不存在: {ftu_path}"}
+    if not str(ftu_path).lower().endswith('.ftu'):
+        return {"success": False, "error": f"不是 .ftu 文件: {ftu_path}（json 直接读，无需 unpack）"}
+    if not _fui_supports_unpack():
+        return {"success": False, "fuiUnpackSupported": False,
+                "error": f"当前 fui.exe 不含 unpack，无法从 ftu 反解析（{FUI_EXE}）",
+                "hint": "换用支持 unpack 的 fui.exe（随包 toolchain/fui.exe 自 v0.27.91 起已支持）"}
+    d = os.path.dirname(os.path.abspath(ftu_path)) or '.'
+    base = os.path.splitext(os.path.basename(ftu_path))[0]
+    src_json = os.path.join(d, base + '.json')
+    if output_json:
+        target = os.path.abspath(output_json)
+        _d = os.path.dirname(target)
+        if _d and not os.path.isdir(_d):          # 显式目标：父目录不存在就建（失败要出声）
+            try:
+                os.makedirs(_d, exist_ok=True)
+            except OSError as e:
+                return {"success": False, "error": f"输出目录不可用: {_d}（{e}）"}
+    elif overwrite:
+        target = src_json                        # 默认：覆盖对应 json（ftu 为真源）
+    else:
+        target = os.path.join(d, base + '.unpacked.json')
+        i = 2
+        while os.path.isfile(target):  # 指定不覆盖时：连 .unpacked.json 都在就换序号
+            target = os.path.join(d, f'{base}.unpacked{i}.json')
+            i += 1
+    try:
+        r = subprocess.run([FUI_EXE, 'unpack', ftu_path, target],
+                           capture_output=True, text=True, timeout=60,
+                           stdin=subprocess.DEVNULL,
+                           encoding='utf-8', errors='replace')
+    except Exception as e:
+        return {"success": False, "error": f"fui unpack 执行失败: {e}"}
+    if r.returncode != 0 or not os.path.isfile(target):
+        return {"success": False, "ftuPath": ftu_path, "jsonPath": None,
+                "error": ((r.stderr or '') + (r.stdout or ''))[-300:] or 'fui unpack 失败'}
+    count, res = _count_controls(target)
+    return {"success": True, "ftuPath": ftu_path, "jsonPath": target,
+            "overwritten": os.path.abspath(target) == os.path.abspath(src_json),
+            "controlsCount": count, "resolution": res}
+
+
+
+# ---------------- 工具 4.6: 静态层叠/遮挡审计（纯几何，0 token）----------------
+# 钟工 2026-09-18：用户说「控件被盖住 / 点不到 / 位置不对」时，json 本身就能判定，
+# 不要一上来就截图（截图贵且只能看视觉、看不出触摸被谁抢）。
+_INTERACTIVE_TYPES = {
+    'button', 'edittext', 'listview', 'seekbar', 'circlebar', 'checkbox', 'qrcode',
+    'radiogroup', 'slidewindow', 'pagewindow', 'scrollwindow', 'videoview', 'diagram', 'pointer',
+}
+
+
+def _ctl_box(node):
+    """控件盒 (l, t, r, b)；position 缺失/非正尺寸返回 None。"""
+    p = node.get('position') if isinstance(node, dict) else None
+    if not isinstance(p, dict):
+        return None
+    try:
+        l, t = int(p.get('left', 0)), int(p.get('top', 0))
+        w, h = int(p.get('width', 0)), int(p.get('height', 0))
+    except (TypeError, ValueError):
+        return None
+    if w <= 0 or h <= 0:
+        return None
+    return (l, t, l + w, t + h)
+
+
+def _box_intersect(a, b):
+    return not (a[2] <= b[0] or b[2] <= a[0] or a[3] <= b[1] or b[3] <= a[1])
+
+
+def _box_cover(a, b):
+    return a[0] <= b[0] and a[1] <= b[1] and a[2] >= b[2] and a[3] >= b[3]
+
+
+def _audit_page(name, data):
+    """单页审计：返回 findings[]（纯几何判定，不猜）。"""
+    findings = []
+    pages = data.get('resolution') or {}
+    try:
+        RW, RH = int(pages.get('width') or 0), int(pages.get('height') or 0)
+    except (TypeError, ValueError):
+        RW = RH = 0
+    groups = {}
+
+    def walk(obj, path):
+        if not isinstance(obj, dict):
+            return
+        for k, v in obj.items():
+            if isinstance(v, dict) and '__' in k:
+                groups.setdefault(path, []).append((k, v))
+                walk(v, (path + '/' + k) if path else k)
+
+    walk(data, '')
+    for parent, children in groups.items():
+        infos = []
+        for order, (key, node) in enumerate(children):
+            box = _ctl_box(node)
+            ctype = key.split('__')[0]
+            infos.append({
+                'key': key, 'type': ctype, 'box': box, 'order': order,
+                'visible': node.get('visible', True) is not False,
+                'touchable': bool(node.get('touchable')),
+                'touchPass': node.get('touchPass'),
+                'interactive': ctype in _INTERACTIVE_TYPES,
+                'children': [x for x in children if x[1] is node],
+            })
+        vis = [i for i in infos if i['visible'] and i['box']]
+        for i, a in enumerate(vis):
+            # 整屏层（盖子）——「点哪都没反应」头号嫌疑
+            if RW and RH and a['touchable'] and a['box'] == (0, 0, RW, RH):
+                # 只有「整屏 + touchable」才是问题：整屏 window 作为页面容器是正常写法
+                findings.append({
+                    'kind': 'fullscreen_layer', 'page': name, 'path': (parent + '/' + a['key']).strip('/'),
+                    'why': ('整屏可点层 %s（%s）覆盖全屏且 touchable=true → 会吞掉整屏触摸'
+                            % (a['key'], a['type'])),
+                    'fix': ('隐藏页用 visible:false（不要整屏 touchable 层）；遮罩只覆盖需要拦截的区域；'
+                            '装饰/容器要穿透：touchable:false + touchPass:true')})
+            if not a['interactive'] or not a['touchable']:
+                pass
+            for b in vis:
+                if a is b or not _box_intersect(a['box'], b['box']):
+                    continue
+                # 目标：b 是可交互控件，看谁挡它 / 抢它触摸
+                if b['interactive'] and b['touchable']:
+                    if a['order'] < b['order'] and a['touchable'] and _box_cover(a['box'], b['box']):
+                        findings.append({
+                            'kind': 'touch_steal', 'page': name,
+                            'control': (parent + '/' + b['key']).strip('/'),
+                            'by': (parent + '/' + a['key']).strip('/'),
+                            'why': ('同层更早定义的 touchable 控件 %s（%s）完整覆盖 %s → 触摸按定义顺序先被它拿走（F133 实测：'
+                                    '遮罩 button 压住卡片 window 时卡片内按钮点不动）'
+                                    % (a['key'], a['type'], b['key'])),
+                            'fix': '把遮挡物改 touchable:false + touchPass:true（要穿透），或让它定义为子级/移除'})
+                    elif a['order'] > b['order'] and a['touchable'] and _box_cover(a['box'], b['box']):
+                        findings.append({
+                            'kind': 'covered_interactive', 'page': name,
+                            'control': (parent + '/' + b['key']).strip('/'),
+                            'by': (parent + '/' + a['key']).strip('/'),
+                            'why': ('上层 touchable 控件 %s（%s）完整盖住可交互控件 %s → 视觉与触摸都被挡'
+                                    % (a['key'], a['type'], b['key'])),
+                            'fix': '调整 position（不要完全盖住）、缩小遮挡层、或把被盖控件 move 到可见区域'})
+                    elif a['order'] < b['order'] and _box_intersect(a['box'], b['box']) and not a['touchable']:
+                        if a['touchPass'] is not True:
+                            findings.append({
+                                'kind': 'pass_through_missing', 'page': name,
+                                'control': (parent + '/' + a['key']).strip('/'),
+                                'over': (parent + '/' + b['key']).strip('/'),
+                                'why': ('装饰/容器 %s（%s）touchable:false 但没有 touchPass:true，与可交互控件 %s 重叠 → '
+                                        '可能拦住下层触摸（铁律：装饰件要 touchable:false + touchPass:true）'
+                                        % (a['key'], a['type'], b['key'])),
+                                'fix': 'setTouchable(false) + setTouchPass(true)（json touchPass:true）'})
+                elif a['order'] < b['order'] and _box_intersect(a['box'], b['box']):
+                    findings.append({
+                        'kind': 'overlap', 'page': name,
+                        'control': (parent + '/' + a['key']).strip('/'),
+                        'over': (parent + '/' + b['key']).strip('/'),
+                        'why': ('同层 %s（%s）与 %s（%s）盒子相交（后者在上层：json 书写顺序=层叠顺序）'
+                                % (a['key'], a['type'], b['key'], b['type'])),
+                        'fix': '确认是否故意叠放；要穿透加 touchPass:true，要隐藏用 visible:false'})
+    # 去重（同一对只报一次，按 kind+control+by）
+    seen, uniq = set(), []
+    for f in findings:
+        sig = (f['kind'], f.get('control', ''), f.get('by') or f.get('over', ''))
+        if sig in seen:
+            continue
+        seen.add(sig)
+        uniq.append(f)
+    return uniq
+
+
+def flythings_layout_audit(project_root, page=''):
+    """静态审计 ui/*.json 的层叠/遮挡/触摸穿透（纯几何，0 token）。
+
+    ⚠️ 用户说「控件被盖住 / 点不到 / 位置不对 / 谁挡着谁」时**先调本 op**（json 就能判定），
+    不要一上来截图；只有需要确认视觉样式（颜色/字体/切图/锯齿）才用 device_screenshot + ui_diff。
+    返回 {pages:[{file, findings:[{kind, control, by, why, fix}]}], summary}。
+    kind：fullscreen_layer 整屏层 / touch_steal 同层更早的 touchable 抢触摸 /
+    covered_interactive 被上层可交互控件盖住 / pass_through_missing 缺 touchPass / overlap 盒子相交。
+    """
+    if not os.path.isdir(project_root):
+        return {"success": False, "error": f"项目目录不存在: {project_root}"}
+    ui_dir = os.path.join(project_root, 'ui')
+    if not os.path.isdir(ui_dir):
+        return {"success": False, "error": f"ui 目录不存在: {ui_dir}"}
+    files = []
+    for fn in sorted(os.listdir(ui_dir)):
+        if fn.endswith('.json'):
+            files.append(os.path.join(ui_dir, fn))
+    for sub in sorted(os.listdir(ui_dir)):
+        d = os.path.join(ui_dir, sub)
+        if os.path.isdir(d):
+            for fn in sorted(os.listdir(d)):
+                if fn.endswith('.json'):
+                    files.append(os.path.join(d, fn))
+    if page:
+        files = [f for f in files if page in os.path.basename(f) or page in f.replace('\\', '/')]
+    pages, total = [], 0
+    for fp in files:
+        try:
+            data = json.load(open(fp, encoding='utf-8-sig'))
+        except Exception as e:
+            pages.append({"file": os.path.relpath(fp, ui_dir).replace('\\', '/'), "error": str(e),
+                          "findings": []})
+            continue
+        fs = _audit_page(os.path.relpath(fp, ui_dir).replace('\\', '/'), data)
+        total += len(fs)
+        pages.append({"file": os.path.relpath(fp, ui_dir).replace('\\', '/'), "findings": fs})
+    if not pages:
+        return {"success": True, "hint": "没有扫到 ui/*.json 布局", "pages": [], "summary": {"pages": 0, "findings": 0}}
+    return {"success": True, "pages": pages,
+            "summary": {"pages": len(pages), "findings": total},
+            "note": '纯几何静态判定（z 序=json 书写顺序；同层更早的 touchable 先拿触摸）。'
+                    '视觉样式（颜色/字体/切图）仍需 device_screenshot；改动前后对比用 ui_visual(action="diff")。'}
 
 
 # ---------------- 工具 4.5: 创建可执行程序项目 (fun create --type bin) -------------
@@ -993,16 +1240,25 @@ def flythings_edit_ftu(ftu_path, operations, output_ftu='', overwrite=False):
     ⚠️ 默认不覆盖原 ftu（overwrite=False）：pack 产物落到 <name>.edited.ftu，原 ftu 原样还原；
     确认效果后再传 overwrite=True 覆盖原 ftu（或 output_ftu 指定目标）。原 ftu 与 json 都留 .bak。
     operations 为 JSON 数组字符串，支持 set/remove/add/set_root（见 _apply_edits）。
-    ⚠️ 布局以 json 为源：优先直接编辑同目录已有 json 再 pack 回 ftu；无 json 时报错。
+    ⚠️ 布局以 json 为源：同目录已有 json 就直接改它再 pack 回 ftu；**没有 json 时按能力自动 unpack**
+    （fui 含 unpack 时从 ftu 反解析出 json 再改；旧版 fui 无 unpack 才报错）。
     客户说「把这个按钮往右移/改文本/换颜色/删掉某控件/复制一个控件」时调用。"""
     if not os.path.isfile(ftu_path):
         return {"success": False, "error": f"ftu 文件不存在: {ftu_path}"}
     src_dir = os.path.dirname(os.path.abspath(ftu_path)) or '.'
     base = os.path.splitext(os.path.basename(ftu_path))[0]
     json_path = os.path.join(src_dir, base + '.json')
+    unpacked_source = False
     if not os.path.isfile(json_path):
-        return {"success": False,
-                "error": f"缺少同目录 {base}.json（布局以 json 为源，请先提供 json 布局再编辑）"}
+        if not _fui_supports_unpack():
+            return {"success": False,
+                    "error": f"缺少同目录 {base}.json（布局以 json 为源，请先提供 json 布局再编辑）"}
+        # v0.27.91：随包 fui 含 unpack → 从 ftu 反解析出 json 当编辑源（ftu 为真源）
+        u = flythings_fui_unpack(ftu_path, json_path, overwrite=True)
+        if not u.get('success'):
+            return {"success": False,
+                    "error": f"缺少 {base}.json 且 fui unpack 反解析失败: {u.get('error')}"}
+        unpacked_source = True
     orig_ftu = os.path.abspath(ftu_path)
     ftu_bak = orig_ftu + '.bak'
     try:
@@ -1031,6 +1287,7 @@ def flythings_edit_ftu(ftu_path, operations, output_ftu='', overwrite=False):
         shutil.copy2(ftu_bak, orig_ftu)
     return {"success": True, "ftuPath": target, "overwriteOriginal": overwrote,
             "backup": ftu_bak, "jsonPath": json_path, "jsonBackup": ed.get('jsonBackup'),
+            "unpackedSource": unpacked_source,
             "report": ed['report'], "controlsCount": ed.get('controlsCount'), "syncedJson": True,
             "hint": (f"已覆盖原 ftu（备份 {os.path.basename(ftu_bak)}，回滚=拷回该文件）" if overwrote
                      else f"默认不覆盖原 ftu：修改结果在 {os.path.basename(target)}；"
@@ -1177,7 +1434,7 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
     """FlyThings UI 构建流程（关键步骤，不可跳过）：
     ① 检查 ui/*.json 与 *.ftu 修改时间一致性
        - json 比 ftu 新 = 改过 json 没重新打包
-       - ftu 比 json 新超 30 秒 = 开发者/IDE 直接改过 ftu → 先 unpack 同步 json 再继续
+       - ftu 比 json 新「分钟级」(≥60 秒) = 开发者/IDE 直接改过 ftu → 先 unpack 同步 json 再继续
     ② 有改动才 fui pack <ui目录>（设备实际加载的是 FTU 而非 JSON）
     ③ fun install 同步 Manifest 依赖（每次 build 前执行，Manifest 变更自动拉取新依赖）
        ⚠️ install 失败**不阻断**（离线/依赖已装场景），但会在返回体顶层给 `warnings` 明说原因
@@ -1209,26 +1466,33 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
 
     steps = []
 
-    # ① 时间戳检查（含开发者修改检测：ftu 比 json 新超 30s）
+    # ① 时间戳检查（ftu→json 只在两种情况下自动做：只有 ftu 没 json；ftu 比 json 新「分钟级」= 用户/IDE 编辑过）
     ts_before = _ui_timestamp_check(project_root)
     dev_modified = ts_before['devModified']
+    ftu_only = ts_before['ftuOnly']
     stale = ts_before['stale'] + [{'json': j} for j in ts_before['missing']]
     steps.append({"step": "check_timestamps",
                   "stale": ts_before['stale'], "missing": ts_before['missing'],
-                  "devModified": dev_modified,
-                  "needPack": bool(stale or dev_modified)})
+                  "devModified": dev_modified, "ftuOnly": ftu_only,
+                  "needPack": bool(stale or dev_modified or ftu_only)})
 
-    # ①.5 开发者改过 ftu → 先 unpack ftu 同步 json（以 ftu 为真源）
-    if dev_modified:
+    # ①.5 只有 ftu 没 json → 直接转出 json；ftu 比 json 新分钟级 → unpack 同步 json（其余情况不做反向）
+    sync_warnings = []
+    if dev_modified or ftu_only:
         sync = _sync_ftu_to_json(project_root)
+        sync_warnings = list(sync.get('warnings') or [])
         steps.append({"step": "sync ftu→json", "success": not sync['failed'],
-                      "synced": sync['synced'], "failed": sync['failed']})
+                      "synced": sync['synced'], "syncedDetail": sync.get('syncedDetail', []),
+                      "skipped": sync.get('skipped', []), "failed": sync['failed'],
+                      "warnings": sync_warnings})
         if sync['failed']:
-            return {"success": False, "steps": steps,
-                    "error": f"unpack ftu 同步 json 失败: {sync['failed'][0]['error']}"}
+            f0 = sync['failed'][0]
+            return {"success": False, "steps": steps, "failed": sync['failed'],
+                    "error": f"ftu → json 转换失败（ui/{f0.get('ftu')}）：{f0.get('error')}",
+                    "hint": f0.get('hint') or '请检查该 ftu 是否合法（或改提供同名 json）后重试'}
 
-    # ② fui pack（有 stale/missing/devModified 才执行；没有则跳过并说明）
-    if stale or dev_modified:
+    # ② fui pack（有 stale/missing/ftuOnly/devModified 才执行；没有则跳过并说明）
+    if stale or dev_modified or ftu_only:
         r = _run_fui('pack', ui_dir)
         steps.append({"step": "fui pack", "success": r['success'],
                       "detail": (r.get('stderr') or r.get('stdout') or '')[-400:]})
@@ -1239,7 +1503,7 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
         steps.append({"step": "fui pack", "success": True, "skipped": "json 与 ftu 时间戳一致，无需重新打包"})
 
     # ③ fun install（同步 Manifest 依赖，Manifest 变更后自动拉取新包）
-    warnings = []
+    warnings = list(sync_warnings)   # ftu→json 的跳过/告警不静默
     ri = _run_fun('install', project_root)
     install_out = (ri.get('stderr') or ri.get('stdout') or ri.get('error') or '')
     steps.append({"step": "fun install", "success": ri['success'],

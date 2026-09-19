@@ -4,7 +4,8 @@
 为什么要单独一个文件（钟工 2026-09-17：「adb 工具随包入库，客户不必另装 SDK」）：
   v0.27.83 之前，仓库里 **6 处各写一份** adb 定位逻辑（project_tools / ui_tools/
   device_screenshot / i18n_tools / components/fonts/scripts/device_font_check /
-  components/ui_v1/WheelPicker/example/tools/deploy），且都写死 `'adb'` 字面量或
+  components/ui_v1/WheelPicker/example/tools/deploy ——该自绘包 2026-09-19 已移除，
+  历史事实保留），且都写死 `'adb'` 字面量或
   只认本机装 SDK 的路径 → 客户机没装 Android SDK 就「找不到 adb」，报错各写各的。
   现在**只有这里**知道 adb 在哪，其余模块一律 `resolve_adb()`。
 

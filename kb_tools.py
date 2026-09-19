@@ -53,8 +53,8 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.90-open'
-MCP_BUILD = '2026-09-18'
+MCP_VERSION = '0.27.95-open'
+MCP_BUILD = '2026-09-19'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
 COMPACT_FEATURE_CHARS = 700
@@ -68,6 +68,25 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+    '2026-09-19: **AA 审计增强：低对比度边缘不再漏检（选中条圆角锯齿/脏边）** v0.27.95-open（钟工 14:00：「这个选中条的边界有锯齿，也需要检查一下 MCP」）——**A 漏检根因**：`tools/qa/aa_audit.py` v1只读 alpha、判据要求「对角 α≤5 且两正交 α≥250」、且没有对比度概念 → 案例的浅色选中条（#F2F3FF 压 #F3F3F3，**只有 B 通道差 12 级、亮度差仅 ~1.4**）在 56 张证据图上 `hard=0 mid=0`（全盲）；**B 工具增强（v2）**：① `resid_bad` —— 沿 ±4px 剖面取「外侧平台色/内侧平台色」（连续 3 采样互差≤6，抗底色渐变），边界像素必须落在两色连线上，偏离 > max(5, **0.6×该处对比度**) 即脏边（对比度归一化 → 低对比度同样敏感）；② `hard_diag` —— 曲线/圆角 1px 阶梯，结构张量区分斜/弧与轴对齐（轴对齐硬边豁免），占比 ≥60% 才算成片缺陷；③ `dirty`/`speck` —— 直通 α 边界 RGB 污染（可见误差=偏离×α/255）；④ 豁免机制：`*.9.png` marker 环（只豁免环区，本体照审）、像素艺术（降 WARN）、**最近邻放大图拒收**、白名单 `aa_audit_allow.json`，逐条打理由；⑤ 证据：标注图 + 8× 放大 + 坐标 + 计数 + `--fail` 退出码。**C 标定（temp/aa_ab，同一几何两条路）**：旧管线（SS+预乘 LANCZOS）176×36 r18 药丸 → `resid_bad=50（最大残差 13 / 对比度 12）`= DEFECT；覆盖率口径（SS 二值 + Image.BOX）同图 → 0 = CLEAN；案例抓帧 `--region` → `resid_bad=40（最大残差 201 / 对比度 12）`。**D 规范**：`references/kb/image-gen-standard.md` §1 缩回算子改口径（**AREA/BOX 优先；带直通 α 的边界禁用 LANCZOS**，负瓣振铃=暗边/白点）+ §1.3「低对比度边缘是高发区」坑条；`knowledge/devflow/ui-asset-rules.md` 新增铁律 #10 （同口径 + 检索同义词）+ `pixel-analysis-ai.md` 坑条一行；新增 `tools/qa/README.md` + 白名单文件。**E 存量复扫**：components/icons/out 915 张 + icons example 18 张 + ui_v1 RadButton 1 张 → **真缺陷 0**；ControlShowcase z21（案例侧新产物，36 张）→ 真缺陷 1（`tab_off.9.png`，resid 8/对比度 24）+ WARN 19（1px 描边亚像素混色，逐条列理由）+ EXEMPT 3。版本 0.27.94→0.27.95；CHANGELOG 不追加。',
+    '2026-09-19: **TimePicker 全族统一收口为 `listview`/L2（含时钟盘形态）+ 检索质量优化（16/16 一次命中）** '
+    'v0.27.94-open（钟工：**「TimePicker 通过 listview 这个实现对应。检索质量优化。有发现的遗留问题都处理掉」**）——'
+    '**A 映射表口径**：`TimePicker`（**滚轮 + 时钟盘两形态都走 `listview`/L2**，不再留「无对应能力」例外）、'
+    '`NumberPicker`（由 `stepper` 改判 `listview`）、小程序 `picker(mode=date/time)` 拆为 `date`(calendar L4)/'
+    '`time`(listview L2)；时钟盘的**圆形排列观感**如实写为「需 12 方位按钮组或 ZKPainter 自绘（观感有损）」'
+    '= **观感降级说明，不是能力缺失**；表版本 2→3，新增别名 `clock dial`/`时钟盘`（可直接查）。'
+    '**B 检索质量**（目标是轮子/选择器类问题一次命中权威文档）：新增 `scripts/check_retrieval.py` 回归 '
+    '（16 条真实问法 + 11 条对照组，进闸门）；`listview-wheel-picker.md` 补「速查」节 + 时间选择/时钟盘 §6 + '
+    '检索命中条件扩全同义词；`listview-fields.md` 的重复滚轮章节改为指针（单一权威文档）；'
+    '检索实现两处最小改动：**专名（rare term）优先重排**（英文控件名向量路不敏感，如 QTimeEdit/LISTWHEEL/NumberPicker）'
+    '+ **BM25 中文口语别名扩展**（滚轮→wheel/roller，吃到「命中文件名」权重）。'
+    '**实测**（1524→1530 chunks）：滚轮族 12 条主力问法 top-1 **9/12 → 12/12**、全部 16 条 **9/16 → 16/16**、'
+    'quality=ok **14/16 → 16/16**；对照组（与滚轮无关 11 条）top-3 **7/11 → 9/11**（专名优先同时修好了别的主题）；'
+    '降级 BM25 模式同样 16/16。**C 遗留清零**：映射表/散文/测试全同步，`wheelpicker` 悬空引用 0、'
+    '「计划 `TimePicker/`」类旧表述 0；版本 0.27.93→0.27.94；CHANGELOG 不追加。',
+    '2026-09-19: **滚轮选择器口径收口：机读映射表 L5 → L2（`listview` 组合）+ 移除自绘包 `ui_v1/WheelPicker/`** v0.27.93-open（钟工 2026-09-19 12:40 拍板：**A1 映射表改 L2**、**A3 去掉自绘包**）——**A1 机读映射口径同步**：`mcp_control_map.json` 的 5 条滚轮族源条目（LVGL `lv_roller`（别名 `wheel`）/ Qt `QTimeEdit` / Android `TimePicker` / 小程序 `picker-view` / emWin `LISTWHEEL`）`target: wheelpicker → listview`、`level: L5 → L2`，`json` 改为**可直接粘的轮子片段**（一列 `listview__N`：`cycleEnable:true` + `edgeEffect:1`/`dragMaxDis:50`/`autoRollback:true` + 行模板 `item.text:""`+ `picTab` 空位 + **listview 之前的静态装饰 `textview` 选中条**），`ref` 指向 `knowledge/uicontrols/listview-wheel-picker.md` + `components/ui_v1/control-map.md` 2.24；`targets.wheelpicker`（旧自绘包占位）**删除**（5 条源条目已全部改指 `listview`，**无悬空引用**）；`targets.listview.note` 补滚轮口径指针。**验证**：`flythings_map_control("picker-view" / "lv_roller" / "wheel")` 均回 `target=listview` + `level=L2`（不再出现 L5 / `wheelpicker`）。**A3 自绘包移除**：删 `components/ui_v1/WheelPicker/`（四件套 + `example/` + 16 张真机证据，共 97 文件，已移入 workspace `/.trash/20260919_mcp_WheelPicker`）；全部引用收口（`components.md` 一行改为「已移除」+ 第 2 段映射项新增第 13 行「滚轮选择器」、`control-map.md` 2.24、`gap-list.md` G-23、`ui_v1/README.md` 目录铁律反例、`control-mapping-capability.md`、`framework-control-mapping.md`、`gui-controls-gap.md` #5、`device-deploy-budget.md`、`touch-events.md`、`adb_tools.py`、`tools/adb/README.md`）；**保留坑条**：自绘轮曾用于逐像素 alpha 渐隐/行内非文字内容，现并入 listview 方案（淡出 = 按行距插值**文字色**；行内小图走行模板 `subItem`）。**文档**：`listview-wheel-picker.md` 新增 **§5.1「机读映射口径」**（源控件 → `target/level` 表 + 验证入口），§5 改写为「与已移除自绘包的关系」；顺手修 `listview-fields.md` §滚轮选择器 坑 1 里残留的旧口径（「行上 `setBackgroundPic(条图)`」→ 改指静态层坑 4）。',
+    '2026-09-18: **新增 `flythings_layout_audit`：从 json 静态判定层叠/遮挡/触摸穿透（先看 json 再截图）** v0.27.92-open（钟工：用户说「改东西 / 控件覆盖」时 AI 总去截图，其实 json 就能分析出问题）——①新 op（**read 风险，纯几何 0 token**）：扫 `ui/*.json`（含分层目录，可 page 过滤），递归同层兄弟做盒子几何判定，返回 `pages[].findings[]`：`fullscreen_layer`（整屏层 == resolution，touchable 会吞整屏触摸）/ `touch_steal`（**同层更早定义的 touchable 控件**完整覆盖 → 触摸按定义顺序先被拿走）/ `covered_interactive`（被上层 touchable 盖住）/ `pass_through_missing`（装饰件缺 touchPass）/ `overlap`（盒子相交）；每条带 `by`+`why`+`fix`。②口径：z 序 = json 书写顺序，遮挡/点不到优先本 op；视觉样式仍 device_screenshot + ui_visual(diff)。③文档/入口：`knowledge/uicontrols/json-layer-rules.md` 新增「静态遮挡审计」节 + 检索词，PROJECT_SPEC 与 `flythings-ui-dev` skill 加触发口径。④预算再压（map_control/generate_ui_assets/hardware_info 长尾细节指向 knowledge），用例 +4。',
+    '2026-09-18: **fui unpack 能力释放（随包 fui 换代）+ 新增 flythings_fui_unpack** v0.27.91-open（钟工：「mcp 两个版本吧，fui 的 unpack 能力释放出去」）——①**两版随包工具链同步换代**：`toolchain/fui.exe` 4873216B（只含 pack，unpack 是空壳）→ **4915712B**（`help` 里 pack/unpack 都在；`unpack <in.ftu> [out.json]` 与「传目录批量解」两种形态实测可用，pack 同）（open 与 release 两版都换），md5 `BA422F14A8155A377C04C8AE51240661` = 开发机 `C:/zkswe/fun/fui.exe`。②**新增 op `flythings_fui_unpack(ftu_path, output_json=``, overwrite=True)`**（36 个 op）：ftu → json 反解析；**默认覆盖同目录同名 json**（ftu 为真源；要保留原 json 传 `overwrite=False` → 写 `<name>.unpacked.json`，已存在则追加序号），也可 `output_json` 指定落盘路径；返回 ftuPath/jsonPath/overwritten/controlsCount/resolution + affectedFiles（写操作回显）。用在：只有 ftu 没 json 的老工程 / 核对设备侧布局 / IDE 直接改过 ftu 要回写 json。③**口径修正**：`read_json` 传 .ftu 不再回「加密文件无法解析」，改为指路 fui_unpack；`_rewrite_ftu_resolution` / `_sync_ftu_to_json` / validate 的 devModified 提示不再写死「内置 fui 只支持 pack」（统一按 `_fui_supports_unpack()` 能力探测）；`knowledge/devflow/ftu-json-pipeline.md` §6/FAQ/检索词、`cli-fun-toolchain.md` 名词口径、`tools_manifest.json` 的 fui 说明同步改正。④**docstring 预算重新压平**（新增 1 个 op 后仍过闸）：单 op ≤ 900（最大 803）+ 总 **11987/12000**（腾位置时把 device_screenshot/ui_visual/verify_assets/html_to_json/edit_ftu 的长尾细节指向 knowledge/）。⑤**unpack 默认覆盖对应 json**（钟工 08:43 更正）：`flythings_fui_unpack(..., overwrite=True)` —— 默认写回同目录同名 json，要保留原 json 传 `overwrite=False`（写 `<name>.unpacked.json`），`output_json` 指定路径时不动同名 json。⑥**ftu→json 自动同步只两种情形**（钟工 09:06 口径）：只有 ftu 没有 json → 直接转；ftu 比 json 新「分钟级」(≥60s，用户/IDE 编辑过) → 转同步；其余**不做**反向（`_ui_timestamp_check.dev_threshold` 30→60，新增 `ftuOnly` / `ftu_without_json` 警告；`_sync_ftu_to_json` 返回 `syncedDetail/skipped/warnings`；**异常 ftu（不能反解析）→ 明确报错 + 给用户 `hint`（提供 json 或重新导出 ftu），不静默跳过**）。⑦用例 +11（unpack 默认覆盖 / overwrite=false 保留源 / 非 ftu 报错 / 能力声明与实际一致 / 往返 / 自动同步三规则 + 阈值 ≥60 钉住），门禁 `check_consistency --with-tests` 全绿。',
     '2026-09-17: **html2json 原生支持 `div.text` 的 `data-bgpic` + 新增静态检查「运行期设图 vs 控件盒」+ 重启应用改温和终止** v0.27.90-open（钟工拍板：上一条清单的第 1/2/3 项入库，第 4 项 U 盘升级不入库）——**A `div.text` 的 `data-bgpic` 不再丢**：`html2json` 的 textview 分支原**不读** `data-bgpic` → json 里那节点没有 `backgroundPic`（弹窗白卡/药丸/图标压根没画出来），案例只能 `patch_json` 反查 HTML 兜底。现与 button/window/seekbar/circlebar 同口径落地（裸文件名补 `images/` 前缀；有图同样去底色，与 button 的「图片按钮不放底色」同规则）。**实料回归**（案例 `projects/translate/tdesign-miniprogram` 双平台重生成，在临时副本里做、不动案例目录）：HTML 里 `class=text`+`data-bgpic` 共 **87 节点** —— 老转换器落地 **0/87**（`patch_json` 补 87）、新转换器 **87/87**；两条路径的 `caption→backgroundPic` 映射**语义等价（110 条全等）**；`patch_json` 变**幂等兜底**（重跑 md5 不变，报「底图 14」= 只有它自己的卡片/面板表在同值覆写）；重生成物 `check_all` 双平台 **exit 0**（0 FAIL / 9 WARN）、`fun build -p Z21` 仍过。新增用例 5 项（正例 + 反例「无 bgpic 的 text 不受影响」+ 图必须与盒 1:1）。**B 新增静态检查 check_all 第 20 项「运行期 set...Pic 的图 vs 控件盒」**（补上 §5 说的盲区；背景：48×16 三点图进了被抬高的 48×26 盒 → 引擎按盒拉伸 → 正圆变竖椭圆，静态检查当时一路 PASS）：扫 `src/**/*.cc|*.cpp` 的 `mXXXPtr->set...Pic("...")`（含三元式多个字面量、去注释保行号、括号平衡取实参），变量名 → caption（`mXxxPtr` 同第 6 项口径）→ 与 json 控件盒比；**`resources/images/` 自动生成图不等 = FAIL**、手绘图（其它目录）不等 = `stretched` 仅提示（官方基准 `navi/fh.png` 44×26 进 72×40 按钮绝不 FAIL）、`.9.png` 豁免、文件不存在 → `missing`、映射不到/非工程内路径 → `unresolved`（列出来不静默）、实参是变量/拼接 → 只计 `dynamic`（明说判不了）。**零误报核查**：`SampleUI-New`(145 FAIL) / `ShowcaseAlbum-F133`(37) / `WebViewDemo`(3) / 案例双平台 —— 新增项 **0 FAIL**（三基准工程该 0 处静态字面量可比 / 案例 6 处比过全匹配）；**真能抓的证明**：案例副本把 `LdDots` 盒高改回被抬高的 26 + 该调用形态 → **当场 FAIL**（`48x16 != 盒 48x26`）、盒高 16 时 PASS。新增用例 11 项。**C 重启应用改温和终止优先**（防御性，**因果未确证**）：MCP 侧新增 `adb_tools.restart_app()`（`kill -TERM` → 3s 轮询 → 仍在则回退 `kill -KILL`，日志写清用了哪条/是否回退）+ 组件示例 `WheelPicker/example/tools/deploy.py` 与案例侧 `deploy_z21.py` 同步该姿势（后者原来直接 `kill -9`）；现场多次 `kill -9 zkgui` 之后（以及 `adb reboot` 之后）出现过整板掉网、两条现象互相矛盾 → **按未确证口径写进文档**（`device-deploy-budget.md` 新节 + `deploy-scene-map.md` 指针），遇到掉网按现场断电重启处理，**不写成已证实结论**。文档同步：`html-subset-quickref.md` §4 的「会被丢掉」改成「已原生支持（v0.27.90-open），旧工程的 `patch_json` 兜底可保留（幂等）」、`text-box-height-rule.md` §5 的「本次未实现」改成已实现并写口径与边界、`ui-layout-verify.md` / `HTML_SUBSET.md` / `touch-inject-autotest.md` / `platform-translate.md` 相应同步。用例 239→**255**（+5 +11），`scripts/sync_ui_tools.py --apply` 双份一致，门禁全绿。',
     '2026-09-17: **TDesign 竞品样式迁移案例的通用能力入库 + 修掉「setInvalid 当重绘」反口径** v0.27.89-open（沛哥：把今天案例里能复用的口径全部入库，顺手把 kb 里会害人的一条改掉；案例 `projects/translate/tdesign-miniprogram`，报告 SLIDER_PERF.md / DOTS_ROUND.md / DLG_CORNER.md / STAGE3.md / TRANSLATE.md）——**A 反口径修正（最高优先级）**：①`knowledge/devflow/device-screenshot.md` §3.3-1 原写「状态变化时分两帧 `setInvalid()`」当强制重绘手段 → 改为明确「**别拿 setInvalid 当重绘**」（附真机证据：13 个导航键被这样禁掉 → 整屏「点哪都没反应」，一度被误判成「注入坏了 / 面板坏了」）；②`knowledge/uicontrols/touch-events.md` 新增 **§6**：`ZKBase::setInvalid(bool)` = 置为无效状态（`ZK_CONTROL_STATUS_INVALID`），头文件三行对照（`setInvalid(bool)` / `isInvalid()` / `invalidate(...)`，**没有无参版本**）+ **§6.1 解释「为什么示例里拿它刷帧也能用」**——它确实会触发重绘（状态变了要重画外观），但那是依赖旁路行为的技巧：只读 `textview` 看不到副作用、**可交互控件直接被禁用**；**§6.2** `invalidate()` 才是重绘 API，但**旧设备 `libeasyui.so` 可能未导出**（undefined symbol → 整屏黑）；并给「30 秒定位判据：先 grep setInvalid」；③顺带把 `project_tools` 的 PROJECT_SPEC caveat 与 validate 提示里那句「帧刷新用 setInvalid 交替」**加限定语**（仅限 setBackgroundBmp 的只读控件），避免再被误用到按钮上；全库自查（md/py/知识）确认无第二处「把 setInvalid 当通用重绘」的表述。**B 新增 3 篇知识**：①`knowledge/uicontrols/high-frequency-callback-perf.md`（★高频回调性能规范：拖动/触摸回调**禁止全量刷新**；案例一次拖动 ≈**86 次 GUI 调用**（21 setText + 9 setSelected + 4 setVisible + 4 值文本 + updateS3 约 48）→ 工具 95 步滑动**只处理 29 次**（对照条 90 次）；A/B 三指标全在设备侧量：CPU **73.8%→7.3%**（10 连拖 74.4%→6.9%、快拖 91.3%→19.2%）、慢拖响应 **250→135ms**、快拖 **383→134ms**、快拖帧变化率 **0.27→4.13fps**、每 20 步画帧 **0→3**；含量具自制与三个坑、自查清单）②`knowledge/uicontrols/text-box-height-rule.md`（字号下限 ≥18px + **「抬盒高只对有文字的 text 盒有效」**：`h≤4` 装饰线 / 带 `data-bgpic` 纯图盒 / **运行期 `setBackgroundPic` 逐帧换图的图标盒**一律不能抬——实测三点指示器盒 48×26 把 48×16 的图拉成 **10×16 竖椭圆**（ratio 0.625），改后 10×10（1.000）；判据 = 「盒里有没有文字」而非控件名白名单；点明 `html2json` FT-009 的 `if not text: continue` **本来就是同口径**（案例自研 clamp 漏了才踩）；静态检查盲区与「是否内建到 ui_tools」评估结论）③`knowledge/devflow/platform-translate.md`（★跨框架/竞品迁移方法论：**机读索引优先**（`flythings_map_control` / `mcp_control_map.json` 212 条，不抄散文映射表）、视觉换算与铁律（rpx×0.5=px / 字号≥18 / 图==盒 / 零自绘 / 单一手写源）、**四阶段路线**（骨架表单 → 反馈弹层 → 数据展示 → 复杂选择器 + 每阶段固定仪式；案例规模 17 页 / 651 控件 / 236 图）、**D-xx 差异降级登记制**、双平台口径（Manifest 平台键可能与目录名不一致：f133 目录→`-p F136`；未验过的平台如实标注）、`flythings_translate_ui` op **仅规划未实现**）。**C 既有文档补 4 处**：①`touch-events.md` 新增 **§7**「嵌套 `window` 里的子控件点不动——被同层更早定义的 touchable 控件抢走触摸」+ 扁平化修法（顺序 = 遮罩 → 卡片底图(touchable=true) → 卡片内控件）与自检清单；②`nine-patch-rule.md` 新增进阶节「**方块底图刷平卡片底部圆角**」（实测平台事实：`.9.png` 着色区左右下各内缩 1px，普通 PNG 严格 1:1；**做法 = 按按钮位置出带下圆角的动作行底图 + 角区整块挖空**，按钮自画弧会二次 alpha 混合发白（178→217）；实测 8 弹窗 7 中招 / 28 偏差行 / 最大 6px → **0 / 0 / 0px**，面板「取消」同根因一并修）；③`html-subset-quickref.md` 补坑「**`div.text` 上的 `data-bgpic` 会被 html2json 丢掉**」（textview 分支不读该属性，同 JSON 里 seekbar 的 textview 却有；两条处置：换支持承载的类型 / `patch_json` 回填）；④`touch-inject-autotest.md` 补「**系统软键盘是整屏窗口**：套件间不收键盘会让紧接的注入全落键盘上 → 一批导航键假 FAIL 且对脚本来说像『注入坏了』」（收键点 ≈(963,550)、键盘守卫判据、顺序纪律）+ 抓帧时机节补「**瞬态层单抓 / 静态页弹窗双抓**」，`device-screenshot.md` 相应新增 §3.3-2 与检索词。隐私闸门按公开口径（设备 IP 一律写「参数传入」，无内网 IP / 绝对路径）。门禁 `check_consistency --with-tests` 全绿。',
     '2026-09-17: **图标抗锯齿去量化（TDesign 案例徽标页 48×48 图标肉眼看硬阶梯）** v0.27.88-open（钟工拍板「修改」）——**根因**：图标走 SVG（Tabler 原图 → `svgmini.render_svg` 8× 超采样 + BOX 面积平均 = 精确覆盖率），问题在收尾的**「α 对比度整形」**：把覆盖率 <0.40 推成 0、>0.60 推成 255，边缘灰度被量化成个位数级。①`svgmini.render_svg(..., snap=False)` 改为默认：**真实覆盖率** + 只清「覆盖率 <0.08 且 8 邻域无内容」的孤立噪点（`_clean_noise`/`_despeckle`），老口径 `_snap_alpha` 保留为 `snap=True`；②`gen_icons.py` 新增 **`--snap`**（opt-in，帮助文本同步）贯穿 `--out`/`--sheet`/compose 全路径（`--ss` 不变）；③**实测 A/B**（全量 305 产物 × 22/24/56，改前/改后）：中间值**灰度级数中位 22px 7→30、24px 4→17、56px 9→42**（bell@48px 9→44 级，user@48px 5→20 级；alpha 唯一值 48px bell 9→44），孤立噪点两口径都是 **0**，覆盖率区间 1.4%~80.2%（22px）；④selfcheck **C 条口径重标定**（`mid_limit(size) = min(60%, 10.5/边长)` → 22px 47.7%｜24px 43.8%｜56px 18.8%；依据实测 22px max 42.6% / 24px 34.7% / 56px 16.1% —— 原固定 15% 是给「整形后」定的，真实覆盖率下会把**正确**的抗锯齿判死）并**新增 C2 条抗锯齿保真**（抽样 bell/user/settings/wifi × 22/48/56 对拍 **16× 超采样理想覆盖率**：边界带 mean ≤8、p95 ≤32（/255），灰度级数 ≥12；换回硬整形实测当场报 **21 条失败**）；⑤`catalog.json` 新增 `render.antialias` 口径（`gen_catalog.py` 生成，模块版本 → **0.3.1**）；⑥模块文档同步（README §3.1/§6/§9/§10 + platforms.md + `knowledge/devflow/icon-library.md`）；⑦实测：305×3 张 PNG + 7 张 sheet 重生，`python components/icons/scripts/selfcheck.py` **915 张 0 失败**，门禁 39/39 全绿。8× 放大 A/B 图：`components/icons/out/aa_*_ab.png`。（遗留待拍板：`example/app/resources/images/` 里 19 张已入库 PNG 未随本次重生。）',
@@ -360,10 +379,8 @@ def flythings_hardware_info(model: str = '', platform: str = '') -> str:
     用户说「我这台是 PocketDisplay4 / SW80480070D_C」时先查这里，别按同系列型号外推。
     **有具体型号 → 按返回的 preset 直接开工**（平台/分辨率/方向/按键，不用再问）；
     **没具体型号 → 确认平台 + 分辨率就能建工程**（缺参数不阻塞）。
-    - model 留空：列平台 + 各平台已登记型号（platform 可过滤，如 'V85X'）
-    - model 给值：回 preset、screen（分辨率/方向）、keys（按键值 = /dev/input 事件 code）、
-      specs、differences（型号/平台差异）、optional（可选补充，非阻塞）、source
-    - 未收录：回 MODEL_NOT_FOUND + fallback（平台 + 分辨率即可开工）+ 近似候选（不猜规格）
+    - model 留空：列平台 + 已登记型号（platform 可过滤）；model 给值：回 preset/screen/keys/specs/
+      differences/optional/source；未收录：MODEL_NOT_FOUND + fallback（平台+分辨率即可开工）+ 近似候选
     完整型号表另见知识库 knowledge/hardware/hardware-models.md。
     """
     return json.dumps(hw.query(model, platform), ensure_ascii=False)
@@ -429,11 +446,8 @@ def flythings_map_control(query: str, source: str = '') -> str:
     - query：源控件名（或别名），忽略大小写与下划线/连字符，如 lv_slider / RecyclerView /
       QCalendarWidget / lv_tabview / swiper
     - source：可选，只在该框架内找（lvgl / qt / android / miniprogram / emwin / mfc）
-    命中返回：source、name、target（我们的控件）、level（L1 等价/L2 组合/L3 自绘/L4 降级/L5 不支持）、
-    notes（坑与降级点）、json（可直接粘进 ui/*.json 的片段，字段全集显式）、ref（L3 指向
-    components/ui_v1/<包>）、control（目标控件的 caption/指针/用法）。
-    未命中回 NO_HIT + candidates + 「缺口五级」处置建议（自绘/降级要先去 ui_v1 登记）。
-    口径：**有对应控件就用本映射**；**平台真缺的能力才做自定义控件包**（components/ui_v1/）。
+    命中返回：target（我们控件）/level（L1~L5）/notes/json（可直接粘的片段）/ref/control。
+    未命中回 NO_HIT + candidates + 缺口五级处置（口径：有对应控件用映射；平台真缺才做 components/ui_v1/ 包）。
     """
     data, err = _control_map()
     if data is None:
@@ -469,7 +483,9 @@ def flythings_map_control(query: str, source: str = '') -> str:
         near = [n for n in names if q[:3] and q[:3] in _cm_norm(n)][:5] if len(q) >= 3 else []
         msg = '映射表里没有「%s」%s' % (query, ('（限定 %s）' % src) if src else '')
         hint = ('先判是不是「平台真缺的能力」：去 components/ui_v1/components.md 看计划/已实现的自定义控件包'
-                '（Chart 已实现；Calendar/TimePicker/WheelPicker/RichText/TableGrid/BadgeToast/Pseudo3D 计划中），'
+                '（Chart/Calendar/RadButton 已实现；RichText/TableGrid/BadgeToast/Pseudo3D 计划中；'
+                '**滚轮/时间/时钟盘族（WheelPicker·TimePicker 含时钟盘·NumberPicker）已改判 L2 → 不建包，'
+                '走 `listview` 组合**，见 knowledge/uicontrols/listview-wheel-picker.md），'
                 '再按「缺口五级」处置：L1 等价 / L2 组合 / L3 自绘（须在 ui_v1/gap-list.md 登记编号）/ '
                 'L4 降级（写明降级点）/ L5 不支持（明说 + 给替代），**不要临场发明**')
         return json.dumps({'ok': False, 'op': 'flythings_map_control', 'query': query,
@@ -505,8 +521,8 @@ def flythings_map_control(query: str, source: str = '') -> str:
 
 def flythings_read_json(json_path: str) -> str:
     """解析 .json 布局文件为 JSON（分辨率、控件列表、caption→id 映射）。传入 json 完整路径。
-    ⚠️ 传入 .ftu 时返回错误提示：ftu 为加密文件无法解析，可提供设计文件 / AI 重新设计界面 / 采用 HTML 布局。
-    （flythings_read_ftu 已移除——无 unpack 能力时它只是 read_json 的包装）"""
+    ⚠️ 传入 .ftu 时不再当「加密无法解析」：先把 ftu 交给 flythings_fui_unpack 反解析成 json，
+    再把返回的 jsonPath 传进来（本 op 只读 json）。"""
     return json.dumps(pt.flythings_read_json(json_path), ensure_ascii=False)
 
 
@@ -540,6 +556,14 @@ def _with_files(obj, *paths):
         obj['affectedFiles'] = files
     return obj
 
+def flythings_layout_audit(project_root: str, page: str = '') -> str:
+    """静态审计 UI 布局的层叠/遮挡/触摸穿透（**纯几何，0 token，先看 json 再截图**）。
+    ⚠️ 用户说「控件被盖住 / 点不到 / 位置不对 / 谁挡着谁」时**先调本 op**：json 就能判定谁压谁
+    （z 序 = 书写顺序）、谁的触摸被抢、整屏层是否吞触摸；每条带 by + why + fix。
+    kind：fullscreen_layer / touch_steal / covered_interactive / pass_through_missing / overlap。
+    视觉样式/像素仍走 device_screenshot + ui_visual(diff)。"""
+    return json.dumps(pt.flythings_layout_audit(project_root, page), ensure_ascii=False)
+
 
 def flythings_fui_pack(json_path: str) -> str:
     """将 json 布局打包为 ftu（设备实际加载的是 ftu）。返回 ftu 路径、控件数、分辨率。
@@ -547,6 +571,15 @@ def flythings_fui_pack(json_path: str) -> str:
     （详见 knowledge/devflow/ftu-json-pipeline.md）。"""
     r = pt.flythings_fui_pack(json_path)
     return json.dumps(_with_files(r, r.get('ftuPath')), ensure_ascii=False)
+
+
+def flythings_fui_unpack(ftu_path: str, output_json: str = '', overwrite: bool = True) -> str:
+    """ftu → json 反解析（fui unpack；随包 fui 自 v0.27.91 起支持）。
+    ⚠️ 默认**覆盖**同目录同名 json（ftu 为真源）；要保留原 json 传 overwrite=False（写 <name>.unpacked.json），
+    或 output_json 指定路径。用在：只有 ftu 没 json 的老工程 / 核对设备侧布局 / IDE 改过 ftu 要回写 json。
+    改布局仍以 json 为源（细节见 knowledge/devflow/ftu-json-pipeline.md）。"""
+    r = pt.flythings_fui_unpack(ftu_path, output_json, overwrite)
+    return json.dumps(_with_files(r, r.get('jsonPath')), ensure_ascii=False)
 
 
 
@@ -562,8 +595,8 @@ def flythings_edit_ftu(ftu_path: str, operations: str, output_ftu: str = '',
     add      {"op":"add","template":"caption或key","newKey":"textview__4","props":{...}}
     set_root {"op":"set_root","props":{"backgroundColor":"#FFFFFF"}}
     客户说「把这个按钮往右移/改文本/换颜色/删掉某控件/复制一个控件」时调用。
-    ftu 是 json 的**编译产物**：本 op 的正确姿势 = 给变更 → 应用到同目录 json → 再 pack 回 ftu，
-    不是改二进制；改布局一律改 json 后 pack，不要手写/手改 ftu（详见 knowledge/devflow/ftu-json-pipeline.md）。"""
+    ftu 是 json 的**编译产物**：本 op = 给变更 → 落到同目录 json → 再 pack 回 ftu
+    （不是改二进制；无 json 源时按能力自动 unpack，详见 knowledge/devflow/ftu-json-pipeline.md）。"""
     r = pt.flythings_edit_ftu(ftu_path, operations, output_ftu, overwrite)
     return json.dumps(_with_files(r, r.get('ftuPath'), r.get('jsonPath'), r.get('backup')),
                       ensure_ascii=False)
@@ -579,12 +612,10 @@ def flythings_build_ui_flow(project_root: str, with_launch: bool = True, device:
     流程：①时间戳检查（json 为源、改过自动 pack）②fui pack ③fun install ④fun build
     ⑤ **设备探测 + fun launch 推送运行（v0.27.84 起默认）**；只编译传 with_launch=False。
     ⑥ 字体体检：缺中文自动投递 common 思源黑体（font_check='off' 关，font_tier 换版）。
-    ⚠️ 探测不猜：0 台 → needDeviceInput+installHint（装 ADB 驱动/开 USB 调试授权/
-    device='<IP>:5555'）；多台 → 列 serial+model+平台匹配并要 device=；1 台且匹配 → 自动推。
-    返回：launched/pushed/device/model/platformMatch + deviceSync（设备侧 /tmp/ui/*.ftu、
-    /tmp/lib/libzkgui.so 的字节/md5 是否与本地一致）+ staleOnDevice（true ⇒ 设备上还是旧版）。
-    ⚠️ install 失败不阻断但给 warnings；launch 失败/超时重试 5 次。细节见
-    knowledge/devflow/adb-and-device-selection.md。
+    ⚠️ 探测不猜：0 台 → needDeviceInput+installHint（ADB 驱动/USB 调试授权/device='<IP>:5555'）；
+    多台 → 列 serial+model+匹配并要 device=；1 台且匹配 → 自动推；install 失败不阻断但给 warnings。
+    返回：launched/pushed/device/model/platformMatch + deviceSync（设备侧 ftu/so 字节+md5 vs 本地）
+    + staleOnDevice（true ⇒ 设备上还是旧版）。细节见 knowledge/devflow/adb-and-device-selection.md。
     传项目根目录；ftu=json 编译产物：改 json 后 pack。
     ⚠️ src/activity/ 由 IDE 自动生成（禁手改），业务代码只写 src/logic/*.cc。
     """
@@ -644,11 +675,10 @@ def flythings_ui_preview(target: str, output_dir: str = '') -> str:
 def flythings_html_to_json(input_html: str, output_json: str = '', res: str = '') -> str:
     """受限 HTML 交互原型 → ui/*.json 布局（CSS 效果自动转图，产物尺寸 == 控件盒）。
 
-    ⚠️ 写原型前先读知识库「HTML_SUBSET 原型规范」（检索：HTML_SUBSET / 控件映射 / data-icon 图标 /
-    CSS 效果转图 / JS 交互稿）：控件映射表、data-* 属性、46 个内置图标词、文本与布局铁律、
-    自动转图清单、JS 交互稿做法都在那里；这里只留要点——
-    根节点 <div class="screen" data-res="WxH" data-bg="#RRGGBB">；定位 data-x/y/w/h；字号 data-fs；
-    data-caption 命名；data-pic 自备图；**图标优先**（常用操作必须用图标，禁止「按钮+文字」糊弄）；
+    ⚠️ 写原型前先读知识库「HTML_SUBSET 原型规范」（检索：HTML_SUBSET / data-icon 图标 /
+    CSS 效果转图 / JS 交互稿）：控件映射表、data-* 属性、内置图标词、铁律与自动转图清单都在那里；
+    这里只留要点——根节点 <div class="screen" data-res="WxH" data-bg="#RRGGBB">；定位 data-x/y/w/h；
+    字号 data-fs；data-caption 命名；data-pic 自备图；**图标优先**（禁止「按钮+文字」糊弄）；
     文本只用汉字+ASCII+基础符号（禁 emoji）；Z 序 = 书写顺序。
 
     ⚠️ 工作流红线：客户说明书/参考照片不能直接转 json（先提炼 UI 需求清单给用户确认）；
@@ -831,10 +861,8 @@ def flythings_generate_ui_assets(project_root: str, assets: str) -> str:
     kind 可选 check/charging/wifi/alert/circle/square/star/heart；返回每项实际方式 method(ai/emoji/line)。
     三级降级（AI 生图 → 本地 emoji → 线条兜底）保证客户无 AI 能力也能出图。
 
-    ⚠️ 图片资源铁律（尺寸 == 控件盒、圆角四角 alpha=0、透明角图不配 bgColorTab、功能按钮用 picTab 两态、
-    生成后查四角 alpha、PNG 防锯齿五要素、**禁止 1x 直画/外部生图直出小图**）+
-    三条合法出图路径见知识库「UI 图片资源铁律与 PNG 抗锯齿管线」，检索：图片资源铁律 / 抗锯齿 /
-    圆角四角发黑 / 走哪条路出图。
+    ⚠️ 铁律（尺寸==控件盒、四角 alpha=0、禁 1x 直画/外部生图直出小图）与三条合法出图路径见知识库
+    「UI 图片资源铁律与 PNG 抗锯齿管线」（检索：图片资源铁律 / 抗锯齿 / 四角发黑 / 走哪条路出图）。
     """
     return json.dumps(h2j_genres.gen_ui_assets(project_root, assets), ensure_ascii=False)
 
@@ -1071,16 +1099,16 @@ def flythings_ui_visual(action: str = 'list', project_root: str = '', output_dir
     """UI 可视化三合一入口（action 选动作；旧 ui_editor / ui_edit_apply / ui_diff 已并入本 op）。
 
     - action="editor"：ui/*.json → 可拖拽编辑器网页（<项目>/ui/_edit/<name>.edit.html）。必填
-      project_root；可选 output_dir。用户拖完点「复制 AI 指令」粘给 AI——页面是本地静态文件、
-      无回传通道，只能复制粘贴。控件/页面能力见知识库「UI 可视化编辑器 用法与能力」。
+      project_root；可选 output_dir。用户拖完点「复制 AI 指令」粘给 AI（页面是本地静态文件、
+      无回传通道，只能复制粘贴）；控件/页面能力见知识库「UI 可视化编辑器 用法与能力」。
     - action="edit_apply"：编辑器导出的变更 JSON 写回 ui/*.json。必填 project_root、changes
       （JSON 文本或文件路径）；pack 默认 False（不动 ftu）；dry_run=True 只预览不写盘。
       结构 {"file","resolution","changes":{控件路径:{left,top,width,height}},"props":{控件路径:{...}}}；
       控件路径顶层 "button__1"、嵌套 "window__2/button__3"；写回前自动 .bak，格式不一致拒绝写。
     - action="diff"：两张同尺寸截图像素级对比（0 token 差异清单，不是图）。必填 image_a、image_b；
-      tolerance=2 / shift=1（±1px 抖动）/ blur=0.7（字磨边）/ min_area=4 / noise_bbox=10 压假报警，
-      show_noise 连小碎块一起看，out_png 出标注图、out_json 存清单。跨渲染器（HTML 预览 vs 真机截图）
-      只当骨架参考。
+      tolerance=2 / shift=1（±1px 抖动）/ blur=0.7 / min_area=4 / noise_bbox=10 压假报警，
+      show_noise 连小碎块一起看，out_png 出标注图、out_json 存清单。
+      跨渲染器（HTML 预览 vs 真机截图）只当骨架参考。
 
     action 传 list（或省略）只回各 action 的必填参数。
     """
@@ -1126,13 +1154,11 @@ def flythings_verify_assets(project_root: str) -> str:
     布局支持 ui/*.json 与 ui/<分辨率>/*.json 两种真实工程布局（v0.27.33 前只认扁平一层，
     分层工程会「0 页却报 ok」）。
     返回：
-      - missing[]  引用了但文件不存在 → 真问题
+      - missing[] 引用了但文件不存在 → 真问题
       - mismatch[] 自动生成图（铁律 #9）尺寸 != position，或 thumb 图 != thumb.size → 真问题
-      - stretched[]手绘图尺寸 != 控件盒 → 仅提示（引擎会拉伸，导航图标/背景图常态）
-      - unresolved[]运行时格式化引用 / 读图失败等跳过项
-      - skippedNoBox[] 盒子未知（无 position / thumb 无 size）而跳过
-      - warnings[] 0 页等「其实没核对到东西」的情况
-    与 check_all 第 11/17 项同一实现。
+      - stretched[] 手绘图尺寸 != 控件盒 → 仅提示（引擎会拉伸，导航图标/背景图常态）
+      - unresolved[] 运行时格式化引用 / 读图失败等跳过项；skippedNoBox[] 盒子未知而跳过
+      - warnings[] 0 页等「其实没核对到东西」的情况；与 check_all 第 11/17 项同一实现。
     """
     if chk_all is None:
         return json.dumps({'ok': False, 'error': 'check_all 模块不可用（缺 ui_tools/check_all.py）'},
@@ -1164,16 +1190,15 @@ def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png
 
     常用（默认参数就够）：默认即抓一张；scale=0.5 或 fmt='jpg', quality=85 省 token；
     多设备传 device='<设备IP>:5555'（先 adb connect）；方向缺省 rotate='auto' 会读项目工程 EasyUI.cfg
-    的 rotateScreen 自动转正（rotateSource 可自证；触摸角度看 screenInfo.rotateTouch，可与显示不同）；
-    只要应用画面（去黑边）用 crop='auto'。⚠️ 抓完把返回的 path 交给看图能力，不要把 raw/文件本身丢给模型。
+    的 rotateScreen 自动转正（rotateSource 可自证）；只要应用画面（去黑边）用 crop='auto'。
+    ⚠️ 抓完把返回的 path 交给看图能力，不要把 raw/文件本身丢给模型。
 
-    ⚠️ 进阶参数（fb / pixel / width / height / offset_y / flip / rotate / crop / layer / name / timeout）
-    **推荐统一走 advanced**（JSON 字符串，如 advanced='{"crop":"auto","pixel":"rgba"}'）；
-    同名显式参数优先于 advanced（旧客户端不受影响）。
-    ⚠️ layer="video"（仅 SigmaStar）：抓**视频层**帧（fb0 只有 UI）——细节见知识库「真机抓屏」。
+    进阶参数（fb/pixel/width/height/offset_y/flip/rotate/crop/layer/name/timeout）**推荐统一走 advanced**
+    （JSON 字符串，如 advanced='{"crop":"auto","pixel":"rgba"}'）；同名显式参数优先于 advanced。
+    ⚠️ layer="video"（仅 SigmaStar）：抓**视频层**帧（fb0 只有 UI）。
 
-    ⚠️ 实现要点（设备没有 screencap/dd、必须按 stride 取、双缓冲 pan 页翻转抓错帧、
-    32bpp BGRA 通道序、角度只认工程配置 + 三个反面做法）见知识库「真机抓屏 实现要点与踩坑」，
+    ⚠️ 实现要点（设备无 screencap/dd、按 stride 取、双缓冲 pan 抓错帧、32bpp BGRA 通道序、
+    角度只认工程配置 + 三个反面做法）见知识库「真机抓屏 实现要点与踩坑」，
     检索：抓屏 / 双缓冲 pan / 颜色红蓝互换 / 取图角度 rotateScreen。
     """
     if dss is None:
@@ -1320,9 +1345,11 @@ OP_NAMES = (
     'flythings_hardware_info',
     'flythings_map_control',
     'flythings_read_json',
+    'flythings_layout_audit',
     'flythings_get_project_spec',
     'flythings_validate_project',
     'flythings_fui_pack',
+    'flythings_fui_unpack',
     'flythings_edit_ftu',
     'flythings_build_ui_flow',
     'flythings_pack_upgrade',

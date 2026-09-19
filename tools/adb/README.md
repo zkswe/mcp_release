@@ -40,7 +40,7 @@ Version 31.0.3-7562133
   设备侧 ftu/so 比对（`staleOnDevice`）、`fun launch -s <serial>` 的选机；
 - `ui_tools/device_screenshot.py`：抓屏链路的 adb 定位；
 - `i18n_tools.py`：`i18n_to_json` 的 adb push；
-- `components/fonts/scripts/device_font_check.py`、`components/ui_v1/WheelPicker/example/tools/deploy.py`。
+- `components/fonts/scripts/device_font_check.py`、案例侧 deploy 脚本（`projects/**/deploy*.py`）。
 
 排查一条命令：
 

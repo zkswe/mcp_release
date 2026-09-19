@@ -2,12 +2,12 @@
   "schema": 1,
   "generatedBy": "scripts/gen_manifest.py",
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY 表后重新生成，勿手改本文件",
-  "version": "0.27.90-open",
-  "build": "2026-09-18",
-  "toolCount": 35,
+  "version": "0.27.95-open",
+  "build": "2026-09-19",
+  "toolCount": 37,
   "cli": {
     "fun": "FlyThings 工程工具（create/install/build/launch，<项目>/.fun/<平台>/ 下）",
-    "fui": "FTU 布局工具——当前内置版本只支持 pack（json → ftu）；unpack 是空壳（调用报通用错误），不要依赖",
+    "fui": "FTU 布局工具：pack（json → ftu）/ unpack（ftu → json）双向下；随包 fui 自 v0.27.91 起含 unpack（旧版只有 pack）",
     "fyx": "旧版打包/发布 CLI 名（历史遗留，等价于 fun 的早期名）",
     "fuse": "本机 workspace 的引擎 CLI（projects/fuse.exe，非本仓库内置）"
   },
@@ -238,6 +238,17 @@
       "category": "layout"
     },
     {
+      "op": "flythings_fui_unpack",
+      "brief": "ftu → json 反解析（fui unpack；随包 fui 自 v0.27.91 起支持）。",
+      "args": [
+        "ftu_path",
+        "output_json",
+        "overwrite"
+      ],
+      "risk": "write",
+      "category": "layout"
+    },
+    {
       "op": "flythings_gen_ui_test",
       "brief": "根据 UI json 布局生成自动化测试项目（纯代码，不依赖 AI，省 token）。",
       "args": [
@@ -389,6 +400,16 @@
       "category": "kbase"
     },
     {
+      "op": "flythings_layout_audit",
+      "brief": "静态审计 UI 布局的层叠/遮挡/触摸穿透（**纯几何，0 token，先看 json 再截图**）。",
+      "args": [
+        "project_root",
+        "page"
+      ],
+      "risk": "read",
+      "category": "layout"
+    },
+    {
       "op": "flythings_list_packages",
       "brief": "列出依赖包生态（platform 如 F133/Z20，留空列全部），含功能描述与版本。写代码前调用。",
       "args": [
@@ -526,9 +547,9 @@
     }
   ],
   "docs": {
-    "knowledgeFiles": 70,
+    "knowledgeFiles": 71,
     "wikiFiles": 128,
-    "ragChunks": 1499,
-    "ragPaths": 198
+    "ragChunks": 1533,
+    "ragPaths": 199
   }
 }
