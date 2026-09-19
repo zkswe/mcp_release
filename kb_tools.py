@@ -53,7 +53,7 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.95-open'
+MCP_VERSION = '0.27.97-open'
 MCP_BUILD = '2026-09-19'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -68,6 +68,40 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+'2026-09-19: **新增知识 `devflow/canvas-panel-coverage.md`：画布必须盖满面板（未覆盖区露出上一款应用的残留帧 = 伪闪烁）** '
+    'v0.27.97-open（钟工 21:10：「总结经验然后上传」；源头 = 钟工真机报障「F133 设备左下角的页标签在页面刷新时总是闪烁第一页内容，'
+    '应该是逻辑问题」）——**诊断（零猜测）**：① 设备跑的是 tdesign-f133 包（拉 `/tmp/ui/main.ftu` 反解析后与本地 md5 逐字节一致，'
+    '`.so` 里搜到本工程独有格式串）；② 屏上那条「第 N / 8 页　<页名>」**在包/json 里搜不到** ⇒ **不属于本应用**；'
+    '**根因 = 两条叠加**：布局画布 **1280×750 < 面板可视区 1280×800**（底部 50px 本应用从不绘制）+ **fb 双缓冲**把前一款部署过的应用'
+    '（ControlShowcase）最后一帧留在未绘制区 → 每次刷新换 buffer 就换一次残留画面（实测连抓两帧同一区域分别是 '
+    '「第 1 / 8 页　滚轮基础」/「第 8 / 8 页　日历」，与钟工「闪烁第一页内容」完全对上）；'
+    '**修法（最小改动、几何零位移）**：`resolution.height` + 根 `position.height` 750→800（控件绝对定位、根背景负责刷底色），'
+    '`fui pack` 后**只推 ftu** + 温和重启（`kill -TERM`，不重编/重推 `.so`、不 reboot）；'
+    '**验收（机器可判）**：补齐区像素 == 根背景色、同页连抓两帧补齐区 diff bbox = None、强制切页后再抓仍 None（三项实测通过）；'
+    '残留 check_all 仅存量 AA 真缺陷 70 张（与本改动无关）。文档含**诊断三步**（拉包比 md5 → 文案丢进 json 搜 → 两帧比补齐区 bbox）、'
+    '**平台面板可视区表**（F133/F136 1280×800、Z21 1024×600、Z20 800×1280、V85x 按型号）、**防复发**（生成器别把画布高度写死成'
+    '"内容高度"；验收脚本加「画布分辨率 == 目标面板可视区」断言——本缺陷修复前任何几何断言都锚在控件盒内，查不出来）。',
+    '2026-09-19: **出图核缩回算子整改（LANCZOS→Image.BOX）+ 9-patch 描边改出图 + check_all 第 21 项** '
+    'v0.27.96-open（钟工拍板：「1. 改，出图的锯齿问题必查。必须改掉这个。 2. 改。 3. 改出图」）——'
+    '**A1 全链路排查（14 处）**：`gen_res._ss_down`/`_ss_mask` 与所有「带直通 α 的缩回点」'
+    '（icon_circle / frames_loading(_gif) / _emoji_img×2 / _ai_img / line_icon / _glyph_render / '
+    '_gear / _refresh / _wifi / _heart / _star / _bluetooth / 阴影 mask）一律改 **Image.BOX 面积平均**'
+    '（判据 `has_straight_alpha()`：只有整幅不透明才允许 LANCZOS；常量 `_DOWN_OP_ALPHA`/'
+    '`_DOWN_OP_OPAQUE`）；`_ss_down` 重写为 float 预乘 + 精确面积平均 + 反预乘。'
+    '实测（temp/a1_chain.py，aa_audit 打分）：出图核矩阵 17 类脏边 1671→932（形状/描边/图标类全部归 0）；'
+    '`rounded_rect_ss(80,40,20,...)` 直通 α 契约脏边 96→0。'
+    '**A3 描边口径（三选一，不登记白名单）**：①新增覆盖率 API `coverage_mask`/`coverage_ring`/'
+    '`rounded_rect_cov`/`bordered_cov`/`recolor_ring`，描边走「整像素描边带」（环触达即整像素上描边色，'
+    '不做描边↔填充亚像素混色）；②`gen_btn9(border=None)` 按下态描边跟随按下色；③发丝线只画在形状'
+    '全覆盖列段（越过圆角弧的线头 = dirty）。案例 19 张 .9.png：WARN 18 张（dirty 172/speck 176）→ '
+    '11 张（dirty 0/speck 0，余下全是切点区 hard_diag，ss=16/64/256 同值 = 几何固有）。'
+    '**A2**：`check_all` 新增**第 21 项**委派 `tools/qa/aa_audit.py --fail`（0 token、有退出码、JSON 解析；'
+    '真缺陷 FAIL、WARN/EXEMPT 逐条理由；`.9.png` marker 环沿用审计内置豁免）——钟工原话是「接进第 19 项」，'
+    '#19/#20 已被 V85X 图层释放/运行期设图占用，为不打乱既有编号与知识库引用追加为 #21。'
+    '**规范**：`references/kb/image-gen-standard.md` 新增 §1.4（描边/发丝线口径）+ §1.5（缩回算子唯一判据），'
+    '§1.2 接进 check_all #21；`knowledge/devflow/ui-asset-rules.md` 铁律 #8/#10 同步（数字复测为 BOX 口径）'
+    '+ 检索同义词。**用例**：test_gen_res_aa 新增 6 条契约（含「旧 LANCZOS 口径复现」反面教材）'
+    '+ test_html2json_ss 真值改 BOX。CHANGELOG 不追加。',
     '2026-09-19: **AA 审计增强：低对比度边缘不再漏检（选中条圆角锯齿/脏边）** v0.27.95-open（钟工 14:00：「这个选中条的边界有锯齿，也需要检查一下 MCP」）——**A 漏检根因**：`tools/qa/aa_audit.py` v1只读 alpha、判据要求「对角 α≤5 且两正交 α≥250」、且没有对比度概念 → 案例的浅色选中条（#F2F3FF 压 #F3F3F3，**只有 B 通道差 12 级、亮度差仅 ~1.4**）在 56 张证据图上 `hard=0 mid=0`（全盲）；**B 工具增强（v2）**：① `resid_bad` —— 沿 ±4px 剖面取「外侧平台色/内侧平台色」（连续 3 采样互差≤6，抗底色渐变），边界像素必须落在两色连线上，偏离 > max(5, **0.6×该处对比度**) 即脏边（对比度归一化 → 低对比度同样敏感）；② `hard_diag` —— 曲线/圆角 1px 阶梯，结构张量区分斜/弧与轴对齐（轴对齐硬边豁免），占比 ≥60% 才算成片缺陷；③ `dirty`/`speck` —— 直通 α 边界 RGB 污染（可见误差=偏离×α/255）；④ 豁免机制：`*.9.png` marker 环（只豁免环区，本体照审）、像素艺术（降 WARN）、**最近邻放大图拒收**、白名单 `aa_audit_allow.json`，逐条打理由；⑤ 证据：标注图 + 8× 放大 + 坐标 + 计数 + `--fail` 退出码。**C 标定（temp/aa_ab，同一几何两条路）**：旧管线（SS+预乘 LANCZOS）176×36 r18 药丸 → `resid_bad=50（最大残差 13 / 对比度 12）`= DEFECT；覆盖率口径（SS 二值 + Image.BOX）同图 → 0 = CLEAN；案例抓帧 `--region` → `resid_bad=40（最大残差 201 / 对比度 12）`。**D 规范**：`references/kb/image-gen-standard.md` §1 缩回算子改口径（**AREA/BOX 优先；带直通 α 的边界禁用 LANCZOS**，负瓣振铃=暗边/白点）+ §1.3「低对比度边缘是高发区」坑条；`knowledge/devflow/ui-asset-rules.md` 新增铁律 #10 （同口径 + 检索同义词）+ `pixel-analysis-ai.md` 坑条一行；新增 `tools/qa/README.md` + 白名单文件。**E 存量复扫**：components/icons/out 915 张 + icons example 18 张 + ui_v1 RadButton 1 张 → **真缺陷 0**；ControlShowcase z21（案例侧新产物，36 张）→ 真缺陷 1（`tab_off.9.png`，resid 8/对比度 24）+ WARN 19（1px 描边亚像素混色，逐条列理由）+ EXEMPT 3。版本 0.27.94→0.27.95；CHANGELOG 不追加。',
     '2026-09-19: **TimePicker 全族统一收口为 `listview`/L2（含时钟盘形态）+ 检索质量优化（16/16 一次命中）** '
     'v0.27.94-open（钟工：**「TimePicker 通过 listview 这个实现对应。检索质量优化。有发现的遗留问题都处理掉」**）——'

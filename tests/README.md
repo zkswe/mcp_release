@@ -13,7 +13,9 @@ python scripts/check_consistency.py --with-tests
 ```
 
 依赖：只用标准库 + 仓库已有依赖（Pillow 缺失时图像相关用例自动 skip）。**不连真机**。
-当前规模：**281 项**（1 项按环境 skip）。
+当前规模：**286 项**（1 项按环境 skip）。
+
+> 2026-09-19（v0.27.96-open，A1/A3）：	est_gen_res_aa.py 的参考真值改为 **Image.BOX 面积平均**，并新增/改写契约：_ss_down 必须走 BOX（0 脏边）、旧 LANCZOS 口径复现（反面教材）、描边整像素带无亚像素混色、边界像素必须纯描边色、gen_btn9 按下态描边跟随按下色、has_straight_alpha() 判据；	est_html2json_ss.py 真值同步改 BOX。
 
 ## 用例分布
 

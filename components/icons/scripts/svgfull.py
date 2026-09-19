@@ -4,7 +4,9 @@
 来源说明：本文件是把**已验证过的**那份渲染器（`temp/svgrender.py`，曾用它把 vendor 线
 **4754 个 Tabler outline 图标全部渲染通过**）纳入模块；渲染逻辑（path 全指令解析 /
 A 圆弧转贝塞尔 / 扫描线 + nonzero 绕序填充 / stroke 圆头圆角 / currentColor 替换 /
-非正方形等比居中 / SS 倍超采样 + LANCZOS 降采样）**一行未动**。
+非正方形等比居中 / SS 倍超采样降采样）**除缩回算子外一行未动**；
+2026-09-19（A1）：最后一步的 α mask 缩回从 LANCZOS 改为 **Image.BOX（面积平均）**
+（与自绘线 `svgmini.py` 及 v0.3.1 的覆盖率口径一致；带直通 α 的边界禁用负瓣算子）。
 
 与原文件的**唯一差异**（本次纳入时补的，其余逐行相同）：最后一步输出 RGBA 时，
 原文件用 `paste(solid, mask=alpha)` → RGB 被按 alpha 预乘（`RGB = color×a/255`，
@@ -505,7 +507,10 @@ def render_svg(svg_text, size, color=(255, 255, 255), ss=4, current="currentColo
     both = Image.new("L", (cw, ch), 0)
     both.paste(fill_mask, (0, 0), fill_mask)
     both.paste(stroke_mask, (0, 0), stroke_mask)
-    both = both.resize((W, H), Image.LANCZOS)
+    # 缩回算子（2026-09-19 A1 口径）：**带直通 α 的边界禁用负瓣算子（LANCZOS/BICUBIC/BILINEAR）**
+    # —— mask 就是覆盖率，LANCZOS 会把边界推出 [0,1]（clip 后成硬边/振铃环）；
+    # 本模块 v0.3.1 的「真实覆盖率（8× + BOX 面积平均）」同一个口径。
+    both = both.resize((W, H), Image.BOX)
     # 输出口径（与自绘线 svgmini.py 一致）：RGB 恒等于请求颜色，只有 alpha 变化。
     # 注：原 temp/svgrender.py 这里写的是
     #     out = Image.new("RGBA", (W, H), (0, 0, 0, 0)); out.paste(solid, (0, 0), both)

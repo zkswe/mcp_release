@@ -129,13 +129,21 @@ def rounded_rect(w, h, radius, fill, border=None, border_w=1):
 # （圆 / 圆钮 / 药丸 / 细圆条）上远不够。用 16x 超采样覆盖率当理想值逐像素对比
 # （本机 Pillow 12.2.0 / numpy 2.5.1；边界带 = 理想 α 介于 4~251 的像素；单位 /255；
 #  复现口径见 knowledge/devflow/ui-asset-rules.md §2 铁律 #8）：
-#     形状                  FT-008 mean/p95     rounded_rect_ss(ss=4)   ss=8
-#     药丸 80x40 r20           35.4 /  97.9          5.3 / 22.7        1.4 / 3.8
-#     圆   30x30 r15           40.9 / 102.0          3.7 / 11.0        1.2 / 4.0
-#     圆钮 31x31 r15           42.0 / 105.0          6.3 / 17.0          —  /  —
-#     细圆条 200x8 r4          21.0 /  43.0          3.2 /  6.0        1.8 / 3.0
-#     大卡片 300x180 r16       43.9 / 153.0         10.0 / 22.0          —  /  —
-#   → 强曲率必须 ≥4x 超采样 + LANCZOS 缩回（小尺寸强曲率可用 ss=8，p95 <4）；
+#     形状                  FT-008 mean/p95     rounded_rect_ss(ss=4)   ss=8     ← 2026-09-19 复测
+#     药丸 80x40 r20           39.6 / 102.0          7.7 / 25.0        1.9 /  5.0
+#     圆   30x30 r15           48.7 / 104.0          7.3 / 21.0        1.9 /  5.0
+#     圆钮 31x31 r15           47.7 / 100.0          7.8 / 20.0        3.6 / 12.0
+#     细圆条 200x8 r4          25.7 /  54.0          5.6 / 10.0        2.4 /  3.0
+#     大卡片 300x180 r16       48.3 / 158.0         10.7 / 26.0        2.3 /  6.0
+#     方角  64x24 r4           45.0 / 119.0         11.6 / 21.0        2.7 /  5.0
+#   （这一组 = 缩回算子改 Image.BOX **并**把真值也改成 BOX 后的复测，脚本 temp/a1_remeasure.py。
+#     改前 LANCZOS 口径旧数字仅作历史对照：药丸 35.4/97.9 → ss4 5.3/22.7、圆 40.9/102 → 3.7/11；
+#     两个口径差在细圆条上最大：真值 LANCZOS 时 ss4=11.7，真值 BOX 时 ss4=5.6。）
+#   → 强曲率必须 ≥4x 超采样 + **面积平均（Image.BOX）**缩回（小尺寸强曲率可用 ss=8，p95 <4）；
+#      ⚠️ 2026-09-19 钟工拍板：缩回算子从 LANCZOS 改成 **Image.BOX（面积平均）**（A1 锯齿根因
+#      = LANCZOS 负瓣振铃把预乘色推出 [0, α·C] → 反预乘后近黑/纯白 = 暗边/白点）。
+#      本注释上方那组 mean/p95 是**改前 LANCZOS 口径**实测；BOX 口径复测见 §A1 复测（同文件下方
+#      `_ss_down` docstring 与 references/kb/image-gen-standard.md §1）。
 #     大半径卡片两条路都能用，但 FT-008 的几何与 1x 直画逐像素一致（FT-008 的修复目的：
 #     倒角宽度不漂），**故大卡片仍默认走 FT-008**，只把新函数给强曲率用，老调用者不受影响。
 # 实测案例：LVGL 迁移案例（projects/translate/lvgl-widgets-uiv1，Z21/F133/F136）
@@ -148,29 +156,163 @@ def rounded_rect(w, h, radius, fill, border=None, border_w=1):
 #   `rounded_rect` 默认（FT-008）保持不变，仅手写调用按形状选：强曲率 rounded_rect_ss /
 #   大半径卡片 rounded_rect。
 # 缩回前必须 **alpha 预乘**，否则透明像素的 RGB（黑）渗进边界 → 暗边（halo）。
-def _ss_down(big, w, h):
-    """超采样画布（RGBA）→ LANCZOS 缩回；带 alpha 预乘 / 反预乘（防暗边）。
+# ---------- 缩回算子口径（2026-09-19 钟工 A1 拍板；规范 = references/kb/image-gen-standard.md §1）----------
+# **硬规矩：带直通 α 的边界禁用带负瓣的插值算子（LANCZOS / BICUBIC / BILINEAR）。**
+#   为什么：负瓣（Gibbs 振铃）会把预乘色 Cpm 推出 [0, α·C] 区间，反预乘后欠冲被 clip 成近黑
+#   （α 还有 8~56/255 → 合成到浅底即暗边）、过冲被 clip 成纯白（白点）。
+#   判据（唯一例外）：**只有「整幅不透明」（α 恒 255，图里根本没有 α 边界）** 的插值类缩放
+#   才允许 LANCZOS —— 此时没有 α 可被污染。其余一律 Image.BOX（面积平均 = 真实覆盖率、无负瓣）。
+_DOWN_OP_ALPHA = Image.BOX        # 带直通 α：面积平均（覆盖率口径）
+_DOWN_OP_OPAQUE = Image.LANCZOS   # 整幅不透明：允许插值
 
-    numpy 为 lock 里钉死的依赖（requirements.lock: numpy==2.5.1），下面的显式预乘是
-    **不依赖 Pillow 内部实现**的写法（老 Pillow 的 RGBA resize 不预乘 → 暗边）。
-    无 numpy 时退化为直缩：Pillow 12.2.0 实测其 RGBA resize 内部已按 alpha 预乘
-    （与手工预乘结果逐像素 0 差，半透明底边界 G/B 通道均为 0 → 无暗边），故可安全退化。
+
+def has_straight_alpha(img):
+    """判据：画布是否存在「直通 α 边界」（存在任何 α<255 的像素 = 有透明/半透明区）。
+
+    返回 True → 缩回必须用 Image.BOX；False（整幅不透明）→ 才允许 LANCZOS。
+    半透明像素（α 1..254）本身也是 α 边界（合成时会透底），同样按 True 处理。
     """
+    if img.mode not in ('RGBA', 'LA', 'PA'):
+        return False
+    try:
+        lo = img.getchannel('A').getextrema()[0]
+    except Exception:                   # 取不到 alpha（异常模式）→ 保守按带 α 处理
+        return True
+    return lo < 255
+
+
+def _ss_down(big, w, h):
+    """超采样画布（RGBA）→ 缩回目标尺寸：**面积平均（Image.BOX）+ alpha 预乘 / 反预乘**。
+
+    算子选择（`has_straight_alpha`）：带直通 α 边界 → `Image.BOX`（无负瓣，α 缩回 = 真实覆盖率）；
+    整幅不透明 → 允许 LANCZOS 插值。**不要**把这里的 BOX 换回 LANCZOS/BICUBIC/BILINEAR。
+
+    BOX 下仍需先按 α 预乘：面积平均的是「预乘色」，再反预乘回直通 α
+    （直接对直通 RGB 做面积平均 = 把透明区的颜色按等权混进来 = 暗边）。
+    显式预乘**不依赖 Pillow 内部实现**（老 Pillow 的 RGBA resize 不预乘）；
+    实测 Pillow 12.2.0 的 RGBA resize 内部已按 alpha 预乘（2x1 半透明红+全透明 → BOX 得
+    (255,0,0,128)，非 (127,0,0,128)），故无 numpy 时可安全退化为直缩。
+    """
+    op = _DOWN_OP_ALPHA if has_straight_alpha(big) else _DOWN_OP_OPAQUE
     try:
         import numpy as np
-    except ImportError:                 # 无 numpy：直缩（见 docstring，实测无暗边）
-        return big.resize((w, h), Image.LANCZOS)
+    except ImportError:                 # 无 numpy：Pillow 内部已预乘（见 docstring 实测）
+        return big.resize((w, h), op)
+    if op is _DOWN_OP_OPAQUE:           # 整幅不透明：无 α 可污染 → 直接插值
+        return big.resize((w, h), op)
     a = np.asarray(big).astype(np.float64)
-    al = a[..., 3:4] / 255.0
-    pm = np.clip(a[..., :3] * al + 0.5, 0, 255).astype(np.uint8)
-    pm_s = np.asarray(Image.fromarray(pm, 'RGB').resize((w, h), Image.LANCZOS)).astype(np.float64)
-    al_s = np.asarray(big.getchannel('A').resize((w, h), Image.LANCZOS)).astype(np.float64)
-    rgb = np.clip(pm_s * 255.0 / np.maximum(al_s[..., None], 1.0), 0, 255)
-    return Image.fromarray(np.concatenate([rgb, al_s[..., None]], axis=2).astype(np.uint8), 'RGBA')
+    al = a[..., 3:4] / 255.0            # 0..1
+    pm = a[..., :3] * al                # 预乘色（float，不取整 → 反预乘不放大误差）
+    hh, ww = pm.shape[:2]
+    if ww % w == 0 and hh % h == 0:     # ss 整数倍：与 Image.BOX 等价的**精确**面积平均
+        fy, fx = hh // h, ww // w
+        pm_s = pm.reshape(h, fy, w, fx, 3).mean(axis=(1, 3))
+        al_s = al.reshape(h, fy, w, fx, 1).mean(axis=(1, 3))
+    else:                               # 非整数倍：走 Image.BOX（'F' 画布，面积平均）
+        pm_s = _box_float(pm, w, h)
+        al_s = _box_float(al, w, h)
+    vis = al_s > 0.0
+    rgb = np.zeros_like(pm_s)
+    # 反预乘：C = Cpm / α（两者单位同为 0..255 → 结果直接是 0..255，clip 到 255 即可）
+    rgb[vis[..., 0]] = np.clip(pm_s[vis[..., 0]] / al_s[vis[..., 0]], 0, 255)
+    out = np.concatenate([np.round(rgb), np.round(al_s * 255.0)], axis=2).astype(np.uint8)
+    return Image.fromarray(out, 'RGBA')
+
+
+def _box_float(arr, w, h):
+    """float 数组（HxWxC）→ 面积平均缩到 (w,h)：逐通道走 PIL 'F' 画布 + Image.BOX。"""
+    import numpy as np
+    chans = [Image.fromarray(np.ascontiguousarray(arr[..., i].astype(np.float32)), 'F')
+             .resize((w, h), Image.BOX) for i in range(arr.shape[-1])]
+    return np.stack([np.asarray(c, dtype=np.float64) for c in chans], axis=-1)
 
 
 # 超采样画布像素上限：防「大图 + 高档位」把内存吃爆（默认 1024x600 ss=4 = 9.8M px，安全）。
 _SS_MAX_PX = 40 * 1000 * 1000
+
+# ---------- 覆盖率（coverage）口径（2026-09-19 钟工 A1/A3 拍板）----------
+# 一句话：**α = 覆盖率，RGB = 实色（不重采样颜色）**；描边/填充之间的关系用「整像素带」表达，
+# 不做亚像素混合。这是「带直通 α 的边界」唯一不会出脏边的画法（规范 §1）。
+_COV_SS = 16          # 覆盖率档位（16x16 子采样 = 256 级覆盖率）
+
+
+def coverage_mask(w, h, radius, rect=None, ss=_COV_SS):
+    """形状覆盖率（L 模式，0..255 = 被形状覆盖的面积比例）。
+
+    SS 二值画布（rounded_rectangle）→ `Image.BOX`（面积平均）缩回。
+    参数：rect = (x0, y0, x1, y1) 形状在 (w, h) 画布上的像素盒（PIL 口径、含端点），缺省整幅；
+         radius 同 PIL（> min(w,h)/2 自动按药丸/正圆钳制）。
+    """
+    if rect is None:
+        rect = (0, 0, w - 1, h - 1)
+    x0, y0, x1, y1 = [int(v) for v in rect]
+    bw, bh = x1 - x0 + 1, y1 - y0 + 1
+    ss = _ss_fit(bw, bh, ss, 'coverage')
+    big = Image.new('L', (bw * ss, bh * ss), 0)
+    ImageDraw.Draw(big).rounded_rectangle([0, 0, bw * ss - 1, bh * ss - 1],
+                                          radius=int(round(radius * ss)), fill=255)
+    out = Image.new('L', (w, h), 0)
+    out.paste(big.resize((bw, bh), Image.BOX), (x0, y0))   # 面积平均：无负瓣
+    return out
+
+
+def coverage_ring(w, h, radius, border_w=1, rect=None, ss=_COV_SS):
+    """「整像素描边带」mask（L，255 = 描边像素）——**A3 整改的核心口径**。
+
+    定义：被描边环触达（A外 > 0）、但未被内形状完整覆盖（A内 < 255）的像素。
+    = 描边落在**整数像素带**上（每像素非全描边即全填充，没有「描边×填充」的亚像素混色）。
+    为什么不用「按覆盖率混合」（Cpm = 描边·(A外−A内) + 填充·A内）：圆角对角线上描边环只有
+    0.707px 厚，混合后角上会出现 1~4px 宽的混色带（实测 22x22 r8 描边按钮 dirty=16 / speck=24）。
+    """
+    from PIL import ImageChops as _IC
+    if rect is None:
+        rect = (0, 0, w - 1, h - 1)
+    x0, y0, x1, y1 = [int(v) for v in rect]
+    bw = max(1, int(border_w))
+    a_out = coverage_mask(w, h, radius, rect, ss)
+    a_in = coverage_mask(w, h, max(0.0, radius - bw),
+                         (x0 + bw, y0 + bw, x1 - bw, y1 - bw), ss)
+    m1 = a_out.point(lambda v: 255 if v >= 1 else 0)
+    m2 = a_in.point(lambda v: 255 if v <= 254 else 0)
+    return _IC.multiply(m1, m2)
+
+
+def rounded_rect_cov(w, h, radius, fill, rect=None, ss=_COV_SS):
+    """圆角矩形 / 圆 / 药丸（覆盖率口径）：α = 覆盖率，RGB = 实色。
+
+    边界像素 = 实色 × 覆盖率 → 合成到任意底色都是「底色 → 实色」的单调过渡（无暗边/白点）。
+    全透明区 RGB 写实色（不是黑色）：避免 0,0,0 落到下游 bbox / 主色统计里（均值/中位被拉黑）。
+    """
+    img = Image.new('RGBA', (w, h), (fill[0], fill[1], fill[2], 255))
+    img.putalpha(coverage_mask(w, h, radius, rect, ss))
+    return img
+
+
+def bordered_cov(w, h, radius, fill, border, border_w=1, rect=None, ss=_COV_SS):
+    """描边 + 填充圆角块（覆盖率口径 + **整像素描边带**，A3 口径）。
+
+    描边像素（`coverage_ring`）整体上描边色，其余上填充色；α = 外形状覆盖率。
+    代价（已知、可接受）：圆角处描边视觉厚度 ~1.41px（整数像素带，直线段仍严格 1px）——
+    这与设备端 1px 描边的光栅化一致（设备也不会画 0.707px 的描边）。
+    """
+    ring = coverage_ring(w, h, radius, border_w, rect, ss)
+    img = Image.new('RGBA', (w, h), (fill[0], fill[1], fill[2], 255))
+    img.paste(Image.new('RGBA', (w, h), (border[0], border[1], border[2], 255)), (0, 0), ring)
+    img.putalpha(coverage_mask(w, h, radius, rect, ss))
+    return img
+
+
+def recolor_ring(img, w, h, radius, border, border_w=1, rect=None, ss=_COV_SS):
+    """把已有底图（渐变/阴影）的**整像素描边带**改涂成 border 色，α 不动。
+
+    用于「底图 + 1px 描边」的合成：不用「叠半透明描边层」（alpha_composite 会在边界处把描边色
+    与底图色按覆盖率混一次 = 脏边），也不动底图内部颜色。
+    """
+    ring = coverage_ring(w, h, radius, border_w, rect, ss)
+    out = img.copy()
+    out.paste(Image.new('RGBA', (w, h), (border[0], border[1], border[2], 255)), (0, 0), ring)
+    return out
+
 
 # html2json（CSS 效果自动出图）统一档位 —— 钟工 2026-09-16 拍板：CSS 效果一律走 SS，
 # 不再保留「1x + α 羽化」那条路（固定本地脚本工作，不额外耗 token）。
@@ -189,20 +331,27 @@ def _ss_fit(w, h, ss, label='SS'):
 
 
 def _ss_rounded_rect(w, h, radius, fill, border=None, border_w=1, ss=4):
-    """圆角矩形（SS 画布绘制 → 预乘 LANCZOS 缩回）。
+    """圆角矩形（超采样画布绘制 → **面积平均**缩回）。
 
+    带 border 时**改走 `bordered_cov`（整像素描边带）**：在 SS 画布上画 outline 再缩回，圆角
+    对角线上的描边环只有 0.707px 厚 → 缩回时必然产生「描边↔填充」的亚像素混色（= aa_audit
+    的 dirty/speck WARN 根因；实测 22x22 r8 描边按钮 dirty=16 / speck=24 → 改后 0/0）。
     共用方：rounded_rect_ss / gen_btn9(ss>0) / gen_shadow_card(ss>0) 主体 / rounded_card 高光层。
     """
+    if border:
+        return bordered_cov(w, h, radius, fill, border, border_w)
     ss = _ss_fit(w, h, ss, 'SS')
-    wd = max(1, int(border_w * ss)) if border else 1
     big = Image.new('RGBA', (w * ss, h * ss), (0, 0, 0, 0))
     ImageDraw.Draw(big).rounded_rectangle([0, 0, w * ss - 1, h * ss - 1], radius=radius * ss,
-                                          fill=fill, outline=border, width=wd)
+                                          fill=fill)
     return _ss_down(big, w, h)
 
 
 def _ss_mask(w, h, radius, ss=4):
-    """圆角 mask（L 模式，0~255 = 理想覆盖率）：SS 画布二值 → LANCZOS 缩回。
+    """圆角 mask（L 模式，0~255 = 理想覆盖率）：SS 画布二值 → **Image.BOX（面积平均）** 缩回。
+
+    L 单通道没有 α 透传的问题，但**同样不许用带负瓣的算子**：mask 就是「覆盖率」本身，
+    LANCZOS 会在边界产生 >255/<0 的过冲欠冲（clip 后成硬边/振铃环）。
 
     给「渐变/阴影裁剪层」用（`_aa_mask` 的 SS 版）。L 单通道无需预乘。
     用于 putalpha 时**替换** alpha（底图本来全不透明，安全）；用于已有 alpha 的图层时
@@ -212,11 +361,16 @@ def _ss_mask(w, h, radius, ss=4):
     big = Image.new('L', (w * ss, h * ss), 0)
     ImageDraw.Draw(big).rounded_rectangle([0, 0, w * ss - 1, h * ss - 1],
                                           radius=radius * ss, fill=255)
-    return big.resize((w, h), Image.LANCZOS)
+    return big.resize((w, h), Image.BOX)          # 面积平均：无负瓣（LANCZOS 会振铃）
 
 
 def _ss_outline(w, h, radius, color, width=1, ss=4):
-    """圆角描边层（透明底 + 仅描边）——`_aa_outline` 的 SS 版，供 rounded_card(ss>0)。"""
+    """圆角描边层（透明底 + 仅描边）——`_aa_outline` 的 SS 版。
+
+    ⚠️ 2026-09-19（A3）：**新代码请用 `recolor_ring`**。本函数是把描边当**独立半透明图层**
+    叠到底图上（`alpha_composite`）——边界处描边色与底图色又按覆盖率混了一次 = 脏边。
+    保留仅为兼容旧调用。
+    """
     ss = _ss_fit(w, h, ss, 'SS outline')
     wd = max(1, int(width * ss))
     big = Image.new('RGBA', (w * ss, h * ss), (0, 0, 0, 0))
@@ -236,13 +390,14 @@ def ss_shape_mask(w, h, radius, ss=4):
 
 
 def rounded_rect_ss(w, h, radius, fill, border=None, border_w=1, ss=4):
-    """圆角矩形 / 圆 / 药丸（≥ss 倍超采样 + LANCZOS 缩回）——**强曲率形状用这个**。
+    """圆角矩形 / 圆 / 药丸（≥ss 倍超采样 + **面积平均（Image.BOX）**缩回）——**强曲率形状用这个**。
 
     与 rounded_rect 的分工（2026-09-16 实测口径，数字见模块头 FT-010 注释）：
       - `rounded_rect`（1x 直画 + α 羽化 σ0.5）：几何与 1x 直画逐像素一致（倒角宽度不漂），
         适合**大半径卡片**圆角 → 强曲率下边界误差 mean 21~44/255、p95 43~153/255；
-      - **本函数**（SS + LANCZOS）：圆 / 圆钮 / 药丸 / 细圆条等强曲率形状 →
+      - **本函数**（SS + 面积平均）：圆 / 圆钮 / 药丸 / 细圆条等强曲率形状 →
         边界误差 mean 3~6/255、p95 11~23/255 （ss=8 时 p95 <4）→ 设备上才不发锯齿。
+    带 border 时实际委托 `bordered_cov`（整像素描边带）：描边与填充不做亚像素混合（A3 口径）。
     参数：radius 同 PIL（> min(w,h)/2 自动按药丸/正圆钳制）；border/border_w 同 rounded_rect；
          ss≥2（画布过大会自动降档并打一行提示，不静默）。
     设备端验证：LVGL 迁移案例 Z21/F133/F136 的 SeekBar 圆钮 + 开关药丸（2026-09-16）。
@@ -251,31 +406,33 @@ def rounded_rect_ss(w, h, radius, fill, border=None, border_w=1, ss=4):
     while ss > 2 and w * ss * h * ss > _SS_MAX_PX:
         ss -= 1
         print('  [NOTE] rounded_rect_ss: %dx%d 画布过大，ss 自动降到 %d（防内存爆）' % (w, h, ss))
-    wd = max(1, int(border_w * ss)) if border else 1
-    big = Image.new('RGBA', (w * ss, h * ss), (0, 0, 0, 0))
-    ImageDraw.Draw(big).rounded_rectangle([0, 0, w * ss - 1, h * ss - 1], radius=radius * ss,
-                                          fill=fill, outline=border, width=wd)
-    return _ss_down(big, w, h)
+    return _ss_rounded_rect(w, h, radius, fill, border, border_w, ss)
 
 
 def gen_btn9(out_dir, name, w, h, radius, fill, border=None, pressed=None, ss=0):
     """按钮两态 .9.png：normal + _p（pressed 边框高亮，还原 CSS :active）
 
-    ss>0：两态底图走 SS（`_ss_rounded_rect`，药丸/强曲率按钮不发锯）；
-    ss=0（默认）：仍走 `rounded_rect`（FT-008：1x 直画 + α 羽化）—— 默认行为不变。
+    **A3 口径（2026-09-19 钟工拍板）**：
+      · `border is None`（设计上无独立描边）→ **按下态描边跟随按下色**（= 与按下填充同色）。
+        旧口径是按下态沏用常态填充色当描边 → 圆角处「旧色描边 × 新色填充」亚像素混色
+        （aa_audit dirty/speck WARN；实测 tab_on_p dirty=16/speck=24）。
+      · 显式传 border（设计有描边，如 btn_norm 的 1px LINE）→ 两态共用该描边色，
+        目走「整像素描边带」（`bordered_cov`，无混色）。
+    ss>0：两态底图走超采样（`_ss_rounded_rect`）；ss=0（默认）：仍走 `rounded_rect`（FT-008）。
     """
     if border is None:
         border = fill
     if pressed is None:
         pressed = tuple(min(255, c + 60) for c in fill[:3]) + (fill[3],)
+    border_p = pressed if border == fill else border   # 无独立描边 → 按下态描边 = 按下色
 
-    def _base(f):
+    def _base(f, bd):
         if ss > 0:
-            return _ss_rounded_rect(w, h, radius, f, border, 1, ss)
-        return rounded_rect(w, h, radius, f, border)
+            return _ss_rounded_rect(w, h, radius, f, bd, 1, ss)
+        return rounded_rect(w, h, radius, f, bd)
 
-    to_9patch(_base(fill), radius, out_dir, name + ".9.png")
-    to_9patch(_base(pressed), radius, out_dir, name + "_p.9.png")
+    to_9patch(_base(fill, border), radius, out_dir, name + ".9.png")
+    to_9patch(_base(pressed, border_p), radius, out_dir, name + "_p.9.png")
 
 
 def gen_gradient(out_dir, name, w, h, color_from, color_to, horizontal=True, to9=False, radius=0, ss=0):
@@ -320,10 +477,13 @@ def rounded_card(out_dir, name, w, h, radius, color_from, color_to, border=None,
         d.line([(0, i), (w, i)], fill=c)
     # 圆角 mask 裁剪（ss>0 → SS；ss=0 → FT-008 1x + α 羽化）
     img.putalpha(_ss_mask(w, h, radius, ss) if ss > 0 else _aa_mask(w, h, radius))
-    # 描边（超采样描边层，避免 outline 二值锯齿）
+    # 描边（A3 口径）：ss>0 → 「整像素描边带」直接改涂（`recolor_ring`，无混色）；
+    # ss=0 → FT-008 描边层叠加（保留旧口径；该层与底图会在边界处混色 → 建议改传 ss>0）
     if border:
-        img.alpha_composite(_ss_outline(w, h, radius, border, border_w, ss) if ss > 0
-                            else _aa_outline(w, h, radius, border, border_w))
+        if ss > 0:
+            img = recolor_ring(img, w, h, radius, border, border_w)
+        else:
+            img.alpha_composite(_aa_outline(w, h, radius, border, border_w))
     # 顶部高光（圆角小，直接画可接受；用超采样描边层方式合成）
     if highlight:
         _hw, _hh = w - highlight[0] - highlight[2], h - highlight[1] - highlight[3]
@@ -394,7 +554,7 @@ def gen_shadow_card(out_dir, name, w, h, radius, fill, shadow=None, border=None,
         # 阴影圆角矩形（高斯模糊）
         sh = Image.new('RGBA', (cw, ch), (0, 0, 0, 0))
         if ss > 0:
-            # SS：阴影矩形画在 ss 画布上 → LANCZOS 缩回当覆盖率 mask，再只缩放 alpha
+            # SS：阴影矩形画在 ss 画布上 → **Image.BOX（面积平均）**缩回当覆盖率 mask，再只缩放 alpha
             # （不能用 paste(color, mask)：RGB 会被一起按 mask 缩小 → 边界发黑）
             _s = _ss_fit(cw, ch, ss, 'SS shadow')
             sbig = Image.new('L', (cw * _s, ch * _s), 0)
@@ -402,7 +562,7 @@ def gen_shadow_card(out_dir, name, w, h, radius, fill, shadow=None, border=None,
                 [(pad + ox) * _s, (pad + oy) * _s,
                  (pad + ox + w) * _s - 1, (pad + oy + h) * _s - 1],
                 radius=radius * _s, fill=255)
-            smask = sbig.resize((cw, ch), Image.LANCZOS)
+            smask = sbig.resize((cw, ch), Image.BOX)      # 覆盖率口径：面积平均（禁用负瓣算子）
             sh = Image.new('RGBA', (cw, ch), sc)
             from PIL import ImageChops as _IC
             sh.putalpha(_IC.multiply(sh.getchannel('A'), smask))
@@ -476,7 +636,7 @@ def icon_circle(out_dir, name, size, color, kind="check"):
         pts = [(cx, cy - S // 3), (cx - S // 4, cy + S // 4), (cx + S // 4, cy + S // 4)]
         d.polygon(pts, fill=color)
         d.rectangle([cx - m // 2, cy - S // 10, cx + m // 2, cy + S // 12], fill=(255, 255, 255, 255))
-    img = img.resize((size, size), Image.LANCZOS)
+    img = img.resize((size, size), _DOWN_OP_ALPHA)
     return save(img, out_dir, name)
 
 
@@ -496,7 +656,7 @@ def frames_loading(out_dir, prefix, size, color, n=12, ring_r=None, width=None):
         end = start + 300  # 缺口 60°
         d.arc([cx - ring_r, cy - ring_r, cx + ring_r, cy + ring_r],
               start=start, end=end, fill=color, width=width)
-        img = img.resize((size, size), Image.LANCZOS)
+        img = img.resize((size, size), _DOWN_OP_ALPHA)
         paths.append(save(img, out_dir, "%s_%02d.png" % (prefix, i)))
     return paths
 
@@ -518,7 +678,7 @@ def frames_loading_gif(out_dir, name, size, color, n=12, duration=80, ring_r=Non
         end = start + 300
         d.arc([cx - ring_r, cy - ring_r, cx + ring_r, cy + ring_r],
               start=start, end=end, fill=color, width=width)
-        frames.append(img.resize((size, size), Image.LANCZOS))
+        frames.append(img.resize((size, size), _DOWN_OP_ALPHA))
     os.makedirs(out_dir, exist_ok=True)
     p = os.path.join(out_dir, name)
     frames[0].save(p, save_all=True, append_images=frames[1:],
@@ -551,7 +711,7 @@ def emoji_icon(out_dir, name, size, ch):
     [!] 2026-09-18 钟工：「emoji 表情包转图片的时候切图不完整」。
     根因：原实现在 1x 画布上从 (0,0) 直画再 bbox 裁剪 —— 彩色字形的 ascent 超出 size 时
     **顶部/右侧会被画布边缘切掉**，且四周无留白，真机上就是「图标缺一块 / 贴边」。
-    现统一委托 `_emoji_img()`：**4x 超采样 + 3 倍画布居中 + bbox + 最长边缩到 86% + LANCZOS**，
+    现统一委托 `_emoji_img()`：**4x 超采样 + 3 倍画布居中 + bbox + 最长边缩到 86% + 面积平均（Image.BOX）**，
     与 `emoji_icon_ss()` 同口径（html2json 两处自动转图调用点一并受益，不再两套写法）。
     """
     return save(_emoji_img(size, ch), out_dir, name)
@@ -577,7 +737,7 @@ _GLYPH_EMOJI = {
 
 def _emoji_img(size, ch):
     """emoji 彩色字形 → RGBA Image：4x 超采样 + 3 倍画布居中（修顶部裁切）+
-    bbox 裁剪 + 最长边缩至 86% 画布（四周留白，各图标视觉大小一致）+ LANCZOS 缩回。"""
+    bbox 裁剪 + 最长边缩至 86% 画布（四周留白，各图标视觉大小一致）+ **面积平均（Image.BOX）**缩回。"""
     fp = _emoji_font()
     if not fp:
         raise RuntimeError('未找到彩色 emoji 字体（seguiemj.ttf / NotoColorEmoji.ttf）')
@@ -594,10 +754,10 @@ def _emoji_img(size, ch):
     target = int(S * 0.86)
     scale = target / max(w, h)
     w2, h2 = max(1, int(w * scale)), max(1, int(h * scale))
-    big = big.resize((w2, h2), Image.LANCZOS)
+    big = big.resize((w2, h2), _DOWN_OP_ALPHA)
     canvas = Image.new('RGBA', (S, S), (0, 0, 0, 0))
     canvas.paste(big, ((S - w2) // 2, (S - h2) // 2), big)
-    return canvas.resize((size, size), Image.LANCZOS)
+    return canvas.resize((size, size), _DOWN_OP_ALPHA)
 
 
 def emoji_icon_ss(out_dir, name, size, ch):
@@ -683,7 +843,7 @@ def _ai_img(size, prompt):
     if not b64:
         raise RuntimeError('AI 生图响应无 b64_json')
     img = Image.open(io.BytesIO(base64.b64decode(b64))).convert('RGBA')
-    return img.resize((size, size), Image.LANCZOS)
+    return img.resize((size, size), _DOWN_OP_ALPHA)
 
 
 def ai_icon(out_dir, name, size, prompt):
@@ -725,7 +885,7 @@ def line_icon(out_dir, name, size, color, kind='check'):
         d.ellipse([cx, cy - S // 4, cx + S // 4, cy + S // 4], outline=color, width=wdt)
         d.line([(cx - S // 4, cy + S // 10), (cx, cy + S // 3), (cx + S // 4, cy + S // 10)],
                fill=color, width=wdt)
-    img = img.resize((size, size), Image.LANCZOS)
+    img = img.resize((size, size), _DOWN_OP_ALPHA)
     return save(img, out_dir, name)
 
 
@@ -797,10 +957,10 @@ def gen_ui_assets(project_root, assets):
 # ---------- iconfont 风格矢量线框图标库（2026-09-03 沛哥定规：图标优先）----------
 # 用途：返回/播放/暂停/设置/搜索/删除等常用操作必须用图标（禁止纯文字按钮糊弄），
 # HTML 里写 data-icon="play"（或 class="iconfont icon-play"）→ 转换器调 glyph_icon 自动生成 PNG。
-# 24 网格坐标（Feather 风格），ss=4 超采样 + LANCZOS 缩回抗锯齿；描边=STROKE(2 单位)。
+# 24 网格坐标（Feather 风格），ss=4 超采样 + **面积平均（Image.BOX）**缩回抗锯齿；描边=STROKE(2 单位)。
 
 _G_STROKE = 2.0          # 24 网格上描边宽度（Feather 同款）
-_G_SS = 8                # 超采样倍数（画 8 倍再 LANCZOS 缩回；2026-09-03 沛哥反馈锯齿，4→8）
+_G_SS = 8                # 超采样倍数（画 8 倍再**面积平均（Image.BOX）**缩回；2026-09-03 沛哥反馈锯齿，4→8）
 
 
 def _round_cap(d, p, r, color):
@@ -865,7 +1025,7 @@ def _glyph_render(ops, size, color):
                 a = _math.radians(a_deg)
                 ep = ((cx + r * _math.cos(a)) * k, (cy + r * _math.sin(a)) * k)
                 _round_cap(d, ep, cap_r, color)
-    img = img.resize((size, size), Image.LANCZOS)
+    img = img.resize((size, size), _DOWN_OP_ALPHA)
     return img
 
 
@@ -916,7 +1076,7 @@ def _gear(size, color):
     d = ImageDraw.Draw(img)
     d.ellipse([(cx - 3.3) * k, (cy - 3.3) * k, (cx + 3.3) * k, (cy + 3.3) * k],
               outline=color, width=max(2, w // 2))
-    img = img.resize((size, size), Image.LANCZOS)
+    img = img.resize((size, size), _DOWN_OP_ALPHA)
     return img
 
 
@@ -946,7 +1106,7 @@ def _refresh(size, color):
     b2 = (pe[0] - rad[0] * 2.1, pe[1] - rad[1] * 2.1)
     d.polygon([(b1[0] * k, b1[1] * k), (b2[0] * k, b2[1] * k), (tip[0] * k, tip[1] * k)],
               fill=color)
-    img = img.resize((size, size), Image.LANCZOS)
+    img = img.resize((size, size), _DOWN_OP_ALPHA)
     return img
 
 
@@ -965,7 +1125,7 @@ def _wifi(size, color):
     d.ellipse([(11.0 - w * 0.45) * k, (20.4 - w * 0.45) * k,
                (11.0 + w * 0.45) * k, (20.4 + w * 0.45) * k], fill=color)
     d.ellipse([9.6 * k, 18.4 * k, 14.4 * k, 23.2 * k], fill=color)
-    img = img.resize((size, size), Image.LANCZOS)
+    img = img.resize((size, size), _DOWN_OP_ALPHA)
     return img
 
 
@@ -990,7 +1150,7 @@ def _heart(size, color):
     # 等比缩放至 20 单位并居中于 (12,12)
     pts = [(2 + (p[0] - x0) / span * 20, 2 + (p[1] - y0) / span * 20) for p in raw]
     d.polygon([(px * k, py * k) for px, py in pts], fill=color)
-    img = img.resize((size, size), Image.LANCZOS)
+    img = img.resize((size, size), _DOWN_OP_ALPHA)
     return img
 
 
@@ -1005,7 +1165,7 @@ def _star(size, color):
         r = 10.2 if i % 2 == 0 else 4.3
         pts.append((12 + r * _math.cos(a), 12 + r * _math.sin(a)))
     d.polygon([(x * k, y * k) for x, y in pts], fill=color)
-    img = img.resize((size, size), Image.LANCZOS)
+    img = img.resize((size, size), _DOWN_OP_ALPHA)
     return img
 
 
@@ -1020,7 +1180,7 @@ def _bluetooth(size, color):
     p2 = [(12, 1), (17.5, 6.5), (6.5, 17.5)]
     d.line([(x * k, y * k) for x, y in p1], fill=color, width=w, joint='curve')
     d.line([(x * k, y * k) for x, y in p2], fill=color, width=w, joint='curve')
-    img = img.resize((size, size), Image.LANCZOS)
+    img = img.resize((size, size), _DOWN_OP_ALPHA)
     return img
 
 

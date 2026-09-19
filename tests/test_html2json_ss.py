@@ -8,7 +8,7 @@
     ①html2json 自动出图 ②调用方显式 `rounded_rect_ss` / `ss>0` 时生效；
   - 同批收口：旧 `border-radius` 解析只认「数字+px」→ `border-radius:50%` / 无单位认不出 →
     该出圆的地方出方角（实测 corner alpha 255，而 `50%` 是设计稿最常见写法）。
-  参考真值 = 16x 超采样覆盖率（与 `test_gen_res_aa.py` 同口径，只用 PIL）。
+  参考真值 = 16x 超采样覆盖率（**Image.BOX 面积平均**缩回，与 `test_gen_res_aa.py` 同口径，只用 PIL）。
 """
 import os
 import shutil
@@ -36,11 +36,11 @@ STOPS = [(0.0, (0x2F, 0x6D, 0xF6, 255)), (1.0, (0x42, 0xC9, 0xFF, 255))]
 
 
 def _ref_alpha(w, h, radius, ss=16):
-    """理想覆盖率：16x 超采样二值 mask → LANCZOS 缩回（与 FT-010 口径一致）。"""
+    """理想覆盖率：16x 超采样二值 mask → **Image.BOX（面积平均）**缩回（与 FT-010 口径一致）。"""
     big = Image.new('L', (w * ss, h * ss), 0)
     ImageDraw.Draw(big).rounded_rectangle([0, 0, w * ss - 1, h * ss - 1],
                                           radius=radius * ss, fill=255)
-    return list(big.resize((w, h), Image.LANCZOS).tobytes())
+    return list(big.resize((w, h), Image.BOX).tobytes())
 
 
 def _rgba_bytes(path):

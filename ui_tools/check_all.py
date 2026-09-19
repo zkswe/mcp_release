@@ -14,6 +14,10 @@ WARN 分两类意图：#15 会先评估「可能故意遮挡」（modal / 容器
 `mXXXPtr->setBackgroundPic("images/x.png")` 等字面量调用，把图片尺寸与目标控件 position 比；
 `resources/images/` 的自动生成图不等 = FAIL，手绘图不等 = 仅提示，`.9.png` 豁免。
 （运行时拼出来的路径静态无解 → 只计 `dynamic`，口径见 knowledge/uicontrols/text-box-height-rule.md §4/§5）
+第 21 项 = **生成图抗锯齿 / 脏边**（2026-09-19 A2，委派 `tools/qa/aa_audit.py --fail`）：
+扫 `resources/images/` 的 PNG，真缺陷（resid_bad / 成片 hard_diag / 无两区边界时退回 dirty）= FAIL；
+WARN 逐条列理由；`*.9.png` marker 环由审计内置豁免；白名单只认 `tools/qa/aa_audit_allow.json`。
+（钟工原话是「接进第 19 项」——#19/#20 已被 V85X/运行期设图占用，为不打乱现有编号与知识库引用，追加为 #21。）
 """
 import glob
 import json
@@ -973,6 +977,76 @@ def check_runtime_setpic(project_root):
     return res
 
 
+def _find_aa_audit():
+    """找 tools/qa/aa_audit.py（#21 用）。搜索顺序：环境变量 AA_AUDIT → 同目录 → 上级 qa/。
+
+    布局说明：工作区 = `<tools>/ui_tools/check_all.py` + `<tools>/qa/aa_audit.py`（兄弟目录）；
+    MCP 包内没有 qa/（审计工具只在工作区）→ 此时报 NOTE 跳过（不静默，不假装跑过）。
+    """
+    env = os.environ.get('AA_AUDIT', '').strip()
+    cands = ([env] if env else []) + [
+        os.path.join(BASE, 'aa_audit.py'),
+        os.path.join(os.path.dirname(BASE), 'qa', 'aa_audit.py'),
+        os.path.join(os.path.dirname(os.path.dirname(BASE)), 'qa', 'aa_audit.py'),
+    ]
+    for c in cands:
+        if c and os.path.isfile(c):
+            return c
+    return None
+
+
+def check_aa_assets(project_root, timeout=1800):
+    """#21：生成图「抗锯齿 / 脏边」审计（委派 aa_audit.py --fail）——0 token、有退出码。
+
+    口径（references/kb/image-gen-standard.md §1.2 + tools/qa/README.md）：
+      · 真缺陷（`resid_bad` / 成片 `hard_diag` / 无两区边界时退回 `dirty`）→ **FAIL**；
+      · WARN（dirty / speck / 切点区 hard_diag）→ 逐条列理由，不阻塞，但也**不静默吞掉**；
+      · `*.9.png` 的 marker 环由 aa_audit 内置豁免（NINEPATCH_MARKER），本函数**不改口径、不加白名单**；
+      · 白名单只认 `tools/qa/aa_audit_allow.json`（命中打 EXEMPT + 理由）。
+    返回 dict(status=ok|fail|skip|error, ...)
+    """
+    exe = _find_aa_audit()
+    if not exe:
+        return {'status': 'skip',
+                'reason': '未找到 tools/qa/aa_audit.py（可用环境变量 AA_AUDIT 指定；MCP 包内不带 qa/）'}
+    img = os.path.join(project_root, 'resources', 'images')
+    if not os.path.isdir(img):
+        return {'status': 'skip', 'reason': '无 resources/images（未出图 / 不用图）'}
+    jsonp = tempfile.mktemp(suffix='.aa.json')
+    try:
+        r = subprocess.run([sys.executable, exe, img, '--fail', '--json', jsonp],
+                           capture_output=True, text=True, timeout=timeout)
+    except Exception as e:                              # noqa: BLE001
+        return {'status': 'error', 'reason': '%s: %s' % (type(e).__name__, e)}
+    if not os.path.isfile(jsonp):
+        return {'status': 'error',
+                'reason': 'aa_audit 未产出 JSON：%s' % ((r.stderr or r.stdout or '')[-200:])}
+    try:
+        with open(jsonp, encoding='utf-8') as f:
+            rows = json.load(f)
+    except Exception as e:                              # noqa: BLE001
+        return {'status': 'error', 'reason': 'JSON 读取失败 %s' % e}
+    finally:
+        try:
+            os.remove(jsonp)
+        except OSError as e:
+            print('  [NOTE] 临时 JSON 清理失败（不影响结果）：%s (%s)' % (jsonp, e))
+    buckets = {'DEFECT': 'defect', 'WARN': 'warn', 'EXEMPT': 'exempt', 'ERROR': 'error',
+               'CLEAN': 'clean'}
+    out = {'status': 'ok', 'total': len(rows), 'exit': r.returncode, 'audit': exe,
+           'defect': [], 'warn': [], 'exempt': [], 'error': [], 'clean': []}
+    for row in rows:
+        item = {'name': row.get('name'), 'reason': row.get('reason', ''),
+                'w': row.get('w'), 'h': row.get('h'),
+                'resid': row.get('resid_bad'), 'hard': row.get('hard_diag'),
+                'frac': row.get('hard_frac'), 'dirty': row.get('dirty'),
+                'speck': row.get('speck'), 'xy': (row.get('resid_xy') or [])[:3]}
+        out[buckets.get(row.get('verdict'), 'warn')].append(item)
+    if out['defect'] or out['error']:
+        out['status'] = 'fail'
+    return out
+
+
 def main(project_root):
     root = os.path.abspath(project_root)
     if not os.path.isdir(root):
@@ -1482,6 +1556,38 @@ def main(project_root):
                   '真机才会现形' % sp['dynamic'])
         if sp['noPil']:
             print('  [NOTE] 无 PIL，只核引用存在性，未比尺寸')
+
+    print('== 21. 生成图抗锯齿 / 脏边（委派 tools/qa/aa_audit.py --fail；0 token 有退出码）==\n'
+          '       钟工 2026-09-19 A2（原话「把 aa_audit --fail 接进 check_all」）：#19/#20 已被\n'
+          '       V85X 图层释放 / 运行期设图占用 → 为不打乱既有编号与知识库引用，追加为 #21。\n'
+          '       口径：真缺陷（resid_bad / 成片 hard_diag / 无两区边界时退回 dirty）= FAIL；\n'
+          '       WARN 逐条列理由（不阻塞也不静默）；*.9.png marker 环由审计内置豁免；\n'
+          '       白名单只认 tools/qa/aa_audit_allow.json（命中即 EXEMPT 并打印理由）。')
+    aa = check_aa_assets(root)
+    if aa['status'] == 'skip':
+        print('  [NOTE] 跳过：%s' % aa['reason'])
+    elif aa['status'] == 'error':
+        log(False, 'AA 审计执行失败：%s' % aa['reason'])
+    else:
+        log(not aa['defect'],
+            'AA 真缺陷 %s（%s 扫 %d 张；WARN %d / EXEMPT %d / 干净 %d / 审计错误 %d）'
+            % ('0 张' if not aa['defect'] else '%d 张' % len(aa['defect']),
+               os.path.basename(aa['audit']), aa['total'], len(aa['warn']),
+               len(aa['exempt']), len(aa['clean']), len(aa['error'])))
+        for d in aa['defect']:
+            print('  [DEFECT] %-30s %sx%s %s' % (d['name'], d['w'], d['h'], d['reason']))
+            if d['xy']:
+                print('           resid@ %s' % (d['xy'],))
+        for w in aa['warn']:
+            print('  [WARN 需人工确认] %-26s %s' % (w['name'], w['reason']))
+        for e in aa['exempt']:
+            print('  [EXEMPT] %-30s %s' % (e['name'], e['reason']))
+        for e in aa['error']:
+            print('  [ERROR] %-31s %s' % (e['name'], e['reason']))
+        if aa['defect']:
+            warn('AA 真缺陷 %d 张 → 修图后重跑；口径见 references/kb/image-gen-standard.md §1.2'
+                 '（带直通 α 的边界禁用 LANCZOS；描边走整像素带）'
+                 % len(aa['defect']))
 
     print()
     if warnings:
