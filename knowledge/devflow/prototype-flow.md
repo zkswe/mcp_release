@@ -187,3 +187,21 @@ home（首页/主入口）
 - 流程本文件入库：AI 检索 `prototype` / `线框` / `wireframe` / `功能拆解` / `页面层级` 关键词触发
 - 转换：`flythings_html_to_json`（美化稿：**缺省每屏一个 json = 一个页面一个 Activity 一个 ftu**；仅当几屏同属一个 Activity、要合成同 ftu 内多整屏 window 时才传 `merge_windows=true`）-> preview -> pack -> build_ui_flow
 - 口径：多屏落地形态判据 = `page-architecture-spec.md`；屏数核对 = 本文件「分页落地清单」与 `ui_tools/HTML_SUBSET.md`「多屏」节
+
+---
+
+## 已提供设计稿时：先匹配平台与分辨率（硬规则，钟工 2026-09-21 拍板）
+
+检索词：已提供设计稿 / 有设计稿 / 设计图 / 原型稿 / 匹配硬件平台 / 分辨率不一致 / 缩放适配 / scale_audit / rotateScreen / 分辨率选择
+
+用户**已经给了设计稿**（UI 图 / 流程图 / HTML 原型 / 布局 json / ftu）时，**跳过 ①~③ 的线框阶段**，但**必须**先做下面三件事，再动手写工程与逻辑：
+
+1. **匹配硬件平台 + 屏幕物理分辨率与方向**
+   - 先确认目标平台：Z20 / F133 / Z21 / T113 / V85x / SSD20x ...
+   - 再确认**屏幕物理分辨率 + 方向**（`rotateScreen`）。例：F133 面板物理 800x1280 竖屏 + `rotateScreen=270` -> UI 坐标 1280x800（`references/kb/devices.md`、`easyui-cfg` 口径）。
+   - **平台或分辨率没确认，不许开始建工程 / 写逻辑。**
+2. **分辨率必须对齐（不一致就走适配并审计）**
+   - 设计稿分辨率 == 平台分辨率 -> 按稿直接还原。
+   - **不等** -> 走分辨率适配口径（`references/kb/resolution-scaling.md`），并用 `tools/qa/scale_audit.py` 审计：**FAIL 必须 0**；**满宽/满高/发丝线类元素**触发人工评审；缩放只允许明确规则（先乘后除，避免累积误差），保留可核对差异清单。**禁止擅自拉伸糊过去。**
+3. **出确认稿再动手**
+   - 按稿还原 -> `flythings_ui_preview` 出**确认稿**（只出预览，**不 pack**）-> 用户确认 -> `flythings_create_project(platform, resolution)`（**平台+分辨率必须与确认过的一致**，方向写进 `EasyUI.cfg`）-> pack / 写逻辑 / 验收。

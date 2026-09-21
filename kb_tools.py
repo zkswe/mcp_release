@@ -53,7 +53,7 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.101-open'
+MCP_VERSION = '0.27.102-open'
 MCP_BUILD = '2026-09-21'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -69,7 +69,7 @@ def _clip_feature(text, limit=None):
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
 '2026-09-21: **新需求「设计先行」硬闸门：没给设计稿就不许直接建工程（钟工口径 A）** '
-    'v0.27.101-open（钟工原话：「如果用户没有提供设计的 UI 流程图和 UI 界面，AI 需要先进入原型设计，界面设计这个流程。」）——'
+    'v0.27.102-open（钟工原话：「如果用户没有提供设计的 UI 流程图和 UI 界面，AI 需要先进入原型设计，界面设计这个流程。」）——'
     '**根因**：意图闸门注入的工具目录是**平铺**的，`flythings_create_project` 排在第 6 行，'
     'AI 拿到「帮我开发一个新项目（智能家居面板…）」这类**新需求**最自然的动作就是直接建工程写代码，'
     '「设计稿先行」流程只活在 knowledge（靠 AI 主动检索才可能命中）。'
