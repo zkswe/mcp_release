@@ -186,11 +186,17 @@ class TestBuildFlowInstallGuard(unittest.TestCase):
                         'font_check': font_check})
 
     def test_clean_project_has_no_warnings(self):
-        """正例（模板新工程口径）：声明齐全 + 流程成功 → 顶层不许有 warnings。"""
+        """正例（模板新工程口径）：声明齐全 + 流程成功 → 顶层不许有 warnings。
+
+        ⚠️ v0.27.101 起只有一个例外：本工程无设计产物（无 design/、无 *.html）→
+        「设计先行」软闸门会附一条 `未检测到设计确认稿…` 的提示（见 test_design_first_gate.py）。
+        本用例的意图是「不许出现**流程噪音**」，因此先剔除该条再断言，不是放宽。
+        """
         with mock.patch.object(pt, '_run_fun', _fake_fun()):
             r = self._flow(MF_WITH_BASE, font_check='off')
         self.assertTrue(r['ok'], r)
-        self.assertFalse(r.get('warnings'), '正常路径出现噪音: %s' % r.get('warnings'))
+        noise = [w for w in (r.get('warnings') or []) if '未检测到设计确认稿' not in w]
+        self.assertFalse(noise, '正常路径出现噪音: %s' % noise)
         self.assertEqual([s for s in r['steps'] if s['step'] == 'check_framework_deps'], [],
                          '正常路径不该加体检 step')
 

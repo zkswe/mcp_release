@@ -6,7 +6,7 @@
     ① 工具的存在 / 参数 = kb_tools.py 的 OP_NAMES + 函数签名 + docstring 首行
        （AST 离线解析，不导入 kb_tools，无需 mcp/onnx 依赖）
     ② 平台矩阵 = platforms.py（PLATFORMS）
-    ③ 风险分级 / 分类 = **本文件顶部的 RISK / CATEGORY 表**（人工维护，唯一一处）
+    ③ 风险分级 / 分类 / 流程阶段 = **本文件顶部的 RISK / CATEGORY / STAGE 表**（人工维护，唯一一处）
   产出：
     tools_manifest.json = 上面三者的**只读快照**，给文档/外部客户端/检查脚本消费。
     ⚠️ 不要手改 tools_manifest.json；改代码或本文件的表，再重新生成。
@@ -114,6 +114,57 @@ CATEGORY = {
     'flythings_gen_ui_test': 'device',
 }
 
+# ---- 事实来源③：流程阶段（给意图闸门分组用；人工维护，唯一一处）-------------------------
+# 目的（2026-09-21，钟工口径「A. 用户没给设计流程/界面，AI 必须先走原型设计、界面设计」）：
+# 意图闸门注入的工具目录要**按阶段分组**，让模型看到「现在就该用哪些、哪些要等确认后」，
+# 而不是一张平铺清单（平铺时 AI 最自然的动作就是直接 create_project）。
+#   - design：设计阶段就该用（只读检索/解析/校验 + 设计产物生成：原型 -> json -> 确认稿）
+#   - build ：确认之后 / 建工程 / 编译部署 / 依赖 / 多语言 / 设备动作
+#   - other ：与流程阶段无关（版本、元信息、硬件查询）
+# 只影响闸门注入的分组文案，不影响任何 op 的行为。
+STAGE = {
+    # 设计阶段（现在就该用）
+    'flythings_knowledge_search': 'design',
+    'flythings_map_control': 'design',
+    'flythings_read_json': 'design',
+    'flythings_layout_audit': 'design',
+    'flythings_get_project_spec': 'design',
+    'flythings_validate_project': 'design',
+    'flythings_ui_preview': 'design',
+    'flythings_html_to_json': 'design',
+    'flythings_ui_visual': 'design',
+    'flythings_generate_ui_assets': 'design',
+    # 确认后才用（建工程 / 编译部署 / 依赖 / 设备）
+    'flythings_create_project': 'build',
+    'flythings_create_bin_project': 'build',
+    'flythings_attach_cli_tools': 'build',
+    'flythings_build_ui_flow': 'build',
+    'flythings_pack_upgrade': 'build',
+    'flythings_fui_pack': 'build',
+    'flythings_fui_unpack': 'build',
+    'flythings_edit_ftu': 'build',
+    'flythings_verify_assets': 'build',
+    'flythings_check_project_deps': 'build',
+    'flythings_manifest': 'build',
+    'flythings_add_package': 'build',
+    'flythings_list_packages': 'build',
+    'flythings_query_package': 'build',
+    'flythings_package_search': 'build',
+    'flythings_get_package_api': 'build',
+    'flythings_resolve_dependencies': 'build',
+    'flythings_i18n_scan': 'build',
+    'flythings_i18n_add_language': 'build',
+    'flythings_i18n_export': 'build',
+    'flythings_i18n_import': 'build',
+    'flythings_i18n_refactor': 'build',
+    'flythings_i18n_to_json': 'build',
+    'flythings_device_screenshot': 'build',
+    'flythings_gen_ui_test': 'build',
+    # 与流程阶段无关
+    'flythings_get_version': 'other',
+    'flythings_hardware_info': 'other',
+}
+
 # 命令行名词表（回应检讨 §2.4：仓库里 fun / fui / fyx / fuse 四种提法容易混）
 CLI_NAMES = {
     'fun': 'FlyThings 工程工具（create/install/build/launch，<项目>/.fun/<平台>/ 下）',
@@ -151,9 +202,10 @@ def collect():
     extra = sorted(set(defined) - set(op_names))
     if missing or extra:
         raise SystemExit('OP_NAMES vs 函数定义不一致  missing=%s extra=%s' % (missing, extra))
-    unclassified = sorted(set(op_names) - set(RISK) | set(op_names) - set(CATEGORY))
+    unclassified = sorted(set(op_names) - set(RISK) | set(op_names) - set(CATEGORY)
+                          | set(op_names) - set(STAGE))
     if unclassified:
-        raise SystemExit('以下 op 未登记 risk/category（请在本脚本表里补）：%s' % unclassified)
+        raise SystemExit('以下 op 未登记 risk/category/stage（请在本脚本表里补）：%s' % unclassified)
 
     ops = []
     for name in op_names:
@@ -162,7 +214,8 @@ def collect():
         brief = (doc[0] if doc else '')[:90]
         args = [a.arg for a in node.args.args if a.arg not in ('ctx', 'self')]
         ops.append({'op': name, 'brief': brief, 'args': args,
-                    'risk': RISK[name], 'category': CATEGORY[name]})
+                    'risk': RISK[name], 'category': CATEGORY[name],
+                    'stage': STAGE[name]})
     ops.sort(key=lambda o: o['op'])
 
     import platforms as _pl
@@ -187,7 +240,7 @@ def collect():
     return {
         'schema': 1,
         'generatedBy': 'scripts/gen_manifest.py',
-        'note': '只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY 表后重新生成，勿手改本文件',
+        'note': '只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY/STAGE 表后重新生成，勿手改本文件',
         'version': version,
         'build': build,
         'toolCount': len(ops),

@@ -3,6 +3,8 @@
 
 背景（v0.27.31）：catalog.json 原先是手工/临时脚本产物，工具名与参数一改就漂移。
 本脚本用 AST 离线生成（不导入 kb_tools，无需 mcp/onnx 依赖），并支持 --check 做漂移检测。
+流程阶段 stage（design/build/other）从 gen_manifest.py 的 STAGE 表（人工维护的唯一一处）AST 读出，
+供意图闸门按阶段分组注入（v0.27.101）。
 
 用法（在 MCP 根目录或任意位置）：
     python scripts/gen_gate_catalog.py            # 写入 ../flythings_intent_gate/catalog.json
@@ -18,6 +20,23 @@ import sys
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_OUT = os.path.join(os.path.dirname(BASE), 'flythings_intent_gate', 'catalog.json')
+
+
+def read_stage():
+    """从 gen_manifest.py 的 STAGE 表读出 {op: stage}（AST 离线，不导入）。
+
+    单一人工维护处在 gen_manifest.py；这里只读不重定义，避免两处表漂移。
+    """
+    p = os.path.join(BASE, 'scripts', 'gen_manifest.py')
+    tree = ast.parse(io.open(p, encoding='utf-8').read())
+    for n in tree.body:
+        if isinstance(n, ast.Assign) and any(
+                isinstance(t, ast.Name) and t.id == 'STAGE' for t in n.targets):
+            try:
+                return {k: str(v) for k, v in ast.literal_eval(n.value).items()}
+            except (ValueError, SyntaxError):
+                return {}
+    return {}
 
 
 def collect():
@@ -43,6 +62,13 @@ def collect():
     extra = sorted(defined - registered)
     if missing or extra:
         raise SystemExit('OP_NAMES vs 函数定义不一致  missing=%s extra=%s' % (missing, extra))
+    STAGE = read_stage()
+    unregistered = sorted(registered - set(STAGE))
+    if unregistered:
+        raise SystemExit('gen_manifest.STAGE 未登记：%s' % unregistered)
+    bad = sorted(v for v in STAGE.values() if v not in ('design', 'build', 'other'))
+    if bad:
+        raise SystemExit('gen_manifest.STAGE 取值非法（只能 design/build/other）：%s' % bad)
     ops = []
     for n in tree.body:
         if not isinstance(n, ast.FunctionDef) or n.name not in registered:
@@ -50,7 +76,8 @@ def collect():
         doc = (ast.get_docstring(n) or '').strip().splitlines()
         brief = (doc[0] if doc else '')[:90]
         args = [a.arg for a in n.args.args if a.arg not in ('ctx', 'self')]
-        ops.append({'op': n.name, 'brief': brief, 'args': args})
+        ops.append({'op': n.name, 'brief': brief, 'args': args,
+                    'stage': STAGE.get(n.name, 'other')})
     ops.sort(key=lambda o: o['op'])
     return {'count': len(ops), 'ops': ops}
 
@@ -79,6 +106,9 @@ def main():
                     diffs.append('args drift %s: %s -> %s' % (op, cc[op]['args'], cw[op]['args']))
                 if cw[op]['brief'] != cc[op]['brief']:
                     diffs.append('brief drift %s' % op)
+                if cw[op].get('stage') != cc[op].get('stage'):
+                    diffs.append('stage drift %s: %s -> %s'
+                                 % (op, cc[op].get('stage'), cw[op].get('stage')))
         if diffs:
             print('[FAIL] gate catalog out of sync (%d):' % len(diffs))
             for d in diffs:

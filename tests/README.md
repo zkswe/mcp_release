@@ -13,7 +13,14 @@ python scripts/check_consistency.py --with-tests
 ```
 
 依赖：只用标准库 + 仓库已有依赖（Pillow 缺失时图像相关用例自动 skip）。**不连真机**。
-当前规模：**306 项**（1 项按环境 skip）。
+当前规模：**322 项**（1 项按环境 skip）。
+
+> 2026-09-21（v0.27.101-open，钟工口径 A「没给设计稿不许直接建工程」）：新增 `test_design_first_gate.py`（16 项）——
+> 设计产物检测口径（`design/` / `*.html` / `*.preview.html` 算、构建产物目录不算、目录不存在不提示）、
+> `create_project` / `build_ui_flow` 的**软闸门只加 warnings**（失败路径不加、有设计稿不加、success 与业务键逐字段不变）、
+> `create_project` / `get_project_spec` docstring 必须点出「先出设计稿」、docstring 预算仍守住、
+> `tools_manifest.json` 每个 op 带 `stage` 且与意图闸门 `catalog.json` 同步。
+> 同时 `test_deps_install_guard.py` / `test_font_autoscan.py` 的「零 warnings」正例改为**剔除该条设计提示后**再断言（不是放宽：原本要钉的是流程噪音）。
 
 > 2026-09-19（v0.27.96-open，A1/A3）：	est_gen_res_aa.py 的参考真值改为 **Image.BOX 面积平均**，并新增/改写契约：_ss_down 必须走 BOX（0 脏边）、旧 LANCZOS 口径复现（反面教材）、描边整像素带无亚像素混色、边界像素必须纯描边色、gen_btn9 按下态描边跟随按下色、has_straight_alpha() 判据；	est_html2json_ss.py 真值同步改 BOX。
 > 2026-09-21（v0.27.100-open，钟工口径反转）：`test_html2json_multiscreen.py` 重写 —— html2json 多屏缺省从「合成多整屏 window」改为「**每屏一个 json**」（一个 .screen = 一个页面 = 一个 Activity = 一个 ftu），合成多整屏 window 变显式 `--merge-windows`；并新增 `jsonsProduced` / `pages[]` 逐页列全 / 嵌套 `.screen` 降为 warning。
@@ -37,6 +44,7 @@ python scripts/check_consistency.py --with-tests
 | `test_adb_resolve.py` | **adb 单一入口 + launch 默认推设备**（v0.27.84）：`resolve_adb()` 优先级（env `ADB`/`FLYTHINGS_ADB` > 随包 `tools/adb/adb.exe`（三件齐备）> PATH > 空串+提示）；`FLYTHINGS_ADB` 与 `ADB` 等价；`devices -l` 解析（带 model / 网络设备无 model / unauthorized）；网络设备用 `getprop` 补 model 并判平台；型号表口径（实测三条 → Z21/Z20/V85X 且必须带 `source`；F133/F136 串 **platform 留空 + todo，不许猜**；表里不许出现 IP）；`match_platform` 三态（未知 ≠ 不匹配）；0 台 → `needDeviceInput`+`installHint`（含 ADB 驱动 / USB 调试 / 网络接入）；多设备提示**不替你选机器**；`staleOnDevice` 判据（设备侧字节/md5 vs 本地，无 md5 时退化比字节；三个真机坑：`ls -l` 第 5 列才是字节 / 裁剪 rootfs 的 `wc -c` 返回空 / 缺 md5sum 走随仓 busybox 兜底）；`fun` 多设备硬失败（`more than one device/emulator`）hint 识别；`build_ui_flow` 默认 `with_launch=True`（两处签名）、1 台匹配 → `fun launch -s <serial>`、`with_launch=False` **不探测不推设备** |
 | `test_runtime_setpic.py` | **`check_all` 第 20 项「运行期 set...Pic 的图 vs 控件盒」**（v0.27.90）：尺寸相等 → ok；`images/` 自动生成图不等 → `mismatch` FAIL（钉住真机事故：48×16 图进 48×26 盒 → 正圆变竖椭圆）；手绘图（`navi/fh.png` 44×26 进 72×40）→ 仅 `stretched`；`.9.png` 豁免；文件不存在 → `missing`；变量映射不到控件 → `unresolved`（不静默跳过）；`setBackgroundPic(path)` / `snprintf` 拼路径 → 只计 `dynamic`；注释里的调用不算；三元式两个字面量都比；同一 caption 多页且有任一盒子对应就不报 |
 | `test_font_autoscan.py` | **字体自动扫描接线 + 缺中文自动投递**（v0.27.86）+ **cmap 硬判据**（v0.27.87）：`flythings_build_ui_flow` **默认**（`font_check='auto'`）就扫字体并把 `common` 档投进工程 `font/`（step 必须在 `fun build` **之前**、返回体写清写入了哪些文件）；`font_check='off'` → **零字体 step 且不写盘**；无设备退化工程侧 self-scan（`note` 写清「未连设备，仅工程侧检查」、**不碰 adb**）；prefs 的 `font` 指向缺失文件 → 报「引用是断的」；`check_project_deps` 默认**只报不投**（`font_apply=True` 才投）+ `fontCheck` 字段（`missingChinese`/`maxFontBytes`/`advisedTier`/`delivered`/`deviceFonts`）+ `fontIssues` 带一键修复命令；阈值/三版清单/投递动作**单一来源** = `device_font_check`（改 `CJK_SIZE_MIN_KB` 结论跟着变）；设备分支（假设备）扫到 `deviceFonts` 并自动投递、且**不重复探 adb**。**硬判据部分**（离线：仓库自带 ttf + fontTools 现场造字体当假设备数据）：基准集 = GB2312 一级 **3755 字**、阈值 90/50 边界、三条 verdict（真字体 100%→`ok` 不投 / 53.3%→`low` 投 / 拉丁 0%→`missing` 投）+ warning 写明覆盖率、缓存命中不再拉（键随体积变即失效）、**超限 12MB / fontTools 不可用 / 拉取失败 → 退回体积判据且 warnings 写明原因**、只探最大字体、临时目录用完即删、部署后复查 `deviceAfterDeploy`（不一致 → 明说 `pack_upgrade` 才生效） |
+| `test_design_first_gate.py` | **设计先行软闸门**（v0.27.101）：设计产物检测口径（`design/` 目录 / `*.html` / `*.preview.html` 算设计产物，`.fun/Release` 构建产物不算，目录不存在不提示）、`create_project` / `build_ui_flow` 缺设计产物时**只加一条 warnings**（`未检测到设计确认稿…` 带 prototype-flow）且**不改 success / 不改其它键**、失败路径不加、有设计稿不加；`create_project` / `get_project_spec` docstring 必须含「先出设计稿」+ `prototype-flow`；docstring 预算（单 op ≤900 / 全体 ≤12000）仍守住；`tools_manifest.json` / 闸门 `catalog.json` 每个 op 的 `stage` 同步 |
 
 > 工具 docstring 有字数预算（单 op ≤ 900 字符、全体 ≤ 12,000）——由 `scripts/check_consistency.py` 卡；
 > 长尾细节请写进 `knowledge/`（可检索），别塞回 docstring。

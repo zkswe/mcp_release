@@ -382,10 +382,15 @@ class TestBuildFlowFontStep(unittest.TestCase):
         self.assertIn('device_font_check.py --apply', w)
 
     def test_clean_project_zero_font_noise(self):
-        """正例：工程已有 1.5 MB 中文字体 → 无字体 warning、不投递（正常路径零噪音）。"""
+        """正例：工程已有 1.5 MB 中文字体 → 无字体 warning、不投递（正常路径零噪音）。
+
+        ⚠️ v0.27.101 起：「设计先行」软闸门会给无设计产物的工程附一条
+        `未检测到设计确认稿…`（不是字体噪音），本用例先剔除它再断言。
+        """
         r, _ = self._flow(fonts=[('big.ttf', 1536)])
         self.assertTrue(r['ok'], r)
-        self.assertFalse(r.get('warnings'), r.get('warnings'))
+        noise = [w for w in (r.get('warnings') or []) if '未检测到设计确认稿' not in w]
+        self.assertFalse(noise, noise)
         self.assertFalse(r['fontCheck']['missingChinese'])
         step = [s for s in r['steps'] if s['step'] == 'check_font'][0]
         self.assertEqual(step['verdict'], 'project_has_cjk')

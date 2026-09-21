@@ -53,7 +53,7 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.100-open'
+MCP_VERSION = '0.27.101-open'
 MCP_BUILD = '2026-09-21'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -68,6 +68,33 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+'2026-09-21: **新需求「设计先行」硬闸门：没给设计稿就不许直接建工程（钟工口径 A）** '
+    'v0.27.101-open（钟工原话：「如果用户没有提供设计的 UI 流程图和 UI 界面，AI 需要先进入原型设计，界面设计这个流程。」）——'
+    '**根因**：意图闸门注入的工具目录是**平铺**的，`flythings_create_project` 排在第 6 行，'
+    'AI 拿到「帮我开发一个新项目（智能家居面板…）」这类**新需求**最自然的动作就是直接建工程写代码，'
+    '「设计稿先行」流程只活在 knowledge（靠 AI 主动检索才可能命中）。'
+    '**① 意图闸门（tools/flythings_intent_gate/index.js）新增 `newproject` 模式**：'
+    '本地正则判定「动作词（开发/做一个/写一个/实现/新项目/新需求/需求）+ 对象词（面板/界面/UI/App/应用/程序/项目/设备/屏/机）同现」'
+    '即为新需求，权重足够单独触发（score 提到 6）；'
+    '请求里出现设计图/设计稿/原型/线框图/wireframe/流程图/UI图/html/.ftu/.json/切图/标注/蓝湖/Figma/墨刀/axure 之一即视为已提供设计。'
+    '**② 三种情形**：新需求 + 未见设计 -> 注入体**第一段**为「ⓞ 流程前置（硬约束）」，'
+    '明确「必须先走完原型设计 -> 界面设计 -> 用户确认，禁止直接创建工程或写业务代码」，'
+    '并给出五步（功能拆解+确认清单 -> 页面树+page-id -> 单 HTML 多页线框图 -> ui_preview 确认稿 -> 确认后美化/html_to_json/create_project）；'
+    '新需求 + 已带设计 -> **不注入硬约束**，只提醒「先还原 + 出确认稿再 pack / 写逻辑」；非新需求 -> full/slim/meta 行为与改动前**逐字节一致**（零回归）。'
+    '**③ 目录按阶段分组**（仅 newproject 模式）：`### 设计阶段（现在就该用）`（knowledge_search / map_control / read_json / layout_audit / '
+    'get_project_spec / validate_project / ui_preview / html_to_json / ui_visual / generate_ui_assets）'
+    '与 `### 确认后才用（建工程 / 编译部署 / 依赖）`（create_project 等）；'
+    '分组数据来自 catalog.json 新增的 `stage` 字段（design/build/other，人工表在 scripts/gen_manifest.py，'
+    '由 scripts/gen_gate_catalog.py 生成并纳入 --check 漂移检测），插件侧**不硬编码 op 清单**。'
+    '**④ 软闸门（MCP 侧 kb_tools.py）**：`flythings_create_project` / `flythings_build_ui_flow` 只读检测项目目录内有无设计产物'
+    '（design/ 目录、*.html、*.preview.html 等），没有就在返回体附 `warnings[]` 指引走 prototype-flow——'
+    '**只加 warning，不改 success 语义、不阻断**。'
+    '**⑤ 可检索性**：`knowledge/devflow/prototype-flow.md` 头部补检索词与硬口径（新项目/新需求/开发一个/需求拆解/原型设计/界面设计/'
+    '设计稿/参考图/线框图/确认稿/智能家居/面板/屏保/温湿度/MQTT/情景联动）；'
+    '`flythings_create_project` 与 `flythings_get_project_spec` 的 docstring 各加一句「新需求先出设计稿/原型并确认再建工程」'
+    '（docstring 预算内，同时精简约 80 字历史噪音）。'
+    '**⑥ 实测**：钟工原话 -> `mode=newproject score=6`，注入体含「流程前置/禁止直接创建工程/wireframe.html/确认稿/页面树/page-id」，'
+    '且 create_project 只出现在「确认后才用」组（断言 62 项：`node tools/flythings_intent_gate/test.mjs`，含与改动前逐字节回归对照）。',
 '2026-09-21: **口径反转：html2json 多屏缺省改成「每屏一个 json」（一个 .screen = 一个页面 = 一个 Activity = 一个 ftu），合成多整屏 window 变显式 `--merge-windows`** '
     'v0.27.100-open（钟工原话：「不是的，按照客户的设计需求，其实目前已经可以准确的做好了不同的 html 页面分页了。'
     '哪些属于不同的 activity 哪些属于 windows，dialog 其实前期 AI 可以分清楚。分清楚的情况下不同的 activity 做好不同的 json 布局就好了」）——'
@@ -412,7 +439,6 @@ def flythings_knowledge_search(query: str, k: int = 3) -> str:
     """在 FlyThings 知识库（wiki 官方镜像 + knowledge 实践文档）中检索相关文档片段（完全本地，零 Key）。
     遇到 FlyThings 开发问题（控件/API/布局/FTU/回调/编译/平台差异等）时调用。query 用中文描述。
     内置 bge-small-zh 本地模型做向量检索，模型不可用时自动降级 BM25（返回里会显式提示）。
-    （v0.27.36 由 flythings_search 改名：与 flythings_package_search 区分语料）
     """
     kk = max(1, min(int(k), 8))
     warnings = []
@@ -610,7 +636,7 @@ def flythings_read_json(json_path: str) -> str:
 
 
 def flythings_get_project_spec() -> str:
-    """返回 FlyThings 项目结构化规范（目录规则、生成规则、注意事项）。编写/修改项目代码前调用。"""
+    """返回 FlyThings 项目结构化规范（目录规则、生成规则、注意事项）。编写/修改项目代码前调用。新需求先出设计稿/原型并确认。"""
     return json.dumps(pt.flythings_get_project_spec(), ensure_ascii=False)
 
 
@@ -702,8 +728,10 @@ def flythings_build_ui_flow(project_root: str, with_launch: bool = True, device:
     传项目根目录；ftu=json 编译产物：改 json 后 pack。
     ⚠️ src/activity/ 由 IDE 自动生成（禁手改），业务代码只写 src/logic/*.cc。
     """
-    return json.dumps(pt.flythings_build_ui_flow(project_root, with_launch, device,
-                                                 font_check, font_tier), ensure_ascii=False)
+    return json.dumps(_with_design_warning(
+        pt.flythings_build_ui_flow(project_root, with_launch, device,
+                                   font_check, font_tier), project_root),
+        ensure_ascii=False)
 
 
 def flythings_pack_upgrade(project_root: str, out_path: str = '', release_version: str = '',
@@ -914,6 +942,59 @@ def flythings_attach_cli_tools(project_root: str, with_fyx: bool = True) -> str:
     return json.dumps(pt.flythings_attach_cli_tools(project_root, with_fyx), ensure_ascii=False)
 
 
+# ===== 设计先行软闸门（v0.27.101）=====
+# 背景（钟工 2026-09-21 口径 A）：用户没给设计流程/界面时，AI 必须先走「原型设计 -> 界面设计 ->
+# 用户确认」再建工程；意图闸门负责在 prompt 侧拦，这里负责在**开干类工具**侧留痕。
+# 口径：**只读检测 + 只加 warnings，不改 success 语义、不阻断**（避免破坏既有调用与用例）。
+_DESIGN_HINT = (
+    '未检测到设计确认稿：若是新需求，请先走原型设计/界面设计流程'
+    '（prototype-flow：功能拆解 -> 页面树 -> 线框图 -> 确认稿 -> 确认后再建工程）'
+)
+# 设计产物识别：design/ 等目录、任意 *.html（线框图/美化稿/确认稿）、*.preview.html 等
+_DESIGN_DIRS = ('design', 'designs', 'prototype', 'wireframe', 'mockup')
+_DESIGN_WALK_SKIP = {'.git', '.fun', 'Release', '__pycache__', 'node_modules', '.settings'}
+
+
+def _has_design_artifacts(root):
+    """项目目录内是否已有设计产物（design/ 目录 / *.html / *.preview.html / 设计稿类文件）。
+
+    只读、只扫一层浅目录树（跳过构建产物）。任何异常一律当作「有设计」（不提示），
+    保证这个提示永远不会变成新的失败点。
+    """
+    try:
+        root = str(root or '').strip()
+        if not root or not os.path.isdir(root):
+            return True          # 目录还不存在（工具自己会报错）-> 不提示
+        for d in _DESIGN_DIRS:
+            if os.path.isdir(os.path.join(root, d)):
+                return True
+        for base, dirs, files in os.walk(root):
+            dirs[:] = [x for x in dirs if x not in _DESIGN_WALK_SKIP]
+            for f in files:
+                low = f.lower()
+                if low.endswith(('.html', '.htm', '.wireframe')) or 'preview' in low:
+                    return True
+        return False
+    except Exception:
+        return True
+
+
+def _with_design_warning(res, root):
+    """给「开干类」返回值追加设计先行软提示（只 push warnings，不动其它键）。
+
+    失败路径（success/ok 显式为 False）不加：失败原因本身才是要看的，别塞噪音。
+    """
+    try:
+        if (isinstance(res, dict) and res.get('success') is not False
+                and res.get('ok') is not False and not _has_design_artifacts(root)):
+            w = list(res.get('warnings') or [])
+            w.append(_DESIGN_HINT)
+            res['warnings'] = w
+    except Exception:
+        return res
+    return res
+
+
 def flythings_create_project(project_root: str, platform: str, resolution: str,
                              app_name: str = '', with_cli: bool = True, force: bool = False) -> str:
     """从 HelloWord 模板创建 FlyThings 项目，自动替换工程名/分辨率/平台。
@@ -923,9 +1004,12 @@ def flythings_create_project(project_root: str, platform: str, resolution: str,
     ⚠️⚠️ src/activity/ 目录（mainActivity.cpp/h）由 IDE 编译时根据 ftu 自动生成，
     禁止创建/修改/覆盖该目录任何文件！业务代码只能写 src/logic/*.cc；
     mXXXPtr 控件指针 / ID_MAIN_* 宏 / 回调表 / findControlByID 初始化全部由 IDE 自动生成，禁止手写。
+    ⚠️ 新需求请先出设计稿/原型并确认（见 prototype-flow）再建工程。
     """
-    return json.dumps(pt.flythings_create_project(project_root, platform, resolution,
-                                                  app_name, with_cli, force), ensure_ascii=False)
+    return json.dumps(_with_design_warning(
+        pt.flythings_create_project(project_root, platform, resolution,
+                                    app_name, with_cli, force), project_root),
+        ensure_ascii=False)
 
 
 def flythings_check_project_deps(project_root: str, platform: str = _platforms.DEFAULT_PLATFORM,
@@ -1235,7 +1319,7 @@ def flythings_verify_assets(project_root: str) -> str:
     ⚠️ 生成/改完图片后必跑（v0.27.30 阴影丢图事故 = 产物没人核对）。
     盒子来源（图片铁律 #1）：控件 position（backgroundPic/picTab/...）**以及** thumb 自有尺寸
     子盒 thumb.size（v0.27.75 补：此前 31×31 图配 30×30 会一路 PASS）；thumb 无 size → 跳过+warning。
-    布局支持 ui/*.json 与 ui/<分辨率>/*.json 两种真实工程布局（v0.27.33 前只认扁平一层）。
+    布局支持 ui/*.json 与 ui/<分辨率>/*.json 两种真实工程布局。
     返回：
       - missing[] 引用了但文件不存在 → 真问题
       - mismatch[] 自动生成图（铁律 #9）尺寸 != position，或 thumb 图 != thumb.size → 真问题

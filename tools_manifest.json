@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "generatedBy": "scripts/gen_manifest.py",
-  "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY 表后重新生成，勿手改本文件",
-  "version": "0.27.100-open",
+  "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY/STAGE 表后重新生成，勿手改本文件",
+  "version": "0.27.101-open",
   "build": "2026-09-21",
   "toolCount": 37,
   "cli": {
@@ -124,7 +124,8 @@
         "with_install"
       ],
       "risk": "write",
-      "category": "package"
+      "category": "package",
+      "stage": "build"
     },
     {
       "op": "flythings_attach_cli_tools",
@@ -134,7 +135,8 @@
         "with_fyx"
       ],
       "risk": "write",
-      "category": "project"
+      "category": "project",
+      "stage": "build"
     },
     {
       "op": "flythings_build_ui_flow",
@@ -147,7 +149,8 @@
         "font_tier"
       ],
       "risk": "device",
-      "category": "build"
+      "category": "build",
+      "stage": "build"
     },
     {
       "op": "flythings_check_project_deps",
@@ -161,7 +164,8 @@
         "font_apply"
       ],
       "risk": "read",
-      "category": "project"
+      "category": "project",
+      "stage": "build"
     },
     {
       "op": "flythings_create_bin_project",
@@ -175,7 +179,8 @@
         "with_build"
       ],
       "risk": "write",
-      "category": "project"
+      "category": "project",
+      "stage": "build"
     },
     {
       "op": "flythings_create_project",
@@ -189,7 +194,8 @@
         "force"
       ],
       "risk": "write",
-      "category": "project"
+      "category": "project",
+      "stage": "build"
     },
     {
       "op": "flythings_device_screenshot",
@@ -214,7 +220,8 @@
         "layer"
       ],
       "risk": "device",
-      "category": "device"
+      "category": "device",
+      "stage": "build"
     },
     {
       "op": "flythings_edit_ftu",
@@ -226,7 +233,8 @@
         "overwrite"
       ],
       "risk": "write",
-      "category": "layout"
+      "category": "layout",
+      "stage": "build"
     },
     {
       "op": "flythings_fui_pack",
@@ -235,7 +243,8 @@
         "json_path"
       ],
       "risk": "write",
-      "category": "layout"
+      "category": "layout",
+      "stage": "build"
     },
     {
       "op": "flythings_fui_unpack",
@@ -246,7 +255,8 @@
         "overwrite"
       ],
       "risk": "write",
-      "category": "layout"
+      "category": "layout",
+      "stage": "build"
     },
     {
       "op": "flythings_gen_ui_test",
@@ -260,7 +270,8 @@
         "monkey_count"
       ],
       "risk": "device",
-      "category": "device"
+      "category": "device",
+      "stage": "build"
     },
     {
       "op": "flythings_generate_ui_assets",
@@ -270,7 +281,8 @@
         "assets"
       ],
       "risk": "write",
-      "category": "assets"
+      "category": "assets",
+      "stage": "design"
     },
     {
       "op": "flythings_get_package_api",
@@ -281,14 +293,16 @@
         "version"
       ],
       "risk": "read",
-      "category": "package"
+      "category": "package",
+      "stage": "build"
     },
     {
       "op": "flythings_get_project_spec",
-      "brief": "返回 FlyThings 项目结构化规范（目录规则、生成规则、注意事项）。编写/修改项目代码前调用。",
+      "brief": "返回 FlyThings 项目结构化规范（目录规则、生成规则、注意事项）。编写/修改项目代码前调用。新需求先出设计稿/原型并确认。",
       "args": [],
       "risk": "read",
-      "category": "layout"
+      "category": "layout",
+      "stage": "design"
     },
     {
       "op": "flythings_get_version",
@@ -297,7 +311,8 @@
         "compact"
       ],
       "risk": "read",
-      "category": "kbase"
+      "category": "kbase",
+      "stage": "other"
     },
     {
       "op": "flythings_hardware_info",
@@ -307,7 +322,8 @@
         "platform"
       ],
       "risk": "read",
-      "category": "kbase"
+      "category": "kbase",
+      "stage": "other"
     },
     {
       "op": "flythings_html_to_json",
@@ -319,7 +335,8 @@
         "merge_windows"
       ],
       "risk": "write",
-      "category": "layout"
+      "category": "layout",
+      "stage": "design"
     },
     {
       "op": "flythings_i18n_add_language",
@@ -332,7 +349,8 @@
         "context"
       ],
       "risk": "write",
-      "category": "i18n"
+      "category": "i18n",
+      "stage": "build"
     },
     {
       "op": "flythings_i18n_export",
@@ -344,7 +362,8 @@
         "context"
       ],
       "risk": "write",
-      "category": "i18n"
+      "category": "i18n",
+      "stage": "build"
     },
     {
       "op": "flythings_i18n_import",
@@ -356,7 +375,8 @@
         "merge"
       ],
       "risk": "write",
-      "category": "i18n"
+      "category": "i18n",
+      "stage": "build"
     },
     {
       "op": "flythings_i18n_refactor",
@@ -367,7 +387,8 @@
         "dry_run"
       ],
       "risk": "write",
-      "category": "i18n"
+      "category": "i18n",
+      "stage": "build"
     },
     {
       "op": "flythings_i18n_scan",
@@ -376,7 +397,8 @@
         "project_root"
       ],
       "risk": "read",
-      "category": "i18n"
+      "category": "i18n",
+      "stage": "build"
     },
     {
       "op": "flythings_i18n_to_json",
@@ -388,7 +410,8 @@
         "device"
       ],
       "risk": "write",
-      "category": "i18n"
+      "category": "i18n",
+      "stage": "build"
     },
     {
       "op": "flythings_knowledge_search",
@@ -398,7 +421,8 @@
         "k"
       ],
       "risk": "read",
-      "category": "kbase"
+      "category": "kbase",
+      "stage": "design"
     },
     {
       "op": "flythings_layout_audit",
@@ -408,7 +432,8 @@
         "page"
       ],
       "risk": "read",
-      "category": "layout"
+      "category": "layout",
+      "stage": "design"
     },
     {
       "op": "flythings_list_packages",
@@ -417,7 +442,8 @@
         "platform"
       ],
       "risk": "read",
-      "category": "package"
+      "category": "package",
+      "stage": "build"
     },
     {
       "op": "flythings_manifest",
@@ -429,7 +455,8 @@
         "dry_run"
       ],
       "risk": "write",
-      "category": "package"
+      "category": "package",
+      "stage": "build"
     },
     {
       "op": "flythings_map_control",
@@ -439,7 +466,8 @@
         "source"
       ],
       "risk": "read",
-      "category": "layout"
+      "category": "layout",
+      "stage": "design"
     },
     {
       "op": "flythings_pack_upgrade",
@@ -453,7 +481,8 @@
         "dry_run"
       ],
       "risk": "write",
-      "category": "build"
+      "category": "build",
+      "stage": "build"
     },
     {
       "op": "flythings_package_search",
@@ -463,7 +492,8 @@
         "platform"
       ],
       "risk": "read",
-      "category": "package"
+      "category": "package",
+      "stage": "build"
     },
     {
       "op": "flythings_query_package",
@@ -473,7 +503,8 @@
         "platform"
       ],
       "risk": "read",
-      "category": "package"
+      "category": "package",
+      "stage": "build"
     },
     {
       "op": "flythings_read_json",
@@ -482,7 +513,8 @@
         "json_path"
       ],
       "risk": "read",
-      "category": "layout"
+      "category": "layout",
+      "stage": "design"
     },
     {
       "op": "flythings_resolve_dependencies",
@@ -492,7 +524,8 @@
         "platform"
       ],
       "risk": "read",
-      "category": "package"
+      "category": "package",
+      "stage": "build"
     },
     {
       "op": "flythings_ui_preview",
@@ -502,7 +535,8 @@
         "output_dir"
       ],
       "risk": "write",
-      "category": "layout"
+      "category": "layout",
+      "stage": "design"
     },
     {
       "op": "flythings_ui_visual",
@@ -526,7 +560,8 @@
         "show_noise"
       ],
       "risk": "write",
-      "category": "ui-visual"
+      "category": "ui-visual",
+      "stage": "design"
     },
     {
       "op": "flythings_validate_project",
@@ -535,7 +570,8 @@
         "project_root"
       ],
       "risk": "read",
-      "category": "layout"
+      "category": "layout",
+      "stage": "design"
     },
     {
       "op": "flythings_verify_assets",
@@ -544,7 +580,8 @@
         "project_root"
       ],
       "risk": "read",
-      "category": "layout"
+      "category": "layout",
+      "stage": "build"
     }
   ],
   "docs": {
