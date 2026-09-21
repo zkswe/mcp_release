@@ -94,7 +94,7 @@ MCP_FEATURES = [
     '`flythings_create_project` 与 `flythings_get_project_spec` 的 docstring 各加一句「新需求先出设计稿/原型并确认再建工程」'
     '（docstring 预算内，同时精简约 80 字历史噪音）。'
     '**⑥ 实测**：钟工原话 -> `mode=newproject score=6`，注入体含「流程前置/禁止直接创建工程/wireframe.html/确认稿/页面树/page-id」，'
-    '且 create_project 只出现在「确认后才用」组（断言 62 项：`node tools/flythings_intent_gate/test.mjs`，含与改动前逐字节回归对照）。',
+    '且 create_project 只出现在「确认后才用」组（断言 70 项：`node tools/flythings_intent_gate/test.mjs`，含与改动前逐字节回归对照）。',
 '2026-09-21: **口径反转：html2json 多屏缺省改成「每屏一个 json」（一个 .screen = 一个页面 = 一个 Activity = 一个 ftu），合成多整屏 window 变显式 `--merge-windows`** '
     'v0.27.100-open（钟工原话：「不是的，按照客户的设计需求，其实目前已经可以准确的做好了不同的 html 页面分页了。'
     '哪些属于不同的 activity 哪些属于 windows，dialog 其实前期 AI 可以分清楚。分清楚的情况下不同的 activity 做好不同的 json 布局就好了」）——'
