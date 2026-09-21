@@ -53,8 +53,8 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.97-open'
-MCP_BUILD = '2026-09-19'
+MCP_VERSION = '0.27.99-open'
+MCP_BUILD = '2026-09-21'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
 COMPACT_FEATURE_CHARS = 700
@@ -68,6 +68,37 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+'2026-09-21: **多屏设计稿不再被静默压成一页：html2json 多 .screen = N 整屏 window（默认口径）+ `--split-per-page` + 屏数核对闸门** '
+    'v0.27.99-open（钟工：「现在改」；根因：用户的多屏设计稿只生成一个页面）——'
+    '**① 工具层（`ui_tools/html2json.py`）**：业版 `_find_screen()` 递归找到**第一个** `div.screen` 就 return、'
+    '`convert()` 只遍历该屏子节点 → N 屏产物只有第一屏且**零提示**；现改为收集全部 `.screen`（文档顺序）并按'
+    '`page-architecture-spec.md` 默认口径合成**同一个 json 的 N 个整屏 window**（`window__1..window__N` 连续编号，'
+    '首屏 `visible:true`、其余 `false`，`caption=data-page`，position = 整屏）；`split_per_page=True`（CLI `--split-per-page`）'
+    '→ 每屏一个 json（文件名取 `data-page`）供跨业务域 / 独立返回栈场景。'
+    '**② 返回体**：新增 `screensDetected` / `pagesProduced` / `mode` / `jsonPaths`，'
+    '**两者不等一律 `success:false` + error**（禁止再静默丢页）；warnings 逐条列「识别到的页 + 对应 window + visible」。'
+    '**③ 口径统一**：删掉与 page-architecture-spec 相反的 FT-006 旧告警「页面级页面应拆多个 Activity」，'
+    '改写成「同业务域 → 同 ftu 多整屏 window；只有跨业务域 / 需独立生命周期与返回栈 / 超大页面才拆新 ftu」。'
+    '**④ 文档**：`ui_tools/HTML_SUBSET.md` 新增「多屏（多个 .screen）」节；`knowledge/devflow/prototype-flow.md` '
+    '新增③→⑨「分页落地清单（硬规则）」；`page-architecture-spec.md` §0 改「多屏设计稿 = N 屏必须全部落地」+ 屏数核对项。'
+    '**⑤ 用例**：新增 `tests/test_html2json_multiscreen.py`（单屏逐字节回归 / 2 屏合成 / split / 嵌套与重名反例）。',
+'2026-09-20: **新增知识 `devflow/ui-asset-rules.md` 铁律 #11/#12 + 随包审计工具 `ui_tools/corner_audit.py` / `ui_tools/alpha_bg_audit.py` / `ui_tools/asset_audit_rules.json`：切图缺倒角 与「图片背景是黑的（烘了底色）」从设计标准 + 自动拦截两层落地** '
+    'v0.27.98-open（钟工：「控件里面图片背景是黑色的，应该做成透明的，这个设计不符合 flyThings OS 平台的能力」/'
+    '「主界面大量图片依旧存在切图缺倒角问题，这个问题三番五次提出来过的。必须给我从设计标准和拦截上处理好」）——'
+    '① **口径**：标准侧（Linux SoC）支持 PNG alpha，形状类资产必须**真透明**（形状外 α=0）；'
+    '「形状外填页面背景色」只是 **Lite（RGB565 + colorkey）** 的做法，两套口径不能混；'
+    '矩形/卡片/磁贴/药丸**必须有倒角**（半径按工程 `DESIGN.md` 圆角令牌，机读副本 `asset_audit_rules.json`），'
+    '抗锯齿走 ≥4× 超采样 + AREA/BOX；② **判据（可复算）**：边起跑距离 `d = r - sqrt(r-0.25)` 反解 `r_est`，'
+    '直角残留 = `d≤1`；整图 `min(α)≥250` = `no_alpha`（烘底色），内切/图标族角块不透明率 ≥0.5 = `corner_opaque`，'
+    '图标最外 1px 环 ≥0.25（或任一边 ≥0.9）= `edge_bleed`；③ **拦截**：两个审计的 `--fail` 已接进 `check_all`'
+    '**第 22 / 23 项**（真缺陷 = FAIL；满幅/底图族按登记理由 EXEMPT；未登记资产只 NOTE，不静默不误判）；'
+    '回归样本 `tools/qa/samples/` + `python tools/qa/run_samples.py`（15 条断言：正例不误报 + 反例必须被抓住 + 退出码正确）；'
+    '④ **存量实测（ControlTest-F133，153 张）**：缺倒角 4 张（`tile_photos(_p)` / `tile_place(_p)`——'
+    '底边不透明图形 `alpha_composite` 把下层圆角抹平 → BL/BR `d=0`/r_est 0.5px、上两角 30.5px）→ 改「同一张 SS 画布一次成图」后'
+    '四角 `d=25`（r_est 30.5）与其余 10 张磁贴一致；透明底/贴边 5 张（`sig_1/2/3`、`icon_wifi_40x40`、`icon_wifi_56x56`：'
+    '旧 `glyph_icon("wifi")` 描边 2.0 单位 ≈ 弧间距 2.6 单位 → 弧带并合成**实心圆顶**、底部圆点半径按 k² 膨胀贴死底边）'
+    '→ 线框重画（弧 + 点，四周留 ≥1px）后角块 0 / 边环 0；`check_all` **40 项全 PASS**（#21/#22/#23 真缺陷 0 张），'
+    'preview 像素 diff **20 处差异全部落在 3 个被改磁贴实例内**（其余像素零差异）。',
 '2026-09-19: **新增知识 `devflow/canvas-panel-coverage.md`：画布必须盖满面板（未覆盖区露出上一款应用的残留帧 = 伪闪烁）** '
     'v0.27.97-open（钟工 21:10：「总结经验然后上传」；源头 = 钟工真机报障「F133 设备左下角的页标签在页面刷新时总是闪烁第一页内容，'
     '应该是逻辑问题」）——**诊断（零猜测）**：① 设备跑的是 tdesign-f133 包（拉 `/tmp/ui/main.ftu` 反解析后与本地 md5 逐字节一致，'
@@ -629,8 +660,8 @@ def flythings_edit_ftu(ftu_path: str, operations: str, output_ftu: str = '',
     add      {"op":"add","template":"caption或key","newKey":"textview__4","props":{...}}
     set_root {"op":"set_root","props":{"backgroundColor":"#FFFFFF"}}
     客户说「把这个按钮往右移/改文本/换颜色/删掉某控件/复制一个控件」时调用。
-    ftu 是 json 的**编译产物**：本 op = 给变更 → 落到同目录 json → 再 pack 回 ftu
-    （不是改二进制；无 json 源时按能力自动 unpack，详见 knowledge/devflow/ftu-json-pipeline.md）。"""
+    ftu 是 json 的**编译产物**：本 op = 变更落到同目录 json 再 pack 回 ftu
+    （无 json 源时自动 unpack，见 knowledge/devflow/ftu-json-pipeline.md）。"""
     r = pt.flythings_edit_ftu(ftu_path, operations, output_ftu, overwrite)
     return json.dumps(_with_files(r, r.get('ftuPath'), r.get('jsonPath'), r.get('backup')),
                       ensure_ascii=False)
@@ -646,8 +677,8 @@ def flythings_build_ui_flow(project_root: str, with_launch: bool = True, device:
     流程：①时间戳检查（json 为源、改过自动 pack）②fui pack ③fun install ④fun build
     ⑤ **设备探测 + fun launch 推送运行（v0.27.84 起默认）**；只编译传 with_launch=False。
     ⑥ 字体体检：缺中文自动投递 common 思源黑体（font_check='off' 关，font_tier 换版）。
-    ⚠️ 探测不猜：0 台 → needDeviceInput+installHint（ADB 驱动/USB 调试授权/device='<IP>:5555'）；
-    多台 → 列 serial+model+匹配并要 device=；1 台且匹配 → 自动推；install 失败不阻断但给 warnings。
+    ⚠️ 探测不猜：0 台 → needDeviceInput+installHint；多台 → 列 serial+model 再要 device=；
+    1 台且匹配 → 自动推；install 失败不阻断但给 warnings（细节见 adb-and-device-selection.md）。
     返回：launched/pushed/device/model/platformMatch + deviceSync（设备侧 ftu/so 字节+md5 vs 本地）
     + staleOnDevice（true ⇒ 设备上还是旧版）。细节见 knowledge/devflow/adb-and-device-selection.md。
     传项目根目录；ftu=json 编译产物：改 json 后 pack。
@@ -660,16 +691,16 @@ def flythings_build_ui_flow(project_root: str, with_launch: bool = True, device:
 def flythings_pack_upgrade(project_root: str, out_path: str = '', release_version: str = '',
                            ab: bool = False, with_build: bool = False,
                            dry_run: bool = False) -> str:
-    """⚠️ 场景别名（固化升级类意图一律本工具，禁止自造命令；不限触发入口）：
+    """⚠️ 场景别名（固化升级类意图一律本工具，禁自造命令）：
     ① 口语：「打包升级包/出升级包/生成 update.img/固化/刷进设备/烧到机器里/出货版本/
        量产版本/TF卡升级包/OTA 包/整机升级」；
     ② 与「调试/推送到设备」不同：那是 flythings_build_ui_flow（fun launch 临时推送，掉电即失）；
     ③ AI 交付/发布/量产一份可升级版本 → 本工具。
-    流程：fun install →（可选 with_build）fun build → fun pack（out_path→-o；
-      release_version→--release-version；ab=True→--ab 出 AB 系统 OTA 包）。
+    流程：fun install →（with_build 可选）fun build → fun pack（out_path→-o；
+      release_version→--release-version；ab=True→--ab 出 OTA 包）。
     产物 `.fun/<平台>/update.img`，返回路径/大小/时间 + 刷法（TF卡/ADB/远程批量）。
-    同机制可换开机 logo：`boot_logo.JPG` → **MISC 分区**（体积 ≤ MISC 大小），见
-      knowledge/devflow/upgrade-pack-image.md 与 tools/set_boot_logo.py。
+    同机制可换开机 logo：`boot_logo.JPG` → **MISC 分区**（≤ MISC 大小），见
+      knowledge/devflow/upgrade-pack-image.md。
     dry_run=True 只回命令计划不执行（写操作默认安全）。
     ⚠️ Windows：`FATAL sign error 0xc0000135` = 缺 32 位 VC++ 运行时；
       `package xxx not found in local` = 依赖未装，先 fun install。传项目根目录。
@@ -706,22 +737,27 @@ def flythings_ui_preview(target: str, output_dir: str = '') -> str:
     return json.dumps(r, ensure_ascii=False)
 
 
-def flythings_html_to_json(input_html: str, output_json: str = '', res: str = '') -> str:
+def flythings_html_to_json(input_html: str, output_json: str = '', res: str = '',
+                           split_per_page: bool = False) -> str:
     """受限 HTML 交互原型 → ui/*.json 布局（CSS 效果自动转图，产物尺寸 == 控件盒）。
 
     ⚠️ 写原型前先读知识库「HTML_SUBSET 原型规范」（检索：HTML_SUBSET / data-icon 图标 /
-    CSS 效果转图 / JS 交互稿）：控件映射表、data-* 属性、内置图标词、铁律与自动转图清单都在那里；
-    这里只留要点——根节点 <div class="screen" data-res="WxH" data-bg="#RRGGBB">；定位 data-x/y/w/h；
+    CSS 效果转图）：控件映射表、data-* 属性、铁律与自动转图清单都在那里；这里只留要点——根节点 <div class="screen" data-res="WxH" data-bg="#RRGGBB">；定位 data-x/y/w/h；
     字号 data-fs；data-caption 命名；data-pic 自备图；**图标优先**（禁止「按钮+文字」糊弄）；
     文本只用汉字+ASCII+基础符号（禁 emoji）；Z 序 = 书写顺序。
 
-    ⚠️ 工作流红线：客户说明书/参考照片不能直接转 json（先提炼 UI 需求清单给用户确认）；
-    转换后必须先出预览稿给用户确认（只交付 .preview.html 本身），确认 OK 才允许 pack / 写逻辑 / 交付。
-    ⚠️ 效果一律转图片 + 控件组合：渐变/阴影+圆角/emoji/loading 自动出图到 <项目>/resources/images/，
-    json 引用写 images/xxx.png；**禁止 AI 自绘 1x png 或外部生图直出小图**。
-    output_json 缺省 html 同名 .json；res 可覆盖分辨率（如 "800x480"）。
+    ⚠️ 多屏（多个 div.screen，data-page 区分）：**页数 = 屏数，一屏不许丢**。缺省 = 合成同一个
+    json 的 N 个整屏 window（window__1..window__N，首屏 visible:true 其余 false，showWnd/hideWnd 切页）；
+    split_per_page=True = 每屏一个 json（文件名取 data-page）；返回 screensDetected/pagesProduced，
+    两者不等一律 success:false。
+
+    ⚠️ 红线：客户说明书/照片不能直接转 json（先提炼需求清单确认）；转换后先出预览稿
+    确认（只交付 .preview.html），OK 才 pack/写逻辑/交付。效果一律转图片（渐变/阴影+圆角/emoji/
+    loading 自动出图到 <项目>/resources/images/，json 引用 images/xxx.png）；**禁止 AI 自绘 1x png**。
+    output_json 缺省 html 同名 .json；res 覆盖分辨率（如 "800x480"）。
     """
-    return json.dumps(h2j.html2json(input_html, output_json or None, res or None), ensure_ascii=False)
+    return json.dumps(h2j.html2json(input_html, output_json or None, res or None,
+                                    split_per_page=bool(split_per_page)), ensure_ascii=False)
 
 
 def flythings_list_packages(platform: str = '') -> str:
@@ -864,9 +900,10 @@ def flythings_attach_cli_tools(project_root: str, with_fyx: bool = True) -> str:
 
 def flythings_create_project(project_root: str, platform: str, resolution: str,
                              app_name: str = '', with_cli: bool = True, force: bool = False) -> str:
-    """从 HelloWord Demo 复制骨架创建 FlyThings 项目，自动替换工程名/分辨率/平台。
-    传入目标项目根目录、平台（可建工程的口径，由 platforms.py 统一提供）与分辨率（如 800x480）。
+    """从 HelloWord 模板创建 FlyThings 项目，自动替换工程名/分辨率/平台。
+    传入项目根目录、平台（口径由 platforms.py 提供）与分辨率（如 800x480）。
     ⚠️ platform/resolution 必填且必须来自用户明确提供，未指定时先询问，禁止猜测或用默认值。
+    ⚠️ 页数：创建后按设计稿屏数确认（多屏设计稿 = N 屏必须全部落地，见 page-architecture-spec.md）。
     ⚠️⚠️ src/activity/ 目录（mainActivity.cpp/h）由 IDE 编译时根据 ftu 自动生成，
     禁止创建/修改/覆盖该目录任何文件！业务代码只能写 src/logic/*.cc；
     mXXXPtr 控件指针 / ID_MAIN_* 宏 / 回调表 / findControlByID 初始化全部由 IDE 自动生成，禁止手写。
@@ -893,7 +930,6 @@ def flythings_generate_ui_assets(project_root: str, assets: str) -> str:
     assets 为 JSON 数组字符串，每项：{name, size, prompt, emoji, color, kind}
     —— name 必填（自动补 .png）；prompt 有则优先 AI 生图，失败用 emoji，再不行用 color/kind 线条兜底；
     kind 可选 check/charging/wifi/alert/circle/square/star/heart；返回每项实际方式 method(ai/emoji/line)。
-    三级降级（AI 生图 → 本地 emoji → 线条兜底）保证客户无 AI 能力也能出图。
 
     ⚠️ 铁律（尺寸==控件盒、四角 alpha=0、禁 1x 直画/外部生图直出小图）与三条合法出图路径见知识库
     「UI 图片资源铁律与 PNG 抗锯齿管线」（检索：图片资源铁律 / 抗锯齿 / 四角发黑 / 走哪条路出图）。
@@ -1133,16 +1169,14 @@ def flythings_ui_visual(action: str = 'list', project_root: str = '', output_dir
     """UI 可视化三合一入口（action 选动作；旧 ui_editor / ui_edit_apply / ui_diff 已并入本 op）。
 
     - action="editor"：ui/*.json → 可拖拽编辑器网页（<项目>/ui/_edit/<name>.edit.html）。必填
-      project_root；可选 output_dir。用户拖完点「复制 AI 指令」粘给 AI（页面是本地静态文件、
-      无回传通道，只能复制粘贴）；控件/页面能力见知识库「UI 可视化编辑器 用法与能力」。
-    - action="edit_apply"：编辑器导出的变更 JSON 写回 ui/*.json。必填 project_root、changes
-      （JSON 文本或文件路径）；pack 默认 False（不动 ftu）；dry_run=True 只预览不写盘。
+      project_root；可选 output_dir。用户拖完点「复制 AI 指令」粘给 AI（本地静态页，只能复制粘贴）；
+      控件/页面能力见知识库「UI 可视化编辑器 用法与能力」。
+    - action="edit_apply"：变更 JSON 写回 ui/*.json。必填 project_root、changes（JSON 文本或路径）；pack 默认 False（不动 ftu）；dry_run=True 只预览不写盘。
       结构 {"file","resolution","changes":{控件路径:{left,top,width,height}},"props":{控件路径:{...}}}；
       控件路径顶层 "button__1"、嵌套 "window__2/button__3"；写回前自动 .bak，格式不一致拒绝写。
     - action="diff"：两张同尺寸截图像素级对比（0 token 差异清单，不是图）。必填 image_a、image_b；
-      tolerance=2 / shift=1（±1px 抖动）/ blur=0.7 / min_area=4 / noise_bbox=10 压假报警，
-      show_noise 连小碎块一起看，out_png 出标注图、out_json 存清单。
-      跨渲染器（HTML 预览 vs 真机截图）只当骨架参考。
+      tolerance=2 / shift=1（±1px 抖动）/ blur=0.7 / min_area=4 / noise_bbox=10 压假报警；
+      out_png 出标注图、out_json 存清单。跨渲染器（HTML 预览 vs 真机截图）只当骨架参考。
 
     action 传 list（或省略）只回各 action 的必填参数。
     """
@@ -1182,11 +1216,10 @@ def flythings_ui_visual(action: str = 'list', project_root: str = '', output_dir
 def flythings_verify_assets(project_root: str) -> str:
     """核对「json 声明 vs 磁盘产物」：图片引用是否存在 + PNG 尺寸是否 == 盒子。
 
-    ⚠️ 生成/改完图片资源后必跑（v0.27.30 阴影丢图事故就是「产物没人核对」）。
+    ⚠️ 生成/改完图片后必跑（v0.27.30 阴影丢图事故 = 产物没人核对）。
     盒子来源（图片铁律 #1）：控件 position（backgroundPic/picTab/...）**以及** thumb 自有尺寸
     子盒 thumb.size（v0.27.75 补：此前 31×31 图配 30×30 会一路 PASS）；thumb 无 size → 跳过+warning。
-    布局支持 ui/*.json 与 ui/<分辨率>/*.json 两种真实工程布局（v0.27.33 前只认扁平一层，
-    分层工程会「0 页却报 ok」）。
+    布局支持 ui/*.json 与 ui/<分辨率>/*.json 两种真实工程布局（v0.27.33 前只认扁平一层）。
     返回：
       - missing[] 引用了但文件不存在 → 真问题
       - mismatch[] 自动生成图（铁律 #9）尺寸 != position，或 thumb 图 != thumb.size → 真问题
@@ -1219,21 +1252,20 @@ def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png
                                timeout: int = 180, advanced: str = '', layer: str = 'ui') -> str:
     """从**设备真机**抓当前屏幕 → PNG / JPG / BMP，交给视觉模型看或用 flythings_ui_visual(action="diff") 做像素验收。
 
-    何时用：要确认设备上实际显示成什么样（布局对不对、图标锯齿、切图、颜色/文字、改完验收、
-    用户说"我屏幕上看到的是..."而你没有截图）。三段式验收第二步：预览 → 本工具（像素真相）→ ui_diff 比对。
+    何时用：要确认设备上实际显示成什么样（布局/锯齿/切图/颜色/文字/改完验收）。
+    三段式验收第二步：预览 → 本工具（像素真相）→ ui_diff 比对。
 
-    常用（默认参数就够）：默认即抓一张；scale=0.5 或 fmt='jpg', quality=85 省 token；
-    多设备传 device='<设备IP>:5555'（先 adb connect）；方向缺省 rotate='auto' 会读项目工程 EasyUI.cfg
-    的 rotateScreen 自动转正（rotateSource 可自证）；只要应用画面（去黑边）用 crop='auto'。
+    常用（默认参数就够）：默认抓一张；scale=0.5 或 fmt='jpg', quality=85 省 token；
+    多设备传 device='<IP>:5555'（先 adb connect）；rotate='auto' 读工程 EasyUI.cfg 的
+    rotateScreen 转正；只要应用画面（去黑边）用 crop='auto'。
     ⚠️ 抓完把返回的 path 交给看图能力，不要把 raw/文件本身丢给模型。
 
     进阶参数（fb/pixel/width/height/offset_y/flip/rotate/crop/layer/name/timeout）**推荐统一走 advanced**
     （JSON 字符串，如 advanced='{"crop":"auto","pixel":"rgba"}'）；同名显式参数优先于 advanced。
     ⚠️ layer="video"（仅 SigmaStar）：抓**视频层**帧（fb0 只有 UI）。
 
-    ⚠️ 实现要点（设备无 screencap/dd、按 stride 取、双缓冲 pan 抓错帧、32bpp BGRA 通道序、
-    角度只认工程配置 + 三个反面做法）见知识库「真机抓屏 实现要点与踩坑」，
-    检索：抓屏 / 双缓冲 pan / 颜色红蓝互换 / 取图角度 rotateScreen。
+    ⚠️ 实现要点与踩坑（无 screencap/dd、stride 取图、双缓冲 pan 抓错帧、BGRA 通道序、取图角度）
+    见知识库「真机抓屏 实现要点与踩坑」，检索：抓屏 / 双缓冲 pan / 颜色红蓝互换 / 取图角度 rotateScreen。
     """
     if dss is None:
         return json.dumps({'success': False, 'error': 'device_screenshot 不可用（缺 ui_tools/device_screenshot.py 或 Pillow）'},

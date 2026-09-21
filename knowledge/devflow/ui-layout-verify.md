@@ -262,11 +262,15 @@ json 同目录 → 项目根 → 再退 `.9.png` 九宫格变体；data URI 按�
 | **位置不对** | ① 转换时 CSS 的 padding/border/margin 参与了几何 ② 坐标取整偏差累积 ③ 嵌套 window 子坐标必须**相对父窗口** |
 | **切图不对** | 控件尺寸是照着 CSS 猜的，没看真实 PNG 尺寸 → 图片控件尺寸应取 PNG 实际尺寸；同一张图被多个不同尺寸控件引用＝靠缩放硬撑的信号 |
 | **预览丢图** | 资源路径解析（第 6 节），带子目录的引用最容易漏 |
+| **多屏设计稿只落地第一屏** | 转换器只取了第一个 `.screen`（旧版行为）-> 核 `screensDetected` == `pagesProduced` == 设计稿屏数 N；`.screen` 必须并列（嵌套/重名会 success:false，见 `devflow/prototype-flow.md`「分页落地清单」） |
 | **预览只看到首页 / 切不了页** | 整屏 window 多页架构 → 用预览稿顶部**页面切换条**或 `#window__N` hash 直达（第 2-2 节）；隐藏的弹窗用「显示隐藏」幽灵框。若预览稿里没有切换条，说明这个 json 确实只有一个整屏窗口（多半页面是 `showWnd()` 动态加载的另一 json，跑项目级预览就会出「项目页面」行） |
 | **文字被裁** | 文本估算宽度超控件宽，或字号 > 控件高 |
 
 ## 8. 改完布局的检查顺序
 
+0. **屏数核对**（交付前必做，2026-09-21 起）：设计稿 N 屏 <-> 产出 N 页 —— `flythings_html_to_json` 返回的
+   `screensDetected` 必须 == `pagesProduced` == N（不等即 `success:false`，先修 HTML）；同 ftu 形态数整屏
+   window 个数，独立 ftu 形态数 json/ftu 个数；预览还要能**切到每一页**（不能只看到首页，见第 2-2 节）
 1. `flythings_ui_visual(action="editor")` 生成编辑器，先看**红标**（图片尺寸不匹配优先修——那是锯齿/糊的根因）
 2. 拖 / 改属性 → 复制变更 JSON → `flythings_ui_visual(action="edit_apply")`（写回 + pack）
 3. `flythings_build_ui_flow` 推真机，`flythings_device_screenshot` 抓屏，与上一版截图 `flythings_ui_visual(action="diff")` 对比：

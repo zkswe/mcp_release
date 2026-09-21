@@ -1,0 +1,32 @@
+{
+  "_doc": "颜色值 0（不透明黑）误用的豁免登记表（tools/qa/zero_color_audit.py 读取）。命中即 EXEMPT 并打印理由；未登记 → DEFECT。",
+  "_source": "判据与官方基准见 references/kb/image-gen-standard.md §7.6、projects/ControlTest-F133/DESIGN.md §2.1",
+  "_rule_shape": "{control: 控件类型(videoview/*)| field: 字段名(backgroundColor/*) | value: 允许的 0 值 | reason: 登记理由 | evidence: 出处}",
+  "rules": [
+    {
+      "control": "videoview",
+      "field": "backgroundColor",
+      "value": 0,
+      "reason": "视频面必须是不透明黑底（播放前后都是黑场；无素材时即黑场，属预期）。官方基准：basedemo VideoViewDemo-New/VideoPlayerDemo-New videoview backgroundColor=0（2/2）、SampleUI-New video2.json videoview=0。",
+      "evidence": "temp/ct182_m6/basedemo/basedemo_bg.txt；projects/SampleUI-New/ui/1024x600/video2.json"
+    },
+    {
+      "control": "cameraview",
+      "field": "backgroundColor",
+      "value": 0,
+      "reason": "摄像头面同理（官方 CamerDemo videoview/cameraview backgroundColor=0；预览前为黑场）。",
+      "evidence": "temp/ct182_m6/basedemo/basedemo_bg.txt"
+    }
+  ],
+  "exact": [
+    {
+      "file": "controls.json",
+      "path": "window__26/videoview__1/backgroundColor",
+      "value": 0,
+      "reason": "本工程控件矩阵页 20 号格「videoview 视频」：无视频素材，预置黑场（格内另有「需视频素材」标注）。",
+      "evidence": "projects/ControlTest-F133/ui/controls.json；真机截图 temp/ct182_m6/evidence_after/../shots/after_controls.png"
+    }
+  ],
+  "track_allow": [],
+  "_track_allow_shape": "[{pic: 文件名或 * | reason: 登记理由 | evidence: 出处}] —— seekbar 轨道/填充图若是**有意的**整条不透明纯白/纯黑，在此登记；未登记且命中「不透明≥95% 且亮度≥200 或 ≤12」→ DEFECT（切图被当成不透明填充）"
+}

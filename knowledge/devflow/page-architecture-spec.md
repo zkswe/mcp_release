@@ -1,16 +1,27 @@
 # 页面架构规范：ftu vs 同 ftu 内多窗口 + src 业务域目录命名
 
 > 2026-09-13 沛哥定规（确认「跨业务域/独立生命周期 → 独立 ftu；同业务域内的页签/弹窗/二级页 → 同 ftu 内整屏 window」判断正确后入库）。
+> 2026-09-21 钟工修正补充：**多屏设计稿的 N 屏必须全部落地**（旧口径易被误读成「只做一个页面」），
+> 并与 `ui_tools/html2json.py` 的返回字段（`screensDetected`/`pagesProduced`）对齐；
+> html2json 内 FT-006 告警文案已同步改为与本文件一致（两处口径互为引用，禁止再漂移）。
 > 检索词：页面架构/ftu 划分/多窗口/showWnd/整屏 window/二级页/弹窗/目录命名/业务域/src 目录/network media/.cpp .h/单 Activity/多 Activity/一个工程几个 Activity/一个工程几个 ftu/多个页面怎么放/页面放一个 ftu 还是多个。
 
 ## 0. 一句话口径
 
-**默认口径（先看这条，最容易误读）：一个工程默认只有 **一个 Activity**（`ui/main.ftu` + `src/activity/mainActivity.*` + `src/logic/mainLogic.cc`）。
-**同一个业务域里的多个页面 = 同一个 ftu 内的多个整屏 window，用 `showWnd()/hideWnd()` 切换** —— 不要为每个页面新建 ftu/Activity（那样会变成多 Activity：Activity 数量、返回栈、跨页状态都要自己管）。
-拆新 ftu（= 新 Activity）只有三个理由：**跨业务域 / 需独立生命周期与返回栈 / 超大页面**。
+**多屏设计稿 = N 屏必须全部落地（页数 = 屏数，一屏不许丢）**；落地形态二选一：
+
+1. **默认（同业务域）：一个工程一个 Activity —— `ui/main.ftu` + `src/activity/mainActivity.*` + `src/logic/mainLogic.cc`；
+同一个业务域里的多个页面 = 同一个 ftu 内的多个整屏 window，用 `showWnd()/hideWnd()` 切换** ——
+不要为每个页面新建 ftu/Activity（那样会变成多 Activity：Activity 数量、返回栈、跨页状态都要自己管）。
+2. **跨业务域 / 需独立生命周期与返回栈 / 超大页面 → 每屏一个 ftu**（= 新 Activity）：转换时用
+`flythings_html_to_json(split_per_page=true)`（CLI `--split-per-page`）每屏一个 json。
+
+**屏数核对（交付前必做）**：html2json 返回体带 `screensDetected`（识别到几个 `.screen`）与
+`pagesProduced`（实际产出几页），**两者必须相等且等于设计稿屏数 N**；不等一律 `success:false`，
+先修 HTML 再往下走。数屏方法与逐条清单见 `devflow/prototype-flow.md`「分页落地清单（硬规则）」。
 
 **ftu = Activity = 一个独立编译单元（IDE 按 ftu 生成 activity+logic，独立生命周期与返回栈）；window = 同一 Activity 内的显隐（零切换成本、共享控件指针与状态）。**
-所以划分依据是**业务域与生命周期**，不是"页面看起来像不像一页"。
+所以划分依据是**业务域与生命周期**，不是"页面看起来像不像一页"；也不是"为了少几个页面所以只做首页"。
 
 ## 1. 三种页面组织形态
 
@@ -41,6 +52,8 @@
 | 用 window 显隐当"页面跳转"但不管理 `visible` 初值 | 首次进页面所有 window 都不显示（或多页叠着显示） | 首屏 window `visible:true`、其余 `visible:false`；切换只走 `showWnd/hideWnd` |
 | 叠在整屏 window 之上的**装饰件**没设穿透 | 下层列表能看不能拖 / 点行没反应（`touchable=false` 不等于穿透） | `pCtrl->setTouchable(false); pCtrl->setTouchPass(true);`（见 touch-events.md） |
 | 多整屏 window 工程预览/交付只见首页 | 客户只看到首屏 | 预览稿用**页面切换条** / `xxx.preview.html#window__N` 直达（ui-layout-verify.md §2-2） |
+| **多屏设计稿只落地第一屏**（其余屏静默丢掉） | 客户要的 N 页只出来一页（html2json 旧版只取第一个 `.screen` 的行为） | 转换后核 **`screensDetected` == `pagesProduced` == N**；不等看返回值里的 error/failed 先修 HTML（见 prototype-flow.md「分页落地清单」） |
+| 把多屏 HTML 里非首屏的 `.screen` 改成嵌套/删掉 | 屏数悄悄少了，交付缺页 | `.screen` 必须**并列**（嵌套 = 转换报错）；改设计稿就重走一遍屏数核对 |
 
 ## 4. src 目录与文件命名规范
 
@@ -74,6 +87,8 @@ src/
 
 ## 5. 自检清单
 
+- [ ] **屏数核对**：设计稿 N 屏 <-> 产出 N 页（html2json 的 `screensDetected` == `pagesProduced` == N）；
+      同 ftu 形态数整屏 window 个数，独立 ftu 形态数 json/ftu 个数（见 prototype-flow.md「分页落地清单」）
 - [ ] 每个 ftu 对应一个**业务域内**的完整页面单元，页面名与 logic 名同前缀（`main.ftu` ↔ `mainLogic.cc`）
 - [ ] 跨业务域/需独立返回栈的页面是独立 ftu；同域内的页签/二级页/弹窗是同 ftu 内的 window
 - [ ] 同 ftu 多整屏 window 工程：首屏 `visible:true`、其余 `visible:false`，切换只走 `showWnd/hideWnd`

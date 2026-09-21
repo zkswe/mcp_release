@@ -6,11 +6,18 @@
 再 fui pack 生成 ftu 交付设备端。替代每个项目手写 Builder/JSON。
 
 用法：
-    python html2json.py <input.html> [output.json] [--res WxH]
+    python html2json.py <input.html> [output.json] [--res WxH] [--split-per-page]
+
+多屏（HTML 内多个 div.screen）两种落地形态（口径见 knowledge/devflow/page-architecture-spec.md）：
+- 缺省：N 屏 = 同一个 json 内的 N 个整屏 window（键 window__1..window__N 连续编号，
+  首屏 visible:true、其余 visible:false，切页走 showWnd/hideWnd）——同业务域页面走这条；
+- --split-per-page：每屏一个 json（文件名取 data-page），供跨业务域 / 需独立返回栈场景。
+**页数 = 屏数**：screensDetected != pagesProduced 一律 success:false + error（不静默丢页）。
 
 受限 HTML 规范见 HTML_SUBSET.md（元素/class → FlyThings 控件映射表）。
 核心规则自动内建：
 - 控件键 `类型__N` 全局递增；ID 按类型分区；颜色十进制
+- 多屏 .screen：默认合成同 json 多整屏 window，识别到的页一条条写进 warnings
 - window 子控件嵌套其内（相对坐标）；弹窗 modal:true + visible:false
 - Z 序 = HTML 文档顺序（后定义在上层，弹窗最后）
 - 空文本不写 text 字段；edittext 自动 beepEnable/hintTextColor
@@ -654,37 +661,183 @@ class HtmlToJson:
 
         return out
 
-    def convert(self, text):
+    def convert(self, text, split_per_page=False):
+        """受限 HTML -> (pages, warnings, meta)。
+
+        pages = [(page_id, data), ...]（失败/屏数核对不过时为 None）：
+          - 单屏（1 个 .screen）：len==1，产物与旧版逐字段一致（回归保护）；
+          - 多屏默认口径（= knowledge/devflow/page-architecture-spec.md「同业务域 ->
+            同 ftu 多整屏 window」）：len==1，data 内是 N 个整屏 window，
+            键 window__1..window__N 连续编号，首屏 visible:true、其余 visible:false，
+            **页数 = 屏数，一屏不许丢**；
+          - split_per_page=True：len==N，每屏一个 json（页 id 作文件名），供跨业务域 /
+            需独立返回栈 / 超大页面场景（各自独立 ftu）。
+        meta = {screensDetected, pagesProduced, mode, failed[], error?}；
+        screensDetected != pagesProduced 一律写 meta['error']（禁止再静默丢页）。
+        """
         p = _DomParser()
         p.feed(text)
         p.close()
         if p.root is None:
-            return None, ['空 HTML']
-        screen = self._find_screen(p.root)
-        if screen is None:
-            return None, ['未找到 <div class="screen"> 根节点（受限 HTML 必须从 screen 容器开始）']
+            return None, ['空 HTML'], None
+        screens, nested = self._find_screens(p.root)
+        if not screens:
+            return None, ['未找到 <div class="screen"> 根节点（受限 HTML 必须从 screen 容器开始）'], None
+        meta = {'screensDetected': len(screens), 'pagesProduced': 0, 'failed': [],
+                'mode': 'split-per-page' if split_per_page
+                        else ('multi-window' if len(screens) > 1 else 'single-screen')}
+        if nested:
+            meta['error'] = ('.screen 嵌套非法：第 %d 个 .screen 位于另一个 .screen 内部；'
+                             '多屏设计稿必须是**并列**的 .screen（每屏一个，data-page 区分）'
+                             % nested)
+            return None, [], meta
+        warnings = []
+        if split_per_page:
+            warnings.append('识别到 %d 个 .screen（多屏设计稿）：%s'
+                            % (len(screens),
+                               ' / '.join(self._page_label(n, i)
+                                          for i, n in enumerate(screens, 1))))
+            pages, seen = [], set()
+            for k, node in enumerate(screens, 1):
+                pid = self._page_id(node, k)
+                if pid in seen:
+                    meta['failed'].append('%s（第 %d 屏：data-page 重复，split 会互相覆盖）'
+                                          % (pid, k))
+                    continue
+                seen.add(pid)
+                try:
+                    data, w = self._convert_one(node)
+                except Exception as e:
+                    meta['failed'].append('%s（第 %d 屏转换失败: %s: %s）'
+                                          % (pid, k, type(e).__name__, e))
+                    continue
+                warnings += w
+                pages.append((pid, data))
+            meta['pagesProduced'] = len(pages)
+        elif len(screens) == 1:
+            data, w = self._convert_one(screens[0])
+            warnings += w
+            pages = [(self._page_id(screens[0], 1), data)]
+            meta['pagesProduced'] = 1
+        else:
+            warnings.append('识别到 %d 个 .screen（多屏设计稿）：%s'
+                            % (len(screens),
+                               ' / '.join(self._page_label(n, i)
+                                          for i, n in enumerate(screens, 1))))
+            warnings.append('默认口径（page-architecture-spec.md）：已合成到同一个 json 的 %d 个整屏 '
+                            'window（window__1..window__%d 连续编号，首屏 visible:true、'
+                            '其余 visible:false，切页走 showWnd/hideWnd）；若某页跨业务域 / '
+                            '需独立返回栈 / 超大页面，请用 --split-per-page'
+                            '（MCP: split_per_page=true）输出每屏一个 json（各自独立 ftu）'
+                            % (len(screens), len(screens)))
+            data, w = self._compose_windows(screens, meta)
+            warnings += w
+            pages = [(self._page_id(screens[0], 1), data)] if data is not None else []
+        if meta['pagesProduced'] != meta['screensDetected']:
+            meta['error'] = ('屏数核对失败：识别到 %d 个 .screen，仅产出 %d 页%s。'
+                             '禁止静默丢页 —— 请修正 HTML（每屏一个并列 .screen，'
+                             'data-page 唯一）后重转'
+                             % (meta['screensDetected'], meta['pagesProduced'],
+                                ('，失败：' + '；'.join(meta['failed']))
+                                if meta['failed'] else ''))
+            return None, warnings, meta
+        return pages, warnings, meta
+
+    def _page_id(self, node, k):
+        """页 id = .screen 的 data-page（缺失则 page_k）；去掉文件名不安全字符（保留汉字）。"""
+        pid = str(_attr(node.attrs, 'data-page') or '').strip()
+        if not pid:
+            return 'page_%d' % k
+        return re.sub(r'[\\/:*?"<>|\s]+', '_', pid) or ('page_%d' % k)
+
+    def _page_label(self, node, k):
+        """warnings 里的页名：id（data-page-name 有则带中文名）。"""
+        pid = self._page_id(node, k)
+        nm = str(_attr(node.attrs, 'data-page-name') or '').strip()
+        return '%s(%s)' % (pid, nm) if nm else pid
+
+    @staticmethod
+    def _strip_markers(d):
+        """清理转换期内部标记（__ 前缀键）；递归。"""
+        for k in [k for k in d if k.startswith('__')]:
+            del d[k]
+        for v in d.values():
+            if isinstance(v, dict):
+                HtmlToJson._strip_markers(v)
+            elif isinstance(v, list):
+                for x in v:
+                    if isinstance(x, dict):
+                        HtmlToJson._strip_markers(x)
+
+    def _convert_one(self, node):
+        """单屏转换（一个 .screen -> 一个独立 json 的根）；返回 (data, warnings)。"""
         ctx = _Ctx()
         self.ctx = ctx
-        self._open_screen(ctx, screen)
-        for ch in screen.children:
+        self._open_screen(ctx, node)
+        for ch in node.children:
             self._walk(ctx, ch)
-        # 清理内部标记
-        def _clean(d):
-            for k in [k for k in d if k.startswith('__')]:
-                del d[k]
-            for v in d.values():
-                if isinstance(v, dict):
-                    _clean(v)
-                elif isinstance(v, list):
-                    for x in v:
-                        if isinstance(x, dict):
-                            _clean(x)
         if ctx.root:
-            _clean(ctx.root)
+            self._strip_markers(ctx.root)
             self._fix_slidewindow_icon_size(ctx.root)
         return ctx.root, ctx.warnings
 
-    def _fix_slidewindow_icon_size(self, root):
+    def _compose_windows(self, screens, meta):
+        """N 屏 -> 同一 json 内 N 个整屏 window（默认口径，页数 = 屏数）。
+
+        键先占号（window__1..window__N 连续），再逐屏把子控件写进对应 window，
+        避免页内嵌套 window 抢占页号。某屏转换失败 -> 记 failed 并跳过（上层据此报错，
+        不静默丢页）。
+        """
+        first = screens[0]
+        W, H = self._screen_size(first)
+        ctx = _Ctx()
+        self.ctx = ctx
+        self._open_screen(ctx, first)          # 根：分辨率/背景/根 position 取首屏
+        keys = [ctx.key('window') for _ in screens]
+        made = 0
+        for k, (key, node) in enumerate(zip(keys, screens), 1):
+            attrs = node.attrs
+            page = self._page_id(node, k)
+            c = {'backgroundColor': -1, 'caption': page,
+                 'hideTimeOut': -1, 'id': ctx.nid('window'),
+                 'modal': False,
+                 'position': {'height': H, 'left': 0, 'top': 0, 'width': W},
+                 'touchable': False, 'visible': (k == 1)}
+            bg = to_dec(_attr(attrs, 'data-background'))
+            if bg is None:
+                bg = to_dec(_attr(attrs, 'data-bg'))
+            if bg is not None:
+                c['backgroundColor'] = bg
+            hto = parse_px(_attr(attrs, 'data-hide-timeout'))
+            if hto is not None:
+                c['hideTimeOut'] = hto
+            pic = _attr(attrs, 'data-pic')
+            if pic:
+                c['backgroundPic'] = pic if '/' in pic else 'images/' + pic
+            try:
+                ctx.root[key] = c
+                ctx.stack.append(c)
+                for ch in node.children:
+                    self._walk(ctx, ch)
+                ctx.stack.pop()
+            except Exception as e:
+                ctx.stack = []
+                ctx.root.pop(key, None)
+                meta['failed'].append('%s（第 %d 屏转换失败: %s: %s）'
+                                      % (page, k, type(e).__name__, e))
+                continue
+            made += 1
+            ctx.warnings.append('第 %d 屏 %s -> %s（caption=%s，visible=%s）'
+                                % (k, self._page_label(node, k), key, page,
+                                   'true' if k == 1 else 'false'))
+        if ctx.root:
+            self._strip_markers(ctx.root)
+            # 多屏合成：slidewindow 落在整屏 window 内，必须递归才不漏回填 iconSize
+            self._fix_slidewindow_icon_size(ctx.root, recursive=True)
+        meta['pagesProduced'] = made
+        return ctx.root, ctx.warnings
+
+    def _fix_slidewindow_icon_size(self, root, recursive=False):
         """SlideWindow 图标布局铁律（沛哥 2026-09-01）：iconSize 必须按实际图片尺寸，
         不是控件平分格子大小（默认 128 会导致图标位置不对/拉伸）。
         HTML 未显式指定 data-icon-w/h 时，尝试从 items 首张图片读实际尺寸回填；
@@ -715,9 +868,7 @@ class HtmlToJson:
                         continue
             return None
 
-        for key, val in list(root.items()):
-            if not (isinstance(val, dict) and key.startswith('slidewindow__')):
-                continue
+        for key, val in HtmlToJson._slidewindow_dicts(root, recursive=recursive):
             items = val.get('items') or []
             if not items:
                 continue
@@ -757,15 +908,45 @@ class HtmlToJson:
                     f'slidewindow {val.get("caption", key)}: 暂按首图尺寸 {w0}x{h0} 回填 iconSize，'
                     f'请统一图标尺寸后重转')
 
-    @staticmethod
-    def _find_screen(node):
-        if node.tag == 'div' and 'screen' in _classes(node.attrs):
-            return node
-        for ch in node.children:
-            r = HtmlToJson._find_screen(ch)
-            if r is not None:
-                return r
-        return None
+    @classmethod
+    def _find_screens(cls, root):
+        """收集全部 div.screen（文档顺序）。返回 (screens[], nested_index)。
+
+        nested_index = 首个「嵌套 .screen」（位于另一个 .screen 内部）的 1 起序号，无则 None。
+        旧版 _find_screen() 只取第一个 .screen 就 return，多屏设计稿因此被静默压成一页
+        （2026-09-21 修：页数 = 屏数，一屏不许丢）。
+        """
+        found, nested = [], []
+
+        def walk(node, inside):
+            if node.tag == 'div' and 'screen' in _classes(node.attrs):
+                found.append(node)
+                if inside and not nested:
+                    nested.append(len(found))
+                inside = True
+            for ch in node.children:
+                walk(ch, inside)
+
+        walk(root, False)
+        return found, (nested[0] if nested else None)
+
+    @classmethod
+    def _slidewindow_dicts(cls, d, out=None, recursive=True):
+        """取 slidewindow 控件 dict（recursive=True 时递归到嵌套 window 内）。
+
+        单屏旧路径保持**不递归**（与改动前逐字段一致，不多出回填）；
+        多屏合成后 slidewindow 落在整屏 window 内，用 recursive=True 才不会漏回填 iconSize。
+        """
+        if out is None:
+            out = []
+        for key, val in d.items():
+            if not isinstance(val, dict) or '__' not in key:
+                continue
+            if key.startswith('slidewindow__'):
+                out.append((key, val))
+            if recursive:
+                cls._slidewindow_dicts(val, out, recursive)
+        return out
 
     # ---------- 遍历 ----------
     _CSS_EFFECT_PATTERNS = (
@@ -942,24 +1123,31 @@ class HtmlToJson:
         self._leaf(ctx, node, typ)
 
     # ---------- 根节点 ----------
-    def _open_screen(self, ctx, node):
+    def _screen_size(self, node):
+        """.screen 分辨率：res 参数 > data-res > data-width+data-height（.screen 上直接写宽高）
+        > style 里的 width/height > 默认 480x272。
+
+        （res 参数给了但不合法时保持默认 480x272，与旧版行为一致。）"""
         attrs = node.attrs
-        # 分辨率优先级：res 参数 > data-res > data-width+data-height（.screen 上直接写宽高）> 默认 480x272
         res = self.res or _attr(attrs, 'data-res')
         W, H = 480, 272
         if res:
             m = re.match(r'^\s*(\d+)\s*[xX]\s*(\d+)\s*$', str(res))
             if m:
-                W, H = int(m.group(1)), int(m.group(2))
-        else:
-            w_attr = parse_px(_attr(attrs, 'data-width'))
-            h_attr = parse_px(_attr(attrs, 'data-height'))
-            if w_attr and h_attr:
-                W, H = w_attr, h_attr
-            else:
-                style_pos = _style_pos(_attr(attrs, 'style') or '')
-                if style_pos.get('width') and style_pos.get('height'):
-                    W, H = style_pos['width'], style_pos['height']
+                return int(m.group(1)), int(m.group(2))
+            return W, H
+        w_attr = parse_px(_attr(attrs, 'data-width'))
+        h_attr = parse_px(_attr(attrs, 'data-height'))
+        if w_attr and h_attr:
+            return w_attr, h_attr
+        style_pos = _style_pos(_attr(attrs, 'style') or '')
+        if style_pos.get('width') and style_pos.get('height'):
+            return style_pos['width'], style_pos['height']
+        return W, H
+
+    def _open_screen(self, ctx, node):
+        attrs = node.attrs
+        W, H = self._screen_size(node)
         # 背景色：data-background 与 data-bg 互为别名；不写则透明（不设 backgroundColor，navibar/statusbar 校准）
         bg = to_dec(_attr(attrs, 'data-background'))
         if bg is None:
@@ -1907,7 +2095,8 @@ def _walk_ctrls(d, top=False, out=None):
 def _finalize_layout(data, warnings):
     """生成收尾规范（fix.log 规则前移内化，2026-09-03）：
     - FT-009：textview/button 宽高自动扩到最小尺寸公式（超容器则告警不扩）
-    - FT-006：顶层多个互斥全屏 window → 告警（页面级应拆多 Activity）
+    - FT-006：顶层多个互盖的整屏 window -> 告警，按 page-architecture-spec.md 口径
+      说清「同业务域就该这样放，只有跨业务域/独立返回栈/超大页面才拆新 ftu」（不误判为错误）
     原地修改 data，把需人工处理的问题追加到 warnings。
     """
     res = data.get('resolution') or {}
@@ -1971,7 +2160,10 @@ def _finalize_layout(data, warnings):
             nw = pos['width']  # 宽度让位人工处理；高度不足仍自动扩（不挤占水平空间）
         pos['width'], pos['height'] = nw, nh
 
-    # ---- FT-006 页面级多全屏 window（互斥页面应拆多 Activity，不堆单 json）----
+    # ---- FT-006 顶层多个互盖整屏 window（同 ftu 多整屏 window = 官方默认口径）----
+    # 口径来源：knowledge/devflow/page-architecture-spec.md §0/§2（两者文字互引用，禁止再漂移）。
+    # 旧文案「页面级页面应拆多个 Activity」与 page-architecture-spec 的默认口径相反，
+    # 会让 AI 把同业务域的多页硬拆成一堆 Activity（2026-09-21 修正）。
     screen_area = rw * (res.get('height') or 0)
     top_wins = [(k, v) for k, v in _walk_ctrls(data, top=True)
                 if k.startswith('window__') and v.get('position')]
@@ -1990,14 +2182,31 @@ def _finalize_layout(data, warnings):
                     hits.append((pages[i][0], pages[j][0]))
         if hits:
             names = ' / '.join(sorted({k for pair in hits for k in pair}))
-            warnings.append(f'检测到页面级互斥全屏 Window（{names}）：页面级页面应拆多个 Activity '
-                            f'用 Intent 跳转（onUI_intent / openActivity），不要单 json 堆全屏 Window '
-                            f'做 visible 状态机；功能窗口内的局部内容才用 Window 嵌套')
+            warnings.append(
+                f'检测到多个互相盖住的整屏 Window（{names}）：按 knowledge/devflow/'
+                f'page-architecture-spec.md 的默认口径，**同一业务域**内的多页就该这么放'
+                f'（同一个 ftu 内叠多个整屏 window，首屏 visible:true、其余 visible:false，'
+                f'切换只走 showWnd()/hideWnd()：零切换成本、共享控件指针与状态）；'
+                f'**只有跨业务域 / 需独立生命周期与返回栈 / 超大页面**才拆成独立 ftu'
+                f'（新 Activity + openActivity() 跳转，html2json 用 --split-per-page 每屏一个 '
+                f'json）。判据见该文档 §2 决策清单')
     return data
 
 
-def html2json(input_html, output_json=None, res=None, asset_dir=None):
-    """受限 HTML → json 布局。返回 {success, jsonPath, resolution, controls, warnings}。
+def html2json(input_html, output_json=None, res=None, asset_dir=None, split_per_page=False):
+    """受限 HTML → json 布局。
+
+    返回 {success, jsonPath, jsonPaths, screensDetected, pagesProduced, mode,
+          resolution, controls, warnings, ...}（失败时 success:false + error）。
+
+    多屏（HTML 内多个 div.screen）两种落地形态（口径见 knowledge/devflow/page-architecture-spec.md）：
+    - 缺省：N 屏 = 同一个 json 内的 N 个整屏 window（window__1..window__N 连续编号，
+      首屏 visible:true、其余 visible:false，切页走 showWnd/hideWnd）——同业务域走这条；
+    - split_per_page=True：每屏一个 json，文件名取 data-page（去掉文件名不安全字符），
+      输出目录 = output_json 所在目录（output_json 不写 .json 时当目录）/ html 同目录；
+      供跨业务域 / 需独立返回栈 / 超大页面场景（各自独立 ftu）。
+    **屏数核对**：screensDetected != pagesProduced 一律 success:false + error（不静默丢页）。
+    controls = 顶层控件数（多屏合成时 = 整屏 window 数）。
 
     asset_dir：CSS 效果（渐变/阴影/emoji/loading）自动转图输出目录；
     缺省自动定位到项目 resources/images/（json 引用 images/xxx.png 相对 resources 目录，与设备加载一致）：
@@ -2009,6 +2218,15 @@ def html2json(input_html, output_json=None, res=None, asset_dir=None):
     with open(input_html, encoding='utf-8-sig') as f:
         text = f.read()
     warnings = []
+    # split 模式：输出目录（每屏一个 json）
+    split_dir = None
+    if split_per_page:
+        if output_json:
+            split_dir = (os.path.dirname(os.path.abspath(output_json))
+                         if str(output_json).lower().endswith('.json')
+                         else os.path.abspath(output_json))
+        else:
+            split_dir = os.path.dirname(os.path.abspath(input_html))
     if asset_dir is None and output_json:
         out_dir = os.path.dirname(os.path.abspath(output_json))
         if os.path.basename(out_dir) == 'ui':
@@ -2018,21 +2236,53 @@ def html2json(input_html, output_json=None, res=None, asset_dir=None):
             asset_dir = os.path.join(out_dir, 'images')
             warnings.append('output_json 不在 <项目>/ui/ 目录下，自动转图输出到 json 同目录 images/；'
                             '建议把图片移到项目 resources/images/ 后 json 引用 images/xxx.png（相对 resources）')
+    elif asset_dir is None and split_dir:
+        base = os.path.abspath(split_dir)
+        if os.path.basename(base) == 'ui':
+            asset_dir = os.path.join(os.path.dirname(base), 'resources', 'images')
+        else:
+            asset_dir = os.path.join(base, 'images')
     conv = HtmlToJson(res=res, asset_dir=asset_dir)
-    data, w2 = conv.convert(text)
+    pages, w2, meta = conv.convert(text, split_per_page=bool(split_per_page))
     warnings += w2
-    if data is None:
-        return {'success': False, 'error': '未找到 <div class="screen"> 根节点（受限 HTML 必须从 screen 容器开始）'}
-    _finalize_layout(data, warnings)  # 收尾规范：FT-009 最小尺寸 / FT-006 多全屏 window 告警
+    if meta is None:
+        return {'success': False, 'warnings': warnings, 'screensDetected': 0, 'pagesProduced': 0,
+                'error': '未找到 <div class="screen"> 根节点（受限 HTML 必须从 screen 容器开始）'}
+    if meta.get('error') or pages is None:
+        return {'success': False, 'warnings': warnings,
+                'screensDetected': meta.get('screensDetected'),
+                'pagesProduced': meta.get('pagesProduced'),
+                'mode': meta.get('mode'),
+                'error': meta.get('error')
+                         or '未找到 <div class="screen"> 根节点（受限 HTML 必须从 screen 容器开始）'}
+    # 收尾规范：FT-009 最小尺寸 / FT-006 多整屏 window 提醒（每个 json 单独过一遍）
+    for _pid, data in pages:
+        _finalize_layout(data, warnings)
 
-    if output_json:
+    json_paths = []
+    if split_per_page:
+        for pid, data in pages:
+            jp = os.path.join(split_dir, pid + '.json')
+            os.makedirs(os.path.dirname(os.path.abspath(jp)), exist_ok=True)
+            with open(jp, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            json_paths.append(jp)
+        output_json = json_paths[0] if json_paths else output_json
+    elif output_json:
         os.makedirs(os.path.dirname(os.path.abspath(output_json)), exist_ok=True)
         with open(output_json, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+            json.dump(pages[0][1], f, ensure_ascii=False, indent=2)
+        json_paths = [output_json]
 
+    data = pages[0][1]
     resv = data.get('resolution', {})
     count = sum(1 for k, v in data.items() if isinstance(v, dict) and '__' in k)
-    return {'success': True, 'jsonPath': output_json,
+    return {'success': True, 'jsonPath': output_json, 'jsonPaths': json_paths,
+            'screensDetected': meta['screensDetected'],
+            'pagesProduced': meta['pagesProduced'],
+            'mode': meta['mode'],
+            'pages': [{'page': pid, 'json': (json_paths[i] if i < len(json_paths) else None)}
+                      for i, (pid, _d) in enumerate(pages)],
             'resolution': f"{resv.get('width')}x{resv.get('height')}",
             'controls': count, 'warnings': warnings,
             'generatedAssets': conv.gen_count,
@@ -2041,17 +2291,21 @@ def html2json(input_html, output_json=None, res=None, asset_dir=None):
 
 if __name__ == '__main__':
     sys.stdout.reconfigure(encoding='utf-8')
-    args = [a for a in sys.argv[1:] if not a.startswith('--')]
+    argv = sys.argv[1:]
+    split = '--split-per-page' in argv
+    args = [a for a in argv if not a.startswith('--')]
     res = None
-    for a in sys.argv[1:]:
+    for a in argv:
         if a.startswith('--res='):
             res = a.split('=', 1)[1]
     if len(args) < 1:
-        print('用法: python html2json.py <input.html> [output.json] [--res WxH]')
+        print('用法: python html2json.py <input.html> [output.json] [--res WxH] [--split-per-page]')
+        print('  多屏（多个 div.screen）：缺省合成同一 json 的多个整屏 window（window__1..window__N）；')
+        print('  --split-per-page：每屏一个 json，文件名取 data-page（输出目录 = output.json 所在目录）')
         sys.exit(1)
     src = args[0]
     dst = args[1] if len(args) > 1 else os.path.splitext(src)[0] + '.json'
-    r = html2json(src, dst, res=res)
+    r = html2json(src, dst, res=res, split_per_page=split)
     if not r['success']:
         print('[X]', r['error'])
         sys.exit(1)

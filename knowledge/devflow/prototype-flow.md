@@ -61,6 +61,27 @@ home（首页/主入口）
 
 ## ③ HTML 线框图（单 HTML 多页面 + 标注，核心）
 
+### ⚠️ 分页落地清单（硬规则：第 ③ 步的 N 个 .screen，第 ⑨ 步必须 N 页全落地）
+
+★ 这是本流程最容易出错的一步（2026-09-21 修的实际事故：多屏设计稿只生成了一个页面，
+因为转换器只取**第一个** `.screen`）。清单如下，缺一步就是交付事故：
+
+1. **数屏**：第 ③ 步产出多少屏（`wireframe.html` / 美化稿里并列 `div.screen` 的个数）就记下 N，
+   并逐屏写下 `data-page`（后续落地形态、文件名、回调命名都靠它）；
+2. **选形态**（二选一，判据 = `page-architecture-spec.md` §2 决策清单）：
+   - 同业务域 → **一个 ftu 内 N 个整屏 window**（html2json 默认口径）；
+   - 跨业务域 / 需独立生命周期与返回栈 / 超大页面 → **每屏一个 json（各自独立 ftu）**
+     （`flythings_html_to_json` 传 `split_per_page=true`）；
+3. **转 + 核屏数**：`flythings_html_to_json` 返回的 `screensDetected` / `pagesProduced`
+   **必须相等且 == N**；不等就是 `success:false`，先修 HTML（别往下走）；
+4. **预览逐页看**：`flythings_ui_preview` 出来的确认稿要能**切到每一页**
+   （多整屏 window 用页面切换条 / `#window__N` 直达；多 json 用项目页面行），不能只看到首页；
+5. **交付前核对**：设计稿 N 屏 <-> 产物 N 页（json / 整屏 window 个数 / ftu 个数按形态对应），
+   对不上 = **FAIL**，不许交付。
+
+> 工具口径：html2json 返回体带 `screensDetected`/`pagesProduced`，两者不等一律 `success:false`；
+> 屏数 = 页数才是合格物。HTML 写法与两种形态的完整说明见 `ui_tools/HTML_SUBSET.md`「多屏」节。
+
 ### 结构规范（单 HTML 预览所有功能，data-page 区分，AI 后续按此分页）
 
 一个 `wireframe.html` 含全部页面，每页一个 `.screen`，**HTML 注释 + data-page 明确区分**：
@@ -83,7 +104,8 @@ home（首页/主入口）
 ### 标注规范（支持多轮交互/UI 沟通修改）
 
 - **页面标注**：`.screen` 前注释 `<!-- ===== PAGE: xxx 页面名 ===== -->` + `data-page`（id）+ `data-page-name`（中文名）
-  → AI 后续按 `data-page` 分页生成独立 json/ftu
+  - 落地时按 `data-page` 定页 id：同 ftu 多整屏 window 形态 = 该 window 的 `caption`；
+    每屏一个 ftu 形态 = json 文件名（**必须唯一**，重复即报错）
 - **控件标注**：每个控件加 `data-note`（一句话说明功能/交互意图）→ 多轮沟通时客户指「这个按钮」→ AI 按 caption/data-note 定位修改
 - **交互标注**：可交互控件加 `data-goto="目标page"` → 示意跳转关系，后续 logic 回调按此实现
 - **线框风格**：灰阶（#808080 系）、无图片、方框占位 + 文字标注功能点
@@ -124,7 +146,9 @@ home（首页/主入口）
 ## ⑥⑦⑧ 美化稿确认 + 转换交付
 
 1. 选中风格美化稿 → 客户预览确认细节（按钮态/间距/图标）
-2. `flythings_html_to_json` → `ui/*.json`（**按 data-page 分页生成多个 json，每页一个**）
+2. `flythings_html_to_json` → `ui/*.json`（**页数 = 屏数**）：同业务域多页直接转 = 一个 json 内多个整屏
+   window；跨业务域/独立返回栈传 `split_per_page=true` = 每屏一个 json；无论哪种都先看
+   `screensDetected` / `pagesProduced` 是否相等（见上「分页落地清单」）
 3. `flythings_ui_preview` 出预览稿
 4. `flythings_fui_pack` → ftu；`flythings_build_ui_flow` → build + launch
 5. 交付
@@ -137,11 +161,12 @@ home（首页/主入口）
 |---|------|------|
 | 1 | 确认清单 | ✅ 需要：产品名/模块数/功能点数/页面数 |
 | 2 | 语音输入 | 不做，文字输入（语音二期可加 Web Speech API） |
-| 3 | 页面组织 | 单 HTML 多 .screen，data-page 区分，AI 后续按此分页 |
+| 3 | 页面组织 | 单 HTML 多 .screen，data-page 区分，AI 后续按此分页（**页数 = 屏数，一屏不许丢**） |
 | 4 | 美化风格 | 3+ 套方案客户选择（**按实际产品定制，不套固定模板**） |
 | + | 标注信息 | 页面注释 + data-page + data-note + data-goto，支持多轮修改 |
 
 ## 落地工具
 
 - 流程本文件入库：AI 检索 `prototype` / `线框` / `wireframe` / `功能拆解` / `页面层级` 关键词触发
-- 转换：`flythings_html_to_json`（美化稿，data-page 分页）→ preview → pack → build_ui_flow
+- 转换：`flythings_html_to_json`（美化稿：同业务域 -> 一个 json 多个整屏 window；跨域/独立返回栈 -> `split_per_page=true` 每屏一个）-> preview -> pack -> build_ui_flow
+- 口径：多屏落地形态判据 = `page-architecture-spec.md`；屏数核对 = 本文件「分页落地清单」与 `ui_tools/HTML_SUBSET.md`「多屏」节

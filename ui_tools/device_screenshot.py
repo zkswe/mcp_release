@@ -793,10 +793,14 @@ def capture(device='', out='', fmt='png', scale=1.0, quality=90, fb='/dev/fb0',
         except Exception:
             oy2 = None
         if oy2 is not None and oy2 != oy:
+            # ⚠️ 重抓必须**原样带上 crop / layer**（2026-09-20 M6 实测缺陷修复）：
+            # 旧实现漏传 crop → 抓到的是整屏，而返回体里 crop 字段为空，调用方
+            # 以为是「工具不支持/批定无效」，实测复现为「同一参数时而裁时而整屏」
+            # （双缓冲 pan 每次翻页都会触发一次重抓，命中率≈50%）。
             return capture(device=device, out=out, fmt=fmt, scale=scale, quality=quality,
                            fb=fb, width=width, height=height, pixel=pixel, flip=flip,
-                           rotate=rotate, offset_y=-1, timeout=timeout,
-                           keep_raw=keep_raw, name=name, adb=adb, _retry=True)
+                           rotate=rotate, offset_y=-1, timeout=timeout, crop=crop,
+                           layer=layer, keep_raw=keep_raw, name=name, adb=adb, _retry=True)
 
     # ---- 2) 解码
     try:

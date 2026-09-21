@@ -302,6 +302,60 @@ def bordered_cov(w, h, radius, fill, border, border_w=1, rect=None, ss=_COV_SS):
     return img
 
 
+def ring_cov_alpha(w, h, radius, border_w=1, rect=None, ss=_COV_SS):
+    """描边环的**覆盖率** mask（L，0..255 = 描边带在该像素内的面积比例）—— **α 口径**。
+
+    与 `coverage_ring` 的分工（2026-09-20 M8：钟工「ct_card.9.png 倒角严重锯齿」实修）：
+      · `coverage_ring` = **颜色指派**口径（二值：被外形状触达 ∧ 未被内形状完整覆盖）。
+        用途是「给**不透明**形状选哪些像素上描边色」——二值化恰好避免了描边色×填充色的
+        亚像素混色（A3 口径；aa_audit 的 dirty/speck 就是查这个）。
+      · **本函数** = **α 口径**（= 外形状覆盖率 − 内形状覆盖率）。凡把描边做成**半透明层**
+        （α 直接决定可见度）的资产（9-patch 半透明卡片 / 半透明描边按钮…）**必须**用它：
+        二值带当 α 用 = 弧上的外沿过渡被压成 1px 硬阶梯（视觉就是锯齿）。
+    实测（44x44 r14 半透卡片、fill α=22 / ring α=46）：coverage_ring 口径下弧上进入像素的
+    覆盖率恒 ≥ 0.676（最小 α=46，占满值 68 的 0.68）；本口径下 = 0.147（最小 α=10）。
+    门禁：`tools/qa/corner_audit.py` 的 `arc_hard` 判据（标准 §7.7）。
+    """
+    from PIL import ImageChops as _IC
+    if rect is None:
+        rect = (0, 0, w - 1, h - 1)
+    x0, y0, x1, y1 = [int(v) for v in rect]
+    bw = max(1, int(border_w))
+    a_out = coverage_mask(w, h, radius, rect, ss)
+    a_in = coverage_mask(w, h, max(0.0, radius - bw),
+                         (x0 + bw, y0 + bw, x1 - bw, y1 - bw), ss)
+    return _IC.subtract(a_out, a_in)          # 覆盖率差 = 描边带在该像素内的面积比例
+
+
+def card9_alpha(w, h, radius, fill_a, ring_a, border_w=1, rect=None, ss=_COV_SS):
+    """半透明 9-patch 卡片**本体 α** mask（覆盖率口径；9-patch marker 环由 `to_9patch` 加）。
+
+    α = fill_a·cov_out + ring_a·(cov_out − cov_in)（两者面积互不重叠，可直接相加）
+      · 直线段：cov_out=1, cov_in=0 → α = fill_a + ring_a（正好 1px 描边带）
+      · 内区：cov_out=cov_in=1 → α = fill_a
+      · 弧上外沿：cov_in=0 → α = (fill_a+ring_a)·cov_out —— **真覆盖率过渡（0→满）**
+      · 弧上内沿：cov_out=1 → α = (fill_a+ring_a) − ring_a·cov_in —— 满→fill_a 连续过渡
+    RGB 全白（描边与填充同色 → 不存在描边色×填充色的亚像素混色，dirty/speck 不受影响）。
+    """
+    from PIL import ImageChops as _IC
+    cov_out = coverage_mask(w, h, radius, rect, ss)
+    fill = cov_out.point(lambda v: int(v * fill_a / 255.0))
+    ring = ring_cov_alpha(w, h, radius, border_w, rect, ss) \
+        .point(lambda v: int(round(v * ring_a / 255.0)))
+    return _IC.add(fill, ring)
+
+
+def translucent_card9(out_dir, name, w, h, radius, fill_a, ring_a, border_w=1, fill=(255, 255, 255)):
+    """半透明卡片 9-patch：正文（RGB=fill, α=覆盖率口径）+ 四周 marker 环（FT-009 规则）。
+
+    尺寸 w×h 是**内容区**（成品 = (w+2)×(h+2)，最外 1px 是 marker 环）。
+    stretch 区从 radius 起（`to_9patch` 规则 2：排除倒角区）。
+    """
+    img = Image.new('RGBA', (w, h), (fill[0], fill[1], fill[2], 255))
+    img.putalpha(card9_alpha(w, h, radius, fill_a, ring_a, border_w))
+    return to_9patch(img, radius, out_dir, name)
+
+
 def recolor_ring(img, w, h, radius, border, border_w=1, rect=None, ss=_COV_SS):
     """把已有底图（渐变/阴影）的**整像素描边带**改涂成 border 色，α 不动。
 
