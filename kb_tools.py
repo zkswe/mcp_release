@@ -53,7 +53,7 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.102-open'
+MCP_VERSION = '0.27.103-open'
 MCP_BUILD = '2026-09-21'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -68,6 +68,23 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+'2026-09-21: **组件入库 `blur`（高斯模糊铺底）+ 播放页黑胶旋转新增 nanovg(AGG) 后端（A/B 实测：定点更快，nanovg 保留为可切换后端）** '
+    'v0.27.103-open（钟工：「高斯模糊入库。旋转的可以用库里面的 nanovg 处理旋转」）——'
+    '**① `components/blur/`（源码型，无第三方包依赖）**：对外只有 `include/zk/zk_blur.h`（纯 C ABI）：'
+    '`zk_blur_bgra`（同尺寸）/ `zk_blur_prep`（铺底专用：cover 裁切+缩放+可降采样模糊+可放大回）/ '
+    '`zk_blur_darken`（定点压暗）/ 档位 `AUTO|NAIVE2D|SEP_FLOAT|SEP_FIXED|BOX3|RVV`；'
+    '真机 F133 实测：1280x800 铺底输出 320x200 缩图 **88ms**（RVV 71ms）、整链路（解码+模糊+上控件不落盘）**105~141ms**'
+    '（对照 PNG 落盘 395ms）；`SEP_FIXED` 查表档在本平台**反而最慢**（33KB 核表打爆 L1，1280x800 实测 40539ms）→ `platforms.md` 写明「别用」。'
+    '索引：`components/README.md` 模块表 + `knowledge/devflow/reusable-components.md` §7（API 摘要 / 实测表 / 已知限制）。'
+    '**② 旋转双后端（`src/core/VinylSpin.cpp`）**：新增 nanovg 后端 —— `nvgCreateAGG` / `nvgReinitAgge` '
+    '**直接渲染到我们自己的 `_bitmap_t` 缓冲**（不落盘、不进 GL），圆裁剪 + `nvgImagePattern` 贴封面 + `nvgRotate`，'
+    '抗锯齿走 AGG 自带 edgeAntiAlias。**实测（同封面、12fps、同台板）**：定点 42.6% CPU / 每帧 7~11ms / 12.3~12.6fps；'
+    'nanovg 59.8% / 25~42ms / 11.1~11.7fps → **默认仍为定点**（`VS_BACKEND_DEFAULT`；nanovg 一行切换，'
+    '运行期建不起来会**自动回退**定点，不报错）。'
+    '**格式坑（真机隔离探针实测）**：本包 AGG 后端只支持 `NVG_TEXTURE_BGRA` 目标，纹理格式必须与目标一致'
+    '（否则 `Assertion failed: !"not supported format"`），`nvgCreateImageRGBA` 用不了 → 要用 '
+    '`nvgCreateImageRaw(ctx,w,h,NVG_TEXTURE_BGRA,0,data)` 直传 BGRA 源（不用做通道交换）。'
+    '证据与回滚：`temp/mu_vinyl/REPORT_NANOVG.md`、`temp/blur_component/REPORT.md`。',
 '2026-09-21: **新需求「设计先行」硬闸门：没给设计稿就不许直接建工程（钟工口径 A）** '
     'v0.27.102-open（钟工原话：「如果用户没有提供设计的 UI 流程图和 UI 界面，AI 需要先进入原型设计，界面设计这个流程。」）——'
     '**根因**：意图闸门注入的工具目录是**平铺**的，`flythings_create_project` 排在第 6 行，'

@@ -1,0 +1,57 @@
+<!--
+  components/blur —— 引用声明（**源码型模块**：include/ + src/ + example/）
+
+  本模块交付物：
+    include/zk/zk_blur.h        唯一对外头（公开 API 契约，纯 C ABI）
+    src/zk_blur.cpp             档位 0~3（朴素二维 / 分离式 float / 分离式定点查表 / 三次盒式）
+    src/zk_blur_rvv.cpp         档位 4（RVV 0.7.1 向量化；整工程没带向量扩展时自动为桩）
+    example/zk_blur_bench.cpp   各档耗时与误差实测（int main，可编成 bin 直接跑）
+
+  接进工程（源码引入，推荐）：
+    1) 拷 include/zk/zk_blur.h 到工程 src/zk/zk_blur.h；
+    2) 拷 src/*.cpp 到工程能编到的地方（如 src/zk/）；
+    3) 工程里 #include "zk/zk_blur.h" 直接用，**无需声明任何依赖包**。
+
+  依赖：无第三方包（只用 libc 的 malloc/memcpy/expf 与 POSIX clock_gettime）。
+  RVV 档位需要**整工程**编译开关 -march=rv64gcv0p7（GCC 单文件 target 属性在这版工具链上不支持，
+  Xuantie GCC 10.4 实测：`warning: target attribute is not supported on this machine`）。
+
+  注：本模块尚未注册进依赖包仓库，所以下面不写 <package id="blur">；
+      将来若注册进包仓库，工程里只需一行（版本写死，不用 ^ 浮动）：
+        <package id="blur" version="0.1.0"></package>
+-->
+<manifest>
+
+  <!-- 全平台：不需要任何底层包（纯计算）。下面按平台列出「已实测」情况，见 platforms.md。 -->
+  <platform name="F133">
+    <dependencies>
+      <!-- 空：libc/libm 由工具链提供 -->
+    </dependencies>
+  </platform>
+
+  <platform name="F135">
+    <dependencies>
+    </dependencies>
+  </platform>
+
+  <platform name="Z20">
+    <dependencies>
+    </dependencies>
+  </platform>
+
+  <platform name="Z21">
+    <dependencies>
+    </dependencies>
+  </platform>
+
+  <platform name="T113">
+    <dependencies>
+    </dependencies>
+  </platform>
+
+  <platform name="V85X">
+    <dependencies>
+    </dependencies>
+  </platform>
+
+</manifest>

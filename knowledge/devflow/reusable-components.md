@@ -17,6 +17,7 @@
 | 模块 | 类型 | 说明 |
 |---|---|---|
 | `ble/` | 代码型 | BLE 门面 `zk::ble`：把蓝牙收拾成 wxapi 那种（**一个 API 面、两个后端**：中心扫描/连接/GATT + 外设广播/GATT 服务/notify）；中心：F133、V85X；双角色：Z20/Z21/T113EMMC |
+| `blur/` | 代码型 | 高斯模糊（铺底/封面背景）`zk::`：拖一张 4 字节 BGRA 位图进，出一张模糊图；**切歌时算一次**不逐帧重算；带 `prep`/`darken`/`bench_once`，档位 AUTO/BOX3/SEP_*/RVV；真机 F133 缩图铺底 **59~88 ms**（详见 §7） |
 | `fonts/` | 资产型 | 思源黑体三版（常用中文872KB / 全中文7.4MB / 多国语言10.5MB）+ 设备字体自检（缺中文自动投递） |
 
 ---
@@ -113,9 +114,49 @@ components/
 > 用户与 AI 只需要"上层概念 + 直接用组件"，不再让任何人去跑那套排查流程；
 > 因此这类文档已从知识库删除，实现细节只保留在组件自带文档（`components/ble/`）里供维护者查阅。
 
+## 7. 组件实测速查：`blur`（高斯模糊 铺底/封面背景）
+
+**能力**：拿一张 4 字节/像素（BGRA）位图 -> 出一张模糊图。专治「音乐播放器封面高斯模糊铺底」这类
+需求：**切歌时算一次**，平时只显示那张图，不逐帧重算。包底固定、可调强度、可定点压暗保文字可读。
+
+**API 摘要**（唯一对外头 `components/blur/include/zk/zk_blur.h`，纯 C ABI，无第三方包依赖）：
+
+| 函数 | 作用 |
+|---|---|
+| `zk_blur_opts_default(o)` | 推荐默认：AUTO / down=4 / upBack=1 / passes=3 |
+| `zk_blur_bgra(src,w,h,srcStride,radius,dst,dstStride,o)` | 同尺寸模糊 |
+| `zk_blur_prep(src,w,h,srcStride,radius,dst,dw,dh,dstStride,o,outW,outH)` | **铺底专用**：cover 裁切 -> 缩放 ->（可降采样）模糊 ->（可回大）；`outW/outH` 回真实尺寸 |
+| `zk_blur_darken(buf,w,h,stride,factor256)` | 定点压暗（铺底可读性；256 = 不变） |
+| `zk_blur_mode_recommended()` / `zk_blur_mode_active(m)` / `zk_blur_mode_name(m)` / `zk_blur_has_rvv()` | 档位探测（RVV 不可用自动退回 BOX3） |
+| `zk_blur_set_log(fn)` / `zk_blur_bench_once(...)` | 日志钩子 / 单档计时+误差（bench 用） |
+
+**实测性能（真机 F133 / C906，标量构建；1 次 = 全链路，同名次跑 N 次取 min）**：
+
+| 场景 | 参数 | 耗时 |
+|---|---|---|
+| 1280x800 铺底、**输出 320x200 缩图**（显示层拉伸，推荐） | BOX3 r=8 down=1 | **88 ms**（RVV 71 ms） |
+| 同上，真实播放器形态（640x640 封面 -> 320x200） | BOX3 r=8 | 88 ms（RVV 71） |
+| 铺底输出就直接是 1280x800 全尺寸 | BOX3 r=32 down=4 + 放大回 | 447~516 ms |
+| 只要极快（160x100 铺底） | BOX3 r=32 down=8 | 54 ms |
+| **整链路（真实播放页，不落盘）** | 解码 37~57 + 模糊 59~88 + 组装 0 + 上控件 0~1 | **105~141 ms**（对照 PNG 落盘版 395 ms） |
+
+**已知限制（选型前必看）**：
+
+1. **RVV 档要整工程开关**：`-march=rv64gcv0p7` 是**整工程级**的（Xuantie GCC 10.4 不支持单文件
+   `__attribute__((target(...)))`）→ 不想改全工程指令集就用标量档（BOX3）；`zk_blur_has_rvv()/mode_active()`
+   可在运行时确认实际生效档。RVV 实测提速只有 +11~19%（三趟盒式的**横趟有像素间依赖**、滑窗串行，只能标量）。
+2. **`SEP_FIXED`（定点核 + 256 项乘积查表）在本平台反而最慢**：核表 65 taps x 256 x 2B = **33 KB，
+   L1 装不下**，每米像素都在打内存 -> 1280x800 实测 **40539 ms**（比 float 档还慢 3.4 倍）。**不要用**。
+3. 只吃 **4 字节/像素 BGRA**（与 `screencap`/`image_load` 字节序一致）；3 字节源请调用方先补 alpha。
+4. 纯计算、可重入、无全局状态；**别在 UI 线程调大图**（几十~几百 ms），放工作线程（如工程内 `TaskRunner`）。
+5. `radius <= 128`；`down ∈ {1,2,4,8}`（>8 收益见顶）；`threads` 字段保留未实现（C906 单核）。
+
+---
+
 ## 相关
 
 - `components/ble/`（BLE 门面 `zk::ble`：上层直接调；上电/预初始化/线程/TLV 全在组件内部）
+- `components/blur/`（高斯模糊 `zk::`：把 4 字节位图变模糊图；铺底/封面背景；档位与实测见 §7）
 - `components/fonts/`（思源黑体三版 + 设备字体自检）
 - `components/icons/`（Tabler 图标库：语义图标 → 任意分辨率单色 PNG，两条命令出图）
 - `components/ui_v1/`（**框架基线目录，文档型**：当前这代 FlyThings IDE + easyui 的跨框架**控件映射唯一权威表** + 逻辑映射 + 缺口五级处置 + 候选组件登记；**跨框架控件映射查这里**）
