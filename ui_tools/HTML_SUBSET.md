@@ -124,11 +124,18 @@ iconfont class），转换器**自动生成 iconfont 风格矢量线框 PNG**（
 </div>
 ```
 
-## 多屏（多个 `.screen`）：页数 = 屏数，一屏不许丢
+## 多屏（多个 `.screen`）：一个 `.screen` = 一个页面 = 一个 Activity = 一个 json
 
 原型线框图/美化稿允许**一个 HTML 放多屏**（每屏一个并列 `div.screen`，`data-page` 区分，见
 `knowledge/devflow/prototype-flow.md` 的「分页落地清单（硬规则）」）。
-**转换后页数必须等于屏数**，不少于。
+**缺省口径（钟工 2026-09-21）：一个 `.screen` = 一个页面 = 一个 Activity = 一个独立 json（-> 一个独立 ftu）；
+N 个 `.screen` 就产出 N 个 json。** 工具**不会**把多个 `.screen` 合成多窗口。
+**转换后 json 数必须等于屏数**，不少于。
+
+> 「哪些屏属于不同 Activity、哪些属于同一个 `.screen` 内部的 window/dialog」**由 AI 在设计阶段
+> （HTML 原型）判定**：不同 Activity 的屏 -> 各自一个 `.screen`（各自一个 json/ftu）；
+> 同一个 Activity 内部的弹窗/二级浮层 -> 写在该 `.screen` **里面**（`div.window` / `div.modal`），
+> 不另起一个 `.screen`。
 
 ### 结构规范
 
@@ -137,8 +144,11 @@ iconfont class），转换器**自动生成 iconfont 风格矢量线框 PNG**（
 <div class="screen" data-page="detail" data-page-name="详情页" data-res="800x480" data-bg="#101418"> ... </div>
 ```
 
-- 每个 `.screen` = **一屏**，必须**并列**（`.screen` 里不能再套 `.screen`，嵌套 = 报错）；
-- `data-page` = 页 id（缺省 `page_k`）：合成多窗口时作为该整屏 window 的 `caption`，split 时作为 json 文件名；**必须唯一**（重复 = 报错）；
+- 每个 `.screen` = **一页**，必须**并列**（`.screen` 里不能再套 `.screen`；嵌套时按**最外层**算页、
+  内层容器被忽略，转换器给 warning 并点名，不静默）；
+- `data-page` = 页 id（缺省 `page_k`）：缺省口径下就是 **json 文件名**；`--merge-windows` 时作为该整屏 window 的 `caption`；**必须唯一**（重复 = 报错）；
+- 同一 `.screen` 内的 `div.window` / `div.modal`（弹窗）**不是页**：它们是这一页内部的显隐元素
+  （json 里就是该页内的 window 控件），不占页数、也不会被拆成第二个 json；
 - 屏内坐标 = 该屏内的绝对坐标（同单屏规则）；各屏分辨率应一致（以 `--res` / 首屏 `data-res` 为准）；
 - 多屏写法只为「一稿看全流程」，**产物形态由转换参数决定**（下面两种）。
 
@@ -146,26 +156,43 @@ iconfont class），转换器**自动生成 iconfont 风格矢量线框 PNG**（
 
 | 形态 | 怎么转 | 产物 | 什么时候用 |
 |------|--------|------|------------|
-| **默认：同 ftu 多整屏 window** | 直接转（不带参数） | 一个 json：`window__1..window__N` 连续编号，首屏 `visible:true`、其余 `visible:false`，每个 window 的 `position` = 整屏，`caption` = `data-page`；屏内控件挂在对应 window 里（相对该窗口坐标） | **同业务域**的多页（页签 / 二级页 / 遮挡页），代码里 `showWnd()/hideWnd()` 切页 |
-| **每屏一个 json（独立 ftu）** | `--split-per-page`（MCP：`split_per_page=true`） | N 个 json，文件名 = `<data-page>.json`，每份都是普通单屏 json（无整屏 window 包裹） | **跨业务域 / 需独立生命周期与返回栈 / 超大页面**（各自独立 ftu + Activity，`openActivity()` 跳转） |
+| **默认：每屏一个 json（独立 ftu / 独立 Activity）** | 直接转（不带参数） | **N 个 json**，文件名 = `<data-page>.json`（缺省 `page_k.json`），每份都是普通单屏 json（无整屏 window 包裹） | **常态**：每页一个 Activity 一个 ftu（`openActivity()` 跳转）；不同业务域、需独立返回栈、大页面一律走这条 |
+| **合并：同 json 多整屏 window** | `--merge-windows`（MCP：`merge_windows=true`） | **一个 json**：`window__1..window__N` 连续编号，首屏 `visible:true`、其余 `visible:false`，每个 window 的 `position` = 整屏，`caption` = `data-page`；屏内控件挂在对应 window 里（相对该窗口坐标） | **仅当 AI 判定这些屏同属一个 Activity**（同 ftu 内的多个整屏 window，代码里 `showWnd()/hideWnd()` 切页）；页签/设置二级页/遮挡页这类共享控件指针与状态的场景 |
 
-判据见 `knowledge/devflow/page-architecture-spec.md` §2 决策清单（默认口径 = 同 ftu 多整屏 window）。
+判据见 `knowledge/devflow/page-architecture-spec.md` §2 决策清单（缺省 = 每屏一个 json / 一个 Activity）。
+
+### 输出落点
+
+- 单页：写 `output_json` 指定的那个文件（与旧版一致）；
+- 多页（缺省口径）：写 `<输出目录>/<data-page>.json`；`output_json` 写 `.json` = 取它的所在目录，
+  写成目录（不带 `.json`）= 直接用它，省略 = html 同目录；
+- `--merge-windows`：只写一个 json（`output_json` 指定的文件；只给目录时用**首屏 data-page** 命名）。
 
 ### 返回值与错误口径（不许静默丢页）
 
-返回体带 **`screensDetected`**（识别到几个 `.screen`）与 **`pagesProduced`**（实际产出几页）：
+返回体带 **`screensDetected`**（识别到几个 `.screen`）、**`pagesProduced`**（实际产出几页）、
+**`jsonsProduced`**（实际写出几个 json）与 **`pages[]`**（**逐页**列：页名 + 对应的 json 路径；
+`--merge-windows` 时多页指向同一个 json）：
 
-- `screensDetected == pagesProduced` = `success:true`；`warnings` 逐条列出「识别到的页」与「第 k 屏 -> `window__k`（caption / visible）」，并提示跨业务域可改用 `--split-per-page`；
-- **两者不等 = `success:false` + `error`**（`.screen` 嵌套、`data-page` 重复、某屏转换失败等）。
-  这是硬闸门：**交付前必做「屏数核对」**（设计稿 N 屏 <-> 产出 N 页），不过不许交付。
+- `screensDetected == pagesProduced` = `success:true`；`warnings` 逐条列出「识别到的页」与每页落点
+  （缺省 = 每页自己的 json 文件名；`--merge-windows` = `第 k 屏 -> window__k`，并回显「本次按
+  merge-windows 合成」）；
+- **两者不等 = `success:false` + `error`**（`data-page` 重复、某屏转换失败等）。
+  这是硬闸门：**交付前必做「屏数核对」**（设计稿 N 屏 <-> 产出 N 页 = N 个 json），不过不许交付。
 
 ### 最小 2 屏示例
 
 ```html
+<!-- ===== PAGE: home 首页（主入口） ===== -->
 <div class="screen" data-page="home" data-page-name="首页" data-res="800x480" data-bg="#101418">
   <div class="text" data-caption="TitleBar" data-x="0"  data-y="0"   data-w="800" data-h="48">首页</div>
   <div class="btn"  data-caption="BtnGo"    data-x="40" data-y="120" data-w="320" data-h="80" data-goto="detail">去详情</div>
+  <!-- 这一页自己的弹窗：不是新页面，不占屏数 -->
+  <div class="modal" data-caption="ConfirmDlg" data-x="200" data-y="160" data-w="400" data-h="200" data-bg="#202830">
+    <div class="text" data-caption="DlgText" data-x="20" data-y="40" data-w="360" data-h="60">确认退出？</div>
+  </div>
 </div>
+<!-- ===== PAGE: detail 详情页 ===== -->
 <div class="screen" data-page="detail" data-page-name="详情页" data-res="800x480" data-bg="#101418">
   <div class="text" data-caption="DetailTitle" data-x="0"  data-y="0"   data-w="800" data-h="48">详情</div>
   <div class="btn"  data-caption="BtnBack"     data-x="40" data-y="380" data-w="200" data-h="80">返回</div>
@@ -173,8 +200,11 @@ iconfont class），转换器**自动生成 iconfont 风格矢量线框 PNG**（
 ```
 
 ```bash
-python tools/ui_tools/html2json.py ui/wireframe.html ui/main.json                     # 默认：一个 json，两个整屏 window
-python tools/ui_tools/html2json.py ui/wireframe.html ui/main.json --split-per-page    # 每屏一个 json：home.json / detail.json
+# 缺省（推荐）：每屏一个 json -> home.json / detail.json（各自一个 ftu / Activity）
+python tools/ui_tools/html2json.py ui/wireframe.html ui/
+
+# 仅当这些屏同属一个 Activity 时：合成一个 json 的 N 个整屏 window
+python tools/ui_tools/html2json.py ui/wireframe.html ui/main.json --merge-windows
 ```
 
 ## 元素/class → FlyThings 控件映射表
@@ -312,8 +342,11 @@ python tools/ui_tools/html2json.py ui/wireframe.html ui/main.json --split-per-pa
    seekbar 恒带 backgroundColor/thumb/touchable/visible；qrcode 恒带 touchable:true/padding:10/visible；videoview 按 SampleUI
    （touchable:true 无 beepEnable）；listview 恒带 touchable:true/hasScrollbar/backgroundColor 等。
    ⚠️ beepEnable 不强制（交互控件默认支持）；交互控件 touchable 显式 true，容器/纯显示 false。
-10. **多屏（多个并列 `div.screen`）= 页数 = 屏数，一屏不许丢**：转换返回 `screensDetected`/`pagesProduced`，
-   两者不等即 `success:false`；交付前必做「屏数核对」（详见上文「多屏」节 + `knowledge/devflow/page-architecture-spec.md`）。
+10. **多屏 = 一个 `.screen` 一页一个 json（`screensDetected` == `pagesProduced` == `jsonsProduced`）**：
+   缺省每屏一个 json（= 一个 Activity 一个 ftu）；只有**同属一个 Activity 的多个整屏 window** 才用
+   `--merge-windows` 合成一个 json。两者不等即 `success:false`；交付前必做「屏数核对」——
+   **设计稿 N 屏 <-> 产出 N 页（= N 个 json）**（详见上文「多屏」节 + `knowledge/devflow/page-architecture-spec.md`）。
+   页内弹窗（`div.window`/`div.modal`）不是页，写在该 `.screen` 内部即可。
 
 ## ⚠️ 切图 / 图片资源铁律（2026-08-29 羊了个羊实战教训）
 1. **图片尺寸必须与 json 控件尺寸一致**（瓦片 76×76 控件 → 76×76 图；槽位 72×72 → 72×72 图），
@@ -357,8 +390,10 @@ python tools/ui_tools/html2json.py ui/wireframe.html ui/main.json --split-per-pa
 ```bash
 # html → json（默认输出同名 .json）
 python tools/ui_tools/html2json.py ui/main.html ui/main.json
-# 多屏 HTML（多个 div.screen）→ 每屏一个 json（文件名取 data-page）
-python tools/ui_tools/html2json.py ui/main.html ui/main.json --split-per-page
+# 多屏 HTML（多个 div.screen）→ 缺省每屏一个 json（文件名取 data-page）
+python tools/ui_tools/html2json.py ui/main.html ui/
+# 只有「同属一个 Activity 的多个整屏 window」才合并成一个 json
+python tools/ui_tools/html2json.py ui/main.html ui/main.json --merge-windows
 # json → html 预览（客户确认稿；多整屏 window 工程自带页面切换条 + #window__N 直达）
 python tools/ui_tools/json2html.py <项目根目录或json路径>
 # 全检（通用，参数化项目路径，不随项目复制）

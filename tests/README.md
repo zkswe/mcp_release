@@ -13,9 +13,10 @@ python scripts/check_consistency.py --with-tests
 ```
 
 依赖：只用标准库 + 仓库已有依赖（Pillow 缺失时图像相关用例自动 skip）。**不连真机**。
-当前规模：**296 项**（1 项按环境 skip）。
+当前规模：**306 项**（1 项按环境 skip）。
 
 > 2026-09-19（v0.27.96-open，A1/A3）：	est_gen_res_aa.py 的参考真值改为 **Image.BOX 面积平均**，并新增/改写契约：_ss_down 必须走 BOX（0 脏边）、旧 LANCZOS 口径复现（反面教材）、描边整像素带无亚像素混色、边界像素必须纯描边色、gen_btn9 按下态描边跟随按下色、has_straight_alpha() 判据；	est_html2json_ss.py 真值同步改 BOX。
+> 2026-09-21（v0.27.100-open，钟工口径反转）：`test_html2json_multiscreen.py` 重写 —— html2json 多屏缺省从「合成多整屏 window」改为「**每屏一个 json**」（一个 .screen = 一个页面 = 一个 Activity = 一个 ftu），合成多整屏 window 变显式 `--merge-windows`；并新增 `jsonsProduced` / `pages[]` 逐页列全 / 嵌套 `.screen` 降为 warning。
 
 ## 用例分布
 
@@ -28,7 +29,7 @@ python scripts/check_consistency.py --with-tests
 | `test_layout_flow.py` | fui pack 确定性 + affectedFiles；**edit_ftu 默认不覆盖原 ftu**（原文件字节不变、留 .bak、产 `.edited.ftu`）；`flythings_ui_visual(action="edit_apply")` dry_run 不写盘 / 默认不 pack / 写盘留 .bak |
 | `test_asset_pipeline.py` | html2json **黄金样例**（渐变/圆角/阴影/emoji/loading 必须真出图且 PNG 尺寸 == 控件盒 = v0.27.30 三连 bug 防回归）；**`div.text` 的 `data-bgpic` 必须落成 backgroundPic**（v0.27.90：正例 + 裸名补 `images/` + 反例「无 bgpic / 只有 data-bg 的 text 不受影响」+ 有图去底色 + 该图必须与盒 1:1）；已自动转图的效果不许再喊「请切图」；`verify_assets`：分层 `ui/<res>/*.json` 必须扫到、自动生成图尺寸不符 = FAIL、手绘图被拉伸 = 仅提示、缺图 = FAIL、0 页必须 warning；**thumb 自有尺寸子盒**（v0.27.75）：thumb.size 一致 → ok / 31 vs 30 → mismatch FAIL / pressedPic 也核 / 手绘 thumb 只 stretched / 无 size → `skippedNoBox`+warning 不误报 |
 | `test_gen_res_aa.py` | **切图抗锯齿档位**（v0.27.75）：FT-008 契约（`rounded_rect` 的 α≥128 轮廓 == 1x 直画，默认行为钉死）/ `rounded_rect_ss` 在强曲率上必须比 FT-008 准一半（对 16x 超采样理想值）/ ss 越高不更差 / 尺寸·四角透明·半径钳制 / 半透明底无暗边（alpha 预乘） |
-| `test_html2json_multiscreen.py` | **多屏设计稿 = 页数 = 屏数，一屏不许丢**（v0.27.99，钟工 2026-09-21「现在改」）：单屏产物**逐字段+键序**与改动前黄金样例一致（多屏支持不得动单屏）/ 单屏返回 `screensDetected=pagesProduced=1` 且不多加多屏 warning / 无 `.screen` 时回 0/0 + error / **2 屏 → 一个 json 内 `window__1..window__2` 连续编号 + 整屏 + 首屏 visible 其余 false + 屏内控件挂自己窗口 + caption=data-page + 各屏自己的底色** / warnings 逐条列页名与窗口号 + 提示 `--split-per-page` / **split_per_page 每屏一个 json（文件名=data-page，无整屏 window 包裹）+ CLI `--split-per-page` 等价** / **反例**：嵌套 `.screen` 与 split 页名重复 → `success:false`（屏数核对，不静默丢页）/ op 面 `flythings_html_to_json` 同时覆盖两种模式 |
+| `test_html2json_multiscreen.py` | **多屏 = 一个 `.screen` 一页一个 json（v0.27.100 钟工口径）+ 页数 = 屏数，一屏不许丢**：单屏产物**逐字段+键序**与改动前黄金样例一致（口径调整不得动单屏）/ 单屏返回 `screensDetected=pagesProduced=jsonsProduced=1`、pages 1 条、不多加多屏 warning / 无 `.screen` 时回 0/0 + error / **缺省 2 屏 → 2 个 json**（`home.json`/`detail.json`，文件名取 data-page；无整屏 window 包裹；每份与该屏**单独转逐字段一致**）+ `pages[]` 逐页列全（页名 + 各自 json 路径）+ output 写目录 / 缺省 `page_k` 命名 / warnings 讲清「window / dialog 属于屏内部」 / **`merge_windows=true`（CLI `--merge-windows`）→ 1 个 json + `window__1..window__2`**（连续编号、整屏、首屏 visible 其余 false、caption=data-page、屏内控件挂自己窗口、各屏自己的底色）+ pages 逐页列全且都指向同一 json + warnings 回显「本次按 merge-windows 合成」/ **嵌套 `.screen` 降为 warning**（只取最外层、点名嵌套屏 data-page、屏内控件不丢）/ **反例**：`data-page` 重复 → `success:false`（屏数核对，不静默丢页）；同重名在 merge 形态下两窗全在 / op 面签名暴露 `merge_windows` 且**不含**退役的 `split_per_page`；CLI `--merge-windows` 与 API 等价、`--split-per-page` **明确报错（退役）** |
 | `test_html2json_ss.py` | **html2json CSS 出图一律 SS**（v0.27.76）：`SS_DEFAULT`/`_CSS_SS` == 4；渐变药丸与阴影片在 SS 下必须显著优于老路（对 16x 理想值，阴影片比 α 最大偏差）；SS mask 不许引入暗边（边界 RGB 对列内基准）；`crop=False` 「图 == 控件盒」尺寸不受 SS 影响；`border-radius` 解析（`px`/无单位/`%`/多值/无声明默认）+ 端到端 `50%` 真出正圆（覆盖率 ≈ π/4） |
 | `test_ui_visual_merge.py` | ui-visual 三合一（`flythings_ui_visual(action)`）：action="list" 参数目录、未知 action / 缺必填参数 = BAD_PARAMS、editor/edit_apply/diff 三路路由、别家 action 的参数必须回 `visualNote`（不静默忽略）、三个旧名回 OP_RENAMED 且 hint 带该用哪个 action |
 | `test_toolchain_capability.py` | `fui unpack` 能力声明与实际一致（声称能用必须真解出 json；声称不能用必须真解不出）、json→ftu→json 往返语义等价、无 unpack 且缺 json 源时 edit_ftu 必须明确报错；**`flythings_fui_unpack`（v0.27.91）**：默认**覆盖**同目录同名 json（ftu 为真源）、`overwrite=False` 保留 json 源（写 `.unpacked.json`、再解换序号）、非 `.ftu`/文件不存在报错、`output_json` 指定路径（父目录自动建）、`edit_ftu` 在缺 json 时自动 unpack 出编辑源（`unpackedSource`）；**ftu→json 自动同步三条规则**（09-18 口径）：只有 ftu 没 json → 直接转、ftu 比 json 新「分钟级」≥60s → 转同步、新几秒或 json 更新 → **不做**反向（阈值钉住 ≥60）；**异常 ftu（不能反解析）→ 必须报错并带 `hint` 告知用户**（不静默跳过） |

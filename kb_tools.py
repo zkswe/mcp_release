@@ -53,7 +53,7 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.99-open'
+MCP_VERSION = '0.27.100-open'
 MCP_BUILD = '2026-09-21'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -68,6 +68,23 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+'2026-09-21: **口径反转：html2json 多屏缺省改成「每屏一个 json」（一个 .screen = 一个页面 = 一个 Activity = 一个 ftu），合成多整屏 window 变显式 `--merge-windows`** '
+    'v0.27.100-open（钟工原话：「不是的，按照客户的设计需求，其实目前已经可以准确的做好了不同的 html 页面分页了。'
+    '哪些属于不同的 activity 哪些属于 windows，dialog 其实前期 AI 可以分清楚。分清楚的情况下不同的 activity 做好不同的 json 布局就好了」）——'
+    '**① 工具层（`ui_tools/html2json.py`）**：v0.27.99 的缺省（N 屏合成同一 json 的 N 个整屏 window）**做反了**，本条反转：'
+    '缺省 = **每屏一个 json**（文件名取 `data-page`，缺省 `page_k`；输出目录 = output 参数所写目录 / html 同目录；'
+    '单页仍写 output_json 指定的那个文件，与旧版逐字节一致）；`merge_windows=True`（CLI `--merge-windows`）才是'
+    '「N 屏合成同一 json 的 N 个整屏 window」（`window__1..window__N` 连续编号，首屏 `visible:true` 其余 `false`，`caption=data-page`），'
+    '**仅当这些屏同属一个 Activity（同 ftu 内整屏 window）**时用；退役的 `--split-per-page` 明确报错（exit 2，不许静默当缺省）。'
+    '**同屏内部的 window/dialog（弹窗）不是页**（写在 `.screen` 里的 `div.window`/`div.modal`），工具不再把多个 `.screen` 合并成多窗口；'
+    '归属由 AI 在设计阶段（HTML 原型）判定。'
+    '**② 返回体**：`screensDetected`/`pagesProduced` 不变（不等一律 `success:false`），新增 `jsonsProduced`；'
+    '`mode` 三值 `single-screen`/`per-screen`/`merge-windows`；**`pages[]` 逐页列全**（页名 + 各自 json 路径，修掉上一版 merge 形态只列 1 条的瑕疵）。'
+    '**③ 防呆**：嵌套 `.screen` 从 error **降为 warning**（按最外层算页、内层容器忽略但屏内控件保留，warnings 点名）；`data-page` 重复仍 `success:false`（屏数核对）。'
+    '**④ 文档三处统一**：`ui_tools/HTML_SUBSET.md`「多屏」节、`devflow/prototype-flow.md`「分页落地清单」（改成 AI 逐屏判定归属：不同 Activity -> 各自 json/ftu；同 Activity 的 window/dialog -> 同 json 内）、'
+    '`devflow/page-architecture-spec.md` §0（删掉「默认一个工程一个 Activity」那条相反的默认）。'
+    '**⑤ 实测**：2 屏 probe 缺省出 `home.json`/`detail.json`（每份与单独转该屏**逐字段一致**）；`--merge-windows` 出 1 个 json + `window__1/2`（首屏 visible）；'
+    '真实 10 屏设计稿出 **10 个 json**；3 个真实单屏工程产物**逐字节 0 差异**。**⑥ 用例**：`tests/test_html2json_multiscreen.py` 重写为 20 项。',
 '2026-09-21: **多屏设计稿不再被静默压成一页：html2json 多 .screen = N 整屏 window（默认口径）+ `--split-per-page` + 屏数核对闸门** '
     'v0.27.99-open（钟工：「现在改」；根因：用户的多屏设计稿只生成一个页面）——'
     '**① 工具层（`ui_tools/html2json.py`）**：业版 `_find_screen()` 递归找到**第一个** `div.screen` 就 return、'
@@ -81,7 +98,8 @@ MCP_FEATURES = [
     '改写成「同业务域 → 同 ftu 多整屏 window；只有跨业务域 / 需独立生命周期与返回栈 / 超大页面才拆新 ftu」。'
     '**④ 文档**：`ui_tools/HTML_SUBSET.md` 新增「多屏（多个 .screen）」节；`knowledge/devflow/prototype-flow.md` '
     '新增③→⑨「分页落地清单（硬规则）」；`page-architecture-spec.md` §0 改「多屏设计稿 = N 屏必须全部落地」+ 屏数核对项。'
-    '**⑤ 用例**：新增 `tests/test_html2json_multiscreen.py`（单屏逐字节回归 / 2 屏合成 / split / 嵌套与重名反例）。',
+    '**⑤ 用例**：新增 `tests/test_html2json_multiscreen.py`（单屏逐字节回归 / 2 屏合成 / split / 嵌套与重名反例）。'
+    '**（注意：本条里的「默认口径 = 合成多整屏 window」已被 v0.27.100 反转 —— 缺省改成每屏一个 json，合成多整屏 window 改为显式 `--merge-windows`；以上一条为准）**',
 '2026-09-20: **新增知识 `devflow/ui-asset-rules.md` 铁律 #11/#12 + 随包审计工具 `ui_tools/corner_audit.py` / `ui_tools/alpha_bg_audit.py` / `ui_tools/asset_audit_rules.json`：切图缺倒角 与「图片背景是黑的（烘了底色）」从设计标准 + 自动拦截两层落地** '
     'v0.27.98-open（钟工：「控件里面图片背景是黑色的，应该做成透明的，这个设计不符合 flyThings OS 平台的能力」/'
     '「主界面大量图片依旧存在切图缺倒角问题，这个问题三番五次提出来过的。必须给我从设计标准和拦截上处理好」）——'
@@ -738,26 +756,24 @@ def flythings_ui_preview(target: str, output_dir: str = '') -> str:
 
 
 def flythings_html_to_json(input_html: str, output_json: str = '', res: str = '',
-                           split_per_page: bool = False) -> str:
-    """受限 HTML 交互原型 → ui/*.json 布局（CSS 效果自动转图，产物尺寸 == 控件盒）。
+                           merge_windows: bool = False) -> str:
+    """受限 HTML 交互原型 -> ui/*.json（CSS 效果自动转图；产物尺寸 == 控件盒）。
 
-    ⚠️ 写原型前先读知识库「HTML_SUBSET 原型规范」（检索：HTML_SUBSET / data-icon 图标 /
-    CSS 效果转图）：控件映射表、data-* 属性、铁律与自动转图清单都在那里；这里只留要点——根节点 <div class="screen" data-res="WxH" data-bg="#RRGGBB">；定位 data-x/y/w/h；
-    字号 data-fs；data-caption 命名；data-pic 自备图；**图标优先**（禁止「按钮+文字」糊弄）；
-    文本只用汉字+ASCII+基础符号（禁 emoji）；Z 序 = 书写顺序。
+[WARN] 动手前先读《HTML_SUBSET 原型规范》（检索 HTML_SUBSET / data-icon / CSS 效果转图）：控件映射表、
+data-* 属性、铁律、自动转图清单都在那里。根节点 `<div class="screen" data-res="WxH" data-bg="#RRGGBB">`；
+定位 data-x/y/w/h；字号 data-fs；命名 data-caption；自备图 data-pic；图标优先；文本只用汉字+ASCII+基础符号。
 
-    ⚠️ 多屏（多个 div.screen，data-page 区分）：**页数 = 屏数，一屏不许丢**。缺省 = 合成同一个
-    json 的 N 个整屏 window（window__1..window__N，首屏 visible:true 其余 false，showWnd/hideWnd 切页）；
-    split_per_page=True = 每屏一个 json（文件名取 data-page）；返回 screensDetected/pagesProduced，
-    两者不等一律 success:false。
+[WARN] 多屏（并列 div.screen，data-page 区分）：默认**每屏一个 json** —— 一个 .screen = 一页 = 一个 Activity
+= 一个独立 ftu（文件名取 data-page，缺省 page_k）。同屏内 window/dialog 不算页；哪些屏属不同 Activity、
+哪些属同屏 window/dialog，**由 AI 在设计阶段判定**。merge_windows（CLI `--merge-windows`）把 N 屏合成同一
+json 内的 N 个整屏 window（首屏 visible、其余 false，showWnd/hideWnd 切页），**仅当同属一个 Activity** 时用。
+返回 screensDetected / pagesProduced / jsonsProduced / pages[]；**两者不等一律 success:false**（不静默丢页）。
 
-    ⚠️ 红线：客户说明书/照片不能直接转 json（先提炼需求清单确认）；转换后先出预览稿
-    确认（只交付 .preview.html），OK 才 pack/写逻辑/交付。效果一律转图片（渐变/阴影+圆角/emoji/
-    loading 自动出图到 <项目>/resources/images/，json 引用 images/xxx.png）；**禁止 AI 自绘 1x png**。
-    output_json 缺省 html 同名 .json；res 覆盖分辨率（如 "800x480"）。
-    """
+[WARN] 红线：说明书/照片不直接转 json；先出 .preview.html 确认再 pack/写逻辑；效果一律转图（出到
+<项目>/resources/images/，json 引用 images/xxx.png）；禁止 AI 自绘 1x png。res 覆盖分辨率。
+"""
     return json.dumps(h2j.html2json(input_html, output_json or None, res or None,
-                                    split_per_page=bool(split_per_page)), ensure_ascii=False)
+                                    merge_windows=bool(merge_windows)), ensure_ascii=False)
 
 
 def flythings_list_packages(platform: str = '') -> str:
