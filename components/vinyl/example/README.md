@@ -1,69 +1,63 @@
-# example —— 最小接入示例（zk::VinylSpin）
+# example —— `zk::VinylSpin` 标准示例
 
-> 本模块的**真编译 + 真机**验证载体就是 `projects/iOSStyle-F133`：
-> 它的播放页黑胶已切到本组件的副本（`projects/iOSStyle-F133/src/zk_vinyl/`），
-> 编译命令与结果：`fun build -p F133` → `[23/23] Linking CXX shared library libzkgui.so`（0 error），
-> 部署后真机日志见 README §7「真机证据」。
+> 2026-09-22 钟工「直接补上，不需要单独验证，纯粹标准化的代码」→ 本目录补成**可直接拷用的标准示例**。
 
-## 1) json：放一个**正方形**占位控件（别配图）
-
-```json
-"textview__6": {
-  "alignment": 36, "caption": "CoverArt", "fontSize": 16, "id": 50004,
-  "position": { "height": 320, "left": 100, "top": 166, "width": 320 },
-  "touchable": false, "text": ""
-}
+```
+example/
+  demo/
+    ui/vinyl_demo.json            一页 demo：320x320 正方形占位控件 + 3 个按钮 + 诊断行（1024x600）
+    src/vinyl_demoLogic.cc        对应 logic：attach/setCover/tick/setPlaying/detach + 3 个按钮回调
+  README.md                       本文件（怎么拷、怎么编、看什么）
 ```
 
-## 2) 页面 logic：三步接入
+## 1) 拷进任意工程（两步）
+
+```bash
+# ① 组件源码（一次拷好，之后各页面共用）
+mkdir -p <工程>/src/zk_vinyl
+cp components/vinyl/include/zk/zk_vinyl.h <工程>/src/zk_vinyl/
+cp components/vinyl/src/*              <工程>/src/zk_vinyl/
+
+# ② demo 页（想验证组件时用；正式页面按下面"接入三步"自己写）
+cp components/vinyl/example/demo/ui/vinyl_demo.json    <工程>/ui/
+cp components/vinyl/example/demo/src/vinyl_demoLogic.cc <工程>/src/logic/
+```
+
+编译（json → ftu 由工程侧负责；改了 json 记得重出 ftu）：
+
+```bash
+<工程>/ui/fui.exe pack <工程>/ui        # json -> ftu
+fun build -p <平台>                      # 例：-p F133 / -p Z36
+```
+
+> 说明：demo 里的封面路径是 `images/album_a.png` / `images/album_b.png`（相对工程 `resources/`），
+> 换成你自己的图即可。要用 nanovg 后端就在 Manifest 里加 `<package id="nanovg" version="1.0.0"></package>`。
+
+## 2) 正式页面「接入三步」（demo 里就是这三步）
 
 ```cpp
 #include "zk_vinyl/zk_vinyl.h"
 
-static S_ACTIVITY_TIMEER REGISTER_ACTIVITY_TIMER_TAB[] = {
-    {0, 83},        /* 12fps 驱动黑胶自转（重活在组件后台队列上跑） */
-};
+static S_ACTIVITY_TIMEER REGISTER_ACTIVITY_TIMER_TAB[] = { {0, 83} };   /* 12fps 驱动 */
 
 static void onUI_init() {
-    if (mCoverArtPtr != NULL && !zk::VinylSpin::instance().attach(mCoverArtPtr)) {
-        LOGW("vinyl: 挂载失败，封面保持占位图");
-    }
-    zk::VinylSpin::instance().setCover("/res/ui/images/album.png");  /* 换封面，角度回 0 */
+    zk::VinylSpin::instance().attach(mCoverArtPtr);                     /* ① 挂到正方形占位控件 */
+    zk::VinylSpin::instance().setCover(CONFIGMANAGER->getResFilePath("images/album.png").c_str());
 }
-
-static bool onUI_Timer(int id) {
-    zk::VinylSpin::instance().tick();
-    return true;
-}
-
-static void onUI_quit() {
-    zk::VinylSpin::instance().detach();     /* 停转 + 释放我方缓冲（位图归框架） */
-}
-
-/* 播放/暂停联动（例：播放器状态变化处调一次） */
-static void syncSpin(bool playing) {
-    zk::VinylSpin::instance().setPlaying(playing);   /* 暂停即停转，恢复从当前角度继续 */
-}
-
-/* 想现场对比两个内置后端（定点 / nanovg）用这个（真机对照用，正式版可删）： */
-static bool onButtonClick_BtnBackend(ZKButton *pButton) {
-    zk::VinylSpin &vs = zk::VinylSpin::instance();
-    vs.setBackend(vs.backend() == 1 ? 0 : 1);        /* 返回实际生效值（nanovg 建不起来会保持定点） */
-    return false;
-}
+static bool onUI_Timer(int id) { zk::VinylSpin::instance().tick(); return true; }   /* ② 每拍驱动 */
+static void onUI_quit() { zk::VinylSpin::instance().detach(); }                     /* ③ 摘下 */
+/* 播放/暂停联动：zk::VinylSpin::instance().setPlaying(playing); */
 ```
 
-## 3) 编译（把组件拷进工程后）
+## 3) demo 页上看到什么 / 怎么判
 
-```bash
-cp -r components/vinyl/include/zk/*.h  <工程>/src/zk_vinyl/
-cp    components/vinyl/src/*.{h,cpp}   <工程>/src/zk_vinyl/
-# 工程里把 include 写成 "zk_vinyl/zk_vinyl.h"（本示例约定）
-fun build -p F133
-```
+- 圆盘每帧自转（默认 12fps），暂停按钮停转、再按从当前角度继续；
+- 「切后端」在 定点 / nanovg 之间现场切换（返回实际生效值；nanovg 建不起来会保持定点，只打 warning）；
+- 「换封面」换图并把角度回到 0；
+- 诊断行每秒刷新：`黑胶 播放中 | nanovg 128度 3500帧 11.8fps | 旋转 26ms 上屏 1ms`。
 
-## 4) 自检要点
+## 4) 真机载体（本组件的实际验证）
 
-- 日志里应每秒出现一条 `vinyl: 刷新 mode=0…控件pos=(…320x320)`，且 `上屏第 N 帧(旋转 Xms … fps=Y)` 的 N 在涨；
-- 暂停后角度停住；换封面（`setCover`）后角度回 0；
-- 页面退出（`onUI_quit`）后 `detach()`，不残留后台任务。
+组件的真编译 + 真机运行载体是 `projects/iOSStyle-F133`（播放页黑胶已切到组件副本
+`projects/iOSStyle-F133/src/zk_vinyl/`）：`fun build -p F133` → 0 error，部署后正常出帧。
+本 demo 页与它用的是同一套接口，只是把参数换成最简三个按钮，便于新工程直接照抄。

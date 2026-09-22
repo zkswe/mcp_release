@@ -1,0 +1,101 @@
+{
+  "beepEnable": true,
+  "id": 0,
+  "resolution": {
+    "height": 600,
+    "width": 1024
+  },
+  "topmost": false,
+  "backgroundColor": 1447450,
+  "position": {
+    "height": 600,
+    "left": 0,
+    "top": 0,
+    "width": 1024
+  },
+  "textview__1": {
+    "alignment": 36,
+    "caption": "CoverArt",
+    "colorTab": {
+      "color0": 15921909
+    },
+    "fontSize": 16,
+    "id": 50004,
+    "position": {
+      "height": 320,
+      "left": 112,
+      "top": 100,
+      "width": 320
+    },
+    "touchable": false,
+    "text": ""
+  },
+  "button__2": {
+    "alignment": 37,
+    "caption": "BtnPlayPause",
+    "colorTab": {
+      "color0": 15921909
+    },
+    "fontSize": 20,
+    "id": 20001,
+    "position": {
+      "height": 56,
+      "left": 512,
+      "top": 180,
+      "width": 200
+    },
+    "touchable": true,
+    "text": "播放/暂停"
+  },
+  "button__3": {
+    "alignment": 37,
+    "caption": "BtnBackend",
+    "colorTab": {
+      "color0": 15921909
+    },
+    "fontSize": 20,
+    "id": 20002,
+    "position": {
+      "height": 56,
+      "left": 512,
+      "top": 260,
+      "width": 200
+    },
+    "touchable": true,
+    "text": "切后端"
+  },
+  "button__4": {
+    "alignment": 37,
+    "caption": "BtnCover",
+    "colorTab": {
+      "color0": 15921909
+    },
+    "fontSize": 20,
+    "id": 20003,
+    "position": {
+      "height": 56,
+      "left": 512,
+      "top": 340,
+      "width": 200
+    },
+    "touchable": true,
+    "text": "换封面"
+  },
+  "textview__5": {
+    "alignment": 36,
+    "caption": "TextDiag",
+    "colorTab": {
+      "color0": 10132131
+    },
+    "fontSize": 16,
+    "id": 50020,
+    "position": {
+      "height": 32,
+      "left": 512,
+      "top": 420,
+      "width": 480
+    },
+    "touchable": false,
+    "text": "黑胶：等待挂载"
+  }
+}
