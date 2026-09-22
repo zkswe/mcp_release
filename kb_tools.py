@@ -53,7 +53,7 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.105-open'
+MCP_VERSION = '0.27.106-open'
 MCP_BUILD = '2026-09-21'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -68,6 +68,13 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+    '2026-09-22: **seekbar 滑块口径入库（钟工：「进度条的滑块为什么做成这样扁的？什么关键词影响了你生成 / 需要什么关键词才能生成圆滑块」）** v0.27.106-open——'
+    '新增 `knowledge/uicontrols/seekbar-fields.md`：①字段全集（position/max/defProgress/orientation/backgroundPic/progressPic/thumb.size/thumb.normalPic+pressedPic/touchable + 三个回调/API）'
+    '②**实测铁律（官方未收录）**：滑块形状**只由图片决定**（json 无“圆/胶囊”关键词），但**渲染高度会被控件盒高度压**——'
+    '24×24 正圆图 + 控件 `height=12` → 屏幕上实测 **24×12 扁椭圆**；把控件盒加高到 28（轨道图也 28 高、可见条 12px 居中）→ 实测 **24×24 正圆**（逐行 4/16/20/22/24/22/20/14）'
+    '③出图口径：正圆 = `gen_res.rounded_rect_cov(w,h,w/2)`（覆盖率抗锯齿）；禁无 AA 的 flat-圆角画法（原图 alpha 只有 0/255、半径 11 的圆角方块）'
+    '④HTML 侧关键词：`data-thumb` / `data-thumb-pressed` / `data-thumb-size`（html2json.py:1732-1744，缺省 24）'
+    '⑤反例含「改 json 用 sort_keys 重排 → 控件顺序=图层顺序被改 → 全屏铺底层盖住进度条」（本次踩过并已回滚重排）。',
     '2026-09-22: **自定义 view 刷新口径入库（钟工：「open mcp 优化指的是针对自定义 view、类似 gameview 这个部分的刷新的问题」）** v0.27.105-open——'
     '①新增 `knowledge/uicontrols/custom-view-refresh.md`（本类刷新的唯一权威口径）：`ctrl->setInvalid(!ctrl->isInvalid())` = 自定义 view/自绘帧刷新的**平台惯例** '
     '（gameview/GIF/地图/掌机显示层/WebView 容器全部这么写，逐条给了工程+行号出处）；`setInvalid(true)` = 禁用（会吃触摸，别拿来刷帧）；'
