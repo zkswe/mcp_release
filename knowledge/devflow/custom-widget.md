@@ -110,6 +110,10 @@ virtual bool onTouchEvent(const MotionEvent &ev);   // 返回 true=吃掉事件
 
 ## 6. 绘制基础（bitmap_t + Region）
 
+> ⚠️ **刷新触发口径（2026-09-22 钟工定规）**：自定义 view（自绘/帧渲染/位图自己改的那类）每帧刷新用
+> `ctrl->setInvalid(!ctrl->isInvalid())`（gameview 口径）；**不要**用 `invalidate(&getAbsolutePosition())`
+> 传绝对矩形（会被按控件本地坐标裁成“右下角一块”，屏上只刷一块）→ 详见 `uicontrols/custom-view-refresh.md`。
+
 - `bitmap_t`：easyui 位图结构（width/height/pitch/bytes/data），`BitmapHelper::loadBitmapFromFile`
   解码文件、unloadBitmap 释放；createBmp 造内存画布后直接操作 data（24 位 BGR / 32 位带 alpha，
   `bmp->type |= 0x01` 透明）
@@ -161,6 +165,7 @@ SliceProgressBar::build(res_dir)：扫目录 `*normal.png` 自动建切片，文
 5. 数据/事件出口全部函数指针 setter（setXxxAdapter/setXxxListener），禁控件内写业务
 6. 手势：onTouchEvent 处理 DOWN/MOVE/UP；惯性用 VelocityTracker + 定时器；多指用 event::multi_touch
 7. 重活（解码/加载）丢 MessageQueueThread，完成回 UI 刷新；析构安全停线程
-8. 图片显示优先子按钮 setBackgroundBmp/Pic；确需自绘再 onDraw + Region 脏区
+8. 图片显示优先子按钮 setBackgroundBmp/Pic；确需自绘再 onDraw + Region 脏区；
+   **每帧刷新的触发按 `uicontrols/custom-view-refresh.md` 的 `setInvalid(!isInvalid())` 口径写**
 9. 配独立测试页（输入控件驱动 + 演示数据），跑真机/模拟器验证手势与刷新
 10. 页面内 new/delete 生命周期严格配对；obtain 回调禁耗时

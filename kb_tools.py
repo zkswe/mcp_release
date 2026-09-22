@@ -53,7 +53,7 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.104-open'
+MCP_VERSION = '0.27.105-open'
 MCP_BUILD = '2026-09-21'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -68,6 +68,14 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+    '2026-09-22: **自定义 view 刷新口径入库（钟工：「open mcp 优化指的是针对自定义 view、类似 gameview 这个部分的刷新的问题」）** v0.27.105-open——'
+    '①新增 `knowledge/uicontrols/custom-view-refresh.md`（本类刷新的唯一权威口径）：`ctrl->setInvalid(!ctrl->isInvalid())` = 自定义 view/自绘帧刷新的**平台惯例** '
+    '（gameview/GIF/地图/掌机显示层/WebView 容器全部这么写，逐条给了工程+行号出处）；`setInvalid(true)` = 禁用（会吃触摸，别拿来刷帧）；'
+    '`setInvalid(!isInvalid())` vs `invalidate()` 四种写法的语义对照表；正确写法模板（位图只交一次 + 原地改像素 + 翻转 invalid）；省 CPU 优先级（先降帧率）。'
+    '②**修掉一条会误导 AI 的真机结论**：`touch-events.md` §6 原来把「setInvalid 交替刷帧」限定为“仅限只读控件场景”，现按实测纠偏 + 补“非必要不碰 getAbsolutePosition”。'
+    '③**新事实（真机实测，无参考判据）**：`invalidate(&rect)` 的 rect 是**控件本地坐标系**，传 `getAbsolutePosition()` 绝对矩形 → 被裁成“右下到右下角”那块 → **屏上只刷一块**；'
+    '判据：源图半径 100 处放四个纯色方块、静态走 20°（理论位移 34.7px）——绝对矩形/NULL/面板系/+父偏移 = **0px**，整页/本地(0,0,w,h)/**setInvalid 翻转** = **33~35px**。'
+    '④回链 `devflow/custom-widget.md`（§6 + 清单 #8）与 `touch-events.md` §6.1/§6.2；rag 索引重建。',
     '2026-09-22: **系统级窗口 / 自定义全局弹框知识入库** v0.27.104-open（钟工：「关于系统级页面 screensave/statusbar/navibar 以及自定义全局弹框（car 相关项目里面的 btcall 页面），这个你要让 AI 可以做到精准命中。**不要自己去创造页面的生命周期和层级关系**」）——'
     '①新增 `knowledge/uicontrols/system-windows.md`：内建 **4 类**系统窗口（statusbar / navibar / screensaver / IME）的'
     '**固定文件名 ↔ APP_TYPE（1/2/3/4）↔ REGISTER_SYSAPP 注册 ↔ 显示隐藏 API** 对照表（出处 = 官方文档 interaction/system_apps.md + app/AppTypeDef.h），'

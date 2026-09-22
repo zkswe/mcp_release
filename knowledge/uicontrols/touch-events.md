@@ -98,6 +98,11 @@ WARN 分两类，**故意遮挡不是 bug，人工审批时直接忽略**：
 
 ## 6. `setInvalid()` 是「禁用控件」，**不是**「强制重绘」（2026-09-17 案例实测）
 
+> ⚠️ 2026-09-22 钟工定规纠偏：**别把这条读成「setInvalid 一律不能用于刷新」**——
+> `setInvalid(true)` 是禁用；而 **`setInvalid(!isInvalid())`（交替翻转）是自定义 view / 帧缓冲刷新的平台惯例**，
+> gameview / GIF / 地图 / 掌机显示层全这么写。两者的区分、正确写法与真机数据 →
+> **`uicontrols/custom-view-refresh.md`**（该文为本类刷新的唯一权威口径）。
+
 ⛔ **最容易致命的一条**：`ZKBase::setInvalid(bool)` 的语义是**把控件置为无效状态**
 （`ZK_CONTROL_STATUS_INVALID` = 禁用），**不是**通用框架里「invalidate = 标脏重绘」那个意思。
 
@@ -132,12 +137,25 @@ mTextView->setInvalid(!mTextView->isInvalid());   // 交替 → 控件重画 →
 | **只读控件**（`textview`，本就不响应点击） | 重绘生效、**看不到副作用**——所以这个技巧“能用” |
 | **可交互控件**（`button` / `radiogroup` …） | **控件被禁用**（半个周期还带着“无效态”外观）→ 点不动 |
 
-⇒ 结论：**这是一个依赖“状态变更顺带重绘”的旁路技巧，不是重绘 API**。
-新代码**不要**用它做通用的“强制重绘”，尤其别用在可交互控件上；
+⇒ 结论：**这是一个依赖“状态变更顺带重绘”的旁路技巧，不是通用重绘 API**；
+新代码**不要**用它做通用的“强制重绘”，尤其别用在可交互控件上（可交互控件要刷新请用别的手段）。
+
+⚠️ 但“只限定在只读控件”这个限定**偏窄**（2026-09-22 更新）：平台里**自定义 view**（内容由我们在位图里自己改）
+普遍就是这么刷帧的——`GameView.cpp:120`、`CGifPlayer.cpp`（多工程）、`ImageAnimView.cpp:437`、
+`FlyMapDemo/mainLogic.cc:218`、`PocketGame/PgDisplay.cpp:77`、`WebViewDemo/mainLogic.cc:88`
+（出处行号见 `uicontrols/custom-view-refresh.md` §3）。
+**判断口径**：内容是**我们自己往位图/画面里写**的（自绘、帧渲染、双缓冲）→ 用 `setInvalid(!isInvalid())` 翻转；
+只是普通控件改了文本/图片/进度 → 引擎本就会重绘，不用手动刷。
 （`project_tools` 的 validate 提示、`flythings_blogs` 的 GIF 示例、`references/kb/controls.md`
-里那句「帧刷新用 setInvalid 交替」都**只限定在 `setBackgroundBmp` 的只读控件场景**。）
+里那句「帧刷新用 setInvalid 交替」指的正是这个惯例。）
 
 ### 6.2 真要用「重绘」：`invalidate()` 也有坑（旧设备可能**未导出**）
+
+⚠️ **2026-09-22 新增（钟工定规 + 真机实测）**：`invalidate(&rect)` 的 `rect` 是**控件本地坐标系**，
+不是页面绝对坐标。传 `getAbsolutePosition()` 那种绝对矩形 → 被裁成“从控件本地 (left,top) 到右下角”那块，
+**屏上只有那一块会刷新**（实测：20° 步进下纯色标记位移 **0px**，而 `setInvalid(!isInvalid())` 是 **35px**，理论值 34.7px）。
+完整对照表 + 判据 → `uicontrols/custom-view-refresh.md` §2。
+**非必要不要碰 `getAbsolutePosition()`**（钟工 2026-09-22 12:28）。
 
 - `ctrl->invalidate()`（或带脏区 `invalidate(&pos)`）才是「重绘」的正式 API；
   **带脏区的版本在部分设备上没导出**：实测 `libeasyui.so` 旧于本机头文件时，用它会在 dlopen/链接时报
