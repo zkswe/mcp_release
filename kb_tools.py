@@ -53,7 +53,7 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.106-open'
+MCP_VERSION = '0.27.107-open'
 MCP_BUILD = '2026-09-21'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -68,6 +68,11 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+    '2026-09-22: **黑胶旋转沉淀为可复用组件 `components/vinyl/`（钟工：「多产品会复用这个功能，我需要把他做成可以复用的功能点」）** v0.27.107-open——'
+    '①**源码型模块四件套齐**：`README.md`（用法/API/依赖/8 条真机坑/验收口径）、`platforms.md`（F133 双后端实测：定点 6~12ms、nanovg 23~44ms；其余平台标未验证）、`Manifest.xml`、`example/README.md`（json 占位 + 页面三步 + 定时器驱动片段）；'
+    '②**自包含化**三个依赖：旋转本体 `zk::VinylSpin`（`include/zk/zk_vinyl.h` + `src/zk_vinyl.cpp`）、后台单线程队列 `zk_vinyl_worker`、正圆覆盖率表 `zk_vinyl_circle_mask`（SS=8 面积平均，与静态圆封面同源）；'
+    '③**工程已切到组件副本并真验证**：`projects/iOSStyle-F133/src/zk_vinyl/`（旧 `src/core/VinylSpin.*` 删除），`fun build -p F133` 0 error、真机跑通（播放页黑胶出帧刷新）；'
+    '④登记：`components/README.md` 模块表加 vinyl 行 \+ `knowledge/devflow/reusable-components.md` §8（含“只有降分辨率/降帧率能省 nanovg 成本”与 `setInvalid(!isInvalid())` 刷新口径）。',
     '2026-09-22: **seekbar 滑块口径入库（钟工：「进度条的滑块为什么做成这样扁的？什么关键词影响了你生成 / 需要什么关键词才能生成圆滑块」）** v0.27.106-open——'
     '新增 `knowledge/uicontrols/seekbar-fields.md`：①字段全集（position/max/defProgress/orientation/backgroundPic/progressPic/thumb.size/thumb.normalPic+pressedPic/touchable + 三个回调/API）'
     '②**实测铁律（官方未收录）**：滑块形状**只由图片决定**（json 无“圆/胶囊”关键词），但**渲染高度会被控件盒高度压**——'

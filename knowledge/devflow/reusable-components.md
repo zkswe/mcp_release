@@ -162,3 +162,25 @@ components/
 - `components/ui_v1/`（**框架基线目录，文档型**：当前这代 FlyThings IDE + easyui 的跨框架**控件映射唯一权威表** + 逻辑映射 + 缺口五级处置 + 候选组件登记；**跨框架控件映射查这里**）
 - `devflow/custom-font-config.md`（字库机制 + 设备字体自检使用口径）
 - `devflow/upgrade-pack-image.md`（固化出包与刷机；⚠️ 会整体替换 `/res`）
+
+---
+
+## 8. `components/vinyl/` —— 黑胶/任意角度旋转（`zk::VinylSpin`，2026-09-22 入库）
+
+- **问题**：平台没有"任意角度旋转位图"的现成能力（`ZKPainter` 不画位图、`misc::bitmap_rotate` 只支持 90° 整数倍、
+  `ZKImageAnim` 只吃 GIF/WebP）。要转的圆图（唱片/表盘）只能自己逐帧算。
+- **口径**：逐帧把封面旋转画进一张 BGRA 内存位图 → `setBackgroundBmp`（**只交一次**）→
+  每帧 `setInvalid(!isInvalid())` 翻转刷新；角度按**墙钟**算（`角度 = spinMs × 24°/s`），
+  暂停不累加、丢帧不漂移；解码与旋转都在组件自带的单线程队列上（UI 线程只做拷贝 + 翻转）。
+- **双后端**（运行期可切，nanovg 建不起来自动回退定点）：
+  | 后端 | 每帧（320×320） | 圆边过渡 | 说明 |
+  |---|---|---|---|
+  | 定点标量（默认） | **6~12ms** | ~1.5px | Q16 反向映射 + 2x2 盒平均 + SS=8 覆盖率表；**纯整数、无浮点** |
+  | nanovg(AGG) | 23~44ms | ~1.0px | `nvgCreateAGG` 直接渲染到我方位图（**只支持 BGRA 目标**）；更顺滑 |
+- **实测结论（提速）**：`NVG_IMAGE_NEAREST`、去 memset、把 rotate 换成 `nvgImagePattern` 的 angle **都省不下来**；
+  只有**降分辨率**（160×160 ≈ 5.4ms）或**降帧率**有效。
+- **顺带定的一条平台口径**：自定义 view 每帧刷新的正确写法是 `ctrl->setInvalid(!ctrl->isInvalid())`
+  （gameview 口径）；`invalidate(&getAbsolutePosition())` 传绝对矩形会被按**控件本地坐标**裁成"右下角一块"，
+  屏上只刷一块 → 详见 `uicontrols/custom-view-refresh.md`。
+- **文件**：`components/vinyl/{README.md,platforms.md,Manifest.xml,include/zk/zk_vinyl.h,src/*,example/}`；
+  落地来源 `projects/iOSStyle-F133`（已切到组件副本，`fun build` 0 error + 真机跑通）。

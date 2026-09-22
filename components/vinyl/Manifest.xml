@@ -1,0 +1,67 @@
+<!--
+  components/vinyl（黑胶/任意角度旋转）—— 引用声明：**源码型模块**（include/ + src/ + example/）
+
+  交付物：
+    include/zk/zk_vinyl.h               唯一对外头（zk::VinylSpin）
+    src/zk_vinyl.cpp                    旋转本体（定点标量 / nanovg(AGG) 双后端 + 双缓冲 + 上屏 + 诊断）
+    src/zk_vinyl_worker.{h,cpp}         自包含后台单线程任务队列
+    src/zk_vinyl_circle_mask.{h,cpp}    正圆覆盖率表（SS=8 面积平均，与静态圆封面同源口径）
+    example/README.md                   最小接入示例（含页面三步 + 定时器驱动片段）
+
+  接进工程（源码引入，推荐）：
+    1) 把 include/zk/zk_vinyl.h 与 src/*.{h,cpp} 拷到工程能编译的地方（例：src/zk_vinyl/）；
+    2) 工程里 #include "zk_vinyl/zk_vinyl.h" 直接用；
+    3) 只要用 nanovg 后端，就在 Manifest 里加 <package id="nanovg" version="1.0.0"></package>。
+
+  注意：本模块**尚未注册进依赖包仓库**，所以下面不写 <package id="vinyl">；
+       将来若注册进包仓库，工程里只需一行（版本写死，不用 ^ 浮动）：
+        <package id="vinyl" version="1.0.0"></package>
+-->
+<manifest>
+
+  <platform name="F133">
+    <dependencies>
+      <package id="easyui" version="2.9.0"></package>
+      <package id="log" version="1.0.0"></package>
+      <!-- 只用定点后端时不需要 nanovg；用 nanovg 后端再加下面这行 -->
+      <package id="nanovg" version="1.0.0"></package>
+    </dependencies>
+  </platform>
+
+  <platform name="F135">
+    <dependencies>
+      <package id="easyui" version="2.9.0"></package>
+      <package id="log" version="1.0.0"></package>
+      <package id="nanovg" version="1.0.0"></package>
+    </dependencies>
+  </platform>
+
+  <platform name="Z20">
+    <dependencies>
+      <package id="easyui" version="3.0.0"></package>
+      <package id="log" version="1.0.0"></package>
+    </dependencies>
+  </platform>
+
+  <platform name="Z21">
+    <dependencies>
+      <package id="easyui" version="2.9.0"></package>
+      <package id="log" version="1.0.0"></package>
+    </dependencies>
+  </platform>
+
+  <platform name="T113">
+    <dependencies>
+      <package id="easyui" version="2.9.0"></package>
+      <package id="log" version="1.0.0"></package>
+    </dependencies>
+  </platform>
+
+  <platform name="V85X">
+    <dependencies>
+      <package id="easyui" version="2.9.0"></package>
+      <package id="log" version="1.0.0"></package>
+    </dependencies>
+  </platform>
+
+</manifest>
