@@ -119,3 +119,8 @@ src/
 - [ ] 新增业务代码全是 `.cpp`/`.h`，没有新建 `.cc`
 - [ ] logic 里只有关联操作，复杂逻辑在业务域目录的类里
 - [ ] 交付预览稿能切到每一页（多整屏 window 用页面切换条 / `#window__N`）
+
+## 6. 相关文档
+
+- **系统级窗口**（状态栏/导航栏/屏保/输入法：固定文件名、APP_TYPE、REGISTER_SYSAPP、API、层级与生命周期）→ uicontrols/system-windows.md
+- **工程自定义系统窗口 / 全局弹框**（floatwnd / popupWnd / 蓝牙来电 btcall 弹框：自定义 appType + SYSAPPFACTORY + show/hide 封装）→ uicontrols/global-popup-window.md

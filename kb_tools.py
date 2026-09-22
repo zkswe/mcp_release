@@ -53,7 +53,7 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.103-open'
+MCP_VERSION = '0.27.104-open'
 MCP_BUILD = '2026-09-21'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -68,6 +68,19 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+    '2026-09-22: **系统级窗口 / 自定义全局弹框知识入库** v0.27.104-open（钟工：「关于系统级页面 screensave/statusbar/navibar 以及自定义全局弹框（car 相关项目里面的 btcall 页面），这个你要让 AI 可以做到精准命中。**不要自己去创造页面的生命周期和层级关系**」）——'
+    '①新增 `knowledge/uicontrols/system-windows.md`：内建 **4 类**系统窗口（statusbar / navibar / screensaver / IME）的'
+    '**固定文件名 ↔ APP_TYPE（1/2/3/4）↔ REGISTER_SYSAPP 注册 ↔ 显示隐藏 API** 对照表（出处 = 官方文档 interaction/system_apps.md + app/AppTypeDef.h），'
+    '`EasyUIContext.h` API 全集（show/hide/is/get、screensaver 超时与使能、showIME、load/unload 与 perform* 实测行号），'
+    '屏保两种配置入口（代码 + EasyUI.cfg 的 screensaverTimeOut），「生命周期与层级只认这些」小节 + 6 条反例（如禁止 openActivity("statusbar")）。'
+    '②新增 `knowledge/uicontrols/global-popup-window.md`：全局弹框/浮窗/来电弹框的**真实机制** —— '
+    '工程自定义 appType（100/101/POPUPWND，甚至直接写 1000）+ `REGISTER_SYSAPP` 静态注册 + `SYSAPPFACTORY->create()/delete` + '
+    '`src/logic/sysapp_context.{h,cpp}` 定时器转发（show/hide 落 UI 线程）+ 触摸命中 `is_hit_xxx`；'
+    '含 car 工程两种真实做法：btcall 具名封装（`app::show_btcall_widget()/hide_btcall_widget()`）与「通话 UI 挂进 statusbar 页的 window（showWnd/hideWnd）」，'
+    '并标明 `topmost` 等无公开条款处只照抄用法、不扩写解释。'
+    '③两文档互链，并回链 `devflow/page-architecture-spec.md`（页面归属）、`touch-events.md`、`cross-thread-ui-rule.md`。'
+    '④检索复核（新进程新索引、7 组真实问法）：目标文档 **5 次 top1 / 1 次 top2 / 1 次 top3**（脚本 `temp/verify_syswin_retrieval.py`）。'
+    '⑤rag 索引重建 1581 chunks。⚠️ 运行中的 MCP 服务在导入时加载索引 → 需重启服务才会检索到新文档。',
 '2026-09-21: **组件入库 `blur`（高斯模糊铺底）+ 播放页黑胶旋转新增 nanovg(AGG) 后端（A/B 实测：定点更快，nanovg 保留为可切换后端）** '
     'v0.27.103-open（钟工：「高斯模糊入库。旋转的可以用库里面的 nanovg 处理旋转」）——'
     '**① `components/blur/`（源码型，无第三方包依赖）**：对外只有 `include/zk/zk_blur.h`（纯 C ABI）：'
