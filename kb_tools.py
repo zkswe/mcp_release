@@ -53,8 +53,8 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.108-open'
-MCP_BUILD = '2026-09-21'
+MCP_VERSION = '0.27.109-open'
+MCP_BUILD = '2026-09-23'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
 COMPACT_FEATURE_CHARS = 700
@@ -68,6 +68,15 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+    '2026-09-23: **列表封面「已解码位图」缓存入库（钟工：「把列表图片 ImageCache 这个方法正式入库 open 版 MCP」）** v0.27.109-open——'
+    '①**组件 `components/imagecache/`**（源码型四件套，核心零依赖）：`zk::ImageCache` = 单例 + `acquire()/release()` 引用计数 + 权重 LRU（与 HaishiM9 逐行同义）+ `capacity`/`pathMaxLen` 参数 + 日志钩子 + `hits()/loads()/slots()/evicts()/fails()` 读数；'
+    '装载/释放**回调注入**（FlyThings 上是 `BitmapHelper`，别的宿主自己给），于是同一份代码在设备与 PC 上都能编；PC 自测 29 项 0 FAIL（llvm-mingw g++ 与 Linux g++ 双测，含「固定名封面 → 串图」复现与 LRU 淘汰可指名验证），接线样板 `example/flythings_wiring.cc`；'
+    '②**知识条目 `knowledge/uicontrols/listview-image-cache.md`**：病症判据（单张解码真机 280x280 圆角封面 26~65ms、64x64 小图 3~4ms，全落在 UI 线程）、机制（`BitmapHelper::loadBitmapFromFile` 把位图登记进框架资源表并持有 → 不 unload 就复用、不再解）、'
+    '**两件套修法**（①先降尺寸：取图尺寸严格 == 显示盒 ②再上 ImageCache，缺一不可）、真机数字表（回页重设同一批 **315ms → 1ms**、回页合计 **524 → 206ms**、首解 211→208ms 不加速、拖动 0 解码）、8 条坑、验收口径（`loads()` 增量 = 解码次数）；'
+    '③**硬约束**：缓存键 = 路径，**路径必须唯一（含批次/版本）**——固定名封面换内容会命中旧图（串图，真机复现并修）；禁抄 HaishiM9 `releaseAll()` 末尾的 `system("echo 3 > /proc/sys/vm/drop_caches")`（全局副作用 + UI 线程 fork 本身就是卡顿源）；'
+    '多页共用要引用计数；容量是内存换速度（`capacity` × 单图解码体积），Z20/Z21 那类 36~128MB 内存板别照抄 128；'
+    '④**互链**：`listview-fields.md`（封面卡专节）、`devflow/reusable-components.md` §9、`components/README.md` 模块表；`scripts/check_retrieval.py` 的对照组加 2 条封面缓存问法防检索退化（实测对照组 12/13 → 14/15）；'
+    '出处 = HaishiM9 `src/logicSelf/imageCache.h`（上游）+ `projects/iOSStyle-F133/src/core/ImageCache.hpp`（真机验证版）。',
     '2026-09-22: **vinyl 组件补齐「标准示例页」（钟工：「直接补上，不需要单独验证，纯粹标准化的代码」）** v0.27.108-open——'
     '`components/vinyl/example/` 从「代码片段」补成可直接拷用的标准示例：'
     '`example/demo/ui/vinyl_demo.json`（1024x600：320x320 正方形占位控件 + 播放/暂停・切后端・换封面 三按钮 + 诊断行，字段按铁律 #5 显式写全）'

@@ -1,0 +1,73 @@
+<!--
+  components/imagecache —— 引用声明（**源码型模块**：include/ + src/ + example/）
+
+  交付物：
+    include/zk/zk_imagecache.h     唯一对外头（zk::ImageCache：单例 + 引用计数 + 权重 LRU + 容量参数）
+    src/zk_imagecache.cpp          实现（LRU 权重语义与 HaishiM9/iOSStyle 逐行同源）
+    example/zk_imagecache_test.cpp PC 可编可跑的自测（29 项，含「串图」复现）
+    example/flythings_wiring.cc    FlyThings 工程接线（装载走 BitmapHelper / 日志走 LOGD·LOGW）
+
+  接进工程（源码引入，推荐）：
+    1) 拷 include/zk/zk_imagecache.h 到工程 src/zk/zk_imagecache.h；
+    2) 拷 src/zk_imagecache.cpp 到工程能编到的地方（如 src/zk/）；
+    3) 按 example/flythings_wiring.cc 写三个回调（load/free/log）+ 一次 configure()；
+    4) 页面 onUI_init/release 配对，列表 fill 里 setBackgroundPic(path) 之后紧跟一句 cache(path)。
+
+  依赖：**核心零依赖**（只 libc/POSIX；_WIN32 下换 std::mutex）。
+       下面列的 easyui/log 是**接线层**（example/flythings_wiring.cc）用的：
+          · easyui   —— utils/BitmapHelper.h（loadBitmapFromFile / unloadBitmap）
+          · log      —— 日志钩子里打 LOGD/LOGW
+       **不用 FlyThings 的宿主**（纯 PC / 别的框架）就一条都不用，自己给 load/free 回调即可。
+
+  ⚠️ 版本号与 components/vinyl 同口径（取自真机工程 Manifest，如 iOSStyle-F133：easyui 2.9.0）；
+     目标工程若已锁别的版本，**以工程为准**（Manifest 里版本写死，不用 ^ 浮动）。
+
+  注：本模块**尚未注册进依赖包仓库**，所以下面不写 <package id="imagecache">；
+      将来若注册进包仓库，工程里只需一行（版本写死）：
+        <package id="imagecache" version="0.1.0"></package>
+-->
+<manifest>
+
+  <platform name="F133">
+    <dependencies>
+      <package id="easyui" version="2.9.0"></package>
+      <package id="log" version="1.0.0"></package>
+    </dependencies>
+  </platform>
+
+  <platform name="F135">
+    <dependencies>
+      <package id="easyui" version="2.9.0"></package>
+      <package id="log" version="1.0.0"></package>
+    </dependencies>
+  </platform>
+
+  <platform name="Z20">
+    <dependencies>
+      <package id="easyui" version="3.0.0"></package>
+      <package id="log" version="0.0.0"></package>
+    </dependencies>
+  </platform>
+
+  <platform name="Z21">
+    <dependencies>
+      <package id="easyui" version="2.9.0"></package>
+      <package id="log" version="0.0.0"></package>
+    </dependencies>
+  </platform>
+
+  <platform name="T113">
+    <dependencies>
+      <package id="easyui" version="2.9.0"></package>
+      <package id="log" version="0.0.0"></package>
+    </dependencies>
+  </platform>
+
+  <platform name="V85X">
+    <dependencies>
+      <package id="easyui" version="2.9.0"></package>
+      <package id="log" version="0.0.0"></package>
+    </dependencies>
+  </platform>
+
+</manifest>

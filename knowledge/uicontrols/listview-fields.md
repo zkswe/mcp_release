@@ -41,6 +41,16 @@
 - **修法**：`setSelection(count-1)` → `refreshListView()`（先跳行再刷新）。
 - **判据**：截图里可见行的**时间戳/序号必须递增且末行是最新**；若停在旧值 → 没做跟随。
 
+## 封面图多 → 刷新/回页卡（2026-09-23）
+
+> fill 里 `setBackgroundPic(path)` 会让框架**当场解这张图**（280×280 圆角封面真机 **26~65 ms/张**，
+> 64×64 小图 3~4 ms），全落在 UI 线程；item 一重建（回页/换页/刷新/控件回收）就**再解一遍**。
+> 完整口径（病症判据 / 机制 / 两件套修法 / 8 条踩坑 / 实测数字 / 验收怎么量）见
+> **`listview-image-cache.md`**；可直接拷的代码在组件 **`components/imagecache/`**（`zk::ImageCache`）。
+> 一句话修法：**①先降尺寸（取图 == 显示盒）②再上 ImageCache（按路径缓存已解码位图）**，
+> 两件套缺一不可；真机回页重设同一批封面 315 ms → 1 ms。
+> ⚠️ 硬约束：**缓存键 = 路径，路径必须唯一（含批次/版本）**——固定名封面换内容会命中旧图（串图）。
+
 ## JSON 字段表（ftu 实测校准）
 
 | 字段 | 说明 |
@@ -117,6 +127,8 @@ p->refreshListView();
 
 ## 样例代码
 listViewDemo-New（增删改查完整 demo：标题+选择钮+删除钮三 subitem）；NetDemo-New（setListAdapter 编程式）；git.com 各产品列表页（38+ 工程在用）。
+封面列表（带图片缓存）真机案例：**`projects/iOSStyle-F133`**（推荐/榜单/搜索结果三个封面列表，
+口径 `listview-image-cache.md` + 组件 `components/imagecache/`）。
 滚轮选择器：`projects/SampleUI-New` 的 `ListviewTimePicker`（3 行循环列表 + 点行选中；口径 `listview-wheel-picker.md`）+ 案例
 `projects/translate/tdesign-miniprogram`（5 列 176×180、可见 5 行、正中行 = 选中行 + **选中条挂静态背景层**，
 真机 `s4c_*` 30 项验收全 PASS）。

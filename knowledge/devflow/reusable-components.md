@@ -18,6 +18,7 @@
 |---|---|---|
 | `ble/` | 代码型 | BLE 门面 `zk::ble`：把蓝牙收拾成 wxapi 那种（**一个 API 面、两个后端**：中心扫描/连接/GATT + 外设广播/GATT 服务/notify）；中心：F133、V85X；双角色：Z20/Z21/T113EMMC |
 | `blur/` | 代码型 | 高斯模糊（铺底/封面背景）`zk::`：拖一张 4 字节 BGRA 位图进，出一张模糊图；**切歌时算一次**不逐帧重算；带 `prep`/`darken`/`bench_once`，档位 AUTO/BOX3/SEP_*/RVV；真机 F133 缩图铺底 **59~88 ms**（详见 §7） |
+| `imagecache/` | 代码型 | 列表封面「已解码位图」按路径缓存 `zk::ImageCache`：单例 + 引用计数 + 权重 LRU + 容量参数 + 日志钩子；治 listview 刷新/回页重设封面反复解码（真机回页重设同一批 **315 ms → 1 ms**）；带 `hits()/loads()` 读数，PC 自测 29 项（详见 §9） |
 | `fonts/` | 资产型 | 思源黑体三版（常用中文872KB / 全中文7.4MB / 多国语言10.5MB）+ 设备字体自检（缺中文自动投递） |
 
 ---
@@ -157,6 +158,8 @@ components/
 
 - `components/ble/`（BLE 门面 `zk::ble`：上层直接调；上电/预初始化/线程/TLV 全在组件内部）
 - `components/blur/`（高斯模糊 `zk::`：把 4 字节位图变模糊图；铺底/封面背景；档位与实测见 §7）
+- `components/vinyl/`（黑胶/任意角度旋转 `zk::VinylSpin`）
+- `components/imagecache/`（列表封面已解码位图缓存 `zk::ImageCache`；详见 §9）
 - `components/fonts/`（思源黑体三版 + 设备字体自检）
 - `components/icons/`（Tabler 图标库：语义图标 → 任意分辨率单色 PNG，两条命令出图）
 - `components/ui_v1/`（**框架基线目录，文档型**：当前这代 FlyThings IDE + easyui 的跨框架**控件映射唯一权威表** + 逻辑映射 + 缺口五级处置 + 候选组件登记；**跨框架控件映射查这里**）
@@ -184,3 +187,29 @@ components/
   屏上只刷一块 → 详见 `uicontrols/custom-view-refresh.md`。
 - **文件**：`components/vinyl/{README.md,platforms.md,Manifest.xml,include/zk/zk_vinyl.h,src/*,example/}`；
   落地来源 `projects/iOSStyle-F133`（已切到组件副本，`fun build` 0 error + 真机跑通）。
+
+## 9. `components/imagecache/` —— 列表封面「已解码位图」缓存（`zk::ImageCache`，2026-09-23 入库）
+
+- **问题**：listview 的 `obtainListItemData_*` 里 `setBackgroundPic(path)` 会让框架**当场解这张图**
+  （真机 F133：280×280 圆角封面 **26~65 ms/张**，64×64 小图 3~4 ms，全部落在 UI 线程）；
+  列表 item 被重建（回页 / 换页 / `refreshListView()` / 控件回收后重设）时，同一张图**还会被反复解**
+  —— 实测回页重设同一批 8 张封面 = **315 ms**。
+- **口径**：按**路径**缓存「已解码位图」。机制是框架侧那条更耐用的路：
+  `BitmapHelper::loadBitmapFromFile` 会把位图登记进**框架资源表并持有**，只要这里不 unload，
+  框架再遇到同路径就直接复用、不再解一遍。策略 = 权重 LRU（命中 `weight++`；未命中的已占用槽 `weight--`；
+  腾位置时「空槽优先，否则 weight 最小」）。
+- **两件套缺一不可**：①**先降尺寸**（取图尺寸严格 == 控件盒，别让引擎去缩大图）；
+  ②**再上 ImageCache**。只做②时首解与内存峰值照样差。
+- **组件形态**：装载/释放**回调注入**（FlyThings 上是 `BitmapHelper`；纯 PC/别的宿主自己给），
+  于是**同一份代码在设备与 PC 上都能编**；比工程版多出「不静默的错误处理 + `setLogHook` + `hits()/loads()/slots()` 诊断读数」。
+- **实测（F133 真机，改前后同一操作）**：回页重设同一批封面 **315 ms → 1 ms（−99.7%）**、
+  回页合计 **524 → 206 ms（−61%）**；首次解码 211 → 208 ms（**不加速首解，设计如此**）；
+  拖动改前后都是 **0 次解码**；内存 `VmRSS ≈ 8964 kB`。逐平台/未验证项见 `components/imagecache/platforms.md`。
+- **四条硬约束**（都是踩出来的，完整 8 条见 `knowledge/uicontrols/listview-image-cache.md` §5）：
+  ①**缓存键 = 路径，路径必须唯一（含批次/版本）** —— 固定名封面换内容会命中旧图（**串图**，已真机复现并修）；
+  ②**别抄** HaishiM9 `releaseAll()` 末尾的 `system("echo 3 > /proc/sys/vm/drop_caches")`（全局副作用 + UI 线程 fork）；
+  ③多页共用一个实例要**引用计数**，否则一个页面退出就把别人在用的位图踢了；
+  ④容量是**内存换速度**（`capacity × 单图解码体积`），Z20/Z21 那类 36~128 MB 板别无脑加大。
+- **文件**：`components/imagecache/{README.md,platforms.md,Manifest.xml,include/zk/zk_imagecache.h,src/zk_imagecache.cpp,example/{zk_imagecache_test.cpp,flythings_wiring.cc,README.md}}`；
+  落地来源 `projects/iOSStyle-F133`（工程内联版 `src/core/ImageCache.hpp` 真机验证）+ `projects/LearningProject/HaishiM9/src/logicSelf/imageCache.h`（上游口径）；
+  知识条目 `knowledge/uicontrols/listview-image-cache.md`。

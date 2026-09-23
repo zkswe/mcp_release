@@ -67,8 +67,11 @@ CONTROL = [
     # 2026-09-19 新增：低对比度边缘 AA 坑条（浅色压浅底的锯齿/脏边）
     ('浅色选中条边界有锯齿 毛边', 'ui-asset-rules.md'),
     ('超采样缩回 LANCZOS 暗边', 'ui-asset-rules.md'),
+    # 2026-09-23 新增：列表封面缓存条（新入库 `listview-image-cache.md`，防检索退化后 AI 找不到解法）
+    ('列表封面卡 重复解码', 'listview-image-cache.md'),
+    ('回页卡 封面列表', 'listview-image-cache.md'),
 ]
-CONTROL_MIN = 9            # 实测 10/11（改动前 7/11，本轮加 2 条低对比度 AA 坑条后 12/13）；低于 9 说明调参伤了其它主题
+CONTROL_MIN = 9            # 实测 14/15（2026-09-23 加 2 条列表封面缓存条后由 12/13 → 14/15；低于 9 说明调参伤了其它主题）
 
 MIN_TOP1 = 12          # 前 12 条主力问法要求 top-1 命中
 TOPK = 3
