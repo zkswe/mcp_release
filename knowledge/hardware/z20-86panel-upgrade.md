@@ -173,9 +173,14 @@ mtd3 "res" (0x720000) /res squashfs ro,noatime,nodiratime            ← 系统�
 ```
 - 另有 `Mtd` / `Mmc` 两个 DevBase 实现（`/dev/mtd/%s`、`/dev/block/platform/soc@3000000/by-name/%s`），
   即升级库**既会写 mtd 也会写 eMMC 块设备**。
-- ⚠️ **哪一条属于 `Zkswe_SSD20X_SPINOR` 尚未钉死**：文件里 12 个机型记录只对应 5 张表，且本机在
-  「res → `mmcblk0p1`+`mmcblk0p2`」与「res → `res`+`backup`」两条表上都见过同名项 →
-  工程上按「**eMMC 双写（p1 主 / p2 备）**」先记着，**真机确认后回填**（见 §9 未证实清单）。
+- ⚠️ **写入目标分区的判定（强推断，两条独立证据，尚未直接取证）**：
+  ① 表形状只有 3 种：纯-NOR（用 mtd 名 `res`/`backup`）、纯 eMMC（全 `/dev/block/mmcblk0*`）、
+  **NOR + SD NAND 混合**（boot/uboot/misc/config 用 mtd 名，**res → `/dev/block/mmcblk0p1` + `mmcblk0p2`**）；
+  Z20 86 面板的硬件就是「16M Flash + 128M SD Nand」→ 属第三种。
+  ② 真机旁证：`/mnt/extsd` = `mmcblk0p1`，**分区有 52.5 MB，但它的 ext4 文件系统只有 2.74 MB**
+  （`df`：`2804` 个 1K 块）——典型的「**小 ext4 镜像写进大分区**」形态，说明 p1 曾被某个固化包整体写过；
+  而它里面的东西（`EasyUI.cfg` + `lib/libzkgui.so` + `ui/`）正是 res 那棵树。
+  → 工程上按「**Z20 86 面板固化写入面 = mmcblk0p1（+p2 作为第二目标）**」理解；正式口径等真机复测回填。
 
 ---
 
@@ -183,7 +188,7 @@ mtd3 "res" (0x720000) /res squashfs ro,noatime,nodiratime            ← 系统�
 
 | # | 现象 | 根因 | 规避 |
 |---|---|---|---|
-| 1 | **ADB 触发升级后整板失联**（本机 2026-09-23 真机遭遇：三属性 + `ctl.restart zkswe` 后 ~40 s 掉 adb，25 min 未回，需现场断电/插卡救援） | 升级会**停掉 app 与网络服务**（`zkswe`/`wpa_supplicant`…）并写目标分区；这类板子的 WiFi 由 app 带起来 → 包/目标分区一变，app 起不来就**连网都没了** | 远程触发固化时**先排好现场**（有人能断电、能手插 TF 卡）；**优先用卡/U 盘路线**（不依赖网络） |
+| 1 | **ADB 触发升级后整板失联**（本机 2026-09-23 真机遭遇：三属性 + `ctl.restart zkswe` 后 ~40 s 掉 adb，25 min 未回，需现场断电/插卡救援） | 升级会把 app 资源写到 **eMMC app 分区**（本机 `mmcblk0p1` = `/mnt/extsd`，见 §6），并停掉 `zkswe`/`wpa_supplicant`…；这类板子的 WiFi 由 app 带起来 → app 一被换掉就**连网都没了** | 远程触发固化时**先排好现场**（有人能断电、能手插 TF 卡）；**优先用卡/U 盘路线**（不依赖网络） |
 | 2 | 包放对了、版本也对，就是不升级 | ①**去重**：`/data/.zkugraderec` 记版本（Z20 的 app 侧还会被 `/mnt/sdnand/config.json` 抬版本）②目录不在扫描表里 ③文件名不对（`update.img` vs `extupdate.img`） | 递增 `--release-version`；确认目录 ∈{`/mnt/usb*`,`/mnt/extsd`,`/mnt/storage/zkimg`}；必要时 `sys.zkupgrade.force` / `flag 255` |
 | 3 | 包与机型不匹配 | 包头机型 magic（§3）+ 库内 `type_no_match_error` | 别跨机型复用包；换型号重新 `fun pack -p <平台>` |
 | 4 | 固化后「汉字变方块 / 工具没了」 | `update.img` 装的是**你工程的 `/res`**，会把目标机 `/res` **整体替换** | 字库/EasyUI.cfg/必要 bin 全部随工程打进包（`upgrade-pack-image.md` §二 6)） |
@@ -231,7 +236,7 @@ mmcblk0p2(sdnand) 9a3aa19383996abdf69ae3e1cf3080bd
 | 项 | 状态 |
 |---|---|
 | 三属性触发的**实际行为**（是否进升级界面 / 是否直接写盘 / 耗时） | **未取到证**（板卡失联，见 §8） |
-| `Zkswe_SSD20X_SPINOR` 的 res 目标到底是 `mmcblk0p1(+p2)` 还是 mtd `res`(+`backup`) | **未证实**（§6 两张表都在库里） |
+| `Zkswe_SSD20X_SPINOR` 的 res 目标：`mmcblk0p1(+p2)` 还是 mtd `res`(+`backup`) | **强推断 = `mmcblk0p1(+p2)`**（表形状 + p1 只有 2.74 MB 文件系统两条证据，见 §6）；**但未直接取证**（触发后板卡失联） |
 | 升级是否**同时写 p1 与 p2**（数据面会被一起替换？） | **未证实**（若成立，p2 上的数据需自行备份回灌） |
 | `release.ext4.size` 是否生效 | **未证实**（`fun.exe` 只有 `release.ext4` 字面量） |
 | `release.ext4=false`（或不写）在**本板**的真机后果 | **未做真机对照**（Z20 参考工程开着它 → 本板大概率必须开） |
