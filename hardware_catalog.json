@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "note": "硬件型号库（唯一事实来源，人工维护）。定位（沛哥 2026-09-12）：**预设参数**，让后期开发少问少核（沛哥 2026-09-12 明确：所谓「平台差异」= 具体型号的默认参数，开发直接照抄不用猜）。有具体型号 → 按该型号的 screen/keys/specs 直接开工（工具会给出 preset）；没有具体型号 → 确认平台 + 分辨率就能建工程，不必等数据补全。改完跑：python scripts/gen_hardware_doc.py（生成 knowledge/hardware/hardware-models.md，可检索）→ python rebuild_index_local.py。字段：platforms.<平台>.models.<型号>，平台名必须是 platforms.py 里的规范名（F133/F135/T113/V85X/Z20/Z21）。dataStatus：complete=规格书完整 / partial=部分参数 / pending=仅登记型号（**都不是开工阻塞**）。optional[] = 可选补充项（有则更方便，没有不影响开工；禁止 AI 拿同系列型号外推填坑）。 defaults（平台级/型号级）= 默认参数；differences = 选型/差异说明；工具把平台级 + 型号级 defaults 合并成 preset 返回。",
-  "updated": "2026-09-12",
+  "updated": "2026-09-23",
   "namingRules": {
     "structure": "SW + 分辨率 + 尺寸 + 平台字母 + 选配位 + _后缀（依据 7 寸串口屏规格书 V1.0 第 4 节）",
     "example": "SW80480070A_CWM = 7 寸 800×480，电容触摸 + WIFI + 多媒体版（官方《产品规格型号说明》示例）",
@@ -936,6 +936,18 @@
             {
               "topic": "同系列三平台差异",
               "detail": "Z6 版 SW48480040B1（ARM9 600MHz，480×480，最低成本）/ Z20 版本型号（1.2GHz+128M DDR3，480×480 或 720×720，带在线语音）/ Z21 版 SW48480040E（1.0GHz，480×480）"
+            },
+            {
+              "topic": "固化/升级链路（真机实证 2026-09-23）",
+              "detail": "升级程序是**系统件**（/lib/libzkupgrade.so + libeasyui 的 UpgradeMonitor + libinternalapp 的 UpgradeActivity + /system/res/internal/zkupgrade.ftu），app 不用自己写升级逻辑。触发三条正路：① 卡/U 盘根目录放 update.img|extupdate.img + 重新上电（弹界面勾选）；② 同目录再放无后缀 zkautoupgrade（默认 2 s 后自动开升；配 zkrebootdelay，-1 = 升完不重启）；③ ADB：setprop sys.zkupgrade.dir <目录> + sys.zkupgrade.flag 255 + setprop ctl.restart zkswe。⚠️ 升级过程中会停 zkswe/wpa_supplicant 等 → 必然掉网；本机真机用 ③ 触发后板卡随即失联（见报告）→ 远程固化前必须先安排现场（能断电、能插卡）。升级库扫描目录：/mnt/usb、/mnt/usb1、/mnt/extsd、/mnt/mmc（另有 uboot 线 /mnt/storage/zkimg/update.img）；去重记录 /data/.zkugraderec。"
+            },
+            {
+              "topic": "包格式与机型绑定（官方 wiki 未收录 release.ext4）",
+              "detail": "包 = 572 字节头部 + payload；头部 0x00 起魔术 \"ZKSWEV1.0-180127\"，0x1C = payload 字节数，0x35 起 = **机型 magic**（Z20 = Zkswe_SSD20X_SPINOR = 0xaa550404；Z21 = 0xaa550606；V85X = 0xaa550a0a；F133 = 0xaa550707）→ 包不能跨机型刷（库内有 sys_upgrade_type_no_match_error）。payload = **/res 镜像**：默认 squashfs（hsqs 头，小）；工程根 package.properties 写 release.ext4=true 时变 **ext4 镜像**（体积 1 MiB 对齐，例 2~3 MiB；出包时自动安装 make-ext4fs），且**产物文件名变为 extupdate.img** —— 这就是「U 盘 extupdate.img / TF 卡 update.img」包名差异的真正来源。Z20 参考工程 PublicTuyaSwitch 开着 release.ext4 → 本平台按 ext4 出包。"
+            },
+            {
+              "topic": "数据面 ext4 分区与系统 res（危险链）",
+              "detail": "/dev/block/mmcblk0p2 → /mnt/sdnand（ext4，rw,dirsync,nosuid,nodev）由 **app 自己挂载**；挂载失败会 make_ext4fs **整盘重建**（无确认、无备份）→ 现场禁止手动 umount/mkfs/dd 写 p2，要取数据只用 adb pull /mnt/sdnand。mtd3 res（squashfs，本板仅 39 KB 空壳）与 mmcblk0p1 （/mnt/extsd ext4，app 资源/debug 落点）是两处不同的「res 形态」；LOGO/MISC = mtd5 = 128 KB。升级写哪个分区由设备端库内机型表决定（带 SD NAND 的 SPINOR 机型会出现 res → /dev/block/mmcblk0p1 + mmcblk0p2 的双目标条目）—— 本型号究竟走哪条，真机复测后回填。"
             }
           ],
           "source": "4 寸 86 盒系列规格书 V3.0（2025-05-20）",
@@ -945,8 +957,19 @@
             "relay": "最多 3 路（10A）",
             "wired": "RS485 + 百兆以太网",
             "power": "AC 220V / DC 9-24V",
-            "boot": "3 秒开机"
-          }
+            "boot": "3 秒开机",
+            "upgrade": "U 盘/TF 卡放 update.img | extupdate.img（+ 无后缀 zkautoupgrade 可自动升级）；或 ADB：setprop sys.zkupgrade.dir <目录> + sys.zkupgrade.flag 255 + setprop ctl.restart zkswe",
+            "resImageFormat": "ext4 —— 工程根 package.properties 必须写 release.ext4=true（出包名变 extupdate.img）",
+            "dataPartition": "/dev/block/mmcblk0p2 → /mnt/sdnand（ext4，由 app 自挂载；挂不上会整盘重建）"
+          },
+          "optional": [
+            "固化写入的目标分区（mmcblk0p1(+p2) 还是 mtd res(+backup)）：真机已触发但板卡失联，待复测回填",
+            "release.ext4=false（或不写）在本型号的真机后果（未做 true/false 对照）",
+            "release.ext4.size 是否生效（fun.exe 内只有 release.ext4 字面量）"
+          ],
+          "docRefs": [
+            "knowledge/hardware/z20-86panel-upgrade.md"
+          ]
         },
         "SW8001280101D-JQ": {
           "kind": "10.1 寸彩色电子价签 PCBA（单屏）",

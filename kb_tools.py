@@ -53,7 +53,7 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.109-open'
+MCP_VERSION = '0.27.110-open'
 MCP_BUILD = '2026-09-23'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -68,6 +68,21 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+    '2026-09-23: **Z20 86 面板升级链路入库（钟工：「只用真机验升级功能 + 型号特殊点落 MCP」）** v0.27.110-open——'
+    '①**硬件型号库补 Z20/86 面板（SW48480040D1）升级与系统特殊性**（改数据源 `hardware_catalog.json`，不是改生成物）：'
+    '升级程序是**系统件**（`/lib/libzkupgrade.so` + `libeasyui` 的 `UpgradeMonitor` + `libinternalapp` 的 `UpgradeActivity`、'
+    '`/system/res/internal/zkupgrade.ftu`），app 不用自己写升级逻辑；三条触发正路 = ①卡/U 盘根目录放 `update.img|extupdate.img` + 重上电'
+    '②同目录加无后缀 `zkautoupgrade`（默认 2 s 自动开升，配 `zkrebootdelay`，`-1`=不重启）③ADB 三属性 `sys.zkupgrade.dir` + '
+    '`sys.zkupgrade.flag 255` + `setprop ctl.restart zkswe`；'
+    '**包与机型绑定**（572 B 头 + 魔术 `ZKSWEV1.0-180127`，0x1C=payload 字节数，0x35 起机型 magic：Z20=`0xaa550404`、'
+    'Z21=`0xaa550606`、V85X=`0xaa550a0a`、F133=`0xaa550707`，跨机型刷会被 `sys_upgrade_type_no_match_error` 拒）；'
+    '数据面 `/dev/block/mmcblk0p2 → /mnt/sdnand`（**app 自挂载** ext4，挂不上就 `make_ext4fs` 整盘重建）、'
+    'LOGO/MISC = 本板 mtd5 = 128 KB；'
+    '②**新知识条目 `knowledge/hardware/z20-86panel-upgrade.md`**：升级链路 + 包字节结构 + **`release.ext4` A/B 实证**'
+    '（`release.ext4=true` → 产物名变 **`extupdate.img`** 且包内 `/res` 是 **ext4** 镜像、出包时自动装 `make-ext4fs`；不写 → `update.img` + squashfs）'
+    '+ 8 条坑（含「ADB 触发固化后整板失联」的真机遭遇）+ **不依赖网络的卡/U 盘救援步骤**；'
+    '③**`release.ext4` 首次入库**（此前官方 wiki 与本库逐处 0 命中）——它才是「U 盘 extupdate.img / TF 卡 update.img」包名差异的**真正来源**（按介质命名是错的）；'
+    '④纪律：写入目标分区/去重记录 `/data/.zkugraderec`/`release.ext4.size`/`release.ext4=false` 后果 等**没验到的点在条目与型号库里显式标「未证实」**，不写成结论；v0.27.110-open',
     '2026-09-23: **列表封面「已解码位图」缓存入库（钟工：「把列表图片 ImageCache 这个方法正式入库 open 版 MCP」）** v0.27.109-open——'
     '①**组件 `components/imagecache/`**（源码型四件套，核心零依赖）：`zk::ImageCache` = 单例 + `acquire()/release()` 引用计数 + 权重 LRU（与 HaishiM9 逐行同义）+ `capacity`/`pathMaxLen` 参数 + 日志钩子 + `hits()/loads()/slots()/evicts()/fails()` 读数；'
     '装载/释放**回调注入**（FlyThings 上是 `BitmapHelper`，别的宿主自己给），于是同一份代码在设备与 PC 上都能编；PC 自测 29 项 0 FAIL（llvm-mingw g++ 与 Linux g++ 双测，含「固定名封面 → 串图」复现与 LRU 淘汰可指名验证），接线样板 `example/flythings_wiring.cc`；'
