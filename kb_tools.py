@@ -53,8 +53,8 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.110-open'
-MCP_BUILD = '2026-09-23'
+MCP_VERSION = '0.27.111-open'
+MCP_BUILD = '2026-09-24'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
 COMPACT_FEATURE_CHARS = 700
@@ -68,6 +68,15 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+    '2026-09-24: **Z20 升级实跑走通 + 固化后卡 logo 根因入库（钟工：把 Z20 升级跟程序基础的问题入库）** v0.27.111-open——'
+    '① **ADB 正常升级 6 步（现行口径）**：`push update.img /tmp` → `setprop sys.zkupgrade.flag 255` → `setprop sys.zkupgrade.dir /tmp` → '
+    '`ctl.stop zkswe` → `umount /mnt/extsd`（extsd 没挂时报 `Invalid argument` = 无害）→ `ctl.restart zkswe`；真机：0.23 s 返回 → '
+    '~50 s 回网，**写入面 = `mtd3(res)`**（由包名 `update.img` 决定），`mmcblk0p1`/`mtd2`/`mtd5` 全不动；'
+    '② **固化后卡开机 logo 的根因**：应用必须设 `sys.zkapp.state=running`（`onUI_init()` 里 `SystemProperties::setString`），'
+    '且**别用 `fun create` 的 fv 骨架（无 `Manifest.xml`）——第一个界面不创建、钩子不执行 → 属性必空**；换带 Manifest 的模板风工程'
+    '（`flythings_create_project`）立即上屏；③ 字体随包要放**工程 `resources/`**（放 `ui/` 会被忽略，`fun pack` 只吐 `no any font`）'
+    '+ `EasyUI.cfg={"font":"/res/ui/fzcircle.ttf"}`；④ 排查手法：`onUI_init` 里附设 `sys.zkapp.dbg` 标记 + `fb0` 纯黑/均匀=应用层没画；'
+    '知识 → `knowledge/hardware/z20-86panel-upgrade.md` §11/§12、`knowledge/devflow/package-properties-easyui-cfg.md`',
     '2026-09-23: **Z20 86 面板升级链路入库（钟工：「只用真机验升级功能 + 型号特殊点落 MCP」）** v0.27.110-open——'
     '①**硬件型号库补 Z20/86 面板（SW48480040D1）升级与系统特殊性**（改数据源 `hardware_catalog.json`，不是改生成物）：'
     '升级程序是**系统件**（`/lib/libzkupgrade.so` + `libeasyui` 的 `UpgradeMonitor` + `libinternalapp` 的 `UpgradeActivity`、'

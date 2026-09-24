@@ -266,6 +266,91 @@ md5 `19DE4DFA041BB98DFCBC9FA0906C3F8F`，头 16 B = `ZKSWEV1.0-180127`）已备�
 
 > 铁律：**救援也走官方升级机制，不要手动写 `/dev/block/*`、不要 `mkfs`/`umount` p2**（§5 会整盘重建）。
 
+## 11. ⭐ ADB 正常升级：现行 6 步口径 + 真机实证（2026-09-24 【实测】）
+
+> 派单人给的新版流程（替代 §1 里我早先自己拼的顺序），**已在一块干净板（`Zkswe_SSD20X_SPINOR`，480×480，
+> easyui 2.4.0）上一次跑通**：写入面、耗时、掉网行为全部取到证。
+
+### 11.1 命令（逐字照用，顺序别调）
+
+```bash
+adb push update.img /tmp           # 注意：正常升级用 update.img（squashfs payload），不是 extupdate.img
+adb shell setprop sys.zkupgrade.flag 255
+adb shell setprop sys.zkupgrade.dir /tmp
+adb shell setprop ctl.stop zkswe
+adb shell umount /mnt/extsd        # extsd 没挂时会报 Invalid argument → 无害，流程继续
+adb shell setprop ctl.restart zkswe
+```
+
+### 11.2 真机结果【实测】
+
+| 项 | 实测 |
+|---|---|
+| 触发 | 6 步一条 shell，**0.23 s 返回**；属性回读 `flag=255` / `dir=/tmp` ✓ |
+| 触发后 | ~10 s 内 adb `error: closed` → `device offline`（app 重启 + 整机 reboot），**~50 s 回网**；`ping` 全程通 |
+| **写入面** | 文件名 `update.img` → **写 `mtdblock3(res)`**：md5 `b6ff56e9…` → `d1d0812d…`；`/res` 变成包内那棵树（`lib/libzkgui.so` 267,828 B = 出包产物），squashfs 正常挂载 |
+| **没动的分区** | `mtd2(rootfs)`、`mtd5(LOGO)`、**`mmcblk0p1`（= `extupdate.img` 的目标面）** |
+| 变了（次要） | `mtd6(data)`（boot 后 libeasyui 写 `/data/preferences.json`）；`mmcblk0p2` 只是被我自己写的 logcat 日志动过 |
+| **网络为何没掉** | 该板 WiFi 是 **init 托管**：`init.svc.wpa_supplicant=running` + `/bin/wpa_supplicant -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf`、`init.svc.zkswe=running` → **不依赖业务 app**。⇒ **§6/§7 里「WiFi 由 app 带起来 → 换 res 必掉网」的归因在本板被证伪**，旧板那次永久失联要另找原因（别再当通论用） |
+| 去重 | 升级后 `/data/.zkugraderec`、`/data/.zkupgraderec` **都不存在** → **ADB 直触发这条链不写去重记录**（去重可能只在 `zkupgradetipbin` 界面链生效；同版本二刷是否被挡仍未测） |
+| 恢复手段 | 升级前把 `dd if=/dev/block/mtdblock3 of=/tmp/bk/mtd3_res.bin` 拉到本机（7,471,104 B）→ 需要时 `dd` 回 `mtdblock3` 即可复位 |
+
+> **铁律（本板实测得到）**：**走 ADB → `/res` 的路线，包名必须是 `update.img`（squashfs payload）**。
+> 把 `release.ext4=true` 出的 `extupdate.img`（payload = ext4 数据面树）拿来当 `update.img` 推，会把 `/res` 写成 ext4，
+> 而 boot 按 **squashfs** 挂 → `SQUASHFS error: Can't find a SQUASHFS superblock` → **开机卡 logo，只能插卡救援**。
+
+---
+
+## 12. ⭐ 固化后「卡在开机 logo」的根因与正解（app 基础问题，2026-09-24 【实测】）
+
+### 12.1 现象与判据
+
+- 现象：升级完重启，屏幕**停在开机 logo**（不是黑屏死机：adb 通、`/res` 是新包、框架日志正常）。
+- 判据（两个合用）：
+  1. `getprop sys.zkapp.state` **为空**（正常应为 `running`）；对照一台正常在跑的 Z20 板即为 `running`；
+  2. `flythings_device_screenshot` 抓到的 `fb0` **纯黑/均匀无色**，且 `pan/offsetY` 不随应用刷新变化
+     → **应用层根本没画**（显示层还压在 logo 那一层）。
+
+### 12.2 根因（两层，A 是表象、B 是底层）
+
+| # | 事实 |
+|---|---|
+| **A** | **应用必须在启动后设 `sys.zkapp.state=running`**。这是系统级的「app 已起来」标记，不设 → 显示服务不把画面切给应用 → 永远停在开机 logo。 |
+| **B** | 更底层：**`fun create` 生成的 fv 骨架工程（只有 `ui/main.fv`、没有 `Manifest.xml`）在这类板子上第一个界面根本不创建** → 逻辑钩子 `onCreate/onUI_init` 从不执行 → 于是 A 必现。同一块板上换 **IDE 模板风工程**（`Manifest.xml` + `ui/main.ftu` + `src/Main.cpp` + `src/logic/mainLogic.cc`）立刻正常。 |
+
+实测台账（同一块板，四个包）：
+
+| 版本 | 工程形态 | 改动 | 结果 |
+|---|---|---|---|
+| v1 | fv 骨架（无 Manifest） | — | 升级流程 ✅、卡 logo |
+| v2 | fv 骨架 | 加 `SystemProperties::setString("sys.zkapp.state","running")` | **仍卡 logo**（钩子没跑） |
+| v3 | fv 骨架 | 再补字体 | 字体进包 ✅、**仍卡 logo** |
+| **v4** | **IDE 模板风**（`flythings_create_project`） | 属性写在 `onUI_init()` | ✅ `sys.zkapp.state=running`、界面正常上屏 |
+
+### 12.3 正解（可直接照抄）
+
+1. **Z20 出包/回归测试别用 `fun create` 的 fv 骨架**，用带 `Manifest.xml` 的模板风工程
+   （MCP：`flythings_create_project`）；
+2. `src/logic/mainLogic.cc` 顶部加 `#include "os/SystemProperties.h"`，在 `onUI_init()` 里：
+
+```cpp
+static void onUI_init(){
+	SystemProperties::setString("sys.zkapp.state", "running");   // ← 不设 = 卡 logo
+}
+```
+
+3. 字体要随包进 `/res`：放**工程 `resources/`**（放 `ui/` 会被忽略，`fun pack` 只吐一句 `no any font`），
+   并用覆盖层 `package.properties` → `EasyUI.cfg={"font":"/res/ui/fzcircle.ttf"}`。详见
+   `knowledge/devflow/package-properties-easyui-cfg.md`。
+
+### 12.4 排查手法（下次直接用）
+
+- `onUI_init()` 里**顺手设一个自设标记属性**（如 `sys.zkapp.dbg="onUI_init"`）→ `getprop` 一看就知道
+  「界面逻辑到底跑了没」，不用反复猜（本轮就是靠它区分「属性没人设」和「钩子没跑」）。
+- 先对一台**正常在跑的同平台板**做只读对照：`getprop sys.zkapp.state`、`/res` 目录形态、`/res/etc/EasyUI.cfg`。
+
+---
+
 ## 相关
 
 - `knowledge/hardware/hardware-models.md`（SW48480040D1 条目）

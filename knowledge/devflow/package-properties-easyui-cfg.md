@@ -83,6 +83,37 @@ ERotation rot = (ERotation)(CONFIGMANAGER->getScreenRotate() / 90);          // 
 - 改完重新编译打包，设备上生成/更新的 EasyUI.cfg 在 resPath 对应目录（boot_from_sd 升级包同样携带 EasyUI.cfg）
 - 调字体 → package.properties 加 `enable.font.location=true` + 工程 font/ 目录放字体 + 代码 `setFontFamily`（不是 EasyUI.cfg 覆盖层的事，注意区分）
 
+## 字体/资源如何真的进 `/res`（2026-09-24 实测校准）
+
+- **字体要放工程 `resources/`**（如 `resources/fzcircle.ttf`）→ 打出的包才有 `/res/ui/fzcircle.ttf`；
+  **放 `ui/` 会被忽略**，`fun pack` 只会吐一句 `no any font`（无报错、无声失败）。
+- 实测判据：不带字体时 Z20 包 payload = **86,016 B**；把 1.9 MB 字体放进 `resources/` 后 payload = **1,236,992 B**（确实进包）。
+- EasyUI.cfg 里把字体指过去（覆盖层即可）：
+
+```properties
+EasyUI.cfg={"font":"/res/ui/fzcircle.ttf"}
+```
+
+- 参考实现：`gitcom/AppGroup/PublicTuyaSwitch`（字体 + 各页面图都在 `resources/`），
+  正常在跑的 Z20 板上 `/res/etc/EasyUI.cfg` 确实带 `"font":"/res/ui/fzcircle.ttf"`。【实测】
+
+## ⚠️ 伴生问题：不设 `sys.zkapp.state` 会卡开机 logo
+
+- Z20/这类带 `zkdisplay` 的板子：**应用启动后必须在 `onUI_init()` 里设 `sys.zkapp.state="running"`**，
+  否则显示层不把画面切给应用，屏幕永远停在开机 logo（adb 通、`/res` 是新包，但 `fb0` 是空的）。
+- 代码（`src/logic/mainLogic.cc`）：
+
+```cpp
+#include "os/SystemProperties.h"
+static void onUI_init(){
+	SystemProperties::setString("sys.zkapp.state", "running");
+}
+```
+
+- 另一个前提：**工程别用 `fun create` 的 fv 骨架（无 `Manifest.xml`）**，否则第一个界面不创建、钩子不跑，
+  属性永远为空 → 照样卡 logo。用带 `Manifest.xml` 的模板风工程（`flythings_create_project`）。
+  完整台账与排查手法 → `knowledge/hardware/z20-86panel-upgrade.md` §12。
+
 ## 相关
 
 - `devflow/dynamic-screen-rotation.md`：**运行时**旋转（`setScreenRotate` + `Activity::relayout` 换两套 ftu），与本文的编译期静态旋转互补；要 easyui ≥ 2.9.0
