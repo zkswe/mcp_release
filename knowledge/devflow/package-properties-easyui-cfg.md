@@ -9,6 +9,40 @@
 3. 所以 `.settings/com.zksw.flythings.easyui.prefs`（IDE 属性，debug/release 两份）里 rotateScreen=0、而 package.properties 里 270 不矛盾——**package.properties 优先**
 4. `enable.font.location=true`：另一独立开关，启用工程内 font/ 目录自定义字体（配合 `setFontFamily`，见 wiki `font/font_setting.md`）
 
+## ⚠️ 查找优先级：设备上生效的**可能不是这一份** cfg（SD 卡会「劫持」程序）
+
+> 2026-09-27 Z20 现场入规。检索词：**推上去没效果 / 改了像没改 / 新包看不到效果 /
+> 加载了 SD 卡旧 lib / startupLibPath 指到 extsd / EasyUI.cfg 劫持 / remount rw extsd**。
+
+启动器按**优先级**加载 cfg（高 → 低）：
+
+```
+/tmp/EasyUI.cfg        ← fun launch 的调试态（tmpfs，重启即清）
+/mnt/extsd/EasyUI.cfg  ← SD 卡（厂商 App / SD 调试包路线）   ★ 现场最常见的“没效果”原因
+/res/etc/EasyUI.cfg    ← 内置固件（release 态）
+```
+
+- **典型现象**：包推上去了、md5 回了、`getprop sys.zkapp.state=running`，但**屏幕/行为还是旧的**（改了像没改）。
+- **根因**：SD 卡那份 cfg 里 `"startupLibPath":"/mnt/extsd/lib/libzkgui.so"`（`resPath` 同理可指向
+  `/mnt/extsd/ui/`）→ 应用**实际加载的是 SD 卡上那份旧 lib/旧 ui**；新包这两份都在，跑的是 SD 那份。
+- **判定（两条）**：
+  1. `cat /mnt/extsd/EasyUI.cfg`（有则看 `startupLibPath` / `resPath` 指哪）；
+  2. 看**真正被加载**的那份：`cat /proc/$(pidof zkgui)/maps | busybox grep libzkgui`（无 busybox 就比
+     `/res/lib/libzkgui.so` 与 `/mnt/extsd/lib/libzkgui.so` 的 md5，哪个 == 本地产物）。
+- **处置**：改名即立即失效（回落下一优先级）；该分区**默认 ro**，要先 remount：
+
+```bash
+adb shell "mount -o remount,rw /mnt/extsd"
+adb shell "mv /mnt/extsd/EasyUI.cfg /mnt/extsd/EasyUi.cfgbak"
+adb shell "mount -o remount,ro /mnt/extsd"     # 改完回 ro
+adb shell "setprop ctl.restart zkswe"          # 重启应用生效
+```
+
+- `rotateScreen` / `rotateTouch` 也在这份 cfg 里（“方向怎么改都不对”同源排查）；
+  静态旋转 vs 运行时旋转详见 `devflow/dynamic-screen-rotation.md`。
+- 另：**编译期 easyui 版本 ≠ 设备运行库版本**（设备看 `getprop ro.easyui.version`；控件类由运行库提供）
+  → 能力存在性判定与矩阵见 `devflow/dynamic-screen-rotation.md` §4.1。
+
 ## EasyUI.cfg 完整字段（沛哥提供标准格式，debug 版示例）
 
 ```json

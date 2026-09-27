@@ -1,7 +1,8 @@
 # 🔄 动态旋转屏幕 / 运行时切换布局（relayout）
 
 > 2026-09-14 沛哥指路 `projects/LearningProject/RelayoutDemo`（F133）→ 本机 easyui 逐版本实测校准（**需要较新的 EasyUI**：relayout 由 easyui 2.9.0 引入；现有公开包的 z20/z21/t113 均无 → 找 FlyThings 厂家支持）。
-> 检索词：动态旋转 / 运行时旋转 / 横竖屏切换 / 屏幕方向切换 / 两套 ftu / relayout / setScreenRotate / setTouchRotate / EasyUI 版本要求。
+> 检索词：动态旋转 / 运行时旋转 / 横竖屏切换 / 屏幕方向切换 / 两套 ftu / relayout / setScreenRotate / setTouchRotate / EasyUI 版本要求 /
+> **scrollwindow 不显示 / 控件看不到 / 控件没渲染 / 页面只有标题 / 某版本不支持某控件 / 编译期头版本 vs 设备运行库 / ro.easyui.version / strings libeasyui.so**。
 
 ## 1. 一句话机制
 
@@ -59,6 +60,38 @@ static bool onButtonClick_Button1(ZKButton *pButton) {
 - `setScreenRotate` / `setTouchRotate` / `getScreenRotate` **很老就有**（z20 3.0.0、z21 2.6.0、t113 2.6.0 全有）——**只有 `relayout` 是新的**，所以「能转但换不了布局」的老平台别以为是同一回事
 - 公开仓库各平台 easyui 可用版本（`package_catalog.json` / `flythings_package_search`）：f136 2.10.0/2.9.0；f133 2.9.0/2.8.0/2.7.0/2.3.0；v85x 2.9.0/2.3.0/2.2.0；z20 3.0.0/2.6.0/2.2.0；z21 2.6.0/2.2.0；t113 2.6.0/2.5.0/2.2.0
 - **平台没有 ≥2.9.0 的 easyui（z20/z21/t113 现状）→ 找 FlyThings 厂家（中科世为）要带 `relayout` 的 EasyUI 版本**，不要在业务代码里模拟（自绘旋转/整页重开 Activity 是另一回事，体验与资源都差）
+
+### 4.1 同一判定法用于其它能力：`scrollwindow`（2026-09-27 核实：**不是版本问题**）
+
+> 检索词：**scrollwindow 不显示 / 控件看不到 / 控件没渲染 / 页面只有标题 / 某版本不支持某控件 /
+> 编译期头版本 vs 设备运行库 / ro.easyui.version / strings libeasyui.so**。
+
+上表只 grep `include/` 是不够的（**控件类由设备运行库提供**，工程只编头）。完整三步：
+
+| 步 | 看什么 | 怎么做 |
+|---|---|---|
+| ① 工程**编译期**解析版本 | `Manifest.xml` 写的是范围（如 `easyui ^2.2.0`），真版本在锁文件 | `<工程>/.deps.lock` 的 `"revision"`；实用 include 路径见 `.fun/<平台>/build.ninja` 的 `-I.../registry/public/<平台>/easyui/<版本>/include` |
+| ② registry 里**有没有这个类** | 逐版本 grep `include/` | `grep -rl ZKScrollWindow <registry>/<平台>/easyui/*/include/` |
+| ③ 设备**运行库**有没有 | `getprop ro.easyui.version` + pull 运行库看符号 | `adb pull /lib/libeasyui.so` → 在 PC 上 `strings`/正则扫 `ZKScrollWindow` 与 `_ControlFactory_ZKScrollWindow::create` |
+
+**Z20 实测结果（2026-09-27）**：registry **2.6.0 / 3.0.0 都有** `window/ZKScrollWindow.h`
+（2.6.0 = 1317 B，API 更全：`setScrollbarColor`/`moveTo`/`setScrollStep`/`setMoveCheckTimeThreshold`；
+3.0.0 = 716 B 是**裁剪版**）；设备 `/lib/libeasyui.so`（822,656 B）含 **40 个 `ZKScrollWindow*` 符号**
+（含 `_ControlFactory_ZKScrollWindow::create`）→ 运行期真能创建。
+**⇒「某版本不支持 `scrollwindow`」不成立**，别往这个方向查。
+
+**反向交叉验证（证明这套判定有效）**：同一份设备库 **有** `ConfigManager::setScreenRotate/setTouchRotate/getScreenRotate`、
+**没有** `relayout` —— 与上表「`relayout` 需 ≥ 2.9.0，Z20 无」完全吻合。
+
+**「控件看不到 / 页面只有标题」排查顺序**（按命中率）：
+1. 设备加载的是**哪一份** lib/ui（`/tmp` > `/mnt/extsd` > `/res`，SD 卡可劫持）
+   → `devflow/package-properties-easyui-cfg.md` 的「查找优先级」节；
+2. 产物有没有同步（改 `ui/*.json` 必须立即 `fui pack` 出 ftu；`fun pack` 会把旧 ftu 回写成 json）
+   → `devflow/ftu-json-pipeline.md`；
+3. 能力/类**存不存在**（上述三步，本例已证伪）；
+4. 控件结构与字段（`scrollwindow` 只装 `window`；内容高 > 视口才滚；固定件放外面；`touchable`）
+   → `uicontrols/scroll-drag-interaction-spec.md`；
+5. 可见性/启动态（`visible:false`、被上层装饰层盖住、`getprop sys.zkapp.state` 不是 `running`）。
 
 ## 5. 本机编译实测（RelayoutDemo + 当前 fun 工具链；CLI 更名见 `devflow/cli-fun-toolchain.md`）
 

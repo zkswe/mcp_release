@@ -143,6 +143,128 @@ class MiVideoFrame(unittest.TestCase):
             ds._sh, ds._run, ds._ensure_zkshot = orig_sh, orig_run, orig_ensure
             ds.pick_device, ds.find_adb = orig_pick, orig_adb
 
+    # ---- vdec 通道号（2026-09-27 实测缺陷：拼墙在 chn 1，工具写死 chn 0 抓不到帧）----
+
+    def _stub_capture(self, out, frame_line, chn=0):
+        """把 capture_mi_video 的 adb 依赖全部换成假的；返回 (r, calls)"""
+        calls = []
+
+        def fake_sh(adb, dev, cmd, timeout=30):
+            calls.append(cmd)
+            if 'vdec' in cmd:
+                return frame_line
+            return ''
+
+        def fake_run(args, timeout=60, binary=False):
+            if 'pull' in args:
+                with open(args[-1], 'wb') as f:
+                    f.write(bytes([100]) * 16 + bytes([128]) * 8)
+            return 0, '', ''
+
+        self._orig = (ds._sh, ds._run, ds._ensure_zkshot, ds.pick_device, ds.find_adb)
+        ds._sh, ds._run = fake_sh, fake_run
+        ds._ensure_zkshot = lambda adb, dev, notes: '/tmp/zkshot'
+        ds.pick_device = lambda adb, device='': ('dev', '')
+        ds.find_adb = lambda: 'adb'
+        r = ds.capture_mi_video(device='dev', out=out, vdec_chn=chn)
+        return r, calls
+
+    def _unstub(self):
+        (ds._sh, ds._run, ds._ensure_zkshot,
+         ds.pick_device, ds.find_adb) = self._orig
+
+    def test_vdec_chn_default_is_chn0(self):
+        """默认值必须是 0（不改变历史行为）：zkshot 命令行 = vdec 0 0"""
+        import tempfile
+        out = os.path.join(tempfile.mkdtemp(), 'v.png')
+        r, calls = self._stub_capture(out, '[vdec] W=4 H=4 fmt=11 stride0=4 stride1=4 bufsize=24')
+        self._unstub()
+        self.assertTrue(r['success'], r)
+        self.assertEqual(r['vdecChn'], 0)
+        self.assertIn('vdec 0 0', ' '.join(calls))
+
+    def test_vdec_chn_passed_to_zkshot(self):
+        """显式 chn 1（拼墙）→ zkshot 收到 `vdec 1 0`，返回体回显 vdecChn=1"""
+        import tempfile
+        out = os.path.join(tempfile.mkdtemp(), 'v.png')
+        r, calls = self._stub_capture(
+            out, '[vdec] SetChnOutputPortDepth(chn=1 port=0) rc=0x0\n'
+                 '[vdec] W=4 H=4 fmt=11 stride0=4 stride1=4 bufsize=24', chn=1)
+        self._unstub()
+        self.assertTrue(r['success'], r)
+        self.assertEqual(r['vdecChn'], 1)
+        self.assertIn('/tmp/zkshot /tmp/.fyshot_video.raw vdec 1 0', ' '.join(calls))
+        self.assertEqual(r['zkshotCmd'], '/tmp/zkshot /tmp/.fyshot_video.raw vdec 1 0')
+
+    def test_vdec_failure_reports_channel_and_hint(self):
+        """取不到帧不许静默：返回体带实际 chn + 命令行 + 指路 hint，warnings 带 zkshot 原始输出"""
+        import tempfile
+        out = os.path.join(tempfile.mkdtemp(), 'v.png')
+        r, calls = self._stub_capture(
+            out, '[vdec] SetChnOutputPortDepth(chn=1 port=0) rc=0x0\n[vdec] GetBuf failed: 0xa00b2008', chn=1)
+        self._unstub()
+        self.assertFalse(r['success'])
+        self.assertEqual(r['vdecChn'], 1)
+        self.assertIn('vdec 1 0', r['zkshotCmd'])
+        self.assertIn('chn 1', r['hint'])
+        self.assertTrue(any('chn=1' in w for w in r['warnings']), r['warnings'])
+        self.assertTrue(any('vdec 1 0' in c for c in calls), calls)
+
+    def test_vdec_empty_frame_reports_channel(self):
+        """空帧（W=0 H=0）也要说清是哪个通道空"""
+        import tempfile
+        out = os.path.join(tempfile.mkdtemp(), 'v.png')
+        r, _ = self._stub_capture(out, '[vdec] W=0 H=0 fmt=-1 stride0=0 stride1=0 bufsize=0')
+        self._unstub()
+        self.assertFalse(r['success'])
+        self.assertEqual(r['vdecChn'], 0)
+        self.assertIn('chn=0', r['error'])
+
+    def test_bad_vdec_chn_type_raises_bad_params(self):
+        """vdec_chn 传垃圾 → 明确报错（含参数名），不要抛异常/静默当 0 用"""
+        r, _ = self._stub_capture(os.path.join(os.environ.get('TEMP', '.'), 'v.png'), '',
+                                  chn='not-an-int')
+        self._unstub()
+        self.assertFalse(r['success'])
+        self.assertIn('vdec_chn', r['error'])
+
+    def test_capture_layer_video_forwards_vdec_chn(self):
+        """capture(layer='video') 必须把 vdec_chn 透传进 capture_mi_video（别学 crop 丢参数的旧坑）"""
+        if ds.Image is None:
+            self.skipTest('缺 Pillow')
+        seen = {}
+        orig = ds.capture_mi_video
+        try:
+            def fake(**kw):
+                seen.update(kw)
+                return {'success': True}
+            ds.capture_mi_video = fake
+            ds.capture(layer='video', vdec_chn=1, device='dev')
+        finally:
+            ds.capture_mi_video = orig
+        self.assertEqual(seen.get('vdec_chn'), 1)
+
+    def test_cli_exposes_layer_and_vdec_chn(self):
+        """CLI 原来根本没有 --layer：补上 --layer video + --vdec-chn 1"""
+        import io
+        import sys
+        seen = {}
+        orig_cap = ds.capture
+        orig_argv, orig_out = sys.argv, sys.stdout
+        try:
+            def fake(**kw):
+                seen.update(kw)
+                return {'success': True}
+            ds.capture = fake
+            sys.argv = ['device_screenshot.py', '--layer', 'video', '--vdec-chn', '1']
+            sys.stdout = io.StringIO()
+            ds.main()
+        finally:
+            ds.capture = orig_cap
+            sys.argv, sys.stdout = orig_argv, orig_out
+        self.assertEqual(seen.get('layer'), 'video')
+        self.assertEqual(seen.get('vdec_chn'), 1)
+
 
 if __name__ == '__main__':
     unittest.main()

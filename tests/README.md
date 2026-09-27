@@ -13,7 +13,13 @@ python scripts/check_consistency.py --with-tests
 ```
 
 依赖：只用标准库 + 仓库已有依赖（Pillow 缺失时图像相关用例自动 skip）。**不连真机**。
-当前规模：**322 项**（1 项按环境 skip）。
+当前规模：**329 项**（1 项按环境 skip）。
+
+> 2026-09-27（v0.27.115-open）：`test_device_screenshot_probe.py` 新增 7 项（+22 → 共 18）——
+> 视频层抓帧的 **vdec 通道口径**：默认必须是 chn 0（`zkshot ... vdec 0 0`，向后兼容）、
+> 显式 `vdec_chn=1` 要真的传进 zkshot 命令行且返回体回显 `vdecChn` + `zkshotCmd`、
+> 取帧失败/空帧必须回带实际通道号 + 指路 hint（不静默）、`vdec_chn` 传垃圾要明确报错、
+> `capture(layer='video')` 必须透传 `vdec_chn`、CLI 必须有 `--layer`/`--vdec-chn`。
 
 > 2026-09-21（v0.27.101-open，钟工口径 A「没给设计稿不许直接建工程」）：新增 `test_design_first_gate.py`（16 项）——
 > 设计产物检测口径（`design/` / `*.html` / `*.preview.html` 算、构建产物目录不算、目录不存在不提示）、

@@ -258,6 +258,18 @@ adb shell ls -l /res/font                  # 本次：HanSans-Medium.ttf 1763788
 `/mnt/sdnand/lib` 虽在 `LD_LIBRARY_PATH` 里，但**UI/字体/配置没有对应的持久读取路径**。
 ⇒ 别自己去铺 `/mnt/sdnand/app` 猜启动方式，**统一走 `update.img`**。
 
+### 6) 体积上限：`update.img` 必须 ≤ **res 分区**大小（出包前先对表）
+
+- `/proc/mtd`（`Zkswe_SSD20X_SPINOR` 实测）：mtd0 BOOT / mtd1 KERNEL / mtd2 rootfs /
+  **mtd3 `res` = `0x720000` = 7,470,080 B** / mtd4 config / mtd5 LOGO / mtd6 data。
+- `update.img` 的落点就是 **res**（`/res` = `/dev/block/mtdblock3` squashfs）→ **包体上限 = 该分区字节数**
+  （本型号 7,470,080 B；本工程实测 5.85 MB）。换型号/换板先 `cat /proc/mtd` 对表，**别照抄**。
+- 无独立 `zkupgrade` 二进制（能力在 `/bin/zkgui` 内）→ 升级永远是「置属性 + `setprop ctl.restart zkswe`」。
+- 刷完的硬判据：`adb shell ls -l /res/lib/libzkgui.so` 的大小/md5 == 本地 `.fun/z20/libzkgui.so`
+  （只比 `update.img` 体积不准：小改动下包体可能恰好不变）。
+- ⚠️ 刷前确认**设备真正加载的是哪一份** —— SD 卡 `/mnt/extsd/EasyUI.cfg` 可能把程序劫持到旧 lib：
+  `devflow/package-properties-easyui-cfg.md` 「查找优先级」节。
+
 ## 五、排查用到的定位手法（可复用）
 
 - fun 的“家目录”由环境变量决定：本机 `FLYTHINGS_FUN_DIR` / `FUN_HOME_PATH` = `C:\zkswe\fun`，
