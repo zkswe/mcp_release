@@ -134,49 +134,78 @@ def start_server(adb='', timeout=DEFAULT_TIMEOUT):
     return rc == 0
 
 
-def restart_app(adb, serial, name='zkgui', term_wait=3.0, extra_path='/tmp/busybox',
-                poll_interval=0.5):
-    """温和终止优先地重启应用进程（init 会自动拉起）：`kill -TERM` → 轮询等退出 → 仍在则 `kill -KILL`。
+# 应用由 init（类 init 服务）托管：**不能用 kill 重启**，只能让 init 回收再拉起
+RESTART_PROP = 'ctl.restart %s'
 
-    为什么不一上来 `kill -9`（v0.27.90 防御性修改，因果**未确证**）：
-      · 现场反馈：多次 `kill -9 zkgui` 之后（以及 deploy 的 `adb reboot` 之后）出现过整板掉网；
-        两条现象互相矛盾，**因果未定**（不是已确认的结论），所以只做「优先温和」这一无害的防御：
-        SIGTERM 让进程正常收尾（关 fb/图层/套接字）再退出，必要时才回退 -KILL，行为等价、不多花时间。
-      · 遇到掉网按现场断电重启处理（deploy-scene-map / device-deploy-budget §温和终止）。
 
-    返回可打的 dict：{found, pid, termSent, fallbackKill, exited, detail}
-    （日志要能取证：用了哪条、是否回退。）
+def restart_app(adb, serial, name='zkgui', service='zkswe', extra_path='/tmp/busybox',
+                wait=6.0, poll_interval=0.5, allow_kill=False):
+    """重启应用进程 —— **setprop 控制（框架口径），默认不 kill**。
+
+    框架事实（2026-09-28 钟工定：应用由类 init 服务托管，不允许 kill）：
+      · 应用进程不是普通进程，`kill` 它（哪怕 -TERM）都不是框架认可的重启方式；
+        正确姿势 = 让 init 回收再拉起 → `setprop ctl.restart zkswe`
+        （`/etc/init.rc`：`service zkswe /bin/zkgui`）。
+      · 厂商 CLI `fun launch` 内部同样走 `ctl.restart`（二进制里可见 `ctl.restart`+`zkswe`
+        +`setprop`，无 kill）；手动部署（推 `/tmp` + `EasyUI.cfg`）之后也用同一句让它生效。
+      · 历史教训：脚本里反复 `kill -9 zkgui` / `busybox killall zkgui` 之后，现场出现过
+        「触摸注入命令成功、应用不响应」「整板掉网」等现象（当时因果未确证，现按框架口径统一
+        不用 kill）→ 这也是本函数默认 `allow_kill=False` 的原因。
+      · 仅当个别板子 `setprop` 静默失败、且调用方显式传 `allow_kill=True` 时，才回退
+        `kill -TERM`（仍然不用 -9）。
+
+    返回可取证 dict：{found, oldPid, newPid, method, restarted, detail}
+    method ∈ {'setprop', 'kill -TERM', 'none'}；restarted=True 表示 pid 确实换了。
     """
-    res = {'found': False, 'pid': '', 'termSent': False, 'fallbackKill': False,
-           'exited': False, 'detail': ''}
+    res = {'found': False, 'oldPid': '', 'newPid': '', 'method': 'none',
+           'restarted': False, 'detail': ''}
     bb = ''
     if extra_path:
         bb = (extra_path.rstrip('/') + '/') if sh(adb, serial, 'test -x %s && echo 1' % extra_path).strip() else ''
     pid_cmd = ('%spidof %s' % (bb, name)) if bb else ('pidof %s' % name)
-    out = sh(adb, serial, pid_cmd)
-    pids = [p for p in (out or '').replace('\n', ' ').split() if p.isdigit()]
-    if not pids:
-        res['detail'] = '未找到 %s 进程（可能首启未拉起，或 pidof 不可用）' % name
-        return res
-    res['found'] = True
-    res['pid'] = pids[0]
-    res['termSent'] = True
-    sh(adb, serial, 'kill -TERM %s' % ' '.join(pids))
+
+    def _pids():
+        out = sh(adb, serial, pid_cmd)
+        return [p for p in (out or '').replace('\n', ' ').split() if p.isdigit()]
+
+    before = _pids()
+    res['found'] = bool(before)
+    res['oldPid'] = before[0] if before else ''
+
+    prop = RESTART_PROP % service
+    sh(adb, serial, 'setprop %s' % prop)
     waited = 0.0
-    while waited < term_wait:
+    while waited < wait:
         time.sleep(poll_interval)
         waited += poll_interval
-        if not sh(adb, serial, '%spidof %s' % (bb, name)).strip():
-            res['exited'] = True
+        now = _pids()
+        if now and (not res['oldPid'] or now[0] != res['oldPid']):
+            res['method'] = 'setprop'
+            res['newPid'] = now[0]
+            res['restarted'] = True
             break
-    if not res['exited']:
-        res['fallbackKill'] = True
-        sh(adb, serial, 'kill -KILL %s' % ' '.join(pids))
-        time.sleep(poll_interval)
-        res['exited'] = not bool(sh(adb, serial, '%spidof %s' % (bb, name)).strip())
-    res['detail'] = ('kill -TERM %s%s' % (res['pid'],
-                                          '；%.1fs 内未退出 → 回退 kill -KILL' % term_wait
-                                          if res['fallbackKill'] else '；已自行退出（未用 -KILL）'))
+    if res['restarted']:
+        res['detail'] = ('setprop %s → 新 pid %s（旧 %s）' % (prop, res['newPid'], res['oldPid'] or '-'))
+        return res
+
+    # —— 兜底（仅显式要求）：个别板子 setprop 通道不可用时才 kill（不用 -9）
+    if allow_kill and res['oldPid']:
+        sh(adb, serial, 'kill -TERM %s' % res['oldPid'])
+        waited = 0.0
+        while waited < wait:
+            time.sleep(poll_interval)
+            waited += poll_interval
+            now = _pids()
+            if now and now[0] != res['oldPid']:
+                res['method'] = 'kill -TERM'
+                res['newPid'] = now[0]
+                res['restarted'] = True
+                break
+
+    res['detail'] = ('setprop %s 后 %.1fs 内未观察到新 pid（旧 %s）；'
+                     '%s请现场断电重上电，别用 kill（应用由 init 托管）'
+                     % (prop, wait, res['oldPid'] or '无',
+                        '' if allow_kill else 'allow_kill=True 可试 kill -TERM 兜底；'))
     return res
 
 

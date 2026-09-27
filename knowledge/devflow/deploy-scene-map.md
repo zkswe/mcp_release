@@ -21,11 +21,14 @@
 ⚠️ 没有「增量推送 vs 全量推送」两种模式：**fun launch 本身就是全量推送**（程序+资源+ftu 一起部署），
 不需要 adb push 单文件、不需要 kill zkgui、不需要中间脚本。
 
-> **应用侧重启应用进程时的姿势**（仅限脚本/示例要自己重启 zkgui 的场合，**不是**正常部署流程）：
-> **温和终止优先** —— `kill -TERM` → 约 3s 内未退出才回退 `kill -KILL`（MCP 侧单一实现
-> `adb_tools.restart_app()`）。现场多次 `kill -9 zkgui` 之后（以及脚本里的 `adb reboot` 之后）
-> 出现过**整板掉网**，但**因果未证**（两条现象互相矛盾）→ 遇掉网按现场断电重启处理，
-> 不当作结论用；口径与背景见 `device-deploy-budget.md` §5。
+> **应用侧重启应用进程时的姿势**（仅限脚本/示例要自己重启应用的场合，**不是**正常部署流程）：
+> **走 setprop 让 init 控制，不 kill 程序** —— 应用由类 init 服务托管（`/etc/init.rc`:
+> `service zkswe /bin/zkgui`），控制程序 = `setprop ctl.restart zkswe`（厂商 `fun launch`
+> 内部也是 `ctl.restart`，不用 kill）。MCP 侧单一实现 `adb_tools.restart_app()`
+> （setprop → 轮询等新 pid；`kill` 仅在 `allow_kill=True` 时才作兜底）。
+> ⚠️ 历史坑：早期临时脚本/示例大量 `kill -9 zkgui` / `busybox killall zkgui`，
+> 反复 kill 之后现场出现过「触摸注入不响应」「整板掉网」→ 现在统一口径：**不 kill**。
+> 口径与背景见 `device-deploy-budget.md` §5。
 
 ## ⚠️ 反例：固化升级**不是**本工具（另一条唯一入口）
 

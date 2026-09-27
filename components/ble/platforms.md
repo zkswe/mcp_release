@@ -459,6 +459,8 @@ E/Realtek: Retransmission exhausts                    Retransmission exhausts
 
 1. ★ **必须先停掉抢串口的 app**：`/bin/zkgui`（系统应用）开机后就持着 `/dev/ttyS2` **两个 fd**，
    此时 rtk_init 的 H5 同步永远超时。查法：`ls -l /proc/<pid>/fd | grep ttyS2`。
+   **停法（框架口径）**：应用由类 init 服务托管（`/etc/init.rc`: `service zkswe /bin/zkgui`），
+   **不要 kill**（kill 只会被 init 立刻拉起）——用 `setprop ctl.stop zkswe` 停服、测完 `setprop ctl.start zkswe` 恢复。
    长期正解：**我们的应用自己固化进设备**（升级包），不跟系统 app 抢。
 2. ★ **传输层必须照实测可用写法**（错一个就在 `hci_power_control()` 里段错）：
    | 项 | 可用 | 不可用（真机段错） |
@@ -473,11 +475,12 @@ E/Realtek: Retransmission exhausts                    Retransmission exhausts
 wsl 无关；全程 Windows + fun + adb：
  cd projects/ZkBleScanTest && C:/zkswe/fun/fun.exe build
  adb push .fun/v85x/ZkBleScanTest /tmp/ && adb shell chmod 777 /tmp/ZkBleScanTest
- adb shell '/tmp/busybox killall zkgui; echo 0 > <state_bt>; sleep 3; echo 1 > <state_bt>; sleep 2; cd /tmp && ./ZkBleScanTest'
+ adb shell 'setprop ctl.stop zkswe; echo 0 > <state_bt>; sleep 3; echo 1 > <state_bt>; sleep 2; cd /tmp && ./ZkBleScanTest'
+ # 测完恢复：adb shell 'setprop ctl.start zkswe'
 ```
 
 **未完成（下一步）**：把我们的应用做**固化升级包**（`fun pack` → update.img → adb 固化），
-让设备上的 app 就是我们自己的，彻底消除抢串口冲突，而不是每次靠 kill。
+让设备上的 app 就是我们自己的，彻底消除抢串口冲突，而不是每次靠 `setprop ctl.stop zkswe` 临时停服。
 
 ### 5.3 ✅ 固化升级跑通（2026-09-13 11:2x，改成 app 工程）
 
