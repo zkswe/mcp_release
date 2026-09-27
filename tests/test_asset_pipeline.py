@@ -296,12 +296,33 @@ class TestTextViewBgPic(unittest.TestCase):
                          'data-bg 仍要落成 bgColorTab')
 
     def test_bgpic_wins_over_bg_color(self):
-        """同 button 口径：有底图就不放底色（透明角图会透出底色）。"""
+        """A6（2026-09-27）口径：有图控件的 `bgColorTab` 不再是「控件底色」而是**圆角外底色**——
+
+        ① 作者显式写 `data-bg` → 用它（四角透出的是这个色，不再是引擎缺省黑底）；
+        ② 没写 data-bg、也没祖先底色 → 保持 pop（退引擎缺省，与旧行为一致）；
+        ③ 没写 data-bg、但坐在有色 window 里 → 取**最近祖先容器底色**。
+        （旧断言「有图必不留 bgColorTab」正是 P4「图标角落都是黑的」的根因，已废）
+        """
         caps = self._convert(
             '<div class="text" data-caption="Both" data-x="10" data-y="10" data-w="60"'
             ' data-h="40" data-bg="#123456" data-bgpic="images/both.png">x</div>')
         self.assertEqual(caps['Both'].get('backgroundPic'), 'images/both.png')
-        self.assertNotIn('bgColorTab', caps['Both'], '有图还留底色 → 透明角透底（button 分支同规则）')
+        self.assertEqual(caps['Both'].get('bgColorTab'), {'color0': 0x123456},
+                         '显式 data-bg 必须作为圆角外底色留下（A6）')
+
+        caps = self._convert(
+            '<div class="text" data-caption="NoBg" data-x="10" data-y="10" data-w="60"'
+            ' data-h="40" data-bgpic="images/nobg.png">x</div>')
+        self.assertNotIn('bgColorTab', caps['NoBg'],
+                         '既无 data-bg 也无祖先底色 → 保持 pop（与旧行为一致）')
+
+        caps = self._convert(
+            '<div class="window card" data-x="0" data-y="0" data-w="200" data-h="120"'
+            ' data-bg="#1C1C1E">'
+            '<div class="text" data-caption="InCard" data-x="10" data-y="10" data-w="60"'
+            ' data-h="40" data-bgpic="images/incard.png">y</div></div>')
+        self.assertEqual(caps['InCard'].get('bgColorTab'), {'color0': 0x1C1C1E},
+                         '无 data-bg 的有图控件要取最近祖先容器底色（A6 ③）')
 
     @unittest.skipUnless(HAS_PIL, 'needs Pillow')
     def test_bgpic_text_image_must_be_1to1(self):

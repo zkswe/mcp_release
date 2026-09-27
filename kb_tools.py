@@ -53,7 +53,7 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.115-open'
+MCP_VERSION = '0.27.116-open'
 MCP_BUILD = '2026-09-27'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -68,6 +68,7 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+    '2026-09-27: **html2json 一批静默缺陷修（A1~A8）+ 属性三表入库**（钟工转发 PocketGame《框架缺陷与踩坑清单-2026-09-27》，逐条对源码核实后开修）v0.27.116-open——① **A4 edittext 漏写 `touchable/visible`**（button/seekbar 都写了，唯 edittext 分支漏）→ 输入框可见、有底色与提示词，但**点了完全没反应、IME 不弹**（极易误判成「IME 没注册」）；② **A2 纯黑 `#000000` 被当「未设置」**：`to_dec(...) or 默认值` 共 16 处（data-color/data-color2/data-bg/data-bg2/data-text-bg/data-hint-color/clockColor）→ 新增 `_color_explicit()` **按「属性是否出现」判定**（原来是按「值是否为 0」→ 0 是 falsy，纯黑被换成默认色，实测「绿底白字」对比度 1.44:1；**老工程 `#010101` 绕过写法继续有效，不必回改**）；③ **A6 有图控件的圆角外底色**：新增 `_corner_bg()`，口径 = **`data-bg` > 最近祖先容器底色（window 的 `__bg`）> 引擎缺省 + 告警**（原来有图一律 `pop(bgColorTab)` → 四角取引擎缺省黑底，坐卡片上的圆角图标四角发黑；⚠️ bgColorTab 只管最外 1px，里圆角那几px在图里）；④ **A5 新增 `data-visible`**：直通 json `visible`（支持控件/容器/subItem/window；旧版不认该属性 → 初始隐藏只能靠运行期 patch，控件名要在生成器与 patch 两处同步，漏一处即静默失败）；⑤ **A1/A8 不再静默**：新增 `_Ctx.warn()`（去重），丢字符（emoji/黑名单字）、有图无底色、文本最小宽超容器等全部进返回体 `warnings[]`；⑥ **A7 统计/遍历含嵌套**：`flythings_ui_preview` 的 controls 改全量（另给 `controlsTopLevel`/`controlsNested`，原来 50 控件页面报 `controls: 1`）、`gen_ui_test` 递归收集嵌套控件并**按父偏移累加绝对坐标**（原来只扫根层 → 弹窗/键盘页可测控件为 0）；⑦ **A3 subItem 认 `data-bg`** → `bgColorTab.color0`（不写 = -1）；⑧ **A8 三表入库**：「属性直通 / 丢弃 / 默认值」三张对照表进 `ui_tools/HTML_SUBSET.md` + `knowledge/devflow/html-subset-quickref.md` §4.1（原来只能靠真机反推）；真机验收：108（Z20 板）逐项上屏核对；v0.27.116-open',
     '2026-09-27: **真机视频层抓帧支持指定 vdec 通道（多屏拼接拼墙抓不到视频帧的修复）**（钟工：交付整机说明书时 `layer="video"` 抓不到拼墙画面，只能手工 `zkshot <out.raw> vdec 1 0`）v0.27.115-open——① **缺陷**：`flythings_device_screenshot(layer="video")` 内部把 vdec 通道**写死为 chn 0**，而多屏拼接（SmartPanel_HA）的拼墙播放器（mi-module h264_player 移植版）在 **chn 1** → 取帧失败（另注：Z20 屏保 zkmedia/ssdvideoplayer 是 FFmpeg 软解、**不建 MI VDEC 通道**，所以「chn 0」只是默认取帧口径，chn 0 抓不到不一定是工具问题）② **新增参数 `vdec_chn`（int，默认 0，向后兼容）**：仅 layer="video" 生效，映射到 `zkshot <out.raw> vdec <chn> 0`（多路/拼墙必须指定，**拼墙在 chn 1**）；也可走 advanced（`{"layer":"video","vdec_chn":1}`）③ **报错可诊断（不再静默）**：取帧失败/空帧/pull 失败/解码失败都返回 `vdecChn`（实际用的通道号）+ `device` + `zkshotCmd`（还原后的命令行）+ `hint`（chn 0/1 各是什么、怎么换通道），warnings 里带 zkshot 原始输出 ④ CLI 补齐 `--layer ui|video` + `--vdec-chn N`（原来 CLI 根本没法抓视频层）⑤ 长尾口径入 `knowledge/devflow/device-screenshot.md` §4.1（含 `tools/zkshot` 的 `[vdec|disp] [chn] [port]` 三参口径与实测背景）；v0.27.115-open',
     '2026-09-27: **倒角/描边「变粗」口径 + EasyUI.cfg 劫持 + easyui 版本→控件可用性三件套入库**（钟工：「多屏拼接里面几个图片的倒角线变粗了，这个问题以前 MCP 应该修复过的。你再检查下 MCP 如果说明不够明显就修改」）v0.27.114-open——① **`knowledge/devflow/ui-asset-rules.md` 新增铁律 #13「倒角/描边『变粗』与同族一致性」**：症状词表（倒角线变粗/描边比别的行厚/圆角发糊/弧线粗一档/与相邻行不一致/弧上 2px 实色带）→ 根因三条（整像素描边带的弧上 ~1.41px 已知代价 / FT-008 取整偏移 / 二值 mask 当 α）→ 唯一正确画法（≥4× SS + Image.BOX；`bordered_cov`=要描边、`rounded_rect_cov`=不要描边；禁二值 mask 当 α、禁亚像素混色）→ **同族同口径铁律**（一组行底/按钮底要么全带描边要么全不带，半径同令牌值）→ 自检命令（`corner_audit --arc-only --fail` / `--fail` / `aa_audit --fail` / `check_all` #21#22#25）+ 闸门盲区声明（#21/#25 都抓不到「弧上 2px 观感」与「同族不一致」）+ 图标家族一致性（改宽只平移、零重采样）② **`knowledge/devflow/package-properties-easyui-cfg.md` 新增「查找优先级：生效的可能是另一份 cfg」**：`/tmp` > **`/mnt/extsd`（可劫持程序）** > `/res/etc`；症状「推上去没效果/改了像没改」的判定两条命令 + `remount,rw` 改名处置 ③ **`knowledge/devflow/dynamic-screen-rotation.md` 新增 §4.1**：easyui 能力存在性三步判定（`.deps.lock` revision / registry `include/` / **设备运行库 `strings /lib/libeasyui.so`**）—— Z20 `scrollwindow` 在 2.6.0/3.0.0/设备库**全有**（不是版本问题）、`relayout` 需 ≥2.9.0；「控件看不到」排查顺序 5 步 ④ **`knowledge/devflow/upgrade-pack-image.md` §四点五 新增 6)**：`update.img` 上限 = res 分区（`0x720000` = 7,470,080 B）、无独立 zkupgrade、md5 判据；v0.27.114-open',
     '2026-09-24: **固化升级 update.img 的 Z20 真机实操入库**（钟工：直接采用 update.img 升级——标准 FlyThings 升级方法，同步到 MCP）v0.27.113-open——①**知识补充**：`knowledge/devflow/upgrade-pack-image.md` 新增 §四点五「Z20 真机实操记录」：Z20 的 `/res` = `/dev/block/mtdblock3` **squashfs ro**（`touch` 直接 Read-only）、`fun launch` 推的是 `/tmp/ui` + `/tmp/font` + `/tmp/EasyUI.cfg`（`tmpfs`，**重启即清空**）、`/etc/init.rc` = `service zkswe /bin/zkgui` + `LD_LIBRARY_PATH /tmp:/lib:/mnt/extsd/lib:/mnt/sdnand/lib` ⇒ 重启后屏幕回到 `/res` 旧版 = 「页面不对」的真根因（调试推送 ≠ 固化升级）②**实测固化序列**（Z20，一次成功）：`flythings_pack_upgrade`（内部 `fun install && fun build && fun pack -p Z20 --release-version x -o out/update.img`，本次 1,913,404 B）→ `adb push update.img /tmp/` → `setprop sys.zkupgrade.flag 255` → `setprop sys.zkupgrade.dir /tmp` → `setprop ctl.restart zkswe` → 升级流程**自行整机重启**（~45 s）③**三步验收**：`cat /proc/uptime`（归零=真重启过）+ `ls -l /res/ui`（新工程页全部到位，本次含 album/brightness）+ `ls -l /res/font`（自家 HanSans 两档进了 /res），再 `flythings_device_screenshot` 交视觉模型确认页面 ④**字体要进包**：工程根 `package.properties` 写 `enable.font.location=true` + 工程 `font/*.ttf` ⇒ 写进 EasyUI.cfg 的 `font` 键并打进 update.img，设备侧落 `/res/font/`；工具在「设备无字库」时会**自动往工程投 `font/zkswe-hans-common.ttf`**，自带字体的话用完记得删（本次已删）⑤**反面教材**：`/mnt/sdnand/app/{ui,lib,font,tr}` 与 0 字节 `/mnt/sdnand/EasyUI.cfg` **不是**升级路径（`init.rc` 不从那儿起应用），别自己铺目录猜启动方式，统一走 `update.img` ⑥定位手法：分清设备跑的是哪一份——`/tmp/ui` 有内容=调试态、`/res/ui` 是新页=固化态；v0.27.113-open',
@@ -865,8 +866,26 @@ def flythings_ui_preview(target: str, output_dir: str = '') -> str:
                 try:
                     with open(jp, encoding='utf-8-sig') as fh:
                         data = json.load(fh)
-                    f['controls'] = sum(1 for k, v in data.items()
-                                         if isinstance(v, dict) and '__' in k)
+                    # A7 修（2026-09-27）：递归计数（旧版只数根层 → 50 控件页面报 controls:1）
+                    def _count_list(dd, acc):
+                        for k, v in dd.items():
+                            if k.startswith('__'):
+                                continue
+                            if isinstance(v, dict) and '__' in k:
+                                acc[0] += 1
+                                _count_list(v, acc)
+                            if isinstance(v, list):
+                                for x in v:
+                                    if isinstance(x, dict):
+                                        _count_list(x, acc)
+                        return acc[0]
+
+                    top = sum(1 for k, v in data.items()
+                              if isinstance(v, dict) and not k.startswith('__') and '__' in k)
+                    total = _count_list(data, [0])
+                    f['controls'] = total
+                    f['controlsTopLevel'] = top
+                    f['controlsNested'] = max(total - top, 0)
                 except Exception:
                     pass
         r['projectRoot'] = target

@@ -322,6 +322,33 @@ python tools/ui_tools/html2json.py ui/wireframe.html ui/main.json --merge-window
 </div>
 ```
 - ⚠️ 旧版本曾要求必须 class="subitem" 直挂、`.item` 包裹会被吞成单个空 subItem，已修复：现在两种写法都支持。
+- **subItem 也能带底色**（A3 修，2026-09-27）：`data-bg` → subItem 的 `bgColorTab.color0`（不写 = `-1`）；
+  但 subItem **仍不支持挂圆角九宫格图**（引擎侧限制，行内要做「带底色的块」用 `data-bg` 色块）。
+
+## 属性对照三表（直通 / 丢弃 / 默认值）—— A8 修（2026-09-27）
+
+> 完整版（含逐行备注与替代写法）：`knowledge/devflow/html-subset-quickref.md` §4.1。
+> 本节只收「改代码时要看」的部分；⚠️ 三个不静默的提醒：
+> 丢字符 / 有图控件无圆角外底色 / 文本最小宽超出容器——均会进返回体 `warnings[]`。
+
+| 类别 | 内容 | 与本文“属性速查”的关系 |
+|---|---|---|
+| **直通** | 写了就 1:1 落地（position/颜色/字号/picTab/backgroundPic/**visible**/charsetTab…） | 速查表的每一行都属此列 |
+| **丢弃** | `data-touchable`、emoji/黑名单字符、未知 class/style 声明、嵌套 `.screen` | 其中 emoji/黑名单字符会 `warn` 记账（A1） |
+| **默认值** | 不写时各字段取值（字号 16 / 文字色 `0xEEF2F6` / `touchable` 按类型 / 背景 `-1`…） | 铁律 9「字段全集显式化 v2」的取值依据 |
+
+### 2026-09-27 一轮修正（钟工转发 PocketGame 清单后核实并修）
+
+| # | 修正 | 代码位置 |
+|---|---|---|
+| A1 | 黑名单/emoji 丢字符 → 进 `warnings[]`（不再静默） | `_clean_text(ctx=…)` |
+| A2 | 纯黑 `#000000` 不再被当未设置（16 处 `or 默认值` → `_color_explicit()`） | `html2json.py` |
+| A3 | subItem 认 `data-bg` → `bgColorTab` | `_leaf()` subItem 分支 |
+| A4 | edittext 补 `touchable/visible`（原缺 → 输入框点不动、IME 不弹） | `_leaf()` edittext 分支 |
+| A5 | 支持 `data-visible` 直通 `visible`（控件/容器/subItem） | `_bool_attr()` |
+| A6 | 有图控件不再一律 pop 底色 → `data-bg > 祖先容器色 > 缺省+告警` | `_corner_bg()` |
+| A7 | `controls` 计数含嵌套（另给顶层/嵌套分项）；遍历脚本递归 + 绝对坐标 | `kb_tools.py` / `test_tools.py` |
+| A8 | 三表入库（本节）+ 上述 alert 统一进 `warnings[]` | 本文 + quickref §4.1 |
 
 ## 铁律（转换器自动处理，手写 HTML 时注意）
 1. **Z 序 = HTML 书写顺序**：后定义在上层。弹窗 modal 必须最后书写。

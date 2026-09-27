@@ -24,8 +24,16 @@ N 屏 -> N 个 json，文件名取 data-page（缺省 page_k），输出目录 =
 - window 子控件嵌套其内（相对坐标）；弹窗 modal:true + visible:false
 - Z 序 = HTML 文档顺序（后定义在上层，弹窗最后）
 - 空文本不写 text 字段；edittext 自动 beepEnable/hintTextColor
-- ⚠️ 纯黑 #000000 会被当「未设置」（data-color/data-bg 走 `to_dec(...) or 默认值`，0 是 falsy）
-  → 要纯黑写 #010101（详细见 knowledge/devflow/html-subset-quickref.md）
+- ✅ 纯黑 #000000 按「属性出现性」判定（A2 修，2026-09-27）：data-color/data-color2/data-bg/
+  data-text-bg/data-hint-color 全走 `_color_explicit()`，不再被 `or 默认值` 吞掉；老工程
+  「纯黑写 #010101」的绕过写法继续有效（#010101 也是纯黑，不必回改）
+- ✅ 支持 `data-visible`（A5 修）：任意控件/容器（含 subItem、window）初始隐藏，直通 json 的 visible
+- ✅ 转换期静默改动一律进返回体 warnings（A1/A8 修）：丢字符（emoji/黑名单字）、有图控件
+  无圆角外底色、文本最小宽超出容器等不再靠真机反推
+- ✅ 有图控件的圆角外底色（A6 修）：data-bg > 最近祖先容器底色 > 引擎缺省（无底色时告警）
+
+⚠️ 设备端渲染路径差异（不是转换器问题，见 references/kb/image-gen-standard.md）：
+  运行时 setBackgroundPic 不保留 alpha（透明底 PNG 会变白块）—— 运行时换图那套素材需烘不透明底。
 """
 import html as html_lib
 import json
@@ -388,17 +396,63 @@ def _is_emoji(ch):
 _TEXT_BLACKLIST = set('⌫℃■●‹－＋–…→★◆▶▷①')
 
 
-def _clean_text(s):
-    """剥离 emoji 与黑名单特殊符号，只保留汉字+ASCII+基础符号（/ % # - _ 空格）。"""
+def _clean_text(s, ctx=None, where=''):
+    """剥离 emoji 与黑名单特殊符号，只保留汉字+ASCII+基础符号（/ % # - _ 空格）。
+
+    A1 修（2026-09-27）：命中黑名单/emoji 的字符**必须记账**。旧版直接 `continue` 静默丢弃，
+    真机表现为「整字消失」（不是方框），调用方查无实据；现在统一写进 ctx.warnings。
+    """
     if not s:
         return s
     out = []
+    dropped = []
     for ch in s:
         if ch in _TEXT_BLACKLIST or _is_emoji(ch):
+            if ch not in dropped:
+                dropped.append(ch)
             continue
         out.append(ch)
+    if dropped and ctx is not None and hasattr(ctx, 'warn'):
+        kind = 'emoji' if all(_is_emoji(c) for c in dropped) else '黑名单特殊符号'
+        ctx.warn('文本字符被丢弃（%s）：%s（设备裁剪字库无该字形 → 整字消失）%s —— '
+                 '改用图片素材或换字符（铁律 1）'
+                 % (kind, ' '.join(repr(c) for c in dropped),
+                    ('  @%s' % where) if where else ''),
+                 key='drop:%s:%s' % (kind, ''.join(sorted(dropped))))
     # \n（来自 <br>）保留为换行；其余空白折叠为单空格
     return re.sub(r'[ \t\r\f\v]+', ' ', ''.join(out)).strip()
+
+
+def _color_explicit(attrs, names, default):
+    """颜色取值（A2 修，2026-09-27）：**按「属性是否出现」判未设置**，不按「值是否为 0」。
+
+    纯黑 `#000000` 解析出来就是 0（合法颜色）；旧写法 `to_dec(...) or 默认` 把 0 当 falsy
+    → 纯黑被换成默认色（实测绿按钮落地成「绿底白字」，对比度 1.44:1）。
+    names 可传单个属性名或候选列表，按顺序取第一个「出现且可解析」；都没有 → default。
+    """
+    for n in (names if isinstance(names, (list, tuple)) else [names]):
+        raw = _attr(attrs, n)
+        if raw is None or str(raw).strip() == '':
+            continue
+        v = to_dec(raw)
+        if v is not None:
+            return v
+    return default
+
+
+def _bool_attr(attrs, name):
+    """三态布尔属性：出现且真值 → True；出现且 false/0/no/off → False；未出现 → None。
+
+    A5 修（2026-09-27）：`data-visible` 是 HTML 侧给「某控件初始就该隐藏」的唯一口
+    （旧版 html2json 不认该属性 → 只能靠运行时代码 patch，两处同步漏一处即静默失败）。
+    """
+    raw = _attr(attrs, name)
+    if raw is None:
+        return None
+    v = str(raw).strip().lower()
+    if v in ('false', '0', 'no', 'off', 'n'):
+        return False
+    return True
 
 
 # ---------- DOM 树节点 ----------
@@ -467,6 +521,19 @@ class _Ctx:
         self.root = None
         self.stack = []          # 打开的容器栈（window/listview/radiogroup dict）
         self.warnings = []
+        self.warned = set()      # 去重键（A8：同一类丢弃/替默认值只报一次，不刷屏）
+
+    def warn(self, msg, key=None):
+        """转换期警告统一入口（去重）。
+
+        A8 修（2026-09-27）：「丢字符 / 纯黑被替默认值 / data-visible 无效 / 圆角无底色」
+        这类**静默失败**必须回传到返回体 warnings，不再靠真机反推。
+        """
+        k = key or msg[:80]
+        if k in self.warned:
+            return
+        self.warned.add(k)
+        self.warnings.append(msg)
 
     def key(self, typ):
         self.n += 1
@@ -1223,8 +1290,13 @@ class HtmlToJson:
             c['hideTimeOut'] = hto
         # 纯色背景（WindowDrag 无背景图用 backgroundColor 6323852 实测）
         bgc = self._bg_color(attrs)
-        if bgc:
+        if bgc is not None:
             c['backgroundColor'] = bgc
+        c['__bg'] = bgc          # A6：子控件圆角外底色取「最近祖先」（__ 前缀键在收尾时被剥离）
+        # A5 修：data-visible 直通（容器初始隐藏；模态默认 visible=false，作者显式写则以其为准）
+        _dv = _bool_attr(attrs, 'data-visible')
+        if _dv is not None:
+            c['visible'] = _dv
         pic = _attr(attrs, 'data-pic')
         if pic:
             c['backgroundPic'] = pic if '/' in pic else 'images/' + pic
@@ -1244,6 +1316,7 @@ class HtmlToJson:
                     root_bg = (ctx.root or {}).get('backgroundColor')
                     if root_bg is not None:
                         c['backgroundColor'] = root_bg
+                        c['__bg'] = root_bg
                     ctx.warnings.append(
                         f'{cap}: box-shadow → 阴影图 {pos["width"]}x{pos["height"]}'
                         f'（含 {eff["pad"]}px 阴影外扩）；控件盒已外扩、子控件已补偿，无需手工调整')
@@ -1434,7 +1507,7 @@ class HtmlToJson:
     def _append_slideitem(self, ctx, node):
         """slidewindow 内的子 div.item → 追加一个图标项到 items（picTab 两态图 + text）。"""
         attrs = node.attrs
-        item = {'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0xFFFFFF},
+        item = {'colorTab': {'color0': _color_explicit(attrs, 'data-color', 0xFFFFFF)},
                 'picTab': {}, 'text': ''}
         pic0 = _attr(attrs, 'data-pic') or _attr(attrs, 'data-pic0') or _attr(attrs, 'data-src')
         pic1 = _attr(attrs, 'data-pic1')
@@ -1456,7 +1529,7 @@ class HtmlToJson:
         attrs = node.attrs
         cap = self._caption(ctx, 'wave', attrs)
         info = {'caption': cap,
-                'penColor': to_dec(_attr(attrs, 'data-color')) or 0xFFFFFF,
+                'penColor': _color_explicit(attrs, 'data-color', 0xFFFFFF),
                 'penWidth': _num(_attr(attrs, 'data-pen-width'), 2),
                 'step': _num(_attr(attrs, 'data-step'), 10.0),
                 'style': _num(_attr(attrs, 'data-style'), 1),
@@ -1485,17 +1558,20 @@ class HtmlToJson:
         attrs = node.attrs
         cap = self._caption(ctx, typ, attrs)
         pos = self._pos(attrs)
-        text = _clean_text(node.text)
+        text = _clean_text(node.text, ctx, cap)
 
         # 在 listview 内 → subItem
         if ctx.stack and ctx.stack[-1].get('__listview'):
             # subItem 子项（UIlayoutDemo/listview.ftu 校准）：支持背景图（头像等图片子项）+ 对齐 + 字号/颜色
             # subItem v2（SampleUI subitem 19 键 100%）：补安全默认键；iconPosition/textPosition/backgroundPic 条件写
             # （引擎缺省 icon/text 区 = position/控件区，历史验证 OK；有 backgroundPic 时用 backgroundPic 显示）
+            # A3 修（2026-09-27）：subItem 也认 data-bg → bgColorTab（行内做「带底色的块」）
+            sbg = self._bg_color(attrs)
             si = {'alignment': ALIGN.get((_attr(attrs, 'data-align') or 'center').lower(), 37),
-                  'backgroundColor': -1, 'bgColorTab': {'color0': -1},
+                  'backgroundColor': -1,
+                  'bgColorTab': {'color0': (-1 if sbg is None else sbg)},
                   'bold': False, 'caption': cap,
-                  'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0xEEF2F6},
+                  'colorTab': {'color0': _color_explicit(attrs, 'data-color', 0xEEF2F6)},
                   'fontFamily': 0,
                   'fontSize': self._font_size(attrs) or 16,
                   'id': ctx.nid('subitem'),
@@ -1528,6 +1604,10 @@ class HtmlToJson:
                         si['charsetTab'] = parsed
                 except Exception:
                     pass
+            # A5 修：data-visible 直通（subItem 初始隐藏）
+            _vis = _bool_attr(attrs, 'data-visible')
+            if _vis is not None:
+                si['visible'] = _vis
             ctx.stack[-1]['item']['subItem'].append(si)
             return
 
@@ -1539,9 +1619,9 @@ class HtmlToJson:
                   'bold': False, 'caption': cap, 'checked': False,
                   'fontSize': self._font_size(attrs) or 16,
                   'italic': False, 'touchable': True,
-                  'bgColorTab': {'color0': to_dec(_attr(attrs, 'data-bg')) or 0x9FA05F,
-                                 'color2': to_dec(_attr(attrs, 'data-bg2')) or 0x55736C},
-                  'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0xEEF2F6},
+                  'bgColorTab': {'color0': _color_explicit(attrs, 'data-bg', 0x9FA05F),
+                                 'color2': _color_explicit(attrs, 'data-bg2', 0x55736C)},
+                  'colorTab': {'color0': _color_explicit(attrs, 'data-color', 0xEEF2F6)},
                   'id': ctx.nid('radiobutton'),
                   'position': pos,
                   'visible': True}
@@ -1563,12 +1643,12 @@ class HtmlToJson:
         if typ == 'textview':
             c = {'alignment': ALIGN.get((_attr(attrs, 'data-align') or 'left').lower(), 36),
                  'caption': cap,
-                 'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0xEEF2F6},
+                 'colorTab': {'color0': _color_explicit(attrs, 'data-color', 0xEEF2F6)},
                  'fontSize': self._font_size(attrs) or 16,   # SampleUI textview fontSize 100% 必写（默认 16）
                  'id': ctx.nid('textview'),
                  'position': pos, 'touchable': False}
             bgc = self._bg_color(attrs)
-            if bgc:
+            if bgc is not None:
                 c['bgColorTab'] = {'color0': bgc}
             # 静态底图 data-bgpic（v0.27.90）：textview 分支原**不读**该属性 → json 里没有
             #   backgroundPic = 「弹窗白卡/药丸/图标压根没画出来」，只能靠案例侧反查 HTML 兜底。
@@ -1576,7 +1656,7 @@ class HtmlToJson:
             bgp = _attr(attrs, 'data-bgpic') or _attr(attrs, 'data-background-pic')
             if bgp and not str(bgp).startswith('#'):
                 c['backgroundPic'] = bgp if '/' in bgp else 'images/' + bgp
-                c.pop('bgColorTab', None)
+                self._corner_bg(ctx, c, attrs, bgc, cap)   # A6：圆角外底色不再一律 pop
             if text:
                 c['text'] = text
             self._text_extra(c, attrs)
@@ -1585,11 +1665,11 @@ class HtmlToJson:
             if eff.get('use_emoji'):
                 # emoji 文本 → 图标 textview（清除文本，避免设备字库不支持）
                 c.pop('text', None)
-                c.pop('bgColorTab', None)
+                self._corner_bg(ctx, c, attrs, bgc, cap)
                 c['touchable'] = False
             if eff.get('backgroundPic'):
                 c['backgroundPic'] = eff['backgroundPic']
-                c.pop('bgColorTab', None)   # 有图不用底色（透明角图会透底色）
+                self._corner_bg(ctx, c, attrs, bgc, cap)   # A6：圆角外底色不再一律 pop
                 if eff.get('pad'):
                     _grow(pos, eff['pad'])   # 叶子无子控件：只外扩自身，保证图==控件尺寸
             if eff.get('imageanim'):
@@ -1625,11 +1705,11 @@ class HtmlToJson:
             bgc = self._bg_color(attrs)
             c = {'alignment': ALIGN.get((_attr(attrs, 'data-align') or 'center').lower(), 37),
                  'caption': cap,
-                 'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0xEEF2F6},
+                 'colorTab': {'color0': _color_explicit(attrs, 'data-color', 0xEEF2F6)},
                  'id': ctx.nid('button'),
                  'position': pos, 'touchable': True}   # SampleUI button touchable 恒 true（沛哥：交互控件显式 true）
             if bgc or text:
-                c['bgColorTab'] = {'color0': bgc or 0x374457}
+                c['bgColorTab'] = {'color0': (bgc if bgc is not None else 0x374457)}
             fs = self._font_size(attrs)
             if fs:
                 c['fontSize'] = fs
@@ -1676,7 +1756,10 @@ class HtmlToJson:
                         if eff.get('pad'):
                             _grow(pos, eff['pad'])   # 叶子：只外扩自身，保证图==控件尺寸
             if 'picTab' in c or 'backgroundPic' in c:
-                c.pop('bgColorTab', None)   # 图片按钮不放底色（透明角会透出底色，图片叠色效果错乱）
+                # A6 修（2026-09-27）：有图控件的**圆角外四角**由 bgColorTab 决定，旧版一律 pop
+                #   → 四角取引擎缺省（窗口黑底），坐卡片上的圆角按钮/图标四角发黑（P4 报障）。
+                #   口径与工程侧 inject_rounded() 一致：data-bg 优先，否则取最近祖先容器底色。
+                self._corner_bg(ctx, c, attrs, bgc, cap)
             # 图标按钮 padding（Button1 demo）：data-icon-w/h 图标尺寸 + data-pad 间隙 → iconPosition
             if _attr(attrs, 'data-icon-w') or _attr(attrs, 'data-icon-h'):
                 cw, ch = pos.get('width', 100), pos.get('height', 40)
@@ -1688,11 +1771,11 @@ class HtmlToJson:
             self._text_extra(c, attrs)
         elif typ == 'edittext':
             c = {'alignment': 37, 'bold': False, 'caption': cap,   # SampleUI edittext 必写 bold（去 beepEnable，沛哥）
-                 'bgColorTab': {'color0': self._bg_color(attrs) or 0xFFFFFF},
-                 'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0},
+                 'bgColorTab': {'color0': self._bg_or(attrs, 0xFFFFFF)},
+                 'colorTab': {'color0': _color_explicit(attrs, 'data-color', 0)},
                  'fontSize': self._font_size(attrs) or 16,   # SampleUI edittext fontSize 100% 必写（默认 16）
                  'hintTextColor': 0, 'id': ctx.nid('edittext'),
-                 'position': pos}
+                 'position': pos, 'touchable': True, 'visible': True}   # A4 修：漏写 touchable/visible → 输入框点不动、IME 不弹
             if str(_attr(attrs, 'data-num') or '').strip() in ('1', 'true'):
                 c['textType'] = 1
             else:
@@ -1704,9 +1787,9 @@ class HtmlToJson:
                     c['passwordChar'] = pc
             hint = _attr(attrs, 'data-hint')
             if hint:
-                c['hintText'] = _clean_text(hint)
-            hc = to_dec(_attr(attrs, 'data-hint-color'))
-            if hc:
+                c['hintText'] = _clean_text(hint, ctx, cap)
+            hc = _color_explicit(attrs, 'data-hint-color', None)
+            if hc is not None:
                 c['hintTextColor'] = hc
             c['text'] = text if text else ''   # SampleUI edittext 必写 text（空串合法）
             self._text_extra(c, attrs)
@@ -1757,10 +1840,10 @@ class HtmlToJson:
                  'bold': False, 'caption': cap, 'checked': False,
                  'fontSize': self._font_size(attrs) or 16,
                  'italic': False, 'touchable': True,
-                 'bgColorTab': {'color0': to_dec(_attr(attrs, 'data-bg')) or 0x607A84,
-                                'color2': to_dec(_attr(attrs, 'data-bg2')) or 0x55736C},
-                 'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0xEEF2F6,
-                              'color2': to_dec(_attr(attrs, 'data-color2')) or 0xFFFFFF},
+                 'bgColorTab': {'color0': _color_explicit(attrs, 'data-bg', 0x607A84),
+                                'color2': _color_explicit(attrs, 'data-bg2', 0x55736C)},
+                 'colorTab': {'color0': _color_explicit(attrs, 'data-color', 0xEEF2F6),
+                              'color2': _color_explicit(attrs, 'data-color2', 0xFFFFFF)},
                  'iconPosition': {'left': 0, 'top': 0, 'width': iw, 'height': ih},
                  'id': ctx.nid('checkbox'),
                  'position': pos,
@@ -1773,7 +1856,7 @@ class HtmlToJson:
             if pic0:
                 c['picTab'] = {'pic0': pic0 if '/' in pic0 else 'images/' + pic0,
                                'pic2': (pic2 if '/' in pic2 else 'images/' + pic2) if pic2 else (pic0 if '/' in pic0 else 'images/' + pic0)}
-                c.pop('bgColorTab', None)  # 有图不用底色
+                self._corner_bg(ctx, c, attrs, self._bg_color(attrs), cap)   # A6
             # basedemo checkbox/radiobutton 均 100% 写 text → 恒写（空串合法）
             c['text'] = text if text else ''
             if str(_attr(attrs, 'data-checked') or '').strip() in ('1', 'true'):
@@ -1854,11 +1937,11 @@ class HtmlToJson:
             if beat is not None:
                 c['beat'] = str(beat).strip() in ('1', 'true')
             # clockColor 数字颜色（ScreensaverDemo 校准）；colorTab 兼容旧写法
-            col = to_dec(_attr(attrs, 'data-color')) or to_dec(_attr(attrs, 'data-clock-color'))
-            if col:
+            col = _color_explicit(attrs, ['data-color', 'data-clock-color'], None)
+            if col is not None:
                 c['clockColor'] = col
             bgc = self._bg_color(attrs)
-            if bgc:
+            if bgc is not None:
                 c['bgColorTab'] = {'color0': bgc}
         elif typ == 'slidetext':
             # 候选字滑动条（ImeDemo/UserIme 校准）：textBgColor 文字背景色，输入法候选词用
@@ -1867,11 +1950,11 @@ class HtmlToJson:
             fs = self._font_size(attrs)
             if fs:
                 c['fontSize'] = fs
-            tbg = to_dec(_attr(attrs, 'data-text-bg'))
-            if tbg:
+            tbg = _color_explicit(attrs, 'data-text-bg', None)
+            if tbg is not None:
                 c['textBgColor'] = tbg
             col = to_dec(_attr(attrs, 'data-color'))
-            if col:
+            if col is not None:
                 c['colorTab'] = {'color0': col}
             if text:
                 c['text'] = text
@@ -1951,7 +2034,7 @@ class HtmlToJson:
             if cs:
                 c['codeStr'] = cs
             bgc = to_dec(_attr(attrs, 'data-bg'))
-            if bgc:
+            if bgc is not None:
                 c['backgroundColor'] = bgc
         elif typ == 'videoview':
             # 视频播放（VideoViewDemo/VideoPlayerDemo 校准）：defaultVolume 默认音量 + loopPlayback 循环 + rotation 旋转
@@ -1971,7 +2054,7 @@ class HtmlToJson:
                 c['rotation'] = rot
         elif typ == 'icon':
             c = {'alignment': 36, 'caption': cap,
-                 'colorTab': {'color0': to_dec(_attr(attrs, 'data-color')) or 0xEEF2F6},
+                 'colorTab': {'color0': _color_explicit(attrs, 'data-color', 0xEEF2F6)},
                  'fontSize': self._font_size(attrs) or 16,
                  'id': ctx.nid('textview'), 'position': pos, 'touchable': False}
             pic = _attr(attrs, 'data-pic') or _attr(attrs, 'src')
@@ -2009,6 +2092,10 @@ class HtmlToJson:
                  'id': ctx.nid('textview'), 'position': pos, 'touchable': False}
             typ = 'textview'
 
+        # A5 修（2026-09-27）：data-visible 直通 visible（HTML 侧「初始隐藏」的唯一口）
+        _vis = _bool_attr(attrs, 'data-visible')
+        if _vis is not None:
+            c['visible'] = _vis
         ctx.add(typ, c)
 
     # ---------- 辅助 ----------
@@ -2069,6 +2156,49 @@ class HtmlToJson:
             if m:
                 c = to_dec(m.group(1).strip())
         return c
+
+    def _bg_or(self, attrs, default):
+        """背景色缺省值（A2 修）：data-bg 写纯黑(#000000) 也是 0，不能被 `or` 吞掉。"""
+        c = self._bg_color(attrs)
+        return default if c is None else c
+
+    def _ancestor_bg(self, ctx):
+        """最近祖先底色（圆角外底色用，A6）：容器打开时记在 __bg；都没有则回退页面底色。"""
+        for v in reversed(list(ctx.stack)):
+            if not isinstance(v, dict) or v.get('__listview'):
+                break
+            b = v.get('__bg')
+            if b is not None:
+                return b
+        root = ctx.root or {}
+        return root.get('backgroundColor', None)
+
+    def _corner_bg(self, ctx, c, attrs, given, cap=''):
+        """有图控件的**圆角外底色**归属（A6 修，2026-09-27）。
+
+        有图控件的四角透出的是 `bgColorTab`；旧版「有图一律 pop(bgColorTab)」
+        → 四角取引擎缺省（窗口黑底）→ 坐在卡片上的圆角按钮/图标四角发黑
+        （P4 报障「图标角落都是黑的」，真机逐点：四角 (0,0,0) / 卡片 (28,28,30)）。
+        口径与工程侧 inject_rounded() 一致：
+          ① 作者显式写 data-bg/data-background/style.background → 用它（最高优先）；
+          ② 没写 → 取**最近祖先容器底色**；
+          ③ 都没有 → 保持 pop（退回引擎缺省），并提示补 data-bg。
+        注意：bgColorTab 只管最外 1px；圆角里侧 4~5px 是图里像素，补色救不回来。
+        """
+        if given is not None:
+            c['bgColorTab'] = {'color0': given}
+            return
+        anc = self._ancestor_bg(ctx)
+        if anc is not None:
+            c['bgColorTab'] = {'color0': anc}
+            ctx.warn('%s：有图控件未写 data-bg，圆角外底色取最近祖先底色 0x%06X'
+                     '（A6：四角由 bgColorTab 决定，不写会露窗口黑底）' % (cap or '控件', anc),
+                     key='corner:%s' % (cap or '?'))
+            return
+        c.pop('bgColorTab', None)
+        ctx.warn('%s：有图控件既无 data-bg 也无祖先底色 → 圆角外四角按引擎缺省渲染'
+                 '（坐卡片上会发黑）；请给该控件补 data-bg=容器色' % (cap or '控件'),
+                 key='corner-nobg:%s' % (cap or '?'))
 
     def _pos(self, attrs):
         style = _attr(attrs, 'style') or ''
@@ -2242,7 +2372,8 @@ def html2json(input_html, output_json=None, res=None, asset_dir=None, merge_wind
 
     **屏数核对**：screensDetected != pagesProduced 一律 success:false + error（不静默丢页）；
     pages[] 逐页列出（页名 + 对应 json 路径；merge_windows 时多页指向同一个 json）。
-    controls = 顶层控件数（merge_windows 时 = 整屏 window 数）。
+    controls = 控件总数（**含嵌套**，A7 修 2026-09-27；旧版只数根层）；
+    controlsTopLevel / controlsNested = 顶层与嵌套分项。
 
     输出落点：output_json 写 .json = 具体文件；写成目录（不带 .json）= 该目录；省略 = html
     同目录。单页时直接写 output_json 文件（与旧版一致）；多页时写 <目录>/<data-page>.json。
@@ -2312,7 +2443,11 @@ def html2json(input_html, output_json=None, res=None, asset_dir=None, merge_wind
             output_json = target
     data = pages[0][1]
     resv = data.get('resolution', {})
-    count = sum(1 for k, v in data.items() if isinstance(v, dict) and '__' in k)
+    # A7 修（2026-09-27）：**嵌套控件也计入**（旧版只数根层 → 50 控件页面报 controls:1，
+    #   键盘页/弹窗页的控件全部漏计；controls 现在是全量，另附顶层/嵌套分项）
+    top_cnt = sum(1 for k, v in data.items() if isinstance(v, dict) and '__' in k)
+    all_cnt = len(_walk_ctrls(data))
+    count = all_cnt
     return {'success': True, 'jsonPath': output_json, 'jsonPaths': json_paths,
             'jsonsProduced': len(json_paths),
             'screensDetected': meta['screensDetected'],
@@ -2323,7 +2458,8 @@ def html2json(input_html, output_json=None, res=None, asset_dir=None, merge_wind
                                 else (json_paths[0] if json_paths else None))}
                       for i, (pid, _d) in enumerate(pages)],
             'resolution': f"{resv.get('width')}x{resv.get('height')}",
-            'controls': count, 'warnings': warnings,
+            'controls': count, 'controlsTopLevel': top_cnt,
+            'controlsNested': max(all_cnt - top_cnt, 0), 'warnings': warnings,
             'generatedAssets': conv.gen_count,
             'assetDir': asset_dir}
 

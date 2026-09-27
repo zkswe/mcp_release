@@ -43,16 +43,83 @@
 - **定位**：`data-x` / `data-y` / `data-w` / `data-h`（或 `data-left/top/width/height`、`style` left/top/width/height）
 - **字号**：`data-fs` / `data-font-size` / `data-fontSize` / 内联 `style="font-size:NNpx"` 都认
 - **颜色**：`data-color` 文字色；`data-bg` 或 `data-background` 背景色（textview/button/edittext 均支持背景）
-  - ⚠️ **纯黑 `#000000` 会被当「未设置」**：转换器对 `data-color` / `data-bg` 用 `to_dec(...) or 默认值` 取值，
-    而 `#000000` = 0 是 falsy → 被替换成默认色（文字 `0xEEF2F6`、按钮底 `0x374457`、窗口底 `0xFFFFFF` 等）。
-    **要纯黑请写 `#010101`**（或改判定逻辑，另议）。深色底 / 黑字最容易踩（2026-09-16 实测）。
+  - ✅ **纯黑 `#000000` 已修**（A2，2026-09-27）：转换器改成按「属性是否出现」判定未设置，
+    `data-color` / `data-color2` / `data-bg` / `data-bg2` / `data-text-bg` / `data-hint-color`
+    共 16 处不再走 `to_dec(...) or 默认值`。**老工程里「纯黑写 `#010101`」的绕过写法继续有效**（
+    `#010101` 也是纯黑），不必回改。
+- **初始隐藏**：`data-visible="false"`（A5，2026-09-27 新增）—— 控件 / 容器（window、listview 与 subItem）
+  都直通 json 的 `visible`；缺省不写 = 保持各类型默认（普通 window 默认可见、modal 默认隐藏）。
+  （旧版不认该属性 → 只能运行时代码 patch，且控件名要在生成器与 patch 两处同步，漏一处即静默失败。）
+- **反性**：`data-visible` 之外**没有**别的新式属性；`data-touchable` 仍**不解析**（见下条）。
 - **命名**：`data-caption` 指定控件名（C 标识符）；缺省自动 `TextView1` / `Button1` …
+- **圆角外底色**（A6，2026-09-27 修）：有图控件（`data-pic`/`data-bgpic`/CSS 效果图/图标）的
+  **四角透出的是 `bgColorTab`**。旧版「有图一律 pop 底色」→ 四角露窗口黑底（坐卡片上就是「图标角落发黑」）。
+  现口径：**`data-bg` 优先 > 最近祖先容器底色 > 引擎缺省（并在 warnings 里告警）**。
+  ⚠️ `bgColorTab` 只管**最外 1px**；圆角里侧 4~5px 那圈是图里的像素，补色救不回来 →
+  坐卡片的底板要么 1:1 普通 PNG + 圆角外烘容器色，要么整张图在出图侧就烘好底色。
 - ⚠️ **`data-touchable` 不解析**（2026-09-17 实测 + 代码核对）：转换器**根本没读**这个属性
   —— `button` 恒 `touchable:true`、`textview` 恒 `false`、`window` 也不解析。
   想**真禁用**某个控件、或让容器按你要的语义「吸收 / 穿透」点击，只能落到 **json**：
   `patch_json` / `ui_edit_apply` 改 `touchable`，或运行期 `setTouchable()` / `setTouchPass()`
   （语义与坑见 `uicontrols/touch-events.md`）。
 - **自备图**：`data-pic`（引用自己切好的 PNG / .9.png / 序列帧 GIF）
+- **静默提醒**（A1/A8，2026-09-27 修）：转换器**不再静默丢改动** —— 返回体 `warnings[]` 会给出
+  「丢字符（emoji/黑名单字）」「有图控件无圆角外底色」「文本最小宽超出容器」等条目；
+  `controls` / `controlsTopLevel` / `controlsNested` 三个计数**含嵌套控件**（A7 修，2026-09-27）。
+
+## 4.1 三张对照表（属性直通 / 丢弃 / 默认值）
+
+> A8（2026-09-27）：这三张表以前只能靠真机反推，现补上；每行「行为」一栏的 `warn` 表示
+> 转换期会在返回体 `warnings[]` 里给出提示。
+
+### ① 直通表（写了就用，1:1 落到 json）
+
+| HTML 属性 | 落地字段 | 适用 | 备注 |
+|---|---|---|---|
+| `data-x/y/w/h`（别名 `data-left/top/width/height`、`style`） | `position` | 全部 | 取值单位 px |
+| `data-res` / `data-width`+`data-height` | `resolution` | `.screen` | 缺省 480x272 |
+| `data-bg` / `data-background` / `style.background` | `bgColorTab.color0` / `backgroundColor` | 全部 | 纯黑现已正确（A2） |
+| `data-color` | `colorTab.color0` | 文字类 | 同上 |
+| `data-color2` / `data-bg2` | `colorTab.color2` / `bgColorTab.color2` | 多态控件 | 选中态 |
+| `data-fs` / `data-font-size` / `data-fontSize` | `fontSize` | 文字类 | 缺省 16 |
+| `data-caption` | `caption` | 全部 | 非 C 标识符字符转 `_` |
+| `data-pic` / `data-pic0..pic4` | `picTab` | button/radiobutton/checkbox | 多态图 |
+| `data-bgpic` / `data-background-pic` | `backgroundPic` | textview/button/window | 有图后走「圆角外底色」口径 |
+| `data-visible` | `visible` | 全部（含 subItem/window） | **A5 新增** |
+| `data-text-bg` | `textBgColor` | slidetext | 纯黑现已正确（A2） |
+| `data-hint-color` / `data-hint` | `hintTextColor` / `hintText` | edittext | 同上 |
+| `data-password` / `data-password-char` / `data-num` | `isPassword` / `passwordChar` / `textType` | edittext | |
+| `data-icon` / `class="icon-xxx"` | 自动出 PNG → `picTab`/`backgroundPic` | button/textview/subItem | 图标优先定规 |
+| `data-icon-w/-h/-pad` | `iconPosition` | button | |
+| `data-cols` / `data-rows` / `data-row-spacing` | listview 行高/列宽公式 | listview | 行高 = 高/rows − rowSpacing |
+| `data-charset` | `charsetTab` | subItem | JSON 字符串 |
+| `data-modal` / `class="modal"` | `modal`+`visible:false` | window | |
+| `data-hide-timeout` / `data-topmost` | `hideTimeOut` / `topmost` | window / 根 | |
+| `data-rotate` 类平台专有 | 对应字段 | 见平台 kb | 不逐一列 |
+
+### ② 丢弃表（写了不生效，且**不会报错**）
+
+| HTML 属性 / 内容 | 行为 | 替代写法 |
+|---|---|---|
+| `data-touchable` | **不解析**（转换器没读）→ 恒按类型默认 | 改 json 或运行期 `setTouchable/setTouchPass` |
+| emoji / 黑名单特殊字符（`⌫ ℃ ■ ● ‹ ＋ – … → ★ ◆ ▶ ▷ ①` 等） | **整字丢弃** → 现在 `warn` 记账（A1 修） | 改图片素材或换字符（铁律 1） |
+| 字库缺字形的其它字符 | 字库层整字消失（转换器不拦） | 同上 |
+| 未知 `class` / 未知标签 | 兑底成 textview（`warn`） | 用 §2 映射表里的 class |
+| `style` 里除 left/top/width/height/font-size/background 外的声明 | 不解析 | 用 CSS 效果转图（渐变/阴影/圆角） |
+| 嵌套 `.screen` | 不展开，`warn` | 改为同屏内 window |
+
+### ③ 默认值表（不写就长这样，显式写才覆盖）
+
+| 字段 | 默认值 | 说明 |
+|---|---|---|
+| `fontSize` | 16（textview/button/edittext/subItem） | |
+| `colorTab.color0` | `0xEEF2F6`（文字）/ edittext `0` | 浅色字 |
+| `bgColorTab.color0` | button：无 `data-bg` 且无文字时**不写**；有则 `0x374457`；window `-1`；subItem `-1` | 透明热区不铺底 |
+| `alignment` | textview 36（左）/ button・subItem 37（中） | |
+| `touchable` | button/subItem/可拖 seekbar/radiogroup/qrcode/videoview `true`；textview/window/seekbar `false`；**edittext `true`（A4 修，2026-09-27）** | 交互控件必须 true |
+| `visible` | 全部 `true`；`modal` 窗口 `false` | A5 起可被 `data-visible` 覆盖 |
+| `backgroundColor` | `-1`（video/cameraview 为 0） | 0 = 不透明黑，别当透明用 |
+| `controls` 计数 | 含嵌套（A7 修）；另给 `controlsTopLevel` / `controlsNested` | |
   - ✅ **`div.text` 上的 `data-bgpic` 已原生支持**（**v0.27.90-open 起**）：转换器把 `data-bgpic`
     正常落成该节点的 `backgroundPic`（与 button / window / seekbar / circlebar 等分支同口径：
     裸文件名补 `images/` 前缀，相对 resources 目录；有图就**不再写背景色**，与 button 的

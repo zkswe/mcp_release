@@ -85,34 +85,46 @@ def _parse_ui_jsons(project_root):
         res = d.get('resolution') or {}
         res_w, res_h = res.get('width', 0), res.get('height', 0)
         controls = []
-        for key, v in d.items():
-            if not isinstance(v, dict) or 'position' not in v:
-                continue
-            pos = v['position']
-            left, top = pos.get('left', 0), pos.get('top', 0)
-            w, h = pos.get('width', 0), pos.get('height', 0)
-            if w <= 0 or h <= 0:
-                continue
-            ctype = key.split('__')[0]
-            touchable = bool(v.get('touchable', False))
-            visible = bool(v.get('visible', True))
-            # 可交互：touchable 或交互类型控件
-            interactive = touchable or ctype in INTERACTIVE_TYPES
-            if not interactive:
-                continue
-            ctrl = {
-                'key': key, 'type': ctype,
-                'caption': v.get('caption', ''),
-                'id': v.get('id', 0),
-                'left': left, 'top': top, 'w': w, 'h': h,
-                'cx': left + w // 2, 'cy': top + h // 2,
-                'touchable': touchable, 'visible': visible,
-                'is_swipe': ctype in SWIPE_TYPES,
-                'picTab': v.get('picTab') or {},
-            }
-            controls.append(ctrl)
+        # A7 修（2026-09-27）：**递归**收集嵌套控件 —— 旧版只扫根层，交互控件全在
+        #   window/card 里（弹窗页、键盘页）的工程产出的可测控件为 0，自动化遍历完全覆盖不到。
+        #   嵌套控件的 position 是**父相对坐标** → 累加父偏移得到屏幕坐标（tap 才落得准）。
+        def _collect(dd, ox, oy, depth, out, keys=()):
+            for key, v in dd.items():
+                if key.startswith('__') or not isinstance(v, dict):
+                    continue
+                pos = v.get('position')
+                if not isinstance(pos, dict):
+                    continue
+                left, top = ox + pos.get('left', 0), oy + pos.get('top', 0)
+                w, h = pos.get('width', 0), pos.get('height', 0)
+                if w <= 0 or h <= 0:
+                    continue
+                ctype = key.split('__')[0]
+                touchable = bool(v.get('touchable', False))
+                visible = bool(v.get('visible', True))
+                # 可交互：touchable 或交互类型控件
+                interactive = touchable or ctype in INTERACTIVE_TYPES
+                if interactive:
+                    ctrl = {
+                        'key': key, 'type': ctype,
+                        'caption': v.get('caption', ''),
+                        'id': v.get('id', 0),
+                        'left': left, 'top': top, 'w': w, 'h': h,
+                        'cx': left + w // 2, 'cy': top + h // 2,
+                        'touchable': touchable, 'visible': visible,
+                        'is_swipe': ctype in SWIPE_TYPES,
+                        'picTab': v.get('picTab') or {},
+                        'nested': depth > 0,
+                        'path': '/'.join(keys + (key,)),
+                    }
+                    out.append(ctrl)
+                _collect(v, left, top, depth + 1, out, keys + (key,))
+
+        _collect(d, 0, 0, 0, controls)
         pages.append({'file': fn, 'res_w': res_w, 'res_h': res_h,
-                      'controls': controls})
+                      'controls': controls,
+                      'controlsTopLevel': sum(1 for c in controls if not c['nested']),
+                      'controlsNested': sum(1 for c in controls if c['nested'])})
     return pages, None
 
 
