@@ -20,7 +20,7 @@
 | 无 alpha | `setSourceColor` 只有 0xRRGGBB → 半透明一律 `Chart::mix()` 混底色近似 |
 | 无 GPU / 无硬解 | 纯 CPU 光栅。实测：4 张图（12 折点 + 12×2 柱 + 3 环 + 20 刻度）一次全刷，整屏 diff 39,489 px，肉眼无卡顿 |
 | 前置条件 | `/tmp` 可写（`/res` 是 squashfs 只读）；⚠️ `/data` 已满，别推文件到 `/data` |
-| 已知限制 | ① fb 双缓冲（`virtualHeight=1200`）：应用固定渲染到 offsetY=600 那一半（offsetY=0 是黑的），抓屏必须按读到的 `pan` 取帧，否则比对的是黑屏/旧帧 → 会得出「图没重绘」的错结论；② **反复 `fun launch` / `kill -9 zkgui` 重启若干次后，触摸注入会「命令成功、应用不响应」**（`touch` 打印 `tap (x,y)`、应用无反应）——⚠️ **重启板子才能恢复**（实测 2026-09-16；与组件无关，是本机输入子系统的状态问题） |
+| 已知限制 | ① fb 双缓冲（`virtualHeight=1200`）：应用固定渲染到 offsetY=600 那一半（offsetY=0 是黑的），抓屏必须按读到的 `pan` 取帧，否则比对的是黑屏/旧帧 → 会得出「图没重绘」的错结论；② **【已勘正 2026-09-28】�回重启后触摸不响应 = 当时用 `fun launch` 之外的 `kill -9 zkgui` 造成的** —— 改成 `setprop ctl.restart zkswe`（框架口径：init 托管、不能 kill）后，**Z20 108 实测 10 轮重启：pid 每轮换新、触摸每轮都有响应（帧差 230400 px）**，不用重启板子（详见 `knowledge/devflow/device-deploy-budget.md` §5） |
 | 真机验收命令 | `fun build -p Z21` → `fun launch -p Z21 -s 192.168.1.100:5555` → `touch tap 805 28` → 抓屏 + `ui_diff.py` |
 
 ## F133（1280×800，rotate 270/270）

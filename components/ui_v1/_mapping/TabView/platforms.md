@@ -17,7 +17,7 @@
 | 分辨率/rotate | 1024×600，`rotateScreen=0 / rotateTouch=0` |
 | 触摸 | `/dev/input/event0` = `gt9xx`，**MT-B** 协议（`touch` 工具自动判协议，直接 `swipe/tap`） |
 | 实测值 | 滑动阈值 `dragMaxDis=200` 下，`swipe 900 300 150 300` 一次即翻页；下划线重算耗时不可测（同帧完成） |
-| 已知限制 | ① fb 双缓冲：`virtualHeight=1200 ≈ 2×600`；实测应用**固定渲染到 offsetY=600 那一半**（offsetY=0 那半是黑的、`pan` 恒为 `0,600`）→ 抓屏必须按读到的 `pan` 偏移取帧，否则拿到黑屏/旧帧；② `zkshot`（视频层抓帧）留在后台会**卡住 zkgui（D 状态）**，抓屏请只用 framebuffer 通道；③ **反复 `fun launch` / `kill -9 zkgui` 重启若干次后，触摸注入会「命令成功、应用不响应」**（`touch` 打印 `tap (x,y)`、应用无任何反应，抓屏不报错）——⚠️ **重启板子才能恢复**，不是组件问题（实测 2026-09-16，本次组件验收为「重启后一次会话内把要验的触摸全跑完」） |
+| 已知限制 | ① fb 双缓冲：`virtualHeight=1200 ≈ 2×600`；实测应用**固定渲染到 offsetY=600 那一半**（offsetY=0 那半是黑的、`pan` 恒为 `0,600`）→ 抓屏必须按读到的 `pan` 偏移取帧，否则拿到黑屏/旧帧；② `zkshot`（视频层抓帧）留在后台会**卡住 zkgui（D 状态）**，抓屏请只用 framebuffer 通道；③ **【已勘正 2026-09-28】�回重启后触摸不响应 = 当时 `kill -9 zkgui` 的后果** —— 改 `setprop ctl.restart zkswe`（框架口径：init 托管、不能 kill）后，**Z20 108 实测 10 轮重启：pid 每轮换新、触摸每轮都有响应（帧差 230400 px）**，不用重启板子，也不是组件问题（详见 `knowledge/devflow/device-deploy-budget.md` §5） |
 | 真机验收命令 | `fun build -p Z21` → `fun launch -p Z21 -s 192.168.1.100:5555` → `/tmp/touch swipe 900 300 150 300` → 抓屏对比 |
 
 ## F133（1280×800，rotate 270/270）
