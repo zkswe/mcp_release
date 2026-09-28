@@ -43,6 +43,22 @@ def _tool_path(name):
 FUI_EXE = _tool_path('fui.exe')
 FUN_EXE = _tool_path('fun.exe')
 
+# ---------------- 构建产物目录（09-28 版 fun 起从 .fun/ 改名 .fsc/）----------------
+# 新版 fun（v0.0.2+2609281006_e09dc96 起，内部包名 fun→fsc）把产物目录从 `<项目>/.fun/<平台>/`
+# 改成 `<项目>/.fsc/<平台>/（锁文件 .fun-lock.json → .fsc-lock.json）。这里统一解析：
+# **两代都认**（旧工程/旧工具链仍在 .fun/ 下的产物不会看不到），优先 .fsc。
+BUILD_DIR_NAMES = ('.fsc', '.fun')
+
+
+def _find_build_artifact(project_root, platform, *parts):
+    """在 .fsc/<平台>/ 与 .fun/<平台>/ 里找构建产物；找不到回新名路径。"""
+    cands = [os.path.join(project_root, name, platform, *parts) for name in BUILD_DIR_NAMES]
+    for c in cands:
+        if os.path.exists(c):
+            return c
+    return cands[0]
+
+
 # IDE 空白模板（新建项目骨架来源，保证框架约定天然正确）
 # 优先用包内 templates/（分发包内置，客户无需装 IDE）；其次 IDE 安装目录。
 # ⚠️ 下面只是「默认探测起点」，不是平台白名单：`_template_dir` 会先在包内 templates/
@@ -417,7 +433,7 @@ _PROJECT_SPEC = {
         "initSequence": "onCreate() → findControlByID() → mActivityPtr=this → onUI_init()"
     },
     "caveats": [
-        "编译体系有**两套**，别混（2026-09-17 钟工纠偏）：**IDE** 编译 src/activity/*.cpp（再由它 #include logic.cc）；**fun build 直接把 src/logic/*.cc 当编译单元，src/activity/* 完全不参与编译**（fun 自动生成入口与分发：generated/{event,event_dispatcher,ui_main}.cpp；编译宏 FUN_BUILD=1）。实测：.fun/<平台>/CMakeLists.txt 的 add_library 只有 Main.cpp + logic/mainLogic.cc + uart/*.cpp + generated/*.cpp",
+        "编译体系有**两套**，别混（2026-09-17 钟工纠偏）：**IDE** 编译 src/activity/*.cpp（再由它 #include logic.cc）；**fun build 直接把 src/logic/*.cc 当编译单元，src/activity/* 完全不参与编译**（fun 自动生成入口与分发：generated/{event,event_dispatcher,ui_main}.cpp；编译宏 FUN_BUILD=1）。实测：构建目录 <平台>/CMakeLists.txt 的 add_library 只有 Main.cpp + logic/mainLogic.cc + uart/*.cpp + generated/*.cpp",
         "控件指针 mXXXPtr / ID_MAIN_* 宏 / 回调表全部由 IDE 编译时根据 ftu 自动生成，用户禁止手写定义",
         "禁止在 logic.cc 中定义 ID_MAIN_* 宏、static ZKxxx* 指针、new ZKxxx、findControlByID 初始化",
         "onUI_init() 时所有控件指针已由 IDE 初始化完毕，直接使用即可",
@@ -431,7 +447,7 @@ _PROJECT_SPEC = {
         "代码层架构：logic/*.cc 只做 UI 与业务的关联操作（取控件指针/setText/调业务对象）；复杂功能开发成独立 C++ 类放**业务域目录**，在 logic include+调用；新增业务代码一律用 .cpp/.h（独立编译单元，fun build 自动编译），禁止新建 .cc 文件——.cc 是 IDE 按页面生成的 logic 专属（仅 mainLogic.cc 等），靠 mainActivity.cpp #include 进编译单元，手写 .cc 不会被编译——IDE 体系里 Makefile 只编 %.cpp %.c，fun 体系里只把 src/logic/*.cc 当编译单元；所以业务代码一律用 .cpp/.h",
         "src 目录命名（2026-09-13 沛哥定规）：按业务域直接建在 src/ 下，不设 core/modules 中间分层——如 src/network/NetworkManager.cpp+.h、src/media/MediaPlayer.cpp+.h、src/storage/ConfigStore.cpp+.h；域名为小写英文单数名词，文件=域内一个职责类（大驼峰，与文件名一致）；include 用相对 src/ 路径（#include \"network/NetworkManager.h\"）",
         "页面架构（2026-09-13 定规；**默认口径先看这条**）：**一个工程默认只有一个 Activity**（ui/main.ftu + src/activity/mainActivity.* + src/logic/mainLogic.cc）——**多个页面不是多个 ftu/Activity**，同一业务域内的页面/页签/二级页/弹窗/整屏遮挡 → **同一个 ftu 里的多个整屏 window + showWnd/hideWnd 切换**；只有跨业务域、需独立生命周期或返回栈、超大页面才拆独立 ftu（openActivity）；并列内容区翻页 → pagewindow/slidewindow/scrollwindow 容器。底层关系：ftu=Activity=独立编译单元（独立生命周期/返回栈），window=同 Activity 内显隐（零切换成本/共享指针）。详见知识库 devflow/page-architecture-spec.md",
-        "**不要改 .fun/<平台>/CMakeLists.txt**（fun 自动生成，文件头写着 Don't edit this file manually，下次 build 会覆盖；改它没有意义也不会生效）：要加源文件就放到 src/ 下（业务代码一律 .cpp/.h），fun 会把 src/**/*.cpp 与 src/logic/*.cc 收进编译单元",
+        "**不要改构建目录里的 <平台>/CMakeLists.txt**（09-28 起 `.fsc/<平台>/`，旧版 `.fun/<平台>/`；fun 自动生成，文件头写着 Don't edit this file manually，下次 build 会覆盖；改它没有意义也不会生效）：要加源文件就放到 src/ 下（业务代码一律 .cpp/.h），fun 会把 src/**/*.cpp 与 src/logic/*.cc 收进编译单元",
         "src/uart 为系统模板：UartContext/ProtocolSender 勿改，只改 ProtocolData.h 与 ProtocolParser.cpp 协议部分",
         "布局遮挡/点不到/谁压谁 → flythings_layout_audit（纯几何静态判定，先看 json 再截图）；json 布局用 fui pack 生成 ftu（ui/ 下已附带 fui.exe）；编译推送用 fun.exe build / fun.exe launch（项目根目录已附带 fun.exe）",
         "⚠️ 交付流程：项目生成后直接用 fun.exe build 编译、fun.exe launch 推送设备，无需客户手动导入 FlyThings IDE 编译烧录",
@@ -1041,7 +1057,7 @@ def flythings_create_bin_project(project_root, project_name='',
 
     - 项目类型 4 选 1：zkgui（UI应用）/ bin（可执行程序）/ staticLibrary / sharedLibrary
     - bin 项目结构极简：fun.json（"type": "executable"）+ src/main.cpp（标准 int main()）
-    - 编译：fun build → 产物 .fun/{platform}/{项目名}，ELF 魔数验证
+    - 编译：fun build → 产物 .fsc/{platform}/{项目名}（09-28 前为 .fun/），ELF 魔数验证
     - 部署：adb push + chmod +x 直接跑（无 zkgui 宿主，不能启动 UI 应用）
     - 非交互：自动传 --app-version/--description 跳过向导；目录非空直接报错（防覆盖询问卡死）
 
@@ -1050,7 +1066,7 @@ def flythings_create_bin_project(project_root, project_name='',
     返回创建结果 + 编译日志 + 产物路径与 ELF 验证。
     """
     try:
-        # 出口统一小写（fun.exe / 产物目录 .fun/<小写平台>/ 的既有约定）
+        # 出口统一小写（fun.exe / 产物目录 <小写平台> 的既有约定；09-28 起为 .fsc/<小写平台>/，旧版 .fun/）
         platform = _platforms.bin_tool_dir(platform or _platforms.DEFAULT_BIN_PLATFORM)
     except ValueError as e:
         return {"success": False, "error": str(e)}
@@ -1094,7 +1110,7 @@ def flythings_create_bin_project(project_root, project_name='',
             result["error"] = f"fun build 失败(rc={rb.returncode}): {result['buildLog']}"
             return result
     # 3. 产物定位 + ELF 验证
-    out = os.path.join(root, '.fun', platform, name)
+    out = _find_build_artifact(root, platform, name)
     exists = os.path.isfile(out)
     result.update({
         "outputPath": out if exists else None,
@@ -1411,7 +1427,7 @@ def _device_sync_check(project_root, serial, platform):
         c['kind'] = 'ftu'
         out['ftu'].append(c)
     key = _platforms.package_key(platform or '') if platform else ''
-    so_local = os.path.join(project_root, '.fun', key, 'libzkgui.so') if key else ''
+    so_local = _find_build_artifact(project_root, key, 'libzkgui.so') if key else ''
     if so_local and os.path.isfile(so_local):
         c = _adb.compare_with_device('', serial, so_local, '/tmp/lib/libzkgui.so',
                                      platform=platform)
@@ -1793,12 +1809,13 @@ def _find_update_img(project_root, out_path, platform):
         cands.append(p)
     else:
         cands.append(os.path.join(project_root, 'out', 'update.img'))
-        if platform:
-            cands.append(os.path.join(project_root, '.fun', platform, 'update.img'))
-        fun_dir = os.path.join(project_root, '.fun')
-        if os.path.isdir(fun_dir):
-            for d in sorted(os.listdir(fun_dir)):
-                cands.append(os.path.join(fun_dir, d, 'update.img'))
+        for _name in BUILD_DIR_NAMES:      # .fsc（09-28 起）/ .fun（旧版）都找
+            if platform:
+                cands.append(os.path.join(project_root, _name, platform, 'update.img'))
+            _base = os.path.join(project_root, _name)
+            if os.path.isdir(_base):
+                for d in sorted(os.listdir(_base)):
+                    cands.append(os.path.join(_base, d, 'update.img'))
     for p in cands:
         if os.path.isfile(p):
             return p
@@ -1815,7 +1832,7 @@ def flythings_pack_upgrade(project_root, out_path='', release_version='', ab=Fal
       掉电即失，不固化）；要固化到设备、掉电保留，必须本工具出 update.img。
     流程：① fun install 同步依赖 → ②（可选 with_build=True）fun build →
       ③ fun pack（-o 指定输出，--release-version 指定版本号，--ab 出 AB 系统 OTA 包）。
-    产物：默认 .fun/<平台>/update.img（-o 可改）；返回路径/大小/时间与三种刷法说明。
+    产物：默认 .fsc/<平台>/update.img（09-28 前为 .fun/；-o 可改）；返回路径/大小/时间与三种刷法说明。
     dry_run=True 只回命令计划不执行（写操作默认安全）。
     ⚠️ Windows 常见坑：`FATAL sign error: exit status 0xc0000135 / 0xc000007b` = 缺 32 位
       VC++ 运行时（fsimg.exe 是 32 位）；`package xxx not found in local` = 先 fun install。
@@ -1846,7 +1863,7 @@ def flythings_pack_upgrade(project_root, out_path='', release_version='', ab=Fal
                 "plan": ["fun install",
                          ("fun build" if with_build else "fun build（跳过，with_build=False）"),
                          cmdline],
-                "output": out_path or ('.fun/%s/update.img' % (platform or '<platform>')),
+                "output": out_path or ('.fsc/%s/update.img' % (platform or '<platform>')),
                 "note": "dry_run 只回计划不执行；确认后传 dry_run=False 出包"}
 
     steps = []

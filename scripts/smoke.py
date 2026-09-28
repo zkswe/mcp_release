@@ -20,7 +20,7 @@
   7. 双份 ui_tools 副本 sha256 一致（tools/ui_tools/ ↔ tools/FlyThings_mcp_open/ui_tools/）
   8. 隐私/路径泄露扫描：本机绝对路径 / 内网真机 IP / DESKTOP 主机名 / 真实 accessKey
      （v0.27.77 起只扫「可能被发布的内容」= git 的已跟踪 + 未忽略新文件；
-      `.fun/` 这类 .gitignore 忽略的构建产物（含本机绝对路径）不再误报；无 git 时回退全量扫）
+      `.fsc/`/`.fun/` 这类 .gitignore 忽略的构建产物（含本机绝对路径）不再误报；无 git 时回退全量扫）
   9. 静默 except lint（调用 scripts/lint_silent_except.py，v0.27.32 起单一实现）
  10. 意图闸门 catalog 参数漂移（调 scripts/gen_gate_catalog.py --check）
 退出码：0 = 全通过；1 = 有 FAIL。
@@ -73,7 +73,7 @@ def _scan_files():
     """待扫描文件清单 [(相对路径, 绝对路径)]
 
     v0.27.77：优先用 git 的「已跟踪 + 未忽略的新文件」清单（`git ls-files -z --cached
-    --others --exclude-standard`）= **可能被发布的内容**；否则 `.fun/` 这类构建产物
+    --others --exclude-standard`）= **可能被发布的内容**；否则 `.fsc/`/`.fun/` 这类构建产物
     （.gitignore 已忽略，却带本机绝对路径/CMakeCache 主机信息）会把隐私扫描一路扫红。
     git 不可用（无 git / 非仓库）时回退到 os.walk 全量扫描（保守，不漏）。
     """

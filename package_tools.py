@@ -7,7 +7,8 @@ import platforms as _platforms  # 平台解析唯一来源（包生态键也在�
 REGISTRY_CANDIDATES = [
     # 本地包注册表（多目录合并：不同工具链/历史下载可能分散存放，全扫不漏包）
     os.environ.get('FLYTHINGS_REGISTRY', ''),      # 环境变量显式指定（最高优先）
-    os.path.join(os.path.expanduser('~'), '.fun', 'registry', 'public'),     # MCP 默认注册表（f133/z21 基础包）
+    os.path.join(os.path.expanduser('~'), '.fsc', 'registry', 'public'),     # 09-28 版 fun 的新家（fsc）
+    os.path.join(os.path.expanduser('~'), '.fun', 'registry', 'public'),     # 旧家（fun，历史包都在这里）
     os.path.join(os.path.expanduser('~'), '.fuse', 'registry', 'public'),    # 历史注册表（f133 全量 30+ 包：ntp/curl/mqtt-cxx 等）
     r'C:\zkswe\fun\registry\public',             # fun.exe 工具链自带注册表
 ]
@@ -390,7 +391,7 @@ BUILTIN_PKGS = {'easyui', 'log', 'zkhardware', 'zknet', 'zkmedia', 'zkmisc'}
 
 # ---------------- 框架基础依赖（v0.27.83）----------------
 # 包 ↔ 头文件判定表（只做有实测依据的，不臆造）：
-#   ① 证据（本机实测 2026-09-17）：`<项目>/.fun/<平台>/generated/event_{dispatcher,app}.{h,cpp}`
+#   ① 证据（本机实测 2026-09-17）：构建目录 `<项目>/{.fsc|.fun}/<平台>/generated/event_{dispatcher,app}.{h,cpp}`
 #      固定 `#include <base/functional.h>` / `base/base.h` / `base/defer.h` / `base/exception.h`
 #      —— 这些文件由 fun 自己生成，任何 UI 工程第一次 build 都会出现 → 缺包必 fatal error。
 #   ② ⚠️ `base/` 前缀**不是 base-utility 独占**（本机注册表实扫）：base-http-client→`base/http_*.h`、
@@ -437,12 +438,14 @@ def _declared_packages(root):
 def _resolved_packages(root):
     """已**解析**（= 真装上、include 路径会进 CMake）的包集合 + 证据文件。
 
-    来源是工具生成物（非手写）：`.fun-lock.json`（fun install 写的锁文件）+ `.deps.lock`（IDE 版本锁）。
+    来源是工具生成物（非手写）：`.fsc-lock.json`（09-28 起；旧名 `.fun-lock.json`，两代都读）+ `.deps.lock`（IDE 版本锁）。
     用途：避免「Manifest 没写、但被传递依赖装上了」的误报（实测：easyui 会带出 base-utility）。
     返回 (set, [证据文件名])。"""
     pkgs, ev = set(), []
-    fp = os.path.join(root, '.fun-lock.json')
-    if os.path.isfile(fp):
+    for _lock in ('.fsc-lock.json', '.fun-lock.json'):
+        fp = os.path.join(root, _lock)
+        if not os.path.isfile(fp):
+            continue
         try:
             data = json.loads(_read_text(fp))
         except Exception:
@@ -454,7 +457,7 @@ def _resolved_packages(root):
             for v in items.values():      # 条目里嵌的传递依赖
                 if isinstance(v, dict) and isinstance(v.get('dependencies'), dict):
                     pkgs.update(k for k in v['dependencies'] if isinstance(k, str))
-        ev.append('.fun-lock.json')
+        ev.append(_lock)
     dp = os.path.join(root, '.deps.lock')
     if os.path.isfile(dp):
         ids = re.findall(r'"id"\s*:\s*"([^"]+)"', _read_text(dp))
@@ -500,15 +503,17 @@ def _framework_include_evidence(root, dep):
     src = os.path.join(root, 'src')
     if os.path.isdir(src):
         roots.append(src)
-    fun_dir = os.path.join(root, '.fun')          # fun 生成物（generated/{event*,ui_main}.{h,cpp}）
-    if os.path.isdir(fun_dir):
-        try:
-            for plat in sorted(os.listdir(fun_dir)):
-                g = os.path.join(fun_dir, plat, 'generated')
-                if os.path.isdir(g):
-                    roots.append(g)
-        except Exception:
-            pass
+    # fun 生成物（generated/{event*,ui_main}.{h,cpp}）：.fsc（09-28 起）/ .fun（旧版）都扫
+    for _name in ('.fsc', '.fun'):
+        fun_dir = os.path.join(root, _name)
+        if os.path.isdir(fun_dir):
+            try:
+                for plat in sorted(os.listdir(fun_dir)):
+                    g = os.path.join(fun_dir, plat, 'generated')
+                    if os.path.isdir(g):
+                        roots.append(g)
+            except Exception:
+                pass
     out = []
     for r in roots:
         for base, _, files in os.walk(r):

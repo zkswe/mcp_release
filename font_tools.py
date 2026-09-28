@@ -19,7 +19,7 @@
      用 fontTools 读 cmap 算 **GB2312 一级 3755 字覆盖率**：≥90% → ok（不投递）/ 50–90% → low
      （投递 + 写明覆盖率）/ <50% → missing（投递）；拉取超 12 MB、fontTools 不可用、拉取或解析
      失败 → **退回体积判据**（source='size'，原因进 warnings，绝不静默）。结论按
-     `serial+目录/文件名+体积+ls 时间` 缓存到 `~/.fun/font-probe.json`（否则每次 build 都拉一遍）。
+     `serial+目录/文件名+体积+ls 时间` 缓存到 `~/.fsc/font-probe.json`（09-28 起；旧 `~/.fun/`）（否则每次 build 都拉一遍）。
      缺 → 默认投递 `common`（872 KB）进工程 `font/`；
   ② **无设备**：退化为工程侧 self-scan（prefs 的 `font` 指向的文件在不在工程 `font/`；
      工程 `font/` 里有没有可用字体）→ 缺就同样投递，并在 `note` 写清「未连设备，仅工程侧检查」。
@@ -248,14 +248,19 @@ def device_scan(serial, platform=''):
 
 # ---------------- 硬判据（cmap 覆盖率）+ 缓存（v0.27.87）----------------
 def probe_cache_path():
-    """探针结论缓存位置：`~/.fun/font-probe.json`（与依赖包注册表同一个 `.fun` 根）。
+    """探针结论缓存位置：`~/.fsc/font-probe.json`（09-28 版 fun 的新家；没有则退回 `~/.fun/`）。
 
     `FLYTHINGS_FONT_CACHE` 可覆盖（测试/多用户隔离用）；空串 = 不用缓存（每次都拉）。
     """
     env = os.environ.get('FLYTHINGS_FONT_CACHE')
     if env is not None:
         return env
-    return os.path.join(os.path.expanduser('~'), '.fun', PROBE_CACHE_NAME)
+    home = os.path.expanduser('~')
+    for _name in ('.fsc', '.fun'):
+        d = os.path.join(home, _name)
+        if os.path.isdir(d):
+            return os.path.join(d, PROBE_CACHE_NAME)
+    return os.path.join(home, '.fsc', PROBE_CACHE_NAME)
 
 
 def probe_cache_key(serial, font, platform=''):

@@ -167,7 +167,7 @@ STAGE = {
 
 # 命令行名词表（回应检讨 §2.4：仓库里 fun / fui / fyx / fuse 四种提法容易混）
 CLI_NAMES = {
-    'fun': 'FlyThings 工程工具（create/install/build/launch，<项目>/.fun/<平台>/ 下）',
+    'fun': 'FlyThings 工程工具（create/install/build/launch，<项目>/.fsc/<平台>/ 下；09-28 前为 .fun/）',
     'fui': 'FTU 布局工具：pack（json → ftu）/ unpack（ftu → json）双向下；随包 fui 自 v0.27.91 起含 unpack（旧版只有 pack）',
     'fyx': '旧版打包/发布 CLI 名（历史遗留，等价于 fun 的早期名）',
     'fuse': '本机 workspace 的引擎 CLI（projects/fuse.exe，非本仓库内置）',
