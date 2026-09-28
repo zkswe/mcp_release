@@ -169,57 +169,69 @@ include 路径就不会进 CMake（症状看起来像「框架头文件不存在
 - ⚠️ **`fun sim` 不在 MCP 能力面内**（沛哥 2026-09-14 定：「暂时发布的 mcp 不要支持 sim 功能」）：工具面不暴露该能力，`project_tools._run_fun` 里也**显式拒绝 `cmd == 'sim'`** 并返回正解 hint（推真机→`flythings_build_ui_flow`；出图→`flythings_device_screenshot`；要跑模拟器自己去本地命令行）。**AI 不要拿 `flythings_*` 工具去实现模拟器运行，也不要因这条向用户承诺 MCP 能跑模拟器。**
 - 抓帧/设备侧动作仍走 `flythings_device_screenshot`（内部已处理 rootfs 裁剪、pan 偏移、压缩链路）
 
-## 7. ⚠️ 多设备（USB + WiFi adb）时的设备选择陷阱（2026-09-16 实测，2026-09-17 复测修正）
+## 7. ⚠️ 多设备在线时「把工程推到指定设备」（2026-09-16 首测 / 09-17 复测 / **09-28 三测定稿**）
 
-> ⚠️ **2026-09-17 复测推翻本节前半部分的机制描述**（原结论：多设备时 fun 静默取列表第一个）。
-> 复测环境：本机 adb host server = **platform-tools 1.0.41 / 31.0.3-7562133**（IDE 自带那份，pid 常驻 5037），
-> 三台设备同时在线；复测手法 = 裸 socket 直问 host server + `fun launch` 直接跑（不看表象看报文）。
-> **结论：多设备在线时 `fun launch` 不管带不带 `-s` 都直接 `FATAL "host:transport <serial>" FAIL: more than one device/emulator`
-> → 它是**硬失败**（不是静默推错设备）；只有恰好 1 台在线时才能推。**
-> 报文级证据（裸 socket，`%04x` 长度前缀，均对 127.0.0.1:5037）：
->
-> | 请求 | 应答 |
-> |------|------|
-> | `host:transport 192.168.x.x:5555`（**空格**形式，fun 的写法） | `FAIL more than one device/emulator` |
-> | `host:transport`（不带 serial） | `FAIL more than one device/emulator` |
-> | `host:transport:<serial>`（**冒号**形式） | `OKAY` |
->
-> 即 fun 的 Go adb 客户端用的是**旧式空格形式** service 串，现代 platform-tools 不认（serial 被当空气）
-> → 多设备时报「more than one」，单设备时靠 server 的「只有一台就用它」兜底成功。
->
-> **正确做法（复测后的口径）**：要推某台先让 adb 列表只剩它 —— `adb disconnect <其它 ip>:5555`
-> （网络设备，可逆；推完 `adb connect` 加回来）或拔掉其它 USB；MCP 侧 `build_ui_flow` 已把
-> 这条写进多设备提示与失败 hint（`adb_tools.multi_device_hint` / `fun_multi_device_error`）。
-> 本机实测：单台在线时默认参数 `build_ui_flow` 自动选机 → `fun launch -s <serial>` 成功，
-> 设备侧 `/tmp/ui/main.ftu` 186 B、`/tmp/lib/libzkgui.so` 277340 B **字节+md5 与本地逐一致**。
+**结论**：多设备在线时 `fun launch`（**新旧版一样**，含 `v0.0.2+2609281006_e09dc96`）**不管带不带 `-s` 都硬失败**：
 
-> 以下几段是 **2026-09-16 的原始记录**（保留作历史；其中「多设备静默取第一个」已被上面的复测推翻，
-> 其余（平台校验、判据命令、WiFi adb 用法）仍有效）。
-
-> 起因：沛哥报「fun launch 在同时连着 WiFi adb 时静默失败，改了 ui 加控件、build 通过、launch 看着成功，界面就是不画」。实测验收后**现象成立、机制要改**（不是 adb 报错被吞，见下）。
-
-**机制（实测，扫 fun.exe 字符串 + 伪造 adb host server 抓包）**
-- `fun launch` 走 **fun 自带 Go adb 客户端**（`pkg/adb` → 直连 adb host server `127.0.0.1:5037`，序列 `host:version` → `host:devices` → `host:transport <serial>` → `shell:` / `sync:`）。
-- fun.exe 里 shell 出 `adb` 二进制**只有两处，且都带 `-s`**（`adb -s %s shell chmod 777 %s`、`adb -s %s shell %s`）→ fun **不会**报 adb 的 `more than one device/emulator`。
-- 2 台设备同时在线时：fun **不报错、不警告、不询问**，按 `adb devices` 列表顺序**取第一个**直接推（实测两种顺序各跑一次，WiFi 在前推 WiFi、把另一台放前面就推那台；pty 交互模式也一样）。
-- 唯一会拦下来的是**平台校验**（`shell:getprop 'ro.product.model'` 对比项目平台），不匹配才 `FATAL platform not match`（exit 1）；push 真出错也会 `FATAL …` + exit 1（不是把输出全吞）。
-
-**为什么危害很大**：被选中的那台若与目标**同平台/同型号**（或 push 到另一台同型号机器），push 会「成功」，目标机仍是旧 `ftu`/旧 `libzkgui.so` → 症状是「build 通过、launch 成功、界面就是不变」，极易被误判成「框架不支持这个控件」。
-
-**正确做法**
-1. `fun launch -p <平台> -s <serial|IP>`（`-s/--device` 实测可用，v0.0.2；支持序号或 IP）；
-2. 或调试完 `adb disconnect <ip>:5555` 只留目标设备再 launch。
-
-**判据（别靠猜）**：比对设备与本地 `ui/*.ftu`
-
-```bash
-adb -s <serial> shell "ls -la /tmp/ui"                       # 设备侧字节数/时间
-adb -s <serial> shell "/tmp/busybox md5sum /tmp/ui/main.ftu" # 设备无 md5sum，用已推的 busybox
+```
+FATAL "host:transport <serial>" FAIL: more than one device/emulator
 ```
 
-设备 `/tmp/ui/main.ftu` 应与本地 `ui/main.ftu` **字节数 + md5 一致**（实测单设备 launch 后 1419 B / `FDC802FF232328DD5395EB433F8BA223` 完全一致；不一致 = 没推上去）。注意设备侧 `ls` 不认 `head`（管道会报 `head: not found`）。
+**根因（报文级）**：fun 自带 Go adb 客户端发的是旧式 **`host:transport <serial>`（空格分隔）**，
+而 platform-tools（实测 37.0.1 与 31.0.3 一样）只认 **`host:transport:<serial>`（冒号分隔）**；
+空格形式下 serial 被丢掉 → adb 按「多设备未指定」回 `more than one device/emulator`。
+裸 socket 直问 `127.0.0.1:5037` 可复现（同一台设备，本机 5–6 台在线）：
 
-**WiFi adb 用法**：`adb tcpip 5555` → `adb connect <ip>:5555`；该设置掉线后可随时重连（实测未重跑 `tcpip` 直接重连成功），设备重启前一直有效；**用完 `adb disconnect <ip>:5555`**，避免 fun 选错设备。
+| 请求 | 应答 |
+|------|------|
+| `host:transport 192.168.x.x:5555`（空格，fun 的写法） | `FAIL more than one device/emulator` |
+| `host:transport:192.168.x.x:5555`（冒号） | `OKAY` |
+
+伪 adb host server 抓包（`temp/fake_adb.py` + `temp/_adb_wire_test2.ps1`）确认 fun launch 的序列：
+`host:version` → `host:devices` → **`host:transport <serial>`（空格）** → `shell:getprop 'ro.product.model'`。
+
+`-s` 本身是生效的（解析 + 校验都有）：`-s <不存在的 serial/IP>` → `FATAL device "..." not found`；
+给纯 IP 会先 `connecting to <ip>:5555` 自动 adb connect；**但不支持序号**（`-s 0/1/5` 均报 not found）。
+单设备在线时能推（server “只有一台就用它”兜底）——正是因为如此，这个 bug 很容易被忽略。
+
+**两条可行路（按推荐序）**
+
+1. **垫片（不改厂家二进制，已实测走通）**：`scripts/adb_transport_shim.py` 把 5037 上 fun 的空格形式改写成冒号形式，转发给另起一个端口的真 adb server：
+
+```bash
+adb kill-server && adb -P 5038 start-server
+adb -P 5038 connect <ip>:5555            # 按需把设备连到 5038
+python scripts/adb_transport_shim.py 5037 5038
+fun launch -p <平台> -s <ip>:5555         # 多设备在线也能精确推到指定设备
+# 收尾：停垫片 → adb -P 5038 kill-server → adb start-server → adb connect 连回
+```
+
+实测（2026-09-28，本机 **5 台在线**，工程 DownloadTimerTest/Z20，目标 `192.168.x.x:5555`）：
+**4.02 s 推完**（`main.ftu` + `images/` + `libzkgui.so` + `EasyUI.cfg`），然后 `shell:sync` + `setprop 'ctl.restart' 'zkswe'`；
+设备侧 md5 与本地构建产物**逐一致**（`/tmp/ui/main.ftu` = 本地 `ui/main.ftu`；
+`/tmp/lib/libzkgui.so` = 本地 `.fsc/z20/libzkgui.so`；`/tmp/ui/images/fill.png` = 本地 `resources/images/fill.png`），
+另一台在线设备 `192.168.x.x` **未被触碰**（无 `/tmp/ui`、lib 未变）。
+
+2. **让 adb 列表只剩目标设备**（不改任何东西，最省事）：`adb disconnect <其它 ip>:5555`（网络设备可逆）
+   或拔掉其它 USB，推完 `adb connect` 连回。
+
+**判据（别靠猜）**：比对设备与本地构建产物
+
+```bash
+adb -s <serial> shell "ls -la /tmp/ui /tmp/lib"
+adb -s <serial> shell "/tmp/busybox md5sum /tmp/ui/main.ftu"   # 设备无 md5sum，用已推的 busybox
+```
+
+设备 `/tmp/ui/main.ftu` 应与本地 `ui/main.ftu` **字节 + md5 一致**；库看构建产物目录：
+⚠️ 09-28 版 fun 把产物目录换成 **`.fsc/<平台>/`**、lockfile 换成 `.fsc-lock.json`（老 `.fun/` 不再更新）
+——这是另一个话题，本节不展开，但做上面的 md5 判据时要知道取哪个目录。
+设备侧 `ls` 不认 `head`（管道会报 `head: not found`）。
+
+**其它仍有效的细节**：唯一会拦下来的是**平台校验**（`shell:getprop 'ro.product.model'` 对比工程平台，
+不匹配 → `FATAL platform not match`，exit 1）；push 真出错也 `FATAL` + exit 1（不会把输出全吞）。
+
+**WiFi adb 用法**：`adb tcpip 5555` → `adb connect <ip>:5555`；该设置掉线后可随时重连（实测未重跑 `tcpip` 直接重连成功），
+设备重启前一直有效；**用完 `adb disconnect <ip>:5555`**，避免选错设备。
 
 ## 8. 未验证 / 边界
 

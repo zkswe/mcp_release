@@ -581,11 +581,14 @@ def install_hint(platform='', devices=None, error=''):
 def multi_device_hint(devices, platform=''):
     """多台在线设备：不猜，列清楚 + 要求显式 device=。（钟工 2026-09-17 口径）
 
-    ⚠️ 本机实测补充（2026-09-17，platform-tools 1.0.41/31.0.3）：多设备在线时
-    `fun launch` **不管有没有 `-s` 都直接 FATAL `more than one device/emulator`**
-    （fun 的 adb 客户端发旧式 `host:transport <serial>`（空格分隔），现代 adb server 不认：
-    裸 socket 实测空格式回 FAIL、`host:transport:<serial>` 才 OKAY）——
-    所以要把工程推到某台机器，得**先让其它机器从 adb 列表里消失**。
+    ⚠️ 实测（2026-09-17 首测 / 09-17 复测 / **2026-09-28 三测**，platform-tools 37.0.1 与 31.0.3 一样）：
+    多设备在线时 `fun launch` **不管有没有 `-s` 都直接 FATAL `more than one device/emulator`**
+    （fun 自带 Go adb 客户端发旧式 `host:transport <serial>`（空格分隔），adb 只认
+    `host:transport:<serial>`（冒号）：裸 socket 实测空格形式回 FAIL、冒号形式 OKAY）——
+    **09-28 版 fun（`v0.0.2+2609281006_e09dc96`）仍未修**。
+    两条路：① 垫片 `scripts/adb_transport_shim.py`（5037 上把空格改写成冒号再转发给另起端口的真 adb；
+    实测 5 台在线时 `fun launch -s <ip>` 精确推到指定设备，设备侧 md5 与本地一致、其它设备未动）；
+    ② 先让其它机器从 adb 列表里消失（`adb disconnect`）。
     这条修正了 `cli-fun-toolchain.md §7` 里「多设备时 fun 静默取列表第一个」的旧结论。
     """
     lines = ['检测到 %d 台在线设备，**不自动选择**（多设备下 fun launch 会 FATAL，见下）：'
@@ -596,9 +599,11 @@ def multi_device_hint(devices, platform=''):
                'unknown': '❓ 平台未知（型号未登记/未回报）'}[mp]
         lines.append('  · %s —— %s' % (device_string(d), tag))
     lines.append("① 先传 device='<serial|IP>' 让我们只对这台干活（探测/比对/续推）；"
-                 '② 若仍报 `more than one device/emulator`（本机实测：fun 的 adb 客户端用旧式 '
-                 '`host:transport <serial>`，与 platform-tools ≥ 31 不兼容），'
-                 '就把**其它设备临时下线**再推：`adb disconnect <其它serial>`（网络设备，可逆，'
+                 '② 若仍报 `more than one device/emulator`（09-28 三测：新老 fun 都一样，fun 的 adb 客户端用旧式 '
+                 '`host:transport <serial>`，platform-tools 只认 `host:transport:<serial>`）→ '
+                 'ⓐ 用垫片 `scripts/adb_transport_shim.py`（把 5037 的请求改写成冒号形式再转发给另起端口的真 adb；'
+                 '已实测多设备在线时能精确推到 `-s` 指定设备），或 '
+                 'ⓑ 把**其它设备临时下线**再推：`adb disconnect <其它serial>`（网络设备，可逆，'
                  '推完再 `adb connect` 回去）或拔掉其它 USB。')
     return '\n'.join(lines)
 
@@ -608,10 +613,11 @@ def fun_multi_device_error(text):
     t = (text or '')
     if 'more than one device/emulator' not in t:
         return ''
-    return ('设备端报 `more than one device/emulator`：本机实测（2026-09-17）**不是你的选机问题**——'
-            'fun 的 adb 客户端用旧式 `host:transport <serial>`（空格分隔）与现代 platform-tools 不兼容，'
-            '只要 adb 列表里不止一台就必失败。处置：把其它设备临时下线（`adb disconnect <其它serial>`，'
-            '可逆；USB 则拔掉）后重试，推完再连回。')
+    return ('设备端报 `more than one device/emulator`：实测（2026-09-17 / **09-28 三测，含 09-28 新版 fun**）**不是你的选机问题**——'
+            'fun 的 adb 客户端用旧式 `host:transport <serial>`（空格分隔），platform-tools 只认 '
+            '`host:transport:<serial>`，只要 adb 列表里不止一台就必失败。处置：'
+            '① 用垫片 `scripts/adb_transport_shim.py`（多设备在线也能精确推到 -s 指定设备，已实测）；'
+            '② 或把其它设备临时下线（`adb disconnect <其它serial>`，可逆；USB 则拔掉）后重试，推完再连回。')
 
 
 def stale_hint(items):
