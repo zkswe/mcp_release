@@ -1,0 +1,41 @@
+########## 自检 AUTO（Z21）开始：不验 MQTT（Z21 无 mqtt-cxx/paho 包） ##########
+== 1/7 HTTP GET ==
+[HTTP] GET /hello.txt -> 200 OK | 33 bytes | ctype=text/plain; charset=utf-8
+[HTTP]   body: hello from zkswe lan test server
+== 2/7 HTTP POST ==
+[HTTP] POST /echo -> 200 OK | 51 bytes
+[HTTP]   echo: ECHO:{"from":"z21-191","msg":"curl-cxx POST works"}
+== 3/7 HTTPS GET ==
+[HTTPS] GET 异常: SSL certificate problem: certificate is not yet valid
+== 4/7 NTP 校时 ==
+[NTP] syncTime(15 个服务器) -> 成功 | 前=1970-01-01 09:28:51 后=2026-09-29 13:47:45（TZ=UTC-8）
+== 5/7 Downloader 双任务 ==
+[DL] http::Downloader 双任务（进度 + 结果回调）
+[DL] 进度 /data/f133_big.bin 0/0
+[DL] 进度 /data/f133_big.bin 13032/307200
+[DL] 进度 /data/f133_big.bin 14480/307200
+[DL] 进度 /data/f133_big.bin 307200/307200
+[DL] 结果 http://192.168.x.x:8000/big?kb=300 -> 成功，落盘 307200 B
+[DL] 结果 http://192.168.x.x:8000/json -> 成功，落盘 81 B
+[DL] 双任务结束：完成 2/2，用时≈500ms（剩余队列=0）
+== 6/7 WebSocket 回显 ==
+[WS] connect(ws://192.168.x.x:8766)
+[WS] sendFrame 17 B: hello-ws-from-z21
+[WS] receiveFrame 22 B: echo:hello-ws-from-z21
+[WS] close() 完成
+== 7/7 SoftAp + Ethernet ==
+[AP] 初始 isEnable=0 state=DISABLED ssid=- ip=-
+[AP] 开热点 isEnable=0 state=DISABLED ssid=- pwd=- ip=-（≈15000ms）
+[AP] 关热点 isEnable=0 state=DISABLED（≈0ms）wifi连接=1
+[ETH] supported=0 connected=0 ip=0.0.0.0 mac=00:00:00:00:00:00 autoMode=1
+[ETH] getConfigureInfo(ok=1) ip=0.0.0.0 mask=0.0.0.0 gw=0.0.0.0 dns=,
+[ETH] getStaticConfigureInfo(ok=1) ip=192.168.x.x mask=255.255.255.0 gw=192.168.x.x dns=192.168.x.x,
+[ETH] NetUtils: iface=eth0 ip=0.0.0.0 mac=00:00:00:00:00:00
+[ETH] setAutoMode(true) -> OK isAutoMode=1
+########## 自检 AUTO（Z21）结束：错误数=2 ##########
+
+===== HTTPS 复跑（NTP 校时后） =====
+== HTTPS GET ==
+[HTTPS] GET https://www.baidu.com -> 200 OK | 29506 bytes（证书校验 mbedtls）
+
+注：AUTO 顺序里 HTTPS 在 NTP 之前 → F133 上电 RTC=1970 时首次报 `SSL certificate problem: certificate is not yet valid`；校时后复跑见上。另：SoftAp setEnable(true) 15s 内未起来（isEnable=0/DISABLED）→ F133 平台结论；Ethernet isSupported=0。

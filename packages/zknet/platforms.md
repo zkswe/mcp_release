@@ -6,7 +6,7 @@
 |---|---|---|---|---|
 | **Z20**（SSD20X 480×480 · 86 面板 · RTL8188 WiFi） | zknet 0.0.0 | ✅ 可用（WiFi 全流程 + 只读面） | 读状态 / `startScan`(13 AP, 200ms) / `disconnect` / `connect`(4.2s) / `enableWifi(false)`→`(true)` 自恢复(5.2s) / `NetUtils` iface / `SoftApManager` 只读 / `getConnChannel` | `evidence/zknet_auto_20260929.txt`、`evidence/zknet_readonly_20260929.txt`、`evidence/zknet_panel_20260929.png` |
 | Z21 | — | 未验证 | 需 Z21 真机（WifiTest-New 里有 Z21 依赖组合：zknet 0.0.0） | — |
-| F133 / F136 | — | 未验证 | 需真机（WifiTest-New：F133/F136 用 zknet 1.1.0） | — |
+| F133 | 1.1.0 | ✅ 可用（读路径） | SoftAp `setEnable(true)` 15s 未起来（平台结论）；Ethernet `isSupported=0`、`getStaticConfigureInfo` 可读、`setAutoMode` OK | `evidence/f133_20260929.txt` |
 | T113EMMC | — | 未验证 | 需真机（WifiTest-New：T113EMMC 用 zknet 1.1.0） | — |
 | V85X | — | 未验证 | 需真机（WifiTest-New：V85X 用 zknet 0.0.0） | — |
 

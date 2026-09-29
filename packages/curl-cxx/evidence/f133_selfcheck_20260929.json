@@ -1,0 +1,548 @@
+{
+  "generatedAt": "2026-09-29 13:48:35",
+  "device": {
+    "serial": "192.168.x.x:5555",
+    "model": "Zkswe_F133_SPINOR",
+    "platform": "",
+    "adb": "C:\\Users\\zkswe\\.openclaw\\workspace\\tools\\FlyThings_mcp_open\\tools\\adb\\adb.exe",
+    "busybox": "/tmp/busybox",
+    "connectNote": "",
+    "busyboxNote": ""
+  },
+  "sections": {
+    "device": {
+      "ok": true,
+      "hint": "",
+      "data": {
+        "model": "Zkswe_F133_SPINOR",
+        "platform": "",
+        "platformConfidence": "todo",
+        "kernel": "Linux version 5.4.61 (jf@jf) (riscv64-unknown-linux-musl-gcc (Xuantie-900 linux-6.6.0 musl gcc Toolchain V2.10.2-zksw B-…",
+        "easyuiVersion": "2.9.0",
+        "buildFingerprint": "ZKOS,flythings(see www.zkswe.com)"
+      },
+      "items": [
+        {
+          "name": "model",
+          "cmd": "getprop ro.product.model",
+          "ok": true,
+          "raw": "Zkswe_F133_SPINOR",
+          "note": ""
+        },
+        {
+          "name": "kernel",
+          "cmd": "cat /proc/version",
+          "ok": true,
+          "raw": "Linux version 5.4.61 (jf@jf) (riscv64-unknown-linux-musl-gcc (Xuantie-900 linux-6.6.0 musl gcc Toolchain V2.10.2-zksw B-20250103) 10.4.0, GNU ld (GNU Binutils) 2.35) #1494 Mon Apr 27 10:46:01 UTC 2026",
+          "note": ""
+        },
+        {
+          "name": "easyuiVersion",
+          "cmd": "getprop ro.easyui.version",
+          "ok": true,
+          "raw": "2.9.0",
+          "note": ""
+        },
+        {
+          "name": "buildFingerprint",
+          "cmd": "getprop ro.build.fingerprint",
+          "ok": true,
+          "raw": "ZKOS,flythings(see www.zkswe.com)",
+          "note": ""
+        }
+      ],
+      "notes": [
+        "型号 'Zkswe_F133_SPINOR' 未在 device_models.json 命中 → platform 留空（不猜）；用 flythings_hardware_info 查硬件规格"
+      ]
+    },
+    "app": {
+      "ok": true,
+      "hint": "",
+      "data": {
+        "initService": "running",
+        "appState": "running",
+        "appDbg": "",
+        "zkguiPid": "383",
+        "uptimeSeconds": 5382.2
+      },
+      "items": [
+        {
+          "name": "initService",
+          "cmd": "getprop init.svc.zkswe",
+          "ok": true,
+          "raw": "running",
+          "note": ""
+        },
+        {
+          "name": "appState",
+          "cmd": "getprop sys.zkapp.state",
+          "ok": true,
+          "raw": "running",
+          "note": ""
+        },
+        {
+          "name": "appDbg",
+          "cmd": "getprop sys.zkapp.dbg",
+          "ok": false,
+          "raw": "",
+          "note": ""
+        },
+        {
+          "name": "pid",
+          "cmd": "/tmp/busybox pidof zkgui",
+          "ok": true,
+          "raw": "383",
+          "note": ""
+        },
+        {
+          "name": "uptime",
+          "cmd": "cat /proc/uptime",
+          "ok": true,
+          "raw": "5382.21 5341.20",
+          "note": ""
+        }
+      ],
+      "notes": []
+    },
+    "display": {
+      "ok": true,
+      "hint": "",
+      "data": {
+        "virtualSize": "800,2560",
+        "bitsPerPixel": 32,
+        "stride": 3200,
+        "pan": "0,0",
+        "rotate": {}
+      },
+      "items": [
+        {
+          "name": "virtualSize",
+          "cmd": "cat /sys/class/graphics/fb0/virtual_size",
+          "ok": true,
+          "raw": "800,2560",
+          "note": ""
+        },
+        {
+          "name": "bitsPerPixel",
+          "cmd": "cat /sys/class/graphics/fb0/bits_per_pixel",
+          "ok": true,
+          "raw": "32",
+          "note": ""
+        },
+        {
+          "name": "stride",
+          "cmd": "cat /sys/class/graphics/fb0/stride",
+          "ok": true,
+          "raw": "3200",
+          "note": ""
+        },
+        {
+          "name": "pan",
+          "cmd": "cat /sys/class/graphics/fb0/pan",
+          "ok": true,
+          "raw": "0,0",
+          "note": ""
+        },
+        {
+          "name": "easyuiCfg",
+          "cmd": "cat /tmp/EasyUI.cfg 2>/dev/null; cat /mnt/extsd/EasyUI.cfg 2>/dev/null; cat /res/etc/EasyUI.cfg 2>/dev/null",
+          "ok": true,
+          "raw": "{\n\"baud\": \"115200\",\n\"defBrightness\": -1,\n\"font\": \"/res/ui/KaiTi.ttf\",\n\"languageCode\": \"zh_CN\",\n\"languagePath\": \"/res/tr/\",\n\"resPath\": \"/tmp/ui/\",\n\"rotateScreen\": 0,\n\"rotateTouch\": 0,\n\"screensaverTimeout\": -1,\n\"startupLibPath\": \"/tmp/lib/libzkgui.so\",\n\"startupTouchCalib\": false,\n\"touchDev\": \"/dev/input/event3\",\n\"uart\": \"ttyS1\",\n\"zkdebug\": true\n}{\n\"baud\":\"115200\",\n\"rotateTouch\":270,\n\"rotateScreen\":2…",
+          "note": ""
+        }
+      ],
+      "notes": [
+        "未从 EasyUI.cfg 读到 rotateScreen/rotateTouch（按 /tmp > /mnt/extsd > /res/etc 顺序找过；三者都可能不存在）",
+        "抓屏口径：可见高≠fb 文件行数，须按 stride 逐行取 + 读 pan 的 yoffset （flythings_device_screenshot 已内置）"
+      ]
+    },
+    "storage": {
+      "ok": true,
+      "hint": "",
+      "data": {
+        "mounts": {
+          "/tmp": {
+            "device": "tmpfs",
+            "fstype": "tmpfs",
+            "options": "rw,nosuid,relatime,size=126000k,nr_inodes=31500,mode=755",
+            "readOnly": false
+          },
+          "/data": {
+            "device": "/dev/block/mtdblock5",
+            "fstype": "jffs2",
+            "options": "rw,noatime,nodiratime",
+            "readOnly": false
+          },
+          "/res": {
+            "device": "/dev/block/mtdblock3",
+            "fstype": "squashfs",
+            "options": "ro,noatime,nodiratime",
+            "readOnly": true
+          },
+          "/mnt/extsd": {
+            "device": "/dev/block/vold/179:1",
+            "fstype": "vfat",
+            "options": "rw,dirsync,nosuid,nodev,relatime,uid=1000,gid=1023,fmask=0702,dmask=0702,allow_utime=0020,codepage=437,iocharset=iso8859-1,shortname=mixed,utf8,errors=remount-ro",
+            "readOnly": false
+          }
+        },
+        "mnt": [
+          "extsd",
+          "sdnand",
+          "storage",
+          "usb1",
+          "usb2",
+          "usb3",
+          "usbotg"
+        ],
+        "tmpSpace": {
+          "filesystem": "tmpfs",
+          "totalKB": 126000,
+          "usedKB": 4824,
+          "availKB": 121176,
+          "usePct": "4%",
+          "mount": "/tmp"
+        },
+        "dataSpace": {
+          "filesystem": "/dev/block/mtdblock5",
+          "totalKB": 320,
+          "usedKB": 260,
+          "availKB": 60,
+          "usePct": "81%",
+          "mount": "/data"
+        },
+        "resUi": [
+          "KaiTi.ttf",
+          "main.ftu",
+          "playmini.png",
+          "stream.ftu",
+          "Mute.png",
+          "next.png",
+          "pre.png",
+          "tipwnd.png",
+          "alsa",
+          "pause.png",
+          "progressbg.png",
+          "user-circle.png",
+          "diskplay.png",
+          "pausemini.png",
+          "progressfull.png",
+          "vol.png",
+          "dot1.png",
+          "play.png",
+          "refresh.png",
+          "vol0.png",
+          "loading.png",
+          "playcycle.png",
+          "rollback.png",
+          "vol1.png"
+        ]
+      },
+      "items": [
+        {
+          "name": "mounts",
+          "cmd": "cat /proc/mounts",
+          "ok": true,
+          "raw": "/dev/root / squashfs ro,relatime 0 0\ntmpfs /dev tmpfs rw,nosuid,relatime,size=126000k,nr_inodes=31500,mode=755 0 0\ntmpfs /tmp tmpfs rw,nosuid,relatime,size=126000k,nr_inodes=31500,mode=755 0 0\ndevpts /dev/pts devpts rw,relatime,mode=600,ptmxmode=000 0 0\nproc /proc proc rw,relatime 0 0\nsysfs /sys sysfs rw,relatime 0 0\n/dev/block/mtdblock5 /data jffs2 rw,noatime,nodiratime 0 0\n/dev/block/mtdblock3 /…",
+          "note": ""
+        },
+        {
+          "name": "mnt",
+          "cmd": "/tmp/busybox ls /mnt",
+          "ok": true,
+          "raw": "extsd    sdnand   storage  usb1     usb2     usb3     usbotg",
+          "note": ""
+        },
+        {
+          "name": "tmpSpace",
+          "cmd": "/tmp/busybox df -k /tmp",
+          "ok": true,
+          "raw": "Filesystem           1K-blocks      Used Available Use% Mounted on\ntmpfs                   126000      4824    121176   4% /tmp",
+          "note": ""
+        },
+        {
+          "name": "dataSpace",
+          "cmd": "/tmp/busybox df -k /data",
+          "ok": true,
+          "raw": "Filesystem           1K-blocks      Used Available Use% Mounted on\n/dev/block/mtdblock5       320       260        60  81% /data",
+          "note": ""
+        },
+        {
+          "name": "resList",
+          "cmd": "/tmp/busybox ls /res/ui",
+          "ok": true,
+          "raw": "KaiTi.ttf         main.ftu          playmini.png      stream.ftu\nMute.png          next.png          pre.png           tipwnd.png\nalsa              pause.png         progressbg.png    user-circle.png\ndiskplay.png      pausemini.png     progressfull.png  vol.png\ndot1.png          play.png          re…",
+          "note": ""
+        }
+      ],
+      "notes": [
+        "/res 是**只读**的（squashfs 常态）→ 调试推送落 /tmp，掉电保留要出 update.img 固化（flythings_pack_upgrade）"
+      ]
+    },
+    "network": {
+      "ok": true,
+      "hint": "",
+      "data": {
+        "wlanMac": "88:00:33:77:c7:0e",
+        "wlan0": {
+          "ip": "192.168.x.x",
+          "mac": "88:00:33:77:C7:0E",
+          "up": true
+        },
+        "defaultRoute": {
+          "iface": "wlan0",
+          "gateway": "192.168.x.x",
+          "mask": "0.0.0.0"
+        },
+        "dns": [
+          "nameserver 114.114.114.114",
+          "nameserver 8.8.8.8"
+        ],
+        "wpaSupplicantConf": "-rw-rw-rw-    1 0        0               97 Jan  1  1970 /data/misc/wifi/wpa_supplicant.conf"
+      },
+      "items": [
+        {
+          "name": "wlanMac",
+          "cmd": "cat /sys/class/net/wlan0/address",
+          "ok": true,
+          "raw": "88:00:33:77:c7:0e",
+          "note": ""
+        },
+        {
+          "name": "wlanIf",
+          "cmd": "/tmp/busybox ifconfig wlan0",
+          "ok": true,
+          "raw": "wlan0     Link encap:Ethernet  HWaddr 88:00:33:77:C7:0E\ninet addr:192.168.x.x  Bcast:192.168.x.x  Mask:255.255.255.0\nUP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1\nRX packets:54796 errors:0 dropped:19551 overruns:0 frame:0\nTX packets:4687 errors:0 dropped:0 overruns:0 carrier:0\ncollisions:0 txqueuelen:1000\nRX bytes:12449342 (11.8 MiB)  TX bytes:703631 (687.1 KiB)",
+          "note": ""
+        },
+        {
+          "name": "route",
+          "cmd": "cat /proc/net/route",
+          "ok": true,
+          "raw": "Iface\tDestination\tGateway \tFlags\tRefCnt\tUse\tMetric\tMask\t\tMTU\tWindow\tIRTT\nwlan0\t00000000\t0101A8C0\t0003\t0\t0\t0\t00000000\t0\t0\t0\nwlan0\t0001A8C0\t00000000\t0001\t0\t0\t0\t00FFFFFF\t0\t0\t0",
+          "note": ""
+        },
+        {
+          "name": "dns",
+          "cmd": "cat /etc/resolv.conf",
+          "ok": true,
+          "raw": "nameserver 114.114.114.114\nnameserver 8.8.8.8",
+          "note": ""
+        },
+        {
+          "name": "wpaConf",
+          "cmd": "/tmp/busybox ls -l /data/misc/wifi/wpa_supplicant.conf",
+          "ok": true,
+          "raw": "-rw-rw-rw-    1 0        0               97 Jan  1  1970 /data/misc/wifi/wpa_supplicant.conf",
+          "note": ""
+        }
+      ],
+      "notes": []
+    },
+    "bluetooth": {
+      "ok": false,
+      "hint": "**本分区 ok=false 常常就是结论**：设备侧没有 BT 属性/rfkill/hci 节点 = 没插模组（AIC USB BT，需 aic_btusb.ko）；真要用蓝牙请查 components/ble 的 BLE 门面 + gatt 包（hciconfig/hcitool 手工验证）。检索：蓝牙/ble/gatt/hciconfig",
+      "data": {
+        "props": {},
+        "rfkillName": "",
+        "rfkillState": "",
+        "hciNodes": []
+      },
+      "items": [
+        {
+          "name": "props",
+          "cmd": "getprop",
+          "ok": true,
+          "raw": "[app.usb.cfg]: [1]\n[init.svc.adbd]: [running]\n[init.svc.console]: [running]\n[init.svc.fifo_server]: [running]\n[init.svc.ueventd]: [running]\n[init.svc.vold]: [running]\n[init.svc.wpa_supplicant]: [running]\n[init.svc.zkdaemon]: [stopped]\n[init.svc.zklogo]: [stopped]\n[init.svc.zkswe]: [running]\n[net.cha…",
+          "note": ""
+        },
+        {
+          "name": "rfkillName",
+          "cmd": "cat /sys/class/rfkill/rfkill0/name 2>/dev/null",
+          "ok": false,
+          "raw": "",
+          "note": ""
+        },
+        {
+          "name": "rfkillState",
+          "cmd": "cat /sys/class/rfkill/rfkill0/state 2>/dev/null",
+          "ok": false,
+          "raw": "",
+          "note": ""
+        },
+        {
+          "name": "hciNodes",
+          "cmd": "/tmp/busybox ls /dev/hci* 2>/dev/null",
+          "ok": false,
+          "raw": "",
+          "note": ""
+        }
+      ],
+      "notes": [
+        "三项都空：本机没有 BT 相关系统属性 / rfkill / hci 节点 → 板子可能没插 AIC USB BT 模组（或模组未起 hci）"
+      ]
+    },
+    "input": {
+      "ok": true,
+      "hint": "",
+      "data": {
+        "nodes": [
+          "event3",
+          "event4",
+          "event5"
+        ],
+        "devices": [
+          {
+            "name": "gslX680",
+            "handlers": "event3"
+          },
+          {
+            "name": "sunxi-ir",
+            "handlers": "event4"
+          },
+          {
+            "name": "audiocodec sunxi Audio Jack",
+            "handlers": "event5"
+          }
+        ],
+        "touchDevices": [],
+        "touchTool": "-rwxrwxrwx    1 0        0            75624 Sep 14 07:04 /tmp/touch"
+      },
+      "items": [
+        {
+          "name": "nodes",
+          "cmd": "/tmp/busybox ls /dev/input",
+          "ok": true,
+          "raw": "event3  event4  event5",
+          "note": ""
+        },
+        {
+          "name": "devices",
+          "cmd": "cat /proc/bus/input/devices",
+          "ok": true,
+          "raw": "I: Bus=0018 Vendor=0000 Product=0000 Version=0000\nN: Name=\"gslX680\"\nP: Phys=\nS: Sysfs=/devices/platform/soc@3000000/sunxi-i2c0/i2c-0/0-0040/input/input0\nU: Uniq=\nH: Handlers=event3\nB: PROP=2\nB: EV=b\nB: KEY=400 0 0 0 0 0\nB: ABS=265000000000000\nI: Bus=0019 Vendor=0001 Product=0001 Version=0100\nN: Name=\"sunxi-ir\"\nP: Phys=sunxi-ir/input0\nS: Sysfs=/devices/platform/soc@3000000/7040000.s_cir/rc/rc0/s_ci…",
+          "note": ""
+        },
+        {
+          "name": "touchTool",
+          "cmd": "/tmp/busybox ls -l /data/touch /tmp/touch 2>/dev/null",
+          "ok": true,
+          "raw": "-rwxrwxrwx    1 0        0            75624 Sep 14 07:04 /tmp/touch",
+          "note": ""
+        }
+      ],
+      "notes": [
+        "没从 /proc/bus/input/devices 认出触摸设备（名字不含 touch/ts/gt9/axs 等）",
+        "注入触摸用随仓 bin_tools/<平台>/touch（先 `touch list` 看节点与协议；busybox 只是让你能看 /dev/input）"
+      ]
+    },
+    "peripheral": {
+      "ok": true,
+      "hint": "",
+      "data": {
+        "preferencesPath": "-rw-rw-rw-    1 1000     1000         12443 Jan  1  1970 /data/preferences.json",
+        "preferencesRead": true,
+        "relayKeys": {},
+        "keys": [
+          "app_brightness",
+          "app_bt_on",
+          "app_channel_index",
+          "app_net_index",
+          "app_song_index",
+          "app_volume",
+          "app_wifi_on",
+          "cm_mode",
+          "cm_recents",
+          "cm_volume",
+          "comm_addr",
+          "comm_baud",
+          "comm_parity",
+          "comm_start",
+          "comm_stop",
+          "ctrl_id",
+          "ctrl_name",
+          "dev0_fault",
+          "dev0_hum",
+          "dev0_temp"
+        ]
+      },
+      "items": [
+        {
+          "name": "prefs",
+          "cmd": "cat /data/preferences.json",
+          "ok": true,
+          "raw": "{\n\"sys_usb_mode_key\" : 1,\n\"server_ip\" : \"192.168.x.x\",\n\"video_port\" : \"9001\",\n\"touch_port\" : \"9002\",\n\"display_width\" : \"1280\",\n\"display_height\" : \"800\",\n\"ctrl_name\" : \"主控制器\",\n\"ctrl_id\" : \"1\",\n\"dev0_hum\" : 52.0,\n\"dev0_temp\" : 22.5,\n\"dev0_thr\" : 51,\n\"dev0_unknown\" : false,\n\"dev0_fault\" : \"\",\n\"dev1_hum\" : 48.0,\n\"dev1_temp\" : 21.899999618530273,\n\"dev1_thr\" : 51,\n\"dev1_unknown\" : true,\n\"dev1_fault\" :…",
+          "note": ""
+        },
+        {
+          "name": "prefsPath",
+          "cmd": "/tmp/busybox ls -l /data/preferences.json",
+          "ok": true,
+          "raw": "-rw-rw-rw-    1 1000     1000         12443 Jan  1  1970 /data/preferences.json",
+          "note": ""
+        },
+        {
+          "name": "prefsAlt",
+          "cmd": "cat /data/data/preferences.json 2>/dev/null",
+          "ok": false,
+          "raw": "",
+          "note": ""
+        }
+      ],
+      "notes": [
+        "偏好里没有 relay/zero/io 相关键（本板可能没接继电器）"
+      ]
+    },
+    "time": {
+      "ok": true,
+      "hint": "",
+      "data": {
+        "date": "Tue Sep 29 05:48:37 UTC 2026",
+        "epoch": 1790660917,
+        "timezone": "",
+        "hostEpoch": 1790660915,
+        "driftSeconds": 1,
+        "ntpTool": ""
+      },
+      "items": [
+        {
+          "name": "dateRaw",
+          "cmd": "date 2>/dev/null",
+          "ok": true,
+          "raw": "Tue Sep 29 05:48:37 UTC 2026",
+          "note": ""
+        },
+        {
+          "name": "epoch",
+          "cmd": "date +%s 2>/dev/null",
+          "ok": true,
+          "raw": "1790660917",
+          "note": ""
+        },
+        {
+          "name": "timezone",
+          "cmd": "getprop persist.sys.timezone",
+          "ok": false,
+          "raw": "",
+          "note": ""
+        },
+        {
+          "name": "ntpTool",
+          "cmd": "/tmp/busybox ls /bin/ntpd /usr/sbin/ntpd /system/bin/ntpd /bin/ntpdate",
+          "ok": false,
+          "raw": "",
+          "note": ""
+        }
+      ],
+      "notes": []
+    }
+  },
+  "summary": {
+    "total": 9,
+    "ok": 8,
+    "failed": 1,
+    "failedSections": [
+      "bluetooth"
+    ]
+  }
+}

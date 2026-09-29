@@ -7,7 +7,7 @@
 |---|---|---|---|---|
 | **Z20**（SSD20X 480×480 · 86 面板 · RTL8188 WiFi） | curl-cxx 10.0.3 | ✅ 可用（HTTP/HTTPS/Downloader/WebSocket 全通） | HTTP GET `/hello.txt` → 200 OK 33 B；HTTP POST `/echo`（JSON + 自定义头）→ 200 OK 51 B 回显；HTTPS GET `https://www.baidu.com` → 200 OK 29506 B（证书校验通过）；`http::Downloader` 双任务 2/2（307200 B + 81 B，进度回调逐段上报、队列清空）；`http::WebSocket` 回显 `sendFrame 17 B → receiveFrame 22 B` | `evidence/netstack_auto_20260929.txt`、`evidence/netstack2_20260929.txt` |
 | **Z21**（SSD21X `Zkswe_SSD21X_SPINOR` · easyui 2.2.0 · 1024×600） | curl-cxx 10.0.3 | ✅ 可用（同 Z20 一套写法，布局按 1024×600 重生成） | HTTP GET/POST 200 OK（33 B / 51 B）；HTTPS **首次 FAIL**（`mbedTLS: The certificate validity starts in the future`，RTC=1970）→ **NTP 校时后复跑 200 OK / 29506 B**；Downloader 双任务 2/2（落盘 `/data/z21_*.bin|json`）；WebSocket 回显 `echo:hello-ws-from-z21` | `evidence/z21_20260929.txt` |
-| F133 / F136 | — | 未验证 | 需该平台真机 + registry 里有可用的 curl-cxx/curl（Z20 是 `curl 8.12.1-mbedtls` 变体，别平台可能不同）。本仓未跑过 | — |
+| F133 | 11.0.0 | ✅ 可用 | HTTP GET/POST 200、HTTPS 200（**需先 NTP 校时**）、Downloader 2/2+进度、WebSocket 回显 | `evidence/f133_20260929.txt` |
 | T113EMMC | — | 未验证 | 同上 | — |
 | V85X | — | 未验证 | 同上 | — |
 

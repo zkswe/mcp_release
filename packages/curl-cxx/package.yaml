@@ -158,3 +158,24 @@ verified_20260929_z21:
     - "**Z21 上电 RTC = 1970** → 带证书校验的 HTTPS/TLS 会报 `certificate validity starts in the future`；**必须先 NTP 校时再做 HTTPS**（Z20 那台时钟本来就对，所以没暴露这个顺序问题）"
     - "**Z21 没有 /mnt/sdnand**（只有 `/mnt/extsd`、`/mnt/usb1`）→ 下载/落盘目标要写 **/data/**（本工程已改成 /data/z21_*）"
   evidence: evidence/z21_20260929.txt
+
+# ── F133 真机验证（2026-09-29 13:4x，Zkswe_F133_SPINOR / RISC-V / 800x1280，设备 192.168.x.x:5555） ──
+verified_20260929_f133:
+  platform: F133
+  device: "Zkswe_F133_SPINOR（easyui 2.9.0，fb 800x2560 @32bpp stride 3200，面板 800x1280）"
+  project: projects/pkg_netstack_f133（与 Z20/Z21 版同一套写法；F133 依赖：curl-cxx 11.0.0 / curl 8.12.1 / openssl 1.1.1-g / cares 1.17.2 / ntp 2.1.2 / zknet 1.1.0 / easyui 2.9.0 / log 1.0.0）
+  steps:
+    - "HTTP GET（LAN 测试服务）-> 200 OK 33 B；HTTP POST -> 200 OK 51 B（回显校验）"
+    - "HTTPS GET -> 首次 FAIL `SSL certificate problem: certificate is not yet valid`（F133 上电 RTC=1970）→ **NTP 校时后复跑 200 OK / 29506 B**"
+    - "NTP syncTime(defaultServerList, 3000) -> 成功（1970-01-01 09:28:51 → 2026-09-29 13:47:45，TZ=UTC-8）"
+    - "http::Downloader 双任务 -> 2/2 成功（307200 B + 81 B），进度回调逐段上报"
+    - "http::WebSocket -> sendFrame 17 B → receiveFrame 22 B = \"echo:echo:hello-ws-from-z21\" → close()"
+    - "SoftAp：setEnable(true) 15s 内未起来（isEnable=0 / state=DISABLED）-> **F133 平台结论：本板 SoftAp 开不起来**（与 Z20/Z21 不同）"
+    - "Ethernet：isSupported=0（该板无以太网管理面）；getStaticConfigureInfo 可读；setAutoMode(true) OK"
+    - "flythings_selfcheck（新工具）九分区快照：8/9 区 ok，唯一 failed = bluetooth（本板没插 AIC USB BT 模组）；/res 只读 squashfs、/tmp 121MB 可用、**/data 仅 320KB（81% 已用）**、wlan0 192.168.x.x、input event3=gslX680"
+  new_gotchas:
+    - "**F133 上电 RTC=1970** → 带证书校验的 HTTPS/TLS 报 `certificate is not yet valid`（与 Z21 同款坑）→ **必须先 NTP 校时再 HTTPS**"
+    - "**F133 的 /data 只有 320KB（81% 已用）** → 下载/落盘别写 /data（我这次实测写 300KB 就快把它塞满）；用 **/tmp**（tmpfs 121MB）或 /mnt/extsd"
+    - "**F133 的 /mnt/sdnand 只读** → 落盘同样别选它"
+    - "SoftAp 在 F133 上开不起来（15s 未 ENabled）→ 要 AP 模式得换平台/方案"
+  evidence: evidence/f133_20260929.txt, evidence/f133_selfcheck_20260929.json

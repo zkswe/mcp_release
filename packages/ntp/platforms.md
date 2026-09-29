@@ -7,7 +7,7 @@
 |---|---|---|---|---|
 | **Z20**（SSD20X 480×480 · 86 面板） | ntp 2.1.1 | ✅ 可用（阻塞版 `syncTime` 成功） | `setenv("TZ","UTC-8",1)` + `tzset()` + `ntp::syncTime(ntp::defaultServerList(), 3000)` → 返回 true；校时前 `2026-09-29 10:55:00` → 校时后 `10:55:04`（TZ=UTC-8 北京时区），用时 4 s | `evidence/netstack_auto_20260929.txt` |
 | **Z21**（SSD21X `Zkswe_SSD21X_SPINOR` · easyui 2.2.0 · 1024×600） | ntp 2.1.1 | ✅ 可用（且这是 Z21 的**必需前置**） | 同一条调用 → 成功；**校时前设备 RTC=1970-01-01**，校时后 `2026-09-29 12:16:12`（TZ=UTC-8）。Z21 上 HTTPS 必须先 NTP 校时，否则报 `certificate validity starts in the future` | `evidence/z21_20260929.txt` |
-| F133 / F136 | — | 未验证 | 需该平台真机 + registry 里有 ntp 包（本仓未跑） | — |
+| F133 | 2.1.2 | ✅ 可用 | `syncTime` → 成功（1970 → 2026-09-29）；是 HTTPS 的前置 | `evidence/f133_20260929.txt` |
 | T113EMMC | — | 未验证 | 同上 | — |
 | V85X | — | 未验证 | 同上 | — |
 
