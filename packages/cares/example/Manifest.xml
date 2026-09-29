@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE flythings>
+<!--
+  cares 1.17.2 最小示例（Z20 86 面板 / 480x480）
+  本包只有静态库（libcares.a）+ 无 Manifest → 依赖不会自动带进来（本包自身 deps 为空）。
+  改完 Manifest 必须 fun install。
+-->
+<manifest platform="Z20">
+    <dependencies enableOnPlatforms="Z20">
+        <package id="easyui" version="^2.2.0"/>
+        <package id="log" version="0.0.0"/>
+        <package id="base-utility" version="^10.8.5"/>
+
+        <!-- c-ares 异步 DNS（Z20 上也是 libcurl 的 resolver） -->
+        <package id="cares" version="1.17.2"/>
+    </dependencies>
+</manifest>

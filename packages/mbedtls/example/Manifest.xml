@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE flythings>
+<!--
+  mbedtls 3.6.5 最小示例（Z20 86 面板 / 480x480）
+  本包 deps 为空、只发 5 个静态库（libmbedtls/libmbedx509/libmbedcrypto + p256m/everest）→ 只声明它自己即可。
+  ⚠️ 跑之前把 resources/cacert.pem 推到设备**资源目录（resPath）**，本包不读系统信任目录。
+  改完 Manifest 必须 fun install。
+-->
+<manifest platform="Z20">
+    <dependencies enableOnPlatforms="Z20">
+        <package id="easyui" version="^2.2.0"/>
+        <package id="log" version="0.0.0"/>
+        <package id="base-utility" version="^10.8.5"/>
+
+        <package id="mbedtls" version="3.6.5"/>
+    </dependencies>
+</manifest>

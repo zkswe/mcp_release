@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE flythings>
+<!--
+  curl 8.12.1-mbedtls 最小示例（Z20 86 面板 / 480x480）
+  ⚠️ 链接是一串：只声明 curl 会满屏 undefined reference（libcurl.a 里有 mbedtls_*/ares_*/inflate 符号）
+     → 必须同时带 mbedtls + cares + z。
+  ⚠️ Z20 的版本名是 8.12.1-mbedtls（其它平台可能是 8.12.1 = openssl 变体）。
+  改完 Manifest 必须 fun install。
+-->
+<manifest platform="Z20">
+    <dependencies enableOnPlatforms="Z20">
+        <package id="easyui" version="^2.2.0"/>
+        <package id="log" version="0.0.0"/>
+        <package id="base-utility" version="^10.8.5"/>
+
+        <package id="curl" version="8.12.1-mbedtls"/>
+        <package id="mbedtls" version="3.6.5"/>
+        <package id="cares" version="1.17.2"/>
+        <package id="z" version="1.2.11"/>
+    </dependencies>
+</manifest>

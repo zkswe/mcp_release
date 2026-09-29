@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE flythings>
+<!--
+  rapidjson 1.1.0 最小示例（Z20 86 面板 / 480x480）
+  纯头文件包：libs 为空（没有 .a/.so）→ 关键是让 include 路径进 CMake：
+  ⚠️ 改完 Manifest 必须 fun install，否则 <rapidjson/...> 找不到。
+-->
+<manifest platform="Z20">
+    <dependencies enableOnPlatforms="Z20">
+        <package id="easyui" version="^2.2.0"/>
+        <package id="log" version="0.0.0"/>
+        <package id="base-utility" version="^10.8.5"/>
+
+        <!-- 纯头文件 JSON 库（Z20 上通常由 base-json 3.1.0 依赖引入，也可单独声明） -->
+        <package id="rapidjson" version="1.1.0"/>
+    </dependencies>
+</manifest>

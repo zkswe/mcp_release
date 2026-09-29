@@ -25,7 +25,7 @@ packages/<包名>/
 | 包 | 状态 | 实测平台 | 备注 |
 |---|---|---|---|
 | zkhardware | ✅ 已验（2026-09-28） | Z20（SSD20X 480×480，easyui 2.6.0） | 蜂鸣器/亮度/ADC/GPIO/过零 IO |
-| zknet | ⏳ 待验 | — | 计划：WifiManager / NetUtils / SoftAp |
+| zknet | ✅ 已验（2026-09-29） | Z20（SSD20X 480×480，86 面板） | WiFi 全流程 + 只读面；详见 `zknet/platforms.md` |
 | easyui | ⏳ 待验 | — | 计划：控件/回调/定时器/页面切换最小骨架 |
 
 ## 缺口背景（为什么要补）
@@ -35,17 +35,27 @@ Z20 registry 27 个包里 **17 个完全没有 README、没有示例**（含 `ea
 MCP 的包查询只能给出「一行描述 + 从 README 抓的代码块」，抓不到就只剩几条静态兜底 →
 AI 拿到包后基本无从下手。本目录就是补这块。
 
-## 包卡完整度状态（2026-09-29 复核，审查报告 §2.3）
+## 包卡完整度状态（2026-09-29 二次复核，审查报告 §2.3 / P1-⑤ 已补）
 
 > 口径：**规范要求有的东西，要么补齐，要么显式标注「待补 + 计划」，不允许静默不一致。**
+> 本表 = 补完之后的状态；**没实测的平台在 `platforms.md` 里写「未验证」+ 所需条件，不编数据**。
 
 | 包 | package.yaml | README | platforms.md | example/ | evidence/ |
 |---|---|---|---|---|---|
 | zkhardware / zknet | ✅ | ✅ | ✅ | ✅ | ✅ |
-| curl-cxx / ntp / mqtt-cxx / paho-mqtt3as | ✅ | ✅ | 🕐 待补（本批只验 Z20/Z21 两平台，跨平台表等 F133/T113/V85X 实测后一并写） | 🕐 待补（实现见 `demos/net-*-verify-*`，后续抽最小 example 进包） | ✅ |
-| cares / mbedtls / openssl / curl | ✅ | ✅ | 🕐 待补（同上；目前只有 Z20 直调 + Z20/Z21 间接验证） | 🕐 待补（实现见 `demos/net-direct-tls-z20`） | ✅ |
-| rapidjson | ✅ | ✅ | 🕐 待补 | 🕐 待补 | 🕐 待补（纯头文件包，未上真机；`verified: null` 已标注） |
+| curl-cxx | ✅ | ✅ | ✅（Z20 ✅ 全通 / Z21 ✅；F133-F136-T113EMMC-V85X 未验证） | ✅（GET·POST·HTTPS·Downloader·WebSocket + AUTO） | ✅ |
+| ntp | ✅ | ✅ | ✅（Z20 ✅ / Z21 ✅ 且是 Z21 的 HTTPS 前置；其余未验证） | ✅（阻塞同步·异步同步·读时间 + AUTO） | ✅ |
+| mqtt-cxx | ✅ | ✅ | ✅（Z20 ✅ 含 MQTTS/LWT/断线重连；Z21 无此包=未验证） | ✅（发布·订阅回显·遗嘱·MQTTS + AUTO） | ✅ |
+| paho-mqtt3as | ✅ | ✅ | ✅（Z20 🟡 经 mqtt-cxx 间接可用；其余平台无此包=未验证） | ✅（C API 直调示例，**路径未上机**已标注） | ✅ |
+| cares | ✅ | ✅ | ✅（Z20 ✅ 直调；Z21 只有间接痕迹=未验证） | ✅（单域名·5 域名批量 + AUTO） | ✅ |
+| mbedtls | ✅ | ✅ | ✅（Z20 ✅ 直调；Z21 🟡 经 curl 间接；其余未验证） | ✅（握手·握手+HTTP GET + AUTO） | ✅ |
+| openssl | ✅ | ✅ | ✅（Z20 ✅ 直调 verify=OK；Z21 是 1.1.1-g=未验证直调） | ✅（握手·握手+HTTP GET + AUTO） | ✅ |
+| curl | ✅ | ✅ | ✅（Z20/Z21 🟡 **间接**可用，`package.yaml` 保持 `verified: null`） | ✅（easy 直调示例，**未上机**已标注） | ✅ |
+| rapidjson | ✅ | ✅ | ✅（**全部未验证** + 说明为什么 + 怎么补） | ✅（解析/生成示例，**未上机**已标注） | ✅（本目录只有 `README.md` 说明「为什么没有证据」，**不放伪造日志**） |
 
-- 「可直接拷 example/ 三步跑起来」目前只有 `zkhardware`/`zknet` 成立；其余包的**可运行实现**在 `demos/` 里（`net-*-verify-*`），
-  包卡 `package.yaml` 的 `usage_cpp` 已给最小片段（这是 AI 的首选入口）。
-- `components/mp_transfer` 缺 `platforms.md` + `example/`，违反「四件套缺一不收」→ 同样标注待补，下一批补齐或按规范下线。
+- 包的**可运行实现**仍在 `demos/` 里（`net-stack-verify-z20` / `net-stack-advanced-z20` / `net-direct-tls-z20`，都真机验过）；
+  `example/` 是从这些 demo 抽出来的最小片段（`example/README.md` 里写明来源与步骤）。
+- **三处「未上机」的 example 已显式标注**：`paho-mqtt3as`（直调 C API 路径）、`curl`（直调 easy 路径）、`rapidjson`（纯头文件包）——
+  它们的 API 形态来自包头实读，**真机数据待补**；`platforms.md` 与 `example/README.md` 两处都写了「要标 ✅ 需做什么」。
+- `components/mp_transfer` 的四件套缺失**已于本轮补齐**：新增 `platforms.md`（逐平台矩阵 + 协议口径 + 前置条件 + 三层验收 + 已知边界）
+  与 `example/`（`README.md` + `mp_transfer_min_example.cc`），并在 `components/README.md` 的模块表里登记。

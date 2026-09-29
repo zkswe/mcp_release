@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE flythings>
+<!--
+  paho-mqtt3as 1.3.13 最小示例（Z20 86 面板 / 480x480）
+  ⚠️ 本包「没有 README、没有 Manifest.xml」→ 依赖不会自动带进来：
+     二进制里引用 SSL_CTX_new/SSL_connect（as = async + SSL）→ 必须显式声明 openssl，否则链接失败
+     （实测报 BIO_read / RAND_bytes / SHA1_Init/Update/Final undefined）。
+  ⚠️ 本包只有 Z20 registry 有（z21/f133/f136/t113emmc/v85x 都不存在）。
+  改完 Manifest 必须 fun install。
+-->
+<manifest platform="Z20">
+    <dependencies enableOnPlatforms="Z20">
+        <package id="easyui" version="^2.2.0"/>
+        <package id="log" version="0.0.0"/>
+        <package id="base-utility" version="^10.8.5"/>
+
+        <package id="paho-mqtt3as" version="1.3.13"/>
+        <package id="openssl" version="1.1.1-w"/>   <!-- 本包的 TLS 后端，漏了链接就炸 -->
+    </dependencies>
+</manifest>

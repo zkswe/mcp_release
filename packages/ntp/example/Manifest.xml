@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE flythings>
+<!--
+  ntp 2.1.1 最小示例（Z20 86 面板 / 480x480）
+  依赖 = ntp 自身 Manifest 的 base-utility（^10.8.0 起）+ 工程骨架的 easyui/log。
+  改完 Manifest 必须 fun install（否则头文件/库路径不进 CMake）。
+-->
+<manifest platform="Z20">
+    <dependencies enableOnPlatforms="Z20">
+        <package id="easyui" version="^2.2.0"/>
+        <package id="log" version="0.0.0"/>
+        <package id="base-utility" version="^10.8.5"/>
+
+        <!-- NTP：只做客户端；Z20 实测 2.1.1（回调是 timeval，旧的 0.1.0 是 struct tm） -->
+        <package id="ntp" version="2.1.1"/>
+    </dependencies>
+</manifest>
