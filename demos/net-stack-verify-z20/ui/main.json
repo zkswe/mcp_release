@@ -1,0 +1,310 @@
+{
+  "backgroundColor": 1513243,
+  "beepEnable": true,
+  "id": 0,
+  "resolution": {
+    "height": 480,
+    "width": 480
+  },
+  "topmost": false,
+  "position": {
+    "height": 480,
+    "left": 0,
+    "top": 0,
+    "width": 480
+  },
+  "textview__1": {
+    "id": 50001,
+    "caption": "TextTitle",
+    "position": {
+      "left": 16,
+      "top": 10,
+      "width": 448,
+      "height": 28
+    },
+    "alignment": 0,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 18,
+    "touchable": false,
+    "bold": true,
+    "italic": false,
+    "text": "网络包示例：curl-cxx / ntp / mqtt（Z20）",
+    "visible": true,
+    "rollEnable": false,
+    "rollDirection": 1,
+    "rollIntervalTime": 150,
+    "rollStep": 5,
+    "bgColorTab": {
+      "color0": -1,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    }
+  },
+  "button__1": {
+    "id": 20001,
+    "caption": "ButtonHttpGet",
+    "position": {
+      "left": 16,
+      "top": 42,
+      "width": 216,
+      "height": 52
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "HTTP GET（本地）",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 15
+  },
+  "button__2": {
+    "id": 20002,
+    "caption": "ButtonHttpPost",
+    "position": {
+      "left": 248,
+      "top": 42,
+      "width": 216,
+      "height": 52
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "HTTP POST（回显）",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 15
+  },
+  "button__3": {
+    "id": 20003,
+    "caption": "ButtonHttpsGet",
+    "position": {
+      "left": 16,
+      "top": 100,
+      "width": 216,
+      "height": 52
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "HTTPS GET（百度）",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 15
+  },
+  "button__4": {
+    "id": 20004,
+    "caption": "ButtonNtp",
+    "position": {
+      "left": 248,
+      "top": 100,
+      "width": 216,
+      "height": 52
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "NTP 校时",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 15
+  },
+  "button__5": {
+    "id": 20005,
+    "caption": "ButtonMqttPub",
+    "position": {
+      "left": 16,
+      "top": 158,
+      "width": 216,
+      "height": 52
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "MQTT 连接+发布",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 15
+  },
+  "button__6": {
+    "id": 20006,
+    "caption": "ButtonMqttSub",
+    "position": {
+      "left": 248,
+      "top": 158,
+      "width": 216,
+      "height": 52
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "MQTT 订阅回显",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 15
+  },
+  "button__7": {
+    "id": 20007,
+    "caption": "ButtonAuto",
+    "position": {
+      "left": 16,
+      "top": 216,
+      "width": 448,
+      "height": 44
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "自检 AUTO（HTTP→HTTPS→NTP→MQTT 连发订）",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 15
+  },
+  "textview__2": {
+    "id": 50002,
+    "caption": "TextStatus",
+    "position": {
+      "left": 16,
+      "top": 268,
+      "width": 448,
+      "height": 198
+    },
+    "alignment": 0,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 14,
+    "touchable": false,
+    "bold": false,
+    "italic": false,
+    "text": "（点按钮看结果）",
+    "visible": true,
+    "rollEnable": false,
+    "rollDirection": 1,
+    "rollIntervalTime": 150,
+    "rollStep": 5,
+    "bgColorTab": {
+      "color0": -1,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    }
+  }
+}

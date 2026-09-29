@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE flythings>
+<!--
+  FlyThings 网络包验证（Z20 86 面板 / 480x480）
+  覆盖：curl-cxx（HTTP/HTTPS，含 POST/FormData）+ curl + mbedtls + cares + z
+        ntp（校时）mqtt-cxx + paho-mqtt3as（MQTT 连/发/订）
+  改完 Manifest 必须 fun install（否则头文件路径不进 CMake）
+-->
+<manifest platform="Z20">
+    <dependencies enableOnPlatforms="Z20">
+        <package id="easyui" version="^2.2.0"/>
+        <package id="log" version="0.0.0"/>
+        <package id="base-utility" version="^10.8.5"/>
+
+        <!-- HTTP(S) -->
+        <package id="curl-cxx" version="10.0.3"/>
+        <package id="curl" version="8.12.1-mbedtls"/>
+        <package id="mbedtls" version="3.6.5"/>
+        <package id="cares" version="1.17.2"/>
+        <package id="z" version="1.2.11"/>
+
+        <!-- 校时 -->
+        <package id="ntp" version="2.1.1"/>
+
+        <!-- MQTT（mqtts/wss 走 paho-mqtt3as；纯 mqtt 用 paho-mqtt3a）
+        注意：Z20 的 paho-mqtt3as 需要 openssl 提供 BIO_read/RAND_bytes/SHA1_* 符号 → 必须声明 openssl -->
+        <package id="mqtt-cxx" version="3.2.0"/>
+        <package id="paho-mqtt3as" version="1.3.13"/>
+        <package id="openssl" version="1.1.1-w"/>
+    </dependencies>
+</manifest>

@@ -1,0 +1,246 @@
+{
+  "backgroundColor": 1513243,
+  "beepEnable": true,
+  "id": 0,
+  "resolution": {
+    "height": 480,
+    "width": 480
+  },
+  "topmost": false,
+  "position": {
+    "height": 480,
+    "left": 0,
+    "top": 0,
+    "width": 480
+  },
+  "textview__1": {
+    "id": 50001,
+    "caption": "TextTitle",
+    "position": {
+      "left": 16,
+      "top": 8,
+      "width": 448,
+      "height": 28
+    },
+    "alignment": 0,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 18,
+    "touchable": false,
+    "bold": true,
+    "italic": false,
+    "text": "底层网络库直调：c-ares / mbedTLS / OpenSSL",
+    "visible": true,
+    "rollEnable": false,
+    "rollDirection": 1,
+    "rollIntervalTime": 150,
+    "rollStep": 5,
+    "bgColorTab": {
+      "color0": -1,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    }
+  },
+  "button__1": {
+    "id": 20001,
+    "caption": "ButtonCares",
+    "position": {
+      "left": 16,
+      "top": 40,
+      "width": 216,
+      "height": 46
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "1 c-ares 解析百度",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 15
+  },
+  "button__2": {
+    "id": 20002,
+    "caption": "ButtonMbedtls",
+    "position": {
+      "left": 248,
+      "top": 40,
+      "width": 216,
+      "height": 46
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "2 mbedTLS TLS+GET",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 15
+  },
+  "button__3": {
+    "id": 20003,
+    "caption": "ButtonOpenssl",
+    "position": {
+      "left": 16,
+      "top": 92,
+      "width": 216,
+      "height": 46
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "3 OpenSSL TLS+GET",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 15
+  },
+  "button__4": {
+    "id": 20004,
+    "caption": "ButtonDnsBench",
+    "position": {
+      "left": 248,
+      "top": 92,
+      "width": 216,
+      "height": 46
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "4 c-ares DNS 5 域名",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 15
+  },
+  "button__5": {
+    "id": 20005,
+    "caption": "ButtonAuto",
+    "position": {
+      "left": 16,
+      "top": 144,
+      "width": 448,
+      "height": 44
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "5 自检 AUTO（1 c-ares → 2 mbedTLS → 3 OpenSSL → 4 DNS）",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 14
+  },
+  "textview__2": {
+    "id": 50002,
+    "caption": "TextStatus",
+    "position": {
+      "left": 16,
+      "top": 196,
+      "width": 448,
+      "height": 272
+    },
+    "alignment": 0,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 13,
+    "touchable": false,
+    "bold": false,
+    "italic": false,
+    "text": "（点按钮看结果）",
+    "visible": true,
+    "rollEnable": false,
+    "rollDirection": 1,
+    "rollIntervalTime": 150,
+    "rollStep": 5,
+    "bgColorTab": {
+      "color0": -1,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    }
+  }
+}

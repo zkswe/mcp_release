@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE flythings>
+
+<manifest platform="Z20">
+    <dependencies enableOnPlatforms="Z20">
+        <package id="easyui" version="^2.2.0"/>
+        <package id="log" version="0.0.0"/>
+        <package id="zkhardware" version="0.0.0"/>
+        <package id="zknet" version="0.0.0"/>
+            <package id="base-utility" version="^10.8.5"/>
+    </dependencies>
+</manifest>

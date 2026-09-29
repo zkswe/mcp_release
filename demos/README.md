@@ -10,6 +10,12 @@
 |------|------|---------|------|---------|
 | `dvr-uvc-recorder-v85x` | V85X | UVC 摄像头 探测/预览/拍照/录像/停止/回放 + 图层释放 + 竖屏旋转 | ✅ 真机全链路验证 | `knowledge/v85x/dvr-recorder-guide.md` |
 | `h264-player-v85x` | V85X | 硬件 H264 解码（bin 工具）：env + dlopen 加载库 + `init_ex` 缩放解码 + 解码回调 + Annex-B 按 AU 喂帧 + 内存采样 | ✅ 真机解码验收（V851 640×480）+ 编译通过 | `knowledge/v85x/h264-player-usage.md` |
+| `net-stack-verify-z20` | Z20 | curl-cxx / ntp / mqtt-cxx：HTTP GET/POST、HTTPS、NTP 校时、MQTT qos1 收发 | ✅ 真机验证 | `knowledge/devflow/package-verify-playbook.md` |
+| `net-stack-advanced-z20` | Z20 | MQTTS(TLS) / LWT 遗嘱 / 异常断线重连 / Downloader 双任务+进度 / WebSocket / SoftAp / Ethernet / 4G 结论 | ✅ 真机验证 | 同上 |
+| `net-wifi-verify-z20` | Z20 | zknet：WiFi 开关·扫描·连接·断开·关开自恢复 + NetUtils/SoftAp/通道只读面 | ✅ 真机验证 | 同上 |
+| `net-stack-verify-z21` | Z21 | 同上网络栈的 1024×600 版（平台差异：curl=8.12.1-mbedtls、openssl=1.1.1-g；无 mqtt-cxx/paho 包） | ✅ 真机验证 | 同上 |
+| `net-direct-tls-z20` | Z20 | c-ares DNS 解析 / mbedTLS 与 OpenSSL 直调 TLS 握手 + HTTP GET | ✅ 真机验证 | 同上 |
+| `hw-relay-verify-z20` | Z20 | zkhardware：3 路继电器（zeroOutput+回读）/ 背光 / ADC / GPIO 过零结论 | ✅ 真机验证 | 同上 |
 
 ## 🆕 新增 demo 的规范（照此执行，保证质量与可维护）
 

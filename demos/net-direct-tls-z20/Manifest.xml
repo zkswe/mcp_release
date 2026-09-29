@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE flythings>
+<!--
+  FlyThings 底层网络库「直调」验证（Z20 86 面板 / 480x480）
+  覆盖：c-ares（DNS 直调）+ mbedTLS（TLS 握手 + HTTP GET）+ OpenSSL（libssl 握手 + HTTP GET）
+  说明：不走 curl-cxx / zknet 之类的门面包，直接调底层库 API，验证 registry 里的包头/静态库可用性。
+  改完 Manifest 必须 fun install（否则头文件/库路径不进 CMake）。
+-->
+<manifest platform="Z20">
+    <dependencies enableOnPlatforms="Z20">
+        <package id="easyui" version="^2.2.0"/>
+        <package id="log" version="0.0.0"/>
+        <package id="base-utility" version="^10.8.5"/>
+
+        <!-- 底层网络库：c-ares（DNS）/ mbedTLS（TLS+证书）/ OpenSSL（libssl+libcrypto） -->
+        <package id="cares" version="1.17.2"/>
+        <package id="mbedtls" version="3.6.5"/>
+        <package id="openssl" version="1.1.1-w"/>
+    </dependencies>
+</manifest>

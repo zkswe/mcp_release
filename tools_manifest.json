@@ -586,9 +586,9 @@
     }
   ],
   "docs": {
-    "knowledgeFiles": 80,
+    "knowledgeFiles": 81,
     "wikiFiles": 128,
-    "ragChunks": 1711,
-    "ragPaths": 208
+    "ragChunks": 1721,
+    "ragPaths": 209
   }
 }
