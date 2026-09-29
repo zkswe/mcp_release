@@ -572,11 +572,39 @@ def _kb_index_map():
 
 
 _LOCAL_BOOST = 1.15        # 本地层同主题优先（更贴近现场）：仅改排序，不改写分数
+_STALE_PENALTY = 0.85     # 过期知识降权（P2 时效）：仅改排序
 
 
 def _kb_index_entry(path):
     km, _err = _kb_index_map()
     return km.get(path) or {}
+
+
+def flythings_knowledge_gaps(limit: int = 20, out: str = '', project_root: str = '') -> str:
+    """查「知识缺口清单」：用户/AI 反复问但**检索不到**的主题（生长引擎的输入端）。
+
+    数据来自本地层 `_logs/no_hit.jsonl`（不外发）。返回 top-N 问法 + 次数 + `nextActions`；
+    out 给路径则同时落 kb_gaps.md。周期看它 = 知道下一批该写什么（缺口驱动写作）。
+    """
+    import kb_local as _kbl
+    g = _kbl.gaps(int(limit or 20), kb_override='')
+    if out:
+        md = _kbl.gaps_markdown(g)
+        try:
+            os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
+            with open(out, 'w', encoding='utf-8', newline='\n') as f:
+                f.write(md)
+            g['markdown'] = out
+        except OSError as e:
+            g['warnings'] = g.get('warnings', []) + ['kb_gaps.md 写不了: %s' % e]
+    g['logFile'] = g.get('logFile')
+    g['nextActions'] = [
+        '挑一条缺口 → flythings_knowledge_capture(...)（落本地层候选）',
+        '补 evidence（cmd 或 artifact）→ python scripts/kb_verify.py --apply',
+        '登记 ≥5 条问法到 scripts/check_retrieval.py 的 GROUPS，跑 --report 取实测阈值',
+        '人工签字（reviewed_by）或机器复验（machine_verified_at）后才 status=verified',
+    ]
+    return json.dumps(g, ensure_ascii=False)
 
 
 def _annotate_kb_hits(hits):
@@ -595,11 +623,19 @@ def _annotate_kb_hits(hits):
         h['evidenceLevel'] = d.get('evidenceLevel')
         h['origin'] = d.get('origin')
         h['verifiedAt'] = d.get('verified_at')
+        h['freshness'] = d.get('freshness')
+        h['ageDays'] = d.get('ageDays')
         lvl = d.get('evidenceLevel') or ''
         if (d.get('status') or '') != 'verified' or lvl != 'has-evidence':
             h['advisory'] = ('本条状态=%s / 证据等级=%s：可当线索，结论前请核对原文'
                              '或按 evidence 复验（法见 knowledge/devflow/kb-growth.md）'
                              % (d.get('status') or '?', lvl or 'none'))
+        if d.get('stale'):
+            h['stale'] = True
+            h['advisory'] = ('⚠️ 本条已过期（%s 天前验，阈值 %s 天）：结论可能已被版本迭代推翻，'
+                             '请先按 evidence 复验' % (d.get('ageDays'), d.get('staleDays') or 180))
+        elif d.get('freshness') == 'aging' and not h.get('advisory'):
+            h['advisory'] = '本条已接近复验期（%s 天前验），大改前建议复验' % d.get('ageDays')
     return hits
 
 
@@ -607,7 +643,7 @@ def flythings_knowledge_search(query: str, k: int = 3) -> str:
     """在知识库（wiki 官方镜像 + knowledge 实践文档）检索片段（完全本地，零 Key）。
 
     遇到 FlyThings 开发问题（控件/API/布局/FTU/回调/编译/平台差异）时调用；query 用中文。
-    bge-small-zh 向量 + BM25；未命中/低置信会落「知识缺口」日志并回 gapLogged/gapHint。
+    命中带 status/evidenceLevel/freshness（未验/过期会带 advisory）；未命中会记账（kb_gaps）。
     """
     kk = max(1, min(int(k), 8))
     warnings = []
@@ -625,12 +661,19 @@ def flythings_knowledge_search(query: str, k: int = 3) -> str:
                                      'hint': '重试一次；仍失败检查 rag_index.json 与模型文件是否完整',
                                      'retryable': True},
                            'warnings': warnings}, ensure_ascii=False)
-    # P0-2：本地层同主题优先（更贴近现场）——只改**排序**，不改分数字段
+    # P0-2：本地层同主题优先（更贴近现场）；P2：**过期降权**（只改排序，不改分数字段）
     _km0, _e0 = _kb_index_map()
-    if any((_km0.get(c.get('path')) or {}).get('origin') == 'local' for _s, c in top):
-        top = sorted(top, key=lambda sc: float(sc[0]) * (_LOCAL_BOOST if (
-            (_km0.get(sc[1].get('path')) or {}).get('origin') == 'local') else 1.0),
-                     reverse=True)
+    if any(((_km0.get(c.get('path')) or {}).get('origin') == 'local')
+           or ((_km0.get(c.get('path')) or {}).get('stale')) for _s, c in top):
+        def _w(sc):
+            d = _km0.get(sc[1].get('path')) or {}
+            f = 1.0
+            if d.get('origin') == 'local':
+                f *= _LOCAL_BOOST
+            if d.get('stale'):
+                f *= _STALE_PENALTY
+            return float(sc[0]) * f
+        top = sorted(top, key=_w, reverse=True)
     hits = _annotate_kb_hits([
         {'path': c['path'], 'score': round(float(s), 4), 'text': c['text'],
          'source': 'knowledge（实践）' if (c.get('path') or '').startswith('knowledge/')
@@ -679,10 +722,8 @@ def flythings_knowledge_capture(title: str, body: str = '', category: str = 'dev
     """把一条现场结论落成知识候选（写**用户本地层/项目层**，绝不写 MCP 安装目录）。
 
     title 一句话说清现象/结论；evidence 传 JSON（[{"kind":"real-device|offline|manual",
-    "cmd":"...","expect_contains":"..."}]）或纯文本；layer=local（~/.flythings/kb_local/）|
-    project（<项目>/docs/kb/）。命中同主题 → 回 duplicateOf，提示**合并**而非新建。
-    之后：补 evidence → scripts/kb_verify.py → 人工签字才 verified（AI 不能自评）；
-    回流用 flythings_knowledge_export；详见 knowledge/devflow/kb-growth.md。
+    "cmd":"...","artifact":"..."}]）或纯文本；layer=local（~/.flythings/kb_local/）| project。
+    命中同主题 → 回 duplicateOf，提示**合并**而非新建。之后：补 evidence → kb_verify → 签字才 verified。
     """
     import kb_local as _kbl
     ev = []
@@ -706,9 +747,8 @@ def flythings_knowledge_export(out: str = '', scope: str = 'inbox', layer: str =
     """导出**脱敏知识补丁包**（回流总账通道 A：kb-contrib-<时间>.json）。
 
     scope=inbox（缺省）/verified/all；**强制脱敏**（IP/本机路径/凭据/主机名 → 占位符），
-    未脱敏须 internal=True（仅总账维护者自用）。交回：发回文件，或对 open 版仓提 PR（只改
-    knowledge/inbox/**）；总账侧 去重 → 复验 → 问法登记 → 人工签字。详见
-    knowledge/devflow/kb-growth.md。
+    未脱敏须 internal=True（仅总账维护者自用）。交回：发回文件，或对 open 版仓提 PR（只改 knowledge/inbox/**）。
+    总账侧 去重 → 复验 → 问法登记 → 人工签字。
     """
     import kb_local as _kbl
     return json.dumps(_kbl.export_pack(out, scope, layer=layer, project_root=project_root,
@@ -1840,6 +1880,7 @@ OP_NAMES = (
     'flythings_knowledge_search',
     'flythings_knowledge_capture',
     'flythings_knowledge_export',
+    'flythings_knowledge_gaps',
     'flythings_hardware_info',
     'flythings_map_control',
     'flythings_read_json',

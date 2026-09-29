@@ -4,7 +4,7 @@
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY/STAGE 表后重新生成，勿手改本文件",
   "version": "0.27.125-open",
   "build": "2026-09-29",
-  "toolCount": 42,
+  "toolCount": 43,
   "cli": {
     "fun": "FlyThings 工程工具（create/install/build/launch，<项目>/.fsc/<平台>/ 下；09-28 前为 .fun/）",
     "fui": "FTU 布局工具：pack（json → ftu）/ unpack（ftu → json）双向下；随包 fui 自 v0.27.91 起含 unpack（旧版只有 pack）",
@@ -467,6 +467,18 @@
       "stage": "other"
     },
     {
+      "op": "flythings_knowledge_gaps",
+      "brief": "查「知识缺口清单」：用户/AI 反复问但**检索不到**的主题（生长引擎的输入端）。",
+      "args": [
+        "limit",
+        "out",
+        "project_root"
+      ],
+      "risk": "read",
+      "category": "kbase",
+      "stage": "other"
+    },
+    {
       "op": "flythings_knowledge_search",
       "brief": "在知识库（wiki 官方镜像 + knowledge 实践文档）检索片段（完全本地，零 Key）。",
       "args": [
@@ -672,7 +684,7 @@
     }
   ],
   "docs": {
-    "knowledgeFiles": 89,
+    "knowledgeFiles": 91,
     "wikiFiles": 128,
     "ragChunks": 1891,
     "ragPaths": 216

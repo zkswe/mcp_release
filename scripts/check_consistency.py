@@ -460,6 +460,12 @@ def stage_delegated(skip_smoke, with_tests):
                if l.startswith('[PASS]') or l.startswith('[FAIL]')]
     check(rc == 0, 'delegated: check_kb.py (知识库门禁)',
           (kb_tail[0] if kb_tail else 'rc=%d' % rc)[:70])
+    # P2：知识体检看板不许滞后（比对 kb_index 源哈希）——看板是决策依据，静默滞后会误导
+    rc, out = _run([sys.executable, os.path.join(SUB, 'kb_health.py'), '--check'])
+    tail2 = [l for l in out.strip().splitlines()
+             if l.startswith('[PASS]') or l.startswith('[FAIL]')]
+    check(rc == 0, 'delegated: kb_health --check (看板新鲜度)',
+          (tail2[0] if tail2 else 'rc=%d' % rc)[:70])
     if not skip_smoke:
         rc, out = _run([sys.executable, os.path.join(SUB, 'smoke.py')])
         last = [l for l in out.strip().splitlines() if l.startswith('total=')]

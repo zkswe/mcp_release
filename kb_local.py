@@ -98,6 +98,37 @@ def today():
     return time.strftime('%Y-%m-%d')
 
 
+FRESHNESS = ('fresh', 'aging', 'stale', 'unknown')
+
+
+def age_days(meta, ref=None):
+    """verified_at 到今天的天数；算不了回 None（不猜）。"""
+    vd = str(meta.get('verified_at') or '')[:10]
+    if len(vd) != 10:
+        return None
+    try:
+        import datetime
+        d0 = datetime.date(*(int(x) for x in vd.split('-')))
+        ts = ref or time.strftime('%Y-%m-%d')
+        d1 = datetime.date(*(int(x) for x in ts[:10].split('-')))
+        return (d1 - d0).days
+    except (ValueError, TypeError):
+        return None
+
+
+def freshness(meta, ref=None):
+    """→ (freshness, ageDays)：超 stale_days = stale；过 70% = aging（P2 时效降权）。"""
+    a = age_days(meta, ref)
+    if a is None:
+        return 'unknown', None
+    lim = int(meta.get('stale_days') or 180)
+    if a > lim:
+        return 'stale', a
+    if a > lim * 0.7:
+        return 'aging', a
+    return 'fresh', a
+
+
 def slugify(text, limit=48):
     s = re.sub(r'[^0-9A-Za-z\u4e00-\u9fff]+', '-', str(text or '').strip()).strip('-')
     return (s[:limit] or 'entry').lower()
@@ -475,7 +506,7 @@ def gaps(limit=20, kb_override=''):
         a['count'] += 1
         a['last'] = r.get('ts', '') or a['last']
     items = sorted(agg.values(), key=lambda x: (-x['count'], x['query']))[:int(limit)]
-    return {'success': True, 'op': 'kb_local.gaps', 'totalLogged': len(rows),
+    return {'success': True, 'op': 'flythings_knowledge_gaps', 'totalLogged': len(rows),
             'uniqueGaps': len(agg), 'items': items, 'logFile':
             os.path.join(d, '_logs', 'no_hit.jsonl')}
 

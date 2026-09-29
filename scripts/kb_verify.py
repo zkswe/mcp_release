@@ -184,6 +184,21 @@ def _apply(path, res):
 
 def run(scope='offline', target='', device='', apply=False, report=''):
     docs = _docs(scope, target)
+    if scope == 'backlog':
+        # P2：不跑，只列「待补判据」队列（无问法优先）——这就是写作/补证据的工单
+        q = sorted([{'id': d.get('id'), 'path': d.get('path'), 'category': d.get('category'),
+                     'hasQueries': bool(d.get('hasQueries')),
+                     'freshness': d.get('freshness')} for d in docs],
+                   key=lambda x: (x['hasQueries'], x['path'] or ''))
+        payload = {'verifiedAt': kbl._now(), 'scope': scope, 'summary': {'backlog': len(q)},
+                   'backlog': q, 'docs': []}
+        if not report:
+            report = os.path.join(REPORT_DIR, 'kb_verify.json')
+        kbl.write_json(report, payload)
+        return payload, report
+    if scope == 'stale':
+        # P2 时效：只复验过期/接近过期的条目
+        docs = [d for d in docs if (d.get('freshness') or '') in ('stale', 'aging')]
     allow_dev = scope in ('all', 'real-device')
     out = []
     for d in docs:
@@ -201,7 +216,8 @@ def run(scope='offline', target='', device='', apply=False, report=''):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--scope', default='offline', choices=['offline', 'all', 'real-device'])
+    ap.add_argument('--scope', default='offline',
+                    choices=['offline', 'all', 'real-device', 'stale', 'backlog'])
     ap.add_argument('--target', default='')
     ap.add_argument('--device', default='')
     ap.add_argument('--apply', action='store_true')
@@ -211,6 +227,12 @@ def main():
     s = payload['summary']
     print('=' * 72)
     print('kb_verify  scope=%s device=%s apply=%s' % (a.scope, a.device or '-', a.apply))
+    if a.scope == 'backlog':
+        print('  待补判据队列：%d 篇（无问法优先）' % s.get('backlog', 0))
+        for b in payload['backlog'][:12]:
+            print('   - %-50s 有问法=%s %s' % (b['path'], b['hasQueries'], b['freshness']))
+        print('  报告 ->', report)
+        return 0
     print('  通过 %d ｜ 失败 %d ｜ 跳过 %d ｜ 人工判据 %d' % (s.get('pass', 0), s.get('fail', 0),
                                                         s.get('skipped', 0), s.get('manual', 0)))
     for r in payload['docs']:

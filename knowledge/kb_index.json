@@ -1,7 +1,7 @@
 {
  "meta": {
   "schema": 1,
-  "built_at": "2026-09-29 20:50:55",
+  "built_at": "2026-09-29 20:58:36",
   "mcp_version": "0.27.125-open",
   "doc_count": 87,
   "source_hash": "a1e46cbcf72187983c524b5406613f88"
@@ -24,6 +24,7 @@
   "noQueries": 72,
   "stale": 0,
   "inbox": 0,
+  "aging": 0,
   "manualOnly": 82
  },
  "docs": [
@@ -59,6 +60,9 @@
    "sha256": "7fb571c5f1f68789de14db8006b08c881c715f9b1dd286b767b7a26110fa4018",
    "fingerprint": "a9622915611b5096",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -98,6 +102,9 @@
    "sha256": "34c1a46d921f435a5f4ff900f11a744ba7cb507b8e825cc5ebc7e447d4f6bf70",
    "fingerprint": "8b01d7ddb7ba8f53",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -135,6 +142,9 @@
    "sha256": "fa75cc12d928f43698d86349a47d5125837653994a261ea7b913211b8efddb2b",
    "fingerprint": "9639693f18beb287",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -169,6 +179,9 @@
    "sha256": "e4fa78edbbfceb2c7ad4248afe8690832dea71700728cb34a985ff6d0ad57b05",
    "fingerprint": "e7f961d720222f28",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -200,6 +213,9 @@
    "sha256": "afb918c9791eceddd25ae97c2874227d3e606278b24ec289fe23323cebf2b3f4",
    "fingerprint": "05cd5df78148f027",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -238,6 +254,9 @@
    "sha256": "509ed4aba072fb84d8caf30c4dafe78dd4271781863f7b2947a61a1e6c624227",
    "fingerprint": "98f6f2a0b48343b1",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -273,6 +292,9 @@
    "sha256": "02b0afa1f455c3d484f390497b645dc9ec86ba5d11d3183e5ebecb9c7edb938d",
    "fingerprint": "b3171efee0e32f25",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -314,6 +336,9 @@
    "sha256": "69c7e2239ae8ec1d72132b10a9830d61b5c27511453f93d438183c1b5a853622",
    "fingerprint": "076ff5cdd5b02b6c",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -344,6 +369,9 @@
    "sha256": "f01bee31548d4eb84b61f15798ba92a65f2cfcd62b803c3aa256dc809d0f486c",
    "fingerprint": "432cbc3954403590",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -369,6 +397,9 @@
    "sha256": "217080999b94c13ddf82883e151046d24087913b115f7d972f797849b890a8ec",
    "fingerprint": "b1961da23e4696a7",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -403,6 +434,9 @@
    "sha256": "f7392a8afdb107f0d812b15d9cce5f54744534e8a7aa8feca3145e735a6895aa",
    "fingerprint": "6a48881bec36bd1a",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -454,6 +488,9 @@
    "sha256": "bd8e663ca65aef7ba9bbf1391ae39cea5d0057fb75bc1910bba37807b5a66b7a",
    "fingerprint": "4f577c548e773334",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -489,6 +526,9 @@
    "sha256": "c8baffaf47864eae3ae51221ced38d95da32d77cd94c938db5b3a70f448cc9d2",
    "fingerprint": "e71ffaccdce70d31",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -529,6 +569,9 @@
    "sha256": "970a615b115ea0d563aa66431ce069961778cfd44937f8c56bfbdaafd4ca687b",
    "fingerprint": "d44bc6ba4d2b08b5",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -570,6 +613,9 @@
    "sha256": "d4c84efcd56884acec7f4caaae813f79907bc0ff1f0c8d588c4fc7a04aad7f5e",
    "fingerprint": "32a57a2799c9b6f0",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -610,6 +656,9 @@
    "sha256": "aa0b9c333fbc8e6a19ac9ee66e4be80e33c8642b86fe32854aa18443c8f98b0f",
    "fingerprint": "373c6181306d886c",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -644,6 +693,9 @@
    "sha256": "56174aaf7bf49293b687434792b46086e8743d014a840a627c3c5465fcfc5569",
    "fingerprint": "94a50fa05d87d492",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -671,6 +723,9 @@
    "sha256": "3a9e304c22c32bb07385b3ce9c247bd5c88065ff93f5074f7e669d84447055e9",
    "fingerprint": "304971a307c71f10",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -701,6 +756,9 @@
    "sha256": "1828f8fc0aa4031e22b37d673a7f474d0d20f015845760ddb81c24f71b917a69",
    "fingerprint": "6224fecc58a78e25",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -728,6 +786,9 @@
    "sha256": "64a26cc3827a30c5a7796617a5bcaa2a83aebc8f204498c6fe059ccf27e6d145",
    "fingerprint": "16d287d3fbba54da",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -762,6 +823,9 @@
    "sha256": "491f589380b515fea6e96312fa45f3e9e4fdd1e01d3d2c6ab5f330cf9e5227bd",
    "fingerprint": "e90e0377edb4e1b5",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -805,6 +869,9 @@
    "sha256": "4dc8eaf9957609901d815f4b94badda84244462a0b3612573b6fe9615fa15a7b",
    "fingerprint": "0ffb49c2d7f976fc",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -839,6 +906,9 @@
    "sha256": "a3d37f4ec5d9e68eb17fde5c6a779e429adff4afacfb957c3af1095babe04838",
    "fingerprint": "98c9131a9c08aad0",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -883,6 +953,9 @@
    "sha256": "565af9f50ce32f412fd1d2e677a866050d9a7e12dc5139772a07984c152987cd",
    "fingerprint": "3cef600f61b87430",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -913,6 +986,9 @@
    "sha256": "4a4461cbddc3994e0f1840db223b3f6a858cee3258e0485c66715ae4b2fe1502",
    "fingerprint": "498d2c275df2fec1",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -941,6 +1017,9 @@
    "sha256": "0e517fc679f903e353178d96ed8abfd69591cb08fa728aee4f3cae651841f284",
    "fingerprint": "c2bbe8276a641c3e",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -975,6 +1054,9 @@
    "sha256": "ae13dd63a5c1b23959d0cb9449a70a26671150015be8f916373bb159dd360842",
    "fingerprint": "5a340f983dafad54",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1001,6 +1083,9 @@
    "sha256": "cb7e7da7eda77ba4bd5b599818f0eab96e2f8fd97da2e2d30caf8ab3da3005e1",
    "fingerprint": "329d4f67339df594",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1037,6 +1122,9 @@
    "sha256": "11d9c6e4cd190378f479349ec1e37284153da51b27c90cffd77797e6b01a0211",
    "fingerprint": "4d890b46c013abc9",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1071,6 +1159,9 @@
    "sha256": "66bd941153ff739e98fe00ce8542a1314657c70dd964a4ae6b573dfc784a35fa",
    "fingerprint": "765dedebdd2de423",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1104,6 +1195,9 @@
    "sha256": "84664c4f80b89756cdfceb7aa80b46b08c7b83bfe55c807fa6998019a68dbcfe",
    "fingerprint": "cccf023d094984eb",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1140,6 +1234,9 @@
    "sha256": "ea7c7e91f2efe8e4b4b51a6f2642e9c1334ae76f9778b44d0d7322935cc6bff7",
    "fingerprint": "77b2b1a5eb30c418",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1181,6 +1278,9 @@
    "sha256": "7d4d537866c985ceabdb074a348704015077714f65047aff1fc2fa42c9540119",
    "fingerprint": "16492270393b0bc4",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1215,6 +1315,9 @@
    "sha256": "2ce30439c02238ac5eb3f6fd42d2ed7a93940dfb5ab9e016eaf91e2ac7d2e1f3",
    "fingerprint": "200f1195e0882e08",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1242,6 +1345,9 @@
    "sha256": "e3edaa041536b8bb3bcf9088f728c30cee68fb6189632b56956b7ad1fcfb8c55",
    "fingerprint": "65cc432f96af17c6",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1269,6 +1375,9 @@
    "sha256": "279a15a711b4c5d2016bdcc2dc489852545857d77d71c1b70df4690da84e2078",
    "fingerprint": "3bba54108ad0943c",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1307,6 +1416,9 @@
    "sha256": "ef554f52711bc6e81e923c63076a90de0fdec7efc10a0570823153caf1046875",
    "fingerprint": "b016a5fe68bcdbf8",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1338,6 +1450,9 @@
    "sha256": "ed1df675be16ad2f0b5d03cf11ac036bea2206a77fe7d8390ba590b72ec87dcd",
    "fingerprint": "6021a191939a5e59",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1367,6 +1482,9 @@
    "sha256": "bf0c465dcaead2eb2909ba3dbf821e8dde4d904672e716616cf0904247bc6362",
    "fingerprint": "72a905927f55d458",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1394,6 +1512,9 @@
    "sha256": "d7ca25ae35f3a65995328446dbb718952b1ca354656983b5368965707781fb0a",
    "fingerprint": "3bda46d0418f8bec",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1428,6 +1549,9 @@
    "sha256": "f5df04c386196147c794b86a428fed28430314d4933b413eb78f7a904076c990",
    "fingerprint": "0e04926c164fb4ad",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1451,6 +1575,9 @@
    "sha256": "882cf544af172b8de75a5bc2f8c6e578bc8ececbb5bf8b78b601dba29c0f8ef1",
    "fingerprint": "562fc62797afc036",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1485,6 +1612,9 @@
    "sha256": "b74d623f1e9d1c32cb098bea43af2b5d62ca24fdc62998b8ab95da6507e7007c",
    "fingerprint": "e0220a9aabb9521f",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1514,6 +1644,9 @@
    "sha256": "a0cbe6802c91685c01aba2f16312c9ded818cdbd2dc45da5a09b6a5e31264a33",
    "fingerprint": "91ae098c1a1eb284",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1542,6 +1675,9 @@
    "sha256": "3b3a5c43b275b2f760a6aff0066076e011c45cb490b6ab619cfeff918d763933",
    "fingerprint": "cd3c248853a914f7",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1572,6 +1708,9 @@
    "sha256": "02505757d3fb8c5744c4a782e249e1a56c8642be3ffefd45fac701cc94336a2b",
    "fingerprint": "ead0f4db91d7ebe8",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1606,6 +1745,9 @@
    "sha256": "3ba87d271f7e20514602bedfdf7c9e190ecaea8290de8a969aa4dc5dd611db36",
    "fingerprint": "5014d79923581ecc",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1642,6 +1784,9 @@
    "sha256": "0bce45a7007f6c3568eace56c0410c6d8d9e0e79fd655c6e293f608959d782a6",
    "fingerprint": "c53d5b75a5a3f2be",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1676,6 +1821,9 @@
    "sha256": "1f0938e4a1d77d72aa2043677c172e88a5a6c602c933cad40ae9d9ecec449d06",
    "fingerprint": "dfc41e99a6fdd408",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1706,6 +1854,9 @@
    "sha256": "7657882ec57681733012849e402155f67721ff7161e3201e758d57ee07b1d38b",
    "fingerprint": "a2fb6bde81236ebf",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1740,6 +1891,9 @@
    "sha256": "924ef27690957899e8db0596171aa64498d1b46c447049410903e584dfdf00ac",
    "fingerprint": "1cb278cec2bb3f27",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1774,6 +1928,9 @@
    "sha256": "60e4bd3c822fabacd3238d3a052bc8f026b0799685338731f60f027642e50a17",
    "fingerprint": "c0e6d732852174dd",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1800,6 +1957,9 @@
    "sha256": "8030f12b96fff70265ec960ad84db578f73a32708f558028c70d071fcfcf09b7",
    "fingerprint": "e382f7b76be7c996",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1827,6 +1987,9 @@
    "sha256": "dee58454fd32e5e4ce5665cea7bdef5e05a4615f174ee8dfd7d492d997d924a7",
    "fingerprint": "ff73fd831b445a00",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1863,6 +2026,9 @@
    "sha256": "30fbc91315cd297f3e07e1c90df7d71a048d0a0a79a10ef3bfd7be30f7280d88",
    "fingerprint": "58ee773d6aa93f24",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1899,6 +2065,9 @@
    "sha256": "41c8b32d182986f0260cebfb41b9167178977c4092126c74a11ef66f12d9a772",
    "fingerprint": "986453d66e1f29e4",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1933,6 +2102,9 @@
    "sha256": "8d1a1d98c9d085727507611e19a429f9bd8718dc853e9f43fee7d7d62f1ab1a4",
    "fingerprint": "a2a7855467eb3cff",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1962,6 +2134,9 @@
    "sha256": "493a450dca30e4ba63e13a12d0fa7c961ded804930c2c66d73a6e2ce3935c28d",
    "fingerprint": "187a5992e5f64386",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -1993,6 +2168,9 @@
    "sha256": "93bb85bd9f8f368ab9ee55bdaa07768f32226bece2f8442151e7a6e62d2a6d85",
    "fingerprint": "1de29d3ca7389bb5",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2020,6 +2198,9 @@
    "sha256": "a4551379e4164530fa22d73cbc6cd5c77c164f2a852684e674c9cf6606b8f6ad",
    "fingerprint": "97bb2a5a1c391223",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2046,6 +2227,9 @@
    "sha256": "658e551b757b715cd23c2b63ad1a3ab71ede5b65e60110f8e7c72200807933ef",
    "fingerprint": "830560ba3e51d168",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2080,6 +2264,9 @@
    "sha256": "9e1e3a70b665b67f0eafc40bf40ceaac4d1e87dfa8a444d4c12d2715b9c30a11",
    "fingerprint": "1ef68a8094305ecb",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2114,6 +2301,9 @@
    "sha256": "b28cc93faa13eb975ed1b1bc90aa188d28818735a1e0508899b1dc950ada8a37",
    "fingerprint": "902cbeb67efe5192",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2148,6 +2338,9 @@
    "sha256": "f50a88f1fb2b2e503a497c626002f4a6ac1d88a86c0afd7ed656d8a1a638793f",
    "fingerprint": "261e8c69d459657a",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2180,6 +2373,9 @@
    "sha256": "811618aa10f019493a8047aff2c784185ace5a6edc9de352581550ad107e78ff",
    "fingerprint": "92efe132ebd4b876",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2207,6 +2403,9 @@
    "sha256": "24f36c528aaa54cc59834241928041770e27d1598d8e18c8e6852e3ccf2bcf8f",
    "fingerprint": "91a8f8028a87811b",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2241,6 +2440,9 @@
    "sha256": "b5d00ce582e45155e8e23be9e683dd6c1fd31e39968af965b6fff3fa8cc7480a",
    "fingerprint": "7b833095ada22c8d",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2275,6 +2477,9 @@
    "sha256": "c772527d4f6c786c5ac39731068fbedb757006ab42507b2d9a721e37b5ab832c",
    "fingerprint": "ea1d860bc97d1f95",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2309,6 +2514,9 @@
    "sha256": "1fd7a2a15d890fed5462f82eca939517afba3a33c45b95e80d4035e9dbbb160f",
    "fingerprint": "29429a42d56f2dc6",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2339,6 +2547,9 @@
    "sha256": "a6b4ff27c27bba5ba6d1d25d73f77610e013f4ea9250115eefad06bf561f0f56",
    "fingerprint": "c1dba6c30d3f40eb",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2375,6 +2586,9 @@
    "sha256": "04bfaae1bc85d09bd2957033e84d089c79bf81efe22acd7fe3e3d9e0f32d02b0",
    "fingerprint": "a3b2622f87027c40",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2412,6 +2626,9 @@
    "sha256": "652c47f242f470f9ee2dc000520c52759a7e7e2fe873112447db208ef4191523",
    "fingerprint": "a34c0184bb8551a4",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 365,
    "frontMatterError": ""
   },
   {
@@ -2450,6 +2667,9 @@
    "sha256": "d3316060df0e6a032e26efc490b7be6129f5c38f81c4605195c39be344826e90",
    "fingerprint": "9e7080bc4d23ad7a",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2490,6 +2710,9 @@
    "sha256": "e0ac9aca374869613987a9e4c8555095a3b1fa8dae22db9f8fc0c4fb35e63322",
    "fingerprint": "2747435eca718879",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2526,6 +2749,9 @@
    "sha256": "ed4ba815f3b37d6f45c716c11f1eaf4f973c876340461c8796b03d0b56bcecd6",
    "fingerprint": "443b8bcd121c83b1",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2558,6 +2784,9 @@
    "sha256": "c6021fbc4dfbac411f7df05eed9691e6ad3b02612e91286689ea0a9469344ccc",
    "fingerprint": "c7307f59d0f8b8d2",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2594,6 +2823,9 @@
    "sha256": "0b3bd48d3a2d4b596516ad42040824fb63a098fe9b0ac2054e131f86dfa41669",
    "fingerprint": "4644e9f5e1c9e6f0",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2623,6 +2855,9 @@
    "sha256": "0658c9187eb994ad7721970800e0880e9f649e77f082db8b3b087e25add92f75",
    "fingerprint": "99ec5e4e57d253a1",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2659,6 +2894,9 @@
    "sha256": "74391c0aa9055d8e5af98acb567cfcd1452e505cb79064c62d0121b0bbad6175",
    "fingerprint": "5729c55fefc48a9f",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2684,6 +2922,9 @@
    "sha256": "4b185829e331837d82fec7f1672e5623dac5cf96d32fb898a9809d4cfc55c929",
    "fingerprint": "111680d3ee96b77c",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2721,6 +2962,9 @@
    "sha256": "9f794927a21f6283ca43d01cca92ae1edea81e167b797557dd2a5781bd44dfcb",
    "fingerprint": "f44f9f5bbe8d1cf7",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2757,6 +3001,9 @@
    "sha256": "25ca27812689a7132dcda192b22752170b806d92896cf1b91576d955bf3eadb7",
    "fingerprint": "aebd434930eea670",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2782,6 +3029,9 @@
    "sha256": "4475d9ac06b6a9496df3ae2d9a03e27f5f60ea1d89c8e955ffe8d27019bee6f8",
    "fingerprint": "14513ba1a6465967",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2818,6 +3068,9 @@
    "sha256": "44d633776f59f3f32b422604d959593c6182aa1bf8c799c678150ff1c5fbd697",
    "fingerprint": "818c871d53b503fb",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2855,6 +3108,9 @@
    "sha256": "02302de8bcc1f7cc0099e42dbac24524c668c427b6a6a56554b3225e5cbc0e24",
    "fingerprint": "3e8d8373083d907a",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2891,6 +3147,9 @@
    "sha256": "abde591aa7a3e9402c5f6d08e5a6473a40f5a560e9356f4a6f9d8ea73e6234d5",
    "fingerprint": "2a343ed84474ee03",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   },
   {
@@ -2924,6 +3183,9 @@
    "sha256": "d3b923c5feafbb278a8ee90a7402649483fce1ecf4194f7fb36ec814bdca2d16",
    "fingerprint": "2d5b4d0f4b182a52",
    "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
    "frontMatterError": ""
   }
  ]

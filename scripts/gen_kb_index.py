@@ -49,7 +49,7 @@ def build():
     docs, hasher = [], hashlib.sha256()
     registered = _queries_registered()
     counts = {'total': 0, 'byCategory': {}, 'byStatus': {}, 'withEvidence': 0,
-              'needsEvidence': 0, 'noQueries': 0, 'stale': 0, 'inbox': 0}
+              'needsEvidence': 0, 'noQueries': 0, 'stale': 0, 'inbox': 0, 'aging': 0}
     for cat in CATEGORIES:
         d = os.path.join(kbl.TOTAL_KB, cat)
         if not os.path.isdir(d):
@@ -71,6 +71,7 @@ def build():
                                - time.mktime(time.strptime(vd[:10], '%Y-%m-%d'))) // 86400)
                 except ValueError:
                     age = None
+            fr, age = kbl.freshness(meta)
             ev = meta.get('evidence') or []
             ev_level = ('has-evidence' if ev else
                         ('manual-only' if meta.get('needs_evidence') else 'none'))
@@ -86,7 +87,9 @@ def build():
                    'needsEvidence': bool(meta.get('needs_evidence')),
                    'hasQueries': rel in registered, 'bytes': len(raw.encode('utf-8')),
                    'sha256': sha, 'fingerprint': kbl.fingerprint(meta),
-                   'ageDays': age, 'frontMatterError': ferr}
+                   'ageDays': age, 'freshness': fr, 'stale': (fr == 'stale'),
+                   'staleDays': int(meta.get('stale_days') or 180),
+                   'frontMatterError': ferr}
             docs.append(row)
             counts['total'] += 1
             counts['byCategory'][cat] = counts['byCategory'].get(cat, 0) + 1
@@ -101,6 +104,8 @@ def build():
                 counts['noQueries'] += 1
             if isinstance(age, int) and meta.get('stale_days') and age > int(meta['stale_days']):
                 counts['stale'] += 1
+            elif fr == 'aging':
+                counts['aging'] = counts.get('aging', 0) + 1
     inbox = os.path.join(kbl.TOTAL_KB, 'inbox')
     if os.path.isdir(inbox):
         counts['inbox'] = len([f for f in os.listdir(inbox)

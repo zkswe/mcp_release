@@ -48,15 +48,15 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 > `python` 不在 PATH 时用完整路径（如 `C:/Users/<你>/AppData/Local/Programs/Python/Python313/python.exe`）。
 
 **3) 验证** —— 问 AI「**MCP 版本是多少？**」：
-应返回 `flythings-kb-open 0.27.125-open`，**42 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / mt_test / zkshot，
+应返回 `flythings-kb-open 0.27.125-open`，**43 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / mt_test / zkshot，
 在 `bin_tools/<平台>/` 下，**不是 op、不占 op 名额**）。
 
 > **工具面三模式（按客户端选一个，别同时配）**
 > | 模式 | 怎么配 | 客户端看到什么 |
 > |------|--------|----------------|
 > | `dispatcher`（默认） | 只指 `mcp_server.py` | 只暴露分发器 `flythings_kb`（`op="list"` 取目录）—— schema 开销最小 |
-> | `all` | `FLYTHINGS_MCP_MODE=all` | 分发器 + 42 个独立工具（旧配置兼容） |
-> | `flat` | 指 `mcp_server_flat.py`（或 `FLYTHINGS_MCP_MODE=flat`） | 42 个独立工具，无分发器（Trae / Cursor / Claude Desktop 需要独立 schema 时用；代价 ≈ 1 万 token/session） |
+> | `all` | `FLYTHINGS_MCP_MODE=all` | 分发器 + 43 个独立工具（旧配置兼容） |
+> | `flat` | 指 `mcp_server_flat.py`（或 `FLYTHINGS_MCP_MODE=flat`） | 43 个独立工具，无分发器（Trae / Cursor / Claude Desktop 需要独立 schema 时用；代价 ≈ 1 万 token/session） |
 >
 > 默认从「全注册」改为「只分发器」是 v0.27.34 的**行为变更**；受影响就设 `FLYTHINGS_MCP_MODE=all` 恢复。
 
@@ -147,6 +147,6 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 
 ---
 
-当前版本 `0.27.125-open`（42 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
+当前版本 `0.27.125-open`（43 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
 
 MIT License · FlyThings Team · 深圳中科世为科技有限公司 · [developer.flythings.cn](https://developer.flythings.cn/)
