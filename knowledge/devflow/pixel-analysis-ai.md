@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [必要的做好入库就好了]
+tags: [2026-09-10 入库, 必要的做好入库就好了]
 evidence: []
 ---
 # 抓帧读图：程序化像素分析 + 像素级渲染坑

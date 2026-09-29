@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [**, deploy_debug, sh`, AI 在任意客户端里收到, 调试, 全量推送]
+tags: [内部 fun launch, deploy_debug, sh, sh 之类的额外部署脚本, AI 在任意客户端里收到, 调试, 全量推送, 部署, 类请求时, 必须调用 MCP 工具]
 evidence: []
 ---
 # 部署/调试场景 → 工具动作映射（禁止自造部署命令）

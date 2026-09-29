@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [现切"**, `components, icons, 比例反复不一致, 不能靠"每次画一遍"]
+tags: [components, icons, 比例反复不一致]
 evidence: []
 ---
 # 🎨 UI 图标库（Tabler, MIT）— 权威规则

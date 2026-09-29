@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [V85X]
-tags: [轮播类型=否, 除此以外没有其他操作**, video, md`, 适用：**V85X**, V853]
+tags: [轮播类型=否, 仅创建一个视频渲染区域, 除此以外没有其他操作, video, md, V853, V553 等]
 evidence: []
 ---
 # 🖥️ V85X 摄像头自维护出图 → videoView 零代码透出视频层（透明渲染区域）

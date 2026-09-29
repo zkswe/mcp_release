@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [图片锯齿, 1x 直画, 大图缩小, 走哪条路出图, thumb, size 与图对不上]
+tags: [图片锯齿, 1x 直画, 大图缩小, 走哪条路出图, thumb, size 与图对不上, 超采样, SS, 选中条边界有毛边, 阶梯]
 evidence: []
 ---
 # UI 图片资源铁律与 PNG 抗锯齿管线

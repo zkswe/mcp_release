@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [⚠️ v0, 27, action=, `：`"editor"`, `"diff"`]
+tags: [⚠️ v0, 27, action=]
 evidence: []
 ---
 # UI 布局可视化编辑与像素验收（json 为源 · 拖拽微调 · 0 token 校验）

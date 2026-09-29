@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: false
 platforms: [Z21]
-tags: [实测来源：Z21, 表现像, WiFi 坏了, Z20, 检索词：部署体积, 内存预算]
+tags: [表现像, WiFi 坏了, Z20, 部署体积, 内存预算, OOM 杀 zkgui, 设备重启, 整板掉网, 重启应用进程, setprop ctl]
 evidence:
   - {kind: real-device, cmd: %ADB% -s %DEVICE% shell getprop init.svc.zkswe, expect_contains: running}
   - {kind: offline, cmd: python -m unittest tests.test_baseline_testrun.TestTouchFallback -q, expect_rc: 0, expect_contains: OK}

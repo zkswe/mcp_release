@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [检索词, ：新项目, 新需求, 开发一个, 做一个, 写一个]
+tags: [新需求, 开发一个, 做一个, 写一个, 实现, 需求拆解, 功能拆解, 原型设计, 界面设计, 设计稿]
 evidence: []
 ---
 # 🏗️ 一句话需求 → 线框确认 → UI 美化 流程（沛哥定规 2026-09-02）

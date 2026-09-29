@@ -52,6 +52,10 @@ def main():
     known = set()  # knowledge 内已有相对路径（如 esl/tag-esl.md），wiki 同名文档跳过避免重复
     if os.path.isdir(KNOWLEDGE_DIR):
         for r, _, fnames in os.walk(KNOWLEDGE_DIR):
+            # 候选区/日志/报告**不进索引**（候选可见但不当依据，见 knowledge/devflow/kb-growth.md §1/§8）
+            _parts = os.path.relpath(r, KNOWLEDGE_DIR).replace('\\', '/').split('/')
+            if any(p in ('inbox', '_reports', '_logs') for p in _parts):
+                continue
             for fn in fnames:
                 if fn.endswith('.md'):
                     rel = os.path.relpath(os.path.join(r, fn), KNOWLEDGE_DIR).replace('\\', '/')

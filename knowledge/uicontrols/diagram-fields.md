@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [0 SDK 头文件校准, 场景：实时波形, 音频频谱, 心率, 串口 ADC 曲线等]
+tags: [2026-09-07 git, 0 SDK 头文件校准, 音频频谱, 心率, 串口 ADC 曲线等]
 evidence: []
 ---
 # Diagram 波形图控件 JSON 字段规范

@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [检索词：滑动很卡, 拖动卡顿, 滑块拖不动, 拖动掉帧, 全量刷新, 高频回调]
+tags: [滑动很卡, 拖动卡顿, 滑块拖不动, 拖动掉帧, 全量刷新, updateUi 每次都调, 高频回调, setText 刷一整屏, 运动事件被丢弃, 触摸事件合并]
 evidence: []
 ---
 # 高频回调性能规范：拖动/触摸回调里**禁止全量刷新**

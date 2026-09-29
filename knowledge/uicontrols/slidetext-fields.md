@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [ImeDemo-New, KaiduZ9, 实测, 场景：一串文本单元横排, 可滑动, 点击某个单元回调]
+tags: [2026-09-07 git, ImeDemo-New, KaiduZ9, Z9S 拼音输入法候选词条, 实测, 可滑动, 点击某个单元回调, 横向选项条]
 evidence: []
 ---
 # SlideText 滑动文本控件 JSON 字段规范

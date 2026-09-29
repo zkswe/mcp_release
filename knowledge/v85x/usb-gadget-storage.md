@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [V85X]
-tags: [客户口径 MTP, sys, devices, platform, soc, usbc0]
+tags: [USB 连电脑当 U盘拷文件, 客户口径 MTP, sys, devices, platform, soc, usbc0, 切 host, U盘, cat usb_device]
 evidence: []
 ---
 # V85X USB OTG 切换与 Device 存储（ADB / U盘 + EMMC / TF 卡双介质）

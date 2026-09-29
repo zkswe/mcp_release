@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [长尾在这里, 实现规范, 工具开发用, HTML_SUBSET, md`, 内容以本页为准]
+tags: [长尾在这里, 实现规范, 工具开发用, HTML_SUBSET, md, 内容以本页为准]
 evidence: []
 ---
 # HTML 原型 → json 规范速查（HTML_SUBSET）

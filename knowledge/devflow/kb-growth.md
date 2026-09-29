@@ -2,8 +2,6 @@
 id: devflow-kb-growth
 title: 知识库生长机制（P1）：采集 / 验证 / 检索三闭环
 category: devflow
-platforms: []
-tags: [知识库, 自动生长, capture, 候选区, 复验, kb_index, 缺口清单, 回流, 脱敏, 总账]
 status: verified
 confidence: offline
 verified_at: 2026-09-29
@@ -11,11 +9,12 @@ stale_days: 180
 origin: total
 source: 钟工 2026-09-29「改造到用户基于这个开发后可以做到自动生长 + 可检索可验证」→ P1
 needs_evidence: false
+platforms: []
+tags: [知识放哪个目录, 会不会写进 MCP 安装目录, 怎么回流总账, 脱敏补丁包, kb-contrib, 未收录怎么办, 知识缺口清单, kb_gaps, 复验知识, evidence 怎么写]
 evidence:
-  - {kind: offline, cmd: "python -m unittest tests.test_kb_growth -q", expect_rc: 0, expect_contains: "OK"}
-  - {kind: offline, cmd: "python scripts/gen_kb_index.py --check", expect_rc: 0, expect_contains: "in sync"}
+  - {kind: offline, cmd: python -m unittest tests.test_kb_growth -q, expect_rc: 0, expect_contains: OK}
+  - {kind: offline, cmd: python scripts/gen_kb_index.py --check, expect_rc: 0, expect_contains: in sync}
 ---
-
 # 知识库生长机制（P1）：采集 / 验证 / 检索三闭环
 
 > **检索导引**：知识怎么自动生长 / 现场结论怎么入库 / capture 怎么用 / 候选区在哪 /
@@ -103,6 +102,13 @@ python scripts/kb_verify.py --apply            # 结果写回（失败 → statu
 - 未命中/低置信 → 落本地层 `_logs/no_hit.jsonl`，返回体带 `gapLogged / gapLog / gapHint`。
 - `python scripts/kb_gaps.py` → `kb_gaps.md`：**用户真的问不到的 top-N = 下一批写作清单**。
   这是"生长"的引擎：不是让 AI 自由发挥写文档，而是**缺口驱动写作**。
+- **命中会带证据等级**（2026-09-29 提报发现 ② 后的收口）：`hits[].status / evidenceLevel /
+  verifiedAt`；`evidenceLevel` 取 `has-evidence`（有可执行判据）/ `manual-only`（人工沉淀、无判据）/
+  `none`。非 verified 或 none 的额外带 `advisory` —— 因为首轮迁移把 80/85 篇迁成
+  `verified + needs_evidence`，**光看 `verified` 会被误当“已验”**。
+- **tags 只允许检索词**：`kb_local.clean_tag()` + `validate_meta()` 档住反引号/星号/尖括号/分号等
+  markdown 碎片（首轮自动抽取污染过 33/85 篇，而 tags 是索引的一部分 ⇒ 噪声会造假命中）；
+  重抽：`python scripts/kb_frontmatter.py --retags`。
 
 ## 6. 机读清单：`knowledge/kb_index.json`
 
@@ -111,9 +117,9 @@ python scripts/gen_kb_index.py            # 生成
 python scripts/gen_kb_index.py --check    # 门禁（源哈希/篇数不一致即 FAIL）
 ```
 
-带 `meta{source_hash, doc_count, built_at, mcp_version}`、summary（verified / 带证据 /
-待补证据 / 无问法登记 / 超期 / inbox）与逐篇字段（含 `sha256 / fingerprint / hasQueries / ageDays`）。
-**新鲜度看源哈希，不看 mtime**。
+带 `meta{source_hash, doc_count, built_at, mcp_version}`、summary（verified / 带证据 / 待补证据 /
+无问法登记 / 超期 / inbox / manualOnly）与逐篇字段（含 `sha256 / fingerprint / hasQueries /
+`ageDays / evidenceLevel`）。**新鲜度看源哈希，不看 mtime**。
 
 ## 7. 回流总账（三条通道）
 

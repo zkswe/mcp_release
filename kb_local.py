@@ -44,6 +44,33 @@ EVIDENCE_KINDS = ('real-device', 'offline', 'manual')
 REQUIRED_FIELDS = ('id', 'title', 'category', 'status', 'confidence', 'verified_at',
                    'stale_days', 'origin', 'source')
 
+# tags 合规：**只允许检索词**（禁止反引号/星号/尖括号/分号等 markdown 碎片混入索引）
+# 背景（2026-09-29 提报发现）：P1 首轮抽取把正文碎片（`<包名`、`**`、`检索词：…`）当 tags 写进 33/85 篇。
+_TAG_BAD = re.compile(r'[`*<>{}|\\"\'’“”·→←;；:：,，。、（）()\[\]【】「」!！?？]')
+_TAG_PREFIX = re.compile(r'^(检索词|检索导引|见|如)\s*[:：]?\s*')
+MAX_TAGS = 16
+MAX_TAG_LEN = 14
+
+
+def clean_tag(tag):
+    """把候选 tag 洗成合规检索词；不合规回 ''（调用方丢弃）。单一实现，抽取与门禁共用。"""
+    t = re.sub(r'\s+', ' ', str(tag or '').strip().strip('`*_ '))
+    t = _TAG_PREFIX.sub('', t).strip()
+    if len(t) < 2 or len(t) > MAX_TAG_LEN or _TAG_BAD.search(t):
+        return ''
+    return t
+
+
+def tag_problems(tags):
+    """返回不合规的 tag 列表（门禁用；空列表 = 合规）。"""
+    bad = []
+    for t in (tags or []):
+        if not isinstance(t, str) or clean_tag(t) != t:
+            bad.append(t)
+    if len(tags or []) > MAX_TAGS:
+        bad.append('（共 %d 个，超过 %d）' % (len(tags or []), MAX_TAGS))
+    return bad
+
 _META_SCALARS = ('id', 'title', 'category', 'status', 'confidence', 'verified_at',
                  'stale_days', 'origin', 'source', 'needs_evidence', 'supersedes',
                  'merged_into', 'applies_to_mcp')
@@ -246,6 +273,9 @@ def validate_meta(meta, path=''):
     ev = meta.get('evidence') or []
     if meta.get('status') == 'verified' and not ev and not meta.get('needs_evidence'):
         errs.append('status=verified 但没有 evidence，也未标 needs_evidence=true（不许口头结论当已验证）')
+    bad_tags = tag_problems(meta.get('tags'))
+    if bad_tags:
+        errs.append('tags 不合规（只允许检索词，禁 markdown 碎片）: %s' % bad_tags[:4])
     for e in ev:
         if isinstance(e, dict):
             if not e.get('cmd'):

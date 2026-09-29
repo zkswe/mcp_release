@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [确认, 跨业务域, 弹窗, 判断正确后入库, 旧口径易被误读成, 只做一个页面]
+tags: [确认, 跨业务域, 弹窗, 判断正确后入库, 旧口径易被误读成, 只做一个页面, html2json, pagesProduced, 对齐, 两处口径互为引用]
 evidence: []
 ---
 # 页面架构规范：ftu vs 同 ftu 内多窗口 + src 业务域目录命名

@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [控件点不动, 列表拖不动, 点了没选中, 定位产出, 0 实机逐条验证, §7]
+tags: [控件点不动, 列表拖不动, 点了没选中, 定位产出, 0 实机逐条验证, §7, ——, translate, 同一个, 点哪都没反应]
 evidence: []
 ---
 # 触摸事件与遮挡（touchable / touchPass / 谁吃掉了我的点击）

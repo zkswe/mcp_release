@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [不同 fui, 含默认值 -1, false, 字号, 均显式写, **]
+tags: [不同 fui, touchable 为典型, 含默认值 -1, false, 字号, 均显式写, 不做缺省声明, 非噪音, 写全对新引擎无害, 权威基准]
 evidence: []
 ---
 # ⛔ json 字段全集显式化（每控件必写字段 v2.1，双源基准）

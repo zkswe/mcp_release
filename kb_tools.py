@@ -545,6 +545,48 @@ def _best_coverage(q, texts):
     return best / total
 
 
+_KB_INDEX_CACHE = {}
+
+
+def _kb_index_map():
+    """`knowledge/kb_index.json` 的 path → 元数据（含 status/evidenceLevel），进程内缓存。"""
+    if 'map' not in _KB_INDEX_CACHE:
+        m, err = {}, ''
+        try:
+            import kb_local as _kbl
+            idx = _kbl.load_json(os.path.join(_kbl.TOTAL_KB, 'kb_index.json'))
+            for d in (idx.get('docs') or []):
+                if d.get('path'):
+                    m[d['path']] = d
+            err = idx.get('_error', '')
+        except Exception as e:                      # 索引读不了不影响检索，只丢标注
+            err = repr(e)
+        _KB_INDEX_CACHE.update({'map': m, 'err': err})
+    return _KB_INDEX_CACHE['map'], _KB_INDEX_CACHE.get('err', '')
+
+
+def _annotate_kb_hits(hits):
+    """给命中补 `status / evidenceLevel / verifiedAt`（消费侧要看得出「这条验没验过」）。
+
+    背景（2026-09-29 提报发现 ②）：首轮迁移把 80/85 篇迁成 `verified + needs_evidence`，
+    光看 `verified` 会被当成"已验"。`evidenceLevel`: has-evidence（有可执行判据）/ manual-only
+    （人工沉淀、无判据）/ none（未验证）。非 verified 或 none 的额外给 `advisory`。
+    """
+    km, _err = _kb_index_map()
+    for h in hits:
+        d = km.get(h.get('path'))
+        if not d:
+            continue
+        h['status'] = d.get('status')
+        h['evidenceLevel'] = d.get('evidenceLevel')
+        h['verifiedAt'] = d.get('verified_at')
+        if (d.get('status') or '') != 'verified' or (d.get('evidenceLevel') or '') == 'none':
+            h['advisory'] = ('本条未附可执行判据/未完全验证（%s）：可当线索，结论前请核对原文'
+                             '或按 evidence 复验（法见 knowledge/devflow/kb-growth.md）'
+                             % (d.get('evidenceLevel') or d.get('status') or 'unknown'))
+    return hits
+
+
 def flythings_knowledge_search(query: str, k: int = 3) -> str:
     """在知识库（wiki 官方镜像 + knowledge 实践文档）检索片段（完全本地，零 Key）。
 
@@ -567,10 +609,11 @@ def flythings_knowledge_search(query: str, k: int = 3) -> str:
                                      'hint': '重试一次；仍失败检查 rag_index.json 与模型文件是否完整',
                                      'retryable': True},
                            'warnings': warnings}, ensure_ascii=False)
-    hits = [{'path': c['path'], 'score': round(float(s), 4), 'text': c['text'],
-             'source': 'knowledge（实践）' if (c.get('path') or '').startswith('knowledge/')
-                       else 'wiki（官方镜像）'}
-            for s, c in top]
+    hits = _annotate_kb_hits([
+        {'path': c['path'], 'score': round(float(s), 4), 'text': c['text'],
+         'source': 'knowledge（实践）' if (c.get('path') or '').startswith('knowledge/')
+                   else 'wiki（官方镜像）'}
+        for s, c in top])
     cover = _best_coverage(query, [c['text'] for _, c in top])
     out = {'ok': True, 'op': 'flythings_knowledge_search', 'query': query, 'count': len(hits),
            'hits': hits, 'coverage': round(cover, 3), 'warnings': warnings,
@@ -967,7 +1010,16 @@ def flythings_html_to_json(input_html: str, output_json: str = '', res: str = ''
 
 def flythings_list_packages(platform: str = '') -> str:
     """列出依赖包生态（platform 如 F133/Z20，留空列全部），含功能描述与版本。写代码前调用。"""
-    return json.dumps(pkgtools.flythings_list_packages(platform or None), ensure_ascii=False)
+    r = pkgtools.flythings_list_packages(platform or None)
+    if platform and isinstance(r, dict):
+        info = _platforms.resolve(platform) or {}
+        if info and not info.get('buildable'):
+            # 「仅依赖包生态」平台：只能查包/取包，**不能建工程与编译**
+            r['packageOnly'] = True
+            r['notice'] = ('%s 属「仅依赖包生态」平台：只能查/取依赖包，'
+                           '**不支持 create_project / build_ui_flow**（别在这些平台上试建工程）'
+                           % (info.get('name') or platform))
+    return json.dumps(r, ensure_ascii=False)
 
 
 def flythings_query_package(package: str, platform: str = _platforms.DEFAULT_PLATFORM) -> str:

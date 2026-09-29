@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [F133, Z20, Z235X]
-tags: [产物目录 `, fun, <平台, `→**`, fsc, `**]
+tags: [产物目录, fun, fsc, fun-lock, fsc-lock, json, 老工程不用改, MCP 两代都认, 产物, 注册表均双向兼容]
 evidence: []
 ---
 # 🧰 fun 命令行工具链（原 fuse 更名；2026-09-28 内部又改成 fsc、产物目录 `.fun/` → `.fsc/`）+ 宏/产物目录改名

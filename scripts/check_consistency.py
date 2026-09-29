@@ -309,6 +309,10 @@ def _expected_md_sets():
     known, expected = set(), set()
     if os.path.isdir(kb_dir):
         for r, _, fs in os.walk(kb_dir):
+            # 与 rebuild_index_local.py 同口径：inbox/_reports/_logs 不入索引
+            _parts = os.path.relpath(r, kb_dir).replace('\\', '/').split('/')
+            if any(p in ('inbox', '_reports', '_logs') for p in _parts):
+                continue
             for f in fs:
                 if f.endswith('.md'):
                     rel = os.path.relpath(os.path.join(r, f), kb_dir).replace('\\', '/')

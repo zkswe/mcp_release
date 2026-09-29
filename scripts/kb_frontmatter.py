@@ -23,9 +23,31 @@ import kb_local as kbl          # noqa: E402
 
 CATEGORIES = ('devflow', 'uicontrols', 'hardware', 'esl', 't113-car', 'v85x')
 SKIP_FILES = ('README.md',)
+# 派生文档（生成物）：front-matter 由生成器（gen_hardware_doc.py 等）拥有，--retags 不许改它
+DERIVED_DOCS = ('knowledge/hardware/hardware-models.md',)
 PLATFORM_TOKENS = ('F133', 'F135', 'Z20', 'Z21', 'Z235X', 'T113', 'V85X', 'V851S')
 GUIDE_RE = re.compile(r'检索导引[^\n]*\n((?:>[^\n]*\n)+)', re.S)
 TAG_SPLIT = re.compile(r'[・、,，/｜|；;（）()\[\]「」。.\n]+')
+
+
+def _tags_from_guide(text):
+    """**只**从 `> 检索导引：…` 块抽 tags，并逐个过 kb_local.clean_tag。
+
+    2026-09-29 修（提报发现）：首轮抽取把正文碎片当 tags（`<包名` / `**` / `检索词：…`）写进 33/85 篇，
+    而 tags 是**索引的一部分** ⇒ 噪声 token 会造假命中。现只从「检索导引」这一人工写的问题集合抽，
+    且逐个洗（禁反引号/星号/尖括号/分号等），不合规直接丢。
+    """
+    g = GUIDE_RE.search(text)
+    if not g:
+        return []
+    out = []
+    for chunk in TAG_SPLIT.split(g.group(1).replace('>', ' ')):
+        t = kbl.clean_tag(chunk)
+        if t and t not in out:
+            out.append(t)
+        if len(out) >= kbl.MAX_TAGS:
+            break
+    return out
 
 
 def _docs():
@@ -49,13 +71,7 @@ def _infer(cat, path, text):
     if not title:
         title = os.path.splitext(os.path.basename(path))[0]
     stem = os.path.splitext(os.path.basename(path))[0]
-    tags = []
-    g = GUIDE_RE.search(text)
-    if g:
-        for chunk in TAG_SPLIT.split(g.group(1).replace('>', ' ')):
-            t = chunk.strip()
-            if 2 <= len(t) <= 12 and t not in tags:
-                tags.append(t)
+    tags = _tags_from_guide(text)
     plats = []
     for p in PLATFORM_TOKENS:
         if len(re.findall(re.escape(p), text, re.I)) >= 3:
@@ -70,8 +86,9 @@ def _infer(cat, path, text):
     }
 
 
-def run(check=False, stats=False):
+def run(check=False, stats=False, retags=False):
     missing, bad, added, extra = [], [], 0, []
+    retagged, dropped = 0, []
     counts = {'total': 0, 'verified': 0, 'withEvidence': 0, 'needsEvidence': 0,
               'byCategory': {}, 'noGuide': 0}
     for cat, path in _docs():
@@ -91,6 +108,16 @@ def run(check=False, stats=False):
             with io.open(path, 'w', encoding='utf-8', newline='\n') as f:
                 f.write(new)
             added += 1
+        elif retags and rel not in DERIVED_DOCS:
+            new_tags = _tags_from_guide(body or text)
+            if new_tags != (meta.get('tags') or []):
+                for t in (meta.get('tags') or []):
+                    if t not in new_tags:
+                        dropped.append((rel, t))
+                meta['tags'] = new_tags
+                with io.open(path, 'w', encoding='utf-8', newline='\n') as f:
+                    f.write(kbl.dump_front_matter(meta, body))
+                retagged += 1
         errs = kbl.validate_meta(meta, rel)
         if ferr:
             errs.append(ferr)
@@ -111,6 +138,12 @@ def run(check=False, stats=False):
         print('  分类：%s' % ', '.join('%s=%d' % kv for kv in sorted(counts['byCategory'].items())))
         if added:
             print('  本次补齐 front-matter：%d 篇' % added)
+        if retagged:
+            print('  本次重抽 tags：%d 篇；丢掉的非检索词碎片 %d 个（例：%s）'
+                  % (retagged, len(dropped),
+                     '、'.join('%s' % t for _, t in dropped[:6])))
+        if counts['noGuide']:
+            print('  ⚠️ %d 篇缺「检索导引」行（tags 会为空）' % counts['noGuide'])
     fail = 0
     if missing:
         print('[FAIL] %d 篇缺 front-matter：%s' % (len(missing), ', '.join(missing[:6])))
@@ -127,8 +160,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--check', action='store_true', help='只校验，不改文件（门禁用）')
     ap.add_argument('--stats', action='store_true', help='出体检数字')
+    ap.add_argument('--retags', action='store_true',
+                    help='重抽 tags（只从「检索导引」行；清掉历史污染）')
     a = ap.parse_args()
-    return run(check=a.check, stats=a.stats)
+    return run(check=a.check, stats=a.stats, retags=a.retags)
 
 
 if __name__ == '__main__':

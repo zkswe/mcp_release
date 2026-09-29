@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: false
 platforms: []
-tags: [JUnit 报告, 像素基线, 基线回归, 首次怎么建基线, 比不到基线是过还是没过, 多设备并行]
+tags: [JUnit 报告, 像素基线, 基线回归, 首次怎么建基线, 比不到基线是过还是没过, 多设备并行, 测试用例 JSON 怎么写, touch 注入怎么批量跑]
 evidence:
   - {kind: offline, cmd: python -m unittest tests.test_baseline_testrun -q, expect_rc: 0, expect_contains: OK}
 ---

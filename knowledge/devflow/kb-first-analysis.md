@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [V85X]
-tags: [沛哥定规, 2026-09-07, 背景：查, 检索策略偏, 已修复 v0, 17]
+tags: [沛哥定规, 2026-09-07, 时检索命中 Z21 通用文档, 检索策略偏, 已修复 v0, 17, 先检索分析, 禁止先试错]
 evidence: []
 ---
 # 开发先检索铁律：AI 分析优先用 MCP 知识库，禁止盲试/猜测

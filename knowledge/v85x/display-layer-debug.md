@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [V85X]
-tags: [UVC 摄像头预览, 回放调试, AP+P2P, 否则黑屏**, 适用：**V85X, V853]
+tags: [UVC 摄像头预览, 回放调试, AP+P2P, 否则黑屏, V853, V851, V553 等, aw-dvr, 场景, 视频解码]
 evidence: []
 ---
 # 🖥️ V85X 显示分层调试：releaseLayer 图层释放 / UI 透出 / 回放旋转

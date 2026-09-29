@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [F133, Z20, Z21, T113, V85X]
-tags: [**JPEG, MJPEG 摄像头绿屏, 录制中黑屏**, **, dev, **摄像头格式协商]
+tags: [JPEG, MJPEG 摄像头绿屏, 录制中黑屏, dev, video 热插拔检测, 摄像头格式协商, V4L2 采集, 平台无关通用层, 指定 V85X 且要预览, 录像]
 evidence: []
 ---
 # UVC / USB 摄像头通用接入（跨平台：V85X / T113 / F133 / Z20 / Z21）

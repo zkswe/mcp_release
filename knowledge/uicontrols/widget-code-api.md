@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [Z21]
-tags: [回调签名, 触发时机, 事件语义, 实测坑, 通用骨架, activity 壳]
+tags: [回调签名, 触发时机, 事件语义, 实测坑, 通用骨架, activity 壳, 回调表, 返回值语义, 生命周期, 定时器]
 evidence: []
 ---
 # 控件代码 API 速查（35 官方 Demo 源码实证，2026-09-08）

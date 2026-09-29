@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [F133]
-tags: [模块目录, 资产型模块, 组件 README, 平台说明, package 引用, ` 模块]
+tags: [模块目录, 资产型模块, 组件 README, 平台说明, package 引用, 模块, 以后模块代码放这里]
 evidence: []
 ---
 # 可复用组件（components）—— 组件化落地规范

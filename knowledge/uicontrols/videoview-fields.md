@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [0 SDK 校准, 场景：视频播放器, 广告机轮播, 本地视频播放, RTSP 等, MusicDemo]
+tags: [2026-09-07 git, 0 SDK 校准, 广告机轮播, 本地视频播放, RTSP 等, MusicDemo]
 evidence: []
 ---
 # VideoView 视频控件 JSON 字段规范（含轮播/API 双模式）

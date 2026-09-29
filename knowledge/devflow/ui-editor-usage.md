@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [显示隐藏控件, 预检红黄标 时命中, ` 的完整口径]
+tags: [显示隐藏控件, 预检红黄标 时命中, 的完整口径]
 evidence: []
 ---
 # UI 可视化编辑器（ui_editor）用法与能力

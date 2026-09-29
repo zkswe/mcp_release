@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [F133, F135, Z20, Z21, T113, V85X]
-tags: [c 原理, AI 不知道有现成工具, 沛哥实测反馈, ：老 input, ui_test, 节点要人工传]
+tags: [2026-09-08 入库, c 原理, AI 不知道有现成工具, 2026-09-12 升级, 沛哥实测反馈, ui_test, 节点要人工传, 自动扫节点 + 自动判协议, 并全平台编译, 自动化测试]
 evidence: []
 ---
 # 触摸注入/UI 自动化测试：先调现成 `touch` 工具（禁止先造轮子）

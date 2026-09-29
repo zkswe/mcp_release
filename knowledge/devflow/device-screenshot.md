@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [Z20, Z21]
-tags: [fb0 参数, 双缓冲 pan, 视频层抓不到帧, 拼墙抓不到画面**, toast 抓不到, 瞬时元素抓不到]
+tags: [fb0 参数, 双缓冲 pan, 视频层抓不到帧, 拼墙抓不到画面, 设备没有 screencap, toast 抓不到, 瞬时元素抓不到, 踩坑细节在这里]
 evidence: []
 ---
 # 真机抓屏（device_screenshot）实现要点与踩坑

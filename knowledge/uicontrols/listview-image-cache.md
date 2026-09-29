@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [F133]
-tags: [**检索命中条件, 列表封面卡, **：, 列表刷新卡, 回页卡, 切页慢]
+tags: [检索命中条件, 列表封面卡, 回页慢 两类问法都命中本文, 列表刷新卡, 回页卡, 切页慢, 滚动卡, 拖动卡, 封面加载慢, 图片多就卡]
 evidence: []
 ---
 # listview 封面刷新卡顿：每次都重解码 → 两件套（尺寸 == 显示盒 + ImageCache）

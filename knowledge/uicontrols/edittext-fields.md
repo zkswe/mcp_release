@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [UIlayoutDemo, edittext, 默认内置键盘, 不自绘, 输入完成触发回调]
+tags: [2026-09-01 入库, UIlayoutDemo, edittext, 默认内置键盘, 不自绘, 输入完成触发回调]
 evidence: []
 ---
 # ⌨️ EditText 输入框 JSON 字段规范

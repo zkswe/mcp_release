@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [V85X, V851S]
-tags: [**HLS, TS, **解码缩放 1, 4**, **起播就静默退出, 进程无报错消失**]
+tags: [zk_h264_player, HLS, TS, RTSP 流送硬解上屏, 解码缩放 1, 起播就静默退出, 进程无报错消失, 库闭源, 不解析不深挖, 本机注册表现场核对]
 evidence: []
 ---
 # 🎬 V85X 硬件 H264 播放器：官方包 `awh264player` vs 厂商门面 `zk_h264_player`

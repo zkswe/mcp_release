@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [35 工程, 逐源码深读, 回调表, 生命周期, logic, cc]
+tags: [35 工程, 逐源码深读, activity 骨架, 回调表, 生命周期, logic, cc, 定时器, 串口模板, SysApp]
 evidence: []
 ---
 # FlyThings 工程代码骨架（35 官方 Demo 深度阅读提炼）

@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [Z21, T113, V85X]
-tags: [或问, **U盘插上没反应, 读不到**, **USB 摄像头, 键鼠 接入**, **且没有指定平台**]
+tags: [或问, USB HOST 外设接入, U盘插上没反应, 读不到, USB 摄像头, 键鼠 接入, 且没有指定平台, 没说 V85X, T113, Z21]
 evidence: []
 ---
 # USB OTG / ADB / U盘 模式切换 + HOST 外设接入（跨平台对照：V85X / T113 / Z21）

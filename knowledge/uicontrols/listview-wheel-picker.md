@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [Z21]
-tags: [**检索命中条件, 滚轮, 时间选择, **：, 滚轮选择器, 转盘]
+tags: [检索命中条件, 滚轮, 时间选择, 时钟盘 三类问法都命中本文, 滚轮选择器, 转盘, 循环列表做选择器, 无限滚动列表, picker 多列联动, lv_roller 怎么用]
 evidence: []
 ---
 # listview 做滚轮选择器（WheelPicker）：字段配法 + 中心行对齐 + 三个真机坑

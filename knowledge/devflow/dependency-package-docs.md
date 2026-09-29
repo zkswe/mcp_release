@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [Z20]
-tags: [<包名, ` 下]
+tags: []
 evidence: []
 ---
 # 依赖包用法文档（packages/<包>/package.yaml）怎么读、怎么查

@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [Z21, V85X]
-tags: [ifconfig, ping 等调试工具, 需要查 IP, 端口, 进程, adb push 即用]
+tags: [2026-09-08 新增, ifconfig, ping 等调试工具, 需要查 IP, 端口, 进程, adb push 即用, 与 ui_test 同架构, bin_tools, README]
 evidence: []
 ---
 # BusyBox 调试工具库（bin_tools/{平台}/busybox，随 MCP 分发）

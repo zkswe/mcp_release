@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [F133, Z20, Z21, T113, V85X]
-tags: [F133, 0 引入, 现有公开包的 z20, z21, 检索词：动态旋转, 运行时旋转]
+tags: [RelayoutDemo, F133, 0 引入, 现有公开包的 z20, z21, 动态旋转, 运行时旋转, 横竖屏切换, 屏幕方向切换, 两套 ftu]
 evidence: []
 ---
 # 🔄 动态旋转屏幕 / 运行时切换布局（relayout）

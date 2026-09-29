@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [png, 的代码, 与 AI 手写生成逻辑, Pillow 绘制卡片, 按钮, 轨道]
+tags: [png, 的代码, 与 AI 手写生成逻辑, Pillow 绘制卡片, 按钮, 轨道, 输入框九宫格背景, marker 残影, 内容区错位, ——真机案例实测]
 evidence: []
 ---
 # 🧵 FT-009 .9.png 生成规则（必读）

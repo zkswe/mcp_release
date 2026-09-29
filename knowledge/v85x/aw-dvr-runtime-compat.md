@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [V85X]
-tags: [⚠️ 仅内部知识, v85x 深度]
+tags: [⚠️ 仅内部知识, v85x 深度, 不进 release 公开版]
 evidence: []
 ---
 # 📦 V85X aw-dvr × runtime 兼容速查（版本不是越新越好 + dlopen 失败 SOP）

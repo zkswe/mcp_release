@@ -72,6 +72,8 @@ def build():
                 except ValueError:
                     age = None
             ev = meta.get('evidence') or []
+            ev_level = ('has-evidence' if ev else
+                        ('manual-only' if meta.get('needs_evidence') else 'none'))
             row = {'id': meta.get('id'), 'path': rel, 'title': meta.get('title'),
                    'category': meta.get('category') or cat,
                    'platforms': meta.get('platforms') or [], 'tags': meta.get('tags') or [],
@@ -80,6 +82,7 @@ def build():
                    'verified_at': vd, 'stale_days': meta.get('stale_days'),
                    'origin': meta.get('origin') or 'total',
                    'evidenceCount': len(ev), 'evidence': ev,
+                   'evidenceLevel': ev_level,
                    'needsEvidence': bool(meta.get('needs_evidence')),
                    'hasQueries': rel in registered, 'bytes': len(raw.encode('utf-8')),
                    'sha256': sha, 'fingerprint': kbl.fingerprint(meta),
@@ -90,6 +93,8 @@ def build():
             counts['byStatus'][row['status']] = counts['byStatus'].get(row['status'], 0) + 1
             if ev:
                 counts['withEvidence'] += 1
+            if ev_level == 'manual-only':
+                counts['manualOnly'] = counts.get('manualOnly', 0) + 1
             if row['needsEvidence']:
                 counts['needsEvidence'] += 1
             if not row['hasQueries']:
@@ -98,7 +103,8 @@ def build():
                 counts['stale'] += 1
     inbox = os.path.join(kbl.TOTAL_KB, 'inbox')
     if os.path.isdir(inbox):
-        counts['inbox'] = len([f for f in os.listdir(inbox) if f.endswith('.md')])
+        counts['inbox'] = len([f for f in os.listdir(inbox)
+                               if f.endswith('.md') and f != 'README.md'])
     return {'meta': {'schema': kbl.SCHEMA_VERSION, 'built_at': kbl._now(),
                      'mcp_version': _version(), 'doc_count': counts['total'],
                      'source_hash': hasher.hexdigest()[:32]},

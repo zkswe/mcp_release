@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [Z21, V85X]
-tags: [本文是, 的直达速查, 问答式, 代码级细节, md`, 同目录]
+tags: [本文是, 的直达速查, 问答式, 代码级细节, 完整 configfs 序列, md, 同目录, 两篇关键路径一致, 改动需同步, xdv23]
 evidence: []
 ---
 # V85X 切换 USB OTG（host/device / ADB/U盘）速查

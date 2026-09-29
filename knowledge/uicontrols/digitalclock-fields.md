@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [0 SDK, 校准]
+tags: [2026-09-07 git, 0 SDK, ZKDigitalClock, 校准]
 evidence: []
 ---
 # DigitalClock 数字时钟控件 JSON 字段规范

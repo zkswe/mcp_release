@@ -71,6 +71,29 @@ def main():
                      % (s.get('total'), s.get('byStatus', {}).get('verified'),
                         s.get('withEvidence'), s.get('needsEvidence'), s.get('noQueries'),
                         s.get('inbox')))
+    # ⑤ 候选区（inbox）的 front-matter 也必须合规（这是能晋升的最低要求），但**不许进索引**
+    inbox = os.path.join(kbl.TOTAL_KB, 'inbox')
+    cand = 0
+    if os.path.isdir(inbox):
+        for f in sorted(os.listdir(inbox)):
+            if not f.endswith('.md') or f == 'README.md':
+                continue
+            cand += 1
+            p = os.path.join(inbox, f)
+            rel = os.path.relpath(p, BASE).replace(os.sep, '/')
+            meta, _b, ferr = kbl.parse_front_matter(io.open(p, encoding='utf-8').read())
+            if not meta:
+                fails.append('%s 缺 front-matter（候选也要带元数据才能晋升）' % rel)
+                continue
+            errs = kbl.validate_meta(meta, rel)
+            if ferr:
+                errs.append(ferr)
+            if meta.get('status') not in ('draft', 'review'):
+                fails.append('%s 在候选区但 status=%s（候选只能是 draft/review；要发布请移出 inbox 走晋升）'
+                             % (rel, meta.get('status')))
+            if errs:
+                fails.append('%s → %s' % (rel, '；'.join(errs)))
+        notes.append('候选区（inbox）: %d 篇（可见但不进索引/检索）' % cand)
     print('=' * 72)
     print('知识库门禁（check_kb）')
     for n in notes:

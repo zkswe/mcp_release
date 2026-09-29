@@ -2,8 +2,6 @@
 id: devflow-device-storage-full-fallback
 title: 设备 /data 写满导致注入工具推不上去（落点 /data → /tmp → /mnt/extsd 回退）
 category: devflow
-platforms: [Z20]
-tags: [存储写满, No space left, 注入工具, touch, 回退, 部署]
 status: verified
 confidence: real-device
 verified_at: 2026-09-29
@@ -11,10 +9,11 @@ stale_days: 180
 origin: total
 source: 2026-09-29 真机实测（两台 Z20 并行跑测试跑批时 push /data/touch 失败）
 needs_evidence: false
+platforms: [Z20]
+tags: [touch 起不来, 设备存储写满, 部署工具放哪, tmp 能不能放工具, 注入失败怎么办]
 evidence:
-  - {kind: offline, cmd: "python -m unittest tests.test_baseline_testrun.TestTouchFallback -q", expect_rc: 0, expect_contains: "OK"}
+  - {kind: offline, cmd: python -m unittest tests.test_baseline_testrun.TestTouchFallback -q, expect_rc: 0, expect_contains: OK}
 ---
-
 # 设备 /data 写满导致注入工具推不上去（落点回退）
 
 > **检索导引**：push 到 /data 失败 / remote No space left on device / 注入工具推不上去 /

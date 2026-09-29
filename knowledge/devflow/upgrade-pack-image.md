@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [Z20, Z21, V85X]
-tags: [铁律：**, 调试, 跑一下, 推送到设备, 固化, 升级]
+tags: [调试, 跑一下, 推送到设备, 固化, 升级, 交付, 量产, 掉电即失, img, 用户说]
 evidence: []
 ---
 # 固化升级：出 update.img 并刷进设备（调试推送 vs 固化升级）

@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [F136, 草稿待确认入库, ⚠️ 内部代码, 不整段复制实现]
+tags: [F136, 2026-09-03 拆解, 草稿待确认入库, ⚠️ 内部代码, 方法论文档只提炼模式与骨架, 不整段复制实现]
 evidence: []
 ---
 # FlyThings 自定义控件方法（lib-ext_widgets 拆解）
