@@ -125,6 +125,30 @@ def sh(adb, serial, cmd, timeout=DEFAULT_TIMEOUT):
     return (out or '') if rc == 0 else (out or '')
 
 
+def shell_rc(adb, serial, cmd, timeout=DEFAULT_TIMEOUT):
+    """`adb [-s serial] shell <cmd>`，返回 (rc, stdout, stderr)。
+
+    `sh()` 只回文本（rc 非 0 时也回文本，调用方判不出失败）；
+    测试跑批这类**必须判 rc** 的场景用本函数。
+    """
+    a = adb or resolve_adb()
+    if not a:
+        return 1, '', 'adb 不可用'
+    args = [a] + (['-s', serial] if serial else []) + ['shell', cmd]
+    return _run(args, timeout=timeout)
+
+
+def push(adb, serial, local, remote, timeout=120):
+    """`adb [-s serial] push <local> <remote>`，返回 (rc, stdout, stderr)。"""
+    a = adb or resolve_adb()
+    if not a:
+        return 1, '', 'adb 不可用'
+    if not os.path.isfile(local):
+        return 1, '', '本地文件不存在: %s' % local
+    args = [a] + (['-s', serial] if serial else []) + ['push', local, remote]
+    return _run(args, timeout=timeout)
+
+
 def start_server(adb='', timeout=DEFAULT_TIMEOUT):
     """确保 adb host server 在跑（fun 也走 127.0.0.1:5037，起一次对双方都有利）。"""
     a = adb or resolve_adb()

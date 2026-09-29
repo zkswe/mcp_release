@@ -13,7 +13,7 @@ python scripts/check_consistency.py --with-tests
 ```
 
 依赖：只用标准库 + 仓库已有依赖（Pillow 缺失时图像相关用例自动 skip）。**不连真机**。
-当前规模：**349 项**（1 项按环境 skip；含 2026-09-29 新增 	est_package_cards.py 7 项 + `test_selfcheck_bugreport.py` 13 项）。
+当前规模：**377 项**（1 项按环境 skip；含 2026-09-29 新增 test_package_cards.py 7 项 + `test_selfcheck_bugreport.py` 13 项 + `test_baseline_testrun.py` 28 项）。
 
 > 2026-09-27（v0.27.115-open）：`test_device_screenshot_probe.py` 新增 7 项（+22 → 共 18）——
 > 视频层抓帧的 **vdec 通道口径**：默认必须是 chn 0（`zkshot ... vdec 0 0`，向后兼容）、
@@ -35,6 +35,7 @@ python scripts/check_consistency.py --with-tests
 
 | 文件 | 钉住什么 |
 |------|----------|
+| `test_baseline_testrun.py` | **像素基线库 + 多设备测试跑批**（v0.27.124）：基线存/比/刷/list（容差档案随基线存、replace=False 不覆盖、revision 递增）；**判据不许静默**——比不到基线 → `no-baseline`（**不是** pass）、尺寸变了 → `size-mismatch`（不硬比）、索引坏了 → `error`、索引在文件丢 → `listing.missingCount`；plan 解析（空/错 action 回可用清单 + planDoc、文件路径、缺省名）；多设备选择（**多台在线 `auto` 不猜**、`all`、显式/裸 IP、不存在要报、无设备给 installHint）；`_one_step`（注入 rc≠0 → error、日志断言不过 → fail、抓屏失败 → error、run 缺 script → error）；JUnit XML（tests/failures/errors/skipped 计数 + XML 转义） |
 | `test_dispatch_contract.py` | op 清单（分发器 = manifest = kb_tools.OP_NAMES）、未知 op 候选、`BAD_ARGS`/`BAD_PARAMS`（参数写错必须回正确签名）、每个非真机 op 空参调用必须回可解析 envelope、**工具面三模式**（默认只 1 个分发器 / `all` 兼容 / `flat` 与 `mcp_server_flat.py` 均 32 个）、`get_version` compact 不膨胀、manifest 新鲜度 |
 | `test_control_map.py` | **跨框架控件映射**（v0.27.73 / 滚轮族 v0.27.93 / **TimePicker 全族 v0.27.94**）：`mcp_control_map.json` 完整性（六源 / 条数 / 级别取值 / 片段可解析 / L1·L2 必给可粘 json）、op `flythings_map_control` 契约（命中形状 / 模糊大小写 / `source` 限定 / `NO_HIT` / `BAD_SOURCE` / `BAD_PARAMS`）、tab 类指向 `_mapping/TabView`、**滚轮族 + `TimePicker`（含时钟盘）/`NumberPicker`/`LISTWHEEL`/`QTimeEdit`/`picker mode=time` → `listview`+L2**、`targets.wheelpicker` 无悬空引用、**表里不许再有「时间/时钟盘无对应能力」类旧表述** |
 | `test_search_quality.py` | 检索：中文**字级 bigram** 切词（整段中文不得成为一个 token）、kb_tools 与 rag_search 共用同一套切词、8 条真实问法 BM25 top-3 命中、hits 带 `source`、返回体带 `retrieval`/`degraded`/`quality`、未收录与低置信必须带检索边界提醒、`k` 上限夹紧 |

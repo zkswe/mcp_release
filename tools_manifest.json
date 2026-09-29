@@ -2,9 +2,9 @@
   "schema": 1,
   "generatedBy": "scripts/gen_manifest.py",
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY/STAGE 表后重新生成，勿手改本文件",
-  "version": "0.27.123-open",
+  "version": "0.27.124-open",
   "build": "2026-09-29",
-  "toolCount": 39,
+  "toolCount": 40,
   "cli": {
     "fun": "FlyThings 工程工具（create/install/build/launch，<项目>/.fsc/<平台>/ 下；09-28 前为 .fun/）",
     "fui": "FTU 布局工具：pack（json → ftu）/ unpack（ftu → json）双向下；随包 fui 自 v0.27.91 起含 unpack（旧版只有 pack）",
@@ -491,7 +491,7 @@
     },
     {
       "op": "flythings_pack_upgrade",
-      "brief": "⚠️ 场景别名（固化升级类意图一律本工具，禁自造命令）：",
+      "brief": "固化升级包（update.img）——AI 交付/发布/量产走本条：「打包升级包/出升级包/固化/",
       "args": [
         "project_root",
         "out_path",
@@ -560,8 +560,25 @@
       "stage": "build"
     },
     {
+      "op": "flythings_test_run",
+      "brief": "多设备**并行**跑一份 UI 用例（触摸注入 + 日志断言 + 像素基线），出 JSON + JUnit 报告。",
+      "args": [
+        "plan",
+        "devices",
+        "project_root",
+        "out",
+        "platform",
+        "parallel",
+        "baseline",
+        "allow_regions"
+      ],
+      "risk": "device",
+      "category": "device",
+      "stage": "build"
+    },
+    {
       "op": "flythings_ui_preview",
-      "brief": "json 布局 / 整个项目 → HTML 预览稿（客户确认 UI 用；只交付 .preview.html，不产图片/截图）。",
+      "brief": "json 布局 / 整个项目 → HTML 预览稿（客户确认 UI 用；只交 .preview.html，不产图片/截图）。",
       "args": [
         "target",
         "output_dir"
@@ -572,7 +589,7 @@
     },
     {
       "op": "flythings_ui_visual",
-      "brief": "UI 可视化三合一入口（action 选动作；旧 ui_editor / ui_edit_apply / ui_diff 已并入本 op）。",
+      "brief": "UI 可视化/像素验收入口（action 选动作；旧 ui_editor / ui_edit_apply / ui_diff 已并入）。",
       "args": [
         "action",
         "project_root",
@@ -589,7 +606,11 @@
         "noise_bbox",
         "out_png",
         "out_json",
-        "show_noise"
+        "show_noise",
+        "mode",
+        "baseline_key",
+        "name",
+        "allow_regions"
       ],
       "risk": "write",
       "category": "ui-visual",
@@ -617,9 +638,9 @@
     }
   ],
   "docs": {
-    "knowledgeFiles": 82,
+    "knowledgeFiles": 84,
     "wikiFiles": 128,
-    "ragChunks": 1741,
-    "ragPaths": 210
+    "ragChunks": 1760,
+    "ragPaths": 212
   }
 }

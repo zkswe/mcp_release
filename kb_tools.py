@@ -61,7 +61,7 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.123-open'
+MCP_VERSION = '0.27.124-open'
 MCP_BUILD = '2026-09-29'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -76,6 +76,7 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+    '2026-09-29: **自动化测试第二轮：多设备并行跑批 + 机读报告 + 像素基线库（工具数 39→40）** v0.27.124-open（钟工「先按照你的方案优化一轮，然后再复检」——这三项是我自己反查 open 版 MCP 时列出的测试侧 P0）——① **新 op `flythings_test_run(plan, devices, project_root, out, platform, parallel, baseline, allow_regions)`（风险 device）**：一份用例 JSON 在**多台设备并行**跑（此前多设备在线时工具一律「不猜」，只能逐台手敲 adb），每步结果**机器可判**：注入命令 rc / `logcat -d -s zkgui` 日志断言（expectLog/expectNoLog）/ 与像素基线逐像素对比；产出 `<out>/report.json` + **`<out>/report.xml`（JUnit，能直接进 CI）**；每台设备各自落 `shots/*.png` + `logcat.txt` 取证；`parallel` 控制并发度；**比不到基线记 no-baseline 并进 warnings，不算通过**（不静默放过）② **新模块 `ui_baseline.py`（像素基线库）** + **`flythings_ui_visual(action="baseline")`**：把「上一次验收通过的那张图」版本化存到 `<项目>/ui_baseline/`（`baseline.json` 索引 + 基线图 + 容差档案随基线存 + `_diff/*.diff.png`）；mode=save/compare/update/list；比不到基线报 `no-baseline`、尺寸变了报 `size-mismatch`（不许拿旧分辨率基线硬比）；判据与 ui_diff 完全同源（±2 容差 + ±1px 抖动补偿 + 噪声块归并）——此前只有「两张临时图比一比」，回归验收没有基线概念 ③ **`adb_tools` 补 `push()` / `shell_rc()`**（原来只有 `sh()` 只回文本、判不出 rc，无法做「注入失败=失败」的硬判据）④ 知识：`knowledge/devflow/device-test-run.md`（用例 schema/首次建基线流程/多设备并发注意/报告字段）+ `knowledge/devflow/capability-boundaries.md`（**能力边界清单**：open 版覆盖什么、哪些知识只在内部版、未覆盖怎么处置）⑤ 六方同步 + 契约用例 `tests/test_baseline_testrun.py`；真机验证：多台在线**并行**跑同一用例（含基线与报告）v0.27.124-open',
     '2026-09-29: **新增整机自检快照 + 缺陷单生成器（工具数 37→39）** v0.27.123-open（审查报告 P2-⑧⑨ / 钟工「1-3 按顺序做」第 3 项）——① **`flythings_selfcheck(device, diff_against, out)`（风险 device）**：一条命令出**整机快照九个分区**（设备信息/应用状态/显示/存储/网络/蓝牙/输入/外设/时间），每分区给 `{ok, hint, data}` —— **「读不到」本身是结论**：ok=false 时 hint 写明「需要什么条件 / 去哪查」，绝不静默吞掉；采集容忍设备缺工具（优先随仓 `bin_tools/<平台>/busybox` → 设备 /tmp/busybox，否则纯 adb shell + getprop/cat）；`diff_against=<上次快照.json>` 出逐分区逐项差异，`out=<json>` 落盘可复用为基线；设备参数带端口（`<serial|IP>:5555`），**多台在线不猜**（回 NO_DEVICE + 在线清单）② **`flythings_bugreport(title, project_root, device, symptom, steps, expected, actual, evidence, severity, out)`（风险 write）**：把「AI 产出的缺陷清单 + 真机判据」落成可提交 markdown，**格式对齐 2026-09-27 html2json A1~A8 那批**（标题 / 元信息 / 现象 / 复现步骤 / 期望 vs 实际 / 真机判据 / 证据 / 影响面）；真机判据自动附 型号·固件·build.fingerprint·应用状态（init.svc.zkswe / sys.zkapp.state / zkgui pid / uptime）·最近 `logcat -d -s zkgui` 末 40 行，采不到就写明原因；**evidence 里文件不存在 → 直接 EVIDENCE_MISSING 报错（不静默跳过）**；默认落 `<项目或MCP仓库>/temp/bugreports/<yyyymmdd-HHMM>-<slug>.md`，返回 path + 前 20 行预览 ③ 六方同步：`OP_NAMES` / `scripts/gen_manifest.py` 的 RISK·CATEGORY·STAGE / `mcp_server` 与 `README` 工具数 37→39 / `tools_manifest.json` / 意图闸门 `catalog.json`；新增 `knowledge/devflow/selfcheck-and-bugreport.md`（含检索导引）+ 契约用例 `tests/test_selfcheck_bugreport.py` ④ docstring 预算：长尾细节搬 knowledge/（html_to_json / build_ui_flow / ui_visual / device_screenshot / edit_ftu / pack_upgrade 六个 op 瘦身），总体仍 ≤12000。v0.27.123-open',
     '2026-09-29: **审查报告（MCP 更新审查-2026-09-29）P0 修复：包卡接进工具返回 + 门禁健壮性 + CHANGELOG 口径定死** v0.27.122-open —— ① **P0① 包卡进返回**：`package_tools` 新增 `package_card()`（读仓库 `packages/<包>/package.yaml`，yaml 缺失自动降级），`flythings_get_package_api` 返回体加 `card`（summary/entry/api/usage_cpp/gotchas/verified_* + cardPath/readmePath）、`list_packages` 加 `hasCard`、`query_package` 加 `cardSummary`/`hasCard` —— 之前 11 张卡 AI **取不到**（只读 registry），现在工具里直接可见；② **P0③ 门禁健壮性**：`lint_silent_except` 的 SKIP_DIRS 补 `.venv/venv/.fsc/.fun/toolchain`（原先扫到 .venv 报 650 条假红）、`check_consistency`/`smoke` 里「意图闸门 catalog 不在仓库内」「ui_tools 双份副本不存在」两条环境依赖检查**降级为 skip + 提示**（不再误报红）；③ **CHANGELOG 口径定死**：文件头改为「已冻结归档 ≤ v0.27.30」，版本史唯一来源指向 `MCP_FEATURES` + README（不再两套并存）；④ `packages/README.md` 补**包卡完整度状态表**（platforms.md/example/evidence 谁缺、谁待补，显式标注不许静默）；⑤ 新增契约用例 `tests/test_package_cards.py`（卡可解析 + 已接进工具返回）。v0.27.122-open',
     '2026-09-29: **依赖包「用法文档」体系 + 网络类包 Z20 真机全流程验证** v0.27.121-open（钟工：用这个面板把网络相关的 API 做好验证，就用平台上面的组件包；说明不完整的在本地 mcp 目录下做好 yaml 说明；源码可在本地 git 搜 lib-<包名>）——① **新增 `packages/<包>/` 文档体系**：机器可读 `package.yaml`（头文件 / API 签名与出处 / 依赖 / 可直接粘的用法 / 坑 / `verified_*` 真机结果）+ 人读 `README.md`（+ `platforms.md` / `example/` / `evidence/`）；首轮覆盖 `zkhardware`(3 路继电器 by zeroOutput + 背光)、`zknet`、`curl-cxx`、`ntp`、`mqtt-cxx`、`paho-mqtt3as`、`cares`、`mbedtls`、`openssl`、`rapidjson`、`curl`（未上真机的一律 `verified: null`，不冒充实测）；② **验证工程**：`projects/pkg_zknet`（WiFi 九键 + 自检 AUTO）、`pkg_netstack`（HTTP/HTTPS/NTP/MQTT）、`pkg_netstack2`（MQTTS/LWT/Downloader/WebSocket/热点/以太网/4G）、`pkg_netdir`（c-ares/mbedTLS/OpenSSL 直调）——全部「脚本注入触摸 + `logcat -d -s zkgui` 取证 + fb 截图」自动跑；③ **Z20(108) 真机结论**：WiFi 开关/扫描/连接/断开 6/6、HTTP GET/POST/HTTPS、Downloader 双任务(进度回调,307200B+81B)、WebSocket 回显、MQTTS(TLS test.mosquitto.org:8883)、LWT 遗嘱（`kill -9` 异常断线后 **~2s broker 代发**）、异常断线自动重连（cause=automatic reconnect，≈10.5s）、c-ares 解析(5 域名 30~88ms)、mbedTLS/OpenSSL 直调 TLS+GET(200 OK)、Ethernet configure/setAutoMode、SoftAp setEnable 开关、4G=本板无模块；④ **新坑入档**：`cacert.pem` 只认 **资源目录(resPath)** 下（放别处报 `not correctly signed by the trusted CA`，那是没找到 CA 不是证书坏）、Z20 的 `paho-mqtt3as` **必须配 openssl**（否则链接报 BIO_read/RAND_bytes/SHA1_* undefined）、**别连续快速 `setprop ctl.restart zkswe`**（旧实例没退干净 → MI 全局 init 锁被占 → 黑屏 + 进程 D 状态 kill -9 无效，只能断电）、取证用 `logcat -d -s zkgui`（zknet 事件线程刷屏会把我方日志挤出缓冲）、MQTT 见证端连 `127.0.0.1:1883`（宿主访问自身 LAN IP 会被拦）；⑤ **Z21（SSD21X / 1024×600 / 192.168.x.x）复验**：HTTP GET/POST、NTP 校时、HTTPS、Downloader 双任务、WebSocket、SoftAp、Ethernet 全通 —— **新增两条 Z21 专属坑**：**Z21 上电 RTC = 1970** → 带证书校验的 HTTPS 会报 `certificate validity starts in the future`（**必须先校时再 HTTPS**，Z20 时钟本来就对所以没暴露）；**Z21 没有 `/mnt/sdnand`**（只有 `/mnt/extsd`、`/mnt/usb1`）→ 落盘走 `/data/`。**Z21 registry 无 mqtt-cxx/paho-mqtt3as，MQTT 两项在 Z21 上无法验**；⑥ **同批入 `demos/` 六个真机验证工程**（`net-stack-verify-z20` / `net-stack-advanced-z20` / `net-wifi-verify-z20` / `net-stack-verify-z21` / `net-direct-tls-z20` / `hw-relay-verify-z20`，源级交付、IP 脱敏）+ `knowledge/devflow/package-verify-playbook.md`（验证套路：worker 线程 + 自检 AUTO 键 + 触摸注入 + `logcat -d -s zkgui` 取证 + framebuffer 截图 + 部署纪律 + 主机侧测试设施） v0.27.121-open',
@@ -807,11 +808,9 @@ def flythings_edit_ftu(ftu_path: str, operations: str, output_ftu: str = '',
 
     ⚠️ 默认 **不覆盖**原 ftu（overwrite=False）→ 生成同目录 <name>.edited.ftu 并还原原文件；
     确认后再传 overwrite=True 覆盖（或 output_ftu 指定目标）。原 ftu 与 json 都留 .bak。
-    operations 为 JSON 数组字符串，支持 set / remove / add / set_root 四类，例：
-      set   {"op":"set","target":"caption或key","props":{"x":100,"text":"新文本"}}
-      add   {"op":"add","template":"caption或key","newKey":"textview__4","props":{...}}
-    逐字段说明见 knowledge/devflow/ftu-json-pipeline.md；客户说「往右移/改文本/换颜色/删掉某控件/
-    复制一个控件」时调用；无 json 源时自动 unpack 出编辑源。
+    operations 为 JSON 数组字符串，支持 set / remove / add / set_root 四类（逐字段说明见
+    knowledge/devflow/ftu-json-pipeline.md）。客户说「往右移/改文本/换颜色/删控件/复制控件」时调用；
+    无 json 源时自动 unpack 出编辑源。
     """
     r = pt.flythings_edit_ftu(ftu_path, operations, output_ftu, overwrite)
     return json.dumps(_with_files(r, r.get('ftuPath'), r.get('jsonPath'), r.get('backup')),
@@ -822,13 +821,13 @@ def flythings_build_ui_flow(project_root: str, with_launch: bool = True, device:
                             font_check: str = 'auto', font_tier: str = '') -> str:
     """⚠️ 场景别名（编译部署类意图一律本工具，禁自造命令；不限入口）：
 
-    ① 口语「编译/构建/调试/部署/推送到设备/跑一下」② 客户端「AI 应用调试/自定义编译」
-    ③ AI 改完代码主动编译验证。**固化/升级/update.img → flythings_pack_upgrade**（掉电保留）。
-    流程：json↔ftu 时间戳检查 → fui pack → fun install → fun build → **设备探测 + fun launch 推送运行**
-    （默认；只编译传 with_launch=False）→ 字体体检（缺中文自动投）+ 设备侧 ftu/so 字节/md5 比对
-    （staleOnDevice=true ⇒ 设备上还是旧版）。探测不猜：0 台→needDeviceInput+installHint；多台→列 serial
-    再要 device=；1 台匹配→自动推。⚠️ src/activity/ 由 IDE 生成（禁手改），业务只写 src/logic/*.cc。
-    细节与检索词：knowledge/devflow/adb-and-device-selection.md。
+    ① 口语「编译/构建/调试/部署/推送到设备/跑一下」② AI 改完代码主动编译验证。
+    **固化/升级/update.img → flythings_pack_upgrade**（掉电保留）。
+    流程：json↔ftu 时间戳检查 → fui pack → fun install → fun build → **设备探测 + fun launch**
+    （默认；只编译传 with_launch=False）→ 字体体检（缺中文自动投）+ 设备侧字节/md5 比对
+    （staleOnDevice=true ⇒ 设备上还是旧版）。探测不猜：0 台→needDeviceInput；多台→列 serial 再要 device=。
+    ⚠️ src/activity/ 由 IDE 生成（禁手改），业务只写 src/logic/*.cc。
+    细节：knowledge/devflow/adb-and-device-selection.md。
     """
     return json.dumps(_with_design_warning(
         pt.flythings_build_ui_flow(project_root, with_launch, device,
@@ -839,15 +838,13 @@ def flythings_build_ui_flow(project_root: str, with_launch: bool = True, device:
 def flythings_pack_upgrade(project_root: str, out_path: str = '', release_version: str = '',
                            ab: bool = False, with_build: bool = False,
                            dry_run: bool = False) -> str:
-    """⚠️ 场景别名（固化升级类意图一律本工具，禁自造命令）：
-
-    ① 口语「打包升级包/出升级包/生成 update.img/固化/刷进设备/出货版本/量产版本/TF卡升级包/整机升级」；
-    ② 与「调试/推送到设备」不同：那是 flythings_build_ui_flow（掉电即失）；③ AI 交付/发布/量产 → 本工具。
+    """固化升级包（update.img）——AI 交付/发布/量产走本条：「打包升级包/出升级包/固化/
+    刷进设备/出货版本/TF卡升级包」；与「调试推送到设备」不同（那是 build_ui_flow，掉电即失）。
     流程：fun install →（with_build 可选）fun build → fun pack（out_path→-o；release_version→
-    --release-version；ab=True→--ab 出 OTA 包）。产物 `.fun/<平台>/update.img`（09-28 起 `.fsc/`）+
-    刷法（TF卡/ADB/远程批量）；同机制换开机 logo `boot_logo.JPG` → **MISC 分区**。
-    dry_run=True 只回命令计划不执行。⚠️ `FATAL sign error 0xc0000135` = 缺 32 位 VC++ 运行时；
-    `package not found in local` = 依赖未装先 fun install。详情：knowledge/devflow/upgrade-pack-image.md。
+    --release-version；ab=True→--ab OTA 包）。产物 `.fsc/<平台>/update.img`；
+    刷法（TF卡/ADB/远程批量）；同机制换开机 logo → MISC 分区。dry_run=True 只回命令计划。
+    ⚠️ `FATAL sign error 0xc0000135`=缺 32 位 VC++ 运行时；`package not found in local`=先 fun install。
+    详情：knowledge/devflow/upgrade-pack-image.md。
     """
     return json.dumps(pt.flythings_pack_upgrade(project_root, out_path, release_version,
                                                 ab, with_build, dry_run),
@@ -856,11 +853,10 @@ def flythings_pack_upgrade(project_root: str, out_path: str = '', release_versio
 
 
 def flythings_ui_preview(target: str, output_dir: str = '') -> str:
-    """json 布局 / 整个项目 → HTML 预览稿（客户确认 UI 用；只交付 .preview.html，不产图片/截图）。
-    target 可以是项目根目录（全部 ui/*.json）或单个 json 文件路径 —— 合并了原 generate_ui_preview 与 json_to_html。
-    ⚠️ 整屏 window 多页工程（visible=false + showWnd() 切页）自带「页面切换条」+ `#window__N`（简写 `#N`）
-    直达某页 + 「显示隐藏」幽灵框（默认页 = 首个 visible!=false 的整屏窗口）；只看到首页 = 该 json 确实只有一个整屏窗口。
-    ⚠️ 流程：布局出来后必须先出预览给用户确认，确认 OK 才允许 fui pack / 写逻辑 / 交付（未确认禁止开工）。
+    """json 布局 / 整个项目 → HTML 预览稿（客户确认 UI 用；只交 .preview.html，不产图片/截图）。
+    target = 项目根目录（全部 ui/*.json）或单个 json 路径（合并原 preview + json_to_html）。
+    ⚠️ 多整屏 window 工程自带「页面切换条」+ `#window__N`（简写 `#N`）直达 + 幽灵框看隐藏窗。
+    ⚠️ 流程：布局出来必须先出预览给用户确认，确认 OK 才允许 fui pack / 写逻辑 / 交付。
     """
     is_dir = os.path.isdir(target)
     r = j2h.json2html(target, output_dir)
@@ -1041,6 +1037,24 @@ def flythings_gen_ui_test(project_root: str, test_type: str = 'ask', output_dir:
     return json.dumps(tt.flythings_gen_ui_test(
         project_root, test_type, output_dir, platform, with_build, monkey_count),
         ensure_ascii=False)
+
+
+def flythings_test_run(plan: str = '', devices: str = 'auto', project_root: str = '',
+                       out: str = '', platform: str = '', parallel: int = 4,
+                       baseline: str = 'auto', allow_regions: int = 0) -> str:
+    """多设备**并行**跑一份 UI 用例（触摸注入 + 日志断言 + 像素基线），出 JSON + JUnit 报告。
+
+    场景：自动化测试 / 验收回归 / 多台机器同时验证一份用例。plan 是用例 JSON（文本或 .json
+    路径）：steps[].action 取 tap/long/swipe/wait/monkey/run/shot/log；每步可带 shot=<基线 key>、
+    expectLog/expectNoLog（日志断言）、wait(ms)。devices="auto"（**恰好 1 台才自动选**）/
+    "all"/"<IP>:5555,<IP>:5555"。project_root 给像素基线库位置；baseline=auto/compare/save/off。
+    报告落 out（缺省 temp/test_runs/<时间>-<名>）：report.json + report.xml（可直接进 CI）。
+    **比不到基线记 no-baseline 并进 warnings，不算通过**（先 baseline="save" 建基线再 compare）。
+    用例写法/首次建基线流程/多设备并发注意见 knowledge/devflow/device-test-run.md。
+    """
+    return json.dumps(tt.flythings_test_run(plan, devices, project_root, out, platform,
+                                            parallel, baseline, allow_regions),
+                      ensure_ascii=False)
 
 
 def flythings_attach_cli_tools(project_root: str, with_fyx: bool = True) -> str:
@@ -1333,20 +1347,51 @@ def _ui_diff(image_a: str, image_b: str, tolerance: int = 2, shift: int = 1,
 # ── 合并后的唯一入口（v0.27.37）──────────────────────────────────────────
 # 三动作合一：editor（原 ui_editor）/ edit_apply（原 ui_edit_apply）/ diff（原 ui_diff）。
 # 每个 action 只接受自己的参数；传了别家的参数会回 visualNote 提醒（不静默忽略）。
-UI_VISUAL_ACTIONS = ('editor', 'edit_apply', 'diff')
+UI_VISUAL_ACTIONS = ('editor', 'edit_apply', 'diff', 'baseline')
 UI_VISUAL_ARGS = {
     'editor': ('project_root', 'output_dir'),
     'edit_apply': ('project_root', 'changes', 'pack', 'dry_run'),
     'diff': ('image_a', 'image_b', 'tolerance', 'shift', 'min_area', 'blur',
              'noise_bbox', 'out_png', 'out_json', 'show_noise'),
+    # baseline（2026-09-29）：像素基线库 —— 把「上一次验收通过的那张图」版本化存下来
+    'baseline': ('project_root', 'image_a', 'mode', 'baseline_key', 'name', 'allow_regions',
+                 'tolerance', 'shift', 'min_area', 'blur', 'noise_bbox', 'out_png'),
 }
 UI_VISUAL_REQUIRED = {'editor': ('project_root',),
                       'edit_apply': ('project_root', 'changes'),
-                      'diff': ('image_a', 'image_b')}
+                      'diff': ('image_a', 'image_b'),
+                      'baseline': ('project_root',)}
 _UI_VISUAL_DEFAULTS = {'project_root': '', 'output_dir': '', 'changes': '', 'pack': False,
                        'dry_run': False, 'image_a': '', 'image_b': '', 'tolerance': 2,
                        'shift': 1, 'min_area': 4, 'blur': 0.7, 'noise_bbox': 10,
-                       'out_png': '', 'out_json': '', 'show_noise': False}
+                       'out_png': '', 'out_json': '', 'show_noise': False,
+                       'mode': '', 'baseline_key': '', 'name': '', 'allow_regions': 0}
+
+
+def _ui_baseline(project_root, image, mode='', key='', name='', allow_regions=0,
+                 out_png='', profile=None):
+    """像素基线库（ui_baseline.py）：mode=list/save/compare/update（缺省 compare）。"""
+    import ui_baseline as ubl
+    m = str(mode or 'compare').strip().lower()
+    ar = None if int(allow_regions or 0) <= 0 else int(allow_regions)
+    if m in ('', 'compare', 'check', 'verify'):
+        return json.dumps(ubl.compare(project_root, image, key=key, out_png=out_png,
+                                      allow_regions=ar, profile=profile),
+                          ensure_ascii=False)
+    if m == 'save':
+        return json.dumps(ubl.save(project_root, image, key=key, name=name,
+                                   profile=profile, allow_regions=ar or 0),
+                          ensure_ascii=False)
+    if m == 'update':
+        return json.dumps(ubl.update(project_root, image, key=key, name=name,
+                                     profile=profile, allow_regions=ar or 0),
+                          ensure_ascii=False)
+    if m in ('list', 'ls'):
+        return json.dumps(ubl.listing(project_root), ensure_ascii=False)
+    return json.dumps({'ok': False, 'op': 'flythings_ui_visual',
+                       'error': _err_obj('BAD_PARAMS', 'baseline mode=%s 不认识' % mode,
+                                         'mode 取 list / save / compare / update', True),
+                       'warnings': []}, ensure_ascii=False)
 
 
 def _ui_visual_bad(msg, hint):
@@ -1375,18 +1420,21 @@ def flythings_ui_visual(action: str = 'list', project_root: str = '', output_dir
                         image_a: str = '', image_b: str = '', tolerance: int = 2,
                         shift: int = 1, min_area: int = 4, blur: float = 0.7,
                         noise_bbox: int = 10, out_png: str = '', out_json: str = '',
-                        show_noise: bool = False) -> str:
-    """UI 可视化三合一入口（action 选动作；旧 ui_editor / ui_edit_apply / ui_diff 已并入本 op）。
+                        show_noise: bool = False, mode: str = '', baseline_key: str = '',
+                        name: str = '', allow_regions: int = 0) -> str:
+    """UI 可视化/像素验收入口（action 选动作；旧 ui_editor / ui_edit_apply / ui_diff 已并入）。
 
     - action="editor"：ui/*.json → 可拖拽编辑器网页（<项目>/ui/_edit/<name>.edit.html）。必填
-      project_root。用户拖完点「复制 AI 指令」粘给 AI（本地静态页）。
+      project_root；拖完点「复制 AI 指令」粘给 AI（本地静态页）。
     - action="edit_apply"：变更 JSON 写回 ui/*.json。必填 project_root、changes（JSON 文本或路径）；
       pack 默认 False；dry_run=True 只预览不写盘；写回前留 .bak。
     - action="diff"：两张同尺寸截图逐像素对比（0 token 差异清单）。必填 image_a、image_b；
       tolerance/shift/blur/min_area/noise_bbox 压假报警；out_png/out_json 出标注图与清单。
+    - action="baseline"：**像素基线库**（<项目>/ui_baseline/）。必填 project_root；mode=save 建/刷
+      基线（+image_a，key 缺省取图名）｜compare 当前图 vs 基线（+image_a）｜update｜list。
+      容差档案随基线存；**比不到基线报 no-baseline，不静默放过**。
 
-    changes 结构 / 参数口径 / 跨渲染器注意事项见知识库「UI 可视化编辑器」+
-    knowledge/devflow/ui-layout-verify.md。action 传 list（或省略）只回各 action 的必填参数。
+    口径 / 跨渲染器注意见 knowledge/devflow/ui-layout-verify.md；action 传 list 看各 action 必填参数。
     """
     act = str(action or '').strip().lower().replace('-', '_')
     if act in ('', 'list', 'help', '?'):
@@ -1394,17 +1442,19 @@ def flythings_ui_visual(action: str = 'list', project_root: str = '', output_dir
                            'actions': {k: {'args': list(v),
                                            'required': list(UI_VISUAL_REQUIRED[k])}
                                        for k, v in UI_VISUAL_ARGS.items()},
-                           'hint': ('action 取 editor / edit_apply / diff；'
+                           'hint': ('action 取 editor / edit_apply / diff / baseline；'
                                     '旧 ui_editor / ui_edit_apply / ui_diff 已并入本 op')},
                           ensure_ascii=False)
     if act not in UI_VISUAL_ACTIONS:
         return _ui_visual_bad('unknown action: %s' % action,
-                              'action 取 editor / edit_apply / diff（传 action="list" 看参数）')
+                              'action 取 editor / edit_apply / diff / baseline'
+                              '（传 action="list" 看参数）')
     given = {'project_root': project_root, 'output_dir': output_dir, 'changes': changes,
              'pack': pack, 'dry_run': dry_run, 'image_a': image_a, 'image_b': image_b,
              'tolerance': tolerance, 'shift': shift, 'min_area': min_area, 'blur': blur,
              'noise_bbox': noise_bbox, 'out_png': out_png, 'out_json': out_json,
-             'show_noise': show_noise}
+             'show_noise': show_noise, 'mode': mode, 'baseline_key': baseline_key,
+             'name': name, 'allow_regions': allow_regions}
     miss = [k for k in UI_VISUAL_REQUIRED[act] if not str(given[k] or '').strip()]
     if miss:
         return _ui_visual_bad('action=%s 缺必填参数: %s' % (act, ', '.join(miss)),
@@ -1417,6 +1467,11 @@ def flythings_ui_visual(action: str = 'list', project_root: str = '', output_dir
         return _ui_visual_note(_ui_editor(project_root, output_dir), note)
     if act == 'edit_apply':
         return _ui_visual_note(_ui_edit_apply(project_root, changes, pack, dry_run), note)
+    if act == 'baseline':
+        prof = {'tolerance': tolerance, 'shift': shift, 'minArea': min_area, 'blur': blur,
+                'noiseBbox': noise_bbox}
+        return _ui_visual_note(_ui_baseline(project_root, image_a, mode, baseline_key,
+                                            name, allow_regions, out_png, prof), note)
     return _ui_visual_note(_ui_diff(image_a, image_b, tolerance, shift, min_area, blur,
                                     noise_bbox, out_png, out_json, show_noise), note)
 
@@ -1681,6 +1736,7 @@ OP_NAMES = (
     'flythings_create_project',
     'flythings_create_bin_project',
     'flythings_gen_ui_test',
+    'flythings_test_run',
     'flythings_check_project_deps',
     'flythings_generate_ui_assets',
     'flythings_i18n_scan',

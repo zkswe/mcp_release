@@ -27,6 +27,7 @@
 import json, os, re, subprocess, shutil
 
 import platforms as _platforms  # 平台名唯一来源（别在这里再抄一份白名单）
+import adb_tools as _adb
 
 _BASE = os.path.dirname(os.path.abspath(__file__))
 BIN_TOOLS_DIR = os.path.join(_BASE, 'bin_tools')
@@ -286,6 +287,458 @@ def flythings_gen_ui_test(project_root, test_type='ask', output_dir='',
         cmd = run_tpl + run_cmd
         result['deployHint'] = ('%s && %s\n%s' % (push_elf, cmd, note))
     return result
+
+
+# ══════════════════════════════════════════════════════════════════════════
+
+# ══════════════════════════════════════════════════════════════════════════
+# 多设备并行测试跑批 + 机读报告（2026-09-29；钟工「自动化测试/验收」优化项）
+#
+# 补的三件事（此前只能靠 AI 手敲 adb + 人眼看截图）：
+#   ① 同一份用例在**多台设备并行**跑（此前多设备在线时工具一律「不猜」，只能逐台串行手敲）
+#   ② 每步结果**机器可判**（注入命令 rc / 日志断言 / 与像素基线逐像素对比），不是「跑完了」
+#   ③ 产出**机器可读报告**（JSON + JUnit XML），能直接进 CI / 质量门
+# 基线对比复用 ui_baseline.py；**比不到基线报 no-baseline，绝不静默当通过**。
+# ══════════════════════════════════════════════════════════════════════════
+import time
+import xml.sax.saxutils as _xml
+from concurrent.futures import ThreadPoolExecutor
+
+STEP_ACTIONS = ('tap', 'swipe', 'long', 'wait', 'shot', 'log', 'monkey', 'run')
+BASELINE_MODES = ('auto', 'compare', 'save', 'off')
+_PLAN_DOC = ('{"name":"<用例名>","steps":['
+             '{"name":"进入设置","action":"tap","x":512,"y":300,"wait":800,'
+             '"shot":"home_setting","expectLog":["onClick"]},'
+             '{"action":"swipe","from":[512,900],"to":[512,300],"duration":300},'
+             '{"action":"log","lines":200,"expectNoLog":["FATAL","segfault"]}]}')
+
+
+def _load_plan(plan):
+    """plan 可以是 JSON 文本，也可以是 .json 文件路径。"""
+    if not plan or not str(plan).strip():
+        return None, ('缺 plan：传用例 JSON 文本或 .json 路径，形如 %s' % _PLAN_DOC)
+    raw = str(plan).strip()
+    txt = raw
+    if os.path.isfile(raw):
+        try:
+            with open(raw, encoding='utf-8') as fh:
+                txt = fh.read()
+        except Exception as e:
+            return None, 'plan 文件读不了: %s (%s)' % (raw, e)
+    try:
+        d = json.loads(txt)
+    except Exception as e:
+        return None, 'plan 不是合法 JSON: %s。形如 %s' % (e, _PLAN_DOC)
+    if not isinstance(d, dict) or not isinstance(d.get('steps'), list) or not d['steps']:
+        return None, 'plan 结构不对：需要 {"steps": [...]} 且非空。形如 %s' % _PLAN_DOC
+    bad = []
+    for i, s in enumerate(d['steps']):
+        if not isinstance(s, dict):
+            bad.append('#%d 不是对象' % (i + 1))
+            continue
+        a = str(s.get('action') or '').strip().lower()
+        if a not in STEP_ACTIONS:
+            bad.append('#%d action=%s 不认识（可用: %s）'
+                       % (i + 1, a or '(空)', '/'.join(STEP_ACTIONS)))
+        s['action'] = a
+    if bad:
+        return None, 'plan 步骤有问题: ' + '；'.join(bad)
+    d.setdefault('name', 'ui-test')
+    return d, None
+
+
+def _dev_brief(d):
+    return {'serial': d.get('serial'), 'model': d.get('model', ''),
+            'platform': d.get('platform', ''), 'state': d.get('state')}
+
+
+def _select_devices(devices, adb, platform=''):
+    """挑执行设备。多台在线时**不猜**（沿用本仓口径）：auto 只在恰好 1 台时生效。"""
+    want = str(devices or 'auto').strip()
+    info = _adb.probe_devices(adb, with_model=True)
+    if not info.get('ok'):
+        return None, {'error': '设备探测失败: %s' % info.get('error', ''),
+                      'hint': '先确认 adb 可用（adb_tools.resolve_adb）'}
+    online = info.get('online') or []
+    if not online:
+        return None, {'error': '没有在线设备', 'installHint': _adb.install_hint(platform),
+                      'hint': 'USB 调试授权；网络设备先 adb connect <IP>:5555'}
+    if want.lower() in ('auto', 'single', 'one'):
+        if len(online) > 1:
+            return None, {'error': '在线 %d 台，devices="auto" 不猜' % len(online),
+                          'online': [_dev_brief(d) for d in online],
+                          'hint': '传 devices="all"（每台都跑）或 devices="<IP>:5555,<IP>:5555"'}
+        return online, None
+    if want.lower() == 'all':
+        return online, None
+    ser_map = {}
+    for d in online:
+        for k in (d.get('serial'), d.get('ip')):
+            if k:
+                ser_map[str(k)] = d
+    picked, unknown = [], []
+    for tok in [x.strip() for x in want.split(',') if x.strip()]:
+        d = ser_map.get(tok)
+        if d is None and ':' not in tok and (tok + ':5555') in ser_map:
+            d = ser_map[tok + ':5555']
+        if d is None:
+            unknown.append(tok)
+        else:
+            picked.append(d)
+    if unknown:
+        return None, {'error': '这些设备不在线: %s' % ', '.join(unknown),
+                      'online': [_dev_brief(d) for d in online],
+                      'hint': '用在线清单里的 serial（含 :5555 端口）'}
+    return picked, None
+
+
+def _platform_of(dev, platform=''):
+    """设备平台：显式传的优先；否则用探测结果里的型号/platform（查不到就明确报，不猜）。"""
+    if platform:
+        return platform, ''
+    p = dev.get('platform') or ''
+    if p:
+        return p, ''
+    model = dev.get('model') or ''
+    if not model:
+        return '', '设备未回 ro.product.model（无法判平台）→ 显式传 platform 参数'
+    return '', '型号 %s 未登记平台（device_models.json）→ 显式传 platform 参数' % model
+
+
+def _deploy_touch(serial, adb, platform, notes):
+    """推 bin_tools/<平台>/touch（touch 自动扫节点+判协议，不传 eventN）。
+
+    落点依次试 `/data` → `/tmp` → `/mnt/extsd`：Z20 那类板子 `/data` 经常写满
+    （实测报 `remote No space left on device`），退到 tmpfs 一样能跑；用了哪个目录会回显。
+    """
+    elf = _platform_elf(platform)
+    if not elf:
+        return None, ('平台 %s 无可用的预编译注入工具（可用: %s）'
+                      % (platform, '/'.join(SUPPORTED_PLATFORMS)))
+    name = os.path.basename(elf)
+    tried, last = [], ''
+    for d in ('/data', '/tmp', '/mnt/extsd'):
+        remote = '%s/%s' % (d, name)
+        rc, out, err = _adb.push(adb, serial, elf, remote)
+        if rc != 0:
+            last = ((out or '') + (err or '')).strip()[-200:]
+            tried.append('%s ✗ %s' % (d, last.replace('\n', ' ')[:80]))
+            continue
+        _adb.shell_rc(adb, serial, 'chmod 777 %s' % remote)
+        rc2, out2, err2 = _adb.shell_rc(adb, serial, '%s list' % remote, timeout=40)
+        if rc2 != 0:
+            last = ((out2 or '') + (err2 or '')).strip()[-200:]
+            tried.append('%s ✗ 起不来: %s' % (d, last.replace('\n', ' ')[:60]))
+            continue
+        extra = '（%s）' % '；'.join(tried) if tried else ''
+        notes.append('%s: 注入工具 %s → %s%s；节点/协议: %s'
+                     % (serial, name, remote, extra,
+                        ' '.join((out2 or '').split())[:80]))
+        return remote, ''
+    return None, ('注入工具推不上去（试过 %s）：%s\nhint: 设备存储满了就先腾空间，'
+                  '或手动把 bin_tools/%s/%s 推到 /tmp 再跑'
+                  % ('/data, /tmp, /mnt/extsd', last, _platform_key(platform), name))
+
+
+def _platform_key(platform):
+    info = _platforms.resolve(platform) or {}
+    return info.get('binTool') or str(platform or '').lower()
+
+
+def _log_tail(adb, serial, lines=200, tag='zkgui'):
+    cmd = 'logcat -d -t %d' % int(lines)
+    if tag:
+        cmd += ' -s %s' % tag
+    rc, out, err = _adb.shell_rc(adb, serial, cmd, timeout=45)
+    return (out or '') if rc == 0 else ''
+
+
+def _as_list(v):
+    if v is None or v == '':
+        return []
+    if isinstance(v, (list, tuple)):
+        return [str(x) for x in v]
+    return [str(v)]
+
+
+def _one_step(step, i, ctx):
+    """执行单步 → 结果字典（status: pass | fail | error | no-baseline）。"""
+    adb, serial, touch = ctx['adb'], ctx['serial'], ctx['touch']
+    res, shot_dir = ctx['res'], ctx['shotDir']
+    act = step['action']
+    name = step.get('name') or ('%s#%d' % (act, i + 1))
+    r = {'index': i + 1, 'name': name, 'action': act, 'status': 'pass', 'detail': {}}
+    t0 = time.time()
+    cmd = ''
+    if act == 'tap':
+        cmd = '%s tap %d %d' % (touch, int(step.get('x', 0)), int(step.get('y', 0)))
+    elif act == 'long':
+        cmd = '%s long %d %d %d' % (touch, int(step.get('x', 0)), int(step.get('y', 0)),
+                                    int(step.get('ms', 1000)))
+    elif act == 'swipe':
+        fr = step.get('from') or [0, 0]
+        to = step.get('to') or [0, 0]
+        cmd = '%s swipe %d %d %d %d %d' % (touch, int(fr[0]), int(fr[1]), int(to[0]),
+                                           int(to[1]), int(step.get('duration', 300)))
+    elif act == 'monkey':
+        cmd = '%s monkey %d %d %d' % (touch, int(step.get('width', 0) or res[0]),
+                                      int(step.get('height', 0) or res[1]),
+                                      int(step.get('count', 200)))
+    elif act == 'run':
+        if not step.get('script'):
+            r.update(status='error', detail={'error': 'action=run 缺 script（设备侧脚本路径）'})
+            r['ms'] = int((time.time() - t0) * 1000)
+            return r
+        cmd = '%s run %s' % (touch, step['script'])
+    elif act == 'wait':
+        time.sleep(max(0, int(step.get('ms', 500))) / 1000.0)
+    if cmd:
+        rc, out, err = _adb.shell_rc(adb, serial, cmd, timeout=int(step.get('timeout', 90)))
+        r['detail']['cmd'] = cmd
+        r['detail']['rc'] = rc
+        if rc != 0:
+            r['status'] = 'error'
+            r['detail'].update(error='注入命令失败（rc=%s）' % rc,
+                               out=(out or '')[-300:], err=(err or '')[-300:])
+            r['ms'] = int((time.time() - t0) * 1000)
+            return r
+    # ---- 截图（+ 像素基线对比）----
+    shot = step.get('shot') or ('shot_%d' % (i + 1) if act == 'shot' else '')
+    if shot:
+        os.makedirs(shot_dir, exist_ok=True)
+        png = os.path.join(shot_dir, '%s.png' % _safe_name(shot))
+        cap = None
+        try:
+            import device_screenshot as dss
+            cap = dss.capture(device=serial, out=png, fmt='png')
+        except Exception as e:
+            cap = {'success': False, 'error': '抓屏异常: %s' % e}
+        if not (isinstance(cap, dict) and cap.get('success') and os.path.isfile(png)):
+            r['status'] = 'error'
+            r['detail'].update(error='抓屏失败',
+                               shotError=(cap or {}).get('error', ''),
+                               shotHint=(cap or {}).get('hint', ''))
+            r['ms'] = int((time.time() - t0) * 1000)
+            return r
+        r['detail']['shot'] = png
+        mode = ctx['baselineMode']
+        broot = ctx['baselineRoot']
+        if broot and mode != 'off':
+            import ui_baseline as ubl
+            if mode == 'save':
+                sv = ubl.save(broot, png, key=shot, name=name, source='test_run',
+                              replace=True, allow_regions=ctx['allowRegions'])
+                r['detail']['baseline'] = {'mode': 'save', 'key': shot,
+                                           'ok': bool(sv.get('success')),
+                                           'error': sv.get('error', '')}
+                if not sv.get('success'):
+                    r['status'] = 'error'
+                    r['detail']['error'] = '存基线失败: %s' % sv.get('error')
+            else:
+                cp = ubl.compare(broot, png, key=shot, allow_regions=ctx['allowRegions'])
+                st = cp.get('status')
+                r['detail']['baseline'] = {'mode': 'compare', 'key': shot, 'status': st,
+                                           'regionCount': cp.get('regionCount'),
+                                           'diffPng': cp.get('diffPng', ''),
+                                           'error': cp.get('error', '')}
+                if st == 'pass':
+                    pass
+                elif st == 'no-baseline' and mode == 'auto':
+                    r['status'] = 'no-baseline'
+                else:
+                    r['status'] = 'fail'
+    # ---- 日志断言 ----
+    exp_in = _as_list(step.get('expectLog'))
+    exp_no = _as_list(step.get('expectNoLog'))
+    if act == 'log' or exp_in or exp_no:
+        tail = _log_tail(adb, serial, int(step.get('lines', 200)), step.get('tag', 'zkgui'))
+        r['detail']['logLines'] = len(tail.splitlines())
+        miss = [s for s in exp_in if s not in tail]
+        hit_bad = [s for s in exp_no if s in tail]
+        if miss or hit_bad:
+            r['status'] = 'fail'
+            parts = []
+            if miss:
+                parts.append('日志里没出现: %s' % miss)
+            if hit_bad:
+                parts.append('日志里不该出现: %s' % hit_bad)
+            r['detail']['error'] = '日志断言未过 —— ' + '；'.join(parts)
+            r['detail']['logTail'] = tail[-600:]
+        else:
+            r['detail']['logAssert'] = {'expectLog': len(exp_in),
+                                        'expectNoLog': len(exp_no), 'ok': True}
+    if step.get('wait') and cmd:
+        time.sleep(max(0, int(step['wait'])) / 1000.0)
+    r['ms'] = int((time.time() - t0) * 1000)
+    return r
+
+
+def _run_on_device(dev, plan, adb, out_root, platform, baseline, allow, resolution):
+    serial = dev.get('serial')
+    t0 = time.time()
+    notes, errors = [], []
+    res = {'serial': serial, 'model': dev.get('model', ''), 'ok': False, 'steps': [],
+           'notes': notes, 'errors': errors, 'ms': 0}
+    use, perr = _platform_of(dev, platform)
+    res['platform'] = use
+    if not use:
+        errors.append(perr or '平台判定失败')
+        res['ms'] = int((time.time() - t0) * 1000)
+        return res
+    out_dir = os.path.join(out_root, _safe_name(serial))
+    shot_dir = os.path.join(out_dir, 'shots')
+    os.makedirs(shot_dir, exist_ok=True)
+    res['reportDir'] = out_dir
+    touch, terr = _deploy_touch(serial, adb, use, notes)
+    if not touch:
+        errors.append(terr or '注入工具部署失败')
+        res['ms'] = int((time.time() - t0) * 1000)
+        return res
+    res['tool'] = os.path.basename(touch)
+    ctx = {'adb': adb, 'serial': serial, 'touch': touch, 'res': resolution,
+           'shotDir': shot_dir, 'baselineRoot': plan.get('baselineRoot') or '',
+           'baselineMode': (plan.get('baseline') or baseline), 'allowRegions': allow}
+    for i, step in enumerate(plan['steps']):
+        try:
+            r = _one_step(step, i, ctx)
+        except Exception as e:
+            r = {'index': i + 1, 'name': step.get('name') or step.get('action'),
+                 'action': step.get('action'), 'status': 'error',
+                 'detail': {'error': '步骤执行异常: %s' % e}, 'ms': 0}
+        res['steps'].append(r)
+    res['ok'] = bool(res['steps']) and all(s['status'] == 'pass' for s in res['steps'])
+    res['ms'] = int((time.time() - t0) * 1000)
+    try:
+        with open(os.path.join(out_dir, 'logcat.txt'), 'w', encoding='utf-8') as f:
+            f.write(_log_tail(adb, serial, 400, 'zkgui'))
+        res['logcat'] = os.path.join(out_dir, 'logcat.txt')
+    except Exception as e:
+        errors.append('logcat 落盘失败: %s' % e)
+    return res
+
+
+def _safe_name(s):
+    return ''.join(c if (c.isalnum() or c in '._-') else '_' for c in str(s)) or 'x'
+
+
+def _junit_xml(plan_name, devices, summary):
+    esc = _xml.escape
+    cases, fails, errs, skips = [], 0, 0, 0
+    for d in devices:
+        devname = d.get('serial') or 'device'
+        if not d.get('steps'):
+            errs += 1
+            cases.append('<testcase classname="%s" name="deploy"><error message="%s"/></testcase>'
+                         % (esc(devname), esc('; '.join(d.get('errors') or ['部署失败']))))
+            continue
+        for s in d['steps']:
+            nm = '%s / %s' % (s.get('action'), s.get('name'))
+            st = s.get('status')
+            body = ''
+            if st == 'fail':
+                fails += 1
+                body = '<failure message="%s"/>' % esc((s.get('detail') or {}).get('error', 'fail'))
+            elif st == 'error':
+                errs += 1
+                body = '<error message="%s"/>' % esc((s.get('detail') or {}).get('error', 'error'))
+            elif st == 'no-baseline':
+                skips += 1
+                body = '<skipped message="基线库中没有该 key，未做像素判定"/>'
+            cases.append('<testcase classname="%s" name="%s" time="%.3f">%s</testcase>'
+                         % (esc(devname), esc(nm), (s.get('ms', 0) or 0) / 1000.0, body))
+    head = ('<?xml version="1.0" encoding="UTF-8"?>' + '\n'
+            + '<testsuites name="%s" tests="%d" failures="%d" errors="%d" skipped="%d">' % (
+                esc(plan_name), summary['steps'], fails, errs, skips) + '\n'
+            + '<testsuite name="%s" tests="%d" failures="%d" errors="%d" skipped="%d">' % (
+                esc(plan_name), summary['steps'], fails, errs, skips) + '\n')
+    return head + '\n'.join(cases) + '\n</testsuite>\n</testsuites>\n'
+
+
+def flythings_test_run(plan='', devices='auto', project_root='', out='', platform='',
+                       parallel=4, baseline='auto', allow_regions=0):
+    """多设备并行跑一份用例（触摸注入 + 日志断言 + 像素基线），出 JSON + JUnit 报告。
+
+    plan：用例 JSON（文本或 .json 路径）——steps[].action 取 tap/long/swipe/wait/monkey/run/
+      shot/log；step 可带 shot=<基线 key>、expectLog/expectNoLog（日志断言）、wait(ms)。
+    devices："auto"（**恰好 1 台才自动选**）|"all"|"<IP>:5555,<IP>:5555"；多台**并行**跑。
+    project_root：像素基线库位置（<项目>/ui_baseline/）；baseline=auto/compare/save/off。
+    out：报告目录（默认 <项目或仓库>/temp/test_runs/<时间>-<用例名>）。
+    返回 summary + reportJson + reportXml；**比不到基线记 no-baseline 并进 warnings，不算通过**。
+    """
+    root = os.path.abspath(project_root) if project_root else ''
+    p, err = _load_plan(plan)
+    if err:
+        return {'success': False, 'op': 'flythings_test_run', 'error': err, 'planDoc': _PLAN_DOC}
+    mode = str(baseline or 'auto').lower()
+    if mode not in BASELINE_MODES:
+        return {'success': False, 'op': 'flythings_test_run',
+                'error': 'baseline 取 %s' % '/'.join(BASELINE_MODES)}
+    broot = (p.get('baselineRoot') or root)
+    if mode != 'off' and not broot:
+        return {'success': False, 'op': 'flythings_test_run',
+                'error': 'baseline=%s 需要 project_root（或 plan.baselineRoot）' % mode,
+                'hint': '不要像素判定就传 baseline="off"'}
+    if broot:
+        p['baselineRoot'] = broot
+    adb = _adb.resolve_adb()
+    if not adb:
+        return {'success': False, 'op': 'flythings_test_run',
+                'error': '找不到 adb', 'hint': _adb.adb_missing_hint()}
+    devs, derr = _select_devices(devices, adb, platform)
+    if derr:
+        return {'success': False, 'op': 'flythings_test_run', 'error': derr.pop('error', ''),
+                'details': derr, 'planDoc': _PLAN_DOC}
+    name = _safe_name(p.get('name') or 'ui-test')
+    if not out:
+        out = os.path.join(root or _BASE, 'temp', 'test_runs',
+                           '%s-%s' % (time.strftime('%Y%m%d-%H%M%S'), name))
+    out = os.path.abspath(out)
+    os.makedirs(out, exist_ok=True)
+    resolution = [int(p.get('width', 0) or 0), int(p.get('height', 0) or 0)]
+    workers = max(1, min(int(parallel or 4), len(devs)))
+    results = []
+    if workers == 1 or len(devs) == 1:
+        for d in devs:
+            results.append(_run_on_device(d, p, adb, out, platform, mode, allow_regions,
+                                          resolution))
+    else:
+        with ThreadPoolExecutor(max_workers=workers) as ex:
+            futs = [ex.submit(_run_on_device, d, p, adb, out, platform, mode,
+                              allow_regions, resolution) for d in devs]
+            for f in futs:
+                results.append(f.result())
+    cnt = {'pass': 0, 'fail': 0, 'error': 0, 'no-baseline': 0}
+    for d in results:
+        for s in d.get('steps', []):
+            cnt[s['status']] = cnt.get(s['status'], 0) + 1
+    summary = {'devices': len(results), 'devicesOk': sum(1 for d in results if d['ok']),
+               'steps': sum(len(d.get('steps', [])) for d in results),
+               'pass': cnt['pass'], 'fail': cnt['fail'], 'error': cnt['error'],
+               'noBaseline': cnt['no-baseline'],
+               'parallelWorkers': workers, 'ms': sum(d.get('ms', 0) for d in results)}
+    warnings = []
+    nb = sorted({s['name'] for d in results for s in d.get('steps', [])
+                 if s['status'] == 'no-baseline'})
+    if nb:
+        warnings.append('%d 个截图步骤**没有基线可比**（记 no-baseline，不算通过）：%s'
+                        % (cnt['no-baseline'], '；'.join(nb)))
+    for d in results:
+        for e in d.get('errors', []):
+            warnings.append('%s: %s' % (d.get('serial'), e))
+    rjson = os.path.join(out, 'report.json')
+    rxml = os.path.join(out, 'report.xml')
+    payload = {'plan': name, 'startedAt': time.strftime('%Y-%m-%d %H:%M:%S'),
+               'summary': summary, 'devices': results, 'warnings': warnings}
+    with open(rjson, 'w', encoding='utf-8') as f:
+        json.dump(payload, f, ensure_ascii=False, indent=1)
+    with open(rxml, 'w', encoding='utf-8') as f:
+        f.write(_junit_xml(name, results, summary))
+    ok = bool(results) and all(d['ok'] for d in results) and not cnt['no-baseline']
+    return {'success': ok, 'op': 'flythings_test_run', 'plan': name, 'baselineMode': mode,
+            'summary': summary, 'devices': results, 'warnings': warnings,
+            'reportJson': rjson, 'reportXml': rxml, 'out': out,
+            'hint': ('success=false 常见原因：有 fail/error 步骤；或截图没有基线'
+                     '（先 baseline="save" 建基线，再 baseline="compare" 卡回归）')}
 
 
 def _ask_options():

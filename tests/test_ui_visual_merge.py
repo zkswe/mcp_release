@@ -47,12 +47,15 @@ class TestActionDirectory(unittest.TestCase):
         r = U.jcall('flythings_ui_visual')          # 不传 action = 目录
         self.assertTrue(r.get('success'), r)
         acts = r['actions']
-        self.assertEqual(sorted(acts), ['diff', 'edit_apply', 'editor'])
+        self.assertEqual(sorted(acts), ['baseline', 'diff', 'edit_apply', 'editor'])
         self.assertEqual(acts['editor']['required'], ['project_root'])
         self.assertEqual(acts['edit_apply']['required'], ['project_root', 'changes'])
         self.assertEqual(acts['diff']['required'], ['image_a', 'image_b'])
+        self.assertEqual(acts['baseline']['required'], ['project_root'])   # 2026-09-29 新 action
         self.assertIn('dry_run', acts['edit_apply']['args'])
         self.assertIn('out_png', acts['diff']['args'])
+        self.assertIn('mode', acts['baseline']['args'])
+        self.assertIn('baseline_key', acts['baseline']['args'])
 
     def test_list_alias(self):
         self.assertTrue(U.jcall('flythings_ui_visual', {'action': 'list'}).get('success'))

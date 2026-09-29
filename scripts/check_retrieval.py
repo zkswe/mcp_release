@@ -145,6 +145,26 @@ GROUPS = [
             '设备字库不支持 emoji 显示空白', '字体 ttf 放 resources 还是 /res',
         ],
     },
+    {
+        'doc': 'knowledge/devflow/device-test-run.md',
+        'name': '多设备并行测试跑批 / 机读报告',
+        'min_top1': 2,
+        'queries': [
+            '自动化测试怎么批量跑 多台设备一起跑一份用例', '测试报告能不能进 CI JUnit xml',
+            '像素基线怎么建 首次怎么建基线', '比不到基线算过还是没过 no-baseline 什么意思',
+            '测试用例 JSON 怎么写 action 有哪些', 'test_run 和 gen_ui_test 区别',
+        ],
+    },
+    {
+        'doc': 'knowledge/devflow/capability-boundaries.md',
+        'name': '能力边界清单',
+        'min_top1': 2,
+        'queries': [
+            'MCP 到底能做什么 能力边界在哪', '哪些知识不在 open 版 内部版有什么区别',
+            '这个主题知识库没收录怎么办', '为什么不支持 V85X 深水区 / 车载方案类',
+            '未收录就标未收录 不许拿沾边片段当依据',
+        ],
+    },
 ]
 
 # 对照组：与上面主题无关的其它问法；want 用子串匹配（不要求 top-1）
