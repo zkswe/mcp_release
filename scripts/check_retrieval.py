@@ -1,19 +1,32 @@
 # -*- coding: utf-8 -*-
-"""检索质量回归（12 条真实问法）：滚轮/选择器类问题必须一次命中权威文档。
+"""检索质量回归（**按文档分组 + 入库门禁**）。
 
-背景（2026-09-19 钟工口径「检索质量优化」）：轮子/选择器这类问题此前会命中
-「官方 wiki 镜像里的 IDE 口径片段」或沾边文档，AI 拿不到我们自己的结论。
-本脚本把「问法 → 期望权威文档」钉死成可重复执行的用例，防止回归。
+背景
+----
+2026-09-19 起本脚本只覆盖「滚轮/选择器」一个主题（12 条问法钉死单篇权威文档）。
+2026-09-29 审查报告 P0② 要求把它**通用化成入库门禁**：新增知识文档必须附 ≥5 条问法，
+CI 对该文档的 top-3 命中做断言 —— 否则「文档写了、AI 检索不到」会静默腐化。
 
-用法：
-  python scripts/check_retrieval.py            # 跑断言（进闸门）
-  python scripts/check_retrieval.py --report   # 只打表格（做前后对比用）
-  python scripts/check_retrieval.py --json out.json
+规则（对贡献者）
+----------------
+1. 新增/大改一篇知识文档 → **在本文件的 `GROUPS` 里加一组**：
+   `{'doc': 'knowledge/.../<文档>.md', 'min_top1': N, 'queries': [≥5 条真实问法]}`
+   · 问法要写「用户/同事会真的说出口的话」（含同义词、口语、常见错说法），可含 1~2 条**反例问法**
+   · 每组 ≥`MIN_QUERIES_PER_GROUP` 条（结构化断言，低于即 FAIL）
+2. 组的判据：该组全部问法 **top-3 必须命中该文档**（`max_miss` 个例外可显式声明）；
+   top-1 命中数 ≥ `min_top1`（阈值留余量，取实测值 −1）
+3. 与主题无关的对照组 `CONTROL`：防「为一个主题调坏别的主题」，只判阈值不判逐条
 
-判据（两条，硬）：
-  ① 每条问法 top-3 里必须出现期望文档（否则该问法算 miss）；
-  ② 至少 MIN_TOP1 条问法的 top-1 就是期望文档。
-退出码 = 0 全绿 / 1 有 miss。
+判据与退出码
+------------
+退出码 0 = 全绿；1 = 有 FAIL（结构化不达标 / 某组 top-3 miss 超限 / top-1 不足 / 对照组退化）。
+
+用法
+----
+    python scripts/check_retrieval.py              # 断言（进闸门）
+    python scripts/check_retrieval.py --report     # 只打表格（前后对比）
+    python scripts/check_retrieval.py --json out.json
+    python scripts/check_retrieval.py --bm25       # 强制降级 BM25（模拟无本地模型）
 """
 import argparse
 import io
@@ -25,173 +38,234 @@ sys.stdout.reconfigure(encoding='utf-8')
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE)
 
-CMD = 'knowledge/uicontrols/listview-wheel-picker.md'      # 本轮权威文档
-CMD_SOFT = (CMD, 'knowledge/uicontrols/control-mapping-capability.md',
-            'knowledge/uicontrols/framework-control-mapping.md')
+TOPK = 3
+MIN_QUERIES_PER_GROUP = 5
 
-# 12 条真实问法（客户/同事原话风格，含同义词与口语），expected = 期望 top-1 的权威文档
-CASES = [
-    ('滚轮怎么做', CMD),
-    ('滚轮拖不动', CMD),
-    ('选中条跟着行滚', CMD),
-    ('picker-view 怎么实现', CMD),
-    ('时间选择器怎么做', CMD),
-    ('列表中间行高亮', CMD),
-    ('滚轮惯性', CMD),
-    ('时间滚轮怎么回读选中值', CMD),
-    ('循环列表做选择器', CMD),
-    ('时钟盘（TimePicker 圆形）怎么实现', CMD),
-    ('NumberPicker 滚轮交互支持吗', CMD),
-    ('日期时间选择器（时/分）怎么拼', CMD),
-    # 同族别名问法：不要求 top-1，但不许 miss（top-3 必须命中）
-    ('lv_roller 怎么用', CMD),
-    ('LISTWHEEL 对应哪个控件', CMD),
-    ('QTimeEdit 怎么做', CMD),
-    ('picker mode=time 小程序怎么转', CMD),
+# --------------------------------------------------------------------------- #
+# 分组用例：doc = 期望权威文档（相对仓库根）；queries = 真实问法
+# --------------------------------------------------------------------------- #
+GROUPS = [
+    {
+        'doc': 'knowledge/uicontrols/listview-wheel-picker.md',
+        'name': '滚轮 / 选择器',
+        'min_top1': 12,          # 实测 16 条里 top-1 命中 12+（2026-09-19 定稿）
+        'queries': [
+            '滚轮怎么做', '滚轮拖不动', '选中条跟着行滚', 'picker-view 怎么实现',
+            '时间选择器怎么做', '列表中间行高亮', '滚轮惯性', '时间滚轮怎么回读选中值',
+            '循环列表做选择器', '时钟盘（TimePicker 圆形）怎么实现',
+            'NumberPicker 滚轮交互支持吗', '日期时间选择器（时/分）怎么拼',
+            'lv_roller 怎么用', 'LISTWHEEL 对应哪个控件', 'QTimeEdit 怎么做',
+            'picker mode=time 小程序怎么转',
+        ],
+    },
+    {
+        'doc': 'knowledge/uicontrols/listview-image-cache.md',
+        'name': '列表封面缓存',
+        'min_top1': 4,
+        'queries': [
+            '列表封面卡 重复解码', '回页卡 封面列表', 'listview 图片缓存怎么做',
+            '列表滚动卡顿 封面重复解码', 'listview 封面 缓存 不生效',
+        ],
+    },
+    {
+        'doc': 'knowledge/devflow/dependency-package-docs.md',
+        'name': '依赖包用法文档（包卡）',
+        'min_top1': 5,
+        'queries': [
+            '依赖包说明不全 怎么看怎么用', 'package.yaml 包卡怎么读', '包卡 package.yaml 里的 api 签名怎么看',
+            'Manifest 里该写哪个包和版本', 'Z20 的 openssl 和别的平台版本不一样',
+            '不要凭记忆写包内 API 怎么校验',
+        ],
+    },
+    {
+        'doc': 'knowledge/devflow/package-verify-playbook.md',
+        'name': '依赖包真机自动化验证套路',
+        'min_top1': 2,
+        'queries': [
+            '依赖包怎么上真机验证', '包验证工程 自检 AUTO 一键跑完', '触摸注入 + logcat 取证 怎么组合',
+            'setprop ctl.restart zkswe 连续重启 黑屏 进程 D 状态', 'Z21 上电 RTC 1970 HTTPS 证书失败',
+            '依赖包验证 主机侧测试服务 HTTP WS 怎么搭',
+        ],
+    },
+    {
+        'doc': 'knowledge/devflow/ui-asset-rules.md',
+        'name': '出图规范 / 抗锯齿',
+        'min_top1': 2,
+        'queries': [
+            '图片生成锯齿 只走三条路', '浅色选中条边界有锯齿 毛边', '超采样缩回 LANCZOS 暗边',
+            '切图尺寸和控件盒不一致', '图标改宽后变糊 要不要重采样',
+        ],
+    },
+    {
+        'doc': 'knowledge/devflow/device-screenshot.md',
+        'name': '设备抓屏',
+        'min_top1': 2,
+        'queries': [
+            'Z20 屏幕截图怎么抓', '抓屏 双缓冲 pan 抓到旧画面', '真机截图颜色红蓝反了',
+            '抓视频层某一帧 vdec 通道', 'device_screenshot 抓不到图怎么办',
+        ],
+    },
+    {
+        'doc': 'knowledge/devflow/html-subset-quickref.md',
+        'name': 'HTML 子集 → json',
+        'min_top1': 2,
+        'queries': [
+            'HTML_SUBSET 控件映射 data-icon 图标', 'html 转 json 支持哪些标签',
+            'data-bg 和 data-color 区别', '原型里的阴影圆角怎么转成切图',
+            'html 原型转 json 丢了字符 看 warnings',
+        ],
+    },
+    {
+        'doc': 'knowledge/uicontrols/json-field-mandatory.md',
+        'name': 'json 字段必写',
+        'min_top1': 2,
+        'queries': [
+            'json 字段必须全写 缺省漂移', '布局 json 少写字段会怎样', '控件字段全集显式化',
+            'beepEnable 要不要写', 'touchable 字段默认值',
+        ],
+    },
+    {
+        'doc': 'knowledge/devflow/custom-font-config.md',
+        'name': '字库配置 / 缺字',
+        'min_top1': 2,
+        'queries': [
+            '字体不显示 缺字', '字库怎么加进工程', '设备字库裁剪了哪些字符',
+            '设备字库不支持 emoji 显示空白', '字体 ttf 放 resources 还是 /res',
+        ],
+    },
 ]
 
-# 对照组：与滚轮无关的其它问法—— 本轮调了检索实现（专名优先/别名扩展），
-# 这组用来防「为了一个主题把别的主题调坏」。阈值取本轮实测值（9/11），留 1 条余量。
+# 对照组：与上面主题无关的其它问法；want 用子串匹配（不要求 top-1）
 CONTROL = [
-    ('HTML_SUBSET 控件映射 data-icon 图标', 'html-subset-quickref.md'),
-    ('Z20 屏幕截图怎么抓', 'device-screenshot.md'),
-    ('抓屏 双缓冲 pan 抓到旧画面', 'device-screenshot.md'),
-    ('图片生成锯齿 只走三条路', 'ui-asset-rules.md'),
-    ('可视化编辑器 拖完怎么回写 json', 'ui-editor-usage.md'),
     ('按钮长按 循环重复 怎么配', 'button-fields.md'),
     ('listview setSelection 没刷新', 'listview-fields.md'),
-    ('json 字段必须全写 缺省漂移', 'json-field-mandatory.md'),
     ('deploy 到设备 抓不到 log', 'device-deploy-budget.md'),
-    ('字体不显示 缺字', 'custom-font-config.md'),
     ('lv_obj 是什么', 'lvgl.md'),
-    # 2026-09-19 新增：低对比度边缘 AA 坑条（浅色压浅底的锯齿/脏边）
-    ('浅色选中条边界有锯齿 毛边', 'ui-asset-rules.md'),
-    ('超采样缩回 LANCZOS 暗边', 'ui-asset-rules.md'),
-    # 2026-09-23 新增：列表封面缓存条（新入库 `listview-image-cache.md`，防检索退化后 AI 找不到解法）
-    ('列表封面卡 重复解码', 'listview-image-cache.md'),
-    ('回页卡 封面列表', 'listview-image-cache.md'),
+    ('检索边界 不许套别的框架', 'retrieval-boundary.md'),
+    ('触摸事件 压在控件上的装饰件', 'touch-events.md'),
+    ('系统键盘盖住界面 收键盘', 'touch-inject-autotest.md'),
+    ('fui unpack 反解析 ftu', 'ftu-json-pipeline.md'),
+    ('升级包 update.img 怎么做', 'upgrade-pack-image.md'),
+    ('多设备在线推到指定设备', 'cli-fun-toolchain.md'),
 ]
-CONTROL_MIN = 9            # 实测 14/15（2026-09-23 加 2 条列表封面缓存条后由 12/13 → 14/15；低于 9 说明调参伤了其它主题）
-
-MIN_TOP1 = 12          # 前 12 条主力问法要求 top-1 命中
-TOPK = 3
+CONTROL_MIN = 6          # 实测 10 条里命中 ≥6（低于此说明调参伤了别的主题）
 
 
-def run(k=TOPK):
+def _search(q, k):
     import kb_tools
+    return json.loads(kb_tools.flythings_knowledge_search(q, k=k))
+
+
+def run_group(g, k=TOPK):
     rows = []
-    for q, want in CASES:
-        out = json.loads(kb_tools.flythings_knowledge_search(q, k=max(k, 5)))
+    for q in g['queries']:
+        out = _search(q, max(k, 5))
         paths = [h['path'] for h in out.get('hits', [])]
-        rank = paths.index(want) + 1 if want in paths else 0
-        rows.append({
-            'query': q,
-            'quality': out.get('quality'),
-            'coverage': out.get('coverage'),
-            'retrieval': out.get('retrieval'),
-            'top3': paths[:3],
-            'rank': rank,
-            'top1_ok': rank == 1,
-            'hit_top3': 1 <= rank <= k,
-            'doc_top1_any': any((p or '') == CMD for p in paths[:1]),
-        })
+        rank = paths.index(g['doc']) + 1 if g['doc'] in paths else 0
+        rows.append({'query': q, 'rank': rank, 'top1_ok': rank == 1,
+                     'hit_top3': 1 <= rank <= k, 'quality': out.get('quality'),
+                     'coverage': out.get('coverage'), 'top3': paths[:3]})
     return rows
 
 
 def run_control(k=TOPK):
-    import kb_tools
     rows = []
     for q, want in CONTROL:
-        out = json.loads(kb_tools.flythings_knowledge_search(q, k=k))
+        out = _search(q, k)
         paths = [h['path'] for h in out.get('hits', [])]
         rows.append({'query': q, 'want': want, 'top3': paths[:3],
-                     'top3_ok': any(want in p for p in paths),
-                     'rank': next((i + 1 for i, p in enumerate(paths) if want in p), 0)})
+                     'ok': any(want in p for p in paths)})
     return rows
 
 
-def run(k=TOPK):
-    import kb_tools
-    rows = []
-    for q, want in CASES:
-        out = json.loads(kb_tools.flythings_knowledge_search(q, k=max(k, 5)))
-        paths = [h['path'] for h in out.get('hits', [])]
-        rank = paths.index(want) + 1 if want in paths else 0
-        rows.append({
-            'query': q,
-            'quality': out.get('quality'),
-            'coverage': out.get('coverage'),
-            'retrieval': out.get('retrieval'),
-            'top3': paths[:3],
-            'rank': rank,
-            'top1_ok': rank == 1,
-            'hit_top3': 1 <= rank <= k,
-            'doc_top1_any': any((p or '') == CMD for p in paths[:1]),
-        })
-    return rows
+def _unregistered_groups():
+    """列出 knowledge/{devflow,uicontrols}/ 下没有登记问法的文档（只提示，不判失败）。"""
+    have = {g['doc'] for g in GROUPS}
+    out = []
+    for sub in ('devflow', 'uicontrols'):
+        d = os.path.join(BASE, 'knowledge', sub)
+        if not os.path.isdir(d):
+            continue
+        for f in sorted(os.listdir(d)):
+            if f.endswith('.md') and 'knowledge/%s/%s' % (sub, f) not in have:
+                out.append('knowledge/%s/%s' % (sub, f))
+    return out
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--report', action='store_true', help='只打表格不判失败')
-    ap.add_argument('--json', default='', help='把结果落 JSON（做前后对比）')
-    ap.add_argument('--bm25', action='store_true',
-                    help='强制降级 BM25（模拟无本地向量模型的机器，验证降级路也不 miss）')
+    ap.add_argument('--report', action='store_true', help='只打表格，不判失败')
+    ap.add_argument('--json', default='', help='结果落 JSON')
+    ap.add_argument('--bm25', action='store_true', help='强制降级 BM25（模拟无本地向量模型）')
     a = ap.parse_args()
     if a.bm25:
         import rag_search
         rag_search._get_embedder = lambda: None
         print('[degraded] 强制 BM25 模式（模拟模型不可用）')
 
-    rows = run()
-    n = len(rows)
-    top1 = sum(1 for r in rows if r['top1_ok'])
-    miss = sum(1 for r in rows if not r['hit_top3'])
-    q_ok = sum(1 for r in rows if r['quality'] == 'ok')
-    crows = run_control()
-    c_ok = sum(1 for r in crows if r['top3_ok'])
+    bad, summary = [], []
+    print('=' * 78)
+    print('retrieval regression（按文档分组，共 %d 组）' % len(GROUPS))
+    print('=' * 78)
+    for g in GROUPS:
+        # 结构化断言：组的问法条数
+        if len(g['queries']) < MIN_QUERIES_PER_GROUP:
+            bad.append('组「%s」问法只有 %d 条 < %d（入库门禁：新文档必须附 ≥%d 条问法）'
+                       % (g['name'], len(g['queries']), MIN_QUERIES_PER_GROUP, MIN_QUERIES_PER_GROUP))
+        if not os.path.isfile(os.path.join(BASE, g['doc'])):
+            bad.append('组「%s」的 doc 不存在: %s' % (g['name'], g['doc']))
+        rows = run_group(g)
+        n = len(rows)
+        top1 = sum(1 for r in rows if r['top1_ok'])
+        miss = [r for r in rows if not r['hit_top3']]
+        summary.append({'group': g['name'], 'doc': g['doc'], 'n': n, 'top1': top1,
+                        'miss': len(miss), 'min_top1': g['min_top1'], 'rows': rows})
+        print('%-26s doc=%-46s 问法=%2d top-1=%2d top-3miss=%d'
+              % (g['name'], g['doc'].split('/')[-1], n, top1, len(miss)))
+        for r in rows:
+            flag = '   ' if r['hit_top3'] else ' !M'
+            if not r['hit_top3'] or not r['top1_ok']:
+                print('   %s %-34s #%-2s %s' % (flag, r['query'][:32], r['rank'],
+                                                (r['top3'][0] if r['top3'] else '-')))
+        if len(miss) > g.get('max_miss', 0):
+            bad.append('组「%s」top-3 未命中 %d 条（允许 %d）: %s'
+                       % (g['name'], len(miss), g.get('max_miss', 0),
+               ', '.join(r['query'] for r in miss)))
+        if top1 < g['min_top1']:
+            bad.append('组「%s」top-1 命中 %d < 要求 %d' % (g['name'], top1, g['min_top1']))
 
-    print('=' * 72)
-    print('retrieval regression  (%d 问法, 期望文档 %s)' % (n, CMD))
-    print('=' * 72)
-    print('%-34s %-6s %-7s %-6s %s' % ('问法', 'quality', 'cover', 'rank', 'top1 片段'))
-    for r in rows:
-        t1 = (r['top3'][0] if r['top3'] else '-')
-        print('%-34s %-6s %-7s %-6s %s' % (r['query'][:32], r['quality'],
-                                           r['coverage'], '#' + str(r['rank']), t1))
-    print('-' * 72)
-    print('对照组（与滚轮无关的 %d 条问法，防调参副作用）：top-3 %d/%d'
-          % (len(crows), c_ok, len(crows)))
+    crows = run_control()
+    c_ok = sum(1 for r in crows if r['ok'])
+    print('-' * 78)
+    print('对照组（无关主题 %d 条，防调参副作用）：top-3 %d/%d' % (len(crows), c_ok, len(crows)))
     for r in crows:
-        if not r['top3_ok']:
-            print('  [ctrl-miss] %-30s %s' % (r['query'][:28],
-                                              [p.split('/')[-1] for p in r['top3']]))
-    print('-' * 72)
-    print('top-1 命中期望文档: %d/%d    top-3 未命中(miss): %d    quality=ok: %d/%d'
-          % (top1, n, miss, q_ok, n))
+        if not r['ok']:
+            print('   [ctrl-miss] %-30s got=%s' % (r['query'][:28],
+                                                   [p.split('/')[-1] for p in r['top3']]))
+    if c_ok < CONTROL_MIN:
+        bad.append('对照组 top-3 命中 %d < 要求 %d（检索实现被调坏了）' % (c_ok, CONTROL_MIN))
+
+    unr = _unregistered_groups()
+    print('-' * 78)
+    print('未登记问法的知识文档（提示，不算失败）：%d 篇（devflow/uicontrols）%s'
+          % (len(unr), ('；例：' + ', '.join(os.path.basename(x) for x in unr[:6])) if unr else ''))
 
     if a.json:
         with io.open(a.json, 'w', encoding='utf-8') as f:
-            json.dump({'top1': top1, 'n': n, 'miss': miss, 'quality_ok': q_ok,
-                       'control_top3': c_ok, 'control_n': len(crows), 'rows': rows,
-                       'control_rows': crows}, f, ensure_ascii=False, indent=1)
+            json.dump({'groups': summary, 'control': crows, 'control_ok': c_ok,
+                       'unregistered': unr, 'fail': bad}, f, ensure_ascii=False, indent=1)
         print('saved ->', a.json)
 
     if a.report:
         return 0
-    bad = []
-    if miss:
-        bad.append('top-3 未命中期望文档 %d 条: %s'
-                   % (miss, ', '.join(r['query'] for r in rows if not r['hit_top3'])))
-    if top1 < MIN_TOP1:
-        bad.append('top-1 命中 %d < 要求 %d' % (top1, MIN_TOP1))
-    if c_ok < CONTROL_MIN:
-        bad.append('对照组 top-3 命中 %d < 要求 %d（检索实现被调坏了）' % (c_ok, CONTROL_MIN))
     for m in bad:
         print('[FAIL]', m)
     if bad:
         return 1
-    print('[PASS] 检索回归全绿（top-1 %d/%d，对照组 %d/%d）' % (top1, n, c_ok, len(crows)))
+    tot_top1 = sum(s['top1'] for s in summary)
+    tot_n = sum(s['n'] for s in summary)
+    print('[PASS] 检索回归全绿（%d 组 / %d 问法，top-1 %d，对照组 %d/%d）'
+          % (len(summary), tot_n, tot_top1, c_ok, len(crows)))
     return 0
 
 
