@@ -1,5 +1,6 @@
 # 🔤 自定义字库（fun build/launch 流程，非 IDE）— 权威规则
 
+> 检索导引：问「换字体 / 换字库 / ttf 放哪 / package.properties 的 enable.font.location / 多字体哪个当默认 / setFontFamily / 设备缺中文 / 照设计稿要换字体」→ 本文（fun 流程权威口径）；屏幕方向等 cfg 机制见 `devflow/package-properties-easyui-cfg.md`。
 > 2026-09-03 沛哥定规。**fun 流程换字库以本条为准**；font_setting.md 是 IDE 视角，AI 引导用户时禁止先去翻 IDE 项目属性那套。
 > ⚠️ 修正记录：v0.13.0 曾按 KlipperF133 案例写入"改 .prefs 的 font 字段"方案——那是 IDE 工程视角，**fun 流程不适用、不需要**，以本条为准。
 

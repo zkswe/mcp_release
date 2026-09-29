@@ -1,5 +1,6 @@
 # 滑动/拖拽手感规范：dragMaxDis / edgeEffect / autoRollback / rollSpeed
 
+> 检索导引：问「dragMaxDis 填多少 / 列表被一次拖出屏 / overscroll 越界回弹 / edgeEffect·autoRollback·rollSpeed 怎么配 / 松手回弹手感」→ 本文（唯一权威口径，官方未收录）。
 > **检索命中条件**：问「dragMaxDis 什么意思 / 列表被拖出去 / 越界回弹 / 拖拽距离填多少 / edgeEffect 怎么配 / 列表滑动手感 / 循环列表拖拽 / 松手回弹 / 拖动很卡」→ 本文。
 > 适用控件：`listview` / `scrollwindow` / `pagewindow` / `slidewindow`（四个控件共用同一批滑动字段）。
 > 2026-09-12 沛哥定规（起因：列表 `dragMaxDis` 按列表高度填 → 一次拖拽把整屏列表拽出去，交互不合格）→ 语义 + 取值规范入库。

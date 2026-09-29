@@ -1,5 +1,6 @@
 # 抓帧读图：程序化像素分析 + 像素级渲染坑
 
+> 检索导引：问「不烧 token 怎么看截图 / 字符画读图 / 文字暗带检测 / 坐标要不要换算 / 像素级渲染坑怎么验」→ 本文；抓图见 `devflow/device-screenshot.md`，像素 diff 见 `devflow/ui-layout-verify.md`。
 > 2026-09-10 入库（来源：外部 skill `flythings-device-screenshot` 与知识库逐条比对后补缺；
 > 沛哥 2026-09-10 21:31「必要的做好入库就好了」）。适用：拿到设备截图后想**不烧 token** 地读它。
 

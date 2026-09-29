@@ -1,5 +1,6 @@
 # ADB 随包 + 设备选择 + 「跑起来了没」（v0.27.84）
 
+> 检索导引：问「找不到 adb / 要不要装 Android SDK / 设备连不上 / 多台设备推错台 / 怎么知道程序跑起来了没 / launch 默认推哪台」→ 本文；多设备推送的 CLI 侧陷阱见 `devflow/cli-fun-toolchain.md` §7。
 > 检索词：adb 在哪 / 找不到 adb / 要不要装 Android SDK / adb 驱动 / 设备连不上 /
 > 该推哪台设备 / 多设备推错 / needDeviceInput / installHint / staleOnDevice /
 > 设备上跑的还是旧版 / launch 默认推设备吗 / with_launch

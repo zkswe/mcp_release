@@ -26,6 +26,14 @@ import json2html as j2h
 import gen_res as h2j_genres
 import i18n_tools as itx
 import test_tools as tt
+# 整机自检 + 缺陷单（2026-09-29）：实现层单列（采集/渲染长逻辑不在本文件），kb_tools 只做工具面封装
+try:
+    import selfcheck_tools as sc
+except Exception as _e:
+    sc = None
+    _SC_ERR = repr(_e)
+else:
+    _SC_ERR = ''
 # UI 可视化编辑 / 像素验收（2026-09-10 起）：缺依赖时降级为对应工具报错，不影响其它工具
 try:
     import ui_editor as uied
@@ -53,7 +61,7 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.122-open'
+MCP_VERSION = '0.27.123-open'
 MCP_BUILD = '2026-09-29'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -68,6 +76,7 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+    '2026-09-29: **新增整机自检快照 + 缺陷单生成器（工具数 37→39）** v0.27.123-open（审查报告 P2-⑧⑨ / 钟工「1-3 按顺序做」第 3 项）——① **`flythings_selfcheck(device, diff_against, out)`（风险 device）**：一条命令出**整机快照九个分区**（设备信息/应用状态/显示/存储/网络/蓝牙/输入/外设/时间），每分区给 `{ok, hint, data}` —— **「读不到」本身是结论**：ok=false 时 hint 写明「需要什么条件 / 去哪查」，绝不静默吞掉；采集容忍设备缺工具（优先随仓 `bin_tools/<平台>/busybox` → 设备 /tmp/busybox，否则纯 adb shell + getprop/cat）；`diff_against=<上次快照.json>` 出逐分区逐项差异，`out=<json>` 落盘可复用为基线；设备参数带端口（`<serial|IP>:5555`），**多台在线不猜**（回 NO_DEVICE + 在线清单）② **`flythings_bugreport(title, project_root, device, symptom, steps, expected, actual, evidence, severity, out)`（风险 write）**：把「AI 产出的缺陷清单 + 真机判据」落成可提交 markdown，**格式对齐 2026-09-27 html2json A1~A8 那批**（标题 / 元信息 / 现象 / 复现步骤 / 期望 vs 实际 / 真机判据 / 证据 / 影响面）；真机判据自动附 型号·固件·build.fingerprint·应用状态（init.svc.zkswe / sys.zkapp.state / zkgui pid / uptime）·最近 `logcat -d -s zkgui` 末 40 行，采不到就写明原因；**evidence 里文件不存在 → 直接 EVIDENCE_MISSING 报错（不静默跳过）**；默认落 `<项目或MCP仓库>/temp/bugreports/<yyyymmdd-HHMM>-<slug>.md`，返回 path + 前 20 行预览 ③ 六方同步：`OP_NAMES` / `scripts/gen_manifest.py` 的 RISK·CATEGORY·STAGE / `mcp_server` 与 `README` 工具数 37→39 / `tools_manifest.json` / 意图闸门 `catalog.json`；新增 `knowledge/devflow/selfcheck-and-bugreport.md`（含检索导引）+ 契约用例 `tests/test_selfcheck_bugreport.py` ④ docstring 预算：长尾细节搬 knowledge/（html_to_json / build_ui_flow / ui_visual / device_screenshot / edit_ftu / pack_upgrade 六个 op 瘦身），总体仍 ≤12000。v0.27.123-open',
     '2026-09-29: **审查报告（MCP 更新审查-2026-09-29）P0 修复：包卡接进工具返回 + 门禁健壮性 + CHANGELOG 口径定死** v0.27.122-open —— ① **P0① 包卡进返回**：`package_tools` 新增 `package_card()`（读仓库 `packages/<包>/package.yaml`，yaml 缺失自动降级），`flythings_get_package_api` 返回体加 `card`（summary/entry/api/usage_cpp/gotchas/verified_* + cardPath/readmePath）、`list_packages` 加 `hasCard`、`query_package` 加 `cardSummary`/`hasCard` —— 之前 11 张卡 AI **取不到**（只读 registry），现在工具里直接可见；② **P0③ 门禁健壮性**：`lint_silent_except` 的 SKIP_DIRS 补 `.venv/venv/.fsc/.fun/toolchain`（原先扫到 .venv 报 650 条假红）、`check_consistency`/`smoke` 里「意图闸门 catalog 不在仓库内」「ui_tools 双份副本不存在」两条环境依赖检查**降级为 skip + 提示**（不再误报红）；③ **CHANGELOG 口径定死**：文件头改为「已冻结归档 ≤ v0.27.30」，版本史唯一来源指向 `MCP_FEATURES` + README（不再两套并存）；④ `packages/README.md` 补**包卡完整度状态表**（platforms.md/example/evidence 谁缺、谁待补，显式标注不许静默）；⑤ 新增契约用例 `tests/test_package_cards.py`（卡可解析 + 已接进工具返回）。v0.27.122-open',
     '2026-09-29: **依赖包「用法文档」体系 + 网络类包 Z20 真机全流程验证** v0.27.121-open（钟工：用这个面板把网络相关的 API 做好验证，就用平台上面的组件包；说明不完整的在本地 mcp 目录下做好 yaml 说明；源码可在本地 git 搜 lib-<包名>）——① **新增 `packages/<包>/` 文档体系**：机器可读 `package.yaml`（头文件 / API 签名与出处 / 依赖 / 可直接粘的用法 / 坑 / `verified_*` 真机结果）+ 人读 `README.md`（+ `platforms.md` / `example/` / `evidence/`）；首轮覆盖 `zkhardware`(3 路继电器 by zeroOutput + 背光)、`zknet`、`curl-cxx`、`ntp`、`mqtt-cxx`、`paho-mqtt3as`、`cares`、`mbedtls`、`openssl`、`rapidjson`、`curl`（未上真机的一律 `verified: null`，不冒充实测）；② **验证工程**：`projects/pkg_zknet`（WiFi 九键 + 自检 AUTO）、`pkg_netstack`（HTTP/HTTPS/NTP/MQTT）、`pkg_netstack2`（MQTTS/LWT/Downloader/WebSocket/热点/以太网/4G）、`pkg_netdir`（c-ares/mbedTLS/OpenSSL 直调）——全部「脚本注入触摸 + `logcat -d -s zkgui` 取证 + fb 截图」自动跑；③ **Z20(108) 真机结论**：WiFi 开关/扫描/连接/断开 6/6、HTTP GET/POST/HTTPS、Downloader 双任务(进度回调,307200B+81B)、WebSocket 回显、MQTTS(TLS test.mosquitto.org:8883)、LWT 遗嘱（`kill -9` 异常断线后 **~2s broker 代发**）、异常断线自动重连（cause=automatic reconnect，≈10.5s）、c-ares 解析(5 域名 30~88ms)、mbedTLS/OpenSSL 直调 TLS+GET(200 OK)、Ethernet configure/setAutoMode、SoftAp setEnable 开关、4G=本板无模块；④ **新坑入档**：`cacert.pem` 只认 **资源目录(resPath)** 下（放别处报 `not correctly signed by the trusted CA`，那是没找到 CA 不是证书坏）、Z20 的 `paho-mqtt3as` **必须配 openssl**（否则链接报 BIO_read/RAND_bytes/SHA1_* undefined）、**别连续快速 `setprop ctl.restart zkswe`**（旧实例没退干净 → MI 全局 init 锁被占 → 黑屏 + 进程 D 状态 kill -9 无效，只能断电）、取证用 `logcat -d -s zkgui`（zknet 事件线程刷屏会把我方日志挤出缓冲）、MQTT 见证端连 `127.0.0.1:1883`（宿主访问自身 LAN IP 会被拦）；⑤ **Z21（SSD21X / 1024×600 / 192.168.x.x）复验**：HTTP GET/POST、NTP 校时、HTTPS、Downloader 双任务、WebSocket、SoftAp、Ethernet 全通 —— **新增两条 Z21 专属坑**：**Z21 上电 RTC = 1970** → 带证书校验的 HTTPS 会报 `certificate validity starts in the future`（**必须先校时再 HTTPS**，Z20 时钟本来就对所以没暴露）；**Z21 没有 `/mnt/sdnand`**（只有 `/mnt/extsd`、`/mnt/usb1`）→ 落盘走 `/data/`。**Z21 registry 无 mqtt-cxx/paho-mqtt3as，MQTT 两项在 Z21 上无法验**；⑥ **同批入 `demos/` 六个真机验证工程**（`net-stack-verify-z20` / `net-stack-advanced-z20` / `net-wifi-verify-z20` / `net-stack-verify-z21` / `net-direct-tls-z20` / `hw-relay-verify-z20`，源级交付、IP 脱敏）+ `knowledge/devflow/package-verify-playbook.md`（验证套路：worker 线程 + 自检 AUTO 键 + 触摸注入 + `logcat -d -s zkgui` 取证 + framebuffer 截图 + 部署纪律 + 主机侧测试设施） v0.27.121-open',
     '2026-09-28: **fun.exe 换代（fun→fsc）+ MCP 兼容 `.fsc/` 新目录** v0.27.120-open（钟工：fun.exe 需要替代，不然会导致这个说明实际不起作用）——① **换代**：`toolchain/fun.exe` 换成厂家 `v0.0.2+2609281006_e09dc96`（37,757,440 B，sha256 `457F1AB2…`；旧版 `v0.0.2+2609032137_b8f28e3` 备份在工作区 `private/fun_backup/`）；② **新版带来的改名（实测）**：内部包名 `fun`→`fsc`；**产物目录 `<项目>/.fun/<平台>/` → `<项目>/.fsc/<平台>/`**；锁 `.fun-lock.json` → `.fsc-lock.json`；home `~/.fun` → **`~/.fsc`**（注册表/工具链/tools 都在里面，env `FSC_HOME_PATH`）；编译宏新版**同时定义 `FUN_BUILD=1` 与 `FSC_BUILD=1`**（老工程不用改）；③ **MCP 两代都认（只扩兼容、不改行为）**：`project_tools` 新增 `BUILD_DIR_NAMES`（`.fsc`/`.fun` 两代目录）与 `_find_build_artifact()`（bin 产物 / libzkgui.so / update.img 双目录找），设计走查跳过名单加 `.fsc`；`package_tools` 注册表候选加 `~/.fsc/registry/public`（排在 `~/.fun` 前）、`.fsc-lock.json`+`.fun-lock.json` 都读、框架头证据扫两个目录；`font_tools` 探针缓存优先 `~/.fsc`；`.gitignore` 加 `.fsc/`/`.fsc-lock.json`；④ **实测**：新版 `fun build -p z20`（DownloadTimerTest）产出 `.fsc/z20/libzkgui.so`；`flythings_build_ui_flow(with_launch=False)` 全流程 success（install/build/font check/verify 全过）；⑤ **文档**：`knowledge/devflow/cli-fun-toolchain.md` 头部加 09-28 改名块 + §1 表（宏 / 产物目录 / 注册表）按新名改写并保留旧名对照；⑥ **本机待办**：`FLYTHINGS_FUN_DIR` 指向机器级安装 `C:/zkswe/fun`，那份还是 `v0.0.2+2608251010_25e6cc9`（8/25），且被 6 个卡住的 `fun.exe` 进程占着（create/publish/login，非本次流程所起）→ 暂未换，需要时先清进程再换。v0.27.120-open',
@@ -794,17 +803,16 @@ def flythings_fui_unpack(ftu_path: str, output_json: str = '', overwrite: bool =
 
 def flythings_edit_ftu(ftu_path: str, operations: str, output_ftu: str = '',
                        overwrite: bool = False) -> str:
-    """编辑 ftu 布局：自动应用编辑到 json 后 pack 回 ftu。
+    """编辑 ftu 布局：自动应用编辑到 json 后 pack 回 ftu（json 是源，ftu 是编译产物）。
+
     ⚠️ 默认 **不覆盖**原 ftu（overwrite=False）→ 生成同目录 <name>.edited.ftu 并还原原文件；
-    确认效果后再传 overwrite=True 覆盖原 ftu（或 output_ftu 指定目标）。原 ftu 与 json 都会留 .bak。
-    operations 为 JSON 数组字符串，支持：
-    set      {"op":"set","target":"caption或key","props":{"x":100,"y":200,"text":"新文本"}}
-    remove   {"op":"remove","target":"caption或key"}
-    add      {"op":"add","template":"caption或key","newKey":"textview__4","props":{...}}
-    set_root {"op":"set_root","props":{"backgroundColor":"#FFFFFF"}}
-    客户说「把这个按钮往右移/改文本/换颜色/删掉某控件/复制一个控件」时调用。
-    ftu 是 json 的**编译产物**：本 op = 变更落到同目录 json 再 pack 回 ftu
-    （无 json 源时自动 unpack，见 knowledge/devflow/ftu-json-pipeline.md）。"""
+    确认后再传 overwrite=True 覆盖（或 output_ftu 指定目标）。原 ftu 与 json 都留 .bak。
+    operations 为 JSON 数组字符串，支持 set / remove / add / set_root 四类，例：
+      set   {"op":"set","target":"caption或key","props":{"x":100,"text":"新文本"}}
+      add   {"op":"add","template":"caption或key","newKey":"textview__4","props":{...}}
+    逐字段说明见 knowledge/devflow/ftu-json-pipeline.md；客户说「往右移/改文本/换颜色/删掉某控件/
+    复制一个控件」时调用；无 json 源时自动 unpack 出编辑源。
+    """
     r = pt.flythings_edit_ftu(ftu_path, operations, output_ftu, overwrite)
     return json.dumps(_with_files(r, r.get('ftuPath'), r.get('jsonPath'), r.get('backup')),
                       ensure_ascii=False)
@@ -813,19 +821,14 @@ def flythings_edit_ftu(ftu_path: str, operations: str, output_ftu: str = '',
 def flythings_build_ui_flow(project_root: str, with_launch: bool = True, device: str = '',
                             font_check: str = 'auto', font_tier: str = '') -> str:
     """⚠️ 场景别名（编译部署类意图一律本工具，禁自造命令；不限入口）：
-    ① 口语：「编译/构建/调试/部署/推送到设备/跑一下」；
-    ② 客户端按钮（AI 应用调试/自定义编译）=编译部署真机调试 → 本工具；
-    ③ AI：写完/改完代码后主动编译验证。
-    ⚠️ 固化/升级/update.img → flythings_pack_upgrade（掉电保留）。
-    流程：①时间戳检查（json 为源、改过自动 pack）②fui pack ③fun install ④fun build
-    ⑤ **设备探测 + fun launch 推送运行（v0.27.84 起默认）**；只编译传 with_launch=False。
-    ⑥ 字体体检：缺中文自动投递 common 思源黑体（font_check='off' 关，font_tier 换版）。
-    ⚠️ 探测不猜：0 台 → needDeviceInput+installHint；多台 → 列 serial+model 再要 device=；
-    1 台且匹配 → 自动推；install 失败不阻断但给 warnings（细节见 adb-and-device-selection.md）。
-    返回：launched/pushed/device/model/platformMatch + deviceSync（设备侧 ftu/so 字节+md5 vs 本地）
-    + staleOnDevice（true ⇒ 设备上还是旧版）。细节见 knowledge/devflow/adb-and-device-selection.md。
-    传项目根目录；ftu=json 编译产物：改 json 后 pack。
-    ⚠️ src/activity/ 由 IDE 自动生成（禁手改），业务代码只写 src/logic/*.cc。
+
+    ① 口语「编译/构建/调试/部署/推送到设备/跑一下」② 客户端「AI 应用调试/自定义编译」
+    ③ AI 改完代码主动编译验证。**固化/升级/update.img → flythings_pack_upgrade**（掉电保留）。
+    流程：json↔ftu 时间戳检查 → fui pack → fun install → fun build → **设备探测 + fun launch 推送运行**
+    （默认；只编译传 with_launch=False）→ 字体体检（缺中文自动投）+ 设备侧 ftu/so 字节/md5 比对
+    （staleOnDevice=true ⇒ 设备上还是旧版）。探测不猜：0 台→needDeviceInput+installHint；多台→列 serial
+    再要 device=；1 台匹配→自动推。⚠️ src/activity/ 由 IDE 生成（禁手改），业务只写 src/logic/*.cc。
+    细节与检索词：knowledge/devflow/adb-and-device-selection.md。
     """
     return json.dumps(_with_design_warning(
         pt.flythings_build_ui_flow(project_root, with_launch, device,
@@ -837,18 +840,14 @@ def flythings_pack_upgrade(project_root: str, out_path: str = '', release_versio
                            ab: bool = False, with_build: bool = False,
                            dry_run: bool = False) -> str:
     """⚠️ 场景别名（固化升级类意图一律本工具，禁自造命令）：
-    ① 口语：「打包升级包/出升级包/生成 update.img/固化/刷进设备/烧到机器里/出货版本/
-       量产版本/TF卡升级包/OTA 包/整机升级」；
-    ② 与「调试/推送到设备」不同：那是 flythings_build_ui_flow（fun launch 临时推送，掉电即失）；
-    ③ AI 交付/发布/量产一份可升级版本 → 本工具。
-    流程：fun install →（with_build 可选）fun build → fun pack（out_path→-o；
-      release_version→--release-version；ab=True→--ab 出 OTA 包）。
-    产物 `.fun/<平台>/update.img`，返回路径/大小/时间 + 刷法（TF卡/ADB/远程批量）。
-    同机制可换开机 logo：`boot_logo.JPG` → **MISC 分区**（≤ MISC 大小），见
-      knowledge/devflow/upgrade-pack-image.md。
-    dry_run=True 只回命令计划不执行（写操作默认安全）。
-    ⚠️ Windows：`FATAL sign error 0xc0000135` = 缺 32 位 VC++ 运行时；
-      `package xxx not found in local` = 依赖未装，先 fun install。传项目根目录。
+
+    ① 口语「打包升级包/出升级包/生成 update.img/固化/刷进设备/出货版本/量产版本/TF卡升级包/整机升级」；
+    ② 与「调试/推送到设备」不同：那是 flythings_build_ui_flow（掉电即失）；③ AI 交付/发布/量产 → 本工具。
+    流程：fun install →（with_build 可选）fun build → fun pack（out_path→-o；release_version→
+    --release-version；ab=True→--ab 出 OTA 包）。产物 `.fun/<平台>/update.img`（09-28 起 `.fsc/`）+
+    刷法（TF卡/ADB/远程批量）；同机制换开机 logo `boot_logo.JPG` → **MISC 分区**。
+    dry_run=True 只回命令计划不执行。⚠️ `FATAL sign error 0xc0000135` = 缺 32 位 VC++ 运行时；
+    `package not found in local` = 依赖未装先 fun install。详情：knowledge/devflow/upgrade-pack-image.md。
     """
     return json.dumps(pt.flythings_pack_upgrade(project_root, out_path, release_version,
                                                 ab, with_build, dry_run),
@@ -904,19 +903,13 @@ def flythings_html_to_json(input_html: str, output_json: str = '', res: str = ''
                            merge_windows: bool = False) -> str:
     """受限 HTML 交互原型 -> ui/*.json（CSS 效果自动转图；产物尺寸 == 控件盒）。
 
-[WARN] 动手前先读《HTML_SUBSET 原型规范》（检索 HTML_SUBSET / data-icon / CSS 效果转图）：控件映射表、
-data-* 属性、铁律、自动转图清单都在那里。根节点 `<div class="screen" data-res="WxH" data-bg="#RRGGBB">`；
-定位 data-x/y/w/h；字号 data-fs；命名 data-caption；自备图 data-pic；图标优先；文本只用汉字+ASCII+基础符号。
-
-[WARN] 多屏（并列 div.screen，data-page 区分）：默认**每屏一个 json** —— 一个 .screen = 一页 = 一个 Activity
-= 一个独立 ftu（文件名取 data-page，缺省 page_k）。同屏内 window/dialog 不算页；哪些屏属不同 Activity、
-哪些属同屏 window/dialog，**由 AI 在设计阶段判定**。merge_windows（CLI `--merge-windows`）把 N 屏合成同一
-json 内的 N 个整屏 window（首屏 visible、其余 false，showWnd/hideWnd 切页），**仅当同属一个 Activity** 时用。
-返回 screensDetected / pagesProduced / jsonsProduced / pages[]；**两者不等一律 success:false**（不静默丢页）。
-
-[WARN] 红线：说明书/照片不直接转 json；先出 .preview.html 确认再 pack/写逻辑；效果一律转图（出到
-<项目>/resources/images/，json 引用 images/xxx.png）；禁止 AI 自绘 1x png。res 覆盖分辨率。
-"""
+    ⚠️ 动手前先读《HTML_SUBSET 原型规范》（检索 HTML_SUBSET / data-icon / 自动转图清单）：
+    控件映射表、全部 data-* 属性、铁律、属性清单都在那里，本 docstring 只留最低限度。
+    多屏（div.screen，data-page）：**每屏一个 json = 一页 = 一个 Activity = 一个独立 ftu**；
+    **仅当同属一个 Activity** 时才用 merge_windows 合成同 json 的 N 个整屏 window。
+    返回 screensDetected/pagesProduced/jsonsProduced/pages[]；**不等一律 success:false**（不静默丢页）。
+    红线：先出 .preview.html 确认再 pack/写逻辑；效果一律转图；禁止 AI 自绘 1x png。
+    """
     return json.dumps(h2j.html2json(input_html, output_json or None, res or None,
                                     merge_windows=bool(merge_windows)), ensure_ascii=False)
 
@@ -1386,16 +1379,14 @@ def flythings_ui_visual(action: str = 'list', project_root: str = '', output_dir
     """UI 可视化三合一入口（action 选动作；旧 ui_editor / ui_edit_apply / ui_diff 已并入本 op）。
 
     - action="editor"：ui/*.json → 可拖拽编辑器网页（<项目>/ui/_edit/<name>.edit.html）。必填
-      project_root；可选 output_dir。用户拖完点「复制 AI 指令」粘给 AI（本地静态页，只能复制粘贴）；
-      控件/页面能力见知识库「UI 可视化编辑器 用法与能力」。
-    - action="edit_apply"：变更 JSON 写回 ui/*.json。必填 project_root、changes（JSON 文本或路径）；pack 默认 False（不动 ftu）；dry_run=True 只预览不写盘。
-      结构 {"file","resolution","changes":{控件路径:{left,top,width,height}},"props":{控件路径:{...}}}；
-      控件路径顶层 "button__1"、嵌套 "window__2/button__3"；写回前自动 .bak，格式不一致拒绝写。
-    - action="diff"：两张同尺寸截图像素级对比（0 token 差异清单，不是图）。必填 image_a、image_b；
-      tolerance=2 / shift=1（±1px 抖动）/ blur=0.7 / min_area=4 / noise_bbox=10 压假报警；
-      out_png 出标注图、out_json 存清单。跨渲染器（HTML 预览 vs 真机截图）只当骨架参考。
+      project_root。用户拖完点「复制 AI 指令」粘给 AI（本地静态页）。
+    - action="edit_apply"：变更 JSON 写回 ui/*.json。必填 project_root、changes（JSON 文本或路径）；
+      pack 默认 False；dry_run=True 只预览不写盘；写回前留 .bak。
+    - action="diff"：两张同尺寸截图逐像素对比（0 token 差异清单）。必填 image_a、image_b；
+      tolerance/shift/blur/min_area/noise_bbox 压假报警；out_png/out_json 出标注图与清单。
 
-    action 传 list（或省略）只回各 action 的必填参数。
+    changes 结构 / 参数口径 / 跨渲染器注意事项见知识库「UI 可视化编辑器」+
+    knowledge/devflow/ui-layout-verify.md。action 传 list（或省略）只回各 action 的必填参数。
     """
     act = str(action or '').strip().lower().replace('-', '_')
     if act in ('', 'list', 'help', '?'):
@@ -1469,23 +1460,16 @@ def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png
                                flip: str = '', rotate: str = 'auto', crop: str = '', name: str = '',
                                timeout: int = 180, advanced: str = '', layer: str = 'ui',
                                vdec_chn: int = 0) -> str:
-    """从**设备真机**抓当前屏幕 → PNG / JPG / BMP，交给视觉模型看或用 flythings_ui_visual(action="diff") 做像素验收。
+    """从**设备真机**抓当前屏幕 → PNG / JPG / BMP（给视觉模型看，或给 ui_visual(action="diff") 做验收）。
 
-    何时用：要确认设备上实际显示成什么样（布局/锯齿/切图/颜色/文字/改完验收）。
-    三段式验收第二步：预览 → 本工具（像素真相）→ ui_diff 比对。
-
-    常用（默认参数就够）：默认抓一张；scale=0.5 或 fmt='jpg', quality=85 省 token；
-    多设备 device='<IP>:5555'；rotate='auto' 按工程 EasyUI.cfg 的 rotateScreen 转正；
-    只要应用画面用 crop='auto'。
-    ⚠️ 抓完把返回的 path 交给看图能力，不要把 raw/文件本身丢给模型。
-
-    进阶参数（fb/pixel/width/height/offset_y/flip/rotate/crop/layer/vdec_chn/name/timeout）**推荐统一走 advanced**
-    （JSON 字符串）；同名显式参数优先于 advanced。
-    ⚠️ layer="video"（仅 SigmaStar）：抓**视频层**帧（fb0 只有 UI）；多路/拼墙必须给 vdec_chn
-    —— 默认 chn 0（单路），**SmartPanel 拼墙在 chn 1**（选错=抓不到帧，返回带 vdecChn+zkshotCmd+hint）。
-
-    ⚠️ 实现要点与踩坑见知识库「真机抓屏 实现要点与踩坑」；
-    检索：抓屏 / vdec 通道 / 双缓冲 pan / 颜色红蓝互换 / 取图角度 rotateScreen。
+    要确认设备上实际显示成什么样（布局/锯齿/切图/颜色/文字/改完验收）时用；三段式验收第二步。
+    常用（默认参数就够）：scale=0.5 或 fmt='jpg', quality=85 省 token；多设备 device='<IP>:5555'；
+    rotate='auto' 按工程 EasyUI.cfg 的 rotateScreen 转正；只要应用画面用 crop='auto'。
+    ⚠️ 抓完把返回的 path 交给看图能力，不要把 raw/文件丢给模型。
+    进阶参数（fb/pixel/宽高/offset_y/flip/rotate/crop/layer/vdec_chn/name/timeout）统一走 advanced
+    （JSON 字符串），同名显式参数优先。layer="video"（仅 SigmaStar）抓**视频层**帧；多路/拼墙必须给
+    vdec_chn（默认 0，**SmartPanel 拼墙在 chn 1**；选错=抓不到帧）。检索词与踩坑见
+    knowledge/devflow/device-screenshot.md。
     """
     if dss is None:
         return json.dumps({'success': False, 'error': 'device_screenshot 不可用（缺 ui_tools/device_screenshot.py 或 Pillow）'},
@@ -1523,6 +1507,52 @@ def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png
     except Exception as e:
         return json.dumps({'success': False, 'error': str(e)}, ensure_ascii=False)
     return json.dumps(r, ensure_ascii=False)
+
+def flythings_selfcheck(device: str = '', diff_against: str = '', out: str = '') -> str:
+    """整机快照（九个分区），每分区给 {ok, hint, data}；`ok=false` **不是错误而是结论**。
+
+    九分区：①设备信息 ②应用状态 ③显示 ④存储 ⑤网络 ⑥蓝牙 ⑦输入 ⑧外设 ⑨时间；
+    hint 写明「需要什么条件 / 去哪查指令」，不静默。采集容忍设备缺工具：优先随仓
+    bin_tools/<平台>/busybox（→设备 /tmp/busybox，缺则推一份），否则纯 adb shell + getprop/cat。
+    device='<serial|IP>:5555'（可省；**多台在线不猜**，回 NO_DEVICE + 在线清单）；
+    diff_against=<上次快照.json> 出逐分区逐项差异；out=<json 路径> 落盘（可复用作基线）。
+    检索词：整机自检/selfcheck/九分区/快照/与上次对比（knowledge/devflow/selfcheck-and-bugreport.md）。
+    """
+    if sc is None:
+        return json.dumps({'ok': False, 'op': 'flythings_selfcheck',
+                           'error': {'code': 'MODULE_MISSING',
+                                     'msg': 'selfcheck_tools 不可用: %s' % _SC_ERR,
+                                     'hint': '恢复仓库里的 selfcheck_tools.py 后重试',
+                                     'retryable': False},
+                           'warnings': []}, ensure_ascii=False)
+    return json.dumps(sc.run_selfcheck(device, diff_against, out), ensure_ascii=False)
+
+
+def flythings_bugreport(title: str = '', project_root: str = '', device: str = '',
+                        symptom: str = '', steps: str = '', expected: str = '',
+                        actual: str = '', evidence: str = '', severity: str = '',
+                        out: str = '') -> str:
+    """缺陷单生成器：把缺陷清单 + 真机判据落成可提交 markdown（格式对齐 2026-09-27 html2json A1~A8 那批）。
+
+    只给 title 也能出框架稿；steps/evidence 支持 JSON 数组字符串，或换行 / 分号 / 逗号分隔。
+    真机判据自动附：型号·固件·build.fingerprint·应用状态（init.svc.zkswe / sys.zkapp.state /
+    zkgui pid / uptime）·最近 `logcat -d -s zkgui` 末 40 行；采不到就写明原因（不静默）。
+    ⚠️ evidence 里任一文件不存在 → 直接报 EVIDENCE_MISSING（绝不静默跳过）。
+    severity ∈ blocker/critical/major/minor/trivial（缺省 major）。
+    默认落 <项目或MCP仓库>/temp/bugreports/<yyyymmdd-HHMM>-<slug>.md，返回 path + 前 20 行预览。
+    检索词：缺陷单/bugreport/提缺陷/现象与复现步骤（knowledge/devflow/selfcheck-and-bugreport.md）。
+    """
+    if sc is None:
+        return json.dumps({'ok': False, 'op': 'flythings_bugreport',
+                           'error': {'code': 'MODULE_MISSING',
+                                     'msg': 'selfcheck_tools 不可用: %s' % _SC_ERR,
+                                     'hint': '恢复仓库里的 selfcheck_tools.py 后重试',
+                                     'retryable': False},
+                           'warnings': []}, ensure_ascii=False)
+    r = sc.build_bugreport(title, project_root, device, symptom, steps, expected, actual,
+                           evidence, severity, out, MCP_VERSION)
+    return json.dumps(_with_files(r, r.get('path')), ensure_ascii=False)
+
 
 
 # ===== 统一返回契约（v0.27.31）=====
@@ -1645,6 +1675,8 @@ OP_NAMES = (
     'flythings_ui_visual',
     'flythings_verify_assets',
     'flythings_device_screenshot',
+    'flythings_selfcheck',
+    'flythings_bugreport',
     'flythings_attach_cli_tools',
     'flythings_create_project',
     'flythings_create_bin_project',

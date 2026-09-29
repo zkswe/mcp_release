@@ -1,5 +1,6 @@
 # 控件代码 API 速查（35 官方 Demo 源码实证，2026-09-08）
 
+> 检索导引：问「控件代码接口怎么调 / 回调函数签名与触发时机 / setTouchPass 在哪设 / 监听器什么时候注册 / 哪个 Demo 有用法」→ 本文（代码侧速查）；工程骨架见 `devflow/activity-code-skeleton.md`。
 > 与 json 字段文档互补：本文聚焦**代码怎么驱动控件**（回调签名/触发时机/事件语义/实测坑），证据全部来自 basedemo-new_z20_1024_600 源码原文。
 > 通用骨架（activity 壳/回调表/返回值语义/生命周期/定时器/串口模板/SysApp）见 `devflow/activity-code-skeleton.md`。
 > 检索词：onButtonClick/onProgressChanged/onEditTextChanged/onListItemClick/setTargetAngle/setData/loadQRCode/play/setCheckedID/showWnd。

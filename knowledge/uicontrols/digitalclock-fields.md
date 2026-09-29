@@ -1,5 +1,6 @@
 # DigitalClock 数字时钟控件 JSON 字段规范
 
+> 检索导引：问「数字时钟控件 / 时间显示要不要写代码 / 冒号跳动 beat / 怎么改显示时间（改系统时间）/ 秒显示」→ 本文。
 > 2026-09-07 git.com 全库学习 + basedemo/DigitalClockDemo-New + f133 easyui 2.9.0 SDK（ZKDigitalClock.h 继承 ZKTextView）校准。
 
 ## 核心铁律

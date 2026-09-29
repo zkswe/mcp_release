@@ -1,5 +1,6 @@
 # 控件层级规则（容器 → 子内容矩阵，双源实证）
 
+> 检索导引：问「控件这样嵌套合不合法 / window 里能放什么 / pagewindow 为什么只装 window / 层级报错（check_all #2）/ 先看 json 做遮挡审计」→ 本文。
 > 2026-09-08 沛哥要求「控件层级问题检讨」产出。**方法**：扫描 86 个真实 json（`projects/SampleUI-New/ui/1024x600` 42 + `projects/LearningProject/basedemo-new_z20_1024_600` 35 demo/44，ftu unpack 反解），统计每个容器类型的直接子内容分布——**零越界样例**，基线全绿。
 > **落地**：check_all.py #2 层级合法性检查（_layer_problems）自动校验；html2json 嵌套栈生成天然合规。
 > 检索词：控件层级/嵌套/容器/父子/结构键/subItem/radiobuttons/页面 window。

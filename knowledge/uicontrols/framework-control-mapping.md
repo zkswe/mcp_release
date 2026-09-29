@@ -1,5 +1,6 @@
 # 跨框架控件映射（摘要 + 指针）— 权威表在 components/ui_v1/
 
+> 检索导引：问「控件对照表在哪 / LVGL·Qt·Android·小程序控件对应我们什么 / 五级处置 L1~L5 / tab 页签怎么对应」→ 本文为摘要指针；机读权威表走 `flythings_map_control`（用法见 `uicontrols/control-mapping-capability.md`）。
 > 检索词：跨框架 / 控件映射 / 翻译 / 转换 / LVGL 转 FlyThings / 小程序转 FlyThings / Qt / Android / emWin /
 > tabview / tab 页签 / pagewindow / 五级处置 / L1 L2 L3 L4 L5 / 缺口级别 / 3D 伪 3D / 控件对照表。
 >

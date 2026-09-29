@@ -2,9 +2,9 @@
   "schema": 1,
   "generatedBy": "scripts/gen_manifest.py",
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY/STAGE 表后重新生成，勿手改本文件",
-  "version": "0.27.122-open",
+  "version": "0.27.123-open",
   "build": "2026-09-29",
-  "toolCount": 37,
+  "toolCount": 39,
   "cli": {
     "fun": "FlyThings 工程工具（create/install/build/launch，<项目>/.fsc/<平台>/ 下；09-28 前为 .fun/）",
     "fui": "FTU 布局工具：pack（json → ftu）/ unpack（ftu → json）双向下；随包 fui 自 v0.27.91 起含 unpack（旧版只有 pack）",
@@ -139,6 +139,25 @@
       "stage": "build"
     },
     {
+      "op": "flythings_bugreport",
+      "brief": "缺陷单生成器：把缺陷清单 + 真机判据落成可提交 markdown（格式对齐 2026-09-27 html2json A1~A8 那批）。",
+      "args": [
+        "title",
+        "project_root",
+        "device",
+        "symptom",
+        "steps",
+        "expected",
+        "actual",
+        "evidence",
+        "severity",
+        "out"
+      ],
+      "risk": "write",
+      "category": "device",
+      "stage": "build"
+    },
+    {
       "op": "flythings_build_ui_flow",
       "brief": "⚠️ 场景别名（编译部署类意图一律本工具，禁自造命令；不限入口）：",
       "args": [
@@ -199,7 +218,7 @@
     },
     {
       "op": "flythings_device_screenshot",
-      "brief": "从**设备真机**抓当前屏幕 → PNG / JPG / BMP，交给视觉模型看或用 flythings_ui_visual(action=\"diff\") 做像素验收。",
+      "brief": "从**设备真机**抓当前屏幕 → PNG / JPG / BMP（给视觉模型看，或给 ui_visual(action=\"diff\") 做验收）。",
       "args": [
         "device",
         "out",
@@ -226,7 +245,7 @@
     },
     {
       "op": "flythings_edit_ftu",
-      "brief": "编辑 ftu 布局：自动应用编辑到 json 后 pack 回 ftu。",
+      "brief": "编辑 ftu 布局：自动应用编辑到 json 后 pack 回 ftu（json 是源，ftu 是编译产物）。",
       "args": [
         "ftu_path",
         "operations",
@@ -529,6 +548,18 @@
       "stage": "build"
     },
     {
+      "op": "flythings_selfcheck",
+      "brief": "整机快照（九个分区），每分区给 {ok, hint, data}；`ok=false` **不是错误而是结论**。",
+      "args": [
+        "device",
+        "diff_against",
+        "out"
+      ],
+      "risk": "device",
+      "category": "device",
+      "stage": "build"
+    },
+    {
       "op": "flythings_ui_preview",
       "brief": "json 布局 / 整个项目 → HTML 预览稿（客户确认 UI 用；只交付 .preview.html，不产图片/截图）。",
       "args": [
@@ -586,9 +617,9 @@
     }
   ],
   "docs": {
-    "knowledgeFiles": 81,
+    "knowledgeFiles": 82,
     "wikiFiles": 128,
-    "ragChunks": 1721,
-    "ragPaths": 209
+    "ragChunks": 1741,
+    "ragPaths": 210
   }
 }

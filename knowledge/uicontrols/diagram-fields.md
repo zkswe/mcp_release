@@ -1,5 +1,6 @@
 # Diagram 波形图控件 JSON 字段规范
 
+> 检索导引：问「波形图 / 实时频谱·心率曲线 / diagram 字段 / 多条波形 infos 配置 / setData 与 addData 区别 / 移动动画卡顿」→ 本文。
 > 2026-09-07 git.com 全库学习 + basedemo/DiagramDemo-New + f133 easyui 2.9.0 SDK 头文件校准。
 > 场景：实时波形（音频频谱、心率、串口 ADC 曲线等）。
 

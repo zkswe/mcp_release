@@ -1,5 +1,6 @@
 # CircleBar 圆形进度条控件 JSON 字段规范
 
+> 检索导引：问「圆形进度条怎么做 / 圆环仪表·调温调光旋钮 / CircleBar 字段 / progressPic 扇形裁剪 / textType 与 unit / touchRange」→ 本文。
 > 2026-09-07 git.com 全库学习 + basedemo/CircleBarDemo-New + f133 easyui 2.9.0 SDK 头文件校准（fui unpack 实测字段 + ZKCircleBar.h 源码）。
 
 ## 核心铁律

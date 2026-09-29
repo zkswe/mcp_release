@@ -1,5 +1,6 @@
 # ListView 列表控件字段 + 回调语义（含 subitem 点击 id 确认）
 
+> 检索导引：问「列表怎么做 / listview 字段 / 三回调一刷新 / 点击拿到的是行号还是 subitem id / 每行都常显 ListItem / 刷新不跟最新行」→ 本文；滚轮选择器见 `uicontrols/listview-wheel-picker.md`，封面卡顿见 `uicontrols/listview-image-cache.md`。
 > 2026-09-07 git.com 全库学习 + basedemo/listViewDemo-New + f133 easyui 2.9.0 SDK 校准。
 > ⚠️ 沛哥 2026-09-07 确认：新版 SDK **已无 subitem 数量 5 个限制**（老 SDK S_MAX_SUB_ITEM_COUNT=5 已移除，可做更多）。
 

@@ -1,5 +1,6 @@
 # 系统级窗口（状态栏 statusbar / 导航栏 navibar / 屏保 screensaver / 输入法 IME）
 
+> 检索导引：问「状态栏·导航栏怎么开 / 屏保怎么配 / 输入法窗口怎么写 / showStatusBar·screensaverOn 等 API / 系统级页面能不能自己创生命周期」→ 本文。
 > 2026-09-22 钟工定规：「系统级页面 screensave/statusbar/navibar 以及自定义全局弹框，AI 要能**精准命中**；
 > **不要自己去创造页面的生命周期和层级关系**」→ 本文只写**有出处的事实**（官方文档 + easyui 头文件 + 真实工程），
 > 查不到的一律标「未收录」，不猜、不套别的 GUI 框架。

@@ -1,5 +1,6 @@
 # SlideText 滑动文本控件 JSON 字段规范
 
+> 检索导引：问「横向文本单元滑动条怎么做 / 输入法候选词控件 / setTextList 灌数据 / onTextUnitClick 点选回调 / 和跑马灯 textview 的区别」→ 本文。
 > 2026-09-07 git.com 全库学习 + basedemo/ImeDemo-New（KaiduZ9/Z9S 拼音输入法候选词条）实测。
 > 场景：一串文本单元横排、可滑动、点击某个单元回调（典型：输入法候选词、横向选项条）。
 

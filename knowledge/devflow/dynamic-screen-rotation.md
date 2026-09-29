@@ -1,5 +1,6 @@
 # 🔄 动态旋转屏幕 / 运行时切换布局（relayout）
 
+> 检索导引：问「运行时转屏 / 横竖屏切换不重启应用 / relayout 怎么用 / setScreenRotate·setTouchRotate / 两套 ftu 怎么切 / 某版本不支持某控件（scrollwindow 看不到）」→ 本文；静态方向配置见 `devflow/package-properties-easyui-cfg.md`。
 > 2026-09-14 沛哥指路 `projects/LearningProject/RelayoutDemo`（F133）→ 本机 easyui 逐版本实测校准（**需要较新的 EasyUI**：relayout 由 easyui 2.9.0 引入；现有公开包的 z20/z21/t113 均无 → 找 FlyThings 厂家支持）。
 > 检索词：动态旋转 / 运行时旋转 / 横竖屏切换 / 屏幕方向切换 / 两套 ftu / relayout / setScreenRotate / setTouchRotate / EasyUI 版本要求 /
 > **scrollwindow 不显示 / 控件看不到 / 控件没渲染 / 页面只有标题 / 某版本不支持某控件 / 编译期头版本 vs 设备运行库 / ro.easyui.version / strings libeasyui.so**。

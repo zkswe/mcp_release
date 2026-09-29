@@ -1,5 +1,6 @@
 # 跨框架控件映射能力（op `flythings_map_control`）
 
+> 检索导引：问「映射能力怎么用 / flythings_map_control 怎么调 / 命中不到映射怎么办 / 和 components/ui_v1 什么分工」→ 本文（工具用法与边界）；常见映射速查见 `uicontrols/framework-control-mapping.md`。
 > 检索词：控件映射 / 映射能力 / 跨框架 / 源控件 / lv_slider / RecyclerView / QCalendarWidget /
 > lv_tabview / swiper / CALENDAR / CDateTimeCtrl / 映射表 / control map / mcp_control_map.json /
 > 别的框架的控件对应我们哪个控件 / 有对应控件就直接用 / 命中不到怎么办 / 缺口五级。

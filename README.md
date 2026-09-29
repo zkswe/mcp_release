@@ -48,15 +48,15 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 > `python` 不在 PATH 时用完整路径（如 `C:/Users/<你>/AppData/Local/Programs/Python/Python313/python.exe`）。
 
 **3) 验证** —— 问 AI「**MCP 版本是多少？**」：
-应返回 `flythings-kb-open 0.27.122-open`，**37 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / mt_test / zkshot，
+应返回 `flythings-kb-open 0.27.123-open`，**39 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / mt_test / zkshot，
 在 `bin_tools/<平台>/` 下，**不是 op、不占 op 名额**）。
 
 > **工具面三模式（按客户端选一个，别同时配）**
 > | 模式 | 怎么配 | 客户端看到什么 |
 > |------|--------|----------------|
 > | `dispatcher`（默认） | 只指 `mcp_server.py` | 只暴露分发器 `flythings_kb`（`op="list"` 取目录）—— schema 开销最小 |
-> | `all` | `FLYTHINGS_MCP_MODE=all` | 分发器 + 37 个独立工具（旧配置兼容） |
-> | `flat` | 指 `mcp_server_flat.py`（或 `FLYTHINGS_MCP_MODE=flat`） | 37 个独立工具，无分发器（Trae / Cursor / Claude Desktop 需要独立 schema 时用；代价 ≈ 1 万 token/session） |
+> | `all` | `FLYTHINGS_MCP_MODE=all` | 分发器 + 39 个独立工具（旧配置兼容） |
+> | `flat` | 指 `mcp_server_flat.py`（或 `FLYTHINGS_MCP_MODE=flat`） | 39 个独立工具，无分发器（Trae / Cursor / Claude Desktop 需要独立 schema 时用；代价 ≈ 1 万 token/session） |
 >
 > 默认从「全注册」改为「只分发器」是 v0.27.34 的**行为变更**；受影响就设 `FLYTHINGS_MCP_MODE=all` 恢复。
 
@@ -113,6 +113,16 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
   （目录名 = 平台小写键）；工具链**不随本包分发**，缺了 `fun build -p Z235X` 会报
   `platform toolchain url must not be empty`——先放好再编译
 
+### 🧪 整机自检与缺陷单
+- **整机快照** `flythings_selfcheck`：九个分区（设备信息 / 应用状态 / 显示 / 存储 / 网络 / 蓝牙 / 输入 / 外设 / 时间）
+  每区给 `{ok, hint, data}` —— **「读不到」本身是结论**（`ok=false` + hint 说清需要什么条件 / 去哪查），绝不静默吞掉；
+  采集容忍设备缺工具（优先随仓 `bin_tools/<平台>/busybox`，否则纯 adb shell + getprop/cat）；
+  `diff_against=<上次快照.json>` 逐分区逐项比对，`out=<json>` 落盘（可复用作基线）。
+- **缺陷单** `flythings_bugreport`：把 AI 产出的缺陷清单 + 真机判据落成可提交 markdown —— 格式对齐 2026-09-27
+  html2json A1~A8 那批（现象 / 复现步骤 / 期望 vs 实际 / 真机判据 / 证据 / 影响面），真机判据自动附
+  型号·固件·应用状态·最近 `logcat -d -s zkgui` 摘要；**证据文件不存在会直接报 EVIDENCE_MISSING**（不静默跳过）。
+  默认写 `<项目或本包>/temp/bugreports/<yyyymmdd-HHMM>-<slug>.md`。
+
 ### 📦 依赖包与 Manifest
 - 包检索 / 版本 / 头文件级 API（`package_search` / `query_package` / `get_package_api`）
 - Manifest 生成（`flythings_manifest`，默认 dry_run 只推荐）→ 加包 `add_package` → 递归解析 `resolve_dependencies` → include 对账 `check_project_deps`
@@ -137,6 +147,6 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 
 ---
 
-当前版本 `0.27.121-open`（37 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
+当前版本 `0.27.123-open`（39 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
 
 MIT License · FlyThings Team · 深圳中科世为科技有限公司 · [developer.flythings.cn](https://developer.flythings.cn/)

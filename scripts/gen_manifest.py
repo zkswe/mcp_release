@@ -71,6 +71,8 @@ RISK = {
     'flythings_pack_upgrade': 'write',
     'flythings_device_screenshot': 'device',
     'flythings_gen_ui_test': 'device',
+    'flythings_selfcheck': 'device',
+    'flythings_bugreport': 'write',
 }
 
 # ---- 事实来源③：分类（给文档/AI 分组用）---------------------------------------------
@@ -112,6 +114,8 @@ CATEGORY = {
     'flythings_manifest': 'package',
     'flythings_device_screenshot': 'device',
     'flythings_gen_ui_test': 'device',
+    'flythings_selfcheck': 'device',
+    'flythings_bugreport': 'device',
 }
 
 # ---- 事实来源③：流程阶段（给意图闸门分组用；人工维护，唯一一处）-------------------------
@@ -160,6 +164,8 @@ STAGE = {
     'flythings_i18n_to_json': 'build',
     'flythings_device_screenshot': 'build',
     'flythings_gen_ui_test': 'build',
+    'flythings_selfcheck': 'build',
+    'flythings_bugreport': 'build',
     # 与流程阶段无关
     'flythings_get_version': 'other',
     'flythings_hardware_info': 'other',

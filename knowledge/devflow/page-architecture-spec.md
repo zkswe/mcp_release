@@ -1,5 +1,6 @@
 # 页面架构规范：ftu vs 同 ftu 内多窗口 + src 业务域目录命名
 
+> 检索导引：问「一个工程几个 ftu/Activity / 二级页·弹窗放同一 ftu 还是新页 / merge_windows 什么时候用 / showWnd 多窗口 / src 目录与文件怎么命名 / 多屏设计稿要落地几页」→ 本文（默认一屏一 Activity 一 json）；原型分页流程见 `devflow/prototype-flow.md`。
 > 2026-09-13 沛哥定规（确认「跨业务域/独立生命周期 → 独立 ftu；同一 Activity 内的页签/弹窗/二级页 → 同 ftu 内整屏 window」判断正确后入库）。
 > 2026-09-21 钟工修正补充：**多屏设计稿的 N 屏必须全部落地**（旧口径易被误读成「只做一个页面」），
 > 并与 `ui_tools/html2json.py` 的返回字段（`screensDetected`/`pagesProduced`）对齐；

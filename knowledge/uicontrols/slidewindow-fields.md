@@ -1,5 +1,6 @@
 # 🎠 SlideWindow 滑动窗口 JSON 字段规范
 
+> 检索导引：问「九宫格翻页怎么做 / 手机桌面式图标分页 / cols×rows 每页格子数 / items 跨页 index / 图标位置和布局对不上」→ 本文。
 > 2026-09-01 沛哥定规 + 入库（UIlayoutDemo/main.ftu + SlideWindowDemo 实测校准）。
 > Android 主页式九宫格滑动：一个滑动主窗口 + 多个图标项，翻页滑动。
 

@@ -1,5 +1,6 @@
 # listview 做滚轮选择器（WheelPicker）：字段配法 + 中心行对齐 + 三个真机坑
 
+> 检索导引：问「滚轮选择器怎么做 / 时间选择·时钟盘 / 选中条跟着行滚 / setSelection 带不带动画 / 中心行选中值怎么回读」→ 本文；基础字段见 `uicontrols/listview-fields.md`。
 > **检索命中条件（滚轮 / 时间选择 / 时钟盘 三类问法都命中本文）**：
 > **① 滚轮族**：滚轮怎么做 / 滚轮选择器 / 转盘 / 循环列表做选择器 / 无限滚动列表 / picker 多列联动 /
 > picker-view 怎么转 / lv_roller 怎么用 / NumberPicker 支持吗 / LISTWHEEL 对应哪个控件 / QTimeEdit 怎么做 /

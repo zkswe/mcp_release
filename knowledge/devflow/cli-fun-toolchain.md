@@ -1,5 +1,6 @@
 # 🧰 fun 命令行工具链（原 fuse 更名；2026-09-28 内部又改成 fsc、产物目录 `.fun/` → `.fsc/`）+ 宏/产物目录改名
 
+> 检索导引：问「用 fun 还是 fuse/fsc / fun build 挂老工程 / FUN_BUILD 宏怎么加 / 产物在 .fun 还是 .fsc / 依赖注册表在哪 / 多设备在线怎么推指定设备」→ 本文；编译部署该调哪个工具见 `devflow/deploy-scene-map.md`。
 > **2026-09-28 更新**：工具链换代为 `v0.0.2+2609281006_e09dc96`（内部包名 `fun`→**`fsc`**；产物目录 `.fun/<平台>/`→**`.fsc/<平台>/`**；锁 `.fun-lock.json`→**`.fsc-lock.json`**；home `~/.fun`→**`~/.fsc`**（env `FSC_HOME_PATH`）；编译宏新版**同时定义 `FUN_BUILD=1` 和 `FSC_BUILD=1`**，老工程不用改）。**MCP 两代都认**（产物/锁/注册表均双向兼容）。
 > 2026-09-14 沛哥指出「fuse 命令行已换成 fun，文档没更新」→ 本机逐项实测校准（`fun.exe v0.0.2+2609032137_b8f28e3`、宏 `FUN_BUILD`、产物 `.fun/<平台>/`）。
 > 检索词：fun.exe / fuse.exe / 命令行工具 / 工具链 / 编译命令 / fun build / fun install / fun launch / fun sim / FUN_BUILD / FUSE_BUILD / .fun / .fsc / .fsc-lock.json / fsc / FSC_HOME_PATH / .fuse / 老工程迁移 / 注册表路径 / 多设备 / 设备选择 / -s / --device / WiFi adb / adb tcpip / adb connect / 推不上去 / more than one device / 旧 ftu / 界面没变 / base/functional.h / 找不到 base utils / base-utility 缺失 / fun install 没生效 / 老工程升级补包。

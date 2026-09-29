@@ -1,5 +1,6 @@
 # ⚙️ package.properties / EasyUI.cfg 工程配置机制（屏幕旋转等）
 
+> 检索导引：问「EasyUI.cfg 怎么写 / package.properties 覆盖了哪份 cfg / rotateScreen 配在哪 / 推上去没效果（extsd 卡里的旧 cfg 劫持）/ 字体资源怎么真进 /res / 卡在开机 logo」→ 本文。
 > 2026-09-03 沛哥讲解机制（定规）+ mark_cv201 实测校准（CV201_PND rotateScreen 270 / CV201_PND_1024_600 不转，同代码双屏方向适配案例）。
 
 ## 核心机制（沛哥 2026-09-03 定规）

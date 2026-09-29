@@ -1,5 +1,6 @@
 # UI 布局可视化编辑与像素验收（json 为源 · 拖拽微调 · 0 token 校验）
 
+> 检索导引：问「布局位置不对 / 想拖控件微调 / 图片与控件尺寸对不上（含 thumb.size）/ 要像素回归对比 / 多页工程预览怎么切页」→ 本文（三段式验收总纲）；三个 action 的细节见 `devflow/ui-editor-usage.md`。
 > ⚠️ v0.27.37 起三个 op 合并为 `flythings_ui_visual(action=...)`：`"editor"` / `"edit_apply"` / `"diff"`
 > （旧名 `flythings_ui_editor` / `flythings_ui_edit_apply` / `flythings_ui_diff` 不再提供）。
 

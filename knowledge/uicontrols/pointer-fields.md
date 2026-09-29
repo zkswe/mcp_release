@@ -1,5 +1,6 @@
 # Pointer 指针仪表控件 JSON 字段规范
 
+> 检索导引：问「指针·表盘怎么做 / 指针绕的圆心不对 / rotationPoint 与 fixedPoint 怎么配 / 起始角负数 / 旋转动画 animatable·rotateSpeed」→ 本文。
 > 2026-09-07 git.com 全库学习 + basedemo/PointerDemo-New + f133 easyui 2.9.0 SDK 头文件校准（fui unpack 实测字段 + ZKPointer.h 源码，非猜测）。
 > 适用平台：全平台（fun 新工程（原 fuse）同样适用）。
 

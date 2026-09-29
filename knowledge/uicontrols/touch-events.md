@@ -1,5 +1,6 @@
 # 触摸事件与遮挡（touchable / touchPass / 谁吃掉了我的点击）
 
+> 检索导引：问「控件点不动 / 列表拖不动 / 点了没选中 / touchable 与 touchPass 怎么配 / 谁吃掉了我的点击 / setInvalid 是禁用不是重绘」→ 本文。
 > 2026-09-10 沛哥报障「控件点不动 / 列表拖不动 / 点了没选中」定位产出，V85X + EasyUI 2.9.0 实机逐条验证。
 > 2026-09-17 补充 §6（`setInvalid` 是禁用不是重绘）/ §7（嵌套 window 的卡片内部点不动）——
 > 两节均来自真机案例 `projects/translate/tdesign-miniprogram`（同一个「点哪都没反应」的两个真根因）。

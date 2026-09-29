@@ -1,5 +1,6 @@
 # Z20 / 86 面板：升级（固化）链路 · 包格式 · 数据面（真机实证）
 
+> 检索导引：问「Z20/86 面板升级链路 / sys.zkupgrade 系列属性 / 升级包格式 ZKSWEV1.0 / release.ext4 / 插卡自动升级 / 固化后卡开机 logo / 升级完整板掉网」→ 本文（真机实证）；通用出包口径见 `devflow/upgrade-pack-image.md`。
 > 检索词：Z20 升级 / 86 面板固化 / extupdate.img / update.img / release.ext4 / zkautoupgrade /
 > zkrebootdelay / sys.zkupgrade.dir / sys.zkupgrade.flag / zk_upgrade_check / libzkupgrade /
 > UpgradeMonitor / UpgradeActivity / 插卡自动升级 / U 盘升级 / MISC 开机 logo / 升级后整板掉网 /

@@ -1,5 +1,6 @@
 # 🚗 T113 车载仪表盘 CAN 应用架构（DashBoard_T113 三套工程实测）
 
+> 检索导引：问「T113 仪表盘 CAN 怎么收 / 车速转速档位怎么解包 / SocketCAN can0 500k 配置 / 仪表指针动画几种做法 / 换车型改哪里」→ 本文（BMW/Comaro/Jeep 三套工程提炼）。
 > 2026-09-07 沛哥安排：学习整车代码后提炼入库（来源：`projects/LearningProject/DashBoard_T113/`，BMW/Comaro/Jeep(Pointer) 三套仪表工程，ZKSWE Develop Team 编写）。
 > 适用：T113 平台 CAN 仪表盘（车速/转速/档位/故障灯/保养），想抄架构先看这篇。
 > ⚠️ 本文只收录 CAN 应用架构；指针动画具体实现（BMW 预渲染帧序列等）属工程自有技术，细节未收录。

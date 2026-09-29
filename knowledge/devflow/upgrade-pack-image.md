@@ -1,5 +1,6 @@
 # 固化升级：出 update.img 并刷进设备（调试推送 vs 固化升级）
 
+> 检索导引：问「出升级包 / 固化到设备 / OTA·TF 卡·ADB 升级各怎么做 / 换开机 logo / 升级后掉网 / update.img 体积上限 / 固化后 /res 变只读」→ 本文；Z20 86 面板升级链路与坑见 `hardware/z20-86panel-upgrade.md`。
 > 铁律：**「调试/跑一下/推送到设备」≠「固化/升级/交付/量产」**。
 > - 调试 = `flythings_build_ui_flow`（内部 `fun launch`）→ 临时推送到设备运行，**掉电即失**；
 > - 固化 = `flythings_pack_upgrade`（内部 `fun pack`）→ 出 **update.img**，刷进设备后**掉电保留**。

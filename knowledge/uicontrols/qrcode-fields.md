@@ -1,5 +1,6 @@
 # QRCode 二维码控件 JSON 字段规范
 
+> 检索导引：问「二维码控件怎么用 / loadQRCode 传什么内容 / 设备 SN·MAC·蓝牙名展示绑定 / codeStr 是不是运行时内容 / 码太密扫不出」→ 本文。
 > 2026-09-07 git.com 全库学习 + basedemo/QRCodeDemo-New 实测（PriceTag 价签 / 设备配网绑定场景）。
 
 ## 核心铁律

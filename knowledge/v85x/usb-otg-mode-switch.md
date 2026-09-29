@@ -1,5 +1,6 @@
 # V85X 切换 USB OTG（host/device / ADB/U盘）速查
 
+> 检索导引：问「V85X 怎么切 USB OTG / 切 ADB 模式或 U 盘模式 / 读哪个 sysfs 节点 / 和 Z21 路径区别 / 切完电脑不识别」→ 本文（速查）；完整 configfs 序列见 `v85x/usb-gadget-storage.md`。
 > 本文是「**V85X 上如何切换 USB OTG**」的直达速查（问答式），代码级细节/完整 configfs 序列
 > 见 `usb-gadget-storage.md`（同目录）。两篇关键路径一致，改动需同步。来源：CV201_PND /
 > xdv23 / xdv200300 的 `usb_monitor.cpp` 实测（V85XEMMC 平台，AW_V853）。

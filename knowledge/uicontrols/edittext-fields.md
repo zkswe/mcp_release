@@ -1,5 +1,6 @@
 # ⌨️ EditText 输入框 JSON 字段规范
 
+> 检索导引：问「输入框怎么做 / edittext 字段 / 预填内容 / 只要数字键盘 / 密码框 / 提示文案 hintText / 输入完成回调」→ 本文。
 > 2026-09-01 入库（UIlayoutDemo/edittext.ftu + EditTextDemo basedemo 实测校准，与 html2json 转换实现一致）。
 > 输入框：点击自动弹出系统键盘（默认内置键盘，不自绘），输入完成触发回调。
 

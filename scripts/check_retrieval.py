@@ -125,6 +125,18 @@ GROUPS = [
         ],
     },
     {
+        'doc': 'knowledge/devflow/selfcheck-and-bugreport.md',
+        'name': '整机自检 / 缺陷单',
+        'min_top1': 2,
+        'queries': [
+            '设备的整体状态怎么看 有没有一条命令出完整快照',
+            '怎么把设备现在的状态和上次比一比 看什么变了',
+            '我要给厂家提缺陷单 用什么格式 复现步骤怎么写',
+            '蓝牙那栏 ok=false 是工具坏了吗',
+            '提缺陷单要附证据 文件不存在会怎样',
+        ],
+    },
+    {
         'doc': 'knowledge/devflow/custom-font-config.md',
         'name': '字库配置 / 缺字',
         'min_top1': 2,
