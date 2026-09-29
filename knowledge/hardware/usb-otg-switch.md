@@ -2,7 +2,7 @@
 id: hardware-usb-otg-switch
 title: USB OTG / ADB / U盘 模式切换 + HOST 外设接入（跨平台对照：V85X / T113 / Z21）
 category: hardware
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

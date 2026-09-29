@@ -44,6 +44,17 @@ EVIDENCE_KINDS = ('real-device', 'offline', 'manual')
 REQUIRED_FIELDS = ('id', 'title', 'category', 'status', 'confidence', 'verified_at',
                    'stale_days', 'origin', 'source')
 
+# 派生文档（生成物）：front-matter 由生成器拥有 —— --retags / --fix-states / kb_verify --apply
+# 都不许改它（否则与生成器输出漂移 → --check 必红）
+DERIVED_DOCS = ('knowledge/hardware/hardware-models.md',)
+
+# 可索引状态（draft = 候选区，不进索引/检索；review = 可检索但必带标注；verified = 已验证）
+INDEXABLE_STATUS = ('verified', 'review')
+# 证据字段：`ran_at` / `output_sha256` 由 kb_verify --apply 自动写；`artifact` = 证据文件
+# （截图/日志/对比表等，观察类判据靠它，否则方法论类知识永远无法自证）
+EVIDENCE_KEYS = ('kind', 'cmd', 'artifact', 'expect_rc', 'expect_contains', 'ran_at',
+                 'output_sha256', 'timeout', 'note')
+
 # tags 合规：**只允许检索词**（禁止反引号/星号/尖括号/分号等 markdown 碎片混入索引）
 # 背景（2026-09-29 提报发现）：P1 首轮抽取把正文碎片（`<包名`、`**`、`检索词：…`）当 tags 写进 33/85 篇。
 _TAG_BAD = re.compile(r'[`*<>{}|\\"\'’“”·→←;；:：,，。、（）()\[\]【】「」!！?？]')
@@ -72,7 +83,8 @@ def tag_problems(tags):
     return bad
 
 _META_SCALARS = ('id', 'title', 'category', 'status', 'confidence', 'verified_at',
-                 'stale_days', 'origin', 'source', 'needs_evidence', 'supersedes',
+                 'reviewed_by', 'reviewed_at', 'machine_verified_at', 'stale_days',
+                 'origin', 'source', 'needs_evidence', 'supersedes',
                  'merged_into', 'applies_to_mcp')
 _META_LISTS = ('platforms', 'tags', 'related')
 _FM_RE = re.compile(r'\A---\s*\n(.*?)\n---\s*\n', re.S)
@@ -271,18 +283,43 @@ def validate_meta(meta, path=''):
     if meta.get('confidence') and meta['confidence'] not in CONFIDENCE:
         errs.append('confidence=%s 不合法（%s）' % (meta['confidence'], '/'.join(CONFIDENCE)))
     ev = meta.get('evidence') or []
-    if meta.get('status') == 'verified' and not ev and not meta.get('needs_evidence'):
-        errs.append('status=verified 但没有 evidence，也未标 needs_evidence=true（不许口头结论当已验证）')
+    if meta.get('status') == 'verified':
+        # P0-1/P0-3/P0-4：verified 必须「有可执行判据」**且**「有人审或机器复验过」
+        hard = [e for e in ev if isinstance(e, dict) and (e.get('cmd') or e.get('artifact'))]
+        if not hard:
+            errs.append('status=verified 但没有带 cmd/artifact 的 evidence（不许口头结论当已验证）')
+        if not (meta.get('reviewed_by') or meta.get('machine_verified_at')):
+            errs.append('status=verified 但无 reviewed_by / machine_verified_at（晋升必须有签字或机器复验）')
     bad_tags = tag_problems(meta.get('tags'))
     if bad_tags:
         errs.append('tags 不合规（只允许检索词，禁 markdown 碎片）: %s' % bad_tags[:4])
     for e in ev:
         if isinstance(e, dict):
-            if not e.get('cmd'):
-                errs.append('evidence 缺 cmd')
+            if not (e.get('cmd') or e.get('artifact')):
+                errs.append('evidence 缺 cmd/artifact')
             if e.get('kind') and e['kind'] not in EVIDENCE_KINDS:
                 errs.append('evidence.kind=%s 不合法' % e['kind'])
+            art = str(e.get('artifact') or '').strip()
+            if art and art not in ('-', 'n/a'):
+                p2 = os.path.join(BASE, art.replace('/', os.sep))
+                if not os.path.exists(p2):
+                    errs.append('evidence.artifact 不存在: %s（证据文件丢了就不算证据）' % art)
     return errs
+
+
+def indexable(meta):
+    """能不能进检索索引：**无 front-matter 的（如 knowledge/README.md）照旧保留**；
+    只有显式写了非可索引状态（draft/deprecated）的才挡。"""
+    if not meta:
+        return True
+    return (meta.get('status') or '') in INDEXABLE_STATUS
+
+
+def evidence_level(meta):
+    ev = [e for e in (meta.get('evidence') or []) if isinstance(e, dict)]
+    if any(e.get('cmd') or e.get('artifact') for e in ev):
+        return 'has-evidence'
+    return 'manual-only' if meta.get('needs_evidence') else 'none'
 
 
 # ── 指纹（去重） ────────────────────────────────────────────────────────────
@@ -549,6 +586,70 @@ def export_pack(out='', scope='inbox', layer='local', project_root='', kb_overri
                hint=('交回方式：把该文件发回（邮件/共享盘/工单），或直接对 open 版仓提 PR '
                      '（只改 knowledge/inbox/**）。总账侧会跑 去重 → 复验 → 问法登记 → 人工签字'))
     return res
+
+
+def local_docs(kb_override='', project_root=''):
+    """本地层/项目层里**可索引**的文档（P0-2：用户 capture 的知识必须自己能搜到）。
+
+    返回 [{path(带 kb_local/ 前缀), abs, meta, sha256, origin}]；draft/deprecated 不算。
+    """
+    out = []
+    roots = [(kb_dir(kb_override), 'local')]
+    pd = project_dir(project_root) if project_root else ''
+    if pd:
+        roots.append((pd, 'project'))
+    for d, origin in roots:
+        if not d or not os.path.isdir(d):
+            continue
+        cand = [os.path.join(d, f) for f in sorted(os.listdir(d)) if f.endswith('.md')]
+        inbox = inbox_dir(d)
+        if os.path.isdir(inbox):
+            cand += [os.path.join(inbox, f) for f in sorted(os.listdir(inbox))
+                     if f.endswith('.md')]
+        for p in cand:
+            try:
+                raw = io.open(p, encoding='utf-8').read()
+            except OSError as e:
+                out.append({'path': '', 'abs': p, 'error': '读不了: %s' % e})
+                continue
+            meta, _body, _err = parse_front_matter(raw)
+            if not indexable(meta):
+                continue
+            rel = os.path.relpath(p, d).replace(os.sep, '/')
+            out.append({'path': 'kb_local/%s/%s' % (origin, rel), 'abs': p, 'meta': meta,
+                        'sha256': hashlib.sha256(raw.encode('utf-8')).hexdigest(),
+                        'origin': origin, 'bytes': len(raw.encode('utf-8'))})
+    return out
+
+
+def build_local_index(kb_override='', project_root=''):
+    """生成本地层机读清单 `kb_index.local.json`（与总账 kb_index.json 同形状的子集）。"""
+    docs, counts = [], {'total': 0, 'byStatus': {}, 'withEvidence': 0, 'manualOnly': 0,
+                        'byOrigin': {}}
+    for d in local_docs(kb_override, project_root):
+        if not d.get('path'):
+            continue
+        meta = d['meta']
+        st = meta.get('status') or 'draft'
+        lvl = evidence_level(meta)
+        docs.append({'id': meta.get('id'), 'path': d['path'], 'title': meta.get('title'),
+                     'category': meta.get('category'), 'status': st,
+                     'evidenceLevel': lvl, 'origin': d['origin'],
+                     'verified_at': meta.get('verified_at'),
+                     'fingerprint': fingerprint(meta), 'sha256': d['sha256'],
+                     'abs': d['abs'], 'bytes': d.get('bytes', 0)})
+        counts['total'] += 1
+        counts['byStatus'][st] = counts['byStatus'].get(st, 0) + 1
+        counts['byOrigin'][d['origin']] = counts['byOrigin'].get(d['origin'], 0) + 1
+        if lvl == 'has-evidence':
+            counts['withEvidence'] += 1
+        elif lvl == 'manual-only':
+            counts['manualOnly'] += 1
+    idx = {'meta': {'schema': SCHEMA_VERSION, 'built_at': _now(), 'layer': 'local',
+                    'doc_count': counts['total']}, 'summary': counts, 'docs': docs}
+    d = _ensure(kb_dir(kb_override))
+    write_json(local_index_path(d), idx)
+    return idx
 
 
 def _pkg_version():

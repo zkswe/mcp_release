@@ -2,7 +2,7 @@
 id: v85x-tfcard-format-requirement
 title: 💾 V85X TF 录制卡格式化要求（FAT32 + 64KB 簇 + OEM=zkswe，不满足会被弹窗要求重格）
 category: v85x
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

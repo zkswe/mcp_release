@@ -2,7 +2,7 @@
 id: v85x-aw-dvr-runtime-compat
 title: 📦 V85X aw-dvr × runtime 兼容速查（版本不是越新越好 + dlopen 失败 SOP）
 category: v85x
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

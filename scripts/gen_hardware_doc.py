@@ -44,9 +44,13 @@ def front_matter():
             'stale_days': 365, 'origin': 'total',
             'source': 'scripts/gen_hardware_doc.py（由 hardware_catalog.json 派生）',
             'needs_evidence': False,
+            # 机器签字（确定性取自 catalog mtime，保证 --check 不漂）；
+            # 证据用契约用例而不是本生成器的 --check —— 后者会因元数据写入而自破（自指环）
+            'machine_verified_at': day,
+            # 证据用契约用例（**必须走 discover**：用例 import `_util`，直接 `python -m unittest tests.x` 会 ImportError）
             'evidence': [{'kind': 'offline',
-                          'cmd': 'python scripts/gen_hardware_doc.py --check',
-                          'expect_rc': 0, 'expect_contains': 'in sync'}]}
+                          'cmd': 'python -m unittest discover -s tests -p test_hardware_catalog.py -q',
+                          'expect_rc': 0, 'expect_contains': 'OK'}]}
 
 
 def collect():

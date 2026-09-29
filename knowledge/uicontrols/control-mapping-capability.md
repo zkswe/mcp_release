@@ -2,7 +2,7 @@
 id: uicontrols-control-mapping-capability
 title: 跨框架控件映射能力（op `flythings_map_control`）
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

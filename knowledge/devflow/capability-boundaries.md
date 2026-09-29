@@ -2,7 +2,7 @@
 id: devflow-capability-boundaries
 title: 能力边界清单（open 版到底能做什么、不能做什么）
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

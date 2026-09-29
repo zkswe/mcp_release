@@ -2,7 +2,7 @@
 id: hardware-z20-86panel-upgrade
 title: Z20 / 86 面板：升级（固化）链路 · 包格式 · 数据面（真机实证）
 category: hardware
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

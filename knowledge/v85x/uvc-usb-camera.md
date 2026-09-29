@@ -2,7 +2,7 @@
 id: v85x-uvc-usb-camera
 title: V85X USB 摄像头（UVC）接入 + 预览/录像/拍照（V85X 平台绑定实现）
 category: v85x
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

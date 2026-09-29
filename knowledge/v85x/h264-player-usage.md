@@ -2,7 +2,7 @@
 id: v85x-h264-player-usage
 title: 🎬 V85X 硬件 H264 播放器：官方包 `awh264player` vs 厂商门面 `zk_h264_player`
 category: v85x
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

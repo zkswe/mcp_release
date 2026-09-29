@@ -8,6 +8,7 @@ sys.stdout.reconfigure(encoding='utf-8')
 BASE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE)
 import embed_local
+import kb_local as _kbl
 
 WIKI_ROOT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.expanduser('~'), '.openclaw', 'workspace', 'wiki', 'flythings')
 OUT = sys.argv[2] if len(sys.argv) > 2 else os.path.join(BASE, 'rag_index.json')
@@ -50,6 +51,7 @@ def main():
         sys.exit(1)
     files = []  # (rel_path, abs_path)
     known = set()  # knowledge 内已有相对路径（如 esl/tag-esl.md），wiki 同名文档跳过避免重复
+    skipped, local_n, bad = [], 0, []
     if os.path.isdir(KNOWLEDGE_DIR):
         for r, _, fnames in os.walk(KNOWLEDGE_DIR):
             # 候选区/日志/报告**不进索引**（候选可见但不当依据，见 knowledge/devflow/kb-growth.md §1/§8）
@@ -57,10 +59,34 @@ def main():
             if any(p in ('inbox', '_reports', '_logs') for p in _parts):
                 continue
             for fn in fnames:
-                if fn.endswith('.md'):
-                    rel = os.path.relpath(os.path.join(r, fn), KNOWLEDGE_DIR).replace('\\', '/')
-                    known.add(rel)
-                    files.append(('knowledge/' + rel, os.path.join(r, fn)))
+                if not fn.endswith('.md'):
+                    continue
+                p2 = os.path.join(r, fn)
+                rel = os.path.relpath(p2, KNOWLEDGE_DIR).replace('\\', '/')
+                # P1.5 状态过滤：draft/deprecated **不进索引**（review 可进但检索侧带标注）
+                try:
+                    raw = open(p2, encoding='utf-8').read()
+                except OSError as e:
+                    bad.append('%s（%s）' % (rel, e))
+                    continue
+                meta, _b, _e = _kbl.parse_front_matter(raw)
+                if not _kbl.indexable(meta):
+                    skipped.append('%s(%s)' % (rel, meta.get('status') or '无元数据'))
+                    continue
+                known.add(rel)
+                files.append(('knowledge/' + rel, p2))
+    # P0-2：用户本地层/项目层也进索引 —— 否则 capture 出来的知识**用户自己都搜不到**
+    for d in _kbl.local_docs(os.environ.get('FLYTHINGS_KB_DIR', '')):
+        if d.get('path') and d.get('abs'):
+            files.append((d['path'], d['abs']))
+            local_n += 1
+    if local_n:
+        print('  并入本地层知识: %d 篇（源：%s）' % (local_n, _kbl.kb_dir()))
+    if skipped:
+        print('  跳过未进索引（draft/deprecated）: %d 篇：%s'
+              % (len(skipped), ', '.join(skipped[:5])))
+    if bad:
+        print('  ⚠️ 读不了的文档（已跳过，不静默）: %s' % '; '.join(bad[:3]))
     for root in [rt for rt in collect_roots() if os.path.abspath(rt) != os.path.abspath(KNOWLEDGE_DIR)]:
         for r, _, fnames in os.walk(root):
             for fn in fnames:
@@ -86,6 +112,11 @@ def main():
     json.dump({'model': 'bge-small-zh-v1.5-local', 'dim': 512, 'chunks': chunks},
               open(OUT, 'w', encoding='utf-8'), ensure_ascii=False)
     print(f'saved -> {OUT} ({os.path.getsize(OUT) / 1024 / 1024:.1f} MB)', flush=True)
+    # P0-2：本地层自己的机读清单（检索侧合并用；与总账 kb_index.json 同形状子集）
+    lidx = _kbl.build_local_index()
+    print('  本地层清单 -> %s（%d 篇，源 %s）'
+          % (_kbl.local_index_path(_kbl.kb_dir()), lidx['meta']['doc_count'], _kbl.kb_dir()),
+          flush=True)
 
 
 if __name__ == '__main__':

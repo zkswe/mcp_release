@@ -2,7 +2,7 @@
 id: uicontrols-radiogroup-checkbox-fields
 title: RadioGroup 单选组 / CheckBox 复选框 JSON 字段规范
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

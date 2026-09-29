@@ -2,7 +2,7 @@
 id: devflow-prototype-flow
 title: 🏗️ 一句话需求 → 线框确认 → UI 美化 流程（沛哥定规 2026-09-02）
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

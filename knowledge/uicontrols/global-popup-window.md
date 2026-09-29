@@ -2,7 +2,7 @@
 id: uicontrols-global-popup-window
 title: 工程自定义系统窗口 / 全局弹框（含 car 工程 btcall 来电弹框做法）
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

@@ -2,7 +2,7 @@
 id: devflow-gui-controls-gap
 title: 现代化 GUI 控件差距盘点（FlyThings 现状 vs 需求）
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

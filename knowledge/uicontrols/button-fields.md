@@ -2,7 +2,7 @@
 id: uicontrols-button-fields
 title: Button 按键控件 JSON 字段规范 + 长按/循环重复配置
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

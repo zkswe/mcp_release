@@ -2,7 +2,7 @@
 id: devflow-custom-widget
 title: FlyThings 自定义控件方法（lib-ext_widgets 拆解）
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

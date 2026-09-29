@@ -13,7 +13,7 @@ python scripts/check_consistency.py --with-tests
 ```
 
 依赖：只用标准库 + 仓库已有依赖（Pillow 缺失时图像相关用例自动 skip）。**不连真机**。
-当前规模：**404 项**（1 项按环境 skip；含 2026-09-29 新增 test_package_cards.py 7 项 + `test_selfcheck_bugreport.py` 13 项 + `test_baseline_testrun.py` 28 项）。
+当前规模：**406 项**（1 项按环境 skip；含 2026-09-29 新增 test_package_cards.py 7 项 + `test_selfcheck_bugreport.py` 13 项 + `test_baseline_testrun.py` 28 项）。
 
 > 2026-09-27（v0.27.115-open）：`test_device_screenshot_probe.py` 新增 7 项（+22 → 共 18）——
 > 视频层抓帧的 **vdec 通道口径**：默认必须是 chn 0（`zkshot ... vdec 0 0`，向后兼容）、

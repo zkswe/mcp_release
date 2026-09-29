@@ -2,7 +2,7 @@
 id: t113-car-dashboard-can-arch
 title: 🚗 T113 车载仪表盘 CAN 应用架构（DashBoard_T113 三套工程实测）
 category: t113-car
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

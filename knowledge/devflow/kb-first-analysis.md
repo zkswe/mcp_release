@@ -2,7 +2,7 @@
 id: devflow-kb-first-analysis
 title: 开发先检索铁律：AI 分析优先用 MCP 知识库，禁止盲试/猜测
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

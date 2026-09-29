@@ -2,7 +2,7 @@
 id: devflow-ui-layout-verify
 title: UI 布局可视化编辑与像素验收（json 为源 · 拖拽微调 · 0 token 校验）
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

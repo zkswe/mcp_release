@@ -2,7 +2,7 @@
 id: uicontrols-nine-patch-rule
 title: 🧵 FT-009 .9.png 生成规则（必读）
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

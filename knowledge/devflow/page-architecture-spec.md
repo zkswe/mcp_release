@@ -2,7 +2,7 @@
 id: devflow-page-architecture-spec
 title: 页面架构规范：ftu vs 同 ftu 内多窗口 + src 业务域目录命名
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

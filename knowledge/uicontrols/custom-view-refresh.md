@@ -2,7 +2,7 @@
 id: uicontrols-custom-view-refresh
 title: 自定义 view / 自绘帧的「刷新口径」（GameView 那一套）
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

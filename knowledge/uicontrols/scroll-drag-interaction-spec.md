@@ -2,7 +2,7 @@
 id: uicontrols-scroll-drag-interaction-spec
 title: 滑动/拖拽手感规范：dragMaxDis / edgeEffect / autoRollback / rollSpeed
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

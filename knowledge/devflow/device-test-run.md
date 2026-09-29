@@ -5,6 +5,7 @@ category: devflow
 status: verified
 confidence: offline
 verified_at: 2026-09-29
+machine_verified_at: "2026-09-29 20:45:46"
 stale_days: 180
 origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
@@ -12,7 +13,7 @@ needs_evidence: false
 platforms: []
 tags: [JUnit 报告, 像素基线, 基线回归, 首次怎么建基线, 比不到基线是过还是没过, 多设备并行, 测试用例 JSON 怎么写, touch 注入怎么批量跑]
 evidence:
-  - {kind: offline, cmd: python -m unittest tests.test_baseline_testrun -q, expect_rc: 0, expect_contains: OK}
+  - {kind: offline, cmd: python -m unittest tests.test_baseline_testrun -q, expect_rc: 0, expect_contains: OK, ran_at: "2026-09-29 20:45:46", output_sha256: d4b1f449069ce6930e5a978720fcfa60d80d94054422a007e02051dd6b0b67df}
 ---
 # 多设备并行测试跑批 + 机读报告（`flythings_test_run`）
 

@@ -2,7 +2,7 @@
 id: uicontrols-json-layer-rules
 title: 控件层级规则（容器 → 子内容矩阵，双源实证）
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

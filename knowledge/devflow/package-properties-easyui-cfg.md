@@ -2,7 +2,7 @@
 id: devflow-package-properties-easyui-cfg
 title: ⚙️ package.properties / EasyUI.cfg 工程配置机制（屏幕旋转等）
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

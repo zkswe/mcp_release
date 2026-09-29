@@ -2,7 +2,7 @@
 id: uicontrols-cross-thread-ui-rule
 title: 跨线程操作 UI 规则（沛哥 2026-09-07 确认）
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

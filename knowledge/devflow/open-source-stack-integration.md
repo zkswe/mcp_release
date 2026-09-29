@@ -2,12 +2,12 @@
 id: devflow-open-source-stack-integration
 title: 开源协议栈/第三方库怎么接进 FlyThings 工程（非 GUI 生态借用）
 category: devflow
-status: draft
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180
 origin: total
-source: 2026-09-29 PocketGame（V851s）实战归纳 + MCP 包卡/packages 实测口径
+source: 2026-09-29 PocketGame（V851s）实战归纳 + MCP 包卡/packages 实测口径 ｜ 2026-09-29 由候选区晋升为 review（可检索+标注）
 needs_evidence: true
 platforms: [V85X, Z20, Z21, F133, T113]
 tags: [开源库, 第三方库, 协议栈, curl, mbedtls, openssl, mqtt, sqlite, libc, musl, glibc, 静态库, dlopen, lib-no-link]

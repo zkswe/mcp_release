@@ -55,19 +55,60 @@ class TestFrontMatter(_KBBase):
     def test_validate_meta_rules(self):
         good = {'id': 'a', 'title': 't', 'category': 'devflow', 'status': 'verified',
                 'confidence': 'offline', 'verified_at': '2026-09-29', 'stale_days': 180,
-                'origin': 'total', 'source': 's',
+                'origin': 'total', 'source': 's', 'machine_verified_at': '2026-09-29 10:00:00',
                 'evidence': [{'kind': 'offline', 'cmd': 'echo'}]}
         self.assertEqual(kbl.validate_meta(good), [])
-        no_ev = dict(good, evidence=[])
-        self.assertTrue(any('needs_evidence' in e for e in kbl.validate_meta(no_ev)),
-                        'verified 无证据必须报错')
-        ok2 = dict(no_ev, needs_evidence=True)
-        self.assertEqual(kbl.validate_meta(ok2), [])
+        # P0-4：verified 无签字也没机验 → 报错
+        no_sign = dict(good)
+        no_sign.pop('machine_verified_at')
+        self.assertTrue(any('reviewed_by' in e for e in kbl.validate_meta(no_sign)),
+                        'verified 无签字/机验必须报错')
+        # P0-3：evidence 必须带 cmd 或 artifact
+        no_ev = dict(good, evidence=[{'kind': 'manual'}])
+        self.assertTrue(any('cmd/artifact' in e for e in kbl.validate_meta(no_ev)))
+        # P0-3：artifact 文件不存在 → 报错（证据文件丢了不算证据）
+        ghost = dict(good, evidence=[{'kind': 'offline', 'artifact': 'no/such/file.png'}])
+        self.assertTrue(any('artifact 不存在' in e for e in kbl.validate_meta(ghost)))
+        # review 不需要签字（可检索但带标注）
+        rev = dict(good, status='review', evidence=[])
+        rev.pop('machine_verified_at')
+        self.assertEqual(kbl.validate_meta(rev), [])
         bad_status = dict(good, status='done')
         self.assertTrue(any('status' in e for e in kbl.validate_meta(bad_status)))
         missing = dict(good)
         missing.pop('source')
         self.assertTrue(any('source' in e for e in kbl.validate_meta(missing)))
+
+    def test_indexable_and_evidence_level(self):
+        self.assertTrue(kbl.indexable({'status': 'verified'}))
+        self.assertTrue(kbl.indexable({'status': 'review'}))
+        self.assertFalse(kbl.indexable({'status': 'draft'}))
+        self.assertFalse(kbl.indexable({'status': 'deprecated'}))
+        self.assertEqual(kbl.evidence_level(
+            {'evidence': [{'cmd': 'x'}]}), 'has-evidence')
+        self.assertEqual(kbl.evidence_level(
+            {'evidence': [], 'needs_evidence': True}), 'manual-only')
+        self.assertEqual(kbl.evidence_level({'evidence': []}), 'none')
+
+    def test_local_layer_docs_respect_status(self):
+        import kb_local as _k
+        d = _k.kb_dir()
+        _k._ensure(d)
+        # draft（候选）不入；review 入
+        _k.capture('本地 draft 探针')          # status=draft
+        p = os.path.join(d, 'local_review.md')
+        with io.open(p, 'w', encoding='utf-8', newline='\n') as f:
+            f.write(_k.dump_front_matter(
+                {'id': 'local-x', 'title': '本地 review 探针', 'category': 'devflow',
+                 'status': 'review', 'confidence': 'manual', 'verified_at': '2026-09-29',
+                 'stale_days': 180, 'origin': 'local', 'source': 'unit-test',
+                 'needs_evidence': True}, '# 本地 review 探针\n'))
+        paths = [x.get('path') for x in _k.local_docs()]
+        self.assertTrue(any(p.endswith('local_review.md') for p in paths if p), paths)
+        self.assertFalse(any('inbox' in (p or '') for p in paths), 'inbox(draft) 不该进索引候选')
+        idx = _k.build_local_index()
+        self.assertGreaterEqual(idx['summary']['total'], 1)
+        self.assertTrue(os.path.isfile(_k.local_index_path(d)))
 
     def test_fingerprint_stable_and_sensitive(self):
         m1 = {'title': 'Z20 注入工具落点回退', 'platforms': ['Z20'],

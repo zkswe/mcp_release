@@ -2,7 +2,7 @@
 id: uicontrols-listview-image-cache
 title: listview 封面刷新卡顿：每次都重解码 → 两件套（尺寸 == 显示盒 + ImageCache）
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

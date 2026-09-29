@@ -2,7 +2,7 @@
 id: v85x-dvr-recorder-guide
 title: 🎥 V85X DVR 录制功能开发 Playbook（端到端：工程 → UI → 摄像头 → 录像 → 回放 → 存储 → 排障）
 category: v85x
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

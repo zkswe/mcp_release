@@ -549,20 +549,34 @@ _KB_INDEX_CACHE = {}
 
 
 def _kb_index_map():
-    """`knowledge/kb_index.json` 的 path → 元数据（含 status/evidenceLevel），进程内缓存。"""
+    """path → 元数据（status/evidenceLevel/origin），总账索引 + **本地层索引**合并，进程内缓存。
+
+    P0-2：本地层（用户 capture 出来的）必须也能被标注到 origin=local，检索侧才能“本地优先”。
+    """
     if 'map' not in _KB_INDEX_CACHE:
         m, err = {}, ''
         try:
             import kb_local as _kbl
-            idx = _kbl.load_json(os.path.join(_kbl.TOTAL_KB, 'kb_index.json'))
-            for d in (idx.get('docs') or []):
-                if d.get('path'):
-                    m[d['path']] = d
-            err = idx.get('_error', '')
+            for path, org in ((os.path.join(_kbl.TOTAL_KB, 'kb_index.json'), 'total'),
+                              (_kbl.local_index_path(_kbl.kb_dir()), 'local')):
+                idx = _kbl.load_json(path)
+                for d in (idx.get('docs') or []):
+                    if d.get('path'):
+                        d.setdefault('origin', org)
+                        m[d['path']] = d
+                err = err or idx.get('_error', '')
         except Exception as e:                      # 索引读不了不影响检索，只丢标注
             err = repr(e)
         _KB_INDEX_CACHE.update({'map': m, 'err': err})
     return _KB_INDEX_CACHE['map'], _KB_INDEX_CACHE.get('err', '')
+
+
+_LOCAL_BOOST = 1.15        # 本地层同主题优先（更贴近现场）：仅改排序，不改写分数
+
+
+def _kb_index_entry(path):
+    km, _err = _kb_index_map()
+    return km.get(path) or {}
 
 
 def _annotate_kb_hits(hits):
@@ -579,11 +593,13 @@ def _annotate_kb_hits(hits):
             continue
         h['status'] = d.get('status')
         h['evidenceLevel'] = d.get('evidenceLevel')
+        h['origin'] = d.get('origin')
         h['verifiedAt'] = d.get('verified_at')
-        if (d.get('status') or '') != 'verified' or (d.get('evidenceLevel') or '') == 'none':
-            h['advisory'] = ('本条未附可执行判据/未完全验证（%s）：可当线索，结论前请核对原文'
+        lvl = d.get('evidenceLevel') or ''
+        if (d.get('status') or '') != 'verified' or lvl != 'has-evidence':
+            h['advisory'] = ('本条状态=%s / 证据等级=%s：可当线索，结论前请核对原文'
                              '或按 evidence 复验（法见 knowledge/devflow/kb-growth.md）'
-                             % (d.get('evidenceLevel') or d.get('status') or 'unknown'))
+                             % (d.get('status') or '?', lvl or 'none'))
     return hits
 
 
@@ -609,6 +625,12 @@ def flythings_knowledge_search(query: str, k: int = 3) -> str:
                                      'hint': '重试一次；仍失败检查 rag_index.json 与模型文件是否完整',
                                      'retryable': True},
                            'warnings': warnings}, ensure_ascii=False)
+    # P0-2：本地层同主题优先（更贴近现场）——只改**排序**，不改分数字段
+    _km0, _e0 = _kb_index_map()
+    if any((_km0.get(c.get('path')) or {}).get('origin') == 'local' for _s, c in top):
+        top = sorted(top, key=lambda sc: float(sc[0]) * (_LOCAL_BOOST if (
+            (_km0.get(sc[1].get('path')) or {}).get('origin') == 'local') else 1.0),
+                     reverse=True)
     hits = _annotate_kb_hits([
         {'path': c['path'], 'score': round(float(s), 4), 'text': c['text'],
          'source': 'knowledge（实践）' if (c.get('path') or '').startswith('knowledge/')

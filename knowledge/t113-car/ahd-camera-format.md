@@ -2,7 +2,7 @@
 id: t113-car-ahd-camera-format
 title: 📹 T113 倒车摄像头格式参数表（AHD/TVI/CVBS/DM5885）
 category: t113-car
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

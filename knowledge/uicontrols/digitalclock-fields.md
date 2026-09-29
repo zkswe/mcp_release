@@ -2,7 +2,7 @@
 id: uicontrols-digitalclock-fields
 title: DigitalClock 数字时钟控件 JSON 字段规范
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

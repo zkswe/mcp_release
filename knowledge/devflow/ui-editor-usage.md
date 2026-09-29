@@ -2,7 +2,7 @@
 id: devflow-ui-editor-usage
 title: UI 可视化编辑器（ui_editor）用法与能力
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

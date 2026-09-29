@@ -2,7 +2,7 @@
 id: devflow-pixel-analysis-ai
 title: 抓帧读图：程序化像素分析 + 像素级渲染坑
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

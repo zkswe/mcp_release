@@ -2,7 +2,7 @@
 id: devflow-ftu-json-pipeline
 title: ftu 是什么：ftu 开发 / ftu 编辑 / ftu 修改 / ftu 格式 / ftu 逆向（ftu 转 json / unpack）（UI 文件 main.ftu 与 json 的关系）
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

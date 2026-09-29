@@ -2,7 +2,7 @@
 id: devflow-deploy-scene-map
 title: 部署/调试场景 → 工具动作映射（禁止自造部署命令）
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

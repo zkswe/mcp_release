@@ -2,7 +2,7 @@
 id: devflow-adb-and-device-selection
 title: ADB 随包 + 设备选择 + 「跑起来了没」（v0.27.84）
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

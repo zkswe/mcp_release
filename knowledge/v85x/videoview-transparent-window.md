@@ -2,7 +2,7 @@
 id: v85x-videoview-transparent-window
 title: 🖥️ V85X 摄像头自维护出图 → videoView 零代码透出视频层（透明渲染区域）
 category: v85x
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

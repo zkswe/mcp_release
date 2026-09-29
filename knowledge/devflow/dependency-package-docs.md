@@ -2,7 +2,7 @@
 id: devflow-dependency-package-docs
 title: 依赖包用法文档（packages/<包>/package.yaml）怎么读、怎么查
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

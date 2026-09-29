@@ -2,7 +2,7 @@
 id: devflow-canvas-panel-coverage
 title: 画布必须盖满面板（全屏覆盖）—— 否则底部露出「上一款应用」的残留帧（伪闪烁）
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

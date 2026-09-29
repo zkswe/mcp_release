@@ -2,7 +2,7 @@
 id: v85x-usb-gadget-storage
 title: V85X USB OTG 切换与 Device 存储（ADB / U盘 + EMMC / TF 卡双介质）
 category: v85x
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

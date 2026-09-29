@@ -2,7 +2,7 @@
 id: devflow-custom-font-config
 title: 🔤 自定义字库（fun build/launch 流程，非 IDE）— 权威规则
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

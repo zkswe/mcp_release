@@ -2,7 +2,7 @@
 id: uicontrols-pagewindow-fields
 title: PageWindow 多页窗口控件 JSON 字段规范
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

@@ -5,6 +5,7 @@ category: devflow
 status: verified
 confidence: real-device
 verified_at: 2026-09-29
+machine_verified_at: "2026-09-29 20:45:45"
 stale_days: 180
 origin: total
 source: 2026-09-29 真机实测（两台 Z20 并行跑测试跑批时 push /data/touch 失败）
@@ -12,7 +13,7 @@ needs_evidence: false
 platforms: [Z20]
 tags: [touch 起不来, 设备存储写满, 部署工具放哪, tmp 能不能放工具, 注入失败怎么办]
 evidence:
-  - {kind: offline, cmd: python -m unittest tests.test_baseline_testrun.TestTouchFallback -q, expect_rc: 0, expect_contains: OK}
+  - {kind: offline, cmd: python -m unittest tests.test_baseline_testrun.TestTouchFallback -q, expect_rc: 0, expect_contains: OK, ran_at: "2026-09-29 20:45:45", output_sha256: 2a50b4749107e50e3993c9a59df48e8d8cebd81e26a286e83bb83d7fe81b2d90}
 ---
 # 设备 /data 写满导致注入工具推不上去（落点回退）
 

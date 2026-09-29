@@ -5,6 +5,7 @@ category: hardware
 status: verified
 confidence: offline
 verified_at: 2026-09-29
+machine_verified_at: 2026-09-29
 stale_days: 365
 origin: total
 source: scripts/gen_hardware_doc.py（由 hardware_catalog.json 派生）
@@ -12,7 +13,7 @@ needs_evidence: false
 platforms: []
 tags: [硬件, 型号库, 平台, 分辨率, 规格, 主控]
 evidence:
-  - {kind: offline, cmd: python scripts/gen_hardware_doc.py --check, expect_rc: 0, expect_contains: in sync}
+  - {kind: offline, cmd: python -m unittest discover -s tests -p test_hardware_catalog.py -q, expect_rc: 0, expect_contains: OK}
 ---
 # 硬件型号库（平台 → 型号 → 规格 / 预设参数）
 

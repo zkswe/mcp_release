@@ -2,7 +2,7 @@
 id: devflow-cli-fun-toolchain
 title: 🧰 fun 命令行工具链（原 fuse 更名；2026-09-28 内部又改成 fsc、产物目录 `.fun/` → `.fsc/`）+ 宏/产物目录改名
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

@@ -2,7 +2,7 @@
 id: devflow-activity-code-skeleton
 title: FlyThings 工程代码骨架（35 官方 Demo 深度阅读提炼）
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

@@ -2,7 +2,7 @@
 id: uicontrols-system-windows
 title: 系统级窗口（状态栏 statusbar / 导航栏 navibar / 屏保 screensaver / 输入法 IME）
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

@@ -2,7 +2,7 @@
 id: v85x-display-layer-debug
 title: 🖥️ V85X 显示分层调试：releaseLayer 图层释放 / UI 透出 / 回放旋转
 category: v85x
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

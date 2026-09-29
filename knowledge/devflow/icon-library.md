@@ -2,7 +2,7 @@
 id: devflow-icon-library
 title: 🎨 UI 图标库（Tabler, MIT）— 权威规则
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

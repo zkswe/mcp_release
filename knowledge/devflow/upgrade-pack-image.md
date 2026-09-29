@@ -2,7 +2,7 @@
 id: devflow-upgrade-pack-image
 title: 固化升级：出 update.img 并刷进设备（调试推送 vs 固化升级）
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

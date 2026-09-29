@@ -2,7 +2,7 @@
 id: uicontrols-text-box-height-rule
 title: 字号下限与「文本盒抬高度」规则（抬高度只对有文字的盒有效）
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

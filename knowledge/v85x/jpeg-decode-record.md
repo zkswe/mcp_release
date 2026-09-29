@@ -2,7 +2,7 @@
 id: v85x-jpeg-decode-record
 title: V85X JPEG 硬件解码与 MJPEG 录像编码用法（V853 照片显示 / UVC 录制 mp4/ts）
 category: v85x
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

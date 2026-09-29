@@ -2,7 +2,7 @@
 id: uicontrols-slidewindow-fields
 title: 🎠 SlideWindow 滑动窗口 JSON 字段规范
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

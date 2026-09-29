@@ -2,7 +2,7 @@
 id: devflow-platform-translate
 title: 跨框架 / 竞品 UI 迁移口径（映射表 + 四阶段路线 + 双平台）
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

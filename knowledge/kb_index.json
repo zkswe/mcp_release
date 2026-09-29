@@ -1,29 +1,30 @@
 {
  "meta": {
   "schema": 1,
-  "built_at": "2026-09-29 20:36:41",
+  "built_at": "2026-09-29 20:50:55",
   "mcp_version": "0.27.125-open",
-  "doc_count": 85,
-  "source_hash": "a07b96074b5ba683a0a44b4d2791c4ca"
+  "doc_count": 87,
+  "source_hash": "a1e46cbcf72187983c524b5406613f88"
  },
  "summary": {
-  "total": 85,
+  "total": 87,
   "byCategory": {
-   "devflow": 35,
+   "devflow": 37,
    "uicontrols": 34,
    "hardware": 4,
    "t113-car": 2,
    "v85x": 10
   },
   "byStatus": {
-   "verified": 85
+   "review": 82,
+   "verified": 5
   },
   "withEvidence": 5,
-  "needsEvidence": 80,
+  "needsEvidence": 82,
   "noQueries": 72,
   "stale": 0,
-  "inbox": 2,
-  "manualOnly": 80
+  "inbox": 0,
+  "manualOnly": 82
  },
  "docs": [
   {
@@ -44,7 +45,7 @@
     "串口模板",
     "SysApp"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -54,8 +55,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 13004,
-   "sha256": "d86a38050902f9b8675b1c476222e27729e5f510ce5a8ce0abcb6ccae99bbdad",
+   "bytes": 13002,
+   "sha256": "7fb571c5f1f68789de14db8006b08c881c715f9b1dd286b767b7a26110fa4018",
    "fingerprint": "a9622915611b5096",
    "ageDays": 0,
    "frontMatterError": ""
@@ -83,7 +84,7 @@
     "设备上跑的还是旧版",
     "launch 默认推设备吗"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -93,8 +94,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 10837,
-   "sha256": "c8c4b2dae98755a4caa6a81cdac24ee091bc35a8728658a97474adff21e67393",
+   "bytes": 10835,
+   "sha256": "34c1a46d921f435a5f4ff900f11a744ba7cb507b8e825cc5ebc7e447d4f6bf70",
    "fingerprint": "8b01d7ddb7ba8f53",
    "ageDays": 0,
    "frontMatterError": ""
@@ -120,7 +121,7 @@
     "bin_tools",
     "README"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -130,8 +131,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 3976,
-   "sha256": "f52e7cd662bf5498653c86a05a88732b5ad061a34103bbd80cc873d4fd529d74",
+   "bytes": 3974,
+   "sha256": "fa75cc12d928f43698d86349a47d5125837653994a261ea7b913211b8efddb2b",
    "fingerprint": "9639693f18beb287",
    "ageDays": 0,
    "frontMatterError": ""
@@ -154,7 +155,7 @@
     "canvas",
     "1280x750"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -164,8 +165,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 4923,
-   "sha256": "0348d54103145618173050b07ff3e5585042a4877f952baf70a69050ed9a4f60",
+   "bytes": 4921,
+   "sha256": "e4fa78edbbfceb2c7ad4248afe8690832dea71700728cb34a985ff6d0ad57b05",
    "fingerprint": "e7f961d720222f28",
    "ageDays": 0,
    "frontMatterError": ""
@@ -185,7 +186,7 @@
     "不支持的方案",
     "该找厂家还是自己写"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -195,8 +196,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": true,
-   "bytes": 6081,
-   "sha256": "b06135199cefdc79838929a14cb25624bf00850054a0bf12afad4ea3bfb603fd",
+   "bytes": 6079,
+   "sha256": "afb918c9791eceddd25ae97c2874227d3e606278b24ec289fe23323cebf2b3f4",
    "fingerprint": "05cd5df78148f027",
    "ageDays": 0,
    "frontMatterError": ""
@@ -223,7 +224,7 @@
     "产物",
     "注册表均双向兼容"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -233,8 +234,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 18715,
-   "sha256": "235addfaae9fb3860ae6fd3fe2defe385dd96790b239040eb73cdc4681896081",
+   "bytes": 18713,
+   "sha256": "509ed4aba072fb84d8caf30c4dafe78dd4271781863f7b2947a61a1e6c624227",
    "fingerprint": "98f6f2a0b48343b1",
    "ageDays": 0,
    "frontMatterError": ""
@@ -258,7 +259,7 @@
     "不需要",
     "以本条为准"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -268,9 +269,50 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": true,
-   "bytes": 18589,
-   "sha256": "3b162fe103badac10a9bf472786b2c5f492a1e08791cb6fc6c432ec36192f634",
+   "bytes": 18587,
+   "sha256": "02b0afa1f455c3d484f390497b645dc9ec86ba5d11d3183e5ebecb9c7edb938d",
    "fingerprint": "b3171efee0e32f25",
+   "ageDays": 0,
+   "frontMatterError": ""
+  },
+  {
+   "id": "devflow-custom-render-paths",
+   "path": "knowledge/devflow/custom-render-paths.md",
+   "title": "自定义 GUI 渲染五条路（在 FlyThings 上借开源渲染生态 / 自绘画面）",
+   "category": "devflow",
+   "platforms": [
+    "V85X",
+    "Z20"
+   ],
+   "tags": [
+    "自定义渲染",
+    "自绘",
+    "canvas",
+    "ZKPainter",
+    "离屏渲染",
+    "LVGL",
+    "cairo",
+    "SDL",
+    "stb",
+    "disp 图层",
+    "硬件合成",
+    "帧缓冲",
+    "fb0",
+    "releaseLayer"
+   ],
+   "status": "review",
+   "confidence": "manual",
+   "verified_at": "2026-09-29",
+   "stale_days": 180,
+   "origin": "total",
+   "evidenceCount": 0,
+   "evidence": [],
+   "evidenceLevel": "manual-only",
+   "needsEvidence": true,
+   "hasQueries": true,
+   "bytes": 8090,
+   "sha256": "69c7e2239ae8ec1d72132b10a9830d61b5c27511453f93d438183c1b5a853622",
+   "fingerprint": "076ff5cdd5b02b6c",
    "ageDays": 0,
    "frontMatterError": ""
   },
@@ -288,7 +330,7 @@
     "方法论文档只提炼模式与骨架",
     "不整段复制实现"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -298,8 +340,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 12301,
-   "sha256": "59cda35500a1e1996bda4aedd04d5f57582001a83370e574f048aee8fd0b8ebc",
+   "bytes": 12299,
+   "sha256": "f01bee31548d4eb84b61f15798ba92a65f2cfcd62b803c3aa256dc809d0f486c",
    "fingerprint": "432cbc3954403590",
    "ageDays": 0,
    "frontMatterError": ""
@@ -313,7 +355,7 @@
     "Z20"
    ],
    "tags": [],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -323,8 +365,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": true,
-   "bytes": 4138,
-   "sha256": "64cc545618f9472842ecd3840d493ce856a2fd4c8c764a9edde5816af5664323",
+   "bytes": 4136,
+   "sha256": "217080999b94c13ddf82883e151046d24087913b115f7d972f797849b890a8ec",
    "fingerprint": "b1961da23e4696a7",
    "ageDays": 0,
    "frontMatterError": ""
@@ -347,7 +389,7 @@
     "类请求时",
     "必须调用 MCP 工具"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -357,8 +399,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 5680,
-   "sha256": "f7038ef95ed57da74dcc866bc35b3fbefaa9453c582b43e7d1704ce7b3cf70f5",
+   "bytes": 5678,
+   "sha256": "f7392a8afdb107f0d812b15d9cce5f54744534e8a7aa8feca3145e735a6895aa",
    "fingerprint": "6a48881bec36bd1a",
    "ageDays": 0,
    "frontMatterError": ""
@@ -393,20 +435,23 @@
     {
      "kind": "real-device",
      "cmd": "%ADB% -s %DEVICE% shell getprop init.svc.zkswe",
-     "expect_contains": "running"
+     "expect_contains": "running",
+     "ran_at": "2026-09-29 20:45:45"
     },
     {
      "kind": "offline",
      "cmd": "python -m unittest tests.test_baseline_testrun.TestTouchFallback -q",
      "expect_rc": 0,
-     "expect_contains": "OK"
+     "expect_contains": "OK",
+     "ran_at": "2026-09-29 20:45:45",
+     "output_sha256": "2a50b4749107e50e3993c9a59df48e8d8cebd81e26a286e83bb83d7fe81b2d90"
     }
    ],
    "evidenceLevel": "has-evidence",
    "needsEvidence": false,
    "hasQueries": false,
-   "bytes": 6676,
-   "sha256": "19d3193fcd5f47de1cdaa53e986bd6599177ad0b5e4ea1cbbe1b2a85e3690cbe",
+   "bytes": 6862,
+   "sha256": "bd8e663ca65aef7ba9bbf1391ae39cea5d0057fb75bc1910bba37807b5a66b7a",
    "fingerprint": "4f577c548e773334",
    "ageDays": 0,
    "frontMatterError": ""
@@ -430,7 +475,7 @@
     "瞬时元素抓不到",
     "踩坑细节在这里"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -440,8 +485,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": true,
-   "bytes": 15628,
-   "sha256": "971a224d13a7a845bd387026ca4f7098edf7801cbbc64dd0a2ea101f4ffeea2a",
+   "bytes": 15626,
+   "sha256": "c8baffaf47864eae3ae51221ced38d95da32d77cd94c938db5b3a70f448cc9d2",
    "fingerprint": "e71ffaccdce70d31",
    "ageDays": 0,
    "frontMatterError": ""
@@ -472,14 +517,16 @@
      "kind": "offline",
      "cmd": "python -m unittest tests.test_baseline_testrun.TestTouchFallback -q",
      "expect_rc": 0,
-     "expect_contains": "OK"
+     "expect_contains": "OK",
+     "ran_at": "2026-09-29 20:45:45",
+     "output_sha256": "2a50b4749107e50e3993c9a59df48e8d8cebd81e26a286e83bb83d7fe81b2d90"
     }
    ],
    "evidenceLevel": "has-evidence",
    "needsEvidence": false,
    "hasQueries": false,
-   "bytes": 2188,
-   "sha256": "68d1ec80f77a51435746541ec73b2e4a6c0773cda111a3349a18686f97021c7d",
+   "bytes": 2343,
+   "sha256": "970a615b115ea0d563aa66431ce069961778cfd44937f8c56bfbdaafd4ca687b",
    "fingerprint": "d44bc6ba4d2b08b5",
    "ageDays": 0,
    "frontMatterError": ""
@@ -511,14 +558,16 @@
      "kind": "offline",
      "cmd": "python -m unittest tests.test_baseline_testrun -q",
      "expect_rc": 0,
-     "expect_contains": "OK"
+     "expect_contains": "OK",
+     "ran_at": "2026-09-29 20:45:46",
+     "output_sha256": "d4b1f449069ce6930e5a978720fcfa60d80d94054422a007e02051dd6b0b67df"
     }
    ],
    "evidenceLevel": "has-evidence",
    "needsEvidence": false,
    "hasQueries": true,
-   "bytes": 8751,
-   "sha256": "5a35ce2a4b16456fb014392e878b3006aff0d76e5f390a7ac229181f6d88b50c",
+   "bytes": 8906,
+   "sha256": "d4c84efcd56884acec7f4caaae813f79907bc0ff1f0c8d588c4fc7a04aad7f5e",
    "fingerprint": "32a57a2799c9b6f0",
    "ageDays": 0,
    "frontMatterError": ""
@@ -547,7 +596,7 @@
     "屏幕方向切换",
     "两套 ftu"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -557,8 +606,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 10818,
-   "sha256": "e0810ffb4b7dc495430450bfc7e5a141292f24731101b2d3d76628585400779c",
+   "bytes": 10816,
+   "sha256": "aa0b9c333fbc8e6a19ac9ee66e4be80e33c8642b86fe32854aa18443c8f98b0f",
    "fingerprint": "373c6181306d886c",
    "ageDays": 0,
    "frontMatterError": ""
@@ -581,7 +630,7 @@
     "拖控件",
     "是另一套"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -591,8 +640,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 14422,
-   "sha256": "705d5aa0d945070491423d255bfc1b6c991686aa9bbb3d38f6a66ea6e3636acd",
+   "bytes": 14420,
+   "sha256": "56174aaf7bf49293b687434792b46086e8743d014a840a627c3c5465fcfc5569",
    "fingerprint": "94a50fa05d87d492",
    "ageDays": 0,
    "frontMatterError": ""
@@ -608,7 +657,7 @@
     "md 方法论逐个补齐",
     "草稿待确认入库"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -618,8 +667,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 6999,
-   "sha256": "653d095ca480eff7ec12f3c329a5c14cb9182339a4e1d61b4d8cfe06283e19df",
+   "bytes": 6997,
+   "sha256": "3a9e304c22c32bb07385b3ce9c247bd5c88065ff93f5074f7e669d84447055e9",
    "fingerprint": "304971a307c71f10",
    "ageDays": 0,
    "frontMatterError": ""
@@ -638,7 +687,7 @@
     "md",
     "内容以本页为准"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -648,8 +697,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": true,
-   "bytes": 17109,
-   "sha256": "c04bcf97426eff66843e019316eb1b0094e614359163e34a95228bfb15468637",
+   "bytes": 17107,
+   "sha256": "1828f8fc0aa4031e22b37d673a7f474d0d20f015845760ddb81c24f71b917a69",
    "fingerprint": "6224fecc58a78e25",
    "ageDays": 0,
    "frontMatterError": ""
@@ -665,7 +714,7 @@
     "icons",
     "比例反复不一致"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -675,8 +724,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 8674,
-   "sha256": "b501d8b9334b2e850043db7c29d384e367e0ff88e738d3e815a0c84aeac9b3ee",
+   "bytes": 8672,
+   "sha256": "64a26cc3827a30c5a7796617a5bcaa2a83aebc8f204498c6fe059ccf27e6d145",
    "fingerprint": "16d287d3fbba54da",
    "ageDays": 0,
    "frontMatterError": ""
@@ -699,7 +748,7 @@
     "先检索分析",
     "禁止先试错"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -709,8 +758,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 5100,
-   "sha256": "5b7093222de89211e905ff1388c67a974e59087b4ff8089bbebefeda3a57b2a2",
+   "bytes": 5098,
+   "sha256": "491f589380b515fea6e96312fa45f3e9e4fdd1e01d3d2c6ab5f330cf9e5227bd",
    "fingerprint": "e90e0377edb4e1b5",
    "ageDays": 0,
    "frontMatterError": ""
@@ -738,27 +787,23 @@
    "verified_at": "2026-09-29",
    "stale_days": 180,
    "origin": "total",
-   "evidenceCount": 2,
+   "evidenceCount": 1,
    "evidence": [
     {
      "kind": "offline",
      "cmd": "python -m unittest tests.test_kb_growth -q",
      "expect_rc": 0,
-     "expect_contains": "OK"
-    },
-    {
-     "kind": "offline",
-     "cmd": "python scripts/gen_kb_index.py --check",
-     "expect_rc": 0,
-     "expect_contains": "in sync"
+     "expect_contains": "OK",
+     "ran_at": "2026-09-29 20:45:47",
+     "output_sha256": "ae14d0eca96adeb68d04b7e565e6557e9949c3f1107b4d678d315f47e1e21dfc"
     }
    ],
    "evidenceLevel": "has-evidence",
    "needsEvidence": false,
    "hasQueries": true,
-   "bytes": 7955,
-   "sha256": "69e7d2141ad9dc3998b8327410f39b512bb360d2eff047c3ec69965027a9ab71",
-   "fingerprint": "c730b188dacf86d0",
+   "bytes": 8005,
+   "sha256": "4dc8eaf9957609901d815f4b94badda84244462a0b3612573b6fe9615fa15a7b",
+   "fingerprint": "0ffb49c2d7f976fc",
    "ageDays": 0,
    "frontMatterError": ""
   },
@@ -780,7 +825,7 @@
     "EasyUI 项目要接",
     "小程序传图"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -790,9 +835,53 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 10100,
-   "sha256": "56d7a9b1b836b9c7f0e6be47753cf7349c62a0cb3e882eeb0c0c56aff30b2191",
+   "bytes": 10098,
+   "sha256": "a3d37f4ec5d9e68eb17fde5c6a779e429adff4afacfb957c3af1095babe04838",
    "fingerprint": "98c9131a9c08aad0",
+   "ageDays": 0,
+   "frontMatterError": ""
+  },
+  {
+   "id": "devflow-open-source-stack-integration",
+   "path": "knowledge/devflow/open-source-stack-integration.md",
+   "title": "开源协议栈/第三方库怎么接进 FlyThings 工程（非 GUI 生态借用）",
+   "category": "devflow",
+   "platforms": [
+    "V85X",
+    "Z20",
+    "Z21",
+    "F133",
+    "T113"
+   ],
+   "tags": [
+    "开源库",
+    "第三方库",
+    "协议栈",
+    "curl",
+    "mbedtls",
+    "openssl",
+    "mqtt",
+    "sqlite",
+    "libc",
+    "musl",
+    "glibc",
+    "静态库",
+    "dlopen",
+    "lib-no-link"
+   ],
+   "status": "review",
+   "confidence": "manual",
+   "verified_at": "2026-09-29",
+   "stale_days": 180,
+   "origin": "total",
+   "evidenceCount": 0,
+   "evidence": [],
+   "evidenceLevel": "manual-only",
+   "needsEvidence": true,
+   "hasQueries": true,
+   "bytes": 8948,
+   "sha256": "565af9f50ce32f412fd1d2e677a866050d9a7e12dc5139772a07984c152987cd",
+   "fingerprint": "3cef600f61b87430",
    "ageDays": 0,
    "frontMatterError": ""
   },
@@ -810,7 +899,7 @@
     "定规",
     "同代码双屏方向适配案例"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -820,8 +909,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 10540,
-   "sha256": "0af2b831a092d76e98c44c6f0c758cb6ab1d7aa271faefd1cb06935d7d8284f1",
+   "bytes": 10538,
+   "sha256": "4a4461cbddc3994e0f1840db223b3f6a858cee3258e0485c66715ae4b2fe1502",
    "fingerprint": "498d2c275df2fec1",
    "ageDays": 0,
    "frontMatterError": ""
@@ -838,7 +927,7 @@
    "tags": [
     "devflow"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -848,8 +937,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": true,
-   "bytes": 5714,
-   "sha256": "08b94252b4b786f6624bb97d68202b21359a791f7be3731ac6c737be95eb3b61",
+   "bytes": 5896,
+   "sha256": "0e517fc679f903e353178d96ed8abfd69591cb08fa728aee4f3cae651841f284",
    "fingerprint": "c2bbe8276a641c3e",
    "ageDays": 0,
    "frontMatterError": ""
@@ -872,7 +961,7 @@
     "对齐",
     "两处口径互为引用"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -882,8 +971,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 13758,
-   "sha256": "e71556b98dd3b5bd10cb9bf5ea142c2bc7964d1410b5f379f8b3a8a69495bdd9",
+   "bytes": 13756,
+   "sha256": "ae13dd63a5c1b23959d0cb9449a70a26671150015be8f916373bb159dd360842",
    "fingerprint": "5a340f983dafad54",
    "ageDays": 0,
    "frontMatterError": ""
@@ -898,7 +987,7 @@
     "2026-09-10 入库",
     "必要的做好入库就好了"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -908,8 +997,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 5698,
-   "sha256": "c2f75f8ed3cc13c01716a82444fc9c54a8f1d63380375cb66bf3538860c943b6",
+   "bytes": 5696,
+   "sha256": "cb7e7da7eda77ba4bd5b599818f0eab96e2f8fd97da2e2d30caf8ab3da3005e1",
    "fingerprint": "329d4f67339df594",
    "ageDays": 0,
    "frontMatterError": ""
@@ -934,7 +1023,7 @@
     "设计稿换算 rpx",
     "迁移工作量评估"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -944,8 +1033,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 10901,
-   "sha256": "6d20ab43454891f3e36f7252fadb0119989fabb1dd94f1b4af5a21cd3178fa7f",
+   "bytes": 10899,
+   "sha256": "11d9c6e4cd190378f479349ec1e37284153da51b27c90cffd77797e6b01a0211",
    "fingerprint": "4d890b46c013abc9",
    "ageDays": 0,
    "frontMatterError": ""
@@ -968,7 +1057,7 @@
     "界面设计",
     "设计稿"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -978,8 +1067,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 14225,
-   "sha256": "223a249159417208505ff901024e9196550ea76c22f2f57409a485e7d990fc2e",
+   "bytes": 14223,
+   "sha256": "66bd941153ff739e98fe00ce8542a1314657c70dd964a4ae6b573dfc784a35fa",
    "fingerprint": "765dedebdd2de423",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1001,7 +1090,7 @@
     "模块",
     "以后模块代码放这里"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1011,8 +1100,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 16903,
-   "sha256": "4473ce73f1f8ab871a75fe9a89c8236d20b4866b52a951d56cca66c622369adb",
+   "bytes": 16901,
+   "sha256": "84664c4f80b89756cdfceb7aa80b46b08c7b83bfe55c807fa6998019a68dbcfe",
    "fingerprint": "cccf023d094984eb",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1037,7 +1126,7 @@
     "读不到是结论",
     "设备缺 busybox"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1047,8 +1136,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": true,
-   "bytes": 12734,
-   "sha256": "74042ac3844c062b03c60a345665881afc2b37a806d9765d835c65eb7517d371",
+   "bytes": 12732,
+   "sha256": "ea7c7e91f2efe8e4b4b51a6f2642e9c1334ae76f9778b44d0d7322935cc6bff7",
    "fingerprint": "77b2b1a5eb30c418",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1078,7 +1167,7 @@
     "并全平台编译",
     "自动化测试"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1088,8 +1177,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 21950,
-   "sha256": "c978459a8a1481cff79663058cb5db9e1bf46180e5a0d0b926b1df63ee5c17df",
+   "bytes": 21948,
+   "sha256": "7d4d537866c985ceabdb074a348704015077714f65047aff1fc2fa42c9540119",
    "fingerprint": "16492270393b0bc4",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1112,7 +1201,7 @@
     "选中条边界有毛边",
     "阶梯"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1122,8 +1211,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": true,
-   "bytes": 28427,
-   "sha256": "49369a87d8fcdfa84557973e2c37147ad5e73e8f7973de04eca35e8ff066b721",
+   "bytes": 28425,
+   "sha256": "2ce30439c02238ac5eb3f6fd42d2ed7a93940dfb5ab9e016eaf91e2ac7d2e1f3",
    "fingerprint": "200f1195e0882e08",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1139,7 +1228,7 @@
     "预检红黄标 时命中",
     "的完整口径"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1149,8 +1238,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 2840,
-   "sha256": "1c954f06c790ca87ab053307d20b8e4868b076ec4d32da8393e76fb990805828",
+   "bytes": 2838,
+   "sha256": "e3edaa041536b8bb3bcf9088f728c30cee68fb6189632b56956b7ad1fcfb8c55",
    "fingerprint": "65cc432f96af17c6",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1166,7 +1255,7 @@
     "27",
     "action="
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1176,8 +1265,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 20941,
-   "sha256": "ec8d0d7cf2cf44d98701336283b2e50e96624a9968ee88a8aff8f00ffecd89a5",
+   "bytes": 20939,
+   "sha256": "279a15a711b4c5d2016bdcc2dc489852545857d77d71c1b70df4690da84e2078",
    "fingerprint": "3bba54108ad0943c",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1204,7 +1293,7 @@
     "img",
     "用户说"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1214,8 +1303,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 18478,
-   "sha256": "69bdcb69d469468d426ca04c29413805c4dc76595983e6eed5a760ac630ee5e2",
+   "bytes": 18476,
+   "sha256": "ef554f52711bc6e81e923c63076a90de0fdec7efc10a0570823153caf1046875",
    "fingerprint": "b016a5fe68bcdbf8",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1235,7 +1324,7 @@
     "1024x600",
     "137 button"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1245,8 +1334,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 4716,
-   "sha256": "30545fcabc3c9e82089104ff3cfe4c0d3e72cc062faff3b63cd81ad47b7c90a8",
+   "bytes": 4714,
+   "sha256": "ed1df675be16ad2f0b5d03cf11ac036bea2206a77fe7d8390ba590b72ec87dcd",
    "fingerprint": "6021a191939a5e59",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1264,7 +1353,7 @@
     "AW_V853",
     "非猜测"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1274,8 +1363,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 6273,
-   "sha256": "7bfa165ae057e75a7b7dfe5dd044f77a518ebd9f6f13997371ccc67b281b6d72",
+   "bytes": 6271,
+   "sha256": "bf0c465dcaead2eb2909ba3dbf821e8dde4d904672e716616cf0904247bc6362",
    "fingerprint": "72a905927f55d458",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1291,7 +1380,7 @@
     "0 SDK 头文件校准",
     "h 源码"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1301,8 +1390,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 3451,
-   "sha256": "3fe198bb55c12ebad581f02fbd1b4715c024665fb4576499d4013ec2938901f7",
+   "bytes": 3449,
+   "sha256": "d7ca25ae35f3a65995328446dbb718952b1ca354656983b5368965707781fb0a",
    "fingerprint": "3bda46d0418f8bec",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1325,7 +1414,7 @@
     "CALENDAR",
     "CDateTimeCtrl"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1335,8 +1424,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 11929,
-   "sha256": "764457ff3122ca06b8ae8b4d9d593987ecaa7aa096562107e1c5a6aef235bce0",
+   "bytes": 11927,
+   "sha256": "f5df04c386196147c794b86a428fed28430314d4933b413eb78f7a904076c990",
    "fingerprint": "0e04926c164fb4ad",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1348,7 +1437,7 @@
    "category": "uicontrols",
    "platforms": [],
    "tags": [],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1358,8 +1447,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 3264,
-   "sha256": "20a5bb4eda86b31b58ea06ac858921a28c258609f60ee95c2dda917e8c72bff2",
+   "bytes": 3262,
+   "sha256": "882cf544af172b8de75a5bc2f8c6e578bc8ececbb5bf8b78b601dba29c0f8ef1",
    "fingerprint": "562fc62797afc036",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1382,7 +1471,7 @@
     "位图刷新",
     "视频帧控件"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1392,8 +1481,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 7952,
-   "sha256": "f04e2cc9f499ff3c399ef638e618a38197ea6ed5768a2181451fceb77e30af37",
+   "bytes": 7950,
+   "sha256": "b74d623f1e9d1c32cb098bea43af2b5d62ca24fdc62998b8ab95da6507e7007c",
    "fingerprint": "e0220a9aabb9521f",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1411,7 +1500,7 @@
     "心率",
     "串口 ADC 曲线等"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1421,8 +1510,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 3482,
-   "sha256": "10643e1fba4340d4d3fb0007ff5bfc8f502602088dea93574f366920c27ac398",
+   "bytes": 3480,
+   "sha256": "a0cbe6802c91685c01aba2f16312c9ded818cdbd2dc45da5a09b6a5e31264a33",
    "fingerprint": "91ae098c1a1eb284",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1439,7 +1528,7 @@
     "ZKDigitalClock",
     "校准"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1449,8 +1538,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 2363,
-   "sha256": "b583f380ca906a561ea3d6a5b9ece527a2c597e0e3498730769d5dbae5af9d9f",
+   "bytes": 2361,
+   "sha256": "3b3a5c43b275b2f760a6aff0066076e011c45cb490b6ab619cfeff918d763933",
    "fingerprint": "cd3c248853a914f7",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1469,7 +1558,7 @@
     "不自绘",
     "输入完成触发回调"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1479,8 +1568,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 4209,
-   "sha256": "fb35f5ffa7a81b206dbf902364740e63d60b4263059fec6b1a03dbdab6ff94d8",
+   "bytes": 4207,
+   "sha256": "02505757d3fb8c5744c4a782e249e1a56c8642be3ffefd45fac701cc94336a2b",
    "fingerprint": "ead0f4db91d7ebe8",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1503,7 +1592,7 @@
     "tabview",
     "tab 页签"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1513,8 +1602,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 7916,
-   "sha256": "5bc5eb468166b366117144de6c939c89c931edd07da15c2492ba353e1d54f60b",
+   "bytes": 7914,
+   "sha256": "3ba87d271f7e20514602bedfdf7c9e190ecaea8290de8a969aa4dc5dd611db36",
    "fingerprint": "5014d79923581ecc",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1539,7 +1628,7 @@
     "弹窗",
     "悬浮窗"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1549,8 +1638,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 10094,
-   "sha256": "b9c1d80c96cee375f6cb056f424383d17d9126a0d2de858043a49c90cdb76722",
+   "bytes": 10092,
+   "sha256": "0bce45a7007f6c3568eace56c0410c6d8d9e0e79fd655c6e293f608959d782a6",
    "fingerprint": "c53d5b75a5a3f2be",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1573,7 +1662,7 @@
     "运动事件被丢弃",
     "触摸事件合并"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1583,8 +1672,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 10730,
-   "sha256": "5a614263a790c74ac42809f492d5d6e8b68b855f49182e9a76804069bba1d5df",
+   "bytes": 10728,
+   "sha256": "1f0938e4a1d77d72aa2043677c172e88a5a6c602c933cad40ae9d9ecec449d06",
    "fingerprint": "dfc41e99a6fdd408",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1603,7 +1692,7 @@
     "imageanim",
     "json 实测校准"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1613,8 +1702,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 4193,
-   "sha256": "049aa73e8f72a6f8d1defb11124a872a3a78126422566f2d4f99ee5cc4c866ad",
+   "bytes": 4191,
+   "sha256": "7657882ec57681733012849e402155f67721ff7161e3201e758d57ee07b1d38b",
    "fingerprint": "a2fb6bde81236ebf",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1637,7 +1726,7 @@
     "写全对新引擎无害",
     "权威基准"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1647,8 +1736,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": true,
-   "bytes": 10774,
-   "sha256": "5c5ae5ef2716e24f101de9eae912f843375af77372fa20e74276f5fb518d5336",
+   "bytes": 10772,
+   "sha256": "924ef27690957899e8db0596171aa64498d1b46c447049410903e584dfdf00ac",
    "fingerprint": "1cb278cec2bb3f27",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1671,7 +1760,7 @@
     "py #2 层级合法性检查",
     "layer_problems"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1681,8 +1770,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 5898,
-   "sha256": "467a4e726f3f9033975b6fe7e99441dae6521903e7b7620e5a25d743531bc00e",
+   "bytes": 5896,
+   "sha256": "60e4bd3c822fabacd3238d3a052bc8f026b0799685338731f60f027642e50a17",
    "fingerprint": "c0e6d732852174dd",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1697,7 +1786,7 @@
     "35 个官方 demo",
     "本次已全部修复"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1707,8 +1796,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 5996,
-   "sha256": "a003c3723bfadedda4dcc1f1e8a45b7ce111d1bac5154f08dc479362ca3a95f6",
+   "bytes": 5994,
+   "sha256": "8030f12b96fff70265ec960ad84db578f73a32708f558028c70d071fcfcf09b7",
    "fingerprint": "e382f7b76be7c996",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1724,7 +1813,7 @@
     "0 SDK 校准",
     "可做更多"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1734,8 +1823,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 10462,
-   "sha256": "5371c97ceff3c364b1794f1bbc261d859edb1e4ddfd04a5c98bd7b4a5c68bde9",
+   "bytes": 10460,
+   "sha256": "dee58454fd32e5e4ce5665cea7bdef5e05a4615f174ee8dfd7d492d997d924a7",
    "fingerprint": "ff73fd831b445a00",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1760,7 +1849,7 @@
     "封面加载慢",
     "图片多就卡"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1770,8 +1859,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": true,
-   "bytes": 13988,
-   "sha256": "f54d42c8b34500c9f4e22cd9711af0fec41cd303ba522ddf48cf8680b7abf6d5",
+   "bytes": 13986,
+   "sha256": "30fbc91315cd297f3e07e1c90df7d71a048d0a0a79a10ef3bfd7be30f7280d88",
    "fingerprint": "58ee773d6aa93f24",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1796,7 +1885,7 @@
     "picker 多列联动",
     "lv_roller 怎么用"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1806,8 +1895,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": true,
-   "bytes": 26620,
-   "sha256": "bd8ebc3778efb9f4468ab04ef95788156851717b3f234b676e76e021c723cbb9",
+   "bytes": 26618,
+   "sha256": "41c8b32d182986f0260cebfb41b9167178977c4092126c74a11ef66f12d9a772",
    "fingerprint": "986453d66e1f29e4",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1830,7 +1919,7 @@
     "内容区错位",
     "——真机案例实测"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1840,8 +1929,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 8922,
-   "sha256": "6209001c0feae959ee1a3787fbad48fa488ba0db5a23a3d488bbba12b10ff5e8",
+   "bytes": 8920,
+   "sha256": "8d1a1d98c9d085727507611e19a429f9bd8718dc853e9f43fee7d7d62f1ab1a4",
    "fingerprint": "a2a7855467eb3cff",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1859,7 +1948,7 @@
     "引导页",
     "分类页签内容区"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1869,8 +1958,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 2398,
-   "sha256": "ca0251870ff275c8eb2ea9b0e04edb4d504c4f645b45afa8fd8b6e89bf601c84",
+   "bytes": 2396,
+   "sha256": "493a450dca30e4ba63e13a12d0fa7c961ded804930c2c66d73a6e2ce3935c28d",
    "fingerprint": "187a5992e5f64386",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1890,7 +1979,7 @@
     "原 fuse",
     "同样适用"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1900,8 +1989,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 3454,
-   "sha256": "1189f8d98be49af3fa4f71c6951d204178f71d8f55b7572c1a01b327a43f4e3d",
+   "bytes": 3452,
+   "sha256": "93bb85bd9f8f368ab9ee55bdaa07768f32226bece2f8442151e7a6e62d2a6d85",
    "fingerprint": "1de29d3ca7389bb5",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1917,7 +2006,7 @@
     "PriceTag 价签",
     "设备配网绑定场景"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1927,8 +2016,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 2248,
-   "sha256": "8337e620ef44432263e8810c2dffe66eac44527700170145ea2258c4da502af2",
+   "bytes": 2246,
+   "sha256": "a4551379e4164530fa22d73cbc6cd5c77c164f2a852684e674c9cf6606b8f6ad",
    "fingerprint": "97bb2a5a1c391223",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1943,7 +2032,7 @@
     "2026-09-07 git",
     "场景开关等产品在用"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1953,8 +2042,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 4102,
-   "sha256": "0c7197dee4018dc81631c05bac270fe37976c1b72a8e0c343257dbd119a17511",
+   "bytes": 4100,
+   "sha256": "658e551b757b715cd23c2b63ad1a3ab71ede5b65e60110f8e7c72200807933ef",
    "fingerprint": "830560ba3e51d168",
    "ageDays": 0,
    "frontMatterError": ""
@@ -1977,7 +2066,7 @@
     "AWTK",
     "LVGL 等"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -1987,8 +2076,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 8161,
-   "sha256": "6c8380f1480c0c614a6a8940477c7c683c95c91f7629b7fdadd08c7001c968a8",
+   "bytes": 8159,
+   "sha256": "9e1e3a70b665b67f0eafc40bf40ceaac4d1e87dfa8a444d4c12d2715b9c30a11",
    "fingerprint": "1ef68a8094305ecb",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2011,7 +2100,7 @@
     "scrollwindow",
     "pagewindow"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2021,8 +2110,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 9492,
-   "sha256": "848cb863896c03cc0b4a2b9c9dc5ad34278b90ed70fd04f8c795b77d7851dcf9",
+   "bytes": 9490,
+   "sha256": "b28cc93faa13eb975ed1b1bc90aa188d28818735a1e0508899b1dc950ada8a37",
    "fingerprint": "902cbeb67efe5192",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2045,7 +2134,7 @@
     "slider",
     "thumb"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2055,8 +2144,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 6347,
-   "sha256": "771417208cf9098535f6983bba07c3102e487e744ea096d162f152eed5054bf1",
+   "bytes": 6345,
+   "sha256": "f50a88f1fb2b2e503a497c626002f4a6ac1d88a86c0afd7ed656d8a1a638793f",
    "fingerprint": "261e8c69d459657a",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2077,7 +2166,7 @@
     "点击某个单元回调",
     "横向选项条"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2087,8 +2176,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 3321,
-   "sha256": "265a2e7712ba32026134ddae5be34b7e69d45154646a07db06107393c74e3897",
+   "bytes": 3319,
+   "sha256": "811618aa10f019493a8047aff2c784185ace5a6edc9de352581550ad107e78ff",
    "fingerprint": "92efe132ebd4b876",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2104,7 +2193,7 @@
     "main",
     "翻页滑动"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2114,8 +2203,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 6458,
-   "sha256": "c0c92d1f69ed8630d879a27af7448c341941803c6e9a16e1f5e9830b22a4ef43",
+   "bytes": 6456,
+   "sha256": "24f36c528aaa54cc59834241928041770e27d1598d8e18c8e6852e3ccf2bcf8f",
    "fingerprint": "91a8f8028a87811b",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2138,7 +2227,7 @@
     "状态栏",
     "navibar"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2148,8 +2237,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 8836,
-   "sha256": "7a155953711c35a45a83f5a643a819a41fb7963cffbf12cd401d0eacf48feec9",
+   "bytes": 8834,
+   "sha256": "b5d00ce582e45155e8e23be9e683dd6c1fd31e39968af965b6fff3fa8cc7480a",
    "fingerprint": "7b833095ada22c8d",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2172,7 +2261,7 @@
     "三点指示器不圆",
     "圆点被拉长"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2182,8 +2271,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 9921,
-   "sha256": "d18f5624d3e4ce9e92392c500b13255fb368a102c5fe823811b714569c7588c0",
+   "bytes": 9919,
+   "sha256": "c772527d4f6c786c5ac39731068fbedb757006ab42507b2d9a721e37b5ab832c",
    "fingerprint": "ea1d860bc97d1f95",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2206,7 +2295,7 @@
     "同一个",
     "点哪都没反应"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2216,8 +2305,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 15581,
-   "sha256": "81682e6430e81e4197ae6c427abe1b96b5e02a1025eebb1b8a557096f3c52806",
+   "bytes": 15579,
+   "sha256": "1fd7a2a15d890fed5462f82eca939517afba3a33c45b95e80d4035e9dbbb160f",
    "fingerprint": "29429a42d56f2dc6",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2236,7 +2325,7 @@
     "RTSP 等",
     "MusicDemo"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2246,8 +2335,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 3466,
-   "sha256": "48da445dd97b203d421b4b68f868e269f649ac7c43f5ef933eecb147a02c1135",
+   "bytes": 3464,
+   "sha256": "a6b4ff27c27bba5ba6d1d25d73f77610e013f4ea9250115eefad06bf561f0f56",
    "fingerprint": "c1dba6c30d3f40eb",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2272,7 +2361,7 @@
     "生命周期",
     "定时器"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2282,8 +2371,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 14679,
-   "sha256": "4b57fd50e1d987f792d38192475fec40ccc1a34627604c42a0e46788475cf944",
+   "bytes": 14677,
+   "sha256": "04bfaae1bc85d09bd2957033e84d089c79bf81efe22acd7fe3e3d9e0f32d02b0",
    "fingerprint": "a3b2622f87027c40",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2311,17 +2400,17 @@
    "evidence": [
     {
      "kind": "offline",
-     "cmd": "python scripts/gen_hardware_doc.py --check",
+     "cmd": "python -m unittest discover -s tests -p test_hardware_catalog.py -q",
      "expect_rc": 0,
-     "expect_contains": "in sync"
+     "expect_contains": "OK"
     }
    ],
    "evidenceLevel": "has-evidence",
    "needsEvidence": false,
    "hasQueries": false,
-   "bytes": 26616,
-   "sha256": "2c7805bff6113ccebe85d205ac22ab90527665a8593f73963e34e80b936318d1",
-   "fingerprint": "593ae80d1b6b442d",
+   "bytes": 26668,
+   "sha256": "652c47f242f470f9ee2dc000520c52759a7e7e2fe873112447db208ef4191523",
+   "fingerprint": "a34c0184bb8551a4",
    "ageDays": 0,
    "frontMatterError": ""
   },
@@ -2347,7 +2436,7 @@
     "T113",
     "Z21"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2357,8 +2446,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 7320,
-   "sha256": "0edb573dae522530a5d4811af17b54b5d361ba76e999c63910d92277a1aa1c4e",
+   "bytes": 7318,
+   "sha256": "d3316060df0e6a032e26efc490b7be6129f5c38f81c4605195c39be344826e90",
    "fingerprint": "9e7080bc4d23ad7a",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2387,7 +2476,7 @@
     "指定 V85X 且要预览",
     "录像"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2397,8 +2486,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 8154,
-   "sha256": "2a8fbb006f0390f1d2f16528236ba54e8894985c23d5dadd179bf1780745caec",
+   "bytes": 8152,
+   "sha256": "e0ac9aca374869613987a9e4c8555095a3b1fa8dae22db9f8fc0c4fb35e63322",
    "fingerprint": "2747435eca718879",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2423,7 +2512,7 @@
     "zkrebootdelay",
     "sys"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2433,8 +2522,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 26479,
-   "sha256": "9a2fc64307e8611312fe217e613aadab73ad5323e132b18e8b2844e6fea10692",
+   "bytes": 26477,
+   "sha256": "ed4ba815f3b37d6f45c716c11f1eaf4f973c876340461c8796b03d0b56bcecd6",
    "fingerprint": "443b8bcd121c83b1",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2455,7 +2544,7 @@
     "分辨率",
     "帧率配置"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2465,8 +2554,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 5644,
-   "sha256": "914287b2f093a762bb623a1afd608b4be177c590ab0d3ccd8df11b02984d7d4b",
+   "bytes": 5642,
+   "sha256": "c6021fbc4dfbac411f7df05eed9691e6ad3b02612e91286689ea0a9469344ccc",
    "fingerprint": "c7307f59d0f8b8d2",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2491,7 +2580,7 @@
     "档位",
     "故障灯"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2501,8 +2590,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 10129,
-   "sha256": "7ce999adb825baeda4ac26951b679998d962e4e07b5d35ded6f523e44ce94da0",
+   "bytes": 10127,
+   "sha256": "0b3bd48d3a2d4b596516ad42040824fb63a098fe9b0ac2054e131f86dfa41669",
    "fingerprint": "4644e9f5e1c9e6f0",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2520,7 +2609,7 @@
     "v85x 深度",
     "不进 release 公开版"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2530,8 +2619,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 4452,
-   "sha256": "890e4bf811e798f9da6cf717fd4b2196bd7ad0c03c03a40feaa239311de1e97e",
+   "bytes": 4450,
+   "sha256": "0658c9187eb994ad7721970800e0880e9f649e77f082db8b3b087e25add92f75",
    "fingerprint": "99ec5e4e57d253a1",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2556,7 +2645,7 @@
     "场景",
     "视频解码"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2566,8 +2655,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 20225,
-   "sha256": "e2c18c8e6c918f50fab3cf9d1569b19274f39a1141b00957f567f54abb9ee64d",
+   "bytes": 20223,
+   "sha256": "74391c0aa9055d8e5af98acb567cfcd1452e505cb79064c62d0121b0bbad6175",
    "fingerprint": "5729c55fefc48a9f",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2581,7 +2670,7 @@
     "V85X"
    ],
    "tags": [],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2591,8 +2680,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 14151,
-   "sha256": "33376e2649120bacd294f0e1efa78d8ff561a9815fa2b2caf5366e7ca633a39c",
+   "bytes": 14149,
+   "sha256": "4b185829e331837d82fec7f1672e5623dac5cf96d32fb898a9809d4cfc55c929",
    "fingerprint": "111680d3ee96b77c",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2618,7 +2707,7 @@
     "不解析不深挖",
     "本机注册表现场核对"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2628,8 +2717,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 23805,
-   "sha256": "8c06922368a9943b5f4cecb9bc71b1e53be83aef21686845a15c7c75574517e2",
+   "bytes": 23803,
+   "sha256": "9f794927a21f6283ca43d01cca92ae1edea81e167b797557dd2a5781bd44dfcb",
    "fingerprint": "f44f9f5bbe8d1cf7",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2654,7 +2743,7 @@
     "录制 API",
     "aw-dvr"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2664,8 +2753,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 9077,
-   "sha256": "c31fab2d2745c0612280e43e2592fdb2fb6c37a403181dd4c7269ba95eda4ada",
+   "bytes": 9075,
+   "sha256": "25ca27812689a7132dcda192b22752170b806d92896cf1b91576d955bf3eadb7",
    "fingerprint": "aebd434930eea670",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2679,7 +2768,7 @@
     "V85X"
    ],
    "tags": [],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2689,8 +2778,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 5208,
-   "sha256": "24abb6042ec89c25ac16783677381b0430b2219db57ba1d48bed31d81edcfb3e",
+   "bytes": 5206,
+   "sha256": "4475d9ac06b6a9496df3ae2d9a03e27f5f60ea1d89c8e955ffe8d27019bee6f8",
    "fingerprint": "14513ba1a6465967",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2715,7 +2804,7 @@
     "U盘",
     "cat usb_device"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2725,8 +2814,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 11524,
-   "sha256": "8f7082097117abbc4f8a02449f7b47913d11eb211d8a149768ede5afeb211630",
+   "bytes": 11522,
+   "sha256": "44d633776f59f3f32b422604d959593c6182aa1bf8c799c678150ff1c5fbd697",
    "fingerprint": "818c871d53b503fb",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2752,7 +2841,7 @@
     "改动需同步",
     "xdv23"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2762,8 +2851,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 3048,
-   "sha256": "1771a2963e57d0769933559453cfa77d963c233451fc7d9ea5c79b05448b311c",
+   "bytes": 3046,
+   "sha256": "02302de8bcc1f7cc0099e42dbac24524c668c427b6a6a56554b3225e5cbc0e24",
    "fingerprint": "3e8d8373083d907a",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2788,7 +2877,7 @@
     "保活",
     "状态机"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2798,8 +2887,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 12930,
-   "sha256": "7861decc8b3dadc884a9f16daf4cd1d75aaa077599d54e6e7c06583b1f77a745",
+   "bytes": 12928,
+   "sha256": "abde591aa7a3e9402c5f6d08e5a6473a40f5a560e9356f4a6f9d8ea73e6234d5",
    "fingerprint": "2a343ed84474ee03",
    "ageDays": 0,
    "frontMatterError": ""
@@ -2821,7 +2910,7 @@
     "V853",
     "V553 等"
    ],
-   "status": "verified",
+   "status": "review",
    "confidence": "manual",
    "verified_at": "2026-09-29",
    "stale_days": 180,
@@ -2831,8 +2920,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 5342,
-   "sha256": "c6f444123c6177ad1e6021b00f0350af78a5c6d02576d61981346a7ee9215f4f",
+   "bytes": 5340,
+   "sha256": "d3b923c5feafbb278a8ee90a7402649483fce1ecf4194f7fb36ec814bdca2d16",
    "fingerprint": "2d5b4d0f4b182a52",
    "ageDays": 0,
    "frontMatterError": ""

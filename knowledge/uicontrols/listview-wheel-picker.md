@@ -2,7 +2,7 @@
 id: uicontrols-listview-wheel-picker
 title: listview 做滚轮选择器（WheelPicker）：字段配法 + 中心行对齐 + 三个真机坑
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

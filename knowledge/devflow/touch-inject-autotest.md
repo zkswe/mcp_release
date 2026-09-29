@@ -2,7 +2,7 @@
 id: devflow-touch-inject-autotest
 title: 触摸注入/UI 自动化测试：先调现成 `touch` 工具（禁止先造轮子）
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

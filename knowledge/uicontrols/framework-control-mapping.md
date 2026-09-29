@@ -2,7 +2,7 @@
 id: uicontrols-framework-control-mapping
 title: 跨框架控件映射（摘要 + 指针）— 权威表在 components/ui_v1/
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

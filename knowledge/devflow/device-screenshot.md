@@ -2,7 +2,7 @@
 id: devflow-device-screenshot
 title: 真机抓屏（device_screenshot）实现要点与踩坑
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

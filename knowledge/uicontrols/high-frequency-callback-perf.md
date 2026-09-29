@@ -2,7 +2,7 @@
 id: uicontrols-high-frequency-callback-perf
 title: 高频回调性能规范：拖动/触摸回调里**禁止全量刷新**
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

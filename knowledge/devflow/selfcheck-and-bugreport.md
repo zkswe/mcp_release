@@ -2,7 +2,7 @@
 id: devflow-selfcheck-and-bugreport
 title: 整机自检（selfcheck）与缺陷单（bugreport）口径
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

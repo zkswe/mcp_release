@@ -2,7 +2,7 @@
 id: v85x-usb-otg-mode-switch
 title: V85X 切换 USB OTG（host/device / ADB/U盘）速查
 category: v85x
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

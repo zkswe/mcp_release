@@ -2,7 +2,7 @@
 id: uicontrols-json-field-mandatory
 title: ⛔ json 字段全集显式化（每控件必写字段 v2.1，双源基准）
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

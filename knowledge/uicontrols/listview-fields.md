@@ -2,7 +2,7 @@
 id: uicontrols-listview-fields
 title: ListView 列表控件字段 + 回调语义（含 subitem 点击 id 确认）
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

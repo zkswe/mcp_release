@@ -2,7 +2,7 @@
 id: hardware-uvc-camera-generic
 title: UVC / USB 摄像头通用接入（跨平台：V85X / T113 / F133 / Z20 / Z21）
 category: hardware
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

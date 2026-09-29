@@ -175,6 +175,32 @@ GROUPS = [
             '知识怎么复验 evidence 怎么写 verified 和 draft 区别',
         ],
     },
+    {
+        'doc': 'knowledge/devflow/open-source-stack-integration.md',
+        'name': '开源库/协议栈接入（P1.5 review）',
+        'min_top1': 5,          # 实测 6/10 → 留 1 条余量
+        'queries': [
+            '想用开源库怎么办', 'registry 里没有这个包', '自己编译的库怎么加进工程',
+            'dlopen 找不到库', 'musl 和 glibc 有什么区别', '静态库太大怎么办',
+            'SQLite 能用吗', '第三方 .so 放哪', 'undefined reference 链接错误',
+            'ldd 看哪些库',
+        ],
+    },
+    {
+        'doc': 'knowledge/devflow/custom-render-paths.md',
+        'name': '自定义渲染路径（P1.5 review）',
+        'min_top1': 4,          # 实测 5/10 → 留 1 条余量
+        # 已知 2 条未进 top-3（真记录，不调阈值凑数）：`视频层怎么叠加` → v85x/videoview-transparent-window.md
+        # 与 `stb 系列头文件库能用吗` → wiki/system/virtual_eeprom.md；跟进手段 = 给这两条写更具体的
+        # 同义问法或把答案拆进对应子文档（P2 的 gap 驱动写作）
+        'max_miss': 2,
+        'queries': [
+            'FlyThings 怎么做自定义渲染', '想用 LVGL 怎么办', '能不能用 cairo/SDL',
+            '直接写 framebuffer 可以吗', '离屏渲染成图再显示', '视频层怎么叠加',
+            'releaseLayer 是什么', '复杂动画性能不够', '自绘指针表怎么做',
+            'stb 系列头文件库能用吗',
+        ],
+    },
 ]
 
 # 对照组：与上面主题无关的其它问法；want 用子串匹配（不要求 top-1）

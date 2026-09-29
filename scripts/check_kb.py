@@ -23,6 +23,7 @@ CATEGORIES = gki.CATEGORIES
 def main():
     fails, notes = [], []
     total = verified = withev = needsev = 0
+    st, signed = {}, 0
     # ① front-matter 合规（含 verified 必须有证据或显式 needs_evidence）
     for cat in CATEGORIES:
         d = os.path.join(kbl.TOTAL_KB, cat)
@@ -43,12 +44,19 @@ def main():
                 errs.append(ferr)
             if errs:
                 fails.append('%s → %s' % (rel, '；'.join(errs)))
+            if meta.get('status') == 'draft':
+                fails.append('%s 在分类目录下是 draft —— 候选请放 knowledge/inbox/'
+                             '（draft 不进索引/检索）' % rel)
+            st[meta.get('status') or '?'] = st.get(meta.get('status') or '?', 0) + 1
             if meta.get('status') == 'verified':
                 verified += 1
             if meta.get('evidence'):
                 withev += 1
             if meta.get('needs_evidence'):
                 needsev += 1
+            if meta.get('status') == 'verified' and (meta.get('reviewed_by')
+                                                     or meta.get('machine_verified_at')):
+                signed += 1
     # ② kb_index 新鲜（源哈希 + 篇数）
     idx_path = os.path.join(kbl.TOTAL_KB, 'kb_index.json')
     if not os.path.isfile(idx_path):
@@ -65,7 +73,13 @@ def main():
         if in_inbox:
             fails.append('knowledge/inbox/ 的候选条目混进了 kb_index（%d 条）：%s'
                          % (len(in_inbox), ', '.join(in_inbox[:3])))
-        # ④ 只报数：无问法登记篇数（P2 起 verified 新条目强制 ≥5 问法）
+        # ④ 索引里不应有不可索引状态（draft/deprecated）的文档
+        bad_status = [d.get('path') for d in (old.get('docs') or [])
+                      if (d.get('status') or '') not in kbl.INDEXABLE_STATUS]
+        if bad_status:
+            fails.append('索引含不可索引状态（draft/deprecated）的文档 %d 篇：%s'
+                         % (len(bad_status), ', '.join(bad_status[:3])))
+        # ⑤ 只报数：无问法登记篇数（P2 起 verified 新条目强制 ≥5 问法）
         s = old.get('summary') or {}
         notes.append('篇数 %s ｜ verified %s ｜ 带证据 %s ｜ 待补证据 %s ｜ 无问法登记 %s ｜ inbox 候选 %s'
                      % (s.get('total'), s.get('byStatus', {}).get('verified'),
@@ -101,8 +115,9 @@ def main():
     print('  本地层目录:', kbl.kb_dir())
     for f in fails:
         print('  [FAIL]', f)
-    print('  统计：篇数 %d ｜ verified %d ｜ 带可执行证据 %d ｜ 显式待补证据 %d'
-          % (total, verified, withev, needsev))
+    print('  统计：篇数 %d ｜ verified %d ｜ 带可执行证据 %d ｜ 显式待补证据 %d ｜ 已签字/机验 %d'
+          % (total, verified, withev, needsev, signed))
+    print('  状态分布：%s' % ', '.join('%s=%d' % kv for kv in sorted(st.items())))
     if fails:
         print('[FAIL] 知识库门禁 %d 项' % len(fails))
         return 1

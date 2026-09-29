@@ -2,7 +2,7 @@
 id: uicontrols-widget-code-api
 title: 控件代码 API 速查（35 官方 Demo 源码实证，2026-09-08）
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

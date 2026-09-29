@@ -2,7 +2,7 @@
 id: devflow-dynamic-screen-rotation
 title: 🔄 动态旋转屏幕 / 运行时切换布局（relayout）
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

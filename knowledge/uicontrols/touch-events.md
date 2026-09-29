@@ -2,7 +2,7 @@
 id: uicontrols-touch-events
 title: 触摸事件与遮挡（touchable / touchPass / 谁吃掉了我的点击）
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

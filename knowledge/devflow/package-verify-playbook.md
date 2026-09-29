@@ -2,7 +2,7 @@
 id: devflow-package-verify-playbook
 title: 依赖包/网络 API 真机自动化验证套路（playbook）
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180
@@ -17,6 +17,8 @@ evidence: []
 
 > 检索导引：需求里出现「验证依赖包 / 网络 API 真机验收 / 自动跑一遍 / 自检 / 触摸注入取证 / 部署调试怎么不翻车 / 面板黑屏了」时命中本文。
 > 配套实现：`demos/net-stack-verify-z20`、`net-stack-advanced-z20`、`net-wifi-verify-z20`、`net-stack-verify-z21`、`net-direct-tls-z20`、`hw-relay-verify-z20`；包文档见 `knowledge/devflow/dependency-package-docs.md` 与 `packages/<包>/`。
+
+> **补充检索词**：Z21 上电 RTC 1970 / HTTPS certificate validity starts in the future / 必须先校时再 HTTPS / 无 RTC 板开机时间 / 证书校验失败不是证书坏
 
 ## 1. 一句话套路
 

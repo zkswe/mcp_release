@@ -2,7 +2,7 @@
 id: uicontrols-seekbar-fields
 title: seekbar（滑块/进度条）字段与「滑块形状」口径
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

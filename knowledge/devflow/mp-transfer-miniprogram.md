@@ -2,7 +2,7 @@
 id: devflow-mp-transfer-miniprogram
 title: 📥 小程序传图/视频对接（相框类设备的局域网接收端）
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

@@ -23,8 +23,9 @@ import kb_local as kbl          # noqa: E402
 
 CATEGORIES = ('devflow', 'uicontrols', 'hardware', 'esl', 't113-car', 'v85x')
 SKIP_FILES = ('README.md',)
-# 派生文档（生成物）：front-matter 由生成器（gen_hardware_doc.py 等）拥有，--retags 不许改它
-DERIVED_DOCS = ('knowledge/hardware/hardware-models.md',)
+# 派生文档（生成物）：front-matter 由生成器（gen_hardware_doc.py 等）拥有 ——
+# --retags / --fix-states / kb_verify --apply 都不许改它（否则与生成器输出漂移）
+DERIVED_DOCS = kbl.DERIVED_DOCS
 PLATFORM_TOKENS = ('F133', 'F135', 'Z20', 'Z21', 'Z235X', 'T113', 'V85X', 'V851S')
 GUIDE_RE = re.compile(r'检索导引[^\n]*\n((?:>[^\n]*\n)+)', re.S)
 TAG_SPLIT = re.compile(r'[・、,，/｜|；;（）()\[\]「」。.\n]+')
@@ -86,9 +87,9 @@ def _infer(cat, path, text):
     }
 
 
-def run(check=False, stats=False, retags=False):
+def run(check=False, stats=False, retags=False, fix_states=False):
     missing, bad, added, extra = [], [], 0, []
-    retagged, dropped = 0, []
+    retagged, dropped, restated = 0, [], 0
     counts = {'total': 0, 'verified': 0, 'withEvidence': 0, 'needsEvidence': 0,
               'byCategory': {}, 'noGuide': 0}
     for cat, path in _docs():
@@ -108,6 +109,16 @@ def run(check=False, stats=False, retags=False):
             with io.open(path, 'w', encoding='utf-8', newline='\n') as f:
                 f.write(new)
             added += 1
+        elif fix_states and rel not in DERIVED_DOCS:
+            # P0-1：存量“在用但无可执行判据”的文档从 verified 降为 review（verified 只留给带判据+签字的）
+            hard = [e for e in (meta.get('evidence') or [])
+                    if isinstance(e, dict) and (e.get('cmd') or e.get('artifact'))]
+            if meta.get('status') == 'verified' and not hard:
+                meta['status'] = 'review'
+                meta['needs_evidence'] = True
+                with io.open(path, 'w', encoding='utf-8', newline='\n') as f:
+                    f.write(kbl.dump_front_matter(meta, body))
+                restated += 1
         elif retags and rel not in DERIVED_DOCS:
             new_tags = _tags_from_guide(body or text)
             if new_tags != (meta.get('tags') or []):
@@ -142,6 +153,8 @@ def run(check=False, stats=False, retags=False):
             print('  本次重抽 tags：%d 篇；丢掉的非检索词碎片 %d 个（例：%s）'
                   % (retagged, len(dropped),
                      '、'.join('%s' % t for _, t in dropped[:6])))
+        if restated:
+            print('  本次状态降级（verified→review，无判据）: %d 篇' % restated)
         if counts['noGuide']:
             print('  ⚠️ %d 篇缺「检索导引」行（tags 会为空）' % counts['noGuide'])
     fail = 0
@@ -162,8 +175,10 @@ def main():
     ap.add_argument('--stats', action='store_true', help='出体检数字')
     ap.add_argument('--retags', action='store_true',
                     help='重抽 tags（只从「检索导引」行；清掉历史污染）')
+    ap.add_argument('--fix-states', action='store_true',
+                    help='P0-1：把「无 cmd/artifact 判据」的 verified 降为 review')
     a = ap.parse_args()
-    return run(check=a.check, stats=a.stats, retags=a.retags)
+    return run(check=a.check, stats=a.stats, retags=a.retags, fix_states=a.fix_states)
 
 
 if __name__ == '__main__':

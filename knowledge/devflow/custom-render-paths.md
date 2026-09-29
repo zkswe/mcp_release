@@ -2,12 +2,12 @@
 id: devflow-custom-render-paths
 title: 自定义 GUI 渲染五条路（在 FlyThings 上借开源渲染生态 / 自绘画面）
 category: devflow
-status: draft
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180
 origin: total
-source: 2026-09-29 PocketGame（V851s）实战 + 画布/视频层/指针仪表实测
+source: 2026-09-29 PocketGame（V851s）实战 + 画布/视频层/指针仪表实测 ｜ 2026-09-29 由候选区晋升为 review（可检索+标注）
 needs_evidence: true
 platforms: [V85X, Z20]
 tags: [自定义渲染, 自绘, canvas, ZKPainter, 离屏渲染, LVGL, cairo, SDL, stb, disp 图层, 硬件合成, 帧缓冲, fb0, releaseLayer]
@@ -19,6 +19,11 @@ evidence: []
 > 想用 LVGL / cairo / SDL / nanovg / stb 画东西 / 离屏渲染成图再显示 / 直接写 /dev/fb0 /
 > 能不能起 GTK/Qt / 视频层怎么叠加 / disp 图层 / releaseLayer / 一半用框架一半自己画 /
 > 复杂动画性能不够怎么办。
+
+
+> **补充检索词（实测命中用）**：stb 系列头文件库能用吗 / 视频层怎么叠加（帧缓冲 vs disp 硬件图层）/
+> 离屏渲染成图再显示 / 直接写 /dev/fb0 可以吗 / releaseLayer 是什么 /
+> 开源渲染库怎么接（lvgl / nanovg / cairo / sdl / stb）
 
 ## 0. 前提事实（三条，决定所有方案）
 

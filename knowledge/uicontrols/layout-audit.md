@@ -2,7 +2,7 @@
 id: uicontrols-layout-audit
 title: 🔍 UI 控件 Layout 全量检查报告
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

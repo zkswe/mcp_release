@@ -2,7 +2,7 @@
 id: uicontrols-retrieval-boundary
 title: 🔒 控件用法检索边界（沛哥定规 2026-09-01）
 category: uicontrols
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

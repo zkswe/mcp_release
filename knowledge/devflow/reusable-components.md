@@ -2,7 +2,7 @@
 id: devflow-reusable-components
 title: 可复用组件（components）—— 组件化落地规范
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

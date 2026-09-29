@@ -16,6 +16,7 @@
 红线：复验只在**维护者侧**跑；报告只落 `knowledge/_reports/`（gitignore），不回写用户数据。
 """
 import argparse
+import hashlib
 import io
 import json
 import os
@@ -32,11 +33,29 @@ REPORT_DIR = os.path.join(kbl.TOTAL_KB, '_reports')
 
 
 def _docs(scope='offline', target=''):
+    """待复验文档：**证据以文件为准**。
+
+    根因（本轮自指环 bug）：kb_verify 原先从 `kb_index.json` 快照读 evidence，
+    而 `--apply` 又会改文件 → 索引滞后时把旧证据当现状（且旧证据是自检索引的命令，
+    写入元数据后必破）→ 自造循环。改为逐篇从 md 读 meta。
+    """
     idx = kbl.load_json(os.path.join(kbl.TOTAL_KB, 'kb_index.json'))
     out = []
     for d in idx.get('docs') or []:
         if target and target not in (d.get('id'), d.get('path')):
             continue
+        p = os.path.join(BASE, (d.get('path') or '').replace('/', os.sep))
+        if os.path.isfile(p):
+            try:
+                meta, _b, _e = kbl.parse_front_matter(io.open(p, encoding='utf-8').read())
+            except OSError as e:
+                d = dict(d, readError=str(e))
+            else:
+                d = dict(d, evidence=meta.get('evidence') or [],
+                         status=meta.get('status'),
+                         needsEvidence=meta.get('needs_evidence'),
+                         derived=(d.get('path') in kbl.DERIVED_DOCS),
+                         id=meta.get('id') or d.get('id'))
         out.append(d)
     return out
 
@@ -81,6 +100,18 @@ def verify_entry(doc, device='', apply=False, allow_device=False):
         if kind == 'manual':
             item['result'] = 'manual'
             item['detail'] = '人工判据（不自动跑，也不算通过）'
+        elif e.get('artifact') and not cmd:
+            # P0-3：观察类判据（截图/日志/对比表）——文件在且哈希可复算就算过
+            art = str(e['artifact'])
+            p2 = os.path.join(BASE, art.replace('/', os.sep))
+            if os.path.isfile(p2):
+                sha = hashlib.sha256(io.open(p2, 'rb').read()).hexdigest()
+                item.update(result='pass', artifactSha256=sha,
+                            detail='artifact 存在，sha256=%s…' % sha[:16])
+                verdicts.append(True)
+            else:
+                item.update(result='fail', detail='artifact 不存在: %s' % art)
+                verdicts.append(False)
         elif kind == 'real-device':
             if not (allow_device and device):
                 item['result'] = 'skip'
@@ -100,6 +131,7 @@ def verify_entry(doc, device='', apply=False, allow_device=False):
             ok = rc == int(e.get('expect_rc', 0)) and (e.get('expect_contains') or '') \
                 in (out + err)
             item.update(result='pass' if ok else 'fail', rc=rc,
+                        outputSha256=hashlib.sha256((out + err).encode('utf-8')).hexdigest(),
                         detail=(out + err).strip()[-300:])
             verdicts.append(ok)
         res['checks'].append(item)
@@ -112,13 +144,14 @@ def verify_entry(doc, device='', apply=False, allow_device=False):
     else:
         res['status'] = 'skipped'
         res['reason'] = res['reason'] or '证据未在本轮范围内（真机项需 --device）'
-    if apply and path and os.path.isfile(path):
+    if apply and path and os.path.isfile(path) and not doc.get('derived'):
         _apply(path, res)
     return res
 
 
 def _apply(path, res):
-    """把复验结果写回 front-matter：pass → verified_at 刷新；fail → status=stale（显式）。"""
+    """把复验结果写回 front-matter：pass → verified_at + **machine_verified_at**（机器签字）
+    + 逐条 evidence 落 `ran_at / output_sha256`（可复算）；fail → status=stale。"""
     raw = io.open(path, encoding='utf-8').read()
     meta, body, _err = kbl.parse_front_matter(raw)
     if not meta:
@@ -126,11 +159,22 @@ def _apply(path, res):
     if res['status'] == 'pass':
         meta['verified_at'] = kbl.today()
         meta['needs_evidence'] = False
+        meta['machine_verified_at'] = kbl._now()      # P0-4：机器签字（与人签 reviewed_by 等价留痕）
         if meta.get('status') == 'stale':
             meta['status'] = 'verified'
+        ev = meta.get('evidence') or []
+        for i, e in enumerate(ev):
+            if not isinstance(e, dict) or i >= len(res.get('checks') or []):
+                continue
+            chk = res['checks'][i]
+            if chk.get('result') == 'pass':
+                e['ran_at'] = kbl._now()
+                sha = chk.get('outputSha256') or chk.get('artifactSha256')
+                if sha:
+                    e['output_sha256'] = sha
+        meta['evidence'] = ev
     elif res['status'] == 'fail':
         meta['status'] = 'stale'
-        meta['supersedes'] = meta.get('supersedes') or ''
         meta['last_failed_at'] = kbl.today()
     else:
         return

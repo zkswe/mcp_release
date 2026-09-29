@@ -2,7 +2,7 @@
 id: devflow-busybox-debug-library
 title: "BusyBox 调试工具库（bin_tools/{平台}/busybox，随 MCP 分发）"
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

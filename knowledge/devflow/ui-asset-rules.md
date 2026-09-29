@@ -2,7 +2,7 @@
 id: devflow-ui-asset-rules
 title: UI 图片资源铁律与 PNG 抗锯齿管线
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180

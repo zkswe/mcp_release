@@ -2,7 +2,7 @@
 id: devflow-html-subset-quickref
 title: HTML 原型 → json 规范速查（HTML_SUBSET）
 category: devflow
-status: verified
+status: review
 confidence: manual
 verified_at: 2026-09-29
 stale_days: 180
