@@ -703,7 +703,7 @@ def flythings_list_packages(platform=None):
         pkgs = reg.get(np_, {})
         if pkgs:
             items = [{'name': n, 'version': v[-1] if v else None,
-                      'description': PKG_DESC.get(n, '')}
+                      'description': PKG_DESC.get(n, ''), 'hasCard': _has_card(n)}
                      for n, v in sorted(pkgs.items())]
         else:
             # 无本地缓存：用离线目录（全平台快照）
@@ -740,6 +740,8 @@ def flythings_query_package(package, platform='F133'):
     if local_versions:
         return {'success': True, 'package': package, 'platform': platform,
                 'description': PKG_DESC.get(package, ''),
+                'cardSummary': (package_card(package) or {}).get('summary') or None,
+                'hasCard': _has_card(package),
                 'versions': local_versions, 'source': 'local registry'}
     cv = _catalog_versions(package, np_)
     if cv:
@@ -749,6 +751,8 @@ def flythings_query_package(package, platform='F133'):
     online = _online_versions(package, np_)
     return {'success': True, 'package': package, 'platform': platform,
             'description': PKG_DESC.get(package, ''),
+            'cardSummary': (package_card(package) or {}).get('summary') or None,
+            'hasCard': _has_card(package),
             'versions': online, 'source': 'package.flythings.cn' if online else 'unknown'}
 
 
@@ -794,7 +798,8 @@ def flythings_get_package_api(package_id, platform='F133', version=None):
     versions = _pkg_versions(package_id, platform)
     v = version or (versions[0] if versions else None)  # versions 降序，[0] 为最新
     if not versions:
-        return {'success': False, 'error': f'平台 {platform} 未找到包 {package_id}'}
+        return {'success': False, 'error': f'平台 {platform} 未找到包 {package_id}',
+                'card': package_card(package_id)}
     inc = os.path.join(_pkg_dir(package_id, platform), v, 'include')
     classes = _parse_header_classes(inc) if os.path.isdir(inc) else []
     readme = _pkg_readme(package_id, platform, v)
@@ -810,7 +815,8 @@ def flythings_get_package_api(package_id, platform='F133', version=None):
     return {'success': True, 'package': package_id, 'version': v,
             'platform': platform,
             'headers': _pkg_headers(package_id, platform, v),
-            'classes': classes, 'examples': examples}
+            'classes': classes, 'examples': examples,
+            'card': package_card(package_id)}
 
 
 def flythings_resolve_dependencies(packages, platform='F133'):
@@ -1022,3 +1028,55 @@ def flythings_add_package(project_root, package, version=None, platform=None, wi
     return {'success': True, 'package': pkg, 'version': v, 'platform': platform,
             'versionSource': 'local' if vers else 'catalog/online',
             'action': action, 'manifestPath': mf, 'install': install}
+
+# ==================== 仓库内置「包卡」（packages/<包>/package.yaml） ====================
+# 背景（2026-09-29 审查报告 P0①）：AI 通过工具只能看到 registry 的头文件/README，
+# 我们写的 11 张包卡（summary / api / usage_cpp / gotchas / verified_*）原先**取不到**。
+# 这里把包卡接进工具返回，registry 仍作兜底（包卡不存在时行为不变）。
+REPO_PACKAGES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'packages')
+_PACKAGE_CARDS = {}
+
+
+def _repo_card_path(pkg):
+    p = os.path.join(REPO_PACKAGES_DIR, str(pkg), 'package.yaml')
+    return p if os.path.isfile(p) else None
+
+
+def _load_yaml_file(path):
+    """优先 pyyaml；不可用时返回 None（调用方降级为「无包卡」）。"""
+    try:
+        import yaml  # noqa
+        with open(path, encoding='utf-8') as fp:
+            return yaml.safe_load(fp)
+    except Exception:
+        return None
+
+
+def package_card(pkg):
+    """仓库里的包卡（不存在/解析失败 → None）。带进程内缓存。"""
+    key = str(pkg)
+    if key in _PACKAGE_CARDS:
+        return _PACKAGE_CARDS[key]
+    path = _repo_card_path(key)
+    card = None
+    if path:
+        data = _load_yaml_file(path)
+        if isinstance(data, dict):
+            card = {k: data.get(k) for k in
+                    ('id', 'version', 'summary', 'entry', 'headers', 'api', 'deps',
+                     'usage_cpp', 'gotchas', 'see_also')}
+            card['platforms'] = data.get('platforms')
+            card['verified'] = {k: v for k, v in data.items()
+                                if isinstance(k, str) and k.startswith('verified')}
+            card['cardPath'] = 'packages/%s/package.yaml' % key
+            card['readmePath'] = 'packages/%s/README.md' % key
+    _PACKAGE_CARDS[key] = card
+    return card
+
+
+def _has_card(pkg):
+    return package_card(pkg) is not None
+
+
+def _cards_dir():
+    return REPO_PACKAGES_DIR

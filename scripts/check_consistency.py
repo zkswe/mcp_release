@@ -134,7 +134,10 @@ def stage_tool_count():
         cnt = json.loads(_read(gp)).get('count')
         check(cnt == len(names), 'gate catalog count', '%s vs %d' % (cnt, len(names)))
     else:
-        check(False, 'gate catalog.json exists', gp)
+        # v0.27.122：意图闸门目录不随 MCP 仓库分发（兄弟目录形态），缺失时降级为 skip + 提示，
+        # 不再误报红（审查报告 §2.1 ②）。存在但漂移仍会 FAIL（上面的 count 校验）。
+        check(True, 'gate catalog.json (未分发 → skip)',
+              '%s 不存在；闸门不在本仓库内，跳过 count 校验（仅提示）' % gp)
     mp = os.path.join(BASE, 'tools_manifest.json')
     if os.path.isfile(mp):
         d = json.loads(_read(mp))

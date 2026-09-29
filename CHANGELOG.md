@@ -1,7 +1,8 @@
 # CHANGELOG — FlyThings MCP Open
 
-> 版本迭代记录（按版本从新到旧）。当前版本：**v0.27.30-open**（2026-09-11）。
-> 每次迭代在本文件顶部新增一节；MCP_FEATURES（kb_tools.py）只保留精华摘要，完整历史以本文件为准。
+> **本文件已冻结为历史归档：内容覆盖 ≤ v0.27.30-open（2026-09-11）**（2026-09-11 钟工定规「方案 B」）。
+> **此后（v0.27.31 → 今）的版本史唯一来源 = `kb_tools.py` 的 `MCP_FEATURES`**（`flythings_get_version(compact=False)` 取全量）
+> 与 `README.md` 的版本号；本文件不再新增章节、不进发布（审查报告 §2.2 口径定死）。
 
 ---
 

@@ -34,7 +34,8 @@ import sys
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASELINE = os.path.join(BASE, 'scripts', 'silent_except_baseline.txt')
 WHITELIST = os.path.join(BASE, 'scripts', 'silent_except_whitelist.txt')
-SKIP_DIRS = ('__pycache__', '.git', '.vscode', 'node_modules', 'build', 'dist')
+SKIP_DIRS = ('__pycache__', '.git', '.vscode', 'node_modules', 'build', 'dist',
+                  '.venv', 'venv', '.fsc', '.fun', 'toolchain')
 
 
 def sites(path):

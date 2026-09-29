@@ -34,3 +34,18 @@ Z20 registry 27 个包里 **17 个完全没有 README、没有示例**（含 `ea
 `mi-*`、`mbedtls`、`openssl`、`paho-mqtt3as`、`rapidjson`…），其余多数只有 1 段代码；
 MCP 的包查询只能给出「一行描述 + 从 README 抓的代码块」，抓不到就只剩几条静态兜底 →
 AI 拿到包后基本无从下手。本目录就是补这块。
+
+## 包卡完整度状态（2026-09-29 复核，审查报告 §2.3）
+
+> 口径：**规范要求有的东西，要么补齐，要么显式标注「待补 + 计划」，不允许静默不一致。**
+
+| 包 | package.yaml | README | platforms.md | example/ | evidence/ |
+|---|---|---|---|---|---|
+| zkhardware / zknet | ✅ | ✅ | ✅ | ✅ | ✅ |
+| curl-cxx / ntp / mqtt-cxx / paho-mqtt3as | ✅ | ✅ | 🕐 待补（本批只验 Z20/Z21 两平台，跨平台表等 F133/T113/V85X 实测后一并写） | 🕐 待补（实现见 `demos/net-*-verify-*`，后续抽最小 example 进包） | ✅ |
+| cares / mbedtls / openssl / curl | ✅ | ✅ | 🕐 待补（同上；目前只有 Z20 直调 + Z20/Z21 间接验证） | 🕐 待补（实现见 `demos/net-direct-tls-z20`） | ✅ |
+| rapidjson | ✅ | ✅ | 🕐 待补 | 🕐 待补 | 🕐 待补（纯头文件包，未上真机；`verified: null` 已标注） |
+
+- 「可直接拷 example/ 三步跑起来」目前只有 `zkhardware`/`zknet` 成立；其余包的**可运行实现**在 `demos/` 里（`net-*-verify-*`），
+  包卡 `package.yaml` 的 `usage_cpp` 已给最小片段（这是 AI 的首选入口）。
+- `components/mp_transfer` 缺 `platforms.md` + `example/`，违反「四件套缺一不收」→ 同样标注待补，下一批补齐或按规范下线。
