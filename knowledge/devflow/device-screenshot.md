@@ -1,3 +1,18 @@
+---
+id: devflow-device-screenshot
+title: 真机抓屏（device_screenshot）实现要点与踩坑
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [Z20, Z21]
+tags: [fb0 参数, 双缓冲 pan, 视频层抓不到帧, 拼墙抓不到画面**, toast 抓不到, 瞬时元素抓不到]
+evidence: []
+---
 # 真机抓屏（device_screenshot）实现要点与踩坑
 
 > 检索导引：抓真机截图 / 抓屏 / 屏幕没图 / 抓到的画面是旧的 / 颜色红蓝互换 / 文字侧躺倒立 /

@@ -1,3 +1,18 @@
+---
+id: devflow-reusable-components
+title: 可复用组件（components）—— 组件化落地规范
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [F133]
+tags: [模块目录, 资产型模块, 组件 README, 平台说明, package 引用, ` 模块]
+evidence: []
+---
 # 可复用组件（components）—— 组件化落地规范
 
 > 检索导引：可复用模块 / 组件化 / 封装一层 / wxapi 风格 API / 参考代码目录 / 组件规范 / 四件套 /

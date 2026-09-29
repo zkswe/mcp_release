@@ -1,3 +1,18 @@
+---
+id: devflow-package-verify-playbook
+title: 依赖包/网络 API 真机自动化验证套路（playbook）
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [Z20, Z21]
+tags: [配套实现：`demos, devflow, <包]
+evidence: []
+---
 # 依赖包/网络 API 真机自动化验证套路（playbook）
 
 > 检索导引：需求里出现「验证依赖包 / 网络 API 真机验收 / 自动跑一遍 / 自检 / 触摸注入取证 / 部署调试怎么不翻车 / 面板黑屏了」时命中本文。

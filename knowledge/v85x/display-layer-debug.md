@@ -1,3 +1,18 @@
+---
+id: v85x-display-layer-debug
+title: 🖥️ V85X 显示分层调试：releaseLayer 图层释放 / UI 透出 / 回放旋转
+category: v85x
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [V85X]
+tags: [UVC 摄像头预览, 回放调试, AP+P2P, 否则黑屏**, 适用：**V85X, V853]
+evidence: []
+---
 # 🖥️ V85X 显示分层调试：releaseLayer 图层释放 / UI 透出 / 回放旋转
 
 > 检索导引：问「V85X 视频层黑屏 / 图层次残留 / releaseLayer 什么时候必做 / UI 层盖住视频 / 回放方向不对 / 竖装屏配横 UI 错屏」→ 本文；videoView 透出画面见 `v85x/videoview-transparent-window.md`。

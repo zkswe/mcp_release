@@ -1,3 +1,18 @@
+---
+id: devflow-platform-translate
+title: 跨框架 / 竞品 UI 迁移口径（映射表 + 四阶段路线 + 双平台）
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [F133]
+tags: [检索词：界面迁移, 竞品样式对齐, 跨框架移植, Android 控件对应, 组件库迁移, TDesign 迁移]
+evidence: []
+---
 # 跨框架 / 竞品 UI 迁移口径（映射表 + 四阶段路线 + 双平台）
 
 > 检索导引：问「竞品/别的框架界面搬过来 / 小程序·LVGL 转 FlyThings 怎么排期 / rpx 与视觉换算 / 差异降级清单 D-xx / 双分辨率同源怎么做」→ 本文（迁移方法论）；控件级对应走 `flythings_map_control`（见 `uicontrols/control-mapping-capability.md`）。

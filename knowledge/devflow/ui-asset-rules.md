@@ -1,3 +1,18 @@
+---
+id: devflow-ui-asset-rules
+title: UI 图片资源铁律与 PNG 抗锯齿管线
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [图片锯齿, 1x 直画, 大图缩小, 走哪条路出图, thumb, size 与图对不上]
+evidence: []
+---
 # UI 图片资源铁律与 PNG 抗锯齿管线
 
 > 检索导引：生成图标/瓦片/按钮背景/卡片图 / 图片尺寸对不上 / 圆角四角发黑 / 按钮透背景 /

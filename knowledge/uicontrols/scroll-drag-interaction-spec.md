@@ -1,3 +1,18 @@
+---
+id: uicontrols-scroll-drag-interaction-spec
+title: 滑动/拖拽手感规范：dragMaxDis / edgeEffect / autoRollback / rollSpeed
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [**检索命中条件**：问, 列表被拖出去, 越界回弹, 拖拽距离填多少, 列表滑动手感, 循环列表拖拽]
+evidence: []
+---
 # 滑动/拖拽手感规范：dragMaxDis / edgeEffect / autoRollback / rollSpeed
 
 > 检索导引：问「dragMaxDis 填多少 / 列表被一次拖出屏 / overscroll 越界回弹 / edgeEffect·autoRollback·rollSpeed 怎么配 / 松手回弹手感」→ 本文（唯一权威口径，官方未收录）。

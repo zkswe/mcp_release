@@ -1,3 +1,18 @@
+---
+id: uicontrols-global-popup-window
+title: 工程自定义系统窗口 / 全局弹框（含 car 工程 btcall 来电弹框做法）
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [F133]
+tags: [md` 同批, statusbar, navibar 以及, **自定义全局弹框**, 官方无条款的地方一律标, 未收录]
+evidence: []
+---
 # 工程自定义系统窗口 / 全局弹框（含 car 工程 btcall 来电弹框做法）
 
 > 检索导引：问「全局弹框/悬浮窗怎么做 / 蓝牙来电话弹窗（btcall）/ 自定义系统级弹窗注册 / 顶层窗口层级与生命周期能不能自创」→ 本文；框架内建的系统窗口见 `uicontrols/system-windows.md`。

@@ -1,3 +1,18 @@
+---
+id: devflow-cli-fun-toolchain
+title: 🧰 fun 命令行工具链（原 fuse 更名；2026-09-28 内部又改成 fsc、产物目录 `.fun/` → `.fsc/`）+ 宏/产物目录改名
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [F133, Z20, Z235X]
+tags: [产物目录 `, fun, <平台, `→**`, fsc, `**]
+evidence: []
+---
 # 🧰 fun 命令行工具链（原 fuse 更名；2026-09-28 内部又改成 fsc、产物目录 `.fun/` → `.fsc/`）+ 宏/产物目录改名
 
 > 检索导引：问「用 fun 还是 fuse/fsc / fun build 挂老工程 / FUN_BUILD 宏怎么加 / 产物在 .fun 还是 .fsc / 依赖注册表在哪 / 多设备在线怎么推指定设备」→ 本文；编译部署该调哪个工具见 `devflow/deploy-scene-map.md`。

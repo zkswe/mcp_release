@@ -1,3 +1,18 @@
+---
+id: v85x-uvc-usb-camera
+title: V85X USB 摄像头（UVC）接入 + 预览/录像/拍照（V85X 平台绑定实现）
+category: v85x
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [V85X]
+tags: [**未指定平台, 其他平台, T113, F133, Z20, Z21]
+evidence: []
+---
 # V85X USB 摄像头（UVC）接入 + 预览/录像/拍照（V85X 平台绑定实现）
 
 > 🔍 **检索导引（命中条件）**：用户指定 **V85X 平台** + 「UVC / USB 摄像头接入 / 预览 / 拍照 / 录像 / 回放 / JPEG/MJPEG」→ 本篇为**平台绑定实现**；

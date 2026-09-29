@@ -1,3 +1,18 @@
+---
+id: devflow-custom-font-config
+title: 🔤 自定义字库（fun build/launch 流程，非 IDE）— 权威规则
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [Z21, V85X, V851S]
+tags: [font_setting, md 是 IDE 视角, ⚠️ 修正记录：v0, 13, **fun 流程不适用, 不需要**]
+evidence: []
+---
 # 🔤 自定义字库（fun build/launch 流程，非 IDE）— 权威规则
 
 > 检索导引：问「换字体 / 换字库 / ttf 放哪 / package.properties 的 enable.font.location / 多字体哪个当默认 / setFontFamily / 设备缺中文 / 照设计稿要换字体」→ 本文（fun 流程权威口径）；屏幕方向等 cfg 机制见 `devflow/package-properties-easyui-cfg.md`。

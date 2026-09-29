@@ -1,3 +1,18 @@
+---
+id: hardware-usb-otg-switch
+title: USB OTG / ADB / U盘 模式切换 + HOST 外设接入（跨平台对照：V85X / T113 / Z21）
+category: hardware
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [Z21, T113, V85X]
+tags: [或问, **U盘插上没反应, 读不到**, **USB 摄像头, 键鼠 接入**, **且没有指定平台**]
+evidence: []
+---
 # USB OTG / ADB / U盘 模式切换 + HOST 外设接入（跨平台对照：V85X / T113 / Z21）
 
 > 🔍 **检索导引（命中条件）**：用户问「**如何切换 USB OTG**」「**USB OTG 怎么切换**」「**怎么切到 ADB 模式**」「**怎么切 U盘 模式**」「**USB 连电脑当 U盘拷文件**」「**设备读节点切 USB 模式 / host device 切换 / 主从切换**」

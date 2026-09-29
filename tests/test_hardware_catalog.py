@@ -37,10 +37,13 @@ class TestHardwareCatalog(unittest.TestCase):
         """派生文档必须与 json 一致（否则检索到的是旧型号表）→ 跑 gen_hardware_doc.py。"""
         p = os.path.join(U.BASE, 'knowledge', 'hardware', 'hardware-models.md')
         want = hw.build_markdown(self.cat)
-        got = io.open(p, encoding='utf-8').read()
+        raw = io.open(p, encoding='utf-8').read()
+        import kb_local as kbl          # P1：knowledge 文档带 front-matter，正文才是派生内容
+        meta, got, _err = kbl.parse_front_matter(raw)
         self.assertEqual(got, want,
                          'hardware-models.md 与 hardware_catalog.json 漂移：'
                          'python scripts/gen_hardware_doc.py')
+        self.assertEqual(meta.get('category'), 'hardware', '派生文档必须带 front-matter')
 
     # ---- op 契约（走分发器，与客户端同一条路径）----
 

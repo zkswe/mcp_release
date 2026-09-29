@@ -1,3 +1,18 @@
+---
+id: uicontrols-custom-view-refresh
+title: 自定义 view / 自绘帧的「刷新口径」（GameView 那一套）
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [每条都有工程出处, 可 grep 核对, 检索词：自定义控件刷新, 自定义 view 刷新, 自绘刷新, 帧刷新]
+evidence: []
+---
 # 自定义 view / 自绘帧的「刷新口径」（GameView 那一套）
 
 > 检索导引：问「自定义 view 每帧怎么刷新 / GameView 那套刷新口径 / setBackgroundBmp 不刷新 / 屏幕只刷一块 / setInvalid·invalidate 语义区别」→ 本文（这类刷新的唯一权威口径）。

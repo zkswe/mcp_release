@@ -1,3 +1,18 @@
+---
+id: uicontrols-json-field-mandatory
+title: ⛔ json 字段全集显式化（每控件必写字段 v2.1，双源基准）
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [不同 fui, 含默认值 -1, false, 字号, 均显式写, **]
+evidence: []
+---
 # ⛔ json 字段全集显式化（每控件必写字段 v2.1，双源基准）
 
 > 检索导引：问「json 字段要不要写全 / 缺字段会出什么问题 / touchable 默认值 / 为什么 radiogroup 要 touchable true / 每类型必写键有哪些」→ 本文（check_all #14 校验依据）。

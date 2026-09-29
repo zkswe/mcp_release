@@ -1,3 +1,18 @@
+---
+id: t113-car-ahd-camera-format
+title: 📹 T113 倒车摄像头格式参数表（AHD/TVI/CVBS/DM5885）
+category: t113-car
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [T113]
+tags: [public, t113, jni, logic, 分辨率, 帧率配置]
+evidence: []
+---
 # 📹 T113 倒车摄像头格式参数表（AHD/TVI/CVBS/DM5885）
 
 > 检索导引：问「T113 倒车摄像头选哪个格式 / AHD·TVI·CVBS·DM5885 参数表 / 分辨率帧率（标 25 实际 24）配错 / cam_format_tab 改哪 / 格式切换回调」→ 本文；控件字段见 `uicontrols/cameraview-fields.md`。

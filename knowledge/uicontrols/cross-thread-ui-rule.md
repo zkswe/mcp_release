@@ -1,3 +1,18 @@
+---
+id: uicontrols-cross-thread-ui-rule
+title: 跨线程操作 UI 规则（沛哥 2026-09-07 确认）
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: []
+evidence: []
+---
 # 跨线程操作 UI 规则（沛哥 2026-09-07 确认）
 
 > 检索导引：问「子线程能不能直接 setText / 工作线程刷 UI 要不要 post·handler / 跨线程操作控件安全吗 / UI 回调里 sleep 等资源释放行不行」→ 本文。

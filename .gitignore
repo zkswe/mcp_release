@@ -24,3 +24,10 @@ screenshots/
 # 图标库生成物（可现场重建：components/icons/README.md §2/§6；
 # out/.icons-cache/ 是按需解包缓存，同样不进库）
 components/icons/out/
+
+# 知识生长（P1）：日志/报告不进库；总账 inbox 走 PR（保留目录）
+knowledge/_logs/
+knowledge/_reports/
+
+# 本地临时日志（跑门禁/用例时的抓屏输出，不入库）
+temp_*.log

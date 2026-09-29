@@ -1,3 +1,18 @@
+---
+id: devflow-html-subset-quickref
+title: HTML 原型 → json 规范速查（HTML_SUBSET）
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [长尾在这里, 实现规范, 工具开发用, HTML_SUBSET, md`, 内容以本页为准]
+evidence: []
+---
 # HTML 原型 → json 规范速查（HTML_SUBSET）
 
 > 检索导引：写「受限 HTML 原型 / 原型转 json / 控件映射 / data-* 属性 / data-touchable 不生效 / data-icon 图标 / CSS 效果转图 / JS 交互稿 / data-bgpic / div.text 底图 / backgroundPic 没生成 / 底图没画出来 / 卡片白卡看不到 / 容器默认可见盖住页面」时命中。

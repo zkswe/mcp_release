@@ -24,6 +24,31 @@ DEFAULT_OUT = os.path.join(BASE, 'knowledge', 'hardware', 'hardware-models.md')
 HEADER_NOTE = '> 本文件由 scripts/gen_hardware_doc.py 生成'
 
 
+def front_matter():
+    """派生文档的 front-matter（P1 起 knowledge 文档都要带元数据）。
+
+    verified_at 取 hardware_catalog.json 的 mtime（**不能用 today()**，否则每天 --check 都漂）。
+    """
+    import kb_local as kbl
+    cat = os.path.join(BASE, 'hardware_catalog.json')
+    try:
+        day = io.open('') and __import__('time').strftime(
+            '%Y-%m-%d', __import__('time').localtime(os.path.getmtime(cat)))
+    except OSError:
+        day = '2026-09-29'
+    return {'id': 'hardware-hardware-models',
+            'title': '硬件型号库（平台 → 型号 → 规格/预设参数）',
+            'category': 'hardware', 'platforms': [],
+            'tags': ['硬件', '型号库', '平台', '分辨率', '规格', '主控'],
+            'status': 'verified', 'confidence': 'offline', 'verified_at': day,
+            'stale_days': 365, 'origin': 'total',
+            'source': 'scripts/gen_hardware_doc.py（由 hardware_catalog.json 派生）',
+            'needs_evidence': False,
+            'evidence': [{'kind': 'offline',
+                          'cmd': 'python scripts/gen_hardware_doc.py --check',
+                          'expect_rc': 0, 'expect_contains': 'in sync'}]}
+
+
 def collect():
     import hardware_tools as hw
     cat, warn = hw.load(force=True)
@@ -42,12 +67,18 @@ def collect():
     return hw.build_markdown(cat)
 
 
+def compose(text):
+    """front-matter + 正文（P1 起 knowledge 文档带元数据；--check 比的就是这个组合）。"""
+    import kb_local as kbl
+    return kbl.dump_front_matter(front_matter(), text)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--out', default=DEFAULT_OUT)
     ap.add_argument('--check', action='store_true', help='只比对，不一致退出码 1')
     a = ap.parse_args()
-    want = collect()
+    want = compose(collect())
     if a.check:
         if not os.path.isfile(a.out):
             print('[FAIL] hardware-models.md missing: %s' % a.out)

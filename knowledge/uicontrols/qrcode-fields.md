@@ -1,3 +1,18 @@
+---
+id: uicontrols-qrcode-fields
+title: QRCode 二维码控件 JSON 字段规范
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [PriceTag 价签, 设备配网绑定场景]
+evidence: []
+---
 # QRCode 二维码控件 JSON 字段规范
 
 > 检索导引：问「二维码控件怎么用 / loadQRCode 传什么内容 / 设备 SN·MAC·蓝牙名展示绑定 / codeStr 是不是运行时内容 / 码太密扫不出」→ 本文。

@@ -1,3 +1,18 @@
+---
+id: devflow-adb-and-device-selection
+title: ADB 随包 + 设备选择 + 「跑起来了没」（v0.27.84）
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [F133, F135, Z21, V85X]
+tags: [检索词：adb 在哪, 找不到 adb, adb 驱动, 设备连不上, 该推哪台设备, 多设备推错]
+evidence: []
+---
 # ADB 随包 + 设备选择 + 「跑起来了没」（v0.27.84）
 
 > 检索导引：问「找不到 adb / 要不要装 Android SDK / 设备连不上 / 多台设备推错台 / 怎么知道程序跑起来了没 / launch 默认推哪台」→ 本文；多设备推送的 CLI 侧陷阱见 `devflow/cli-fun-toolchain.md` §7。

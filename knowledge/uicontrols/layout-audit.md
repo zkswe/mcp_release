@@ -1,3 +1,18 @@
+---
+id: uicontrols-layout-audit
+title: 🔍 UI 控件 Layout 全量检查报告
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [35 个官方 demo, 本次已全部修复]
+evidence: []
+---
 # 🔍 UI 控件 Layout 全量检查报告
 
 > 检索导引：问「21 个控件字段到底全不全 / html2json 支持哪些字段 / 控件 id 段怎么分配 / 有没有遗漏控件」→ 本文（全量对账报告）。

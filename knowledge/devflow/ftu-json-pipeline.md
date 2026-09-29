@@ -1,3 +1,18 @@
+---
+id: devflow-ftu-json-pipeline
+title: ftu 是什么：ftu 开发 / ftu 编辑 / ftu 修改 / ftu 格式 / ftu 逆向（ftu 转 json / unpack）（UI 文件 main.ftu 与 json 的关系）
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [ftu 能不能手写手改, `main, ftu` 在哪, 时命中, **不要手写, 手改 ftu**]
+evidence: []
+---
 # ftu 是什么：ftu 开发 / ftu 编辑 / ftu 修改 / ftu 格式 / ftu 逆向（ftu 转 json / unpack）（UI 文件 main.ftu 与 json 的关系）
 
 > 检索导引：客户或 AI 问「**ftu 如何开发** / ftu 怎么改 / **怎么修改 ftu 布局文件** / ftu 是什么格式 /

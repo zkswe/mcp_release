@@ -1,3 +1,18 @@
+---
+id: uicontrols-high-frequency-callback-perf
+title: 高频回调性能规范：拖动/触摸回调里**禁止全量刷新**
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [检索词：滑动很卡, 拖动卡顿, 滑块拖不动, 拖动掉帧, 全量刷新, 高频回调]
+evidence: []
+---
 # 高频回调性能规范：拖动/触摸回调里**禁止全量刷新**
 
 > 检索导引：问「拖动卡顿·滑动很卡 / 高频回调里顺手刷了整页 / 触摸事件被合并丢弃 / 掉帧怎么量化」→ 本文；列表封面类的另一路优化见 `uicontrols/listview-image-cache.md`。

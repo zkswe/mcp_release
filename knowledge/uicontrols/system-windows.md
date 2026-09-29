@@ -1,3 +1,18 @@
+---
+id: uicontrols-system-windows
+title: 系统级窗口（状态栏 statusbar / 导航栏 navibar / 屏保 screensaver / 输入法 IME）
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [statusbar, 查不到的一律标, 未收录, 不猜, 不套别的 GUI 框架, 检索词：系统级页面]
+evidence: []
+---
 # 系统级窗口（状态栏 statusbar / 导航栏 navibar / 屏保 screensaver / 输入法 IME）
 
 > 检索导引：问「状态栏·导航栏怎么开 / 屏保怎么配 / 输入法窗口怎么写 / showStatusBar·screensaverOn 等 API / 系统级页面能不能自己创生命周期」→ 本文。

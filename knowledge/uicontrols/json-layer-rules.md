@@ -1,3 +1,18 @@
+---
+id: uicontrols-json-layer-rules
+title: 控件层级规则（容器 → 子内容矩阵，双源实证）
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [控件层级问题检讨, 产出, `projects, SampleUI-New, ui, 44]
+evidence: []
+---
 # 控件层级规则（容器 → 子内容矩阵，双源实证）
 
 > 检索导引：问「控件这样嵌套合不合法 / window 里能放什么 / pagewindow 为什么只装 window / 层级报错（check_all #2）/ 先看 json 做遮挡审计」→ 本文。

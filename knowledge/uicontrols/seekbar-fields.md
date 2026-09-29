@@ -1,3 +1,18 @@
+---
+id: uicontrols-seekbar-fields
+title: seekbar（滑块/进度条）字段与「滑块形状」口径
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [→ 真机定位后入库, 只由, 图片 + 控件盒子高度, 两件事决定, **, 检索词：滑块]
+evidence: []
+---
 # seekbar（滑块/进度条）字段与「滑块形状」口径
 
 > 检索导引：问「进度条滑块为什么是扁的 / 圆滑块怎么做 / thumb.size 和盒子高度关系 / 轨道图·有效图配错 / 播放进度条与音量条」→ 本文（滑块形状无字段可调）。

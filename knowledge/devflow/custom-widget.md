@@ -1,3 +1,18 @@
+---
+id: devflow-custom-widget
+title: FlyThings 自定义控件方法（lib-ext_widgets 拆解）
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [F136, 草稿待确认入库, ⚠️ 内部代码, 不整段复制实现]
+evidence: []
+---
 # FlyThings 自定义控件方法（lib-ext_widgets 拆解）
 
 > 检索导引：问「想做一个平台没有的控件 / 自定义控件怎么写 / 继承 ZKBase / onDraw 自绘 / 控件触摸事件重写 / 有没有现成自创控件可抄」→ 本文；先看缺什么控件见 `devflow/gui-controls-gap.md`，交付形态见 `devflow/reusable-components.md`。

@@ -1,3 +1,18 @@
+---
+id: uicontrols-radiogroup-checkbox-fields
+title: RadioGroup 单选组 / CheckBox 复选框 JSON 字段规范
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [场景开关等产品在用]
+evidence: []
+---
 # RadioGroup 单选组 / CheckBox 复选框 JSON 字段规范
 
 > 检索导引：问「单选组·复选框怎么做 / radiobuttons 子项字段 / 选中态用哪张图（pic2）/ setCheckedID 怎么用 / 单选点了没反应」→ 本文。

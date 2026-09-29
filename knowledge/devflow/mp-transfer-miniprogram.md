@@ -1,3 +1,18 @@
+---
+id: devflow-mp-transfer-miniprogram
+title: 📥 小程序传图/视频对接（相框类设备的局域网接收端）
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [钟工：, 小程序传输对接指南, 已在其他产品上验证, 先入库, 2026-09-24, mp_transfer]
+evidence: []
+---
 # 📥 小程序传图/视频对接（相框类设备的局域网接收端）
 
 > 检索导引：问「小程序传图/传视频 / 相框类设备接收端 / UDP 8899 设备发现 / TCP 9000 收文件 / ACK 怎么回 / 局域网对接怎么联调」→ 本文；实现代码在 `components/mp_transfer/`。

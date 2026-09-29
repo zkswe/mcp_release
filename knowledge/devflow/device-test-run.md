@@ -1,3 +1,19 @@
+---
+id: devflow-device-test-run
+title: 多设备并行测试跑批 + 机读报告（`flythings_test_run`）
+category: devflow
+status: verified
+confidence: offline
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: false
+platforms: []
+tags: [JUnit 报告, 像素基线, 基线回归, 首次怎么建基线, 比不到基线是过还是没过, 多设备并行]
+evidence:
+  - {kind: offline, cmd: python -m unittest tests.test_baseline_testrun -q, expect_rc: 0, expect_contains: OK}
+---
 # 多设备并行测试跑批 + 机读报告（`flythings_test_run`）
 
 > **检索导引**：自动化测试怎么跑 / 验收怎么批量做 / 多台设备一起跑用例 / 测试报告能进 CI 吗 /

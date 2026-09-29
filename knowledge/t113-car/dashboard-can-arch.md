@@ -1,3 +1,18 @@
+---
+id: t113-car-dashboard-can-arch
+title: 🚗 T113 车载仪表盘 CAN 应用架构（DashBoard_T113 三套工程实测）
+category: t113-car
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [T113]
+tags: [来源：`projects, BMW, Comaro, Jeep, Pointer, 三套仪表工程]
+evidence: []
+---
 # 🚗 T113 车载仪表盘 CAN 应用架构（DashBoard_T113 三套工程实测）
 
 > 检索导引：问「T113 仪表盘 CAN 怎么收 / 车速转速档位怎么解包 / SocketCAN can0 500k 配置 / 仪表指针动画几种做法 / 换车型改哪里」→ 本文（BMW/Comaro/Jeep 三套工程提炼）。

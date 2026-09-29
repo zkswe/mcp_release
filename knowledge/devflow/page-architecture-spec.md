@@ -1,3 +1,18 @@
+---
+id: devflow-page-architecture-spec
+title: 页面架构规范：ftu vs 同 ftu 内多窗口 + src 业务域目录命名
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [确认, 跨业务域, 弹窗, 判断正确后入库, 旧口径易被误读成, 只做一个页面]
+evidence: []
+---
 # 页面架构规范：ftu vs 同 ftu 内多窗口 + src 业务域目录命名
 
 > 检索导引：问「一个工程几个 ftu/Activity / 二级页·弹窗放同一 ftu 还是新页 / merge_windows 什么时候用 / showWnd 多窗口 / src 目录与文件怎么命名 / 多屏设计稿要落地几页」→ 本文（默认一屏一 Activity 一 json）；原型分页流程见 `devflow/prototype-flow.md`。

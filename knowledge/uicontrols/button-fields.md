@@ -1,3 +1,18 @@
+---
+id: uicontrols-button-fields
+title: Button 按键控件 JSON 字段规范 + 长按/循环重复配置
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [循环重复时间通过 UI, IDE 属性表, 可配, button, ui, 1024x600]
+evidence: []
+---
 # Button 按键控件 JSON 字段规范 + 长按/循环重复配置
 
 > 检索导引：问「按钮怎么做 / Button 有哪些 json 字段 / 长按时间怎么配（longClickTimeOut·longClickIntervalTime）/ 图标与文字怎么排（iconPosition）/ 五态图 picTab」→ 本文；按钮图片铁律见 `devflow/ui-asset-rules.md`。

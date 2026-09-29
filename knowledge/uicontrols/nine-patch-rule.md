@@ -1,3 +1,18 @@
+---
+id: uicontrols-nine-patch-rule
+title: 🧵 FT-009 .9.png 生成规则（必读）
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [png, 的代码, 与 AI 手写生成逻辑, Pillow 绘制卡片, 按钮, 轨道]
+evidence: []
+---
 # 🧵 FT-009 .9.png 生成规则（必读）
 
 > 检索导引：问「.9.png 怎么生成 / marker 黑线怎么画 / 圆角被刷平·底部倒角变方 / 拉伸区与内容区怎么定 / 卡片圆角验收」→ 本文；出图总铁律见 `devflow/ui-asset-rules.md`。

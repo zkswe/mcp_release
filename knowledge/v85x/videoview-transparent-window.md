@@ -1,3 +1,18 @@
+---
+id: v85x-videoview-transparent-window
+title: 🖥️ V85X 摄像头自维护出图 → videoView 零代码透出视频层（透明渲染区域）
+category: v85x
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [V85X]
+tags: [轮播类型=否, 除此以外没有其他操作**, video, md`, 适用：**V85X**, V853]
+evidence: []
+---
 # 🖥️ V85X 摄像头自维护出图 → videoView 零代码透出视频层（透明渲染区域）
 
 > 检索导引：问「V85X 摄像头画面自己输出怎么显示 / videoView 当透明窗口 / 要不要写 startPreview·play / video 控件轮播=否是什么行为」→ 本文；图层释放与黑屏防御见 `v85x/display-layer-debug.md`。

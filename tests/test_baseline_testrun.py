@@ -447,5 +447,50 @@ class TestPerDeviceKeysAndTolerance(unittest.TestCase):
         self.assertEqual(r['summary']['pass'], 2)
 
 
+class TestTouchFallback(unittest.TestCase):
+    """真机实测教训（Z20 /data 写满 → 注入工具推不上去）：落点必须逐级回退并自证。"""
+
+    def test_deploy_falls_back_when_data_is_full(self):
+        calls = []
+        orig_push, orig_sh = tt._adb.push, tt._adb.shell_rc
+        orig_elf = tt._platform_elf
+        tt._platform_elf = lambda p: os.path.join(BASE, 'bin_tools', 'z20', 'touch') \
+            if os.path.isfile(os.path.join(BASE, 'bin_tools', 'z20', 'touch')) else 'touch_dummy'
+
+        def _push(adb, serial, local, remote, timeout=120):
+            calls.append(remote)
+            if remote.startswith('/data'):
+                return 1, '', 'adb: error: failed to copy: remote No space left on device'
+            return 0, '1 file pushed', ''
+        tt._adb.push = _push
+        tt._adb.shell_rc = lambda adb, serial, cmd, timeout=15: (0, 'proto=MT-B /dev/input/event0', '')
+        try:
+            notes = []
+            remote, err = tt._deploy_touch('198.51.100.9:5555', 'adb', 'Z20', notes)
+        finally:
+            tt._adb.push, tt._adb.shell_rc = orig_push, orig_sh
+            tt._platform_elf = orig_elf
+        self.assertEqual(err, '', err)
+        self.assertTrue(remote.startswith('/tmp'), remote)      # 回退到 tmpfs
+        self.assertIn('/data', calls[0])
+        self.assertTrue(any('回退' in n or '/tmp' in n for n in notes), notes)
+
+    def test_deploy_reports_when_all_paths_fail(self):
+        orig_push, orig_sh = tt._adb.push, tt._adb.shell_rc
+        orig_elf = tt._platform_elf
+        tt._platform_elf = lambda p: os.path.join(BASE, 'bin_tools', 'z20', 'touch') \
+            if os.path.isfile(os.path.join(BASE, 'bin_tools', 'z20', 'touch')) else 'touch_dummy'
+        tt._adb.push = lambda *a, **kw: (1, '', 'No space left on device')
+        tt._adb.shell_rc = lambda *a, **kw: (1, '', 'x')
+        try:
+            remote, err = tt._deploy_touch('198.51.100.9:5555', 'adb', 'Z20', [])
+        finally:
+            tt._adb.push, tt._adb.shell_rc = orig_push, orig_sh
+            tt._platform_elf = orig_elf
+        self.assertIsNone(remote)
+        self.assertIn('No space left', err)                     # 明说原因，不静默
+        self.assertIn('hint', err)
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

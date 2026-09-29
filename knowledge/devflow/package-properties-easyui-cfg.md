@@ -1,3 +1,18 @@
+---
+id: devflow-package-properties-easyui-cfg
+title: ⚙️ package.properties / EasyUI.cfg 工程配置机制（屏幕旋转等）
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [F133, Z20, T113]
+tags: [定规, 同代码双屏方向适配案例]
+evidence: []
+---
 # ⚙️ package.properties / EasyUI.cfg 工程配置机制（屏幕旋转等）
 
 > 检索导引：问「EasyUI.cfg 怎么写 / package.properties 覆盖了哪份 cfg / rotateScreen 配在哪 / 推上去没效果（extsd 卡里的旧 cfg 劫持）/ 字体资源怎么真进 /res / 卡在开机 logo」→ 本文。

@@ -61,7 +61,7 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.124-open'
+MCP_VERSION = '0.27.125-open'
 MCP_BUILD = '2026-09-29'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -76,6 +76,7 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+    '2026-09-29: **知识库改造 P1：自动生长 + 可检索 + 可验证（骨架与门禁，工具数 40→42）** v0.27.125-open（钟工：「改造到后续用户基于这个开发后可以做到自动生长 + 可检索可验证」→「开工 P1」）——① **结构化元数据**：83 篇 knowledge 全补 front-matter（id/title/category/platforms/tags/status/confidence/verified_at/stale_days/evidence/origin/source）；历史文档先认成 `verified + confidence=manual + needs_evidence=true`，**第一次把「有多少结论其实没有可执行判据」显式记下来**；`scripts/kb_frontmatter.py`（幂等迁移 + `--check` 门禁）。② **机读清单** `knowledge/kb_index.json`（`scripts/gen_kb_index.py` + `--check`）：带 `meta{source_hash,doc_count,built_at,mcp_version}`（**不再靠 mtime 判新鲜**）+ summary（verified / 带证据 / 待补证据 / 无问法登记 / 超期 / inbox）+ 逐篇字段（sha256/fingerprint/hasQueries/ageDays）。③ **采集（增长入口）**：新 op `flythings_knowledge_capture`（风险 write）写**用户本地层**（`~/.flythings/kb_local/`，`FLYTHINGS_KB_DIR` 可改）或项目层（`<项目>/docs/kb/`）——**绝不写 MCP 安装目录**（版本物，升级会覆盖）；指纹去重（归一化标题+命令+平台）命中同主题 → 回 `duplicateOf` 提示**合并而非新建**。④ **回流（脱敏补丁包）**：新 op `flythings_knowledge_export`（kb-contrib-<时间>.json；IP/本机路径/凭据/主机名强制占位化，未脱敏须 `internal=True`）；总账只收过「去重 + 复验 + 问法登记」三关并由人签字的条目（**AI 不能自评通过**）。⑤ **检索闭环**：未命中/低置信落**用户本地层**日志（`_logs/no_hit.jsonl`）+ 返回体带 `gapLogged/gapHint`；`scripts/kb_gaps.py` 聚合出 `kb_gaps.md`（**用户真的问不到的东西 = 下一批写作清单**）。⑥ **验证闭环骨架**：`scripts/kb_verify.py` 按 evidence 真跑判据（`offline` 进 CI / `real-device` 走 `--device` / `manual` 显式不算通过），失败写回 `status=stale`。⑦ 门禁加 4 项（front-matter 合规 / kb_index 新鲜 / verified 必须有证据或显式待补 / inbox 不计入索引）+ 契约用例 `tests/test_kb_growth.py`；知识 `knowledge/devflow/kb-growth.md` 入库。v0.27.125-open',
     '2026-09-29: **自动化测试第二轮：多设备并行跑批 + 机读报告 + 像素基线库（工具数 39→40）** v0.27.124-open（钟工「先按照你的方案优化一轮，然后再复检」——这三项是我自己反查 open 版 MCP 时列出的测试侧 P0）——① **新 op `flythings_test_run(plan, devices, project_root, out, platform, parallel, baseline, allow_regions)`（风险 device）**：一份用例 JSON 在**多台设备并行**跑（此前多设备在线时工具一律「不猜」，只能逐台手敲 adb），每步结果**机器可判**：注入命令 rc / `logcat -d -s zkgui` 日志断言（expectLog/expectNoLog）/ 与像素基线逐像素对比；产出 `<out>/report.json` + **`<out>/report.xml`（JUnit，能直接进 CI）**；每台设备各自落 `shots/*.png` + `logcat.txt` 取证；`parallel` 控制并发度；**比不到基线记 no-baseline 并进 warnings，不算通过**（不静默放过）② **新模块 `ui_baseline.py`（像素基线库）** + **`flythings_ui_visual(action="baseline")`**：把「上一次验收通过的那张图」版本化存到 `<项目>/ui_baseline/`（`baseline.json` 索引 + 基线图 + 容差档案随基线存 + `_diff/*.diff.png`）；mode=save/compare/update/list；比不到基线报 `no-baseline`、尺寸变了报 `size-mismatch`（不许拿旧分辨率基线硬比）；判据与 ui_diff 完全同源（±2 容差 + ±1px 抖动补偿 + 噪声块归并）——此前只有「两张临时图比一比」，回归验收没有基线概念 ③ **`adb_tools` 补 `push()` / `shell_rc()`**（原来只有 `sh()` 只回文本、判不出 rc，无法做「注入失败=失败」的硬判据）④ 知识：`knowledge/devflow/device-test-run.md`（用例 schema/首次建基线流程/多设备并发注意/报告字段）+ `knowledge/devflow/capability-boundaries.md`（**能力边界清单**：open 版覆盖什么、哪些知识只在内部版、未覆盖怎么处置）⑤ 六方同步 + 契约用例 `tests/test_baseline_testrun.py`；真机验证：多台在线**并行**跑同一用例（含基线与报告）v0.27.124-open',
     '2026-09-29: **新增整机自检快照 + 缺陷单生成器（工具数 37→39）** v0.27.123-open（审查报告 P2-⑧⑨ / 钟工「1-3 按顺序做」第 3 项）——① **`flythings_selfcheck(device, diff_against, out)`（风险 device）**：一条命令出**整机快照九个分区**（设备信息/应用状态/显示/存储/网络/蓝牙/输入/外设/时间），每分区给 `{ok, hint, data}` —— **「读不到」本身是结论**：ok=false 时 hint 写明「需要什么条件 / 去哪查」，绝不静默吞掉；采集容忍设备缺工具（优先随仓 `bin_tools/<平台>/busybox` → 设备 /tmp/busybox，否则纯 adb shell + getprop/cat）；`diff_against=<上次快照.json>` 出逐分区逐项差异，`out=<json>` 落盘可复用为基线；设备参数带端口（`<serial|IP>:5555`），**多台在线不猜**（回 NO_DEVICE + 在线清单）② **`flythings_bugreport(title, project_root, device, symptom, steps, expected, actual, evidence, severity, out)`（风险 write）**：把「AI 产出的缺陷清单 + 真机判据」落成可提交 markdown，**格式对齐 2026-09-27 html2json A1~A8 那批**（标题 / 元信息 / 现象 / 复现步骤 / 期望 vs 实际 / 真机判据 / 证据 / 影响面）；真机判据自动附 型号·固件·build.fingerprint·应用状态（init.svc.zkswe / sys.zkapp.state / zkgui pid / uptime）·最近 `logcat -d -s zkgui` 末 40 行，采不到就写明原因；**evidence 里文件不存在 → 直接 EVIDENCE_MISSING 报错（不静默跳过）**；默认落 `<项目或MCP仓库>/temp/bugreports/<yyyymmdd-HHMM>-<slug>.md`，返回 path + 前 20 行预览 ③ 六方同步：`OP_NAMES` / `scripts/gen_manifest.py` 的 RISK·CATEGORY·STAGE / `mcp_server` 与 `README` 工具数 37→39 / `tools_manifest.json` / 意图闸门 `catalog.json`；新增 `knowledge/devflow/selfcheck-and-bugreport.md`（含检索导引）+ 契约用例 `tests/test_selfcheck_bugreport.py` ④ docstring 预算：长尾细节搬 knowledge/（html_to_json / build_ui_flow / ui_visual / device_screenshot / edit_ftu / pack_upgrade 六个 op 瘦身），总体仍 ≤12000。v0.27.123-open',
     '2026-09-29: **审查报告（MCP 更新审查-2026-09-29）P0 修复：包卡接进工具返回 + 门禁健壮性 + CHANGELOG 口径定死** v0.27.122-open —— ① **P0① 包卡进返回**：`package_tools` 新增 `package_card()`（读仓库 `packages/<包>/package.yaml`，yaml 缺失自动降级），`flythings_get_package_api` 返回体加 `card`（summary/entry/api/usage_cpp/gotchas/verified_* + cardPath/readmePath）、`list_packages` 加 `hasCard`、`query_package` 加 `cardSummary`/`hasCard` —— 之前 11 张卡 AI **取不到**（只读 registry），现在工具里直接可见；② **P0③ 门禁健壮性**：`lint_silent_except` 的 SKIP_DIRS 补 `.venv/venv/.fsc/.fun/toolchain`（原先扫到 .venv 报 650 条假红）、`check_consistency`/`smoke` 里「意图闸门 catalog 不在仓库内」「ui_tools 双份副本不存在」两条环境依赖检查**降级为 skip + 提示**（不再误报红）；③ **CHANGELOG 口径定死**：文件头改为「已冻结归档 ≤ v0.27.30」，版本史唯一来源指向 `MCP_FEATURES` + README（不再两套并存）；④ `packages/README.md` 补**包卡完整度状态表**（platforms.md/example/evidence 谁缺、谁待补，显式标注不许静默）；⑤ 新增契约用例 `tests/test_package_cards.py`（卡可解析 + 已接进工具返回）。v0.27.122-open',
@@ -545,9 +546,10 @@ def _best_coverage(q, texts):
 
 
 def flythings_knowledge_search(query: str, k: int = 3) -> str:
-    """在 FlyThings 知识库（wiki 官方镜像 + knowledge 实践文档）中检索相关文档片段（完全本地，零 Key）。
-    遇到 FlyThings 开发问题（控件/API/布局/FTU/回调/编译/平台差异等）时调用。query 用中文描述。
-    内置 bge-small-zh 本地模型做向量检索，模型不可用时自动降级 BM25（返回里会显式提示）。
+    """在知识库（wiki 官方镜像 + knowledge 实践文档）检索片段（完全本地，零 Key）。
+
+    遇到 FlyThings 开发问题（控件/API/布局/FTU/回调/编译/平台差异）时调用；query 用中文。
+    bge-small-zh 向量 + BM25；未命中/低置信会落「知识缺口」日志并回 gapLogged/gapHint。
     """
     kk = max(1, min(int(k), 8))
     warnings = []
@@ -588,7 +590,64 @@ def flythings_knowledge_search(query: str, k: int = 3) -> str:
                          '请查官方文档 developer.flythings.cn 或转人工确认。' % cover)
     else:
         out['quality'] = 'ok'
+    # 知识生长燃料（P1）：未命中/低置信落**用户本地层**日志（绝不写安装目录），
+    # scripts/kb_gaps.py 聚合出「用户真的问不到什么」→ 驱动下一批写作。
+    if out['quality'] in ('no_hit', 'low_confidence'):
+        try:
+            import kb_local as _kbl
+            logr = _kbl.log_no_hit(query, out['quality'], [h['path'] for h in hits], kk)
+        except Exception as _e:                      # 日志失败不能影响检索本身
+            logr = {'logged': False, 'error': repr(_e)}
+            warnings.append('未命中日志写入失败（不影响检索）：%s' % _e)
+        out['gapLogged'] = bool(logr.get('logged'))
+        out['gapLog'] = logr.get('file', '')
+        out['gapHint'] = ('本条已记入知识缺口清单（scripts/kb_gaps.py 生成 kb_gaps.md）；'
+                          '要补这条知识：flythings_knowledge_capture(...) → 补 evidence → '
+                          'scripts/kb_verify.py 复验 → 人工签字后才入库')
     return json.dumps(out, ensure_ascii=False)
+
+
+def flythings_knowledge_capture(title: str, body: str = '', category: str = 'devflow',
+                                platforms: str = '', tags: str = '', evidence: str = '',
+                                source: str = '', severity: str = 'normal',
+                                project_root: str = '', layer: str = 'local') -> str:
+    """把一条现场结论落成知识候选（写**用户本地层/项目层**，绝不写 MCP 安装目录）。
+
+    title 一句话说清现象/结论；evidence 传 JSON（[{"kind":"real-device|offline|manual",
+    "cmd":"...","expect_contains":"..."}]）或纯文本；layer=local（~/.flythings/kb_local/）|
+    project（<项目>/docs/kb/）。命中同主题 → 回 duplicateOf，提示**合并**而非新建。
+    之后：补 evidence → scripts/kb_verify.py → 人工签字才 verified（AI 不能自评）；
+    回流用 flythings_knowledge_export；详见 knowledge/devflow/kb-growth.md。
+    """
+    import kb_local as _kbl
+    ev = []
+    if str(evidence or '').strip():
+        try:
+            ev = json.loads(evidence)
+            if not isinstance(ev, list):
+                ev = [ev]
+        except ValueError:
+            ev = [{'kind': 'manual', 'cmd': str(evidence)}]
+    r = _kbl.capture(title, body, category,
+                     [x for x in str(platforms or '').split(',') if x.strip()],
+                     [x for x in str(tags or '').split(',') if x.strip()], ev,
+                     source=source, layer=layer, project_root=project_root,
+                     severity=severity)
+    return json.dumps(r, ensure_ascii=False)
+
+
+def flythings_knowledge_export(out: str = '', scope: str = 'inbox', layer: str = 'local',
+                               project_root: str = '', internal: bool = False) -> str:
+    """导出**脱敏知识补丁包**（回流总账通道 A：kb-contrib-<时间>.json）。
+
+    scope=inbox（缺省）/verified/all；**强制脱敏**（IP/本机路径/凭据/主机名 → 占位符），
+    未脱敏须 internal=True（仅总账维护者自用）。交回：发回文件，或对 open 版仓提 PR（只改
+    knowledge/inbox/**）；总账侧 去重 → 复验 → 问法登记 → 人工签字。详见
+    knowledge/devflow/kb-growth.md。
+    """
+    import kb_local as _kbl
+    return json.dumps(_kbl.export_pack(out, scope, layer=layer, project_root=project_root,
+                                       internal=internal), ensure_ascii=False)
 
 
 def flythings_hardware_info(model: str = '', platform: str = '') -> str:
@@ -808,9 +867,8 @@ def flythings_edit_ftu(ftu_path: str, operations: str, output_ftu: str = '',
 
     ⚠️ 默认 **不覆盖**原 ftu（overwrite=False）→ 生成同目录 <name>.edited.ftu 并还原原文件；
     确认后再传 overwrite=True 覆盖（或 output_ftu 指定目标）。原 ftu 与 json 都留 .bak。
-    operations 为 JSON 数组字符串，支持 set / remove / add / set_root 四类（逐字段说明见
-    knowledge/devflow/ftu-json-pipeline.md）。客户说「往右移/改文本/换颜色/删控件/复制控件」时调用；
-    无 json 源时自动 unpack 出编辑源。
+    operations 为 JSON 数组（set/remove/add/set_root；逐字段见 ftu-json-pipeline.md）。客户说
+    「往右移/改文本/换颜色/删控件/复制控件」时调用；无 json 源时自动 unpack 出编辑源。
     """
     r = pt.flythings_edit_ftu(ftu_path, operations, output_ftu, overwrite)
     return json.dumps(_with_files(r, r.get('ftuPath'), r.get('jsonPath'), r.get('backup')),
@@ -819,15 +877,13 @@ def flythings_edit_ftu(ftu_path: str, operations: str, output_ftu: str = '',
 
 def flythings_build_ui_flow(project_root: str, with_launch: bool = True, device: str = '',
                             font_check: str = 'auto', font_tier: str = '') -> str:
-    """⚠️ 场景别名（编译部署类意图一律本工具，禁自造命令；不限入口）：
-
-    ① 口语「编译/构建/调试/部署/推送到设备/跑一下」② AI 改完代码主动编译验证。
-    **固化/升级/update.img → flythings_pack_upgrade**（掉电保留）。
+    """⚠️ 场景别名（编译/部署类意图一律本工具，禁自造命令）：口语「编译/构建/调试/部署/推送到
+    设备/跑一下」；固化升级（update.img）→ flythings_pack_upgrade（掉电保留）。
     流程：json↔ftu 时间戳检查 → fui pack → fun install → fun build → **设备探测 + fun launch**
-    （默认；只编译传 with_launch=False）→ 字体体检（缺中文自动投）+ 设备侧字节/md5 比对
-    （staleOnDevice=true ⇒ 设备上还是旧版）。探测不猜：0 台→needDeviceInput；多台→列 serial 再要 device=。
-    ⚠️ src/activity/ 由 IDE 生成（禁手改），业务只写 src/logic/*.cc。
-    细节：knowledge/devflow/adb-and-device-selection.md。
+    （只编译传 with_launch=False）→ 字体体检（缺中文自动投）+ 设备侧字节/md5 比对
+    （staleOnDevice=true ⇒ 设备上还是旧版）。探测不猜：0 台→needDeviceInput；多台→列 serial 要 device=。
+    ⚠️ src/activity/ 由 IDE 生成（禁手改），业务只写 src/logic/*.cc；细节见
+    knowledge/devflow/adb-and-device-selection.md。
     """
     return json.dumps(_with_design_warning(
         pt.flythings_build_ui_flow(project_root, with_launch, device,
@@ -838,13 +894,12 @@ def flythings_build_ui_flow(project_root: str, with_launch: bool = True, device:
 def flythings_pack_upgrade(project_root: str, out_path: str = '', release_version: str = '',
                            ab: bool = False, with_build: bool = False,
                            dry_run: bool = False) -> str:
-    """固化升级包（update.img）——AI 交付/发布/量产走本条：「打包升级包/出升级包/固化/
-    刷进设备/出货版本/TF卡升级包」；与「调试推送到设备」不同（那是 build_ui_flow，掉电即失）。
-    流程：fun install →（with_build 可选）fun build → fun pack（out_path→-o；release_version→
-    --release-version；ab=True→--ab OTA 包）。产物 `.fsc/<平台>/update.img`；
-    刷法（TF卡/ADB/远程批量）；同机制换开机 logo → MISC 分区。dry_run=True 只回命令计划。
-    ⚠️ `FATAL sign error 0xc0000135`=缺 32 位 VC++ 运行时；`package not found in local`=先 fun install。
-    详情：knowledge/devflow/upgrade-pack-image.md。
+    """固化升级包（update.img）——交付/发布/量产走本条：「打包升级包/出升级包/固化/刷进设备/
+    出货版本/TF卡升级包」；与「调试推送到设备」不同（那是 build_ui_flow，掉电即失）。
+    流程：fun install →（with_build 可选）fun build → fun pack（out_path→-o；--release-version；
+    ab=True→--ab OTA）。产物 `.fsc/<平台>/update.img`；刷法 TF卡/ADB/远程批量；换开机 logo → MISC。
+    dry_run=True 只回命令计划。⚠️ `sign error 0xc0000135`=缺 32 位 VC++；`package not found
+    in local`=先 fun install。详情：knowledge/devflow/upgrade-pack-image.md。
     """
     return json.dumps(pt.flythings_pack_upgrade(project_root, out_path, release_version,
                                                 ab, with_build, dry_run),
@@ -1045,13 +1100,12 @@ def flythings_test_run(plan: str = '', devices: str = 'auto', project_root: str 
                        per_device_keys: str = 'auto') -> str:
     """多设备**并行**跑一份 UI 用例（触摸注入 + 日志断言 + 像素基线），出 JSON + JUnit 报告。
 
-    场景：自动化测试 / 验收回归 / 多台机器同时验证一份用例。plan 是用例 JSON（文本或 .json
-    路径）：steps[].action 取 tap/long/swipe/wait/monkey/run/shot/log；每步可带 shot=<基线 key>、
-    expectLog/expectNoLog（日志断言）、wait(ms)。devices="auto"（**恰好 1 台才自动选**）/
-    "all"/"<IP>:5555,<IP>:5555"。project_root 给像素基线库位置；baseline=auto/compare/save/off。
-    报告落 out（缺省 temp/test_runs/<时间>-<名>）：report.json + report.xml（可直接进 CI）。
-    **比不到基线记 no-baseline 并进 warnings，不算通过**（先 baseline="save" 建基线再 compare）。
-    用例写法/首次建基线流程/多设备并发注意见 knowledge/devflow/device-test-run.md。
+    plan 是用例 JSON（文本或路径）：steps[].action 取 tap/long/swipe/wait/monkey/run/shot/log；
+    每步可带 shot=<基线 key>、expectLog/expectNoLog、allowRegions、wait(ms)。devices="auto"
+    （**恰好 1 台才自动选**）/"all"/"<IP>:5555,..."；project_root 给基线库位置；
+    baseline=auto/compare/save/off；报告落 out：report.json + report.xml（可进 CI）。
+    **比不到基线记 no-baseline，不算通过**。写法/建基线流程见
+    knowledge/devflow/device-test-run.md。
     """
     return json.dumps(tt.flythings_test_run(plan, devices, project_root, out, platform,
                                             parallel, baseline, allow_regions,
@@ -1432,11 +1486,10 @@ def flythings_ui_visual(action: str = 'list', project_root: str = '', output_dir
       pack 默认 False；dry_run=True 只预览不写盘；写回前留 .bak。
     - action="diff"：两张同尺寸截图逐像素对比（0 token 差异清单）。必填 image_a、image_b；
       tolerance/shift/blur/min_area/noise_bbox 压假报警；out_png/out_json 出标注图与清单。
-    - action="baseline"：**像素基线库**（<项目>/ui_baseline/）。必填 project_root；mode=save 建/刷
-      基线（+image_a，key 缺省取图名）｜compare 当前图 vs 基线（+image_a）｜update｜list。
-      容差档案随基线存；**比不到基线报 no-baseline，不静默放过**。
+    - action="baseline"：**像素基线库**（<项目>/ui_baseline/）。必填 project_root；mode=
+      save/compare/update/list（+image_a）；容差档案随基线存；比不到基线报 no-baseline，不静默放过。
 
-    口径 / 跨渲染器注意见 knowledge/devflow/ui-layout-verify.md；action 传 list 看各 action 必填参数。
+    口径见 knowledge/devflow/ui-layout-verify.md；action 传 list 看各 action 参数。
     """
     act = str(action or '').strip().lower().replace('-', '_')
     if act in ('', 'list', 'help', '?'):
@@ -1482,15 +1535,11 @@ def flythings_verify_assets(project_root: str) -> str:
     """核对「json 声明 vs 磁盘产物」：图片引用是否存在 + PNG 尺寸是否 == 盒子。
 
     ⚠️ 生成/改完图片后必跑（v0.27.30 阴影丢图事故 = 产物没人核对）。
-    盒子来源（图片铁律 #1）：控件 position（backgroundPic/picTab/...）**以及** thumb 自有尺寸
-    子盒 thumb.size（v0.27.75 补：此前 31×31 图配 30×30 会一路 PASS）；thumb 无 size → 跳过+warning。
-    布局支持 ui/*.json 与 ui/<分辨率>/*.json 两种真实工程布局。
-    返回：
-      - missing[] 引用了但文件不存在 → 真问题
-      - mismatch[] 自动生成图（铁律 #9）尺寸 != position，或 thumb 图 != thumb.size → 真问题
-      - stretched[] 手绘图尺寸 != 控件盒 → 仅提示（引擎会拉伸，导航图标/背景图常态）
-      - unresolved[] 运行时格式化引用 / 读图失败等跳过项；skippedNoBox[] 盒子未知而跳过
-      - warnings[] 0 页等「其实没核对到东西」的情况；与 check_all 第 11/17 项同一实现。
+    盒子来源（图片铁律 #1）：控件 position（backgroundPic/picTab/...）+ thumb 自有尺寸子盒
+    thumb.size；支持 ui/*.json 与 ui/<分辨率>/*.json 两种布局。
+    返回：missing[]（引用无文件）/ mismatch[]（自动生成图或 thumb 尺寸 != 盒）= 真问题；
+    stretched[]（手绘图被拉伸）仅提示；unresolved[]/skippedNoBox[] 跳过项；warnings[] 0 页等。
+    与 check_all 第 11/17 项同一实现。
     """
     if chk_all is None:
         return json.dumps({'ok': False, 'error': 'check_all 模块不可用（缺 ui_tools/check_all.py）'},
@@ -1591,13 +1640,12 @@ def flythings_bugreport(title: str = '', project_root: str = '', device: str = '
                         out: str = '') -> str:
     """缺陷单生成器：把缺陷清单 + 真机判据落成可提交 markdown（格式对齐 2026-09-27 html2json A1~A8 那批）。
 
-    只给 title 也能出框架稿；steps/evidence 支持 JSON 数组字符串，或换行 / 分号 / 逗号分隔。
+    只给 title 也能出框架稿；steps/evidence 支持 JSON 数组或换行/分号/逗号分隔。
     真机判据自动附：型号·固件·build.fingerprint·应用状态（init.svc.zkswe / sys.zkapp.state /
     zkgui pid / uptime）·最近 `logcat -d -s zkgui` 末 40 行；采不到就写明原因（不静默）。
-    ⚠️ evidence 里任一文件不存在 → 直接报 EVIDENCE_MISSING（绝不静默跳过）。
-    severity ∈ blocker/critical/major/minor/trivial（缺省 major）。
-    默认落 <项目或MCP仓库>/temp/bugreports/<yyyymmdd-HHMM>-<slug>.md，返回 path + 前 20 行预览。
-    检索词：缺陷单/bugreport/提缺陷/现象与复现步骤（knowledge/devflow/selfcheck-and-bugreport.md）。
+    ⚠️ evidence 文件不存在 → 直接报 EVIDENCE_MISSING。severity ∈ blocker…trivial（缺省 major）。
+    默认落 <项目或仓库>/temp/bugreports/<yyyymmdd-HHMM>-<slug>.md（返回 path + 前 20 行预览）。
+    细节见 knowledge/devflow/selfcheck-and-bugreport.md。
     """
     if sc is None:
         return json.dumps({'ok': False, 'op': 'flythings_bugreport',
@@ -1716,6 +1764,8 @@ for _n in _tool_names():
 OP_NAMES = (
     'flythings_get_version',
     'flythings_knowledge_search',
+    'flythings_knowledge_capture',
+    'flythings_knowledge_export',
     'flythings_hardware_info',
     'flythings_map_control',
     'flythings_read_json',

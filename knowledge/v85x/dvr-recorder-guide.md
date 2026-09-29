@@ -1,3 +1,18 @@
+---
+id: v85x-dvr-recorder-guide
+title: 🎥 V85X DVR 录制功能开发 Playbook（端到端：工程 → UI → 摄像头 → 录像 → 回放 → 存储 → 排障）
+category: v85x
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [V85X]
+tags: []
+evidence: []
+---
 # 🎥 V85X DVR 录制功能开发 Playbook（端到端：工程 → UI → 摄像头 → 录像 → 回放 → 存储 → 排障）
 
 > 2026-09-09 沉淀（V85X 行车记录仪/DVR 类产品全链路实战：内置 AHD/TVI 双路 + UVC JPEG 单路，预览/录像/拍照/回放真机验证）。

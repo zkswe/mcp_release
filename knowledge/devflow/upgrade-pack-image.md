@@ -1,3 +1,18 @@
+---
+id: devflow-upgrade-pack-image
+title: 固化升级：出 update.img 并刷进设备（调试推送 vs 固化升级）
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [Z20, Z21, V85X]
+tags: [铁律：**, 调试, 跑一下, 推送到设备, 固化, 升级]
+evidence: []
+---
 # 固化升级：出 update.img 并刷进设备（调试推送 vs 固化升级）
 
 > 检索导引：问「出升级包 / 固化到设备 / OTA·TF 卡·ADB 升级各怎么做 / 换开机 logo / 升级后掉网 / update.img 体积上限 / 固化后 /res 变只读」→ 本文；Z20 86 面板升级链路与坑见 `hardware/z20-86panel-upgrade.md`。

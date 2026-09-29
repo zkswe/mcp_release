@@ -2,9 +2,9 @@
   "schema": 1,
   "generatedBy": "scripts/gen_manifest.py",
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY/STAGE 表后重新生成，勿手改本文件",
-  "version": "0.27.124-open",
+  "version": "0.27.125-open",
   "build": "2026-09-29",
-  "toolCount": 40,
+  "toolCount": 42,
   "cli": {
     "fun": "FlyThings 工程工具（create/install/build/launch，<项目>/.fsc/<平台>/ 下；09-28 前为 .fun/）",
     "fui": "FTU 布局工具：pack（json → ftu）/ unpack（ftu → json）双向下；随包 fui 自 v0.27.91 起含 unpack（旧版只有 pack）",
@@ -159,7 +159,7 @@
     },
     {
       "op": "flythings_build_ui_flow",
-      "brief": "⚠️ 场景别名（编译部署类意图一律本工具，禁自造命令；不限入口）：",
+      "brief": "⚠️ 场景别名（编译/部署类意图一律本工具，禁自造命令）：口语「编译/构建/调试/部署/推送到",
       "args": [
         "project_root",
         "with_launch",
@@ -434,8 +434,41 @@
       "stage": "build"
     },
     {
+      "op": "flythings_knowledge_capture",
+      "brief": "把一条现场结论落成知识候选（写**用户本地层/项目层**，绝不写 MCP 安装目录）。",
+      "args": [
+        "title",
+        "body",
+        "category",
+        "platforms",
+        "tags",
+        "evidence",
+        "source",
+        "severity",
+        "project_root",
+        "layer"
+      ],
+      "risk": "write",
+      "category": "kbase",
+      "stage": "other"
+    },
+    {
+      "op": "flythings_knowledge_export",
+      "brief": "导出**脱敏知识补丁包**（回流总账通道 A：kb-contrib-<时间>.json）。",
+      "args": [
+        "out",
+        "scope",
+        "layer",
+        "project_root",
+        "internal"
+      ],
+      "risk": "read",
+      "category": "kbase",
+      "stage": "other"
+    },
+    {
       "op": "flythings_knowledge_search",
-      "brief": "在 FlyThings 知识库（wiki 官方镜像 + knowledge 实践文档）中检索相关文档片段（完全本地，零 Key）。",
+      "brief": "在知识库（wiki 官方镜像 + knowledge 实践文档）检索片段（完全本地，零 Key）。",
       "args": [
         "query",
         "k"
@@ -491,7 +524,7 @@
     },
     {
       "op": "flythings_pack_upgrade",
-      "brief": "固化升级包（update.img）——AI 交付/发布/量产走本条：「打包升级包/出升级包/固化/",
+      "brief": "固化升级包（update.img）——交付/发布/量产走本条：「打包升级包/出升级包/固化/刷进设备/",
       "args": [
         "project_root",
         "out_path",
@@ -639,9 +672,9 @@
     }
   ],
   "docs": {
-    "knowledgeFiles": 84,
+    "knowledgeFiles": 86,
     "wikiFiles": 128,
-    "ragChunks": 1761,
-    "ragPaths": 212
+    "ragChunks": 1862,
+    "ragPaths": 214
   }
 }

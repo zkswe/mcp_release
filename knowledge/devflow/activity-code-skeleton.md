@@ -1,3 +1,18 @@
+---
+id: devflow-activity-code-skeleton
+title: FlyThings 工程代码骨架（35 官方 Demo 深度阅读提炼）
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [35 工程, 逐源码深读, 回调表, 生命周期, logic, cc]
+evidence: []
+---
 # FlyThings 工程代码骨架（35 官方 Demo 深度阅读提炼）
 
 > 检索导引：问「activity 骨架怎么写 / 回调分发表在哪 / onUI_init·onUI_quit 标准序列 / logic.cc 与 activity.cpp 谁参与编译 / 切页后回调还触发吗 / check_all 括号平衡误报」→ 本文（工程代码骨架总纲）；控件逐个的代码接口见 `uicontrols/widget-code-api.md`。

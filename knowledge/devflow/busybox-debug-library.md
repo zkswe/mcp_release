@@ -1,3 +1,18 @@
+---
+id: devflow-busybox-debug-library
+title: "BusyBox 调试工具库（bin_tools/{平台}/busybox，随 MCP 分发）"
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [Z21, V85X]
+tags: [ifconfig, ping 等调试工具, 需要查 IP, 端口, 进程, adb push 即用]
+evidence: []
+---
 # BusyBox 调试工具库（bin_tools/{平台}/busybox，随 MCP 分发）
 
 > 检索导引：问「设备上没有 ifconfig / ping / ps / uname / 想看设备 IP·网卡·进程 / 设备缺命令怎么办」→ 本文（六平台静态 busybox，push 即用）；出包与部署动作用哪条见 `devflow/deploy-scene-map.md`。

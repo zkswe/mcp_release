@@ -1,3 +1,18 @@
+---
+id: uicontrols-slidetext-fields
+title: SlideText 滑动文本控件 JSON 字段规范
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [ImeDemo-New, KaiduZ9, 实测, 场景：一串文本单元横排, 可滑动, 点击某个单元回调]
+evidence: []
+---
 # SlideText 滑动文本控件 JSON 字段规范
 
 > 检索导引：问「横向文本单元滑动条怎么做 / 输入法候选词控件 / setTextList 灌数据 / onTextUnitClick 点选回调 / 和跑马灯 textview 的区别」→ 本文。

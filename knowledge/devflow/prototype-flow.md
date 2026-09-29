@@ -1,3 +1,18 @@
+---
+id: devflow-prototype-flow
+title: 🏗️ 一句话需求 → 线框确认 → UI 美化 流程（沛哥定规 2026-09-02）
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [检索词, ：新项目, 新需求, 开发一个, 做一个, 写一个]
+evidence: []
+---
 # 🏗️ 一句话需求 → 线框确认 → UI 美化 流程（沛哥定规 2026-09-02）
 
 > 检索导引：问「新项目从哪开始 / 一句话需求怎么变成界面 / 线框图怎么给用户确认 / 要出几套风格 / 需求里带设计稿先做什么」→ 本文（原型确认流程总纲）；带稿后的分辨率对齐硬规则也在文末。

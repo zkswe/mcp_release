@@ -1,3 +1,18 @@
+---
+id: uicontrols-digitalclock-fields
+title: DigitalClock 数字时钟控件 JSON 字段规范
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [0 SDK, 校准]
+evidence: []
+---
 # DigitalClock 数字时钟控件 JSON 字段规范
 
 > 检索导引：问「数字时钟控件 / 时间显示要不要写代码 / 冒号跳动 beat / 怎么改显示时间（改系统时间）/ 秒显示」→ 本文。

@@ -1,3 +1,18 @@
+---
+id: hardware-uvc-camera-generic
+title: UVC / USB 摄像头通用接入（跨平台：V85X / T113 / F133 / Z20 / Z21）
+category: hardware
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [F133, Z20, Z21, T113, V85X]
+tags: [**JPEG, MJPEG 摄像头绿屏, 录制中黑屏**, **, dev, **摄像头格式协商]
+evidence: []
+---
 # UVC / USB 摄像头通用接入（跨平台：V85X / T113 / F133 / Z20 / Z21）
 
 > 🔍 **检索导引（命中条件）**：用户问「**UVC 摄像头接入**」「**USB 摄像头预览/拍照/录像**」「**外接摄像头 / USB 摄像头没画面**」

@@ -1,3 +1,18 @@
+---
+id: devflow-selfcheck-and-bugreport
+title: 整机自检（selfcheck）与缺陷单（bugreport）口径
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [Z20]
+tags: [提缺陷, 缺陷单, bug 报告, bugreport, 现象与复现步骤, 真机判据]
+evidence: []
+---
 # 整机自检（selfcheck）与缺陷单（bugreport）口径
 
 > 检索导引：整机自检 / selfcheck / 九分区快照 / 一次把设备状态全抓一遍 / 与上次快照对比 / 现场体检报告 /

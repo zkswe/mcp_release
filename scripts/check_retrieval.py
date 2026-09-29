@@ -165,6 +165,16 @@ GROUPS = [
             '未收录就标未收录 不许拿沾边片段当依据',
         ],
     },
+    {
+        'doc': 'knowledge/devflow/kb-growth.md',
+        'name': '知识库生长机制（采集/验证/检索）',
+        'min_top1': 2,
+        'queries': [
+            '知识库怎么自动生长 现场结论怎么入库', 'capture 怎么用 候选区在哪 会不会写进安装目录',
+            '未收录怎么办 知识缺口清单 kb_gaps', '知识怎么回流总账 脱敏补丁包 kb-contrib',
+            '知识怎么复验 evidence 怎么写 verified 和 draft 区别',
+        ],
+    },
 ]
 
 # 对照组：与上面主题无关的其它问法；want 用子串匹配（不要求 top-1）

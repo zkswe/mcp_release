@@ -1,3 +1,18 @@
+---
+id: devflow-ui-layout-verify
+title: UI 布局可视化编辑与像素验收（json 为源 · 拖拽微调 · 0 token 校验）
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [⚠️ v0, 27, action=, `：`"editor"`, `"diff"`]
+evidence: []
+---
 # UI 布局可视化编辑与像素验收（json 为源 · 拖拽微调 · 0 token 校验）
 
 > 检索导引：问「布局位置不对 / 想拖控件微调 / 图片与控件尺寸对不上（含 thumb.size）/ 要像素回归对比 / 多页工程预览怎么切页」→ 本文（三段式验收总纲）；三个 action 的细节见 `devflow/ui-editor-usage.md`。

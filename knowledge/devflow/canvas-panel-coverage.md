@@ -1,3 +1,18 @@
+---
+id: devflow-canvas-panel-coverage
+title: 画布必须盖满面板（全屏覆盖）—— 否则底部露出「上一款应用」的残留帧（伪闪烁）
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [检索关键词：残留帧, 花屏, 底部条, 页标签闪烁, 画布高度, 分辨率不符]
+evidence: []
+---
 # 画布必须盖满面板（全屏覆盖）—— 否则底部露出「上一款应用」的残留帧（伪闪烁）
 
 > 检索导引：问「屏幕底部有一条不属于本应用的内容 / 残留帧 / 页标签在闪 / 画布高度比面板小（1280×750 vs 800）/ 全屏覆盖怎么做」→ 本文；抓真机截图取证见 `devflow/device-screenshot.md`。

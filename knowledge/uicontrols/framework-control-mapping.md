@@ -1,3 +1,18 @@
+---
+id: uicontrols-framework-control-mapping
+title: 跨框架控件映射（摘要 + 指针）— 权威表在 components/ui_v1/
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [检索词：跨框架, 控件映射, 翻译, 转换, Qt, Android]
+evidence: []
+---
 # 跨框架控件映射（摘要 + 指针）— 权威表在 components/ui_v1/
 
 > 检索导引：问「控件对照表在哪 / LVGL·Qt·Android·小程序控件对应我们什么 / 五级处置 L1~L5 / tab 页签怎么对应」→ 本文为摘要指针；机读权威表走 `flythings_map_control`（用法见 `uicontrols/control-mapping-capability.md`）。

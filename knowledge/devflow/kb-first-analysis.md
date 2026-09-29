@@ -1,3 +1,18 @@
+---
+id: devflow-kb-first-analysis
+title: 开发先检索铁律：AI 分析优先用 MCP 知识库，禁止盲试/猜测
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [V85X]
+tags: [沛哥定规, 2026-09-07, 背景：查, 检索策略偏, 已修复 v0, 17]
+evidence: []
+---
 # 开发先检索铁律：AI 分析优先用 MCP 知识库，禁止盲试/猜测
 
 > 检索导引：问「该先检索还是先试 / 检索命中不准怎么办 / 查不到是不是没收录 / 该拿什么关键词搜」→ 本文（先检索后动手铁律）；允许检索哪些来源见 `uicontrols/retrieval-boundary.md`。

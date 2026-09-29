@@ -1,3 +1,18 @@
+---
+id: uicontrols-cameraview-fields
+title: 📷 CameraView 相机预览控件 JSON 字段规范
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [V85X]
+tags: [平台 V85X, AW_V853, 非猜测]
+evidence: []
+---
 # 📷 CameraView 相机预览控件 JSON 字段规范
 
 > 检索导引：问「实时摄像头预览用哪个控件 / cameraview 字段 / formatSize 是源分辨率不是控件大小 / 画面拉伸裁剪怎么处理 / 能不能和 videoview 混用」→ 本文。

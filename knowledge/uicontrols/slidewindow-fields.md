@@ -1,3 +1,18 @@
+---
+id: uicontrols-slidewindow-fields
+title: 🎠 SlideWindow 滑动窗口 JSON 字段规范
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [UIlayoutDemo, main, 翻页滑动]
+evidence: []
+---
 # 🎠 SlideWindow 滑动窗口 JSON 字段规范
 
 > 检索导引：问「九宫格翻页怎么做 / 手机桌面式图标分页 / cols×rows 每页格子数 / items 跨页 index / 图标位置和布局对不上」→ 本文。

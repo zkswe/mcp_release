@@ -1,3 +1,18 @@
+---
+id: uicontrols-imageanim-fields
+title: 🎞️ ImageAnim 动图控件 JSON 字段规范
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [F133, T113]
+tags: [main, imageanim, json 实测校准]
+evidence: []
+---
 # 🎞️ ImageAnim 动图控件 JSON 字段规范
 
 > 检索导引：问「动图控件 / GIF·WebP 播放 / playFile 不显示 / PNG 序列做动画 / 动图与文本帧动画选型」→ 本文。

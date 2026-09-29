@@ -1,3 +1,18 @@
+---
+id: devflow-pixel-analysis-ai
+title: 抓帧读图：程序化像素分析 + 像素级渲染坑
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [必要的做好入库就好了]
+evidence: []
+---
 # 抓帧读图：程序化像素分析 + 像素级渲染坑
 
 > 检索导引：问「不烧 token 怎么看截图 / 字符画读图 / 文字暗带检测 / 坐标要不要换算 / 像素级渲染坑怎么验」→ 本文；抓图见 `devflow/device-screenshot.md`，像素 diff 见 `devflow/ui-layout-verify.md`。

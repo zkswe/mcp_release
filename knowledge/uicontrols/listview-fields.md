@@ -1,3 +1,18 @@
+---
+id: uicontrols-listview-fields
+title: ListView 列表控件字段 + 回调语义（含 subitem 点击 id 确认）
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [0 SDK 校准, 可做更多]
+evidence: []
+---
 # ListView 列表控件字段 + 回调语义（含 subitem 点击 id 确认）
 
 > 检索导引：问「列表怎么做 / listview 字段 / 三回调一刷新 / 点击拿到的是行号还是 subitem id / 每行都常显 ListItem / 刷新不跟最新行」→ 本文；滚轮选择器见 `uicontrols/listview-wheel-picker.md`，封面卡顿见 `uicontrols/listview-image-cache.md`。

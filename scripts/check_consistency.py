@@ -449,6 +449,13 @@ def stage_delegated(skip_smoke, with_tests):
     rc, out = _run([sys.executable, os.path.join(SUB, 'gen_hardware_doc.py'), '--check'])
     check(rc == 0, 'delegated: gen_hardware_doc --check',
           'ok' if rc == 0 else out.strip().splitlines()[-1][:70])
+    # 知识库门禁（v0.27.125 起）：front-matter 合规 / kb_index 新鲜（源哈希）/ inbox 不进索引 /
+    # verified 必须有证据或显式 needs_evidence —— 「自动生长」没有门禁就会自动腐化。
+    rc, out = _run([sys.executable, os.path.join(SUB, 'check_kb.py')])
+    kb_tail = [l for l in out.strip().splitlines()
+               if l.startswith('[PASS]') or l.startswith('[FAIL]')]
+    check(rc == 0, 'delegated: check_kb.py (知识库门禁)',
+          (kb_tail[0] if kb_tail else 'rc=%d' % rc)[:70])
     if not skip_smoke:
         rc, out = _run([sys.executable, os.path.join(SUB, 'smoke.py')])
         last = [l for l in out.strip().splitlines() if l.startswith('total=')]

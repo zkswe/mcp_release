@@ -1,3 +1,18 @@
+---
+id: v85x-tfcard-format-requirement
+title: 💾 V85X TF 录制卡格式化要求（FAT32 + 64KB 簇 + OEM=zkswe，不满足会被弹窗要求重格）
+category: v85x
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [V85X]
+tags: []
+evidence: []
+---
 # 💾 V85X TF 录制卡格式化要求（FAT32 + 64KB 簇 + OEM=zkswe，不满足会被弹窗要求重格）
 
 > 2026-09-09 沉淀（V85X DVR 录制产品实测）。适用：**V85X**（V853/V553 等）带 TF 卡录像/存储的产品。

@@ -1,3 +1,18 @@
+---
+id: v85x-aw-dvr-runtime-compat
+title: 📦 V85X aw-dvr × runtime 兼容速查（版本不是越新越好 + dlopen 失败 SOP）
+category: v85x
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [V85X]
+tags: [⚠️ 仅内部知识, v85x 深度]
+evidence: []
+---
 # 📦 V85X aw-dvr × runtime 兼容速查（版本不是越新越好 + dlopen 失败 SOP）
 
 > 2026-09-09 入库（来源：V553 UVC 相机项目实测 2026-09 + 工程 Manifest 注释实证）。

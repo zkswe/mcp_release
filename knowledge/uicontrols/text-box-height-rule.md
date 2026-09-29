@@ -1,3 +1,18 @@
+---
+id: uicontrols-text-box-height-rule
+title: 字号下限与「文本盒抬高度」规则（抬高度只对有文字的盒有效）
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [检索词：字号下限, 18px 太小看不清, 文本盒高度, 抬高度, 盒高, 图被拉伸]
+evidence: []
+---
 # 字号下限与「文本盒抬高度」规则（抬高度只对有文字的盒有效）
 
 > 检索导引：问「字号最小多少（18px）/ 文本盒要不要抬高度 / 抬高度把图拉变形·竖椭圆 / 三点指示器不圆 / 装饰线把按钮压住」→ 本文。

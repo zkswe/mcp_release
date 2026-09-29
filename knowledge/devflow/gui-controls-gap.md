@@ -1,3 +1,18 @@
+---
+id: devflow-gui-controls-gap
+title: 现代化 GUI 控件差距盘点（FlyThings 现状 vs 需求）
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [例：富文本显示, + 自研 8 控件, md 方法论逐个补齐, 草稿待确认入库]
+evidence: []
+---
 # 现代化 GUI 控件差距盘点（FlyThings 现状 vs 需求）
 
 > 检索导引：问「平台缺哪些控件 / 有没有富文本控件 / 家底盘点（21 内置 + 8 自研）/ 下一步该补什么」→ 本文（缺口清单）；补法见 `devflow/custom-widget.md`。

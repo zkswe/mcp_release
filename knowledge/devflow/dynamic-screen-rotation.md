@@ -1,3 +1,18 @@
+---
+id: devflow-dynamic-screen-rotation
+title: 🔄 动态旋转屏幕 / 运行时切换布局（relayout）
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [F133, Z20, Z21, T113, V85X]
+tags: [F133, 0 引入, 现有公开包的 z20, z21, 检索词：动态旋转, 运行时旋转]
+evidence: []
+---
 # 🔄 动态旋转屏幕 / 运行时切换布局（relayout）
 
 > 检索导引：问「运行时转屏 / 横竖屏切换不重启应用 / relayout 怎么用 / setScreenRotate·setTouchRotate / 两套 ftu 怎么切 / 某版本不支持某控件（scrollwindow 看不到）」→ 本文；静态方向配置见 `devflow/package-properties-easyui-cfg.md`。

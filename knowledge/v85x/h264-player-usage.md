@@ -1,3 +1,18 @@
+---
+id: v85x-h264-player-usage
+title: 🎬 V85X 硬件 H264 播放器：官方包 `awh264player` vs 厂商门面 `zk_h264_player`
+category: v85x
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [V85X, V851S]
+tags: [**HLS, TS, **解码缩放 1, 4**, **起播就静默退出, 进程无报错消失**]
+evidence: []
+---
 # 🎬 V85X 硬件 H264 播放器：官方包 `awh264player` vs 厂商门面 `zk_h264_player`
 
 > 🔍 **检索导引**：V85X/V853/V851/V553「**硬件 H264 解码**」「**awh264player 包怎么用**」

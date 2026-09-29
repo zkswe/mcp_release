@@ -1,3 +1,18 @@
+---
+id: uicontrols-listview-wheel-picker
+title: listview 做滚轮选择器（WheelPicker）：字段配法 + 中心行对齐 + 三个真机坑
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [Z21]
+tags: [**检索命中条件, 滚轮, 时间选择, **：, 滚轮选择器, 转盘]
+evidence: []
+---
 # listview 做滚轮选择器（WheelPicker）：字段配法 + 中心行对齐 + 三个真机坑
 
 > 检索导引：问「滚轮选择器怎么做 / 时间选择·时钟盘 / 选中条跟着行滚 / setSelection 带不带动画 / 中心行选中值怎么回读」→ 本文；基础字段见 `uicontrols/listview-fields.md`。

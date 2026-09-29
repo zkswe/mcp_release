@@ -1,3 +1,18 @@
+---
+id: devflow-dependency-package-docs
+title: 依赖包用法文档（packages/<包>/package.yaml）怎么读、怎么查
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [Z20]
+tags: [<包名, ` 下]
+evidence: []
+---
 # 依赖包用法文档（packages/<包>/package.yaml）怎么读、怎么查
 
 > 检索导引：需求里出现「某个依赖包怎么用 / 这个包有什么 API / Manifest 该写哪个包和版本 / 包说明不全 / package.yaml / 组件包用法」时命中本文。

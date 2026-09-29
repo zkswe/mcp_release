@@ -1,3 +1,18 @@
+---
+id: devflow-touch-inject-autotest
+title: 触摸注入/UI 自动化测试：先调现成 `touch` 工具（禁止先造轮子）
+category: devflow
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [F133, F135, Z20, Z21, T113, V85X]
+tags: [c 原理, AI 不知道有现成工具, 沛哥实测反馈, ：老 input, ui_test, 节点要人工传]
+evidence: []
+---
 # 触摸注入/UI 自动化测试：先调现成 `touch` 工具（禁止先造轮子）
 
 > 检索导引：问「要自动化测试/压测/遍历验收 / 模拟点击滑动怎么注入 / 触摸节点和协议怎么定 / 有没有现成工具别再造轮子」→ 本文（统一 `touch` ELF + `flythings_gen_ui_test`；英文命中词见上方「🔑 关键词索引」）。

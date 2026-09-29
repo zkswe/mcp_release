@@ -36,6 +36,8 @@ DEFAULT_OUT = os.path.join(BASE, 'tools_manifest.json')
 RISK = {
     'flythings_get_version': 'read',
     'flythings_knowledge_search': 'read',
+    'flythings_knowledge_capture': 'write',
+    'flythings_knowledge_export': 'read',
     'flythings_hardware_info': 'read',
     'flythings_map_control': 'read',
     'flythings_read_json': 'read',
@@ -80,6 +82,8 @@ RISK = {
 CATEGORY = {
     'flythings_get_version': 'kbase',
     'flythings_knowledge_search': 'kbase',
+    'flythings_knowledge_capture': 'kbase',
+    'flythings_knowledge_export': 'kbase',
     'flythings_hardware_info': 'kbase',
     'flythings_map_control': 'layout',
     'flythings_read_json': 'layout',
@@ -131,6 +135,8 @@ CATEGORY = {
 STAGE = {
     # 设计阶段（现在就该用）
     'flythings_knowledge_search': 'design',
+    'flythings_knowledge_capture': 'other',
+    'flythings_knowledge_export': 'other',
     'flythings_map_control': 'design',
     'flythings_read_json': 'design',
     'flythings_layout_audit': 'design',

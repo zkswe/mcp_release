@@ -1,3 +1,20 @@
+---
+id: devflow-device-deploy-budget
+title: 设备部署体积与内存预算（小内存设备必看）
+category: devflow
+status: verified
+confidence: real-device
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: false
+platforms: [Z21]
+tags: [实测来源：Z21, 表现像, WiFi 坏了, Z20, 检索词：部署体积, 内存预算]
+evidence:
+  - {kind: real-device, cmd: %ADB% -s %DEVICE% shell getprop init.svc.zkswe, expect_contains: running}
+  - {kind: offline, cmd: python -m unittest tests.test_baseline_testrun.TestTouchFallback -q, expect_rc: 0, expect_contains: OK}
+---
 # 设备部署体积与内存预算（小内存设备必看）
 
 > 检索导引：问「部署后设备 OOM 重启 / 整板掉网像 WiFi 坏了 / /tmp 太小 / 部署体积怎么压 / 应用进程怎么重启（为什么不能 kill）」→ 本文（小内存板必读）。

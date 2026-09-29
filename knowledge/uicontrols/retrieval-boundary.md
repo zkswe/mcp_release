@@ -1,3 +1,18 @@
+---
+id: uicontrols-retrieval-boundary
+title: 🔒 控件用法检索边界（沛哥定规 2026-09-01）
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [字段, API 时, Qt, Android, Flutter, emWin]
+evidence: []
+---
 # 🔒 控件用法检索边界（沛哥定规 2026-09-01）
 
 > 检索导引：问「控件用法能去哪查 / 能不能照搬其他 GUI 框架的写法 / Package API 算不算控件 json 字段 / 设备侧动作能自己敲命令吗」→ 本文（检索来源与行为边界铁律）。

@@ -1,3 +1,18 @@
+---
+id: uicontrols-diagram-fields
+title: Diagram 波形图控件 JSON 字段规范
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: []
+tags: [0 SDK 头文件校准, 场景：实时波形, 音频频谱, 心率, 串口 ADC 曲线等]
+evidence: []
+---
 # Diagram 波形图控件 JSON 字段规范
 
 > 检索导引：问「波形图 / 实时频谱·心率曲线 / diagram 字段 / 多条波形 infos 配置 / setData 与 addData 区别 / 移动动画卡顿」→ 本文。

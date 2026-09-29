@@ -1,3 +1,18 @@
+---
+id: v85x-usb-gadget-storage
+title: V85X USB OTG 切换与 Device 存储（ADB / U盘 + EMMC / TF 卡双介质）
+category: v85x
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [V85X]
+tags: [客户口径 MTP, sys, devices, platform, soc, usbc0]
+evidence: []
+---
 # V85X USB OTG 切换与 Device 存储（ADB / U盘 + EMMC / TF 卡双介质）
 
 > 🔍 **检索导引**：本文回答「V85X / V85XEMMC 如何切换 USB OTG、切 host / device 模式、切 ADB / U盘 模式、

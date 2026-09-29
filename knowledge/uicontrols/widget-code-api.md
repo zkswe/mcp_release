@@ -1,3 +1,18 @@
+---
+id: uicontrols-widget-code-api
+title: 控件代码 API 速查（35 官方 Demo 源码实证，2026-09-08）
+category: uicontrols
+status: verified
+confidence: manual
+verified_at: 2026-09-29
+stale_days: 180
+origin: total
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+needs_evidence: true
+platforms: [Z21]
+tags: [回调签名, 触发时机, 事件语义, 实测坑, 通用骨架, activity 壳]
+evidence: []
+---
 # 控件代码 API 速查（35 官方 Demo 源码实证，2026-09-08）
 
 > 检索导引：问「控件代码接口怎么调 / 回调函数签名与触发时机 / setTouchPass 在哪设 / 监听器什么时候注册 / 哪个 Demo 有用法」→ 本文（代码侧速查）；工程骨架见 `devflow/activity-code-skeleton.md`。
