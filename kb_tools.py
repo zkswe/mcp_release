@@ -1041,7 +1041,8 @@ def flythings_gen_ui_test(project_root: str, test_type: str = 'ask', output_dir:
 
 def flythings_test_run(plan: str = '', devices: str = 'auto', project_root: str = '',
                        out: str = '', platform: str = '', parallel: int = 4,
-                       baseline: str = 'auto', allow_regions: int = 0) -> str:
+                       baseline: str = 'auto', allow_regions: int = 0,
+                       per_device_keys: str = 'auto') -> str:
     """多设备**并行**跑一份 UI 用例（触摸注入 + 日志断言 + 像素基线），出 JSON + JUnit 报告。
 
     场景：自动化测试 / 验收回归 / 多台机器同时验证一份用例。plan 是用例 JSON（文本或 .json
@@ -1053,7 +1054,8 @@ def flythings_test_run(plan: str = '', devices: str = 'auto', project_root: str 
     用例写法/首次建基线流程/多设备并发注意见 knowledge/devflow/device-test-run.md。
     """
     return json.dumps(tt.flythings_test_run(plan, devices, project_root, out, platform,
-                                            parallel, baseline, allow_regions),
+                                            parallel, baseline, allow_regions,
+                                            per_device_keys),
                       ensure_ascii=False)
 
 

@@ -61,7 +61,15 @@ flythings_ui_visual(action="baseline", project_root="<工程>", mode="update", i
 ```
 
 - `baseline="auto"`（默认）：能比就比，比不到记 `no-baseline` 并进 warnings。
+- `baseline="compare"`（**严格模式**）：明确要回归就**不该缺基线**——缺基线仍报 `no-baseline` 状态，
+  但报告里按 **failure** 算（`auto` 才算 skipped）。首次务必先 `save`。
 - `baseline="off"`：不做像素判定（只要注入 + 日志断言时用）。
+- **每步可单独放宽容差**：step 里写 `"allowRegions": N`（活页面如时钟/温度会自己变，
+  实测同一个单台 save→compare 也会因状态文字变化报 1 处差异，给 1~2 的宽容差即可）；
+  plan 级 `"allowRegions": N` 作为整份用例的默认，函数参数 `allow_regions` 为最后兵。
+- **多台设备自动按设备区分 key**（`per_device_keys="auto"`，缺省）：`shot="panel"` + 两台设备
+  → 实际 key `panel@108` / `panel@71`（避免「两台本来就不在同一页」被当成回归差异），
+  设备名与回退目录都会写进该设备的 `notes`；想故意跨机共用一把 key 就传 `per_device_keys="off"`。
 - 基线库存 `<工程>/ui_baseline/`：`baseline.json`（索引 + 容差档案）+ `<key>.png` + `_diff/<key>.diff.png`。
 - **key 必须稳定**（同一页面同一状态永远用同一个 key）；key 变了等于绕过基线。
 - 分辨率改了 → `size-mismatch`：**别拿旧基线硬比**，确认新尺寸后 `mode=update` 刷基线。
@@ -107,6 +115,7 @@ flythings_ui_visual(action="baseline", project_root="<工程>", mode="update", i
 
 | 现象 | 原因 / 处置 |
 |------|-------------|
+| 单台 save→compare 也报 1~2 处差异 | 页面上有**自己在变的内容**（时钟/温度/动画）：给 step 加 `"allowRegions": 1~2`，或裁到稳定区域，或改日志断言 |
 | 全部步骤 `no-baseline` | 还没建基线：先 `baseline="save"` 跑一轮 |
 | `size-mismatch` | 工程分辨率变了：确认新尺寸后 `mode=update` |
 | 抓屏步骤 `error` 且 hint 提「双缓冲/pan」 | 抓到上一帧：注入前先 `tap` 唤醒重绘，或对同一步抓两次（见 `device-screenshot.md`） |

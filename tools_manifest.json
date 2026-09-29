@@ -570,7 +570,8 @@
         "platform",
         "parallel",
         "baseline",
-        "allow_regions"
+        "allow_regions",
+        "per_device_keys"
       ],
       "risk": "device",
       "category": "device",
@@ -640,7 +641,7 @@
   "docs": {
     "knowledgeFiles": 84,
     "wikiFiles": 128,
-    "ragChunks": 1760,
+    "ragChunks": 1761,
     "ragPaths": 212
   }
 }

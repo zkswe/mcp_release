@@ -461,6 +461,15 @@ def _as_list(v):
     return [str(v)]
 
 
+def _dev_key(serial):
+    """设备的短标识（用于按设备区分基线 key）：`198.51.100.108:5555` → `108`。"""
+    s = str(serial or '').split(':')[0]
+    parts = [p for p in s.split('.') if p]
+    if len(parts) >= 2 and all(p.isdigit() for p in parts):
+        return parts[-1]
+    return _safe_name(s)
+
+
 def _one_step(step, i, ctx):
     """执行单步 → 结果字典（status: pass | fail | error | no-baseline）。"""
     adb, serial, touch = ctx['adb'], ctx['serial'], ctx['touch']
@@ -504,6 +513,10 @@ def _one_step(step, i, ctx):
             return r
     # ---- 截图（+ 像素基线对比）----
     shot = step.get('shot') or ('shot_%d' % (i + 1) if act == 'shot' else '')
+    if shot and ctx.get('keySuffix'):
+        # 多设备同一份用例：基线 key **按设备区分**（panel@108 / panel@71）
+        # —— 否则「两台机器本来就不在同一页」会被当成回归差异（真机实测踩过）
+        shot = '%s@%s' % (shot, ctx['keySuffix'])
     if shot:
         os.makedirs(shot_dir, exist_ok=True)
         png = os.path.join(shot_dir, '%s.png' % _safe_name(shot))
@@ -523,11 +536,20 @@ def _one_step(step, i, ctx):
         r['detail']['shot'] = png
         mode = ctx['baselineMode']
         broot = ctx['baselineRoot']
+        # 容差优先序：**步骤指定 > 运行级指定 > 基线登记的档案（None）**
+        # （复检 #2 抓到：以前总把 0 显式传给 compare，把基线里存的容差覆盖掉了）
+        if step.get('allowRegions') is not None:
+            allow_val = int(step['allowRegions'])
+        elif ctx.get('allowSpecified'):
+            allow_val = int(ctx.get('allowRegions') or 0)
+        else:
+            allow_val = None
         if broot and mode != 'off':
             import ui_baseline as ubl
             if mode == 'save':
                 sv = ubl.save(broot, png, key=shot, name=name, source='test_run',
-                              replace=True, allow_regions=ctx['allowRegions'])
+                              replace=True,
+                              allow_regions=(0 if allow_val is None else allow_val))
                 r['detail']['baseline'] = {'mode': 'save', 'key': shot,
                                            'ok': bool(sv.get('success')),
                                            'error': sv.get('error', '')}
@@ -535,16 +557,27 @@ def _one_step(step, i, ctx):
                     r['status'] = 'error'
                     r['detail']['error'] = '存基线失败: %s' % sv.get('error')
             else:
-                cp = ubl.compare(broot, png, key=shot, allow_regions=ctx['allowRegions'])
+                cp = ubl.compare(broot, png, key=shot, allow_regions=allow_val)
                 st = cp.get('status')
                 r['detail']['baseline'] = {'mode': 'compare', 'key': shot, 'status': st,
                                            'regionCount': cp.get('regionCount'),
+                                           'allowRegions': cp.get('allowRegions'),
+                                           'toleranceFrom': ('step' if step.get('allowRegions')
+                                                             is not None else
+                                                             ('run' if ctx.get('allowSpecified')
+                                                              else 'baseline')),
                                            'diffPng': cp.get('diffPng', ''),
                                            'error': cp.get('error', '')}
                 if st == 'pass':
                     pass
-                elif st == 'no-baseline' and mode == 'auto':
+                elif st == 'no-baseline':
+                    # 状态永远是 no-baseline（机器可读的真相）；但 baseline=compare 是**严格模式**：
+                    # 明确要求回归比对却没有基线 → 报告里按失败算（auto 才算 skipped）。
                     r['status'] = 'no-baseline'
+                    if mode != 'auto':
+                        r['detail']['baseline']['strict'] = True
+                        r['detail']['error'] = ('基线库里没有 key=%s（baseline=%s 为严格模式，缺基线按失败算；'
+                                                '首次请先用 baseline="save" 建基线）' % (shot, mode))
                 else:
                     r['status'] = 'fail'
     # ---- 日志断言 ----
@@ -573,7 +606,8 @@ def _one_step(step, i, ctx):
     return r
 
 
-def _run_on_device(dev, plan, adb, out_root, platform, baseline, allow, resolution):
+def _run_on_device(dev, plan, adb, out_root, platform, baseline, allow, resolution,
+                   dev_count=1, per_device='auto'):
     serial = dev.get('serial')
     t0 = time.time()
     notes, errors = [], []
@@ -595,9 +629,21 @@ def _run_on_device(dev, plan, adb, out_root, platform, baseline, allow, resoluti
         res['ms'] = int((time.time() - t0) * 1000)
         return res
     res['tool'] = os.path.basename(touch)
+    plan_allow = plan.get('allowRegions')
+    if plan_allow is not None:
+        a_spec, a_val = True, int(plan_allow)
+    elif int(allow or 0) > 0:
+        a_spec, a_val = True, int(allow)
+    else:
+        a_spec, a_val = False, 0        # 都没指定 → 用基线里登记的容差档案
     ctx = {'adb': adb, 'serial': serial, 'touch': touch, 'res': resolution,
            'shotDir': shot_dir, 'baselineRoot': plan.get('baselineRoot') or '',
-           'baselineMode': (plan.get('baseline') or baseline), 'allowRegions': allow}
+           'baselineMode': (plan.get('baseline') or baseline),
+           'allowRegions': a_val, 'allowSpecified': a_spec,
+           'keySuffix': (_dev_key(serial) if _per_device_on(per_device, dev_count) else '')}
+    if ctx['keySuffix']:
+        notes.append('%s: 基线 key 带设备标识（@%s）—— 多设备同一用例必须区分，'
+                     '否则会把“两台内容不同”误报成回归' % (serial, ctx['keySuffix']))
     for i, step in enumerate(plan['steps']):
         try:
             r = _one_step(step, i, ctx)
@@ -621,8 +667,13 @@ def _safe_name(s):
     return ''.join(c if (c.isalnum() or c in '._-') else '_' for c in str(s)) or 'x'
 
 
+def _xattr(v):
+    """XML 属性值转义（**必须含引号**，否则 message 里的 " 会把属性截断 → XML 非法，CI 直接解析失败）。"""
+    return _xml.escape(str(v or ''), {'"': '&quot;', "'": '&apos;'})
+
+
 def _junit_xml(plan_name, devices, summary):
-    esc = _xml.escape
+    esc = _xattr
     cases, fails, errs, skips = [], 0, 0, 0
     for d in devices:
         devname = d.get('serial') or 'device'
@@ -642,8 +693,13 @@ def _junit_xml(plan_name, devices, summary):
                 errs += 1
                 body = '<error message="%s"/>' % esc((s.get('detail') or {}).get('error', 'error'))
             elif st == 'no-baseline':
-                skips += 1
-                body = '<skipped message="基线库中没有该 key，未做像素判定"/>'
+                det = s.get('detail') or {}
+                if (det.get('baseline') or {}).get('strict'):
+                    fails += 1          # 严格模式（baseline=compare）：缺基线按失败
+                    body = '<failure message="%s"/>' % esc(det.get('error') or '缺基线')
+                else:
+                    skips += 1
+                    body = '<skipped message="基线库中没有该 key，未做像素判定"/>'
             cases.append('<testcase classname="%s" name="%s" time="%.3f">%s</testcase>'
                          % (esc(devname), esc(nm), (s.get('ms', 0) or 0) / 1000.0, body))
     head = ('<?xml version="1.0" encoding="UTF-8"?>' + '\n'
@@ -654,8 +710,19 @@ def _junit_xml(plan_name, devices, summary):
     return head + '\n'.join(cases) + '\n</testsuite>\n</testsuites>\n'
 
 
+def _per_device_on(mode, dev_count):
+    """是否按设备区分基线 key：auto = 多台才开；on/off 显式。"""
+    m = str(mode or 'auto').strip().lower()
+    if m in ('off', 'false', '0', 'no'):
+        return False
+    if m in ('on', 'true', '1', 'yes'):
+        return True
+    return int(dev_count or 1) > 1
+
+
 def flythings_test_run(plan='', devices='auto', project_root='', out='', platform='',
-                       parallel=4, baseline='auto', allow_regions=0):
+                       parallel=4, baseline='auto', allow_regions=0,
+                       per_device_keys='auto'):
     """多设备并行跑一份用例（触摸注入 + 日志断言 + 像素基线），出 JSON + JUnit 报告。
 
     plan：用例 JSON（文本或 .json 路径）——steps[].action 取 tap/long/swipe/wait/monkey/run/
@@ -700,11 +767,12 @@ def flythings_test_run(plan='', devices='auto', project_root='', out='', platfor
     if workers == 1 or len(devs) == 1:
         for d in devs:
             results.append(_run_on_device(d, p, adb, out, platform, mode, allow_regions,
-                                          resolution))
+                                          resolution, len(devs), per_device_keys))
     else:
         with ThreadPoolExecutor(max_workers=workers) as ex:
             futs = [ex.submit(_run_on_device, d, p, adb, out, platform, mode,
-                              allow_regions, resolution) for d in devs]
+                              allow_regions, resolution, len(devs), per_device_keys)
+                    for d in devs]
             for f in futs:
                 results.append(f.result())
     cnt = {'pass': 0, 'fail': 0, 'error': 0, 'no-baseline': 0}
@@ -735,6 +803,7 @@ def flythings_test_run(plan='', devices='auto', project_root='', out='', platfor
         f.write(_junit_xml(name, results, summary))
     ok = bool(results) and all(d['ok'] for d in results) and not cnt['no-baseline']
     return {'success': ok, 'op': 'flythings_test_run', 'plan': name, 'baselineMode': mode,
+            'perDeviceKeys': _per_device_on(per_device_keys, len(devs)),
             'summary': summary, 'devices': results, 'warnings': warnings,
             'reportJson': rjson, 'reportXml': rxml, 'out': out,
             'hint': ('success=false 常见原因：有 fail/error 步骤；或截图没有基线'

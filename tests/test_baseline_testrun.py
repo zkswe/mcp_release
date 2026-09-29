@@ -164,9 +164,9 @@ class TestDeviceSelection(unittest.TestCase):
     def setUp(self):
         self._orig = tt._adb.probe_devices
         self.online = [
-            {'serial': '10.0.0.1:5555', 'model': 'Zkswe_SSD20X_SPINOR', 'platform': 'Z20',
+            {'serial': '198.51.100.1:5555', 'model': 'Zkswe_SSD20X_SPINOR', 'platform': 'Z20',
              'state': 'device'},
-            {'serial': '10.0.0.2:5555', 'model': 'Zkswe_F133_SPINOR', 'platform': 'F133',
+            {'serial': '198.51.100.2:5555', 'model': 'Zkswe_F133_SPINOR', 'platform': 'F133',
              'state': 'device'},
         ]
 
@@ -194,17 +194,17 @@ class TestDeviceSelection(unittest.TestCase):
         self._fake(self.online)
         devs, err = tt._select_devices('all', 'adb')
         self.assertIsNone(err)
-        self.assertEqual([d['serial'] for d in devs], ['10.0.0.1:5555', '10.0.0.2:5555'])
+        self.assertEqual([d['serial'] for d in devs], ['198.51.100.1:5555', '198.51.100.2:5555'])
 
     def test_explicit_list_and_bare_ip(self):
         self._fake(self.online)
-        devs, err = tt._select_devices('10.0.0.2,10.0.0.1:5555', 'adb')
+        devs, err = tt._select_devices('198.51.100.2,198.51.100.1:5555', 'adb')
         self.assertIsNone(err)
-        self.assertEqual([d['serial'] for d in devs], ['10.0.0.2:5555', '10.0.0.1:5555'])
+        self.assertEqual([d['serial'] for d in devs], ['198.51.100.2:5555', '198.51.100.1:5555'])
 
     def test_unknown_serial_reported(self):
         self._fake(self.online)
-        devs, err = tt._select_devices('10.0.0.9:5555', 'adb')
+        devs, err = tt._select_devices('198.51.100.9:5555', 'adb')
         self.assertIsNone(devs)
         self.assertIn('不在线', err['error'])
 
@@ -216,6 +216,22 @@ class TestDeviceSelection(unittest.TestCase):
 
 
 class TestJunitAndSteps(unittest.TestCase):
+    def test_junit_xml_escapes_quotes_in_messages(self):
+        """复检 #2 抓到的真缺陷：message 里带双引号（严格模式的提示语就有）
+        会把属性截断 → XML 非法（消息含 baseline="compare"）。必须转义且可被解析。"""
+        devs = [{'serial': '198.51.100.7:5555', 'ok': False, 'steps': [
+            {'action': 'shot', 'name': 'panel', 'status': 'no-baseline', 'ms': 3,
+             'detail': {'baseline': {'strict': True},
+                        'error': '基线库里没有 key=panel（baseline="compare" 为严格模式）'}},
+        ], 'errors': []}]
+        xml = tt._junit_xml('strict-plan', devs, {'steps': 1})
+        self.assertNotIn('baseline="compare"', xml)      # 未转义的裸引号不许出现
+        self.assertIn('&quot;compare&quot;', xml)
+        import xml.dom.minidom as minidom
+        doc = minidom.parseString(xml)                     # 能解析才是真过
+        ts = doc.getElementsByTagName('testsuite')[0]
+        self.assertEqual(ts.getAttribute('failures'), '1')  # 严格模式缺基线记 failure
+
     def test_junit_xml_counts_and_escaping(self):
         devs = [{'serial': '1.2.3.4:5555', 'ok': False, 'steps': [
             {'action': 'tap', 'name': '点按钮 <A>', 'status': 'pass', 'ms': 10},
@@ -303,6 +319,132 @@ class TestTestRunEntry(unittest.TestCase):
                                   baseline='whatever')
         self.assertFalse(r['success'])
         self.assertIn('auto', r['error'])
+
+
+@unittest.skipUnless(HAS_PIL, 'need Pillow')
+class TestPerDeviceKeysAndTolerance(unittest.TestCase):
+    """复检 #2 抓到并修掉的两件事：按设备区分基线 key、按步骤放宽容差。"""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp(prefix='pdk_')
+        self.proj = os.path.join(self.tmp, 'proj')
+        os.makedirs(self.proj)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _fake_capture(self, color=(0, 0, 0, 255), patch=None):
+        mod = types.ModuleType('device_screenshot')
+
+        def capture(**kw):
+            p = kw['out']
+            os.makedirs(os.path.dirname(p), exist_ok=True)
+            _mkimg(p, size=(480, 480), color=color, patch=patch)
+            return {'success': True}
+        mod.capture = capture
+        return mod
+
+    def _ctx(self, **over):
+        c = {'adb': 'adb', 'serial': '198.51.100.108:5555', 'touch': '/data/touch',
+             'res': [480, 480], 'shotDir': os.path.join(self.tmp, 'shots'),
+             'baselineRoot': self.proj, 'baselineMode': 'compare', 'allowRegions': 0,
+             'allowSpecified': False, 'keySuffix': ''}
+        c.update(over)
+        return c
+
+    def _with_fake(self, mod, fn):
+        old = sys.modules.get('device_screenshot')
+        sys.modules['device_screenshot'] = mod
+        try:
+            return fn()
+        finally:
+            if old is not None:
+                sys.modules['device_screenshot'] = old
+            else:
+                sys.modules.pop('device_screenshot', None)
+
+    def test_per_device_on_logic(self):
+        self.assertTrue(tt._per_device_on('auto', 2))     # 多台 → 自动按设备区分
+        self.assertFalse(tt._per_device_on('auto', 1))
+        self.assertTrue(tt._per_device_on('on', 1))
+        self.assertFalse(tt._per_device_on('off', 3))
+        self.assertTrue(tt._per_device_on('', 3))     # 空值 = auto（多台 → 开）
+
+    def test_dev_key_short_form(self):
+        self.assertEqual(tt._dev_key('198.51.100.108:5555'), '108')
+        self.assertEqual(tt._dev_key('198.51.100.71'), '71')
+        self.assertTrue(tt._dev_key('ABCDEF012345'))       # USB serial → 清洗成安全 key
+
+    def test_shot_key_includes_device_suffix(self):
+        black = os.path.join(self.tmp, 'b.png')
+        _mkimg(black, size=(480, 480))
+        ubl.save(self.proj, black, key='panel@108')        # 基线按设备存
+        mod = self._fake_capture()                         # 抓到的也是全黑
+        r = self._with_fake(mod, lambda: tt._one_step({'action': 'shot', 'shot': 'panel'}, 0,
+                                                     self._ctx(keySuffix='108')))
+        self.assertEqual(r['status'], 'pass', r)
+        self.assertEqual(r['detail']['baseline']['key'], 'panel@108')
+        # 不带设备后缀 + 严格 compare → 仍然明说 no-baseline（且标 strict）
+        r2 = self._with_fake(mod, lambda: tt._one_step({'action': 'shot', 'shot': 'panel'}, 0,
+                                                      self._ctx(keySuffix='')))
+        self.assertEqual(r2['status'], 'no-baseline', r2)
+        self.assertTrue(r2['detail']['baseline']['strict'])
+
+    def test_step_allow_regions_override(self):
+        black = os.path.join(self.tmp, 'b.png')
+        _mkimg(black, size=(480, 480))
+        ubl.save(self.proj, black, key='k')
+        mod = self._fake_capture(patch=(100, 100, 160, 160, (255, 0, 0, 255)))   # 一处差异
+        r_fail = self._with_fake(mod, lambda: tt._one_step({'action': 'shot', 'shot': 'k'}, 0,
+                                                          self._ctx()))
+        self.assertEqual(r_fail['status'], 'fail', r_fail)
+        # 活页面（时钟/温度等会自己变）→ 按步骤放宽容差
+        r_ok = self._with_fake(mod, lambda: tt._one_step(
+            {'action': 'shot', 'shot': 'k', 'allowRegions': 1}, 0, self._ctx()))
+        self.assertEqual(r_ok['status'], 'pass', r_ok)
+
+    def test_compare_inherits_baseline_tolerance_when_unspecified(self):
+        """复检 #2 抓到的第二个真缺陷：运行级没指定容差时，**必须用基线里登记的档案**
+        （以前总把 0 显式传下去，把基线里的容差覆盖掉了）。"""
+        black = os.path.join(self.tmp, 'b.png')
+        _mkimg(black, size=(480, 480))
+        ubl.save(self.proj, black, key='k', allow_regions=1)
+        mod = self._fake_capture(patch=(100, 100, 160, 160, (255, 0, 0, 255)))
+        # 未指定（allowSpecified=False）→ 继承基线档案 1 → pass
+        r = self._with_fake(mod, lambda: tt._one_step(
+            {'action': 'shot', 'shot': 'k'}, 0,
+            self._ctx(allowRegions=0, allowSpecified=False)))
+        self.assertEqual(r['status'], 'pass', r)
+        self.assertEqual(r['detail']['baseline']['allowRegions'], 1)
+        self.assertEqual(r['detail']['baseline']['toleranceFrom'], 'baseline')
+        # 显式指定 0（严格）→ fail
+        r2 = self._with_fake(mod, lambda: tt._one_step(
+            {'action': 'shot', 'shot': 'k'}, 0,
+            self._ctx(allowRegions=0, allowSpecified=True)))
+        self.assertEqual(r2['status'], 'fail', r2)
+        self.assertEqual(r2['detail']['baseline']['toleranceFrom'], 'run')
+
+    def test_report_exposes_per_device_keys_flag(self):
+        orig_sel, orig_run = tt._select_devices, tt._run_on_device
+        tt._select_devices = lambda devices, adb, platform='': (
+            [{'serial': '1.1.1.1:5555', 'platform': 'Z20'},
+             {'serial': '1.1.1.2:5555', 'platform': 'Z20'}], None)
+
+        def _fake_run(dev, plan, adb, out_root, platform, baseline, allow, resolution,
+                      dev_count=1, per_device='auto'):
+            return {'serial': dev['serial'], 'ok': True, 'notes': [], 'errors': [], 'ms': 1,
+                    'steps': [{'index': 1, 'name': 'w', 'action': 'wait', 'status': 'pass',
+                               'ms': 1, 'detail': {}}]}
+        tt._run_on_device = _fake_run
+        try:
+            r = tt.flythings_test_run(json.dumps({'steps': [{'action': 'wait', 'ms': 1}]}),
+                                      devices='all', baseline='off',
+                                      out=os.path.join(self.tmp, 'o'))
+        finally:
+            tt._select_devices, tt._run_on_device = orig_sel, orig_run
+        self.assertTrue(r['perDeviceKeys'])
+        self.assertEqual(r['summary']['devices'], 2)
+        self.assertEqual(r['summary']['pass'], 2)
 
 
 if __name__ == '__main__':
