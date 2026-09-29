@@ -212,3 +212,22 @@ verified_20260929_part2:
     - "本板开 SoftAp 实测**没有**导致重启（同一操作在 11:35 那次之后设备重启过，但复测未复现 → 那次重启更可能是同期有人更新 /res 后的重启，不是 SoftAp 引起）"
     - "关热点后瞬时 isConnected()=0（STA 恢复需要几秒），不是掉线"
   evidence: evidence/netstack2_20260929.txt
+
+# ── Z21 真机验证（2026-09-29 12:1x，Zkswe_SSD21X_SPINOR / PIONEER3 / 1024x600，设备 192.168.x.x） ──
+verified_20260929_z21:
+  platform: Z21
+  device: "192.168.x.x（Zkswe_SSD21X_SPINOR，easyui 2.2.0，1024x600）"
+  project: projects/pkg_netstack_z21（与 Z20 版同一套写法，布局按 1024x600 重新生成）
+  note: "平台差异按包站版本走：Z21 curl=8.12.1-mbedtls、openssl=1.1.1-g、mbedtls 3.6.5、cares 1.17.2、ntp 2.1.1；**Z21 registry 无 mqtt-cxx/paho-mqtt3as → 不验 MQTT**"
+  steps:
+    - "HTTP GET（LAN 测试服务）-> 200 OK 33 B；HTTP POST -> 200 OK 51 B"
+    - "NTP syncTime(defaultServerList, 3000) -> 成功；校时前 1970-01-01 → 校时后 2026-09-29 12:16:12（TZ=UTC-8）"
+    - "HTTPS GET → 首次 FAIL（`mbedTLS: The certificate validity starts in the future`），**校时后复跑 200 OK / 29506 B**"
+    - "http::Downloader 双任务 -> 2/2 成功（307200 B + 81 B，落盘 /data/z21_*.bin|json），进度回调正常"
+    - "http::WebSocket -> sendFrame 17 B → receiveFrame 22 B = \"echo:hello-ws-from-z21\" → close()"
+    - "SoftAp setEnable(true) -> isEnable=1/ENABLED（≈5s）；setEnable(false) -> isEnable=0/DISABLING"
+    - "Ethernet：supported=1 connected=0；getConfigureInfo=0.0.0.0；getStaticConfigureInfo=192.168.x.x/255.255.255.0/gw 192.168.x.x；NetUtils(eth0) mac=16:49:98:3b:38:13；setAutoMode(true) OK"
+  new_gotchas:
+    - "**Z21 上电 RTC = 1970** → 带证书校验的 HTTPS/TLS 会报 `certificate validity starts in the future`；**必须先 NTP 校时再做 HTTPS**（Z20 那台时钟本来就对，所以没暴露这个顺序问题）"
+    - "**Z21 没有 /mnt/sdnand**（只有 `/mnt/extsd`、`/mnt/usb1`）→ 下载/落盘目标要写 **/data/**（本工程已改成 /data/z21_*）"
+  evidence: evidence/z21_20260929.txt

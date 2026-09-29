@@ -1,0 +1,41 @@
+########## 自检 AUTO（Z21）开始：不验 MQTT（Z21 无 mqtt-cxx/paho 包） ##########
+== 1/7 HTTP GET ==
+[HTTP] GET /hello.txt -> 200 OK | 33 bytes | ctype=text/plain; charset=utf-8
+[HTTP]   body: hello from zkswe lan test server
+== 2/7 HTTP POST ==
+[HTTP] POST /echo -> 200 OK | 51 bytes
+[HTTP]   echo: ECHO:{"from":"z21-191","msg":"curl-cxx POST works"}
+== 3/7 HTTPS GET ==
+[HTTPS] GET 异常: mbedTLS: The certificate validity starts in the future
+== 4/7 NTP 校时 ==
+[NTP] syncTime(15 个服务器) -> 成功 | 前=1970-01-01 08:10:45 后=2026-09-29 12:16:12（TZ=UTC-8）
+== 5/7 Downloader 双任务 ==
+[DL] http::Downloader 双任务（进度 + 结果回调）
+[DL] 进度 /data/z21_big.bin 0/0
+[DL] 进度 /data/z21_big.bin 13032/307200
+[DL] 进度 /data/z21_big.bin 14480/307200
+[DL] 进度 /data/z21_big.bin 307200/307200
+[DL] 结果 http://192.168.x.x:8000/big?kb=300 -> 成功，落盘 307200 B
+[DL] 结果 http://192.168.x.x:8000/json -> 成功，落盘 81 B
+[DL] 双任务结束：完成 2/2，用时≈500ms（剩余队列=0）
+== 6/7 WebSocket 回显 ==
+[WS] connect(ws://192.168.x.x:8766)
+[WS] sendFrame 17 B: hello-ws-from-z21
+[WS] receiveFrame 22 B: echo:hello-ws-from-z21
+[WS] close() 完成
+== 7/7 SoftAp + Ethernet ==
+[AP] 初始 isEnable=0 state=DISABLED ssid=zkswe ip=192.168.x.x
+[AP] 开热点 isEnable=1 state=ENABLED ssid=zkswe pwd=12345678 ip=192.168.x.x（≈5000ms）
+[AP] 关热点 isEnable=0 state=DISABLING（≈0ms）wifi连接=0
+[ETH] supported=1 connected=0 ip=0.0.0.0 mac=16:49:98:3b:38:13 autoMode=1
+[ETH] getConfigureInfo(ok=1) ip=0.0.0.0 mask=0.0.0.0 gw=0.0.0.0 dns=,
+[ETH] getStaticConfigureInfo(ok=1) ip=192.168.x.x mask=255.255.255.0 gw=192.168.x.x dns=192.168.x.x,
+[ETH] NetUtils: iface=eth0 ip=0.0.0.0 mac=16:49:98:3b:38:13
+[ETH] setAutoMode(true) -> OK isAutoMode=1
+########## 自检 AUTO（Z21）结束：错误数=1 ##########
+
+===== HTTPS 复跑（NTP 校时后，12:1x） =====
+== HTTPS GET ==
+[HTTPS] GET https://www.baidu.com -> 200 OK | 29506 bytes（证书校验 mbedtls）
+
+注：AUTO 里 HTTPS 排在 NTP 之前 → Z21 上电 RTC=1970 时会报 "certificate validity starts in the future"；校时后重跑即 200 OK。Z20 那台时钟本来就对，所以没暴露这个顺序问题。
