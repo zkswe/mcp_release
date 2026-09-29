@@ -1,0 +1,141 @@
+# curl-cxx —— HTTP/HTTPS 客户端（基于 libcurl 的 C++ 封装）
+# 由实读 registry 头文件 + Z20 真机验证写成。
+
+id: curl-cxx
+version: "10.0.3"
+platforms:
+  Z20:
+    registry: C:\zkswe\fun\registry\public\z20\curl-cxx\10.0.3
+    libs: [lib/libcurl-cxx.a]
+    headers_count: 7
+    verified: "2026-09-29"
+    status: verified
+    device: "192.168.x.x（Zkswe_SSD20X_SPINOR / 86 面板）"
+
+summary: >
+  HTTP/HTTPS 客户端（C++ 封装）：http::Axios（GET/POST/PUT/PATCH/DELETE/HEAD/OPTIONS/request）、
+  http::AxiosRequestConfig（baseURL/headers/query/超时）、http::AxiosResponse、http::FormData（multipart）、
+  http::Downloader（多任务下载 + 进度回调）。Z20 走 curl 8.12.1-mbedtls。
+
+entry: "#include <http/axios.h>"
+source: "未在本地 gitcom/AppGroup 找到 lib-curl-cxx 形态的源码仓（只有编译好的 .a + 头文件 + README）"
+
+headers:
+  - path: include/http/axios.h
+    role: 主类 http::Axios（GET/POST/DELETE/PUT/PATCH/HEAD/OPTIONS/request + defaults 默认配置）
+  - path: include/http/axios_request_config.h
+    role: 请求配置（baseURL/headers/queryParams/超时/SSL 等）
+  - path: include/http/axios_response.h
+    role: 响应（status / status_text / headers / data + getContentLength/getContentType）
+  - path: include/http/downloader.h
+    role: 下载器（单例 instance() + add(Task) + 静态 download(...)，支持进度/结果回调、低速超时、重试）
+  - path: include/http/form_data.h
+    role: multipart/form-data 表单（append / appendFile）
+  - path: include/http/easy.h
+    role: libcurl easy handle 的薄包装（Axios 内部用；高级用法可绕）
+  - path: include/http/web_socket.h
+    role: WebSocket 客户端（依赖 curl 的 ws 支持）
+
+api:
+  - symbol: http::Axios
+    header: http/axios.h
+    methods:
+      - "AxiosResponse GET(const std::string& url);"
+      - "AxiosResponse GET(const std::string& url, const AxiosRequestConfig& config);"
+      - "AxiosResponse POST(const std::string& url, const std::string& data);"
+      - "AxiosResponse POST(const std::string& url, const std::string& data, const AxiosRequestConfig& config);"
+      - "AxiosResponse POST(const std::string& url, const FormData& data);"
+      - "AxiosResponse PUT(const std::string& url, const std::string& data, const AxiosRequestConfig& config);"
+      - "AxiosResponse DELETE(const std::string& url);"
+      - "AxiosResponse HEAD(const std::string& url);"
+      - "AxiosResponse request(const AxiosRequestConfig& config);"
+      - "AxiosRequestConfig defaults;   // 默认配置（改这里影响后续请求）"
+  - symbol: http::AxiosRequestConfig
+    header: http/axios_request_config.h
+    methods:
+      - "void setBaseURL(const std::string& url);"
+      - "void setHeaders(const Headers& headers);"
+      - "void setQueryParams(const QueryParams& params);"
+      - "void setConnectTimeout(int ms);   void setTimeout(int ms);"
+  - symbol: http::AxiosResponse
+    header: http/axios_response.h
+    methods:
+      - "int status; std::string status_text; Headers headers; std::string data;"
+      - "int getContentLength() const;   std::string getContentType() const;"
+  - symbol: http::Downloader
+    header: http/downloader.h
+    methods:
+      - "static Downloader& instance();   void add(const Task& task);"
+      - "static void download(const std::string& source, const std::string& target, int retry, const LowSpeedLimit&, const ProgressHandler&);"
+
+deps:                        # Z20 段落（curl-cxx 10.0.3 自带 Manifest 里对 Z20 的声明）
+  - {id: base-utility, version: "^10.1.0"}
+  - {id: z, version: "^1.2.11"}
+  - {id: cares, version: "^1.17.2"}
+  - {id: mbedtls, version: "^3.6.5"}
+  - {id: curl, version: "8.12.1-mbedtls"}
+
+usage_cpp: |
+  #include <http/axios.h>
+  #include <base/exception.h>
+
+  // ⚠️ 阻塞 API：丢到 worker 线程里跑，别在 UI 线程直接调
+  static void doGet() {
+    try {
+      http::Axios ios;
+      http::AxiosRequestConfig cfg;
+      cfg.setConnectTimeout(3000);
+      cfg.setTimeout(10000);
+      http::AxiosResponse r = ios.GET("http://192.168.x.x:8000/hello.txt", cfg);
+      LOGD("status=%d bytes=%d ctype=%s", r.status, (int) r.data.size(), r.getContentType().c_str());
+      LOGD("body=%s", r.data.c_str());
+
+      // POST（带自定义头）
+      http::Headers h; h["Content-Type"] = "application/json";
+      cfg.setHeaders(h);
+      http::AxiosResponse p = ios.POST("http://192.168.x.x:8000/echo", "{\"k\":\"v\"}", cfg);
+      LOGD("post=%d echo=%s", p.status, p.data.c_str());
+
+      // HTTPS（需 ① 先校时 ② cacert.pem 放资源目录，见 gotchas）
+      http::AxiosResponse s = ios.GET("https://www.baidu.com", cfg);
+      LOGD("https=%d bytes=%d", s.status, (int) s.data.size());
+    } catch (base::Exception& e) {
+      LOGD("http 异常: %s", e.what());
+    }
+  }
+
+verified_20260929:
+  platform: Z20
+  device: "192.168.x.x（86 面板）"
+  project: projects/pkg_netstack
+  steps:
+    - "HTTP GET http://192.168.x.x:8000/hello.txt -> 200 OK，33 B，body=hello from zkswe lan test server"
+    - "HTTP POST .../echo（JSON + 自定义头）-> 200 OK，51 B，回显 ECHO:{...}"
+    - "HTTPS GET https://www.baidu.com -> 200 OK，29506 B（证书校验通过）"
+  verdict: pass
+  evidence: evidence/netstack_auto_20260929.txt
+
+gotchas:
+  - "**HTTPS 前先校时**（包 README 第 1 条）：系统时间不对 → 证书校验直接失败。用 ntp 包同步后再发 HTTPS。"
+  - "**cacert.pem 的实际加载位置 = 资源目录（resPath）下，不是随便哪个 resources/ 目录**：实测 resPath=/tmp/ui 时，只有 /tmp/ui/cacert.pem 能通过校验；放 /tmp/resources/cacert.pem、/tmp/cacert.pem 都报 `mbedTLS: The certificate is not correctly signed by the trusted CA`（这个报错是「没找到/用错 CA」，不是「服务器证书坏」）。正常部署 resPath=/res/ui → 即与 ftu 同级。"
+  - "Z20 的 curl 是 **8.12.1-mbedtls** 变体（不是 openssl 变体）：feature report 显示 **IPv6=no、无内置 CA bundle/path/embed** → 必须自带 cacert.pem；历史上「缺 CA 不是优雅报错而是进程崩→看门狗反复重启」（references/kb/build.md 有记录）。"
+  - "http::Axios 全是**阻塞**调用 → 必须放 worker 线程；本示例用 pthread + 日志缓冲，主线程只刷 UI。"
+  - "非 2xx 会抛 base::Exception（下载接口按 README：状态码非 200/206 或长度不符即失败）→ 一定要 try/catch，否则 worker 线程里异常会中断整个任务链。"
+  - "同一个工程里 HTTP 走 mbedtls、MQTT(paho) 走 openssl → 会链进两套 TLS，体积/内存要算进去。"
+
+see_also:
+  - "packages/curl/package.yaml（底层 libcurl：8.12.1-mbedtls）"
+  - "packages/ntp/package.yaml（HS 之前的校时）"
+  - "packages/mqtt-cxx/package.yaml（MQTT；Z20 上依赖 paho-mqtt3as + openssl）"
+  - "projects/pkg_netstack（真机验证工程：HTTP/HTTPS/NTP/MQTT 一键自检）"
+
+# ── 补充真机验证（2026-09-29，Z20 / 192.168.x.x，工程 projects/pkg_netstack2） ──
+verified_20260929_part2:
+  platform: Z20
+  device: "192.168.x.x（86 面板）"
+  steps:
+    - "http::Downloader 双任务：/big?kb=300 -> 307200 B + /json -> 81 B，2/2 成功，**进度回调逐段上报**（1448/7240/…/307200），队列清空 -> pass"
+    - "http::WebSocket：ws://192.168.x.x:8766 本地回显服务，sendFrame 17B -> receiveFrame 22B = \"echo:hello-ws-from-108\" -> close() -> pass"
+  gotchas_added:
+    - "WebSocket 回显测试要自己有 WS 服务端；本机 8765 被 tools/lite_ui 的 http.server 占着，用 8766"
+  evidence: evidence/netstack2_20260929.txt

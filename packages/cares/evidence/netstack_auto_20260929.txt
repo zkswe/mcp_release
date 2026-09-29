@@ -1,0 +1,19 @@
+########## 自检 AUTO 开始（curl-cxx → ntp → mqtt） ##########
+== 1/5 HTTP GET ==
+[HTTP] GET /hello.txt -> 200 OK | 33 bytes | ctype=text/plain; charset=utf-8
+[HTTP]   body: hello from zkswe lan test server
+== 2/5 HTTP POST ==
+[HTTP] POST /echo -> 200 OK | 51 bytes
+[HTTP]   echo: ECHO:{"from":"z20-108","msg":"curl-cxx POST works"}
+== 3/5 HTTPS GET ==
+[HTTPS] GET https://www.baidu.com -> 200 OK | 29506 bytes（证书校验 + 时间）
+== 4/5 NTP 校时 ==
+[NTP] 服务器: 203.107.6.88 182.92.12.11 120.25.115.20
+[NTP] syncTime -> 成功 | 校时前=2026-09-29 10:55:00 校时后=2026-09-29 10:55:04（TZ=UTC-8 即北京时区）
+== 5/5 MQTT 订阅+回显 ==
+[MQTT] subscribe(topic=zk/netstack/108 qos=1) -> OK
+[MQTT] 已发一条等回显: {"dev":"108","msg":"sub echo test"}
+[MQTT] on_message topic=zk/netstack/108 len=35 payload={"dev":"108","msg":"sub echo test"}
+[MQTT] 收到 1 条，最后一条={"dev":"108","msg":"sub echo test"}
+[MQTT] unsubscribe -> OK
+########## 自检 AUTO 结束：错误数=0 ##########

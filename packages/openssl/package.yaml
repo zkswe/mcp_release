@@ -1,0 +1,111 @@
+# openssl —— OpenSSL 1.1.1w（Z20 变体 = "1.1.1-w"），静态预编译
+# 事实来源：实读 include/openssl/*.h（opensslv.h 里 OPENSSL_VERSION_TEXT = "OpenSSL 1.1.1w  11 Sep 2023"）；
+#          「谁在用」用二进制符号反查：libpaho-mqtt3as.a 里有 SSL_CTX_new / SSL_connect。
+id: openssl
+version: "1.1.1-w"
+platforms:
+  Z20:
+    registry: C:\zkswe\fun\registry\public\z20\openssl\1.1.1-w
+    libs: [lib/libssl.a, lib/libcrypto.a]
+    headers_count: 104
+    verified: "2026-09-29"
+    status: verified
+summary: OpenSSL 1.1.1w（2023-09-11）静态库（libssl.a + libcrypto.a）。Z20 上这条 TLS 路线主要服务 paho-mqtt3as（该库二进制里引用 SSL_CTX_new/SSL_connect）→ 即 MQTT over TLS；也可自己用 SSL_*/EVP/SHA 做 TLS 连接或加解密。注意 Z20 的另一条 TLS 路线是 mbedtls（curl 用），两套并存别混。
+headers:
+  - path: include/openssl/ssl.h
+    role: TLS 会话/上下文：SSL_CTX_new / SSL_new / SSL_set_fd / SSL_connect / SSL_read / SSL_write / SSL_shutdown
+  - path: include/openssl/crypto.h
+    role: 初始化与工具（OPENSSL_init_crypto、CRYPTO_memcmp、内存回调）
+  - path: include/openssl/evp.h
+    role: 高层加密接口（EVP_* 摘要/加解密/签名），推荐用这层而不是 low-level API
+  - path: include/openssl/sha.h
+    role: SHA1/SHA256/SHA512 摘要（SHA256() / SHA256_Init|Update|Final）
+  - path: include/openssl/rand.h
+    role: 随机数（RAND_bytes 等；设备上要有可用熵源）
+  - path: include/openssl/x509_vfy.h
+    role: 证书校验（X509_STORE / verify 参数），配 SSL_CTX_load_verify_locations 用
+  - path: include/openssl/opensslv.h
+    role: 版本宏：OPENSSL_VERSION_TEXT "OpenSSL 1.1.1w  11 Sep 2023"、OPENSSL_VERSION_NUMBER 0x1010117fL
+  - path: include/openssl/err.h
+    role: 错误栈（ERR_get_error / ERR_error_string），排 TLS 失败必用
+api:
+  - symbol: SSL / SSL_CTX
+    header: include/openssl/ssl.h
+    methods:
+      - "SSL_CTX *SSL_CTX_new(const SSL_METHOD *meth);   // Z20 可用 TLS_client_method()"
+      - "SSL *SSL_new(SSL_CTX *ctx);"
+      - "int SSL_set_fd(SSL *s, int fd);"
+      - "int SSL_connect(SSL *ssl);"
+      - "int SSL_read(SSL *ssl, void *buf, int num);"
+      - "int SSL_write(SSL *ssl, const void *buf, int num);"
+      - "int SSL_shutdown(SSL *s);"
+      - "void SSL_free(SSL *ssl);  void SSL_CTX_free(SSL_CTX *);"
+      - "void SSL_CTX_set_verify(SSL_CTX *ctx, int mode, int (*cb)(int, X509_STORE_CTX *));   // mode = SSL_VERIFY_PEER"
+      - "int SSL_CTX_load_verify_locations(SSL_CTX *ctx, const char *CAfile, const char *CApath);"
+      - "int OPENSSL_init_ssl(uint64_t opts, const OPENSSL_INIT_SETTINGS *settings);"
+  - symbol: SHA256
+    header: include/openssl/sha.h
+    methods:
+      - "unsigned char *SHA256(const unsigned char *d, size_t n, unsigned char *md);"
+      - "int SHA256_Init(SHA256_CTX *c);"
+      - "int SHA256_Update(SHA256_CTX *c, const void *data, size_t len);"
+      - "int SHA256_Final(unsigned char *md, SHA256_CTX *c);"
+  - symbol: 版本宏
+    header: include/openssl/opensslv.h
+    methods:
+      - "#define OPENSSL_VERSION_TEXT  \"OpenSSL 1.1.1w  11 Sep 2023\""
+      - "#define OPENSSL_VERSION_NUMBER  0x1010117fL"
+deps: []
+usage_cpp: |
+  #include <openssl/ssl.h>
+  #include <openssl/err.h>
+  #include <netinet/in.h>
+  #include <arpa/inet.h>
+  #include <sys/socket.h>
+  #include <string.h>
+  #include <unistd.h>
+
+  void opensslTlsDemo() {
+    OPENSSL_init_ssl(0, NULL);                       // 1.1.1 起要显式初始化
+    SSL_CTX* ctx = SSL_CTX_new(TLS_client_method());
+    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
+    SSL_CTX_load_verify_locations(ctx, "/data/data/<pkg>/resources/cacert.pem", NULL);
+
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in sa; memset(&sa, 0, sizeof(sa));
+    sa.sin_family = AF_INET; sa.sin_port = htons(443);
+    inet_pton(AF_INET, "93.184.216.34", &sa.sin_addr);   // 演示用；真实代码走 DNS/域名
+    if (connect(fd, (struct sockaddr*)&sa, sizeof(sa)) != 0) return;
+
+    SSL* ssl = SSL_new(ctx);
+    SSL_set_fd(ssl, fd);
+    if (SSL_connect(ssl) != 1) { ERR_print_errors_fp(stderr); return; }   // 失败先看 ERR 栈
+    SSL_write(ssl, "GET / HTTP/1.0\r\nHost: example.com\r\n\r\n", 38);
+    SSL_shutdown(ssl);
+    SSL_free(ssl); SSL_CTX_free(ctx); close(fd);
+  }
+gotchas:
+  - "Z20 的版本号是 1.1.1-w（其它平台是 1.1.1-g）——同平台内别按别的平台照抄版本号，否则 fun install 解析不到。"
+  - "本包只有 .a（libssl.a/libcrypto.a），没有 .so → 必须静态链；链接顺序 libssl 在前 libcrypto 在后，顺序错会 undefined reference。"
+  - "1.1.1 已是 EOL 版本（官方支持到 2023-09），新协议特性（TLS1.3 新扩展、ECH 等）别指望；Z20 上真要新 TLS 特性应看 mbedtls 3.6.5 那条路线。"
+  - "本包是 Z20 上 paho-mqtt3as 的 TLS 后端（二进制符号 SSL_CTX_new/SSL_connect 为证）；用 mqtt-cxx + paho-mqtt3as 时 Manifest 里要显式带 openssl，否则链接期找不到符号。"
+  - "自己用 SSL_* 时：证书校验默认开（SSL_VERIFY_PEER）但必须自己 SSL_CTX_load_verify_locations 给 CA；不给 CA 就是连接失败（拒绝自签/链不全），不是「库坏了」。"
+  - "1.1.1 系列 API 与 3.x 不同（3.x 用 OSSL_PARAM/OSSL_LIB_CTX、部分函数改名）→ 别照 3.x 文档写。"
+see_also:
+  - "paho-mqtt3as 1.3.13（Z20 上消费本包的主要用户：MQTT over TLS）"
+  - "mqtt-cxx 3.2.0（业务层封装，TLS 场景最终落到 paho + 本包）"
+  - "mbedtls 3.6.5（Z20 的另一条 TLS 路线，给 curl 用；两套并存）"
+source: >
+  未在本地 gitcom/AppGroup 找到 lib-openssl 形态的实现仓（OpenSSL 1.1.1w 预编译产物）。
+  使用者痕迹：projects/SmartPanel_HA/Manifest.xml 的 Z20 段显式写 <package id="openssl" version="1.1.1-w"/>；
+  projects/Z20_StandMixerTest、NetSpeedTest-New 等老工程用 1.1.1-g（别的平台口径）。
+
+# ── 直调真机验证（2026-09-29，Z20 / 192.168.x.x，工程 projects/pkg_netdir） ──
+verified_20260929:
+  platform: Z20
+  device: "192.168.x.x（86 面板）"
+  version_used: "1.1.1-w（Z20 专属版本号）"
+  call: "TLS_client_method + SSL_CTX_load_verify_locations(/tmp/ui/cacert.pem) + VERIFY_PEER + getaddrinfo/socket/connect + SSL_new/set_fd/connect + HTTP GET"
+  result: "握手 OK 83ms，TLSv1.2 / ECDHE-RSA-AES128-GCM-SHA256，verify=OK(0)；对端证书 subject=/C=CN/ST=Beijing/L=Beijing/O=Beijing Baidu Netcom Science Technology Co., Ltd./CN=baidu.com；收 511 B，HTTP/1.0 200 OK，总 219ms"
+  verdict: pass
+  evidence: evidence/netdir_20260929.txt

@@ -1,0 +1,406 @@
+{
+  "backgroundColor": 1513243,
+  "beepEnable": true,
+  "id": 0,
+  "resolution": {
+    "height": 480,
+    "width": 480
+  },
+  "topmost": false,
+  "position": {
+    "height": 480,
+    "left": 0,
+    "top": 0,
+    "width": 480
+  },
+  "textview__1": {
+    "id": 50001,
+    "caption": "TextTitle",
+    "position": {
+      "left": 16,
+      "top": 12,
+      "width": 448,
+      "height": 30
+    },
+    "alignment": 0,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 20,
+    "touchable": false,
+    "bold": true,
+    "italic": false,
+    "text": "zknet 网络包示例（Z20 · WiFi）",
+    "visible": true,
+    "rollEnable": false,
+    "rollDirection": 1,
+    "rollIntervalTime": 150,
+    "rollStep": 5,
+    "bgColorTab": {
+      "color0": -1,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    }
+  },
+  "button__1": {
+    "id": 20001,
+    "caption": "ButtonWifiOn",
+    "position": {
+      "left": 16,
+      "top": 50,
+      "width": 144,
+      "height": 54
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "WiFi 开",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 15
+  },
+  "button__2": {
+    "id": 20002,
+    "caption": "ButtonWifiOff",
+    "position": {
+      "left": 168,
+      "top": 50,
+      "width": 144,
+      "height": 54
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "WiFi 关(断 adb)",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 15
+  },
+  "button__3": {
+    "id": 20003,
+    "caption": "ButtonScan",
+    "position": {
+      "left": 320,
+      "top": 50,
+      "width": 144,
+      "height": 54
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "扫描 WiFi",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 15
+  },
+  "button__4": {
+    "id": 20004,
+    "caption": "ButtonConnect",
+    "position": {
+      "left": 16,
+      "top": 112,
+      "width": 144,
+      "height": 54
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "连接目标 AP",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 15
+  },
+  "button__5": {
+    "id": 20005,
+    "caption": "ButtonDisconnect",
+    "position": {
+      "left": 168,
+      "top": 112,
+      "width": 144,
+      "height": 54
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "断开连接",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 15
+  },
+  "button__6": {
+    "id": 20006,
+    "caption": "ButtonNetInfo",
+    "position": {
+      "left": 320,
+      "top": 112,
+      "width": 144,
+      "height": 54
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "读 IP / MAC",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 15
+  },
+  "button__7": {
+    "id": 20007,
+    "caption": "ButtonNetUtils",
+    "position": {
+      "left": 16,
+      "top": 174,
+      "width": 144,
+      "height": 54
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "NetUtils 查询",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 15
+  },
+  "button__8": {
+    "id": 20008,
+    "caption": "ButtonSoftAp",
+    "position": {
+      "left": 168,
+      "top": 174,
+      "width": 144,
+      "height": 54
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "热点状态",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 15
+  },
+  "button__9": {
+    "id": 20009,
+    "caption": "ButtonChannel",
+    "position": {
+      "left": 320,
+      "top": 174,
+      "width": 144,
+      "height": 54
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "网络通道",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 15
+  },
+  "button__10": {
+    "id": 20010,
+    "caption": "ButtonAuto",
+    "position": {
+      "left": 16,
+      "top": 236,
+      "width": 448,
+      "height": 46
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "自检 AUTO（读→扫描→断开→连接→WiFi 关 10s→WiFi 开）",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 15
+  },
+  "textview__2": {
+    "id": 50002,
+    "caption": "TextStatus",
+    "position": {
+      "left": 16,
+      "top": 290,
+      "width": 448,
+      "height": 174
+    },
+    "alignment": 0,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 15,
+    "touchable": false,
+    "bold": false,
+    "italic": false,
+    "text": "（点按钮看结果）",
+    "visible": true,
+    "rollEnable": false,
+    "rollDirection": 1,
+    "rollIntervalTime": 150,
+    "rollStep": 5,
+    "bgColorTab": {
+      "color0": -1,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    }
+  }
+}

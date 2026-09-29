@@ -1,0 +1,134 @@
+# mqtt-cxx —— MQTT C++ 门面（基于 paho），静态 libmqtt-cxx.a
+# 事实来源：实读 include/mqtt/mqtt_client.h（2775B，全部签名都在里面）+ README.md(1339B) + Manifest.xml；
+#          真实用法交叉验证自 projects/SmartPanel_HA/src/network/MqttBridge.cpp（Z20 在跑，HA MQTT 接入）。
+id: mqtt-cxx
+version: "3.2.0"
+platforms:
+  Z20:
+    registry: C:\zkswe\fun\registry\public\z20\mqtt-cxx\3.2.0
+    libs: [lib/libmqtt-cxx.a]
+    headers_count: 1
+    verified: "2026-09-29"
+    status: verified
+summary: MQTT C++ 封装（mqtt::Client）：publish/subscribe/unsubscribe/isConnected + 连接/掉线回调 + LWT（遗嘱）+ SSL 配置项。Z20 上做 MQTT 就用它，底层是 paho（异步 API）；TLS 场景还要手动加 paho-mqtt3as（+openssl）依赖——README 明说了。SmartPanel_HA 的 Home Assistant MQTT 接入就是它（实测可用）。
+headers:
+  - path: include/mqtt/mqtt_client.h
+    role: 全包唯一的头，所有 API 都在这：Client / Client::Configuration / Qos / 4 个回调 typedef
+api:
+  - symbol: mqtt::Client
+    header: include/mqtt/mqtt_client.h
+    methods:
+      - "Client(const Configuration& conf);   // 构造即发起连接（异步，看 on_connected/isConnected）"
+      - "virtual ~Client();"
+      - "bool publish(const std::string& topic, const std::string& payload, Qos qos) noexcept;"
+      - "bool publish(const std::string& topic, const std::string& payload, Qos qos, bool retained) noexcept;"
+      - "bool subscribe(const std::string& topic, Qos qos, const MessageHandler& handler) noexcept;"
+      - "bool subscribe(const std::string& topic, Qos qos, const NativeMessageHandler& handler) noexcept;"
+      - "bool unsubscribe(const std::string& topic) noexcept;"
+      - "bool isConnected() noexcept;"
+      - "typedef base::function<void (const std::string& cause)> ConnectedHandler;   // 连接成功"
+      - "typedef base::function<void (const std::string& cause)> ConnectionLostHandler;   // 掉线"
+      - "typedef base::function<void (const std::string& topic, const std::string& payload)> MessageHandler;"
+      - "typedef base::function<void (const char* topicName, int topicLen, const MQTTAsync_message* message)> NativeMessageHandler;"
+  - symbol: mqtt::Client::Configuration
+    header: include/mqtt/mqtt_client.h
+    methods:
+      - "std::string server;   // 例：mqtt://host:1883 / mqtts://host:8883"
+      - "std::string client_id;  std::string username;  std::string password;"
+      - "int version = MQTTVERSION_3_1_1;   // 也可设 MQTTVERSION_5（宏来自 MQTTAsync.h）"
+      - "bool clean_session = true;"
+      - "struct WillOpts { std::string topic; std::string message; Qos qos = QOS_AT_LEAST_ONCE; bool retained = false; } will;"
+      - "struct SslOpts { std::string trust_store; std::string key_store; std::string private_key; bool enable_server_cert_auth = false; bool verify = false; } ssl;"
+      - "ConnectedHandler on_connected;  ConnectionLostHandler on_disconnected;"
+  - symbol: mqtt::Qos
+    header: include/mqtt/mqtt_client.h
+    methods:
+      - "enum Qos { QOS_AT_MOST_ONCE = 0, QOS_AT_LEAST_ONCE = 1, QOS_EXACTLY_ONCE = 2 };"
+deps:
+  - id: base-utility
+    version: "^10.0.0"
+  - id: z
+    version: "1.2.11"
+usage_cpp: |
+  #include <mqtt/mqtt_client.h>
+  #include <stdio.h>
+
+  static void onMessage(const std::string& topic, const std::string& payload) {
+    printf("recv %s = %s\n", topic.c_str(), payload.c_str());
+  }
+
+  void mqttDemo() {
+    mqtt::Client::Configuration conf;
+    conf.client_id = "z20-panel";
+    conf.server    = "mqtt://192.168.x.x:1883";   // TLS 用 mqtts://host:8883（且要加 paho-mqtt3as + openssl）
+    conf.username = "user"; conf.password = "pass";   // 不需要认证就都留空
+    conf.clean_session = true;
+    conf.will.topic = "panel/availability";          // LWT：掉线时由 broker 代发 offline
+    conf.will.message = "offline";
+    conf.will.retained = true;
+    conf.on_connected    = [](const std::string&) { printf("connected\n"); };
+    conf.on_disconnected = [](const std::string& cause) { printf("lost: %s\n", cause.c_str()); };
+
+    try {
+      mqtt::Client client(conf);                     // 构造即连接（异步，结果看回调/isConnected）
+      if (!client.isConnected()) return;             // 刚构造常还没连上，正式代码放 on_connected 里订阅
+      client.subscribe("test/topic", mqtt::QOS_AT_LEAST_ONCE, onMessage);
+      client.publish("test/topic", "hello", mqtt::QOS_AT_LEAST_ONCE, true);
+    } catch (const std::exception& e) {
+      printf("mqtt failed: %s\n", e.what());         // 连接失败会抛异常，务必 try/catch
+    }
+  }
+gotchas:
+  - "TLS/SSL 要手动加依赖：README 明说「想支持 mqtts/wss 就手动加 <package id=\"paho-mqtt3as\" version=\"^1.3.13\"/>，否则加 paho-mqtt3a」。但 Z20 registry 里**没有 paho-mqtt3a**（只有 paho-mqtt3as）→ Z20 就用 paho-mqtt3as，而且要连带 openssl（该库二进制引用 SSL_*）。"
+  - "本包只发一个 .a + 一个头；头里 `extern \"C\" { #include <MQTTAsync.h> }` → 编译时 paho 的头路径必须可见，链接时 paho 的库必须在 → Manifest 里 paho 不能漏（只写 mqtt-cxx 会链接失败）。"
+  - "构造函数就可能抛异常（连接失败/参数错），且析构会断连：Z20 实测「每次重连都 new client 却不 delete 旧的」，会因同 client_id 被 broker 互相踢下线（每秒踢 2~3 次）→ 重连前先 delete 旧 client（SmartPanel_HA 用 gen 代号丢弃旧回调，见 MqttBridge.cpp）。"
+  - "on_connected/on_disconnected 回调在库的线程上跑：里面只做置标志位，真正的 publish/subscribe 拿到锁外/主线程做，别在回调里直接动 UI 控件（Z20 面板会卡/崩）。"
+  - "publish/subscribe 的返回值是「提交成功」不等于「broker 收到了」（QOS0 更是发完就忘）；要确认送达只能靠 retained + 状态回读对账（SmartPanel_HA 就是 1s 差分校验兜底）。"
+  - "retained 消息是持久状态：清不掉会一直影响新订阅者——SmartPanel_HA 用「往同 topic 发空 payload + retained」来撤销，别直接忽略。"
+see_also:
+  - "paho-mqtt3as 1.3.13（本包的底层；TLS 必需）"
+  - "openssl 1.1.1-w（paho 的 TLS 后端，Z20 口径）"
+  - "rapidjson 1.1.0 / base-json 3.1.0（收到 JSON 报文后解析）"
+source: >
+  未在本地 gitcom/AppGroup 找到 lib-mqtt-cxx 形态的实现仓。
+  可对照的 vendored 参考（C API 版，不是本包）：gitcom/AppGroup/PublicPhone2.0/src/dependencies/include/mqtt_client_cxx.hpp
+  （自己封 MQTTClient_* 的写法）、gitcom/AppGroup/sannuo/jni/core/mqtt_client_cxx.h。
+  本包的真实调用样例：projects/SmartPanel_HA/src/network/{MqttBridge.cpp,LocalLink.cpp}（Z20，HA 接入）。
+
+# ── 真机验证（2026-09-29，Z20 / 192.168.x.x，工程 projects/pkg_netstack） ──
+verified_20260929:
+  platform: Z20
+  device: "192.168.x.x（86 面板）"
+  broker: "mqtt://192.168.x.x:1883（WSL 里的 EMQX，admin/zkswe1024）"
+  call: 'mqtt::Client(conf) + subscribe(topic,qos1,cb) + publish(topic,payload,qos1) + unsubscribe(topic)'
+  result: "on_connected 触发、isConnected()=1；订阅 qos1 OK；自己发的 payload 原样收到（on_message len=35）；unsubscribe OK"
+  verdict: pass
+  note: "Z20 上 mqtt-cxx 依赖 paho-mqtt3as，而 paho-mqtt3as 需要 openssl —— Manifest 里必须一起声明 <package id=\"openssl\" version=\"1.1.1-w\"/>，否则链接报 BIO_read/RAND_bytes/SHA1_* undefined"
+  evidence: evidence/netstack_auto_20260929.txt
+
+# ── 补充真机验证（2026-09-29，Z20 / 192.168.x.x，工程 projects/pkg_netstack2） ──
+verified_20260929_part2:
+  platform: Z20
+  device: "192.168.x.x（86 面板）"
+  steps:
+    - "MQTTS(TLS)：mqtts://test.mosquitto.org:8883（conf.ssl.verify=false）连通 → qos1 subscribe/publish/on_message 回显全通 -> pass"
+    - "遗嘱 LWT：conf.will{topic,message,qos=1,retained=false} 注册成功，broker 接受 -> pass（broker 代发遗嘱那一刻未在见证端捕获，见证脚本本身没连上 broker，待补测）"
+    - "异常断线 + 自动重连：enableWifi(false) 90s（> paho keepalive）→ on_disconnected；enableWifi(true) → **on_connected 再次触发，cause=automatic reconnect**，回连≈10.5s；unsubscribe OK -> pass"
+  evidence: evidence/netstack2_20260929.txt
+
+# ── 遗嘱（LWT）实际代发验证（2026-09-29 12:02，Z20 / 192.168.x.x，工程 projects/pkg_netstack2） ──
+verified_20260929_will:
+  platform: Z20
+  device: "192.168.x.x（86 面板）"
+  broker: "mqtt://192.168.x.x:1883（EMQX，admin/zkswe1024）"
+  method: >
+    设备端 mqtt::Client 带 will{topic=zk/netstack2/will108, payload={"dev":"108","msg":"will: offline"}, qos=1} 连上后，
+    **kill -9 杀掉进程**（不发 MQTT DISCONNECT = 异常断线）；PC 侧见证客户端订阅 will 主题。
+  witness: "PC 侧 paho（连 127.0.0.1:1883，WSL EMQX 本地口）"
+  timeline:
+    - "12:02:13 见证端收到 DATA zk/netstack2/108 -> {\"dev\":\"108\",\"msg\":\"alive\"}（证明订阅链路通）"
+    - "12:02:15 见证端收到 **WILL zk/netstack2/will108 -> {\"dev\":\"108\",\"msg\":\"will: offline\"}**"
+  result: "异常断线后 **约 2s** broker 即代发遗嘱，payload 与注册值完全一致 -> pass"
+  notes:
+    - "PC 直连 192.168.x.x:1883 会超时（宿主自身访问该 IP 被拦），**用 127.0.0.1:1883 才通** → 做见证端就用 localhost 或进 WSL 跑 mosquitto_sub"
+  evidence: evidence/lwt_will_20260929.txt

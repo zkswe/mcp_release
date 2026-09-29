@@ -1,0 +1,105 @@
+# curl —— libcurl 8.12.1（Z20 变体 8.12.1-mbedtls），静态 libcurl.a
+# 事实来源：实读包内 README.md（1824B，是 configure 的 feature report）+ include/curl/*.h 真实签名；
+#          「谁在用」= curl-cxx 10.0.3（Manifest Z20 段：cares+^1.17.2 / mbedtls ^3.6.5 / curl 8.12.1-mbedtls / z ^1.2.11）
+#          + libcurl.a 符号反查（mbedtls_* / ares_* / inflate 都在）。
+id: curl
+version: "8.12.1-mbedtls"
+platforms:
+  Z20:
+    registry: C:\zkswe\fun\registry\public\z20\curl\8.12.1-mbedtls
+    libs: [lib/libcurl.a]
+    headers_count: 12
+    verified: null
+    status: unverified
+summary: libcurl 8.12.1，Z20 专属变体（SSL=mbedTLS、resolver=c-ares、zlib 开、**IPv6 关**、无内置 CA、只有静态库）。业务一般用 curl-cxx（http::Axios/Downloader）封装，只有自己拼请求/要精细控制时才直接调 curl_easy_*。链接必须一并带 mbedtls + cares + z。
+headers:
+  - path: include/curl/curl.h
+    role: 主头：curl_easy_* / curl_multi_* / CURLOPT_* 选项枚举全在这（含 CURLOPT_URL/WRITEDATA/WRITEFUNCTION）
+  - path: include/curl/easy.h
+    role: easy 接口补充：curl_easy_init / setopt / perform / cleanup / getinfo / reset / duphandle
+  - path: include/curl/multi.h
+    role: multi 接口（一次并发多请求；面板业务少用，异步场景可用）
+  - path: include/curl/urlapi.h
+    role: URL 解析/拼接 API（构造带 query 的 URL 时比手拼字符串稳）
+  - path: include/curl/header.h
+    role: 响应头 API（curl_header 结构，拿多个同名头）
+  - path: include/curl/curlver.h
+    role: 版本宏 LIBCURL_VERSION "8.12.1" / LIBCURL_VERSION_NUM
+  - path: include/curl/options.h
+    role: CURLOPT_ 的类型化封装（curl_easy_setopt 的强类型替代）
+  - path: include/curl/websockets.h
+    role: WebSocket（curl_ws_send/recv）——本包 Protocols 里含 ws/wss
+api:
+  - symbol: curl_easy（C API）
+    header: include/curl/curl.h
+    methods:
+      - "CURL *curl_easy_init(void);"
+      - "CURLcode curl_easy_setopt(CURL *curl, CURLoption option, ...);   // 变参，注意类型（long/指针/函数指针）"
+      - "CURLcode curl_easy_perform(CURL *curl);"
+      - "void curl_easy_cleanup(CURL *curl);"
+      - "CURLcode curl_easy_getinfo(CURL *curl, CURLINFO info, ...);"
+      - "void curl_easy_reset(CURL *curl);"
+      - "CURL *curl_easy_duphandle(CURL *curl);"
+      - "CURLcode curl_global_init(long flags);  void curl_global_cleanup(void);"
+      - "const char *curl_version(void);"
+      - "struct curl_slist *curl_slist_append(struct curl_slist *list, const char *data);  void curl_slist_free_all(struct curl_slist *list);"
+  - symbol: 常用 CURLOPT 选项（枚举，值实测）
+    header: include/curl/curl.h
+    methods:
+      - "CURLOPT(CURLOPT_URL, CURLOPTTYPE_STRINGPOINT, 2)"
+      - "CURLOPT(CURLOPT_WRITEFUNCTION, CURLOPTTYPE_FUNCTIONPOINT, 11) ; CURLOPT(CURLOPT_WRITEDATA, CURLOPTTYPE_CBPOINT, 1)"
+      - "CURLOPT(CURLOPT_FOLLOWLOCATION, CURLOPTTYPE_LONG, 52) ; CURLOPT(CURLOPT_TIMEOUT, CURLOPTTYPE_LONG, 13)"
+      - "CURLOPT(CURLOPT_CAINFO, CURLOPTTYPE_STRINGPOINT, 65) ; CURLOPT(CURLOPT_SSL_VERIFYPEER, CURLOPTTYPE_LONG, 64)"
+      - "CURLOPT(CURLOPT_HTTPHEADER, CURLOPTTYPE_SLISTPOINT, 23) ; CURLOPT(CURLOPT_POSTFIELDS, CURLOPTTYPE_OBJECTPOINT, 15)"
+      - "CURLINFO_RESPONSE_CODE = CURLINFO_LONG + 2   // 老名 CURLINFO_HTTP_CODE"
+deps: []
+usage_cpp: |
+  #include <curl/curl.h>
+  #include <string>
+
+  static size_t onWrite(char* ptr, size_t size, size_t nmemb, void* userdata) {
+    ((std::string*)userdata)->append(ptr, size * nmemb);
+    return size * nmemb;                    // 返回值必须等于 size*nmemb，否则 curl 判错
+  }
+
+  void httpDemo() {
+    curl_global_init(CURL_GLOBAL_DEFAULT);   // 多线程场景：在起线程之前调（或者直接不调，easy 会隐式初始化）
+    CURL* curl = curl_easy_init();
+    if (!curl) return;
+    std::string body;
+    curl_easy_setopt(curl, CURLOPT_URL, "https://example.com/api");
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, onWrite);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &body);
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
+    // 本包「ca cert bundle/path/embed = no」→ HTTPS 必须自己给 CA，否则握手失败
+    curl_easy_setopt(curl, CURLOPT_CAINFO, "/data/data/<pkg>/resources/cacert.pem");
+
+    CURLcode rc = curl_easy_perform(curl);
+    long code = 0;
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
+    (void)rc; (void)code; (void)body;
+
+    curl_easy_cleanup(curl);
+    curl_global_cleanup();
+  }
+gotchas:
+  - "HTTPS 必带 CA：包内 feature report 明确「ca cert bundle: no / ca cert path: no / ca cert embed: no / ca fallback: no」→ 不设 CURLOPT_CAINFO 就是连不上（Z21 上还实测过「缺 CA 不是优雅报错，而是进程崩→看门狗反复重启」）。把 cacert.pem 放项目 resources/ 随包发。"
+  - "链接是一串：libcurl.a 里能查到 mbedtls_* / ares_* / inflate 符号 → 必须同时带 mbedtls 3.6.5 + cares 1.17.2 + z 1.2.11（curl-cxx 10.0.3 的 Manifest Z20 段就是这四件套）。只声明 curl 会满屏 undefined reference。"
+  - "本变体 IPv6 = no（feature report「IPv6: no」）→ 只有 AAAA 记录的域名/纯 IPv6 网络会失败，别当网络故障查。"
+  - "只有静态库（Build libcurl: Shared=no, Static=yes）→ 没有 libcurl.so 可推；且 HTTP2/HTTP3 都关（HTTP1: enabled (internal)），要 h2 得换构建。"
+  - "Z20 的变体名是 8.12.1-mbedtls（别的平台是 8.12.1，走 openssl）→ Manifest 写错版本名（比如写 8.12.1）在 Z20 上解析不到，要写 8.12.1-mbedtls。"
+  - "resolver=c-ares：DNS 是 ares 异步解析，不读 /etc/hosts 的普通路径那么直观；排「解析不到域名」要看 cares 那条链（dns 走了 ares，不是 libc getaddrinfo）。"
+  - "curl_easy_setopt 是变参：long 类选项传 int 会踩 64 位对齐（如 CURLOPT_TIMEOUT 传 int 而非 long）——一律显式写 1L/10L。"
+  - "多线程里不要共享同一个 easy handle（curl 不明文保证线程安全）；跨线程用 curl_easy_duphandle 各起一份（头文件注释里就是这么建议的）。"
+see_also:
+  - "curl-cxx 10.0.3（业务层封装：http::Axios / http::Downloader / http::WebSocket；Z20 用这个）"
+  - "mbedtls 3.6.5（本包的 TLS 后端，Z20 口径）"
+  - "cares 1.17.2（本包的 DNS 后端，resolver=c-ares）"
+  - "z 1.2.11（zlib，本包 Features 里有 libz → gzip 解压）"
+  - "openssl 1.1.1-w（注意：Z20 的 curl 不用它，它给 paho-mqtt3as 用）"
+source: >
+  未在本地 gitcom/AppGroup 找到 lib-curl 形态的实现仓（libcurl 8.12.1 预编译产物）。
+  直接调 curl 的参考代码（别的平台/工程）：gitcom/AppGroup/oven_public/OvenPublic/src/http/*（自己的 http 封装）、
+  gitcom/AppGroup/KaiduZ9/src/restclient-cpp/*（restclient-cpp）、gitcom/AppGroup/lib-h264-player/src/logic/mainLogic.cc。
+  Z20 上的消费方：curl-cxx 10.0.3（Manifest.xml Z20 段）。

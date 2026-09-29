@@ -1,0 +1,374 @@
+{
+  "backgroundColor": 1513243,
+  "beepEnable": true,
+  "id": 0,
+  "resolution": {
+    "height": 480,
+    "width": 480
+  },
+  "topmost": false,
+  "position": {
+    "height": 480,
+    "left": 0,
+    "top": 0,
+    "width": 480
+  },
+  "textview__1": {
+    "id": 50001,
+    "caption": "TextTitle",
+    "position": {
+      "left": 16,
+      "top": 12,
+      "width": 448,
+      "height": 34
+    },
+    "alignment": 0,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 22,
+    "touchable": false,
+    "bold": true,
+    "italic": false,
+    "text": "zkhardware 示例（Z20 86 面板 · 3 路继电器）",
+    "visible": true,
+    "rollEnable": false,
+    "rollDirection": 1,
+    "rollIntervalTime": 150,
+    "rollStep": 5,
+    "bgColorTab": {
+      "color0": -1,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    }
+  },
+  "button__1": {
+    "id": 20001,
+    "caption": "ButtonRelay1",
+    "position": {
+      "left": 16,
+      "top": 56,
+      "width": 144,
+      "height": 62
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "继电器 1 切换",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 16
+  },
+  "button__2": {
+    "id": 20002,
+    "caption": "ButtonRelay2",
+    "position": {
+      "left": 168,
+      "top": 56,
+      "width": 144,
+      "height": 62
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "继电器 2 切换",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 16
+  },
+  "button__3": {
+    "id": 20003,
+    "caption": "ButtonRelay3",
+    "position": {
+      "left": 320,
+      "top": 56,
+      "width": 144,
+      "height": 62
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "继电器 3 切换",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 16
+  },
+  "button__4": {
+    "id": 20004,
+    "caption": "ButtonRelayRead",
+    "position": {
+      "left": 16,
+      "top": 126,
+      "width": 216,
+      "height": 58
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "读继电器状态",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 16
+  },
+  "button__5": {
+    "id": 20005,
+    "caption": "ButtonRelayAllOff",
+    "position": {
+      "left": 248,
+      "top": 126,
+      "width": 216,
+      "height": 58
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "全部断开",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 16
+  },
+  "button__6": {
+    "id": 20006,
+    "caption": "ButtonBeep",
+    "position": {
+      "left": 16,
+      "top": 192,
+      "width": 144,
+      "height": 58
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "蜂鸣器 beep()",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 16
+  },
+  "button__7": {
+    "id": 20007,
+    "caption": "ButtonBrightDown",
+    "position": {
+      "left": 168,
+      "top": 192,
+      "width": 144,
+      "height": 58
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "背光 -10",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 16
+  },
+  "button__8": {
+    "id": 20008,
+    "caption": "ButtonBrightUp",
+    "position": {
+      "left": 320,
+      "top": 192,
+      "width": 144,
+      "height": 58
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "背光 +10",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 16
+  },
+  "button__9": {
+    "id": 20009,
+    "caption": "ButtonAdc",
+    "position": {
+      "left": 16,
+      "top": 258,
+      "width": 448,
+      "height": 46
+    },
+    "alignment": 5,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": 15527152,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "text": "读 ADC（86 面板无 ADC 接口，值仅供参考）",
+    "touchable": true,
+    "visible": true,
+    "picTab": {},
+    "longClickTimeOut": -1,
+    "longClickIntervalTime": -1,
+    "bgColorTab": {
+      "color0": 10921638,
+      "color1": 7763574,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 16
+  },
+  "textview__2": {
+    "id": 50002,
+    "caption": "TextStatus",
+    "position": {
+      "left": 16,
+      "top": 312,
+      "width": 448,
+      "height": 152
+    },
+    "alignment": 0,
+    "colorTab": {
+      "color0": 15527152,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 16,
+    "touchable": false,
+    "bold": false,
+    "italic": false,
+    "text": "（点按钮看结果）",
+    "visible": true,
+    "rollEnable": false,
+    "rollDirection": 1,
+    "rollIntervalTime": 150,
+    "rollStep": 5,
+    "bgColorTab": {
+      "color0": -1,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    }
+  }
+}

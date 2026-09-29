@@ -1,0 +1,12 @@
+[AUTO 1/6] 开始自检：读状态
+[AUTO 1/6] 支持=1 开关=开 连接=1 IP=192.168.x.x MAC=28:f5:2b:45:f5:a5 当前 AP：zkswe-soft  0dBm  0MHz bssid=38:a9:1c:25:ca:ec enc=
+[AUTO 2/6] startScan() 下发
+[AUTO 2/6] 扫描到 13 个 AP（200ms）：TPLink_zkswe(-32dBm) ChinaNet-bsyX(-44dBm) zkswe-soft(-46dBm)
+[AUTO 3/6] disconnect() 下发
+[AUTO 3/6] 断开完成（200ms，连接=0）
+[AUTO 4/6] connect("zkswe-soft") 下发
+[AUTO 4/6] 已连上（4200ms）：IP=192.168.x.x
+[AUTO 5/6] enableWifi(false) 下发——adb 会断，10s 后自动开回来
+[AUTO 5/6] 5s：开关状态=关
+[AUTO 6/6] enableWifi(true) 下发（恢复）
+[AUTO 6/6] WiFi 已恢复并回连（5200ms）：IP=192.168.x.x

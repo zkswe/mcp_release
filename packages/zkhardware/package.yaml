@@ -1,0 +1,74 @@
+# zkhardware —— 硬件外设门面包（蜂鸣器/背光/ADC/GPIO/过零IO(继电器)/I2C/PWM/SPI）
+# 机器可读版；人读说明见 README.md，板级事实见 platforms.md。
+
+id: zkhardware
+version: "0.0.0"
+platforms:
+  Z20:
+    registry: C:\zkswe\fun\registry\public\z20\zkhardware\0.0.0
+    libs: [lib/libzkhardware.so]
+    headers_count: null
+    verified: "2026-09-29"
+    status: verified
+    device: "192.168.x.x（Zkswe_SSD20X_SPINOR / 86 面板，easyui 2.6.0）"
+
+summary: >
+  硬件外设门面：蜂鸣器（HardwareManager / HARDWAREMANAGER）、亮度背光（BrightnessHelper / BRIGHTNESSHELPER）、
+  ADC（AdcHelper）、GPIO + 过零 IO / 继电器（GpioHelper）、I2C / PWM / SPI 辅助类。
+
+entry: "hw/HardwareManager.h + utils/{BrightnessHelper,AdcHelper,GpioHelper}.h"
+
+api:
+  - symbol: HardwareManager (HARDWAREMANAGER)
+    header: hw/HardwareManager.h
+    methods:
+      - "void beep();                 // void 无返回；面板没接蜂鸣器时听不到声"
+      - "void setBeepPWM(int freq, int duty);   // 默认 2500Hz / 50"
+      - "void setCustomBeep(cb);"
+  - symbol: BrightnessHelper (BRIGHTNESSHELPER)
+    header: utils/BrightnessHelper.h
+    methods:
+      - "int getMaxBrightness(); int getBrightness(); void setBrightness(int v);   // 范围 1~100"
+      - "screenOff()/screenOn()/backlightOff()/backlightOn();"
+      - "setContrast/setSaturation/setHue(int);"
+  - symbol: AdcHelper
+    header: utils/AdcHelper.h
+    methods:
+      - "static void setEnable(bool); static bool setChannel(int); static int getVal();   // -1 = 失败"
+  - symbol: GpioHelper
+    header: utils/GpioHelper.h
+    methods:
+      - "static int input(const char* pin);   // 1/0 电平，-1 = 失败"
+      - "static int output(const char* pin, int val);"
+      - "static void zeroOutput(int index, int onoff, int onns = 0, int offns = 0);  // 过零 IO → 交流继电器"
+      - "static int getZeroIoNum(); static int getZeroIoStatus(int index); static void zeroResetPeriod();"
+      - "static void registerGpioListener(const char* pin, IGpioListener*, int edgeType);"
+
+deps:
+  - {id: easyui, version: "^2.2.0"}
+  - {id: log, version: "0.0.0"}
+
+verified_20260929:
+  platform: Z20
+  device: "192.168.x.x（86 面板）"
+  project: projects/pkg_zkhardware
+  steps:
+    - "背光：setBrightness(21/31/41/51/61) 读回逐次一致，人眼确认面板变亮 -> pass"
+    - "3 路继电器分别控制：zeroOutput(索引 3/1/2) 写 + getZeroIoStatus 回读双向一致；#1=ON(索引3) #2=ON(索引1) #3=ON(索引2) -> pass"
+    - "「全部断开」三路归 OFF（先回读→写→再回读）-> pass"
+    - "蜂鸣器 beep()：调用链通、无异常；**86 面板没接蜂鸣器** → 验不了声响 -> 部分"
+    - "ADC ch0~3：API 都 ok=1 且值浮动，但**86 面板没有 ADC 接口** → 无效通道，别当能力用 -> 不适用"
+    - "GPIO input(B_02/B_03/E_20)：全 -1 —— 面板上这三脚是过零驱动脚，**GPIO 操作只能走 zeroOutput** -> 预期行为"
+  evidence: "README.md §4 + evidence/zkhardware_108_relay3_20260929.txt/.png"
+
+gotchas:
+  - "过零 IO 索引映射 `{3,1,2}`：通道 1/2/3 = 索引 3/1/2（**不是顺序映射**）；写错会动错回路。"
+  - "写后必须 `getZeroIoStatus(index)` 回读，别只信软件变量。"
+  - "`zeroOutput()` 驱动交流电继电器（安全件）：示例 `onUI_init` 只读不写，动作一律由人点按钮触发。"
+  - "Z20 86 面板：无蜂鸣器、无 ADC 接口；PWMHelper 可能与背光同路，动前确认。"
+  - "按键回调必须注册进 activity 的 `sButtonCallbackTab`，否则按钮无反应。"
+  - "改 Manifest 后必须 `fun install`，否则包内头文件路径不进 CMake。"
+
+see_also:
+  - "packages/zkhardware/README.md（实测表 + 7 条坑）、platforms.md（板级事实 + 部署纪律）"
+  - "projects/pkg_zkhardware（真机验证工程：3 路继电器 + 背光 + ADC）"

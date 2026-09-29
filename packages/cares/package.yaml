@@ -1,0 +1,90 @@
+# cares —— c-ares 异步 DNS 解析库（静态，预编译）
+# 事实来源：实读包本体 include/ares*.h（无 README、无 Manifest）；「谁在用」用二进制符号反查：
+#          libcurl.a 里有 ares_getaddrinfo / ares_init_options / ares_destroy；调用形态参照 ares.h 注释。
+id: cares
+version: "1.17.2"
+platforms:
+  Z20:
+    registry: C:\zkswe\fun\registry\public\z20\cares\1.17.2
+    libs: [lib/libcares.a]
+    headers_count: 5
+    verified: "2026-09-29"
+    status: verified
+summary: c-ares（1.17.2）异步 DNS 解析库，只发静态库。Z20 上它不是给业务直接用的——它是 libcurl 的 DNS 后端（curl 8.12.1-mbedtls 的 resolver 就是 c-ares），只有要自己做异步解析/可取消的 DNS、或给 curl 配 ares 行为时才碰 ares_*。头文件自带版本宏 ARES_VERSION_STR = "1.17.2"。
+headers:
+  - path: include/ares.h
+    role: 全部公开 API：ares_library_init / ares_init_options / ares_gethostbyname / ares_getaddrinfo / ares_process(_fd) / ares_destroy
+  - path: include/ares_build.h
+    role: 编译期平台探测结果（CARES_SIZEOF_* 等），跨平台移植时必读
+  - path: include/ares_version.h
+    role: 版本宏 ARES_VERSION_MAJOR/MINOR/PATCH、ARES_VERSION_STR
+  - path: include/ares_dns.h
+    role: DNS 报文级宏（解析/构造 DNS RR 文本用，一般业务不碰）
+  - path: include/ares_rules.h
+    role: 编译期自检规则（配置组合是否合法）
+api:
+  - symbol: ares_channel（C API）
+    header: include/ares.h
+    methods:
+      - "int ares_library_init(int flags);   // flags = ARES_LIB_INIT_ALL"
+      - "int ares_init_options(ares_channel* channelptr, struct ares_options* options, int optmask);"
+      - "void ares_gethostbyname(ares_channel channel, const char* name, int family, ares_host_callback callback, void* arg);"
+      - "void ares_getaddrinfo(ares_channel channel, const char* node, const char* service, const struct ares_addrinfo_hints* hints, ares_addrinfo_callback callback, void* arg);"
+      - "int ares_fds(ares_channel channel, fd_set* read_fds, fd_set* write_fds);"
+      - "struct timeval* ares_timeout(ares_channel channel, struct timeval* maxtv, struct timeval* tv);"
+      - "void ares_process(ares_channel channel, fd_set* read_fds, fd_set* write_fds);"
+      - "void ares_process_fd(ares_channel channel, ares_socket_t read_fd, ares_socket_t write_fd);"
+      - "void ares_destroy(ares_channel channel);"
+      - "const char* ares_version(int* version);"
+      - "void ares_library_cleanup(void);"
+deps: []
+usage_cpp: |
+  // 直接用 ares 的场合很少（多数人通过 libcurl 间接受益）；下面是最小可跑的解析闭环
+  #include <ares.h>
+  #include <arpa/inet.h>
+  #include <stdio.h>
+
+  static void onResolved(void* arg, int status, int timeouts, struct hostent* host) {
+    if (status != ARES_SUCCESS) { printf("dns fail: %s\n", ares_strerror(status)); return; }
+    printf("addr = %s\n", inet_ntoa(*(struct in_addr*)host->h_addr_list[0]));
+  }
+
+  void dnsDemo() {
+    ares_library_init(ARES_LIB_INIT_ALL);
+    ares_channel ch = NULL;
+    if (ares_init_options(&ch, NULL, 0) != ARES_SUCCESS) return;   // 0 = 用 /etc/resolv.conf
+    ares_gethostbyname(ch, "example.com", AF_INET, onResolved, NULL);
+    while (1) {                                     // 手动驱动事件循环（ares 不自己起线程）
+      fd_set rd, wr; FD_ZERO(&rd); FD_ZERO(&wr);
+      struct timeval tv;
+      struct timeval* tvp = ares_timeout(ch, NULL, &tv);
+      int nfds = ares_fds(ch, &rd, &wr);
+      if (nfds == 0) break;                         // 查询都结束了
+      select(nfds, &rd, &wr, NULL, tvp);
+      ares_process(ch, &rd, &wr);
+    }
+    ares_destroy(ch);
+    ares_library_cleanup();
+  }
+gotchas:
+  - "本包只有 .a 静态库（没有 .so）→ 必须静态链进可执行文件；且 ares_* 不自己开线程，要自己 select/poll 驱动 ares_fds/ares_timeout/ares_process。"
+  - "Z20 上真正需要它的原因是 libcurl：curl 8.12.1-mbedtls 编译时 resolver=c-ares（libcurl.a 里能查到 ares_getaddrinfo/ares_init_options）→ 声明 curl/curl-cxx 时 cares 会被依赖链带进来，一般不用手工调用。"
+  - "ares 1.17.2 是 2020 年的版本（头文件 copyright 2004-2020）：新 API（如 ares_set_socket_functions 的部分形态）已出现，但老接口行为与新版 c-ares 有差异，别照最新官方文档抄。"
+  - "ares_gethostbyname 回调里的 struct hostent 归 ares 所有：用完要 ares_free_hostent()（或 ares_free_data），字符串同理 ares_free_string()。"
+  - "回调是异步的，返回后仍在 ares 线程/事件循环里：业务里改 UI 要走自己的线程安全通道（Z20 面板别在回调里直接动控件）。"
+see_also:
+  - "curl 8.12.1-mbedtls（本包的直接使用者：resolver=c-ares）"
+  - "curl-cxx 10.0.3 / z 1.2.11（Z20 上这一整条 HTTP 依赖链）"
+source: >
+  未在本地 gitcom/AppGroup 找到 lib-cares 形态的实现仓（c-ares 1.17.2 预编译产物）；
+  使用者可从 curl-cxx 10.0.3 的 Manifest.xml（Z20 段显式列 cares ^1.17.2）和 libcurl.a 符号反查确认。
+
+# ── 直调真机验证（2026-09-29，Z20 / 192.168.x.x，工程 projects/pkg_netdir） ──
+verified_20260929:
+  platform: Z20
+  device: "192.168.x.x（86 面板）"
+  call: "ares_library_init(ARES_LIB_INIT_ALL) + ares_init + ares_gethostbyname + ares_fds/select/ares_process_fd 事件循环"
+  result: "www.baidu.com -> 183.2.172.177（40ms，status=0）；5 域名批量：baidu 35ms / qq 30ms / taobao 30ms / github 34ms / zkswe 88ms，5/5 成功"
+  verdict: pass
+  note: "依赖设备 /etc/resolv.conf；ares_library_init 在 POSIX 近似 no-op，返回非 0 不判失败"
+  evidence: evidence/netdir_20260929.txt

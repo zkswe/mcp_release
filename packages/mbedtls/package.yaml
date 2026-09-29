@@ -1,0 +1,122 @@
+# mbedtls —— Mbed TLS 3.6.5（TLS 1.3 可用 + PSA Crypto），静态预编译
+# 事实来源：实读 include/（133 个头）+ 逐个 #define 核对 mbedtls_config.h；「谁在用」= curl 8.12.1-mbedtls
+#          （libcurl.a 里有 mbedtls_ssl_setup 等 100 处符号）→ 用户可不看文档就被告知「curl 走 mbedtls」。
+id: mbedtls
+version: "3.6.5"
+platforms:
+  Z20:
+    registry: C:\zkswe\fun\registry\public\z20\mbedtls\3.6.5
+    libs: [lib/libmbedtls.a, lib/libmbedx509.a, lib/libmbedcrypto.a, lib/libeverest.a, lib/libp256m.a]
+    headers_count: 133
+    verified: "2026-09-29"
+    status: verified
+summary: Mbed TLS 3.6.5 静态库（libmbedtls/libmbedx509/libmbedcrypto + p256m/everest）。Z20 上它是 curl 的 TLS 后端（curl 8.12.1-mbedtls 变体，符号反查确认）——用 curl/curl-cxx 就自动吃到它，不必自己调；直接调 mbedtls 的场景是「自己写 TLS 长连接」（WebSocket、自研协议、私有 MQTT over TLS）。
+headers:
+  - path: include/mbedtls/ssl.h
+    role: TLS 会话与配置：ssl_config_defaults / ssl_setup / ssl_set_bio / ssl_handshake / ssl_read / ssl_write
+  - path: include/mbedtls/net_sockets.h
+    role: 阻塞式 TCP 连接辅助（net_connect / net_recv / net_send / net_free），DEMO 里当 bio 用
+  - path: include/mbedtls/x509_crt.h
+    role: CA / 证书链解析（x509_crt_parse_file / x509_crt_parse / x509_crt_init / x509_crt_free）
+  - path: include/mbedtls/entropy.h
+    role: 熵源（entropy_init / mbedtls_entropy_func）；本包无硬件熵源，走平台默认（需要 /dev/urandom）
+  - path: include/mbedtls/ctr_drbg.h
+    role: CTR-DRBG 随机数发生器（ctr_drbg_seed / mbedtls_ctr_drbg_random），TLS 必须提供 rng
+  - path: include/mbedtls/mbedtls_config.h
+    role: 编译期能力开关所在（本包实测：SSL_PROTO_TLS1_3=on、PSA_CRYPTO_C=on、THREADING_C=off、NET_C=on、FS_IO=on）
+  - path: include/psa/crypto.h
+    role: PSA Crypto API（本包 PSA_CRYPTO_C=on，可用统一 psa_* 接口做加解密/哈希）
+  - path: include/mbedtls/build_info.h
+    role: 版本与构建信息（MBEDTLS_VERSION_STRING = "3.6.5"）
+api:
+  - symbol: mbedtls_ssl_context / mbedtls_ssl_config
+    header: include/mbedtls/ssl.h
+    methods:
+      - "void mbedtls_ssl_init(mbedtls_ssl_context *ssl);"
+      - "void mbedtls_ssl_config_init(mbedtls_ssl_config *conf);"
+      - "int mbedtls_ssl_config_defaults(mbedtls_ssl_config *conf, int endpoint, int transport, int preset);"
+      - "int mbedtls_ssl_setup(mbedtls_ssl_context *ssl, const mbedtls_ssl_config *conf);"
+      - "void mbedtls_ssl_set_bio(mbedtls_ssl_context *ssl, void *p_bio, mbedtls_ssl_send_t *f_send, mbedtls_ssl_recv_t *f_recv, mbedtls_ssl_recv_timeout_t *f_recv_timeout);"
+      - "int mbedtls_ssl_set_hostname(mbedtls_ssl_context *ssl, const char *hostname);"
+      - "void mbedtls_ssl_conf_rng(mbedtls_ssl_config *conf, mbedtls_f_rng_t *f_rng, void *p_rng);"
+      - "void mbedtls_ssl_conf_authmode(mbedtls_ssl_config *conf, int authmode);"
+      - "void mbedtls_ssl_conf_ca_chain(mbedtls_ssl_config *conf, mbedtls_x509_crt *ca_chain, mbedtls_x509_crl *ca_crl);"
+      - "int mbedtls_ssl_handshake(mbedtls_ssl_context *ssl);"
+      - "int mbedtls_ssl_read(mbedtls_ssl_context *ssl, unsigned char *buf, size_t len);"
+      - "int mbedtls_ssl_write(mbedtls_ssl_context *ssl, const unsigned char *buf, size_t len);"
+      - "int mbedtls_ssl_close_notify(mbedtls_ssl_context *ssl);"
+      - "void mbedtls_ssl_free(mbedtls_ssl_context *ssl);  void mbedtls_ssl_config_free(mbedtls_ssl_config *conf);"
+  - symbol: mbedtls_net_context
+    header: include/mbedtls/net_sockets.h
+    methods:
+      - "void mbedtls_net_init(mbedtls_net_context *ctx);"
+      - "int mbedtls_net_connect(mbedtls_net_context *ctx, const char *host, const char *port, int proto);   // proto = MBEDTLS_NET_PROTO_TCP"
+      - "int mbedtls_net_recv(void *ctx, unsigned char *buf, size_t len);"
+      - "int mbedtls_net_send(void *ctx, const unsigned char *buf, size_t len);"
+      - "void mbedtls_net_free(mbedtls_net_context *ctx);"
+  - symbol: mbedtls_x509_crt
+    header: include/mbedtls/x509_crt.h
+    methods:
+      - "void mbedtls_x509_crt_init(mbedtls_x509_crt *crt);"
+      - "int mbedtls_x509_crt_parse(mbedtls_x509_crt *chain, const unsigned char *buf, size_t buflen);"
+      - "int mbedtls_x509_crt_parse_file(mbedtls_x509_crt *chain, const char *path);"
+      - "void mbedtls_x509_crt_free(mbedtls_x509_crt *crt);"
+  - symbol: mbedtls_ctr_drbg_context
+    header: include/mbedtls/ctr_drbg.h
+    methods:
+      - "int mbedtls_ctr_drbg_seed(mbedtls_ctr_drbg_context *ctx, int (*f_entropy)(void *, unsigned char *, size_t), void *p_entropy, const unsigned char *custom, size_t len);"
+      - "int mbedtls_ctr_drbg_random(void *p_rng, unsigned char *output, size_t output_len);"
+deps: []
+usage_cpp: |
+  #include <mbedtls/net_sockets.h>
+  #include <mbedtls/ssl.h>
+  #include <mbedtls/entropy.h>
+  #include <mbedtls/ctr_drbg.h>
+  #include <mbedtls/x509_crt.h>
+
+  void tlsDemo() {
+    mbedtls_net_context net;      mbedtls_ssl_context ssl;   mbedtls_ssl_config cfg;
+    mbedtls_entropy_context ent;  mbedtls_ctr_drbg_context drbg;  mbedtls_x509_crt ca;
+    mbedtls_net_init(&net); mbedtls_ssl_init(&ssl); mbedtls_ssl_config_init(&cfg);
+    mbedtls_entropy_init(&ent); mbedtls_ctr_drbg_init(&drbg); mbedtls_x509_crt_init(&ca);
+
+    mbedtls_ctr_drbg_seed(&drbg, mbedtls_entropy_func, &ent, (const unsigned char*)"z20", 3);
+    mbedtls_x509_crt_parse_file(&ca, "/data/data/<pkg>/resources/cacert.pem");   // CA 必须自带
+
+    mbedtls_ssl_config_defaults(&cfg, MBEDTLS_SSL_IS_CLIENT,
+                                MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
+    mbedtls_ssl_conf_rng(&cfg, mbedtls_ctr_drbg_random, &drbg);
+    mbedtls_ssl_conf_authmode(&cfg, MBEDTLS_SSL_VERIFY_REQUIRED);   // 默认就是 REQUIRED
+    mbedtls_ssl_conf_ca_chain(&cfg, &ca, NULL);
+    mbedtls_ssl_setup(&ssl, &cfg);
+    mbedtls_ssl_set_hostname(&ssl, "example.com");                  // SNI + 证书域名校验
+
+    if (mbedtls_net_connect(&net, "example.com", "443", MBEDTLS_NET_PROTO_TCP) != 0) return;
+    mbedtls_ssl_set_bio(&ssl, &net, mbedtls_net_send, mbedtls_net_recv, NULL);
+    if (mbedtls_ssl_handshake(&ssl) != 0) return;
+    mbedtls_ssl_write(&ssl, (const unsigned char*)"GET / HTTP/1.0\r\n\r\n", 18);
+    mbedtls_ssl_close_notify(&ssl);   // 收尾：mbedtls_ssl_free/ssl_config_free/net_free/crt_free 别忘
+  }
+gotchas:
+  - "本包只发静态库（5 个 .a，无 .so）→ 链接顺序有讲究（mbedtls → mbedx509 → mbedcrypto，p256m/everest 也要带上），顺序错就满屏 undefined reference。"
+  - "链接了本包 = Z20 的 TLS 走 mbedtls；而 Z20 的 paho-mqtt3as 走 openssl → 同一个工程可能同时存在两套 TLS 栈（SmartPanel_HA 就是：curl-cxx→mbedtls，mqtt-cxx→paho-mqtt3as→openssl），体积/内存要算清楚。"
+  - "THREADING_C 是关的（实测 off）→ mbedtls 自身无锁；多线程共用同一个 ssl/ctr_drbg 上下文要自己加锁。"
+  - "本包没有内置 CA、也不读系统信任目录：HTTPS 必须自带 cacert.pem（项目 resources/cacert.pem 随包发），漏了不是优雅报错——Z21 实测过「缺 CA → 进程崩 → 看门狗拉起 → 反复重启」（references/kb/build.md）。"
+  - "本包 TLS 1.3 是编进去的（SSL_PROTO_TLS1_3=on）+ PSA Crypto 打开 → 3.x 的 API 与 2.x 教程不兼容（如 mbedtls_ssl_conf_rng 的 rng 类型、entropy 回调签名都变了），别照 2.x 的老例子抄。"
+  - "entropy 走平台默认（没有硬件熵源选项打开）→ 设备上必须能读到 /dev/urandom，否则 handshake 阶段就失败（报 MBEDTLS_ERR_ENTROPY_SOURCE_FAILED 之类）。"
+see_also:
+  - "curl 8.12.1-mbedtls（Z20 上真正消费本包的包：SSL=mbedTLS）"
+  - "openssl 1.1.1-w（Z20 另一条 TLS 路线，给 paho-mqtt3as 用；两套别混着理解）"
+  - "curl-cxx 10.0.3（业务层的 HTTP 封装，间接用到本包）"
+source: >
+  未在本地 gitcom/AppGroup 找到 lib-mbedtls 形态的实现仓（Mbed TLS 3.6.5 预编译产物）。
+  能力开关以包内 include/mbedtls/mbedtls_config.h 的 #define 实测为准（本文件 gotchas 里逐条列出）。
+
+# ── 直调真机验证（2026-09-29，Z20 / 192.168.x.x，工程 projects/pkg_netdir） ──
+verified_20260929:
+  platform: Z20
+  device: "192.168.x.x（86 面板）"
+  call: "mbedtls_net_connect + mbedtls_ssl_config_defaults + x509_crt_parse_file(/tmp/ui/cacert.pem) + ctr_drbg + ssl_handshake + HTTP GET"
+  result: "握手 OK 103ms，TLSv1.2 / TLS-ECDHE-RSA-WITH-AES-128-GCM-SHA256；GET www.baidu.com 收 511 B，首行 HTTP/1.0 200 OK，总 352ms；psa_crypto_init 必需（TLS1.3 路径）"
+  verdict: pass
+  evidence: evidence/netdir_20260929.txt

@@ -1,0 +1,46 @@
+===== tap ButtonBeep (120,90) =====
+D/zkgui   ( 3139): zkhardware demo: HARDWAREMANAGER->beep() 已调用（默认 2500Hz / duty 50，可用 setBeepPWM 改）
+===== tap ButtonBrightDown (356,90) =====
+D/zkgui   ( 3139): zkhardware demo: HARDWAREMANAGER->beep() 已调用（默认 2500Hz / duty 50，可用 setBeepPWM 改）
+D/zkgui   ( 3139): zkhardware demo: setBrightness(7) -> getBrightness() = 7（范围 1~100）
+===== tap ButtonBrightUp (120,160) =====
+D/zkgui   ( 3139): zkhardware demo: HARDWAREMANAGER->beep() 已调用（默认 2500Hz / duty 50，可用 setBeepPWM 改）
+D/zkgui   ( 3139): zkhardware demo: setBrightness(7) -> getBrightness() = 7（范围 1~100）
+D/zkgui   ( 3139): zkhardware demo: setBrightness(17) -> getBrightness() = 17（范围 1~100）
+===== tap ButtonAdc (356,160) =====
+D/zkgui   ( 3139): zkhardware demo: HARDWAREMANAGER->beep() 已调用（默认 2500Hz / duty 50，可用 setBeepPWM 改）
+D/zkgui   ( 3139): zkhardware demo: setBrightness(7) -> getBrightness() = 7（范围 1~100）
+D/zkgui   ( 3139): zkhardware demo: setBrightness(17) -> getBrightness() = 17（范围 1~100）
+D/zkgui   ( 3139): zkhardware demo: Adc ch=0 ok=1 val=0
+D/zkgui   ( 3139): zkhardware demo: Adc ch=1 ok=1 val=46
+D/zkgui   ( 3139): zkhardware demo: Adc ch=2 ok=1 val=945
+D/zkgui   ( 3139): zkhardware demo: Adc ch=3 ok=1 val=615
+D/zkgui   ( 3139): zkhardware demo: ADC 扫 ch0~3：ch0=0(ok=1) ch1=46(ok=1) ch2=945(ok=1) ch3=615(ok=1)
+===== tap ButtonGpio (120,230) =====
+D/zkgui   ( 3139): zkhardware demo: HARDWAREMANAGER->beep() 已调用（默认 2500Hz / duty 50，可用 setBeepPWM 改）
+D/zkgui   ( 3139): zkhardware demo: setBrightness(7) -> getBrightness() = 7（范围 1~100）
+D/zkgui   ( 3139): zkhardware demo: setBrightness(17) -> getBrightness() = 17（范围 1~100）
+D/zkgui   ( 3139): zkhardware demo: Adc ch=0 ok=1 val=0
+D/zkgui   ( 3139): zkhardware demo: Adc ch=1 ok=1 val=46
+D/zkgui   ( 3139): zkhardware demo: Adc ch=2 ok=1 val=945
+D/zkgui   ( 3139): zkhardware demo: Adc ch=3 ok=1 val=615
+D/zkgui   ( 3139): zkhardware demo: ADC 扫 ch0~3：ch0=0(ok=1) ch1=46(ok=1) ch2=945(ok=1) ch3=615(ok=1)
+D/zkgui   ( 3139): zkhardware demo: Gpio input B_02 = -1
+D/zkgui   ( 3139): zkhardware demo: Gpio input B_03 = -1
+D/zkgui   ( 3139): zkhardware demo: Gpio input E_20 = -1
+D/zkgui   ( 3139): zkhardware demo: GPIO 电平（-1 = 失败）：B_02=-1 B_03=-1 E_20=-1
+===== tap ButtonZeroIo (356,230) =====
+D/zkgui   ( 3139): zkhardware demo: HARDWAREMANAGER->beep() 已调用（默认 2500Hz / duty 50，可用 setBeepPWM 改）
+D/zkgui   ( 3139): zkhardware demo: setBrightness(7) -> getBrightness() = 7（范围 1~100）
+D/zkgui   ( 3139): zkhardware demo: setBrightness(17) -> getBrightness() = 17（范围 1~100）
+D/zkgui   ( 3139): zkhardware demo: Adc ch=0 ok=1 val=0
+D/zkgui   ( 3139): zkhardware demo: Adc ch=1 ok=1 val=46
+D/zkgui   ( 3139): zkhardware demo: Adc ch=2 ok=1 val=945
+D/zkgui   ( 3139): zkhardware demo: Adc ch=3 ok=1 val=615
+D/zkgui   ( 3139): zkhardware demo: ADC 扫 ch0~3：ch0=0(ok=1) ch1=46(ok=1) ch2=945(ok=1) ch3=615(ok=1)
+D/zkgui   ( 3139): zkhardware demo: Gpio input B_02 = -1
+D/zkgui   ( 3139): zkhardware demo: Gpio input B_03 = -1
+D/zkgui   ( 3139): zkhardware demo: Gpio input E_20 = -1
+D/zkgui   ( 3139): zkhardware demo: GPIO 电平（-1 = 失败）：B_02=-1 B_03=-1 E_20=-1
+D/zkgui   ( 3139): zkhardware demo: zeroIo num=4 #0=OFF #1=ON #2=ON #3=ON
+D/zkgui   ( 3139): zkhardware demo: 过零 IO 共 4 路：#0=OFF #1=ON #2=ON #3=ON

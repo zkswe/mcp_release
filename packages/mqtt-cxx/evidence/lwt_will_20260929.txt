@@ -1,0 +1,17 @@
+=== device LWT ===
+== MQTT 遗嘱 LWT ==
+[LWT] 注册遗嘱 topic=zk/netstack2/will108 payload={"dev":"108","msg":"will: offline"}
+[LWT] new Client(mqtt://192.168.x.x:1883) will_topic=zk/netstack2/will108 payload={"dev":"108","msg":"will: offline"}
+[LWT] on_connected（第 1 次）cause=
+[LWT] on_connected（第 2 次）cause=connect onSuccess called
+[LWT] 连接结果 connected=1 isConnected=1
+[LWT] subscribe(zk/netstack2/108) -> OK（订阅自己的数据主题做存活对照）
+[LWT] publish alive -> OK
+[LWT] on_message topic=zk/netstack2/108 len=27 payload={"dev":"108","msg":"alive"}
+[LWT] 遗嘱已就绪：接下来由「断线+重连」按钮制造异常断线，看 broker 是否代发遗嘱
+
+=== witness log ===
+[12:01:29] witness starting -> 127.0.0.1:1883
+[12:01:29] witness connected rc=0; subscribing [('zk/netstack2/will108', 1), ('zk/netstack2/108', 1)]
+[12:02:13] DATA zk/netstack2/108 -> {"dev":"108","msg":"alive"}
+[12:02:15] WILL zk/netstack2/will108 -> {"dev":"108","msg":"will: offline"}

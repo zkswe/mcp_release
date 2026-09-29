@@ -1,0 +1,90 @@
+# ntp —— NTP 客户端（同步网络时间）静态库
+# 事实来源：实读包本体 include/ntp/{ntp.h,server.h} + README.md(975B) + Manifest.xml；
+#          实现细节 = 源码直读 gitcom/AppGroup/lib-ntp/src/ntp/ntp.cpp（该仓即本包上游包）；
+#          现场结论交叉验证自 projects/SmartPanel_HA/src/system/ClockManager.cpp（Z20，已改用自研 SNTP）。
+id: ntp
+version: "2.1.1"
+platforms:
+  Z20:
+    registry: C:\zkswe\fun\registry\public\z20\ntp\2.1.1
+    libs: [lib/libntp.a]
+    headers_count: 2
+    verified: "2026-09-29"
+    status: verified
+summary: NTP 客户端库：往 NTP 服务器（UDP 123）要时间，写进系统时钟（settimeofday）+ RTC。只做客户端不做服务端；默认服务器列表是 15 个内置 IP（阿里云优先）。⚠️ 实测精度差（源码里没有四时间戳/asymmetry 补偿，见 gotchas），要毫秒级稳态或组网对时别用它——Z20 的 SmartPanel_HA 后来自己写了 SNTP。Z20 上 2.1.1 的回调是 timeval（微秒），旧版 0.1.0 是 struct tm（秒级）。
+headers:
+  - path: include/ntp/ntp.h
+    role: 公开 API 全部在这里：getTime / defaultServerList / startSyncTime / syncTime + 回调 typedef
+  - path: include/ntp/server.h
+    role: ntp::Server 单例（服务端类声明，依赖 <base/base.h> 的宏）；README 明确「本库只实现客户端」，别指望它
+api:
+  - symbol: ntp（命名空间函数）
+    header: include/ntp/ntp.h
+    methods:
+      - "struct timeval getTime(const std::string& ip, int recv_timeout);   // 失败抛 base::Exception，不返回错误码"
+      - "std::vector<std::string> defaultServerList() noexcept;   // 15 个内置 IP，首个 203.107.6.88(ntp.aliyun.com)"
+      - "int startSyncTime(const std::vector<std::string> server_list, SynchronizationTaskEnd end_callback) noexcept;   // 0=线程已起；全局单任务"
+      - "bool syncTime(const std::vector<std::string> server_list, int recv_timeout) noexcept;   // 阻塞版，逐个服务器试"
+      - "typedef void (*SynchronizationTaskEnd)(const std::string& server, const timeval* time);"
+  - symbol: ntp::Server
+    header: include/ntp/server.h
+    methods:
+      - "virtual ~Server();"
+      - "void doTask();   // protected；类里用 DECLARE_SINGLETON_PATTERN(Server) / DECLARE_TASK / DISALLOW_COPY_AND_ASSIGN_METHOD"
+deps:
+  - id: base-utility
+    version: "^10.8.0"
+usage_cpp: |
+  // 最小用法（与包内 README 一致；先设时区再同步）
+  #include <ntp/ntp.h>
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <vector>
+  #include <string>
+
+  static void onSyncEnd(const std::string& server, const struct timeval* tv) {
+    // 注意：拿到回调时系统时钟/RTC 已经被写过了，这里只做提示/记录
+    if (tv) printf("ntp synced via %s = %ld.%06ld\n", server.c_str(), (long)tv->tv_sec, (long)tv->tv_usec);
+    else    printf("ntp sync failed (all servers)\n");
+  }
+
+  void ntpDemo() {
+    setenv("TZ", "UTC-8", 1);   // 必须先设时区（北京 = UTC-8），否则本地时间不对
+    tzset();
+
+    // 异步：起线程后台同步，回调通知结果
+    ntp::startSyncTime(ntp::defaultServerList(), onSyncEnd);
+
+    // 要立刻拿到结果就用阻塞版（每台服务器超时 recv_timeout 毫秒）：
+    std::vector<std::string> srv;
+    srv.push_back("203.107.6.88");     // 阿里云，实测较稳
+    if (ntp::syncTime(srv, 3000)) printf("sync ok\n"); else printf("sync failed\n");
+  }
+gotchas:
+  - "精度坑（实测口径）：libntp.a 没有源码，反汇编 + 上游源码（gitcom/AppGroup/lib-ntp/src/ntp/ntp.cpp）都确认——getTime() 里 T1 一直是 0、T4 只取了「发送到现在」的差值，四时间戳偏差公式实际退化成 T3 + RTT/2 → 每台设备系统性偏，10 分钟重校也不收敛（现场实测单次误差几十~几百 ms，两台设备互差 30~180 ms）。要毫秒级就自己发 SNTP（参照 SmartPanel_HA/src/system/ClockManager.cpp）。"
+  - "0.1.0 与 2.1.1 的回调不一样：0.1.0 是 struct tm（秒级，库内 TimeHelper::setDateTime 只写整秒 → 每次校时带 0~1s 随机误差）；2.1.1 才是 timeval（settimeofday 到微秒）。老工程 Manifest 写 0.1.0 的要升上来。"
+  - "startSyncTime 有全局单任务保护（is_task_running）：上一次任务还在跑时再调用直接返回 0（日志「already start」）。而失败时线程内部 while(true) + 5s 退避无限重试、永不返回 → 周期刷新调用方会以为「任务还在跑」，永远轮不到新的同步（别把它当初次失败就能重试的接口）。"
+  - "getTime() 里硬编码了「时间必须 ≥ 1748510332（2025-05-29）」的合理性检查，比它早一律抛 invalid time → 服务器返回旧时间/设备 RTC 回绕会直接失败，别当网络故障查。"
+  - "getTime() 用 udp 123 + recv_timeout 毫秒；失败抛 base::Exception（不是返回 -1），只 try/catch 不查返回值——syncTime() 已经把异常吞掉转成 false。"
+  - "默认服务器列表虽以国内 IP 打头，但里面混了 NIST/Apple/Windows 等境外地址（102/132.x/17.x/20.x）：无外网时逐个试会白等很久 → 现场建议传自己的服务器列表（SmartPanel_HA 只留了阿里 203.107.6.88 / 120.25.115.20 / 182.92.12.11）。"
+  - "README 明说不保证内置服务器长期稳定；且库内同时写 RTC（TimeHelper::setDateTime）+ 系统时钟（settimeofday），掉电 RTC 会被改成「服务器时间」，多设备组网对时要注意（组内对时靠这个包对不齐，见第一条）。"
+see_also:
+  - "base-utility（本包 Manifest 依赖 ^10.8.0；lib-ntp 仓里 target 写的是 ^10.0.0）"
+  - "zknet / easyui（联网与时间显示；Z20 项目里常一起出现）"
+  - "curl / curl-cxx（另一条取时间的路：HTTP Date 头）"
+source: >
+  已找到实现仓：gitcom/AppGroup/lib-ntp（src/ntp/ntp.cpp 7300B + ntp.h + server.cpp/h + define.h；
+  其 Manifest target 声明 staticLibrary id="ntp" version="2.1.0"，发布头 src/ntp/{ntp.h,server.h}）。
+  该仓 ntp.h 与 registry 2.1.1 的 include/ntp/ntp.h 逐字节相同（1467B），server.h 仅注释差 32B
+  → 可视为 2.1.1 的同源实现（仓内 target 版本号写的是 2.1.0）。
+
+# ── 真机验证（2026-09-29，Z20 / 192.168.x.x，工程 projects/pkg_netstack） ──
+verified_20260929:
+  platform: Z20
+  device: "192.168.x.x（86 面板）"
+  call: 'setenv("TZ","UTC-8",1) + tzset() + ntp::syncTime(ntp::defaultServerList(), 3000)'
+  servers_used: [203.107.6.88, 182.92.12.11, 120.25.115.20]
+  result: "成功（返回 true），校时后本地时间 TZ=UTC-8 显示正确（10:55 北京时间）"
+  verdict: pass
+  note: "同步调用 3s 超时窗口够用；用 ntp::startSyncTime() 异步版时同样先 setenv TZ 再 tzset()"
+  evidence: evidence/netstack_auto_20260929.txt

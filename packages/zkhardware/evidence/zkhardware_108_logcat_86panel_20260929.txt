@@ -1,0 +1,39 @@
+===== tap ButtonBeep (120,90) =====
+zkhardware demo: HARDWAREMANAGER->beep() 已调用（默认 2500Hz / duty 50，可用 setBeepPWM 改）
+===== tap ButtonBrightDown(背光-10) (356,90) =====
+zkhardware demo: setBrightness(21) -> getBrightness() = 21（范围 1~100）
+===== tap ButtonBrightUp(背光+10) (120,160) =====
+zkhardware demo: setBrightness(31) -> getBrightness() = 31（范围 1~100）
+===== tap ButtonAdc(读ADC) (356,160) =====
+zkhardware demo: Adc ch=0 ok=1 val=0
+zkhardware demo: Adc ch=1 ok=1 val=41
+zkhardware demo: Adc ch=2 ok=1 val=940
+zkhardware demo: Adc ch=3 ok=1 val=611
+zkhardware demo: ADC 扫 ch0~3：ch0=0(ok=1) ch1=41(ok=1) ch2=940(ok=1) ch3=611(ok=1)
+===== tap ButtonGpio(读GPIO电平) (120,230) =====
+zkhardware demo: Gpio input B_02 = -1
+zkhardware demo: Gpio input B_03 = -1
+zkhardware demo: Gpio input E_20 = -1
+zkhardware demo: GPIO 电平（-1 = 失败）：B_02=-1 B_03=-1 E_20=-1
+===== tap ButtonZeroIo(过零IO状态) (356,230) =====
+zkhardware demo: zeroIo num=4 #0=OFF #1=ON #2=ON #3=ON
+zkhardware demo: 过零 IO 共 4 路：#0=OFF #1=ON #2=ON #3=ON
+===== drift pass x3 (背光+10 + 读ADC) =====
+zkhardware demo: setBrightness(41) -> getBrightness() = 41（范围 1~100）
+zkhardware demo: Adc ch=0 ok=1 val=0
+zkhardware demo: Adc ch=1 ok=1 val=42
+zkhardware demo: Adc ch=2 ok=1 val=941
+zkhardware demo: Adc ch=3 ok=1 val=611
+zkhardware demo: ADC 扫 ch0~3：ch0=0(ok=1) ch1=42(ok=1) ch2=941(ok=1) ch3=611(ok=1)
+zkhardware demo: setBrightness(51) -> getBrightness() = 51（范围 1~100）
+zkhardware demo: Adc ch=0 ok=1 val=0
+zkhardware demo: Adc ch=1 ok=1 val=43
+zkhardware demo: Adc ch=2 ok=1 val=942
+zkhardware demo: Adc ch=3 ok=1 val=608
+zkhardware demo: ADC 扫 ch0~3：ch0=0(ok=1) ch1=43(ok=1) ch2=942(ok=1) ch3=608(ok=1)
+zkhardware demo: setBrightness(61) -> getBrightness() = 61（范围 1~100）
+zkhardware demo: Adc ch=0 ok=1 val=0
+zkhardware demo: Adc ch=1 ok=1 val=43
+zkhardware demo: Adc ch=2 ok=1 val=942
+zkhardware demo: Adc ch=3 ok=1 val=610
+zkhardware demo: ADC 扫 ch0~3：ch0=0(ok=1) ch1=43(ok=1) ch2=942(ok=1) ch3=610(ok=1)

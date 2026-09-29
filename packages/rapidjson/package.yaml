@@ -1,0 +1,102 @@
+# rapidjson —— RapidJSON 1.1.0 纯头文件 JSON 库（无 lib）
+# 事实来源：实读 include/rapidjson/*.h（document.h/reader.h/writer.h 里的真实签名）；
+#          真实用法交叉验证自 projects/SmartPanel_HA/src/network/LocalLink.cpp（Z20 在跑）。
+id: rapidjson
+version: "1.1.0"
+platforms:
+  Z20:
+    registry: C:\zkswe\fun\registry\public\z20\rapidjson\1.1.0
+    libs: []
+    headers_count: 36
+    verified: null
+    status: unverified
+summary: RapidJSON 1.1.0 —— 纯头文件 JSON 解析/生成库（无 lib，include 即用）。Z20 上通常由 base-json 3.1.0 依赖引入（也会随依赖链进工程），也可以单独声明后直接 #include <rapidjson/...>。注意它和 easyui/base 里的 jsoncpp（include/json/*）不是一套，别混。
+headers:
+  - path: include/rapidjson/document.h
+    role: Document/Value：Parse、HasParseError、IsObject/IsArray、HasMember、operator[]、GetString/GetInt/GetBool
+  - path: include/rapidjson/reader.h
+    role: SAX 式 Reader（低内存流式解析，大报文才需要）
+  - path: include/rapidjson/writer.h
+    role: Writer<OutputStream>：StartObject/Key/String/StartArray/... 生成 JSON 文本
+  - path: include/rapidjson/prettywriter.h
+    role: PrettyWriter：带缩进的 Writer（调试/落盘好看）
+  - path: include/rapidjson/stringbuffer.h
+    role: StringBuffer：写端内存缓冲，GetString()/GetSize() 取结果
+  - path: include/rapidjson/error/en.h
+    role: GetParseError_En()：把 ParseErrorCode 翻成人话（排查解析失败必用）
+  - path: include/rapidjson/filereadstream.h
+    role: 从 FILE* 读（配 FileReadStream + Reader 解析文件）
+  - path: include/rapidjson/istreamwrapper.h
+    role: 从 std::istream 读（配 std::ifstream 解析文件）
+api:
+  - symbol: rapidjson::Document
+    header: include/rapidjson/document.h
+    methods:
+      - "GenericDocument& Parse(const Ch* str);   // 也有带长度/流式重载；失败不抛异常，必须查 HasParseError()"
+      - "bool HasParseError() const;"
+      - "ParseErrorCode GetParseError() const;"
+      - "size_t GetErrorOffset() const;"
+      - "bool IsObject() const;  bool IsArray() const;  bool IsString() const;  bool IsNumber() const;"
+      - "bool HasMember(const Ch* name) const;"
+      - "const GenericValue& operator[](const Ch* name) const;   // 支持字符串/下标，也支持 chained d[\"a\"][\"b\"]"
+      - "SizeType Size() const;"
+      - "const Ch* GetString() const;  int GetInt() const;  bool GetBool() const;"
+  - symbol: rapidjson::Writer<OutputStream>
+    header: include/rapidjson/writer.h
+    methods:
+      - "bool StartObject();  bool EndObject();  bool StartArray();  bool EndArray();"
+      - "bool Key(const Ch* str);"
+      - "bool String(const Ch* str, SizeType length, bool copy = false);"
+      - "bool String(const std::basic_string<Ch>& str);"
+      - "bool Bool(bool b);"
+  - symbol: rapidjson::PrettyWriter<OutputStream>
+    header: include/rapidjson/prettywriter.h
+    methods:
+      - "PrettyWriter(OutputStream& os);   // 继承 Writer，额外带缩进；接口同 Writer"
+  - symbol: rapidjson::StringBuffer
+    header: include/rapidjson/stringbuffer.h
+    methods:
+      - "const Ch* GetString() const;"
+      - "size_t GetSize() const;   // 字节数（含结尾 \\0 之外的实际长度）"
+      - "void Clear();"
+deps: []
+usage_cpp: |
+  #include <rapidjson/document.h>
+  #include <rapidjson/stringbuffer.h>
+  #include <rapidjson/writer.h>
+  #include <string>
+
+  void jsonDemo(const char* payload) {
+    rapidjson::Document d;
+    if (d.Parse(payload).HasParseError() || !d.IsObject()) return;   // 解析失败不抛异常，必须查错
+    std::string name = d.HasMember("name") && d["name"].IsString() ? d["name"].GetString() : "";
+    if (d.HasMember("relays") && d["relays"].IsArray()) {
+      for (rapidjson::SizeType i = 0; i < d["relays"].Size(); ++i) {
+        bool on = d["relays"][i].GetBool();      // 取下标前要 IsArray/元素类型判定，否则 assert 崩
+        (void)on;
+      }
+    }
+
+    rapidjson::StringBuffer sb;
+    rapidjson::Writer<rapidjson::StringBuffer> w(sb);
+    w.StartObject();
+    w.Key("name"); w.String(name.c_str());
+    w.EndObject();
+    std::string out(sb.GetString(), sb.GetSize());   // 用 (ptr,len)：JSON 里允许 NUL 字节
+    (void)out;
+  }
+gotchas:
+  - "纯头文件：libs 为空，没有 .a/.so → 只要 include 路径到位就能编（改 Manifest 后仍要 fun install 让 include 路径进 CMake）；不要去找 librapidjson。"
+  - "本包在本地 registry 只有 z20 目录（rapidjson 1.1.0 在 z21/f133/f136/t113emmc/v85x 下都没有）→ 别的平台要用得自己确认官方仓库是否有，别照 Z20 的 Manifest 抄。"
+  - "1.1.0 是上游老版本（2016 年线）：与 master/新文档有行为差异（如 kParseValidateEncodingFlag 默认值、schema.h 能力），照最新官方文档抄可能对不上。"
+  - "Document::Parse 默认要求字符串以 \\0 结尾（c_str() 传法最稳）；带内嵌 \\0 的二进制 payload 要用 Parse(str, length)。"
+  - "取值不做类型检查会在 debug 下 RAPIDJSON_ASSERT 直接 abort（release 下则是垃圾值）→ 一律先 IsString/IsArray/HasMember 再取，Z20 的既有代码就是这个口径。"
+  - "解析大报文别用 Document（全量树）；Reader（SAX）+ 自己的 handler 才省内存（Z20 面板内存紧张）。"
+  - "跟 easyui/base-json 的 jsoncpp（#include <json/json.h>）是两套库：项目里同时出现会重复解析逻辑，选一套用。"
+see_also:
+  - "base-json 3.1.0（Z20 上依赖本包的封装：base::JSONObject，Manifest 里写 rapidjson 1.1.0）"
+  - "base-utility（base::format 等，通常和 base-json 一起出现）"
+  - "curl-cxx 10.0.3（HTTP 拿到 JSON 后解析时常用本包）"
+source: >
+  未在本地 gitcom/AppGroup 找到 lib-rapidjson 形态的实现仓（上游 RapidJSON 1.1.0 头文件副本）。
+  真实用法证据：projects/SmartPanel_HA/src/network/LocalLink.cpp 与 src/logic/scenesLogic.cc（Z20 工程，直接 include <rapidjson/...>）。

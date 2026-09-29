@@ -1,0 +1,122 @@
+# paho-mqtt3as —— Eclipse Paho MQTT C 客户端（async 变体 + SSL/TLS）预编译库
+# 事实来源：实读包本体 include/ + lib/（无 README、无 Manifest）；链接依赖用二进制符号反查；
+#          真实用法交叉验证自 projects/SmartPanel_HA（Z20，mqtt-cxx + paho-mqtt3as + openssl）。
+id: paho-mqtt3as
+version: "1.3.13"
+platforms:
+  Z20:
+    registry: C:\zkswe\fun\registry\public\z20\paho-mqtt3as\1.3.13
+    libs: [lib/libpaho-mqtt3as.a, lib/libpaho-mqtt3as.so]
+    headers_count: 7
+    verified: "2026-09-29"
+    status: verified
+summary: Eclipse Paho MQTT C 客户端（async 版 + SSL/TLS）：同时提供 C 同步 API（MQTTClient_*）和异步 API（MQTTAsync_*）。业务一般不必直接调它——Z20 上走 mqtt-cxx 的 mqtt::Client（它就是包 MQTTAsync.h）；只有要 MQTT v5 属性、原生回调或自己封装时才直接用。
+headers:
+  - path: include/MQTTAsync.h
+    role: 异步 API（MQTTAsync_*），非阻塞 + 回调式；mqtt-cxx 包的就是它
+  - path: include/MQTTClient.h
+    role: 同步 API（MQTTClient_*），connect/publish/subscribe 阻塞式，写小工具最短
+  - path: include/MQTTProperties.h
+    role: MQTT v5 属性结构（MQTTProperties_initializer）
+  - path: include/MQTTReasonCodes.h
+    role: MQTT v5 原因码枚举
+  - path: include/MQTTSubscribeOpts.h
+    role: MQTT v5 订阅选项（noLocal / retainAsPublished 等）
+  - path: include/MQTTClientPersistence.h
+    role: 离线消息持久化接口（PERSISTENCE_NONE / FILE / DEFAULT）
+  - path: include/MQTTExportDeclarations.h
+    role: 导入导出宏（LIBMQTT_API 等的定义处）
+api:
+  - symbol: MQTTAsync（异步 API）
+    header: include/MQTTAsync.h
+    methods:
+      - "int MQTTAsync_create(MQTTAsync* handle, const char* serverURI, const char* clientId, int persistence_type, void* persistence_context);"
+      - "int MQTTAsync_setCallbacks(MQTTAsync handle, void* context, MQTTAsync_connectionLost* cl, MQTTAsync_messageArrived* ma, MQTTAsync_deliveryComplete* dc);"
+      - "int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options);"
+      - "int MQTTAsync_subscribe(MQTTAsync handle, const char* topic, int qos, MQTTAsync_responseOptions* response);"
+      - "int MQTTAsync_sendMessage(MQTTAsync handle, const char* destinationName, const MQTTAsync_message* msg, MQTTAsync_responseOptions* response);"
+      - "int MQTTAsync_disconnect(MQTTAsync handle, const MQTTAsync_disconnectOptions* options);"
+      - "void MQTTAsync_destroy(MQTTAsync* handle);"
+  - symbol: MQTTClient（同步 API）
+    header: include/MQTTClient.h
+    methods:
+      - "int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* clientId, int persistence_type, void* persistence_context);"
+      - "int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options);"
+      - "int MQTTClient_setCallbacks(MQTTClient handle, void* context, MQTTClient_connectionLost* cl, MQTTClient_messageArrived* ma, MQTTClient_deliveryComplete* dc);"
+      - "int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen, const void* payload, int qos, int retained, MQTTClient_deliveryToken* dt);"
+      - "int MQTTClient_subscribe(MQTTClient handle, const char* topic, int qos);"
+      - "int MQTTClient_disconnect(MQTTClient handle, int timeout);"
+      - "int MQTTClient_waitForCompletion(MQTTClient handle, MQTTClient_deliveryToken dt, unsigned long timeout);"
+      - "void MQTTClient_freeMessage(MQTTClient_message** msg);  void MQTTClient_free(void* ptr);"
+deps: []
+usage_cpp: |
+  #include <MQTTClient.h>
+  #include <stdio.h>
+
+  static int onMessage(void* ctx, char* topicName, int topicLen, MQTTClient_message* msg) {
+    printf("recv %.*s = %.*s\n", topicLen, topicName, msg->payloadlen, (char*)msg->payload);
+    MQTTClient_freeMessage(&msg);   // 必须释放，否则内存泄漏
+    MQTTClient_free(topicName);
+    return 1;                       // 返回 1 = 消息已处理
+  }
+
+  void mqttDemo() {
+    MQTTClient cli = NULL;
+    MQTTClient_create(&cli, "tcp://192.168.x.x:1883", "z20-demo",
+                      MQTTCLIENT_PERSISTENCE_NONE, NULL);
+    MQTTClient_connectOptions opt = MQTTClient_connectOptions_initializer;
+    opt.keepAliveInterval = 20;
+    opt.cleansession = 1;
+    opt.username = "user";          // 不需要就保持 NULL
+    opt.password = "pass";
+    MQTTClient_setCallbacks(cli, NULL, NULL, onMessage, NULL);
+    if (MQTTClient_connect(cli, &opt) != MQTTCLIENT_SUCCESS) return;
+    MQTTClient_subscribe(cli, "test/topic", 1);
+    MQTTClient_deliveryToken tok;
+    MQTTClient_publish(cli, "test/topic", 5, "hello", 1, 0, &tok);
+    MQTTClient_disconnect(cli, 1000);
+    MQTTClient_destroy(&cli);
+  }
+gotchas:
+  - "lib 名字里的 as = async + SSL：本包是「异步 + 支持 TLS」变体。二进制里能查到 SSL_CTX_new/SSL_connect 符号 → 链接期需要 openssl（Z20 上就是 openssl 1.1.1-w），同时需要 pthread。Manifest 不写这两条会在链接阶段炸（或运行期符号缺失）。"
+  - "mqtt-cxx 3.2.0 的 README 让你「不支持 mqtts/wss 就用 paho-mqtt3a」，但本地 registry 的 z20 目录下没有 paho-mqtt3a（只有 paho-mqtt3as）→ Z20 上要么就用 paho-mqtt3as（它的 SSL 能力不用白不用），要么别加 paho 依赖。"
+  - "本包是本地 z20 registry 独有：paho-mqtt3as 1.3.13 在 z21/f133/f136/t113emmc/v85x 目录下都不存在 → 依赖它的 mqtt-cxx 3.2.0 也是 Z20 专属组合，换平台要换 MQTT 方案。"
+  - "没有 README、没有 Manifest.xml（registry 目录里只有 include/ + lib/）→ 依赖不会自动带进来，必须自己在 Manifest 里显式声明 openssl/pthread 之类的实际链接依赖。"
+  - "同步 API 的回调里必须 MQTTClient_freeMessage()/MQTTClient_free()，否则消息体泄漏；本库不替你释放（可参考 gitcom/AppGroup/PublicPhone2.0 里 vendored 的 mqtt_client_cxx.hpp 同类写法）。"
+  - "paho 的 client_id 在 broker 侧是互斥的：同一个 client_id 起两个连接会互相踢下线（SmartPanel_HA 现场实测过「每 10s 重复 new client 不 delete 旧的」→ broker 每秒踢 2~3 次）。"
+see_also:
+  - "mqtt-cxx（Z20 上的 C++ 封装，依赖本包；日常优先用它）"
+  - "openssl 1.1.1-w（本包的 TLS 后端，Z20 用这条 TLS 路线）"
+  - "z 1.2.11 / base-utility（mqtt-cxx 的依赖链）"
+source: >
+  未在本地 gitcom/AppGroup 找到 paho-mqtt3as 的实现仓（第三方 paho.mqtt.c 1.3.13 的预编译产物）。
+  可作 API 参照的 vendored 副本：gitcom/AppGroup/PublicPhone2.0/src/dependencies/include/mqtt/{MQTTClient.h,mqtt_client_cxx.hpp}
+  （C 同步 API 写法）、gitcom/AppGroup/sannuo/jni/mqtt/（MQTTAsync.h 等源码级头）。
+
+# ── 真机验证（2026-09-29，Z20 / 192.168.x.x，经 mqtt-cxx 1.3.13 间接验证） ──
+verified_20260929:
+  platform: Z20
+  device: "192.168.x.x（86 面板）"
+  how: "由 mqtt-cxx::Client 内部使用（未直接调 MQTTAsync_*）"
+  result: "明文 mqtt:// 连接、qos1 订阅/发布/回显全部成功 —— 说明 paho 的明文路径可用"
+  verdict: pass
+  note_1: "Z20 上这个包必须配 openssl 1.1.1-w：不加会链接失败（BIO_read / RAND_bytes / SHA1_Init/Update/Final undefined，实测）"
+  note_2: "mqtts://（TLS）路径本轮未验证（本地无 TLS broker）"
+  evidence: evidence/netstack_auto_20260929.txt
+
+# ── 遗嘱（LWT）实际代发验证（2026-09-29 12:02，Z20 / 192.168.x.x，工程 projects/pkg_netstack2） ──
+verified_20260929_will:
+  platform: Z20
+  device: "192.168.x.x（86 面板）"
+  broker: "mqtt://192.168.x.x:1883（EMQX，admin/zkswe1024）"
+  method: >
+    设备端 mqtt::Client 带 will{topic=zk/netstack2/will108, payload={"dev":"108","msg":"will: offline"}, qos=1} 连上后，
+    **kill -9 杀掉进程**（不发 MQTT DISCONNECT = 异常断线）；PC 侧见证客户端订阅 will 主题。
+  witness: "PC 侧 paho（连 127.0.0.1:1883，WSL EMQX 本地口）"
+  timeline:
+    - "12:02:13 见证端收到 DATA zk/netstack2/108 -> {\"dev\":\"108\",\"msg\":\"alive\"}（证明订阅链路通）"
+    - "12:02:15 见证端收到 **WILL zk/netstack2/will108 -> {\"dev\":\"108\",\"msg\":\"will: offline\"}**"
+  result: "异常断线后 **约 2s** broker 即代发遗嘱，payload 与注册值完全一致 -> pass"
+  notes:
+    - "PC 直连 192.168.x.x:1883 会超时（宿主自身访问该 IP 被拦），**用 127.0.0.1:1883 才通** → 做见证端就用 localhost 或进 WSL 跑 mosquitto_sub"
+  evidence: evidence/lwt_will_20260929.txt

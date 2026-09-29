@@ -1,0 +1,57 @@
+===== MQTTS(TLS) (106,60) =====
+== MQTTS（TLS） ==
+[MQTTS] 连接结果 connected=1 isConnected=1
+[MQTTS] subscribe(zk/netstack2/108 qos1) -> OK
+[MQTTS] publish qos1 -> OK payload={"dev":"108","via":"mqtts","ts":1790653022}
+[MQTTS] on_message topic=zk/netstack2/108 len=43 payload={"dev":"108","via":"mqtts","ts":1790653022}
+[MQTTS] 收到 1 条 echo={"dev":"108","via":"mqtts","ts":1790653022}
+
+===== MQTT LWT 遗嘱 (338,60) =====
+== MQTT 遗嘱 LWT ==
+[LWT] 注册遗嘱 topic=zk/netstack2/will108 payload={"dev":"108","msg":"will: offline"}
+[LWT] subscribe(zk/netstack2/108) -> OK（订阅自己的数据主题做存活对照）
+[LWT] publish alive -> OK
+[LWT] on_message topic=zk/netstack2/108 len=27 payload={"dev":"108","msg":"alive"}
+[LWT] 遗嘱已就绪：接下来由「断线+重连」按钮制造异常断线，看 broker 是否代发遗嘱
+
+===== Downloader 双任务 (338,108) =====
+== http::Downloader 多任务 ==
+[DL] http::Downloader 双任务（含进度回调 + 结果回调）
+[DL] 进度 /mnt/sdnand/ns2_big.bin 0/0
+[DL] 进度 /mnt/sdnand/ns2_big.bin 7240/307200
+
+===== WebSocket 回显 (106,156) =====
+
+===== SoftAp 开关 (338,156) =====
+
+===== 4G 状态 (338,204) =====
+
+===== 4G 状态 (338,204) =====
+== LTE4G 状态 ==
+[4G] isSupported=0 powerState=POWER_OFF ip=0.0.0.0 imei=
+[4G] queryRSSI() = -1
+[4G] 本板 isSupported=0 → 动作类 API（setPower）无硬件可验，跳过（结论：Z20 86 面板无 4G 模块）
+
+===== 断线+重连 (106,108) =====
+== MQTT 异常断线 + 自动重连 ==
+[RECON] 目标：制造异常断线（关 WiFi 90s > paho keepalive 60s）→ 看 ① broker 是否代发遗嘱 ② 开回 WiFi 后是否自动回连
+[LWT] new Client(mqtt://192.168.x.x:1883) will_topic=zk/netstack2/will108 payload={"dev":"108","msg":"will: offline"}
+[LWT] on_connected（第 1 次）cause=
+[LWT] on_connected（第 2 次）cause=connect onSuccess called
+[LWT] 连接结果 connected=1 isConnected=1
+[RECON] enableWifi(false) 下发（adb 会断 90s）
+[RECON] WiFi 关，等 90s 让 keepalive 超时…
+[LWT] on_disconnected cause=
+[RECON] enableWifi(true) 下发
+[LWT] on_connected（第 3 次）cause=automatic reconnect
+[RECON] WiFi 恢复后：wifi连接=1 mqtt connected=1 on_connected 次数 2->3（回连耗时≈10500ms）
+[RECON] unsubscribe -> OK
+
+===== SoftAp 开关 (338,156) =====
+== SoftAp setEnable ==
+[AP] 初始：isEnable=0 state=DISABLED ssid=zkswe ip=192.168.x.x
+[AP] setEnable(true) 下发（⚠️ 单射频可能与 STA 抢占，测试里 15s 后自动关）
+[AP] 开热点：isEnable=1 state=ENABLED ssid=zkswe pwd=12345678 ip=192.168.x.x（耗时≈5000ms）
+[AP] setEnable(false) 下发（恢复）
+[AP] 关热点：isEnable=0 state=DISABLING（耗时≈0ms）wifi 连接=0
+

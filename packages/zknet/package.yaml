@@ -1,0 +1,214 @@
+# zknet —— FlyThings 网络能力包（WiFi / 以太网 / 热点 / 4G）
+# 用途：AI 读这个文件就能知道包里有啥、怎么调用、哪些坑。
+# 本文件由实读头文件写成；事实来源见 source 段。
+
+id: zknet
+version: "0.0.0"
+platforms:
+  Z20:
+    registry: C:\zkswe\fun\registry\public\z20\zknet\0.0.0
+    libs: [lib/libzknet.so]
+    headers_count: 8
+    verified: "2026-09-29"
+    status: verified
+    device: "192.168.x.x（Zkswe_SSD20X_SPINOR / 86 面板 / RTL8188 WiFi）"
+  T113EMMC:
+    registry: null
+    libs: []
+    headers_count: null
+    verified: "2026-09-29"
+    status: verified
+  F133:
+    registry: null
+    libs: []
+    headers_count: null
+    verified: null
+    status: unverified
+
+summary: >
+  网络总门面：WiFi（开关/扫描/连接/断开/静态IP/MAC/IP）、以太网、SoftAP 热点、4G，
+  外加 NetUtils 静态 iface 工具（ifconfig 级）。Manifest 里声明即可用，入口是 net/NetManager.h 的 NETMANAGER 宏。
+
+entry: "net/NetManager.h → NETMANAGER (= NetManager::getInstance())"
+source: >
+  包本体只发 include/ + libzknet.so（无 README/Manifest）；
+  本地 gitcom 里 lib-networking（networking 包）反向依赖 zknet（<net/NetManager.h>），未找到 zknet 自身实现仓。
+
+headers:
+  - path: include/net/NetManager.h
+    role: 总入口：getWifiManager / getEthernetManager / getLTE4GManager / getSoftApManager / getConnChannel / INetChannelChangedListener
+  - path: include/net/WifiManager.h
+    role: WiFi 全生命周期 + IWifiListener（5 个回调）
+  - path: include/net/WifiInfo.h
+    role: 单个 AP 的信息（ssid/bssid/rssi/freq/encryption/level/statement）
+  - path: include/net/NetUtils.h
+    role: 静态工具：getIp/getMacAddr/configure/getConfigureInfo/enableIfc/dhcpRequestIp/dhcpReleaseIp
+  - path: include/net/SoftApManager.h
+    role: 热点：setEnable/isEnable/getSoftApState/setSsidAndPwd/getSsid/getPwd/getIp + 状态监听
+  - path: include/net/EthernetManager.h
+    role: 以太网：isSupported/isConnected/getIp/getMacAddr/configure/setAutoMode + 连接状态监听
+  - path: include/net/LTE4GManager.h
+    role: 4G：setPower/getPowerState/getIMEI/getICCID/getIMSI/queryRSSI + 电源状态监听
+  - path: include/net/WifiCtrl.h
+    role: 底层 wpa_supplicant 控制（scanResults/signalPoll/status/addNetwork…），一般不用直接碰
+
+api:
+  - symbol: NetManager
+    header: net/NetManager.h
+    methods:
+      - "static NetManager* getInstance();   // 宏 NETMANAGER"
+      - "WifiManager* getWifiManager() const;"
+      - "EthernetManager* getEthernetManager() const;"
+      - "LTE4GManager* getLTE4GManager() const;"
+      - "SoftApManager* getSoftApManager() const;"
+      - "ENetChannel getConnChannel() const;   // E_NET_CHANNEL_NONE/WIFI/ETHERNET/SOFTAP"
+      - "void addNetChannelChangedListener(INetChannelChangedListener*);"
+  - symbol: WifiManager
+    header: net/WifiManager.h
+    methods:
+      - "bool init(); bool isSupported() const;"
+      - "void enableWifi(bool enable); bool isWifiEnable() const;"
+      - "E_WIFI_ENABLE getEnableStatus() const;"
+      - "void startScan(); void stopScan(); void setScanInterval(int);"
+      - "void connect(const std::string& ssid, const std::string& pw);"
+      - "void connect(const std::string& ssid, const std::string& pw, const std::string& encryption);"
+      - "void reconnect(); void disconnect(); bool isConnected() const;"
+      - "const char* getIp() const; const char* getMacAddr() const;"
+      - "WifiInfo* getConnectionInfo() const;"
+      - "void getWifiScanInfosLock(std::vector<WifiInfo>& out);"
+      - "bool configure(const char*, const char*, const char*, const char*, const char*); bool getConfigureInfo(...);"
+      - "bool setAutoMode(bool); bool isAutoMode() const;"
+      - "void addWifiListener(IWifiListener*); void removeWifiListener(IWifiListener*);"
+  - symbol: WifiManager::IWifiListener
+    header: net/WifiManager.h
+    methods:
+      - "virtual void handleWifiEnable(E_WIFI_ENABLE event, int args);"
+      - "virtual void handleWifiConnect(E_WIFI_CONNECT event, int args);"
+      - "virtual void handleWifiErrorCode(E_WIFI_ERROR_CODE code);   // 例如 E_WIFI_ERROR_CODE_PASSWORD_INCORRECT"
+      - "virtual void handleWifiScanResult(std::vector<WifiInfo>* wifiInfos);"
+      - "virtual void notifySupplicantStateChange(int networkid, const char* ssid, const char* bssid, E_SUPPLICATION_STATE newState);"
+  - symbol: WifiInfo
+    header: net/WifiInfo.h
+    methods:
+      - "const std::string& getSsid() const;  const std::string& getBssid() const;"
+      - "const std::string& getEncryption() const;  int getLevel() const;"
+      - "int getRssi() const;  int getFreq() const;"
+  - symbol: NetUtils
+    header: net/NetUtils.h
+    methods:
+      - "static const char* getIp(const char* iname);  static const char* getMacAddr(const char* iname);"
+      - "static bool getConfigureInfo(const char* iname, char* ip, char* mask, char* gw, char* dns1, char* dns2);"
+      - "static bool configure(const char* iname, ...);  static bool enableIfc(const char* iname, bool);"
+      - "static bool dhcpRequestIp(const char* iname);  static bool dhcpReleaseIp(const char* iname);  static void dhcpExit();"
+  - symbol: SoftApManager
+    header: net/SoftApManager.h
+    methods:
+      - "void setEnable(bool); bool isEnable() const; ESoftApState getSoftApState() const;"
+      - "void setSsidAndPwd(const char* ssid, const char* pwd);"
+      - "const char* getSsid() const; const char* getPwd() const; const char* getIp() const;"
+      - "void addSoftApStateListener(ISoftApStateListener*);"
+  - symbol: EthernetManager
+    header: net/EthernetManager.h
+    methods:
+      - "bool isSupported() const; bool isConnected() const; EEthConnState getConnState() const;"
+      - "const char* getIp() const; const char* getMacAddr() const;"
+      - "bool configure(...); bool getConfigureInfo(...); bool getStaticConfigureInfo(...); bool setAutoMode(bool);"
+  - symbol: LTE4GManager
+    header: net/LTE4GManager.h
+    methods:
+      - "bool isSupported() const; ELTE4GPowerState getPowerState() const; void setPower(bool);"
+      - "const char* getIp() const; const char* getMacAddr() const; const char* getIMEI() const;"
+      - "const char* getICCID() const; const char* getIMSI() const; int queryRSSI();"
+
+deps: []   # registry 里这个版本没有 Manifest.xml；实测项目里同时声明 base-utility 一起用
+
+usage_cpp: |
+  #include "net/NetManager.h"     // NETMANAGER 宏
+  #include "net/WifiManager.h"
+  #include "net/NetUtils.h"
+
+  class MyWifi : public WifiManager::IWifiListener {
+    void handleWifiEnable(E_WIFI_ENABLE ev, int args) { LOGD("wifi enable ev=%d\n", (int) ev); }
+    void handleWifiConnect(E_WIFI_CONNECT ev, int args) { LOGD("wifi conn ev=%d\n", (int) ev); }
+    void handleWifiScanResult(std::vector<WifiInfo>* infos) { LOGD("scan n=%d\n", (int) infos->size()); }
+  };
+  static MyWifi sWifi;
+
+  // ⚠️ 不要在 onUI_init / 构造函数里调 getWifiManager()，放到按钮或后台线程里惰性取
+  static void onButtonClick(WifiButton* b) {
+    WifiManager* w = NETMANAGER->getWifiManager();
+    if (!w) return;
+    w->addWifiListener(&sWifi);
+    w->startScan();                       // 扫描（结果走 handleWifiScanResult 或 getWifiScanInfosLock）
+    std::vector<WifiInfo> infos;
+    w->getWifiScanInfosLock(infos);
+    w->connect("ssid", "password");       // 连接（两参数重载，加密方式自动判定）
+    w->disconnect();                      // 断开
+    LOGD("ip=%s mac=%s ch=%d\n", w->getIp(), w->getMacAddr(), (int) NETMANAGER->getConnChannel());
+    LOGD("iface ip=%s\n", NetUtils::getIp("wlan0"));   // NetUtils 静态工具（ifconfig 级）
+  }
+
+verified:
+  platform: Z20
+  device: "192.168.x.x"
+  date: "2026-09-29"
+  project: projects/pkg_zknet        # 480x480 九键 demo + 「自检 AUTO」全自动流程
+  steps:
+    - step: 读状态
+      call: "getWifiManager() → isSupported/getEnableStatus/isConnected/getIp/getMacAddr/getConnectionInfo/isAutoMode"
+      result: "支持=1 开关=开 连接=1 IP=192.168.x.x MAC=28:f5:2b:45:f5:a5 当前 AP=zkswe-soft autoIP=1"
+      verdict: pass
+    - step: 扫描
+      call: "startScan() + getWifiScanInfosLock() / handleWifiScanResult"
+      result: "200ms 拿到 13 个 AP；信号最强：TPLink_zkswe(-32dBm) ChinaNet-bsyX(-44dBm) zkswe-soft(-46dBm)"
+      verdict: pass
+    - step: 断开
+      call: "disconnect()"
+      result: "200ms 后 isConnected()=0"
+      verdict: pass
+    - step: 连接
+      call: "connect(\"zkswe-soft\", \"www.zkswe.com\")"
+      result: "4.2s 连上，IP=192.168.x.x"
+      verdict: pass
+    - step: "关 WiFi（enableWifi(false)）"
+      call: "enableWifi(false)"
+      result: "5s 后 getEnableStatus()=关；adb（走 WiFi）断开 —— 测试程序自动重连成功"
+      verdict: pass
+    - step: "开 WiFi + 回连（enableWifi(true)）"
+      call: "enableWifi(true)"
+      result: "5.2s 恢复并回连，IP=192.168.x.x"
+      verdict: pass
+  readonly:
+    - "NetUtils::getIp/getMacAddr/getConfigureInfo(\"wlan0\") → IP 192.168.x.x / MAC 28:f5:2b:45:f5:a5 / mask 255.255.255.0 gw 192.168.x.x dns 192.168.x.x（与 WifiManager 读回一致）"
+    - "SoftApManager 读回：isEnable=0 state=0 ssid=zkswe pwd=12345678 ip=192.168.x.x"
+    - "NetManager::getConnChannel()=WiFi(1)；Ethernet isSupported=1 isConnected=0 ip=0.0.0.0；LTE4G isSupported=0"
+  evidence: evidence/zknet_auto_20260929.txt, evidence/zknet_readonly_20260929.txt, evidence/zknet_panel_20260929.png
+
+gotchas:
+  - "**别在 onUI_init/构造里调 NETMANAGER->getWifiManager()**：本板实测（2026-09-29）第一版就是 init 里取，页面没起来（卡在 MI_SYS_IOCTL_Init / sys.zkapp.dbg=main:onUI_init）。改成按钮/线程里惰性取后正常。"
+  - "**别连着快速 setprop ctl.restart zkswe**：旧实例没退干净就起新的 → MI 全局 init 锁被占，面板黑屏、多个 zkgui 进程变 D 状态且 kill -9 无效（只能断电重启）。部署脚本要「先确认无残留 pid 再起，单次 restart」。"
+  - "**enableWifi(false) 会断 adb**（adb 走 WiFi 192.168.x.x:5555）→ 自动化测试必须自带恢复（本包示例 10s 后自动 enableWifi(true)）。"
+  - "**连接前先扫到目标 SSID 再 connect**：模组刚枚举完时直接 connect 容易失败（WifiTest-New 的做法是多轮扫描→命中后 connect）。"
+  - "**getConnectionInfo() 的 RSSI/Freq 在这块板上返回 0**（未填充）→ 想要信号强度用扫描结果里的 WifiInfo::getRssi()，或底层 WifiCtrl::signalPoll()。"
+  - "IWifiListener 的回调跑在 zknet 自己的线程里 → 回调里只置标志/打日志，状态一律以 manager 读回为准，别在回调里直接刷 UI。"
+
+see_also:
+  - "packages/curl-cxx/package.yaml（HTTP/HTTPS，依赖 curl + cares + openssl/mbedtls + z）"
+  - "packages/ntp/package.yaml（校时；HTTPS 之前建议先校时）"
+  - "packages/zkhardware/package.yaml（同项目下的硬件外设包，示例工程风格一致）"
+  - "projects/pkg_zknet（本包真机验证工程：九键 + 自检 AUTO）"
+  - "knowledge/... → references/kb/wifi-test-project.md（WifiTest-New：WiFi 开关/扫描/下载三项专项测试）"
+
+# ── 补充真机验证（2026-09-29 晚些时候，Z20 / 192.168.x.x，工程 projects/pkg_netstack2） ──
+verified_20260929_part2:
+  platform: Z20
+  device: "192.168.x.x（86 面板，RTL8188）"
+  steps:
+    - "Ethernet：configure() 原值回写 -> OK；setAutoMode(true) -> OK；getStaticConfigureInfo = 192.168.x.x/255.255.255.0/gw 192.168.x.x；getConfigureInfo 当前 0.0.0.0（未插网线）-> pass"
+    - "SoftAp：setEnable(true) -> isEnable=1 state=ENABLED（≈1000ms，ssid=zkswe pwd=12345678 ip=192.168.x.x）；setEnable(false) -> isEnable=0 state=DISABLING -> pass"
+    - "LTE4G：isSupported=0 / powerState=POWER_OFF / ip=0.0.0.0 / queryRSSI()=-1 -> 本板无 4G 模块，动作类 API 无硬件可验（结论，非失败）"
+    - "MQTT 断线+重连（配合 mqtt-cxx）：enableWifi(false) 90s -> on_disconnected；enableWifi(true) -> on_connected 第 3 次 cause=automatic reconnect，回连≈10.5s -> pass"
+  notes:
+    - "本板开 SoftAp 实测**没有**导致重启（同一操作在 11:35 那次之后设备重启过，但复测未复现 → 那次重启更可能是同期有人更新 /res 后的重启，不是 SoftAp 引起）"
+    - "关热点后瞬时 isConnected()=0（STA 恢复需要几秒），不是掉线"
+  evidence: evidence/netstack2_20260929.txt

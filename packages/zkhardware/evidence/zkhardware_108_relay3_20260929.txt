@@ -1,0 +1,39 @@
+zkhardware demo: relay mode=过零 IO（4 路，索引表 3/1/2）
+zkhardware demo: onUI_init brightness=17/100 zeroIo=4 mode=过零 IO
+zkhardware demo: relay read #1=ON(索引3) #2=ON(索引1) #3=ON(索引2)
+zkhardware demo: 就绪：亮度 17/100，过零 IO 4 路，继电器模式 过零 IO
+zkhardware demo: Adc ch=0 ok=1 val=0
+zkhardware demo: Adc ch=1 ok=1 val=42
+zkhardware demo: Adc ch=2 ok=1 val=939
+zkhardware demo: Adc ch=3 ok=1 val=608
+zkhardware demo: ADC 扫 ch0~3：ch0=0(ok=1) ch1=42(ok=1) ch2=939(ok=1) ch3=608(ok=1)
+zkhardware demo: Adc ch=0 ok=1 val=0
+zkhardware demo: Adc ch=1 ok=1 val=44
+zkhardware demo: Adc ch=2 ok=1 val=940
+zkhardware demo: Adc ch=3 ok=1 val=610
+zkhardware demo: ADC 扫 ch0~3：ch0=0(ok=1) ch1=44(ok=1) ch2=940(ok=1) ch3=610(ok=1)
+zkhardware demo: relay 1: 读=1 -> zeroOutput(索引3,0) -> 回读=0
+zkhardware demo: 继电器 1：读 ON → 写 OFF → 回读 OFF（过零 IO，过零索引 3，高电平吸合）
+zkhardware demo: relay 2: 读=1 -> zeroOutput(索引1,0) -> 回读=0
+zkhardware demo: 继电器 2：读 ON → 写 OFF → 回读 OFF（过零 IO，过零索引 1，高电平吸合）
+zkhardware demo: relay 3: 读=1 -> zeroOutput(索引2,0) -> 回读=0
+zkhardware demo: 继电器 3：读 ON → 写 OFF → 回读 OFF（过零 IO，过零索引 2，高电平吸合）
+zkhardware demo: relay 3: 读=0 -> zeroOutput(索引2,1) -> 回读=1
+zkhardware demo: 继电器 3：读 OFF → 写 ON → 回读 ON（过零 IO，过零索引 2，高电平吸合）
+zkhardware demo: relay 2: 读=0 -> zeroOutput(索引1,1) -> 回读=1
+zkhardware demo: 继电器 2：读 OFF → 写 ON → 回读 ON（过零 IO，过零索引 1，高电平吸合）
+zkhardware demo: relay 1: 读=0 -> zeroOutput(索引3,1) -> 回读=1
+zkhardware demo: 继电器 1：读 OFF → 写 ON → 回读 ON（过零 IO，过零索引 3，高电平吸合）
+zkhardware demo: relay read #1=ON(索引3) #2=ON(索引1) #3=ON(索引2) | 原始 zeroIo num=4 #0=OFF #1=ON #2=ON #3=ON
+zkhardware demo: 继电器（模式 过零 IO，索引表 {3,1,2}）：#1=ON(索引3) #2=ON(索引1) #3=ON(索引2)
+zkhardware demo: relay read #1=ON(索引3) #2=ON(索引1) #3=ON(索引2) | 原始 zeroIo num=4 #0=OFF #1=ON #2=ON #3=ON
+zkhardware demo: 继电器（模式 过零 IO，索引表 {3,1,2}）：#1=ON(索引3) #2=ON(索引1) #3=ON(索引2)
+zkhardware demo: relay read #1=ON(索引3) #2=ON(索引1) #3=ON(索引2) | 原始 zeroIo num=4 #0=OFF #1=ON #2=ON #3=ON
+zkhardware demo: 继电器（模式 过零 IO，索引表 {3,1,2}）：#1=ON(索引3) #2=ON(索引1) #3=ON(索引2)
+zkhardware demo: relay read #1=ON(索引3) #2=ON(索引1) #3=ON(索引2) | 原始 zeroIo num=4 #0=OFF #1=ON #2=ON #3=ON
+zkhardware demo: 继电器（模式 过零 IO，索引表 {3,1,2}）：#1=ON(索引3) #2=ON(索引1) #3=ON(索引2)
+zkhardware demo: relay all OFF -> #1=OFF(索引3) #2=OFF(索引1) #3=OFF(索引2)
+zkhardware demo: 已对三路依次 zeroOutput(索引,0)：#1=OFF(索引3) #2=OFF(索引1) #3=OFF(索引2)
+zkhardware demo: HARDWAREMANAGER->beep() 已调用（默认 2500Hz / duty 50，可用 setBeepPWM 改）
+zkhardware demo: setBrightness(7) -> getBrightness() = 7（范围 1~100）
+zkhardware demo: setBrightness(17) -> getBrightness() = 17（范围 1~100）

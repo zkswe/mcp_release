@@ -1,0 +1,46 @@
+===== pkg_netdir 真机跑（108，2026-09-29 11:5x） =====
+
+===== c-ares 解析百度 (124,63) =====
+===== 1) c-ares 直调 DNS（ares_fds + select 事件循环） =====
+[CARES] ares_library_init(ARES_LIB_INIT_ALL) -> 0 (Successful completion)
+[CARES] ares_init OK, 开始 ares_gethostbyname(www.baidu.com, AF_INET)
+[CARES] 解析结果 status=0 (Successful completion) ip=183.2.172.177 耗时=40ms timeouts=0
+[CARES] OK: www.baidu.com -> 183.2.172.177
+
+===== mbedTLS TLS+GET (356,63) =====
+===== 2) mbedTLS 直调 TLS 握手 + HTTP GET =====
+[MBEDTLS] CA 文件: /tmp/ui/cacert.pem (211167 bytes)
+[MBEDTLS] psa_crypto_init -> 0
+[MBEDTLS] ctr_drbg_seed OK
+[MBEDTLS] x509_crt_parse_file OK (/tmp/ui/cacert.pem)
+[MBEDTLS] net_connect(www.baidu.com:443) OK, fd=24
+[MBEDTLS] 握手 OK 耗时=103ms 版本=TLSv1.2 套件=TLS-ECDHE-RSA-WITH-AES-128-GCM-SHA256
+[MBEDTLS] 服务端证书:
+[MBEDTLS] 已发送 GET 请求 39 字节
+[MBEDTLS] 收到 511 字节 耗时=27ms
+[MBEDTLS] 首行(=HTTP 状态行): HTTP/1.0 200 OK
+[MBEDTLS] 总计耗时=352ms
+
+===== OpenSSL TLS+GET (124,115) =====
+===== 3) OpenSSL(libssl) 直调 TLS 握手 + HTTP GET =====
+[OPENSSL] CA 文件: /tmp/ui/cacert.pem (211167 bytes)
+[OPENSSL] SSL_CTX_new OK (OpenSSL OpenSSL 1.1.1w  11 Sep 2023)
+[OPENSSL] load_verify_locations OK + VERIFY_PEER
+[OPENSSL] getaddrinfo OK: www.baidu.com -> 183.2.172.177
+[OPENSSL] connect OK fd=24 耗时=16ms
+[OPENSSL] 握手 OK 耗时=83ms 版本=TLSv1.2 套件=ECDHE-RSA-AES128-GCM-SHA256 verify=OK(0)
+[OPENSSL] 服务端证书 subject: /C=CN/ST=Beijing/L=Beijing/O=Beijing Baidu Netcom Science Technology Co., Ltd./CN=baidu.com
+[OPENSSL] 已发送 GET 请求 39 字节
+[OPENSSL] 收到 511 字节 耗时=13ms
+[OPENSSL] 首行(=HTTP 状态行): HTTP/1.0 200 OK
+[OPENSSL] 总计耗时=219ms
+
+===== c-ares DNS 5 域名 (356,115) =====
+===== 4) c-ares DNS 批量测速（5 个域名） =====
+[DNS] ares_library_init -> 0 (Successful completion)
+[DNS] 1/5 www.baidu.com    -> 183.2.172.177      35ms status=0(Successful completion)
+[DNS] 2/5 www.qq.com       -> 121.14.77.221      30ms status=0(Successful completion)
+[DNS] 3/5 www.taobao.com   -> 183.61.4.163       30ms status=0(Successful completion)
+[DNS] 4/5 github.com       -> 20.205.243.166     34ms status=0(Successful completion)
+[DNS] 5/5 www.zkswe.com    -> 165.154.98.78      88ms status=0(Successful completion)
+[DNS] 完成：成功 5/5

@@ -1,0 +1,15 @@
+===== tap ButtonNetInfo 读 IP/MAC =====
+WifiManager 读回： | 支持=1 开关=开 连接=1 | IP=192.168.x.x MAC=28:f5:2b:45:f5:a5 | 当前 AP：zkswe-soft  0dBm  0MHz | bssid=38:a9:1c:25:ca:ec enc= |  | 自动 IP=1
+
+
+===== tap ButtonNetUtils NetUtils 查询 =====
+NetUtils 静态接口（iface=wlan0）： | getIp=192.168.x.x | getMacAddr=28:f5:2b:45:f5:a5 | getConfigureInfo(ok=1)=192.168.x.x/255.255.255.0 gw=192.168.x.x dns=192.168.x.x, | INVALID_IP_ADDR=0.0.0.0 INVALID_MAC_ADDR=00:00:00:00:00:00
+
+
+===== tap ButtonSoftAp 热点状态 =====
+SoftApManager 读回： | isEnable=0 state=0 | ssid=zkswe pwd=12345678 | ip=192.168.x.x | （本示例只读；setEnable()/setSsidAndPwd() 未在 STA 连通时验证——RTL8188 同时开 AP+STA 行为待现场确认）
+
+
+===== tap ButtonChannel 网络通道 =====
+NetManager 读回： | getConnChannel()=WiFi(1) | Ethernet: isSupported=1 isConnected=0 ip=0.0.0.0 | LTE4G: isSupported=0 powerState=2 | 回调计数：enable=0 connect=0 scan=0 supplicant=0 error=0
+
