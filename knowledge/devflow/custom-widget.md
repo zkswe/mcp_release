@@ -15,7 +15,7 @@ evidence: []
 ---
 # FlyThings 自定义控件方法（lib-ext_widgets 拆解）
 
-> 检索导引：问「想做一个平台没有的控件 / 自定义控件怎么写 / 继承 ZKBase / onDraw 自绘 / 控件触摸事件重写 / 有没有现成自创控件可抄」→ 本文；先看缺什么控件见 `devflow/gui-controls-gap.md`，交付形态见 `devflow/reusable-components.md`。
+> 检索导引：问「想做一个平台没有的控件 / 自定义控件怎么写 / 继承 ZKBase / onDraw 自绘 / 控件触摸事件重写 / 有没有现成自创控件可抄」→ 本文；先看缺什么控件见 `devflow/gui-controls-gap.md`，交付形态见 `devflow/reusable-components.md`，**能力边界总纲见 `devflow/render-extension-boundary.md`**。
 > 来源：内部私有仓库 `guoxs/lib-ext_widgets`（LearningProject 本地副本，F136/F133 + easyui ^2.3.0），
 > ZKSWE Develop Team 2024-2025 系列自研控件。2026-09-03 拆解，草稿待确认入库。
 > ⚠️ 内部代码，方法论文档只提炼模式与骨架，不整段复制实现；新控件做时按需回工程精读对应控件。
@@ -133,8 +133,9 @@ virtual bool onTouchEvent(const MotionEvent &ev);   // 返回 true=吃掉事件
 - `bitmap_t`：easyui 位图结构（width/height/pitch/bytes/data），`BitmapHelper::loadBitmapFromFile`
   解码文件、unloadBitmap 释放；createBmp 造内存画布后直接操作 data（24 位 BGR / 32 位带 alpha，
   `bmp->type |= 0x01` 透明）
-- 控件显示位图：子 ZKButton `setBackgroundBmp(bmp)`（或 setBackgroundPic 文件）——控件不自绘时
-  用按钮当"图框"最省事
+- 控件显示位图：子 ZKButton `setBackgroundBmp(bmp)`（或 setBackgroundPic 文件）——**这就是平台的 canvas 画布扩展**：
+  `ZKTextView`/`ZKButton` 挂一张内存位图当画布，只调一次 + `setInvalid(!isInvalid())` 交替刷帧；
+  控件不自绘时用按钮当"图框"最省事。能力边界（三层模型 / 非 3D GPU 皆可 / 软模拟）见 `devflow/render-extension-boundary.md`，
 - `Region`（left/top/right/bottom + 宏：SET/RESET/IS_EMPTY/OFFSET/CONTAINS/DOES_INTERSECT/
   Intersect/Bound）——脏区/裁剪/命中通用；typedef.h 里 EImageShowMode/EMotionFilter/枚举风格库内统一
 
