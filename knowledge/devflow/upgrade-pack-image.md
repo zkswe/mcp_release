@@ -15,7 +15,7 @@ evidence: []
 ---
 # 固化升级：出 update.img 并刷进设备（调试推送 vs 固化升级）
 
-> 检索导引：问「出升级包 / 固化到设备 / OTA·TF 卡·ADB 升级各怎么做 / 换开机 logo / 升级后掉网 / update.img 体积上限 / 固化后 /res 变只读」→ 本文；Z20 86 面板升级链路与坑见 `hardware/z20-86panel-upgrade.md`。
+> 检索导引：问「出升级包 / 固化到设备 / OTA·TF 卡·ADB 升级各怎么做 / 换开机 logo / 升级后掉网 / update.img 体积上限 / 固化后 /res 变只读」→ 本文；Z20 86 面板升级链路与坑见 `knowledge/hardware/z20-86panel-upgrade.md`。
 > 铁律：**「调试/跑一下/推送到设备」≠「固化/升级/交付/量产」**。
 > - 调试 = `flythings_build_ui_flow`（内部 `fun launch`）→ 临时推送到设备运行，**掉电即失**；
 > - 固化 = `flythings_pack_upgrade`（内部 `fun pack`）→ 出 **update.img**，刷进设备后**掉电保留**。
@@ -71,7 +71,7 @@ adb shell setprop ctl.restart zkswe
 
 ### 6) ⚠️ 固化会**整体替换目标机的 `/res`** —— 应用资源必须随包走（2026-09-13 真机踩实）
 
-`update.img` 里装的是你自己工程的 `/res` 内容，刷上去后**原 app 在 `/res` 下的东西全部消失**。实测（V85X SPINOR + RTL8733BS）真故障：汉字全变方块（英文正常）—— 原 app 自带中文字体，`/res/font` 被清空 → 回退到 `/etc/font/fzcircle.ttf`（21KB，只有英文）；修法 = 工程 `font/*.ttf`（工具链自动写 EasyUI.cfg 的 `font` 键，见 `devflow/custom-font-config.md`）。**动手前先自问**：原 app 在 `/res` 下带了哪些"运行期才需要"的东西？（字库 / 配置文件 / 二进制工具）→ 全部搬进自己工程。硬件层面的东西（如 BT 补丁固件）已收进组件，用户/AI 不需要关心（见 `components/`）。
+`update.img` 里装的是你自己工程的 `/res` 内容，刷上去后**原 app 在 `/res` 下的东西全部消失**。实测（V85X SPINOR + RTL8733BS）真故障：汉字全变方块（英文正常）—— 原 app 自带中文字体，`/res/font` 被清空 → 回退到 `/etc/font/fzcircle.ttf`（21KB，只有英文）；修法 = 工程 `font/*.ttf`（工具链自动写 EasyUI.cfg 的 `font` 键，见 `knowledge/devflow/custom-font-config.md`）。**动手前先自问**：原 app 在 `/res` 下带了哪些"运行期才需要"的东西？（字库 / 配置文件 / 二进制工具）→ 全部搬进自己工程。硬件层面的东西（如 BT 补丁固件）已收进组件，用户/AI 不需要关心（见 `components/`）。
 
 **刷机后的核验手法**（界面验收直接抓屏交视觉模型，不要手搓 fb0）
 ```bash
@@ -197,7 +197,7 @@ adb shell ls -l /res/font                  # 本次：HanSans-Medium.ttf 1763788
 - `/proc/mtd`（`Zkswe_SSD20X_SPINOR` 实测）：mtd0 BOOT / mtd1 KERNEL / mtd2 rootfs / **mtd3 `res` = `0x720000` = 7,470,080 B** / mtd4 config / mtd5 LOGO / mtd6 data。
 - `update.img` 的落点就是 **res**（`/res` = `/dev/block/mtdblock3` squashfs）→ **包体上限 = 该分区字节数**（本型号 7,470,080 B；本工程实测 5.85 MB）。换型号/换板先 `cat /proc/mtd` 对表，**别照抄**。
 - 无独立 `zkupgrade` 二进制（能力在 `/bin/zkgui` 内）→ 升级永远是「置属性 + `setprop ctl.restart zkswe`」。刷完的硬判据：`adb shell ls -l /res/lib/libzkgui.so` 的大小/md5 == 本地 `.fun/z20/libzkgui.so`（只比 `update.img` 体积不准：小改动下包体可能恰好不变）。
-- ⚠️ 刷前确认**设备真正加载的是哪一份** —— SD 卡 `/mnt/extsd/EasyUI.cfg` 可能把程序劫持到旧 lib：`devflow/package-properties-easyui-cfg.md` 「查找优先级」节。
+- ⚠️ 刷前确认**设备真正加载的是哪一份** —— SD 卡 `/mnt/extsd/EasyUI.cfg` 可能把程序劫持到旧 lib：`knowledge/devflow/package-properties-easyui-cfg.md` 「查找优先级」节。
 
 ## 五、排查用到的定位手法（可复用）
 

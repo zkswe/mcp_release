@@ -23,7 +23,7 @@ evidence: []
 > screensave / 屏保 / 输入法 / IME / UserIme / APP_TYPE_SYS_ / REGISTER_SYSAPP / SYSAPPFACTORY /
 > showStatusBar / hideStatusBar / isStatusBarShow / getStatusBar / showNaviBar / hideNaviBar /
 > screensaverOn / screensaverOff / isScreensaverOn / setScreensaverTimeOut / setScreensaverEnable /
-> loadStatusBar / loadNaviBar / 悬浮层 / 全局层 / 通用来电弹框（见 `global-popup-window.md`）。
+> loadStatusBar / loadNaviBar / 悬浮层 / 全局层 / 通用来电弹框（见 `knowledge/uicontrols/global-popup-window.md`）。
 
 ## 0. 一句话口径
 
@@ -66,7 +66,7 @@ evidence: []
 1. 代码：`setScreensaverTimeOut(秒)` / `setScreensaverEnable(bool)`
    —— 官方给的真实场景：升级界面不能进屏保 → 升级页里 `setScreensaverEnable(false)`，退出时恢复 `true`。
 2. 工程配置：`.settings/*.easyui.prefs` 与 `package.properties` 的 `EasyUI.cfg` 键 `screensaverTimeOut`（-1 = 不进屏保）
-   → 详见 `devflow/package-properties-easyui-cfg.md`。
+   → 详见 `knowledge/devflow/package-properties-easyui-cfg.md`。
 
 ## 4. 真实工程事实（用于核对；`内部` 前缀=不进对外发布版）
 
@@ -76,7 +76,7 @@ evidence: []
 | 生成代码长什么样 | `projects/iOSStyle-F133/.fun/f133/generated/ui_statusbar.cpp:8` → `REGISTER_SYSAPP(APP_TYPE_SYS_STATUSBAR, statusbar)` |
 | 屏保逻辑文件与触摸回调名 | 内部 car/PND 工程 `src/logic/screensaver.cc:64 onscreensaverActivityTouchEvent`（回调命名同普通页面） |
 | 屏保与业务互斥（真实做法） | 内部 `mark_cv201/CV201_PND`：来电/通话 `mainLogic.cc:138-139 screensaverOff()`；倒车中不进屏保 `mainLogic.cc:393-395`；升级测试页 `TestLogic.cc:136-137 setScreensaverEnable(false)`；设置页改超时 `settingsLogic.cc:354-362 setScreensaverEnable/TimeOut` |
-| 系统窗口里也能放业务 UI | 同工程状态栏页里放通话 window（见 `global-popup-window.md` §4） |
+| 系统窗口里也能放业务 UI | 同工程状态栏页里放通话 window（见 `knowledge/uicontrols/global-popup-window.md` §4） |
 
 ## 5. 生命周期与层级（**只认这些，别自创**）
 
@@ -86,23 +86,23 @@ evidence: []
 - **装载/卸载**：走框架的 `load*/unload*`（§2 最后一行）——**不要自己造装载流程**，也不要手动 `new` 系统窗口。
 - **层级**：状态栏/导航栏由框架叠在普通窗口**之上**（官方用词「悬浮」、导航栏一般在底部）；
   **具体 z 序 / 多系统窗口叠放顺序官方无可查条款 → 标「未收录」，以真机实测为准，不要编**。
-- **触摸**：系统窗口是独立一层，会挡住下层（与控件 `touchable` 无关）；要穿透见 `uicontrols/touch-events.md`。
+- **触摸**：系统窗口是独立一层，会挡住下层（与控件 `touchable` 无关）；要穿透见 `knowledge/uicontrols/touch-events.md`。
 
 ## 6. 反例（AI 最常见的「自创」）
 
 | 自创写法 | 为什么错 | 正确做法 |
 |---|---|---|
 | `EASYUICONTEXT->openActivity("statusbar")` | statusbar 不是 Activity，是框架按 sysapp 装载的窗口 | `showStatusBar()` / `hideStatusBar()`（或 `getStatusBar()->show()/hide()`） |
-| 自己 `#define APP_TYPE_SYS_STATUSBAR 5` | 内建编号固定 1/2/3/4 | 用 `AppTypeDef.h` 常量；要新类型见 `global-popup-window.md` |
+| 自己 `#define APP_TYPE_SYS_STATUSBAR 5` | 内建编号固定 1/2/3/4 | 用 `AppTypeDef.h` 常量；要新类型见 `knowledge/uicontrols/global-popup-window.md` |
 | 给状态栏编 `onUI_create/onUI_destroy/onUI_pause` 之类回调 | 框架没有这些回调 | 只有 §5 列出的那套 |
 | 假设屏保「有返回栈/自动 onUI_quit/会自动退回上一页」 | 官方只给 on/off/enable/timeout 语义 | 用 `isScreensaverOn()` 判断、`screensaverOff()` 退 |
-| 把 `FLOATWND` / `POPUPWND` / `CTRLBAR` 当作内建系统类型 | 头文件里没有 | 那是**工程自定义**类型 → `uicontrols/global-popup-window.md` |
+| 把 `FLOATWND` / `POPUPWND` / `CTRLBAR` 当作内建系统类型 | 头文件里没有 | 那是**工程自定义**类型 → `knowledge/uicontrols/global-popup-window.md` |
 | 把「导航栏 navibar」当 Android 的导航栏 API 套用 | 只用官方那 4 个 API | 只用 §2 表中的接口 |
 
 ## 7. 相关文档
 
-- 自定义全局弹框 / 悬浮窗 / 来电弹框：`uicontrols/global-popup-window.md`
-- 页面归属判定（一个页面=一个 Activity=一个 ftu；同 Activity 内的 window 用 showWnd）：`devflow/page-architecture-spec.md`
-- 工程配置（screensaverTimeOut 等 EasyUI.cfg）：`devflow/package-properties-easyui-cfg.md`
-- 页面代码骨架与回调时机：`devflow/activity-code-skeleton.md`
-- 触摸穿透/命中：`uicontrols/touch-events.md`；跨线程操作 UI：`uicontrols/cross-thread-ui-rule.md`
+- 自定义全局弹框 / 悬浮窗 / 来电弹框：`knowledge/uicontrols/global-popup-window.md`
+- 页面归属判定（一个页面=一个 Activity=一个 ftu；同 Activity 内的 window 用 showWnd）：`knowledge/devflow/page-architecture-spec.md`
+- 工程配置（screensaverTimeOut 等 EasyUI.cfg）：`knowledge/devflow/package-properties-easyui-cfg.md`
+- 页面代码骨架与回调时机：`knowledge/devflow/activity-code-skeleton.md`
+- 触摸穿透/命中：`knowledge/uicontrols/touch-events.md`；跨线程操作 UI：`knowledge/uicontrols/cross-thread-ui-rule.md`

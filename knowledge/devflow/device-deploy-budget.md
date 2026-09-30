@@ -80,9 +80,9 @@ Z21 实测：`Mem total 36072 kB`（**36MB**）；`/tmp` = **tmpfs 13.6MB**（tm
 - **实测验收（2026-09-28，Z20 `192.168.1.100`，480×480）**：`setprop ctl.restart zkswe` **连续 10 轮** ——
   每轮 pid 都换新（1233→…→2332，每轮 ~0.7–0.8s），每轮重启后 `touch tap 240 240` 都把「时钟待机页」切到
   「控制面板页」（帧差恒 **230400 px** = 480×480 整屏），**无一轮出现“命令成功、应用不响应”，也不需要重启板子**。
-  → 由此**勘正**三个组件（Calendar / Chart / `_mapping`-TabView）`platforms.md` 里那条
+  → 由此**勘正**三个组件（Calendar / Chart / `_mapping`-TabView）`components/ui_v1/<组件>/platforms.md` 里那条
   「反复 `kill -9 zkgui` 后触摸注入不响应」的已知限制（那是 kill 的后果，不是设备/组件缺陷）。
-  脚本 `temp/setprop_accept.py`，证据 `temp/setprop_accept/`（含 `RESULT.md` 与 20 张逐轮截图）。
+  脚本 `temp/setprop_accept.py`，证据 `temp/setprop_accept/`（含 `workspace/temp/setprop_accept/RESULT.md` 与 20 张逐轮截图）。
 - **遇到掉网怎么处理**：按**现场断电重启**处理（先看设备电源/网线/WiFi，再 `adb connect`）；
   排查方向优先 setprop 通道（`setprop` 静默失败的板子才考虑 kill 兜底）。
 - 另：`adb reboot` 后 /tmp 是空的（tmpfs）→ 必须**整套重推**（见 §2/§4），且重启后要等网络 adb 重新上线。

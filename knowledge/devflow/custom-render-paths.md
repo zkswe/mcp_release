@@ -15,7 +15,7 @@ evidence: []
 ---
 # 自定义 GUI 渲染五条路（在 FlyThings 上借开源渲染生态 / 自绘画面）
 
-> ⚠️ **能力边界看这篇：`devflow/render-extension-boundary.md`**（三层模型 + 边界口径 + 已知限制）。本文只讲**怎么做**（五条路选型）。
+> ⚠️ **能力边界看这篇：`knowledge/devflow/render-extension-boundary.md`**（三层模型 + 边界口径 + 已知限制）。本文只讲**怎么做**（五条路选型）。
 >
 > **检索导引**：FlyThings 上怎么做自定义绘制 / 自绘控件 / canvas / 画布 / 仪表盘 / 指针表 /
 > 想用 LVGL / cairo / SDL / nanovg / stb 画东西 / 离屏渲染成图再显示 / 直接写 /dev/fb0 /
@@ -78,13 +78,13 @@ evidence: []
 ### ②b 运行时离屏渲染（未验证，价值高）
 - 形态：把开源渲染库渲到**内存画布**，再把画布交给框架显示（换图/贴图控件）。
 - ⚠️ **先查设备自带**：`ls /lib /res/lib`（nanovg / libpng12 / freetype / libjpeg / libmad / zlib 已装在板上）
-  —— **注册表没有 ≠ 平台没有**，清单见 `devflow/device-preinstalled-libs.md`。
+  —— **注册表没有 ≠ 平台没有**，清单见 `knowledge/devflow/device-preinstalled-libs.md`。
 - 选件建议（按嵌入式友好度排）：
   | 库 | 形态 | 说明 |
   |---|---|---|
   | **stb_image / stb_truetype / stb_image_write** | 纯头文件 | 零依赖，最适合嵌入式；解码/写字够用 |
   | **libpng / lodepng** | 静态库 / 单文件 | PNG 读写 |
-  | **nanovg** | **设备已带 .so**（不是源码） | 矢量绘制（AGG 后端）：Z21 `/lib/libnanovg.so` 实测存在（50,984 B，符号含 `nvgCreateAGG`）；**F133 侧与注册表包同源**；⚠️ **只支持 `NVG_TEXTURE_BGRA` 目标**；320×320 **23~44ms/帧**（定点后端 6~12ms）。清单见 `devflow/device-preinstalled-libs.md` |
+  | **nanovg** | **设备已带 .so**（不是源码） | 矢量绘制（AGG 后端）：Z21 `/lib/libnanovg.so` 实测存在（50,984 B，符号含 `nvgCreateAGG`）；**F133 侧与注册表包同源**；⚠️ **只支持 `NVG_TEXTURE_BGRA` 目标**；320×320 **23~44ms/帧**（定点后端 6~12ms）。清单见 `knowledge/devflow/device-preinstalled-libs.md` |
   | **cairo** | 静态库 | 矢量/文字最全，体积偏大 |
   | **LVGL（当库用）** | 源码 | 只借它的渲染器/控件层，不接管整套 |
   | SDL2 | 静态库 | **偏重**，除非已有移植 |

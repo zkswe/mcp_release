@@ -92,9 +92,9 @@ ctrl->setInvalid(!ctrl->isInvalid());              // ✅ 整块重画
 ```
 
 - **刷新时机**：页面定时器（`REGISTER_ACTIVITY_TIMER_TAB`）或 UI 线程里做；跨线程直接调控件接口是允许的
-  （见 `cross-thread-ui-rule.md`），但"重活"仍要放后台。
+  （见 `knowledge/uicontrols/cross-thread-ui-rule.md`），但"重活"仍要放后台。
 - **省 CPU 的顺序**：① **降帧率**（最有效、线性，例如 12fps→8fps 观感差别不大）② 缩小真正要改的区域
-  （自绘时用 `Region` 脏区 + `onDraw`，见 `devflow/custom-widget.md` §6）③ 别每帧 `memset` 整块/整页。
+  （自绘时用 `Region` 脏区 + `onDraw`，见 `knowledge/devflow/custom-widget.md` §6）③ 别每帧 `memset` 整块/整页。
 - **别每帧 `setBackgroundBmp(new bmp)`**：那会每帧新建位图（分配抖动、框架反复释放）。
   正确形态是"只交一次 + 原地改像素 + `setInvalid` 翻转"。
 
@@ -111,6 +111,6 @@ ctrl->setInvalid(!ctrl->isInvalid());              // ✅ 整块重画
 ## 6. 相关文档
 
 - 触摸/禁用语义与踩坑（`setInvalid(true)` 的现场）：本文 §1、§5 案例
-- 自定义控件整体做法（BaseView / onDraw / 适配器 / 脏区）：`devflow/custom-widget.md`
-- 跨线程直接操作控件：`uicontrols/cross-thread-ui-rule.md`
-- 抓帧与"别拿 setInvalid 当重绘"的误判记录：`devflow/device-screenshot.md` §3.3-1
+- 自定义控件整体做法（BaseView / onDraw / 适配器 / 脏区）：`knowledge/devflow/custom-widget.md`
+- 跨线程直接操作控件：`knowledge/uicontrols/cross-thread-ui-rule.md`
+- 抓帧与"别拿 setInvalid 当重绘"的误判记录：`knowledge/devflow/device-screenshot.md` §3.3-1

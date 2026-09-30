@@ -94,24 +94,24 @@ evidence: []
    6. **审计必须用「逐通道最大差 + 按该处对比度归一化」的阶梯/残差判据**（`tools/qa/aa_audit.py` v2：`resid_bad` = 边界像素到「外侧底色↔内侧形色」连线的 Chebyshev 残差 > max(5, 0.6×对比度)；`hard_diag` = 斜/弧边界成片的 1px 硬阶跃），跑 `--fail` 期望真缺陷 0 张；**已接进 `check_all` 第 21 项**（扫 `resources/images/**`，真缺陷 = FAIL，WARN/EXEMPT 逐条打理由；`.9.png` marker 环用审计内置豁免）。
    7. 真机复核用 **8× 最近邻**放大看边界（平滑放大/缩放会直接抹掉这类缺陷）。
 
-   **复核命令**：`python tools/qa/aa_audit.py <工程>/resources/images --fail`（口径/豁免见 `tools/qa/README.md`；完整生图规范 `references/kb/image-gen-standard.md` §1.2/§1.3/§1.4/§1.5）。
+   **复核命令**：`python tools/qa/aa_audit.py <工程>/resources/images --fail`（口径/豁免见 `workspace/tools/qa/README.md`；完整生图规范 `workspace/references/kb/image-gen-standard.md` §1.2/§1.3/§1.4/§1.5）。
 
    **已落地（2026-09-19，v0.27.96-open）**：`gen_res._ss_down`/`_ss_mask` + 全链路 14 处带 α 缩回点已改 `Image.BOX`；描边/发丝线/按下态三条口径已改出图。实测：案例 19 张 `.9.png` 的 WARN 从 **18 张（dirty 172 / speck 176）** → **11 张（dirty 0 / speck 0，余下全是切点区 `hard_diag`：同一几何在 ss=16/64/256 下同值 = 几何固有）**。
-   **尚存误报（待定，见 `tools/qa/README.md` §3）**：① 多色位图字形（emoji）的 `resid_bad`（换 LANCZOS 也一样 → M3 两区模型的局限）；② 高对比 1px 描边压深色填充时 `hard_diag` 占比可到 100%（需三区制剖面模型）。
+   **尚存误报（待定，见 `workspace/tools/qa/README.md` §3）**：① 多色位图字形（emoji）的 `resid_bad`（换 LANCZOS 也一样 → M3 两区模型的局限）；② 高对比 1px 描边压深色填充时 `hard_diag` 占比可到 100%（需三区制剖面模型）。
 
 11. **★ 形状类资产必须真透明底（标准侧支持 PNG alpha，禁烘底色）**（2026-09-20 钟工入规：「**控件里面图片背景是黑色的，应该做成透明的，这个设计不符合 flyThings OS 平台的能力**」）：
     - **必须 RGBA 真透明（形状外 α=0）**：图标 / 磁贴 / 环形 / 指针 / 开关滑块 / 图形装饰 / 圆角卡片底 / 药丸（track·fill·seg·sw）/ 圆钮 / 表盘；
     - **不要求透明区（「形状外没有外面」，登记理由豁免）**：满幅底图・渐变壁纸・照片内容图・全屏遮罩・**1px 通栏线**（发丝线轴对齐）・软阴影翼；
-    - **禁止**把页面底色/黑底烘进图当透明 —— 那是 **Lite（MCU）侧 RGB565 + colorkey** 的做法（无 α 混合，见 `knowledge/mcu/*` 与 `references/kb/lite-input-pipeline.md`），**两套口径不能混**（MEMORY 铁律 #17：两侧严格隔离）；把 Lite 做法带到标准侧 = 整图没有透明像素 → 拦。
+    - **禁止**把页面底色/黑底烘进图当透明 —— 那是 **Lite（MCU）侧 RGB565 + colorkey** 的做法（无 α 混合，见 `knowledge/mcu/*` 与 `workspace/references/kb/lite-input-pipeline.md`），**两套口径不能混**（MEMORY 铁律 #17：两侧严格隔离）；把 Lite 做法带到标准侧 = 整图没有透明像素 → 拦。
     - 图标类还要求**四周 ≥1px 透明**（不贴死图边）。
     - **判定/门禁**（数字与几何都有出处，禁拍脑袋）：`tools/qa/alpha_bg_audit.py` —— 整图 `min(α) ≥ 250` = `no_alpha`、内切/图标族角块不透明率 ≥0.5 = `corner_opaque`、最外 1px 环不透明率 ≥0.25（或任一边 ≥0.9）= `edge_bleed` → **FAIL**；**已接进 `check_all` 第 23 项**。分类登记表 `tools/qa/asset_audit_rules.json`。
 
 12. **★ 矩形/卡片/磁贴/药丸必须有倒角（半径按 DESIGN.md 圆角令牌；禁直角）**（2026-09-20 钟工入规：「**主界面大量图片依旧存在切图缺倒角问题，这个问题三番五次提出来过的。必须给我从设计标准和拦截上处理好**」）：
-    - **半径令牌出处** = 工程 `DESIGN.md` 的「圆角令牌」表（磁贴 squircle `n=5,r=30`、9-patch 卡片 14、面板 24、缩略图 16/12、药丸 = `min(w,h)/2`、圆/环 = `min(w,h)/2`）；`tools/qa/asset_audit_rules.json` 是机读副本（改令牌要同步改它）。
+    - **半径令牌出处** = 工程 `<项目>/DESIGN.md` 的「圆角令牌」表（磁贴 squircle `n=5,r=30`、9-patch 卡片 14、面板 24、缩略图 16/12、药丸 = `min(w,h)/2`、圆/环 = `min(w,h)/2`）；`tools/qa/asset_audit_rules.json` 是机读副本（改令牌要同步改它）。
     - **几何判据（可复算）**：沿圆角所在边界行/列量「边起跑距离」`d` = 从角点起第一个 α≥128 的像素位置；半径 r 满足 `d = r - sqrt(r - 0.25)` → 反解 `r_est = (0.5+sqrt(d))**2+0.25`。**直角残留 = `d ≤ 1`**（α 铺到角点）。
     - **判定**：`r_est < 0.5×令牌` 或直角残留或四角极差 >4px 且 min/max <0.5 → **FAIL**；`< 0.8×令牌` → WARN。工具 `tools/qa/corner_audit.py`，**已接进 `check_all` 第 22 项**。
     - **反例（必须记住）**：**把不透明图形 `alpha_composite` 到圆角底图上 = 把下层圆角抹平**（`over` 的 α = `src_α + dst_α(1-src_α)`，`src_α=255` 处 α 恒为 1）。实测：主屏 `tile_photos.png`/`tile_place.png` 底边图形铺满 → 底部两角 `d=0`（r_est 0.5px）、上两角 `d=25`（r_est 30.5px）→ 真机就是两个「方角磁贴」。**修法（推荐 ①）**：① 渐变底 + 图形都画在 `size×SS` 画布，最后一次套形状遮罩、只缩回一次（同一轮廓一次成图，整图只有一条抗锯齿边）；② 内容先按形状 α 裁剪 → composite → 最后 `putalpha(形状 α)`（轮廓只由遮罩决定）。
-    - **出图验收命令**：`python tools/qa/corner_audit.py <工程>/resources/images --fail` + `python tools/qa/alpha_bg_audit.py <工程>/resources/images --fail`（证据图：`<name>.corner.png` 四角 8× 放大 + 违例角红框；`<name>.alpha.png` 违例角块/边环标红）。回归样本 `tools/qa/samples/` + `python tools/qa/run_samples.py`。真实口径文档：`references/kb/image-gen-standard.md` **§7（透明底与圆角）**。
+    - **出图验收命令**：`python tools/qa/corner_audit.py <工程>/resources/images --fail` + `python tools/qa/alpha_bg_audit.py <工程>/resources/images --fail`（证据图：`<name>.corner.png` 四角 8× 放大 + 违例角红框；`<name>.alpha.png` 违例角块/边环标红）。回归样本 `tools/qa/samples/` + `python tools/qa/run_samples.py`。真实口径文档：`workspace/references/kb/image-gen-standard.md` **§7（透明底与圆角）**。
 
 13. **★ 倒角/描边「变粗」与同族一致性（2026-09-27 钟工入规）**
 
@@ -144,7 +144,7 @@ evidence: []
 
     ❗ **闸门盲区（必须知道）**：#21 量脏边/残差、#25 量「覆盖率是否真的从 0 渐变到满值」—— **两者都抓不到「弧上 2px 的描边观感」和「同族图口径不一致」**（本案 5 张图上述审计全 PASS）。所以这一条靠**出图时同族同口径**保证 + **人眼 8× 最近邻**复核。
 
-    ❗ **图标/小件家族一致性**：同一页同族图标要**像素级同款**。改宽度（例：箭头统一成 `26×20`，原图 20×20）时**只平移、零重采样**（canvas 加宽 + `paste` 原图），**禁** `resize` / 重绘 —— 缩放会让小图标发糊、笔画粗细漂移。真实口径文档：`references/kb/image-gen-standard.md` **§1.6 + §1.7**。
+    ❗ **图标/小件家族一致性**：同一页同族图标要**像素级同款**。改宽度（例：箭头统一成 `26×20`，原图 20×20）时**只平移、零重采样**（canvas 加宽 + `paste` 原图），**禁** `resize` / 重绘 —— 缩放会让小图标发糊、笔画粗细漂移。真实口径文档：`workspace/references/kb/image-gen-standard.md` **§1.6 + §1.7**。
 
 ## 3. 入参与返回
 
@@ -164,9 +164,9 @@ evidence: []
 
 跑 `flythings_verify_assets`（或 `check_all` 第 17 项）：引用存在 + **自动生成图尺寸严格 == 盒子**（盒子 = 控件 position，**以及 thumb 自有尺寸子盒 `thumb.size`**；`missing` / `mismatch` = FAIL；手绘图被引擎拉伸记 `stretched` 仅提示；盒子未知记 `skippedNoBox` 并写 warning）。第 11 项用同一份判定（含 thumb 子盒）。
 
-若项目有 `DESIGN.md`（新项目第一版视觉应当有）：`check_all` **第 18 项设计令牌漂移检测** 会自动核对 json 里的颜色/字号是否都落在 DESIGN.md 令牌内。口径：
+若项目有 `<项目>/DESIGN.md`（新项目第一版视觉应当有）：`check_all` **第 18 项设计令牌漂移检测** 会自动核对 json 里的颜色/字号是否都落在 DESIGN.md 令牌内。口径：
 - 令牌外的色值/字号 = **FAIL**（漂移；结构值 0 / -1 / 16777215 例外）
-- 无 `DESIGN.md` 或令牌表未填全 → **NOTE 跳过**（兼容存量工程）
+- 无 `<项目>/DESIGN.md` 或令牌表未填全 → **NOTE 跳过**（兼容存量工程）
 - 单点例外在 DESIGN.md 写一行 `漂移豁免: #RRGGBB 18` 留痕（比改代码好溯源）
 - 间距梯度外的纵向间距 → **WARN**（对齐/芯距可能正常，人工确认）
 
@@ -181,7 +181,7 @@ evidence: []
 
 ## 5. 相关
 
-- HTML 原型侧的效果转图与属性写法 → `html-subset-quickref.md`
-- 控件层图片字段语义 → `uicontrols/button-fields.md`、`uicontrols/circlebar-fields.md`
-- 产物核对/编辑器预检/像素验收流程 → `ui-layout-verify.md`（§3 预检口径与本文 §2 铁律 #1/#8 一致）
-- 像素级渲染坑（半透明图贴纯色底发脏、圆角四角发黑、listview 黑块）→ `pixel-analysis-ai.md`
+- HTML 原型侧的效果转图与属性写法 → `knowledge/devflow/html-subset-quickref.md`
+- 控件层图片字段语义 → `knowledge/uicontrols/button-fields.md`、`knowledge/uicontrols/circlebar-fields.md`
+- 产物核对/编辑器预检/像素验收流程 → `knowledge/devflow/ui-layout-verify.md`（§3 预检口径与本文 §2 铁律 #1/#8 一致）
+- 像素级渲染坑（半透明图贴纯色底发脏、圆角四角发黑、listview 黑块）→ `knowledge/devflow/pixel-analysis-ai.md`

@@ -15,7 +15,7 @@ evidence: []
 ---
 # 🎨 UI 图标库（Tabler, MIT）— 权威规则
 
-> 检索导引：问「图标哪来 / 图标风格不统一 / 有没有语义名 / 图标库许可合规 / 小尺寸图标发糊 / 按控件盒尺寸出图」→ 本文；抗锯齿与透明底铁律见 `devflow/ui-asset-rules.md`。
+> 检索导引：问「图标哪来 / 图标风格不统一 / 有没有语义名 / 图标库许可合规 / 小尺寸图标发糊 / 按控件盒尺寸出图」→ 本文；抗锯齿与透明底铁律见 `knowledge/devflow/ui-asset-rules.md`。
 > 2026-09-16 沛哥定规：**UI 图标不再"每个项目现画、现切"**。统一用随 MCP 发布的图标库
 > `components/icons/`：矢量源存在 MCP 里，按控件盒尺寸一条命令烘成 PNG。
 > 起因：AI 生成的界面切图风格/比例反复不一致，每次都要人工回来确认 → 风格统一这件事必须由工具保证，不能靠"每次画一遍"。
@@ -73,7 +73,7 @@ python components/icons/scripts/gen_icons.py --vendor-set common --size 22 --out
   - **不要再去 `grep`/浏览 `vendor/tabler/icons/*.svg`**（已不存在）；
   - 查名字用 `--list` / `--list-vendor <分类>` / `--list-tabler <子串>`，或读 `catalog.json`；
   - 查来源/缓存状态用 `--pack-info`；默认**完全离线**，不拉网。
-- 设备/产品包只带烘好的 PNG；归档不进设备（见模块 `platforms.md` §3）。
+- 设备/产品包只带烘好的 PNG；归档不进设备（见模块 `components/icons/platforms.md` §3）。
 
 ---
 
@@ -136,7 +136,7 @@ alpha = BOX 面积平均出来的**真实覆盖率**（不做 α 对比度整形
 
 ## 7. 相关文件
 
-- 模块（随 MCP 发布）：`components/icons/`（`README.md` 用法 / `platforms.md` 平台与硬规则 / `THIRD-PARTY.md` 合规 / `catalog.json` 清单）
+- 模块（随 MCP 发布）：`components/icons/`（`knowledge/README.md` 用法 / `components/icons/platforms.md` 平台与硬规则 / `components/icons/THIRD-PARTY.md` 合规 / `catalog.json` 清单）
 - 资产：`components/icons/vendor/tabler-3.46.0.pack.tgz`（Tabler 3.46.0，MIT，单归档按需解）
   + `components/icons/svg/`（自绘兜底）+ `vendor/tabler/{LICENSE,index.json,VERSION.txt}`（归档外）
 - 配套规范：`knowledge/devflow/ui-asset-rules.md`（图片路径与尺寸铁律）、`knowledge/devflow/design.md`（字库限制）

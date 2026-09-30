@@ -15,7 +15,7 @@ evidence: []
 ---
 # 跨框架控件映射能力（op `flythings_map_control`）
 
-> 检索导引：问「映射能力怎么用 / flythings_map_control 怎么调 / 命中不到映射怎么办 / 和 components/ui_v1 什么分工」→ 本文（工具用法与边界）；常见映射速查见 `uicontrols/framework-control-mapping.md`。
+> 检索导引：问「映射能力怎么用 / flythings_map_control 怎么调 / 命中不到映射怎么办 / 和 components/ui_v1 什么分工」→ 本文（工具用法与边界）；常见映射速查见 `knowledge/uicontrols/framework-control-mapping.md`。
 > 检索词：控件映射 / 映射能力 / 跨框架 / 源控件 / lv_slider / RecyclerView / QCalendarWidget /
 > lv_tabview / swiper / CALENDAR / CDateTimeCtrl / 映射表 / control map / mcp_control_map.json /
 > 别的框架的控件对应我们哪个控件 / 有对应控件就直接用 / 命中不到怎么办 / 缺口五级。
@@ -54,7 +54,7 @@ flythings_map_control(query, source='')
 | `source` / `sourceLabel` | 命中的源框架（如 `android` / `Android View / Material`） |
 | `name` | 命中的源控件名 |
 | `target` | **我们的控件**（json 里的类型名，如 `seekbar` / `pagewindow` / `listview`） |
-| `level` / `levelName` | `L1 等价 / L2 组合 / L3 自绘 / L4 降级 / L5 不支持`（判定口径见 `control-map.md` §0） |
+| `level` / `levelName` | `L1 等价 / L2 组合 / L3 自绘 / L4 降级 / L5 不支持`（判定口径见 `components/ui_v1/control-map.md` §0） |
 | `json` | **可直接粘进 `ui/*.json` 的片段**（字段全集显式写出，含默认值；caption 用规范命名） |
 | `notes` | 坑与降级点（例如「背景禁 `.9.png`」「行自身要 `setText('')`」「F133 不支持动图」） |
 | `ref` | L3/L4/L5 时指向 `components/ui_v1/<包>` 或计划条目；L1/L2 通常为空 |
@@ -88,13 +88,13 @@ flythings_map_control(query, source='')
    （例如 `CALENDAR`→`lv_calendar`、`CDateTimeCtrl`→`calendar`、`swiper`→`swiper+tab`）。
 2. **确认平台真缺 → 按「缺口处置五级」走**（`components/ui_v1/gap-list.md`）：
    - **L1 等价 / L2 组合**：**禁止建包**，用自带控件 + logic 侧聚合（可把接线放 `_mapping/`）。
-   - **L3 自绘**：`ZKPainter` 自绘（文字一律 `textview` 叠加），**必须先在 `gap-list.md` 登记缺口编号**，
+   - **L3 自绘**：`ZKPainter` 自绘（文字一律 `textview` 叠加），**必须先在 `components/ui_v1/gap-list.md` 登记缺口编号**，
      再落到 `components/ui_v1/<源控件名>/`（已实现的先看 `Chart/`）。
    - **L4 降级**：保留语义、写明降级点后实现；真机证据里标注「降级实现」。
    - **L5 不支持**：**明说不支持**，给替代建议或书面理由，不假装能转。
 3. **别做的事**：不要拿别家框架的字段/API 套用到我们控件上（`android:hint`→`hintText`、
    `lv_label_set_text()`→`setText()`）——控件用法/字段只查 MCP 知识库或官方站
-   （`uicontrols/retrieval-boundary.md`）；本能力只回答「**哪个控件对应哪个控件**」。
+   （`knowledge/uicontrols/retrieval-boundary.md`）；本能力只回答「**哪个控件对应哪个控件**」。
 
 ## 5. 与 `components/ui_v1/` 的分工（最容易做反的地方）
 
@@ -146,7 +146,7 @@ static void onUI_init() { mPwPagesPtr->setPageChangeListener(&s_listener); }
 
 **④ 真缺能力（L3/L4/L5）示例**：`flythings_map_control("lv_chart")` → `target=chart`、`level=L3`、
 `ref=components/ui_v1/Chart` ⇒ 不要自己从零画：**直接取 `components/ui_v1/Chart/`**（`include/zk/` + `src/`，
-照 `example/` 接线；改数据必须 `refresh()`）。计划中的（`RichText/`、`TableGrid/`、`BadgeToast/`、`Pseudo3D/`）**还没有包**，走批次立项，期间按 `gap-list.md` 的过渡方案；
+照 `example/` 接线；改数据必须 `refresh()`）。计划中的（`RichText/`、`TableGrid/`、`BadgeToast/`、`Pseudo3D/`）**还没有包**，走批次立项，期间按 `components/ui_v1/gap-list.md` 的过渡方案；
 **滚轮选择器（`picker-view`/`lv_roller`/`WheelPicker`/`TimePicker` 含时钟盘/`NumberPicker`/`LISTWHEEL` 类）不是 L3/L4/L5**：2026-09-19 已改为 **L2**（`listview` 组合，
 口径见 `knowledge/uicontrols/listview-wheel-picker.md`，含 §6 时间选择/时钟盘），原自绘包 `components/ui_v1/WheelPicker/` **已移除**、`TimePicker/` **不做包**——查这类控件
 直接 `flythings_map_control("picker-view")` / `("TimePicker")` / `("clock dial")` / `("NumberPicker")` 拿 `target=listview` + `level=L2` + 可直接粘的片段。
@@ -155,7 +155,7 @@ static void onUI_init() { mPwPagesPtr->setPageChangeListener(&s_listener); }
 
 1. 改 **`mcp_control_map.json`**（唯一数据源）：对应 `sources.<框架>` 加/改一条
    （`name`/`aliases`/`target`/`level`/`json`/`notes`/`ref`），新控件类型再补 `targets.<类型>`。
-2. 同步散文表 `components/ui_v1/control-map.md`（级别口径/行）与 `gap-list.md`（真缺能力必须补缺口编号）。
+2. 同步散文表 `components/ui_v1/control-map.md`（级别口径/行）与 `components/ui_v1/gap-list.md`（真缺能力必须补缺口编号）。
 3. 跑 `python rebuild_index_local.py`（重建检索索引）＋ `python scripts/check_consistency.py --with-tests`（全绿）。
 4. **冲突一律以 KB 为准**（`knowledge/uicontrols/*-fields.md`、`knowledge/devflow/gui-controls-gap.md`、
    `knowledge/uicontrols/json-field-mandatory.md`）。
@@ -163,7 +163,7 @@ static void onUI_init() { mPwPagesPtr->setPageChangeListener(&s_listener); }
 ## 8. 相关文件
 
 - 机读数据：`mcp_control_map.json`（仓库根目录）
-- 散文权威表 / 缺口 / 组件状态：`components/ui_v1/control-map.md`、`gap-list.md`、`components.md`
+- 散文权威表 / 缺口 / 组件状态：`components/ui_v1/control-map.md`、`components/ui_v1/gap-list.md`、`components/ui_v1/components.md`
 - 映射参考（接线留档）：`components/ui_v1/_mapping/README.md`
 - 摘要版指针：`knowledge/uicontrols/framework-control-mapping.md`
 - 字段全集与 json 口径：`knowledge/uicontrols/json-field-mandatory.md`（+ `*-fields.md`）

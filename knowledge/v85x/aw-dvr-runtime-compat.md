@@ -74,5 +74,5 @@ V553 实证案例：aw-dvr 4.0.1 装不上 = 引用了 3 个 aw-mpp 3.0.0-pre2 �
 - **升 runtime**：整机 rootfs 的 aw-mpp 升到新版本要求的（如 3.0.0-pre2）——影响面大，先确认固件支持
 
 ## 4. 参考
-- `v85x/dvr-recorder-guide.md` §2（Manifest 依赖 + 版本策略已按本表修正）
+- `knowledge/v85x/dvr-recorder-guide.md` §2（Manifest 依赖 + 版本策略已按本表修正）
 - MCP v0.27.10+ 实测环境：aw-dvr 3.13.12 + aw-mpp 2.0.2（UVC JPEG 全链路验证）

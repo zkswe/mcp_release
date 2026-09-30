@@ -15,12 +15,12 @@ evidence: []
 ---
 # 跨框架 / 竞品 UI 迁移口径（映射表 + 四阶段路线 + 双平台）
 
-> 检索导引：问「竞品/别的框架界面搬过来 / 小程序·LVGL 转 FlyThings 怎么排期 / rpx 与视觉换算 / 差异降级清单 D-xx / 双分辨率同源怎么做」→ 本文（迁移方法论）；控件级对应走 `flythings_map_control`（见 `uicontrols/control-mapping-capability.md`）。
+> 检索导引：问「竞品/别的框架界面搬过来 / 小程序·LVGL 转 FlyThings 怎么排期 / rpx 与视觉换算 / 差异降级清单 D-xx / 双分辨率同源怎么做」→ 本文（迁移方法论）；控件级对应走 `flythings_map_control`（见 `knowledge/uicontrols/control-mapping-capability.md`）。
 > 检索词：界面迁移 / 竞品样式对齐 / 跨框架移植 / 小程序转 FlyThings / LVGL 转 FlyThings /
 > Android 控件对应 / 组件库迁移 / TDesign 迁移 / 视觉还原 / 设计稿换算 rpx / 迁移工作量评估 /
 > 分阶段迁移 / 映射表 / 差异降级清单 D-xx。
 > 案例：`projects/translate/tdesign-miniprogram`（TDesign 小程序组件库 → FlyThings，2026-09-17 三阶段收口；
-> 口径总表 `TRANSLATE.md`，阶段 3 报告 `STAGE3.md`）。
+> 口径总表 `projects/translate/<案例>/TRANSLATE.md`（案例侧口径总表），阶段 3 报告 `projects/translate/tdesign-miniprogram/STAGE3.md`）。
 > 本文是**方法论 + 口径**；具体控件的逐条对应**不在这里**（见 §1 的机读索引，避免双份漂移）。
 > ⚠️ **文末 §5 的 `flythings_translate_ui` op 只是规划，尚未实现**。
 
@@ -29,9 +29,9 @@ evidence: []
 | 要找什么 | 去哪 | 说明 |
 |---|---|---|
 | **控件 ↔ 控件** 对应（6 个框架） | `flythings_map_control(query, source='')` op / 仓库根 `mcp_control_map.json` | 213 条：lvgl 32 / qt 40 / android 43 / **miniprogram 39** / emwin 29 / mfc 30；每条含 `level` / `target` / **可直接粘的 `json` 片段** / `notes` / `ref` |
-| 平台**真缺**的能力（要自定义控件） | `components/ui_v1/`（一个源控件一个目录）+ `gap-list.md` G-xx | 有对应控件的**不进**控件包，只作映射参考（`_mapping/`） |
+| 平台**真缺**的能力（要自定义控件） | `components/ui_v1/`（一个源控件一个目录）+ `components/ui_v1/gap-list.md` G-xx | 有对应控件的**不进**控件包，只作映射参考（`_mapping/`） |
 | 缺口分级口径 | 五级 `L1 等价 / L2 组合 / L3 自绘 / L4 降级 / L5 不支持` | 与 `mcp_control_map.json` 的 `level` 同一套 |
-| 检索口 | `knowledge/uicontrols/control-mapping-capability.md`、`framework-control-mapping.md` | |
+| 检索口 | `knowledge/uicontrols/control-mapping-capability.md`、`knowledge/uicontrols/framework-control-mapping.md` | |
 
 ⇒ **做迁移第一步：把源界面里的控件逐个过 `flythings_map_control`**，命中 L1/L2 直接用（拿它的 `json`），
 只有 L3 以上才需要出图标/组合/自定义控件。**不要**在本文里再抄一份映射表。
@@ -41,13 +41,13 @@ evidence: []
 | 项 | 口径 | 依据 |
 |---|---|---|
 | **单位换算** | 小程序 `rpx × 0.5 = px`（750rpx 设计稿 → 基准 1024 宽画布） | 案例实测 |
-| **字号下限** | 正文/按钮 **≥ 18px**；小控件盒（徽标/标签）因此比源稿大 | `uicontrols/text-box-height-rule.md` |
-| **颜色** | 一律 `#RRGGBB`；⚠️ `#000000` 会被转换器当「未设置」，要纯黑写 `#010101` | `devflow/html-subset-quickref.md` |
-| **圆角/药丸/描边/渐变/阴影/图标** | **一律出图**（SS 超采样），图尺寸**严格 == 控件盒** | `uicontrols/nine-patch-rule.md`、`devflow/ui-asset-rules.md` |
+| **字号下限** | 正文/按钮 **≥ 18px**；小控件盒（徽标/标签）因此比源稿大 | `knowledge/uicontrols/text-box-height-rule.md` |
+| **颜色** | 一律 `#RRGGBB`；⚠️ `#000000` 会被转换器当「未设置」，要纯黑写 `#010101` | `knowledge/devflow/html-subset-quickref.md` |
+| **圆角/药丸/描边/渐变/阴影/图标** | **一律出图**（SS 超采样），图尺寸**严格 == 控件盒** | `knowledge/uicontrols/nine-patch-rule.md`、`knowledge/devflow/ui-asset-rules.md` |
 | **零自绘** | 能用平台控件 + 出图表达的就不用 painter 自绘；自绘只在平台真缺能力时（并落到 `components/ui_v1/`） | `components/ui_v1/README.md` |
-| **单一手写源** | HTML 是**唯一手写源** → `html2json` → json（json 是事实来源）→ `fui pack` → ftu | `devflow/ftu-json-pipeline.md` |
-| **「隐藏」怎么写** | 换**同尺寸透明占位图 + 文本置空**；不用 `setVisible(true)`（动态显示不重绘），**更不用 `setInvalid(true)`（那是禁用）** | `uicontrols/custom-view-refresh.md` |
-| **高频回调** | 只刷变化的那一个控件，禁止全量刷新 | `uicontrols/high-frequency-callback-perf.md` |
+| **单一手写源** | HTML 是**唯一手写源** → `html2json` → json（json 是事实来源）→ `fui pack` → ftu | `knowledge/devflow/ftu-json-pipeline.md` |
+| **「隐藏」怎么写** | 换**同尺寸透明占位图 + 文本置空**；不用 `setVisible(true)`（动态显示不重绘），**更不用 `setInvalid(true)`（那是禁用）** | `knowledge/uicontrols/custom-view-refresh.md` |
+| **高频回调** | 只刷变化的那一个控件，禁止全量刷新 | `knowledge/uicontrols/high-frequency-callback-perf.md` |
 
 ## 3. 四阶段路线（案例实际走法，可直接套用到下一个迁移任务）
 
@@ -67,10 +67,10 @@ seekbar 7 · edittext 6 · radiogroup 3 · circlebar 1）/ **236 张图**，双�
 ### 每阶段的固定仪式
 
 1. **离线先做完**：出图 → 生成 HTML → `html2json` → `patch_json` 补漏 → `fui pack` → `check_all`（0 FAIL）→ 双平台 `fun build`。
-2. **再碰设备**：部署（**`--no-reboot`**；部分板子 `adb reboot` 后会整板掉网，**因果未证** → `device-deploy-budget.md` §5）→ 同一 boot 内一口气跑完断言。
+2. **再碰设备**：部署（**`--no-reboot`**；部分板子 `adb reboot` 后会整板掉网，**因果未证** → `knowledge/devflow/device-deploy-budget.md` §5）→ 同一 boot 内一口气跑完断言。
 3. **每套断言前清场**：重启应用进程（`kill -TERM` 优先，约 3s 内未退出才回退 `kill -KILL`）→ init 自动拉起
    （不是 reboot）；**输入类用例会弹系统键盘**，
-   必须在套件间收键盘，否则后续导航点击全落键盘上、假 FAIL 一片（`devflow/touch-inject-autotest.md`）。
+   必须在套件间收键盘，否则后续导航点击全落键盘上、假 FAIL 一片（`knowledge/devflow/touch-inject-autotest.md`）。
 4. **证据落盘**：`<平台>/evidence/*.png` + 每套 `*_test.log` + 静态全检 log。
 5. **差异如实登记**（见 §4），不要「看起来一样」就过。
 
@@ -106,20 +106,20 @@ seekbar 7 · edittext 6 · radiogroup 3 · circlebar 1）/ **236 张图**，双�
 
 | 坑 | 去哪看 |
 |---|---|
-| 弹层卡片内部按钮点不动（遮罩抢触摸） | `uicontrols/touch-events.md` §6 |
-| `setInvalid` 当重绘用 → 整屏点不动 | `uicontrols/custom-view-refresh.md` |
-| 拖动卡顿（回调全量刷新） | `uicontrols/high-frequency-callback-perf.md` |
-| `div.text` 上的 `data-bgpic` | `devflow/html-subset-quickref.md` §4 |
-| 抬盒高把图拉变形（圆点变竖椭圆） | `uicontrols/text-box-height-rule.md`（静态检查 = `check_all` 第 20 项） |
-| 方块底图刷平卡片下圆角 | `uicontrols/nine-patch-rule.md` 进阶节 |
-| 定时器里顺序错了会慢 N 倍 | `devflow/activity-code-skeleton.md`（`onUI_Timer` 顺序） |
-| 键盘盖住界面 → 假 FAIL | `devflow/touch-inject-autotest.md` 键盘节 |
-| 抓帧抓到上一帧 / 瞬态层被吃掉 | `devflow/device-screenshot.md` §3.3-1 / §3.3-2 |
+| 弹层卡片内部按钮点不动（遮罩抢触摸） | `knowledge/uicontrols/touch-events.md` §6 |
+| `setInvalid` 当重绘用 → 整屏点不动 | `knowledge/uicontrols/custom-view-refresh.md` |
+| 拖动卡顿（回调全量刷新） | `knowledge/uicontrols/high-frequency-callback-perf.md` |
+| `div.text` 上的 `data-bgpic` | `knowledge/devflow/html-subset-quickref.md` §4 |
+| 抬盒高把图拉变形（圆点变竖椭圆） | `knowledge/uicontrols/text-box-height-rule.md`（静态检查 = `check_all` 第 20 项） |
+| 方块底图刷平卡片下圆角 | `knowledge/uicontrols/nine-patch-rule.md` 进阶节 |
+| 定时器里顺序错了会慢 N 倍 | `knowledge/devflow/activity-code-skeleton.md`（`onUI_Timer` 顺序） |
+| 键盘盖住界面 → 假 FAIL | `knowledge/devflow/touch-inject-autotest.md` 键盘节 |
+| 抓帧抓到上一帧 / 瞬态层被吃掉 | `knowledge/devflow/device-screenshot.md` §3.3-1 / §3.3-2 |
 
 ## 相关
 
-- 控件映射机读索引与 op → `uicontrols/control-mapping-capability.md`、`uicontrols/framework-control-mapping.md`
-- 缺口五级与自定义控件包 → `components/ui_v1/README.md`、`uicontrols/gui-controls-gap.md`
-- 页面架构（单 Activity + 多 window） → `devflow/page-architecture-spec.md`
-- 原型 → json 全链路 → `devflow/ftu-json-pipeline.md`、`devflow/html-subset-quickref.md`
-- 可复用模块（随 MCP 发布） → `devflow/reusable-components.md`
+- 控件映射机读索引与 op → `knowledge/uicontrols/control-mapping-capability.md`、`knowledge/uicontrols/framework-control-mapping.md`
+- 缺口五级与自定义控件包 → `components/ui_v1/README.md`、`knowledge/devflow/gui-controls-gap.md`
+- 页面架构（单 Activity + 多 window） → `knowledge/devflow/page-architecture-spec.md`
+- 原型 → json 全链路 → `knowledge/devflow/ftu-json-pipeline.md`、`knowledge/devflow/html-subset-quickref.md`
+- 可复用模块（随 MCP 发布） → `knowledge/devflow/reusable-components.md`

@@ -25,12 +25,12 @@ evidence: []
 3. **代码用子项 ID 宏选中**：`setCheckedID(ID_MAIN_RadioButton1)`，回调拿 `checkedID` 反查是哪项（ID 宏 = UI 文件名_子项 caption 大写）。
 4. 一个 group 内每项 `checked` 字段决定初始选中（只能一项 true）。
 5. **⚠️ `touchable` 必须为 `true`**（沛哥 2026-09-10 修正，实测出过错代码）：
-   radiogroup 虽然写的是「容器」结构（内含 radiobuttons[]），但**不适用** `json-field-mandatory.md` 里「容器显式 false」的通用口径；
+   radiogroup 虽然写的是「容器」结构（内含 radiobuttons[]），但**不适用** `knowledge/uicontrols/json-field-mandatory.md` 里「容器显式 false」的通用口径；
    写 `false` 时整组**收不到触摸**，表现：单选按钮点了没反应 / 选中态不切换。
    - 生成器（html2json.py `_open_radiogroup`）已修为 `'touchable': True`
    - radiobutton 子项本身也是 `touchable: true`（本质 ZKCheckBox 按钮）
    - 为什么不适用：“容器 false” 是给 window/painter 这类**不响应交互的容器/背景**定的；radiogroup 本身就是要被点的交互集合
-   - 完整触摸语义与「点了没反应」排查顺序 → `touch-events.md`
+   - 完整触摸语义与「点了没反应」排查顺序 → `knowledge/uicontrols/touch-events.md`
 
 ## JSON 字段表（ftu 实测校准）
 

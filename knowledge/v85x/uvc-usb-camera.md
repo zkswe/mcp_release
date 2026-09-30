@@ -16,12 +16,12 @@ evidence: []
 # V85X USB 摄像头（UVC）接入 + 预览/录像/拍照（V85X 平台绑定实现）
 
 > 🔍 **检索导引（命中条件）**：用户指定 **V85X 平台** + 「UVC / USB 摄像头接入 / 预览 / 拍照 / 录像 / 回放 / JPEG/MJPEG」→ 本篇为**平台绑定实现**；
-> **未指定平台 / 其他平台（T113/F133/Z20/Z21）问 UVC 接入** → 先读 `hardware/uvc-camera-generic.md`（平台无关通用层：发现/协商/保活/状态机/JPEG 必查清单）。
+> **未指定平台 / 其他平台（T113/F133/Z20/Z21）问 UVC 接入** → 先读 `knowledge/hardware/uvc-camera-generic.md`（平台无关通用层：发现/协商/保活/状态机/JPEG 必查清单）。
 > 来源：V85X 平台通用 UVC 接入实测（2026-09-03 学习收录，沛哥 2026-09-07 转正；2026-09-08 去工程化，纯通用形态）。
 > 平台：V85X（AW_V853），aw-dvr 3.13.12 / aw-mpp 2.0.2。
 > 场景：**V85X 主机通过 USB 接入 UVC 摄像头**，与内置 ISP 前摄像头双路共存：预览/录像/拍照。
 > 本文为 V85X aw-dvr/mpi:: **绑定层**（MPP 注册/双路预览/Recorder/Snapshot）；平台无关的 UVC 通用逻辑（inotify 发现、
-> V4L2 格式协商、持续取流保活、状态机设计、JPEG 摄像头防坑清单）见 `hardware/uvc-camera-generic.md`。
+> V4L2 格式协商、持续取流保活、状态机设计、JPEG 摄像头防坑清单）见 `knowledge/hardware/uvc-camera-generic.md`。
 > ⚠️ 通用 JPEG(MJPEG) UVC 摄像头接入前**必读硬件通用篇 §5 落地必查清单**（格式协商/尺寸对齐/互斥顺序/保活），否则易出录制绿屏、录制中黑屏。
 
 ## 0. 接入主链路（通用，任意 UVC 摄像头可抄）
@@ -48,7 +48,7 @@ USB UVC 摄像头（免驱，uvcvideo 驱动）
 ## 1. UVC 设备发现（inotify + uvcvideo 驱动匹配）
 
 平台无关的发现逻辑（遍历 `/dev/videoN` + `VIDIOC_QUERYCAP` 认 `driver=="uvcvideo"`；inotify 监听 `/dev`，
-IN_CREATE 延时 ~3s 且「当前无设备才触发」，IN_DELETE 只认自己记录的节点）→ 正文 `hardware/uvc-camera-generic.md` §1。
+IN_CREATE 延时 ~3s 且「当前无设备才触发」，IN_DELETE 只认自己记录的节点）→ 正文 `knowledge/hardware/uvc-camera-generic.md` §1。
 
 V85X 差异部分（命中后）：`mpi::SharedVideoDevice dev(VIDEO_DEVICE_REAR); fd = dev.getFileDescriptor();`
 记下节点 → 启动取流任务 → 状态置正常广播。
@@ -185,7 +185,7 @@ class UvcCameraDetection: public mpi::Task<> {
 
 - 录像产物仅 **mp4 / ts**（H.264 封装）；JPEG 仅用于照片场景（Snapshot 拍照 → 相册 → JpegViewer 回看）
 - 回放：视频 → ZKVideoView::play(file)；照片 → mpi::JpegViewer::start(file, rect)（先停视频再显示，成对 stop）
-- 详细解码/录制 API 见同目录 `jpeg-decode-record.md`
+- 详细解码/录制 API 见同目录 `knowledge/v85x/jpeg-decode-record.md`
 
 ## 8. 全链路验证流程（实测基准，2026-09-08 CV201PND 板 1280x720 JPEG UVC）
 

@@ -147,7 +147,7 @@ class TestBinToolsSurface(unittest.TestCase):
         """touch/busybox 是设备端 ELF，不能被当成 op（防后来人又去数 op 找触摸注入）。"""
         import kb_tools
         d = json.loads(kb_tools.flythings_get_version())
-        for name in ('touch', 'busybox', 'ui_test', 'mt_test'):
+        for name in ('touch', 'busybox', 'ui_test'):
             self.assertNotIn(name, d['tools'])
             self.assertNotIn(name, kb_tools.OP_NAMES)
             self.assertNotIn('flythings_' + name, d['tools'])

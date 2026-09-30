@@ -61,7 +61,7 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.138-open'
+MCP_VERSION = '0.27.139-open'
 MCP_BUILD = '2026-09-30'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -76,6 +76,7 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+    '2026-09-30: **bin_tools 去 mt_test（9.7MB）+ 引用口径统一（438 处）** v0.27.139-open（钟工：「3-4 也处理」）——① **mt_test 下线**：`bin_tools/{z20,z21,t113,v85x}/mt_test` 四个二进制（9.7MB）移入工作区归档 `archive/mcp_mt_test_20260930/`（`touch` 自动扫节点 + 判协议，已覆盖单点/MT-A/MT-B）；`BIN_TOOL_BRIEF` / 入口文档 / 用例同步（binTools 只剩 touch / busybox / ui_test / zkshot）；`bin_tools/README.md`、`bin_tools/z235x/README.md`、`hardware_catalog.json`（型号表源头）+ 6 篇知识文档同步；**MT-A / MT-B / 单点协议铁律（事件序列、`SYN_MT_REPORT`、`TRACKING_ID=-1`、恒 0 坐标判据）一字未删**。② **引用口径统一**：定规「knowledge 内互引一律 `knowledge/<分类>/<文件名>.md`；官方镜像写 `wiki/flythings/…`；仓库内其它文件写仓库相对路径；工作区文件写 `workspace/…`；禁裸文件名」，脚本批量落地 **438 处**（含 20 个原先解析不到的定向修复：gap-list / control-map / THIRD-PARTY / DESIGN / 案例侧报告等），复核「解析不到的引用 = 0」。门禁 `check_consistency --with-tests` 全绿。v0.27.139-open',
     '2026-09-30: **op→知识「去哪找」+ 版本史归档（钟工：「12 做了」）** v0.27.138-open——① **新增 `op_seealso.json`（43 op 全覆盖）**：35 个 op 有 seeAlso（仓库内知识文档，随包分发）+ 8 个显式登记 none 并写理由（如 `flythings_create_bin_project` 按 MCU 口径单独维护、i18n 家族在官方文档/wiki 镜像）；`kb_tools.normalize_result` 把 `seeAlso` 统一注入返回体（**不占 docstring 预算**——预算 12000 已顶格），AI 拿到工具结果就知道去哪看细节；`scripts/gen_seealso.py --check` 进发布闸门（覆盖 + 路径存在），新增契约用例 `tests/test_seealso.py`。② **MCP_FEATURES 老条目搬家**：`kb_tools.py` 只留近期 28 条（>= v0.27.121-open），更早 116 条归档到仓库根 `VERSION_HISTORY.md`（168KB）→ `kb_tools.py` **313KB → 144KB**；`flythings_get_version` 新增 `historyFile` / `historyMax` 字段（compact 与全量都回）；口径文档（knowledge/README、PUBLISH、demos/README、smoke 注释）同步；release 不带 VERSION_HISTORY.md。门禁 `check_consistency --with-tests` 全绿。v0.27.138-open',
     '2026-09-30: **知识库章节断号修复：编号连续化 + 全仓 §引用联动** v0.27.137-open（钟工：「修复3」）——① 7 篇顶层编号断号/乱序归为连续：`v85x/h264-player-usage`（12/13→11/12）、`hardware/z20-86panel-upgrade`（10/11/12→8/9/10）、`v85x/display-layer-debug`（8→7）、`uicontrols/touch-events`（7→6）、`uicontrols/layout-audit`（3/4/5→2/3/4）、`devflow/cli-fun-toolchain`（7/8→6/7）；② `devflow/package-properties-easyui-cfg.md` 顶层小节补编号 1..9（原先只有孤立的「## 8. 取图角度」，现为 §9，样式与其它篇一致）；③ 联动全仓章节引用：文档内自引用 + `xxx.md` §N 跨文件引用（含 `§11/§12` 链式）共 **26 处 / 13 个文件**（含 `adb_tools.py` / `kb_tools.py` 活指针与 6 篇知识文档）；复核「仍指向旧号的引用 = 0」；`kb_tools` 的 MCP_FEATURES 历史长串不动。门禁 `check_consistency --with-tests` 全绿。v0.27.137-open',
     '2026-09-30: **知识库治理 2 / 3 / 1（结构收口 → 元数据清理 → 正文压缩）** v0.27.136-open（钟工：「按着这个 231 收」）——① **结构收口**：USB OTG 三篇收口成 `hardware/usb-otg-switch.md` 跨平台正文（V85X/Z21 节点路径表 + 差异；另两篇改指针，`usb-gadget-storage.md` 的 configfs 序列与 `lun.0/file` 块设备细节保留在本地）；UVC 必查清单两篇去重（正文 `v85x/uvc-usb-camera.md`）；`base-utility 缺失 / 改 Manifest 必重跑 fun install` 四处重复收口到 `devflow/cli-fun-toolchain.md`；`rotateScreen / 取图角度 / 坐标旋转` 口径由 **7 篇**收口到 `devflow/package-properties-easyui-cfg.md`（其余 6 篇 ≤2 行指针）。② **tags 清理**：`kb_frontmatter --retags` 重抽 70 篇 tags，清掉 **117 个非检索词碎片**（「找不到 adb」「fun 流程不适用」「注册表均双向兼容」这类句子/版本号 tag）。③ **正文压缩 Top-15**：9 篇正文压缩（touch-inject-autotest 365→149、ui-asset-rules 342→188、upgrade-pack-image 299→206、prototype-flow 224→157、html-subset-quickref 241→206、listview-wheel-picker 288→222、h264-player-usage 333→300、touch-events 152→124、high-frequency-callback-perf 158→94），**机读判据/阈值/命令/序号铁律逐条保住**（如 ui-asset-rules 13/13 条铁律仍在）。④ 账：knowledge 13,028 行 → **11,763 行**；`rag_index.json` 3.8 MB / 1876 chunks；门禁 `check_consistency --with-tests` 全绿（检索 18 组 127 问法 / 417 用例 / smoke 29 项）。v0.27.136-open',
@@ -134,7 +135,6 @@ BIN_TOOL_BRIEF = {
              'tap/swipe/long/monkey/run/record/play + list/info；部署不带 /dev/input/eventN',
     'busybox': '设备调试工具箱（网络/系统/Shell applet 全开，静态链接）',
     'ui_test': '触摸注入 / 自动化测试（单点协议，兼容保留，需人工传节点）',
-    'mt_test': 'MT-A 协议触摸注入（兼容保留，需人工传节点）',
     'zkshot': 'SigmaStar（z20/z21）视频层抓帧，配合 flythings_device_screenshot(layer="video")',
 }
 
@@ -178,7 +178,7 @@ def _bin_tools_field() -> dict:
 def flythings_get_version(compact: bool = True) -> str:
     """返回 MCP 版本号、工具数量与近期关键特性。用户问「MCP 版本是多少 / 是不是最新的」时调用。
     compact=True（默认）只回版本摘要 + 近期 3 条（每条 ≤700 字，防 token 炸弹）；完整能力史传 compact=False。
-    另回 `binTools` 字段（设备端预编译工具：touch / busybox / ui_test / mt_test / zkshot），
+    另回 `binTools` 字段（设备端预编译工具：touch / busybox / ui_test / zkshot；mt_test 已移除），
     在 bin_tools/<平台>/ 下，**不是 op、不占名额**。
     """
     tools = _tool_names()
@@ -1370,7 +1370,7 @@ def flythings_ui_visual(action: str = 'list', project_root: str = '', output_dir
                         noise_bbox: int = 10, out_png: str = '', out_json: str = '',
                         show_noise: bool = False, mode: str = '', baseline_key: str = '',
                         name: str = '', allow_regions: int = 0) -> str:
-    """UI 可视化/像素验收入口（action 选动作；旧 ui_editor / ui_edit_apply / ui_diff 已并入）。
+    """UI 可视化/像素验收入口（action 选动作；旧编辑器三 op 已并入）。
 
     - action="editor"：ui/*.json → 可拖拽编辑器网页（<项目>/ui/_edit/<name>.edit.html）。
     - action="edit_apply"：变更 JSON 写回 ui/*.json（pack 默认 False；dry_run 只预览；写回留 .bak）。

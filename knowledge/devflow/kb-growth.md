@@ -100,7 +100,7 @@ python scripts/kb_verify.py --apply            # 结果写回（失败 → statu
 ## 5. 检索闭环
 
 - 未命中/低置信 → 落本地层 `_logs/no_hit.jsonl`，返回体带 `gapLogged / gapLog / gapHint`。
-- `python scripts/kb_gaps.py` → `kb_gaps.md`：**用户真的问不到的 top-N = 下一批写作清单**。
+- `python scripts/kb_gaps.py` → `knowledge/_reports/kb_gaps.md（scripts/kb_gaps.py 生成）`：**用户真的问不到的 top-N = 下一批写作清单**。
   这是"生长"的引擎：不是让 AI 自由发挥写文档，而是**缺口驱动写作**。
 - **命中会带证据等级**（2026-09-29 提报发现 ② 后的收口）：`hits[].status / evidenceLevel /
   verifiedAt`；`evidenceLevel` 取 `has-evidence`（有可执行判据）/ `manual-only`（人工沉淀、无判据）/

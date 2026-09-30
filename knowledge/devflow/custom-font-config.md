@@ -15,7 +15,7 @@ evidence: []
 ---
 # 🔤 自定义字库（fun build/launch 流程，非 IDE）— 权威规则
 
-> 检索导引：问「换字体 / 换字库 / ttf 放哪 / package.properties 的 enable.font.location / 多字体哪个当默认 / setFontFamily / 设备缺中文 / 照设计稿要换字体」→ 本文（fun 流程权威口径）；屏幕方向等 cfg 机制见 `devflow/package-properties-easyui-cfg.md`。
+> 检索导引：问「换字体 / 换字库 / ttf 放哪 / package.properties 的 enable.font.location / 多字体哪个当默认 / setFontFamily / 设备缺中文 / 照设计稿要换字体」→ 本文（fun 流程权威口径）；屏幕方向等 cfg 机制见 `knowledge/devflow/package-properties-easyui-cfg.md`。
 > 2026-09-03 沛哥定规。**fun 流程换字库以本条为准**；font_setting.md 是 IDE 视角，AI 引导用户时禁止先去翻 IDE 项目属性那套。
 
 ## ✅ 标准流程（用户说"换字库/换字体"直接照做，禁止绕道 IDE 属性）
@@ -36,7 +36,7 @@ evidence: []
 ## ⚠️ AI 引导规则（沛哥 2026-09-03 定规）
 
 - 用户说"换库" → **直接按上述 4 步执行**，不要先翻 IDE 项目属性那套
-- wiki `font/font_setting.md` 是 **IDE 视角**（单字体走项目属性导入、多字体 setFontFamily），fun 流程**以本条为准**
+- wiki `wiki/flythings/font/font_setting.md` 是 **IDE 视角**（单字体走项目属性导入、多字体 setFontFamily），fun 流程**以本条为准**
 - "改 .prefs font 字段"（v0.13 记录，KlipperF133 案例）属 IDE 工程做法，fun 流程项目不要用
 
 ## 常见坑
@@ -148,7 +148,7 @@ cmap 覆盖率 / GB2312 一级 / 硬判据 / font-probe 缓存。
 ### 0.2.2 真机实测（v0.27.87，V85X SPINOR 整机、网络 adb）
 
 > 环境：本机 adb = 随包 `tools/adb/adb.exe`；**多设备在线时 `fun launch` 硬失败**（fun 的 Go adb 用旧式
-> `host:transport <serial>` 空格写——详见 `cli-fun-toolchain.md` §6），本次实测前先 `adb disconnect` 另两台、
+> `host:transport <serial>` 空格写——详见 `knowledge/devflow/cli-fun-toolchain.md` §6），本次实测前先 `adb disconnect` 另两台、
 > 跑完再 `adb connect` 加回；设备报 `ro.product.model=Zkswe_V85X_SPINOR`（480×800）。
 > （本段不写具体内网地址：隐私扫描不允许——设备用 `device='<serial|IP:5555>'` 现查现传。）
 
@@ -209,5 +209,5 @@ cmap 覆盖率 / GB2312 一级 / 硬判据 / font-probe 缓存。
 ## 相关
 
 - MEMORY.md 铁律「设备字库是裁剪字库」（emoji/特殊符号不支持）
-- wiki `font/font_setting.md`（IDE 视角，仅参考）
-- knowledge `devflow/package-properties-easyui-cfg.md`（package.properties 覆盖层机制）
+- wiki `wiki/flythings/font/font_setting.md`（IDE 视角，仅参考）
+- knowledge `knowledge/devflow/package-properties-easyui-cfg.md`（package.properties 覆盖层机制）

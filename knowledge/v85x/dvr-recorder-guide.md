@@ -24,11 +24,11 @@ evidence: []
 
 | 本指南章节 | 配套细读 |
 |------|------|
-| §4 屏幕方向 | `devflow/package-properties-easyui-cfg.md` §9（rotateScreen 机制/取图角度口径）|
-| §5-1 UI 透出 | `v85x/videoview-transparent-window.md`（videoView 透明窗口权威口径）|
-| §5-2/§9 图层与回放方向 | `v85x/display-layer-debug.md`（releaseLayer/图层检查/rotation 枚举）|
-| §6 UVC 摄像头 | `v85x/uvc-usb-camera.md` + `v85x/jpeg-decode-record.md` |
-| §8 录制卡 | `v85x/tfcard-format-requirement.md`（FAT32+64KB 簇要求）|
+| §4 屏幕方向 | `knowledge/devflow/package-properties-easyui-cfg.md` §9（rotateScreen 机制/取图角度口径）|
+| §5-1 UI 透出 | `knowledge/v85x/videoview-transparent-window.md`（videoView 透明窗口权威口径）|
+| §5-2/§9 图层与回放方向 | `knowledge/v85x/display-layer-debug.md`（releaseLayer/图层检查/rotation 枚举）|
+| §6 UVC 摄像头 | `knowledge/v85x/uvc-usb-camera.md` + `knowledge/v85x/jpeg-decode-record.md` |
+| §8 录制卡 | `knowledge/v85x/tfcard-format-requirement.md`（FAT32+64KB 簇要求）|
 
 **为什么需要 playbook**：DVR 是跨显示/媒体/存储/硬件的复合功能，只检索碎片文档容易漏环节（最常见漏项：videoView 没 visible、回放 rotation 写角度值、卡没按 64KB 簇格式化）。
 
@@ -63,7 +63,7 @@ evidence: []
 </dependencies>
 ```
 - **aw-dvr = 核心 MPP 封装（`mpi::` 命名空间，accessKey 私有包）**，registry 在 package.flythings.cn
-- **版本不是越新越好**：aw-dvr 必须与设备 runtime 的 aw-mpp 配套（4.0.1 需 aw-mpp 3.0.0-pre2，设备 runtime 2.0.2 装不上）；**V85X runtime aw-mpp 2.0.2 → 用 aw-dvr 3.13.12**（当前实测全适配组合）；版本×runtime 兼容矩阵与 dlopen 排障见 `v85x/aw-dvr-runtime-compat.md`
+- **版本不是越新越好**：aw-dvr 必须与设备 runtime 的 aw-mpp 配套（4.0.1 需 aw-mpp 3.0.0-pre2，设备 runtime 2.0.2 装不上）；**V85X runtime aw-mpp 2.0.2 → 用 aw-dvr 3.13.12**（当前实测全适配组合）；版本×runtime 兼容矩阵与 dlopen 排障见 `knowledge/v85x/aw-dvr-runtime-compat.md`
 - ⚠️ aw-* 系列仅 V85X；T113 分支无 MPP 依赖
 - 头文件：`<mpi/case/recorder.h>` `<mpi/case/front_camera.h>` `<mpi/case/rear_camera.h>` `<mpi/case/jpeg_viewer.h>` `<mpi/module/vo.h>` `<mpi/case/shared_video_device.h>`；异常走 `mpi::Exception`
 
@@ -79,7 +79,7 @@ evidence: []
 
 ## 4. 屏幕方向（硬件适配，错屏根因）
 
-**错屏根因 = UI 布局超出物理屏**：横 UI（如 1600×600）用在竖装屏（600×1600），不旋转时 UI 宽 1600 > 物理宽 600，内容溢出屏外。`rotateScreen` 是硬件方向适配（值由屏幕安装方向决定，非 UI/代码决定）；配置写法、`fun clean` 全量重编时序、触摸不转（只写 rotateScreen 不写 rotateTouch）、设备端 `/tmp/EasyUI.cfg` 核对 → `devflow/package-properties-easyui-cfg.md` §9。
+**错屏根因 = UI 布局超出物理屏**：横 UI（如 1600×600）用在竖装屏（600×1600），不旋转时 UI 宽 1600 > 物理宽 600，内容溢出屏外。`rotateScreen` 是硬件方向适配（值由屏幕安装方向决定，非 UI/代码决定）；配置写法、`fun clean` 全量重编时序、触摸不转（只写 rotateScreen 不写 rotateTouch）、设备端 `/tmp/EasyUI.cfg` 核对 → `knowledge/devflow/package-properties-easyui-cfg.md` §9。
 
 ## 5. UI 布局（videoView 透明窗 + 控制件）
 
@@ -127,7 +127,7 @@ mpi::config().apply();
 // 取流保活任务（防休眠断流）：SharedVideoDevice(REAR) 循环 wait
 // 显示与 6-1 相同：RearCamera::instance().setParam(...)
 ```
-⚠️ 详见 `v85x/uvc-usb-camera.md`：**ENUM_FMT+S_FMT 必须锁 MJPEG**（摄像头默认可能 YUYV，不协商=绿屏）；录制尺寸必须=UVC 实际分辨率。
+⚠️ 详见 `knowledge/v85x/uvc-usb-camera.md`：**ENUM_FMT+S_FMT 必须锁 MJPEG**（摄像头默认可能 YUYV，不协商=绿屏）；录制尺寸必须=UVC 实际分辨率。
 
 ## 7. 录像（mpi::Recorder）
 
@@ -190,7 +190,7 @@ stop() / pause() / resume() / seekTo(ms); getDuration() / getCurrentPosition();
 
 ## 9. 存储与录制卡（TF/EMMC）
 
-- **录制卡有专属格式要求（FAT32+64KB 簇+OEM=zkswe），不满足弹「文件系统不符合要求」/自动重格** → 必读 `v85x/tfcard-format-requirement.md`
+- **录制卡有专属格式要求（FAT32+64KB 簇+OEM=zkswe），不满足弹「文件系统不符合要求」/自动重格** → 必读 `knowledge/v85x/tfcard-format-requirement.md`
 - 录像/照片目录约定：挂载点下 `/video`、`/photo`（如 `/mnt/extsd/video/Rear/*.mp4`）
 - 容量查询：statfs 挂载点（total/free → UI 显示）
 - 满卡处理：录满自动覆盖最老普通片段（循环录像，锁定片段不覆盖）；格式化会清空整卡（含锁定片段）
@@ -208,7 +208,7 @@ stop() / pause() / resume() / seekTo(ms); getDuration() / getCurrentPosition();
 
 **图层级检查**（无图像最有效）：`cat /sys/class/disp/disp/attr/sys`——看每层 enable/ch/z/frame/addr：
 - 视频层 enable 且有 addr + UI 层 z=16 最顶 → 基本是 UI 不透明遮挡
-- 启动异常残留层 → 启动早期调 releaseLayer 释放（保留 UI 层 ch2/layer0），代码见 `v85x/display-layer-debug.md`
+- 启动异常残留层 → 启动早期调 releaseLayer 释放（保留 UI 层 ch2/layer0），代码见 `knowledge/v85x/display-layer-debug.md`
 
 ## 11. 开发顺序自检清单（做完逐项打勾）
 
@@ -222,8 +222,8 @@ stop() / pause() / resume() / seekTo(ms); getDuration() / getCurrentPosition();
 8. [ ] 边界：拔卡/满卡/切分辨率重启录像/热插拔 无黑屏绿屏
 
 ## 12. 参考
-- `v85x/display-layer-debug.md`（图层/旋转/透出/回放方向排查四板斧）
-- `v85x/tfcard-format-requirement.md`（录制卡格式化）
-- `v85x/uvc-usb-camera.md` / `v85x/jpeg-decode-record.md`（UVC/JPEG 链路）
-- `v85x/videoview-transparent-window.md`（videoView 透出权威口径）
-- `devflow/package-properties-easyui-cfg.md`（工程配置机制）
+- `knowledge/v85x/display-layer-debug.md`（图层/旋转/透出/回放方向排查四板斧）
+- `knowledge/v85x/tfcard-format-requirement.md`（录制卡格式化）
+- `knowledge/v85x/uvc-usb-camera.md` / `knowledge/v85x/jpeg-decode-record.md`（UVC/JPEG 链路）
+- `knowledge/v85x/videoview-transparent-window.md`（videoView 透出权威口径）
+- `knowledge/devflow/package-properties-easyui-cfg.md`（工程配置机制）

@@ -51,14 +51,14 @@ selfcheck 只看"设备本身的状态读数"，不看画面内容。
 | # | 分区 | 采集项（主要） | ok 判据 | 读不到时（hint 摘要） |
 |---|------|----------------|---------|------------------------|
 | ① | 设备信息 | `ro.product.model`、`/proc/version`、`ro.easyui.version`、`ro.build.fingerprint` | 型号或内核非空 | 确认设备在线且 `ro.product.model` 没被裁剪；平台靠 `device_models.json` 反查，**未命中就留空**（用 `flythings_hardware_info` 查规格，不许猜） |
-| ② | 应用状态 | `init.svc.zkswe`、`sys.zkapp.state`、`sys.zkapp.dbg`、`pidof zkgui`、`/proc/uptime` | 服务态或 pid 有值 | 重启应用一律 `setprop ctl.restart zkswe`（**不要 kill**，应用由类 init 服务托管，见 `device-deploy-budget.md`） |
+| ② | 应用状态 | `init.svc.zkswe`、`sys.zkapp.state`、`sys.zkapp.dbg`、`pidof zkgui`、`/proc/uptime` | 服务态或 pid 有值 | 重启应用一律 `setprop ctl.restart zkswe`（**不要 kill**，应用由类 init 服务托管，见 `knowledge/devflow/device-deploy-budget.md`） |
 | ③ | 显示 | `fb0/{virtual_size,bits_per_pixel,stride,pan}`、EasyUI.cfg 的 `rotateScreen`/`rotateTouch` | fb 三项任一有值 | 板子可能没有 fb0（走 MI 显示通道）；旋转口径按 `/tmp` > `/mnt/extsd` > `/res/etc` 顺序找 EasyUI.cfg |
 | ④ | 存储 | `/proc/mounts`（/res、/data…只读性）、`ls /mnt`、`df -k /tmp`、`df -k /data`、`ls /res/ui` | 挂载表解析出条目 | `/proc/mounts` 不依赖 busybox；`/res` 多为只读 squashfs（调试推 `/tmp`，固化才落盘）；`/tmp` 是 tmpfs，撑爆会 OOM 杀 zkgui |
 | ⑤ | 网络 | `/sys/class/net/wlan0/address`、`ifconfig wlan0`、`/proc/net/route`（默认路由）、`/etc/resolv.conf`、`/data/misc/wifi/wpa_supplicant.conf` | 任一有值 | 读不到 wlan0 = 可能没 WiFi 模组（先看 `/proc/net/dev` 的接口名）；无默认路由 = 没联网 |
 | ⑥ | 蓝牙 | `getprop` 里的 bt/bluetooth 属性、`/sys/class/rfkill/rfkill0/{name,state}`、`/dev/hci*` | 任一有值 | **`ok=false` 常常就是结论**：没插 AIC USB BT 模组（或模组没起 hci）；要用蓝牙看 `components/ble` + `gatt` 包 |
 | ⑦ | 输入 | `ls /dev/input`（需 busybox）、`/proc/bus/input/devices`（触摸设备名） | 节点或设备表非空 | `/proc/bus/input/devices` 不依赖 busybox；注入测试用随仓 `bin_tools/<平台>/touch`（先 `touch list`） |
 | ⑧ | 外设 | `/data/preferences.json`（继电器/过零 IO 键） | 偏好文件是 JSON 且有 relay/zero/io 键 | 偏好文件**应用没写过就没有**，`ok=false` 属常态；继电器走 `zkhardware` 包（`zeroOutput`/背光） |
-| ⑨ | 时间 | `date`、`date +%s`、`persist.sys.timezone`、`ntpd/ntpdate` 是否存在 | date 或 epoch 有值 | 设备 `date` 被裁剪 → 自动退 `busybox date`；`driftSeconds` = 设备 − 宿主，**NTP 是否可用不替你判断**（本分区只给偏差）；偏差大时先让设备把时间对上再验需要时间正确的功能（相关坑见 `package-verify-playbook.md`） |
+| ⑨ | 时间 | `date`、`date +%s`、`persist.sys.timezone`、`ntpd/ntpdate` 是否存在 | date 或 epoch 有值 | 设备 `date` 被裁剪 → 自动退 `busybox date`；`driftSeconds` = 设备 − 宿主，**NTP 是否可用不替你判断**（本分区只给偏差）；偏差大时先让设备把时间对上再验需要时间正确的功能（相关坑见 `knowledge/devflow/package-verify-playbook.md`） |
 
 ### 2.1 采集的工程口径（为什么这么写）
 
@@ -117,7 +117,7 @@ selfcheck 只看"设备本身的状态读数"，不看画面内容。
 **最近 `logcat -d -s zkgui` 末 40 行**（每行截 200 字符）。
 
 - 采 logcat 的口径：`-s zkgui` 只留应用 tag（网络类事件线程会刷屏把日志挤出缓冲，见
-  `package-verify-playbook.md`）；没有输出时**写明原因**而不是留空。
+  `knowledge/devflow/package-verify-playbook.md`）；没有输出时**写明原因**而不是留空。
 - **连不上设备 / 设备不可定位**：markdown 里写「未采集到真机数据 + 原因 + 怎么补采」，
   并在返回体 `warnings` 里同步一条。缺陷单照样产出（可能是静态分析出来的缺陷）。
 - `device` 的口径与 selfcheck 完全一致（带端口、多台不猜）。

@@ -20,7 +20,7 @@ evidence:
 > **检索导引**：自动化测试怎么跑 / 验收怎么批量做 / 多台设备一起跑用例 / 测试报告能进 CI 吗 /
 > JUnit 报告 / 像素基线 / 基线回归 / 首次怎么建基线 / 比不到基线是过还是没过 /
 > 报告里 no-baseline 什么意思 / 多设备并行 / 测试用例 JSON 怎么写 /
-> touch 注入怎么批量跑 / ui_test 与 test_run 区别 / test_run 与 gen_ui_test 区别
+> touch 注入怎么批量跑 / touch / ui_test（兼容老屏）与 test_run 区别 / test_run 与 gen_ui_test 区别
 
 ---
 
@@ -135,7 +135,7 @@ flythings_ui_visual(action="baseline", project_root="<工程>", mode="update", i
 | 单台 save→compare 也报 1~2 处差异 | 页面上有**自己在变的内容**（时钟/温度/动画）：给 step 加 `"allowRegions": 1~2`，或裁到稳定区域，或改日志断言 |
 | 全部步骤 `no-baseline` | 还没建基线：先 `baseline="save"` 跑一轮 |
 | `size-mismatch` | 工程分辨率变了：确认新尺寸后 `mode=update` |
-| 抓屏步骤 `error` 且 hint 提「双缓冲/pan」 | 抓到上一帧：注入前先 `tap` 唤醒重绘，或对同一步抓两次（见 `device-screenshot.md`） |
+| 抓屏步骤 `error` 且 hint 提「双缓冲/pan」 | 抓到上一帧：注入前先 `tap` 唤醒重绘，或对同一步抓两次（见 `knowledge/devflow/device-screenshot.md`） |
 | 日志断言老不过 | `tag` 不是 `zkgui`，或 `lines` 太小（业务日志被刷屏挤掉缓冲） |
 | 注入 `error` 且提 `No space left on device` | 设备 `/data` 写满（Z20 常见）：工具自动退到 `/tmp`→`/mnt/extsd`；三个都放不下就只能先腾空间 |
 | 注入 `error` | 设备无 root/权限（`chmod 777` 失败）、平台 ELF 不匹配、触摸节点被占用 |
@@ -146,6 +146,6 @@ flythings_ui_visual(action="baseline", project_root="<工程>", mode="update", i
 ## 6. 相关
 
 - 单步工具（人工试）：`knowledge/devflow/touch-inject-autotest.md`（`touch tap/swipe/long/monkey/run/record/play`）
-- 像素判据与容差：`knowledge/devflow/ui-asset-rules.md`、`ui-layout-verify.md`
+- 像素判据与容差：`knowledge/devflow/ui-asset-rules.md`、`knowledge/devflow/ui-layout-verify.md`
 - 整机快照 / 缺陷单：`knowledge/devflow/selfcheck-and-bugreport.md`
 - 依赖包真机验证套路：`knowledge/devflow/package-verify-playbook.md`

@@ -15,7 +15,7 @@ evidence: []
 ---
 # 页面架构规范：ftu vs 同 ftu 内多窗口 + src 业务域目录命名
 
-> 检索导引：问「一个工程几个 ftu/Activity / 二级页·弹窗放同一 ftu 还是新页 / merge_windows 什么时候用 / showWnd 多窗口 / src 目录与文件怎么命名 / 多屏设计稿要落地几页」→ 本文（默认一屏一 Activity 一 json）；原型分页流程见 `devflow/prototype-flow.md`。
+> 检索导引：问「一个工程几个 ftu/Activity / 二级页·弹窗放同一 ftu 还是新页 / merge_windows 什么时候用 / showWnd 多窗口 / src 目录与文件怎么命名 / 多屏设计稿要落地几页」→ 本文（默认一屏一 Activity 一 json）；原型分页流程见 `knowledge/devflow/prototype-flow.md`。
 > 检索词：页面架构/ftu 划分/多窗口/showWnd/整屏 window/二级页/弹窗/目录命名/业务域/src 目录/network media/.cpp .h/单 Activity/多 Activity/一个工程几个 Activity/一个工程几个 ftu/多个页面怎么放/页面放一个 ftu 还是多个。
 
 ## 0. 一句话口径
@@ -32,7 +32,7 @@ evidence: []
 
 **屏数核对（交付前必做）**：html2json 返回体带 `screensDetected`（识别到几个 `.screen`）与
 `pagesProduced`（实际产出几页），**两者必须相等且等于设计稿屏数 N**；不等一律 `success:false`，
-先修 HTML 再往下走。数屏方法与逐条清单见 `devflow/prototype-flow.md`「分页落地清单（硬规则）」。
+先修 HTML 再往下走。数屏方法与逐条清单见 `knowledge/devflow/prototype-flow.md`「分页落地清单（硬规则）」。
 
 **ftu = Activity = 一个独立编译单元（IDE 按 ftu 生成 activity+logic，独立生命周期与返回栈）；window = 同一 Activity 内的显隐（零切换成本、共享控件指针与状态）。**
 所以划分依据是**设计稿的 Activity 归属（业务域 + 生命周期）**，不是"页面看起来像不像一页"；
@@ -108,7 +108,7 @@ src/
 1. **一级子目录 = 业务域**（network / media / storage / ui-config …），域名用**小写英文单数名词**，不用 `core`、`common`、`misc`、`utils` 这类无域含义的名字（真有两个域共用的东西，才另起 `common/`，并写明归属）。
 2. **不在 `src/` 下先分 `core/`/`modules/` 再分业务域**（两层壳只会让 include 路径变长、归属变模糊）。
 3. **文件 = 业务域内的一个职责类**：`<职责>.cpp` + `<职责>.h` 成对；类名用大驼峰，与文件名一致（`NetworkManager` ↔ `NetworkManager.cpp/.h`）。
-4. **一律 `.cpp`/`.h`**：新增业务代码禁止建 `.cc`（`.cc` 是 IDE 按页面生成的 logic 专属）。**两套编译体系别混**：IDE 里 `.cc` 靠 `mainActivity.cpp` `#include` 进编译单元（Makefile 只编 `%.cpp %.c`）；**`fun build` 里 `src/activity/*` 不参与编译，`src/logic/*.cc` 直接被编译，业务 `src/**/*.cpp` 被扫描收进编译单元** —— **不要改 `.fun/<平台>/CMakeLists.txt`**（fun 自动生成、会覆盖）。详见 `cli-fun-toolchain.md` §4.5。
+4. **一律 `.cpp`/`.h`**：新增业务代码禁止建 `.cc`（`.cc` 是 IDE 按页面生成的 logic 专属）。**两套编译体系别混**：IDE 里 `.cc` 靠 `mainActivity.cpp` `#include` 进编译单元（Makefile 只编 `%.cpp %.c`）；**`fun build` 里 `src/activity/*` 不参与编译，`src/logic/*.cc` 直接被编译，业务 `src/**/*.cpp` 被扫描收进编译单元** —— **不要改 `.fun/<平台>/CMakeLists.txt`**（fun 自动生成、会覆盖）。详见 `knowledge/devflow/cli-fun-toolchain.md` §4.5。
 5. **`src/logic/*.cc` 只做关联层**：取控件指针 / `setText` / 调业务对象；复杂逻辑放业务域目录里的类，logic 只 include + 调用。
 6. **include 路径**：业务模块头文件用相对 `src/` 的路径（如 `#include "network/NetworkManager.h"`），不要写绝对路径。
 7. **资源与代码分开**：图片等资源仍放 `resources/`（自动生成图放 `resources/images/`，json 引用写 `images/xxx.png`），业务域目录只放代码。

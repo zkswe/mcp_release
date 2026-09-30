@@ -15,7 +15,7 @@ evidence: []
 ---
 # 部署/调试场景 → 工具动作映射（禁止自造部署命令）
 
-> 检索导引：问「调试/部署/全量推送/跑一下该调哪个工具 / 有没有 deploy_debug.sh / 固化升级算不算调试」→ 本文（用户话语→唯一动作映射）；固化出包见 `devflow/upgrade-pack-image.md`。
+> 检索导引：问「调试/部署/全量推送/跑一下该调哪个工具 / 有没有 deploy_debug.sh / 固化升级算不算调试」→ 本文（用户话语→唯一动作映射）；固化出包见 `knowledge/devflow/upgrade-pack-image.md`。
 > 铁律：FlyThings 全量部署/推送的唯一入口是 **`flythings_build_ui_flow`（内部 fun launch）**，
 > **不存在任何 `tools/deploy_debug.sh` / deploy_debug.sh 之类的额外部署脚本**。
 > AI 在任意客户端里收到「调试/全量推送/部署」类请求时，必须调用 MCP 工具，禁止自创 shell 脚本或命令路径。
@@ -44,7 +44,7 @@ evidence: []
 > （setprop → 轮询等新 pid；`kill` 仅在 `allow_kill=True` 时才作兜底）。
 > ⚠️ 历史坑：早期临时脚本/示例大量 `kill -9 zkgui` / `busybox killall zkgui`，
 > 反复 kill 之后现场出现过「触摸注入不响应」「整板掉网」→ 现在统一口径：**不 kill**。
-> 口径与背景见 `device-deploy-budget.md` §5。
+> 口径与背景见 `knowledge/devflow/device-deploy-budget.md` §5。
 
 ## ⚠️ 反例：固化升级**不是**本工具（另一条唯一入口）
 

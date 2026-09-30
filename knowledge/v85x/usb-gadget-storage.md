@@ -124,7 +124,7 @@ USB 插入/充电检测：GPIO（xdv23 用 `GPIO_260` = `GPIO_USBIN_DET`，1=插
 
 V85X 节点在 `/sys/devices/platform/soc/usbc0/`：`otg_role`(查) / `usb_device`(切 device) / `usb_host`(切 host) / `usb_null`(清角色)。
 ⚠️ 切角色前先读 `usb_null` 清当前角色（相同档早退），再读目标节点；Z21 路径不同 ——
-跨平台对照、设备树差异与 8 步 configfs 概览见 `hardware/usb-otg-switch.md`（正文）。
+跨平台对照、设备树差异与 8 步 configfs 概览见 `knowledge/hardware/usb-otg-switch.md`（正文）。
 
 ## 4. configfs usb_gadget 配置序列（8 步，顺序不可乱）
 
@@ -172,12 +172,12 @@ FlyThings app 自己把介质块设备格式化为 FAT32 并挂载（EMMC 分区
 
 ## 6. 平台差异备忘
 
-- **Z21**（`soc0/soc/soc:usbotg` 路径、只有 usb_host/usb_device 两节点、shell cat 即切）与 T113（`usbc0@0` 带 reg 地址）→ 对照表在 `hardware/usb-otg-switch.md`（正文）。
+- **Z21**（`soc0/soc/soc:usbotg` 路径、只有 usb_host/usb_device 两节点、shell cat 即切）与 T113（`usbc0@0` 带 reg 地址）→ 对照表在 `knowledge/hardware/usb-otg-switch.md`（正文）。
 - **V85X/V85XEMMC**：本文 §1–§4（usb_monitor.cpp = 完整可抄实现，含 g1/mass_storage/ffs.adb + 介质双分支）。
 
 ## 7. 坑与注意
 
-1. **互斥 / configfs 未挂 / adbd uid-gid 与 `ctl.restart`**：与 `hardware/usb-otg-switch.md` §坑 1–3 同源——
+1. **互斥 / configfs 未挂 / adbd uid-gid 与 `ctl.restart`**：与 `knowledge/hardware/usb-otg-switch.md` §坑 1–3 同源——
    换档先 unlink 两个旧 symlink（残留→新档不生效）、先 `mount none configfs`，ADB 档 functionfs uid/gid=2000。
 2. **暴露整分区 vs 设备端写入抢数据**：U盘档暴露的是整块介质（mmcblk0p1 / mmcblk1），
    若设备端同时挂载读写相册会抢——量产取舍：默认 U盘模式但写入只在拍照/录像瞬间；

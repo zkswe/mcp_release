@@ -11,8 +11,11 @@
 |------|------|------|
 | **`touch`** ⭐ | **统一触摸注入（推荐）**：自动扫描触摸节点 + 自动判协议（单点 / MT-A / MT-B），**部署命令不带 `/dev/input/eventN`**；命令 tap/swipe/long/monkey/run/record/play + list/info。2026-09-12 新增，源码 `tools/touch_inject/` | z21 / z20 / t113 / f133 / f135 / v85x |
 | `ui_test` | 触摸注入/自动化测试（tap/swipe/long/monkey/run 脚本，**单点协议**适配老屏）——**兼容保留**，需人工给节点 | z21 / z20 / t113 / f133 / v85x |
-| `mt_test` | **MT-A 协议**触摸注入（适配 gt9xx 等 ABS_MT_* 多点屏）——**兼容保留**，需人工给节点 | z21 / z20 / t113 / v85x（f133/f135 待 WSL 编译） |
 | `busybox` | 设备调试工具箱（网络/系统/Shell 全开，2026-09-08 新增） | z21 / z20 / t113 / f133 / f135 / v85x |
+
+> 📌 **`mt_test` 已于 2026-09-30 移除**（二进制归档到工作区 `archive/mcp_mt_test_20260930/`）：
+> `touch` 自动扫描触摸节点 + 自动判协议（单点 / MT-A / MT-B）已完整覆盖其能力，**MT 屏一律用 `touch`**。
+> `ui_test` 保留（体积小、兼容老屏，需人工给节点）。
 
 全部 ELF 已验证魔数 `7F 45 4C 46`，直接 `adb push` 即可运行（无需宿主 zkgui）。
 
@@ -34,18 +37,18 @@ adb shell getevent -p /dev/input/eventN
 # 看 ABS 列表有没有 ABS_MT_POSITION_X/Y
 
 # 方法 3：试注入一次，看 FlyThings 日志
-adb shell ui_test /dev/input/eventN tap 100 100   # 单点协议
-adb shell mt_test /dev/input/eventN tap 100 100   # MT 协议
+adb shell /data/touch tap 100 100                 # touch 自动判协议（命令不带 eventN）
+adb shell ui_test /dev/input/eventN tap 100 100   # 单点协议（兼容工具，需人工给节点）
 # FlyThings 收到坐标非 0 = 协议对；恒 0 = 协议错
 ```
 
 | 屏幕类型 | 典型驱动 | 工具 |
 |---|---|---|
 | 单点（旧电阻屏/部分电容） | ili210x、ADS7846 等 | `touch`（自动） / `ui_test` |
-| MT Type-A 多点（**gt9xx 主流**） | gt9xx、Goodix 系列 | `touch`（自动） / `mt_test` |
+| MT Type-A 多点（**gt9xx 主流**） | gt9xx、Goodix 系列 | `touch`（自动；人工核验可 `touch --proto a`） |
 | MT Type-B 多点（slot 协议） | 部分新驱动 | `touch`（自动） |
 
-V553 实测（2026-09-08）：`/dev/input/event0` = gt9xx MT Type-A，`ui_test` 注入坐标恒 0，改 `mt_test` 后坐标正确 —— 当时只能靠试；**现在 `touch` 会自己判成 MT-A**。
+V553 实测（2026-09-08）：`/dev/input/event0` = gt9xx MT Type-A，`ui_test` 注入坐标恒 0，改 `mt_test`（**2026-09-30 已移除**，能力由 `touch` 自动判协议覆盖）后坐标正确 —— 当时只能靠试；**现在 `touch` 会自己判成 MT-A**。
 
 ## 🔧 busybox 调用方法（设备没 ifconfig/ping 等工具时用它）
 
@@ -135,17 +138,10 @@ adb shell /data/ui_test /dev/input/event1 monkey 1024 600 500
 ```
 ⚠️ EV_SYN 必须发，否则内核不提交事件；滑动禁止跳终点（会被识别为无效/抖动）。
 
-## 🎯 mt_test 调用方法（兼容保留；MT Type-A 协议，gt9xx 等多点屏用）
+## 🎯 MT Type-A 协议要点（对接知识；`mt_test` 已移除）
 
-```
-用法: mt_test <设备节点> <命令> [参数]   # 命令与 ui_test 完全一致
-
-  tap x y                    # 点击
-  swipe x1 y1 x2 y2          # 滑动
-  long x y ms                # 长按
-  monkey <w> <h> <count>     # 随机压测
-  run <script.txt>           # 跑脚本（同 ui_test 格式）
-```
+> `mt_test` 已于 **2026-09-30 移除**（`touch` 自动判协议覆盖其能力）。下面这套 MT-A 事件序列是**对接/核验知识**，
+> 不是某个工具的用法；需要人工指定协议时用 `touch info` 看能力位、`touch --proto a tap x y` 注入。
 
 ### 协议铁律（MT Type-A）
 ```
@@ -155,16 +151,12 @@ adb shell /data/ui_test /dev/input/event1 monkey 1024 600 500
 抬起: ABS_MT_TRACKING_ID=-1 → BTN_TOUCH=0 → EV_SYN
 ```
 
-部署：
-```bash
-# 选对应平台 push
-adb push bin_tools/v85x/mt_test /tmp/mt_test
-adb shell chmod +x /tmp/mt_test
-# 设备节点按 getevent 确认（MT 屏是 ABS_MT_* 那路）
-adb shell /tmp/mt_test /dev/input/event0 tap 100 100
-```
+### 单点 / MT-A / MT-B 的注入差异（用错 → 坐标恒 0）
+- **单点**：`ABS_X/Y + ABS_PRESSURE + BTN_TOUCH`（老电阻屏/部分电容屏）——`ui_test` 走这条
+- **MT Type-A**：`ABS_MT_POSITION_X/Y + ABS_MT_TRACKING_ID`，靠 `SYN_MT_REPORT` 分隔点位（gt9xx 主流）
+- **MT Type-B**：有 `ABS_MT_SLOT`，抬起帧须同帧带 `TRACKING_ID=-1`（**不能**发 `SYN_MT_REPORT`）
 
-**与 ui_test 的核心区别**：mt_test 用 `ABS_MT_POSITION_X/Y + ABS_MT_TRACKING_ID` 多点协议，ui_test 用 `ABS_X/Y + ABS_PRESSURE` 单点协议。**用错协议 → 驱动丢弃坐标 → FlyThings 收到恒 0**（具体判定见上方"协议速判"）。
+`touch` 会自动判成单点 / MT-A / MT-B（`touch list` 一步核验），**不必再按屏型挑工具**；协议用错 → 驱动丢弃坐标 → FlyThings 收到恒 0（判定见上方"协议速判"）。
 
 ## 🔧 新增平台/工具流程
 1. 新平台：`fun create --type bin --platform <新平台>` + 放源码 `src/main.cpp`（ui_test 源码由工具链维护）

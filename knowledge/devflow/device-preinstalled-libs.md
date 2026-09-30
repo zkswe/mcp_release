@@ -68,7 +68,7 @@ arm-pc-linux-gnueabihf-readelf.exe --dyn-syms <lib>.so  # 导出符号（对照�
 - ⛔ **应用层不需要关注、也不要去 dlopen/链接**（接口不对外、随固件变）；
   （2026-09-30 钟工：「mi_gfx 不需要用户关注」）
 - ✅ 需要图层/合成能力时，走**框架提供的高层 API**（`videoview`/`cameraview`/disp 图层纪律、
-  `setBackgroundBmp`+`setInvalid`、`button+picTab` 的 α 路径）——见 `devflow/render-extension-boundary.md`。
+  `setBackgroundBmp`+`setInvalid`、`button+picTab` 的 α 路径）——见 `knowledge/devflow/render-extension-boundary.md`。
 
 ### 2.3 框架与平台服务
 
@@ -103,6 +103,6 @@ arm-pc-linux-gnueabihf-readelf.exe --dyn-syms <lib>.so  # 导出符号（对照�
 
 ## 5. 相关文档
 
-- 借开源库的完整落地纪律（libc 匹配 / `src/dependencies/lib/` / strip / maps 核验）：`devflow/open-source-stack-integration.md`
-- 渲染扩展点与选件（nanovg 在渲染里的角色）：`devflow/custom-render-paths.md` ②b、`devflow/render-extension-boundary.md`
-- F133 侧 nanovg 实证：`components/vinyl/`（含 `platforms.md`）
+- 借开源库的完整落地纪律（libc 匹配 / `src/dependencies/lib/` / strip / maps 核验）：`knowledge/devflow/open-source-stack-integration.md`
+- 渲染扩展点与选件（nanovg 在渲染里的角色）：`knowledge/devflow/custom-render-paths.md` ②b、`knowledge/devflow/render-extension-boundary.md`
+- F133 侧 nanovg 实证：`components/vinyl/`（含 `components/vinyl/platforms.md`）

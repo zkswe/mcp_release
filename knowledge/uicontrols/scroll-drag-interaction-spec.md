@@ -20,7 +20,7 @@ evidence: []
 > 适用控件：`listview` / `scrollwindow` / `pagewindow` / `slidewindow`（四个控件共用同一批滑动字段）。
 > 2026-09-12 沛哥定规（起因：列表 `dragMaxDis` 按列表高度填 → 一次拖拽把整屏列表拽出去，交互不合格）→ 语义 + 取值规范入库。
 > **证据**：SampleUI-New(1024x600) 42 json + basedemo 官方示例（listViewDemo-New / ScrollWindowDemo-New / PageWindowDemo-New / SlideWindowDemo）+ 真实工程 json 统计（取值只落 4 档，见 §5）。
-> ⚠️ 官方文档站与 wiki **未收录** `dragMaxDis` 语义 —— 本文是唯一权威口径（实践知识）。检索边界见 `retrieval-boundary.md`。
+> ⚠️ 官方文档站与 wiki **未收录** `dragMaxDis` 语义 —— 本文是唯一权威口径（实践知识）。检索边界见 `knowledge/uicontrols/retrieval-boundary.md`。
 
 ## 0. 一句话
 
@@ -59,13 +59,13 @@ evidence: []
 - **R2 上限**：listview **禁止 `dragMaxDis` ≥ 控件可视高**（≥ 值 = 整屏可被拽出，用户失去「边界」物理感知，回弹前界面露底 → 判不合格）。
 - **R3 `0` 的语义**：`0` = 关闭越界拖出（配 `edgeEffect:0`）。要回弹手感就 `edgeEffect:1 + dragMaxDis:50`；**`edgeEffect:1 + dragMaxDis:0` 是自相矛盾的配法**（白配，等效硬停）。
 - **R4 循环列表**（`cycleEnable:true`）：本身没有边界，越界拖拽别开大，用基准 50。
-- **R5 回弹对齐**（`autoRollback:true`）：只影响拖拽过程手感，不改变最终停靠（对齐整行/整页）；改停靠位置靠 `setSelection()`（其后必须 `refreshListView()`，见 `listview-fields.md`）。
+- **R5 回弹对齐**（`autoRollback:true`）：只影响拖拽过程手感，不改变最终停靠（对齐整行/整页）；改停靠位置靠 `setSelection()`（其后必须 `refreshListView()`，见 `knowledge/uicontrols/listview-fields.md`）。
 - **R6 分辨率换算**：基准 50 @1024×600 ≈ 屏高 8%；其他分辨率 `round(scale × 50)`，下限 24（480×272 → 24；800×480 → 40；1280×800 → 67）。
 - **R7 手感验收（实机）**：拽到边界应 1-2 帧内「拽不动」并带阻尼；松手 200-300ms 内回弹归位；**任何情况下不允许整屏内容被拖离后长时间露底**。
 - **R8 别拿它做别的**：翻页用 `pagewindow`；下拉刷新自己做手势判定（`onXxxActivityTouchEvent` + 边缘判定），`dragMaxDis` 做不到。
 - **R9 回调重量也算手感**（2026-09-17 实测）：拖动回调里**禁止全量刷新**——同一页 4 条滑块只因回调重量不同，
   拖动期的 CPU 就相差一个数量级（重回调 **73.8%** vs 轻回调 **7.1%**，快拖延迟 **383ms vs 169ms**）。
-  手感不对时先量「回调里写了几次控件」，再看字段取值。详见 `high-frequency-callback-perf.md`。
+  手感不对时先量「回调里写了几次控件」，再看字段取值。详见 `knowledge/uicontrols/high-frequency-callback-perf.md`。
 
 ## 3. 症状 → 病因对照
 
@@ -75,7 +75,7 @@ evidence: []
 | 边缘毫无反馈、硬邦邦 | `edgeEffect:0`（或 `edgeEffect:1` 但 `dragMaxDis:0`） | 要回弹就 `edgeEffect:1 + 50` |
 | 列表停在不该停的位置 | 缺 `autoRollback:true`（或改数据后没 refresh） | 补 autoRollback / `refreshListView()` |
 | 滚动页滚不到底 | scrollwindow 的 `dragMaxDis` < 内容尺寸 | 填内容尺寸（实测与内嵌 window 尺寸一致） |
-| 同一个页面的同类控件，**有的顺有的卡** | 卡的那条回调里走了**全量刷新**（每次拖动 80+ 次 GUI 调用） | 回调只刷变化的那一个控件，见 `high-frequency-callback-perf.md` |
+| 同一个页面的同类控件，**有的顺有的卡** | 卡的那条回调里走了**全量刷新**（每次拖动 80+ 次 GUI 调用） | 回调只刷变化的那一个控件，见 `knowledge/uicontrols/high-frequency-callback-perf.md` |
 
 ## 4. 验收清单（交付前打勾）
 
@@ -105,12 +105,12 @@ evidence: []
 
 ## 6. 相关
 
-- listview 字段/回调（含 `item.text` 必须 `""`）：`listview-fields.md`
-- ★ **用 listview 做滚轮选择器**（循环选择器档的完整配法 + 中心行对齐 + 三个真机坑）：`listview-wheel-picker.md`
+- listview 字段/回调（含 `item.text` 必须 `""`）：`knowledge/uicontrols/listview-fields.md`
+- ★ **用 listview 做滚轮选择器**（循环选择器档的完整配法 + 中心行对齐 + 三个真机坑）：`knowledge/uicontrols/listview-wheel-picker.md`
   （实测口径：`setSelection(i)` 只把第 i 项摆到列表盒第 1 行**且带动画**；程控定位改用「数据侧平移 + refreshListView()」）
-- 字段必写全集（含 dragMaxDis 默认值）：`json-field-mandatory.md`
-- 分层规则（scrollwindow 内容 = window 尺寸 = dragMaxDis）：`json-layer-rules.md`
-- slidewindow / pagewindow 字段：`slidewindow-fields.md`、`pagewindow-fields.md`
+- 字段必写全集（含 dragMaxDis 默认值）：`knowledge/uicontrols/json-field-mandatory.md`
+- 分层规则（scrollwindow 内容 = window 尺寸 = dragMaxDis）：`knowledge/uicontrols/json-layer-rules.md`
+- slidewindow / pagewindow 字段：`knowledge/uicontrols/slidewindow-fields.md`、`knowledge/uicontrols/pagewindow-fields.md`
 - HTML 属性映射：`ui_tools/HTML_SUBSET.md`（`data-drag-max` / `data-edge-effect` / `data-auto-rollback` / `data-roll-speed`）
-- 自定义手势（下拉刷新等）：`touch-events.md`
-- 拖动回调写得太多导致的卡顿（CPU 降一个数量级） → `high-frequency-callback-perf.md`
+- 自定义手势（下拉刷新等）：`knowledge/uicontrols/touch-events.md`
+- 拖动回调写得太多导致的卡顿（CPU 降一个数量级） → `knowledge/uicontrols/high-frequency-callback-perf.md`

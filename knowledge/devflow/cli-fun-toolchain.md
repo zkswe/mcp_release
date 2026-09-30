@@ -15,7 +15,7 @@ evidence: []
 ---
 # 🧰 fun 命令行工具链（原 fuse 更名；2026-09-28 内部又改成 fsc、产物目录 `.fun/` → `.fsc/`）+ 宏/产物目录改名
 
-> 检索导引：问「用 fun 还是 fuse/fsc / fun build 挂老工程 / FUN_BUILD 宏怎么加 / 产物在 .fun 还是 .fsc / 依赖注册表在哪 / 多设备在线怎么推指定设备」→ 本文；编译部署该调哪个工具见 `devflow/deploy-scene-map.md`。
+> 检索导引：问「用 fun 还是 fuse/fsc / fun build 挂老工程 / FUN_BUILD 宏怎么加 / 产物在 .fun 还是 .fsc / 依赖注册表在哪 / 多设备在线怎么推指定设备」→ 本文；编译部署该调哪个工具见 `knowledge/devflow/deploy-scene-map.md`。
 > **2026-09-28 换代**：工具链 `v0.0.2+2609281006_e09dc96` —— 内部包名 `fun`→**`fsc`**；产物目录 `.fun/<平台>/`→**`.fsc/<平台>/`**；锁 `.fun-lock.json`→**`.fsc-lock.json`**；home `~/.fun`→**`~/.fsc`**（env `FSC_HOME_PATH`）；编译宏**同时定义 `FUN_BUILD=1` 和 `FSC_BUILD=1`**，老工程不用改。**MCP 两代都认**（产物/锁/注册表双向兼容）。
 > 检索词：fun.exe / fuse.exe / fsc / FSC_HOME_PATH / 工具链 / 编译命令 / fun build / fun install / fun launch / fun sim / FUN_BUILD / FUSE_BUILD / .fun / .fsc / .fsc-lock.json / .fuse / 老工程迁移 / 注册表路径 / 多设备 / 设备选择 / -s / --device / WiFi adb / adb tcpip / adb connect / 推不上去 / more than one device / 旧 ftu / 界面没变 / base/functional.h / 找不到 base utils / base-utility 缺失 / fun install 没生效。
 
@@ -135,7 +135,7 @@ INIT_UI_EVENT_BINDINGS
 
 - 工具侧动作优先走 MCP（`flythings_build_ui_flow` / `flythings_add_package` / `flythings_pack_upgrade`），**禁止手搓 fun/adb 命令**（MCP 已处理 retry、设备选择、i18n 盲点等）
 - **改过 `Manifest.xml`（加包/改版本/改平台）→ 必须先 `fun install` 再 `fun build`**：根因、判据、工具侧防护见 §4.7
-- 调试 = `fun launch`（临时推送，掉电即失）；固化 = `fun pack` 出 `update.img`（掉电保留）——两者语义别混（见 `deploy-scene-map.md`）；
+- 调试 = `fun launch`（临时推送，掉电即失）；固化 = `fun pack` 出 `update.img`（掉电保留）——两者语义别混（见 `knowledge/devflow/deploy-scene-map.md`）；
   抓帧/设备侧动作仍走 `flythings_device_screenshot`（内部已处理 rootfs 裁剪、pan 偏移、压缩链路）
 - ⚠️ **`fun sim` 不在 MCP 能力面内**（沛哥 2026-09-14 定「暂时发布的 mcp 不要支持 sim 功能」）：工具面不暴露该能力，`project_tools._run_fun` 也**显式拒绝 `cmd == 'sim'`** 并返回正解 hint（推真机→`flythings_build_ui_flow`；出图→`flythings_device_screenshot`；要跑模拟器自己去本地命令行）。**AI 不要拿 `flythings_*` 工具去实现模拟器运行，也不要因这条向用户承诺 MCP 能跑模拟器。**
 

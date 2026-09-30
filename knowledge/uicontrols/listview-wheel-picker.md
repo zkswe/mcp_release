@@ -15,13 +15,13 @@ evidence: []
 ---
 # listview 做滚轮选择器（WheelPicker）：字段配法 + 中心行对齐 + 三个真机坑
 
-> 检索导引：问「滚轮选择器怎么做 / 时间选择·时钟盘 / 选中条跟着行滚 / setSelection 带不带动画 / 中心行选中值怎么回读」→ 本文；基础字段见 `uicontrols/listview-fields.md`。
+> 检索导引：问「滚轮选择器怎么做 / 时间选择·时钟盘 / 选中条跟着行滚 / setSelection 带不带动画 / 中心行选中值怎么回读」→ 本文；基础字段见 `knowledge/uicontrols/listview-fields.md`。
 > **检索命中条件（三类问法都命中本文）**：**① 滚轮族**（滚轮怎么做 / 滚轮选择器 / 转盘 / 循环列表做选择器 / 无限滚动列表 / picker 多列联动 / picker-view 怎么转 / lv_roller 怎么用 / NumberPicker 支持吗 / LISTWHEEL 对应哪个控件 / QTimeEdit 怎么做 / WheelPicker 有没有原生能力 / 那个自绘轮子包还在吗 / 滚轮改判 L2 了吗 / 滚轮机读映射 / wheel 别名 / 滚轮拖不动 / 滚轮惯性 / 惯性回弹 / 松手回弹对齐 / 拖动选择器怎么回读选中值 / 停下报事件 / 选中项变化回调）；**② 居中行 / 选中条族**（listview 居中选中 / 列表中行 / 行停在中行 / 中间行高亮 / 选中行高亮 / 选择条 / 高亮带 / 选中条（高亮带）跟着滚 / 滚动时高亮条跑了 / 选中条放背景图 / 高亮带挂哪层 / 条跟着行走 / 字色淡出 / 边缘渐隐）；**③ 时间 / 时钟盘族**（时间选择器怎么做 / 日期时间选择 / 时间滚轮 / 时·分·秒怎么拼 / 24 小时制选择 / TimePicker 怎么做 / TimePicker 时钟盘 / 时钟盘怎么实现 / clock dial / 圆形时间选择 / 时钟盘有没有对应能力）。
 > **检索词（同义/别名，降级 BM25 与人工核对都用）**：WheelPicker、wheel、roller、lv_roller、picker-view、picker-view-column、picker mode=time、NumberPicker、LISTWHEEL、QTimeEdit、TimePicker、TimePickerDialog、选择器、滚动选择、cycleEnable、autoRollback、edgeEffect。
-> **相关**：字段与回调全集 `listview-fields.md`；滑动/惯性字段取值 `scroll-drag-interaction-spec.md`；json 必写字段 `json-field-mandatory.md`；装饰件吞触摸 `touch-events.md`；跨框架映射 `control-mapping-capability.md`。
+> **相关**：字段与回调全集 `knowledge/uicontrols/listview-fields.md`；滑动/惯性字段取值 `knowledge/uicontrols/scroll-drag-interaction-spec.md`；json 必写字段 `knowledge/uicontrols/json-field-mandatory.md`；装饰件吞触摸 `knowledge/uicontrols/touch-events.md`；跨框架映射 `knowledge/uicontrols/control-mapping-capability.md`。
 > 案例 `projects/translate/tdesign-miniprogram`（Z21 1024×600 真机，`z21/evidence/s4b_*` + `s4b_test.log` 24 项全 PASS；`s4c_*` + `s4c_test.log` 30 项全 PASS = 条改静态层后的现役验收）。
 > 结论一句话：**平台 listview 能把滚轮做出来（L2 组合），不用自绘**；但三件事要自己做：①「正中行 = 选中行」用**数据侧平移**摆；②**不能用引擎的选中态**（它会把选中态打在列表盒第 1 行，还会盖掉宿主的 `setSelected`）；③**选中条要挂「静态背景层」，不挂行背景图**（挂行 → 滚起来条跟着走）。
-> 缺口编号：`../components/ui_v1/gap-list.md` G-23（由 L5「明说不支持」改判 **L2 组合**）、G-37、G-38。
+> 缺口编号：`knowledge/../components/ui_v1/gap-list.md` G-23（由 L5「明说不支持」改判 **L2 组合**）、G-37、G-38。
 
 ## 速查（滚轮 / 选择器 / 时间选择 / 时钟盘）
 
@@ -67,7 +67,7 @@ evidence: []
 //（touchPass 无 json 字段，必须写代码，见 uicontrols/touch-events.md §1）
 ```
 
-字段取值依据：`scroll-drag-interaction-spec.md`「循环选择器（月/日/时/分）」档 = `edgeEffect 1 / dragMaxDis 50 / autoRollback true / cycleEnable true`。`dragMaxDis` 的分辨率换算（R6）：基准 50 @1024×600，其他分辨率 `round(scale×50)`，下限 24。（案例里列盒是固定 176×180 不随 k 缩放，与阶段 1-3 的控件盒口径一致。）
+字段取值依据：`knowledge/uicontrols/scroll-drag-interaction-spec.md`「循环选择器（月/日/时/分）」档 = `edgeEffect 1 / dragMaxDis 50 / autoRollback true / cycleEnable true`。`dragMaxDis` 的分辨率换算（R6）：基准 50 @1024×600，其他分辨率 `round(scale×50)`，下限 24。（案例里列盒是固定 176×180 不随 k 缩放，与阶段 1-3 的控件盒口径一致。）
 
 ⚠️ `color2/pic2` 全置中色/空图**是有意的**：引擎的选中态要「看不见」，见 §3 坑 1。
 
@@ -129,15 +129,15 @@ int A   = fi + (h / 2 - off) / ih;            // 盒中线落在哪一行（= �
 - **现象**：连调 `setSelection` 做迭代校正会**越推越远**（复位后跑偏，见 §1）。
 - **口径**：`setSelection(i)` 让第 i 项落在列表盒**第 1 行**（不是正中行），且落地是**动画**（多帧）。
 - **处置**：程序化定位改用 §1 的数据平移；确实要 `setSelection` 时，调用后**先等动画跑完再回读**（`fi` 连续 2~3 帧不变再判定），不要「调用+立即回读+再调用」。
-- 另注：`gap-list.md` G-32 旧口径写「`setSelection(index)` 直跳」（无平滑滚动）—— 本次实测**它是有滚动动画的**，缺的是「滚动到任意偏移 / 平滑滚到指定像素」（G-32 已同步修正）。
+- 另注：`components/ui_v1/gap-list.md` G-32 旧口径写「`setSelection(index)` 直跳」（无平滑滚动）—— 本次实测**它是有滚动动画的**，缺的是「滚动到任意偏移 / 平滑滚到指定像素」（G-32 已同步修正）。
 
 ### 坑 4：**选中条挂在行背景图上 -> 滚动时条跟着行走**（★2026-09-19 12:00 钟工口径：条要挂**静态背景层**）
 - **现象**（钟工原话「选中条放到背景图里面。这样子滚动以后选中条不会动」）：上一轮的实现是「正中行在 `obtainListItemData` 里 `item->setBackgroundPic(条图)`」——挑不出错，底带也确实只出现在正中行，但**手指一拖，条就跟着行跑**（整条跟着滚动位移，不是停在框的正中）。
 - **根因**：行背景图是**行自己的绘制内容**，行随滚动偏移 -> 条也随滚动偏移。listview 没有「固定叠层（sticky overlay）」概念，行模板能画的只有「行盒内、随行移动」的东西。
 - **处置（正确做法）**：把条做成页面里的**静态控件**（z 比 listview 低），行侧**不再挂任何背景图**：
   1. json 里给每列加一个装底图的 **装饰 `textview`**（`backgroundPic = images/xxx.png`，图 == 盒），`position` 就取该列**正中行**的盒（列盒 176×180 / 行高 36 -> 正中行 top = 列 top + 2×36）；
-  2. **必须写在 listview 之前**：json 书写顺序 = z 序（后定义在上层，见 `json-layer-rules.md`）-> 条在下层；行的 `item` **无底图/无底色（透明）** -> 条从行下面透出来，**滚动时条一个像素不动**；
-  3. 装饰件 `touchable:false`（json 显式写），运行期再 `setTouchable(false) + setTouchPass(true)`（`touchPass` **无 json 字段**，见 `touch-events.md` §1；虽然条在下层、理论上抽不到触摸，但作为防线很便宜）；
+  2. **必须写在 listview 之前**：json 书写顺序 = z 序（后定义在上层，见 `knowledge/uicontrols/json-layer-rules.md`）-> 条在下层；行的 `item` **无底图/无底色（透明）** -> 条从行下面透出来，**滚动时条一个像素不动**；
+  3. 装饰件 `touchable:false`（json 显式写），运行期再 `setTouchable(false) + setTouchPass(true)`（`touchPass` **无 json 字段**，见 `knowledge/uicontrols/touch-events.md` §1；虽然条在下层、理论上抽不到触摸，但作为防线很便宜）；
   4. 选中感就只剩**正中行文字色**（`setTextStatusColor`），顶/底「渐隐」仍按行距给文字色插值。
 - **通栏 1px 分隔线归谁**：本案例判定归「**条**」——两条线正好落在条盒的上下边缘（旧自绘包里也是随条一起画的两条线）：不拆图、不拆层。若要把它当「框」看（不随条挪位），就拆成「框线层 + 条层」两个静态控件，都写在 listview 之前即可。
 - **验收（两个可机器断言的硬指标，本轮真机实测值）**：
@@ -178,7 +178,7 @@ flythings_map_control("wheel")          # -> 同上（中文/英文别名都认�
 - 以下源控件**一律** `target: listview` + `level: L2`：Android `TimePicker`（**滚轮形态** + **时钟盘 clock dial 形态**）/ `TimePickerDialog` / `NumberPicker`；Qt `QTimeEdit` / `QDateTimeEdit`（**时间部分**）；小程序 `picker mode=time`；emWin `LISTWHEEL`。
 - **没有「时钟盘无对应能力」这种例外**（旧表述自 2026-09-19 起作废，`mcp_control_map.json` 表版本 3 已清理干净，无残留）。
 - 一句话：**取值与联动语义由 `listview` 列承载；“圆的观感”是另一回事**（§6.3 如实写清）。
-- **日期部分不在这里**：日历/日期选择仍是 `calendar` L4（已落地 `components/ui_v1/Calendar/`，见 `../../components/ui_v1/control-map.md` 2.15）。
+- **日期部分不在这里**：日历/日期选择仍是 `calendar` L4（已落地 `components/ui_v1/Calendar/`，见 `knowledge/../components/ui_v1/control-map.md` 2.15）。
 
 ### 6.2 怎么拼（时 / 分 / 秒）
 
@@ -195,7 +195,7 @@ flythings_map_control("wheel")          # -> 同上（中文/英文别名都认�
 - **能做的（语义）**：把 12 个方位值按一列（一列 = 一个 `listview__N`）排布，选中项 = 中心行；回读、惯性、回弹、选中条层与 §1/§2/§3 完全一致；**logic 层与滚轮形态零差别**（同一份代码可复用）。
 - **做不出（如实说）**：**圆周观感**——平台 listview 的行盒是**矩形等分行**，没有圆周布局/角度命中能力。
   - 观感路线 A（推荐，**零自绘**）：**12 方位按钮组**（`button__N` × 12 手工摆一圈）+ 中心 `textview` 显示当前时辰；点即选值，缺点是“转”的手感没了（但比拖手更准）。
-  - 观感路线 B（要“真圆周拖动”）：**ZKPainter 自绘** + 角度反算命中（宿主自己算 `atan2`）→ 属 **L3 自绘**，按 `../components/ui_v1/gap-list.md` 编号立项 + 给真机证据，**不要临场造包**。
+  - 观感路线 B（要“真圆周拖动”）：**ZKPainter 自绘** + 角度反算命中（宿主自己算 `atan2`）→ 属 **L3 自绘**，按 `knowledge/../components/ui_v1/gap-list.md` 编号立项 + 给真机证据，**不要临场造包**。
 - **定性**：这是**观感降级说明**（圆周排列需 12 方位按钮或自绘、观感有损），**不是“能力缺失 / 不支持”**；选型建议统一按钟工口径走 listview 组合（L2），除非产品硬要求“钟面转圈”。
 
 ### 6.4 验证入口（可复现）
@@ -210,12 +210,12 @@ flythings_map_control("picker mode=time") # -> listview / L2（小程序）
 
 ## 7. 相关
 
-- 字段/回调全集：`listview-fields.md`（含 `item.text` 必须 `""`、`refreshListView()` 与滚动位置的关系）
-- 手感字段取值：`scroll-drag-interaction-spec.md`（`dragMaxDis` 的语义与 R1~R9；**循环选择器档 = 本文 §0 片段的取值源**）
-- json 必写字段：`json-field-mandatory.md`（行模板/装饰件的字段全集在此）
-- 装饰件吞触摸（选中条为什么还要 `setTouchPass(true)`）：`touch-events.md` §1
-- 层叠顺序（装饰条为什么必须写在 listview 之前）：`json-layer-rules.md`
-- 跨框架映射（`TimePicker` 全族 → `listview`）：`control-mapping-capability.md` / `framework-control-mapping.md` / `../../components/ui_v1/control-map.md` 2.24
-- 高频回调性能（`obtainListItemData` 里禁止耗时操作）：`high-frequency-callback-perf.md`
-- 缺口编号与级别：`../../components/ui_v1/gap-list.md` G-22（日期部分）/ G-23（滚轮·时间·时钟盘）/ G-37 / G-38
+- 字段/回调全集：`knowledge/uicontrols/listview-fields.md`（含 `item.text` 必须 `""`、`refreshListView()` 与滚动位置的关系）
+- 手感字段取值：`knowledge/uicontrols/scroll-drag-interaction-spec.md`（`dragMaxDis` 的语义与 R1~R9；**循环选择器档 = 本文 §0 片段的取值源**）
+- json 必写字段：`knowledge/uicontrols/json-field-mandatory.md`（行模板/装饰件的字段全集在此）
+- 装饰件吞触摸（选中条为什么还要 `setTouchPass(true)`）：`knowledge/uicontrols/touch-events.md` §1
+- 层叠顺序（装饰条为什么必须写在 listview 之前）：`knowledge/uicontrols/json-layer-rules.md`
+- 跨框架映射（`TimePicker` 全族 → `listview`）：`knowledge/uicontrols/control-mapping-capability.md` / `knowledge/uicontrols/framework-control-mapping.md` / `knowledge/../components/ui_v1/control-map.md` 2.24
+- 高频回调性能（`obtainListItemData` 里禁止耗时操作）：`knowledge/uicontrols/high-frequency-callback-perf.md`
+- 缺口编号与级别：`knowledge/../components/ui_v1/gap-list.md` G-22（日期部分）/ G-23（滚轮·时间·时钟盘）/ G-37 / G-38
 - 官方样例（3 行循环列表，点行选中）：`projects/SampleUI-New/ui/1024x600/detail.json` `ListviewTimePicker`

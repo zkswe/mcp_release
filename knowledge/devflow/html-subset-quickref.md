@@ -59,7 +59,7 @@ evidence: []
 - **反性**：`data-visible` 之外**没有**别的新式属性；`data-touchable` 仍**不解析**（见下条）。
 - **命名**：`data-caption` 指定控件名（C 标识符）；缺省自动 `TextView1` / `Button1` …
 - **圆角外底色**（A6，2026-09-27 修）：有图控件（`data-pic`/`data-bgpic`/CSS 效果图/图标）的 **四角透出的是 `bgColorTab`**。旧版「有图一律 pop 底色」→ 四角露窗口黑底（坐卡片上就是「图标角落发黑」）。现口径：**`data-bg` 优先 > 最近祖先容器底色 > 引擎缺省（并在 warnings 里告警）**。⚠️ `bgColorTab` 只管**最外 1px**；圆角里侧 4~5px 那圈是图里的像素，补色救不回来 → 坐卡片的底板要么 1:1 普通 PNG + 圆角外烘容器色，要么整张图在出图侧就烘好底色。
-- ⚠️ **`data-touchable` 不解析**（2026-09-17 实测 + 代码核对）：转换器**根本没读**这个属性 —— `button` 恒 `touchable:true`、`textview` 恒 `false`、`window` 也不解析。想**真禁用**某个控件、或让容器按你要的语义「吸收 / 穿透」点击，只能落到 **json**：`patch_json` / `ui_edit_apply` 改 `touchable`，或运行期 `setTouchable()` / `setTouchPass()`（语义与坑见 `uicontrols/touch-events.md`）。
+- ⚠️ **`data-touchable` 不解析**（2026-09-17 实测 + 代码核对）：转换器**根本没读**这个属性 —— `button` 恒 `touchable:true`、`textview` 恒 `false`、`window` 也不解析。想**真禁用**某个控件、或让容器按你要的语义「吸收 / 穿透」点击，只能落到 **json**：`patch_json` / `ui_edit_apply` 改 `touchable`，或运行期 `setTouchable()` / `setTouchPass()`（语义与坑见 `knowledge/uicontrols/touch-events.md`）。
 - **自备图**：`data-pic`（引用自己切好的 PNG / .9.png / 序列帧 GIF）
 - **静默提醒**（A1/A8，2026-09-27 修）：转换器**不再静默丢改动** —— 返回体 `warnings[]` 会给出「丢字符（emoji/黑名单字）」「有图控件无圆角外底色」「文本最小宽超出容器」等条目；`controls` / `controlsTopLevel` / `controlsNested` 三个计数**含嵌套控件**（A7 修）。
 
@@ -171,7 +171,7 @@ style 里出现 `linear-gradient` / `box-shadow` / `border-radius` / `animation`
 
 ⚠️ **图片一律由转换器自动转图（内置抗锯齿管线），禁止 AI 自绘 1x 直画 png，
 或用外部生图能力直出小图交付**（1x 二值 alpha / 大图缩小边缘必锯齿）。
-防锯齿铁律见 `ui-asset-rules.md`（本目录）。
+防锯齿铁律见 `knowledge/devflow/ui-asset-rules.md`（本目录）。
 
 **出图档位（v0.27.76 起）**：CSS 效果出图**一律走 SS（`ss=4` = 每像素 16 子采样）**，不再保留
 1x + α 羽化那条路 —— 药丸（`border-radius:999px`）/ 正圆（`50%`）/ 圆钮 这类强曲率形状
@@ -198,10 +198,10 @@ warning 会要求切图后用 `data-pic` 引用。
 
 ## 10. 相关
 
-- 图片资源铁律与 PNG 抗锯齿管线 → `ui-asset-rules.md`
-- json 字段全集/层级规则 → `uicontrols/json-field-mandatory.md`、`uicontrols/json-layer-rules.md`
+- 图片资源铁律与 PNG 抗锯齿管线 → `knowledge/devflow/ui-asset-rules.md`
+- json 字段全集/层级规则 → `knowledge/uicontrols/json-field-mandatory.md`、`knowledge/uicontrols/json-layer-rules.md`
 - 布局产物核对（图尺寸 == 控件盒）→ `flythings_verify_assets` / check_all 第 17 项
   （⚠️ 只管 json **声明**的图；运行期 `setBackgroundPic` 的**字面量**图由 check_all 第 20 项核
-  （v0.27.90 起），运行时拼接的路径静态无解 → `uicontrols/text-box-height-rule.md` §4/§5）
-- 设计令牌漂移（`DESIGN.md` 令牌 vs json 色值/字号）→ check_all 第 18 项
-- 归一化、转图、补丁的完整链路 → `ftu-json-pipeline.md`
+  （v0.27.90 起），运行时拼接的路径静态无解 → `knowledge/uicontrols/text-box-height-rule.md` §4/§5）
+- 设计令牌漂移（`<项目>/DESIGN.md` 令牌 vs json 色值/字号）→ check_all 第 18 项
+- 归一化、转图、补丁的完整链路 → `knowledge/devflow/ftu-json-pipeline.md`

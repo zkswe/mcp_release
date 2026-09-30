@@ -49,7 +49,7 @@
           "kind": "主控 SoC（全志 V85x 系列）",
           "dataStatus": "partial",
           "aliases": [],
-          "note": "实测最多的一颗（触摸注入 mt_test、UVC + aw-dvr 版本配套、i18n 推送 /tmp/tr、图层释放）；工程 Manifest 宏统一写 AWCHIP=AW_V853",
+          "note": "实测最多的一颗（触摸注入 touch（原 mt_test，2026-09-30 已移除）、UVC + aw-dvr 版本配套、i18n 推送 /tmp/tr、图层释放）；工程 Manifest 宏统一写 AWCHIP=AW_V853",
           "source": "仓库实测记录：knowledge/devflow/touch-inject-autotest.md、knowledge/v85x/aw-dvr-runtime-compat.md、knowledge/v85x/display-layer-debug.md"
         },
         "V851": {

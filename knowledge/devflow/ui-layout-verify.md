@@ -15,7 +15,7 @@ evidence: []
 ---
 # UI 布局可视化编辑与像素验收（json 为源 · 拖拽微调 · 0 token 校验）
 
-> 检索导引：问「布局位置不对 / 想拖控件微调 / 图片与控件尺寸对不上（含 thumb.size）/ 要像素回归对比 / 多页工程预览怎么切页」→ 本文（三段式验收总纲）；三个 action 的细节见 `devflow/ui-editor-usage.md`。
+> 检索导引：问「布局位置不对 / 想拖控件微调 / 图片与控件尺寸对不上（含 thumb.size）/ 要像素回归对比 / 多页工程预览怎么切页」→ 本文（三段式验收总纲）；三个 action 的细节见 `knowledge/devflow/ui-editor-usage.md`。
 > ⚠️ v0.27.37 起三个 op 合并为 `flythings_ui_visual(action=...)`：`"editor"` / `"edit_apply"` / `"diff"`
 
 > 命中条件：UI 布局做完需要"看得见、拖得动、验得了"时——用户说布局位置不对 / 图标锯齿 /
@@ -81,7 +81,7 @@ flythings_device_screenshot(crop='auto')           # 按 disp 图层 frame 裁�
 
 ### 2-1-1 取图方向/角度：读**项目工程**的配置，不要猜（❗踩过坑）
 
-旋转/取图角度口径见 `devflow/package-properties-easyui-cfg.md` §9（唯一来源 = 工程 `EasyUI.cfg` 的
+旋转/取图角度口径见 `knowledge/devflow/package-properties-easyui-cfg.md` §9（唯一来源 = 工程 `EasyUI.cfg` 的
 `rotateScreen` / `rotateTouch`；工具 `rotate='auto'`（缺省）读它，返回值 `rotateSource` 可自证）。
 
 设备侧实现要点（AI 不需要重做，但排障要懂）：
@@ -171,7 +171,7 @@ logic.cc 里用 `showWnd()/hideWnd()` 切页」（弹窗、设置页、二级页
 | 同上 | `thumb.size` | 手绘 thumb 失配 → 仅 `stretched[]` 提示：官方基准工程 `SampleUI-New` 就是手绘 `slider_/jdt_ht.png` 35×34 vs `thumb.size` 33×35（引擎会拉伸） |
 | 同上 | — | `thumb` 没写 `size` → 跳过 + `skippedNoBox[]`/warning（不误报） |
 
-完整口径与量化数字（形状分类出图 / 抗锯齿档位）见 `ui-asset-rules.md` §2 铁律 #1 与 #8。
+完整口径与量化数字（形状分类出图 / 抗锯齿档位）见 `knowledge/devflow/ui-asset-rules.md` §2 铁律 #1 与 #8。
 
 ### 3-1 代码侧：运行期设的图也要核（v0.27.90 起，`check_all` 第 20 项）
 
@@ -189,7 +189,7 @@ logic.cc 里用 `showWnd()/hideWnd()` 切页」（弹窗、设置页、二级页
 
 零误报核查：`SampleUI-New` / `ShowcaseAlbum-F133` / `WebViewDemo` / TDesign 迁移案例双平台
 在 v0.27.90 下 **0 新增 FAIL**；把案例 `LdDots` 盒高改回 26（旧值）**当场报出**。
-口径与边界详见 `uicontrols/text-box-height-rule.md` §4/§5。
+口径与边界详见 `knowledge/uicontrols/text-box-height-rule.md` §4/§5。
 
 ## 4. 变更写回（`flythings_ui_visual(action="edit_apply")`）
 
@@ -278,7 +278,7 @@ json 同目录 → 项目根 → 再退 `.9.png` 九宫格变体；data URI 按�
 | **位置不对** | ① 转换时 CSS 的 padding/border/margin 参与了几何 ② 坐标取整偏差累积 ③ 嵌套 window 子坐标必须**相对父窗口** |
 | **切图不对** | 控件尺寸是照着 CSS 猜的，没看真实 PNG 尺寸 → 图片控件尺寸应取 PNG 实际尺寸；同一张图被多个不同尺寸控件引用＝靠缩放硬撑的信号 |
 | **预览丢图** | 资源路径解析（第 6 节），带子目录的引用最容易漏 |
-| **多屏设计稿只落地第一屏** | 转换器只取了第一个 `.screen`（旧版行为）-> 核 `screensDetected` == `pagesProduced` == 设计稿屏数 N；`.screen` 必须并列（嵌套/重名会 success:false，见 `devflow/prototype-flow.md`「分页落地清单」） |
+| **多屏设计稿只落地第一屏** | 转换器只取了第一个 `.screen`（旧版行为）-> 核 `screensDetected` == `pagesProduced` == 设计稿屏数 N；`.screen` 必须并列（嵌套/重名会 success:false，见 `knowledge/devflow/prototype-flow.md`「分页落地清单」） |
 | **预览只看到首页 / 切不了页** | 整屏 window 多页架构 → 用预览稿顶部**页面切换条**或 `#window__N` hash 直达（第 2-2 节）；隐藏的弹窗用「显示隐藏」幽灵框。若预览稿里没有切换条，说明这个 json 确实只有一个整屏窗口（多半页面是 `showWnd()` 动态加载的另一 json，跑项目级预览就会出「项目页面」行） |
 | **文字被裁** | 文本估算宽度超控件宽，或字号 > 控件高 |
 

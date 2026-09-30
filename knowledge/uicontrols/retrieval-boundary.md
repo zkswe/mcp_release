@@ -29,7 +29,7 @@ evidence: []
 > 权威表在 `components/ui_v1/control-map.md`（摘要 + 指针：`knowledge/uicontrols/framework-control-mapping.md`）。
 > 映射完**怎么写字段/API**仍按本规则：只查 MCP 知识库或官方站。
 > 已收口的典型映射（可直接引用，不必再推理）：**`picker-view`/`lv_roller`/`TimePicker`/`NumberPicker`
-> → `listview` 组合（L2）**，字段配法见 `listview-wheel-picker.md`。
+> → `listview` 组合（L2）**，字段配法见 `knowledge/uicontrols/listview-wheel-picker.md`。
 
 ## 禁止的行为
 
@@ -45,7 +45,7 @@ evidence: []
 
 - **FlyThings/依赖 package（预编译闭源 .so + include 头文件）的 C++ API**：**只通过包内头文件识别**——类/方法签名/枚举/常量/注释是官方接口声明，可信来源（如 aw-dvr 的 `mpi/*.h`、easyui 的 `control/ZKVideoView.h` 方法注释）
 - **不要猜**：头文件读不出/不确定 → 如实标注「未收录/不确定」，问沛哥或官方，**禁止编造 API**（不会就是不会）
-- **不要反编译/扒二进制**：禁止 objdump/反编译 .so 提取接口或语义（浪费时间且拿不到语义）；readelf 仅限**排障**用（查依赖/符号缺失，dlopen 失败 SOP 见 `v85x/aw-dvr-runtime-compat.md`），不是 API 识别手段
+- **不要反编译/扒二进制**：禁止 objdump/反编译 .so 提取接口或语义（浪费时间且拿不到语义）；readelf 仅限**排障**用（查依赖/符号缺失，dlopen 失败 SOP 见 `knowledge/v85x/aw-dvr-runtime-compat.md`），不是 API 识别手段
 - **区分两层**（与上文 easyui 禁止条款不冲突）：
   - 头文件能确认的 = **API 签名/枚举/常量/注释** → 读头文件（本条规则）
   - 头文件表达不了的 = **控件 json 字段/回调语义/内部实现** → 走 wiki/knowledge（上文规则），没有就标未收录
@@ -61,7 +61,7 @@ evidence: []
 | 设备侧需求 | 直接用 | 不要做 |
 |-----------|--------|--------|
 | 抓当前屏幕 → png/jpg/bmp | `flythings_device_screenshot()` | ❌ 手搓 `adb exec-out screencap` / `cat /dev/fb0` / 自己找 busybox / 自己读 pan |
-| 触摸注入 / 自动点击 / 压测 | `flythings_gen_ui_test(project_root, test_type)`（生成脚本 + `bin_tools/<平台>/ui_test`） | ❌ 现场写 input 注入脚本 |
+| 触摸注入 / 自动点击 / 压测 | `flythings_gen_ui_test(project_root, test_type)`（生成脚本 + `bin_tools/<平台>/touch`，自动扫节点+判协议；命令不带 `/dev/input/eventN`） | ❌ 现场写 input 注入脚本 |
 | 编译 + 推真机 | `flythings_build_ui_flow(project_root, device)` | ❌ 自造 fun/fuse/adb push 命令 |
 | 设备上跑网络/系统命令 | `tools/busybox/bin/<平台>/busybox`（push 即用） | ❌ 假设设备有 dd/head/uname/screencap |
 | 设备依赖包/API | `flythings_list_packages` / `get_package_api` | ❌ 自己翻设备 rootfs |
@@ -70,7 +70,7 @@ evidence: []
 → ③ 工具不存在或失败，才做设备侧探测，并把结论回灌成新工具/新知识。
 
 **原因**：设备 rootfs 是裁剪版（常见无 screencap/dd/head），且 framebuffer 有双缓冲、
-stride、bpp、字节序、慢链路等一堆坑（详见 `devflow/ui-layout-verify.md` §2-1）；
+stride、bpp、字节序、慢链路等一堆坑（详见 `knowledge/devflow/ui-layout-verify.md` §2-1）；
 这些坑已经被工具吃掉，AI 重新探一遍 = 白烧 token + 高风险抓错。
 
 ## 原因

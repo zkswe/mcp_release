@@ -93,7 +93,7 @@ evidence: []
    调了它控件当场**点不动**（可交互控件上发作），现象是「注入坏了 / 界面点哪都没反应」，能白查半天
    （案例里 13 个导航键被这样禁掉）。**内容变更（`setText` / `setBackgroundPic`）引擎本来就会重绘该控件**，
    通常什么都不用做；真要手动重绘用 `ZKBase::invalidate()`，但它**在部分设备的旧 `libeasyui.so` 上未导出**
-   （实测 `undefined symbol ...invalidate...` → 整屏黑），用前先确认。详见 `uicontrols/custom-view-refresh.md`；
+   （实测 `undefined symbol ...invalidate...` → 整屏黑），用前先确认。详见 `knowledge/uicontrols/custom-view-refresh.md`；
 4. 像素 diff 验收（`flythings_ui_visual(action="diff")`）之前**先确认「手里这张是新帧」**，
    否则会把 stale frame 当「改动没生效」，白查一轮应用逻辑。
 
@@ -136,7 +136,7 @@ evidence: []
 ### 3.6 方向/角度只认项目工程配置（沛哥 2026-09-10 定规）
 
 旋转/取图角度口径（`rotateScreen` / `rotateTouch` 字段、实测角度对应、生效判据）
-→ 见 `devflow/package-properties-easyui-cfg.md` §9。
+→ 见 `knowledge/devflow/package-properties-easyui-cfg.md` §9。
 
 ## 4. 返回字段
 
@@ -179,7 +179,7 @@ fwrite → Munmap → PutBuf
 | **chn 1** | **多屏拼接拼墙播放器**（SmartPanel_HA，mi-module `h264_player` 移植版） | 硬件 vdec chn1 |
 
 > ⚠️ **别把「屏保 = chn 0」当真**（早先的说法）：Z20 屏保 `zkmedia`/`ssdvideoplayer` 是 **FFmpeg 软解**、
-> 全设备扫描确认它**不建 MI VDEC 通道**（2026-09-27 反汇编实证：`z20-mi-vdec-channel-attrs.md` §7）——
+> 全设备扫描确认它**不建 MI VDEC 通道**（2026-09-27 反汇编实证：`workspace/references/kb/z20-mi-vdec-channel-attrs.md` §7）——
 > 所以 chn 0 抽不到帧**不一定是工具问题**；「chn 0」只是默认取帧口径。
 
 **怎么用**：`vdec_chn`（int，**默认 0**，向后兼容）仅 `layer='video'` 生效，
@@ -226,7 +226,7 @@ python ui_tools/device_screenshot.py --layer video --vdec-chn 1         # CLI
 `df -h /tmp` 看一眼即可确认；腾空间优先删「同盘备份副本」（备份应 tar 回主机或放 `/data`）。
 ## 5. 相关
 
-- 像素级读图/省 token 阶梯、1 字符=1 像素分类图、文字暗带检测 → `pixel-analysis-ai.md`
-- 触摸注入与抓帧时机（注入 + 抓帧同一次 adb 调用、多档 sleep 差分）→ `touch-inject-autotest.md`
-- 屏幕方向（rotateScreen / rotateTouch 权威来源）→ `package-properties-easyui-cfg.md` §9
-- 设备缺命令（grep/sed/dd…）→ 用 busybox → `busybox-debug-library.md`
+- 像素级读图/省 token 阶梯、1 字符=1 像素分类图、文字暗带检测 → `knowledge/devflow/pixel-analysis-ai.md`
+- 触摸注入与抓帧时机（注入 + 抓帧同一次 adb 调用、多档 sleep 差分）→ `knowledge/devflow/touch-inject-autotest.md`
+- 屏幕方向（rotateScreen / rotateTouch 权威来源）→ `knowledge/devflow/package-properties-easyui-cfg.md` §9
+- 设备缺命令（grep/sed/dd…）→ 用 busybox → `knowledge/devflow/busybox-debug-library.md`

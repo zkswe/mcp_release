@@ -37,7 +37,7 @@ evidence: []
 
 **异步资源释放三选一**（按优先级）：
 1. **官方回调/轮询确认**：等官方完成信号（播放器 stop 完成回调、线程退出标志），或轮询探测资源可用（如 VO enable 试探成功才继续，失败带重试）
-2. **raw 层强制回收**：不依赖异步释放，直接 raw API 强制回收并拿返回码（如 `AW_MPI_VO_Disable(0)` 强占 VO，见 `v85x/display-layer-debug.md` §4）
+2. **raw 层强制回收**：不依赖异步释放，直接 raw API 强制回收并拿返回码（如 `AW_MPI_VO_Disable(0)` 强占 VO，见 `knowledge/v85x/display-layer-debug.md` §4）
 3. **接受重建**：确认资源确实不再需要 → 允许重建通路（重启预览/重开页面），而不是空等它释放
 
 **实例**（播放页退出 → 预览页 VO 冲突 0xa00f8042）：错误做法 = quit 里 sleep 600-800ms 等 VO 让位（不释放就永远失败）；正确做法 = ② raw `AW_MPI_VO_Disable(0)` 强制回收，或 ① 预览启动对 VO enable 失败轮询重试。

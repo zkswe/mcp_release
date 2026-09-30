@@ -20,7 +20,7 @@ evidence: []
 > **且没有指定平台**（没说 V85X / T113 / Z21）→ **本篇就是答案**：切换与 host 外设接入是跨平台共性场景，各平台 sysfs 路径不同，
 > **回答必须给出 V85X / T113 / Z21 三条路径对照并请用户确认平台，禁止默认按某一个平台答**。
 > 本篇 = 跨平台总表（角色节点/切换语义/挂载点）。V85X 完整可抄的 configfs 8 步与存储介质双选 →
-> `v85x/usb-gadget-storage.md` §1–§4；V85X 代码级切换实现在 `v85x/usb-otg-mode-switch.md`。
+> `knowledge/v85x/usb-gadget-storage.md` §1–§4；V85X 代码级切换实现在 `knowledge/v85x/usb-otg-mode-switch.md`。
 
 ## 一句话
 
@@ -76,10 +76,10 @@ void change_usb_mode(usb_mode_e mode) {
 
 mount configfs → g1 strings(manufacturer=zkswe / product=flythings / serialnumber=20080411)
 → configs/c.1(bmAttributes 0xc0 自供电 / MaxPower 500) → unlink 旧 symlink(`configs/c.1/ffs.adb` + `configs/c.1/f1`)
-→ 切角色（ADB/STORAGE→device，NONE→host）→ VID/PID（ADB `0x18D1/0xD002`；存储档 `0x1F3A/0x1000`、NONE `0x1F3A/0x1001`，档位表见 `v85x/usb-gadget-storage.md` §2.1）
+→ 切角色（ADB/STORAGE→device，NONE→host）→ VID/PID（ADB `0x18D1/0xD002`；存储档 `0x1F3A/0x1000`、NONE `0x1F3A/0x1001`，档位表见 `knowledge/v85x/usb-gadget-storage.md` §2.1）
 + function（`ffs.adb` 或 `mass_storage.usb0`）→ symlink 挂 config → 枚举 `/sys/class/udc` 第一个目录名写 `g1/UDC`。
 ADB 档还要 `/dev/usb-ffs/adb` 不存在时 mkdirs + `mount(..."functionfs", uid=2000,gid=2000)`。
-防重：SystemProperties `app.usb.cfg` 记录当前档，相同直接 return。完整可抄实现见 `v85x/usb-gadget-storage.md` §4。
+防重：SystemProperties `app.usb.cfg` 记录当前档，相同直接 return。完整可抄实现见 `knowledge/v85x/usb-gadget-storage.md` §4。
 
 > ⚠️ **只读节点切角色 ≠ 电脑能识别**：必须走完上面 8 步（尤其写 `g1/UDC`）；ADB 档缺 `ctl.restart adbd`、
 > U盘档缺 `lun.0/file` 写块设备，电脑端都枚举不到。
@@ -123,5 +123,5 @@ V85X host 接入 UVC 摄像头（发现/取流/录像/拍照）→ 见 `knowledg
 
 - V85X：CV201_PND / xdv23 / xdv200300 `src/system/usb_monitor.cpp` + `src/media/media_context.cpp`（实测）
 - T113：`temp_car/public/t113/T113CarSystem_PND/jni/system/usb_monitor.cpp` + `jni/media/media_context.cpp`（实测，2026-09-07 沛哥提醒核对）
-- Z21/Z210：官方 wiki `hardware/z210_core_board.md`「USB功能/切换USB模式」
-- U盘挂载/监听：官方 wiki `system/tf_usb.md`（TF→/mnt/extsd，U盘→/mnt/usb1|2|3，MountNotification/MountMonitor）
+- Z21/Z210：官方 wiki `wiki/flythings/hardware/z210_core_board.md`「USB功能/切换USB模式」
+- U盘挂载/监听：官方 wiki `wiki/flythings/system/tf_usb.md`（TF→/mnt/extsd，U盘→/mnt/usb1|2|3，MountNotification/MountMonitor）

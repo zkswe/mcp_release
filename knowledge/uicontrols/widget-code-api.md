@@ -15,15 +15,15 @@ evidence: []
 ---
 # 控件代码 API 速查（35 官方 Demo 源码实证，2026-09-08）
 
-> 检索导引：问「控件代码接口怎么调 / 回调函数签名与触发时机 / setTouchPass 在哪设 / 监听器什么时候注册 / 哪个 Demo 有用法」→ 本文（代码侧速查）；工程骨架见 `devflow/activity-code-skeleton.md`。
+> 检索导引：问「控件代码接口怎么调 / 回调函数签名与触发时机 / setTouchPass 在哪设 / 监听器什么时候注册 / 哪个 Demo 有用法」→ 本文（代码侧速查）；工程骨架见 `knowledge/devflow/activity-code-skeleton.md`。
 > 与 json 字段文档互补：本文聚焦**代码怎么驱动控件**（回调签名/触发时机/事件语义/实测坑），证据全部来自 basedemo-new_z20_1024_600 源码原文。
-> 通用骨架（activity 壳/回调表/返回值语义/生命周期/定时器/串口模板/SysApp）见 `devflow/activity-code-skeleton.md`。
+> 通用骨架（activity 壳/回调表/返回值语义/生命周期/定时器/串口模板/SysApp）见 `knowledge/devflow/activity-code-skeleton.md`。
 > 检索词：onButtonClick/onProgressChanged/onEditTextChanged/onListItemClick/setTargetAngle/setData/loadQRCode/play/setCheckedID/showWnd。
 
 ## ZKBase 通用（所有控件）
 - 触摸开关 / 穿透：`setTouchable(bool)` + **`setTouchPass(true)`**（ZKBase：本控件不响应触摸时把事件放行给下层控件）。
   ⚠️ `touchPass` **没有 json 字段**，只能代码设；压在可触摸控件上的装饰件（渐隐遮罩/高亮色带/徽标/半透明蒙层）必须
-  `setTouchable(false)+setTouchPass(true)`，否则下层列表拖不动、点行无回调（V85X + EasyUI 2.9.0 实测，见 `touch-events.md` §1）。
+  `setTouchable(false)+setTouchPass(true)`，否则下层列表拖不动、点行无回调（V85X + EasyUI 2.9.0 实测，见 `knowledge/uicontrols/touch-events.md` §1）。
 - 监听器注册：`setTouchListener`(ITouchListener) / `setLongClickListener`(ILongClickListener)——onUI_init 注册、onUI_quit 置 NULL。
 
 ## ZKButton（ButtonDemo）

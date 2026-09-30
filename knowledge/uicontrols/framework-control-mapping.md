@@ -15,7 +15,7 @@ evidence: []
 ---
 # 跨框架控件映射（摘要 + 指针）— 权威表在 components/ui_v1/
 
-> 检索导引：问「控件对照表在哪 / LVGL·Qt·Android·小程序控件对应我们什么 / 五级处置 L1~L5 / tab 页签怎么对应」→ 本文为摘要指针；机读权威表走 `flythings_map_control`（用法见 `uicontrols/control-mapping-capability.md`）。
+> 检索导引：问「控件对照表在哪 / LVGL·Qt·Android·小程序控件对应我们什么 / 五级处置 L1~L5 / tab 页签怎么对应」→ 本文为摘要指针；机读权威表走 `flythings_map_control`（用法见 `knowledge/uicontrols/control-mapping-capability.md`）。
 > 检索词：跨框架 / 控件映射 / 翻译 / 转换 / LVGL 转 FlyThings / 小程序转 FlyThings / Qt / Android / emWin /
 > tabview / tab 页签 / pagewindow / 五级处置 / L1 L2 L3 L4 L5 / 缺口级别 / 3D 伪 3D / 控件对照表。
 >
@@ -38,11 +38,11 @@ evidence: []
 ## 1. 三条必须先记住的口径
 
 1. **控件一律换成 FlyThings 自带控件做语义映射**，不照搬源框架外观/自绘实现；
-   `ZKPainter` 自绘**只用于平台确实没有的能力**（图表/仪表/环形刻度/富文本），且每处必须在 `gap-list.md` 点名。
+   `ZKPainter` 自绘**只用于平台确实没有的能力**（图表/仪表/环形刻度/富文本），且每处必须在 `components/ui_v1/gap-list.md` 点名。
 2. **`tab` 类容器（`lv_tabview` / `ViewPager+TabLayout` / 小程序 `swiper+tab` / `QTabWidget`）→ 一律 `pagewindow`（ZKPageWindow）**，
    自带滑动切页 + `onPageChange`；**禁止**用「多个整屏 `window` + 按钮显隐」拼（**丢手势滑动**）。
 3. **缺口统一五级**：`L1 等价` / `L2 组合` / `L3 自绘` / `L4 降级` / `L5 不支持`；
-   旧案例的 `A/B/C/D` 与旧 `L1~L5` 按 `control-map.md` §0.1 换算（并列取差、自绘记 L3）。
+   旧案例的 `A/B/C/D` 与旧 `L1~L5` 按 `components/ui_v1/control-map.md` §0.1 换算（并列取差、自绘记 L3）。
 4. **口径（2026-09-16 钟工修正）**：**有对应控件 → 映射能力（op + `mcp_control_map.json`），不写散文**；
    **平台真缺 → 才做成 `components/ui_v1/<源控件名>/` 自定义控件包**；有对应控件但接线值得留 → `ui_v1/_mapping/`。
 
@@ -72,9 +72,9 @@ evidence: []
 - **滚轮选择器（`WheelPicker`/`TimePicker` 类，含时钟盘）** → **不是 L5**：2026-09-19 已改为 **L2**（`listview` 组合，循环列表 + 数据侧平移定正中行 + 选中条挂静态层；口径 `knowledge/uicontrols/listview-wheel-picker.md`，含 §6 时间选择/时钟盘），原自绘包 `ui_v1/WheelPicker/` **已移除**、`ui_v1/TimePicker/` **不做包**（时钟盘的圆形排列观感需 12 方位按钮组或自绘 → **观感降级说明，不是能力缺失**）。
 - **3D**：Z21/F133 **无 GPU/无硬解 → 伪 3D/2.5D**（贴图 + 烘焙阴影 + 序列帧）**或软件模拟（软渲染/软光栅）**；
   **真 3D GPU 实时管线（着色器/实时光栅化）超出能力边界**，目前仅 V85X（disp 分层）验证过真 3D 形态。
-  ⇒ 完整能力边界（三层：基础控件 / canvas 画布 / 自定义控件；非 3D GPU 皆可 + 软件模拟）见 `devflow/render-extension-boundary.md`。
+  ⇒ 完整能力边界（三层：基础控件 / canvas 画布 / 自定义控件；非 3D GPU 皆可 + 软件模拟）见 `knowledge/devflow/render-extension-boundary.md`。
 
-## 4. 必须避开的工具链坑（写错就不亮/不编译，详见 `gap-list.md` §4）
+## 4. 必须避开的工具链坑（写错就不亮/不编译，详见 `components/ui_v1/gap-list.md` §4）
 
 1. `fun` 不为 `checkbox__` 生成宏/指针/回调 → 用两态按钮。
 2. 设备侧 `libeasyui.so` **无 `getAbsolutePosition()`** → 只用 `getPosition()`（否则 `dlopen` undefined symbol → **整屏黑**）。
@@ -86,7 +86,7 @@ evidence: []
 
 ## 5. 边界（与检索规则的关系）
 
-- 「控件用法/字段/API 从哪来」仍按 `uicontrols/retrieval-boundary.md`：**只查 MCP 知识库或官方站**，
+- 「控件用法/字段/API 从哪来」仍按 `knowledge/uicontrols/retrieval-boundary.md`：**只查 MCP 知识库或官方站**，
   禁止拿别家框架的字段/API 套用（`android:hint`→`hintText`、`lv_label_set_text()`→`setText()`）。
 - 「**别的框架的控件对应我们哪个控件**」是**映射问题**，权威答案就是本文件指向的 `components/ui_v1/control-map.md`。
-- 未收录/未验证的：标 `未验证`，**不猜**（要确认的写进 `gap-list.md` §5 待确认表）。
+- 未收录/未验证的：标 `未验证`，**不猜**（要确认的写进 `components/ui_v1/gap-list.md` §5 待确认表）。

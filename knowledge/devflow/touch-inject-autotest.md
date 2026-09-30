@@ -16,11 +16,11 @@ evidence: []
 # 触摸注入/UI 自动化测试：先调现成 `touch` 工具（禁止先造轮子）
 
 > 检索导引：问「要自动化测试/压测/遍历验收 / 模拟点击滑动怎么注入 / 触摸节点和协议怎么定 / 有没有现成工具别再造轮子」→ 本文（统一 `touch` ELF + `flythings_gen_ui_test`）。
-> 2026-09-08 入库（此前只有 wiki 老版 event.c 原理，AI 不知道有现成工具）。**2026-09-12 升级（沛哥实测反馈）**：老 input / ui_test / mt_test 有三个硬伤——单点协议写死、节点要人工传、节点或 IC 一变就注入失败 → AI 只能反复 try → 已建统一工具 `touch`（自动扫节点 + 自动判协议，全平台编译）。
+> 2026-09-08 入库（此前只有 wiki 老版 event.c 原理，AI 不知道有现成工具）。**2026-09-12 升级（沛哥实测反馈）**：老 input / ui_test / mt_test 有三个硬伤——单点协议写死、节点要人工传、节点或 IC 一变就注入失败 → AI 只能反复 try → 已建统一工具 `touch`（自动扫节点 + 自动判协议，全平台编译）。（`mt_test` 2026-09-30 已移除，`ui_test` 兼容保留。）
 > 定位：用户要「自动化测试 / 遍历验收 / 压测 / 自动点击 / 模拟触摸 / 滑动验证 UI」时，**先调 MCP 工具 `flythings_gen_ui_test` + 预编译 `touch` ELF（bin_tools/{平台}/touch）**，常规自动化**无需重编、无需抄代码、无需猜节点与协议**；event.c 原理只在定制/移植新平台时参考。
 
 ## 🔑 关键词索引
-**触摸注入 / 模拟触摸 / 自动化测试 / 自动点击 / tap / swipe / monkey / 压测 / 遍历验收 / touch / ui_test / mt_test / input 事件 / /dev/input / 触摸协议 / EV_SYN / 坐标恒 0 / 节点自动识别 / 系统键盘盖住界面 / 导航键全部无效 / 收键盘 / 瞬态层单次抓帧 / toast 抓不到**
+**触摸注入 / 模拟触摸 / 自动化测试 / 自动点击 / tap / swipe / monkey / 压测 / 遍历验收 / touch / ui_test / mt_test（2026-09-30 已移除，历史检索词） / input 事件 / /dev/input / 触摸协议 / EV_SYN / 坐标恒 0 / 节点自动识别 / 系统键盘盖住界面 / 导航键全部无效 / 收键盘 / 瞬态层单次抓帧 / toast 抓不到**
 
 ## ✅ 首选路径（现成工具，MCP 已分发）
 
@@ -35,6 +35,7 @@ evidence: []
 ### 2. 预编译工具：`bin_tools/{平台}/touch` ⭐ 首选（2026-09-12 新增）
 
 > **一句话：不传节点、不选协议，`touch` 自己搞定。** 取代 ui_test/mt_test 二选一的试错。
+> （`mt_test` 2026-09-30 已移除：MT 屏的事全归 `touch` 自动判协议；`ui_test` 只作单点兼容保留。）
 
 ```bash
 # 0. 部署（平台目录按实际选）
@@ -62,35 +63,37 @@ adb shell /data/touch monkey 800 1280 500
 **常用命令**：**先 `touch check [x y]`**（一条命令自检：节点/协议/量程落点结论，给坐标则再注一次 tap；退出码 **0=可用 / 3=无节点 / 4=有风险**）· `touch list` / `touch info` / `touch [-d /dev/input/eventN] tap x y`；触摸之外：`key <code> [ms]`（物理键，需 `-d`）· `sweep <from> <to> [ms]`（扫键码）· `raw t:c:v …`（原始事件）；选项 `--screen WxH`、`-v`（打印探测失败原因，`TOUCH_DEBUG=1` 同效）。
 源码/自测/重编：`tools/touch_inject/`（`wsl bash scripts/touch_build_all.sh all`；`list`/CLI/降级路径有 x86 自测，真机行为需设备验证）。更全的调试工具箱 → 同目录 `busybox`（见 busybox-debug-library.md）。
 
-### 3. 兼容保留：`ui_test`（单点）/ `mt_test`（MT Type-A）
+### 3. 兼容保留：`ui_test`（单点，需人工给节点）
 
-> 仅在 `touch` 缺该平台 ELF、或需要人工核验协议时用；**新工作不要再用它们**。
+> 仅在 `touch` 缺该平台 ELF、或需要人工核验协议时用；**新工作不要再用它**。
+> **`mt_test` 已于 2026-09-30 移除**（二进制归档到工作区 `archive/mcp_mt_test_20260930/`）：`touch` 自动判协议（单点 / MT-A / MT-B）已完整覆盖其能力，MT 屏不必再换工具名。
 
-**⛔ 关键坑（2026-09-08 沛哥 V553 实测）**：`ui_test` 是**单点协议**（ABS_X/ABS_Y + BTN_TOUCH），只适配老电阻屏/单点电容屏。**V85X 的 gt9xx 是 MT Type-A**（MODALIAS `ra30,32,35,36,39` = ABS_MT_TOUCH_MAJOR/WIDTH_MAJOR/POSITION_X/POSITION_Y/TRACKING_ID），不订阅单点坐标轴——用 `ui_test` 注入后**驱动丢弃坐标，FlyThings 收到恒 `x=0 y=0`**。解决：MT Type-A 屏改用 `mt_test`（`ABS_MT_POSITION_X/Y + ABS_MT_TRACKING_ID`），接口与 ui_test 完全一致（tap/swipe/long/monkey/run），直接换工具名即可。
+**⛔ 关键坑（2026-09-08 沛哥 V553 实测）**：`ui_test` 是**单点协议**（ABS_X/ABS_Y + BTN_TOUCH），只适配老电阻屏/单点电容屏。**V85X 的 gt9xx 是 MT Type-A**（MODALIAS `ra30,32,35,36,39` = ABS_MT_TOUCH_MAJOR/WIDTH_MAJOR/POSITION_X/POSITION_Y/TRACKING_ID），不订阅单点坐标轴——用 `ui_test` 注入后**驱动丢弃坐标，FlyThings 收到恒 `x=0 y=0`**。解决：MT-A 屏**用 `touch`（自动判成 MT-A）**，人工核验时按下文「协议速判」确认协议；`ui_test` 只在单点老屏上用。
 
 **协议速判**（注入前必看；**首选直接 `touch list` 一步到位**）：
 ```bash
-# 方法 1：读能力位 —— 有 ABS code 53(0x35)=ABS_MT_POSITION_X → MT 屏用 mt_test；只有 0/1=ABS_X/ABS_Y → 单点用 ui_test
+# 方法 1：读能力位 —— 有 ABS code 53(0x35)=ABS_MT_POSITION_X → MT 屏（MT-A/MT-B）；只有 0/1=ABS_X/ABS_Y → 单点
 adb shell "cat /sys/devices/virtual/input/input*/capabilities/abs | xxd"
-# 方法 2：试注入一次（最快）——  FlyThings 收到坐标非 0 = 协议对；恒 0 = 协议错，换另一个
-adb shell ui_test /dev/input/event0 tap 100 100
-adb shell mt_test /dev/input/event0 tap 100 100
+# 方法 2：试注入一次（最快）——  FlyThings 收到坐标非 0 = 协议对；恒 0 = 协议错
+adb shell /data/touch tap 100 100                 # touch 自动判协议
+adb shell ui_test /dev/input/event0 tap 100 100   # 单点协议（需人工给节点）
 ```
 
-**工具清单**（前两行兼容保留）：
+**工具清单**：
 
 | 工具 | 协议 | 平台 |
 |------|------|------|
 | `touch` ⭐ | **自动**（单点/MT-A/MT-B） | z21 / z20 / t113 / f133 / f135 / v85x |
-| `ui_test` | 单点 | z21 / z20 / t113 / f133 / v85x |
-| `mt_test` | MT Type-A | z21 / z20 / t113 / v85x |
+| `ui_test` | 单点（**兼容保留**，需人工给节点） | z21 / z20 / t113 / f133 / v85x |
+
+> 📌 `mt_test` 已于 2026-09-30 移除：`touch` 自动判协议（单点 / MT-A / MT-B）覆盖其能力；二进制归档在工作区 `archive/mcp_mt_test_20260930/`。
 
 ## 🖥 V85X 真机实录（2026-09-14，两块屏两种协议——都是"单点工具必死"）
 
 | 板子 | 触摸节点 | IC | 协议 | `ABS_X/Y` | 结论 |
 |------|---------|----|------|-----------|------|
 | Zkswe_V85X_SPINOR（480×800） | `/dev/input/event0` | gt9xx | **MT-A**（48/50/53/54/57，无 SLOT） | **不存在** | `ui_test` 完全点不动；`touch` 自动判 MT-A ✅ |
-| V851s（480×800，学习机 PocketGame） | `/dev/input/event4` | axs_ts | **MT-B**（有 SLOT+TRACKING_ID） | **范围 0..0** | MT-A 写法（老 `pginj`/`mt_test` 发 `SYN_MT_REPORT`）→ 整帧作废；按 2b 三条修后全通 |
+| V851s（480×800，学习机 PocketGame） | `/dev/input/event4` | axs_ts | **MT-B**（有 SLOT+TRACKING_ID） | **范围 0..0** | MT-A 写法（老 `pginj`/`mt_test` 发 `SYN_MT_REPORT`；`mt_test` 2026-09-30 已移除）→ 整帧作废；按 2b 三条修后全通 |
 
 **三条必须知道的坑（都踩过）**：
 1. **`ABS_X/Y` 可能压根不存在**（V85X 两块屏都这样）：单点轴工具在这类屏上不是"偏"，是**完全点不动**（写了也被钳成 0）。判据：`touch info` 看 `ABS_X=0 ABS_Y=0` + `MT_POSITION_X=1`。
@@ -115,7 +118,7 @@ adb shell mt_test /dev/input/event0 tap 100 100
 3. **EV_SYN 必须发**，否则内核不提交事件——最容易漏的坑
 4. **滑动逐像素/插值过渡**，禁止一次跳终点（被识别为无效/抖动），每步跟 EV_SYN
 5. 时间戳 `gettimeofday` 必须填
-6. **协议用错 → 坐标恒 0**：注入后 FlyThings 收到 `(0, 0)` 几乎都是协议不匹配。**首选 `touch`（自动判协议，直接绕开）**；若在用 ui_test/mt_test，才按上面"协议速判"切换。
+6. **协议用错 → 坐标恒 0**：注入后 FlyThings 收到 `(0, 0)` 几乎都是协议不匹配。**首选 `touch`（自动判协议，直接绕开）**；若在用手工给节点的 `ui_test`（单点），才按上面"协议速判"确认协议（`mt_test` 2026-09-30 已移除，MT 屏一律用 `touch`）。
 
 ### 移植新平台（ui_test 没有的平台）
 1. 确认触摸节点：`scandir("/dev/input")` + `EVIOCGNAME`（含 touch/ts）或 evtest/getevent
@@ -131,7 +134,7 @@ adb shell mt_test /dev/input/event0 tap 100 100
 
 ## 🔁 抓帧时机：静止帧会漏掉瞬时元素（实测教训）
 - **注入 + 抓帧放在同一次 adb 调用里**（`… && 抓帧命令`），否则中间的网络往返把瞬时状态等没了。
-- ⚠️ **抓帧次数看对象寿命**：双缓冲板需要「连抓两帧取第二张」治滞后，但这会**吃掉瞬态层**——toast 一类只活约 **2s** → **瞬态层单次抓帧**，静态页/弹窗才双抓（案例：一批 toast 断言就是这么假 FAIL 的）。完整表格 → `device-screenshot.md` §3.3-2。
+- ⚠️ **抓帧次数看对象寿命**：双缓冲板需要「连抓两帧取第二张」治滞后，但这会**吃掉瞬态层**——toast 一类只活约 **2s** → **瞬态层单次抓帧**，静态页/弹窗才双抓（案例：一批 toast 断言就是这么假 FAIL 的）。完整表格 → `knowledge/devflow/device-screenshot.md` §3.3-2。
 - **多档 sleep 差分**：同一次操作后分别抓 3~4 张（如 0.15s / 0.4s / 1.0s）→ diff 出"变化中的元素"（瞬时元素只在其中一两张出现）。
 - **`hasScrollbar` 滚动条约 0.6 秒淡出**、颜色**逐帧变化** → 要在滚动结束后 0.6s 内抓，判据看**色阶**（不是固定灰值）。
 - 页面切换类测试：先 `logcat` 看到 `onUI_show` 再抓帧（导航×回调矩阵见 activity-code-skeleton.md）。
@@ -143,6 +146,6 @@ adb shell mt_test /dev/input/event0 tap 100 100
 **对策（按优先级）**：
 1. **每套件开始前先收键盘**（注入一次关闭键）：多数平台上点键盘**右下角收起键 ≈ (963,550)**（以屏分辨率为准，基准 1024×600）→ 注入后抓一帧确认键盘已收。
 2. **钳住注入坐标的合法性**：早退保护要**区分「键盘在屏上」与「真的点不动」**，别把前者当后者；至少把键盘状态（下半屏亮度/亮占比）写进日志留痕。
-3. **顺序纪律**：把会弹键盘的输入类用例放**最后一套**，或每套之间重启应用（`kill -TERM` 优先，约 3s 未退出才回退 `kill -KILL` → init 自动拉起，**不是 reboot**；同时避免 `adb reboot`——部分板子 reboot 后整板掉网，**因果未证**，见 `device-deploy-budget.md` §5）。
+3. **顺序纪律**：把会弹键盘的输入类用例放**最后一套**，或每套之间重启应用（`kill -TERM` 优先，约 3s 未退出才回退 `kill -KILL` → init 自动拉起，**不是 reboot**；同时避免 `adb reboot`——部分板子 reboot 后整板掉网，**因果未证**，见 `knowledge/devflow/device-deploy-budget.md` §5）。
 
 **判据（不靠肉眼）**：键盘在屏与不在屏时，同一坐标（如导航条区域）的亮度明显不同（案例实测一个固定点约 **62 vs 102**）→ 用它当「键盘守卫」判据，比「看截图像不像键盘」稳。

@@ -14,7 +14,7 @@
 | `touch` | 触摸注入（tap / swipe / long / monkey / raw） | 缺 |
 | `busybox` | 设备端调试（ps / ifconfig / ping / dd / hexdump…） | 缺 |
 | `ui_test` | UI 自动化（tap / swipe / monkey / run script） | 缺 |
-| `mt_test` | MT 协议触摸测试 | 缺 |
+| ~~`mt_test`~~ | **2026-09-30 已移除**：能力由 `touch` 覆盖（自动判协议） | — |
 | `zkshot` | 设备端抓屏 | 缺 |
 
 ## 为什么缺
@@ -30,7 +30,7 @@
 
 1. 拿到 Z235X 工具链与样机（找钟工/厂家）；
 2. 按仓库既有口径重编静态工具：busybox 见 `scripts/bb_build_all.sh`（输出 `tools/busybox/bin/<平台>/busybox`），
-   `touch` / `ui_test` / `mt_test` / `zkshot` 见 `tools/touch_inject/`、`tools/zkshot/` 的构建脚本；
+   `touch` / `ui_test` / `zkshot` 见 `tools/touch_inject/`、`tools/zkshot/` 的构建脚本；
 3. 产物放进本目录 → 跑 `python scripts/gen_manifest.py`（刷新 `tools_manifest.json` 的平台/工具面）
    → 跑 `python scripts/check_consistency.py --with-tests` 确认门禁全绿。
 

@@ -33,8 +33,8 @@ evidence: []
 ## 2. 查一个包怎么用（推荐顺序）
 
 1. `packages/<包>/package.yaml` → 看 `summary` / `api` / `usage_cpp` / `gotchas`
-2. 还不够 → `packages/<包>/README.md`（含真机实测表）→ `platforms.md`（板级差异）
-3. 要直接上手 → 拷 `example/` 进工程；跑法见该包 `platforms.md` 的「复现方式」
+2. 还不够 → `packages/<包>/README.md`（含真机实测表）→ `components/<模块>/platforms.md`（板级差异）
+3. 要直接上手 → 拷 `example/` 进工程；跑法见该包 `components/<模块>/platforms.md` 的「复现方式」
 4. 包里没有？→ 用 MCP 的 `flythings_query_package` / `flythings_list_packages` 查平台可用版本；再不行 `flythings_get_package_api`（读 registry 头文件）
 5. 想看实现 → 本地 git 里按 **`lib-<包名>`** 形式找源码仓（例：`lib-networking`、`lib-ntp`、`lib-json`、`lib-civetweb-cxx`）
 
@@ -42,7 +42,7 @@ evidence: []
 
 - 已真机验证（Z20/108）：`zkhardware`（GPIO/过零继电器/背光）、`zknet`（WiFi 全流程 + 以太网/热点/4G 结论）、`curl-cxx`（HTTP/HTTPS/Downloader/WebSocket）、`ntp`、`mqtt-cxx`（明文/TLS/LWT/异常断线重连）、`paho-mqtt3as`、`cares`（DNS 直调）、`mbedtls`、`openssl`（TLS 直调）
 - 只有说明（未上真机）：`rapidjson`、`curl`（`curl` 由 `curl-cxx` 间接验证）
-- 判据：文件内有没有 `verified_<日期>` 块；`platforms.md` 表里未测的平台一律写「未验证 + 需要什么条件」
+- 判据：文件内有没有 `verified_<日期>` 块；`components/<模块>/platforms.md` 表里未测的平台一律写「未验证 + 需要什么条件」
 - 依赖版本按平台分叉，别照抄：**Z20 的 `openssl` = `1.1.1-w`（其他平台 `1.1.1-g`）**；**Z20/Z21 的 `curl` = `8.12.1-mbedtls`（其他平台 `8.12.1`）**；`paho-mqtt3as` / `mqtt-cxx` / `rapidjson` 本地 registry **只有 Z20 有**
 
 ## 4. 红线（踩过的）

@@ -51,7 +51,7 @@ evidence: []
   **但 `/data` 在 ld 路径最前，会遮蔽 `/res/lib` 的固化版** ⇒ "升级了库却跑旧库，日志毫无异常"。
 - ④ 的风险：设备上的 `.so` 随固件走，**下个版本可能没有/签名变了** ⇒ 必须包一层失败回退；
   ⚠️ **别急着自编**：`ls /lib /res/lib` 先看设备自带（nanovg / libpng12 / freetype / libjpeg / libmad /
-  zlib 已装在板上）—— **注册表没有 ≠ 平台没有**，清单见 `devflow/device-preinstalled-libs.md`。
+  zlib 已装在板上）—— **注册表没有 ≠ 平台没有**，清单见 `knowledge/devflow/device-preinstalled-libs.md`。
 
 ---
 
@@ -68,7 +68,7 @@ evidence: []
 - **预编译二进制必须与目标平台 libc 同源**。拿 glibc 版 `.so` 丢给 V85X = `not found`/段错误；
   反向同理。**同一份库，V85X 与 Z20 要分别编**。
 - 静态链接（`-static` + musl）是跨平台最稳的形态；本仓设备端工具就是这么发的
-  （`mt_test`：ARMv7 musl 72KB / ARMv7 glibc 4.5MB——**同一份源码，体积差 60 倍**，
+  （历史实测 `mt_test`（2026-09-30 已移除，同族 `ui_test`/`touch` 同理）：ARMv7 musl 72KB / ARMv7 glibc 4.5MB——**同一份源码，体积差 60 倍**，
   静态带 glibc 会顺带把一堆东西拖进去）。
 - 判据命令：`file <lib>`（看 interpreter/架构）、`readelf -d <lib> | grep NEEDED`（看依赖的 libc）。
 
@@ -108,14 +108,14 @@ evidence: []
 | 媒体（播放/解封装） | 官方 `awh264player` / 本地 ffmpeg 静态库 | registry / ② | ffmpeg 走本地库 + `strip -g`；与 MPP 路线**互斥**（同一颗 VE、同一 disp 视频层） |
 | 蓝牙（BLE HID / GATT） | `btstack` | registry | 需模组在位（自检可直接判：无 BT 属性/rfkill/hci 节点 = 没插） |
 | 数据库 / Modbus / OPC-UA / 组播 / 序列化 | sqlite3 / libmodbus / open62541 / libwebsockets / protobuf-c 等 | **需自编（②或⑤）** | **未验证**：先按 §2 四判据自证，再按 §4 落地 |
-| **图形 / 图像 / 音频（设备已自带，免编译）** | **nanovg**（矢量，AGG 后端）/ **libpng12** / **freetype** / **libjpeg** / **libmad**（MP3）/ **zlib** | **dlopen 即用**（设备 `/lib`） | **注册表没有 ≠ 设备没有**（注册表里 f133 有 nanovg/1.0.0，z20/z21/v85x/f136 无；但 Z21 设备 `/lib` 实测全在）；头文件需从 SDK/组件取，用 `readelf --dyn-syms` 核签名；**libc 必须匹配**。清单见 `devflow/device-preinstalled-libs.md`（另有 `libmi_*` = **框架/系统内部模块，应用不需关注**） |
+| **图形 / 图像 / 音频（设备已自带，免编译）** | **nanovg**（矢量，AGG 后端）/ **libpng12** / **freetype** / **libjpeg** / **libmad**（MP3）/ **zlib** | **dlopen 即用**（设备 `/lib`） | **注册表没有 ≠ 设备没有**（注册表里 f133 有 nanovg/1.0.0，z20/z21/v85x/f136 无；但 Z21 设备 `/lib` 实测全在）；头文件需从 SDK/组件取，用 `readelf --dyn-syms` 核签名；**libc 必须匹配**。清单见 `knowledge/devflow/device-preinstalled-libs.md`（另有 `libmi_*` = **框架/系统内部模块，应用不需关注**） |
 
 ---
 
 ## 4. 落地纪律（六条）
 
 1. 改 `Manifest.xml` 必须 `fun install`（否则头文件路径不进 CMake）——根因/判据/工具侧防护见
-   `devflow/cli-fun-toolchain.md` §4.7（该口径唯一正文）；
+   `knowledge/devflow/cli-fun-toolchain.md` §4.7（该口径唯一正文）；
 2. 本地库放 `src/dependencies/lib/`，**不要手改生成的 `CMakeLists.txt`**；
 3. TLS 的 CA 证书只认**资源目录（resPath）**：放别处报
    `not correctly signed by the trusted CA`——**那是没找到 CA，不是证书坏**；
@@ -132,7 +132,7 @@ evidence: []
 | 拿 glibc 预编译库给 musl 平台 | 链接过 / 设备起不来 | 按 §2-1 重新编 |
 | 同名 `.so` 长期留在 `/data` | 升级了库却跑旧库，**日志无异常** | 用完删；固化走 `/res/lib` |
 | 靠"编译通过"当"能用" | 上机才炸 | 真机判据（maps/fd/回读） |
-| 从别的 GUI 框架类推 API | AI 写出不存在的接口 | 见 `devflow/capability-boundaries.md`：**未收录就标未收录，不猜、不类推** |
+| 从别的 GUI 框架类推 API | AI 写出不存在的接口 | 见 `knowledge/devflow/capability-boundaries.md`：**未收录就标未收录，不猜、不类推** |
 | 把大库直接丢进 `/res` | 升级包写不下/启动失败 | strip + 算预算，或改 dlopen 按需 |
 
 ---

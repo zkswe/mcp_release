@@ -2,7 +2,7 @@
   "schema": 1,
   "generatedBy": "scripts/gen_manifest.py",
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY/STAGE 表后重新生成，勿手改本文件",
-  "version": "0.27.138-open",
+  "version": "0.27.139-open",
   "build": "2026-09-30",
   "toolCount": 43,
   "cli": {
@@ -635,7 +635,7 @@
     },
     {
       "op": "flythings_ui_visual",
-      "brief": "UI 可视化/像素验收入口（action 选动作；旧 ui_editor / ui_edit_apply / ui_diff 已并入）。",
+      "brief": "UI 可视化/像素验收入口（action 选动作；旧编辑器三 op 已并入）。",
       "args": [
         "action",
         "project_root",
@@ -686,7 +686,7 @@
   "docs": {
     "knowledgeFiles": 94,
     "wikiFiles": 128,
-    "ragChunks": 1871,
+    "ragChunks": 1876,
     "ragPaths": 219
   }
 }

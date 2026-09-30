@@ -11,7 +11,7 @@ resources：
   flythings://knowledge/<文件>.md          knowledge/ 根目录的文档（如 README.md）
   flythings://tools                 工具清单（op / 风险分级 / 一句话简介；来自 tools_manifest.json）
                                     + 「设备端预编译工具」一节：bin_tools/<平台>/ 下的 touch / busybox /
-                                    ui_test / mt_test / zkshot（**不是 op**，数 op 看不到）
+                                    ui_test / zkshot（**不是 op**，数 op 看不到）
   flythings://version               版本 / 构建日 / 工具数 / 近期特性
 
   ⚠️ FastMCP 的 URI 模板参数只匹配单段路径（内部把 {x} 换成 [^/]+），所以分类文档与

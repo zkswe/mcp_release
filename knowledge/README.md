@@ -15,7 +15,7 @@
 ## 2. 新增/更新文档流程（照此做）
 
 1. **只改 `knowledge/<分类>/<文档>.md`**——不 Copy 到 wiki（wiki 官方镜像与 knowledge 实践内容互不复制）
-2. 文档头部写检索导引（命中条件，参考现有文档格式）；内部引用用相对路径（如 `v85x/aw-dvr-runtime-compat.md`）或 `knowledge/` 前缀，**不引用 wiki 实践副本路径**
+2. 文档头部写检索导引（命中条件，参考现有文档格式）；内部引用用相对路径（如 `knowledge/v85x/aw-dvr-runtime-compat.md`）或 `knowledge/` 前缀，**不引用 wiki 实践副本路径**
 3. 改完：`kb_tools.py` 版本递增 + `MCP_FEATURES` 顶部加一条精华摘要（版本史：**近期**在 `MCP_FEATURES`，**更早**归档在仓库根 `VERSION_HISTORY.md`；CHANGELOG.md 自 v0.27.31 起已冻结，不再维护）
 4. `python rebuild_index_local.py` 重建索引（默认收 wiki 官方 + knowledge 实践，无重复）
 5. commit + push origin（release 同步走 PUBLISH.md 流程）

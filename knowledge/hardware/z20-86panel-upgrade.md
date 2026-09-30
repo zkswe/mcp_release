@@ -15,7 +15,7 @@ evidence: []
 ---
 # Z20 / 86 面板：升级（固化）链路 · 包格式 · 数据面（真机实证）
 
-> 检索导引：问「Z20/86 面板升级链路 / sys.zkupgrade 系列属性 / 升级包格式 ZKSWEV1.0 / release.ext4 / 插卡自动升级 / 固化后卡开机 logo / 升级完整板掉网」→ 本文（真机实证）；通用出包口径见 `devflow/upgrade-pack-image.md`。
+> 检索导引：问「Z20/86 面板升级链路 / sys.zkupgrade 系列属性 / 升级包格式 ZKSWEV1.0 / release.ext4 / 插卡自动升级 / 固化后卡开机 logo / 升级完整板掉网」→ 本文（真机实证）；通用出包口径见 `knowledge/devflow/upgrade-pack-image.md`。
 > 检索词：Z20 升级 / 86 面板固化 / extupdate.img / update.img / release.ext4 / zkautoupgrade /
 > zkrebootdelay / sys.zkupgrade.dir / sys.zkupgrade.flag / zk_upgrade_check / libzkupgrade /
 > UpgradeMonitor / UpgradeActivity / 插卡自动升级 / U 盘升级 / MISC 开机 logo / 升级后整板掉网 /
@@ -52,9 +52,9 @@ evidence: []
 | ① 插卡/U 盘（常用） | `update.img`（squashfs 包）/ `extupdate.img`（ext4 包，见 §4） | 卡/U 盘**根目录**（FAT32） | **重新上电** → 弹升级界面 → 勾选 → 升级 | 升完**立刻拔盘**，否则每次开机重刷 |
 | ② 插卡自动升级 | ① + 无后缀 `zkautoupgrade` | 同上 | 插卡重上电，**默认 2 s 后自动开升** | `zkautoupgrade` 内容 = 延时秒数；再放无后缀 `zkrebootdelay`（`-1` = 升完不重启） |
 | ③ **ADB 固化**（屏幕/卡座不便） | 包推到设备 `/tmp` | `/tmp` | 见下行三属性 | 掉电即失，仅用于当次固化 |
-| ④ 远程 OTA / 批量升级 | 由设备下载到 `update.img` | 数据面 `temp/` | app 调 `checkUpgradeFile(dir)` | 见 `z20-tuya86-upgrade-firstaid.md` |
+| ④ 远程 OTA / 批量升级 | 由设备下载到 `update.img` | 数据面 `temp/` | app 调 `checkUpgradeFile(dir)` | 见 `workspace/references/kb/z20-tuya86-upgrade-firstaid.md` |
 
-**③ 的准确命令（官方 wiki `upgrade-pack-image.md` 口径，与本机库内属性名一致）**
+**③ 的准确命令（官方 wiki `knowledge/devflow/upgrade-pack-image.md` 口径，与本机库内属性名一致）**
 
 ```bash
 adb push update.img /tmp/update.img            # 或 extupdate.img
@@ -166,7 +166,7 @@ mtd3 "res" (0x720000) /res squashfs ro,noatime,nodiratime            ← 系统�
   `:143-158` 里的 `zkfs -f -y`）。真机日志对照：`Ext4Utils mount ret 0`。
   → **现场永远不要**手动 `umount /mnt/sdnand` / `mkfs` / `dd` 写 p2；要取数据 → `adb pull /mnt/sdnand`。
 - 工程里数据面的落点：`TY_FS_PATH = "/mnt/sdnand/"`（涂鸦库/数据库）、`/mnt/sdnand/config.json`（版本标注）、
-  `/mnt/sdnand/temp/`（升级包工作目录，见 `z20-tuya86-upgrade-firstaid.md` §2 常量表）。
+  `/mnt/sdnand/temp/`（升级包工作目录，见 `workspace/references/kb/z20-tuya86-upgrade-firstaid.md` §2 常量表）。
 - 依赖包侧旁证：`fun install` 解析 Z20 依赖时 base-utility 会带出 **`ext4 0.0.1`** 包
   （内容 = `libext4.a` + `make_ext4fs.h`，暴露 `int make_ext4fs(const char *block, s64 len, const char *mountpoint, struct selabel_handle *sh)`）
   → 想自己格式化/建 ext4 镜像时用它，**别手搓 mkfs**。
@@ -199,10 +199,10 @@ mtd3 "res" (0x720000) /res squashfs ro,noatime,nodiratime            ← 系统�
 | 1 | **ADB 触发升级后整板失联**（本机 2026-09-23 真机遭遇：三属性 + `ctl.restart zkswe` 后 ~40 s 掉 adb，25 min 未回，需现场断电/插卡救援） | 升级会把 app 资源写到 **eMMC app 分区**（本机 `mmcblk0p1` = `/mnt/extsd`，见 §6），并停掉 `zkswe`/`wpa_supplicant`…；这类板子的 WiFi 由 app 带起来 → app 一被换掉就**连网都没了** | 远程触发固化时**先排好现场**（有人能断电、能手插 TF 卡）；**优先用卡/U 盘路线**（不依赖网络） |
 | 2 | 包放对了、版本也对，就是不升级 | ①**去重**：`/data/.zkugraderec` 记版本（Z20 的 app 侧还会被 `/mnt/sdnand/config.json` 抬版本）②目录不在扫描表里 ③文件名不对（`update.img` vs `extupdate.img`） | 递增 `--release-version`；确认目录 ∈{`/mnt/usb*`,`/mnt/extsd`,`/mnt/storage/zkimg`}；必要时 `sys.zkupgrade.force` / `flag 255` |
 | 3 | 包与机型不匹配 | 包头机型 magic（§3）+ 库内 `type_no_match_error` | 别跨机型复用包；换型号重新 `fun pack -p <平台>` |
-| 4 | 固化后「汉字变方块 / 工具没了」 | `update.img` 装的是**你工程的 `/res`**，会把目标机 `/res` **整体替换** | 字库/EasyUI.cfg/必要 bin 全部随工程打进包（`upgrade-pack-image.md` §二 6)） |
+| 4 | 固化后「汉字变方块 / 工具没了」 | `update.img` 装的是**你工程的 `/res`**，会把目标机 `/res` **整体替换** | 字库/EasyUI.cfg/必要 bin 全部随工程打进包（`knowledge/devflow/upgrade-pack-image.md` §二 6)） |
 | 5 | **数据面被整盘重建**（设备列表/场景全空） | p2 挂不上 → `make_ext4fs` 重建（§5，无确认环节） | 不手动动 p2；出包带数据面（`release.ext4=true`）；救数据先 `adb pull /mnt/sdnand` |
 | 6 | 升级窗口里网络/串口日志断 | 升级库会 stop `zkswe`/`wpa_supplicant`/`bt`…（§1） | 别把「升级期间没网」当故障 |
-| 7 | 只放 `boot_logo.JPG` 想只换 logo | 升级项是**逐项勾选**的（`zk_upgrade_get_items` / `checkUpgradeFile`）；`MISC` = 本板 mtd5 = 256 KB | logo 分辨率/体积按 MISC 上限卡（见 `upgrade-pack-image.md` §三） |
+| 7 | 只放 `boot_logo.JPG` 想只换 logo | 升级项是**逐项勾选**的（`zk_upgrade_get_items` / `checkUpgradeFile`）；`MISC` = 本板 mtd5 = 256 KB | logo 分辨率/体积按 MISC 上限卡（见 `knowledge/devflow/upgrade-pack-image.md` §三） |
 | 8 | `/tmp` 里放了包，重启后"包没了" | `/tmp` 是 tmpfs；`sys.zkupgrade.*` 属性也**不持久** | ADB 路线要**一次做完**（push → 三属性 → 重启 app），别中途 `reboot` |
 
 ---
@@ -317,6 +317,6 @@ static void onUI_init(){
 
 - `knowledge/hardware/hardware-models.md`（SW48480040D1 条目）
 - `knowledge/devflow/upgrade-pack-image.md`（出包/刷机总口径、MISC logo、ADB 三属性）
-- wiki `upgrade/auto_upgrade.md`（插卡自动升级）、wiki `upgrade/make_image.md`（TF 卡 FAT32）
-- `references/kb/z20-tuya86-upgrade-firstaid.md`（4 条升级入口的源码时序 + 16 条坑，PublicTuyaSwitch）
-- `references/kb/z20-86panel-extupdate.md`（`release.ext4` 出处与收录情况、机型对号）
+- wiki `wiki/flythings/upgrade/auto_upgrade.md`（插卡自动升级）、wiki `wiki/flythings/upgrade/make_image.md`（TF 卡 FAT32）
+- `workspace/references/kb/z20-tuya86-upgrade-firstaid.md`（4 条升级入口的源码时序 + 16 条坑，PublicTuyaSwitch）
+- `workspace/references/kb/z20-86panel-extupdate.md`（`release.ext4` 出处与收录情况、机型对号）

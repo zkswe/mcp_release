@@ -23,7 +23,7 @@ evidence: []
 1. **编译工具会自动生成完整的 EasyUI.cfg**（默认 JSON，包含下方字段表中的全部参数，路径分 debug=/mnt/extsd 与 release=/res 两套）
 2. 工程根目录 `package.properties` 里的 **`EasyUI.cfg={...}` 是覆盖层**：写了哪个字段就**优先采用**哪个（覆盖编译默认值）；**不需要特殊处理的字段不用写**
 3. 所以 `.settings/com.zksw.flythings.easyui.prefs`（IDE 属性，debug/release 两份）里 rotateScreen=0、而 package.properties 里 270 不矛盾——**package.properties 优先**
-4. `enable.font.location=true`：另一独立开关，启用工程内 font/ 目录自定义字体（配合 `setFontFamily`，见 wiki `font/font_setting.md`）
+4. `enable.font.location=true`：另一独立开关，启用工程内 font/ 目录自定义字体（配合 `setFontFamily`，见 wiki `wiki/flythings/font/font_setting.md`）
 
 ## 2. ⚠️ 查找优先级：设备上生效的**可能不是这一份** cfg（SD 卡会「劫持」程序）
 
@@ -55,9 +55,9 @@ adb shell "setprop ctl.restart zkswe"          # 重启应用生效
 ```
 
 - `rotateScreen` / `rotateTouch` 也在这份 cfg 里（“方向怎么改都不对”同源排查）；
-  静态旋转 vs 运行时旋转详见 `devflow/dynamic-screen-rotation.md`。
+  静态旋转 vs 运行时旋转详见 `knowledge/devflow/dynamic-screen-rotation.md`。
 - 另：**编译期 easyui 版本 ≠ 设备运行库版本**（设备看 `getprop ro.easyui.version`；控件类由运行库提供）
-  → 能力存在性判定与矩阵见 `devflow/dynamic-screen-rotation.md` §4.1。
+  → 能力存在性判定与矩阵见 `knowledge/devflow/dynamic-screen-rotation.md` §4.1。
 
 ## 3. EasyUI.cfg 完整字段（沛哥提供标准格式，debug 版示例）
 
@@ -150,8 +150,8 @@ EasyUI.cfg={"font":"/res/ui/fzcircle.ttf"}
 ## 9. 取图角度 / 触摸坐标旋转口径（唯一事实来源 = 工程 EasyUI.cfg）
 
 > 本节是「屏幕/取图角度 + 触摸坐标旋转口径」的**唯一收口处**（2026-09-30 收口）：
-> `devflow/ui-layout-verify.md` §2-1-1、`devflow/device-screenshot.md` §3.6、`devflow/pixel-analysis-ai.md` §3、
-> `devflow/dynamic-screen-rotation.md` §1、`v85x/dvr-recorder-guide.md` §4、`v85x/display-layer-debug.md` §5 均已压成指向本节的指针。
+> `knowledge/devflow/ui-layout-verify.md` §2-1-1、`knowledge/devflow/device-screenshot.md` §3.6、`knowledge/devflow/pixel-analysis-ai.md` §3、
+> `knowledge/devflow/dynamic-screen-rotation.md` §1、`knowledge/v85x/dvr-recorder-guide.md` §4、`knowledge/v85x/display-layer-debug.md` §5 均已压成指向本节的指针。
 
 **判据（唯一权威来源）**：取图/屏幕角度只有一个来源 = **项目工程自己的 `EasyUI.cfg`**（字段 `rotateScreen` / `rotateTouch`），
 **不是设备 sysfs 状态、也不是「看起来该转多少」**：
@@ -179,7 +179,7 @@ EasyUI.cfg={"font":"/res/ui/fzcircle.ttf"}
 - **时序铁律**：改完 `package.properties` 后 `fun build` 会 `ninja: no work to do` —— **必须 `fun clean` 全量重编**；
   EasyUI.cfg 由 `fun launch` 本地准备阶段合并生成（`.fun/<平台>/launch/EasyUI.cfg`），launch 时随部署推送。
 - ⚠️ **动态旋转 `setScreenRotate()` 只改进程内 `CONFIGMANAGER`，不回写工程 `EasyUI.cfg`**
-  → 「取图 / 换算角度」的基准仍是工程 cfg（见 `devflow/dynamic-screen-rotation.md` §1）。
+  → 「取图 / 换算角度」的基准仍是工程 cfg（见 `knowledge/devflow/dynamic-screen-rotation.md` §1）。
 
 **❌ 不要做的事（跨篇踩过的坑统一归此，三条）**：
 
@@ -192,11 +192,11 @@ EasyUI.cfg={"font":"/res/ui/fzcircle.ttf"}
 
 **注意区分（不是同一回事，别混）**：`ZKVideoView` 布局里的 `"rotation"` 是**枚举** `0/1/2/3`
 （= 0°/90°/180°/270° 顺时针，**不是角度值**，写 `270` 无效被忽略），属**控件级视频画面旋转**，
-与本节的 `rotateScreen` 屏幕旋转无关 → 细节见 `v85x/display-layer-debug.md` §6 / `v85x/dvr-recorder-guide.md` §5-1。
+与本节的 `rotateScreen` 屏幕旋转无关 → 细节见 `knowledge/v85x/display-layer-debug.md` §6 / `knowledge/v85x/dvr-recorder-guide.md` §5-1。
 
 ## 相关
 
-- `devflow/dynamic-screen-rotation.md`：**运行时**旋转（`setScreenRotate` + `Activity::relayout` 换两套 ftu），与本文的编译期静态旋转互补；要 easyui ≥ 2.9.0
-- wiki `font/font_setting.md`：enable.font.location + 多字体完整流程
-- wiki `devflow/new_project.md`：创建项目时"屏幕旋转"选项（IDE 向导对应字段）
+- `knowledge/devflow/dynamic-screen-rotation.md`：**运行时**旋转（`setScreenRotate` + `Activity::relayout` 换两套 ftu），与本文的编译期静态旋转互补；要 easyui ≥ 2.9.0
+- wiki `wiki/flythings/font/font_setting.md`：enable.font.location + 多字体完整流程
+- wiki `wiki/flythings/devflow/new_project.md`：创建项目时"屏幕旋转"选项（IDE 向导对应字段）
 - references/kb/t113-car-link.md：T113 PND 竖装横显先例

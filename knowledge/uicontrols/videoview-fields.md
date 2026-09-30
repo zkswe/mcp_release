@@ -15,7 +15,7 @@ evidence: []
 ---
 # VideoView 视频控件 JSON 字段规范（含轮播/API 双模式）
 
-> 检索导引：问「视频播放怎么做 / 轮播列表文件 _video_list.txt 放哪 / loopPlayback 两种模式 / play 接口 / 播放状态回调 / rotation 是角度还是枚举」→ 本文；摄像头实时预览见 `uicontrols/cameraview-fields.md`。
+> 检索导引：问「视频播放怎么做 / 轮播列表文件 _video_list.txt 放哪 / loopPlayback 两种模式 / play 接口 / 播放状态回调 / rotation 是角度还是枚举」→ 本文；摄像头实时预览见 `knowledge/uicontrols/cameraview-fields.md`。
 > 2026-09-07 git.com 全库学习 + basedemo/VideoPlayerDemo-New、VideoViewDemo-New + f133 easyui 2.9.0 SDK 校准。
 > 场景：视频播放器（广告机轮播、本地视频播放、RTSP 等）。音频播放器见 ZKMediaPlayer 说明（MusicDemo）。
 

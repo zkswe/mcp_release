@@ -57,7 +57,7 @@ components/
 - **资产/工具型**（如 `fonts/`）：无 `include/src`，四件套对应为
   `README.md + platforms.md + scripts/（可复现的生成/检查脚本）+ 产物目录`，使用方式写成"一条命令"。
 
-**四件套缺一不收**：没有 `platforms.md` 的模块 = 把"什么板子上会翻车"藏起来了；
+**四件套缺一不收**：没有 `components/<模块>/platforms.md` 的模块 = 把"什么板子上会翻车"藏起来了；
 没有 `example/` 的模块 = 让下一个人从零猜调用姿势。
 
 ---
@@ -94,7 +94,7 @@ components/
 `type:"executable"` 才出可执行 ELF（否则出 `libzkgui.so`）。
 
 ⚠️ 模块自己的 `Manifest.xml` 声明底层包时**别漏 `base-utility`**（fun 生成的 `generated/*.h` 固定 `#include <base/…>`），
-且**改 Manifest 后必须重跑 `fun install`**——现象/处置/判据（含 `base/` 前缀误报排除）见 `devflow/cli-fun-toolchain.md` §4.7（唯一正文）。
+且**改 Manifest 后必须重跑 `fun install`**——现象/处置/判据（含 `base/` 前缀误报排除）见 `knowledge/devflow/cli-fun-toolchain.md` §4.7（唯一正文）。
 
 ---
 
@@ -109,8 +109,8 @@ components/
 ## 5. 新增模块 checklist
 
 - [ ] 目录名/命名空间定好（`zk::<模块>` / `include/zk/zk_<模块>.h`，或资产型则定产物与脚本入口）
-- [ ] `README.md`：用法（10~30 行可跑示例）+ API 表 + 依赖 + 限制 + 排错
-- [ ] `platforms.md`：逐平台前置条件与实测值（未实测标 `未验证`）
+- [ ] `knowledge/README.md`：用法（10~30 行可跑示例）+ API 表 + 依赖 + 限制 + 排错
+- [ ] `components/<模块>/platforms.md`：逐平台前置条件与实测值（未实测标 `未验证`）
 - [ ] `Manifest.xml`：底层依赖 + 本模块被引用的两种方式
 - [ ] `example/`（或资产型的"一条命令"）：**真的跑过/编过**，把命令写进 README
 - [ ] 版本号 + 变更记录（模块内 README 顶部一段）
@@ -175,8 +175,8 @@ components/
 - `components/fonts/`（思源黑体三版 + 设备字体自检）
 - `components/icons/`（Tabler 图标库：语义图标 → 任意分辨率单色 PNG，两条命令出图）
 - `components/ui_v1/`（**框架基线目录，文档型**：当前这代 FlyThings IDE + easyui 的跨框架**控件映射唯一权威表** + 逻辑映射 + 缺口五级处置 + 候选组件登记；**跨框架控件映射查这里**）
-- `devflow/custom-font-config.md`（字库机制 + 设备字体自检使用口径）
-- `devflow/upgrade-pack-image.md`（固化出包与刷机；⚠️ 会整体替换 `/res`）
+- `knowledge/devflow/custom-font-config.md`（字库机制 + 设备字体自检使用口径）
+- `knowledge/devflow/upgrade-pack-image.md`（固化出包与刷机；⚠️ 会整体替换 `/res`）
 
 ---
 
@@ -196,7 +196,7 @@ components/
   只有**降分辨率**（160×160 ≈ 5.4ms）或**降帧率**有效。
 - **顺带定的一条平台口径**：自定义 view 每帧刷新的正确写法是 `ctrl->setInvalid(!ctrl->isInvalid())`
   （gameview 口径）；`invalidate(&getAbsolutePosition())` 传绝对矩形会被按**控件本地坐标**裁成"右下角一块"，
-  屏上只刷一块 → 详见 `uicontrols/custom-view-refresh.md`。
+  屏上只刷一块 → 详见 `knowledge/uicontrols/custom-view-refresh.md`。
 - **文件**：`components/vinyl/{README.md,platforms.md,Manifest.xml,include/zk/zk_vinyl.h,src/*,example/}`；
   落地来源 `projects/iOSStyle-F133`（已切到组件副本，`fun build` 0 error + 真机跑通）。
 

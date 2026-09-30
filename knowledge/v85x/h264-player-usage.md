@@ -17,7 +17,7 @@ evidence: []
 
 > 🔍 **检索导引**：V85X/V853/V851/V553「**硬件 H264 解码**」「**awh264player 包怎么用**」「**zk_h264_player**」「**h264_player_init_ex**」「**HLS/TS/RTSP 流送硬解上屏**」「**解码缩放 1/2 / 1/4**」「**起播就静默退出 / 进程无报错消失**」「**get_picture_count 不准**」「**lib-no-link 推不上去**」。定规：**只记录怎么用**（库闭源，不解析不深挖）。来源：2026-09-14 V851s 真机实测 + 包仓库/本机注册表现场核对。
 > 🧪 **同仓 demo**：`demos/h264-player-v85x/`（bin 工具：env + dlopen + init_ex + 解码回调 + 喂 AU，**✅ 编译通过**）。⚠️ 与 MPP 路线（`libmedia_mpp` / `AW_MPI_VDEC_*`）是**两条独立链路**，同一颗 VE、同一个 disp 视频层，**互斥**。
-> 💡 显示层结构 / UI 层透明窗口 / 图层释放见 `v85x/display-layer-debug.md`、`v85x/videoview-transparent-window.md`（本篇不复述）。
+> 💡 显示层结构 / UI 层透明窗口 / 图层释放见 `knowledge/v85x/display-layer-debug.md`、`knowledge/v85x/videoview-transparent-window.md`（本篇不复述）。
 
 ---
 
@@ -213,7 +213,7 @@ typedef struct {                       // 解码回调给的帧
 
 ## 7. 部署：库放哪、运行时找得到吗（`lib-no-link` / `/data` 遮蔽）
 
-> 官方 wiki（`manifest/add_local_lib.md`）只写了「`dependencies/lib-no-link` 下的动态库**仅随程序打包**，不参与编译」——最要紧的两件事（打进哪、运行时可见性）没写。以下是实测口径。
+> 官方 wiki（`wiki/flythings/manifest/add_local_lib.md`）只写了「`dependencies/lib-no-link` 下的动态库**仅随程序打包**，不参与编译」——最要紧的两件事（打进哪、运行时可见性）没写。以下是实测口径。
 
 | 场景 | 行为 |
 |---|---|
@@ -248,7 +248,7 @@ typedef struct {                       // 解码回调给的帧
 - 该层是**内核态**的：进程崩溃/重启**不释放**，异常重启后屏上会冻在上一轮残影 ⇒
   **用到视频图层的产品，启动首次初始化必须先释放残留层**（V85X 必做）。
 - 排查层用 `cat /sys/class/disp/disp/attr/sys`（**不在 `/dev/fb0`**，fb0 只有 UI 层）。
-- 👉 细节与真机判据：`v85x/display-layer-debug.md`（含"**按 ch/lyr 判、不要用格式区间**"这条纠错）。
+- 👉 细节与真机判据：`knowledge/v85x/display-layer-debug.md`（含"**按 ch/lyr 判、不要用格式区间**"这条纠错）。
 
 ---
 
@@ -283,7 +283,7 @@ typedef struct {                       // 解码回调给的帧
 |---|---|
 | H264 直播/点播上屏，要旋转/缩放/裁剪 | **本包**（硬解，能解 720p，靠 1/2、1/4 缩放） |
 | 需要 MPP 家族能力（与摄像头/录像/多路复用同链路） | MPP（`AW_MPI_VDEC_*`），注意 960x544 上限与自愈机制 |
-| JPEG / MJPEG | 见 `v85x/jpeg-decode-record.md` |
+| JPEG / MJPEG | 见 `knowledge/v85x/jpeg-decode-record.md` |
 | 只是要显示"播放器控件" | 框架 `ZKVideoView`（另一条路） |
 
 ⚠️ **两条链路互斥**：同一颗 VE + 同一个 disp 视频层，切换前先优雅停掉另一条（停止 → 释放视频层 → 再起）。

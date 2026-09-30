@@ -15,7 +15,7 @@ evidence: []
 ---
 # 抓帧读图：程序化像素分析 + 像素级渲染坑
 
-> 检索导引：问「不烧 token 怎么看截图 / 字符画读图 / 文字暗带检测 / 坐标要不要换算 / 像素级渲染坑怎么验」→ 本文；抓图见 `devflow/device-screenshot.md`，像素 diff 见 `devflow/ui-layout-verify.md`。
+> 检索导引：问「不烧 token 怎么看截图 / 字符画读图 / 文字暗带检测 / 坐标要不要换算 / 像素级渲染坑怎么验」→ 本文；抓图见 `knowledge/devflow/device-screenshot.md`，像素 diff 见 `knowledge/devflow/ui-layout-verify.md`。
 > 2026-09-10 入库（来源：外部 skill `flythings-device-screenshot` 与知识库逐条比对后补缺；
 > 沛哥 2026-09-10 21:31「必要的做好入库就好了」）。适用：拿到设备截图后想**不烧 token** 地读它。
 
@@ -57,7 +57,7 @@ evidence: []
 
 `flythings_device_screenshot` 缺省 `rotate='auto'`，输出**已经是项目逻辑方向**（读工程 `EasyUI.cfg` 的
 `rotateScreen` 转正）→ 直接按图里坐标点/裁图，**不需要换算**；显式 `rotate=0` 或触摸注入的换算口径
-（旋转函数、`rotateTouch` 与 `rotateScreen` 可以不同）→ 见 `devflow/package-properties-easyui-cfg.md` §9。
+（旋转函数、`rotateTouch` 与 `rotateScreen` 可以不同）→ 见 `knowledge/devflow/package-properties-easyui-cfg.md` §9。
 
 ## 4. 像素级渲染坑（改图/改 json 时常踩，全是像素能验的）
 
@@ -68,11 +68,11 @@ evidence: []
 | 图标边缘发黑/发脏 | 图是**半透明 PNG** 却贴在纯色底上 | **纯色底就烘底**（把底色烘进图）；真需要透明装饰件用 **button + picTab**（alpha 混合正确） |
 | 圆角背景**四角发黑** | 圆角图四角是透明像素，被渲成黑 | 圆角图**四角烘页面底色**（见 nine-patch-rule.md） |
 | listview / item / subItem 出现**黑块** | 填了 `backgroundColor` + `bgColorTab` | **删掉**这两个键 |
-| 浅色形状（浅色带/卡片）边界有**断续暗边/亮白点、圆角发毂齿** | 超采样缩回用了 `LANCZOS`（负瓣振铃）→ 反预乘后 RGB 越界；且低对比边界（只差单通道 12 级）靠肉眼/亮度阈值看不见 | 缩回换**面积平均（AREA/BOX）**，详见 `ui-asset-rules.md` 铁律 #10；用 `tools/qa/aa_audit.py --fail` 验（判 `resid_bad`） |
+| 浅色形状（浅色带/卡片）边界有**断续暗边/亮白点、圆角发毂齿** | 超采样缩回用了 `LANCZOS`（负瓣振铃）→ 反预乘后 RGB 越界；且低对比边界（只差单通道 12 级）靠肉眼/亮度阈值看不见 | 缩回换**面积平均（AREA/BOX）**，详见 `knowledge/devflow/ui-asset-rules.md` 铁律 #10；用 `tools/qa/aa_audit.py --fail` 验（判 `resid_bad`） |
 
 ## 5. 相关
 
-- 抓屏工具与方向口径：`devflow/ui-layout-verify.md`（§2-1）；旋转字段与取图角度口径：
-  `devflow/package-properties-easyui-cfg.md` §9
-- 触摸注入与抓帧时机：`devflow/touch-inject-autotest.md`
-- 设备端工具缺失（无 grep/sed/head）：`devflow/busybox-debug-library.md`
+- 抓屏工具与方向口径：`knowledge/devflow/ui-layout-verify.md`（§2-1）；旋转字段与取图角度口径：
+  `knowledge/devflow/package-properties-easyui-cfg.md` §9
+- 触摸注入与抓帧时机：`knowledge/devflow/touch-inject-autotest.md`
+- 设备端工具缺失（无 grep/sed/head）：`knowledge/devflow/busybox-debug-library.md`

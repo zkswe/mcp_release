@@ -26,9 +26,9 @@ evidence: []
 > loadBitmapFromFile、unloadBitmap、setBackgroundPic、coverCache、缓存命中、hits/loads、CACHE_SIZE、
 > 权重 LRU、引用计数、releaseAll、drop_caches、串图、批次命名。
 > **2026-09-23 立**（钟工口径：把 HaishiM9 的「列表图片 ImageCache 方法」正式入库 open 版 MCP）。
-> **相关**：字段与回调全集 `listview-fields.md`；高频回调里别做重活 `high-frequency-callback-perf.md`；
-> 滑动/惯性字段 `scroll-drag-interaction-spec.md`；组件 **`components/imagecache/`**（可直接拷的代码）；
-> 平台实测与未验证项 `components/imagecache/platforms.md`；原始实测报告 `temp/music_ui/REPORT.md`。
+> **相关**：字段与回调全集 `knowledge/uicontrols/listview-fields.md`；高频回调里别做重活 `knowledge/uicontrols/high-frequency-callback-perf.md`；
+> 滑动/惯性字段 `knowledge/uicontrols/scroll-drag-interaction-spec.md`；组件 **`components/imagecache/`**（可直接拷的代码）；
+> 平台实测与未验证项 `components/imagecache/platforms.md`；原始实测报告 `components/imagecache/platforms.md`（原始实测报告已归档）。
 > **一句话**：`setBackgroundPic(path)` 会让框架**当场解这张图**（280×280 圆角封面真机 26~65 ms/张，落在 UI 线程），
 > 列表 item 一重建（回页/换页/刷新/控件回收）就**再解一遍**；修法是**两件套、缺一不可**：
 > ①**先降尺寸**（出图/取图严格 == 显示盒，别让引擎去缩大图）→ ②**再上 ImageCache**（按路径缓存**已解码位图**，命中不再解码）。
@@ -86,7 +86,7 @@ evidence: []
 | 我的 `ListFav/ListRecent` | **没有封面控件** | fill 里没有 `setBackgroundPic` | 无图可缓存（要加封面 = 改布局） |
 
 做法：① 列表封面**取图接口的 size 参数**与控件盒对齐（网络图就带 `?size=`，本地图就用出图脚本按盒尺寸出）；
-② 圆角/裁剪合成也按盒尺寸做，不要「先出大图再缩」。相关：图与盒的一般规则见 `ui-asset-rules.md`。
+② 圆角/裁剪合成也按盒尺寸做，不要「先出大图再缩」。相关：图与盒的一般规则见 `knowledge/devflow/ui-asset-rules.md`。
 
 ## 4. 修法第二件套：上 ImageCache
 
@@ -169,11 +169,11 @@ zk::ImageCache::instance().cache(p.c_str());
 | 上游参考实现（钟工指定） | `projects/LearningProject/HaishiM9/src/logicSelf/imageCache.h` | `CACHE_SIZE=128` + 权重 LRU + `BitmapHelper::loadBitmapFromFile/unloadBitmap`；用法见该工程 `src/logic/MenuLogic.cc:1151/1153`、`1219/1221`（`setBackgroundPic` 后紧跟 `cache`）与 `src/logic/HelpInterfaceLogic.cc:129/141/154`（先 `cache` 再 `setBackgroundPic`，两种顺序都成立）。⚠️ 其 `releaseAll()` 末尾的 `drop_caches` 别抄（坑 2）。 |
 | 真机验证过的工程化版 | `projects/iOSStyle-F133/src/core/ImageCache.hpp` | 单例 + 引用计数 `acquire()/release()` + 内部加锁；**去掉** `drop_caches`。接线点 `src/logic/mu_mainLogic.cc:521/562`、`src/logic/mu_searchLogic.cc:313`；`onUI_init/onUI_quit` 配 `acquire()/release()`。 |
 | 可复用组件（本仓库） | `components/imagecache/` | 把上者的工程耦合摘掉（装载/释放**回调注入**），并补上「不静默的错误处理 + 日志钩子 + 诊断读数」；PC 自测 29 项含串图复现。 |
-| 原始实测报告 | `temp/music_ui/REPORT.md` | 改前后数据、串图回归、像素 diff、未验证项。 |
+| 原始实测报告 | `components/imagecache/platforms.md`（原始实测报告已归档） | 改前后数据、串图回归、像素 diff、未验证项。 |
 
 ## 相关
 
-- `listview-fields.md`（字段/回调全集、刷新与跟随口径）
-- `high-frequency-callback-perf.md`（高频回调里禁做的事）
-- `components/imagecache/`（代码 + `platforms.md` 逐平台实测 + `example/` 自测与接线样板）
-- `ui-asset-rules.md`（出图尺寸/与控件盒一致的一般规则）
+- `knowledge/uicontrols/listview-fields.md`（字段/回调全集、刷新与跟随口径）
+- `knowledge/uicontrols/high-frequency-callback-perf.md`（高频回调里禁做的事）
+- `components/imagecache/`（代码 + `components/imagecache/platforms.md` 逐平台实测 + `example/` 自测与接线样板）
+- `knowledge/devflow/ui-asset-rules.md`（出图尺寸/与控件盒一致的一般规则）

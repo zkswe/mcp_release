@@ -15,7 +15,7 @@ evidence: []
 ---
 # 画布必须盖满面板（全屏覆盖）—— 否则底部露出「上一款应用」的残留帧（伪闪烁）
 
-> 检索导引：问「屏幕底部有一条不属于本应用的内容 / 残留帧 / 页标签在闪 / 画布高度比面板小（1280×750 vs 800）/ 全屏覆盖怎么做」→ 本文；抓真机截图取证见 `devflow/device-screenshot.md`。
+> 检索导引：问「屏幕底部有一条不属于本应用的内容 / 残留帧 / 页标签在闪 / 画布高度比面板小（1280×750 vs 800）/ 全屏覆盖怎么做」→ 本文；抓真机截图取证见 `knowledge/devflow/device-screenshot.md`。
 > 检索关键词：残留帧 / 花屏 / 底部条 / 页标签闪烁 / 画布高度 / 分辨率不符 / 双缓冲 / 伪闪烁 / 全屏覆盖 / canvas / 1280x750
 > 适用：**全屏应用**（有意留黑边/多分辨率分目录的工程另按各自主张）。
 
@@ -47,7 +47,7 @@ evidence: []
 * `ui/main.json`：把 **`resolution.height`** 与**根节点 `position.height`** 一起改成**面板可视高度**（750 → 800）。
   * 控件全是绝对定位 → 位置不受影响；改前先确认根 `backgroundColor` 不是透明/黑（它负责把补齐区刷成正常底色）。
 * `fui pack` 出新 ftu → push 到设备 → **温和重启**应用（`kill -TERM <pid>`，init respawn）。
-  平台禁 reboot 的照旧禁（见 `devflow/adb-and-device-selection.md`）。
+  平台禁 reboot 的照旧禁（见 `knowledge/devflow/adb-and-device-selection.md`）。
 * **只改布局 = 不用重编/重推 `.so`**，把影响面压到最小。
 
 ## 验收判据（机器可判，0 token）
@@ -66,9 +66,9 @@ evidence: []
 | F133 / F136 | **1280×800** | fb 800×1280 竖排 + `rotateScreen=270`；触摸 `rotateTouch=270` |
 | Z21 | 1024×600 | |
 | Z20 | 800×1280（竖屏） | |
-| V85x | 480×800 / 640×480（按型号） | 见 `hardware/hardware-models.md` |
+| V85x | 480×800 / 640×480（按型号） | 见 `knowledge/hardware/hardware-models.md` |
 
-> 型号/面板尺寸以 `flythings_hardware_info` + `hardware/hardware-models.md` 为准，不要在生成器里硬编码猜测。
+> 型号/面板尺寸以 `flythings_hardware_info` + `knowledge/hardware/hardware-models.md` 为准，不要在生成器里硬编码猜测。
 
 ## 落地注意（防复发）
 

@@ -89,9 +89,9 @@ int getBlockSize(mount_point) { return statfs(mount_point).f_bsize; }
 1. **设备上录不了像，先怀疑卡被电脑格过**（簇不对/exFAT/NTFS）；用设备自身「格式化存储卡」最稳
 2. 量产/测试装机前直接用设备格式化，别用电脑格
 3. 文件系统工具链（newfs_msdos）是 V85X 平台 DVR 配套的一部分，随设备系统提供，应用层只调命令/接口
-4. 双介质产品（EMMC + TF）：挂载与 USB 存储暴露共用同一介质探针（EMMC 存在 → EMMC 分区，否则 → TF 卡），见 `v85x/usb-gadget-storage.md`
+4. 双介质产品（EMMC + TF）：挂载与 USB 存储暴露共用同一介质探针（EMMC 存在 → EMMC 分区，否则 → TF 卡），见 `knowledge/v85x/usb-gadget-storage.md`
 
 ## 5. 参考
-- `v85x/dvr-recorder-guide.md`（DVR 录制功能开发 Playbook，存储章节引用本篇）
-- `v85x/usb-gadget-storage.md`（EMMC/TF 双介质挂载与 USB 暴露）
-- `devflow/package-properties-easyui-cfg.md`（EasyUI.cfg 配置机制，与格式化无关但同为工程级坑位）
+- `knowledge/v85x/dvr-recorder-guide.md`（DVR 录制功能开发 Playbook，存储章节引用本篇）
+- `knowledge/v85x/usb-gadget-storage.md`（EMMC/TF 双介质挂载与 USB 暴露）
+- `knowledge/devflow/package-properties-easyui-cfg.md`（EasyUI.cfg 配置机制，与格式化无关但同为工程级坑位）

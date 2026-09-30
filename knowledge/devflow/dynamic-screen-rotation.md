@@ -15,7 +15,7 @@ evidence: []
 ---
 # 🔄 动态旋转屏幕 / 运行时切换布局（relayout）
 
-> 检索导引：问「运行时转屏 / 横竖屏切换不重启应用 / relayout 怎么用 / setScreenRotate·setTouchRotate / 两套 ftu 怎么切 / 某版本不支持某控件（scrollwindow 看不到）」→ 本文；静态方向配置（`rotateScreen` / `rotateTouch` / 取图角度口径）见 `devflow/package-properties-easyui-cfg.md` §9。
+> 检索导引：问「运行时转屏 / 横竖屏切换不重启应用 / relayout 怎么用 / setScreenRotate·setTouchRotate / 两套 ftu 怎么切 / 某版本不支持某控件（scrollwindow 看不到）」→ 本文；静态方向配置（`rotateScreen` / `rotateTouch` / 取图角度口径）见 `knowledge/devflow/package-properties-easyui-cfg.md` §9。
 > 2026-09-14 沛哥指路 `projects/LearningProject/RelayoutDemo`（F133）→ 本机 easyui 逐版本实测校准（**需要较新的 EasyUI**：relayout 由 easyui 2.9.0 引入；现有公开包的 z20/z21/t113 均无 → 找 FlyThings 厂家支持）。
 > 检索词：动态旋转 / 运行时旋转 / 横竖屏切换 / 屏幕方向切换 / 两套 ftu / relayout / setScreenRotate / setTouchRotate / EasyUI 版本要求 /
 > **scrollwindow 不显示 / 控件看不到 / 控件没渲染 / 页面只有标题 / 某版本不支持某控件 / 编译期头版本 vs 设备运行库 / ro.easyui.version / strings libeasyui.so**。
@@ -32,7 +32,7 @@ mActivityPtr->relayout(payloadFtu);    // 换布局：传 ui/ 下的 ftu 文件�
 
 - `relayout(const std::string &appName)` 在 **`include/app/BaseApp.h`**（Activity/Window 继承链上都能调）
 - 另有控件级 `ZKBase::relayout(const Json::Value &json)`（`control/ZKBase.h`，用 json 直接重排单个控件，属另一路）
-- 与静态旋转的区别：静态旋转是编译期写 `package.properties`（`EasyUI.cfg={"rotateScreen":270}`），**开机定死**；动态旋转用于「用户能切 / 按场景切 / 传感器切」；静态口径（字段语义、取图角度/触摸换算、生效判据）→ `devflow/package-properties-easyui-cfg.md` §9
+- 与静态旋转的区别：静态旋转是编译期写 `package.properties`（`EasyUI.cfg={"rotateScreen":270}`），**开机定死**；动态旋转用于「用户能切 / 按场景切 / 传感器切」；静态口径（字段语义、取图角度/触摸换算、生效判据）→ `knowledge/devflow/package-properties-easyui-cfg.md` §9
 
 ## 2. Demo 全量逻辑（RelayoutDemo/src/logic/mainLogic.cc，核心就这几行）
 
@@ -101,15 +101,15 @@ static bool onButtonClick_Button1(ZKButton *pButton) {
 
 **「控件看不到 / 页面只有标题」排查顺序**（按命中率）：
 1. 设备加载的是**哪一份** lib/ui（`/tmp` > `/mnt/extsd` > `/res`，SD 卡可劫持）
-   → `devflow/package-properties-easyui-cfg.md` 的「查找优先级」节；
+   → `knowledge/devflow/package-properties-easyui-cfg.md` 的「查找优先级」节；
 2. 产物有没有同步（改 `ui/*.json` 必须立即 `fui pack` 出 ftu；`fun pack` 会把旧 ftu 回写成 json）
-   → `devflow/ftu-json-pipeline.md`；
+   → `knowledge/devflow/ftu-json-pipeline.md`；
 3. 能力/类**存不存在**（上述三步，本例已证伪）；
 4. 控件结构与字段（`scrollwindow` 只装 `window`；内容高 > 视口才滚；固定件放外面；`touchable`）
-   → `uicontrols/scroll-drag-interaction-spec.md`；
+   → `knowledge/uicontrols/scroll-drag-interaction-spec.md`；
 5. 可见性/启动态（`visible:false`、被上层装饰层盖住、`getprop sys.zkapp.state` 不是 `running`）。
 
-## 5. 本机编译实测（RelayoutDemo + 当前 fun 工具链；CLI 更名见 `devflow/cli-fun-toolchain.md`）
+## 5. 本机编译实测（RelayoutDemo + 当前 fun 工具链；CLI 更名见 `knowledge/devflow/cli-fun-toolchain.md`）
 
 踩了两个坑，都不在旋转本身：
 

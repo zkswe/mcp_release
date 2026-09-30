@@ -15,7 +15,7 @@ evidence: []
 ---
 # FlyThings 工程代码骨架（35 官方 Demo 深度阅读提炼）
 
-> 检索导引：问「activity 骨架怎么写 / 回调分发表在哪 / onUI_init·onUI_quit 标准序列 / logic.cc 与 activity.cpp 谁参与编译 / 切页后回调还触发吗 / check_all 括号平衡误报」→ 本文（工程代码骨架总纲）；控件逐个的代码接口见 `uicontrols/widget-code-api.md`。
+> 检索导引：问「activity 骨架怎么写 / 回调分发表在哪 / onUI_init·onUI_quit 标准序列 / logic.cc 与 activity.cpp 谁参与编译 / 切页后回调还触发吗 / check_all 括号平衡误报」→ 本文（工程代码骨架总纲）；控件逐个的代码接口见 `knowledge/uicontrols/widget-code-api.md`。
 > 2026-09-08 basedemo-new_z20_1024_600（35 工程）逐源码深读。所有 Demo 共用同一套生成器骨架，理解它=理解一切控件如何被代码驱动。
 > 检索词：activity 骨架/回调表/生命周期/logic.cc/定时器/串口模板/SysApp/REGISTER_ACTIVITY/check_all 括号不平衡/全检误报。
 
@@ -24,7 +24,7 @@ evidence: []
 
 - **IDE 体系**：`src/activity/<name>Activity.cpp` 参与编译，它 `#include` 同名 logic（`logic/<name>Logic.cc`）。
 - **`fun build`（命令行，推荐）**：**`src/activity/*` 完全不参与编译**；fun 直接把 `src/logic/*.cc`、`src/**/*.cpp` 与**自己生成的** `generated/{event,event_dispatcher,ui_main}.cpp` 编成 `libzkgui.so`（编译宏 `FUN_BUILD=1`）。
-- 所以：改 activity 对 fun 构建**无效**；**不要改 `.fun/<平台>/CMakeLists.txt`**（fun 自动生成、会被覆盖）。细节见 `cli-fun-toolchain.md` §4.5。
+- 所以：改 activity 对 fun 构建**无效**；**不要改 `.fun/<平台>/CMakeLists.txt`**（fun 自动生成、会被覆盖）。细节见 `knowledge/devflow/cli-fun-toolchain.md` §4.5。
 
 ## 1. 代码组织（生成器骨架）
 - **src/activity/mainActivity.cpp 是"壳"**：顶部定义 `static ZKXxx* mXXXPtr`（控件全局指针，与 ftu 的 caption 对应）→ `REGISTER_ACTIVITY(mainActivity);` → `#include "logic/mainLogic.cc"` 把用户逻辑**文本包含**进来 → logic 里可直接裸用 mXXXPtr/mActivityPtr，无需自己 findControl（但要改监听才用 findControlByID 或直接在 onCreate 已配好）。

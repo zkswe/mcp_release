@@ -15,9 +15,9 @@ evidence: []
 ---
 # 🖥️ V85X 摄像头自维护出图 → videoView 零代码透出视频层（透明渲染区域）
 
-> 检索导引：问「V85X 摄像头画面自己输出怎么显示 / videoView 当透明窗口 / 要不要写 startPreview·play / video 控件轮播=否是什么行为」→ 本文；图层释放与黑屏防御见 `v85x/display-layer-debug.md`。
+> 检索导引：问「V85X 摄像头画面自己输出怎么显示 / videoView 当透明窗口 / 要不要写 startPreview·play / video 控件轮播=否是什么行为」→ 本文；图层释放与黑屏防御见 `knowledge/v85x/display-layer-debug.md`。
 > 2026-09-07 沛哥知识补充（来源：V85X 平台实测经验）。官方口径佐证：video 控件「轮播类型=否」时
-> **仅创建一个视频渲染区域，除此以外没有其他操作**（wiki `uicontrols/video.md`）。
+> **仅创建一个视频渲染区域，除此以外没有其他操作**（wiki `wiki/flythings/uicontrols/video.md`）。
 > 适用：**V85X**（V853/V553 等）摄像头画面由**用户自己打开并维护显示内容**的场景。
 
 ## 0. 一句话知识
@@ -34,7 +34,7 @@ UI 上只需要添加一个 videoView 控件——不需要写任何关联代码
 | B. 播放文件/回放/拉流 | ZKVideoView（easyui 播放器） | videoview 控件 | `play(path, 0)` / pause / resume / stop |
 | C. **摄像头自维护出图（本知识点）** | **用户/系统自己打开摄像头并把内容输出到 Video 层** | **videoview 控件（仅作透明渲染窗口）** | **零代码，不需要 play/关联** |
 
-⚠️ A/B 的详细字段与坑位见 `uicontrols/cameraview-fields.md`（实时预览/播放禁混用）；
+⚠️ A/B 的详细字段与坑位见 `knowledge/uicontrols/cameraview-fields.md`（实时预览/播放禁混用）；
 本文专讲 **C 场景**——videoView 不当播放器用，当"视频层窗口"用。
 
 ## 2. 操作步骤（极简）
@@ -43,7 +43,7 @@ UI 上只需要添加一个 videoView 控件——不需要写任何关联代码
 2. **位置/尺寸即画面显示区域**：videoView 放哪、多大，视频层画面就从哪透出
    - ⚠️ **视频图层尺寸不能超过屏幕区域**（全志平台唯一相关限制；**定性口径、不挂具体数值**，
      早年的具体数值系误测已撤回——钟工 2026-09-30 校准）。另外 **GUI 层缩放/绘制无限制**，
-     别把视频层的尺寸约束算到画布/文字缩放头上。边界口径总见 `devflow/render-extension-boundary.md` §5
+     别把视频层的尺寸约束算到画布/文字缩放头上。边界口径总见 `knowledge/devflow/render-extension-boundary.md` §5
 3. 编译运行——**不需要在 logic.cc 里写任何关联代码**
    - 不调用 `play()` / `stop()` / `setVideoPath` 之类
    - 控件自动生成的 `onVideoViewPlayerMessageListener_XXX` 回调也可不填（没人播报不了状态，不影响透出）
@@ -72,6 +72,6 @@ UI 上只需要添加一个 videoView 控件——不需要写任何关联代码
 
 ## 5. 参考
 
-- 官方 wiki `uicontrols/video.md`（非轮播=仅创建视频渲染区域）
-- `uicontrols/cameraview-fields.md`（场景 A/B 控件字段与禁混用铁律）
-- `v85x/uvc-usb-camera.md` / `v85x/jpeg-decode-record.md`（V85X 视频层相关实测）
+- 官方 wiki `wiki/flythings/uicontrols/video.md`（非轮播=仅创建视频渲染区域）
+- `knowledge/uicontrols/cameraview-fields.md`（场景 A/B 控件字段与禁混用铁律）
+- `knowledge/v85x/uvc-usb-camera.md` / `knowledge/v85x/jpeg-decode-record.md`（V85X 视频层相关实测）

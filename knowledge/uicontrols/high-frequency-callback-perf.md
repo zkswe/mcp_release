@@ -15,9 +15,9 @@ evidence: []
 ---
 # 高频回调性能规范：拖动/触摸回调里**禁止全量刷新**
 
-> 检索导引：问「拖动卡顿·滑动很卡 / 高频回调里顺手刷了整页 / 触摸事件被合并丢弃 / 掉帧怎么量化」→ 本文；列表封面类的另一路优化见 `uicontrols/listview-image-cache.md`。
+> 检索导引：问「拖动卡顿·滑动很卡 / 高频回调里顺手刷了整页 / 触摸事件被合并丢弃 / 掉帧怎么量化」→ 本文；列表封面类的另一路优化见 `knowledge/uicontrols/listview-image-cache.md`。
 > 检索词：滑动很卡 / 拖动卡顿 / 滑块拖不动 / 拖动掉帧 / 全量刷新 / updateUi 每次都调 / 高频回调 / setText 刷一整屏 / 运动事件被丢弃 / 触摸事件合并 / 事件被吞 / 回调太慢 / 优先级 / 拖动响应延迟 / CPU 占用高 / 掉帧 / 帧变化率 / A/B 量化口径。
-> 案例：`projects/translate/tdesign-miniprogram`（2026-09-17 真机实测；报告 `SLIDER_PERF.md`）。设备条件：Z21 同型板 1024×600、**无 GPU / 纯软渲染**；设备 IP 用参数传入（`--dev <IP>:5555`）。
+> 案例：`projects/translate/tdesign-miniprogram`（2026-09-17 真机实测；报告 `projects/translate/tdesign-miniprogram/SLIDER_PERF.md`）。设备条件：Z21 同型板 1024×600、**无 GPU / 纯软渲染**；设备 IP 用参数传入（`--dev <IP>:5555`）。
 > 适用：任何**高频回调**——`onProgressChanged_*`（拖动）、滑动/长按、逐帧定时器、以及被它们间接调用的「一次性刷全页」函数。
 
 ## 0. 一句话
@@ -86,8 +86,8 @@ evidence: []
 
 ## 相关
 
-- 触摸/遮挡/禁用语义 → `custom-view-refresh.md`（`setInvalid` 是禁用）、`touch-events.md` §6（嵌套 window 抢触摸）
-- 滑动字段手感（dragMaxDis / edgeEffect） → `scroll-drag-interaction-spec.md`
-- 列表刷新与选中（`setSelection` 后必须 `refreshListView`） → `listview-fields.md`
-- 跨线程刷 UI → `cross-thread-ui-rule.md`
-- 真机抓帧与双缓冲/瞬时元素口径 → `devflow/device-screenshot.md` §3.3-1 / §3.3-2
+- 触摸/遮挡/禁用语义 → `knowledge/uicontrols/custom-view-refresh.md`（`setInvalid` 是禁用）、`knowledge/uicontrols/touch-events.md` §6（嵌套 window 抢触摸）
+- 滑动字段手感（dragMaxDis / edgeEffect） → `knowledge/uicontrols/scroll-drag-interaction-spec.md`
+- 列表刷新与选中（`setSelection` 后必须 `refreshListView`） → `knowledge/uicontrols/listview-fields.md`
+- 跨线程刷 UI → `knowledge/uicontrols/cross-thread-ui-rule.md`
+- 真机抓帧与双缓冲/瞬时元素口径 → `knowledge/devflow/device-screenshot.md` §3.3-1 / §3.3-2

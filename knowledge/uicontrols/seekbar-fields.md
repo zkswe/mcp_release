@@ -46,7 +46,7 @@ evidence: []
 | `thumb.normalPic` / `thumb.pressedPic` | 滑块常显图 / 按下图 | |
 | `touchable` | 交互控件 → `true`（铁律 #5） | |
 
-回调与代码：`onProgressChanged_XXXX(ZKSeekBar*, int progress)`、`setProgress(int)`、`getProgress()`（官方 `uicontrols/seekbar.md`）。
+回调与代码：`onProgressChanged_XXXX(ZKSeekBar*, int progress)`、`setProgress(int)`、`getProgress()`（官方 `wiki/flythings/uicontrols/seekbar.md`）。
 
 ## 2. ⚠️ 实测铁律：滑块会被**控件盒高度**压扁（官方文档未收录）
 
@@ -83,13 +83,13 @@ evidence: []
 |---|---|
 | 滑块图是圆角方块/无 AA，指望引擎"画成圆" | 引擎不画形状，只贴图 → 扁/硬边 |
 | 控件 12 高 + `thumb.size` 24×24 | 屏幕上是 24×12 扁椭圆（§2 实测） |
-| `thumb.size` 与图尺寸不一致 | 真机滑块与轨道错位（`ui-asset-rules.md` §thumb 子盒、`ui-layout-verify.md`） |
+| `thumb.size` 与图尺寸不一致 | 真机滑块与轨道错位（`knowledge/devflow/ui-asset-rules.md` §thumb 子盒、`knowledge/devflow/ui-layout-verify.md`） |
 | 只想"看起来像 iOS"就把滑块做很大但不加高控件盒 | 一定被压扁 |
 | 改 json 时用 `sort_keys=True` 整体重排 | **控件顺序 = 图层顺序**，会把全屏铺底层排到进度条之上 → 进度条/滑块整条看不见（本次踩过，回滚重排才恢复） |
 
 ## 6. 相关文档
 
-- 图片/尺寸铁律（`thumb.size` 子盒口径）：`devflow/ui-asset-rules.md`
-- 布局审计与红标（含 thumb 子盒）：`devflow/ui-layout-verify.md`、`uicontrols/layout-audit.md`
-- 字段必写口径：`uicontrols/json-field-mandatory.md`；图层顺序：`uicontrols/json-layer-rules.md`
+- 图片/尺寸铁律（`thumb.size` 子盒口径）：`knowledge/devflow/ui-asset-rules.md`
+- 布局审计与红标（含 thumb 子盒）：`knowledge/devflow/ui-layout-verify.md`、`knowledge/uicontrols/layout-audit.md`
+- 字段必写口径：`knowledge/uicontrols/json-field-mandatory.md`；图层顺序：`knowledge/uicontrols/json-layer-rules.md`
 - 官方滑块文档（四张图 + 三个函数）：`wiki/flythings/uicontrols/seekbar.md`

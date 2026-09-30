@@ -71,7 +71,7 @@ Python/PIL 侧把 raw 按 `BGRA` 解成 PNG（stride = 宽×4）。比较两屏�
 
 - 包文档 `packages/<包>/package.yaml` 的 `verified_<日期>` 块（步骤 → 结果 → 判据）+ `evidence/` 里的设备日志；
   **没上真机的一律 `verified: null`**，不冒充实测。
-- 平台差异写进 `platforms.md` 的实测表（没测的平台写「未验证 + 需要什么条件」）。
+- 平台差异写进 `components/<模块>/platforms.md` 的实测表（没测的平台写「未验证 + 需要什么条件」）。
 
 ## 7. 常见误判（都真踩过）
 

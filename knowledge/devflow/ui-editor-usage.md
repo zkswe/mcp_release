@@ -53,5 +53,5 @@ evidence: []
 
 ## 5. 相关
 
-- 布局验收三段式与像素 diff → `ui-layout-verify.md`
-- json 字段全集（属性栏列出哪些字段）→ `uicontrols/json-field-mandatory.md`
+- 布局验收三段式与像素 diff → `knowledge/devflow/ui-layout-verify.md`
+- json 字段全集（属性栏列出哪些字段）→ `knowledge/uicontrols/json-field-mandatory.md`

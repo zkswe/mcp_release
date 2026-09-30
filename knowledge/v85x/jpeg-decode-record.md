@@ -16,7 +16,7 @@ evidence: []
 # V85X JPEG 硬件解码与 MJPEG 录像编码用法（V853 照片显示 / UVC 录制 mp4/ts）
 
 > 🔍 **检索导引**：V853/V85X「**JPEG 硬件解码**」「**MJPEG 摄像头转码录制 mp4**」「**UVC 摄像头录像**」「**照片显示**」「**录像格式 mp4/ts/avi**」「**DVR 录制/拍照**」问题。
-> 💡 JPEG/MJPEG UVC 摄像头**平台无关接入**（发现/格式协商/保活/防坑）见 `hardware/uvc-camera-generic.md`；本篇为 V85X 平台绑定（解码/录制 API）。
+> 💡 JPEG/MJPEG UVC 摄像头**平台无关接入**（发现/格式协商/保活/防坑）见 `knowledge/hardware/uvc-camera-generic.md`；本篇为 V85X 平台绑定（解码/录制 API）。
 > 沛哥 2026-09-07 定规：**只记录怎么用**；aw-dvr/aw-mpp 预编译闭源内部（MJPEG→H264 转码实现）不解析不深挖。
 > 来源：V85X 平台通用实测 + aw-dvr 3.13.12 / aw-mpp 2.0.2 头文件（2026-09-08 去工程化，纯通用形态）。
 
@@ -157,7 +157,7 @@ UVC MJPEG 摄像头 (/dev/videoX)
 
 - 依赖包：aw-dvr（mpi::Recorder/JpegViewer/Camera/VO/Snapshot）、aw-mpp（MPP 底层）
 - 头文件：`~/.fun/registry/public/v85x/aw-dvr/3.13.12/include/mpi/case/{recorder,config,jpeg_viewer,camera}.h`、
-  （旧工具链时代是 `~/.fuse/registry/...`，两套注册表并存；CLI 已由 fuse 更名 fun，见 `devflow/cli-fun-toolchain.md`）
+  （旧工具链时代是 `~/.fuse/registry/...`，两套注册表并存；CLI 已由 fuse 更名 fun，见 `knowledge/devflow/cli-fun-toolchain.md`）
   `aw-mpp/2.0.2/.../mm_common.h`（MEDIA_FILE_FORMAT_E）
 - 工程实测：V85X 平台 DVR 类工程（录制页/回放页逻辑、UVC 接入模块、存储模块）
 - 平台：V85X（AW_V853/AWCHIP=AW_V853）；其他平台 DVR 封装不同（无 aw-dvr，走 ZKCameraView）

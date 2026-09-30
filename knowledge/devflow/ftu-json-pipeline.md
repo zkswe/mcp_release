@@ -29,7 +29,7 @@ evidence: []
 | ftu 是什么 | `<项目>/ui/*.ftu` = **设备实际加载的布局文件**（FlyThings 的 UI 二进制/打包格式） |
 | 能直接看吗 | **不能当文本看**：实测文件头带 `ZKSW` 标记、内容是二进制（`git diff`、文本编辑器都读不懂） |
 | 谁读它 | 设备侧 zkgui 读 **ftu**，不读 json；`fun launch` 把 `ui/main.ftu` 推到设备 `/tmp/ui/main.ftu`（实测设备侧与本文件字节数 + md5 完全一致） |
-| 一个 ftu 顶什么 | **一个 ftu = 一个 Activity = 一个独立编译单元**（IDE 按 ftu 生成 `<name>Activity` + `<name>Logic.cc`）；但**页面 ≠ ftu**：一个 ftu 里通常放**多个整屏 window（= 多个页面）**，用 `showWnd()/hideWnd()` 切换。**默认单 Activity**（`main.ftu` + `mainActivity` + `mainLogic.cc`），只有跨业务域/需独立返回栈才拆新 ftu（口径见 `page-architecture-spec.md` §0/§2） |
+| 一个 ftu 顶什么 | **一个 ftu = 一个 Activity = 一个独立编译单元**（IDE 按 ftu 生成 `<name>Activity` + `<name>Logic.cc`）；但**页面 ≠ ftu**：一个 ftu 里通常放**多个整屏 window（= 多个页面）**，用 `showWnd()/hideWnd()` 切换。**默认单 Activity**（`main.ftu` + `mainActivity` + `mainLogic.cc`），只有跨业务域/需独立返回栈才拆新 ftu（口径见 `knowledge/devflow/page-architecture-spec.md` §0/§2） |
 | ftu 从哪来 | 由**同目录同名 json** `pack` 而来：`ui/main.json` --fui pack--> `ui/main.ftu` |
 | 模板里就有 json 吗 | **没有**。模板只带 IDE 产出的 `ui/main.ftu`（实测 162–164 B）；我们的工作流第一步是生成 `ui/main.json`（HTML 原型 → `flythings_html_to_json`），之后 json 才是源 |
 
@@ -69,12 +69,12 @@ ui/*.ftu  ← 设备实际加载的是它
 | 新界面从零开始 | 先 `flythings_html_to_json`（HTML 原型 → `ui/main.json`）→ pack → 预览 `flythings_ui_preview` → 真机验收 |
 
 不要做的事：**不要绕过 pack 直接改设备上的 `/tmp/ui/*.ftu`**（下次 launch 全量推送就覆盖，且本地与设备对不上，
-见 `ui-layout-verify.md` §9 红线）。
+见 `knowledge/devflow/ui-layout-verify.md` §9 红线）。
 
 ## 4. ⚠️ IDE 工作流 vs 本 MCP 代码工作流（客户最常混的地方）
 
-官方 wiki 有几篇讲 ftu 的文档（`devflow/project_structure.md`「ftu 是 UI 文件的后缀名、双击打开、
-编辑完必须主动编译一次」、`devflow/new_ui_file.md`「新建 → FlyThings UI 文件」、`uicontrols/*.md` 的控件面板），
+官方 wiki 有几篇讲 ftu 的文档（`wiki/flythings/devflow/project_structure.md`「ftu 是 UI 文件的后缀名、双击打开、
+编辑完必须主动编译一次」、`wiki/flythings/devflow/new_ui_file.md`「新建 → FlyThings UI 文件」、`uicontrols/*.md` 的控件面板），
 **它们讲的全是 FlyThings IDE 的可视化工作流**：在 IDE 里 ftu 是你直接编辑的对象，IDE 负责管理它与代码的对应关系。
 
 本 MCP 的实践口径**不是**这一套：这里 ftu 是 **json 的编译产物**，布局以 `ui/*.json` 为源，改 json 后 pack。
@@ -83,7 +83,7 @@ ui/*.ftu  ← 设备实际加载的是它
 
 ## 5. 为什么禁止手改 ftu（以及 `flythings_edit_ftu` 的正确姿势）
 
-1. **json 是唯一事实来源**：预览、编辑器、像素验收（`ui-layout-verify.md` §1/§2）全部从 json 渲染，
+1. **json 是唯一事实来源**：预览、编辑器、像素验收（`knowledge/devflow/ui-layout-verify.md` §1/§2）全部从 json 渲染，
    ftu 只是产物；手改 ftu 等于在产物上打补丁，下一次 pack 就没了。
 2. **会被覆盖**：任何一次 `fui pack`（`flythings_fui_pack` / `build_ui_flow` 第②步 / `edit_apply`）
    都会用 json 重新生成 ftu，手改内容静默丢。
@@ -118,13 +118,13 @@ ui/*.ftu  ← 设备实际加载的是它
 ## 7. 和 resources / 图片资源的关系（哪个进 ftu，哪个不进）
 
 - json 里的图片写**相对 resources 的路径**（`images/xxx.png`），**不要写绝对路径、不要带 `resources/` 前缀**
-  （`ui-asset-rules.md` 铁律 #6）。
+  （`knowledge/devflow/ui-asset-rules.md` 铁律 #6）。
 - `resources/` 目录**不是塞进 ftu**，而是**随程序一起打包/推送**；设备侧资源根 = `EasyUI.cfg` 的 `resPath`
   （launch 调试时为 `/tmp/ui/`），所以 `images/xxx.png` 落到设备 `/tmp/ui/images/xxx.png`
-  （调试时可用 `adb shell /tmp/busybox ls -l /tmp/ui/images` 核对图有没有推上去，见 `busybox-debug-library.md`）。
+  （调试时可用 `adb shell /tmp/busybox ls -l /tmp/ui/images` 核对图有没有推上去，见 `knowledge/devflow/busybox-debug-library.md`）。
 - 因此**改图 ≠ 改 ftu**：图片换新只要资源推上去就生效；但**图片路径/尺寸写错**（含 `thumb.size` 与图不符）
-  会被 `flythings_verify_assets` / `check_all` 判 FAIL（`ui-asset-rules.md` 铁律 #1）。
-- 部署体积与内存预算（Z20/Z21 这类 36MB 内存板尤其看）见 `device-deploy-budget.md`：launch 的产物全落
+  会被 `flythings_verify_assets` / `check_all` 判 FAIL（`knowledge/devflow/ui-asset-rules.md` 铁律 #1）。
+- 部署体积与内存预算（Z20/Z21 这类 36MB 内存板尤其看）见 `knowledge/devflow/device-deploy-budget.md`：launch 的产物全落
   `/tmp`（tmpfs = 吃内存），字库是最大头。
 
 ## 8. FAQ（客户原话 → 结论）
@@ -137,7 +137,7 @@ ui/*.ftu  ← 设备实际加载的是它
 | 能不能手写 ftu / 能不能直接改 ftu | **不能**。会被下次 pack 覆盖、无版本管理价值，见 §5 五条理由 |
 | ftu 能逆向成 json 吗 | **能**（v0.27.91 起）：`flythings_fui_unpack`（默认覆盖同目录同名 json，ftu 为真源），详见 §6 |
 | main.ftu 是什么文件 / UI 文件和 json 什么关系 | `main.ftu` = `main.json` 编译出来的界面文件，设备加载它；一对一同名（§1、§2） |
-| 改了 json 为什么设备上没变 | 三连查：**没 pack**（`fui pack`）→ **没推**（`build_ui_flow(with_launch=True)` / `fun launch`）→ **设备在读旧 ftu / 推错了设备**（多设备必传 `-s`，见 `cli-fun-toolchain.md` §6） |
+| 改了 json 为什么设备上没变 | 三连查：**没 pack**（`fui pack`）→ **没推**（`build_ui_flow(with_launch=True)` / `fun launch`）→ **设备在读旧 ftu / 推错了设备**（多设备必传 `-s`，见 `knowledge/devflow/cli-fun-toolchain.md` §6） |
 | 我在 IDE 里直接改了 ftu，AI 再改 json 会不会冲突 | 不会丢：ftu 比 json 新「分钟级」时 build_ui_flow 会先 unpack 同步 json（以 ftu 为真源）；要么统一走 json，要么统一走 IDE（§4） |
 
 ## 9. 验证（实测记录）
@@ -154,11 +154,11 @@ flythings_knowledge_search("main.ftu 是什么文件")
 
 | 问法 | 改前 | 改后（2026-09-17 实测） |
 |------|------|------|
-| ftu 如何开发 怎么修改 ftu 布局文件 | `low_confidence`（coverage 0.248；top5 里 3 条 wiki 镜像：`devflow/project_structure.md`、`uicontrols/textview.md`、`uicontrols/button.md`） | **`ok`（coverage 1.0）**，top5 中 4 条 = 本文档，top1 = `knowledge/devflow/ftu-json-pipeline.md` |
-| ftu 可以手写吗 | `low_confidence`（top1 = wiki `devflow/project_structure.md`） | `ok`（1.0），top1/top3 = 本文档 §5 |
-| main.ftu 是什么文件 | `low_confidence`（top1 = wiki `uicontrols/common_props.md`） | `ok`（1.0），top1 = 本文档 §1 |
+| ftu 如何开发 怎么修改 ftu 布局文件 | `low_confidence`（coverage 0.248；top5 里 3 条 wiki 镜像：`wiki/flythings/devflow/project_structure.md`、`wiki/flythings/uicontrols/textview.md`、`wiki/flythings/uicontrols/button.md`） | **`ok`（coverage 1.0）**，top5 中 4 条 = 本文档，top1 = `knowledge/devflow/ftu-json-pipeline.md` |
+| ftu 可以手写吗 | `low_confidence`（top1 = wiki `wiki/flythings/devflow/project_structure.md`） | `ok`（1.0），top1/top3 = 本文档 §5 |
+| main.ftu 是什么文件 | `low_confidence`（top1 = wiki `wiki/flythings/uicontrols/common_props.md`） | `ok`（1.0），top1 = 本文档 §1 |
 | ftu 开发 / ftu 格式 逆向 / ftu 能逆向成 json 吗 | `ok`/`low_confidence` 混杂，命中多为 wiki 镜像 | `ok`（1.0），top5 全为本文档 |
-| 改了 json 设备没变 | `ok`（命中 `upgrade-pack-image.md` / `ui-layout-verify.md`，无专门讲 ftu 的文档） | `ok`（1.0），top1 = 本文档 §8 FAQ |
+| 改了 json 设备没变 | `ok`（命中 `knowledge/devflow/upgrade-pack-image.md` / `knowledge/devflow/ui-layout-verify.md`，无专门讲 ftu 的文档） | `ok`（1.0），top1 = 本文档 §8 FAQ |
 
 > 数字来自 2026-09-17 本地实测（开发机；索引含本机 wiki 官方镜像，1412 chunks / 194 篇）。
 > 复现口径：`python rebuild_index_local.py` 后跑 `tests/_util.jcall('flythings_knowledge_search', {'query': '<问法>', 'k': 5})`
@@ -166,9 +166,9 @@ flythings_knowledge_search("main.ftu 是什么文件")
 
 ## 10. 相关文档
 
-- `ui-layout-verify.md`：三段式验收、像素 diff、§9 红线（json 为源）
-- `ui-editor-usage.md`：可视化编辑器（`ui_visual(action="editor")`）
-- `cli-fun-toolchain.md`：fun / fui 命令表、多设备陷阱、`/tmp/ui` 核对判据
-- `page-architecture-spec.md`：一个界面该用独立 ftu 还是同 ftu 内多 window
-- `ui-asset-rules.md`：图片资源铁律（路径、尺寸、`thumb.size`）
-- `device-deploy-budget.md`：部署体积与内存预算（launch 产物落 `/tmp`）
+- `knowledge/devflow/ui-layout-verify.md`：三段式验收、像素 diff、§9 红线（json 为源）
+- `knowledge/devflow/ui-editor-usage.md`：可视化编辑器（`ui_visual(action="editor")`）
+- `knowledge/devflow/cli-fun-toolchain.md`：fun / fui 命令表、多设备陷阱、`/tmp/ui` 核对判据
+- `knowledge/devflow/page-architecture-spec.md`：一个界面该用独立 ftu 还是同 ftu 内多 window
+- `knowledge/devflow/ui-asset-rules.md`：图片资源铁律（路径、尺寸、`thumb.size`）
+- `knowledge/devflow/device-deploy-budget.md`：部署体积与内存预算（launch 产物落 `/tmp`）

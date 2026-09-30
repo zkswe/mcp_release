@@ -10,15 +10,15 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [Z21, V85X]
-tags: [2026-09-08 新增, ifconfig, ping 等调试工具, 需要查 IP, 端口, 进程, adb push 即用, 与 ui_test 同架构, bin_tools, README, md]
+tags: [2026-09-08 新增, ifconfig, ping 等调试工具, 需要查 IP, 端口, 进程, adb push 即用, 与 touch 同架构, bin_tools, README, md]
 evidence: []
 ---
 # BusyBox 调试工具库（bin_tools/{平台}/busybox，随 MCP 分发）
 
-> 检索导引：问「设备上没有 ifconfig / ping / ps / uname / 想看设备 IP·网卡·进程 / 设备缺命令怎么办」→ 本文（六平台静态 busybox，push 即用）；出包与部署动作用哪条见 `devflow/deploy-scene-map.md`。
+> 检索导引：问「设备上没有 ifconfig / ping / ps / uname / 想看设备 IP·网卡·进程 / 设备缺命令怎么办」→ 本文（六平台静态 busybox，push 即用）；出包与部署动作用哪条见 `knowledge/devflow/deploy-scene-map.md`。
 > 2026-09-08 新增。背景：设备系统内没有 busybox / ifconfig / ping 等调试工具，
 > 需要查 IP/端口/进程/网络时无工具可用 → 电脑端预编译各平台静态 busybox，
-> adb push 即用（与 ui_test 同架构，见 bin_tools/README.md）。
+> adb push 即用（与 `touch`/`ui_test` 同架构，见 bin_tools/README.md）。
 
 ## 平台 ↔ 文件
 
@@ -52,7 +52,7 @@ adb shell /tmp/busybox telnet <ip> / nc -l -p 5555
 
 ## 重新编译
 
-源码/坑位在本地 `tools/busybox/README.md`（不入库）；MCP 侧只分发 ELF。
+源码/坑位在本地 `workspace/tools/busybox/README.md`（不入库）；MCP 侧只分发 ELF。
 重编：WSL 内 `wsl bash scripts/bb_build_all.sh all`（构建必须 WSL 原生盘，Windows exe 工具链无法派生 cc1）。
 
 ## 设备端没有的常用命令 → 用 busybox applet（别写“设备不支持”）

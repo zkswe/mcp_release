@@ -32,7 +32,7 @@ evidence: []
  ```
  在 `onUI_init()` 里对这批装饰件**统一设置**最省事。⚠ **没有对应的 json 字段**（`touchPass` 不是 json 键），必须写代码。
 
-**层叠顺序**：json 书写顺序 = 层叠顺序（后定义在上层，见 `json-layer-rules.md`）。所以"渐隐层要盖住滚动文字"就注定它在上层 —— **它必须穿透，否则列表就废了**。
+**层叠顺序**：json 书写顺序 = 层叠顺序（后定义在上层，见 `knowledge/uicontrols/json-layer-rules.md`）。所以"渐隐层要盖住滚动文字"就注定它在上层 —— **它必须穿透，否则列表就废了**。
 
 **实测对照**（同一固件，只开关 `setTouchPass`；控件为 listview 顶/底各 42px 的渐隐层）：
 
@@ -48,7 +48,7 @@ evidence: []
 
 - 实测：`radiogroup.touchable=false` → 其 `radiobuttons` **全部点不动**（语言设置页完全无法选语言）；改 `true` 后正常。
 - 因此 `radiogroup` 是"容器显式 false"通用口径的**例外**，必须写 `true`。
-- 补充（2026-09-10）：选中某项用子项 ID 宏 `setCheckedID(ID_MAIN_RadioButtonN)`，**不要用序号/行号**（与字段表一致，见 `radiogroup-checkbox-fields.md`）。
+- 补充（2026-09-10）：选中某项用子项 ID 宏 `setCheckedID(ID_MAIN_RadioButtonN)`，**不要用序号/行号**（与字段表一致，见 `knowledge/uicontrols/radiogroup-checkbox-fields.md`）。
 
 ## 3. `ZKListView::setSelection()` 之后必须 `refreshListView()`
 
@@ -115,9 +115,9 @@ lv->refreshListView(); // ⚠ 不能省
 
 ## 相关
 
-- 层级与层叠顺序 → `json-layer-rules.md`（第 7 条：层叠顺序决定谁收到触摸）
-- 字段全集与默认值 → `json-field-mandatory.md`（radiogroup 行已标注 true 例外）；radiogroup / checkbox 字段与代码操作 → `radiogroup-checkbox-fields.md`
-- listview 回调与刷新 → `listview-fields.md`（铁律 7）；★ 装饰件压在可触摸控件之上的陷阱（选中条为什么要 `setTouchPass(true)`） → `listview-wheel-picker.md` §3
-- 真机确认画面（按 pan 取活帧） → `devflow/ui-layout-verify.md` §2-1
-- 强制重绘 / 禁用语义（`invalidate` vs `setInvalid`） → `uicontrols/custom-view-refresh.md`；抓帧侧口径 `devflow/device-screenshot.md` §3.3-1
-- 高频回调只刷变化控件（拖动卡顿的真因） → `high-frequency-callback-perf.md`
+- 层级与层叠顺序 → `knowledge/uicontrols/json-layer-rules.md`（第 7 条：层叠顺序决定谁收到触摸）
+- 字段全集与默认值 → `knowledge/uicontrols/json-field-mandatory.md`（radiogroup 行已标注 true 例外）；radiogroup / checkbox 字段与代码操作 → `knowledge/uicontrols/radiogroup-checkbox-fields.md`
+- listview 回调与刷新 → `knowledge/uicontrols/listview-fields.md`（铁律 7）；★ 装饰件压在可触摸控件之上的陷阱（选中条为什么要 `setTouchPass(true)`） → `knowledge/uicontrols/listview-wheel-picker.md` §3
+- 真机确认画面（按 pan 取活帧） → `knowledge/devflow/ui-layout-verify.md` §2-1
+- 强制重绘 / 禁用语义（`invalidate` vs `setInvalid`） → `knowledge/uicontrols/custom-view-refresh.md`；抓帧侧口径 `knowledge/devflow/device-screenshot.md` §3.3-1
+- 高频回调只刷变化控件（拖动卡顿的真因） → `knowledge/uicontrols/high-frequency-callback-perf.md`

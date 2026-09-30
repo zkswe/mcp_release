@@ -15,7 +15,7 @@ evidence: []
 ---
 # FlyThings 自定义控件方法（lib-ext_widgets 拆解）
 
-> 检索导引：问「想做一个平台没有的控件 / 自定义控件怎么写 / 继承 ZKBase / onDraw 自绘 / 控件触摸事件重写 / 有没有现成自创控件可抄」→ 本文；先看缺什么控件见 `devflow/gui-controls-gap.md`，交付形态见 `devflow/reusable-components.md`，**能力边界总纲见 `devflow/render-extension-boundary.md`**。
+> 检索导引：问「想做一个平台没有的控件 / 自定义控件怎么写 / 继承 ZKBase / onDraw 自绘 / 控件触摸事件重写 / 有没有现成自创控件可抄」→ 本文；先看缺什么控件见 `knowledge/devflow/gui-controls-gap.md`，交付形态见 `knowledge/devflow/reusable-components.md`，**能力边界总纲见 `knowledge/devflow/render-extension-boundary.md`**。
 > 来源：内部私有仓库 `guoxs/lib-ext_widgets`（LearningProject 本地副本，F136/F133 + easyui ^2.3.0），
 > ZKSWE Develop Team 2024-2025 系列自研控件。2026-09-03 拆解，草稿待确认入库。
 > ⚠️ 内部代码，方法论文档只提炼模式与骨架，不整段复制实现；新控件做时按需回工程精读对应控件。
@@ -128,14 +128,14 @@ virtual bool onTouchEvent(const MotionEvent &ev);   // 返回 true=吃掉事件
 
 > ⚠️ **刷新触发口径（2026-09-22 钟工定规）**：自定义 view（自绘/帧渲染/位图自己改的那类）每帧刷新用
 > `ctrl->setInvalid(!ctrl->isInvalid())`（gameview 口径）；**不要**用 `invalidate(&getAbsolutePosition())`
-> 传绝对矩形（会被按控件本地坐标裁成“右下角一块”，屏上只刷一块）→ 详见 `uicontrols/custom-view-refresh.md`。
+> 传绝对矩形（会被按控件本地坐标裁成“右下角一块”，屏上只刷一块）→ 详见 `knowledge/uicontrols/custom-view-refresh.md`。
 
 - `bitmap_t`：easyui 位图结构（width/height/pitch/bytes/data），`BitmapHelper::loadBitmapFromFile`
   解码文件、unloadBitmap 释放；createBmp 造内存画布后直接操作 data（24 位 BGR / 32 位带 alpha，
   `bmp->type |= 0x01` 透明）
 - 控件显示位图：子 ZKButton `setBackgroundBmp(bmp)`（或 setBackgroundPic 文件）——**这就是平台的 canvas 画布扩展**：
   `ZKTextView`/`ZKButton` 挂一张内存位图当画布，只调一次 + `setInvalid(!isInvalid())` 交替刷帧；
-  控件不自绘时用按钮当"图框"最省事。能力边界（三层模型 / 非 3D GPU 皆可 / 软模拟）见 `devflow/render-extension-boundary.md`，
+  控件不自绘时用按钮当"图框"最省事。能力边界（三层模型 / 非 3D GPU 皆可 / 软模拟）见 `knowledge/devflow/render-extension-boundary.md`，
 - `Region`（left/top/right/bottom + 宏：SET/RESET/IS_EMPTY/OFFSET/CONTAINS/DOES_INTERSECT/
   Intersect/Bound）——脏区/裁剪/命中通用；typedef.h 里 EImageShowMode/EMotionFilter/枚举风格库内统一
 
@@ -183,6 +183,6 @@ SliceProgressBar::build(res_dir)：扫目录 `*normal.png` 自动建切片，文
 6. 手势：onTouchEvent 处理 DOWN/MOVE/UP；惯性用 VelocityTracker + 定时器；多指用 event::multi_touch
 7. 重活（解码/加载）丢 MessageQueueThread，完成回 UI 刷新；析构安全停线程
 8. 图片显示优先子按钮 setBackgroundBmp/Pic；确需自绘再 onDraw + Region 脏区；
-   **每帧刷新的触发按 `uicontrols/custom-view-refresh.md` 的 `setInvalid(!isInvalid())` 口径写**
+   **每帧刷新的触发按 `knowledge/uicontrols/custom-view-refresh.md` 的 `setInvalid(!isInvalid())` 口径写**
 9. 配独立测试页（输入控件驱动 + 演示数据），跑真机/模拟器验证手势与刷新
 10. 页面内 new/delete 生命周期严格配对；obtain 回调禁耗时

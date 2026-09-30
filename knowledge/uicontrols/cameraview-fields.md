@@ -101,5 +101,5 @@ ptr->startPreview(); / stopPreview(); / isPreviewing();
 
 ## 相关
 
-- V85X MPP 完整 API 汇总：`references/kb/v85x-mpp.md` §① ZKCameraView 控件用法
-- UVC 摄像头接入（发现/取流/双路预览/录像拍照）：`references/kb/v85x-uvc-camera.md`、`knowledge/v85x/uvc-usb-camera.md`
+- V85X MPP 完整 API 汇总：`workspace/references/kb/v85x-mpp.md` §① ZKCameraView 控件用法
+- UVC 摄像头接入（发现/取流/双路预览/录像拍照）：`workspace/references/kb/v85x-uvc-camera.md`、`knowledge/v85x/uvc-usb-camera.md`
