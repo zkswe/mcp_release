@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [T113]
-tags: [DashBoard_T113, BMW, Comaro, Jeep, Pointer, 三套仪表工程, 车速, 转速, 档位, 故障灯]
+tags: [DashBoard_T113, BMW, Comaro, Jeep, Pointer, 三套仪表工程, 车速, 转速, 档位, 故障灯, 保养, 想抄架构先看这篇, 指针动画具体实现, BMW 预渲染帧序列等, 属工程自有技术, 细节未收录]
 evidence: []
 ---
 # 🚗 T113 车载仪表盘 CAN 应用架构（DashBoard_T113 三套工程实测）

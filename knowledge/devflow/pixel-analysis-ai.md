@@ -55,16 +55,9 @@ evidence: []
 
 ## 3. 情况：坐标要换算吗？——缺省不用
 
-`flythings_device_screenshot` 缺省 `rotate='auto'`，输出**已经是项目逻辑方向**（读工程
-`EasyUI.cfg` 的 `rotateScreen` 转正了）→ 直接按你在图里看到的坐标点/裁图即可，**不需要换算**。
-
-只有当你显式 `rotate=0`（故意要原样 fb）时才涉及方向换算：
-
-- 换算就用**同一个旋转函数**（本仓库 `device_screenshot.py` 即 `img.rotate(-rotateScreen, expand=True)`，
-  PIL 逆时针为正），**不要手推矩阵**。
-- 触摸注入收到的是 **UI 逻辑坐标** → 注入前按 `rotateTouch` 换算（`rotateTouch` 与 `rotateScreen`
-  **可以不同**，见 ui-layout-verify.md §2-1-1 与 package-properties-easyui-cfg.md）。
-- ❌ 不要把某台设备的“转置 + 垂直翻转”组合写成通则——那是**那台设备那个角度**的结果，角度值说了算。
+`flythings_device_screenshot` 缺省 `rotate='auto'`，输出**已经是项目逻辑方向**（读工程 `EasyUI.cfg` 的
+`rotateScreen` 转正）→ 直接按图里坐标点/裁图，**不需要换算**；显式 `rotate=0` 或触摸注入的换算口径
+（旋转函数、`rotateTouch` 与 `rotateScreen` 可以不同）→ 见 `devflow/package-properties-easyui-cfg.md` §8。
 
 ## 4. 像素级渲染坑（改图/改 json 时常踩，全是像素能验的）
 
@@ -79,7 +72,7 @@ evidence: []
 
 ## 5. 相关
 
-- 抓屏工具与方向口径：`devflow/ui-layout-verify.md`（§2-1、§2-1-1）
-- 旋转字段语义：`devflow/package-properties-easyui-cfg.md`
+- 抓屏工具与方向口径：`devflow/ui-layout-verify.md`（§2-1）；旋转字段与取图角度口径：
+  `devflow/package-properties-easyui-cfg.md` §8
 - 触摸注入与抓帧时机：`devflow/touch-inject-autotest.md`
 - 设备端工具缺失（无 grep/sed/head）：`devflow/busybox-debug-library.md`

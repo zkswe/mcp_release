@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [ftu 能不能手写手改, main, 改了 json 设备上没变, 时命中, 不要手写, 手改 ftu, FlyThings IDE, 双击打开 ftu, 拖控件, 是另一套]
+tags: [ftu 能不能手写手改, main, 改了 json 设备上没变, 时命中, 不要手写, 手改 ftu, FlyThings IDE, 双击打开 ftu, 拖控件, 是另一套, 工作流, 两者不冲突但不能混用, §4]
 evidence: []
 ---
 # ftu 是什么：ftu 开发 / ftu 编辑 / ftu 修改 / ftu 格式 / ftu 逆向（ftu 转 json / unpack）（UI 文件 main.ftu 与 json 的关系）

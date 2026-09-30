@@ -10,15 +10,14 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [F133, Z20, Z235X]
-tags: [产物目录, fun, fsc, fun-lock, fsc-lock, json, 老工程不用改, MCP 两代都认, 产物, 注册表均双向兼容]
+tags: [产物目录, fun, fsc, fun-lock, fsc-lock, json, 老工程不用改, MCP 两代都认, 产物, 注册表双向兼容, exe, fuse, FSC_HOME_PATH, 工具链, 编译命令, fun build]
 evidence: []
 ---
 # 🧰 fun 命令行工具链（原 fuse 更名；2026-09-28 内部又改成 fsc、产物目录 `.fun/` → `.fsc/`）+ 宏/产物目录改名
 
 > 检索导引：问「用 fun 还是 fuse/fsc / fun build 挂老工程 / FUN_BUILD 宏怎么加 / 产物在 .fun 还是 .fsc / 依赖注册表在哪 / 多设备在线怎么推指定设备」→ 本文；编译部署该调哪个工具见 `devflow/deploy-scene-map.md`。
-> **2026-09-28 更新**：工具链换代为 `v0.0.2+2609281006_e09dc96`（内部包名 `fun`→**`fsc`**；产物目录 `.fun/<平台>/`→**`.fsc/<平台>/`**；锁 `.fun-lock.json`→**`.fsc-lock.json`**；home `~/.fun`→**`~/.fsc`**（env `FSC_HOME_PATH`）；编译宏新版**同时定义 `FUN_BUILD=1` 和 `FSC_BUILD=1`**，老工程不用改）。**MCP 两代都认**（产物/锁/注册表均双向兼容）。
-> 2026-09-14 沛哥指出「fuse 命令行已换成 fun，文档没更新」→ 本机逐项实测校准（`fun.exe v0.0.2+2609032137_b8f28e3`、宏 `FUN_BUILD`、产物 `.fun/<平台>/`）。
-> 检索词：fun.exe / fuse.exe / 命令行工具 / 工具链 / 编译命令 / fun build / fun install / fun launch / fun sim / FUN_BUILD / FUSE_BUILD / .fun / .fsc / .fsc-lock.json / fsc / FSC_HOME_PATH / .fuse / 老工程迁移 / 注册表路径 / 多设备 / 设备选择 / -s / --device / WiFi adb / adb tcpip / adb connect / 推不上去 / more than one device / 旧 ftu / 界面没变 / base/functional.h / 找不到 base utils / base-utility 缺失 / fun install 没生效 / 老工程升级补包。
+> **2026-09-28 换代**：工具链 `v0.0.2+2609281006_e09dc96` —— 内部包名 `fun`→**`fsc`**；产物目录 `.fun/<平台>/`→**`.fsc/<平台>/`**；锁 `.fun-lock.json`→**`.fsc-lock.json`**；home `~/.fun`→**`~/.fsc`**（env `FSC_HOME_PATH`）；编译宏**同时定义 `FUN_BUILD=1` 和 `FSC_BUILD=1`**，老工程不用改。**MCP 两代都认**（产物/锁/注册表双向兼容）。
+> 检索词：fun.exe / fuse.exe / fsc / FSC_HOME_PATH / 工具链 / 编译命令 / fun build / fun install / fun launch / fun sim / FUN_BUILD / FUSE_BUILD / .fun / .fsc / .fsc-lock.json / .fuse / 老工程迁移 / 注册表路径 / 多设备 / 设备选择 / -s / --device / WiFi adb / adb tcpip / adb connect / 推不上去 / more than one device / 旧 ftu / 界面没变 / base/functional.h / 找不到 base utils / base-utility 缺失 / fun install 没生效。
 
 ## 1. 结论（一句话）
 
@@ -26,13 +25,14 @@ evidence: []
 
 > ⚠️ 但**目录级老名字还在**：生成的 CMake 里依旧写 `$ENV{FUSE_HOME_PATH}/registry/public/<平台>/<包>/<版本>/include`。看到 `.fuse` / `FUSE_HOME_PATH` 不等于工具还是 fuse。
 
-## 2. fun.exe / fui.exe 在哪
+## 2. fun.exe / fui.exe / 注册表在哪
 
 | 位置 | 说明 |
 |------|------|
 | `C:\zkswe\fun\`（或 `D:\zkswe\fun\`） | 官方工具链安装目录，`fun.exe` + `fui.exe` 同目录 |
 | `<项目>\fun.exe`、`<项目>\ui\fui.exe` | `flythings_attach_cli_tools` 复制过去，**随项目交付**（客户不用装 IDE） |
 | 环境变量 `FLYTHINGS_FUN_DIR` | MCP 解析工具目录的候选之一（`project_tools._tool_dir()`） |
+| 依赖注册表 | 工具链自带 `C:\zkswe\fun\registry\public\<平台小写键>\<包>\<版本>\`；用户级 `~/.fsc/registry/public/`（09-28 起），老 `~/.fun`、`~/.fuse` 并存；MCP `package_tools` 解析顺序 `~/.fsc` → `~/.fun` → `~/.fuse` → `C:\zkswe\fun\registry` |
 
 `fun` 管**编译/依赖/部署/出包**；`fui` 管 **json ↔ ftu**（`pack` / `unpack` 都支持：随包 fui 自 v0.27.91 起含 `unpack`，旧版只有 `pack`）。
 
@@ -42,33 +42,20 @@ evidence: []
 |------|------|
 | `fun install` | 安装配置里声明的**所有依赖**（`--project-dir` 可指项目；`-p` 指平台） |
 | `fun build -p F133` | 编译（`-p/--platform`、`-t/--target`、`-D` 预定义、`--cflags`、`--project-dir`、`--verbose`） |
-| `fun launch -p F133 [-s <serial\|IP>]` | 部署到设备并启动，**仅用于临时调试**（`-s/--device` 只支持合法语法，**多设备时本机实测反而必 FAIL**、单设备才稳 → 见 §7；MCP 侧失败自动重试 5 次） |
-| `fun sim` | **模拟器运行**（fuse 时代没有这条）。⚠️ **MCP 暂不提供/不代跑**（沛哥 2026-09-14 定，见 §6） |
+| `fun launch -p F133 [-s <serial\|IP>]` | 部署到设备并启动，**仅用于临时调试**（`-s/--device` 只收合法 serial/IP；**多设备在线时必 FAIL** → §7；MCP 侧失败自动重试 5 次） |
+| `fun sim` | **模拟器运行**（fuse 时代没有这条）。⚠️ **MCP 暂不提供/不代跑**（见 §5） |
 | `fun create [<starter>]` | 建工程（`--type bin` 出可执行程序工程） |
 | `fun add <package>` | 追加依赖包 |
 | `fun pack` | 制作升级包 `update.img`（固化用，掉电保留）/ 依赖包 |
 | `fun clean` | 清理中间产物（**改了 `package.properties` 必清再全量编**，ninja 不感知） |
 | `fun migrate --input= --output=`、`fun publish`、`fun login` | 迁移配置 / 发布依赖包 / 登录 |
-| `fui pack <json>` | json → ftu（设备实际加载 ftu） |
+| `fui pack <json>` / `fui unpack <ftu>` | json → ftu（设备实际加载 ftu）/ ftu → json |
 
 ## 4. 老工程用 fun 编译会挂 → 一行迁移
 
-新生成器产出的 `src/logic/*.cc` 头部是：
-
-```cpp
-#ifdef FUN_BUILD
-#include GENERATED_UI_DEFINITIONS
-INIT_UI_EVENT_BINDINGS
-#endif // FUN_BUILD
-```
-
-老工程（fuse 时代生成）写的是 `#ifdef FUSE_BUILD` → 用 `fun build`（宏是 `-DFUN_BUILD=1`）时这段被跳过 → `ui_main.h` 没进来 → 满屏：
-
-```
-error: 'LOGD_TRACE' was not declared in this scope
-error: 'Intent' does not name a type
-error: 'ZKButton' was not declared in this scope
-```
+新生成器产出的 `src/logic/*.cc` 头部用 `#ifdef FUN_BUILD` 包着 `#include GENERATED_UI_DEFINITIONS` + `INIT_UI_EVENT_BINDINGS`；
+老工程（fuse 时代）写的是 `#ifdef FUSE_BUILD` → 用 `fun build`（宏 `-DFUN_BUILD=1`）时这段被跳过 → `ui_main.h` 没进来 →
+满屏 `error: 'LOGD_TRACE' was not declared` / `'Intent' does not name a type` / `'ZKButton' was not declared`。
 
 **迁移写法（实测通过）**：
 
@@ -79,9 +66,9 @@ INIT_UI_EVENT_BINDINGS
 #endif
 ```
 
-改完 `fun build -p F133` 通过、出 `libzkgui.so`；或者干脆用新 IDE/生成器重新生成 logic 文件。
+改完 `fun build -p F133` 通过、出 `libzkgui.so`；或干脆用新 IDE/生成器重新生成 logic 文件。
 
-## 4.5 编译单元口径（IDE vs fun，2026-09-17 钟工纠偏 + 实测）
+## 4.5 编译单元口径（IDE vs fun，2026-09-17 纠偏 + 实测）
 
 **两套编译体系，不要混：**
 
@@ -91,81 +78,54 @@ INIT_UI_EVENT_BINDINGS
 | `src/activity/*` | ✅ 参与编译 | ❌ **完全不参与编译**（该目录是 IDE 专用） |
 | `src/logic/*.cc` | 由 activity `#include` 进编译单元 | ✅ **直接当编译单元编译** |
 | 业务代码 `src/**/*.cpp` | 需在 IDE 工程里登记 | ✅ fun 扫描收进编译单元 |
-| 编译宏 | — | `FUN_BUILD=1`（`GENERATED_UI_DEFINITIONS` 必须用 `#if defined(FUSE_BUILD) || defined(FUN_BUILD)` 包裹） |
+| 编译宏 | — | `FUN_BUILD=1`（写法与迁移见 §4） |
 
-**实测证据（本项目 z21 工程，2026-09-17）**
-- `.fsc/<平台>/CMakeLists.txt` 首行就写着 `# Auto-generated by fun` / `# Don't edit this file manually!`，
-  内容只有：`add_library(zkgui SHARED ../../src/Main.cpp ../../src/logic/mainLogic.cc ../../src/uart/*.cpp generated/{event,event_dispatcher,ui_main}.cpp)`
-- `.fsc/<平台>/compile_commands.json` 共 **8 个编译单元**：`Main.cpp`、`logic/mainLogic.cc`、`uart/{ProtocolParser,ProtocolSender,UartContext}.cpp`、`generated/{event,event_dispatcher,ui_main}.cpp` —— **没有任何 `src/activity/*`**
+**实测证据（z21 工程）**：`.fsc/<平台>/CMakeLists.txt`（首行 `# Auto-generated by fun`）与 `compile_commands.json`
+（8 个编译单元）里**都没有 `src/activity/*`**，只有 `Main.cpp` + `logic/*.cc` + `uart/*.cpp` + `generated/{event,event_dispatcher,ui_main}.cpp`。
 
-**因此（纪律）**
-1. **不要改 `.fsc/<平台>/CMakeLists.txt`**（生成物，下次 build 覆盖；改了也不会生效）。要加源文件 → 放到 `src/` 下（业务域目录 + `.cpp/.h`）。
-2. 不要靠"改 activity"来影响 fun 构建——fun 根本不编译它；activity 目录只在 IDE 体系里有意义。
-3. 回调/定时器注册在 fun 体系里由 `generated/event_dispatcher.cpp` 等生成代码接管（`REGISTER_ACTIVITY_TIMER_TAB` 仍按纪律写在 logic 里）。
+**纪律**：① **不要改 `.fsc/<平台>/CMakeLists.txt`**（生成物，下次 build 覆盖，改了不生效；要加源文件→放 `src/` 下）；
+② 不要靠改 activity 影响 fun 构建（fun 根本不编译它，activity 只在 IDE 体系有意义）；
+③ 回调/定时器注册由 `generated/event_dispatcher.cpp` 接管（`REGISTER_ACTIVITY_TIMER_TAB` 仍写在 logic 里）。
 
 ## 4.6 平台工具链放哪 + 模板依赖最低集（2026-09-17 Z235X 实测）
 
-**工具链目录约定**：`<fun 安装目录>/toolchains/<平台小写键>/`（例如 `C:/zkswe/fun/toolchains/z235x/`），
-目录内层级与其它平台一致：`bin/ include/ lib/ libexec/ share/` + 目标三元组目录（如 `arm-unknown-linux-gnueabihf/`）。
+**工具链目录约定**：`<fun 安装目录>/toolchains/<平台小写键>/`（如 `C:/zkswe/fun/toolchains/z235x/`），内含
+`bin/ include/ lib/ libexec/ share/` + 目标三元组目录（如 `arm-unknown-linux-gnueabihf/`）。
+- 缺工具链时 `fun build -p <平台>` 直接 **panic：`platform toolchain url must not be empty`**（`core/platform.go:88`）——不是工程问题，是工具链没装。
+- 工具链**不随 MCP/仓库分发**：拿到压缩包解压到上述目录即可用（实测编译命令变成 `.../toolchains/z235x/bin/arm-unknown-linux-gnueabihf-gcc.exe`）。
+- **模板 Manifest 依赖最低集**：新平台模板除 `easyui / log / zkhardware / zknet` 外**必须带 `base-utility`**
+  （版本写法与缺包处置见 §4.7）；`fun install` 从 `package.flythings.cn` 拉（Z235X 实测 `base-utility@10.11.0` + `ext4@0.0.1`）。
+- **Z235X 建工程 → 编译闭环（实测）**：`flythings_create_project(platform="Z235X")` → 工具链解压到 `toolchains/z235x`
+  → `fun install` → `fun build -p Z235X` → **9/9 编译链接成功，产出 `.fsc/z235x/libzkgui.so`（217,240 B）**。
 
-- 缺工具链时 `fun build -p <平台>` 会直接 **panic：`platform toolchain url must not be empty`**（`core/platform.go:88`）——这不是工程问题，是平台工具链没装。
-- 工具链**不随 MCP/仓库分发**（体积大、有授权问题）：拿到压缩包后解压到上面的目录即可，`fun` 会立刻使用（实测 `fun build -p Z235X` 的编译命令会变成 `.../toolchains/z235x/bin/arm-unknown-linux-gnueabihf-gcc.exe`）。
+## 4.7 老工程升级：补 base-utility（本口径唯一正文；2026-09-17 实测，v0.27.83）
 
-**模板 Manifest 的依赖最低集**：新平台模板除了 `easyui / log / zkhardware / zknet`，
-**必须带 `base-utility`**——`fun` 生成的 `generated/event_dispatcher.h` 等会 `#include <base/functional.h>`，
-缺这条会 `fatal error: base/functional.h: No such file or directory`（**老工程升级的完整处置见 §4.7**）。
-参考写法（Z235X 模板已按此补齐）：`<package id="base-utility" version="^10.0.0"/>`；
-`fun install` 会从 `package.flythings.cn` 拉到实测可用版本（Z235X 实测 `base-utility@10.11.0` + `ext4@0.0.1`）。
+**现象**：老工程（源头 IDE 工程 / 用户自建工程）用 `fun build` 编不过，报的是**编译错误**（不是链接错误）：
+`In file included from generated/event_dispatcher.cpp:1: fatal error: base/functional.h: No such file or directory`。
 
-**Z235X 建工程 → 编译闭环实测（2026-09-17）**
-1. `flythings_create_project(platform="Z235X")`（或 `fun create --platform=z235x`）→ 出工程；
-2. 工具链解压到 `toolchains/z235x`；
-3. `fun install`（拉 base-utility 等）→ `fun build -p Z235X` → **9/9 编译链接成功，产出 `.fsc/z235x/libzkgui.so`（217,240 B）**。
-
-## 4.7 老工程升级：补 base-utility（2026-09-17 钟工实测；v0.27.83）
-
-**现象**：老工程（源头 IDE 工程 / 用户自建工程）用 `fun build` 编不过，报的是**编译错误**——
-
-```
-In file included from generated/event_dispatcher.cpp:1:
-fatal error: base/functional.h: No such file or directory
-compilation terminated.
-```
-
-**根因**：`fun` 生成的 `generated/{event_dispatcher,event_app}.{h,cpp}`、`ui_main.*` 里**固定**
-`#include <base/functional.h>`（还有 `base/base.h`/`base/defer.h`/`base/exception.h`），这些头文件
-归**依赖包 `base-utility`**；而 `base-utility` **不是模板/IDE 自动带的**——工程 `Manifest.xml` 不声明，
-include 路径就不会进 CMake（症状看起来像「框架头文件不存在」，其实只是**包没声明/没装**）。
+**根因**：`fun` 生成的 `generated/{event_dispatcher,event_app}.{h,cpp}`、`ui_main.*` 里**固定** `#include <base/functional.h>`
+（还有 `base/base.h`/`base/defer.h`/`base/exception.h`），归**依赖包 `base-utility`**；而它不是模板/IDE 自动带的——
+`Manifest.xml` 不声明 → include 路径就不进 CMake（症状像「框架头文件不存在」，其实只是**包没声明/没装**）。
 
 **处置（三步，顺序不能改）**：
 
-1. 工程 `Manifest.xml` 的 `<dependencies>` 里加一行：
-   ```xml
-   <package id="base-utility" version="^10.0.0"></package>
-   ```
-   （或直接 `flythings_add_package(project_root, "base-utility", with_install=True)`，它会写 Manifest 并跑 install）
-2. **重跑 `fun install`**；
+1. 工程 `Manifest.xml` 的 `<dependencies>` 加一行：`<package id="base-utility" version="^10.0.0"></package>`
+   （或直接 `flythings_add_package(project_root, "base-utility", with_install=True)`——写 Manifest 并跑 install）。
+2. **重跑 `fun install`**（改过 `Manifest.xml` 必须重跑，否则新包的 include/lib 路径**不会**进生成的
+   `.fsc/<平台>/CMakeLists.txt`，加了也白加，报错一模一样——「加了包还是编不过」这类假象的来源）。
 3. `fun build -p <平台>`。
 
-> ⚠️ **改过 `Manifest.xml` 必须重跑 `fun install`**，否则新包的 include/lib 路径**不会**进生成的
-> `.fsc/<平台>/CMakeLists.txt`（加了也白加，报错一模一样）。这也解释了「加了包还是编不过」这一类假象。
-
-**判据（别靠猜）**：
-- 编过与否：`fun build -p <平台>` 出 `.fsc/<平台>/libzkgui.so`（09-28 前 `.fun/`）；
-- 依赖到底装上没：看 `.fsc-lock.json`（09-28 前 `.fun-lock.json`）的 `dependencies.<平台小写键>.base-utility`（`fun install` 写的锁），
-  `C:\zkswe\fun\registry\public\<平台键>\base-utility\<版本>\include\base\functional.h` 应真实存在；
-- 头文件在不在编译命令行里：`.fsc/<平台>/build.ninja` 的 `INCLUDES` 里应有 `<注册表>/<平台>/base-utility/<版本>/include`。
+**判据（别靠猜）**：① 编过与否 = `fun build -p <平台>` 出 `.fsc/<平台>/libzkgui.so`（09-28 前 `.fun/`）；
+② 依赖装上没 = `.fsc-lock.json`（前 `.fun-lock.json`）的 `dependencies.<平台小写键>.base-utility`，
+且 `C:\zkswe\fun\registry\public\<平台键>\base-utility\<版本>\include\base\functional.h` 真实存在；
+③ 头文件在不在命令行 = `.fsc/<平台>/build.ninja` 的 `INCLUDES` 应有 `<注册表>/<平台>/base-utility/<版本>/include`。
 
 **工具侧防护（v0.27.83，别只靠人眼）**：
-- `flythings_check_project_deps` / `flythings_validate_project`：代码或 fun 生成的 `generated/*.h` 出现
-  `#include <base/…>` 而 Manifest 未声明 base-utility（且依赖锁里也没解析到）→ 报
-  `missing_framework_dependency`，并给出可直接照做的 fix（`flythings_add_package` + `fun install`）；
-- `flythings_build_ui_flow`：`fun install` 失败不再静默（返回体顶层 `warnings`）；build 前先做一次
-  框架基础头体检，缺包就直接点明「依赖未装/缺包」（不把 ninja 的 `fatal error` 丢给用户）。
-- 判定口径（避免误报）：**Manifest 已声明 或 依赖已解析（传递依赖装上也算）**即视为 OK——
-  实测 `easyui` 有时会把 `base-utility` 带出来，这种情况不报。
-  ⚠️ `base/` 前缀**不是 base-utility 独占**：`base-http-client`→`base/http_*.h`、`base-json`→`base/json_*.h`、
-  `easyui 3.0.0(Z20)`→`base/fy_*.h`（本机注册表实扫），工具按「精确头名 + 前缀排除」判定。
+- `flythings_check_project_deps` / `flythings_validate_project`：代码或 `generated/*.h` 出现 `#include <base/…>` 而 Manifest
+  未声明 base-utility（依赖锁也没解析到）→ 报 `missing_framework_dependency` + 可照做的 fix。
+- `flythings_build_ui_flow`：`fun install` 失败不再静默（返回体顶层 `warnings`）；build 前做框架基础头体检，缺包直接点明。
+  判定口径（避免误报）：**Manifest 已声明 或 依赖已解析（传递依赖也算）**即 OK（实测 `easyui` 有时会把 `base-utility` 带出来）；
+  ⚠️ `base/` 前缀**不是 base-utility 独占**：`base-http-client`→`base/http_*.h`、`base-json`→`base/json_*.h`、`easyui 3.0.0(Z20)`→`base/fy_*.h`（本机注册表实扫），按「精确头名 + 前缀排除」判定。
 
 **同源现象（一起记）**：`fun build` 报 `找不到 base utils` / `base-utility 缺失` / `fun install 没生效` —— 同一条根因。
 
@@ -174,10 +134,10 @@ include 路径就不会进 CMake（症状看起来像「框架头文件不存在
 ## 5. 纪律与惯例
 
 - 工具侧动作优先走 MCP（`flythings_build_ui_flow` / `flythings_add_package` / `flythings_pack_upgrade`），**禁止手搓 fun/adb 命令**（MCP 已处理 retry、设备选择、i18n 盲点等）
-- **改过 `Manifest.xml`（加包/改版本/改平台）→ 必须先 `fun install` 再 `fun build`**，否则新包 include/lib 路径不会进生成的 CMake（加了也白加）
-- 调试 = `fun launch`（临时推送，掉电即失）；固化 = `fun pack` 出 `update.img`（掉电保留）——两者语义别混（见 `deploy-scene-map.md`）
-- ⚠️ **`fun sim` 不在 MCP 能力面内**（沛哥 2026-09-14 定：「暂时发布的 mcp 不要支持 sim 功能」）：工具面不暴露该能力，`project_tools._run_fun` 里也**显式拒绝 `cmd == 'sim'`** 并返回正解 hint（推真机→`flythings_build_ui_flow`；出图→`flythings_device_screenshot`；要跑模拟器自己去本地命令行）。**AI 不要拿 `flythings_*` 工具去实现模拟器运行，也不要因这条向用户承诺 MCP 能跑模拟器。**
-- 抓帧/设备侧动作仍走 `flythings_device_screenshot`（内部已处理 rootfs 裁剪、pan 偏移、压缩链路）
+- **改过 `Manifest.xml`（加包/改版本/改平台）→ 必须先 `fun install` 再 `fun build`**：根因、判据、工具侧防护见 §4.7
+- 调试 = `fun launch`（临时推送，掉电即失）；固化 = `fun pack` 出 `update.img`（掉电保留）——两者语义别混（见 `deploy-scene-map.md`）；
+  抓帧/设备侧动作仍走 `flythings_device_screenshot`（内部已处理 rootfs 裁剪、pan 偏移、压缩链路）
+- ⚠️ **`fun sim` 不在 MCP 能力面内**（沛哥 2026-09-14 定「暂时发布的 mcp 不要支持 sim 功能」）：工具面不暴露该能力，`project_tools._run_fun` 也**显式拒绝 `cmd == 'sim'`** 并返回正解 hint（推真机→`flythings_build_ui_flow`；出图→`flythings_device_screenshot`；要跑模拟器自己去本地命令行）。**AI 不要拿 `flythings_*` 工具去实现模拟器运行，也不要因这条向用户承诺 MCP 能跑模拟器。**
 
 ## 7. ⚠️ 多设备在线时「把工程推到指定设备」（2026-09-16 首测 / 09-17 复测 / **09-28 三测定稿**）
 
@@ -187,22 +147,18 @@ include 路径就不会进 CMake（症状看起来像「框架头文件不存在
 FATAL "host:transport <serial>" FAIL: more than one device/emulator
 ```
 
-**根因（报文级）**：fun 自带 Go adb 客户端发的是旧式 **`host:transport <serial>`（空格分隔）**，
-而 platform-tools（实测 37.0.1 与 31.0.3 一样）只认 **`host:transport:<serial>`（冒号分隔）**；
-空格形式下 serial 被丢掉 → adb 按「多设备未指定」回 `more than one device/emulator`。
-裸 socket 直问 `127.0.0.1:5037` 可复现（同一台设备，本机 5–6 台在线）：
+**根因（报文级）**：fun 自带 Go adb 客户端发旧式 **`host:transport <serial>`（空格分隔）**，而 platform-tools
+（实测 37.0.1 与 31.0.3 一样）只认 **`host:transport:<serial>`（冒号分隔）**；空格形式下 serial 被丢掉 →
+adb 按「多设备未指定」回 `more than one device/emulator`。裸 socket 直问 `127.0.0.1:5037` 可复现：
 
 | 请求 | 应答 |
 |------|------|
 | `host:transport 192.168.x.x:5555`（空格，fun 的写法） | `FAIL more than one device/emulator` |
 | `host:transport:192.168.x.x:5555`（冒号） | `OKAY` |
 
-伪 adb host server 抓包（`temp/fake_adb.py` + `temp/_adb_wire_test2.ps1`）确认 fun launch 的序列：
-`host:version` → `host:devices` → **`host:transport <serial>`（空格）** → `shell:getprop 'ro.product.model'`。
-
-`-s` 本身是生效的（解析 + 校验都有）：`-s <不存在的 serial/IP>` → `FATAL device "..." not found`；
-给纯 IP 会先 `connecting to <ip>:5555` 自动 adb connect；**但不支持序号**（`-s 0/1/5` 均报 not found）。
-单设备在线时能推（server “只有一台就用它”兜底）——正是因为如此，这个 bug 很容易被忽略。
+fun launch 完整序列（伪 adb host server 抓包）：`host:version` → `host:devices` → **`host:transport <serial>`（空格）** →
+`shell:getprop 'ro.product.model'`。`-s` 本身生效（解析 + 校验都有）：`-s <不存在的 serial/IP>` → `FATAL device "..." not found`；
+纯 IP 会自动 `adb connect`；**但不支持序号**（`-s 0/1/5` 均 not found）。单设备在线时能推（server 兜底），所以这个 bug 很容易被忽略。
 
 **两条可行路（按推荐序）**
 
@@ -216,35 +172,19 @@ fun launch -p <平台> -s <ip>:5555         # 多设备在线也能精确推到�
 # 收尾：停垫片 → adb -P 5038 kill-server → adb start-server → adb connect 连回
 ```
 
-实测（2026-09-28，本机 **5 台在线**，工程 DownloadTimerTest/Z20，目标 `192.168.x.x:5555`）：
-**4.02 s 推完**（`main.ftu` + `images/` + `libzkgui.so` + `EasyUI.cfg`），然后 `shell:sync` + `setprop 'ctl.restart' 'zkswe'`；
-设备侧 md5 与本地构建产物**逐一致**（`/tmp/ui/main.ftu` = 本地 `ui/main.ftu`；
-`/tmp/lib/libzkgui.so` = 本地 `.fsc/z20/libzkgui.so`；`/tmp/ui/images/fill.png` = 本地 `resources/images/fill.png`），
-另一台在线设备 `192.168.x.x` **未被触碰**（无 `/tmp/ui`、lib 未变）。
+实测（09-28，本机 **5 台在线**，目标 `192.168.x.x:5555`）：**4.02 s 推完**（`main.ftu` + `images/` + `libzkgui.so` +
+`EasyUI.cfg`），设备侧 md5 与本地构建产物**逐一致**，另一台在线设备**未被触碰**。
 
-2. **让 adb 列表只剩目标设备**（不改任何东西，最省事）：`adb disconnect <其它 ip>:5555`（网络设备可逆）
-   或拔掉其它 USB，推完 `adb connect` 连回。
+2. **让 adb 列表只剩目标设备**（最省事）：`adb disconnect <其它 ip>:5555`（网络设备可逆）或拔掉其它 USB，推完连回。
 
-**判据（别靠猜）**：比对设备与本地构建产物
+**判据（别靠猜）**：`adb -s <serial> shell "ls -la /tmp/ui /tmp/lib"` + 设备上 busybox `md5sum /tmp/ui/main.ftu`（设备无 `md5sum`）
+应与本地 `ui/main.ftu` **字节 + md5 一致**；库取本地 `.fsc/<平台>/libzkgui.so`（09-28 版产物目录已换成 `.fsc/`，老 `.fun/` 不再更新）；设备侧 `ls` 不认 `head`。
 
-```bash
-adb -s <serial> shell "ls -la /tmp/ui /tmp/lib"
-adb -s <serial> shell "/tmp/busybox md5sum /tmp/ui/main.ftu"   # 设备无 md5sum，用已推的 busybox
-```
-
-设备 `/tmp/ui/main.ftu` 应与本地 `ui/main.ftu` **字节 + md5 一致**；库看构建产物目录：
-⚠️ 09-28 版 fun 把产物目录换成 **`.fsc/<平台>/`**、lockfile 换成 `.fsc-lock.json`（老 `.fun/` 不再更新）
-——这是另一个话题，本节不展开，但做上面的 md5 判据时要知道取哪个目录。
-设备侧 `ls` 不认 `head`（管道会报 `head: not found`）。
-
-**其它仍有效的细节**：唯一会拦下来的是**平台校验**（`shell:getprop 'ro.product.model'` 对比工程平台，
-不匹配 → `FATAL platform not match`，exit 1）；push 真出错也 `FATAL` + exit 1（不会把输出全吞）。
-
-**WiFi adb 用法**：`adb tcpip 5555` → `adb connect <ip>:5555`；该设置掉线后可随时重连（实测未重跑 `tcpip` 直接重连成功），
-设备重启前一直有效；**用完 `adb disconnect <ip>:5555`**，避免选错设备。
+**其它**：唯一会拦下来的是**平台校验**（`shell:getprop 'ro.product.model'` 对比工程平台，不匹配 → `FATAL platform not match`，exit 1）；push 出错也 `FATAL` + exit 1。
+**WiFi adb**：`adb tcpip 5555` → `adb connect <ip>:5555`；掉线可随时重连（实测未重跑 `tcpip` 直接重连成功），设备重启前有效；**用完 `adb disconnect <ip>:5555`** 避免选错设备。
 
 ## 8. 未验证 / 边界
 
-- `fun sim` 只确认了 `--help` 存在该命令，**没实跑**（模拟器细节看 wiki 官方镜像）；⚠️ 且**发布的 MCP 暂不支持该功能**（沛哥 2026-09-14 定，见 §5）
-- 本机旧 `fuse.exe` 仍可运行（实测能编过），所以历史工程里的 `.fuse/` 产物与 `FUSE_BUILD` 宏**不是错误**，只是旧代；**新知识一律按 fun 写**
-- `~/.fun` 与 `~/.fuse` 两套注册表的具体分工（哪套优先、镜像还是复制）未逐条验证；MCP `package_tools` 的解析顺序是 `~/.fsc`（09-28 起）→ `~/.fun` → `~/.fuse` → `C:\zkswe\fun\registry`
+- `fun sim` 只确认了 `--help` 存在该命令，**没实跑**（模拟器细节看 wiki 官方镜像）；发布版 MCP 也不支持该功能（见 §5）
+- 本机旧 `fuse.exe` 仍可运行（实测能编过），历史工程里的 `.fuse/` 产物与 `FUSE_BUILD` 宏**不是错误**，只是旧代；**新知识一律按 fun 写**
+- `~/.fsc`、`~/.fun`、`~/.fuse` 三套注册表的具体分工（哪套优先、镜像还是复制）未逐条验证；MCP 解析顺序见 §2

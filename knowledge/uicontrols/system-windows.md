@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [statusbar, 查不到的一律标, 未收录, 不猜, 不套别的 GUI 框架, 系统级页面, 系统窗口, 系统内置界面, 状态栏, navibar]
+tags: [statusbar, 查不到的一律标, 未收录, 不猜, 不套别的 GUI 框架, 系统级页面, 系统窗口, 系统内置界面, 状态栏, navibar, 导航栏, screensaver, screensave, 屏保, 输入法, IME]
 evidence: []
 ---
 # 系统级窗口（状态栏 statusbar / 导航栏 navibar / 屏保 screensaver / 输入法 IME）

@@ -11,7 +11,7 @@ origin: total
 source: 钟工 2026-09-29「改造到用户基于这个开发后可以做到自动生长 + 可检索可验证」→ P1
 needs_evidence: false
 platforms: []
-tags: [知识放哪个目录, 会不会写进 MCP 安装目录, 怎么回流总账, 脱敏补丁包, kb-contrib, 未收录怎么办, 知识缺口清单, kb_gaps, 复验知识, evidence 怎么写]
+tags: [知识放哪个目录, 会不会写进 MCP 安装目录, 怎么回流总账, 脱敏补丁包, kb-contrib, 未收录怎么办, 知识缺口清单, kb_gaps, 复验知识, evidence 怎么写, kb_verify, kb_index, json, 知识体检]
 evidence:
   - {kind: offline, cmd: python -m unittest tests.test_kb_growth -q, expect_rc: 0, expect_contains: OK, ran_at: "2026-09-29 20:45:47", output_sha256: ae14d0eca96adeb68d04b7e565e6557e9949c3f1107b4d678d315f47e1e21dfc}
 ---

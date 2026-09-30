@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [F133, Z20, Z21, T113, V85X]
-tags: [JPEG, MJPEG 摄像头绿屏, 录制中黑屏, dev, video 热插拔检测, 摄像头格式协商, V4L2 采集, 平台无关通用层, 指定 V85X 且要预览, 录像]
+tags: [JPEG, MJPEG 摄像头绿屏, 录制中黑屏, dev, video 热插拔检测, 摄像头格式协商, V4L2 采集, 平台无关通用层, 指定 V85X 且要预览, 录像, v85x, uvc-usb-camera, md, aw-dvr, JPEG 解码, MJPEG 录制]
 evidence: []
 ---
 # UVC / USB 摄像头通用接入（跨平台：V85X / T113 / F133 / Z20 / Z21）
@@ -57,62 +57,32 @@ std::string get_uvc_dev() {
   - **IN_DELETE**：删除节点 == 当前记录节点 → 关设备（先停录像/预览/取流任务），清状态广播断开
 - **匹配口径**：`VIDIOC_QUERYCAP` 且 `driver == "uvcvideo"` 才认（排除平台自带 sensor 的 video 节点）
 
-## 2. 打开与格式协商（决定后面全链路，JPEG 摄像头必做）
+## 2. 打开与格式协商（决定后面全链路）
 
-1. **读能力**：`VIDIOC_QUERYCAP`（driver/card/bus_info）
-2. **枚举像素格式**：`VIDIOC_ENUM_FMT`（区分 YUYV / MJPEG / H264 / NV12）
-3. **锁定格式 + 分辨率**：`VIDIOC_S_FMT`（**不能只 G_FMT 读默认就开工**——摄像头默认未必是你想要的格式）
-4. **用 S_FMT 实际返回的宽高做后续初始化**（部分摄像头会回退到相邻档位）
-
-```cpp
-// JPEG(MJPEG) 摄像头协商示例（平台无关的 V4L2 部分）
-struct v4l2_fmtdesc fd; memset(&fd,0,sizeof(fd)); fd.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-for (int i=0; ioctl(fd, VIDIOC_ENUM_FMT, &fd) == 0; i++, fd.index++) {
-    if (fd.pixelformat == V4L2_PIX_FMT_MJPEG) { /* 支持 JPEG */ }
-}
-struct v4l2_format fmt; memset(&fmt,0,sizeof(fmt)); fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_MJPEG;
-fmt.fmt.pix.width = W; fmt.fmt.pix.height = H;   // W/H 从 ENUM_FRAMESIZES 或默认取
-if (ioctl(fd, VIDIOC_S_FMT, &fmt) < 0) { /* 不支持该尺寸，回退相邻档 */ }
-// 之后用 fmt.fmt.pix.width/height（S_FMT 实际返回值）初始化采集/显示
-```
+1. `VIDIOC_QUERYCAP` 读能力（driver/card/bus_info）
+2. `VIDIOC_ENUM_FMT` 枚举像素格式（区分 YUYV / MJPEG / H264 / NV12）
+3. `VIDIOC_S_FMT` **锁定格式 + 分辨率**（**不能只 G_FMT 读默认就开工**——摄像头默认未必是你想要的格式）
+4. 用 S_FMT **实际返回**的宽高做后续初始化（部分摄像头会回退到相邻档位）
 
 - **不协商的后果**：摄像头默认格式可能是 YUYV 却按 MJPEG 处理 → 垃圾流 → **绿屏/花屏**
+- 可直接抄的 MJPEG 协商代码（ENUM_FMT + S_FMT + 用返回值 Init）→ `v85x/uvc-usb-camera.md` §7.1
 
 ## 3. 持续取流保活（UVC 铁律，平台无关）
 
-⚠️ **UVC 摄像头必须有任务持续读流**，否则摄像头休眠/断流（尤其 USB 带宽紧张或设备省电策略）。
-接入成功先启动保活任务再开预览；录像期间也不能停（停了 → 录制中画面黑掉）。
-
-```cpp
-// 通用模式：一个线程/任务持续持有采集通道并 wait()/read()
-while (running) {
-    // 绑定层实现：打开采集通道（V85X = SharedVideoDevice(REAR)）
-    while (running) { waitForFrameOrSignal(); }   // 持续拉流占住
-    // 通道异常/断开 → 短暂延时重试
-}
-```
+⚠️ UVC 摄像头**必须有任务持续读流**，否则摄像头休眠/断流（尤其 USB 带宽紧张或设备省电策略）；
+接入成功先启动保活任务再开预览，**录像期间也不能停**（停了 → 录制中画面黑掉）。
+V85X 的具体实现（`mpi::Task<>` 循环 + `SharedVideoDevice(REAR)` 持续 wait）见 `v85x/uvc-usb-camera.md` §3。
 
 ## 4. 热插拔状态机（通用设计）
 
-- 状态枚举（按产品裁剪）：连接正常 / USB 断开 / 摄像头异常 / 流异常 / 其他
-- **防抖计数**：状态连续 N 帧（如 50）才切换广播，避免瞬时抖动闪 UI
-- 回调集通知 UI；从异常恢复或断开重连后，若在预览页 → 延时 ~200ms 重建预览
-- 开机流程：注册状态回调 → 启动检测线程 → 初始预览置不可见；设置页可提供"重新探测"
+状态枚举（按产品裁剪）：连接正常 / USB 断开 / 摄像头异常 / 流异常 / 其他；**防抖计数** = 状态连续 N 帧（如 50）才切换广播，避免瞬时抖动闪 UI；
+回调通知 UI，从异常恢复或断开重连后若在预览页 → 延时 ~200ms 重建预览；开机：注册回调 → 启动检测线程 → 初始预览置不可见（设置页可「重新探测」）。
+V85X 对应的落地 API（`uvc_add_camera_state_cb` / `runInUiThreadUniqueDelayed` / `uvc_video_detect_start`）见 `v85x/uvc-usb-camera.md` §5。
 
-## 5. JPEG(MJPEG) UVC 摄像头落地必查清单（绿屏/黑屏防坑）
+## 5. JPEG(MJPEG) UVC 摄像头落地必查清单
 
-> 来源：V85X 平台实测总结（2026-09-08 沛哥定规去工程化）；外部 AI 工具落地 JPEG UVC 曾出现
-> 「录制文件播放绿屏」「录制中摄像头图像黑掉」，根因集中在四件事：
-
-1. **格式协商**：接入必须 ENUM_FMT 确认 + S_FMT 锁定（MJPEG 摄像头默认可能 YUYV，不协商 = 绿屏）
-2. **尺寸对齐**：录像/显示的目标分辨率必须 = 摄像头实际输出分辨率（S_FMT 返回值），
-   不能照抄内置摄像头 1080P/720P 档位（尺寸错配 = 编码异常 → 回放绿屏）
-3. **互斥顺序**：**开始录像不要停预览/保活**（边录边看是常态）；切流/拔插/进回放前才先停录像再停预览
-   （顺序反了 → 录制中画面黑掉）
-4. **UVC 保活**：持续读流任务录像期间也不能停（停了 → 黑屏/断流不恢复）
-5. **格式口径**：带硬件编码器的平台录像产物 = H.264 封装 mp4/ts；**JPEG 仅用于照片场景**
-   （拍照 → 相册 → JPEG 解码显示），不要把 JPEG 帧当视频源直录（播放绿屏）
+→ **正文（唯一出处）**：`v85x/uvc-usb-camera.md` §7「通用 JPEG(MJPEG) UVC 摄像头落地必查清单」——格式协商 / 尺寸对齐 /
+互斥顺序 / 保活四件事，含代码与日志判据；落地前必读，否则易出「录制文件播放绿屏」「录制中画面黑掉」。
 
 ## 6. 平台绑定对照（谁负责哪一层）
 
@@ -124,7 +94,6 @@ while (running) {
 
 ## 坑速记
 
-1. UVC 必须持续读流保活；2. 切流/拔插/进回放前先停录像再停预览（MPP/媒体栈互斥）；
-3. IN_CREATE 延时 3s 再枚举、「无设备才触发」防多节点；4. IN_DELETE 只认自己记录的节点；
-5. JPEG 摄像头必须显式 S_FMT 锁格式；6. 录像目标尺寸 = 摄像头实际分辨率；
-7. 平台绑定层细节按各平台媒体栈实现，未实测不写
+1. IN_CREATE 延时 3s 再枚举、「无设备才触发」防多节点；IN_DELETE 只认自己记录的节点；
+2. 平台绑定层细节按各平台媒体栈实现，未实测不写；
+3. 保活 / 互斥顺序 / 格式协商 / 尺寸对齐四坑与处置统一见 `v85x/uvc-usb-camera.md` §6/§7。

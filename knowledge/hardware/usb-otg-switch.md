@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [Z21, T113, V85X]
-tags: [或问, USB HOST 外设接入, U盘插上没反应, 读不到, USB 摄像头, 键鼠 接入, 且没有指定平台, 没说 V85X, T113, Z21]
+tags: [或问, USB HOST 外设接入, U盘插上没反应, 读不到, USB 摄像头, 键鼠 接入, 且没有指定平台, 没说 V85X, T113, Z21, 各平台 sysfs 路径不同, 回答必须给出 V85X, 禁止默认按某一个平台答, 本篇 = 跨平台总表, 角色节点, 切换语义]
 evidence: []
 ---
 # USB OTG / ADB / U盘 模式切换 + HOST 外设接入（跨平台对照：V85X / T113 / Z21）
@@ -19,7 +19,8 @@ evidence: []
 > 或问「**USB HOST 外设接入**」「**U盘插上没反应/读不到**」「**USB 摄像头/键鼠 接入**」「**USB host devices**」
 > **且没有指定平台**（没说 V85X / T113 / Z21）→ **本篇就是答案**：切换与 host 外设接入是跨平台共性场景，各平台 sysfs 路径不同，
 > **回答必须给出 V85X / T113 / Z21 三条路径对照并请用户确认平台，禁止默认按某一个平台答**。
-> 详细 configfs 序列见 `v85x/usb-gadget-storage.md`（V85X/T113 代码同款）。
+> 本篇 = 跨平台总表（角色节点/切换语义/挂载点）。V85X 完整可抄的 configfs 8 步与存储介质双选 →
+> `v85x/usb-gadget-storage.md` §1–§4；V85X 代码级切换实现在 `v85x/usb-otg-mode-switch.md`。
 
 ## 一句话
 
@@ -73,14 +74,21 @@ void change_usb_mode(usb_mode_e mode) {
 
 ## configfs 序列（V85X/T113 实测同款，8 步）
 
-mount configfs → g1 strings(manufacturer/product/serialnumber) → configs/c.1(bmAttributes 0xc0/MaxPower 500)
-→ unlink 旧 symlink(ffs.adb+f1) → 切角色 → VID/PID（ADB `0x18D1/0xD002`；U盘 `0x1F3A/0x1001`）+
-function（ffs.adb 或 mass_storage）→ symlink 挂 config → 枚举 `/sys/class/udc` 写 `g1/UDC`。
-防重：SystemProperties app.usb.cfg 记录当前档。完整可抄实现见 `v85x/usb-gadget-storage.md` §4。
+mount configfs → g1 strings(manufacturer=zkswe / product=flythings / serialnumber=20080411)
+→ configs/c.1(bmAttributes 0xc0 自供电 / MaxPower 500) → unlink 旧 symlink(`configs/c.1/ffs.adb` + `configs/c.1/f1`)
+→ 切角色（ADB/STORAGE→device，NONE→host）→ VID/PID（ADB `0x18D1/0xD002`；存储档 `0x1F3A/0x1000`、NONE `0x1F3A/0x1001`，档位表见 `v85x/usb-gadget-storage.md` §2.1）
++ function（`ffs.adb` 或 `mass_storage.usb0`）→ symlink 挂 config → 枚举 `/sys/class/udc` 第一个目录名写 `g1/UDC`。
+ADB 档还要 `/dev/usb-ffs/adb` 不存在时 mkdirs + `mount(..."functionfs", uid=2000,gid=2000)`。
+防重：SystemProperties `app.usb.cfg` 记录当前档，相同直接 return。完整可抄实现见 `v85x/usb-gadget-storage.md` §4。
+
+> ⚠️ **只读节点切角色 ≠ 电脑能识别**：必须走完上面 8 步（尤其写 `g1/UDC`）；ADB 档缺 `ctl.restart adbd`、
+> U盘档缺 `lun.0/file` 写块设备，电脑端都枚举不到。
 
 ## U盘档暴露源（V85X/T113）
 
-`lun.0/file` 只认**块设备**（mmcblk0p1 内置 EMMC / mmcblk1 TF 卡，按介质探针二选一），不是挂载路径。
+`lun.0/file` 只接受**块设备/镜像文件**（不是挂载路径）。二选一由**介质探针** `/dev/block/mmcblk0boot0` 决定：
+存在 = 内置 EMMC → `mmcblk0p1`（设备内挂 `/mnt/storage`）；不存在 = TF 卡 → `mmcblk1`（挂 `/mnt/extsd`）。
+⚠️ 探针必须与启动挂载分支用**同一个**，两处不一致 = 「设备端写 A 介质、电脑读 B 介质」。
 
 ## USB HOST 外设接入（客户场景：U盘/摄像头/键鼠读不到）
 

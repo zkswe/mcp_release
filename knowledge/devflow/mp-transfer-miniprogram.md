@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [2026-09-24 入库, 小程序传输对接指南, 已在其他产品上验证, 先入库, 2026-09-24, mp_transfer, python, receiver, EasyUI 项目要接, 小程序传图]
+tags: [2026-09-24 入库, 小程序传输对接指南, 已在其他产品上验证, 先入库, 2026-09-24, mp_transfer, python, receiver, EasyUI 项目要接, 小程序传图, 传视频, 的场景]
 evidence: []
 ---
 # 📥 小程序传图/视频对接（相框类设备的局域网接收端）

@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [V85X]
-tags: [USB 连电脑当 U盘拷文件, 客户口径 MTP, sys, devices, platform, soc, usbc0, 切 host, U盘, cat usb_device]
+tags: [USB 连电脑当 U盘拷文件, 客户口径 MTP, sys, devices, platform, soc, usbc0, 切 host, U盘, cat usb_device, 切 device, ADB, cat usb_null, 断开, cat otg_role, 查当前角色]
 evidence: []
 ---
 # V85X USB OTG 切换与 Device 存储（ADB / U盘 + EMMC / TF 卡双介质）
@@ -28,24 +28,10 @@ evidence: []
 
 ## 0. 概念框架：介质与档位是两个正交维度
 
-```
-                ┌─ 介质（数据放哪）─────────────┐
-  硬件变体 ──→   │  A. 内置 EMMC：mmcblk0p1       │
-                │     挂载 /mnt/storage          │
-                │  B. TF 卡：   mmcblk1          │
-                │     挂载 /mnt/extsd            │
-                └──────────────┬──────────────┘
-                               │ 探针：/dev/block/mmcblk0boot0 是否存在
-                               ▼
-                ┌─ USB 档位（连电脑暴露成什么）──┐
-  开发/量产 ──→  │  ADB 调试（functionfs ffs.adb）│
-                │  U盘存储（mass_storage）        │ ← 暴露源 = 当前介质块设备
-                │  NONE（仅充电）                 │
-                └──────────────────────────────┘
-```
-
-- **介质**：拍照/录像存哪块存储（EMMC 版 xdv23 / TF 卡版 xdv200300 无内置 EMMC 时的存储载体）
-- **USB 档位**：USB 连电脑时 gadget 暴露成什么；U盘档要把「当前介质」的块设备写进 `lun.0/file`
+- **介质（数据放哪）**：内置 EMMC `mmcblk0p1` → 挂 `/mnt/storage`；TF 卡 `mmcblk1` → 挂 `/mnt/extsd`。
+  探针：`/dev/block/mmcblk0boot0` 是否存在。
+- **USB 档位（连电脑暴露成什么）**：ADB 调试（functionfs `ffs.adb`） / U盘存储（mass_storage） / NONE（仅充电）。
+  U盘档要把「当前介质」的块设备写进 `lun.0/file`。
 
 ## 1. 存储介质双选（双介质主线）
 
@@ -134,28 +120,11 @@ SystemProperties::setInt("app.usb.cfg", target);
 
 USB 插入/充电检测：GPIO（xdv23 用 `GPIO_260` = `GPIO_USBIN_DET`，1=插入）。
 
-## 3. OTG 角色切换：切 USB host/device（V85X/全志 usbc0 sysfs，读节点即切换）
+## 3. OTG 角色切换（读节点即切换）
 
-路径与 Z21（`soc0/soc/soc:usbotg`）不同，V85X 是 platform soc 下 usbc0，**读节点即切换**：
-
-```
-/sys/devices/platform/soc/usbc0/otg_role   # 读当前角色：usb_device / usb_host
-/sys/devices/platform/soc/usbc0/usb_device # 读它 = 切 device 模式
-/sys/devices/platform/soc/usbc0/usb_host   # 读它 = 切 host 模式
-/sys/devices/platform/soc/usbc0/usb_null   # 读它 = 空角色
-```
-
-```cpp
-usb_mode_e get_usb_mode() {            // 读 otg_role 内容比对
-    char buf[32]; _read(USB_OTG_ROLE, buf, sizeof(buf)); ...
-}
-void set_usb_mode(usb_mode_e mode) {   // 相同跳过；先读 usb_null 清角色再读目标节点
-    if (get_usb_mode() == mode) return;
-    char buf[32]; _read(USB_NULL, buf, sizeof(buf));
-    if (mode == E_USB_MODE_DEVICE) _read(USB_DEVICE, buf, sizeof(buf));
-    else if (mode == E_USB_MODE_HOST) _read(USB_HOST, buf, sizeof(buf));
-}
-```
+V85X 节点在 `/sys/devices/platform/soc/usbc0/`：`otg_role`(查) / `usb_device`(切 device) / `usb_host`(切 host) / `usb_null`(清角色)。
+⚠️ 切角色前先读 `usb_null` 清当前角色（相同档早退），再读目标节点；Z21 路径不同 ——
+跨平台对照、设备树差异与 8 步 configfs 概览见 `hardware/usb-otg-switch.md`（正文）。
 
 ## 4. configfs usb_gadget 配置序列（8 步，顺序不可乱）
 
@@ -203,20 +172,17 @@ FlyThings app 自己把介质块设备格式化为 FAT32 并挂载（EMMC 分区
 
 ## 6. 平台差异备忘
 
-- **Z21**（soc0 路径，shell 一行切换）：`cat /sys/devices/soc0/soc/soc:usbotg/usb_host|usb_device`
-- **V85X/V85XEMMC**（platform/soc/usbc0 路径，文件 IO 切换）：本文 3/4 节
-- V85X 的 usb_monitor.cpp 是完整可抄实现（g1/mass_storage/ffs.adb + 介质双分支全套）
+- **Z21**（`soc0/soc/soc:usbotg` 路径、只有 usb_host/usb_device 两节点、shell cat 即切）与 T113（`usbc0@0` 带 reg 地址）→ 对照表在 `hardware/usb-otg-switch.md`（正文）。
+- **V85X/V85XEMMC**：本文 §1–§4（usb_monitor.cpp = 完整可抄实现，含 g1/mass_storage/ffs.adb + 介质双分支）。
 
 ## 7. 坑与注意
 
-1. **mass_storage 与 adb 互斥**：换档必须先 unlink 两个旧 symlink，残留会导致新档不生效
-2. **configfs 未挂载**：直接 mkdirs 会失败，先 `mount none configfs`
-3. **暴露整分区 vs 设备端写入抢数据**：U盘档暴露的是整块介质（mmcblk0p1 / mmcblk1），
+1. **互斥 / configfs 未挂 / adbd uid-gid 与 `ctl.restart`**：与 `hardware/usb-otg-switch.md` §坑 1–3 同源——
+   换档先 unlink 两个旧 symlink（残留→新档不生效）、先 `mount none configfs`，ADB 档 functionfs uid/gid=2000。
+2. **暴露整分区 vs 设备端写入抢数据**：U盘档暴露的是整块介质（mmcblk0p1 / mmcblk1），
    若设备端同时挂载读写相册会抢——量产取舍：默认 U盘模式但写入只在拍照/录像瞬间；
    要更稳可切档前 umount（业务层控制）
-4. **UDC 绑定时机**：function 挂好后必须写 `g1/UDC` 才被电脑枚举；枚举不到先看
+3. **UDC 绑定时机**：function 挂好后必须写 `g1/UDC` 才被电脑枚举；枚举不到先看
    `/sys/class/udc` 是否有控制器（无 = 内核没开 gadget/驱动问题）
-5. **探针一致性**：Main.cpp 挂载与 usb_monitor 暴露源必须用同一探针（mmcblk0boot0），
+4. **探针一致性**：Main.cpp 挂载与 usb_monitor 暴露源必须用同一探针（mmcblk0boot0），
    两处不一致会出现「设备端写 A 介质、电脑读 B 介质」的错乱
-6. ADB 档 functionfs 挂载 uid/gid=2000 是 adbd 服务用户；`ctl.restart adbd` 走
-   SystemProperties（init 属性服务），不是 system()

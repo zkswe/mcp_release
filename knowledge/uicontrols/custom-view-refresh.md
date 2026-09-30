@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [每条都有工程出处, 可 grep 核对, 自定义控件刷新, 自定义 view 刷新, 自绘刷新, 帧刷新, 逐帧刷新, 自绘帧, 位图刷新, 视频帧控件]
+tags: [每条都有工程出处, 可 grep 核对, 自定义控件刷新, 自定义 view 刷新, 自绘刷新, 帧刷新, 逐帧刷新, 自绘帧, 位图刷新, 视频帧控件, GIF 控件, 地图控件, 游戏视图, GameView, gameview, setInvalid]
 evidence: []
 ---
 # 自定义 view / 自绘帧的「刷新口径」（GameView 那一套）

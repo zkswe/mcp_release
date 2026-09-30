@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [F133]
-tags: [statusbar, navibar 以及, 自定义全局弹框, 官方无条款的地方一律标, 未收录, 不猜, 全局弹框, 自定义弹框, 弹窗, 悬浮窗]
+tags: [statusbar, navibar 以及, 自定义全局弹框, 官方无条款的地方一律标, 未收录, 不猜, 全局弹框, 自定义弹框, 弹窗, 悬浮窗, 浮窗, floatwnd, popupWnd, popup window, btcall, 蓝牙来电弹框]
 evidence: []
 ---
 # 工程自定义系统窗口 / 全局弹框（含 car 工程 btcall 来电弹框做法）

@@ -23,8 +23,7 @@ evidence: []
 
 `<div class="screen" data-res="WxH" data-bg="#RRGGBB">` 为根。
 
-- 也可用 `data-width` / `data-height` 或内联 `style` 宽高替代 `data-res`
-- `data-background` 与 `data-bg` 互为别名
+- 也可用 `data-width` / `data-height` 或内联 `style` 宽高替代 `data-res`；`data-background` 与 `data-bg` 互为别名
 - 缺省分辨率 480x272；建议显式传 `res` 参数（如 `"800x480"`）或写 `data-res`
 
 ## 2. 控件映射
@@ -38,15 +37,13 @@ evidence: []
 | `div.card` / `window` / `panel` / `win` | window 容器（子控件相对坐标；**默认可见**，见下表注） |
 | `div.modal` / `dialog` / `popup` | 弹窗（modal + **默认隐藏**） |
 
-⚠️ **容器窗口的初始可见性不同**（代码注释：弹窗 modal 默认隐藏；普通卡片/容器窗口**默认可见**）：
-`div.window` / `card` / `panel`（非 modal）生成出来就是 `visible=true`。用它们做「第二个页面」时，
-**它一生成就在屏幕上、会盖住后面定义的同层内容**，必须靠逻辑侧 `hideWnd()` 收起来。
-（案例真根因：一个非 modal window 忘了 hide → 表单页永远压在最上面 + 吃掉下半屏点击，
-一度被误判成「触摸注入坏了」。）
+⚠️ **容器窗口的初始可见性不同**（代码注释：弹窗 modal 默认隐藏；普通卡片/容器窗口**默认可见**）：`div.window` / `card` / `panel`（非 modal）生成出来就是 `visible=true`。用它们做「第二个页面」时，**它一生成就在屏幕上、会盖住后面定义的同层内容**，必须靠逻辑侧 `hideWnd()` 收起来（案例真根因：一个非 modal window 忘了 hide → 表单页永远压在最上面 + 吃掉下半屏点击，一度被误判成「触摸注入坏了」）。
 | `div.list` / `listview` | listview（子项见 §3） |
 | `div.checkbox` | checkbox |
 | `div.radio` / `radiogroup` | radiogroup |
 | `div.icon` / `img` | 图标 textview |
+
+**图标映射**：控件映射表里的图标类（`div.icon` / `img` / `data-icon` / `class="icon-xxx"`）都出**图标 textview**（自动生成 PNG → `backgroundPic` / `picTab`）；`data-icon` 的取值必须取 **46 个内置图标词**（见 §5），中文别名（如 `data-icon="播放"`）也认，未收录名会给 warning。
 
 ## 3. listview 子项
 
@@ -58,30 +55,17 @@ evidence: []
 - **定位**：`data-x` / `data-y` / `data-w` / `data-h`（或 `data-left/top/width/height`、`style` left/top/width/height）
 - **字号**：`data-fs` / `data-font-size` / `data-fontSize` / 内联 `style="font-size:NNpx"` 都认
 - **颜色**：`data-color` 文字色；`data-bg` 或 `data-background` 背景色（textview/button/edittext 均支持背景）
-- **初始隐藏**：`data-visible="false"`（A5，2026-09-27 新增）—— 控件 / 容器（window、listview 与 subItem）
-  都直通 json 的 `visible`；缺省不写 = 保持各类型默认（普通 window 默认可见、modal 默认隐藏）。
-  （旧版不认该属性 → 只能运行时代码 patch，且控件名要在生成器与 patch 两处同步，漏一处即静默失败。）
+- **初始隐藏**：`data-visible="false"`（A5，2026-09-27 新增）—— 控件 / 容器（window、listview 与 subItem）都直通 json 的 `visible`；缺省不写 = 保持各类型默认（普通 window 默认可见、modal 默认隐藏）。（旧版不认该属性 → 只能运行时代码 patch，且控件名要在生成器与 patch 两处同步，漏一处即静默失败。）
 - **反性**：`data-visible` 之外**没有**别的新式属性；`data-touchable` 仍**不解析**（见下条）。
 - **命名**：`data-caption` 指定控件名（C 标识符）；缺省自动 `TextView1` / `Button1` …
-- **圆角外底色**（A6，2026-09-27 修）：有图控件（`data-pic`/`data-bgpic`/CSS 效果图/图标）的
-  **四角透出的是 `bgColorTab`**。旧版「有图一律 pop 底色」→ 四角露窗口黑底（坐卡片上就是「图标角落发黑」）。
-  现口径：**`data-bg` 优先 > 最近祖先容器底色 > 引擎缺省（并在 warnings 里告警）**。
-  ⚠️ `bgColorTab` 只管**最外 1px**；圆角里侧 4~5px 那圈是图里的像素，补色救不回来 →
-  坐卡片的底板要么 1:1 普通 PNG + 圆角外烘容器色，要么整张图在出图侧就烘好底色。
-- ⚠️ **`data-touchable` 不解析**（2026-09-17 实测 + 代码核对）：转换器**根本没读**这个属性
-  —— `button` 恒 `touchable:true`、`textview` 恒 `false`、`window` 也不解析。
-  想**真禁用**某个控件、或让容器按你要的语义「吸收 / 穿透」点击，只能落到 **json**：
-  `patch_json` / `ui_edit_apply` 改 `touchable`，或运行期 `setTouchable()` / `setTouchPass()`
-  （语义与坑见 `uicontrols/touch-events.md`）。
+- **圆角外底色**（A6，2026-09-27 修）：有图控件（`data-pic`/`data-bgpic`/CSS 效果图/图标）的 **四角透出的是 `bgColorTab`**。旧版「有图一律 pop 底色」→ 四角露窗口黑底（坐卡片上就是「图标角落发黑」）。现口径：**`data-bg` 优先 > 最近祖先容器底色 > 引擎缺省（并在 warnings 里告警）**。⚠️ `bgColorTab` 只管**最外 1px**；圆角里侧 4~5px 那圈是图里的像素，补色救不回来 → 坐卡片的底板要么 1:1 普通 PNG + 圆角外烘容器色，要么整张图在出图侧就烘好底色。
+- ⚠️ **`data-touchable` 不解析**（2026-09-17 实测 + 代码核对）：转换器**根本没读**这个属性 —— `button` 恒 `touchable:true`、`textview` 恒 `false`、`window` 也不解析。想**真禁用**某个控件、或让容器按你要的语义「吸收 / 穿透」点击，只能落到 **json**：`patch_json` / `ui_edit_apply` 改 `touchable`，或运行期 `setTouchable()` / `setTouchPass()`（语义与坑见 `uicontrols/touch-events.md`）。
 - **自备图**：`data-pic`（引用自己切好的 PNG / .9.png / 序列帧 GIF）
-- **静默提醒**（A1/A8，2026-09-27 修）：转换器**不再静默丢改动** —— 返回体 `warnings[]` 会给出
-  「丢字符（emoji/黑名单字）」「有图控件无圆角外底色」「文本最小宽超出容器」等条目；
-  `controls` / `controlsTopLevel` / `controlsNested` 三个计数**含嵌套控件**（A7 修，2026-09-27）。
+- **静默提醒**（A1/A8，2026-09-27 修）：转换器**不再静默丢改动** —— 返回体 `warnings[]` 会给出「丢字符（emoji/黑名单字）」「有图控件无圆角外底色」「文本最小宽超出容器」等条目；`controls` / `controlsTopLevel` / `controlsNested` 三个计数**含嵌套控件**（A7 修）。
 
 ## 4.1 三张对照表（属性直通 / 丢弃 / 默认值）
 
-> A8（2026-09-27）：这三张表以前只能靠真机反推，现补上；每行「行为」一栏的 `warn` 表示
-> 转换期会在返回体 `warnings[]` 里给出提示。
+> A8（2026-09-27）补；每行「行为」一栏的 `warn` 表示转换期会在返回体 `warnings[]` 里给出提示。
 
 ### ① 直通表（写了就用，1:1 落到 json）
 
@@ -139,10 +123,7 @@ evidence: []
 
 ## 5. 图标优先（沛哥 2026-09-03 定规，生成 UI 时必守）
 
-常用操作（返回 / 播放 / 暂停 / 上一首 / 下一首 / 设置 / 搜索 / 删除 / 刷新 / 确认 / 关闭 / 加减 /
-音量 / 主页 / 菜单等）**必须用图标表达，禁止用「按钮 + 文字」糊弄**。
-
-写法：
+常用操作（返回 / 播放 / 暂停 / 上一首 / 下一首 / 设置 / 搜索 / 删除 / 刷新 / 确认 / 关闭 / 加减 / 音量 / 主页 / 菜单等）**必须用图标表达，禁止用「按钮 + 文字」糊弄**。写法（① 图标按钮：自动出 normal + pressed 两态 picTab；② 纯展示图标：自动出 backgroundPic）：
 
 ```html
 <!-- ① 图标按钮：自动出 normal + pressed 两态 picTab -->
@@ -153,9 +134,7 @@ evidence: []
 <i class="iconfont icon-volume"></i>
 ```
 
-- 转换器自动生成 iconfont 风格矢量线框 PNG；控件建议正方形
-- `data-color` 配线框颜色（#RRGGBB，缺省浅灰蓝）
-- 未收录图标名会给 warning
+- 转换器自动生成 iconfont 风格矢量线框 PNG；控件建议正方形；`data-color` 配线框颜色（#RRGGBB，缺省浅灰蓝）；未收录图标名会给 warning
 - **46 个内置图标词**：back / forward / up / down / close / check / plus / minus / menu / more / search /
   home / list / play / pause / stop / prev / next / power / volume / mute / delete / edit / share /
   download / upload / user / lock / info / warning / camera / clock / calendar / bell / mic /
@@ -165,12 +144,8 @@ evidence: []
 
 ## 6. 文本与布局铁律
 
-- Z 序 = 书写顺序（弹窗写最后）
-- 文本只用**汉字 + ASCII + 基础符号**（`/ % # - _ 空格`），**禁 emoji**（设备字库是裁剪字库）
-- ⚠️ **HTML 里的换行/缩进会被折叠成空格**（不是 `\n`）：要多行文案就**拆成多个 textview**
-  （案例实测：在文本里写 `\n` 会被按整串算最小尺寸，撞 `check_all` 第 13 项最小尺寸判定）
-- 进度条用 `div.bar`；输入框用 `div.input`（系统键盘）
-- 颜色一律 `#RRGGBB` 6 位
+- **文本**：Z 序 = 书写顺序（弹窗写最后）；文本只用**汉字 + ASCII + 基础符号**（`/ % # - _ 空格`），**禁 emoji**（设备字库是裁剪字库）；进度条用 `div.bar`；输入框用 `div.input`（系统键盘）；颜色一律 `#RRGGBB` 6 位
+- ⚠️ **HTML 里的换行/缩进会被折叠成空格**（不是 `\n`）：要多行文案就**拆成多个 textview**（案例实测：在文本里写 `\n` 会被按整串算最小尺寸，撞 `check_all` 第 13 项最小尺寸判定）
 
 ## 7. CSS 效果：一律转图片 + 控件组合
 
@@ -191,12 +166,8 @@ style 里出现 `linear-gradient` / `box-shadow` / `border-radius` / `animation`
 - 渐变 → `grad_*.png`（backgroundPic）
 - 阴影 + 圆角 → `shadow_*.png` / `gradshadow_*.png`（渐变阴影自动合成）
 - emoji 文本 → `emoji_*.png` 图标
-- `class="loading"` / `spinner` 或 `animation: spin` → `loading_*.gif`（12 帧）+ imageanim 控件
-  （warning 提示 logic.cc 里 `mXXXPtr->play()`）
-- 图片输出到 `<项目>/resources/images/`（`output_json` 在 `<项目>/ui/` 下时自动识别；
-  json 引用路径 `images/xxx.png` 相对 resources 目录，与设备加载一致；
-  非 ui/ 目录结构回退 json 同目录 `images/` 并警告）
-- 返回 `generatedAssets` 计数 + `assetDir` 实际输出目录
+- `class="loading"` / `spinner` 或 `animation: spin` → `loading_*.gif`（12 帧）+ imageanim 控件（warning 提示 logic.cc 里 `mXXXPtr->play()`）
+- 图片输出到 `<项目>/resources/images/`（`output_json` 在 `<项目>/ui/` 下时自动识别；json 引用路径 `images/xxx.png` 相对 resources 目录，与设备加载一致；非 ui/ 目录结构回退 json 同目录 `images/` 并警告）；返回 `generatedAssets` 计数 + `assetDir` 实际输出目录
 
 ⚠️ **图片一律由转换器自动转图（内置抗锯齿管线），禁止 AI 自绘 1x 直画 png，
 或用外部生图能力直出小图交付**（1x 二值 alpha / 大图缩小边缘必锯齿）。
@@ -217,16 +188,12 @@ warning 会要求切图后用 `data-pic` 引用。
 第一套 HTML 效果稿建议直接写 JS 交互——点击弹窗 / 页面切换 / tab 切换 / 列表滚动 / 数据模拟 /
 动效触发等，让客户在浏览器里直接「点得动」，前期效果确认和修改效率翻倍。
 
-- 转换器**自动忽略 `<script>` 标签和 `onclick` 等交互属性**（实测验证）
-- JS 只服务于浏览器预览确认，不转 json
-- FlyThings 端交互逻辑由 `logic.cc` 实现（json 布局 + 回调）
+- 转换器**自动忽略 `<script>` 标签和 `onclick` 等交互属性**（实测验证）；JS 只服务于浏览器预览确认，不转 json；FlyThings 端交互逻辑由 `logic.cc` 实现（json 布局 + 回调）
 
 ## 9. 工作流红线
 
-1. 客户发说明书 / 参考照片 / 需求文档时**不能直接转 json**：先引导分析提炼 UI 需求清单 → 用户确认 →
-   再写受限 HTML → 才调转换工具
-2. 转换后**必须先出预览稿给用户确认**（只交付 .preview.html 文件本身，不生成图片/截图），
-   确认 OK 后才允许 `fui pack` / 写逻辑 / 交付（**未确认禁止开工**）
+1. 客户发说明书 / 参考照片 / 需求文档时**不能直接转 json**：先引导分析提炼 UI 需求清单 → 用户确认 → 再写受限 HTML → 才调转换工具
+2. 转换后**必须先出预览稿给用户确认**（只交付 .preview.html 文件本身，不生成图片/截图），确认 OK 后才允许 `fui pack` / 写逻辑 / 交付（**未确认禁止开工**）
 3. `output_json` 缺省为 html 同名 `.json`；`res` 可覆盖分辨率
 
 ## 10. 相关

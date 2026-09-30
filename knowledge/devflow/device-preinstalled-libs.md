@@ -10,10 +10,10 @@ origin: partial
 source: 2026-09-30 钟工 Z21 真机盘点（Zkswe_SSD21X_SPINOR）+ 本机复核（adb ls 体积实测 + 注册表对照 + F133 引自 components/vinyl/platforms.md）
 needs_evidence: true
 platforms: [Z21, F133]
-tags: [设备自带库, 已装库, dlopen, nanovg, libpng, freetype, libjpeg, libmad, zlib, 第三方库, 免编译, 符号校验]
+tags: [libpng 在哪, freetype 有没有, 图片解码用什么, MP3 解码, zlib, dlopen 找不到库, 设备自带, so 清单, 免编译借用, 其中一批, 图形, 解码库, nanovg, libpng12, freetype, libjpeg]
 evidence:
-  - {cmd: "adb -s <设备>:5555 shell 'ls -l /lib /res/lib'", kind: real-device, note: "2026-09-30 本机复核通过：/lib 80 项；libnanovg.so=50984B、libpng12.so.0.56.0、libfreetype.so.6.11.4=137120B、libjpeg.so.9.1.0=177488B、libmad.so.0.2.1=83224B；/res/lib=libzkgui.so"}
-  - {cmd: "arm-pc-linux-gnueabihf-readelf.exe -d <lib>.so", kind: offline, note: "符号级复核待跑（本机未找到 gnueabihf readelf，需 z21 工具链 bin）"}
+  - {cmd: "adb -s <设备>:5555 shell 'ls -l /lib /res/lib'", kind: real-device, note: 2026-09-30 本机复核通过：/lib 80 项；libnanovg.so=50984B、libpng12.so.0.56.0、libfreetype.so.6.11.4=137120B、libjpeg.so.9.1.0=177488B、libmad.so.0.2.1=83224B；/res/lib=libzkgui.so}
+  - {cmd: arm-pc-linux-gnueabihf-readelf.exe -d <lib>.so, kind: offline, note: 符号级复核待跑（本机未找到 gnueabihf readelf，需 z21 工具链 bin）}
 ---
 # 设备端已自带的可借用库清单（dlopen 即用 / 免编译）
 

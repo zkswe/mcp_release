@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [F133, F135, Z21, V85X]
-tags: [adb 在哪, 找不到 adb, adb 驱动, 设备连不上, 该推哪台设备, 多设备推错, installHint, staleOnDevice, 设备上跑的还是旧版, launch 默认推设备吗]
+tags: [adb 在哪, 找不到 adb, adb 驱动, 设备连不上, 该推哪台设备, 多设备推错, installHint, staleOnDevice, 设备上跑的还是旧版, launch 默认推设备吗, with_launch, 探测, 推送, 抓屏, i18n 推送, CLI 侧的]
 evidence: []
 ---
 # ADB 随包 + 设备选择 + 「跑起来了没」（v0.27.84）

@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [控件映射, 映射能力, 跨框架, 源控件, lv_slider, RecyclerView, lv_tabview, swiper, CALENDAR, CDateTimeCtrl]
+tags: [控件映射, 映射能力, 跨框架, 源控件, lv_slider, RecyclerView, lv_tabview, swiper, CALENDAR, CDateTimeCtrl, 映射表, control map, json, 有对应控件就直接用, 命中不到怎么办, 缺口五级]
 evidence: []
 ---
 # 跨框架控件映射能力（op `flythings_map_control`）

@@ -135,16 +135,8 @@ evidence: []
 
 ### 3.6 方向/角度只认项目工程配置（沛哥 2026-09-10 定规）
 
-`<项目>/.fun/<平台>/launch/EasyUI.cfg`（设备上 = `/res/etc/EasyUI.cfg`）里：
-
-- `rotateScreen`（0/90/180/270）= 屏幕/取图角度
-- `rotateTouch` = 触摸角度（**可以与之不同**）
-
-实测（V85X DVR 板）：`rotateScreen=270` 时 fb 里内容侧躺，按 270 转后文字正立。
-
-❌ **不要**拿 `/sys/class/graphics/fb0/rotate` 当首选（本机它 = 0，与工程角度不一致，看着像不用转其实要转）
-❌ **不要**把某台设备的「转置 + 翻转」组合硬编成通则（那是那台设备那个角度的结果）
-❌ **不要**从 `/sys/class/disp/disp/attr/sys` 的图层几何反推方向（它只说明某层占哪块，不告诉你屏幕角度）
+旋转/取图角度口径（`rotateScreen` / `rotateTouch` 字段、实测角度对应、生效判据）
+→ 见 `devflow/package-properties-easyui-cfg.md` §8。
 
 ## 4. 返回字段
 
@@ -236,5 +228,5 @@ python ui_tools/device_screenshot.py --layer video --vdec-chn 1         # CLI
 
 - 像素级读图/省 token 阶梯、1 字符=1 像素分类图、文字暗带检测 → `pixel-analysis-ai.md`
 - 触摸注入与抓帧时机（注入 + 抓帧同一次 adb 调用、多档 sleep 差分）→ `touch-inject-autotest.md`
-- 屏幕方向（rotateScreen 权威来源）→ `ui-layout-verify.md` §2-1-1
+- 屏幕方向（rotateScreen / rotateTouch 权威来源）→ `package-properties-easyui-cfg.md` §8
 - 设备缺命令（grep/sed/dd…）→ 用 busybox → `busybox-debug-library.md`

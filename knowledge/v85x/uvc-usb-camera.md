@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [V85X]
-tags: [未指定平台, 其他平台, T113, F133, Z20, Z21, md, 协商, 保活, 状态机]
+tags: [未指定平台, 其他平台, T113, F133, Z20, Z21, md, 协商, 保活, 状态机, JPEG 必查清单, 纯通用形态, AW_V853, aw-dvr 3, 13, 12]
 evidence: []
 ---
 # V85X USB 摄像头（UVC）接入 + 预览/录像/拍照（V85X 平台绑定实现）
@@ -47,26 +47,11 @@ USB UVC 摄像头（免驱，uvcvideo 驱动）
 
 ## 1. UVC 设备发现（inotify + uvcvideo 驱动匹配）
 
-```cpp
-#define VIDEO_DEV_MAX 12
-std::string get_uvc_dev() {
-    for (int i = 0; i <= VIDEO_DEV_MAX; i++) {
-        sprintf(dev, "/dev/video%d", i);
-        if (access(dev, F_OK) != 0) continue;
-        if (!_query_video_info(dev, &cap)) continue;   // open + VIDIOC_QUERYCAP
-        if (strcmp("uvcvideo", (const char*)cap.driver) == 0) return std::string(dev);
-    }
-    return "";
-}
-```
+平台无关的发现逻辑（遍历 `/dev/videoN` + `VIDIOC_QUERYCAP` 认 `driver=="uvcvideo"`；inotify 监听 `/dev`，
+IN_CREATE 延时 ~3s 且「当前无设备才触发」，IN_DELETE 只认自己记录的节点）→ 正文 `hardware/uvc-camera-generic.md` §1。
 
-- 后台线程 `inotify_init` + `inotify_add_watch("/dev", IN_CREATE|IN_DELETE)`，
-  文件名 `regex_match("video\\d*")`：
-  - **IN_CREATE**：当前无设备才触发，**延时 ~3s** 再枚举（等内核枚举完成，太早 open 失败；
-    UVC 常建多个 videoN，用「无设备才触发」防重复处理）
-  - **IN_DELETE**：删除节点 == 当前记录节点 → 关设备（先停录像/预览/取流任务），清状态广播断开
-- 命中后：`mpi::SharedVideoDevice dev(VIDEO_DEVICE_REAR); fd = dev.getFileDescriptor();`
-  记下节点 → 启动取流任务 → 状态置正常广播
+V85X 差异部分（命中后）：`mpi::SharedVideoDevice dev(VIDEO_DEVICE_REAR); fd = dev.getFileDescriptor();`
+记下节点 → 启动取流任务 → 状态置正常广播。
 
 ## 2. 打开与初始化（一次，幂等）
 

@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-30 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [V85X, Z20, F136, F133]
-tags: [扩展点, 自定义控件, 自绘, canvas, GameView, disp 图层, 系统窗口, 全局弹框, 差异化效果, 定制效果, 能做什么]
+tags: [GameView, 自定义控件怎么写, 能扩展什么, 扩展点有哪些, 图层能不能自己用, 这个效果能不能实现, 别的框架能做到这里能吗, 该走哪条路, 自绘性能够吗, 再按各表指向进细节篇, md, 不许拿别的 GUI 框架类推, 能力边界, 能不能做, 非 3D GPU 皆可, 软模拟]
 evidence: []
 ---
 # 扩展点总表（我能扩展什么 / 不能扩展什么）

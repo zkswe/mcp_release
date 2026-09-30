@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [字段, API 时, 只允许以下两个来源, 否则会混入其他 GUI 框架, Qt, Android, Flutter, emWin, AWTK, LVGL 等]
+tags: [字段, API 时, 只允许以下两个来源, 否则会混入其他 GUI 框架, Qt, Android, Flutter, emWin, AWTK, LVGL 等, 的控件使用方法, 导致知识错乱]
 evidence: []
 ---
 # 🔒 控件用法检索边界（沛哥定规 2026-09-01）

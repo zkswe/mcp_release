@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [Z20]
-tags: [Z20 升级, 86 面板固化, extupdate, img, update, release, ext4, zkautoupgrade, zkrebootdelay, sys]
+tags: [Z20 升级, 86 面板固化, extupdate, img, update, release, ext4, zkautoupgrade, zkrebootdelay, sys, zkupgrade, dir, flag, libzkupgrade, UpgradeMonitor, 插卡自动升级]
 evidence: []
 ---
 # Z20 / 86 面板：升级（固化）链路 · 包格式 · 数据面（真机实证）

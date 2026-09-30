@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [Z21, V85X, V851S]
-tags: [fun 流程换字库以本条为准, font_setting, md 是 IDE 视角, 13, fun 流程不适用, 不需要, 以本条为准]
+tags: [fun 流程换字库以本条为准, font_setting, md 是 IDE 视角]
 evidence: []
 ---
 # 🔤 自定义字库（fun build/launch 流程，非 IDE）— 权威规则

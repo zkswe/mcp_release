@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [控件层级问题检讨, 产出, projects, SampleUI-New, ui, 44, ftu unpack 反解, 基线全绿, py #2 层级合法性检查, layer_problems]
+tags: [控件层级问题检讨, 产出, projects, SampleUI-New, ui, 44, ftu unpack 反解, 基线全绿, py #2 层级合法性检查, layer_problems, 自动校验, 控件层级, 嵌套, 容器, 父子, 结构键]
 evidence: []
 ---
 # 控件层级规则（容器 → 子内容矩阵，双源实证）

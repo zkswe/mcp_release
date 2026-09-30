@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [跨框架, 控件映射, 翻译, 转换, 小程序转 FlyThings, Qt, Android, emWin, tabview, tab 页签]
+tags: [跨框架, 控件映射, 翻译, 转换, 小程序转 FlyThings, Qt, Android, emWin, tabview, tab 页签, pagewindow, 五级处置, L1 L2 L3 L4 L5, 缺口级别, 3D 伪 3D, 控件对照表]
 evidence: []
 ---
 # 跨框架控件映射（摘要 + 指针）— 权威表在 components/ui_v1/

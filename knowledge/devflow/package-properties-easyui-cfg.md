@@ -147,6 +147,53 @@ EasyUI.cfg={"font":"/res/ui/fzcircle.ttf"}
 - 参考实现：`gitcom/AppGroup/PublicTuyaSwitch`（字体 + 各页面图都在 `resources/`），
   正常在跑的 Z20 板上 `/res/etc/EasyUI.cfg` 确实带 `"font":"/res/ui/fzcircle.ttf"`。【实测】
 
+## 8. 取图角度 / 触摸坐标旋转口径（唯一事实来源 = 工程 EasyUI.cfg）
+
+> 本节是「屏幕/取图角度 + 触摸坐标旋转口径」的**唯一收口处**（2026-09-30 收口）：
+> `devflow/ui-layout-verify.md` §2-1-1、`devflow/device-screenshot.md` §3.6、`devflow/pixel-analysis-ai.md` §3、
+> `devflow/dynamic-screen-rotation.md` §1、`v85x/dvr-recorder-guide.md` §4、`v85x/display-layer-debug.md` §5 均已压成指向本节的指针。
+
+**判据（唯一权威来源）**：取图/屏幕角度只有一个来源 = **项目工程自己的 `EasyUI.cfg`**（字段 `rotateScreen` / `rotateTouch`），
+**不是设备 sysfs 状态、也不是「看起来该转多少」**：
+
+| 东西 | 位置 / 字段 |
+|---|---|
+| 工程内 | `<项目>/.fun/<平台>/launch/EasyUI.cfg`（打包时进 `.fun`/`imgout`，设备上 = `/res/etc/EasyUI.cfg`） |
+| 取图 / 屏幕角度 | `"rotateScreen"`（0 / 90 / 180 / 270） |
+| 触摸角度 | `"rotateTouch"`（**可与 `rotateScreen` 不同**；注入触摸测试要按它换算） |
+
+**错屏机制（为什么必须转）**：UI 逻辑分辨率（如 1600×600 横）与物理屏方向（600×1600 竖装）不匹配时，
+不旋转则 UI 宽 1600 > 物理宽 600 → 布局/视频内容溢出屏外 = 错屏/花屏；`rotateScreen` 把 UI 转回屏内。
+**取值跟随硬件物理安装方向**（同代码双屏工程：横装屏 0/不写、竖装屏 270），与 UI 分辨率、代码无关。
+
+**实测角度对应关系（V85X DVR 板，设备 `/res/etc/EasyUI.cfg` → `rotateScreen=270, rotateTouch=0`）**：
+不转 → fb 里的内容**侧躺/倒立**（文字方向错）；按 **270 转** → 文字正立。代码 `img.rotate(-rotateScreen, expand=True)`
+（PIL 逆时针为正）。⇒ **角度值直接决定变换**，不是某台设备的固定组合。
+
+**验证做法（都可自证）**：
+
+- 抓图工具缺省 `rotate='auto'` 就是读它（返回值带 `rotateSource: 'EasyUI.cfg rotateScreen'` 可自证）；
+  触摸注入收到的是 **UI 逻辑坐标** → 注入前按 `rotateTouch` 换算（`rotateTouch=0` 时不用换）。
+- 静态旋转**生效的硬指标**：`cat /sys/class/disp/disp/attr/sys` 里 UI 层 crop 由异常（如 `[0,1600,...]`）
+  恢复为 `[0,0,600,1600]` 全屏正常值；设备端 `cat /tmp/EasyUI.cfg` 可核对 `rotateScreen: 270 / rotateTouch: 0`。
+- **时序铁律**：改完 `package.properties` 后 `fun build` 会 `ninja: no work to do` —— **必须 `fun clean` 全量重编**；
+  EasyUI.cfg 由 `fun launch` 本地准备阶段合并生成（`.fun/<平台>/launch/EasyUI.cfg`），launch 时随部署推送。
+- ⚠️ **动态旋转 `setScreenRotate()` 只改进程内 `CONFIGMANAGER`，不回写工程 `EasyUI.cfg`**
+  → 「取图 / 换算角度」的基准仍是工程 cfg（见 `devflow/dynamic-screen-rotation.md` §1）。
+
+**❌ 不要做的事（跨篇踩过的坑统一归此，三条）**：
+
+1. 不要拿 `/sys/class/graphics/fb0/rotate` 当首选 —— 本机它 = `0`，与工程角度**不一致**
+   （看着像不用转，实际要转 270）；只在拿不到 EasyUI.cfg 时退化用。
+2. 不要把某台设备的「转置 / 翻转」组合硬编成通则（如“某型号必须 TRANSPOSE+FLIP_TOP_BOTTOM”）——
+   那是**那台设备那个角度**的结果，换角度/换板子就不对；也不要手推旋转矩阵，统一用同一个旋转函数。
+3. 不要从 disp 图层几何**反推**方向 —— `/sys/class/disp/disp/attr/sys` 只告诉你 UI 图层占哪块，
+   不给屏幕角度（例：480×800 那个图层是**视频/DVR 层**，不是应用 UI 层）。
+
+**注意区分（不是同一回事，别混）**：`ZKVideoView` 布局里的 `"rotation"` 是**枚举** `0/1/2/3`
+（= 0°/90°/180°/270° 顺时针，**不是角度值**，写 `270` 无效被忽略），属**控件级视频画面旋转**，
+与本节的 `rotateScreen` 屏幕旋转无关 → 细节见 `v85x/display-layer-debug.md` §6 / `v85x/dvr-recorder-guide.md` §5-1。
+
 ## 相关
 
 - `devflow/dynamic-screen-rotation.md`：**运行时**旋转（`setScreenRotate` + `Activity::relayout` 换两套 ftu），与本文的编译期静态旋转互补；要 easyui ≥ 2.9.0

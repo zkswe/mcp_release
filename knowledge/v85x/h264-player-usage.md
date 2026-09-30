@@ -10,17 +10,13 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [V85X, V851S]
-tags: [zk_h264_player, HLS, TS, RTSP 流送硬解上屏, 解码缩放 1, 起播就静默退出, 进程无报错消失, 库闭源, 不解析不深挖, 本机注册表现场核对]
+tags: [✅ 编译通过, ⚠️ 与 MPP 路线, libmedia_mpp, AW_MPI_VDEC, 同一颗 VE, 同一个 disp 视频层, 互斥, 💡 显示层结构, UI 层透明窗口, md, v85x, 本篇不复述]
 evidence: []
 ---
 # 🎬 V85X 硬件 H264 播放器：官方包 `awh264player` vs 厂商门面 `zk_h264_player`
 
-> 🔍 **检索导引**：V85X/V853/V851/V553「**硬件 H264 解码**」「**awh264player 包怎么用**」
-> 「**zk_h264_player**」「**h264_player_init_ex**」「**HLS/TS/RTSP 流送硬解上屏**」「**解码缩放 1/2 / 1/4**」
-> 「**起播就静默退出 / 进程无报错消失**」「**get_picture_count 不准**」「**lib-no-link 推不上去**」。
-> 定规：**只记录怎么用**（库闭源，不解析不深挖）。来源：2026-09-14 V851s 真机实测 + 包仓库/本机注册表现场核对。
-> 🧪 **同仓 demo**：`demos/h264-player-v85x/`（bin 工具：env + dlopen + init_ex + 解码回调 + 喂 AU，**✅ 编译通过**）。
-> ⚠️ 与 MPP 路线（`libmedia_mpp` / `AW_MPI_VDEC_*`）是**两条独立链路**，同一颗 VE、同一个 disp 视频层，**互斥**。
+> 🔍 **检索导引**：V85X/V853/V851/V553「**硬件 H264 解码**」「**awh264player 包怎么用**」「**zk_h264_player**」「**h264_player_init_ex**」「**HLS/TS/RTSP 流送硬解上屏**」「**解码缩放 1/2 / 1/4**」「**起播就静默退出 / 进程无报错消失**」「**get_picture_count 不准**」「**lib-no-link 推不上去**」。定规：**只记录怎么用**（库闭源，不解析不深挖）。来源：2026-09-14 V851s 真机实测 + 包仓库/本机注册表现场核对。
+> 🧪 **同仓 demo**：`demos/h264-player-v85x/`（bin 工具：env + dlopen + init_ex + 解码回调 + 喂 AU，**✅ 编译通过**）。⚠️ 与 MPP 路线（`libmedia_mpp` / `AW_MPI_VDEC_*`）是**两条独立链路**，同一颗 VE、同一个 disp 视频层，**互斥**。
 > 💡 显示层结构 / UI 层透明窗口 / 图层释放见 `v85x/display-layer-debug.md`、`v85x/videoview-transparent-window.md`（本篇不复述）。
 
 ---
@@ -35,9 +31,7 @@ evidence: []
 | 形态 | 普通动态库（⚠️ **V85X 上不要直接上链接行**，用 dlopen，见 §1.4） | `zk_*` 静态库 **dlopen wrapper** + `libawh264player.so`（`lib-no-link/`，调试期要手推） |
 | 获取方式 | `fun.json` 声明后 `fun install` | 向 FlyThings 厂家要参考工程（**V85X 包仓库没有 `zkmedia` 包**，见 §1.3） |
 
-> ⚠️ **这条路最贵的坑就是选错路线**：`zk_h264_player_init` 在官方包里**没有**（包内 `.so` 符号表只有
-> `h264_player_*`），写错就是 `undefined reference`；反过来，用了厂商门面却按包的 API 名写也编不过。
-> 两个头文件**互不覆盖**（包内头文件里连 `zk_` 影子都没有）——**先 `grep zk_h264 头文件` 确认手里的库是哪一条**。
+> ⚠️ **这条路最贵的坑就是选错路线**：`zk_h264_player_init` 在官方包里**没有**（包内 `.so` 符号表只有 `h264_player_*`），写错就是 `undefined reference`；反过来，用了厂商门面却按包的 API 名写也编不过。两个头文件**互不覆盖**（包内头文件里连 `zk_` 影子都没有）——**先 `grep zk_h264 头文件` 确认手里的库是哪一条**。
 
 ---
 
@@ -58,10 +52,7 @@ V85X `1.0.0` 包内实测就三个条目：`CHANGELOG.md` + `include/h264_player
 
 ### 1.2 ⚠️ 声明位置：`fun.json` 优先，写错地方会**静默不装**
 
-工程里同时有 `fun.json` 与 `Manifest.xml` 时，`fun` 只用 `fun.json`（实测打印
-`WARNING "fun.json" and "Manifest.xml" both exists, will use "fun.json" first`）。
-此时把 `<package id="awh264player">` 写进 `Manifest.xml`，`fun install` 会**报成功**，
-但 `.fun-lock.json` 里 `"v85x": {}` 是空的 —— **包根本没装**（后面报 `package not found in local` 或头文件找不到）。
+工程里同时有 `fun.json` 与 `Manifest.xml` 时，`fun` 只用 `fun.json`（实测打印 `WARNING "fun.json" and "Manifest.xml" both exists, will use "fun.json" first`）。此时把 `<package id="awh264player">` 写进 `Manifest.xml`，`fun install` 会**报成功**，但 `.fun-lock.json` 里 `"v85x": {}` 是空的 —— **包根本没装**（后面报 `package not found in local` 或头文件找不到）。
 
 ```jsonc
 // fun.json —— 依赖要写在这里
@@ -102,15 +93,11 @@ h264_player_deinit();
 | 试法 | 实测结果（`fun build -p v85x`） |
 |---|---|
 | `fun.json` 只声明 `awh264player` | ❌ 链接失败：`libawh264player.so: undefined reference to CreateVideoDecoder / hw_display_init / hwd_layer_close / hwd_layer_render / SubmitVideoStreamData / VideoStreamBufferSize / __android_log_print …`（bin 工程带 `-Wl,-z,defs`，共享库的未解析符号在链接期就是硬错） |
-| 再补 `aw-mpp`（它带 `libvdecoder.so`/`libVE.so`/`libhwdisplay.so`/`libMemAdapter.so`/`libcdx_base.so`/`libvideoengine.so` …） | ❌ 变成 `libmedia_mpp.so: undefined reference to snd_pcm_* / snd_mixer_*`（alsa）——而 **v85x 包仓库没有 alsa 包**（74 个包里没有） |
+| 再补 `aw-mpp`（带 `libvdecoder.so`/`libVE.so`/`libhwdisplay.so`/`libMemAdapter.so`/`libcdx_base.so`/`libvideoengine.so`…） | ❌ 变成 `libmedia_mpp.so: undefined reference to snd_pcm_* / snd_mixer_*`（alsa）——而 **v85x 包仓库没有 alsa 包**（74 个包里没有） |
 | ✅ **推荐**：头文件放 `src/dependencies/include/`，`.so` 放 `src/dependencies/lib-no-link/`，代码里 **dlopen + dlsym** | ✅ 编译通过；运行时全志侧依赖由设备 ld 路径解析（`/lib/eyesee-mpp` 已在 `/etc/ld-musl-armhf.path` 里） |
 
-**为什么 dlopen 能成、直链不能**：`-z defs` 要求链接期解析**全部**符号，而这些符号的实现在**设备运行时**才有；
-dlopen 把解析推到运行时，正好绕过。厂商参考工程的 `zk_*` 门面也是 dlopen 形态（§2.1 符号表证据）。
-⇒ 新工程要么**自己 dlopen**（照同仓 `demos/h264-player-v85x`），要么**找厂家要 `libzkmedia.a` 门面**，别去凑全志侧库。
-
-> 🔎 这条坑的搜索词：`undefined reference to CreateVideoDecoder` / `-Wl,-z,defs` /
-> `snd_pcm_hw_params_sizeof` / `aw-mpp 链接失败` / `awh264player 包不能直接依赖`。
+**为什么 dlopen 能成、直链不能**：`-z defs` 要求链接期解析**全部**符号，而这些符号的实现在**设备运行时**才有；dlopen 把解析推到运行时，正好绕过（厂商参考工程 `zk_*` 门面也是 dlopen 形态，§2.1 符号表证据）。⇒ 新工程要么**自己 dlopen**（照同仓 `demos/h264-player-v85x`），要么**找厂家要 `libzkmedia.a` 门面**，别去凑全志侧库。
+> 🔎 搜索词：`undefined reference to CreateVideoDecoder` / `-Wl,-z,defs` / `snd_pcm_hw_params_sizeof` / `aw-mpp 链接失败` / `awh264player 包不能直接依赖`。
 
 ---
 
@@ -190,12 +177,9 @@ typedef struct {                       // 解码回调给的帧
 
 ## 4. ★★ 头号坑：起播瞬间「静默退出」= `ZKMEDIA_H264_VBVSIZE` 没设
 
-- **症状**：进程**没有任何报错就消失**（stderr 被重定向到 /dev/null，日志断在"起播"那几行），
-  随后被 init 拉起 → 现场表现为"重启→重播→再重启"。`init()` 的返回日志都来不及打。
+- **症状**：进程**没有任何报错就消失**（stderr 被重定向到 /dev/null，日志断在"起播"那几行），随后被 init 拉起 → 现场表现为"重启→重播→再重启"。`init()` 的返回日志都来不及打。
 - **根因**：库用**默认的小码流缓冲**，720p 的 I 帧几百 KB 装不下。
-- **做法**：在**库被加载之前**（路线 A：`init*` 之前；路线 B：首次 `preload()` 之前）
-  `setenv("ZKMEDIA_H264_VBVSIZE", "1048576", 0)`（`0` = 外部已设的不覆盖，方便现场调参）。
-  ⚠️ 环境变量是**加载时读的** ⇒ 改完要**重启应用**才生效。
+- **做法**：在**库被加载之前**（路线 A：`init*` 之前；路线 B：首次 `preload()` 之前）`setenv("ZKMEDIA_H264_VBVSIZE", "1048576", 0)`（`0` = 外部已设的不覆盖，方便现场调参）。⚠️ 环境变量是**加载时读的** ⇒ 改完要**重启应用**才生效。
 - **实测**：设之前 720p(1.2~1.5Mbps) + 1/2 缩放**起播即崩**；设之后连续 900 帧、丢 0。
 - 另有 `ZKMEDIA_H264_LAYER`（显示层号，参考工程里出现过），本平台一般不用改。
 
@@ -211,10 +195,8 @@ typedef struct {                       // 解码回调给的帧
 | 426x240 | 不缩放 | 448x256 | 充裕 |
 
 - **挑档规则**：源宽 > 屏宽上限就下一档；480x800 屏上 1/2（640x360）已比屏还大，够用。
-- **内存门槛**：起播要申请解码/显示缓冲，**`MemAvailable < 3MB` 必挂或静默消失**；
-  被 OOM 杀过的进程内存**不会自己回来，必须重启板子**（这点很反直觉，实测浪费过半天）。
-- 判据与手法：读 `/proc/meminfo` 的 **`MemAvailable`**（别只看 `MemFree`）；
-  起播前 `echo 3 > /proc/sys/vm/drop_caches`（本板实测一次腾出 +16MB）。
+- **内存门槛**：起播要申请解码/显示缓冲，**`MemAvailable < 3MB` 必挂或静默消失**；被 OOM 杀过的进程内存**不会自己回来，必须重启板子**（这点很反直觉，实测浪费过半天）。
+- 判据与手法：读 `/proc/meminfo` 的 **`MemAvailable`**（别只看 `MemFree`）；起播前 `echo 3 > /proc/sys/vm/drop_caches`（本板实测一次腾出 +16MB）。
 - ⚠️ 表中数值是**单点实测值**（同一段流、同一时刻读 `/proc/meminfo`），不是长期均值 —— 只看量级与大小关系。
 
 ---
@@ -225,15 +207,13 @@ typedef struct {                       // 解码回调给的帧
 ⇒ 判断"解码器有没有真出画"**只看解码回调**；做背压请用**媒体时间 vs 播放时间**
 （例如落后 > 600ms 才丢帧）。
 
-**另一个配套坑**：喂帧节流的 guard 别开太大 —— 曾用 `guard<100 × 10ms`（每帧最多等 1 秒），
-而缓冲长期在阈值之上 ⇒ **每帧都等满 1 秒**，看起来像"喂不动了"。改 `30 × 5ms` 即可。
+**另一个配套坑**：喂帧节流的 guard 别开太大 —— 曾用 `guard<100 × 10ms`（每帧最多等 1 秒），而缓冲长期在阈值之上 ⇒ **每帧都等满 1 秒**，看起来像"喂不动了"。改 `30 × 5ms` 即可。
 
 ---
 
 ## 7. 部署：库放哪、运行时找得到吗（`lib-no-link` / `/data` 遮蔽）
 
-> 官方 wiki（`manifest/add_local_lib.md`）只写了「`dependencies/lib-no-link` 下的动态库**仅随程序打包**，
-> 不参与编译」—— 最要紧的两件事（打进哪、运行时可见性）没写。以下是实测口径。
+> 官方 wiki（`manifest/add_local_lib.md`）只写了「`dependencies/lib-no-link` 下的动态库**仅随程序打包**，不参与编译」——最要紧的两件事（打进哪、运行时可见性）没写。以下是实测口径。
 
 | 场景 | 行为 |
 |---|---|
@@ -250,17 +230,13 @@ typedef struct {                       // 解码回调给的帧
 
 | 环节 | 实测结果 |
 |---|---|
-| `/res` 是什么 | `/dev/block/mtdblock3` → **squashfs，`ro`**（2.1MB 小分区，100% 满）⇒ **不能直接写，只能靠刷 `update.img` 更新** |
-| `fun pack` 把 `lib-no-link/*.so` 放哪 | ✅ 出包中间产物 `.fun/<平台>/imgout/lib/` 里出现了 `lib-no-link/` 下的库（本次放了官方包那份 + 一个临时标记库，两个都在） |
-| 镜像格式/体积 | `ZKSWEV1.0-180127`，空工程约 68KB |
+| `/res` 是什么 | `/dev/block/mtdblock3` → **squashfs，`ro`**（2.1MB 小分区，100% 满）⇒ **不能直接写，只能靠刷 `update.img` 更新**；`/tmp` 是 tmpfs（重启即清空）⇒ push 镜像、setprop、restart 必须在**同一轮**做完 |
+| `fun pack` 放哪 / 镜像体积 | ✅ 出包中间产物 `.fun/<平台>/imgout/lib/` 里出现了 `lib-no-link/` 下的库（官方包那份 + 一个临时标记库，两个都在）；镜像 `ZKSWEV1.0-180127`，空工程约 68KB |
 | ⚠️ bin 工程能不能 pack | **不能**：`fun pack` 对 `type="executable"` 报 `FATAL libzkgui.so not found, please build project first` ⇒ **固化只适用于 zkgui 工程** |
 | **ADB 固化完整序列（实测可用）** | `adb push update.img /tmp/` → `setprop sys.zkupgrade.dir /tmp` → `setprop sys.zkupgrade.flag 255` → **`setprop ctl.restart zkswe`**（**只重启应用**） → 应用重启后读属性执行升级，**升级流程自己触发整机重启**后生效 |
-| 刷完 `/res` 是否真变 | ✅ **整体被替换**（逐项核对）：`libawh264player.so` **21624 → 17528**、`libzkgui.so` 体积变、`/res/ui` 只剩新工程的页（`main.ftu` 162B）、带进去的标记库 `libzzmarker.so`(12345) 也在 |
-| 固化后运行时能否找到 | ✅ 不推库直接跑：dlopen **实际命中 `/res/lib/libawh264player.so`**，解码回调 21 次 |
+| 刷完 `/res` / 固化后运行时 | ✅ **整体被替换**（逐项核对）：`libawh264player.so` **21624 → 17528**、`libzkgui.so` 体积变、`/res/ui` 只剩新工程的页（`main.ftu` 162B）、标记库 `libzzmarker.so`(12345) 也在；✅ 不推库直接跑：dlopen **实际命中 `/res/lib/libawh264player.so`**，解码回调 21 次 |
 | `/tmp` 遮蔽 `/res` | ✅ 实测：把同名库推到 `/tmp` 后 dlopen **真的命中 `/tmp/libawh264player.so`**（`/tmp` 在 `LD_LIBRARY_PATH` 最前） |
 | ⚠️ **别被 "/res 已有这个库" 误导** | 实测某板 `/res/lib/libawh264player.so` = **21624 B**，而官方包那份是 **17528 B** ⇒ 它是**参考工程 `lib-no-link/` 里那份**固化上去的，**不是官方包的 build**。⇒ 判"固化生效了没"要**比体积/sha256**，不能只看"ls 有文件" |
-
-- **`/tmp` 是 tmpfs，重启即清空** ⇒ push 镜像、setprop、restart 必须在**同一轮**做完；过后别拿“/tmp 里没文件了”当失败依据。
 
 ---
 
@@ -285,19 +261,13 @@ typedef struct {                       // 解码回调给的帧
 5. **显示**：UI 层有 `visible:true` 的 videoView 透明窗口吗？（§8）
 6. **最后才怀疑参数组合**：`rot` 放 init 里还是 `set_rot` —— 实测**都可用**。
 
-> 排障手段：把 **stderr 从 `/dev/null` 引出来**（或写文件）才有机会看到库内报错；
-> 起播前后各 `cat /proc/meminfo`；打日志时**必须打印实际传进去的参数**
-> （曾因日志里硬编码 `rot=0` 白跑一轮 A/B）。
+> 排障手段：把 **stderr 从 `/dev/null` 引出来**（或写文件）才有机会看到库内报错；起播前后各 `cat /proc/meminfo`；打日志时**必须打印实际传进去的参数**（曾因日志里硬编码 `rot=0` 白跑一轮 A/B）。
 
 ---
 
 ## 10. 素材与自检
 
-- **TS → H264 ES**（做对照实验用）：剥 PAT → PMT（视频 PID）→ PES 头，顺序写出 ES。
-  两个 TS 解析坑：① PSI section 前有 **`pointer_field`**（`payload_unit_start_indicator=1` 时先跳 1 字节再读 `table_id`，
-  不跳整段错位 1 字节 → 解出"不存在的 PMT PID"）；② PMT 要跳 `program_info` 描述符
-  （`off = 12 + program_info_length`，不是 `12` → 会读出 `stream_type = 0x25`、PID 等于 PMT 自己这类怪值）。
-  脚本还应统计 NAL 类型并**警告"没有 IDR / 没有 SPS"**（起播必须有这俩）。
+- **TS → H264 ES**（做对照实验用）：剥 PAT → PMT（视频 PID）→ PES 头，顺序写出 ES。两个 TS 解析坑：① PSI section 前有 **`pointer_field`**（`payload_unit_start_indicator=1` 时先跳 1 字节再读 `table_id`，不跳整段错位 1 字节 → 解出"不存在的 PMT PID"）；② PMT 要跳 `program_info` 描述符（`off = 12 + program_info_length`，不是 `12` → 会读出 `stream_type = 0x25`、PID 等于 PMT 自己这类怪值）。脚本还应统计 NAL 类型并**警告"没有 IDR / 没有 SPS"**（起播必须有这俩）。
 - **验收（真机）**：
   ```bash
   cat /sys/class/disp/disp/attr/sys                                  # ① 视频层是否 enable
@@ -322,10 +292,7 @@ typedef struct {                       // 解码回调给的帧
 
 ## 13. 本平台未验证项（如实标注，别当结论用）
 
-1. **包（路线 A）在 V85X 上的真机播放验收**：本次在 V851s 上验证的是**路线 B（zk 门面）**；
-   路线 A 的 API/头文件/包结构/**链接失败原因**是现场核对出来的（包下载 + `.so` 符号表 + 两次 `fun build` 实报）；
-   包内那份 `.so`（17528）已在 V851 真机上跑通**解码链路**（`init_ex -> 0` + 解码回调 18 次）；
-   带显示层的业务验收（透明窗口/图层释放配合）仍建议在目标工程里跑一遍。
+1. **包（路线 A）在 V85X 上的真机播放验收**：本次在 V851s 上验证的是**路线 B（zk 门面）**；路线 A 的 API/头文件/包结构/**链接失败原因**是现场核对出来的（包下载 + `.so` 符号表 + 两次 `fun build` 实报）；包内那份 `.so`（17528）已在 V851 真机上跑通**解码链路**（`init_ex -> 0` + 解码回调 18 次）；带显示层的业务验收（透明窗口/图层释放配合）仍建议在目标工程里跑一遍。
 2. `h264_multi_player_*` 多实例：**未实测**。
 3. 固化后 `/res/lib/libawh264player.so` 的自动加载：✅ **已真机验收**（打包侧 + 刷机侧全通，见 §7.1）。
 4. 各平台（f133/f136/t113）的 `awh264player` 包：**仅查到版本号**，未实测。

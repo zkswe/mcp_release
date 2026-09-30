@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [V85X]
-tags: [💡 JPEG, 发现, 格式协商, 保活, 防坑, md, 本篇为 V85X 平台绑定, 解码, 录制 API, aw-dvr]
+tags: [💡 JPEG, 发现, 格式协商, 保活, 防坑, md, 本篇为 V85X 平台绑定, 解码, 录制 API, aw-dvr, aw-mpp 预编译闭源内部, 不解析不深挖, 13, 12, aw-mpp 2, 2 头文件]
 evidence: []
 ---
 # V85X JPEG 硬件解码与 MJPEG 录像编码用法（V853 照片显示 / UVC 录制 mp4/ts）

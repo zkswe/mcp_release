@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [Z20]
-tags: [提缺陷, 缺陷单, bug 报告, bugreport, 现象与复现步骤, 真机判据, 严重级, 证据清单, 读不到是结论, 设备缺 busybox]
+tags: [提缺陷, 缺陷单, bug 报告, bugreport, 现象与复现步骤, 真机判据, 严重级, 证据清单, 读不到是结论, 设备缺 busybox, logcat 取证, v0, 27, 123-open 首次入库, 已在 SSD20X, 不冒充实测]
 evidence: []
 ---
 # 整机自检（selfcheck）与缺陷单（bugreport）口径

@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [V85X]
-tags: [UVC 摄像头预览, 回放调试, AP+P2P, 否则黑屏, V853, V851, V553 等, aw-dvr, 场景, 视频解码]
+tags: [UVC 摄像头预览, 回放调试, AP+P2P, 否则黑屏, V853, V851, V553 等, aw-dvr, 场景, 视频解码, 播放链路同样适用, ⚠️ 仅 V85X 平台生效, T113, F133, Z20 按各自链路处理, releaseLayer]
 evidence: []
 ---
 # 🖥️ V85X 显示分层调试：releaseLayer 图层释放 / UI 透出 / 回放旋转
@@ -24,7 +24,7 @@ evidence: []
 ## 0. 一句话
 
 V85X 竖屏工程调试「错屏 / 无图像 / 回放方向不对」四板斧，按顺序查：
-1. **屏幕旋转（硬件方向适配）**：**错屏根因 = UI 布局尺寸超出物理屏**——横 UI（1600×600）用在竖装屏（600×1600）上，不旋转时 UI 宽 1600 超过物理宽 600，界面/视频内容画到屏幕外 = 错屏。rotateScreen 是**针对硬件物理安装方向的适配**（值由屏幕怎么装决定，不是 UI 分辨率决定），把 UI 旋转 270° 后完整映射进屏内 → `package.properties` 配 `EasyUI.cfg={"rotateScreen": 270}`（触摸不转=不写 rotateTouch）→ **必须 clean 全量重编**（ninja 不感知 package.properties 改动），EasyUI.cfg 由 fun launch 阶段合并生成
+1. **屏幕旋转（硬件方向适配）**：**错屏根因 = UI 布局尺寸超出物理屏**——横 UI（1600×600）用在竖装屏（600×1600）上，不旋转时 UI 宽 1600 超过物理宽 600 = 错屏；rotateScreen 值由屏幕安装方向决定 → `package.properties` 配 `EasyUI.cfg={"rotateScreen": 270}`（触摸不转=不写 rotateTouch）→ **必须 clean 全量重编**（ninja 不感知 package.properties 改动）。完整口径（字段/取图角度/生效判据）→ `devflow/package-properties-easyui-cfg.md` §8
 2. **图层释放（平台匹配时必做）**：**视频解码返回后 / 启动早期必须做 `releaseLayer()`** 关掉残留 disp 层（保留 UI 层）——V85X 上不做会**黑屏**；**开发与 check 验收都必须做这个**（check_all #19 已机器核验，见 §2-0）
 3. **无图像**：UI 层（z=16 最顶）不透明背景盖住 disp 视频层（z=1）→ UI 上必须有**可见的 videoView 透明窗口**（`visible:true` + position=画面区域），下层视频才透出
 4. **回放方向**：ZKVideoView 的 `rotation` 是**枚举不是角度**：0/1/2/3 = 0°/90°/180°/270°（顺时针），写 `3` 才是 270°
@@ -213,13 +213,7 @@ if (voRet != 0) LOGD("VO_Disable(0) ret=0x%x", voRet);   // 非0=dev0 正被占/
 
 ## 5. 屏幕旋转配置（rotateScreen = 硬件方向适配，值由屏幕安装方向决定）
 
-**错屏机制**：UI 逻辑分辨率（1600×600 横）与物理屏方向（600×1600 竖装）不匹配时，不旋转则 UI 宽 1600 > 物理宽 600，布局/视频内容溢出到屏幕外 = 错屏/花屏。rotateScreen 让 UI 旋转后完整落在屏内——**取值跟随硬件物理安装方向**（同代码双屏工程：横装屏不写/0、竖装屏转 270），与 UI 分辨率无关、与代码无关，只改 package.properties 覆盖层即可生效。
-
-- 工程根 `package.properties` 写：`EasyUI.cfg={"rotateScreen": 270}`
-- **触摸不旋转 = 只写 rotateScreen，不写 rotateTouch**（rotateTouch 保持默认 0）——某些硬件"屏幕转、触摸不转"（见 `devflow/package-properties-easyui-cfg.md`）
-- ⚠️ 改 package.properties 后 `fun build` 会 `ninja: no work to do`——**必须 `fun clean` 全量重编**
-- EasyUI.cfg 由 **fun launch** 本地准备阶段合并生成（`.fun/<平台>/launch/EasyUI.cfg`），launch 时随部署推送；设备端 `/tmp/EasyUI.cfg` 可 cat 验证 `rotateScreen: 270 / rotateTouch: 0`
-- 生效后 disp sys 的 UI 层 crop 应从异常（如 `[0,1600,...]`）恢复为 `[0,0,600,1600]` 全屏正常值
+旋转/取图角度口径（错屏机制、配置写法、`fun clean` 全量重编时序、`/tmp/EasyUI.cfg` 核对）→ `devflow/package-properties-easyui-cfg.md` §8；本节独有生效判据：`cat /sys/class/disp/disp/attr/sys` 的 UI 层 crop 由异常（如 `[0,1600,...]`）恢复为 `[0,0,600,1600]` 全屏正常值才算生效。
 
 ## 6. 回放旋转：ZKVideoView rotation 是枚举不是角度！
 

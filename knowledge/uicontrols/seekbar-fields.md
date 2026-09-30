@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [需要什么关键词才能生成圆滑块, 只由, 图片 + 控件盒子高度, 两件事决定, 滑块, 进度条, seekbar, SeekBar, slider, thumb]
+tags: [需要什么关键词才能生成圆滑块, 只由, 图片 + 控件盒子高度, 两件事决定, 滑块, 进度条, seekbar, SeekBar, slider, thumb, 滑块图, 圆滑块, 圆形滑块, 滑块扁的, 滑块被压扁, 滑块变成椭圆]
 evidence: []
 ---
 # seekbar（滑块/进度条）字段与「滑块形状」口径

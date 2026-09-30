@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-30 钟工口径（"FlyThings GUI 提供基础控件，canvas（textview + setBackgroundBmp）提供自定义渲染扩展，自定义控件方案可扩展到任意不需要 3D GPU 的效果，但可支持软件模拟 GPU 效果"）+ 修正 custom-render-paths.md / framework-control-mapping.md 的不当表述
 needs_evidence: true
 platforms: []
-tags: [渲染能力边界, canvas 画布, 自定义控件, 自绘, 位图画布, 硬件合成, 软渲染, 软件模拟 GPU, 伪 3D, 真 3D, GPU, 视频图层尺寸, 任意角度旋转, 动画计时, 绝对时间基准]
+tags: [能不能做 3D, 自绘限制有哪些, 软件模拟 GPU 效果行不行, 文字缩放有没有上限, 视频图层尺寸限制, 动画计时怎么算, 能力边界总纲, custom-widget, md, 自定义控件方法论, devflow, 渲染五条路, uicontrols, 刷帧口径, 其余文档只讲做法, 不另立边界]
 evidence: []
 ---
 # 渲染扩展能力边界（基础控件 / canvas 画布 / 自定义控件 三层）

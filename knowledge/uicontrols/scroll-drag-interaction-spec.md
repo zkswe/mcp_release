@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [列表被拖出去, 越界回弹, 拖拽距离填多少, edgeEffect 怎么配, 列表滑动手感, 循环列表拖拽, 松手回弹, 拖动很卡, scrollwindow, pagewindow]
+tags: [列表被拖出去, 越界回弹, 拖拽距离填多少, edgeEffect 怎么配, 列表滑动手感, 循环列表拖拽, 松手回弹, 拖动很卡, scrollwindow, pagewindow, slidewindow, 四个控件共用同一批滑动字段, 交互不合格, 1024x600, + 真实工程 json 统计, 取值只落 4 档]
 evidence: []
 ---
 # 滑动/拖拽手感规范：dragMaxDis / edgeEffect / autoRollback / rollSpeed

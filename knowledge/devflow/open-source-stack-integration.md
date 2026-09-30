@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 PocketGame（V851s）实战归纳 + MCP 包卡/packages 实测口径 ｜ 2026-09-29 由候选区晋升为 review（可检索+标注）
 needs_evidence: true
 platforms: [V85X, Z20, Z21, F133, T113]
-tags: [开源库, 第三方库, 协议栈, curl, mbedtls, openssl, mqtt, sqlite, libc, musl, glibc, 静态库, dlopen, lib-no-link]
+tags: [Modbus, OPC-UA, DNS, 压缩, 怎么办, 能不能用现成的开源, so, 自己交叉编译的库怎么进工程, dlopen 找不到库, 静态库太大, libc 不匹配, 预编译库跑不起来, 有没有类似的包可以用, 不用厂家的包行不行]
 evidence: []
 ---
 # 开源协议栈/第三方库怎么接进 FlyThings 工程（非 GUI 生态借用）
@@ -114,7 +114,8 @@ evidence: []
 
 ## 4. 落地纪律（六条）
 
-1. 改 `Manifest.xml` 必须 `fun install`（否则头文件路径不进 CMake）；
+1. 改 `Manifest.xml` 必须 `fun install`（否则头文件路径不进 CMake）——根因/判据/工具侧防护见
+   `devflow/cli-fun-toolchain.md` §4.7（该口径唯一正文）；
 2. 本地库放 `src/dependencies/lib/`，**不要手改生成的 `CMakeLists.txt`**；
 3. TLS 的 CA 证书只认**资源目录（resPath）**：放别处报
    `not correctly signed by the trusted CA`——**那是没找到 CA，不是证书坏**；

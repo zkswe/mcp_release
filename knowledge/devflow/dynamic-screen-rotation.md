@@ -10,12 +10,12 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [F133, Z20, Z21, T113, V85X]
-tags: [RelayoutDemo, F133, 0 引入, 现有公开包的 z20, z21, 动态旋转, 运行时旋转, 横竖屏切换, 屏幕方向切换, 两套 ftu]
+tags: [RelayoutDemo, F133, 0 引入, 现有公开包的 z20, z21, 动态旋转, 运行时旋转, 横竖屏切换, 屏幕方向切换, 两套 ftu, relayout, setTouchRotate, EasyUI 版本要求, 控件看不到, 控件没渲染, 页面只有标题]
 evidence: []
 ---
 # 🔄 动态旋转屏幕 / 运行时切换布局（relayout）
 
-> 检索导引：问「运行时转屏 / 横竖屏切换不重启应用 / relayout 怎么用 / setScreenRotate·setTouchRotate / 两套 ftu 怎么切 / 某版本不支持某控件（scrollwindow 看不到）」→ 本文；静态方向配置见 `devflow/package-properties-easyui-cfg.md`。
+> 检索导引：问「运行时转屏 / 横竖屏切换不重启应用 / relayout 怎么用 / setScreenRotate·setTouchRotate / 两套 ftu 怎么切 / 某版本不支持某控件（scrollwindow 看不到）」→ 本文；静态方向配置（`rotateScreen` / `rotateTouch` / 取图角度口径）见 `devflow/package-properties-easyui-cfg.md` §8。
 > 2026-09-14 沛哥指路 `projects/LearningProject/RelayoutDemo`（F133）→ 本机 easyui 逐版本实测校准（**需要较新的 EasyUI**：relayout 由 easyui 2.9.0 引入；现有公开包的 z20/z21/t113 均无 → 找 FlyThings 厂家支持）。
 > 检索词：动态旋转 / 运行时旋转 / 横竖屏切换 / 屏幕方向切换 / 两套 ftu / relayout / setScreenRotate / setTouchRotate / EasyUI 版本要求 /
 > **scrollwindow 不显示 / 控件看不到 / 控件没渲染 / 页面只有标题 / 某版本不支持某控件 / 编译期头版本 vs 设备运行库 / ro.easyui.version / strings libeasyui.so**。
@@ -32,7 +32,7 @@ mActivityPtr->relayout(payloadFtu);    // 换布局：传 ui/ 下的 ftu 文件�
 
 - `relayout(const std::string &appName)` 在 **`include/app/BaseApp.h`**（Activity/Window 继承链上都能调）
 - 另有控件级 `ZKBase::relayout(const Json::Value &json)`（`control/ZKBase.h`，用 json 直接重排单个控件，属另一路）
-- 与静态旋转的区别：静态旋转是编译期写 `package.properties` 的 `EasyUI.cfg={"rotateScreen":270}`（见 `devflow/package-properties-easyui-cfg.md`），**开机定死**；动态旋转用于「用户能切 / 按场景切 / 传感器切」
+- 与静态旋转的区别：静态旋转是编译期写 `package.properties`（`EasyUI.cfg={"rotateScreen":270}`），**开机定死**；动态旋转用于「用户能切 / 按场景切 / 传感器切」；静态口径（字段语义、取图角度/触摸换算、生效判据）→ `devflow/package-properties-easyui-cfg.md` §8
 
 ## 2. Demo 全量逻辑（RelayoutDemo/src/logic/mainLogic.cc，核心就这几行）
 

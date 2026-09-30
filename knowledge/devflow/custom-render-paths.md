@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 PocketGame（V851s）实战 + 画布/视频层/指针仪表实测 ｜ 2026-09-29 由候选区晋升为 review（可检索+标注）
 needs_evidence: true
 platforms: [V85X, Z20]
-tags: [自定义渲染, 自绘, canvas, ZKPainter, 离屏渲染, LVGL, cairo, SDL, stb, disp 图层, 硬件合成, 帧缓冲, fb0, releaseLayer]
+tags: [想用 LVGL, cairo, SDL, nanovg, stb 画东西, 离屏渲染成图再显示, 直接写, dev, fb0, 能不能起 GTK, Qt, 视频层怎么叠加, disp 图层, releaseLayer, 一半用框架一半自己画, 复杂动画性能不够怎么办]
 evidence: []
 ---
 # 自定义 GUI 渲染五条路（在 FlyThings 上借开源渲染生态 / 自绘画面）
