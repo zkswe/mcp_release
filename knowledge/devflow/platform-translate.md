@@ -106,7 +106,7 @@ seekbar 7 · edittext 6 · radiogroup 3 · circlebar 1）/ **236 张图**，双�
 
 | 坑 | 去哪看 |
 |---|---|
-| 弹层卡片内部按钮点不动（遮罩抢触摸） | `uicontrols/touch-events.md` §7 |
+| 弹层卡片内部按钮点不动（遮罩抢触摸） | `uicontrols/touch-events.md` §6 |
 | `setInvalid` 当重绘用 → 整屏点不动 | `uicontrols/custom-view-refresh.md` |
 | 拖动卡顿（回调全量刷新） | `uicontrols/high-frequency-callback-perf.md` |
 | `div.text` 上的 `data-bgpic` | `devflow/html-subset-quickref.md` §4 |

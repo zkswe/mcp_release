@@ -45,13 +45,13 @@ evidence: []
 | 20 | cameraview | CameraDemo (1) | autoPreview/formatSize | ✅ | +cvbs/mirror |
 | 21 | videoview | VideoViewDemo (2) | defaultVolume/loopPlayback | ✅ | +rotation |
 
-## 3. 之前已校准控件（本报告确认无缺口）
+## 2. 之前已校准控件（本报告确认无缺口）
 
 - **pointer**：pointerPic/fixedPoint/rotationPoint/pointerSize/startAngle/rotateSpeed/clockwise/animatable（坐标三件套 16:35 修复）
 - **scrollwindow/pagewindow**：容器嵌套结构 + dragMaxDis/orientation/edgeEffect/rollSpeed（16:37 入库）
 - **diagram/digitalclock/imageanim/seekbar**：字段与 demo 完全一致
 
-## 4. 控件 id 段（html2json NID 映射，与 IDE 一致）
+## 3. 控件 id 段（html2json NID 映射，与 IDE 一致）
 
 | 控件 | id 起始 | 控件 | id 起始 |
 |------|--------|------|--------|
@@ -65,7 +65,7 @@ evidence: []
 | imageanim | 94000 | videoview | 95000 |
 | qrcode | 92000 | cameraview | 97000 |
 
-## 5. 遗留说明（诚实标注）
+## 4. 遗留说明（诚实标注）
 
 - **slidetext**：候选字滑动条（输入法专用），一般项目用不到
 - **date**：DateDemo 存在但抽取未检出独立 date 控件类型（demo 里可能用 digitalclock/textview 实现），如有需要再校准

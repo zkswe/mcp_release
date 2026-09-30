@@ -42,7 +42,7 @@ evidence: []
 |------|------|
 | `fun install` | 安装配置里声明的**所有依赖**（`--project-dir` 可指项目；`-p` 指平台） |
 | `fun build -p F133` | 编译（`-p/--platform`、`-t/--target`、`-D` 预定义、`--cflags`、`--project-dir`、`--verbose`） |
-| `fun launch -p F133 [-s <serial\|IP>]` | 部署到设备并启动，**仅用于临时调试**（`-s/--device` 只收合法 serial/IP；**多设备在线时必 FAIL** → §7；MCP 侧失败自动重试 5 次） |
+| `fun launch -p F133 [-s <serial\|IP>]` | 部署到设备并启动，**仅用于临时调试**（`-s/--device` 只收合法 serial/IP；**多设备在线时必 FAIL** → §6；MCP 侧失败自动重试 5 次） |
 | `fun sim` | **模拟器运行**（fuse 时代没有这条）。⚠️ **MCP 暂不提供/不代跑**（见 §5） |
 | `fun create [<starter>]` | 建工程（`--type bin` 出可执行程序工程） |
 | `fun add <package>` | 追加依赖包 |
@@ -139,7 +139,7 @@ INIT_UI_EVENT_BINDINGS
   抓帧/设备侧动作仍走 `flythings_device_screenshot`（内部已处理 rootfs 裁剪、pan 偏移、压缩链路）
 - ⚠️ **`fun sim` 不在 MCP 能力面内**（沛哥 2026-09-14 定「暂时发布的 mcp 不要支持 sim 功能」）：工具面不暴露该能力，`project_tools._run_fun` 也**显式拒绝 `cmd == 'sim'`** 并返回正解 hint（推真机→`flythings_build_ui_flow`；出图→`flythings_device_screenshot`；要跑模拟器自己去本地命令行）。**AI 不要拿 `flythings_*` 工具去实现模拟器运行，也不要因这条向用户承诺 MCP 能跑模拟器。**
 
-## 7. ⚠️ 多设备在线时「把工程推到指定设备」（2026-09-16 首测 / 09-17 复测 / **09-28 三测定稿**）
+## 6. ⚠️ 多设备在线时「把工程推到指定设备」（2026-09-16 首测 / 09-17 复测 / **09-28 三测定稿**）
 
 **结论**：多设备在线时 `fun launch`（**新旧版一样**，含 `v0.0.2+2609281006_e09dc96`）**不管带不带 `-s` 都硬失败**：
 
@@ -183,7 +183,7 @@ fun launch -p <平台> -s <ip>:5555         # 多设备在线也能精确推到�
 **其它**：唯一会拦下来的是**平台校验**（`shell:getprop 'ro.product.model'` 对比工程平台，不匹配 → `FATAL platform not match`，exit 1）；push 出错也 `FATAL` + exit 1。
 **WiFi adb**：`adb tcpip 5555` → `adb connect <ip>:5555`；掉线可随时重连（实测未重跑 `tcpip` 直接重连成功），设备重启前有效；**用完 `adb disconnect <ip>:5555`** 避免选错设备。
 
-## 8. 未验证 / 边界
+## 7. 未验证 / 边界
 
 - `fun sim` 只确认了 `--help` 存在该命令，**没实跑**（模拟器细节看 wiki 官方镜像）；发布版 MCP 也不支持该功能（见 §5）
 - 本机旧 `fuse.exe` 仍可运行（实测能编过），历史工程里的 `.fuse/` 产物与 `FUSE_BUILD` 宏**不是错误**，只是旧代；**新知识一律按 fun 写**

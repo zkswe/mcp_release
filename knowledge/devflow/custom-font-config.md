@@ -148,7 +148,7 @@ cmap 覆盖率 / GB2312 一级 / 硬判据 / font-probe 缓存。
 ### 0.2.2 真机实测（v0.27.87，V85X SPINOR 整机、网络 adb）
 
 > 环境：本机 adb = 随包 `tools/adb/adb.exe`；**多设备在线时 `fun launch` 硬失败**（fun 的 Go adb 用旧式
-> `host:transport <serial>` 空格写——详见 `cli-fun-toolchain.md` §7），本次实测前先 `adb disconnect` 另两台、
+> `host:transport <serial>` 空格写——详见 `cli-fun-toolchain.md` §6），本次实测前先 `adb disconnect` 另两台、
 > 跑完再 `adb connect` 加回；设备报 `ro.product.model=Zkswe_V85X_SPINOR`（480×800）。
 > （本段不写具体内网地址：隐私扫描不允许——设备用 `device='<serial|IP:5555>'` 现查现传。）
 

@@ -24,7 +24,7 @@ evidence: []
 
 | 本指南章节 | 配套细读 |
 |------|------|
-| §4 屏幕方向 | `devflow/package-properties-easyui-cfg.md` §8（rotateScreen 机制/取图角度口径）|
+| §4 屏幕方向 | `devflow/package-properties-easyui-cfg.md` §9（rotateScreen 机制/取图角度口径）|
 | §5-1 UI 透出 | `v85x/videoview-transparent-window.md`（videoView 透明窗口权威口径）|
 | §5-2/§9 图层与回放方向 | `v85x/display-layer-debug.md`（releaseLayer/图层检查/rotation 枚举）|
 | §6 UVC 摄像头 | `v85x/uvc-usb-camera.md` + `v85x/jpeg-decode-record.md` |
@@ -79,7 +79,7 @@ evidence: []
 
 ## 4. 屏幕方向（硬件适配，错屏根因）
 
-**错屏根因 = UI 布局超出物理屏**：横 UI（如 1600×600）用在竖装屏（600×1600），不旋转时 UI 宽 1600 > 物理宽 600，内容溢出屏外。`rotateScreen` 是硬件方向适配（值由屏幕安装方向决定，非 UI/代码决定）；配置写法、`fun clean` 全量重编时序、触摸不转（只写 rotateScreen 不写 rotateTouch）、设备端 `/tmp/EasyUI.cfg` 核对 → `devflow/package-properties-easyui-cfg.md` §8。
+**错屏根因 = UI 布局超出物理屏**：横 UI（如 1600×600）用在竖装屏（600×1600），不旋转时 UI 宽 1600 > 物理宽 600，内容溢出屏外。`rotateScreen` 是硬件方向适配（值由屏幕安装方向决定，非 UI/代码决定）；配置写法、`fun clean` 全量重编时序、触摸不转（只写 rotateScreen 不写 rotateTouch）、设备端 `/tmp/EasyUI.cfg` 核对 → `devflow/package-properties-easyui-cfg.md` §9。
 
 ## 5. UI 布局（videoView 透明窗 + 控制件）
 

@@ -57,7 +57,7 @@ evidence: []
 
 `flythings_device_screenshot` 缺省 `rotate='auto'`，输出**已经是项目逻辑方向**（读工程 `EasyUI.cfg` 的
 `rotateScreen` 转正）→ 直接按图里坐标点/裁图，**不需要换算**；显式 `rotate=0` 或触摸注入的换算口径
-（旋转函数、`rotateTouch` 与 `rotateScreen` 可以不同）→ 见 `devflow/package-properties-easyui-cfg.md` §8。
+（旋转函数、`rotateTouch` 与 `rotateScreen` 可以不同）→ 见 `devflow/package-properties-easyui-cfg.md` §9。
 
 ## 4. 像素级渲染坑（改图/改 json 时常踩，全是像素能验的）
 
@@ -73,6 +73,6 @@ evidence: []
 ## 5. 相关
 
 - 抓屏工具与方向口径：`devflow/ui-layout-verify.md`（§2-1）；旋转字段与取图角度口径：
-  `devflow/package-properties-easyui-cfg.md` §8
+  `devflow/package-properties-easyui-cfg.md` §9
 - 触摸注入与抓帧时机：`devflow/touch-inject-autotest.md`
 - 设备端工具缺失（无 grep/sed/head）：`devflow/busybox-debug-library.md`

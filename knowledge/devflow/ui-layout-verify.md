@@ -81,7 +81,7 @@ flythings_device_screenshot(crop='auto')           # 按 disp 图层 frame 裁�
 
 ### 2-1-1 取图方向/角度：读**项目工程**的配置，不要猜（❗踩过坑）
 
-旋转/取图角度口径见 `devflow/package-properties-easyui-cfg.md` §8（唯一来源 = 工程 `EasyUI.cfg` 的
+旋转/取图角度口径见 `devflow/package-properties-easyui-cfg.md` §9（唯一来源 = 工程 `EasyUI.cfg` 的
 `rotateScreen` / `rotateTouch`；工具 `rotate='auto'`（缺省）读它，返回值 `rotateSource` 可自证）。
 
 设备侧实现要点（AI 不需要重做，但排障要懂）：

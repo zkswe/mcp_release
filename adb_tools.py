@@ -613,7 +613,7 @@ def multi_device_hint(devices, platform=''):
     两条路：① 垫片 `scripts/adb_transport_shim.py`（5037 上把空格改写成冒号再转发给另起端口的真 adb；
     实测 5 台在线时 `fun launch -s <ip>` 精确推到指定设备，设备侧 md5 与本地一致、其它设备未动）；
     ② 先让其它机器从 adb 列表里消失（`adb disconnect`）。
-    这条修正了 `cli-fun-toolchain.md §7` 里「多设备时 fun 静默取列表第一个」的旧结论。
+    这条修正了 `cli-fun-toolchain.md §6` 里「多设备时 fun 静默取列表第一个」的旧结论。
     """
     lines = ['检测到 %d 台在线设备，**不自动选择**（多设备下 fun launch 会 FATAL，见下）：'
              % len(devices)]

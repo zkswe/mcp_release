@@ -18,14 +18,14 @@ evidence: []
 > 检索导引：问「EasyUI.cfg 怎么写 / package.properties 覆盖了哪份 cfg / rotateScreen 配在哪 / 推上去没效果（extsd 卡里的旧 cfg 劫持）/ 字体资源怎么真进 /res」→ 本文。
 > 2026-09-03 沛哥讲解机制（定规）+ mark_cv201 实测校准（CV201_PND rotateScreen 270 / CV201_PND_1024_600 不转，同代码双屏方向适配案例）。
 
-## 核心机制（沛哥 2026-09-03 定规）
+## 1. 核心机制（沛哥 2026-09-03 定规）
 
 1. **编译工具会自动生成完整的 EasyUI.cfg**（默认 JSON，包含下方字段表中的全部参数，路径分 debug=/mnt/extsd 与 release=/res 两套）
 2. 工程根目录 `package.properties` 里的 **`EasyUI.cfg={...}` 是覆盖层**：写了哪个字段就**优先采用**哪个（覆盖编译默认值）；**不需要特殊处理的字段不用写**
 3. 所以 `.settings/com.zksw.flythings.easyui.prefs`（IDE 属性，debug/release 两份）里 rotateScreen=0、而 package.properties 里 270 不矛盾——**package.properties 优先**
 4. `enable.font.location=true`：另一独立开关，启用工程内 font/ 目录自定义字体（配合 `setFontFamily`，见 wiki `font/font_setting.md`）
 
-## ⚠️ 查找优先级：设备上生效的**可能不是这一份** cfg（SD 卡会「劫持」程序）
+## 2. ⚠️ 查找优先级：设备上生效的**可能不是这一份** cfg（SD 卡会「劫持」程序）
 
 > 2026-09-27 Z20 现场入规。检索词：**推上去没效果 / 改了像没改 / 新包看不到效果 /
 > 加载了 SD 卡旧 lib / startupLibPath 指到 extsd / EasyUI.cfg 劫持 / remount rw extsd**。
@@ -59,7 +59,7 @@ adb shell "setprop ctl.restart zkswe"          # 重启应用生效
 - 另：**编译期 easyui 版本 ≠ 设备运行库版本**（设备看 `getprop ro.easyui.version`；控件类由运行库提供）
   → 能力存在性判定与矩阵见 `devflow/dynamic-screen-rotation.md` §4.1。
 
-## EasyUI.cfg 完整字段（沛哥提供标准格式，debug 版示例）
+## 3. EasyUI.cfg 完整字段（沛哥提供标准格式，debug 版示例）
 
 ```json
 {
@@ -98,7 +98,7 @@ adb shell "setprop ctl.restart zkswe"          # 重启应用生效
 | `zkdebug` | bool | 调试开关 |
 | `watchDogEnable` | bool | 看门狗开关（F133 工程普遍 false，mark_cv201 也配 false）——完整默认以编译工具生成为准，需要改才在 package.properties 覆盖 |
 
-## ⚠️ 何时用 package.properties 覆盖（沛哥 2026-09-03 补充定规）
+## 4. ⚠️ 何时用 package.properties 覆盖（沛哥 2026-09-03 补充定规）
 
 - **正常情况（屏幕与触摸方向一致 / 都不转）→ 发 IDE 配置 .prefs 即可，不用写 package.properties**
 - **需要特殊处理覆盖时才用 package.properties**：典型场景 = **某些硬件屏幕需要旋转、而触摸不需要旋转**
@@ -106,7 +106,7 @@ adb shell "setprop ctl.restart zkswe"          # 重启应用生效
   —— mark_cv201 CV201_PND 正是此例：只配 `rotateScreen:270` 不配 rotateTouch
 - 同值成套的常规旋转（F133 工程 rotateScreen:270+rotateTouch:270）走 .prefs 就够，不必进 package.properties
 
-## mark_cv201 实测案例（同代码双屏方向适配）
+## 5. mark_cv201 实测案例（同代码双屏方向适配）
 
 - `CV201_PND`（UI 1600×600）：`EasyUI.cfg={"rotateScreen": 270, "watchDogEnable":false}` → 设备屏幕坐标方向与 UI 差 270°，旋转适配
 - `CV201_PND_1024_600`（UI 1024×600）：`EasyUI.cfg={ "watchDogEnable":false}` → 屏幕方向正常，**不需要写 rotateScreen**
@@ -114,7 +114,7 @@ adb shell "setprop ctl.restart zkswe"          # 重启应用生效
 - 同类先例：T113 车载 PND「竖装横显」= 1024×600 横 UI + `rotateScreen: 270`（references/kb/t113-car-link.md）
 - F133 系工程（AirPlayF133/CycleComputer 等）惯例成套：`rotateScreen:270 + rotateTouch:270 + gfxMode:1 + ninePatchAccel:true`
 
-## 代码消费链
+## 6. 代码消费链
 
 ```cpp
 CONFIGMANAGER->getScreenRotate();   // 读 rotateScreen（ConfigManager.h 注释 rot: 0 90 180 270）
@@ -124,7 +124,7 @@ ERotation rot = (ERotation)(CONFIGMANAGER->getScreenRotate() / 90);          // 
 - `ConfigManager.h` 接口：`setScreenRotate(int)` / `setTouchRotate(int)` / `getScreenRotate()`；宏 `CONFIGMANAGER`
 - mark_cv201 倒车画面 reverse 页的 `get_camera_rot()` 是**另一路**（摄像头画面自身旋转参数，来自 `_s_camera_info`，非屏幕旋转），别混淆
 
-## 常见坑 / 使用规则
+## 7. 常见坑 / 使用规则
 
 - **想改设备显示方向 → 只改 package.properties 的 rotateScreen，不要动 .ftu/代码**（编译工具自动合并生效）
 - **屏幕转、触摸不转的硬件 → package.properties 只配 rotateScreen，不写 rotateTouch**；
@@ -133,7 +133,7 @@ ERotation rot = (ERotation)(CONFIGMANAGER->getScreenRotate() / 90);          // 
 - 改完重新编译打包，设备上生成/更新的 EasyUI.cfg 在 resPath 对应目录（boot_from_sd 升级包同样携带 EasyUI.cfg）
 - 调字体 → package.properties 加 `enable.font.location=true` + 工程 font/ 目录放字体 + 代码 `setFontFamily`（不是 EasyUI.cfg 覆盖层的事，注意区分）
 
-## 字体/资源如何真的进 `/res`（2026-09-24 实测校准）
+## 8. 字体/资源如何真的进 `/res`（2026-09-24 实测校准）
 
 - **字体要放工程 `resources/`**（如 `resources/fzcircle.ttf`）→ 打出的包才有 `/res/ui/fzcircle.ttf`；
   **放 `ui/` 会被忽略**，`fun pack` 只会吐一句 `no any font`（无报错、无声失败）。
@@ -147,7 +147,7 @@ EasyUI.cfg={"font":"/res/ui/fzcircle.ttf"}
 - 参考实现：`gitcom/AppGroup/PublicTuyaSwitch`（字体 + 各页面图都在 `resources/`），
   正常在跑的 Z20 板上 `/res/etc/EasyUI.cfg` 确实带 `"font":"/res/ui/fzcircle.ttf"`。【实测】
 
-## 8. 取图角度 / 触摸坐标旋转口径（唯一事实来源 = 工程 EasyUI.cfg）
+## 9. 取图角度 / 触摸坐标旋转口径（唯一事实来源 = 工程 EasyUI.cfg）
 
 > 本节是「屏幕/取图角度 + 触摸坐标旋转口径」的**唯一收口处**（2026-09-30 收口）：
 > `devflow/ui-layout-verify.md` §2-1-1、`devflow/device-screenshot.md` §3.6、`devflow/pixel-analysis-ai.md` §3、

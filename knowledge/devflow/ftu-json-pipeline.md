@@ -137,7 +137,7 @@ ui/*.ftu  ← 设备实际加载的是它
 | 能不能手写 ftu / 能不能直接改 ftu | **不能**。会被下次 pack 覆盖、无版本管理价值，见 §5 五条理由 |
 | ftu 能逆向成 json 吗 | **能**（v0.27.91 起）：`flythings_fui_unpack`（默认覆盖同目录同名 json，ftu 为真源），详见 §6 |
 | main.ftu 是什么文件 / UI 文件和 json 什么关系 | `main.ftu` = `main.json` 编译出来的界面文件，设备加载它；一对一同名（§1、§2） |
-| 改了 json 为什么设备上没变 | 三连查：**没 pack**（`fui pack`）→ **没推**（`build_ui_flow(with_launch=True)` / `fun launch`）→ **设备在读旧 ftu / 推错了设备**（多设备必传 `-s`，见 `cli-fun-toolchain.md` §7） |
+| 改了 json 为什么设备上没变 | 三连查：**没 pack**（`fui pack`）→ **没推**（`build_ui_flow(with_launch=True)` / `fun launch`）→ **设备在读旧 ftu / 推错了设备**（多设备必传 `-s`，见 `cli-fun-toolchain.md` §6） |
 | 我在 IDE 里直接改了 ftu，AI 再改 json 会不会冲突 | 不会丢：ftu 比 json 新「分钟级」时 build_ui_flow 会先 unpack 同步 json（以 ftu 为真源）；要么统一走 json，要么统一走 IDE（§4） |
 
 ## 9. 验证（实测记录）

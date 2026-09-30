@@ -24,7 +24,7 @@ evidence: []
 ## 0. 一句话
 
 V85X 竖屏工程调试「错屏 / 无图像 / 回放方向不对」四板斧，按顺序查：
-1. **屏幕旋转（硬件方向适配）**：**错屏根因 = UI 布局尺寸超出物理屏**——横 UI（1600×600）用在竖装屏（600×1600）上，不旋转时 UI 宽 1600 超过物理宽 600 = 错屏；rotateScreen 值由屏幕安装方向决定 → `package.properties` 配 `EasyUI.cfg={"rotateScreen": 270}`（触摸不转=不写 rotateTouch）→ **必须 clean 全量重编**（ninja 不感知 package.properties 改动）。完整口径（字段/取图角度/生效判据）→ `devflow/package-properties-easyui-cfg.md` §8
+1. **屏幕旋转（硬件方向适配）**：**错屏根因 = UI 布局尺寸超出物理屏**——横 UI（1600×600）用在竖装屏（600×1600）上，不旋转时 UI 宽 1600 超过物理宽 600 = 错屏；rotateScreen 值由屏幕安装方向决定 → `package.properties` 配 `EasyUI.cfg={"rotateScreen": 270}`（触摸不转=不写 rotateTouch）→ **必须 clean 全量重编**（ninja 不感知 package.properties 改动）。完整口径（字段/取图角度/生效判据）→ `devflow/package-properties-easyui-cfg.md` §9
 2. **图层释放（平台匹配时必做）**：**视频解码返回后 / 启动早期必须做 `releaseLayer()`** 关掉残留 disp 层（保留 UI 层）——V85X 上不做会**黑屏**；**开发与 check 验收都必须做这个**（check_all #19 已机器核验，见 §2-0）
 3. **无图像**：UI 层（z=16 最顶）不透明背景盖住 disp 视频层（z=1）→ UI 上必须有**可见的 videoView 透明窗口**（`visible:true` + position=画面区域），下层视频才透出
 4. **回放方向**：ZKVideoView 的 `rotation` 是**枚举不是角度**：0/1/2/3 = 0°/90°/180°/270°（顺时针），写 `3` 才是 270°
@@ -213,7 +213,7 @@ if (voRet != 0) LOGD("VO_Disable(0) ret=0x%x", voRet);   // 非0=dev0 正被占/
 
 ## 5. 屏幕旋转配置（rotateScreen = 硬件方向适配，值由屏幕安装方向决定）
 
-旋转/取图角度口径（错屏机制、配置写法、`fun clean` 全量重编时序、`/tmp/EasyUI.cfg` 核对）→ `devflow/package-properties-easyui-cfg.md` §8；本节独有生效判据：`cat /sys/class/disp/disp/attr/sys` 的 UI 层 crop 由异常（如 `[0,1600,...]`）恢复为 `[0,0,600,1600]` 全屏正常值才算生效。
+旋转/取图角度口径（错屏机制、配置写法、`fun clean` 全量重编时序、`/tmp/EasyUI.cfg` 核对）→ `devflow/package-properties-easyui-cfg.md` §9；本节独有生效判据：`cat /sys/class/disp/disp/attr/sys` 的 UI 层 crop 由异常（如 `[0,1600,...]`）恢复为 `[0,0,600,1600]` 全屏正常值才算生效。
 
 ## 6. 回放旋转：ZKVideoView rotation 是枚举不是角度！
 
@@ -227,7 +227,7 @@ void setRotation(int val);
 - 回放 mp4 横视频（1280×720）在竖屏 UI 上播，rotation=3 后与预览方向一致
 - 若改了 rotation 仍不对：检查是否复用 videoView 的预览透出区域被 rotation 影响，或参考同平台产品回放页（mpi::VO 初始化时序：播放前 stop 预览链路 + 延迟 50ms 初始化 VO 避免 MPP 冲突——详见 `v85x-mpp.md`）
 
-## 8. 参考
+## 7. 参考
 - `v85x/videoview-transparent-window.md`（videoView 透出机制权威口径）
 - `v85x-mpp.md`（mpi:: 摄像头/回放 API、MPP 冲突时序）
 - `devflow/package-properties-easyui-cfg.md`（package.properties / EasyUI.cfg 机制、rotateScreen 定规）

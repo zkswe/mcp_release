@@ -136,7 +136,7 @@ evidence: []
 ### 3.6 方向/角度只认项目工程配置（沛哥 2026-09-10 定规）
 
 旋转/取图角度口径（`rotateScreen` / `rotateTouch` 字段、实测角度对应、生效判据）
-→ 见 `devflow/package-properties-easyui-cfg.md` §8。
+→ 见 `devflow/package-properties-easyui-cfg.md` §9。
 
 ## 4. 返回字段
 
@@ -228,5 +228,5 @@ python ui_tools/device_screenshot.py --layer video --vdec-chn 1         # CLI
 
 - 像素级读图/省 token 阶梯、1 字符=1 像素分类图、文字暗带检测 → `pixel-analysis-ai.md`
 - 触摸注入与抓帧时机（注入 + 抓帧同一次 adb 调用、多档 sleep 差分）→ `touch-inject-autotest.md`
-- 屏幕方向（rotateScreen / rotateTouch 权威来源）→ `package-properties-easyui-cfg.md` §8
+- 屏幕方向（rotateScreen / rotateTouch 权威来源）→ `package-properties-easyui-cfg.md` §9
 - 设备缺命令（grep/sed/dd…）→ 用 busybox → `busybox-debug-library.md`
