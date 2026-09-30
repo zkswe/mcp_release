@@ -1,31 +1,31 @@
 {
  "meta": {
   "schema": 1,
-  "built_at": "2026-09-30 09:59:52",
-  "mcp_version": "0.27.130-open",
-  "doc_count": 88,
-  "source_hash": "f37f528485d6ab46e3eafcfa6a330635"
+  "built_at": "2026-09-30 10:05:15",
+  "mcp_version": "0.27.131-open",
+  "doc_count": 90,
+  "source_hash": "6c543bdd81c883275daa9cec3cd9a6e1"
  },
  "summary": {
-  "total": 88,
+  "total": 90,
   "byCategory": {
-   "devflow": 38,
-   "uicontrols": 34,
+   "devflow": 39,
+   "uicontrols": 35,
    "hardware": 4,
    "t113-car": 2,
    "v85x": 10
   },
   "byStatus": {
-   "review": 83,
+   "review": 85,
    "verified": 5
   },
-  "withEvidence": 5,
-  "needsEvidence": 83,
+  "withEvidence": 6,
+  "needsEvidence": 85,
   "noQueries": 72,
   "stale": 0,
   "inbox": 0,
   "aging": 0,
-  "manualOnly": 83
+  "manualOnly": 84
  },
  "docs": [
   {
@@ -332,8 +332,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": true,
-   "bytes": 11106,
-   "sha256": "f20d134522c1d8510c13a00c4998076c8f6b8eed64ba1ebda39262f5222493f7",
+   "bytes": 11636,
+   "sha256": "b900a2a2bd6bf6ebc060418f45c1adbc94d767edca336357bd40c197e450dccf",
    "fingerprint": "076ff5cdd5b02b6c",
    "ageDays": 1,
    "freshness": "fresh",
@@ -488,6 +488,61 @@
    "sha256": "bd8e663ca65aef7ba9bbf1391ae39cea5d0057fb75bc1910bba37807b5a66b7a",
    "fingerprint": "4f577c548e773334",
    "ageDays": 1,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
+   "frontMatterError": ""
+  },
+  {
+   "id": "devflow-device-preinstalled-libs",
+   "path": "knowledge/devflow/device-preinstalled-libs.md",
+   "title": "设备端已自带的可借用库清单（dlopen 即用 / 免编译）—— 先查这里再决定自己编",
+   "category": "devflow",
+   "platforms": [
+    "Z21",
+    "F133"
+   ],
+   "tags": [
+    "设备自带库",
+    "已装库",
+    "dlopen",
+    "nanovg",
+    "libpng",
+    "freetype",
+    "libjpeg",
+    "libmad",
+    "zlib",
+    "第三方库",
+    "免编译",
+    "mi_gfx",
+    "2D 加速",
+    "符号校验"
+   ],
+   "status": "review",
+   "confidence": "real-device",
+   "verified_at": "2026-09-30",
+   "stale_days": 180,
+   "origin": "partial",
+   "evidenceCount": 2,
+   "evidence": [
+    {
+     "cmd": "adb -s <设备>:5555 shell 'ls -l /lib /res/lib'",
+     "kind": "real-device",
+     "note": "2026-09-30 本机复核通过：/lib 80 项；libnanovg.so=50984B、libpng12.so.0.56.0、libfreetype.so.6.11.4=137120B、libjpeg.so.9.1.0=177488B、libmad.so.0.2.1=83224B、libmi_gfx.so、libmi_disp.so；/res/lib=libzkgui.so"
+    },
+    {
+     "cmd": "arm-pc-linux-gnueabihf-readelf.exe -d <lib>.so",
+     "kind": "offline",
+     "note": "符号级复核待跑（本机未找到 gnueabihf readelf，需 z21 工具链 bin）"
+    }
+   ],
+   "evidenceLevel": "has-evidence",
+   "needsEvidence": true,
+   "hasQueries": true,
+   "bytes": 7069,
+   "sha256": "03944a205b30f1bace883be73abe50663057c101362e6d47947cd6f78cab472a",
+   "fingerprint": "d78f710f9f00b70f",
+   "ageDays": 0,
    "freshness": "fresh",
    "stale": false,
    "staleDays": 180,
@@ -949,8 +1004,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": true,
-   "bytes": 8948,
-   "sha256": "565af9f50ce32f412fd1d2e677a866050d9a7e12dc5139772a07984c152987cd",
+   "bytes": 9777,
+   "sha256": "4d099f75c187c11ec47a832eb0e10b4a4eef8775edc981f1bf50e3bbf7e7b25c",
    "fingerprint": "3cef600f61b87430",
    "ageDays": 1,
    "freshness": "fresh",
@@ -1197,8 +1252,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": true,
-   "bytes": 10501,
-   "sha256": "3b89840b1bb271a929e38703ee75c74cb6f82ab03ab2392a156033567ee76063",
+   "bytes": 10753,
+   "sha256": "e3ae9571478dcc81d1e1835ffd92e45bc7cdd436324f33c6a413eab632cff237",
    "fingerprint": "fc4fe097d5a567e8",
    "ageDays": 0,
    "freshness": "fresh",
@@ -1750,6 +1805,49 @@
    "sha256": "02505757d3fb8c5744c4a782e249e1a56c8642be3ffefd45fac701cc94336a2b",
    "fingerprint": "ead0f4db91d7ebe8",
    "ageDays": 1,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
+   "frontMatterError": ""
+  },
+  {
+   "id": "uicontrols-extension-surface",
+   "path": "knowledge/uicontrols/extension-surface.md",
+   "title": "扩展点总表（能扩展什么 / 不能扩展什么）—— 做差异化效果前的唯一入口",
+   "category": "uicontrols",
+   "platforms": [
+    "V85X",
+    "Z20",
+    "F136",
+    "F133"
+   ],
+   "tags": [
+    "扩展点",
+    "自定义控件",
+    "自绘",
+    "canvas",
+    "GameView",
+    "disp 图层",
+    "系统窗口",
+    "全局弹框",
+    "差异化效果",
+    "定制效果",
+    "能做什么"
+   ],
+   "status": "review",
+   "confidence": "manual",
+   "verified_at": "2026-09-30",
+   "stale_days": 180,
+   "origin": "total",
+   "evidenceCount": 0,
+   "evidence": [],
+   "evidenceLevel": "manual-only",
+   "needsEvidence": true,
+   "hasQueries": true,
+   "bytes": 10599,
+   "sha256": "e9c36d59c0c84f7b8f8f8de72bbd58351d5dbf2dddf04b7029d9b0f813be7b09",
+   "fingerprint": "929d5a996b2861ed",
+   "ageDays": 0,
    "freshness": "fresh",
    "stale": false,
    "staleDays": 180,

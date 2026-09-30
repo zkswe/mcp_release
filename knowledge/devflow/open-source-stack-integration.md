@@ -49,7 +49,9 @@ evidence: []
 - ② 的判据：`grep -c <库名> .fsc/<平台>/CMakeLists.txt`（09-28 前产物目录为 `.fun/`）。
 - ③ 的坑：`fun launch`（调试推送）**不推** `lib-no-link`，开发期要手动 push 到 `/data` 或 `/tmp`；
   **但 `/data` 在 ld 路径最前，会遮蔽 `/res/lib` 的固化版** ⇒ "升级了库却跑旧库，日志毫无异常"。
-- ④ 的风险：设备上的 `.so` 随固件走，**下个版本可能没有/签名变了** ⇒ 必须包一层失败回退。
+- ④ 的风险：设备上的 `.so` 随固件走，**下个版本可能没有/签名变了** ⇒ 必须包一层失败回退；
+  ⚠️ **别急着自编**：`ls /lib /res/lib` 先看设备自带（nanovg / libpng12 / freetype / libjpeg / libmad /
+  zlib / `libmi_*` 已装在板上）—— **注册表没有 ≠ 平台没有**，清单见 `devflow/device-preinstalled-libs.md`。
 
 ---
 
@@ -106,6 +108,7 @@ evidence: []
 | 媒体（播放/解封装） | 官方 `awh264player` / 本地 ffmpeg 静态库 | registry / ② | ffmpeg 走本地库 + `strip -g`；与 MPP 路线**互斥**（同一颗 VE、同一 disp 视频层） |
 | 蓝牙（BLE HID / GATT） | `btstack` | registry | 需模组在位（自检可直接判：无 BT 属性/rfkill/hci 节点 = 没插） |
 | 数据库 / Modbus / OPC-UA / 组播 / 序列化 | sqlite3 / libmodbus / open62541 / libwebsockets / protobuf-c 等 | **需自编（②或⑤）** | **未验证**：先按 §2 四判据自证，再按 §4 落地 |
+| **图形 / 图像 / 音频 / 2D 加速（设备已自带，免编译）** | **nanovg**（矢量，AGG 后端）/ **libpng12** / **freetype** / **libjpeg** / **libmad**（MP3）/ **zlib** / **`libmi_*`**（MI 图形·显示·区域·视频处理） | **dlopen 即用**（设备 `/lib`） | **注册表没有 ≠ 设备没有**（注册表里 f133 有 nanovg/1.0.0，z20/z21/v85x/f136 无；但 Z21 设备 `/lib` 实测全在）；头文件需从 SDK/组件取，用 `readelf --dyn-syms` 核签名；**libc 必须匹配**。清单见 `devflow/device-preinstalled-libs.md` |
 
 ---
 

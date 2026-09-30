@@ -91,12 +91,14 @@ evidence: []
 
 ### ②b 运行时离屏渲染（未验证，价值高）
 - 形态：把开源渲染库渲到**内存画布**，再把画布交给框架显示（换图/贴图控件）。
+- ⚠️ **先查设备自带**：`ls /lib /res/lib`（nanovg / libpng12 / freetype / libjpeg / libmad / zlib / `libmi_*` 已装在板上）
+  —— **注册表没有 ≠ 平台没有**，清单见 `devflow/device-preinstalled-libs.md`。
 - 选件建议（按嵌入式友好度排）：
   | 库 | 形态 | 说明 |
   |---|---|---|
   | **stb_image / stb_truetype / stb_image_write** | 纯头文件 | 零依赖，最适合嵌入式；解码/写字够用 |
   | **libpng / lodepng** | 静态库 / 单文件 | PNG 读写 |
-  | **nanovg** | 源码 | 矢量绘制，可走 GL 或软后端 |
+  | **nanovg** | **设备已带 .so**（不是源码） | 矢量绘制（AGG 后端）：Z21 `/lib/libnanovg.so` 实测存在（50,984 B，符号含 `nvgCreateAGG`）；**F133 侧与注册表包同源**；⚠️ **只支持 `NVG_TEXTURE_BGRA` 目标**；320×320 **23~44ms/帧**（定点后端 6~12ms）。清单见 `devflow/device-preinstalled-libs.md` |
   | **cairo** | 静态库 | 矢量/文字最全，体积偏大 |
   | **LVGL（当库用）** | 源码 | 只借它的渲染器/控件层，不接管整套 |
   | SDL2 | 静态库 | **偏重**，除非已有移植 |
