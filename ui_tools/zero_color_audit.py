@@ -9,7 +9,7 @@
 
 判据（三源，见 references/kb/image-gen-standard.md §7.6）：
   · 官方基准 A：projects/SampleUI-New/ui/1024x600（42 json，新 IDE 全量序列化）
-  · 官方基准 B：projects/LearningProject/basedemo-new_z20_1024_600（官方 Demo 集合，
+  · 官方基准 B：官方 Demo 集合 `basedemo-new_z20_1024_600`（
     `<项目>/ui/fui.exe unpack` 反解）：checkbox/radiogroup/seekbar/digitalclock/pointer/
     circlebar/listview/painter/slidetext/diagram/textview = **-1**；
     videoview 2/2、cameraview 1/1 = **0**（视频/摄像头面必须有实黑底）；
