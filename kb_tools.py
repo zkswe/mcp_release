@@ -61,7 +61,7 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.129-open'
+MCP_VERSION = '0.27.130-open'
 MCP_BUILD = '2026-09-30'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -76,6 +76,7 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+    '2026-09-30: **审核钟工修订稿（逐条取证）：一处与代码不符已修正、一处降级为待核** v0.27.130-open（钟工：「我给你发的稿子你要审核后再处理。哪些是真实存在」——我先前的毛病是照单全收，本版起改为**先取证再入库**）——审核方式：对每条断言找**代码/文件锚点**（不靠记忆、不靠措辞）。**结论（§写进 `custom-render-paths.md` 脚注 + `render-extension-boundary.md` §3/§5）**：① **成立**——`misc::bitmap_rotate` 第三参是 `ui::ERot` 枚举（`ext_widgets/2.12.0/include/misc/bitmap_utility.h:29`）⇒ “只支持 90° 整数倍”真实；`components/vinyl` 真机跑通 ⇒ “平台没有任意角度旋转位图”真实；`PgDisplay.cpp:59/77` 确实是 `setBackgroundBmp()`+`setInvalid()` 刷帧；`PgFontData.h` 确实是 `tools/genfont.py` 预烘多档（`PG_FONT_MAX_N=5`/`BIG=3`）；`448` 确在工程 json 里成片出现（27 处，480 宽屏内容区宽）。② **与代码不符（已修正）**：稿子里“超档位会走位图放大 = 拉伸”——代码是 **`clampN()` 夹到上限 + 缺字跨档 1:1 回退 + 全程不做放大/插值**（`PgCanvas.cpp:478-497` 注释明写“没有任何放大/插值”）。⇒ 真约束 = **档位预烘且档数固定**，不是画布限制、也不会拉伸。③ **降级为待核**：稿子列的“bitblt / 透明 α 混合 / 90° 旋转三种硬件能力”只核到 **G2D 存在 + 缩放/格式转换**（`g2d_scale.h`/`EPIXELFORMAT_g2d_format_convert.h`），逐项能力**未取证**（已标 `needs_evidence`，不许当定论引用）。v0.27.130-open',
     '2026-09-30: **真根因入库：「软渲染」要说清哪一段 + 两条旧限制的出处（字库预烘档位 / 内容区宽）** v0.27.129-open（钟工回传修订稿：`scale` 限制源自我方**自研字库只预烘有限档**；数值是**某工程 UI 的内容区宽**；**内存画布→屏幕是硬件合成**）——① `knowledge/devflow/custom-render-paths.md` §0-3 重写：**绘制进内存画布**那段代价取决于实现/面积（我方 `src/core/PgCanvas.*` 自研软件实现），但**内存画布→屏幕是硬件合成**（平台有 bitblt / 透明 α 混合 / 90° 旋转能力，实证 `ZKTextView::setBackgroundBmp()`+`setInvalid()`；`misc::bitmap_rotate` 只支持 90° 整数倍）⇒ **不要把“我们的实现是软件”说成“平台只能软渲染”**；平台真做不到的是**任意角度旋转位图**（先例 `components/vinyl`）。② 脚注三条旧说法给出**真根因**：`scale` 那条 = **自研字库预烘档位需编译期常量，超档位走位图放大=拉伸**（资源侧约束，**画布对 scale 无限制**）；宽度数值 = **某工程 UI 内容区宽（屏宽−2×16 的布局值），不是任何限制**；动画计时用绝对时间基准（原话“绝对时钟”）。③ `render-extension-boundary.md` §3/§5 同步：限制表新增「平台做不到的事（任意角度旋转位图）」与「资源侧约束 vs 平台限制」的分离。④ 检索组重测保持全绿（16 组 / 111 问法）。v0.27.129-open',
     '2026-09-30: **撤回误测数值：视频图层只保留定性口径（不超过屏幕区域）** v0.27.128-open（钟工：「448 限制你去掉，这个应该是误测。全志平台就只有一个视频图层尺寸不能超过屏幕区域的问题」——第三次校准，把数值彻底拿掉）——① `knowledge/devflow/render-extension-boundary.md` §5 改为**定性口径**：GUI 层缩放无限制（已定论）+ **视频图层尺寸不能超过屏幕区域**（全志平台唯一相关限制，**不挂具体数值**；早期具体数值系误测已撤回）+ 动画计时用绝对时间基准；§4 消歧同步（“canvas 宽度有上限”说法不成立）。② `custom-render-paths.md` 脚注同口径（保留「数值系误测已撤回」一句，防重入）。③ `v85x/videoview-transparent-window.md` §2 同步。④ `check_retrieval.py` 边界组把带过时数值的问法换成「视频图层超过屏幕区域会怎样」（12 条问法）。⑤ **知识纪律**：误测数值**不写成新口径的注释余留**，只留一句撤回标记（防止日后又被当作实测值抄回去）。v0.27.128-open',
     '2026-09-30: **修正：GUI 层缩放无限制，448 是视频图层上限（钟工口径）** v0.27.127-open（钟工：「scale 在 GUI 层没有限制。是视频图层不能超过屏幕的宽度导致的」——接上一条渲染边界入库后的当场校准）——① `knowledge/devflow/render-extension-boundary.md` §5 重写：**删掉「画布文字 scale 只认编译期常量」的错误归因**（GUI 层缩放/文字绘制**无限制**），**把 448 归位到「视频图层不能超过屏幕宽度（V851s 屏宽 480 → 实测上限 448）」**；§4 术语消歧同步修正（「canvas 宽 ≤448px」说法本身不成立）。② `custom-render-paths.md` 脚注与总表同口径改写。③ `v85x/videoview-transparent-window.md` §2 在「位置/尺寸即画面显示区域」直接标上视频层超屏宽不对的实测值+出处。④ `check_retrieval.py` 边界组扩到 12 条问法（新增「视频图层尺寸上限」「GUI 层缩放有上限吗」，top-1 实测 9/12 → 阈值 8）。v0.27.127-open',
