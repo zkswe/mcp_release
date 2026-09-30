@@ -1,10 +1,10 @@
 {
  "meta": {
   "schema": 1,
-  "built_at": "2026-09-30 09:33:23",
-  "mcp_version": "0.27.126-open",
+  "built_at": "2026-09-30 09:36:26",
+  "mcp_version": "0.27.127-open",
   "doc_count": 88,
-  "source_hash": "838b97ad77650a961e6a5af22c704263"
+  "source_hash": "e25764a12d6f1d085394a902f7ccc0c3"
  },
  "summary": {
   "total": 88,
@@ -332,8 +332,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": true,
-   "bytes": 8964,
-   "sha256": "4b935e7a44801eef639f68ae1219fc3630c78d1686cb75fe12cce5b2b1f66b2d",
+   "bytes": 9086,
+   "sha256": "4df84db7634a36ee38829af630b8f1a4594e83783009f4371800519361cd61f6",
    "fingerprint": "076ff5cdd5b02b6c",
    "ageDays": 1,
    "freshness": "fresh",
@@ -1182,6 +1182,7 @@
     "真 3D",
     "GPU",
     "画布上限",
+    "视频图层上限",
     "动画计时",
     "绝对时间基准"
    ],
@@ -1195,8 +1196,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": true,
-   "bytes": 8924,
-   "sha256": "755b520e4189a276507e906d6bdceb90743efd1ababf16d51749f70a8347b85f",
+   "bytes": 9473,
+   "sha256": "254219cccbf846f5fc06ce1e386a2472847ea754232d03dad6d0554750787503",
    "fingerprint": "fc4fe097d5a567e8",
    "ageDays": 0,
    "freshness": "fresh",
@@ -3219,8 +3220,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 5340,
-   "sha256": "d3b923c5feafbb278a8ee90a7402649483fce1ecf4194f7fb36ec814bdca2d16",
+   "bytes": 5849,
+   "sha256": "8710901ee3158289a7892874577ac76c4d3931d3c05bf8caf6aadb95899f6377",
    "fingerprint": "2d5b4d0f4b182a52",
    "ageDays": 1,
    "freshness": "fresh",

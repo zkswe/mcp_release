@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "flythings-mcp-open"
 # ⚠️ PEP440 不接受 "-open" 后缀：这里只放数字部分；唯一真相是 kb_tools.MCP_VERSION，
 #    scripts/check_consistency.py 会校验两者一致（0.27.37-open <-> 0.27.37）。
-version = "0.27.126"
+version = "0.27.127"
 description = "FlyThings 开发能力 MCP 服务器（open 版）：单入口 39 个 op，覆盖建工程→布局→资源→编译→部署→验收→i18n"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -27,7 +27,7 @@ Documentation = "https://developer.flythings.cn/"
 
 [tool.flythings]
 # 与 kb_tools.MCP_VERSION 保持一致（由 scripts/check_consistency.py 校验）
-mcp_version = "0.27.126-open"
+mcp_version = "0.27.127-open"
 # 依赖组合的唯一真相是 requirements.lock（本文件的 dependencies 只给 pip 解析用范围）
 verified_python = "3.13.13"
 
