@@ -450,6 +450,10 @@ def stage_delegated(skip_smoke, with_tests):
     rc, out = _run([sys.executable, os.path.join(SUB, 'gen_manifest.py'), '--check'])
     check(rc == 0, 'delegated: gen_manifest --check',
           'ok' if rc == 0 else out.strip().splitlines()[-1][:70])
+    # v0.27.138：op → 知识「去哪找」（op_seealso.json）覆盖度 —— 每个 op 要么有 seeAlso、要么登记 none + 理由
+    rc, out = _run([sys.executable, os.path.join(SUB, 'gen_seealso.py'), '--check'])
+    check(rc == 0, 'delegated: gen_seealso --check',
+          'ok' if rc == 0 else out.strip().splitlines()[-1][:70])
     rc, out = _run([sys.executable, os.path.join(SUB, 'gen_hardware_doc.py'), '--check'])
     check(rc == 0, 'delegated: gen_hardware_doc --check',
           'ok' if rc == 0 else out.strip().splitlines()[-1][:70])

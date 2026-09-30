@@ -1,8 +1,8 @@
 {
  "meta": {
   "schema": 1,
-  "built_at": "2026-09-30 21:04:17",
-  "mcp_version": "0.27.137-open",
+  "built_at": "2026-09-30 21:10:19",
+  "mcp_version": "unknown(IndentationError)",
   "doc_count": 90,
   "source_hash": "9c9b01011b828176f077c0f1d7d75854"
  },

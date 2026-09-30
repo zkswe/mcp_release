@@ -1,0 +1,160 @@
+{
+  "schema": 1,
+  "note": "op → 知识文档「去哪找」映射（唯一人工维护处）。由 kb_tools.normalize_result 注入返回体 seeAlso 字段；scripts/gen_seealso.py --check 进发布闸门。seeAlso 只写仓库内 knowledge/ 路径（随包分发）；wiki 是本地官方镜像（不进仓库），仅作提示。none 表示该 op 没有实践知识归属，必须写理由。",
+  "ops": {
+    "flythings_get_version": {
+      "none": "工具元信息（版本/工具数/近期特性），无实践知识归属"
+    },
+    "flythings_knowledge_search": {
+      "seeAlso": ["knowledge/README.md", "knowledge/uicontrols/retrieval-boundary.md"]
+    },
+    "flythings_knowledge_capture": {
+      "seeAlso": ["knowledge/devflow/kb-growth.md"]
+    },
+    "flythings_knowledge_export": {
+      "seeAlso": ["knowledge/devflow/kb-growth.md"]
+    },
+    "flythings_knowledge_gaps": {
+      "seeAlso": ["knowledge/devflow/kb-growth.md"]
+    },
+    "flythings_hardware_info": {
+      "seeAlso": ["knowledge/hardware/hardware-models.md"]
+    },
+    "flythings_map_control": {
+      "seeAlso": ["knowledge/uicontrols/control-mapping-capability.md",
+                  "knowledge/uicontrols/framework-control-mapping.md"]
+    },
+    "flythings_read_json": {
+      "seeAlso": ["knowledge/devflow/ftu-json-pipeline.md",
+                  "knowledge/uicontrols/json-field-mandatory.md"]
+    },
+    "flythings_layout_audit": {
+      "seeAlso": ["knowledge/uicontrols/layout-audit.md",
+                  "knowledge/uicontrols/json-layer-rules.md"]
+    },
+    "flythings_get_project_spec": {
+      "seeAlso": ["knowledge/devflow/page-architecture-spec.md"]
+    },
+    "flythings_validate_project": {
+      "seeAlso": ["knowledge/devflow/page-architecture-spec.md",
+                  "knowledge/uicontrols/json-field-mandatory.md"]
+    },
+    "flythings_fui_pack": {
+      "seeAlso": ["knowledge/devflow/ftu-json-pipeline.md"]
+    },
+    "flythings_fui_unpack": {
+      "seeAlso": ["knowledge/devflow/ftu-json-pipeline.md"]
+    },
+    "flythings_edit_ftu": {
+      "seeAlso": ["knowledge/devflow/ftu-json-pipeline.md"]
+    },
+    "flythings_build_ui_flow": {
+      "seeAlso": ["knowledge/devflow/cli-fun-toolchain.md",
+                  "knowledge/devflow/deploy-scene-map.md"]
+    },
+    "flythings_pack_upgrade": {
+      "seeAlso": ["knowledge/devflow/upgrade-pack-image.md",
+                  "knowledge/hardware/z20-86panel-upgrade.md"]
+    },
+    "flythings_ui_preview": {
+      "seeAlso": ["knowledge/devflow/ui-layout-verify.md",
+                  "knowledge/devflow/ui-editor-usage.md"]
+    },
+    "flythings_html_to_json": {
+      "seeAlso": ["knowledge/devflow/html-subset-quickref.md",
+                  "knowledge/devflow/prototype-flow.md"]
+    },
+    "flythings_ui_visual": {
+      "seeAlso": ["knowledge/devflow/ui-layout-verify.md",
+                  "knowledge/devflow/ui-editor-usage.md"]
+    },
+    "flythings_verify_assets": {
+      "seeAlso": ["knowledge/devflow/ui-asset-rules.md"]
+    },
+    "flythings_device_screenshot": {
+      "seeAlso": ["knowledge/devflow/device-screenshot.md",
+                  "knowledge/devflow/pixel-analysis-ai.md"]
+    },
+    "flythings_selfcheck": {
+      "seeAlso": ["knowledge/devflow/selfcheck-and-bugreport.md",
+                  "knowledge/devflow/device-preinstalled-libs.md"]
+    },
+    "flythings_bugreport": {
+      "seeAlso": ["knowledge/devflow/selfcheck-and-bugreport.md"]
+    },
+    "flythings_attach_cli_tools": {
+      "seeAlso": ["knowledge/devflow/cli-fun-toolchain.md",
+                  "knowledge/devflow/adb-and-device-selection.md"]
+    },
+    "flythings_create_project": {
+      "seeAlso": ["knowledge/devflow/prototype-flow.md",
+                  "knowledge/devflow/page-architecture-spec.md"]
+    },
+    "flythings_create_bin_project": {
+      "none": "MCU（FlyThings Lite）侧工程，按 MCU 口径单独维护，不进 open 版 knowledge/"
+    },
+    "flythings_gen_ui_test": {
+      "seeAlso": ["knowledge/devflow/device-test-run.md",
+                  "knowledge/devflow/touch-inject-autotest.md"]
+    },
+    "flythings_test_run": {
+      "seeAlso": ["knowledge/devflow/device-test-run.md"]
+    },
+    "flythings_check_project_deps": {
+      "seeAlso": ["knowledge/devflow/dependency-package-docs.md",
+                  "knowledge/devflow/cli-fun-toolchain.md"]
+    },
+    "flythings_generate_ui_assets": {
+      "seeAlso": ["knowledge/devflow/ui-asset-rules.md",
+                  "knowledge/devflow/icon-library.md"]
+    },
+    "flythings_i18n_scan": {
+      "wiki": ["i18n/i18n.md"],
+      "none": "i18n 口径在官方文档站（developer.flythings.cn）与本地 wiki 镜像，open 版 knowledge/ 未收录"
+    },
+    "flythings_i18n_add_language": {
+      "wiki": ["i18n/i18n.md"],
+      "none": "同 flythings_i18n_scan：口径在官方文档 / 本地 wiki 镜像"
+    },
+    "flythings_i18n_export": {
+      "wiki": ["i18n/i18n.md"],
+      "none": "同 flythings_i18n_scan：口径在官方文档 / 本地 wiki 镜像"
+    },
+    "flythings_i18n_import": {
+      "wiki": ["i18n/i18n.md"],
+      "none": "同 flythings_i18n_scan：口径在官方文档 / 本地 wiki 镜像"
+    },
+    "flythings_i18n_refactor": {
+      "wiki": ["i18n/i18n.md"],
+      "none": "同 flythings_i18n_scan：口径在官方文档 / 本地 wiki 镜像"
+    },
+    "flythings_i18n_to_json": {
+      "wiki": ["i18n/i18n.md"],
+      "none": "同 flythings_i18n_scan：口径在官方文档 / 本地 wiki 镜像"
+    },
+    "flythings_list_packages": {
+      "seeAlso": ["knowledge/devflow/dependency-package-docs.md"]
+    },
+    "flythings_query_package": {
+      "seeAlso": ["knowledge/devflow/dependency-package-docs.md"]
+    },
+    "flythings_manifest": {
+      "seeAlso": ["knowledge/devflow/dependency-package-docs.md",
+                  "knowledge/devflow/cli-fun-toolchain.md"]
+    },
+    "flythings_add_package": {
+      "seeAlso": ["knowledge/devflow/cli-fun-toolchain.md",
+                  "knowledge/devflow/dependency-package-docs.md"]
+    },
+    "flythings_package_search": {
+      "seeAlso": ["knowledge/devflow/dependency-package-docs.md"]
+    },
+    "flythings_get_package_api": {
+      "seeAlso": ["knowledge/devflow/dependency-package-docs.md",
+                  "knowledge/devflow/device-preinstalled-libs.md"]
+    },
+    "flythings_resolve_dependencies": {
+      "seeAlso": ["knowledge/devflow/dependency-package-docs.md"]
+    }
+  }
+}

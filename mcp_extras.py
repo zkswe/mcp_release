@@ -165,7 +165,7 @@ def _version_doc():
     return ('# FlyThings MCP 版本\n\n'
             '- version: `%s`\n- build: `%s`\n- toolCount: %d\n\n'
             '## 近期特性\n\n%s\n\n'
-            '> 全量变更史：调用 `flythings_get_version(compact=False)`。\n'
+            '> 近期变更史：调用 `flythings_get_version(compact=False)`；更早版本史见仓库根 `VERSION_HISTORY.md`。\n'
             % (kb_tools.MCP_VERSION, kb_tools.MCP_BUILD, len(kb_tools.OP_NAMES), f))
 
 

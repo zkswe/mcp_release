@@ -202,7 +202,7 @@ def main():
           % (','.join(str(b) for b in bad) if bad else (mentions[0] if mentions else '?'),
              len(names), len(mentions)))
     check(ver in rd, 'README mentions current version', str(ver))
-    # CHANGELOG.md 自 v0.27.31 起冻结为历史归档（不再维护/不提交），版本史唯一来源 = MCP_FEATURES + README
+    # CHANGELOG.md 自 v0.27.31 起冻结为历史归档（不再维护/不提交），版本史 = MCP_FEATURES（近期）+ VERSION_HISTORY.md（归档）+ README
     feats = getattr(k, 'MCP_FEATURES', [])
     check(bool(feats) and str(ver) in feats[0], 'MCP_FEATURES[0] mentions version',
           feats[0][:40] if feats else 'empty')
