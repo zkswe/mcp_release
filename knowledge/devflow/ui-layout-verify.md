@@ -256,6 +256,26 @@ logic.cc 里用 `showWnd()/hideWnd()` 切页」（弹窗、设置页、二级页
 分层省钱：**L1 像素 diff（0 token，默认）→ L2 需要语义判断时只把差异区域裁 200×200 小图给模型
 → L3 人工看标注图（0 token）**。
 
+### 5-1 像素基线库（`flythings_ui_visual(action="baseline")`）
+
+把「上一次验收通过的那张图」版本化存到 **`<项目>/ui_baseline/`**（`baseline.json` 索引 + 图片），
+下次验收直接比，**省掉人工看图**。必填 `project_root`；
+
+| `mode` | 作用 |
+|---|---|
+| `save` | 存基线（首次建基线用它） |
+| `compare` | 与基线比（+ `image_a`）；**容差档案随基线一起存**，所以比对口径与建基线时一致 |
+| `update` | 把当前图替换为基线 |
+| `list` | 列出现有基线 |
+
+⚠️ **比不到基线 → 返回 `no-baseline` 并进 `warnings`，不算通过**（不静默放过）。
+
+### 5-2 edit_apply 的写盘开关（默认安全）
+
+- `pack` **默认 False**（只写 json，不自动 pack ftu）——要 pack 得显式传 `pack=true`；
+- `dry_run=True` 只预览变更、**不写盘**；
+- 写回前一律留 `<name>.json.bak`（见 §4 安全措施）。
+
 ## 6. 图片资源路径（易错点，影响所有预览）
 
 json 里的图片引用是**相对 resources 目录、可带子目录**的路径：`audio/horn.png`、

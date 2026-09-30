@@ -61,7 +61,7 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.132-open'
+MCP_VERSION = '0.27.133-open'
 MCP_BUILD = '2026-09-30'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -76,6 +76,7 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+    '2026-09-30: **批次 B：docstring 腾预算 + 补“去哪找”描述（净零预算）** v0.27.133-open（钟工：「批次 B 处理」）——硬约束：docstring 总量 ≤12000（现 **11994**，即只剩 6 字符）⇒ **不新增 op，先腾后加**。① **B1 腾预算**：`flythings_ui_visual` 663→**470**、`flythings_device_screenshot` 550→**≈450**，把长尾细节**下沉到知识文档**：`knowledge/devflow/ui-layout-verify.md` 新增 **§5-1 像素基线库**（`action=baseline`：`<项目>/ui_baseline/`、mode=save/compare/update/list、**容差档案随基线存**、比不到基线报 `no-baseline` 不静默放过）与 **§5-2 edit_apply 写盘开关**（`pack` 默认 False / `dry_run` 只预览 / 写回留 `.bak`）；device_screenshot 的 advanced/layer/vdec_chn 细节本就在 `device-screenshot.md`。docstring 现在只留**要点 + 指向知识文档**。② **B2 加描述**（每条都直接指向知识文档）：`flythings_get_package_api` **39→194**——「**注册表没有 ≠ 平台没有**：设备 `/lib` 自带 nanovg/libpng12/freetype/jpeg/mad/zlib，可 dlopen 免编译；清单见 `knowledge/devflow/device-preinstalled-libs.md`（先 `adb shell ls /lib`）」；`flythings_build_ui_flow` 416→524——「链本地/第三方库放 `src/dependencies/lib/`（fun 自动链接）；**libc 必须匹配**：Z20/Z21=glibc、V85X/T113=musl、F133=RISC-V64 musl」；`flythings_html_to_json` 443→517——「做差异化效果前先答三问（静态/逐帧？面积？有无硬件层？）并查 `uicontrols/extension-surface.md`」。③ **净零验证**：总量仍为 **11994/12000**（腾出与加入基本持平），单 op 上限 900 仍有大量余量；门禁 `check_consistency` 全绿。v0.27.133-open',
     '2026-09-30: **`libmi_*` 降为“框架内部库，应用不需关注”** v0.27.132-open（钟工：「mi_gfx 不需要用户关注」）——① `knowledge/devflow/device-preinstalled-libs.md` §2.2 从“芯片侧能力入口（待逐符号核 API）”改写为 **框架/系统内部模块**：**明确⛔ 应用层不需关注、不要去 dlopen/链接**（接口不对外、随固件变），要图层/合成能力时走**框架高层 API**（videoview/cameraview/disp 纪律、`setBackgroundBmp`+`setInvalid`、`button+picTab` α 路径）；② 同步摘掉“悬而未决”的 `libmi_gfx API 未核”★待办项（不再追踪）与 tags 里的 mi_gfx / 2D 加速；③ `open-source-stack-integration.md` 与 `custom-render-paths.md` 的“设备自带可借用”清单里**移除 `libmi_*`**（只留 nanovg/libpng12/freetype/libjpeg/libmad/zlib），并注明 libmi 系列属框架内部。v0.27.132-open',
     '2026-09-30: **设备自带库入库 + 扩展点总表入库（先审核再处理）** v0.27.131-open（钟工：「我给你发的稿子你要审核后在处理。哪些是真实存在」）——① **先审核**：钟工四份稿逐条取证。**真机复核通过（Z21 / Zkswe_SSD21X_SPINOR）**：`/lib` 约 80 项，`libnanovg.so`=50,984 B、`libpng12.so.0.56.0`、`libfreetype.so.6.11.4`=137,120 B、`libjpeg.so.9.1.0`=177,488 B、`libmad.so.0.2.1`=83,224 B、`libmi_gfx/libmi_disp` 等在位，`/res/lib`=libzkgui.so。**纠正一处与事实不符**：稿子写“nanovg 四个平台注册表里都没有包”——本机实测 **f133 注册表有 `nanovg/1.0.0`**（z20/z21/v85x/f136 无，但设备 `/lib` 都有）。**降级一处**：`libmi_gfx` API 仍未核（只到库名+体积）。② **A1 入库** `knowledge/devflow/device-preinstalled-libs.md`：设备自带可 dlopen 库清单 + 两条采集命令（busybox ls / readelf）+ 三条纪律（注册表没有≠设备没有 / 头文件不在设备上 / libc 必须匹配）+ 明说 Z21 只做静态复核。③ **A2 入库** `knowledge/uicontrols/extension-surface.md`：六个扩展点总表（E1 组合/E2 自绘/E3 canvas/E4 disp 图层/E5 系统窗口/E6 进程外，含“明确不能做什么”、生命周期、性能档、最小示例、支持平台）+ §缺失表；E3 按代码修正字库档位口径（clampN 夹上限 + 跨档 1:1 回退 + 无放大插值）。④ **A3/A4 修订**：`open-source-stack-integration.md` §1/§3 增“设备已自带免编译”一条（nanovg/libpng12/freetype/libjpeg/libmad/zlib/`libmi_*`）；`custom-render-paths.md` ②b 选件表 nanovg 从“源码”改为“**设备已带 .so**”。⑤ **A5 已落**：`render-extension-boundary.md` §3 改为两段口径并引沛哥 2026-09-30 口径（内存画布→屏幕 = 硬件合成：拷贝/blit、透明 α 混合、90° 旋转），同时标明**芯片侧通道名未取证**。⑥ A6：`check_retrieval.py` 新增两组（设备自带库 6 问法 top-1 5/6；扩展点总表 10 问法 top-1 6/10、显式 `max_miss: 2` 并注明两条待改写的泛问法）。v0.27.131-open',
     '2026-09-30: **审核钟工修订稿（逐条取证）：一处与代码不符已修正、一处降级为待核** v0.27.130-open（钟工：「我给你发的稿子你要审核后再处理。哪些是真实存在」——我先前的毛病是照单全收，本版起改为**先取证再入库**）——审核方式：对每条断言找**代码/文件锚点**（不靠记忆、不靠措辞）。**结论（§写进 `custom-render-paths.md` 脚注 + `render-extension-boundary.md` §3/§5）**：① **成立**——`misc::bitmap_rotate` 第三参是 `ui::ERot` 枚举（`ext_widgets/2.12.0/include/misc/bitmap_utility.h:29`）⇒ “只支持 90° 整数倍”真实；`components/vinyl` 真机跑通 ⇒ “平台没有任意角度旋转位图”真实；`PgDisplay.cpp:59/77` 确实是 `setBackgroundBmp()`+`setInvalid()` 刷帧；`PgFontData.h` 确实是 `tools/genfont.py` 预烘多档（`PG_FONT_MAX_N=5`/`BIG=3`）；`448` 确在工程 json 里成片出现（27 处，480 宽屏内容区宽）。② **与代码不符（已修正）**：稿子里“超档位会走位图放大 = 拉伸”——代码是 **`clampN()` 夹到上限 + 缺字跨档 1:1 回退 + 全程不做放大/插值**（`PgCanvas.cpp:478-497` 注释明写“没有任何放大/插值”）。⇒ 真约束 = **档位预烘且档数固定**，不是画布限制、也不会拉伸。③ **降级为待核**：稿子列的“bitblt / 透明 α 混合 / 90° 旋转三种硬件能力”只核到 **G2D 存在 + 缩放/格式转换**（`g2d_scale.h`/`EPIXELFORMAT_g2d_format_convert.h`），逐项能力**未取证**（已标 `needs_evidence`，不许当定论引用）。v0.27.130-open',
@@ -996,6 +997,8 @@ def flythings_build_ui_flow(project_root: str, with_launch: bool = True, device:
     （staleOnDevice=true ⇒ 设备上还是旧版）。探测不猜：0 台→needDeviceInput；多台→列 serial 要 device=。
     ⚠️ src/activity/ 由 IDE 生成（禁手改），业务只写 src/logic/*.cc；细节见
     knowledge/devflow/adb-and-device-selection.md。
+    链本地/第三方库：放 src/dependencies/lib/（fun 自动链接）；**libc 必须匹配**——Z20/Z21=glibc、
+    V85X/T113=musl、F133=RISC-V64 musl。
     """
     return json.dumps(_with_design_warning(
         pt.flythings_build_ui_flow(project_root, with_launch, device,
@@ -1072,6 +1075,7 @@ def flythings_html_to_json(input_html: str, output_json: str = '', res: str = ''
     **仅当同属一个 Activity** 时才用 merge_windows 合成同 json 的 N 个整屏 window。
     返回 screensDetected/pagesProduced/jsonsProduced/pages[]；**不等一律 success:false**（不静默丢页）。
     红线：先出 .preview.html 确认再 pack/写逻辑；效果一律转图；禁止 AI 自绘 1x png。
+    做差异化效果前先答三问（静态/逐帧？面积？有无硬件层？）并查 knowledge/uicontrols/extension-surface.md。
     """
     return json.dumps(h2j.html2json(input_html, output_json or None, res or None,
                                     merge_windows=bool(merge_windows)), ensure_ascii=False)
@@ -1165,7 +1169,11 @@ def flythings_package_search(keyword: str, platform: str = _platforms.DEFAULT_PL
 
 
 def flythings_get_package_api(package_id: str, platform: str = _platforms.DEFAULT_PLATFORM, version: str = '') -> str:
-    """获取 package 的头文件路径、类方法签名、使用示例。传入包名与可选版本。"""
+    """获取 package 的头文件路径、类方法签名、使用示例。传入包名与可选版本。
+
+    注册表没有 ≠ 平台没有：设备 /lib 自带 nanovg/libpng12/freetype/jpeg/mad/zlib，可 dlopen 免编译；
+    清单与采集命令见 knowledge/devflow/device-preinstalled-libs.md（先 adb shell ls /lib）。
+    """
     return json.dumps(pkgtools.flythings_get_package_api(package_id, platform, version or None), ensure_ascii=False)
 
 
@@ -1601,16 +1609,12 @@ def flythings_ui_visual(action: str = 'list', project_root: str = '', output_dir
                         name: str = '', allow_regions: int = 0) -> str:
     """UI 可视化/像素验收入口（action 选动作；旧 ui_editor / ui_edit_apply / ui_diff 已并入）。
 
-    - action="editor"：ui/*.json → 可拖拽编辑器网页（<项目>/ui/_edit/<name>.edit.html）。必填
-      project_root；拖完点「复制 AI 指令」粘给 AI（本地静态页）。
-    - action="edit_apply"：变更 JSON 写回 ui/*.json。必填 project_root、changes（JSON 文本或路径）；
-      pack 默认 False；dry_run=True 只预览不写盘；写回前留 .bak。
-    - action="diff"：两张同尺寸截图逐像素对比（0 token 差异清单）。必填 image_a、image_b；
-      tolerance/shift/blur/min_area/noise_bbox 压假报警；out_png/out_json 出标注图与清单。
-    - action="baseline"：**像素基线库**（<项目>/ui_baseline/）。必填 project_root；mode=
-      save/compare/update/list（+image_a）；容差档案随基线存；比不到基线报 no-baseline，不静默放过。
+    - action="editor"：ui/*.json → 可拖拽编辑器网页（<项目>/ui/_edit/<name>.edit.html）。
+    - action="edit_apply"：变更 JSON 写回 ui/*.json（pack 默认 False；dry_run 只预览；写回留 .bak）。
+    - action="diff"：两张同尺寸截图逐像素对比，出 0 token 差异清单（tolerance/shift/blur/min_area/noise_bbox 压假报警）。
+    - action="baseline"：像素基线库（<项目>/ui_baseline/），mode=save/compare/update/list。
 
-    口径见 knowledge/devflow/ui-layout-verify.md；action 传 list 看各 action 参数。
+    详细口径见 knowledge/devflow/ui-layout-verify.md §3~§5-2；action 传 list 看各 action 参数。
     """
     act = str(action or '').strip().lower().replace('-', '_')
     if act in ('', 'list', 'help', '?'):
@@ -1687,16 +1691,13 @@ def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png
                                flip: str = '', rotate: str = 'auto', crop: str = '', name: str = '',
                                timeout: int = 180, advanced: str = '', layer: str = 'ui',
                                vdec_chn: int = 0) -> str:
-    """从**设备真机**抓当前屏幕 → PNG / JPG / BMP（给视觉模型看，或给 ui_visual(action="diff") 做验收）。
+    """从**设备真机**抓当前屏幕 → PNG / JPG / BMP（给视觉模型看，或给 ui_visual(action="diff") 验收）。
 
-    要确认设备上实际显示成什么样（布局/锯齿/切图/颜色/文字/改完验收）时用；三段式验收第二步。
-    常用（默认参数就够）：scale=0.5 或 fmt='jpg', quality=85 省 token；多设备 device='<IP>:5555'；
-    rotate='auto' 按工程 EasyUI.cfg 的 rotateScreen 转正；只要应用画面用 crop='auto'。
-    ⚠️ 抓完把返回的 path 交给看图能力，不要把 raw/文件丢给模型。
-    进阶参数（fb/pixel/宽高/offset_y/flip/rotate/crop/layer/vdec_chn/name/timeout）统一走 advanced
-    （JSON 字符串），同名显式参数优先。layer="video"（仅 SigmaStar）抓**视频层**帧；多路/拼墙必须给
-    vdec_chn（默认 0，**SmartPanel 拼墙在 chn 1**；选错=抓不到帧）。检索词与踩坑见
-    knowledge/devflow/device-screenshot.md。
+    三段式验收第二步。常用：scale=0.5 或 fmt='jpg', quality=85 省 token；rotate='auto' 按工程
+    EasyUI.cfg 转正；只要应用画面 crop='auto'。进阶参数（fb/pixel/宽高/offset_y/flip/rotate/crop/
+    layer/vdec_chn/name/timeout）走 advanced(JSON)；layer="video"（仅 SigmaStar）抓视频层，多路/
+    拼墙必须给 vdec_chn（默认 0，**拼墙在 chn 1**）。⚠️ 抓完把返回 path 交看图能力。
+    检索词与踩坑见 knowledge/devflow/device-screenshot.md。
     """
     if dss is None:
         return json.dumps({'success': False, 'error': 'device_screenshot 不可用（缺 ui_tools/device_screenshot.py 或 Pillow）'},
