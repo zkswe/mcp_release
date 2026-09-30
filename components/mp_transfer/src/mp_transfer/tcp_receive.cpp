@@ -19,8 +19,30 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <base/base.h>
-#include "config.h"
+#include "mp_config.h"
+#if defined(MP_TRANSFER_HAVE_FILE_PARSER)
 #include "mtp_monitor/file_parse_manager.h"
+#define MP_PARSE_FILE(p) FileParseManager::instance().parseFile(p)
+#else
+#include <sys/stat.h>
+
+/* 默认（弱）解析实现：只填 path/name/size/mtime；宽高/时长/分类要工程自己给
+ * （强符号覆盖 mp_parse_file，或编译加 -DMP_TRANSFER_HAVE_FILE_PARSER=1，见 mp_config.h） */
+__attribute__((weak)) TransferFileInfo mp_parse_file(const std::string& path) {
+	TransferFileInfo info;
+	info.path = path;
+	size_t slash = path.find_last_of('/');
+	info.name = (slash == std::string::npos) ? path : path.substr(slash + 1);
+	struct stat st;
+	if (stat(path.c_str(), &st) == 0) {
+		info.size = static_cast<uint64_t>(st.st_size);
+		info.last_modified = st.st_mtime;
+	}
+	info.category = FileCategory::UNKNOWN;
+	return info;
+}
+#define MP_PARSE_FILE(p) mp_parse_file(p)
+#endif
 
 #define TCP_STATUS_READY        1
 #define TCP_STATUS_OVER     0
@@ -346,7 +368,7 @@ void TcpReceiveTask::scanPath(const std::string& root_path) {
 		if (isTmpFile(path)) {
 			continue;
 		}
-		auto file_info = FileParseManager::instance().parseFile(path);
+		auto file_info = MP_PARSE_FILE(path);
 		scanned_list.push_back(file_info);
 	}
 
@@ -397,7 +419,7 @@ void TcpReceiveTask::updateCacheWithFile(const std::string& filepath, bool is_li
 		return;
 	}
 
-	auto file_info = FileParseManager::instance().parseFile(filepath);
+	auto file_info = MP_PARSE_FILE(filepath);
 	file_info.is_live = is_live;
 	{
 		std::lock_guard<std::mutex> lock(mMutex);

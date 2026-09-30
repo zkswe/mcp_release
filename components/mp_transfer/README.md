@@ -58,3 +58,13 @@ MpTransferRuntimeCoordinator::instance().release("my-project");
 无版本协商 / 无设备唯一 ID（端口固定 9000）/ 无认证加密 / 无 CRC 校验 / 无断点续传 / 非法请求直接断连不报错 / TCP 空闲超时短（不适合保活）。**仅适合可信局域网。**
 
 检索词：小程序传图 / 相册传输模式 / mp_transfer / UDP 8899 / TCP 9000 / zkswe: 广播 / 32KiB ACK / OK 确认 / 相框接收端
+
+
+## 编译前置（本组件自带，2026-09-30 补）
+
+- 落盘目录、媒体解析均已收进组件：
+  - src/mp_transfer/mp_config.h：MP_PATH（默认 /mnt/sdnand/album/，末尾带 /）—— 改这里或 -DMP_PATH=...。
+  - 媒体解析默认**不做**（只填 path/name/size/mtime）；要宽高/时长就给 mp_parse_file() 写强符号，或编译加 -DMP_TRANSFER_HAVE_FILE_PARSER=1 并提供 mtp_monitor/file_parse_manager.h。
+- 依赖：ase-utility（ase::Task）+ log（<android/log.h>）。
+  ⚠！ase-utility 的头会引入 SDK 的 os/MountMonitor.h（在 easyui 包里）——**单独建 in 工程会编不过**（缺该头；强行链 easyui 又会带一堆未解析符号）。
+  本组件属于 **zkgui 工程**，受支持的验证方式 = 接进 zkgui 工程后 un build -p <平台>。
