@@ -61,7 +61,7 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.133-open'
+MCP_VERSION = '0.27.134-open'
 MCP_BUILD = '2026-09-30'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -76,6 +76,7 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+    '2026-09-30: **批次 C：selfcheck 第⑩区「库清单」+ 返回体 pathHint（不开新 op）** v0.27.134-open（钟工：「批次 C」）——① **C1 `flythings_selfcheck` 新增第⑩分区「库清单」**（不新开 op，正因 docstring 预算只剩 6 字符）：新探针 `ls -l /lib` + `ls -l /res/lib`（busybox），新后处理 `_post_libs` 归出 `libs/libCount/resLib/focus（nanovg·libpng·freetype·jpeg·mad·libz·libgomp·libstdc++）/borrowable`；`ok` = 至少读到 `/lib` 清单；`hint` = 「注册表没有 ≠ 平台没有（自带 nanovg/libpng/freetype/jpeg/mad/zlib 可 dlopen 免编译）；借库前先 `readelf -d` 看 NEEDED/SONAME、`--dyn-syms` 对头文件核签名；清单见 `knowledge/devflow/device-preinstalled-libs.md`；`libmi_*` 属框架内部不要用」；notes 自动报“可借库”命中项。② **C2 返回体提示（不占 docstring 预算）**：新 `_render_path_hint()`/`_ui_visual_hint()`；`flythings_html_to_json` 与 `flythings_ui_visual(action=editor/edit_apply)` 命中关键词（旋转/矢量/半透明/alpha/3D/模糊/仪表/图表/粒子）时，返回体多一行 `pathHint`——“先答三问（静态/逐帧？面积？硬件层？）+ 查 `uicontrols/extension-surface.md`；任意角度旋转位图平台没有（先例 components/vinyl）”。③ docstring 总量 11994→**11999**/12000（九分区→十分区 + ⑩库清单，仍在红线内）；selfcheck 文档同步“十分区”。v0.27.134-open',
     '2026-09-30: **批次 B：docstring 腾预算 + 补“去哪找”描述（净零预算）** v0.27.133-open（钟工：「批次 B 处理」）——硬约束：docstring 总量 ≤12000（现 **11994**，即只剩 6 字符）⇒ **不新增 op，先腾后加**。① **B1 腾预算**：`flythings_ui_visual` 663→**470**、`flythings_device_screenshot` 550→**≈450**，把长尾细节**下沉到知识文档**：`knowledge/devflow/ui-layout-verify.md` 新增 **§5-1 像素基线库**（`action=baseline`：`<项目>/ui_baseline/`、mode=save/compare/update/list、**容差档案随基线存**、比不到基线报 `no-baseline` 不静默放过）与 **§5-2 edit_apply 写盘开关**（`pack` 默认 False / `dry_run` 只预览 / 写回留 `.bak`）；device_screenshot 的 advanced/layer/vdec_chn 细节本就在 `device-screenshot.md`。docstring 现在只留**要点 + 指向知识文档**。② **B2 加描述**（每条都直接指向知识文档）：`flythings_get_package_api` **39→194**——「**注册表没有 ≠ 平台没有**：设备 `/lib` 自带 nanovg/libpng12/freetype/jpeg/mad/zlib，可 dlopen 免编译；清单见 `knowledge/devflow/device-preinstalled-libs.md`（先 `adb shell ls /lib`）」；`flythings_build_ui_flow` 416→524——「链本地/第三方库放 `src/dependencies/lib/`（fun 自动链接）；**libc 必须匹配**：Z20/Z21=glibc、V85X/T113=musl、F133=RISC-V64 musl」；`flythings_html_to_json` 443→517——「做差异化效果前先答三问（静态/逐帧？面积？有无硬件层？）并查 `uicontrols/extension-surface.md`」。③ **净零验证**：总量仍为 **11994/12000**（腾出与加入基本持平），单 op 上限 900 仍有大量余量；门禁 `check_consistency` 全绿。v0.27.133-open',
     '2026-09-30: **`libmi_*` 降为“框架内部库，应用不需关注”** v0.27.132-open（钟工：「mi_gfx 不需要用户关注」）——① `knowledge/devflow/device-preinstalled-libs.md` §2.2 从“芯片侧能力入口（待逐符号核 API）”改写为 **框架/系统内部模块**：**明确⛔ 应用层不需关注、不要去 dlopen/链接**（接口不对外、随固件变），要图层/合成能力时走**框架高层 API**（videoview/cameraview/disp 纪律、`setBackgroundBmp`+`setInvalid`、`button+picTab` α 路径）；② 同步摘掉“悬而未决”的 `libmi_gfx API 未核”★待办项（不再追踪）与 tags 里的 mi_gfx / 2D 加速；③ `open-source-stack-integration.md` 与 `custom-render-paths.md` 的“设备自带可借用”清单里**移除 `libmi_*`**（只留 nanovg/libpng12/freetype/libjpeg/libmad/zlib），并注明 libmi 系列属框架内部。v0.27.132-open',
     '2026-09-30: **设备自带库入库 + 扩展点总表入库（先审核再处理）** v0.27.131-open（钟工：「我给你发的稿子你要审核后在处理。哪些是真实存在」）——① **先审核**：钟工四份稿逐条取证。**真机复核通过（Z21 / Zkswe_SSD21X_SPINOR）**：`/lib` 约 80 项，`libnanovg.so`=50,984 B、`libpng12.so.0.56.0`、`libfreetype.so.6.11.4`=137,120 B、`libjpeg.so.9.1.0`=177,488 B、`libmad.so.0.2.1`=83,224 B、`libmi_gfx/libmi_disp` 等在位，`/res/lib`=libzkgui.so。**纠正一处与事实不符**：稿子写“nanovg 四个平台注册表里都没有包”——本机实测 **f133 注册表有 `nanovg/1.0.0`**（z20/z21/v85x/f136 无，但设备 `/lib` 都有）。**降级一处**：`libmi_gfx` API 仍未核（只到库名+体积）。② **A1 入库** `knowledge/devflow/device-preinstalled-libs.md`：设备自带可 dlopen 库清单 + 两条采集命令（busybox ls / readelf）+ 三条纪律（注册表没有≠设备没有 / 头文件不在设备上 / libc 必须匹配）+ 明说 Z21 只做静态复核。③ **A2 入库** `knowledge/uicontrols/extension-surface.md`：六个扩展点总表（E1 组合/E2 自绘/E3 canvas/E4 disp 图层/E5 系统窗口/E6 进程外，含“明确不能做什么”、生命周期、性能档、最小示例、支持平台）+ §缺失表；E3 按代码修正字库档位口径（clampN 夹上限 + 跨档 1:1 回退 + 无放大插值）。④ **A3/A4 修订**：`open-source-stack-integration.md` §1/§3 增“设备已自带免编译”一条（nanovg/libpng12/freetype/libjpeg/libmad/zlib/`libmi_*`）；`custom-render-paths.md` ②b 选件表 nanovg 从“源码”改为“**设备已带 .so**”。⑤ **A5 已落**：`render-extension-boundary.md` §3 改为两段口径并引沛哥 2026-09-30 口径（内存画布→屏幕 = 硬件合成：拷贝/blit、透明 α 混合、90° 旋转），同时标明**芯片侧通道名未取证**。⑥ A6：`check_retrieval.py` 新增两组（设备自带库 6 问法 top-1 5/6；扩展点总表 10 问法 top-1 6/10、显式 `max_miss: 2` 并注明两条待改写的泛问法）。v0.27.131-open',
@@ -1077,8 +1078,12 @@ def flythings_html_to_json(input_html: str, output_json: str = '', res: str = ''
     红线：先出 .preview.html 确认再 pack/写逻辑；效果一律转图；禁止 AI 自绘 1x png。
     做差异化效果前先答三问（静态/逐帧？面积？有无硬件层？）并查 knowledge/uicontrols/extension-surface.md。
     """
-    return json.dumps(h2j.html2json(input_html, output_json or None, res or None,
-                                    merge_windows=bool(merge_windows)), ensure_ascii=False)
+    out = h2j.html2json(input_html, output_json or None, res or None,
+                        merge_windows=bool(merge_windows))
+    hint = _render_path_hint(input_html)
+    if hint and isinstance(out, dict):
+        out['pathHint'] = hint
+    return json.dumps(out, ensure_ascii=False)
 
 
 def flythings_list_packages(platform: str = '') -> str:
@@ -1586,6 +1591,31 @@ def _ui_visual_bad(msg, hint):
                        'warnings': []}, ensure_ascii=False)
 
 
+def _render_path_hint(text):
+    """按关键词给一行「走哪条路」（返回体提示，不占 docstring 预算）。"""
+    s = str(text or '').lower()
+    keys = ('旋转', '矢量', '半透明', 'alpha', '3d', '模糊', '仪表', '图表', '粒子')
+    if not any(k in s for k in keys):
+        return ''
+    return ('检测到可能涉及矢量/旋转/透明/差异化绘制 → 先答三问（静态还是逐帧？面积多大？'
+            '有无硬件层？），再查 knowledge/uicontrols/extension-surface.md 选扩展点；'
+            '任意角度旋转位图平台没有（先例 components/vinyl）')
+
+
+def _ui_visual_hint(raw, hint):
+    """把 pathHint 塞进返回体（解析不了就原样回）。"""
+    if not hint:
+        return raw
+    try:
+        d = __import__('json').loads(raw)
+    except ValueError:
+        return raw
+    if isinstance(d, dict):
+        d['pathHint'] = hint
+        return __import__('json').dumps(d, ensure_ascii=False)
+    return raw
+
+
 def _ui_visual_note(raw, note):
     """给内层结果补一条 visualNote（不改内层语义；解析不了就原样回）。"""
     if not note:
@@ -1644,9 +1674,11 @@ def flythings_ui_visual(action: str = 'list', project_root: str = '', output_dir
     note = ('action=%s 用不到这些参数，已忽略: %s（各 action 参数见 action="list"）'
             % (act, ', '.join(ignored))) if ignored else ''
     if act == 'editor':
-        return _ui_visual_note(_ui_editor(project_root, output_dir), note)
+        return _ui_visual_hint(_ui_visual_note(_ui_editor(project_root, output_dir), note),
+                              _render_path_hint(changes))
     if act == 'edit_apply':
-        return _ui_visual_note(_ui_edit_apply(project_root, changes, pack, dry_run), note)
+        return _ui_visual_hint(_ui_visual_note(_ui_edit_apply(project_root, changes, pack, dry_run), note),
+                              _render_path_hint(changes))
     if act == 'baseline':
         prof = {'tolerance': tolerance, 'shift': shift, 'minArea': min_area, 'blur': blur,
                 'noiseBbox': noise_bbox}
@@ -1737,14 +1769,14 @@ def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png
     return json.dumps(r, ensure_ascii=False)
 
 def flythings_selfcheck(device: str = '', diff_against: str = '', out: str = '') -> str:
-    """整机快照（九个分区），每分区给 {ok, hint, data}；`ok=false` **不是错误而是结论**。
+    """整机快照（十个分区），每分区给 {ok, hint, data}；`ok=false` **不是错误而是结论**。
 
-    九分区：①设备信息 ②应用状态 ③显示 ④存储 ⑤网络 ⑥蓝牙 ⑦输入 ⑧外设 ⑨时间；
+    九分区：①设备信息 ②应用状态 ③显示 ④存储 ⑤网络 ⑥蓝牙 ⑦输入 ⑧外设 ⑨时间 ⑩库清单；
     hint 写明「需要什么条件 / 去哪查指令」，不静默。采集容忍设备缺工具：优先随仓
     bin_tools/<平台>/busybox（→设备 /tmp/busybox，缺则推一份），否则纯 adb shell + getprop/cat。
     device='<serial|IP>:5555'（可省；**多台在线不猜**，回 NO_DEVICE + 在线清单）；
     diff_against=<上次快照.json> 出逐分区逐项差异；out=<json 路径> 落盘（可复用作基线）。
-    检索词：整机自检/selfcheck/九分区/快照/与上次对比（knowledge/devflow/selfcheck-and-bugreport.md）。
+    检索词：整机自检/selfcheck/十分区/快照/与上次对比（knowledge/devflow/selfcheck-and-bugreport.md）。
     """
     if sc is None:
         return json.dumps({'ok': False, 'op': 'flythings_selfcheck',

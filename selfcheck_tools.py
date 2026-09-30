@@ -434,6 +434,38 @@ def _post_time(raw, dev):
     return data, notes
 
 
+def _post_libs(raw, dev):
+    """库清单：/lib 与 /res/lib 的 .so 盘点 —— 借库先看这里，别急着自己编。"""
+    focus = ('nanovg', 'libpng', 'freetype', 'jpeg', 'mad', 'libz.so',
+             'libgomp', 'libstdc++')
+    libs, res = [], []
+    for key, bucket in (('libList', libs), ('resLibList', res)):
+        for line in str(raw.get(key) or '').splitlines():
+            parts = line.split()
+            if len(parts) < 5:
+                continue
+            path = parts[-1]
+            if '.so' not in path:
+                continue
+            name = path.rsplit('/', 1)[-1]
+            try:
+                size = int(parts[4])
+            except (ValueError, IndexError):
+                size = None
+            bucket.append({'name': name, 'size': size, 'path': path})
+    found = {k: any(k in it['name'] for it in libs) for k in focus}
+    data = {'libs': libs, 'libCount': len(libs),
+            'resLib': res, 'resLibCount': len(res), 'focus': found,
+            'borrowable': [k for k, v in found.items() if v]}
+    notes = []
+    if not libs:
+        notes.append('读不到 /lib 清单：确认 busybox 在位（本模块会自动推）')
+    else:
+        notes.append('可借库（dlopen 免编译）：%s；`libmi_*` 属框架内部，应用不需关注'
+                     % (', '.join(data['borrowable']) or '未命中重点库'))
+    return data, notes
+
+
 def _any(*vals):
     """ok 判据：任一值非空。"""
     for v in vals:
@@ -534,6 +566,13 @@ SECTIONS = (
                 _probe('timezone', 'getprop persist.sys.timezone'),
                 _probe('ntpTool', 'ls /bin/ntpd /usr/sbin/ntpd /system/bin/ntpd /bin/ntpdate',
                        bb=True))},
+    {'key': 'libs', 'title': '⑩ 库清单', 'post': _post_libs,
+     'ok': lambda d: _any(d.get('libs')),
+     'hint': '要借哪个库 → 先 `readelf -d <lib>` 看 NEEDED/SONAME，再用 `--dyn-syms` 对照头文件核签名；'
+             '**注册表没有 ≠ 平台没有**（设备 /lib 自带 nanovg/libpng/freetype/jpeg/mad/zlib，可 dlopen 免编译）；'
+             '清单与三条纪律见 knowledge/devflow/device-preinstalled-libs.md（libmi_* 属框架内部，不要用）',
+     'probes': (_probe('libList', 'ls -l /lib', bb=True, cap=6000),
+                _probe('resLibList', 'ls -l /res/lib', bb=True, cap=2000))},
 )
 
 
@@ -558,7 +597,7 @@ def _collect_section(dev, sec):
 
 
 def _snapshot(dev, target):
-    """九个分区快照（selfcheck 的正文）。"""
+    """十个分区快照（selfcheck 的正文）。"""
     sections = {}
     for sec in SECTIONS:
         try:
@@ -645,7 +684,7 @@ def _compute_diff(prev, cur):
 
 
 def run_selfcheck(device='', diff_against='', out=''):
-    """整机快照（九分区）+ 可选 diff + 可选落盘。返回 dict（kb_tools 只做 JSON 包装）。"""
+    """整机快照（十分区）+ 可选 diff + 可选落盘。返回 dict（kb_tools 只做 JSON 包装）。"""
     target = resolve_target(device)
     if not target['ok']:
         return {'ok': False, 'op': 'flythings_selfcheck',
