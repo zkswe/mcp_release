@@ -1,10 +1,10 @@
 {
  "meta": {
   "schema": 1,
-  "built_at": "2026-09-30 09:39:28",
-  "mcp_version": "0.27.128-open",
+  "built_at": "2026-09-30 09:53:02",
+  "mcp_version": "0.27.129-open",
   "doc_count": 88,
-  "source_hash": "1860489c56dcb0534681b4d3c7ea7119"
+  "source_hash": "a0389858cfffde1910e9dcb2606d3679"
  },
  "summary": {
   "total": 88,
@@ -332,8 +332,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": true,
-   "bytes": 9153,
-   "sha256": "5a67d6cc1e9d2879d060c5b899c4443b2d003265a632932ea0fc13871d7e222e",
+   "bytes": 9909,
+   "sha256": "dfaa460944bb2a812d7e69f8deed16090f0a7807b96e599ca6801d864e363689",
    "fingerprint": "076ff5cdd5b02b6c",
    "ageDays": 1,
    "freshness": "fresh",
@@ -1176,13 +1176,14 @@
     "自定义控件",
     "自绘",
     "位图画布",
+    "硬件合成",
     "软渲染",
     "软件模拟 GPU",
     "伪 3D",
     "真 3D",
     "GPU",
-    "画布上限",
     "视频图层尺寸",
+    "任意角度旋转",
     "动画计时",
     "绝对时间基准"
    ],
@@ -1196,8 +1197,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": true,
-   "bytes": 9429,
-   "sha256": "ee6a5b3fb582857cf36ddbee5bc8ab2c1cfb435916216aad53dcab810bbe0e4e",
+   "bytes": 10084,
+   "sha256": "b485aee785d563ca6b9f96747e7024bae8cca2514bf65ba31cdc221f9efc31ac",
    "fingerprint": "fc4fe097d5a567e8",
    "ageDays": 0,
    "freshness": "fresh",

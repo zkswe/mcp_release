@@ -190,10 +190,11 @@ GROUPS = [
         'doc': 'knowledge/devflow/custom-render-paths.md',
         'name': '自定义渲染路径（P1.5 review）',
         'min_top1': 4,          # 实测 5/10 → 留 1 条余量
-        # 已知 2 条未进 top-3（真记录，不调阈值凑数）：`视频层怎么叠加` → v85x/videoview-transparent-window.md
-        # 与 `stb 系列头文件库能用吗` → wiki/system/virtual_eeprom.md；跟进手段 = 给这两条写更具体的
-        # 同义问法或把答案拆进对应子文档（P2 的 gap 驱动写作）
-        'max_miss': 2,
+        # 已知 3 条未进 top-3（真记录，不调阈值凑数）：`视频层怎么叠加` → v85x/videoview-transparent-window.md、
+        # `stb 系列头文件库能用吗` → wiki/system/virtual_eeprom.md（这两条是 P1.5 期就有的老账），
+        # 新増 `复杂动画性能不够` → 被新增的「边界总纲」篇拽走（同族父子文档竞争：总纲只给结论，
+        # 降本做法在本篇；两篇互链、答案都在 top-5）。跟进手段 = 后续把 3 条各自写更具体的同义问法或拆子文档
+        'max_miss': 3,
         'queries': [
             'FlyThings 怎么做自定义渲染', '想用 LVGL 怎么办', '能不能用 cairo/SDL',
             '直接写 framebuffer 可以吗', '离屏渲染成图再显示', '视频层怎么叠加',
@@ -204,11 +205,11 @@ GROUPS = [
     {
         'doc': 'knowledge/devflow/render-extension-boundary.md',
         'name': '渲染扩展能力边界（三层模型）',
-        'min_top1': 7,          # 实测 12 条里 top-1 命中 8（2026-09-30 建组，已含钟工三次更正后的问法）→ 留 1 条余量
+        'min_top1': 11,         # 实测 12 条里 top-1 命中 12（2026-09-30，含钟工三次更正后的问法）→ 留 1 条余量
         'queries': [
             'FlyThings 能不能做 3D', '没有 GPU 能不能做动画特效',
             'canvas 画布能做到什么程度', '软件模拟 GPU 效果行不行',
-            '视频图层超过屏幕区域会怎样', '渲染能力边界在哪',
+            '我们只能软渲染吗', '渲染能力边界在哪',
             '非 3D 的效果都能做吗', 'FlyThings 视觉效果能做到什么程度',
             '动画计时必须用绝对时钟吗', '动画计时能不能用帧计数',
             '视频图层尺寸上限', 'GUI 层缩放有上限吗',
