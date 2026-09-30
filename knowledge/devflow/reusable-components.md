@@ -34,6 +34,9 @@ evidence: []
 | `ble/` | 代码型 | BLE 门面 `zk::ble`：把蓝牙收拾成 wxapi 那种（**一个 API 面、两个后端**：中心扫描/连接/GATT + 外设广播/GATT 服务/notify）；中心：F133、V85X；双角色：Z20/Z21/T113EMMC |
 | `blur/` | 代码型 | 高斯模糊（铺底/封面背景）`zk::`：拖一张 4 字节 BGRA 位图进，出一张模糊图；**切歌时算一次**不逐帧重算；带 `prep`/`darken`/`bench_once`，档位 AUTO/BOX3/SEP_*/RVV；真机 F133 缩图铺底 **59~88 ms**（详见 §7） |
 | `imagecache/` | 代码型 | 列表封面「已解码位图」按路径缓存 `zk::ImageCache`：单例 + 引用计数 + 权重 LRU + 容量参数 + 日志钩子；治 listview 刷新/回页重设封面反复解码（真机回页重设同一批 **315 ms → 1 ms**）；带 `hits()/loads()` 读数，PC 自测 29 项（详见 §9） |
+| `wall_sync/` | 代码型 | 多屏拼接 / 视频墙同步 `zk::wall`：`Sync`（UDP 自组网 + 主机 epoch + 从机双向测时 RTT/2 钟差 + 绝对墙钟**整边界栅格** + `playlist.json` 多 clip 时间轴 + 失联/时钟守卫）+ `Player`（按栅格挑本机那格、边界踩点起播、交**注入的 `Engine`** 送流）；零 MI/ffmpeg 类型泄漏；Z20 口径来自来源工程内联版（相位 ≤40ms、稳态偏差 ≤1ms） |
+| `album_upload/` | 代码型 | 相册传图（手机→面板）**业务接线层** `zk::album`：配置/生命周期/回调归一化/**二维码三态**（远端小程序码图 / `ZKQrcode` 现场生成 / 本机地址兜底）+ 计数读数；附我们的小程序码素材与生成脚本；**协议与落盘引用 `mp_transfer/`（不复制）** |
+| `ha_bridge/` | 代码型 | Home Assistant / MQTT 桥 + 继电器语义 `zk::ha`：配置全空默认、HA Discovery 自动发、上行 retained、下行只认 `switch/relay_<n>/command` 的 ON/OFF、retained 撤销；**重连只留一个真源** + 代次作废旧回调；`RelayBank` 从接口上消灭「覆盖式 listener 抹掉上报」 |
 | `fonts/` | 资产型 | 思源黑体三版（常用中文872KB / 全中文7.4MB / 多国语言10.5MB）+ 设备字体自检（缺中文自动投递） |
 
 ---

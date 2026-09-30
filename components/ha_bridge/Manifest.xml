@@ -1,0 +1,53 @@
+<!--
+  components/ha_bridge —— 引用声明（**源码型模块**：include/ + src/ + example/）
+
+  交付物：
+    include/zk/zk_ha_bridge.h      唯一对外头（zk::ha::Bridge / RelayBank / Config / Result；
+                                   **不泄漏** mqtt-cxx / paho / rapidjson 任何类型）
+    src/zk_ha_bridge.cpp           实现（mqtt-cxx + base-json + log；代次/退避/差分/retained 撤销）
+    example/zk_ha_bridge_demo.cc   FlyThings 逻辑示例（连 broker -> 发一次状态 -> 收命令打印）
+
+  接入工程（源码引入，推荐起步）：
+    1) 把 components/ha_bridge/{include,src} 拷进工程（如 src/zk/）；
+    2) 按下面 <platform name="Z20"> 声明底层包；**改完 Manifest 必须重跑 fun install**
+       （否则新包的 include 路径不进 CMake，编译期报找不到 mqtt/mqtt_client.h）；
+    3) 页面 onUI_init 调 start()、1s 定时器调 tick()、onUI_quit 调 stop()。
+
+  ⚠️ Z20 上三个不能漏的（实测）：
+    * paho-mqtt3as —— mqtt-cxx 只发一个 .a + 一个头（头里 `extern "C" { #include <MQTTAsync.h> }`），
+      编译要它的头、链接要它的库；Z20 registry **没有 paho-mqtt3a**，只有 `as` 变体；
+    * openssl      —— paho 的 TLS 后端；漏了链接报 BIO_read / RAND_bytes / SHA1_* undefined；
+    * base-utility —— base/functional.h（回调类型 = ConnectedHandler/MessageHandler）
+      与 generated/*.h 固定 `#include <base/…>`。
+
+  注意：本模块**尚未注册进依赖包仓库**，所以下面不写 <package id="ha_bridge">；
+        将来若注册进包仓库，工程里就只需一行（版本**写死**，不用 ^ 浮动：底层 ABI 一变就不可复现）：
+          <package id="ha_bridge" version="0.1.0"></package>
+-->
+<manifest>
+
+  <platform name="Z20">
+    <dependencies>
+      <package id="mqtt-cxx" version="^3.2.0"></package>
+      <package id="paho-mqtt3as" version="^1.3.13"></package>
+      <package id="openssl" version="1.1.1-w"></package>
+      <package id="base-json" version="^3.1.0"></package>       <!-- Discovery/状态对象（base::JSONObject） -->
+      <package id="base-utility" version="^10.8.5"></package>   <!-- base/functional.h + generated 头 -->
+      <package id="log" version="0.0.0"></package>              <!-- android/log.h：base-utility/base/log.h 需要它 -->
+      <!--
+        可选：easyui —— 只为「没装日志钩子」时的 LOGD/LOGW/LOGE 兜底
+        （src/zk_ha_bridge.cpp 用 __has_include("utils/Log.h") 自动探测；工程里本来就有 easyui 就不用管）。
+        用日志钩子 setLogHook() 的工程完全不需要这一行。
+        <package id="easyui" version="^2.2.0"></package>
+      -->
+      <!-- 可选：工程侧要解析 HA 回传 JSON 时用；本组件自身不依赖 -->
+      <package id="rapidjson" version="1.1.0"></package>
+    </dependencies>
+  </platform>
+
+  <!--
+    其它平台（Z21 / F133 / F136 / T113EMMC / V85X）：registry 里没有 mqtt-cxx / paho-mqtt3as
+    -> 本模块在这些平台上**不支持**（不拿别的平台的头凑）。详见 platforms.md §1 / §5。
+  -->
+
+</manifest>

@@ -1,0 +1,74 @@
+<!--
+  components/wall_sync —— package 引用声明（源码型）
+
+  交付物：
+    include/zk/zk_wall.h       唯一对外头（zk::Sync / zk::Engine / zk::Player，无任何底层类型）
+    src/zk_wall_sync.cpp       组网/校时/时间轴（移植自 SmartPanel_HA src/wall/WallLink.cpp）
+    src/zk_wall_player.cpp     选片+起停（移植自 src/wall/WallPlayer.cpp + mainLogic 的边界踩点）
+    example/zk_wall_example.cc 首次接触 PC/WSL 可编可跑的桩引擎示例（无媒体也能跑通逻辑链）
+    example/flythings_wiring.cc FlyThings 接线样板（SimplePlayer 引擎 + prefs + 日志/时钟钩子 + 屏保生命周期）
+
+  ── 怎么用（源码引入，推荐起步）────────────────────────────────────────────
+    1) 把 include/zk/zk_wall.h → 工程 <src>/zk/zk_wall.h；src/*.cpp + src/zk_wall_internal.h → 工程能编到的目录；
+    2) 按下面 【组件核心依赖】 在工程 fun.json / Manifest.xml 声明；
+    3) 自己实现 zk::wall::Engine（Z20 参考 = 官方包 simple-player 的 SimplePlayer，见 example/flythings_wiring.cc）；
+    4) 把 sp_wall_* 配置组装成 SyncConfig / PlayerConfig，屏保页 1s 定时器里调 Sync::tick() + Player::start/stop()。
+    ⚠️ 改完 Manifest/fun.json **必须重跑 fun install**（否则新包的 include 路径进不了 CMake）。
+    ⚠️ fun.json 优先于 Manifest.xml；依赖写 fun.json；type:"executable" 才出可执行 ELF。
+
+  ── 怎么用（依赖包引用，模块定型后）────────────────────────────────────────
+    模块按平台编出 include/ + lib/<平台>/ 注册进包仓库后，工程里一行（版本写死，不用 ^ 浮动）：
+        <package id="wall_sync" version="1.0.0"></package>
+
+  ── 版本口径 ─────────────────────────────────────────────────────────────
+    下列版本号**抄自落地来源工程 projects/SmartPanel_HA/Manifest.xml**（Z20 现场在跑的真实组合）；
+    只把"组件核心真正需要"的标成必选，接线/引擎链路的标成可选。
+    目标工程若已锁别的版本，**以工程为准**（版本冲突时不要为组件改工程）。
+-->
+<manifest>
+
+  <!-- ══════════ 组件核心依赖（Sync/Player 实现本身要的）══════════ -->
+  <platform name="Z20">
+    <dependencies>
+      <!-- playlist.json 解析（组件里唯一用到 JSON 的地方；rapidjson 1.1.0 = 仓库里实际可用版本，
+           来源工程经 base-json ^3.1.0 间接使用它） -->
+      <package id="rapidjson" version="1.1.0"></package>
+      <!-- fun 生成的 generated/*.h 固定 #include <base/…>，别漏（组件规范 §3 的坑） -->
+      <package id="base-utility" version="^10.8.5"></package>
+    </dependencies>
+  </platform>
+
+  <!-- ══════════ 接线侧依赖（example/flythings_wiring.cc 才需要）══════════
+       这些属于"接进 FlyThings 工程"的成本，不是组件核心的依赖：
+         easyui        ：StoragePreferences（配置持久化）/ Log（日志）/ ZKVideoView（要与引擎互斥的那个内核）
+         log           ：日志包（版本 0.0.0 = 跟工程）
+         simple-player ：**播放引擎**（官方包，带 accessKey 授权）：MI VDEC + MI DISP 硬解 + 自带格子对齐
+         ffmpeg        ：引擎链路的传递依赖（封装 h264_mp4toannexb + MI 解码）
+                          ⚠️ 必须 4.1.9-configure3：4.1.9 是精简构建，libavformat.a 里没有 ff_mov_demuxer、
+                             libavcodec.a 里没有 ff_h264_mp4toannexb_bsf，avformat_open_input 直接返回
+                             -1094995529 Invalid data（真机实测）
+         mi-module     ：引擎链路的传递依赖；固定 5.0.2（5.0.0 在 fun 解析器里会撞预发布版报「依赖版本冲突」）
+         ntp           ：校时前提（面板 RTC 掉电不保时；各机必须校到毫秒级，否则相位收敛不到 1 帧）
+  -->
+  <platform name="Z20">
+    <dependencies>
+      <package id="easyui" version="^2.2.0"></package>
+      <package id="log" version="0.0.0"></package>
+      <package id="ffmpeg" version="4.1.9-configure3"></package>
+      <package id="mi-module" version="5.0.2"></package>
+      <package id="ntp" version="2.1.1"></package>
+      <!-- 官方引擎包：授权码（accessKey）由厂商/项目方发放，**本仓不代管、不写死**。
+           声明形态（把 <ACCESS_KEY> 换成你拿到的 key；没有授权时请改用自研 Engine 实现）：
+      <package id="simple-player" version="^4.0.1" accessKey="<ACCESS_KEY>"></package>
+      -->
+    </dependencies>
+  </platform>
+
+  <!-- ══════════ 其它平台 ══════════
+       组件核心（POSIX socket/pthread/clock_gettime + rapidjson + base-utility）在这些平台**可编译**；
+       但"拼墙相位对齐"从未在这些平台实测（见 platforms.md §1）：
+         F133 / F135 / F136 / Z21 / T113 / T113EMMC / V85X  →  未验证
+       接入前先过 platforms.md §3「换平台先查三件事」，并在该平台重做验收。
+  -->
+
+</manifest>

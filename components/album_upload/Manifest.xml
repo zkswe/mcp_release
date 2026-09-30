@@ -1,0 +1,80 @@
+<!--
+  components/album_upload —— 依赖声明（相册传图业务接线层）
+
+  交付物：
+    include/zk/zk_album.h  唯一对外头（zk::album::Uploader / Config / Result / FileInfo / QrInfo）
+    src/zk_album.cpp       实现（配置 + 生命周期 + 回调归一化 + 二维码三态 + 计数）
+    assets/                小程序码素材（128×128）+ 三态口径
+    scripts/               从原图出素材/解链接（含 5 条验扫判据）
+    example/               最小接线 + FlyThings 接线样板
+
+  ⚠️ 本组件**引用** components/mp_transfer/（不复制）：把它的
+     src/mp_transfer/{broadcast_task,tcp_receive}.{h,cpp}、src/mp_transfer/runtime_coordinator.h、
+     src/system/transfer_type_and_data.h 一起拷进工程，两个 .cpp 加进编译。
+     mp_transfer 的落盘目录是**编译期宏**（MP_PATH）→ 必须与 Config::save_dir 一致。
+
+  接进工程（源码引入，推荐起步）：
+    1) 把 include/zk/zk_album.h → 工程 src/zk/zk_album.h；src/zk_album.cpp → 工程能编到的地方
+    2) 把 mp_transfer 的 4 源 + 1 头拷进工程
+    3) 工程 Manifest/fun.json 声明下面这些底层包
+    4) 照 example/flythings_wiring.cc 接：configure → 回调 → start/stop → 二维码三态落 UI
+
+  依赖分两层（别混）：
+    · **组件本体只用 libc/POSIX**（opendir/stat/mkdir/socket 全在 mp_transfer 那侧）；
+    · 下面列的是**接线层 + mp_transfer** 需要的：easyui（控件/StoragePreferences/生成代码）、
+      log（工程日志宏）、base-utility（mp_transfer 的 base::Task）、curl-cxx（远端小程序码图下载）。
+      **改完 Manifest 必须重跑 fun install**，否则新的 include 路径不进 CMake。
+
+  将来若注册进依赖包仓库，工程里一行（版本号写死，不用 ^ 浮动）：
+    <package id="album_upload" version="0.1.0"></package>
+-->
+<manifest>
+
+  <!-- Z20：口径来源（来源工程 SmartPanel_HA 的相册上传页跑在这条平台上；版本取自该工程 Manifest） -->
+  <platform name="Z20">
+    <dependencies>
+      <package id="easyui" version="^2.2.0"></package>        <!-- 二维码控件 ZKQRCode / StoragePreferences / 生成代码 -->
+      <package id="log" version="0.0.0"></package>             <!-- 工程日志宏（接线层用） -->
+      <package id="base-utility" version="^10.8.5"></package>  <!-- mp_transfer 的 base::Task -->
+      <package id="curl-cxx" version="^10.0.3"></package>      <!-- http/downloader.h：远端小程序码图下载 -->
+    </dependencies>
+  </platform>
+
+  <!-- 其它平台：协议本体与组件代码不挑平台，但**本仓未实测**；版本号请以目标工程 Manifest 为准 -->
+  <platform name="Z21">
+    <dependencies>
+      <package id="easyui" version="^2.2.0"></package>
+      <package id="log" version="0.0.0"></package>
+      <package id="base-utility" version="^10.8.5"></package>
+      <package id="curl-cxx" version="^10.0.3"></package>
+    </dependencies>
+  </platform>
+
+  <platform name="F133">
+    <dependencies>
+      <package id="easyui" version="^2.2.0"></package>
+      <package id="log" version="1.0.0"></package>
+      <package id="base-utility" version="^10.8.5"></package>
+      <package id="curl-cxx" version="^10.0.3"></package>
+    </dependencies>
+  </platform>
+
+  <platform name="T113">
+    <dependencies>
+      <package id="easyui" version="^2.2.0"></package>
+      <package id="log" version="0.0.0"></package>
+      <package id="base-utility" version="^10.8.5"></package>
+      <package id="curl-cxx" version="^9.0.1"></package>
+    </dependencies>
+  </platform>
+
+  <platform name="V85X">
+    <dependencies>
+      <package id="easyui" version="^2.2.0"></package>
+      <package id="log" version="0.0.0"></package>
+      <package id="base-utility" version="^10.8.5"></package>
+      <package id="curl-cxx" version="^10.0.3"></package>
+    </dependencies>
+  </platform>
+
+</manifest>
