@@ -8,17 +8,18 @@
 ## 1. 是什么 / 不是什么
 
 **是**：
-- **配置面**：落盘目录、设备名（小程序里看到的名字）、监听端口、二维码三态的内容来源（全部配置项，**不写死**）；
+- **配置面**：落盘目录、设备名（小程序里看到的名字）、监听端口、二维码内容来源（全部配置项，**不写死**）；
 - **生命周期面**：`start()/stop()` 一句起停（内部 = mp_transfer 的 `retain/release` 引用计数，多页共用安全）；
 - **回调面**：上传完成 `onFileAdded` / 手机连接状态 `onStateChanged`（归一化过，不外泄底层类型）；
-- **二维码面**：`qrInfo()` 按三态算出"现在该显示什么"（远端小程序码图 / 控件现场生成 / 本机地址兜底）；
+- **二维码面**：`qrInfo()` 给出**要喂给控件的链接**（一条路 + 一个兜底：配置 URL / 本机上传地址）；
 - **读数面**：`stats()`（图片/视频计数）、`peerConnected()`（呼吸灯 vs 帧动画）、`lastError()`（人话）。
 
 **不是**：
 - ❌ 不实现协议：UDP 8899 广播、TCP 9000、32 KiB 分块 ACK、`.tmp`→rename 落盘全在 `components/mp_transfer/`；
 - ❌ 不解析媒体：**只收不解析**（不读 JPG/MP4 头，不给宽高/时长 —— 底部 `TransferFileInfo` 里有字段但本组件不填）；
 - ❌ 不做 UI：二维码控件、白卡、呼吸灯、文件网格都是你的页面（接线样板见 `example/flythings_wiring.cc`）；
-- ❌ 不管网络/存储策略：本机 IP 由你注入（`setLocalIpProvider`），远端码图下载由你的下载器做（`notifyQrImageDownloaded`）；
+- ❌ **不下载任何图片、不铺二维码位图**（口径 2026-09-30：二维码只用 URL 现场生成，见 `assets/README.md`）；
+- ❌ 不管网络/存储策略：本机 IP 由你注入（`setLocalIpProvider`）；
 - ❌ 不认 prefs：本组件不认识 `StoragePreferences`，配置由你从自己的 prefs 读出来后灌进 `Config`。
 
 **分工（移植时对号入座）**
@@ -26,8 +27,8 @@
 | 层 | 谁 | 干什么 |
 |---|---|---|
 | 协议/网络/落盘 | `components/mp_transfer/` | UDP 8899 广播 `zkswe:<设备名>`；TCP 9000 收文件；分块 ACK；`.tmp`→校验→rename |
-| 业务接线 | **本组件 `zk::album`** | 配置、生命周期、回调归一化、二维码三态、计数 |
-| 工程 | 你的项目 | 读写 prefs、UI 显示二维码、收到文件后刷列表/入轮播 |
+| 业务接线 | **本组件 `zk::album`** | 配置、生命周期、回调归一化、二维码内容（URL）、计数 |
+| 工程 | 你的项目 | 读写 prefs、UI 显示二维码（`loadQRCode(qrInfo().content)`）、收到文件后刷列表/入轮播 |
 
 ## 2. 怎么用（最小可跑，15 行）
 
@@ -43,22 +44,22 @@ up.setLocalIpProvider(myLocalIp, 0);           // 兜底二维码拼 http://<ip>
 zk::album::Config cfg;                         // 默认值安全（save_dir=/mnt/sdnand/album/）
 cfg.save_dir    = "/mnt/sdnand/album/";        // ⚠️ 末尾带 '/'，且与 mp_transfer 的 MP_PATH 一致
 cfg.device_name = "我的相框";                   // 小程序里看到的名字（空 → Frame）
-cfg.qr_url      = myPrefsQrUrl();              // 空 → 兜底本机上传地址；非空 = 控件现场生成的内容
-cfg.qr_image_url= myPrefsQrImageUrl();         // 非空 = 远端微信小程序码图（控件编不出来）
 up.configure(cfg);                             // 内部会 start()（start_on_configure=true）
+
+up.setQrUrl(myPrefsQrUrl());                   // 二维码内容：从你自己的 prefs 读（空 → 兜底本机上传地址）
 up.refresh();                                  // 进页扫一遍：stats() 拿到图片/视频数
-zk::album::QrInfo qr = up.qrInfo();            // 三态：见 assets/README.md
+zk::album::QrInfo qr = up.qrInfo();            // 一条路 + 一个兜底：见 assets/README.md
+// UI 线程：mQrcodePtr->loadQRCode(qr.content.c_str())   ← 内容变了才重算（QR 生成很贵）
 ```
 
 页面销毁时**两句必做**（真机踩出来的，见 §6 坑 1）：
 
 ```cpp
-sQrShown.clear();                       // 你自己"已 load 的内容"缓存
-zk::album::Uploader::instance().resetQrCache();
+sQrShown.clear();                       // ⚠️ 你自己"已 load 的内容"缓存，与控件同生共死
 zk::album::Uploader::instance().stop(); // 离开页面停传输（省电；小程序侧会显示设备不可见）
 ```
 
-完整接线（prefs 读配置 + 远端码图下载 + 定时器刷新 + 模式开关）见 `example/flythings_wiring.cc`；
+完整接线（prefs 读配置 + 定时器刷新 + 模式开关）见 `example/flythings_wiring.cc`；
 端到端生命周期见 `example/album_upload_example.cc`。**跑起来还要三步**（拷 mp_transfer + 拷本组件 + 声明依赖），
 命令与判据见 `example/README.md`。
 
@@ -75,15 +76,17 @@ zk::album::Uploader::instance().stop(); // 离开页面停传输（省电；小�
 | `setOnStateChanged(fn,user)` | 手机连上/断开（**接收线程**） |
 | `setLogHook(fn,user)` / `setLocalIpProvider(fn,user)` | 日志钩子 / 本机 IP 来源 |
 | `refresh() / stats() / lastError()` | 重扫落盘目录 / `{photos,videos}` / 最近一次错误（人话） |
-| `qrInfo()` | 二维码三态（`QrMode` + `content`/`image_url`/`image_path`/`image_ready`） |
-| `setQrUrl() / setQrImageUrl()` | 运行时改二维码内容来源（如设置页改完立刻生效） |
-| `notifyQrImageDownloaded(bool)` | 你的下载器完成后调（失败 → 自动回落下一态，不卡空白） |
-| `resetQrCache()` | **页面销毁必调**（清"下载失败"记忆；同款缓存坑见 §6） |
-| `localUploadUrl()` | `http://<ip>:<端口>/upload`（`QR_LOCAL_UPLOAD_FALLBACK` 的内容） |
+| `qrInfo()` | 二维码内容（`QrMode` + `content`（**永远非空**）+ `local_url`） |
+| `setQrUrl(url)` | 运行时改二维码内容（如设置页改完立刻生效；**空串 → 退回本机地址兜底**） |
+| `localUploadUrl()` | `http://<ip>:<端口>/upload`（`QR_LOCAL_UPLOAD_FALLBACK` 的内容，调试/提示用） |
+
+**二维码口径（只有一条路 + 一个兜底）**：`QrMode{QR_FROM_CONFIG, QR_LOCAL_UPLOAD_FALLBACK}` ——
+两种 mode 的 UI 处理**完全一样**：`ZKQRCode::loadQRCode(qr.content)`。组件侧**不缓存**二维码内容
+（`qrInfo()` 即时计算），也没有任何"下载/失败"状态。
 
 **线程模型（硬约束）**：`setOnFileAdded` / `setOnStateChanged` 在 **mp_transfer 接收线程**里被调 →
 只允许置标志 / 记路径 / 入队列；**禁止**在回调里动控件、注册注销、起停服务。
-UI（`loadQRCode`、`setBackgroundPic`）只能在 UI 线程，靠你的定时器消费标志。
+UI（`loadQRCode`）只能在 UI 线程，靠你的定时器消费标志。
 
 **错误口径**：一切可失败操作返回 `Result{code,msg}`，`msg` 是人话（可直接打日志/回给用户），
 **不静默失败**；`lastError()` 留最近一次。日志走 `setLogHook`（未设钩子时完全静默，不刷屏）。
@@ -92,8 +95,8 @@ UI（`loadQRCode`、`setBackgroundPic`）只能在 UI 线程，靠你的定时�
 
 - **组件本体**：只用 libc/POSIX（`opendir/stat/mkdir/access`）—— PC 侧可编（见 §7）；
 - **传输本体**：`components/mp_transfer/`（必须一起拷进工程；它依赖 `base::Task` = 包 `base-utility`）；
-- **接线层**：`easyui`（`ZKQRCode`、`StoragePreferences`、生成代码）、`log`（工程日志宏）、
-  `curl-cxx`（`http/downloader.h`，远端小程序码图下载）。
+- **接线层**：`easyui`（`ZKQRCode`、`StoragePreferences`、生成代码）、`log`（工程日志宏）。
+  **不需要 `curl-cxx`**（二维码现场生成，不下载位图）。
   各平台版本与声明见 `Manifest.xml`（**改完 Manifest 必须重跑 `fun install`**）。
 
 ## 5. 限制（写需求时先看）
@@ -108,14 +111,17 @@ UI（`loadQRCode`、`setBackgroundPic`）只能在 UI 线程，靠你的定时�
 | 端口固定 9000 | 小程序侧写死；改了口收不到文件（组件会给 WARN） |
 | 网络能力 | 无认证/加密/CRC/断点续传；TCP 空闲 2 s 超时（不适合保活）；**仅适合可信局域网** |
 | 启动 ≠ 就绪 | `start()` 只是 retain（底层 listen 在任务线程做）；用 `peerConnected()`/日志确认 |
+| 二维码内容 = 必须配 | 不配（`qr_url` 空）时只能给本机上传地址兜底（联调保底，不是终端用户入口） |
 
 ## 6. 排错（都是真机踩过的）
 
-1. **再进页二维码空白，切一下页面才出来** —— 业务侧缓存活得比控件久：二维码内容存在 `static std::string`，
+1. **再进页二维码空白，切一下页面才出来** —— 业务侧缓存活得比控件久：二维码内容存在你的 `static std::string`，
    页面销毁时生成代码把控件指针置 NULL，新控件从未 `loadQRCode()`，而缓存比对直接 `return`。
-   → 修法：`onUI_quit` 同时清业务缓存 + `resetQrCache()`（本组件已把"下载失败"记忆一起清掉）。
-2. **二维码边缘发糊/扫不动** —— 直接铺 128px 位图时 128/37 = 3.46 px/模块（非整数像素）。
-   → 改「控件现场生成」（把素材里的链接解出来当 `qr_url`），模块像素对齐更锐利；见 `assets/README.md`。
+   → 修法：`onUI_quit` 里**清业务侧缓存**（本组件不缓存二维码内容，无需额外清理）。
+2. **二维码边缘发糊/扫不动** —— 别铺位图：素材 128px 压 37 模块 = 3.46 px/模块（非整数像素）必然发糊。
+   → 组件口径就是**控件现场生成**（`loadQRCode(qrInfo().content)`，模块像素对齐）。
+   还扫不动就查两件事：① `content` 是不是你要的链接（`sp_qr_url` 是否为空走了兜底、链接是否被改坏）
+   ② 布局有没有给**白边静区**（≈4 模块；来源工程 = 160×160 白卡 + 128 码居中）。
 3. **手机扫不到/发现不了设备** —— ① 不同网段/VLAN ② 路由器开了客户端隔离 ③ 相册模式没开（`stop()` 状态下不广播）。
 4. **传完了文件不在目录里** —— ① `save_dir` 与 mp_transfer 的 `MP_PATH` 不一致（看 WARN 日志）
    ② TF 卡/分区没挂载（`configure()` 会直接报"落盘目录不可写"）③ 文件名非法被拒（`..` `/` `\`）。
@@ -126,8 +132,8 @@ UI（`loadQRCode`、`setBackgroundPic`）只能在 UI 线程，靠你的定时�
 
 | 层 | 判据 | 状态 |
 |---|---|---|
-| 组件本体（`src/zk_album.cpp` + `example/album_upload_example.cc`） | PC 侧语法自检：`g++ -std=c++11 -fsyntax-only -Wall -Wextra`（用桩头模拟 mp_transfer 接口） | ✅ **通过（0 warning）** |
-| 素材生成脚本（`scripts/make_qr_asset.py`） | 5 条判据全绿；同一原图重跑**逐字节一致**（md5 `5AF8B65E6CBE92A6FAD6D3158B4D144E` / 1287 B）；`--decode-only` 能解出链接 | ✅ **通过** |
+| 组件本体（`src/zk_album.cpp` + `example/album_upload_example.cc`） | PC 侧语法自检：`-std=c++11 -fsyntax-only -Wall -Wextra`（用桩头模拟 mp_transfer 接口） | ✅ **通过（0 warning）** |
+| 解链接脚本（`scripts/decode_qr_url.py`） | 在码图上解出链接；`--expect` 核对通过；`--write` 产物与 `assets/qr_url.txt` **逐字节一致**（375 B） | ✅ **通过**（离线工具，运行时不依赖图片） |
 | 工程侧接线（`example/flythings_wiring.cc`） | 工程 `fun build` 通过 + 真机扫码 | ⚠️ **未在目标工程重放**（样板来自来源工程实跑代码，见 `platforms.md`） |
 | 真机（微信扫码传图端到端） | 手机扫面板码 → 小程序 → 传图 → 落盘 → 回调 | ⚠️ **本仓无逐条取证**（来源工程口径见 `platforms.md` §0/§1） |
 
@@ -140,8 +146,9 @@ UI（`loadQRCode`、`setBackgroundPic`）只能在 UI 线程，靠你的定时�
    必须一致，末尾都带 `/`。
 3. **本机 IP 注入**：`setLocalIpProvider` 传工程自己的取法（如 `NetKeeper_localIp()`）；**不要**指望组件猜网卡
    （来源工程踩过：只读 wlan0 → 走网线时二维码变成 127.0.0.1）。
-4. **二维码内容来自配置**：AppID / 链接**一律配置项**（`sp_qr_url` / `sp_qr_img_url` / `sp_mp_appid` 语义），
-   本组件与素材都不带我方常量。
+4. **二维码内容来自配置**：链接（`sp_qr_url` 语义）由你从自己的 prefs 读出来灌进 `setQrUrl()`；
+   组件**不带任何默认链接**（`assets/qr_url.txt` 只是给部署方填配置用的示例值，见 `assets/README.md`）。
+   AppID（`sp_mp_appid` 语义 → `Config::mp_app_id`）只记录、不参与生成，也一律配置项。
 5. **别在多页各持一份配置**：单例 + `owner` 区分持有者；一个页面 `stop()` 只减引用，最后一个释放才真停。
 
 ## 9. 来源与相关
@@ -149,9 +156,8 @@ UI（`loadQRCode`、`setBackgroundPic`）只能在 UI 线程，靠你的定时�
 - 传输本体：`components/mp_transfer/`（协议/落盘/PC 侧 Python 参考接收端）+ `knowledge/devflow/mp-transfer-miniprogram.md`
 - 组件规范：`components/README.md`、`knowledge/devflow/reusable-components.md`（四件套 + 代码尺子）
 - 来源工程：`projects/SmartPanel_HA`（`src/logic/albumLogic.cc`、`src/logic/albumfileLogic.cc`、
-  `src/mp_transfer/`、`src/storage/ConfigStore.cpp` 的 `sp_qr_url/sp_qr_img_url/sp_mp_appid` 键语义、
-  `resources/images/album_qr_mp128.png`）
-- 素材与三态口径：`assets/README.md`；出素材/解链接：`scripts/make_qr_asset.py`
+  `src/mp_transfer/`、`src/storage/ConfigStore.cpp` 的 `sp_qr_url/sp_mp_appid` 键语义）
+- 二维码 URL 口径（为什么不用位图 / URL 从哪来）：`assets/README.md`；解链接工具：`scripts/decode_qr_url.py`
 
-检索词：相册传图 / 扫码传图 / 小程序传图 / 微信小程序码 / 二维码三态 / zk_album / album_upload /
-面板接收手机照片 / 落盘目录 / 上传完成回调 / loadQRCode / sp_qr_url / sp_qr_img_url
+检索词：相册传图 / 扫码传图 / 小程序传图 / 二维码现场生成 / 二维码 URL / zk_album / album_upload /
+面板接收手机照片 / 落盘目录 / 上传完成回调 / loadQRCode / sp_qr_url

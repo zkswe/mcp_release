@@ -6,8 +6,8 @@
 
 | 文件 | 作用 |
 |---|---|
-| `album_upload_example.cc` | 端到端生命周期样板：`configure → 回调 → start → （运行业务）→ stop/resetQrCache`；含三态打印与"远端码图怎么下来"的注释代码 |
-| `flythings_wiring.cc` | FlyThings 工程接线样板：从 prefs 读配置（键名语义 `sp_dev_name`/`sp_album_mode`/`sp_qr_url`/`sp_qr_img_url`/`sp_mp_appid`）、二维码三态落 UI、远端码图下载、定时器刷新、模式开关 |
+| `album_upload_example.cc` | 端到端生命周期样板：`configure → setQrUrl(prefs) → 回调 → start → （运行业务）→ stop`；含二维码两条来源的打印与"上屏就是 loadQRCode(content)"的注释 |
+| `flythings_wiring.cc` | FlyThings 工程接线样板：从 prefs 读配置（键名语义 `sp_dev_name`/`sp_album_mode`/`sp_qr_url`/`sp_mp_appid`）、**二维码落 UI（`qrInfo().content` → 控件现场生成，不铺位图）**、定时器刷新、模式开关 |
 
 ## 1. 三步接起来
 
@@ -22,7 +22,8 @@
 #    components/album_upload/include/zk/zk_album.h  ->  <工程>/src/zk/zk_album.h
 #    components/album_upload/src/zk_album.cpp       ->  <工程>/src/zk/zk_album.cpp（并加进编译）
 
-# ③ 依赖：按 ../Manifest.xml 往工程 Manifest/fun.json 里加 easyui / log / base-utility / curl-cxx
+# ③ 依赖：按 ../Manifest.xml 往工程 Manifest/fun.json 里加 easyui / log / base-utility
+#    （二维码现场生成、不下载位图 → **不需要 curl-cxx**）
 #    ⚠️ 改完 Manifest 必须重跑：fun install      （否则新 include 路径不进 CMake）
 
 # ④ 编译
@@ -34,11 +35,14 @@ fun build -p <平台>
 
 ## 2. 三个最容易踩的点（照抄能省一轮真机）
 
-1. **`onUI_quit` 两句必做**：业务侧二维码内容缓存 `clear()` + `resetQrCache()` + `stop()`。
+1. **`onUI_quit` 两句必做**：业务侧二维码内容缓存 `clear()` + `stop()`。
    不做 → 再进页二维码空白、要切页面才出来（真机复现过，见 `../README.md` §6 坑 1）。
+   组件侧**不缓存**二维码内容（`qrInfo()` 即时计算），没有需要清的组件缓存。
 2. **回调是接收线程**：`onFileAdded` / `onStateChanged` 里只置标志（`sNeedRefresh = true`），
    控件操作全放到 UI 定时器 —— 直接在回调里 `setText()` 是竞态来源。
 3. **落盘目录写两处**：`Config::save_dir` 与 mp_transfer 的 `MP_PATH` 必须一致，末尾都带 `/`。
+4. **二维码内容从 prefs 灌**：`setQrUrl(StoragePreferences::getString("sp_qr_url", ""))`；空串 = 本机地址兜底，
+   组件**不带默认链接**（示例值见 `../assets/qr_url.txt`，取自 `../assets/README.md`）。
 
 ## 3. 怎么验（三层，逐层加真）
 

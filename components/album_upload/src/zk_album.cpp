@@ -46,16 +46,9 @@ namespace {
 const int kProtocolPort = 9000;                 /* 协议固定：小程序侧写死 9000 */
 const uint32_t kMaxFileSize = 500u * 1024u * 1024u;   /* 协议上限 500 MiB */
 const int kTcpStateReady = 1;                   /* mp_transfer: 1=有客户端连上, 0=断开 */
-const int kTcpStateOver = 0;
 
 bool endsWithSlash(const std::string &s) {
     return !s.empty() && s[s.size() - 1] == '/';
-}
-
-bool fileNonEmpty(const std::string &path) {
-    if (path.empty()) return false;
-    struct stat st;
-    return stat(path.c_str(), &st) == 0 && st.st_size > 0;
 }
 
 bool exists(const std::string &path) {
@@ -82,15 +75,6 @@ bool ensureDir(const std::string &path) {
 bool dirWritable(const std::string &path) {
     if (!exists(path)) return false;
     return access(path.c_str(), W_OK) == 0;
-}
-
-/* 把 "<...>/album/" 这种目录串变成同级文件 "<...>/qr_code.png"（用于远端码图默认落点） */
-std::string siblingFile(const std::string &dir, const char *filename) {
-    std::string d = dir;
-    while (!d.empty() && d[d.size() - 1] == '/') d.erase(d.size() - 1);
-    size_t slash = d.find_last_of('/');
-    if (slash == std::string::npos) return std::string(filename);
-    return d.substr(0, slash + 1) + filename;
 }
 
 int kindOfName(const std::string &name) {
@@ -127,8 +111,8 @@ struct Uploader::Impl {
     Config mCfg;
 
     bool mRunning;
-    bool mImgDownloadFailed;
     bool mWarnedNoIp;
+    bool mWarnedQrFallback;
     std::string mLastError;
     Stats mStats;
 
@@ -194,7 +178,7 @@ struct Uploader::Impl {
 
     Bridge *mBridge;
 
-    Impl() : mRunning(false), mImgDownloadFailed(false), mWarnedNoIp(false),
+    Impl() : mRunning(false), mWarnedNoIp(false), mWarnedQrFallback(false),
              mFileFn(0), mFileUser(0), mStateFn(0), mStateUser(0),
              mLogFn(0), mLogUser(0), mIpFn(0), mIpUser(0), mBridge(0) {}
 
@@ -306,41 +290,41 @@ struct Uploader::Impl {
         return std::string(buf);
     }
 
+    /* 一条路 + 一个兜底：两条路的**处理方式完全一样**（都是 loadQRCode(content)），
+     * mode 只是告诉业务"这串内容是从配置来的，还是本机地址顶上的"。 */
     QrInfo qrInfo() {
-        Config cfg;
-        bool dlFailed = false;
+        std::string cfgUrl;
         {
             std::lock_guard<std::mutex> lk(mMutex);
-            cfg = mCfg;
-            dlFailed = mImgDownloadFailed;
+            cfgUrl = mCfg.qr_url;
         }
         QrInfo out;
-        out.mode = QR_LOCAL_GENERATED;
-        out.image_ready = false;
-        out.image_url = cfg.qr_image_url;
-        out.image_path = cfg.qr_image_local_path;
-        if (out.image_path.empty() && !cfg.qr_image_url.empty()) {
-            out.image_path = siblingFile(cfg.save_dir, "qr_code.png");
-        }
+        out.local_url = localUploadUrl();
 
-        /* ① 远端小程序码图（微信原生小程序码只能远程下载显示，控件编不出来） */
-        if (!cfg.qr_image_url.empty() && !dlFailed && fileNonEmpty(out.image_path)) {
-            out.mode = QR_REMOTE_IMAGE;
-            out.image_ready = true;
-            out.content = cfg.qr_image_url;
+        if (!cfgUrl.empty()) {
+            out.mode = QR_FROM_CONFIG;
+            out.content = cfgUrl;
             return out;
         }
 
-        /* ② 二维码控件现场生成（默认内容 = 「扫普通链接二维码打开小程序」链接） */
-        if (!cfg.qr_url.empty()) {
-            out.mode = QR_LOCAL_GENERATED;
-            out.content = cfg.qr_url;
-            return out;
-        }
-
-        /* ③ 本机上传地址兜底（联调保底） */
+        /* 本机上传地址兜底（联调保底，不是给终端用户的入口）；**只提醒一次**，不在定时器里刷屏
+         * （log() 自己会取 mMutex，所以先出锁再打） */
         out.mode = QR_LOCAL_UPLOAD_FALLBACK;
-        out.content = localUploadUrl();
+        out.content = out.local_url;
+        bool firstWarn = false;
+        {
+            std::lock_guard<std::mutex> lk(mMutex);
+            if (!mWarnedQrFallback) {
+                mWarnedQrFallback = true;
+                firstWarn = true;
+            }
+        }
+        if (firstWarn) {
+            log(ZK_ALBUM_LOG_WARN,
+                "qr_url 为空 → 二维码退回本机上传地址兜底 %s。"
+                "正式部署应从 prefs 灌入小程序链接（见 assets/README.md）。",
+                out.content.c_str());
+        }
         return out;
     }
 };
@@ -382,14 +366,13 @@ Result Uploader::configure(const Config &cfg) {
     {
         std::lock_guard<std::mutex> lk(mImpl->mMutex);
         mImpl->mCfg = c;
-        mImpl->mImgDownloadFailed = false;       /* 重新配置 → 允许再试远端码图 */
+        mImpl->mWarnedQrFallback = false;        /* 重新配置 → 允许再提醒一次兜底 */
     }
 
     mImpl->log(ZK_ALBUM_LOG_DEBUG,
-               "configure: dir=%s dev='%s' port=%d qr_url=%s qr_img_url=%s appid=%s",
+               "configure: dir=%s dev='%s' port=%d qr_url=%s appid=%s",
                c.save_dir.c_str(), c.device_name.c_str(), c.listen_port,
                c.qr_url.empty() ? "(空→兜底本机地址)" : c.qr_url.c_str(),
-               c.qr_image_url.empty() ? "(空)" : c.qr_image_url.c_str(),
                c.mp_app_id.empty() ? "(空)" : "(已配)");
 
     if (c.start_on_configure) return start();
@@ -494,30 +477,8 @@ std::string Uploader::localUploadUrl() const { return mImpl->localUploadUrl(); }
 void Uploader::setQrUrl(const std::string &url) {
     std::lock_guard<std::mutex> lk(mImpl->mMutex);
     mImpl->mCfg.qr_url = url;
-}
-
-void Uploader::setQrImageUrl(const std::string &url) {
-    std::lock_guard<std::mutex> lk(mImpl->mMutex);
-    mImpl->mCfg.qr_image_url = url;
-    mImpl->mImgDownloadFailed = false;
-}
-
-void Uploader::notifyQrImageDownloaded(bool ok) {
-    {
-        std::lock_guard<std::mutex> lk(mImpl->mMutex);
-        mImpl->mImgDownloadFailed = !ok;
-    }
-    if (!ok) {
-        mImpl->log(ZK_ALBUM_LOG_WARN, "远端小程序码图下载失败 → 回落现场生成/本机地址兜底");
-    }
-}
-
-void Uploader::resetQrCache() {
-    /* 缓存口径：本组件的三态判定是**即时计算**的（不缓存内容），这里只负责清掉"这次失败"的记忆，
-     * 使页面重进时远端码图能再试一次；调用方还需清掉自己 UI 侧的"已 load 的内容"缓存
-     *（真源坑：业务侧 sQrShown 活得比控件久 → 再进页二维码空白）。 */
-    std::lock_guard<std::mutex> lk(mImpl->mMutex);
-    mImpl->mImgDownloadFailed = false;
+    /* 内容变了 → 允许重新提醒一次兜底 */
+    if (url.empty()) mImpl->mWarnedQrFallback = false;
 }
 
 } /* namespace album */

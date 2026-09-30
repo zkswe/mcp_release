@@ -10,8 +10,13 @@
  *
  * 三层分工（移植时对号入座）：
  *   ① components/mp_transfer/  —— 协议/网络/落盘（组件的"腿"）
- *   ② 本组件 zk::album         —— 配置、生命周期、回调归一化、二维码内容三态、计数（业务接线层）
- *   ③ 目标工程                 —— 读写自己的 prefs（落盘目录/设备名/二维码配置）、UI 显示二维码、刷新列表
+ *   ② 本组件 zk::album         —— 配置、生命周期、回调归一化、二维码内容（URL）、计数（业务接线层）
+ *   ③ 目标工程                 —— 读写自己的 prefs（落盘目录/设备名/二维码链接）、UI 显示二维码、刷新列表
+ *
+ * 二维码口径（2026-09-30 起，只有一条路 + 一个兜底）：**面板上不铺任何二维码位图**，
+ *   一律把「链接字符串」交给 easyui 的二维码控件现场生成（`ZKQRCode::loadQRCode`）。
+ *   位图 128px / 37 模块 = 3.46 px/模块（非整数）→ 边缘发糊、扫不动；控件生成模块像素对齐。
+ *   链接从哪来见 assets/README.md（本仓附 assets/qr_url.txt）。
  *
  * 线程模型（重要，别踩）：
  *   - configure()/start()/stop()/stats()/qrInfo() 等都可以在 UI 线程调；
@@ -69,24 +74,20 @@ struct Stats {
     int videos;
 };
 
-/* ---------------- 二维码三态（口径见 assets/README.md） ----------------
- * ① QR_REMOTE_IMAGE          远端小程序码图（微信原生小程序码**只能远端下载显示**，控件编不出来）
- * ② QR_LOCAL_GENERATED       二维码控件现场生成（qr_url = 「扫普通链接二维码打开小程序」链接）
- * ③ QR_LOCAL_UPLOAD_FALLBACK qr_url 被清空 → 本机上传地址兜底 http://<ip>:<port>/upload（联调保底）
- * AppID / 链接**一律配置项，不许写死**。
+/* ---------------- 二维码内容来源（一条路 + 一个兜底；口径见 assets/README.md） ----------------
+ * ① QR_FROM_CONFIG            用配置给的链接（Config::qr_url = 「扫普通链接二维码打开小程序」链接）
+ * ② QR_LOCAL_UPLOAD_FALLBACK  qr_url 为空 → 本机上传地址兜底 http://<ip>:<port>/upload（联调保底）
+ * 两种情况的处理方式**完全一样**：把 content 交给控件现场生成。AppID / 链接**一律配置项，不许写死**。
  */
 enum QrMode {
-    QR_LOCAL_GENERATED        = 0,
-    QR_REMOTE_IMAGE           = 1,
-    QR_LOCAL_UPLOAD_FALLBACK  = 2
+    QR_FROM_CONFIG            = 0,
+    QR_LOCAL_UPLOAD_FALLBACK  = 1
 };
 
 struct QrInfo {
-    int mode;              /* QrMode */
-    std::string content;   /* 二维码内容：mode != QR_REMOTE_IMAGE 时交给 ZKQRCode::loadQRCode(content) */
-    std::string image_url; /* mode == QR_REMOTE_IMAGE 时的下载地址 */
-    std::string image_path;/* 远端码图在本机的落点（下载完成后 image_ready=true 才显示） */
-    bool image_ready;      /* 远端码图是否已就绪 */
+    int mode;              /* QrMode：内容是从配置来的，还是本机地址兜底 */
+    std::string content;   /* 要喂给 ZKQRCode::loadQRCode(content) 的 URL；**永远非空**（兜底也在） */
+    std::string local_url; /* 本机上传地址 http://<ip>:<port>/upload（调试/提示用；兜底时 == content） */
 };
 
 /* ---------------- 配置（默认值安全：不传参也能跑） ---------------- */
@@ -101,10 +102,10 @@ struct Config {
     std::string owner;         /* mp_transfer 的 retain/release owner（多页共用时区分持有者） */
     int listen_port;           /* 监听端口，协议固定 9000（改了两端要一起改） */
 
-    std::string qr_url;            /* 现场生成二维码的内容（扫普通链接二维码打开小程序）；空 → 兜底本机上传地址 */
-    std::string qr_image_url;      /* 远端小程序码图 URL（非空 → 优先显示它） */
-    std::string qr_image_local_path;/* 远端码图下载落点；空 → "<save_dir 同级>qr_code.png" 由调用方给 */
-    std::string mp_app_id;         /* 微信小程序 AppID：**仅记录/业务用**，不参与本机生成二维码 */
+    std::string qr_url;        /* 现场生成二维码的内容（扫普通链接二维码打开小程序，如 "https://mp.weixin.qq.com/a/~...~~"）；
+                                * 空 → 兜底本机上传地址。**组件不带任何默认链接**：由部署方从 prefs 读出来灌进来
+                                * （本仓 assets/qr_url.txt 只是给部署方填配置用的示例值，见 assets/README.md）。 */
+    std::string mp_app_id;     /* 微信小程序 AppID：**仅记录/业务用**，不参与本机生成二维码 */
 
     bool start_on_configure;   /* configure() 后自动 start()；默认 true */
 };
@@ -145,16 +146,13 @@ public:
     std::string lastError() const;
 
     /* ---------------- 二维码 ---------------- */
-    /* 按三态口径算出「现在该显示什么」；远端码图未就绪时不会返回 QR_REMOTE_IMAGE */
+    /* 算出「现在该喂给控件的链接」：qr_url 非空 → QR_FROM_CONFIG；空 → QR_LOCAL_UPLOAD_FALLBACK。
+     * **即时计算、组件内不缓存**：内容变了才需重新 loadQRCode，由调用方比对 QrInfo::content
+     * （业务侧那份"已 load 的内容"缓存在页面销毁时必须清，见 README §6 坑 1）。
+     * 两种 mode 的 UI 处理完全一样：ZKQRCode::loadQRCode(qr.content.c_str())。 */
     QrInfo qrInfo() const;
     std::string localUploadUrl() const;             /* http://<ip>:<端口>/upload（兜底内容） */
-    void setQrUrl(const std::string &url);          /* 由业务从自己的 prefs 读出来后灌进来 */
-    void setQrImageUrl(const std::string &url);
-    /* 业务侧下载器（如 easyui http::Downloader）完成后调它：ok=false 则继续走下一态 */
-    void notifyQrImageDownloaded(bool ok);
-    /* ⚠️ 页面销毁时**必须**调（真源坑：二维码内容缓存活得比控件久 → 再进页控件是新的、
-     *    缓存命中直接 return → 二维码空白，要切一下页面才出来）。onUI_quit 里调。 */
-    void resetQrCache();
+    void setQrUrl(const std::string &url);          /* 由业务从自己的 prefs 读出来后灌进来（空 → 兜底） */
 
 private:
     Uploader();

@@ -4,7 +4,8 @@
  * 跑起来要三步（照 README「怎么用」）：
  *   1) 把 components/mp_transfer/ 的 4 个源文件 + 1 个头拷进工程（它在工程里通常叫 src/mp_transfer/ 与 src/system/）；
  *   2) 把 components/album_upload/ 的 include/ 与 src/ 拷进工程，本组件 .cpp 加进编译；
- *   3) 照本文的 main 接：configure → 回调 → start；UI 侧看 example/flythings_wiring.cc。
+ *   3) 照本文的 main 接：configure → setQrUrl(配置链接) → 回调 → start；
+ *      UI 侧看 example/flythings_wiring.cc（二维码 = `qrInfo().content` 交给控件现场生成）。
  *
  * ⚠️ 本文件是**接线形状**，不是已上机产物：本仓没有设备侧验证记录（见 ../platforms.md §0）。
  *    它的编译判据只有「PC 侧语法自检」（见 ../README.md 「验证」一节）。
@@ -56,27 +57,16 @@ static void onLog(int level, const char *msg, void *user) {
 }
 
 /* ------------------------------------------------------------------ *
- * 2) 二维码：三态口径（远端码图 / 控件现场生成 / 本机上传地址兜底）
+ * 2) 二维码：**一条路 + 一个兜底**（都交给 ZKQRCode::loadQRCode，不铺任何位图）
+ *    · QR_FROM_CONFIG            配置给的链接（从 prefs 灌进来）
+ *    · QR_LOCAL_UPLOAD_FALLBACK  链接为空 → 本机上传地址 http://<ip>:9000/upload
  * ------------------------------------------------------------------ */
 static void printQr(const zk::album::QrInfo &qr) {
-    switch (qr.mode) {
-        case zk::album::QR_REMOTE_IMAGE:
-            /* 远端小程序码图已就绪 → 显示图片（setBackgroundPic(image_path)），隐藏 qrcode 控件 */
-            printf("[album] QR = 远端小程序码图: %s (本地 %s)\n",
-                   qr.image_url.c_str(), qr.image_path.c_str());
-            break;
-        case zk::album::QR_LOCAL_GENERATED:
-            /* 二维码控件现场生成：只在内容变化时 loadQRCode（QR 重算很贵） */
-            printf("[album] QR = 控件现场生成: %s\n", qr.content.c_str());
-            break;
-        default:
-            printf("[album] QR = 本机上传地址兜底: %s\n", qr.content.c_str());
-            break;
-    }
-    if (qr.mode != zk::album::QR_REMOTE_IMAGE && !qr.image_url.empty() && !qr.image_ready) {
-        /* 配了远端小程序码图但还没下载好 → 先用控件生成顶住，同时去下载 */
-        printf("[album]   （远端码图待下载: %s）\n", qr.image_url.c_str());
-    }
+    printf("[album] QR = %s: %s\n",
+           (qr.mode == zk::album::QR_FROM_CONFIG) ? "配置的小程序链接" : "本机上传地址兜底",
+           qr.content.c_str());
+    printf("[album]   → 上屏：mQrcodePtr->loadQRCode(\"%s\")（UI 线程；内容变了才重算）\n",
+           qr.content.c_str());
 }
 
 /* ------------------------------------------------------------------ *
@@ -94,8 +84,6 @@ void album_upload_example_main() {
     cfg.save_dir = "/mnt/sdnand/album/";    /* ⚠️ 必须与 mp_transfer 编译期 MP_PATH 一致，末尾带 '/' */
     cfg.device_name = "我的相框";            /* 小程序里看到的设备名；空 → "Frame" */
     cfg.owner = "albumActivity";            /* 谁持有（多页共用时区分） */
-    cfg.qr_url = "";                        /* 空 → 兜底本机上传地址；非空 = 现场生成的内容 */
-    cfg.qr_image_url = "";                  /* 非空 = 远端微信小程序码图（控件编不出来） */
     cfg.mp_app_id = "";                     /* AppID 只记录，不参与生成 —— 一律配置，不许写死 */
     cfg.start_on_configure = true;
 
@@ -103,35 +91,21 @@ void album_upload_example_main() {
     printf("[album] configure: %s (%s)\n", r.ok() ? "OK" : "FAIL", r.msg.c_str());
     if (!r.ok()) return;
 
+    /* 二维码内容：从你自己的 prefs 读出来灌进去（组件不带默认链接）
+     * —— 链接怎么来见 ../assets/README.md（附 assets/qr_url.txt 供部署方填配置）；空串 = 本机地址兜底 */
+    up.setQrUrl("");                        /* ← 换成 prefs 取值（如 StoragePreferences::getString("sp_qr_url", "")） */
+
     up.refresh();                           /* 进页先扫一遍，拿图片/视频计数 */
-    printQr(up.qrInfo());
-    printQr(up.qrInfo());                   /* 远端码图就绪后（notifyQrImageDownloaded(true)）再取一次就变三态第一态 */
+    printQr(up.qrInfo());                   /* 取一次就把 content 交给二维码控件（内容变了才重新 loadQRCode） */
 
     /* …… 应用运行：小程序随时发图；UI 定时器里消费 sNeedRefreshUi …… */
 
-    up.stop();                              /* 离开页面停传输（省电；小程序侧会显示设备不可见） */
-    up.resetQrCache();                      /* ⚠️ 页面销毁时必调，否则重进页二维码可能空白 */
-}
+    /* 设置页改完链接：setQrUrl(新链接) → 下一拍 UI 定时器里重新 loadQRCode（传空串 = 退回兜底） */
+    up.setQrUrl("https://mp.weixin.qq.com/a/~换成你自己的小程序链接~~");
+    printQr(up.qrInfo());
 
-/* ------------------------------------------------------------------ *
- * 4) 远端小程序码图怎么下来？（组件不干网络，用工程自己的下载器）
- *
- *    up.notifyQrImageDownloaded(true/false) 由**下载完成回调**调：
- *
- *    // 工程侧（easyui 的 http::Downloader；见 $(curl-cxx)/include/http/downloader.h）
- *    if (zk::album::Uploader::instance().qrInfo().mode != zk::album::QR_REMOTE_IMAGE
- *        && !zk::album::Uploader::instance().qrInfo().image_url.empty()) {
- *        http::Downloader::Task t;
- *        t.source = zk::album::Uploader::instance().qrInfo().image_url;
- *        t.target = zk::album::Uploader::instance().qrInfo().image_path;
- *        t.retry_max = 2;
- *        t.result = [](const http::Downloader::Task &task, bool ok) {
- *            (void)task;
- *            zk::album::Uploader::instance().notifyQrImageDownloaded(ok);  // ← 标志位
- *            // ⚠️ 别在这里动控件：下载器回调不在 UI 线程；下一拍 UI 定时器里再刷
- *        };
- *        http::Downloader::instance().add(t);
- *    }
- *
- *    失败 → 组件自动回落到「控件现场生成 / 本机地址兜底」，不会卡在空白。
- * ------------------------------------------------------------------ */
+    up.stop();                              /* 离开页面停传输（省电；小程序侧会显示设备不可见） */
+
+    /* ⚠️ 页面销毁：清掉**业务侧**那份"已 load 的内容"缓存（组件侧不缓存二维码内容，无需额外清理）：
+     *    不清 → 新控件从未 loadQRCode、缓存比对直接 return → 再进页二维码空白（真机复现过，见 ../README.md §6 坑 1） */
+}

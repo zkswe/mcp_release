@@ -1,0 +1,4 @@
+# 我方小程序码解出来的链接（= 「扫普通链接二维码打开小程序」链接）。
+# 用法：填进你自己的配置（如 prefs 键 sp_qr_url），面板交给 ZKQRCode 控件现场生成；
+#      **换成你自己的小程序链接**（见 README.md §3），组件本身不带任何默认链接。
+https://mp.weixin.qq.com/a/~03uyHJCCRb4XvYYqL6pgKw~~

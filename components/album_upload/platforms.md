@@ -53,9 +53,8 @@
 |---|---|---|
 | 控件 | `qrcode` 控件（`ZKQRCode`）盒 **128×128**，`padding=10` | 来源工程 `ui/album.json`（qrcode__1） |
 | 白卡 | 160×160（`qr_card_160.png`），居中 → 四边各 16 px 白边 = 静区 | 同上 |
-| 素材 | `assets/album_qr_mp128.png` **128×128**（纯黑白，1287 B，md5 `5AF8B65E6CBE92A6FAD6D3158B4D144E`）—— **尺寸严格 == 控件盒** | 素材出图脚本 + 校验 |
-| 上屏口径（2026-09-30 起） | 控件**现场生成**（内容 = 从素材解出的链接），不再直接铺位图：128/37 = **3.46 px/模块**，模块宽非整数像素 → 位图发糊；控件生成模块像素对齐 | 来源工程 `albumLogic.cc` / `ConfigStore.cpp` 注释 |
-| 三态优先级 | ① 远端小程序码图（`sp_qr_img_url`）② 控件现场生成（`sp_qr_url`）③ 本机上传地址兜底 `http://<ip>:9000/upload` | 来源工程 `refreshQrcode()`；细节见 `assets/README.md` |
+| 上屏口径 | **只用 URL 现场生成**（`loadQRCode(链接)`）：控件按整数像素对齐模块 → 锐利；**不铺任何二维码位图**（128px / 37 模块 = 3.46 px/模块，非整数 → 边缘发糊） | 来源工程 `albumLogic.cc` 现场生成那条路（2026-09-30 口径） |
+| 内容来源 | ① 配置链接（`sp_qr_url` 语义；我方小程序码解出的链接示例见 `assets/qr_url.txt`） ② 链接为空 → 本机上传地址兜底 `http://<ip>:9000/upload`；**两条路上屏方式完全一样** | 组件 `qrInfo()` + 来源工程 `refreshQrcode()`；细节见 `assets/README.md` |
 | 扫描可解性 | 板内网页二维码在 Z20 真机截图上**用 zxing 解出成功**（同款「截图→解二维码」验收手段） | 2026-09-30 真机记录（解的是运行模式页的板内网页码，非相册码 —— 见 §1.5） |
 
 ### 1.5 真机取证状态（逐项，别含混）
@@ -92,8 +91,8 @@
 4. **可信网络**：无认证/加密/CRC/断点续传，非法请求直接断连 → 只适合可信局域网。
 5. **落盘空间**：单文件上限 500 MiB、分块 32 KiB —— 传视频前先确认分区剩余空间。
 6. **端口可用**：9000/tcp 未被占用（同机还有 8080 板内网页 / 8084 zkmqtt 状态页）。
-7. **接线层依赖**：`easyui`（`ZKQRCode`、`StoragePreferences`）、`log`、`curl-cxx`（远端小程序码图下载）——
-   见 `Manifest.xml`；**改完 Manifest 必须重跑 `fun install`**。
+7. **接线层依赖**：`easyui`（`ZKQRCode`、`StoragePreferences`）、`log`。
+   二维码现场生成、不下载位图 → **不需要 `curl-cxx`**（`Manifest.xml`）。**改完 Manifest 必须重跑 `fun install`**。
 
 ---
 
@@ -127,11 +126,11 @@
 
 1. 微信扫码传图**端到端**（面板 Z20，手机 + 上线小程序），含截图与落盘 `ls` 双证；
 2. 相册**二维码**在真机上被手机扫到的实证（同款手段已在板内网页码上验证：真机截图 → zxing 解码）；
-3. 远端小程序码图（`sp_qr_img_url`）在真机上"下载成功 → 切第一态"的实证；
+3. 面板侧链接码与来源工程 `kQrUrlDefault` 的一致性（本仓只校了“解出的链接 == 文档里写的链接”）；
 4. 传输吞吐/耗时（不同大小文件）、`.tmp` 残留清理的实测；
 5. Z21/T113/V85X/F135/F136 的 mp_transfer 编译与落盘目录（Z21 已知无 `/mnt/sdnand`）。
 
 ---
 
-**相关**：`README.md`（API/依赖/限制/排错）｜`Manifest.xml`（依赖声明）｜`assets/README.md`（二维码三态）｜
+**相关**：`README.md`（API/依赖/限制/排错）｜`Manifest.xml`（依赖声明）｜`assets/README.md`（二维码 URL 口径）｜
 `example/README.md`（三步接起来）｜`../mp_transfer/platforms.md`（协议侧平台事实与 PC 参考接收端）
