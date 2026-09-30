@@ -91,7 +91,7 @@ evidence: []
 
 ### ②b 运行时离屏渲染（未验证，价值高）
 - 形态：把开源渲染库渲到**内存画布**，再把画布交给框架显示（换图/贴图控件）。
-- ⚠️ **先查设备自带**：`ls /lib /res/lib`（nanovg / libpng12 / freetype / libjpeg / libmad / zlib / `libmi_*` 已装在板上）
+- ⚠️ **先查设备自带**：`ls /lib /res/lib`（nanovg / libpng12 / freetype / libjpeg / libmad / zlib 已装在板上）
   —— **注册表没有 ≠ 平台没有**，清单见 `devflow/device-preinstalled-libs.md`。
 - 选件建议（按嵌入式友好度排）：
   | 库 | 形态 | 说明 |

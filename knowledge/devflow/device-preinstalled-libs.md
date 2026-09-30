@@ -10,19 +10,21 @@ origin: partial
 source: 2026-09-30 钟工 Z21 真机盘点（Zkswe_SSD21X_SPINOR）+ 本机复核（adb ls 体积实测 + 注册表对照 + F133 引自 components/vinyl/platforms.md）
 needs_evidence: true
 platforms: [Z21, F133]
-tags: [设备自带库, 已装库, dlopen, nanovg, libpng, freetype, libjpeg, libmad, zlib, 第三方库, 免编译, mi_gfx, 2D 加速, 符号校验]
+tags: [设备自带库, 已装库, dlopen, nanovg, libpng, freetype, libjpeg, libmad, zlib, 第三方库, 免编译, 符号校验]
 evidence:
-  - {cmd: "adb -s <设备>:5555 shell 'ls -l /lib /res/lib'", kind: real-device, note: "2026-09-30 本机复核通过：/lib 80 项；libnanovg.so=50984B、libpng12.so.0.56.0、libfreetype.so.6.11.4=137120B、libjpeg.so.9.1.0=177488B、libmad.so.0.2.1=83224B、libmi_gfx.so、libmi_disp.so；/res/lib=libzkgui.so"}
+  - {cmd: "adb -s <设备>:5555 shell 'ls -l /lib /res/lib'", kind: real-device, note: "2026-09-30 本机复核通过：/lib 80 项；libnanovg.so=50984B、libpng12.so.0.56.0、libfreetype.so.6.11.4=137120B、libjpeg.so.9.1.0=177488B、libmad.so.0.2.1=83224B；/res/lib=libzkgui.so"}
   - {cmd: "arm-pc-linux-gnueabihf-readelf.exe -d <lib>.so", kind: offline, note: "符号级复核待跑（本机未找到 gnueabihf readelf，需 z21 工具链 bin）"}
 ---
 # 设备端已自带的可借用库清单（dlopen 即用 / 免编译）
 
 > **检索导引**：想用的库设备上有没有 / 能不能直接用 / 需不需要自己编译 / nanovg 能用吗 /
-> libpng 在哪 / freetype 有没有 / 图片解码用什么 / MP3 解码 / zlib / 有没有 2D 加速库 /
+> libpng 在哪 / freetype 有没有 / 图片解码用什么 / MP3 解码 / zlib /
 > dlopen 找不到库 / 注册表里没有这个包是不是就没有 / 设备自带 .so 清单 / 免编译借用。
 >
 > **一句话**：**"注册表里没有"≠"平台没有"** —— 设备 `/lib` 里躺着约 80 个库，其中一批
-> 图形/解码/加速库**可直接 dlopen 或链接**。**先查本表，再决定是否自己交叉编译。**
+> 图形/解码库（nanovg / libpng12 / freetype / libjpeg / libmad / zlib 等）**可直接 dlopen 或链接**。
+> **先查本表，再决定是否自己交叉编译。**
+> （另有 `libmi_*` 一整套 —— **框架/系统内部模块，应用不需要关注**，见 §2.2。）
 
 ## 1. 判据（先跑这两条命令，别猜）
 
@@ -57,17 +59,16 @@ arm-pc-linux-gnueabihf-readelf.exe --dyn-syms <lib>.so  # 导出符号（对照�
 **同为一份构建（符号逐条相同）**；nanovg 后端 320×320 **23~44ms/帧**（定点后端 6~12ms），
 **只支持 `NVG_TEXTURE_BGRA` 目标**。⚠️ **Z21 本轮只做"存在性 + 体积"复核，运行时未验**。
 
-### 2.2 全志 MI 系列（芯片侧能力入口）
+### 2.2 全志 MI 系列（**框架/系统内部使用 —— 应用不需要关注**）
 
-| 库 | 用途 |
-|---|---|
-| **`libmi_gfx.so`** | **MI 图形加速模块**（2D 相关能力入口，**待逐符号核 API**） |
-| `libmi_disp.so` | 显示/图层（disp） |
-| `libmi_rgn.so` | 区域/OSD 叠加（Region） |
-| `libmi_divp.so` | 视频处理（缩放/去隔行一类） |
-| `libmi_ao.so` / `libmi_sys.so` / `libmi_common.so` / `libmi_panel.so` | 音频输出 / MI 基础 / 面板 |
+设备 `/lib` 里能看到 `libmi_gfx` / `libmi_disp` / `libmi_rgn` / `libmi_divp` / `libmi_ao` /
+`libmi_sys` / `libmi_common` / `libmi_panel` 等一整套 —— **这些是框架与系统自己用的内部模块**
+（显示、区域叠加、视频处理、音频输出等）：
 
-⇒ **这组是"芯片侧能力"的正式入口**，与框架层能力互补；具体 API 需按头文件核对后使用。
+- ⛔ **应用层不需要关注、也不要去 dlopen/链接**（接口不对外、随固件变）；
+  （2026-09-30 钟工：「mi_gfx 不需要用户关注」）
+- ✅ 需要图层/合成能力时，走**框架提供的高层 API**（`videoview`/`cameraview`/disp 图层纪律、
+  `setBackgroundBmp`+`setInvalid`、`button+picTab` 的 α 路径）——见 `devflow/render-extension-boundary.md`。
 
 ### 2.3 框架与平台服务
 
@@ -98,7 +99,6 @@ arm-pc-linux-gnueabihf-readelf.exe --dyn-syms <lib>.so  # 导出符号（对照�
 - Z21 的库目前是**静态验证（存在性 + 体积）**，**符号级与运行时均未验**：
   升 `verified` 需 ① `readelf --dyn-syms` 对照头文件 ② Z21 上跑一次真实绘制
   （建议直接复用 `components/vinyl` 的 A/B 口径）；
-- `libmi_gfx.so` 的 API **未核**（只有库名与体积），要写进材料前必须 `--dyn-syms` + 头文件对照；
 - 本清单是**Z21 单点**盘点：**换板必须重跑 §1 的两条命令**（不同平台库集合不同）。
 
 ## 5. 相关文档

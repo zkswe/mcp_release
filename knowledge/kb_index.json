@@ -1,10 +1,10 @@
 {
  "meta": {
   "schema": 1,
-  "built_at": "2026-09-30 10:05:15",
-  "mcp_version": "0.27.131-open",
+  "built_at": "2026-09-30 14:38:38",
+  "mcp_version": "0.27.132-open",
   "doc_count": 90,
-  "source_hash": "6c543bdd81c883275daa9cec3cd9a6e1"
+  "source_hash": "cf051a46b703ef70c02c220e5f7ae3e4"
  },
  "summary": {
   "total": 90,
@@ -332,8 +332,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": true,
-   "bytes": 11636,
-   "sha256": "b900a2a2bd6bf6ebc060418f45c1adbc94d767edca336357bd40c197e450dccf",
+   "bytes": 11624,
+   "sha256": "22e6da2d67607c276881c0ae3897865dccd575cd1b06fce6451a7e3c97c8c15a",
    "fingerprint": "076ff5cdd5b02b6c",
    "ageDays": 1,
    "freshness": "fresh",
@@ -514,8 +514,6 @@
     "zlib",
     "第三方库",
     "免编译",
-    "mi_gfx",
-    "2D 加速",
     "符号校验"
    ],
    "status": "review",
@@ -528,7 +526,7 @@
     {
      "cmd": "adb -s <设备>:5555 shell 'ls -l /lib /res/lib'",
      "kind": "real-device",
-     "note": "2026-09-30 本机复核通过：/lib 80 项；libnanovg.so=50984B、libpng12.so.0.56.0、libfreetype.so.6.11.4=137120B、libjpeg.so.9.1.0=177488B、libmad.so.0.2.1=83224B、libmi_gfx.so、libmi_disp.so；/res/lib=libzkgui.so"
+     "note": "2026-09-30 本机复核通过：/lib 80 项；libnanovg.so=50984B、libpng12.so.0.56.0、libfreetype.so.6.11.4=137120B、libjpeg.so.9.1.0=177488B、libmad.so.0.2.1=83224B；/res/lib=libzkgui.so"
     },
     {
      "cmd": "arm-pc-linux-gnueabihf-readelf.exe -d <lib>.so",
@@ -539,8 +537,8 @@
    "evidenceLevel": "has-evidence",
    "needsEvidence": true,
    "hasQueries": true,
-   "bytes": 7069,
-   "sha256": "03944a205b30f1bace883be73abe50663057c101362e6d47947cd6f78cab472a",
+   "bytes": 7237,
+   "sha256": "0013262fc1d4731657502e7f492cd6eb3eaf2557952b7484f4ceb93187217cff",
    "fingerprint": "d78f710f9f00b70f",
    "ageDays": 0,
    "freshness": "fresh",
@@ -1004,8 +1002,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": true,
-   "bytes": 9777,
-   "sha256": "4d099f75c187c11ec47a832eb0e10b4a4eef8775edc981f1bf50e3bbf7e7b25c",
+   "bytes": 9767,
+   "sha256": "45c59372f4909bf7d0518908cd85a30f907c6d13fe76e0c321f7f35b19e38453",
    "fingerprint": "3cef600f61b87430",
    "ageDays": 1,
    "freshness": "fresh",
