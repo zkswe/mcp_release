@@ -26,7 +26,7 @@ evidence: []
 | 根层 | 全部 21 类控件均允许 | 各类均有根层样例 |
 | **window** | **万能容器**：textview/button/edittext/listview/seekbar/**window(深嵌套)**/qrcode/digitalclock/slidetext/slidewindow 等全部控件类型 | textview 147 / button 128 / edittext 16 / listview 8 / seekbar 7 / window 5 / qrcode 2 / digitalclock 1 / slidetext 1 / slidewindow 1 |
 | **pagewindow** | **只装 window**（页面叠放，同尺寸；代码 turnToNextPage 翻页） | window 3（basedemo 3 页） |
-| **scrollwindow** | **只装 window**（滚动内容，window 尺寸=dragMaxDis） | window 1 |
+| **scrollwindow** | **只装 window**（滚动内容；**内层 window 的尺寸 = 滚动行程基准**（滚到不到底看它，不看 `dragMaxDis`） | window 1 |
 | **listview** | 只走 **item**（行模板）→ 行内容在 `item.subItem[]`；**禁止平铺 __N 控件键** | item 100%（两源） |
 | **radiogroup** | 只走 **radiobuttons[]**（每项带 id/caption，本质按钮） | basedemo |
 | **slidewindow** | 只走 **items[]**（图标项 {colorTab/picTab/text}，非控件） | 两源 |

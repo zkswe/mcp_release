@@ -232,7 +232,7 @@ python tools/ui_tools/html2json.py ui/wireframe.html ui/main.json --merge-window
 > 不写 `data-bg`（背景透明）；statusbar 可用 `data-x/y/w/h` 指定局部悬浮块（如 100×41 电量显示），navibar 全屏叠弹窗。
 | `div.list` | ZKListView | data-cols/data-rows/data-row-spacing/data-col-spacing；子项为 subItem（见下） |
 | `div.slidewindow` / `div.slide` / `div.launcher` | ZKSlideWindow 滑动窗口（Android 主页式） | data-cols/data-rows 每页行列、data-icon-w/h 图标尺寸、data-icon-align 文字对齐、data-icon-pad-b/data-pad-b 间距、data-drag-max 拖动距离、data-edge-effect 边缘效果、data-orientation 方向、data-roll-speed 滚动速度；子 div.item 每个图标项（data-pic/data-pic1 两态图 + 文字） |
-| `div.scrollwindow` / `div.scrollwin` / `div.scroll` | ZKScrollWindow 滚动窗口 | data-drag-max 最大拖动距离（=滚动内容尺寸）、data-orientation 滑动方向（0水平/1垂直）、data-edge-effect 边界效果；滚动内容=内嵌普通 window（尺寸=dragMaxDis） |
+| `div.scrollwindow` / `div.scrollwin` / `div.scroll` | ZKScrollWindow 滚动窗口 | data-drag-max **越界拖拽上限（overscroll，不是行程）**、data-orientation 滑动方向（0水平/1垂直）、data-edge-effect 边界效果；滚动内容=内嵌普通 window（**它的尺寸决定行程**，要滚到底就把它画得比视口高） |
 | `div.pagewindow` / `div.page` / `div.pager` | ZKPageWindow 翻页窗口 | data-drag-max 拖动距离、data-orientation 方向、data-edge-effect 边界、data-roll-speed 滚动速度；页面=多个同尺寸 window 叠放（代码 turnToNextPage/turnToPrevPage 翻页） |
 | `div.checkbox` | ZKCheckBox | data-checked="1" 勾选；**padding 三件套**：data-icon-w/h 图标尺寸、data-pad 图标与文字间隙、data-pic/data-pic2 两态图（pic0 未选/pic2 选中，自动生成 iconPosition+textPosition）；无图时 data-bg/data-bg2 + data-color/data-color2 选中变色 |
 | `div.radio` / `div.radiogroup` | ZKRadioGroup | 子项自动进 radiobuttons 数组 |
@@ -264,7 +264,7 @@ python tools/ui_tools/html2json.py ui/wireframe.html ui/main.json --merge-window
 | `data-icon-align` | slidewindow 图标文字对齐（41 底部） | data-icon-align="41" |
 | `data-icon-pad-b` / `data-pad-b` | slidewindow 文字/容器下间距 | data-icon-pad-b="5" data-pad-b="8" |
 | `data-drag-max` / `data-edge-effect` / `data-roll-speed` | slidewindow 拖动距离/边缘效果/滚动速度 | data-drag-max="200" |
-| `data-drag-max` | scrollwindow 最大拖动距离（=滚动内容尺寸，如 2400） | data-drag-max="2400" |
+| `data-drag-max` | scrollwindow 越界拖拽上限（**不是行程**；行程 = 内层 window 尺寸 − 视口，引擎自算） | data-drag-max="60"（480×480 手感值） |
 | `data-orientation` | scrollwindow 滑动方向（0水平/1垂直） | data-orientation="1" |
 | `data-edge-effect` | scrollwindow 边界效果（拖拽/无/循环） | data-edge-effect="0" |
 | `data-roll-speed` | pagewindow 滚动速度 | data-roll-speed="30" |

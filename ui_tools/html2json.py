@@ -1453,8 +1453,9 @@ class HtmlToJson:
 
     def _open_scrollwindow(self, ctx, node):
         """滚动窗口（UIlayoutDemo/setting.ftu 校准）：
-        dragMaxDis 最大拖动距离 + orientation 滑动方向（垂直/水平） + edgeEffect 边界效果（拖拽/无/循环）。
-        滚动内容 = 内嵌的普通 window（尺寸=dragMaxDis，如 ScrollWin 2400），window 内再嵌面板。
+        dragMaxDis **越界拖拽上限**（overscroll，不是行程） + orientation 滑动方向（垂直/水平） + edgeEffect 边界效果（拖拽/无/循环）。
+        滚动内容 = 内嵌的普通 window（如 ScrollWin 2400）——**它的尺寸才是行程**（行程 = 内层 window 尺寸 − 视口）。
+        口径（2026-10-01 钟工修正）：别拿 dragMaxDis 算行程/判滚没滚到底，见 knowledge/uicontrols/scroll-drag-interaction-spec.md。
         """
         attrs = node.attrs
         cap = self._caption(ctx, 'scrollwindow', attrs)
@@ -1462,7 +1463,7 @@ class HtmlToJson:
              'dragMaxDis': 200, 'edgeEffect': 1,
              'id': ctx.nid('scrollwindow'),
              'orientation': 0,
-             'position': self._pos(attrs)}
+             'position': self._pos(attrs)}  # dragMaxDis = 越界拖拽上限（不是行程；行程由内层 window 尺寸定，见 scroll-drag-interaction-spec.md §0）
         dmd = parse_px(_attr(attrs, 'data-drag-max'))
         if dmd is not None:
             c['dragMaxDis'] = dmd

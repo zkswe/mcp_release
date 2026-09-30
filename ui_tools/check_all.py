@@ -1240,6 +1240,69 @@ def check_aa_assets(project_root, timeout=1800):
     return out
 
 
+def check_scrollwindow_travel(project_root):
+    """scrollwindow 行程核对（钟工 2026-10-01 定）。
+
+    口径：`dragMaxDis` = **越界拖拽上限（overscroll）**——手指越过内容边界后还能再拽出去多少像素，
+    四个控件（listview/scrollwindow/pagewindow/slidewindow）语义相同；**不是行程**。
+    行程（travel）由内容决定、引擎自算：scrollwindow = 内层 window 尺寸 − 视口尺寸。
+    **不要拿 dragMaxDis 算行程/判「能不能滚」**（旧口径「dragMaxDis = 行程/内容尺寸」已作废，
+    反例：官方 ScrollWindowDemo-New 视口 450 / 内容 800（行程 350）而 dragMaxDis=200；
+    SmartPanel settings 视口 418 / 内容 832（行程 414）而 dragMaxDis=60，真机仍能滚 302px 到底）。
+    口径与证据：knowledge/uicontrols/scroll-drag-interaction-spec.md。
+
+    返回 (notes, warns)：notes = 每处摘要（含行程与 dragMaxDis）；warns = [(页面, 说明)]。
+      WARN A：视口内已放不下（内层 window 高/宽没跟上实际内容）→ 末尾行/列会被裁掉或滚不到；
+      WARN B：edgeEffect 生效（≠0）且 dragMaxDis ≥ 控件可视尺寸 → 一次能拖出整屏（露底），改手感值。
+    """
+    notes, warns = [], []
+    for jf in _ui_pages(project_root):
+        d = json.load(open(jf, encoding='utf-8'))
+        rel = 'ui/' + os.path.basename(jf)
+        for k, v in _all_controls(d):
+            if not k.startswith('scrollwindow__'):
+                continue
+            pos = v.get('position') or {}
+            vw, vh = pos.get('width') or 0, pos.get('height') or 0
+            wins = [(wk, wv) for wk, wv in v.items()
+                    if wk.startswith('window__') and isinstance(wv, dict)]
+            if not wins:
+                continue  # 无内层 window 由 #2 层级检查报
+            ori = v.get('orientation', 0)  # 0 水平 / 1 垂直
+            drag = v.get('dragMaxDis')
+            edge = v.get('edgeEffect')
+            for wk, wv in wins:
+                wp = wv.get('position') or {}
+                ww, wh = wp.get('width') or 0, wp.get('height') or 0
+                axis = 'y' if ori == 1 else 'x'
+                view, content = (vh, wh) if ori == 1 else (vw, ww)
+                travel = content - view
+                notes.append('%s %s（%s 轴）视口 %d / 内容 %d / 行程 %d；dragMaxDis=%s'
+                             % (rel, k, axis, view, content, travel, drag))
+                if travel <= 0:
+                    # 内容其实超没超出？看内层 window 里子控件的最远缘（相对内容窗口）
+                    need = 0
+                    for ck, cv in _all_controls(wv):
+                        cp = cv.get('position') or {}
+                        edge_px = ((cp.get('top') or 0) + (cp.get('height') or 0)) if ori == 1 \
+                            else ((cp.get('left') or 0) + (cp.get('width') or 0))
+                        need = max(need, edge_px)
+                    if need > view:
+                        warns.append((rel,
+                                      '%s 行程 %d ≤ 0 但内层 %s 的内容已到 %d > 视口 %d：内层 window 的%s'
+                                      ' 没跟上实际内容 → 末尾控件会被裁掉/滚不到。修法：把内层 %s 的%s'
+                                      ' 改成 ≥ 内容总%s（行数 × 行距 + 首行偏移）'
+                                      % (k, travel, wk, need, view, 'height' if ori == 1 else 'width',
+                                         wk, 'height' if ori == 1 else 'width',
+                                         '高' if ori == 1 else '宽')))
+                elif isinstance(drag, int) and isinstance(edge, int) and edge != 0 and drag > view:
+                    warns.append((rel,
+                                  '%s 的 dragMaxDis=%d > 控件可视%s %d（edgeEffect=%d 生效）：越界可把整屏内容'
+                                  '拽出去（露底）→ 改成手感值（基准 1024×600 取 50~200，480×480 取 40~60）'
+                                  % (k, drag, '高' if ori == 1 else '宽', view, edge)))
+    return notes, warns
+
+
 def main(project_root):
     root = os.path.abspath(project_root)
     if not os.path.isdir(root):
@@ -1911,6 +1974,22 @@ def main(project_root):
             warn('弧线过渡硬阶梯 %d 张 → 重出图：描边 alpha 必须用覆盖率口径（gen_res.ring_cov_alpha /'
                  'card9_alpha / translucent_card9），**禁把 coverage_ring（二值颜色指派 mask）当 α 层用**；'
                  '口径见 references/kb/image-gen-standard.md §7.7' % len(aq['defect']))
+
+    print('== 26. scrollwindow 行程核对（行程 = 内层 window − 视口，**不读 dragMaxDis**）==\n'
+          '       钟工 2026-10-01 定：`dragMaxDis` = 越界拖拽上限（overscroll），四个滑动控件语义一致，\n'
+          '       **不是行程**；行程由内容决定、引擎自算（scrollwindow = 内层 window 尺寸 − 视口尺寸）。\n'
+          '       反例（旧口径作废的证据）：官方 ScrollWindowDemo-New 视口 450 / 内容 800（行程 350）\n'
+          '       而 dragMaxDis=200；SmartPanel settings 视口 418 / 内容 832（行程 414）而 dragMaxDis=60，\n'
+          '       真机仍能滚 302px 到底。口径：knowledge/uicontrols/scroll-drag-interaction-spec.md。')
+    st_notes, st_warns = check_scrollwindow_travel(root)
+    if not st_notes:
+        print('  [NOTE] 无 scrollwindow（或未内嵌 window），跳过')
+    for n in st_notes:
+        print('  [NOTE] %s' % n)
+    for pg, msg in st_warns:
+        warn('%s %s' % (pg, msg))
+    if st_notes and not st_warns:
+        print('  [PASS] 行程与 dragMaxDis 用法正常（%d 处）' % len(st_notes))
 
     print()
     if warnings:
