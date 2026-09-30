@@ -2,8 +2,8 @@
   "schema": 1,
   "generatedBy": "scripts/gen_manifest.py",
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY/STAGE 表后重新生成，勿手改本文件",
-  "version": "0.27.144-open",
-  "build": "2026-09-30",
+  "version": "0.27.145-open",
+  "build": "2026-10-01",
   "toolCount": 43,
   "cli": {
     "fun": "FlyThings 工程工具（create/install/build/launch，<项目>/.fsc/<平台>/ 下；09-28 前为 .fun/）",

@@ -3,7 +3,7 @@
 > 口径：**只写实测过的**；没测的写「未验证」+ 缺什么条件，不猜、不套别的平台结论。
 > 结论来源：`packages/mqtt-cxx/{platforms.md, package.yaml}`（2026-09-29 三块真机验证记录，Z20）
 > + `projects/SmartPanel_HA/docs/{DOMOTICZ-COMPAT.md, HA-CONFIG-WEB.md}`（2026-09-30 真机/网关实测）。
-> 本组件自身的**组件形态尚未单独上机**（见 §6「未验证项」）。
+> 本组件自身的**组件形态已在 Z20 真机单独上机验收**（2026-10-01，zkgui 工程形态，见 §6）。
 
 ---
 
@@ -11,7 +11,7 @@
 
 | 平台 | 可用性 | 前提 | 实测内容 |
 |---|---|---|---|
-| **Z20**（SSD20X 480×480 · 86 面板） | ✅ **可用**（`mqtt-cxx` 3.2.0） | Manifest 必须一起声明 `mqtt-cxx` + `paho-mqtt3as` + `openssl 1.1.1-w`（漏 openssl 链接报 `BIO_read / RAND_bytes / SHA1_*` undefined） | 明文 `mqtt://…:1883`（EMQX）：`on_connected` 触发、`isConnected()=1`、qos1 订阅→发布→`on_message` 原样回显（len=35）、`unsubscribe` OK；MQTTS `mqtts://test.mosquitto.org:8883`（`ssl.verify=false`）连通 + qos1 收发回显；LWT 注册后 **`kill -9` 异常断线 → 约 2 s broker 代发遗嘱**（PC 见证端，payload 与注册值一致）；断线重连：`enableWifi(false)` 90 s → `on_disconnected`，`enableWifi(true)` 后 **`on_connected` 再触发（cause=`automatic reconnect`，≈10.5 s）** |
+| **Z20**（SSD20X 480×480 · 86 面板） | ✅ **可用**（`mqtt-cxx` 3.2.0）；✅ **组件形态已真机验收**（2026-10-01，zkgui 工程，见 §6） | Manifest 必须一起声明 `mqtt-cxx` + `paho-mqtt3as` + `openssl 1.1.1-w`（漏 openssl 链接报 `BIO_read / RAND_bytes / SHA1_*` undefined） | 明文 `mqtt://…:1883`（EMQX）：`on_connected` 触发、`isConnected()=1`、qos1 订阅→发布→`on_message` 原样回显（len=35）、`unsubscribe` OK；MQTTS `mqtts://test.mosquitto.org:8883`（`ssl.verify=false`）连通 + qos1 收发回显；LWT 注册后 **`kill -9` 异常断线 → 约 2 s broker 代发遗嘱**（PC 见证端，payload 与注册值一致）；断线重连：`enableWifi(false)` 90 s → `on_disconnected`，`enableWifi(true)` 后 **`on_connected` 再触发（cause=`automatic reconnect`，≈10.5 s）** |
 | Z21 | ❌ 未验证（**平台无此包**） | Z21 registry **没有 `mqtt-cxx` / `paho-mqtt3as`** | 不验 MQTT（换平台要换 MQTT 方案） |
 | F133 / F136 | ❌ 未验证 | 同上：f133/f136/t113emmc/v85x 目录下**都没有** `paho-mqtt3as` | — |
 | T113EMMC | ❌ 未验证 | 同上 | — |
@@ -114,23 +114,62 @@ discovery **不用改风格**就能被 Domoticz 吃下：
 
 ---
 
-## 6. 未验证项与所需条件
+## 6. 组件形态真机验收记录（Z20 · 2026-10-01）
 
-- **本组件的组件形态未单独上机**：代码/接口从真源工程摘除私有依赖重写，`example/` 已写好但**未在工程里编过**
-  （Z20 上「能不能编」需要一次 `fun install && fun build -p Z20`；**未取证**）。
-  **已做的一致性检查**：`g++ -fsyntax-only -std=c++11 -Wall -Wextra -D__PLATFORM_Z20__=1`
-  对 `src/zk_ha_bridge.cpp` 与 `example/zk_ha_bridge_demo.cc` 都通过（0 error / 0 warning），
-  头文件路径用 Z20 registry 真实包（mqtt-cxx 3.2.0 / paho-mqtt3as 1.3.13 / base-json 3.1.0 /
-  base-utility 10.8.5 / easyui 3.0.0 / log 0.0.0 / rapidjson 1.1.0）——**只是语法/接口对得上，不等于真机跑通**。
-  已验证的是**同源逻辑**：`SmartPanel_HA` 的 `MqttBridge` + `RelayManager` 组合在 Z20 真机跑通（HA + Domoticz 双向）。
+**验收形态**：FlyThings **zkgui 工程**（不拿 bin 交付，遵钟工口径），真依赖真编译
+（`fun install` + `fun build -p Z20`），部署到 Z20 面板真机跑通。
+
+- 被测工程：`temp/verify71_ha/ha_zkgui`（Z20 / 480×480，9 个 TextView：连接态 / 三路开关态 /
+  命令计数+最近命令 / 组件日志 / uid）；组件 `include/` + `src/` **原样拷入，零改动**。
+- 接线：`prefs → Config`（`sp_mqtt_server/sp_mqtt_user/sp_mqtt_pass/sp_device_id/sp_dev_name/sp_relay_name1..3`，
+  **不写死** broker/凭据；仅「prefs 缺键时的兜底 server」与「验收前缀基」为集中一处常量）；
+  `onCommand/onConnected/onDisconnected` 只置标志；1s 定时器里 `tick()` + 消费标志 + 刷 UI；
+  `setLogHook()` 接日志（app 模式 stdout 是 `/dev/null`）；继电器硬件（过零 IO 索引 `{3,1,2}`，
+  GPIO `B_02/B_03/E_20` 高电平，实测走了**过零模式** `zeroIoNum=4`）在**工程侧**。
+- 环境：EMQX 5.8.7（`<broker>:1883`，明文无鉴权）；PC 侧见证端用 paho（连 `127.0.0.1:1883`）。
+- 证据索引：`temp/verify71_ha/EVIDENCE.md`（含逐条原始输出）。
+
+| # | 判据 | 结果 | 证据文件（`temp/verify71_ha/`） |
+|---|---|---|---|
+| a | 设备连上 broker（设备日志 + broker 侧 client 在线，两侧） | ✅ | `logs/logcat_a_connect.txt`、`logs/emqx_clients_verify71ha.txt`、`shots/a_connected.png` |
+| b | 上行 `availability/state/status` **retained** | ✅ | `logs/witness_retained_bc.txt`（重订阅回放，5 条全 `RETAIN=1`） |
+| c | 连接后**自动发 HA Discovery**（retained config，字段与 RelayBank 语义一致） | ✅ | `logs/witness_retained_bc.txt` |
+| d | 下行 `.../switch/relay_<n>/command` ON/OFF → `onCommand` + 继电器真实动作 | ✅ | `logs/logcat_d_commands.txt`、`shots/d_{relay1_on,all_on,relay1_off,all_off}.png`；`sp_relay_state` 1→7→6→0 |
+| e | 生命周期 `start()/stop()` + 一次重连（单 client + 代次作废旧回调，不互踢） | ✅ | `logs/logcat_e_lifecycle_reconnect.txt`、`logs/witness_full.txt`、`logs/emqx_clients_verify71ha.txt` |
+
+**关键量**：连上到发完 discovery/state/status ≈ 0.14 s；broker 侧 kick 后 **断开→回连成功 ≈ 0.56 s**（gen+1）；
+同 client_id 在 broker 上计数恒为 **1**（无互踢风暴）；重启后 `restored mask` 恢复硬件并回发 retained。
+
+**本次未取证**（不冒充实测）：
+
+1. **QoS1 全链路**：state/command 走组件默认 **QoS0 + retained**；QoS1 端到端未测。
+2. **LWT 异常断线**：只做了 broker 侧 kick 与 clean `stop()`，未 `kill -9` 验遗嘱代发。
+3. **MQTTS / 用户名口令鉴权**：本次为明文无鉴权。
+4. **吞吐/时延数字**、**QoS2**、**>8 通道**、**长令牌下 discovery 报文体积**：未测。
+5. **`clearDiscovery()` retained 撤销**、**`extraSubscriptions`/`onMessage` 业务主题**：未测。
+6. **`sp_relay_state` 键缺失（哨兵 -1）分支**：未构造。
+7. **物理灯人工观察**：过零 IO 真写已由日志（`relay: chN hw -> ON/OFF (mode=0)`）证明，
+   但未做「肉眼看到灯亮灭」的记录；状态变化以 `sp_relay_state` + UI 截图为证。
+8. 其它平台：registry 无 `mqtt-cxx`/`paho-mqtt3as`，未取证。
+
+## 7. 未验证项与所需条件
+
+- **本组件的组件形态已在 Z20 真机上机验收（2026-10-01）**：`fun install && fun build -p Z20` **真编译通过**，
+  zkgui 工程真机跑通（连接 / retained 上行 / 自动 discovery / 下行命令 → `onCommand` + 继电器真实动作 /
+  `start()/stop()` + kick 重连）。逐条证据见 §6。
+  **已做的一致性检查（历史）**：`g++ -fsyntax-only -std=c++11 -Wall -Wextra -D__PLATFORM_Z20__=1`
+  对 `src/zk_ha_bridge.cpp` 与 `example/zk_ha_bridge_demo.cc` 均通过（0 error / 0 warning）。
+  同源逻辑（`SmartPanel_HA` 的 `MqttBridge` + `RelayManager`）在 Z20 真机跑通（HA + Domoticz 双向）。
+- **仍未取证的项**：见 §6 末尾清单（QoS1 全链路 / LWT 异常断线 / MQTTS+鉴权 / 吞吐时延 /
+  `clearDiscovery` / `extraSubscriptions` / 哨兵 -1 分支 / 物理灯肉眼观察）。
 - MQTT v5 属性、`wss`（WebSocket over TLS）：未测（示例只覆盖 `mqtt://` 与 `mqtts://`）。
 - QoS2（EXACTLY_ONCE）：未测（实测都是 QoS1；本组件 state/command 用 QoS0 + retained）。
-- 遗嘱代发可靠性：只做了 1 次（异常断线 → 约 2 s 代发）；未做多次重复与 retained will 回归。
+- 遗嘱代发可靠性：只做了 1 次（真源工程，异常断线 → 约 2 s 代发）；**组件形态下未做**（本次只做 broker kick）。
 - 长令牌/大量实体场景下的 discovery 报文体积：未测。
 
 ---
 
-## 7. 真机验收步骤（Z20）
+## 8. 真机验收步骤（Z20）
 
 ```bash
 # ① 编译部署（工程侧）

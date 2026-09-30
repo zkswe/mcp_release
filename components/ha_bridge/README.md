@@ -7,7 +7,7 @@
 - 对外命名空间 `zk::ha`（唯一对外头 `include/zk/zk_ha_bridge.h`），**源码型**（`include/ + src/ + example/`）
 - **不泄漏底层类型**：头文件里没有 `mqtt::Client` / paho / rapidjson 任何符号（底层在 `.cpp` 里）
 - 依赖包：`mqtt-cxx`（+ 必带的 `paho-mqtt3as` / `openssl`）、`base-json`、`base-utility`、`log`（可选 `easyui`/`rapidjson`） —— 见 `Manifest.xml`
-- 平台：**Z20 已实测**（明文 MQTT / MQTTS / LWT / retained / 重连口径全部来自真机）；其余平台**未验证**（无 mqtt-cxx 包）
+- 平台：**Z20 已实测**（明文 MQTT / MQTTS / LWT / retained / 重连口径全部来自真机）；**组件形态已在 Z20 真机单独验收**（2026-10-01，FlyThings zkgui 工程形态，5 条判据全过，见 `platforms.md` §6）；其余平台**未验证**（无 mqtt-cxx 包）
 - 落地来源：`projects/SmartPanel_HA`（Z20 86 面板，HA + Domoticz 双向实测）
 
 **版本记录**
@@ -15,7 +15,10 @@
   + `zk::ha::RelayBank`（唯一事实源 + UI 槽/业务具名槽分离）；坑与实测数字全部搬自 `SmartPanel_HA` 真机记录
   （数字出处逐条标注，未取证的写「未取证」）。
   **检查过什么**：`src/` 与 `example/` 已过 `g++ -fsyntax-only -std=c++11 -Wall -Wextra -D__PLATFORM_Z20__=1`
-  （0 error / 0 warning，头文件用 Z20 registry 真实包）；**未在真机工程里编过/跑过**（见 `platforms.md` §6「未验证项」）。
+  （0 error / 0 warning，头文件用 Z20 registry 真实包）。
+  **2026-10-01 补验收**：组件形态已在 Z20 真机以 **zkgui 工程形态**落地跑通（`fun install && fun build -p Z20`
+  真编译 + 真机 5 条判据：连上 broker / retained 上行 / 自动 discovery / 下行命令 → `onCommand` + 继电器真实动作 /
+  `start()/stop()` + kick 重连），证据见 `platforms.md` §6；仍未取证的项见同节末尾清单。
 
 ---
 
