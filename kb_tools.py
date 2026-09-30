@@ -61,7 +61,7 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.139-open'
+MCP_VERSION = '0.27.140-open'
 MCP_BUILD = '2026-09-30'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -76,6 +76,7 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+    '2026-09-30: **UI 确认闸门 + 客户确认稿 + 出图内联审计 + 三条知识入库（SmartPanel 检讨落地）** v0.27.140-open（钟工：「按照你的建议改。旋转倒装可以入知识库，不需要入 component」）——① **确认闸门（P0，返修点）**：`flythings_ui_visual(action="edit_apply")` 与 `flythings_fui_pack` 返回体新增 `confirmNeeded/confirmDraft/confirmHint` —— 项目 `ui/` 下没有比本次改动**更新**的确认稿（`.confirm.html`/`.preview.html`/`_edit/*.edit.html`）时提示「先出确认稿给需求方确认再 pack/推真机」（**只提醒不阻塞**；闸门自身异常也如实回报）。起因 = SmartPanel 项目 UI 布局多次来回对齐、全程没提醒用可分享 HTML 版跟客户确认（该工程 81 个 `_gen` 脚本 / 只 3 份 preview / 编辑器 0 次）。② **客户确认稿（P0）**：`flythings_ui_preview(target, for_customer=True)` → 单文件 `<name>.confirm.html`（图 base64 内联、手机可打开可转发），带「标注」开关（控件名+尺寸+坐标叠加层）、窄屏自动等比缩放、抬头带分辨率/控件数/生成时间；`ui_tools/json2html.py` 的 `json2html(target, output_dir, for_customer)` 与命令行 `--customer` 同步。③ **出图内联审计（P0）**：`flythings_generate_ui_assets` 返回体新增 `assetAudit`（自动跑 `check_all` 的抗锯齿 + 弧线过渡 + 倒角 + 透明底四项审计，DEFECT 计数点名；工具缺失/跑挂如实回报，不静默）—— 倒角线变粗那类问题不该等客户先看出来。④ **流程条款（P0）**：`knowledge/devflow/ui-layout-verify.md` 新增 **§0 确认闸门**（改完布局 → 出确认稿 → 确认 → 才 pack/推真机，含成本账）；`prototype-flow.md` 补「**已有工程的布局迭代同样走确认稿**」（原先只管新项目的线框/美化）。⑤ **知识入库**：新增 `knowledge/devflow/video-wall-sync.md`（多屏拼接跨设备同步：epoch/相位/整边界起播/校时/验收判据，实测数字逐条注明出处）、`knowledge/hardware/z20-display-rotate-flip180.md`（倒装 180°：UI+触摸 `setScreenRotate/setTouchRotate` + 视频层 `MI_DISP_SetVideoLayerRotateMode` + 用 `mi_disp` 的 `rotatemode` 自证；**只入知识库、不入组件**，钟工口径）、`knowledge/devflow/easyui-version-capability.md`（easyui 版本→能力三步判定 + Z20 实测矩阵；`scrollwindow` 不是版本问题、面板机型常见运行库 2.4.0）。⑥ **口径更正**：`z20-86panel-upgrade.md` §11.1 明确 **`umount /mnt/extsd` 失败（`Invalid argument` 或 `Device or resource busy`）都不是硬门槛**（写入面是 mtd3，两次实测照样升级成功）；`packages/mqtt-cxx` 补「**重连只能有一个真源**」（库自带 automatic reconnect + 应用看门狗各自 `new client` → 同 client_id 互踢风暴，实测 1 分钟 143 connected/123 disconnected）。⑦ docstring 预算内收（11972→11963/12000：长尾下沉 knowledge/）。v0.27.140-open',
     '2026-09-30: **bin_tools 去 mt_test（9.7MB）+ 引用口径统一（438 处）** v0.27.139-open（钟工：「3-4 也处理」）——① **mt_test 下线**：`bin_tools/{z20,z21,t113,v85x}/mt_test` 四个二进制（9.7MB）移入工作区归档 `archive/mcp_mt_test_20260930/`（`touch` 自动扫节点 + 判协议，已覆盖单点/MT-A/MT-B）；`BIN_TOOL_BRIEF` / 入口文档 / 用例同步（binTools 只剩 touch / busybox / ui_test / zkshot）；`bin_tools/README.md`、`bin_tools/z235x/README.md`、`hardware_catalog.json`（型号表源头）+ 6 篇知识文档同步；**MT-A / MT-B / 单点协议铁律（事件序列、`SYN_MT_REPORT`、`TRACKING_ID=-1`、恒 0 坐标判据）一字未删**。② **引用口径统一**：定规「knowledge 内互引一律 `knowledge/<分类>/<文件名>.md`；官方镜像写 `wiki/flythings/…`；仓库内其它文件写仓库相对路径；工作区文件写 `workspace/…`；禁裸文件名」，脚本批量落地 **438 处**（含 20 个原先解析不到的定向修复：gap-list / control-map / THIRD-PARTY / DESIGN / 案例侧报告等），复核「解析不到的引用 = 0」。门禁 `check_consistency --with-tests` 全绿。v0.27.139-open',
     '2026-09-30: **op→知识「去哪找」+ 版本史归档（钟工：「12 做了」）** v0.27.138-open——① **新增 `op_seealso.json`（43 op 全覆盖）**：35 个 op 有 seeAlso（仓库内知识文档，随包分发）+ 8 个显式登记 none 并写理由（如 `flythings_create_bin_project` 按 MCU 口径单独维护、i18n 家族在官方文档/wiki 镜像）；`kb_tools.normalize_result` 把 `seeAlso` 统一注入返回体（**不占 docstring 预算**——预算 12000 已顶格），AI 拿到工具结果就知道去哪看细节；`scripts/gen_seealso.py --check` 进发布闸门（覆盖 + 路径存在），新增契约用例 `tests/test_seealso.py`。② **MCP_FEATURES 老条目搬家**：`kb_tools.py` 只留近期 28 条（>= v0.27.121-open），更早 116 条归档到仓库根 `VERSION_HISTORY.md`（168KB）→ `kb_tools.py` **313KB → 144KB**；`flythings_get_version` 新增 `historyFile` / `historyMax` 字段（compact 与全量都回）；口径文档（knowledge/README、PUBLISH、demos/README、smoke 注释）同步；release 不带 VERSION_HISTORY.md。门禁 `check_consistency --with-tests` 全绿。v0.27.138-open',
     '2026-09-30: **知识库章节断号修复：编号连续化 + 全仓 §引用联动** v0.27.137-open（钟工：「修复3」）——① 7 篇顶层编号断号/乱序归为连续：`v85x/h264-player-usage`（12/13→11/12）、`hardware/z20-86panel-upgrade`（10/11/12→8/9/10）、`v85x/display-layer-debug`（8→7）、`uicontrols/touch-events`（7→6）、`uicontrols/layout-audit`（3/4/5→2/3/4）、`devflow/cli-fun-toolchain`（7/8→6/7）；② `devflow/package-properties-easyui-cfg.md` 顶层小节补编号 1..9（原先只有孤立的「## 8. 取图角度」，现为 §9，样式与其它篇一致）；③ 联动全仓章节引用：文档内自引用 + `xxx.md` §N 跨文件引用（含 `§11/§12` 链式）共 **26 处 / 13 个文件**（含 `adb_tools.py` / `kb_tools.py` 活指针与 6 篇知识文档）；复核「仍指向旧号的引用 = 0」；`kb_tools` 的 MCP_FEATURES 历史长串不动。门禁 `check_consistency --with-tests` 全绿。v0.27.137-open',
@@ -690,10 +691,15 @@ def flythings_layout_audit(project_root: str, page: str = '') -> str:
 
 
 def flythings_fui_pack(json_path: str) -> str:
-    """将 json 布局打包为 ftu（设备实际加载的是 ftu）。返回 ftu 路径、控件数、分辨率。
-    ftu 是 json 布局的**编译产物**：改布局一律改 json 后 pack，不要手写/手改 ftu
-    （详见 knowledge/devflow/ftu-json-pipeline.md）。"""
+    """
+    将 json 布局打包为 ftu（设备实际加载的是 ftu）。返回 ftu 路径、控件数、分辨率。
+        ftu 是 json 布局的**编译产物**：改布局一律改 json 后 pack，不要手写/手改 ftu
+        （详见 knowledge/devflow/ftu-json-pipeline.md；返回体带 confirmNeeded 确认闸门）。
+        
+    """
     r = pt.flythings_fui_pack(json_path)
+    if isinstance(r, dict):
+        r.update(_confirm_gate(_project_root_of(json_path), json_path))
     return json.dumps(_with_files(r, r.get('ftuPath')), ensure_ascii=False)
 
 
@@ -727,12 +733,10 @@ def flythings_build_ui_flow(project_root: str, with_launch: bool = True, device:
     """⚠️ 场景别名（编译/部署类意图一律本工具，禁自造命令）：口语「编译/构建/调试/部署/推送到
     设备/跑一下」；固化升级（update.img）→ flythings_pack_upgrade（掉电保留）。
     流程：json↔ftu 时间戳检查 → fui pack → fun install → fun build → **设备探测 + fun launch**
-    （只编译传 with_launch=False）→ 字体体检（缺中文自动投）+ 设备侧字节/md5 比对
+    （只编译传 with_launch=False）→ 字体体检 + 设备侧 md5 比对
     （staleOnDevice=true ⇒ 设备上还是旧版）。探测不猜：0 台→needDeviceInput；多台→列 serial 要 device=。
-    ⚠️ src/activity/ 由 IDE 生成（禁手改），业务只写 src/logic/*.cc；细节见
-    knowledge/devflow/adb-and-device-selection.md。
-    链本地/第三方库：放 src/dependencies/lib/（fun 自动链接）；**libc 必须匹配**——Z20/Z21=glibc、
-    V85X/T113=musl、F133=RISC-V64 musl。
+    ⚠️ src/activity/ 由 IDE 生成（禁手改），业务只写 src/logic/*.cc。
+    链库放 src/dependencies/lib/（fun 自动链接）；**libc 必须匹配**：Z20/Z21=glibc，其余=musl 系。
     """
     return json.dumps(_with_design_warning(
         pt.flythings_build_ui_flow(project_root, with_launch, device,
@@ -756,14 +760,144 @@ def flythings_pack_upgrade(project_root: str, out_path: str = '', release_versio
 
 
 
-def flythings_ui_preview(target: str, output_dir: str = '') -> str:
-    """json 布局 / 整个项目 → HTML 预览稿（客户确认 UI 用；只交 .preview.html，不产图片/截图）。
-    target = 项目根目录（全部 ui/*.json）或单个 json 路径（合并原 preview + json_to_html）。
-    ⚠️ 多整屏 window 工程自带「页面切换条」+ `#window__N`（简写 `#N`）直达 + 幽灵框看隐藏窗。
-    ⚠️ 流程：布局出来必须先出预览给用户确认，确认 OK 才允许 fui pack / 写逻辑 / 交付。
+def _project_root_of(json_path):
+    """从 ui/*.json 反推项目根（找包含 ui/ 或 Manifest.xml 的最近上级）。"""
+    p = os.path.abspath(json_path or '')
+    d = os.path.dirname(p)
+    for _ in range(4):
+        if os.path.isdir(os.path.join(d, 'ui')) or os.path.isfile(os.path.join(d, 'Manifest.xml')):
+            return d
+        nd = os.path.dirname(d)
+        if nd == d:
+            break
+        d = nd
+    return os.path.dirname(p)
+
+
+def _newest(paths, errs=None):
+    """[(mtime, path)] → (最大 mtime, 对应 path)；空列表 → (0.0, '')。
+
+    errs 传 list 时，把「读 mtime 失败」的文件名记进去（上层回给调用方，不静默吞）。
+    """
+    mt, who = 0.0, ''
+    for p in paths:
+        try:
+            m = os.path.getmtime(p)
+        except OSError as e:
+            if errs is not None:
+                errs.append('%s (%s)' % (os.path.basename(p), type(e).__name__))
+            continue
+        if m > mt:
+            mt, who = m, p
+    return mt, who
+
+
+def _confirm_gate(project_root, json_path=''):
+    """确认闸门（2026-09-30 钟工 SmartPanel 检讨）：布局改完 → 项目里有没有**更新**的确认稿？
+
+    只提醒、不阻塞（与「写操作默认安全」同一纪律）：回 confirmNeeded + confirmHint。
+    确认稿 = flythings_ui_preview(for_customer=True) 的 `.confirm.html`（或 .preview.html / _edit/*.edit.html）。
+    """
+    out = {'confirmNeeded': None, 'confirmDraft': '', 'confirmHint': ''}
+    try:
+        root = os.path.abspath(project_root or '') or _project_root_of(json_path)
+        uroot = os.path.join(root, 'ui')
+        if not os.path.isdir(uroot):
+            return out
+        drafts, jsons, skipped = [], [], []
+        for dp, _dn, fn in os.walk(uroot):
+            for f in fn:
+                p = os.path.join(dp, f)
+                if f.endswith(('.confirm.html', '.preview.html', '.edit.html')):
+                    drafts.append(p)
+                elif f.endswith('.json'):
+                    jsons.append(p)
+        if json_path and os.path.isfile(json_path):
+            jsons.append(os.path.abspath(json_path))
+        t_json, jm = _newest(jsons, skipped)
+        t_draft, dm = _newest(drafts, skipped)
+        out['confirmDraft'] = dm
+        out['confirmNeeded'] = bool(t_json and (not dm or t_draft < t_json))
+        if out['confirmNeeded']:
+            out['confirmHint'] = (
+                '布局已改（%s）但没有**更新**的确认稿 → 先出确认稿给需求方确认，再 pack / 推真机：'
+                'flythings_ui_preview(target="%s", for_customer=True)（单文件 .confirm.html，'
+                '手机可打开、带控件标注）；口径见 knowledge/devflow/ui-layout-verify.md §0'
+                % (os.path.basename(jm or ''), root))
+        else:
+            out['confirmHint'] = ('已有确认稿 %s，可直接 pack/推真机（再改布局记得重出确认稿）'
+                                  % os.path.basename(dm or ''))
+        if skipped:
+            out['confirmWarnings'] = skipped
+    except Exception as e:                                # noqa: BLE001
+        out['confirmHint'] = '确认闸门未跑成：%s' % e
+    return out
+
+
+def _asset_audit(project_root):
+    """出图后自动跑资产审计（抗锯齿 / 弧线过渡 / 倒角 / 透明底）；缺工具如实回报，不静默。"""
+    out = {'ran': False, 'status': 'skip', 'hint': '', 'checks': []}
+    if chk_all is None:
+        out['hint'] = ('ui_tools/check_all.py 不可用，审计没跑；手跑 tools/qa/{aa_audit,corner_audit}.py')
+        return out
+    jobs = (('aa', lambda: chk_all.check_aa_assets(project_root)),
+            ('arc', lambda: chk_all.check_arc_quality(project_root)),
+            ('corner', lambda: chk_all.check_shape_audit(project_root, 'corner')),
+            ('alphaBg', lambda: chk_all.check_shape_audit(project_root, 'alpha')))
+    for name, fn in jobs:
+        try:
+            r = fn() or {}
+        except Exception as e:                            # noqa: BLE001
+            out['checks'].append({'check': name, 'status': 'error', 'reason': str(e)})
+            continue
+        item = {'check': name, 'status': r.get('status') or 'skip',
+                'defect': len(r.get('defect') or []), 'warn': len(r.get('warn') or [])}
+        if item['status'] == 'skip':
+            item['reason'] = r.get('reason', '')
+        out['checks'].append(item)
+    ran = [c for c in out['checks'] if c['status'] not in ('skip', 'error')]
+    out['ran'] = bool(ran)
+    if any(c.get('defect') or c['status'] == 'fail' for c in out['checks']):
+        out['status'] = 'fail'
+        out['hint'] = ('有 DEFECT（逐条看 checks 的 defect 数）→ 按 knowledge/devflow/ui-asset-rules.md '
+                       '#11~#13 修图后重出；⚠️ 纯二值资产（二维码/条形码那种只有两种颜色的图）会被抗锯齿'
+                       '审计判 hard_diag，属预期，需在审计规则里登记豁免而不是改图')
+    elif ran:
+        out['status'] = 'ok'
+        out['hint'] = '抗锯齿/弧线过渡/倒角/透明底审计通过（WARN 逐条列在 checks，不阻塞但别忽略）'
+    else:
+        out['hint'] = ('审计脚本没找到（tools/qa/*.py 不在搜索路径）→ 手跑 '
+                       'python tools/qa/aa_audit.py <项目>/resources/images --fail')
+    return out
+
+
+def _with_confirm_gate(r, json_path='', project_root=''):
+    """把确认闸门结果合进返回体（解析不了/不是 dict 就原样回）。"""
+    if not isinstance(r, dict):
+        return r
+    if not project_root:
+        p = os.path.abspath(json_path) if json_path else ''
+        if p and os.path.isdir(p):                    # 传的是项目根/目录
+            project_root = p
+        elif p and os.path.isdir(os.path.join(os.path.dirname(p), 'ui')):
+            project_root = os.path.dirname(p)
+    r.update(_confirm_gate(project_root, json_path))
+    return r
+
+
+def flythings_ui_preview(target: str, output_dir: str = '', for_customer: bool = False) -> str:
+    """
+    json 布局 / 整个项目 → HTML 预览稿（客户确认 UI 用；只交 html，不产图片/截图）。
+        target = 项目根目录（全部 ui/*.json）或单个 json 路径。
+        for_customer=True → **客户确认稿** `<name>.confirm.html`：单文件（图内联）、手机可打开/转发、
+        带「标注」开关（控件名 + 尺寸 + 坐标）与窄屏自适应；只出预览，不动 json/ftu。
+        ⚠️ 多整屏 window 工程自带「页面切换条」+ `#window__N`（简写 `#N`）直达 + 幽灵框看隐藏窗。
+        ⚠️ 确认闸门：改完布局先出确认稿给需求方确认，确认 OK 才 pack / 写逻辑 / 推真机
+        （口径与来由见 knowledge/devflow/ui-layout-verify.md §0）。
+        
     """
     is_dir = os.path.isdir(target)
-    r = j2h.json2html(target, output_dir)
+    r = j2h.json2html(target, output_dir, for_customer=bool(for_customer))
     if is_dir and isinstance(r, dict) and r.get('success'):
         for f in r.get('files', []):
             jp = os.path.join(target, 'ui', f.get('json', ''))
@@ -795,8 +929,11 @@ def flythings_ui_preview(target: str, output_dir: str = '') -> str:
                     pass
         r['projectRoot'] = target
         r['outputDir'] = output_dir or os.path.join(target, 'ui')
-        r['note'] = 'html 为客户预览稿；设备端仍用 fui pack 生成的 ftu，两者同源于 json'
-    return json.dumps(r, ensure_ascii=False)
+        r['forCustomer'] = bool(for_customer)
+        r['note'] = ('html 为客户预览稿；设备端仍用 fui pack 生成的 ftu，两者同源于 json' +
+                     ('；**客户确认稿**：单文件可发微信/手机打开，点「标注」看控件名与尺寸'
+                      if for_customer else ''))
+    return json.dumps(_with_confirm_gate(r, target), ensure_ascii=False)
 
 
 def flythings_html_to_json(input_html: str, output_json: str = '', res: str = '',
@@ -805,11 +942,10 @@ def flythings_html_to_json(input_html: str, output_json: str = '', res: str = ''
 
     ⚠️ 动手前先读《HTML_SUBSET 原型规范》（检索 HTML_SUBSET / data-icon / 自动转图清单）：
     控件映射表、全部 data-* 属性、铁律、属性清单都在那里，本 docstring 只留最低限度。
-    多屏（div.screen，data-page）：**每屏一个 json = 一页 = 一个 Activity = 一个独立 ftu**；
+    多屏（div.screen，data-page）：每屏一个 json = 一页 = 一个 Activity = 一个 ftu；
     **仅当同属一个 Activity** 时才用 merge_windows 合成同 json 的 N 个整屏 window。
     返回 screensDetected/pagesProduced/jsonsProduced/pages[]；**不等一律 success:false**（不静默丢页）。
-    红线：先出 .preview.html 确认再 pack/写逻辑；效果一律转图；禁止 AI 自绘 1x png。
-    做差异化效果前先答三问（静态/逐帧？面积？有无硬件层？）并查 knowledge/uicontrols/extension-surface.md。
+    红线 / 确认闸门 / 差异化三问 → knowledge/devflow/html-subset-quickref.md。
     """
     out = h2j.html2json(input_html, output_json or None, res or None,
                         merge_windows=bool(merge_windows))
@@ -925,16 +1061,18 @@ def flythings_resolve_dependencies(packages: str, platform: str = _platforms.DEF
 def flythings_create_bin_project(project_root: str, project_name: str = '', platform: str = _platforms.DEFAULT_BIN_PLATFORM,
                                  app_version: str = '1.0.0', description: str = '',
                                  with_build: bool = True) -> str:
-    """创建「可执行程序」项目（fun create --type bin）并编译为直接可运行的 ELF 二进制。
+    """
+    创建「可执行程序」项目（fun create --type bin）并编译为直接可运行的 ELF 二进制。
 
-    - 项目类型 4 选 1：zkgui（UI应用）/ bin（可执行程序）/ staticLibrary / sharedLibrary
-    - bin 项目结构极简：fun.json（"type": "executable"）+ src/main.cpp（标准 int main()）
-    - 编译：fun build → 产物 .fun/{platform}/{项目名}，ELF 魔数验证
-    - 部署：adb push + chmod +x 直接跑（无 zkgui 宿主，不能启动 UI 应用）
-    - 非交互：自动传 --app-version/--description 跳过向导；目录非空直接报错（防覆盖询问卡死）
+        - 项目类型 4 选 1：zkgui（UI应用）/ bin（可执行程序）/ staticLibrary / sharedLibrary
+        - bin 项目结构极简：fun.json（"type": "executable"）+ src/main.cpp（标准 int main()）
+        - 编译：fun build → 产物 .fun/{platform}/{项目名}，ELF 魔数验证
+        - 部署：adb push + chmod +x 直接跑（无 zkgui 宿主，不能启动 UI 应用）
+        - 非交互：自动传 --app-version/--description 跳过向导；目录非空直接报错
 
-    用户要「编译出可直接执行的二进制/bin 程序/执行程序（非 UI 应用）」时调用。
-    platform 默认 z21（支持 z20/t113/f133 等）；project_name 缺省取目录名。
+        用户要「编译出可直接执行的二进制/bin 程序/执行程序（非 UI 应用）」时调用。
+        platform 默认 z21（支持 z20/t113/f133 等）；project_name 缺省取目录名。
+        
     """
     return json.dumps(pt.flythings_create_bin_project(
         project_root, project_name, platform, app_version, description, with_build),
@@ -1048,9 +1186,8 @@ def flythings_create_project(project_root: str, platform: str, resolution: str,
     传入项目根目录、平台（口径由 platforms.py 提供）与分辨率（如 800x480）。
     ⚠️ platform/resolution 必填且必须来自用户明确提供，未指定时先询问，禁止猜测或用默认值。
     ⚠️ 页数：创建后按设计稿屏数确认（多屏设计稿 = N 屏必须全部落地，见 page-architecture-spec.md）。
-    ⚠️⚠️ src/activity/ 目录（mainActivity.cpp/h）由 IDE 编译时根据 ftu 自动生成，
-    禁止创建/修改/覆盖该目录任何文件！业务代码只能写 src/logic/*.cc；
-    mXXXPtr 控件指针 / ID_MAIN_* 宏 / 回调表 / findControlByID 初始化全部由 IDE 自动生成，禁止手写。
+    ⚠️⚠️ src/activity/（mainActivity.cpp/h）由 IDE 按 ftu 生成，**禁止创建/修改/覆盖**；业务只写
+    src/logic/*.cc（mXXXPtr / ID_MAIN_* / 回调表 / findControlByID 都由 IDE 生成，禁手写）。
     ⚠️ 新需求请先出设计稿/原型并确认（见 prototype-flow）再建工程。
     """
     return json.dumps(_with_design_warning(
@@ -1072,16 +1209,23 @@ def flythings_check_project_deps(project_root: str, platform: str = _platforms.D
 
 
 def flythings_generate_ui_assets(project_root: str, assets: str) -> str:
-    """生成 UI 图片资源（图标/牌面/按钮背景等）→ <项目>/resources/images/（json 引用写 images/xxx.png）。
-
-    assets 为 JSON 数组字符串，每项：{name, size, prompt, emoji, color, kind}
-    —— name 必填（自动补 .png）；prompt 有则优先 AI 生图，失败用 emoji，再不行用 color/kind 线条兜底；
-    kind 可选 check/charging/wifi/alert/circle/square/star/heart；返回每项实际方式 method(ai/emoji/line)。
-
-    ⚠️ 铁律（尺寸==控件盒、四角 alpha=0、禁 1x 直画/外部生图直出小图）与三条合法出图路径见知识库
-    「UI 图片资源铁律与 PNG 抗锯齿管线」（检索：图片资源铁律 / 抗锯齿 / 四角发黑 / 走哪条路出图）。
     """
-    return json.dumps(h2j_genres.gen_ui_assets(project_root, assets), ensure_ascii=False)
+    生成 UI 图片资源（图标/牌面/按钮背景等）→ <项目>/resources/images/（json 引用写 images/xxx.png）。
+
+        assets 为 JSON 数组字符串，每项 {name,size,prompt,emoji,color,kind}；name 必填（自动补 .png），
+        prompt 优先 AI 生图、失败用 emoji、再不行用 color/kind 线条兜底；kind 取
+        check/charging/wifi/alert/circle/square/star/heart。
+        **返回体自动带 assetAudit**（出图后跑抗锯齿/弧线过渡/倒角/透明底审计；有 DEFECT 就按
+        knowledge/devflow/ui-asset-rules.md #11~#13 修图重出）。
+
+        ⚠️ 铁律（尺寸==控件盒、四角 alpha=0、禁 1x 直画/外部生图直出小图）与三条合法出图路径见知识库
+        「UI 图片资源铁律与 PNG 抗锯齿管线」（检索：图片资源铁律 / 抗锯齿 / 走哪条路出图）。
+        
+    """
+    res = h2j_genres.gen_ui_assets(project_root, assets)
+    if isinstance(res, dict):
+        res['assetAudit'] = _asset_audit(project_root)
+    return json.dumps(res, ensure_ascii=False)
 
 
 def flythings_i18n_scan(project_root: str) -> str:
@@ -1135,8 +1279,7 @@ def flythings_i18n_to_json(project_root: str, langs: str = '', push: bool = True
     （tab 缩进+无空格冒号+末尾无换行），默认自动 adb push 到 /tmp/tr/；多设备需传 device=IP。
     生产固件翻译打包到 /res/，无需推送（push=False）。
 
-    完整流程：flythings_i18n_import / add_language / refactor 改 .tr → 本工具转 json + push →
-    adb shell "setprop ctl.stop zkswe && setprop ctl.start zkswe"（DEBUG 模式重启加载）。
+    完整流程（改 .tr → 本工具转 json + push → 重启加载）见 knowledge/devflow/i18n.md。
     """
     return json.dumps(itx.flythings_i18n_to_json(project_root, langs, push, device), ensure_ascii=False)
 
@@ -1213,13 +1356,16 @@ def _ui_edit_apply(project_root: str, changes: str, pack: bool = False,
         r = uia.apply_changes(ch, project=project_root, dry_run=bool(dry_run))
         if r.get('success') and pack and not dry_run:
             r['pack'] = uia.pack(r['json'], project_root)
+        if r.get('success') and not dry_run:
+            r.update(_confirm_gate(project_root, r.get('json') or ''))
         if dry_run:
             r['note'] = ('dry_run：仅预览，未写盘；确认后传 dry_run=False 写回' +
                          '（要接着 pack 再传 pack=True）')
         else:
             r['note'] = '变更已写回 json' + ('（含 ftu 重新打包）' if r.get('pack') else
                                              '（未 pack：布局确认后传 pack=True）') + \
-                        '；备份在同目录 <name>.json.bak'
+                        '；备份在同目录 <name>.json.bak；布局改完先出确认稿给需求方确认' \
+                        '（flythings_ui_preview for_customer=True）再 pack/推真机（见 confirmHint）'
         return json.dumps(_with_files(r, r.get('json'), r.get('backup')), ensure_ascii=False)
     except Exception as e:
         return json.dumps({'success': False, 'error': str(e)}, ensure_ascii=False)
@@ -1370,14 +1516,16 @@ def flythings_ui_visual(action: str = 'list', project_root: str = '', output_dir
                         noise_bbox: int = 10, out_png: str = '', out_json: str = '',
                         show_noise: bool = False, mode: str = '', baseline_key: str = '',
                         name: str = '', allow_regions: int = 0) -> str:
-    """UI 可视化/像素验收入口（action 选动作；旧编辑器三 op 已并入）。
+    """
+    UI 可视化/像素验收入口（action 选动作；旧编辑器三 op 已并入）。
 
-    - action="editor"：ui/*.json → 可拖拽编辑器网页（<项目>/ui/_edit/<name>.edit.html）。
-    - action="edit_apply"：变更 JSON 写回 ui/*.json（pack 默认 False；dry_run 只预览；写回留 .bak）。
-    - action="diff"：两张同尺寸截图逐像素对比，出 0 token 差异清单（tolerance/shift/blur/min_area/noise_bbox 压假报警）。
-    - action="baseline"：像素基线库（<项目>/ui_baseline/），mode=save/compare/update/list。
+        - action="editor"：ui/*.json → 可拖拽编辑器网页（<项目>/ui/_edit/<name>.edit.html）。
+        - action="edit_apply"：变更 JSON 写回 ui/*.json（pack 默认 False；dry_run 只预览；写回留 .bak）。
+        - action="diff"：两张同尺寸截图逐像素对比，出 0 token 差异清单（阈值参数压假报警）。
+        - action="baseline"：像素基线库（<项目>/ui_baseline/），mode=save/compare/update/list。
 
-    详细口径见 knowledge/devflow/ui-layout-verify.md §3~§5-2；action 传 list 看各 action 参数。
+        详细口径见 knowledge/devflow/ui-layout-verify.md §3~§5-2；action 传 list 看各 action 参数。
+        
     """
     act = str(action or '').strip().lower().replace('-', '_')
     if act in ('', 'list', 'help', '?'):
@@ -1504,8 +1652,8 @@ def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png
 def flythings_selfcheck(device: str = '', diff_against: str = '', out: str = '') -> str:
     """整机快照（十个分区），每分区给 {ok, hint, data}；`ok=false` **不是错误而是结论**。
 
-    九分区：①设备信息 ②应用状态 ③显示 ④存储 ⑤网络 ⑥蓝牙 ⑦输入 ⑧外设 ⑨时间 ⑩库清单；
-    hint 写明「需要什么条件 / 去哪查指令」，不静默。采集容忍设备缺工具：优先随仓
+    分区：设备信息/应用状态/显示/存储/网络/蓝牙/输入/外设/时间/库清单；hint 写明「需要什么条件 /
+    去哪查指令」，不静默。采集容忍设备缺工具：优先随仓
     bin_tools/<平台>/busybox（→设备 /tmp/busybox，缺则推一份），否则纯 adb shell + getprop/cat。
     device='<serial|IP>:5555'（可省；**多台在线不猜**，回 NO_DEVICE + 在线清单）；
     diff_against=<上次快照.json> 出逐分区逐项差异；out=<json 路径> 落盘（可复用作基线）。
@@ -1525,14 +1673,16 @@ def flythings_bugreport(title: str = '', project_root: str = '', device: str = '
                         symptom: str = '', steps: str = '', expected: str = '',
                         actual: str = '', evidence: str = '', severity: str = '',
                         out: str = '') -> str:
-    """缺陷单生成器：把缺陷清单 + 真机判据落成可提交 markdown（格式对齐 2026-09-27 html2json A1~A8 那批）。
+    """
+    缺陷单生成器：缺陷清单 + 真机判据 → 可提交 markdown（格式对齐 html2json A1~A8 那批）。
 
-    只给 title 也能出框架稿；steps/evidence 支持 JSON 数组或换行/分号/逗号分隔。
-    真机判据自动附：型号·固件·build.fingerprint·应用状态（init.svc.zkswe / sys.zkapp.state /
-    zkgui pid / uptime）·最近 `logcat -d -s zkgui` 末 40 行；采不到就写明原因（不静默）。
-    ⚠️ evidence 文件不存在 → 直接报 EVIDENCE_MISSING。severity ∈ blocker…trivial（缺省 major）。
-    默认落 <项目或仓库>/temp/bugreports/<yyyymmdd-HHMM>-<slug>.md（返回 path + 前 20 行预览）。
-    细节见 knowledge/devflow/selfcheck-and-bugreport.md。
+        只给 title 也能出框架稿；steps/evidence 支持 JSON 数组或换行/分号/逗号分隔。
+        真机判据自动附：型号·固件·fingerprint·应用状态（init.svc.zkswe / sys.zkapp.state / pid /
+        uptime）·`logcat -d -s zkgui` 末 40 行；采不到就写明原因。
+        ⚠️ evidence 文件不存在 → 直接报 EVIDENCE_MISSING（不静默）。severity ∈ blocker…trivial。
+        默认落 <项目或仓库>/temp/bugreports/<yyyymmdd-HHMM>-<slug>.md（返回 path + 前 20 行预览）。
+        细节见 knowledge/devflow/selfcheck-and-bugreport.md。
+        
     """
     if sc is None:
         return json.dumps({'ok': False, 'op': 'flythings_bugreport',

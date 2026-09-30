@@ -82,6 +82,7 @@ gotchas:
   - "TLS/SSL 要手动加依赖：README 明说「想支持 mqtts/wss 就手动加 <package id=\"paho-mqtt3as\" version=\"^1.3.13\"/>，否则加 paho-mqtt3a」。但 Z20 registry 里**没有 paho-mqtt3a**（只有 paho-mqtt3as）→ Z20 就用 paho-mqtt3as，而且要连带 openssl（该库二进制引用 SSL_*）。"
   - "本包只发一个 .a + 一个头；头里 `extern \"C\" { #include <MQTTAsync.h> }` → 编译时 paho 的头路径必须可见，链接时 paho 的库必须在 → Manifest 里 paho 不能漏（只写 mqtt-cxx 会链接失败）。"
   - "构造函数就可能抛异常（连接失败/参数错），且析构会断连：Z20 实测「每次重连都 new client 却不 delete 旧的」，会因同 client_id 被 broker 互相踢下线（每秒踢 2~3 次）→ 重连前先 delete 旧 client（SmartPanel_HA 用 gen 代号丢弃旧回调，见 MqttBridge.cpp）。"
+  - "⚠️ 重连只能有一个真源：本库**自带 automatic reconnect**，如果应用层看门狗又 connect() 并 new 一个 client，两个 client 同 client_id 会互踢成风暴（2026-09-28 实测：一分钟 143 connected / 123 disconnected、两条 disconnected 相隔 2 ms）→ 关掉库的自动重连只留应用层，或只留库的重连且应用层只监听状态；两种方案都必须保证重连前 delete 旧 client。"
   - "on_connected/on_disconnected 回调在库的线程上跑：里面只做置标志位，真正的 publish/subscribe 拿到锁外/主线程做，别在回调里直接动 UI 控件（Z20 面板会卡/崩）。"
   - "publish/subscribe 的返回值是「提交成功」不等于「broker 收到了」（QOS0 更是发完就忘）；要确认送达只能靠 retained + 状态回读对账（SmartPanel_HA 就是 1s 差分校验兜底）。"
   - "retained 消息是持久状态：清不掉会一直影响新订阅者——SmartPanel_HA 用「往同 topic 发空 payload + retained」来撤销，别直接忽略。"

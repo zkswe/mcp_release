@@ -21,6 +21,11 @@
 - `conf.ssl.verify=false` 是"只为验公网通路"的用法（公网 broker 自签/不受信 CA）；产品侧要配 `trust_store`。
 - 回调在库自己的线程上跑 → 回调里只置标志位/打日志，**别直接动 UI 控件**（Z20 面板会卡）。
 - 同一个 `client_id` 被 broker 互斥：每次重连都 `new` 却不 `delete` 旧 client → 会被 broker 每秒踢 2~3 次（实测过）。
+- ⚠️ **重连只能有一个真源（2026-09-28 实测）**：mqtt-cxx/mqtt-cxx 库**自带自动重连**（`onReconnect`
+  cause=`automatic reconnect`），若应用层看门狗同时又 `connect()` 并 `new` 一个 client，**两个 client 用同一
+  client_id 互相踢** → 自激风暴（真机实测：一分钟 143 次 `connected` / 123 次 `disconnected`，两条
+  `disconnected` 相隔 2 ms）。修法二选一：① 关掉库的自动重连，只留应用层一条；② 只留库的重连，
+  应用层只做状态监听；**无论如何重连前先 `delete` 旧 client**（回调也要认准当前实例，别让旧 client 回调生效）。
 - `publish/subscribe` 返回 true 只代表"提交成功"，不等于 broker 收到（QOS0 更是发完就忘）→ 要送达确认靠 retained + 状态回读对账。
 
 ## 复现方式

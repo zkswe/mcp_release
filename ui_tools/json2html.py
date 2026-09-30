@@ -20,7 +20,7 @@
         （与 flythings_ui_visual(action="editor") 的 ghost 行为对齐）
       · 左右方向键翻页；同一项目多个 json 时另有「项目页面」跳转行
 """
-import base64, json, os, re, sys
+import base64, json, os, re, sys, time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -307,6 +307,78 @@ PREVIEW_JS = """
 """
 
 
+# ---------- 客户确认稿模式（for_customer，2026-09-30）----------
+# 与工程预览的区别：**给需求方/客户看**，不是给工程师拖。
+#   ① 单文件、图片已 base64 内联，手机可直接打开/转发；
+#   ② 默认隐藏 window 虚线框等"工程感"装饰；
+#   ③ 「标注」开关：每个控件叠一个编号框 + `key · 宽x高 @(left,top)`（客户能指到具体控件）；
+#   ④ 窄屏（手机）自动等比缩放适配；
+#   ⑤ 顶部带项目名/分辨率/页数/控件数/生成时间，便于留档比对。
+CUSTOMER_CSS = """
+  body.customer { background:#1b1b1b; }
+  body.customer .window { border:none; }
+  .cbar { max-width:__W__px; margin:0 auto 10px; color:#ddd; font-size:13px;
+          display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .cbar button { background:#3a3f4b; color:#eee; border:1px solid #555;
+                 border-radius:4px; padding:4px 10px; cursor:pointer; font-size:12px; }
+  .cbar button.on { background:#2f6d3a; border-color:#3f8f4d; }
+  .cbar .meta { color:#9aa; }
+  #annotate-layer { position:absolute; left:0; top:0; right:0; bottom:0;
+                    pointer-events:none; display:none; z-index:60; }
+  body.annotate #annotate-layer { display:block; }
+  #annotate-layer .abox { position:absolute; border:1px dashed #ffd24a;
+                          background:rgba(255,210,74,.06); }
+  #annotate-layer .atag { position:absolute; font:11px/1.35 'Microsoft YaHei',sans-serif;
+                          color:#1b1b1b; background:#ffd24a; padding:1px 4px;
+                          border-radius:3px; white-space:nowrap; }
+"""
+
+CUSTOMER_JS = """
+<script>
+(function(){
+  document.body.classList.add('customer');
+  var dev = document.querySelector('.device');
+  if (!dev) { return; }
+  var bar = document.createElement('div');
+  bar.className = 'cbar';
+  bar.innerHTML = '<button id="btn-an">标注 控件名/尺寸</button>'
+                + '<button id="btn-fit">适应屏幕</button>'
+                + '<span class="meta">__META__</span>';
+  dev.parentNode.insertBefore(bar, dev.parentNode.firstChild);
+  var layer = document.createElement('div');
+  layer.id = 'annotate-layer';
+  dev.appendChild(layer);
+  var nodes = dev.querySelectorAll('.ctrl[data-key]');
+  for (var i = 0; i < nodes.length; i++) {
+    var el = nodes[i];
+    if (el.dataset.visible === 'false' || el.offsetParent === null) { continue; }
+    var box = document.createElement('div');
+    box.className = 'abox';
+    box.style.left = el.offsetLeft + 'px';  box.style.top = el.offsetTop + 'px';
+    box.style.width = el.offsetWidth + 'px'; box.style.height = el.offsetHeight + 'px';
+    var tag = document.createElement('div');
+    tag.className = 'atag';
+    tag.textContent = (i + 1) + '. ' + el.dataset.key + '  ' + el.offsetWidth + 'x'
+                    + el.offsetHeight + ' @(' + el.offsetLeft + ',' + el.offsetTop + ')';
+    tag.style.left = el.offsetLeft + 'px';
+    tag.style.top = Math.max(el.offsetTop - 15, 0) + 'px';
+    layer.appendChild(box); layer.appendChild(tag);
+  }
+  document.getElementById('btn-an').onclick = function(){
+    document.body.classList.toggle('annotate');
+    this.classList.toggle('on');
+  };
+  document.getElementById('btn-fit').onclick = function(){
+    var w = dev.offsetWidth || 1, vw = document.documentElement.clientWidth - 40;
+    var s = vw < w ? (vw / w) : 1;
+    dev.style.transform = s < 1 ? 'scale(' + s.toFixed(3) + ')' : 'none';
+    dev.style.transformOrigin = 'top left';
+  };
+})();
+</script>
+"""
+
+
 def _bg_image(ctrl, field='backgroundPic', base_dir=''):
     pic = ctrl.get(field)
     if not pic:
@@ -450,7 +522,7 @@ def _render_control(key, ctrl, depth=0, base_dir='', edit=False):
 
 # ---------- 主转换 ----------
 def _json_to_html(json_path, html_path, edit=False, extra_css='', extra_js='',
-                  wrapper_open='', wrapper_close='', siblings=None):
+                  wrapper_open='', wrapper_close='', siblings=None, customer=False):
     with open(json_path, encoding='utf-8-sig') as f:
         data = json.load(f)
     res = data.get('resolution', {})
@@ -478,11 +550,21 @@ def _json_to_html(json_path, html_path, edit=False, extra_css='', extra_js='',
         if pages_bar:
             pages_css = PREVIEW_CSS.replace('__W__', str(W))
 
+    # ---- 客户确认稿（for_customer）：窄屏适配 + 标注层 + 留档抬头 ----
+    viewport, bar = '', ''
+    if customer:
+        meta = ('%s · 分辨率 %d x %d · 控件 %d 个 · 生成 %s'
+                % (os.path.basename(json_path), W, H, len(body),
+                   time.strftime('%Y-%m-%d %H:%M')))
+        extra_css += CUSTOMER_CSS.replace('__W__', str(W))
+        extra_js = CUSTOMER_JS.replace('__META__', _esc(meta)) + extra_js
+        viewport = '<meta name="viewport" content="width=device-width,initial-scale=1">\n'
+
     html = f"""<!DOCTYPE html>
 <html lang="zh">
 <head>
-<meta charset="utf-8">
-<title>UI 预览 - {os.path.basename(json_path)}</title>
+<meta charset="utf-8">{viewport}
+<title>{'UI 确认稿' if customer else 'UI 预览'} - {os.path.basename(json_path)}</title>
 <style>
   * {{ margin:0; padding:0; box-sizing:border-box; }}
   body {{ background:#2a2a2a; font-family:'Microsoft YaHei',sans-serif; padding:20px; }}
@@ -520,7 +602,7 @@ def _json_to_html(json_path, html_path, edit=False, extra_css='', extra_js='',
 </head>
 <body>
   <div class="toolbar">
-    <div>🖥 UI 预览（客户确认稿）· <span>{os.path.basename(json_path)}</span></div>
+    <div>🖥 {'UI 确认稿（给需求方看，单文件可转发）' if customer else 'UI 预览（客户确认稿）'} · <span>{os.path.basename(json_path)}</span></div>
     <div>分辨率 {W} x {H} · 与设备端 ftu 同源</div>
   </div>
   {pages_bar}
@@ -565,8 +647,10 @@ def _ui_json_pages(ui_dir):
     return out
 
 
-def json2html(target, output_dir=''):
-    """target 为项目根目录或单个 json 文件路径。返回 {"success", "files": [...]}。"""
+def json2html(target, output_dir='', for_customer=False):
+    """target 为项目根目录或单个 json 文件路径；for_customer=True 出「客户确认稿」（.confirm.html）。
+    返回 {"success", "files": [...]}。"""
+    suffix = '.confirm.html' if for_customer else '.preview.html'
     if os.path.isdir(target):
         ui_dir = os.path.join(target, 'ui')
         if not os.path.isdir(ui_dir):
@@ -583,9 +667,9 @@ def json2html(target, output_dir=''):
             # 兄弟页只在同一个目录内互链（不同分辨率的 json 不串页）
             siblings = [os.path.basename(x) for x, _ in _ui_json_pages(os.path.dirname(jp))]
             sibs = _siblings_of(os.path.dirname(jp), odir, siblings)
-            hp = os.path.join(odir, base[:-5] + '.preview.html')
+            hp = os.path.join(odir, base[:-5] + suffix)
             try:
-                W, H = _json_to_html(jp, hp, siblings=sibs)
+                W, H = _json_to_html(jp, hp, siblings=sibs, customer=for_customer)
                 results.append({"json": rel, "html": hp, "resolution": f"{W}x{H}"})
             except Exception as e:
                 results.append({"json": rel, "html": None, "error": str(e)})
@@ -595,7 +679,7 @@ def json2html(target, output_dir=''):
         out_dir = output_dir or os.path.dirname(os.path.abspath(target))
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
-        hp = os.path.join(out_dir, os.path.splitext(os.path.basename(target))[0] + '.preview.html')
+        hp = os.path.join(out_dir, os.path.splitext(os.path.basename(target))[0] + suffix)
     # 单文件模式：只链同目录已有同名 .preview.html 的邻居，避免死链接
         sibs = []
         jdir = os.path.dirname(os.path.abspath(target))
@@ -607,7 +691,7 @@ def json2html(target, output_dir=''):
                 if fn == os.path.basename(target) or os.path.isfile(cand):
                     sibs.append((fn, fn[:-5] + '.preview.html'))
         try:
-            W, H = _json_to_html(target, hp, siblings=sibs)
+            W, H = _json_to_html(target, hp, siblings=sibs, customer=for_customer)
             return {"success": True, "files": [{"json": os.path.basename(target),
                                                 "html": hp, "resolution": f"{W}x{H}"}]}
         except Exception as e:
@@ -618,9 +702,11 @@ def json2html(target, output_dir=''):
 if __name__ == '__main__':
     sys.stdout.reconfigure(encoding='utf-8')
     if len(sys.argv) < 2:
-        print('用法: python json2html.py <项目根目录或 json 文件> [输出目录]')
+        print('用法: python json2html.py <项目根目录或 json 文件> [输出目录] [--customer]')
         sys.exit(1)
-    out = sys.argv[2] if len(sys.argv) > 2 else ''
-    r = json2html(sys.argv[1], out)
+    argv = [a for a in sys.argv[1:] if a != '--customer']
+    cust = '--customer' in sys.argv
+    out = argv[1] if len(argv) > 1 else ''
+    r = json2html(argv[0], out, for_customer=cust)
     print(json.dumps(r, ensure_ascii=False, indent=1))
     sys.exit(0 if r.get('success') else 1)

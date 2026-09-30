@@ -2,7 +2,7 @@
   "schema": 1,
   "generatedBy": "scripts/gen_manifest.py",
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY/STAGE 表后重新生成，勿手改本文件",
-  "version": "0.27.139-open",
+  "version": "0.27.140-open",
   "build": "2026-09-30",
   "toolCount": 43,
   "cli": {
@@ -140,7 +140,7 @@
     },
     {
       "op": "flythings_bugreport",
-      "brief": "缺陷单生成器：把缺陷清单 + 真机判据落成可提交 markdown（格式对齐 2026-09-27 html2json A1~A8 那批）。",
+      "brief": "缺陷单生成器：缺陷清单 + 真机判据 → 可提交 markdown（格式对齐 html2json A1~A8 那批）。",
       "args": [
         "title",
         "project_root",
@@ -624,10 +624,11 @@
     },
     {
       "op": "flythings_ui_preview",
-      "brief": "json 布局 / 整个项目 → HTML 预览稿（客户确认 UI 用；只交 .preview.html，不产图片/截图）。",
+      "brief": "json 布局 / 整个项目 → HTML 预览稿（客户确认 UI 用；只交 html，不产图片/截图）。",
       "args": [
         "target",
-        "output_dir"
+        "output_dir",
+        "for_customer"
       ],
       "risk": "write",
       "category": "layout",
@@ -684,9 +685,9 @@
     }
   ],
   "docs": {
-    "knowledgeFiles": 94,
+    "knowledgeFiles": 97,
     "wikiFiles": 128,
-    "ragChunks": 1876,
-    "ragPaths": 219
+    "ragChunks": 1913,
+    "ragPaths": 222
   }
 }

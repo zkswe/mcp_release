@@ -15,7 +15,7 @@ evidence: []
 ---
 # UI 布局可视化编辑与像素验收（json 为源 · 拖拽微调 · 0 token 校验）
 
-> 检索导引：问「布局位置不对 / 想拖控件微调 / 图片与控件尺寸对不上（含 thumb.size）/ 要像素回归对比 / 多页工程预览怎么切页」→ 本文（三段式验收总纲）；三个 action 的细节见 `knowledge/devflow/ui-editor-usage.md`。
+> 检索导引：问「布局位置不对 / 想拖控件微调 / 图片与控件尺寸对不上（含 thumb.size）/ 要像素回归对比 / 多页工程预览怎么切页 / **改完布局怎么给客户（需求方）确认 / 客户确认稿 / 反复改布局浪费时间**」→ 本文（三段式验收总纲）；三个 action 的细节见 `knowledge/devflow/ui-editor-usage.md`。
 > ⚠️ v0.27.37 起三个 op 合并为 `flythings_ui_visual(action=...)`：`"editor"` / `"edit_apply"` / `"diff"`
 
 > 命中条件：UI 布局做完需要"看得见、拖得动、验得了"时——用户说布局位置不对 / 图标锯齿 /
@@ -23,6 +23,25 @@ evidence: []
 > **图片与控件尺寸对不上（含滑块 thumb.size）**。
 > 工具：`flythings_ui_visual(action="editor")`（出可拖拽编辑器）→ `flythings_ui_visual(action="edit_apply")`（写回 + pack ftu）→
 > `flythings_ui_visual(action="diff")`（像素 diff）。
+
+## 0. 确认闸门（改完布局 → 出确认稿 → 需求方确认 → 才 pack / 推真机）
+
+> 2026-09-30 补（钟工 SmartPanel 检讨：UI 控件布局位置**多次来回对齐**，过程中没提醒用**可分享的
+> HTML 版**跟客户确认 → 在“改 json → 编译 → 推真机 → 目视”上反复烧时间）。**这条是流程红线**，不是可选优化。
+
+| 环节 | 做什么 | 工具 |
+|---|---|---|
+| 改前/改中 | 出**可拖拽编辑器**给自己或用户微调（本地静态页；拖完复制变更 JSON 回写） | `flythings_ui_visual(action="editor")` |
+| **改完（关键）** | 出**客户确认稿**：单文件 `.confirm.html`（图内联、手机可打开/可转发），带「标注」开关看控件名/尺寸/坐标 | `flythings_ui_preview(target=…, for_customer=True)` |
+| 确认后 | 才 `fui pack` / `edit_apply(pack=True)` / 推真机 / 写逻辑 | — |
+| 回归 | 真机截图 + 像素 diff / 基线比对（**真机像素才是最终真相**） | `device_screenshot` + `ui_visual(diff/baseline)` |
+
+- `flythings_ui_visual(action="edit_apply")` 与 `flythings_fui_pack` 的返回体带 **`confirmNeeded` /
+  `confirmHint`**：项目里没有比本次改动**更新**的确认稿（`.confirm.html` / `.preview.html` /
+  `_edit/*.edit.html`）时会提示先出确认稿（**只提醒、不阻塞**）。
+- **多轮沟通就用确认稿**：客户指着标注说「这个按钮往右 20px」→ 改完**重出确认稿**再确认；
+  不要直接推真机让他看屏（一次推机 = 编译 + 推送 + 人工目视，成本高一个量级）。
+- 生成物是**近似渲染**（字体度量 / 9-patch 拉伸与设备有差）→ **最终验收仍需真机像素**（§2 三段式）。
 
 ## 1. 铁律：json 是唯一真相
 

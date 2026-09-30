@@ -154,3 +154,20 @@ home（首页/主入口）
 1. **匹配硬件平台 + 屏幕物理分辨率与方向**：先确认目标平台（Z20 / F133 / Z21 / T113 / V85x / SSD20x ...），再确认**屏幕物理分辨率 + 方向**（`rotateScreen`）。例：F133 面板物理 800x1280 竖屏 + `rotateScreen=270` -> UI 坐标 1280x800（`workspace/references/kb/devices.md`、`easyui-cfg` 口径）。**平台或分辨率没确认，不许开始建工程 / 写逻辑。**
 2. **分辨率必须对齐（不一致就走适配并审计）**：设计稿分辨率 == 平台分辨率 -> 按稿直接还原；**不等** -> 走分辨率适配口径（`workspace/references/kb/resolution-scaling.md`），并用 `tools/qa/scale_audit.py` 审计：**FAIL 必须 0**；**满宽/满高/发丝线类元素**触发人工评审；缩放只允许明确规则（先乘后除，避免累积误差），保留可核对差异清单。**禁止擅自拉伸糊过去。**
 3. **出确认稿再动手**：按稿还原 -> `flythings_ui_preview` 出**确认稿**（只出预览，**不 pack**）-> 用户确认 -> `flythings_create_project(platform, resolution)`（**平台+分辨率必须与确认过的一致**，方向写进 `EasyUI.cfg`）-> pack / 写逻辑 / 验收。
+
+---
+
+## 已有工程的布局迭代：同样走确认稿（2026-09-30 补，钟工口径）
+
+检索词：改现有工程的布局 / 客户看不懂截图 / 布局来回改 / 怎么让客户确认 / 客户确认稿 / 反复推真机
+
+上面 ①~⑧ 是**新项目**的线框/美化流程；**已经在跑的工程（改版面、加控件、调间距）同样必须走确认稿**，
+别把“推真机让客户看屏”当成确认手段：
+
+1. 改 json/布局 → `flythings_ui_preview(target=<项目根>, for_customer=True)` 出**单文件确认稿**
+   `.confirm.html`（图内联、手机可打开、带「标注」开关显示控件名 + 尺寸 + 坐标）；
+2. 把确认稿（或其截图）发过去，按标注指位沟通「哪个控件、往哪挪、多少 px」；
+3. 改完**重出确认稿** → 确认 → 才 `fui pack` / `edit_apply(pack=True)` / 推真机。
+
+> `edit_apply` / `fui_pack` 返回体带 `confirmNeeded` 提示未出确认稿（只提醒、不阻塞）；
+> 口径与工具细节 → `knowledge/devflow/ui-layout-verify.md` §0。

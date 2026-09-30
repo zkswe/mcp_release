@@ -240,9 +240,15 @@ adb push update.img /tmp           # 注意：正常升级用 update.img（squas
 adb shell setprop sys.zkupgrade.flag 255
 adb shell setprop sys.zkupgrade.dir /tmp
 adb shell setprop ctl.stop zkswe
-adb shell umount /mnt/extsd        # extsd 没挂时会报 Invalid argument → 无害，流程继续
+adb shell umount /mnt/extsd        # 没挂会报 Invalid argument、已挂且被占会报 Device or resource busy → 两种都无害，流程继续
 adb shell setprop ctl.restart zkswe
 ```
+
+> ⚠️ **`umount` 失败不是硬门槛（2026-09-29 补）**：本链路写入面是 `mtdblock3(res)`，与 extsd 无关。
+> 实测两种失败都照样升级成功：① extsd **未挂载** → `Invalid argument`；② 一块**已挂载且占着**的板
+> （`/mnt/extsd` 有内容）→ **`Device or resource busy`**。所以**不要因为 umount 报错就中断/放弃流程**，
+> 看触发后的写入面与 `/res` 树才是判据（§11.2）。
+> （唯一例外仍是数据面 p2：现场**永远不要**手动 `umount /mnt/sdnand` / `mkfs` / `dd` 写 p2 —— 见 §5。）
 
 ### 11.2 真机结果【实测】
 
