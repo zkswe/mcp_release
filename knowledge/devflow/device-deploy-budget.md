@@ -73,9 +73,6 @@ Z21 实测：`Mem total 36072 kB`（**36MB**）；`/tmp` = **tmpfs 13.6MB**（tm
 - **厂商 CLI 也是这么做的**：`fun launch` 二进制里只用到 `ctl.restart` + `zkswe` + `setprop`（**没有 kill**）；
   手动部署（推 `/tmp` + `/tmp/EasyUI.cfg`）之后同样一句 `setprop ctl.restart zkswe` 让新 lib/ftu 生效
   （实测新进程确实加载 `/tmp` 的 lib，`/proc/<pid>/maps` 可见）。
-- **历史教训（agent 侧自造脚本的坑）**：工作区里早期的临时脚本/示例大量用 `kill -9 zkgui`、`busybox killall zkgui`；
-  这类脚本反复 kill 之后现场出现过「触摸注入命令成功、应用不响应」「整板掉网」等现象。
-  早期的「温和终止优先（`kill -TERM`→回退 `-KILL`）」只是**防御性猜测**（当时因果未确证）；
   按框架口径，**任何 kill 都不该用**，统一 setprop。
 - **实现（单一来源）**：MCP 侧 `adb_tools.restart_app()` = `setprop ctl.restart zkswe` → 轮询等新 pid（约 6s）；
   `allow_kill=True` 才启用 `kill -TERM` 兜底（给个别 setprop 失效的老板子留口子，仍然不用 -9）。

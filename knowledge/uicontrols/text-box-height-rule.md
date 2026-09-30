@@ -122,6 +122,6 @@ if not text or not fs or not pos.get('width') or not pos.get('height'):
 ## 相关
 
 - 图片与控件盒 1:1 铁律 / 抗锯齿出图档位 → `devflow/ui-asset-rules.md`
-- 运行期换图做「隐藏」（同尺寸透明占位图） → `devflow/ftu-json-pipeline.md`、`touch-events.md` §6
+- 运行期换图做「隐藏」（同尺寸透明占位图） → `devflow/ftu-json-pipeline.md`、`custom-view-refresh.md`
 - 装饰件压住按钮（`touchable=false` 也要穿透） → `touch-events.md` §1
 - 静态全检能查什么/查不到什么 → `retrieval-boundary.md`、`devflow/ui-layout-verify.md`

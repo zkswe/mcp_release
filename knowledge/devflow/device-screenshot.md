@@ -93,7 +93,7 @@ evidence: []
    调了它控件当场**点不动**（可交互控件上发作），现象是「注入坏了 / 界面点哪都没反应」，能白查半天
    （案例里 13 个导航键被这样禁掉）。**内容变更（`setText` / `setBackgroundPic`）引擎本来就会重绘该控件**，
    通常什么都不用做；真要手动重绘用 `ZKBase::invalidate()`，但它**在部分设备的旧 `libeasyui.so` 上未导出**
-   （实测 `undefined symbol ...invalidate...` → 整屏黑），用前先确认。详见 `uicontrols/touch-events.md` §6；
+   （实测 `undefined symbol ...invalidate...` → 整屏黑），用前先确认。详见 `uicontrols/custom-view-refresh.md`；
 4. 像素 diff 验收（`flythings_ui_visual(action="diff")`）之前**先确认「手里这张是新帧」**，
    否则会把 stale frame 当「改动没生效」，白查一轮应用逻辑。
 
@@ -225,16 +225,9 @@ python ui_tools/device_screenshot.py --layer video --vdec-chn 1         # CLI
   （`cat /proc/mi_modules/mi_disp/mi_disp0` 能看到端口被 `mi_vdec` 绑定）—— 当前工具只给**视频帧本身**，不合成。
 - **V85X 不适用**（Allwinner disp 分层，视频层要经 `/dev/disp` ioctl 拿）；Z21 **无硬件解码器**（软解 ffmpeg），沛哥定：暂不处理。
 
-## 4.2 两条实测坑（2026-09-20 M6）
+## 4.2 实测坑（2026-09-20 M6）
 
-**① `crop` 会被「pan 重抓」分支静默丢掉（已修 v0.27.98）**
-双缓冲设备每次翻页 `pan` 都会变，触发「抓到旧帧 → 重抓一次」的兜底分支；旧实现的递归调用
-**漏传 `crop`/`layer`** → 返回整屏（`crop` 字段为空字符串），表现为「同一个参数时而裁出小块、
-时而给整屏」，命中率≈50%（实测连拍 6 张里 3 张是整屏）。症状很容易被误判成
-「工具不支持 crop」，进而怀疑判据。修法：重抓时原样带上 `crop` / `layer`。
-**自检**：同一 `crop` 连拍 3 张，尺寸与字节数必须完全一致（本机实测 620x248 / 9330B ×3）。
-
-**② `/tmp` 满 → 抓屏报「raw 数据不足…实际 0 字节」**
+**`/tmp` 满 → 抓屏报「raw 数据不足…实际 0 字节」**
 抓屏要在设备侧写 `/tmp/.fyshot.bin`；F133(1.182) 的 `/tmp` 是 **123MB tmpfs**，一旦被
 （推前备份目录、测试视频素材等）塞满，`dd | gzip` 就产 0 字节，报错文案是
 「解码失败: raw 数据不足：需要 4096000 字节…实际 0 字节」，**不是**截屏逻辑坏了。

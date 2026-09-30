@@ -46,7 +46,7 @@ evidence: []
 | **圆角/药丸/描边/渐变/阴影/图标** | **一律出图**（SS 超采样），图尺寸**严格 == 控件盒** | `uicontrols/nine-patch-rule.md`、`devflow/ui-asset-rules.md` |
 | **零自绘** | 能用平台控件 + 出图表达的就不用 painter 自绘；自绘只在平台真缺能力时（并落到 `components/ui_v1/`） | `components/ui_v1/README.md` |
 | **单一手写源** | HTML 是**唯一手写源** → `html2json` → json（json 是事实来源）→ `fui pack` → ftu | `devflow/ftu-json-pipeline.md` |
-| **「隐藏」怎么写** | 换**同尺寸透明占位图 + 文本置空**；不用 `setVisible(true)`（动态显示不重绘），**更不用 `setInvalid(true)`（那是禁用）** | `uicontrols/touch-events.md` §6 |
+| **「隐藏」怎么写** | 换**同尺寸透明占位图 + 文本置空**；不用 `setVisible(true)`（动态显示不重绘），**更不用 `setInvalid(true)`（那是禁用）** | `uicontrols/custom-view-refresh.md` |
 | **高频回调** | 只刷变化的那一个控件，禁止全量刷新 | `uicontrols/high-frequency-callback-perf.md` |
 
 ## 3. 四阶段路线（案例实际走法，可直接套用到下一个迁移任务）
@@ -107,24 +107,14 @@ seekbar 7 · edittext 6 · radiogroup 3 · circlebar 1）/ **236 张图**，双�
 | 坑 | 去哪看 |
 |---|---|
 | 弹层卡片内部按钮点不动（遮罩抢触摸） | `uicontrols/touch-events.md` §7 |
-| `setInvalid` 当重绘用 → 整屏点不动 | `uicontrols/touch-events.md` §6 |
+| `setInvalid` 当重绘用 → 整屏点不动 | `uicontrols/custom-view-refresh.md` |
 | 拖动卡顿（回调全量刷新） | `uicontrols/high-frequency-callback-perf.md` |
-| `div.text` 上的 `data-bgpic`（v0.27.90 起已原生支持；旧工程 `patch_json` 兜底幂等可留） | `devflow/html-subset-quickref.md` §4 |
+| `div.text` 上的 `data-bgpic` | `devflow/html-subset-quickref.md` §4 |
 | 抬盒高把图拉变形（圆点变竖椭圆） | `uicontrols/text-box-height-rule.md`（静态检查 = `check_all` 第 20 项） |
 | 方块底图刷平卡片下圆角 | `uicontrols/nine-patch-rule.md` 进阶节 |
 | 定时器里顺序错了会慢 N 倍 | `devflow/activity-code-skeleton.md`（`onUI_Timer` 顺序） |
 | 键盘盖住界面 → 假 FAIL | `devflow/touch-inject-autotest.md` 键盘节 |
 | 抓帧抓到上一帧 / 瞬态层被吃掉 | `devflow/device-screenshot.md` §3.3-1 / §3.3-2 |
-
-## 7. 规划（**未实现**）：`flythings_translate_ui`
-
-将来可以做成一个 op，把「控件映射 → 出图 → 生成 HTML → 转 json → 补丁 → 全检」串成一条流水线
-（输入：源框架名 + 源界面描述/结构；输出：json + 资源 + 迁移报告含 D-xx 清单）。
-**本次不实现**——原因：映射表已有机读索引（§1）、生成器是案例级的（各案例的出图口径不同），
-过早抽通用 op 会把「案例自由度」锁死。真要立这个 op，前置条件是：
-① `mcp_control_map.json` 的覆盖再扩（先把 L3/L4 的 `ref` 补全）；
-② 出图管线的「按源控件形状选模板」先稳定成可复用组件；
-③ 迁移报告（D-xx + 双平台验收）格式先固定。
 
 ## 相关
 

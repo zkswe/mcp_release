@@ -61,7 +61,7 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.134-open'
+MCP_VERSION = '0.27.135-open'
 MCP_BUILD = '2026-09-30'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -76,6 +76,7 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+    '2026-09-30: **open 版全身检查（啰嗦清理 + RAG 索引瘦身）** v0.27.135-open（钟工：「对 mcp open 版本做一个全身检查，去掉不需要的啰嗦的废话…RAG 相关的内容优化，让 MCP 运行效率更高」）——① **RAG 索引瘦身**：`rag_index.json` 向量由「每 chunk 内联明文浮点数组」改为 **float16 拼接 + base64 单文件**（22.2 MB→**3.9 MB**；加载解析 0.4s→**0.1s**；向量检索由纯 Python cos 全扫 42ms→**numpy 点积 3ms**；行归一化后余弦=点积），旧格式仍可读、`rebuild_index_local.py --repack` 可原地重编码；等价性实测 12 条真实问法 **top-5 集合零差异**（f16 vs f32 最大绝对误差 1.3e-4），`check_retrieval` 18 组 127 问法仍全绿。② **知识库瘦身（批次 A：已修复/已被实测取代/自我否认）**：28 篇共删 **545 行**（touch-inject 附录源码、z20 失联记录与待填表、touch-events 重复的 `setInvalid` 话题、各文 changelog 段等）；**「真坑」一律保留**（时序/路径/平台差异/必填参数）；7 处悬空交叉引用改指 `custom-view-refresh.md`。③ 修 `kb_tools.py` 两处非法转义（SyntaxWarning）；清 workspace `tools/ui_tools/` 双份 CRLF 漂移（门禁 2 项 FAIL 归零）。v0.27.135-open',
     '2026-09-30: **批次 C：selfcheck 第⑩区「库清单」+ 返回体 pathHint（不开新 op）** v0.27.134-open（钟工：「批次 C」）——① **C1 `flythings_selfcheck` 新增第⑩分区「库清单」**（不新开 op，正因 docstring 预算只剩 6 字符）：新探针 `ls -l /lib` + `ls -l /res/lib`（busybox），新后处理 `_post_libs` 归出 `libs/libCount/resLib/focus（nanovg·libpng·freetype·jpeg·mad·libz·libgomp·libstdc++）/borrowable`；`ok` = 至少读到 `/lib` 清单；`hint` = 「注册表没有 ≠ 平台没有（自带 nanovg/libpng/freetype/jpeg/mad/zlib 可 dlopen 免编译）；借库前先 `readelf -d` 看 NEEDED/SONAME、`--dyn-syms` 对头文件核签名；清单见 `knowledge/devflow/device-preinstalled-libs.md`；`libmi_*` 属框架内部不要用」；notes 自动报“可借库”命中项。② **C2 返回体提示（不占 docstring 预算）**：新 `_render_path_hint()`/`_ui_visual_hint()`；`flythings_html_to_json` 与 `flythings_ui_visual(action=editor/edit_apply)` 命中关键词（旋转/矢量/半透明/alpha/3D/模糊/仪表/图表/粒子）时，返回体多一行 `pathHint`——“先答三问（静态/逐帧？面积？硬件层？）+ 查 `uicontrols/extension-surface.md`；任意角度旋转位图平台没有（先例 components/vinyl）”。③ docstring 总量 11994→**11999**/12000（九分区→十分区 + ⑩库清单，仍在红线内）；selfcheck 文档同步“十分区”。v0.27.134-open',
     '2026-09-30: **批次 B：docstring 腾预算 + 补“去哪找”描述（净零预算）** v0.27.133-open（钟工：「批次 B 处理」）——硬约束：docstring 总量 ≤12000（现 **11994**，即只剩 6 字符）⇒ **不新增 op，先腾后加**。① **B1 腾预算**：`flythings_ui_visual` 663→**470**、`flythings_device_screenshot` 550→**≈450**，把长尾细节**下沉到知识文档**：`knowledge/devflow/ui-layout-verify.md` 新增 **§5-1 像素基线库**（`action=baseline`：`<项目>/ui_baseline/`、mode=save/compare/update/list、**容差档案随基线存**、比不到基线报 `no-baseline` 不静默放过）与 **§5-2 edit_apply 写盘开关**（`pack` 默认 False / `dry_run` 只预览 / 写回留 `.bak`）；device_screenshot 的 advanced/layer/vdec_chn 细节本就在 `device-screenshot.md`。docstring 现在只留**要点 + 指向知识文档**。② **B2 加描述**（每条都直接指向知识文档）：`flythings_get_package_api` **39→194**——「**注册表没有 ≠ 平台没有**：设备 `/lib` 自带 nanovg/libpng12/freetype/jpeg/mad/zlib，可 dlopen 免编译；清单见 `knowledge/devflow/device-preinstalled-libs.md`（先 `adb shell ls /lib`）」；`flythings_build_ui_flow` 416→524——「链本地/第三方库放 `src/dependencies/lib/`（fun 自动链接）；**libc 必须匹配**：Z20/Z21=glibc、V85X/T113=musl、F133=RISC-V64 musl」；`flythings_html_to_json` 443→517——「做差异化效果前先答三问（静态/逐帧？面积？有无硬件层？）并查 `uicontrols/extension-surface.md`」。③ **净零验证**：总量仍为 **11994/12000**（腾出与加入基本持平），单 op 上限 900 仍有大量余量；门禁 `check_consistency` 全绿。v0.27.133-open',
     '2026-09-30: **`libmi_*` 降为“框架内部库，应用不需关注”** v0.27.132-open（钟工：「mi_gfx 不需要用户关注」）——① `knowledge/devflow/device-preinstalled-libs.md` §2.2 从“芯片侧能力入口（待逐符号核 API）”改写为 **框架/系统内部模块**：**明确⛔ 应用层不需关注、不要去 dlopen/链接**（接口不对外、随固件变），要图层/合成能力时走**框架高层 API**（videoview/cameraview/disp 纪律、`setBackgroundBmp`+`setInvalid`、`button+picTab` α 路径）；② 同步摘掉“悬而未决”的 `libmi_gfx API 未核”★待办项（不再追踪）与 tags 里的 mi_gfx / 2D 加速；③ `open-source-stack-integration.md` 与 `custom-render-paths.md` 的“设备自带可借用”清单里**移除 `libmi_*`**（只留 nanovg/libpng12/freetype/libjpeg/libmad/zlib），并注明 libmi 系列属框架内部。v0.27.132-open',
@@ -135,13 +136,13 @@ MCP_FEATURES = [
     '2026-09-22: **vinyl 组件补齐「标准示例页」（钟工：「直接补上，不需要单独验证，纯粹标准化的代码」）** v0.27.108-open——'
     '`components/vinyl/example/` 从「代码片段」补成可直接拷用的标准示例：'
     '`example/demo/ui/vinyl_demo.json`（1024x600：320x320 正方形占位控件 + 播放/暂停・切后端・换封面 三按钮 + 诊断行，字段按铁律 #5 显式写全）'
-    '\+ `example/demo/src/vinyl_demoLogic.cc`（attach/setCover/定时器 tick/setPlaying/detach + 三按钮回调 + 每秒诊断行，回调名与 json caption 一一对应）；'
+    '+  `example/demo/src/vinyl_demoLogic.cc`（attach/setCover/定时器 tick/setPlaying/detach + 三按钮回调 + 每秒诊断行，回调名与 json caption 一一对应）；'
     '`example/README.md` 写明「拷进任意工程两步 + fui pack + fun build」与判据（自转/暂停/切后端/换封面/诊断行）。',
     '2026-09-22: **黑胶旋转沉淀为可复用组件 `components/vinyl/`（钟工：「多产品会复用这个功能，我需要把他做成可以复用的功能点」）** v0.27.107-open——'
     '①**源码型模块四件套齐**：`README.md`（用法/API/依赖/8 条真机坑/验收口径）、`platforms.md`（F133 双后端实测：定点 6~12ms、nanovg 23~44ms；其余平台标未验证）、`Manifest.xml`、`example/README.md`（json 占位 + 页面三步 + 定时器驱动片段）；'
     '②**自包含化**三个依赖：旋转本体 `zk::VinylSpin`（`include/zk/zk_vinyl.h` + `src/zk_vinyl.cpp`）、后台单线程队列 `zk_vinyl_worker`、正圆覆盖率表 `zk_vinyl_circle_mask`（SS=8 面积平均，与静态圆封面同源）；'
     '③**工程已切到组件副本并真验证**：`projects/iOSStyle-F133/src/zk_vinyl/`（旧 `src/core/VinylSpin.*` 删除），`fun build -p F133` 0 error、真机跑通（播放页黑胶出帧刷新）；'
-    '④登记：`components/README.md` 模块表加 vinyl 行 \+ `knowledge/devflow/reusable-components.md` §8（含“只有降分辨率/降帧率能省 nanovg 成本”与 `setInvalid(!isInvalid())` 刷新口径）。',
+    '④登记：`components/README.md` 模块表加 vinyl 行 +  `knowledge/devflow/reusable-components.md` §8（含“只有降分辨率/降帧率能省 nanovg 成本”与 `setInvalid(!isInvalid())` 刷新口径）。',
     '2026-09-22: **seekbar 滑块口径入库（钟工：「进度条的滑块为什么做成这样扁的？什么关键词影响了你生成 / 需要什么关键词才能生成圆滑块」）** v0.27.106-open——'
     '新增 `knowledge/uicontrols/seekbar-fields.md`：①字段全集（position/max/defProgress/orientation/backgroundPic/progressPic/thumb.size/thumb.normalPic+pressedPic/touchable + 三个回调/API）'
     '②**实测铁律（官方未收录）**：滑块形状**只由图片决定**（json 无“圆/胶囊”关键词），但**渲染高度会被控件盒高度压**——'

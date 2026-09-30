@@ -29,17 +29,6 @@ evidence: []
 > **检索词（同义/别名，降级 BM25 与人工核对都用）**：WheelPicker、wheel、roller、lv_roller、picker-view、
 > picker-view-column、picker mode=time、NumberPicker、LISTWHEEL、QTimeEdit、TimePicker、TimePickerDialog、
 > 选择器、滚动选择、cycleEnable、autoRollback、edgeEffect。
-> **2026-09-19 立**（起因：钟工口径「这个滚轮效果你基于 ListView 改造吧。或者把他映射到 listView 里面」）。
-> **2026-09-19 12:00 更新**（钟工口径「选中条放到背景图里面。这样子滚动以后选中条不会动」）：选中条从「挂在**行**上的背景图」改成「页面里的**静态背景层**」，见 §3 坑 4。
-> **2026-09-19 12:40 更新**（钟工 A1/A3 拍板）：**机读映射口径已同步**——`picker-view` / `lv_roller`(别名 `wheel`) /
-> `TimePicker` / `QTimeEdit` / `LISTWHEEL` 在 `mcp_control_map.json` 里 `target: wheelpicker -> listview`、
-> `level: L5 -> L2`；自绘包 `components/ui_v1/WheelPicker/` **已删除**（不再有该路线）。见 §5.1。
-> **2026-09-19 13:10 更新**（钟工口径「TimePicker 通过 listview 这个实现对应」）：**TimePicker 全族统一按 L2 收口**
-> ——**含时钟盘（clock dial）形态**，`NumberPicker` 由 `stepper` 改判 `listview`，小程序 `picker(mode=date/time)`
-> 拆成 `date`（`calendar` L4）/ `time`（`listview` L2）；**「时钟盘无对应能力」的旧表述作废**，时钟盘只存在
-> **观感降级**（圆形排列需 12 方位按钮或自绘）。见 **§6 时间选择 / 时钟盘**。
-> **检索词补充**：picker-view 映射到哪个控件 / lv_roller 怎么转 / WheelPicker 还有没有包 / 那个自绘轮子包还在吗 /
-> 滚轮改判 L2 了吗 / 滚轮机读映射 / wheel 别名 / TimePicker 时钟盘有没有对应能力 / NumberPicker 走哪个控件。
 > **相关**：字段与回调全集 `listview-fields.md`；滑动/惯性字段取值 `scroll-drag-interaction-spec.md`；
 > json 必写字段 `json-field-mandatory.md`；装饰件吞触摸 `touch-events.md`；跨框架映射 `control-mapping-capability.md`。
 > 案例 `projects/translate/tdesign-miniprogram`（Z21 1024×600 真机，`z21/evidence/s4b_*` + `s4b_test.log` 24 项全 PASS；`s4c_*` + `s4c_test.log` 30 项全 PASS = 条改静态层后的现役验收）。
@@ -216,46 +205,31 @@ int A   = fi + (h / 2 - off) / ih;            // 盒中线落在哪一行（= �
 | 选中 = 正中行文字色 | 正中行品牌蓝像素 > 40；上下相邻行无品牌蓝 | blue 159/66/93/105/91；邻居 0 ✓ |
 | 相邻列不受影响 | 拖 A 列后，其余列正中行裁图 md5 **逐像素相同** | same=[True×4] ✓ |
 
-## 5. 与已移除的自绘包 `components/ui_v1/WheelPicker` 的关系（★2026-09-19 已删）
+## 5. 机读映射口径（源控件 → `target` / `level` + 验证入口）
 
-- **自绘包已于 2026-09-19 随钟工 A3 拍板移除**（连同 `components/ui_v1/WheelPicker/` 整目录；历史真机证据在案例侧
-  `z21/evidence/s4_*`，可作对照）。曾经的自绘路线 = painter 自绘 + 宿主 textview 池 + `setTouchOrigin` 坐标补偿
-  + 16ms `tick()`，视觉可做到更细（伪 alpha 淡出、任意行数、无滚动条干扰），代价是要自绘 + 自己做惯性/吸附 + 自己算触摸命中。
-- **那些“只有自绘才做得到”的需求已并入本 listview 方案**：
-  - **伪 alpha 淡出** → 按行距给每行插值**文字色**（向底色插值），观感等价（本文 §3 坑 1 顺带做）。
-  - **行内非文字内容（小图标/刻度）** → 行模板的 `subItem` 里再放一个子 `textview`（`picTab` 切图），
-    仍然由 `obtainListItemData` 填，不需要自绘。
-  - **任意行数** → 改 json 的 `rows`/`item.position.height`（行高 × rows = 列盒高）。
-  - （真需要逐像素真 alpha 或非矩形行盒时，属于 L3 自绘，得走 `gap-list.md` 编号立项并给真机证据——**不要临场造包**。）
-- **取舍点**：只需要「转起来 + 联动 + 回写」就用本文（零自绘、惯性/回弹/循环是引擎的、命中判定是框架的、
-  触摸坐标补偿整类消失）；列表盒内**行数与行高由 json 固定**（`rows`/`item.position`）。
+滚轮族（含时间选择 / 时钟盘形态）在 `mcp_control_map.json` 里**一律** `target: listview` + `level: L2`，不再有 L5 例外：
 
-## 5.1 机读映射口径（★2026-09-19 12:40 钟工 A1/A3 拍板后同步）
-
-跨框架迁移时不要再查散文、也不要再找自绘包，直接调 MCP op：
-
-| 源框架控件（别名） | op 返回 `target` | `level` |
+| 源框架控件（别名） | target | level |
 |---|---|---|
-| 小程序 `picker-view` / `picker-view-column` | `listview` | **L2** |
-| LVGL `lv_roller`（别名 `roller` / `wheel`） | `listview` | **L2** |
-| Android `TimePicker`（滚轮形态）/ `TimePicker`（**时钟盘形态**）/ `NumberPicker` | `listview` | **L2** |
-| Qt `QTimeEdit` / emWin `LISTWHEEL` | `listview` | **L2** |
-| iOS `WheelPicker` / 其它框架同族 | `listview` | **L2** |
+| LVGL `lv_roller`（`wheel` / `滚轮` / `转盘`） | `listview` | **L2** |
+| Qt `QTimeEdit` / `QDateTimeEdit`（时间部分） | `listview` | **L2** |
+| Android `TimePicker` / `TimePickerDialog`（含**时钟盘**形态） | `listview` | **L2** |
+| Android `NumberPicker` / 小程序 `picker-view`（`picker mode=time`） | `listview` | **L2** |
+| emWin `LISTWHEEL` | `listview` | **L2** |
 
-- **机读数据**：`mcp_control_map.json`（表版本 3，2026-09-19 同步）——滚轮族源条目 `target: wheelpicker -> listview`、
-  `level: L5 -> L2`（`TimePicker`/`NumberPicker`/`picker mode=time` 同族统一，`NumberPicker` 由 `stepper` 改判），
-  `json` 字段改为**可直接粘的轮子片段**（循环列表 + 行模板 + 条层装饰 `textview`），
-  `ref` 指向本文 + `components/ui_v1/control-map.md` 2.24；`targets.wheelpicker`（旧“自绘包”占位）**已删**，
-  源条目全部改指 `listview`，**无悬空引用**。
-- **散文側同步**：`components/ui_v1/control-map.md` **2.24 = L2**（2026-09-19 改判，原 L5）、
-  `gap-list.md` **G-23 = L2**（+ G-37 “无把第 i 项摆正中的 API” / G-38 “引擎自维护选中态 + 行属性不随中心行重刷”）、
-  `components.md` 新增映射项第 13 行（滚轮）。
-- **自绘包移除**：`components/ui_v1/WheelPicker/`（四件套 + `example/` + 16 张证据）已于 2026-09-19 删除；
-  全仓对其的引用已收口（`components.md`/`control-map.md`/`gap-list.md`/`ui_v1/README.md`/`control-mapping-capability.md`/
-  `framework-control-mapping.md`/`gui-controls-gap.md`/`device-deploy-budget.md`/`touch-events.md`/`ui_v1/README.md`、
-  `mcp_control_map.json`、`adb_tools.py`/`tools/adb/README.md`）。
-- **验证入口**（可复现）：`flythings_map_control("picker-view")` / `("lv_roller")` / `("wheel")`
-  → 均回 `target=listview` + `level=L2`（不再出现 L5 / `wheelpicker`）。
+**验证入口（可复现）**：
+
+```python
+flythings_map_control("lv_roller")      # -> target=listview / level=L2
+flythings_map_control("TimePicker")     # -> 同上（含时钟盘形态）
+flythings_map_control("wheel")          # -> 同上（中文/英文别名都认）
+```
+
+**自绘包已移除**：`components/ui_v1/WheelPicker/` 已被 `listview` 组合方案取代（2026-09-19），
+`mcp_control_map.json` 里旧的 `targets.wheelpicker` 占位条目**同时删除**（5 条源条目已全部改指 `listview`，
+无悬空引用）；自绘轮曾用于的「逐像素 alpha 渐隐 / 行内非文字内容」已分别并入本文 §0 与行模板 `subItem`。
+
+
 
 ## 6. 时间选择 / 时钟盘（`TimePicker` 全族；★2026-09-19 钟工口径「TimePicker 通过 listview 这个实现对应」）
 

@@ -15,12 +15,12 @@ evidence: []
 ---
 # 触摸事件与遮挡（touchable / touchPass / 谁吃掉了我的点击）
 
-> 检索导引：问「控件点不动 / 列表拖不动 / 点了没选中 / touchable 与 touchPass 怎么配 / 谁吃掉了我的点击 / setInvalid 是禁用不是重绘」→ 本文。
+> 检索导引：问「控件点不动 / 列表拖不动 / 点了没选中 / touchable 与 touchPass 怎么配 / 谁吃掉了我的点击」→ 本文。
 > 2026-09-10 沛哥报障「控件点不动 / 列表拖不动 / 点了没选中」定位产出，V85X + EasyUI 2.9.0 实机逐条验证。
-> 2026-09-17 补充 §6（`setInvalid` 是禁用不是重绘）/ §7（嵌套 window 的卡片内部点不动）——
-> 两节均来自真机案例 `projects/translate/tdesign-miniprogram`（同一个「点哪都没反应」的两个真根因）。
+> 2026-09-17 补充 §7（嵌套 window 的卡片内部点不动）——
+> 该节来自真机案例 `projects/translate/tdesign-miniprogram`。
 > 检索词：触摸/点击无效/点不动/拖不动/滑动/穿透/遮挡/touchable/touchPass/setTouchPass/单选点不了/
-> setInvalid/禁用控件/强制重绘/invalidate/嵌套 window/遮罩抢触摸/卡片里的按钮点不动/扁平化/
+> 嵌套 window/遮罩抢触摸/卡片里的按钮点不动/扁平化/
 > data-touchable 不生效/真禁用只能改 json。
 
 ## 1. `touchable=false` **不等于**触摸穿透（最容易搞错的一条）
@@ -87,7 +87,7 @@ lv->refreshListView(); // ⚠ 不能省
 - [ ] 每个"压在可触摸控件之上的装饰件"都设了 `setTouchPass(true)`
 - [ ] `radiogroup`/`checkbox` 等交互容器 `touchable=true`
 - [ ] 列表里所有 `setSelection()` 后面都跟了 `refreshListView()`
-- [ ] 代码里**没有把 `setInvalid()` 当重绘用**（§6；禁用控件会让整屏点不动）
+- [ ] 代码里**没有把 `setInvalid()` 当重绘用**（禁用控件会让整屏点不动）
 - [ ] 弹层卡片**不是嵌套 window**：卡片底图与子控件扁平化、排在遮罩之后（§7）
 - [ ] **实机**逐项验证：从控件**边缘起手**拖动 / 点首行 / 点末行 / 跨页返回再进入
 - [x] **自动审计已实现**（2026-09-10，`check_all.py` #15 / #16，报 WARN 交人工审批 —— 见下）
@@ -111,77 +111,6 @@ WARN 分两类，**故意遮挡不是 bug，人工审批时直接忽略**：
 - 两类都只 **WARN**：不计入 `failures`、不影响 PASS/FAIL 与退出码，逐条人工审批。
 - 实测噪声（175 个真实 json，2026-09-10）：命中 14 文件 / 17 处 → **可能有意 7 处、疑似误压 10 处**；负向用例（装饰件移开 + 补穿透）0 命中。
 - 局限：#15 只能看 json 层叠与 `touchable`，**查不到运行期才设的 `setTouchPass`**，分类只是线索，最终仍需实机验证（清单第 4 条）。
-
-## 6. `setInvalid()` 是「禁用控件」，**不是**「强制重绘」（2026-09-17 案例实测）
-
-> ⚠️ 2026-09-22 钟工定规纠偏：**别把这条读成「setInvalid 一律不能用于刷新」**——
-> `setInvalid(true)` 是禁用；而 **`setInvalid(!isInvalid())`（交替翻转）是自定义 view / 帧缓冲刷新的平台惯例**，
-> gameview / GIF / 地图 / 掌机显示层全这么写。两者的区分、正确写法与真机数据 →
-> **`uicontrols/custom-view-refresh.md`**（该文为本类刷新的唯一权威口径）。
-
-⛔ **最容易致命的一条**：`ZKBase::setInvalid(bool)` 的语义是**把控件置为无效状态**
-（`ZK_CONTROL_STATUS_INVALID` = 禁用），**不是**通用框架里「invalidate = 标脏重绘」那个意思。
-
-- 头文件事实（`references/easyui/*/include/control/ZKBase.h`）：
-  ```cpp
-  void setInvalid(bool isInvalid);   // @brief 设置无效状态
-  bool isInvalid() const;            // @brief 是否是无效状态
-  void invalidate(const LayoutPosition *dirty = NULL);   // @brief 重绘
-  ```
-  **只有带 `bool` 的版本，没有 `setInvalid()` 无参版本**——照「重绘」的直觉写根本编译不过。
-- 真机实测（案例 `projects/translate/tdesign-miniprogram`）：阶段 2 在 `showPage()` 里给 **13 个导航键**
-  都调了 `nav->setInvalid(true)`（本意是「强制重绘」），`showOv()` 给弹层也调了一处 →
-  **导航全部被禁用、整个案例「点哪都没反应」**。排查了大半天，且一度被误判成「触摸注入坏了 / 面板坏了」
-  （注入侧 `dd if=/dev/input/event0` 能证明事件确实写进了节点）。两处删掉后导航立刻全部复活。
-- **判据（30 秒定位）**：现象是「界面能看、但所有控件/整屏都不响应」时，**先 grep 代码里有没有 `setInvalid`**，
-  再去看注入和像素——顺序反了会白查一天。
-
-### 6.1 为什么「网上/示例里拿它刷帧」也会碰得上：它**确实会触发重绘**（但那不是它的语义）
-
-平台实践里真的存在「用 `setInvalid(!isInvalid())` 交替来刷帧」的写法，来源是**自定义帧缓冲**那条路：
-
-```cpp
-// 帧缓冲渲染（GameView / GIF 博客 / game-knob 示例 / setBackgroundBmp 自定义渲染引擎）
-mTextView->setBackgroundBmp(&bmp);          // 只调一次
-mTextView->setInvalid(!mTextView->isInvalid());   // 交替 → 控件重画 → 把新帧抖出来
-```
-
-**机理**：状态变了就要重画外观，于是**顺手把控件重绘了一遍**。所以：
-
-| 用在哪 | 后果 |
-|---|---|
-| **只读控件**（`textview`，本就不响应点击） | 重绘生效、**看不到副作用**——所以这个技巧“能用” |
-| **可交互控件**（`button` / `radiogroup` …） | **控件被禁用**（半个周期还带着“无效态”外观）→ 点不动 |
-
-⇒ 结论：**这是一个依赖“状态变更顺带重绘”的旁路技巧，不是通用重绘 API**；
-新代码**不要**用它做通用的“强制重绘”，尤其别用在可交互控件上（可交互控件要刷新请用别的手段）。
-
-⚠️ 但“只限定在只读控件”这个限定**偏窄**（2026-09-22 更新）：平台里**自定义 view**（内容由我们在位图里自己改）
-普遍就是这么刷帧的——`GameView.cpp:120`、`CGifPlayer.cpp`（多工程）、`ImageAnimView.cpp:437`、
-`FlyMapDemo/mainLogic.cc:218`、`PocketGame/PgDisplay.cpp:77`、`WebViewDemo/mainLogic.cc:88`
-（出处行号见 `uicontrols/custom-view-refresh.md` §3）。
-**判断口径**：内容是**我们自己往位图/画面里写**的（自绘、帧渲染、双缓冲）→ 用 `setInvalid(!isInvalid())` 翻转；
-只是普通控件改了文本/图片/进度 → 引擎本就会重绘，不用手动刷。
-（`project_tools` 的 validate 提示、`flythings_blogs` 的 GIF 示例、`references/kb/controls.md`
-里那句「帧刷新用 setInvalid 交替」指的正是这个惯例。）
-
-### 6.2 真要用「重绘」：`invalidate()` 也有坑（旧设备可能**未导出**）
-
-⚠️ **2026-09-22 新增（钟工定规 + 真机实测）**：`invalidate(&rect)` 的 `rect` 是**控件本地坐标系**，
-不是页面绝对坐标。传 `getAbsolutePosition()` 那种绝对矩形 → 被裁成“从控件本地 (left,top) 到右下角”那块，
-**屏上只有那一块会刷新**（实测：20° 步进下纯色标记位移 **0px**，而 `setInvalid(!isInvalid())` 是 **35px**，理论值 34.7px）。
-完整对照表 + 判据 → `uicontrols/custom-view-refresh.md` §2。
-**非必要不要碰 `getAbsolutePosition()`**（钟工 2026-09-22 12:28）。
-
-- `ctrl->invalidate()`（或带脏区 `invalidate(&pos)`）才是「重绘」的正式 API；
-  **带脏区的版本在部分设备上没导出**：实测 `libeasyui.so` 旧于本机头文件时，用它会在 dlopen/链接时报
-  `undefined symbol: _ZN6ZKBase10invalidateEPK14LayoutPosition` → **整屏黑**（不是报错退出）。
-  真机/组件里用前先确认符号存在（案例侧记录：`projects/translate/tdesign-miniprogram` 的真机验证与
- `gap-list.md` G-38 的头文件核对）。
-- **大多数情况根本不需要手动重绘**：`setText` / `setTextColor` / `setBackgroundPic` / `setProgress`
-  这类内容变更**引擎本来就会重绘该控件**。
-- 「隐藏一个控件」不要靠重绘，用**换同尺寸透明占位图 + 文本置空**
-  （`setVisible(true)` 动态显示不重绘）。
 
 ## 7. 嵌套 `window` 里的子控件点不动：被**同层更早定义**的 touchable 控件抢走触摸
 
@@ -218,5 +147,5 @@ mTextView->setInvalid(!mTextView->isInvalid());   // 交替 → 控件重画 →
 - listview 回调与刷新 → `listview-fields.md`（铁律 7）
 - ★ 装饰件压在可触摸控件之上的陷阱（选中条为什么要 `setTouchPass(true)`） → `listview-wheel-picker.md` §3
 - 真机确认画面（按 pan 取活帧） → `devflow/ui-layout-verify.md` §2-1
-- 强制重绘 / 禁用语义（`invalidate` vs `setInvalid`） → 本文 §6；抓帧侧口径 `devflow/device-screenshot.md` §3.3-1
+- 强制重绘 / 禁用语义（`invalidate` vs `setInvalid`） → `uicontrols/custom-view-refresh.md`；抓帧侧口径 `devflow/device-screenshot.md` §3.3-1
 - 高频回调只刷变化控件（拖动卡顿的真因） → `high-frequency-callback-perf.md`

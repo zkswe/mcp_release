@@ -41,7 +41,7 @@ PullWidget（下拉展开面板，app 级触摸）、BaseView（基类）
 | 2 | **通用图表 ChartView**（折线历史/柱状/饼/仪表） | ❌ 真缺 | diagram 只做实时波形（addData + 轴范围），无静态/历史/多类型 | 自绘 | 数据可视化、统计页、曲线历史 |
 | 3 | **表格 TableView**（表头/列宽/行数据） | ❌ 真缺 | listview 网格可凑内容但无表头/列定义 | 组合+自绘 | 参数表、记录列表、设置矩阵 |
 | 4 | **下拉选择 ComboBox/选项框** | ❌ 真缺 | 产品都在自造单选列表（xdv ufs.add_item_radio）；无现成"点击弹出选择" | 组合 | 设置页选项、模式选择 |
-| 5 | **滚轮选择器 WheelPicker**（时间/日期/数值） | ✅ **可代（2026-09-19 改判）** | **`listview` 组合**：循环列表（`cycleEnable:true`）+ 引擎惯性/回弹（`edgeEffect:1`/`dragMaxDis:50`/`autoRollback:true`）+ **数据侧平移**定正中行 + **选中条挂静态层**；原自绘包 `ui_v1/WheelPicker/` 已移除 | **映射（L2）**，不建包 | 调时间日期、数值步进选择（口径 `uicontrols/listview-wheel-picker.md`） |
+| 5 | **滚轮选择器 WheelPicker**（时间/日期/数值） | ✅ **可代** | **`listview` 组合**：循环列表（`cycleEnable:true`）+ 引擎惯性/回弹（`edgeEffect:1`/`dragMaxDis:50`/`autoRollback:true`）+ **数据侧平移**定正中行 + **选中条挂静态层** | **映射（L2）**，不建包 | 调时间日期、数值步进选择（口径 `uicontrols/listview-wheel-picker.md`） |
 | 6 | **轻提示/角标/加载指示**（Toast/Snackbar、Badge、Spinner 菊花） | 🟡 半缺 | PopupService 只有居中 dialog；无角落浮动条/角标/转圈 | 组合小件 | 操作反馈、未读角标、等待 |
 | 7 | **Switch 现代开关** | 🟡 可代 | checkbox picTab 两态图可做出开关样式 | 组合 | 开关设置项 |
 | 8 | **标签页 TabHost/侧滑抽屉 Drawer** | 🟡 架构可代 | 多 Activity openActivity / pagewindow / PullWidget 下拉面板 | 组合 | 多页签导航 |
@@ -80,4 +80,3 @@ AlbumListView 的滚动 + 可视区复用套路、ImageBoxView 的异步加载�
 3. ChartView 通用图表（折线历史 + 柱状 + 饼）
 4. Toast/Snackbar + Loading 菊花 + Badge（小件，一次做一组）
 5. TableView（需要时再做，listview 可过渡）
-6. ~~WheelPicker~~（配合日期时间场景）—— **2026-09-19 移除**：改判 **L2**，走 `listview` 组合（`uicontrols/listview-wheel-picker.md`），不再建包

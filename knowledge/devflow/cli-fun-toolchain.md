@@ -22,14 +22,7 @@ evidence: []
 
 ## 1. 结论（一句话）
 
-**命令行统一是 `fun`；`fuse` 是旧名。** 工具更名连带改了三个地方，写文档/写命令时别再用旧名：
-
-| 东西 | 旧（fuse 时代） | 新（fun） | 备注 |
-|------|------|------|------|
-| CLI | `fuse.exe` | **`fun.exe`** | 本机旧 fuse = `v0.0.2+202606171636`，新 fun = `v0.0.2+2609032137` |
-| 构建宏 | `FUSE_BUILD` | **`FUN_BUILD`** | 编译命令行实测 `-DFUN_BUILD=1`（旧版是 `-DFUSE_BUILD=1`）；**09-28 新版同时定义 `-DFUN_BUILD=1 -DFSC_BUILD=1`**（老工程不用改） |
-| 中间产物目录 | `.fuse/<平台>/` | **`.fsc/<平台>/`**（09-28 前为 `.fun/<平台>/`） | 生成的 UI/CMake/ninja、`update.img` 都在这里 |
-| 依赖注册表 | `~/.fuse/registry/public/` | **`~/.fsc/registry/public/`**（09-28 前为 `~/.fun/registry/public/`） | 旧的 `.fuse` 目录仍是**历史注册表**（MCP 会兜底查），`C:\zkswe\fun\registry\public` 是工具链自带 |
+**命令行统一是 `fun`；`fuse` 是旧名。**
 
 > ⚠️ 但**目录级老名字还在**：生成的 CMake 里依旧写 `$ENV{FUSE_HOME_PATH}/registry/public/<平台>/<包>/<版本>/include`。看到 `.fuse` / `FUSE_HOME_PATH` 不等于工具还是 fuse。
 

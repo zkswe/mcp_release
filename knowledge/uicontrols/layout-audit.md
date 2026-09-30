@@ -45,15 +45,6 @@ evidence: []
 | 20 | cameraview | CameraDemo (1) | autoPreview/formatSize | ✅ | +cvbs/mirror |
 | 21 | videoview | VideoViewDemo (2) | defaultVolume/loopPlayback | ✅ | +rotation |
 
-## 2. 本次修复清单（html2json，2026-09-01）
-
-1. **circlebar**：+ 中间文字 `data-text-color/data-text-size/data-text-type/data-unit`（textColor/textSize/textType/unit）、+ 滑块 `data-thumb/data-thumb-size`（thumb{size,normalPic}）、+ 触摸范围 `data-touch-range="lower,upper"`（touchRange）
-2. **cameraview**：+ `data-cvbs`（cvbs 布尔）、+ `data-mirror`（mirror 整数）
-3. **videoview**：+ `data-rotation`（rotation 0/90/180/270）
-4. **listview**：+ `data-auto-rollback`（autoRollback）、`data-cycle`（cycleEnable）、`data-drag-max`（dragMaxDis）、`data-edge-effect`（edgeEffect）、`data-scrollbar`（hasScrollbar）
-5. **slidewindow**：+ `data-bgpic/data-background-pic`（backgroundPic）、`data-icon-max`（iconMaxSize）
-6. **文字控件通用**（textview/button/edittext/checkbox/slidetext）：新增 `_text_extra()` 辅助，+ `data-bold`（bold）、`data-italic`（italic）、`data-roll`（rollEnable）+ `data-roll-direction`（rollDirection）+ `data-roll-step`（rollStep）+ `data-roll-interval`（rollIntervalTime）文字滚动
-
 ## 3. 之前已校准控件（本报告确认无缺口）
 
 - **pointer**：pointerPic/fixedPoint/rotationPoint/pointerSize/startAngle/rotateSpeed/clockwise/animatable（坐标三件套 16:35 修复）

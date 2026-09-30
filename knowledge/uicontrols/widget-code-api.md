@@ -94,11 +94,8 @@ evidence: []
 
 ## ZKPainter（PainterDemo）
 - 状态式画笔：`setLineWidth(px)/setSourceColor(0xRRGGBB)` 后画：`drawRect(x,y,w,h,r)/drawArc(...)/fillArc/drawTriangle/fillTriangle/drawLines(SZKPoint*,n)/drawCurve(SZKPoint*,n)`
-- ⚠️ **`drawArc` 实参口径存疑（两套记录冲突，待官方/沛哥确认，勿当定论）**：
-  - 既有文档/笔记写 `drawArc(外接矩形, startAng, sweepAng)`；
-  - **Z21（easyui 2.6.0）真机实测**按 `(cx, cy, rx, ry, start, sweep)`（圆心 + 半径）写**渲染正确**
-    （按格子填色，无残影）；可复现调用点：`projects/EasyDevice-Z21/src/logic/mainLogic.cc`。
-  - 两种写法用前先按项目平台跑一次小图自证，别照抄。
+- **`drawArc` 实参口径（Z21 easyui 2.6.0 真机实测）**：按 `(cx, cy, rx, ry, start, sweep)`（圆心 + 半径）写**渲染正确**
+  （按格子填色，无残影）；可复现调用点：`projects/EasyDevice-Z21/src/logic/mainLogic.cc`。
 - **`fillRect` / `erase` 实测可用（Z21，同上调用点）**：`fillRect` 填矩形、`erase` 清屏
   （清屏后无残影，适合做数据刷新前的整块重画）——官方 demo 未演示，故补记。
 - **z 序（2026-09-16 Z21 真机实测，静态检查发现不了）**：json 里**后定义 = z 更高**。
@@ -133,5 +130,3 @@ evidence: []
 - Thread：`readyToRun()`（true 进循环）/`threadLoop()`（return true 继续 false 退出；`exitPending()` 判断退出请求）；`run("name")/requestExit()/requestExitAndWait()(阻塞)/isRunning()`；工作线程直接刷 UI 是官方写法，保守用共享变量+UI 定时器轮询
 - 网络（NetDemo 四页）：`NETMANAGER->getWifiManager()/getLTE4GManager()/getSoftApManager()/getEthernetManager()` 宏；异步一律 addXxxListener（回调在 Manager 内部线程，数据拷贝加锁）→ 刷新 UI；wifi 状态机 `notifySupplicantStateChange`、扫描 `handleWifiScanResult` 后 refreshListView；信号格=charsetTab 字符表技巧 `setText(5+level)`；SoftAP 整页被 FLYTHINGS_ENABLE_HOTSPOT 宏裁剪（默认关）；以太网输入框校验用自定义 ITextChangeListener + `text==addr` 短路防 setText 回环；密码错误弹窗 hideTimeOut 自动隐。详见 NetDemo 源码与 zknet 头文件（无 socket/http 客户端示例，连接管理是 zknet 能力）
 
-## 深读原始笔记
-完整逐 Demo 精读（含代码引用）见 `workspace/references/demo-read-2026-09-08/group{A,B,C,D,E}.md`。

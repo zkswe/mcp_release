@@ -5,9 +5,11 @@
 1. 内置 bge-small-zh 本地模型可用 → 向量检索（推荐，免任何 Key）
 2. 模型缺失/加载失败 → BM25 关键词检索兜底
 
-知识库索引（rag_index.json）由本地模型预计算，完全离线。
+索引格式（rag_index.json，单文件、自带向量）：
+- chunks[] 只放 id/path/text；向量集中在 `embs`（float16 拼接后 base64），加载即成 numpy 矩阵。
+  旧格式（每个 chunk 内联 `embedding` 浮点数组）仍可读，向后兼容。
 """
-import json, math, os, re, sys
+import base64, json, math, os, re, sys
 
 # PyInstaller 打包后数据文件在 _MEIPASS；正常运行时在脚本同目录
 _BASE = sys._MEIPASS if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
@@ -17,6 +19,42 @@ WIKI_ROOT = os.path.join(_BASE, 'wiki', 'flythings')
 data = json.load(open(IDX, encoding='utf-8'))
 CHUNKS = data['chunks']
 _BY_ID = {c['id']: c for c in CHUNKS}  # RRF 融合用 id 映射（模块级建一次）
+_DIM = int(data.get('dim') or 512)
+
+# 向量矩阵：np.float32 [N, _DIM]，行已归一化（余弦 = 点积）。拿不到就退回纯 Python cos。
+try:
+    import numpy as _np
+except ImportError:  # pragma: no cover
+    _np = None
+
+
+def _load_vecs(_data, _chunks):
+    """加载向量：优先 `embs`（f16+base64 紧凑格式），否则回退内联 embedding。
+
+    紧凑格式把 22 MB 的明文浮点数组压到约 2 MB（解析 0.4s → 0.1s，内存 −30 MB），
+    单文件分发、不新增依赖文件。f16 精度约 1e-3，对 512 维余弦排序无影响。
+    """
+    if _np is None:
+        return None
+    try:
+        if _data.get('embs'):
+            buf = base64.b64decode(_data['embs'])
+            m = _np.frombuffer(buf, dtype=_np.float16)
+            if m.size != len(_chunks) * _DIM:
+                return None
+            m = m.reshape(len(_chunks), _DIM).astype(_np.float32)
+        elif _chunks and 'embedding' in _chunks[0]:
+            m = _np.asarray([c['embedding'] for c in _chunks], dtype=_np.float32)
+        else:
+            return None
+    except Exception:
+        return None
+    n = _np.sqrt((m * m).sum(axis=1, keepdims=True))
+    _np.divide(m, n, out=m, where=n > 0)
+    return m
+
+
+_VECS = _load_vecs(data, CHUNKS)
 
 _embedder = None  # None=未尝试加载, False=不可用, 模块=可用
 
@@ -66,6 +104,9 @@ def query_tokens(q):
 _BM25_K1 = 1.5
 _BM25_B = 0.75
 _DF = {}      # token -> 文档频次缓存（索引在进程内不变，可长期复用）
+# 长度统计预计算（原来每次查询都把全部 chunk 累加一遍）
+_AVGDL = sum(len(c['text']) for c in CHUNKS) / float(max(1, len(CHUNKS)))
+_DL = [len(c['text']) for c in CHUNKS]
 
 # ---- 中文口语 → 文档里的英文专名（只为 BM25 的「文件名/目录名加权」服务）----
 # 为何要它（2026-09-19 实测）：目标文档叫 listview-wheel-picker.md，而用户只会说「滚轮/转盘」；
@@ -145,11 +186,11 @@ def _bm25_search(q, k):
     if not toks:
         return []
     n = len(CHUNKS)
-    avgdl = sum(len(c['text']) for c in CHUNKS) / float(max(1, n))
+    avgdl = _AVGDL
     scored = []
-    for c in CHUNKS:
+    for ci, c in enumerate(CHUNKS):
         tl = c['text'].lower()
-        dl = len(tl)
+        dl = _DL[ci]
         head = tl[:120]
         path = (c.get('path') or '').lower()
         score = 0.0
@@ -188,8 +229,7 @@ def search(q, k=3):
     if emb is not None:
         try:
             qv = emb.embed(q)
-            vec = sorted(((cos(qv, c['embedding']), c) for c in CHUNKS),
-                         key=lambda x: x[0], reverse=True)[:_TOPN]
+            vec = _vector_search(qv, _TOPN)
             kw = _bm25_search(q, _TOPN)
             if not kw:
                 return vec[:k]
@@ -202,6 +242,22 @@ def search(q, k=3):
 
 _TOPN = 40  # 混合融合：两路各取前 40 再 RRF
 _K = 60  # RRF 平滑常数
+
+
+def _vector_search(qv, k):
+    """向量检索：有 numpy 矩阵就走矩阵乘（3 ms 量级），否则退回纯 Python cos。"""
+    if _VECS is not None:
+        v = _np.asarray(qv, dtype=_np.float32)
+        n = float(_np.sqrt((v * v).sum()))
+        if n > 0:
+            v = v / n
+        s = _VECS @ v
+        k = max(1, min(k, len(CHUNKS)))
+        idx = _np.argpartition(-s, k - 1)[:k]
+        idx = idx[_np.argsort(-s[idx])]
+        return [(float(s[i]), CHUNKS[int(i)]) for i in idx]
+    return sorted(((cos(qv, c['embedding']), c) for c in CHUNKS),
+                  key=lambda x: x[0], reverse=True)[:k]
 
 
 def _rrf_fuse(vec, kw, k):

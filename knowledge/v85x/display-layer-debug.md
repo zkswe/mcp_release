@@ -233,13 +233,6 @@ void setRotation(int val);
 - 回放 mp4 横视频（1280×720）在竖屏 UI 上播，rotation=3 后与预览方向一致
 - 若改了 rotation 仍不对：检查是否复用 videoView 的预览透出区域被 rotation 影响，或参考同平台产品回放页（mpi::VO 初始化时序：播放前 stop 预览链路 + 延迟 50ms 初始化 VO 避免 MPP 冲突——详见 `v85x-mpp.md`）
 
-## 7. 设备侧调试技巧（无 screencap/input 的精简系统）
-
-- **抓屏**：设备常无 `screencap`；可用 fb dump 分析：`busybox dd if=/dev/fb0 bs=<行字节> count=1` 拉头部 → 解析像素（32bpp BGRA，看 alpha 判 UI 层透明与否）
-- **触摸注入**：设备常无 `input` 命令；用交叉工具链静态编译小工具（`-static`，open /dev/input/eventX 写 EV_ABS/EV_KEY/EV_SYN 序列）即可 tap；⚠️ 触摸设备节点要查 `/proc/bus/input/devices`（gt9xx 触摸可能是 **event0**，EasyUI.cfg 写的 touchDev 可能不准）
-- **坐标映射**：旋转屏注入 tap 前先小样本试探（注入后看 logcat 按钮回调日志反推命中）
-- 网络 adb：`adb connect <设备IP>:5555`；电脑与设备需同网段
-
 ## 8. 参考
 - `v85x/videoview-transparent-window.md`（videoView 透出机制权威口径）
 - `v85x-mpp.md`（mpi:: 摄像头/回放 API、MPP 冲突时序）

@@ -103,14 +103,14 @@ ctrl->setInvalid(!ctrl->isInvalid());              // ✅ 整块重画
 | 反面写法 | 后果 |
 |---|---|
 | `invalidate(&getAbsolutePosition())` 刷自定义 view | 屏幕**只刷右下角一块**（§2 实测：位移 0px vs 35px） |
-| `setInvalid(true)` 当"强制重绘" | 控件**被禁用 → 点不动**（`touch-events.md` §6 案例：13 个导航键全废、整屏无响应） |
+| `setInvalid(true)` 当"强制重绘" | 控件**被禁用 → 点不动**（真实案例：13 个导航键全废、整屏无响应） |
 | 每帧 `setBackgroundBmp(new bmp)` | 每帧新建位图 → 分配抖动 / 内存涨 |
 | 每帧 `memset` 整幅目标缓冲 | 白烧 CPU（实测 320×320 去掉 memset 只省 0.4ms，但更大尺寸/整页就别做） |
 | 用 `setText("")`/改内容去"顺手刷新"自定义 view | 语义错位，拿不准时按本文件 §0 的写法来 |
 
 ## 6. 相关文档
 
-- 触摸/禁用语义与踩坑（`setInvalid(true)` 的现场）：`uicontrols/touch-events.md` §6
+- 触摸/禁用语义与踩坑（`setInvalid(true)` 的现场）：本文 §1、§5 案例
 - 自定义控件整体做法（BaseView / onDraw / 适配器 / 脏区）：`devflow/custom-widget.md`
 - 跨线程直接操作控件：`uicontrols/cross-thread-ui-rule.md`
 - 抓帧与"别拿 setInvalid 当重绘"的误判记录：`devflow/device-screenshot.md` §3.3-1

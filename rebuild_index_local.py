@@ -2,7 +2,7 @@
 """用本地 bge-small-zh 模型重建 RAG 索引（离线，无需任何 API Key）。
 用法：python rebuild_index_local.py <wiki根目录> [输出路径]
 """
-import json, os, sys, time
+import base64, json, os, sys, time
 
 sys.stdout.reconfigure(encoding='utf-8')
 BASE = os.path.dirname(os.path.abspath(__file__))
@@ -45,7 +45,51 @@ def chunk_md(path):
     return [c for c in chunks if len(c.strip()) > 40]
 
 
+def save_index(chunks, dim, out):
+    """写紧凑索引：chunks 只存 id/path/text，向量拼接成 float16 + base64 放 `embs`。
+
+    相比旧格式（每个 chunk 内联明文 `embedding`）体积 22 MB → 5 MB，
+    加载解析 0.4s → 0.1s；读取侧兼容旧格式（rag_search._load_vecs）。
+    """
+    import numpy as np
+    embs = []
+    for c in chunks:
+        e = c.pop('embedding', None)
+        if e is None:
+            raise SystemExit('缺少 embedding，无法写紧凑格式')
+        embs.append(np.asarray(e, dtype=np.float16))
+    m = np.stack(embs).astype(np.float16) if embs else np.zeros((0, dim), np.float16)
+    payload = {'model': 'bge-small-zh-v1.5-local', 'dim': int(dim),
+               'embFormat': 'f16+base64',
+               'embs': base64.b64encode(m.tobytes()).decode('ascii'),
+               'chunks': chunks}
+    with open(out, 'w', encoding='utf-8') as f:
+        json.dump(payload, f, ensure_ascii=False)
+    print('saved -> %s (%.1f MB)' % (out, os.path.getsize(out) / 1024 / 1024))
+
+
+def repack(src, dst=None):
+    """旧索引 → 紧凑格式（不需要跑模型，纯重编码）。"""
+    dst = dst or src
+    d = json.load(open(src, encoding='utf-8'))
+    dim = int(d.get('dim') or 512)
+    if d.get('embs'):
+        print('已经是紧凑格式，无需重包:', src)
+        return
+    chunks = d['chunks']
+    before = os.path.getsize(src) / 1024 / 1024
+    save_index(chunks, dim, dst)
+    print('repack: %.1f MB -> %.1f MB' % (before, os.path.getsize(dst) / 1024 / 1024))
+
+
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == '--repack':
+        src = sys.argv[2] if len(sys.argv) > 2 else os.path.join(BASE, 'rag_index.json')
+        repack(src, sys.argv[3] if len(sys.argv) > 3 else None)
+        return
+    if len(sys.argv) > 1 and sys.argv[1] == '--repack-all':
+        repack(os.path.join(BASE, 'rag_index.json'))
+        return
     if not embed_local.available():
         print('模型不可用，请先确认 models/bge-small-zh/ 存在')
         sys.exit(1)
@@ -109,9 +153,7 @@ def main():
             el = time.time() - t0
             print(f'{i + 1}/{len(chunks)} embedded ({el:.0f}s)', flush=True)
 
-    json.dump({'model': 'bge-small-zh-v1.5-local', 'dim': 512, 'chunks': chunks},
-              open(OUT, 'w', encoding='utf-8'), ensure_ascii=False)
-    print(f'saved -> {OUT} ({os.path.getsize(OUT) / 1024 / 1024:.1f} MB)', flush=True)
+    save_index(chunks, 512, OUT)
     # P0-2：本地层自己的机读清单（检索侧合并用；与总账 kb_index.json 同形状子集）
     lidx = _kbl.build_local_index()
     print('  本地层清单 -> %s（%d 篇，源 %s）'

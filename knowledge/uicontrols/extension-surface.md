@@ -7,7 +7,7 @@ confidence: manual
 verified_at: 2026-09-30
 stale_days: 180
 origin: total
-source: 2026-09-30 从 custom-widget / custom-view-refresh / canvas-panel-coverage / custom-render-paths 四篇抽取汇编（钟工稿）＋本仓复核修正（E3 字库档位口径、硬件合成分段、缺失表）；缺失处已显式标注
+source: 2026-09-30 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [V85X, Z20, F136, F133]
 tags: [扩展点, 自定义控件, 自绘, canvas, GameView, disp 图层, 系统窗口, 全局弹框, 差异化效果, 定制效果, 能做什么]
@@ -51,7 +51,7 @@ evidence: []
 | **明确不能做什么** | ① **不进 ftu / IDE**：IDE 里看不到、**不能可视化编辑**、属性不能从 json 配（纯代码控件无 ftu 属性通道）；② **不能 static 跨页面复用**（页面 `onUI_quit` 必须 delete，重进要 new）；③ 控件内**不许写业务**（数据/事件一律函数指针出口） |
 | **生命周期** | 页面 `onUI_init` 里 `new Xxx(父容器Ptr)`（构造自动铺满父容器）→ `onUI_quit` `delete`；**严格配对** |
 | **刷新口径（★易错）** | 自绘/帧渲染类每帧刷新用 `ctrl->setInvalid(!ctrl->isInvalid())`；**禁用 `invalidate(&getAbsolutePosition())`**（会被按控件本地坐标裁成"右下角一块"，屏上只刷一块）→ `uicontrols/custom-view-refresh.md` |
-| **性能档位** | 组合式 ≈ 基础控件开销（拼接越多越贵）；自绘式取决于**重绘面积** —— **具体帧耗实测缺，见 §缺失** |
+| **性能档位** | 组合式 ≈ 基础控件开销（拼接越多越贵）；自绘式取决于**重绘面积** —— **具体帧耗实测缺** |
 | **最小示例** | 库内 8 个成品 + 各自独立测试 Activity：AlbumListView（滚动/惯性/回弹/LRU 缓存）、ImageBoxView（双指缩放）、FrameImageView（帧播放）、SliceProgressBar（切片进度）、… |
 | **支持平台** | F136 / F133 实证（easyui ^2.3.0）；**V85X / Z20 待核** |
 
@@ -62,8 +62,8 @@ evidence: []
 | **能做什么** | 逐帧自绘整个画面：位图操作（`createBmp` 内存画布 / `bitmap_t` 直接改 data）、脏区（`Region`）、软渲染游戏/动画/仪表 |
 | **明确不能做什么** | ① 动画计时**必须用绝对时间基准（单调时钟 / 时间戳差值）**，相对累加会漂；② **画布必须盖满面板**，否则底部露出上一款应用的残留帧（伪闪烁）。<br>⚠️ **不要把"工程侧约束"当成画布限制**（2026-09-30 更正）：<br>· **FlyThings 画布对 `scale` 没有限制**；"档位要编译期常量"的真出处是**我方自研字库**（`PgFontData.h`，`genfont.py` 预烘，`MAX_N=5`）——绘制 1:1 原生档位字形，超档位 `clampN()` **夹到上限**、缺字**跨档 1:1 回退**，**不做放大/插值**（所以不会"拉伸"）；<br>· `448` 是**某工程 UI 的内容区宽**（480−2×16，布局值），**不是画布宽上限** |
 | **生命周期/刷新** | 与 E2 同口径（`setInvalid(!isInvalid())`）；画布几何零位移改动优先 |
-| **性能档位** | 与帧耗直接挂钩的是**重绘面积**（全刷 vs 脏区）；**具体帧耗实测缺**，见 §缺失。<br>★ **分层看**：**绘制进画布** = 应用实现（本工程 `src/core/PgCanvas.*`，软件）；**画布 → 屏幕** = 框架 + 芯片**硬件合成**（内存拷贝/blit、透明 α 混合、90° 旋转）——口径来源 沛哥 2026-09-30；我方代码实证 `src/platform/PgDisplay.h` 头注释「控件→屏幕走硬件加速」+ `button+picTab` 的 α 路径。⚠️ **芯片侧通道名（MI_DISP / G2D 等）未取证** |
-| **最小示例** | `devflow/custom-render-paths.md` ①；本工程 8 款画布游戏 + 4 款节奏游戏（**尚未入库**，见 §缺失） |
+| **性能档位** | 与帧耗直接挂钩的是**重绘面积**（全刷 vs 脏区）；**具体帧耗实测缺**。<br>★ **分层看**：**绘制进画布** = 应用实现（本工程 `src/core/PgCanvas.*`，软件）；**画布 → 屏幕** = 框架 + 芯片**硬件合成**（内存拷贝/blit、透明 α 混合、90° 旋转）——口径来源 沛哥 2026-09-30；我方代码实证 `src/platform/PgDisplay.h` 头注释「控件→屏幕走硬件加速」+ `button+picTab` 的 α 路径。⚠️ **芯片侧通道名（MI_DISP / G2D 等）未取证** |
+| **最小示例** | `devflow/custom-render-paths.md` ①；本工程 8 款画布游戏 + 4 款节奏游戏（**尚未入库**） |
 | **支持平台** | V85X 实证（本工程）；其余待核 |
 
 ## E4 · disp 独立硬件图层
@@ -104,14 +104,3 @@ evidence: []
 - 渲染五条路选型：`devflow/custom-render-paths.md`；布局画布：`devflow/canvas-panel-coverage.md`
 - 设备自带库清单（nanovg/libpng/freetype… 免编译借用）：`devflow/device-preinstalled-libs.md`
 
-## §缺失（本文明确标注不知道的部分）
-
-| 缺口 | 影响 | 补法 |
-|---|---|---|
-| **E1/E2/E3 的帧耗实测全缺** | 无法判断"这条效果会不会卡" | 需性能采集工具（建议 `flythings_perf_probe`）出「面积 × 写法 → 帧耗时」表 |
-| **canvas 全屏 60fps 是否可达** | 决定 E3 能否承载全屏动画 | 同上，先量再答 |
-| **画布 API 的真实上限**（最大画布尺寸 / 任意 scale 的行为） | 现只有"工程侧约束"被误记为画布限制的先例 | 补一次基准实测：最大画布宽高、任意 scale 的绘制结果与代价 |
-| **本工程 8 款画布游戏 + 4 款节奏游戏的实操未入库** | 这是 E3 最厚的经验 | 出 `devflow/canvas-authoring.md` |
-| **E1/E2 在 V85X / Z20 是否同样可用** | 现只有 F136/F133 实证 | 各平台跑一次库内测试 Activity |
-| **E6 接入口是否存在** | 决定"借 LVGL"是官方路线还是绕路 | 需厂家确认 |
-| **多指触摸的适用范围** | 只有 ImageBoxView 有实证 | 按控件逐个登记 |

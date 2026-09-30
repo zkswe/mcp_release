@@ -16,16 +16,6 @@ evidence: []
 # 页面架构规范：ftu vs 同 ftu 内多窗口 + src 业务域目录命名
 
 > 检索导引：问「一个工程几个 ftu/Activity / 二级页·弹窗放同一 ftu 还是新页 / merge_windows 什么时候用 / showWnd 多窗口 / src 目录与文件怎么命名 / 多屏设计稿要落地几页」→ 本文（默认一屏一 Activity 一 json）；原型分页流程见 `devflow/prototype-flow.md`。
-> 2026-09-13 沛哥定规（确认「跨业务域/独立生命周期 → 独立 ftu；同一 Activity 内的页签/弹窗/二级页 → 同 ftu 内整屏 window」判断正确后入库）。
-> 2026-09-21 钟工修正补充：**多屏设计稿的 N 屏必须全部落地**（旧口径易被误读成「只做一个页面」），
-> 并与 `ui_tools/html2json.py` 的返回字段（`screensDetected`/`pagesProduced`）对齐；
-> html2json 内 FT-006 告警文案已同步改为与本文件一致（两处口径互为引用，禁止再漂移）。
-> **2026-09-21 钟工再修正（v0.27.100，本条优先）：默认口径反转** —— 钟工原话「不是的，按照客户的设计需求，
-> 其实目前已经可以准确的做好了不同的 html 页面分页了。哪些属于不同的 activity 哪些属于 windows，dialog
-> 其实前期 AI 可以分清楚。分清楚的情况下不同的 activity 做好不同的 json 布局就好了」。
-> 即：**一个 `.screen` = 一个页面 = 一个 Activity = 一个 json/ftu 是常态（html2json 缺省，不带参数）**；
-> 「同 ftu 内多个整屏 window」不再默认，只有**同属一个 Activity** 时才用 `merge_windows=true` 合成；
-> 归属由 **AI 在 HTML 原型阶段逐屏判定**（不同 Activity -> 各自 json/ftu；同屏内 window/dialog -> 同一 json 内）。
 > 检索词：页面架构/ftu 划分/多窗口/showWnd/整屏 window/二级页/弹窗/目录命名/业务域/src 目录/network media/.cpp .h/单 Activity/多 Activity/一个工程几个 Activity/一个工程几个 ftu/多个页面怎么放/页面放一个 ftu 还是多个。
 
 ## 0. 一句话口径

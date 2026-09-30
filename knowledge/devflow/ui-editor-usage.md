@@ -16,7 +16,6 @@ evidence: []
 # UI 可视化编辑器（ui_editor）用法与能力
 
 > ⚠️ v0.27.37 起 ui-visual 组已收口为一个入口：`flythings_ui_visual(action="editor" | "edit_apply" | "diff")`
-> （旧名 `flythings_ui_editor` / `flythings_ui_edit_apply` / `flythings_ui_diff` 不再提供，调到会回 OP_RENAMED + 对应 action）。
 
 > 检索导引：让用户自己拖控件 / 可视化改布局 / 拖完怎么回到 json / Alt 点穿透选中 / 属性栏字段 /
 > 显示隐藏控件 / 预检红黄标 时命中。用途：`flythings_ui_visual(action="editor")` 的完整口径。

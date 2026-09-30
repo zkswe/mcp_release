@@ -17,7 +17,6 @@ evidence: []
 
 > 检索导引：问「换字体 / 换字库 / ttf 放哪 / package.properties 的 enable.font.location / 多字体哪个当默认 / setFontFamily / 设备缺中文 / 照设计稿要换字体」→ 本文（fun 流程权威口径）；屏幕方向等 cfg 机制见 `devflow/package-properties-easyui-cfg.md`。
 > 2026-09-03 沛哥定规。**fun 流程换字库以本条为准**；font_setting.md 是 IDE 视角，AI 引导用户时禁止先去翻 IDE 项目属性那套。
-> ⚠️ 修正记录：v0.13.0 曾按 KlipperF133 案例写入"改 .prefs 的 font 字段"方案——那是 IDE 工程视角，**fun 流程不适用、不需要**，以本条为准。
 
 ## ✅ 标准流程（用户说"换字库/换字体"直接照做，禁止绕道 IDE 属性）
 
@@ -46,7 +45,6 @@ evidence: []
 - 多字体没按预期默认 → ASCII 排序理解错（排最前的是默认）；个别控件要显式 `setFontFamily`
 - `setFontFamily` 参数写 "xxx.ttf" → 错，**只要文件名、不含 .ttf 后缀**
 - 字库要带 emoji/特殊符号 → 做不到（裁剪字库），图标转 PNG、文本只用基础符号
-- 把 IDE 那套（.prefs font 字段）用到 fun 流程项目 → 方向错误，fun 项目看 font/ + enable.font.location
 
 ## 设备字库自检 && 思源黑体三版（2026-09-13 新增，真机实测）
 
@@ -58,7 +56,6 @@ evidence: []
 - **项目 `font/` 里的字体会被工具链自动写进 `EasyUI.cfg` 的 `font` 键**（`fun launch` 与 `fun pack` 都做：
   `internal/launch/launcher.go` / `internal/packaging/packaging.go` 里 `cfg.Font = join(项目 font/*.ttf → /res/font/...)`）。
   → **不要为“让字体生效”去手改 `.settings/com.zksw.flythings.easyui.prefs` 的 `font` 键**（多余；实测去掉后照样正常）。
-  （注：本文件之前引用的 v0.13.0“改 .prefs font 字段”已在本条里显式排除；那份是 IDE 视角。）
 - `package.properties: enable.font.location=true` = 启用工程内字库（配合多字体 `setFontFamily`）；单字体时就是全局默认字体。
 - 本机实测：app 工程放 `font/font.ttf` + `enable.font.location=true`，固化后 `/res/etc/EasyUI.cfg` 自动出现
   `"font": "/res/font/font.ttf"`，汉字正常显示 → **这就是 fun 流程的标准姿势**。

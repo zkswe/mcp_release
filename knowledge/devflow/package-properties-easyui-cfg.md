@@ -15,7 +15,7 @@ evidence: []
 ---
 # ⚙️ package.properties / EasyUI.cfg 工程配置机制（屏幕旋转等）
 
-> 检索导引：问「EasyUI.cfg 怎么写 / package.properties 覆盖了哪份 cfg / rotateScreen 配在哪 / 推上去没效果（extsd 卡里的旧 cfg 劫持）/ 字体资源怎么真进 /res / 卡在开机 logo」→ 本文。
+> 检索导引：问「EasyUI.cfg 怎么写 / package.properties 覆盖了哪份 cfg / rotateScreen 配在哪 / 推上去没效果（extsd 卡里的旧 cfg 劫持）/ 字体资源怎么真进 /res」→ 本文。
 > 2026-09-03 沛哥讲解机制（定规）+ mark_cv201 实测校准（CV201_PND rotateScreen 270 / CV201_PND_1024_600 不转，同代码双屏方向适配案例）。
 
 ## 核心机制（沛哥 2026-09-03 定规）
@@ -146,23 +146,6 @@ EasyUI.cfg={"font":"/res/ui/fzcircle.ttf"}
 
 - 参考实现：`gitcom/AppGroup/PublicTuyaSwitch`（字体 + 各页面图都在 `resources/`），
   正常在跑的 Z20 板上 `/res/etc/EasyUI.cfg` 确实带 `"font":"/res/ui/fzcircle.ttf"`。【实测】
-
-## ⚠️ 伴生问题：不设 `sys.zkapp.state` 会卡开机 logo
-
-- Z20/这类带 `zkdisplay` 的板子：**应用启动后必须在 `onUI_init()` 里设 `sys.zkapp.state="running"`**，
-  否则显示层不把画面切给应用，屏幕永远停在开机 logo（adb 通、`/res` 是新包，但 `fb0` 是空的）。
-- 代码（`src/logic/mainLogic.cc`）：
-
-```cpp
-#include "os/SystemProperties.h"
-static void onUI_init(){
-	SystemProperties::setString("sys.zkapp.state", "running");
-}
-```
-
-- 另一个前提：**工程别用 `fun create` 的 fv 骨架（无 `Manifest.xml`）**，否则第一个界面不创建、钩子不跑，
-  属性永远为空 → 照样卡 logo。用带 `Manifest.xml` 的模板风工程（`flythings_create_project`）。
-  完整台账与排查手法 → `knowledge/hardware/z20-86panel-upgrade.md` §12。
 
 ## 相关
 

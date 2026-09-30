@@ -260,11 +260,7 @@ typedef struct {                       // 解码回调给的帧
 | `/tmp` 遮蔽 `/res` | ✅ 实测：把同名库推到 `/tmp` 后 dlopen **真的命中 `/tmp/libawh264player.so`**（`/tmp` 在 `LD_LIBRARY_PATH` 最前） |
 | ⚠️ **别被 "/res 已有这个库" 误导** | 实测某板 `/res/lib/libawh264player.so` = **21624 B**，而官方包那份是 **17528 B** ⇒ 它是**参考工程 `lib-no-link/` 里那份**固化上去的，**不是官方包的 build**。⇒ 判"固化生效了没"要**比体积/sha256**，不能只看"ls 有文件" |
 
-**⚠️ 关于“重启”与“看早了”的纠正（2026-09-14 受控实测）**：
-1. **`ctl.restart zkswe` 只重启应用，不重启系统** —— 单跑它（不带任何升级属性）实测：app pid 变化（719→887）、`/proc/uptime` **连续**（249.89 → 270.10，未归零）、`/tmp` 原样保留（标记文件读回正常）。**别把“设备重启”归因于它。**
-2. 带升级属性时设备确实会重启（adbd 断、`/tmp` 被清空），那是**升级流程发起的**（`/lib/libzkupgrade.so` 里有 `android_reboot`）；升级是**重启后**才应用的 ⇒ **要等够再查**，看早了看到的还是旧 `/res`。
-3. ⚠️ **未做单变量 A/B**：生效那轮用的是 `dir + flag(255) + force(1)`，**`force` / `flag` 的必需性未分离验证**（如实标注，别当结论）。
-4. **`/tmp` 是 tmpfs，重启即清空** ⇒ push 镜像、setprop、restart 必须在**同一轮**做完；过后别拿“/tmp 里没文件了”当失败依据。
+- **`/tmp` 是 tmpfs，重启即清空** ⇒ push 镜像、setprop、restart 必须在**同一轮**做完；过后别拿“/tmp 里没文件了”当失败依据。
 
 ---
 
@@ -287,7 +283,7 @@ typedef struct {                       // 解码回调给的帧
 3. **码流**：喂进去的数据里**已有 SPS/PPS/IDR** 吗？缺了就一直在等（工具见 §10）。
 4. **协议**：喂的是 **Annex-B** 吗？（TS 要去掉 PES 头；mp4 要 `h264_mp4toannexb`）
 5. **显示**：UI 层有 `visible:true` 的 videoView 透明窗口吗？（§8）
-6. **最后才怀疑参数组合**：`rot` 放 init 里还是 `set_rot` —— 实测**都可用**（§11）。
+6. **最后才怀疑参数组合**：`rot` 放 init 里还是 `set_rot` —— 实测**都可用**。
 
 > 排障手段：把 **stderr 从 `/dev/null` 引出来**（或写文件）才有机会看到库内报错；
 > 起播前后各 `cat /proc/meminfo`；打日志时**必须打印实际传进去的参数**
@@ -308,19 +304,6 @@ typedef struct {                       // 解码回调给的帧
   /bin/logcat -d | grep -E "解码回调|h264_player_init|zk_h264_player_init"  # ② 回调在涨 = 真出画
   grep -E "awh264player|eyesee-mpp" /proc/<pid>/maps                  # ③ 库加载与路径（/res 还是 /tmp）
   ```
-
----
-
-## 11. 参数组合的实测结论（省得你再 A/B 一遍）
-
-| 组合 | 实测 |
-|---|---|
-| `init(rot=0)` → `show()` → `set_rot(90)` → `set_crop` | ✅ 720p+1/2，36 秒 / 900 帧 / 0 重启 / 丢 0 |
-| `init(rot=90)`（不再 `set_rot`） | ✅ 同样 36 秒 / 900 帧 / 0 重启 |
-| 720p + `SCALE_DOWN_2` + 90° | ✅（VBV 设好、内存充足的前提下） |
-| 960x540 不缩放 + 90° | ✅ |
-
-⇒ **旋转放哪都行**，不是崩因；但 **`set_rot` 之后必须重发 `set_crop`**。
 
 ---
 
@@ -347,17 +330,3 @@ typedef struct {                       // 解码回调给的帧
 3. 固化后 `/res/lib/libawh264player.so` 的自动加载：✅ **已真机验收**（打包侧 + 刷机侧全通，见 §7.1）。
 4. 各平台（f133/f136/t113）的 `awh264player` 包：**仅查到版本号**，未实测。
 
-## 14. 变更记录
-
-- 2026-09-14 首次入库：路线 A/B 分野（含“包里没有 `zk_*`”的现场证据）、**V85X 上包不能直接上链接行的两次实测失败与 dlopen 结论**、
-  `fun.json` 优先导致的**静默不装**、`lib-no-link` 部署矩阵与 `/data`、`/tmp` 遮蔽实测、`ZKMEDIA_H264_VBVSIZE`、内存门槛、
-  `get_picture_count` 语义、起播排查顺序、参数组合 A/B、未验证项；附 demo `demos/h264-player-v85x/`。
-- 2026-09-14 补：**固化链路实测（§7.1）**——`/res` = `mtdblock3` 只读 squashfs（只能刷 update.img 更新）；
-  `fun pack` 中间产物 `.fun/<平台>/imgout/lib/` 含 `lib-no-link/*.so`；bin 工程不能 pack；
-  “/res 已有同名库（21624）≠ 官方包那份（17528）”的体积判据；`/tmp` 遮蔽 `/res` 的真机实证。
-- 2026-09-14 三补：**ADB 固化全流程真机跑通**（push → `sys.zkupgrade.dir/flag` → **`ctl.restart zkswe`** → 等整机重启）；
-  刷后 `/res` 整体替换已逐项核对（库体积 21624→17528、libzkgui、`/res/ui` 只剩新工程页、标记库到位），
-  且 **dlopen 实际命中 `/res/lib`** + 解码回调 21 次 ⇒ **固化后的运行时可见性与功能均已验收**。
-- 2026-09-14 四补（**纠正自己的错误结论**）：把 §7.1 “`ctl.restart zkswe` 会连带整机重启”改成实测口径——
-  受控单跑实测它**只重启应用**（app pid 变、`/proc/uptime` 连续、`/tmp` 不清）；带升级属性时的系统重启是**升级流程**发起的（`android_reboot`）；
-  并标注 `force`/`flag` 必需性**未做单变量 A/B**。

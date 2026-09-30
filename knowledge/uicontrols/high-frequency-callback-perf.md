@@ -150,7 +150,7 @@ static void onProgressChanged_SeekBase(ZKSeekBar *p, int progress) {
 
 ## 相关
 
-- 触摸/遮挡/禁用语义 → `touch-events.md`（§6 `setInvalid` 是禁用、§7 嵌套 window 抢触摸）
+- 触摸/遮挡/禁用语义 → `custom-view-refresh.md`（`setInvalid` 是禁用）、`touch-events.md` §7（嵌套 window 抢触摸）
 - 滑动字段手感（dragMaxDis / edgeEffect） → `scroll-drag-interaction-spec.md`
 - 列表刷新与选中（`setSelection` 后必须 `refreshListView`） → `listview-fields.md`
 - 跨线程刷 UI → `cross-thread-ui-rule.md`

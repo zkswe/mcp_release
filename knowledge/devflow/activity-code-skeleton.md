@@ -111,6 +111,3 @@ logic 钩子：onUI_init / onUI_show(≈onResume) / onUI_hide(≈onPause) / onUI
 | GPIO | `GpioHelper::input("B_02")/output("B_02",1)`（引脚名平台不同，返回 -1 失败；边沿中断 registerGpioListener 头文件有 demo 未用；模组需启用 GPIO 固件） | GpioDemo |
 | 页面跳转 | `EASYUICONTEXT->openActivity("subActivity")/goHome()/goBack()` | 全系 |
 | 资源路径 | `CONFIGMANAGER->getResFilePath("pic/x.png")`（相对资源根） | listViewDemo |
-
-## 10. 深读原始笔记
-35 Demo 逐源码精读笔记（控件代码用法/坑/事件语义）已归档：`workspace/references/demo-read-2026-09-08/group{A,B,C,D,E}.md`（按 显示/容器/图形/媒体系统/IO网络 五组，证据均引源码原文）。

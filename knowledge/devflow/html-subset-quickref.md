@@ -58,10 +58,6 @@ evidence: []
 - **定位**：`data-x` / `data-y` / `data-w` / `data-h`（或 `data-left/top/width/height`、`style` left/top/width/height）
 - **字号**：`data-fs` / `data-font-size` / `data-fontSize` / 内联 `style="font-size:NNpx"` 都认
 - **颜色**：`data-color` 文字色；`data-bg` 或 `data-background` 背景色（textview/button/edittext 均支持背景）
-  - ✅ **纯黑 `#000000` 已修**（A2，2026-09-27）：转换器改成按「属性是否出现」判定未设置，
-    `data-color` / `data-color2` / `data-bg` / `data-bg2` / `data-text-bg` / `data-hint-color`
-    共 16 处不再走 `to_dec(...) or 默认值`。**老工程里「纯黑写 `#010101`」的绕过写法继续有效**（
-    `#010101` 也是纯黑），不必回改。
 - **初始隐藏**：`data-visible="false"`（A5，2026-09-27 新增）—— 控件 / 容器（window、listview 与 subItem）
   都直通 json 的 `visible`；缺省不写 = 保持各类型默认（普通 window 默认可见、modal 默认隐藏）。
   （旧版不认该属性 → 只能运行时代码 patch，且控件名要在生成器与 patch 两处同步，漏一处即静默失败。）
@@ -139,15 +135,6 @@ evidence: []
     正常落成该节点的 `backgroundPic`（与 button / window / seekbar / circlebar 等分支同口径：
     裸文件名补 `images/` 前缀，相对 resources 目录；有图就**不再写背景色**，与 button 的
     「图片按钮不放底色」同规则，避免透明角图透出底色）。
-    - **历史**（v0.27.90 之前）：textview 分支**不读**这个属性 → JSON 里那节点**没有 `backgroundPic`**
-      （同一份 JSON 里 seekbar 的 textview 却有，极易看成「怎么别人就好」），现象是「卡片/底图
-      压根没画出来」（案例：弹窗打开、变暗也对，就是**看不到白卡**）；当时靠 `patch_json` 反查
-      HTML 按 caption 回填。
-    - **旧工程可照旧保留 `patch_json` 兜底** —— 现在它是**幂等**的（转换器已写出同样的值，兜底
-      覆写同值 / 只补缺的，重跑不产生差异）；不必为了这条专门改老工程。
-    - 实测口径（TDesign 迁移案例双平台）：HTML 里 `class="text"` + `data-bgpic` 共 87 个节点，
-      旧转换器直接落地 0/87（全靠兜底），新转换器 87/87，两条路径的 `caption→backgroundPic`
-      **语义等价（110 条全等）**。
   - 注：`data-bg` / `data-background` 是**背景色**，不是图；要图不能用它们替代。
 
 ## 5. 图标优先（沛哥 2026-09-03 定规，生成 UI 时必守）

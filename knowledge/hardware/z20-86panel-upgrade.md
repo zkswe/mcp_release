@@ -22,7 +22,7 @@ evidence: []
 > mmcblk0p1 / mmcblk0p2 / sdnand / res 分区 / ext4 数据面 / Ext4Utils / 机型 magic / 固化包绑定机型
 >
 > 取证时间：2026-09-23（真机 `<设备IP>:5555`，`Zkswe_SSD20X_SPINOR` + `RGB_LCD480480` 480×480，
-> 即 **SW48480040D1 = Z20 版 4 寸 86 盒智能面板**）。方法：只读侦察 + 出包 A/B + 一次真机触发（见 §8）。
+> 即 **SW48480040D1 = Z20 版 4 寸 86 盒智能面板**）。方法：只读侦察 + 出包 A/B + 一次真机触发。
 > **每个结论都标了证据等级**：`【实测】`真机/产物实证 · `【反汇编】`设备端库静态解析 · `【工程】`参考工程源码 ·
 > `【未证实】`推断，不得当结论用。
 
@@ -189,14 +189,6 @@ mtd3 "res" (0x720000) /res squashfs ro,noatime,nodiratime            ← 系统�
 ```
 - 另有 `Mtd` / `Mmc` 两个 DevBase 实现（`/dev/mtd/%s`、`/dev/block/platform/soc@3000000/by-name/%s`），
   即升级库**既会写 mtd 也会写 eMMC 块设备**。
-- ⚠️ **写入目标分区的判定（强推断，两条独立证据，尚未直接取证）**：
-  ① 表形状只有 3 种：纯-NOR（用 mtd 名 `res`/`backup`）、纯 eMMC（全 `/dev/block/mmcblk0*`）、
-  **NOR + SD NAND 混合**（boot/uboot/misc/config 用 mtd 名，**res → `/dev/block/mmcblk0p1` + `mmcblk0p2`**）；
-  Z20 86 面板的硬件就是「16M Flash + 128M SD Nand」→ 属第三种。
-  ② 真机旁证：`/mnt/extsd` = `mmcblk0p1`，**分区有 52.5 MB，但它的 ext4 文件系统只有 2.74 MB**
-  （`df`：`2804` 个 1K 块）——典型的「**小 ext4 镜像写进大分区**」形态，说明 p1 曾被某个固化包整体写过；
-  而它里面的东西（`EasyUI.cfg` + `lib/libzkgui.so` + `ui/`）正是 res 那棵树。
-  → 工程上按「**Z20 86 面板固化写入面 = mmcblk0p1（+p2 作为第二目标）**」理解；正式口径等真机复测回填。
 
 ---
 
@@ -212,52 +204,6 @@ mtd3 "res" (0x720000) /res squashfs ro,noatime,nodiratime            ← 系统�
 | 6 | 升级窗口里网络/串口日志断 | 升级库会 stop `zkswe`/`wpa_supplicant`/`bt`…（§1） | 别把「升级期间没网」当故障 |
 | 7 | 只放 `boot_logo.JPG` 想只换 logo | 升级项是**逐项勾选**的（`zk_upgrade_get_items` / `checkUpgradeFile`）；`MISC` = 本板 mtd5 = 256 KB | logo 分辨率/体积按 MISC 上限卡（见 `upgrade-pack-image.md` §三） |
 | 8 | `/tmp` 里放了包，重启后"包没了" | `/tmp` 是 tmpfs；`sys.zkupgrade.*` 属性也**不持久** | ADB 路线要**一次做完**（push → 三属性 → 重启 app），别中途 `reboot` |
-
----
-
-## 8. 本次真机验证记录（含失败/未完成项，照实记）
-
-环境：`<设备IP>:5555`，`Zkswe_SSD20X_SPINOR`，480×480，`sys.zkupgrade.force=1`，
-`sys.zkapp.state=running`，`/data/.zkugraderec` **不存在**（本板此前没升级过）。
-
-物料：自出 Z20 480×480 测试工程（`fun create -n Z20UpgTest --platform=z20` → `fun build -p z20` →
-`fun pack -p z20 --release-version 1.0.2`）= `extupdate.img` 2,097,724 B（`release.ext4=true`）。
-
-安全前置（**已做**）：`/res` 全量 pull（3 文件/39,049 B）+ 数据面 11 文件/8.84 MB pull +
-`/proc/mtd`、`/proc/mounts`、`df`、`getprop`、ps 快照 + **分区 md5 基线**：
-
-```
-mtdblock2(rootfs) 41a120944a3fe5c3a2741422b65f4ea5
-mtdblock3(res)    c5f155147247cf2767826cf5882e0285
-mtdblock5(LOGO)   62e3692151ab1ee2e89658e06cde89ee
-mtdblock6(data)   82d268c38ff046b71f2fdd136d92cd77
-mmcblk0p1(extsd)  0619375594673fbe2b83583b95e51e31
-mmcblk0p2(sdnand) 9a3aa19383996abdf69ae3e1cf3080bd
-```
-
-动作（17:40:19，只做了一步就停了）：`push /tmp/update.img` + `/tmp/zkautoupgrade`(`2`) +
-`/tmp/zkrebootdelay`(`-1`) → `setprop sys.zkupgrade.dir /tmp` + `flag 255`（回读 OK）→
-`setprop ctl.restart zkswe`。
-
-结果：**~40 s 后设备掉 adb，随后 ping 不通，25 分钟未回**（同网段其它板 `<同网段其它板卡>` 仍在，
-型号/内容都不是本板）→ 触发动作**已执行**，但「是否进入升级流程、写到哪个分区」**本次未取到证**（板卡失联）。
-
-> 结论边界：本次**没有**拿到「升级成功/耗时/写入面/去重」的真机证据；§3/§4/§6 的包与分区结论来自
-> **出包 A/B + 设备端库静态解析**，不依赖这次触发。**未做完的部分**见 §9，**救援路径**见 §10。
-
----
-
-## 9. 未证实 / 待真机回填
-
-| 项 | 状态 |
-|---|---|
-| 三属性触发的**实际行为**（是否进升级界面 / 是否直接写盘 / 耗时） | **未取到证**（板卡失联，见 §8） |
-| `Zkswe_SSD20X_SPINOR` 的 res 目标：`mmcblk0p1(+p2)` 还是 mtd `res`(+`backup`) | **强推断 = `mmcblk0p1(+p2)`**（表形状 + p1 只有 2.74 MB 文件系统两条证据，见 §6）；**但未直接取证**（触发后板卡失联） |
-| 升级是否**同时写 p1 与 p2**（数据面会被一起替换？） | **未证实**（若成立，p2 上的数据需自行备份回灌） |
-| `release.ext4.size` 是否生效 | **未证实**（`fun.exe` 只有 `release.ext4` 字面量） |
-| `release.ext4=false`（或不写）在**本板**的真机后果 | **未做真机对照**（Z20 参考工程开着它 → 本板大概率必须开） |
-| 去重记录 `/data/.zkugraderec` 的**内容格式/同版本行为** | **未证实**（本板该文件不存在） |
-| 本板 `MISC`/LOGO 分区（mtd5 = 0x20000 = **128 KB**）能否放 logo | 未量过实际可用上限（换 logo 前先 `cat /proc/mtd` 对表） |
 
 ---
 
