@@ -1,6 +1,9 @@
 # album_upload —— 相册传图（手机 → 面板）业务接线层 `zk::album`
 
 > 版本 **0.1.0**（2026-09-30 入库）· 类型：**源码型**（`include/ + src/ + assets/ + scripts/ + example/`）
+> ✅ **真机状态（2026-09-30）**：组件形态已在 **Z20 / <验收机IP>:5555 的 zkgui 工程**（`temp/verify71/album_zkgui`，480×480，qrcode 控件）上逐条取证 ——
+> 二维码上屏 + 截图解码 == `qrInfo()` 内容、TCP 9000 在听 + UDP 8899 广播被 PC 收到、PC 发图落盘 + `onFileAdded` 回调 + 计数刷新；
+> 四条判据、原始证据与还原复核见 `platforms.md` §1.6。**「手机微信扫码」那一环仍未取证**（等价判据已过）。
 > 一句话：**面板上出二维码 → 手机微信扫 → 同局域网把照片/视频传进面板 → 落盘 → 通知业务**，
 > 这一整套**业务口径**收成一个 API 面；**传输本体不在这里**（`components/mp_transfer/`，本组件引用它）。
 > 来源工程：`projects/SmartPanel_HA` 的「相册上传」子页（album.ftu / albumLogic.cc / albumfileLogic.cc）。
@@ -134,8 +137,8 @@ UI（`loadQRCode`）只能在 UI 线程，靠你的定时器消费标志。
 |---|---|---|
 | 组件本体（`src/zk_album.cpp` + `example/album_upload_example.cc`） | PC 侧语法自检：`-std=c++11 -fsyntax-only -Wall -Wextra`（用桩头模拟 mp_transfer 接口） | ✅ **通过（0 warning）** |
 | 解链接脚本（`scripts/decode_qr_url.py`） | 在码图上解出链接；`--expect` 核对通过；`--write` 产物与 `assets/qr_url.txt` **逐字节一致**（375 B） | ✅ **通过**（离线工具，运行时不依赖图片） |
-| 工程侧接线（`example/flythings_wiring.cc`） | 工程 `fun build` 通过 + 真机扫码 | ⚠️ **未在目标工程重放**（样板来自来源工程实跑代码，见 `platforms.md`） |
-| 真机（微信扫码传图端到端） | 手机扫面板码 → 小程序 → 传图 → 落盘 → 回调 | ⚠️ **本仓无逐条取证**（来源工程口径见 `platforms.md` §0/§1） |
+| 工程侧接线（`example/flythings_wiring.cc`） | 工程 `fun build` 通过 + 真机跑通 | ✅ **2026-09-30 已按本样板在 zkgui 工程重放并在 Z20 真机跑通**（二维码上屏/截图解码/9000 监听/发图落盘 + 回调 + 计数刷新，见 `platforms.md` §1.6）；原样板本身来自来源工程实跑代码 |
+| 真机（扫码传图端到端） | 扫码 → 传图 → 落盘 → 回调 | 🟡 **部分取证（2026-09-30）**：协议等价 PC 客户端发图 → 设备落盘（md5 一致、无 `.tmp`）+ `logcat -s zkgui` 出现 `album: onFileAdded …` + 页面计数刷新（`platforms.md` §1.6 判据 d）；**手机微信扫码那一环仍未取证**（无手机/小程序权限） |
 
 ## 8. 移植注意
 

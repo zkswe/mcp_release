@@ -2,7 +2,9 @@
 
 > ⚠️ **验证状态**：组件本体（`../src/zk_album.cpp`）判据 = PC 侧语法自检（0 warning，见 `../README.md` §7）；
 > `flythings_wiring.cc` 是**接线形状**（要工程里的 easyui 头 + 生成代码，不能单独编）；
-> **真机端到端（微信扫码传图）本仓无逐条取证** —— 详见 `../platforms.md` §0/§1.5。
+> ✅ **真机状态（2026-09-30）**：本文件这套接线已在 **Z20（<验收机IP>:5555）的 zkgui 工程**上重放并逐条取证
+> （二维码上屏 + 截图解码、TCP 9000 在听 + UDP 广播被 PC 收到、发图落盘 + `onFileAdded` 回调 + 计数刷新）
+> —— 详见 `../platforms.md` §1.6；**仅「手机微信真扫」未取证**。
 
 | 文件 | 作用 |
 |---|---|
@@ -49,7 +51,7 @@ fun build -p <平台>
 | 层 | 命令/做法 | 期望 |
 |---|---|---|
 | ① PC（不接设备） | 组件：`g++ -std=c++11 -fsyntax-only -Wall -Wextra -Iinclude -I<桩头>` `src/zk_album.cpp example/album_upload_example.cc`；链路：`components/mp_transfer/src/python/receiver.py` | 0 warning；PC 收端文件长度一致、逐块 `ACK`、末块 `OK` |
-| ② 设备（不上屏） | `fun build -p <平台>` + 推设备 + 看日志 | 「广播 UDP 8899 + 监听 TCP 9000，期望落盘 …」；小程序能发现设备名 |
-| ③ 端到端 | 面板上屏二维码 → 手机微信扫码 → 选图传 | 文件出现在 `save_dir`（大小 == 协议声明、无 `.tmp` 残留）；`onFileAdded` 触发；页面计数刷新 |
+| ② 设备（不上屏） | `fun build -p <平台>` + 推设备 + 看日志 | 「广播 UDP 8899 + 监听 TCP 9000，期望落盘 …」；小程序能发现设备名（✅ 2026-09-30 组件形态实跑：`platforms.md` §1.6 判据 c） |
+| ③ 端到端 | 面板上屏二维码 → 手机微信扫码 → 选图传 | 文件出现在 `save_dir`（大小 == 协议声明、无 `.tmp` 残留）；`onFileAdded` 触发；页面计数刷新（🟡 2026-09-30 已用协议等价 PC 客户端代跑通过，见 `platforms.md` §1.6 判据 d；手机微信那一环未取证） |
 
 （②③ 的验收口径与"未取证清单"见 `../platforms.md` §5/§6。）
