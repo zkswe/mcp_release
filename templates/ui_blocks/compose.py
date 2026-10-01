@@ -15,6 +15,8 @@
   · dragMaxDis = 越界拖拽上限（不是行程） → knowledge/uicontrols/scroll-drag-interaction-spec.md
   · 切图「图 == 盒」+ 抗锯齿/倒角口径 → knowledge/devflow/ui-asset-rules.md
   · 设计令牌/相对尺度 → projects/UISpec-Demo/docs/SPEC-CHECK.md §7/§8 + blocks/_tokens.json
+  · caption 全页唯一（块序号**全页全局递增** + 块类型前缀；同名 caption ⇒ onButtonClick_ 重定义 ⇒
+    C++ 编译失败）→ 见本文件 BLOCK_PREFIX / assert_caption_unique（修前按卡内序号分配 = 跨卡重名）
 
 用法：
   python templates/ui_blocks/compose.py spec.json --project <项目根> [--page main] [--render] [--check]
@@ -36,6 +38,67 @@ sys.path.insert(0, UI_TOOLS)
 import gen_res                                                 # noqa: E402  唯一出图实现
 
 sys.stdout.reconfigure(encoding='utf-8')
+
+# ─────────────────────── caption 命名口径（全页唯一，2026-10-01 修正）───────────────────────
+# 缺陷（修前）：块名按「卡内序号」分配（每张卡从 1 重数）→ 跨卡重名；caption 前缀又不区分块类型
+#   ⇒ 同页出现 ButtonRowSettingRow1 / ImageRowSettingRow1Chevron / TextRowSettingRow1Label /
+#     TextRowSettingRow1Value / RowSep1 等重名 caption
+#   ⇒ 生成的 src/logic/<page>Logic.cc 里 onButtonClick_ButtonRowSettingRow1 **定义两次**（C++ 重定义，
+#     编译必失败；check_all #5 只查「回调是否存在」不查唯一，所以一路 PASS）。
+# 口径（修后）：
+#   · 块序号 = **全页全局递增**（1,2,3…，跨卡不重置；卡内行接着本卡的序号往下数）
+#   · 块名   = <块类型前缀><序号>（setting_row→SettingRow4 / icon_row→IconRow5 /
+#              toggle_row→ToggleRow6 / device_card→DeviceCard7 / card→Card2 / …）
+#   · 行族子控件 = <角色><块名>（ImageRowSettingRow4 / ImageRowSettingRow4Chevron /
+#              TextRowSettingRow4Label / TextRowSettingRow4Value / ButtonRowSettingRow4）
+#   · 分隔线     = RowSep<上一行块的序号>（RowSep4）
+#   · 容器/页面级子控件 = <角色><该块序号>（Card2 / CardBg2 / SectionHeader2 / EmptyStateBg3 /
+#              ButtonPrimary9 / DialogWindow13 …）
+#   · compose 出产物前 `assert_caption_unique`：任何重名 → 报错退出（不许静默出产物）
+BLOCK_PREFIX = {
+    'page_title': 'Title',
+    'section_header': 'SectionHeader',
+    'card': 'Card',
+    'setting_row': 'SettingRow',
+    'icon_row': 'IconRow',
+    'toggle_row': 'ToggleRow',
+    'device_card': 'DeviceCard',
+    'empty_state': 'EmptyState',
+    'bottom_actions': 'Action',
+    'dialog': 'Dialog',
+}
+
+
+def duplicate_captions(doc):
+    """doc 内 caption 重名清单 {caption: [控件 key, ...]}（只返回重复项；空 caption 不计）。"""
+    seen = defaultdict(list)
+
+    def walk(o):
+        for k, v in o.items():
+            if isinstance(v, dict) and '__' in k:
+                cap = v.get('caption')
+                if cap:
+                    seen[cap].append(k)
+                walk(v)
+    walk(doc)
+    return {c: keys for c, keys in seen.items() if len(keys) > 1}
+
+
+def assert_caption_unique(doc, page_name=''):
+    """自检：任一 caption 重名 → 报错退出。
+
+    重名的直接后果：src/logic/<page>Logic.cc 会生成两份 onButtonClick_<caption> → C++ 重定义报错；
+    业务代码按 caption 取控件（m<caption>Ptr / getControl）也会取到错的那个。
+    """
+    dups = duplicate_captions(doc)
+    if not dups:
+        return
+    lines = ['[X] caption 重名 %d 个（页面 %s）：重名 ⇒ onButtonClick_<caption> 重定义 ⇒ C++ 编译必失败'
+             % (len(dups), page_name)]
+    for cap, keys in sorted(dups.items()):
+        lines.append('    - %s 出现 %d 次：%s' % (cap, len(keys), ', '.join(keys)))
+    raise SystemExit('\n'.join(lines))
+
 
 # ─────────────────────────── 基础工具 ───────────────────────────
 
@@ -279,6 +342,7 @@ class Composer(object):
         self.W, self.H = int(res['width']), int(res['height'])
         self.m = build_metrics(self.W, self.H, self.tok)
         self.blocks = self._load_blocks()
+        self._seq = 0             # 全页全局块序号（caption 唯一性来源；跨卡不重置）
         self.assets = {}          # 文件名 → ('shape'|'glyph', 参数)
         self.notes = []           # 自检提示（不进 json）
         self.root = []            # 根层节点（定义顺序 = z 顺序）
@@ -344,6 +408,26 @@ class Composer(object):
             made.append(name)
         return made
 
+    # ---- 命名（caption 唯一性：全页全局序号 + 块类型前缀）----
+    def next_seq(self):
+        """全页全局块序号（跨卡不重置）——caption 唯一性的唯一来源。"""
+        self._seq += 1
+        return self._seq
+
+    def name_block(self, blk):
+        """给一个块分配 _seq / _name（行族与页面级块同一口径；显式 name 优先）。"""
+        blk['_seq'] = self.next_seq()
+        blk['_name'] = blk.get('name') or \
+            (BLOCK_PREFIX.get(blk.get('type'), 'Block') + str(blk['_seq']))
+        return blk
+
+    def name_tree(self, blocks):
+        """按「页顺序」给块树命名：卡 → 卡内行（行接着本卡的序号往下数，不再按卡内下标重数）。"""
+        for b in blocks or []:
+            self.name_block(b)
+            if b.get('type') == 'card':
+                self.name_tree(b.get('blocks'))
+
     # ---- 坐标换算 ----
     def xy(self, x, y):
         """内容空间绝对坐标 → 当前父容器坐标。"""
@@ -390,12 +474,16 @@ class Composer(object):
             n.payload['text'] = txt
         return n
 
-    def sep_node(self, x, y, w):
-        """1px 分割线（轴线，直线不需要 AA）→ 出图 + textview 装饰件。"""
+    def sep_node(self, x, y, w, seq):
+        """1px 分割线（轴线，直线不需要 AA）→ 出图 + textview 装饰件。
+
+        caption = RowSep<上一行块的全局序号>。旧实现用「当前控件数 + 1」计数 → 跨卡重数，
+        修前示例里 RowSep1 重复 5 次（5 张卡内分割线全叫 RowSep1）。
+        """
         m = self.m
         name = 'sep_%dx%d.png' % (w, 1)
         p = self.shape(name, w, 1, 0, rgba(self.tok['color']['line']))
-        return self.text('RowSep%d' % (len(self.collect_controls(self.content)) + 1),
+        return self.text('RowSep%d' % seq,
                          self.box(x, y, w, 1), m['fs']['b2'], hex2int(self.tok['color']['line']),
                          '', bg=p, align=37, touchable=False)
 
@@ -447,7 +535,7 @@ class Composer(object):
         m = self.m
         col = {k: hex2int(v) for k, v in self.tok['color'].items() if v.startswith('#')}
         btype = blk['type']
-        cap = blk.get('_caption') or (self.blocks[btype]['caption_prefix'] + blk['_name'])
+        # 行族 caption 一律 = <角色><块名>；块名已含「类型前缀 + 全页全局序号」（见 BLOCK_PREFIX）
         row = []
         # 1) 命中区（整行透明按钮）—— value_row 类纯显示不交互
         interactive = btype != 'value_row'
@@ -552,13 +640,13 @@ class Composer(object):
         m = self.m
         rows = blk.get('blocks') or []
         if blk.get('title'):
-            y = self.build_section({'text': blk['title'], '_name': blk['_name']}, parent, x, y)
+            y = self.build_section({'text': blk['title'], '_seq': blk['_seq']}, parent, x, y)
         n = len(rows)
         cw, ch_ = m['content_w'], n * m['row_h']
-        win = Node('window', 'Card' + blk['_name'], self.box(x, y, cw, ch_))
+        win = Node('window', 'Card%d' % blk['_seq'], self.box(x, y, cw, ch_))
         bg = self.shape('card_%dx%d.png' % (cw, ch_), cw, ch_, m['radius'],
                         rgba(self.tok['color']['surface']))
-        win.children.append(self.text('CardBg' + blk['_name'], self.box(x, y, cw, ch_),
+        win.children.append(self.text('CardBg%d' % blk['_seq'], self.box(x, y, cw, ch_),
                                       m['fs']['b2'], hex2int(self.tok['color']['surface']),
                                       '', bg=bg, align=37))
 
@@ -568,21 +656,17 @@ class Composer(object):
         row_nodes, sep_nodes = [], []
         top = 0
         for i, b in enumerate(rows):
-            b['_name'] = b.get('_name') or (b['type'].replace('_', ' ').title().replace(' ', '')
-                                            + str(i + 1))
+            # 行名/序号已在 name_tree 预分配（全页全局递增，跨卡不重置）→ 此处不再按卡内下标重数
             has_icon = self.fam_icon and bool(b.get('icon')) and \
                 (not m['compact'] or b['type'] != 'icon_row')
             self.build_row(b, row_nodes, 0, top, cw, reserve, has_icon)
             top += m['row_h']
             if i < n - 1:
-                sep_nodes.append(self.sep_node(m['pad_l'], top, cw - m['pad_l']))
+                sep_nodes.append(self.sep_node(m['pad_l'], top, cw - m['pad_l'], b['_seq']))
         self.origin = old_origin
         # z 顺序：卡底 → 分割线（纯装饰，先铺）→ 行（装饰件 + 整行命中按钮放最后）→ 无装饰件压住按钮
         win.children.extend(sep_nodes)
         win.children.extend(row_nodes)
-        parent.append(win)
-        return y + ch_
-        self.origin = old_origin
         parent.append(win)
         return y + ch_
 
@@ -591,7 +675,7 @@ class Composer(object):
         m = self.m
         txt = blk.get('text') or ''
         p = self.box(x, y, m['content_w'], m['h_h2'])
-        parent.append(self.text('SectionHeader%s' % (blk.get('_name') or 'Main'), p,
+        parent.append(self.text('SectionHeader%d' % blk['_seq'], p,
                                 m['fs']['h2'], hex2int(self.tok['color']['fg2']), txt, bold=True))
         return y + max(self.tok['spacer']['spacer3'], m['h_h2'])
 
@@ -611,29 +695,31 @@ class Composer(object):
     def build_empty(self, blk, parent, x, y):
         m = self.m
         col = {k: hex2int(v) for k, v in self.tok['color'].items() if v.startswith('#')}
+        s_ = blk['_seq']                                  # 空态块序号（多空态同页也不重名）
         band = r4(self.H * 0.30)
         s = r4(m['icon_bg'] * 2)
         cx = x + (m['content_w'] - s) // 2
         top = y + (band - s) // 2 - m['h_b1']
         p_bg = self.shape('icbg_%d.png' % s, s, s, s // 2, rgba(self.tok['color']['brand1']))
-        parent.append(self.text('EmptyStateBg', self.box(cx, top, s, s), m['fs']['b2'],
+        parent.append(self.text('EmptyStateBg%d' % s_, self.box(cx, top, s, s), m['fs']['b2'],
                                 col['brand1'], '', bg=p_bg, align=37))
         ic = s // 2
         p_ic = self.glyph('ic_%s_%d.png' % (blk.get('icon') or 'info', ic),
                           blk.get('icon') or 'info', ic, rgba(self.tok['color']['brand']),
                           canvas=(ic, ic))
-        parent.append(self.text('EmptyStateIcon', self.box(cx + (s - ic) // 2,
-                                                           top + (s - ic) // 2, ic, ic),
+        parent.append(self.text('EmptyStateIcon%d' % s_, self.box(cx + (s - ic) // 2,
+                                                                  top + (s - ic) // 2, ic, ic),
                                 m['fs']['b2'], col['brand'], '', bg=p_ic, align=37))
         tw = r4(m['content_w'] * 0.8)
         tx = x + (m['content_w'] - tw) // 2
         ty = top + s + m['spacer2']
-        parent.append(self.text('EmptyStateText', self.box(tx, ty, tw, m['h_b1']),
+        parent.append(self.text('EmptyStateText%d' % s_, self.box(tx, ty, tw, m['h_b1']),
                                 m['fs']['b1'], col['fg2'], blk.get('text') or '', align=37))
-        self.check_text_fit('EmptyStateText', blk.get('text') or '', m['fs']['b1'],
+        self.check_text_fit('EmptyStateText%d' % s_, blk.get('text') or '', m['fs']['b1'],
                             tw, m['h_b1'], 'empty')
         if blk.get('sub'):
-            parent.append(self.text('EmptyStateSub', self.box(tx, ty + m['h_b1'] + 4, tw, m['h_b2']),
+            parent.append(self.text('EmptyStateSub%d' % s_,
+                                    self.box(tx, ty + m['h_b1'] + 4, tw, m['h_b2']),
                                     m['fs']['b2'], col['fg2'], blk['sub'], align=37))
         return y + band
 
@@ -641,10 +727,11 @@ class Composer(object):
         """底部操作条（固定件，永远放 scrollwindow 外面）。"""
         m = self.m
         col = {k: hex2int(v) for k, v in self.tok['color'].items() if v.startswith('#')}
+        sq = blk['_seq']                                     # 底栏块序号（多个底栏同页也不重名）
         bar_y = self.H - m['bar_bot']
         bg = self.shape('footbg_%dx%d.png' % (self.W, m['bar_bot']), self.W, m['bar_bot'], 0,
                         rgba(self.tok['color']['surface']))
-        parent.append(self.text('FooterBg', self.box(0, bar_y, self.W, m['bar_bot']),
+        parent.append(self.text('FooterBg%d' % sq, self.box(0, bar_y, self.W, m['bar_bot']),
                                 m['fs']['b2'], col['surface'], '', bg=bg, align=37))
         bw, bh = m['btn_w'], m['btn_h']
         by = bar_y + (m['bar_bot'] - bh) // 2
@@ -654,35 +741,37 @@ class Composer(object):
             # 而描边环会让 AA 审计的弧线过渡退回硬阶梯（§7.1 实测）→ 用浅品牌底代替描边
             sbg = self.shape('btn_secondary_%dx%d.png' % (bw, bh), bw, bh, m['radius'] // 2 + 2,
                              rgba(self.tok['color']['brand1']))
-            parent.append(self.button('ButtonSecondary',
+            parent.append(self.button('ButtonSecondary%d' % sq,
                                       self.box(px_primary - m['spacer'] - bw, by, bw, bh),
                                       bg=sbg, fs=m['fs']['b2'], color=col['brand'],
                                       align=37, txt=blk['secondary']))
         pbg = self.shape('btn_primary_%dx%d.png' % (bw, bh), bw, bh, m['radius'] // 2 + 2,
                          rgba(self.tok['color']['brand']))
-        parent.append(self.button('ButtonPrimary', self.box(px_primary, by, bw, bh), bg=pbg,
-                                  fs=m['fs']['b2'], color=col['onBrand'], align=37,
+        parent.append(self.button('ButtonPrimary%d' % sq, self.box(px_primary, by, bw, bh),
+                                  bg=pbg, fs=m['fs']['b2'], color=col['onBrand'], align=37,
                                   txt=blk.get('primary') or '确定'))
         if blk.get('status'):
             sw = r4(m['content_w'] * 0.40)
-            parent.append(self.text('ActionStatus', self.box(m['margin'], by + (bh - m['h_b2']) // 2,
-                                                             sw, m['h_b2']),
+            parent.append(self.text('ActionStatus%d' % sq,
+                                    self.box(m['margin'], by + (bh - m['h_b2']) // 2,
+                                             sw, m['h_b2']),
                                     m['fs']['b2'], col['fg2'], blk['status']))
-            self.check_text_fit('ActionStatus', blk['status'], m['fs']['b2'], sw, m['h_b2'],
-                                'footer')
+            self.check_text_fit('ActionStatus%d' % sq, blk['status'], m['fs']['b2'], sw,
+                                m['h_b2'], 'footer')
         return self.H
 
     def build_dialog(self, blk, parent):
         """弹窗：根层整屏 window（modal + visible:false）+ 遮罩 + 面板。"""
         m = self.m
         col = {k: hex2int(v) for k, v in self.tok['color'].items() if v.startswith('#')}
-        win = Node('window', 'DialogWindow', {'left': 0, 'top': 0, 'width': self.W,
-                                             'height': self.H},
+        q = blk['_seq']                                       # 弹窗块序号（多弹窗同页也不重名）
+        win = Node('window', 'DialogWindow%d' % q, {'left': 0, 'top': 0, 'width': self.W,
+                                                    'height': self.H},
                    {'modal': True, 'visible': bool(blk.get('visible', False)),
                     'touchable': False})
         scrim = self.shape('cc_scrim_%dx%d.png' % (self.W, self.H), self.W, self.H, 0,
                            rgba(self.tok['color']['scrim'], 0x66))
-        win.children.append(self.text('DialogScrim', self.box(0, 0, self.W, self.H),
+        win.children.append(self.text('DialogScrim%d' % q, self.box(0, 0, self.W, self.H),
                                       m['fs']['b2'], hex2int(self.tok['color']['surface']),
                                       '', bg=scrim, align=37, touchable=False))
         pw = max(200, r4(self.W * (0.80 if m['compact'] else 0.60)))
@@ -691,18 +780,18 @@ class Composer(object):
         ph = (2 * m['spacer2'] + title_h + m['spacer'] + body_h * lines + m['spacer2'] + m['btn_h'])
         px_ = (self.W - pw) // 2
         py_ = (self.H - ph) // 2
-        panel = Node('window', 'DialogPanel', {'left': px_, 'top': py_, 'width': pw,
-                                              'height': ph})
+        panel = Node('window', 'DialogPanel%d' % q, {'left': px_, 'top': py_, 'width': pw,
+                                                     'height': ph})
         pbg = self.shape('panel_%dx%d.png' % (pw, ph), pw, ph, m['radius'],
                          rgba(self.tok['color']['surface']))
-        panel.children.append(self.text('DialogPanelBg', {'left': 0, 'top': 0, 'width': pw,
-                                                          'height': ph},
+        panel.children.append(self.text('DialogPanelBg%d' % q,
+                                        {'left': 0, 'top': 0, 'width': pw, 'height': ph},
                                         m['fs']['b2'], col['surface'], '', bg=pbg, align=37))
-        panel.children.append(self.text('DialogTitle',
+        panel.children.append(self.text('DialogTitle%d' % q,
                                         {'left': m['spacer2'], 'top': m['spacer2'],
                                          'width': pw - 2 * m['spacer2'], 'height': title_h},
                                         m['fs']['h2'], col['fg1'], blk.get('title') or '', bold=True))
-        panel.children.append(self.text('DialogBody',
+        panel.children.append(self.text('DialogBody%d' % q,
                                         {'left': m['spacer2'],
                                          'top': m['spacer2'] + title_h + m['spacer'],
                                          'width': pw - 2 * m['spacer2'],
@@ -712,14 +801,14 @@ class Composer(object):
         bh, by = m['btn_h'], ph - m['spacer2'] - m['btn_h']
         sbg = self.shape('btn_secondary_%dx%d.png' % (bw, bh), bw, bh, m['radius'] // 2 + 2,
                          rgba(self.tok['color']['brand1']))
-        panel.children.append(self.button('DialogButtonSecondary',
+        panel.children.append(self.button('DialogButtonSecondary%d' % q,
                                           {'left': m['spacer2'], 'top': by, 'width': bw,
                                            'height': bh}, bg=sbg, fs=m['fs']['b2'],
                                           color=col['brand'], align=37,
                                           txt=blk.get('secondary') or '取消'))
         pbg2 = self.shape('btn_primary_%dx%d.png' % (bw, bh), bw, bh, m['radius'] // 2 + 2,
                           rgba(self.tok['color']['brand']))
-        panel.children.append(self.button('DialogButtonPrimary',
+        panel.children.append(self.button('DialogButtonPrimary%d' % q,
                                           {'left': 2 * m['spacer2'] + bw, 'top': by,
                                            'width': bw, 'height': bh}, bg=pbg2,
                                           fs=m['fs']['b2'], color=col['onBrand'], align=37,
@@ -734,14 +823,14 @@ class Composer(object):
         self.root = []
         content, footer, dialogs = [], [], []
         seen_title = False
+        self._seq = 0
+        self.name_tree(self.page.get('blocks'))      # 先全页统一编号（caption 唯一性来源）
         self.scan_row_family()
-        for i, blk in enumerate(self.page.get('blocks') or []):
+        for blk in self.page.get('blocks') or []:
             t = blk.get('type')
             if t not in self.blocks:
                 raise SystemExit('[X] 未知块类型：%s（可用：%s）'
                                  % (t, ', '.join(sorted(self.blocks))))
-            blk['_name'] = blk.get('name') or (t.replace('_', ' ').title().replace(' ', '')
-                                               + str(i + 1))
             if t == 'page_title':
                 if seen_title:
                     raise SystemExit('[X] page_title 只能出现一次')
@@ -774,13 +863,13 @@ class Composer(object):
         title_blk = next((b for b in (self.page.get('blocks') or [])
                           if b.get('type') == 'page_title'), None)
         if title_blk is None and self.page.get('title'):
-            title_blk = {'type': 'page_title', 'title': self.page.get('title'),
-                         'subtitle': self.page.get('subtitle'), '_name': 'Main'}
+            title_blk = self.name_block({'type': 'page_title', 'title': self.page.get('title'),
+                                         'subtitle': self.page.get('subtitle')})
         if not title_blk:
             raise SystemExit('[X] 缺标题：给 page.title（+ page.subtitle）或一个 page_title 块——'
                              '顶部固定带高靠它定')
         if not footer and self.page.get('footer'):
-            footer = [dict(self.page['footer'], type='bottom_actions', _name='Main')]
+            footer = [self.name_block(dict(self.page['footer'], type='bottom_actions'))]
         if not footer:
             raise SystemExit('[X] 缺 bottom_actions（底部固定带必须有，否则视口高度没法定）')
         title_nodes = []
@@ -831,6 +920,7 @@ class Composer(object):
                'backgroundColor': hex2int(self.tok['color']['page']),
                'touchable': False, 'topmost': False}
         doc.update(body)
+        assert_caption_unique(doc, self.page_name)     # 自检：重名 → 报错退出（不出产物）
         return doc
 
 
@@ -906,6 +996,10 @@ def find_render_font(project_root):
 def emit_logic(project_root, page, doc):
     """生成 <project>/src/logic/<page>Logic.cc 骨架（check_all #5/#8 靠它过）。"""
     caps = collect_button_caps(doc)
+    dups = sorted({c for c in caps if caps.count(c) > 1})      # 二道闸：button caption 重名
+    if dups:
+        raise SystemExit('[X] button caption 重名（%s）→ onButtonClick_<caption> 会重复定义，'
+                         '拒绝生成 logic 骨架' % '、'.join(dups))
     body = [LOGIC_HEAD]
     body.append('\n// ---- 按钮回调 ----\n')
     for cap in caps:

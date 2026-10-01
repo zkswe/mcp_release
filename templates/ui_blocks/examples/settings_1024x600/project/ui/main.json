@@ -116,7 +116,7 @@
       "visible": true,
       "textview__3": {
         "id": 50003,
-        "caption": "SectionHeaderCard1",
+        "caption": "SectionHeader1",
         "position": {
           "left": 16,
           "top": 0,
@@ -153,7 +153,7 @@
       },
       "window__2": {
         "id": 110002,
-        "caption": "CardCard1",
+        "caption": "Card1",
         "position": {
           "left": 16,
           "top": 28,
@@ -167,7 +167,7 @@
         "visible": true,
         "textview__4": {
           "id": 50004,
-          "caption": "CardBgCard1",
+          "caption": "CardBg1",
           "position": {
             "left": 16,
             "top": 28,
@@ -211,7 +211,7 @@
         },
         "textview__5": {
           "id": 50005,
-          "caption": "RowSep1",
+          "caption": "RowSep2",
           "position": {
             "left": 16,
             "top": 60,
@@ -255,7 +255,7 @@
         },
         "textview__6": {
           "id": 50006,
-          "caption": "RowSep1",
+          "caption": "RowSep3",
           "position": {
             "left": 16,
             "top": 120,
@@ -299,7 +299,7 @@
         },
         "textview__7": {
           "id": 50007,
-          "caption": "TextRowSettingRow1Label",
+          "caption": "TextRowSettingRow2Label",
           "position": {
             "left": 52,
             "top": 8,
@@ -336,7 +336,7 @@
         },
         "textview__8": {
           "id": 50008,
-          "caption": "TextRowSettingRow1Value",
+          "caption": "TextRowSettingRow2Value",
           "position": {
             "left": 52,
             "top": 32,
@@ -373,7 +373,7 @@
         },
         "textview__9": {
           "id": 50009,
-          "caption": "ImageRowSettingRow1Chevron",
+          "caption": "ImageRowSettingRow2Chevron",
           "position": {
             "left": 952,
             "top": 22,
@@ -417,7 +417,7 @@
         },
         "button__1": {
           "id": 20001,
-          "caption": "ButtonRowSettingRow1",
+          "caption": "ButtonRowSettingRow2",
           "position": {
             "left": 0,
             "top": 0,
@@ -457,7 +457,7 @@
         },
         "textview__10": {
           "id": 50010,
-          "caption": "TextRowSettingRow2Label",
+          "caption": "TextRowSettingRow3Label",
           "position": {
             "left": 52,
             "top": 68,
@@ -494,7 +494,7 @@
         },
         "textview__11": {
           "id": 50011,
-          "caption": "TextRowSettingRow2Value",
+          "caption": "TextRowSettingRow3Value",
           "position": {
             "left": 52,
             "top": 92,
@@ -531,7 +531,7 @@
         },
         "textview__12": {
           "id": 50012,
-          "caption": "ImageRowSettingRow2Chevron",
+          "caption": "ImageRowSettingRow3Chevron",
           "position": {
             "left": 952,
             "top": 82,
@@ -575,7 +575,7 @@
         },
         "button__2": {
           "id": 20002,
-          "caption": "ButtonRowSettingRow2",
+          "caption": "ButtonRowSettingRow3",
           "position": {
             "left": 0,
             "top": 60,
@@ -615,7 +615,7 @@
         },
         "textview__13": {
           "id": 50013,
-          "caption": "TextRowSettingRow3Label",
+          "caption": "TextRowSettingRow4Label",
           "position": {
             "left": 52,
             "top": 128,
@@ -652,7 +652,7 @@
         },
         "textview__14": {
           "id": 50014,
-          "caption": "TextRowSettingRow3Value",
+          "caption": "TextRowSettingRow4Value",
           "position": {
             "left": 52,
             "top": 152,
@@ -689,7 +689,7 @@
         },
         "textview__15": {
           "id": 50015,
-          "caption": "ImageRowSettingRow3Chevron",
+          "caption": "ImageRowSettingRow4Chevron",
           "position": {
             "left": 952,
             "top": 142,
@@ -733,7 +733,7 @@
         },
         "button__3": {
           "id": 20003,
-          "caption": "ButtonRowSettingRow3",
+          "caption": "ButtonRowSettingRow4",
           "position": {
             "left": 0,
             "top": 120,
@@ -774,7 +774,7 @@
       },
       "textview__16": {
         "id": 50016,
-        "caption": "SectionHeaderCard2",
+        "caption": "SectionHeader5",
         "position": {
           "left": 16,
           "top": 224,
@@ -811,7 +811,7 @@
       },
       "window__3": {
         "id": 110003,
-        "caption": "CardCard2",
+        "caption": "Card5",
         "position": {
           "left": 16,
           "top": 252,
@@ -825,7 +825,7 @@
         "visible": true,
         "textview__17": {
           "id": 50017,
-          "caption": "CardBgCard2",
+          "caption": "CardBg5",
           "position": {
             "left": 16,
             "top": 252,
@@ -869,7 +869,7 @@
         },
         "textview__18": {
           "id": 50018,
-          "caption": "RowSep1",
+          "caption": "RowSep6",
           "position": {
             "left": 16,
             "top": 60,
@@ -913,7 +913,7 @@
         },
         "textview__19": {
           "id": 50019,
-          "caption": "RowSep1",
+          "caption": "RowSep7",
           "position": {
             "left": 16,
             "top": 120,
@@ -957,7 +957,7 @@
         },
         "textview__20": {
           "id": 50020,
-          "caption": "RowSep1",
+          "caption": "RowSep8",
           "position": {
             "left": 16,
             "top": 180,
@@ -1001,7 +1001,7 @@
         },
         "textview__21": {
           "id": 50021,
-          "caption": "TextRowSettingRow1Label",
+          "caption": "TextRowSettingRow6Label",
           "position": {
             "left": 52,
             "top": 8,
@@ -1038,7 +1038,7 @@
         },
         "textview__22": {
           "id": 50022,
-          "caption": "TextRowSettingRow1Value",
+          "caption": "TextRowSettingRow6Value",
           "position": {
             "left": 52,
             "top": 32,
@@ -1075,7 +1075,7 @@
         },
         "textview__23": {
           "id": 50023,
-          "caption": "ImageRowSettingRow1Chevron",
+          "caption": "ImageRowSettingRow6Chevron",
           "position": {
             "left": 952,
             "top": 22,
@@ -1119,7 +1119,7 @@
         },
         "button__4": {
           "id": 20004,
-          "caption": "ButtonRowSettingRow1",
+          "caption": "ButtonRowSettingRow6",
           "position": {
             "left": 0,
             "top": 0,
@@ -1159,7 +1159,7 @@
         },
         "textview__24": {
           "id": 50024,
-          "caption": "ImageRowIconRow2IconBg",
+          "caption": "ImageRowIconRow7IconBg",
           "position": {
             "left": 8,
             "top": 72,
@@ -1203,7 +1203,7 @@
         },
         "textview__25": {
           "id": 50025,
-          "caption": "ImageRowIconRow2Icon",
+          "caption": "ImageRowIconRow7Icon",
           "position": {
             "left": 14,
             "top": 78,
@@ -1247,7 +1247,7 @@
         },
         "textview__26": {
           "id": 50026,
-          "caption": "TextRowIconRow2Label",
+          "caption": "TextRowIconRow7Label",
           "position": {
             "left": 52,
             "top": 68,
@@ -1284,7 +1284,7 @@
         },
         "textview__27": {
           "id": 50027,
-          "caption": "TextRowIconRow2Value",
+          "caption": "TextRowIconRow7Value",
           "position": {
             "left": 52,
             "top": 92,
@@ -1321,7 +1321,7 @@
         },
         "textview__28": {
           "id": 50028,
-          "caption": "ImageRowIconRow2Chevron",
+          "caption": "ImageRowIconRow7Chevron",
           "position": {
             "left": 952,
             "top": 82,
@@ -1365,7 +1365,7 @@
         },
         "button__5": {
           "id": 20005,
-          "caption": "ButtonRowIconRow2",
+          "caption": "ButtonRowIconRow7",
           "position": {
             "left": 0,
             "top": 60,
@@ -1405,7 +1405,7 @@
         },
         "textview__29": {
           "id": 50029,
-          "caption": "TextRowToggleRow3Label",
+          "caption": "TextRowToggleRow8Label",
           "position": {
             "left": 52,
             "top": 128,
@@ -1442,7 +1442,7 @@
         },
         "textview__30": {
           "id": 50030,
-          "caption": "TextRowToggleRow3Value",
+          "caption": "TextRowToggleRow8Value",
           "position": {
             "left": 52,
             "top": 152,
@@ -1479,7 +1479,7 @@
         },
         "textview__31": {
           "id": 50031,
-          "caption": "ToggleRowToggleRow3Track",
+          "caption": "ToggleRowToggleRow8Track",
           "position": {
             "left": 896,
             "top": 128,
@@ -1523,7 +1523,7 @@
         },
         "textview__32": {
           "id": 50032,
-          "caption": "ToggleRowToggleRow3Knob",
+          "caption": "ToggleRowToggleRow8Knob",
           "position": {
             "left": 934,
             "top": 130,
@@ -1567,7 +1567,7 @@
         },
         "button__6": {
           "id": 20006,
-          "caption": "ButtonRowToggleRow3",
+          "caption": "ButtonRowToggleRow8",
           "position": {
             "left": 0,
             "top": 120,
@@ -1607,7 +1607,7 @@
         },
         "textview__33": {
           "id": 50033,
-          "caption": "ImageRowDeviceCard4IconBg",
+          "caption": "ImageRowDeviceCard9IconBg",
           "position": {
             "left": 8,
             "top": 192,
@@ -1651,7 +1651,7 @@
         },
         "textview__34": {
           "id": 50034,
-          "caption": "ImageRowDeviceCard4Icon",
+          "caption": "ImageRowDeviceCard9Icon",
           "position": {
             "left": 14,
             "top": 198,
@@ -1695,7 +1695,7 @@
         },
         "textview__35": {
           "id": 50035,
-          "caption": "TextRowDeviceCard4Label",
+          "caption": "TextRowDeviceCard9Label",
           "position": {
             "left": 52,
             "top": 188,
@@ -1732,7 +1732,7 @@
         },
         "textview__36": {
           "id": 50036,
-          "caption": "TextRowDeviceCard4Value",
+          "caption": "TextRowDeviceCard9Value",
           "position": {
             "left": 52,
             "top": 212,
@@ -1769,7 +1769,7 @@
         },
         "textview__37": {
           "id": 50037,
-          "caption": "ImageRowDeviceCard4Chevron",
+          "caption": "ImageRowDeviceCard9Chevron",
           "position": {
             "left": 952,
             "top": 202,
@@ -1813,7 +1813,7 @@
         },
         "textview__38": {
           "id": 50038,
-          "caption": "DeviceRowDeviceCard4Dot",
+          "caption": "DeviceRowDeviceCard9Dot",
           "position": {
             "left": 37,
             "top": 218,
@@ -1857,7 +1857,7 @@
         },
         "button__7": {
           "id": 20007,
-          "caption": "ButtonRowDeviceCard4",
+          "caption": "ButtonRowDeviceCard9",
           "position": {
             "left": 0,
             "top": 180,
@@ -1898,7 +1898,7 @@
       },
       "textview__39": {
         "id": 50039,
-        "caption": "SectionHeaderSectionHeader3",
+        "caption": "SectionHeader10",
         "position": {
           "left": 16,
           "top": 508,
@@ -1935,7 +1935,7 @@
       },
       "textview__40": {
         "id": 50040,
-        "caption": "EmptyStateBg",
+        "caption": "EmptyStateBg11",
         "position": {
           "left": 476,
           "top": 566,
@@ -1979,7 +1979,7 @@
       },
       "textview__41": {
         "id": 50041,
-        "caption": "EmptyStateIcon",
+        "caption": "EmptyStateIcon11",
         "position": {
           "left": 494,
           "top": 584,
@@ -2023,7 +2023,7 @@
       },
       "textview__42": {
         "id": 50042,
-        "caption": "EmptyStateText",
+        "caption": "EmptyStateText11",
         "position": {
           "left": 116,
           "top": 654,
@@ -2060,7 +2060,7 @@
       },
       "textview__43": {
         "id": 50043,
-        "caption": "EmptyStateSub",
+        "caption": "EmptyStateSub11",
         "position": {
           "left": 116,
           "top": 682,
@@ -2099,7 +2099,7 @@
   },
   "textview__44": {
     "id": 50044,
-    "caption": "FooterBg",
+    "caption": "FooterBg12",
     "position": {
       "left": 0,
       "top": 528,
@@ -2143,7 +2143,7 @@
   },
   "button__8": {
     "id": 20008,
-    "caption": "ButtonSecondary",
+    "caption": "ButtonSecondary12",
     "position": {
       "left": 672,
       "top": 542,
@@ -2196,7 +2196,7 @@
   },
   "button__9": {
     "id": 20009,
-    "caption": "ButtonPrimary",
+    "caption": "ButtonPrimary12",
     "position": {
       "left": 844,
       "top": 542,
@@ -2249,7 +2249,7 @@
   },
   "textview__45": {
     "id": 50045,
-    "caption": "ActionStatus",
+    "caption": "ActionStatus12",
     "position": {
       "left": 16,
       "top": 554,
@@ -2286,7 +2286,7 @@
   },
   "window__4": {
     "id": 110004,
-    "caption": "DialogWindow",
+    "caption": "DialogWindow13",
     "position": {
       "left": 0,
       "top": 0,
@@ -2300,7 +2300,7 @@
     "visible": false,
     "textview__46": {
       "id": 50046,
-      "caption": "DialogScrim",
+      "caption": "DialogScrim13",
       "position": {
         "left": 0,
         "top": 0,
@@ -2344,7 +2344,7 @@
     },
     "window__5": {
       "id": 110005,
-      "caption": "DialogPanel",
+      "caption": "DialogPanel13",
       "position": {
         "left": 204,
         "top": 212,
@@ -2358,7 +2358,7 @@
       "visible": true,
       "textview__47": {
         "id": 50047,
-        "caption": "DialogPanelBg",
+        "caption": "DialogPanelBg13",
         "position": {
           "left": 0,
           "top": 0,
@@ -2402,7 +2402,7 @@
       },
       "textview__48": {
         "id": 50048,
-        "caption": "DialogTitle",
+        "caption": "DialogTitle13",
         "position": {
           "left": 16,
           "top": 16,
@@ -2439,7 +2439,7 @@
       },
       "textview__49": {
         "id": 50049,
-        "caption": "DialogBody",
+        "caption": "DialogBody13",
         "position": {
           "left": 16,
           "top": 52,
@@ -2476,7 +2476,7 @@
       },
       "button__10": {
         "id": 20010,
-        "caption": "DialogButtonSecondary",
+        "caption": "DialogButtonSecondary13",
         "position": {
           "left": 16,
           "top": 116,
@@ -2529,7 +2529,7 @@
       },
       "button__11": {
         "id": 20011,
-        "caption": "DialogButtonPrimary",
+        "caption": "DialogButtonPrimary13",
         "position": {
           "left": 316,
           "top": 116,

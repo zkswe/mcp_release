@@ -3,7 +3,7 @@
   "zh": "设备卡（图标 + 名称 + 状态 + 箭头）",
   "builder": "row",
   "family": "row",
-  "caption_prefix": "DeviceRow",
+  "caption_prefix": "DeviceCard",
   "fields": {
     "icon": {"type": "string", "required": true, "example": "wifi"},
     "label": {"type": "string", "required": true, "example": "客厅面板"},

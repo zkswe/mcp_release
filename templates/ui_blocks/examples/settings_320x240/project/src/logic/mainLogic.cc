@@ -42,10 +42,6 @@ static void onUI_Timer(int id) {
 }
 
 // ---- 按钮回调 ----
-static bool onButtonClick_ButtonRowSettingRow1(ZKButton *pButton) {
-    // TODO: ButtonRowSettingRow1
-    return false;
-}
 static bool onButtonClick_ButtonRowSettingRow2(ZKButton *pButton) {
     // TODO: ButtonRowSettingRow2
     return false;
@@ -54,35 +50,39 @@ static bool onButtonClick_ButtonRowSettingRow3(ZKButton *pButton) {
     // TODO: ButtonRowSettingRow3
     return false;
 }
-static bool onButtonClick_ButtonRowSettingRow1(ZKButton *pButton) {
-    // TODO: ButtonRowSettingRow1
+static bool onButtonClick_ButtonRowSettingRow4(ZKButton *pButton) {
+    // TODO: ButtonRowSettingRow4
     return false;
 }
-static bool onButtonClick_ButtonRowIconRow2(ZKButton *pButton) {
-    // TODO: ButtonRowIconRow2
+static bool onButtonClick_ButtonRowSettingRow6(ZKButton *pButton) {
+    // TODO: ButtonRowSettingRow6
     return false;
 }
-static bool onButtonClick_ButtonRowToggleRow3(ZKButton *pButton) {
-    // TODO: ButtonRowToggleRow3
+static bool onButtonClick_ButtonRowIconRow7(ZKButton *pButton) {
+    // TODO: ButtonRowIconRow7
     return false;
 }
-static bool onButtonClick_ButtonRowDeviceCard4(ZKButton *pButton) {
-    // TODO: ButtonRowDeviceCard4
+static bool onButtonClick_ButtonRowToggleRow8(ZKButton *pButton) {
+    // TODO: ButtonRowToggleRow8
     return false;
 }
-static bool onButtonClick_ButtonSecondary(ZKButton *pButton) {
-    // TODO: ButtonSecondary
+static bool onButtonClick_ButtonRowDeviceCard9(ZKButton *pButton) {
+    // TODO: ButtonRowDeviceCard9
     return false;
 }
-static bool onButtonClick_ButtonPrimary(ZKButton *pButton) {
-    // TODO: ButtonPrimary
+static bool onButtonClick_ButtonSecondary12(ZKButton *pButton) {
+    // TODO: ButtonSecondary12
     return false;
 }
-static bool onButtonClick_DialogButtonSecondary(ZKButton *pButton) {
-    // TODO: DialogButtonSecondary
+static bool onButtonClick_ButtonPrimary12(ZKButton *pButton) {
+    // TODO: ButtonPrimary12
     return false;
 }
-static bool onButtonClick_DialogButtonPrimary(ZKButton *pButton) {
-    // TODO: DialogButtonPrimary
+static bool onButtonClick_DialogButtonSecondary13(ZKButton *pButton) {
+    // TODO: DialogButtonSecondary13
+    return false;
+}
+static bool onButtonClick_DialogButtonPrimary13(ZKButton *pButton) {
+    // TODO: DialogButtonPrimary13
     return false;
 }

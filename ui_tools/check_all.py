@@ -1504,6 +1504,40 @@ def check_display_eats_touch(project_root):
     return notes, warns
 
 
+def check_caption_unique(project_root):
+    """caption 唯一性（页内）：返回 (notes, dups)。
+
+    dups = [(页面, caption, [控件 key...])]——同一 caption 在一页 json 内出现 ≥2 次即为重复。
+
+    为什么必须有这条：#5 只核对「每个 button 的 onButtonClick_<caption> 回调**存在**」，
+    不核对 caption 本身唯一 —— 同一 caption 出现两次时，生成器（templates/ui_blocks/compose.py）
+    会为同名 caption 各写一份 `static bool onButtonClick_<caption>(ZKButton *pButton)`
+    → **C++ 重定义，编译必失败**；业务侧 `getControl("<caption>")` / `m<caption>Ptr`
+    也只能取到其中一个（另一个永远不可达）。
+
+    实例（2026-10-01 实读确认）：块库修前按「卡内序号」分配块名，跨卡从 1 重数 →
+    `ButtonRowSettingRow1` / `ImageRowSettingRow1Chevron` / `TextRowSettingRow1Label` /
+    `TextRowSettingRow1Value` / `RowSep1` 重名，mainLogic.cc 里 onButtonClick_ButtonRowSettingRow1
+    定义两次（第 45、57 行）。修后：块序号全页全局递增 + 块类型前缀 + compose 内自检。
+    """
+    notes, dups = [], []
+    root = os.path.abspath(project_root)
+    ui = os.path.join(root, 'ui')
+    for jf in _ui_pages(root):
+        d = json.load(open(jf, encoding='utf-8'))
+        rel = 'ui/' + os.path.relpath(jf, ui).replace('\\', '/')
+        by_cap = {}
+        for k, v in _all_controls(d):
+            cap = v.get('caption')
+            if cap:
+                by_cap.setdefault(cap, []).append(k)
+        for cap, keys in sorted(by_cap.items()):
+            if len(keys) > 1:
+                dups.append((rel, cap, keys))
+        notes.append(rel)
+    return notes, dups
+
+
 def main(project_root):
     root = os.path.abspath(project_root)
     if not os.path.isdir(root):
@@ -2228,6 +2262,20 @@ def main(project_root):
         warn('%s %s' % (pg, msg))
     if de_notes and not de_warns:
         print('  [PASS] 无显示件压住交互控件（%d 页）' % len(de_notes))
+
+    print('== 30. caption 唯一性（页内同名 caption → onButtonClick_<caption> 重定义 ⇒ C++ 编译必失败；钟工 2026-10-01）==\n'
+          '       #5 只核对「回调是否存在」，核不出同名 caption 各生成一份回调（重定义）\n'
+          '       → 同一 json 内 caption 出现 ≥2 次即 FAIL，并列出「哪个 caption、几次、在哪几个控件」。\n'
+          '       背景：templates/ui_blocks/compose.py 修前按「卡内序号」分配块名 → 跨卡从 1 重数\n'
+          '       （RowSep1×5 / ButtonRowSettingRow1×2 等），生成的两份 onButtonClick 一个 TU 里重定义。')
+    cu_notes, cu_dups = check_caption_unique(root)
+    for pg, cap, keys in cu_dups:
+        log(False, '%s caption「%s」重复 %d 次：%s（同名 caption ⇒ onButtonClick_%s 重复定义 ⇒ 编译失败）'
+            % (pg, cap, len(keys), '、'.join(keys), cap))
+    if not cu_notes:
+        print('  [NOTE] 无页面，跳过')
+    elif not cu_dups:
+        print('  [PASS] %d 页 caption 全部唯一' % len(cu_notes))
 
     print()
     if warnings:
