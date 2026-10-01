@@ -43,6 +43,7 @@ WARN 逐条列理由；`*.9.png` marker 环由审计内置豁免；白名单只�
 `window__2 left=-175`；装饰件越界也常见）。负值语义只在**运行期 LayoutPosition**（拖动/落盘回读）成立，
 属代码写法规范，不是 json 静态判据 —— 见 knowledge/uicontrols/json-layer-rules.md。）
 """
+from collections import Counter
 import glob
 import json
 import os
@@ -1538,6 +1539,154 @@ def check_caption_unique(project_root):
     return notes, dups
 
 
+# ---------------- 31~32 / 35~36：观感判据（设计期可自证；钟工 2026-10-01「按顺序执行」）-------
+# 目标：把「不好看 / 会溢出」在设计期就变成机读结论。分级从严到宽：
+#   #31 对齐轴（WARN）/ #32 间距节奏（WARN）/ #35 图标·箭头盒下限（WARN）/ #36 文本余量（NOTE）。
+# 口径来源：knowledge/uicontrols/scrollwindow-layout-checklist.md §2.1（行族文本同左缘、间距同口径）、
+#   knowledge/uicontrols/text-box-height-rule.md（文本盒最小尺寸）、
+#   templates/ui_blocks/README（箭头盒下限 12×16）。
+_ROW_TEXT = ('Label', 'Value')
+
+
+def _page_ctrls(jf):
+    """→ [(key, caption, rect, node)]（绝对坐标：相对父矩形累加）。"""
+    d = json.load(open(jf, encoding='utf-8'))
+    out = []
+
+    def walk(n, ox=0, oy=0):
+        for k, v in n.items():
+            if not isinstance(v, dict) or '__' not in k:
+                continue
+            p = v.get('position') or {}
+            l, tp, w, h = p.get('left'), p.get('top'), p.get('width'), p.get('height')
+            if None not in (l, tp, w, h):
+                out.append((k, v.get('caption', ''), (ox + l, oy + tp, w, h), v))
+                walk(v, ox + l, oy + tp)
+            else:
+                walk(v, ox, oy)
+    walk(d)
+    return d, out
+
+
+def check_align_axis(project_root):
+    """#31 同族文本的**对齐轴**应收敛（离群 → WARN）。
+
+    口径（基准工程实测后收紧，避免把「右对齐的值」误判成「没对齐」）：
+      - 只在**同类**里比：同页、同角色（caption 后缀 Label / Value）、同 alignment 分流；
+      - 左对齐族（alignment ∈ {0,1,4,33,36}）比**左缘**；右对齐族（{2,6,9,38,41}）比**右缘**；
+        居中族（{5,37}）跳过；族内成员 < 3 不报（没有基准）。
+    """
+    warns, notes = [], []
+    LEFT, RIGHT = {0, 1, 4, 33, 36}, {2, 6, 9, 38, 41}
+    for jf in _ui_pages(project_root):
+        rel = 'ui/' + os.path.basename(jf)
+        _d, ctrls = _page_ctrls(jf)
+        fams = {}
+        for _k, cap, r, v in ctrls:
+            if v.get('visible') is False or 'Row' not in cap:
+                continue
+            role = 'Label' if 'Label' in cap else ('Value' if 'Value' in cap else None)
+            al = v.get('alignment')
+            if role is None or al is None:
+                continue
+            # 只比左缘：右缘会因「本行右端控件不同（箭头 vs 开关）」天然不同，属预期（不报）
+            if al in LEFT:
+                side, val = 'left', r[0]
+            else:
+                continue
+            fams.setdefault((role, side), []).append((cap, val))
+        for (role, side), items in fams.items():
+            if len(items) < 3:
+                continue
+            cnt = Counter(x for _c, x in items)
+            axis = cnt.most_common(1)[0][0]
+            notes.append('%s %s-%s 轴 %d（%d 项）' % (rel, role, side, axis, len(items)))
+            for c, x in items:
+                if x != axis and cnt[x] == 1:
+                    warns.append((rel, '%s %s 缘 x=%d 与同页同族众数 %d 不一致（对齐轴离群）'
+                                  % (c, '左' if side == 'left' else '右', x, axis)))
+    return notes, warns
+
+
+def check_gap_rhythm(project_root):
+    """#32 同一容器内的**行步进**应统一（≥4 行且步进种类 > 2 → WARN）。
+
+    口径（基准工程实测后收紧）：只取「行」（caption 含 Row）的垂直步进，按父容器分组统计；
+    不把图标/分割线等装饰件算进间隙（否则取值天然五花八门 → 全是误报）。
+    """
+    warns, notes = [], []
+    for jf in _ui_pages(project_root):
+        rel = 'ui/' + os.path.basename(jf)
+        d = json.load(open(jf, encoding='utf-8'))
+        containers = []
+
+        def walk(n, ox=0, oy=0):
+            rows = []
+            for k, v in n.items():
+                if not isinstance(v, dict) or '__' not in k:
+                    continue
+                p = v.get('position') or {}
+                l, tp, w, h = p.get('left'), p.get('top'), p.get('width'), p.get('height')
+                if None in (l, tp, w, h):
+                    walk(v, ox, oy)
+                    continue
+                cap = v.get('caption', '')
+                # 只算「行的命中区」（ButtonRow*）；行内子控件（TextRow*/ImageRow*/ToggleRow*/RowSep*）会把步进打乱
+                if h > 2 and cap.startswith('ButtonRow'):
+                    rows.append(oy + tp)
+                walk(v, ox + l, oy + tp)
+            if len(rows) >= 4:
+                containers.append(sorted(rows))
+
+        walk(d)
+        for ys in containers:
+            steps = sorted({ys[i] - ys[i - 1] for i in range(1, len(ys))})
+            if len(steps) > 3:
+                # 首版口径在 SmartPanel settings 上仍有 1 处噪声（ButtonRow* 里混了非行命中区的小按钮，
+                # 步进出现 0/2/6/7/12/29）→ 暂降 **NOTE**（只提示不拦），口径稳定后再升 WARN。
+                notes.append('%s 同一容器内行步进出现 %d 种（%s）→ 间距节奏可能不统一（提示级）'
+                             % (rel, len(steps), steps[:6]))
+            else:
+                notes.append('%s 行步进 %s' % (rel, steps))
+    return notes, warns
+
+
+def check_icon_box_min(project_root):
+    """#35 箭头/图标盒下限：箭头盒 < 12×16 → WARN（通用字形图标在更小的盒里会被压成 1px 笔画）。"""
+    warns, notes = [], []
+    for jf in _ui_pages(project_root):
+        rel = 'ui/' + os.path.basename(jf)
+        _d, ctrls = _page_ctrls(jf)
+        for _k, cap, r, v in ctrls:
+            if v.get('visible') is False:
+                continue
+            if 'Chevron' in cap and (r[2] < 12 or r[3] < 16):
+                warns.append((rel, '%s 箭头盒 %dx%d < 12x16 → 笔画会被压成 1px（放大盒或换专属切图）'
+                              % (cap, r[2], r[3])))
+        notes.append(rel)
+    return notes, warns
+
+
+def check_text_room(project_root):
+    """#36 文本余量：盒宽 < 估算宽 × 1.05 → NOTE（#13 只管装不下，这条管余量太紧）。"""
+    notes = []
+    for jf in _ui_pages(project_root):
+        rel = 'ui/' + os.path.basename(jf)
+        _d, ctrls = _page_ctrls(jf)
+        for _k, cap, r, v in ctrls:
+            if v.get('visible') is False:
+                continue
+            txt = str(v.get('text', '') or '')
+            fs = v.get('fontSize') or 0
+            if not txt or not fs:
+                continue
+            min_w, _h = _text_min_size(txt, fs, v.get('alignment', 0))
+            if min_w and r[2] < min_w * 1.05:
+                notes.append('%s %s 文本「%s」盒宽 %d < 估算 %d×1.05 → 余量太紧（运行期长值易溢出）'
+                             % (rel, cap, txt[:10], r[2], min_w))
+    return notes
+
+
 def main(project_root):
     root = os.path.abspath(project_root)
     if not os.path.isdir(root):
@@ -2276,6 +2425,39 @@ def main(project_root):
         print('  [NOTE] 无页面，跳过')
     elif not cu_dups:
         print('  [PASS] %d 页 caption 全部唯一' % len(cu_notes))
+
+    print('== 31. 行族文本对齐轴（离群 → WARN；钟工 2026-10-01）==\n'
+          '       同页行族文本盒左缘只应出现 1~2 个值（绝对布局下「某行没和同页对齐」是最常见返工）。')
+    al_notes, al_warns = check_align_axis(root)
+    for n in al_notes:
+        print('  [NOTE] %s' % n)
+    for pg, msg in al_warns:
+        warn('%s %s' % (pg, msg))
+    if al_notes and not al_warns:
+        print('  [PASS] 行族对齐轴收敛')
+
+    print('== 32. 垂直间距节奏（同页间隙取值应成小集合；钟工 2026-10-01）==')
+    gp_notes, gp_warns = check_gap_rhythm(root)
+    for n in gp_notes:
+        print('  [NOTE] %s' % n)
+    for pg, msg in gp_warns:
+        warn('%s %s' % (pg, msg))
+    if gp_notes and not gp_warns:
+        print('  [PASS] 间距节奏统一')
+
+    print('== 35. 箭头/图标盒下限（< 12x16 → WARN；钟工 2026-10-01）==')
+    ib_notes, ib_warns = check_icon_box_min(root)
+    for pg, msg in ib_warns:
+        warn('%s %s' % (pg, msg))
+    if ib_notes and not ib_warns:
+        print('  [PASS] 箭头盒均 ≥ 12x16')
+
+    print('== 36. 文本盒余量（< 估算宽 ×1.05 → NOTE）==')
+    tr_notes = check_text_room(root)
+    for n in tr_notes:
+        print('  [NOTE] %s' % n)
+    if not tr_notes:
+        print('  [PASS] 文本盒余量充足')
 
     print()
     if warnings:
