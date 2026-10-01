@@ -1,27 +1,27 @@
 {
  "meta": {
   "schema": 1,
-  "built_at": "2026-10-01 22:00:34",
+  "built_at": "2026-10-01 22:17:45",
   "mcp_version": "0.27.170-open",
-  "doc_count": 98,
-  "source_hash": "777ef4dc1b552073fd822baa0c062d77"
+  "doc_count": 99,
+  "source_hash": "47a734d4de96c17a50f5aa88014586f4"
  },
  "summary": {
-  "total": 98,
+  "total": 99,
   "byCategory": {
-   "devflow": 45,
+   "devflow": 46,
    "uicontrols": 36,
    "hardware": 5,
    "t113-car": 2,
    "v85x": 10
   },
   "byStatus": {
-   "review": 93,
+   "review": 94,
    "verified": 5
   },
-  "withEvidence": 15,
+  "withEvidence": 16,
   "needsEvidence": 93,
-  "noQueries": 78,
+  "noQueries": 79,
   "stale": 0,
   "inbox": 0,
   "aging": 0,
@@ -289,6 +289,50 @@
    "freshness": "fresh",
    "stale": false,
    "staleDays": 180,
+   "frontMatterError": ""
+  },
+  {
+   "id": "devflow-color-contrast-standard",
+   "path": "knowledge/devflow/color-contrast-standard.md",
+   "title": "配色对比度标准（字底对比度 + 深底文字档）",
+   "category": "devflow",
+   "platforms": [
+    "通用"
+   ],
+   "tags": [
+    "对比度",
+    "WCAG",
+    "深底文字档",
+    "副文本色",
+    "9A9AA2",
+    "5F5F68",
+    "配色标准",
+    "灰底白字",
+    "check_all34",
+    "字符集"
+   ],
+   "status": "review",
+   "confidence": "offline",
+   "verified_at": "2026-10-01",
+   "stale_days": 365,
+   "origin": "实践",
+   "evidenceCount": 4,
+   "evidence": [
+    "SmartPanel_HA 480x480 改前 check_all 第 34 项 FAIL 22 处",
+    "22 处构成 = 20 处 #5F5F68 on #17171B 2.83x + 卡片底 2.34x + 芯片底 2.44x",
+    "改后 FAIL 0 处，219 个可判文本全达标（14 个 ui json 文件、50 处 color0）",
+    "钟工 2026-10-01 定「用改后的做标准，老项目不修改了」"
+   ],
+   "evidenceLevel": "has-evidence",
+   "needsEvidence": false,
+   "hasQueries": false,
+   "bytes": 4623,
+   "sha256": "d5a67b2b3113e9efab4afd2bdfc5765f90540a0f55b64d1a5be36ab8d2ad8ee2",
+   "fingerprint": "d4e63f83a874db61",
+   "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 365,
    "frontMatterError": ""
   },
   {

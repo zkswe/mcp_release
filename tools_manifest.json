@@ -694,9 +694,9 @@
     }
   ],
   "docs": {
-    "knowledgeFiles": 102,
+    "knowledgeFiles": 103,
     "wikiFiles": 128,
-    "ragChunks": 1998,
-    "ragPaths": 227
+    "ragChunks": 2005,
+    "ragPaths": 228
   }
 }
