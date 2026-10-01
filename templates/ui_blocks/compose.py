@@ -209,7 +209,9 @@ def build_metrics(W, H, tok):
     m['line_w'] = sh['line_px']
     m['chev_w'] = max(s['chev_w_min'], r4(W * s['chev_w_of_w']))
     m['chev_h'] = max(s['chev_h_min'], r4(H * s['chev_h_of_h']))
-    m['text_chev_gap'] = sp[s['text_chev_gap']]
+    # 文本×右端控件间隙：**按屏高比例 + 上下限**（token 只给基准，避免小屏上绝对像素显得过大）
+    m['text_chev_gap'] = max(s['text_chev_gap_min'],
+                             min(s['text_chev_gap_max'], r4(H * s['text_chev_gap_of_h'])))
     m['text_vpad'] = s['text_vpad']
 
     # 行高：屏高比例 与 文本可读性 取大（SPEC-CHECK §3 B4「可读性优先」）
@@ -559,8 +561,18 @@ class Composer(object):
         # 文本区（全页统一口径：只要页内有任一行带图标，**所有行**都给图标列留位）
         text_left = x0 + (m['icon_left'] + m['icon_bg'] + m['spacer']
                           if getattr(self, 'fam_icon', False) else m['pad_l'])
-        right_edge = x0 + w - m['pad_r'] - (reserve + m['text_chev_gap'] if reserve else 0)
+        # 右端控件左缘 = 本行**实际**有的那个（箭头 / 开关；两者都有取更靠左者）
+        rt_edge = None
+        if reserve and btype != 'toggle_row' and blk.get('chevron', True):
+            rt_edge = x0 + w - m['pad_r'] - m['chev_w']
+        if btype == 'toggle_row':
+            sw_left = x0 + w - m['pad_r'] - r4(m['row_h'] * 1.30)
+            rt_edge = sw_left if rt_edge is None else min(rt_edge, sw_left)
+        # 值文本右缘 = 本行右端控件左缘 − 间隙（旧实现用「全页最宽预留」→ 只有箭头的行多留死区）
+        right_edge = (rt_edge - m['text_chev_gap']) if rt_edge is not None \
+            else (x0 + w - m['pad_r'])
         text_w = right_edge - text_left
+        self.note_row_gaps('TextRow%s' % blk['_name'], right_edge, rt_edge)
         label = blk.get('label') or blk.get('text') or ''
         value = blk.get('value') or ''
         if m['compact'] and blk.get('value_short'):
@@ -634,6 +646,22 @@ class Composer(object):
             row.append(self.button('ButtonRow' + blk['_name'], self.box(x0, y0, w, m['row_h'])))
         parent.extend(row)
         return m['row_h']
+
+    def note_row_gaps(self, caption, right_edge, rt_edge):
+        """记录每行「值文本右缘 → 本行右端控件左缘」的实际间隙，供同页一致性自检。"""
+        if rt_edge is None:
+            return
+        gaps = getattr(self, '_row_gaps', None)
+        if gaps is None:
+            gaps = self._row_gaps = []
+        gaps.append((caption, rt_edge - right_edge))
+
+    def assert_row_gaps(self):
+        """同页行族：上述间隙必须一致（防「有的行贴箭头、有的行留死区」）。"""
+        vals = sorted({g for _c, g in getattr(self, '_row_gaps', [])})
+        if len(vals) > 1:
+            raise SystemExit('[X] 行族「值→右端控件」间隙不一致：%s'
+                             % '；'.join('%s=%d' % (c, g) for c, g in self._row_gaps))
 
     def assert_children_fit(self, win, cw, ch_, where):
         """自检：容器子节点盒必须落在容器盒内（子节点坐标是**相对父容器**的）。
@@ -941,6 +969,7 @@ class Composer(object):
                'touchable': False, 'topmost': False}
         doc.update(body)
         assert_caption_unique(doc, self.page_name)     # 自检：重名 → 报错退出（不出产物）
+        self.assert_row_gaps()                          # 自检：同页行族「值→右端控件」间隙一致
         return doc
 
 
