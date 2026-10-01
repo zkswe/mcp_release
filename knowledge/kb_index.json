@@ -1,27 +1,27 @@
 {
  "meta": {
   "schema": 1,
-  "built_at": "2026-10-01 12:44:22",
-  "mcp_version": "0.27.153-open",
-  "doc_count": 96,
-  "source_hash": "e284a530558d6e588f318fbf3a50a95f"
+  "built_at": "2026-10-01 13:13:05",
+  "mcp_version": "0.27.154-open",
+  "doc_count": 97,
+  "source_hash": "189b8c32ee0a78972450a6f457a3948a"
  },
  "summary": {
-  "total": 96,
+  "total": 97,
   "byCategory": {
-   "devflow": 43,
+   "devflow": 44,
    "uicontrols": 36,
    "hardware": 5,
    "t113-car": 2,
    "v85x": 10
   },
   "byStatus": {
-   "review": 91,
+   "review": 92,
    "verified": 5
   },
-  "withEvidence": 13,
-  "needsEvidence": 91,
-  "noQueries": 76,
+  "withEvidence": 14,
+  "needsEvidence": 92,
+  "noQueries": 77,
   "stale": 0,
   "inbox": 0,
   "aging": 0,
@@ -1693,8 +1693,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 22312,
-   "sha256": "f1ff78d11222a52744af1bd3374223cb1b0aa30a4f80797103380e6c9bda24c7",
+   "bytes": 22705,
+   "sha256": "615ae62724b3d9ee9575711680b0d47ef713c6152dc4b00c9944273ff45a7818",
    "fingerprint": "3bba54108ad0943c",
    "ageDays": 2,
    "freshness": "fresh",
@@ -1787,6 +1787,49 @@
    "bytes": 26407,
    "sha256": "1cb8fad467d31e8ac639fe884fc271afd57fff143e4912b8e1e8f675001b8636",
    "fingerprint": "f2027ae5a1d327a8",
+   "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
+   "frontMatterError": ""
+  },
+  {
+   "id": "devflow-wysiwyg-render-spec",
+   "path": "knowledge/devflow/wysiwyg-render-spec.md",
+   "title": "渲染语义规格（离线「所见即所得」单点真相：树序 / 拉伸填充 / 对齐位模型 / 裁剪）",
+   "category": "devflow",
+   "platforms": [
+    "Z20"
+   ],
+   "tags": [
+    "渲染语义",
+    "所见即所得",
+    "离线渲染",
+    "拉伸填充",
+    "对齐位模型",
+    "绘制顺序",
+    "字体度量",
+    "视口裁剪",
+    "真机基线",
+    "文本位置不对"
+   ],
+   "status": "review",
+   "confidence": "manual",
+   "verified_at": "2026-10-01",
+   "stale_days": 180,
+   "origin": "partial",
+   "evidenceCount": 3,
+   "evidence": [
+    "引擎语义与实现：ui_tools/json2img.py（树序 / 拉伸填充 / 纯色 / 字体 / 裁剪 / 专有绘制，逐条注释给依据）",
+    "对齐位模型真机证据：见本文 §4 表（4/5/6 与 36/37/38 等价；基线 diff 1690px vs 8608px）",
+    "静态一致率实测：多屏拼接页 97.36% / 设置页顶部 95.32%（ui_tools/wysiwyg_diff.py 可复现）"
+   ],
+   "evidenceLevel": "has-evidence",
+   "needsEvidence": true,
+   "hasQueries": false,
+   "bytes": 7655,
+   "sha256": "1fb9744009082b624331c5049b71803dec349de97ecf81a1c4e7f7d343ec5345",
+   "fingerprint": "ac753bfcaee07fd4",
    "ageDays": 0,
    "freshness": "fresh",
    "stale": false,

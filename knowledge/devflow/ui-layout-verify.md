@@ -236,6 +236,10 @@ logic.cc 里用 `showWnd()/hideWnd()` 切页」（弹窗、设置页、二级页
 
 ## 5. 像素 diff（`flythings_ui_visual(action="diff")`，0 token）
 
+> **离线「所见即所得」**：改完布局想不上机先看像不像 → `ui_tools/json2img.py`（引擎等价渲染）+
+> `ui_tools/wysiwyg_diff.py`（与真机截图/基线比，给非文字区一致率 + 逐控件归因）；
+> 渲染语义规格与边界见 `knowledge/devflow/wysiwyg-render-spec.md`（静态几何/图/纯色可到 100%，文字只差 ±2px 字形栅格化）。
+
 输出的**是差异清单（数字）而不是图**——所以不吃 token：区域坐标 / 尺寸 / 面积 / 最大色差。
 把整屏图丢给视觉模型是千级 token/次，迭代十轮就上万，没必要。
 
