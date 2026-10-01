@@ -67,8 +67,6 @@ json2img v0.1.0 — 引擎等价离线渲染（PIL 像素级，静止态）
    合计：实测 50 处 / 待校准 0 处 / 表外 0 处
   渲染图 main.render.png 1024x600 ｜ 尺寸 == resolution: True
 -- check_all --
-  [NOTE] key_325x96.png                   未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
-  [NOTE] key_326x96.png                   未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
   [NOTE] keybrand_326x96.png              未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
   [NOTE] sep_960x1.png                    未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
   [NOTE] skel_576x16.png                  未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
@@ -91,7 +89,7 @@ json2img v0.1.0 — 引擎等价离线渲染（PIL 像素级，静止态）
 == 28. UTF-8 文本陷阱（src 静态扫描；钟工 2026-10-01）==
 == 29. 显示件吃掉下层触摸（装饰件漏设穿透；钟工 2026-10-01）==
        → 同一 json 内 caption 出现 ≥2 次即 FAIL，并列出「哪个 caption、几次、在哪几个控件」。
+== 34. 文本对比度（字色 vs 实际底色；不足 → FAIL；钟工 2026-10-01）==
+       σ≤6）不足 → FAIL；照片/渐变图底与控件自述底只 NOTE；临界带（≥0.9×阈值）只 NOTE。
 [OK] 全部 PASS，可以交付。
   check_all exit = 0
-
----STDERR---

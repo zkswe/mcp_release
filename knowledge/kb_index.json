@@ -1,27 +1,27 @@
 {
  "meta": {
   "schema": 1,
-  "built_at": "2026-10-01 20:50:36",
-  "mcp_version": "0.27.168-open",
-  "doc_count": 97,
-  "source_hash": "f9f3356f64b1b145abef31e1bd67db69"
+  "built_at": "2026-10-01 21:40:31",
+  "mcp_version": "0.27.169-open",
+  "doc_count": 98,
+  "source_hash": "777ef4dc1b552073fd822baa0c062d77"
  },
  "summary": {
-  "total": 97,
+  "total": 98,
   "byCategory": {
-   "devflow": 44,
+   "devflow": 45,
    "uicontrols": 36,
    "hardware": 5,
    "t113-car": 2,
    "v85x": 10
   },
   "byStatus": {
-   "review": 92,
+   "review": 93,
    "verified": 5
   },
-  "withEvidence": 14,
-  "needsEvidence": 92,
-  "noQueries": 77,
+  "withEvidence": 15,
+  "needsEvidence": 93,
+  "noQueries": 78,
   "stale": 0,
   "inbox": 0,
   "aging": 0,
@@ -1830,6 +1830,51 @@
    "bytes": 7655,
    "sha256": "1fb9744009082b624331c5049b71803dec349de97ecf81a1c4e7f7d343ec5345",
    "fingerprint": "ac753bfcaee07fd4",
+   "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
+   "frontMatterError": ""
+  },
+  {
+   "id": "devflow-z20-video-pipeline-spec",
+   "path": "knowledge/devflow/z20-video-pipeline-spec.md",
+   "title": "Z20 视频链路规格（素材编码 → 解码 → 上屏）—— H.264 去 B 帧与块状花屏硬约束",
+   "category": "devflow",
+   "platforms": [
+    "Z20"
+   ],
+   "tags": [
+    "视频链路",
+    "去B帧",
+    "块状花屏",
+    "MI VDEC",
+    "通道属性",
+    "H264",
+    "H265不支持",
+    "素材编码",
+    "播放判据",
+    "拼墙起播"
+   ],
+   "status": "review",
+   "confidence": "manual",
+   "verified_at": "2026-10-01",
+   "stale_days": 180,
+   "origin": "partial",
+   "evidenceCount": 5,
+   "evidence": [
+    "去 B 帧来历：tools/video_wall/split_wall.py L68-L79、tools/video_wall/README.md L179-L184 与 L215（Z20 编码建议表 B 帧 0）；判据 has_b_frames==0 见 memory/2026-09-29.md L6",
+    "块状花屏与通道属性：references/kb/z20-mi-vdec-channel-attrs.md §1（块度 1.53~1.81→1.08~1.17）、§2（固化于 libmi-module.a 成员 h264_player.o）、§5、§7（厂商实建值 524288/1/INPLACE）",
+    "素材与通道一致正反证：temp/h265_probe/REPORT.md §4.2（A 用例 chn0 H264 480 480 2097152 能播；B 用例 HEVC 报错 0 帧）",
+    "H.265 交付不支持：temp/h265_probe/REPORT.md §2.1/§2.2/§2.4/§5/§6.3；原文 temp/h265_probe/evidence/probe2_h265.txt",
+    "播放侧判据：references/kb/video-wall-sync.md §9.5（bind mi_vdec chn1）、§10.1（GOP 内丢包→P 帧花屏）、§12.7（dropGop==0、块度 1.07/1.00）"
+   ],
+   "evidenceLevel": "has-evidence",
+   "needsEvidence": true,
+   "hasQueries": false,
+   "bytes": 5606,
+   "sha256": "1b8c39956a8c8fe83f060920dc6e6a1207967f462ec8bcd1a4f07fa3b74a8b18",
+   "fingerprint": "d574baa4c0e3f198",
    "ageDays": 0,
    "freshness": "fresh",
    "stale": false,

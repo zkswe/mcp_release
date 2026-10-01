@@ -138,7 +138,7 @@ python templates/ui_blocks/full_render.py templates/ui_blocks/examples/nav_1024x
 * **第 3 批新块都是根层块**（不进卡）：`tabs` / `bottom_nav` / `banner` / `toast` / `status_pill` / `divider_label` / `grid_icons`；写进 `card.blocks` 会直接报错退出（不静默兜底）。
 * `bottom_nav` 与 `bottom_actions` 可**同页共存**：nav 贴底栏上沿（两者不重叠），视口 = 屏高 − 标题带 − nav 带 − 底栏带（compose 打印 `[NOTE] bottom_nav 固定带 N px → 视口缩至 M`）。
 
-## 4. 块清单（24 个 = 第 1 批 10 个 + 第 2 批交互类 7 个 + 第 3 批结构/导航/提示类 7 个）
+## 4. 块清单（24 个 = 第 1 批 10 个 + 第 2 批交互类 7 个 + 第 3 批结构/导航/提示类 7 个）；第 4 批复杂块另见本节末 4 行与 §4.3
 
 | 块 | 用途 | 占几行 | 需要素材（`gen_res` 出） | 能滚动 | 关键相对约束 |
 |---|---|---|---|---|---|
@@ -166,6 +166,10 @@ python templates/ui_blocks/full_render.py templates/ui_blocks/examples/nav_1024x
 | `status_pill` | 状态胶囊（圆角药丸 + 彩色文字） | 1 带 | `pill_<state>_` | 随内容 | 带高 = max(屏高 7%, b2 高 + spacer)；盒宽 = 文本盒（估算 × 1.10，向上取 4px 栅格）+ 2×pill_pad；圆角 = 带高/2；state = ok/warn/danger/off |
 | `divider_label` | 带文字分割线（左右 1px 线 + 中间小字） | 1 带 | `sep_<W>x1`（与行内分割线共用） | 随内容 | 带高 = max(屏高 5%, b2 高)；线长 = (内容宽 − 文本盒)/2 − 间隙（**随容器比例伸缩，不给固定像素**）；两侧等长；轴线直角（不用圆角） |
 | `grid_icons` | 图标宫格（N×M 等距格：格底 + 图标底 + 图标 + 文字） | 自带块高（rows × 格高 + 行距） | `gtile_`、`icbg_`、`ic_<glyph>_<S>` | 随内容 | 格宽 = 内容宽/cols（末列吃余数）− 横向间隙；**格盒 == 图**；格高 = 2×spacer + 图标底 + b2 高；图标底 = max(图标底档, 图标 × 1.5)；`tappable` → 每格一个整格 button（最后定义） |
+| `toolbar` | 顶部工具条（左返回 + 标题 + 右侧动作图标，图标走 `components/icons`） | **固定带**（占标题带位置） | `toolbg_<W>x<H>`、`ic_back_`、`ic_<glyph>_` | ✗（固定件） | 带高 = max(屏高 12%, 图标档 + 2×spacer)（1024→72 / 320→40）；**与 `page_title` 二选一**（同页同给 → 报错退出）；动作图标 ≤3；返回/动作命中盒 = min(带高, max(图标档+2×spacer, 32))；底盘 → 图标 → 命中 button（最后定义 = z 最高） |
+| `loading` | 加载态（spinner 转圈图 + 文案 / skeleton 文案 + N 条骨架条；**静态帧**） | 自带块高（1 带） | `card_<W>x<H>`、`skel_<W>x<H>`、`ic_<glyph>_<S>` | 随内容 | 根层块（卡内写报错退出）；spinner 带高 = max(屏高×0.18, 图标档+spacer+b1+2×spacer-2)（1024→108 / 320→80）；skeleton 带高 = 2×spacer-2 + b1 + spacer-1 + lines×条高 + (lines−1)×spacer；条高 = max(10, b1×0.70)（**≥10px 硬口径**）；整块装饰件 touchable 显式 false |
+| `time_row` | 时间行（标题 + 时间/日期值 + 箭头；**是「行」不是日历**） | 1 行 | `chev_`（+可选 `icbg_/ic_`） | 随内容 | 与 `setting_row` **同一套行模板**（行高 = 屏高 10%、极小屏 11.7%）；两行式标题在上、值在下、**左缘同一**；极小屏整页降单行式（标题左、值右，可给 `value_short`）；值 = 已格式化**字符串**（块库不解析时间）；命中区 = 整行透明 button（caption = `ButtonRowTimeRow<n>`） |
+| `form_section` | 表单分组（组标题 + 字段行集合 + 组间距；行族口径复用 `setting_row`） | 组标题 1 带 + N 行（自带块高） | 可选 `card_<W>x<H>`（surface=true）、`sep_<W>x1` | 随内容 | 行集合与 card **同一套 builder**（字段行 / 行块 / list_item / wheel_picker；根层块写进 `blocks` 报错退出）；组内行间 1px 分割线（`RowSep<行块序号>`）、组内行与行**不额外留空**；组间距 = 块前后各一个 `group_gap(spacer-2)`（run() 统一加，与 card 同口径）；surface=false 默认（行直接落页面灰底，无底图） |
 
 > `value_row`（左标题 + 右值，无箭头）不用单独建块：`{"type":"setting_row","chevron":false,"icon":""}` 就是它。
 
@@ -196,6 +200,17 @@ python templates/ui_blocks/full_render.py templates/ui_blocks/examples/nav_1024x
 > **① 图的尺寸下限**：块内 glyph 尺寸 >= `_tokens.json` 的 `glyph_min_px = 24`。实测（`aa_audit --fail`）：`wifi@12` / `home@16` / `settings@16` / `bell@20` 全部判**真缺陷**，`home@20` / `wifi@16` 已是 WARN 边界。图标**不像字号可以降档**（降了就退化成硬阶梯），极小屏宁可省图标（见反面清单 #18/#38）。
 > **② 根层块不进卡**：`tabs / bottom_nav / banner / toast / status_pill / divider_label / grid_icons` 都是根层块；卡内只收行块 / 列表块（`build_card` 类型校验直接报错退出）。
 > **③ 「文本→右端控件」间隙口径全页一致**：banner 的「文案 → 关闭盒」与 divider_label 的「线 → 文字」都走 `m['text_chev_gap']`（与行族同一口径）→ `note_row_gaps` + `assert_row_gaps` 同页一致（不同口径会直接报错退出，不是静默放过）。
+
+### 4.3 第 4 批 4 个块的禁止项（红线；完整版在 `blocks/<type>.json` 的 `forbidden`）
+
+| 块 | 红线（写了就注定返工/编译不过/真机不对） |
+|---|---|
+| `toolbar` | ① **同页再写 `page_title` / 用 `page.title` 同时给工具条标题**（两者争同一条固定带 → compose 报错退出，不静默兜底）；② 把工具条放进滑动区（固定件进 scrollwindow → 上滑时工具条跟着滚走）；③ 给工具条加主/次按钮（那是 `bottom_actions` 的活；工具条只收图标动作）；④ action 图标自绘 / 用 emoji 字体兜底（图标唯一来源 = `components/icons`）；⑤ 图标盒 ≠ 图 / 图标盒 < `glyph_min_px`(24px) 硬塞；⑥ 返回/动作命中盒 < 16px；⑦ actions 超过 3 个（标题带放不下，多动作请收进 more 菜单）。 |
+| `loading` | ① **骨架条矮于 10px**（药丸端弧线在 `aa_audit` 里退化成硬阶梯 → #21 真缺陷）；② 条盒 ≠ 图（拉伸 → 药丸两端变椭圆）；③ 条/卡盒用 1px 描边环做「轮廓」；④ 图标盒 ≠ 图 / < 24px 硬塞；⑤ 在块里跑动画 / 定时器（块库只出静态帧，转圈动画由业务换图驱动）；⑥ 让加载态吃触摸；⑦ 把加载态塞进卡（根层块）；⑧ 用 loading 冒充 `empty_state`（中间态 vs 结论态，语义不同）。 |
+| `time_row` | ① **在块里画日历 / 月历网格 / 星期头**（那是 `components/ui_v1/Calendar` 的能力，块库不重造）；② 让块库解析 / 格式化时间（`value` 是**字符串**，时区、相对时间都在业务侧算好）；③ 同页行族里只有时间行带图标（`assert_icon_uniform` 直接报错退出——要么都带、要么都不带）；④ 值文案超长却不用 `value_short`（极小屏单行式会 #13 FAIL）；⑤ 为给箭头腾位去收窄 / 挪值文本盒；⑥ 把时间行做成两行以上（它是一行）；⑦ icon 用 emoji 字体兜底。 |
+| `form_section` | ① **在组里另起一套行几何**（行高 / 文本左缘 / 右端预留 / 图标列必须与全页行族同源）；② 把根层块（`tabs`/`banner`/`toast`/`status_pill`/`divider_label`/`grid_icons`/`chart_card`/`image_gallery`/`keypad`/`loading`/`toolbar`）塞进 `blocks`（只收行块 / 列表块 → 报错退出）；③ 一个分组同时给 `title` 又给 card 包一层（组标题与卡标题连成两层标题）；④ 组间距手写像素（必须走 `group_gap` = spacer-2）；⑤ `surface=true` 时又给行底色（会盖住卡底圆角）；⑥ 组内有的行两行式、有的单行式（极小屏整页降单行式，禁混用）。 |
+
+> **第 4 批公共红线**：**① 顶部固定带只有一个**（`toolbar` 与 `page_title` 二选一；`toolbar` 只能出现一次）；**② 根层块** = `loading` / `form_section`（+ `chart_card` / `image_gallery` / `keypad`），卡内写直接报错退出；**③ 行 = 全页一套几何**：`time_row` 与 `setting_row` 同一套行模板、`form_section` 组内行复用同一批行 builder（同页 `assert_row_gaps` / `assert_icon_uniform` 一致，不一致直接报错退出）。
 
 ## 5. 相对尺度体系（唯一的数值源 = `blocks/_tokens.json`）
 

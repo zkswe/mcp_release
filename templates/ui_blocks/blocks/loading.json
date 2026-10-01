@@ -25,7 +25,7 @@
   },
   "assets": [
     {"name": "card_{W}x{H}.png", "via": "gen_res.rounded_rect_ss(radius=容器圆角, fill=surface)（与 card / 其它卡内容器同名同尺寸只出一张）", "size": "带盒 == 图"},
-    {"name": "skel_{W}x{H}.png", "via": "gen_res.rounded_rect_cov(radius=H/2, fill=line)（药丸骨架条）", "size": "条盒 == 图"},
+    {"name": "skel_{W}x{H}.png", "via": "gen_res.rounded_rect_ss(radius=条高/2, fill=line, ss=8)（药丸骨架条；compose 走 shape → 与卡底同一条出图链路）", "size": "条盒 == 图"},
     {"name": "ic_{glyph}_{S}.png", "via": "components/icons 资产库（loader）；盒 == 档位时取库里产物换色，缺档按盒尺寸现出", "size": "图标盒 == 图"}
   ],
   "scroll": "inherit",
