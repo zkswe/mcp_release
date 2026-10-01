@@ -1687,6 +1687,42 @@ def check_text_room(project_root):
     return notes
 
 
+# ---------------- 37. listview item 高核对（钟工 2026-10-01）----------------
+# 引擎按 itemH = int(lv高 / rows) − rowSpacing 自动算行高；**除不尽的余数是有意设计**——
+# 底部会露出下一项的一小块，让用户知道「还能继续滑」。所以不要求 rows×(itemH+rowSpacing) 恰好等于板高，
+# 也**不要**把「底部露出下一条」当缺陷（这一点 #11/#17 的「图 == 盒」判据不适用：盒子由公式决定）。
+# 要拦的是反向错法：itemH 写成比公式**大** → 挤爆/裁切；写成比公式**小** → 每项底部多出空带。
+def check_listview_item_h(project_root):
+    """→ (notes, warns)：notes 含「余 N px = 可滑动提示（预期）」的合规记录。"""
+    notes, warns = [], []
+    for jf in _ui_pages(project_root):
+        rel = 'ui/' + os.path.basename(jf)
+        _d, ctrls = _page_ctrls(jf)
+        for k, cap, rect, v in ctrls:
+            if not k.startswith('listview') or v.get('visible') is False:
+                continue
+            lv_h, rows, rs = rect[3], v.get('rows') or 0, v.get('rowSpacing') or 0
+            if not rows:
+                continue
+            item = v.get('item')
+            if not isinstance(item, dict):
+                si = v.get('subItem')
+                item = si[0] if isinstance(si, list) and si and isinstance(si[0], dict) else None
+            ih = (item.get('position') or {}).get('height') if isinstance(item, dict) else None
+            if not ih:
+                continue
+            exp = int(lv_h / rows) - rs
+            peek = lv_h - rows * (ih + rs)
+            if ih != exp:
+                warns.append((rel, '%s item 高 %d ≠ int(%d/%d)−%d = %d（%s）'
+                              % (cap, ih, lv_h, rows, rs, exp,
+                                 '挤爆/裁切' if ih > exp else '每项底部多空带')))
+            else:
+                notes.append('%s %s item 高 %d = int(%d/%d)−%d ✓，余 %d px = 可滑动提示（预期）'
+                             % (rel, cap, ih, lv_h, rows, rs, peek))
+    return notes, warns
+
+
 def main(project_root):
     root = os.path.abspath(project_root)
     if not os.path.isdir(root):
@@ -2458,6 +2494,17 @@ def main(project_root):
         print('  [NOTE] %s' % n)
     if not tr_notes:
         print('  [PASS] 文本盒余量充足')
+
+    print('== 37. listview item 高核对（itemH = int(lv高/rows) − rowSpacing；钟工 2026-10-01）==\n'
+          '       余数（底部露出下一项一小块）是**有意的可滑动提示**，不算缺陷；只有「比公式大（挤爆）'
+          '或比公式小（空带）」才报。')
+    lv_notes, lv_warns = check_listview_item_h(root)
+    for n in lv_notes:
+        print('  [NOTE] %s' % n)
+    for pg, msg in lv_warns:
+        warn('%s %s' % (pg, msg))
+    if not lv_notes and not lv_warns:
+        print('  [NOTE] 无 listview，跳过')
 
     print()
     if warnings:
