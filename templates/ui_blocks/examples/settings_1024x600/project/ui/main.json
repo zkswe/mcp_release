@@ -169,8 +169,8 @@
           "id": 50004,
           "caption": "CardBg1",
           "position": {
-            "left": 16,
-            "top": 28,
+            "left": 0,
+            "top": 0,
             "width": 992,
             "height": 180
           },
@@ -202,8 +202,8 @@
           "rollIntervalTime": 150,
           "rollStep": 5,
           "textPosition": {
-            "left": 16,
-            "top": 28,
+            "left": 0,
+            "top": 0,
             "width": 992,
             "height": 180
           },
@@ -215,7 +215,7 @@
           "position": {
             "left": 16,
             "top": 60,
-            "width": 976,
+            "width": 960,
             "height": 1
           },
           "alignment": 37,
@@ -248,10 +248,10 @@
           "textPosition": {
             "left": 16,
             "top": 60,
-            "width": 976,
+            "width": 960,
             "height": 1
           },
-          "backgroundPic": "images/sep_976x1.png"
+          "backgroundPic": "images/sep_960x1.png"
         },
         "textview__6": {
           "id": 50006,
@@ -259,7 +259,7 @@
           "position": {
             "left": 16,
             "top": 120,
-            "width": 976,
+            "width": 960,
             "height": 1
           },
           "alignment": 37,
@@ -292,10 +292,10 @@
           "textPosition": {
             "left": 16,
             "top": 120,
-            "width": 976,
+            "width": 960,
             "height": 1
           },
-          "backgroundPic": "images/sep_976x1.png"
+          "backgroundPic": "images/sep_960x1.png"
         },
         "textview__7": {
           "id": 50007,
@@ -827,8 +827,8 @@
           "id": 50017,
           "caption": "CardBg5",
           "position": {
-            "left": 16,
-            "top": 252,
+            "left": 0,
+            "top": 0,
             "width": 992,
             "height": 240
           },
@@ -860,8 +860,8 @@
           "rollIntervalTime": 150,
           "rollStep": 5,
           "textPosition": {
-            "left": 16,
-            "top": 252,
+            "left": 0,
+            "top": 0,
             "width": 992,
             "height": 240
           },
@@ -873,7 +873,7 @@
           "position": {
             "left": 16,
             "top": 60,
-            "width": 976,
+            "width": 960,
             "height": 1
           },
           "alignment": 37,
@@ -906,10 +906,10 @@
           "textPosition": {
             "left": 16,
             "top": 60,
-            "width": 976,
+            "width": 960,
             "height": 1
           },
-          "backgroundPic": "images/sep_976x1.png"
+          "backgroundPic": "images/sep_960x1.png"
         },
         "textview__19": {
           "id": 50019,
@@ -917,7 +917,7 @@
           "position": {
             "left": 16,
             "top": 120,
-            "width": 976,
+            "width": 960,
             "height": 1
           },
           "alignment": 37,
@@ -950,10 +950,10 @@
           "textPosition": {
             "left": 16,
             "top": 120,
-            "width": 976,
+            "width": 960,
             "height": 1
           },
-          "backgroundPic": "images/sep_976x1.png"
+          "backgroundPic": "images/sep_960x1.png"
         },
         "textview__20": {
           "id": 50020,
@@ -961,7 +961,7 @@
           "position": {
             "left": 16,
             "top": 180,
-            "width": 976,
+            "width": 960,
             "height": 1
           },
           "alignment": 37,
@@ -994,10 +994,10 @@
           "textPosition": {
             "left": 16,
             "top": 180,
-            "width": 976,
+            "width": 960,
             "height": 1
           },
-          "backgroundPic": "images/sep_976x1.png"
+          "backgroundPic": "images/sep_960x1.png"
         },
         "textview__21": {
           "id": 50021,

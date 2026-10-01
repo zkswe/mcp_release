@@ -635,6 +635,25 @@ class Composer(object):
         parent.extend(row)
         return m['row_h']
 
+    def assert_children_fit(self, win, cw, ch_, where):
+        """自检：容器子节点盒必须落在容器盒内（子节点坐标是**相对父容器**的）。
+
+        为什么加（2026-10-01 实测缺陷）：卡底图节点误用「卡的绝对 x/y」当子节点坐标 →
+        父子双计 → 白框底色整体右下各偏一个 margin、右侧溢出屏外（症状=「白框底色与文本列表区错位」）。
+        同类事故在 SmartPanel 也出现过（卡片底图/装饰件用绝对坐标）。
+        """
+        bad = []
+        for c in getattr(win, 'children', []) or []:
+            p = c.pos or {}
+            l, tp, w, h = p.get('left'), p.get('top'), p.get('width'), p.get('height')
+            if None in (l, tp, w, h):
+                continue
+            if l < 0 or tp < 0 or l + w > cw or tp + h > ch_:
+                bad.append('%s(%s) %d,%d %dx%d 超出容器 %dx%d'
+                           % (c.caption, c.type, l, tp, w, h, cw, ch_))
+        if bad:
+            raise SystemExit('[X] %s 子节点越界（子节点坐标应为相对父容器）：%s' % (where, '；'.join(bad)))
+
     def build_card(self, blk, parent, x, y):
         """卡片 = window__N 容器（touchable false）+ 卡底装饰 + 行 + 行间分割线。"""
         m = self.m
@@ -646,7 +665,7 @@ class Composer(object):
         win = Node('window', 'Card%d' % blk['_seq'], self.box(x, y, cw, ch_))
         bg = self.shape('card_%dx%d.png' % (cw, ch_), cw, ch_, m['radius'],
                         rgba(self.tok['color']['surface']))
-        win.children.append(self.text('CardBg%d' % blk['_seq'], self.box(x, y, cw, ch_),
+        win.children.append(self.text('CardBg%d' % blk['_seq'], self.box(0, 0, cw, ch_),
                                       m['fs']['b2'], hex2int(self.tok['color']['surface']),
                                       '', bg=bg, align=37))
 
@@ -662,11 +681,12 @@ class Composer(object):
             self.build_row(b, row_nodes, 0, top, cw, reserve, has_icon)
             top += m['row_h']
             if i < n - 1:
-                sep_nodes.append(self.sep_node(m['pad_l'], top, cw - m['pad_l'], b['_seq']))
+                sep_nodes.append(self.sep_node(m['pad_l'], top, cw - 2 * m['pad_l'], b['_seq']))
         self.origin = old_origin
         # z 顺序：卡底 → 分割线（纯装饰，先铺）→ 行（装饰件 + 整行命中按钮放最后）→ 无装饰件压住按钮
         win.children.extend(sep_nodes)
         win.children.extend(row_nodes)
+        self.assert_children_fit(win, cw, ch_, 'Card%s' % blk['_seq'])
         parent.append(win)
         return y + ch_
 
