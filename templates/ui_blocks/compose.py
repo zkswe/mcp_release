@@ -74,7 +74,18 @@ BLOCK_PREFIX = {
     'radio_row': 'RadioRow',
     'list_item': 'ListItem',
     'wheel_picker': 'WheelPicker',
+    # ── 第 3 批（结构 / 导航 / 提示类，2026-10-01）──
+    'tabs': 'Tabs',
+    'bottom_nav': 'BottomNav',
+    'banner': 'Banner',
+    'toast': 'Toast',
+    'status_pill': 'StatusPill',
+    'divider_label': 'DividerLabel',
+    'grid_icons': 'GridIcons',
 }
+
+# 根层块（第 3 批）：不进卡（卡内只收行块/列表块），带高自成一带
+STRUCT3_TYPES = ('tabs', 'banner', 'divider_label', 'grid_icons', 'status_pill')
 
 # 控件 id 分区（与 tools/ui_tools/html2json.py 的 ID_BASE 同源，只有 checkbox/radiobutton 例外）
 #   · checkbox 本库取 **94500** 段（html2json 旧口径是 21000）：check_all #5 按「20000 ≤ id < 30000」
@@ -140,6 +151,11 @@ def assert_caption_unique(doc, page_name=''):
 def r4(v):
     """4px 栅格（令牌体系里所有几何值都落在 4 的倍数上）。"""
     return max(4, int(round(float(v) / 4.0)) * 4)
+
+
+def r4up(v):
+    """4px 栅格**向上**取整（文本盒宽专用：必须 ≥ 估算宽 × 余量系数，见 check_all #36）。"""
+    return max(4, int(-(-float(v) // 4)) * 4)
 
 
 def pick(target, lo, hi, ladder):
@@ -311,6 +327,29 @@ def build_metrics(W, H, tok):
     m['wheel_rows'] = 5                                       # 可见行数（奇数：正中行 = 选中行）
     m['wheel_h'] = max(m['h_b1'] + m['spacer'], r4(m['row_h'] * 0.60))  # 滚轮模板行高
     m['wheel_col_w'] = r4(m['content_w'] * 0.20)              # 滚轮列宽
+
+    # —— 第 3 批：结构 / 导航 / 提示类度量（比例 + 内容反算，两版分辨率同一套公式）——
+    m['tab_h'] = max(r4(H * 0.09), m['h_b1'] + 2 * m['spacer'])      # 顶部分段控件带高
+    m['ind_h'] = max(2, int(round(H * 0.005)))                       # 指示条高（1024→3 / 320→2）
+    m['pill_h'] = max(r4(H * 0.07), m['h_b2'] + m['spacer'])         # 状态胶囊高
+    m['pill_pad'] = r4(m['h_b2'] * 0.75)                             # 胶囊左右内边距
+    m['banner_h'] = max(r4(H * 0.08), m['h_b1'] + 2 * m['spacer'])   # 提示条带高
+    m['divider_h'] = max(r4(H * 0.05), m['h_b2'])                    # 带文字分割线带高
+    # 块内图标尺寸下限（第 3 批实测）：aa_audit 对 <20px 的弧线类 glyph 判真缺陷
+    # （wifi@12 / home@16 / settings@16 FAIL，bell@20 FAIL，home@20 / wifi@16 已是 WARN 边界）——
+    # 图标不像字号可以降档（降了就退化成硬阶梯），所以第 3 批块内图标一律保尺寸；极小屏宁可省图标。
+    m['ic_min'] = max(m['icon'], s.get('glyph_min_px', 24))
+    m['nav_gap'] = m['row_gap']                                      # 底导图标×文字间距
+    m['nav_ic'] = m['ic_min']                                        # 底导图标档（= 块内图标下限）
+    m['nav_h'] = max(r4(H * 0.10),
+                     m['nav_ic'] + m['nav_gap'] + m['h_b2'] + 2 * m['spacer'])  # 底导固定带高
+    m['toast_h'] = m['h_b1'] + 2 * m['spacer2']                      # 浮层提示盒高（单行）
+    m['toast_top_of_h'] = 0.60                                       # 浮层垂直位置（居中偏下）
+    m['grid_ic'] = m['ic_min']                                       # 宫格图标档
+    m['grid_ib'] = max(m['icon_bg'], r4(m['grid_ic'] * 1.5))         # 宫格图标底（≥ 图标 × 1.5）
+    m['grid_tile_h'] = 2 * m['spacer'] + m['grid_ib'] + m['h_b2']    # 宫格格高（图标底 + 文字）
+    m['grid_gap'] = m['spacer2']                                     # 宫格横向间隙（格 → 格）
+    m['grid_row_gap'] = m['spacer']                                  # 宫格纵向间隙（行 → 行）
 
     # 顶栏 / 底栏
     m['bar_top'] = max(r4(H * s['bar_top_of_h']),
@@ -936,7 +975,9 @@ class Composer(object):
                     (not m['compact'] or b['type'] != 'icon_row')
                 self.build_row(b, row_nodes, 0, top, cw, reserve, has_icon)
             else:
-                raise SystemExit('[X] 卡内不支持的块类型：%s（卡内只能是行块/列表块）' % t)
+                raise SystemExit('[X] 卡内不支持的块类型：%s（卡内只能是行块/列表块；'
+                                 'tabs/banner/toast/status_pill/divider_label/grid_icons/'
+                                 'bottom_nav 是根层块）' % t)
             top += heights[i]
             if i < n - 1:
                 sep_nodes.append(self.sep_node(m['pad_l'], top, cw - 2 * m['pad_l'], b['_seq']))
@@ -1406,15 +1447,356 @@ class Composer(object):
         parent.extend(lists)
         return cur + lv_h - y
 
+    # ─────── 第 3 批 builder：结构 / 导航 / 提示类 ───────
+    #   统一形态（照抄行族口径）：**装饰件先定义（z 低 + touchable 显式 false）→ 命中 button 最后定义（z 高）**；
+    #   容器一律过 assert_children_fit；文本一律过 check_text_fit（#13）；
+    #   「文本右缘 → 右端控件左缘」间隙过 note_row_gaps（同页一致 → assert_row_gaps）。
+    #   这批块都是**根层块**：卡内只收行块 / 列表块（build_card 的类型校验会拒绝，不静默兜底）。
+
+    def text_box_w(self, txt, fs, align=37, slack=1.10):
+        """文本盒宽 = FT-009 估算宽 × slack，再**向上**取 4px 栅格。
+
+        为什么向上取整：check_all #36 文本余量要求「盒宽 ≥ 估算宽 × 1.05」，
+        而 r4 是四舍五入（可能把余量吃掉）→ 这里用 r4up（例：42 → 44 而不是 40）。
+        """
+        mw, _h = text_min_size(txt, fs, align)
+        return r4up(max(4, mw) * slack)
+
+    def sem_color(self, state):
+        """语义状态 → (前景令牌名, 浅底令牌名)。状态非法 → 报错（不静默兜底）。
+
+        表里同时收 banner 的 4 态（info/success/warn/danger）与胶囊的 4 态（ok/warn/danger/off）。
+        """
+        table = {'info': ('info', 'info1'), 'success': ('success', 'success1'),
+                 'warn': ('warn', 'warn1'), 'danger': ('danger', 'danger1'),
+                 'ok': ('success', 'success1'), 'off': ('fg2', 'page')}
+        if state not in table:
+            raise SystemExit('[X] 未知语义状态：%s（可用：%s）'
+                             % (state, '、'.join(sorted(table))))
+        return table[state]
+
+    def col_int(self):
+        """令牌色名 → FlyThings 整型色值。"""
+        return {k: hex2int(v) for k, v in self.tok['color'].items() if v.startswith('#')}
+
+    def build_tabs(self, blk, parent, x, y):
+        """顶部分段控件：容器（window）+ 指示条 + 选中底 + N 个 tab（透明 button 自带文字）。
+
+        z 顺序（本块内）：容器底 → **指示条（先于所有 tab 定义：静态件放最前）** → 选中底 → tab 按钮。
+        指示条与选中底**几何不重叠**（选中底高度让出 ind_h）→ 谁先定义都不互相遮挡；
+        两者都写在 tab 按钮之前（装饰件 z 低、touchable 显式 false）→ #15/#29 不误报。
+        """
+        m = self.m
+        col = self.col_int()
+        items = [str(s) for s in (blk.get('items') or [])]
+        if len(items) < 2:
+            raise SystemExit('[X] tabs.items 至少 2 个（分段控件），得到 %d' % len(items))
+        n = len(items)
+        sel = int(blk.get('selected') or 0)
+        if not 0 <= sel < n:
+            raise SystemExit('[X] tabs.selected=%d 越界（可选 0~%d）' % (sel, n - 1))
+        w, h = m['content_w'], m['tab_h']
+        win = Node('window', 'Tabs%d' % blk['_seq'], self.box(x, y, w, h))
+        p_bg = self.shape('tabsbg_%dx%d.png' % (w, h), w, h, h // 2,
+                          rgba(self.tok['color']['surface']))
+        win.children.append(self.text('TabsBg%d' % blk['_seq'], self.box(0, 0, w, h),
+                                      m['fs']['b2'], col['surface'], '', bg=p_bg, align=37))
+        base = w // n
+        widths = [base] * n
+        widths[-1] = w - base * (n - 1)
+        lefts, cur = [], 0
+        for i in range(n):
+            lefts.append(cur)
+            cur += widths[i]
+        # ① 指示条：静态件放最前；水平两侧内缩 m['radius']（避开容器圆角，见反面清单 #11/#22）
+        ind_w = max(4, widths[sel] - 2 * m['radius'])
+        p_ind = self.shape('ind_%dx%d.png' % (ind_w, m['ind_h']), ind_w, m['ind_h'], 0,
+                           rgba(self.tok['color']['brand']))
+        win.children.append(self.text('TabsIndicator%d' % blk['_seq'],
+                                      self.box(lefts[sel] + m['radius'], h - m['ind_h'],
+                                               ind_w, m['ind_h']),
+                                      m['fs']['b2'], col['brand'], '', bg=p_ind, align=37))
+        # ② 选中 tab 的底色（高度让出指示条 → 与①不重叠）
+        on_w, on_h = widths[sel], h - m['ind_h']
+        p_on = self.shape('tab_on_%dx%d.png' % (on_w, on_h), on_w, on_h, m['radius'],
+                          rgba(self.tok['color']['brand1']))
+        win.children.append(self.text('TabsOnBg%d' % blk['_seq'],
+                                      self.box(lefts[sel], 0, on_w, on_h),
+                                      m['fs']['b2'], col['brand1'], '', bg=p_on, align=37))
+        # ③ tab：透明 button（文字自带、命中区 = 整个 tab 盒）；caption 唯一 → logic 骨架自动出回调
+        for i, txt in enumerate(items):
+            cap = 'Tabs%dItem%d' % (blk['_seq'], i + 1)
+            win.children.append(self.button(cap, self.box(lefts[i], 0, widths[i], h),
+                                            fs=m['fs']['b1'],
+                                            color=col['brand'] if i == sel else col['fg2'],
+                                            align=37, txt=txt))
+            self.check_text_fit(cap, txt, m['fs']['b1'], widths[i], h, 'tab')
+        self.assert_children_fit(win, w, h, 'Tabs%d' % blk['_seq'])
+        parent.append(win)
+        return y + h
+
+    def build_nav(self, blk, parent):
+        """底部导航（固定带，贴底栏上沿）：满宽白面 + 每项 图标 + 文字 + 整项命中按钮。
+
+        与 bottom_actions 的区别：**固定高**（nav_h 只跟屏高/图标档有关，与项数无关）、**无主次按钮**。
+        底导带与底栏带**不重叠**（nav 贴 bar_bot 上沿），视口在 run() 里扣掉 nav_h。
+        """
+        m = self.m
+        col = self.col_int()
+        items = blk.get('items') or []
+        n = len(items)
+        if not 2 <= n <= 6:
+            raise SystemExit('[X] bottom_nav.items 应为 3~5 项（允许 2~6），得到 %d' % n)
+        sel = int(blk.get('selected') or 0)
+        if not 0 <= sel < n:
+            raise SystemExit('[X] bottom_nav.selected=%d 越界（可选 0~%d）' % (sel, n - 1))
+        w, h = self.W, m['nav_h']
+        ny = self.H - m['bar_bot'] - h
+        win = Node('window', 'BottomNav%d' % blk['_seq'],
+                   {'left': 0, 'top': ny, 'width': w, 'height': h})
+        p_bg = self.shape('navbg_%dx%d.png' % (w, h), w, h, 0,
+                          rgba(self.tok['color']['surface']))
+        win.children.append(self.text('NavBg%d' % blk['_seq'], self.box(0, 0, w, h),
+                                      m['fs']['b2'], col['surface'], '', bg=p_bg, align=37))
+        base = w // n
+        widths = [base] * n
+        widths[-1] = w - base * (n - 1)
+        ic = m['nav_ic']
+        top_ic = max(4, (h - (ic + m['nav_gap'] + m['h_b2'])) // 2)
+        lefts, cur = [], 0
+        for i in range(n):
+            lefts.append(cur)
+            cur += widths[i]
+        deco = []                       # 装饰件（先定义）
+        btns = []                       # 命中区（最后定义）
+        for i, it in enumerate(items):
+            it = it if isinstance(it, dict) else {'text': str(it)}
+            on = (i == sel)
+            glyph = it.get('icon') or 'info'
+            iw, ix0 = widths[i], lefts[i]
+            p_ic = self.glyph('nav_%s_%d_%s.png' % (glyph, ic, 'on' if on else 'off'), glyph, ic,
+                              rgba(self.tok['color']['brand'] if on
+                                   else self.tok['color']['fg2']), canvas=(ic, ic))
+            deco.append(self.text('Nav%dItem%dIcon' % (blk['_seq'], i + 1),
+                                  self.box(ix0 + (iw - ic) // 2, top_ic, ic, ic),
+                                  m['fs']['b2'], col['brand'] if on else col['fg2'],
+                                  '', bg=p_ic, align=37))
+            lbl = it.get('text') or ''
+            deco.append(self.text('Nav%dItem%dLabel' % (blk['_seq'], i + 1),
+                                  self.box(ix0, top_ic + ic + m['nav_gap'], iw, m['h_b2']),
+                                  m['fs']['b2'], col['brand'] if on else col['fg2'],
+                                  lbl, align=37))
+            self.check_text_fit('Nav%dItem%dLabel' % (blk['_seq'], i + 1), lbl, m['fs']['b2'],
+                                iw, m['h_b2'], 'nav')
+            btns.append(self.button('Nav%dItem%d' % (blk['_seq'], i + 1),
+                                    self.box(ix0, 0, iw, h)))
+        win.children.extend(deco)
+        win.children.extend(btns)
+        self.assert_children_fit(win, w, h, 'BottomNav%d' % blk['_seq'])
+        parent.append(win)
+        return ny + h
+
+    def build_banner(self, blk, parent, x, y):
+        """提示 / 告警条：浅语义底 + 图标 + 一行文案 + 可选关闭按钮（4 种语义色走令牌）。"""
+        m = self.m
+        col = self.col_int()
+        state = str(blk.get('state') or 'info')
+        fg_name, bg_name = self.sem_color(state)
+        w, h = m['content_w'], m['banner_h']
+        win = Node('window', 'Banner%d' % blk['_seq'], self.box(x, y, w, h))
+        p_bg = self.shape('bnr_%s_%dx%d.png' % (state, w, h), w, h, m['radius'],
+                          rgba(self.tok['color'][bg_name]))
+        win.children.append(self.text('BannerBg%d' % blk['_seq'], self.box(0, 0, w, h),
+                                      m['fs']['b2'], col[fg_name], '', bg=p_bg, align=37))
+        glyph = blk.get('icon') or {'info': 'info', 'success': 'check', 'warn': 'warning',
+                                    'danger': 'warning', 'ok': 'check',
+                                    'off': 'info'}[state]
+        ic = m['ic_min']
+        p_ic = self.glyph('ic_%s_%d_%s.png' % (glyph, ic, state), glyph, ic,
+                          rgba(self.tok['color'][fg_name]), canvas=(ic, ic))
+        win.children.append(self.text('Banner%dIcon' % blk['_seq'],
+                                      self.box(m['pad_l'], (h - ic) // 2, ic, ic),
+                                      m['fs']['b2'], col[fg_name], '', bg=p_ic, align=37))
+        close = bool(blk.get('close', True))
+        cw = max(16, ic)                                     # 命中盒下限 16（手指点得到）
+        gj = m['text_chev_gap']                              # 与行族同一间隙口径（assert_row_gaps 同页一致）
+        text_left = m['pad_l'] + ic + m['spacer']
+        text_right = w - m['pad_r'] - (cw + gj if close else 0)
+        label = blk.get('text') or ''
+        win.children.append(self.text('Banner%dText' % blk['_seq'],
+                                      self.box(text_left, (h - m['h_b1']) // 2,
+                                               text_right - text_left, m['h_b1']),
+                                      m['fs']['b1'], col[fg_name], label, align=36))
+        self.check_text_fit('Banner%dText' % blk['_seq'], label, m['fs']['b1'],
+                            text_right - text_left, m['h_b1'], 'banner')
+        if close:
+            self.note_row_gaps('Banner%dText' % blk['_seq'], text_right,
+                               w - m['pad_r'] - cw)          # 与分割线同口径（间隙 = spacer）
+            p_cl = self.glyph('ic_close_%d_%s.png' % (cw, state), 'close', cw,
+                              rgba(self.tok['color']['fg2']), canvas=(cw, cw))
+            win.children.append(self.button('Banner%dClose' % blk['_seq'],
+                                            self.box(w - m['pad_r'] - cw, (h - cw) // 2,
+                                                     cw, cw), bg=p_cl))
+        self.assert_children_fit(win, w, h, 'Banner%d' % blk['_seq'])
+        parent.append(win)
+        return y + h
+
+    def build_pill(self, blk, parent, x, y):
+        """状态胶囊：圆角药丸（浅语义底）+ 彩色文字；state: ok / warn / danger / off。"""
+        m = self.m
+        col = self.col_int()
+        state = str(blk.get('state') or 'ok')
+        fg_name, bg_name = self.sem_color(state)
+        txt = blk.get('text') or ''
+        h = m['pill_h']
+        fs = m['fs']['b2']
+        w = min(m['content_w'], self.text_box_w(txt, fs, 37) + 2 * m['pill_pad'])
+        win = Node('window', 'StatusPill%d' % blk['_seq'], self.box(x, y, w, h))
+        p_bg = self.shape('pill_%s_%dx%d.png' % (state, w, h), w, h, h // 2,
+                          rgba(self.tok['color'][bg_name]))
+        win.children.append(self.text('StatusPill%dBg' % blk['_seq'], self.box(0, 0, w, h),
+                                      fs, col[bg_name], '', bg=p_bg, align=37))
+        win.children.append(self.text('StatusPill%dText' % blk['_seq'], self.box(0, 0, w, h),
+                                      fs, col[fg_name], txt, align=37))
+        self.check_text_fit('StatusPill%dText' % blk['_seq'], txt, fs, w, h, 'pill')
+        self.assert_children_fit(win, w, h, 'StatusPill%d' % blk['_seq'])
+        parent.append(win)
+        return y + h
+
+    def build_divider_label(self, blk, parent, x, y):
+        """带文字分割线：左右 1px 线 + 中间小字；线长 = 容器剩余空间对半分（随容器比例伸缩）。"""
+        m = self.m
+        col = self.col_int()
+        txt = blk.get('text') or ''
+        h = m['divider_h']
+        fs = m['fs']['b2']
+        tw = min(self.text_box_w(txt, fs, 37), m['content_w'] - 2 * (m['spacer'] + 4))
+        gj = m['text_chev_gap']                              # 与行族同一间隙口径（assert_row_gaps 同页一致）
+        line = max(4, (m['content_w'] - tw) // 2 - gj)
+        p_line = self.shape('sep_%dx1.png' % line, line, 1, 0, rgba(self.tok['color']['line']))
+        ly = y + (h - 1) // 2
+        parent.append(self.text('DividerLabel%dLineL' % blk['_seq'],
+                                self.box(x, ly, line, 1), fs, col['line'], '',
+                                bg=p_line, align=37))
+        parent.append(self.text('DividerLabel%dLineR' % blk['_seq'],
+                                self.box(x + m['content_w'] - line, ly, line, 1), fs,
+                                col['line'], '', bg=p_line, align=37))
+        tx = x + (m['content_w'] - tw) // 2
+        parent.append(self.text('DividerLabel%dText' % blk['_seq'],
+                                self.box(tx, y + (h - m['h_b2']) // 2, tw, m['h_b2']),
+                                fs, col['fg2'], txt, align=37))
+        self.note_row_gaps('DividerLabel%dText' % blk['_seq'], x + line, tx)
+        return y + h
+
+    def build_grid(self, blk, parent, x, y):
+        """图标宫格：N×M 等距格，每格 = 格底（图 == 格盒）+ 图标底 + 图标 + 文字（格数由 spec 决定）。"""
+        m = self.m
+        col = self.col_int()
+        items = blk.get('items') or []
+        if not items:
+            raise SystemExit('[X] grid_icons.items 不能为空')
+        cols = int(blk.get('cols') or 4)
+        if not 1 <= cols <= 6:
+            raise SystemExit('[X] grid_icons.cols 应在 1~6，得到 %d' % cols)
+        n = len(items)
+        rows = (n + cols - 1) // cols
+        tile_h, gap, rgap = m['grid_tile_h'], m['grid_gap'], m['grid_row_gap']
+        gh = rows * tile_h + (rows - 1) * rgap
+        win = Node('window', 'GridIcons%d' % blk['_seq'], self.box(x, y, m['content_w'], gh))
+        base = m['content_w'] // cols
+        widths = [base] * cols
+        widths[-1] = m['content_w'] - base * (cols - 1)
+        lefts, cur = [], 0
+        for i in range(cols):
+            lefts.append(cur)
+            cur += widths[i]
+        tappable = bool(blk.get('tappable', False))
+        ib, ic = m['grid_ib'], m['grid_ic']
+        deco, btns = [], []
+        for i, it in enumerate(items):
+            it = it if isinstance(it, dict) else {'text': str(it)}
+            r, c = divmod(i, cols)
+            cap = 'GridIcons%dCell%d' % (blk['_seq'], i + 1)
+            tw = max(8, widths[c] - gap)                     # 格盒（== 格底图尺寸）
+            tx = lefts[c] + (widths[c] - tw) // 2
+            ty = r * (tile_h + rgap)
+            p_tile = self.shape('gtile_%dx%d.png' % (tw, tile_h), tw, tile_h, m['radius'],
+                                rgba(self.tok['color']['surface']))
+            deco.append(self.text(cap + 'Bg', self.box(tx, ty, tw, tile_h), m['fs']['b2'],
+                                  col['surface'], '', bg=p_tile, align=37))
+            p_ib = self.shape('icbg_%d.png' % ib, ib, ib, ib // 2,
+                              rgba(self.tok['color']['brand1']))
+            deco.append(self.text(cap + 'IconBg',
+                                  self.box(tx + (tw - ib) // 2, ty + m['spacer'], ib, ib),
+                                  m['fs']['b2'], col['brand1'], '', bg=p_ib, align=37))
+            glyph = it.get('icon') or 'info'
+            p_ic = self.glyph('ic_%s_%d.png' % (glyph, ic), glyph, ic,
+                              rgba(self.tok['color']['brand']), canvas=(ic, ic))
+            deco.append(self.text(cap + 'Icon',
+                                  self.box(tx + (tw - ic) // 2,
+                                           ty + m['spacer'] + (ib - ic) // 2, ic, ic),
+                                  m['fs']['b2'], col['brand'], '', bg=p_ic, align=37))
+            lbl = it.get('text') or ''
+            deco.append(self.text(cap + 'Label',
+                                  self.box(tx, ty + m['spacer'] + ib + m['spacer'], tw,
+                                           m['h_b2']),
+                                  m['fs']['b2'], col['fg1'], lbl, align=37))
+            self.check_text_fit(cap + 'Label', lbl, m['fs']['b2'], tw, m['h_b2'], 'grid')
+            if tappable:
+                btns.append(self.button(cap, self.box(tx, ty, tw, tile_h)))
+        win.children.extend(deco)
+        win.children.extend(btns)
+        self.assert_children_fit(win, m['content_w'], gh, 'GridIcons%d' % blk['_seq'])
+        parent.append(win)
+        return y + gh
+
+    def build_toast(self, blk, parent):
+        """浮层提示（根层整屏 window + 半透明圆角底 + 文案）：**visible=false 默认、最后定义 = 最上层**。
+
+        为什么根层整屏 window：与 dialog 同构（业务用 showWnd()/hideWnd() 控制），
+        但 modal=false + touchable=false（提示不该拦住操作）；visible=false 时 #15/#29 自然不报。
+        """
+        m = self.m
+        col = self.col_int()
+        txt = blk.get('text') or ''
+        fs = m['fs']['b1']
+        h = m['toast_h']
+        w = min(r4(m['content_w'] * 0.70), self.text_box_w(txt, fs, 37) + 2 * m['spacer3'])
+        win = Node('window', 'ToastWindow%d' % blk['_seq'],
+                   {'left': 0, 'top': 0, 'width': self.W, 'height': self.H},
+                   {'modal': False, 'touchable': False,
+                    'visible': bool(blk.get('visible', False))})
+        tx = (self.W - w) // 2
+        ty = int((self.H - h) * m['toast_top_of_h'])
+        ty = max(0, min(self.H - h, ty))
+        p_bg = self.shape('toast_bg_%dx%d.png' % (w, h), w, h, m['radius'],
+                          rgba(self.tok['color']['mask'], 0x99))
+        win.children.append(self.text('ToastBg%d' % blk['_seq'], self.box(tx, ty, w, h),
+                                      fs, col['onBrand'], '', bg=p_bg, align=37))
+        win.children.append(self.text('ToastText%d' % blk['_seq'], self.box(tx, ty, w, h),
+                                      fs, col['onBrand'], txt, align=37))
+        self.check_text_fit('ToastText%d' % blk['_seq'], txt, fs, w, h, 'toast')
+        parent.append(win)
+        return self.H
+
     # ─────── 主流程 ───────
     def run(self):
         m = self.m
         self.root = []
         content, footer, dialogs = [], [], []
+        navs, toasts = [], []
         seen_title = False
         self._seq = 0
         self.name_tree(self.page.get('blocks'))      # 先全页统一编号（caption 唯一性来源）
         self.scan_row_family()
+        # bottom_nav 是**固定带**（贴底栏上沿）：它不出现在内容流里，但占视口高度
+        for b in self.page.get('blocks') or []:
+            if b.get('type') == 'bottom_nav':
+                navs.append(b)
+        if navs:
+            m['viewport'] = max(40, m['viewport'] - m['nav_h'])
+            self.notes.append('bottom_nav 固定带 %d px 贴底栏上沿 → 视口缩至 %d'
+                              % (m['nav_h'], m['viewport']))
         for blk in self.page.get('blocks') or []:
             t = blk.get('type')
             if t not in self.blocks:
@@ -1456,6 +1838,23 @@ class Composer(object):
                 else:
                     self.y += self.build_wheel(blk, content, m['margin'], self.y,
                                                m['content_w'])
+            elif t in STRUCT3_TYPES:
+                if self.y > 0:
+                    self.y += m['group_gap']
+                if t == 'tabs':
+                    self.y = self.build_tabs(blk, content, m['margin'], self.y)
+                elif t == 'banner':
+                    self.y = self.build_banner(blk, content, m['margin'], self.y)
+                elif t == 'status_pill':
+                    self.y = self.build_pill(blk, content, m['margin'], self.y)
+                elif t == 'divider_label':
+                    self.y = self.build_divider_label(blk, content, m['margin'], self.y)
+                else:
+                    self.y = self.build_grid(blk, content, m['margin'], self.y)
+            elif t == 'bottom_nav':
+                pass                                    # 固定带：下面统一摆（不进内容流）
+            elif t == 'toast':
+                toasts.append(blk)
             else:
                 raise SystemExit('[X] 块 %s 没有 builder' % t)
         content_h = max(0, self.y)
@@ -1501,11 +1900,15 @@ class Composer(object):
             self.notes.append('内容总高 %d ≤ 视口 %d → 不上滑动窗口（白放一层没意义，§2.1 第 1 步）'
                               % (content_h, m['viewport']))
 
+        for blk in navs:
+            self.build_nav(blk, self.root)              # 固定带（贴底栏上沿，不进滑动区）
         for blk in footer:
             self.build_actions(blk, self.root, m['margin'], 0)
         for blk in dialogs:
             self.build_dialog(blk, self.root)
-        # 顺序 = z 顺序：标题 → 内容 → 底栏 → 弹窗（弹窗永远最上层）
+        for blk in toasts:
+            self.build_toast(blk, self.root)            # 浮层提示：**最后定义 = 最上层**
+        # 顺序 = z 顺序：标题 → 内容 → 底导 → 底栏 → 弹窗 → 提示浮层（越往后越上）
         self.root = title_nodes + body + self.root
         self.content_h = content_h
         self._nodes = self.root                                 # 幂等：document() 不再重跑

@@ -1,0 +1,31 @@
+{
+  "type": "toast",
+  "zh": "浮层提示（根层 window + 半透明圆角底 + 文案；visible=false 默认，最上层）",
+  "builder": "toast",
+  "family": "overlay",
+  "caption_prefix": "Toast",
+  "fields": {
+    "text": {"type": "string", "required": true, "example": "已保存"},
+    "visible": {"type": "boolean", "default": false, "note": "**默认 false**：真机由业务 showWnd()/hideWnd()（或 setVisible）控制"}
+  },
+  "relative_constraints": {
+    "root": "根层整屏 window__N（0,0,W,H；**modal=false + touchable=false**：提示不该拦住操作）",
+    "pos": "**必须最后定义 = z 最上层**（顺序：标题 → 内容 → 底导 → 底栏 → 弹窗 → toast）",
+    "box": "盒宽 = min(内容区宽 × 0.70, 文本盒宽 + 2×spacer-3)；盒高 = b1 文本高 + 2×spacer-2（单行）",
+    "place": "水平居中；垂直 = (屏高 − 盒高) × 0.60（居中偏下，不压底栏）",
+    "bg": "半透明圆角底（色 = mask 令牌，TDesign mask-active 60%），圆角 = 容器圆角",
+    "text": "b1 + onBrand（白字，居中）；文本盒 == 底盒"
+  },
+  "assets": [
+    {"name": "toast_bg_{w}x{h}.png", "via": "gen_res.rounded_rect_ss(fill=mask #00000099)", "size": "底盒 == 图"}
+  ],
+  "scroll": "no",
+  "forbidden": [
+    "**visible 写 true**（默认弹出会盖住首屏；必须 false，由业务触发）",
+    "**定义在弹窗/内容之前**（z 不够高会被内容或弹窗盖住；toast 必须最后定义）",
+    "给 toast 写 modal=true 或 touchable=true（提示不该拦触摸；modal 会让整屏点不动）",
+    "用 pagewindow/scrollwindow 做浮层（层级非法：scrollwindow 只装 window）",
+    "底色写 #000000 不透明（遮住下层内容，失去「浮层」语义；用 mask 令牌半透明）"
+  ],
+  "compact_note": "极小屏：盒高 = b1 + 2×spacer-2 = 40，文案 ≤6 字"
+}

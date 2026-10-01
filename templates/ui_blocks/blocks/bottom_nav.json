@@ -1,0 +1,35 @@
+{
+  "type": "bottom_nav",
+  "zh": "底部导航（3~5 个图标+文字项，选中态用品牌色）",
+  "builder": "nav",
+  "family": "page",
+  "caption_prefix": "BottomNav",
+  "fields": {
+    "items": {"type": "array", "required": true, "example": [{"icon": "home", "text": "首页"}], "note": "每项 = {icon（gen_res glyph 名）, text}；项数 3~5（允许 2~6）"},
+    "selected": {"type": "int", "default": 0, "note": "仅决定初始视觉（品牌色图标/文字）；业务切换 = 运行期切图/改色"}
+  },
+  "relative_constraints": {
+    "band_h": "max(屏高 × 0.10, nav_ic + nav_gap + b2 文本高 + 2×spacer)（1024→64 / 320→60）—— **固定高：与项数无关**",
+    "width": "满屏宽（与 bottom_actions 同口径）；最后一个项吃掉 W mod N",
+    "pos": "贴底栏上沿（top = 屏高 − 底栏带高 − nav 带高）；**不进内容流、不进 scrollwindow**（固定件）",
+    "viewport": "视口 = 屏高 − 标题带 − 底栏带 − nav 带（compose 在 run() 里扣，见 notes）",
+    "item": "每项 = 透明 button（命中区 = 整项盒）+ 图标（canvas == 图标盒）+ 文字（居中、b2）",
+    "icon": "尺寸 = max(图标档, glyph_min_px=24)（**两版均 24**，不随屏降档）；**选中 = brand，未选中 = fg2**（两个色各出一张图）",
+    "z": "容器底 → 全部图标/文字（装饰件，touchable 显式 false）→ 全部整项 button（最后定义 = z 最高）"
+  },
+  "assets": [
+    {"name": "navbg_{W}x{H}.png", "via": "gen_res.rounded_rect_ss(radius=0, fill=surface)", "size": "带盒 == 图"},
+    {"name": "nav_{glyph}_{S}_on.png", "via": "gen_res.glyph_icon(glyph, size=S, color=brand)", "size": "图标盒 == 图（canvas=S×S）"},
+    {"name": "nav_{glyph}_{S}_off.png", "via": "gen_res.glyph_icon(glyph, size=S, color=fg2)", "size": "同上"}
+  ],
+  "scroll": "no",
+  "forbidden": [
+    "把 bottom_nav 放进滑动区（固定件必须放 scrollwindow 外面，否则上滑时导航跟着滚走）",
+    "底导带与底栏带**重叠**（nav 必须贴底栏上沿；同页两者的带高之和 + 标题带 = 视口外高度）",
+    "nav 项数改了就改带高（**带高固定**，只有项宽随项数变）",
+    "图标盒 ≠ 图（glyph 必须给 canvas=图标档；否则角标被拉伸变形）",
+    "**项宽写死像素**（必须按**屏宽比例**等分：项宽 = 屏宽/N，末项吃余数；写死像素则换分辨率/改项数必错位）",
+    "给 nav 加主/次按钮（那是 bottom_actions 的活；一个页面一个主行动）"
+  ],
+  "compact_note": "极小屏：带高 60（= 图标 24 + 间距 4 + 文字 16 + 16）、图标 24（不降档）、文字 b2=10、项文案 ≤2 字；项数建议 4。带高占 320×240 的 25%，视口只剩 108（极小屏两带叠置的必然）"
+}

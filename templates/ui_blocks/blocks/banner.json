@@ -1,0 +1,36 @@
+{
+  "type": "banner",
+  "zh": "提示/告警条（图标 + 一行文案 + 可选关闭；4 种语义色走令牌）",
+  "builder": "banner",
+  "family": "page",
+  "caption_prefix": "Banner",
+  "fields": {
+    "state": {"type": "string", "default": "info", "example": "warn", "note": "info / success / warn / danger —— 色全走 _tokens.json 语义色（前景 = -6 档、浅底 = -1 档）"},
+    "text": {"type": "string", "required": true, "example": "网络连接不稳定，请检查网线"},
+    "icon": {"type": "string", "required": false, "note": "缺省按 state 取：info→info / success·ok→check / warn·danger→warning"},
+    "close": {"type": "boolean", "default": true, "note": "给一个关闭 button（id 20000 段 → logic 骨架自动出 onButtonClick_<caption>）"}
+  },
+  "relative_constraints": {
+    "band_h": "max(屏高 × 0.08, b1 文本高 + 2×spacer)（1024→48 / 320→32）",
+    "width": "内容区宽（屏宽 − 2×spacer-2）",
+    "container": "window__N（touchable false）+ 浅语义底（圆角 = 容器圆角）",
+    "icon": "图标档 = max(屏幕图标档, glyph_min_px=24)（两版均 24——**块内 glyph 不随屏降档**，见 §4.2 公共红线 ①）垂中；左缘 = pad_l",
+    "text_box": "左缘 = pad_l + 图标 + spacer；右缘 = 内容宽 − pad_r −（关闭盒 + spacer）；b1、色 = 语义前景色",
+    "close": "正方形盒 = max(16, 图标档)（**命中盒下限 16**，手点得到；两版均 24）；贴右缘 − pad_r、垂中；图 = glyph close（色 fg2）",
+    "gap": "「文本右缘 → 关闭盒左缘」= spacer（与 divider_label 同口径，过 note_row_gaps/assert_row_gaps）"
+  },
+  "assets": [
+    {"name": "bnr_{state}_{W}x{H}.png", "via": "gen_res.rounded_rect_ss(fill=语义浅底 -1 档)", "size": "容器盒 == 图"},
+    {"name": "ic_{glyph}_{S}_{state}.png", "via": "gen_res.glyph_icon(glyph, size=S, color=语义前景色)", "size": "图标盒 == 图"},
+    {"name": "ic_close_{W}_{state}.png", "via": "gen_res.glyph_icon('close', size=关闭盒, color=fg2)", "size": "关闭盒 == 图"}
+  ],
+  "scroll": "inherit",
+  "forbidden": [
+    "语义色写死十六进制（必须走 _tokens.json：info/success/warn/danger + -1 浅底；改色只改令牌）",
+    "底图 ≠ 容器盒（引擎拉伸 → 圆角糊；见反面清单 #5）",
+    "把多个提示条塞进一个块（一个 banner = 一条语义提示；多条就多块，块序号自动保证 caption 唯一）",
+    "关闭按钮做成纯装饰（关不掉；它必须是 button，且 z 最高——写在底盘/图标/文字之后）",
+    "关闭按钮盒 < 16px（真实手指点不到；极小屏也不要小于 16）"
+  ],
+  "compact_note": "极小屏：带高 32、图标 24（**不降档**）、关闭盒 24、文案 ≤6 字"
+}

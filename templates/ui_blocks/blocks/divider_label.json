@@ -1,0 +1,29 @@
+{
+  "type": "divider_label",
+  "zh": "带文字分割线（左右 1px 线 + 中间小字，线宽按容器比例）",
+  "builder": "divider_label",
+  "family": "page",
+  "caption_prefix": "DividerLabel",
+  "fields": {
+    "text": {"type": "string", "required": true, "example": "设备列表"}
+  },
+  "relative_constraints": {
+    "band_h": "max(屏高 × 0.05, b2 文本高)（1024→32 / 320→16）",
+    "text_box": "宽 = FT-009 估算 × 1.10（向上取 4px 栅格）；水平居中；b2 + fg2",
+    "line": "左右各一条 1px 线（色 line，radius 0 —— 轴线不需要圆角）；长 = (内容区宽 − 文本盒宽) / 2 − spacer（**随容器比例伸缩，不给固定像素**）；垂直居中",
+    "gap": "「线右缘 → 文本左缘」= spacer（过 note_row_gaps/assert_row_gaps，与 banner 同口径）",
+    "z": "线 + 文字都是装饰件（touchable 显式 false），无命中区"
+  },
+  "assets": [
+    {"name": "sep_{W}x1.png", "via": "gen_res.rounded_rect_ss(radius=0, fill=line)", "size": "线盒 == 图（与设置行分割线共用同一出图口径 → 同宽自动去重）"}
+  ],
+  "scroll": "inherit",
+  "forbidden": [
+    "线用圆角药丸（1px 高的圆角在 aa_audit 里退化成硬阶梯 → #21 真缺陷；轴线一律直角）",
+    "线长写死像素（换分辨率/换容器宽就错位；必须由「容器宽 − 文本盒宽」反算）",
+    "左右线长不等（视觉上文字偏心；两侧必须同长）",
+    "把 line 用 backgroundColor 画 + 又给 backgroundPic（底色盖掉底图，见反面清单 #10）",
+    "文字盒宽 < 估算宽 × 1.05（#36 余量不足；compose 已按 1.10 给余量）"
+  ],
+  "compact_note": "极小屏：带高 16、1px 线、b2=10；线长仍按容器反算（不设下限以外的特例）"
+}

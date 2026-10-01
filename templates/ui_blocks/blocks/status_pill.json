@@ -1,0 +1,31 @@
+{
+  "type": "status_pill",
+  "zh": "状态胶囊（圆角药丸 + 彩色文字；state: ok/warn/danger/off）",
+  "builder": "pill",
+  "family": "page",
+  "caption_prefix": "StatusPill",
+  "fields": {
+    "text": {"type": "string", "required": true, "example": "运行正常"},
+    "state": {"type": "string", "default": "ok", "example": "warn", "note": "ok→success / warn→warn / danger→danger / off→fg2（浅底 = 语义 -1 档，off 用页面底色）"}
+  },
+  "relative_constraints": {
+    "band_h": "max(屏高 × 0.07, b2 文本高 + spacer)（1024→44 / 320→24）——胶囊占一带，盒在带内左对齐",
+    "width": "内容反算：文本盒宽（FT-009 估算 × 1.10，向上取 4px 栅格）+ 2×胶囊内边距（b2×0.75）；上限 = 内容区宽",
+    "radius": "带高 / 2（全圆药丸）",
+    "bg": "浅语义底（-1 档）：ok→success1 / warn→warn1 / danger→danger1 / off→page",
+    "text": "b2 + 语义前景色（-6 档）；文本盒 == 胶囊盒（居中）",
+    "z": "胶囊底（装饰件，touchable 显式 false）→ 文字"
+  },
+  "assets": [
+    {"name": "pill_{state}_{w}x{h}.png", "via": "gen_res.rounded_rect_ss(radius=h/2, fill=语义浅底)", "size": "胶囊盒 == 图"}
+  ],
+  "scroll": "inherit",
+  "forbidden": [
+    "胶囊盒 ≠ 图（引擎拉伸 → 药丸两端变椭圆）",
+    "色值写死（走令牌；4 态语义色在 _tokens.json）",
+    "把胶囊拉满内容区宽（胶囊宽度由文案反算；拉满就成了一条色带，失去「胶囊」语义）",
+    "state 写成表外值（compose 会报错退出，不静默兜底成 info）",
+    "药丸高 < b2 文本高 + spacer（文字贴边；极小屏药丸高 24 ≥ 10+8）"
+  ],
+  "compact_note": "极小屏：带高 24、药丸圆角 12、文案 ≤4 字"
+}

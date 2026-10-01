@@ -1,0 +1,77 @@
+{
+  "_doc": "示例 F · 320×240（边界屏）· 第 3 批（结构/导航/提示类）。与 ../nav_1024x600/spec.json 是**同一份块清单**、同一套块，只换 resolution + 极小屏短文案（行族自动降单行式、字号降 2 级、宫格 cols 3）。",
+  "resolution": {
+    "width": 320,
+    "height": 240
+  },
+  "page": {
+    "title": "导航提示",
+    "blocks": [
+      {
+        "type": "tabs",
+        "items": ["全部", "在线", "离线"],
+        "selected": 0
+      },
+      {
+        "type": "card",
+        "title": "设备",
+        "blocks": [
+          {"type": "icon_row", "icon": "wifi", "label": "客厅", "value": "在线", "value_short": "在线"},
+          {"type": "toggle_row", "icon": "bell", "label": "提醒", "value": "已开", "on": true},
+          {"type": "setting_row", "icon": "settings", "label": "刷新", "value": "30 秒", "value_short": "30 秒"}
+        ]
+      },
+      {
+        "type": "section_header",
+        "text": "状态"
+      },
+      {"type": "status_pill", "state": "ok", "text": "正常"},
+      {"type": "status_pill", "state": "danger", "text": "故障"},
+      {"type": "banner", "state": "info", "text": "正在同步数据"},
+      {"type": "banner", "state": "success", "text": "校验通过"},
+      {"type": "banner", "state": "warn", "text": "信号较弱", "close": false},
+      {"type": "banner", "state": "danger", "text": "无存储卡"},
+      {
+        "type": "divider_label",
+        "text": "快捷"
+      },
+      {
+        "type": "grid_icons",
+        "cols": 3,
+        "tappable": true,
+        "items": [
+          {"icon": "wifi", "text": "网络"},
+          {"icon": "list", "text": "设备"},
+          {"icon": "bell", "text": "消息"},
+          {"icon": "settings", "text": "设置"},
+          {"icon": "user", "text": "账户"},
+          {"icon": "star", "text": "收藏"}
+        ]
+      },
+      {
+        "type": "bottom_nav",
+        "selected": 0,
+        "items": [
+          {"icon": "home", "text": "首页"},
+          {"icon": "list", "text": "设备"},
+          {"icon": "bell", "text": "消息"},
+          {"icon": "user", "text": "我的"}
+        ]
+      },
+      {
+        "type": "bottom_actions",
+        "primary": "保存",
+        "secondary": "取消"
+      },
+      {"type": "toast", "text": "已保存", "visible": false},
+      {
+        "type": "dialog",
+        "title": "确认保存",
+        "body": "保存后立即生效",
+        "primary": "保存",
+        "secondary": "取消",
+        "visible": false
+      }
+    ]
+  }
+}

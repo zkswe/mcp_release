@@ -1,0 +1,100 @@
+== compose (1024x600) ==
+  行高 60 ｜ 字号 {'h1': 28, 'h2': 20, 'b1': 16, 'b2': 14} ｜ 圆角 6 ｜ 图标底/图标 36/24 ｜ 箭头 24x16 ｜ 内容 916 → 视口 388
+  [NOTE] bottom_nav 固定带 64 px 贴底栏上沿 → 视口缩至 388
+  [NOTE] 内容总高 916 > 视口 388 → 自动上滑动窗口（行程 528 px，dragMaxDis=60）
+  bnr_danger_992x48.png  992x48
+  bnr_info_992x48.png  992x48
+  bnr_success_992x48.png  992x48
+  bnr_warn_992x48.png  992x48
+  btn_primary_164x44.png  164x44
+  btn_primary_284x44.png  284x44
+  btn_secondary_164x44.png  164x44
+  btn_secondary_284x44.png  284x44
+  card_992x180.png  992x180
+  cc_scrim_1024x600.png  1024x600
+  chev_24x16.png  24x16
+  footbg_1024x72.png  1024x72
+  gtile_314x72.png  314x72
+  gtile_316x72.png  316x72
+  ic_bell_24.png  24x24
+  ic_check_24_success.png  24x24
+  ic_close_24_danger.png  24x24
+  ic_close_24_info.png  24x24
+  ic_close_24_success.png  24x24
+  ic_info_24_info.png  24x24
+  ic_list_24.png  24x24
+  ic_settings_24.png  24x24
+  ic_star_24.png  24x24
+  ic_user_24.png  24x24
+  ic_warning_24_danger.png  24x24
+  ic_warning_24_warn.png  24x24
+  ic_wifi_24.png  24x24
+  icbg_36.png  36x36
+  ind_318x3.png  318x3
+  nav_bell_24_off.png  24x24
+  nav_home_24_on.png  24x24
+  nav_list_24_off.png  24x24
+  nav_user_24_off.png  24x24
+  navbg_1024x64.png  1024x64
+  panel_616x176.png  616x176
+  pill_ok_128x44.png  128x44
+  pill_warn_144x44.png  144x44
+  sep_440x1.png  440x1
+  sep_960x1.png  960x1
+  sw_80x44_on.png  80x44
+  swk_40.png  40x40
+  tab_on_330x53.png  330x53
+  tabsbg_992x56.png  992x56
+  toast_bg_132x56.png  132x56
+  出图 44 张 → C:\Users\zkswe\.openclaw\workspace\tools\FlyThings_mcp_open\templates\ui_blocks\examples\nav_1024x600\project\resources\images
+  logic 骨架 → C:\Users\zkswe\.openclaw\workspace\tools\FlyThings_mcp_open\templates\ui_blocks\examples\nav_1024x600\project\src\logic\mainLogic.cc（23 个按钮回调 + 0 个输入框回调）
+  → C:\Users\zkswe\.openclaw\workspace\tools\FlyThings_mcp_open\templates\ui_blocks\examples\nav_1024x600\project\ui\main.json
+  控件：顶层 10 个键 ｜ 含嵌套共 124 个控件
+-- render --
+========================================================================
+json2img v0.1.0 — 引擎等价离线渲染（PIL 像素级，静止态）
+========================================================================
+[render] page=main       json=templates\ui_blocks\examples\nav_1024x600\project\ui\main.json
+          out=C:\Users\zkswe\.openclaw\workspace\tools\FlyThings_mcp_open\templates\ui_blocks\examples\nav_1024x600\project\ui\main.render.png  size=1024x600  resolution=1024x600  scale=1
+          font=C:\Users\zkswe\.openclaw\workspace\tools\FlyThings_mcp_open\components\fonts\fonts\zkswe-hans-common.ttf
+          [OK] 尺寸 == resolution × scale
+------------------------------------------------------------------------
+[unsupported/降级] 1 类：
+   - textview       bold                   x3    无 *Bold*.ttf 变体 → 用同字体
+     pages: main
+     例: textview/TextTitle, textview/SectionHeader2, textview/SectionHeader6
+------------------------------------------------------------------------
+[校准状态] alignment（模式 --align-mode measured）
+   实测表（真机验证）：36=靠左+垂直居中 37=居中 38=靠右+垂直居中 33=顶部 41=底部
+     [measured]     36  → ('l', 'c')   x15
+     [measured]     37  → ('c', 'c')   x18
+   TODO 待校准（无真机表）：4/5/0/1/6/2 —— 本模式解码：
+   合计：实测 33 处 / 待校准 0 处 / 表外 0 处
+  渲染图 main.render.png 1024x600 ｜ 尺寸 == resolution: True
+-- check_all --
+  [NOTE] panel_616x176.png                未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] pill_ok_128x44.png               未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] pill_warn_144x44.png             未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] sep_440x1.png                    未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] sep_960x1.png                    未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] swk_40.png                       未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] tab_on_330x53.png                未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] tabsbg_992x56.png                未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] toast_bg_132x56.png              未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+== 24. 颜色值 0（不透明黑）误用（委派 tools/qa/zero_color_audit.py --fail；0 token 有退出码）==
+       references/kb/image-gen-standard.md §7.6：未登记豁免 → FAIL；命中
+== 25. 弧线过渡质量（9-patch 圆角 AA；委派 tools/qa/corner_audit.py --arc-only --fail）==
+       要求 min_cov ≤ 0.35 且 ≤0.35 的个数 ≥ 2（成组出现）；否则 = 过渡被压进 1px 硬阶梯 → FAIL。
+  [NOTE] bnr_danger_992x48.png            未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] bnr_info_992x48.png              未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] bnr_success_992x48.png           未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] bnr_warn_992x48.png              未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] btn_primary_164x44.png           未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] btn_primary_284x44.png           未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+== 26. scrollwindow 行程核对（行程 = 内层 window − 视口，**不读 dragMaxDis**）==
+== 27. 同族控件口径离群 / 文本×图标重叠（设计期拦截；钟工 2026-10-01）==
+== 28. UTF-8 文本陷阱（src 静态扫描；钟工 2026-10-01）==
+== 29. 显示件吃掉下层触摸（装饰件漏设穿透；钟工 2026-10-01）==
+       → 同一 json 内 caption 出现 ≥2 次即 FAIL，并列出「哪个 caption、几次、在哪几个控件」。
+[OK] 全部 PASS，可以交付。
+  check_all exit = 0

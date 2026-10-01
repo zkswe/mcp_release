@@ -1,0 +1,33 @@
+{
+  "type": "tabs",
+  "zh": "顶部分段控件（N 个 tab：选中态底色/文字色差异 + 底部指示条）",
+  "builder": "tabs",
+  "family": "page",
+  "caption_prefix": "Tabs",
+  "fields": {
+    "items": {"type": "array", "required": true, "example": ["全部", "在线", "离线"], "note": "tab 文案（≥2 个）；等分内容区宽，最后一个 tab 吃掉整除余数"},
+    "selected": {"type": "int", "default": 0, "note": "**仅决定初始视觉**：选中底的文字色/底色 + 指示条位置；业务切换 = 运行期改这 3 个控件的可见/文案/位移，json 里不做动画"}
+  },
+  "relative_constraints": {
+    "band_h": "max(屏高 × 0.09, b1 文本高 + 2×spacer)（1024→56 / 320→32）",
+    "width": "内容区宽（屏宽 − 2×spacer-2）；最后一个 tab 吃掉 content_w mod N",
+    "container": "window__N（touchable false）+ 药丸白底（圆角 = band_h/2，两端半圆，TDesign segmented 形态）",
+    "indicator": "盒 = tab 宽 − 2×容器圆角 × ind_h（高 = max(2, 屏高×0.005)，1024→3 / 320→2）；贴容器下沿；色 = brand；**直角实条（圆形小弧在 2~3px 高上会退化成硬阶梯）**",
+    "selected_bg": "盒 = tab 宽 × (band_h − ind_h)（**高度让出指示条 → 与指示条几何不重叠**）；色 = brand1；圆角 = 容器圆角",
+    "tab": "N 个**透明 button**（命中区 = 整个 tab 盒，文字由 button 自带）；选中 tab 文字 = brand，未选中 = fg2；字号档 b1"
+  },
+  "assets": [
+    {"name": "tabsbg_{W}x{H}.png", "via": "gen_res.rounded_rect_ss(radius=H/2, fill=surface)", "size": "容器盒 == 图"},
+    {"name": "ind_{w}x{h}.png", "via": "gen_res.rounded_rect_ss(radius=0, fill=brand)", "size": "指示条盒 == 图"},
+    {"name": "tab_on_{w}x{h}.png", "via": "gen_res.rounded_rect_ss(radius=容器圆角, fill=brand1)", "size": "选中底盒 == 图"}
+  ],
+  "scroll": "inherit",
+  "forbidden": [
+    "**指示条定义在 tab 之后**（静态件必须写在所有 tab/button 之前；写在后面 = z 更高会盖住 tab 文字、也可能吃触摸）",
+    "指示条写成圆角药丸（2~3px 高的小弧在 aa_audit 里退化成硬阶梯 → #21 真缺陷）；或把指示条贴到容器圆角上（内缩容器圆角宽，见反面清单 #11）",
+    "选中底与指示条**几何重叠**（选中底高度必须让出 ind_h，否则指示条被底色盖住 = 「看不见指示条」）",
+    "tab 用 textview + 整行透明 button 两层（tab 只需要一个透明 button 自带文字；多一层多一个 caption）",
+    "tab 数量 ≥2 之外还给 tab 图（tab 底图必须 == tab 盒；用底图做「选中态」会让未选中 tab 也带底色）"
+  ],
+  "compact_note": "极小屏：带高 32、字号 b1=12、tab 文案 ≤2 字（3 个字 × 12px = 50px < 96px 也放得下，但建议 ≤2 字）"
+}

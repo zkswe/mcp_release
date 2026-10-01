@@ -1,0 +1,79 @@
+{
+  "_doc": "示例 E · 1024×600（基准屏）· 第 3 批（结构/导航/提示类）。第 3 批 7 个新块每块至少一处（tabs / bottom_nav / banner×4 态 / toast / status_pill×2 态 / divider_label / grid_icons）+ 复用 page_title / card / icon_row / toggle_row / setting_row / section_header / bottom_actions / dialog。与 ../nav_320x240/spec.json 是**同一份块清单**，只差 resolution 与极小屏短文案。",
+  "resolution": {
+    "width": 1024,
+    "height": 600
+  },
+  "page": {
+    "title": "导航与提示",
+    "subtitle": "Navigation",
+    "blocks": [
+      {
+        "type": "tabs",
+        "items": ["全部", "在线", "离线"],
+        "selected": 0
+      },
+      {
+        "type": "card",
+        "title": "设备状态",
+        "blocks": [
+          {"type": "icon_row", "icon": "wifi", "label": "客厅面板", "value": "在线 · 信号良好", "value_short": "在线"},
+          {"type": "toggle_row", "icon": "bell", "label": "消息提醒", "value": "已开启", "on": true},
+          {"type": "setting_row", "icon": "settings", "label": "刷新间隔", "value": "每 30 秒", "value_short": "30 秒"}
+        ]
+      },
+      {
+        "type": "section_header",
+        "text": "运行状态"
+      },
+      {"type": "status_pill", "state": "ok", "text": "运行正常"},
+      {"type": "status_pill", "state": "warn", "text": "固件待更新"},
+      {"type": "banner", "state": "info", "text": "已连接云端服务，数据实时同步中"},
+      {"type": "banner", "state": "success", "text": "固件校验通过，可安全升级"},
+      {"type": "banner", "state": "warn", "text": "网络信号较弱，建议靠近路由器", "close": false},
+      {"type": "banner", "state": "danger", "text": "未检测到存储卡，录制功能不可用"},
+      {
+        "type": "divider_label",
+        "text": "快捷入口"
+      },
+      {
+        "type": "grid_icons",
+        "cols": 3,
+        "tappable": true,
+        "items": [
+          {"icon": "wifi", "text": "网络"},
+          {"icon": "list", "text": "设备"},
+          {"icon": "bell", "text": "消息"},
+          {"icon": "settings", "text": "设置"},
+          {"icon": "user", "text": "账户"},
+          {"icon": "star", "text": "收藏"}
+        ]
+      },
+      {
+        "type": "bottom_nav",
+        "selected": 0,
+        "items": [
+          {"icon": "home", "text": "首页"},
+          {"icon": "list", "text": "设备"},
+          {"icon": "bell", "text": "消息"},
+          {"icon": "user", "text": "我的"}
+        ]
+      },
+      {
+        "type": "bottom_actions",
+        "status": "已是最新",
+        "primary": "保存",
+        "secondary": "取消"
+      },
+      {"type": "toast", "text": "已保存", "visible": false},
+      {
+        "type": "dialog",
+        "title": "确认保存",
+        "body": "保存后立即生效，确定继续吗？",
+        "primary": "保存",
+        "secondary": "取消",
+        "visible": false
+      }
+    ]
+  }
+}

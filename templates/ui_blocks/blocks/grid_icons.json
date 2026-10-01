@@ -1,0 +1,36 @@
+{
+  "type": "grid_icons",
+  "zh": "图标宫格（N×M 等距格：每格 图标底 + 图标 + 文字）",
+  "builder": "grid",
+  "family": "page",
+  "caption_prefix": "GridIcons",
+  "fields": {
+    "items": {"type": "array", "required": true, "example": [{"icon": "wifi", "text": "网络"}], "note": "每项 = {icon（gen_res glyph 名）, text}；**格数由 items 长度决定**"},
+    "cols": {"type": "int", "default": 4, "min": 1, "max": 6, "note": "每行格数；行数 = ceil(n / cols)"},
+    "tappable": {"type": "boolean", "default": false, "note": "true → 每格加一个整格透明 button（id 20000 段 → logic 骨架自动出回调）"}
+  },
+  "relative_constraints": {
+    "cell_w": "内容区宽 / cols（最后一个格吃掉整除余数）",
+    "tile": "**格盒 == 图**：格盒宽 = 格宽 − spacer-2（横向间隙），格盒高 = 2×spacer + 图标底 + b2 文本高（1024→314×72 / 320→80×68；两版高度接近，因为图标不降档）",
+    "row_gap": "行间 = spacer（纵向）；列间 = spacer-2（横向）",
+    "icon_bg": "圆形底 = max(图标底档, 图标 × 1.5)（1024→36 / 320→36）；水平居中、贴格上沿 + spacer",
+    "icon": "glyph = max(图标档, glyph_min_px=24)（**两版均 24**，不随屏降档）；与图标底**同心**；color = brand",
+    "text": "b2 + fg1；盒宽 = 格盒宽、居中；top = 格上沿 + spacer + 图标底 + spacer",
+    "z": "格底 → 图标底 → 图标 → 文字（装饰件，touchable 显式 false）→ 整格 button（tappable 时，最后定义）"
+  },
+  "assets": [
+    {"name": "gtile_{w}x{h}.png", "via": "gen_res.rounded_rect_ss(radius=容器圆角, fill=surface)", "size": "格盒 == 图"},
+    {"name": "icbg_{S}.png", "via": "gen_res.rounded_rect_ss(radius=S/2, fill=brand1)", "size": "图标底盒 == 图"},
+    {"name": "ic_{glyph}_{S}.png", "via": "gen_res.glyph_icon(glyph, size=S, color=brand)", "size": "图标盒 == 图（canvas=S×S）"}
+  ],
+  "scroll": "inherit",
+  "forbidden": [
+    "**格盒 ≠ 图**（格底图尺寸必须 == 格盒；否则格间「等距」观感被拉伸破坏 → #11/#17 FAIL）",
+    "格宽写死像素 / 每格单独调宽（必须 cols 等分 + 余数给最后一格）",
+    "cols 随 items 变化而改格高（格高由「图标底 + 文字」反算，与 cols 无关）",
+    "图标盒 ≠ 图（glyph 必须给 canvas=图标档；否则图标在非方格里被拉伸）",
+    "把宫格塞进卡（根层块；卡内只收行块/列表块 → 卡内写 grid_icons 会报错退出）",
+    "tappable=true 却把整格 button 写在装饰件之前（装饰件会压住命中区；按钮必须最后定义）"
+  ],
+  "compact_note": "极小屏：cols 建议 3；格盒 80×68、图标底 36、图标 24（不降档）、文字 b2=10（≤2 字）——格高由内容反算，与 1024 版接近（图标不降档的代价）"
+}

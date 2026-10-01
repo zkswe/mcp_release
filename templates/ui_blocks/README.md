@@ -4,6 +4,7 @@
 > 像用 Bootstrap/组件库那样拼界面，并且**一次就出能过的产物**：json + 切图 + 渲染图 + 全检。
 >
 > 建立：2026-10-01（钟工「按照你的建议做」）。第 2 批（交互类 7 块）：2026-10-01 同日追加。
+> 第 3 批（结构 / 导航 / 提示类 7 块 + 两版示例）：2026-10-01 同日追加 → 共 **24 个块 / 6 版示例**。
 > 范围：**只新建/只改本目录**，不改任何现有脚本/知识文档；
 > 所有出图/渲染/全检都**调现有工具**（`ui_tools/gen_res.py`、`ui_tools/json2img.py`、`ui_tools/check_all.py`），
 > 不复制它们的逻辑。
@@ -16,15 +17,18 @@
 templates/ui_blocks/
 ├─ compose.py                 ← 组装器（唯一入口，CLI）
 ├─ blocks/
-│  ├─ _tokens.json            ← 设计令牌 + 相对尺度体系的**唯一数值源**（比例/令牌，不写死某屏像素）
+│  ├─ _tokens.json            ← 设计令牌 + 相对尺度体系的**唯一数值源**（比例/令牌，不写死某屏像素；含第 3 批语义色与 glyph 尺寸下限）
 │  ├─ page_title.json         ← 块定义：字段 + 相对约束 + 需要素材 + 禁止项
-│  └─ …（共 17 个块定义 = 第 1 批 10 个 + 第 2 批交互类 7 个）
+│  └─ …（共 24 个块定义 = 第 1 批 10 个 + 第 2 批交互类 7 个 + 第 3 批结构/导航/提示类 7 个）
 └─ examples/
    ├─ settings_1024x600/      ← 示例 A：spec.json + project/（产物）+ main.render.png + 两个日志
    ├─ settings_320x240/       ← 示例 B：**同一套块**，只换分辨率（spec.json 只差 resolution 与短文案）
    ├─ interactive_1024x600/   ← 示例 C：**第 2 批 7 个交互块**全都用上 + 复用 card/section_header/toggle_row/setting_row/bottom_actions/dialog
    │                            （另出 main.full.render.png = 展平 scrollwindow 的整页渲染，仅供人工验收，不参与 check_all）
-   └─ interactive_320x240/    ← 示例 D：与示例 C **同一份块清单**，只换分辨率（极小屏自动降级）
+   ├─ interactive_320x240/    ← 示例 D：与示例 C **同一份块清单**，只换分辨率（极小屏自动降级）
+   ├─ nav_1024x600/           ← 示例 E：**第 3 批 7 个新块**全都用上（tabs/bottom_nav/banner×4 态/toast/status_pill×2 态/divider_label/grid_icons）
+   │                            + 复用 page_title/card/section_header/bottom_actions/dialog；另出 main.full.render.png
+   └─ nav_320x240/            ← 示例 F：与示例 E **同一份块清单**，只换分辨率与短文案（极小屏：视口 = 屏高 − 标题 − nav − 底栏）
 ```
 
 ## 2. 用法（一条命令）
@@ -56,6 +60,10 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/interactive_1
        --project templates/ui_blocks/examples/interactive_1024x600/project --render --check
 python templates/ui_blocks/compose.py templates/ui_blocks/examples/interactive_320x240/spec.json \
        --project templates/ui_blocks/examples/interactive_320x240/project --render --check
+python templates/ui_blocks/compose.py templates/ui_blocks/examples/nav_1024x600/spec.json \
+       --project templates/ui_blocks/examples/nav_1024x600/project --render --check
+python templates/ui_blocks/compose.py templates/ui_blocks/examples/nav_320x240/spec.json \
+       --project templates/ui_blocks/examples/nav_320x240/project --render --check
 ```
 
 产物清单（每页）：
@@ -87,7 +95,16 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/interactive_3
       {"type": "wheel_picker", "label": "定时关闭", "rows": 5,
        "columns": [{"options": ["不关", "15 分", "30 分"], "selected": 1}]},
       {"type": "empty_state", "icon": "info", "text": "暂无其它设备", "sub": "点右上角添加"},
+      {"type": "tabs", "items": ["全部", "在线", "离线"], "selected": 0},
+      {"type": "status_pill", "state": "ok", "text": "运行正常"},
+      {"type": "banner", "state": "warn", "text": "网络信号较弱，建议靠近路由器"},
+      {"type": "divider_label", "text": "快捷入口"},
+      {"type": "grid_icons", "cols": 3, "tappable": true,
+       "items": [{"icon": "wifi", "text": "网络"}, {"icon": "list", "text": "设备"}]},
+      {"type": "bottom_nav", "selected": 0,
+       "items": [{"icon": "home", "text": "首页"}, {"icon": "user", "text": "我的"}]},
       {"type": "bottom_actions", "status": "已是最新", "primary": "保存", "secondary": "取消"},
+      {"type": "toast", "text": "已保存", "visible": false},
       {"type": "dialog", "title": "确认删除", "body": "删除后不可恢复，确定继续吗？", "visible": false}
     ]
   }
@@ -96,8 +113,10 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/interactive_3
 
 * `page.title`（+ `subtitle`）也可以写成一个 `page_title` 块，二选一；`bottom_actions` 同理可用 `page.footer`。
 * 极小块用 `value_short` 给「数得出来的短文案」（长值在 320 上放不下会 #13 FAIL）。
+* **第 3 批新块都是根层块**（不进卡）：`tabs` / `bottom_nav` / `banner` / `toast` / `status_pill` / `divider_label` / `grid_icons`；写进 `card.blocks` 会直接报错退出（不静默兜底）。
+* `bottom_nav` 与 `bottom_actions` 可**同页共存**：nav 贴底栏上沿（两者不重叠），视口 = 屏高 − 标题带 − nav 带 − 底栏带（compose 打印 `[NOTE] bottom_nav 固定带 N px → 视口缩至 M`）。
 
-## 4. 块清单（17 个 = 第 1 批 10 个 + 第 2 批交互类 7 个）
+## 4. 块清单（24 个 = 第 1 批 10 个 + 第 2 批交互类 7 个 + 第 3 批结构/导航/提示类 7 个）
 
 | 块 | 用途 | 占几行 | 需要素材（`gen_res` 出） | 能滚动 | 关键相对约束 |
 |---|---|---|---|---|---|
@@ -118,11 +137,17 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/interactive_3
 | `radio_row` | 单选行（标题 + **竖排**选项） | 2 带（带高 = 选项数 × 项高 + 2×spacer） | `rd_{S}_on/off` | 随内容 | 项高 = max(标题高+spacer, 行高×0.70)；子项坐标**相对 radiogroup**；组 **touchable 必须 true** |
 | `list_item` | 列表行块（listview + subItem 行模板） | 自带块高（rows × 模板高 + 余数） | `chev_`（行尾箭头子项） | ✗（自带滚动） | **itemH = int(lv高/rows) − rowSpacing**，模板高 == 它；**余数是「有意的可滑动提示」**；item.text 必须空串 |
 | `wheel_picker` | 滚轮选择块（listview 组合，非自绘） | 自带块高（rows × 模板高） | `wband_`（选中条） | ✗（自带滚动） | 选中条 = **静态 textview 且写在 listview 之前**；rows 必须奇数（正中行 = 选中行）；cycleEnable + autoRollback + edgeEffect 1 + dragMaxDis 手感值 |
+| `tabs` | 顶部分段控件（N 个 tab：选中底色/文字色 + 底部指示条） | 1 顶带（随内容） | `tabsbg_`、`ind_`、`tab_on_` | 随内容 | 带高 = max(屏高 9%, b1 高 + 2×spacer)；tab 等分内容区宽（末个吃余数）；**指示条盒 = tab 宽 − 2×圆角 × ind_h（高 3/2px 直角条）且写在所有 tab 之前**；选中 = brand1 底（高让出 ind_h）+ brand 字 |
+| `bottom_nav` | 底部导航（3~5 个图标+文字项，选中用品牌色） | **固定带** | `navbg_`、`nav_<glyph>_<S>_on/off` | ✗（固定件） | 带高**固定**（与项数无关）= max(屏高 10%, 图标档 + 间距 + b2 + 2×spacer)；贴底栏上沿；视口 = 屏高 − 标题带 − nav 带 − 底栏带；项宽 = 屏宽/N（末个吃余数） |
+| `banner` | 提示/告警条（图标 + 一行文案 + 可选关闭） | 1 带 | `bnr_<state>_`、`ic_<glyph>_<S>_<state>`、`ic_close_<S>_<state>` | 随内容 | 带高 = max(屏高 8%, b1 高 + 2×spacer)；4 语义色走令牌（state = info/success/warn/danger）；关闭盒 = max(16, 图标档) 贴右缘；文案右缘 → 关闭盒间隙 = 行族同口径 |
+| `toast` | 浮层提示（半透明圆角底 + 文案） | 覆盖层（根层整屏 window） | `toast_bg_` | ✗ | **visible:false 默认**；modal=false + touchable=false；盒宽 = min(内容宽 × 0.70, 文本盒 + 2×spacer-3)，高 = b1 + 2×spacer-2；垂直 = (屏高 − 盒高) × 0.60；**最后定义 = 最上层** |
+| `status_pill` | 状态胶囊（圆角药丸 + 彩色文字） | 1 带 | `pill_<state>_` | 随内容 | 带高 = max(屏高 7%, b2 高 + spacer)；盒宽 = 文本盒（估算 × 1.10，向上取 4px 栅格）+ 2×pill_pad；圆角 = 带高/2；state = ok/warn/danger/off |
+| `divider_label` | 带文字分割线（左右 1px 线 + 中间小字） | 1 带 | `sep_<W>x1`（与行内分割线共用） | 随内容 | 带高 = max(屏高 5%, b2 高)；线长 = (内容宽 − 文本盒)/2 − 间隙（**随容器比例伸缩，不给固定像素**）；两侧等长；轴线直角（不用圆角） |
+| `grid_icons` | 图标宫格（N×M 等距格：格底 + 图标底 + 图标 + 文字） | 自带块高（rows × 格高 + 行距） | `gtile_`、`icbg_`、`ic_<glyph>_<S>` | 随内容 | 格宽 = 内容宽/cols（末列吃余数）− 横向间隙；**格盒 == 图**；格高 = 2×spacer + 图标底 + b2 高；图标底 = max(图标底档, 图标 × 1.5)；`tappable` → 每格一个整格 button（最后定义） |
 
 > `value_row`（左标题 + 右值，无箭头）不用单独建块：`{"type":"setting_row","chevron":false,"icon":""}` 就是它。
 
 ### 4.1 第 2 批 7 个块的禁止项（红线；完整版在 `blocks/<type>.json` 的 `forbidden`）
-
 | 块 | 红线（写了就注定返工/编译不过/真机不对） |
 |---|---|
 | `slider_row` | ① **滑块盒 ≠ 图**（`thumb.size` 与滑块图不一致 → 真机滑块与轨道错位，check_all #11/#17 FAIL）；② **滑块被盒高压扁**（控件 `position.height` < `thumb.size.height` → 屏幕上是扁椭圆，**只改图或只改盒都没用**）；③ 为给滑块腾位去收窄/挪 title·value 文本盒；④ 滑轨/有效图用 `.9.png`（ZKSeekBar 不解析 marker → 黑框，#10 FAIL）；⑤ 可见条矮于 10px（药丸端弧线过不了 AA 审计，#21 真缺陷）。 |
@@ -132,6 +157,23 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/interactive_3
 | `radio_row` | ① **radiogroup 的 `touchable` 写 false**（整组收不到触摸 = 点了没反应；它是「容器 false」口径的**例外**）；② 选中图写进 `pic1`（引擎只认 `pic2` = 选中态）；③ 选项横排（横排要按选项数动态改行族预留 → 同页其它行文本盒跟着变；竖排在极小屏也放得下）；④ 圆点盒 ≠ 图；⑤ 极小屏用 1px 描边环 / 极小内点（AA 真缺陷）。 |
 | `list_item` | ① **item 高 ≠ `int(lv高/rows) − rowSpacing`**（#37 WARN：写大 = 挤爆/裁切，写小 = 每项底部多空带）；② 把「底部露出下一项一小块」当缺陷去凑整（**那是引擎给的可滑动提示**，余数是有意的）；③ `item.text`/`subItem.text` 写占位串（真机每行常显占位文字）；④ 在 listview 下平铺 textview/button 当行（#2 层级非法）；⑤ subItem 图 ≠ subItem 盒。 |
 | `wheel_picker` | ① **选中条挂行背景图**（滚动时条跟着行走）；② **条写在 listview 之后**（z 更高会盖住列表/吃触摸）；③ 条设成可触摸（装饰件必须 `touchable:false` 显式写）；④ 用引擎选中态（`pic2`/`color2`）做正中行高亮（引擎把选中态打在第 1 可见行，会盖掉宿主）；⑤ 程序化定位用 `setSelection`（只对齐第 1 行 + 带动画 → 「读-改-读」会越推越远，要用数据侧平移）；⑥ lv 高非 rows 整除却当「可滑动提示」凑格（滚轮要刚好一屏窗口）；⑦ 自绘轮子（listview 组合就是 L2 能力）。 |
+
+### 4.2 第 3 批 7 个块的禁止项（红线；完整版在 `blocks/<type>.json` 的 `forbidden`）
+
+| 块 | 红线（写了就注定返工/编译不过/真机不对） |
+|---|---|
+| `tabs` | ① **指示条定义在 tab 之后**（静态件必须写在所有 tab/button 之前；写在后面 z 更高 → 盖住 tab 文字、可能吃触摸）；② 指示条写成圆角药丸（2~3px 高的小弧在 `aa_audit` 里退化成硬阶梯 → #21 真缺陷）、或把指示条贴到容器圆角上（水平内缩容器圆角宽，见反面清单 #11）；③ 选中底与指示条**几何重叠**（选中底高度必须让出 `ind_h`，否则指示条被底色盖住 = 「看不见指示条」）；④ tab 用 textview + 整行透明 button 两层（tab 只需一个透明 button 自带文字）；⑤ 给 tab 再挂底图做「选中态」（底图 == 盒，会让未选中 tab 也带底色）。 |
+| `bottom_nav` | ① 把 bottom_nav 放进滑动区（固定件必须放 scrollwindow 外面）；② 底导带与底栏带**重叠**（nav 必须贴底栏上沿；视口 = 屏高 − 标题 − nav − 底栏）；③ 项数变了就改带高（**带高固定**，只有项宽随项数变）；④ 图标盒 ≠ 图（glyph 必须给 `canvas=图标档`）；⑤ **项宽写死像素**（必须按**屏宽比例**等分：项宽 = 屏宽/N，末项吃余数）；⑥ 给 nav 加主/次按钮（那是 `bottom_actions` 的活）。 |
+| `banner` | ① 语义色写死十六进制（必须走 `_tokens.json` 的 info/success/warn/danger + -1 浅底）；② 底图 ≠ 容器盒（引擎拉伸 → 圆角糊）；③ 把多条提示塞进一个块（一个 banner = 一条语义提示）；④ 关闭按钮做成纯装饰（关不掉，且必须写在底盘/图标/文字**之后** = z 最高）；⑤ 关闭按钮盒 < 16px（真实手指点不到）。 |
+| `toast` | ① **`visible` 写 true**（默认弹出会盖住首屏）；② **定义在弹窗/内容之前**（z 不够高会被盖住；toast 必须最后定义）；③ 写 `modal=true` 或 `touchable=true`（提示不该拦触摸，modal 会让整屏点不动）；④ 用 pagewindow/scrollwindow 做浮层（层级非法）；⑤ 底色写不透明 `#000000`（失去「浮层」语义；用 `mask` 令牌半透明）。 |
+| `status_pill` | ① 胶囊盒 ≠ 图（引擎拉伸 → 药丸两端变椭圆）；② 色值写死（4 态走令牌）；③ 胶囊拉满内容区宽（宽度由文案反算；拉满就成了色带）；④ `state` 写成表外值（compose 报错退出，不静默兜底）；⑤ 药丸高 < b2 文本高 + spacer（文字贴边）。 |
+| `divider_label` | ① 线用圆角药丸（1px 高的圆角在 `aa_audit` 里退化成硬阶梯 → #21 真缺陷；轴线一律直角）；② 线长写死像素（换分辨率/换容器宽就错位；必须由「容器宽 − 文本盒宽」反算）；③ 左右线长不等（文字偏心）；④ 线用 `backgroundColor` 画 + 又给 `backgroundPic`（底色盖底图，见反面清单 #10）；⑤ 文本盒宽 < 估算宽 × 1.05（#36 余量不足；compose 已按 1.10 给余量）。 |
+| `grid_icons` | ① **格盒 ≠ 图**（格底图尺寸必须 == 格盒；否则格间等距被拉伸破坏 → #11/#17 FAIL）；② 格宽写死像素 / 每格单独调宽（必须 `cols` 等分 + 余数给最后一格）；③ `cols` 变了就改格高（格高由「图标底 + 文字」反算，与 cols 无关）；④ 图标盒 ≠ 图（glyph 必须给 `canvas=图标档`）；⑤ 把宫格塞进卡（根层块；卡内写 `grid_icons` 会报错退出）；⑥ `tappable=true` 却把整格 button 写在装饰件之前（装饰件会压住命中区）。 |
+
+> **第 3 批公共红线（三处措辞已写回各块 forbidden）**：
+> **① 图的尺寸下限**：块内 glyph 尺寸 >= `_tokens.json` 的 `glyph_min_px = 24`。实测（`aa_audit --fail`）：`wifi@12` / `home@16` / `settings@16` / `bell@20` 全部判**真缺陷**，`home@20` / `wifi@16` 已是 WARN 边界。图标**不像字号可以降档**（降了就退化成硬阶梯），极小屏宁可省图标（见反面清单 #18/#38）。
+> **② 根层块不进卡**：`tabs / bottom_nav / banner / toast / status_pill / divider_label / grid_icons` 都是根层块；卡内只收行块 / 列表块（`build_card` 类型校验直接报错退出）。
+> **③ 「文本→右端控件」间隙口径全页一致**：banner 的「文案 → 关闭盒」与 divider_label 的「线 → 文字」都走 `m['text_chev_gap']`（与行族同一口径）→ `note_row_gaps` + `assert_row_gaps` 同页一致（不同口径会直接报错退出，不是静默放过）。
 
 ## 5. 相对尺度体系（唯一的数值源 = `blocks/_tokens.json`）
 
@@ -144,17 +186,35 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/interactive_3
 | 组件级 | 行高 = 屏高 10%（极小屏 11.7%，并给文本可读性兜底）；行条宽 = 屏宽 − 2×spacer-2；左内边距 ≈ 屏宽 3.1%；图标底 0.6×行高；图标 0.4×行高；箭头 max(12, 屏宽 2.5%) × max(16, 屏高 2.7%) | `scrollwindow-layout-checklist §2.1` + `SPEC-CHECK §7` |
 | 滚动 | `dragMaxDis` = **越界拖拽上限**（全页 max(24, 屏宽×6%)），**不是行程**；行程 = 内层 window − 视口，引擎自算 | `scroll-drag-interaction-spec` R1/R2/R6/R10 |
 | 交互控件（第 2 批） | 滑块盒高 = max(图标档, 行高×0.60)（且 ≥ 滑块图高，可见条高 ≥ 10px）；输入框盒高 = 单选项高 = max(标题高+spacer, 行高×0.70)；复选/圆点盒 = max(12, 行高×0.50)；列表模板行高 = max(标题高+spacer, 行高×0.70)（余 2px 可滑动提示）；滚轮模板行高 = max(标题高+spacer, 行高×0.60)；滚轮列宽 = 内容宽 20%（≥ 2×复选盒） | `seekbar-fields` / `edittext-fields` / `listview-wheel-picker` / `radiogroup-checkbox-fields` + 同页行族口径 |
+| 结构/导航/提示（第 3 批） | 段带高 = max(屏高 9%, b1+2×spacer)、指示条高 = max(2, 屏高 0.005)、胶囊带高 = max(屏高 7%, b2+spacer)、提示条高 = max(屏高 8%, b1+2×spacer)、分割线带高 = max(屏高 5%, b2)、底导带高 = max(屏高 10%, 图标+间距+文字+2×spacer)、浮层盒高 = b1+2×spacer2、浮层位置 = 屏高×0.60、格高 = 2×spacer+图标底+文字、**块内 glyph 尺寸下限 = 24px** | `_tokens.json` §size ·第 3 批 + `aa_audit` 实测（见 §4.2 公共红线 ①） |
 
 **行族文本盒宽 = 全页族预留（2026-10-01 第 2 批修正）**：右缘按 **全页** `fam_reserve`（max(箭头, 开关, 复选框)）算，而不是「本行自己有什么右端控件」——否则「只有箭头的行」会得到比「有开关的行」宽 56px 的文本盒，check_all #27 会报「口径偏离同族」（第 1 批两版示例各有 2 条 WARN 就是这个原因，本批修掉）。代价：只有箭头的行多留一段死区（文本左对齐且短，观感无影响）。
 
 **第 2 批交互块度量（`_tokens.json` 只给基准，公式在 `compose.build_metrics`）**：滑块盒 = max(图标档, 行高×0.60)（1024→36，320→16）；thumb = 图标档（24/12）；输入框盒 = 单选项高 = max(标题高+spacer, 行高×0.70)（42/24）；复选/圆点盒 = max(12, 行高×0.50)（32/16）；列表模板高（40/24，余 2px）；滚轮模板高（36/24，整除）；滚轮列宽（200/56）。
 
-**布局自动决策**：内容总高 > 视口 → 自动包 `scrollwindow`（视口高）→ 内层 `window`（高 = 内容总高）；≤ 视口 → **不上滑动窗口**（白放一层没意义，§2.1 第 1 步）。
+**第 3 批结构/导航/提示块度量（实测值，公式在 `compose.build_metrics`）**：
 
-## 6. 自测结果（四版示例，全自动）
+| 度量 | 1024×600 | 320×240 | 说明 |
+|---|---|---|---|
+| `tab_h`（段带高） | 56 | 32 | max(r4(屏高×0.09), b1 高+16) |
+| `ind_h`（指示条高） | 3 | 2 | max(2, round(屏高×0.005))——两条都是**直角条**（不用圆角，见 §4.2） |
+| `pill_h`（胶囊带高） | 44 | 24 | 圆角 = 带高/2 |
+| `banner_h`（提示条带高） | 48 | 32 | 4 语义色浅底 + 图标（24/24） |
+| `divider_h`（分割线带高） | 32 | 16 | 线长 440/114（同一页两侧等长，随宽度伸缩） |
+| `nav_h`（底导带高） | 64 | 60 | = 图标+间距+文字+16，**与项数无关**；320 上占屏高 25%（极小屏两带叠置的代价，见 §8 第 0 条④） |
+| `toast_h` | 56 | 40 | b1 + 2×spacer2；盒宽 132/120（文本反算） |
+| 宫格格（格盒 == 图） | 314×72（3 列 6 格） | 80×68（3 列 6 格） | 格高 = 16 + 图标底 + 文字高（图标底 36/36 = 图标 24×1.5） |
+| 块内图标档 | 24 | 24 | **与屏高无关**（`glyph_min_px`）：小屏不降图标，靠「省图标」降级（见 §4.2 ①） |
+
+
+**布局自动决策**：内容总高 > 视口 → 自动包 `scrollwindow`（视口高）→ 内层 `window`（高 = 内容总高）；≤ 视口 → **不上滑动窗口**（白放一层没意义，§2.1 第 1 步）。
+**视口扣除（第 3 批新增）**：有 `bottom_nav` 时视口再减 `nav_h`（视口 = 屏高 − 标题带 − nav 带 − 底栏带），并在 compose 日志里打印一行 `[NOTE] bottom_nav 固定带 N px 贴底栏上沿 → 视口缩至 M`。
+
+## 6. 自测结果（六版示例，全自动）
 
 > 命令：`python templates/ui_blocks/compose.py <示例>/spec.json --project <示例>/project --render --check`\
-> 再加一遍 `python tools/ui_tools/check_all.py <示例>/project`（存到 `check_all.log`）。**四版都是 compose exit 0 + check_all exit 0（0 FAIL / 0 WARN）**。
+> 再加一遍 `python tools/ui_tools/check_all.py <示例>/project`（存到 `check_all.log`）。**六版都是 compose exit 0 + check_all exit 0（0 FAIL / 0 需审批 WARN）**；
+> 第 3 批改完 `compose.py` 后，**旧四版全部重跑一遍（回归）仍是 exit 0**，且旧四版产物与上一版**逐字节一致**（`git status` 无改动 = 新代码对旧块零影响）。
 
 ### 6.1 第 1 批（基础块，10 块）
 
@@ -205,7 +265,31 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/interactive_3
 | `listview` | `item/subItem`（x3） | 按模板画 rows 个单元（`item.text` 空串 → 只看到子项图/箭头，如列表行的行尾箭头；滚轮的静态选中条可见） | 引擎按数据填行 + 滚动 + 循环 |
 | `listview.item.subItem` | `picTab.pic0`（x4） | 行尾箭头子项按背景图绘制（仅常态） | 行内子项图由引擎直接贴（图 == subItem 盒） |
 
-对齐解码：全部文字控件用 **36/37/38（真机实测表）**，`json2img` 报「待校准 0 处 / 表外 0 处」（四版示例均是）。
+对齐解码：全部文字控件用 **36/37/38（真机实测表）**，`json2img` 报「待校准 0 处 / 表外 0 处」（六版示例均是）。
+**第 3 批新增块：渲染器零 unsupported 新增**——7 个新块全部由 `textview` / `button` / `window` 组成（不引入 checkbox/radiogroup/listview/seekbar 这类「v0 未专有实现」的控件），所以 `json2img --report` 的清单比第 2 批更短（只剩 `bold` 一类）：
+
+| 示例 | `json2img --report` unsupported/降级 | 拉伸填充 |
+|---|---|---|
+| nav_1024x600 | `textview bold x3`（TextTitle / SectionHeader2 / SectionHeader6 → 用同字体） | 0 处 |
+| nav_320x240 | `textview bold x3`（同上） | 0 处 |
+
+### 6.4 第 3 批（结构 / 导航 / 提示类 7 块）
+
+| 项 | nav_1024x600 | nav_320x240 |
+|---|---|---|
+| 块用量 | 24 个块里用了 **15 个**（7 新 + page_title / card / icon_row / toggle_row / setting_row / section_header / bottom_actions / dialog） | 同左（**同一份块清单**） |
+| 控件数（含嵌套） | **124**（textview 86 / button 23 / window 14 / scrollwindow 1） | **116**（textview 78 / button 23 / window 14 / scrollwindow 1） |
+| 关键度量 | 行高 60 ｜ tab 带 56 / 指示条 3 ｜ 胶囊 128×44 / 144×44 ｜ 提示条 992×48 ｜ 分割线 440+96+440 ｜ 宫格 314×72（3 列 2 行）｜ nav 带 64 ｜ 浮层 132×56 | 行高 28 ｜ tab 带 32 / 指示条 2 ｜ 胶囊 76×24 ｜ 提示条 288×32 ｜ 分割线 114+52+114 ｜ 宫格 80×68 ｜ nav 带 60 ｜ 浮层 120×40 |
+| 内容 → 视口 / 行程 | 916 → 388（=600−76−72−64）/**行程 528**，dragMaxDis 60 | 660 → 108（=240−32−40−60）/**行程 552**，dragMaxDis 24 |
+| 出图 | **44 张**（#11/#17 图 == 盒 0 处不匹配；格盒 == 格底图 0 处不匹配） | **43 张**（同上） |
+| logic 骨架 | **23 个按钮回调**（3 tab + 6 宫格 + 4 底导 + 3 提示关闭 + 主/次 + 弹窗 2 + 3 行命中区）齐全 | 同左 23 个 |
+| `check_all` | **exit 0（0 FAIL / 0 需审批 WARN）**；#21 AA 真缺陷 0（扫 44 张，WARN 12 / EXEMPT 3）｜#22/#23/#25/#24 真缺陷 0 | **exit 0（0 FAIL / 0 需审批 WARN）**；#21 AA 真缺陷 0（扫 43 张，WARN 8 / EXEMPT 3） |
+| #27 同族 / #29 触摸 / #31 对齐 | 均 PASS（0 条离群、0 处文本×图标相交、无显示件压交互控件） | 同左 |
+| #30 caption / #35 盒下限 / #36 文本余量 | PASS 唯一 / PASS ≥ 12×16 / PASS 余量充足 | 同左 |
+| 渲染图 | `project/ui/main.render.png` **1024×600 == resolution** ✓ | **320×240** ✓ |
+| 整页证据图 | `main.full.render.png` 1024×1128（展平 scrollwindow；供人工验收） | 320×792 |
+| 证据 | `examples/nav_1024x600/{main.render.png,main.full.render.png,last-run.log,check_all.log}` | 同左 |
+
 
 ## 7. ⛔ 反面清单（照抄我们踩过的坑，别重犯）
 
@@ -235,12 +319,23 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/interactive_3
 | 22 | **极小内点/小弧线**（复选勾画 7px、单选内点 7px、矮于 10px 的药丸条） | 同上（7px 内点实测 78~100% hard_diag = #21 真缺陷；8px 药丸条 67~75%） | 圆点内点只在标记盒 ≥24px 时给（极小屏用实底色区分态）；滑轨可见条高 **≥ 10px**；这些阈值是本库实测写回 `compose.py` 的 |
 | 23 | **`checkbox` 的 id 落在 20000~30000 段** | `check_all #5` 按 id 段把 checkbox 当 button → 要求 `onButtonClick_<caption>`（而 checkbox 的语义回调是 `onCheckedChanged`），要么编译不过要么得编个假回调 | checkbox id 取 **94500** 段（radiobutton 94100、subitem 24000）——真机 id 段无语义，只要求页内唯一 |
 | 24 | **给 checkbox 行再压一个整行透明 button**（照抄 `toggle_row` 的「装饰件 + 整行命中」） | 复选框永远选不上（button 在 z 更高、吃掉 DOWN）——而 `toggle_row` 那种写法是**对的**，因为它的开关只是呈现态、由代码切图 | `checkbox_row` **不给整行 button**（勾选框自己就是命中区）；`radio_row` 同理不加整行 button |
+| 25 | **tab 指示条定义在 tab 之后**（静态件没写最前） | z 更高 → 盖住 tab 文字、可能吃触摸；且选中底把指示条压没（「看不见指示条」） | 指示条**紧跟容器底**定义（先于所有 tab 与 button），`touchable:false` 显式写；选中底**高度让出 `ind_h`**（与指示条几何不重叠） |
+| 26 | **2~3px 高的小弧/圆角当指示条**（或把滑轨可见条压到 10px 以下） | `aa_audit` 报成片 hard_diag / 直通 α → #21 **真缺陷**（与 #22 极端内点同一类） | 指示条用**直角实条**（radius 0）；滑轨可见条高 **≥ 10px** |
+| 27 | **块内 glyph 跟着小屏降档**（12/16px 图标） | `aa_audit` 真缺陷：`wifi@12` / `home@16` / `settings@16` / `bell@20` 实测 FAIL（图标笔画 <1px 退成硬阶梯） | 第 3 批引入 `glyph_min_px = 24`（块内图标尺寸**不随屏降**）；极小屏靠「省图标」降级，不靠缩小图标 |
+| 28 | **浮层（toast）写在普通层里** / `visible` 写 true | 被内容/弹窗盖住（提示根本看不见）；或一进页就弹一层遮屏 | toast = 根层整屏 window（modal=false + touchable=false） + **最后定义 = 最上层** + `visible:false` 默认 |
+| 29 | **底导与底栏两带叠在一起**（或 nav 放进滑动区） | 按钮被盖住/点不动（重叠）；上滑时 nav 跟着滚走（进滚动区） | nav 贴底栏上沿 + **视口扣除 nav 带高**（`compose` 日志会打 `[NOTE] bottom_nav … → 视口缩至 N`，看得见） |
 
 **两条纪律（写在最显眼处）**
 1. **加行 = 照抄同页已有行的口径**（行高/步进/文本左缘/各元素盒），禁止自创形态；
 2. **文本禁止为避让控件而改宽/挪位**——要改的是布局形态或盒子。
 
 ## 8. 本库做的取舍（如实报告）
+
+0. **第 3 批（结构 / 导航 / 提示）四条关键取舍**（都在对应 `blocks/*.json` 的 `forbidden` 里写了红线）：
+   ① **指示条写成直角实条**（不用圆角药丸）：2~3px 高的圆角在 `aa_audit` 里退化成硬阶梯（#21 真缺陷）；且水平内缩容器圆角宽，避开容器圆角；
+   ② **选中底高度让出指示条高**（`tab_h − ind_h`）：这样指示条与选中底**几何不重叠**，谁先定义都不互相遮挡（同时满足「指示条放最前」与「选中态看得见底色」两个要求）；
+   ③ **块内 glyph 尺寸下限 24px**（`glyph_min_px`）：图标不像字号可以降档，降了就退化成硬阶梯（实测 `wifi@12`/`home@16`/`settings@16`/`bell@20` 均判真缺陷）——代价是极小屏（320×240）上图标显得相对大（宫格格高 68 与 1024 的 72 几乎一样），这是为了「一次出能过的产物」付的代价；
+   ④ **底导叠在底栏上方**（两带不重叠）：两者都是固定带，nav 贴底栏上沿，视口 = 屏高 − 标题 − nav − 底栏；**代价：320×240 上 nav 带 60px = 屏高 25%，视口只剩 108px**（极小屏两带叠置的必然结果，已在日志里打印可见）。
 
 1. **`setting_row` 用「两行式」而不是左标题右值**：`scrollwindow-layout-checklist §2.1` 明确把"左标题 + 右值单行式"列为返工第一名（同页混用 → 文字外凸、箭头被压）。极小屏放不下两行时**整页**降单行式（全页一致），不是单行特例。
 2. **卡片不给描边**：`SPEC-CHECK §7.1/§8` 的结论（1px 描边环在弧线上会让 AA 审计退回硬阶梯；TDesign 靠灰底衬托）→ 容器/面板/次按钮全部素面或浅色实底。
@@ -260,10 +355,16 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/interactive_3
 
 * 块数量按需扩展：新增块 = 加一个 `blocks/<type>.json`（字段 + 相对约束 + 素材 + 禁止项）+ 在 `compose.py` 里指到已有 builder（`title/section/row/field_row/card/empty/actions/dialog/list/wheel`）；新增形态才写新 builder。
 * `compose.py` 第 2 批新增的控件 factory：`make_seekbar` / `make_edittext` / `make_checkbox` / `make_radiogroup` / `subitem` / `list_item_template`，及 builder `build_field_row` / `build_list` / `build_wheel`（素材新增 `bar` / `mark` / `chevron` 三个出图 kind）。
-* **未覆盖**：tab 页签、日期/日历块、图表块（可复用 `components/ui_v1/` 的自绘控件后再包成块）、`circlebar`/`slidetext`/`pagewindow` 等控件块。
+* `compose.py` 第 3 批新增：
+  · 工具：`r4up`（4px 栅格**向上**取整，专给文本盒宽，#36 余量口径）、`text_box_w`（文本盒宽 = 估算×1.10 向上取4）、`sem_color`（语义状态 → 前景/浅底令牌）、`col_int`（令牌名 → 整型色值）；
+  · builder：`build_tabs`（tab 项批量）、`build_nav`（nav 项批量）、`build_banner`、`build_pill`（药丸）、`build_divider_label`、`build_grid`（宫格格子批量）、`build_toast`；全部只复用 `shape()/glyph()/text()/button()` + 第2批的 `bar/mark/chevron`，**没有新出图 kind**；
+  · 自检全部复用：`assert_caption_unique`（每次出产物前）/ `assert_icon_uniform`（行族）/ `assert_children_fit`（每个新容器）/ `assert_row_gaps`（banner 的「文案→关闭盒」与 divider_label 的「线→文字」都记入同一张间隙表）/ `next_seq` + `name_block`（caption 唯一性）；
+  · `_tokens.json` 新增：语义色 9 个（`info/info1/success/success1/warn/warn1/danger/danger1` + `mask`，TDesign v1.17 档位）与比例 `tab_h_of_h/ind_h_of_h/pill_h_of_h/banner_h_of_h/divider_h_of_h/nav_h_of_h/toast_top_of_h` + `glyph_min_px`。
+* **未覆盖**：日期/日历块、图表块（可复用 `components/ui_v1/` 的自绘控件后再包成块）、`circlebar`/`slidetext`/`pagewindow`/`slidewindow`/`digitalclock` 等控件块（tab 页签已在第 3 批覆盖）。
+* **第 3 批遗留**：① 底部导航只有「图标 + 文字」两种呈现，没做「选中项突出/凸起」变体；② 宫格行数由 `cols` 与项数隐式决定，未支持跨列合并（`span`）；③ toast 是**单行**盒（多行需改 `toast_h` 公式）；④ 提示条的关闭动作只到回调骨架，关闭后重新弹出需业务自己记状态。
 * 渲染图是**静止态近似**（`json2img` v0.1.0），真观感仍需模拟器/真机；320×240 的 10~12px 字号在设备字库下的可读性**未验证**。
 * **渲染图的固有盲区**（不是本库的问题，但看渲染图时要知道）：见 §6.3 清单——`radiogroup` 选项区整块空白、`checkbox` 只画未选态、`listview` 只画模板不填数据、seekbar 有效图按缩放近似（引擎是裁剪）。
 * **滚轮/列表的实际手感与回读**需要业务侧代码（中心行回读 + 数据侧平移 + `refreshListView()`），本库只到 UI（json）；骨架里的 listview 三回调以注释形式给出签名。
 * **`resources/images/` 不做旧图清理**（compose 只增量出图）：换块/改尺寸后旧切图会留在目录里（check_all 只核**被引用**的图，不影响判定）——要干净就手工删或整目录重建。
 * `check_all #9` 对 `ui/<W>x<H>/` 布局的误报（见反面清单 #20）——修在 `check_all` 里更合适，本库用 `--ui-layout` 绕开，不去改既有工具。
-* **`check_all` 的 2 条备注**（本库不管，属于既有工具口径）：① 新建的交互类切图（`sk_*`/`cb_*`/`rd_*`/`wband_*`）未在 `tools/qa/asset_audit_rules.json` 登记 → 按 `unknown_policy` 只出 NOTE（不判 FAIL）；要纳入 AA/倒角/透明底审计需在那个文件补分类（不在本库改动范围）。
+* **`check_all` 的 2 条备注**（本库不管，属于既有工具口径）：① 新建的切图（第 2 批 `sk_*`/`cb_*`/`rd_*`/`wband_*`，第 3 批 `tabsbg_*`/`tab_on_*`/`ind_*`/`navbg_*`/`nav_*`/`bnr_*`/`pill_*`/`gtile_*`/`toast_bg_*`/`nav_*_on/off`）未在 `tools/qa/asset_audit_rules.json` 登记 → 按 `unknown_policy` 只出 NOTE（不判 FAIL）；要纳入 AA/倒角/透明底审计需在那个文件补分类（不在本库改动范围）。⚠️ 但 `aa_audit`（#21）**不过滤未登记资产**（它按全目录扫描）→ 所以块内 glyph 才有 `glyph_min_px = 24` 这个硬下限（见 §4.2 与反面清单 #27）。
