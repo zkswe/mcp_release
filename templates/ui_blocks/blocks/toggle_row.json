@@ -5,11 +5,31 @@
   "family": "row",
   "caption_prefix": "ToggleRow",
   "fields": {
-    "label": {"type": "string", "required": true, "example": "自动息屏"},
-    "value": {"type": "string", "required": false, "example": "已开启"},
-    "value_short": {"type": "string", "required": false},
-    "on": {"type": "bool", "default": true, "note": "开关当前态（决定药丸底色与滑块位置；真机态由业务代码 setControlPic 切换）"},
-    "icon": {"type": "string", "default": ""}
+    "label": {
+      "type": "string",
+      "required": true,
+      "example": "自动息屏"
+    },
+    "value": {
+      "type": "string",
+      "required": false,
+      "example": "已开启"
+    },
+    "value_short": {
+      "type": "string",
+      "required": false
+    },
+    "on": {
+      "type": "bool",
+      "default": true,
+      "note": "开关当前态（决定药丸底色与滑块位置；真机态由业务代码 setControlPic 切换）"
+    },
+    "icon": {
+      "type": "string",
+      "default": "",
+      "note": "图标名（**来源 = components/icons 资产库**，禁自绘/禁 emoji 字体；全量允许值见 `blocks/_icons.json`）例：bulb / bell / wifi / bluetooth / air-conditioning",
+      "allowed": "blocks/_icons.json"
+    }
   },
   "relative_constraints": {
     "row_w": "同 setting_row（同页行必须同一口径）",
@@ -20,9 +40,21 @@
     "hit_area": "整行一个透明 button（touchable true）盖住行条；开关、药丸底、滑块均为**装饰件**（touchable false 显式写）"
   },
   "assets": [
-    {"name": "sw_{w}x{h}_on.png", "via": "gen_res.rounded_rect_ss(radius=h/2)", "size": "开关盒（药丸）"},
-    {"name": "sw_{w}x{h}_off.png", "via": "gen_res.rounded_rect_ss(radius=h/2)", "size": "开关盒（药丸）"},
-    {"name": "swk_{k}.png", "via": "gen_res.rounded_rect_ss(radius=k/2)", "size": "滑块（圆）"}
+    {
+      "name": "sw_{w}x{h}_on.png",
+      "via": "gen_res.rounded_rect_ss(radius=h/2)",
+      "size": "开关盒（药丸）"
+    },
+    {
+      "name": "sw_{w}x{h}_off.png",
+      "via": "gen_res.rounded_rect_ss(radius=h/2)",
+      "size": "开关盒（药丸）"
+    },
+    {
+      "name": "swk_{k}.png",
+      "via": "gen_res.rounded_rect_ss(radius=k/2)",
+      "size": "滑块（圆）"
+    }
   ],
   "scroll": "inherit",
   "forbidden": [
@@ -30,5 +62,16 @@
     "开关盒与值文本盒相交（值盒右缘 = 开关盒左缘 − spacer）",
     "同页开关尺寸不一致（照抄第一个开关的口径）"
   ],
-  "compact_note": "极小屏：开关宽 = 行高 × 1.10；值文案用 value_short"
+  "compact_note": "极小屏：开关宽 = 行高 × 1.10；值文案用 value_short",
+  "icon_source": "components/icons（v0.3.1 = Tabler Icons 3.46.0 单色烘焙 PNG；生成器 components/icons/scripts/gen_icons.py）。按盒尺寸选档 56/24/22，**产物图严格 == 控件盒**；库里没有该语义名 → compose 回退 gen_res 线框并在输出里明说「回退线框」（目标 0 处）。全量允许值 + 分类 + 两态说明见 `blocks/_icons.json`",
+  "icon_examples": [
+    "bulb",
+    "bell",
+    "wifi",
+    "bluetooth",
+    "air-conditioning",
+    "windmill",
+    "battery",
+    "shield"
+  ]
 }

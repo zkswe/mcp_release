@@ -5,11 +5,32 @@
   "family": "row",
   "caption_prefix": "SettingRow",
   "fields": {
-    "label": {"type": "string", "required": true, "example": "WiFi"},
-    "value": {"type": "string", "required": false, "example": "已连接 · 192.168.1.100"},
-    "value_short": {"type": "string", "required": false, "example": "已连接", "note": "极小屏替代文案（放不下长值时用，见坑 B3）"},
-    "chevron": {"type": "bool", "default": true},
-    "icon": {"type": "string", "default": "", "note": "gen_res glyph 名（wifi/settings/list/...）；空 = 不画图标"}
+    "label": {
+      "type": "string",
+      "required": true,
+      "example": "WiFi"
+    },
+    "value": {
+      "type": "string",
+      "required": false,
+      "example": "已连接 · 192.168.1.100"
+    },
+    "value_short": {
+      "type": "string",
+      "required": false,
+      "example": "已连接",
+      "note": "极小屏替代文案（放不下长值时用，见坑 B3）"
+    },
+    "chevron": {
+      "type": "bool",
+      "default": true
+    },
+    "icon": {
+      "type": "string",
+      "default": "",
+      "note": "图标名（**来源 = components/icons 资产库**，禁自绘/禁 emoji 字体；全量允许值见 `blocks/_icons.json`）例：wifi / settings / bulb / bell / user / lock；空 = 不画图标",
+      "allowed": "blocks/_icons.json"
+    }
   },
   "relative_constraints": {
     "row_w": "内容区宽 = 屏宽 − 2×margin（margin = spacer-2）",
@@ -25,8 +46,14 @@
     "radius": "行本身不给圆角（圆角由 card 容器承担，行内只画 1px 分割线）"
   },
   "assets": [
-    {"name": "chev_{w}x{h}.png", "via": "gen_res.glyph_icon(glyph='forward', canvas=(w,h))", "size": "箭头盒 == 控件盒"},
-    {"comment": "icon 非空时另出：icbg_{S}.png（圆，色 brand1）+ ic_{S}.png（glyph，色 brand）"}
+    {
+      "name": "chev_{w}x{h}.png",
+      "via": "chevron_image（SPEC-CHECK §7 箭头专属口径：45° + 圆头 + 笔画 ≈ 盒宽 12% 且 ≥2px；**不走图标库**，理由见 README §8-3）",
+      "size": "箭头盒 == 控件盒"
+    },
+    {
+      "comment": "icon 非空时另出：icbg_{S}.png（圆，色 brand1）+ ic_{S}.png（glyph，色 brand）"
+    }
   ],
   "scroll": "inherit",
   "forbidden": [
@@ -35,5 +62,16 @@
     "行内控件盒相交（引擎先画底图后画文字，箭头会被文字盖住）",
     "行条图 ≠ 控件盒（引擎会拉伸填充，非 1:1 必糊）"
   ],
-  "compact_note": "极小屏：整页降单行式，标题盒 = 文本区 42% − spacer，值右对齐；图标可省；长值换 value_short"
+  "compact_note": "极小屏：整页降单行式，标题盒 = 文本区 42% − spacer，值右对齐；图标可省；长值换 value_short",
+  "icon_source": "components/icons（v0.3.1 = Tabler Icons 3.46.0 单色烘焙 PNG；生成器 components/icons/scripts/gen_icons.py）。按盒尺寸选档 56/24/22，**产物图严格 == 控件盒**；库里没有该语义名 → compose 回退 gen_res 线框并在输出里明说「回退线框」（目标 0 处）。全量允许值 + 分类 + 两态说明见 `blocks/_icons.json`",
+  "icon_examples": [
+    "wifi",
+    "settings",
+    "bulb",
+    "bell",
+    "user",
+    "lock",
+    "bluetooth",
+    "tv"
+  ]
 }

@@ -5,12 +5,37 @@
   "family": "row",
   "caption_prefix": "DeviceCard",
   "fields": {
-    "icon": {"type": "string", "required": true, "example": "wifi"},
-    "label": {"type": "string", "required": true, "example": "客厅面板"},
-    "value": {"type": "string", "required": false, "example": "在线 · 信号良好"},
-    "value_short": {"type": "string", "required": false, "example": "在线"},
-    "online": {"type": "bool", "default": true, "note": "状态点颜色（装饰件；真机态由业务代码切图）"},
-    "chevron": {"type": "bool", "default": true}
+    "icon": {
+      "type": "string",
+      "required": true,
+      "example": "wifi",
+      "note": "图标名（**来源 = components/icons 资产库**，禁自绘/禁 emoji 字体；全量允许值见 `blocks/_icons.json`）",
+      "allowed": "blocks/_icons.json"
+    },
+    "label": {
+      "type": "string",
+      "required": true,
+      "example": "客厅面板"
+    },
+    "value": {
+      "type": "string",
+      "required": false,
+      "example": "在线 · 信号良好"
+    },
+    "value_short": {
+      "type": "string",
+      "required": false,
+      "example": "在线"
+    },
+    "online": {
+      "type": "bool",
+      "default": true,
+      "note": "状态点颜色（装饰件；真机态由业务代码切图）"
+    },
+    "chevron": {
+      "type": "bool",
+      "default": true
+    }
   },
   "relative_constraints": {
     "geometry": "与 icon_row 完全同一口径（同一套行模板 → 同页行族一致，check_all #27 才为 0 条）",
@@ -18,13 +43,36 @@
     "text": "名称 = 字号档 b1（色 fg1）；状态 = 字号档 b2（色 fg2）"
   },
   "assets": [
-    {"name": "icbg_{S}.png / ic_{glyph}_{S}.png / chev_{w}x{h}.png", "via": "同 icon_row", "size": "各自盒 == 图"},
-    {"name": "dot_{d}.png", "via": "gen_res.rounded_rect_ss(radius=d/2)", "size": "状态点盒"}
+    {
+      "name": "icbg_{S}.png / ic_{glyph}_{S}.png / chev_{w}x{h}.png",
+      "via": "icbg_/ic_（图标底 + 图标）走 components/icons 资产库（compose.iconlib：盒 == 档位 22/24/56 时取库里 out/<档>/ 那张并按 alpha 换色，缺档则按盒尺寸现出）；chev_ 走 chevron_image（SPEC-CHECK §7 箭头口径，不走图标库）",
+      "size": "各自盒 == 图（严格相等，铁律 #11/#17）"
+    },
+    {
+      "name": "dot_{d}.png",
+      "via": "gen_res.rounded_rect_ss(radius=d/2)",
+      "size": "状态点盒"
+    }
   ],
   "scroll": "inherit",
   "forbidden": [
     "设备卡自创一套行高/内边距（同一页里它就是「带图标的行」）",
     "状态文本用红绿字代替状态点（层级靠色 + 点，不靠给文字上色染红）"
   ],
-  "compact_note": "极小屏：与 setting_row 同降单行式（名称左、状态右），状态点省略"
+  "compact_note": "极小屏：与 setting_row 同降单行式（名称左、状态右），状态点省略",
+  "icon_source": "components/icons（v0.3.1 = Tabler Icons 3.46.0 单色烘焙 PNG；生成器 components/icons/scripts/gen_icons.py）。按盒尺寸选档 56/24/22，**产物图严格 == 控件盒**；库里没有该语义名 → compose 回退 gen_res 线框并在输出里明说「回退线框」（目标 0 处）。全量允许值 + 分类 + 两态说明见 `blocks/_icons.json`",
+  "icon_examples": [
+    "wifi",
+    "tv",
+    "air-conditioning",
+    "bulb",
+    "windmill",
+    "plug",
+    "wash-machine",
+    "fridge",
+    "vacuum",
+    "robot",
+    "door",
+    "window"
+  ]
 }

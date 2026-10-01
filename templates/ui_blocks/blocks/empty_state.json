@@ -5,9 +5,22 @@
   "family": "page",
   "caption_prefix": "EmptyState",
   "fields": {
-    "icon": {"type": "string", "default": "info", "note": "gen_res glyph 名"},
-    "text": {"type": "string", "required": true, "example": "暂无设备"},
-    "sub": {"type": "string", "required": false, "example": "点右上角添加"}
+    "icon": {
+      "type": "string",
+      "default": "info",
+      "note": "默认 info；图标名（**来源 = components/icons 资产库**，禁自绘/禁 emoji 字体；全量允许值见 `blocks/_icons.json`）。图标盒 = 图标底盒/2（1024→36px / 320→16px，**属缺档**）→ 用库生成器按盒尺寸现出（不放大盒子去凑 24 档）",
+      "allowed": "blocks/_icons.json"
+    },
+    "text": {
+      "type": "string",
+      "required": true,
+      "example": "暂无设备"
+    },
+    "sub": {
+      "type": "string",
+      "required": false,
+      "example": "点右上角添加"
+    }
   },
   "relative_constraints": {
     "band_h": "屏高 × 0.30（不小于 3×行高，也不大于视口）",
@@ -17,13 +30,31 @@
     "sub_box": "同 text_box，位于 text 下方 + 4；字号档 b2，色 fg2"
   },
   "assets": [
-    {"name": "icbg_{S}.png", "via": "gen_res.rounded_rect_ss(radius=S/2, fill=brand1)", "size": "图标底盒"},
-    {"name": "ic_{glyph}_{S}.png", "via": "gen_res.glyph_icon(glyph, canvas=(S,S))", "size": "图标盒"}
+    {
+      "name": "icbg_{S}.png",
+      "via": "gen_res.rounded_rect_ss(radius=S/2, fill=brand1)",
+      "size": "图标底盒"
+    },
+    {
+      "name": "ic_{glyph}_{S}.png",
+      "via": "components/icons 资产库（compose.iconlib：盒 == 档位 22/24/56 时取库里 out/<档>/ 那张并按 alpha 换色，缺档则用库生成器按盒尺寸现出；两者像素等价）",
+      "size": "图标盒 == 图（严格相等，铁律 #11/#17）"
+    }
   ],
   "scroll": "inherit",
   "forbidden": [
     "空态在本页有数据时也显示（空态是「无数据」分支，不是装饰层）",
     "空态图标与文案字号同档（层级靠字号档，一个 h1 一个大 b1）"
   ],
-  "compact_note": "极小屏：图标底直径 = 1.5×行高 × 0.60，文案 ≤ 6 字"
+  "compact_note": "极小屏：图标底直径 = 1.5×行高 × 0.60，文案 ≤ 6 字",
+  "icon_source": "components/icons（v0.3.1 = Tabler Icons 3.46.0 单色烘焙 PNG；生成器 components/icons/scripts/gen_icons.py）。按盒尺寸选档 56/24/22，**产物图严格 == 控件盒**；库里没有该语义名 → compose 回退 gen_res 线框并在输出里明说「回退线框」（目标 0 处）。全量允许值 + 分类 + 两态说明见 `blocks/_icons.json`",
+  "icon_examples": [
+    "info",
+    "list",
+    "search",
+    "bell",
+    "wifi-off",
+    "network-off",
+    "trash"
+  ]
 }

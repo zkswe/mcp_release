@@ -1,5 +1,21 @@
 == compose (320x240) ==
   行高 28 ｜ 字号 {'h1': 14, 'h2': 12, 'b1': 12, 'b2': 10} ｜ 圆角 5 ｜ 图标底/图标 16/12 ｜ 箭头 12x16 ｜ 内容 660 → 视口 108
+  图标来源：components/icons（17 处 ｜ 档位 24 档 ×17 ｜ 14 种 名×尺寸×态 组合）
+      bell         → system.bell              24px（24 档）state=-
+      bell         → system.bell              24px（24 档）state=off
+      check        → control.check            24px（24 档）state=-
+      close        → control.close            24px（24 档）state=-
+      home         → system.home              24px（24 档）state=on
+      info         → system.info              24px（24 档）state=-
+      list         → system.list              24px（24 档）state=-
+      list         → system.list              24px（24 档）state=off
+      settings     → system.settings          24px（24 档）state=-
+      star         → system.star              24px（24 档）state=on
+      user         → system.user              24px（24 档）state=-
+      user         → system.user              24px（24 档）state=off
+      warning      → system.warning           24px（24 档）state=-
+      wifi         → system.wifi              24px（24 档）state=-
+  回退线框 0 处（全部图标来自 components/icons ✓）
   [NOTE] bottom_nav 固定带 60 px 贴底栏上沿 → 视口缩至 108
   [NOTE] 内容总高 660 > 视口 108 → 自动上滑动窗口（行程 552 px，dragMaxDis=24）
   bnr_danger_288x32.png  288x32
@@ -15,25 +31,25 @@
   chev_12x16.png  12x16
   footbg_320x40.png  320x40
   gtile_80x68.png  80x68
-  ic_bell_24.png  24x24
-  ic_check_24_success.png  24x24
-  ic_close_24_danger.png  24x24
-  ic_close_24_info.png  24x24
-  ic_close_24_success.png  24x24
-  ic_info_24_info.png  24x24
-  ic_list_24.png  24x24
-  ic_settings_24.png  24x24
-  ic_star_24.png  24x24
-  ic_user_24.png  24x24
-  ic_warning_24_danger.png  24x24
-  ic_warning_24_warn.png  24x24
-  ic_wifi_24.png  24x24
+  ic_bell_24.png                           24x24  [components/icons system.bell · 24档 · prebuilt+recolor]
+  ic_check_24_success.png                  24x24  [components/icons control.check · 24档 · prebuilt+recolor]
+  ic_close_24_danger.png                   24x24  [components/icons control.close · 24档 · prebuilt+recolor]
+  ic_close_24_info.png                     24x24  [components/icons control.close · 24档 · prebuilt+recolor]
+  ic_close_24_success.png                  24x24  [components/icons control.close · 24档 · prebuilt+recolor]
+  ic_info_24_info.png                      24x24  [components/icons system.info · 24档 · prebuilt+recolor]
+  ic_list_24.png                           24x24  [components/icons system.list · 24档 · prebuilt+recolor]
+  ic_settings_24.png                       24x24  [components/icons system.settings · 24档 · prebuilt+recolor]
+  ic_star_24.png                           24x24  [components/icons system.star · 24档 · prebuilt+recolor]
+  ic_user_24.png                           24x24  [components/icons system.user · 24档 · prebuilt+recolor]
+  ic_warning_24_danger.png                 24x24  [components/icons system.warning · 24档 · prebuilt+recolor]
+  ic_warning_24_warn.png                   24x24  [components/icons system.warning · 24档 · prebuilt+recolor]
+  ic_wifi_24.png                           24x24  [components/icons system.wifi · 24档 · prebuilt+recolor]
   icbg_36.png  36x36
   ind_86x2.png  86x2
-  nav_bell_24_off.png  24x24
-  nav_home_24_on.png  24x24
-  nav_list_24_off.png  24x24
-  nav_user_24_off.png  24x24
+  nav_bell_24_off.png                      24x24  [components/icons system.bell · 24档 · prebuilt+recolor]
+  nav_home_24_on.png                       24x24  [components/icons system.home · 24档 · prebuilt+recolor]
+  nav_list_24_off.png                      24x24  [components/icons system.list · 24档 · prebuilt+recolor]
+  nav_user_24_off.png                      24x24  [components/icons system.user · 24档 · prebuilt+recolor]
   navbg_320x60.png  320x60
   panel_256x104.png  256x104
   pill_danger_76x24.png  76x24

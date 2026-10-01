@@ -5,6 +5,8 @@
 >
 > 建立：2026-10-01（钟工「按照你的建议做」）。第 2 批（交互类 7 块）：2026-10-01 同日追加。
 > 第 3 批（结构 / 导航 / 提示类 7 块 + 两版示例）：2026-10-01 同日追加 → 共 **24 个块 / 6 版示例**。
+> **图标来源改口径：2026-10-01 同日**（钟工「这些网络/设备的 icon 来源？效果差异和实际差异太大」
+> → 块库图标**唯一来源 = `components/icons` 图标资产库**，禁自绘/禁 emoji 字体兜底，见 **§5.1**）。
 > 范围：**只新建/只改本目录**，不改任何现有脚本/知识文档；
 > 所有出图/渲染/全检都**调现有工具**（`ui_tools/gen_res.py`、`ui_tools/json2img.py`、`ui_tools/check_all.py`），
 > 不复制它们的逻辑。
@@ -16,20 +18,26 @@
 ```
 templates/ui_blocks/
 ├─ compose.py                 ← 组装器（唯一入口，CLI）
+├─ iconlib.py                 ← 图标解析层：语义名 → `components/icons` 资产库（档位 56/24/22、图 == 盒、
+│                                缺档按盒尺寸现出、查不到才回退线框并**明说**）
+├─ full_render.py             ← 整页渲染（展平 scrollwindow → y 方向长图，供人工验收；不参与 check_all）
 ├─ blocks/
 │  ├─ _tokens.json            ← 设计令牌 + 相对尺度体系的**唯一数值源**（比例/令牌，不写死某屏像素；含第 3 批语义色与 glyph 尺寸下限）
+│  ├─ _icons.json             ← `icon` 字段的**允许值清单**（从 components/icons/catalog.json 摘：203 语义名 / 5 分类 / 两态清单 / 档位与回退口径）
 │  ├─ page_title.json         ← 块定义：字段 + 相对约束 + 需要素材 + 禁止项
 │  └─ …（共 24 个块定义 = 第 1 批 10 个 + 第 2 批交互类 7 个 + 第 3 批结构/导航/提示类 7 个）
 └─ examples/
-   ├─ settings_1024x600/      ← 示例 A：spec.json + project/（产物）+ main.render.png + 两个日志
+   ├─ settings_1024x600/      ← 示例 A：spec.json + project/（产物）+ main.render.png + main.full.render.png + 两个日志
    ├─ settings_320x240/       ← 示例 B：**同一套块**，只换分辨率（spec.json 只差 resolution 与短文案）
    ├─ interactive_1024x600/   ← 示例 C：**第 2 批 7 个交互块**全都用上 + 复用 card/section_header/toggle_row/setting_row/bottom_actions/dialog
-   │                            （另出 main.full.render.png = 展平 scrollwindow 的整页渲染，仅供人工验收，不参与 check_all）
    ├─ interactive_320x240/    ← 示例 D：与示例 C **同一份块清单**，只换分辨率（极小屏自动降级）
    ├─ nav_1024x600/           ← 示例 E：**第 3 批 7 个新块**全都用上（tabs/bottom_nav/banner×4 态/toast/status_pill×2 态/divider_label/grid_icons）
-   │                            + 复用 page_title/card/section_header/bottom_actions/dialog；另出 main.full.render.png
+   │                            + 复用 page_title/card/section_header/bottom_actions/dialog
    └─ nav_320x240/            ← 示例 F：与示例 E **同一份块清单**，只换分辨率与短文案（极小屏：视口 = 屏高 − 标题 − nav − 底栏）
 ```
+六版示例都带 `main.full.render.png` = 展平 scrollwindow 的**整页渲染**（由 `full_render.py` 产出，仅供人工验收，**不参与 check_all**）。
+口径：内容展平；**固定带（底导 / 底栏 / 弹窗 / 浮层）保持原屏 y 不变**（与上一批交付的长图逐像素一致，仅图标/勾选符号变了）——
+所以它们在长图里出现在中段、与下方内容叠在一起，看图时当「原屏固定层」理解。
 
 ## 2. 用法（一条命令）
 
@@ -66,10 +74,18 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/nav_320x240/s
        --project templates/ui_blocks/examples/nav_320x240/project --render --check
 ```
 
+**整页渲染（六版都有，供人工验收；不参与 check_all）**：
+
+```bash
+cd tools/FlyThings_mcp_open
+python templates/ui_blocks/full_render.py templates/ui_blocks/examples/nav_1024x600/project \
+       --out templates/ui_blocks/examples/nav_1024x600/main.full.render.png
+```
+
 产物清单（每页）：
 1. `<工程>/ui/[<W>x<H>/]main.json` —— 字段全集显式、`textview__N/button__N/window__N` **连续编号**、根节点 `id:0 + position + resolution`；
-2. `<工程>/resources/images/*.png` —— 只给用到的块出图，**图 == 控件盒**（走 `gen_res.py`）；
-3. `<工程>/ui/main.render.png`（`--render`）、`<工程>/src/logic/mainLogic.cc`（骨架，按钮回调一个不缺）；
+2. `<工程>/resources/images/*.png` —— 只给用到的块出图，**图 == 控件盒**（形状/底图走 `gen_res.py`；**图标走 `components/icons` 资产库**，见 §5.1）；
+3. `<工程>/ui/main.render.png`（`--render`）、`<工程>/src/logic/mainLogic.cc`（骨架，按钮回调一个不缺）、`<示例>/main.full.render.png`（`full_render.py`，人工验收）；
 4. `check_all` 全检结果（`--check`）。
 
 ## 3. spec 格式
@@ -210,11 +226,58 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/nav_320x240/s
 **布局自动决策**：内容总高 > 视口 → 自动包 `scrollwindow`（视口高）→ 内层 `window`（高 = 内容总高）；≤ 视口 → **不上滑动窗口**（白放一层没意义，§2.1 第 1 步）。
 **视口扣除（第 3 批新增）**：有 `bottom_nav` 时视口再减 `nav_h`（视口 = 屏高 − 标题带 − nav 带 − 底栏带），并在 compose 日志里打印一行 `[NOTE] bottom_nav 固定带 N px 贴底栏上沿 → 视口缩至 M`。
 
+### 5.1 图标来源 = `components/icons` 资产库（2026-10-01 改口径）
+
+钟工 2026-10-01：「这些网络/设备的 icon 来源？效果差异和实际差异太大」——块库原先的 `glyph()`
+走 `ui_tools/gen_res.glyph_icon()` 的兜底（默认 style=emoji → 查 `_GLYPH_EMOJI` + 本地 emoji 字体，
+缺字体退简笔线框），与**真机/产品用的那套图标**不是同一套图形。
+现在块库图标**唯一来源 = `components/icons`**（v0.3.1 = Tabler Icons 3.46.0 单色烘焙 PNG；
+矢量源 `vendor/tabler/**`，生成器 `components/icons/scripts/gen_icons.py`），实现见同目录 **`iconlib.py`**。
+
+| 项 | 口径 |
+|---|---|
+| 来源 | `components/icons`——**禁自绘、禁 emoji 字体兜底**（真机没那套字体） |
+| 档位（按盒尺寸） | 盒 ≥ 44px → **56 档**；≥ 26px → **24 档**；否则 **22 档**；盒尺寸**正好等于**档位（22/24/56）且库里有该状态产物 → 直接取库里 `out/<档>/` 那张（按 alpha 换色，与重新渲染**像素等价**，实测 maxdiff = 0） |
+| 缺档 | 盒不是 22/24/56（示例里：空态 1024→36px、320→16px）→ 用库自带生成器按**盒尺寸**现出（缺档补齐，**不放大控件盒去凑档**） |
+| 尺寸铁律 | 产物图**严格 == 控件盒**（#11/#17；引擎对「图 ≠ 盒」是拉伸填充） |
+| 颜色 | FlyThings 无 tint → 生成时烘焙（brand `#0052D9` / fg2 `#666666` / 语义 -6 档；库预置产物是白的） |
+| 两态 | `off` = 描边态（行/宫格/空态默认）、`on` = 实心态（底导选中自动用 `_on`；`grid_icons` 项可显式 `state:"on"`；checkbox 勾用 `control.check` 的 `_on`） |
+| 回退 | 库里**查不到**该语义名 → 回退 `gen_res` 线框，且 compose 输出里**明说「回退线框」**（不静默）；六版示例实测 **0 处** |
+| 允许值 | **`blocks/_icons.json`**（从 `catalog.json` 摘：203 语义名按 5 分类列全 + 两态清单 + 档位/回退口径）；各 `blocks/*.json` 的 `icon` 字段都指向它；`compose` 每次运行会把「图标来源 / 档位 / 名称×尺寸×态 组合」打进日志 |
+
+**六版示例用到的名字 → 库名 / 档位**（块里的 `icon` 只写短名，库自己解析别名）：
+
+| 块里的 `icon` | 库语义名 | 档位（盒尺寸） | 用在哪 |
+|---|---|---|---|
+| `info` | `system.info` | 24 档（1024 空态 36px，**缺档现出**）/ 22 档（320 空态 16px） | 空态、提示条、宫格 |
+| `wifi` | `system.wifi` | 24 档（24px） | 行族图标、宫格 |
+| `list` | `system.list` | 24 档 | 行族图标、宫格、底导 |
+| `bell` | `system.bell` | 24 档 | 行族图标、宫格、底导、提示条 |
+| `settings` | `system.settings` | 24 档 | 行族图标、宫格 |
+| `user` | `system.user` | 24 档 | 宫格、底导 |
+| `star` | `system.star` | 24 档（`state:"on"` 实心态） | 宫格 |
+| `home` | `system.home` | 24 档（`_on` 选中态） | 底导 |
+| `check` | `control.check` | 24 档 | 提示条（success） |
+| `close` | `control.close` | 24 档 | 提示条关闭钮 |
+| `warning` | `system.warning` | 24 档 | 提示条（warn / danger） |
+
+**一个实测坑（已写进 `blocks/_icons.json`）**：`star` **描边态 @24px** 会被 `tools/qa/aa_audit` 判
+**真缺陷**（`hard_diag=4` 占斜线边界 67% ≥ 60% —— 细描边星形在小盒上退成硬阶梯）→ 小盒上的 star 请用
+**实心态**（spec 里 `{"icon": "star", "state": "on"}`，nav 示例就是这么写的）或改用 `heart`（两态都干净）。
+其余 20+ 个常用名 @16/24/36px 实测干净或只 WARN（不构成 FAIL）。
+
+**箭头仍不走图标库**：`chev_{w}x{h}.png` 继续用 `chevron_image()` 的箭头专属口径（45° + 圆头 +
+笔画 ≈ 盒宽 12% 且 ≥2px）——库的 `control.chevron-right` 是 24 网格的细描边，在 12×16 小盒上会退成
+1px 硬斜边（`aa_audit` 报 `hard_diag`），见 §8-3；`checkbox` 勾选符号（`mark_image` 里的 `check`）
+已改走库（`control.check` 的 `_on`）。
+
 ## 6. 自测结果（六版示例，全自动）
 
 > 命令：`python templates/ui_blocks/compose.py <示例>/spec.json --project <示例>/project --render --check`\
 > 再加一遍 `python tools/ui_tools/check_all.py <示例>/project`（存到 `check_all.log`）。**六版都是 compose exit 0 + check_all exit 0（0 FAIL / 0 需审批 WARN）**；
-> 第 3 批改完 `compose.py` 后，**旧四版全部重跑一遍（回归）仍是 exit 0**，且旧四版产物与上一版**逐字节一致**（`git status` 无改动 = 新代码对旧块零影响）。
+> 第 3 批改完 `compose.py` 后，**旧四版全部重跑一遍（回归）仍是 exit 0**，且旧四版产物与上一版**逐字节一致**（`git status` 无改动 = 新代码对旧块零影响）。\
+> **图标来源改口径（§5.1）后六版又全部重跑一遍**：仍是 compose exit 0 + check_all exit 0（0 FAIL），
+> 图标回退线框 **0 处**，六版都补了 `main.full.render.png`（含旧两版）——核对见 **§6.5**。
 
 ### 6.1 第 1 批（基础块，10 块）
 
@@ -228,9 +291,9 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/nav_320x240/s
 | logic 骨架 | `src/logic/mainLogic.cc`，**11 个按钮回调**齐全 | 同左，11 个 |
 | `json2img --report` unsupported | **1 类**：`bold x4`（渲染器无 `*Bold*.ttf` 变体 → 用同字体；真机由字库承担） | 同左：`bold x4` |
 | 渲染图 | `main.render.png` **1024×600 == resolution** ✓ | `main.render.png` **320×240 == resolution** ✓ |
-| `check_all` | **exit 0（0 FAIL / 0 WARN）** | **exit 0（0 FAIL / 0 WARN）** |
+| `check_all` | **exit 0（0 FAIL / 0 需审批 WARN）**；#21 AA 真缺陷 0（扫 20 张，WARN 5 / EXEMPT 2） | **exit 0（0 FAIL / 0 需审批 WARN）**；#21 AA 真缺陷 0（扫 16 张，WARN 0 / EXEMPT 2） |
 | #26 行程 / #27 同族 | 行程=内层−视口 ✓ ｜ 同族口径 0 条离群、文本×图标 0 处相交 | 同左 ✓ |
-| 证据 | `examples/settings_1024x600/{main.render.png,last-run.log,check_all.log}` | `examples/settings_320x240/{main.render.png,last-run.log,check_all.log}` |
+| 证据 | `examples/settings_1024x600/{main.render.png,main.full.render.png,last-run.log,check_all.log}` | 同左 |
 
 > 注：示例工程 `resources/images/` 里可能留有**历史多余切图**（compose 只增量出图、不清理旧文件）——以 `last-run.log` 的「出图 N 张」清单为准（旧两版各余 4/1 张旧版图标/分隔线）。
 
@@ -245,7 +308,7 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/nav_320x240/s
 | 出图 | **22 张**（图 == 盒，#11/#17 PASS 0 处不匹配；`thumb.size == 滑块图` ✓） | **22 张**（同上） |
 | logic 骨架 | **6 个按钮回调 + 1 个输入框回调**（`onEditTextChanged_EditRowInputRow7Box`）齐全 | 同左 |
 | #37 listview item 高 | `ListListItem13 item 高 40 = int(162/4)−0 ✓，余 2 px = 可滑动提示（预期）`；`ListWheelPicker14Col1/2 item 高 36 = int(180/5)−0 ✓，余 0 px` | `ListListItem13 item 高 24 = int(98/4)−0 ✓，余 2 px`；`ListWheelPicker14Col1/2 item 高 24 = int(120/5)−0 ✓，余 0 px` |
-| `check_all` | **exit 0（0 FAIL / 0 WARN）**；#21 AA 真缺陷 0（扫 22 张，WARN 4 / EXEMPT 2） | **exit 0（0 FAIL / 0 WARN）**；#21 AA 真缺陷 0（扫 22 张，WARN 0 / EXEMPT 2） |
+| `check_all` | **exit 0（0 FAIL / 0 需审批 WARN）**；#21 AA 真缺陷 0（扫 22 张，WARN 4 / EXEMPT 2） | **exit 0（0 FAIL / 0 需审批 WARN）**；#21 AA 真缺陷 0（扫 22 张，WARN 0 / EXEMPT 2） |
 | 渲染图 | `project/ui/main.render.png` **1024×600 == resolution** ✓ | `project/ui/main.render.png` **320×240 == resolution** ✓ |
 | 整页证据图 | `main.full.render.png` 1024×1514（展平 scrollwindow；供人工验收） | `main.full.render.png` 320×930 |
 | 证据 | `examples/interactive_1024x600/{main.render.png,main.full.render.png,last-run.log,check_all.log}` | 同左 |
@@ -283,12 +346,35 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/nav_320x240/s
 | 内容 → 视口 / 行程 | 916 → 388（=600−76−72−64）/**行程 528**，dragMaxDis 60 | 660 → 108（=240−32−40−60）/**行程 552**，dragMaxDis 24 |
 | 出图 | **44 张**（#11/#17 图 == 盒 0 处不匹配；格盒 == 格底图 0 处不匹配） | **43 张**（同上） |
 | logic 骨架 | **23 个按钮回调**（3 tab + 6 宫格 + 4 底导 + 3 提示关闭 + 主/次 + 弹窗 2 + 3 行命中区）齐全 | 同左 23 个 |
-| `check_all` | **exit 0（0 FAIL / 0 需审批 WARN）**；#21 AA 真缺陷 0（扫 44 张，WARN 12 / EXEMPT 3）｜#22/#23/#25/#24 真缺陷 0 | **exit 0（0 FAIL / 0 需审批 WARN）**；#21 AA 真缺陷 0（扫 43 张，WARN 8 / EXEMPT 3） |
+| `check_all` | **exit 0（0 FAIL / 0 需审批 WARN）**；#21 AA 真缺陷 0（扫 44 张，WARN 7 / EXEMPT 3）｜#22/#23/#25/#24 真缺陷 0 | **exit 0（0 FAIL / 0 需审批 WARN）**；#21 AA 真缺陷 0（扫 43 张，WARN 3 / EXEMPT 3） |
 | #27 同族 / #29 触摸 / #31 对齐 | 均 PASS（0 条离群、0 处文本×图标相交、无显示件压交互控件） | 同左 |
 | #30 caption / #35 盒下限 / #36 文本余量 | PASS 唯一 / PASS ≥ 12×16 / PASS 余量充足 | 同左 |
 | 渲染图 | `project/ui/main.render.png` **1024×600 == resolution** ✓ | **320×240** ✓ |
 | 整页证据图 | `main.full.render.png` 1024×1128（展平 scrollwindow；供人工验收） | 320×792 |
 | 证据 | `examples/nav_1024x600/{main.render.png,main.full.render.png,last-run.log,check_all.log}` | 同左 |
+
+
+### 6.5 图标来源核对（2026-10-01 改口径后重跑六版，口径见 §5.1）
+
+| 示例 | 图标处数 | 档位（盒尺寸） | 回退线框 | 出图 / 控件数 | #21 AA（真缺陷） | 整页图 |
+|---|---|---|---|---|---|---|
+| settings_1024x600 | 1（`info`） | 24 档 @36px（**缺档现出**） | **0** | 16 / 62 | 0 张（WARN 5 / EXEMPT 2） | 1024×864 |
+| settings_320x240 | 1（`info`） | 22 档 @16px（**缺档现出**） | **0** | 15 / 59 | 0 张（WARN 0 / EXEMPT 2） | 320×444 |
+| interactive_1024x600 | 0（无图标块） | — | **0** | 22 / 64 | 0 张（WARN 4 / EXEMPT 2） | 1024×1514 |
+| interactive_320x240 | 0（无图标块） | — | **0** | 22 / 62 | 0 张（WARN 0 / EXEMPT 2） | 320×930 |
+| nav_1024x600 | 20（14 种 名×尺寸×态） | 24 档 @24px ×20 | **0** | 44 / 124 | 0 张（WARN 7 / EXEMPT 3） | 1024×1128 |
+| nav_320x240 | 17（同上 14 种） | 24 档 @24px ×17 | **0** | 43 / 116 | 0 张（WARN 3 / EXEMPT 3） | 320×792 |
+
+> 六版都是 **compose exit 0 + check_all exit 0（0 FAIL）**；`json2img --report` 的 unsupported 清单**与改口径前逐条一致**
+> （图标是静态 PNG，不引入新的渲染器未支持项）：settings 两版 `bold x4`；nav 两版 `bold x3`；
+> interactive 两版 9 类（`bold x5` + `subitem picTab.pic0 x4` + `checkbox picTab.pic0 x2` + `checkbox x2` +
+> `listview item/subItem x2/x1` + `seekbar defProgress x1`×2 + `radiogroup x1`）+「拉伸填充」2 处
+> （`sk_fill_960x36.png`，引擎语义 = 裁剪）——逐条解读见 §6.3。
+>
+> **图标像素等价实证**：库里 `out/24/` 的预置产物按 alpha 换色，与用 `gen_icons.py` 按同尺寸重新渲染**逐像素一致**
+> （`star`/`wifi`/`bell`/`info`/`check` @24px 实测 maxdiff = 0）——所以「取库产物」与「按盒尺寸现出」没有口径差。
+> **star 坑**：`star` 描边态 @24px 会被 aa_audit 判真缺陷（`hard_diag=4` / 斜线边界 67%）→ nav 示例的宫格写的是
+> `{"icon": "star", "state": "on", "text": "收藏"}`（实心态，实测 WARN 21%，不判缺陷）。
 
 
 ## 7. ⛔ 反面清单（照抄我们踩过的坑，别重犯）
@@ -324,6 +410,7 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/nav_320x240/s
 | 27 | **块内 glyph 跟着小屏降档**（12/16px 图标） | `aa_audit` 真缺陷：`wifi@12` / `home@16` / `settings@16` / `bell@20` 实测 FAIL（图标笔画 <1px 退成硬阶梯） | 第 3 批引入 `glyph_min_px = 24`（块内图标尺寸**不随屏降**）；极小屏靠「省图标」降级，不靠缩小图标 |
 | 28 | **浮层（toast）写在普通层里** / `visible` 写 true | 被内容/弹窗盖住（提示根本看不见）；或一进页就弹一层遮屏 | toast = 根层整屏 window（modal=false + touchable=false） + **最后定义 = 最上层** + `visible:false` 默认 |
 | 29 | **底导与底栏两带叠在一起**（或 nav 放进滑动区） | 按钮被盖住/点不动（重叠）；上滑时 nav 跟着滚走（进滚动区） | nav 贴底栏上沿 + **视口扣除 nav 带高**（`compose` 日志会打 `[NOTE] bottom_nav … → 视口缩至 N`，看得见） |
+| 30 | **块内图标自绘 / 用 emoji 字体兜底**（`gen_res.glyph_icon` 默认 style=emoji） | 观感与真机/产品那套图标完全不同（钟工 2026-10-01：「效果差异和实际差异太大」） | 图标**唯一来源 = `components/icons`**（`iconlib.py`，见 §5.1）；库里没该语义名 → 回退线框**并在日志里明说**（不静默）；小盒上的 `star` **描边态**会被 `aa_audit` 判真缺陷 → 用 `state:"on"` 实心态或 `heart` |
 
 **两条纪律（写在最显眼处）**
 1. **加行 = 照抄同页已有行的口径**（行高/步进/文本左缘/各元素盒），禁止自创形态；
@@ -351,6 +438,13 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/nav_320x240/s
    * **`list_item` 行高公式**：`lv高 = rows × (模板高 + rowSpacing) + 余数`，余数默认 2px（= 有意的可滑动提示）；**滚轮反过来——行高恰好整除，不留余数**（滚轮语义是「刚好一屏窗口」）。
    * **滚轮选中条用静态 textview**（写在 listview 之前、`touchable:false` 显式写），行模板透明、`picTab.pic0/1/2` 全空 + `color2/color3` 与常态同色（让引擎自带选中态看不见）—— 口径全部照 `knowledge/uicontrols/listview-wheel-picker.md`。
 
+8. **图标来源 = `components/icons` 资产库（2026-10-01 改口径，详见 §5.1）**：
+   * 原先走 `gen_res.glyph_icon()`（emoji 字体 / iconfont 线框兜底）→ 与真机/产品那套图标**不是同一套图形**（钟工原话「效果差异和实际差异太大」）。现在实现是 `iconlib.py`：语义名 → 库条目（复用库自带 `resolve_target` 解析别名/全名/Tabler 名，**不另建名字表**，避免与库漂移）。
+   * **为什么不直接拷库里的 PNG**：① FlyThings 无 tint，块内图标各有颜色（brand / fg2 / 语义色）→ 颜色必须生成时烘焙；② 库预置档只有 22/24/56，而块内图标盒有 16/24/36px。所以口径定为「盒 == 档位 → 取库预置产物并按 alpha 换色（与现出**像素等价**，maxdiff = 0）；缺档 → 用库自带生成器按**盒尺寸**现出」。两条都不改盒尺寸（图 == 盒是硬口径）。
+   * **箭头（chevron）刻意留在本库自绘**：库的 `control.chevron-right` 是 24 网格的细描边，在 12×16 盒上会退成 1px 硬斜边（`aa_audit` 报 `hard_diag`）——即本库 §8-3 已定的箭头专属口径；`checkbox` 勾选符号已改走库（`control.check` 的 `_on`）。
+   * **实测坑**：`star` 描边态 @24px 被 `aa_audit` 判真缺陷（`hard_diag=4` / 斜线边界 67% ≥ 60%）→ 小盒上的 star 用 `state:"on"` 实心态或改 `heart`（已写进 `blocks/_icons.json` 的 `_pitfall`）。
+   * **回退不静默**：库里查不到语义名时 compose 打 `[回退线框] …` 并在日志里汇总「回退线框 N 处（目标 0）」；六版示例实测 **0 处**。
+
 ## 9. 已知限制 / 下一步
 
 * 块数量按需扩展：新增块 = 加一个 `blocks/<type>.json`（字段 + 相对约束 + 素材 + 禁止项）+ 在 `compose.py` 里指到已有 builder（`title/section/row/field_row/card/empty/actions/dialog/list/wheel`）；新增形态才写新 builder。
@@ -360,6 +454,8 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/nav_320x240/s
   · builder：`build_tabs`（tab 项批量）、`build_nav`（nav 项批量）、`build_banner`、`build_pill`（药丸）、`build_divider_label`、`build_grid`（宫格格子批量）、`build_toast`；全部只复用 `shape()/glyph()/text()/button()` + 第2批的 `bar/mark/chevron`，**没有新出图 kind**；
   · 自检全部复用：`assert_caption_unique`（每次出产物前）/ `assert_icon_uniform`（行族）/ `assert_children_fit`（每个新容器）/ `assert_row_gaps`（banner 的「文案→关闭盒」与 divider_label 的「线→文字」都记入同一张间隙表）/ `next_seq` + `name_block`（caption 唯一性）；
   · `_tokens.json` 新增：语义色 9 个（`info/info1/success/success1/warn/warn1/danger/danger1` + `mask`，TDesign v1.17 档位）与比例 `tab_h_of_h/ind_h_of_h/pill_h_of_h/banner_h_of_h/divider_h_of_h/nav_h_of_h/toast_top_of_h` + `glyph_min_px`。
+* **图标来源（2026-10-01）新增文件**：`iconlib.py`（语义名 → `components/icons`；档位 56/24/22；盒 == 档位取库产物换色、缺档按盒尺寸现出；回退线框**明说**）、`blocks/_icons.json`（允许值清单：203 名 / 5 分类 / 两态）、`full_render.py`（整页渲染）；
+  `compose.py` 新增出图 kind `libicon` + `glyph(state=…)` 参数（底导选中/未选中直接对上库两态）+ `grid_icons.items[].state`；`resources/images/` 里原来的 `ic_*` / `nav_*` 文件名不变（json 引用零改动）。
 * **未覆盖**：日期/日历块、图表块（可复用 `components/ui_v1/` 的自绘控件后再包成块）、`circlebar`/`slidetext`/`pagewindow`/`slidewindow`/`digitalclock` 等控件块（tab 页签已在第 3 批覆盖）。
 * **第 3 批遗留**：① 底部导航只有「图标 + 文字」两种呈现，没做「选中项突出/凸起」变体；② 宫格行数由 `cols` 与项数隐式决定，未支持跨列合并（`span`）；③ toast 是**单行**盒（多行需改 `toast_h` 公式）；④ 提示条的关闭动作只到回调骨架，关闭后重新弹出需业务自己记状态。
 * 渲染图是**静止态近似**（`json2img` v0.1.0），真观感仍需模拟器/真机；320×240 的 10~12px 字号在设备字库下的可读性**未验证**。

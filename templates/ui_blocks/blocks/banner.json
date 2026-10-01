@@ -5,10 +5,28 @@
   "family": "page",
   "caption_prefix": "Banner",
   "fields": {
-    "state": {"type": "string", "default": "info", "example": "warn", "note": "info / success / warn / danger —— 色全走 _tokens.json 语义色（前景 = -6 档、浅底 = -1 档）"},
-    "text": {"type": "string", "required": true, "example": "网络连接不稳定，请检查网线"},
-    "icon": {"type": "string", "required": false, "note": "缺省按 state 取：info→info / success·ok→check / warn·danger→warning"},
-    "close": {"type": "boolean", "default": true, "note": "给一个关闭 button（id 20000 段 → logic 骨架自动出 onButtonClick_<caption>）"}
+    "state": {
+      "type": "string",
+      "default": "info",
+      "example": "warn",
+      "note": "info / success / warn / danger —— 色全走 _tokens.json 语义色（前景 = -6 档、浅底 = -1 档）"
+    },
+    "text": {
+      "type": "string",
+      "required": true,
+      "example": "网络连接不稳定，请检查网线"
+    },
+    "icon": {
+      "type": "string",
+      "required": false,
+      "note": "缺省按 state 取：info→info / success·ok→check / warn·danger→warning；图标名（**来源 = components/icons 资产库**，禁自绘/禁 emoji 字体；全量允许值见 `blocks/_icons.json`）",
+      "allowed": "blocks/_icons.json"
+    },
+    "close": {
+      "type": "boolean",
+      "default": true,
+      "note": "给一个关闭 button（id 20000 段 → logic 骨架自动出 onButtonClick_<caption>）"
+    }
   },
   "relative_constraints": {
     "band_h": "max(屏高 × 0.08, b1 文本高 + 2×spacer)（1024→48 / 320→32）",
@@ -20,9 +38,21 @@
     "gap": "「文本右缘 → 关闭盒左缘」= spacer（与 divider_label 同口径，过 note_row_gaps/assert_row_gaps）"
   },
   "assets": [
-    {"name": "bnr_{state}_{W}x{H}.png", "via": "gen_res.rounded_rect_ss(fill=语义浅底 -1 档)", "size": "容器盒 == 图"},
-    {"name": "ic_{glyph}_{S}_{state}.png", "via": "gen_res.glyph_icon(glyph, size=S, color=语义前景色)", "size": "图标盒 == 图"},
-    {"name": "ic_close_{W}_{state}.png", "via": "gen_res.glyph_icon('close', size=关闭盒, color=fg2)", "size": "关闭盒 == 图"}
+    {
+      "name": "bnr_{state}_{W}x{H}.png",
+      "via": "gen_res.rounded_rect_ss(fill=语义浅底 -1 档)",
+      "size": "容器盒 == 图"
+    },
+    {
+      "name": "ic_{glyph}_{S}_{state}.png",
+      "via": "components/icons 资产库（compose.iconlib：盒 == 档位 22/24/56 时取库里 out/<档>/ 那张并按 alpha 换色，缺档则用库生成器按盒尺寸现出；两者像素等价）",
+      "size": "图标盒 == 图（严格相等，铁律 #11/#17）"
+    },
+    {
+      "name": "ic_close_{W}_{state}.png",
+      "via": "components/icons 资产库（compose.iconlib：盒 == 档位 22/24/56 时取库里 out/<档>/ 那张并按 alpha 换色，缺档则用库生成器按盒尺寸现出；两者像素等价）",
+      "size": "图标盒 == 图（严格相等，铁律 #11/#17）"
+    }
   ],
   "scroll": "inherit",
   "forbidden": [
@@ -32,5 +62,16 @@
     "关闭按钮做成纯装饰（关不掉；它必须是 button，且 z 最高——写在底盘/图标/文字之后）",
     "关闭按钮盒 < 16px（真实手指点不到；极小屏也不要小于 16）"
   ],
-  "compact_note": "极小屏：带高 32、图标 24（**不降档**）、关闭盒 24、文案 ≤6 字"
+  "compact_note": "极小屏：带高 32、图标 24（**不降档**）、关闭盒 24、文案 ≤6 字",
+  "icon_source": "components/icons（v0.3.1 = Tabler Icons 3.46.0 单色烘焙 PNG；生成器 components/icons/scripts/gen_icons.py）。按盒尺寸选档 56/24/22，**产物图严格 == 控件盒**；库里没有该语义名 → compose 回退 gen_res 线框并在输出里明说「回退线框」（目标 0 处）。全量允许值 + 分类 + 两态说明见 `blocks/_icons.json`",
+  "icon_examples": [
+    "info",
+    "check",
+    "warning",
+    "bell",
+    "close",
+    "signal-off",
+    "wifi-off",
+    "battery-off"
+  ]
 }

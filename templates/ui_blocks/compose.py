@@ -14,6 +14,9 @@
   · 相对约束/设置行形态 → knowledge/uicontrols/scrollwindow-layout-checklist.md §2.1
   · dragMaxDis = 越界拖拽上限（不是行程） → knowledge/uicontrols/scroll-drag-interaction-spec.md
   · 切图「图 == 盒」+ 抗锯齿/倒角口径 → knowledge/devflow/ui-asset-rules.md
+  · **图标来源 = `components/icons` 图标资产库**（禁自绘/禁 emoji 字体兜底；按盒尺寸选档
+    56/24/22，图严格 == 控件盒；库里没有该语义名才回退 gen_res 线框并**明说**）
+    → 钟工 2026-10-01；实现见同目录 `iconlib.py`
   · 设计令牌/相对尺度 → projects/UISpec-Demo/docs/SPEC-CHECK.md §7/§8 + blocks/_tokens.json
   · caption 全页唯一（块序号**全页全局递增** + 块类型前缀；同名 caption ⇒ onButtonClick_ 重定义 ⇒
     C++ 编译失败）→ 见本文件 BLOCK_PREFIX / assert_caption_unique（修前按卡内序号分配 = 跨卡重名）
@@ -36,6 +39,7 @@ UI_TOOLS = os.path.join(os.path.dirname(REPO), 'ui_tools')     # tools/ui_tools�
 BLOCKS_DIR = os.path.join(HERE, 'blocks')
 sys.path.insert(0, UI_TOOLS)
 import gen_res                                                 # noqa: E402  唯一出图实现
+import iconlib                                                 # noqa: E402  图标唯一来源（components/icons）
 
 sys.stdout.reconfigure(encoding='utf-8')
 
@@ -240,14 +244,20 @@ def mark_image(prm):
         img = gen_res.rounded_rect_cov(w, h, prm['radius'], prm['fill'], ss=8)
     mark = prm.get('mark') or ''
     if mark == 'check':
-        import contextlib
-        import io as _io
-        import tempfile
-        d = tempfile.mkdtemp(prefix='uiblocks_mark_')
-        with contextlib.redirect_stdout(_io.StringIO()):          # 静音 gen_res.save 的打印
-            p = gen_res.glyph_icon(d, 'uc_mark_check.png', 'check', size=int(prm['mark_size']),
-                                   color=tuple(prm['mark_color']))
-        g = Image.open(p).convert('RGBA')
+        # 勾选符号也走图标资产库（control.check 的 _on 实心勾）；库不可用才退回 gen_res 线框
+        ms = int(prm['mark_size'])
+        mc = tuple(prm['mark_color'])
+        if iconlib.lookup('check'):
+            g, _meta = iconlib.produce('check', ms, mc, state='on')
+        else:
+            import contextlib
+            import io as _io
+            import tempfile
+            print('  [回退线框] 勾选符号 check 未走图标库（库不可用）→ gen_res 线框')
+            d = tempfile.mkdtemp(prefix='uiblocks_mark_')
+            with contextlib.redirect_stdout(_io.StringIO()):      # 静音 gen_res.save 的打印
+                p = gen_res.glyph_icon(d, 'uc_mark_check.png', 'check', size=ms, color=mc)
+            g = Image.open(p).convert('RGBA')
         img.alpha_composite(g, ((w - g.width) // 2, (h - g.height) // 2))
     elif mark == 'dot':
         d = int(prm['mark_size'])
@@ -510,8 +520,10 @@ class Composer(object):
         self.m = build_metrics(self.W, self.H, self.tok)
         self.blocks = self._load_blocks()
         self._seq = 0             # 全页全局块序号（caption 唯一性来源；跨卡不重置）
-        self.assets = {}          # 文件名 → ('shape'|'glyph', 参数)
+        self.assets = {}          # 文件名 → ('shape'|'glyph'|'libicon'|…, 参数)
         self.notes = []           # 自检提示（不进 json）
+        self.icon_uses = []       # 图标用点清单（语义名 → 库名/档位/状态），供交付报告
+        self.icon_fallbacks = []  # 回退 gen_res 线框的图标（目标 0；非 0 时 compose 明说）
         self.root = []            # 根层节点（定义顺序 = z 顺序）
         self.content = []         # 页面中部内容（可能被 scrollwindow 包起来）
         self.y = 0                # 内容当前纵向位置（内容空间，y 从 0 起）
@@ -539,8 +551,32 @@ class Composer(object):
                                            fill=fill, border=border, border_w=border_w))
         return 'images/' + name
 
-    def glyph(self, name, g, size, color, canvas=None):
-        self.assets[name] = ('glyph', dict(g=g, size=int(size), color=color, canvas=canvas))
+    def glyph(self, name, g, size, color, canvas=None, state=None):
+        """块内图标：**唯一来源 = `components/icons` 图标资产库**（Tabler 单色烘焙图）。
+
+        钟工 2026-10-01：「这些网络/设备的 icon 来源？效果差异和实际差异太大」——
+        库里查得到该语义名 → 走 `iconlib`（按盒尺寸选档，产物图严格 == 控件盒）；
+        **库里确实没有**才回退 `gen_res` 线框，并在输出里**明说「回退线框」**（不静默）。
+
+        state：库里的两态图标（_off 描边 / _on 实心）——底导的选中/未选中直接对上；
+        单态图标忽略该参数。
+        """
+        size = int(size)
+        info = iconlib.lookup(g) if iconlib.available() else None
+        if info is not None:
+            self.assets[name] = ('libicon', dict(g=g, size=size, color=color, canvas=canvas,
+                                                 state=state))
+            self.icon_uses.append(dict(token=g, name=info['name'], icon=info['icon'],
+                                       category=info['category'], style=info['style'],
+                                       states=info['states'], size=size,
+                                       tier=iconlib.tier_of(size), state=state,
+                                       asset=name))
+        else:
+            self.assets[name] = ('glyph', dict(g=g, size=size, color=color, canvas=canvas))
+            self.icon_fallbacks.append(dict(token=g, size=size, asset=name,
+                                            page=self.page_name))
+            print('  [回退线框] 图标 %r 在 components/icons 里没有对应语义名 → 用 gen_res 线框'
+                  '（%s；目标 0 处，请改用库里已有语义名）' % (g, name))
         return 'images/' + name
 
     def chevron(self, name, w, h, color):
@@ -593,6 +629,21 @@ class Composer(object):
                 gen_res.save(img, out, name)
             elif kind == 'mark':
                 gen_res.save(mark_image(prm), out, name)
+            elif kind == 'libicon':
+                # 图标资产库出图：按盒尺寸取档/现出，图严格 == 控件盒（铁律 #11/#17）
+                img, _meta = iconlib.produce(prm['g'], prm['size'], prm['color'],
+                                             prm['state'])
+                cv = prm.get('canvas')
+                if cv and (int(cv[0]), int(cv[1])) != img.size:
+                    from PIL import Image as _Im
+                    base = _Im.new('RGBA', (int(cv[0]), int(cv[1])), (0, 0, 0, 0))
+                    base.alpha_composite(img, ((int(cv[0]) - img.width) // 2,
+                                               (int(cv[1]) - img.height) // 2))
+                    img = base
+                img.save(os.path.join(out, name))
+                print('  %-40s %dx%d  [components/icons %s · %s档 · %s]'
+                      % (name, img.width, img.height, _meta['name'], _meta['tier'],
+                         _meta['render']))
             else:
                 gen_res.glyph_icon(out, name, prm['g'], size=prm['size'],
                                    color=prm['color'], canvas=prm['canvas'])
@@ -1576,7 +1627,8 @@ class Composer(object):
             iw, ix0 = widths[i], lefts[i]
             p_ic = self.glyph('nav_%s_%d_%s.png' % (glyph, ic, 'on' if on else 'off'), glyph, ic,
                               rgba(self.tok['color']['brand'] if on
-                                   else self.tok['color']['fg2']), canvas=(ic, ic))
+                                   else self.tok['color']['fg2']), canvas=(ic, ic),
+                              state='on' if on else 'off')      # 库里两态图标直接对上选中态
             deco.append(self.text('Nav%dItem%dIcon' % (blk['_seq'], i + 1),
                                   self.box(ix0 + (iw - ic) // 2, top_ic, ic, ic),
                                   m['fs']['b2'], col['brand'] if on else col['fg2'],
@@ -1731,7 +1783,8 @@ class Composer(object):
                                   m['fs']['b2'], col['brand1'], '', bg=p_ib, align=37))
             glyph = it.get('icon') or 'info'
             p_ic = self.glyph('ic_%s_%d.png' % (glyph, ic), glyph, ic,
-                              rgba(self.tok['color']['brand']), canvas=(ic, ic))
+                              rgba(self.tok['color']['brand']), canvas=(ic, ic),
+                              state=it.get('state'))       # 可选态：'off' 描边 / 'on' 实心（库两态）
             deco.append(self.text(cap + 'Icon',
                                   self.box(tx + (tw - ic) // 2,
                                            ty + m['spacer'] + (ib - ic) // 2, ic, ic),
@@ -2094,6 +2147,24 @@ def main():
           % (cmp_.m['row_h'], cmp_.m['fs'], cmp_.m['radius'], cmp_.m['icon_bg'],
              cmp_.m['icon'], cmp_.m['chev_w'], cmp_.m['chev_h'], cmp_.content_h,
              cmp_.m['viewport']))
+    # 图标来源（钟工 2026-10-01：块库图标 = components/icons 资产库，不自绘、不走 emoji 兜底）
+    if cmp_.icon_uses:
+        tiers = defaultdict(int)
+        for u in cmp_.icon_uses:
+            tiers[u['tier']] += 1
+        pairs = sorted({(u['token'], u['name'], u['size'], u['tier'], u['state'] or '-')
+                        for u in cmp_.icon_uses})
+        print('  图标来源：components/icons（%d 处 ｜ 档位 %s ｜ %d 种 名×尺寸×态 组合）'
+              % (len(cmp_.icon_uses), '、'.join('%d 档 ×%d' % (t, tiers[t])
+                                                for t in sorted(tiers)), len(pairs)))
+        for tok, nm, sz, tr, st in pairs:
+            print('      %-12s → %-24s %dpx（%d 档）state=%s' % (tok, nm, sz, tr, st))
+    if cmp_.icon_fallbacks:
+        print('  [X] 回退线框 %d 处（目标 0）—— 图标字面量不在 components/icons 里：%s'
+              % (len(cmp_.icon_fallbacks),
+                 '、'.join('%s@%dpx' % (f['token'], f['size']) for f in cmp_.icon_fallbacks)))
+    else:
+        print('  回退线框 0 处（全部图标来自 components/icons ✓）')
     for n in cmp_.notes:
         print('  [NOTE] %s' % n)
 

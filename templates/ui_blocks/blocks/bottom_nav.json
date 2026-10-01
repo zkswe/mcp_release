@@ -5,8 +5,23 @@
   "family": "page",
   "caption_prefix": "BottomNav",
   "fields": {
-    "items": {"type": "array", "required": true, "example": [{"icon": "home", "text": "首页"}], "note": "每项 = {icon（gen_res glyph 名）, text}；项数 3~5（允许 2~6）"},
-    "selected": {"type": "int", "default": 0, "note": "仅决定初始视觉（品牌色图标/文字）；业务切换 = 运行期切图/改色"}
+    "items": {
+      "type": "array",
+      "required": true,
+      "example": [
+        {
+          "icon": "home",
+          "text": "首页"
+        }
+      ],
+      "note": "每项 = {icon（**来源 = components/icons 资产库**，禁自绘/禁 emoji 字体；全量允许值见 `blocks/_icons.json`））, text}；项数 3~5（允许 2~6）。选中项的图标自动用库里**实心态（_on）**、未选中用描边态（_off）——与库的两态设计一致，不改盒尺寸",
+      "allowed": "blocks/_icons.json"
+    },
+    "selected": {
+      "type": "int",
+      "default": 0,
+      "note": "仅决定初始视觉（品牌色图标/文字）；业务切换 = 运行期切图/改色"
+    }
   },
   "relative_constraints": {
     "band_h": "max(屏高 × 0.10, nav_ic + nav_gap + b2 文本高 + 2×spacer)（1024→64 / 320→60）—— **固定高：与项数无关**",
@@ -18,9 +33,21 @@
     "z": "容器底 → 全部图标/文字（装饰件，touchable 显式 false）→ 全部整项 button（最后定义 = z 最高）"
   },
   "assets": [
-    {"name": "navbg_{W}x{H}.png", "via": "gen_res.rounded_rect_ss(radius=0, fill=surface)", "size": "带盒 == 图"},
-    {"name": "nav_{glyph}_{S}_on.png", "via": "gen_res.glyph_icon(glyph, size=S, color=brand)", "size": "图标盒 == 图（canvas=S×S）"},
-    {"name": "nav_{glyph}_{S}_off.png", "via": "gen_res.glyph_icon(glyph, size=S, color=fg2)", "size": "同上"}
+    {
+      "name": "navbg_{W}x{H}.png",
+      "via": "gen_res.rounded_rect_ss(radius=0, fill=surface)",
+      "size": "带盒 == 图"
+    },
+    {
+      "name": "nav_{glyph}_{S}_on.png",
+      "via": "components/icons 资产库（compose.iconlib：盒 == 档位 22/24/56 时取库里 out/<档>/ 那张并按 alpha 换色，缺档则用库生成器按盒尺寸现出；两者像素等价）",
+      "size": "图标盒 == 图（严格相等，铁律 #11/#17）"
+    },
+    {
+      "name": "nav_{glyph}_{S}_off.png",
+      "via": "components/icons 资产库（compose.iconlib：盒 == 档位 22/24/56 时取库里 out/<档>/ 那张并按 alpha 换色，缺档则用库生成器按盒尺寸现出；两者像素等价）",
+      "size": "图标盒 == 图（严格相等，铁律 #11/#17）"
+    }
   ],
   "scroll": "no",
   "forbidden": [
@@ -31,5 +58,16 @@
     "**项宽写死像素**（必须按**屏宽比例**等分：项宽 = 屏宽/N，末项吃余数；写死像素则换分辨率/改项数必错位）",
     "给 nav 加主/次按钮（那是 bottom_actions 的活；一个页面一个主行动）"
   ],
-  "compact_note": "极小屏：带高 60（= 图标 24 + 间距 4 + 文字 16 + 16）、图标 24（不降档）、文字 b2=10、项文案 ≤2 字；项数建议 4。带高占 320×240 的 25%，视口只剩 108（极小屏两带叠置的必然）"
+  "compact_note": "极小屏：带高 60（= 图标 24 + 间距 4 + 文字 16 + 16）、图标 24（不降档）、文字 b2=10、项文案 ≤2 字；项数建议 4。带高占 320×240 的 25%，视口只剩 108（极小屏两带叠置的必然）",
+  "icon_source": "components/icons（v0.3.1 = Tabler Icons 3.46.0 单色烘焙 PNG；生成器 components/icons/scripts/gen_icons.py）。按盒尺寸选档 56/24/22，**产物图严格 == 控件盒**；库里没有该语义名 → compose 回退 gen_res 线框并在输出里明说「回退线框」（目标 0 处）。全量允许值 + 分类 + 两态说明见 `blocks/_icons.json`",
+  "icon_examples": [
+    "home",
+    "list",
+    "bell",
+    "user",
+    "settings",
+    "star",
+    "grid",
+    "search"
+  ]
 }

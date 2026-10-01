@@ -1,5 +1,6 @@
 == compose (320x240) ==
   行高 28 ｜ 字号 {'h1': 14, 'h2': 12, 'b1': 12, 'b2': 10} ｜ 圆角 5 ｜ 图标底/图标 16/12 ｜ 箭头 12x16 ｜ 内容 858 → 视口 168
+  回退线框 0 处（全部图标来自 components/icons ✓）
   [NOTE] 内容总高 858 > 视口 168 → 自动上滑动窗口（行程 690 px，dragMaxDis=24）
   btn_primary_104x16.png  104x16
   btn_primary_64x16.png  64x16

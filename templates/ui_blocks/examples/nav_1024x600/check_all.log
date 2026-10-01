@@ -60,16 +60,11 @@
        口径：真缺陷（resid_bad / 成片 hard_diag / 无两区边界时退回 dirty）= FAIL；
        WARN 逐条列理由（不阻塞也不静默）；*.9.png marker 环由审计内置豁免；
        白名单只认 tools/qa/aa_audit_allow.json（命中即 EXEMPT 并打印理由）。
-  [PASS] AA 真缺陷 0 张（aa_audit.py 扫 44 张；WARN 12 / EXEMPT 3 / 干净 29 / 审计错误 0）
+  [PASS] AA 真缺陷 0 张（aa_audit.py 扫 44 张；WARN 7 / EXEMPT 3 / 干净 34 / 审计错误 0）
   [WARN 需人工确认] chev_24x16.png             hard_diag=2 但只占斜/弧边界 5%（< 60%，多为切点区，该处边界本就轴对齐）→ 只要不脏就不算缺陷
-  [WARN 需人工确认] ic_bell_24.png             hard_diag=5 但只占斜/弧边界 28%（< 60%，多为切点区，该处边界本就轴对齐）→ 只要不脏就不算缺陷
-  [WARN 需人工确认] ic_settings_24.png         hard_diag=12 但只占斜/弧边界 21%（< 60%，多为切点区，该处边界本就轴对齐）→ 只要不脏就不算缺陷
-  [WARN 需人工确认] ic_star_24.png             hard_diag=6 但只占斜/弧边界 12%（< 60%，多为切点区，该处边界本就轴对齐）→ 只要不脏就不算缺陷
-  [WARN 需人工确认] ic_warning_24_danger.png   hard_diag=13 但只占斜/弧边界 29%（< 60%，多为切点区，该处边界本就轴对齐）→ 只要不脏就不算缺陷
-  [WARN 需人工确认] ic_warning_24_warn.png     hard_diag=13 但只占斜/弧边界 29%（< 60%，多为切点区，该处边界本就轴对齐）→ 只要不脏就不算缺陷
-  [WARN 需人工确认] ic_wifi_24.png             hard_diag=16 但只占斜/弧边界 44%（< 60%，多为切点区，该处边界本就轴对齐）→ 只要不脏就不算缺陷
+  [WARN 需人工确认] ic_bell_24.png             hard_diag=6 但只占斜/弧边界 33%（< 60%，多为切点区，该处边界本就轴对齐）→ 只要不脏就不算缺陷
+  [WARN 需人工确认] ic_star_24.png             hard_diag=12 但只占斜/弧边界 21%（< 60%，多为切点区，该处边界本就轴对齐）→ 只要不脏就不算缺陷
   [WARN 需人工确认] nav_bell_24_off.png        hard_diag=6 但只占斜/弧边界 33%（< 60%，多为切点区，该处边界本就轴对齐）→ 只要不脏就不算缺陷
-  [WARN 需人工确认] nav_home_24_on.png         hard_diag=4 但只占斜/弧边界 24%（< 60%，多为切点区，该处边界本就轴对齐）→ 只要不脏就不算缺陷
   [WARN 需人工确认] pill_ok_128x44.png         hard_diag=8 但只占斜/弧边界 10%（< 60%，多为切点区，该处边界本就轴对齐）→ 只要不脏就不算缺陷
   [WARN 需人工确认] pill_warn_144x44.png       hard_diag=8 但只占斜/弧边界 10%（< 60%，多为切点区，该处边界本就轴对齐）→ 只要不脏就不算缺陷
   [WARN 需人工确认] sw_80x44_on.png            hard_diag=8 但只占斜/弧边界 10%（< 60%，多为切点区，该处边界本就轴对齐）→ 只要不脏就不算缺陷

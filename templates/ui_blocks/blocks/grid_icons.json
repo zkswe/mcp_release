@@ -5,9 +5,37 @@
   "family": "page",
   "caption_prefix": "GridIcons",
   "fields": {
-    "items": {"type": "array", "required": true, "example": [{"icon": "wifi", "text": "网络"}], "note": "每项 = {icon（gen_res glyph 名）, text}；**格数由 items 长度决定**"},
-    "cols": {"type": "int", "default": 4, "min": 1, "max": 6, "note": "每行格数；行数 = ceil(n / cols)"},
-    "tappable": {"type": "boolean", "default": false, "note": "true → 每格加一个整格透明 button（id 20000 段 → logic 骨架自动出回调）"}
+    "items": {
+      "type": "array",
+      "required": true,
+      "example": [
+        {
+          "icon": "wifi",
+          "text": "网络"
+        }
+      ],
+      "note": "每项 = {icon（**来源 = components/icons 资产库**，禁自绘/禁 emoji 字体；全量允许值见 `blocks/_icons.json`））, state（可选：off 描边/on 实心）, text}；格数由 items 长度决定",
+      "allowed": "blocks/_icons.json"
+    },
+    "cols": {
+      "type": "int",
+      "default": 4,
+      "min": 1,
+      "max": 6,
+      "note": "每行格数；行数 = ceil(n / cols)"
+    },
+    "tappable": {
+      "type": "boolean",
+      "default": false,
+      "note": "true → 每格加一个整格透明 button（id 20000 段 → logic 骨架自动出回调）"
+    },
+    "state": {
+      "type": "string",
+      "required": false,
+      "default": "off",
+      "example": "on",
+      "note": "该项图标用库里的哪个态（两态图标才有）：off = 描边（默认）/ on = 实心；单态图标忽略。实测 star 描边态 @24px 会被 aa_audit 判真缺陷 → 小盒上的 star 请给 state:\"on\" 或改用 heart"
+    }
   },
   "relative_constraints": {
     "cell_w": "内容区宽 / cols（最后一个格吃掉整除余数）",
@@ -19,9 +47,21 @@
     "z": "格底 → 图标底 → 图标 → 文字（装饰件，touchable 显式 false）→ 整格 button（tappable 时，最后定义）"
   },
   "assets": [
-    {"name": "gtile_{w}x{h}.png", "via": "gen_res.rounded_rect_ss(radius=容器圆角, fill=surface)", "size": "格盒 == 图"},
-    {"name": "icbg_{S}.png", "via": "gen_res.rounded_rect_ss(radius=S/2, fill=brand1)", "size": "图标底盒 == 图"},
-    {"name": "ic_{glyph}_{S}.png", "via": "gen_res.glyph_icon(glyph, size=S, color=brand)", "size": "图标盒 == 图（canvas=S×S）"}
+    {
+      "name": "gtile_{w}x{h}.png",
+      "via": "gen_res.rounded_rect_ss(radius=容器圆角, fill=surface)",
+      "size": "格盒 == 图"
+    },
+    {
+      "name": "icbg_{S}.png",
+      "via": "gen_res.rounded_rect_ss(radius=S/2, fill=brand1)",
+      "size": "图标底盒 == 图"
+    },
+    {
+      "name": "ic_{glyph}_{S}.png",
+      "via": "components/icons 资产库（compose.iconlib：盒 == 档位 22/24/56 时取库里 out/<档>/ 那张并按 alpha 换色，缺档则用库生成器按盒尺寸现出；两者像素等价）",
+      "size": "图标盒 == 图（严格相等，铁律 #11/#17）"
+    }
   ],
   "scroll": "inherit",
   "forbidden": [
@@ -32,5 +72,22 @@
     "把宫格塞进卡（根层块；卡内只收行块/列表块 → 卡内写 grid_icons 会报错退出）",
     "tappable=true 却把整格 button 写在装饰件之前（装饰件会压住命中区；按钮必须最后定义）"
   ],
-  "compact_note": "极小屏：cols 建议 3；格盒 80×68、图标底 36、图标 24（不降档）、文字 b2=10（≤2 字）——格高由内容反算，与 1024 版接近（图标不降档的代价）"
+  "compact_note": "极小屏：cols 建议 3；格盒 80×68、图标底 36、图标 24（不降档）、文字 b2=10（≤2 字）——格高由内容反算，与 1024 版接近（图标不降档的代价）",
+  "icon_source": "components/icons（v0.3.1 = Tabler Icons 3.46.0 单色烘焙 PNG；生成器 components/icons/scripts/gen_icons.py）。按盒尺寸选档 56/24/22，**产物图严格 == 控件盒**；库里没有该语义名 → compose 回退 gen_res 线框并在输出里明说「回退线框」（目标 0 处）。全量允许值 + 分类 + 两态说明见 `blocks/_icons.json`",
+  "icon_examples": [
+    "wifi",
+    "bulb",
+    "tv",
+    "air-conditioning",
+    "windmill",
+    "settings",
+    "user",
+    "bell",
+    "star",
+    "heart",
+    "list",
+    "camera",
+    "music",
+    "clock"
+  ]
 }

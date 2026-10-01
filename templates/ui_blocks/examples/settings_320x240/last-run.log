@@ -1,5 +1,8 @@
 == compose (320x240) ==
   行高 28 ｜ 字号 {'h1': 14, 'h2': 12, 'b1': 12, 'b2': 10} ｜ 圆角 5 ｜ 图标底/图标 16/12 ｜ 箭头 12x16 ｜ 内容 372 → 视口 168
+  图标来源：components/icons（1 处 ｜ 档位 22 档 ×1 ｜ 1 种 名×尺寸×态 组合）
+      info         → system.info              16px（22 档）state=-
+  回退线框 0 处（全部图标来自 components/icons ✓）
   [NOTE] 内容总高 372 > 视口 168 → 自动上滑动窗口（行程 204 px，dragMaxDis=24）
   btn_primary_104x16.png  104x16
   btn_primary_64x16.png  64x16
@@ -10,7 +13,7 @@
   cc_scrim_320x240.png  320x240
   chev_12x16.png  12x16
   footbg_320x40.png  320x40
-  ic_info_16.png  16x16
+  ic_info_16.png                           16x16  [components/icons system.info · 22档 · generated]
   icbg_32.png  32x32
   panel_256x104.png  256x104
   sep_272x1.png  272x1

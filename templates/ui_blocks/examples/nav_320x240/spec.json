@@ -45,7 +45,7 @@
           {"icon": "bell", "text": "消息"},
           {"icon": "settings", "text": "设置"},
           {"icon": "user", "text": "账户"},
-          {"icon": "star", "text": "收藏"}
+          {"icon": "star", "state": "on", "text": "收藏"}
         ]
       },
       {
