@@ -61,7 +61,7 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.154-open'
+MCP_VERSION = '0.27.155-open'
 MCP_BUILD = '2026-10-01'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -76,6 +76,7 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+    '2026-10-01: **离线所见即所得接成 op：`ui_visual` 新增 `render` / `render_check`（设计流向 HTML 体验靠拢）** v0.27.155-open（钟工：「接着做，做成 op，我希望接近 html 的设计… html 我只是为了让你更好的适应 PC 端的各种适配」）—— 设计流闭环：`AI 写 HTML/CSS（PC 侧适配优势）` → `flythings_html_to_json` → `ui/*.json` → **离线渲染图（引擎等价）** → **一致性判据** → 确认稿 → pack/推真机。① **`action="render"`**：项目 json → PNG（离线所见即所得）。参数 `project_root`(必填)/`page`/`scale`(NEAREST)/`out`(缺省 `<项目>/ui/_render/<page>.png`)/`all`；返回 `pages[{page,png,size}]` + **`unsupported`（逐条原样透出不吞）** + `missingAssets/stretched`。② **`action="render_check"`**：渲染图 vs 真机截图 → 一致性判据。参数 `device`/`json`(必填)/`render`(可自动渲染)/`tol`/`max_ratio`；返回 `nonTextConsistencyPct`/`runtimeTextRatioPct`/`maxBlock`/`pass`/`attribution[]`；**不一致时 `ok=false` + `code=WYSIWYG_MISMATCH` + message 写明差在哪**（绝不静默）。③ 实现只做**单一实现调用**（子进程调 `ui_tools/json2img.py` / `wysiwyg_diff.py`，不复制逻辑）；工具数保持 **43**。④ **docstring 硬预算**（单 op ≤900 / 全体 ≤12000）：`ui_visual` 429→687 字符，靠精简 11 个 op 文案腾出，全体 **11999→11937**。⑤ 契约同步：`tests/test_ui_visual_merge.py` +8 用例（422→430）、`op_seealso.json` 加 `devflow/wysiwyg-render-spec`指针。⑥ **实测（SmartPanel_HA）**：`render` wall 页出 480×480；`render all=true` 14 页全出；`render_check`（真机基线 s03_wall_page.png）→ **`nonTextConsistencyPct=100.0` / `pass=true`**、`maxBlock 0x0`、attribution 30 条；缺参回 BAD_PARAMS+本 action 参数清单、传别家参数回 visualNote。v0.27.155-open',
     '2026-10-01: **离线「所见即所得」：渲染语义规格 + 引擎等价渲染器 + 一致性校验（实测非文字区 100%）** v0.27.154-open（钟工：「json 布局清晰…为什么做不到直接预览还需要上机，这不符合 AI 的逻辑」→「所见即所得上面应该是可以做到 100%」）—— ① **新增 `knowledge/devflow/wysiwyg-render-spec.md`（渲染语义单点真相）**：R1 绘制顺序=json 树序（父先子后、后定义在上）/ R2 单节点顺序=底色→背景图→文字→子控件 / **R3 图 != 矩形＝拉伸填充** / R4 颜色（-1 透明、0 不透明黑）/ R5 子控件相对父矩形、无 flex 无层叠 / R6 滚动容器按 rect 裁剪 / R7 文字字段 / **R8 字体必须与设备同款 TTF** / R9 九宫格 / R10 控件专有绘制；并划清边界（运行期数据文本、滚动位置、动画/视频/屏保/旋转、系统栏＝**不做承诺，需上机**）。② **对齐位模型定案（真机基线）**：`alignment` 是位模型（低 2 位水平 0 左/1 中/2 右，次 2 位垂直 0 顶/1 中/2 底），**`4/5/6 ≡ 36/37/38`**、`1≡33`、`9≡41` —— 旧文档只记了 36/37/38，而工程里 **91% 的文字控件用 4/5/6/0/1**（只按「36=左」处理会把右对齐的值摆到左边）；证据＝真机基线二选一：多屏拼接页 **1690 px（位模型）vs 8608 px（一律 36）**，设置页 3456 vs 4778。③ **新增 `ui_tools/json2img.py`**（引擎等价 PIL 渲染器，~1100 行：树序/拉伸填充/纯色/设备字体/视口裁剪/9-patch/控件专有绘制，`--align-mode measured|task36` 可切换、`--report` 如实列未支持项）。④ **新增 `ui_tools/wysiwyg_diff.py`**（渲染图 vs 真机截图：非文字区一致率 + 逐控件归因 + 连通块结构性差异检测 + 自动排除运行期文字盒）。⑤ **首例实测（projects/SmartPanel_HA，真机基线 480×480）**：**非文字区（几何/图/纯色/层级）0 px 超容差 = 100.00%**、无结构性差异；差异只在文字字形（同字体、同位置、边缘 ±2px 的栅格化差异），运行期值/状态文本已单独排除（25.6%/12.5% 属设备 live 值）。⑥ 交叉链：`ui-layout-verify` §5 加离线所见即所得指针；工作区 `references/kb/controls.md` 对齐行补等价族。⑦ 工具侧仍为 CLI（op 接线下一版）；**动态效果一律不承诺**。v0.27.154-open',
     '2026-10-01: **引擎图像语义更正：图 != 盒子时是「拉伸填充」** v0.27.153-open（钟工：「图不等于 rect 区域的时候 easyui 采用的方式是拉伸填充」）—— 之前知识库内部**自相矛盾**：#11 的文案写「FlyThings 不缩放普通 PNG，图与盒子不等即错位/裁切」，而 #17/verify_assets 同一份代码里又写「引擎会拉伸」（基准工程 SampleUI-New 的 navi/fh.png 44×26 放 72×40 按钮就是合法拉伸）。现按实际引擎行为统一为：**普通 PNG 一律拉伸填充到控件矩形，尺寸不等不报错**；「图 == 盒」是**质量纪律**（非整数缩放必糊/变形、正圆变椭圆），不是引擎贴不上 —— 也是本仓 #11/#17 FAIL/提示分级的真正理由。改动：`ui_tools/check_all.py`（#11 打印头 + `verify_assets` docstring）、`ui_tools/HTML_SUBSET.md`（五要素 ①）、`knowledge/devflow/ui-layout-verify.md`（内置预检表红项）、`knowledge/devflow/ui-asset-rules.md`（铁律 1 补引擎行为）、`knowledge/uicontrols/scrollwindow-layout-checklist.md`（行条/图标「引擎不缩放」→「会拉伸填充，非 1:1 就糊」）。未改判据逻辑（FAIL/提示分级不变），只改「为什么」的表述。v0.27.153-open',
     '2026-10-01: **撤下 check_all「坐标越界/负值」（json 负值合法）+ 顺延编号为 #28/#29** v0.27.152-open（钟工：「坐标负值不是什么问题呀。怎么会报 warn」）—— 上一版（v0.27.151）我把 SmartPanel 真机问题单里的**运行期**语义直接做成了 **json 静态判据**，属越界使用，当日纠正：① **json 里 `left/top` 负值是合法写法** —— 官方 wiki `scrollwindow-layout.md` §2 明写「left/top 可为负值：内容 window 的 left:-175 是初始偏移」，官方 `ScrollWindowDemo-New` 事实就是 `window__2 left=-175`；`-1` 表未设置（`SampleUI-New/1024x600/ad.json`）、装饰件越界（`button top=-7`、`textview left=-12`、分隔线宽 1157 超出 1024 屏）都在用。② 实测误报面：官方/存量工程里「非滚动内层越界」控件 **26 个**（textview 15 / window 4 / edittext 4 / button 1 / listview 1 / painter 1）→ 静态 WARN 会常年清单噪音。③ **处置**：`ui_tools/check_all.py` 删除 `check_coord_sanity` 及其接线，原 #29/#30 顺延为 **#28 UTF-8 文本陷阱（src 静态扫描）** 与 **#29 显示件吃掉下层触摸**（发布当晚即时更正，避免断号；docstring 写明撤下原因与编号变化）。④ **知识层重新定界**：`knowledge/uicontrols/json-layer-rules.md` 「坐标负值 = 从右/下算」开头加「适用范围」块——只约束**运行期算出的绝对坐标**（拖动夹取 / 落盘回读 / `setPosition`），json 负值不告警；「一眼发现」改为看**运行期落盘的业务坐标**（prefs），不是看 `ui/*.json`。真实教训保留：夹取到绝对 0 + 右下留 40px/1/3 + 读回 `-1`/越界当未设置。v0.27.152-open',
@@ -582,11 +583,10 @@ def flythings_map_control(query: str, source: str = '') -> str:
     """跨框架控件映射：输入源框架控件名 → 一次对上我们的控件（等价级别 + 可直接粘的 json 片段）。
 
     什么时候用：拿到 LVGL/Qt/Android/小程序/emWin/MFC 工程或设计稿，要转到 FlyThings 时。
-    - query：源控件名（或别名），忽略大小写与下划线/连字符，如 lv_slider / RecyclerView /
-      QCalendarWidget / lv_tabview / swiper
+    - query：源控件名（或别名），忽略大小写与下划线/连字符（如 lv_slider / QCalendarWidget）
     - source：可选，只在该框架内找（lvgl / qt / android / miniprogram / emwin / mfc）
     命中返回：target（我们控件）/level（L1~L5）/notes/json（可直接粘的片段）/ref/control。
-    未命中回 NO_HIT + candidates + 缺口五级处置（口径：有对应控件用映射；平台真缺才做 components/ui_v1/ 包）。
+    未命中回 NO_HIT + candidates + 缺口五级处置（有对应控件用映射；平台真缺才做 components/ui_v1/ 包）。
     """
     data, err = _control_map()
     if data is None:
@@ -763,10 +763,10 @@ def flythings_pack_upgrade(project_root: str, out_path: str = '', release_versio
                            dry_run: bool = False) -> str:
     """固化升级包（update.img）——交付/发布/量产走本条：「打包升级包/出升级包/固化/刷进设备/
     出货版本/TF卡升级包」；与「调试推送到设备」不同（那是 build_ui_flow，掉电即失）。
-    流程：fun install →（with_build 可选）fun build → fun pack（out_path→-o；--release-version；
-    ab=True→--ab OTA）。产物 `.fsc/<平台>/update.img`；刷法 TF卡/ADB/远程批量；换开机 logo → MISC。
-    dry_run=True 只回命令计划。⚠️ `sign error 0xc0000135`=缺 32 位 VC++；`package not found
-    in local`=先 fun install。详情：knowledge/devflow/upgrade-pack-image.md。
+    流程：fun install →（with_build 可选）fun build → fun pack（out_path→-o；--release-version；ab=True→--ab OTA）。
+    产物 `.fsc/<平台>/update.img`；刷法 TF卡/ADB/远程批量；换开机 logo → MISC；dry_run=True 只回命令计划。
+    ⚠️ `sign error 0xc0000135`=缺 32 位 VC++；`package not found in local`=先 fun install。
+    详情：knowledge/devflow/upgrade-pack-image.md。
     """
     return json.dumps(pt.flythings_pack_upgrade(project_root, out_path, release_version,
                                                 ab, with_build, dry_run),
@@ -906,8 +906,8 @@ def flythings_ui_preview(target: str, output_dir: str = '', for_customer: bool =
         for_customer=True → **客户确认稿** `<name>.confirm.html`：单文件（图内联）、手机可打开/转发、
         带「标注」开关（控件名 + 尺寸 + 坐标）与窄屏自适应；只出预览，不动 json/ftu。
         ⚠️ 多整屏 window 工程自带「页面切换条」+ `#window__N`（简写 `#N`）直达 + 幽灵框看隐藏窗。
-        ⚠️ 确认闸门：改完布局先出确认稿给需求方确认，确认 OK 才 pack / 写逻辑 / 推真机
-        （口径与来由见 knowledge/devflow/ui-layout-verify.md §0）。
+        ⚠️ 确认闸门：改完布局先出确认稿给需求方确认，OK 才 pack / 写逻辑 / 推真机
+        （口径见 knowledge/devflow/ui-layout-verify.md §0）。
         
     """
     is_dir = os.path.isdir(target)
@@ -955,7 +955,7 @@ def flythings_html_to_json(input_html: str, output_json: str = '', res: str = ''
     """受限 HTML 交互原型 -> ui/*.json（CSS 效果自动转图；产物尺寸 == 控件盒）。
 
     ⚠️ 动手前先读《HTML_SUBSET 原型规范》（检索 HTML_SUBSET / data-icon / 自动转图清单）：
-    控件映射表、全部 data-* 属性、铁律、属性清单都在那里，本 docstring 只留最低限度。
+    控件映射表、全部 data-* 属性、铁律都在那里，本 docstring 只留最低限度。
     多屏（div.screen，data-page）：每屏一个 json = 一页 = 一个 Activity = 一个 ftu；
     **仅当同属一个 Activity** 时才用 merge_windows 合成同 json 的 N 个整屏 window。
     返回 screensDetected/pagesProduced/jsonsProduced/pages[]；**不等一律 success:false**（不静默丢页）。
@@ -1078,14 +1078,13 @@ def flythings_create_bin_project(project_root: str, project_name: str = '', plat
     """
     创建「可执行程序」项目（fun create --type bin）并编译为直接可运行的 ELF 二进制。
 
-        - 项目类型 4 选 1：zkgui（UI应用）/ bin（可执行程序）/ staticLibrary / sharedLibrary
-        - bin 项目结构极简：fun.json（"type": "executable"）+ src/main.cpp（标准 int main()）
-        - 编译：fun build → 产物 .fun/{platform}/{项目名}，ELF 魔数验证
-        - 部署：adb push + chmod +x 直接跑（无 zkgui 宿主，不能启动 UI 应用）
-        - 非交互：自动传 --app-version/--description 跳过向导；目录非空直接报错
-
-        用户要「编译出可直接执行的二进制/bin 程序/执行程序（非 UI 应用）」时调用。
-        platform 默认 z21（支持 z20/t113/f133 等）；project_name 缺省取目录名。
+        - 项目类型 4 选 1：zkgui / bin（可执行程序）/ staticLibrary / sharedLibrary
+        - bin 结构极简：fun.json（"type": "executable"）+ src/main.cpp
+        - 编译 fun build → 产物 .fun/{platform}/{项目名}，ELF 魔数验证
+        - 部署 adb push + chmod +x 直接跑（无 zkgui 宿主，不能启 UI 应用）
+        - 非交互：自动传 --app-version/--description；目录非空直接报错
+        用户要「编译出可直接执行的二进制（非 UI 应用）」时调用；platform 默认 z21
+        （支持 z20/t113/f133 等）；project_name 缺省取目录名。
         
     """
     return json.dumps(pt.flythings_create_bin_project(
@@ -1098,15 +1097,13 @@ def flythings_gen_ui_test(project_root: str, test_type: str = 'ask', output_dir:
                           monkey_count: int = 500) -> str:
     """根据 UI json 布局生成自动化测试项目（纯代码，不依赖 AI，省 token）。
 
-    ui/*.json 已含全部控件坐标（position left/top/width/height）与可交互信息
-    （touchable/visible），直接解析生成可编译的 bin 测试项目：
-      ask      - 询问用户三种验收方式（默认，返回选项让用户选）
-      traverse - 遍历控件验收：所有可交互控件逐个点击+滑动 + 图片资源缺失检查 + logcat 配合
-      monkey   - 压测 MonkeyTest：随机 tap/swipe 指定次数，发现潜在隐患
-      custom   - 自定义验收：按用户输入要求生成（差异化逻辑走 AI，此模式仅返回提示）
+    ui/*.json 已含全部控件坐标与可交互信息（touchable/visible），直接解析生成可编译的 bin 测试项目：
+      ask      - 询问用户验收方式（默认，返回选项让用户选）
+      traverse - 遍历控件：所有可交互控件逐个点击+滑动 + 图片资源缺失检查 + logcat 配合
+      monkey   - 压测 MonkeyTest：随机 tap/swipe 指定次数
+      custom   - 自定义验收（差异化逻辑走 AI，此模式仅返回提示）
 
-    用户提出「自动化测试 / 验收 / 遍历控件 / 压测 / Monkey」等需求时调用；
-    默认先问用户选哪种验收方式，避免 AI 参与重复生成（省 token）。
+    用户提「自动化测试 / 验收 / 遍历控件 / 压测 / Monkey」时调用；默认先问用户选哪种（省 token）。
     """
     return json.dumps(tt.flythings_gen_ui_test(
         project_root, test_type, output_dir, platform, with_build, monkey_count),
@@ -1117,14 +1114,13 @@ def flythings_test_run(plan: str = '', devices: str = 'auto', project_root: str 
                        out: str = '', platform: str = '', parallel: int = 4,
                        baseline: str = 'auto', allow_regions: int = 0,
                        per_device_keys: str = 'auto') -> str:
-    """多设备**并行**跑一份 UI 用例（触摸注入 + 日志断言 + 像素基线），出 JSON + JUnit 报告。
+    """多设备**并行**跑一份 UI 用例（触摸注入+日志断言+像素基线），出 JSON + JUnit 报告。
 
     plan 是用例 JSON（文本或路径）：steps[].action 取 tap/long/swipe/wait/monkey/run/shot/log；
     每步可带 shot=<基线 key>、expectLog/expectNoLog、allowRegions、wait(ms)。devices="auto"
     （**恰好 1 台才自动选**）/"all"/"<IP>:5555,..."；project_root 给基线库位置；
     baseline=auto/compare/save/off；报告落 out：report.json + report.xml（可进 CI）。
-    **比不到基线记 no-baseline，不算通过**。写法/建基线流程见
-    knowledge/devflow/device-test-run.md。
+    **比不到基线记 no-baseline，不算通过**。写法见 knowledge/devflow/device-test-run.md。
     """
     return json.dumps(tt.flythings_test_run(plan, devices, project_root, out, platform,
                                             parallel, baseline, allow_regions,
@@ -1229,10 +1225,8 @@ def flythings_generate_ui_assets(project_root: str, assets: str) -> str:
         assets 为 JSON 数组字符串，每项 {name,size,prompt,emoji,color,kind}；name 必填（自动补 .png），
         prompt 优先 AI 生图、失败用 emoji、再不行用 color/kind 线条兜底；kind 取
         check/charging/wifi/alert/circle/square/star/heart。
-        **返回体自动带 assetAudit**（出图后跑抗锯齿/弧线过渡/倒角/透明底审计；有 DEFECT 就按
-        knowledge/devflow/ui-asset-rules.md #11~#13 修图重出）。
-
-        ⚠️ 铁律（尺寸==控件盒、四角 alpha=0、禁 1x 直画/外部生图直出小图）与三条合法出图路径见知识库
+        **返回体自动带 assetAudit**（抗锯齿/弧线过渡/倒角/透明底审计；有 DEFECT 就修图重出）。
+        ⚠️ 铁律（尺寸==控件盒、四角 alpha=0、禁 1x 直画）与三条合法出图路径见知识库
         「UI 图片资源铁律与 PNG 抗锯齿管线」（检索：图片资源铁律 / 抗锯齿 / 走哪条路出图）。
         
     """
@@ -1427,10 +1421,175 @@ def _ui_diff(image_a: str, image_b: str, tolerance: int = 2, shift: int = 1,
         return json.dumps({'success': False, 'error': str(e)}, ensure_ascii=False)
 
 
+def _render_report_dir(project_root='', json_path=''):
+    """清单目录：<项目>/temp/render/ —— **绝不能放 ui/ 下**（json2img 会把 ui/*/*.json 当页面 json）。
+
+    没给工程根时从页面 json 反推；两者都取不到→临时目录（不污染工程）。
+    """
+    root = str(project_root or '').strip()
+    jp = str(json_path or '').strip()
+    if not root and jp:
+        cand = os.path.dirname(os.path.dirname(os.path.abspath(jp)))
+        if os.path.isdir(os.path.join(cand, 'ui')):
+            root = cand
+    if root:
+        return os.path.join(root, 'temp', 'render')
+    import tempfile
+    return os.path.join(tempfile.gettempdir(), 'ft_render')
+
+
+def _ui_render(project_root, page='', scale=1, out='', all_pages=False):
+    """离线「所见即所得」：ui/*.json → 引擎等价 PNG（子进程调 ui_tools/json2img.py）。
+
+    清单走 --json-report 读回，unsupported（未支持/待校准降级）**原样透出、绝不静默吞**。
+    渲染语义（树序 / 拉伸填充 / 对齐位模型 / 裁剪）见 knowledge/devflow/wysiwyg-render-spec.md。
+    """
+    import subprocess
+    script = os.path.join(UI_TOOLS, 'json2img.py')
+    if not os.path.isfile(script):
+        return json.dumps({'success': False, 'error': 'json2img.py 不可用: %s' % script},
+                          ensure_ascii=False)
+    root = str(project_root or '').strip()
+    if not os.path.isdir(os.path.join(root, 'ui')):
+        return json.dumps({'success': False, 'error': 'project_root 下没有 ui/ 目录: %r' % root},
+                          ensure_ascii=False)
+    pg = str(page or 'main').strip() or 'main'
+    try:
+        sc = max(1, int(scale or 1))
+    except (TypeError, ValueError):
+        return json.dumps({'success': False, 'error': 'scale 必须是整数: %r' % scale},
+                          ensure_ascii=False)
+    rd = os.path.join(root, 'ui', '_render')
+    rjd = _render_report_dir(root)            # 清单不进 ui/（否则被当页面 json 扫到）
+    outp = str(out or '').strip()
+    if all_pages:                       # --all：out 视作输出目录
+        dst = outp or rd
+        rj = os.path.join(rjd, '_all.report.json')
+    else:
+        dst = outp or os.path.join(rd, pg + '.png')
+        rj = os.path.join(rjd, pg + '.report.json')
+    try:                                # json2img 只自建清单目录，产物目录这里保证
+        os.makedirs(dst if all_pages else os.path.dirname(os.path.abspath(dst)), exist_ok=True)
+        os.makedirs(os.path.dirname(os.path.abspath(rj)), exist_ok=True)
+    except OSError as e:
+        return json.dumps({'success': False, 'error': '创建输出目录失败: %s' % e},
+                          ensure_ascii=False)
+    cmd = [sys.executable, script, root, '--scale', str(sc), '--json-report', rj]
+    cmd += ['--all', '--out', dst] if all_pages else ['--page', pg, '--out', dst]
+    try:
+        proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=900)
+    except Exception as e:                      # 解释器/脚本异常也不静默
+        return json.dumps({'success': False, 'error': 'json2img 执行失败: %r' % e},
+                          ensure_ascii=False)
+    log = (proc.stdout or b'').decode('utf-8', 'replace')
+    rep = {}
+    if os.path.isfile(rj):
+        try:
+            with open(rj, encoding='utf-8') as f:
+                rep = json.load(f)
+        except (ValueError, OSError) as e:
+            return json.dumps({'success': False, 'error': '清单读取失败: %r' % e,
+                               'stdout': log[-1200:]}, ensure_ascii=False)
+    pages = rep.get('renders') or []
+    if proc.returncode != 0 or not pages:
+        return json.dumps({'success': False,
+                           'error': 'json2img 失败 rc=%s（页面名/项目路径是否正确？）'
+                                    % proc.returncode,
+                           'stdout': log[-1500:]}, ensure_ascii=False)
+    return json.dumps({'success': True,
+                       'pages': [{'page': r.get('page'), 'png': r.get('out'),
+                                  'size': r.get('size')} for r in pages],
+                       'unsupported': rep.get('unsupported') or [],
+                       'missingAssets': rep.get('missing_assets') or [],
+                       'stretched': rep.get('stretched') or [],
+                       'report': rj}, ensure_ascii=False)
+
+
+def _ui_render_check(render='', device='', page_json='', tol=2, max_ratio=1.0,
+                     project_root='', page='', scale=1):
+    """渲染图 vs 真机截图 → 一致性判据（子进程调 ui_tools/wysiwyg_diff.py）。
+
+    render 不给就用 project_root+page 自渲染。pass=false ⇒ 返回体 ok=false +
+    error.code=WYSIWYG_MISMATCH（不一致明说，不静默）；判据口径见 wysiwyg-render-spec.md §5。
+    """
+    import subprocess
+    script = os.path.join(UI_TOOLS, 'wysiwyg_diff.py')
+    if not os.path.isfile(script):
+        return json.dumps({'success': False, 'error': 'wysiwyg_diff.py 不可用: %s' % script},
+                          ensure_ascii=False)
+    dev = str(device or '').strip()
+    pj = str(page_json or '').strip()
+    for p in (dev, pj):
+        if not p or not os.path.isfile(p):
+            return json.dumps({'success': False, 'error': 'device/json 文件不存在: %r' % p},
+                              ensure_ascii=False)
+    rimg = str(render or '').strip()
+    if not rimg:                                # 没给渲染图 → 自己渲染（同 op 内复用）
+        root0 = str(project_root or '').strip()
+        if not root0:
+            return json.dumps({'success': False,
+                               'error': 'render 与 project_root 至少要给一个'},
+                              ensure_ascii=False)
+        r0 = json.loads(_ui_render(root0, page, scale, '', False))
+        if not r0.get('success'):
+            return json.dumps(r0, ensure_ascii=False)
+        pg = str(page or 'main').strip() or 'main'
+        hit = [p for p in r0['pages'] if len(r0['pages']) == 1 or p.get('page') == pg]
+        rimg = hit[0].get('png', '') if hit else ''
+    if not rimg or not os.path.isfile(rimg):
+        return json.dumps({'success': False, 'error': '没有可用的渲染图: %r' % rimg},
+                          ensure_ascii=False)
+    try:
+        t, mr = int(tol), float(max_ratio)
+    except (TypeError, ValueError):
+        return json.dumps({'success': False, 'error': 'tol 需整数 / max_ratio 需数字'},
+                          ensure_ascii=False)
+    rj = os.path.join(_render_report_dir(project_root, pj),
+                      os.path.splitext(os.path.basename(rimg))[0] + '.wysiwyg.json')
+    cmd = [sys.executable, script, rimg, dev, pj, '--tol', str(t), '--max-ratio', str(mr),
+           '--json', rj]
+    root = str(project_root or '').strip()
+    if root:
+        cmd += ['--project', root]              # 显式给工程根（运行期文字盒识别用）
+    try:
+        proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=900)
+    except Exception as e:
+        return json.dumps({'success': False, 'error': 'wysiwyg_diff 执行失败: %r' % e},
+                          ensure_ascii=False)
+    log = (proc.stdout or b'').decode('utf-8', 'replace')
+    if proc.returncode not in (0, 1) or not os.path.isfile(rj):
+        return json.dumps({'success': False,
+                           'error': 'wysiwyg_diff 失败 rc=%s（尺寸不一致？看 stdout）'
+                                    % proc.returncode,
+                           'stdout': log[-1500:]}, ensure_ascii=False)
+    with open(rj, encoding='utf-8') as f:
+        d = json.load(f)
+    pct = d.get('nonTextConsistencyPct')
+    mb = d.get('maxBlock') or {}
+    ok = bool(d.get('pass'))
+    res = {'success': True, 'ok': ok, 'pass': ok, 'render': rimg, 'device': dev,
+           'pageJson': pj, 'nonTextConsistencyPct': pct,
+           'runtimeTextRatioPct': d.get('runtimeTextRatioPct'),
+           'runtimeTextControls': d.get('runtimeTextControls'),
+           'maxBlock': d.get('maxBlock'), 'attribution': d.get('attribution') or [],
+           'tol': t, 'maxRatio': mr, 'report': rj}
+    base = ('非文字区超容差 %.2f%%（判据 ≤ %.2f%%），运行期文字区 %.2f%%，最大差异块 %sx%s'
+            % (100.0 - float(pct or 0.0), mr, float(d.get('runtimeTextRatioPct') or 0.0),
+               mb.get('w', 0), mb.get('h', 0)))
+    if ok:
+        res['message'] = '一致（PASS）：' + base
+    else:
+        res['code'] = 'WYSIWYG_MISMATCH'
+        res['message'] = ('渲染图与真机截图不一致（FAIL）：' + base
+                          + '；逐控件归因见 attribution，口径见 '
+                            'knowledge/devflow/wysiwyg-render-spec.md §5')
+    return json.dumps(res, ensure_ascii=False)
+
+
 # ── 合并后的唯一入口（v0.27.37）──────────────────────────────────────────
 # 三动作合一：editor（原 ui_editor）/ edit_apply（原 ui_edit_apply）/ diff（原 ui_diff）。
 # 每个 action 只接受自己的参数；传了别家的参数会回 visualNote 提醒（不静默忽略）。
-UI_VISUAL_ACTIONS = ('editor', 'edit_apply', 'diff', 'baseline')
+UI_VISUAL_ACTIONS = ('editor', 'edit_apply', 'diff', 'baseline', 'render', 'render_check')
 UI_VISUAL_ARGS = {
     'editor': ('project_root', 'output_dir'),
     'edit_apply': ('project_root', 'changes', 'pack', 'dry_run'),
@@ -1439,16 +1598,24 @@ UI_VISUAL_ARGS = {
     # baseline（2026-09-29）：像素基线库 —— 把「上一次验收通过的那张图」版本化存下来
     'baseline': ('project_root', 'image_a', 'mode', 'baseline_key', 'name', 'allow_regions',
                  'tolerance', 'shift', 'min_area', 'blur', 'noise_bbox', 'out_png'),
+    # render / render_check（2026-10-01，钟工：设计流要像写 HTML，离线所见即所得要闭环）
+    'render': ('project_root', 'page', 'scale', 'out', 'all'),
+    'render_check': ('render', 'device', 'json', 'tol', 'max_ratio', 'project_root',
+                     'page', 'scale'),
 }
 UI_VISUAL_REQUIRED = {'editor': ('project_root',),
                       'edit_apply': ('project_root', 'changes'),
                       'diff': ('image_a', 'image_b'),
-                      'baseline': ('project_root',)}
+                      'baseline': ('project_root',),
+                      'render': ('project_root',),
+                      'render_check': ('device', 'json')}
 _UI_VISUAL_DEFAULTS = {'project_root': '', 'output_dir': '', 'changes': '', 'pack': False,
                        'dry_run': False, 'image_a': '', 'image_b': '', 'tolerance': 2,
                        'shift': 1, 'min_area': 4, 'blur': 0.7, 'noise_bbox': 10,
                        'out_png': '', 'out_json': '', 'show_noise': False,
-                       'mode': '', 'baseline_key': '', 'name': '', 'allow_regions': 0}
+                       'mode': '', 'baseline_key': '', 'name': '', 'allow_regions': 0,
+                       'page': '', 'scale': 1, 'out': '', 'all': False, 'render': '',
+                       'device': '', 'json': '', 'tol': 2, 'max_ratio': 1.0}
 
 
 def _ui_baseline(project_root, image, mode='', key='', name='', allow_regions=0,
@@ -1523,43 +1690,55 @@ def _ui_visual_note(raw, note):
     return raw
 
 
+def _jvis(o):
+    """json.dumps 的本地别名：flythings_ui_visual 有名为 json 的参数，会遮蔽模块名。"""
+    return json.dumps(o, ensure_ascii=False)
+
+
 def flythings_ui_visual(action: str = 'list', project_root: str = '', output_dir: str = '',
                         changes: str = '', pack: bool = False, dry_run: bool = False,
                         image_a: str = '', image_b: str = '', tolerance: int = 2,
                         shift: int = 1, min_area: int = 4, blur: float = 0.7,
                         noise_bbox: int = 10, out_png: str = '', out_json: str = '',
                         show_noise: bool = False, mode: str = '', baseline_key: str = '',
-                        name: str = '', allow_regions: int = 0) -> str:
+                        name: str = '', allow_regions: int = 0,
+                        page: str = '', scale: int = 1, out: str = '', all: bool = False,
+                        render: str = '', device: str = '', json: str = '',
+                        tol: int = 2, max_ratio: float = 1.0) -> str:
     """
     UI 可视化/像素验收入口（action 选动作；旧编辑器三 op 已并入）。
 
-        - action="editor"：ui/*.json → 可拖拽编辑器网页（<项目>/ui/_edit/<name>.edit.html）。
-        - action="edit_apply"：变更 JSON 写回 ui/*.json（pack 默认 False；dry_run 只预览；写回留 .bak）。
-        - action="diff"：两张同尺寸截图逐像素对比，出 0 token 差异清单（阈值参数压假报警）。
-        - action="baseline"：像素基线库（<项目>/ui_baseline/），mode=save/compare/update/list。
+        - editor：ui/*.json → 可拖拽编辑器网页（<项目>/ui/_edit/<name>.edit.html）。
+        - edit_apply：变更 JSON 写回 ui/*.json（pack 默认 False；dry_run 只预览；写回留 .bak）。
+        - diff：两张同尺寸截图逐像素对比，出 0 token 差异清单。
+        - baseline：像素基线库（<项目>/ui_baseline/），mode=save/compare/update/list。
+        - render：ui/*.json → 引擎等价 PNG（离线所见即所得；out 缺省 <项目>/ui/_render/<page>.png；
+          all=true 全页；scale 放大走 NEAREST）；返回 pages[]+unsupported[]（降级项不吞）。
+        - render_check：渲染图 vs 真机截图 → 一致性判据（缺 render 则用 project_root+page 自渲染）；
+          回 nonTextConsistencyPct/runtimeTextRatioPct/maxBlock/pass/attribution[]；pass=false⇒ok=false。
 
-        详细口径见 knowledge/devflow/ui-layout-verify.md §3~§5-2；action 传 list 看各 action 参数。
-        
+        渲染语义真相见 knowledge/devflow/wysiwyg-render-spec.md；action 传 list 看参数。
     """
     act = str(action or '').strip().lower().replace('-', '_')
     if act in ('', 'list', 'help', '?'):
-        return json.dumps({'success': True, 'op': 'flythings_ui_visual',
-                           'actions': {k: {'args': list(v),
-                                           'required': list(UI_VISUAL_REQUIRED[k])}
-                                       for k, v in UI_VISUAL_ARGS.items()},
-                           'hint': ('action 取 editor / edit_apply / diff / baseline；'
-                                    '旧 ui_editor / ui_edit_apply / ui_diff 已并入本 op')},
-                          ensure_ascii=False)
+        return _jvis({'success': True, 'op': 'flythings_ui_visual',
+                      'actions': {k: {'args': list(v),
+                                      'required': list(UI_VISUAL_REQUIRED[k])}
+                                  for k, v in UI_VISUAL_ARGS.items()},
+                      'hint': ('action 取 editor / edit_apply / diff / baseline / render / '
+                               'render_check；旧 ui_editor / ui_edit_apply / ui_diff 已并入本 op')})
     if act not in UI_VISUAL_ACTIONS:
         return _ui_visual_bad('unknown action: %s' % action,
-                              'action 取 editor / edit_apply / diff / baseline'
-                              '（传 action="list" 看参数）')
+                              'action 取 editor / edit_apply / diff / baseline / render / '
+                              'render_check（传 action="list" 看参数）')
     given = {'project_root': project_root, 'output_dir': output_dir, 'changes': changes,
              'pack': pack, 'dry_run': dry_run, 'image_a': image_a, 'image_b': image_b,
              'tolerance': tolerance, 'shift': shift, 'min_area': min_area, 'blur': blur,
              'noise_bbox': noise_bbox, 'out_png': out_png, 'out_json': out_json,
              'show_noise': show_noise, 'mode': mode, 'baseline_key': baseline_key,
-             'name': name, 'allow_regions': allow_regions}
+             'name': name, 'allow_regions': allow_regions,
+             'page': page, 'scale': scale, 'out': out, 'all': all, 'render': render,
+             'device': device, 'json': json, 'tol': tol, 'max_ratio': max_ratio}
     miss = [k for k in UI_VISUAL_REQUIRED[act] if not str(given[k] or '').strip()]
     if miss:
         return _ui_visual_bad('action=%s 缺必填参数: %s' % (act, ', '.join(miss)),
@@ -1579,6 +1758,11 @@ def flythings_ui_visual(action: str = 'list', project_root: str = '', output_dir
                 'noiseBbox': noise_bbox}
         return _ui_visual_note(_ui_baseline(project_root, image_a, mode, baseline_key,
                                             name, allow_regions, out_png, prof), note)
+    if act == 'render':
+        return _ui_visual_note(_ui_render(project_root, page, scale, out, all), note)
+    if act == 'render_check':
+        return _ui_visual_note(_ui_render_check(render, device, json, tol, max_ratio,
+                                               project_root, page, scale), note)
     return _ui_visual_note(_ui_diff(image_a, image_b, tolerance, shift, min_area, blur,
                                     noise_bbox, out_png, out_json, show_noise), note)
 
@@ -1621,8 +1805,8 @@ def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png
     """从**设备真机**抓当前屏幕 → PNG / JPG / BMP（给视觉模型看，或给 ui_visual(action="diff") 验收）。
 
     三段式验收第二步。常用：scale=0.5 或 fmt='jpg', quality=85 省 token；rotate='auto' 按工程
-    EasyUI.cfg 转正；只要应用画面 crop='auto'。进阶参数（fb/pixel/宽高/offset_y/flip/rotate/crop/
-    layer/vdec_chn/name/timeout）走 advanced(JSON)；layer="video"（仅 SigmaStar）抓视频层，多路/
+    EasyUI.cfg 转正；只要应用画面 crop='auto'。进阶参数（fb/pixel/宽高/offset_y/flip/rotate/crop/layer/
+    vdec_chn/name/timeout）走 advanced(JSON)；layer="video"（仅 SigmaStar）抓视频层，多路/
     拼墙必须给 vdec_chn（默认 0，**拼墙在 chn 1**）。⚠️ 抓完把返回 path 交看图能力。
     检索词与踩坑见 knowledge/devflow/device-screenshot.md。
     """
@@ -1666,11 +1850,10 @@ def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png
 def flythings_selfcheck(device: str = '', diff_against: str = '', out: str = '') -> str:
     """整机快照（十一个分区），每分区给 {ok, hint, data}；`ok=false` **不是错误而是结论**。
 
-    分区：设备信息/应用状态/显示/存储/网络/蓝牙/输入/外设/时间/库清单/部署一致性；hint 写明「需要什么条件 /
-    去哪查指令」，不静默。第⑪区「部署一致性」专治「改了像没改」（新库旧界面混搭）。采集容忍设备缺工具：优先随仓
-    bin_tools/<平台>/busybox（→设备 /tmp/busybox，缺则推一份），否则纯 adb shell + getprop/cat。
+    分区：设备信息/应用状态/显示/存储/网络/蓝牙/输入/外设/时间/库清单/部署一致性（第⑪区治「改了像没改」）。
+    采集容忍设备缺工具：优先随仓 bin_tools/<平台>/busybox（→设备 /tmp/busybox，缺则推），否则纯 adb shell。
     device='<serial|IP>:5555'（可省；**多台在线不猜**，回 NO_DEVICE + 在线清单）；
-    diff_against=<上次快照.json> 出逐分区逐项差异；out=<json 路径> 落盘（可复用作基线）。
+    diff_against=<上次快照.json> 出逐分区差异；out=<json 路径> 落盘（可复用作基线）。
     检索词：整机自检/selfcheck/十分区/快照/与上次对比（knowledge/devflow/selfcheck-and-bugreport.md）。
     """
     if sc is None:
@@ -1691,8 +1874,8 @@ def flythings_bugreport(title: str = '', project_root: str = '', device: str = '
     缺陷单生成器：缺陷清单 + 真机判据 → 可提交 markdown（格式对齐 html2json A1~A8 那批）。
 
         只给 title 也能出框架稿；steps/evidence 支持 JSON 数组或换行/分号/逗号分隔。
-        真机判据自动附：型号·固件·fingerprint·应用状态（init.svc.zkswe / sys.zkapp.state / pid /
-        uptime）·`logcat -d -s zkgui` 末 40 行；采不到就写明原因。
+        真机判据自动附：型号·固件·fingerprint·应用状态（init.svc.zkswe / pid / uptime）·
+        `logcat -d -s zkgui` 末 40 行；采不到就写明原因。
         ⚠️ evidence 文件不存在 → 直接报 EVIDENCE_MISSING（不静默）。severity ∈ blocker…trivial。
         默认落 <项目或仓库>/temp/bugreports/<yyyymmdd-HHMM>-<slug>.md（返回 path + 前 20 行预览）。
         细节见 knowledge/devflow/selfcheck-and-bugreport.md。

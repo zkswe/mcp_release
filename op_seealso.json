@@ -65,7 +65,8 @@
                   "knowledge/devflow/prototype-flow.md"]
     },
     "flythings_ui_visual": {
-      "seeAlso": ["knowledge/devflow/ui-layout-verify.md",
+      "seeAlso": ["knowledge/devflow/wysiwyg-render-spec.md",
+                  "knowledge/devflow/ui-layout-verify.md",
                   "knowledge/devflow/ui-editor-usage.md"]
     },
     "flythings_verify_assets": {
