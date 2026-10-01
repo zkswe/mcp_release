@@ -367,7 +367,12 @@ def build_metrics(W, H, tok):
     m['bar_bot'] = max(r4(H * s['bar_bot_of_h']), r4(H * 0.07) + 2 * 12)
     m['btn_h'] = min(m['bar_bot'] - 2 * 12, r4(H * 0.07))
     m['btn_w'] = max(64, r4(W * 0.16))
-    m['viewport'] = H - m['bar_top'] - m['bar_bot']
+    # 内容区下沿 = 底栏上沿 = 屏高 − 底栏高（**唯一算式**：底栏 y / 底导 y / 内容视口都由它派生）
+    # 缺陷 A（钟工 2026-10-01 看图）：原先底栏 y 用 H − bar_bot 定位、内容视口用另一套减法，
+    # 两处各算一套 → 内容流按错视口排，最后一行/卡片底落进底栏带被盖住。这里钉成同一令牌。
+    m['content_bottom'] = H - m['bar_bot']
+    # 内容视口高 = 屏高 − 标题带 − 底部条高（与上同一令牌派生，不再各算一套）
+    m['viewport'] = m['content_bottom'] - m['bar_top']
     m['drag_max'] = max(tok['scroll']['drag_max_dis_min'],
                         r4(W * tok['scroll']['drag_max_dis_of_w']))
     return m
@@ -966,6 +971,98 @@ class Composer(object):
         if bad:
             raise SystemExit('[X] %s 子节点越界（子节点坐标应为相对父容器）：%s' % (where, '；'.join(bad)))
 
+    # ───────────── 自检：底部固定带 × 内容区（缺陷 A） ─────────────
+    #  背景（钟工 2026-10-01 看图）：「内容区伸进底部固定条，把最后一行盖住」。
+    #  根因：底栏 y 与内容视口各算一套（视口没同步扣掉底栏高）→ 内容流按错视口排。
+    #  修法：① 视口 = 屏高 − 标题带 − 底栏高（共用 m['bar_bot'] 一个令牌，见 build_metrics）；
+    #        ② 本自检把口径钉死：固定带（bottom_actions / bottom_nav）与实际渲染出的
+    #           内容节点逐对判 rect 相交，相交 → 报错退出、不出产物。
+    #  判交用**裁剪后的有效 rect**（= 设备实际渲染出来的那部分）：scrollwindow 视口外的
+    #  内容被引擎裁掉、不参与判交 —— 否则「滑动列表最后一行半露」这种正常滚动形态会误报。
+    CLIP_TYPES = ('scrollwindow', 'pagewindow', 'slidewindow')
+
+    def _collect_rects(self, nodes, ox=0, oy=0, clip=None, out=None, path=()):
+        """递归收集节点的「绝对有效矩形」：own rect ∩ 祖先裁剪容器 rect（裁剪容器 = 视口）。
+
+        返回 [{'rect':(l,t,r,b), 'caption':…, 'type':…, 'path':(…)}]；
+        完全被裁掉（有效面积 0）的节点不进结果（设备上根本画不出来，也不会被盖住）。
+        """
+        out = [] if out is None else out
+        for nd in nodes or []:
+            p = nd.pos or {}
+            l = ox + int(p.get('left') or 0)
+            t = oy + int(p.get('top') or 0)
+            w, h = int(p.get('width') or 0), int(p.get('height') or 0)
+            if w > 0 and h > 0:
+                r = (l, t, l + w, t + h)
+                if clip is not None:
+                    r = (max(r[0], clip[0]), max(r[1], clip[1]),
+                         min(r[2], clip[2]), min(r[3], clip[3]))
+                if r[2] > r[0] and r[3] > r[1]:
+                    out.append({'rect': r, 'caption': nd.caption, 'type': nd.type,
+                                'leaf': not nd.children, 'path': path + (nd.caption,)})
+            sub_clip = clip
+            if nd.type in self.CLIP_TYPES and w > 0 and h > 0:
+                box = (l, t, l + w, t + h)
+                sub_clip = box if clip is None else (max(clip[0], box[0]), max(clip[1], box[1]),
+                                                     min(clip[2], box[2]), min(clip[3], box[3]))
+            if nd.children:
+                self._collect_rects(nd.children, l, t, sub_clip, out, path + (nd.caption,))
+        return out
+
+    def assert_no_bar_overlap(self, content_nodes, band_nodes):
+        """自检：底部固定带 vs 内容区 —— 视口不得伸进底栏，且逐对 rect 不得相交。
+
+        · 不变式（缺陷 A 的口径）：m['bar_top'] + m['viewport'] <= m['content_bottom']；
+        · 逐对判相交（含「最后一行 / 卡片底」这类最靠近底栏的节点）；
+        · 相交 → SystemExit（组装器报错退出，不写 json / 不出切图 / 不写逻辑骨架）。
+        """
+        m = self.m
+        m_bot = m['content_bottom']
+        view_bot = m['bar_top'] + m['viewport']
+        if m['bar_top'] + m['viewport'] > m_bot:
+            raise SystemExit('[X] 内容视口伸进底部固定条：标题带 %d + 视口 %d = %d > 内容区下沿 %d'
+                             '（视口必须 = 屏高 − 标题带 − 底部条高）'
+                             % (m['bar_top'], m['viewport'], view_bot, m_bot))
+        crect = self._collect_rects(content_nodes)
+        brect = self._collect_rects(band_nodes)
+        # ② 声明高度一致性：内容的实际底不得越过「标题带 + 声明内容高」
+        #    （越过了 = 滑到底也看不到最后一段；320 屏空态块实测就是这样被拓出来的）
+        deep = max((c for c in crect if c['leaf']), key=lambda c: c['rect'][3], default=None)
+        declared_bottom = m['bar_top'] + self.content_h
+        if deep and deep['rect'][3] > declared_bottom:
+            raise SystemExit('[X] 内容实际底 %d > 声明内容高上沿 %d（%s %d,%d..%d,%d）：'
+                             '块自己报的高度装不下子节点 → 滑动到底也看不到最后一段'
+                             % (deep['rect'][3], declared_bottom, deep['caption'],
+                                deep['rect'][0], deep['rect'][1], deep['rect'][2],
+                                deep['rect'][3]))
+        bad = []
+        for a in crect:
+            for b in brect:
+                al, at, ar, ab = a['rect']
+                bl, bt, br, bb = b['rect']
+                ix, iy = min(ar, br) - max(al, bl), min(ab, bb) - max(at, bt)
+                if ix > 0 and iy > 0:
+                    bad.append('%s(%s) %d,%d..%d,%d ∩ %s(%s) %d,%d..%d,%d = %dx%d px'
+                               % (a['caption'], a['type'], al, at, ar, ab,
+                                  b['caption'], b['type'], bl, bt, br, bb, ix, iy))
+        if bad:
+            raise SystemExit('[X] 底部固定带与内容节点相交 %d 对（缺陷 A：底栏/底导盖住内容）——'
+                             '视口必须扣掉底部条高（m[\'content_bottom\'] = H − bar_bot）：\n    %s'
+                             % (len(bad), '\n    '.join(sorted(set(bad))[:12])))
+        deepest = max(crect, key=lambda c: c['rect'][3], default=None)
+        leaf = max((c for c in crect if c['leaf']), key=lambda c: c['rect'][3], default=None)
+        if deepest:
+            dl, dt, dr, db = deepest['rect']
+            note = '固定带自检：内容有效底 %d ≤ 底栏上沿 %d（最靠下内容节点 %s %d,%d..%d,%d'
+            args = [db, m_bot, deepest['caption'], dl, dt, dr, db]
+            if leaf is not None and leaf is not deepest:
+                ll, lt, lr, lb = leaf['rect']
+                note += '；最靠下行/卡底 %s %d,%d..%d,%d（超出视口部分被引擎裁掉）'
+                args += [leaf['caption'], ll, lt, lr, lb]
+            note += '）｜ 相交 0 对'
+            self.notes.append(note % tuple(args))
+
     def row_height(self, blk):
         """一行块占的高度（第 2 批）：字段行 = 文本带 + 控件带；列表/滚轮自带块高。
 
@@ -1066,8 +1163,11 @@ class Composer(object):
         m = self.m
         col = {k: hex2int(v) for k, v in self.tok['color'].items() if v.startswith('#')}
         s_ = blk['_seq']                                  # 空态块序号（多空态同页也不重名）
-        band = r4(self.H * 0.30)
+        # 块高必须**装得下**图标底 + 文案 + 副文案：极小屏上 H×0.30 会不够（320 屏实测 72 < 80）
+        # → 子项溢出块高 → 内容实际底 > 声明内容高（滑动到底也滚不出来），
+        #   且展平长图里会压到底部固定带（被 full_render 的 assert_bands_clear 拓出）。
         s = r4(m['icon_bg'] * 2)
+        band = max(r4(self.H * 0.30), s + 2 * (m['spacer2'] + 4 + m['h_b2']))
         cx = x + (m['content_w'] - s) // 2
         top = y + (band - s) // 2 - m['h_b1']
         p_bg = self.shape('icbg_%d.png' % s, s, s, s // 2, rgba(self.tok['color']['brand1']))
@@ -1098,7 +1198,7 @@ class Composer(object):
         m = self.m
         col = {k: hex2int(v) for k, v in self.tok['color'].items() if v.startswith('#')}
         sq = blk['_seq']                                     # 底栏块序号（多个底栏同页也不重名）
-        bar_y = self.H - m['bar_bot']
+        bar_y = m['content_bottom']                          # 底栏上沿（与内容视口同一令牌派生）
         bg = self.shape('footbg_%dx%d.png' % (self.W, m['bar_bot']), self.W, m['bar_bot'], 0,
                         rgba(self.tok['color']['surface']))
         parent.append(self.text('FooterBg%d' % sq, self.box(0, bar_y, self.W, m['bar_bot']),
@@ -1602,7 +1702,7 @@ class Composer(object):
         if not 0 <= sel < n:
             raise SystemExit('[X] bottom_nav.selected=%d 越界（可选 0~%d）' % (sel, n - 1))
         w, h = self.W, m['nav_h']
-        ny = self.H - m['bar_bot'] - h
+        ny = m['content_bottom'] - h                         # 底导贴底栏上沿（同一令牌派生）
         win = Node('window', 'BottomNav%d' % blk['_seq'],
                    {'left': 0, 'top': ny, 'width': w, 'height': h})
         p_bg = self.shape('navbg_%dx%d.png' % (w, h), w, h, 0,
@@ -1953,17 +2053,24 @@ class Composer(object):
             self.notes.append('内容总高 %d ≤ 视口 %d → 不上滑动窗口（白放一层没意义，§2.1 第 1 步）'
                               % (content_h, m['viewport']))
 
+        bands = []                                      # 底部固定带的顶层节点（自检用）
         for blk in navs:
+            i0 = len(self.root)
             self.build_nav(blk, self.root)              # 固定带（贴底栏上沿，不进滑动区）
+            bands += self.root[i0:]
         for blk in footer:
+            i0 = len(self.root)
             self.build_actions(blk, self.root, m['margin'], 0)
+            bands += self.root[i0:]
         for blk in dialogs:
-            self.build_dialog(blk, self.root)
+            self.build_dialog(blk, self.root)           # 弹窗/浮层是整屏层：不算固定带（本就该盖住内容）
         for blk in toasts:
             self.build_toast(blk, self.root)            # 浮层提示：**最后定义 = 最上层**
         # 顺序 = z 顺序：标题 → 内容 → 底导 → 底栏 → 弹窗 → 提示浮层（越往后越上）
         self.root = title_nodes + body + self.root
+        # 自检（缺陷 A）：底部固定带 × 实际渲染出的内容节点，逐对判 rect 相交 → 相交报错退出（不出产物）
         self.content_h = content_h
+        self.assert_no_bar_overlap(title_nodes + body, bands)
         self._nodes = self.root                                 # 幂等：document() 不再重跑
         self.control_count = len(self.collect_controls(self.root))
         return self.root

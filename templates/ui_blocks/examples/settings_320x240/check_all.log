@@ -132,7 +132,7 @@
        反例（旧口径作废的证据）：官方 ScrollWindowDemo-New 视口 450 / 内容 800（行程 350）
        而 dragMaxDis=200；SmartPanel settings 视口 418 / 内容 832（行程 414）而 dragMaxDis=60，
        真机仍能滚 302px 到底。口径：knowledge/uicontrols/scroll-drag-interaction-spec.md。
-  [NOTE] ui/main.json scrollwindow__1（y 轴）视口 168 / 内容 372 / 行程 204；dragMaxDis=24
+  [NOTE] ui/main.json scrollwindow__1（y 轴）视口 168 / 内容 404 / 行程 236；dragMaxDis=24
   [PASS] 行程与 dragMaxDis 用法正常（1 处）
 == 27. 同族控件口径离群 / 文本×图标重叠（设计期拦截；钟工 2026-10-01）==
        给设置行这类重复行模板上的静态判据：同页同父同角色的 *Label/*Value/*Icon/*Chevron

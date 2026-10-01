@@ -18,6 +18,7 @@
   回退线框 0 处（全部图标来自 components/icons ✓）
   [NOTE] bottom_nav 固定带 64 px 贴底栏上沿 → 视口缩至 388
   [NOTE] 内容总高 916 > 视口 388 → 自动上滑动窗口（行程 528 px，dragMaxDis=60）
+  [NOTE] 固定带自检：内容有效底 464 ≤ 底栏上沿 528（最靠下内容节点 ScrollMain 0,76..1024,464；最靠下行/卡底 StatusPill7Bg 16,416..144,460（超出视口部分被引擎裁掉））｜ 相交 0 对
   bnr_danger_992x48.png  992x48
   bnr_info_992x48.png  992x48
   bnr_success_992x48.png  992x48
@@ -68,24 +69,24 @@
   控件：顶层 10 个键 ｜ 含嵌套共 124 个控件
 -- render --
 ========================================================================
-json2img v0.1.0 — 引擎等价离线渲染（PIL 像素级，静止态）
+json2img v0.1.0 �� ����ȼ�������Ⱦ��PIL ���ؼ�����ֹ̬��
 ========================================================================
 [render] page=main       json=templates\ui_blocks\examples\nav_1024x600\project\ui\main.json
           out=C:\Users\zkswe\.openclaw\workspace\tools\FlyThings_mcp_open\templates\ui_blocks\examples\nav_1024x600\project\ui\main.render.png  size=1024x600  resolution=1024x600  scale=1
           font=C:\Users\zkswe\.openclaw\workspace\tools\FlyThings_mcp_open\components\fonts\fonts\zkswe-hans-common.ttf
-          [OK] 尺寸 == resolution × scale
+          [OK] �ߴ� == resolution �� scale
 ------------------------------------------------------------------------
-[unsupported/降级] 1 类：
-   - textview       bold                   x3    无 *Bold*.ttf 变体 → 用同字体
+[unsupported/����] 1 �ࣺ
+   - textview       bold                   x3    �� *Bold*.ttf ���� �� ��ͬ����
      pages: main
-     例: textview/TextTitle, textview/SectionHeader2, textview/SectionHeader6
+     ��: textview/TextTitle, textview/SectionHeader2, textview/SectionHeader6
 ------------------------------------------------------------------------
-[校准状态] alignment（模式 --align-mode measured）
-   实测表（真机验证）：36=靠左+垂直居中 37=居中 38=靠右+垂直居中 33=顶部 41=底部
-     [measured]     36  → ('l', 'c')   x15
-     [measured]     37  → ('c', 'c')   x18
-   TODO 待校准（无真机表）：4/5/0/1/6/2 —— 本模式解码：
-   合计：实测 33 处 / 待校准 0 处 / 表外 0 处
+[У׼״̬] alignment��ģʽ --align-mode measured��
+   ʵ����������֤����36=����+��ֱ���� 37=���� 38=����+��ֱ���� 33=���� 41=�ײ�
+     [measured]     36  �� ('l', 'c')   x15
+     [measured]     37  �� ('c', 'c')   x18
+   TODO ��У׼�������������4/5/0/1/6/2 ���� ��ģʽ���룺
+   �ϼƣ�ʵ�� 33 �� / ��У׼ 0 �� / ���� 0 ��
   渲染图 main.render.png 1024x600 ｜ 尺寸 == resolution: True
 -- check_all --
   [NOTE] panel_616x176.png                未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记

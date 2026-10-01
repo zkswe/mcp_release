@@ -70,7 +70,7 @@
         "left": 0,
         "top": 0,
         "width": 320,
-        "height": 372
+        "height": 404
       },
       "backgroundColor": -1,
       "hideTimeOut": -1,
@@ -1681,7 +1681,7 @@
         "caption": "EmptyStateBg11",
         "position": {
           "left": 144,
-          "top": 304,
+          "top": 320,
           "width": 32,
           "height": 32
         },
@@ -1714,7 +1714,7 @@
         "rollStep": 5,
         "textPosition": {
           "left": 144,
-          "top": 304,
+          "top": 320,
           "width": 32,
           "height": 32
         },
@@ -1725,7 +1725,7 @@
         "caption": "EmptyStateIcon11",
         "position": {
           "left": 152,
-          "top": 312,
+          "top": 328,
           "width": 16,
           "height": 16
         },
@@ -1758,7 +1758,7 @@
         "rollStep": 5,
         "textPosition": {
           "left": 152,
-          "top": 312,
+          "top": 328,
           "width": 16,
           "height": 16
         },
@@ -1769,7 +1769,7 @@
         "caption": "EmptyStateText11",
         "position": {
           "left": 44,
-          "top": 352,
+          "top": 368,
           "width": 232,
           "height": 16
         },
@@ -1806,7 +1806,7 @@
         "caption": "EmptyStateSub11",
         "position": {
           "left": 44,
-          "top": 372,
+          "top": 388,
           "width": 232,
           "height": 16
         },

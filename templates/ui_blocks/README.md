@@ -36,8 +36,10 @@ templates/ui_blocks/
    └─ nav_320x240/            ← 示例 F：与示例 E **同一份块清单**，只换分辨率与短文案（极小屏：视口 = 屏高 − 标题 − nav − 底栏）
 ```
 六版示例都带 `main.full.render.png` = 展平 scrollwindow 的**整页渲染**（由 `full_render.py` 产出，仅供人工验收，**不参与 check_all**）。
-口径：内容展平；**固定带（底导 / 底栏 / 弹窗 / 浮层）保持原屏 y 不变**（与上一批交付的长图逐像素一致，仅图标/勾选符号变了）——
-所以它们在长图里出现在中段、与下方内容叠在一起，看图时当「原屏固定层」理解。
+口径：内容展平；**固定带（底导 / 底栏）让位到长图底部**（y = 整页高 − 固定带高，位移量 = 滑动行程）——
+旧口径「保持原屏 y 不变」会把底栏摆在长图中段、压住内容（钟工 2026-10-01 看图：「内容区伸进底部
+固定条，把最后一行盖住」）。整屏浮层（弹窗 / 提示）仍按原屏 y 画（它们是「浮层」不是贴底固定带）。
+让位前后都过 `assert_bands_clear`：固定带 × 实际渲染出的内容节点逐对判 rect 相交，相交 → 报错退出、不出图。
 
 ## 2. 用法（一条命令）
 
@@ -286,7 +288,7 @@ python templates/ui_blocks/full_render.py templates/ui_blocks/examples/nav_1024x
 | 块数 / 行数 | 10 个块类型 / 7 行（2 卡 + 1 独立分组标题 + 空态 + 底栏 + 弹窗） | 同左（**同一套块**） |
 | 控件数（含嵌套） | **62**（textview 45 / button 11 / window 5 / scrollwindow 1） | **59**（textview 42 / button 11 / window 5 / scrollwindow 1） |
 | 关键度量 | 行高 60 ｜ 字号 28/20/16/14 ｜ 圆角 6 ｜ 图标底/图标 36/24 ｜ 箭头 24×16 | 行高 28 ｜ 字号 14/12/12/10 ｜ 圆角 5 ｜ 图标底 16（图标省略）｜ 箭头 12×16 ｜ **单行式** |
-| 内容 → 视口 / 行程 | 716 → 452 / **行程 264**，dragMaxDis 60 | 372 → 168 / **行程 204**，dragMaxDis 24 |
+| 内容 → 视口 / 行程 | 716 → 452 / **行程 264**，dragMaxDis 60 | 404 → 168 / **行程 236**，dragMaxDis 24 |
 | 出图 | **16 张**（图 == 盒，#11 PASS 0 处不匹配） | **15 张**（同上） |
 | logic 骨架 | `src/logic/mainLogic.cc`，**11 个按钮回调**齐全 | 同左，11 个 |
 | `json2img --report` unsupported | **1 类**：`bold x4`（渲染器无 `*Bold*.ttf` 变体 → 用同字体；真机由字库承担） | 同左：`bold x4` |
@@ -323,10 +325,16 @@ python templates/ui_blocks/full_render.py templates/ui_blocks/examples/nav_1024x
 | `seekbar` | `defProgress`（x2） | 只画静止进度（60% / 45%） | 引擎按 `defProgress`/`max` 画；可拖 |
 | `seekbar` | `拉伸填充 sk_fill_<W>x<H>.png`（x2，属「拉伸」类不是 unsupported） | 渲染器把「有效图」按 defProgress **缩放**近似 | 引擎是**横向裁剪**（不是拉伸）；图 == 盒已由 #11/#17 核对通过 |
 | `edittext` | （无） | 画 `text`；空则画 `hintText` | 点击弹系统内置键盘 |
-| `checkbox` | `picTab.pic0`（x2）/ `v0 未专有实现`（x2） | 只画 **pic0（未选）**；`checked:true` 也画成未选 | 引擎按 `checked` 切 pic2（品牌底 + 白勾） |
-| `radiogroup` | `v0 未专有实现`（x1） | **整个选项区画成空白**（`radiobuttons[]` 是数组子项，渲染器不进数组） | 引擎画圆点 + 选项文字（`pic0`/`pic2` 切态） |
-| `listview` | `item/subItem`（x3） | 按模板画 rows 个单元（`item.text` 空串 → 只看到子项图/箭头，如列表行的行尾箭头；滚轮的静态选中条可见） | 引擎按数据填行 + 滚动 + 循环 |
+| `checkbox` | （无新增降级项） | **按 `checked` 切图**：选中画 `pic2`（品牌底 + 白勾），未选画 `pic0` | 引擎同口径 |
+| `radiogroup` | `runtimeState`（x1） | **`radiobuttons[]` 逐项画圆点 + 选项文字**（选中走 `pic2` + `colorTab.color2`）；组内联动/点击态不还原 | 引擎同口径 + 运行期组内联动 |
+| `listview` | `runtimeRows`（x3） | 按 `rows`/`rowSpacing`/`itemH` **逐行铺模板**（行底 + `subItem[]` 的图/文本）；**模板 `text` 是空串（`list_item` block 明令禁写占位串）→ 静态图里只看到子项图/箭头**，滚轮的静态选中条可见 | 引擎按运行期数据填行 + 滚动 + 循环 |
 | `listview.item.subItem` | `picTab.pic0`（x4） | 行尾箭头子项按背景图绘制（仅常态） | 行内子项图由引擎直接贴（图 == subItem 盒） |
+
+> **数组子项渲染（2026-10-01 补，缺陷 B）**：`radiobutton` / `checkbox` / `listview.item+subItem` 过去只走
+> 「通用兜底」→ 渲染图里选项区、勾选态是空的（钟工原话「列表依旧没有刷新出来」）。现在三者都专有实现；
+> 模板缺 `pic2` 时 `checkbox` 的勾走 `components/icons` 的 `control.check_on`（只缩不放；勾色按盒底亮度二选一，
+> 否则白勾落在浅灰盒上「看不见」）——夹具实测可见。**列表行文本仍取决于模板 `text`**（本库块规范禁写占位串），
+> 要预览带文本的列表需用夹具 / 带运行期文案的真实 json。
 
 对齐解码：全部文字控件用 **36/37/38（真机实测表）**，`json2img` 报「待校准 0 处 / 表外 0 处」（六版示例均是）。
 **第 3 批新增块：渲染器零 unsupported 新增**——7 个新块全部由 `textview` / `button` / `window` 组成（不引入 checkbox/radiogroup/listview/seekbar 这类「v0 未专有实现」的控件），所以 `json2img --report` 的清单比第 2 批更短（只剩 `bold` 一类）：
@@ -359,17 +367,23 @@ python templates/ui_blocks/full_render.py templates/ui_blocks/examples/nav_1024x
 | 示例 | 图标处数 | 档位（盒尺寸） | 回退线框 | 出图 / 控件数 | #21 AA（真缺陷） | 整页图 |
 |---|---|---|---|---|---|---|
 | settings_1024x600 | 1（`info`） | 24 档 @36px（**缺档现出**） | **0** | 16 / 62 | 0 张（WARN 5 / EXEMPT 2） | 1024×864 |
-| settings_320x240 | 1（`info`） | 22 档 @16px（**缺档现出**） | **0** | 15 / 59 | 0 张（WARN 0 / EXEMPT 2） | 320×444 |
+| settings_320x240 | 1（`info`） | 22 档 @16px（**缺档现出**） | **0** | 15 / 59 | 0 张（WARN 0 / EXEMPT 2） | 320×476 |
 | interactive_1024x600 | 0（无图标块） | — | **0** | 22 / 64 | 0 张（WARN 4 / EXEMPT 2） | 1024×1514 |
 | interactive_320x240 | 0（无图标块） | — | **0** | 22 / 62 | 0 张（WARN 0 / EXEMPT 2） | 320×930 |
 | nav_1024x600 | 20（14 种 名×尺寸×态） | 24 档 @24px ×20 | **0** | 44 / 124 | 0 张（WARN 7 / EXEMPT 3） | 1024×1128 |
 | nav_320x240 | 17（同上 14 种） | 24 档 @24px ×17 | **0** | 43 / 116 | 0 张（WARN 3 / EXEMPT 3） | 320×792 |
 
-> 六版都是 **compose exit 0 + check_all exit 0（0 FAIL）**；`json2img --report` 的 unsupported 清单**与改口径前逐条一致**
-> （图标是静态 PNG，不引入新的渲染器未支持项）：settings 两版 `bold x4`；nav 两版 `bold x3`；
-> interactive 两版 9 类（`bold x5` + `subitem picTab.pic0 x4` + `checkbox picTab.pic0 x2` + `checkbox x2` +
-> `listview item/subItem x2/x1` + `seekbar defProgress x1`×2 + `radiogroup x1`）+「拉伸填充」2 处
-> （`sk_fill_960x36.png`，引擎语义 = 裁剪）——逐条解读见 §6.3。
+> 六版都是 **compose exit 0 + check_all exit 0（0 FAIL）**。`json2img --report` 的 unsupported/降级清单：
+> settings 两版 `bold x4`（1 类）；nav 两版 `bold x3`（1 类）；interactive 两版 **7 类**（`bold x5` +
+> `subitem picTab.pic0 x4` + `listview runtimeRows x2/x1` + `seekbar defProgress x1`×2 +
+> `radiogroup runtimeState x1`）+「拉伸填充」2 处（`sk_fill_960x36.png`，引擎语义 = 裁剪）——逐条解读见 §6.3。
+> 旧清单里的 `checkbox v0 未专有实现 x2` / `checkbox picTab.pic0 x2` / `radiogroup v0 未专有实现 x1` /
+> `listview item/subItem x3` **已随缺陷 B 的修复去掉**（改成逐项 / 逐行真画）。
+>
+> 另：compose 打一行 `[NOTE] 固定带自检：…`（缺陷 A），`full_render.py` 打一行 `固定带让位：y A → B`——
+> 六版数值：settings 1024 `528 → 792（+264）`；settings 320 `200 → 372（+236，整页 476）`；
+> interactive 1024 `528 → 1442（+914）`；interactive 320 `200 → 890（+690）`；
+> nav 1024 `464 → 992（+528，带高 136）`；nav 320 `140 → 692（+552，带高 100）`。
 >
 > **图标像素等价实证**：库里 `out/24/` 的预置产物按 alpha 换色，与用 `gen_icons.py` 按同尺寸重新渲染**逐像素一致**
 > （`star`/`wifi`/`bell`/`info`/`check` @24px 实测 maxdiff = 0）——所以「取库产物」与「按盒尺寸现出」没有口径差。
@@ -410,7 +424,10 @@ python templates/ui_blocks/full_render.py templates/ui_blocks/examples/nav_1024x
 | 27 | **块内 glyph 跟着小屏降档**（12/16px 图标） | `aa_audit` 真缺陷：`wifi@12` / `home@16` / `settings@16` / `bell@20` 实测 FAIL（图标笔画 <1px 退成硬阶梯） | 第 3 批引入 `glyph_min_px = 24`（块内图标尺寸**不随屏降**）；极小屏靠「省图标」降级，不靠缩小图标 |
 | 28 | **浮层（toast）写在普通层里** / `visible` 写 true | 被内容/弹窗盖住（提示根本看不见）；或一进页就弹一层遮屏 | toast = 根层整屏 window（modal=false + touchable=false） + **最后定义 = 最上层** + `visible:false` 默认 |
 | 29 | **底导与底栏两带叠在一起**（或 nav 放进滑动区） | 按钮被盖住/点不动（重叠）；上滑时 nav 跟着滚走（进滚动区） | nav 贴底栏上沿 + **视口扣除 nav 带高**（`compose` 日志会打 `[NOTE] bottom_nav … → 视口缩至 N`，看得见） |
-| 30 | **块内图标自绘 / 用 emoji 字体兜底**（`gen_res.glyph_icon` 默认 style=emoji） | 观感与真机/产品那套图标完全不同（钟工 2026-10-01：「效果差异和实际差异太大」） | 图标**唯一来源 = `components/icons`**（`iconlib.py`，见 §5.1）；库里没该语义名 → 回退线框**并在日志里明说**（不静默）；小盒上的 `star` **描边态**会被 `aa_audit` 判真缺陷 → 用 `state:"on"` 实心态或 `heart` |
+| 30 | **块内图标自绘 / 用 emoji 字体兜底**（`gen_res.glyph_icon` 默认 style=emoji） | 观感与真机/产品那套图标完全不同（钟工 2026-10-01：「效果差异和实际差异太大」） | 图标**唯一来源 = `components/icons`**（`iconlib.py`，见 §5.1）；库里没该语义名 → 回退线框**并在日志里明说**（不静默）；小盒上的 `star` **描边
+| 31 | **底栏 y 与内容视口各算一套**（底栏 `H − bar_bot`，视口忘了扣底栏高） | 内容流按错视口排 → **最后一行/卡片底落进底栏带被盖住**（钟工 2026-10-01 看图：「内容区伸进底部固定条，把最后一行盖住」；展平长图里 `ButtonRowDeviceCard9 508..568 ∩ FooterBg12 528..600 = 992×40 px`） | 视口与底栏**同源**（`m['content_bottom'] = H − bar_bot`）+ 自检 `assert_no_bar_overlap`（逐对判 rect、裁剪后有效矩形、相交报错退出；实测旧口径下能拓出上述 992×40）；展平长图里固定带**让位到长图底部**（`assert_bands_clear` 守） |
+| 32 | **块自己报的高度装不下子节点**（空态块 `H×0.30` 在 320×240 上 72 < 需要的 104） | 内容实际底 > 声明内容高 → 滑动窗行程不够，**最后一段永远滚不出来**（且展平长图里压到底栏） | 块高按内容反算（`band = max(H×0.30, 图标底 + 2×(间距+4+副文案高))`）+ 自检「内容实际底 ≤ 声明内容高」（320 屏实测被拓出来 → 已修） |
+| 33 | **数组子项（`radiobuttons[]` / `checkbox.checked` / `item.subItem[]`）只走通用兜底** | 渲染图里单选区 / 勾选态 / 列表行**是空的**，看图以为「列表没刷新出来」（钟工 2026-10-01） | 渲染器按引擎口径专有实现：逐项画圆点 + 选项文字（`pic0`/`pic2` 切态）、按 `checked` 切图（缺 `pic2` → `components/icons` 的 `control.check_on`）、按 `rows`/`rowSpacing`/`itemH` 逐行铺模板（行底 + 子项图/文本） |态**会被 `aa_audit` 判真缺陷 → 用 `state:"on"` 实心态或 `heart` |
 
 **两条纪律（写在最显眼处）**
 1. **加行 = 照抄同页已有行的口径**（行高/步进/文本左缘/各元素盒），禁止自创形态；
@@ -453,13 +470,14 @@ python templates/ui_blocks/full_render.py templates/ui_blocks/examples/nav_1024x
   · 工具：`r4up`（4px 栅格**向上**取整，专给文本盒宽，#36 余量口径）、`text_box_w`（文本盒宽 = 估算×1.10 向上取4）、`sem_color`（语义状态 → 前景/浅底令牌）、`col_int`（令牌名 → 整型色值）；
   · builder：`build_tabs`（tab 项批量）、`build_nav`（nav 项批量）、`build_banner`、`build_pill`（药丸）、`build_divider_label`、`build_grid`（宫格格子批量）、`build_toast`；全部只复用 `shape()/glyph()/text()/button()` + 第2批的 `bar/mark/chevron`，**没有新出图 kind**；
   · 自检全部复用：`assert_caption_unique`（每次出产物前）/ `assert_icon_uniform`（行族）/ `assert_children_fit`（每个新容器）/ `assert_row_gaps`（banner 的「文案→关闭盒」与 divider_label 的「线→文字」都记入同一张间隙表）/ `next_seq` + `name_block`（caption 唯一性）；
+  · **缺陷 A 新增自检 `assert_no_bar_overlap`**（2026-10-01）：① 不变式「标题带 + 内容视口 ≤ 屏高 − 底栏高」；② 底部固定带（`bottom_actions`/`bottom_nav`）与**实际渲染出的**内容节点逐对判 rect 相交（用裁剪后的有效矩形——滑动区外的内容被引擎裁掉，不参与判定），相交 → 报错退出、不出产物；③ 内容实际底 ≤ 声明内容高（越了 = 滑到底也看不到最后一段）。口径来源：底栏 y / 底导 y / 内容视口**都从 `m['content_bottom'] = H − bar_bot` 一个令牌派生**，不再两处各算一套。
   · `_tokens.json` 新增：语义色 9 个（`info/info1/success/success1/warn/warn1/danger/danger1` + `mask`，TDesign v1.17 档位）与比例 `tab_h_of_h/ind_h_of_h/pill_h_of_h/banner_h_of_h/divider_h_of_h/nav_h_of_h/toast_top_of_h` + `glyph_min_px`。
 * **图标来源（2026-10-01）新增文件**：`iconlib.py`（语义名 → `components/icons`；档位 56/24/22；盒 == 档位取库产物换色、缺档按盒尺寸现出；回退线框**明说**）、`blocks/_icons.json`（允许值清单：203 名 / 5 分类 / 两态）、`full_render.py`（整页渲染）；
   `compose.py` 新增出图 kind `libicon` + `glyph(state=…)` 参数（底导选中/未选中直接对上库两态）+ `grid_icons.items[].state`；`resources/images/` 里原来的 `ic_*` / `nav_*` 文件名不变（json 引用零改动）。
 * **未覆盖**：日期/日历块、图表块（可复用 `components/ui_v1/` 的自绘控件后再包成块）、`circlebar`/`slidetext`/`pagewindow`/`slidewindow`/`digitalclock` 等控件块（tab 页签已在第 3 批覆盖）。
 * **第 3 批遗留**：① 底部导航只有「图标 + 文字」两种呈现，没做「选中项突出/凸起」变体；② 宫格行数由 `cols` 与项数隐式决定，未支持跨列合并（`span`）；③ toast 是**单行**盒（多行需改 `toast_h` 公式）；④ 提示条的关闭动作只到回调骨架，关闭后重新弹出需业务自己记状态。
 * 渲染图是**静止态近似**（`json2img` v0.1.0），真观感仍需模拟器/真机；320×240 的 10~12px 字号在设备字库下的可读性**未验证**。
-* **渲染图的固有盲区**（不是本库的问题，但看渲染图时要知道）：见 §6.3 清单——`radiogroup` 选项区整块空白、`checkbox` 只画未选态、`listview` 只画模板不填数据、seekbar 有效图按缩放近似（引擎是裁剪）。
+* **渲染图的固有盲区**（不是本库的问题，但看渲染图时要知道）：见 §6.3 清单——`listview` 只画模板不填运行期数据（模板 `text` 是空串）、seekbar 有效图按缩放近似（引擎是裁剪）、`rollEnable`/动画/视频只画静止首帧。（`radiogroup` 选项区、`checkbox` 勾选态**已不再是盲区**——2026-10-01 起专有实现。）
 * **滚轮/列表的实际手感与回读**需要业务侧代码（中心行回读 + 数据侧平移 + `refreshListView()`），本库只到 UI（json）；骨架里的 listview 三回调以注释形式给出签名。
 * **`resources/images/` 不做旧图清理**（compose 只增量出图）：换块/改尺寸后旧切图会留在目录里（check_all 只核**被引用**的图，不影响判定）——要干净就手工删或整目录重建。
 * `check_all #9` 对 `ui/<W>x<H>/` 布局的误报（见反面清单 #20）——修在 `check_all` 里更合适，本库用 `--ui-layout` 绕开，不去改既有工具。

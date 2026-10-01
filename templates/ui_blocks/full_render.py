@@ -10,9 +10,13 @@
     底部固定带 = 屏高 − min(top of 贴底固定的顶层节点)（底导 + 底栏；没有底导时就是底栏）
     内容子节点上提（坐标 = 内层 window 局部 + scrollwindow.top）
 
-⚠️ **固定带（底导/底栏/弹窗/浮层）保持原屏 y 不变**（与上一批交付的 `main.full.render.png` 口径一致，
-`git diff` 除图标外零差异已核对）：所以它们会出现在长图的中段、与下方内容重叠——
-看长图时把这两条带当「原屏上的固定层」看即可（真要它们贴到长图底部是另一种口径，必须说清）。
+⚠️ **固定带让位（缺陷 A 修，2026-10-01）**：固定带（底导 / 底栏）**随内容一起下移到长图底部**
+（y = 整页高 − 固定带高）——旧口径「保持原屏 y 不变」会把底栏压在长图中段、盖住内容
+（钟工看图：「内容区伸进底部固定条，把最后一行盖住」：ButtonRowDeviceCard9 508..568 被
+FooterBg12 528..600 盖掉 40px）。让位后二者零相交；位移量 = 滑动行程（内容高 − 视口高）。
+让位前后都逐对判 rect 相交（固定带 × 实际渲染出的内容节点），相交 → 报错退出、不出图。
+
+整屏浮层（弹窗 / 提示）仍按原屏 y 画（它们是「浮在屏上的层」，不是贴底固定带）。
 
 口径来源：README §6.2/§6.4 的 `main.full.render.png`（interactive_1024x600 → 1024×1514、
 nav_320x240 → 320×792 等，均由本脚本产出）。
@@ -36,22 +40,71 @@ UI_TOOLS = os.path.join(os.path.dirname(REPO), 'ui_tools')
 sys.stdout.reconfigure(encoding='utf-8')
 
 
+def _walk(node, ox, oy, band_keys=None, is_band=False, out=None):
+    """递归收集 (rect, caption, is_band)。跳过隐藏节点；band_keys 命中的顶层子树 = 固定带。"""
+    out = [] if out is None else out
+    for k, v in (node or {}).items():
+        if not isinstance(v, dict) or '__' not in k or 'position' not in v:
+            continue
+        b_ = is_band or bool(band_keys and k in band_keys)
+        p = v['position']
+        l, t = ox + int(p.get('left') or 0), oy + int(p.get('top') or 0)
+        w, h = int(p.get('width') or 0), int(p.get('height') or 0)
+        if v.get('visible', True) is False or w <= 0 or h <= 0:
+            continue
+        out.append({'rect': (l, t, l + w, t + h), 'caption': v.get('caption') or k,
+                    'band': b_})
+        _walk(v, l, t, band_keys, b_, out)
+    return out
+
+
+def assert_bands_clear(doc, meta):
+    """自检（缺陷 A）：整合页后，固定带不得与内容节点相交（逐对判 rect，含最后一行/卡片底）。
+
+    相交 → 返回冲突清单（调用方报错退出、**不出图**）。
+    整屏浮层（弹窗 / 提示遮罩）不算内容：它们压在固定带上合法（它们本就该盖住一切）。
+    """
+    W, H_orig = meta['screen_w'], meta['screen_h']
+    full_h, band_keys = meta['full_h'], meta.get('band_keys') or []
+    rects = _walk(doc, 0, 0, band_keys)
+    content, bands = [], []
+    for r in rects:
+        l, t, rr, b = r['rect']
+        if t == 0 and (rr - l) >= W and (b - t) >= H_orig:     # 整屏浮层（弹窗/遮罩）
+            continue
+        (bands if r['band'] else content).append(r)
+    bad = []
+    for a in bands:
+        for c in content:
+            al, at, ar, ab = a['rect']
+            cl, ct, cr, cb = c['rect']
+            ix, iy = min(ar, cr) - max(al, cl), min(ab, cb) - max(at, ct)
+            if ix > 0 and iy > 0:
+                bad.append('%s %d,%d..%d,%d ∩ %s %d,%d..%d,%d = %dx%d px'
+                           % (c['caption'], cl, ct, cr, cb, a['caption'], al, at, ar, ab, ix, iy))
+    return bad
+
+
 def full_page(doc):
-    """整页 json（展平 scrollwindow）。返回 (doc, 整页高)；本就无滑动窗口 → 原样返回。"""
+    """整页 json（展平 scrollwindow + 固定带让位）。返回 (doc, 整页高, meta)。"""
     d = json.loads(json.dumps(doc))
     H = int(d['resolution']['height'])
+    W = int(d['resolution']['width'])
     swkey = next((k for k in d if k.startswith('scrollwindow__')), None)
+    base = {'full_h': H, 'band_top': H, 'band_h': 0, 'new_band_top': H, 'dy': 0,
+            'band_keys': [], 'screen_w': W, 'screen_h': H}
     if not swkey:
-        return d, H
+        return d, H, base
     sw = d[swkey]
     innerkey = next(k for k in sw if k.startswith('window__'))
     inner = sw[innerkey]
     sw_top = int(sw['position']['top'])
     content_h = int(inner['position']['height'])
-    tops = [v['position']['top'] for k, v in d.items()
-            if isinstance(v, dict) and '__' in k and 'position' in v
-            and v['position']['top'] >= H * 0.5]
-    bottom_h = H - min(tops) if tops else 0
+    band_keys = [k for k, v in d.items()
+                 if isinstance(v, dict) and '__' in k and 'position' in v
+                 and v['position']['top'] >= H * 0.5]
+    band_top = min(int(d[k]['position']['top']) for k in band_keys) if band_keys else H
+    bottom_h = H - band_top                              # 底部固定带总高（底导 + 底栏）
     full_h = sw_top + content_h + bottom_h
     for k, v in list(inner.items()):
         if '__' in k:
@@ -63,9 +116,16 @@ def full_page(doc):
             continue
         if v['position']['top'] == 0 and v['position']['height'] == H:
             v['position']['height'] = full_h                        # 弹窗/浮层的整屏层
+    # 固定带让位：贴底固定带随内容下移到长图底部（y = 整页高 − 固定带高）
+    new_band_top = full_h - bottom_h
+    dy = new_band_top - band_top
+    for k in band_keys:
+        d[k]['position']['top'] += dy
     d['resolution'] = {'width': int(d['resolution']['width']), 'height': full_h}
     d['position']['height'] = full_h
-    return d, full_h
+    return d, full_h, {'full_h': full_h, 'band_top': band_top, 'band_h': bottom_h,
+                       'new_band_top': new_band_top, 'dy': dy, 'band_keys': band_keys,
+                       'screen_w': W, 'screen_h': H}
 
 
 def find_font(project_root):
@@ -105,7 +165,19 @@ def main():
         out = a.out or os.path.join(os.path.dirname(t), a.page + '.full.png')
 
     doc = json.load(open(json_path, encoding='utf-8'))
-    full, full_h = full_page(doc)
+    full, full_h, meta = full_page(doc)
+    bad = assert_bands_clear(full, meta)
+    if bad:
+        print('  [X] 整页渲染自检失败：固定带与内容相交 %d 对（缺陷 A：底栏/底导盖住内容）——不出图'
+              % len(bad))
+        for line in sorted(set(bad))[:12]:
+            print('      - %s' % line)
+        return 4
+    if meta['band_h']:
+        print('  固定带让位：y %d → %d（%+d px = 滑动行程）｜ 带高 %d ｜ 整页 %d'
+              % (meta['band_top'], meta['new_band_top'], meta['dy'], meta['band_h'], full_h))
+    else:
+        print('  无滑动窗口：固定带保持原屏 y（本页内容不需要展平）')
     # 展平 json 必须与 main.json 同目录：json2img 用相对路径解析 images/*.png，
     # 放到临时目录会让所有底图（卡片/图标/底栏）“缺失”，长图看上去一片灰。
     tmp_json = a.json_out is None

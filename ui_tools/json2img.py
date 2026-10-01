@@ -54,10 +54,15 @@ v0 能力 / 已知降级（渲染后必打 unsupported 清单，不静默跳过�
 支持：window/textview/button/edittext/scrollwindow/pagewindow/slidewindow/listview/
       seekbar/qrcode/imageanim/videoview；含 .9.png 九宫格、backgroundPic、bgColorTab、
       colorTab、多行 text(\n)+rowSpace、bold/italic 字体变体、按 rect 裁剪。
-降级：circlebar（近似弧）、listview 运行期数据（无 text 字段时只画模板）、
+      **数组子项（2026-10-01 补）：radiogroup.radiobuttons[]（逐项圆点 + 选项文字，选中态走
+      pic2 + colorTab.color2）、listview.item + item.subItem[]（按 rows/rowSpacing/itemH 逐行铺，
+      每行画行底 + 子项图/文本）、checkbox.checked（选中走 pic2；缺 pic2 时叠 components/icons
+      的 control.check_on）。**
+降级：circlebar（近似弧）、listview 运行期数据/滚动（模板行按 rows 铺，obtainListItemData
+      的数据与滚动不还原）、radiogroup/checkbox 运行期联动（按 json 的 checked 画静止态）、
       rollEnable 滚动文字（只画静止首屏）、imageanim（只画 picTab.pic0 首帧）、
-      videoview（黑/底色块）、digitalclock.painter.pointer.diagram.cameraview.slidetext.
-      radiogroup/checkbox（通用兜底：底色+背景图+文字）、charsetTab 字符图映射不还原。
+      videoview（黑/底色块）、digitalclock.painter.pointer.diagram.cameraview.slidetext、
+      charsetTab 字符图映射不还原。
 
 CLI
      python tools/FlyThings_mcp_open/ui_tools/json2img.py <项目根或 json> \
@@ -313,9 +318,67 @@ class Report:
 CLIP_TYPES = {'scrollwindow', 'pagewindow', 'slidewindow'}
 # 键名不是子控件（容器/属性块），不进树序
 BLOCK_KEYS = {'position', 'resolution', 'colorTab', 'bgColorTab', 'picTab', 'thumb',
-              'item', 'subItem', 'items', 'iconSize', 'padding', 'size', 'charsetTab',
+              'item', 'subItem', 'items', 'radiobuttons', 'iconSize', 'padding', 'size',
+              'charsetTab', 'iconPosition', 'textPosition',
               'progressPic', 'backgroundPic', 'normalPic', 'pressedPic', 'selectedPic',
               'disabledPic', 'videoPath', 'src'}
+
+# ─── components/icons 资产库（离线渲染的图标兜底源；与 templates/ui_blocks/iconlib.py 同一库）───
+#   注：json2img 有两份副本（`tools/ui_tools/` 与 `tools/FlyThings_mcp_open/ui_tools/`），
+#   相对位置不同 → 按候选路径逐个探（认 catalog.json 为准），避免换个副本就找不到库。
+def _find_icons_lib():
+    here = os.path.dirname(os.path.abspath(__file__))
+    cands = []
+    env = os.environ.get('FLYTHINGS_ICONS_LIB')
+    if env:
+        cands.append(env)
+    for up in (1, 2, 3):
+        base = os.path.join(here, *(['..'] * up))
+        cands.append(os.path.join(base, 'components', 'icons'))
+        for sib in sorted(glob.glob(os.path.join(base, '*', 'components', 'icons'))):
+            cands.append(sib)
+    for c in cands:
+        if os.path.isfile(os.path.join(c, 'catalog.json')):
+            return os.path.abspath(c)
+    return os.path.abspath(cands[0] if cands else os.path.join(here, 'components', 'icons'))
+
+
+ICONS_LIB = _find_icons_lib()
+ICON_TIERS = (56, 24, 22)
+_icon_cache = {}
+
+
+def _recolor_alpha(im, rgb):
+    """按 alpha 换色（components/icons 库口径：RGB 恒等于颜色、alpha = 覆盖率）。"""
+    a = im.convert('RGBA').split()[3]
+    out = Image.new('RGBA', im.size, (int(rgb[0]), int(rgb[1]), int(rgb[2]), 0))
+    out.putalpha(a)
+    return out
+
+
+def icon_asset(name, state='', box=None):
+    """语义名（如 control.check）+ 状态（on/off）→ components/icons 的现成产物。
+
+    命中规则：`out/<档>/ic_<分类>_<图标>[_<状态>].png`；档位优先取 ≤ 盒尺寸的最大档
+    （**不放大**：宁可小一号，也不把库产图拉大）。返回 (path, tier)；查不到 → (None, None)。
+    """
+    key = (name, state, box)
+    if key in _icon_cache:
+        return _icon_cache[key]
+    res = (None, None)
+    if name and '.' in str(name):
+        cat, icon = str(name).split('.', 1)
+        fn = 'ic_%s_%s%s.png' % (cat, icon, ('_' + state) if state else '')
+        tiers = list(ICON_TIERS)
+        if box:
+            tiers.sort(key=lambda t: (0 if t <= int(box) else 1, -t if t <= int(box) else t))
+        for t in tiers:
+            p = os.path.join(ICONS_LIB, 'out', str(t), fn)
+            if os.path.isfile(p):
+                res = (p, t)
+                break
+    _icon_cache[key] = res
+    return res
 
 
 def children_of(node):
@@ -575,8 +638,9 @@ class Renderer:
             ImageDraw.Draw(img).rectangle([x, y, x + w - 1, y + h - 1], fill=rgba)
             self.window_fill[ctype] += 1
         # ② 背景图：backgroundPic > picTab.pic0（按钮常态图）
+        #    checkbox 例外：勾选态走 _draw_marker（pic0/pic2 按 checked 切；它自己会画）
         pic = node.get('backgroundPic')
-        if not pic:
+        if not pic and ctype != 'checkbox':
             ptab = node.get('picTab') if isinstance(node.get('picTab'), dict) else {}
             for k in ('pic0', 'normalPic', 'bgPic'):
                 if ptab.get(k):
@@ -604,8 +668,11 @@ class Renderer:
         elif ctype == 'digitalclock':
             self.report.unsupported(self.page, ctype, caption, 'digitalclock',
                                     '数字时钟（运行期时间）→ 静止态不画')
-        elif ctype in ('painter', 'pointer', 'diagram', 'cameraview', 'slidetext',
-                       'radiogroup', 'checkbox'):
+        elif ctype == 'radiogroup':
+            self.draw_radiogroup(img, node, x, y, w, h, caption)
+        elif ctype == 'checkbox':
+            self.draw_checkbox(img, node, x, y, w, h, caption)
+        elif ctype in ('painter', 'pointer', 'diagram', 'cameraview', 'slidetext'):
             self.report.unsupported(self.page, ctype, caption, ctype,
                                     'v0 未专有实现 → 通用兜底（底色+背景图+文字）')
             self.draw_text(img, node, x, y, w, h, ctype, caption)
@@ -744,7 +811,141 @@ class Renderer:
                                 '环宽/起始角为近似（4%%直径、-90° 起顺时针），角度按 %s*%.0f%%'
                                 % (max_angle, frac * 100))
 
+    # ---------- 状态化标记（checkbox / radiobutton 共用） ----------
+    def _marker_box(self, node, x, y, w, h):
+        """标记图/勾的盒 = iconPosition（缺省 → 控件盒）。"""
+        box = node.get('iconPosition') if isinstance(node.get('iconPosition'), dict) else None
+        if box:
+            return (x + int(box.get('left') or 0), y + int(box.get('top') or 0),
+                    int(box.get('width') or 0) or w, int(box.get('height') or 0) or h)
+        return (x, y, w, h)
+
+    def _draw_marker(self, img, node, bx, by, bw, bh, on, ctype, caption):
+        """画状态化标记图，返回用了哪张图（引擎口径：pic0=常态 / pic2=选中态）：
+
+        'on' = 用了 pic2（选中态图）；'off' = 只剩 pic0/pic1（常态图，选中态图形缺失）；
+        None = 模板里没有任何可用图。调用方据此决定是否兜底（如 checkbox 叠白勾）。
+        """
+        ptab = node.get('picTab') if isinstance(node.get('picTab'), dict) else {}
+        if on:
+            if ptab.get('pic2'):
+                self.draw_pic(img, ptab['pic2'], bx, by, bw, bh, ctype, caption)
+                return 'on'
+            pic = ptab.get('pic1') or ptab.get('pic0')
+            if pic:
+                self.draw_pic(img, pic, bx, by, bw, bh, ctype, caption)
+                return 'off'
+            return None
+        pic = ptab.get('pic0') or ptab.get('pic1')
+        if pic:
+            self.draw_pic(img, pic, bx, by, bw, bh, ctype, caption)
+            return 'off'
+        return None
+
+    def draw_checkbox(self, img, node, x, y, w, h, caption):
+        """checkbox.checked：选中走 pic2（compose 把 `control.check` 的白勾烘在 pic2 里）；
+
+        模板缺 pic2 / 图加载不到 → 叠 `components/icons` 的 control.check_on（**只缩不放**）。
+        勾色按盒底亮度二选一（暗底白勾 / 亮底用 colorTab.color0）——否则白勾落在浅灰盒
+        上会“看不见”（fixture 实测）。两者都没有 → 记 unsupported（不静默）。
+        """
+        checked = bool(node.get('checked'))
+        bx, by, bw, bh = self._marker_box(node, x, y, w, h)
+        mark = self._draw_marker(img, node, bx, by, bw, bh, checked, 'checkbox', caption)
+        if not checked:
+            pass
+        elif mark == 'on':
+            pass                                      # pic2 自带勾（compose 口径）
+        else:
+            p, tier = icon_asset('control.check', 'on', bw)
+            ic = None
+            if p:
+                try:
+                    ic = Image.open(p).convert('RGBA')
+                except Exception:                                     # noqa: BLE001
+                    ic = None
+            if ic is not None:
+                if ic.size[0] > bw or ic.size[1] > bh:                # 库档比盒大 → 缩到盒（只缩不放）
+                    ic = ic.resize((bw, bh), NEAREST)
+                col = (node.get('colorTab') or {}).get('color0')
+                luma = self._box_luma(img, bx, by, bw, bh)
+                if luma is not None and luma >= 140:
+                    rgb = color_rgba(col)[:3] if col is not None and int(col) >= 0 else (51, 51, 51)
+                    ic = _recolor_alpha(ic, rgb)
+                paste_rgba(img, ic, bx + (bw - ic.size[0]) // 2, by + (bh - ic.size[1]) // 2)
+                self.report.unsupported(self.page, 'checkbox', caption, 'checked',
+                                        '模板缺 pic2 → 勾用 components/icons 的 '
+                                        'control.check_on（%d 档，只缩不放；勾色按底亮度）叠加'
+                                        % tier)
+            else:
+                self.report.unsupported(self.page, 'checkbox', caption, 'checked',
+                                        '选中态无图可用（pic2 缺 + 图标库无 control.check_on）')
+        self.draw_text(img, node, x, y, w, h, 'checkbox', caption)
+
+    def _box_luma(self, img, x, y, w, h):
+        """盒区可见像素的平均亮度（勾色选择用；无可见像素 → None）。"""
+        try:
+            box = img.crop((int(x), int(y), int(x + w), int(y + h))).convert('RGBA')
+        except Exception:                                             # noqa: BLE001
+            return None
+        px = list(box.getdata())
+        vals = [(r * 299 + g * 587 + b * 114) // 1000 for r, g, b, a in px if a > 10]
+        return (sum(vals) / len(vals)) if vals else None
+
+    def draw_radiogroup(self, img, node, x, y, w, h, caption):
+        """radiogroup.radiobuttons[]：逐项画圆点（pic0 常态 / pic2 选中）+ 选项文字。
+
+        选中文字色走 colorTab.color2（无则 color0）——与 compose.make_radiogroup 同口径。
+        """
+        rbs = node.get('radiobuttons')
+        if not isinstance(rbs, list) or not rbs:
+            self.report.unsupported(self.page, 'radiogroup', caption, 'radiobuttons',
+                                    '无选项子项（radiobuttons 空）→ 选项区空白')
+            return
+        n = 0
+        for rb in rbs:
+            if not isinstance(rb, dict):
+                continue
+            p = rb.get('position') or {}
+            rx, ry = x + int(p.get('left') or 0), y + int(p.get('top') or 0)
+            rw, rh = int(p.get('width') or w), int(p.get('height') or h)
+            on = bool(rb.get('checked'))
+            bx, by, bw, bh = self._marker_box(rb, rx, ry, rw, rh)
+            mark = self._draw_marker(img, rb, bx, by, bw, bh, on, 'radiobutton',
+                                     rb.get('caption') or caption)
+            if mark is None:
+                self.report.unsupported(self.page, 'radiobutton',
+                                        rb.get('caption') or caption, 'picTab',
+                                        '无 pic0/pic2 → 不画圆点（只画选项文字）')
+            elif on and mark != 'on':
+                self.report.unsupported(self.page, 'radiobutton',
+                                        rb.get('caption') or caption, 'picTab.pic2',
+                                        '缺选中态图 pic2 → 选中项圆点与未选中同形（真机同）')
+            col = rb.get('colorTab') if isinstance(rb.get('colorTab'), dict) else {}
+            color = col.get('color2') if on else None
+            if color is None or int(color) < 0:
+                color = col.get('color0')
+            tp = rb.get('textPosition') if isinstance(rb.get('textPosition'), dict) else None
+            txt = rb.get('text') or ''
+            if tp:
+                self._draw_label(img, rb, txt, rx + int(tp.get('left') or 0),
+                                 ry + int(tp.get('top') or 0),
+                                 int(tp.get('width') or rw), int(tp.get('height') or rh),
+                                 'radiobutton', rb.get('caption') or caption, color=color)
+            else:
+                self._draw_label(img, rb, txt, rx, ry, rw, rh, 'radiobutton',
+                                 rb.get('caption') or caption, color=color)
+            n += 1
+        self.report.unsupported(self.page, 'radiogroup', caption, 'runtimeState',
+                                '%d 个选项按 checked 画静止态（组内联动/点击态不还原）' % n)
+
     def draw_listview(self, img, node, x, y, w, h, caption):
+        """listview：按 rows / rowSpacing / itemH(=item.position.height) 逐行铺模板。
+
+        每行 = item 自身（底色 / 背景图 / 文字）+ 其 subItem[]（各自 iconPosition /
+        textPosition / picTab 的图与文本）；列数走 cols/colSpacing。
+        运行期数据（obtainListItemData 填行）与滚动位置不还原——模板无文本时如实记账。
+        """
         item = node.get('item') if isinstance(node.get('item'), dict) else None
         if not item:
             self.report.unsupported(self.page, 'listview', caption, 'item',
@@ -752,12 +953,12 @@ class Renderer:
             return
         ipos = item.get('position', {})
         cw = int(ipos.get('width') or w) or w
-        ch = int(ipos.get('height') or h) or h
+        ch = int(ipos.get('height') or h) or h                # ch == itemH（引擎口径）
         cols = int(node.get('cols') or 0) or max(1, w // max(1, cw))
-        rows = int(node.get('rows') or 0) or max(1, h // max(1, ch))
         cs = int(node.get('colSpacing') or 0)
         rs = int(node.get('rowSpacing') or 0)
-        n = 0
+        rows = int(node.get('rows') or 0) or max(1, h // max(1, ch + rs))
+        n, ntxt = 0, 0
         sub = Image.new('RGBA', img.size, (0, 0, 0, 0))
         for r in range(rows):
             for c in range(cols):
@@ -768,6 +969,8 @@ class Renderer:
                 n += 1
                 self.draw_self(sub, item, cx, cy, cw, ch, 'item',
                                item.get('caption') or caption)
+                if item.get('text'):
+                    ntxt += 1
                 for si in (item.get('subItem') or []):
                     if not isinstance(si, dict):
                         continue
@@ -776,9 +979,17 @@ class Renderer:
                                    cy + int(sp.get('top') or 0),
                                    int(sp.get('width') or cw), int(sp.get('height') or ch),
                                    'subitem', si.get('caption') or '')
+                    if si.get('text'):
+                        ntxt += 1
         img.alpha_composite(sub)
-        self.report.unsupported(self.page, 'listview', caption, 'item/subItem',
-                                '按模板画 %d 个单元（%dx%d 网格）；运行期数据/滚动不还原' % (n, cols, rows))
+        if ntxt:
+            note = ('模板行 %d 行 × %d 列（itemH=%d + rowSpacing=%d 铺行；%d 处文本已画）；'
+                    '运行期数据/滚动不还原' % (n, cols, ch, rs, ntxt))
+        else:
+            note = ('模板行 %d 行 × %d 列（itemH=%d + rowSpacing=%d 铺行；行底+子项图已画）；'
+                    '模板无行文本（运行期 obtainListItemData 填行）+ 滚动不还原'
+                    % (n, cols, ch, rs))
+        self.report.unsupported(self.page, 'listview', caption, 'runtimeRows', note)
 
     def draw_slidewindow(self, img, node, x, y, w, h, caption):
         items = node.get('items') or []
