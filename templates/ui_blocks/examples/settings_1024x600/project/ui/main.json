@@ -301,9 +301,9 @@
           "id": 50007,
           "caption": "TextRowSettingRow2Label",
           "position": {
-            "left": 52,
+            "left": 16,
             "top": 8,
-            "width": 892,
+            "width": 928,
             "height": 24
           },
           "alignment": 36,
@@ -338,9 +338,9 @@
           "id": 50008,
           "caption": "TextRowSettingRow2Value",
           "position": {
-            "left": 52,
+            "left": 16,
             "top": 32,
-            "width": 892,
+            "width": 928,
             "height": 20
           },
           "alignment": 36,
@@ -459,9 +459,9 @@
           "id": 50010,
           "caption": "TextRowSettingRow3Label",
           "position": {
-            "left": 52,
+            "left": 16,
             "top": 68,
-            "width": 892,
+            "width": 928,
             "height": 24
           },
           "alignment": 36,
@@ -496,9 +496,9 @@
           "id": 50011,
           "caption": "TextRowSettingRow3Value",
           "position": {
-            "left": 52,
+            "left": 16,
             "top": 92,
-            "width": 892,
+            "width": 928,
             "height": 20
           },
           "alignment": 36,
@@ -617,9 +617,9 @@
           "id": 50013,
           "caption": "TextRowSettingRow4Label",
           "position": {
-            "left": 52,
+            "left": 16,
             "top": 128,
-            "width": 892,
+            "width": 928,
             "height": 24
           },
           "alignment": 36,
@@ -654,9 +654,9 @@
           "id": 50014,
           "caption": "TextRowSettingRow4Value",
           "position": {
-            "left": 52,
+            "left": 16,
             "top": 152,
-            "width": 892,
+            "width": 928,
             "height": 20
           },
           "alignment": 36,
@@ -1003,9 +1003,9 @@
           "id": 50021,
           "caption": "TextRowSettingRow6Label",
           "position": {
-            "left": 52,
+            "left": 16,
             "top": 8,
-            "width": 892,
+            "width": 928,
             "height": 24
           },
           "alignment": 36,
@@ -1040,9 +1040,9 @@
           "id": 50022,
           "caption": "TextRowSettingRow6Value",
           "position": {
-            "left": 52,
+            "left": 16,
             "top": 32,
-            "width": 892,
+            "width": 928,
             "height": 20
           },
           "alignment": 36,
@@ -1159,99 +1159,11 @@
         },
         "textview__24": {
           "id": 50024,
-          "caption": "ImageRowIconRow7IconBg",
-          "position": {
-            "left": 8,
-            "top": 72,
-            "width": 36,
-            "height": 36
-          },
-          "alignment": 37,
-          "colorTab": {
-            "color0": 15922175,
-            "color1": -1,
-            "color2": -1,
-            "color3": -1,
-            "color4": -1
-          },
-          "fontSize": 14,
-          "touchable": false,
-          "backgroundColor": -1,
-          "bgColorTab": {
-            "color0": -1,
-            "color1": -1,
-            "color2": -1,
-            "color3": -1,
-            "color4": -1
-          },
-          "bold": false,
-          "italic": false,
-          "fontFamily": 0,
-          "text": "",
-          "visible": true,
-          "rollEnable": false,
-          "rollDirection": 1,
-          "rollIntervalTime": 150,
-          "rollStep": 5,
-          "textPosition": {
-            "left": 8,
-            "top": 72,
-            "width": 36,
-            "height": 36
-          },
-          "backgroundPic": "images/icbg_36.png"
-        },
-        "textview__25": {
-          "id": 50025,
-          "caption": "ImageRowIconRow7Icon",
-          "position": {
-            "left": 14,
-            "top": 78,
-            "width": 24,
-            "height": 24
-          },
-          "alignment": 37,
-          "colorTab": {
-            "color0": 21209,
-            "color1": -1,
-            "color2": -1,
-            "color3": -1,
-            "color4": -1
-          },
-          "fontSize": 14,
-          "touchable": false,
-          "backgroundColor": -1,
-          "bgColorTab": {
-            "color0": -1,
-            "color1": -1,
-            "color2": -1,
-            "color3": -1,
-            "color4": -1
-          },
-          "bold": false,
-          "italic": false,
-          "fontFamily": 0,
-          "text": "",
-          "visible": true,
-          "rollEnable": false,
-          "rollDirection": 1,
-          "rollIntervalTime": 150,
-          "rollStep": 5,
-          "textPosition": {
-            "left": 14,
-            "top": 78,
-            "width": 24,
-            "height": 24
-          },
-          "backgroundPic": "images/ic_list_24.png"
-        },
-        "textview__26": {
-          "id": 50026,
           "caption": "TextRowIconRow7Label",
           "position": {
-            "left": 52,
+            "left": 16,
             "top": 68,
-            "width": 892,
+            "width": 928,
             "height": 24
           },
           "alignment": 36,
@@ -1282,13 +1194,13 @@
           "rollIntervalTime": 150,
           "rollStep": 5
         },
-        "textview__27": {
-          "id": 50027,
+        "textview__25": {
+          "id": 50025,
           "caption": "TextRowIconRow7Value",
           "position": {
-            "left": 52,
+            "left": 16,
             "top": 92,
-            "width": 892,
+            "width": 928,
             "height": 20
           },
           "alignment": 36,
@@ -1319,8 +1231,8 @@
           "rollIntervalTime": 150,
           "rollStep": 5
         },
-        "textview__28": {
-          "id": 50028,
+        "textview__26": {
+          "id": 50026,
           "caption": "ImageRowIconRow7Chevron",
           "position": {
             "left": 952,
@@ -1403,13 +1315,13 @@
           "rollIntervalTime": 150,
           "rollStep": 5
         },
-        "textview__29": {
-          "id": 50029,
+        "textview__27": {
+          "id": 50027,
           "caption": "TextRowToggleRow8Label",
           "position": {
-            "left": 52,
+            "left": 16,
             "top": 128,
-            "width": 836,
+            "width": 872,
             "height": 24
           },
           "alignment": 36,
@@ -1440,13 +1352,13 @@
           "rollIntervalTime": 150,
           "rollStep": 5
         },
-        "textview__30": {
-          "id": 50030,
+        "textview__28": {
+          "id": 50028,
           "caption": "TextRowToggleRow8Value",
           "position": {
-            "left": 52,
+            "left": 16,
             "top": 152,
-            "width": 836,
+            "width": 872,
             "height": 20
           },
           "alignment": 36,
@@ -1477,8 +1389,8 @@
           "rollIntervalTime": 150,
           "rollStep": 5
         },
-        "textview__31": {
-          "id": 50031,
+        "textview__29": {
+          "id": 50029,
           "caption": "ToggleRowToggleRow8Track",
           "position": {
             "left": 896,
@@ -1521,8 +1433,8 @@
           },
           "backgroundPic": "images/sw_80x44_on.png"
         },
-        "textview__32": {
-          "id": 50032,
+        "textview__30": {
+          "id": 50030,
           "caption": "ToggleRowToggleRow8Knob",
           "position": {
             "left": 934,
@@ -1605,101 +1517,13 @@
           "rollIntervalTime": 150,
           "rollStep": 5
         },
-        "textview__33": {
-          "id": 50033,
-          "caption": "ImageRowDeviceCard9IconBg",
-          "position": {
-            "left": 8,
-            "top": 192,
-            "width": 36,
-            "height": 36
-          },
-          "alignment": 37,
-          "colorTab": {
-            "color0": 15922175,
-            "color1": -1,
-            "color2": -1,
-            "color3": -1,
-            "color4": -1
-          },
-          "fontSize": 14,
-          "touchable": false,
-          "backgroundColor": -1,
-          "bgColorTab": {
-            "color0": -1,
-            "color1": -1,
-            "color2": -1,
-            "color3": -1,
-            "color4": -1
-          },
-          "bold": false,
-          "italic": false,
-          "fontFamily": 0,
-          "text": "",
-          "visible": true,
-          "rollEnable": false,
-          "rollDirection": 1,
-          "rollIntervalTime": 150,
-          "rollStep": 5,
-          "textPosition": {
-            "left": 8,
-            "top": 192,
-            "width": 36,
-            "height": 36
-          },
-          "backgroundPic": "images/icbg_36.png"
-        },
-        "textview__34": {
-          "id": 50034,
-          "caption": "ImageRowDeviceCard9Icon",
-          "position": {
-            "left": 14,
-            "top": 198,
-            "width": 24,
-            "height": 24
-          },
-          "alignment": 37,
-          "colorTab": {
-            "color0": 21209,
-            "color1": -1,
-            "color2": -1,
-            "color3": -1,
-            "color4": -1
-          },
-          "fontSize": 14,
-          "touchable": false,
-          "backgroundColor": -1,
-          "bgColorTab": {
-            "color0": -1,
-            "color1": -1,
-            "color2": -1,
-            "color3": -1,
-            "color4": -1
-          },
-          "bold": false,
-          "italic": false,
-          "fontFamily": 0,
-          "text": "",
-          "visible": true,
-          "rollEnable": false,
-          "rollDirection": 1,
-          "rollIntervalTime": 150,
-          "rollStep": 5,
-          "textPosition": {
-            "left": 14,
-            "top": 198,
-            "width": 24,
-            "height": 24
-          },
-          "backgroundPic": "images/ic_wifi_24.png"
-        },
-        "textview__35": {
-          "id": 50035,
+        "textview__31": {
+          "id": 50031,
           "caption": "TextRowDeviceCard9Label",
           "position": {
-            "left": 52,
+            "left": 16,
             "top": 188,
-            "width": 892,
+            "width": 928,
             "height": 24
           },
           "alignment": 36,
@@ -1730,13 +1554,13 @@
           "rollIntervalTime": 150,
           "rollStep": 5
         },
-        "textview__36": {
-          "id": 50036,
+        "textview__32": {
+          "id": 50032,
           "caption": "TextRowDeviceCard9Value",
           "position": {
-            "left": 52,
+            "left": 16,
             "top": 212,
-            "width": 892,
+            "width": 928,
             "height": 20
           },
           "alignment": 36,
@@ -1767,8 +1591,8 @@
           "rollIntervalTime": 150,
           "rollStep": 5
         },
-        "textview__37": {
-          "id": 50037,
+        "textview__33": {
+          "id": 50033,
           "caption": "ImageRowDeviceCard9Chevron",
           "position": {
             "left": 952,
@@ -1811,11 +1635,11 @@
           },
           "backgroundPic": "images/chev_24x16.png"
         },
-        "textview__38": {
-          "id": 50038,
+        "textview__34": {
+          "id": 50034,
           "caption": "DeviceRowDeviceCard9Dot",
           "position": {
-            "left": 37,
+            "left": 1,
             "top": 218,
             "width": 7,
             "height": 7
@@ -1848,7 +1672,7 @@
           "rollIntervalTime": 150,
           "rollStep": 5,
           "textPosition": {
-            "left": 37,
+            "left": 1,
             "top": 218,
             "width": 7,
             "height": 7
@@ -1896,8 +1720,8 @@
           "rollStep": 5
         }
       },
-      "textview__39": {
-        "id": 50039,
+      "textview__35": {
+        "id": 50035,
         "caption": "SectionHeader10",
         "position": {
           "left": 16,
@@ -1933,8 +1757,8 @@
         "rollIntervalTime": 150,
         "rollStep": 5
       },
-      "textview__40": {
-        "id": 50040,
+      "textview__36": {
+        "id": 50036,
         "caption": "EmptyStateBg11",
         "position": {
           "left": 476,
@@ -1977,8 +1801,8 @@
         },
         "backgroundPic": "images/icbg_72.png"
       },
-      "textview__41": {
-        "id": 50041,
+      "textview__37": {
+        "id": 50037,
         "caption": "EmptyStateIcon11",
         "position": {
           "left": 494,
@@ -2021,8 +1845,8 @@
         },
         "backgroundPic": "images/ic_info_36.png"
       },
-      "textview__42": {
-        "id": 50042,
+      "textview__38": {
+        "id": 50038,
         "caption": "EmptyStateText11",
         "position": {
           "left": 116,
@@ -2058,8 +1882,8 @@
         "rollIntervalTime": 150,
         "rollStep": 5
       },
-      "textview__43": {
-        "id": 50043,
+      "textview__39": {
+        "id": 50039,
         "caption": "EmptyStateSub11",
         "position": {
           "left": 116,
@@ -2097,8 +1921,8 @@
       }
     }
   },
-  "textview__44": {
-    "id": 50044,
+  "textview__40": {
+    "id": 50040,
     "caption": "FooterBg12",
     "position": {
       "left": 0,
@@ -2247,8 +2071,8 @@
     },
     "backgroundPic": "images/btn_primary_164x44.png"
   },
-  "textview__45": {
-    "id": 50045,
+  "textview__41": {
+    "id": 50041,
     "caption": "ActionStatus12",
     "position": {
       "left": 16,
@@ -2298,8 +2122,8 @@
     "modal": true,
     "touchable": false,
     "visible": false,
-    "textview__46": {
-      "id": 50046,
+    "textview__42": {
+      "id": 50042,
       "caption": "DialogScrim13",
       "position": {
         "left": 0,
@@ -2356,8 +2180,8 @@
       "modal": false,
       "touchable": false,
       "visible": true,
-      "textview__47": {
-        "id": 50047,
+      "textview__43": {
+        "id": 50043,
         "caption": "DialogPanelBg13",
         "position": {
           "left": 0,
@@ -2400,8 +2224,8 @@
         },
         "backgroundPic": "images/panel_616x176.png"
       },
-      "textview__48": {
-        "id": 50048,
+      "textview__44": {
+        "id": 50044,
         "caption": "DialogTitle13",
         "position": {
           "left": 16,
@@ -2437,8 +2261,8 @@
         "rollIntervalTime": 150,
         "rollStep": 5
       },
-      "textview__49": {
-        "id": 50049,
+      "textview__45": {
+        "id": 50045,
         "caption": "DialogBody13",
         "position": {
           "left": 16,

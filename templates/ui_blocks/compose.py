@@ -517,6 +517,34 @@ class Composer(object):
                 reserve = max(reserve, m['chev_w'])
         return reserve
 
+    def assert_icon_uniform(self):
+        """自检（钟工 2026-10-01 口径「同一页面统一设计」）：同一页行族，图标要么都有、要么都没有。
+
+        为什么：图标列一旦被某行占用，所有行的文本左缘都会右移一个列宽（全页对齐）；
+        此时只有个别行真画图标 → 观感上像「那几行多长了一块」，不统一（实测 1024 版只有
+        多屏拼接/客厅面板两行有图标）。
+        """
+        m = self.m
+        rows = []
+
+        def walk(blocks):
+            for b in blocks or []:
+                if b.get('type') == 'card':
+                    walk(b.get('blocks'))
+                elif b.get('type') in self.ROW_TYPES:
+                    rows.append(b)
+        walk(self.page.get('blocks'))
+        if not rows:
+            return
+        with_icon = [b for b in rows if b.get('icon')]
+        if with_icon and len(with_icon) != len(rows):
+            raise SystemExit(
+                '[X] 同页行族图标不统一（%d/%d 行有图标）：%s\n'
+                '    口径：同一页面行族图标「要么都有、要么都没有」；'
+                '缺图标的行请补 icon，或去掉所有 icon（钟工 2026-10-01）'
+                % (len(with_icon), len(rows),
+                   '；'.join(b.get('label') or b.get('_name') for b in with_icon)))
+
     def scan_row_family(self):
         """全页行族扫描：右端预留、图标列、图标盒（供所有行共用同一文本左缘）。"""
         m = self.m
@@ -529,6 +557,7 @@ class Composer(object):
                 elif b.get('type') in self.ROW_TYPES:
                     rows.append(b)
         walk(self.page.get('blocks'))
+        self.assert_icon_uniform()          # 自检：同页行族图标统一（全有 / 全无）
         self.fam_reserve = self.plan_row_reserve(rows)
         self.fam_icon = any(b.get('icon') for b in rows) and not m['compact']
 
