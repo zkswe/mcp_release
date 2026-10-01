@@ -5,6 +5,20 @@
  * 行块的口令：整行就是一个透明 button，命中区 = 行条。
  */
 
+/*
+ * 第 2 批交互块（slider_row / progress_row / input_row / checkbox_row / radio_row /
+ * list_item / wheel_picker）的运行期回调——签名出自 knowledge/uicontrols/*.md，未在骨架里
+ * 展开（避免签名漂移），需要时把下面注释打开并按业务补实现：
+ *
+ *   static void onProgressChanged_SeekRowSliderRow1Bar(ZKSeekBar *pSeekBar, int progress) {}
+ *   static void onCheckedChanged_CheckRowCheckboxRow2Box(ZKCheckBox *pCheckBox, bool isChecked) {}
+ *   static void onCheckedChanged_RadioRowRadioRow3Group(ZKRadioGroup *pGroup, int checkedID) {}
+ *   static int  getListItemCount_ListListItem4(const ZKListView *pListView) { return 0; }
+ *   static void obtainListItemData_ListListItem4(ZKListView *p, ZKListView::ZKListItem *item, int index) {}
+ *   static void onListItemClick_ListListItem4(ZKListView *p, int index, int id) {}
+ *   // 滚轮：正中行回读 fi + (h/2 − off)/ih；程序化定位用数据侧平移（见 listview-wheel-picker.md）
+ */
+
 /**
  * 注册定时器（id 不能重复）
  */

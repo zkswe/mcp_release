@@ -1,0 +1,34 @@
+{
+  "type": "input_row",
+  "zh": "输入行（标题 + 单行输入框 edittext）",
+  "builder": "field_row",
+  "family": "row",
+  "caption_prefix": "InputRow",
+  "fields": {
+    "label": {"type": "string", "required": true, "example": "设备名称"},
+    "value": {"type": "string", "required": false, "example": "当前：客厅面板"},
+    "value_short": {"type": "string", "required": false},
+    "text": {"type": "string", "required": false, "example": "客厅面板", "note": "预填内容（初始显示）"},
+    "hintText": {"type": "string", "required": false, "example": "请输入设备名称", "note": "空内容时的提示文案"},
+    "textType": {"type": "int", "default": 0, "range": "0 全文本 / 1 仅数字", "note": "1 = 数字键盘"},
+    "isPassword": {"type": "bool", "default": false, "note": "true 必须同时给 passwordChar（掩码字符）"}
+  },
+  "relative_constraints": {
+    "row_w": "内容区宽 = 屏宽 − 2×margin",
+    "row_h": "文本带高 = 行高（同 setting_row）",
+    "text_band": "title/value 盒逐字节照抄行族口径（左缘/宽/字号/色同族）",
+    "input_band": "输入框占独立一带（高 = edit 盒高 + 2×spacer），左/右内缩 pad_left；盒高 = max(标题高 + spacer, 行高 × 0.70)（装得下文本）",
+    "bg": "输入框底色用 bgColorTab.color0 浅灰（= 页面底 #F3F3F3），**不用图**（白卡上的白输入框看不见；描边环在小盒上会让 AA 审计退回硬阶梯）",
+    "id_band": "edittext id 取 51000 段 → check_all #5 会核对 `onEditTextChanged_<caption>` 回调存在（logic 骨架已自动生成）"
+  },
+  "assets": [],
+  "scroll": "inherit",
+  "forbidden": [
+    "输入框底色写 0（= 不透明黑，真机黑块；透明写 -1，见 check_all #24）",
+    "isPassword=true 却不给 passwordChar（掩码字符口径不明）",
+    "密码框把真实密码预填进 text（明文入 json）",
+    "自绘键盘（系统内置键盘，ZKEditText 点击自动弹）",
+    "把输入框盒高做小于字号 × 1.25（文本被裁）"
+  ],
+  "compact_note": "极小屏：输入框盒高 = 标题高 + spacer（不小于 24），hint 文案要短"
+}

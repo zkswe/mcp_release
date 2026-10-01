@@ -1,0 +1,30 @@
+{
+  "type": "progress_row",
+  "zh": "进度行（标题 + 百分比 + 只读进度条 seekbar）",
+  "builder": "field_row",
+  "family": "row",
+  "caption_prefix": "ProgressRow",
+  "fields": {
+    "label": {"type": "string", "required": true, "example": "播放进度"},
+    "value": {"type": "string", "required": false, "example": "进度 45%"},
+    "value_short": {"type": "string", "required": false},
+    "progress": {"type": "int", "default": 0, "range": "0~100", "example": 45},
+    "max": {"type": "int", "default": 100}
+  },
+  "relative_constraints": {
+    "geometry": "**与 slider_row 完全同一套几何与素材**（同页进度型控件口径统一：同盒高、同轨高、同左缘）",
+    "thumb": "进度条**不给滑块图**：thumb.normalPic/pressedPic 留空 + thumb.size 写 0（引擎不画滑块；给图会被当成可拖滑块）",
+    "readonly": "整行不进命中区：seekbar 仍 touchable（引擎字段要求），业务侧不注册 onProgressChanged 即只读；要彻底禁拖写 setTouchable(false)"
+  },
+  "assets": [
+    {"name": "sk_track_{W}x{H}.png", "via": "与 slider_row 共用（同名同尺寸只出一张）"},
+    {"name": "sk_fill_{W}x{H}.png", "via": "与 slider_row 共用"}
+  ],
+  "scroll": "inherit",
+  "forbidden": [
+    "给只读进度条配 thumb 图（会被用户当成可拖滑块，且 thumb.size ≠ 图会 FAIL）",
+    "进度条盒高 < 可见条高（条被裁）",
+    "同页两个进度控件用不同盒高/不同左缘（口径必须照抄第一个）"
+  ],
+  "compact_note": "同 slider_row"
+}

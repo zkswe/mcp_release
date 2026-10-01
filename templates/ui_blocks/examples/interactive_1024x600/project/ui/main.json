@@ -1,0 +1,2776 @@
+{
+  "id": 0,
+  "position": {
+    "left": 0,
+    "top": 0,
+    "width": 1024,
+    "height": 600
+  },
+  "resolution": {
+    "width": 1024,
+    "height": 600
+  },
+  "backgroundColor": 15987699,
+  "touchable": false,
+  "topmost": false,
+  "textview__1": {
+    "id": 50001,
+    "caption": "TextTitle",
+    "position": {
+      "left": 16,
+      "top": 6,
+      "width": 992,
+      "height": 40
+    },
+    "alignment": 36,
+    "colorTab": {
+      "color0": 1710618,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 28,
+    "touchable": false,
+    "backgroundColor": -1,
+    "bgColorTab": {
+      "color0": -1,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "bold": true,
+    "italic": false,
+    "fontFamily": 0,
+    "text": "交互控件",
+    "visible": true,
+    "rollEnable": false,
+    "rollDirection": 1,
+    "rollIntervalTime": 150,
+    "rollStep": 5
+  },
+  "textview__2": {
+    "id": 50002,
+    "caption": "TextSubtitle",
+    "position": {
+      "left": 16,
+      "top": 50,
+      "width": 992,
+      "height": 20
+    },
+    "alignment": 36,
+    "colorTab": {
+      "color0": 6710886,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 14,
+    "touchable": false,
+    "backgroundColor": -1,
+    "bgColorTab": {
+      "color0": -1,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "bold": false,
+    "italic": false,
+    "fontFamily": 0,
+    "text": "Interactive",
+    "visible": true,
+    "rollEnable": false,
+    "rollDirection": 1,
+    "rollIntervalTime": 150,
+    "rollStep": 5
+  },
+  "scrollwindow__1": {
+    "id": 120001,
+    "caption": "ScrollMain",
+    "position": {
+      "left": 0,
+      "top": 76,
+      "width": 1024,
+      "height": 452
+    },
+    "dragMaxDis": 60,
+    "orientation": 1,
+    "edgeEffect": 1,
+    "touchable": true,
+    "window__1": {
+      "id": 110001,
+      "caption": "WindowMain",
+      "position": {
+        "left": 0,
+        "top": 0,
+        "width": 1024,
+        "height": 1366
+      },
+      "backgroundColor": -1,
+      "hideTimeOut": -1,
+      "modal": false,
+      "touchable": false,
+      "visible": true,
+      "textview__3": {
+        "id": 50003,
+        "caption": "SectionHeader1",
+        "position": {
+          "left": 16,
+          "top": 0,
+          "width": 992,
+          "height": 28
+        },
+        "alignment": 36,
+        "colorTab": {
+          "color0": 6710886,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 20,
+        "touchable": false,
+        "backgroundColor": -1,
+        "bgColorTab": {
+          "color0": -1,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "bold": true,
+        "italic": false,
+        "fontFamily": 0,
+        "text": "播放",
+        "visible": true,
+        "rollEnable": false,
+        "rollDirection": 1,
+        "rollIntervalTime": 150,
+        "rollStep": 5
+      },
+      "window__2": {
+        "id": 110002,
+        "caption": "Card1",
+        "position": {
+          "left": 16,
+          "top": 28,
+          "width": 992,
+          "height": 344
+        },
+        "backgroundColor": -1,
+        "hideTimeOut": -1,
+        "modal": false,
+        "touchable": false,
+        "visible": true,
+        "textview__4": {
+          "id": 50004,
+          "caption": "CardBg1",
+          "position": {
+            "left": 0,
+            "top": 0,
+            "width": 992,
+            "height": 344
+          },
+          "alignment": 37,
+          "colorTab": {
+            "color0": 16777215,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 14,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5,
+          "textPosition": {
+            "left": 0,
+            "top": 0,
+            "width": 992,
+            "height": 344
+          },
+          "backgroundPic": "images/card_992x344.png"
+        },
+        "textview__5": {
+          "id": 50005,
+          "caption": "RowSep2",
+          "position": {
+            "left": 16,
+            "top": 112,
+            "width": 960,
+            "height": 1
+          },
+          "alignment": 37,
+          "colorTab": {
+            "color0": 15198183,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 14,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5,
+          "textPosition": {
+            "left": 16,
+            "top": 112,
+            "width": 960,
+            "height": 1
+          },
+          "backgroundPic": "images/sep_960x1.png"
+        },
+        "textview__6": {
+          "id": 50006,
+          "caption": "RowSep3",
+          "position": {
+            "left": 16,
+            "top": 224,
+            "width": 960,
+            "height": 1
+          },
+          "alignment": 37,
+          "colorTab": {
+            "color0": 15198183,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 14,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5,
+          "textPosition": {
+            "left": 16,
+            "top": 224,
+            "width": 960,
+            "height": 1
+          },
+          "backgroundPic": "images/sep_960x1.png"
+        },
+        "textview__7": {
+          "id": 50007,
+          "caption": "RowSep4",
+          "position": {
+            "left": 16,
+            "top": 284,
+            "width": 960,
+            "height": 1
+          },
+          "alignment": 37,
+          "colorTab": {
+            "color0": 15198183,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 14,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5,
+          "textPosition": {
+            "left": 16,
+            "top": 284,
+            "width": 960,
+            "height": 1
+          },
+          "backgroundPic": "images/sep_960x1.png"
+        },
+        "textview__8": {
+          "id": 50008,
+          "caption": "TextRowSliderRow2Label",
+          "position": {
+            "left": 16,
+            "top": 8,
+            "width": 872,
+            "height": 24
+          },
+          "alignment": 36,
+          "colorTab": {
+            "color0": 1710618,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 16,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "音量",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5
+        },
+        "textview__9": {
+          "id": 50009,
+          "caption": "TextRowSliderRow2Value",
+          "position": {
+            "left": 16,
+            "top": 32,
+            "width": 872,
+            "height": 20
+          },
+          "alignment": 36,
+          "colorTab": {
+            "color0": 6710886,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 14,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "当前 60%",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5
+        },
+        "seekbar__1": {
+          "id": 91001,
+          "caption": "SeekRowSliderRow2Bar",
+          "position": {
+            "left": 16,
+            "top": 68,
+            "width": 960,
+            "height": 36
+          },
+          "backgroundColor": -1,
+          "backgroundPic": "images/sk_track_960x36.png",
+          "defProgress": 60,
+          "max": 100,
+          "orientation": 0,
+          "progressPic": "images/sk_fill_960x36.png",
+          "secondaryProgressPic": "",
+          "thumb": {
+            "size": {
+              "width": 24,
+              "height": 24
+            },
+            "normalPic": "images/sk_thumb_24.png",
+            "pressedPic": "images/sk_thumb_24.png"
+          },
+          "touchable": true,
+          "visible": true
+        },
+        "textview__10": {
+          "id": 50010,
+          "caption": "TextRowProgressRow3Label",
+          "position": {
+            "left": 16,
+            "top": 120,
+            "width": 872,
+            "height": 24
+          },
+          "alignment": 36,
+          "colorTab": {
+            "color0": 1710618,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 16,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "播放进度",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5
+        },
+        "textview__11": {
+          "id": 50011,
+          "caption": "TextRowProgressRow3Value",
+          "position": {
+            "left": 16,
+            "top": 144,
+            "width": 872,
+            "height": 20
+          },
+          "alignment": 36,
+          "colorTab": {
+            "color0": 6710886,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 14,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "已播放 45%",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5
+        },
+        "seekbar__2": {
+          "id": 91002,
+          "caption": "SeekRowProgressRow3Bar",
+          "position": {
+            "left": 16,
+            "top": 180,
+            "width": 960,
+            "height": 36
+          },
+          "backgroundColor": -1,
+          "backgroundPic": "images/sk_track_960x36.png",
+          "defProgress": 45,
+          "max": 100,
+          "orientation": 0,
+          "progressPic": "images/sk_fill_960x36.png",
+          "secondaryProgressPic": "",
+          "thumb": {
+            "size": {
+              "width": 0,
+              "height": 0
+            },
+            "normalPic": "",
+            "pressedPic": ""
+          },
+          "touchable": true,
+          "visible": true
+        },
+        "textview__12": {
+          "id": 50012,
+          "caption": "TextRowToggleRow4Label",
+          "position": {
+            "left": 16,
+            "top": 232,
+            "width": 872,
+            "height": 24
+          },
+          "alignment": 36,
+          "colorTab": {
+            "color0": 1710618,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 16,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "循环播放",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5
+        },
+        "textview__13": {
+          "id": 50013,
+          "caption": "TextRowToggleRow4Value",
+          "position": {
+            "left": 16,
+            "top": 256,
+            "width": 872,
+            "height": 20
+          },
+          "alignment": 36,
+          "colorTab": {
+            "color0": 6710886,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 14,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "已开启",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5
+        },
+        "textview__14": {
+          "id": 50014,
+          "caption": "ToggleRowToggleRow4Track",
+          "position": {
+            "left": 896,
+            "top": 232,
+            "width": 80,
+            "height": 44
+          },
+          "alignment": 37,
+          "colorTab": {
+            "color0": 21209,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 14,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5,
+          "textPosition": {
+            "left": 896,
+            "top": 232,
+            "width": 80,
+            "height": 44
+          },
+          "backgroundPic": "images/sw_80x44_on.png"
+        },
+        "textview__15": {
+          "id": 50015,
+          "caption": "ToggleRowToggleRow4Knob",
+          "position": {
+            "left": 934,
+            "top": 234,
+            "width": 40,
+            "height": 40
+          },
+          "alignment": 37,
+          "colorTab": {
+            "color0": 16777215,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 14,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5,
+          "textPosition": {
+            "left": 934,
+            "top": 234,
+            "width": 40,
+            "height": 40
+          },
+          "backgroundPic": "images/swk_40.png"
+        },
+        "button__1": {
+          "id": 20001,
+          "caption": "ButtonRowToggleRow4",
+          "position": {
+            "left": 0,
+            "top": 224,
+            "width": 992,
+            "height": 60
+          },
+          "alignment": 37,
+          "colorTab": {
+            "color0": 16777215,
+            "color1": 16777215,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "picTab": {},
+          "text": "",
+          "touchable": true,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "fontSize": 16,
+          "visible": true,
+          "longClickIntervalTime": -1,
+          "longClickTimeOut": -1,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5
+        },
+        "textview__16": {
+          "id": 50016,
+          "caption": "TextRowSettingRow5Label",
+          "position": {
+            "left": 16,
+            "top": 292,
+            "width": 872,
+            "height": 24
+          },
+          "alignment": 36,
+          "colorTab": {
+            "color0": 1710618,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 16,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "音效模式",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5
+        },
+        "textview__17": {
+          "id": 50017,
+          "caption": "TextRowSettingRow5Value",
+          "position": {
+            "left": 16,
+            "top": 316,
+            "width": 872,
+            "height": 20
+          },
+          "alignment": 36,
+          "colorTab": {
+            "color0": 6710886,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 14,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "标准",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5
+        },
+        "textview__18": {
+          "id": 50018,
+          "caption": "ImageRowSettingRow5Chevron",
+          "position": {
+            "left": 952,
+            "top": 306,
+            "width": 24,
+            "height": 16
+          },
+          "alignment": 37,
+          "colorTab": {
+            "color0": 14474460,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 14,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5,
+          "textPosition": {
+            "left": 952,
+            "top": 306,
+            "width": 24,
+            "height": 16
+          },
+          "backgroundPic": "images/chev_24x16.png"
+        },
+        "button__2": {
+          "id": 20002,
+          "caption": "ButtonRowSettingRow5",
+          "position": {
+            "left": 0,
+            "top": 284,
+            "width": 992,
+            "height": 60
+          },
+          "alignment": 37,
+          "colorTab": {
+            "color0": 16777215,
+            "color1": 16777215,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "picTab": {},
+          "text": "",
+          "touchable": true,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "fontSize": 16,
+          "visible": true,
+          "longClickIntervalTime": -1,
+          "longClickTimeOut": -1,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5
+        }
+      },
+      "textview__19": {
+        "id": 50019,
+        "caption": "SectionHeader6",
+        "position": {
+          "left": 16,
+          "top": 388,
+          "width": 992,
+          "height": 28
+        },
+        "alignment": 36,
+        "colorTab": {
+          "color0": 6710886,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 20,
+        "touchable": false,
+        "backgroundColor": -1,
+        "bgColorTab": {
+          "color0": -1,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "bold": true,
+        "italic": false,
+        "fontFamily": 0,
+        "text": "设备信息",
+        "visible": true,
+        "rollEnable": false,
+        "rollDirection": 1,
+        "rollIntervalTime": 150,
+        "rollStep": 5
+      },
+      "window__3": {
+        "id": 110003,
+        "caption": "Card6",
+        "position": {
+          "left": 16,
+          "top": 416,
+          "width": 992,
+          "height": 236
+        },
+        "backgroundColor": -1,
+        "hideTimeOut": -1,
+        "modal": false,
+        "touchable": false,
+        "visible": true,
+        "textview__20": {
+          "id": 50020,
+          "caption": "CardBg6",
+          "position": {
+            "left": 0,
+            "top": 0,
+            "width": 992,
+            "height": 236
+          },
+          "alignment": 37,
+          "colorTab": {
+            "color0": 16777215,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 14,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5,
+          "textPosition": {
+            "left": 0,
+            "top": 0,
+            "width": 992,
+            "height": 236
+          },
+          "backgroundPic": "images/card_992x236.png"
+        },
+        "textview__21": {
+          "id": 50021,
+          "caption": "RowSep7",
+          "position": {
+            "left": 16,
+            "top": 116,
+            "width": 960,
+            "height": 1
+          },
+          "alignment": 37,
+          "colorTab": {
+            "color0": 15198183,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 14,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5,
+          "textPosition": {
+            "left": 16,
+            "top": 116,
+            "width": 960,
+            "height": 1
+          },
+          "backgroundPic": "images/sep_960x1.png"
+        },
+        "textview__22": {
+          "id": 50022,
+          "caption": "RowSep8",
+          "position": {
+            "left": 16,
+            "top": 176,
+            "width": 960,
+            "height": 1
+          },
+          "alignment": 37,
+          "colorTab": {
+            "color0": 15198183,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 14,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5,
+          "textPosition": {
+            "left": 16,
+            "top": 176,
+            "width": 960,
+            "height": 1
+          },
+          "backgroundPic": "images/sep_960x1.png"
+        },
+        "textview__23": {
+          "id": 50023,
+          "caption": "TextRowInputRow7Label",
+          "position": {
+            "left": 16,
+            "top": 8,
+            "width": 872,
+            "height": 24
+          },
+          "alignment": 36,
+          "colorTab": {
+            "color0": 1710618,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 16,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "设备名称",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5
+        },
+        "edittext__1": {
+          "id": 51001,
+          "caption": "EditRowInputRow7Box",
+          "position": {
+            "left": 16,
+            "top": 68,
+            "width": 960,
+            "height": 40
+          },
+          "alignment": 36,
+          "bgColorTab": {
+            "color0": 15987699,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "beepEnable": true,
+          "colorTab": {
+            "color0": 1710618,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontFamily": 0,
+          "fontSize": 16,
+          "hintText": "请输入设备名称",
+          "hintTextColor": 8947848,
+          "isPassword": false,
+          "italic": false,
+          "passwordChar": "*",
+          "text": "客厅面板",
+          "textType": 0,
+          "touchable": true,
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5
+        },
+        "textview__24": {
+          "id": 50024,
+          "caption": "TextRowCheckboxRow8Label",
+          "position": {
+            "left": 16,
+            "top": 124,
+            "width": 872,
+            "height": 24
+          },
+          "alignment": 36,
+          "colorTab": {
+            "color0": 1710618,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 16,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "记住本次设置",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5
+        },
+        "textview__25": {
+          "id": 50025,
+          "caption": "TextRowCheckboxRow8Value",
+          "position": {
+            "left": 16,
+            "top": 148,
+            "width": 872,
+            "height": 20
+          },
+          "alignment": 36,
+          "colorTab": {
+            "color0": 6710886,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 14,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "已勾选",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5
+        },
+        "checkbox__1": {
+          "id": 94501,
+          "caption": "CheckRowCheckboxRow8Box",
+          "position": {
+            "left": 944,
+            "top": 130,
+            "width": 32,
+            "height": 32
+          },
+          "alignment": 37,
+          "backgroundColor": -1,
+          "bold": false,
+          "checked": true,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "colorTab": {
+            "color0": 1710618,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontFamily": 0,
+          "fontSize": 16,
+          "italic": false,
+          "iconPosition": {
+            "left": 0,
+            "top": 0,
+            "width": 32,
+            "height": 32
+          },
+          "text": "",
+          "textPosition": {
+            "left": 0,
+            "top": 0,
+            "width": 32,
+            "height": 32
+          },
+          "touchable": true,
+          "visible": true,
+          "picTab": {
+            "pic0": "images/cb_32_off.png",
+            "pic1": "images/cb_32_off.png",
+            "pic2": "images/cb_32_on.png"
+          }
+        },
+        "textview__26": {
+          "id": 50026,
+          "caption": "TextRowCheckboxRow9Label",
+          "position": {
+            "left": 16,
+            "top": 184,
+            "width": 872,
+            "height": 24
+          },
+          "alignment": 36,
+          "colorTab": {
+            "color0": 1710618,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 16,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "开机自动播放",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5
+        },
+        "textview__27": {
+          "id": 50027,
+          "caption": "TextRowCheckboxRow9Value",
+          "position": {
+            "left": 16,
+            "top": 208,
+            "width": 872,
+            "height": 20
+          },
+          "alignment": 36,
+          "colorTab": {
+            "color0": 6710886,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 14,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "未勾选",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5
+        },
+        "checkbox__2": {
+          "id": 94502,
+          "caption": "CheckRowCheckboxRow9Box",
+          "position": {
+            "left": 944,
+            "top": 190,
+            "width": 32,
+            "height": 32
+          },
+          "alignment": 37,
+          "backgroundColor": -1,
+          "bold": false,
+          "checked": false,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "colorTab": {
+            "color0": 1710618,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontFamily": 0,
+          "fontSize": 16,
+          "italic": false,
+          "iconPosition": {
+            "left": 0,
+            "top": 0,
+            "width": 32,
+            "height": 32
+          },
+          "text": "",
+          "textPosition": {
+            "left": 0,
+            "top": 0,
+            "width": 32,
+            "height": 32
+          },
+          "touchable": true,
+          "visible": true,
+          "picTab": {
+            "pic0": "images/cb_32_off.png",
+            "pic1": "images/cb_32_off.png",
+            "pic2": "images/cb_32_on.png"
+          }
+        }
+      },
+      "textview__28": {
+        "id": 50028,
+        "caption": "SectionHeader10",
+        "position": {
+          "left": 16,
+          "top": 668,
+          "width": 992,
+          "height": 28
+        },
+        "alignment": 36,
+        "colorTab": {
+          "color0": 6710886,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 20,
+        "touchable": false,
+        "backgroundColor": -1,
+        "bgColorTab": {
+          "color0": -1,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "bold": true,
+        "italic": false,
+        "fontFamily": 0,
+        "text": "运行模式",
+        "visible": true,
+        "rollEnable": false,
+        "rollDirection": 1,
+        "rollIntervalTime": 150,
+        "rollStep": 5
+      },
+      "window__4": {
+        "id": 110004,
+        "caption": "Card10",
+        "position": {
+          "left": 16,
+          "top": 696,
+          "width": 992,
+          "height": 196
+        },
+        "backgroundColor": -1,
+        "hideTimeOut": -1,
+        "modal": false,
+        "touchable": false,
+        "visible": true,
+        "textview__29": {
+          "id": 50029,
+          "caption": "CardBg10",
+          "position": {
+            "left": 0,
+            "top": 0,
+            "width": 992,
+            "height": 196
+          },
+          "alignment": 37,
+          "colorTab": {
+            "color0": 16777215,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 14,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5,
+          "textPosition": {
+            "left": 0,
+            "top": 0,
+            "width": 992,
+            "height": 196
+          },
+          "backgroundPic": "images/card_992x196.png"
+        },
+        "textview__30": {
+          "id": 50030,
+          "caption": "TextRowRadioRow11Label",
+          "position": {
+            "left": 16,
+            "top": 8,
+            "width": 872,
+            "height": 24
+          },
+          "alignment": 36,
+          "colorTab": {
+            "color0": 1710618,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 16,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "工作模式",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5
+        },
+        "textview__31": {
+          "id": 50031,
+          "caption": "TextRowRadioRow11Value",
+          "position": {
+            "left": 16,
+            "top": 32,
+            "width": 872,
+            "height": 20
+          },
+          "alignment": 36,
+          "colorTab": {
+            "color0": 6710886,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "fontSize": 14,
+          "touchable": false,
+          "backgroundColor": -1,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "bold": false,
+          "italic": false,
+          "fontFamily": 0,
+          "text": "当前 本地主机",
+          "visible": true,
+          "rollEnable": false,
+          "rollDirection": 1,
+          "rollIntervalTime": 150,
+          "rollStep": 5
+        },
+        "radiogroup__1": {
+          "id": 94001,
+          "caption": "RadioRowRadioRow11Group",
+          "position": {
+            "left": 16,
+            "top": 68,
+            "width": 960,
+            "height": 120
+          },
+          "backgroundColor": -1,
+          "touchable": true,
+          "visible": true,
+          "radiobuttons": [
+            {
+              "id": 94101,
+              "caption": "RadioRowRadioRow11Opt1",
+              "position": {
+                "left": 0,
+                "top": 0,
+                "width": 960,
+                "height": 40
+              },
+              "alignment": 36,
+              "backgroundColor": -1,
+              "bold": false,
+              "checked": true,
+              "bgColorTab": {
+                "color0": -1,
+                "color1": -1,
+                "color2": -1,
+                "color3": -1,
+                "color4": -1
+              },
+              "colorTab": {
+                "color0": 1710618,
+                "color1": -1,
+                "color2": 21209,
+                "color3": -1,
+                "color4": -1
+              },
+              "fontFamily": 0,
+              "fontSize": 16,
+              "italic": false,
+              "iconPosition": {
+                "left": 8,
+                "top": 4,
+                "width": 32,
+                "height": 32
+              },
+              "textPosition": {
+                "left": 48,
+                "top": 8,
+                "width": 904,
+                "height": 24
+              },
+              "picTab": {
+                "pic0": "images/rd_32_off.png",
+                "pic1": "images/rd_32_off.png",
+                "pic2": "images/rd_32_on.png"
+              },
+              "text": "本地主机",
+              "touchable": true,
+              "visible": true,
+              "beepEnable": true
+            },
+            {
+              "id": 94102,
+              "caption": "RadioRowRadioRow11Opt2",
+              "position": {
+                "left": 0,
+                "top": 40,
+                "width": 960,
+                "height": 40
+              },
+              "alignment": 36,
+              "backgroundColor": -1,
+              "bold": false,
+              "checked": false,
+              "bgColorTab": {
+                "color0": -1,
+                "color1": -1,
+                "color2": -1,
+                "color3": -1,
+                "color4": -1
+              },
+              "colorTab": {
+                "color0": 1710618,
+                "color1": -1,
+                "color2": 21209,
+                "color3": -1,
+                "color4": -1
+              },
+              "fontFamily": 0,
+              "fontSize": 16,
+              "italic": false,
+              "iconPosition": {
+                "left": 8,
+                "top": 4,
+                "width": 32,
+                "height": 32
+              },
+              "textPosition": {
+                "left": 48,
+                "top": 8,
+                "width": 904,
+                "height": 24
+              },
+              "picTab": {
+                "pic0": "images/rd_32_off.png",
+                "pic1": "images/rd_32_off.png",
+                "pic2": "images/rd_32_on.png"
+              },
+              "text": "远程主机",
+              "touchable": true,
+              "visible": true,
+              "beepEnable": true
+            },
+            {
+              "id": 94103,
+              "caption": "RadioRowRadioRow11Opt3",
+              "position": {
+                "left": 0,
+                "top": 80,
+                "width": 960,
+                "height": 40
+              },
+              "alignment": 36,
+              "backgroundColor": -1,
+              "bold": false,
+              "checked": false,
+              "bgColorTab": {
+                "color0": -1,
+                "color1": -1,
+                "color2": -1,
+                "color3": -1,
+                "color4": -1
+              },
+              "colorTab": {
+                "color0": 1710618,
+                "color1": -1,
+                "color2": 21209,
+                "color3": -1,
+                "color4": -1
+              },
+              "fontFamily": 0,
+              "fontSize": 16,
+              "italic": false,
+              "iconPosition": {
+                "left": 8,
+                "top": 4,
+                "width": 32,
+                "height": 32
+              },
+              "textPosition": {
+                "left": 48,
+                "top": 8,
+                "width": 904,
+                "height": 24
+              },
+              "picTab": {
+                "pic0": "images/rd_32_off.png",
+                "pic1": "images/rd_32_off.png",
+                "pic2": "images/rd_32_on.png"
+              },
+              "text": "自动切换",
+              "touchable": true,
+              "visible": true,
+              "beepEnable": true
+            }
+          ]
+        }
+      },
+      "textview__32": {
+        "id": 50032,
+        "caption": "SectionHeader12",
+        "position": {
+          "left": 16,
+          "top": 908,
+          "width": 992,
+          "height": 28
+        },
+        "alignment": 36,
+        "colorTab": {
+          "color0": 6710886,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 20,
+        "touchable": false,
+        "backgroundColor": -1,
+        "bgColorTab": {
+          "color0": -1,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "bold": true,
+        "italic": false,
+        "fontFamily": 0,
+        "text": "设备列表",
+        "visible": true,
+        "rollEnable": false,
+        "rollDirection": 1,
+        "rollIntervalTime": 150,
+        "rollStep": 5
+      },
+      "textview__33": {
+        "id": 50033,
+        "caption": "LabelListItem13",
+        "position": {
+          "left": 32,
+          "top": 952,
+          "width": 960,
+          "height": 20
+        },
+        "alignment": 36,
+        "colorTab": {
+          "color0": 6710886,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 14,
+        "touchable": false,
+        "backgroundColor": -1,
+        "bgColorTab": {
+          "color0": -1,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "bold": false,
+        "italic": false,
+        "fontFamily": 0,
+        "text": "在线设备",
+        "visible": true,
+        "rollEnable": false,
+        "rollDirection": 1,
+        "rollIntervalTime": 150,
+        "rollStep": 5
+      },
+      "listview__1": {
+        "id": 80001,
+        "caption": "ListListItem13",
+        "position": {
+          "left": 32,
+          "top": 980,
+          "width": 960,
+          "height": 162
+        },
+        "autoRollback": true,
+        "backgroundColor": -1,
+        "cols": 1,
+        "cycleEnable": false,
+        "dragMaxDis": 60,
+        "edgeEffect": 1,
+        "hasScrollbar": false,
+        "rows": 4,
+        "touchable": true,
+        "visible": true,
+        "orientation": 1,
+        "colSpacing": 0,
+        "rowSpacing": 0,
+        "item": {
+          "caption": "ListItem13Item",
+          "position": {
+            "left": 0,
+            "top": 0,
+            "width": 960,
+            "height": 40
+          },
+          "alignment": 36,
+          "backgroundColor": -1,
+          "bold": false,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "colorTab": {
+            "color0": 1710618,
+            "color1": 1710618,
+            "color2": 1710618,
+            "color3": 1710618,
+            "color4": -1
+          },
+          "fontSize": 16,
+          "italic": false,
+          "picTab": {},
+          "text": "",
+          "touchable": true,
+          "visible": true,
+          "longClickIntervalTime": -1,
+          "longClickTimeOut": -1,
+          "subItem": [
+            {
+              "id": 24004,
+              "caption": "ListItem13ItemSubTitle",
+              "position": {
+                "left": 16,
+                "top": 8,
+                "width": 896,
+                "height": 24
+              },
+              "alignment": 36,
+              "backgroundColor": -1,
+              "bgColorTab": {
+                "color0": -1,
+                "color1": -1,
+                "color2": -1,
+                "color3": -1,
+                "color4": -1
+              },
+              "bold": false,
+              "colorTab": {
+                "color0": 1710618,
+                "color1": -1,
+                "color2": -1,
+                "color3": -1,
+                "color4": -1
+              },
+              "fontFamily": 0,
+              "fontSize": 16,
+              "italic": false,
+              "longClickIntervalTime": -1,
+              "longClickTimeOut": -1,
+              "picTab": {
+                "pic0": ""
+              },
+              "text": "",
+              "touchable": true,
+              "visible": true
+            },
+            {
+              "id": 24005,
+              "caption": "ListItem13ItemSubChevron",
+              "position": {
+                "left": 920,
+                "top": 12,
+                "width": 24,
+                "height": 16
+              },
+              "alignment": 37,
+              "backgroundColor": -1,
+              "bgColorTab": {
+                "color0": -1,
+                "color1": -1,
+                "color2": -1,
+                "color3": -1,
+                "color4": -1
+              },
+              "bold": false,
+              "colorTab": {
+                "color0": 14474460,
+                "color1": -1,
+                "color2": -1,
+                "color3": -1,
+                "color4": -1
+              },
+              "fontFamily": 0,
+              "fontSize": 14,
+              "italic": false,
+              "longClickIntervalTime": -1,
+              "longClickTimeOut": -1,
+              "picTab": {
+                "pic0": "images/chev_24x16.png"
+              },
+              "text": "",
+              "touchable": true,
+              "visible": true
+            }
+          ]
+        }
+      },
+      "textview__34": {
+        "id": 50034,
+        "caption": "LabelWheelPicker14",
+        "position": {
+          "left": 32,
+          "top": 1158,
+          "width": 960,
+          "height": 20
+        },
+        "alignment": 36,
+        "colorTab": {
+          "color0": 6710886,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 14,
+        "touchable": false,
+        "backgroundColor": -1,
+        "bgColorTab": {
+          "color0": -1,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "bold": false,
+        "italic": false,
+        "fontFamily": 0,
+        "text": "定时关闭",
+        "visible": true,
+        "rollEnable": false,
+        "rollDirection": 1,
+        "rollIntervalTime": 150,
+        "rollStep": 5
+      },
+      "textview__35": {
+        "id": 50035,
+        "caption": "BandWheelPicker14Col1",
+        "position": {
+          "left": 304,
+          "top": 1258,
+          "width": 200,
+          "height": 36
+        },
+        "alignment": 37,
+        "colorTab": {
+          "color0": 15922175,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 14,
+        "touchable": false,
+        "backgroundColor": -1,
+        "bgColorTab": {
+          "color0": -1,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "bold": false,
+        "italic": false,
+        "fontFamily": 0,
+        "text": "",
+        "visible": true,
+        "rollEnable": false,
+        "rollDirection": 1,
+        "rollIntervalTime": 150,
+        "rollStep": 5,
+        "textPosition": {
+          "left": 304,
+          "top": 1258,
+          "width": 200,
+          "height": 36
+        },
+        "backgroundPic": "images/wband_200x36.png"
+      },
+      "textview__36": {
+        "id": 50036,
+        "caption": "BandWheelPicker14Col2",
+        "position": {
+          "left": 520,
+          "top": 1258,
+          "width": 200,
+          "height": 36
+        },
+        "alignment": 37,
+        "colorTab": {
+          "color0": 15922175,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 14,
+        "touchable": false,
+        "backgroundColor": -1,
+        "bgColorTab": {
+          "color0": -1,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "bold": false,
+        "italic": false,
+        "fontFamily": 0,
+        "text": "",
+        "visible": true,
+        "rollEnable": false,
+        "rollDirection": 1,
+        "rollIntervalTime": 150,
+        "rollStep": 5,
+        "textPosition": {
+          "left": 520,
+          "top": 1258,
+          "width": 200,
+          "height": 36
+        },
+        "backgroundPic": "images/wband_200x36.png"
+      },
+      "listview__2": {
+        "id": 80002,
+        "caption": "ListWheelPicker14Col1",
+        "position": {
+          "left": 304,
+          "top": 1186,
+          "width": 200,
+          "height": 180
+        },
+        "autoRollback": true,
+        "backgroundColor": -1,
+        "cols": 1,
+        "cycleEnable": true,
+        "dragMaxDis": 60,
+        "edgeEffect": 1,
+        "hasScrollbar": false,
+        "rows": 5,
+        "touchable": true,
+        "visible": true,
+        "orientation": 1,
+        "colSpacing": 0,
+        "rowSpacing": 0,
+        "item": {
+          "caption": "TextWheelPicker14Col1",
+          "position": {
+            "left": 0,
+            "top": 0,
+            "width": 200,
+            "height": 36
+          },
+          "alignment": 37,
+          "backgroundColor": -1,
+          "bold": false,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "colorTab": {
+            "color0": 1710618,
+            "color1": 1710618,
+            "color2": 1710618,
+            "color3": 1710618,
+            "color4": -1
+          },
+          "fontSize": 16,
+          "italic": false,
+          "picTab": {},
+          "text": "",
+          "touchable": true,
+          "visible": true,
+          "longClickIntervalTime": -1,
+          "longClickTimeOut": -1,
+          "subItem": [
+            {
+              "id": 24006,
+              "caption": "TextWheelPicker14Col1SubTitle",
+              "position": {
+                "left": 16,
+                "top": 6,
+                "width": 168,
+                "height": 24
+              },
+              "alignment": 37,
+              "backgroundColor": -1,
+              "bgColorTab": {
+                "color0": -1,
+                "color1": -1,
+                "color2": -1,
+                "color3": -1,
+                "color4": -1
+              },
+              "bold": false,
+              "colorTab": {
+                "color0": 1710618,
+                "color1": -1,
+                "color2": -1,
+                "color3": -1,
+                "color4": -1
+              },
+              "fontFamily": 0,
+              "fontSize": 16,
+              "italic": false,
+              "longClickIntervalTime": -1,
+              "longClickTimeOut": -1,
+              "picTab": {
+                "pic0": ""
+              },
+              "text": "",
+              "touchable": true,
+              "visible": true
+            }
+          ]
+        }
+      },
+      "listview__3": {
+        "id": 80003,
+        "caption": "ListWheelPicker14Col2",
+        "position": {
+          "left": 520,
+          "top": 1186,
+          "width": 200,
+          "height": 180
+        },
+        "autoRollback": true,
+        "backgroundColor": -1,
+        "cols": 1,
+        "cycleEnable": true,
+        "dragMaxDis": 60,
+        "edgeEffect": 1,
+        "hasScrollbar": false,
+        "rows": 5,
+        "touchable": true,
+        "visible": true,
+        "orientation": 1,
+        "colSpacing": 0,
+        "rowSpacing": 0,
+        "item": {
+          "caption": "TextWheelPicker14Col2",
+          "position": {
+            "left": 0,
+            "top": 0,
+            "width": 200,
+            "height": 36
+          },
+          "alignment": 37,
+          "backgroundColor": -1,
+          "bold": false,
+          "bgColorTab": {
+            "color0": -1,
+            "color1": -1,
+            "color2": -1,
+            "color3": -1,
+            "color4": -1
+          },
+          "colorTab": {
+            "color0": 1710618,
+            "color1": 1710618,
+            "color2": 1710618,
+            "color3": 1710618,
+            "color4": -1
+          },
+          "fontSize": 16,
+          "italic": false,
+          "picTab": {},
+          "text": "",
+          "touchable": true,
+          "visible": true,
+          "longClickIntervalTime": -1,
+          "longClickTimeOut": -1,
+          "subItem": [
+            {
+              "id": 24007,
+              "caption": "TextWheelPicker14Col2SubTitle",
+              "position": {
+                "left": 16,
+                "top": 6,
+                "width": 168,
+                "height": 24
+              },
+              "alignment": 37,
+              "backgroundColor": -1,
+              "bgColorTab": {
+                "color0": -1,
+                "color1": -1,
+                "color2": -1,
+                "color3": -1,
+                "color4": -1
+              },
+              "bold": false,
+              "colorTab": {
+                "color0": 1710618,
+                "color1": -1,
+                "color2": -1,
+                "color3": -1,
+                "color4": -1
+              },
+              "fontFamily": 0,
+              "fontSize": 16,
+              "italic": false,
+              "longClickIntervalTime": -1,
+              "longClickTimeOut": -1,
+              "picTab": {
+                "pic0": ""
+              },
+              "text": "",
+              "touchable": true,
+              "visible": true
+            }
+          ]
+        }
+      }
+    }
+  },
+  "textview__37": {
+    "id": 50037,
+    "caption": "FooterBg15",
+    "position": {
+      "left": 0,
+      "top": 528,
+      "width": 1024,
+      "height": 72
+    },
+    "alignment": 37,
+    "colorTab": {
+      "color0": 16777215,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 14,
+    "touchable": false,
+    "backgroundColor": -1,
+    "bgColorTab": {
+      "color0": -1,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "bold": false,
+    "italic": false,
+    "fontFamily": 0,
+    "text": "",
+    "visible": true,
+    "rollEnable": false,
+    "rollDirection": 1,
+    "rollIntervalTime": 150,
+    "rollStep": 5,
+    "textPosition": {
+      "left": 0,
+      "top": 528,
+      "width": 1024,
+      "height": 72
+    },
+    "backgroundPic": "images/footbg_1024x72.png"
+  },
+  "button__3": {
+    "id": 20003,
+    "caption": "ButtonSecondary15",
+    "position": {
+      "left": 672,
+      "top": 542,
+      "width": 164,
+      "height": 44
+    },
+    "alignment": 37,
+    "colorTab": {
+      "color0": 21209,
+      "color1": 21209,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "picTab": {},
+    "text": "取消",
+    "touchable": true,
+    "backgroundColor": -1,
+    "bgColorTab": {
+      "color0": -1,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "bold": false,
+    "italic": false,
+    "fontFamily": 0,
+    "fontSize": 14,
+    "visible": true,
+    "longClickIntervalTime": -1,
+    "longClickTimeOut": -1,
+    "rollEnable": false,
+    "rollDirection": 1,
+    "rollIntervalTime": 150,
+    "rollStep": 5,
+    "iconPosition": {
+      "left": 672,
+      "top": 542,
+      "width": 164,
+      "height": 44
+    },
+    "textPosition": {
+      "left": 672,
+      "top": 542,
+      "width": 164,
+      "height": 44
+    },
+    "backgroundPic": "images/btn_secondary_164x44.png"
+  },
+  "button__4": {
+    "id": 20004,
+    "caption": "ButtonPrimary15",
+    "position": {
+      "left": 844,
+      "top": 542,
+      "width": 164,
+      "height": 44
+    },
+    "alignment": 37,
+    "colorTab": {
+      "color0": 16777215,
+      "color1": 16777215,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "picTab": {},
+    "text": "保存",
+    "touchable": true,
+    "backgroundColor": -1,
+    "bgColorTab": {
+      "color0": -1,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "bold": false,
+    "italic": false,
+    "fontFamily": 0,
+    "fontSize": 14,
+    "visible": true,
+    "longClickIntervalTime": -1,
+    "longClickTimeOut": -1,
+    "rollEnable": false,
+    "rollDirection": 1,
+    "rollIntervalTime": 150,
+    "rollStep": 5,
+    "iconPosition": {
+      "left": 844,
+      "top": 542,
+      "width": 164,
+      "height": 44
+    },
+    "textPosition": {
+      "left": 844,
+      "top": 542,
+      "width": 164,
+      "height": 44
+    },
+    "backgroundPic": "images/btn_primary_164x44.png"
+  },
+  "textview__38": {
+    "id": 50038,
+    "caption": "ActionStatus15",
+    "position": {
+      "left": 16,
+      "top": 554,
+      "width": 396,
+      "height": 20
+    },
+    "alignment": 36,
+    "colorTab": {
+      "color0": 6710886,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 14,
+    "touchable": false,
+    "backgroundColor": -1,
+    "bgColorTab": {
+      "color0": -1,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "bold": false,
+    "italic": false,
+    "fontFamily": 0,
+    "text": "已是最新",
+    "visible": true,
+    "rollEnable": false,
+    "rollDirection": 1,
+    "rollIntervalTime": 150,
+    "rollStep": 5
+  },
+  "window__5": {
+    "id": 110005,
+    "caption": "DialogWindow16",
+    "position": {
+      "left": 0,
+      "top": 0,
+      "width": 1024,
+      "height": 600
+    },
+    "backgroundColor": -1,
+    "hideTimeOut": -1,
+    "modal": true,
+    "touchable": false,
+    "visible": false,
+    "textview__39": {
+      "id": 50039,
+      "caption": "DialogScrim16",
+      "position": {
+        "left": 0,
+        "top": 0,
+        "width": 1024,
+        "height": 600
+      },
+      "alignment": 37,
+      "colorTab": {
+        "color0": 16777215,
+        "color1": -1,
+        "color2": -1,
+        "color3": -1,
+        "color4": -1
+      },
+      "fontSize": 14,
+      "touchable": false,
+      "backgroundColor": -1,
+      "bgColorTab": {
+        "color0": -1,
+        "color1": -1,
+        "color2": -1,
+        "color3": -1,
+        "color4": -1
+      },
+      "bold": false,
+      "italic": false,
+      "fontFamily": 0,
+      "text": "",
+      "visible": true,
+      "rollEnable": false,
+      "rollDirection": 1,
+      "rollIntervalTime": 150,
+      "rollStep": 5,
+      "textPosition": {
+        "left": 0,
+        "top": 0,
+        "width": 1024,
+        "height": 600
+      },
+      "backgroundPic": "images/cc_scrim_1024x600.png"
+    },
+    "window__6": {
+      "id": 110006,
+      "caption": "DialogPanel16",
+      "position": {
+        "left": 204,
+        "top": 212,
+        "width": 616,
+        "height": 176
+      },
+      "backgroundColor": -1,
+      "hideTimeOut": -1,
+      "modal": false,
+      "touchable": false,
+      "visible": true,
+      "textview__40": {
+        "id": 50040,
+        "caption": "DialogPanelBg16",
+        "position": {
+          "left": 0,
+          "top": 0,
+          "width": 616,
+          "height": 176
+        },
+        "alignment": 37,
+        "colorTab": {
+          "color0": 16777215,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 14,
+        "touchable": false,
+        "backgroundColor": -1,
+        "bgColorTab": {
+          "color0": -1,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "bold": false,
+        "italic": false,
+        "fontFamily": 0,
+        "text": "",
+        "visible": true,
+        "rollEnable": false,
+        "rollDirection": 1,
+        "rollIntervalTime": 150,
+        "rollStep": 5,
+        "textPosition": {
+          "left": 0,
+          "top": 0,
+          "width": 616,
+          "height": 176
+        },
+        "backgroundPic": "images/panel_616x176.png"
+      },
+      "textview__41": {
+        "id": 50041,
+        "caption": "DialogTitle16",
+        "position": {
+          "left": 16,
+          "top": 16,
+          "width": 584,
+          "height": 28
+        },
+        "alignment": 36,
+        "colorTab": {
+          "color0": 1710618,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 20,
+        "touchable": false,
+        "backgroundColor": -1,
+        "bgColorTab": {
+          "color0": -1,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "bold": true,
+        "italic": false,
+        "fontFamily": 0,
+        "text": "确认保存",
+        "visible": true,
+        "rollEnable": false,
+        "rollDirection": 1,
+        "rollIntervalTime": 150,
+        "rollStep": 5
+      },
+      "textview__42": {
+        "id": 50042,
+        "caption": "DialogBody16",
+        "position": {
+          "left": 16,
+          "top": 52,
+          "width": 584,
+          "height": 48
+        },
+        "alignment": 36,
+        "colorTab": {
+          "color0": 6710886,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 16,
+        "touchable": false,
+        "backgroundColor": -1,
+        "bgColorTab": {
+          "color0": -1,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "bold": false,
+        "italic": false,
+        "fontFamily": 0,
+        "text": "保存后立即生效，确定继续吗？",
+        "visible": true,
+        "rollEnable": false,
+        "rollDirection": 1,
+        "rollIntervalTime": 150,
+        "rollStep": 5
+      },
+      "button__5": {
+        "id": 20005,
+        "caption": "DialogButtonSecondary16",
+        "position": {
+          "left": 16,
+          "top": 116,
+          "width": 284,
+          "height": 44
+        },
+        "alignment": 37,
+        "colorTab": {
+          "color0": 21209,
+          "color1": 21209,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "picTab": {},
+        "text": "取消",
+        "touchable": true,
+        "backgroundColor": -1,
+        "bgColorTab": {
+          "color0": -1,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "bold": false,
+        "italic": false,
+        "fontFamily": 0,
+        "fontSize": 14,
+        "visible": true,
+        "longClickIntervalTime": -1,
+        "longClickTimeOut": -1,
+        "rollEnable": false,
+        "rollDirection": 1,
+        "rollIntervalTime": 150,
+        "rollStep": 5,
+        "iconPosition": {
+          "left": 16,
+          "top": 116,
+          "width": 284,
+          "height": 44
+        },
+        "textPosition": {
+          "left": 16,
+          "top": 116,
+          "width": 284,
+          "height": 44
+        },
+        "backgroundPic": "images/btn_secondary_284x44.png"
+      },
+      "button__6": {
+        "id": 20006,
+        "caption": "DialogButtonPrimary16",
+        "position": {
+          "left": 316,
+          "top": 116,
+          "width": 284,
+          "height": 44
+        },
+        "alignment": 37,
+        "colorTab": {
+          "color0": 16777215,
+          "color1": 16777215,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "picTab": {},
+        "text": "保存",
+        "touchable": true,
+        "backgroundColor": -1,
+        "bgColorTab": {
+          "color0": -1,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "bold": false,
+        "italic": false,
+        "fontFamily": 0,
+        "fontSize": 14,
+        "visible": true,
+        "longClickIntervalTime": -1,
+        "longClickTimeOut": -1,
+        "rollEnable": false,
+        "rollDirection": 1,
+        "rollIntervalTime": 150,
+        "rollStep": 5,
+        "iconPosition": {
+          "left": 316,
+          "top": 116,
+          "width": 284,
+          "height": 44
+        },
+        "textPosition": {
+          "left": 316,
+          "top": 116,
+          "width": 284,
+          "height": 44
+        },
+        "backgroundPic": "images/btn_primary_284x44.png"
+      }
+    }
+  }
+}

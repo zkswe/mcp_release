@@ -1,0 +1,181 @@
+== 1. 根节点（id:0 + position 全屏 + resolution 一致；
+      topmost 系统栏/导航栏页例外：官方机制允许根为「局部悬浮块」，见 kb/controls.md）==
+  [PASS] ui/main.json 根节点
+== 2. 层级合法性（SampleUI+basedemo 双源矩阵实证，2026-09-08）==
+      pagewindow/scrollwindow 只装 window；叶子无子键；数组子结构归属固定）
+  [PASS] ui/main.json 层级 合法
+== 3. 特殊字符（emoji/字库外字符）==
+  [PASS] ui/main.json 特殊字符 无
+  [PASS] src/logic/mainLogic.cc 特殊字符 无
+== 4. 图片引用（json + logic.cc 引用的图片必须存在）==
+  [PASS] 图片引用 全部存在
+== 5. 回调核对（button → onButtonClick，edittext → onEditTextChanged）==
+  [PASS] ui/main.json 回调 齐全
+== 6. 指针核对（mXXXPtr 必须存在于 caption）==
+  [PASS] ui/main.json 指针 全部有效
+== 7. REGISTER_ACTIVITY_TIMER_TAB（每个 logic.cc 必须包含）==
+  [PASS] src/logic/mainLogic.cc 定时器表
+== 8. 括号平衡 ==
+  [PASS] src/logic/mainLogic.cc 括号 平衡
+== 9. ftu→json 自动同步（只两种情形）+ fui pack 成功生成 ftu ==
+  [PASS] main.json ftu 与 json 时间戳正常
+  [PASS] main.json pack 成功 → main.ftu
+== 10. SeekBar 禁用 9-patch（ZKSeekBar 不解析 marker，会显示黑框）==
+  [PASS] ui/main.json SeekBar 9-patch 无
+== 11. 图片尺寸必须与盒子严格相等（控件 position；thumb 子盒用 thumb.size）==
+       引擎行为：图 != 盒时**拉伸填充**（不报错，但非整数缩放发糊/变形）→ 所以要 1:1；
+       thumb 滑块是「自有尺寸」子盒，盒子=thumb.size（铁律 #1）。
+  [PASS] ui/main.json 图片尺寸 全部匹配
+== 12. INIT_UI_TIMERS 不被 FYX_BUILD 保护（fun 工具链宏是 FUN_BUILD）==
+  [PASS] src/logic/mainLogic.cc TIMER 宏保护
+== 13. TextView/Button 最小尺寸（防文本截断）==
+  [PASS] ui/main.json 最小尺寸 满足
+== 14. 控件字段全集（必写键齐全，沛哥 2026-09-08：字段全显式防版本不匹配）==
+  [PASS] ui/main.json 字段全集 齐全
+== 15. 装饰件遮挡可触摸控件（WARN 需人工审批；含「可能故意遮挡」评估）==
+      口径：同层后定义（z 更高）且 touchable=false 的控件压在 touchable=true 控件之上。
+      两类可能：① 误压（装饰件/布局失误）→ 需运行期 setTouchPass(true)；
+      ② 故意遮挡（蒙层/禁用态/防盗点：modal 弹窗、容器遮罩、整屏遮罩、完全覆盖）→ 本就有意，忽略。
+  [PASS] ui/main.json 无装饰件遮挡
+== 16. 代码层 setTouchable(false) 是否配套 setTouchPass(true)（WARN）==
+  [PASS] src/logic/mainLogic.cc 触摸穿透配套
+== 17. 资源产物核对（引用存在 + 自动生成图 PNG 尺寸 == 控件 position；
+       thumb 子盒 PNG 尺寸 == thumb.size，即铁律 #1）==
+  [PASS] 图片引用存在性（1 个页面 / 32 处引用）全部存在
+  [PASS] PNG 尺寸 == 盒子（自动生成图 / thumb.size 声明）全部匹配
+== 18. 设计令牌漂移检测（DESIGN.md 令牌 vs json 实际值；沛哥 2026-09-12）==
+      口径：DESIGN.md 冻结视觉真相，json 颜色/字号应来自令牌；结构值例外 0/-1/16777215；
+      单项例外写一行「漂移豁免: #RRGGBB 18」留痕。无 DESIGN.md / 令牌表未填 → NOTE 跳过。
+  [NOTE] 跳过：未见 DESIGN.md（新项目第一版视觉应当有：见 skill flythings-ui-dev / templates/DESIGN.md）；存量工程可忽略
+== 19. V85X 视频解码返回后必须 releaseLayer（防黑屏；沛哥 2026-09-14 定：
+      平台匹配时开发与 check 验收都必须做，参考 knowledge/v85x/display-layer-debug.md §2）==
+  [NOTE] 跳过：Manifest.xml 无 platform 属性，无法判定平台
+== 20. 运行期 set...Pic 的图 vs 控件盒（v0.27.90；扫 src/**/*.cc|*.cpp）==
+       口径与 #11/#17 同源：图尺寸应 == 控件盒；resources/images/ 的**自动生成图**不等 = FAIL，
+       手绘图（其它目录）不等 = 仅提示（引擎本就拉伸）；.9.png 豁免；变量映射不到控件不静默跳过。
+  [NOTE] 未见 set...Pic 调用（运行期设图），跳过尺寸核对
+== 21. 生成图抗锯齿 / 脏边（委派 tools/qa/aa_audit.py --fail；0 token 有退出码）==
+       钟工 2026-09-19 A2（原话「把 aa_audit --fail 接进 check_all」）：#19/#20 已被
+       V85X 图层释放 / 运行期设图占用 → 为不打乱既有编号与知识库引用，追加为 #21。
+       口径：真缺陷（resid_bad / 成片 hard_diag / 无两区边界时退回 dirty）= FAIL；
+       WARN 逐条列理由（不阻塞也不静默）；*.9.png marker 环由审计内置豁免；
+       白名单只认 tools/qa/aa_audit_allow.json（命中即 EXEMPT 并打印理由）。
+  [PASS] AA 真缺陷 0 张（aa_audit.py 扫 22 张；WARN 0 / EXEMPT 2 / 干净 20 / 审计错误 0）
+  [EXEMPT] cc_scrim_320x240.png           NN_ZOOM_INPUT：输入是 2× 最近邻放大图，阶梯/硬边是放大本身产生的，请改用**原始分辨率**抓帧或传入真实资产（--no-nn-guard 可强制审计）
+  [EXEMPT] footbg_320x40.png              NN_ZOOM_INPUT：输入是 2× 最近邻放大图，阶梯/硬边是放大本身产生的，请改用**原始分辨率**抓帧或传入真实资产（--no-nn-guard 可强制审计）
+== 22. 切图缺倒角 / 直角残留（委派 tools/qa/corner_audit.py --fail；0 token 有退出码）==
+       钟工 2026-09-20 M5（原话「主界面大量图片依旧存在切图缺倒角问题……必须给我从设计标准和
+       拦截上处理好」）：矩形/卡片/磁贴/药丸族按**边起跑距离**几何反解圆角 r_est
+       （d = r - sqrt(r-0.25)）与 DESIGN.md 圆角令牌比。
+       口径：直角残留（d≤1）/ r_est < 0.5×令牌 / 四角不一致 → FAIL；< 0.8×令牌 → WARN；
+       图标・内切图形族不做倒角判据（由 #23 判形状外透明）；满幅/底图族按登记理由 EXEMPT。
+  [PASS] 缺倒角真缺陷 0 张（corner_audit.py 扫 22 张；WARN 0 / EXEMPT 0 / NOTE 21 / 干净 1 / 错误 0）
+  [NOTE] btn_primary_104x16.png           未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] btn_primary_64x16.png            未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] btn_secondary_104x16.png         未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] btn_secondary_64x16.png          未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] card_288x116.png                 未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] card_288x124.png                 未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] card_288x176.png                 未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] cb_16_off.png                    未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] cb_16_on.png                     未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] cc_scrim_320x240.png             未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] chev_12x16.png                   未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] footbg_320x40.png                未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] ...其余 9 张同类（图标/内切族不做倒角判据）
+== 23. 透明底 / 烘底色（委派 tools/qa/alpha_bg_audit.py --fail；0 token 有退出码）==
+       钟工 2026-09-20 M5（原话「控件里面图片背景是黑色的，应该做成透明的，这个设计不符
+       合 flyThings OS 平台的能力」）：形状类资产必须真透明底（形状外 α=0）。
+       口径：整图无透明像素（α≥250）/ 内切・图标族角区不透明（= 烘了底色）/
+       图标贴死图边 → FAIL；满幅族（照片・壁纸・遮罩・1px 通栏线・软阴影）登记豁免。
+  [PASS] 透明底真缺陷 0 张（alpha_bg_audit.py 扫 22 张；WARN 0 / EXEMPT 0 / NOTE 21 / 干净 1 / 错误 0）
+  [NOTE] btn_primary_104x16.png           未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] btn_primary_64x16.png            未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] btn_secondary_104x16.png         未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] btn_secondary_64x16.png          未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] card_288x116.png                 未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] card_288x124.png                 未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] card_288x176.png                 未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] cb_16_off.png                    未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] cb_16_on.png                     未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] cc_scrim_320x240.png             未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] chev_12x16.png                   未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] footbg_320x40.png                未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] panel_256x104.png                未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] rd_16_off.png                    未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] rd_16_on.png                     未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] sep_272x1.png                    未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] sk_fill_272x16.png               未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] sk_thumb_12.png                  未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] sk_track_272x16.png              未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] swk_16.png                       未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] wband_56x24.png                  未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+== 24. 颜色值 0（不透明黑）误用（委派 tools/qa/zero_color_audit.py --fail；0 token 有退出码）==
+       钟工 2026-09-20 M6（原话「控件/切图黑底」「从标准和拦截上处理」）：本平台里
+       颜色值 **0 = 不透明黑**、**-1 = 透明**；json 里把「透明」写成 0 的字段（backgroundColor /
+       bgColorTab.color0 / textBgColor …）真机就是黑块。口径见 DESIGN.md §2.1 与
+       references/kb/image-gen-standard.md §7.6：未登记豁免 → FAIL；命中
+       tools/qa/zero_color_allow.json（视频/摄像头面黑底）→ EXEMPT + 打印理由。
+  [PASS] 颜色 0 误用 0 处（zero_color_audit.py 扫 1 条；EXEMPT 0 / 干净 1 / 错误 0）
+== 25. 弧线过渡质量（9-patch 圆角 AA；委派 tools/qa/corner_audit.py --arc-only --fail）==
+       钟工 2026-09-20 M8（原话「全控件演示界面的每个演示框背景图 ct_card.9.png 倒角有
+       严重锯齿」）：#22 量倒角的*几何*（有没有/够不够大），#25 量弧上的*过渡质量*
+       （覆盖率是否真的从 0 渐变到满值）。`*.9.png` 先剥离最外 1px marker 环再判。
+       口径：角块内「外沿进入像素」（α>0 且 4 邻域有 α=0）的覆盖率 = α/峰值α；
+       要求 min_cov ≤ 0.35 且 ≤0.35 的个数 ≥ 2（成组出现）；否则 = 过渡被压进 1px 硬阶梯 → FAIL。
+       阈值出处 P(min>t)=(1−t)^N（与标准「≥4× 超采样」档位自洽）见 references/kb/image-gen-standard.md §7.7。
+  [PASS] 弧线过渡硬阶梯 0 张（corner_audit.py 扫 22 张；弧线可判 1 张（均 CLEAN）/ WARN 0 / NOTE 21 / 错误 0）
+  [NOTE] btn_primary_104x16.png           未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] btn_primary_64x16.png            未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] btn_secondary_104x16.png         未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] btn_secondary_64x16.png          未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] card_288x116.png                 未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] card_288x124.png                 未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] ...其余 15 张同类（无透明背景/样本不足）
+== 26. scrollwindow 行程核对（行程 = 内层 window − 视口，**不读 dragMaxDis**）==
+       钟工 2026-10-01 定：`dragMaxDis` = 越界拖拽上限（overscroll），四个滑动控件语义一致，
+       **不是行程**；行程由内容决定、引擎自算（scrollwindow = 内层 window 尺寸 − 视口尺寸）。
+       反例（旧口径作废的证据）：官方 ScrollWindowDemo-New 视口 450 / 内容 800（行程 350）
+       而 dragMaxDis=200；SmartPanel settings 视口 418 / 内容 832（行程 414）而 dragMaxDis=60，
+       真机仍能滚 302px 到底。口径：knowledge/uicontrols/scroll-drag-interaction-spec.md。
+  [NOTE] ui/main.json scrollwindow__1（y 轴）视口 168 / 内容 858 / 行程 690；dragMaxDis=24
+  [PASS] 行程与 dragMaxDis 用法正常（1 处）
+== 27. 同族控件口径离群 / 文本×图标重叠（设计期拦截；钟工 2026-10-01）==
+       给设置行这类重复行模板上的静态判据：同页同父同角色的 *Label/*Value/*Icon/*Chevron
+       应取同一组 (left,width,height,alignment) 口径；偏离众数、或文本盒与图标/箭头盒相交 → WARN。
+       实例：某行值框被做成右对齐窄框 300..418（其余 12 行 75..375），且右缘顶到箭头盒
+       → 文字凸出 43px + “文本和箭头混到一起”（引擎先画背景图后画文字，箭头被盖住）。
+       口径：knowledge/uicontrols/scrollwindow-layout-checklist.md。
+== 28. UTF-8 文本陷阱（src 静态扫描；钟工 2026-10-01）==
+       `find_first_of("：")` 按**单字节**匹配 → 多字节字符被切在字节中间（实测「回家模式」被切坏）
+       → 必须用 `find("：")` 整序列搜索。只扫**含非 ASCII** 的字面量实参（纯 ASCII 集合法，不报）。
+       口径：knowledge/uicontrols/text-box-height-rule.md（UTF-8 三件套）。
+  [NOTE] 扫描 1 个源文件
+  [PASS] 未发现多字节 find_first_of/find_last_of
+== 29. 显示件吃掉下层触摸（装饰件漏设穿透；钟工 2026-10-01）==
+       同层「后定义（z 更高）+ 可见 + touchable 未显式 false」的纯显示件压住交互控件
+       → 会吃掉 DOWN（症状=整块点不动/只剩缝隙能点）。容器/整屏/近全覆盖/modal 视为故意，不报。
+       口径：knowledge/uicontrols/touch-events.md、scrollwindow-layout-checklist.md §2.1。
+  [PASS] 无显示件压住交互控件（1 页）
+== 30. caption 唯一性（页内同名 caption → onButtonClick_<caption> 重定义 ⇒ C++ 编译必失败；钟工 2026-10-01）==
+       #5 只核对「回调是否存在」，核不出同名 caption 各生成一份回调（重定义）
+       → 同一 json 内 caption 出现 ≥2 次即 FAIL，并列出「哪个 caption、几次、在哪几个控件」。
+       背景：templates/ui_blocks/compose.py 修前按「卡内序号」分配块名 → 跨卡从 1 重数
+       （RowSep1×5 / ButtonRowSettingRow1×2 等），生成的两份 onButtonClick 一个 TU 里重定义。
+  [PASS] 1 页 caption 全部唯一
+== 31. 行族文本对齐轴（离群 → WARN；钟工 2026-10-01）==
+       同页行族文本盒左缘只应出现 1~2 个值（绝对布局下「某行没和同页对齐」是最常见返工）。
+  [NOTE] ui/main.json Label-left 轴 24（8 项）
+  [PASS] 行族对齐轴收敛
+== 32. 垂直间距节奏（同页间隙取值应成小集合；钟工 2026-10-01）==
+== 35. 箭头/图标盒下限（< 12x16 → WARN；钟工 2026-10-01）==
+  [PASS] 箭头盒均 ≥ 12x16
+== 36. 文本盒余量（< 估算宽 ×1.05 → NOTE）==
+  [PASS] 文本盒余量充足
+== 37. listview item 高核对（itemH = int(lv高/rows) − rowSpacing；钟工 2026-10-01）==
+       余数（底部露出下一项一小块）是**有意的可滑动提示**，不算缺陷；只有「比公式大（挤爆）或比公式小（空带）」才报。
+  [NOTE] ui/main.json ListListItem13 item 高 24 = int(98/4)−0 ✓，余 2 px = 可滑动提示（预期）
+  [NOTE] ui/main.json ListWheelPicker14Col1 item 高 24 = int(120/5)−0 ✓，余 0 px = 可滑动提示（预期）
+  [NOTE] ui/main.json ListWheelPicker14Col2 item 高 24 = int(120/5)−0 ✓，余 0 px = 可滑动提示（预期）
+
+[OK] 全部 PASS，可以交付。

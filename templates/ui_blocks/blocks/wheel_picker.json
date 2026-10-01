@@ -1,0 +1,35 @@
+{
+  "type": "wheel_picker",
+  "zh": "滚轮选择块（listview 组合实现；正中行 = 选中行，选中条挂静态层）",
+  "builder": "widget",
+  "family": "list",
+  "caption_prefix": "WheelPicker",
+  "fields": {
+    "label": {"type": "string", "required": false, "example": "定时关闭"},
+    "rows": {"type": "int", "default": 5, "note": "**可见行数（必须奇数）** —— 正中行 = 第 (rows−1)/2 行 = 选中行"},
+    "columns": {"type": "array", "required": true, "example": [{"options": ["不关闭", "15 分钟", "30 分钟"], "selected": 1}], "note": "一列 = 一个 listview；selected 只用于业务初始化（数据侧平移，见 listview-wheel-picker.md §1）"}
+  },
+  "relative_constraints": {
+    "lv_box": "每列宽 = 屏宽 × 0.20（4px 栅格），高 = rows × 模板行高（**恰好整除，不留余数**：滚轮的语义是「刚好一屏窗口」）；列间距 = spacer-2；整组在内容区水平居中",
+    "itemH": "**itemH = int(lv高 / rows) − rowSpacing**；模板 item.position.height 必须 == 它（check_all #37 核对）",
+    "band": "选中条 = 静态装饰 textview（**写在 listview 之前 = z 更低**），盒 = 该列正中行盒（top = 列 top + (rows−1)/2 × itemH），底图 == 盒",
+    "band_rule": "条**不许挂行背景图**：行背景图随行滚动 → 手指一拖条就跑；必须挂静态层（listview-wheel-picker.md §3 坑 4）",
+    "item": "item.text 空串；picTab.pic0/1/2 全空、colorTab.color2/color3 与常态同色 → 让引擎自带的「当前项」选中态看不见（它会盖掉宿主 setSelected，且打在第 1 可见行）",
+    "fields": "cycleEnable true（循环列表 = 滚轮语义）/ edgeEffect 1 / autoRollback true / dragMaxDis 50×缩放下限 24 / hasScrollbar false",
+    "runtime": "回读正中行 = fi + (h/2 − off)/ih（off 为负 = 内容上移，符号写错会差 1~2 行）；程序化定位用**数据侧平移**，不要 setSelection（带动画且只对齐第 1 行）"
+  },
+  "assets": [
+    {"name": "wband_{W}x{H}.png", "via": "gen_res.rounded_rect_ss(fill=brand1, radius=min(6, 行高×0.18) 且 ≥4)", "size": "正中行盒 == 图"}
+  ],
+  "scroll": "inherit",
+  "forbidden": [
+    "**选中条挂在行背景图上**（滚动时条跟着行走；必须挂静态层且写在 listview 之前）",
+    "条写在 listview **之后**（z 更高会盖住列表、还可能吃掉触摸）",
+    "条设成可触摸（装饰件必须 touchable:false 显式写）",
+    "用引擎的选中态（pic2 / color2）做正中行高亮（引擎把选中态打在第 1 可见行，会盖掉宿主设置）",
+    "程序化定位用 setSelection（只对齐第 1 行 + 带动画 → 「读-改-读」迭代会越推越远）",
+    "lv 高非 rows 整除却当成「可滑动提示」凑格（滚轮要刚好一屏窗口；余数语义属于 list_item）",
+    "自绘轮子（平台 listview 组合就是 L2 能力，见 listview-wheel-picker.md §5/§6）"
+  ],
+  "compact_note": "极小屏：列宽 = 内容宽 × 0.20（≥ 40），模板行高 24，rows 5；label 文案 ≤ 4 字"
+}

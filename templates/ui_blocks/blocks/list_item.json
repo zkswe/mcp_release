@@ -1,0 +1,33 @@
+{
+  "type": "list_item",
+  "zh": "列表行块（listview + subItem 行模板，可直接喂数据）",
+  "builder": "widget",
+  "family": "list",
+  "caption_prefix": "ListItem",
+  "fields": {
+    "label": {"type": "string", "required": false, "example": "设备列表", "note": "可选：列表上方的小标题带"},
+    "rows": {"type": "int", "default": 4, "note": "**可见行数**（= listview.rows；引擎按它算行高）"},
+    "rowSpacing": {"type": "int", "default": 0, "note": "行间距（参与 itemH 公式）"},
+    "chevron": {"type": "bool", "default": true, "note": "行尾是否给箭头子项（静态装饰图，非文本）"}
+  },
+  "relative_constraints": {
+    "lv_box": "宽 = 行条宽 − 2×pad_left；高 = rows × 模板行高 + 余数（余数 = lv高 mod rows，见下）",
+    "itemH": "**itemH = int(lv高 / rows) − rowSpacing**（引擎口径）；模板 item.position.height **必须 == 这个值**（check_all #37 逐条核对）",
+    "peek": "余数（lv 高 − rows×(itemH+rowSpacing)）**是有意的可滑动提示**：底部露出下一项一小块，告诉用户「还能滑」——不算缺陷（#37 出 NOTE 而不是 WARN）",
+    "item_box": "item.position = (0, 0, 列表宽, itemH)；item.text 必须空串（默认值 \"ListItem\" 会每行常显，见 listview-fields.md 坑 1）",
+    "subitem": "行内容走 subItem（**绝不平铺子控件**，check_all #2 层级）：标题子项（左对齐、b1 档、fg1、text 空串，运行期由 obtainListItemData 填）+ 可选的箭头子项（盒 == 箭头图）",
+    "id_band": "listview id 取 80000 段、subitem 取 24000 段（与既有工程一致；两段都不在 check_all #5 的回调核对范围内）"
+  },
+  "assets": [
+    {"name": "chev_{W}x{H}.png", "via": "与行族共用箭头切图（同名同尺寸只出一张）", "size": "箭头子项盒"}
+  ],
+  "scroll": "inherit",
+  "forbidden": [
+    "**item 高 ≠ int(lv高/rows) − rowSpacing**（比公式大 = 挤爆/裁切；比公式小 = 每项底部多空带）→ check_all #37 WARN",
+    "把「底部露出下一项一小块」当缺陷去凑整（那是引擎给的可滑动提示，凑整反而要看行高是否等于公式）",
+    "item.text / subItem.text 写占位串（真机每行常显占位文字，运行期数据一来就串味）",
+    "在 listview 下平铺 textview/button 当行（引擎不认，check_all #2 报层级非法）",
+    "subItem 图 ≠ subItem 盒（引擎拉伸）"
+  ],
+  "compact_note": "极小屏：模板行高 = 标题高 + spacer（24）、rows 3~4；标题子项文案要短"
+}

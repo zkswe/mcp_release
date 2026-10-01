@@ -1,0 +1,36 @@
+{
+  "type": "radio_row",
+  "zh": "单选行（标题 + 竖排 radiogroup/radiobuttons 选项）",
+  "builder": "field_row",
+  "family": "row",
+  "caption_prefix": "RadioRow",
+  "fields": {
+    "label": {"type": "string", "required": true, "example": "工作模式"},
+    "value": {"type": "string", "required": false, "example": "当前：本地主机"},
+    "value_short": {"type": "string", "required": false},
+    "options": {"type": "array", "required": true, "example": ["本地主机", "远程主机", "自动切换"], "note": "选项文案（顺序即 radiobuttons 顺序）"},
+    "selected": {"type": "int", "default": 0, "note": "初始选中项下标（业务侧 m<Caption>Ptr->setCheckedID(ID_MAIN_<选项caption>)）"}
+  },
+  "relative_constraints": {
+    "row_w/row_h/text_band": "同 setting_row（行高、左内边距、文本盒口径照抄行族）",
+    "group_band": "radiogroup 占独立一带：左/右内缩 pad_left，盒高 = 选项数 × 项高（项高 = max(标题高 + spacer, 行高 × 0.70)），上下各留 spacer",
+    "option_box": "每个 radiobutton 盒 = (组宽, 项高)，top = 序号 × 项高（**子项坐标相对 radiogroup**，与 listview 子项同一口径）",
+    "mark": "圆点边长 = max(图标档 12, 行高 × 0.50)；iconPosition = {左内边距, (项高−圆点)/2, 圆点, 圆点}；textPosition = 圆点右缘 + spacer 起",
+    "pics": "picTab.pic0 = 未选（**switchOff 实底圆，不给 1px 描边环**：小盒上的 1px 环过不了 AA 审计）；picTab.pic2 = 选中（品牌实底圆 + 白内点；**标记盒 <24px 时不给内点**：7px 内点的弧线在 AA 审计里是硬阶梯 → #21 真缺陷，极小屏改用实底色区分态）；两张图尺寸 == 圆点盒",
+    "container": "radiogroup **touchable 必须 true**（写 false 整组收不到触摸 = 点了没反应；它是「容器 touchable=false」口径的例外，见 radiogroup-checkbox-fields.md 铁律 5）"
+  },
+  "assets": [
+    {"name": "rd_{S}_off.png", "via": "gen_res.rounded_rect_cov(radius=S/2, fill=switchOff)", "size": "圆点盒（正方）"},
+    {"name": "rd_{S}_on.png", "via": "gen_res.rounded_rect_cov(radius=S/2, fill=brand) + 白色内点（S≥24 时）", "size": "圆点盒（正方）"}
+  ],
+  "scroll": "inherit",
+  "forbidden": [
+    "radiogroup touchable 写 false（整组点不动 —— 它不是普通容器）",
+    "radiobutton 的选中图写进 pic1（引擎只认 pic2 = 选中态）",
+    "圆点盒 ≠ 图（引擎拉伸 → 圆变椭圆）",
+    "选中态用 1px 环 / 极小内点画（AA 审计真缺陷：小弧线过不了；见 references/kb/image-gen-standard.md §1.2）",
+    "把选项横排（横排要按选项数动态改行族预留，会让同页其它行的文本盒跟着变宽/变窄；竖排在极小屏也放得下）",
+    "radiobutton 的 id 落在 20000~30000 段（check_all #5 会要求 onButtonClick_<caption>；本块用 94100 段）"
+  ],
+  "compact_note": "极小屏：项高 = 24，圆点 16；选项文案 ≤ 4 字（value 用 value_short）"
+}

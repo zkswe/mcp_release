@@ -1,0 +1,113 @@
+{
+  "_doc": "示例 C · 1024×600（基准屏）· 交互类块。第 2 批 7 个新块每块至少一处 + 复用 card / section_header / toggle_row / setting_row / bottom_actions / dialog。与 ../interactive_320x240/spec.json 是**同一套块**，只差 resolution 与极小屏短文案。",
+  "resolution": {
+    "width": 1024,
+    "height": 600
+  },
+  "page": {
+    "title": "交互控件",
+    "subtitle": "Interactive",
+    "blocks": [
+      {
+        "type": "card",
+        "title": "播放",
+        "blocks": [
+          {
+            "type": "slider_row",
+            "label": "音量",
+            "value": "当前 60%",
+            "progress": 60
+          },
+          {
+            "type": "progress_row",
+            "label": "播放进度",
+            "value": "已播放 45%",
+            "progress": 45
+          },
+          {
+            "type": "toggle_row",
+            "label": "循环播放",
+            "value": "已开启",
+            "on": true
+          },
+          {
+            "type": "setting_row",
+            "label": "音效模式",
+            "value": "标准"
+          }
+        ]
+      },
+      {
+        "type": "card",
+        "title": "设备信息",
+        "blocks": [
+          {
+            "type": "input_row",
+            "label": "设备名称",
+            "hintText": "请输入设备名称",
+            "text": "客厅面板",
+            "textType": 0
+          },
+          {
+            "type": "checkbox_row",
+            "label": "记住本次设置",
+            "value": "已勾选",
+            "checked": true
+          },
+          {
+            "type": "checkbox_row",
+            "label": "开机自动播放",
+            "value": "未勾选",
+            "checked": false
+          }
+        ]
+      },
+      {
+        "type": "card",
+        "title": "运行模式",
+        "blocks": [
+          {
+            "type": "radio_row",
+            "label": "工作模式",
+            "value": "当前 本地主机",
+            "options": ["本地主机", "远程主机", "自动切换"],
+            "selected": 0
+          }
+        ]
+      },
+      {
+        "type": "section_header",
+        "text": "设备列表"
+      },
+      {
+        "type": "list_item",
+        "label": "在线设备",
+        "rows": 4,
+        "chevron": true
+      },
+      {
+        "type": "wheel_picker",
+        "label": "定时关闭",
+        "rows": 5,
+        "columns": [
+          {"options": ["不关闭", "15 分钟", "30 分钟", "60 分钟"], "selected": 1},
+          {"options": ["整点", "半点"], "selected": 0}
+        ]
+      },
+      {
+        "type": "bottom_actions",
+        "status": "已是最新",
+        "primary": "保存",
+        "secondary": "取消"
+      },
+      {
+        "type": "dialog",
+        "title": "确认保存",
+        "body": "保存后立即生效，确定继续吗？",
+        "primary": "保存",
+        "secondary": "取消",
+        "visible": false
+      }
+    ]
+  }
+}

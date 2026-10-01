@@ -1,0 +1,105 @@
+== compose (320x240) ==
+  行高 28 ｜ 字号 {'h1': 14, 'h2': 12, 'b1': 12, 'b2': 10} ｜ 圆角 5 ｜ 图标底/图标 16/12 ｜ 箭头 12x16 ｜ 内容 858 → 视口 168
+  [NOTE] 内容总高 858 > 视口 168 → 自动上滑动窗口（行程 690 px，dragMaxDis=24）
+  btn_primary_104x16.png  104x16
+  btn_primary_64x16.png  64x16
+  btn_secondary_104x16.png  104x16
+  btn_secondary_64x16.png  64x16
+  card_288x116.png  288x116
+  card_288x124.png  288x124
+  card_288x176.png  288x176
+  cb_16_off.png  16x16
+  cb_16_on.png  16x16
+  cc_scrim_320x240.png  320x240
+  chev_12x16.png  12x16
+  footbg_320x40.png  320x40
+  panel_256x104.png  256x104
+  rd_16_off.png  16x16
+  rd_16_on.png  16x16
+  sep_272x1.png  272x1
+  sk_fill_272x16.png  272x16
+  sk_thumb_12.png  12x12
+  sk_track_272x16.png  272x16
+  sw_36x20_on.png  36x20
+  swk_16.png  16x16
+  wband_56x24.png  56x24
+  出图 22 张 → C:\Users\zkswe\.openclaw\workspace\tools\FlyThings_mcp_open\templates\ui_blocks\examples\interactive_320x240\project\resources\images
+  logic 骨架 → C:\Users\zkswe\.openclaw\workspace\tools\FlyThings_mcp_open\templates\ui_blocks\examples\interactive_320x240\project\src\logic\mainLogic.cc（6 个按钮回调 + 1 个输入框回调）
+  → C:\Users\zkswe\.openclaw\workspace\tools\FlyThings_mcp_open\templates\ui_blocks\examples\interactive_320x240\project\ui\main.json
+  控件：顶层 6 个键 ｜ 含嵌套共 62 个控件
+-- render --
+========================================================================
+json2img v0.1.0 — 引擎等价离线渲染（PIL 像素级，静止态）
+========================================================================
+[render] page=main       json=templates\ui_blocks\examples\interactive_320x240\project\ui\main.json
+          out=C:\Users\zkswe\.openclaw\workspace\tools\FlyThings_mcp_open\templates\ui_blocks\examples\interactive_320x240\project\ui\main.render.png  size=320x240  resolution=320x240  scale=1
+          font=C:\Users\zkswe\.openclaw\workspace\tools\FlyThings_mcp_open\components\fonts\fonts\zkswe-hans-common.ttf
+          [OK] 尺寸 == resolution × scale
+------------------------------------------------------------------------
+[unsupported/降级] 9 类：
+   - textview       bold                   x5    无 *Bold*.ttf 变体 → 用同字体
+     pages: main
+     例: textview/TextTitle, textview/SectionHeader1, textview/SectionHeader6, textview/SectionHeader10
+   - subitem        picTab.pic0            x4    按背景图绘制（仅常态；按下/选中态不还原）
+     pages: main
+     例: subitem/ListItem13ItemSubChevron
+   - checkbox       picTab.pic0            x2    按背景图绘制（仅常态；按下/选中态不还原）
+     pages: main
+     例: checkbox/CheckRowCheckboxRow8Box, checkbox/CheckRowCheckboxRow9Box
+   - checkbox       checkbox               x2    v0 未专有实现 → 通用兜底（底色+背景图+文字）
+     pages: main
+     例: checkbox/CheckRowCheckboxRow8Box, checkbox/CheckRowCheckboxRow9Box
+   - listview       item/subItem           x2    按模板画 5 个单元（1x5 网格）；运行期数据/滚动不还原
+     pages: main
+     例: listview/ListWheelPicker14Col1, listview/ListWheelPicker14Col2
+   - seekbar        defProgress            x1    进度静止态（defProgress/max=60%），拖动/动画不还原
+     pages: main
+     例: seekbar/SeekRowSliderRow2Bar
+   - seekbar        defProgress            x1    进度静止态（defProgress/max=45%），拖动/动画不还原
+     pages: main
+     例: seekbar/SeekRowProgressRow3Bar
+   - radiogroup     radiogroup             x1    v0 未专有实现 → 通用兜底（底色+背景图+文字）
+     pages: main
+     例: radiogroup/RadioRowRadioRow11Group
+   - listview       item/subItem           x1    按模板画 4 个单元（1x4 网格）；运行期数据/滚动不还原
+     pages: main
+     例: listview/ListListItem13
+[拉伸填充（图 != 矩形，引擎语义=拉伸）2 类]
+   - main seekbar images/sk_fill_272x16.png x1
+   - main seekbar images/sk_fill_272x16.png x1
+------------------------------------------------------------------------
+[校准状态] alignment（模式 --align-mode measured）
+   实测表（真机验证）：36=靠左+垂直居中 37=居中 38=靠右+垂直居中 33=顶部 41=底部
+     [measured]     36  → ('l', 'c')   x16
+     [measured]     37  → ('c', 'c')   x2
+     [measured]     38  → ('r', 'c')   x7
+   TODO 待校准（无真机表）：4/5/0/1/6/2 —— 本模式解码：
+   合计：实测 25 处 / 待校准 0 处 / 表外 0 处
+  渲染图 main.render.png 320x240 ｜ 尺寸 == resolution: True
+-- check_all --
+  [NOTE] panel_256x104.png                未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] rd_16_off.png                    未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] rd_16_on.png                     未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] sep_272x1.png                    未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] sk_fill_272x16.png               未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] sk_thumb_12.png                  未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] sk_track_272x16.png              未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] swk_16.png                       未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] wband_56x24.png                  未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+== 24. 颜色值 0（不透明黑）误用（委派 tools/qa/zero_color_audit.py --fail；0 token 有退出码）==
+       references/kb/image-gen-standard.md §7.6：未登记豁免 → FAIL；命中
+== 25. 弧线过渡质量（9-patch 圆角 AA；委派 tools/qa/corner_audit.py --arc-only --fail）==
+       要求 min_cov ≤ 0.35 且 ≤0.35 的个数 ≥ 2（成组出现）；否则 = 过渡被压进 1px 硬阶梯 → FAIL。
+  [NOTE] btn_primary_104x16.png           未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] btn_primary_64x16.png            未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] btn_secondary_104x16.png         未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] btn_secondary_64x16.png          未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] card_288x116.png                 未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] card_288x124.png                 未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+== 26. scrollwindow 行程核对（行程 = 内层 window − 视口，**不读 dragMaxDis**）==
+== 27. 同族控件口径离群 / 文本×图标重叠（设计期拦截；钟工 2026-10-01）==
+== 28. UTF-8 文本陷阱（src 静态扫描；钟工 2026-10-01）==
+== 29. 显示件吃掉下层触摸（装饰件漏设穿透；钟工 2026-10-01）==
+       → 同一 json 内 caption 出现 ≥2 次即 FAIL，并列出「哪个 caption、几次、在哪几个控件」。
+[OK] 全部 PASS，可以交付。
+  check_all exit = 0

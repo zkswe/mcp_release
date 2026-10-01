@@ -1,0 +1,34 @@
+{
+  "type": "checkbox_row",
+  "zh": "复选行（标题 + 状态值 + 右端复选框）",
+  "builder": "field_row",
+  "family": "row",
+  "caption_prefix": "CheckboxRow",
+  "fields": {
+    "label": {"type": "string", "required": true, "example": "记住本次设置"},
+    "value": {"type": "string", "required": false, "example": "已勾选"},
+    "value_short": {"type": "string", "required": false},
+    "checked": {"type": "bool", "default": false, "note": "初始勾选态（运行期 m<Caption>Ptr->setChecked(b)）"},
+    "component": {"type": "string", "default": "checkbox", "note": "行内控件的底（见下 forbidden：不要在同一行混两种形态）"}
+  },
+  "relative_constraints": {
+    "row_w/row_h": "同 setting_row（行高、左内边距、文本盒口径全部照抄行族）",
+    "checkbox_box": "正方盒（边长 = max(图标档 12, 行高 × 0.50)），贴行条右缘 − pad_right、与行条垂直居中；**盒 == 图**",
+    "pics": "picTab.pic0 = 未选（**switchOff 实底方，不给 1px 描边环**：小盒上的 1px 环在 AA 审计里会退化成「成片直通 α」→ #21 真缺陷）；picTab.pic2 = 选中（品牌实底 + 白勾）；两张图尺寸都 == 复选框盒",
+    "touchable": "**checkbox 自身 touchable=true（它就是命中区）**；不给整行透明 button —— 整行 button 会压在复选框之上，吃掉勾选（与 toggle_row「装饰件 + 整行命中」不同）",
+    "text": "复选框自身 text 留空串（标题由行族 label 承担，避免同页出现两套文本左缘）"
+  },
+  "assets": [
+    {"name": "cb_{W}x{H}_off.png", "via": "gen_res.rounded_rect_cov(radius=W×0.25, fill=switchOff)", "size": "复选框盒（方）"},
+    {"name": "cb_{W}x{H}_on.png", "via": "gen_res.rounded_rect_cov(fill=brand) + 白色 check 字形居中", "size": "复选框盒（方）"}
+  ],
+  "scroll": "inherit",
+  "forbidden": [
+    "在复选框行上再压一个整行透明 button（吃掉勾选：点行没有任何反应）",
+    "复选框盒 ≠ 图（引擎拉伸 → 圆角糊、勾变形）",
+    "把「选中态」写成引擎自己的选中图却不给 pic2（点一下没视觉反馈）",
+    "id 取 21000 段（那是 html2json 的旧口径）：本块用 94500 段，避开 check_all #5「20000~30000 段必须有 onButtonClick_<caption>」——checkbox 的语义回调是 onCheckedChanged，不是 onButtonClick",
+    "勾选态与 value 文案不一致（「已勾选」却 checked=false）"
+  ],
+  "compact_note": "极小屏：复选框边长 = 16（图标档），value 用 value_short；仍不做整行命中"
+}

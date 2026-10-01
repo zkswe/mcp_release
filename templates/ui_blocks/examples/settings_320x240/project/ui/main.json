@@ -266,7 +266,7 @@
           "position": {
             "left": 8,
             "top": 6,
-            "width": 100,
+            "width": 88,
             "height": 16
           },
           "alignment": 36,
@@ -301,9 +301,9 @@
           "id": 50007,
           "caption": "TextRowSettingRow2Value",
           "position": {
-            "left": 116,
+            "left": 104,
             "top": 6,
-            "width": 148,
+            "width": 136,
             "height": 16
           },
           "alignment": 38,
@@ -424,7 +424,7 @@
           "position": {
             "left": 8,
             "top": 34,
-            "width": 100,
+            "width": 88,
             "height": 16
           },
           "alignment": 36,
@@ -459,9 +459,9 @@
           "id": 50010,
           "caption": "TextRowSettingRow3Value",
           "position": {
-            "left": 116,
+            "left": 104,
             "top": 34,
-            "width": 148,
+            "width": 136,
             "height": 16
           },
           "alignment": 38,
@@ -582,7 +582,7 @@
           "position": {
             "left": 8,
             "top": 62,
-            "width": 100,
+            "width": 88,
             "height": 16
           },
           "alignment": 36,
@@ -617,9 +617,9 @@
           "id": 50013,
           "caption": "TextRowSettingRow4Value",
           "position": {
-            "left": 116,
+            "left": 104,
             "top": 62,
-            "width": 148,
+            "width": 136,
             "height": 16
           },
           "alignment": 38,
@@ -968,7 +968,7 @@
           "position": {
             "left": 8,
             "top": 6,
-            "width": 100,
+            "width": 88,
             "height": 16
           },
           "alignment": 36,
@@ -1003,9 +1003,9 @@
           "id": 50021,
           "caption": "TextRowSettingRow6Value",
           "position": {
-            "left": 116,
+            "left": 104,
             "top": 6,
-            "width": 148,
+            "width": 136,
             "height": 16
           },
           "alignment": 38,
@@ -1126,7 +1126,7 @@
           "position": {
             "left": 8,
             "top": 34,
-            "width": 100,
+            "width": 88,
             "height": 16
           },
           "alignment": 36,
@@ -1161,9 +1161,9 @@
           "id": 50024,
           "caption": "TextRowIconRow7Value",
           "position": {
-            "left": 116,
+            "left": 104,
             "top": 34,
-            "width": 148,
+            "width": 136,
             "height": 16
           },
           "alignment": 38,
@@ -1486,7 +1486,7 @@
           "position": {
             "left": 8,
             "top": 90,
-            "width": 100,
+            "width": 88,
             "height": 16
           },
           "alignment": 36,
@@ -1521,9 +1521,9 @@
           "id": 50031,
           "caption": "TextRowDeviceCard9Value",
           "position": {
-            "left": 116,
+            "left": 104,
             "top": 90,
-            "width": 148,
+            "width": 136,
             "height": 16
           },
           "alignment": 38,

@@ -1,0 +1,39 @@
+{
+  "type": "slider_row",
+  "zh": "滑块行（标题 + 数值 + 可拖滑块 seekbar）",
+  "builder": "field_row",
+  "family": "row",
+  "caption_prefix": "SliderRow",
+  "fields": {
+    "label": {"type": "string", "required": true, "example": "音量"},
+    "value": {"type": "string", "required": false, "example": "音量 60%", "note": "数值文案（业务侧可读写）"},
+    "value_short": {"type": "string", "required": false, "note": "极小屏替代文案"},
+    "progress": {"type": "int", "default": 60, "range": "0~100", "example": 60, "note": "写入 seekbar.defProgress（max 恒 100，故 progress 即百分比）；运行期用 m<Caption>Ptr->setProgress(v)"},
+    "max": {"type": "int", "default": 100, "note": "本块固定 100 —— progress 就是百分比，业务不必再换算"}
+  },
+  "relative_constraints": {
+    "row_w": "内容区宽 = 屏宽 − 2×margin（margin = spacer-2）",
+    "row_h": "文本带高 = 行高（同 setting_row；全页行族同一口径）",
+    "text_band": "文本带内 title/value 盒**逐字节照抄行族口径**（左缘 = 行族 text_left、宽 = 行族 text_w、字号 b1/b2、色 fg1/fg2）——不得为滑块收窄文本盒",
+    "slider_band": "滑块占**独立一带**（高 = seek 盒高 + 2×spacer），左/右内缩 pad_left；不与文本盒相交",
+    "seek_box": "宽 = 行条宽 − 2×pad_left；高 = max(thumb 尺寸, 行高 × 0.60)；**盒高必须 ≥ thumb.size.height**，否则真机滑块被盒高压扁（seekbar-fields.md §2 实测）",
+    "thumb": "正方盒（边长 = 图标档 max(12, 行高 × 0.40)）；`thumb.size == 滑块图尺寸`（图 == thumb 子盒，铁律 #1）；滑轨图高 == 控件盒高、可见条居中、**可见条高 ≥ 10px**（条太矮时药丸端的弧线过渡在 AA 审计里会退化成硬阶梯 → #21 真缺陷）",
+    "track_pics": "backgroundPic（轨道）与 progressPic（有效）尺寸 **== 控件盒**（图 == 盒）；引擎按 defProgress/max 横向裁剪 progressPic",
+    "readonly": "progress_row 用同一套几何，只把「可拖」交给业务（setTouchable(false) 或干脆不注册回调）"
+  },
+  "assets": [
+    {"name": "sk_track_{W}x{H}.png", "via": "gen_res.rounded_rect_ss(radius=bar_h/2) 居中贴进透明画布", "size": "控件盒 W×H（可见圆条高 ≈ 盒高 43%，上下透明）"},
+    {"name": "sk_fill_{W}x{H}.png", "via": "同上（品牌色）", "size": "控件盒 W×H"},
+    {"name": "sk_thumb_{S}.png", "via": "gen_res.rounded_rect_ss(radius=S/2)", "size": "thumb.size（正方）"}
+  ],
+  "scroll": "inherit",
+  "forbidden": [
+    "**滑块盒 ≠ 图**（thumb.size 与滑块图尺寸不一致）→ 真机滑块与轨道错位",
+    "**滑块被盒高压扁**（控件 position.height < thumb.size.height）→ 屏幕上是扁椭圆（只改图或只改盒都没用）",
+    "为给滑块腾位把 title/value 文本盒收窄/挪位（照抄行族口径，冲突改布局形态）",
+    "滑轨/有效图用 .9.png（ZKSeekBar 不解析 marker → 显示黑框，check_all #10）",
+    "把 progress（0~100）当像素或行程写进别的字段",
+    "滑轨可见条做得太矮（< 10px）→ 药丸端弧线过不了 AA 审计（#21 真缺陷）"
+  ],
+  "compact_note": "极小屏：thumb 取 12×12（图标档下限），滑块带高 = 16 + 2×spacer；文本用 value_short"
+}

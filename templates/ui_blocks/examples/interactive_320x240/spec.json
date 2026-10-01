@@ -1,0 +1,111 @@
+{
+  "_doc": "示例 D · 320×240（边界屏）· 交互类块。与 ../interactive_1024x600/spec.json 是 **同一套块**、同一份块清单，只换 resolution；极小屏自动降级（单行式行族、字号降 2 级、短文案）。",
+  "resolution": {
+    "width": 320,
+    "height": 240
+  },
+  "page": {
+    "title": "交互",
+    "blocks": [
+      {
+        "type": "card",
+        "title": "播放",
+        "blocks": [
+          {
+            "type": "slider_row",
+            "label": "音量",
+            "value": "当前 60%",
+            "progress": 60
+          },
+          {
+            "type": "progress_row",
+            "label": "进度",
+            "value": "已播 45%",
+            "progress": 45
+          },
+          {
+            "type": "toggle_row",
+            "label": "循环",
+            "value": "已开",
+            "on": true
+          },
+          {
+            "type": "setting_row",
+            "label": "音效",
+            "value": "标准"
+          }
+        ]
+      },
+      {
+        "type": "card",
+        "title": "设备",
+        "blocks": [
+          {
+            "type": "input_row",
+            "label": "设备名",
+            "hintText": "请输入名称",
+            "text": "客厅",
+            "textType": 0
+          },
+          {
+            "type": "checkbox_row",
+            "label": "记住设置",
+            "value": "已勾选",
+            "checked": true
+          },
+          {
+            "type": "checkbox_row",
+            "label": "开机播放",
+            "value": "未勾选",
+            "checked": false
+          }
+        ]
+      },
+      {
+        "type": "card",
+        "title": "运行模式",
+        "blocks": [
+          {
+            "type": "radio_row",
+            "label": "工作模式",
+            "value": "本地",
+            "options": ["本地", "远程", "自动"],
+            "selected": 0
+          }
+        ]
+      },
+      {
+        "type": "section_header",
+        "text": "设备列表"
+      },
+      {
+        "type": "list_item",
+        "label": "在线设备",
+        "rows": 4,
+        "chevron": true
+      },
+      {
+        "type": "wheel_picker",
+        "label": "定时关闭",
+        "rows": 5,
+        "columns": [
+          {"options": ["不关", "15 分", "30 分", "60 分"], "selected": 1},
+          {"options": ["整点", "半点"], "selected": 0}
+        ]
+      },
+      {
+        "type": "bottom_actions",
+        "primary": "保存",
+        "secondary": "取消"
+      },
+      {
+        "type": "dialog",
+        "title": "确认保存",
+        "body": "保存后立即生效",
+        "primary": "保存",
+        "secondary": "取消",
+        "visible": false
+      }
+    ]
+  }
+}

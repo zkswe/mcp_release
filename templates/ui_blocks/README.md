@@ -3,7 +3,8 @@
 > **一句话**：让 AI（和人）做 FlyThings 界面时，从「手算坐标」变成「**选块 + 填值 + 排序**」——
 > 像用 Bootstrap/组件库那样拼界面，并且**一次就出能过的产物**：json + 切图 + 渲染图 + 全检。
 >
-> 建立：2026-10-01（钟工「按照你的建议做」）。范围：**只新建本目录**，不改任何现有脚本/知识文档；
+> 建立：2026-10-01（钟工「按照你的建议做」）。第 2 批（交互类 7 块）：2026-10-01 同日追加。
+> 范围：**只新建/只改本目录**，不改任何现有脚本/知识文档；
 > 所有出图/渲染/全检都**调现有工具**（`ui_tools/gen_res.py`、`ui_tools/json2img.py`、`ui_tools/check_all.py`），
 > 不复制它们的逻辑。
 
@@ -17,10 +18,13 @@ templates/ui_blocks/
 ├─ blocks/
 │  ├─ _tokens.json            ← 设计令牌 + 相对尺度体系的**唯一数值源**（比例/令牌，不写死某屏像素）
 │  ├─ page_title.json         ← 块定义：字段 + 相对约束 + 需要素材 + 禁止项
-│  └─ …（共 10 个块定义）
+│  └─ …（共 17 个块定义 = 第 1 批 10 个 + 第 2 批交互类 7 个）
 └─ examples/
    ├─ settings_1024x600/      ← 示例 A：spec.json + project/（产物）+ main.render.png + 两个日志
-   └─ settings_320x240/       ← 示例 B：**同一套块**，只换分辨率（spec.json 只差 resolution 与短文案）
+   ├─ settings_320x240/       ← 示例 B：**同一套块**，只换分辨率（spec.json 只差 resolution 与短文案）
+   ├─ interactive_1024x600/   ← 示例 C：**第 2 批 7 个交互块**全都用上 + 复用 card/section_header/toggle_row/setting_row/bottom_actions/dialog
+   │                            （另出 main.full.render.png = 展平 scrollwindow 的整页渲染，仅供人工验收，不参与 check_all）
+   └─ interactive_320x240/    ← 示例 D：与示例 C **同一份块清单**，只换分辨率（极小屏自动降级）
 ```
 
 ## 2. 用法（一条命令）
@@ -48,6 +52,10 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/settings_1024
        --project templates/ui_blocks/examples/settings_1024x600/project --render --check
 python templates/ui_blocks/compose.py templates/ui_blocks/examples/settings_320x240/spec.json \
        --project templates/ui_blocks/examples/settings_320x240/project --render --check
+python templates/ui_blocks/compose.py templates/ui_blocks/examples/interactive_1024x600/spec.json \
+       --project templates/ui_blocks/examples/interactive_1024x600/project --render --check
+python templates/ui_blocks/compose.py templates/ui_blocks/examples/interactive_320x240/spec.json \
+       --project templates/ui_blocks/examples/interactive_320x240/project --render --check
 ```
 
 产物清单（每页）：
@@ -71,6 +79,13 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/settings_320x
         {"type": "device_card", "icon": "wifi", "label": "客厅面板", "value": "在线 · 信号良好", "online": true}
       ]},
       {"type": "section_header", "text": "其它"},
+      {"type": "slider_row", "label": "音量", "value": "当前 60%", "progress": 60},
+      {"type": "input_row", "label": "设备名称", "hintText": "请输入名称", "text": "客厅面板", "textType": 0},
+      {"type": "checkbox_row", "label": "记住设置", "value": "已勾选", "checked": true},
+      {"type": "radio_row", "label": "工作模式", "options": ["本地", "远程", "自动"], "selected": 0},
+      {"type": "list_item", "label": "在线设备", "rows": 4, "chevron": true},
+      {"type": "wheel_picker", "label": "定时关闭", "rows": 5,
+       "columns": [{"options": ["不关", "15 分", "30 分"], "selected": 1}]},
       {"type": "empty_state", "icon": "info", "text": "暂无其它设备", "sub": "点右上角添加"},
       {"type": "bottom_actions", "status": "已是最新", "primary": "保存", "secondary": "取消"},
       {"type": "dialog", "title": "确认删除", "body": "删除后不可恢复，确定继续吗？", "visible": false}
@@ -82,7 +97,7 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/settings_320x
 * `page.title`（+ `subtitle`）也可以写成一个 `page_title` 块，二选一；`bottom_actions` 同理可用 `page.footer`。
 * 极小块用 `value_short` 给「数得出来的短文案」（长值在 320 上放不下会 #13 FAIL）。
 
-## 4. 块清单（10 个）
+## 4. 块清单（17 个 = 第 1 批 10 个 + 第 2 批交互类 7 个）
 
 | 块 | 用途 | 占几行 | 需要素材（`gen_res` 出） | 能滚动 | 关键相对约束 |
 |---|---|---|---|---|---|
@@ -96,8 +111,27 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/settings_320x
 | `empty_state` | 空态（图标 + 文案，居中） | 1 带 | `icbg_`、`ic_<glyph>_` | 随内容 | 带高 = 屏高×30%；图标底 = 2×行高×0.60；文案居中 |
 | `bottom_actions` | 底部状态文案 + 主/次按钮 | 底栏带 | `footbg_`、`btn_primary_`、`btn_secondary_` | ✗（固定件） | 带高 = max(屏高×12%, 按钮高+24)；主按钮贴右，次按钮在其左 − spacer |
 | `dialog` | 弹窗（遮罩 + 面板 + 标题 + 正文 + 双按钮） | 覆盖层 | `cc_scrim_<W>x<H>`、`panel_`、双按钮图 | ✗ | 根层整屏 `window`（modal + visible:false）；面板宽 = 屏宽×60%，整屏居中；遮罩 **touchable 显式 false** |
+| `slider_row` | 滑块行（标题 + 数值 + 可拖滑块） | 2 带（文本带 + 滑块带） | `sk_track_`、`sk_fill_`、`sk_thumb_` | 随内容 | 文本带照抄行族；滑块带高 = 盒高 + 2×spacer；盒高 = max(thumb, 行高×0.60) 且 **≥ thumb.size.height**；**thumb 盒 == 图**；progress 0~100 |
+| `progress_row` | 进度行（只读进度条 + 百分比） | 2 带 | 同 `slider_row`（同名同尺寸只出一张） | 随内容 | 与 `slider_row` **同一套几何**；thumb 图留空 + `thumb.size` 写 0（否则被当可拖滑块） |
+| `input_row` | 输入行（标题 + edittext） | 2 带 | —（底色走 `bgColorTab` 浅灰） | 随内容 | 输入框盒高 = max(标题高+spacer, 行高×0.70)；id 51000 段 → logic 骨架自动带 `onEditTextChanged_<caption>` |
+| `checkbox_row` | 复选行（标题 + 值 + 右端复选框） | 1 行 | `cb_{S}_on/off` | 随内容 | 复选框正方盒 = max(12, 行高×0.50)，贴行条右端槽（同 toggle_row 形态）；**自身就是命中区** |
+| `radio_row` | 单选行（标题 + **竖排**选项） | 2 带（带高 = 选项数 × 项高 + 2×spacer） | `rd_{S}_on/off` | 随内容 | 项高 = max(标题高+spacer, 行高×0.70)；子项坐标**相对 radiogroup**；组 **touchable 必须 true** |
+| `list_item` | 列表行块（listview + subItem 行模板） | 自带块高（rows × 模板高 + 余数） | `chev_`（行尾箭头子项） | ✗（自带滚动） | **itemH = int(lv高/rows) − rowSpacing**，模板高 == 它；**余数是「有意的可滑动提示」**；item.text 必须空串 |
+| `wheel_picker` | 滚轮选择块（listview 组合，非自绘） | 自带块高（rows × 模板高） | `wband_`（选中条） | ✗（自带滚动） | 选中条 = **静态 textview 且写在 listview 之前**；rows 必须奇数（正中行 = 选中行）；cycleEnable + autoRollback + edgeEffect 1 + dragMaxDis 手感值 |
 
 > `value_row`（左标题 + 右值，无箭头）不用单独建块：`{"type":"setting_row","chevron":false,"icon":""}` 就是它。
+
+### 4.1 第 2 批 7 个块的禁止项（红线；完整版在 `blocks/<type>.json` 的 `forbidden`）
+
+| 块 | 红线（写了就注定返工/编译不过/真机不对） |
+|---|---|
+| `slider_row` | ① **滑块盒 ≠ 图**（`thumb.size` 与滑块图不一致 → 真机滑块与轨道错位，check_all #11/#17 FAIL）；② **滑块被盒高压扁**（控件 `position.height` < `thumb.size.height` → 屏幕上是扁椭圆，**只改图或只改盒都没用**）；③ 为给滑块腾位去收窄/挪 title·value 文本盒；④ 滑轨/有效图用 `.9.png`（ZKSeekBar 不解析 marker → 黑框，#10 FAIL）；⑤ 可见条矮于 10px（药丸端弧线过不了 AA 审计，#21 真缺陷）。 |
+| `progress_row` | ① 给只读进度条配 thumb 图（会被当成可拖滑块）；② 与 `slider_row` 用不同盒高/左缘（同页进度控件口径必须照抄第一个）；③ 盒高 < 可见条高（条被裁）。 |
+| `input_row` | ① 底色写 `0`（= 不透明黑，真机黑块；透明写 `-1`，#24 FAIL）；② `isPassword=true` 却不给 `passwordChar`；③ 密码框把真密码预填进 `text`；④ 自绘键盘（系统内置，点击自动弹）。 |
+| `checkbox_row` | ① **在复选框上再压一个整行透明 button**（吃掉勾选：点行没反应 —— checkbox 与 toggle_row 不同，**它自己就是命中区**）；② 盒 ≠ 图（引擎拉伸 → 圆角糊、勾变形）；③ 只给 `pic0` 不给 `pic2`（点了没视觉反馈）；④ id 取 21000 段（html2json 旧口径；#5 会把 20000~30000 段当 button 要求 `onButtonClick_<caption>`）—— 本块用 **94500** 段。 |
+| `radio_row` | ① **radiogroup 的 `touchable` 写 false**（整组收不到触摸 = 点了没反应；它是「容器 false」口径的**例外**）；② 选中图写进 `pic1`（引擎只认 `pic2` = 选中态）；③ 选项横排（横排要按选项数动态改行族预留 → 同页其它行文本盒跟着变；竖排在极小屏也放得下）；④ 圆点盒 ≠ 图；⑤ 极小屏用 1px 描边环 / 极小内点（AA 真缺陷）。 |
+| `list_item` | ① **item 高 ≠ `int(lv高/rows) − rowSpacing`**（#37 WARN：写大 = 挤爆/裁切，写小 = 每项底部多空带）；② 把「底部露出下一项一小块」当缺陷去凑整（**那是引擎给的可滑动提示**，余数是有意的）；③ `item.text`/`subItem.text` 写占位串（真机每行常显占位文字）；④ 在 listview 下平铺 textview/button 当行（#2 层级非法）；⑤ subItem 图 ≠ subItem 盒。 |
+| `wheel_picker` | ① **选中条挂行背景图**（滚动时条跟着行走）；② **条写在 listview 之后**（z 更高会盖住列表/吃触摸）；③ 条设成可触摸（装饰件必须 `touchable:false` 显式写）；④ 用引擎选中态（`pic2`/`color2`）做正中行高亮（引擎把选中态打在第 1 可见行，会盖掉宿主）；⑤ 程序化定位用 `setSelection`（只对齐第 1 行 + 带动画 → 「读-改-读」会越推越远，要用数据侧平移）；⑥ lv 高非 rows 整除却当「可滑动提示」凑格（滚轮要刚好一屏窗口）；⑦ 自绘轮子（listview 组合就是 L2 能力）。 |
 
 ## 5. 相对尺度体系（唯一的数值源 = `blocks/_tokens.json`）
 
@@ -109,26 +143,69 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/settings_320x
 | 形 | 容器圆角 = min(radius-default 6, 行高×0.18) 且 ≥4；分割线 1px；**白卡不给描边**（见反面清单 #10） | `SPEC-CHECK §8` |
 | 组件级 | 行高 = 屏高 10%（极小屏 11.7%，并给文本可读性兜底）；行条宽 = 屏宽 − 2×spacer-2；左内边距 ≈ 屏宽 3.1%；图标底 0.6×行高；图标 0.4×行高；箭头 max(12, 屏宽 2.5%) × max(16, 屏高 2.7%) | `scrollwindow-layout-checklist §2.1` + `SPEC-CHECK §7` |
 | 滚动 | `dragMaxDis` = **越界拖拽上限**（全页 max(24, 屏宽×6%)），**不是行程**；行程 = 内层 window − 视口，引擎自算 | `scroll-drag-interaction-spec` R1/R2/R6/R10 |
+| 交互控件（第 2 批） | 滑块盒高 = max(图标档, 行高×0.60)（且 ≥ 滑块图高，可见条高 ≥ 10px）；输入框盒高 = 单选项高 = max(标题高+spacer, 行高×0.70)；复选/圆点盒 = max(12, 行高×0.50)；列表模板行高 = max(标题高+spacer, 行高×0.70)（余 2px 可滑动提示）；滚轮模板行高 = max(标题高+spacer, 行高×0.60)；滚轮列宽 = 内容宽 20%（≥ 2×复选盒） | `seekbar-fields` / `edittext-fields` / `listview-wheel-picker` / `radiogroup-checkbox-fields` + 同页行族口径 |
+
+**行族文本盒宽 = 全页族预留（2026-10-01 第 2 批修正）**：右缘按 **全页** `fam_reserve`（max(箭头, 开关, 复选框)）算，而不是「本行自己有什么右端控件」——否则「只有箭头的行」会得到比「有开关的行」宽 56px 的文本盒，check_all #27 会报「口径偏离同族」（第 1 批两版示例各有 2 条 WARN 就是这个原因，本批修掉）。代价：只有箭头的行多留一段死区（文本左对齐且短，观感无影响）。
+
+**第 2 批交互块度量（`_tokens.json` 只给基准，公式在 `compose.build_metrics`）**：滑块盒 = max(图标档, 行高×0.60)（1024→36，320→16）；thumb = 图标档（24/12）；输入框盒 = 单选项高 = max(标题高+spacer, 行高×0.70)（42/24）；复选/圆点盒 = max(12, 行高×0.50)（32/16）；列表模板高（40/24，余 2px）；滚轮模板高（36/24，整除）；滚轮列宽（200/56）。
 
 **布局自动决策**：内容总高 > 视口 → 自动包 `scrollwindow`（视口高）→ 内层 `window`（高 = 内容总高）；≤ 视口 → **不上滑动窗口**（白放一层没意义，§2.1 第 1 步）。
 
-## 6. 自测结果（两版示例，全自动）
+## 6. 自测结果（四版示例，全自动）
+
+> 命令：`python templates/ui_blocks/compose.py <示例>/spec.json --project <示例>/project --render --check`\
+> 再加一遍 `python tools/ui_tools/check_all.py <示例>/project`（存到 `check_all.log`）。**四版都是 compose exit 0 + check_all exit 0（0 FAIL / 0 WARN）**。
+
+### 6.1 第 1 批（基础块，10 块）
 
 | 项 | 1024×600 | 320×240 |
 |---|---|---|
 | 块数 / 行数 | 10 个块类型 / 7 行（2 卡 + 1 独立分组标题 + 空态 + 底栏 + 弹窗） | 同左（**同一套块**） |
-| 控件数（含嵌套） | **66**（textview 49 / button 11 / window 5 / scrollwindow 1） | **59**（textview 42 / button 11 / window 5 / scrollwindow 1） |
+| 控件数（含嵌套） | **62**（textview 45 / button 11 / window 5 / scrollwindow 1） | **59**（textview 42 / button 11 / window 5 / scrollwindow 1） |
 | 关键度量 | 行高 60 ｜ 字号 28/20/16/14 ｜ 圆角 6 ｜ 图标底/图标 36/24 ｜ 箭头 24×16 | 行高 28 ｜ 字号 14/12/12/10 ｜ 圆角 5 ｜ 图标底 16（图标省略）｜ 箭头 12×16 ｜ **单行式** |
 | 内容 → 视口 / 行程 | 716 → 452 / **行程 264**，dragMaxDis 60 | 372 → 168 / **行程 204**，dragMaxDis 24 |
-| 出图 | **19 张**（图 == 盒，#11 PASS 0 处不匹配） | **15 张**（同上） |
+| 出图 | **16 张**（图 == 盒，#11 PASS 0 处不匹配） | **15 张**（同上） |
 | logic 骨架 | `src/logic/mainLogic.cc`，**11 个按钮回调**齐全 | 同左，11 个 |
 | `json2img --report` unsupported | **1 类**：`bold x4`（渲染器无 `*Bold*.ttf` 变体 → 用同字体；真机由字库承担） | 同左：`bold x4` |
 | 渲染图 | `main.render.png` **1024×600 == resolution** ✓ | `main.render.png` **320×240 == resolution** ✓ |
-| `check_all` | **exit 0（0 FAIL）**，0 条 WARN | **exit 0（0 FAIL）**，0 条 WARN |
+| `check_all` | **exit 0（0 FAIL / 0 WARN）** | **exit 0（0 FAIL / 0 WARN）** |
 | #26 行程 / #27 同族 | 行程=内层−视口 ✓ ｜ 同族口径 0 条离群、文本×图标 0 处相交 | 同左 ✓ |
 | 证据 | `examples/settings_1024x600/{main.render.png,last-run.log,check_all.log}` | `examples/settings_320x240/{main.render.png,last-run.log,check_all.log}` |
 
-对齐解码：全部文字控件用 **36/37/38（真机实测表）**，`json2img` 报「待校准 0 处 / 表外 0 处」。
+> 注：示例工程 `resources/images/` 里可能留有**历史多余切图**（compose 只增量出图、不清理旧文件）——以 `last-run.log` 的「出图 N 张」清单为准（旧两版各余 4/1 张旧版图标/分隔线）。
+
+### 6.2 第 2 批（交互类 7 块）
+
+| 项 | interactive_1024x600 | interactive_320x240 |
+|---|---|---|
+| 块数 / 行数 | 17 个块类型里用了 **12 个**（7 新 + card/section_header/toggle_row/setting_row/bottom_actions/dialog） | 同左（**同一份块清单**） |
+| 控件数（含嵌套） | **64**（textview 42 / button 6 / window 6 / scrollwindow 1 / seekbar 2 / edittext 1 / checkbox 2 / radiogroup 1 / listview 3） | **62**（textview 40 + 其余同左） |
+| 关键度量 | 行高 60 ｜ 滑块盒 960×36（thumb 24）｜ 输入框盒 42 ｜ 项高 42 ｜ 复选盒 32 ｜ 列表模板 960×40（rows 4）｜ 滚轮列 200×180（rows 5 / 模板高 36）｜ 选中条 200×36 | 行高 28 ｜ 滑块盒 272×16（thumb 12）｜ 输入框盒 24 ｜ 项高 24 ｜ 复选盒 16 ｜ 列表模板 272×24（rows 4）｜ 滚轮列 56×120（rows 5 / 模板高 24）｜ 选中条 56×24 |
+| 内容 → 视口 / 行程 | 1366 → 452 / **行程 914**，dragMaxDis 60 | 858 → 168 / **行程 690**，dragMaxDis 24 |
+| 出图 | **22 张**（图 == 盒，#11/#17 PASS 0 处不匹配；`thumb.size == 滑块图` ✓） | **22 张**（同上） |
+| logic 骨架 | **6 个按钮回调 + 1 个输入框回调**（`onEditTextChanged_EditRowInputRow7Box`）齐全 | 同左 |
+| #37 listview item 高 | `ListListItem13 item 高 40 = int(162/4)−0 ✓，余 2 px = 可滑动提示（预期）`；`ListWheelPicker14Col1/2 item 高 36 = int(180/5)−0 ✓，余 0 px` | `ListListItem13 item 高 24 = int(98/4)−0 ✓，余 2 px`；`ListWheelPicker14Col1/2 item 高 24 = int(120/5)−0 ✓，余 0 px` |
+| `check_all` | **exit 0（0 FAIL / 0 WARN）**；#21 AA 真缺陷 0（扫 22 张，WARN 4 / EXEMPT 2） | **exit 0（0 FAIL / 0 WARN）**；#21 AA 真缺陷 0（扫 22 张，WARN 0 / EXEMPT 2） |
+| 渲染图 | `project/ui/main.render.png` **1024×600 == resolution** ✓ | `project/ui/main.render.png` **320×240 == resolution** ✓ |
+| 整页证据图 | `main.full.render.png` 1024×1514（展平 scrollwindow；供人工验收） | `main.full.render.png` 320×930 |
+| 证据 | `examples/interactive_1024x600/{main.render.png,main.full.render.png,last-run.log,check_all.log}` | 同左 |
+
+### 6.3 `json2img --report` 未支持/降级清单（**如实列出，不吞**）
+
+> `json2img` v0.1.0 是**静止态近似**渲染器；下面这些**不是缺陷**，写在这里保证「看一眼渲染图就以为是 bug」不会发生。
+
+| 控件 | 报告项 | 渲染表现 | 真机行为 |
+|---|---|---|---|
+| `textview` | `bold`（交互版 x5 / 基础版 x4） | 用同字体（无 `*Bold*.ttf` 变体）；标题/分组标题看上去不粗 | 字库承担字重 |
+| `seekbar` | `defProgress`（x2） | 只画静止进度（60% / 45%） | 引擎按 `defProgress`/`max` 画；可拖 |
+| `seekbar` | `拉伸填充 sk_fill_<W>x<H>.png`（x2，属「拉伸」类不是 unsupported） | 渲染器把「有效图」按 defProgress **缩放**近似 | 引擎是**横向裁剪**（不是拉伸）；图 == 盒已由 #11/#17 核对通过 |
+| `edittext` | （无） | 画 `text`；空则画 `hintText` | 点击弹系统内置键盘 |
+| `checkbox` | `picTab.pic0`（x2）/ `v0 未专有实现`（x2） | 只画 **pic0（未选）**；`checked:true` 也画成未选 | 引擎按 `checked` 切 pic2（品牌底 + 白勾） |
+| `radiogroup` | `v0 未专有实现`（x1） | **整个选项区画成空白**（`radiobuttons[]` 是数组子项，渲染器不进数组） | 引擎画圆点 + 选项文字（`pic0`/`pic2` 切态） |
+| `listview` | `item/subItem`（x3） | 按模板画 rows 个单元（`item.text` 空串 → 只看到子项图/箭头，如列表行的行尾箭头；滚轮的静态选中条可见） | 引擎按数据填行 + 滚动 + 循环 |
+| `listview.item.subItem` | `picTab.pic0`（x4） | 行尾箭头子项按背景图绘制（仅常态） | 行内子项图由引擎直接贴（图 == subItem 盒） |
+
+对齐解码：全部文字控件用 **36/37/38（真机实测表）**，`json2img` 报「待校准 0 处 / 表外 0 处」（四版示例均是）。
 
 ## 7. ⛔ 反面清单（照抄我们踩过的坑，别重犯）
 
@@ -154,6 +231,10 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/settings_320x
 | 18 | **极小屏硬上两行式** | 行高被文本顶到 ~18% 屏高，一屏只剩 4 行 | 屏高 <320 自动降**单行式** + 字号降 2 级 + 省图标 |
 | 19 | **极小屏用长值文案** | `check_all #13` 文本最小尺寸 FAIL（如"已连接 · 192.168.1.100"在 136px 盒里放不下） | 提供 `value_short`，本库在极小屏自动启用；`compose.py` 还做**事前自检**并点名是哪条文案 |
 | 20 | **单分辨率工程把 json 放到 `ui/<W>x<H>/`** | `check_all #9` 的 `fui pack` 只认扁平 `ui/*.json` → 误报 `pack 成功 → main.ftu` FAIL | `--ui-layout auto`：没有现成的 `ui/<W>x<H>/` 就按**扁平**落（`res` 留给真多分辨率工程，此时 #9 的误报是既有工具的已知限制） |
+| 21 | **小盒上用 1px 描边环做「未选态」**（复选/单选/小图标） | `aa_audit` 报「成片直通 α」/`hard_diag` 占比 ≥60% → #21 **真缺陷**（radius=8、32px 方框 1px 环 实测 50% WARN；同一图放 16px 盒就变直通 α 缺陷） | 未选态用 **switchOff 实底**（`gen_res.rounded_rect_cov`），不用 `bordered_cov` 的 1px 环（见 §8-3） |
+| 22 | **极小内点/小弧线**（复选勾画 7px、单选内点 7px、矮于 10px 的药丸条） | 同上（7px 内点实测 78~100% hard_diag = #21 真缺陷；8px 药丸条 67~75%） | 圆点内点只在标记盒 ≥24px 时给（极小屏用实底色区分态）；滑轨可见条高 **≥ 10px**；这些阈值是本库实测写回 `compose.py` 的 |
+| 23 | **`checkbox` 的 id 落在 20000~30000 段** | `check_all #5` 按 id 段把 checkbox 当 button → 要求 `onButtonClick_<caption>`（而 checkbox 的语义回调是 `onCheckedChanged`），要么编译不过要么得编个假回调 | checkbox id 取 **94500** 段（radiobutton 94100、subitem 24000）——真机 id 段无语义，只要求页内唯一 |
+| 24 | **给 checkbox 行再压一个整行透明 button**（照抄 `toggle_row` 的「装饰件 + 整行命中」） | 复选框永远选不上（button 在 z 更高、吃掉 DOWN）——而 `toggle_row` 那种写法是**对的**，因为它的开关只是呈现态、由代码切图 | `checkbox_row` **不给整行 button**（勾选框自己就是命中区）；`radio_row` 同理不加整行 button |
 
 **两条纪律（写在最显眼处）**
 1. **加行 = 照抄同页已有行的口径**（行高/步进/文本左缘/各元素盒），禁止自创形态；
@@ -163,14 +244,26 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/settings_320x
 
 1. **`setting_row` 用「两行式」而不是左标题右值**：`scrollwindow-layout-checklist §2.1` 明确把"左标题 + 右值单行式"列为返工第一名（同页混用 → 文字外凸、箭头被压）。极小屏放不下两行时**整页**降单行式（全页一致），不是单行特例。
 2. **卡片不给描边**：`SPEC-CHECK §7.1/§8` 的结论（1px 描边环在弧线上会让 AA 审计退回硬阶梯；TDesign 靠灰底衬托）→ 容器/面板/次按钮全部素面或浅色实底。
-3. **箭头贴图按 `SPEC-CHECK §7` 的箭头专属口径自绘**（45° + 圆头 + 笔画 ≈ 盒宽 12% 且 ≥2px + SS≥8 + BOX）：`gen_res.glyph_icon('forward')` 的 iconfont 比例在 12px 盒上只剩 1px 笔画 → `aa_audit` 判 `hard_diag` FAIL。**其余所有图（卡片/圆角/图标/开关/分割线）都走 `gen_res` 的现成函数**。
+3. **箭头贴图按 `SPEC-CHECK §7` 的箭头专属口径自绘**（45° + 圆头 + 笔画 ≈ 盒宽 12% 且 ≥2px + SS≥8 + BOX）：`gen_res.glyph_icon('forward')` 的 iconfont 比例在 12px 盒上只剩 1px 笔画 → `aa_audit` 判 `hard_diag` FAIL。第 2 批又多了两个**合成** kind：`bar`（透明画布上居中贴一条药丸 = 滑轨/有效条，`gen_res.rounded_rect_cov`）与 `mark`（复选/单选标记 = `gen_res.rounded_rect_cov`/`bordered_cov` 打底 + `gen_res.glyph_icon('check')`/内圆点叠一次）——**形状与字形都还是 `gen_res` 的现成函数，本库只做「同画布叠一次」**，不重写画形状的逻辑。其余所有图（卡片/圆角/图标/开关/分割线/选中条）都直接走 `gen_res`。
 4. **logic 骨架一并生成**：`check_all #5` 要求每个 button 有 `onButtonClick_<caption>`，否则整个工程 FAIL。骨架只含空实现 + 定时器表 + 生命周期钩子，业务自填。
 5. **弹窗只出结构**（modal + `visible:false`）：真机由业务 `showWnd()/hideWnd()` 控制；`setTouchPass(true)` 等运行期口径不在 json 里（模板装饰件已 `touchable:false`，是否补穿透由业务按 §15 判）。
 6. **未生成 `src/activity/*Activity.*`、`Manifest.xml`、`Main.cpp`**：这些属工程壳（`flythings_create_project` / HelloWord 模板的活），本库只管 UI 与 logic 骨架。
+7. **第 2 批交互块的形态选型（都是为了让同页行族口径与 AA 审计同时成立）**：
+   * **字段行 = 文本带 + 控件带两带式**（`slider_row`/`progress_row`/`input_row`/`radio_row`），不把控件塞进文本行右端：① seekbar/edittext 需要「盒高 ≥ 滑块高/文本高」才不被压扁；② 塞右端会与值文本盒相交（#27 文本×控件重叠）；③ 极小屏只靠「两带式」才同时放得下控件与文本。
+   * **行族文本盒宽按全页预留**（§5 末）：观感上多一段死区，换 #27「同族口径 0 条离群」（旧两版示例的 2 条 WARN 就是这里）。
+   * **未选态 = switchOff 实底，不给 1px 环**；**极小屏复选/单选不用内点**：全是 `aa_audit` 实测逼出来的（见反面清单 #21/#22）。
+   * **`radio_row` 竖排**（而非右端横排）：横排要按选项数动态改行族预留 → 同页其它行的文本盒会跟着变宽/变窄；竖排在 320×240 也放得下。
+   * **`list_item` 行高公式**：`lv高 = rows × (模板高 + rowSpacing) + 余数`，余数默认 2px（= 有意的可滑动提示）；**滚轮反过来——行高恰好整除，不留余数**（滚轮语义是「刚好一屏窗口」）。
+   * **滚轮选中条用静态 textview**（写在 listview 之前、`touchable:false` 显式写），行模板透明、`picTab.pic0/1/2` 全空 + `color2/color3` 与常态同色（让引擎自带选中态看不见）—— 口径全部照 `knowledge/uicontrols/listview-wheel-picker.md`。
 
 ## 9. 已知限制 / 下一步
 
-* 块数量按需扩展：新增块 = 加一个 `blocks/<type>.json`（字段 + 相对约束 + 素材 + 禁止项）+ 在 `compose.py` 里指到已有 builder（`title/section/row/card/empty/actions/dialog`）；新增形态才写新 builder。
-* 暂未覆盖：listview/滚动列表块、tab 页签、日期/滚轮选择器、图表块（可复用 `components/ui_v1/` 的自绘控件后再包成块）。
+* 块数量按需扩展：新增块 = 加一个 `blocks/<type>.json`（字段 + 相对约束 + 素材 + 禁止项）+ 在 `compose.py` 里指到已有 builder（`title/section/row/field_row/card/empty/actions/dialog/list/wheel`）；新增形态才写新 builder。
+* `compose.py` 第 2 批新增的控件 factory：`make_seekbar` / `make_edittext` / `make_checkbox` / `make_radiogroup` / `subitem` / `list_item_template`，及 builder `build_field_row` / `build_list` / `build_wheel`（素材新增 `bar` / `mark` / `chevron` 三个出图 kind）。
+* **未覆盖**：tab 页签、日期/日历块、图表块（可复用 `components/ui_v1/` 的自绘控件后再包成块）、`circlebar`/`slidetext`/`pagewindow` 等控件块。
 * 渲染图是**静止态近似**（`json2img` v0.1.0），真观感仍需模拟器/真机；320×240 的 10~12px 字号在设备字库下的可读性**未验证**。
+* **渲染图的固有盲区**（不是本库的问题，但看渲染图时要知道）：见 §6.3 清单——`radiogroup` 选项区整块空白、`checkbox` 只画未选态、`listview` 只画模板不填数据、seekbar 有效图按缩放近似（引擎是裁剪）。
+* **滚轮/列表的实际手感与回读**需要业务侧代码（中心行回读 + 数据侧平移 + `refreshListView()`），本库只到 UI（json）；骨架里的 listview 三回调以注释形式给出签名。
+* **`resources/images/` 不做旧图清理**（compose 只增量出图）：换块/改尺寸后旧切图会留在目录里（check_all 只核**被引用**的图，不影响判定）——要干净就手工删或整目录重建。
 * `check_all #9` 对 `ui/<W>x<H>/` 布局的误报（见反面清单 #20）——修在 `check_all` 里更合适，本库用 `--ui-layout` 绕开，不去改既有工具。
+* **`check_all` 的 2 条备注**（本库不管，属于既有工具口径）：① 新建的交互类切图（`sk_*`/`cb_*`/`rd_*`/`wband_*`）未在 `tools/qa/asset_audit_rules.json` 登记 → 按 `unknown_policy` 只出 NOTE（不判 FAIL）；要纳入 AA/倒角/透明底审计需在那个文件补分类（不在本库改动范围）。

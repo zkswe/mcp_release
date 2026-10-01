@@ -66,7 +66,41 @@ BLOCK_PREFIX = {
     'empty_state': 'EmptyState',
     'bottom_actions': 'Action',
     'dialog': 'Dialog',
+    # ── 第 2 批（交互类，2026-10-01）──
+    'slider_row': 'SliderRow',
+    'progress_row': 'ProgressRow',
+    'input_row': 'InputRow',
+    'checkbox_row': 'CheckboxRow',
+    'radio_row': 'RadioRow',
+    'list_item': 'ListItem',
+    'wheel_picker': 'WheelPicker',
 }
+
+# 控件 id 分区（与 tools/ui_tools/html2json.py 的 ID_BASE 同源，只有 checkbox/radiobutton 例外）
+#   · checkbox 本库取 **94500** 段（html2json 旧口径是 21000）：check_all #5 按「20000 ≤ id < 30000」
+#     推断「这是 button，必须有 onButtonClick_<caption>」——而 checkbox 的语义回调是 onCheckedChanged，
+#     给它编一个 onButtonClick 是错的。避开该段即可两不误（真机 id 段无语义，只要求页内唯一）。
+#   · radiobutton 取 94100 段（html2json 用 22000，会落进上面那段；且 radiobuttons 是数组子项，
+#     #5 的 by_caption 递归不到数组元素，这里取 94100 只为口径统一 + 与 radiogroup 94000 相邻）。
+#   · subitem 24000 段：同样是数组子项，与既有工程一致。
+ID_BASE = {
+    'textview': 50000,
+    'button': 20000,
+    'window': 110000,
+    'scrollwindow': 120000,
+    'edittext': 51000,
+    'seekbar': 91000,
+    'listview': 80000,
+    'checkbox': 94500,
+    'radiogroup': 94000,
+}
+SUBITEM_ID_BASE = 24000
+RADIOBUTTON_ID_BASE = 94100
+
+# 交互字段行（文本带 + 控件带 两带式；2026-10-01 第 2 批）
+FIELD_TYPES = ('slider_row', 'progress_row', 'input_row', 'checkbox_row', 'radio_row')
+# 列表/滚轮块（listview 组合，自带块高）
+WIDGET_TYPES = ('list_item', 'wheel_picker')
 
 
 def duplicate_captions(doc):
@@ -174,6 +208,38 @@ def chevron_image(w, h, color, ss=8):
     return big.resize((w, h), Image.BOX)                    # 面积平均：带直通 α 的边界禁用负瓣算子
 
 
+def mark_image(prm):
+    """勾选/单选标记图（第 2 批交互块）：底形状（gen_res 覆盖率口径）+ 可选符号。
+
+    为什么要一个「合成」入口：checkbox 的选中态 = 品牌实底 + 白勾，单选选中态 = 品牌实圆 + 白内点。
+    底形状与符号都能用 gen_res 现成函数（bordered_cov / rounded_rect_cov / glyph_icon），
+    这里只做「同一张画布上叠一次」——不是重写画形状的逻辑。
+    """
+    from PIL import Image
+    w, h = int(prm['w']), int(prm['h'])
+    if prm.get('border'):
+        img = gen_res.bordered_cov(w, h, prm['radius'], prm['fill'], prm['border'],
+                                   prm['border_w'], ss=8)
+    else:
+        img = gen_res.rounded_rect_cov(w, h, prm['radius'], prm['fill'], ss=8)
+    mark = prm.get('mark') or ''
+    if mark == 'check':
+        import contextlib
+        import io as _io
+        import tempfile
+        d = tempfile.mkdtemp(prefix='uiblocks_mark_')
+        with contextlib.redirect_stdout(_io.StringIO()):          # 静音 gen_res.save 的打印
+            p = gen_res.glyph_icon(d, 'uc_mark_check.png', 'check', size=int(prm['mark_size']),
+                                   color=tuple(prm['mark_color']))
+        g = Image.open(p).convert('RGBA')
+        img.alpha_composite(g, ((w - g.width) // 2, (h - g.height) // 2))
+    elif mark == 'dot':
+        d = int(prm['mark_size'])
+        dot = gen_res.rounded_rect_cov(d, d, d // 2, prm['mark_color'], ss=8)
+        img.alpha_composite(dot, ((w - d) // 2, (h - d) // 2))
+    return img
+
+
 # ─────────────────────────── 令牌 → 本屏度量 ───────────────────────────
 
 
@@ -231,6 +297,21 @@ def build_metrics(W, H, tok):
     m['icon_left'] = int(round(m['pad_l'] * s['icon_pad_of_pad_l']))
     # line_w：容器描边的可选路径（§8「描边降级为可选」；当前所有底图都素面，仅登记规则）
 
+    # —— 第 2 批：交互块度量（比例 / 内容反算，两版分辨率同一套公式）——
+    m['thumb'] = m['icon']                                    # 滑块边长 = 图标档（≥12）
+    m['seek_h'] = max(m['thumb'], r4(m['row_h'] * 0.60))      # 滑块控件盒高 ≥ thumb.size.height（否则真机滑块被压扁）
+    m['edit_h'] = max(m['h_b1'] + m['spacer'], r4(m['row_h'] * 0.70))   # 输入框盒高（装得下文本）
+    m['opt_h'] = m['edit_h']                                  # 单选每项高（与输入框同档）
+    m['cb'] = max(m['icon'], r4(m['row_h'] * 0.50))           # 复选/单选标记盒（正方）
+    m['widget_pad'] = m['spacer']                             # 控件带上下呼吸
+    # list_item / wheel_picker（listview 族）
+    m['li_rows'] = 4
+    m['li_h'] = max(m['h_b1'] + m['spacer'], r4(m['row_h'] * 0.70))   # 列表模板行高
+    m['li_peek'] = 2                                          # 行高公式除不尽的余数 = 有意的可滑动提示（#37 NOTE）
+    m['wheel_rows'] = 5                                       # 可见行数（奇数：正中行 = 选中行）
+    m['wheel_h'] = max(m['h_b1'] + m['spacer'], r4(m['row_h'] * 0.60))  # 滚轮模板行高
+    m['wheel_col_w'] = r4(m['content_w'] * 0.20)              # 滚轮列宽
+
     # 顶栏 / 底栏
     m['bar_top'] = max(r4(H * s['bar_top_of_h']),
                        m['h_h1'] + (m['h_b2'] + 4 if not m['compact'] else 0) + s['bar_min_pad'])
@@ -267,7 +348,7 @@ class Node(object):
         t = self.type
         c = {}
         if t == 'textview':
-            c = {'id': 50000 + n, 'caption': self.caption, 'position': dict(self.pos),
+            c = {'id': ID_BASE['textview'] + n, 'caption': self.caption, 'position': dict(self.pos),
                  'alignment': 0, 'colorTab': {'color0': 16777215, 'color1': -1, 'color2': -1,
                                               'color3': -1, 'color4': -1},
                  'fontSize': 16, 'touchable': False}
@@ -283,7 +364,7 @@ class Node(object):
                 # 纯色/纯图装饰件：文本盒 == 控件盒（与 IDE 全量序列化一致）
                 c['textPosition'] = dict(self.pos)
         elif t == 'button':
-            c = {'id': 20000 + n, 'caption': self.caption, 'position': dict(self.pos),
+            c = {'id': ID_BASE['button'] + n, 'caption': self.caption, 'position': dict(self.pos),
                  'alignment': 37, 'colorTab': {'color0': 16777215, 'color1': 16777215,
                                               'color2': -1, 'color3': -1, 'color4': -1},
                  'picTab': {}, 'text': '', 'touchable': True}
@@ -298,12 +379,57 @@ class Node(object):
                 c['iconPosition'] = dict(self.pos)
                 c['textPosition'] = dict(self.pos)
         elif t == 'window':
-            c = {'id': 110000 + n, 'caption': self.caption, 'position': dict(self.pos),
+            c = {'id': ID_BASE['window'] + n, 'caption': self.caption, 'position': dict(self.pos),
                  'backgroundColor': -1, 'hideTimeOut': -1, 'modal': False,
                  'touchable': False, 'visible': True}
         elif t == 'scrollwindow':
-            c = {'id': 120000 + n, 'caption': self.caption, 'position': dict(self.pos),
-                 'dragMaxDis': 200, 'orientation': 1, 'edgeEffect': 1, 'touchable': True}
+            c = {'id': ID_BASE['scrollwindow'] + n, 'caption': self.caption,
+                 'position': dict(self.pos), 'dragMaxDis': 200, 'orientation': 1,
+                 'edgeEffect': 1, 'touchable': True}
+        elif t == 'edittext':
+            # 字段全集 = check_all CTRL_FIELD_TEMPLATES['edittext']（id 51000 段 → #5 会核 onEditTextChanged_）
+            c = {'id': ID_BASE['edittext'] + n, 'caption': self.caption, 'position': dict(self.pos),
+                 'alignment': 36,
+                 'bgColorTab': {'color0': 16777215, 'color1': -1, 'color2': -1, 'color3': -1,
+                                'color4': -1},
+                 'bold': False, 'beepEnable': True,
+                 'colorTab': {'color0': 16777215, 'color1': -1, 'color2': -1, 'color3': -1,
+                              'color4': -1},
+                 'fontFamily': 0, 'fontSize': 16, 'hintText': '', 'hintTextColor': 8947848,
+                 'isPassword': False, 'italic': False, 'passwordChar': '*', 'text': '',
+                 'textType': 0, 'touchable': True, 'visible': True,
+                 'rollEnable': False, 'rollDirection': 1, 'rollIntervalTime': 150, 'rollStep': 5}
+        elif t == 'seekbar':
+            # 字段全集 = CTRL_FIELD_TEMPLATES['seekbar']；thumb 子盒 == 图（#11/#17 铁律 #1）
+            c = {'id': ID_BASE['seekbar'] + n, 'caption': self.caption, 'position': dict(self.pos),
+                 'backgroundColor': -1, 'backgroundPic': '', 'defProgress': 0, 'max': 100,
+                 'orientation': 0, 'progressPic': '', 'secondaryProgressPic': '',
+                 'thumb': {'size': {'width': 0, 'height': 0}, 'normalPic': '', 'pressedPic': ''},
+                 'touchable': True, 'visible': True}
+        elif t == 'checkbox':
+            # 字段全集 = CTRL_FIELD_TEMPLATES['checkbox']（id 94500 段见 ID_BASE 注释）
+            c = {'id': ID_BASE['checkbox'] + n, 'caption': self.caption, 'position': dict(self.pos),
+                 'alignment': 37, 'backgroundColor': -1, 'bold': False, 'checked': False,
+                 'bgColorTab': {'color0': -1, 'color1': -1, 'color2': -1, 'color3': -1,
+                                'color4': -1},
+                 'colorTab': {'color0': 16777215, 'color1': -1, 'color2': -1, 'color3': -1,
+                              'color4': -1},
+                 'fontFamily': 0, 'fontSize': 16, 'italic': False,
+                 'iconPosition': {'left': 0, 'top': 0, 'width': 0, 'height': 0},
+                 'text': '', 'textPosition': {'left': 0, 'top': 0, 'width': 0, 'height': 0},
+                 'touchable': True, 'visible': True}
+        elif t == 'radiogroup':
+            # 容器 touchable **必须 true**（写 false 整组点不动，radiogroup-checkbox-fields.md 铁律 5）
+            c = {'id': ID_BASE['radiogroup'] + n, 'caption': self.caption,
+                 'position': dict(self.pos), 'backgroundColor': -1, 'touchable': True,
+                 'visible': True, 'radiobuttons': []}
+        elif t == 'listview':
+            # 字段全集 = CTRL_FIELD_TEMPLATES['listview']；item 模板高由 itemH 公式反算（#37）
+            c = {'id': ID_BASE['listview'] + n, 'caption': self.caption, 'position': dict(self.pos),
+                 'autoRollback': True, 'backgroundColor': -1, 'cols': 1, 'cycleEnable': False,
+                 'dragMaxDis': 50, 'edgeEffect': 1, 'hasScrollbar': False, 'rows': 1,
+                 'touchable': True, 'visible': True, 'orientation': 1, 'colSpacing': 0,
+                 'rowSpacing': 0, 'item': {}}
         elif t == 'separator':                                  # 内部用它，序列化时变 textview
             raise AssertionError('separator 不应直接序列化')
         c.update(self.payload)
@@ -352,6 +478,7 @@ class Composer(object):
         self.y = 0                # 内容当前纵向位置（内容空间，y 从 0 起）
         self.origin = (0, 0)      # 当前容器原点（内容空间）→ 子控件坐标 = 绝对 − origin
         self.title_done = False
+        self._sub = 0            # subitem/radiobutton 共用 id 计数器（24000 / 94100 段）
 
     # ---- 载入 ----
     @staticmethod
@@ -387,6 +514,20 @@ class Composer(object):
         self.assets[name] = ('chevron', dict(w=int(w), h=int(h), color=color))
         return 'images/' + name
 
+    def bar(self, name, w, h, bar_h, fill):
+        """滑轨/有效条：透明画布 w×h + 居中药丸条（可见条高 bar_h）——滑轨图高 == 控件盒高（seekbar-fields.md §3）。"""
+        self.assets[name] = ('bar', dict(w=int(w), h=int(h), bar_h=int(bar_h), fill=fill))
+        return 'images/' + name
+
+    def mark(self, name, w, h, radius, fill, mark='', mark_size=0, mark_color=None,
+             border=None, border_w=1):
+        """勾选/单选标记图（底形状 + 可选符号 check/dot）；图 == 控件盒（铁律 #1）。"""
+        self.assets[name] = ('mark', dict(w=int(w), h=int(h), radius=int(radius), fill=fill,
+                                          mark=mark, mark_size=int(mark_size),
+                                          mark_color=mark_color, border=border,
+                                          border_w=border_w))
+        return 'images/' + name
+
     def emit_assets(self, project_root):
         """交给 ui_tools/gen_res.py 出图（抗锯齿/倒角/透明底口径由它统一负责）。"""
         out = os.path.join(project_root, 'resources', 'images')
@@ -404,6 +545,15 @@ class Composer(object):
                 gen_res.save(img, out, name)
             elif kind == 'chevron':
                 gen_res.save(chevron_image(prm['w'], prm['h'], prm['color']), out, name)
+            elif kind == 'bar':
+                from PIL import Image as _Im
+                img = _Im.new('RGBA', (prm['w'], prm['h']), (0, 0, 0, 0))
+                bar = gen_res.rounded_rect_cov(prm['w'], prm['bar_h'],
+                                               max(1, prm['bar_h'] // 2), prm['fill'], ss=8)
+                img.alpha_composite(bar, (0, (prm['h'] - prm['bar_h']) // 2))
+                gen_res.save(img, out, name)
+            elif kind == 'mark':
+                gen_res.save(mark_image(prm), out, name)
             else:
                 gen_res.glyph_icon(out, name, prm['g'], size=prm['size'],
                                    color=prm['color'], canvas=prm['canvas'])
@@ -501,16 +651,26 @@ class Composer(object):
 
     # ─────── 块 builder：行族（setting_row / icon_row / toggle_row / device_card）───────
     ROW_TYPES = ('setting_row', 'icon_row', 'toggle_row', 'device_card')
+    # 行族扫描范围 = 老行块 + 第 2 批字段行（字段行的文本带必须跟老行同一左缘/同宽）
+    FAMILY_TYPES = ROW_TYPES + FIELD_TYPES
 
     def plan_row_reserve(self, rows):
         """一行族口径（同页全局，越卡也一致）：右端预留宽 + 是否给图标列留位。
 
         为什么按「页」而不是按「卡」：check_all #27 按容器递归取族，跨卡的同行会互相比；
         且 §2.1 要求“同一页里重复出现的行，其一切口径只能照抄”。所以全页取同一组值。
+        2026-10-01 第 2 批修正：文本盒宽也按这个**全页族预留**算（不再按「本行自己有什么右端控件」）
+        —— 否则「只有箭头的行」与「有开关的行」文本盒宽不同，#27 会报「口径偏离同族」
+        （旧两版示例各有 2 条 WARN 就是这么来的）。
         """
         m = self.m
         reserve = 0
         for b in rows:
+            if b['type'] in FIELD_TYPES:
+                # 字段行的控件在**独立带**上（不在文本带右端）——只有 checkbox_row 占右端槽
+                if b['type'] == 'checkbox_row':
+                    reserve = max(reserve, m['cb'])
+                continue
             if b['type'] == 'toggle_row':
                 reserve = max(reserve, r4(m['row_h'] * 1.30))
             elif b.get('chevron', True):
@@ -554,12 +714,27 @@ class Composer(object):
             for b in blocks or []:
                 if b.get('type') == 'card':
                     walk(b.get('blocks'))
-                elif b.get('type') in self.ROW_TYPES:
+                elif b.get('type') in self.FAMILY_TYPES:
                     rows.append(b)
         walk(self.page.get('blocks'))
-        self.assert_icon_uniform()          # 自检：同页行族图标统一（全有 / 全无）
+        self.assert_icon_uniform()          # 自检：同页行族图标统一（全有 / 全无；只看老行块）
         self.fam_reserve = self.plan_row_reserve(rows)
         self.fam_icon = any(b.get('icon') for b in rows) and not m['compact']
+
+    def row_boxes(self, x0, y0, w):
+        """行族文本盒统一口径（全页一份）：(text_left, text_w, right_edge)。
+
+        右缘取 **全页族预留**（fam_reserve）而不是「本行自己有什么右端控件」：
+        同一页行族只能有一套口径（check_all #27 按族取众数比 left/width/height/alignment，
+        按「本行自己的右端控件」算会让只有箭头的行与有开关的行宽度不同 → 报「口径偏离同族」）。
+        代价：只有箭头的行会多留一段死区；文本左对齐且短，观感无影响。
+        """
+        m = self.m
+        text_left = x0 + (m['icon_left'] + m['icon_bg'] + m['spacer']
+                          if getattr(self, 'fam_icon', False) else m['pad_l'])
+        reserve = getattr(self, 'fam_reserve', 0)
+        right_edge = x0 + w - m['pad_r'] - (reserve + m['text_chev_gap'] if reserve else 0)
+        return text_left, max(1, right_edge - text_left), right_edge
 
     def build_row(self, blk, parent, x0, y0, w, reserve, has_icon):
         """一行 = 透明 button（命中区，touchable true）+ 装饰件（touchable false 显式写）。"""
@@ -588,19 +763,9 @@ class Composer(object):
                                  self.box(ix + (s - ic) // 2, iy + (s - ic) // 2, ic, ic),
                                  m['fs']['b2'], col['brand'], '', bg=p_ic, align=37))
         # 文本区（全页统一口径：只要页内有任一行带图标，**所有行**都给图标列留位）
-        text_left = x0 + (m['icon_left'] + m['icon_bg'] + m['spacer']
-                          if getattr(self, 'fam_icon', False) else m['pad_l'])
-        # 右端控件左缘 = 本行**实际**有的那个（箭头 / 开关；两者都有取更靠左者）
-        rt_edge = None
-        if reserve and btype != 'toggle_row' and blk.get('chevron', True):
-            rt_edge = x0 + w - m['pad_r'] - m['chev_w']
-        if btype == 'toggle_row':
-            sw_left = x0 + w - m['pad_r'] - r4(m['row_h'] * 1.30)
-            rt_edge = sw_left if rt_edge is None else min(rt_edge, sw_left)
-        # 值文本右缘 = 本行右端控件左缘 − 间隙（旧实现用「全页最宽预留」→ 只有箭头的行多留死区）
-        right_edge = (rt_edge - m['text_chev_gap']) if rt_edge is not None \
-            else (x0 + w - m['pad_r'])
-        text_w = right_edge - text_left
+        text_left, text_w, right_edge = self.row_boxes(x0, y0, w)
+        # 右端槽左缘（全页族预留）：供「值文本右缘 → 右端控件」间隙自检（同页必须一致）
+        rt_edge = (x0 + w - m['pad_r'] - reserve) if reserve else None
         self.note_row_gaps('TextRow%s' % blk['_name'], right_edge, rt_edge)
         label = blk.get('label') or blk.get('text') or ''
         value = blk.get('value') or ''
@@ -711,6 +876,31 @@ class Composer(object):
         if bad:
             raise SystemExit('[X] %s 子节点越界（子节点坐标应为相对父容器）：%s' % (where, '；'.join(bad)))
 
+    def row_height(self, blk):
+        """一行块占的高度（第 2 批）：字段行 = 文本带 + 控件带；列表/滚轮自带块高。
+
+        必须与各 builder 实际占的高度一致（卡容器高靠它先算出来，子控件坐标是卡局部坐标）。
+        """
+        m = self.m
+        t = blk.get('type')
+        if t in ('slider_row', 'progress_row'):
+            return m['row_h'] + m['seek_h'] + 2 * m['widget_pad']
+        if t == 'input_row':
+            return m['row_h'] + m['edit_h'] + 2 * m['widget_pad']
+        if t == 'radio_row':
+            return m['row_h'] + len(blk.get('options') or []) * m['opt_h'] \
+                + 2 * m['widget_pad']
+        if t == 'list_item':
+            rows = max(1, int(blk.get('rows') or m['li_rows']))
+            rs = max(0, int(blk.get('rowSpacing') or 0))
+            h = rows * (m['li_h'] + rs) + min(m['li_peek'], rows - 1)
+            return h + (m['h_b2'] + m['spacer'] if blk.get('label') else 0)
+        if t == 'wheel_picker':
+            rows = max(3, int(blk.get('rows') or m['wheel_rows']))
+            h = rows * m['wheel_h']
+            return h + (m['h_b2'] + m['spacer'] if blk.get('label') else 0)
+        return m['row_h']
+
     def build_card(self, blk, parent, x, y):
         """卡片 = window__N 容器（touchable false）+ 卡底装饰 + 行 + 行间分割线。"""
         m = self.m
@@ -718,7 +908,8 @@ class Composer(object):
         if blk.get('title'):
             y = self.build_section({'text': blk['title'], '_seq': blk['_seq']}, parent, x, y)
         n = len(rows)
-        cw, ch_ = m['content_w'], n * m['row_h']
+        heights = [self.row_height(b) for b in rows]
+        cw, ch_ = m['content_w'], sum(heights)
         win = Node('window', 'Card%d' % blk['_seq'], self.box(x, y, cw, ch_))
         bg = self.shape('card_%dx%d.png' % (cw, ch_), cw, ch_, m['radius'],
                         rgba(self.tok['color']['surface']))
@@ -733,10 +924,20 @@ class Composer(object):
         top = 0
         for i, b in enumerate(rows):
             # 行名/序号已在 name_tree 预分配（全页全局递增，跨卡不重置）→ 此处不再按卡内下标重数
-            has_icon = self.fam_icon and bool(b.get('icon')) and \
-                (not m['compact'] or b['type'] != 'icon_row')
-            self.build_row(b, row_nodes, 0, top, cw, reserve, has_icon)
-            top += m['row_h']
+            t = b.get('type')
+            if t in FIELD_TYPES:
+                self.build_field_row(b, row_nodes, 0, top, cw)
+            elif t == 'list_item':
+                self.build_list(b, row_nodes, 0, top, cw)
+            elif t == 'wheel_picker':
+                self.build_wheel(b, row_nodes, 0, top, cw)
+            elif t in self.ROW_TYPES:
+                has_icon = self.fam_icon and bool(b.get('icon')) and \
+                    (not m['compact'] or b['type'] != 'icon_row')
+                self.build_row(b, row_nodes, 0, top, cw, reserve, has_icon)
+            else:
+                raise SystemExit('[X] 卡内不支持的块类型：%s（卡内只能是行块/列表块）' % t)
+            top += heights[i]
             if i < n - 1:
                 sep_nodes.append(self.sep_node(m['pad_l'], top, cw - 2 * m['pad_l'], b['_seq']))
         self.origin = old_origin
@@ -894,6 +1095,317 @@ class Composer(object):
         parent.append(win)
         return self.H
 
+    # ─────── 第 2 批 builder：字段行（slider/progress/input/checkbox/radio）───────
+
+    def make_seekbar(self, caption, box, progress, readonly=False):
+        """seekbar 控件：轨道/有效图 == 控件盒，thumb 子盒 == 滑块图（seekbar-fields.md）。
+
+        盒高 ≥ thumb.size.height 是硬要求：矮盒会真机把滑块压成扁椭圆（只改图/只改盒都没用）。
+        readonly=True（progress_row）：不给滑块图 + thumb.size 写 0（引擎不画滑块；给图会被当成可拖滑块）。
+        """
+        m = self.m
+        th = m['thumb']
+        # 可见条高 ≥ 10（AA 审计：条太矮时药丸端的弧线过渡会退化成硬阶梯 → #21 真缺陷），
+        # 且 ≈ 盒高 43%（滑轨图高 == 控件盒高，上下透明）
+        bar_h = min(box['height'], max(10, r4(box['height'] * 0.43)))
+        p_track = self.bar('sk_track_%dx%d.png' % (box['width'], box['height']),
+                           box['width'], box['height'], bar_h, rgba(self.tok['color']['line']))
+        p_fill = self.bar('sk_fill_%dx%d.png' % (box['width'], box['height']),
+                          box['width'], box['height'], bar_h, rgba(self.tok['color']['brand']))
+        thumb = {'size': {'width': 0, 'height': 0}, 'normalPic': '', 'pressedPic': ''}
+        if not readonly:
+            p_thumb = self.shape('sk_thumb_%d.png' % th, th, th, th // 2,
+                                 rgba(self.tok['color']['brand']))
+            thumb = {'size': {'width': th, 'height': th}, 'normalPic': p_thumb,
+                     'pressedPic': p_thumb}
+        return Node('seekbar', caption, box,
+                    {'backgroundPic': p_track, 'progressPic': p_fill,
+                     'secondaryProgressPic': '', 'defProgress': int(progress), 'max': 100,
+                     'orientation': 0, 'thumb': thumb, 'touchable': True})
+
+    def make_edittext(self, caption, box, blk):
+        """edittext 控件：底色用 bgColorTab 浅灰（白卡上白输入框看不见），不用图（避免描边环 AA 问题）。"""
+        m = self.m
+        col = {k: hex2int(v) for k, v in self.tok['color'].items() if v.startswith('#')}
+        payload = {'alignment': 36, 'fontSize': m['fs']['b1'],
+                   'bgColorTab': {'color0': hex2int(self.tok['color']['page']), 'color1': -1,
+                                  'color2': -1, 'color3': -1, 'color4': -1},
+                   'colorTab': {'color0': col['fg1'], 'color1': -1, 'color2': -1, 'color3': -1,
+                                'color4': -1},
+                   'hintTextColor': 8947848,          # #888888（edittext-fields.md 实测值）
+                   'hintText': blk.get('hintText') or '', 'text': blk.get('text') or '',
+                   'textType': int(blk.get('textType') or 0),
+                   'isPassword': bool(blk.get('isPassword', False)),
+                   'passwordChar': blk.get('passwordChar') or '*',
+                   'beepEnable': True, 'touchable': True}
+        return Node('edittext', caption, box, payload)
+
+    def make_checkbox(self, caption, box, checked):
+        """checkbox 控件（正方盒；pic0 未选 / pic2 选中，两张图 == 盒）。"""
+        m = self.m
+        s = int(box['width'])
+        col = {k: hex2int(v) for k, v in self.tok['color'].items() if v.startswith('#')}
+        r = max(2, int(round(s * 0.25)))
+        # 关态用 switchOff 实底（不用 1px 环）：小盒上的 1px 环会让 AA 审计退回「成片直通 α」
+        off = self.mark('cb_%d_off.png' % s, s, s, r, rgba(self.tok['color']['switchOff']))
+        on = self.mark('cb_%d_on.png' % s, s, s, r, rgba(self.tok['color']['brand']),
+                       mark='check', mark_size=max(8, int(round(s * 0.58))),
+                        mark_color=rgba(self.tok['color']['onBrand']))
+        icon_pos = {'left': 0, 'top': 0, 'width': s, 'height': s}
+        return Node('checkbox', caption, box,
+                    {'alignment': 37, 'checked': bool(checked), 'bold': False,
+                     'fontSize': m['fs']['b1'], 'italic': False, 'text': '',
+                     'colorTab': {'color0': col['fg1'], 'color1': -1, 'color2': -1, 'color3': -1,
+                                  'color4': -1},
+                     'backgroundColor': -1, 'touchable': True,
+                     'iconPosition': dict(icon_pos), 'textPosition': dict(icon_pos),
+                     'picTab': {'pic0': off, 'pic1': off, 'pic2': on}})
+
+    def make_radiogroup(self, caption, box, opts, selected, name):
+        """radiogroup + radiobuttons（竖排）：子项坐标相对 radiogroup；组 touchable 必须 true。"""
+        m = self.m
+        col = {k: hex2int(v) for k, v in self.tok['color'].items() if v.startswith('#')}
+        s = m['cb']
+        rbs = []
+        off = self.mark('rd_%d_off.png' % s, s, s, s // 2, rgba(self.tok['color']['switchOff']))
+        # 内点只在标记盒 ≥ 24px 时给：7px 内点的弧线在 aa_audit 里会退化成硬阶梯（#21 真缺陷）
+        # → 极小屏（16px）改用「实底色区分态」（品牌实底 = 选中 / switchOff 实底 = 未选）
+        if s >= 24:
+            on = self.mark('rd_%d_on.png' % s, s, s, s // 2, rgba(self.tok['color']['brand']),
+                           mark='dot', mark_size=max(6, int(round(s * 0.42))),
+                           mark_color=rgba(self.tok['color']['onBrand']))
+        else:
+            on = self.mark('rd_%d_on.png' % s, s, s, s // 2, rgba(self.tok['color']['brand']))
+        gw, oh = int(box['width']), m['opt_h']
+        for i, txt in enumerate(opts):
+            self._sub += 1
+            rbs.append({'id': RADIOBUTTON_ID_BASE + self._sub,
+                        'caption': '%sOpt%d' % (name, i + 1),
+                        'position': {'left': 0, 'top': i * oh, 'width': gw, 'height': oh},
+                        'alignment': 36, 'backgroundColor': -1, 'bold': False,
+                        'checked': bool(i == int(selected)),
+                        'bgColorTab': {'color0': -1, 'color1': -1, 'color2': -1, 'color3': -1,
+                                       'color4': -1},
+                        'colorTab': {'color0': col['fg1'], 'color1': -1, 'color2': col['brand'],
+                                     'color3': -1, 'color4': -1},
+                        'fontFamily': 0, 'fontSize': m['fs']['b1'], 'italic': False,
+                        'iconPosition': {'left': m['spacer'], 'top': (oh - s) // 2,
+                                         'width': s, 'height': s},
+                        'textPosition': {'left': 2 * m['spacer'] + s,
+                                         'top': (oh - m['h_b1']) // 2,
+                                         'width': gw - (3 * m['spacer'] + s),
+                                         'height': m['h_b1']},
+                        'picTab': {'pic0': off, 'pic1': off, 'pic2': on},
+                        'text': str(txt), 'touchable': True, 'visible': True,
+                        'beepEnable': True})
+        return Node('radiogroup', caption, box, {'touchable': True, 'radiobuttons': rbs})
+
+    def build_field_row(self, blk, parent, x0, y0, w):
+        """字段行 = 文本带（行高，**逐字节照抄行族口径**）+ 控件带（控件单独占一带）。
+
+        为什么控件单独占一带（而不是塞进行条右端）：
+          · seekbar/edittext 需要「盒高 ≥ 滑块高 / 文本高」才不被压扁（seekbar-fields.md §2）；
+          · 塞进行条右端会与值文本盒几何相交 → #27 文本×控件重叠 / 观感上文字外凸；
+          · 独立带在极小屏（320×240）也放得下，不必另设一套形态。
+        返回本行占的高度（供卡容器 / 内容流累加）。
+        """
+        m = self.m
+        col = {k: hex2int(v) for k, v in self.tok['color'].items() if v.startswith('#')}
+        t = blk['type']
+        text_left, text_w, _re_ = self.row_boxes(x0, y0, w)
+        label = blk.get('label') or ''
+        value = blk.get('value') or ''
+        if m['compact'] and blk.get('value_short'):
+            value = blk['value_short']
+        row = []
+        if m['two_line']:
+            row.append(self.text('TextRow%sLabel' % blk['_name'],
+                                 self.box(text_left, y0 + m['text_vpad'], text_w, m['h_b1']),
+                                 m['fs']['b1'], col['fg1'], label))
+            self.check_text_fit('TextRow%sLabel' % blk['_name'], label, m['fs']['b1'],
+                                text_w, m['h_b1'], 'label')
+            if value:
+                row.append(self.text('TextRow%sValue' % blk['_name'],
+                                     self.box(text_left, y0 + m['text_vpad'] + m['h_b1'],
+                                              text_w, m['h_b2']),
+                                     m['fs']['b2'], col['fg2'], value))
+                self.check_text_fit('TextRow%sValue' % blk['_name'], value, m['fs']['b2'],
+                                    text_w, m['h_b2'], 'value')
+        else:                                                   # 极小屏单行式（整页一致）
+            lw = r4(text_w * 0.42) - m['spacer']
+            ty = y0 + (m['row_h'] - m['h_b1']) // 2
+            row.append(self.text('TextRow%sLabel' % blk['_name'],
+                                 self.box(text_left, ty, lw, m['h_b1']),
+                                 m['fs']['b1'], col['fg1'], label))
+            self.check_text_fit('TextRow%sLabel' % blk['_name'], label, m['fs']['b1'],
+                                lw, m['h_b1'], 'label')
+            if value:
+                row.append(self.text('TextRow%sValue' % blk['_name'],
+                                     self.box(text_left + lw + m['spacer'], ty,
+                                              text_w - lw - m['spacer'], m['h_b1']),
+                                     m['fs']['b2'], col['fg2'], value, align=38))
+                self.check_text_fit('TextRow%sValue' % blk['_name'], value, m['fs']['b2'],
+                                    text_w - lw - m['spacer'], m['h_b1'], 'value')
+        band_y = y0 + m['row_h']
+        band_h = 0
+        bx = x0 + m['pad_l']
+        bw = w - 2 * m['pad_l']
+        if t in ('slider_row', 'progress_row'):
+            band_h = m['seek_h'] + 2 * m['widget_pad']
+            row.append(self.make_seekbar('SeekRow%sBar' % blk['_name'],
+                                         self.box(bx, band_y + m['widget_pad'], bw, m['seek_h']),
+                                         blk.get('progress') or 0,
+                                         readonly=(t == 'progress_row')))
+        elif t == 'input_row':
+            band_h = m['edit_h'] + 2 * m['widget_pad']
+            row.append(self.make_edittext('EditRow%sBox' % blk['_name'],
+                                          self.box(bx, band_y + m['widget_pad'], bw, m['edit_h']),
+                                          blk))
+        elif t == 'checkbox_row':
+            s = m['cb']                                        # 复选框在文本带右端槽（同 toggle_row 形态）
+            row.append(self.make_checkbox('CheckRow%sBox' % blk['_name'],
+                                          self.box(x0 + w - m['pad_r'] - s,
+                                                   y0 + (m['row_h'] - s) // 2, s, s),
+                                          blk.get('checked', False)))
+        elif t == 'radio_row':
+            band_h = len(blk.get('options') or []) * m['opt_h'] + 2 * m['widget_pad']
+            row.append(self.make_radiogroup('RadioRow%sGroup' % blk['_name'],
+                                            self.box(bx, band_y + m['widget_pad'], bw, band_h - 2 * m['widget_pad']),
+                                            blk.get('options') or [], blk.get('selected', 0),
+                                            'RadioRow%s' % blk['_name']))
+        else:
+            raise SystemExit('[X] 字段行未知类型：%s' % t)
+        parent.extend(row)
+        return m['row_h'] + band_h
+
+    # ─────── 第 2 批 builder：list_item / wheel_picker（listview 族）───────
+
+    def subitem(self, caption, pos, fs, color, txt='', pic=None, align=36):
+        """listview 行内子项（字段全集 = CTRL_FIELD_TEMPLATES['subitem']；id 24000 段）。"""
+        self._sub += 1
+        return {'id': SUBITEM_ID_BASE + self._sub, 'caption': caption, 'position': pos,
+                'alignment': align, 'backgroundColor': -1,
+                'bgColorTab': {'color0': -1, 'color1': -1, 'color2': -1, 'color3': -1,
+                               'color4': -1},
+                'bold': False,
+                'colorTab': {'color0': color, 'color1': -1, 'color2': -1, 'color3': -1,
+                             'color4': -1},
+                'fontFamily': 0, 'fontSize': fs, 'italic': False,
+                'longClickIntervalTime': -1, 'longClickTimeOut': -1,
+                'picTab': {'pic0': pic or ''}, 'text': txt, 'touchable': True, 'visible': True}
+
+    def list_item_template(self, caption, w, ih, chevron=True):
+        """listview 行模板：item.text 空串 + 内容走 subItem（绝不平铺子控件）。"""
+        m = self.m
+        col = {k: hex2int(v) for k, v in self.tok['color'].items() if v.startswith('#')}
+        sub = []
+        right = m['pad_l'] + (m['chev_w'] + m['spacer'] if chevron else 0)
+        sub.append(self.subitem(caption + 'SubTitle',
+                                {'left': m['pad_l'], 'top': (ih - m['h_b1']) // 2,
+                                 'width': w - m['pad_l'] - right, 'height': m['h_b1']},
+                                m['fs']['b1'], col['fg1']))
+        if chevron:
+            p = self.chevron('chev_%dx%d.png' % (m['chev_w'], m['chev_h']),
+                             m['chev_w'], m['chev_h'], rgba(self.tok['color']['chevron']))
+            sub.append(self.subitem(caption + 'SubChevron',
+                                    {'left': w - m['pad_l'] - m['chev_w'],
+                                     'top': (ih - m['chev_h']) // 2,
+                                     'width': m['chev_w'], 'height': m['chev_h']},
+                                    m['fs']['b2'], col['chevron'], pic=p, align=37))
+        return {'caption': caption, 'position': {'left': 0, 'top': 0, 'width': w, 'height': ih},
+                'alignment': 36, 'backgroundColor': -1, 'bold': False,
+                'bgColorTab': {'color0': -1, 'color1': -1, 'color2': -1, 'color3': -1,
+                               'color4': -1},
+                'colorTab': {'color0': col['fg1'], 'color1': col['fg1'], 'color2': col['fg1'],
+                             'color3': col['fg1'], 'color4': -1},
+                'fontSize': m['fs']['b1'], 'italic': False, 'picTab': {}, 'text': '',
+                'touchable': True, 'visible': True,
+                'longClickIntervalTime': -1, 'longClickTimeOut': -1, 'subItem': sub}
+
+    def build_list(self, blk, parent, x, y, w):
+        """list_item：listview + subItem 行模板。
+
+        itemH = int(lv高 / rows) − rowSpacing（引擎口径）——模板高必须 == 它（check_all #37）；
+        余数（= lv高 mod rows）**是有意的可滑动提示**（底部露出下一项一小块），不是缺陷。
+        返回本块占的高度。
+        """
+        m = self.m
+        col = {k: hex2int(v) for k, v in self.tok['color'].items() if v.startswith('#')}
+        rows = max(1, int(blk.get('rows') or m['li_rows']))
+        rs = max(0, int(blk.get('rowSpacing') or 0))
+        ih = m['li_h']
+        peek = min(m['li_peek'], rows - 1)
+        lv_w = w - 2 * m['pad_l']
+        lv_h = rows * (ih + rs) + peek
+        cur = y
+        if blk.get('label'):
+            parent.append(self.text('Label%s' % blk['_name'],
+                                    self.box(x + m['pad_l'], cur, lv_w, m['h_b2']),
+                                    m['fs']['b2'], col['fg2'], blk['label']))
+            cur += m['h_b2'] + m['spacer']
+        item = self.list_item_template(blk['_name'] + 'Item', lv_w, ih,
+                                       blk.get('chevron', True))
+        parent.append(Node('listview', 'List' + blk['_name'],
+                           self.box(x + m['pad_l'], cur, lv_w, lv_h),
+                           {'rows': rows, 'rowSpacing': rs, 'cols': 1, 'cycleEnable': False,
+                            'edgeEffect': 1, 'autoRollback': True, 'hasScrollbar': False,
+                            'dragMaxDis': m['drag_max'], 'orientation': 1, 'item': item}))
+        return cur + lv_h - y
+
+    def build_wheel(self, blk, parent, x, y, w):
+        """wheel_picker：一列 = 一个 listview；选中条挂**静态层**且写在 listview 之前。
+
+        口径（knowledge/uicontrols/listview-wheel-picker.md）：
+          · 正中行 = 选中行（rows 必须奇数；运行时用「数据侧平移」把值摆到正中）；
+          · 选中条必须是**先定义的静态 textview**（z 更低）—— 挂行背景图会跟着行滚；
+          · lv 高 = rows × 模板高（滚轮要刚好一屏窗口，不留余数）。
+        返回本块占的高度。
+        """
+        m = self.m
+        col = {k: hex2int(v) for k, v in self.tok['color'].items() if v.startswith('#')}
+        cols = blk.get('columns')
+        if isinstance(cols, int):
+            cols = [{} for _ in range(max(1, cols))]
+        cols = list(cols or [{}])
+        rows = max(3, int(blk.get('rows') or m['wheel_rows']))
+        if rows % 2 == 0:
+            raise SystemExit('[X] wheel_picker.rows 必须为奇数（正中行 = 选中行），得到 %d' % rows)
+        ih = m['wheel_h']
+        lv_h = rows * ih
+        gap = m['spacer2']
+        n = len(cols)
+        col_w = min(m['wheel_col_w'], max(m['cb'] * 2, (w - (n - 1) * gap - 2 * m['pad_l']) // n))
+        col_w = r4(col_w)
+        cur = y
+        if blk.get('label'):
+            parent.append(self.text('Label%s' % blk['_name'],
+                                    self.box(x + m['pad_l'], cur, w - 2 * m['pad_l'], m['h_b2']),
+                                    m['fs']['b2'], col['fg2'], blk['label']))
+            cur += m['h_b2'] + m['spacer']
+        total = n * col_w + (n - 1) * gap
+        cx0 = x + max(0, (w - total) // 2)
+        band_r = max(4, min(m['tok']['shape']['container_radius_px'], int(round(ih * 0.18))))
+        bands, lists = [], []
+        for i in range(n):
+            cx = cx0 + i * (col_w + gap)
+            cap = '%sCol%d' % (blk['_name'], i + 1)
+            p = self.shape('wband_%dx%d.png' % (col_w, ih), col_w, ih, band_r,
+                           rgba(self.tok['color']['brand1']))
+            bands.append(self.text('Band' + cap,
+                                   self.box(cx, cur + (rows // 2) * ih, col_w, ih),
+                                   m['fs']['b2'], col['brand1'], '', bg=p, align=37))
+            item = self.list_item_template('Text' + cap, col_w, ih, chevron=False)
+            item['alignment'] = 37
+            for si in item['subItem']:
+                si['alignment'] = 37
+            lists.append(Node('listview', 'List' + cap, self.box(cx, cur, col_w, lv_h),
+                              {'rows': rows, 'rowSpacing': 0, 'cols': 1, 'cycleEnable': True,
+                               'edgeEffect': 1, 'autoRollback': True, 'hasScrollbar': False,
+                               'dragMaxDis': m['drag_max'], 'orientation': 1, 'item': item}))
+        parent.extend(bands)                # 条先定义 = z 更低（滚动时条一个像素不动）
+        parent.extend(lists)
+        return cur + lv_h - y
+
     # ─────── 主流程 ───────
     def run(self):
         m = self.m
@@ -932,6 +1444,18 @@ class Composer(object):
                 self.build_row(blk, content, m['margin'], self.y, m['content_w'],
                                self.fam_reserve, has_icon)
                 self.y += m['row_h']
+            elif t in FIELD_TYPES:
+                self.y += self.build_field_row(blk, content, m['margin'], self.y,
+                                               m['content_w'])
+            elif t in WIDGET_TYPES:
+                if self.y > 0:
+                    self.y += m['group_gap']
+                if t == 'list_item':
+                    self.y += self.build_list(blk, content, m['margin'], self.y,
+                                              m['content_w'])
+                else:
+                    self.y += self.build_wheel(blk, content, m['margin'], self.y,
+                                               m['content_w'])
             else:
                 raise SystemExit('[X] 块 %s 没有 builder' % t)
         content_h = max(0, self.y)
@@ -1011,6 +1535,20 @@ LOGIC_HEAD = '''/*
  * 行块的口令：整行就是一个透明 button，命中区 = 行条。
  */
 
+/*
+ * 第 2 批交互块（slider_row / progress_row / input_row / checkbox_row / radio_row /
+ * list_item / wheel_picker）的运行期回调——签名出自 knowledge/uicontrols/*.md，未在骨架里
+ * 展开（避免签名漂移），需要时把下面注释打开并按业务补实现：
+ *
+ *   static void onProgressChanged_SeekRowSliderRow1Bar(ZKSeekBar *pSeekBar, int progress) {}
+ *   static void onCheckedChanged_CheckRowCheckboxRow2Box(ZKCheckBox *pCheckBox, bool isChecked) {}
+ *   static void onCheckedChanged_RadioRowRadioRow3Group(ZKRadioGroup *pGroup, int checkedID) {}
+ *   static int  getListItemCount_ListListItem4(const ZKListView *pListView) { return 0; }
+ *   static void obtainListItemData_ListListItem4(ZKListView *p, ZKListView::ZKListItem *item, int index) {}
+ *   static void onListItemClick_ListListItem4(ZKListView *p, int index, int id) {}
+ *   // 滚轮：正中行回读 fi + (h/2 − off)/ih；程序化定位用数据侧平移（见 listview-wheel-picker.md）
+ */
+
 /**
  * 注册定时器（id 不能重复）
  */
@@ -1059,6 +1597,17 @@ def collect_button_caps(node, out=None):
     return out
 
 
+def collect_edittext_caps(node, out=None):
+    """edittext caption 清单（id 51000 段）——check_all #5 要求 onEditTextChanged_<caption> 存在。"""
+    out = [] if out is None else out
+    for k, v in node.items():
+        if isinstance(v, dict) and '__' in k:
+            if 51000 <= int(v.get('id', 0)) < 52000 and v.get('caption'):
+                out.append(v['caption'])
+            collect_edittext_caps(v, out)
+    return out
+
+
 def find_render_font(project_root):
     """渲染用字体：项目自带优先（真机同族），否则用 components/fonts 的 zkswe 字体。"""
     import glob as _glob
@@ -1083,6 +1632,12 @@ def emit_logic(project_root, page, doc):
     for cap in caps:
         body.append('static bool onButtonClick_%s(ZKButton *pButton) {\n'
                     '    // TODO: %s\n    return false;\n}\n' % (cap, cap))
+    edit_caps = collect_edittext_caps(doc)
+    if edit_caps:
+        body.append('\n// ---- 输入框回调（check_all #5 核对：edittext 必须有 onEditTextChanged_<caption>）----\n')
+    for cap in edit_caps:
+        body.append('static void onEditTextChanged_%s(const std::string &text) {\n'
+                    '    // TODO: %s 输入内容 = text\n}\n' % (cap, cap))
     d = os.path.join(project_root, 'src', 'logic')
     os.makedirs(d, exist_ok=True)
     p = os.path.join(d, '%sLogic.cc' % page)
@@ -1144,8 +1699,8 @@ def main():
         print('  出图 %d 张 → %s' % (len(made), os.path.join(project, 'resources', 'images')))
         if not a.no_logic:
             lp = emit_logic(project, a.page, doc)
-            print('  logic 骨架 → %s（%d 个按钮回调）'
-                  % (lp, len(collect_button_caps(doc))))
+            print('  logic 骨架 → %s（%d 个按钮回调 + %d 个输入框回调）'
+                  % (lp, len(collect_button_caps(doc)), len(collect_edittext_caps(doc))))
     print('  → %s' % json_path)
     print('  控件：顶层 %d 个键 ｜ 含嵌套共 %d 个控件'
           % (len([k for k in doc if '__' in k]), cmp_.control_count))
@@ -1166,7 +1721,13 @@ def main():
         r = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace')
         rep = (r.stdout or '').strip()
         print('-- render --')
-        print(rep[-1500:])
+        # 完整打印（含 unsupported/降级清单）：旧版只打尾部 1500 字，交互块多了之后会把清单头部截掉
+        # （表现＝日志里看不到 radiogroup/checkbox 的降级项）。超长时只截中段，头尾都保留。
+        if len(rep) > 6000:
+            print(rep[:2500] + '\n  ...[中略 %d 字；完整清单请直接跑 json2img --report]...\n' %
+                  (len(rep) - 5000) + rep[-2500:])
+        else:
+            print(rep)
         if r.returncode != 0:
             print('  [X] json2img exit=%d\n%s' % (r.returncode, (r.stderr or '')[-800:]))
         else:
