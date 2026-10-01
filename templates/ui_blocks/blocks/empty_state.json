@@ -1,0 +1,29 @@
+{
+  "type": "empty_state",
+  "zh": "空态（图标 + 文案，居中）",
+  "builder": "empty",
+  "family": "page",
+  "caption_prefix": "EmptyState",
+  "fields": {
+    "icon": {"type": "string", "default": "info", "note": "gen_res glyph 名"},
+    "text": {"type": "string", "required": true, "example": "暂无设备"},
+    "sub": {"type": "string", "required": false, "example": "点右上角添加"}
+  },
+  "relative_constraints": {
+    "band_h": "屏高 × 0.30（不小于 3×行高，也不大于视口）",
+    "icon_bg": "直径 = 2×行高 × 0.60，水平居中于内容区",
+    "icon": "直径 = 图标底 × 0.5，与图标底同心",
+    "text_box": "宽 = 内容区宽 × 0.8，水平居中，位于图标底下方 + spacer-2；字号档 b1，色 fg2，居中 alignment",
+    "sub_box": "同 text_box，位于 text 下方 + 4；字号档 b2，色 fg2"
+  },
+  "assets": [
+    {"name": "icbg_{S}.png", "via": "gen_res.rounded_rect_ss(radius=S/2, fill=brand1)", "size": "图标底盒"},
+    {"name": "ic_{glyph}_{S}.png", "via": "gen_res.glyph_icon(glyph, canvas=(S,S))", "size": "图标盒"}
+  ],
+  "scroll": "inherit",
+  "forbidden": [
+    "空态在本页有数据时也显示（空态是「无数据」分支，不是装饰层）",
+    "空态图标与文案字号同档（层级靠字号档，一个 h1 一个大 b1）"
+  ],
+  "compact_note": "极小屏：图标底直径 = 1.5×行高 × 0.60，文案 ≤ 6 字"
+}

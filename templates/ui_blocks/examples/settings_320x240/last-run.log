@@ -1,0 +1,71 @@
+﻿== compose (320x240) ==
+  行高 28 ｜ 字号 {'h1': 14, 'h2': 12, 'b1': 12, 'b2': 10} ｜ 圆角 5 ｜ 图标底/图标 16/12 ｜ 箭头 12x16 ｜ 内容 372 → 视口 168
+  [NOTE] 内容总高 372 > 视口 168 → 自动上滑动窗口（行程 204 px，dragMaxDis=24）
+  btn_primary_104x16.png  104x16
+  btn_primary_64x16.png  64x16
+  btn_secondary_104x16.png  104x16
+  btn_secondary_64x16.png  64x16
+  card_288x112.png  288x112
+  card_288x84.png  288x84
+  cc_scrim_320x240.png  320x240
+  chev_12x16.png  12x16
+  footbg_320x40.png  320x40
+  ic_info_16.png  16x16
+  icbg_32.png  32x32
+  panel_256x104.png  256x104
+  sep_280x1.png  280x1
+  sw_36x20_on.png  36x20
+  swk_16.png  16x16
+  出图 15 张 → C:\Users\zkswe\.openclaw\workspace\tools\FlyThings_mcp_open\templates\ui_blocks\examples\settings_320x240\project\resources\images
+  logic 骨架 → C:\Users\zkswe\.openclaw\workspace\tools\FlyThings_mcp_open\templates\ui_blocks\examples\settings_320x240\project\src\logic\mainLogic.cc（11 个按钮回调）
+  → C:\Users\zkswe\.openclaw\workspace\tools\FlyThings_mcp_open\templates\ui_blocks\examples\settings_320x240\project\ui\main.json
+  控件：顶层 6 个键 ｜ 含嵌套共 59 个控件
+-- render --
+========================================================================
+json2img v0.1.0 — 引擎等价离线渲染（PIL 像素级，静止态）
+========================================================================
+[render] page=main       json=examples\settings_320x240\project\ui\main.json
+          out=C:\Users\zkswe\.openclaw\workspace\tools\FlyThings_mcp_open\templates\ui_blocks\examples\settings_320x240\project\ui\main.render.png  size=320x240  resolution=320x240  scale=1
+          font=C:\Users\zkswe\.openclaw\workspace\tools\FlyThings_mcp_open\components\fonts\fonts\zkswe-hans-common.ttf
+          [OK] 尺寸 == resolution × scale
+------------------------------------------------------------------------
+[unsupported/降级] 1 类：
+   - textview       bold                   x4    无 *Bold*.ttf 变体 → 用同字体
+     pages: main
+     例: textview/TextTitle, textview/SectionHeaderCard1, textview/SectionHeaderCard2, textview/SectionHeaderSectionHeader3
+------------------------------------------------------------------------
+[校准状态] alignment（模式 --align-mode measured）
+   实测表（真机验证）：36=靠左+垂直居中 37=居中 38=靠右+垂直居中 33=顶部 41=底部
+     [measured]     36  → ('l', 'c')   x11
+     [measured]     37  → ('c', 'c')   x4
+     [measured]     38  → ('r', 'c')   x7
+   TODO 待校准（无真机表）：4/5/0/1/6/2 —— 本模式解码：
+   合计：实测 22 处 / 待校准 0 处 / 表外 0 处
+  渲染图 main.render.png 320x240 ｜ 尺寸 == resolution: True
+-- check_all --
+  [NOTE] card_288x112.png                 未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] card_288x84.png                  未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] cc_scrim_320x240.png             未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] chev_12x16.png                   未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] footbg_320x40.png                未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] ic_info_16.png                   未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] icbg_32.png                      未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] panel_256x104.png                未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] sep_280x1.png                    未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] swk_16.png                       未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+== 24. 颜色值 0（不透明黑）误用（委派 tools/qa/zero_color_audit.py --fail；0 token 有退出码）==
+       references/kb/image-gen-standard.md §7.6：未登记豁免 → FAIL；命中
+== 25. 弧线过渡质量（9-patch 圆角 AA；委派 tools/qa/corner_audit.py --arc-only --fail）==
+       要求 min_cov ≤ 0.35 且 ≤0.35 的个数 ≥ 2（成组出现）；否则 = 过渡被压进 1px 硬阶梯 → FAIL。
+  [NOTE] btn_primary_104x16.png           未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] btn_primary_64x16.png            未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] btn_secondary_104x16.png         未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] btn_secondary_64x16.png          未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] card_288x112.png                 未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] card_288x84.png                  未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+== 26. scrollwindow 行程核对（行程 = 内层 window − 视口，**不读 dragMaxDis**）==
+== 27. 同族控件口径离群 / 文本×图标重叠（设计期拦截；钟工 2026-10-01）==
+== 28. UTF-8 文本陷阱（src 静态扫描；钟工 2026-10-01）==
+== 29. 显示件吃掉下层触摸（装饰件漏设穿透；钟工 2026-10-01）==
+[OK] 全部 PASS，可以交付。
+  check_all exit = 0

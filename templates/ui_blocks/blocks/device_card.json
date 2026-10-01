@@ -1,0 +1,30 @@
+{
+  "type": "device_card",
+  "zh": "设备卡（图标 + 名称 + 状态 + 箭头）",
+  "builder": "row",
+  "family": "row",
+  "caption_prefix": "DeviceRow",
+  "fields": {
+    "icon": {"type": "string", "required": true, "example": "wifi"},
+    "label": {"type": "string", "required": true, "example": "客厅面板"},
+    "value": {"type": "string", "required": false, "example": "在线 · 信号良好"},
+    "value_short": {"type": "string", "required": false, "example": "在线"},
+    "online": {"type": "bool", "default": true, "note": "状态点颜色（装饰件；真机态由业务代码切图）"},
+    "chevron": {"type": "bool", "default": true}
+  },
+  "relative_constraints": {
+    "geometry": "与 icon_row 完全同一口径（同一套行模板 → 同页行族一致，check_all #27 才为 0 条）",
+    "status_dot": "直径 = 图标盒 × 0.28，贴值盒左缘 − spacer；与值行垂直居中（装饰件，touchable false）",
+    "text": "名称 = 字号档 b1（色 fg1）；状态 = 字号档 b2（色 fg2）"
+  },
+  "assets": [
+    {"name": "icbg_{S}.png / ic_{glyph}_{S}.png / chev_{w}x{h}.png", "via": "同 icon_row", "size": "各自盒 == 图"},
+    {"name": "dot_{d}.png", "via": "gen_res.rounded_rect_ss(radius=d/2)", "size": "状态点盒"}
+  ],
+  "scroll": "inherit",
+  "forbidden": [
+    "设备卡自创一套行高/内边距（同一页里它就是「带图标的行」）",
+    "状态文本用红绿字代替状态点（层级靠色 + 点，不靠给文字上色染红）"
+  ],
+  "compact_note": "极小屏：与 setting_row 同降单行式（名称左、状态右），状态点省略"
+}

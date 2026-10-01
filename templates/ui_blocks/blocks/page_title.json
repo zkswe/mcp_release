@@ -1,0 +1,24 @@
+{
+  "type": "page_title",
+  "zh": "页标题（标题 + 英文副标题）",
+  "builder": "title",
+  "family": "page",
+  "caption_prefix": "TextTitle",
+  "fields": {
+    "title": {"type": "string", "required": true, "example": "设置"},
+    "subtitle": {"type": "string", "required": false, "example": "Settings", "note": "英文副标题；缺省不画"}
+  },
+  "relative_constraints": {
+    "band_h": "max(屏高 × 0.10, 标题带内容高 + 12) —— 可读性优先，超出比例带时按内容反算（SPEC-CHECK §3 B4）",
+    "title_box": "宽 = 屏宽 − 2×margin(=spacer-2)；高 = 字号档 h1 × 1.45（r4 取 4 的倍数）；左缘 = spacer-2；字号档 h1 + 字重 bold + 色 fg1",
+    "subtitle_box": "左缘与标题同；紧贴标题下方（间隔 4）；高 = 字号档 b2 × 1.45；色 fg2",
+    "vertical": "整块在标题带内垂直居中"
+  },
+  "assets": [],
+  "scroll": "no",
+  "forbidden": [
+    "一个页面出现多个 page_title（一页一标题）",
+    "把标题放进滑动区（滚动时标题会跟着滚走 → 固定件必须放在 scrollwindow 外面）"
+  ],
+  "compact_note": "极小屏：副标题默认省略（h1 14 / 副标题 10 太挤），除非 spec 显式给 subtitle"
+}

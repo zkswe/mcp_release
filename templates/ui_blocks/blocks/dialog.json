@@ -1,0 +1,36 @@
+{
+  "type": "dialog",
+  "zh": "弹窗（遮罩 + 卡片 + 标题 + 正文 + 双按钮）",
+  "builder": "dialog",
+  "family": "overlay",
+  "caption_prefix": "Dialog",
+  "fields": {
+    "title": {"type": "string", "required": true, "example": "确认删除"},
+    "body": {"type": "string", "required": false, "example": "删除后不可恢复，确定继续吗？"},
+    "primary": {"type": "string", "default": "确定"},
+    "secondary": {"type": "string", "default": "取消"},
+    "visible": {"type": "bool", "default": false, "note": "缺省 false：真机由业务代码 showWnd()/hideWnd() 控制"}
+  },
+  "relative_constraints": {
+    "root": "window__N 覆盖整屏 (0,0,W,H)，modal true + visible false（容器，touchable 显式 false）",
+    "scrim": "遮罩 = 满屏装饰件（touchable false 显式写；半透明底图）。**必须显式 false**，否则会吃掉下层触摸",
+    "panel_w": "屏宽 × 0.60（不小于 200，r4）",
+    "panel_h": "内容反算 = 2×spacer-2 + 标题高 + 8 + 正文高×行数 + spacer-2 + 按钮高",
+    "panel": "面板 = 内层 window__M（圆角卡片底图 + 描边，盒 == 图），整屏居中",
+    "title_box": "宽 = 面板宽 − 2×spacer-2；字号档 h2，色 fg1",
+    "body_box": "同宽；字号档 b1，色 fg2；可换行（行数 ≤ 3）",
+    "btn": "高 = min(屏高 × 0.07, 面板高 × 0.22)；副按钮左、主按钮右；同高同宽（面板宽 − 3×spacer-2 的一半）"
+  },
+  "assets": [
+    {"name": "cc_scrim_{W}x{H}.png", "via": "gen_res.rounded_rect(radius=0, fill=#00000066)（满屏半透明层）", "size": "遮罩盒 == 图"},
+    {"name": "panel_{w}x{h}.png", "via": "gen_res.rounded_rect_ss(fill=surface, border=line)", "size": "面板盒 == 图"},
+    {"name": "btn_primary_{w}x{h}.png / btn_secondary_{w}x{h}.png", "via": "同 bottom_actions", "size": "按钮盒 == 图"}
+  ],
+  "scroll": "no",
+  "forbidden": [
+    "遮罩不设 touchable:false（会吃掉下层触摸；纯显示件一律 touchable false）",
+    "弹窗整屏 window 放在滑动区内部（必须是根层兄弟节点，保证最上层）",
+    "一个页面塞多个弹窗叠着（一层一个窗口，其余 visible:false）"
+  ],
+  "compact_note": "极小屏：面板宽 = 屏宽 × 0.80，正文 ≤ 2 行，按钮改上下排列"
+}

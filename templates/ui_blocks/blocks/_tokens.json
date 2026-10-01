@@ -1,0 +1,83 @@
+{
+  "_doc": "界面块片段库 · 设计令牌 + 相对尺度体系（唯一数值源）。所有块定义只引用这里的名字，不写死某屏绝对像素。",
+  "_source": [
+    "TDesign v1.17.0 官方令牌（projects/UISpec-Demo/docs/tdesign-tokens-distilled.json + tdesign-tokens-v1.17.0.wxss），换算口径 rpx ÷ 2 = px",
+    "组件级相对尺度：knowledge/uicontrols/scrollwindow-layout-checklist.md §2.1（基准屏 1024×600；行高 8%~10%；箭头宽 2.5%~4%；左内边距 2%~4%）",
+    "已验收定版参数：projects/UISpec-Demo/docs/SPEC-CHECK.md §7/§8（钟工 2026-10-01「这个效果比例可以」）"
+  ],
+  "base_screen": {"width": 1024, "height": 600},
+
+  "compact_when_h_lt": 320,
+  "_compact_doc": "屏高 < 320 视为极小屏：行改单行式（全页一致，禁同页混用）、字号降 2 级、图标可省",
+
+  "spacer": {"spacer": 8, "spacer1": 12, "spacer2": 16, "spacer3": 24},
+
+  "ladder": [10, 12, 14, 16, 18, 20, 24, 28, 36, 48],
+  "_ladder_doc": "字号只从档位里选（不线性放大）；相邻档级差不足 1.3，层级改由「字号档 + 字重 + 颜色灰阶」三件套表达",
+
+  "font": {
+    "h1": {"base": 28, "min": 16, "max": 48, "weight": "bold", "color": "fg1"},
+    "h2": {"base": 20, "min": 14, "max": 36, "weight": "bold", "color": "fg2"},
+    "b1": {"base": 16, "min": 12, "max": 28, "weight": "regular", "color": "fg1"},
+    "b2": {"base": 14, "min": 10, "max": 24, "weight": "regular", "color": "fg2"}
+  },
+  "compact_font": {"h1": 14, "h2": 12, "b1": 12, "b2": 10},
+  "_compact_font_doc": "极小屏 2 级 → 实际用 4 档的降级映射（h1/h2/b1/b2 = 14/12/12/10）",
+
+  "color": {
+    "page": "#F3F3F3",
+    "surface": "#FFFFFF",
+    "fg1": "#1A1A1A",
+    "fg2": "#666666",
+    "line": "#E7E7E7",
+    "chevron": "#DCDCDC",
+    "brand": "#0052D9",
+    "brand1": "#F2F3FF",
+    "onBrand": "#FFFFFF",
+    "switchOff": "#DCDCDC",
+    "scrim": "#00000066",
+    "_doc": "TDesign px 等价：gray-1 页面底 / 白容器 / font-gray 0.9、0.6 / gray-3 分割线 / brand #0052D9"
+  },
+
+  "shape": {
+    "container_radius_px": 6,
+    "container_radius_of_row_h": 0.18,
+    "container_radius_min": 4,
+    "line_px": 1,
+    "line_px_thick_below_row_h": 40,
+    "_doc": "容器圆角 = min(TDesign radius-default 6px, 行高×0.18) 且 ≥4；描边 1px（行高 <40 时改 2px，避免 1px 环在 AA 审计里退化成脏边）"
+  },
+
+  "size": {
+    "bar_top_of_h": 0.10,
+    "bar_bot_of_h": 0.12,
+    "bar_min_pad": 12,
+    "row_h_of_h": 0.10,
+    "row_h_of_h_compact": 0.117,
+    "row_gap_px": 4,
+    "group_gap": "spacer2",
+    "card_inset": "spacer2",
+    "pad_l_wide": "spacer2",
+    "pad_l_compact": "spacer",
+    "icon_bg_of_row_h": 0.60,
+    "icon_of_row_h": 0.40,
+    "icon_min": 12,
+    "chev_w_of_w": 0.025,
+    "chev_w_min": 12,
+    "chev_h_of_h": 0.027,
+    "chev_h_min": 16,
+    "text_chev_gap": "spacer",
+    "text_h_of_fs": 1.45,
+    "text_vpad": 8,
+    "icon_pad_of_pad_l": 0.5,
+    "_doc": "全部是「比例 / 令牌 / 内容反算」三类来源之一；r4 = 取 4 的倍数（4px 栅格）"
+  },
+
+  "scroll": {
+    "drag_max_dis_of_w": 0.06,
+    "drag_max_dis_min": 24,
+    "edge_effect": 1,
+    "orientation": 1,
+    "_doc": "dragMaxDis = 越界拖拽上限（不是行程！行程 = 内层 window 尺寸 − 视口）；见 knowledge/uicontrols/scroll-drag-interaction-spec.md R1/R2/R6"
+  }
+}

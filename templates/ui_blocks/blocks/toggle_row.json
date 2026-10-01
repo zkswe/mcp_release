@@ -1,0 +1,34 @@
+{
+  "type": "toggle_row",
+  "zh": "开关行（左标题 + 状态值 + 右开关）",
+  "builder": "row",
+  "family": "row",
+  "caption_prefix": "ToggleRow",
+  "fields": {
+    "label": {"type": "string", "required": true, "example": "自动息屏"},
+    "value": {"type": "string", "required": false, "example": "已开启"},
+    "value_short": {"type": "string", "required": false},
+    "on": {"type": "bool", "default": true, "note": "开关当前态（决定药丸底色与滑块位置；真机态由业务代码 setControlPic 切换）"},
+    "icon": {"type": "string", "default": ""}
+  },
+  "relative_constraints": {
+    "row_w": "同 setting_row（同页行必须同一口径）",
+    "row_h": "同 setting_row",
+    "switch_box": "宽 = 行高 × 1.30，高 = 行高 × 0.72；贴行条右缘 − pad_right；与行条垂直居中；**盒 == 图**",
+    "switch_knob": "高 = 开关盒高 − 2×2px 内缩，圆心距盒边 2px；态 on → 贴右，off → 贴左",
+    "label_box/value_box": "与 setting_row 完全同左缘/同宽（值盒右缘留出开关盒 + spacer 间隙）",
+    "hit_area": "整行一个透明 button（touchable true）盖住行条；开关、药丸底、滑块均为**装饰件**（touchable false 显式写）"
+  },
+  "assets": [
+    {"name": "sw_{w}x{h}_on.png", "via": "gen_res.rounded_rect_ss(radius=h/2)", "size": "开关盒（药丸）"},
+    {"name": "sw_{w}x{h}_off.png", "via": "gen_res.rounded_rect_ss(radius=h/2)", "size": "开关盒（药丸）"},
+    {"name": "swk_{k}.png", "via": "gen_res.rounded_rect_ss(radius=k/2)", "size": "滑块（圆）"}
+  ],
+  "scroll": "inherit",
+  "forbidden": [
+    "把开关做成按钮的唯一图（点一下换图）——那会让「态」和「命中区」耦合；本块用「装饰件呈现态 + 整行透明 button 命中」",
+    "开关盒与值文本盒相交（值盒右缘 = 开关盒左缘 − spacer）",
+    "同页开关尺寸不一致（照抄第一个开关的口径）"
+  ],
+  "compact_note": "极小屏：开关宽 = 行高 × 1.10；值文案用 value_short"
+}

@@ -1,0 +1,30 @@
+{
+  "type": "card",
+  "zh": "圆角卡片容器（白底分组容器 + 行内分割线）",
+  "builder": "card",
+  "family": "group",
+  "caption_prefix": "Card",
+  "fields": {
+    "title": {"type": "string", "required": false, "example": "设备", "note": "有则先画一个 section_header 分组标题带"},
+    "blocks": {"type": "array", "required": true, "note": "容器内的行块（setting_row / icon_row / toggle_row / device_card）"}
+  },
+  "relative_constraints": {
+    "width": "屏宽 − 2×margin（margin = spacer-2，TDesign cell-group 形态）",
+    "left": "spacer-2",
+    "height": "行数 × 行高（容器高 = 内容总高，不留内边距：行自带竖内边距）",
+    "radius": "min(TDesign radius-default 6px, 行高 × 0.18) 且 ≥ 4",
+    "stroke": "1px 线（行高 < 40 时 2px；白卡必须配描边或阴影，否则白面/近白底对比 ≈1.05:1 看不到轮廓）",
+    "separator": "相邻行之间 1px 分割线（色 line），左缘 = 卡内 pad_left，右缘贴卡右缘；最后一行不画",
+    "struct": "容器 = window__N（touchable false + 卡底装饰 textview 先定义 + 行控件）"
+  },
+  "assets": [
+    {"name": "card_{W}x{H}.png", "via": "gen_res.rounded_rect_ss(radius=r, fill=surface, border=line, border_w=1|2)", "size": "卡容器盒 == 图（含描边环）"}
+  ],
+  "scroll": "inherit",
+  "forbidden": [
+    "卡片图 ≠ 容器盒（引擎拉伸 → 圆角/描边糊）",
+    "给每行再做一层圆角卡（TDesign 形态是「一个分组容器 + 行内分割线」，不是每行一张卡）",
+    "同时给 colorTab 底色 + 卡片底图（方形底色会盖掉底图圆角与描边，表现＝「倒角没生效」）"
+  ],
+  "compact_note": "极小屏：卡圆角 4~5，容器仍满宽 − 2×spacer-2"
+}

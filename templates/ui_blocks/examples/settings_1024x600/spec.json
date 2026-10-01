@@ -1,0 +1,25 @@
+{
+  "_doc": "示例 A · 1024×600（基准屏）。同一份块清单在 320×240 上再出一版（见 ../settings_320x240/spec.json），两版只差 resolution 与极小屏文案。",
+  "resolution": {"width": 1024, "height": 600},
+  "page": {
+    "title": "设置",
+    "subtitle": "Settings",
+    "blocks": [
+      {"type": "card", "title": "设备", "blocks": [
+        {"type": "setting_row", "label": "WiFi", "value": "已连接 · 192.168.1.100", "value_short": "已连接", "chevron": true},
+        {"type": "setting_row", "label": "运行模式", "value": "本地主机", "value_short": "本地", "chevron": true},
+        {"type": "setting_row", "label": "设备名称", "value": "UISpec-Demo", "chevron": true}
+      ]},
+      {"type": "card", "title": "显示", "blocks": [
+        {"type": "setting_row", "label": "屏幕亮度", "value": "工作 80% · 屏保 30%", "value_short": "80%"},
+        {"type": "icon_row", "icon": "list", "label": "多屏拼接", "value": "已开启 2/2 · 主屏", "value_short": "2/2"},
+        {"type": "toggle_row", "label": "自动息屏", "value": "已开启", "on": true},
+        {"type": "device_card", "icon": "wifi", "label": "客厅面板", "value": "在线 · 信号良好", "value_short": "在线", "online": true}
+      ]},
+      {"type": "section_header", "text": "其它"},
+      {"type": "empty_state", "icon": "info", "text": "暂无其它设备", "sub": "点右上角添加"},
+      {"type": "bottom_actions", "status": "已是最新", "primary": "保存", "secondary": "取消"},
+      {"type": "dialog", "title": "确认删除", "body": "删除后不可恢复，确定继续吗？", "primary": "删除", "secondary": "取消", "visible": false}
+    ]
+  }
+}

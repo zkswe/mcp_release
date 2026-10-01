@@ -99,3 +99,8 @@ components/
 | [`wall_sync/`](wall_sync/README.md) | 多屏拼接 / 视频墙同步 `zk::wall`：`Sync`（UDP 自组网 + 主机 epoch + 从机双向测时 RTT/2 算钟差 + 绝对墙钟整边界栅格 + `playlist.json` 多 clip 时间轴 + 失联/时钟守卫）+ `Player`（按栅格挑本机那一格、边界踩点起播、交**注入的 `Engine`** 送流）；头文件零 MI/ffmpeg 类型泄漏。**源码型**（rapidjson + base-utility；接线侧 easyui/ffmpeg/mi-module） | Z20 已实测（口径来自来源工程内联版：相位 ≤40ms、simple 引擎稳态偏差 ≤1ms）；其余平台未验证 · **本仓组件形态未上机** | 0.1.0 |
 | [`ha_bridge/`](ha_bridge/README.md) | Home Assistant / MQTT 桥 + 继电器语义 `zk::ha`：`Bridge`（配置全空默认 → 不给就明确报错；上行 availability/state/status retained + 连接后自动发 HA Discovery；下行只认 `<prefix>/switch/relay_<n>/command` 的 ON/OFF；retained 撤销原语；**重连只留一个真源** + 代次作废旧回调 + 退避）；`RelayBank`（继电器唯一事实源 + 变化才通知，UI 视觉单槽与业务具名槽**互不覆盖**）。头文件零 mqtt-cxx 类型泄漏。**源码型**（mqtt-cxx + paho-mqtt3as + openssl） | Z20 已实测（同源逻辑在来源工程真机跑通）；**本仓组件形态未上机** | 0.1.0 |
 | [`ui_v1/`](ui_v1/README.md) | **本代 UI 目录（口径 2026-09-16 修正）：只放「FlyThings 没有的能力」的自定义控件包**（`ui_v1/<源控件名>/`，四件套 + `example/evidence`）。已落 **`Chart/`**（折线/柱/环/仪表自绘集合 + 分段环，Z21 真机验收）、**`Calendar/`**（42-textview 日历网格 + 触摸反算命中，Z21 真机验收）与 **`RadButton/`**（painter 自绘带倒角按钮：任意尺寸/半径/四态/边框 + 抗锯齿数字，Z21 真机验收）；**有一一映射的控件走「映射能力」**（`mcp_control_map.json` + op `flythings_map_control`，六框架 212 条）；有平台对应控件但接线值得留的叫**映射参考**（`ui_v1/_mapping/TabView/`，基于 pagewindow）；级别/缺口/平台事实在 `control-map.md`/`gap-list.md`/`platforms.md` | Z21 已验收 · F133 仅编译 · Z20/T113/V85X 未验证 | 0.4.0（含 `Chart` 0.2.0 / `Calendar` 0.1.0 / `_mapping/TabView` 0.1.0） |
+
+---
+
+> **相关（不属本目录四件套体系）**：界面块片段库 + 组装器 → [`templates/ui_blocks/`](../templates/ui_blocks/README.md)
+> ——把 UI 从「手算坐标」变成「选块 + 填值 + 排序」：`python templates/ui_blocks/compose.py spec.json --project <工程> --render --check`（11 个块，出 json + 切图 + 渲染图 + 全检）。

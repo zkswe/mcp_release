@@ -1,0 +1,33 @@
+{
+  "type": "bottom_actions",
+  "zh": "底部操作条（状态文案 + 主/次按钮）",
+  "builder": "actions",
+  "family": "page",
+  "caption_prefix": "Action",
+  "fields": {
+    "status": {"type": "string", "required": false, "example": "已是最新"},
+    "primary": {"type": "string", "required": true, "example": "保存"},
+    "primary_id": {"type": "string", "default": "", "note": "业务代码用控件 id（不填则按 caption 取）"},
+    "secondary": {"type": "string", "required": false, "example": "取消"}
+  },
+  "relative_constraints": {
+    "band_h": "max(屏高 × 0.12, 按钮高 + 2×12)",
+    "surface": "bar 底：满宽白色面（可选图，图 == 盒）",
+    "status_box": "左缘 = spacer-2；宽 = 内容区宽 × 40%；字号档 b2，色 fg2；bar 内垂直居中",
+    "btn": "高 = min(bar 高 − 2×12, 屏高 × 0.07)；宽 = max(64, 屏宽 × 0.16)（r4）",
+    "btn_pos": "右缘 = 屏宽 − spacer-2；主按钮贴右，次按钮在主按钮左侧 − spacer；bar 内垂直居中",
+    "btn_style": "主 = 品牌实底（色 brand）+ 白字（onBrand）；次 = 白底 + 1px 描边 + 品牌字"
+  },
+  "assets": [
+    {"name": "btn_primary_{w}x{h}.png", "via": "gen_res.rounded_rect_ss(radius=r, fill=brand)", "size": "按钮盒 == 图"},
+    {"name": "btn_secondary_{w}x{h}.png", "via": "gen_res.rounded_rect_ss(fill=surface, border=line)", "size": "按钮盒 == 图"},
+    {"name": "footbg_{W}x{H}.png", "via": "gen_res.rounded_rect_ss(radius=0, fill=surface)", "size": "bar 盒 == 图"}
+  ],
+  "scroll": "no",
+  "forbidden": [
+    "把底部按钮放进滑动区（固定件必须放 scrollwindow 外面，否则上滑时按钮跟着滚走）",
+    "按钮盒 ≠ 图（引擎拉伸 → 圆角糊 + 文字位置偏）",
+    "主按钮做多个（一屏一个主行动）"
+  ],
+  "compact_note": "极小屏：按钮高 = min(bar 高 − 12, 屏高 × 0.10)；状态文案可省"
+}

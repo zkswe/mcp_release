@@ -1,0 +1,155 @@
+﻿== 1. 鏍硅妭鐐癸紙id:0 + position 鍏ㄥ睆 + resolution 涓€鑷达紱
+      topmost 绯荤粺鏍?瀵艰埅鏍忛〉渚嬪锛氬畼鏂规満鍒跺厑璁告牴涓恒€屽眬閮ㄦ偓娴潡銆嶏紝瑙?kb/controls.md锛?=
+  [PASS] ui/main.json 鏍硅妭鐐?
+== 2. 灞傜骇鍚堟硶鎬э紙SampleUI+basedemo 鍙屾簮鐭╅樀瀹炶瘉锛?026-09-08锛?=
+      pagewindow/scrollwindow 鍙 window锛涘彾瀛愭棤瀛愰敭锛涙暟缁勫瓙缁撴瀯褰掑睘鍥哄畾锛?
+  [PASS] ui/main.json 灞傜骇 鍚堟硶
+== 3. 鐗规畩瀛楃锛坋moji/瀛楀簱澶栧瓧绗︼級==
+  [PASS] ui/main.json 鐗规畩瀛楃 鏃?
+  [PASS] src/logic/mainLogic.cc 鐗规畩瀛楃 鏃?
+== 4. 鍥剧墖寮曠敤锛坖son + logic.cc 寮曠敤鐨勫浘鐗囧繀椤诲瓨鍦級==
+  [PASS] 鍥剧墖寮曠敤 鍏ㄩ儴瀛樺湪
+== 5. 鍥炶皟鏍稿锛坆utton 鈫?onButtonClick锛宔dittext 鈫?onEditTextChanged锛?=
+  [PASS] ui/main.json 鍥炶皟 榻愬叏
+== 6. 鎸囬拡鏍稿锛坢XXXPtr 蹇呴』瀛樺湪浜?caption锛?=
+  [PASS] ui/main.json 鎸囬拡 鍏ㄩ儴鏈夋晥
+== 7. REGISTER_ACTIVITY_TIMER_TAB锛堟瘡涓?logic.cc 蹇呴』鍖呭惈锛?=
+  [PASS] src/logic/mainLogic.cc 瀹氭椂鍣ㄨ〃
+== 8. 鎷彿骞宠　 ==
+  [PASS] src/logic/mainLogic.cc 鎷彿 骞宠　
+== 9. ftu鈫抝son 鑷姩鍚屾锛堝彧涓ょ鎯呭舰锛? fui pack 鎴愬姛鐢熸垚 ftu ==
+  [PASS] main.json ftu 涓?json 鏃堕棿鎴虫甯?
+  [PASS] main.json pack 鎴愬姛 鈫?main.ftu
+== 10. SeekBar 绂佺敤 9-patch锛圸KSeekBar 涓嶈В鏋?marker锛屼細鏄剧ず榛戞锛?=
+  [PASS] ui/main.json SeekBar 9-patch 鏃?
+== 11. 鍥剧墖灏哄蹇呴』涓庣洅瀛愪弗鏍肩浉绛夛紙鎺т欢 position锛泃humb 瀛愮洅鐢?thumb.size锛?=
+       寮曟搸琛屼负锛氬浘 != 鐩掓椂**鎷変几濉厖**锛堜笉鎶ラ敊锛屼絾闈炴暣鏁扮缉鏀惧彂绯?鍙樺舰锛夆啋 鎵€浠ヨ 1:1锛?
+       thumb 婊戝潡鏄€岃嚜鏈夊昂瀵搞€嶅瓙鐩掞紝鐩掑瓙=thumb.size锛堥搧寰?#1锛夈€?
+  [PASS] ui/main.json 鍥剧墖灏哄 鍏ㄩ儴鍖归厤
+== 12. INIT_UI_TIMERS 涓嶈 FYX_BUILD 淇濇姢锛坒un 宸ュ叿閾惧畯鏄?FUN_BUILD锛?=
+  [PASS] src/logic/mainLogic.cc TIMER 瀹忎繚鎶?
+== 13. TextView/Button 鏈€灏忓昂瀵革紙闃叉枃鏈埅鏂級==
+  [PASS] ui/main.json 鏈€灏忓昂瀵?婊¤冻
+== 14. 鎺т欢瀛楁鍏ㄩ泦锛堝繀鍐欓敭榻愬叏锛屾矝鍝?2026-09-08锛氬瓧娈靛叏鏄惧紡闃茬増鏈笉鍖归厤锛?=
+  [PASS] ui/main.json 瀛楁鍏ㄩ泦 榻愬叏
+== 15. 瑁呴グ浠堕伄鎸″彲瑙︽懜鎺т欢锛圵ARN 闇€浜哄伐瀹℃壒锛涘惈銆屽彲鑳芥晠鎰忛伄鎸°€嶈瘎浼帮級==
+      鍙ｅ緞锛氬悓灞傚悗瀹氫箟锛坺 鏇撮珮锛変笖 touchable=false 鐨勬帶浠跺帇鍦?touchable=true 鎺т欢涔嬩笂銆?
+      涓ょ被鍙兘锛氣憼 璇帇锛堣楗颁欢/甯冨眬澶辫锛夆啋 闇€杩愯鏈?setTouchPass(true)锛?
+      鈶?鏁呮剰閬尅锛堣挋灞?绂佺敤鎬?闃茬洍鐐癸細modal 寮圭獥銆佸鍣ㄩ伄缃┿€佹暣灞忛伄缃┿€佸畬鍏ㄨ鐩栵級鈫?鏈氨鏈夋剰锛屽拷鐣ャ€?
+  [PASS] ui/main.json 鏃犺楗颁欢閬尅
+== 16. 浠ｇ爜灞?setTouchable(false) 鏄惁閰嶅 setTouchPass(true)锛圵ARN锛?=
+  [PASS] src/logic/mainLogic.cc 瑙︽懜绌块€忛厤濂?
+== 17. 璧勬簮浜х墿鏍稿锛堝紩鐢ㄥ瓨鍦?+ 鑷姩鐢熸垚鍥?PNG 灏哄 == 鎺т欢 position锛?
+       thumb 瀛愮洅 PNG 灏哄 == thumb.size锛屽嵆閾佸緥 #1锛?=
+  [PASS] 鍥剧墖寮曠敤瀛樺湪鎬э紙1 涓〉闈?/ 24 澶勫紩鐢級鍏ㄩ儴瀛樺湪
+  [PASS] PNG 灏哄 == 鐩掑瓙锛堣嚜鍔ㄧ敓鎴愬浘 / thumb.size 澹版槑锛夊叏閮ㄥ尮閰?
+== 18. 璁捐浠ょ墝婕傜Щ妫€娴嬶紙DESIGN.md 浠ょ墝 vs json 瀹為檯鍊硷紱娌涘摜 2026-09-12锛?=
+      鍙ｅ緞锛欴ESIGN.md 鍐荤粨瑙嗚鐪熺浉锛宩son 棰滆壊/瀛楀彿搴旀潵鑷护鐗岋紱缁撴瀯鍊间緥澶?0/-1/16777215锛?
+      鍗曢」渚嬪鍐欎竴琛屻€屾紓绉昏眮鍏? #RRGGBB 18銆嶇暀鐥曘€傛棤 DESIGN.md / 浠ょ墝琛ㄦ湭濉?鈫?NOTE 璺宠繃銆?
+  [NOTE] 璺宠繃锛氭湭瑙?DESIGN.md锛堟柊椤圭洰绗竴鐗堣瑙夊簲褰撴湁锛氳 skill flythings-ui-dev / templates/DESIGN.md锛夛紱瀛橀噺宸ョ▼鍙拷鐣?
+== 19. V85X 瑙嗛瑙ｇ爜杩斿洖鍚庡繀椤?releaseLayer锛堥槻榛戝睆锛涙矝鍝?2026-09-14 瀹氾細
+      骞冲彴鍖归厤鏃跺紑鍙戜笌 check 楠屾敹閮藉繀椤诲仛锛屽弬鑰?knowledge/v85x/display-layer-debug.md 搂2锛?=
+  [NOTE] 璺宠繃锛歁anifest.xml 鏃?platform 灞炴€э紝鏃犳硶鍒ゅ畾骞冲彴
+== 20. 杩愯鏈?set...Pic 鐨勫浘 vs 鎺т欢鐩掞紙v0.27.90锛涙壂 src/**/*.cc|*.cpp锛?=
+       鍙ｅ緞涓?#11/#17 鍚屾簮锛氬浘灏哄搴?== 鎺т欢鐩掞紱resources/images/ 鐨?*鑷姩鐢熸垚鍥?*涓嶇瓑 = FAIL锛?
+       鎵嬬粯鍥撅紙鍏跺畠鐩綍锛変笉绛?= 浠呮彁绀猴紙寮曟搸鏈氨鎷変几锛夛紱.9.png 璞佸厤锛涘彉閲忔槧灏勪笉鍒版帶浠朵笉闈欓粯璺宠繃銆?
+  [NOTE] 鏈 set...Pic 璋冪敤锛堣繍琛屾湡璁惧浘锛夛紝璺宠繃灏哄鏍稿
+== 21. 鐢熸垚鍥炬姉閿娇 / 鑴忚竟锛堝娲?tools/qa/aa_audit.py --fail锛? token 鏈夐€€鍑虹爜锛?=
+       閽熷伐 2026-09-19 A2锛堝師璇濄€屾妸 aa_audit --fail 鎺ヨ繘 check_all銆嶏級锛?19/#20 宸茶
+       V85X 鍥惧眰閲婃斁 / 杩愯鏈熻鍥惧崰鐢?鈫?涓轰笉鎵撲贡鏃㈡湁缂栧彿涓庣煡璇嗗簱寮曠敤锛岃拷鍔犱负 #21銆?
+       鍙ｅ緞锛氱湡缂洪櫡锛坮esid_bad / 鎴愮墖 hard_diag / 鏃犱袱鍖鸿竟鐣屾椂閫€鍥?dirty锛? FAIL锛?
+       WARN 閫愭潯鍒楃悊鐢憋紙涓嶉樆濉炰篃涓嶉潤榛橈級锛?.9.png marker 鐜敱瀹¤鍐呯疆璞佸厤锛?
+       鐧藉悕鍗曞彧璁?tools/qa/aa_audit_allow.json锛堝懡涓嵆 EXEMPT 骞舵墦鍗扮悊鐢憋級銆?
+  [PASS] AA 鐪熺己闄?0 寮狅紙aa_audit.py 鎵?15 寮狅紱WARN 0 / EXEMPT 2 / 骞插噣 13 / 瀹¤閿欒 0锛?
+  [EXEMPT] cc_scrim_320x240.png           NN_ZOOM_INPUT锛氳緭鍏ユ槸 2脳 鏈€杩戦偦鏀惧ぇ鍥撅紝闃舵/纭竟鏄斁澶ф湰韬骇鐢熺殑锛岃鏀圭敤**鍘熷鍒嗚鲸鐜?*鎶撳抚鎴栦紶鍏ョ湡瀹炶祫浜э紙--no-nn-guard 鍙己鍒跺璁★級
+  [EXEMPT] footbg_320x40.png              NN_ZOOM_INPUT锛氳緭鍏ユ槸 2脳 鏈€杩戦偦鏀惧ぇ鍥撅紝闃舵/纭竟鏄斁澶ф湰韬骇鐢熺殑锛岃鏀圭敤**鍘熷鍒嗚鲸鐜?*鎶撳抚鎴栦紶鍏ョ湡瀹炶祫浜э紙--no-nn-guard 鍙己鍒跺璁★級
+== 22. 鍒囧浘缂哄€掕 / 鐩磋娈嬬暀锛堝娲?tools/qa/corner_audit.py --fail锛? token 鏈夐€€鍑虹爜锛?=
+       閽熷伐 2026-09-20 M5锛堝師璇濄€屼富鐣岄潰澶ч噺鍥剧墖渚濇棫瀛樺湪鍒囧浘缂哄€掕闂鈥︹€﹀繀椤荤粰鎴戜粠璁捐鏍囧噯鍜?
+       鎷︽埅涓婂鐞嗗ソ銆嶏級锛氱煩褰?鍗＄墖/纾佽创/鑽父鏃忔寜**杈硅捣璺戣窛绂?*鍑犱綍鍙嶈В鍦嗚 r_est
+       锛坉 = r - sqrt(r-0.25)锛変笌 DESIGN.md 鍦嗚浠ょ墝姣斻€?
+       鍙ｅ緞锛氱洿瑙掓畫鐣欙紙d鈮?锛? r_est < 0.5脳浠ょ墝 / 鍥涜涓嶄竴鑷?鈫?FAIL锛? 0.8脳浠ょ墝 鈫?WARN锛?
+       鍥炬爣銉诲唴鍒囧浘褰㈡棌涓嶅仛鍊掕鍒ゆ嵁锛堢敱 #23 鍒ゅ舰鐘跺閫忔槑锛夛紱婊″箙/搴曞浘鏃忔寜鐧昏鐞嗙敱 EXEMPT銆?
+  [PASS] 缂哄€掕鐪熺己闄?0 寮狅紙corner_audit.py 鎵?15 寮狅紱WARN 0 / EXEMPT 0 / NOTE 14 / 骞插噣 1 / 閿欒 0锛?
+  [NOTE] btn_primary_104x16.png           鏈櫥璁拌祫浜э紙鎸?unknown_policy锛氬彧 NOTE銆佷笉鍒?FAIL锛?
+  [NOTE] btn_primary_64x16.png            鏈櫥璁拌祫浜э紙鎸?unknown_policy锛氬彧 NOTE銆佷笉鍒?FAIL锛?
+  [NOTE] btn_secondary_104x16.png         鏈櫥璁拌祫浜э紙鎸?unknown_policy锛氬彧 NOTE銆佷笉鍒?FAIL锛?
+  [NOTE] btn_secondary_64x16.png          鏈櫥璁拌祫浜э紙鎸?unknown_policy锛氬彧 NOTE銆佷笉鍒?FAIL锛?
+  [NOTE] card_288x112.png                 鏈櫥璁拌祫浜э紙鎸?unknown_policy锛氬彧 NOTE銆佷笉鍒?FAIL锛?
+  [NOTE] card_288x84.png                  鏈櫥璁拌祫浜э紙鎸?unknown_policy锛氬彧 NOTE銆佷笉鍒?FAIL锛?
+  [NOTE] cc_scrim_320x240.png             鏈櫥璁拌祫浜э紙鎸?unknown_policy锛氬彧 NOTE銆佷笉鍒?FAIL锛?
+  [NOTE] chev_12x16.png                   鏈櫥璁拌祫浜э紙鎸?unknown_policy锛氬彧 NOTE銆佷笉鍒?FAIL锛?
+  [NOTE] footbg_320x40.png                鏈櫥璁拌祫浜э紙鎸?unknown_policy锛氬彧 NOTE銆佷笉鍒?FAIL锛?
+  [NOTE] ic_info_16.png                   鏈櫥璁拌祫浜э紙鎸?unknown_policy锛氬彧 NOTE銆佷笉鍒?FAIL锛?
+  [NOTE] icbg_32.png                      鏈櫥璁拌祫浜э紙鎸?unknown_policy锛氬彧 NOTE銆佷笉鍒?FAIL锛?
+  [NOTE] panel_256x104.png                鏈櫥璁拌祫浜э紙鎸?unknown_policy锛氬彧 NOTE銆佷笉鍒?FAIL锛?
+  [NOTE] ...鍏朵綑 2 寮犲悓绫伙紙鍥炬爣/鍐呭垏鏃忎笉鍋氬€掕鍒ゆ嵁锛?
+== 23. 閫忔槑搴?/ 鐑樺簳鑹诧紙濮旀淳 tools/qa/alpha_bg_audit.py --fail锛? token 鏈夐€€鍑虹爜锛?=
+       閽熷伐 2026-09-20 M5锛堝師璇濄€屾帶浠堕噷闈㈠浘鐗囪儗鏅槸榛戣壊鐨勶紝搴旇鍋氭垚閫忔槑鐨勶紝杩欎釜璁捐涓嶇
+       鍚?flyThings OS 骞冲彴鐨勮兘鍔涖€嶏級锛氬舰鐘剁被璧勪骇蹇呴』鐪熼€忔槑搴曪紙褰㈢姸澶?伪=0锛夈€?
+       鍙ｅ緞锛氭暣鍥炬棤閫忔槑鍍忕礌锛埼扁墺250锛? 鍐呭垏銉诲浘鏍囨棌瑙掑尯涓嶉€忔槑锛? 鐑樹簡搴曡壊锛?
+       鍥炬爣璐存鍥捐竟 鈫?FAIL锛涙弧骞呮棌锛堢収鐗囥兓澹佺焊銉婚伄缃┿兓1px 閫氭爮绾裤兓杞槾褰憋級鐧昏璞佸厤銆?
+  [PASS] 閫忔槑搴曠湡缂洪櫡 0 寮狅紙alpha_bg_audit.py 鎵?15 寮狅紱WARN 0 / EXEMPT 0 / NOTE 14 / 骞插噣 1 / 閿欒 0锛?
+  [NOTE] btn_primary_104x16.png           鏈櫥璁拌祫浜э細鎸?rules.unknown_policy 鍙?NOTE銆佷笉鍒?FAIL锛涜鍦?standard 搂7.1 鍒嗙被琛ㄨˉ鐧昏
+  [NOTE] btn_primary_64x16.png            鏈櫥璁拌祫浜э細鎸?rules.unknown_policy 鍙?NOTE銆佷笉鍒?FAIL锛涜鍦?standard 搂7.1 鍒嗙被琛ㄨˉ鐧昏
+  [NOTE] btn_secondary_104x16.png         鏈櫥璁拌祫浜э細鎸?rules.unknown_policy 鍙?NOTE銆佷笉鍒?FAIL锛涜鍦?standard 搂7.1 鍒嗙被琛ㄨˉ鐧昏
+  [NOTE] btn_secondary_64x16.png          鏈櫥璁拌祫浜э細鎸?rules.unknown_policy 鍙?NOTE銆佷笉鍒?FAIL锛涜鍦?standard 搂7.1 鍒嗙被琛ㄨˉ鐧昏
+  [NOTE] card_288x112.png                 鏈櫥璁拌祫浜э細鎸?rules.unknown_policy 鍙?NOTE銆佷笉鍒?FAIL锛涜鍦?standard 搂7.1 鍒嗙被琛ㄨˉ鐧昏
+  [NOTE] card_288x84.png                  鏈櫥璁拌祫浜э細鎸?rules.unknown_policy 鍙?NOTE銆佷笉鍒?FAIL锛涜鍦?standard 搂7.1 鍒嗙被琛ㄨˉ鐧昏
+  [NOTE] cc_scrim_320x240.png             鏈櫥璁拌祫浜э細鎸?rules.unknown_policy 鍙?NOTE銆佷笉鍒?FAIL锛涜鍦?standard 搂7.1 鍒嗙被琛ㄨˉ鐧昏
+  [NOTE] chev_12x16.png                   鏈櫥璁拌祫浜э細鎸?rules.unknown_policy 鍙?NOTE銆佷笉鍒?FAIL锛涜鍦?standard 搂7.1 鍒嗙被琛ㄨˉ鐧昏
+  [NOTE] footbg_320x40.png                鏈櫥璁拌祫浜э細鎸?rules.unknown_policy 鍙?NOTE銆佷笉鍒?FAIL锛涜鍦?standard 搂7.1 鍒嗙被琛ㄨˉ鐧昏
+  [NOTE] ic_info_16.png                   鏈櫥璁拌祫浜э細鎸?rules.unknown_policy 鍙?NOTE銆佷笉鍒?FAIL锛涜鍦?standard 搂7.1 鍒嗙被琛ㄨˉ鐧昏
+  [NOTE] icbg_32.png                      鏈櫥璁拌祫浜э細鎸?rules.unknown_policy 鍙?NOTE銆佷笉鍒?FAIL锛涜鍦?standard 搂7.1 鍒嗙被琛ㄨˉ鐧昏
+  [NOTE] panel_256x104.png                鏈櫥璁拌祫浜э細鎸?rules.unknown_policy 鍙?NOTE銆佷笉鍒?FAIL锛涜鍦?standard 搂7.1 鍒嗙被琛ㄨˉ鐧昏
+  [NOTE] sep_280x1.png                    鏈櫥璁拌祫浜э細鎸?rules.unknown_policy 鍙?NOTE銆佷笉鍒?FAIL锛涜鍦?standard 搂7.1 鍒嗙被琛ㄨˉ鐧昏
+  [NOTE] swk_16.png                       鏈櫥璁拌祫浜э細鎸?rules.unknown_policy 鍙?NOTE銆佷笉鍒?FAIL锛涜鍦?standard 搂7.1 鍒嗙被琛ㄨˉ鐧昏
+== 24. 棰滆壊鍊?0锛堜笉閫忔槑榛戯級璇敤锛堝娲?tools/qa/zero_color_audit.py --fail锛? token 鏈夐€€鍑虹爜锛?=
+       閽熷伐 2026-09-20 M6锛堝師璇濄€屾帶浠?鍒囧浘榛戝簳銆嶃€屼粠鏍囧噯鍜屾嫤鎴笂澶勭悊銆嶏級锛氭湰骞冲彴閲?
+       棰滆壊鍊?**0 = 涓嶉€忔槑榛?*銆?*-1 = 閫忔槑**锛沯son 閲屾妸銆岄€忔槑銆嶅啓鎴?0 鐨勫瓧娈碉紙backgroundColor /
+       bgColorTab.color0 / textBgColor 鈥︼級鐪熸満灏辨槸榛戝潡銆傚彛寰勮 DESIGN.md 搂2.1 涓?
+       references/kb/image-gen-standard.md 搂7.6锛氭湭鐧昏璞佸厤 鈫?FAIL锛涘懡涓?
+       tools/qa/zero_color_allow.json锛堣棰?鎽勫儚澶撮潰榛戝簳锛夆啋 EXEMPT + 鎵撳嵃鐞嗙敱銆?
+  [PASS] 棰滆壊 0 璇敤 0 澶勶紙zero_color_audit.py 鎵?1 鏉★紱EXEMPT 0 / 骞插噣 1 / 閿欒 0锛?
+== 25. 寮х嚎杩囨浮璐ㄩ噺锛?-patch 鍦嗚 AA锛涘娲?tools/qa/corner_audit.py --arc-only --fail锛?=
+       閽熷伐 2026-09-20 M8锛堝師璇濄€屽叏鎺т欢婕旂ず鐣岄潰鐨勬瘡涓紨绀烘鑳屾櫙鍥?ct_card.9.png 鍊掕鏈?
+       涓ラ噸閿娇銆嶏級锛?22 閲忓€掕鐨?鍑犱綍*锛堟湁娌℃湁/澶熶笉澶熷ぇ锛夛紝#25 閲忓姬涓婄殑*杩囨浮璐ㄩ噺*
+       锛堣鐩栫巼鏄惁鐪熺殑浠?0 娓愬彉鍒版弧鍊硷級銆俙*.9.png` 鍏堝墺绂绘渶澶?1px marker 鐜啀鍒ゃ€?
+       鍙ｅ緞锛氳鍧楀唴銆屽娌胯繘鍏ュ儚绱犮€嶏紙伪>0 涓?4 閭诲煙鏈?伪=0锛夌殑瑕嗙洊鐜?= 伪/宄板€嘉憋紱
+       瑕佹眰 min_cov 鈮?0.35 涓?鈮?.35 鐨勪釜鏁?鈮?2锛堟垚缁勫嚭鐜帮級锛涘惁鍒?= 杩囨浮琚帇杩?1px 纭樁姊?鈫?FAIL銆?
+       闃堝€煎嚭澶?P(min>t)=(1鈭抰)^N锛堜笌鏍囧噯銆屸墺4脳 瓒呴噰鏍枫€嶆。浣嶈嚜娲斤級瑙?references/kb/image-gen-standard.md 搂7.7銆?
+  [PASS] 寮х嚎杩囨浮纭樁姊?0 寮狅紙corner_audit.py 鎵?15 寮狅紱寮х嚎鍙垽 1 寮狅紙鍧?CLEAN锛? WARN 0 / NOTE 14 / 閿欒 0锛?
+  [NOTE] btn_primary_104x16.png           鏈櫥璁拌祫浜э紙鎸?unknown_policy锛氬彧 NOTE銆佷笉鍒?FAIL锛?
+  [NOTE] btn_primary_64x16.png            鏈櫥璁拌祫浜э紙鎸?unknown_policy锛氬彧 NOTE銆佷笉鍒?FAIL锛?
+  [NOTE] btn_secondary_104x16.png         鏈櫥璁拌祫浜э紙鎸?unknown_policy锛氬彧 NOTE銆佷笉鍒?FAIL锛?
+  [NOTE] btn_secondary_64x16.png          鏈櫥璁拌祫浜э紙鎸?unknown_policy锛氬彧 NOTE銆佷笉鍒?FAIL锛?
+  [NOTE] card_288x112.png                 鏈櫥璁拌祫浜э紙鎸?unknown_policy锛氬彧 NOTE銆佷笉鍒?FAIL锛?
+  [NOTE] card_288x84.png                  鏈櫥璁拌祫浜э紙鎸?unknown_policy锛氬彧 NOTE銆佷笉鍒?FAIL锛?
+  [NOTE] ...鍏朵綑 8 寮犲悓绫伙紙鏃犻€忔槑鑳屾櫙/鏍锋湰涓嶈冻锛?
+== 26. scrollwindow 琛岀▼鏍稿锛堣绋?= 鍐呭眰 window 鈭?瑙嗗彛锛?*涓嶈 dragMaxDis**锛?=
+       閽熷伐 2026-10-01 瀹氾細`dragMaxDis` = 瓒婄晫鎷栨嫿涓婇檺锛坥verscroll锛夛紝鍥涗釜婊戝姩鎺т欢璇箟涓€鑷达紝
+       **涓嶆槸琛岀▼**锛涜绋嬬敱鍐呭鍐冲畾銆佸紩鎿庤嚜绠楋紙scrollwindow = 鍐呭眰 window 灏哄 鈭?瑙嗗彛灏哄锛夈€?
+       鍙嶄緥锛堟棫鍙ｅ緞浣滃簾鐨勮瘉鎹級锛氬畼鏂?ScrollWindowDemo-New 瑙嗗彛 450 / 鍐呭 800锛堣绋?350锛?
+       鑰?dragMaxDis=200锛汼martPanel settings 瑙嗗彛 418 / 鍐呭 832锛堣绋?414锛夎€?dragMaxDis=60锛?
+       鐪熸満浠嶈兘婊?302px 鍒板簳銆傚彛寰勶細knowledge/uicontrols/scroll-drag-interaction-spec.md銆?
+  [NOTE] ui/main.json scrollwindow__1锛坹 杞达級瑙嗗彛 168 / 鍐呭 372 / 琛岀▼ 204锛沝ragMaxDis=24
+  [PASS] 琛岀▼涓?dragMaxDis 鐢ㄦ硶姝ｅ父锛? 澶勶級
+== 27. 鍚屾棌鎺т欢鍙ｅ緞绂荤兢 / 鏂囨湰脳鍥炬爣閲嶅彔锛堣璁℃湡鎷︽埅锛涢挓宸?2026-10-01锛?=
+       缁欒缃杩欑被閲嶅琛屾ā鏉夸笂鐨勯潤鎬佸垽鎹細鍚岄〉鍚岀埗鍚岃鑹茬殑 *Label/*Value/*Icon/*Chevron
+       搴斿彇鍚屼竴缁?(left,width,height,alignment) 鍙ｅ緞锛涘亸绂讳紬鏁般€佹垨鏂囨湰鐩掍笌鍥炬爣/绠ご鐩掔浉浜?鈫?WARN銆?
+       瀹炰緥锛氭煇琛屽€兼琚仛鎴愬彸瀵归綈绐勬 300..418锛堝叾浣?12 琛?75..375锛夛紝涓斿彸缂橀《鍒扮澶寸洅
+       鈫?鏂囧瓧鍑稿嚭 43px + 鈥滄枃鏈拰绠ご娣峰埌涓€璧封€濓紙寮曟搸鍏堢敾鑳屾櫙鍥惧悗鐢绘枃瀛楋紝绠ご琚洊浣忥級銆?
+       鍙ｅ緞锛歬nowledge/uicontrols/scrollwindow-layout-checklist.md銆?
+  [PASS] 鍚屾棌鍙ｅ緞涓€鑷淬€佹棤鏂囨湰脳鍥炬爣閲嶅彔
+== 28. UTF-8 鏂囨湰闄烽槺锛坰rc 闈欐€佹壂鎻忥紱閽熷伐 2026-10-01锛?=
+       `find_first_of("锛?)` 鎸?*鍗曞瓧鑺?*鍖归厤 鈫?澶氬瓧鑺傚瓧绗﹁鍒囧湪瀛楄妭涓棿锛堝疄娴嬨€屽洖瀹舵ā寮忋€嶈鍒囧潖锛?
+       鈫?蹇呴』鐢?`find("锛?)` 鏁村簭鍒楁悳绱€傚彧鎵?*鍚潪 ASCII** 鐨勫瓧闈㈤噺瀹炲弬锛堢函 ASCII 闆嗗悎娉曪紝涓嶆姤锛夈€?
+       鍙ｅ緞锛歬nowledge/uicontrols/text-box-height-rule.md锛圲TF-8 涓変欢濂楋級銆?
+  [NOTE] 鎵弿 1 涓簮鏂囦欢
+  [PASS] 鏈彂鐜板瀛楄妭 find_first_of/find_last_of
+== 29. 鏄剧ず浠跺悆鎺変笅灞傝Е鎽革紙瑁呴グ浠舵紡璁剧┛閫忥紱閽熷伐 2026-10-01锛?=
+       鍚屽眰銆屽悗瀹氫箟锛坺 鏇撮珮锛? 鍙 + touchable 鏈樉寮?false銆嶇殑绾樉绀轰欢鍘嬩綇浜や簰鎺т欢
+       鈫?浼氬悆鎺?DOWN锛堢棁鐘?鏁村潡鐐逛笉鍔?鍙墿缂濋殭鑳界偣锛夈€傚鍣?鏁村睆/杩戝叏瑕嗙洊/modal 瑙嗕负鏁呮剰锛屼笉鎶ャ€?
+       鍙ｅ緞锛歬nowledge/uicontrols/touch-events.md銆乻crollwindow-layout-checklist.md 搂2.1銆?
+  [PASS] 鏃犳樉绀轰欢鍘嬩綇浜や簰鎺т欢锛? 椤碉級
+
+[OK] 鍏ㄩ儴 PASS锛屽彲浠ヤ氦浠樸€?

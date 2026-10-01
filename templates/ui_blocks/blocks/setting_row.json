@@ -1,0 +1,39 @@
+{
+  "type": "setting_row",
+  "zh": "设置行（左标题 + 值 + 可选右箭头）",
+  "builder": "row",
+  "family": "row",
+  "caption_prefix": "SettingRow",
+  "fields": {
+    "label": {"type": "string", "required": true, "example": "WiFi"},
+    "value": {"type": "string", "required": false, "example": "已连接 · 192.168.1.100"},
+    "value_short": {"type": "string", "required": false, "example": "已连接", "note": "极小屏替代文案（放不下长值时用，见坑 B3）"},
+    "chevron": {"type": "bool", "default": true},
+    "icon": {"type": "string", "default": "", "note": "gen_res glyph 名（wifi/settings/list/...）；空 = 不画图标"}
+  },
+  "relative_constraints": {
+    "row_w": "内容区宽 = 屏宽 − 2×margin（margin = spacer-2）",
+    "row_h": "屏高 × 0.10（极小屏 0.117）；若不足文本高则抬高到 文本高 + 2×行内竖内边距（可读性优先）",
+    "pad_left": "屏宽 ≈3.1%（= token spacer-2 @基准屏；极小屏取 spacer-1 档）",
+    "two_line": "行高 ≥ 标题高 + 值高 + 8 时用两行式（标题在上、值在下，左缘同一）",
+    "one_line": "否则降单行式（标题左、值右对齐），**整页所有行同时降**",
+    "label_box": "左缘 = 图标底右缘 + spacer（无图标时 = pad_left）；宽 = 行条宽 − 左内边距 − 箭头宽 − 文本×箭头间隙；字号档 b1，色 fg1",
+    "value_box": "左缘与标题**相同**（不是右对齐窄框）；宽同标题；字号档 b2，色 fg2",
+    "chevron": "宽 = max(12, 屏宽 × 0.025)，高 = max(16, 屏高 × 0.027)；贴行条右缘 − pad_right；与行条垂直居中；盒与文本盒**必须留 间隙**（盒子不得相交）",
+    "icon_bg": "高 = 行高 × 0.60（圆/圆角方），盒尺寸 == 图尺寸",
+    "icon": "高 = 行高 × 0.40，与图标底同心",
+    "radius": "行本身不给圆角（圆角由 card 容器承担，行内只画 1px 分割线）"
+  },
+  "assets": [
+    {"name": "chev_{w}x{h}.png", "via": "gen_res.glyph_icon(glyph='forward', canvas=(w,h))", "size": "箭头盒 == 控件盒"},
+    {"comment": "icon 非空时另出：icbg_{S}.png（圆，色 brand1）+ ic_{S}.png（glyph，色 brand）"}
+  ],
+  "scroll": "inherit",
+  "forbidden": [
+    "把行做成「左标题 + 右值单行式」而其它行是两行式（同页混用形态 = 返工第一名；加行必须照抄同页口径）",
+    "为给箭头腾位把值框收窄/挪位（挤文本去让位）——冲突改布局形态或盒子，不许改文本盒",
+    "行内控件盒相交（引擎先画底图后画文字，箭头会被文字盖住）",
+    "行条图 ≠ 控件盒（引擎会拉伸填充，非 1:1 必糊）"
+  ],
+  "compact_note": "极小屏：整页降单行式，标题盒 = 文本区 42% − spacer，值右对齐；图标可省；长值换 value_short"
+}

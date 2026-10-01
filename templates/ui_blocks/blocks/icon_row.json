@@ -1,0 +1,33 @@
+{
+  "type": "icon_row",
+  "zh": "图标行（图标底 + 图标 + 标题 + 值 + 箭头）",
+  "builder": "row",
+  "family": "row",
+  "caption_prefix": "IconRow",
+  "fields": {
+    "icon": {"type": "string", "required": true, "example": "list", "note": "gen_res glyph 名"},
+    "label": {"type": "string", "required": true},
+    "value": {"type": "string", "required": false},
+    "value_short": {"type": "string", "required": false},
+    "chevron": {"type": "bool", "default": true}
+  },
+  "relative_constraints": {
+    "row_w / row_h / pad_left": "与 setting_row 同一口径（同页行族必须一致，否则 check_all #27 报离群）",
+    "icon_bg": "左缘 = pad_left×0.5；高 = 行高 × 0.60，宽 = 高（圆或圆角方）；与行条垂直居中",
+    "icon": "高 = 行高 × 0.40，与图标底**同心**",
+    "text_left": "图标底右缘 + spacer（**文本盒禁止与图标盒相交**）",
+    "label_box / value_box / chevron": "同 setting_row"
+  },
+  "assets": [
+    {"name": "icbg_{S}.png", "via": "gen_res.rounded_rect_ss(radius=S/2, fill=brand1)", "size": "图标底盒"},
+    {"name": "ic_{glyph}_{S}.png", "via": "gen_res.glyph_icon(glyph, canvas=(S,S))", "size": "图标盒"},
+    {"name": "chev_{w}x{h}.png", "via": "gen_res.glyph_icon('forward')", "size": "箭头盒"}
+  ],
+  "scroll": "inherit",
+  "forbidden": [
+    "图标盒与标题盒相交（本次踩坑：图标 24..60 与标题 48 重叠 12px；文本左缘必须 = 图标底右缘 + spacer）",
+    "图标盒小于最小可辨识尺寸（箭头/图标盒下限 12×16，否则 glyph 被压到 6×6 发糊）",
+    "同页混用「有图标行」与「无图标行」的文本左缘口径（有图标时文本整体右移，这是允许的；但同一块内必须一致）"
+  ],
+  "compact_note": "极小屏：图标默认省略（横向放不下）→ 退化成 setting_row；显式给 icon 时才画"
+}

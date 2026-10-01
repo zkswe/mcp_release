@@ -1,0 +1,22 @@
+{
+  "type": "section_header",
+  "zh": "分组小标题",
+  "builder": "section",
+  "family": "group",
+  "caption_prefix": "SectionHeader",
+  "fields": {
+    "text": {"type": "string", "required": true, "example": "设备"}
+  },
+  "relative_constraints": {
+    "band_h": "max(spacer-3(24), 字号档 h2 × 1.45)",
+    "top_gap": "与上一块之间留 spacer-2（分组间距）",
+    "text_box": "宽 = 屏宽 − 2×margin；左缘 = spacer-2；字号档 h2 + 色 fg2（弱于正文标题，只做分组）"
+  },
+  "assets": [],
+  "scroll": "inherit",
+  "forbidden": [
+    "同页分组标题字号/颜色不统一（同族口径必须照抄第一处）",
+    "把分组标题当正文用（层级靠「字号档 + 字重 + 颜色」三件套，不靠堆字号）"
+  ],
+  "compact_note": "极小屏：h2 = 12，带高仍取 max(24, 12×1.45)"
+}
