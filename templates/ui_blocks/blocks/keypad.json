@@ -1,0 +1,43 @@
+{
+  "type": "keypad",
+  "zh": "数字键盘 3×4（1-9 / 0 / 退格 / 确认，每键 == 盒）",
+  "builder": "keypad",
+  "family": "page",
+  "caption_prefix": "Keypad",
+  "fields": {
+    "display": {"type": "string", "required": false, "example": "12.5",
+                "note": "可选：键区上方的输入显示行（右对齐、b1）；缺省不画（纯键面）"},
+    "items": {"type": "array", "required": false,
+              "default": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "backspace", "0", "ok"],
+              "example": [{"text": "1"}, {"icon": "arrow-left"}, {"text": "0"}, {"icon": "check"}],
+              "note": "12 个键（3 列 × 4 行）：每项 = 字符串（键面文字）或对象（text = 文字 / icon = 语义图标名，走 components/icons）。**个数必须是 3 的倍数**（6~15）——多一个键就多一行；末行默认是「退格 / 0 / 确认」",
+              "allowed": "blocks/_icons.json"}
+  },
+  "relative_constraints": {
+    "keys": "键宽 = (内容宽 − 2×键间距) / 3（末列吃整除余数，**3 列对称**：两侧间隙均为键间距）；键高 = max(b1 文本高 + 2×spacer, min(键宽 × 0.66, 屏高 × 0.16))（1024→96 / 320→40）；行间距 = 键间距（= spacer）",
+    "face": "**每键 == 盒**：键面图尺寸严格 == 键盒；数字键 = 白底圆角（radius = 容器圆角）；退格键 = 白底 + fg2 图标；确认键 = brand 实底 + onBrand 图标（「确认」是主键，与主按钮同色）",
+    "glyph": "图标键的 glyph = 图标档 max(glyph_min_px 24, min(键宽, 键高) × 0.34)（与键面同心，居中）；数字键的文字走 button 自带 text（b1 + fg1 + 居中）",
+    "display": "显示行盒 = (pad_l, 键区上沿 − spacer-1 − b1 文本高, 内容宽 − 2×pad_l, b1)；右对齐（38）；**它只是显示**，输入逻辑在运行期（见下方 runtime）",
+    "z": "键面（装饰件，touchable 显式 false）→ 图标（装饰件）→ 整键透明 button（**最后定义** = z 最高，文字随 button 自带）",
+    "runtime": "键面只出静态图：真实输入 = 业务在 onButtonClick_Keypad<n>Key<i> 里自行拼串（把键面文字 / 图标语义映射成字符），再 setText 到显示行（或 edittext）——块库不生成输入法逻辑"
+  },
+  "assets": [
+    {"name": "key_{W}x{H}.png", "via": "gen_res.rounded_rect_ss(radius=容器圆角, fill=surface)（数字键 / 退格键）", "size": "键盒 == 图"},
+    {"name": "keybrand_{W}x{H}.png", "via": "gen_res.rounded_rect_ss(radius=容器圆角, fill=brand)（确认键）", "size": "键盒 == 图"},
+    {"name": "ic_{glyph}_{S}.png", "via": "components/icons 资产库（退格 arrow-left / 确认 check）；确认键颜色 = onBrand（白）、退格键 = fg2", "size": "图标盒 == 图"}
+  ],
+  "scroll": "inherit",
+  "forbidden": [
+    "**键盒 ≠ 键面图**（引擎拉伸 → 圆角糊、键面大小不一）",
+    "键宽写死像素 / 3 列不等分（键宽必须 (内容宽 − 2×间距)/3 等分 + 余数给末列）",
+    "把 12 个键平铺成 12 个坐标写死的 button（必须按 3 列栅格排；改动 cols 逻辑要靠 items 长度推算行数）",
+    "图标盒 ≠ 图 / 图标盒 < glyph_min_px（24px）硬塞（退格与确认键的 glyph 必须给 canvas=图标盒）",
+    "确认键做成白底白勾 / 白底黑勾不一致（确认键一律 brand 实底 + onBrand 白图标，与主按钮同一套色）",
+    "把键面做成 1px 描边环（小弧线退化成硬阶梯 → #21 真缺陷；用白底实色 + 灰底衬托）",
+    "在块里嵌自绘键盘 / 自建输入法逻辑（块库只出静态键面 + 回调骨架，输入拼串在业务）",
+    "用 image_gallery 的格几何复用到键盘（键盘键高由键宽 × 0.66 且受屏高 16% 上限约束，两者口径不同）"
+  ],
+  "compact_note": "极小屏：键宽 90 / 键高 40、3 列 × 4 行总高 184；显示行 ≤5 字（宽度自检会点名）；图标键 glyph 24（不降档）",
+  "icon_source": "components/icons（v0.3.1 = Tabler Icons 3.46.0 单色烘焙 PNG）。按盒尺寸选档 56/24/22，**产物图严格 == 控件盒**；库里没有该语义名 → compose 回退 gen_res 线框并在输出里明说「回退线框」（目标 0 处）。全量允许值见 blocks/_icons.json",
+  "icon_examples": ["arrow-left", "chevron-left", "check", "close", "plus", "minus"]
+}

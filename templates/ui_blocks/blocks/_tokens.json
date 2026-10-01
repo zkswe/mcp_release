@@ -82,13 +82,13 @@
     "mask": "#00000099",
     "info": "#0052D9",
     "info1": "#F2F3FF",
-    "success": "#2BA471",
+    "success": "#006C45",
     "success1": "#E8F8F2",
-    "warn": "#E37318",
+    "warn": "#954500",
     "warn1": "#FFF1E9",
-    "danger": "#D54941",
+    "danger": "#AD352F",
     "danger1": "#FFEEEE",
-    "_doc": "TDesign px 等价：gray-1 页面底 / 白容器 / font-gray 0.9、0.6 / gray-3 分割线 / brand #0052D9；第 3 批新增语义色：info=brand、success #2BA471、warn #E37318、danger #D54941（-6 档），浅底取同族 -1 档（info1=brand1）；mask = TDesign mask-active 60%（浮层提示底）"
+    "_doc": "TDesign px 等价：gray-1 页面底 / 白容器 / font-gray 0.9、0.6 / gray-3 分割线 / brand #0052D9；第 3 批新增语义色：info=brand、success #006C45、warn #954500、danger #AD352F（-7 档；2026-10-01 改：浅底上的语义文字需 ≥4.5:1（WCAG AA），-6 档（#008858/#BE5A00）只有 ~4.1:1 不够 → 压深到 -7 档），浅底取同族 -1 档（info1=brand1）；mask = TDesign mask-active 60%（浮层提示底）"
   },
   "shape": {
     "container_radius_px": 6,
@@ -133,6 +133,16 @@
     "nav_h_of_h": 0.1,
     "nav_icon_of_nav_h": 0.34,
     "toast_top_of_h": 0.6,
+    "tb_h_of_h": 0.12,
+    "tb_ic_of_tb_h": 0.45,
+    "key_h_of_w": 0.66,
+    "key_h_max_of_h": 0.16,
+    "chart_h_of_h": 0.22,
+    "gal_tile_of_w": 0.66,
+    "gal_ic_max": 56,
+    "load_h_of_h": 0.18,
+    "load_bar_h_of_fs": 0.7,
+    "_doc4": "第 4 批（复杂块）比例源：工具条带高 = 屏高 × 0.12（不小于 图标档 + 2×spacer）；工具条图标档 = 带高 × 0.45 且 ≥ glyph_min_px；键盘键高 = 键宽 × 0.66 且 ≤ 屏高 × 0.16（不小于 b1 高 + 2×spacer）；图表绘图区高 = 屏高 × 0.22（不小于 b2 高 × 4）；相册格高 = 格宽 × 0.66、占位图标上限 56（= 图标库最大档）；加载态带高 = 屏高 × 0.18、骨架条高 = b1 高 × 0.70 且 ≥ 10（AA 硬口径：更矮的药丸端弧线退化成硬阶梯）",
     "_doc3": "第 3 批（结构/导航/提示类）比例源：tab/pill/banner/divider/nav 带高 = 屏高比例 与 内容高取大（各有兜底）；nav 图标档 = max(图标档, glyph_min_px)；浮层垂直位置 = 屏高 × 0.60（居中偏下）；格高 = 2×spacer + 图标底 + 文字高（内容反算）。glyph_min_px = 块内图标**尺寸下限**（第 3 批实测：aa_audit 对 <20px 的弧线类 glyph 判真缺陷 —— wifi@12 / home@16 / settings@16 / bell@20 均 FAIL，home@20 / wifi@16 已是 WARN 边界；图标不像字号可以降档，只能保尺寸，极小屏宁可省图标）"
   },
   "scroll": {

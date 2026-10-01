@@ -1,0 +1,46 @@
+{
+  "type": "toolbar",
+  "zh": "顶部工具条（固定带：左返回 + 标题 + 右侧动作图标）",
+  "builder": "toolbar",
+  "family": "page",
+  "caption_prefix": "Toolbar",
+  "fields": {
+    "title": {"type": "string", "required": true, "example": "设备详情",
+              "note": "工具条标题；缺省回落 page.title。与 page_title **二选一**（同页同时给会争同一条固定带 → compose 报错退出，不静默兜底）"},
+    "back": {"type": "bool", "default": true,
+             "note": "是否给左返回；命中区 = 工具条带内的方形盒（≥16px 手指点得到），图标走 components/icons 的 arrow-left"},
+    "backIcon": {"type": "string", "required": false, "example": "chevron-left",
+                 "note": "可选：返回图标语义名（缺省 arrow-left）；允许值见 blocks/_icons.json"},
+    "actions": {"type": "array", "default": [], "max": 3,
+                "example": [{"icon": "refresh"}, {"icon": "more"}],
+                "note": "右侧动作图标，每项 = 对象（取 icon 字段）或直接写语义名字符串；**最多 3 个**（再多标题带放不下）；icon 走 components/icons，全量允许值见 blocks/_icons.json",
+                "allowed": "blocks/_icons.json"}
+  },
+  "relative_constraints": {
+    "band_h": "带高 = max(屏高 × 0.12, 图标档 + 2×spacer)（1024→72 / 320→40）；**固定带**：占标题带位置（run() 里 m.bar_top = max(标题带, 工具条带)），内容视口从带下开始",
+    "band_w": "满屏宽（屏宽 × 带高），底盘图 == 带盒（白底，圆角 0 通栏）",
+    "back": "命中盒 = 带高内方形盒（边长 = min(带高, max(图标档 + 2×spacer, 32))；1024→48 / 320→40），贴 margin 左缘；图标 = 图标档 glyph（≥ glyph_min_px 24），居中",
+    "title": "左缘 = 返回命中盒右缘 + spacer；右缘 = 首个动作命中盒左缘 − spacer；字号档 h2 + 字重 bold + 色 fg1；**居中（37）**；盒高 = h2 文本高",
+    "actions": "每个动作命中盒 = 与返回同尺寸方形盒；自右向左排（最右贴 margin 右缘，间距 = spacer）；图标 = 图标档 glyph，色 fg2；caption = Toolbar<序号>Action<i>（logic 骨架自动出回调）",
+    "z": "底盘 → 图标（装饰件，touchable 显式 false）→ 命中 button（返回 + 各动作，**最后定义** = z 最高）"
+  },
+  "assets": [
+    {"name": "toolbg_{W}x{H}.png", "via": "gen_res.rounded_rect_ss(radius=0, fill=surface)", "size": "带盒 == 图（满屏宽）"},
+    {"name": "ic_back_{S}.png", "via": "components/icons 资产库（arrow-left；盒 == 档位 22/24/56 时取库里产物换色，缺档按盒尺寸现出）", "size": "图标盒 == 图"},
+    {"name": "ic_{glyph}_{S}.png", "via": "components/icons 资产库（动作图标）", "size": "图标盒 == 图"}
+  ],
+  "scroll": "no",
+  "forbidden": [
+    "同页再写 page_title / 用 page.title 同时给工具条标题（两者争同一条固定带；工具条在时 page.title 只当标题回落源）",
+    "把工具条放进滑动区（固定件进 scrollwindow → 上滑时工具条跟着滚走）",
+    "给工具条加主/次按钮（那是 bottom_actions 的活；工具条只收图标动作）",
+    "action 图标自绘 / 用 emoji 字体兜底（图标唯一来源 = components/icons，见 README §5.1）",
+    "图标盒 ≠ 图（glyph 必须给 canvas=图标盒；引擎对图 ≠ 盒是拉伸填充 → #11/#17 FAIL）",
+    "图标盒 < glyph_min_px（24px）硬塞（icons 不像字号可降档，降了退化成硬阶梯 → aa_audit 真缺陷）",
+    "返回/动作命中盒 < 16px（真实手指点不到）",
+    "actions 超过 3 个（标题带放不下；多动作请收进 more 菜单，别挤平铺）"
+  ],
+  "compact_note": "极小屏：带高 40（= 图标档 24 + 2×spacer 8）、标题字号 h2=12 且要短（宽度自检会点名）；动作最多 2 个，返回图标不降档",
+  "icon_source": "components/icons（v0.3.1 = Tabler Icons 3.46.0 单色烘焙 PNG）。按盒尺寸选档 56/24/22，**产物图严格 == 控件盒**；库里没有该语义名 → compose 回退 gen_res 线框并在输出里明说「回退线框」（目标 0 处）。全量允许值见 blocks/_icons.json",
+  "icon_examples": ["arrow-left", "chevron-left", "refresh", "more", "more-vertical", "search", "settings", "close", "check"]
+}

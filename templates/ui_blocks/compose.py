@@ -86,10 +86,22 @@ BLOCK_PREFIX = {
     'status_pill': 'StatusPill',
     'divider_label': 'DividerLabel',
     'grid_icons': 'GridIcons',
+    # ── 第 4 批（复杂块，2026-10-01）──
+    'chart_card': 'ChartCard',
+    'image_gallery': 'ImageGallery',
+    'keypad': 'Keypad',
+    'time_row': 'TimeRow',
+    'loading': 'Loading',
+    'form_section': 'FormSection',
+    'toolbar': 'Toolbar',
 }
 
 # 根层块（第 3 批）：不进卡（卡内只收行块/列表块），带高自成一带
 STRUCT3_TYPES = ('tabs', 'banner', 'divider_label', 'grid_icons', 'status_pill')
+# 根层块（第 4 批）：同上（图表卡 / 相册 / 键盘 / 加载 / 表单分组）；toolbar 是**固定带**单独处理
+STRUCT4_TYPES = ('chart_card', 'image_gallery', 'keypad', 'loading', 'form_section')
+# 可以装行集合的容器块（行族扫描 / 全页编号都要往里递归）
+ROW_CONTAINERS = ('card', 'form_section')
 
 # 控件 id 分区（与 tools/ui_tools/html2json.py 的 ID_BASE 同源，只有 checkbox/radiobutton 例外）
 #   · checkbox 本库取 **94500** 段（html2json 旧口径是 21000）：check_all #5 按「20000 ≤ id < 30000」
@@ -116,6 +128,29 @@ RADIOBUTTON_ID_BASE = 94100
 FIELD_TYPES = ('slider_row', 'progress_row', 'input_row', 'checkbox_row', 'radio_row')
 # 列表/滚轮块（listview 组合，自带块高）
 WIDGET_TYPES = ('list_item', 'wheel_picker')
+
+
+# 字符黑名单（与 `tools/ui_tools/check_all.py` 的 BLACKLIST 同源）：这些符号在引擎字库里
+# 常缺字/渲染成方块，check_all 静态扫描到就 FAIL（… 与 ℃ 都实测过）。
+# 块库口径：**出产物前先自检**，把 FAIL 拦在 compose 阶段（不把注定返工的 json 交出去）。
+BLACKLIST_CHARS = set('⌫℃■●‹－＋–…→★◆▶▷①')
+TEXT_KEYS = ('text', 'hintText', 'passwordChar')
+
+
+def find_forbidden_chars(doc):
+    """doc 里含黑名单字符的文本值 → [(caption, value), ...]（空 = 干净）。"""
+    bad = []
+
+    def walk(o):
+        for k, v in o.items():
+            if isinstance(v, dict):
+                for tk in TEXT_KEYS:
+                    s = v.get(tk)
+                    if isinstance(s, str) and any(ch in BLACKLIST_CHARS for ch in s):
+                        bad.append((v.get('caption') or k, s))
+                walk(v)
+    walk(doc)
+    return bad
 
 
 def duplicate_captions(doc):
@@ -275,6 +310,66 @@ def mark_image(prm):
     return img
 
 
+def chart_image(prm):
+    """图表切图（第 4 批 chart_card）：折线 / 柱状 —— **图 == 盒**（铁律 #11/#17）。
+
+    与 mark_image 同一口径：**不重写画形状的逻辑**——
+      · 基线（x 轴）= gen_res.rounded_rect_cov(radius=0) 的 1px 直角条；
+      · 柱状条 = gen_res.rounded_rect_cov（实心圆角条，绝不空心/描边）；
+      · 折线 = 8× 超采样画布 + 圆头折线（与 chevron_image 同一手法）+ BOX 面积平均缩回
+        （带直通 α 的边界禁用负瓣算子）；数据点加圆头端点（避免尖角退成硬阶梯）。
+
+    为什么折线笔画有下限（≥3px）：细线在 aa_audit 里会退成硬阶梯（hard_diag）→ #21 真缺陷
+    （与块内 glyph 的 glyph_min_px=24 同一类口径）。
+    """
+    from PIL import Image, ImageDraw
+    w, h = int(prm['w']), int(prm['h'])
+    kind = prm['kind']
+    data = [float(v) for v in prm['data']]
+    color = tuple(int(c) for c in prm['color'])
+    axis = tuple(int(c) for c in prm['axis'])
+    base_h = max(1, int(prm.get('base_h') or 1))
+    dmax = max(data + [0.0])
+    dmin = min(data + [0.0])
+    span = (dmax - dmin) or 1.0
+    n = len(data)
+    top_pad = max(base_h + 2, int(round(h * 0.12)))        # 顶部留白：最高点不顶到盒边
+    plot_h = max(1, h - base_h - top_pad)
+    img = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+    if base_h >= 1:                                        # ① 基线（x 轴）：直角 1px 条
+        img.alpha_composite(gen_res.rounded_rect_cov(w, base_h, 0, axis, ss=8),
+                            (0, h - base_h))
+
+    def y_of(v):
+        return h - base_h - int(round((v - dmin) / span * plot_h))
+
+    if kind == 'bar':
+        slot = w / float(n)
+        bw = max(2, int(round(slot * 0.56)))
+        for i, v in enumerate(data):
+            top = y_of(v)
+            bh = max(2, h - base_h - top)
+            r = min(6, max(1, bw // 4))
+            bar = gen_res.rounded_rect_cov(bw, bh, r, color, ss=8)
+            cx = int(round(i * slot + (slot - bw) / 2.0))
+            img.alpha_composite(bar, (max(0, min(w - bw, cx)), top))
+    else:                                                   # 折线
+        ss = 8
+        big = Image.new('RGBA', (w * ss, h * ss), (0, 0, 0, 0))
+        d = ImageDraw.Draw(big)
+        stroke = max(3, int(round(h * 0.05)))               # 笔画下限 3px（AA 口径）
+        pts = []
+        for i, v in enumerate(data):
+            x = (w * (i + 0.5) / float(n)) if n > 1 else w / 2.0
+            pts.append((x * ss, y_of(v) * ss))
+        d.line(pts, fill=color, width=stroke * ss, joint='curve')
+        rr = stroke * ss / 2.0
+        for p in pts:                                       # 数据点圆头
+            d.ellipse([p[0] - rr, p[1] - rr, p[0] + rr, p[1] + rr], fill=color)
+        img.alpha_composite(big.resize((w, h), Image.BOX))
+    return img
+
+
 # ─────────────────────────── 令牌 → 本屏度量 ───────────────────────────
 
 
@@ -369,6 +464,21 @@ def build_metrics(W, H, tok):
     m['grid_tile_h'] = 2 * m['spacer'] + m['grid_ib'] + m['h_b2']    # 宫格格高（图标底 + 文字）
     m['grid_gap'] = m['spacer2']                                     # 宫格横向间隙（格 → 格）
     m['grid_row_gap'] = m['spacer']                                  # 宫格纵向间隙（行 → 行）
+
+    # —— 第 4 批：复杂块度量（图表 / 相册 / 键盘 / 时间行 / 加载 / 表单组 / 工具条）——
+    # 口径：能比例化的走比例（_tokens.size），与屏高无关的靠「内容反算 + 硬下限」。
+    m['tb_h'] = max(r4(H * s['tb_h_of_h']), m['ic_min'] + 2 * m['spacer'])   # 工具条固定带高
+    m['tb_ic'] = max(m['ic_min'], r4(m['tb_h'] * s['tb_ic_of_tb_h']))        # 工具条图标档
+    m['key_gap'] = m['spacer']                                               # 键盘键间距
+    m['key_w'] = (m['content_w'] - 2 * m['key_gap']) // 3                    # 键宽（3 列等分，末列吃余数）
+    m['key_h'] = max(m['h_b1'] + 2 * m['spacer'],
+                     min(r4(m['key_w'] * s['key_h_of_w']), r4(H * s['key_h_max_of_h'])))
+    m['chart_plot_h'] = max(r4(H * s['chart_h_of_h']), m['h_b2'] * 4)        # 图表绘图区高
+    m['gal_tile_h'] = max(m['ic_min'] + 2 * m['spacer'],                     # 相册格高（默认 cols=3）
+                          r4(((m['content_w'] - 2 * m['grid_gap']) // 3) * s['gal_tile_of_w']))
+    m['gal_ic_max'] = s['gal_ic_max']                                        # 相册占位图标上限（= 最大档 56）
+    m['load_h_of_h'] = s['load_h_of_h']                                      # 加载态（spinner）带高比例
+    m['load_bar_h'] = max(10, r4(m['h_b1'] * s['load_bar_h_of_fs']))         # 骨架条高（≥10，AA 口径）
 
     # 顶栏 / 底栏
     m['bar_top'] = max(r4(H * s['bar_top_of_h']),
@@ -603,6 +713,22 @@ class Composer(object):
         self.assets[name] = ('chevron', dict(w=int(w), h=int(h), color=color))
         return 'images/' + name
 
+    def clip_shape(self, name, w, h, radius, fill, src_w, src_h, src_x, src_y, ss=8):
+        """条内装饰件：从「整条的圆角形状」上裁一块（装饰件边缘与容器边缘严丝合缝）。
+
+        为什么不用普通 shape：整条底是**药丸**（半径 = 带高/2），条内装饰件若用自己那份
+        `shape(..., m['radius'])` 就会在条的两端露出「方角叠影」（选中项在最左/最右时
+        尤其明显 —— 同一根条的左端看起来比方，右端是圆的，钟工 2026-10-01 指的「左右倒角
+        不一样」）。这里改用**同一份形状覆盖率 mask** 裁切：装饰件的圆角 = 条本身的圆角，
+        像素级同缘；同一元素左右两端要么都跟条走、要么都是直角，绝不混。
+
+        图 == 盒（铁律 #1）：裁出来的就是装饰件的控件盒尺寸。
+        """
+        self.assets[name] = ('clip', dict(w=int(w), h=int(h), radius=int(radius), fill=fill,
+                                          src_w=int(src_w), src_h=int(src_h),
+                                          src_x=int(src_x), src_y=int(src_y), ss=int(ss)))
+        return 'images/' + name
+
     def bar(self, name, w, h, bar_h, fill):
         """滑轨/有效条：透明画布 w×h + 居中药丸条（可见条高 bar_h）——滑轨图高 == 控件盒高（seekbar-fields.md §3）。"""
         self.assets[name] = ('bar', dict(w=int(w), h=int(h), bar_h=int(bar_h), fill=fill))
@@ -615,6 +741,17 @@ class Composer(object):
                                           mark=mark, mark_size=int(mark_size),
                                           mark_color=mark_color, border=border,
                                           border_w=border_w))
+        return 'images/' + name
+
+    def chart(self, name, w, h, kind, data, color, axis, base_h=1):
+        """图表切图（第 4 批 chart_card）：折线/柱状合成图；**图 == 控件盒**（铁律 #11/#17）。
+
+        与 bar()/mark() 同一口径：本库只做「同一张画布上叠现成形状」，
+        不重写画形状的逻辑（柱条/基线都走 gen_res，折线走 chevron 那套超采样手法）。
+        """
+        self.assets[name] = ('chart', dict(w=int(w), h=int(h), kind=str(kind),
+                                           data=[float(v) for v in data],
+                                           color=color, axis=axis, base_h=int(base_h)))
         return 'images/' + name
 
     def emit_assets(self, project_root):
@@ -632,6 +769,17 @@ class Composer(object):
                     img = gen_res.rounded_rect_ss(prm['w'], prm['h'], prm['radius'],
                                                   prm['fill'], ss=8)
                 gen_res.save(img, out, name)
+            elif kind == 'clip':
+                # 条内装饰件：从整条形状（同半径、同 ss）裁一块 → 与容器边缘像素级同缘
+                from PIL import Image as _Im
+                mask = gen_res.coverage_mask(prm['src_w'], prm['src_h'], prm['radius'],
+                                             ss=prm['ss']).crop(
+                    (prm['src_x'], prm['src_y'],
+                     prm['src_x'] + prm['w'], prm['src_y'] + prm['h']))
+                img = _Im.new('RGBA', (prm['w'], prm['h']),
+                              (prm['fill'][0], prm['fill'][1], prm['fill'][2], 255))
+                img.putalpha(mask)
+                gen_res.save(img, out, name)
             elif kind == 'chevron':
                 gen_res.save(chevron_image(prm['w'], prm['h'], prm['color']), out, name)
             elif kind == 'bar':
@@ -643,6 +791,8 @@ class Composer(object):
                 gen_res.save(img, out, name)
             elif kind == 'mark':
                 gen_res.save(mark_image(prm), out, name)
+            elif kind == 'chart':
+                gen_res.save(chart_image(prm), out, name)
             elif kind == 'libicon':
                 # 图标资产库出图：按盒尺寸取档/现出，图严格 == 控件盒（铁律 #11/#17）
                 img, _meta = iconlib.produce(prm['g'], prm['size'], prm['color'],
@@ -678,10 +828,14 @@ class Composer(object):
         return blk
 
     def name_tree(self, blocks):
-        """按「页顺序」给块树命名：卡 → 卡内行（行接着本卡的序号往下数，不再按卡内下标重数）。"""
+        """按「页顺序」给块树命名：卡/表单分组 → 其内行（行接着本块的序号往下数，不再按内下标重数）。
+
+        第 4 批起递归目标是 ROW_CONTAINERS（card + form_section）——两容器内都是行集合，
+        行块的 _seq / _name 必须由这里统一分配（否则 form_section 里的行拿不到唯一 caption）。
+        """
         for b in blocks or []:
             self.name_block(b)
-            if b.get('type') == 'card':
+            if b.get('type') in ROW_CONTAINERS:
                 self.name_tree(b.get('blocks'))
 
     # ---- 坐标换算 ----
@@ -753,8 +907,10 @@ class Composer(object):
             return False
         return True
 
-    # ─────── 块 builder：行族（setting_row / icon_row / toggle_row / device_card）───────
-    ROW_TYPES = ('setting_row', 'icon_row', 'toggle_row', 'device_card')
+    # ─────── 块 builder：行族（setting_row / icon_row / toggle_row / device_card / time_row）───────
+    #   time_row（第 4 批）**就是一行**：与 setting_row 同一套行模板（标题 + 值 + 箭头），
+    #   只是语义上是「时间 / 日期」（块库不解析时间、不重造日历——日历是 components/ui_v1/Calendar 的活）。
+    ROW_TYPES = ('setting_row', 'icon_row', 'toggle_row', 'device_card', 'time_row')
     # 行族扫描范围 = 老行块 + 第 2 批字段行（字段行的文本带必须跟老行同一左缘/同宽）
     FAMILY_TYPES = ROW_TYPES + FIELD_TYPES
 
@@ -793,7 +949,7 @@ class Composer(object):
 
         def walk(blocks):
             for b in blocks or []:
-                if b.get('type') == 'card':
+                if b.get('type') in ROW_CONTAINERS:
                     walk(b.get('blocks'))
                 elif b.get('type') in self.ROW_TYPES:
                     rows.append(b)
@@ -816,7 +972,7 @@ class Composer(object):
 
         def walk(blocks):
             for b in blocks or []:
-                if b.get('type') == 'card':
+                if b.get('type') in ROW_CONTAINERS:
                     walk(b.get('blocks'))
                 elif b.get('type') in self.FAMILY_TYPES:
                     rows.append(b)
@@ -1134,7 +1290,8 @@ class Composer(object):
             else:
                 raise SystemExit('[X] 卡内不支持的块类型：%s（卡内只能是行块/列表块；'
                                  'tabs/banner/toast/status_pill/divider_label/grid_icons/'
-                                 'bottom_nav 是根层块）' % t)
+                                 'chart_card/image_gallery/keypad/loading/form_section/'
+                                 'toolbar 是根层块）' % t)
             top += heights[i]
             if i < n - 1:
                 sep_nodes.append(self.sep_node(m['pad_l'], top, cw - 2 * m['pad_l'], b['_seq']))
@@ -1778,6 +1935,12 @@ class Composer(object):
         z 顺序（本块内）：容器底 → **指示条（先于所有 tab 定义：静态件放最前）** → 选中底 → tab 按钮。
         指示条与选中底**几何不重叠**（选中底高度让出 ind_h）→ 谁先定义都不互相遮挡；
         两者都写在 tab 按钮之前（装饰件 z 低、touchable 显式 false）→ #15/#29 不误报。
+
+        2026-10-01 修（钟工看图）：① 指示条曾「两侧内缩 m['radius']」→ 与 tab 项左右各差 6px；
+        现在 = **项盒本身**（同 left / 同 width）。② 选中底曾用自己的 `m['radius']`（6）叠在
+        药丸条（r = 带高/2）上 → 同一根条左端露方角、右端是圆的。现在选中底/指示条都从
+        **整条的形状覆盖率mask 裁切**（`clip_shape`）：首/末项的圆角 == 条的圆角（像素同缘），
+        中间项是直角；半径只跟带高走，与宽度无关（图 == 盒，无拉伸）。
         """
         m = self.m
         col = self.col_int()
@@ -1789,8 +1952,9 @@ class Composer(object):
         if not 0 <= sel < n:
             raise SystemExit('[X] tabs.selected=%d 越界（可选 0~%d）' % (sel, n - 1))
         w, h = m['content_w'], m['tab_h']
+        r_bar = h // 2                       # 整条药丸半径：**按带高算**（与宽度无关）
         win = Node('window', 'Tabs%d' % blk['_seq'], self.box(x, y, w, h))
-        p_bg = self.shape('tabsbg_%dx%d.png' % (w, h), w, h, h // 2,
+        p_bg = self.shape('tabsbg_%dx%d.png' % (w, h), w, h, r_bar,
                           rgba(self.tok['color']['surface']))
         win.children.append(self.text('TabsBg%d' % blk['_seq'], self.box(0, 0, w, h),
                                       m['fs']['b2'], col['surface'], '', bg=p_bg, align=37))
@@ -1801,18 +1965,23 @@ class Composer(object):
         for i in range(n):
             lefts.append(cur)
             cur += widths[i]
-        # ① 指示条：静态件放最前；水平两侧内缩 m['radius']（避开容器圆角，见反面清单 #11/#22）
-        ind_w = max(4, widths[sel] - 2 * m['radius'])
-        p_ind = self.shape('ind_%dx%d.png' % (ind_w, m['ind_h']), ind_w, m['ind_h'], 0,
-                           rgba(self.tok['color']['brand']))
+        # ① 指示条：静态件放最前；**与 tab 项同左缘、同宽**（2026-10-01 修缺陷 1：
+        #    旧口径「两侧内缩 m['radius']」= 与项左右各差 6px，钟工看图不齐）。
+        #    边缘不内缩也不出方角：图从「整条形状」裁切 → 首/末项处跟着条的圆角走（缺陷 2）。
+        ind_w = widths[sel]
+        p_ind = self.clip_shape('ind_%dx%d_l%d.png' % (ind_w, m['ind_h'], lefts[sel]),
+                                ind_w, m['ind_h'], r_bar, rgba(self.tok['color']['brand']),
+                                w, h, lefts[sel], h - m['ind_h'])
         win.children.append(self.text('TabsIndicator%d' % blk['_seq'],
-                                      self.box(lefts[sel] + m['radius'], h - m['ind_h'],
+                                      self.box(lefts[sel], h - m['ind_h'],
                                                ind_w, m['ind_h']),
                                       m['fs']['b2'], col['brand'], '', bg=p_ind, align=37))
-        # ② 选中 tab 的底色（高度让出指示条 → 与①不重叠）
+        # ② 选中 tab 的底色（高度让出指示条 → 与①不重叠）；同样从条形状裁切，
+        #    半径 == 条半径（按带高算），首/末项与条端圆角严丝合缝，其余边是直角。
         on_w, on_h = widths[sel], h - m['ind_h']
-        p_on = self.shape('tab_on_%dx%d.png' % (on_w, on_h), on_w, on_h, m['radius'],
-                          rgba(self.tok['color']['brand1']))
+        p_on = self.clip_shape('tab_on_%dx%d_l%d.png' % (on_w, on_h, lefts[sel]),
+                               on_w, on_h, r_bar, rgba(self.tok['color']['brand1']),
+                               w, h, lefts[sel], 0)
         win.children.append(self.text('TabsOnBg%d' % blk['_seq'],
                                       self.box(lefts[sel], 0, on_w, on_h),
                                       m['fs']['b2'], col['brand1'], '', bg=p_on, align=37))
@@ -2074,6 +2243,427 @@ class Composer(object):
         parent.append(win)
         return self.H
 
+    # ─────── 第 4 批 builder：复杂块 ───────
+    #   图表卡 / 相册 / 键盘 / 时间行（并入行族）/ 加载态 / 表单分组 / 顶部工具条。
+    #   统一口径（与第 3 批一致）：**装饰件先定义（z 低 + touchable 显式 false）→ 命中 button 最后定义；
+    #   容器一律过 assert_children_fit；文本一律过 check_text_fit（#13）；图一律 == 盒（#11/#17）；
+    #   块内 glyph ≥ glyph_min_px（不降档，极小屏宁可省图标）。
+
+    def build_toolbar(self, blk, parent):
+        """顶部工具条（固定带）：左返回 + 标题 + 右侧动作图标。
+
+        它是**固定带**（占标题带位置，不进滑动区）：run() 里先把它算进 m['bar_top']，
+        再按新视口排内容 → 标题带以下才是内容区（与 bottom_actions 同源令牌 content_bottom）。
+        与 page_title 二选一（同页同时给 → run() 报错退出），因为两者争同一条带。
+        """
+        m = self.m
+        col = self.col_int()
+        h, ic = m['tb_h'], m['tb_ic']
+        s_ = blk['_seq']
+        win = Node('window', 'Toolbar%d' % s_,
+                   {'left': 0, 'top': 0, 'width': self.W, 'height': h})
+        p_bg = self.shape('toolbg_%dx%d.png' % (self.W, h), self.W, h, 0,
+                          rgba(self.tok['color']['surface']))
+        win.children.append(self.text('Toolbar%dBg' % s_, self.box(0, 0, self.W, h),
+                                      m['fs']['b2'], col['surface'], '', bg=p_bg, align=37))
+        hs = min(h, max(ic + 2 * m['spacer'], 32))          # 命中盒边长（≥32 或 图标档+2×spacer）
+        title_l, title_r = m['margin'], self.W - m['margin']
+        deco, btns = [], []
+        # 左返回：图标（装饰件）+ 命中 button
+        if blk.get('back', True):
+            glyph = blk.get('backIcon') or 'arrow-left'
+            p_ic = self.glyph('ic_back_%d.png' % ic, glyph, ic,
+                              rgba(self.tok['color']['fg1']), canvas=(ic, ic))
+            deco.append(self.text('Toolbar%dBackIcon' % s_,
+                                  self.box(m['margin'] + (hs - ic) // 2, (h - ic) // 2, ic, ic),
+                                  m['fs']['b2'], col['fg1'], '', bg=p_ic, align=37))
+            btns.append(self.button('Toolbar%dBack' % s_, self.box(m['margin'], 0, hs, h)))
+            title_l = m['margin'] + hs + m['spacer']
+        # 右侧动作（最多 3）：自右向左排，每项 图标 + 命中 button
+        acts = [a if isinstance(a, dict) else {'icon': str(a)}
+                for a in (blk.get('actions') or [])]
+        if len(acts) > 3:
+            raise SystemExit('[X] toolbar.actions 最多 3 个（标题带放不下），得到 %d' % len(acts))
+        right = self.W - m['margin']
+        for idx in range(len(acts) - 1, -1, -1):
+            a, cap = acts[idx], 'Toolbar%dAction%d' % (s_, idx + 1)
+            gx = right - hs
+            p_ic = self.glyph('ic_%s_%d.png' % (a.get('icon') or 'more', ic),
+                              a.get('icon') or 'more', ic,
+                              rgba(self.tok['color']['fg2']), canvas=(ic, ic))
+            deco.append(self.text(cap + 'Icon',
+                                  self.box(gx + (hs - ic) // 2, (h - ic) // 2, ic, ic),
+                                  m['fs']['b2'], col['fg2'], '', bg=p_ic, align=37))
+            btns.append(self.button(cap, self.box(gx, 0, hs, h)))
+            right = gx - m['spacer']
+        if acts:
+            title_r = right + m['spacer']
+        # 标题（h2 + bold + 居中）
+        title = blk.get('title') or ''
+        win.children.append(self.text('Toolbar%dTitle' % s_,
+                                      self.box(title_l, (h - m['h_h2']) // 2,
+                                               max(1, title_r - title_l), m['h_h2']),
+                                      m['fs']['h2'], col['fg1'], title, align=37, bold=True))
+        self.check_text_fit('Toolbar%dTitle' % s_, title, m['fs']['h2'],
+                            max(1, title_r - title_l), m['h_h2'], 'toolbar')
+        win.children.extend(deco)
+        win.children.extend(btns)
+        self.assert_children_fit(win, self.W, h, 'Toolbar%d' % s_)
+        parent.append(win)
+        return h
+
+    def build_chart_card(self, blk, parent, x, y):
+        """图表卡片：白卡 + 图表（折线 / 柱状）+ 标题 + x 轴刻度 + 轴注。
+
+        图 = **合成切图**（chart_image：柱条/基线走 gen_res，折线走超采样+圆头），**图 == 盒**；
+        x 轴刻度 = 每个数据点所在槽宽的居中文案（槽宽 = 绘图区宽 / 点数）；轴注 = 单位/口径一行。
+        """
+        m = self.m
+        col = self.col_int()
+        kind = str(blk.get('kind') or 'bar')
+        if kind not in ('line', 'bar'):
+            raise SystemExit('[X] chart_card.kind 只支持 line / bar，得到 %r' % kind)
+        data = []
+        for v in (blk.get('data') or []):
+            try:
+                data.append(float(v))
+            except (TypeError, ValueError):
+                raise SystemExit('[X] chart_card.data 必须全是数字，得到 %r' % (v,))
+        if len(data) < 2:
+            raise SystemExit('[X] chart_card.data 至少 2 个数据点，得到 %d 个' % len(data))
+        labels = [str(t) for t in (blk.get('labels') or [])]
+        if labels and len(labels) != len(data):
+            raise SystemExit('[X] chart_card.labels 个数（%d）必须与 data（%d）一致，或整省'
+                             % (len(labels), len(data)))
+        n, s_ = len(data), blk['_seq']
+        w, padl = m['content_w'], m['pad_l']
+        plot_w, plot_h = w - 2 * padl, m['chart_plot_h']
+        title, note = blk.get('title') or '', blk.get('note') or ''
+        # 先算高度（内容反算 → 卡盒装得下所有子节点；不然 assert_children_fit 会报错退出）
+        h = m['spacer2']
+        y_title = h if title else None
+        if title:
+            h += m['h_b1'] + m['spacer']
+        y_plot = h
+        h += plot_h
+        y_lab = None
+        if labels:
+            h += m['spacer']
+            y_lab = h
+            h += m['h_b2']
+        y_note = None
+        if note:
+            h += m['spacer1']
+            y_note = h
+            h += m['h_b2']
+        h += m['spacer2']
+        win = Node('window', 'ChartCard%d' % s_, self.box(x, y, w, h))
+        bg = self.shape('card_%dx%d.png' % (w, h), w, h, m['radius'],
+                        rgba(self.tok['color']['surface']))
+        win.children.append(self.text('ChartCard%dBg' % s_, self.box(0, 0, w, h),
+                                      m['fs']['b2'], col['surface'], '', bg=bg, align=37))
+        if title:
+            win.children.append(self.text('ChartCard%dTitle' % s_,
+                                          self.box(padl, y_title, plot_w, m['h_b1']),
+                                          m['fs']['b1'], col['fg1'], title, bold=True))
+            self.check_text_fit('ChartCard%dTitle' % s_, title, m['fs']['b1'], plot_w,
+                                m['h_b1'], '图表标题')
+        p_plot = self.chart('chart_%s_%dx%d.png' % (kind, plot_w, plot_h), plot_w, plot_h,
+                            kind, data, rgba(self.tok['color']['brand']),
+                            rgba(self.tok['color']['line']))
+        win.children.append(self.text('ChartCard%dPlot' % s_, self.box(padl, y_plot, plot_w, plot_h),
+                                      m['fs']['b2'], col['line'], '', bg=p_plot, align=37))
+        if labels:
+            base = plot_w // n
+            widths = [base] * n
+            widths[-1] = plot_w - base * (n - 1)
+            xoff = padl
+            for i, txt in enumerate(labels):
+                cap = 'ChartCard%dLabel%d' % (s_, i + 1)
+                win.children.append(self.text(cap, self.box(xoff, y_lab, widths[i], m['h_b2']),
+                                              m['fs']['b2'], col['fg2'], txt, align=37))
+                self.check_text_fit(cap, txt, m['fs']['b2'], widths[i], m['h_b2'], '图表 x 轴刻度')
+                xoff += widths[i]
+        if note:
+            # 轴注贴**右下角**：盒仍占满内容宽（左界 padl、右界 = 卡右 − padl），靠 align=38 右对齐
+            win.children.append(self.text('ChartCard%dNote' % s_,
+                                          self.box(padl, y_note, plot_w, m['h_b2']),
+                                          m['fs']['b2'], col['fg2'], note, align=38))
+            self.check_text_fit('ChartCard%dNote' % s_, note, m['fs']['b2'], plot_w,
+                                m['h_b2'], '图表轴注')
+        self.assert_children_fit(win, w, h, 'ChartCard%d' % s_)
+        parent.append(win)
+        return y + h
+
+    def build_gallery(self, blk, parent, x, y):
+        """缩略图相册（宫格）：标题 + 计数 + cols×rows 个格（格底 == 盒 + 占位缩略图）。
+
+        为什么用宫格而不是 listview：等距网格在 listview 里要靠 cols/colSpacing 反算（图 ≠ 盒风险高），
+        且宫格是**静态可画**的（首屏就能看到缩略图）——真图片由业务运行期 setBackgroundPic 换。
+        """
+        m = self.m
+        col = self.col_int()
+        cols = int(blk.get('cols') or 3)
+        if not 1 <= cols <= 5:
+            raise SystemExit('[X] image_gallery.cols 应在 1~5，得到 %d' % cols)
+        rows = max(1, int(blk.get('rows') or 2))
+        n_tile = cols * rows
+        cnt = blk.get('countText')
+        if not cnt:
+            cnt = '共 %d 张' % int(blk.get('count') or n_tile)
+        gap = m['grid_gap']
+        w, s_ = m['content_w'], blk['_seq']
+        # 列宽：两侧对称（总间隙 = (cols−1)×gap；末列吃整除余数）
+        slot = w - (cols - 1) * gap
+        base = slot // cols
+        widths = [base] * cols
+        widths[-1] = slot - base * (cols - 1)
+        lefts, cur = [], 0
+        for i in range(cols):
+            lefts.append(cur)
+            cur += widths[i] + gap
+        tile_w = min(widths)
+        tile_h = max(m['ic_min'] + 2 * m['spacer'], r4(tile_w * m['tok']['size']['gal_tile_of_w']))
+        gic = max(m['ic_min'], r4(min(tile_w, tile_h) * 0.34))
+        gic = min(gic, m['gal_ic_max'], max(m['ic_min'], tile_h - 2 * m['spacer']))
+        h = 0
+        title = blk.get('title') or ''
+        if title:                                           # 头部带（只有标题）
+            h += m['h_b1'] + m['spacer1']
+        grid_h = rows * tile_h + (rows - 1) * gap
+        # 计数贴**右下角**：宫格下方单开一条脚注带（右对齐），不压在格盒/整格 button 上
+        cw = self.text_box_w(cnt, m['fs']['b2'], align=38)
+        foot_h = m['spacer1'] + m['h_b2'] if cnt else 0
+        win = Node('window', 'ImageGallery%d' % s_, self.box(x, y, w, h + grid_h + foot_h))
+        if title:
+            win.children.append(self.text('ImageGallery%dTitle' % s_,
+                                          self.box(0, 0, w, m['h_b1']),
+                                          m['fs']['b1'], col['fg1'], title, bold=True))
+            self.check_text_fit('ImageGallery%dTitle' % s_, title, m['fs']['b1'],
+                                w, m['h_b1'], '相册标题')
+        if cnt:
+            cnt_box = self.text('ImageGallery%dCount' % s_,
+                                self.box(w - cw, h + grid_h + m['spacer1'], cw, m['h_b2']),
+                                m['fs']['b2'], col['fg2'], cnt, align=38)
+            win.children.append(cnt_box)
+            self.check_text_fit('ImageGallery%dCount' % s_, cnt, m['fs']['b2'], cw, m['h_b2'],
+                                '相册计数')
+        tappable = bool(blk.get('tappable', False))
+        deco, btns = [], []
+        for i in range(n_tile):
+            r, c = divmod(i, cols)
+            tx, tw = lefts[c], widths[c]
+            ty = h + r * (tile_h + gap)
+            cap = 'ImageGallery%dThumb%d' % (s_, i + 1)
+            p_t = self.shape('thumb_%dx%d.png' % (tw, tile_h), tw, tile_h, m['radius'],
+                             rgba(self.tok['color']['surface']))
+            deco.append(self.text(cap + 'Bg', self.box(tx, ty, tw, tile_h), m['fs']['b2'],
+                                  col['surface'], '', bg=p_t, align=37))
+            p_ic = self.glyph('ic_photo_%d.png' % gic, blk.get('icon') or 'photo', gic,
+                              rgba(self.tok['color']['chevron']), canvas=(gic, gic))
+            deco.append(self.text(cap + 'Icon',
+                                  self.box(tx + (tw - gic) // 2, ty + (tile_h - gic) // 2,
+                                           gic, gic),
+                                  m['fs']['b2'], col['chevron'], '', bg=p_ic, align=37))
+            if tappable:
+                btns.append(self.button(cap, self.box(tx, ty, tw, tile_h)))
+        win.children.extend(deco)
+        win.children.extend(btns)
+        self.assert_children_fit(win, w, h + grid_h + foot_h, 'ImageGallery%d' % s_)
+        parent.append(win)
+        return y + h + grid_h + foot_h
+
+    def build_keypad(self, blk, parent, x, y):
+        """数字键盘 3×4：键面（== 盒）+ 图标/文字 + 整键透明 button。
+
+        默认 12 键 = 1-9 / 退格 / 0 / 确认（末行 = 退格、数字 0、确认）；
+        items 可覆盖（字符串 = 键面文字，对象 = text / icon），个数必须是 3 的倍数。
+        键面只是静态图：输入拼串在业务侧（onButtonClick_Keypad<n>Key<i>）。
+        """
+        m = self.m
+        col = self.col_int()
+        items = blk.get('items')
+        if items is None:
+            items = ([{'text': str(i)} for i in range(1, 10)]
+                     + [{'icon': 'arrow-left'}, {'text': '0'}, {'icon': 'check'}])
+        items = [it if isinstance(it, dict) else {'text': str(it)} for it in items]
+        n = len(items)
+        if n % 3 or not 6 <= n <= 15:
+            raise SystemExit('[X] keypad.items 个数必须是 3 的倍数且在 6~15，得到 %d' % n)
+        rows = n // 3
+        gap = m['key_gap']
+        w, s_ = m['content_w'], blk['_seq']
+        slot = w - 2 * gap
+        base = slot // 3
+        widths = [base, base, slot - 2 * base]              # 3 列等分，余数给末列
+        lefts, cur = [], 0
+        for i in range(3):
+            lefts.append(cur)
+            cur += widths[i] + gap
+        kw = min(widths)
+        kh = max(m['h_b1'] + 2 * m['spacer'],
+                 min(r4(kw * m['tok']['size']['key_h_of_w']),
+                     r4(self.H * m['tok']['size']['key_h_max_of_h'])))
+        gic = max(m['ic_min'], r4(min(kw, kh) * 0.34))
+        gic = min(gic, max(m['ic_min'], kh - 2 * m['spacer']))
+        disp = blk.get('display')
+        top = 0
+        if disp:
+            parent.append(self.text('Keypad%dDisplay' % s_,
+                                    self.box(x + m['pad_l'], y + top, w - 2 * m['pad_l'],
+                                             m['h_b1']),
+                                    m['fs']['b1'], col['fg1'], str(disp), align=38))
+            self.check_text_fit('Keypad%dDisplay' % s_, str(disp), m['fs']['b1'],
+                                w - 2 * m['pad_l'], m['h_b1'], '键盘显示行')
+            top += m['h_b1'] + m['spacer1']
+        keys_h = rows * kh + (rows - 1) * gap
+        win = Node('window', 'Keypad%d' % s_, self.box(x, y + top, w, keys_h))
+        deco, btns = [], []
+        for i, it in enumerate(items):
+            r, c = divmod(i, 3)
+            kx, kyw = lefts[c], widths[c]
+            ky = r * (kh + gap)
+            cap = 'Keypad%dKey%d' % (s_, i + 1)
+            icon = it.get('icon')
+            primary = bool(icon) and icon == 'check'      # 确认键 = brand 实底 + onBrand 图标
+            fill = rgba(self.tok['color']['brand'] if primary else self.tok['color']['surface'])
+            p_f = self.shape('%s_%dx%d.png' % ('keybrand' if primary else 'key', kyw, kh),
+                             kyw, kh, m['radius'], fill)
+            deco.append(self.text(cap + 'Face', self.box(kx, ky, kyw, kh), m['fs']['b2'],
+                                  col['surface'], '', bg=p_f, align=37))
+            if icon:
+                ic_col = rgba(self.tok['color']['onBrand'] if primary
+                              else self.tok['color']['fg2'])
+                p_ic = self.glyph('ic_%s_%d.png' % (icon, gic), icon, gic, ic_col,
+                                  canvas=(gic, gic), state=it.get('state'))
+                deco.append(self.text(cap + 'Icon',
+                                      self.box(kx + (kyw - gic) // 2, ky + (kh - gic) // 2,
+                                               gic, gic),
+                                      m['fs']['b2'], col['fg2'], '', bg=p_ic, align=37))
+                btns.append(self.button(cap, self.box(kx, ky, kyw, kh)))
+            else:
+                txt = str(it.get('text') or '')
+                btns.append(self.button(cap, self.box(kx, ky, kyw, kh), fs=m['fs']['b1'],
+                                        color=col['fg1'], align=37, txt=txt))
+                self.check_text_fit(cap, txt, m['fs']['b1'], kyw, kh, '键盘键面')
+        win.children.extend(deco)
+        win.children.extend(btns)
+        self.assert_children_fit(win, w, keys_h, 'Keypad%d' % s_)
+        parent.append(win)
+        return y + top + keys_h
+
+    def build_loading(self, blk, parent, x, y):
+        """加载态（静态可画）：spinner（转圈图标 + 文案）或 skeleton（文案 + N 条骨架条）。
+
+        转圈是**静态帧**（真机动画由业务换图/定时器驱动）；骨架条高 ≥10px（AA 硬口径）。
+        """
+        m = self.m
+        col = self.col_int()
+        variant = str(blk.get('variant') or 'spinner')
+        if variant not in ('spinner', 'skeleton'):
+            raise SystemExit('[X] loading.variant 只支持 spinner / skeleton，得到 %r' % variant)
+        txt = blk.get('text') or '加载中…'
+        w, s_ = m['content_w'], blk['_seq']
+        bar_h = m['load_bar_h']
+        win = None
+        deco = []
+        if variant == 'spinner':
+            ic = m['ic_min']                                  # 图标不降档（glyph_min_px）
+            band = max(r4(self.H * m['load_h_of_h']),
+                       ic + m['spacer'] + m['h_b1'] + 2 * m['spacer2'])
+            win = Node('window', 'Loading%d' % s_, self.box(x, y, w, band))
+            bg = self.shape('card_%dx%d.png' % (w, band), w, band, m['radius'],
+                            rgba(self.tok['color']['surface']))
+            deco.append(self.text('Loading%dBg' % s_, self.box(0, 0, w, band), m['fs']['b2'],
+                                  col['surface'], '', bg=bg, align=37))
+            top = (band - (ic + m['spacer'] + m['h_b1'])) // 2
+            p_ic = self.glyph('ic_%s_%d.png' % (blk.get('icon') or 'loader', ic),
+                              blk.get('icon') or 'loader', ic,
+                              rgba(self.tok['color']['brand']), canvas=(ic, ic))
+            deco.append(self.text('Loading%dIcon' % s_, self.box((w - ic) // 2, top, ic, ic),
+                                  m['fs']['b2'], col['brand'], '', bg=p_ic, align=37))
+            deco.append(self.text('Loading%dText' % s_, self.box(0, top + ic + m['spacer'], w,
+                                                                 m['h_b1']),
+                                  m['fs']['b1'], col['fg2'], txt, align=37))
+            self.check_text_fit('Loading%dText' % s_, txt, m['fs']['b1'], w, m['h_b1'], '加载态')
+        else:
+            lines = max(1, int(blk.get('lines') or 3))
+            band = (2 * m['spacer2'] + m['h_b1'] + m['spacer1'] + lines * bar_h
+                    + (lines - 1) * m['spacer'])
+            win = Node('window', 'Loading%d' % s_, self.box(x, y, w, band))
+            bg = self.shape('card_%dx%d.png' % (w, band), w, band, m['radius'],
+                            rgba(self.tok['color']['surface']))
+            deco.append(self.text('Loading%dBg' % s_, self.box(0, 0, w, band), m['fs']['b2'],
+                                  col['surface'], '', bg=bg, align=37))
+            tw = w - 2 * m['pad_l']
+            deco.append(self.text('Loading%dText' % s_,
+                                  self.box(m['pad_l'], m['spacer2'], tw, m['h_b1']),
+                                  m['fs']['b1'], col['fg2'], txt))
+            self.check_text_fit('Loading%dText' % s_, txt, m['fs']['b1'], tw, m['h_b1'], '加载态')
+            for i in range(lines):
+                bw = tw if i < lines - 1 else max(8, r4(tw * 0.60))
+                by = m['spacer2'] + m['h_b1'] + m['spacer1'] + i * (bar_h + m['spacer'])
+                p_b = self.shape('skel_%dx%d.png' % (bw, bar_h), bw, bar_h, bar_h // 2,
+                                 rgba(self.tok['color']['line']))
+                deco.append(self.text('Loading%dBar%d' % (s_, i + 1),
+                                      self.box(m['pad_l'], by, bw, bar_h), m['fs']['b2'],
+                                      col['line'], '', bg=p_b, align=37))
+        win.children.extend(deco)
+        self.assert_children_fit(win, w, win.pos['height'], 'Loading%d' % s_)
+        parent.append(win)
+        return y + win.pos['height']
+
+    def build_form_section(self, blk, parent, x, y):
+        """表单分组：组标题 + 字段行集合（行一律复用行族/字段行同一套 builder）+ 组间距。
+
+        与 card 的唯一差别：① 默认**不给白卡底**（surface=false，行直接落在页面灰底上，
+        靠组间距分块）；② 组间距 = 块前后各一个 group_gap（run() 统一加，与 card 同口径）。
+        组内可收类型与 card 完全一致（字段行 / 行块 / list_item / wheel_picker）。
+        """
+        m = self.m
+        col = self.col_int()
+        rows = blk.get('blocks') or []
+        if not rows:
+            raise SystemExit('[X] form_section.blocks 不能为空（它就是「组标题 + 字段行集合」）')
+        cur = y
+        if blk.get('title'):
+            cur = self.build_section({'text': blk['title'], '_seq': blk['_seq']}, parent, x, cur)
+        heights = [self.row_height(b) for b in rows]
+        ch_, cw = sum(heights), m['content_w']
+        win = Node('window', 'FormSection%d' % blk['_seq'], self.box(x, cur, cw, ch_))
+        if blk.get('surface', False):
+            bg = self.shape('card_%dx%d.png' % (cw, ch_), cw, ch_, m['radius'],
+                            rgba(self.tok['color']['surface']))
+            win.children.append(self.text('FormSection%dBg' % blk['_seq'],
+                                          self.box(0, 0, cw, ch_), m['fs']['b2'],
+                                          col['surface'], '', bg=bg, align=37))
+        old_origin = self.origin
+        self.origin = (0, 0)
+        nodes, seps, top = [], [], 0
+        for i, b in enumerate(rows):
+            t = b.get('type')
+            if t in FIELD_TYPES:
+                self.build_field_row(b, nodes, 0, top, cw)
+            elif t == 'list_item':
+                self.build_list(b, nodes, 0, top, cw)
+            elif t == 'wheel_picker':
+                self.build_wheel(b, nodes, 0, top, cw)
+            elif t in self.ROW_TYPES:
+                has_icon = self.fam_icon and bool(b.get('icon')) and \
+                    (not m['compact'] or b['type'] != 'icon_row')
+                self.build_row(b, nodes, 0, top, cw, self.fam_reserve, has_icon)
+            else:
+                raise SystemExit('[X] form_section 只收行块/列表块（与 card 同口径）：%s' % t)
+            top += heights[i]
+            if i < len(rows) - 1:
+                seps.append(self.sep_node(m['pad_l'], top, cw - 2 * m['pad_l'], b['_seq']))
+        self.origin = old_origin
+        win.children.extend(seps)
+        win.children.extend(nodes)
+        self.assert_children_fit(win, cw, ch_, 'FormSection%d' % blk['_seq'])
+        parent.append(win)
+        return cur + ch_
+
     # ─────── 主流程 ───────
     def run(self):
         m = self.m
@@ -2084,6 +2674,16 @@ class Composer(object):
         self._seq = 0
         self.name_tree(self.page.get('blocks'))      # 先全页统一编号（caption 唯一性来源）
         self.scan_row_family()
+        # 第 4 批：toolbar 是**顶部固定带**（占标题带位置）——它不出现在内容流里，
+        # 但把 bar_top 抬到自己的带高（内容视口从带下开始，与底栏同源令牌 content_bottom 派生）。
+        toolbars = [b for b in (self.page.get('blocks') or []) if b.get('type') == 'toolbar']
+        if len(toolbars) > 1:
+            raise SystemExit('[X] toolbar 只能出现一次（一页一条顶部工具条）')
+        if toolbars:
+            m['bar_top'] = max(m['bar_top'], m['tb_h'])
+            m['viewport'] = max(40, m['content_bottom'] - m['bar_top'])   # 重算视口
+            self.notes.append('toolbar 固定带 %d px 占标题带位置 → 标题带 %d，视口重算为 %d'
+                              % (m['tb_h'], m['bar_top'], m['viewport']))
         # bottom_nav 是**固定带**（贴底栏上沿）：它不出现在内容流里，但占视口高度
         for b in self.page.get('blocks') or []:
             if b.get('type') == 'bottom_nav':
@@ -2146,8 +2746,23 @@ class Composer(object):
                     self.y = self.build_divider_label(blk, content, m['margin'], self.y)
                 else:
                     self.y = self.build_grid(blk, content, m['margin'], self.y)
+            elif t in STRUCT4_TYPES:
+                if self.y > 0:
+                    self.y += m['group_gap']
+                if t == 'chart_card':
+                    self.y = self.build_chart_card(blk, content, m['margin'], self.y)
+                elif t == 'image_gallery':
+                    self.y = self.build_gallery(blk, content, m['margin'], self.y)
+                elif t == 'keypad':
+                    self.y = self.build_keypad(blk, content, m['margin'], self.y)
+                elif t == 'loading':
+                    self.y = self.build_loading(blk, content, m['margin'], self.y)
+                else:
+                    self.y = self.build_form_section(blk, content, m['margin'], self.y)
             elif t == 'bottom_nav':
                 pass                                    # 固定带：下面统一摆（不进内容流）
+            elif t == 'toolbar':
+                pass                                    # 固定带（标题带位置）：下面统一摆
             elif t == 'toast':
                 toasts.append(blk)
             else:
@@ -2157,18 +2772,30 @@ class Composer(object):
         # 标题带：优先用显式 page_title 块，否则用 page.title/page.subtitle（spec 常见写法）
         title_blk = next((b for b in (self.page.get('blocks') or [])
                           if b.get('type') == 'page_title'), None)
-        if title_blk is None and self.page.get('title'):
+        if toolbars:
+            if title_blk is not None:
+                raise SystemExit('[X] 同页既有 toolbar 又有 page_title（两者争同一条固定带）——'
+                                 '二选一：要返回/动作就留 toolbar，否则留 page_title')
+            tb = toolbars[0]
+            if not tb.get('title'):
+                tb['title'] = self.page.get('title') or ''
+            if self.page.get('subtitle'):
+                self.notes.append('toolbar 已在标题带上 → page.subtitle 忽略（副标题请写进 toolbar.title 或另起一行）')
+        elif title_blk is None and self.page.get('title'):
             title_blk = self.name_block({'type': 'page_title', 'title': self.page.get('title'),
                                          'subtitle': self.page.get('subtitle')})
-        if not title_blk:
-            raise SystemExit('[X] 缺标题：给 page.title（+ page.subtitle）或一个 page_title 块——'
-                             '顶部固定带高靠它定')
+        if not title_blk and not toolbars:
+            raise SystemExit('[X] 缺标题：给 page.title（+ page.subtitle）、一个 page_title 块，'
+                             '或一个 toolbar 块——顶部固定带高靠它定')
         if not footer and self.page.get('footer'):
             footer = [self.name_block(dict(self.page['footer'], type='bottom_actions'))]
         if not footer:
             raise SystemExit('[X] 缺 bottom_actions（底部固定带必须有，否则视口高度没法定）')
         title_nodes = []
-        self.build_title(title_blk, title_nodes, m['margin'], 0)
+        if title_blk:
+            self.build_title(title_blk, title_nodes, m['margin'], 0)
+        for tb in toolbars:
+            self.build_toolbar(tb, title_nodes)      # 固定带（根层，y = 0..bar_top）
 
         # 内容放得下就直接摆；放不下才上滑动窗口（§2.1 流程第 1 步）
         if content_h > m['viewport']:
@@ -2228,6 +2855,13 @@ class Composer(object):
         doc.update(body)
         assert_caption_unique(doc, self.page_name)     # 自检：重名 → 报错退出（不出产物）
         self.assert_row_gaps()                          # 自检：同页行族「值→右端控件」间隙一致
+        # 自检（check_all「特殊字符」同一张黑名单）：拦在 compose 阶段，不把注定 FAIL 的 json 交出去
+        badch = find_forbidden_chars(doc)
+        if badch:
+            raise SystemExit('[X] 文本含引擎字库黑名单字符 %s（check_all 会 FAIL）——'
+                             '请改用 ASCII 等价写法（如 … → ...；℃ → 摄氏度）：\n    %s'
+                             % ('、'.join(sorted(BLACKLIST_CHARS)),
+                                '\n    '.join('%s: %s' % (c, t) for c, t in badch[:8])))
         return doc
 
 

@@ -9,7 +9,7 @@
       "type": "string",
       "default": "info",
       "example": "warn",
-      "note": "info / success / warn / danger —— 色全走 _tokens.json 语义色（前景 = -6 档、浅底 = -1 档）"
+      "note": "info / success / warn / danger —— 色全走 _tokens.json 语义色（前景 = -7 档、浅底 = -1 档）"
     },
     "text": {
       "type": "string",

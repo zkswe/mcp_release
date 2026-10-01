@@ -1,0 +1,29 @@
+-- check_all --
+  [NOTE] key_325x96.png                   未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] key_326x96.png                   未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] keybrand_326x96.png              未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] sep_960x1.png                    未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] skel_576x16.png                  未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] skel_960x16.png                  未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] swk_40.png                       未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] thumb_320x212.png                未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] toolbg_1024x72.png               未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+== 24. 颜色值 0（不透明黑）误用（委派 tools/qa/zero_color_audit.py --fail；0 token 有退出码）==
+       references/kb/image-gen-standard.md §7.6：未登记豁免 → FAIL；命中
+== 25. 弧线过渡质量（9-patch 圆角 AA；委派 tools/qa/corner_audit.py --arc-only --fail）==
+       要求 min_cov ≤ 0.35 且 ≤0.35 的个数 ≥ 2（成组出现）；否则 = 过渡被压进 1px 硬阶梯 → FAIL。
+  [NOTE] btn_primary_164x44.png           未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] btn_secondary_164x44.png         未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] card_992x108.png                 未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] card_992x132.png                 未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] card_992x180.png                 未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+  [NOTE] card_992x256.png                 未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
+== 26. scrollwindow 行程核对（行程 = 内层 window − 视口，**不读 dragMaxDis**）==
+== 27. 同族控件口径离群 / 文本×图标重叠（设计期拦截；钟工 2026-10-01）==
+== 28. UTF-8 文本陷阱（src 静态扫描；钟工 2026-10-01）==
+== 29. 显示件吃掉下层触摸（装饰件漏设穿透；钟工 2026-10-01）==
+       → 同一 json 内 caption 出现 ≥2 次即 FAIL，并列出「哪个 caption、几次、在哪几个控件」。
+[OK] 全部 PASS，可以交付。
+  check_all exit = 0
+
+---STDERR---

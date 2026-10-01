@@ -139,9 +139,9 @@
           "id": 50003,
           "caption": "TabsIndicator1",
           "position": {
-            "left": 5,
+            "left": 0,
             "top": 30,
-            "width": 86,
+            "width": 96,
             "height": 2
           },
           "alignment": 37,
@@ -172,12 +172,12 @@
           "rollIntervalTime": 150,
           "rollStep": 5,
           "textPosition": {
-            "left": 5,
+            "left": 0,
             "top": 30,
-            "width": 86,
+            "width": 96,
             "height": 2
           },
-          "backgroundPic": "images/ind_86x2.png"
+          "backgroundPic": "images/ind_96x2_l0.png"
         },
         "textview__4": {
           "id": 50004,
@@ -221,7 +221,7 @@
             "width": 96,
             "height": 30
           },
-          "backgroundPic": "images/tab_on_96x30.png"
+          "backgroundPic": "images/tab_on_96x30_l0.png"
         },
         "button__1": {
           "id": 20001,
@@ -1152,7 +1152,7 @@
           },
           "alignment": 37,
           "colorTab": {
-            "color0": 2860145,
+            "color0": 27717,
             "color1": -1,
             "color2": -1,
             "color3": -1,
@@ -1248,7 +1248,7 @@
           },
           "alignment": 37,
           "colorTab": {
-            "color0": 13977921,
+            "color0": 11351343,
             "color1": -1,
             "color2": -1,
             "color3": -1,
@@ -1493,7 +1493,7 @@
           },
           "alignment": 37,
           "colorTab": {
-            "color0": 2860145,
+            "color0": 27717,
             "color1": -1,
             "color2": -1,
             "color3": -1,
@@ -1537,7 +1537,7 @@
           },
           "alignment": 37,
           "colorTab": {
-            "color0": 2860145,
+            "color0": 27717,
             "color1": -1,
             "color2": -1,
             "color3": -1,
@@ -1581,7 +1581,7 @@
           },
           "alignment": 36,
           "colorTab": {
-            "color0": 2860145,
+            "color0": 27717,
             "color1": -1,
             "color2": -1,
             "color3": -1,
@@ -1686,7 +1686,7 @@
           },
           "alignment": 37,
           "colorTab": {
-            "color0": 14906136,
+            "color0": 9782528,
             "color1": -1,
             "color2": -1,
             "color3": -1,
@@ -1730,7 +1730,7 @@
           },
           "alignment": 37,
           "colorTab": {
-            "color0": 14906136,
+            "color0": 9782528,
             "color1": -1,
             "color2": -1,
             "color3": -1,
@@ -1774,7 +1774,7 @@
           },
           "alignment": 36,
           "colorTab": {
-            "color0": 14906136,
+            "color0": 9782528,
             "color1": -1,
             "color2": -1,
             "color3": -1,
@@ -1826,7 +1826,7 @@
           },
           "alignment": 37,
           "colorTab": {
-            "color0": 13977921,
+            "color0": 11351343,
             "color1": -1,
             "color2": -1,
             "color3": -1,
@@ -1870,7 +1870,7 @@
           },
           "alignment": 37,
           "colorTab": {
-            "color0": 13977921,
+            "color0": 11351343,
             "color1": -1,
             "color2": -1,
             "color3": -1,
@@ -1914,7 +1914,7 @@
           },
           "alignment": 36,
           "colorTab": {
-            "color0": 13977921,
+            "color0": 11351343,
             "color1": -1,
             "color2": -1,
             "color3": -1,

@@ -1,0 +1,39 @@
+{
+  "type": "form_section",
+  "zh": "表单分组（组标题 + 字段行集合 + 组间距；行一律复用行族口径）",
+  "builder": "form_section",
+  "family": "page",
+  "caption_prefix": "FormSection",
+  "fields": {
+    "title": {"type": "string", "required": false, "example": "联网设置",
+              "note": "组标题（与 section_header / card.title 同一套带高与字号档；缺省不画，只留行集合）"},
+    "surface": {"type": "bool", "default": false,
+                "note": "是否给白卡底（默认 false = 行直接落在页面灰底上，靠组间距分块；true 就与 card 同观感，只是**行集合由本块统一给**）"},
+    "blocks": {"type": "array", "required": true,
+               "example": [{"type": "input_row", "label": "WiFi 名称", "hintText": "请输入"},
+                           {"type": "checkbox_row", "label": "自动重连", "checked": true},
+                           {"type": "toggle_row", "label": "显示图标", "on": true}],
+               "note": "字段行集合（与 card.blocks 同一套可收类型：字段行 / 行块 / list_item / wheel_picker）；**卡内不支持的根层块同样不收**（写进去报错退出）。行高 / 文本左缘 / 右端预留 / 图标列与全页行族同源"}
+  },
+  "relative_constraints": {
+    "group_title": "有 title 时先铺一带（高 = max(spacer-3, h2 文本高)，与 section_header 同一算式），再铺行集合",
+    "rows": "行集合 = card 内同一套 builder（build_field_row / build_list / build_wheel / build_row）+ 同一套行高；行与行之间给 1px 分割线（RowSep<行块序号>，与卡内同口径）",
+    "group_gap": "**组间距** = 块前后各一个 group_gap(spacer-2)（与 card / section_header 同一口径，由 run() 统一加）；组内行与行不额外留空（只有 1px 分割线）",
+    "surface": "surface=true 时白卡底图 == 容器盒（radius = 容器圆角）；false 时容器透明（**没有底图，行仍落在同一坐标系**）",
+    "hit": "行 / 字段行的命中区口径完全照抄 card 内：整行透明 button 最后定义；字段行按各自控件带排布"
+  },
+  "assets": [
+    {"name": "card_{W}x{H}.png", "via": "仅 surface=true 时：gen_res.rounded_rect_ss(radius=容器圆角, fill=surface)", "size": "容器盒 == 图"},
+    {"name": "sep_{W}x1.png", "via": "与行内分割线共用（同名同尺寸只出一张）", "size": "分割线盒 == 图"}
+  ],
+  "scroll": "inherit",
+  "forbidden": [
+    "**在组里另起一套行几何**（行高 / 文本左缘 / 右端预留 / 图标列必须与全页行族同源——照抄 card 内口径，禁止自创形态）",
+    "把根层块（tabs / banner / toast / status_pill / divider_label / grid_icons / chart_card / image_gallery / keypad / loading / toolbar）塞进 blocks（只收行块 / 列表块；写进去报错退出）",
+    "一个分组同时给 title 又给 card 包一层（组标题与卡标题会连成两层标题；要么用 card.title，要么用本块）",
+    "组间距手写像素（必须走 group_gap(spacer-2)，与 card / section_header 同一口径）",
+    "surface=true 时又给行底色（行底色会盖住卡底圆角 → 反面清单 #10）",
+    "把组内行做成「有的两行式、有的单行式」（极小屏整页降单行式，禁混用 —— 反面清单 #1）"
+  ],
+  "compact_note": "极小屏：组标题 ≤4 字；组内 prefer 输入行（2 带）/ 复选行（1 行）/ 开关行（1 行）各一；行族整页降单行式"
+}

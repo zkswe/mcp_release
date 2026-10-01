@@ -1,4 +1,4 @@
-== compose (1024x600) ==
+﻿== compose (1024x600) ==
   行高 60 ｜ 字号 {'h1': 28, 'h2': 20, 'b1': 16, 'b2': 14} ｜ 圆角 6 ｜ 图标底/图标 36/24 ｜ 箭头 24x16 ｜ 内容 916 → 视口 388
   图标来源：components/icons（20 处 ｜ 档位 24 档 ×20 ｜ 14 种 名×尺寸×态 组合）
       bell         → system.bell              24px（24 档）state=-
@@ -47,7 +47,7 @@
   ic_warning_24_warn.png                   24x24  [components/icons system.warning · 24档 · prebuilt+recolor]
   ic_wifi_24.png                           24x24  [components/icons system.wifi · 24档 · prebuilt+recolor]
   icbg_36.png  36x36
-  ind_318x3.png  318x3
+  ind_330x3_l0.png  330x3
   nav_bell_24_off.png                      24x24  [components/icons system.bell · 24档 · prebuilt+recolor]
   nav_home_24_on.png                       24x24  [components/icons system.home · 24档 · prebuilt+recolor]
   nav_list_24_off.png                      24x24  [components/icons system.list · 24档 · prebuilt+recolor]
@@ -60,7 +60,7 @@
   sep_960x1.png  960x1
   sw_80x44_on.png  80x44
   swk_40.png  40x40
-  tab_on_330x53.png  330x53
+  tab_on_330x53_l0.png  330x53
   tabsbg_992x56.png  992x56
   toast_bg_132x56.png  132x56
   出图 44 张 → C:\Users\zkswe\.openclaw\workspace\tools\FlyThings_mcp_open\templates\ui_blocks\examples\nav_1024x600\project\resources\images
@@ -71,7 +71,7 @@
 ========================================================================
 json2img v0.1.0 — 引擎等价离线渲染（PIL 像素级，静止态）
 ========================================================================
-[render] page=main       json=templates\ui_blocks\examples\nav_1024x600\project\ui\main.json
+[render] page=main       json=examples\nav_1024x600\project\ui\main.json
           out=C:\Users\zkswe\.openclaw\workspace\tools\FlyThings_mcp_open\templates\ui_blocks\examples\nav_1024x600\project\ui\main.render.png  size=1024x600  resolution=1024x600  scale=1
           font=C:\Users\zkswe\.openclaw\workspace\tools\FlyThings_mcp_open\components\fonts\fonts\zkswe-hans-common.ttf
           [OK] 尺寸 == resolution × scale
@@ -89,13 +89,13 @@ json2img v0.1.0 — 引擎等价离线渲染（PIL 像素级，静止态）
    合计：实测 33 处 / 待校准 0 处 / 表外 0 处
   渲染图 main.render.png 1024x600 ｜ 尺寸 == resolution: True
 -- check_all --
-  [NOTE] panel_616x176.png                未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
   [NOTE] pill_ok_128x44.png               未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
   [NOTE] pill_warn_144x44.png             未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
   [NOTE] sep_440x1.png                    未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
   [NOTE] sep_960x1.png                    未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
   [NOTE] swk_40.png                       未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
   [NOTE] tab_on_330x53.png                未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] tab_on_330x53_l0.png             未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
   [NOTE] tabsbg_992x56.png                未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
   [NOTE] toast_bg_132x56.png              未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
 == 24. 颜色值 0（不透明黑）误用（委派 tools/qa/zero_color_audit.py --fail；0 token 有退出码）==

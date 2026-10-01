@@ -1,0 +1,285 @@
+{
+  "schema": "flythings-device-baseline/1",
+  "name": "z20_480x480",
+  "createdAt": "2026-10-01T20:24:30+08:00",
+  "purpose": "真机基线库：一次上机取截图，之后改布局用 baselines/wysiwyg_regress.py 离线跑所见即所得回归（不再上机）",
+  "device": {
+    "serial": "",
+    "serialHint": "设备串口不落盘（隐私扫描禁止内网 IP）。重取基线用 --device <serial|IP>:5555 或环境变量 FLYTHINGS_TEST_DEVICE。",
+    "model": "Zkswe_SSD20X_SPINOR",
+    "platform": "Z20",
+    "resolution": "480x480",
+    "fb": "/dev/fb0",
+    "fbName": "SStar FB0",
+    "bpp": 32,
+    "stride": 1920,
+    "virtualHeight": 1440,
+    "rotate": 0,
+    "easyuiVersion": "2.4.0",
+    "easyuiVersionSource": "getprop ro.easyui.version",
+    "osVersion": "flythingsV2.1",
+    "libzkguiMd5": "ed79b00633acc47f5fa53b3efadc9ca1",
+    "libzkguiBytes": 10575736,
+    "libSource": "设备运行 /tmp/lib/libzkgui.so；与本工程 .fun/z20/libzkgui.so md5 相同（本地构建 == 机上运行）",
+    "resPath": "/tmp/ui/",
+    "cfgSource": "/tmp/EasyUI.cfg（本工程最新版覆盖层；设备固化态 /res/etc/EasyUI.cfg 为 resPath=/res/ui/）",
+    "touchNode": "/dev/input/event0",
+    "touchProto": "single（chipone-ts，量程 0..480 x 0..480，1:1 直用屏幕坐标）"
+  },
+  "project": {
+    "root": "projects/SmartPanel_HA",
+    "platform": "Z20",
+    "resolution": "480x480",
+    "uiDir": "ui",
+    "font": "HanSans-Medium.ttf（与设备字体同款）",
+    "ftuMd5DeviceEqualsLocal": true,
+    "ftuMd5": {
+      "album.ftu": "b1101ff6847b75e20f4d9b39c414e7dd",
+      "albumfile.ftu": "087c8dd3b47839f055ca57f7648cdeae",
+      "brightness.ftu": "1883e4b18d80279ea8903d88dc9df0e5",
+      "devname.ftu": "70b2d90bb39d380d87f5ca1491f82ecc",
+      "home.ftu": "b683ce974049648d916f03eeb1611b23",
+      "keyset.ftu": "1c16774bb6cbee137cc33a7309369e74",
+      "main.ftu": "e347d67db8b43ac25e7090760d2f97b9",
+      "mode.ftu": "5857ea5e1529eec93c88904b597f35d0",
+      "off.ftu": "8c18dfae062fe170ca473923555a3b53",
+      "scenes.ftu": "ac51b0ad22b8ba04d77c6e90ccd6b11c",
+      "settings.ftu": "b2a861aee2837a8154275146385244b7",
+      "ssset.ftu": "dbcbe60804d93b850151c1c9cae7e9af",
+      "video.ftu": "81823c0677b8adee3c1932a271120ac5",
+      "wall.ftu": "2e5d9ee048a2fc45a723021c116aaa4c"
+    }
+  },
+  "capture": {
+    "tool": "tools/FlyThings_mcp_open/tools/adb/adb.exe + ui_tools/device_screenshot.py（fb0，自动 pan/像素序）",
+    "nav": "bin_tools/z20/touch 注入（自动判协议：event0 单点，坐标 1:1）",
+    "steps": "每条 entry.capture.steps 从主页起手；touch 动作原样执行（tap/swipe …），wait N 只等待；每步后等 1.5s",
+    "cropNone": "整屏 480x480，无裁剪、无缩放"
+  },
+  "entries": [
+    {
+      "name": "main_screensaver",
+      "file": "01_main_screensaver.png",
+      "page": "main",
+      "json": "projects/SmartPanel_HA/ui/main.json",
+      "pageRole": "屏保/待机页（启动页 mainActivity：大字时钟 + 日期/天气 + 3 个设备芯片 + 触摸提示）",
+      "capturedAt": "2026-10-01T20:21:52+08:00",
+      "deviceModel": "Zkswe_SSD20X_SPINOR",
+      "easyuiVersion": "2.4.0",
+      "width": 480,
+      "height": 480,
+      "md5": "651ed0abc220e39856374d7250900ae6",
+      "scrollY": 0,
+      "capture": {
+        "from": "screensaver",
+        "steps": []
+      },
+      "note": "上屏即屏保页（开机/超时后回到此页），无法用固定点击序列复现 → --update 需人工停在该页 + --force。时钟/日期/天气/设备状态为运行期文字。"
+    },
+    {
+      "name": "home",
+      "file": "02_home.png",
+      "page": "home",
+      "json": "projects/SmartPanel_HA/ui/home.json",
+      "pageRole": "主页（顶部时钟/日期/天气 + 齿轮进设置 + 3 张设备卡 + 情景模式芯片）",
+      "capturedAt": "2026-10-01T20:22:04+08:00",
+      "deviceModel": "Zkswe_SSD20X_SPINOR",
+      "easyuiVersion": "2.4.0",
+      "width": 480,
+      "height": 480,
+      "md5": "6f9f8933ece66b20d606e8d38405deb2",
+      "scrollY": 0,
+      "capture": {
+        "from": "home",
+        "steps": []
+      },
+      "note": "全体子页的「返回」都回本页 → 重取其它基线前先按 7 次 返回(417,32) 回主页。时钟/天气/设备状态/选中芯片为运行期内容。"
+    },
+    {
+      "name": "settings_top",
+      "file": "03_settings_top.png",
+      "page": "settings",
+      "json": "projects/SmartPanel_HA/ui/settings.json",
+      "pageRole": "设置页顶部（设备组：WiFi/运行模式/设备名称/情景模式/屏幕亮度；屏保组首行）",
+      "capturedAt": "2026-10-01T20:22:13+08:00",
+      "deviceModel": "Zkswe_SSD20X_SPINOR",
+      "easyuiVersion": "2.4.0",
+      "width": 480,
+      "height": 480,
+      "md5": "91f07e78835fe322e502ab620713d76b",
+      "scrollY": 0,
+      "capture": {
+        "from": "home",
+        "steps": [
+          "tap 445 35"
+        ]
+      },
+      "note": "齿轮按钮中心 (445,35)。各行的 Value 为运行期文字（已连接 - <IP>、HA 模式 …）。"
+    },
+    {
+      "name": "settings_bottom",
+      "file": "04_settings_bottom.png",
+      "page": "settings",
+      "json": "projects/SmartPanel_HA/ui/settings.json",
+      "pageRole": "设置页底部（屏保显示/屏保视频/相册上传 + 系统组：设备倒装/版本信息/多屏拼接）",
+      "capturedAt": "2026-10-01T20:22:41+08:00",
+      "deviceModel": "Zkswe_SSD20X_SPINOR",
+      "easyuiVersion": "2.4.0",
+      "width": 480,
+      "height": 480,
+      "md5": "288a2ea35c3248b990448cfac197acbd",
+      "scrollY": 414,
+      "capture": {
+        "from": "home",
+        "steps": [
+          "tap 445 35",
+          "swipe 240 430 240 130 600",
+          "swipe 240 430 240 130 600",
+          "swipe 240 430 240 130 600"
+        ]
+      },
+      "note": "scrollY=414 = 内容高 832 - 视口 418（滚到底，已用 400/404/406/408/410/412/414 逐值渲染比对定标，414 残差最小）。滚动位置本身不在离线承诺范围，本条目靠 scrollY 复现底部状态。"
+    },
+    {
+      "name": "wall",
+      "file": "05_wall.png",
+      "page": "wall",
+      "json": "projects/SmartPanel_HA/ui/wall.json",
+      "pageRole": "多屏拼接页（拼接联动/组名/本机序号/排布/角色 + 状态 + 保存）",
+      "capturedAt": "2026-10-01T20:30:02+08:00",
+      "deviceModel": "Zkswe_SSD20X_SPINOR",
+      "easyuiVersion": "2.4.0",
+      "width": 480,
+      "height": 480,
+      "md5": "edb3197e4ef74f119e24881b1b1d15fe",
+      "scrollY": 0,
+      "capture": {
+        "from": "home",
+        "steps": [
+          "tap 445 35",
+          "swipe 240 430 240 130 600",
+          "swipe 240 430 240 130 600",
+          "swipe 240 430 240 130 600",
+          "tap 240 432"
+        ]
+      },
+      "note": "设置页滚到底后点「多屏拼接」行（该行 abs 822..872，滚到底后在屏 408..458，取中心 432）。值为运行期文字（组名 beitman / 2 / 2 / 1x2 / 主机 / 状态…）。"
+    },
+    {
+      "name": "album",
+      "file": "06_album.png",
+      "page": "album",
+      "json": "projects/SmartPanel_HA/ui/album.json",
+      "pageRole": "相册上传页（相册模式行 + 二维码白卡 + 图片/视频计数 + 文件管理/结束相册模式）",
+      "capturedAt": "2026-10-01T20:23:21+08:00",
+      "deviceModel": "Zkswe_SSD20X_SPINOR",
+      "easyuiVersion": "2.4.0",
+      "width": 480,
+      "height": 480,
+      "md5": "7b066a7e5eff8974352f5a9a652b7c3b",
+      "scrollY": 0,
+      "ignoreRegions": [
+        [
+          176,
+          146,
+          128,
+          128
+        ]
+      ],
+      "capture": {
+        "from": "home",
+        "steps": [
+          "tap 445 35",
+          "swipe 240 430 240 130 600",
+          "swipe 240 430 240 130 600",
+          "swipe 240 430 240 130 600",
+          "tap 240 245"
+        ]
+      },
+      "note": "设置页滚到底后点「相册上传」行（abs 626..676 → 屏 212..262，取 245）。ignoreRegions = qrcode__1 (176,146,128x128)：运行期 ZKQrcode 现场生成，离线渲染画不出 → 两边置同色不比。主标题计数为运行期文字。"
+    },
+    {
+      "name": "keyset",
+      "file": "07_keyset.png",
+      "page": "keyset",
+      "json": "projects/SmartPanel_HA/ui/keyset.json",
+      "pageRole": "键位配置页（灯带/办公/茶台 三行 + 显示/隐藏 胶囊 + 提示）",
+      "capturedAt": "2026-10-01T20:23:45+08:00",
+      "deviceModel": "Zkswe_SSD20X_SPINOR",
+      "easyuiVersion": "2.4.0",
+      "width": 480,
+      "height": 480,
+      "md5": "b89181d134e9e8994a984db017187cf3",
+      "scrollY": 0,
+      "capture": {
+        "from": "home",
+        "steps": [
+          "tap 445 35",
+          "tap 240 470"
+        ]
+      },
+      "note": "「按键配置」行 abs 458..508，设置在顶部时只露出 458..480 → 点 (240,470) 命中露出的按钮区。行名为运行期文字（灯带/办公/茶台 + 显示/隐藏）。"
+    },
+    {
+      "name": "mode",
+      "file": "08_mode.png",
+      "page": "mode",
+      "json": "projects/SmartPanel_HA/ui/mode.json",
+      "pageRole": "运行模式页（HA 模式/本地主机/本地从机 三卡 + 扫码配置 HA 服务器 + 保存）",
+      "capturedAt": "2026-10-01T20:23:57+08:00",
+      "deviceModel": "Zkswe_SSD20X_SPINOR",
+      "easyuiVersion": "2.4.0",
+      "width": 480,
+      "height": 480,
+      "md5": "fd944d9bc557e6f5767f82971131df92",
+      "scrollY": 0,
+      "visibleOverrides": {
+        "TextModeIpLabel": false,
+        "TextModeIpHint": false,
+        "ImageModeIpBg": false,
+        "EditModeIp": false,
+        "TextModeQrTitle": true,
+        "TextModeQrUrl": true,
+        "TextModeQrHint": true
+      },
+      "ignoreRegions": [
+        [
+          14,
+          300,
+          104,
+          104
+        ]
+      ],
+      "capture": {
+        "from": "home",
+        "steps": [
+          "tap 445 35",
+          "tap 240 160"
+        ]
+      },
+      "note": "「运行模式」行 abs 150..200 → 点 (240,160)。本页运行在 HA 模式：modeLogic 在 HA 下显示二维码块（TextModeQrTitle/Url/Hint + qrcode QrcodeModeHa），隐藏主机 IP 行（TextModeIpLabel/IpHint/ImageModeIpBg/EditModeIp）—— 静态 json 里正好相反，故用 visibleOverrides 复现运行期可见性（否则必假 FAIL）。ignoreRegions = qrcode__1/QrcodeModeHa (14,300,104x104)：控件现场生成二维码，离线渲染画不出 → 两边置同色不比。URL 文本（含内网地址）为运行期文字。"
+    },
+    {
+      "name": "scenes",
+      "file": "09_scenes.png",
+      "page": "scenes",
+      "json": "projects/SmartPanel_HA/ui/scenes.json",
+      "pageRole": "情景模式页（回家/观影/睡眠 三行；HA 模式下只读）",
+      "capturedAt": "2026-10-01T20:24:13+08:00",
+      "deviceModel": "Zkswe_SSD20X_SPINOR",
+      "easyuiVersion": "2.4.0",
+      "width": 480,
+      "height": 480,
+      "md5": "aff175bc1a2a33a857dbe14745d64faa",
+      "scrollY": 0,
+      "capture": {
+        "from": "home",
+        "steps": [
+          "tap 445 35",
+          "tap 240 290"
+        ]
+      },
+      "note": "「情景模式」行 abs 262..312 → 点 (240,290)。行名/描述为运行期文字。"
+    }
+  ]
+}

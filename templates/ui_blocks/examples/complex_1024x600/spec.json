@@ -1,0 +1,81 @@
+{
+  "_doc": "示例 G · 1024×600（基准屏）：第 4 批（复杂块）7 个新块全都用上——toolbar（顶部固定带：返回 + 标题 + 动作）/ chart_card×2（柱状 + 折线，含 x 轴刻度与轴注）/ time_row（时间行：标题 + 时间值 + 箭头）/ form_section（组标题 + 字段行集合）/ image_gallery（3 列 × 2 行缩略图 + 计数）/ keypad（3×4 = 12 键 + 显示行）/ loading×2（spinner + skeleton 两种形态）；复用 card / setting_row / input_row / checkbox_row / toggle_row / bottom_actions。与 ../complex_320x240/spec.json 是同一份块清单，只差 resolution 与极小屏短文案（本示例不给 page.title —— 标题带由 toolbar 承担）。",
+  "resolution": {
+    "width": 1024,
+    "height": 600
+  },
+  "page": {
+    "blocks": [
+      {
+        "type": "toolbar",
+        "title": "设备详情",
+        "back": true,
+        "actions": [{"icon": "refresh"}, {"icon": "settings"}]
+      },
+      {
+        "type": "chart_card",
+        "kind": "bar",
+        "title": "近 7 日用电量",
+        "data": [12, 18, 9, 24, 15, 21, 11],
+        "labels": ["周一", "周二", "周三", "周四", "周五", "周六", "周日"],
+        "note": "单位 kWh ｜ 每日 00:00 汇总"
+      },
+      {
+        "type": "chart_card",
+        "kind": "line",
+        "title": "室内温度",
+        "data": [21, 23, 22, 25, 24, 26],
+        "labels": ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00"],
+        "note": "单位 摄氏度 ｜ 客厅面板传感器"
+      },
+      {
+        "type": "card",
+        "title": "基础信息",
+        "blocks": [
+          {"type": "setting_row", "label": "设备名称", "value": "客厅面板"},
+          {"type": "time_row", "label": "上次同步", "value": "2026-10-01 20:20", "value_short": "20:20"},
+          {"type": "setting_row", "label": "安装位置", "value": "一层客厅"}
+        ]
+      },
+      {
+        "type": "form_section",
+        "title": "联网设置",
+        "surface": false,
+        "blocks": [
+          {"type": "input_row", "label": "WiFi 名称", "hintText": "请输入名称", "text": "ZKSWE-IOT", "textType": 0},
+          {"type": "checkbox_row", "label": "自动重连", "value": "已勾选", "checked": true},
+          {"type": "toggle_row", "label": "显示网络图标", "value": "已开启", "on": true}
+        ]
+      },
+      {
+        "type": "image_gallery",
+        "title": "相册",
+        "count": 12,
+        "cols": 3,
+        "rows": 2,
+        "tappable": true
+      },
+      {
+        "type": "loading",
+        "variant": "skeleton",
+        "text": "正在同步设备状态...",
+        "lines": 3
+      },
+      {
+        "type": "keypad",
+        "display": "12.5"
+      },
+      {
+        "type": "loading",
+        "variant": "spinner",
+        "text": "正在连接云端..."
+      },
+      {
+        "type": "bottom_actions",
+        "status": "已是最新",
+        "primary": "保存",
+        "secondary": "取消"
+      }
+    ]
+  }
+}

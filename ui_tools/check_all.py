@@ -48,6 +48,8 @@ import glob
 import json
 import os
 import re
+import shutil
+import statistics
 import subprocess
 import sys
 import shutil
@@ -1723,6 +1725,386 @@ def check_listview_item_h(project_root):
     return notes, warns
 
 
+# ---------------- 34. 文本对比度（FAIL 级；钟工 2026-10-01）----------------
+# 背景：字色（colorTab.color0）与底图/底色分别来自出图脚本与 json，很容易各自改对、
+# 组合起来看不见（2026-09-18 实例：default 主题灰底 #F3F3F3 + 白字 #FFFFFF = 1.11:1）。
+# 判定**复用** tools/qa/contrast_check.py（WCAG 2.1 AA：fs<24 → ≥4.5:1；fs≥24 → ≥3:1），
+# 本文件不复制它的亮度/对比度实现，只负责「把背景算成 hex 再喂给它」。
+#
+# 背景取色（按绘制顺序 + 几何覆盖反解「文字底下真正是什么」）：
+#   ① 页面根 backgroundPic / 覆盖本控件盒的、绘制在前（z 更低）的控件里最后一个提供底色的 /
+#      **控件自己的底**（自身背景画在自己文字之下、盖在先前兄弟之上 → 优先级最高）；
+#      · 带 backgroundPic（或 picTab.pic0）→ 取该图**平均色**（PIL；半透明像素按父底色合成，
+#        全透明像素剔除）——这是本平台「卡片/药丸/横幅/键帽」的常见底；
+#      · 只有 backgroundColor → 取该底色（-1 = 透明 → 视作未提供，继续下探）；
+#   ② 都没有 → 页面底色（缺省白）。
+#
+# 分级（关键：不让「算不准的底」进 FAIL）——
+#   · 可信底（平色 / 近纯色图，合成色标准差 ≤ 6）且对比度不足 → **FAIL**；可信底限「页面底」
+#     与「其它覆盖件（容器/整屏底图件）提供的底」；
+#   · **控件自己声明的** backgroundColor/底图 → 只 NOTE：本平台运行期 setBackground(Pic/Color)、
+#     蒙层/禁用态换底、IDE 默认值残留很常见（#20 专管运行期设图），静态无法确认真机可见底；
+#   · 图片底（照片/渐变/图形，平均色不能代表像素真值）或读不到的图 → 只 NOTE（附平均色与 σ）；
+#   · 临界带：比率在 [0.9×阈值, 阈值) 之间（如 4.32 vs 4.5）→ 只 NOTE，不算缺陷
+#     （引擎抗锯齿/子像素合成会把笔画实际对比度再拉低，边界值不值得当缺陷拦）；
+#   · 豁免：禁用态（caption TgDisabled*/BtnDisabled* 或字色 #B5B5B5，与 contrast_check 同口径，
+#     WCAG 1.4.3 不管禁用件）→ EXEMPT；
+#   · 待核：fg == bg 或 bg == #666666（透明蒙层合成色，与 contrast_check 的 suspect 同义）→ NOTE。
+# 误报控制证据（2026-10-01 实测）：官方基准工程 SampleUI-New **0 FAIL**（其非达标项全部落在
+#   「控件自述底色」一档，被降级为 NOTE）；对照 tools/qa/contrast_check.py 自己跑 = 72 FAIL
+#   （它把照片底按「众数色」当真值）。可 FAIL 的两档（页面底 / 容器底）在反例上都能拦住。
+_C34_PIC_FLAT_STD = 6.0      # 合成色标准差 ≤ 6 → 视为纯色底（同色板抖动 + 轻微渐变残留）
+_C34_TOL = 0.9               # 临界带：比率 ≥ 0.9×阈值只 NOTE（抗锯齿/引擎合成会再拉低笔画实际对比度，
+                             #              不把 4.3~4.5 这种边界值当缺陷；实测 SampleUI-New 的 4.32 落在这一档）
+_C34_DISABLED_FG = (0xB5, 0xB5, 0xB5)
+_CC_MOD = None
+_CC_ERR = ''
+
+
+def _load_contrast_module():
+    """加载 tools/qa/contrast_check.py，复用其对比度/亮度判定（0 复制）。
+
+    找不到 / 导入失败 → 返回 None，并把原因写进 _CC_ERR（#34/#33 报 NOTE 跳过，不静默）。
+    注意：contrast_check 在缺少 Pillow 时会在导入期 sys.exit(2) → 这里必须连 SystemExit 一起接住，
+    否则会把 check_all 本体一起带走。
+    """
+    global _CC_MOD, _CC_ERR
+    if _CC_MOD is not None:
+        return _CC_MOD
+    exe = _find_qa_tool('contrast_check.py', 'CONTRAST_CHECK')
+    if not exe:
+        _CC_ERR = '未找到 tools/qa/contrast_check.py（可用环境变量 CONTRAST_CHECK 指定）'
+        return None
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('_ft_contrast_check', exe)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    except BaseException as e:                          # noqa: BLE001  连 SystemExit 一起接
+        _CC_ERR = '导入 %s 失败：%s: %s' % (exe, type(e).__name__, e)
+        return None
+    if not hasattr(mod, 'contrast'):
+        _CC_ERR = '%s 没有 contrast()（版本不匹配）' % exe
+        return None
+    _CC_MOD = mod
+    return mod
+
+
+def _c34_pic_stats(root, ref, parent, cache):
+    """底图 → (平均色 rgb, 合成色标准差)；读不到图 / 无透明以外像素 → None。
+
+    半透明像素按 parent 底色合成（toast/蒙层类药丸底常是半透明深色），全透明像素剔除；
+    统一缩到 ≤64×64 再采样（判定用均值，不需要全分辨率）。
+    """
+    if not _HAS_PIL or not ref:
+        return None
+    p = _pic_path(root, ref)
+    if not p:
+        return None
+    key = (p, parent)
+    if key in cache:
+        return cache[key]
+    out = None
+    try:
+        im = _Image.open(p).convert('RGBA')
+        w, h = im.size
+        im = im.resize((max(1, min(64, w)), max(1, min(64, h))), _Image.NEAREST)
+        acc = [0.0, 0.0, 0.0]
+        n = 0
+        chans = []
+        for px in im.getdata():
+            a = px[3]
+            if a == 0:
+                continue
+            f = a / 255.0
+            c = tuple(px[i] * f + parent[i] * (1 - f) for i in range(3))
+            for i in range(3):
+                acc[i] += c[i]
+            chans.append(c)
+            n += 1
+        if n:
+            avg = tuple(v / n for v in acc)
+            var = 0.0
+            for c in chans:
+                for i in range(3):
+                    var += (c[i] - avg[i]) ** 2
+            std = (var / (3.0 * n)) ** 0.5
+            out = (tuple(int(round(v)) for v in avg), std)
+    except Exception as e:                              # noqa: BLE001
+        print('  [NOTE] #34 底图读取失败（该控件按不可信底处理）：%s (%s: %s)'
+              % (ref, type(e).__name__, e))
+        out = None
+    cache[key] = out
+    return out
+
+
+def _c34_pic_ref(v):
+    """控件自身的底图引用（backgroundPic 优先，其次 picTab.pic0/pic/pic1）。"""
+    pic = v.get('backgroundPic')
+    if not pic:
+        pt = v.get('picTab') or {}
+        pic = pt.get('pic0') or pt.get('pic') or pt.get('pic1')
+    return pic if isinstance(pic, str) and pic else None
+
+
+def _c34_page_elements(jf):
+    """→ (页面 dict, [(key, caption, 绝对盒, node)])，顺序 = 绘制顺序（后定义 = z 更高）。"""
+    d = json.load(open(jf, encoding='utf-8'))
+    out = []
+
+    def walk(n, ox=0, oy=0):
+        for k, v in n.items():
+            if not isinstance(v, dict) or '__' not in k:
+                continue
+            p = v.get('position') or {}
+            l, tp, w, h = p.get('left'), p.get('top'), p.get('width'), p.get('height')
+            if None in (l, tp, w, h):
+                walk(v, ox, oy)
+                continue
+            out.append((k, v.get('caption', '') or '', (ox + l, oy + tp, w, h), v))
+            walk(v, ox + l, oy + tp)
+
+    walk(d)
+    return d, out
+
+
+def _c34_is_disabled(cap, fg):
+    """与 tools/qa/contrast_check.py 同口径的禁用态判定（WCAG 1.4.3 不管禁用件）。"""
+    return bool(cap.startswith(('TgDisabled', 'BtnDisabled'))) or fg == _C34_DISABLED_FG
+
+
+def _c34_bg(project_root, page, ctrls, idx, cache):
+    """→ (bg_rgb, grade, 来源描述, 参与判定的底图列表)；grade ∈ {'fail','note'}。
+
+    覆盖判定 = 绘制在前的控件盒完整包含本控件盒（含祖先容器、整屏底图件，如 SampleUI 的
+    TextviewBackground）；最后一个提供底色的覆盖件 = 实际可见底（z 最高）。
+
+    grade='note' 的两种情形：
+      · 底是「非纯色图」/「读不到的图」——平均色不代表像素真值；
+      · 底是**控件自己声明的** backgroundColor/底图——本平台运行期 setBackground(Pic/Color)、
+        蒙层/禁用态换底、IDE 默认值残留都很常见（#20 专管运行期设图），静态无法确认真机可见底，
+        故只提示（实测：官方基准工程 SampleUI-New 的非达标项全落在这一类 → 0 FAIL）。
+    """
+    tx0, ty0, tw, th = ctrls[idx][2]
+    tx1, ty1 = tx0 + tw, ty0 + th
+    pics = []
+    bg = (255, 255, 255)
+    desc = '页面底色缺省白'
+    trusted = True
+    kind = 'page'
+    rp = page.get('backgroundPic')
+    if isinstance(rp, str) and rp:
+        st = _c34_pic_stats(project_root, rp, bg, cache)
+        pics.append(rp)
+        if st:
+            bg = st[0]
+            trusted = st[1] <= _C34_PIC_FLAT_STD
+            desc = '根底图 %s 均色 σ=%.1f' % (rp, st[1])
+        else:
+            trusted = False
+            desc = '根底图 %s 读不到（底不可信）' % rp
+    rc = page.get('backgroundColor')
+    if rc not in (None, -1):
+        c = _CC_MOD.dec2rgb(rc) if _CC_MOD else None
+        if c:
+            bg, trusted, kind, desc = c, True, 'page', '页面底色 #%02X%02X%02X' % tuple(c)
+            if not (isinstance(rp, str) and rp):
+                pics = []
+    for i in range(idx):
+        _k, cap0, (x, y, w, h), v = ctrls[i]
+        if w <= 0 or h <= 0:
+            continue
+        if not (x <= tx0 and y <= ty0 and x + w >= tx1 and y + h >= ty1):
+            continue
+        pic = _c34_pic_ref(v)
+        if pic:
+            st = _c34_pic_stats(project_root, pic, bg, cache)
+            pics.append(pic)
+            if st:
+                bg = st[0]
+                trusted = st[1] <= _C34_PIC_FLAT_STD
+                kind = 'cover'
+                desc = '%s 底图 %s 均色 σ=%.1f' % (cap0 or _k, pic, st[1])
+            else:
+                trusted = False
+                kind = 'cover'
+                desc = '%s 底图 %s 读不到（底不可信）' % (cap0 or _k, pic)
+        elif v.get('backgroundColor') not in (None, -1):
+            c = _CC_MOD.dec2rgb(v['backgroundColor']) if _CC_MOD else None
+            if c:
+                bg, trusted, kind = c, True, 'cover'
+                desc = '%s 底色 #%02X%02X%02X' % ((cap0 or _k,) + tuple(c))
+    # 最后叠上**控件自己的底**（自己的背景画在自己文字之下、盖在先前兄弟之上 → 优先级最高）：
+    # 漏了它会把「按钮自带 picTab.pic0 键帽图 + 字色 0」误判成「黑字压在下层容器底色上」。
+    self_pic = _c34_pic_ref(ctrls[idx][3])
+    if self_pic:
+        st = _c34_pic_stats(project_root, self_pic, bg, cache)
+        pics.append(self_pic)
+        if st:
+            bg = st[0]
+            trusted = st[1] <= _C34_PIC_FLAT_STD
+            desc = '自身底图 %s 均色 σ=%.1f' % (self_pic, st[1])
+        else:
+            trusted = False
+            desc = '自身底图 %s 读不到（底不可信）' % self_pic
+        kind = 'self'
+    else:
+        sc = ctrls[idx][3].get('backgroundColor')
+        if sc not in (None, -1):
+            c = _CC_MOD.dec2rgb(sc) if _CC_MOD else None
+            if c:
+                bg, trusted, kind = c, True, 'self'
+                desc = '自身底色 #%02X%02X%02X' % tuple(c)
+    grade = 'fail' if (trusted and kind in ('page', 'cover')) else 'note'
+    return bg, grade, desc, pics
+
+
+def check_text_contrast(project_root):
+    """#34 文本对比度（→ (notes, fails)）：页面底/容器底（平色/近纯色图）+ 对比度不足 → FAIL。
+
+    阈值与判定全部来自 tools/qa/contrast_check.py（fs<24 → 4.5:1；fs≥24 → 3:1；临界带 0.9×只 NOTE）。
+    非可信底（照片/渐变图、控件自述底、读不到的图）只 NOTE；禁用态 EXEMPT；fg==bg / #666666 → 待核 NOTE。
+    """
+    notes, fails = [], []
+    cc = _load_contrast_module()
+    if cc is None:
+        notes.append('跳过：#34 需要 %s' % _CC_ERR)
+        return notes, fails
+    judged = pic_note = exempt = suspect = border = 0
+    for jf in _ui_pages(project_root):
+        rel = 'ui/' + os.path.relpath(jf, os.path.join(project_root, 'ui')).replace('\\', '/')
+        try:
+            page, ctrls = _c34_page_elements(jf)
+        except Exception as e:                          # noqa: BLE001
+            fails.append((rel, '#34 页面解析失败（不静默跳过）：%s: %s' % (type(e).__name__, e)))
+            continue
+        cache = {}
+        for i, (k, cap, box, v) in enumerate(ctrls):
+            txt = str(v.get('text') or '').strip()
+            ct = v.get('colorTab') or {}
+            fg = cc.dec2rgb(ct.get('color0')) if ct.get('color0') is not None else None
+            if not txt or fg is None or v.get('visible') is False:
+                continue
+            fs = int(v.get('fontSize') or 18)
+            bg, grade, desc, _pics = _c34_bg(project_root, page, ctrls, i, cache)
+            need = 3.0 if fs >= 24 else 4.5
+            ratio = cc.contrast(fg, bg)
+            if ratio >= need:
+                judged += 1
+                continue
+            fg_hex, bg_hex = '#%02X%02X%02X' % fg, '#%02X%02X%02X' % bg
+            if _c34_is_disabled(cap, fg):
+                exempt += 1
+                notes.append('%s %s 禁用态字色 %s on %s = %.2f（WCAG 1.4.3 不管禁用件，豁免）'
+                             % (rel, cap, fg_hex, bg_hex, ratio))
+                continue
+            if ratio >= need * _C34_TOL:
+                border += 1
+                notes.append('%s %s fs=%d 字色 %s on %s = %.2f:1（阈值 %.1f，临界带）→ 不算缺陷；'
+                             '真机上若看着发糊再顺手提一档字色'
+                             % (rel, cap, fs, fg_hex, bg_hex, ratio, need))
+                continue
+            if fg == bg or bg == (0x66, 0x66, 0x66):
+                suspect += 1
+                notes.append('%s %s 字色==底色/蒙层合成色（%s on %s）→ 待核，看真机帧'
+                             % (rel, cap, fg_hex, bg_hex))
+                continue
+            if grade != 'fail':
+                pic_note += 1
+                notes.append('%s %s fs=%d 字色 %s on %s = %.2f < %.1f，但%s → 只提示，须人工看图；'
+                             '画面确认发糊再改字色或换成实色底'
+                             % (rel, cap, fs, fg_hex, bg_hex, ratio, need, desc))
+                continue
+            judged += 1
+            fails.append((rel, '%s 文本「%s」fs=%d 字色 %s on %s = %.2f:1 < %.1f:1'
+                                '（底来源：%s）→ 修：调亮/调暗字色或改底（WCAG 2.1 AA）'
+                          % (cap, txt[:12], fs, fg_hex, bg_hex, ratio, need, desc)))
+    notes.append('可判文本 %d 个（达标）；临界带降级 %d / 不可信底降级 %d / 禁用豁免 %d / 待核 %d'
+                 % (judged, border, pic_note, exempt, suspect))
+    return notes, fails
+
+
+# ---------------- 33. 层级三件套（WARN 级；钟工 2026-10-01）----------------
+# 字号「档位」是视觉层级的骨架：#35/#36 管盒与余量、#27 管几何同族（left/width/height/alignment），
+# 都不看**字号与字色亮度**。本项把「一页里字号几档、层级倒不倒挂」变成机读结论。
+#   · ① 档位过散：同页**实质档位** > 5 → WARN（列出档位与计数）；
+#   · ② 层级倒挂：大字号族的字色**对比度**中位显著低于小字号族（小/大 ≥ 2×）→ WARN；
+#     倒挂判定用「对自身底的对比度」而不是裸亮度：#34 的亮度口径在浅底/深底上方向相反，
+#     裸亮度比较会把「浅底上深标题 + 浅灰小字」这种正常设计误报成倒挂（同一 bug 方向相反）。
+#   · 误报控制（与 #27 同一套）：同族占比门槛（档位要么 ≥2 个控件、要么占该页文本 ≥10% ——
+#     单例字号不算「族」，否则一个特殊页就能凑出 6~10 档）+ (page,msg) 去重。
+# 实测（2026-10-01）：两版基准 + 7 个示例只命中 2 条（SampleUI 的 clock.json 倒挂 2.62×、
+#   xinfeng.json 8 档），均为 WARN 不拦门禁。
+_C33_MAX_TIERS = 5           # 实质字号档位上限
+_C33_TIER_SHARE = 0.10       # 同族占比门槛（或 ≥2 个控件）
+_C33_INVERT = 2.0            # 倒挂显著性：小字号族对比度中位 / 大字号族对比度中位
+
+
+def check_type_scale(project_root):
+    """#33 层级三件套（→ (notes, warns)）：字号档位过散 / 层级倒挂（WARN）。
+
+    notes 含每页档位直方图（档位×计数，便于人工核对）；warns 含 (页面, 说明)。
+    """
+    notes, warns = [], []
+    cc = _load_contrast_module()
+    if cc is None:
+        notes.append('跳过：#33 需要 %s' % _CC_ERR)
+        return notes, warns
+    seen = set()
+    for jf in _ui_pages(project_root):
+        rel = 'ui/' + os.path.relpath(jf, os.path.join(project_root, 'ui')).replace('\\', '/')
+        try:
+            page, ctrls = _c34_page_elements(jf)
+        except Exception as e:                          # noqa: BLE001
+            warns.append((rel, '#33 页面解析失败（不静默跳过）：%s: %s' % (type(e).__name__, e)))
+            continue
+        cache = {}
+        tiers = {}
+        for i, (k, cap, box, v) in enumerate(ctrls):
+            txt = str(v.get('text') or '').strip()
+            ct = v.get('colorTab') or {}
+            fg = cc.dec2rgb(ct.get('color0')) if ct.get('color0') is not None else None
+            if not txt or fg is None or v.get('visible') is False:
+                continue
+            if _c34_is_disabled(cap, fg):
+                continue                                    # 禁用态不参与层级统计（同 #34 口径）
+            bg, _grade, _desc, _pics = _c34_bg(project_root, page, ctrls, i, cache)
+            tiers.setdefault(int(v.get('fontSize') or 18), []).append(
+                (cap, cc.contrast(fg, bg)))
+        if not tiers:
+            continue
+        total = sum(len(x) for x in tiers.values())
+        hist = ', '.join('%d×%d' % (f, len(tiers[f])) for f in sorted(tiers))
+        real = {f: v for f, v in tiers.items()
+                if len(v) >= 2 or len(v) / float(total) >= _C33_TIER_SHARE}
+        notes.append('%s 字号档位 %s（共 %d 个文本；实质档位 %d）' % (rel, hist, total, len(real)))
+        if len(real) > _C33_MAX_TIERS:
+            msg = ('同页字号实质档位 %d 档 (>%d)：%s；→ 层级过散：收成 3~4 档（标题/正文/注释）'
+                   % (len(real), _C33_MAX_TIERS,
+                      ', '.join('%d(%d个)' % (f, len(real[f])) for f in sorted(real))))
+            if (rel, msg) not in seen:
+                seen.add((rel, msg))
+                warns.append((rel, msg))
+        elif len(tiers) > _C33_MAX_TIERS:
+            notes.append('%s 全部 %d 档但实质 %d 档（单例 %s 不算族，忽略）'
+                         % (rel, len(tiers), len(real),
+                            ','.join(str(f) for f in sorted(tiers) if f not in real)))
+        ks = sorted(real)
+        if len(ks) >= 2:
+            small, big = ks[0], ks[-1]
+            if len(real[small]) >= 2 and len(real[big]) >= 2:
+                cs = statistics.median([x[1] for x in real[small]])
+                cb = statistics.median([x[1] for x in real[big]])
+                if cb < cs and (cs + 0.05) / (cb + 0.05) >= _C33_INVERT:
+                    msg = ('层级倒挂：小字号 %d 的字色对比度中位 %.2f:1，反而高于大字号 %d 的 %.2f:1'
+                           '（%.2f×）→ 大字看起来比小字还弱；把大写醒目、把注释写弱'
+                           % (small, cs, big, cb, (cs + 0.05) / (cb + 0.05)))
+                    if (rel, msg) not in seen:
+                        seen.add((rel, msg))
+                        warns.append((rel, msg))
+    return notes, warns
+
+
 def main(project_root):
     root = os.path.abspath(project_root)
     if not os.path.isdir(root):
@@ -2505,6 +2887,35 @@ def main(project_root):
         warn('%s %s' % (pg, msg))
     if not lv_notes and not lv_warns:
         print('  [NOTE] 无 listview，跳过')
+
+    print('== 33. 层级三件套（字号档位过散 / 层级倒挂 → WARN；钟工 2026-10-01）==\n'
+          '       ① 同页**实质档位** > 5 → WARN（列出档位与计数）；\n'
+          '       ② 层级倒挂：大字号族的字色**对比度**中位显著低于小字号族（小/大 ≥ 2×）→ WARN；\n'
+          '         用「对自身底的对比度」而非裸亮度（#34 的亮度口径在浅底/深底上方向相反，裸亮度比\n'
+          '         会把「浅底深标题 + 浅灰小字」误报成倒挂）；\n'
+          '       ③ 与 #27（几何同族：left/width/height/alignment）职责不重叠：#33 只看字号与字色层级。\n'
+          '       误报控制沿用 #27 的「同族占比门槛（≥2 个控件 或 占该页文本 ≥10%）+ (page,msg) 去重」。')
+    ts_notes, ts_warns = check_type_scale(root)
+    for n in ts_notes:
+        print('  [NOTE] %s' % n)
+    for pg, msg in ts_warns:
+        warn('%s %s' % (pg, msg))
+    if not ts_warns:
+        print('  [PASS] 字号档位与字色层级正常')
+
+    print('== 34. 文本对比度（字色 vs 实际底色；不足 → FAIL；钟工 2026-10-01）==\n'
+          '       判定**复用** tools/qa/contrast_check.py（WCAG 2.1 AA：fs<24 → 4.5:1 / fs≥24 → 3:1），\n'
+          '       本文件只负责把底算成 hex 再喂它：底 = 覆盖本控件盒的绘制在前控件里最后一个\n'
+          '       提供底色的（含祖先容器/整屏底图件）+ 控件自己的底，图片底取**平均色**（PIL，\n'
+          '       半透明按父底合成）；都没有 → 页面底色。分级：页面/容器可信底（平色或近纯色图\n'
+          '       σ≤6）不足 → FAIL；照片/渐变图底与控件自述底只 NOTE；临界带（≥0.9×阈值）只 NOTE。')
+    tc_notes, tc_fails = check_text_contrast(root)
+    for n in tc_notes:
+        print('  [NOTE] %s' % n)
+    for pg, msg in tc_fails:
+        log(False, '%s %s' % (pg, msg))
+    if not tc_fails:
+        print('  [PASS] 无「可信底 + 对比度不足」的文本')
 
     print()
     if warnings:

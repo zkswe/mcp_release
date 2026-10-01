@@ -1,0 +1,42 @@
+{
+  "type": "chart_card",
+  "zh": "图表卡片（白卡 + 图表：折线 / 柱状 + 标题 + 轴注）",
+  "builder": "chart",
+  "family": "page",
+  "caption_prefix": "ChartCard",
+  "fields": {
+    "title": {"type": "string", "required": false, "example": "近 7 日用电量",
+              "note": "图表标题（卡内第一行，b1 + bold + fg1）"},
+    "kind": {"type": "string", "default": "bar", "example": "line",
+             "note": "图表类型：line = 折线 / bar = 柱状（表外值 → compose 报错退出，不静默兜底）"},
+    "data": {"type": "array", "required": true, "example": [12, 18, 9, 24, 15, 21, 11],
+             "note": "数据点（数字数组，**至少 2 个**）；柱状图与折线图共用同一份数据 → 只改 kind 就能换图形"},
+    "labels": {"type": "array", "required": false, "example": ["一", "二", "三", "四", "五", "六", "日"],
+               "note": "x 轴刻度文案；**个数必须与 data 一致，或整省**（不一致 → compose 报错退出）。每个刻度盒 = 该数据点所在槽宽，居中；盒子放不下会点名（#13）"},
+    "note": {"type": "string", "required": false, "example": "单位 kWh ｜ 每日 00:00 汇总",
+             "note": "**轴注**（y 轴单位 / 数据口径 / 时间窗），卡内最后一行、**右下角右对齐**（盒仍占满内容宽，align=38）、b2 + fg2；缺省不画"}
+  },
+  "relative_constraints": {
+    "card": "白卡（window + 卡底图），宽 = 屏宽 − 2×margin；圆角 = 容器圆角；高 = 内容反算（标题带 + 绘图区 + 刻度带 + 轴注带 + 上下 spacer-2）",
+    "plot": "绘图区盒 = (pad_l, 标题带下 + spacer, 内容宽 − 2×pad_l, max(屏高 × 0.22, b2 文本高 × 4))（1024→132 / 320→64）；**图 == 盒**（铁律 #11/#17）",
+    "plot_grid": "基线（x 轴）= 1px 直角条，贴绘图区底；柱状条 = gen_res 圆角条（宽 ≈ 槽宽 × 0.56，圆角 ≤ 6）；折线 = 圆头折线（笔画 ≈ 绘图区高 × 5% 且 ≥3px）+ 数据点圆头；顶部留白 ≈ 绘图区高 12%",
+    "labels": "刻度带高 = b2 文本高；槽宽 = 绘图区宽 / data 个数（末槽吃整除余数）；每槽一个居中文案；刻度带前留 spacer",
+    "note": "轴注带高 = b2 文本高；盒 = 内容宽 − 2×pad_l（左界 pad_l、右界 = 卡右 − pad_l，右对齐）；在刻度带下（间隔 spacer-1）；**轴注不是正文**，不参与行族口径",
+    "chart_box": "绘图区水平范围恒等于卡内内容宽（与 x 轴刻度槽一一对齐）；**不要在卡外另起一层容器**（卡内子控件坐标为卡局部坐标）"
+  },
+  "assets": [
+    {"name": "card_{W}x{H}.png", "via": "gen_res.rounded_rect_ss(radius=容器圆角, fill=surface)", "size": "卡盒 == 图"},
+    {"name": "chart_{kind}_{W}x{H}.png", "via": "compose 合成：基线走 gen_res.rounded_rect_cov（直角 1px）；柱状条走 gen_res.rounded_rect_cov；折线走 8× 超采样 + 圆头折线 + BOX 面积平均缩回（与 chevron 同手法）", "size": "绘图区盒 == 图"}
+  ],
+  "scroll": "inherit",
+  "forbidden": [
+    "绘图区盒 ≠ 图（引擎拉伸 → 折线变粗、柱状条被压扁；柱条宽/间距观感全乱）",
+    "labels 个数与 data 不一致（刻度与数据点错位；compose 直接报错退出）",
+    "把 y 轴刻度做成第二个自绘控件 / 另建一个刻度 listview（本块只给「x 轴刻度 + 轴注」；y 轴单位写 note）",
+    "用折线图却把笔画压到 1px（aa_audit 判 hard_diag 真缺陷；笔画 ≥ 绘图区高 × 5% 且 ≥3px）",
+    "柱状条用 1px 描边环做「未选中」/ 空心柱（小弧线会退化成硬阶梯 → #21 真缺陷；用实心圆角条）",
+    "把 chart_card 塞进卡（根层块；卡内只收行块/列表块 → 卡内写 chart_card 会报错退出）",
+    "data 写非数字 / 空数组（compose 报错退出，不静默兜底）"
+  ],
+  "compact_note": "极小屏：绘图区 64 高、刻度文案 ≤2 字（单字最稳，宽度自检会点名）；轴注 ≤6 字；标题 ≤6 字；数据点建议 ≤6 个（槽宽 = 绘图区宽 / 点数）"
+}

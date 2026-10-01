@@ -1,0 +1,44 @@
+{
+  "type": "loading",
+  "zh": "加载态（转圈或骨架条 + 文案，静态可画）",
+  "builder": "loading",
+  "family": "page",
+  "caption_prefix": "Loading",
+  "fields": {
+    "variant": {"type": "string", "default": "spinner", "example": "skeleton",
+                "note": "形态：spinner = 转圈（图标 + 文案上下居中）/ skeleton = 骨架条（文案 + N 条灰条）；表外值 → compose 报错退出，不静默兜底"},
+    "text": {"type": "string", "default": "加载中…", "example": "正在同步设备状态…",
+             "note": "文案（spinner 形态居中、skeleton 形态左上）；**静态可画**——转圈是静态帧（真机动画由业务换图/定时器驱动）"},
+    "icon": {"type": "string", "required": false, "example": "loader",
+             "note": "仅 spinner 形态用：转圈 glyph 语义名（缺省 loader）；允许值见 blocks/_icons.json",
+             "allowed": "blocks/_icons.json"},
+    "lines": {"type": "int", "default": 3,
+              "note": "仅 skeleton 形态用：骨架条条数（≥1）；末条 = 60% 宽（读起来像一段被截断的文字）"}
+  },
+  "relative_constraints": {
+    "band": "白卡（window + 卡底图），宽 = 屏宽 − 2×margin；高 = 内容反算",
+    "spinner_h": "带高 = max(屏高 × 0.18, 图标档 + spacer + b1 文本高 + 2×spacer-2)（1024→108 / 320→80）；图标与文案**同一竖列的上下两件**，整体在带内垂直居中（图标水平居中、文案居中）",
+    "skeleton_h": "带高 = 2×spacer-2 + b1 文本高 + spacer-1 + lines × 条高 + (lines−1) × spacer；文案左上（36），条带在文案下",
+    "bar": "骨架条：盒 = (pad_l, …, 内容宽 − 2×pad_l, 条高)（末条 60% 宽）；条高 = max(10, b1 文本高 × 0.70)（**≥10px 硬口径**：更矮的药丸端弧线会退化成硬阶梯 → aa_audit 真缺陷）；圆角 = 条高 / 2（药丸），色 = line",
+    "glyph": "spinner glyph 档 = max(glyph_min_px 24, …)（icons 不像字号可降档；降了退化成硬阶梯）；色 = brand",
+    "z": "卡底 → 图标 / 骨架条 / 文案（全是装饰件，touchable 显式 false；加载态不该吃触摸）"
+  },
+  "assets": [
+    {"name": "card_{W}x{H}.png", "via": "gen_res.rounded_rect_ss(radius=容器圆角, fill=surface)（与 card / 其它卡内容器同名同尺寸只出一张）", "size": "带盒 == 图"},
+    {"name": "skel_{W}x{H}.png", "via": "gen_res.rounded_rect_cov(radius=H/2, fill=line)（药丸骨架条）", "size": "条盒 == 图"},
+    {"name": "ic_{glyph}_{S}.png", "via": "components/icons 资产库（loader）；盒 == 档位时取库里产物换色，缺档按盒尺寸现出", "size": "图标盒 == 图"}
+  ],
+  "scroll": "inherit",
+  "forbidden": [
+    "**骨架条矮于 10px**（药丸端弧线在 aa_audit 里退化成硬阶梯 → #21 真缺陷；条高 = max(10, b1 × 0.70)）",
+    "**条盒 ≠ 图**（拉伸 → 药丸两端变椭圆）",
+    "条 / 卡盒用 1px 描边环做「轮廓」（小弧线退化成硬阶梯 → #21 真缺陷；白底实色 + 灰底衬托）",
+    "图标盒 ≠ 图 / 图标盒 < glyph_min_px（24px）硬塞",
+    "在块里跑动画 / 定时器（块库只出**静态帧**；转圈动画由业务换图或用定时器改 backgroundPic）",
+    "让加载态吃触摸（整块装饰件 touchable 显式 false；它不该拦住下层操作）",
+    "把加载态塞进卡（根层块；卡内只收行块/列表块 → 卡内写 loading 会报错退出）",
+    "skeleton 形态文案写成超长串（盒 = 内容宽 − 2×pad_l；装不下 compose 会点名）",
+    "用 loading 冒充 empty_state（空态是「没数据」的结论态，加载态是「还没到」的中间态，两者语义不同）"
+  ],
+  "compact_note": "极小屏：spinner 带高 80、glyph 24；skeleton 带高 = 32 + 16 + 12 + 3×12 + 2×8 = 112、条高 12；文案 ≤10 字（宽度自检会点名）"
+}

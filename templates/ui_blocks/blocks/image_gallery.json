@@ -1,0 +1,46 @@
+{
+  "type": "image_gallery",
+  "zh": "缩略图相册（宫格格子：格底 + 占位缩略图 + 可选计数，格盒 == 图）",
+  "builder": "gallery",
+  "family": "page",
+  "caption_prefix": "ImageGallery",
+  "fields": {
+    "title": {"type": "string", "required": false, "example": "相册",
+              "note": "左上角小标题（b1 + bold + fg1）；缺省不画，只留计数"},
+    "count": {"type": "int", "required": false, "example": 12,
+              "note": "计数（**右下角**显示：宫格下方单开一条脚注带、右对齐「共 N 张」）；缺省 = cols × rows（即本页可见格数）"},
+    "countText": {"type": "string", "required": false, "example": "共 12 张",
+                  "note": "可选：直接给计数文案（给了就不按 count 生成；极小屏用短文案）"},
+    "cols": {"type": "int", "default": 3, "min": 1, "max": 5,
+             "note": "每行格数；格宽 = (内容宽 − (cols−1)×格间距) / cols（末列吃整除余数）"},
+    "rows": {"type": "int", "default": 2,
+             "note": "格行数；**总格数 = cols × rows**（缩略图总数由它决定，与 count 无关——count 只是显示）"},
+    "tappable": {"type": "bool", "default": false,
+                 "note": "true → 每格加一个整格透明 button（id 20000 段 → logic 骨架自动出回调：点第 i 张缩略图）"}
+  },
+  "relative_constraints": {
+    "header": "有标题时给头部带，高 = b1 文本高；标题左对齐，标题盒占满宽；带下留 spacer-1",
+    "grid": "**格盒 == 图**：格盒 = 格宽 × 格高（格高 = 格宽 × 0.66）；列间距 = spacer-2、行间距 = spacer-2；格盒横向居中于槽（对称：两侧间隙均为间距的一半，最后格不额外吃间距）",
+    "thumb": "格底 = 白底圆角（== 格盒，radius = 容器圆角）；占位缩略图 = components/icons 的 photo glyph，居中；glyph 档 = max(glyph_min_px 24, min(格宽, 格高) × 0.34) 且 ≤ 56（最大档），**不放大控件盒去凑档**",
+    "count": "计数盒宽 = 文本估算 × 1.10 向上取 4px 栅格（#36 余量），右缘贴内容区右缘；**位置在宫格下方**（脚注带，不压格盒 / 整格 button）",
+    "z": "格底 → 占位图（装饰件，touchable 显式 false）→ 整格 button（tappable 时，**最后定义** = z 最高）",
+    "why_grid_not_listview": "本块用**宫格**（window + 等距格）而不是 listview：① 相册的「等距网格」在 listview 里要靠 cols/colSpacing 反算，图 ≠ 盒风险高；② 宫格是静态可画的（首屏就能看到缩略图），listview 的行内容要运行期填；③ 与 grid_icons 同一套格几何，同页口径一致"
+  },
+  "assets": [
+    {"name": "thumb_{W}x{H}.png", "via": "gen_res.rounded_rect_ss(radius=容器圆角, fill=surface)", "size": "格盒 == 图（严格相等）"},
+    {"name": "ic_photo_{S}.png", "via": "components/icons 资产库（system.photo；盒 == 档位 22/24/56 时取库里产物换色，缺档按盒尺寸现出）", "size": "图标盒 == 图"}
+  ],
+  "scroll": "inherit",
+  "forbidden": [
+    "**格盒 ≠ 图**（格底图尺寸必须 == 格盒；否则等距网格被拉伸破坏 → #11/#17 FAIL）",
+    "格宽写死像素 / 每格单独调宽（必须 cols 等分 + 余数给最后一列）",
+    "cols 变了就改格高（格高 = 格宽 × 0.66，与 cols 无关）",
+    "图标盒 ≠ 图（glyph 必须给 canvas=图标盒）",
+    "图标盒 < glyph_min_px（24px）硬塞、或把 glyph 放大到 56 档以上去「填满格子」（icons 不像字号可降档，但也不放大控件盒去凑档）",
+    "把相册塞进卡（根层块；卡内只收行块/列表块 → 卡内写 image_gallery 会报错退出）",
+    "tappable=true 却把整格 button 写在装饰件之前（装饰件会压住命中区）",
+    "用真照片素材当「固定占位」（缩略图是**占位**，真实图片由业务在运行期 setBackgroundPic 换；本块只出占位底图）",
+    "把 count 当成格数去生成格子（格数 = cols × rows；count 只是显示，两者互不派生）"
+  ],
+  "compact_note": "极小屏：cols 3 / rows 2、格盒 85×56、glyph 24（不降档）、标题 ≤4 字、计数文案用短版（如 12 张）；格高由格宽 × 0.66 反算"
+}

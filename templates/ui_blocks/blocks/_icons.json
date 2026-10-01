@@ -21,7 +21,7 @@
     "size": "产物图严格 == 控件盒（工程铁律 #11/#17 —— 图 ≠ 盒时引擎是拉伸填充）",
     "tier": "按盒尺寸选档：盒 ≥44px → 56 档；≥26px → 24 档；否则 22 档；盒 == 档位（22/24/56）时直接取库里 out/<档>/ 那张（按 alpha 换色，与现出像素等价）；缺档（如 16 / 36）用 gen_icons.py 按**盒尺寸**现出——不放大控件盒去凑档",
     "state": "两态图标：off = 描边态（默认，行/宫格/空态用），on = 实心态（底导选中、grid 显式 state:'on'、checkbox 勾）。单态图标忽略 state",
-    "color": "FlyThings 无 tint → 颜色生成时烘焙（brand #0052D9 / fg2 #666666 / 语义 -6 档）",
+    "color": "FlyThings 无 tint → 颜色生成时烘焙（brand #0052D9 / fg2 #666666 / 语义 -7 档）",
     "fallback": "库里查不到语义名 → 回退 gen_res 线框并明说（非 0 即视为待修）"
   },
   "_source": "components/icons/catalog.json（203 语义 / 305 产物；Tabler Icons 3.46.0 单色烘焙 PNG）",

@@ -1,0 +1,44 @@
+{
+  "type": "time_row",
+  "zh": "时间行（标题 + 时间/日期值 + 箭头）——它是**行**，不是日历",
+  "builder": "row",
+  "family": "row",
+  "caption_prefix": "TimeRow",
+  "fields": {
+    "label": {"type": "string", "required": true, "example": "上次同步",
+              "note": "行标题（本块是「行」：标题在上/左，值在下/右）"},
+    "value": {"type": "string", "required": true, "example": "2026-10-01 20:20",
+              "note": "时间 / 日期值文案（**字符串**，块库不解析时间格式——格式化在业务侧）"},
+    "value_short": {"type": "string", "required": false, "example": "20:20",
+                    "note": "极小屏短文案（长值在 320 上放不下会 #13 FAIL；单行式下自动启用）"},
+    "chevron": {"type": "bool", "default": true,
+                "note": "行尾箭头（点行去改时间/进时间选择页）；写 false 就是纯展示"},
+    "icon": {"type": "string", "required": false, "example": "clock",
+             "note": "可选行首图标（建议 clock / calendar）；⚠️ 同页行族图标必须「要么都有、要么都没有」（assert_icon_uniform），全量允许值见 blocks/_icons.json",
+             "allowed": "blocks/_icons.json"}
+  },
+  "relative_constraints": {
+    "row": "**与 setting_row 同一套行模板**（行高 = 屏高 10%（极小屏 11.7%）｜ 文本左缘 / 右端预留 / 图标列全页一致）：两行式（标题 b1 + fg1 在上，值 b2 + fg2 在下，左缘同一）；极小屏整页降单行式（标题左、值右）",
+    "reserve": "右端预留走全页族预留（fam_reserve = max(箭头, 开关, 复选框)）；箭头盒 = 箭头档（1024→24×16 / 320→12×16），贴右缘 − pad_l，垂直居中；「值 → 箭头」间隙 = 行族同口径（assert_row_gaps 同页一致）",
+    "hit": "整行一个透明 button（命中区 = 行条，caption = ButtonRowTimeRow<序号>），装饰件（图标/文字/箭头）全部先定义且 touchable 显式 false",
+    "vs_calendar": "**它是「行」，不是日历**：① 不画月历网格 / 不画星期头（那是 components/ui_v1/Calendar 的活，块库不重造）；② 值就是一段**已格式化好的字符串**（块库不做时间解析、不做时区、不做联动）；③ 点行的语义 = 进时间选择页 / 弹系统日期选择器（运行期），块库里只给箭头与回调骨架"
+  },
+  "assets": [
+    {"name": "chev_{W}x{H}.png", "via": "与行族共用箭头切图（同名同尺寸只出一张；箭头专属口径：45° + 圆头 + 笔画 ≈ 盒宽 12% 且 ≥2px）", "size": "箭头盒 == 图"},
+    {"name": "icbg_{S}.png", "via": "gen_res.rounded_rect_ss(radius=S/2, fill=brand1)（仅当给了 icon）", "size": "图标底盒 == 图"},
+    {"name": "ic_{glyph}_{S}.png", "via": "components/icons 资产库（仅当给了 icon）", "size": "图标盒 == 图"}
+  ],
+  "scroll": "inherit",
+  "forbidden": [
+    "**在块里画日历 / 月历网格 / 星期头**（本块是行；日历是 components/ui_v1/Calendar 的能力，块库不重造）",
+    "让块库解析 / 格式化时间（value 是**字符串**；时区、相对时间「3 分钟前」都在业务侧算好再传）",
+    "同页行族里只有时间行带图标（assert_icon_uniform 直接报错退出——要么都带，要么都不带）",
+    "值文案写成超长串却不给 value_short（极小屏单行式下会 #13 FAIL，compose 会点名）",
+    "为给箭头腾位去收窄/挪值文本盒（要改的是布局形态或盒子，不是挤文本——反面清单 #2）",
+    "把时间行做成两行以上（它是**一行**；多行时间信息请用 card + 多行）",
+    "icon 用 emoji 字体兜底 / 自绘（图标唯一来源 = components/icons，见 README §5.1）"
+  ],
+  "compact_note": "极小屏：单行式（标题左、值右），值用 value_short（如 20:20）；行高 28；图标列与其它行族一起决定（fn：极小屏若其它行都省图标，本行也不给）",
+  "icon_source": "components/icons（v0.3.1 = Tabler Icons 3.46.0 单色烘焙 PNG）。按盒尺寸选档 56/24/22，**产物图严格 == 控件盒**；库里没有该语义名 → compose 回退 gen_res 线框并在输出里明说「回退线框」（目标 0 处）。全量允许值见 blocks/_icons.json",
+  "icon_examples": ["clock", "calendar", "refresh", "bell"]
+}
