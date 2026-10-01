@@ -34,14 +34,14 @@ WARN 逐条列理由；`*.9.png` marker 环由审计内置豁免；白名单只�
 钟工原话：「全控件演示界面的每个演示框背景图 ct_card.9.png 倒角有严重锯齿」——
 根因：描边 α 用了 `gen_res.coverage_ring`（整像素二值带）→ 弧上外沿最小覆盖率 0.676；
 修后 0.147（标准 §7.7；阈值出处 = P(min>t)=(1−t)^N，与「≥4× 超采样」档位自洽）。
-第 28 项 = **坐标越界 / 负值**（钟工 2026-10-01，源自 SmartPanel 真机问题单 09251751-8）：
-`LayoutPosition` 里负的绝对坐标会被引擎当成「从右/下算」的 bottom/right → 重启后跑位
-（负值判定不分层，根层/滚动内层都报）；right/bottom 超出 resolution 另报，但滚动宿主
-（scrollwindow/pagewindow/slidewindow/listview）**内层内容允许超出**（可滚内容）→ 只报负值。**只 WARN**。
-第 29 项 = **UTF-8 文本陷阱（src 静态扫描）**（同上批次）：`find_first_of("：")` 按单字节匹配
+第 28 项 = **UTF-8 文本陷阱（src 静态扫描）**（2026-10-01 第一批）：`find_first_of("：")` 按单字节匹配
 会把多字节字符切在字节中间（「回家模式」被切坏）→ 改用 `find("：")`；只报含非 ASCII 的字面量。
-第 30 项 = **显示件吃掉下层触摸**（同上批次，补 #15 的反方向）：同层后定义（z 更高）且
+第 29 项 = **显示件吃掉下层触摸**（同上批次，补 #15 的反方向）：同层后定义（z 更高）且
 `touchable` 未显式 false 的纯显示件压住交互控件 → 整块点不动；容器/整屏/近全覆盖/modal 视为故意不报。
+（注：这一批原拟的「#28 坐标越界/负值」已**自行撤下**——json 里 left/top 负值是**合法写法**
+（scrollwindow 内容用负值做初始偏移，官方 wiki `scrollwindow-layout.md` §2 + 官方 ScrollWindowDemo-New
+`window__2 left=-175`；装饰件越界也常见）。负值语义只在**运行期 LayoutPosition**（拖动/落盘回读）成立，
+属代码写法规范，不是 json 静态判据 —— 见 knowledge/uicontrols/json-layer-rules.md。）
 """
 import glob
 import json
@@ -1413,59 +1413,7 @@ def check_family_alignment(project_root):
     return notes, warns
 
 
-# ---------------- 28. 坐标越界 / 负值（设计期拦截；钟工 2026-10-01）----------------
-# 为什么：`LayoutPosition` 里**负的绝对坐标**会被引擎当成「从右/下算」的 bottom/right
-#   （不是「负偏移」）→ 落盘再读出来控件跑到另一侧，表现为「重启后位置跑了」，当次运行看不出来
-#   （真机问题单 09251751-8）。
-# 口径：① position.left/top < -1 → WARN（-1 = 「未设置」，官方样例 ad.json 里就有，不报）；
-#   ② right/bottom 超出根 resolution → WARN（内容被裁到屏外）。
-#   **滚动类宿主（scrollwindow/pagewindow/slidewindow/listview）的内层内容允许超出**——
-#   那是可滚内容不是缺陷（口径见 knowledge/uicontrols/scroll-drag-interaction-spec.md），整棵子树跳过。
-# 只 WARN 不 FAIL：存量工程可能有历史值，人工审批后再改。
-# 口径落点：knowledge/uicontrols/json-layer-rules.md。
-_SCROLL_HOSTS = ('scrollwindow__', 'pagewindow__', 'slidewindow__', 'listview__')
-
-
-def check_coord_sanity(project_root):
-    """返回 (notes, warns)：notes = 每页摘要；warns = [(页面, 说明)]。"""
-    notes, warns = [], []
-    for jf in _ui_pages(project_root):
-        d = json.load(open(jf, encoding='utf-8'))
-        rel = 'ui/' + os.path.basename(jf)
-        res = d.get('resolution') or {}
-        rw, rh = res.get('width'), res.get('height')
-        cnt = [0]
-
-        def walk(node, in_scroll):
-            for k, v in node.items():
-                if not isinstance(v, dict) or '__' not in k:
-                    continue
-                if v.get('visible') is not False:
-                    p = v.get('position') or {}
-                    l, t = p.get('left'), p.get('top')
-                    w, h = p.get('width'), p.get('height')
-                    cap = v.get('caption', '')
-                    cnt[0] += 1
-                    if isinstance(l, int) and isinstance(t, int) and (l == -1 or t == -1):
-                        pass                       # -1 = 未设置（官方样例同样有）
-                    elif isinstance(l, int) and l < -1:
-                        warns.append((rel, '%s(%s) position.left=%d 为负 → 引擎按「从右算」摆放，'
-                                           '重启后跑位；左边界必须夹到 0' % (k, cap, l)))
-                    elif isinstance(t, int) and t < -1:
-                        warns.append((rel, '%s(%s) position.top=%d 为负 → 同上；上边界必须夹到 0'
-                                      % (k, cap, t)))
-                    elif not in_scroll and None not in (l, t, w, h) and rw and rh \
-                            and (l + w > rw or t + h > rh):
-                        warns.append((rel, '%s(%s) 盒子 %d,%d %dx%d 超出 resolution %dx%d'
-                                      % (k, cap, l, t, w, h, rw, rh)))
-                walk(v, in_scroll or k.startswith(_SCROLL_HOSTS))
-
-        walk(d, False)
-        notes.append('%s 坐标 %d 个（滚动宿主内层不判越界）' % (rel, cnt[0]))
-    return notes, warns
-
-
-# ---------------- 29. UTF-8 文本陷阱静态扫描（钟工 2026-10-01）----------------
+# ---------------- 28. UTF-8 文本陷阱静态扫描（钟工 2026-10-01）----------------
 # 真机事故：`find_first_of("：")` 按**单字节**匹配 —— 多字节字符会被切在字节中间
 #   （实测「回家模式」被切成「回家模」+ 半个字节）→ 必须用 `find("：")` 整序列搜索。
 # 本项只扫**含非 ASCII 的字面量实参**（纯 ASCII 集合法、不报）；注释先剥离（保持行号）。
@@ -1502,7 +1450,7 @@ def check_utf8_pitfalls(project_root):
     return notes, warns
 
 
-# ---------------- 30. 显示件吃掉下层触摸（装饰件漏设穿透；钟工 2026-10-01）----------------
+# ---------------- 29. 显示件吃掉下层触摸（装饰件漏设穿透；钟工 2026-10-01）----------------
 # 真机事故（设置页某行）：行条/图标底/图标 等装饰件**只给部分设了 setTouchable(false)** →
 #   先定义（z 更低）的兄弟控件把 DOWN 吃掉，**整行只剩底缝/右缘能点**（用户报「点不动」）。
 # 口径：同层兄弟中「后定义（z 更高）+ 可见 + touchable 未显式 false」的**纯显示件**，
@@ -2255,23 +2203,7 @@ def main(project_root):
     for pg, msg in fa_warns:
         warn('%s %s' % (pg, msg))
 
-    print('== 28. 坐标越界 / 负值（设计期拦截；钟工 2026-10-01）==\n'
-          '       `LayoutPosition` 里**负的绝对坐标会被当成「从右/下算」的 bottom/right** → 落盘再读出来\n'
-          '       控件跑到另一侧（症状=重启后跑位，当次看不出来；真机问题单 09251751-8）。\n'
-          '       口径：left/top < -1 → WARN（-1=未设置，官方样例也有；负值判定不分层）；\n'
-          '       right/bottom 超出 resolution → WARN，但**滚动宿主内层不判越界**（那是可滚内容）。\n'
-          '       口径：knowledge/uicontrols/json-layer-rules.md。')
-    cs_notes, cs_warns = check_coord_sanity(root)
-    if not cs_notes:
-        print('  [NOTE] 无页面，跳过')
-    for n in cs_notes:
-        print('  [NOTE] %s' % n)
-    for pg, msg in cs_warns:
-        warn('%s %s' % (pg, msg))
-    if cs_notes and not cs_warns:
-        print('  [PASS] 无负坐标 / 无越界盒子（%d 页）' % len(cs_notes))
-
-    print('== 29. UTF-8 文本陷阱（src 静态扫描；钟工 2026-10-01）==\n'
+    print('== 28. UTF-8 文本陷阱（src 静态扫描；钟工 2026-10-01）==\n'
           '       `find_first_of("：")` 按**单字节**匹配 → 多字节字符被切在字节中间（实测「回家模式」被切坏）\n'
           '       → 必须用 `find("：")` 整序列搜索。只扫**含非 ASCII** 的字面量实参（纯 ASCII 集合法，不报）。\n'
           '       口径：knowledge/uicontrols/text-box-height-rule.md（UTF-8 三件套）。')
@@ -2283,7 +2215,7 @@ def main(project_root):
     if u8_notes and not u8_warns:
         print('  [PASS] 未发现多字节 find_first_of/find_last_of')
 
-    print('== 30. 显示件吃掉下层触摸（装饰件漏设穿透；钟工 2026-10-01）==\n'
+    print('== 29. 显示件吃掉下层触摸（装饰件漏设穿透；钟工 2026-10-01）==\n'
           '       同层「后定义（z 更高）+ 可见 + touchable 未显式 false」的纯显示件压住交互控件\n'
           '       → 会吃掉 DOWN（症状=整块点不动/只剩缝隙能点）。容器/整屏/近全覆盖/modal 视为故意，不报。\n'
           '       口径：knowledge/uicontrols/touch-events.md、scrollwindow-layout-checklist.md §2.1。')
