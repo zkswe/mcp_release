@@ -61,7 +61,7 @@ except Exception:
     dss = None
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.146-open'
+MCP_VERSION = '0.27.147-open'
 MCP_BUILD = '2026-10-01'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -76,6 +76,7 @@ def _clip_feature(text, limit=None):
         return s
     return s[:limit] + '…（完整见 compact=False）'
 MCP_FEATURES = [
+    '2026-10-01: **scrollwindow 布局异常清单 + 部署一致性自检（selfcheck 第⑪区）** v0.27.147-open（钟工：「问题整理更新到 mcp 里面，确保问题不会再出现」）—— 把 SmartPanel_HA 反复返工的那批问题落成**知识 + 判据**三层。① **新增 `knowledge/uicontrols/scrollwindow-layout-checklist.md`**：结构模板（scrollwindow=视口 → 内层 window=内容，固定件外置）+ **十类反复异常表**（加行忘加高内层 window→末尾滚不到 / 新控件直挂 scrollwindow→整块不显示 / 固定件被滚走 / 把 dragMaxDis 当行程 / 滚到底后触摸坐标忘叠偏移→点错行 / 行内图标被数值文字盖住（引擎先画背景图后画文字）/ 同行切图口径混用→倒角看粗 / 缺 touchable→拖不动 / 部署层混搭 + ftu 回退→「改了像没改」/ 设计期没算总高→堆叠），每条给「现象→根因→修→机读判据」；含**建/改页流程**与**上机五条复核判据**（10-01 真机实测口径）。② **新增 `knowledge/devflow/deploy-consistency-check.md`**：`resPath` 与 `startupLibPath` 必须同源（只换 lib 不换 resPath = 「新库 + 旧界面」，症状恰是“改了像没改”，10-01 真机实测）+ 四步部署后自检 + 处置表 + 两条纪律（tmpfs 余量、脚本 ASCII）。③ **工具层新增 `flythings_selfcheck` 第⑪区「部署一致性」**（分区 10→11）：读三处 EasyUI.cfg 判生效源、比 `/tmp` 与 `/res` 的 lib/UI 两代 md5、`mixed=true` 报“新库旧界面”；契约用例同步（10→11）。④ 交叉链：`scroll-drag-interaction-spec` / `json-layer-rules` / `package-properties-easyui-cfg` / `selfcheck-and-bugreport`（九→十一分区）。⑤ 检索回归新增 2 组（21 条真实问法，top-1 6/7、top-3 8/9，未命中的泛问法已如实登记 max_miss）。v0.27.147-open',
     '2026-10-01: **dragMaxDis 语义修正（= 越界拖拽上限，不是行程）+ check_all #26 scrollwindow 行程核对** v0.27.146-open（钟工：「dragmaxdis 是可以拖出去多长像素的意思吧」→「按照你的建议改」）—— ① **语义修正**：`dragMaxDis` 在四个滑动控件（listview/scrollwindow/pagewindow/slidewindow）**语义一致 = 越界拖拽上限（overscroll）**，**不是行程**；行程由内容决定、引擎自算（scrollwindow = 内层 window 尺寸 − 视口；pagewindow/slidewindow = (页数−1)×页宽；listview = 项数×行高 − 可视高，运行期）。旧口径「scrollwindow/pagewindow/slidewindow 上填行程值（200/内容尺寸）」**作废** —— 双反例：① 官方 `ScrollWindowDemo-New` 视口 450 / 内层 window 800（行程 350）而 dragMaxDis=200（既非行程也非内容尺寸）② SmartPanel_HA `ui/settings.json` 视口 418 / 内层 832（行程 414）而 dragMaxDis=60，真机点 (240,438) 可进「多屏拼接」页（实际滚 ≈302px 到底）→ 证明 60 只管越界拖拽。**误读来源**：UIlayoutDemo 那份 dragMaxDis=2400 恰好 = 内层 window 尺寸、且 edgeEffect=0（越界本就不生效）。② **工具层**：`ui_tools/check_all.py` 新增 **#26 scrollwindow 行程核对**（行程 = 内层 window − 视口，**不读 dragMaxDis**）：每处 NOTE 打「视口/内容/行程/dragMaxDis」；WARN-A 行程≤0 但内层内容已超出 → 内层 window 没跟上（末尾控件被裁/滚不到，SmartPanel 反复踩的那类）；WARN-B `edgeEffect` 生效且 `dragMaxDis ≥ 控件可视尺寸` → 一次拖出整屏（露底），改手感值（基准 50~200；480×480 取 40~60）。③ **文档同步**：`knowledge/uicontrols/scroll-drag-interaction-spec.md`（§0/§1/§2 的 R1·R2/§3/§4/§5 + 新增 §5-1 双反例与 R10）、`json-layer-rules.md`、`pagewindow-fields.md`、`slidewindow-fields.md`、`json-field-mandatory.md`、`ui_tools/HTML_SUBSET.md`、`ui_tools/html2json.py` 注释；工作区 `references/kb/controls.md`·`design.md` 同步。v0.27.146-open',
     '2026-10-01: **ha_bridge 组件形态真机验收通过（Z20 · zkgui 工程）** v0.27.145-open（钟工：「ha 验证下」；wall_sync 明确不验）——按钟工口径「带界面的功能验收必须走 FlyThings zkgui 工程，不能拿 bin 交付」，新建 zkgui 工程（Z20 / 480×480）接入 `components/ha_bridge`（`include/`+`src/` **原样拷入零改动**），真依赖真编译（`fun install` + `fun build -p Z20`：mqtt-cxx 3.2.0 + paho-mqtt3as + openssl 1.1.1-w + base-json + base-utility + log + easyui）后上机真机。**五条判据全过且留原始证据**：① 设备连上 broker（设备日志 + broker `emqx ctl clients list` 两侧）② 上行 availability/state/status **retained**（发完后新订阅回放，5 条全 `RETAIN=1`）③ 连接后**自动发 HA Discovery**（3 条 `homeassistant/switch/…/config` retained，字段与 RelayBank 语义一致）④ 下行 `…/switch/relay_<n>/command` ON/OFF → `onCommand` + RelayBank 状态 + **继电器真实动作**（过零 IO `zeroIoNum=4`，`sp_relay_state` 1→7→6→0）+ UI 截图 ⑤ `start()/stop()` + broker kick 重连（`old client dropped (gen=6)` → 回连 ≈0.56 s；同 client_id 计数恒 **1**，无互踢风暴）。实测：连上→发完 discovery/state/status ≈0.14 s；重启后 `restored mask=0x7` 恢复硬件并回发 retained。**未取证（如实标注）**：QoS1 全链路 / LWT 异常断线 / MQTTS+鉴权 / 吞吐时延 / `clearDiscovery` retained 撤销 / `extraSubscriptions` / 哨兵 -1 分支 / 物理灯肉眼观察 / 其它平台（registry 无 `mqtt-cxx`·`paho-mqtt3as`）。**设备零残留**：`/tmp/ui` **131/131 逐文件 md5 相等**、`/tmp/lib/libzkgui.so` 与 `/tmp/EasyUI.cfg` == 备份、prefs 未变、**`sp_relay_state=0`（三路继电器全关）**、临时文件已清、broker 上 retained 已清空。组件文档回写（platforms.md 新增「§6 组件形态真机验收记录」+ 平台总表 + README 验证状态），内网 IP 已脱敏。v0.27.145-open',
     '2026-09-30: **album_upload 组件形态真机验收通过（Z20）+ 两条验收判据修正** v0.27.144-open（钟工：「用1.71验收…只能烧录进去后确认可以用就可以了」）——按 FlyThings 框架做法新建 **zkgui 工程**（480x480，二维码控件页）接入组件，**四条判据全过且留原始证据**：① 二维码渲染上屏 ② **从截图解出码内容 == `qrInfo()` 兜底值**（`decode_qr_url.py --expect` 通过）③ TCP 9000 `LISTEN` + UDP 8899 广播（**接收端抓到广播**证明）④ PC 发 205 B 图 → 落盘（设备侧 md5 == PC 侧、无 `.tmp` 残留）+ 组件 `onFileAdded` 回调日志 + 页面计数 4→5。**判据修正（值得记住）**：UDP 广播是「未 bind 的 socket + `SO_BROADCAST` + `sendto 255.255.255.255`」→ **`netstat` / `/proc/net/udp` 里查不到 8899**，判据必须换成接收端抓广播；`fun launch` 多设备硬失败时改用 MCP 自己的 adb 层（全程带 `-s`）复刻部署约定。**未取证（如实标注）**：手机微信真扫（用协议等价 PC 客户端代跑）、配置分支（设备 prefs 无 `sp_qr_url`，只走了兜底分支）、其它平台（Z21/T113/V85X/F135/F136）与吞吐数字。**设备零残留还原**：`/tmp` 三件 md5 与原样一致（`/tmp/ui` 131/131 逐文件相同）、prefs 未变、继电器全关、增删文件已复原。组件文档（platforms/README/example）已回写验收记录。v0.27.144-open',
@@ -1656,10 +1657,10 @@ def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png
     return json.dumps(r, ensure_ascii=False)
 
 def flythings_selfcheck(device: str = '', diff_against: str = '', out: str = '') -> str:
-    """整机快照（十个分区），每分区给 {ok, hint, data}；`ok=false` **不是错误而是结论**。
+    """整机快照（十一个分区），每分区给 {ok, hint, data}；`ok=false` **不是错误而是结论**。
 
-    分区：设备信息/应用状态/显示/存储/网络/蓝牙/输入/外设/时间/库清单；hint 写明「需要什么条件 /
-    去哪查指令」，不静默。采集容忍设备缺工具：优先随仓
+    分区：设备信息/应用状态/显示/存储/网络/蓝牙/输入/外设/时间/库清单/部署一致性；hint 写明「需要什么条件 /
+    去哪查指令」，不静默。第⑪区「部署一致性」专治「改了像没改」（新库旧界面混搭）。采集容忍设备缺工具：优先随仓
     bin_tools/<平台>/busybox（→设备 /tmp/busybox，缺则推一份），否则纯 adb shell + getprop/cat。
     device='<serial|IP>:5555'（可省；**多台在线不猜**，回 NO_DEVICE + 在线清单）；
     diff_against=<上次快照.json> 出逐分区逐项差异；out=<json 路径> 落盘（可复用作基线）。

@@ -15,7 +15,7 @@ evidence: []
 ---
 # 整机自检（selfcheck）与缺陷单（bugreport）口径
 
-> 检索导引：整机自检 / selfcheck / 九分区快照 / 一次把设备状态全抓一遍 / 与上次快照对比 / 现场体检报告 /
+> 检索导引：整机自检 / selfcheck / 十一分区快照 / 一次把设备状态全抓一遍 / 与上次快照对比 / 现场体检报告 /
 > 提缺陷 / 缺陷单 / bug 报告 / bugreport / 现象与复现步骤 / 真机判据 / 严重级 / 证据清单 /
 > 读不到是结论 / 设备缺 busybox / logcat 取证。
 > 用途：`flythings_selfcheck` 与 `flythings_bugreport` 的完整口径（两个工具的 docstring 只留要点，
@@ -27,7 +27,7 @@ evidence: []
 
 | 场景 | 用哪个 |
 |------|--------|
-| 「这块板现在什么状态？」「开机后到底起没起？」「网络/存储/时间到底哪不对？」 | `flythings_selfcheck`（一条命令出九分区快照） |
+| 「这块板现在什么状态？」「开机后到底起没起？」「网络/存储/时间到底哪不对？」 | `flythings_selfcheck`（一条命令出十一分区快照） |
 | 「上次还好好的，现在变了没有？」 | `flythings_selfcheck(diff_against=<上次快照.json>)` |
 | 「把这个 bug 记下来，我要提交给厂家/同事」 | `flythings_bugreport`（落成可提交 markdown） |
 | 「我要先把现场留证」 | `flythings_selfcheck(out=<json>)` + `flythings_device_screenshot()` + `flythings_bugreport(evidence=[...])` |
@@ -36,7 +36,7 @@ evidence: []
 `flythings_ui_visual(action="diff")`；**布局层叠/触摸穿透** = `flythings_layout_audit`。
 selfcheck 只看"设备本身的状态读数"，不看画面内容。
 
-## 2. 九分区（selfcheck）
+## 2. 十一分区（selfcheck）
 
 每分区返回 `{ok, hint, data, items[], notes[]}`：
 
@@ -59,6 +59,7 @@ selfcheck 只看"设备本身的状态读数"，不看画面内容。
 | ⑦ | 输入 | `ls /dev/input`（需 busybox）、`/proc/bus/input/devices`（触摸设备名） | 节点或设备表非空 | `/proc/bus/input/devices` 不依赖 busybox；注入测试用随仓 `bin_tools/<平台>/touch`（先 `touch list`） |
 | ⑧ | 外设 | `/data/preferences.json`（继电器/过零 IO 键） | 偏好文件是 JSON 且有 relay/zero/io 键 | 偏好文件**应用没写过就没有**，`ok=false` 属常态；继电器走 `zkhardware` 包（`zeroOutput`/背光） |
 | ⑨ | 时间 | `date`、`date +%s`、`persist.sys.timezone`、`ntpd/ntpdate` 是否存在 | date 或 epoch 有值 | 设备 `date` 被裁剪 → 自动退 `busybox date`；`driftSeconds` = 设备 − 宿主，**NTP 是否可用不替你判断**（本分区只给偏差）；偏差大时先让设备把时间对上再验需要时间正确的功能（相关坑见 `knowledge/devflow/package-verify-playbook.md`） |
+| ⑪ | **部署一致性** | 三处 `EasyUI.cfg`（`/tmp` > `/mnt/extsd` > `/res/etc`）、`md5sum /tmp/lib/libzkgui.so /res/lib/libzkgui.so`、`md5sum /tmp/ui/*.ftu` 与 `/res/ui/*.ftu` | 读到生效 cfg **且 `resPath` 与 `startupLibPath` 同源** | **专治「改了像没改」**：`mixed=true` = 新库旧界面（或反之）→ 两条路径成对指到同一次部署的产物，或 `rm -rf /tmp/lib /tmp/EasyUI.cfg /tmp/ui` 退回固化态再 `setprop ctl.restart zkswe`；口径与四步自检见 `knowledge/devflow/deploy-consistency-check.md` |
 
 ### 2.1 采集的工程口径（为什么这么写）
 
@@ -81,7 +82,7 @@ selfcheck 只看"设备本身的状态读数"，不看画面内容。
  "outPath": "<落盘路径，未传 out 时为空串>"}
 ```
 
-- `out=<json 路径>`：把**整个快照**（含九分区 data/items）落盘，可留证、可当基线。
+- `out=<json 路径>`：把**整个快照**（含十一分区 data/items）落盘，可留证、可当基线。
 - `diff_against=<上次快照.json>`：逐分区逐项比对，`diff.sections[].status ∈ changed|same|added|removed`，
   `diff.sections[].items[]` 给 `{key, before, after}`（键形如 `data.model`、`probe.pid`、`__ok`）。
   **天然会变的读数**（`uptimeSeconds` / `date` / `epoch` / `hostEpoch` / `driftSeconds` / df 空间 /

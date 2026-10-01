@@ -5,7 +5,7 @@
 预算），采集 / 渲染这类长逻辑放这里，改实现不动工具签名。
 
 口径要点（2026-09-29，钟工「1-3 按顺序做」第 3 项 = 审查报告 P2-⑧⑨）：
-  · **selfcheck 九分区**，每分区给 `{ok, hint, data}`；**「读不到」本身是结论** ——
+  · **selfcheck 十一分区**，每分区给 `{ok, hint, data}`；**「读不到」本身是结论** ——
     读不到就 `ok=false` + `hint` 写清「需要什么条件 / 去哪查」，绝不静默吞掉。
   · 命令一律**容忍设备缺工具**：优先用随仓 `bin_tools/<平台>/busybox`（`adb_tools.ensure_busybox`
     会复用设备上已有的 `/tmp/busybox` 或推一份过去），没有就退化成纯 `adb shell` + `getprop` / `cat`。
@@ -466,6 +466,91 @@ def _post_libs(raw, dev):
     return data, notes
 
 
+def _cfg_field(txt, key):
+    """从 EasyUI.cfg 文本里取字符串字段（读不到回空串，不猜）。"""
+    m = re.search(r'"%s"\s*:\s*"([^"]*)"' % re.escape(key), txt or '')
+    return m.group(1) if m else ''
+
+
+def _md5_lines(txt):
+    """busybox `md5sum` 输出 → {路径: md5}（格式不对的行直接跳过，不当成读数）。"""
+    out = {}
+    for line in str(txt or '').splitlines():
+        parts = line.split()
+        if len(parts) >= 2 and len(parts[0]) == 32 and '/' in parts[1]:
+            out[parts[1]] = parts[0]
+    return out
+
+
+def _post_deploy(raw, dev):
+    """部署一致性：生效 cfg 是哪一份 / resPath 与 startupLibPath 是否同源 / lib 与 ui 是否同代。
+
+    2026-10-01 真机发现（192.168.x.x）：面板上 `startupLibPath=/tmp/lib/libzkgui.so`（新）
+    而 `resPath=/res/ui/`（旧）→ **跑的是「新库 + 旧界面」**，症状就是「改了像没改 / 布局不对劲」。
+    """
+    srcs = (('/tmp/EasyUI.cfg', raw.get('cfgTmp')),
+            ('/mnt/extsd/EasyUI.cfg', raw.get('cfgSd')),
+            ('/res/etc/EasyUI.cfg', raw.get('cfgRes')))
+    cfg_src, cfg_text = '', ''
+    for name, txt in srcs:
+        if str(txt or '').lstrip().startswith('{'):
+            cfg_src, cfg_text = name, str(txt)
+            break                      # 优先级 /tmp > /mnt/extsd > /res/etc
+    res_path = _cfg_field(cfg_text, 'resPath')
+    lib_path = _cfg_field(cfg_text, 'startupLibPath')
+
+    def _root(p):
+        for r in ('/tmp', '/mnt/extsd', '/res'):
+            if str(p).startswith(r):
+                return r
+        return ''
+
+    root_same = bool(res_path and lib_path and _root(res_path) == _root(lib_path))
+    found_cfg = [n for n, t in srcs if str(t or '').lstrip().startswith('{')]
+    md5_lib = _md5_lines(raw.get('libMd5'))
+    tmp_lib = next((v for k, v in md5_lib.items() if k.startswith('/tmp/')), '')
+    res_lib = next((v for k, v in md5_lib.items() if k.startswith('/res/')), '')
+    ui_tmp, ui_res = _md5_lines(raw.get('uiTmpMd5')), _md5_lines(raw.get('uiResMd5'))
+    common = sorted(set(k.rsplit('/', 1)[-1] for k in ui_tmp) & set(k.rsplit('/', 1)[-1] for k in ui_res))
+    same_pages = diff_pages = 0
+    for name in common:
+        t = ui_tmp.get('/tmp/ui/' + name)
+        r = ui_res.get('/res/ui/' + name)
+        if t and r:
+            if t == r:
+                same_pages += 1
+            else:
+                diff_pages += 1
+    lib_same_generation = bool(tmp_lib and res_lib and tmp_lib == res_lib)
+    data = {'effectiveCfg': cfg_src, 'cfgFound': found_cfg,
+            'resPath': res_path, 'startupLibPath': lib_path,
+            'overlay': bool(_root(res_path) == '/tmp' or _root(lib_path) == '/tmp'),
+            'rootSame': root_same, 'mixed': bool(res_path and lib_path and not root_same),
+            'libMd5Tmp': tmp_lib, 'libMd5Res': res_lib,
+            'libSameGeneration': lib_same_generation,
+            'uiPages': {'tmp': len(ui_tmp), 'res': len(ui_res),
+                        'common': len(common), 'same': same_pages, 'diff': diff_pages},
+            'uiDiffPages': [n for n in common
+                            if ui_tmp.get('/tmp/ui/' + n) != ui_res.get('/res/ui/' + n)][:12]}
+    notes = []
+    if not cfg_src:
+        notes.append('三处 cfg 都没读到（/tmp > /mnt/extsd > /res/etc）：设备可能没有 EasyUI.cfg 或读取受限')
+    else:
+        notes.append('生效配置 = %s；resPath=%s / startupLibPath=%s'
+                     % (cfg_src, res_path or '-', lib_path or '-'))
+    if data['mixed']:
+        notes.append('⚠️ **混搭**：resPath 与 startupLibPath 不在同一个根（%s vs %s）→ '
+                     '跑的是「新库旧界面」或反之；把两者**成对更新**'
+                     % (_root(res_path) or '?', _root(lib_path) or '?'))
+    if common and diff_pages:
+        notes.append('/tmp/ui 与 /res/ui 有 %d 页 ftu md5 不同（同 %d 页）→ 两个版本并存，'
+                     '界面到底用哪一代由 resPath 决定' % (diff_pages, same_pages))
+    if tmp_lib and res_lib and not lib_same_generation:
+        notes.append('/tmp/lib 与 /res/lib 的 libzkgui.so **不是同一份** → 当前生效的是 resPath/'
+                     'startupLibPath 指向的那代，别拿另一份当基线')
+    return data, notes
+
+
 def _any(*vals):
     """ok 判据：任一值非空。"""
     for v in vals:
@@ -573,6 +658,23 @@ SECTIONS = (
              '清单与三条纪律见 knowledge/devflow/device-preinstalled-libs.md（libmi_* 属框架内部，不要用）',
      'probes': (_probe('libList', 'ls -l /lib', bb=True, cap=6000),
                 _probe('resLibList', 'ls -l /res/lib', bb=True, cap=2000))},
+    {'key': 'deploy', 'title': '⑪ 部署一致性', 'post': _post_deploy,
+     'ok': lambda d: bool(d.get('effectiveCfg')) and not d.get('mixed'),
+     'hint': 'cfg 三处都没读到 → 读不到配置：确认固化态 /res/etc/EasyUI.cfg 存在，或本次用了 /tmp、'
+             '/mnt/extsd 覆盖（优先级 /tmp > /mnt/extsd > /res/etc）。**resPath 与 startupLibPath 必须同源'
+             '（同一次部署成对改）**：最常见坑是只换了 lib（startupLibPath=/tmp/lib/…）却把 resPath 留在 '
+             '/res/ui/ → 跑的是「新库 + 旧界面」，症状正是「改了像没改 / 布局不对劲」。修法：两条一起指到'
+             '同一次部署的产物，或 `rm -rf /tmp/lib /tmp/EasyUI.cfg /tmp/ui` 退回固化态后 '
+             '`setprop ctl.restart zkswe`。检索：部署一致性/新库旧界面/resPath 混搭'
+             '（knowledge/devflow/deploy-consistency-check.md）',
+     'probes': (_probe('cfgTmp', 'cat /tmp/EasyUI.cfg 2>/dev/null', cap=500),
+                _probe('cfgSd', 'cat /mnt/extsd/EasyUI.cfg 2>/dev/null', cap=500),
+                _probe('cfgRes', 'cat /res/etc/EasyUI.cfg 2>/dev/null', cap=500),
+                _probe('libMd5', 'md5sum /tmp/lib/libzkgui.so /res/lib/libzkgui.so 2>/dev/null',
+                       bb=True, cap=400),
+                _probe('uiTmpMd5', 'md5sum /tmp/ui/*.ftu 2>/dev/null', bb=True, cap=4000),
+                _probe('uiResMd5', 'md5sum /res/ui/*.ftu 2>/dev/null', bb=True, cap=4000),
+                _probe('dirs', 'ls -l /tmp/lib /tmp/ui 2>/dev/null', bb=True, cap=600))},
 )
 
 

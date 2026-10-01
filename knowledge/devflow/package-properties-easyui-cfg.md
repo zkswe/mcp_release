@@ -197,6 +197,7 @@ EasyUI.cfg={"font":"/res/ui/fzcircle.ttf"}
 ## 相关
 
 - `knowledge/devflow/dynamic-screen-rotation.md`：**运行时**旋转（`setScreenRotate` + `Activity::relayout` 换两套 ftu），与本文的编译期静态旋转互补；要 easyui ≥ 2.9.0
+- ★ **`resPath` 与 `startupLibPath` 必须同源**（只换 lib 不换 resPath = 「新库 + 旧界面」，症状就是“改了像没改”）→ `knowledge/devflow/deploy-consistency-check.md`
 - wiki `wiki/flythings/font/font_setting.md`：enable.font.location + 多字体完整流程
 - wiki `wiki/flythings/devflow/new_project.md`：创建项目时"屏幕旋转"选项（IDE 向导对应字段）
 - references/kb/t113-car-link.md：T113 PND 竖装横显先例

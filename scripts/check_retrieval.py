@@ -238,6 +238,35 @@ GROUPS = [
             '图层能不能自己用', '走哪条路', '自绘性能够吗', '别的框架能做到这里能吗',
         ],
     },
+    {
+        'doc': 'knowledge/uicontrols/scrollwindow-layout-checklist.md',
+        'name': 'scrollwindow 布局异常清单',
+        'min_top1': 5,          # 2026-10-01 建组，实测 top-1 6/11 → 留 1 条余量
+        # 实测 top-3 未命中 3 条（真记录，不调阈值凑数）：`滚动窗口怎么做`(rank4) /
+        # `滑动窗口怎么做才不堆叠`(rank5) → 落在官方镜像 `scrollwindow.md`/`slidewindow.md`（泛问法，两篇都该看）；
+        # `固定按钮跟着滚走了`(rank0) → 落 listview-wheel-picker（“跟着滚”被当滚轮语义）。
+        # 跟进：这三条改写成带主体的问法（如“scrollwindow 里的底部按钮为什么跟着滚”）后再收紧。
+        'max_miss': 3,
+        'queries': [
+            'scrollwindow 布局不对', '加了一行滚不到底', '滚动窗口最后一行看不到',
+            '滚动窗口怎么做', '固定按钮跟着滚走了', '滚到底点行点错了',
+            '行里图标被文字盖住了', '滑动窗口怎么做才不堆叠', 'scrollwindow 内层 window 要多高',
+            'scrollwindow 反复返工', '内容堆叠怎么办',
+        ],
+    },
+    {
+        'doc': 'knowledge/devflow/deploy-consistency-check.md',
+        'name': '部署一致性（新库旧界面）',
+        'min_top1': 6,          # 2026-10-01 建组，实测 top-1 7/10 → 留 1 条余量
+        # 实测 top-3 未命中 1 条（真记录）：`设备上跑的是哪一份`(rank0) → 落 upgrade-pack-image
+        # （“哪一份”被当升级包语义）。跟进：改成“设备上跑的是哪一份 lib / 界面怎么对账”后再收紧。
+        'max_miss': 1,
+        'queries': [
+            '改了像没改', '界面还是旧的', '推了没生效', 'resPath 和 startupLibPath',
+            'EasyUI.cfg 优先级', '新库旧界面', 'lib 换了界面没换', '部署后自检',
+            '覆盖层和固化区混搭', '设备上跑的是哪一份',
+        ],
+    },
 ]
 
 # 对照组：与上面主题无关的其它问法；want 用子串匹配（不要求 top-1）

@@ -46,6 +46,7 @@ evidence: []
 
 ## 相关
 - 子结构字段全集（item 17 键含 position / subItem / infos 含 visible）见 `knowledge/uicontrols/json-field-mandatory.md`
+- ★ **scrollwindow 内容的尺寸决定行程（不是 dragMaxDis）；加行忘加高内层 window = 末尾滚不到** → `knowledge/uicontrols/scrollwindow-layout-checklist.md`
 - window 嵌套/弹窗结构见 `uicontrols/window` wiki；页面级多全屏 window 应拆多 Activity（非同一 json 堆叠）
 
 ## 静态遮挡审计（v0.27.92：先看 json，别一上来截图）

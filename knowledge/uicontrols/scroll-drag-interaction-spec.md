@@ -135,6 +135,7 @@ evidence: []
 
 ## 6. 相关
 
+- ★ **scrollwindow 布局反复踩的坑 + 逐条判据（建/改滑动窗口页面前先过一遍）**：`knowledge/uicontrols/scrollwindow-layout-checklist.md`
 - listview 字段/回调（含 `item.text` 必须 `""`）：`knowledge/uicontrols/listview-fields.md`
 - ★ **用 listview 做滚轮选择器**（循环选择器档的完整配法 + 中心行对齐 + 三个真机坑）：`knowledge/uicontrols/listview-wheel-picker.md`
   （实测口径：`setSelection(i)` 只把第 i 项摆到列表盒第 1 行**且带动画**；程控定位改用「数据侧平移 + refreshListView()」）

@@ -158,7 +158,7 @@ class TestSelfcheckSections(unittest.TestCase):
         r = U.jcall('flythings_selfcheck')
         self.assertTrue(r['ok'], r.get('error'))
         want = [s['key'] for s in st.SECTIONS]
-        self.assertEqual(len(want), 10, '分区口径被改了？（含第⑩区「库清单」）')
+        self.assertEqual(len(want), 11, '分区口径被改了？（含第⑪区「部署一致性」）')
         self.assertEqual(sorted(r['sections']), sorted(want))
         for key, sec in r['sections'].items():
             self.assertIsInstance(sec['ok'], bool, key)
@@ -171,8 +171,8 @@ class TestSelfcheckSections(unittest.TestCase):
                 self.assertIn('ok', it)
             if not sec['ok']:
                 self.assertTrue(sec['hint'], '%s ok=false 必须给 hint（读不到是结论）' % key)
-        self.assertEqual(r['summary']['total'], 10)
-        self.assertEqual(r['summary']['ok'] + r['summary']['failed'], 10)
+        self.assertEqual(r['summary']['total'], 11)
+        self.assertEqual(r['summary']['ok'] + r['summary']['failed'], 11)
 
     def test_busybox_free_probes_report_why(self):
         """设备没有 busybox 时：需要 busybox 的采集项要写明原因，而不是静默空着。"""
@@ -195,7 +195,7 @@ class TestSelfcheckSections(unittest.TestCase):
         same = U.jcall('flythings_selfcheck', {'diff_against': snap})
         self.assertTrue(same['ok'])
         self.assertEqual(same['diff']['summary']['changed'], 0)
-        self.assertEqual(same['diff']['summary']['same'], 10)
+        self.assertEqual(same['diff']['summary']['same'], 11)
         self.assertEqual([s['status'] for s in same['diff']['sections']][0], 'same')
         # 改了设备读数 → diff 必须报 changed + 给出 before/after
         _unpatch(self)

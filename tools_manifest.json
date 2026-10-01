@@ -2,7 +2,7 @@
   "schema": 1,
   "generatedBy": "scripts/gen_manifest.py",
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY/STAGE 表后重新生成，勿手改本文件",
-  "version": "0.27.146-open",
+  "version": "0.27.147-open",
   "build": "2026-10-01",
   "toolCount": 43,
   "cli": {
@@ -594,7 +594,7 @@
     },
     {
       "op": "flythings_selfcheck",
-      "brief": "整机快照（十个分区），每分区给 {ok, hint, data}；`ok=false` **不是错误而是结论**。",
+      "brief": "整机快照（十一个分区），每分区给 {ok, hint, data}；`ok=false` **不是错误而是结论**。",
       "args": [
         "device",
         "diff_against",
@@ -685,9 +685,9 @@
     }
   ],
   "docs": {
-    "knowledgeFiles": 97,
+    "knowledgeFiles": 99,
     "wikiFiles": 128,
-    "ragChunks": 1915,
-    "ragPaths": 222
+    "ragChunks": 1932,
+    "ragPaths": 224
   }
 }
