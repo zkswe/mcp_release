@@ -40,7 +40,7 @@ evidence: []
 
 ## 3. 目前收录（2026-09-29 首轮，Z20 为主）
 
-- 已真机验证（Z20/108）：`zkhardware`（GPIO/过零继电器/背光）、`zknet`（WiFi 全流程 + 以太网/热点/4G 结论）、`curl-cxx`（HTTP/HTTPS/Downloader/WebSocket）、`ntp`、`mqtt-cxx`（明文/TLS/LWT/异常断线重连）、`paho-mqtt3as`、`cares`（DNS 直调）、`mbedtls`、`openssl`（TLS 直调）
+- 已真机验证（Z20/108）：`zkhardware`（GPIO/过零继电器/背光）、`zknet`（WiFi 全流程 + 以太网/热点/4G 结论）、`curl-cxx`（HTTP/HTTPS/Downloader/WebSocket）、`ntp`、`mqtt-cxx`（明文/TLS/LWT/异常断线重连；**连接生命周期口径**（单一重连真源 / client_id 互踢 / retained 回放 / availability 顺序 / 板内 broker 降级）→ `devflow-mqtt-client-lifecycle.md`）、`paho-mqtt3as`、`cares`（DNS 直调）、`mbedtls`、`openssl`（TLS 直调）
 - 只有说明（未上真机）：`rapidjson`、`curl`（`curl` 由 `curl-cxx` 间接验证）
 - 判据：文件内有没有 `verified_<日期>` 块；`components/<模块>/platforms.md` 表里未测的平台一律写「未验证 + 需要什么条件」
 - 依赖版本按平台分叉，别照抄：**Z20 的 `openssl` = `1.1.1-w`（其他平台 `1.1.1-g`）**；**Z20/Z21 的 `curl` = `8.12.1-mbedtls`（其他平台 `8.12.1`）**；`paho-mqtt3as` / `mqtt-cxx` / `rapidjson` 本地 registry **只有 Z20 有**

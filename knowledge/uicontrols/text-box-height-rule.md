@@ -10,15 +10,16 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [字号下限, 18px 太小看不清, 文本盒高度, 抬高度, 盒高, 图被拉伸, 图变形, 竖椭圆, 三点指示器不圆, 圆点被拉长, 装饰线压住按钮, 分隔线高度, clamp_fs, data-h 抬高, 图片尺寸 == 控件盒, 帧动画控件被拉伸]
+tags: [字号下限, 18px 太小看不清, 文本盒高度, 抬高度, 盒高, 图被拉伸, 竖椭圆, 三点指示器不圆, 圆点被拉长, 装饰线压住按钮, clamp_fs, 帧动画控件被拉伸, UTF8安全截断, 半个汉字, 多字节分隔符, 全角冒号误切]
 evidence: []
 ---
 # 字号下限与「文本盒抬高度」规则（抬高度只对有文字的盒有效）
 
-> 检索导引：问「字号最小多少（18px）/ 文本盒要不要抬高度 / 抬高度把图拉变形·竖椭圆 / 三点指示器不圆 / 装饰线把按钮压住」→ 本文。
+> 检索导引：问「字号最小多少（18px）/ 文本盒要不要抬高度 / 抬高度把图拉变形·竖椭圆 / 三点指示器不圆 / 装饰线把按钮压住 / **中文被截出乱码问号 · 限宽用字节还是字宽 · 全角冒号把汉字切坏**」→ 本文。
 > 检索词：字号下限 / 18px 太小看不清 / 文本盒高度 / 抬高度 / 盒高 / 图被拉伸 / 图变形 /
 > 竖椭圆 / 三点指示器不圆 / 圆点被拉长 / 装饰线压住按钮 / 分隔线高度 / clamp_fs / data-h 抬高 /
-> 图片尺寸 == 控件盒 / 运行期 setBackgroundPic / 帧动画控件被拉伸。
+> 图片尺寸 == 控件盒 / 运行期 setBackgroundPic / 帧动画控件被拉伸 /
+> UTF-8 安全截断 / 半个汉字 / 字符边界 / 宽度单位估算 / 汉字 1.0 ASCII 0.55 / 多字节分隔符 / find_first_of 禁用 / 全角冒号误切。
 > 案例：`projects/translate/tdesign-miniprogram`（2026-09-17 真机实测；报告 `projects/translate/tdesign-miniprogram/DOTS_ROUND.md`）。
 > 适用：所有「出 HTML → html2json/自研生成器 → json」链路里对**盒高做统一规范化**的地方。
 
@@ -118,6 +119,77 @@ if not text or not fs or not pos.get('width') or not pos.get('height'):
 - [ ] 真机量像素验收（比例类判据，如每点 `w/h ∈ [0.8, 1.25]`），别只信静态全检
 - [ ] 跑过 `check_all` **第 20 项**（运行期 set...Pic 的图 vs 控件盒）：`mismatch[]` 必须为空；
       若全是 `dynamic`/`unresolved`，说明静态没覆盖到——回到真机量像素那一条
+
+## 7. 文本处理三件套（UTF-8；中文界面必踩）
+
+> 适用：**任何自己截断/裁剪/限宽中文文本**的地方——场景名、设备名、chip 标签、列表行标题。
+> 证据：真工程只读 `projects/SmartPanel_HA/src/logic/`（行号已实读核对）；`verified_at` 维持原文 2026-09-29。
+
+### 7.1 安全截断：只在 UTF-8 字符边界断
+
+**现象**：短名被截成「半个字」→ 真机上显示**乱码 / 问号 / 方块**（问号常是「半个汉字」的兜底字形）。
+**根因**：按**字节**截（`substr(0, n)` / `resize(n)`）会把 3 字节的汉字切成一半。
+**做法**：先按**前导字节**算出该字符占几字节，**整字符** append，一字节都不切。
+**判据**：截断结果的字节数**恒为 3 的倍数**（纯 ASCII 段除开）；任取一个字符，首字节 `>= 0xC0` 时不出现孤立尾字节。
+
+### 7.2 显示宽度估算：汉字 1.0 / ASCII 0.55（限宽别用字节数）
+
+**现象**：限宽时中英混排「该截的没截、不该截的截了」（全中文按字节数算会只剩 1/3 个字）。
+**做法**：用**单位（units）**估宽：**汉字/全角 = 1.0，ASCII = 0.55**；限宽写 `最多 N 个单位`。
+**判据**：`fitUnits(s, N)` 返回值的 `textUnits()` 恒 `<= N`，且等于最长可行前缀。
+
+### 7.3 多字节分隔符：禁用 `find_first_of`，用 `find("整串")`
+
+**现象**：拿场景描述切中文名时，**「回家模式」被切坏**（切出半个字节 + 难认字）。
+**根因**：`find_first_of(":：")` **按单字节**匹配——全角冒号「：」的 UTF-8 首字节 `0xEF`，
+也是很多汉字的**内部字节**，于是切点落到别的汉字**中间**。
+**做法**：对多字节分隔符改用 `find("：")`（**整字节序列**搜索）；ASCII `':'` 与全角各自 `find` 后**取较小的 npos 非空者**。
+**判据**：切点必然落在字符边界（同 §7.1）。
+
+### 7.4 可直接抄的函数口径（`utf8CharLen` / `fitUnits` / `textUnits`）
+
+```cpp
+// ---- 可直接抄：UTF-8 前导字节 -> 字符字节长（不识别非法序列，仅保证不切半字）----
+static size_t utf8CharLen(unsigned char c) {
+    return (c < 0x80) ? 1 : ((c < 0xE0) ? 2 : ((c < 0xF0) ? 3 : 4));
+}
+
+// ---- 可直接抄：按【显示宽度】安全截断；汉字/全角 = 1.0，ASCII = 0.55 ----
+static std::string fitUnits(const std::string& s, double maxUnits) {
+    std::string out; double used = 0.0;
+    for (size_t i = 0; i < s.size();) {
+        unsigned char c = (unsigned char)s[i];
+        size_t len = utf8CharLen(c);
+        if (i + len > s.size()) break;          // 不切半个字
+        double w = (c < 0x80) ? 0.55 : 1.0;
+        if (used + w > maxUnits) break;         // 放不下就整字符停
+        out.append(s, i, len); used += w; i += len;
+    }
+    return out;
+}
+
+// ---- 可直接抄：量一段文本占几个单位（中英混排限宽判断用）----
+static double textUnits(const std::string& s) {
+    double used = 0.0;
+    for (size_t i = 0; i < s.size();) {
+        unsigned char c = (unsigned char)s[i];
+        size_t len = utf8CharLen(c);
+        if (i + len > s.size()) break;
+        used += (c < 0x80) ? 0.55 : 1.0; i += len;
+    }
+    return used;
+}
+```
+
+> 想按「最大字节数」限位而非按字宽时，把上面的 `w` 换成 `len` 即得 `dnFit(s, maxBytes)`（只保证不切半字）。
+
+**证据（真工程只读，行号已实读核对）**：
+- `projects/SmartPanel_HA/src/logic/homeLogic.cc:97-108` `fitChipText()`：按前导字节取 `len`、只在边界 append；注释「汉字按 1.0、ASCII 按 0.55 估，最多 4 个汉字宽」。
+- `projects/SmartPanel_HA/src/logic/homeLogic.cc:110-118` `chipLabelText()`：注释明写「**不能用 `find_first_of(":：")`** —— 它按单字节匹配，全角冒号的字节会误切到其他汉字中间（实测把「回家模式」切坏）」；代码改用 `find(':')` + `find("：")` 整序列搜索并取较小者。
+- `projects/SmartPanel_HA/src/logic/devnameLogic.cc:44-57` `dnFit()`：注释「按 UTF-8 字符边界截断（避免截出半个汉字）」；配 `:30` `DN_MAX_BYTES 72 // 最多 24 个汉字（UTF-8 3 字节/字）`。
+- `projects/SmartPanel_HA/src/logic/scenesLogic.cc:82-96` `fitUnits()` 与 `:98-108` `textUnits()`（口径源）；配 `:45` `SCENE_NAME_UNITS_MAX 6 // 新增场景名最多 6 个汉字（1 个 ASCII 算 0.55）`。
+
+检索词：中文截断乱码 / 显示问号 / 半个汉字 / UTF-8 字符边界 / 截断函数 / 限宽字节还是字宽 / 汉字宽度估算 / 1.0 0.55 / 多字节分隔符 / find_first_of 坑 / 全角冒号 / 中文名被切坏。
 
 ## 相关
 

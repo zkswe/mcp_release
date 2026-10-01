@@ -10,15 +10,15 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: []
-tags: [控件层级问题检讨, 产出, projects, SampleUI-New, ui, 44, ftu unpack 反解, 基线全绿, py #2 层级合法性检查, layer_problems, 自动校验, 控件层级, 嵌套, 容器, 父子, 结构键]
+tags: [控件层级问题检讨, ftu unpack 反解, py #2 层级合法性检查, layer_problems, 自动校验, 控件层级, 嵌套, 容器, 父子, 结构键, 坐标负值, 重启后控件跑位, 从右下算, 拖拽夹取边界, 落盘位置读回, 控件跑位]
 evidence: []
 ---
 # 控件层级规则（容器 → 子内容矩阵，双源实证）
 
-> 检索导引：问「控件这样嵌套合不合法 / window 里能放什么 / pagewindow 为什么只装 window / 层级报错（check_all #2）/ 先看 json 做遮挡审计」→ 本文。
+> 检索导引：问「控件这样嵌套合不合法 / window 里能放什么 / pagewindow 为什么只装 window / 层级报错（check_all #2）/ 先看 json 做遮挡审计 / **重启后控件位置跑了 · 坐标出现负值 · 拖动夹到什么边界**」→ 本文。
 > 2026-09-08 沛哥要求「控件层级问题检讨」产出。**方法**：扫描 86 个真实 json（`projects/SampleUI-New/ui/1024x600` 42 + `projects/LearningProject/basedemo-new_z20_1024_600` 35 demo/44，ftu unpack 反解），统计每个容器类型的直接子内容分布——**零越界样例**，基线全绿。
 > **落地**：check_all.py #2 层级合法性检查（_layer_problems）自动校验；html2json 嵌套栈生成天然合规。
-> 检索词：控件层级/嵌套/容器/父子/结构键/subItem/radiobuttons/页面 window。
+> 检索词：控件层级/嵌套/容器/父子/结构键/subItem/radiobuttons/页面 window/坐标负值/重启跑位/从右下算/拖动夹取。
 
 ## 容器 → 直接子内容矩阵（实证次数）
 | 容器 | 允许的直接子内容 | 实证 |
@@ -43,6 +43,35 @@ evidence: []
 7. **层叠顺序决定谁收到触摸**（沛哥 2026-09-10）：上层控件若 `touchable: true` 会**先截走触摸**，下层即使 touchable=true 也收不到——
    「点了没反应」优先查是不是被上层（常是全屏透明面板/遮罩 window）挡住了；要穿透就不要让上层 `touchable: true`
    （注意：radiogroup 必须 true，见 `knowledge/uicontrols/touch-events.md`）。
+
+## 坐标负值 = 从右/下算（**「重启后控件跑位」的根因**）
+
+**现象**：可拖动控件**当次拖动看着完全正常**，但**重启（或重新读落盘）后跑到屏幕另一侧 / 贴右贴下**。
+分水岭就在这：是**重启后跑位**，不是当次就跑位 —— 当次跑位是夹取/刷新 bug，重启跑位才是本坑。
+
+**根因**：`LayoutPosition` 里**负的绝对坐标不是「负偏移」，引擎把它当成「从右/从下算」的 bottom/right 值**
+（`x = -20` 语义 =「距右边 20」，不是「左边界为 -20」）。于是拖动/持久化时写进负值的那一次，
+落盘再读出来就被摆到另一侧。
+
+**一眼发现**：看**落盘的 json / `/data` 配置值里出现负坐标**（正常界面绝对坐标应 ≥ 0）；
+配合「重启后才跑位」的现象即可坐实。注意：静态像素/遮挡审计（`layout_audit`）**查不出这类**——几何本身合法，要看**值**。
+
+**正确做法**（真机问题单 09251751-8，钟工 2026-09-25 口径）：
+1. **拖动/夹取时左、上边界夹到绝对 0**：调参量 `dx/dy` 的下界取 `lo = -dl / -dt`（即取负的基准左/上），
+   保证最终绝对坐标 `dl + dx >= 0`；**不许「可以推出去大半」**（那就是负值来源）。
+2. **右下至少留 `SS_EDGE_KEEP`（40px，或控件 1/3 尺寸，取小）在屏内**：`hi = SCR - keep - base`。
+3. **落盘读回时 `-1` / 越界一律视为「未设置」**，走默认位置——**历史脏数据（已经写进去的负值）因此自动失效**，不用清库。
+
+**判据**：夹取后恒有 `dl + dx >= 0 && dt + dy >= 0`（**绝对坐标绝不出现负值**）；
+读回分支 `x < 0 || x > SCR` → 默认位置；落盘值扫一遍无负数即过。
+
+**证据（真工程只读，行号已实读核对）**：
+- `projects/SmartPanel_HA/src/logic/mainLogic.cc:598-612` `ssLoadLayout()`：`-1/越界 视为未设置（用默认位置）；负值一律当未设置（历史脏数据，见问题单 09251751-8）`。
+- `projects/SmartPanel_HA/src/logic/mainLogic.cc:614-635` `ssClampX/ssClampY`：注释写明「**绝不允许绝对坐标出现负值** —— LayoutPosition 里负值会被引擎当成「从右/下算」的 bottom/right 值，重启后控件位置就跑了」，故左/上夹到绝对 0（`lo = -dl / -dt`）。
+- 对应写入点：`mainLogic.cc:591-596` `ssSaveGroupPos()`（落盘 `dl+dx / dt+dy`）；应用点 `ssApplyGroup()`（`:584-587`，`setPosition(LayoutPosition(dl+dx, dt+dy, dw, dh))`）。
+- 口径时间：2026-09-24 现场夹取口径 → 2026-09-25 追加负值硬约束；本文 `verified_at` 维持 2026-09-29。
+
+检索词：重启后控件跑了 / 位置跑到另一边 / 控件位置重置 / 坐标负值 / 负坐标 / LayoutPosition 负值 / 从右下算 / bottom right 语义 / 拖动跑位 / 落盘位置读回 / 夹取边界。
 
 ## 相关
 - 子结构字段全集（item 17 键含 position / subItem / infos 含 visible）见 `knowledge/uicontrols/json-field-mandatory.md`

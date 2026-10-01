@@ -11,5 +11,6 @@ LWT 遗嘱 + SSL 配置项），底层是 paho 的**异步 API**。Z20 在跑的
    `will.*`、`on_connected/on_disconnected`）→ `mqtt::Client client(conf);`（构造即连接，**要 try/catch**）
    → `subscribe(topic, mqtt::QOS_AT_LEAST_ONCE, handler)` / `publish(topic, payload, qos, retained)`。
 3. 同 client_id 互踢、重连要 delete 旧 client、回调线程别动 UI、retained 清理等 6 条坑 → `package.yaml`。
+4. 连接生命周期完整口径（单一重连真源 / 回收旧 client + 代次 / retained 回放当命令 / availability 上行顺序 / LWT 逐字一致 / 板内 broker 降级边界，逐条带行号与一眼判据）→ `knowledge/devflow/mqtt-client-lifecycle.md`。
 
 ⚠️ 未实测（`verified: null`）：实读头文件 + README + Z20 真实工程用法交叉验证写成。
