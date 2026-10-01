@@ -152,6 +152,15 @@ def assert_caption_unique(doc, page_name=''):
 # ─────────────────────────── 基础工具 ───────────────────────────
 
 
+def row_field(row, *keys):
+    """行数据取值：按 keys 顺序取第一个非空（标题 ← title/label/text；值 ← value）。"""
+    for k in keys:
+        v = row.get(k)
+        if v not in (None, ''):
+            return str(v)
+    return ''
+
+
 def r4(v):
     """4px 栅格（令牌体系里所有几何值都落在 4 的倍数上）。"""
     return max(4, int(round(float(v) / 4.0)) * 4)
@@ -1472,8 +1481,12 @@ class Composer(object):
 
     # ─────── 第 2 批 builder：list_item / wheel_picker（listview 族）───────
 
-    def subitem(self, caption, pos, fs, color, txt='', pic=None, align=36):
-        """listview 行内子项（字段全集 = CTRL_FIELD_TEMPLATES['subitem']；id 24000 段）。"""
+    def subitem(self, caption, pos, fs, color, txt='', pic=None, align=36, touchable=True):
+        """listview 行内子项（字段全集 = CTRL_FIELD_TEMPLATES['subitem']；id 24000 段）。
+
+        touchable=False 用于行内**纯装饰**子项（如行首图标）：与行族口径一致
+        （装饰件不参与命中；行内可点区域 = 标题/值/箭头子项，onListItemClick 拿到其 id）。
+        """
         self._sub += 1
         return {'id': SUBITEM_ID_BASE + self._sub, 'caption': caption, 'position': pos,
                 'alignment': align, 'backgroundColor': -1,
@@ -1484,18 +1497,75 @@ class Composer(object):
                              'color4': -1},
                 'fontFamily': 0, 'fontSize': fs, 'italic': False,
                 'longClickIntervalTime': -1, 'longClickTimeOut': -1,
-                'picTab': {'pic0': pic or ''}, 'text': txt, 'touchable': True, 'visible': True}
+                'picTab': {'pic0': pic or ''}, 'text': txt,
+                'touchable': bool(touchable), 'visible': True}
 
-    def list_item_template(self, caption, w, ih, chevron=True):
-        """listview 行模板：item.text 空串 + 内容走 subItem（绝不平铺子控件）。"""
+    # ---- list_item 行内容（items[] → subItem：图标 + 标题 + 值）----
+    def list_row_boxes(self, w, ih, row, chevron):
+        """一行内容的盒口径（**唯一算式**：模板行与逐行核对共用）→ dict。
+
+        · 左缘 = pad_l + (图标档 + spacer)——图标放得下才给图标列（has_ic，极小屏省图标）；
+        · 右缘 = 行宽 − pad_l − (箭头盒 + text_chev_gap)——与行族同一口径；
+        · 值盒宽 = text_box_w（估算 × 1.10 向上取 4）；标题盒 = 右缘 − 左缘 − (值盒 + spacer)。
+        """
         m = self.m
-        col = {k: hex2int(v) for k, v in self.tok['color'].items() if v.startswith('#')}
+        ic = m['ic_min']                       # 块内图标尺寸下限（不随屏降档，README §4.2）
+        has_ic = bool(row.get('icon')) and (ic + 2 * m['spacer'] <= ih)
+        left = m['pad_l'] + (ic + m['spacer'] if has_ic else 0)
+        right_edge = w - m['pad_l'] - ((m['chev_w'] + m['text_chev_gap']) if chevron else 0)
+        value = row_field(row, 'value')
+        vw = self.text_box_w(value, m['fs']['b2'], align=38) if value else 0
+        tw = max(4, right_edge - left - (vw + m['spacer'] if value else 0))
+        return {'ic': ic, 'has_ic': has_ic, 'left': left, 'right_edge': right_edge,
+                'vw': vw, 'tw': tw,
+                'title': row_field(row, 'title', 'label', 'text'), 'value': value}
+
+    def list_row_check(self, caption, w, ih, row, chevron):
+        """逐行宽度核对（**每一行都要过**，不只模板行）——长文案在这里被点名。
+
+        check_all 的 #13/#36 **covers 不到 subItem**（item/subItem 是数组子项，`_page_ctrls`
+        不遍历）→ 块库必须自己把「行文案装不装得下」核到位（否则运行期截断在静态审查里静默）。
+        """
+        m = self.m
+        b = self.list_row_boxes(w, ih, row, chevron)
+        self.check_text_fit(caption + 'SubTitle', b['title'], m['fs']['b1'], b['tw'],
+                            m['h_b1'], '列表行标题')
+        if b['value']:
+            self.check_text_fit(caption + 'SubValue', b['value'], m['fs']['b2'], b['vw'],
+                                m['h_b2'], '列表行值')
+        icon = str(row.get('icon') or '')
+        if icon and iconlib.available() and iconlib.lookup(icon) is None:
+            self.notes.append('list_item 行内图标「%s」不在 components/icons 资产库里（%s）——'
+                              '请改用库里语义名（允许值见 blocks/_icons.json）'
+                              % (icon, caption))
+        return b
+
+    def list_row_subitems(self, caption, w, ih, row, chevron):
+        """一行内容 → subItem[]（图标子项 + 标题子项 + 值子项 + 可选箭头子项）。"""
+        m = self.m
+        col = self.col_int()
+        b = self.list_row_boxes(w, ih, row, chevron)
         sub = []
-        right = m['pad_l'] + (m['chev_w'] + m['spacer'] if chevron else 0)
+        if b['has_ic']:
+            ic, icon = b['ic'], str(row.get('icon'))
+            p = self.glyph('ic_%s_%d.png' % (icon, ic), icon, ic,
+                           rgba(self.tok['color']['brand']), canvas=(ic, ic),
+                           state=row.get('icon_state'))       # 可选态：库两态图标（off 描边/on 实心）
+            sub.append(self.subitem(caption + 'SubIcon',
+                                    {'left': m['pad_l'], 'top': (ih - ic) // 2,
+                                     'width': ic, 'height': ic},
+                                    m['fs']['b2'], col['brand'], pic=p, align=37,
+                                    touchable=False))         # 纯装饰：不吃触摸
         sub.append(self.subitem(caption + 'SubTitle',
-                                {'left': m['pad_l'], 'top': (ih - m['h_b1']) // 2,
-                                 'width': w - m['pad_l'] - right, 'height': m['h_b1']},
-                                m['fs']['b1'], col['fg1']))
+                                {'left': b['left'], 'top': (ih - m['h_b1']) // 2,
+                                 'width': b['tw'], 'height': m['h_b1']},
+                                m['fs']['b1'], col['fg1'], txt=b['title']))
+        if b['value']:
+            sub.append(self.subitem(caption + 'SubValue',
+                                    {'left': b['right_edge'] - b['vw'],
+                                     'top': (ih - m['h_b2']) // 2,
+                                     'width': b['vw'], 'height': m['h_b2']},
+                                    m['fs']['b2'], col['fg2'], txt=b['value'], align=38))
         if chevron:
             p = self.chevron('chev_%dx%d.png' % (m['chev_w'], m['chev_h']),
                              m['chev_w'], m['chev_h'], rgba(self.tok['color']['chevron']))
@@ -1504,6 +1574,36 @@ class Composer(object):
                                      'top': (ih - m['chev_h']) // 2,
                                      'width': m['chev_w'], 'height': m['chev_h']},
                                     m['fs']['b2'], col['chevron'], pic=p, align=37))
+        return sub
+
+    def list_item_template(self, caption, w, ih, chevron=True, row=None):
+        """listview 行模板：item.text 空串 + 内容走 subItem（绝不平铺子控件）。
+
+        row（= items[0]）给了 → 模板行带上「图标 + 标题 + 值」（**静态图/首次上屏就能看到内容**）；
+        row=None → 旧口径（标题子项空串 + 箭头），对不写 items 的 spec 零影响（向后兼容）。
+        ⚠ 引擎只有**一份**行模板（所有行共用）→ 真机必须用 obtainListItemData 逐行覆盖
+          （否则每行常显模板行文案），见 knowledge/uicontrols/listview-fields.md。
+        """
+        m = self.m
+        col = self.col_int()
+        if row:
+            sub = self.list_row_subitems(caption, w, ih, row, chevron)
+        else:
+            sub = []
+            right = m['pad_l'] + (m['chev_w'] + m['spacer'] if chevron else 0)
+            sub.append(self.subitem(caption + 'SubTitle',
+                                    {'left': m['pad_l'], 'top': (ih - m['h_b1']) // 2,
+                                     'width': w - m['pad_l'] - right, 'height': m['h_b1']},
+                                    m['fs']['b1'], col['fg1']))
+            if chevron:
+                p = self.chevron('chev_%dx%d.png' % (m['chev_w'], m['chev_h']),
+                                 m['chev_w'], m['chev_h'],
+                                 rgba(self.tok['color']['chevron']))
+                sub.append(self.subitem(caption + 'SubChevron',
+                                        {'left': w - m['pad_l'] - m['chev_w'],
+                                         'top': (ih - m['chev_h']) // 2,
+                                         'width': m['chev_w'], 'height': m['chev_h']},
+                                        m['fs']['b2'], col['chevron'], pic=p, align=37))
         return {'caption': caption, 'position': {'left': 0, 'top': 0, 'width': w, 'height': ih},
                 'alignment': 36, 'backgroundColor': -1, 'bold': False,
                 'bgColorTab': {'color0': -1, 'color1': -1, 'color2': -1, 'color3': -1,
@@ -1515,28 +1615,70 @@ class Composer(object):
                 'longClickIntervalTime': -1, 'longClickTimeOut': -1, 'subItem': sub}
 
     def build_list(self, blk, parent, x, y, w):
-        """list_item：listview + subItem 行模板。
+        """list_item：listview + subItem 行模板（**行内容由 items 给**）。
 
         itemH = int(lv高 / rows) − rowSpacing（引擎口径）——模板高必须 == 它（check_all #37）；
         余数（= lv高 mod rows）**是有意的可滑动提示**（底部露出下一项一小块），不是缺陷。
+
+        `items[]` = 行数据（{icon, title, value}）：
+          · 模板行 = items[0]（引擎只有一份行模板 → 静态图/首次上屏所有行都是它，
+            逐行各异的文案是**运行期数据**，由 obtainListItemData 填，json 表达不了）；
+          · **列表高只由 rows 算**——items 给少了只在真机多出空行，不会把已有行挤在一起；
+          · 每一行都过宽度自检（#13/#36 追不到 subItem，所以块库自己核）。
         返回本块占的高度。
         """
         m = self.m
-        col = {k: hex2int(v) for k, v in self.tok['color'].items() if v.startswith('#')}
+        col = self.col_int()
         rows = max(1, int(blk.get('rows') or m['li_rows']))
         rs = max(0, int(blk.get('rowSpacing') or 0))
         ih = m['li_h']
         peek = min(m['li_peek'], rows - 1)
         lv_w = w - 2 * m['pad_l']
         lv_h = rows * (ih + rs) + peek
+        chevron = blk.get('chevron', True)
+        items = blk.get('items') or []
+        if items and not isinstance(items, list):
+            raise SystemExit('[X] list_item.items 应为数组（每行一个 {icon,title,value}），'
+                             '得到 %s' % type(items).__name__)
+        rows_data = [it if isinstance(it, dict) else {'title': str(it)} for it in items]
         cur = y
         if blk.get('label'):
             parent.append(self.text('Label%s' % blk['_name'],
                                     self.box(x + m['pad_l'], cur, lv_w, m['h_b2']),
                                     m['fs']['b2'], col['fg2'], blk['label']))
             cur += m['h_b2'] + m['spacer']
-        item = self.list_item_template(blk['_name'] + 'Item', lv_w, ih,
-                                       blk.get('chevron', True))
+        cap = blk['_name'] + 'Item'
+        if rows_data:
+            tight, n_ic = None, 0
+            for i, row in enumerate(rows_data):
+                c_i = '%sRow%d' % (blk['_name'], i + 1)
+                bx = self.list_row_check(c_i, lv_w, ih, row, chevron)
+                if bx['has_ic']:
+                    n_ic += 1
+                mw, _h = text_min_size(bx['title'], m['fs']['b1'], 36)
+                slack_ = bx['tw'] - mw
+                if tight is None or slack_ < tight[1]:
+                    tight = ('%s 标题「%s」需 %d / 盒 %d' % (c_i, bx['title'][:12], mw,
+                                                            bx['tw']), slack_)
+            if len(rows_data) < rows:
+                self.notes.append('list_item %s：items %d 行 < rows %d → 其余 %d 行在真机上'
+                                  '是空行（**列表高按 rows 算**，不把已有行挤在一起）'
+                                  % (blk['_name'], len(rows_data), rows,
+                                     rows - len(rows_data)))
+            if n_ic == 0 and any(r.get('icon') for r in rows_data):
+                self.notes.append('list_item %s 行内图标省去（图标档 %d + 上下各 1×spacer %d > '
+                                  '模板行高 %d）——极小屏宁可省图标（README §4.2 / 反面清单 '
+                                  '#27），不是渲染丢失'
+                                  % (blk['_name'], m['ic_min'], m['spacer'], ih))
+            self.notes.append('list_item %s：rows %d ｜ items %d 行（模板行 = items[0]：%s / %s）'
+                              ' ｜ itemH %d = int(%d/%d)−%d（余 %d px = 可滑动提示）'
+                              ' ｜ 行内图标 %d 处 × %dpx ｜ 逐行宽度最紧者 %s'
+                              % (blk['_name'], rows, len(rows_data),
+                                 row_field(rows_data[0], 'title', 'label', 'text'),
+                                 row_field(rows_data[0], 'value'), ih, lv_h, rows, rs, peek,
+                                 n_ic, m['ic_min'], tight[0]))
+        item = self.list_item_template(cap, lv_w, ih, chevron,
+                                       row=(rows_data[0] if rows_data else None))
         parent.append(Node('listview', 'List' + blk['_name'],
                            self.box(x + m['pad_l'], cur, lv_w, lv_h),
                            {'rows': rows, 'rowSpacing': rs, 'cols': 1, 'cycleEnable': False,

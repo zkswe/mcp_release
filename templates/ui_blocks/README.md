@@ -109,7 +109,11 @@ python templates/ui_blocks/full_render.py templates/ui_blocks/examples/nav_1024x
       {"type": "input_row", "label": "设备名称", "hintText": "请输入名称", "text": "客厅面板", "textType": 0},
       {"type": "checkbox_row", "label": "记住设置", "value": "已勾选", "checked": true},
       {"type": "radio_row", "label": "工作模式", "options": ["本地", "远程", "自动"], "selected": 0},
-      {"type": "list_item", "label": "在线设备", "rows": 4, "chevron": true},
+      {"type": "list_item", "label": "在线设备", "rows": 4, "chevron": true,
+       "items": [{"icon": "wifi", "title": "客厅面板", "value": "在线"},
+                 {"icon": "bulb", "title": "主卧灯", "value": "离线"},
+                 {"icon": "wifi", "title": "书房空气净化器", "value": "在线"},
+                 {"icon": "bulb", "title": "Kitchen Light", "value": "离线"}]},
       {"type": "wheel_picker", "label": "定时关闭", "rows": 5,
        "columns": [{"options": ["不关", "15 分", "30 分"], "selected": 1}]},
       {"type": "empty_state", "icon": "info", "text": "暂无其它设备", "sub": "点右上角添加"},
@@ -153,7 +157,7 @@ python templates/ui_blocks/full_render.py templates/ui_blocks/examples/nav_1024x
 | `input_row` | 输入行（标题 + edittext） | 2 带 | —（底色走 `bgColorTab` 浅灰） | 随内容 | 输入框盒高 = max(标题高+spacer, 行高×0.70)；id 51000 段 → logic 骨架自动带 `onEditTextChanged_<caption>` |
 | `checkbox_row` | 复选行（标题 + 值 + 右端复选框） | 1 行 | `cb_{S}_on/off` | 随内容 | 复选框正方盒 = max(12, 行高×0.50)，贴行条右端槽（同 toggle_row 形态）；**自身就是命中区** |
 | `radio_row` | 单选行（标题 + **竖排**选项） | 2 带（带高 = 选项数 × 项高 + 2×spacer） | `rd_{S}_on/off` | 随内容 | 项高 = max(标题高+spacer, 行高×0.70)；子项坐标**相对 radiogroup**；组 **touchable 必须 true** |
-| `list_item` | 列表行块（listview + subItem 行模板） | 自带块高（rows × 模板高 + 余数） | `chev_`（行尾箭头子项） | ✗（自带滚动） | **itemH = int(lv高/rows) − rowSpacing**，模板高 == 它；**余数是「有意的可滑动提示」**；item.text 必须空串 |
+| `list_item` | 列表行块（listview + subItem 行模板，行内容由 `items` 给） | 自带块高（rows × 模板高 + 余数） | `chev_`（行尾箭头子项）、`ic_`（行内图标） | ✗（自带滚动） | **itemH = int(lv高/rows) − rowSpacing**，模板高 == 它；**余数是「有意的可滑动提示」**；item.text 必须空串；**列表内容必须由 `items` 给**（只写 rows = 空列表） |
 | `wheel_picker` | 滚轮选择块（listview 组合，非自绘） | 自带块高（rows × 模板高） | `wband_`（选中条） | ✗（自带滚动） | 选中条 = **静态 textview 且写在 listview 之前**；rows 必须奇数（正中行 = 选中行）；cycleEnable + autoRollback + edgeEffect 1 + dragMaxDis 手感值 |
 | `tabs` | 顶部分段控件（N 个 tab：选中底色/文字色 + 底部指示条） | 1 顶带（随内容） | `tabsbg_`、`ind_`、`tab_on_` | 随内容 | 带高 = max(屏高 9%, b1 高 + 2×spacer)；tab 等分内容区宽（末个吃余数）；**指示条盒 = tab 宽 − 2×圆角 × ind_h（高 3/2px 直角条）且写在所有 tab 之前**；选中 = brand1 底（高让出 ind_h）+ brand 字 |
 | `bottom_nav` | 底部导航（3~5 个图标+文字项，选中用品牌色） | **固定带** | `navbg_`、`nav_<glyph>_<S>_on/off` | ✗（固定件） | 带高**固定**（与项数无关）= max(屏高 10%, 图标档 + 间距 + b2 + 2×spacer)；贴底栏上沿；视口 = 屏高 − 标题带 − nav 带 − 底栏带；项宽 = 屏宽/N（末个吃余数） |
@@ -173,7 +177,7 @@ python templates/ui_blocks/full_render.py templates/ui_blocks/examples/nav_1024x
 | `input_row` | ① 底色写 `0`（= 不透明黑，真机黑块；透明写 `-1`，#24 FAIL）；② `isPassword=true` 却不给 `passwordChar`；③ 密码框把真密码预填进 `text`；④ 自绘键盘（系统内置，点击自动弹）。 |
 | `checkbox_row` | ① **在复选框上再压一个整行透明 button**（吃掉勾选：点行没反应 —— checkbox 与 toggle_row 不同，**它自己就是命中区**）；② 盒 ≠ 图（引擎拉伸 → 圆角糊、勾变形）；③ 只给 `pic0` 不给 `pic2`（点了没视觉反馈）；④ id 取 21000 段（html2json 旧口径；#5 会把 20000~30000 段当 button 要求 `onButtonClick_<caption>`）—— 本块用 **94500** 段。 |
 | `radio_row` | ① **radiogroup 的 `touchable` 写 false**（整组收不到触摸 = 点了没反应；它是「容器 false」口径的**例外**）；② 选中图写进 `pic1`（引擎只认 `pic2` = 选中态）；③ 选项横排（横排要按选项数动态改行族预留 → 同页其它行文本盒跟着变；竖排在极小屏也放得下）；④ 圆点盒 ≠ 图；⑤ 极小屏用 1px 描边环 / 极小内点（AA 真缺陷）。 |
-| `list_item` | ① **item 高 ≠ `int(lv高/rows) − rowSpacing`**（#37 WARN：写大 = 挤爆/裁切，写小 = 每项底部多空带）；② 把「底部露出下一项一小块」当缺陷去凑整（**那是引擎给的可滑动提示**，余数是有意的）；③ `item.text`/`subItem.text` 写占位串（真机每行常显占位文字）；④ 在 listview 下平铺 textview/button 当行（#2 层级非法）；⑤ subItem 图 ≠ subItem 盒。 |
+| `list_item` | ① **只写 `rows` 不给 `items`**（列表内容必须由 `items` 给；只写 rows 会得到空列表——**这是规范，不是渲染 bug**）；② **item 高 ≠ `int(lv高/rows) − rowSpacing`**（#37 WARN：写大 = 挤爆/裁切，写小 = 每项底部多空带）；③ 把「底部露出下一项一小块」当缺陷去凑整（**那是引擎给的可滑动提示**，余数是有意的）；④ `item.text` 写占位串（真机每行常显占位文字；`items` 给的**真实首行文案**是有意的模板样例，但真机必须 `obtainListItemData` 逐行覆盖）；⑤ 在 listview 下平铺 textview/button 当行（#2 层级非法）；⑥ subItem 图 ≠ subItem 盒；⑦ 行内图标盒 < 24px 硬塞（极小屏宁可**省图标**，不是缩图标）。 |
 | `wheel_picker` | ① **选中条挂行背景图**（滚动时条跟着行走）；② **条写在 listview 之后**（z 更高会盖住列表/吃触摸）；③ 条设成可触摸（装饰件必须 `touchable:false` 显式写）；④ 用引擎选中态（`pic2`/`color2`）做正中行高亮（引擎把选中态打在第 1 可见行，会盖掉宿主）；⑤ 程序化定位用 `setSelection`（只对齐第 1 行 + 带动画 → 「读-改-读」会越推越远，要用数据侧平移）；⑥ lv 高非 rows 整除却当「可滑动提示」凑格（滚轮要刚好一屏窗口）；⑦ 自绘轮子（listview 组合就是 L2 能力）。 |
 
 ### 4.2 第 3 批 7 个块的禁止项（红线；完整版在 `blocks/<type>.json` 的 `forbidden`）
@@ -279,7 +283,11 @@ python templates/ui_blocks/full_render.py templates/ui_blocks/examples/nav_1024x
 > 再加一遍 `python tools/ui_tools/check_all.py <示例>/project`（存到 `check_all.log`）。**六版都是 compose exit 0 + check_all exit 0（0 FAIL / 0 需审批 WARN）**；
 > 第 3 批改完 `compose.py` 后，**旧四版全部重跑一遍（回归）仍是 exit 0**，且旧四版产物与上一版**逐字节一致**（`git status` 无改动 = 新代码对旧块零影响）。\
 > **图标来源改口径（§5.1）后六版又全部重跑一遍**：仍是 compose exit 0 + check_all exit 0（0 FAIL），
-> 图标回退线框 **0 处**，六版都补了 `main.full.render.png`（含旧两版）——核对见 **§6.5**。
+> 图标回退线框 **0 处**，六版都补了 `main.full.render.png`（含旧两版）——核对见 **§6.5**。\
+> **`list_item` 逐行内容（2026-10-01 二次修，钟工「现在就是列表显示不出来了」）后六版再重跑一遍**：
+> 仍是 compose exit 0 + check_all exit 0（0 FAIL），`#37 itemH` 比对照旧输出（余数 = 可滑动提示）；
+> **旧四版（settings×2 / nav×2）的长图与单屏图与上一版像素零差异**（`ui_diff` PASS，容差 ±2 + 抖动补偿），
+> 只有两个 interactive 版的长图在**列表行区域**有差异（1024：24 处 / 4272 px；320：8 处 / 1324 px）——逐块核对见 §6.2。
 
 ### 6.1 第 1 批（基础块，10 块）
 
@@ -305,12 +313,13 @@ python templates/ui_blocks/full_render.py templates/ui_blocks/examples/nav_1024x
 |---|---|---|
 | 块数 / 行数 | 17 个块类型里用了 **12 个**（7 新 + card/section_header/toggle_row/setting_row/bottom_actions/dialog） | 同左（**同一份块清单**） |
 | 控件数（含嵌套） | **64**（textview 42 / button 6 / window 6 / scrollwindow 1 / seekbar 2 / edittext 1 / checkbox 2 / radiogroup 1 / listview 3） | **62**（textview 40 + 其余同左） |
-| 关键度量 | 行高 60 ｜ 滑块盒 960×36（thumb 24）｜ 输入框盒 42 ｜ 项高 42 ｜ 复选盒 32 ｜ 列表模板 960×40（rows 4）｜ 滚轮列 200×180（rows 5 / 模板高 36）｜ 选中条 200×36 | 行高 28 ｜ 滑块盒 272×16（thumb 12）｜ 输入框盒 24 ｜ 项高 24 ｜ 复选盒 16 ｜ 列表模板 272×24（rows 4）｜ 滚轮列 56×120（rows 5 / 模板高 24）｜ 选中条 56×24 |
+| 关键度量 | 行高 60 ｜ 滑块盒 960×36（thumb 24）｜ 输入框盒 42 ｜ 项高 42 ｜ 复选盒 32 ｜ 列表模板 960×40（rows 4，**行内 subItem**：图标 24 / 标题 804×24 / 值 52×20 / 箭头 24×16）｜ 滚轮列 200×180（rows 5 / 模板高 36）｜ 选中条 200×36 | 行高 28 ｜ 滑块盒 272×16（thumb 12）｜ 输入框盒 24 ｜ 项高 24 ｜ 复选盒 16 ｜ 列表模板 272×24（rows 4；**极小屏省行内图标**：标题 188×16 / 值 44×16 / 箭头 12×16）｜ 滚轮列 56×120（rows 5 / 模板高 24）｜ 选中条 56×24 |
 | 内容 → 视口 / 行程 | 1366 → 452 / **行程 914**，dragMaxDis 60 | 858 → 168 / **行程 690**，dragMaxDis 24 |
-| 出图 | **22 张**（图 == 盒，#11/#17 PASS 0 处不匹配；`thumb.size == 滑块图` ✓） | **22 张**（同上） |
+| 列表行内容（`items` → subItem） | 模板行 = `items[0]`（客厅面板 / 在线）：`…SubIcon 16,8,24×24（ic_wifi_24.png）｜…SubTitle 48,8,804×24「客厅面板」｜…SubValue 860,10,52×20「在线」（右对齐）｜…SubChevron 920,12,24×16`；item.text = `""` | 同左（无图标列）：`…SubTitle 8,4,188×16「客厅」｜…SubValue 204,4,44×16「在线」｜…SubChevron 252,4,12×16`；compose 打 `[NOTE] list_item … 行内图标省去（图标档 24 + 上下各 1×spacer 8 > 模板行高 24）` |
+| 出图 | **23 张**（= 旧 22 + 行内图标 `ic_wifi_24.png`；图 == 盒，#11/#17 PASS 0 处不匹配；`thumb.size == 滑块图` ✓） | **22 张**（同上；320 省行内图标 → 无新增图） |
 | logic 骨架 | **6 个按钮回调 + 1 个输入框回调**（`onEditTextChanged_EditRowInputRow7Box`）齐全 | 同左 |
 | #37 listview item 高 | `ListListItem13 item 高 40 = int(162/4)−0 ✓，余 2 px = 可滑动提示（预期）`；`ListWheelPicker14Col1/2 item 高 36 = int(180/5)−0 ✓，余 0 px` | `ListListItem13 item 高 24 = int(98/4)−0 ✓，余 2 px`；`ListWheelPicker14Col1/2 item 高 24 = int(120/5)−0 ✓，余 0 px` |
-| `check_all` | **exit 0（0 FAIL / 0 需审批 WARN）**；#21 AA 真缺陷 0（扫 22 张，WARN 4 / EXEMPT 2） | **exit 0（0 FAIL / 0 需审批 WARN）**；#21 AA 真缺陷 0（扫 22 张，WARN 0 / EXEMPT 2） |
+| `check_all` | **exit 0（0 FAIL / 0 需审批 WARN）**；#21 AA 真缺陷 0（扫 23 张，WARN 4 / EXEMPT 2） | **exit 0（0 FAIL / 0 需审批 WARN）**；#21 AA 真缺陷 0（扫 22 张，WARN 0 / EXEMPT 2） |
 | 渲染图 | `project/ui/main.render.png` **1024×600 == resolution** ✓ | `project/ui/main.render.png` **320×240 == resolution** ✓ |
 | 整页证据图 | `main.full.render.png` 1024×1514（展平 scrollwindow；供人工验收） | `main.full.render.png` 320×930 |
 | 证据 | `examples/interactive_1024x600/{main.render.png,main.full.render.png,last-run.log,check_all.log}` | 同左 |
@@ -327,14 +336,17 @@ python templates/ui_blocks/full_render.py templates/ui_blocks/examples/nav_1024x
 | `edittext` | （无） | 画 `text`；空则画 `hintText` | 点击弹系统内置键盘 |
 | `checkbox` | （无新增降级项） | **按 `checked` 切图**：选中画 `pic2`（品牌底 + 白勾），未选画 `pic0` | 引擎同口径 |
 | `radiogroup` | `runtimeState`（x1） | **`radiobuttons[]` 逐项画圆点 + 选项文字**（选中走 `pic2` + `colorTab.color2`）；组内联动/点击态不还原 | 引擎同口径 + 运行期组内联动 |
-| `listview` | `runtimeRows`（x3） | 按 `rows`/`rowSpacing`/`itemH` **逐行铺模板**（行底 + `subItem[]` 的图/文本）；**模板 `text` 是空串（`list_item` block 明令禁写占位串）→ 静态图里只看到子项图/箭头**，滚轮的静态选中条可见 | 引擎按运行期数据填行 + 滚动 + 循环 |
-| `listview.item.subItem` | `picTab.pic0`（x4） | 行尾箭头子项按背景图绘制（仅常态） | 行内子项图由引擎直接贴（图 == subItem 盒） |
+| `listview` | `runtimeRows`（x3） | 按 `rows`/`rowSpacing`/`itemH` **逐行铺模板**（行底 + `subItem[]` 的图/文本）；`list_item` 块的模板行 = `items[0]` → **静态图里 4 行都看得到「图标 + 标题 + 值 + 箭头」（模板是一份、行行相同）**；滚轮的模板 `text` 仍是空串（只看到静态选中条） | 引擎按运行期数据填行（**逐行各异**）+ 滚动 + 循环 |
+| `listview.item.subItem` | `picTab.pic0`（交互 1024 x8 / 交互 320 x4） | 行内子项图（行首图标 / 行尾箭头）按背景图绘制（仅常态） | 行内子项图由引擎直接贴（图 == subItem 盒） |
 
 > **数组子项渲染（2026-10-01 补，缺陷 B）**：`radiobutton` / `checkbox` / `listview.item+subItem` 过去只走
 > 「通用兜底」→ 渲染图里选项区、勾选态是空的（钟工原话「列表依旧没有刷新出来」）。现在三者都专有实现；
 > 模板缺 `pic2` 时 `checkbox` 的勾走 `components/icons` 的 `control.check_on`（只缩不放；勾色按盒底亮度二选一，
-> 否则白勾落在浅灰盒上「看不见」）——夹具实测可见。**列表行文本仍取决于模板 `text`**（本库块规范禁写占位串），
-> 要预览带文本的列表需用夹具 / 带运行期文案的真实 json。
+> 否则白勾落在浅灰盒上「看不见」）——夹具实测可见。
+> **列表行文本（2026-10-01 二次修，钟工「现在就是列表显示不出来了」）**：块库原先只按「item.text 空串 + 子项空文本」
+> 出行模板 → 渲染图/首次上屏是**一列空行**（只有箭头）。现在 `list_item` 块吃 `items[]`，把行内容落成
+> subItem（图标 + 标题 + 值）→ 静态图可见；⚠ **引擎只有一份行模板**，所以静态图 4 行相同（= `items[0]`），
+> 逐行各异是**运行期数据**（`obtainListItemData` 填），json 表达不了。
 
 对齐解码：全部文字控件用 **36/37/38（真机实测表）**，`json2img` 报「待校准 0 处 / 表外 0 处」（六版示例均是）。
 **第 3 批新增块：渲染器零 unsupported 新增**——7 个新块全部由 `textview` / `button` / `window` 组成（不引入 checkbox/radiogroup/listview/seekbar 这类「v0 未专有实现」的控件），所以 `json2img --report` 的清单比第 2 批更短（只剩 `bold` 一类）：
@@ -368,15 +380,17 @@ python templates/ui_blocks/full_render.py templates/ui_blocks/examples/nav_1024x
 |---|---|---|---|---|---|---|
 | settings_1024x600 | 1（`info`） | 24 档 @36px（**缺档现出**） | **0** | 16 / 62 | 0 张（WARN 5 / EXEMPT 2） | 1024×864 |
 | settings_320x240 | 1（`info`） | 22 档 @16px（**缺档现出**） | **0** | 15 / 59 | 0 张（WARN 0 / EXEMPT 2） | 320×476 |
-| interactive_1024x600 | 0（无图标块） | — | **0** | 22 / 64 | 0 张（WARN 4 / EXEMPT 2） | 1024×1514 |
-| interactive_320x240 | 0（无图标块） | — | **0** | 22 / 62 | 0 张（WARN 0 / EXEMPT 2） | 320×930 |
+| interactive_1024x600 | 1（`wifi` = 列表模板行图标；其余行只核名） | 24 档 @24px | **0** | 23 / 64 | 0 张（WARN 4 / EXEMPT 2） | 1024×1514 |
+| interactive_320x240 | 0（极小屏省行内图标） | — | **0** | 22 / 62 | 0 张（WARN 0 / EXEMPT 2） | 320×930 |
 | nav_1024x600 | 20（14 种 名×尺寸×态） | 24 档 @24px ×20 | **0** | 44 / 124 | 0 张（WARN 7 / EXEMPT 3） | 1024×1128 |
 | nav_320x240 | 17（同上 14 种） | 24 档 @24px ×17 | **0** | 43 / 116 | 0 张（WARN 3 / EXEMPT 3） | 320×792 |
 
 > 六版都是 **compose exit 0 + check_all exit 0（0 FAIL）**。`json2img --report` 的 unsupported/降级清单：
 > settings 两版 `bold x4`（1 类）；nav 两版 `bold x3`（1 类）；interactive 两版 **7 类**（`bold x5` +
-> `subitem picTab.pic0 x4` + `listview runtimeRows x2/x1` + `seekbar defProgress x1`×2 +
-> `radiogroup runtimeState x1`）+「拉伸填充」2 处（`sk_fill_960x36.png`，引擎语义 = 裁剪）——逐条解读见 §6.3。
+> `subitem picTab.pic0`（1024 **x8** = 4 行 ×(图标+箭头) / 320 **x4** = 4 行 × 箭头）+ `listview runtimeRows x2/x1` +
+> `seekbar defProgress x1`×2 + `radiogroup runtimeState x1`）+「拉伸填充」2 处（`sk_fill_960x36.png`，引擎语义 = 裁剪）——逐条解读见 §6.3。
+> 列表行文本已从「模板空文本」变为「模板行 = `items[0]`」：`listview runtimeRows` 的 note 从「模板无行文本」
+> 变成「**8 处文本已画**」（4 行 ×(标题+值)）——这是缺陷 B 之后的**第二次修**（`list_item` 块吃 `items`）。
 > 旧清单里的 `checkbox v0 未专有实现 x2` / `checkbox picTab.pic0 x2` / `radiogroup v0 未专有实现 x1` /
 > `listview item/subItem x3` **已随缺陷 B 的修复去掉**（改成逐项 / 逐行真画）。
 >
@@ -428,6 +442,7 @@ python templates/ui_blocks/full_render.py templates/ui_blocks/examples/nav_1024x
 | 31 | **底栏 y 与内容视口各算一套**（底栏 `H − bar_bot`，视口忘了扣底栏高） | 内容流按错视口排 → **最后一行/卡片底落进底栏带被盖住**（钟工 2026-10-01 看图：「内容区伸进底部固定条，把最后一行盖住」；展平长图里 `ButtonRowDeviceCard9 508..568 ∩ FooterBg12 528..600 = 992×40 px`） | 视口与底栏**同源**（`m['content_bottom'] = H − bar_bot`）+ 自检 `assert_no_bar_overlap`（逐对判 rect、裁剪后有效矩形、相交报错退出；实测旧口径下能拓出上述 992×40）；展平长图里固定带**让位到长图底部**（`assert_bands_clear` 守） |
 | 32 | **块自己报的高度装不下子节点**（空态块 `H×0.30` 在 320×240 上 72 < 需要的 104） | 内容实际底 > 声明内容高 → 滑动窗行程不够，**最后一段永远滚不出来**（且展平长图里压到底栏） | 块高按内容反算（`band = max(H×0.30, 图标底 + 2×(间距+4+副文案高))`）+ 自检「内容实际底 ≤ 声明内容高」（320 屏实测被拓出来 → 已修） |
 | 33 | **数组子项（`radiobuttons[]` / `checkbox.checked` / `item.subItem[]`）只走通用兜底** | 渲染图里单选区 / 勾选态 / 列表行**是空的**，看图以为「列表没刷新出来」（钟工 2026-10-01） | 渲染器按引擎口径专有实现：逐项画圆点 + 选项文字（`pic0`/`pic2` 切态）、按 `checked` 切图（缺 `pic2` → `components/icons` 的 `control.check_on`）、按 `rows`/`rowSpacing`/`itemH` 逐行铺模板（行底 + 子项图/文本） |态**会被 `aa_audit` 判真缺陷 → 用 `state:"on"` 实心态或 `heart` |
+| 34 | **`list_item` 只写 `rows` 不给 `items`**（把列表内容留给运行期，spec 里什么都不写） | 渲染图/真机首次上屏是**一列空行**（只有箭头）；看的人会当成「渲染 bug / 列表没刷新出来」（钟工 2026-10-01：「现在就是列表显示不出来了」） | 块库口径：**列表内容必须由 `items` 给**（`{icon,title,value}` → subItem：图标 + 标题 + 值）；模板行 = `items[0]`，每行都过宽度自检；`items` 给少了只是真机空行（高度只认 `rows`）——不是渲染 bug |
 
 **两条纪律（写在最显眼处）**
 1. **加行 = 照抄同页已有行的口径**（行高/步进/文本左缘/各元素盒），禁止自创形态；
@@ -453,6 +468,7 @@ python templates/ui_blocks/full_render.py templates/ui_blocks/examples/nav_1024x
    * **未选态 = switchOff 实底，不给 1px 环**；**极小屏复选/单选不用内点**：全是 `aa_audit` 实测逼出来的（见反面清单 #21/#22）。
    * **`radio_row` 竖排**（而非右端横排）：横排要按选项数动态改行族预留 → 同页其它行的文本盒会跟着变宽/变窄；竖排在 320×240 也放得下。
    * **`list_item` 行高公式**：`lv高 = rows × (模板高 + rowSpacing) + 余数`，余数默认 2px（= 有意的可滑动提示）；**滚轮反过来——行高恰好整除，不留余数**（滚轮语义是「刚好一屏窗口」）。
+   * **`list_item` 行内容（2026-10-01 补）**：行内容**必须由 `items` 给**（`{icon,title,value}` → 图标/标题/值三个 subItem；图标走 `components/icons`）；**模板行取 `items[0]`**（引擎只有一份行模板 → 静态图 4 行相同），逐行各异的文案是运行期数据（`obtainListItemData` 填）；**列表高只由 `rows` 算**（items 少了 = 真机空行，不挤在一起）；**每一行都过宽度自检** + 非模板行的 icon 名也逐一核对（#13/#36 追不到 subItem，只能块库自己核）。极小屏 **省行内图标**（图标档 24 + 2×spacer > 行高 24）——与§4.2「宁可省图标」同口径。
    * **滚轮选中条用静态 textview**（写在 listview 之前、`touchable:false` 显式写），行模板透明、`picTab.pic0/1/2` 全空 + `color2/color3` 与常态同色（让引擎自带选中态看不见）—— 口径全部照 `knowledge/uicontrols/listview-wheel-picker.md`。
 
 8. **图标来源 = `components/icons` 资产库（2026-10-01 改口径，详见 §5.1）**：
@@ -466,6 +482,7 @@ python templates/ui_blocks/full_render.py templates/ui_blocks/examples/nav_1024x
 
 * 块数量按需扩展：新增块 = 加一个 `blocks/<type>.json`（字段 + 相对约束 + 素材 + 禁止项）+ 在 `compose.py` 里指到已有 builder（`title/section/row/field_row/card/empty/actions/dialog/list/wheel`）；新增形态才写新 builder。
 * `compose.py` 第 2 批新增的控件 factory：`make_seekbar` / `make_edittext` / `make_checkbox` / `make_radiogroup` / `subitem` / `list_item_template`，及 builder `build_field_row` / `build_list` / `build_wheel`（素材新增 `bar` / `mark` / `chevron` 三个出图 kind）。
+* `list_item` 逐行内容（2026-10-01 二次修）：`compose.py` 新增 `row_field()`（行数据取值）、`list_row_boxes()`（行内容盒口径**唯一算式**，模板行与逐行核对共用）、`list_row_check()`（逐行宽度自检 + icon 名存在性核对）、`list_row_subitems()`（行内容 → 图标/标题/值/箭头四个 subItem），`list_item_template(..., row=…)` 与 `build_list()` 吃 `items[]`；`subitem()` 新增 `touchable` 参数（图标子项 = 纯装饰，不吃触摸）。**不写 `items` 的 spec 输出与旧版逐字节一致**（向后兼容）。
 * `compose.py` 第 3 批新增：
   · 工具：`r4up`（4px 栅格**向上**取整，专给文本盒宽，#36 余量口径）、`text_box_w`（文本盒宽 = 估算×1.10 向上取4）、`sem_color`（语义状态 → 前景/浅底令牌）、`col_int`（令牌名 → 整型色值）；
   · builder：`build_tabs`（tab 项批量）、`build_nav`（nav 项批量）、`build_banner`、`build_pill`（药丸）、`build_divider_label`、`build_grid`（宫格格子批量）、`build_toast`；全部只复用 `shape()/glyph()/text()/button()` + 第2批的 `bar/mark/chevron`，**没有新出图 kind**；

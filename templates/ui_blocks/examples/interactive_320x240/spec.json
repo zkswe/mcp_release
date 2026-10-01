@@ -82,7 +82,13 @@
         "type": "list_item",
         "label": "在线设备",
         "rows": 4,
-        "chevron": true
+        "chevron": true,
+        "items": [
+          {"icon": "wifi", "title": "客厅", "value": "在线"},
+          {"icon": "bulb", "title": "主卧灯", "value": "离线"},
+          {"icon": "wifi", "title": "书房净化", "value": "在线"},
+          {"icon": "bulb", "title": "Kitchen", "value": "离线"}
+        ]
       },
       {
         "type": "wheel_picker",

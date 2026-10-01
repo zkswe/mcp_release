@@ -6,28 +6,38 @@
   "caption_prefix": "ListItem",
   "fields": {
     "label": {"type": "string", "required": false, "example": "设备列表", "note": "可选：列表上方的小标题带"},
-    "rows": {"type": "int", "default": 4, "note": "**可见行数**（= listview.rows；引擎按它算行高）"},
+    "rows": {"type": "int", "default": 4, "note": "**可见行数**（= listview.rows；引擎按它算行高）。列表高度**只由它决定**"},
     "rowSpacing": {"type": "int", "default": 0, "note": "行间距（参与 itemH 公式）"},
-    "chevron": {"type": "bool", "default": true, "note": "行尾是否给箭头子项（静态装饰图，非文本）"}
+    "chevron": {"type": "bool", "default": true, "note": "行尾是否给箭头子项（静态装饰图，非文本）"},
+    "items": {"type": "array", "required": false, "default": [],
+              "example": [{"icon": "wifi", "title": "客厅面板", "value": "在线"},
+                          {"icon": "bulb", "title": "主卧灯", "value": "离线"}],
+              "note": "**行内容**（每行 {icon, title, value}；icon 走 components/icons 语义名，title/value 可省；也允许直接写字符串 = title）。**列表内容必须由 items 给**——只写 rows 会得到空列表（这是规范，不是渲染 bug）。模板行取 items[0]（引擎只有一份行模板 → 静态图/首次上屏所有行都是它）；items 少于 rows 时其余行在真机为空行（高度仍按 rows 算，不把已有行挤在一起）；**每一行都过宽度自检**（#13/#36 遍历不到 subItem，块库自己核）"}
   },
   "relative_constraints": {
     "lv_box": "宽 = 行条宽 − 2×pad_left；高 = rows × 模板行高 + 余数（余数 = lv高 mod rows，见下）",
     "itemH": "**itemH = int(lv高 / rows) − rowSpacing**（引擎口径）；模板 item.position.height **必须 == 这个值**（check_all #37 逐条核对）",
     "peek": "余数（lv 高 − rows×(itemH+rowSpacing)）**是有意的可滑动提示**：底部露出下一项一小块，告诉用户「还能滑」——不算缺陷（#37 出 NOTE 而不是 WARN）",
     "item_box": "item.position = (0, 0, 列表宽, itemH)；item.text 必须空串（默认值 \"ListItem\" 会每行常显，见 listview-fields.md 坑 1）",
-    "subitem": "行内容走 subItem（**绝不平铺子控件**，check_all #2 层级）：标题子项（左对齐、b1 档、fg1、text 空串，运行期由 obtainListItemData 填）+ 可选的箭头子项（盒 == 箭头图）",
+    "subitem": "行内容走 subItem（**绝不平铺子控件**，check_all #2 层级）：**图标子项**（盒 = 图标档，走 components/icons，touchable 显式 false）+ **标题子项**（左对齐 36、b1 档、fg1）+ **值子项**（右对齐 38、b2 档、fg2）+ 可选的箭头子项（盒 == 箭头图）",
+    "row_content_boxes": "图标左缘 = pad_l（盒 = ic_min）；文本左缘 = pad_l + 图标档 + spacer（**图标放得下才给图标列**）；值盒 = 估算宽×1.10 向上取 4，右缘 = 行宽 − pad_l − (箭头盒 + text_chev_gap)（与行族同口径）；标题盒 = 值盒左缘 − spacer − 文本左缘",
+    "runtime": "**引擎只有一份行模板**（所有行共用）：真机必须 `obtainListItemData_<列表caption>` 逐行 `findSubItemByID(<subitem id>)`.`setText(...)` 覆盖，否则每行常显模板行（items[0]）的文案——items[] 就是这份运行期数据的清单",
     "id_band": "listview id 取 80000 段、subitem 取 24000 段（与既有工程一致；两段都不在 check_all #5 的回调核对范围内）"
   },
   "assets": [
-    {"name": "chev_{W}x{H}.png", "via": "与行族共用箭头切图（同名同尺寸只出一张）", "size": "箭头子项盒"}
+    {"name": "chev_{W}x{H}.png", "via": "与行族共用箭头切图（同名同尺寸只出一张）", "size": "箭头子项盒"},
+    {"name": "ic_{glyph}_{S}.png", "via": "行内图标（唯一来源 components/icons，盒 == 图）；**由模板行（items[0]）引用驱动出图**（与 wheel_picker 的 options 同口径：运行期数据不出素材），非模板行的 icon 只做「库里有没有」核对", "size": "模板行高 − 2×spacer 且 ≥ glyph_min_px"}
   ],
   "scroll": "inherit",
   "forbidden": [
+    "**只写 rows 不给 items**（渲染图/真机初屏就是一列空行 + 箭头——这是规范，不是渲染 bug；列表内容一律由 `items` 给）",
     "**item 高 ≠ int(lv高/rows) − rowSpacing**（比公式大 = 挤爆/裁切；比公式小 = 每项底部多空带）→ check_all #37 WARN",
     "把「底部露出下一项一小块」当缺陷去凑整（那是引擎给的可滑动提示，凑整反而要看行高是否等于公式）",
-    "item.text / subItem.text 写占位串（真机每行常显占位文字，运行期数据一来就串味）",
+    "**items 少于 rows 时改短列表高去凑 items**（高度只认 rows；少了的那几行就是空行，挤在一起 = 行高被改坏）",
+    "item.text 写占位串（默认 \"ListItem\"/\"主标题\" 之类**与真实数据无关**的串 → 真机每行常显；items 里给的**真实首行文案**是有意的「模板样例」，不算占位串，但必须在 obtainListItemData 里逐行覆盖）",
     "在 listview 下平铺 textview/button 当行（引擎不认，check_all #2 报层级非法）",
-    "subItem 图 ≠ subItem 盒（引擎拉伸）"
+    "subItem 图 ≠ subItem 盒（引擎拉伸）",
+    "行内图标盒 < glyph_min_px（24px）就硬塞（极小屏宁可**省图标**：图标档 + 2×spacer > 模板行高时不给图标列，不是缩小图标）"
   ],
-  "compact_note": "极小屏：模板行高 = 标题高 + spacer（24）、rows 3~4；标题子项文案要短"
+  "compact_note": "极小屏：模板行高 = 标题高 + spacer（24）、rows 3~4；**图标列放不下就整块省掉**（24 + 2×8 > 24），退回「标题 + 值 + 箭头」单行式；标题子项文案要短（宽度自检会点名）"
 }

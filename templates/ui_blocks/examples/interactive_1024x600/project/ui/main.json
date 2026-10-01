@@ -1890,11 +1890,49 @@
           "subItem": [
             {
               "id": 24004,
-              "caption": "ListItem13ItemSubTitle",
+              "caption": "ListItem13ItemSubIcon",
               "position": {
                 "left": 16,
                 "top": 8,
-                "width": 896,
+                "width": 24,
+                "height": 24
+              },
+              "alignment": 37,
+              "backgroundColor": -1,
+              "bgColorTab": {
+                "color0": -1,
+                "color1": -1,
+                "color2": -1,
+                "color3": -1,
+                "color4": -1
+              },
+              "bold": false,
+              "colorTab": {
+                "color0": 21209,
+                "color1": -1,
+                "color2": -1,
+                "color3": -1,
+                "color4": -1
+              },
+              "fontFamily": 0,
+              "fontSize": 14,
+              "italic": false,
+              "longClickIntervalTime": -1,
+              "longClickTimeOut": -1,
+              "picTab": {
+                "pic0": "images/ic_wifi_24.png"
+              },
+              "text": "",
+              "touchable": false,
+              "visible": true
+            },
+            {
+              "id": 24005,
+              "caption": "ListItem13ItemSubTitle",
+              "position": {
+                "left": 48,
+                "top": 8,
+                "width": 804,
                 "height": 24
               },
               "alignment": 36,
@@ -1922,12 +1960,50 @@
               "picTab": {
                 "pic0": ""
               },
-              "text": "",
+              "text": "客厅面板",
               "touchable": true,
               "visible": true
             },
             {
-              "id": 24005,
+              "id": 24006,
+              "caption": "ListItem13ItemSubValue",
+              "position": {
+                "left": 860,
+                "top": 10,
+                "width": 52,
+                "height": 20
+              },
+              "alignment": 38,
+              "backgroundColor": -1,
+              "bgColorTab": {
+                "color0": -1,
+                "color1": -1,
+                "color2": -1,
+                "color3": -1,
+                "color4": -1
+              },
+              "bold": false,
+              "colorTab": {
+                "color0": 6710886,
+                "color1": -1,
+                "color2": -1,
+                "color3": -1,
+                "color4": -1
+              },
+              "fontFamily": 0,
+              "fontSize": 14,
+              "italic": false,
+              "longClickIntervalTime": -1,
+              "longClickTimeOut": -1,
+              "picTab": {
+                "pic0": ""
+              },
+              "text": "在线",
+              "touchable": true,
+              "visible": true
+            },
+            {
+              "id": 24007,
               "caption": "ListItem13ItemSubChevron",
               "position": {
                 "left": 920,
@@ -2149,7 +2225,7 @@
           "longClickTimeOut": -1,
           "subItem": [
             {
-              "id": 24006,
+              "id": 24008,
               "caption": "TextWheelPicker14Col1SubTitle",
               "position": {
                 "left": 16,
@@ -2246,7 +2322,7 @@
           "longClickTimeOut": -1,
           "subItem": [
             {
-              "id": 24007,
+              "id": 24009,
               "caption": "TextWheelPicker14Col2SubTitle",
               "position": {
                 "left": 16,

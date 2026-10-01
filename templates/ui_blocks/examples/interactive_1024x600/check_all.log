@@ -60,7 +60,7 @@
        口径：真缺陷（resid_bad / 成片 hard_diag / 无两区边界时退回 dirty）= FAIL；
        WARN 逐条列理由（不阻塞也不静默）；*.9.png marker 环由审计内置豁免；
        白名单只认 tools/qa/aa_audit_allow.json（命中即 EXEMPT 并打印理由）。
-  [PASS] AA 真缺陷 0 张（aa_audit.py 扫 22 张；WARN 4 / EXEMPT 2 / 干净 16 / 审计错误 0）
+  [PASS] AA 真缺陷 0 张（aa_audit.py 扫 23 张；WARN 4 / EXEMPT 2 / 干净 17 / 审计错误 0）
   [WARN 需人工确认] chev_24x16.png             hard_diag=2 但只占斜/弧边界 5%（< 60%，多为切点区，该处边界本就轴对齐）→ 只要不脏就不算缺陷
   [WARN 需人工确认] rd_32_off.png              hard_diag=12 但只占斜/弧边界 23%（< 60%，多为切点区，该处边界本就轴对齐）→ 只要不脏就不算缺陷
   [WARN 需人工确认] rd_32_on.png               hard_diag=32 但只占斜/弧边界 29%（< 60%，多为切点区，该处边界本就轴对齐）→ 只要不脏就不算缺陷
@@ -73,7 +73,7 @@
        （d = r - sqrt(r-0.25)）与 DESIGN.md 圆角令牌比。
        口径：直角残留（d≤1）/ r_est < 0.5×令牌 / 四角不一致 → FAIL；< 0.8×令牌 → WARN；
        图标・内切图形族不做倒角判据（由 #23 判形状外透明）；满幅/底图族按登记理由 EXEMPT。
-  [PASS] 缺倒角真缺陷 0 张（corner_audit.py 扫 22 张；WARN 0 / EXEMPT 0 / NOTE 21 / 干净 1 / 错误 0）
+  [PASS] 缺倒角真缺陷 0 张（corner_audit.py 扫 23 张；WARN 0 / EXEMPT 0 / NOTE 22 / 干净 1 / 错误 0）
   [NOTE] btn_primary_164x44.png           未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
   [NOTE] btn_primary_284x44.png           未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
   [NOTE] btn_secondary_164x44.png         未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
@@ -86,13 +86,13 @@
   [NOTE] cc_scrim_1024x600.png            未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
   [NOTE] chev_24x16.png                   未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
   [NOTE] footbg_1024x72.png               未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
-  [NOTE] ...其余 9 张同类（图标/内切族不做倒角判据）
+  [NOTE] ...其余 10 张同类（图标/内切族不做倒角判据）
 == 23. 透明底 / 烘底色（委派 tools/qa/alpha_bg_audit.py --fail；0 token 有退出码）==
        钟工 2026-09-20 M5（原话「控件里面图片背景是黑色的，应该做成透明的，这个设计不符
        合 flyThings OS 平台的能力」）：形状类资产必须真透明底（形状外 α=0）。
        口径：整图无透明像素（α≥250）/ 内切・图标族角区不透明（= 烘了底色）/
        图标贴死图边 → FAIL；满幅族（照片・壁纸・遮罩・1px 通栏线・软阴影）登记豁免。
-  [PASS] 透明底真缺陷 0 张（alpha_bg_audit.py 扫 22 张；WARN 0 / EXEMPT 0 / NOTE 21 / 干净 1 / 错误 0）
+  [PASS] 透明底真缺陷 0 张（alpha_bg_audit.py 扫 23 张；WARN 0 / EXEMPT 0 / NOTE 22 / 干净 1 / 错误 0）
   [NOTE] btn_primary_164x44.png           未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
   [NOTE] btn_primary_284x44.png           未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
   [NOTE] btn_secondary_164x44.png         未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
@@ -105,6 +105,7 @@
   [NOTE] cc_scrim_1024x600.png            未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
   [NOTE] chev_24x16.png                   未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
   [NOTE] footbg_1024x72.png               未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
+  [NOTE] ic_wifi_24.png                   未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
   [NOTE] panel_616x176.png                未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
   [NOTE] rd_32_off.png                    未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
   [NOTE] rd_32_on.png                     未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
@@ -128,14 +129,14 @@
        口径：角块内「外沿进入像素」（α>0 且 4 邻域有 α=0）的覆盖率 = α/峰值α；
        要求 min_cov ≤ 0.35 且 ≤0.35 的个数 ≥ 2（成组出现）；否则 = 过渡被压进 1px 硬阶梯 → FAIL。
        阈值出处 P(min>t)=(1−t)^N（与标准「≥4× 超采样」档位自洽）见 references/kb/image-gen-standard.md §7.7。
-  [PASS] 弧线过渡硬阶梯 0 张（corner_audit.py 扫 22 张；弧线可判 1 张（均 CLEAN）/ WARN 0 / NOTE 21 / 错误 0）
+  [PASS] 弧线过渡硬阶梯 0 张（corner_audit.py 扫 23 张；弧线可判 1 张（均 CLEAN）/ WARN 0 / NOTE 22 / 错误 0）
   [NOTE] btn_primary_164x44.png           未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
   [NOTE] btn_primary_284x44.png           未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
   [NOTE] btn_secondary_164x44.png         未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
   [NOTE] btn_secondary_284x44.png         未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
   [NOTE] card_992x196.png                 未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
   [NOTE] card_992x236.png                 未登记资产（按 unknown_policy：只 NOTE、不判 FAIL）
-  [NOTE] ...其余 15 张同类（无透明背景/样本不足）
+  [NOTE] ...其余 16 张同类（无透明背景/样本不足）
 == 26. scrollwindow 行程核对（行程 = 内层 window − 视口，**不读 dragMaxDis**）==
        钟工 2026-10-01 定：`dragMaxDis` = 越界拖拽上限（overscroll），四个滑动控件语义一致，
        **不是行程**；行程由内容决定、引擎自算（scrollwindow = 内层 window 尺寸 − 视口尺寸）。

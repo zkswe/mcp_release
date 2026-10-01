@@ -1857,7 +1857,7 @@
               "position": {
                 "left": 8,
                 "top": 4,
-                "width": 236,
+                "width": 188,
                 "height": 16
               },
               "alignment": 36,
@@ -1885,12 +1885,50 @@
               "picTab": {
                 "pic0": ""
               },
-              "text": "",
+              "text": "客厅",
               "touchable": true,
               "visible": true
             },
             {
               "id": 24005,
+              "caption": "ListItem13ItemSubValue",
+              "position": {
+                "left": 204,
+                "top": 4,
+                "width": 44,
+                "height": 16
+              },
+              "alignment": 38,
+              "backgroundColor": -1,
+              "bgColorTab": {
+                "color0": -1,
+                "color1": -1,
+                "color2": -1,
+                "color3": -1,
+                "color4": -1
+              },
+              "bold": false,
+              "colorTab": {
+                "color0": 6710886,
+                "color1": -1,
+                "color2": -1,
+                "color3": -1,
+                "color4": -1
+              },
+              "fontFamily": 0,
+              "fontSize": 10,
+              "italic": false,
+              "longClickIntervalTime": -1,
+              "longClickTimeOut": -1,
+              "picTab": {
+                "pic0": ""
+              },
+              "text": "在线",
+              "touchable": true,
+              "visible": true
+            },
+            {
+              "id": 24006,
               "caption": "ListItem13ItemSubChevron",
               "position": {
                 "left": 252,
@@ -2112,7 +2150,7 @@
           "longClickTimeOut": -1,
           "subItem": [
             {
-              "id": 24006,
+              "id": 24007,
               "caption": "TextWheelPicker14Col1SubTitle",
               "position": {
                 "left": 8,
@@ -2209,7 +2247,7 @@
           "longClickTimeOut": -1,
           "subItem": [
             {
-              "id": 24007,
+              "id": 24008,
               "caption": "TextWheelPicker14Col2SubTitle",
               "position": {
                 "left": 8,

@@ -27,24 +27,24 @@
   控件：顶层 8 个键 ｜ 含嵌套共 62 个控件
 -- render --
 ========================================================================
-json2img v0.1.0 �� ����ȼ�������Ⱦ��PIL ���ؼ�����ֹ̬��
+json2img v0.1.0 — 引擎等价离线渲染（PIL 像素级，静止态）
 ========================================================================
 [render] page=main       json=templates\ui_blocks\examples\settings_1024x600\project\ui\main.json
           out=C:\Users\zkswe\.openclaw\workspace\tools\FlyThings_mcp_open\templates\ui_blocks\examples\settings_1024x600\project\ui\main.render.png  size=1024x600  resolution=1024x600  scale=1
           font=C:\Users\zkswe\.openclaw\workspace\tools\FlyThings_mcp_open\components\fonts\fonts\zkswe-hans-common.ttf
-          [OK] �ߴ� == resolution �� scale
+          [OK] 尺寸 == resolution × scale
 ------------------------------------------------------------------------
-[unsupported/����] 1 �ࣺ
-   - textview       bold                   x4    �� *Bold*.ttf ���� �� ��ͬ����
+[unsupported/降级] 1 类：
+   - textview       bold                   x4    无 *Bold*.ttf 变体 → 用同字体
      pages: main
-     ��: textview/TextTitle, textview/SectionHeader1, textview/SectionHeader5, textview/SectionHeader10
+     例: textview/TextTitle, textview/SectionHeader1, textview/SectionHeader5, textview/SectionHeader10
 ------------------------------------------------------------------------
-[У׼״̬] alignment��ģʽ --align-mode measured��
-   ʵ����������֤����36=����+��ֱ���� 37=���� 38=����+��ֱ���� 33=���� 41=�ײ�
-     [measured]     36  �� ('l', 'c')   x20
-     [measured]     37  �� ('c', 'c')   x4
-   TODO ��У׼�������������4/5/0/1/6/2 ���� ��ģʽ���룺
-   �ϼƣ�ʵ�� 24 �� / ��У׼ 0 �� / ���� 0 ��
+[校准状态] alignment（模式 --align-mode measured）
+   实测表（真机验证）：36=靠左+垂直居中 37=居中 38=靠右+垂直居中 33=顶部 41=底部
+     [measured]     36  → ('l', 'c')   x20
+     [measured]     37  → ('c', 'c')   x4
+   TODO 待校准（无真机表）：4/5/0/1/6/2 —— 本模式解码：
+   合计：实测 24 处 / 待校准 0 处 / 表外 0 处
   渲染图 main.render.png 1024x600 ｜ 尺寸 == resolution: True
 -- check_all --
   [NOTE] ic_info_36.png                   未登记资产：按 rules.unknown_policy 只 NOTE、不判 FAIL；请在 standard §7.1 分类表补登记
