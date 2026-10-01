@@ -1303,6 +1303,104 @@ def check_scrollwindow_travel(project_root):
     return notes, warns
 
 
+def check_family_alignment(project_root):
+    """同族控件口径离群 + 同层「文本≈图标重叠」（设计期静态拦截）。
+
+    背景（钟工 2026-10-01：「希望以后在设计的时候就可以解决」）：设置行这类**重复行模板**
+    最容易在“后加一行”时走样 —— 已发生的两起：① 多屏拼接行的值被做成右对齐窄框（300..418），
+    而其余 12 行是 75..375 左对齐 → 该行文字比别的行凸出 43px；② 值框右缘顶到箭头盒
+    （重叠/贴边）→ “文本和箭头混到一起”，而引擎**先画背景图后画文字** → 箭头被文字盖住。
+
+    判据（同页 / 同父容器 / 同角色）：
+      · 角色 = caption 尾巴（Label / Value / IconBg / Icon / Chevron）；
+      · 族内 ≥3 个成员时取 (left,width,height,alignment) 众数，成员偏离 >2px 或尺寸/对齐全不等 → WARN；
+      · 族内 Label/Value 盒 与 Icon/Chevron 盒 相交（容差 0px）→ WARN。
+    返回 {'notes','warns'}；只报不拦（新增判据一律先 WARN，避免存量工程被误伤）。
+    """
+    import collections
+    role_re = re.compile(r'Row[^_]*?(Label|Value|IconBg|Icon|Chevron)$')
+    notes, warns = [], []
+    seen = set()
+    for jf in _ui_pages(project_root):
+        rel = 'ui/' + os.path.basename(jf)
+        try:
+            with open(jf, encoding='utf-8') as fp:
+                d = json.load(fp)
+        except (OSError, ValueError) as e:
+            notes.append('%s 读取失败，已跳过（不静默）：%s' % (rel, e))
+            continue
+        # 按“父容器”分组：顶层 + 每个 window/scrollwindow 各自一组
+        containers = [('root', d)]
+        for k, v in _all_controls(d):
+            if k.startswith(('window__', 'scrollwindow__', 'pagewindow__')):
+                containers.append((k, v))
+        for cname, node in containers:
+            fam = collections.defaultdict(list)
+            boxes = []
+            for k, v in _all_controls(node):
+                cap = v.get('caption') or ''
+                m = role_re.search(cap)
+                p = v.get('position') or {}
+                if not p.get('width'):
+                    continue
+                boxes.append((k, cap, p, v.get('alignment'), role_re.search(cap).group(1) if m else ''))
+                if not m:
+                    continue
+                fam[m.group(1)].append((k, cap, p, v.get('alignment')))
+            for role, items in fam.items():
+                if len(items) < 3:
+                    continue
+
+                def mode_of(fn):
+                    c = collections.Counter(fn(t) for t in items)
+                    val, n = c.most_common(1)[0]
+                    return val, n / float(len(items))
+                ml, sl = mode_of(lambda t: t[2].get('left'))
+                mw, sw = mode_of(lambda t: t[2].get('width'))
+                mh, sh = mode_of(lambda t: t[2].get('height'))
+                ma, sa = mode_of(lambda t: t[3])
+                if min(sl, sw, sh, sa) < 0.6:
+                    continue          # 族内本身就不均匀 → 不是同一类行，不报（防误报）
+                for k, cap, p, al in items:
+                    why = []
+                    if isinstance(ml, int) and isinstance(p.get('left'), int) and abs(p['left'] - ml) > 2:
+                        why.append('left=%s(族内多数 %s)' % (p['left'], ml))
+                    if isinstance(mw, int) and p.get('width') != mw:
+                        why.append('width=%s(多数 %s)' % (p.get('width'), mw))
+                    if isinstance(mh, int) and p.get('height') != mh:
+                        why.append('height=%s(多数 %s)' % (p.get('height'), mh))
+                    if al != ma:
+                        why.append('alignment=%s(多数 %s)' % (al, ma))
+                    if why:
+                        msg = ('%s(%s) 口径偏离同族：%s → 照抄同页已有行的口径，别自创形态'
+                               % (cap or k, role, '，'.join(why)))
+                        if (rel, msg) not in seen:
+                            seen.add((rel, msg))
+                            warns.append((rel, msg))
+                            notes.append('%s / %s / %s：%s' % (rel, cname, cap, '；'.join(why)))
+            # 文本盒 × 图标/箭头盒 相交
+            txt = [b for b in boxes if b[4] in ('Label', 'Value')]
+            icon = [b for b in boxes if b[4] in ('Icon', 'Chevron', 'IconBg')]
+
+            def _r(p):
+                vals = (p.get('left'), p.get('top'), p.get('width'), p.get('height'))
+                if any(v is None for v in vals):
+                    return None
+                return (vals[0], vals[1], vals[0] + vals[2], vals[1] + vals[3])
+            for _k, tcap, tp, _al, _rl in txt:
+                ta = _r(tp)
+                for _k2, icap, ip, _al2, _rl2 in icon:
+                    ib = _r(ip)
+                    if ta and ib and _overlap(ta, ib, min_axis=1):
+                        msg = ('%s 与 %s 盒子相交（%s vs %s）：引擎先画背景图后画文字 → 图标/箭头会被文字盖住；'
+                               '应把文本按同页行模板摆回，**不要挤文本去让位**' % (tcap or tk, icap or ik, tp, ip))
+                        if (rel, msg) not in seen:
+                            seen.add((rel, msg))
+                            warns.append((rel, msg))
+                            notes.append('%s / %s 相交 %s x %s' % (rel, tcap, tp, ip))
+    return notes, warns
+
+
 def main(project_root):
     root = os.path.abspath(project_root)
     if not os.path.isdir(root):
@@ -1990,6 +2088,18 @@ def main(project_root):
         warn('%s %s' % (pg, msg))
     if st_notes and not st_warns:
         print('  [PASS] 行程与 dragMaxDis 用法正常（%d 处）' % len(st_notes))
+
+    print('== 27. 同族控件口径离群 / 文本×图标重叠（设计期拦截；钟工 2026-10-01）==\n'
+          '       给设置行这类重复行模板上的静态判据：同页同父同角色的 *Label/*Value/*Icon/*Chevron\n'
+          '       应取同一组 (left,width,height,alignment) 口径；偏离众数、或文本盒与图标/箭头盒相交 → WARN。\n'
+          '       实例：某行值框被做成右对齐窄框 300..418（其余 12 行 75..375），且右缘顶到箭头盒\n'
+          '       → 文字凸出 43px + “文本和箭头混到一起”（引擎先画背景图后画文字，箭头被盖住）。\n'
+          '       口径：knowledge/uicontrols/scrollwindow-layout-checklist.md。')
+    fa_notes, fa_warns = check_family_alignment(root)
+    if not fa_notes:
+        print('  [PASS] 同族口径一致、无文本×图标重叠')
+    for pg, msg in fa_warns:
+        warn('%s %s' % (pg, msg))
 
     print()
     if warnings:

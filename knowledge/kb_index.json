@@ -1,10 +1,10 @@
 {
  "meta": {
   "schema": 1,
-  "built_at": "2026-10-01 09:28:02",
-  "mcp_version": "0.27.147-open",
+  "built_at": "2026-10-01 09:46:11",
+  "mcp_version": "0.27.148-open",
   "doc_count": 95,
-  "source_hash": "2f48b671b3c84bc76654caf5bbb81d48"
+  "source_hash": "4f2294560fbb7cec77793a204e789142"
  },
  "summary": {
   "total": 95,
@@ -2751,8 +2751,8 @@
    "evidenceLevel": "has-evidence",
    "needsEvidence": true,
    "hasQueries": true,
-   "bytes": 8157,
-   "sha256": "ca3a18888a3ee9dd2576f87619a1b13edc783b167c05ef1c9b5320170ed86eb9",
+   "bytes": 10349,
+   "sha256": "ba00e98f86c74cf5f7665267d274656037071bf6ff656ed5ce5ce47c5df4cd72",
    "fingerprint": "50e71de52213d7e9",
    "ageDays": 0,
    "freshness": "fresh",
