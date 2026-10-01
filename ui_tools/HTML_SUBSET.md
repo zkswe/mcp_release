@@ -404,7 +404,8 @@ python tools/ui_tools/html2json.py ui/wireframe.html ui/main.json --merge-window
    **禁止**：AI 用自身 image 生成能力直出小尺寸 png 交付（大图缩小边缘/斜线必锯齿）、
    禁止自写 Pillow/绘图代码 1x 直画圆角/斜线/圆弧（1x 二值 alpha 无抗锯齿，PIL 默认 butt 线帽斜线端点出毛刺）。
 9. **PNG 防锯齿五要素（生成后逐条自查，任一不满足重新生成或换工具路径）**：
-   ① 像素尺寸与控件 position 严格相等（FlyThings 普通 PNG 不缩放；大图缩小必须交给工具 LANCZOS）；
+   ① 像素尺寸与控件 position 严格相等（**引擎会把图拉伸填充到盒子**（图 != 盒不报错）→ 非整数缩放必糊；
+      大图缩小必须交给工具 LANCZOS）；
    ② 斜线/曲线/圆角必须 ≥4x 超采样绘制后 LANCZOS 缩回，或 α 通道高斯羽化过渡（sigma≈0.5），禁止 1x 直画；
    ③ 线段端点加 round cap（PIL 默认 butt 平头 → 斜线端点毛刺缺口）；
    ④ 圆角/异形图弧线外角落 alpha 必须 =0（真透明），阴影模糊溢出须再裁一次圆角清残影；

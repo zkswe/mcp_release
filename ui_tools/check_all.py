@@ -455,7 +455,8 @@ def _ctrl_pic_refs(v):
 def verify_assets(project_root):
     """核对「json 声明 vs 磁盘产物」：引用文件是否存在 + PNG 尺寸是否 == 盒子。
 
-    为什么必须机器化：FlyThings 不缩放普通 PNG，图与盒子不等即错位/裁切；
+    为什么必须机器化：**引擎会把图「拉伸填充」到控件矩形**（图 != 盒不报错，但非整数缩放会糊/变形——
+    这才是「图 == 盒」纪律的原因，不是引擎贴不上）；
     v0.27.30 的阴影三连 bug 正是「图没生成也没人发现」，靠人肉目测漏掉了。
 
     盒子（铁律 #1 的作用对象）：
@@ -1740,7 +1741,8 @@ def main(project_root):
         log(not bad, '%s SeekBar 9-patch %s' % (f, '；'.join(bad) if bad else '无'))
 
     print('== 11. 图片尺寸必须与盒子严格相等（控件 position；thumb 子盒用 thumb.size）==\n'
-          '       FlyThings 不缩放普通 PNG；thumb 滑块是「自有尺寸」子盒，盒子=thumb.size（铁律 #1）。')
+          '       引擎行为：图 != 盒时**拉伸填充**（不报错，但非整数缩放发糊/变形）→ 所以要 1:1；\n'
+          '       thumb 滑块是「自有尺寸」子盒，盒子=thumb.size（铁律 #1）。')
     if not _HAS_PIL:
         log(True, '无 PIL，跳过图片尺寸核对（仅检查引用存在性）')
     for f in PAGES:
