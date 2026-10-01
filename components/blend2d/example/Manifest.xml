@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE flythings>
+
+<!--
+  components/blend2d/example —— Blend2D 门面最小示例（Z20 480×480）
+
+  依赖说明：
+    blend2d 0.11.1  —— 官方依赖包（**只有 z20 平台有**）：提供 <blend2d.h> 与链接用的 .so
+                       ⚠️ 包里的库是「原厂档」；要用「性能档（NEON）」时，把
+                          components/blend2d/lib/z20-neon/libblend2d.so 覆盖到
+                          <工程>/src/dependencies/lib/libblend2d.so（换库零代码改动，ABI 全等）
+    其余为工程模板自带（easyui/log/zkhardware/zknet/base-utility）
+
+  部署（少一条就报 initLib error）：
+    · 调试：fun launch **不推**第三方包 .so → 手动 adb push <so> /tmp/libblend2d.so
+    · 量产：<工程>/src/dependencies/lib/libblend2d.so → fun pack（进 update.img）
+-->
+<manifest platform="Z20">
+    <dependencies enableOnPlatforms="Z20">
+        <package id="easyui" version="^2.2.0"/>
+        <package id="log" version="0.0.0"/>
+        <package id="zkhardware" version="0.0.0"/>
+        <package id="zknet" version="0.0.0"/>
+        <package id="base-utility" version="^10.8.5"/>
+        <package id="blend2d" version="0.11.1"/>
+    </dependencies>
+</manifest>

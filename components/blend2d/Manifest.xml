@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  components/blend2d —— 引用声明（**二进制引擎 + 门面源码**）
+
+  本模块的交付物：
+    include/zk/zk_blend2d.h        唯一对外头（公开 API 契约，**不含任何 BL* 类型**）
+    src/zk_blend2d.cpp             门面实现（include <blend2d.h>；拷进工程一起编）
+    lib/z20/libblend2d.so          原厂档（来自官方依赖包 blend2d 0.11.1，md5 E07458D8…）
+    lib/z20-neon/libblend2d.so     性能档（我们按 commit a7f9476 重编的 NEON 版，md5 C1E9DCCE…）
+    lib/BUILD_INFO.md              两档来源 / commit / 构建命令 / ABI 787:787 / 体积账 / libgcc_s 依赖
+
+  接进工程（手工引入，推荐）：
+    1) 拷 include/zk/ + src/zk_blend2d.cpp 到工程（如 src/zk/）；
+    2) 选一档 .so → 放到 <工程>/src/dependencies/lib/libblend2d.so
+       （**这一步是"上屏/量产"的关键**：fun pack 会把它打进 update.img；
+        调试时 fun launch 不推第三方包 .so，要手动 adb push 到 /tmp）；
+    3) 工程 Manifest 声明底层包（见下）；
+    4) 上屏：bitmap_t 指向 canvas.pixels()，setBackgroundBmp 挂一次，之后 setInvalid(!isInvalid()) 翻帧。
+
+  注：本模块**不在依赖包仓库里**，所以下面不写 <package id="zkb2d">；
+      将来若注册进包仓库，工程里就只需一行：
+        <package id="zkb2d" version="0.1.0"></package>
+      （版本写死，不用 ^ 浮动：底层 ABI 一变，编出来的东西就不可复现。）
+
+  平台矩阵（详见 platforms.md）：
+    Z20 已验（真机 + NEON 复测）· Z21 / T113EMMC 理论可用**未验** ·
+    V85X / T113(musl) **不可直接用**（缺 libstdc++/glibc，需 musl 重编）· F13x（RISC-V）**不可用**
+-->
+<manifest>
+
+  <!-- ============================================================ Z20（已验） -->
+  <platform name="Z20">
+    <dependencies>
+      <!-- 必需：Blend2D 引擎（**注册表只有 z20 有这个包**；提供 <blend2d.h> 与链接用 .so） -->
+      <package id="blend2d" version="0.11.1"></package>
+      <!-- 上屏通道（bitmap_t / setBackgroundBmp / setInvalid）用；纯离屏出图（savePng）可不依赖 -->
+      <package id="easyui"   version="^2.2.0"></package>
+      <!-- 可选：日志/基础设施（工程模板一般都有） -->
+      <package id="log"      version="0.0.0"></package>
+    </dependencies>
+  </platform>
+
+  <!-- ============================================================ 理论可用（未验证，自己验了再标） -->
+  <!-- Z21：与 Z20 同 libc(glibc)/同族工具链，理论上可直接复用同一份 .so；
+           但注册表**没有** z21 的 blend2d 包 → 需要自己把 .so 放进 src/dependencies/lib/ 并自证（未验）。
+       T113EMMC：同为 ARMv7 + glibc → 同上（未验）。 -->
+  <platform name="Z21">
+    <dependencies>
+      <package id="easyui" version="^2.2.0"></package>
+    </dependencies>
+  </platform>
+  <platform name="T113EMMC">
+    <dependencies>
+      <package id="easyui" version="^2.2.0"></package>
+    </dependencies>
+  </platform>
+
+  <!-- ============================================================ 不可用（别照抄） -->
+  <!-- V85X / T113（musl）：包内 .so 依赖 glibc + libstdc++.so.6 → musl 平台**不能直接用**，需 musl 重编（未做）。
+       F133/F135/F136（RISC-V64 musl）：架构不同，需另编（RISC-V 同样无 JIT，走参考管线；未做）。 -->
+
+</manifest>
