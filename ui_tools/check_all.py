@@ -1349,6 +1349,10 @@ def check_family_alignment(project_root):
                 fam[m.group(1)].append((k, cap, p, v.get('alignment')))
             for role, items in fam.items():
                 if len(items) < 3:
+                    if items:
+                        notes.append('%s / %s / %s 族内仅 %d 个成员，无“同页基准口径”可对比 → '
+                                     '按同页其它行的口径或按基准屏（1024×600）比例换算后定，不靠猜'
+                                     % (rel, cname, role, len(items)))
                     continue
 
                 def mode_of(fn):
