@@ -477,6 +477,17 @@ def _render_control(key, ctrl, depth=0, base_dir='', edit=False):
                 f'style="{style}{track}" '
                 f'data-progress="{pct}"><div class="seekbar-fill" style="width:{pct}%;{fill}"></div></div>')
 
+    if ctype in ('scrollwindow', 'pagewindow'):
+        # 只装 window（层级铁律）；**必须递归渲染子控件**，否则确认稿只剩容器壳、看不到滑动区内容
+        inner = []
+        for k2, v2 in ctrl.items():
+            if isinstance(v2, dict) and '__' in k2 and k2 != key:
+                inner.append(_render_control(k2, v2, depth + 1, base_dir, edit))
+        # 视口裁剪由 .ctrl 的 overflow:hidden 提供（与引擎一致：内层 window 可高于视口，多出的部分被裁掉）
+        return (f'<div class="ctrl {ctype} {align}" data-caption="{cap}" '
+                f'{_da(key, ctrl, ctype, edit)} '
+                f'style="{style}">' + ''.join(inner) + '</div>')
+
     if ctype == 'listview':
         cols = int(ctrl.get('cols', 1) or 1)
         rows = int(ctrl.get('rows', 1) or 1)
