@@ -128,9 +128,9 @@ class TestBothServersRegisterExtras(unittest.TestCase):
 class TestBinToolsSurface(unittest.TestCase):
     """「能力不止 op」：bin_tools 设备端工具必须在**工具面**可发现。
 
-    2026-09-14 钟工反馈的回退位：外部 AI 数完 34 个 op 就断言「这版没有 touch 注入」——
-    实际 touch 自 v0.27.40 起一直在 bin_tools/<平台>/ 下，只是当时工具面没有任何出口。
-    三条出口各钉一条用例：get_version.binTools / flythings://tools 一节 / 分发器 docstring。
+    2026-09-14 需求方反馈的回退位：外部 AI 数完 34 个 op 就断言「这版没有 touch 注入」——
+实际 touch 自 v0.27.40 起一直在 bin_tools/<平台>/ 下，只是当时工具面没有任何出口。
+三条出口各钉一条用例：get_version.binTools / flythings://tools 一节 / 分发器 docstring。
     """
 
     def test_get_version_exposes_bin_tools(self):

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""corner_audit.py — 切图「缺倒角 / 直角残留」审计（2026-09-20 M5，钟工「切图缺倒角必须从设计标准和拦截上处理好」）
+"""corner_audit.py — 切图「缺倒角 / 直角残留」审计（2026-09-20 M5，需求方「切图缺倒角必须从设计标准和拦截上处理好」）
 
 为什么需要它
 ------------
@@ -19,10 +19,10 @@
   · **thr（不透明阈值）**：默认 `alpha_opaque`=128；若整图峰值 α < 128
     （**半透明资产**：9-patch 半透卡片 / 半透明面板）→ 改用**相对阈值**
     `thr = ceil(0.5 × 峰值α)`（半个像素覆盖率，与 128 同义，只是换成相对刻度）。
-    没有这一条时，所有峰值 <128 的资产四角全部 d=-1 → 「不判」→ **半径判据整条失效**。
+没有这一条时，所有峰值 <128 的资产四角全部 d=-1 → 「不判」→ **半径判据整条失效**。
   · **`*.9.png`（9-patch）**：最外 1px 是 **marker 环**（拉伸区/内容区元数据，不是视觉内容）
     → 判前**剥离最外 1px**，只判本体；否则量到的是 marker 环的透明角，r_est 虚高（实测 19.35
-    把真缺陷放过去）。marker 环的其他影响由 aa_audit 的 NINEPATCH_MARKER 豁免区负责。
+把真缺陷放过去）。marker 环的其他影响由 aa_audit 的 NINEPATCH_MARKER 豁免区负责。
 
 判定（阈值出自 `asset_audit_rules.json` 的 defaults，逐条可追溯到标准 §7.2/§7.7）：
 
@@ -34,13 +34,13 @@
 | `asym` | 同图四角 `r_est` 极差 > `asym_max`(=4px) 且 min/max < `asym_ratio`(=0.5) | DEFECT |
 | `n/a` | 该角所在行/列整条透明（无内容）→ 不判（记 n/a，绝不瞎猜） | — |
 
-【B】弧线过渡质量（arc_hard；2026-09-20 M8 新增，钟工「ct_card.9.png 倒角严重锯齿」）
+【B】弧线过渡质量（arc_hard；2026-09-20 M8 新增，需求方「ct_card.9.png 倒角严重锯齿」）
 【A】只量「倒角有没有/够不够大」，看不见「弧上过渡被压进 1px」——
 半透明 9-patch 卡片的弧上一像素从背景直接跳到 0.68×满值，几何 r_est 照样合格、肉眼却是锯齿。
 本判据直接量**外沿过渡**：角块内「进入像素」= α > 0 且 4 邻域存在 α = 0 的像素。
 覆盖率 = α / 峰值α（相对刻度，与半透明/不透明无关）。
 
-  要求：进入像素里**成组出现**覆盖率 ≤ `arc_lo_cov_max`(=0.35) 的像素：
+要求：进入像素里**成组出现**覆盖率 ≤ `arc_lo_cov_max`(=0.35) 的像素：
         `min_cov ≤ 0.35` 且 `count(cov ≤ 0.35) ≥ arc_lo_px_min`(=2)。
 
 **背景口径 = 完全透明（α=0）**，不用相对比例阈值：0.02×峰值 会把真 AA 的低覆盖率像素
@@ -65,8 +65,8 @@ N ≈ (π/2)·r（r=14 → 22），像素中心到边界的有符号距离的小
 
 | 样本 | min_cov | count(≤0.35) | 判定 |
 |---|---|---|---|
-| 真 AA 的最佳值（home_indicator / ct_check_off / vslider_fill / tile_*） | 0.153 / 0.180 / **0.012** / 0.047 | 8 / 2 / 12 / 88 | CLEAN（离阈值 ≥2.3×） |
-| `ct_card.9.png` **修前**（二值描边带） | **0.676**（p05=p10 同值） | **0** | DEFECT |
+| 真 AA 的最佳值（home_indicator / ct_check_off / vslider_fill / tile_*） | 0.153 / 0.180 / **0.012**/ 0.047 | 8 / 2 / 12 / 88 | CLEAN（离阈值 ≥2.3×） |
+| `ct_card.9.png` **修前**（二值描边带） | **0.676**（p05=p10 同值） | **0**| DEFECT |
 | `ct_card.9.png` **修后**（覆盖率口径） | 0.147 | 24 | CLEAN |
 
 | 结果 | 条件 | 级别 |
@@ -86,7 +86,7 @@ N ≈ (π/2)·r（r=14 → 22），像素中心到边界的有符号距离的小
             [--arc-only]          # 只判【B】弧线过渡质量（check_all #25 用）
             [--no-arc]            # 不判【B】弧线过渡质量（排查用）
             [--verbose-arc]       # 逐张打印弧线指标（含 CLEAN）
-  退出码：0 = 无缺陷；`--fail` 时「有真缺陷」→ 1（门禁用这个）。
+退出码：0 = 无缺陷；`--fail` 时「有真缺陷」→ 1（门禁用这个）。
   `--list-classes` 只打印分类结果（登记表体检）。
 """
 import argparse
@@ -172,7 +172,7 @@ def token_of(kind, radius, w, h):
 # ---------------------------------------------------------------- 几何
 def r_est_from_d(d):
     """由边起跑距离反解圆弧半径：d = r - sqrt(r-0.25) → r = (0.5+sqrt(d))^2 + 0.25。"""
-    return (0.5 + math.sqrt(max(0.0, float(d)))) ** 2 + 0.25
+    return (0.5 + math.sqrt(max(0.0, float(d)))) **2 + 0.25
 
 
 def _first_opaque(line, alpha_opaque, reverse=False):
@@ -245,7 +245,7 @@ def content_alpha(name, a_full):
     9-patch 的最外 1px 是拉伸区/内容区元数据（纯黑不透明），不是视觉内容：
       · 把它当内容 → 量到的是 marker 环的透明角（r_est 虚高，实测 19.35，把真缺陷放过去）；
       · 半透明卡片还会有 marker 行 α=255 的假“不透明边界”。
-    故先剥离再判；marker 行本身的量化残留由 aa_audit 的豁免区负责（分工不重叠）。
+故先剥离再判；marker 行本身的量化残留由 aa_audit 的豁免区负责（分工不重叠）。
     """
     ninepatch = name.lower().endswith('.9.png')
     if ninepatch and a_full.shape[0] > 2 and a_full.shape[1] > 2:
@@ -256,7 +256,7 @@ def content_alpha(name, a_full):
 def effective_opaque_thr(alpha_opaque, a):
     """不透明阈值：不透明资产用 `alpha_opaque`；**半透明资产改相对阈值**（峰值的一半）。
 
-    没有这一条时，峰值 α < 128 的资产（半透卡片/半透面板）四角 d 全 = -1 → 整条半径判据失效。
+没有这一条时，峰值 α < 128 的资产（半透卡片/半透面板）四角 d 全 = -1 → 整条半径判据失效。
     """
     amax = float(a.max()) if a.size else 0.0
     if amax * 255.0 < alpha_opaque:
@@ -277,9 +277,9 @@ def _neighbour_any(mask):
 def arc_metrics(a, tok, d):
     """【B】弧线过渡质量：四角角块内「外沿进入像素」的覆盖率下限。
 
-    进入像素 = α > 背景阈值 且 4 邻域存在 α ≤ 背景阈值的像素（内容区最外沿按背景算）。
-    覆盖率 = α / 峰值α（相对刻度，与半透明/不透明无关）。
-    返回 dict(verdict=CLEAN|WARN|DEFECT|NOTE, judged, min_cov, n_px, corners, amax, reason)
+进入像素 = α > 背景阈值 且 4 邻域存在 α ≤ 背景阈值的像素（内容区最外沿按背景算）。
+覆盖率 = α / 峰值α（相对刻度，与半透明/不透明无关）。
+返回 dict(verdict=CLEAN|WARN|DEFECT|NOTE, judged, min_cov, n_px, corners, amax, reason)
     """
     out = {'judged': False, 'verdict': 'NOTE', 'min_cov': None, 'n_px': 0, 'amax': 0.0,
            'corners': {k: {'n': 0, 'min_cov': None} for k in _CORNERS}, 'reason': ''}
@@ -295,7 +295,7 @@ def arc_metrics(a, tok, d):
     bg_thr = max(float(d.get('arc_bg_abs', 0)) / 255.0, float(d['arc_bg_ratio']) * amax)
     # 背景 = 完全透明像素（α ≤ bg_thr，默认为 0）∪ **图外**
     # （不是「图最外 1px」：9-patch 本体剥离 marker 环后，本体最外一行/列就是卡片自己的描边，
-    #  把它当背景会把描边内侧的填充像素误判成「进入像素」）
+    #把它当背景会把描边内侧的填充像素误判成「进入像素」）
     bgin = a <= bg_thr
     padded = np.pad(bgin, 1, mode='constant', constant_values=True)
     nbr_bg = _neighbour_any(padded)[1:-1, 1:-1]
@@ -546,7 +546,7 @@ def main():
     note = [r for r in rows if r['verdict'] == 'NOTE']
     clean = [r for r in rows if r['verdict'] == 'CLEAN']
     err = [r for r in rows if r['verdict'] == 'ERROR']
-    print('== corner_audit（缺倒角 / 直角残留%s）  口径 %s =='
+    print('== corner_audit（缺倒角 / 直角残留%s）口径 %s =='
           % (' + 弧线过渡质量' if not args.no_arc else '', rules_path))
     print('扫 %d 张：真缺陷 %d / WARN %d / EXEMPT %d / NOTE %d / 干净 %d / 错误 %d'
           % (len(rows), len(defect), len(warn), len(exempt), len(note), len(clean), len(err)))
@@ -569,7 +569,7 @@ def main():
                          r['arc'].get('block')))
         for r in arc_bad:
             print('  [ARC DEFECT] %-31s %s' % (r['name'], r['arc']['reason']))
-            print('               四角最小覆盖率 %s（角块 %s，进入像素 %d）'
+            print('四角最小覆盖率 %s（角块 %s，进入像素 %d）'
                   % ({k.upper(): v['min_cov'] for k, v in r['arc']['corners'].items()},
                      r['arc'].get('block'), r['arc']['n_px']))
         for r in arc_warn:
@@ -583,7 +583,7 @@ def main():
         for r in defect:
             print('%-38s %4dx%-4d %s' % (r['name'], r['w'], r['h'], r['reason']))
             if r.get('corners'):
-                print('     四角(边界起跑 d / r_est) %s 令牌=%s'
+                print('四角(边界起跑 d / r_est) %s 令牌=%s'
                       % (r['corners'], r['radius_token']))
                 for k in dict.fromkeys(r.get('at') or []):
                     if k in r['corners']:
@@ -591,7 +591,7 @@ def main():
                                                               r['corners'][k]['d_row'],
                                                               r['corners'][k]['d_col']))
             if r.get('evidence'):
-                print('     证据图 %s' % r['evidence'])
+                print('证据图 %s' % r['evidence'])
     if warn:
         print('--- [WARN] 需人工确认（不阻塞）---')
         for r in warn:

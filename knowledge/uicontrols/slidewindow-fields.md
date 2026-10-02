@@ -16,10 +16,10 @@ evidence: []
 # 🎠 SlideWindow 滑动窗口 JSON 字段规范
 
 > 检索导引：问「九宫格翻页怎么做 / 手机桌面式图标分页 / cols×rows 每页格子数 / items 跨页 index / 图标位置和布局对不上」→ 本文。
-> 2026-09-01 沛哥定规 + 入库（UIlayoutDemo/main.ftu + SlideWindowDemo 实测校准）。
+> 2026-09-01 需求方定规 + 入库（UIlayoutDemo/main.ftu + SlideWindowDemo 实测校准）。
 > Android 主页式九宫格滑动：一个滑动主窗口 + 多个图标项，翻页滑动。
 
-## ✅ 宫格翻页语义（沛哥 2026-09-07 确认）
+## ✅ 宫格翻页语义（2026-09-07 确认）
 - **cols×rows = 每页格子数**：如 4×2 = 每页 8 格；items 总数 11 = 第 1 页 8 个 + 第 2 页 3 个（第二页未满）
 - 像手机桌面图标一样：自动分页、滑动翻页、回调 index 是全局 items 序号（0~10，跨页连续）
 
@@ -44,14 +44,14 @@ evidence: []
 | `backgroundPic` | string | 背景图 |
 | `items[]` | array | 图标项数组，每项 `{picTab{pic0,pic1} 两态图, text 文字, colorTab}` |
 
-## ⚠️ 布局铁律（沛哥 2026-09-01 定规，图标位置不对的根因）
+## ⚠️ 布局铁律（2026-09-01 定规，图标位置不对的根因）
 
 1. **iconSize 按实际图片尺寸设置，不是平分格子大小**
    - 控件区域按 cols×rows 平分出格子，但图标图片有自己的实际宽高
    - `iconSize.width/height` 必须填**图片真实像素**（如 60×60 的 png 就写 60×60），
-     填大了/填小了图标会拉伸变形或位置偏移
+填大了/填小了图标会拉伸变形或位置偏移
    - ❌ 常见错：以为 iconSize = 格子大小（控件宽/cols），导致图标被拉伸、位置不对
-2. **同一 slidewindow 的所有图标尺寸必须一致（沛哥 21:52 补充）**
+2. **同一 slidewindow 的所有图标尺寸必须一致（21:52 补充）**
    - 生成图标时保证所有 items 的图片尺寸统一（如全部 60×60），不一致会导致位置错乱
    - html2json 已加一致性检查：items 图片尺寸不一致 → warning 提示统一尺寸后重转
 3. **padding = 图标相对平分格子区域的内边距**
@@ -60,7 +60,7 @@ evidence: []
 4. **iconTextPadding = 图标配套文字的 padding**
    - 是 icon 配套文本（caption 文字）相对图标的位置偏移（通常 bottom=文字在图标下方间距）
    - 调整它改变文字与图标的距离，不是改图标位置
-5. **坐标由 HTML 原型绝对定位确定，确认好即无需微调（沛哥 21:59 纠正）**
+5. **坐标由 HTML 原型绝对定位确定，确认好即无需微调（21:59 纠正）**
    - json 的 position（left/top/width/height）直接来自 HTML 原型的 data-x/y/w/h，是**绝对布局**，坐标明确
    - HTML 效果确认后 → json 坐标即准确 → **不需要再微调**（也不该微调）
    - ⚠️ 若交付后还要调位置，说明**前期 HTML 效果没确认好**——正确流程：HTML 布局 → json2html/generate_ui_preview 出预览稿给用户确认 → 确认 OK 才 fui pack / 写逻辑 / 交付
@@ -97,7 +97,7 @@ mSlideWindow1Ptr->getCurrentPage();             // 当前页码
 
 ## 常见坑
 
-- **图标位置不对/拉伸** → iconSize 没按实际图片尺寸填（最常见，见布局铁律 1）
+- **图标位置不对/拉伸**→ iconSize 没按实际图片尺寸填（最常见，见布局铁律 1）
 - 图标挤在格子一角 → padding 各边没配好（padding 是图标相对格子边界的留白）
 - 文字叠在图标上/离太远 → 调 iconTextPadding（文字 padding），不是调 padding
 - 图片尺寸与 iconSize 不一致 → 设备上拉伸变形；生成图片时按 iconSize 出图

@@ -16,7 +16,7 @@ evidence: []
 # 🖥️ V85X 显示分层调试：releaseLayer 图层释放 / UI 透出 / 回放旋转
 
 > 检索导引：问「V85X 视频层黑屏 / 图层次残留 / releaseLayer 什么时候必做 / UI 层盖住视频 / 回放方向不对 / 竖装屏配横 UI 错屏」→ 本文；videoView 透出画面见 `knowledge/v85x/videoview-transparent-window.md`。
-> 2026-09-09 实战沉淀（来源：V85X 竖屏 600×1600 + 1600×600 横 UI 工程，UVC 摄像头预览/回放调试）；2026-09-14 沛哥定规 + V85X 扩展屏（AP+P2P）工程校准：**视频解码返回后必须 releaseLayer，否则黑屏**。
+> 2026-09-09 实战沉淀（来源：V85X 竖屏 600×1600 + 1600×600 横 UI 工程，UVC 摄像头预览/回放调试）；2026-09-14 需求方定规 + V85X 扩展屏（AP+P2P）工程校准：**视频解码返回后必须 releaseLayer，否则黑屏**。
 > 适用：**V85X（V853/V851/V553 等）**——竖装屏 + 横 UI + MPP 摄像头（aw-dvr/mpi::）场景；视频解码/播放链路同样适用。
 > ⚠️ 仅 V85X 平台生效（disp 分层机制是 V85X 特有）；T113/F133/Z20 按各自链路处理。
 > 检索词：releaseLayer / 释放图层 / 视频解码返回 / 解码结束 / 播放器退出 / 黑屏 / 黑屏防御 / disp 层 / /dev/disp / DISP_LAYER_SET_CONFIG / 必做动作 / 开发与验收必做 / 格式区间漏关 / RGB_888 / COLOR 模式 / fb0 抓图看不到黑屏。
@@ -25,7 +25,7 @@ evidence: []
 
 V85X 竖屏工程调试「错屏 / 无图像 / 回放方向不对」四板斧，按顺序查：
 1. **屏幕旋转（硬件方向适配）**：**错屏根因 = UI 布局尺寸超出物理屏**——横 UI（1600×600）用在竖装屏（600×1600）上，不旋转时 UI 宽 1600 超过物理宽 600 = 错屏；rotateScreen 值由屏幕安装方向决定 → `package.properties` 配 `EasyUI.cfg={"rotateScreen": 270}`（触摸不转=不写 rotateTouch）→ **必须 clean 全量重编**（ninja 不感知 package.properties 改动）。完整口径（字段/取图角度/生效判据）→ `knowledge/devflow/package-properties-easyui-cfg.md` §9
-2. **图层释放（平台匹配时必做）**：**视频解码返回后 / 启动早期必须做 `releaseLayer()`** 关掉残留 disp 层（保留 UI 层）——V85X 上不做会**黑屏**；**开发与 check 验收都必须做这个**（check_all #19 已机器核验，见 §2-0）
+2. **图层释放（平台匹配时必做）**：**视频解码返回后 / 启动早期必须做 `releaseLayer()`**关掉残留 disp 层（保留 UI 层）——V85X 上不做会**黑屏**；**开发与 check 验收都必须做这个**（check_all #19 已机器核验，见 §2-0）
 3. **无图像**：UI 层（z=16 最顶）不透明背景盖住 disp 视频层（z=1）→ UI 上必须有**可见的 videoView 透明窗口**（`visible:true` + position=画面区域），下层视频才透出
 4. **回放方向**：ZKVideoView 的 `rotation` 是**枚举不是角度**：0/1/2/3 = 0°/90°/180°/270°（顺时针），写 `3` 才是 270°
 
@@ -44,18 +44,18 @@ disp 输出：UI 层（ch2/layer0，z=16，最顶）
 
 ### 2-0 ⚠️ 必做场景：① 启动首次初始化（首要）② 视频解码返回后（平台匹配 → 开发与验收都必做）
 
-**沛哥 2026-09-14 定规**：**用到视频图层的产品**，V85X（V853/V851/V553）上 **① 上来第一次初始化就必须先释放图层**（防崩溃重启后残留的系统级图层没释放 → **屏幕永久性异常**）；**② 视频解码返回后**也要释放一次。两处不做都可能黑屏，但 ① 的后果最严重：**是永久性的**。
+**2026-09-14 定规**：**用到视频图层的产品**，V85X（V853/V851/V553）上 **① 上来第一次初始化就必须先释放图层**（防崩溃重启后残留的系统级图层没释放 → **屏幕永久性异常**）；**② 视频解码返回后**也要释放一次。两处不做都可能黑屏，但 ① 的后果最严重：**是永久性的**。
 
 | 项 | 口径 |
 |----|------|
-| **平台匹配** | 用到视频图层的产品 + V85X 系（disp 分层平台）；T113/F133/Z20 不适用 |
-| **触发时机** | ① **启动首次初始化（首要）**：进程启动早期调一次（UI 起来后、开摄像头/播视频前）；② **视频解码返回后**：解码结束 / 播放器退出（`zk_h264_player_deinit` 一类）/ 播放页销毁返回 UI 时 |
-| **为什么启动必须释放** | disp 图层是**系统级（内核/disp 驱动）状态，不随进程退出而清理**：程序崩溃/重启后，上次残留的图层还在，会盖在 UI 上；如果新启动的进程不去释放，**重启多少次都在 → 屏幕永久持异常**（真机实测：杀进程重启后残留黑层依然在，见 §2-1-3） |
-| **不做会怎样** | 残留视频层仍 enable 且压在 UI 之上/占位 → **黑屏**；崩溃重启场景 → **永久性黑屏/异常**（屏上没内容或只有残帧） |
-| **开发要求** | 代码里必须有释放实现，且**启动初始化路径里必须要调到**（不是“应该做”而是**必做**） |
-| **验收要求** | 机器：`check_all` 第 19 项（见下）；人工：真机抓图 **不够**（见 §2-1-2 陷坑）——必须看 `cat /sys/class/disp/disp/attr/sys` 层清单，必要时重启进程复验 |
+| **平台匹配**| 用到视频图层的产品 + V85X 系（disp 分层平台）；T113/F133/Z20 不适用 |
+| **触发时机**| ① **启动首次初始化（首要）**：进程启动早期调一次（UI 起来后、开摄像头/播视频前）；② **视频解码返回后**：解码结束 / 播放器退出（`zk_h264_player_deinit` 一类）/ 播放页销毁返回 UI 时 |
+| **为什么启动必须释放**| disp 图层是**系统级（内核/disp 驱动）状态，不随进程退出而清理**：程序崩溃/重启后，上次残留的图层还在，会盖在 UI 上；如果新启动的进程不去释放，**重启多少次都在 → 屏幕永久持异常**（真机实测：杀进程重启后残留黑层依然在，见 §2-1-3） |
+| **不做会怎样**| 残留视频层仍 enable 且压在 UI 之上/占位 → **黑屏**；崩溃重启场景 → **永久性黑屏/异常**（屏上没内容或只有残帧） |
+| **开发要求**| 代码里必须有释放实现，且**启动初始化路径里必须要调到**（不是“应该做”而是**必做**） |
+| **验收要求**| 机器：`check_all` 第 19 项（见下）；人工：真机抓图 **不够**（见 §2-1-2 陷坑）——必须看 `cat /sys/class/disp/disp/attr/sys` 层清单，必要时重启进程复验 |
 
-**机器核验（check_all #19）**：平台 = V85X **且** src/ 出现视频解码用法（`zk_h264_player_` / `h264_player.h` / `vdecoder.h` / `CedarX` / `mi_vdec` / `VideoDecoder` / `sunxi_display2`）**但**找不到释放实现（`/dev/disp` + `DISP_LAYER_GET/SET_CONFIG` / `releaseLayer` / `hwdisplay.h`）→ **FAIL**。非 V85X 或未见解码用法 → NOTE 跳过（不误报）。
+**机器核验（check_all #19）**：平台 = V85X **且**src/ 出现视频解码用法（`zk_h264_player_` / `h264_player.h` / `vdecoder.h` / `CedarX` / `mi_vdec` / `VideoDecoder` / `sunxi_display2`）**但**找不到释放实现（`/dev/disp` + `DISP_LAYER_GET/SET_CONFIG` / `releaseLayer` / `hwdisplay.h`）→ **FAIL**。非 V85X 或未见解码用法 → NOTE 跳过（不误报）。
 
 ### 2-1 实现要点（可直接复用）
 
@@ -70,9 +70,9 @@ disp 输出：UI 层（ch2/layer0，z=16，最顶）
 | 造出的残留层 | format 读值 | 格式区间判据的行为 |
 |------|------|------|
 | BUFFER 模式 `DISP_FORMAT_RGB_888`(0x08) ch0/lyr1 | 0x08 | ❌ **误判为 UI 层 → SKIP 漏关**（0x08 落在 0x00~0x13 里） |
-| COLOR 模式纯黑层（`color=0xff000000`）ch0/lyr1 | 0x00（`info.fb.format` 与 `info.color` 是 union，COLOR 层读出来就是 color 的低字节） | ❌ **误判为 UI 层 → SKIP 漏关 → 黑层永远盖在 UI 上** |
+| COLOR 模式纯黑层（`color=0xff000000`）ch0/lyr1 | 0x00（`info.fb.format` 与 `info.color` 是 union，COLOR 层读出来就是 color 的低字节） | ❌ **误判为 UI 层 → SKIP 漏关 → 黑层永远盖在 UI 上**|
 
-**正确口径（实测有效）**：按 **通道/层号** 跳过 UI 层 —— `if ((ch == UI_LYCHN) && (lyl == UI_LYLAY)) continue;`（V851 实测 UI 层稳定在 **ch2/lyr0**），其余 enabled 层全部 `enable=0`。
+**正确口径（实测有效）**：按 **通道/层号**跳过 UI 层 —— `if ((ch == UI_LYCHN) && (lyl == UI_LYLAY)) continue;`（V851 实测 UI 层稳定在 **ch2/lyr0**），其余 enabled 层全部 `enable=0`。
 如需双保险，可再加一条**限定 mode 的**格式判断（`info.mode == LAYER_MODE_BUFFER` 时才看 `fb.format`），但**不要单独用格式区间**：它既会漏关 RGB/COLOR 残留层，也挡不住 UI 通道本身。
 
 #### 2-1-2 真机验证记录（Zkswe_V85X_SPINOR / V851，480×800，2026-09-14）
@@ -83,10 +83,10 @@ disp 输出：UI 层（ch2/layer0，z=16，最顶）
 |------|------|------|
 | 起始 | 仅 `ch2 lyr0 z16 fmt=0x00`（UI） | 无残留时屏幕正常 |
 | 造「残留视频层」（`RGB_888` z=1，在 UI 之下不可见） | `ch0 lyr1 fmt=0x08` + UI | 残留层确实可造出且不影响显示 |
-| **格式区间口径 release** | `SKIP ch0 lyr1`（漏关）| ❌ **残留层仍在**，规则失效 |
-| **ch/lyr 口径 release** | `CLOSE ch0 lyr1` → 只剩 UI | ✅ 正确关掉，UI 层无损 |
+| **格式区间口径 release**| `SKIP ch0 lyr1`（漏关）| ❌ **残留层仍在**，规则失效 |
+| **ch/lyr 口径 release**| `CLOSE ch0 lyr1` → 只剩 UI | ✅ 正确关掉，UI 层无损 |
 | 造「黑层」（COLOR 纯黑 z=17，**盖在 UI 之上**） | `ch0 lyr1 mode=1 z=17 color=0xff000000` + UI | 复现「残留层盖 UI」 |
-| 格式区间口径 release（针对黑层） | `SKIP ch0 lyr1`（漏关）| ❌ 黑层留在最上面 = **屏幕一直黑** |
+| 格式区间口径 release（针对黑层） | `SKIP ch0 lyr1`（漏关）| ❌ 黑层留在最上面 = **屏幕一直黑**|
 | ch/lyr 口径 release | `CLOSE ch0 lyr1` → 只剩 UI | ✅ 恢复 |
 
 #### 2-1-3 崩溃重启残留实测（证明“启动首次初始化必须释放”，2026-09-14 V851）
@@ -97,7 +97,7 @@ disp 输出：UI 层（ch2/layer0，z=16，最顶）
 |------|------|
 | 造残留黑层（COLOR 纯黑 z=17，盖住 UI） | `ch0 lyr1 mode=1 z=17` + UI |
 | `kill <zkgui pid>` → init 自动拉起新进程（新 pid） | — |
-| **重启后再看** | **黑层仍在 `ch0 lyr1 z=17`**（进程换了，图层没变）|
+| **重启后再看**| **黑层仍在 `ch0 lyr1 z=17`**（进程换了，图层没变）|
 | 跑一次释放（ch/lyr 口径） | `CLOSE ch0 lyr1` → 只剩 UI，屏幕恢复 |
 
 **结论**：disp 图层是系统级状态，**不随进程退出/重启而清理**——所以“启动第一次初始化先释放图层”是硬要求：不释放，残留层会在每一次重启后继续盖在 UI 上 ⇒ 屏幕**永久性异常**（只有代码去释放或整机重启才能恢复）。
@@ -189,7 +189,7 @@ E/dvr: at enable(vo.cpp:29)
 | `0xa00f8043` | EN_ERR_VO_DEV_HAS_BINDED | 已绑定 |
 （前缀 `0xa00f` = AW_MPI 错误模块，低字节即 VO 错误枚举）
 
-**架构事实**：easyui ZKVideoView（zkmedia/CedarX 播放器）与 mpi 预览（aw-dvr RearCamera）**共用 VO dev0**；播放器退出/播放页销毁后 VO dev0 **不自动释放** → mpi 预览 enable 同一 dev → HAS_ENABLED。
+**架构事实**：easyui ZKVideoView（zkmedia/CedarX 播放器）与 mpi 预览（aw-dvr RearCamera）**共用 VO dev0**；播放器退出/播放页销毁后 VO dev0 **不自动释放**→ mpi 预览 enable 同一 dev → HAS_ENABLED。
 - ⚠️ **触发条件**：播放页是独立 Activity、走销毁路径（onUI_quit/goBack）才触发；videoview 常驻同一页面不销毁播放器实例时无此问题
 - disp layer 级知识（§2 releaseLayer ch0/layer1）只到层，**VO dev 级是另一层**：disp layer enable 正常但 VO enable 失败
 

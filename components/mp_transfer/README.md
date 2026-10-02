@@ -1,7 +1,7 @@
 # mp_transfer —— 小程序传图/视频（设备端接收参考实现）
 
 > 来源：`F133UhaleAlbum` 设备端提交 `39c25c1`（2026-09-24），**已在其他产品上验证**（附带的 Python 参考接收端由项目维护者用已上线小程序实测通过）。
-> 入库：2026-09-24（钟工：「小程序传输对接指南」先入库，做**相册上传/相册传输模式**时用它）。
+> 入库：2026-09-24（现场反馈：「小程序传输对接指南」先入库，做**相册上传/相册传输模式**时用它）。
 > 知识文档（可检索、含移植清单与坑）：`knowledge/devflow/mp-transfer-miniprogram.md`
 
 ## 是什么 / 不是什么
@@ -16,7 +16,7 @@
 | 项 | 值 |
 |---|---|
 | 发现 | UDP 广播 `255.255.255.255:8899`，每 ≈2 s，正文 `zkswe:<设备名>`（UTF-8，**无换行**；名字空则 `Frame`） |
-| 传输 | TCP `0.0.0.0:9000`；accept 后连接 socket **收发阻塞超时 2 s** |
+| 传输 | TCP `0.0.0.0:9000`；accept 后连接 socket **收发阻塞超时 2 s**|
 | 包头 | `type`(uint8) + `len`(uint32 **大端**)，`len`=文件内容字节数，有效 `1..500 MiB` |
 | 类型 | `1`=图片 / `2`=视频（`0`=文本兼容分支、`3`=扩展，同文件规则） |
 | 文件包 | `type(1B) + fileLen(4B BE) + nameLen(2B BE) + filename(UTF-8) + fileData` |
@@ -43,11 +43,11 @@
 ```bash
 # 1) 先不接设备，用 PC 验证网络与小程序链路（手机与电脑同一局域网）
 py .\src\python\receiver.py --name PythonFrame --output .\received
-#    多网卡/VPN：--bind <本机IP> --broadcast <子网广播地址> --verbose
+#多网卡/VPN：--bind <本机IP> --broadcast <子网广播地址> --verbose
 
 # 2) 接设备端：复制 4 个源文件 + 1 个头到工程，两个 .cpp 加入编译，适配依赖
 #    base::Task/日志宏/defer → 换项目自己的后台线程与 RAII；MP_PATH → 自己的可写目录
-#    媒体解析/缓存（FileParseManager 等）可整段删掉，不影响传输与落盘
+#媒体解析/缓存（FileParseManager 等）可整段删掉，不影响传输与落盘
 # 3) 启动/停止
 MpTransferRuntimeCoordinator::instance().retain("my-project", "My Frame");
 MpTransferRuntimeCoordinator::instance().release("my-project");
@@ -67,4 +67,4 @@ MpTransferRuntimeCoordinator::instance().release("my-project");
   - 媒体解析默认**不做**（只填 path/name/size/mtime）；要宽高/时长就给 mp_parse_file() 写强符号，或编译加 -DMP_TRANSFER_HAVE_FILE_PARSER=1 并提供 mtp_monitor/file_parse_manager.h。
 - 依赖：ase-utility（ase::Task）+ log（<android/log.h>）。
   ⚠！ase-utility 的头会引入 SDK 的 os/MountMonitor.h（在 easyui 包里）——**单独建 in 工程会编不过**（缺该头；强行链 easyui 又会带一堆未解析符号）。
-  本组件属于 **zkgui 工程**，受支持的验证方式 = 接进 zkgui 工程后 un build -p <平台>。
+本组件属于 **zkgui 工程**，受支持的验证方式 = 接进 zkgui 工程后 un build -p <平台>。

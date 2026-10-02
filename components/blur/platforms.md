@@ -75,7 +75,6 @@
 | F133 / F135 / F136（C906，musl） | **已实测**（上表）；RVV 档可用但要整工程开关 |
 | Z20 / Z21（ARM glibc） | **未验证**（纯整数代码，无平台依赖；`down`/`radius` 口径通用） |
 | T113 / V85X（ARM musl） | **未验证** |
-| PC（gcc/clang，x86_64） | 仅做过自测（`example/zk_blur_bench.cpp` 能编能跑，`zk_now_us` 走 QueryPerformanceCounter） |
 
 ## 4. 已知限制
 

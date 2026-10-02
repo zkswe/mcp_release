@@ -1,12 +1,12 @@
 # 📤 双仓库边界与发布流程约定（FlyThings MCP）
 
-> 2026-09-09 沛哥定规。**默认开发维护内部版本（master）**；release 版**仅在沛哥确认需要推送时**按本文边界同步，测试验证后发布。
+> 2026-09-09 需求方定规。**默认开发维护内部版本（master）**；release 版**仅在需求方确认需要推送时**按本文边界同步，测试验证后发布。
 
 ## 1. 仓库矩阵
 
 | 仓库 | remote | 分支 | 定位 | 访问 |
 |------|--------|------|------|------|
-| 内部测试版 | `origin` = gitee.com/Kwolve/fly-things-os_-mcp.git | `master`（完整版） | 日常开发维护主战场，全量知识/工具/demo/内部史 | 私有（沛哥管理） |
+| 内部测试版 | `origin` = gitee.com/Kwolve/fly-things-os_-mcp.git | `master`（完整版） | 日常开发维护主战场，全量知识/工具/demo/内部史 | 私有（管理） |
 | 公开发布版 | `release` = gitee.com/Kwolve/flythingsmcp_release.git | `master`（= 本地 `release-base` 裁剪分支） | 普通开发者：基础控件 + 通用机制 + hardware API + bin_tools + 模板 + 工具 | 公开 |
 
 - 本地分支：`master`（内部全量）、`release-base`（发布裁剪，从 master 派生，force push 到 release/master）
@@ -14,8 +14,8 @@
 
 ## 2. 默认工作流（90% 的时间走这条）
 
-1. 所有开发/知识更新**只改 `master`** → commit → `git push origin master`
-2. **不主动同步 release**；只有沛哥说「发布 release / 推 release 版」才执行 §4 流程
+1. 所有开发/知识更新**只改 `master`**→ commit → `git push origin master`
+2. **不主动同步 release**；只有需求方说「发布 release / 推 release 版」才执行 §4 流程
 3. 发布后 memory 记一笔（版本号 + 同步了什么）
 
 ## 3. 边界规范（release 保留 vs 剔除）
@@ -49,12 +49,12 @@
 | accessKey 真实值 | 一律全 0 占位 `0000000000000000000000000000000000000000`（真实 key 只在本机/内部 Manifest） |
 
 ### ⚠️ 边界说明
-- **安装说明/URL 必须指向公开仓**（2026-09-17 钟工纠错）：release 侧 README 的安装指引与 `pyproject.toml` 的 Homepage 一律写 `https://gitee.com/Kwolve/flythingsmcp_release`；内部仓名/URL（`fly-things-os_-mcp`）已登记进 `release_scope.json` 的禁词表，merge 时若被带回来会被 `release_gate.py` 拦下。
-- hardware 跨平台对照表含 V85X 路径列 = API 一部分（沛哥 12:22 拍板 hardware 可开放）；但 V85X **绑定实现/私有媒体栈**表述为「未收录于公开版，以平台方 SDK 为准」
-- bin_tools 含 v85x 平台 ELF = 通用调试工具（沛哥拍板 bin_tools 全开放）
+- **安装说明/URL 必须指向公开仓**（2026-09-17 需求方纠错）：release 侧 README 的安装指引与 `pyproject.toml` 的 Homepage 一律写 `https://gitee.com/Kwolve/flythingsmcp_release`；内部仓名/URL（`fly-things-os_-mcp`）已登记进 `release_scope.json` 的禁词表，merge 时若被带回来会被 `release_gate.py` 拦下。
+- hardware 跨平台对照表含 V85X 路径列 = API 一部分（12:22 拍板 hardware 可开放）；但 V85X **绑定实现/私有媒体栈**表述为「未收录于公开版，以平台方 SDK 为准」
+- bin_tools 含 v85x 平台 ELF = 通用调试工具（拍板 bin_tools 全开放）
 - 保留文档中指向已删文档的引用必须同步清理（否则客户检索到死链/暴露文档名）
 
-## 4. 发布流程（沛哥确认后执行）
+## 4. 发布流程（经需求方确认后执行）
 
 ```bash
 # ① 从最新 master 派生/更新裁剪分支
@@ -69,14 +69,14 @@ python rebuild_index_local.py <存在的空目录>   # → rag_index.json 只含
 python scripts/check_consistency.py --with-tests
 #   = 版本/工具数/平台矩阵/知识索引/隐私 + 静默 except + 双份 ui_tools 哈希
 #     + gen_manifest 新鲜度 + smoke 30 项 + tests/ 契约用例 38 项
-#   带设备时再加：python scripts/smoke.py --screenshot --device <设备IP>
+#带设备时再加：python scripts/smoke.py --screenshot --device <设备IP>
 #   CI 同口径：sh scripts/ci.sh（Windows：scripts\ci.bat）
 # ⓪ 改了 op/平台/依赖/版本时先补齐生成物：
 python scripts/gen_manifest.py        # tools_manifest.json
 python scripts/gen_gate_catalog.py    # 意图闸门 catalog.json
 python scripts/sync_ui_tools.py --apply   # ui_tools 双份同步（源 = 本仓库）
 # ⑤ 干净性扫描（必须 0 命中）
-#   词表：89afac(真实key) | aw-dvr | aw-mpp | voip | tuyaoscxx | uvc-camera | lylink
+#词表：89afac(真实key) | aw-dvr | aw-mpp | voip | tuyaoscxx | uvc-camera | lylink
 #         | CV201_PND | mark_cv201 | UvcJpegTest | xdv23 | T113CarSystem | KlipperF133
 #         | guoxs/lib | DashBoard | LearningProject | temp_car | demos/ | knowledge/v85x
 # ⑥ 提交 + force push（release/master 只接受 force 覆盖）
@@ -94,7 +94,7 @@ git ls-tree -r --name-only release/master | grep -E "knowledge/v85x|demos/|bin_t
   —— 四处必须一致，`scripts/check_consistency.py` 会卡住不一致的提交
 - 工具数也是机器校验项（`kb_tools.OP_NAMES` = mcp_server docstring = README 三处 = 闸门 catalog = `tools_manifest.json`）
   —— 新增/删除 op 后必须重跑 `gen_manifest.py` + `gen_gate_catalog.py`，否则闸门 FAIL
-- ⛔ **CHANGELOG.md 自 v0.27.31（2026-09-11）起冻结为历史归档**（沛哥：「changelog 不需要提交」）
+- ⛔ **CHANGELOG.md 自 v0.27.31（2026-09-11）起冻结为历史归档**（现场反馈：「changelog 不需要提交」）
   —— 不再追加新节、不进任何提交/发布；版本史 = `features_recent.json`（近期，`compact=False` 取近期全量；原内联 `MCP_FEATURES` 已数据外置）+ 仓库根 `VERSION_HISTORY.md`（更早归档）+ `README.md`
 - release 同步时：`kb_tools.py` 版本照 master（内容为裁剪版）；**CHANGELOG.md 不带**（历史留内部 git）
 - 自检 `scripts/smoke.py` 已不再校验 CHANGELOG（避免代码与冻结档案脱节）

@@ -547,7 +547,7 @@
     "target": "calendar",
     "level": "L4",
     "json": "{\"button__20\":{\"id\":20020,\"caption\":\"BtnDate\",\"position\":{\"left\":40,\"top\":220,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"bgColorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":16,\"picTab\":{},\"text\":\"2026-09-16\",\"touchable\":true},\"window__21\":{\"id\":110021,\"caption\":\"WinCalendar\",\"position\":{\"left\":112,\"top\":60,\"width\":800,\"height\":480},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
-    "notes": "42 个 textview 承载日号 + 触摸反算命中格；无「今天」高亮、无年/月下拉；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内** textview 底色实测画不出；普通容器里可画）**",
+    "notes": "42 个 textview 承载日号 + 触摸反算命中格；无「今天」高亮、无年/月下拉；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内**textview 底色实测画不出；普通容器里可画）**",
     "ref": "components/ui_v1/Calendar"
    },
    {
@@ -876,7 +876,7 @@
     "target": "calendar",
     "level": "L4",
     "json": "{\"button__20\":{\"id\":20020,\"caption\":\"BtnDate\",\"position\":{\"left\":40,\"top\":220,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"bgColorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":16,\"picTab\":{},\"text\":\"2026-09-16\",\"touchable\":true},\"window__21\":{\"id\":110021,\"caption\":\"WinCalendar\",\"position\":{\"left\":112,\"top\":60,\"width\":800,\"height\":480},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
-    "notes": "42 个 textview + 触摸反算；无今天高亮/年月下拉；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内** textview 底色实测画不出；普通容器里可画）**",
+    "notes": "42 个 textview + 触摸反算；无今天高亮/年月下拉；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内**textview 底色实测画不出；普通容器里可画）**",
     "ref": "components/ui_v1/Calendar"
    },
    {
@@ -887,7 +887,7 @@
     "target": "calendar",
     "level": "L4",
     "json": "{\"button__20\":{\"id\":20020,\"caption\":\"BtnDate\",\"position\":{\"left\":40,\"top\":220,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"bgColorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":16,\"picTab\":{},\"text\":\"2026-09-16\",\"touchable\":true},\"window__21\":{\"id\":110021,\"caption\":\"WinCalendar\",\"position\":{\"left\":112,\"top\":60,\"width\":800,\"height\":480},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
-    "notes": "同上（时间部分也可用步进按钮组——观感取舍，滚轮形态走 listview/L2）；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内** textview 底色实测画不出；普通容器里可画）**（日期部分；**时间部分 = `listview` 组合 / L2**，见 `knowledge/uicontrols/listview-wheel-picker.md`）",
+    "notes": "同上（时间部分也可用步进按钮组——观感取舍，滚轮形态走 listview/L2）；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内**textview 底色实测画不出；普通容器里可画）**（日期部分；**时间部分 = `listview` 组合 / L2**，见 `knowledge/uicontrols/listview-wheel-picker.md`）",
     "ref": "components/ui_v1/Calendar"
    },
    {
@@ -1351,7 +1351,7 @@
     "target": "calendar",
     "level": "L4",
     "json": "{\"button__20\":{\"id\":20020,\"caption\":\"BtnDate\",\"position\":{\"left\":40,\"top\":220,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"bgColorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":16,\"picTab\":{},\"text\":\"2026-09-16\",\"touchable\":true},\"window__21\":{\"id\":110021,\"caption\":\"WinCalendar\",\"position\":{\"left\":112,\"top\":60,\"width\":800,\"height\":480},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
-    "notes": "42 个 textview + 触摸反算命中格；无今天高亮/年月下拉；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内** textview 底色实测画不出；普通容器里可画）**",
+    "notes": "42 个 textview + 触摸反算命中格；无今天高亮/年月下拉；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内**textview 底色实测画不出；普通容器里可画）**",
     "ref": "components/ui_v1/Calendar"
    },
    {
@@ -1364,7 +1364,7 @@
     "target": "listview",
     "level": "L2",
     "json": "{\"textview__10\":{\"id\":50010,\"caption\":\"DyHourBand\",\"position\":{\"left\":28,\"top\":142,\"width\":176,\"height\":36},\"alignment\":37,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":18,\"touchable\":false,\"text\":\"\",\"backgroundPic\":\"images/dy_band.png\"},\"listview__11\":{\"id\":60011,\"caption\":\"DyHourLv\",\"position\":{\"left\":28,\"top\":70,\"width\":176,\"height\":180},\"autoRollback\":true,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":true,\"dragMaxDis\":50,\"edgeEffect\":1,\"hasScrollbar\":false,\"orientation\":1,\"rows\":5,\"rowSpacing\":0,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"item\",\"alignment\":37,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"bold\":false,\"colorTab\":{\"color0\":6710886,\"color1\":6710886,\"color2\":6710886,\"color3\":6710886,\"color4\":-1},\"fontSize\":18,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{\"pic0\":\"\",\"pic1\":\"\",\"pic2\":\"\"},\"position\":{\"left\":0,\"top\":0,\"width\":176,\"height\":36},\"text\":\"\",\"touchable\":true,\"visible\":true}}}",
-    "notes": "时间选择 = **listview 组合（L2）**（★钟工 2026-09-19 口径：TimePicker 走 listview 实现对应，两种形态都收口到这里，**不再留「无对应能力」的例外**）：①**滚轮形态**：时/分（12/24h）各一列 `listview__N`（`cycleEnable:true + edgeEffect:1 + dragMaxDis:50 + autoRollback:true`），正中行 = 选中行靠数据侧平移，选中条挂静态装饰 textview（listview 之前，不挂行）；②**时钟盘（clock dial）形态**：**数值/联动语义同样由 listview 组合承载**（12 个方位值按一列排布，回读中心行 → 时/分），**圆形排列观感**要用 12 方位按钮组或 ZKPainter 自绘才有 （**观感降级说明，不是能力缺失**；非矩形/圆周布局属 L3 自绘，要做就按 gap-list 编号立项）。不用自绘包（`components/ui_v1/WheelPicker/` 2026-09-19 已移除）。",
+    "notes": "时间选择 = **listview 组合（L2）**（★2026-09-19 口径：TimePicker 走 listview 实现对应，两种形态都收口到这里，**不再留「无对应能力」的例外**）：①**滚轮形态**：时/分（12/24h）各一列 `listview__N`（`cycleEnable:true + edgeEffect:1 + dragMaxDis:50 + autoRollback:true`），正中行 = 选中行靠数据侧平移，选中条挂静态装饰 textview（listview 之前，不挂行）；②**时钟盘（clock dial）形态**：**数值/联动语义同样由 listview 组合承载**（12 个方位值按一列排布，回读中心行 → 时/分），**圆形排列观感**要用 12 方位按钮组或 ZKPainter 自绘才有 （**观感降级说明，不是能力缺失**；非矩形/圆周布局属 L3 自绘，要做就按 gap-list 编号立项）。不用自绘包（`components/ui_v1/WheelPicker/` 2026-09-19 已移除）。",
     "ref": "knowledge/uicontrols/listview-wheel-picker.md（字段配法 + 正中行对齐 + 4 个真机坑 + 像素验收 + §6 时间选择/时钟盘）；components/ui_v1/control-map.md 2.24（滚轮 L2 改判） / 2.15（日期时间选择）"
    },
    {
@@ -1756,7 +1756,7 @@
     "target": "calendar",
     "level": "L4",
     "json": "{\"button__20\":{\"id\":20020,\"caption\":\"BtnDate\",\"position\":{\"left\":40,\"top\":220,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"bgColorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":16,\"picTab\":{},\"text\":\"2026-09-16\",\"touchable\":true},\"window__21\":{\"id\":110021,\"caption\":\"WinCalendar\",\"position\":{\"left\":112,\"top\":60,\"width\":800,\"height\":480},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
-    "notes": "42 个 textview + 触摸反算命中格；时间部分用步进按钮组；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内** textview 底色实测画不出；普通容器里可画）**（日期部分；**时间部分 = `listview` 组合 / L2**，见 `knowledge/uicontrols/listview-wheel-picker.md`）",
+    "notes": "42 个 textview + 触摸反算命中格；时间部分用步进按钮组；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内**textview 底色实测画不出；普通容器里可画）**（日期部分；**时间部分 = `listview` 组合 / L2**，见 `knowledge/uicontrols/listview-wheel-picker.md`）",
     "ref": "components/ui_v1/Calendar"
    },
    {
@@ -1768,7 +1768,7 @@
     "target": "listview",
     "level": "L2",
     "json": "{\"textview__10\":{\"id\":50010,\"caption\":\"DyHourBand\",\"position\":{\"left\":28,\"top\":142,\"width\":176,\"height\":36},\"alignment\":37,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":18,\"touchable\":false,\"text\":\"\",\"backgroundPic\":\"images/dy_band.png\"},\"listview__11\":{\"id\":60011,\"caption\":\"DyHourLv\",\"position\":{\"left\":28,\"top\":70,\"width\":176,\"height\":180},\"autoRollback\":true,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":true,\"dragMaxDis\":50,\"edgeEffect\":1,\"hasScrollbar\":false,\"orientation\":1,\"rows\":5,\"rowSpacing\":0,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"item\",\"alignment\":37,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"bold\":false,\"colorTab\":{\"color0\":6710886,\"color1\":6710886,\"color2\":6710886,\"color3\":6710886,\"color4\":-1},\"fontSize\":18,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{\"pic0\":\"\",\"pic1\":\"\",\"pic2\":\"\"},\"position\":{\"left\":0,\"top\":0,\"width\":176,\"height\":36},\"text\":\"\",\"touchable\":true,\"visible\":true}}}",
-    "notes": "时间滚轮 = **listview 组合（L2）**（钟工 2026-09-19 口径：`picker mode=time` 走 listview 实现对应）：时/分各一列 `listview__N`（`cycleEnable:true + edgeEffect:1 + dragMaxDis:50 + autoRollback:true`），正中行 = 选中行走数据侧平移，选中条挂静态装饰 `textview`（`backgroundPic`、`touchable:false`，listview 之前，不挂行）；`bindchange` 等价物 = 宿主定时器轮询中心行。不用自绘包（`components/ui_v1/WheelPicker/` 2026-09-19 已移除）。",
+    "notes": "时间滚轮 = **listview 组合（L2）**（2026-09-19 口径：`picker mode=time` 走 listview 实现对应）：时/分各一列 `listview__N`（`cycleEnable:true + edgeEffect:1 + dragMaxDis:50 + autoRollback:true`），正中行 = 选中行走数据侧平移，选中条挂静态装饰 `textview`（`backgroundPic`、`touchable:false`，listview 之前，不挂行）；`bindchange` 等价物 = 宿主定时器轮询中心行。不用自绘包（`components/ui_v1/WheelPicker/` 2026-09-19 已移除）。",
     "ref": "knowledge/uicontrols/listview-wheel-picker.md（字段配法 + 正中行对齐 + 4 个真机坑 + 像素验收 + §6 时间选择/时钟盘）；components/ui_v1/control-map.md 2.24（滚轮 L2 改判） / 2.15（日期时间选择）"
    },
    {
@@ -2583,7 +2583,7 @@
     "target": "calendar",
     "level": "L4",
     "json": "{\"button__20\":{\"id\":20020,\"caption\":\"BtnDate\",\"position\":{\"left\":40,\"top\":220,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"bgColorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":16,\"picTab\":{},\"text\":\"2026-09-16\",\"touchable\":true},\"window__21\":{\"id\":110021,\"caption\":\"WinCalendar\",\"position\":{\"left\":112,\"top\":60,\"width\":800,\"height\":480},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
-    "notes": "42 个 textview + 触摸反算；无今天高亮/年月下拉；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内** textview 底色实测画不出；普通容器里可画）**（日期部分；**时间部分 = `listview` 组合 / L2**，见 `knowledge/uicontrols/listview-wheel-picker.md`）",
+    "notes": "42 个 textview + 触摸反算；无今天高亮/年月下拉；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内**textview 底色实测画不出；普通容器里可画）**（日期部分；**时间部分 = `listview` 组合 / L2**，见 `knowledge/uicontrols/listview-wheel-picker.md`）",
     "ref": "components/ui_v1/Calendar"
    },
    {
@@ -2595,7 +2595,7 @@
     "target": "calendar",
     "level": "L4",
     "json": "{\"button__20\":{\"id\":20020,\"caption\":\"BtnDate\",\"position\":{\"left\":40,\"top\":220,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"bgColorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":16,\"picTab\":{},\"text\":\"2026-09-16\",\"touchable\":true},\"window__21\":{\"id\":110021,\"caption\":\"WinCalendar\",\"position\":{\"left\":112,\"top\":60,\"width\":800,\"height\":480},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
-    "notes": "同上；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内** textview 底色实测画不出；普通容器里可画）**",
+    "notes": "同上；**已落地组件包 `components/ui_v1/Calendar`（Z21 真机验收）：42 textview 承载日号 + 触摸反算命中 + 翻月/选中/标记/今天；高亮=文字色+加粗（**弹窗（div.modal）内**textview 底色实测画不出；普通容器里可画）**",
     "ref": "components/ui_v1/Calendar"
    },
    {

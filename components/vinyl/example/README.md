@@ -1,13 +1,13 @@
 # example —— `zk::VinylSpin` 标准示例
 
-> 2026-09-22 钟工「直接补上，不需要单独验证，纯粹标准化的代码」→ 本目录补成**可直接拷用的标准示例**。
+> 2026-09-22 需求方「直接补上，不需要单独验证，纯粹标准化的代码」→ 本目录补成**可直接拷用的标准示例**。
 
 ```
 example/
   demo/
-    ui/vinyl_demo.json            一页 demo：320x320 正方形占位控件 + 3 个按钮 + 诊断行（1024x600）
-    src/vinyl_demoLogic.cc        对应 logic：attach/setCover/tick/setPlaying/detach + 3 个按钮回调
-  README.md                       本文件（怎么拷、怎么编、看什么）
+    ui/vinyl_demo.json一页 demo：320x320 正方形占位控件 + 3 个按钮 + 诊断行（1024x600）
+    src/vinyl_demoLogic.cc对应 logic：attach/setCover/tick/setPlaying/detach + 3 个按钮回调
+  README.md本文件（怎么拷、怎么编、看什么）
 ```
 
 ## 1) 拷进任意工程（两步）

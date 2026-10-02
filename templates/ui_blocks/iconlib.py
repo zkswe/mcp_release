@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 """块库图标解析层：语义图标名 → `components/icons` 图标资产库（**唯一图标源**）。
 
-背景（钟工 2026-10-01）：「这些网络/设备的 icon 来源？效果差异和实际差异太大」——
+背景（2026-10-01）：「这些网络/设备的 icon 来源？效果差异和实际差异太大」——
 块库原先的 `glyph()` 走 `ui_tools/gen_res.glyph_icon()` 的兜底（默认 style=emoji → 查
 `_GLYPH_EMOJI` + 本地 emoji 字体，缺字体退简笔线框），与**真机/产品用的那套图标**不是同一套图形。
 本模块把块库图标接到 `components/icons`：
 
-  · **唯一来源** = `components/icons`（v0.3.1 = Tabler Icons 3.46.0 单色烘焙 PNG；
-    矢量源 `vendor/tabler/**`，生成器 `components/icons/scripts/gen_icons.py`）。
-    块库**不自绘图标、不用 emoji 字体**（真机没有那套字体）。
+  · **唯一来源**= `components/icons`（v0.3.1 = Tabler Icons 3.46.0 单色烘焙 PNG；
+矢量源 `vendor/tabler/**`，生成器 `components/icons/scripts/gen_icons.py`）。
+块库**不自绘图标、不用 emoji 字体**（真机没有那套字体）。
   · **产物图 == 控件盒**（工程铁律 #11/#17：引擎对「图 ≠ 盒」是**拉伸填充**）——
-    本模块按盒尺寸取档/出图，绝不拉伸。
+本模块按盒尺寸取档/出图，绝不拉伸。
   · **档位（按目标盒尺寸选）**：盒 ≥ 44px → **56 档**；≥ 26px → **24 档**；否则 **22 档**
     （与 `blocks/_tokens.json` 的 `glyph_min_px = 24` 对齐）。盒尺寸**正好等于**档位
     ——直接取库里 `out/<档>/` 那张现成 PNG（白底烘焙，故只在要求白色时命中）；
@@ -19,7 +19,7 @@
   · **颜色**：FlyThings 无 tint API，颜色必须生成时烘焙（见 `components/icons/README.md` 的
     `palette.note`）——所以按调用方给的颜色现出；库预置产物是白的。
   · **回退**：库里查不到该语义名 → 返回 None，由调用方（`compose.py`）回退 `gen_res` 线框，
-    并在 compose 输出里**明说「回退线框」**（不静默）。
+并在 compose 输出里**明说「回退线框」**（不静默）。
 
 对外 API：
     available()                      → 资产库可用？（catalog + 生成器都在）
@@ -31,7 +31,7 @@
 
 缓存：
     FLYTHINGS_ICONS_CACHE 指到 <workspace>/temp/ui_blocks_icons/（解包出来的 Tabler SVG +
-    本模块渲染的 PNG 缓存）——**不往 `components/icons/out/` 里写任何新档位**（不动他人产物）。
+本模块渲染的 PNG 缓存）——**不往 `components/icons/out/` 里写任何新档位**（不动他人产物）。
 """
 import os
 import sys
@@ -90,7 +90,7 @@ def _load():
     if LIB_SCRIPTS not in sys.path:
         sys.path.insert(0, LIB_SCRIPTS)
     try:
-        import gen_icons                                          # noqa: E402  库自带唯一入口
+        import gen_icons                                          # noqa: E402库自带唯一入口
     except Exception:                                             # noqa: BLE001
         return False
     try:
@@ -108,7 +108,7 @@ def available():
 def lookup(token):
     """语义名 → 库条目 dict；查不到 / 库不可用 → None。
 
-    支持：语义名（wifi）/ 语义全名（system.wifi）/ 别名（bell-off / x / dots）/
+支持：语义名（wifi）/ 语义全名（system.wifi）/ 别名（bell-off / x / dots）/
     Tabler 原生名（cloud-rain）/ 旧产物名（ic_system_wifi.png）。
     """
     key = str(token or '').strip().lower()
@@ -149,8 +149,8 @@ def lookup(token):
 def tier_of(box):
     """目标盒尺寸 → 档位（盒 ≥ 44 → 56；≥ 26 → 24；否则 22；**盒 == 预置档尺寸时取该档**）。
 
-    最后一条是 2026-10-01 实测补的：24px 盒按「≥26」阈值会落到 22 档，但库里 24 档明明有
-    现成产物，且「盒 == 档」才能直接取库里那张（产物图仍严格 == 盒）。
+最后一条是 2026-10-01 实测补的：24px 盒按「≥26」阈值会落到 22 档，但库里 24 档明明有
+现成产物，且「盒 == 档」才能直接取库里那张（产物图仍严格 == 盒）。
     """
     box = int(box)
     if box in TIER_SIZES:
@@ -182,12 +182,11 @@ def prebuilt_png(info, tier, state):
 def produce(token, box, rgb, state=None):
     """按**盒尺寸**出图 → (PIL.Image, meta dict)；图尺寸严格 == box。
 
-    优先级（都不改盒尺寸）：
-      ① 盒尺寸 == 档位（22/24/56）且库里有该状态产物 → 取库里 `out/<档>/` 那张：
-         要求白色 → 原图直用；其它颜色 → 按 alpha 换色（库 PNG 就是「RGB 恒等于 --color，
+优先级（都不改盒尺寸）：
+      ① 盒尺寸 == 档位（22/24/56）且库里有该状态产物 → 取库里 `out/<档>/` 那张：要求白色 → 原图直用；其它颜色 → 按 alpha 换色（库 PNG 就是「RGB 恒等于 --color，
          alpha = 覆盖率」，换色与重新渲染**像素等价**；见交付报告里的 maxdiff=0 实证）；
       ② 其余（缺档：16 / 36 / …）→ 用库自带生成器 `gen_icons.py` 按盒尺寸 + 指定颜色现出。
-    查不到该语义名 → 抛 LookupError（调用方回退线框并**明说**）。
+查不到该语义名 → 抛 LookupError（调用方回退线框并**明说**）。
     """
     info = lookup(token)
     if info is None:

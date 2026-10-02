@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 """zero_color_audit.py — **颜色值 0（不透明黑）误用**审计（0 token，有退出码）。
 
-背景（钟工 2026-09-20 M6：「控件/切图黑底」；根因 = M1 起 json 里把「透明」写成 0）：
-  本平台颜色语义：**0 = 不透明黑（0xFF000000）**；**透明标记是 -1（0xFFFFFFFF）**。
-  历史上把 0 当「透明/缺省」写进 `backgroundColor` / `bgColorTab.color0` / `textBgColor`，
-  真机就渲染成黑块（ControlTest-F133 实测：checkbox 行底、listview 行、digitalclock、
+背景（2026-09-20 M6：「控件/切图黑底」；根因 = M1 起 json 里把「透明」写成 0）：本平台颜色语义：**0 = 不透明黑（0xFF000000）**；**透明标记是 -1（0xFFFFFFFF）**。
+历史上把 0 当「透明/缺省」写进 `backgroundColor` / `bgColorTab.color0` / `textBgColor`，
+真机就渲染成黑块（ControlTest-F133 实测：checkbox 行底、listview 行、digitalclock、
   pointer、circlebar 一共 83k 近黑像素，其中 61k 是这类误用）。
 
 判据（三源，见 references/kb/image-gen-standard.md §7.6）：
@@ -66,7 +65,7 @@ def load_allow():
 
 
 # ---- 第二判据：「切图被当成不透明填充」（seekbar 轨道/填充图）----
-# 背景（钟工 M6 原话里的「切图黑底/白杠」）：seekbar 的 backgroundPic（轨道）本该是
+# 背景（M6 原话里的「切图黑底/白杠」）：seekbar 的 backgroundPic（轨道）本该是
 # 「凹槽」——令牌 track-on-dark #3C3C3E；实际 ct_track.png 被出成**不透明白条**
 # （294x18，不透明占比 98.1%，RGB 全 255），真机观感就是一条白杠而不是槽。
 # 判据（对 seekbar 的 backgroundPic / progressPic）：
@@ -74,7 +73,7 @@ def load_allow():
 #   · 不透明占比 ≥ 0.95 且平均亮度 ≤ 12  → DEFECT（近黑不透明整条 = 黑杠/黑底）
 #   · 其余 → CLEAN；确实要纯白/纯黑整条（浅色主题等）→ 在 zero_color_allow.json 的
 #     track_allow 里登记（file/pic/reason）。阈值出处：实测改前 ct_track 98.1%/255、
-#     改后令牌 97.7%/#3C3C3E(亮度 60) 与 accent ct_fill(亮度 109) 均不命中。
+#改后令牌 97.7%/#3C3C3E(亮度 60) 与 accent ct_fill(亮度 109) 均不命中。
 TRACK_OPAQUE_MIN = 0.95
 TRACK_LUM_WHITE = 200.0
 TRACK_LUM_BLACK = 12.0
@@ -268,7 +267,7 @@ def main():
     exempt = [r for r in rows if r['verdict'] == 'EXEMPT']
     error = [r for r in rows if r['verdict'] == 'ERROR']
     clean = [r for r in rows if r['verdict'] == 'CLEAN']
-    print('zero_color_audit  target=%s  扫描=%s' % (target, scan_mode))
+    print('zero_color_audit  target=%s扫描=%s' % (target, scan_mode))
     for r in defect:
         print('  [DEFECT] %s' % r['name'])
         print('           %s' % r['reason'])
@@ -278,7 +277,7 @@ def main():
         print('  [ERROR]  %s  %s' % (r['name'], r['reason']))
     for r in clean:
         print('  [CLEAN]  %s  %s' % (r['name'], r['reason']))
-    print('  汇总：DEFECT %d / EXEMPT %d / ERROR %d / CLEAN %d'
+    print('汇总：DEFECT %d / EXEMPT %d / ERROR %d / CLEAN %d'
           % (len(defect), len(exempt), len(error), len(clean)))
     if a.jsonp:
         io.open(a.jsonp, 'w', encoding='utf-8').write(

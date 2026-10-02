@@ -4,14 +4,14 @@
 为什么单列一个模块：`kb_tools.py` 只放「MCP 工具面」的薄封装（统一 envelope + docstring
 预算），采集 / 渲染这类长逻辑放这里，改实现不动工具签名。
 
-口径要点（2026-09-29，钟工「1-3 按顺序做」第 3 项 = 审查报告 P2-⑧⑨）：
-  · **selfcheck 十一分区**，每分区给 `{ok, hint, data}`；**「读不到」本身是结论** ——
-    读不到就 `ok=false` + `hint` 写清「需要什么条件 / 去哪查」，绝不静默吞掉。
+口径要点（2026-09-29，需求方「1-3 按顺序做」第 3 项 = 审查报告 P2-⑧⑨）：
+  · **selfcheck 十一分区**，每分区给 `{ok, hint, data}`；**「读不到」本身是结论**——
+读不到就 `ok=false` + `hint` 写清「需要什么条件 / 去哪查」，绝不静默吞掉。
   · 命令一律**容忍设备缺工具**：优先用随仓 `bin_tools/<平台>/busybox`（`adb_tools.ensure_busybox`
-    会复用设备上已有的 `/tmp/busybox` 或推一份过去），没有就退化成纯 `adb shell` + `getprop` / `cat`。
-  · **bugreport** 把「AI 产出的缺陷清单 + 真机判据」落成可提交的 markdown，
-    格式对齐 2026-09-27 html2json A1~A8 那批缺陷单（标题 / 元信息 / 现象 / 复现步骤 /
-    期望 vs 实际 / 真机判据 / 证据 / 影响面）。
+会复用设备上已有的 `/tmp/busybox` 或推一份过去），没有就退化成纯 `adb shell` + `getprop` / `cat`。
+  · **bugreport**把「AI 产出的缺陷清单 + 真机判据」落成可提交的 markdown，
+格式对齐 2026-09-27 html2json A1~A8 那批缺陷单（标题 / 元信息 / 现象 / 复现步骤 /
+期望 vs 实际 / 真机判据 / 证据 / 影响面）。
 
 ⚠️ 隐私纪律：本模块只输出**设备侧**读数；不带本机绝对路径、不带内网真机 IP（示例统一写
 `<serial|IP>:5555`）。测试与文档同理（scripts/smoke.py 的隐私扫描会扫本文件）。
@@ -57,7 +57,7 @@ def _clean(txt):
     """设备命令输出 → 读数：去掉 ANSI 转义与**报错行**。
 
     ⚠️ 必须有这一步：`ls /dev/hci*` 打不出文件时回的是 `ls: ...: No such file`，
-    当成读数会让「没插模组」的蓝牙分区变成 ok=true（假阳性，真机抽查抓到过）。
+当成读数会让「没插模组」的蓝牙分区变成 ok=true（假阳性，真机抽查抓到过）。
     """
     t = _ANSI.sub('', str(txt or ''))
     keep = []
@@ -125,7 +125,7 @@ def resolve_target(device=''):
 
     `device` 传 `<serial|IP>:5555`；留空则按 adb 在线列表解析 —— **多台绝不猜**
     （fun 在多设备下会静默取第一个 → 可能量到别的机器上）。
-    返回 {'ok','adb','serial','model','platform','connectNote','devices','offline','error','hint'}
+返回 {'ok','adb','serial','model','platform','connectNote','devices','offline','error','hint'}
     """
     out = {'ok': False, 'adb': '', 'serial': '', 'model': '', 'platform': '',
            'connectNote': '', 'devices': [], 'offline': [], 'error': '', 'hint': ''}
@@ -486,7 +486,7 @@ def _post_deploy(raw, dev):
     """部署一致性：生效 cfg 是哪一份 / resPath 与 startupLibPath 是否同源 / lib 与 ui 是否同代。
 
     2026-10-01 真机发现（192.168.x.x）：面板上 `startupLibPath=/tmp/lib/libzkgui.so`（新）
-    而 `resPath=/res/ui/`（旧）→ **跑的是「新库 + 旧界面」**，症状就是「改了像没改 / 布局不对劲」。
+而 `resPath=/res/ui/`（旧）→ **跑的是「新库 + 旧界面」**，症状就是「改了像没改 / 布局不对劲」。
     """
     srcs = (('/tmp/EasyUI.cfg', raw.get('cfgTmp')),
             ('/mnt/extsd/EasyUI.cfg', raw.get('cfgSd')),
@@ -546,7 +546,7 @@ def _post_deploy(raw, dev):
         notes.append('/tmp/ui 与 /res/ui 有 %d 页 ftu md5 不同（同 %d 页）→ 两个版本并存，'
                      '界面到底用哪一代由 resPath 决定' % (diff_pages, same_pages))
     if tmp_lib and res_lib and not lib_same_generation:
-        notes.append('/tmp/lib 与 /res/lib 的 libzkgui.so **不是同一份** → 当前生效的是 resPath/'
+        notes.append('/tmp/lib 与 /res/lib 的 libzkgui.so **不是同一份**→ 当前生效的是 resPath/'
                      'startupLibPath 指向的那代，别拿另一份当基线')
     return data, notes
 
@@ -878,7 +878,7 @@ def _slug(title, limit=40):
 def collect_judgement(device='', project_root=''):
     """真机判据（bugreport 自动附）：型号 / 固件 / 应用状态 / 最近 logcat 摘要。
 
-    采不到就写明原因（未连设备 / 设备缺工具），**不静默**。
+采不到就写明原因（未连设备 / 设备缺工具），**不静默**。
     """
     out = {'ok': False, 'device': {}, 'items': {}, 'logcat': [], 'note': ''}
     target = resolve_target(device)

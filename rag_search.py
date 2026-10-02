@@ -7,7 +7,7 @@
 
 索引格式（rag_index.json，单文件、自带向量）：
 - chunks[] 只放 id/path/text；向量集中在 `embs`（float16 拼接后 base64），加载即成 numpy 矩阵。
-  旧格式（每个 chunk 内联 `embedding` 浮点数组）仍可读，向后兼容。
+旧格式（每个 chunk 内联 `embedding` 浮点数组）仍可读，向后兼容。
 """
 import base64, json, math, os, re, sys
 
@@ -31,8 +31,8 @@ except ImportError:  # pragma: no cover
 def _load_vecs(_data, _chunks):
     """加载向量：优先 `embs`（f16+base64 紧凑格式），否则回退内联 embedding。
 
-    紧凑格式把 22 MB 的明文浮点数组压到约 2 MB（解析 0.4s → 0.1s，内存 −30 MB），
-    单文件分发、不新增依赖文件。f16 精度约 1e-3，对 512 维余弦排序无影响。
+紧凑格式把 22 MB 的明文浮点数组压到约 2 MB（解析 0.4s → 0.1s，内存 −30 MB），
+单文件分发、不新增依赖文件。f16 精度约 1e-3，对 512 维余弦排序无影响。
     """
     if _np is None:
         return None
@@ -87,9 +87,9 @@ def query_tokens(q):
     """查询切词（**单一实现**：BM25 与 kb_tools 的覆盖率判定共用）。
 
     ASCII 词取 ≥2 字符；中文用**字级 bigram**。
-    为何必须 bigram（检讨报告 §3.7）：原 BM25 把整段连续中文当一个 token，
+为何必须 bigram（检讨报告 §3.7）：原 BM25 把整段连续中文当一个 token，
     『Z20 屏幕截图怎么抓』会切出 '屏幕截图怎么抓' 这种超长 token，
-    只有正文原样出现才命中 → 模型不可用降级 BM25 时召回明显掉。
+只有正文原样出现才命中 → 模型不可用降级 BM25 时召回明显掉。
     """
     ql = (q or '').lower()
     toks = set(_ASCII_RE.findall(ql))
@@ -138,9 +138,9 @@ _RARE_DF_RATIO = 0.02     # 在 ≤2% 的 chunk 中出现 → 视为判别性专
 def _rare_terms(q):
     """查询里的判别性专名（如 qtimeedit / listwheel / numberpicker / pickerview）。
 
-    为何要它（2026-09-19 实测）：向量路把「英文控件名 + 中文问法」当普通语义，
-    常把通用文档排前（『QTimeEdit 怎么做』向量路 top3 全是 devflow 通用文档，
-    目标文档压根不在 top-40），BM25 路却能精确命中第 1；两路 RRF 融合后目标文档被挤到 #4。
+为何要它（2026-09-19 实测）：向量路把「英文控件名 + 中文问法」当普通语义，
+常把通用文档排前（『QTimeEdit 怎么做』向量路 top3 全是 devflow 通用文档，
+目标文档压根不在 top-40），BM25 路却能精确命中第 1；两路 RRF 融合后目标文档被挤到 #4。
     → 在融合结果上把「含专名的片段」提前（**重排，不丢弃**，无召回损失）。
     """
     n = len(CHUNKS) or 1
@@ -178,9 +178,9 @@ def _df_of(t):
 def _bm25_search(q, k):
     """BM25 关键词检索：字级 bigram + IDF + 长度归一 + 路径/标题加权。
 
-    相比原实现（裸词频计数，无 IDF/长度归一），评分口径向标准 BM25 靠齐，
-    并对「命中文件名/目录名」与「命中首段标题」加权——实践中这两个信号的
-    准确率远高于正文里偶然出现一次。
+相比原实现（裸词频计数，无 IDF/长度归一），评分口径向标准 BM25 靠齐，
+并对「命中文件名/目录名」与「命中首段标题」加权——实践中这两个信号的
+准确率远高于正文里偶然出现一次。
     """
     toks = sorted(set(query_tokens(q)) | _alias_tokens(q))
     if not toks:
@@ -217,12 +217,11 @@ def search(q, k=3):
 
     2026-09-07 修改：原纯向量模式对「自然语言 + 缩写/专名混合查询」偏弱
     （如『V85x 如何切换 USB OTG』——向量命中 Z21 通用文档，BM25 才能命中
-    v85x/usb-gadget-storage）。现改为两路 top-N 经 RRF 融合，双向互补：
-    向量抓语义近邻、BM25 抓关键词精确命中，专名/缩写查询命中率显著提升。
+    v85x/usb-gadget-storage）。现改为两路 top-N 经 RRF 融合，双向互补：向量抓语义近邻、BM25 抓关键词精确命中，专名/缩写查询命中率显著提升。
 
-    2026-09-19 补充（钟工「检索质量优化」）：融合后再做一次**专名优先重排**
+    2026-09-19 补充（「检索质量优化」）：融合后再做一次**专名优先重排**
     （见 `_prefer_rare`）—— 英文控件名这类判别性专名在向量路几乎不起作用，
-    必须在融合结果里把「含该专名的片段」提前；BM25 另加中文口语别名扩展
+必须在融合结果里把「含该专名的片段」提前；BM25 另加中文口语别名扩展
     （`_alias_tokens`，如 滚轮→wheel/roller）以吃到「命中文件名」那份额外权重。
     """
     emb = _get_embedder()
@@ -262,7 +261,7 @@ def _vector_search(qv, k):
 
 def _rrf_fuse(vec, kw, k):
     """Reciprocal Rank Fusion：两路 (score, chunk) 列表按 chunk id 合并重排。
-    返回 (融合分, chunk)，分数为 RRF 分（非相似度，仅用于排序展示）。"""
+返回 (融合分, chunk)，分数为 RRF 分（非相似度，仅用于排序展示）。"""
     rank = {}
     for lst in (vec, kw):
         for i, (_, c) in enumerate(lst):

@@ -5,33 +5,29 @@
 开发者修改检测（ftu 比 json 新>30s 自动同步）+ fui pack 成功。
 全部 PASS 才允许交付。任何 FAIL 都会给出具体文件与原因。
 第 15/16 项为 **WARN（需人工审批，不影响 PASS/FAIL）**：装饰件压在可触摸控件之上、
-setTouchable(false) 未配套 setTouchPass(true)（沛哥 2026-09-10，见 knowledge/uicontrols/touch-events.md）。
+setTouchable(false) 未配套 setTouchPass(true)（2026-09-10，见 knowledge/uicontrols/touch-events.md）。
 WARN 分两类意图：#15 会先评估「可能故意遮挡」（modal / 容器遮罩 / 整屏 / 完全覆盖 → 本就有意，忽略），
 其余才是「疑似误压」；WARN 永远只是给人工审批的清单，不自动修。
-第 18 项 = **设计令牌漂移检测**（沛哥 2026-09-12）：DESIGN.md 是冻结的视觉真相，json 里的颜色/字号
+第 18 项 = **设计令牌漂移检测**（2026-09-12）：DESIGN.md 是冻结的视觉真相，json 里的颜色/字号
 应当来自令牌；出现令牌外的值 = 漂移。无 DESIGN.md 或令牌表未填全 → NOTE 跳过（不 FAIL，兼容存量工程）。
 第 20 项 = **运行期设图 vs 控件盒**（v0.27.90，补 #11/#17 的盲区）：扫 src/**/*.cc|*.cpp 里
 `mXXXPtr->setBackgroundPic("images/x.png")` 等字面量调用，把图片尺寸与目标控件 position 比；
 `resources/images/` 的自动生成图不等 = FAIL，手绘图不等 = 仅提示，`.9.png` 豁免。
 （运行时拼出来的路径静态无解 → 只计 `dynamic`，口径见 knowledge/uicontrols/text-box-height-rule.md §4/§5）
-第 21 项 = **生成图抗锯齿 / 脏边**（2026-09-19 A2，委派 `tools/qa/aa_audit.py --fail`）：
-扫 `resources/images/` 的 PNG，真缺陷（resid_bad / 成片 hard_diag / 无两区边界时退回 dirty）= FAIL；
+第 21 项 = **生成图抗锯齿 / 脏边**（2026-09-19 A2，委派 `tools/qa/aa_audit.py --fail`）：扫 `resources/images/` 的 PNG，真缺陷（resid_bad / 成片 hard_diag / 无两区边界时退回 dirty）= FAIL；
 WARN 逐条列理由；`*.9.png` marker 环由审计内置豁免；白名单只认 `tools/qa/aa_audit_allow.json`。
-（钟工原话是「接进第 19 项」——#19/#20 已被 V85X/运行期设图占用，为不打乱现有编号与知识库引用，追加为 #21。）
-第 22 项 = **切图缺倒角 / 直角残留**（2026-09-20 M5，委派 `tools/qa/corner_audit.py --fail`）：
-矩形/卡片/磁贴/药丸族（`tools/qa/asset_audit_rules.json` 登记 kind=rect/round）按**边起跑距离**
+（经需求方原话是「接进第 19 项」——#19/#20 已被 V85X/运行期设图占用，为不打乱现有编号与知识库引用，追加为 #21。）
+第 22 项 = **切图缺倒角 / 直角残留**（2026-09-20 M5，委派 `tools/qa/corner_audit.py --fail`）：矩形/卡片/磁贴/药丸族（`tools/qa/asset_audit_rules.json` 登记 kind=rect/round）按**边起跑距离**
 几何反解圆角 `r_est`（d = r - sqrt(r-0.25)），与工程 DESIGN.md 圆角令牌比（<0.5× 令牌 / 直角残留 d≤1 → FAIL）。
-钟工原话：「主界面大量图片依旧存在切图缺倒角问题……必须给我从设计标准和拦截上处理好」。
-第 23 项 = **透明底 / 烘底色**（2026-09-20 M5，委派 `tools/qa/alpha_bg_audit.py --fail`）：
-形状类资产（kind=rect/round/inscribed/icon）必须**真透明底**：整图无透明像素（α≥250）→ FAIL；
+需求方原话：「主界面大量图片依旧存在切图缺倒角问题……必须给我从设计标准和拦截上处理好」。
+第 23 项 = **透明底 / 烘底色**（2026-09-20 M5，委派 `tools/qa/alpha_bg_audit.py --fail`）：形状类资产（kind=rect/round/inscribed/icon）必须**真透明底**：整图无透明像素（α≥250）→ FAIL；
 内切/图标族角区不透明（形状外有不透明像素 = 烘了底色）→ FAIL；图标贴死图边（最外 1px 环）→ FAIL。
 满幅/底图族（照片/壁纸/遮罩/1px 通栏线/软阴影）按 `asset_audit_rules.json` 逐条登记理由豁免。
-钟工原话：「控件里面图片背景是黑色的，应该做成透明的，这个设计不符合 flyThings OS 平台的能力」——
+需求方原话：「控件里面图片背景是黑色的，应该做成透明的，这个设计不符合 flyThings OS 平台的能力」——
 标准侧支持 PNG alpha；「形状外填页面背景色」只是 Lite（RGB565+colorkey）的做法，两套口径不能混（规范 §7.3）。
-第 25 项 = **弧线过渡质量（9-patch 圆角 AA）**（2026-09-20 M8，委派 `tools/qa/corner_audit.py --arc-only --fail`）：
-角块内「外沿进入像素」的覆盖率（= α/峰值α）必须**成组出现 ≤ 0.35 的低值**（min ≤ 0.35 且个数 ≥ 2）；
+第 25 项 = **弧线过渡质量（9-patch 圆角 AA）**（2026-09-20 M8，委派 `tools/qa/corner_audit.py --arc-only --fail`）：角块内「外沿进入像素」的覆盖率（= α/峰值α）必须**成组出现 ≤ 0.35 的低值**（min ≤ 0.35 且个数 ≥ 2）；
 否则 = 弧上过渡被压进 1px 硬阶梯（视觉=锯齿）→ FAIL。`*.9.png` 判前剥离最外 1px marker 环。
-钟工原话：「全控件演示界面的每个演示框背景图 ct_card.9.png 倒角有严重锯齿」——
+需求方原话：「全控件演示界面的每个演示框背景图 ct_card.9.png 倒角有严重锯齿」——
 根因：描边 α 用了 `gen_res.coverage_ring`（整像素二值带）→ 弧上外沿最小覆盖率 0.676；
 修后 0.147（标准 §7.7；阈值出处 = P(min>t)=(1−t)^N，与「≥4× 超采样」档位自洽）。
 第 28 项 = **UTF-8 文本陷阱（src 静态扫描）**（2026-10-01 第一批）：`find_first_of("：")` 按单字节匹配
@@ -133,11 +129,11 @@ def _layer_problems(d):
 
 SEEKBAR_PIC_FIELDS = ('progressPic', 'secondaryProgressPic', 'backgroundPic', 'thumbPic')
 
-# ⚠️ 控件必写字段全集（沛哥 2026-09-08 定规 v2）——**已迁入注册表，禁止再内嵌一份模板**
+# ⚠️ 控件必写字段全集（2026-09-08 定规 v2）——**已迁入注册表，禁止再内嵌一份模板**
 # 真源 = ui_tools/ui_schema.json（controls/subStructures 的 required 声明），经 ui_schema_loader 派生。
 # 口径（不变）：以 projects/SampleUI-New/ui/1024x600（42 json、新 IDE 全量序列化）为准——
-#   扫描每类型所有控件 100% 共有的字段 = 必选；值含默认(-1/0/false/字号16)也显式写，不做缺省省略（防版本漂移）。
-# 补充口径（沛哥）：beepEnable 不强制（交互控件默认支持）；交互控件 touchable 显式 true（button/listview/seekbar 可拖/
+#扫描每类型所有控件 100% 共有的字段 = 必选；值含默认(-1/0/false/字号16)也显式写，不做缺省省略（防版本漂移）。
+# 补充口径（）：beepEnable 不强制（交互控件默认支持）；交互控件 touchable 显式 true（button/listview/seekbar 可拖/
 #   qrcode/videoview/diagram/slidewindow/subitem），容器/纯显示显式 false（window/painter/cameraview）；qrcode 恒写 padding:10；
 #   videoview 按 SampleUI。生成器产出必须全部满足；手写 json 缺键时按模板补默认值。
 # ⚠️ 例外：条件字段 text/图片路径等按设计（无值可写空串/缺省）；SampleUI 无样例类型（pagewindow/scrollwindow/checkbox/
@@ -168,7 +164,7 @@ def _all_controls(d, out=None):
 def _pic_path(root, ref):
     """json 引用 → 真实文件路径。
 
-    先按 ref 原样相对 resources 找（支持 audio/xxx.png 这类带子目录的引用，
+先按 ref 原样相对 resources 找（支持 audio/xxx.png 这类带子目录的引用，
     ui-layout-verify.md §图片引用），再退化到按 basename 在 resources/images 或
     ui/images 里找（历史作品常只写 images/xxx.png）。
     """
@@ -188,12 +184,12 @@ def _pic_path(root, ref):
 def _ui_pages(root):
     """ui 布局 json 清单：同时支持两种真实工程布局 ui/*.json 与 ui/<分辨率>/*.json。
 
-    为什么两种都收：FlyThings 工程布局不一致——扁平 ui/main.json 与分层
+为什么两种都收：FlyThings 工程布局不一致——扁平 ui/main.json 与分层
     ui/1024x600/main.json 都常见（基准工程 SampleUI-New 就是分层 42 个）。
-    原先只 glob 扁平一层，导致分层工程「0 页却报 ok」= **静默假阴性**
+原先只 glob 扁平一层，导致分层工程「0 页却报 ok」= **静默假阴性**
     （v0.27.33 实测：SampleUI-New / ShowcaseAlbum-F133 / WebViewDemo 三个真实工程
-    全部 pages=0 且 ok=true），产物核对形同虚设。
-    返回按相对路径排序的绝对路径列表（只下探一层分辨率目录，不再无限递归）。
+全部 pages=0 且 ok=true），产物核对形同虚设。
+返回按相对路径排序的绝对路径列表（只下探一层分辨率目录，不再无限递归）。
     """
     ui = os.path.join(root, 'ui')
     found = set(glob.glob(os.path.join(ui, '*.json')))
@@ -242,7 +238,7 @@ def log(ok, msg):
 
 
 def warn(msg):
-    """WARN：不参与 PASS/FAIL 判定，输出给用户审批（沛哥 2026-09-10）。"""
+    """WARN：不参与 PASS/FAIL 判定，输出给用户审批（2026-09-10）。"""
     print('  [WARN] ' + msg)
     warnings.append(msg)
 
@@ -274,8 +270,8 @@ def _overlap(a, b, min_axis=4):
 def _deco_blockers(d):
     """同层兄弟中「后定义（z 更高）且 touchable=false」的控件压住 touchable=true 的控件。
 
-    对应 touch-events.md §1：touchable=false 不等于穿透，仍会吃掉下层触摸（下层拖不动/点不响应）。
-    返回 [(装饰件键, 装饰件控件, 被压控件键, 被压控件, 重叠面积)]；仅统计双方 visible。
+对应 touch-events.md §1：touchable=false 不等于穿透，仍会吃掉下层触摸（下层拖不动/点不响应）。
+返回 [(装饰件键, 装饰件控件, 被压控件键, 被压控件, 重叠面积)]；仅统计双方 visible。
     （是否「故意遮挡」由 _deco_hint 单独评估，本函数只找几何上的遮挡关系。）
     """
     found = []
@@ -311,8 +307,8 @@ _DECO_CONTAINER = {'window', 'painter', 'scrollwindow', 'pagewindow'}
 def _deco_hint(deco_key, deco, covered, res=None):
     """评估遮挡是否可能「故意」——返回 (possibly_intentional, [线索...])。
 
-    故意遮挡的常见形态（沛哥 2026-09-10 提醒）：弹窗/蒙层本来就该吃掉下层触摸，不是 bug。
-    线索：modal 弹窗 / 遮挡件是容器类（常见遮罩）/ 几乎完全覆盖被压控件 / 遮挡件整屏尺寸。
+故意遮挡的常见形态（2026-09-10 提醒）：弹窗/蒙层本来就该吃掉下层触摸，不是 bug。
+线索：modal 弹窗 / 遮挡件是容器类（常见遮罩）/ 几乎完全覆盖被压控件 / 遮挡件整屏尺寸。
     """
     t = deco_key.split('__')[0]
     hints = []
@@ -354,8 +350,8 @@ _AUTO_ASSET_DIR = 'images'
 def _thumb_box(v):
     """控件 `thumb` 子盒尺寸 (w, h)；未给 / 为 0 → None（盒子未知，跳过+warning，不误报）。
 
-    实测格式（projects/**/ui/*.json 53 处 thumb 全为 dict）：`thumb.size = {width, height}`；
-    兼容简写 `size = 24`（老 json / 手写稿）。size 全 0（basedemo 空 thumb）= 无滑块 → None。
+实测格式（projects/**/ui/*.json 53 处 thumb 全为 dict）：`thumb.size = {width, height}`；
+兼容简写 `size = 24`（老 json / 手写稿）。size 全 0（basedemo 空 thumb）= 无滑块 → None。
     """
     th = v.get('thumb')
     if not isinstance(th, dict):
@@ -375,8 +371,8 @@ def _thumb_box(v):
 def _thumb_pic_refs(v):
     """thumb 子盒的图片引用 [(字段, 引用, 盒子尺寸或 None)] —— 供 #11 与 verify_assets 共用。
 
-    为什么单独一个入口：thumb 的盒子**不是**控件 position（图片铁律 #1 对 thumb 同样成立，
-    但盒子来源是 thumb.size）；两处若各写一套「什么时候比、比什么」就是两套口径。
+为什么单独一个入口：thumb 的盒子**不是**控件 position（图片铁律 #1 对 thumb 同样成立，
+但盒子来源是 thumb.size）；两处若各写一套「什么时候比、比什么」就是两套口径。
     """
     th = v.get('thumb')
     if not isinstance(th, dict):
@@ -389,14 +385,14 @@ def _thumb_pic_refs(v):
 def _is_auto_generated(ref):
     """引用是否为「流水线自动生成图」——这类图**必须**与控件盒 1:1（唯一强制严格核对的情形）。
 
-    为什么区分（v0.27.33 实测修正，回应「产物核对形同虚设」）：
+为什么区分（v0.27.33 实测修正，回应「产物核对形同虚设」）：
       ① 自动生成图（html2json/gen_res 出的渐变/圆角/阴影/图标）几何信息烘在像素里，
-         尺寸 != 控件盒 → 圆角错位/阴影断边，这是 v0.27.30 事故的本质 → 必须 FAIL。
+尺寸 != 控件盒 → 圆角错位/阴影断边，这是 v0.27.30 事故的本质 → 必须 FAIL。
       ② 手绘图（navi/fh.png 44x26 放在 72x40 按钮里、charge/bg.jpg 800x430 放 1024x550
          window 里）是官方基准工程 SampleUI-New 就有的正常写法，引擎会拉伸到控件盒
          → 尺寸不等属正常，只能 WARN，不能 FAIL。
-    判别：按铁律 #9，自动生成图一律在 resources/images/ 下（引用首段 = images）；
-    手绘图可放任意子目录（navi/、charge/、InputBox/ ...）。
+判别：按铁律 #9，自动生成图一律在 resources/images/ 下（引用首段 = images）；
+手绘图可放任意子目录（navi/、charge/、InputBox/ ...）。
     """
     p = (ref or '').replace('\\', '/').lstrip('./')
     return p.split('/')[0].lower() == _AUTO_ASSET_DIR
@@ -420,24 +416,23 @@ def _ctrl_pic_refs(v):
 def verify_assets(project_root):
     """核对「json 声明 vs 磁盘产物」：引用文件是否存在 + PNG 尺寸是否 == 盒子。
 
-    为什么必须机器化：**引擎会把图「拉伸填充」到控件矩形**（图 != 盒不报错，但非整数缩放会糊/变形——
-    这才是「图 == 盒」纪律的原因，不是引擎贴不上）；
+为什么必须机器化：**引擎会把图「拉伸填充」到控件矩形**（图 != 盒不报错，但非整数缩放会糊/变形——
+这才是「图 == 盒」纪律的原因，不是引擎贴不上）；
     v0.27.30 的阴影三连 bug 正是「图没生成也没人发现」，靠人肉目测漏掉了。
 
-    盒子（铁律 #1 的作用对象）：
+盒子（铁律 #1 的作用对象）：
       - 控件 position：backgroundPic / progressPic / secondaryProgressPic / thumbPic / picTab.*
       - **thumb.size**：thumb.normalPic / thumb.pressedPic（滑块自有尺寸，v0.27.75 补；
-        此前是核对盲区 —— 实测 31×31 图配 thumb.size 30×30 一路 PASS）
+此前是核对盲区 —— 实测 31×31 图配 thumb.size 30×30 一路 PASS）
 
-    返回可 JSON 序列化的 dict：
+返回可 JSON 序列化的 dict：
       ok / pages / refCount / missing[] / mismatch[] / stretched[] / unresolved[] / warnings[] / noPil
       （另有 skippedNoBox[]：盒子尺寸未知而跳过核对的引用，供上层显示 NOTE）
       - missing   ：字段引用了图片但文件不存在 → FAIL
       - mismatch  ：**自动生成图**（resources/images/，铁律 #9）尺寸 != position → FAIL
-                    （.9.png 除外，9-patch 可拉伸）；thumb 子盒（thumb.size）同口径：
-                    自动生成的 thumb 图尺寸 != thumb.size → FAIL（v0.27.75 补的核对盲区）
+                    （.9.png 除外，9-patch 可拉伸）；thumb 子盒（thumb.size）同口径：自动生成的 thumb 图尺寸 != thumb.size → FAIL（v0.27.75 补的核对盲区）
       - stretched ：手绘图尺寸 != 盒子 → 仅提示（引擎会拉伸，基准工程 SampleUI-New 的
-                    导航图与手绘 thumb 都这么用）
+导航图与手绘 thumb 都这么用）
       - unresolved：带 %s 格式化前缀 / json 解析失败 / 读图失败（仅提示）
       - warnings  ：0 页、thumb 无 size（跳过核对）等「其实没核」的情况会写这里（不静默）
     """
@@ -527,7 +522,7 @@ def verify_assets(project_root):
     return res
 
 
-# ---------------- 设计令牌漂移检测（DESIGN.md 令牌 vs json 实际值，沛哥 2026-09-12）----------------
+# ---------------- 设计令牌漂移检测（DESIGN.md 令牌 vs json 实际值，2026-09-12）----------------
 # 口径：DESIGN.md 是「冻结的视觉真相」——json 里的颜色/字号应当来自令牌，不应当出现模板外的值。
 # 结构值例外（不经令牌）：0（透明）/ -1（未设）/ 16777215（纯白，平台默认文本色）；
 # 显式豁免：在 DESIGN.md 里写一行「漂移豁免: #RRGGBB 18 24」即视为已批准（便于单点例外留痕）。
@@ -689,7 +684,7 @@ def verify_design_tokens(project_root):
 
 
 # ---------------- 19. V85X：视频解码返回后必须 releaseLayer（防黑屏）----------------
-# 沛哥 2026-09-14 定：平台匹配（V85X 系 disp 分层平台）时，视频解码返回后必须释放残留 disp 层，
+# 2026-09-14 定：平台匹配（V85X 系 disp 分层平台）时，视频解码返回后必须释放残留 disp 层，
 # 否则残留视频层不关 → 屏幕黑屏；**开发与 check 验收都必须做这个**。
 # 参考实现：knowledge/v85x/display-layer-debug.md §2（/dev/disp + DISP_LAYER_GET/SET_CONFIG，
 # 只关非 UI 层（跳过 ARGB 格式层），有开机动画时用 /tmp/zk_boot_anim 存在性保护）。
@@ -720,7 +715,7 @@ def _manifest_platform(root):
 
 def _scan_src(root, markers):
     """扫 src/ 下级源码里出现过的标记 → {marker: [相对文件...]}。
-    读不了的文件不静默吞：记入返回体第二个元素（调用方可提示）。"""
+读不了的文件不静默吞：记入返回体第二个元素（调用方可提示）。"""
     hits, unread = {}, []
     src = os.path.join(root, 'src')
     if not os.path.isdir(src):
@@ -786,7 +781,7 @@ def check_v85x_release_layer(root):
         fmt_hits = _scan_src(root, ('DISP_FORMAT_ARGB_8888', 'DISP_FORMAT_BGRA_5551'))[0]
         unsafe = sorted(set(fmt_hits.get('DISP_FORMAT_ARGB_8888', []))
                         & set(fmt_hits.get('DISP_FORMAT_BGRA_5551', [])))
-        # 2026-09-14 沛哥：用到视频图层的产品「启动第一次初始化」必须先释放图层（崩溃重启残留 -> 屏幕永久性异常）
+        # 2026-09-14：用到视频图层的产品「启动第一次初始化」必须先释放图层（崩溃重启残留 -> 屏幕永久性异常）
         # → 实现存在不代表调到了：名字只出现 1 次（只有定义、没启动路径调用）就提醒。
         name_cnt = sum(_count_src(root, ('release_layer', 'releaseLayer', 'ReleaseLayer')).values())
         nocall = name_cnt <= 1
@@ -807,19 +802,19 @@ def check_v85x_release_layer(root):
 
 # ---------------- 运行期设图 vs 控件盒（#20，v0.27.90） ----------------
 # 为什么要有（静态核对的已知盲区）：#11/#17 只看 json 里**声明**的 backgroundPic；
-#   运行期 mXXXPtr->setBackgroundPic("images/x.png") 设的图静态查不到 → 盒子配错也一路 PASS。
-#   真机事故：48x16 的三点图被放进了被抬高的 48x26 盒 → 引擎按盒拉伸 → 10x10 正圆变 10x16 竖椭圆。
+#运行期 mXXXPtr->setBackgroundPic("images/x.png") 设的图静态查不到 → 盒子配错也一路 PASS。
+#真机事故：48x16 的三点图被放进了被抬高的 48x26 盒 → 引擎按盒拉伸 → 10x10 正圆变 10x16 竖椭圆。
 # 口径（与 #11/#17 同源，不另立一套）：
 #   · 图片尺寸 == 控件盒 → PASS；
 #   · 不等：`resources/images/` 下的**自动生成图**（铁律 #9）→ FAIL；
-#     手绘图（navi/、charge/ 等其它目录）→ stretched[] 仅提示（官方基准 SampleUI-New 的
+#手绘图（navi/、charge/ 等其它目录）→ stretched[] 仅提示（官方基准 SampleUI-New 的
 #     navi/fh.png 44x26 放进 72x40 按钮里是合法拉伸，绝不能 FAIL）；
 #   · `.9.png` 豁免（可拉伸）；文件不存在 → missing[]；
 #   · 变量名 → 控件：mXXXPtr → caption XXX（与第 6 项同口径，精确匹配）；映射不到 →
 #     unresolved[] 列出来（**不静默跳过**）；非字面量实参 → dynamic 计数（静态判不了，明说）。
 # 边界（为什么只扫字面量）：案例用 helper 逐帧换图（snprintf 拼路径再 setBackgroundPic(path)）、
-#   三元式 `mCdThemePtr->setBackgroundPic(a ? "images/a.png" : "images/b.png")`（两个字面量都查）；
-#   运行时拼出来的路径静态无从得知 → 只计 dynamic 数（明说，不假装查过）。
+#三元式 `mCdThemePtr->setBackgroundPic(a ? "images/a.png" : "images/b.png")`（两个字面量都查）；
+#运行时拼出来的路径静态无从得知 → 只计 dynamic 数（明说，不假装查过）。
 # 口径与判据见 knowledge/uicontrols/text-box-height-rule.md §5、devflow/ui-layout-verify.md；
 # 案例实测（v0.27.90）：基准 4 工程 0 误报（SampleUI-New / ShowcaseAlbum-F133 / WebViewDemo /
 #   projects/translate/tdesign-miniprogram），构造反例（LdDots 盒高改回 26）→ 必报 FAIL。
@@ -869,7 +864,7 @@ def _is_img_literal(s):
 def _caption_boxes(root):
     """全部页面里 caption → [(页面名, 控件键, (w, h))]（同一 caption 可在多页出现）。
 
-    返回 (boxes, unreadable)：坏 json 读不出来的页面归入 unreadable（**不静默**，由调用方列出）。
+返回 (boxes, unreadable)：坏 json 读不出来的页面归入 unreadable（**不静默**，由调用方列出）。
     """
     out, bad = {}, []
     for p in _ui_pages(root):
@@ -891,7 +886,7 @@ def _caption_boxes(root):
 def check_runtime_setpic(project_root):
     """扫 src/**/*.cc|*.cpp 的 set...Pic 字面量调用 → 与目标控件盒比对（#20 单一实现）。
 
-    返回可 JSON 序列化的 dict：
+返回可 JSON 序列化的 dict：
       calls/dynamic/resolved/matched：调用数 / 静态判不了的 / 比过的字面量 / 尺寸匹配数
       mismatch[]：images/ 自动生成图尺寸 != 控件盒（FAIL）
       stretched[]：手绘图尺寸 != 控件盒（仅提示）
@@ -970,7 +965,7 @@ def check_runtime_setpic(project_root):
 def _find_aa_audit():
     """找 tools/qa/aa_audit.py（#21 用）。搜索顺序：环境变量 AA_AUDIT → 同目录 → 上级 qa/。
 
-    布局说明：工作区 = `<tools>/ui_tools/check_all.py` + `<tools>/qa/aa_audit.py`（兄弟目录）；
+布局说明：工作区 = `<tools>/ui_tools/check_all.py` + `<tools>/qa/aa_audit.py`（兄弟目录）；
     MCP 包内不带 qa/ 时 → 返回 None，该项时报 NOTE 跳过（不静默，不假装跑过）。
     """
     env = os.environ.get('AA_AUDIT', '').strip()
@@ -988,8 +983,8 @@ def _find_aa_audit():
 def _find_qa_tool(filename, env_var):
     """通用审计脚本定位（#22 corner_audit / #23 alpha_bg_audit 用）。
 
-    搜索顺序：环境变量 → 同目录（MCP 包内副本）→ 兄弟目录 qa/ → 上级 qa/。
-    找不到返回 None → 该项 NOTE 跳过（不静默、不假装跑过）。
+搜索顺序：环境变量 → 同目录（MCP 包内副本）→ 兄弟目录 qa/ → 上级 qa/。
+找不到返回 None → 该项 NOTE 跳过（不静默、不假装跑过）。
     """
     env = os.environ.get(env_var, '').strip()
     cands = ([env] if env else []) + [
@@ -1006,7 +1001,7 @@ def _find_qa_tool(filename, env_var):
 def _run_qa_audit(project_root, exe, timeout=1800, extra=()):
     """跑一个「目录 → JSON + 退出码」审计（#21/#22/#23/#25 共用执行壳，0 token）。
 
-    返回 (rows, returncode, err)：rows 为 None 表示没跑成（err 给原因）。
+返回 (rows, returncode, err)：rows 为 None 表示没跑成（err 给原因）。
     extra：额外命令行参数（如 #25 的 `--arc-only`）。
     """
     img = os.path.join(project_root, 'resources', 'images')
@@ -1037,17 +1032,17 @@ def _run_qa_audit(project_root, exe, timeout=1800, extra=()):
 
 
 def check_zero_color(project_root, timeout=600):
-    """#24（2026-09-20 M6）：颜色字段值 **0（不透明黑）** 误用审计。
+    """#24（2026-09-20 M6）：颜色字段值 **0（不透明黑）**误用审计。
 
-    背景（钟工 M6「控件/切图黑底」）：本平台 **0 = 不透明黑**、**-1 = 透明**；M1 起
+背景（M6「控件/切图黑底」）：本平台 **0 = 不透明黑**、**-1 = 透明**；M1 起
     `backgroundColor` / `bgColorTab.color0` / `textBgColor` 里把「透明」写成 0 的地方，
-    真机渲染成黑块（ControlTest-F133 实测 83k 近黑像素，其中 61k 是这类误用）。
-    委派 `tools/qa/zero_color_audit.py`（0 token、有退出码）：
+真机渲染成黑块（ControlTest-F133 实测 83k 近黑像素，其中 61k 是这类误用）。
+委派 `tools/qa/zero_color_audit.py`（0 token、有退出码）：
       · 未登记豁免的 0 值颜色 → **DEFECT → FAIL**；
       · 命中 `tools/qa/zero_color_allow.json` 的登记项（视频/摄像头面黑底等）→ EXEMPT + 打印理由；
       · DEFECT 的修法：① 底由下层/图片承担 → 改 -1；② 要实底 → 写 DESIGN.md 令牌色；
         ③ 确实要黑 → 在豁免表登记理由（并写进 DESIGN.md §2.1）。
-    返回 dict(status=ok|fail|skip|error, defect/exempt/clean/error, ...)
+返回 dict(status=ok|fail|skip|error, defect/exempt/clean/error, ...)
     """
     exe = _find_qa_tool('zero_color_audit.py', 'ZERO_COLOR_AUDIT')
     if not exe:
@@ -1091,7 +1086,7 @@ def check_shape_audit(project_root, kind):
 
     kind='corner' → corner_audit.py（缺倒角 / 直角残留）
     kind='alpha'  → alpha_bg_audit.py（透明底 / 烘底色）
-    口径（references/kb/image-gen-standard.md §7 + tools/qa/asset_audit_rules.json）：
+口径（references/kb/image-gen-standard.md §7 + tools/qa/asset_audit_rules.json）：
       · DEFECT → **FAIL**（有退出码，门禁用这个）；
       · WARN → 逐条列理由，不阻塞、也不静默吞掉；
       · EXEMPT（满幅/底图族）→ 打印登记理由；
@@ -1120,21 +1115,20 @@ def check_shape_audit(project_root, kind):
 def check_arc_quality(project_root):
     """#25（2026-09-20 M8）：9-patch / 圆角资产的**弧线过渡质量**（圆角 AA）审计。
 
-    背景（钟工 M8）：「全控件演示界面的每个演示框背景图 ct_card.9.png 倒角有严重锯齿」。
-    根因：修图脚本把 `gen_res.coverage_ring`（**整像素二值描边带**，本是给不透明形状选描边色
-    的「颜色指派」mask）当成 **alpha 层**用 → 卡片的 1px 描边在弧上变成二值带：
-    外沿像素 α ∈ {0} ∪ [46,68]（占满值 68 的 0.676~1.0），永远看不到 0→46 的过渡 = 肉眼锯齿。
-    而 #22（几何倒角）量的是「边起跑距离」→ 仍然合格；#23（透明底）看到的是「有透明区」→ 也合格。
+背景（M8）：「全控件演示界面的每个演示框背景图 ct_card.9.png 倒角有严重锯齿」。
+根因：修图脚本把 `gen_res.coverage_ring`（**整像素二值描边带**，本是给不透明形状选描边色
+的「颜色指派」mask）当成 **alpha 层**用 → 卡片的 1px 描边在弧上变成二值带：外沿像素 α ∈ {0} ∪ [46,68]（占满值 68 的 0.676~1.0），永远看不到 0→46 的过渡 = 肉眼锯齿。
+而 #22（几何倒角）量的是「边起跑距离」→ 仍然合格；#23（透明底）看到的是「有透明区」→ 也合格。
     **参数化审计盲区**：从标准/拦截上补上「弧上过渡质量」这一条。
 
-    口径（references/kb/image-gen-standard.md §7.7；阈值出处 = P(min>t)=(1−t)^N）：
+口径（references/kb/image-gen-standard.md §7.7；阈值出处 = P(min>t)=(1−t)^N）：
       · `*.9.png` 先剥离最外 1px marker 环，只判本体（修 M5 遗留盲区：之前量到的是 marker 环）；
       · 角块内「外沿进入像素」= α>0 且 4 邻域存在 α=0 的像素；覆盖率 = α / 峰值α；
       · 判定：min_cov ≤ `arc_lo_cov_max`(0.35) 且 count(≤0.35) ≥ `arc_lo_px_min`(2) → 过；
-        否则 **DEFECT → FAIL**（附四角最小覆盖率与角块 α 级别数）；
+否则 **DEFECT → FAIL**（附四角最小覆盖率与角块 α 级别数）；
       · 单角硬、其余角正常 → WARN（点名角，不阻塞、不静默）。
-    委派 `tools/qa/corner_audit.py --arc-only --fail`（0 token、有退出码）；
-    阈值真源：`tools/qa/asset_audit_rules.json` 的 defaults（arc_*）。
+委派 `tools/qa/corner_audit.py --arc-only --fail`（0 token、有退出码）；
+阈值真源：`tools/qa/asset_audit_rules.json` 的 defaults（arc_*）。
     """
     exe = _find_qa_tool('corner_audit.py', 'CORNER_AUDIT')
     if not exe:
@@ -1164,12 +1158,12 @@ def check_arc_quality(project_root):
 def check_aa_assets(project_root, timeout=1800):
     """#21：生成图「抗锯齿 / 脏边」审计（委派 aa_audit.py --fail）——0 token、有退出码。
 
-    口径（references/kb/image-gen-standard.md §1.2 + tools/qa/README.md）：
+口径（references/kb/image-gen-standard.md §1.2 + tools/qa/README.md）：
       · 真缺陷（`resid_bad` / 成片 `hard_diag` / 无两区边界时退回 `dirty`）→ **FAIL**；
       · WARN（dirty / speck / 切点区 hard_diag）→ 逐条列理由，不阻塞，但也**不静默吞掉**；
       · `*.9.png` 的 marker 环由 aa_audit 内置豁免（NINEPATCH_MARKER），本函数**不改口径、不加白名单**；
       · 白名单只认 `tools/qa/aa_audit_allow.json`（命中打 EXEMPT + 理由）。
-    返回 dict(status=ok|fail|skip|error, ...)
+返回 dict(status=ok|fail|skip|error, ...)
     """
     exe = _find_aa_audit()
     if not exe:
@@ -1215,17 +1209,17 @@ def check_aa_assets(project_root, timeout=1800):
 
 
 def check_scrollwindow_travel(project_root):
-    """scrollwindow 行程核对（钟工 2026-10-01 定）。
+    """scrollwindow 行程核对（2026-10-01 定）。
 
-    口径：`dragMaxDis` = **越界拖拽上限（overscroll）**——手指越过内容边界后还能再拽出去多少像素，
-    四个控件（listview/scrollwindow/pagewindow/slidewindow）语义相同；**不是行程**。
-    行程（travel）由内容决定、引擎自算：scrollwindow = 内层 window 尺寸 − 视口尺寸。
+口径：`dragMaxDis` = **越界拖拽上限（overscroll）**——手指越过内容边界后还能再拽出去多少像素，
+四个控件（listview/scrollwindow/pagewindow/slidewindow）语义相同；**不是行程**。
+行程（travel）由内容决定、引擎自算：scrollwindow = 内层 window 尺寸 − 视口尺寸。
     **不要拿 dragMaxDis 算行程/判「能不能滚」**（旧口径「dragMaxDis = 行程/内容尺寸」已作废，
-    反例：官方 ScrollWindowDemo-New 视口 450 / 内容 800（行程 350）而 dragMaxDis=200；
+反例：官方 ScrollWindowDemo-New 视口 450 / 内容 800（行程 350）而 dragMaxDis=200；
     SmartPanel settings 视口 418 / 内容 832（行程 414）而 dragMaxDis=60，真机仍能滚 302px 到底）。
-    口径与证据：knowledge/uicontrols/scroll-drag-interaction-spec.md。
+口径与证据：knowledge/uicontrols/scroll-drag-interaction-spec.md。
 
-    返回 (notes, warns)：notes = 每处摘要（含行程与 dragMaxDis）；warns = [(页面, 说明)]。
+返回 (notes, warns)：notes = 每处摘要（含行程与 dragMaxDis）；warns = [(页面, 说明)]。
       WARN A：视口内已放不下（内层 window 高/宽没跟上实际内容）→ 末尾行/列会被裁掉或滚不到；
       WARN B：edgeEffect 生效（≠0）且 dragMaxDis ≥ 控件可视尺寸 → 一次能拖出整屏（露底），改手感值。
     """
@@ -1280,16 +1274,16 @@ def check_scrollwindow_travel(project_root):
 def check_family_alignment(project_root):
     """同族控件口径离群 + 同层「文本≈图标重叠」（设计期静态拦截）。
 
-    背景（钟工 2026-10-01：「希望以后在设计的时候就可以解决」）：设置行这类**重复行模板**
-    最容易在“后加一行”时走样 —— 已发生的两起：① 多屏拼接行的值被做成右对齐窄框（300..418），
-    而其余 12 行是 75..375 左对齐 → 该行文字比别的行凸出 43px；② 值框右缘顶到箭头盒
-    （重叠/贴边）→ “文本和箭头混到一起”，而引擎**先画背景图后画文字** → 箭头被文字盖住。
+背景（2026-10-01：「希望以后在设计的时候就可以解决」）：设置行这类**重复行模板**
+最容易在“后加一行”时走样 —— 已发生的两起：① 多屏拼接行的值被做成右对齐窄框（300..418），
+而其余 12 行是 75..375 左对齐 → 该行文字比别的行凸出 43px；② 值框右缘顶到箭头盒
+    （重叠/贴边）→ “文本和箭头混到一起”，而引擎**先画背景图后画文字**→ 箭头被文字盖住。
 
-    判据（同页 / 同父容器 / 同角色）：
+判据（同页 / 同父容器 / 同角色）：
       · 角色 = caption 尾巴（Label / Value / IconBg / Icon / Chevron）；
       · 族内 ≥3 个成员时取 (left,width,height,alignment) 众数，成员偏离 >2px 或尺寸/对齐全不等 → WARN；
       · 族内 Label/Value 盒 与 Icon/Chevron 盒 相交（容差 0px）→ WARN。
-    返回 {'notes','warns'}；只报不拦（新增判据一律先 WARN，避免存量工程被误伤）。
+返回 {'notes','warns'}；只报不拦（新增判据一律先 WARN，避免存量工程被误伤）。
     """
     import collections
     role_re = re.compile(r'Row[^_]*?(Label|Value|IconBg|Icon|Chevron)$')
@@ -1379,7 +1373,7 @@ def check_family_alignment(project_root):
     return notes, warns
 
 
-# ---------------- 28. UTF-8 文本陷阱静态扫描（钟工 2026-10-01）----------------
+# ---------------- 28. UTF-8 文本陷阱静态扫描（2026-10-01）----------------
 # 真机事故：`find_first_of("：")` 按**单字节**匹配 —— 多字节字符会被切在字节中间
 #   （实测「回家模式」被切成「回家模」+ 半个字节）→ 必须用 `find("：")` 整序列搜索。
 # 本项只扫**含非 ASCII 的字面量实参**（纯 ASCII 集合法、不报）；注释先剥离（保持行号）。
@@ -1416,12 +1410,12 @@ def check_utf8_pitfalls(project_root):
     return notes, warns
 
 
-# ---------------- 29. 显示件吃掉下层触摸（装饰件漏设穿透；钟工 2026-10-01）----------------
-# 真机事故（设置页某行）：行条/图标底/图标 等装饰件**只给部分设了 setTouchable(false)** →
-#   先定义（z 更低）的兄弟控件把 DOWN 吃掉，**整行只剩底缝/右缘能点**（用户报「点不动」）。
+# ---------------- 29. 显示件吃掉下层触摸（装饰件漏设穿透；需求方 2026-10-01）----------------
+# 真机事故（设置页某行）：行条/图标底/图标 等装饰件**只给部分设了 setTouchable(false)**→
+#先定义（z 更低）的兄弟控件把 DOWN 吃掉，**整行只剩底缝/右缘能点**（用户报「点不动」）。
 # 口径：同层兄弟中「后定义（z 更高）+ 可见 + touchable 未显式 false」的**纯显示件**，
-#   与先定义的**交互控件**（touchable=true）盒子相交（≥4px）→ WARN。
-#   容器/整屏/近全覆盖/modal 等「可能故意遮挡」的形态由 _deco_hint 识别后跳过（不报）。
+#与先定义的**交互控件**（touchable=true）盒子相交（≥4px）→ WARN。
+#容器/整屏/近全覆盖/modal 等「可能故意遮挡」的形态由 _deco_hint 识别后跳过（不报）。
 #   （#15 查的是相反方向：touchable=false 的件压住可触摸件；本项补「该关没关」这一半。）
 # 口径落点：knowledge/uicontrols/touch-events.md、scrollwindow-layout-checklist.md §2.1。
 _PURE_DISPLAY = ('textview__', 'window__', 'painter__', 'diagram__', 'digitalclock__',
@@ -1474,16 +1468,16 @@ def check_caption_unique(project_root):
 
     dups = [(页面, caption, [控件 key...])]——同一 caption 在一页 json 内出现 ≥2 次即为重复。
 
-    为什么必须有这条：#5 只核对「每个 button 的 onButtonClick_<caption> 回调**存在**」，
-    不核对 caption 本身唯一 —— 同一 caption 出现两次时，生成器（templates/ui_blocks/compose.py）
-    会为同名 caption 各写一份 `static bool onButtonClick_<caption>(ZKButton *pButton)`
+为什么必须有这条：#5 只核对「每个 button 的 onButtonClick_<caption> 回调**存在**」，
+不核对 caption 本身唯一 —— 同一 caption 出现两次时，生成器（templates/ui_blocks/compose.py）
+会为同名 caption 各写一份 `static bool onButtonClick_<caption>(ZKButton *pButton)`
     → **C++ 重定义，编译必失败**；业务侧 `getControl("<caption>")` / `m<caption>Ptr`
-    也只能取到其中一个（另一个永远不可达）。
+也只能取到其中一个（另一个永远不可达）。
 
-    实例（2026-10-01 实读确认）：块库修前按「卡内序号」分配块名，跨卡从 1 重数 →
+实例（2026-10-01 实读确认）：块库修前按「卡内序号」分配块名，跨卡从 1 重数 →
     `ButtonRowSettingRow1` / `ImageRowSettingRow1Chevron` / `TextRowSettingRow1Label` /
     `TextRowSettingRow1Value` / `RowSep1` 重名，mainLogic.cc 里 onButtonClick_ButtonRowSettingRow1
-    定义两次（第 45、57 行）。修后：块序号全页全局递增 + 块类型前缀 + compose 内自检。
+定义两次（第 45、57 行）。修后：块序号全页全局递增 + 块类型前缀 + compose 内自检。
     """
     notes, dups = [], []
     root = os.path.abspath(project_root)
@@ -1503,7 +1497,7 @@ def check_caption_unique(project_root):
     return notes, dups
 
 
-# ---------------- 31~32 / 35~36：观感判据（设计期可自证；钟工 2026-10-01「按顺序执行」）-------
+# ---------------- 31~32 / 35~36：观感判据（设计期可自证；需求方 2026-10-01「按顺序执行」）-------
 # 目标：把「不好看 / 会溢出」在设计期就变成机读结论。分级从严到宽：
 #   #31 对齐轴（WARN）/ #32 间距节奏（WARN）/ #35 图标·箭头盒下限（WARN）/ #36 文本余量（NOTE）。
 # 口径来源：knowledge/uicontrols/scrollwindow-layout-checklist.md §2.1（行族文本同左缘、间距同口径）、
@@ -1535,10 +1529,10 @@ def _page_ctrls(jf):
 def check_align_axis(project_root):
     """#31 同族文本的**对齐轴**应收敛（离群 → WARN）。
 
-    口径（基准工程实测后收紧，避免把「右对齐的值」误判成「没对齐」）：
+口径（基准工程实测后收紧，避免把「右对齐的值」误判成「没对齐」）：
       - 只在**同类**里比：同页、同角色（caption 后缀 Label / Value）、同 alignment 分流；
       - 左对齐族（alignment ∈ {0,1,4,33,36}）比**左缘**；右对齐族（{2,6,9,38,41}）比**右缘**；
-        居中族（{5,37}）跳过；族内成员 < 3 不报（没有基准）。
+居中族（{5,37}）跳过；族内成员 < 3 不报（没有基准）。
     """
     warns, notes = [], []
     LEFT, RIGHT = {0, 1, 4, 33, 36}, {2, 6, 9, 38, 41}
@@ -1575,8 +1569,8 @@ def check_align_axis(project_root):
 def check_gap_rhythm(project_root):
     """#32 同一容器内的**行步进**应统一（≥4 行且步进种类 > 2 → WARN）。
 
-    口径（基准工程实测后收紧）：只取「行」（caption 含 Row）的垂直步进，按父容器分组统计；
-    不把图标/分割线等装饰件算进间隙（否则取值天然五花八门 → 全是误报）。
+口径（基准工程实测后收紧）：只取「行」（caption 含 Row）的垂直步进，按父容器分组统计；
+不把图标/分割线等装饰件算进间隙（否则取值天然五花八门 → 全是误报）。
     """
     warns, notes = [], []
     for jf in _ui_pages(project_root):
@@ -1651,11 +1645,11 @@ def check_text_room(project_root):
     return notes
 
 
-# ---------------- 37. listview item 高核对（钟工 2026-10-01）----------------
+# ---------------- 37. listview item 高核对（2026-10-01）----------------
 # 引擎按 itemH = int(lv高 / rows) − rowSpacing 自动算行高；**除不尽的余数是有意设计**——
 # 底部会露出下一项的一小块，让用户知道「还能继续滑」。所以不要求 rows×(itemH+rowSpacing) 恰好等于板高，
 # 也**不要**把「底部露出下一条」当缺陷（这一点 #11/#17 的「图 == 盒」判据不适用：盒子由公式决定）。
-# 要拦的是反向错法：itemH 写成比公式**大** → 挤爆/裁切；写成比公式**小** → 每项底部多出空带。
+# 要拦的是反向错法：itemH 写成比公式**大**→ 挤爆/裁切；写成比公式**小**→ 每项底部多出空带。
 def check_listview_item_h(project_root):
     """→ (notes, warns)：notes 含「余 N px = 可滑动提示（预期）」的合规记录。"""
     notes, warns = [], []
@@ -1687,25 +1681,25 @@ def check_listview_item_h(project_root):
     return notes, warns
 
 
-# ---------------- 34. 文本对比度（FAIL 级；钟工 2026-10-01）----------------
+# ---------------- 34. 文本对比度（FAIL 级；需求方 2026-10-01）----------------
 # 背景：字色（colorTab.color0）与底图/底色分别来自出图脚本与 json，很容易各自改对、
 # 组合起来看不见（2026-09-18 实例：default 主题灰底 #F3F3F3 + 白字 #FFFFFF = 1.11:1）。
-# 判定**复用** tools/qa/contrast_check.py（WCAG 2.1 AA：fs<24 → ≥4.5:1；fs≥24 → ≥3:1），
+# 判定**复用**tools/qa/contrast_check.py（WCAG 2.1 AA：fs<24 → ≥4.5:1；fs≥24 → ≥3:1），
 # 本文件不复制它的亮度/对比度实现，只负责「把背景算成 hex 再喂给它」。
 #
 # 背景取色（按绘制顺序 + 几何覆盖反解「文字底下真正是什么」）：
 #   ① 页面根 backgroundPic / 覆盖本控件盒的、绘制在前（z 更低）的控件里最后一个提供底色的 /
 #      **控件自己的底**（自身背景画在自己文字之下、盖在先前兄弟之上 → 优先级最高）；
 #      · 带 backgroundPic（或 picTab.pic0）→ 取该图**平均色**（PIL；半透明像素按父底色合成，
-#        全透明像素剔除）——这是本平台「卡片/药丸/横幅/键帽」的常见底；
+#全透明像素剔除）——这是本平台「卡片/药丸/横幅/键帽」的常见底；
 #      · 只有 backgroundColor → 取该底色（-1 = 透明 → 视作未提供，继续下探）；
 #   ② 都没有 → 页面底色（缺省白）。
 #
 # 分级（关键：不让「算不准的底」进 FAIL）——
 #   · 可信底（平色 / 近纯色图，合成色标准差 ≤ 6）且对比度不足 → **FAIL**；可信底限「页面底」
-#     与「其它覆盖件（容器/整屏底图件）提供的底」；
-#   · **控件自己声明的** backgroundColor/底图 → 只 NOTE：本平台运行期 setBackground(Pic/Color)、
-#     蒙层/禁用态换底、IDE 默认值残留很常见（#20 专管运行期设图），静态无法确认真机可见底；
+#与「其它覆盖件（容器/整屏底图件）提供的底」；
+#   · **控件自己声明的**backgroundColor/底图 → 只 NOTE：本平台运行期 setBackground(Pic/Color)、
+#蒙层/禁用态换底、IDE 默认值残留很常见（#20 专管运行期设图），静态无法确认真机可见底；
 #   · 图片底（照片/渐变/图形，平均色不能代表像素真值）或读不到的图 → 只 NOTE（附平均色与 σ）；
 #   · 临界带：比率在 [0.9×阈值, 阈值) 之间（如 4.32 vs 4.5）→ 只 NOTE，不算缺陷
 #     （引擎抗锯齿/子像素合成会把笔画实际对比度再拉低，边界值不值得当缺陷拦）；
@@ -1717,7 +1711,7 @@ def check_listview_item_h(project_root):
 #   （它把照片底按「众数色」当真值）。可 FAIL 的两档（页面底 / 容器底）在反例上都能拦住。
 _C34_PIC_FLAT_STD = 6.0      # 合成色标准差 ≤ 6 → 视为纯色底（同色板抖动 + 轻微渐变残留）
 _C34_TOL = 0.9               # 临界带：比率 ≥ 0.9×阈值只 NOTE（抗锯齿/引擎合成会再拉低笔画实际对比度，
-                             #              不把 4.3~4.5 这种边界值当缺陷；实测 SampleUI-New 的 4.32 落在这一档）
+                             #不把 4.3~4.5 这种边界值当缺陷；实测 SampleUI-New 的 4.32 落在这一档）
 _C34_DISABLED_FG = (0xB5, 0xB5, 0xB5)
 _CC_MOD = None
 _CC_ERR = ''
@@ -1726,9 +1720,9 @@ _CC_ERR = ''
 def _load_contrast_module():
     """加载 tools/qa/contrast_check.py，复用其对比度/亮度判定（0 复制）。
 
-    找不到 / 导入失败 → 返回 None，并把原因写进 _CC_ERR（#34/#33 报 NOTE 跳过，不静默）。
-    注意：contrast_check 在缺少 Pillow 时会在导入期 sys.exit(2) → 这里必须连 SystemExit 一起接住，
-    否则会把 check_all 本体一起带走。
+找不到 / 导入失败 → 返回 None，并把原因写进 _CC_ERR（#34/#33 报 NOTE 跳过，不静默）。
+注意：contrast_check 在缺少 Pillow 时会在导入期 sys.exit(2) → 这里必须连 SystemExit 一起接住，
+否则会把 check_all 本体一起带走。
     """
     global _CC_MOD, _CC_ERR
     if _CC_MOD is not None:
@@ -1742,7 +1736,7 @@ def _load_contrast_module():
         spec = importlib.util.spec_from_file_location('_ft_contrast_check', exe)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
-    except BaseException as e:                          # noqa: BLE001  连 SystemExit 一起接
+    except BaseException as e:                          # noqa: BLE001连 SystemExit 一起接
         _CC_ERR = '导入 %s 失败：%s: %s' % (exe, type(e).__name__, e)
         return None
     if not hasattr(mod, 'contrast'):
@@ -1755,8 +1749,8 @@ def _load_contrast_module():
 def _c34_pic_stats(root, ref, parent, cache):
     """底图 → (平均色 rgb, 合成色标准差)；读不到图 / 无透明以外像素 → None。
 
-    半透明像素按 parent 底色合成（toast/蒙层类药丸底常是半透明深色），全透明像素剔除；
-    统一缩到 ≤64×64 再采样（判定用均值，不需要全分辨率）。
+半透明像素按 parent 底色合成（toast/蒙层类药丸底常是半透明深色），全透明像素剔除；
+统一缩到 ≤64×64 再采样（判定用均值，不需要全分辨率）。
     """
     if not _HAS_PIL or not ref:
         return None
@@ -1789,8 +1783,8 @@ def _c34_pic_stats(root, ref, parent, cache):
             var = 0.0
             for c in chans:
                 for i in range(3):
-                    var += (c[i] - avg[i]) ** 2
-            std = (var / (3.0 * n)) ** 0.5
+                    var += (c[i] - avg[i]) **2
+            std = (var / (3.0 * n)) **0.5
             out = (tuple(int(round(v)) for v in avg), std)
     except Exception as e:                              # noqa: BLE001
         print('  [NOTE] #34 底图读取失败（该控件按不可信底处理）：%s (%s: %s)'
@@ -1838,14 +1832,14 @@ def _c34_is_disabled(cap, fg):
 def _c34_bg(project_root, page, ctrls, idx, cache):
     """→ (bg_rgb, grade, 来源描述, 参与判定的底图列表)；grade ∈ {'fail','note'}。
 
-    覆盖判定 = 绘制在前的控件盒完整包含本控件盒（含祖先容器、整屏底图件，如 SampleUI 的
+覆盖判定 = 绘制在前的控件盒完整包含本控件盒（含祖先容器、整屏底图件，如 SampleUI 的
     TextviewBackground）；最后一个提供底色的覆盖件 = 实际可见底（z 最高）。
 
     grade='note' 的两种情形：
       · 底是「非纯色图」/「读不到的图」——平均色不代表像素真值；
-      · 底是**控件自己声明的** backgroundColor/底图——本平台运行期 setBackground(Pic/Color)、
-        蒙层/禁用态换底、IDE 默认值残留都很常见（#20 专管运行期设图），静态无法确认真机可见底，
-        故只提示（实测：官方基准工程 SampleUI-New 的非达标项全落在这一类 → 0 FAIL）。
+      · 底是**控件自己声明的**backgroundColor/底图——本平台运行期 setBackground(Pic/Color)、
+蒙层/禁用态换底、IDE 默认值残留都很常见（#20 专管运行期设图），静态无法确认真机可见底，
+故只提示（实测：官方基准工程 SampleUI-New 的非达标项全落在这一类 → 0 FAIL）。
     """
     tx0, ty0, tw, th = ctrls[idx][2]
     tx1, ty1 = tx0 + tw, ty0 + th
@@ -1924,8 +1918,8 @@ def _c34_bg(project_root, page, ctrls, idx, cache):
 def check_text_contrast(project_root):
     """#34 文本对比度（→ (notes, fails)）：页面底/容器底（平色/近纯色图）+ 对比度不足 → FAIL。
 
-    阈值与判定全部来自 tools/qa/contrast_check.py（fs<24 → 4.5:1；fs≥24 → 3:1；临界带 0.9×只 NOTE）。
-    非可信底（照片/渐变图、控件自述底、读不到的图）只 NOTE；禁用态 EXEMPT；fg==bg / #666666 → 待核 NOTE。
+阈值与判定全部来自 tools/qa/contrast_check.py（fs<24 → 4.5:1；fs≥24 → 3:1；临界带 0.9×只 NOTE）。
+非可信底（照片/渐变图、控件自述底、读不到的图）只 NOTE；禁用态 EXEMPT；fg==bg / #666666 → 待核 NOTE。
     """
     notes, fails = [], []
     cc = _load_contrast_module()
@@ -1986,15 +1980,15 @@ def check_text_contrast(project_root):
     return notes, fails
 
 
-# ---------------- 33. 层级三件套（WARN 级；钟工 2026-10-01）----------------
+# ---------------- 33. 层级三件套（WARN 级；需求方 2026-10-01）----------------
 # 字号「档位」是视觉层级的骨架：#35/#36 管盒与余量、#27 管几何同族（left/width/height/alignment），
 # 都不看**字号与字色亮度**。本项把「一页里字号几档、层级倒不倒挂」变成机读结论。
-#   · ① 档位过散：同页**实质档位** > 5 → WARN（列出档位与计数）；
+#   · ① 档位过散：同页**实质档位**> 5 → WARN（列出档位与计数）；
 #   · ② 层级倒挂：大字号族的字色**对比度**中位显著低于小字号族（小/大 ≥ 2×）→ WARN；
-#     倒挂判定用「对自身底的对比度」而不是裸亮度：#34 的亮度口径在浅底/深底上方向相反，
-#     裸亮度比较会把「浅底上深标题 + 浅灰小字」这种正常设计误报成倒挂（同一 bug 方向相反）。
+#倒挂判定用「对自身底的对比度」而不是裸亮度：#34 的亮度口径在浅底/深底上方向相反，
+#裸亮度比较会把「浅底上深标题 + 浅灰小字」这种正常设计误报成倒挂（同一 bug 方向相反）。
 #   · 误报控制（与 #27 同一套）：同族占比门槛（档位要么 ≥2 个控件、要么占该页文本 ≥10% ——
-#     单例字号不算「族」，否则一个特殊页就能凑出 6~10 档）+ (page,msg) 去重。
+#单例字号不算「族」，否则一个特殊页就能凑出 6~10 档）+ (page,msg) 去重。
 # 实测（2026-10-01）：两版基准 + 7 个示例只命中 2 条（SampleUI 的 clock.json 倒挂 2.62×、
 #   xinfeng.json 8 档），均为 WARN 不拦门禁。
 _C33_MAX_TIERS = 5           # 实质字号档位上限
@@ -2142,7 +2136,7 @@ def main(project_root):
         log(not bad, '%s 特殊字符 %s' % (f, bad if bad else '无'))
 
     print('== 4. 图片引用（json + logic.cc 引用的图片必须存在；缺图 = 控件不可见（验收缺陷）。\n'
-          '      真正致命的是 thumb 等子盒字段写成字符串 = ftu 加载无声挂死，见 4b）==')
+          '真正致命的是 thumb 等子盒字段写成字符串 = ftu 加载无声挂死，见 4b）==')
     refs = set()
     for f in PAGES + LOGICS:
         txt = open(os.path.join(root, f), encoding='utf-8').read()
@@ -2168,7 +2162,7 @@ def main(project_root):
     # thumb 对象+缺图 = 正常。这是当年「黑屏两小时」的唯一真凶，离线评审必须拦住。
     # 原 seekbar.thumb 专项检查（2026-10-01）已泛化：全控件 × 全字段按注册表 field_type 校验。
     print('== 4b. 控件字段类型（注册表驱动：子盒对象必须是 dict 且 requiredKeys 齐全、标量类型匹配、\n'
-          '      数组必须是 list；thumb 写成字符串 = 真机 ftu 加载无声挂死（A/B 实测 V85X iMirror 2026-10-02））==')
+          '数组必须是 list；thumb 写成字符串 = 真机 ftu 加载无声挂死（A/B 实测 V85X iMirror 2026-10-02））==')
     _KNOWN_TYPES = set(_uischema.known_types())
     def _walk_controls(dd, path, out):
         for k, v in dd.items():
@@ -2310,7 +2304,7 @@ def main(project_root):
     def _run_fui(args):
         """fui 子进程：fui.exe 缺失/不可执行时不再炸 traceback（v0.27.172 修复：
         FUI 回退到 PATH 的 'fui' 而 PATH 没有 → CreateProcess WinError 2 裸抛）。
-        返回 (returncode, 输出)；异常归一为 rc=1 + 原因文本。"""
+返回 (returncode, 输出)；异常归一为 rc=1 + 原因文本。"""
         try:
             r = subprocess.run(args, capture_output=True, text=True)
             return r.returncode, (r.stderr or r.stdout or '')
@@ -2368,7 +2362,7 @@ def main(project_root):
         log(not bad, '%s SeekBar 9-patch %s' % (f, '；'.join(bad) if bad else '无'))
 
     print('== 11. 图片尺寸必须与盒子严格相等（控件 position；thumb 子盒用 thumb.size）==\n'
-          '       引擎行为：图 != 盒时**拉伸填充**（不报错，但非整数缩放发糊/变形）→ 所以要 1:1；\n'
+          '引擎行为：图 != 盒时**拉伸填充**（不报错，但非整数缩放发糊/变形）→ 所以要 1:1；\n'
           '       thumb 滑块是「自有尺寸」子盒，盒子=thumb.size（铁律 #1）。')
     if not _HAS_PIL:
         log(True, '无 PIL，跳过图片尺寸核对（仅检查引用存在性）')
@@ -2413,14 +2407,14 @@ def main(project_root):
                     pass
         log(not bad, '%s 图片尺寸 %s' % (f, '；'.join(bad) if bad else '全部匹配'))
 
-    print('== 12. INIT_UI_TIMERS 不被 FYX_BUILD 保护（fun 工具链宏是 FUN_BUILD）==')
+    print('== 12. INIT_UI_TIMERS 不被旧宏 FUSE_BUILD 保护（当前 fun 工具链宏是 FUN_BUILD）==')
     for f in LOGICS:
         code = open(os.path.join(root, f), encoding='utf-8').read()
         idx = code.find('INIT_UI_TIMERS')
         bad = False
         if idx >= 0:
             m = re.findall(r'#if(n?def|ndef)\s+(\w+)', code[:idx])
-            if m and m[-1][1] == 'FYX_BUILD':
+            if m and m[-1][1] == 'FUSE_BUILD':
                 bad = True
         log(not bad, '%s TIMER 宏保护' % f)
 
@@ -2443,7 +2437,7 @@ def main(project_root):
                               pos['width'], pos['height']))
         log(not bad, '%s 最小尺寸 %s' % (f, '；'.join(bad) if bad else '满足'))
 
-    print('== 14. 控件字段全集（必写键齐全，沛哥 2026-09-08：字段全显式防版本不匹配）==')
+    print('== 14. 控件字段全集（必写键齐全，2026-09-08：字段全显式防版本不匹配）==')
     for f in PAGES:
         d = json.load(open(os.path.join(root, f), encoding='utf-8'))
         missing = []
@@ -2479,8 +2473,8 @@ def main(project_root):
         log(not missing, '%s 字段全集 %s' % (f, '；'.join(missing[:15]) if missing else '齐全'))
 
     print('== 15. 装饰件遮挡可触摸控件（WARN 需人工审批；含「可能故意遮挡」评估）==\n'
-          '      口径：同层后定义（z 更高）且 touchable=false 的控件压在 touchable=true 控件之上。\n'
-          '      两类可能：① 误压（装饰件/布局失误）→ 需运行期 setTouchPass(true)；\n'
+          '口径：同层后定义（z 更高）且 touchable=false 的控件压在 touchable=true 控件之上。\n'
+          '两类可能：① 误压（装饰件/布局失误）→ 需运行期 setTouchPass(true)；\n'
           '      ② 故意遮挡（蒙层/禁用态/防盗点：modal 弹窗、容器遮罩、整屏遮罩、完全覆盖）→ 本就有意，忽略。')
     for f in PAGES:
         d = json.load(open(os.path.join(root, f), encoding='utf-8'))
@@ -2541,7 +2535,7 @@ def main(project_root):
                                (m.get('box') or m.get('position'))[1]) for m in va['mismatch'][:6]))))
         if va.get('stretched'):
             print('  [NOTE] %d 处图尺寸 != 盒子（引擎会拉伸，通常正常；其中 thumb.size 盒子只对\n'
-                  '         手绘 thumb 适用）：%s'
+                  '手绘 thumb 适用）：%s'
                   % (len(va['stretched']),
                      '；'.join('%s.%s %dx%d != %s %dx%d'
                                % (m['control'], m['field'], m['png'][0], m['png'][1],
@@ -2556,9 +2550,9 @@ def main(project_root):
             print('  [NOTE] %d 处因盒子尺寸未知（控件无 position / thumb 无 size）跳过尺寸核对：%s'
                   % (len(va['skippedNoBox']), '、'.join(va['skippedNoBox'][:5])))
 
-    print('== 18. 设计令牌漂移检测（DESIGN.md 令牌 vs json 实际值；沛哥 2026-09-12）==\n'
-          '      口径：DESIGN.md 冻结视觉真相，json 颜色/字号应来自令牌；结构值例外 0/-1/16777215；\n'
-          '      单项例外写一行「漂移豁免: #RRGGBB 18」留痕。无 DESIGN.md / 令牌表未填 → NOTE 跳过。')
+    print('== 18. 设计令牌漂移检测（DESIGN.md 令牌 vs json 实际值；需求方 2026-09-12）==\n'
+          '口径：DESIGN.md 冻结视觉真相，json 颜色/字号应来自令牌；结构值例外 0/-1/16777215；\n'
+          '单项例外写一行「漂移豁免: #RRGGBB 18」留痕。无 DESIGN.md / 令牌表未填 → NOTE 跳过。')
     dt = verify_design_tokens(root)
     if dt['status'] in ('skip', 'incomplete'):
         print('  [NOTE] 跳过：%s' % dt['note'])
@@ -2577,8 +2571,8 @@ def main(project_root):
                  % (len(dt['gaps']), ','.join(str(s) for s in tk.get('spacing', [])),
                     '、'.join('%dpx×%d' % (g, c) for g, c in list(dt['gaps'].items())[:8])))
 
-    print('== 19. V85X 视频解码返回后必须 releaseLayer（防黑屏；沛哥 2026-09-14 定：\n'
-          '      平台匹配时开发与 check 验收都必须做，参考 knowledge/v85x/display-layer-debug.md §2）==')
+    print('== 19. V85X 视频解码返回后必须 releaseLayer（防黑屏；需求方 2026-09-14 定：\n'
+          '平台匹配时开发与 check 验收都必须做，参考 knowledge/v85x/display-layer-debug.md §2）==')
     rl = check_v85x_release_layer(root)
     if rl['status'] == 'skip':
         print('  [NOTE] 跳过：%s' % rl['note'])
@@ -2586,10 +2580,10 @@ def main(project_root):
         log(rl['ok'], 'V85X 图层释放 %s' % rl['detail'])
         if rl.get('nocall'):
             warn('V85X 图层释放：src/ 里释放函数名只出现一次（疑似只定义未调用）——\n'
-                 '          沛哥 2026-09-14 定：用到视频图层的产品**启动第一次初始化就必须先释放图层**，\n'
-                 '          否则程序崩溃/重启后残留的系统级 disp 图层不会被清理 → **屏幕永久性异常**\n'
+                 '          2026-09-14 定：用到视频图层的产品**启动第一次初始化就必须先释放图层**，\n'
+                 '否则程序崩溃/重启后残留的系统级 disp 图层不会被清理 → **屏幕永久性异常**\n'
                  '          （真机实测：杀进程重启后残留黑层仍在）。修复：在启动初始化路径里调一次释放\n'
-                 '          函数（如 sys::hw::init() / onUI_init），详见 knowledge/v85x/display-layer-debug.md §2-0/§2-1-3')
+                 '函数（如 sys::hw::init() / onUI_init），详见 knowledge/v85x/display-layer-debug.md §2-0/§2-1-3')
         if rl.get('unsafe'):
             warn('V85X 图层释放用「格式区间（DISP_FORMAT_ARGB_8888 ~ DISP_FORMAT_BGRA_5551）判定 UI 层」'
                  '（%s）→ 2026-09-14 V851 真机实测会漏关残留层：RGB_888(0x08) 落在区间内被误判为 UI 层、'
@@ -2600,8 +2594,8 @@ def main(project_root):
                  % '、'.join(rl['unsafe'][:3]))
 
     print('== 20. 运行期 set...Pic 的图 vs 控件盒（v0.27.90；扫 src/**/*.cc|*.cpp）==\n'
-          '       口径与 #11/#17 同源：图尺寸应 == 控件盒；resources/images/ 的**自动生成图**不等 = FAIL，\n'
-          '       手绘图（其它目录）不等 = 仅提示（引擎本就拉伸）；.9.png 豁免；变量映射不到控件不静默跳过。')
+          '口径与 #11/#17 同源：图尺寸应 == 控件盒；resources/images/ 的**自动生成图**不等 = FAIL，\n'
+          '手绘图（其它目录）不等 = 仅提示（引擎本就拉伸）；.9.png 豁免；变量映射不到控件不静默跳过。')
     sp = check_runtime_setpic(root)
     if not sp['files']:
         print('  [NOTE] src/ 下没有 .cc/.cpp（纯 UI 交付），跳过')
@@ -2622,7 +2616,7 @@ def main(project_root):
                                m['boxes'][0]) for m in sp['mismatch'][:4]))))
         for m in sp['mismatch']:
             warn('运行期设图被拉伸：%s:%d %s->%s("%s") 图 %dx%d，控件盒 %s → 引擎按盒拉伸\n'
-                 '          修法二选一：① 控件盒改回图尺寸（推荐，图==盒铁律）；② 重出同尺寸图\n'
+                 '修法二选一：① 控件盒改回图尺寸（推荐，图==盒铁律）；② 重出同尺寸图\n'
                  '          （案例：48x16 三点图放进 48x26 盒 → 正圆被拉成竖椭圆，'
                  'knowledge/uicontrols/text-box-height-rule.md）'
                  % (m['file'], m['line'], m['target'], m['field'], m['pic'],
@@ -2643,11 +2637,11 @@ def main(project_root):
             print('  [NOTE] 无 PIL，只核引用存在性，未比尺寸')
 
     print('== 21. 生成图抗锯齿 / 脏边（委派 tools/qa/aa_audit.py --fail；0 token 有退出码）==\n'
-          '       钟工 2026-09-19 A2（原话「把 aa_audit --fail 接进 check_all」）：#19/#20 已被\n'
+          '       2026-09-19 A2（原话「把 aa_audit --fail 接进 check_all」）：#19/#20 已被\n'
           '       V85X 图层释放 / 运行期设图占用 → 为不打乱既有编号与知识库引用，追加为 #21。\n'
-          '       口径：真缺陷（resid_bad / 成片 hard_diag / 无两区边界时退回 dirty）= FAIL；\n'
+          '口径：真缺陷（resid_bad / 成片 hard_diag / 无两区边界时退回 dirty）= FAIL；\n'
           '       WARN 逐条列理由（不阻塞也不静默）；*.9.png marker 环由审计内置豁免；\n'
-          '       白名单只认 tools/qa/aa_audit_allow.json（命中即 EXEMPT 并打印理由）。')
+          '白名单只认 tools/qa/aa_audit_allow.json（命中即 EXEMPT 并打印理由）。')
     aa = check_aa_assets(root)
     if aa['status'] == 'skip':
         print('  [NOTE] 跳过：%s' % aa['reason'])
@@ -2675,11 +2669,11 @@ def main(project_root):
                  % len(aa['defect']))
 
     print('== 22. 切图缺倒角 / 直角残留（委派 tools/qa/corner_audit.py --fail；0 token 有退出码）==\n'
-          '       钟工 2026-09-20 M5（原话「主界面大量图片依旧存在切图缺倒角问题……必须给我从设计标准和\n'
-          '       拦截上处理好」）：矩形/卡片/磁贴/药丸族按**边起跑距离**几何反解圆角 r_est\n'
+          '       2026-09-20 M5（原话「主界面大量图片依旧存在切图缺倒角问题……必须给我从设计标准和\n'
+          '拦截上处理好」）：矩形/卡片/磁贴/药丸族按**边起跑距离**几何反解圆角 r_est\n'
           '       （d = r - sqrt(r-0.25)）与 DESIGN.md 圆角令牌比。\n'
-          '       口径：直角残留（d≤1）/ r_est < 0.5×令牌 / 四角不一致 → FAIL；< 0.8×令牌 → WARN；\n'
-          '       图标・内切图形族不做倒角判据（由 #23 判形状外透明）；满幅/底图族按登记理由 EXEMPT。')
+          '口径：直角残留（d≤1）/ r_est < 0.5×令牌 / 四角不一致 → FAIL；< 0.8×令牌 → WARN；\n'
+          '图标・内切图形族不做倒角判据（由 #23 判形状外透明）；满幅/底图族按登记理由 EXEMPT。')
     ca = check_shape_audit(root, 'corner')
     if ca['status'] == 'skip':
         print('  [NOTE] 跳过：%s' % ca['reason'])
@@ -2709,10 +2703,10 @@ def main(project_root):
                  'references/kb/image-gen-standard.md §7.2' % len(ca['defect']))
 
     print('== 23. 透明底 / 烘底色（委派 tools/qa/alpha_bg_audit.py --fail；0 token 有退出码）==\n'
-          '       钟工 2026-09-20 M5（原话「控件里面图片背景是黑色的，应该做成透明的，这个设计不符\n'
-          '       合 flyThings OS 平台的能力」）：形状类资产必须真透明底（形状外 α=0）。\n'
-          '       口径：整图无透明像素（α≥250）/ 内切・图标族角区不透明（= 烘了底色）/\n'
-          '       图标贴死图边 → FAIL；满幅族（照片・壁纸・遮罩・1px 通栏线・软阴影）登记豁免。')
+          '       2026-09-20 M5（原话「控件里面图片背景是黑色的，应该做成透明的，这个设计不符\n'
+          '合 flyThings OS 平台的能力」）：形状类资产必须真透明底（形状外 α=0）。\n'
+          '口径：整图无透明像素（α≥250）/ 内切・图标族角区不透明（= 烘了底色）/\n'
+          '图标贴死图边 → FAIL；满幅族（照片・壁纸・遮罩・1px 通栏线・软阴影）登记豁免。')
     ab = check_shape_audit(root, 'alpha')
     if ab['status'] == 'skip':
         print('  [NOTE] 跳过：%s' % ab['reason'])
@@ -2739,8 +2733,8 @@ def main(project_root):
                  'references/kb/image-gen-standard.md §7.1/§7.3' % len(ab['defect']))
 
     print('== 24. 颜色值 0（不透明黑）误用（委派 tools/qa/zero_color_audit.py --fail；0 token 有退出码）==\n'
-          '       钟工 2026-09-20 M6（原话「控件/切图黑底」「从标准和拦截上处理」）：本平台里\n'
-          '       颜色值 **0 = 不透明黑**、**-1 = 透明**；json 里把「透明」写成 0 的字段（backgroundColor /\n'
+          '       2026-09-20 M6（原话「控件/切图黑底」「从标准和拦截上处理」）：本平台里\n'
+          '颜色值 **0 = 不透明黑**、**-1 = 透明**；json 里把「透明」写成 0 的字段（backgroundColor /\n'
           '       bgColorTab.color0 / textBgColor …）真机就是黑块。口径见 DESIGN.md §2.1 与\n'
           '       references/kb/image-gen-standard.md §7.6：未登记豁免 → FAIL；命中\n'
           '       tools/qa/zero_color_allow.json（视频/摄像头面黑底）→ EXEMPT + 打印理由。')
@@ -2768,12 +2762,12 @@ def main(project_root):
                  % len(zc['defect']))
 
     print('== 25. 弧线过渡质量（9-patch 圆角 AA；委派 tools/qa/corner_audit.py --arc-only --fail）==\n'
-          '       钟工 2026-09-20 M8（原话「全控件演示界面的每个演示框背景图 ct_card.9.png 倒角有\n'
-          '       严重锯齿」）：#22 量倒角的*几何*（有没有/够不够大），#25 量弧上的*过渡质量*\n'
+          '       2026-09-20 M8（原话「全控件演示界面的每个演示框背景图 ct_card.9.png 倒角有\n'
+          '严重锯齿」）：#22 量倒角的*几何*（有没有/够不够大），#25 量弧上的*过渡质量*\n'
           '       （覆盖率是否真的从 0 渐变到满值）。`*.9.png` 先剥离最外 1px marker 环再判。\n'
-          '       口径：角块内「外沿进入像素」（α>0 且 4 邻域有 α=0）的覆盖率 = α/峰值α；\n'
-          '       要求 min_cov ≤ 0.35 且 ≤0.35 的个数 ≥ 2（成组出现）；否则 = 过渡被压进 1px 硬阶梯 → FAIL。\n'
-          '       阈值出处 P(min>t)=(1−t)^N（与标准「≥4× 超采样」档位自洽）见 references/kb/image-gen-standard.md §7.7。')
+          '口径：角块内「外沿进入像素」（α>0 且 4 邻域有 α=0）的覆盖率 = α/峰值α；\n'
+          '要求 min_cov ≤ 0.35 且 ≤0.35 的个数 ≥ 2（成组出现）；否则 = 过渡被压进 1px 硬阶梯 → FAIL。\n'
+          '阈值出处 P(min>t)=(1−t)^N（与标准「≥4× 超采样」档位自洽）见 references/kb/image-gen-standard.md §7.7。')
     aq = check_arc_quality(root)
     if aq['status'] == 'skip':
         print('  [NOTE] 跳过：%s' % aq['reason'])
@@ -2788,7 +2782,7 @@ def main(project_root):
         for d in aq['defect']:
             print('  [DEFECT] %-30s 最小覆盖率=%s（≤0.35 的 %s 个 / 进入像素 %s，角块 α 峰值 %s）'
                   % (d['name'], d['min_cov'], d['lo_n'], d['n_px'], d['amax']))
-            print('           四角最小覆盖率 %s' % (d['corners'],))
+            print('四角最小覆盖率 %s' % (d['corners'],))
             print('           %s' % d['reason'])
         for w in aq['warn']:
             print('  [WARN 需人工确认] %-26s 四角最小覆盖率 %s；%s'
@@ -2805,11 +2799,11 @@ def main(project_root):
                  '口径见 references/kb/image-gen-standard.md §7.7' % len(aq['defect']))
 
     print('== 26. scrollwindow 行程核对（行程 = 内层 window − 视口，**不读 dragMaxDis**）==\n'
-          '       钟工 2026-10-01 定：`dragMaxDis` = 越界拖拽上限（overscroll），四个滑动控件语义一致，\n'
+          '       2026-10-01 定：`dragMaxDis` = 越界拖拽上限（overscroll），四个滑动控件语义一致，\n'
           '       **不是行程**；行程由内容决定、引擎自算（scrollwindow = 内层 window 尺寸 − 视口尺寸）。\n'
-          '       反例（旧口径作废的证据）：官方 ScrollWindowDemo-New 视口 450 / 内容 800（行程 350）\n'
-          '       而 dragMaxDis=200；SmartPanel settings 视口 418 / 内容 832（行程 414）而 dragMaxDis=60，\n'
-          '       真机仍能滚 302px 到底。口径：knowledge/uicontrols/scroll-drag-interaction-spec.md。')
+          '反例（旧口径作废的证据）：官方 ScrollWindowDemo-New 视口 450 / 内容 800（行程 350）\n'
+          '而 dragMaxDis=200；SmartPanel settings 视口 418 / 内容 832（行程 414）而 dragMaxDis=60，\n'
+          '真机仍能滚 302px 到底。口径：knowledge/uicontrols/scroll-drag-interaction-spec.md。')
     st_notes, st_warns = check_scrollwindow_travel(root)
     if not st_notes:
         print('  [NOTE] 无 scrollwindow（或未内嵌 window），跳过')
@@ -2820,22 +2814,22 @@ def main(project_root):
     if st_notes and not st_warns:
         print('  [PASS] 行程与 dragMaxDis 用法正常（%d 处）' % len(st_notes))
 
-    print('== 27. 同族控件口径离群 / 文本×图标重叠（设计期拦截；钟工 2026-10-01）==\n'
-          '       给设置行这类重复行模板上的静态判据：同页同父同角色的 *Label/*Value/*Icon/*Chevron\n'
-          '       应取同一组 (left,width,height,alignment) 口径；偏离众数、或文本盒与图标/箭头盒相交 → WARN。\n'
-          '       实例：某行值框被做成右对齐窄框 300..418（其余 12 行 75..375），且右缘顶到箭头盒\n'
+    print('== 27. 同族控件口径离群 / 文本×图标重叠（设计期拦截；需求方 2026-10-01）==\n'
+          '给设置行这类重复行模板上的静态判据：同页同父同角色的 *Label/*Value/*Icon/*Chevron\n'
+          '应取同一组 (left,width,height,alignment) 口径；偏离众数、或文本盒与图标/箭头盒相交 → WARN。\n'
+          '实例：某行值框被做成右对齐窄框 300..418（其余 12 行 75..375），且右缘顶到箭头盒\n'
           '       → 文字凸出 43px + “文本和箭头混到一起”（引擎先画背景图后画文字，箭头被盖住）。\n'
-          '       口径：knowledge/uicontrols/scrollwindow-layout-checklist.md。')
+          '口径：knowledge/uicontrols/scrollwindow-layout-checklist.md。')
     fa_notes, fa_warns = check_family_alignment(root)
     if not fa_notes:
         print('  [PASS] 同族口径一致、无文本×图标重叠')
     for pg, msg in fa_warns:
         warn('%s %s' % (pg, msg))
 
-    print('== 28. UTF-8 文本陷阱（src 静态扫描；钟工 2026-10-01）==\n'
+    print('== 28. UTF-8 文本陷阱（src 静态扫描；需求方 2026-10-01）==\n'
           '       `find_first_of("：")` 按**单字节**匹配 → 多字节字符被切在字节中间（实测「回家模式」被切坏）\n'
-          '       → 必须用 `find("：")` 整序列搜索。只扫**含非 ASCII** 的字面量实参（纯 ASCII 集合法，不报）。\n'
-          '       口径：knowledge/uicontrols/text-box-height-rule.md（UTF-8 三件套）。')
+          '       → 必须用 `find("：")` 整序列搜索。只扫**含非 ASCII**的字面量实参（纯 ASCII 集合法，不报）。\n'
+          '口径：knowledge/uicontrols/text-box-height-rule.md（UTF-8 三件套）。')
     u8_notes, u8_warns = check_utf8_pitfalls(root)
     for n in u8_notes:
         print('  [NOTE] %s' % n)
@@ -2844,10 +2838,10 @@ def main(project_root):
     if u8_notes and not u8_warns:
         print('  [PASS] 未发现多字节 find_first_of/find_last_of')
 
-    print('== 29. 显示件吃掉下层触摸（装饰件漏设穿透；钟工 2026-10-01）==\n'
-          '       同层「后定义（z 更高）+ 可见 + touchable 未显式 false」的纯显示件压住交互控件\n'
+    print('== 29. 显示件吃掉下层触摸（装饰件漏设穿透；需求方 2026-10-01）==\n'
+          '同层「后定义（z 更高）+ 可见 + touchable 未显式 false」的纯显示件压住交互控件\n'
           '       → 会吃掉 DOWN（症状=整块点不动/只剩缝隙能点）。容器/整屏/近全覆盖/modal 视为故意，不报。\n'
-          '       口径：knowledge/uicontrols/touch-events.md、scrollwindow-layout-checklist.md §2.1。')
+          '口径：knowledge/uicontrols/touch-events.md、scrollwindow-layout-checklist.md §2.1。')
     de_notes, de_warns = check_display_eats_touch(root)
     if not de_notes:
         print('  [NOTE] 无页面，跳过')
@@ -2856,10 +2850,10 @@ def main(project_root):
     if de_notes and not de_warns:
         print('  [PASS] 无显示件压住交互控件（%d 页）' % len(de_notes))
 
-    print('== 30. caption 唯一性（页内同名 caption → onButtonClick_<caption> 重定义 ⇒ C++ 编译必失败；钟工 2026-10-01）==\n'
+    print('== 30. caption 唯一性（页内同名 caption → onButtonClick_<caption> 重定义 ⇒ C++ 编译必失败；需求方 2026-10-01）==\n'
           '       #5 只核对「回调是否存在」，核不出同名 caption 各生成一份回调（重定义）\n'
           '       → 同一 json 内 caption 出现 ≥2 次即 FAIL，并列出「哪个 caption、几次、在哪几个控件」。\n'
-          '       背景：templates/ui_blocks/compose.py 修前按「卡内序号」分配块名 → 跨卡从 1 重数\n'
+          '背景：templates/ui_blocks/compose.py 修前按「卡内序号」分配块名 → 跨卡从 1 重数\n'
           '       （RowSep1×5 / ButtonRowSettingRow1×2 等），生成的两份 onButtonClick 一个 TU 里重定义。')
     cu_notes, cu_dups = check_caption_unique(root)
     for pg, cap, keys in cu_dups:
@@ -2870,8 +2864,8 @@ def main(project_root):
     elif not cu_dups:
         print('  [PASS] %d 页 caption 全部唯一' % len(cu_notes))
 
-    print('== 31. 行族文本对齐轴（离群 → WARN；钟工 2026-10-01）==\n'
-          '       同页行族文本盒左缘只应出现 1~2 个值（绝对布局下「某行没和同页对齐」是最常见返工）。')
+    print('== 31. 行族文本对齐轴（离群 → WARN；需求方 2026-10-01）==\n'
+          '同页行族文本盒左缘只应出现 1~2 个值（绝对布局下「某行没和同页对齐」是最常见返工）。')
     al_notes, al_warns = check_align_axis(root)
     for n in al_notes:
         print('  [NOTE] %s' % n)
@@ -2880,7 +2874,7 @@ def main(project_root):
     if al_notes and not al_warns:
         print('  [PASS] 行族对齐轴收敛')
 
-    print('== 32. 垂直间距节奏（同页间隙取值应成小集合；钟工 2026-10-01）==')
+    print('== 32. 垂直间距节奏（同页间隙取值应成小集合；需求方 2026-10-01）==')
     gp_notes, gp_warns = check_gap_rhythm(root)
     for n in gp_notes:
         print('  [NOTE] %s' % n)
@@ -2889,7 +2883,7 @@ def main(project_root):
     if gp_notes and not gp_warns:
         print('  [PASS] 间距节奏统一')
 
-    print('== 35. 箭头/图标盒下限（< 12x16 → WARN；钟工 2026-10-01）==')
+    print('== 35. 箭头/图标盒下限（< 12x16 → WARN；需求方 2026-10-01）==')
     ib_notes, ib_warns = check_icon_box_min(root)
     for pg, msg in ib_warns:
         warn('%s %s' % (pg, msg))
@@ -2903,8 +2897,8 @@ def main(project_root):
     if not tr_notes:
         print('  [PASS] 文本盒余量充足')
 
-    print('== 37. listview item 高核对（itemH = int(lv高/rows) − rowSpacing；钟工 2026-10-01）==\n'
-          '       余数（底部露出下一项一小块）是**有意的可滑动提示**，不算缺陷；只有「比公式大（挤爆）'
+    print('== 37. listview item 高核对（itemH = int(lv高/rows) − rowSpacing；需求方 2026-10-01）==\n'
+          '余数（底部露出下一项一小块）是**有意的可滑动提示**，不算缺陷；只有「比公式大（挤爆）'
           '或比公式小（空带）」才报。')
     lv_notes, lv_warns = check_listview_item_h(root)
     for n in lv_notes:
@@ -2914,13 +2908,13 @@ def main(project_root):
     if not lv_notes and not lv_warns:
         print('  [NOTE] 无 listview，跳过')
 
-    print('== 33. 层级三件套（字号档位过散 / 层级倒挂 → WARN；钟工 2026-10-01）==\n'
-          '       ① 同页**实质档位** > 5 → WARN（列出档位与计数）；\n'
+    print('== 33. 层级三件套（字号档位过散 / 层级倒挂 → WARN；需求方 2026-10-01）==\n'
+          '       ① 同页**实质档位**> 5 → WARN（列出档位与计数）；\n'
           '       ② 层级倒挂：大字号族的字色**对比度**中位显著低于小字号族（小/大 ≥ 2×）→ WARN；\n'
-          '         用「对自身底的对比度」而非裸亮度（#34 的亮度口径在浅底/深底上方向相反，裸亮度比\n'
-          '         会把「浅底深标题 + 浅灰小字」误报成倒挂）；\n'
+          '用「对自身底的对比度」而非裸亮度（#34 的亮度口径在浅底/深底上方向相反，裸亮度比\n'
+          '会把「浅底深标题 + 浅灰小字」误报成倒挂）；\n'
           '       ③ 与 #27（几何同族：left/width/height/alignment）职责不重叠：#33 只看字号与字色层级。\n'
-          '       误报控制沿用 #27 的「同族占比门槛（≥2 个控件 或 占该页文本 ≥10%）+ (page,msg) 去重」。')
+          '误报控制沿用 #27 的「同族占比门槛（≥2 个控件 或 占该页文本 ≥10%）+ (page,msg) 去重」。')
     ts_notes, ts_warns = check_type_scale(root)
     for n in ts_notes:
         print('  [NOTE] %s' % n)
@@ -2929,11 +2923,11 @@ def main(project_root):
     if not ts_warns:
         print('  [PASS] 字号档位与字色层级正常')
 
-    print('== 34. 文本对比度（字色 vs 实际底色；不足 → FAIL；钟工 2026-10-01）==\n'
-          '       判定**复用** tools/qa/contrast_check.py（WCAG 2.1 AA：fs<24 → 4.5:1 / fs≥24 → 3:1），\n'
-          '       本文件只负责把底算成 hex 再喂它：底 = 覆盖本控件盒的绘制在前控件里最后一个\n'
-          '       提供底色的（含祖先容器/整屏底图件）+ 控件自己的底，图片底取**平均色**（PIL，\n'
-          '       半透明按父底合成）；都没有 → 页面底色。分级：页面/容器可信底（平色或近纯色图\n'
+    print('== 34. 文本对比度（字色 vs 实际底色；不足 → FAIL；需求方 2026-10-01）==\n'
+          '判定**复用**tools/qa/contrast_check.py（WCAG 2.1 AA：fs<24 → 4.5:1 / fs≥24 → 3:1），\n'
+          '本文件只负责把底算成 hex 再喂它：底 = 覆盖本控件盒的绘制在前控件里最后一个\n'
+          '提供底色的（含祖先容器/整屏底图件）+ 控件自己的底，图片底取**平均色**（PIL，\n'
+          '半透明按父底合成）；都没有 → 页面底色。分级：页面/容器可信底（平色或近纯色图\n'
           '       σ≤6）不足 → FAIL；照片/渐变图底与控件自述底只 NOTE；临界带（≥0.9×阈值）只 NOTE。')
     tc_notes, tc_fails = check_text_contrast(root)
     for n in tc_notes:

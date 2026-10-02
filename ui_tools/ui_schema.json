@@ -7,7 +7,7 @@
     "colorZero": "0 = 不透明黑。仅 videoview/cameraview 底色官方原值为 0（必须实黑底）；其他控件透明写 -1，写 0 就是黑块（M6 实测坑）",
     "missingImage": "图片字段指向不存在文件或置 '' → 控件不可见（framework 容错，不挂死），属验收缺陷",
     "subboxType": "⛔ 子盒对象字段（thumb/position/colorTab/picTab/size/point/range）写成字符串或其他类型 = 真机 ftu 加载无声挂死（无 onUI_init/onUI_show、无报错日志）。A/B 实测 V85X iMirror 固件 2026-10-02：thumb 对象+缺图=正常，thumb 字符串+有图=挂死",
-    "fullFields": "生成 json 时每控件输出本类型必填字段全集（含默认值），不做缺省声明——不同 fui/easyui 版本默认处理可能不同（沛哥 2026-09-08）"
+    "fullFields": "生成 json 时每控件输出本类型必填字段全集（含默认值），不做缺省声明——不同 fui/easyui 版本默认处理可能不同（2026-09-08）"
   },
   "page": {
     "controlKeyPattern": "^[a-z]+__\\d+$",
@@ -18,7 +18,7 @@
       "position": {"type": "position", "required": true, "note": "整页通常 left0/top0/width=resolution.width/height=resolution.height"},
       "backgroundColor": {"type": "color", "required": true, "default": -1},
       "topmost": {"type": "bool", "required": false, "default": false},
-      "beepEnable": {"type": "bool", "required": false, "note": "不强制（沛哥 2026-09-08，两源证实非必写）"}
+      "beepEnable": {"type": "bool", "required": false, "note": "不强制（2026-09-08，两源证实非必写）"}
     }
   },
   "sharedTypes": {
@@ -211,7 +211,7 @@
         "position": {"type": "position", "required": true},
         "backgroundColor": {"type": "color", "required": true},
         "codeStr": {"type": "string", "required": false, "note": "有值才写"},
-        "padding": {"type": "int", "required": true, "default": 10, "note": "恒写 10（沛哥口径）"},
+        "padding": {"type": "int", "required": true, "default": 10, "note": "恒写 10（经需求方口径）"},
         "touchable": {"type": "bool", "required": true, "default": true},
         "visible": {"type": "bool", "required": true, "default": true}
       }
@@ -391,7 +391,7 @@
   },
   "subStructures": {
     "listitem": {
-      "note": "listview.item；无 id。⚠️ position 必写：itemH = int(lv高/rows) − rowSpacing、itemW = lv宽、left/top=0；除不尽的余数是故意的（露出下一项提示可滑，钟工 2026-10-01），itemH 比公式大会挤爆列表（check_all #37）",
+      "note": "listview.item；无 id。⚠️ position 必写：itemH = int(lv高/rows) − rowSpacing、itemW = lv宽、left/top=0；除不尽的余数是故意的（露出下一项提示可滑，2026-10-01），itemH 比公式大会挤爆列表（check_all #37）",
       "fields": {
         "caption": {"type": "string", "required": true},
         "alignment": {"type": "int", "required": true},

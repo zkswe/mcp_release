@@ -16,7 +16,7 @@ evidence: []
 # 真机抓屏（device_screenshot）实现要点与踩坑
 
 > 检索导引：抓真机截图 / 抓屏 / 屏幕没图 / 抓到的画面是旧的 / 颜色红蓝互换 / 文字侧躺倒立 /
-> 取图角度 rotateScreen / fb0 参数 / 双缓冲 pan / **vdec 通道 vdec_chn / 视频层抓不到帧 / 拼墙抓不到画面** /
+> 取图角度 rotateScreen / fb0 参数 / 双缓冲 pan / **vdec 通道 vdec_chn / 视频层抓不到帧 / 拼墙抓不到画面**/
 > 设备没有 screencap / toast 抓不到 / 瞬时元素抓不到 /
 > setInvalid 是禁用不是重绘 / 强制重绘 invalidate 时命中。
 > 用途：`flythings_device_screenshot` 的完整口径（该工具 docstring 只保留要点，踩坑细节在这里）。
@@ -26,7 +26,7 @@ evidence: []
 要确认设备上**实际显示成什么样**：布局对不对、图标有没有锯齿、切图对不对、颜色/文字是否正常、
 改完要不要验收、用户说「我屏幕上看到的是……」而你手上没有截图。
 
-三段式验收的第二步：预览（秒级）→ **本工具抓真机截图（像素真相）** → `flythings_ui_visual(action="diff")` 比对。
+三段式验收的第二步：预览（秒级）→ **本工具抓真机截图（像素真相）**→ `flythings_ui_visual(action="diff")` 比对。
 
 ## 2. 默认用法（默认参数就够了）
 
@@ -35,7 +35,7 @@ evidence: []
 | 抓一张 | `flythings_device_screenshot()` → `screenshots/device_600x1600_*.png` |
 | 省 token | `scale=0.5`（长宽各半）或 `fmt='jpg', quality=85` |
 | 多设备 | `device='<设备IP>:5555'`（先 `adb connect <IP>:5555`） |
-| 分析画面 | 把返回的 `path` 交给看图能力；**不要把 raw/文件本身丢给模型** |
+| 分析画面 | 把返回的 `path` 交给看图能力；**不要把 raw/文件本身丢给模型**|
 | 改前改后验收 | 改前抓一张存好，改后再抓一张 → `flythings_ui_visual(action="diff", image_a=改前, image_b=改后)` 0 token 出差异清单 |
 | 方向不对 | **不用自己试角度**：缺省 `rotate='auto'` 会读项目工程 `EasyUI.cfg` 的 `rotateScreen` 自动转正（返回值 `rotateSource` 可自证）；触摸角度看 `screenInfo.rotateTouch`（可与显示不同） |
 | 只要应用画面（去黑边） | `crop='auto'` 按 disp 图层 frame 裁出逻辑分辨率区域（仅存在唯一非全屏图层时生效，否则不裁并在 `crop` 字段说明） |
@@ -81,7 +81,7 @@ evidence: []
 点了按钮图不变、翻页后画面不更新，看起来像「改动没生效」。
 
 **判据（一条命令级的硬指标）**：`flythings_device_screenshot` 返回的
-`screenInfo.virtualHeight ≈ 2 × height` **且 `pan` 非 0** → fb0 是**双缓冲**（写 A 显示 B）。
+`screenInfo.virtualHeight ≈ 2 × height` **且 `pan` 非 0**→ fb0 是**双缓冲**（写 A 显示 B）。
 实测：Z21 = 1024x600 / virtualHeight 1200；F133 = 800x1280 / virtualHeight 2560。
 ⇒ **凡 virtualHeight = 2×height 的平台都可能中招**，不是某一块板子的怪癖。
 
@@ -90,24 +90,23 @@ evidence: []
 2. 用触摸注入 `touch long <x> <y> 250` 触发一次重绘后再抓；
 3. ⛔ **别拿 `setInvalid()` 当「强制重绘」**（2026-09-17 案例实测踩坑）：
    `ZKBase::setInvalid(bool)` = 把控件置为**无效状态（禁用）**（`ZK_CONTROL_STATUS_INVALID`）——
-   调了它控件当场**点不动**（可交互控件上发作），现象是「注入坏了 / 界面点哪都没反应」，能白查半天
+调了它控件当场**点不动**（可交互控件上发作），现象是「注入坏了 / 界面点哪都没反应」，能白查半天
    （案例里 13 个导航键被这样禁掉）。**内容变更（`setText` / `setBackgroundPic`）引擎本来就会重绘该控件**，
-   通常什么都不用做；真要手动重绘用 `ZKBase::invalidate()`，但它**在部分设备的旧 `libeasyui.so` 上未导出**
+通常什么都不用做；真要手动重绘用 `ZKBase::invalidate()`，但它**在部分设备的旧 `libeasyui.so` 上未导出**
    （实测 `undefined symbol ...invalidate...` → 整屏黑），用前先确认。详见 `knowledge/uicontrols/custom-view-refresh.md`；
 4. 像素 diff 验收（`flythings_ui_visual(action="diff")`）之前**先确认「手里这张是新帧」**，
-   否则会把 stale frame 当「改动没生效」，白查一轮应用逻辑。
+否则会把 stale frame 当「改动没生效」，白查一轮应用逻辑。
 
 ### 3.3-2 ⚠ 抓帧次数：**瞬态层单抓、静态页/弹窗双抓**（2026-09-17 实测）
 
 3.3-1 的「抓两次取第二张」（连抓两帧比 md5，不一致就重抓）只适用于**静态页面 / 弹窗**这类
-抓的时候还在的画面。**碰到瞬态层（toast 一类，设计寿命约 2s）会把它吃掉**：
-两次抓帧之间的 adb 往返 + 落盘（实测 ≈0.4s 量级）还没来得及抓第二张，弹层已经到点自动关了 →
+抓的时候还在的画面。**碰到瞬态层（toast 一类，设计寿命约 2s）会把它吃掉**：两次抓帧之间的 adb 往返 + 落盘（实测 ≈0.4s 量级）还没来得及抓第二张，弹层已经到点自动关了 →
 得到「toast 没弹出来」的**假 FAIL**（案例实测：slider 页 toast 一批全挂在这上面，改单抓后全过）。
 
 | 对象 | 抓帧次数 | 为什么 |
 |------|----------|--------|
 | 静态页面 / 模态弹窗 / 面板 | **双抓取第二张**（或前后比 `pan`） | 治双缓冲滞后（3.3-1） |
-| 瞬态层：toast / 按压态 / 滚动条 / 逐帧动画中的某一帧 | **单次抓帧**，且**与触发命令放同一次调用** | 寿命短，第二抓必然落空 |
+| 瞬态层：toast / 按压态 / 滚动条 / 逐帧动画中的某一帧 | **单次抓帧**，且**与触发命令放同一次调用**| 寿命短，第二抓必然落空 |
 | 拿不准 | 先按**单抓 + 同调用**做一次，再补双抓 | 保命优先：别把「有」判成「无」 |
 
 判据：瞬态层的验收要**先证明触发了**（日志/像素同时留痕），再谈画面细节；
@@ -116,9 +115,9 @@ evidence: []
 **边界（重要）**：
 - 这是**抓图/验收侧的问题，不是应用 bug**，**不要为此改应用逻辑**（不要加无意义的重绘 hack）；
 - `offset_y=-1`（缺省）已按 pan 取值 + 抓后二次确认，但设备在抓图期间翻页仍可能抓到旧帧；
-  返回体里的 `screenInfo.pan` / `offsetY` 就是给你自证的；
+返回体里的 `screenInfo.pan` / `offsetY` 就是给你自证的；
 - `layer='video'`（SigmaStar）走的是 vdec 输出口，**与 fb0 双缓冲无关**，不适用本条；
-  多路/拼墙要指定通道 → 见 §4.1.1 `vdec_chn`。
+多路/拼墙要指定通道 → 见 §4.1.1 `vdec_chn`。
 
 ### 3.4 通道序
 
@@ -133,7 +132,7 @@ evidence: []
 `width` / `height` 可覆盖（sysfs 读不到时）、`flip='v|h|both'`、`rotate='auto'|0|90|180|270`、
 `crop=''|'auto'|'x,y,w,h'`、`offset_y` 手动指定。
 
-### 3.6 方向/角度只认项目工程配置（沛哥 2026-09-10 定规）
+### 3.6 方向/角度只认项目工程配置（2026-09-10 定规）
 
 旋转/取图角度口径（`rotateScreen` / `rotateTouch` 字段、实测角度对应、生效判据）
 → 见 `knowledge/devflow/package-properties-easyui-cfg.md` §9。
@@ -154,7 +153,7 @@ evidence: []
 
 > 背景：Z20/Z21 上**视频是 MI 硬件图层**，`/dev/fb0` 只是 UI(OSD) 层 —— 屏上在放视频时，
 > 拓 fb0 得到的是黑的（Z20 实测 800x1280 只得 4KB 全黑，仅右下角一个 Wi-Fi 图标）。
-> 沛哥 2026-09-13：「你如果可以把视频图层抓出来更好了，这样子就可以更好确认问题。」
+> 2026-09-13：「你如果可以把视频图层抓出来更好了，这样子就可以更好确认问题。」
 
 **怎么做**：`flythings_device_screenshot(layer='video')` → 内部用 `zkshot`（`tools/zkshot/`，成品在 `bin_tools/{z20,z21}/zkshot`）
 从 **vdec 输出口**取一帧 → 按帧格式解码落盘：
@@ -171,12 +170,12 @@ fwrite → Munmap → PutBuf
 
 **症状**：`layer='video'` 抓不到帧（`zkshot` 取帧失败 / 空帧），但屏上确实在播视频。
 交付整机说明书时实测：多屏拼接（`SmartPanel_HA`）的**拼墙播放器在 vdec chn 1**，
-而工具早期把通道**写死成 chn 0** → 只能手工 `zkshot <out.raw> vdec 1 0` 兜。
+而工具早期把通道**写死成 chn 0**→ 只能手工 `zkshot <out.raw> vdec 1 0` 兜。
 
 | vdec 通道 | 谁在用 | 解码方式 |
 |-----------|--------|----------|
-| **chn 0** | 工具**默认值**（单路/历史口径） | — |
-| **chn 1** | **多屏拼接拼墙播放器**（SmartPanel_HA，mi-module `h264_player` 移植版） | 硬件 vdec chn1 |
+| **chn 0**| 工具**默认值**（单路/历史口径） | — |
+| **chn 1**| **多屏拼接拼墙播放器**（SmartPanel_HA，mi-module `h264_player` 移植版） | 硬件 vdec chn1 |
 
 > ⚠️ **别把「屏保 = chn 0」当真**（早先的说法）：Z20 屏保 `zkmedia`/`ssdvideoplayer` 是 **FFmpeg 软解**、
 > 全设备扫描确认它**不建 MI VDEC 通道**（2026-09-27 反汇编实证：`workspace/references/kb/z20-mi-vdec-channel-attrs.md` §7）——
@@ -207,15 +206,15 @@ python ui_tools/device_screenshot.py --layer video --vdec-chn 1         # CLI
 1. `MI_DISP_GetScreenFrame()` **不能用**：那是给“拥有显示层的进程”的，**跨进程只回空帧**
    （layer 0/1 都试过、补 `MI_SYS_Init` 也没用）→ 必须从 **vdec 输出口**取。
 2. **按设备实际符号写**：设备 `libmi_sys.so` 只导出**非 Pa 版**（`MI_SYS_ChnOutputPortGetBuf/PutBuf`）；
-   用 `...GetBufPa`（IDE 包里的库有、设备没）会 `symbol lookup error`。
-   上手先看一眼：`strings /lib/libmi_sys.so | grep MI_SYS_`。
+用 `...GetBufPa`（IDE 包里的库有、设备没）会 `symbol lookup error`。
+上手先看一眼：`strings /lib/libmi_sys.so | grep MI_SYS_`。
 3. **帧格式不是固定的**：`fmt` 值→格式见 `E_MI_SYS_PixelFormat_e`（11=NV12、0=YUYV422、1/2/3=ARGB/ABGR/BGRA8888、4=RGB565）；
-   解码器遇到不支持的 fmt 会**明确报错**（不静默当黑屏）。
+解码器遇到不支持的 fmt 会**明确报错**（不静默当黑屏）。
 
 **边界**
 - 视频层分辨率**独立于屏**（Z20 视频 384x448，屏 800x1280）；要“叠回 UI”得读 mi_disp 的 input port attr 拿屏上位置
   （`cat /proc/mi_modules/mi_disp/mi_disp0` 能看到端口被 `mi_vdec` 绑定）—— 当前工具只给**视频帧本身**，不合成。
-- **V85X 不适用**（Allwinner disp 分层，视频层要经 `/dev/disp` ioctl 拿）；Z21 **无硬件解码器**（软解 ffmpeg），沛哥定：暂不处理。
+- **V85X 不适用**（Allwinner disp 分层，视频层要经 `/dev/disp` ioctl 拿）；Z21 **无硬件解码器**（软解 ffmpeg），需求方定：暂不处理。
 
 ## 4.2 实测坑（2026-09-20 M6）
 

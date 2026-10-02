@@ -9,6 +9,7 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE)
 import embed_local
 import kb_local as _kbl
+import kb_index_roots as bir
 
 WIKI_ROOT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.expanduser('~'), '.openclaw', 'workspace', 'wiki', 'flythings')
 OUT = sys.argv[2] if len(sys.argv) > 2 else os.path.join(BASE, 'rag_index.json')
@@ -97,28 +98,24 @@ def main():
     known = set()  # knowledge 内已有相对路径（如 esl/tag-esl.md），wiki 同名文档跳过避免重复
     skipped, local_n, bad = [], 0, []
     if os.path.isdir(KNOWLEDGE_DIR):
-        for r, _, fnames in os.walk(KNOWLEDGE_DIR):
-            # 候选区/日志/报告**不进索引**（候选可见但不当依据，见 knowledge/devflow/kb-growth.md §1/§8）
-            _parts = os.path.relpath(r, KNOWLEDGE_DIR).replace('\\', '/').split('/')
-            if any(p in ('inbox', '_reports', '_logs') for p in _parts):
+        # 索引范围唯一真源 = kb_index_roots.py（以前这段遍历口径在本文件与 check_consistency
+        # 的 _expected_md_sets() 里各写一遍，加一类文档要改两处）。
+        for base_rel, abs_path, spec in bir.iter_repo_docs(BASE):
+            rel = (base_rel[len(spec['dir']) + 1:]
+                   if base_rel.startswith(spec['dir'] + '/') else base_rel)
+            # P1.5 状态过滤：draft/deprecated **不进索引**（review 可进但检索侧带标注）；
+            # 无 front-matter 的资产文档（组件 platforms.md）按 kb_local.indexable 口径照旧保留。
+            try:
+                raw = open(abs_path, encoding='utf-8').read()
+            except OSError as e:
+                bad.append('%s（%s）' % (rel, e))
                 continue
-            for fn in fnames:
-                if not fn.endswith('.md'):
-                    continue
-                p2 = os.path.join(r, fn)
-                rel = os.path.relpath(p2, KNOWLEDGE_DIR).replace('\\', '/')
-                # P1.5 状态过滤：draft/deprecated **不进索引**（review 可进但检索侧带标注）
-                try:
-                    raw = open(p2, encoding='utf-8').read()
-                except OSError as e:
-                    bad.append('%s（%s）' % (rel, e))
-                    continue
-                meta, _b, _e = _kbl.parse_front_matter(raw)
-                if not _kbl.indexable(meta):
-                    skipped.append('%s(%s)' % (rel, meta.get('status') or '无元数据'))
-                    continue
-                known.add(rel)
-                files.append(('knowledge/' + rel, p2))
+            meta, _b, _e = _kbl.parse_front_matter(raw)
+            if not _kbl.indexable(meta):
+                skipped.append('%s(%s)' % (rel, meta.get('status') or '无元数据'))
+                continue
+            known.add(rel)
+            files.append((base_rel, abs_path))
     # P0-2：用户本地层/项目层也进索引 —— 否则 capture 出来的知识**用户自己都搜不到**
     for d in _kbl.local_docs(os.environ.get('FLYTHINGS_KB_DIR', '')):
         if d.get('path') and d.get('abs'):

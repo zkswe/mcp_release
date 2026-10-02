@@ -68,7 +68,6 @@ ImageCache 装载 /tmp/cm_riv_rec0_280x280_9.png 槽=9/128      ← 新一批（
 | F133 / F135 / F136（C906，musl） | F133 **已实测**（规格同上，经工程内联版）；F135/F136 **未验证** |
 | Z20 / Z21（ARM glibc） | **未验证**。⚠️ 内存敏感：36~128 MB 板的 `capacity` 别按 128 抄，先按 §1 的公式算账 |
 | T113 / V85X（ARM musl） | **未验证** |
-| PC（Windows llvm-mingw g++ / Linux g++） | **已实测**：`example/zk_imagecache_test.cpp` 29/29 PASS（见 §4） |
 
 前置条件：无（不需要串口/属性门/固件版本）。**唯一前置 = 装载回调必须返回「框架资源表里被持有的位图」**
 （FlyThings = `BitmapHelper::loadBitmapFromFile`），否则缓存持有了别人随时会释放的指针。

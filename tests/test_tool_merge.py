@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""工具合并契约（v0.27.36 起，沛哥：直接合并、不留别名）。
+"""工具合并契约（v0.27.36 起：直接合并、不留别名）。
 
 合并内容：
   flythings_generate_ui_preview + flythings_json_to_html  → flythings_ui_preview(target)

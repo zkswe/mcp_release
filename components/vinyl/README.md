@@ -1,6 +1,6 @@
 # zk::VinylSpin —— 黑胶唱片自转（封面按角度旋转上屏）组件
 
-> 2026-09-22 入库（钟工：「多产品会复用这个功能，我需要把他做成可以复用的功能点」）。
+> 2026-09-22 入库（现场反馈：「多产品会复用这个功能，我需要把他做成可以复用的功能点」）。
 > 落地来源：`projects/iOSStyle-F133`（CloudMusic 音乐播放页「黑胶唱片」黑胶自转），
 > 抽出后工程已切到本组件副本（`projects/iOSStyle-F133/src/zk_vinyl/`）**真编译 + 真机跑通**。
 
@@ -74,14 +74,14 @@ src/zk_vinyl_circle_mask.{h,cpp}  # 正圆覆盖率表（SS=8 面积平均，与
 
 1. **刷新口径**：位图只 `setBackgroundBmp` 交一次，之后每帧 `host->setInvalid(!host->isInvalid())` 翻转刷新
    （gameview 口径）。**别**用 `invalidate(&getAbsolutePosition())` 传绝对矩形 —— rect 是**控件本地坐标系**，
-   会被裁成"右下角一块"，屏上只刷一块（现象：部分区域 12fps、其余 ~1fps）。
+会被裁成"右下角一块"，屏上只刷一块（现象：部分区域 12fps、其余 ~1fps）。
 2. **宿主控件必须正方形**（`attach` 会拒绝非方控件）；控件**别在 json 里配图**（首帧算好前显示占位图，之后换成我们的位图）。
 3. **位图所有权**：交给框架后归框架；每帧改为"原地改像素 + 翻转 invalid"（零分配），不要每帧新建 bitmap。
 4. **nanovg 后端只支持 `NVG_TEXTURE_BGRA` 目标**，且纹理格式必须与目标一致；`nvgCreateImageRGBA` 会断言；
-   源数据按 BGRA 直传（不用换通道）。上下文建不起来会**自动回退定点**并只 warning。
+源数据按 BGRA 直传（不用换通道）。上下文建不起来会**自动回退定点**并只 warning。
 5. **后端取舍**：定点 ~6~12ms/帧（边缘过渡 ~1.5px，60fps 上限高）；nanovg 更顺滑（过渡 ~1.0px）但 ~23ms/帧（320×320）。
-   实测：`NEAREST` 采样 / 去 memset / pattern-angle 都**省不下来**，只有**降分辨率**（160×160 ≈ 5.4ms）或**降帧率**有效。
-6. **listview 的 item/subItem 挂不了自定义控件** → 列表里的圆封面只能"先合成 PNG 再 setBackgroundPic"。
+实测：`NEAREST` 采样 / 去 memset / pattern-angle 都**省不下来**，只有**降分辨率**（160×160 ≈ 5.4ms）或**降帧率**有效。
+6. **listview 的 item/subItem 挂不了自定义控件**→ 列表里的圆封面只能"先合成 PNG 再 setBackgroundPic"。
 7. **改 json 别用 `sort_keys=True` 整体重排**（控件顺序 = 图层顺序，会把全屏铺底层排到控件之上）。
 8. 调试开关（默认关，正式路径不受影响）：`/tmp/vinyl_dump`（逐帧 dump rot/pub/src）、
    `/tmp/vinyl_inv`（刷新口径 0/1/2）、`/tmp/vinyl_step`（静态 +N 度并强制重画一帧）、

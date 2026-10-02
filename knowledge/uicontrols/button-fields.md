@@ -16,24 +16,24 @@ evidence: []
 # Button 按键控件 JSON 字段规范 + 长按/循环重复配置
 
 > 检索导引：问「按钮怎么做 / Button 有哪些 json 字段 / 长按时间怎么配（longClickTimeOut·longClickIntervalTime）/ 图标与文字怎么排（iconPosition）/ 五态图 picTab」→ 本文；按钮图片铁律见 `knowledge/devflow/ui-asset-rules.md`。
-> 2026-09-08 沛哥确认学习：长按触发时间/循环重复时间通过 UI（IDE 属性表）可配。校准源：官方 wiki uicontrols/button.md + SampleUI-New/ui/1024x600（137 button）+ basedemo ButtonDemo-New/ImeDemo-New ftu 反解。
+> 2026-09-08 需求方确认学习：长按触发时间/循环重复时间通过 UI（IDE 属性表）可配。校准源：官方 wiki uicontrols/button.md + SampleUI-New/ui/1024x600（137 button）+ basedemo ButtonDemo-New/ImeDemo-New ftu 反解。
 
 ## JSON 字段全集（SampleUI 1024x600 实证频率）
 | 字段 | 出现率 | 说明 |
 |------|--------|------|
 | id/caption/position/alignment/colorTab/picTab/text | 100% | 必写（见 json-field-mandatory.md，touchable true 另加） |
 | iconPosition | 98.5% | 图标在按钮内锚点（图标+文字布局用） |
-| **longClickTimeOut** | 97.8% | **长按事件触发时间(ms)**：>0 启用长按，默认 -1 = 不启用（134/137 为 -1） |
-| **longClickIntervalTime** | 97.8% | **长按事件循环触发间隔(ms)**：>0 = 长按期间循环重复触发；-1 = 仅触发一次不循环 |
+| **longClickTimeOut**| 97.8% | **长按事件触发时间(ms)**：>0 启用长按，默认 -1 = 不启用（134/137 为 -1） |
+| **longClickIntervalTime**| 97.8% | **长按事件循环触发间隔(ms)**：>0 = 长按期间循环重复触发；-1 = 仅触发一次不循环 |
 | fontSize/bold/italic/bgColorTab/backgroundColor/visible/textPosition/roll* | 97.8% | 文字/背景/滚动属性 |
 | fontFamily | 89% | 字体族（0=默认） |
 | beepEnable | 8.8% | 按键音（需要才写，非必写） |
 | charsetTab | 0.7% | 指定字符用图片渲染 |
 
-## ⚠️ 长按模式：UI 配置 ↔ json ↔ 代码（沛哥 2026-09-08 确认）
+## ⚠️ 长按模式：UI 配置 ↔ json ↔ 代码（2026-09-08 确认）
 **IDE 属性表两个属性（单位 ms）**：
-- **长按事件触发时间** → json `longClickTimeOut`（按住多久判定为长按并触发）
-- **长按事件循环触发间隔时间** → json `longClickIntervalTime`（长按不松手时，每隔多久重复触发一次 onLongClick）
+- **长按事件触发时间**→ json `longClickTimeOut`（按住多久判定为长按并触发）
+- **长按事件循环触发间隔时间**→ json `longClickIntervalTime`（长按不松手时，每隔多久重复触发一次 onLongClick）
 - 默认 -1（两键都 -1 = 不启用长按，普通点击）；要启用必须显式给 >0 值
 
 **实测真源值**（basedemo）：
@@ -66,7 +66,7 @@ static void onUI_quit() {
 
 ## 图片按钮铁律（勿忘）
 - **缺图不致命但属验收缺陷**：`picTab.pic0~picN`/`backgroundPic` 指向不存在的文件 →
-  控件不可见/无图（framework 容错，不会挂死）；图没出好就删 picTab 条目/置 `''`
+控件不可见/无图（framework 容错，不会挂死）；图没出好就删 picTab 条目/置 `''`
   （纯文字按钮可正常工作），只写已落盘的图。
   ⛔ 真正致命的是**子盒对象字段写成字符串**（如 seekbar.thumb，见 seekbar-fields.md §0）
   = ftu 加载无声挂死（A/B 实测 V85X iMirror 固件 2026-10-02）

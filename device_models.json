@@ -26,13 +26,13 @@
     "Zkswe_F133_SPINOR": {
       "platform": "",
       "confidence": "todo",
-      "source": "钟工 2026-09-17 举例时提到的串；本仓（open）**无 F133 型号实测记录** → 待确认",
+      "source": "2026-09-17 举例时提到的串；本仓（open）**无 F133 型号实测记录**→ 待确认",
       "note": "待确认：F133 板子型号串未入库核验，拿到真机后 `adb devices -l` + getprop ro.product.model 回填"
     },
     "Zkswe_F136_SPINOR": {
       "platform": "",
       "confidence": "todo",
-      "source": "钟工 2026-09-17 举例时提到的串；本仓（open）无 F136/F135 型号实测记录 → 待确认",
+      "source": "2026-09-17 举例时提到的串；本仓（open）无 F136/F135 型号实测记录 → 待确认",
       "note": "待确认：F135/F136 板子型号串未入库核验（若确认，平台写 F135 —— platforms.py 里 F136 归一为 F135）"
     }
   }

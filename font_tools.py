@@ -1,35 +1,34 @@
 # -*- coding: utf-8 -*-
 """font_tools.py —— 字体自动扫描接线（设备侧优先，退化到工程侧）+ 缺中文自动投递。
 
-为什么有（钟工 2026-09-17「现在做」）：
+为什么有（2026-09-17「现在做」）：
   `components/fonts/scripts/device_font_check.py` 早就实现了「扫设备字体 + 缺中文投递思源黑体」，
-  但**没有任何 op 包它、也没接进 build/deploy 流程** → 等于没做：客户撞到「界面汉字全变方块」
-  时才知道要手动跑脚本。本模块把这一步接成**自动动作**（与 build_ui_flow 的依赖/install 体检同一套思路）。
+但**没有任何 op 包它、也没接进 build/deploy 流程**→ 等于没做：客户撞到「界面汉字全变方块」
+时才知道要手动跑脚本。本模块把这一步接成**自动动作**（与 build_ui_flow 的依赖/install 体检同一套思路）。
 
-单一事实来源（不许两套判定规则）：
-  判定阈值 / 字体目录 / 三版字体清单 / 投递动作（copy→font/ + 改 easyui prefs）
+单一事实来源（不许两套判定规则）：判定阈值 / 字体目录 / 三版字体清单 / 投递动作（copy→font/ + 改 easyui prefs）
   **全部 import `device_font_check`**（`judge()` / `TIERS` / `collect()` / `apply_to_project()`）；
-  本模块只负责接线：设备探测（`adb_tools.resolve_adb()` / `probe_devices()` / `ensure_busybox()`）
+本模块只负责接线：设备探测（`adb_tools.resolve_adb()` / `probe_devices()` / `ensure_busybox()`）
   → 判定 → 需要就投递 → 组织成体检字段（missingChinese / maxFontBytes / advisedTier / delivered /
   deviceFonts），失败一律进 warnings，**不新增静默 except**。
 
 两条分支：
   ① **有设备**：扫 `/etc/font`、`/res/font`、`/system/font`、`/usr/share/fonts` 里字体体积，
-     挑出最大者；**v0.27.87 起优先「硬判据」**——把最大字体拉回 PC（临时目录，用完即删），
-     用 fontTools 读 cmap 算 **GB2312 一级 3755 字覆盖率**：≥90% → ok（不投递）/ 50–90% → low
+挑出最大者；**v0.27.87 起优先「硬判据」**——把最大字体拉回 PC（临时目录，用完即删），
+用 fontTools 读 cmap 算 **GB2312 一级 3755 字覆盖率**：≥90% → ok（不投递）/ 50–90% → low
      （投递 + 写明覆盖率）/ <50% → missing（投递）；拉取超 12 MB、fontTools 不可用、拉取或解析
-     失败 → **退回体积判据**（source='size'，原因进 warnings，绝不静默）。结论按
+失败 → **退回体积判据**（source='size'，原因进 warnings，绝不静默）。结论按
      `serial+目录/文件名+体积+ls 时间` 缓存到 `~/.fsc/font-probe.json`（09-28 起；旧 `~/.fun/`）（否则每次 build 都拉一遍）。
-     缺 → 默认投递 `common`（872 KB）进工程 `font/`；
+缺 → 默认投递 `common`（872 KB）进工程 `font/`；
   ② **无设备**：退化为工程侧 self-scan（prefs 的 `font` 指向的文件在不在工程 `font/`；
-     工程 `font/` 里有没有可用字体）→ 缺就同样投递，并在 `note` 写清「未连设备，仅工程侧检查」。
+工程 `font/` 里有没有可用字体）→ 缺就同样投递，并在 `note` 写清「未连设备，仅工程侧检查」。
 
 部署后复查（v0.27.87）：`fun launch` 成功后且本次投递过字体 → `recheck_after_deploy()` 回看
-  设备侧字体清单与工程投递是否一致，回答「设备侧中文字库现在可用吗 / 要不要固化」
+设备侧字体清单与工程投递是否一致，回答「设备侧中文字库现在可用吗 / 要不要固化」
   （与应用侧的 `staleOnDevice` 合成闭环：app 陈旧 vs 字库待固化分开报）。
 
 开关：`font_check='auto'`（默认）/ `'off'`（完全不碰字体，零 step）；`font_tier='common'|'full'|'multi'`。
-  默认 common；要生僻字换 full；多语言/日韩换 multi；**只有要更小体积/自定义字符集才需要自己裁字库**。
+默认 common；要生僻字换 full；多语言/日韩换 multi；**只有要更小体积/自定义字符集才需要自己裁字库**。
 """
 import importlib.util
 import json
@@ -65,7 +64,7 @@ OFF_VALUES = ('off', 'false', '0', 'no', 'none', 'disable', 'disabled', '')
 def device_font_check():
     """加载（并缓存）`device_font_check` 模块 —— 判定/投递规则的单一来源。
 
-    返回 (mod, error)；mod 为 None 时 error 写明原因（调用方进 warnings，不静默）。
+返回 (mod, error)；mod 为 None 时 error 写明原因（调用方进 warnings，不静默）。
     """
     if _DFC['mod'] is not None or _DFC['error']:
         return _DFC['mod'], _DFC['error']
@@ -121,7 +120,7 @@ def prefs_font(project_root):
     """easyui prefs 里的 `font` 键 → {'path','key','file','existsInProject'}。
 
     ⚠️ 口径：`font/` 里的字体工具链会自动写进 `EasyUI.cfg`（规范做法），prefs 的 font 键属冗余；
-    但**prefs 指向的文件不存在**仍是真问题（IDE 侧/easyui 会去找它）→ 必须报出来。
+但**prefs 指向的文件不存在**仍是真问题（IDE 侧/easyui 会去找它）→ 必须报出来。
     """
     p = os.path.join(project_root, PREFS_REL)
     out = {'path': p, 'exists': os.path.isfile(p), 'key': '', 'file': '',
@@ -168,8 +167,8 @@ def pick_device(device='', platform='', known_online=None):
     """选设备（**不猜**）：显式 device= > 唯一在线设备；多台/0 台都不擅自选。
 
     `known_online`：调用方（build_ui_flow）**已经探过**的设备列表（含 `[]` = 确实没有）→
-    直接用它，不再重复 `adb devices`（传 None 才自己探）。
-    返回 (serial, dev, warning)：serial='' 表示没选到（warning 里写明原因，空串=本来就没设备）。
+直接用它，不再重复 `adb devices`（传 None 才自己探）。
+返回 (serial, dev, warning)：serial='' 表示没选到（warning 里写明原因，空串=本来就没设备）。
     """
     if _adb is None:
         return '', {}, 'adb 子系统不可用（%s）→ 跳过设备侧字体扫描' % _ADB_ERR
@@ -223,7 +222,7 @@ def device_scan(serial, platform=''):
         note = note or '随仓 busybox 未就绪 → 用设备自带 ls -l 解析体积（可能取不到）'
     info = dfc.collect(adb, serial, bool(busybox))
     if not info['fonts']:
-        # v0.27.87 实测补的诚实提醒：扫不到字体时**不要把「无字库」说得像板上真的没有** ——
+        # v0.27.87 实测补的诚实提醒：扫不到字体时**不要把「无字库」说得像板上真的没有**——
         # 设备自带 ls -l 拿不到体积或目录没读到，同样会得到一个空列表（详见 custom-font-config.md §0.2.2）。
         miss_note = ('设备侧字体目录**没解析出任何字体文件**——可能确实没字库，也可能是设备自带 '
                      'ls -l 取不到体积（busybox 未就绪）→ 本条「无字库」结论存疑，'
@@ -266,8 +265,8 @@ def probe_cache_path():
 def probe_cache_key(serial, font, platform=''):
     """缓存键 = `serial + 目录/文件名 + 体积 + ls 时间文本`（与平台）。
 
-    为什么不直接拿 md5：算 md5 得先删拉（就没缓存意义了）。设备侧字体一变 ⇒ 体积或 ls 时间变。
-    拉回来后的 md5 仍会记进缓存条目（供人核对，不参与命中判定）。
+为什么不直接拿 md5：算 md5 得先删拉（就没缓存意义了）。设备侧字体一变 ⇒ 体积或 ls 时间变。
+拉回来后的 md5 仍会记进缓存条目（供人核对，不参与命中判定）。
     """
     parts = [str(serial or ''), str((font or {}).get('dir') or ''),
              str((font or {}).get('name') or ''),
@@ -313,12 +312,12 @@ def hard_probe(serial, fonts, platform='', dfc=None, use_cache=True, cache_path=
                adb=''):
     """**硬判据主入口**：挑设备上最大的字体 → 拉回 PC → cmap 覆盖率 → verdict。
 
-    字段（调用方直接合并进 fontCheck）：
+字段（调用方直接合并进 fontCheck）：
       source='cmap' | 'size'，verdict='ok'|'low'|'missing'（cmap）或 None（size，保留体积判据），
       cmapCoverageGB2312L1（百分数，size 分支为 None）、cmapCoveredChars/TotalChars、
       checkedFont{path,name,sizeBytes,sizeKB,localMd5,mtime}、needFont、recommendedTier、
       cacheHit、reason（size 分支的原因）、warnings（本环节自己产生的问题，非静默）。
-    超限 / fontTools 不可用 / 拉取失败 / 解析失败 → source='size' + warnings 写明原因。
+超限 / fontTools 不可用 / 拉取失败 / 解析失败 → source='size' + warnings 写明原因。
     """
     mod = dfc or device_font_check()[0]
     out = {'source': 'size', 'verdict': None, 'needFont': None, 'recommendedTier': None,
@@ -409,10 +408,9 @@ def _adb_path():
 def recheck_after_deploy(serial, platform, project_root, delivered, dfc=None):
     """部署后复查（v0.27.87）：fun launch 成功后，回看「设备侧现在中文字库可用性 + 与工程是否一致」。
 
-    为什么**不**重算 cmap：字体是**资源/固件侧**的东西，`fun launch` 只推 app（`/tmp/lib`、`/tmp/ui`），
-    设备侧字库在 `pack_upgrade` 固化前不会变 —— 再拉一次只会白花一次传输。故这里只做轻量核验：
-    设备字体清单（体积判据）+ 投递文件的名字/体积是否已在设备上 ⇒ 给「需固化才生效」的实话。
-    与已有 `staleOnDevice`（app 侧文件比对）凑成闭环：**app 陈旧** vs **字库待固化** 分开报。
+为什么**不**重算 cmap：字体是**资源/固件侧**的东西，`fun launch` 只推 app（`/tmp/lib`、`/tmp/ui`），
+设备侧字库在 `pack_upgrade` 固化前不会变 —— 再拉一次只会白花一次传输。故这里只做轻量核验：设备字体清单（体积判据）+ 投递文件的名字/体积是否已在设备上 ⇒ 给「需固化才生效」的实话。
+与已有 `staleOnDevice`（app 侧文件比对）凑成闭环：**app 陈旧**vs **字库待固化**分开报。
     """
     out = {'checked': False, 'consistent': None, 'deviceVerdict': '', 'deviceMaxFontKB': 0,
            'deviceFontNames': [], 'projectFont': (delivered or {}).get('file') or '',
@@ -454,8 +452,8 @@ def recheck_after_deploy(serial, platform, project_root, delivered, dfc=None):
 def deliver(project_root, tier, dfc):
     """把 tier 字体投进工程 `font/`（+ 改 prefs，+ 补 enable.font.location）→ delivered 字段。
 
-    投递动作本身复用 `device_font_check.apply_to_project`（不复制一套）；
-    本函数额外做两件让它**真的生效**的事，并如实回报「写入了哪些文件」：
+投递动作本身复用 `device_font_check.apply_to_project`（不复制一套）；
+本函数额外做两件让它**真的生效**的事，并如实回报「写入了哪些文件」：
       ① `.settings/...easyui.prefs` 的 font 键（apply_to_project 内做的，这里比对前后差异）
       ② `package.properties` 的 `enable.font.location=true`（规范流程第 2 步，缺了字体不进 EasyUI.cfg）
     """
@@ -548,7 +546,7 @@ def font_preflight(project_root, platform='', device='', font_check='auto',
             if scan.get('scanNote'):
                 res['warnings'].append('设备字体扫描：%s' % scan['scanNote'])
             # ★ 硬判据（v0.27.87）：拉最大字体回 PC 算 cmap 覆盖率 → 覆盖体积判据的结论；
-            #   超限/无 fontTools/拉取失败/解析失败 → source='size'，保留体积结论 + warnings 写清原因
+            #超限/无 fontTools/拉取失败/解析失败 → source='size'，保留体积结论 + warnings 写清原因
             if probe:
                 hp = hard_probe(serial, scan.get('deviceFonts') or [], platform, dfc=dfc)
                 res['probe'] = {'source': hp['source'], 'cacheHit': hp['cacheHit'],

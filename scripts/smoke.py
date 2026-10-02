@@ -14,8 +14,8 @@
   4. 入口一致性：mcp_server 入口 docstring 工具数
   5. 文档漂移：README 的版本号/工具数是否等于真实值
      （v0.27.77 起 README 精简为「一键安装 + 功能说明」，工具数改为**扫全部「N 个工具」提法对齐**，
-      不再要求固定的 FAQ / 项目结构句位；用例数/知识规模的承载处见 check_consistency.py）
-     （CHANGELOG.md 自 v0.27.31 起**冻结为历史归档**，不再维护、不再校验——沛哥 2026-09-11 定）
+不再要求固定的 FAQ / 项目结构句位；用例数/知识规模的承载处见 check_consistency.py）
+     （CHANGELOG.md 自 v0.27.31 起**冻结为历史归档**，不再维护、不再校验——2026-09-11 定）
   6. catalog.json（本地意图闸门）ops 数是否等于真实工具数
   7. 双份 ui_tools 副本 sha256 一致（tools/ui_tools/ ↔ tools/FlyThings_mcp_open/ui_tools/）
   8. 隐私/路径泄露扫描：本机绝对路径 / 内网真机 IP / DESKTOP 主机名 / 真实 accessKey
@@ -111,7 +111,7 @@ def _scan_files():
 def scan_leaks():
     """返回 [(相对路径, 行号, 触发模式)]。
 
-    跳过：
+跳过：
       - rag_index.json（发布前由 rebuild 重建，内容随 knowledge 同步）
       - smoke.py（本文件自身就写着识别用正则）
       - git 忽略的文件（构建产物；见 _scan_files 说明）

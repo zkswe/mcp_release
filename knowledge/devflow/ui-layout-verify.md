@@ -26,13 +26,13 @@ evidence: []
 
 ## 0. 确认闸门（改完布局 → 出确认稿 → 需求方确认 → 才 pack / 推真机）
 
-> 2026-09-30 补（钟工 SmartPanel 检讨：UI 控件布局位置**多次来回对齐**，过程中没提醒用**可分享的
+> 2026-09-30 补（SmartPanel 检讨：UI 控件布局位置**多次来回对齐**，过程中没提醒用**可分享的
 > HTML 版**跟客户确认 → 在“改 json → 编译 → 推真机 → 目视”上反复烧时间）。**这条是流程红线**，不是可选优化。
 
 | 环节 | 做什么 | 工具 |
 |---|---|---|
 | 改前/改中 | 出**可拖拽编辑器**给自己或用户微调（本地静态页；拖完复制变更 JSON 回写） | `flythings_ui_visual(action="editor")` |
-| **改完（关键）** | 出**客户确认稿**：单文件 `.confirm.html`（图内联、手机可打开/可转发），带「标注」开关看控件名/尺寸/坐标 | `flythings_ui_preview(target=…, for_customer=True)` |
+| **改完（关键）**| 出**客户确认稿**：单文件 `.confirm.html`（图内联、手机可打开/可转发），带「标注」开关看控件名/尺寸/坐标 | `flythings_ui_preview(target=…, for_customer=True)` |
 | 确认后 | 才 `fui pack` / `edit_apply(pack=True)` / 推真机 / 写逻辑 | — |
 | 回归 | 真机截图 + 像素 diff / 基线比对（**真机像素才是最终真相**） | `device_screenshot` + `ui_visual(diff/baseline)` |
 
@@ -40,12 +40,12 @@ evidence: []
   `confirmHint`**：项目里没有比本次改动**更新**的确认稿（`.confirm.html` / `.preview.html` /
   `_edit/*.edit.html`）时会提示先出确认稿（**只提醒、不阻塞**）。
 - **多轮沟通就用确认稿**：客户指着标注说「这个按钮往右 20px」→ 改完**重出确认稿**再确认；
-  不要直接推真机让他看屏（一次推机 = 编译 + 推送 + 人工目视，成本高一个量级）。
+不要直接推真机让他看屏（一次推机 = 编译 + 推送 + 人工目视，成本高一个量级）。
 - 生成物是**近似渲染**（字体度量 / 9-patch 拉伸与设备有差）→ **最终验收仍需真机像素**（§2 三段式）。
 
 ## 1. 铁律：json 是唯一真相
 
-设备加载的是 **ftu**，而 ftu 由 **json** pack 出来 → **json 是唯一数据源**。
+设备加载的是 **ftu**，而 ftu 由 **json**pack 出来 → **json 是唯一数据源**。
 所以预览与编辑器都必须**从 json 渲染**：手写 HTML 原型等于第二份真相，CSS 盒模型、字体度量、
 行内基线跟设备 Canvas 是两套规则，必然漂移。
 
@@ -65,7 +65,7 @@ HTML 交互原型 → flythings_html_to_json → ui/*.json（唯一源）
 | 段 | 手段 | 成本 | 用途 |
 |----|------|------|------|
 | 1 | `flythings_ui_preview` / `flythings_ui_visual(action="editor")` | 秒级、0 token | 看结构、相对关系，确认交互 |
-| 2 | `flythings_build_ui_flow` 推真机 + **`flythings_device_screenshot` 抓屏** | 一次编译 + 几秒 | 像素真相，最终验收 |
+| 2 | `flythings_build_ui_flow` 推真机 + **`flythings_device_screenshot` 抓屏**| 一次编译 + 几秒 | 像素真相，最终验收 |
 | 3 | `flythings_ui_visual(action="diff")` 对比两张截图 | 0 token | 回归/验收，差异可视化 |
 
 ## 2-1 真机截图怎么拿（`flythings_device_screenshot`，一行搞定）
@@ -80,7 +80,7 @@ flythings_device_screenshot(scale=0.5)             # 长宽各半，省 AI token
 flythings_device_screenshot(fmt='jpg', quality=85) # jpg / bmp
 flythings_device_screenshot(device='<设备IP>:5555')  # 多设备指定
 flythings_device_screenshot(pixel='rgba')          # 颜色红蓝互换时
-flythings_device_screenshot(rotate='auto')         # 缺省值：按**项目工程** EasyUI.cfg 的 rotateScreen 转（出来就是正立的）
+flythings_device_screenshot(rotate='auto')         # 缺省值：按**项目工程**EasyUI.cfg 的 rotateScreen 转（出来就是正立的）
 flythings_device_screenshot(crop='auto')           # 按 disp 图层 frame 裁出「项目逻辑分辨率」区域（非全屏图层唯一时）
 ```
 
@@ -96,7 +96,7 @@ flythings_device_screenshot(crop='auto')           # 按 disp 图层 frame 裁�
 
 参数：`device, out, fmt(png/jpg/bmp), scale, quality, fb, pixel, width, height, offset_y, flip, rotate, crop, name, timeout`；
 返回 `{success, path, width, height, format, sizeBytes, device, method, screenInfo{...offsetY,pan,rotate,rotateScreen,rotateTouch}, uiLayer, pixelOrder, rotateDeg, rotateSource, crop, readHint}`。
-调完把 **path** 交给看图能力，**不要把 raw/整文件丢给模型**。
+调完把 **path**交给看图能力，**不要把 raw/整文件丢给模型**。
 
 ### 2-1-1 取图方向/角度：读**项目工程**的配置，不要猜（❗踩过坑）
 
@@ -106,22 +106,22 @@ flythings_device_screenshot(crop='auto')           # 按 disp 图层 frame 裁�
 设备侧实现要点（AI 不需要重做，但排障要懂）：
 
 - 设备 rootfs 多为裁剪版：**没有 screencap / dd / head**，`adb exec-out` 也可能不通（patched adbd）；
-  链路 = 设备侧 `busybox dd if=<fb> bs=<stride> skip=<panY> count=<h> | busybox gzip -1 > /tmp/x` + `adb pull`。
-  裸 raw 一大就慢（600×1600×4≈7.7MB，WiFi 上几分钟）；gzip 后 ~37KB、0.3 秒。设备上没 busybox 会自动退化全量 cat（会提示先 push 一个 busybox）。
+链路 = 设备侧 `busybox dd if=<fb> bs=<stride> skip=<panY> count=<h> | busybox gzip -1 > /tmp/x` + `adb pull`。
+裸 raw 一大就慢（600×1600×4≈7.7MB，WiFi 上几分钟）；gzip 后 ~37KB、0.3 秒。设备上没 busybox 会自动退化全量 cat（会提示先 push 一个 busybox）。
 - fb 参数问 sysfs：`modes`(可见分辨率) / `virtual_size`(可能是 2 倍 OVERALLOC) / `stride` / `bits_per_pixel`；**必须按 stride 逐行取**。
 - **双缓冲页翻转**：读 `/sys/class/graphics/fb0/pan`（如 `0,1600`）按 yoffset 抓，否则抓到的是**上一帧**（旧画面也可能是完整 UI，肉眼难发现）；工具已在抓后二次确认 pan 未变。
 - 32bpp 内存序 BGRA（小端 ARGB8888）；颜色反了就 `pixel='rgba'`。
 
 ## 2-2 多页工程的预览怎么切页（整屏 window + `showWnd()` 架构，v0.27.35 起）
 
-⚠️ **背景（AI 实测反馈过的失效场景）**：FlyThings 常见写法是「多个**整屏 window** 叠在同一页，
+⚠️ **背景（AI 实测反馈过的失效场景）**：FlyThings 常见写法是「多个**整屏 window**叠在同一页，
 logic.cc 里用 `showWnd()/hideWnd()` 切页」（弹窗、设置页、二级页都这么干）。旧版预览把所有
 `visible:false` 的控件一律 `display:none` → **客户确认稿只能看到首屏**，看不到的页面等于没交付。
 现在预览稿自带切页能力，看到的是**全部页面**：
 
 | 能力 | 用法 | 说明 |
 |------|------|------|
-| 页面切换条 | 预览页顶部页签 | 列出**全部整屏 window** 的 caption；点页签 = 显示该页、隐藏其余整屏窗口 |
+| 页面切换条 | 预览页顶部页签 | 列出**全部整屏 window**的 caption；点页签 = 显示该页、隐藏其余整屏窗口 |
 | 默认页 | 自动 | = json 里**首个 `visible!=false` 的整屏窗口**（与 logic.cc 首屏对齐，不用手点） |
 | hash 直达 | `main.preview.html#window__29`（也认简写 `#29`） | **给客户发某一张页面的链接**就用这个 |
 | 「显示隐藏」 | 顶部开关 | `visible:false` 的控件/窗口以 35% 透明 + 橙色虚线**幽灵框**叠显（与编辑器 `.ed-ghost` 同一行为） |
@@ -129,7 +129,7 @@ logic.cc 里用 `showWnd()/hideWnd()` 切页」（弹窗、设置页、二级页
 | 翻页键 | ← / → | 上一页 / 下一页 |
 
 **「整屏窗口」怎么判定**：顶层（`depth==0`）window 且 `width/height ≥ resolution − 4px`。
-**只在「≥2 个整屏窗口 / 存在 `visible:false` 控件 / 同项目多 json」时才出条** ——
+**只在「≥2 个整屏窗口 / 存在 `visible:false` 控件 / 同项目多 json」时才出条**——
 单页无隐藏的工程预览**零变化**，不会多出一行 UI。
 
 **边界**：
@@ -150,8 +150,8 @@ logic.cc 里用 `showWnd()/hideWnd()` 切页」（弹窗、设置页、二级页
 | 点控件 / 悬停 | 亮蓝框提示 → 点击选中（绿框 + 8 个手柄） |
 | 拖动 / 拖手柄 | 移动 / 缩放（整数像素，吸附网格 1/2/5/10） |
 | 方向键 | 1px（Shift 10px；Alt 强制 1px；按住 Alt 拖动临时关吸附） |
-| **Alt + 点** | **穿透选中下层控件**（专治全屏透明 button 压住其它控件） |
-| 选中框左上 **✥ 绿块** | 拖动 = 移动当前选中控件，**被遮罩压住也能拖** |
+| **Alt + 点**| **穿透选中下层控件**（专治全屏透明 button 压住其它控件） |
+| 选中框左上 **✥ 绿块**| 拖动 = 移动当前选中控件，**被遮罩压住也能拖**|
 | 控件列表 | 可搜 key / caption / 坐标，点一行即选中并滚动定位（被遮挡或隐藏的控件从这里选） |
 | 「显示隐藏」 | 把 `visible:false` 的弹窗（modal 类）显示成虚线幽灵框，摆完位再关掉 |
 | 深链接 | `<name>.edit.html#button__2`（嵌套用 `#window__1%2Ftextview__3`）打开即选中 |
@@ -186,7 +186,7 @@ logic.cc 里用 `showWnd()/hideWnd()` 切页」（弹窗、设置页、二级页
 | 面 | 盒子 | 口径 |
 |----|------|------|
 | 编辑器预检（本节） | `thumb.size` | **自动生成图**（`resources/images/`）失配 → 红标（修图，别改 json 盒子） |
-| `check_all` #11 / #17 / `verify_assets` | `thumb.size` | 自动生成图失配 → `mismatch[]` = **FAIL** |
+| `check_all` #11 / #17 / `verify_assets` | `thumb.size` | 自动生成图失配 → `mismatch[]` = **FAIL**|
 | 同上 | `thumb.size` | 手绘 thumb 失配 → 仅 `stretched[]` 提示：官方基准工程 `SampleUI-New` 就是手绘 `slider_/jdt_ht.png` 35×34 vs `thumb.size` 33×35（引擎会拉伸） |
 | 同上 | — | `thumb` 没写 `size` → 跳过 + `skippedNoBox[]`/warning（不误报） |
 
@@ -201,7 +201,7 @@ logic.cc 里用 `showWnd()/hideWnd()` 切页」（弹窗、设置页、二级页
 | 面 | 口径 |
 |----|------|
 | 扫描 | `<项目>/src/**/*.cc`｜`*.cpp` 里 `set…Pic("…")` 的**字面量**实参（去注释保行号；三元式多个字面量一并查） |
-| 目标 | `mXxxPtr` → caption `Xxx`（同第 6 项）；映射不到 → `unresolved[]` 列出，**不静默跳过** |
+| 目标 | `mXxxPtr` → caption `Xxx`（同第 6 项）；映射不到 → `unresolved[]` 列出，**不静默跳过**|
 | FAIL | `resources/images/` 的自动生成图 != 控件盒（同一 caption 在**任一页**对上就算对） |
 | NOTE | 手绘图（`navi/` 等）!= 盒子 → `stretched[]` 仅提示（官方基准 `navi/fh.png` 44×26 → 72×40 按钮是合法拉伸）；`.9.png` 豁免 |
 | NOTE | 实参是变量/拼接（运行时才知道用哪张图）→ 只计 `dynamic`（案例 `ldFrame()` 拼路径就是这类） |
@@ -231,7 +231,7 @@ logic.cc 里用 `showWnd()/hideWnd()` 切页」（弹窗、设置页、二级页
 
 1. 写回前自动备份 `<name>.json.bak`
 2. **格式一致性自检**：原文件必须能 `json.dumps(indent=2, ensure_ascii=False)` 无损还原，
-   否则拒写（防止把 IDE 格式的整个文件重排，产生巨大 diff）
+否则拒写（防止把 IDE 格式的整个文件重排，产生巨大 diff）
 3. 坐标取整 + 不越出屏幕边界；宽度/高度至少 1px
 
 ## 5. 像素 diff（`flythings_ui_visual(action="diff")`，0 token）
@@ -297,13 +297,13 @@ json 同目录 → 项目根 → 再退 `.9.png` 九宫格变体；data URI 按�
 
 | 现象 | 先查 |
 |------|------|
-| 图标/整体**锯齿、发糊** | ① json `resolution` 是否等于设备屏（不等 = 整屏缩放，全糊）② 图片尺寸 ≠ 控件尺寸 ③ 图标控件过小（<24px）或非正方（图标按 min 边长画，居中后描边发虚） |
-| **位置不对** | ① 转换时 CSS 的 padding/border/margin 参与了几何 ② 坐标取整偏差累积 ③ 嵌套 window 子坐标必须**相对父窗口** |
-| **切图不对** | 控件尺寸是照着 CSS 猜的，没看真实 PNG 尺寸 → 图片控件尺寸应取 PNG 实际尺寸；同一张图被多个不同尺寸控件引用＝靠缩放硬撑的信号 |
-| **预览丢图** | 资源路径解析（第 6 节），带子目录的引用最容易漏 |
-| **多屏设计稿只落地第一屏** | 转换器只取了第一个 `.screen`（旧版行为）-> 核 `screensDetected` == `pagesProduced` == 设计稿屏数 N；`.screen` 必须并列（嵌套/重名会 success:false，见 `knowledge/devflow/prototype-flow.md`「分页落地清单」） |
-| **预览只看到首页 / 切不了页** | 整屏 window 多页架构 → 用预览稿顶部**页面切换条**或 `#window__N` hash 直达（第 2-2 节）；隐藏的弹窗用「显示隐藏」幽灵框。若预览稿里没有切换条，说明这个 json 确实只有一个整屏窗口（多半页面是 `showWnd()` 动态加载的另一 json，跑项目级预览就会出「项目页面」行） |
-| **文字被裁** | 文本估算宽度超控件宽，或字号 > 控件高 |
+| 图标/整体**锯齿、发糊**| ① json `resolution` 是否等于设备屏（不等 = 整屏缩放，全糊）② 图片尺寸 ≠ 控件尺寸 ③ 图标控件过小（<24px）或非正方（图标按 min 边长画，居中后描边发虚） |
+| **位置不对**| ① 转换时 CSS 的 padding/border/margin 参与了几何 ② 坐标取整偏差累积 ③ 嵌套 window 子坐标必须**相对父窗口**|
+| **切图不对**| 控件尺寸是照着 CSS 猜的，没看真实 PNG 尺寸 → 图片控件尺寸应取 PNG 实际尺寸；同一张图被多个不同尺寸控件引用＝靠缩放硬撑的信号 |
+| **预览丢图**| 资源路径解析（第 6 节），带子目录的引用最容易漏 |
+| **多屏设计稿只落地第一屏**| 转换器只取了第一个 `.screen`（旧版行为）-> 核 `screensDetected` == `pagesProduced` == 设计稿屏数 N；`.screen` 必须并列（嵌套/重名会 success:false，见 `knowledge/devflow/prototype-flow.md`「分页落地清单」） |
+| **预览只看到首页 / 切不了页**| 整屏 window 多页架构 → 用预览稿顶部**页面切换条**或 `#window__N` hash 直达（第 2-2 节）；隐藏的弹窗用「显示隐藏」幽灵框。若预览稿里没有切换条，说明这个 json 确实只有一个整屏窗口（多半页面是 `showWnd()` 动态加载的另一 json，跑项目级预览就会出「项目页面」行） |
+| **文字被裁**| 文本估算宽度超控件宽，或字号 > 控件高 |
 
 ## 8. 改完布局的检查顺序
 

@@ -16,7 +16,7 @@ evidence: []
 # 系统级窗口（状态栏 statusbar / 导航栏 navibar / 屏保 screensaver / 输入法 IME）
 
 > 检索导引：问「状态栏·导航栏怎么开 / 屏保怎么配 / 输入法窗口怎么写 / showStatusBar·screensaverOn 等 API / 系统级页面能不能自己创生命周期」→ 本文。
-> 2026-09-22 钟工定规：「系统级页面 screensave/statusbar/navibar 以及自定义全局弹框，AI 要能**精准命中**；
+> 2026-09-22 需求方定规：「系统级页面 screensave/statusbar/navibar 以及自定义全局弹框，AI 要能**精准命中**；
 > **不要自己去创造页面的生命周期和层级关系**」→ 本文只写**有出处的事实**（官方文档 + easyui 头文件 + 真实工程），
 > 查不到的一律标「未收录」，不猜、不套别的 GUI 框架。
 > 检索词：系统级页面 / 系统窗口 / 系统内置界面 / statusbar / 状态栏 / navibar / 导航栏 / screensaver /
@@ -29,7 +29,7 @@ evidence: []
 
 普通界面 = **Activity**（一个 ftu 一个 Activity）；
 **系统级窗口 = BaseApp**（框架注册/装载，悬浮在普通窗口之上），
-**不是 Activity**，所以 **不能** `openActivity("statusbar")`。
+**不是 Activity**，所以 **不能**`openActivity("statusbar")`。
 
 ## 1. 内建系统窗口只有 4 类（官方口径，别扩写）
 
@@ -44,9 +44,9 @@ evidence: []
 | 输入法 | `UserIme.ftu`（生成 `UserImeActivity`） | `APP_TYPE_SYS_IME` = 4 | `REGISTER_SYSAPP(APP_TYPE_SYS_IME, UserImeActivity)` | `showIME(...)` / `hideIME()` |
 
 - 官方原话（状态栏）：**「一个悬浮在 UI 界面之上的一个通用显示区」**，常用于常见信息/返回键/Home 键；
-  导航栏「跟状态栏没有什么差别」，一般在页面底部。
+导航栏「跟状态栏没有什么差别」，一般在页面底部。
 - **文件名与类型绑定**：IDE 里选窗口类型后工具自动生成文件 + 注册代码；
-  自己改文件名 / 自造类型编号 = 框架不认识（`APP_TYPE_ACTIVITY` = 0 是普通 Activity；**内建只有 1/2/3/4**）。
+自己改文件名 / 自造类型编号 = 框架不认识（`APP_TYPE_ACTIVITY` = 0 是普通 Activity；**内建只有 1/2/3/4**）。
 - 屏保语义（官方）：用户停止交互超过设定时长，系统**自动打开**该页面（超时可在工程属性里设，-1 = 不进屏保）。
 
 ## 2. API 全集（`entry/EasyUIContext.h`，easyui 2.9.0 实测行号）

@@ -12,9 +12,9 @@ kb_tools / mcp_server / catalog.json / README / MCP_FEATURES / CHANGELOG 六处�
      = 意图闸门 catalog.json = tools_manifest.json
      （v0.27.77 起 README 精简为「一键安装 + 功能说明」，不再按固定句位查，改为扫全部提法对齐）
   3. 平台矩阵自洽：platforms.PLATFORMS 的模板目录 / bin_tools 目录真实存在；
-     别名可归一；未知平台必须报错并列出支持项
+别名可归一；未知平台必须报错并列出支持项
   4. 知识索引新鲜度：rag_index.json 的文档集合 == 磁盘上 knowledge/(+wiki) 的 md 集合，
-     且索引不早于最新源文件；wiki 篇数对着 tools_manifest.json 的 docs.wikiFiles 核
+且索引不早于最新源文件；wiki 篇数对着 tools_manifest.json 的 docs.wikiFiles 核
      （README 精简后不再写该数字；若又写了则两处须一致）
   5. tools_manifest.json 与代码/表一致（委派 scripts/gen_manifest.py --check）
   6. 冒烟与纪律（委派单一实现）：scripts/smoke.py（隐私扫描 / 静默 except / 双份 ui_tools 哈希
@@ -118,7 +118,7 @@ def stage_tool_count():
     m = re.search(r'(\d+)\s*(?:个能力合一|个能力)', srv)
     check(bool(m) and int(m.group(1)) == len(names), 'mcp_server docstring count',
           '%s vs %d' % (m.group(1) if m else '?', len(names)))
-    # v0.27.77（钟工：README 精简为「一键安装 + 功能说明」）起：不再要求 README 里保留
+    # v0.27.77（现场反馈：README 精简为「一键安装 + 功能说明」）起：不再要求 README 里保留
     # 「FAQ 工具列表 < N」与「# 工具定义与注册（N 个）」这两处固定句位（已随精简章节删除），
     # 改为**扫出 README 里所有「N 个工具」提法并全部对齐**——少写不报警、写错任何一处必报警；
     # 工具数的唯一真源仍是 kb_tools.OP_NAMES / tools_manifest.json。
@@ -193,9 +193,9 @@ def stage_platforms():
 def stage_platform_single_source():
     """平台单一来源防回归（v0.27.41 起）。
 
-    背景：platforms.py 自称「唯一真相」，但 package_tools / test_tools 各留了一份平台表
+背景：platforms.py 自称「唯一真相」，但 package_tools / test_tools 各留了一份平台表
     （前者只认 v85x 家族，不认 F133EMMC/F136/T113STDCXX；后者手抄小写元组），
-    且 package_catalog.json 里 16 个平台键有 5 个在 platforms.py 里根本不存在
+且 package_catalog.json 里 16 个平台键有 5 个在 platforms.py 里根本不存在
     → 「同一个平台名，包查询认、建工程不认」。这道闸门盯住四件事：
       1. 副本必须是**引用**而不是再抄一份（对象身份级校验，不是值相等）；
       2. package_catalog.json 的每个平台键都能被 platforms 解析（不再有“无主”平台名）；
@@ -303,21 +303,75 @@ def stage_platform_single_source():
           ','.join(sem) if sem else 'ok')
 
 
-def _expected_md_sets():
-    """按 rebuild_index_local.py 的口径推导索引应包含的文档集合（相对路径，'/' 分隔）。"""
-    kb_dir = os.path.join(BASE, 'knowledge')
-    known, expected = set(), set()
-    if os.path.isdir(kb_dir):
-        for r, _, fs in os.walk(kb_dir):
-            # 与 rebuild_index_local.py 同口径：inbox/_reports/_logs 不入索引
-            _parts = os.path.relpath(r, kb_dir).replace('\\', '/').split('/')
-            if any(p in ('inbox', '_reports', '_logs') for p in _parts):
+# 平台 arch 白名单（v0.27.178）。新增架构必须显式加进来——这就是这道门的全部意义。
+PLATFORM_ARCHES = ('arm', 'riscv64')
+
+
+def stage_platform_arch():
+    """平台 `arch` 只允许白名单值（v0.27.178）。
+
+为什么加：`platforms.py` 的 `arch` 是**人工维护、原先零校验**的字段，实测写错过两处——
+    `F135` 写成 `arm`（实际与 F133 同核 C906，工具链 `riscv64-unknown-linux-musl-g++`）、
+    `F133` 写成 `riscv32`（工具链与 isa `rv64imafdcvu` 都是 64 位）。
+这个错会经 `tools_manifest.json` 原样传给 AI（它据此判架构兼容性：ARM 的 .so 在 RISC-V 上
+根本加载不了），所以按「白名单 + 显式登记」拦，而不是靠人记得。
+    """
+    try:
+        sys.path.insert(0, BASE)
+        import platforms as pl
+    except Exception as e:
+        check(False, 'platforms 可加载', '%s: %s' % (type(e).__name__, e))
+        return
+    bad = sorted('%s=%r' % (k, v.get('arch')) for k, v in pl.PLATFORMS.items()
+                 if v.get('arch') not in PLATFORM_ARCHES)
+    check(not bad, 'platforms.arch 白名单（%s）' % ', '.join(PLATFORM_ARCHES),
+          'ok（%d 平台）' % len(pl.PLATFORMS) if not bad else '异常值: %s' % '; '.join(bad))
+
+
+# 资料里不得出现的内部人名（v0.27.178）。
+# 口径（2026-10-02）：资料的价值是「结论 + 依据 + 日期」，不是「谁说的」——
+# 「<人名> 2026-09-12 确认」这类口语会让 AI 把口头确认当成权威依据，对外也不专业。
+# 换成中性主语（需求方 / 现场反馈）即可，日期与结论照留。
+# ⚠️ 名单**写成 unicode 转义**：本文件也在扫描范围内，写明文会被自己命中（自指）。
+FORBIDDEN_NAMES = ('\u6c9b\u54e5', '\u949f\u5de5')
+SCAN_EXT = ('.md', '.json', '.py', '.txt', '.cmd', '.bat', '.cpp', '.h', '.cc')
+SCAN_SKIP_DIR = {'__pycache__', '.git', 'temp', 'models', 'node_modules'}
+
+
+def stage_no_people_names():
+    """资料里不得出现内部人名口语（v0.27.178）。"""
+    hits = []
+    for root, dirs, files in os.walk(BASE):
+        dirs[:] = [d for d in dirs if d not in SCAN_SKIP_DIR]
+        for f in files:
+            if not f.endswith(SCAN_EXT):
                 continue
-            for f in fs:
-                if f.endswith('.md'):
-                    rel = os.path.relpath(os.path.join(r, f), kb_dir).replace('\\', '/')
-                    known.add(rel)
-                    expected.add('knowledge/' + rel)
+            p = os.path.join(root, f)
+            if os.path.getsize(p) > 4_000_000:
+                continue
+            rel = os.path.relpath(p, BASE).replace('\\', '/')
+            try:
+                t = io.open(p, encoding='utf-8', errors='replace').read()
+            except OSError as e:
+                hits.append('%s(读失败:%s)' % (rel, type(e).__name__))
+                continue
+            n = sum(t.count(x) for x in FORBIDDEN_NAMES)
+            if n:
+                hits.append('%s(%d)' % (rel, n))
+    check(not hits, '资料不含内部人名',
+          'ok' if not hits else '；'.join(hits[:4]))
+
+
+def _expected_md_sets():
+    """按 kb_index_roots.py（索引范围唯一真源）推导索引应包含的仓库内文档集合。
+
+这里**不再自己写遍历口径**——以前是照着 rebuild_index_local.py "同口径"抄一遍，
+给检索加一类文档要改两处、漏一处就漂移（2026-10-02 收编）。
+    """
+    sys.path.insert(0, BASE)
+    import kb_index_roots as bir
+    expected = set(bir.repo_rel_docs(BASE))
+    known = {rel.split('/', 1)[1] if '/' in rel else rel for rel in expected}
     wiki_count = 0
     if os.path.isdir(WIKI_ROOT) and not RELEASE_SCOPE:
         for r, _, fs in os.walk(WIKI_ROOT):
@@ -408,6 +462,96 @@ DOC_PER_OP_MAX = 900
 DOC_TOTAL_MAX = 12000
 
 
+def stage_package_manifest():
+    """打包清单完整性：`pyproject.toml` 的 py-modules **== 根目录所有 .py**（v0.27.177）。
+
+为什么（B5 实测 2026-10-02）：根目录平铺了 25 个模块，而 py-modules 只手写了 10 个——
+漏掉 `mcp_extras`（mcp_server 直接 import）、`mcp_server_flat`（文档里的另一个入口）、
+    `platforms` 等 15 个。`pip install .` 出来的包会缺模块、运行时 ImportError。
+根因是「清单靠人维护」；本阶段把它变成比对，漏一个直接红。
+    """
+    pp = os.path.join(BASE, 'pyproject.toml')
+    if not os.path.isfile(pp):
+        check(False, 'has pyproject.toml', pp)
+        return
+    src = _read(pp)
+    m = re.search(r'py-modules\s*=\s*\[(.*?)\]', src, re.S)
+    if not m:
+        check(False, 'pyproject py-modules 存在', '没找到 py-modules 表')
+        return
+    declared = set(re.findall(r'"([A-Za-z0-9_]+)"', m.group(1)))
+    on_disk = {f[:-3] for f in os.listdir(BASE)
+               if f.endswith('.py') and os.path.isfile(os.path.join(BASE, f))}
+    missing = sorted(on_disk - declared)
+    extra = sorted(declared - on_disk)
+    check(not missing and not extra, 'py-modules == 根目录 .py 集合',
+          ('漏登记: %s' % ', '.join(missing[:5])) if missing
+          else (('多登记（文件已不在）: %s' % ', '.join(extra[:5])) if extra
+                else '%d 个模块全部登记' % len(on_disk)))
+
+
+# 已不在当前工具链的历史命令名（清空处理，v0.27.178）。
+# 判据：仓库里找不到任何实体（可执行 / 模块 / 目录），只剩名字。
+DEPRECATED_CLI = ('fyx', 'fuse')
+
+
+def stage_cli_names():
+    """旧 CLI 名不得出现在**常驻契约面**（v0.27.178）。
+
+口径（2026-10-02）：名字只有指向**真实存在**的东西才该留。\u0060fyx\u0060 在本仓库没有任何
+实体（\u0060find -iname \'*fyx*\'\u0060 为空），却被登记进 \u0060tools_manifest.json\u0060 的名词表、并当作
+    op 参数名 \u0060with_fyx\u0060——AI 读到会以为还有这条命令可调。
+
+范围只限「会被 AI 当命令用」的两处：manifest 名词表、op 签名参数名。**不含知识文档**——
+    \u0060knowledge/devflow/cli-fun-toolchain.md\u0060 里的 fuse 痕迹是**兼容识别知识**（老工程为什么
+带 \u0060.fuse/\u0060 产物目录、\u0060FUSE_BUILD\u0060 宏、\u0060~/.fuse\u0060 注册表），删了反而无法诊断。
+区别是：**要认识的老形态**保留，**可调的命令**清空。
+    """
+    man = json.loads(_read(os.path.join(BASE, 'tools_manifest.json')) or '{}')
+    cli = set((man.get('cli') or {}).keys())
+    bad = sorted(cli & set(DEPRECATED_CLI))
+    check(not bad, 'cliNames 不登记已废弃命令名',
+          ('ok（%s）' % ', '.join(sorted(cli))) if not bad
+          else '登记了旧名: %s' % ', '.join(bad))
+    tree = ast.parse(_read(os.path.join(BASE, 'kb_tools.py')))
+    hits = []
+    for n in tree.body:
+        if not isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        a = n.args
+        names = [x.arg for x in list(a.posonlyargs) + list(a.args) + list(a.kwonlyargs)]
+        for nm in names:
+            if any(d in nm.lower() for d in DEPRECATED_CLI):
+                hits.append('%s(%s)' % (n.name, nm))
+    check(not hits, 'op 签名参数名不含已废弃 CLI 名',
+          'ok（%d 个 op）' % sum(1 for n in tree.body
+                                if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+                                and n.name.startswith('flythings_')) if not hits
+          else '；'.join(hits[:3]))
+
+
+def stage_kb_authority():
+    """权威口径注册表（knowledge/authority_map.json）自检（v0.27.177）。
+
+钉住最要紧的一条：canonical 必须**落在检索范围内**—— 存在但不在索引里等于没有
+    （AI 拿到指针也搜不到）。另外查别名撞车与 ops 存在性。
+    """
+    try:
+        sys.path.insert(0, BASE)
+        import kb_authority as au
+    except Exception as e:
+        check(False, 'kb_authority 可加载', '%s: %s' % (type(e).__name__, e))
+        return
+    try:
+        errs = au.validate()
+        n = len(au.concepts())
+    except Exception as e:
+        check(False, 'op 权威口径注册表自检', '%s: %s' % (type(e).__name__, e))
+        return
+    check(not errs, 'op 权威口径注册表自检（canonical 在检索范围内 / 别名不撞车 / ops 存在）',
+          '%d 概念 ok' % n if not errs else '; '.join(errs[:3]))
+
+
 def stage_docstring_budget():
     tree = ast.parse(_read(os.path.join(BASE, 'kb_tools.py')))
     sizes = []
@@ -450,10 +594,44 @@ def stage_delegated(skip_smoke, with_tests):
     rc, out = _run([sys.executable, os.path.join(SUB, 'gen_manifest.py'), '--check'])
     check(rc == 0, 'delegated: gen_manifest --check',
           'ok' if rc == 0 else out.strip().splitlines()[-1][:70])
+    # v0.27.174：op 契约注册表（op_spec.json）→ docstring 派生一致性 + 渲染预算。
+    # 45/45 已登记 → --strict：任何 op 漏登记、docstring 与注册表漂移、渲染超预算都算失败。
+    rc, out = _run([sys.executable, os.path.join(SUB, 'gen_op_docs.py'), '--check', '--strict'])
+    op_tail = [l for l in out.strip().splitlines()
+               if l.startswith('[PASS]') or l.startswith('[FAIL]')]
+    check(rc == 0, 'delegated: gen_op_docs --check (op 契约注册表)',
+          (op_tail[-1] if op_tail else 'rc=%d' % rc)[:70])
+    # v0.27.175：平台能力注册表（platform_capabilities.json）→ components/*/platforms.md
+    # 里那张「平台 × 可用性」矩阵表的派生一致性（15 篇同源，不许各抄一份）。
+    rc, out = _run([sys.executable, os.path.join(SUB, 'gen_component_platforms.py'), '--check'])
+    pc_tail = [l for l in out.strip().splitlines()
+               if l.startswith('[PASS]') or l.startswith('[FAIL]')]
+    check(rc == 0, 'delegated: gen_component_platforms --check (平台能力注册表)',
+          (pc_tail[-1] if pc_tail else 'rc=%d' % rc)[:70])
+    # v0.27.175：平台能力注册表 → 可检索知识页（knowledge/devflow/platform-capability-matrix.md）。
+    # 该页让「某组件在某平台能不能用」进入检索范围（RAG 只覆盖 knowledge/，components/*.md 检索不到）。
+    rc, out = _run([sys.executable, os.path.join(SUB, 'gen_platform_cap_doc.py'), '--check'])
+    pcd_tail = [l for l in out.strip().splitlines()
+                if l.startswith('[PASS]') or l.startswith('[FAIL]')]
+    check(rc == 0, 'delegated: gen_platform_cap_doc --check (平台能力知识页)',
+          (pcd_tail[-1] if pcd_tail else 'rc=%d' % rc)[:70])
+    # v0.27.176：内置包注册表（package_catalog.json）→ 可检索知识页（builtin-packages.md）。
+    # 「有哪些内置包 / 什么版本」原先只在 json 里，AI 检索不到，选型时不知道能直接用现成包。
+    rc, out = _run([sys.executable, os.path.join(SUB, 'gen_package_catalog_doc.py'), '--check'])
+    pk_tail = [l for l in out.strip().splitlines()
+               if l.startswith('[PASS]') or l.startswith('[FAIL]')]
+    check(rc == 0, 'delegated: gen_package_catalog_doc --check (内置包知识页)',
+          (pk_tail[-1] if pk_tail else 'rc=%d' % rc)[:70])
     # v0.27.138：op → 知识「去哪找」（op_seealso.json）覆盖度 —— 每个 op 要么有 seeAlso、要么登记 none + 理由
     rc, out = _run([sys.executable, os.path.join(SUB, 'gen_seealso.py'), '--check'])
     check(rc == 0, 'delegated: gen_seealso --check',
           'ok' if rc == 0 else out.strip().splitlines()[-1][:70])
+    # v0.27.177：文档指针健康——引用的 knowledge 文档路径必须真实存在（死指针会让 AI 去搜搜不到的东西）
+    rc, out = _run([sys.executable, os.path.join(SUB, 'check_doc_refs.py')])
+    dr_tail = [l for l in out.strip().splitlines()
+               if l.startswith('[PASS]') or l.startswith('[FAIL]')]
+    check(rc == 0, 'delegated: check_doc_refs (文档指针健康)',
+          (dr_tail[0] if dr_tail else 'rc=%d' % rc)[:70])
     rc, out = _run([sys.executable, os.path.join(SUB, 'gen_hardware_doc.py'), '--check'])
     check(rc == 0, 'delegated: gen_hardware_doc --check',
           'ok' if rc == 0 else out.strip().splitlines()[-1][:70])
@@ -513,8 +691,13 @@ def main():
     stage_tool_count()
     stage_platforms()
     stage_platform_single_source()
+    stage_platform_arch()
+    stage_no_people_names()
     stage_index()
     stage_docstring_budget()
+    stage_kb_authority()
+    stage_package_manifest()
+    stage_cli_names()
     stage_deliverables(a.with_tests)
     stage_delegated(a.skip_smoke, a.with_tests)
     fails = [r for r in RESULT if not r[0]]

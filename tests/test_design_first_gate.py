@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""设计先行软闸门契约（v0.27.101 / 钟工口径 A）。
+"""设计先行软闸门契约（v0.27.101 / 需求方口径 A）。
 
 为什么要有：用户提「新项目/新需求」却没给设计流程与界面时，AI 必须先走原型设计、界面设计，
 再建工程。硬约束在意图闸门（tools/flythings_intent_gate，见其 test.mjs）；MCP 侧这一层只做
@@ -10,7 +10,7 @@
   A 检测口径：design/ 目录、*.html、*.preview.html 算设计产物；空工程不算
   B op 集成：create_project / build_ui_flow 的返回值带/不带该 warning，且 success 不变
   C 文档可检索性：create_project / get_project_spec 的 docstring 必须点出「先出设计稿」，
-    且 docstring 预算（单 op ≤900 / 全体 ≤12000）不被撑破
+且 docstring 预算（单 op ≤900 / 全体 ≤12000）不被撑破
 """
 import ast
 import io

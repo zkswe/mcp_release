@@ -1,6 +1,6 @@
 ---
 id: uicontrols-cross-thread-ui-rule
-title: 跨线程操作 UI 规则（沛哥 2026-09-07 确认）
+title: 跨线程操作 UI 规则（2026-09-07 确认）
 category: uicontrols
 status: review
 confidence: manual
@@ -13,7 +13,7 @@ platforms: []
 tags: []
 evidence: []
 ---
-# 跨线程操作 UI 规则（沛哥 2026-09-07 确认）
+# 跨线程操作 UI 规则（2026-09-07 确认）
 
 > 检索导引：问「子线程能不能直接 setText / 工作线程刷 UI 要不要 post·handler / 跨线程操作控件安全吗 / UI 回调里 sleep 等资源释放行不行」→ 本文。
 

@@ -7,7 +7,7 @@ json2img.py — FlyThings 布局 json → PNG 离线「引擎等价」渲染器�
 用于设计期与 check 期的离线确认（动态效果：滚动位置、动画、视频 → 不还原，见下方清单）。
 
 ────────────────────────────────────────────────────────────────────────
-引擎语义（钟工 2026-10-01 两条更正，本实现照此）
+引擎语义（2026-10-01 两条更正，本实现照此）
 ────────────────────────────────────────────────────────────────────────
 1. 控件 = 矩形 position{left,top,width,height} + 背景图或纯色 + 文字 + 子控件；
    **绘制顺序 = json 内的树序**（父先子后；同层按出现顺序，后定义的画在上面）。
@@ -19,9 +19,9 @@ json2img.py — FlyThings 布局 json → PNG 离线「引擎等价」渲染器�
 单节点绘制顺序（严格）：铺「底色」→ 贴「背景图」→ 画「文字」→ 递归子控件。
   （例：箭头被文字盖住 = 引擎先画背景图、后画文字，本实现同样顺序）
 颜色约定：`-1` = 不填充（透明）；`0` = 不透明黑；其它按 `0xRRGGBB`。
-  有 `backgroundPic` 时，若 `bgColorTab.color0` 有效（≥0）先铺底色再贴图
+有 `backgroundPic` 时，若 `bgColorTab.color0` 有效（≥0）先铺底色再贴图
   （贴图不透明区覆盖底色，图的透明区露出底色）—— 与 §单节点顺序一致。
-  窗口类用 `backgroundColor`；文本/按钮类用 `bgColorTab.color0`。
+窗口类用 `backgroundColor`；文本/按钮类用 `bgColorTab.color0`。
 
 ────────────────────────────────────────────────────────────────────────
 裁剪
@@ -32,21 +32,21 @@ json2img.py — FlyThings 布局 json → PNG 离线「引擎等价」渲染器�
 ────────────────────────────────────────────────────────────────────────
 alignment 解码表（显式表；⚠️ 待校准项单列）
 ────────────────────────────────────────────────────────────────────────
-实测表（真机验证，钟工 2026-10-01 提供，务必照抄）：
+实测表（真机验证，2026-10-01 提供，务必照抄）：
     36 = 靠左 + 垂直居中    37 = 水平居中 + 垂直居中    38 = 靠右 + 垂直居中
     33 = 顶部对齐           41 = 底部对齐
 工程里同时大量在用 `5 / 0 / 1 / 4 / 6 / 2`（在 SmartPanel_HA 里占 91% 的文字控件）：
     TODO(待校准) —— 这 6 个值**没有**真机实测表。本文件给出两种显式解码，`--align-mode` 切换：
       * `measured`（默认）：按位模型解码（h = a & 3，v = (a >> 2) & 3），即
             4 ≡ 36（左中）  5 ≡ 37（中中）  6 ≡ 38（右中）  0 ≡ 左顶  1 ≡ 中顶  2 ≡ 右顶
-        依据：该位模型对**全部 5 个实测值**都成立（36/37/38/33/41 无一反例），且与项目内
-        设备实测记录 references/kb/controls.md（2026-08-29 真机校准）及 html2json.py 的
+依据：该位模型对**全部 5 个实测值**都成立（36/37/38/33/41 无一反例），且与项目内
+设备实测记录 references/kb/controls.md（2026-08-29 真机校准）及 html2json.py 的
         ALIGN 映射（left→36 / center→37 / right→38）一致；工程里 4/5/6 与 36/37/38 混用同一
-        版式（同一按钮/标题/返回键既有 36 也有 4）也支持「高位是附加标志位」的解释。
-      * `task36`：把这 6 个值一律当 36（靠左 + 垂直居中）—— 即钟工口头给的兜底口径。
-    两者都会被打印进 unsupported/校准清单，绝不静默。
+版式（同一按钮/标题/返回键既有 36 也有 4）也支持「高位是附加标志位」的解释。
+      * `task36`：把这 6 个值一律当 36（靠左 + 垂直居中）—— 即需求方口头给的兜底口径。
+两者都会被打印进 unsupported/校准清单，绝不静默。
     👉 待真机基线出来后的动作：对 4/5/6/0/1/2 各出一个对照图，钉死到底哪张表对，
-       然后把 ALIGN_TABLE 里 `uncalibrated=True` 的项改成实测值。
+然后把 ALIGN_TABLE 里 `uncalibrated=True` 的项改成实测值。
 
 ────────────────────────────────────────────────────────────────────────
 v0 能力 / 已知降级（渲染后必打 unsupported 清单，不静默跳过）
@@ -56,10 +56,10 @@ v0 能力 / 已知降级（渲染后必打 unsupported 清单，不静默跳过�
       colorTab、多行 text(\n)+rowSpace、bold/italic 字体变体、按 rect 裁剪。
       **数组子项（2026-10-01 补）：radiogroup.radiobuttons[]（逐项圆点 + 选项文字，选中态走
       pic2 + colorTab.color2）、listview.item + item.subItem[]（按 rows/rowSpacing/itemH 逐行铺，
-      每行画行底 + 子项图/文本）、checkbox.checked（选中走 pic2；缺 pic2 时叠 components/icons
-      的 control.check_on）。**
+每行画行底 + 子项图/文本）、checkbox.checked（选中走 pic2；缺 pic2 时叠 components/icons
+的 control.check_on）。**
 降级：circlebar（近似弧）、listview 运行期数据/滚动（模板行按 rows 铺，obtainListItemData
-      的数据与滚动不还原）、radiogroup/checkbox 运行期联动（按 json 的 checked 画静止态）、
+的数据与滚动不还原）、radiogroup/checkbox 运行期联动（按 json 的 checked 画静止态）、
       rollEnable 滚动文字（只画静止首屏）、imageanim（只画 picTab.pic0 首帧）、
       videoview（黑/底色块）、digitalclock.painter.pointer.diagram.cameraview.slidetext、
       charsetTab 字符图映射不还原。
@@ -108,7 +108,7 @@ def _bit_model(a):
     return _HC.get(a & 3, 'l'), _VC.get((a >> 2) & 3, 't')
 
 
-# 实测（真机验证，钟工 2026-10-01）—— 这 5 个值是钉死的
+# 实测（真机验证，2026-10-01）—— 这 5 个值是钉死的
 ALIGN_MEASURED = {
     36: ('l', 'c'),   # 靠左 + 垂直居中
     37: ('c', 'c'),   # 水平居中 + 垂直居中
@@ -324,8 +324,8 @@ BLOCK_KEYS = {'position', 'resolution', 'colorTab', 'bgColorTab', 'picTab', 'thu
               'disabledPic', 'videoPath', 'src'}
 
 # ─── components/icons 资产库（离线渲染的图标兜底源；与 templates/ui_blocks/iconlib.py 同一库）───
-#   注：json2img 有两份副本（`tools/ui_tools/` 与 `tools/FlyThings_mcp_open/ui_tools/`），
-#   相对位置不同 → 按候选路径逐个探（认 catalog.json 为准），避免换个副本就找不到库。
+#注：json2img 有两份副本（`tools/ui_tools/` 与 `tools/FlyThings_mcp_open/ui_tools/`），
+#相对位置不同 → 按候选路径逐个探（认 catalog.json 为准），避免换个副本就找不到库。
 def _find_icons_lib():
     here = os.path.dirname(os.path.abspath(__file__))
     cands = []
@@ -359,7 +359,7 @@ def _recolor_alpha(im, rgb):
 def icon_asset(name, state='', box=None):
     """语义名（如 control.check）+ 状态（on/off）→ components/icons 的现成产物。
 
-    命中规则：`out/<档>/ic_<分类>_<图标>[_<状态>].png`；档位优先取 ≤ 盒尺寸的最大档
+命中规则：`out/<档>/ic_<分类>_<图标>[_<状态>].png`；档位优先取 ≤ 盒尺寸的最大档
     （**不放大**：宁可小一号，也不把库产图拉大）。返回 (path, tier)；查不到 → (None, None)。
     """
     key = (name, state, box)
@@ -845,9 +845,9 @@ class Renderer:
     def draw_checkbox(self, img, node, x, y, w, h, caption):
         """checkbox.checked：选中走 pic2（compose 把 `control.check` 的白勾烘在 pic2 里）；
 
-        模板缺 pic2 / 图加载不到 → 叠 `components/icons` 的 control.check_on（**只缩不放**）。
-        勾色按盒底亮度二选一（暗底白勾 / 亮底用 colorTab.color0）——否则白勾落在浅灰盒
-        上会“看不见”（fixture 实测）。两者都没有 → 记 unsupported（不静默）。
+模板缺 pic2 / 图加载不到 → 叠 `components/icons` 的 control.check_on（**只缩不放**）。
+勾色按盒底亮度二选一（暗底白勾 / 亮底用 colorTab.color0）——否则白勾落在浅灰盒
+上会“看不见”（fixture 实测）。两者都没有 → 记 unsupported（不静默）。
         """
         checked = bool(node.get('checked'))
         bx, by, bw, bh = self._marker_box(node, x, y, w, h)
@@ -895,7 +895,7 @@ class Renderer:
     def draw_radiogroup(self, img, node, x, y, w, h, caption):
         """radiogroup.radiobuttons[]：逐项画圆点（pic0 常态 / pic2 选中）+ 选项文字。
 
-        选中文字色走 colorTab.color2（无则 color0）——与 compose.make_radiogroup 同口径。
+选中文字色走 colorTab.color2（无则 color0）——与 compose.make_radiogroup 同口径。
         """
         rbs = node.get('radiobuttons')
         if not isinstance(rbs, list) or not rbs:
@@ -942,9 +942,9 @@ class Renderer:
     def draw_listview(self, img, node, x, y, w, h, caption):
         """listview：按 rows / rowSpacing / itemH(=item.position.height) 逐行铺模板。
 
-        每行 = item 自身（底色 / 背景图 / 文字）+ 其 subItem[]（各自 iconPosition /
+每行 = item 自身（底色 / 背景图 / 文字）+ 其 subItem[]（各自 iconPosition /
         textPosition / picTab 的图与文本）；列数走 cols/colSpacing。
-        运行期数据（obtainListItemData 填行）与滚动位置不还原——模板无文本时如实记账。
+运行期数据（obtainListItemData 填行）与滚动位置不还原——模板无文本时如实记账。
         """
         item = node.get('item') if isinstance(node.get('item'), dict) else None
         if not item:
@@ -1251,7 +1251,7 @@ def main(argv=None):
         if args.report:
             print('     pages: %s' % ', '.join(pages))
             key = [k for k in rep.items if k[1] == ctype and k[2] == field and k[3] == note][0]
-            print('     例: %s' % ', '.join(rep.items[key]['examples'][:4]))
+            print('例: %s' % ', '.join(rep.items[key]['examples'][:4]))
     if not args.report and items:
         print('   （--report 看每个案例的 page/caption 明细）')
 
@@ -1278,7 +1278,7 @@ def main(argv=None):
         tbl = i.get('align')
         if tbl:
             t.hits.update(tbl.hits)
-    print('   实测表（真机验证）：36=靠左+垂直居中 37=居中 38=靠右+垂直居中 33=顶部 41=底部')
+    print('实测表（真机验证）：36=靠左+垂直居中 37=居中 38=靠右+垂直居中 33=顶部 41=底部')
     for v in sorted(ALIGN_MEASURED):
         if t.hits.get(v):
             print('     [measured]     %-3d → %s   x%d' % (v, ALIGN_MEASURED[v], t.hits[v]))
@@ -1292,7 +1292,7 @@ def main(argv=None):
            if v not in ALIGN_MEASURED and v not in ALIGN_UNCALIBRATED}
     if unk:
         print('     [表外值→按 %d 处理] %s' % (ALIGN_DEFAULT[0], unk))
-    print('   合计：实测 %d 处 / 待校准 %d 处 / 表外 %d 处'
+    print('合计：实测 %d 处 / 待校准 %d 处 / 表外 %d 处'
           % (t.measured_count(), t.uncalibrated_count(), t.other_count()))
 
     if args.json_report:

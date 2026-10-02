@@ -7,7 +7,7 @@ confidence: manual
 verified_at: 2026-10-01
 stale_days: 180
 origin: partial
-source: 2026-10-01 由 workspace references/kb/z20-video-pipeline-spec.md（229 行，含钟工新增「H.264 必须去 B 帧」要素）+ split_wall.py / README 与既有 kb 条目交叉核对后入库；未能取证的条目只标注不引数字
+source: 2026-10-01 由 workspace references/kb/z20-video-pipeline-spec.md（229 行，含需求方新增「H.264 必须去 B 帧」要素）+ split_wall.py / README 与既有 kb 条目交叉核对后入库；未能取证的条目只标注不引数字
 needs_evidence: true
 platforms: [Z20]
 tags: [视频链路, 去B帧, 块状花屏, MI VDEC, 通道属性, H264, H265不支持, 素材编码, 播放判据, 拼墙起播]
@@ -29,13 +29,13 @@ evidence:
 
 | # | 环节 | 约束 | 不做的后果 | 判据 / 怎么发现 |
 |---|------|------|-----------|----------------|
-| 1 | 编码 | **H.264 必须去 B 帧：`-bf 0`** | **卡顿**一类问题（钟工 2026-10-01 口径）；解码顺序 ≠ 显示顺序，seek/起播也不准 | `has_b_frames=0`（`ffprobe`）；`split_wall.py` 默认 `bf: 0` |
+| 1 | 编码 | **H.264 必须去 B 帧：`-bf 0`**| **卡顿**一类问题（2026-10-01 口径）；解码顺序 ≠ 显示顺序，seek/起播也不准 | `has_b_frames=0`（`ffprobe`）；`split_wall.py` 默认 `bf: 0` |
 | 2 | 解码 | **素材属性必须与 MI VDEC 通道属性一致**（分辨率/编码/帧内存） | **块状花屏**（块度 1.53~1.81 → 修后 1.08~1.17） | 抓帧算块度；`/proc` 看通道实建值 |
-| 3 | 解码 | 通道属性**固化在预编译 `libmi-module.a` 的 `h264_player.o`** | 改错地方 = 白跑（源码移植不覆盖固化值） | `nm`/`objdump` 核对；改完必须 `/proc` 自证 |
+| 3 | 解码 | 通道属性**固化在预编译 `libmi-module.a` 的 `h264_player.o`**| 改错地方 = 白跑（源码移植不覆盖固化值） | `nm`/`objdump` 核对；改完必须 `/proc` 自证 |
 | 4 | 编码 | `yuv420p`（硬件只吃 420）、分辨率/帧率**不超屏**、`-fps_mode cfr`、`+faststart`、段内首帧 IDR | 不播 / 起播慢 / 拼接处卡 | `ffprobe` + 真机起播时间 |
 | 5 | 编码 | 码率给足（拼墙建议 CRF20 或 2~4 Mbps；本工程 baseline `-crf 21 -maxrate 1500k -bufsize 3000k`） | 细节糊 / 卡顿 | 真机对比 |
 | 6 | 编码 | 音频 AAC 160k / 44.1k / 2ch | 无声/爆音 | `ffprobe` |
-| 7 | 编码 | **H.265/HEVC 不要用**：Z20 硬件 VDEC 有 HEVC 能力，但**依赖包内 0 个解码器、无 HEVC parser/BSF**，播放核也未打通 → **交付不支持** | 直接不播（`0xa008200f`，0 帧） | `TOTAL decoders=0`；`Codec 'hevc' ... not supported` |
+| 7 | 编码 | **H.265/HEVC 不要用**：Z20 硬件 VDEC 有 HEVC 能力，但**依赖包内 0 个解码器、无 HEVC parser/BSF**，播放核也未打通 → **交付不支持**| 直接不播（`0xa008200f`，0 帧） | `TOTAL decoders=0`；`Codec 'hevc' ... not supported` |
 | 8 | 播放 | **GOP 内不能丢包**（丢一片 = P 帧花屏一片）；长稳看 `dropGop=0`、块度 ≈1.0 | 花屏 / 逐渐劣化 | 播放日志 + 抓帧块度 |
 
 ## 1. 标准素材编码命令（baseline）
@@ -49,7 +49,7 @@ ffmpeg -i in.mp4 \
   out.mp4
 ```
 
-- **`-bf 0` 是本规格的第一条硬约束**（钟工新增）：B 帧让解码顺序 ≠ 显示顺序 → 卡顿/seek 不准。
+- **`-bf 0` 是本规格的第一条硬约束**（新增）：B 帧让解码顺序 ≠ 显示顺序 → 卡顿/seek 不准。
 - 同族参数（非强制）：`-refs 1`；`-g` 与切段对齐（拼墙按段切、段内首帧 IDR）。
 - 拼墙切段不要手搓：`tools/video_wall/split_wall.py` 已内建 `bf=0`、段一致 fps、首帧 IDR。
 - 平台隔离：F133（refs16 + bf≥4 会 HANG）与 V85X（`ZKMEDIA_H264_VBVSIZE`）口径不同，**另见各自条目**，不要套到 Z20。
@@ -62,7 +62,7 @@ ffmpeg -i in.mp4 \
 
 ## 3. 未取证（如实标注，勿当结论用）
 
-1. **B 帧在 Z20 上"具体走哪条路径卡"没有 A/B 量化**（目前依据 = 钟工口径 + 切段工具设计前提 `bf=0`，缺 `-bf 0` vs `-bf 3` 真机对照）。
+1. **B 帧在 Z20 上"具体走哪条路径卡"没有 A/B 量化**（目前依据 = 需求方口径 + 切段工具设计前提 `bf=0`，缺 `-bf 0` vs `-bf 3` 真机对照）。
 2. B 帧/参考帧与 `max_dec_frame_buffering`/DPB 的关系未测。
 3. Z20 H265 通道真机能否解出画面（只到"SDK/驱动/内核具备"）。
 4. 码率硬门槛未做阶梯实测；素材分辨率 ≠ 屏时的通道缩放行为未实测。

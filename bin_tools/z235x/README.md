@@ -20,15 +20,15 @@
 ## 为什么缺
 
 - Z235X 此前只做「依赖包生态」登记：`package_catalog.json` 有 `z235x` 键（17 个包，chip = SSD2355），
-  但 MCP 侧既没有 IDE 模板、也没有设备端工具（当时口径：`platforms.PACKAGE_ONLY`）。
-- 本次入库的是**IDE 模板**（`templates/HelloWord_Z235X`，来自钟工给的 `HelloWord_z235x` 工程）
+但 MCP 侧既没有 IDE 模板、也没有设备端工具（当时口径：`platforms.PACKAGE_ONLY`）。
+- 本次入库的是**IDE 模板**（`templates/HelloWord_Z235X`，来自需求方给的 `HelloWord_z235x` 工程）
   \+ `platforms.py` 登记（`PLATFORMS['Z235X']`，`arch: arm`）。
 - 设备端工具需要 **Z235X 样机 + 该平台的工具链**才能编译；Z235X 的架构/ABI 与现有平台不一定相同，
   **禁止拿其它平台的 ELF 顶替**（会静默失败或打崩应用）。
 
 ## 怎么补
 
-1. 拿到 Z235X 工具链与样机（找钟工/厂家）；
+1. 拿到 Z235X 工具链与样机（找需求方/厂家）；
 2. 按仓库既有口径重编静态工具：busybox 见 `scripts/bb_build_all.sh`（输出 `tools/busybox/bin/<平台>/busybox`），
    `touch` / `ui_test` / `zkshot` 见 `tools/touch_inject/`、`tools/zkshot/` 的构建脚本；
 3. 产物放进本目录 → 跑 `python scripts/gen_manifest.py`（刷新 `tools_manifest.json` 的平台/工具面）

@@ -22,9 +22,7 @@ evidence: []
 
 ## 0. 一句话方法
 
-**FlyThings 自定义控件 = 继承 `ZKBase`（easyui 控件基类）→ 空 `create(Json::Value())` 纯代码实例化 →**
-**组合基础控件 或 重写 `onDraw` 自绘 → 暴露 build(attr)/setXxxAdapter() 由使用方驱动 →**
-**页面 onUI_init `new Xxx(父容器Ptr)` 挂载、onUI_quit `delete` 释放。**
+**FlyThings 自定义控件 = 继承 `ZKBase`（easyui 控件基类）→ 空 `create(Json::Value())` 纯代码实例化 →组合基础控件 或 重写 `onDraw` 自绘 → 暴露 build(attr)/setXxxAdapter() 由使用方驱动 →页面 onUI_init `new Xxx(父容器Ptr)` 挂载、onUI_quit `delete` 释放。**
 
 控件不进 ftu/IDE，是纯 C++ 类；使用方代码 new 到 ftu 里已有容器（ZKWindow*）上。
 参考库内 8 个成品：AlbumListView / FrameImageView / ImageBoxView / ImageEditView /
@@ -48,11 +46,11 @@ protected:
 ```
 要点：
 - **`create(Json::Value())` 是关键**——所有 easyui 控件都支持"代码创建"（json 传空对象走默认值），
-  不依赖 ftu 反序列化；`ZKButton`/`ZKBase` 等都能这么 new
+不依赖 ftu 反序列化；`ZKButton`/`ZKBase` 等都能这么 new
 - 子控件构造也要 `create(Json::Value())`；按钮默认 `setVisible(false)+setTouchable(false)`，
-  用的时候再开（很多控件拿按钮当"可放图、可点、可换态的通用矩形"用）
+用的时候再开（很多控件拿按钮当"可放图、可点、可换态的通用矩形"用）
 - 画布：`createBmp` 生成一个 `bitmap_t` 内存位图（透明/填色/直接操作 data），
-  配合 `ZKButton::setBackgroundBmp` 之类显示——自绘控件的基本素材
+配合 `ZKButton::setBackgroundBmp` 之类显示——自绘控件的基本素材
 
 ## 2. 两条实现路线
 
@@ -65,7 +63,7 @@ protected:
 
 **路线 B：自绘式（重写 onDraw）**——适合基础控件表达不了的（帧动画/特殊形状/图像处理）
 - 例：FrameImageView 重写 `virtual void onDraw(ZKCanvas *pCanvas)`，把解码好的 `bitmap_t`
-  按帧画到控件上（配合 Region 脏区只重绘变化区域）
+按帧画到控件上（配合 Region 脏区只重绘变化区域）
 - 自绘需要拿到画布：onDraw 里用 ZKCanvas API + 预解码 bitmap_t；解码放后台线程
   （MessageQueueThread），完成后再触发重绘
 
@@ -87,7 +85,7 @@ static void onUI_quit() {
 - **父容器**：ftu 里已有的控件（常用 ZKWindow）作 parent；控件构造自动铺满 parent 区域
 - 页面切换 openActivity 时 onUI_quit 释放；重复进入每次 new（不能 static 复用跨页面）
 - 控件回调到页面：控件不直接认识页面，页面持有控件指针（如 test_bar）直接调 setProgress；
-  控件→页面用函数指针 setter（适配器）或控件自己发事件/回调
+控件→页面用函数指针 setter（适配器）或控件自己发事件/回调
 
 ## 4. 配置与数据：Attr 结构 + 适配器回调（控件不自带业务）
 
@@ -117,25 +115,25 @@ virtual bool onTouchEvent(const MotionEvent &ev);   // 返回 true=吃掉事件
 ```
 - 滚动实现套路（AlbumListView/ImageBoxView）：DOWN 记录 down_event_+位置 → MOVE 计算位移
   setPosition/move 平移内容（或 offset）→ UP 判断惯性：VelocityTracker 算速度 → is_rolling_
-  定时器逐步减速滚动 → 越界回弹（is_damping_ + 阻尼系数）→ 长按计时（long_click_timeout）
+定时器逐步减速滚动 → 越界回弹（is_damping_ + 阻尼系数）→ 长按计时（long_click_timeout）
 - 全局触摸监听：Activity 层 `registerGlobalTouchListener`（测试页手势），控件内不必要
 - **多指触控**：src/event/multi_touch.* 提供全局多点触摸分发（TouchPoint 列表回调），
   ImageBoxView 用它实现双指缩放（prepareScale/processScale：两指距离比例 → setPosition 缩放）
 - 控件内定时器：`onTimer(int id)`（页面注册的定时器框架会分发？——见各控件：滚动/回弹/
-  动画步进都在 onTimer 里做，id 用控件内私有 id）
+动画步进都在 onTimer 里做，id 用控件内私有 id）
 
 ## 6. 绘制基础（bitmap_t + Region）
 
-> ⚠️ **刷新触发口径（2026-09-22 钟工定规）**：自定义 view（自绘/帧渲染/位图自己改的那类）每帧刷新用
+> ⚠️ **刷新触发口径（2026-09-22 需求方定规）**：自定义 view（自绘/帧渲染/位图自己改的那类）每帧刷新用
 > `ctrl->setInvalid(!ctrl->isInvalid())`（gameview 口径）；**不要**用 `invalidate(&getAbsolutePosition())`
 > 传绝对矩形（会被按控件本地坐标裁成“右下角一块”，屏上只刷一块）→ 详见 `knowledge/uicontrols/custom-view-refresh.md`。
 
 - `bitmap_t`：easyui 位图结构（width/height/pitch/bytes/data），`BitmapHelper::loadBitmapFromFile`
-  解码文件、unloadBitmap 释放；createBmp 造内存画布后直接操作 data（24 位 BGR / 32 位带 alpha，
+解码文件、unloadBitmap 释放；createBmp 造内存画布后直接操作 data（24 位 BGR / 32 位带 alpha，
   `bmp->type |= 0x01` 透明）
 - 控件显示位图：子 ZKButton `setBackgroundBmp(bmp)`（或 setBackgroundPic 文件）——**这就是平台的 canvas 画布扩展**：
   `ZKTextView`/`ZKButton` 挂一张内存位图当画布，只调一次 + `setInvalid(!isInvalid())` 交替刷帧；
-  控件不自绘时用按钮当"图框"最省事。能力边界（三层模型 / 非 3D GPU 皆可 / 软模拟）见 `knowledge/devflow/render-extension-boundary.md`，
+控件不自绘时用按钮当"图框"最省事。能力边界（三层模型 / 非 3D GPU 皆可 / 软模拟）见 `knowledge/devflow/render-extension-boundary.md`，
 - `Region`（left/top/right/bottom + 宏：SET/RESET/IS_EMPTY/OFFSET/CONTAINS/DOES_INTERSECT/
   Intersect/Bound）——脏区/裁剪/命中通用；typedef.h 里 EImageShowMode/EMotionFilter/枚举风格库内统一
 

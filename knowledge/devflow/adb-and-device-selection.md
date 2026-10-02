@@ -25,17 +25,17 @@ evidence: []
 
 ## 1. adb 从哪来（单一入口 `adb_tools.resolve_adb()`）
 
-v0.27.84 之前，仓库里 **6 处各写一份** adb 定位逻辑，且默认写死 `'adb'` 字面量
+v0.27.84 之前，仓库里 **6 处各写一份**adb 定位逻辑，且默认写死 `'adb'` 字面量
 → 客户机没装 Android SDK 就到处「找不到 adb」。现在：
 
 | 优先级 | 来源 | 说明 |
 |--------|------|------|
 | ① | 环境变量 `ADB` / `FLYTHINGS_ADB`（兼容旧名 `ADB_PATH`） | 显式指定永远优先 |
-| ② | **随包** `tools/adb/adb.exe`（非 Windows 用 `tools/adb/adb`） | 随 MCP 分发，开箱可用（≈6.1 MB） |
+| ② | **随包**`tools/adb/adb.exe`（非 Windows 用 `tools/adb/adb`） | 随 MCP 分发，开箱可用（≈6.1 MB） |
 | ③ | `PATH` 里的 `adb` | 客户自己装过 platform-tools 时兜底 |
 
 随包内容只有三件：`adb.exe` + `AdbWinApi.dll` + `AdbWinUsbApi.dll`
-（实测版本 `1.0.41 / 31.0.3-7562133`）。**不带** IDE 里那些杂件
+（实测版本 `1.0.41 / 31.0.3-7562133`）。**不带**IDE 里那些杂件
 （`vdisp_capture.exe`、`adb*.tmp`、日志快捷方式）。
 
 排查一条命令（零副作用，适合让客户自己跑）：
@@ -59,8 +59,8 @@ python adb_tools.py devices    # 只列设备
 | `Zkswe_SSD21X_SPINOR` | Z21 | 本仓实测（`components/ble/platforms.md`、`knowledge/devflow/device-deploy-budget.md`）+ 2026-09-17 真机复测 |
 | `Zkswe_SSD20X_SPINOR` | Z20 | 本仓实测（`components/ble/platforms.md`）+ 2026-09-17 真机复测 |
 | `Zkswe_V85X_SPINOR` | V85X | 本仓实测（`components/fonts/platforms.md`、`knowledge/v85x/display-layer-debug.md`）+ 复测 |
-| `Zkswe_F133_SPINOR` | **待确认** | 本仓无实测记录（钟工举例提到）；`device_models.json` 里登记为 `todo`、平台留空 |
-| `Zkswe_F136_SPINOR` | **待确认** | 同上（若确认，平台写 `F135`——`platforms.py` 把 F136 归一为 F135） |
+| `Zkswe_F133_SPINOR` | **待确认**| 本仓无实测记录（举例提到）；`device_models.json` 里登记为 `todo`、平台留空 |
+| `Zkswe_F136_SPINOR` | **待确认**| 同上（若确认，平台写 `F135`——`platforms.py` 把 F136 归一为 F135） |
 
 **纪律**：型号表只放型号字符串，**不放内网 IP / 序列号**（隐私闸门会拦）；
 不确定的一律 `platform=""` + `confidence="todo"`，**不臆造**。拿到新板子后按下面第 4 节回填。
@@ -125,7 +125,7 @@ python adb_tools.py                              # 确认判定与预期一致
 - `python adb_tools.py` → 三台在线全部正确判定（Z21 / Z20 / V85X，型号均由
   `devices -l` 的 `model:` 或 `getprop` 取到）；
 - 默认参数 `build_ui_flow`（三台在线）：build 通过 → 探测到多台 → `needDeviceInput=true` +
-  多设备清单（带平台匹配列），**未替用户选机器**；
+多设备清单（带平台匹配列），**未替用户选机器**；
 - `with_launch=False`：到 build 结束，`launchSkipped=true`、`device=""`，不碰设备。
 
 **单台在线 → 自动选机 + 推送 + 设备侧比对（Z21）**
@@ -143,21 +143,20 @@ python adb_tools.py                              # 确认判定与预期一致
 
 **设备端取数踩到的 3 个坑（已修在 `adb_tools`）**
 1. `wc -c < file` 返回**空**（裁剪 rootfs）→ 尺寸只能靠 `ls -l`，且 **`ls -l` 第 1 个数字是硬链接数（恒为 1）**，
-   第 5 列才是字节数（旧写法把每个文件都报成 1 字节 = 假 stale，实测踩到）；
-2. 设备没有 `md5sum`、`busybox` 也不在 PATH → 用**随仓** `bin_tools/<平台>/busybox`
+第 5 列才是字节数（旧写法把每个文件都报成 1 字节 = 假 stale，实测踩到）；
+2. 设备没有 `md5sum`、`busybox` 也不在 PATH → 用**随仓**`bin_tools/<平台>/busybox`
    （优先复用设备上已有的 `/tmp/busybox`）拿到 md5，才做到「比 md5」而不是「比字节」；
 3. 多设备下 `fun launch` 硬失败（机制与处置见 §3 与 `knowledge/devflow/cli-fun-toolchain.md` §6），
-   所以单台推送验证需要先 `adb disconnect` 其它设备（本次实测即如此，推完已连回）。
+所以单台推送验证需要先 `adb disconnect` 其它设备（本次实测即如此，推完已连回）。
 
 ## 6. 待确认 / 未覆盖（诚实标注）
 
 - `Zkswe_F133_SPINOR` / `Zkswe_F136_SPINOR` 两条型号串 **平台留空（todo）**：本仓
-  没有 F133/F135 真机型号实测记录，不臆造；拿到板子按第 4 节回填。
-- 其它平台的型号串（T113 / Z235X）同样**未登记** → 会走「平台未知」分支（照推 + warning）。
+没有 F133/F135 真机型号实测记录，不臆造；拿到板子按第 4 节回填。
+- 其它平台的型号串（T113 / Z235X）同样**未登记**→ 会走「平台未知」分支（照推 + warning）。
 - USB 接入口的 `installHint` 里「驱动没装」的判定**目前只能靠人工**（设备管理器），
-  工具无法从 adb 侧区分「没插」「驱动没装」「没授权」——三者都表现为 0 台或 unauthorized。
-- **fun 与 adb server 的兼容性只在本机 platform-tools 1.0.41/31.0.3 上验证过**：
-  别的 adb server 版本（旧版 / 不同分发）报文解析可能不同，可能在多设备下行为不一样
+工具无法从 adb 侧区分「没插」「驱动没装」「没授权」——三者都表现为 0 台或 unauthorized。
+- **fun 与 adb server 的兼容性只在本机 platform-tools 1.0.41/31.0.3 上验证过**：别的 adb server 版本（旧版 / 不同分发）报文解析可能不同，可能在多设备下行为不一样
   —— 复测方法就写在 `knowledge/devflow/cli-fun-toolchain.md` §6（裸 socket 问 5037，看 `host:transport` 是否被认）。
 - `deviceSync` 只比对 `ui/*.ftu`（最多 8 个）与 `libzkgui.so`：**图片/字体/i18n/配置没比**
   （那些不是 ftu 时代同一问题，且体积大）；需要时可后续扩。

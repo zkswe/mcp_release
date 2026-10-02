@@ -3,20 +3,20 @@
 
 核心思路：
   ui/*.json 布局本身已包含全部控件坐标（position left/top/width/height）与
-  可交互信息（touchable/visible）——直接解析 json 生成测试**数据脚本**，
-  配合预编译的通用触摸注入工具（bin_tools/{platform}/touch ELF）执行。
+可交互信息（touchable/visible）——直接解析 json 生成测试**数据脚本**，
+配合预编译的通用触摸注入工具（bin_tools/{platform}/touch ELF）执行。
 
-  架构（沛哥 2026-08-31 确认；2026-09-12 换用统一工具 touch）：
+架构（2026-08-31 确认；2026-09-12 换用统一工具 touch）：
     - 通用工具（触摸注入 touch、busybox 等）在电脑端预编译成各平台 ELF，
-      放 MCP 独立目录 bin_tools/{platform}/，一次编译处处复用
+放 MCP 独立目录 bin_tools/{platform}/，一次编译处处复用
     - 测试项目只生成数据文件（script.txt：tap/swipe/delay 指令），不再现场编译
     - 好处：tools 不膨胀、生成秒级、部署 = adb push ELF + 脚本
 
   ⚠️ 注入工具选择（2026-09-12）：
     - **首选 `touch`**（bin_tools/{平台}/touch）：自动扫描 /dev/input 找触摸节点、
-      自动判协议（MT-B / MT-A / 单点），**部署命令不需要传设备节点**
+自动判协议（MT-B / MT-A / 单点），**部署命令不需要传设备节点**
     - `ui_test`（单点）/ `mt_test`（MT-A）保留兼容，但需人工指定节点且要猜协议，
-      仅在 touch 缺该平台 ELF 时退回使用
+仅在 touch 缺该平台 ELF 时退回使用
 
   test_type:
     traverse - 遍历控件验收：所有可交互控件逐个点击+滑动（生成脚本）+ 资源缺失检查
@@ -53,9 +53,9 @@ SWIPE_TYPES = ('seekbar', 'slidewindow', 'scrollwindow', 'pagewindow')
 def _platform_elf(platform):
     """返回预编译触摸注入 ELF 路径（**按真实文件探测**，不是按平台名白名单）。
 
-    解析（支持别名/大小写）→ 取 bin_tools 目录名 → 真的存在 touch 才用，
-    其次退回老的 ui_test；两边都没有就回 None（调用方据此报「未预编译」，
-    并把真实可用平台列出来，而不是笼统地说平台不支持）。
+解析（支持别名/大小写）→ 取 bin_tools 目录名 → 真的存在 touch 才用，
+其次退回老的 ui_test；两边都没有就回 None（调用方据此报「未预编译」，
+并把真实可用平台列出来，而不是笼统地说平台不支持）。
     """
     info = _platforms.resolve(platform)
     if not info or not info.get('buildable'):
@@ -71,8 +71,8 @@ def _platform_elf(platform):
 def _parse_ui_jsons(project_root):
     """解析 project_root/ui/*.json → 页面+控件列表。
 
-    返回: {pages: [{file, res_w, res_h, controls: [...]}]}
-    控件: {key, type, caption, id, left, top, w, h, touchable, visible,
+返回: {pages: [{file, res_w, res_h, controls: [...]}]}
+控件: {key, type, caption, id, left, top, w, h, touchable, visible,
            cx, cy(中心点), is_swipe}
     """
     ui_dir = os.path.join(project_root, 'ui')
@@ -95,7 +95,7 @@ def _parse_ui_jsons(project_root):
         controls = []
         # A7 修（2026-09-27）：**递归**收集嵌套控件 —— 旧版只扫根层，交互控件全在
         #   window/card 里（弹窗页、键盘页）的工程产出的可测控件为 0，自动化遍历完全覆盖不到。
-        #   嵌套控件的 position 是**父相对坐标** → 累加父偏移得到屏幕坐标（tap 才落得准）。
+        #嵌套控件的 position 是**父相对坐标**→ 累加父偏移得到屏幕坐标（tap 才落得准）。
         def _collect(dd, ox, oy, depth, out, keys=()):
             for key, v in dd.items():
                 if key.startswith('__') or not isinstance(v, dict):
@@ -140,7 +140,7 @@ def _parse_ui_jsons(project_root):
 def _pic_refs(v):
     """收集控件引用的全部图片路径：picTab 各槽 + *Pic 标量字段 + thumb 子对象的 *Pic。
     （seekbar 的 backgroundPic/progressPic/thumb.*Pic 缺图 = 控件不可见（不致命但属验收缺陷），
-    只查 picTab 会漏掉这一类。）"""
+只查 picTab 会漏掉这一类。）"""
     refs = []
     tab = v.get('picTab')
     if isinstance(tab, dict):
@@ -182,8 +182,8 @@ def _check_resources(project_root, pages):
 def _gen_traverse_script(pages):
     """生成遍历验收数据脚本（ui_test run 格式）。
 
-    每行: tap x y / swipe x1 y1 x2 y2 / long x y ms / delay ms
-    注释行: # 页名/控件名 说明（便于 logcat 对应）
+每行: tap x y / swipe x1 y1 x2 y2 / long x y ms / delay ms
+注释行: # 页名/控件名 说明（便于 logcat 对应）
     """
     lines = ['# FlyThings UI 遍历控件验收脚本（自动生成，ui_test run 执行）']
     for pg in pages:
@@ -222,8 +222,8 @@ def flythings_gen_ui_test(project_root, test_type='ask', output_dir='',
       monkey   - 压测 MonkeyTest：随机 tap/swipe（touch monkey 命令直接跑）
       custom   - 自定义验收：按用户提供的要求生成（差异化逻辑可走 AI）
 
-    执行依赖预编译工具 bin_tools/{platform}/touch（ELF，电脑端已编好），
-    部署 = adb push ELF + 脚本，不再现场编译。
+执行依赖预编译工具 bin_tools/{platform}/touch（ELF，电脑端已编好），
+部署 = adb push ELF + 脚本，不再现场编译。
     **touch 自动识别触摸节点与协议，部署命令不带 /dev/input/eventN**。
     """
     if test_type not in ('ask', 'traverse', 'monkey', 'custom'):
@@ -322,7 +322,7 @@ def flythings_gen_ui_test(project_root, test_type='ask', output_dir='',
 # ══════════════════════════════════════════════════════════════════════════
 
 # ══════════════════════════════════════════════════════════════════════════
-# 多设备并行测试跑批 + 机读报告（2026-09-29；钟工「自动化测试/验收」优化项）
+# 多设备并行测试跑批 + 机读报告（2026-09-29；需求方「自动化测试/验收」优化项）
 #
 # 补的三件事（此前只能靠 AI 手敲 adb + 人眼看截图）：
 #   ① 同一份用例在**多台设备并行**跑（此前多设备在线时工具一律「不猜」，只能逐台串行手敲）
@@ -438,7 +438,7 @@ def _platform_of(dev, platform=''):
 def _deploy_touch(serial, adb, platform, notes):
     """推 bin_tools/<平台>/touch（touch 自动扫节点+判协议，不传 eventN）。
 
-    落点依次试 `/data` → `/tmp` → `/mnt/extsd`：Z20 那类板子 `/data` 经常写满
+落点依次试 `/data` → `/tmp` → `/mnt/extsd`：Z20 那类板子 `/data` 经常写满
     （实测报 `remote No space left on device`），退到 tmpfs 一样能跑；用了哪个目录会回显。
     """
     elf = _platform_elf(platform)
@@ -760,7 +760,7 @@ def flythings_test_run(plan='', devices='auto', project_root='', out='', platfor
     devices："auto"（**恰好 1 台才自动选**）|"all"|"<IP>:5555,<IP>:5555"；多台**并行**跑。
     project_root：像素基线库位置（<项目>/ui_baseline/）；baseline=auto/compare/save/off。
     out：报告目录（默认 <项目或仓库>/temp/test_runs/<时间>-<用例名>）。
-    返回 summary + reportJson + reportXml；**比不到基线记 no-baseline 并进 warnings，不算通过**。
+返回 summary + reportJson + reportXml；**比不到基线记 no-baseline 并进 warnings，不算通过**。
     """
     root = os.path.abspath(project_root) if project_root else ''
     p, err = _load_plan(plan)

@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-"""adb 单一入口 + 「launch 默认推设备」契约（v0.27.84，钟工 2026-09-17 三项要求）。
+"""adb 单一入口 + 「launch 默认推设备」契约（v0.27.84，2026-09-17 三项要求）。
 
 为什么要有（事故背景）：
   ① adb 定位原先在仓库里**抄了 6 份**（各写死 `'adb'` 字面量/本机 SDK 路径）→ 客户机
-     没装 Android SDK 就到处「找不到 adb」；现在只有 `adb_tools.resolve_adb()` 知道 adb 在哪。
+没装 Android SDK 就到处「找不到 adb」；现在只有 `adb_tools.resolve_adb()` 知道 adb 在哪。
   ② `build_ui_flow` 以前默认**不推设备**（with_launch=False），客户以为「编译好了」其实
-     设备上什么都没变；现在默认 build → 探测 → 推送/运行，只编译要显式关掉。
+设备上什么都没变；现在默认 build → 探测 → 推送/运行，只编译要显式关掉。
   ③ 探测必须**不猜**：0 台给 needDeviceInput+installHint，多台要显式 device=，
-     恰好 1 台且平台匹配才自动推；推完要比对设备侧产物并给 staleOnDevice。
+恰好 1 台且平台匹配才自动推；推完要比对设备侧产物并给 staleOnDevice。
 
 本文件**离线**（全程 monkeypatch，不碰真机、不需要 adb 在 PATH）。
 """
@@ -35,7 +35,7 @@ class TestResolveAdb(unittest.TestCase):
         self.assertEqual(info['envVar'], 'ADB')
 
     def test_flythings_adb_alias(self):
-        """FLYTHINGS_ADB 与 ADB 等价（钟工口径里两个都认）。"""
+        """FLYTHINGS_ADB 与 ADB 等价（经需求方口径里两个都认）。"""
         tmp = os.path.join(U.BASE, 'tools', 'adb', 'adb.exe')
         env = {k: v for k, v in os.environ.items() if k not in ('ADB', 'ADB_PATH')}
         env['FLYTHINGS_ADB'] = tmp
@@ -43,7 +43,7 @@ class TestResolveAdb(unittest.TestCase):
             self.assertEqual(at.resolve_adb(), tmp)
 
     def test_bundled_used_when_no_env(self):
-        """② 没有环境变量时用**随包** tools/adb/adb.exe（客户不必另装 SDK）。"""
+        """② 没有环境变量时用**随包**tools/adb/adb.exe（客户不必另装 SDK）。"""
         env = {k: v for k, v in os.environ.items()
                if k not in ('ADB', 'FLYTHINGS_ADB', 'ADB_PATH')}
         with mock.patch.dict(os.environ, env, clear=True):
@@ -152,7 +152,7 @@ class TestProbeAndHints(unittest.TestCase):
         self.assertEqual(pr['online'][0]['platform'], 'Z21')
 
     def test_install_hint_covers_three_things(self):
-        """installHint 必须覆盖三件事：ADB 驱动 / USB 调试授权 / 网络接入（钟工要求）。"""
+        """installHint 必须覆盖三件事：ADB 驱动 / USB 调试授权 / 网络接入（要求）。"""
         txt = at.install_hint('Z21')
         self.assertIn('ADB 驱动', txt)
         self.assertIn('USB', txt)
@@ -177,7 +177,7 @@ class TestProbeAndHints(unittest.TestCase):
 
     def test_remote_file_info_uses_ls_l_column5(self):
         """设备侧取数（真机踩到的 bug）：`ls -l` 第 1 个数字是硬链接数（恒为 1），
-        第 5 列才是字节数；且裁剪 rootfs 的 `wc -c` 返回空、没有 md5sum。"""
+第 5 列才是字节数；且裁剪 rootfs 的 `wc -c` 返回空、没有 md5sum。"""
         txt = ('-rw-rw-rw-    1 0        0              186 Sep 17  2026 main.ftu\n')
         with mock.patch.object(at, 'sh', lambda a, s, cmd, timeout=15: txt), \
                 mock.patch.object(at, 'ensure_busybox', lambda a, s, p='', timeout=15: ''):

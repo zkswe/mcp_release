@@ -3,7 +3,7 @@
 
 唯一真源原则：字段/必填/默认值以注册表为准，文档表是**派生产物**——
 本脚本重写 knowledge/uicontrols/json-field-mandatory.md 的「## 每类型必写键」整节
-（表格：控件 / 必填键 / 默认值要点），文档其余部分（沛哥 5 条口径、子结构公式说明等）不动。
+（表格：控件 / 必填键 / 默认值要点），文档其余部分（5 条口径、子结构公式说明等）不动。
 必写键口径与 check_all #14 完全同源（复用 check_all._required_keys：注册表必填 ∪ 兼容垫片）。
 
 用法：
@@ -38,7 +38,7 @@ def _fmt_default(v):
 
 
 def _defaults_brief(tname):
-    """「默认值要点」列：注册表**显式 default** 的标量 k=v 清单 + 字段 note 的首句（截断）。
+    """「默认值要点」列：注册表**显式 default**的标量 k=v 清单 + 字段 note 的首句（截断）。
     （无 default 的必填零值是占位不是「默认值要点」，不列。）"""
     fields = (us.load()['controls'].get(tname) or {}).get('fields') or {}
     parts = []

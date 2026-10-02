@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 """契约：op → 知识「去哪找」（seeAlso）覆盖率与注入。
 
-为什么要有（钟工 2026-09-30：「12 做了」）：docstring 预算已顶格（12000/12000），
+为什么要有（2026-09-30：「12 做了」）：docstring 预算已顶格（12000/12000），
 43 个 op 里原先只有 12 处 docstring 指到知识文档 → AI 选到工具后还得自己二次检索。
-现在改为**返回体注入 seeAlso**（不占 docstring 预算），由 op_seealso.json 驱动：
-每个 op 要么有 seeAlso、要么显式登记 none + 理由（scripts/gen_seealso.py --check 进闸门）。
+现在改为**返回体注入 seeAlso**（不占 docstring 预算），由 op_seealso.json 驱动：每个 op 要么有 seeAlso、要么显式登记 none + 理由（scripts/gen_seealso.py --check 进闸门）。
 """
 import json
 import os

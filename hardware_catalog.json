@@ -1,15 +1,15 @@
 {
   "schema": 1,
-  "note": "硬件型号库（唯一事实来源，人工维护）。定位（沛哥 2026-09-12）：**预设参数**，让后期开发少问少核（沛哥 2026-09-12 明确：所谓「平台差异」= 具体型号的默认参数，开发直接照抄不用猜）。有具体型号 → 按该型号的 screen/keys/specs 直接开工（工具会给出 preset）；没有具体型号 → 确认平台 + 分辨率就能建工程，不必等数据补全。改完跑：python scripts/gen_hardware_doc.py（生成 knowledge/hardware/hardware-models.md，可检索）→ python rebuild_index_local.py。字段：platforms.<平台>.models.<型号>，平台名必须是 platforms.py 里的规范名（F133/F135/T113/V85X/Z20/Z21）。dataStatus：complete=规格书完整 / partial=部分参数 / pending=仅登记型号（**都不是开工阻塞**）。optional[] = 可选补充项（有则更方便，没有不影响开工；禁止 AI 拿同系列型号外推填坑）。 defaults（平台级/型号级）= 默认参数；differences = 选型/差异说明；工具把平台级 + 型号级 defaults 合并成 preset 返回。",
-  "updated": "2026-09-23",
+  "note": "硬件型号库（唯一事实来源，人工维护）。定位（2026-09-12）：**预设参数**，让后期开发少问少核（2026-09-12 明确：所谓「平台差异」= 具体型号的默认参数，开发直接照抄不用猜）。有具体型号 → 按该型号的 screen/keys/specs 直接开工（工具会给出 preset）；没有具体型号 → 确认平台 + 分辨率就能建工程，不必等数据补全。改完跑：python scripts/gen_hardware_doc.py（生成 knowledge/hardware/hardware-models.md，可检索）→ python rebuild_index_local.py。字段：platforms.<平台>.models.<型号>，平台名必须是 platforms.py 里的规范名（F133/F135/T113/V85X/Z20/Z21）。dataStatus：complete=规格书完整 / partial=部分参数 / pending=仅登记型号（**都不是开工阻塞**）。optional[] = 可选补充项（有则更方便，没有不影响开工；禁止 AI 拿同系列型号外推填坑）。 defaults（平台级/型号级）= 默认参数；differences = 选型/差异说明；工具把平台级 + 型号级 defaults 合并成 preset 返回。",
+  "updated": "2026-10-02",
   "namingRules": {
     "structure": "SW + 分辨率 + 尺寸 + 平台字母 + 选配位 + _后缀（依据 7 寸串口屏规格书 V1.0 第 4 节）",
     "example": "SW80480070A_CWM = 7 寸 800×480，电容触摸 + WIFI + 多媒体版（官方《产品规格型号说明》示例）",
     "platformLetter": {
-      "D": "Z20 平台（沛哥 2026-09-12 确认）",
-      "E": "Z21 平台（沛哥 2026-09-12 确认）"
+      "D": "Z20 平台（2026-09-12 确认）",
+      "E": "Z21 平台（2026-09-12 确认）"
     },
-    "lettersNote": "字母可跨产品线套用：4 寸 86 盒线 SW48480040B1=Z6 / D1=Z20 / E=Z21（86 盒规格书 V3.0）与 D=Z20、E=Z21 一致；其他字母（A/B/C 等）未确认，先问沛哥再入库。",
+    "lettersNote": "字母可跨产品线套用：4 寸 86 盒线 SW48480040B1=Z6 / D1=Z20 / E=Z21（86 盒规格书 V3.0）与 D=Z20、E=Z21 一致；其他字母（A/B/C 等）未确认，先问需求方再入库。",
     "limit": "型号名只能看出平台/分辨率线索，**具体规格以规格书为准**（不要按命名外推接口、内存、容量）",
     "decode": {
       "resolution": {
@@ -30,9 +30,33 @@
         "TC": "电容触摸 + 铁框（整机型）"
       }
     },
-    "legacyLabelWarning": "旧文档/旧标签存在**历史写法错误**：7 寸串口屏规格书 V1.0 第 4 节写「D: Z21」、标题页写 SW10600070D_C，实为 E=Z21 / SW10600070E_C（沛哥 2026-09-12：早期内部标签弄错的历史预留问题）。**以现行口径 D=Z20 / E=Z21 为准，不要据旧文档反推平台。**"
+    "legacyLabelWarning": "旧文档/旧标签存在**历史写法错误**：7 寸串口屏规格书 V1.0 第 4 节写「D: Z21」、标题页写 SW10600070D_C，实为 E=Z21 / SW10600070E_C（2026-09-12：早期内部标签弄错的历史预留问题）。**以现行口径 D=Z20 / E=Z21 为准，不要据旧文档反推平台。**"
   },
   "platforms": {
+    "F133": {
+      "summary": "RISC-V64（C906 核，isa rv64imafdcvu）；工具链 riscv64-unknown-linux-musl-g++（musl）——与 F135/F136 同核",
+      "chips": ["F133"],
+      "chipsNote": "C906 RISC-V64 单核；与 F135/F136 同核（F136 在 platforms.py 里归一为 F135）。芯片级规格待补。",
+      "optional": ["型号级规格（屏幕/按键/接口）待规格书入库；**不阻塞开工**：确认平台 + 分辨率即可建工程"],
+      "differences": [
+        {"topic": "与 ARM 平台不通用", "detail": "Z20/Z21/V85X/T113 的 .so 加载不了（ELF32 ARM vs RISC-V64），要用 RISC-V64 musl 工具链重编"},
+        {"topic": "工具链", "detail": "riscv64-unknown-linux-musl-g++（musl），严禁混入 glibc"},
+        {"topic": "包键", "detail": "f133（F135 是 f136），见 package_catalog.json"}
+      ],
+      "models": {}
+    },
+    "F135": {
+      "summary": "RISC-V64（C906 核）——与 F133 同核；工具链 riscv64-unknown-linux-musl-g++（musl）",
+      "chips": ["F135"],
+      "chipsNote": "C906 RISC-V64 单核；与 F133 同核。**F136 是别名**（platforms.py 归一为 F135），包键 f136。规格待补。",
+      "optional": ["型号级规格待规格书入库；不阻塞开工（平台 + 分辨率即可）"],
+      "differences": [
+        {"topic": "与 ARM 平台不通用", "detail": "Z20/Z21/V85X/T113 的 .so 加载不了（ELF32 ARM vs RISC-V64）"},
+        {"topic": "工具链", "detail": "riscv64-unknown-linux-musl-g++（musl），严禁混入 glibc"},
+        {"topic": "包键", "detail": "f136（F133 是 f133；F136 是别名，归一为 F135）"}
+      ],
+      "models": {}
+    },
     "V85X": {
       "summary": "全志 V85x 系列（A7，视频编码 1080p）——摄像头/DVR/手持便携类产品常用",
       "chips": [
@@ -43,7 +67,7 @@
         "V853",
         "V853S"
       ],
-      "chipsNote": "V85x 家族（V553 / V851 / V851S / V851S3 / V853 / V853S）在 MCP 里**统一归一到 V85X 平台**（入参写 V851S/V853S 等也会 resolve 成 V85X）：包键走 `v85x`（SPINOR）/ `v85xemmc`（EMMC），**芯片名（如 v851s）不是平台键** —— 拿去查包会查空（v0.27.87 收拢）。",
+      "chipsNote": "V85x 家族（V553 / V851 / V851S / V851S3 / V853 / V853S）在 MCP 里**统一归一到 V85X 平台**（入参写 V851S/V853S 等也会 resolve 成 V85X）：包键走 `v85x`（SPINOR）/ `v85xemmc`（EMMC），**芯片名（如 v851s）不是平台键**—— 拿去查包会查空（v0.27.87 收拢）。",
       "chipEntries": {
         "V553": {
           "kind": "主控 SoC（全志 V85x 系列）",
@@ -89,7 +113,7 @@
         }
       },
       "optional": [
-        "平台差异化说明（沛哥将补充：与 Z21/V853 等在屏幕方向、按键、TF 卡格式等方面的差异；有了就不用每次核查）"
+        "平台差异化说明（将补充：与 Z21/V853 等在屏幕方向、按键、TF 卡格式等方面的差异；有了就不用每次核查）"
       ],
       "differences": [],
       "models": {
@@ -131,7 +155,7 @@
             "三个按键的物理位置与丝印",
             "V85X 平台差异化说明（屏幕方向 rotateScreen / TF 卡格式等）"
           ],
-          "source": "沛哥 2026-09-12 口述",
+          "source": "2026-09-12 口述",
           "docRefs": [],
           "defaults": {
             "resolution": "480x800",
@@ -157,7 +181,7 @@
         "T113-S3"
       ],
       "optional": [
-        "平台差异化说明（沛哥将补充；没有也不影响开工）"
+        "平台差异化说明（将补充；没有也不影响开工）"
       ],
       "differences": [],
       "models": {
@@ -872,10 +896,10 @@
           "optional": [
             "同系列另一型号 SW10600070D_TC（7 寸高清电容屏带铁框）是否也入库"
           ],
-          "source": "SW10600070E_C 规格书 V1.0（2021-03-20，文档内写作 D_C）+ 平台字母 E=Z21（沛哥确认）",
+          "source": "SW10600070E_C 规格书 V1.0（2021-03-20，文档内写作 D_C）+ 平台字母 E=Z21（经需求方确认）",
           "naming": {
             "letter": "E",
-            "meaning": "Z21 平台（沛哥 2026-09-12 确认：D=Z20、E=Z21）"
+            "meaning": "Z21 平台（2026-09-12 确认：D=Z20、E=Z21）"
           },
           "defaults": {
             "resolution": "1024x600",
@@ -908,7 +932,7 @@
         "SSD202D"
       ],
       "optional": [
-        "平台差异化说明（沛哥将补充；没有也不影响开工）"
+        "平台差异化说明（将补充；没有也不影响开工）"
       ],
       "differences": [],
       "models": {
@@ -943,7 +967,7 @@
             },
             {
               "topic": "包格式与机型绑定（官方 wiki 未收录 release.ext4）",
-              "detail": "包 = 572 字节头部 + payload；头部 0x00 起魔术 \"ZKSWEV1.0-180127\"，0x1C = payload 字节数，0x35 起 = **机型 magic**（Z20 = Zkswe_SSD20X_SPINOR = 0xaa550404；Z21 = 0xaa550606；V85X = 0xaa550a0a；F133 = 0xaa550707）→ 包不能跨机型刷（库内有 sys_upgrade_type_no_match_error）。payload = **/res 镜像**：默认 squashfs（hsqs 头，小）；工程根 package.properties 写 release.ext4=true 时变 **ext4 镜像**（体积 1 MiB 对齐，例 2~3 MiB；出包时自动安装 make-ext4fs），且**产物文件名变为 extupdate.img** —— 这就是「U 盘 extupdate.img / TF 卡 update.img」包名差异的真正来源。Z20 参考工程 PublicTuyaSwitch 开着 release.ext4 → 本平台按 ext4 出包。"
+              "detail": "包 = 572 字节头部 + payload；头部 0x00 起魔术 \"ZKSWEV1.0-180127\"，0x1C = payload 字节数，0x35 起 = **机型 magic**（Z20 = Zkswe_SSD20X_SPINOR = 0xaa550404；Z21 = 0xaa550606；V85X = 0xaa550a0a；F133 = 0xaa550707）→ 包不能跨机型刷（库内有 sys_upgrade_type_no_match_error）。payload = **/res 镜像**：默认 squashfs（hsqs 头，小）；工程根 package.properties 写 release.ext4=true 时变 **ext4 镜像**（体积 1 MiB 对齐，例 2~3 MiB；出包时自动安装 make-ext4fs），且**产物文件名变为 extupdate.img**—— 这就是「U 盘 extupdate.img / TF 卡 update.img」包名差异的真正来源。Z20 参考工程 PublicTuyaSwitch 开着 release.ext4 → 本平台按 ext4 出包。"
             },
             {
               "topic": "数据面 ext4 分区与系统 res（危险链）",
@@ -1061,10 +1085,10 @@
             "resolution": "800x480",
             "orientation": "landscape"
           },
-          "screenNote": "按官方《产品规格型号说明》命名规则推导：SW+宽+高+尺寸+版本，SW80 480 070 D = 7 寸 800×480；型号字母 D = Z20 平台（沛哥确认）。同系列 SW80480070D-CK 规格书标 800×480 / 1024×600 可选",
+          "screenNote": "按官方《产品规格型号说明》命名规则推导：SW+宽+高+尺寸+版本，SW80 480 070 D = 7 寸 800×480；型号字母 D = Z20 平台（经需求方确认）。同系列 SW80480070D-CK 规格书标 800×480 / 1024×600 可选",
           "naming": {
             "letter": "D",
-            "meaning": "Z20 平台（沛哥 2026-09-12 确认：D=Z20、E=Z21）"
+            "meaning": "Z20 平台（2026-09-12 确认：D=Z20、E=Z21）"
           },
           "specs": {},
           "differences": [],
@@ -1073,7 +1097,7 @@
             "型号后缀 _C 的确切含义（电容触摸？版本？）",
             "与 SW80480070D-CK 系列是否同一产品"
           ],
-          "source": "命名规则（官方《产品规格型号说明》）+ 平台字母 D=Z20（沛哥确认）+ hardwarespec/SW80480070D-CK系列型.pdf",
+          "source": "命名规则（官方《产品规格型号说明》）+ 平台字母 D=Z20（经需求方确认）+ hardwarespec/SW80480070D-CK系列型.pdf",
           "defaults": {
             "resolution": "800x480",
             "orientation": "landscape"

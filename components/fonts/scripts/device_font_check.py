@@ -3,11 +3,11 @@
 """
 device_font_check.py —— 设备字体自检（判定是否有中文字库，必要时投递思源黑体）
 
-思路（沛哥 2026-09-13 定；v0.27.87 起主判据升级为 **cmap 覆盖率硬判据**）：
+思路（2026-09-13 定；v0.27.87 起主判据升级为 **cmap 覆盖率硬判据**）：
   ① `getprop` 拿平台信息（型号/系统/模组）；
   ② 读设备上的 `/etc/font`、`/res/font`（以及 `/system/font`）里字体文件大小 → 挑最大的那个；
-  ③ **硬判据（钟工 2026-09-17 拍板）**：把最大的字体**拉回 PC**，用 `fontTools.ttLib` 读它的
-     **cmap**，以 **GB2312 一级 3755 字** 为基准算覆盖率 `cmapCoverageGB2312L1`：
+  ③ **硬判据（2026-09-17 拍板）**：把最大的字体**拉回 PC**，用 `fontTools.ttLib` 读它的
+     **cmap**，以 **GB2312 一级 3755 字**为基准算覆盖率 `cmapCoverageGB2312L1`：
        ≥ 90% → `ok`（不投递）／ 50–90% → `low`（投递 + 说明覆盖率）／ < 50% → `missing`（投递）
      —— 比体积判据准：体积像中文的字体也可能 cmap 里只有拉丁（反过来也一样）；
   ④ **兜底（绝不静默）**：字体体积超过 `PROBE_MAX_BYTES`（12 MB）或 `fontTools` 不可用
@@ -54,7 +54,7 @@ FONT_DIRS = ['/etc/font', '/res/font', '/system/font', '/usr/share/fonts']
 # 判定阈值（KB）：小于这个体积的字体，基本只有拉丁字母 —— **只作兜底判据**（v0.27.87 起）
 CJK_SIZE_MIN_KB = 200
 
-# ---------------- 硬判据：cmap 覆盖率（v0.27.87，钟工 2026-09-17 拍板）----------------
+# ---------------- 硬判据：cmap 覆盖率（v0.27.87，2026-09-17 拍板）----------------
 # 基准 = GB2312 一级汉字 3755 个（0xB0A1–0xD7FE，含 5 个未定义码位被 codec 剔除）
 CMAP_TOTAL_CHARS = 3755
 CMAP_OK_MIN_PCT = 90.0        # ≥ 90% → ok（设备中文字库可用，不投递）
@@ -173,7 +173,7 @@ def collect(adb, serial, use_busybox):
 def gb2312_level1():
     """GB2312 一级汉字 3755 字（0xB0A1–0xD7FE）。
 
-    不依赖外部数据文件：用标准库 `gb2312` codec 逐码位解码，解不出的（5 个未定义码位）跳过
+不依赖外部数据文件：用标准库 `gb2312` codec 逐码位解码，解不出的（5 个未定义码位）跳过
     → 结果恰好 3755 个。这是覆盖率判据的**基准集合**，与是否装有中文码表无关。
     """
     if 'L1' not in _CACHE:
@@ -202,7 +202,7 @@ def font_cmap_coverage(path):
     """读字体 cmap → GB2312 一级覆盖率。返回 (pct, covered, total, error)。
 
     `.ttc` 取第 0 号字体（设备上多为单字体 ttc）；只统计 Unicode cmap 子表。
-    解析失败 / 一个 Unicode cmap 子表都没读到 → 回 (None, 0, 3755, 原因)，由调用方退回体积判据。
+解析失败 / 一个 Unicode cmap 子表都没读到 → 回 (None, 0, 3755, 原因)，由调用方退回体积判据。
     """
     chars = gb2312_level1()
     bad_tables = []
@@ -249,8 +249,8 @@ def judge_cmap(pct):
 def pre_pull_block(size_bytes):
     """拉取前的**本地闸门**（不碰设备）：① 体积超限 ② fontTools 不可用。
 
-    返回原因字符串（'' = 可以拉）。判定规则的唯一来源就在这里 —— 调用方（font_tools 的
-    缓存/拉取接线、本模块 CLI）不再各自写一遍阈值与文案。
+返回原因字符串（'' = 可以拉）。判定规则的唯一来源就在这里 —— 调用方（font_tools 的
+缓存/拉取接线、本模块 CLI）不再各自写一遍阈值与文案。
     """
     size = int(size_bytes or 0)
     if size > PROBE_MAX_BYTES:
@@ -265,7 +265,7 @@ def pre_pull_block(size_bytes):
 def probe_font(path, size_bytes=None):
     """**单个本地字体**（一般是刚从设备拉回来的）→ 硬判据结论。
 
-    返回 dict：source='cmap'（含 coveragePct/coveredChars/totalChars）或 source='size'
+返回 dict：source='cmap'（含 coveragePct/coveredChars/totalChars）或 source='size'
     （含 reason：超限 / fontTools 不可用 / 解析失败），verdict 在 source='size' 时为 None
     （由调用方保留体积判据的结论，并**必须**把 reason 写进 warnings）。
     """
@@ -325,7 +325,7 @@ def probe_device_font(adb, serial, font):
 
     `font` = collect() 给的 {'dir','name','sizeBytes',...}。返回 probe_font 的字段 + ：
       localBytes / md5 / pulled（有没有真拉）/ reason（退回体积判据的原因，写进 warnings）。
-    超限（> PROBE_MAX_BYTES）时**不拉取**（先看体积再看拉取，别把 12MB+ 拖回来）。
+超限（> PROBE_MAX_BYTES）时**不拉取**（先看体积再看拉取，别把 12MB+ 拖回来）。
     """
     out = {'pulled': False, 'localBytes': 0, 'md5': '', 'localPath': '', 'reason': ''}
     size = int(font.get('sizeBytes') or 0)
@@ -356,7 +356,7 @@ def probe_device_font(adb, serial, font):
 
 
 def judge(info):
-    """按"体积"判定是否带中文字库（沛哥口径：几十K/100多K 大概率只有英文）"""
+    """按"体积"判定是否带中文字库（经需求方口径：几十K/100多K 大概率只有英文）"""
     fonts = sorted(info['fonts'], key=lambda f: -f['sizeBytes'])
     biggest = fonts[0] if fonts else None
     biggest_kb = (biggest['sizeBytes'] / 1024.0) if biggest else 0.0
@@ -404,7 +404,7 @@ def apply_to_project(project, tier, font_name, dry_run=False):
         with open(prefs, 'r', encoding='utf-8') as f:
             text = f.read()
         # ★ v0.27.86 修：兼容 prefs 里转义（"font"\:"x"）与非转义（"font":"x"）两种写法 ——
-        #   原正则只认未转义，而真 prefs 是转义，导致「改 prefs」实际没改成
+        #原正则只认未转义，而真 prefs 是转义，导致「改 prefs」实际没改成
         new = re.sub(r'"font"\s*\\?\s*:\s*"[^"]*"', '"font"\\:"/res/font/%s"' % font_name,
                      text)
         if new == text and '"font"' not in text:

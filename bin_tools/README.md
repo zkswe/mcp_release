@@ -1,6 +1,6 @@
 # bin_tools — FlyThings 通用预编译工具（电脑端编译，MCP 独立存放）
 
-> 架构（沛哥 2026-08-31 确认）：通用工具（触摸注入 ui_test、将来 busybox 等）在**电脑端预编译成各平台 ELF**，
+> 架构（2026-08-31 确认）：通用工具（触摸注入 ui_test、将来 busybox 等）在**电脑端预编译成各平台 ELF**，
 > 放本目录 `{平台}/工具名`，一次编译处处复用。MCP 工具生成测试项目时只产出**数据文件**（脚本/参数），
 > 不再现场编译——tools 不膨胀、生成秒级。
 > ⚠️ 本目录只保留**可执行 ELF + 调用方法**，不存放 C 源码（源码由 FlyThings 工具链维护）。
@@ -9,7 +9,7 @@
 
 | 工具 | 用途 | 平台 |
 |------|------|------|
-| **`touch`** ⭐ | **统一触摸注入（推荐）**：自动扫描触摸节点 + 自动判协议（单点 / MT-A / MT-B），**部署命令不带 `/dev/input/eventN`**；命令 tap/swipe/long/monkey/run/record/play + list/info。2026-09-12 新增，源码 `tools/touch_inject/` | z21 / z20 / t113 / f133 / f135 / v85x |
+| **`touch`**⭐ | **统一触摸注入（推荐）**：自动扫描触摸节点 + 自动判协议（单点 / MT-A / MT-B），**部署命令不带 `/dev/input/eventN`**；命令 tap/swipe/long/monkey/run/record/play + list/info。2026-09-12 新增，源码 `tools/touch_inject/` | z21 / z20 / t113 / f133 / f135 / v85x |
 | `ui_test` | 触摸注入/自动化测试（tap/swipe/long/monkey/run 脚本，**单点协议**适配老屏）——**兼容保留**，需人工给节点 | z21 / z20 / t113 / f133 / v85x |
 | `busybox` | 设备调试工具箱（网络/系统/Shell 全开，2026-09-08 新增） | z21 / z20 / t113 / f133 / f135 / v85x |
 

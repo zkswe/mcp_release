@@ -34,12 +34,12 @@ evidence: []
 
 | # | 扩展点 | 一句话 | 成熟度 | 细节篇 |
 |---|---|---|---|---|
-| E1 | **自定义控件（组合式）** | 用基础控件拼出新控件 | ✅ 有成品可抄（库内 8 个） | `knowledge/devflow/custom-widget.md` §2 路线 A |
-| E2 | **自定义控件（自绘式 onDraw）** | 重写绘制，基础控件表达不了的 | ✅ 有成品可抄（FrameImageView） | 同上 §2 路线 B + §6 |
-| E3 | **canvas / GameView 画布** | 逐帧自绘一整个画面 | ✅ 工程内大量使用（⚠️ 别把工程侧约束当画布限制） | `knowledge/devflow/custom-render-paths.md` ① + `knowledge/uicontrols/custom-view-refresh.md` |
-| E4 | **disp 独立硬件图层** | 视频/摄像头与 UI 叠加 | ✅ 已验证（含必做纪律） | `knowledge/v85x/display-layer-debug.md` + `knowledge/devflow/custom-render-paths.md` ③ |
-| E5 | **系统窗口 / 全局弹框** | 状态栏/导航栏/屏保/IME/全局弹层 | ✅ 已收录（字段级） | `knowledge/uicontrols/system-windows.md`、`knowledge/uicontrols/global-popup-window.md` |
-| E6 | **进程外渲染** | 另一个进程渲一帧、交给框架显示 | ⚠️ **未验证**（无官方接入口） | `knowledge/devflow/custom-render-paths.md` ④ |
+| E1 | **自定义控件（组合式）**| 用基础控件拼出新控件 | ✅ 有成品可抄（库内 8 个） | `knowledge/devflow/custom-widget.md` §2 路线 A |
+| E2 | **自定义控件（自绘式 onDraw）**| 重写绘制，基础控件表达不了的 | ✅ 有成品可抄（FrameImageView） | 同上 §2 路线 B + §6 |
+| E3 | **canvas / GameView 画布**| 逐帧自绘一整个画面 | ✅ 工程内大量使用（⚠️ 别把工程侧约束当画布限制） | `knowledge/devflow/custom-render-paths.md` ① + `knowledge/uicontrols/custom-view-refresh.md` |
+| E4 | **disp 独立硬件图层**| 视频/摄像头与 UI 叠加 | ✅ 已验证（含必做纪律） | `knowledge/v85x/display-layer-debug.md` + `knowledge/devflow/custom-render-paths.md` ③ |
+| E5 | **系统窗口 / 全局弹框**| 状态栏/导航栏/屏保/IME/全局弹层 | ✅ 已收录（字段级） | `knowledge/uicontrols/system-windows.md`、`knowledge/uicontrols/global-popup-window.md` |
+| E6 | **进程外渲染**| 另一个进程渲一帧、交给框架显示 | ⚠️ **未验证**（无官方接入口） | `knowledge/devflow/custom-render-paths.md` ④ |
 
 ---
 
@@ -47,53 +47,53 @@ evidence: []
 
 | 项 | 内容 |
 |---|---|
-| **能做什么** | 任意新控件：继承 `ZKBase`（或库内 `ui::BaseView`）→ 空 `create(Json::Value())` 纯代码实例化 → 组合基础控件 或 重写 `onDraw` 自绘 → `build(Attr)` 配置 + `setXxxAdapter/setXxxListener` 回调驱动。**可多指触摸**（`src/event/multi_touch.*`）、可异步解码（`MessageQueueThread`）、可资源驱动（文件名编码布局） |
-| **明确不能做什么** | ① **不进 ftu / IDE**：IDE 里看不到、**不能可视化编辑**、属性不能从 json 配（纯代码控件无 ftu 属性通道）；② **不能 static 跨页面复用**（页面 `onUI_quit` 必须 delete，重进要 new）；③ 控件内**不许写业务**（数据/事件一律函数指针出口） |
-| **生命周期** | 页面 `onUI_init` 里 `new Xxx(父容器Ptr)`（构造自动铺满父容器）→ `onUI_quit` `delete`；**严格配对** |
-| **刷新口径（★易错）** | 自绘/帧渲染类每帧刷新用 `ctrl->setInvalid(!ctrl->isInvalid())`；**禁用 `invalidate(&getAbsolutePosition())`**（会被按控件本地坐标裁成"右下角一块"，屏上只刷一块）→ `knowledge/uicontrols/custom-view-refresh.md` |
-| **性能档位** | 组合式 ≈ 基础控件开销（拼接越多越贵）；自绘式取决于**重绘面积** —— **具体帧耗实测缺** |
-| **最小示例** | 库内 8 个成品 + 各自独立测试 Activity：AlbumListView（滚动/惯性/回弹/LRU 缓存）、ImageBoxView（双指缩放）、FrameImageView（帧播放）、SliceProgressBar（切片进度）、… |
-| **支持平台** | F136 / F133 实证（easyui ^2.3.0）；**V85X / Z20 待核** |
+| **能做什么**| 任意新控件：继承 `ZKBase`（或库内 `ui::BaseView`）→ 空 `create(Json::Value())` 纯代码实例化 → 组合基础控件 或 重写 `onDraw` 自绘 → `build(Attr)` 配置 + `setXxxAdapter/setXxxListener` 回调驱动。**可多指触摸**（`src/event/multi_touch.*`）、可异步解码（`MessageQueueThread`）、可资源驱动（文件名编码布局） |
+| **明确不能做什么**| ① **不进 ftu / IDE**：IDE 里看不到、**不能可视化编辑**、属性不能从 json 配（纯代码控件无 ftu 属性通道）；② **不能 static 跨页面复用**（页面 `onUI_quit` 必须 delete，重进要 new）；③ 控件内**不许写业务**（数据/事件一律函数指针出口） |
+| **生命周期**| 页面 `onUI_init` 里 `new Xxx(父容器Ptr)`（构造自动铺满父容器）→ `onUI_quit` `delete`；**严格配对**|
+| **刷新口径（★易错）**| 自绘/帧渲染类每帧刷新用 `ctrl->setInvalid(!ctrl->isInvalid())`；**禁用 `invalidate(&getAbsolutePosition())`**（会被按控件本地坐标裁成"右下角一块"，屏上只刷一块）→ `knowledge/uicontrols/custom-view-refresh.md` |
+| **性能档位**| 组合式 ≈ 基础控件开销（拼接越多越贵）；自绘式取决于**重绘面积**—— **具体帧耗实测缺**|
+| **最小示例**| 库内 8 个成品 + 各自独立测试 Activity：AlbumListView（滚动/惯性/回弹/LRU 缓存）、ImageBoxView（双指缩放）、FrameImageView（帧播放）、SliceProgressBar（切片进度）、… |
+| **支持平台**| F136 / F133 实证（easyui ^2.3.0）；**V85X / Z20 待核**|
 
 ## E3 · canvas / GameView 画布
 
 | 项 | 内容 |
 |---|---|
-| **能做什么** | 逐帧自绘整个画面：位图操作（`createBmp` 内存画布 / `bitmap_t` 直接改 data）、脏区（`Region`）、软渲染游戏/动画/仪表 |
-| **明确不能做什么** | ① 动画计时**必须用绝对时间基准（单调时钟 / 时间戳差值）**，相对累加会漂；② **画布必须盖满面板**，否则底部露出上一款应用的残留帧（伪闪烁）。<br>⚠️ **不要把"工程侧约束"当成画布限制**（2026-09-30 更正）：<br>· **FlyThings 画布对 `scale` 没有限制**；"档位要编译期常量"的真出处是**我方自研字库**（`PgFontData.h`，`genfont.py` 预烘，`MAX_N=5`）——绘制 1:1 原生档位字形，超档位 `clampN()` **夹到上限**、缺字**跨档 1:1 回退**，**不做放大/插值**（所以不会"拉伸"）；<br>· `448` 是**某工程 UI 的内容区宽**（480−2×16，布局值），**不是画布宽上限** |
-| **生命周期/刷新** | 与 E2 同口径（`setInvalid(!isInvalid())`）；画布几何零位移改动优先 |
-| **性能档位** | 与帧耗直接挂钩的是**重绘面积**（全刷 vs 脏区）；**具体帧耗实测缺**。<br>★ **分层看**：**绘制进画布** = 应用实现（本工程 `src/core/PgCanvas.*`，软件）；**画布 → 屏幕** = 框架 + 芯片**硬件合成**（内存拷贝/blit、透明 α 混合、90° 旋转）——口径来源 沛哥 2026-09-30；我方代码实证 `src/platform/PgDisplay.h` 头注释「控件→屏幕走硬件加速」+ `button+picTab` 的 α 路径。⚠️ **芯片侧通道名（MI_DISP / G2D 等）未取证** |
-| **最小示例** | `knowledge/devflow/custom-render-paths.md` ①；本工程 8 款画布游戏 + 4 款节奏游戏（**尚未入库**） |
-| **支持平台** | V85X 实证（本工程）；其余待核 |
+| **能做什么**| 逐帧自绘整个画面：位图操作（`createBmp` 内存画布 / `bitmap_t` 直接改 data）、脏区（`Region`）、软渲染游戏/动画/仪表 |
+| **明确不能做什么**| ① 动画计时**必须用绝对时间基准（单调时钟 / 时间戳差值）**，相对累加会漂；② **画布必须盖满面板**，否则底部露出上一款应用的残留帧（伪闪烁）。<br>⚠️ **不要把"工程侧约束"当成画布限制**（2026-09-30 更正）：<br>· **FlyThings 画布对 `scale` 没有限制**；"档位要编译期常量"的真出处是**我方自研字库**（`PgFontData.h`，`genfont.py` 预烘，`MAX_N=5`）——绘制 1:1 原生档位字形，超档位 `clampN()` **夹到上限**、缺字**跨档 1:1 回退**，**不做放大/插值**（所以不会"拉伸"）；<br>· `448` 是**某工程 UI 的内容区宽**（480−2×16，布局值），**不是画布宽上限**|
+| **生命周期/刷新**| 与 E2 同口径（`setInvalid(!isInvalid())`）；画布几何零位移改动优先 |
+| **性能档位**| 与帧耗直接挂钩的是**重绘面积**（全刷 vs 脏区）；**具体帧耗实测缺**。<br>★ **分层看**：**绘制进画布**= 应用实现（本工程 `src/core/PgCanvas.*`，软件）；**画布 → 屏幕**= 框架 + 芯片**硬件合成**（内存拷贝/blit、透明 α 混合、90° 旋转）——口径来源 2026-09-30；我方代码实证 `src/platform/PgDisplay.h` 头注释「控件→屏幕走硬件加速」+ `button+picTab` 的 α 路径。⚠️ **芯片侧通道名（MI_DISP / G2D 等）未取证**|
+| **最小示例**| `knowledge/devflow/custom-render-paths.md` ①；本工程 8 款画布游戏 + 4 款节奏游戏（**尚未入库**） |
+| **支持平台**| V85X 实证（本工程）；其余待核 |
 
 ## E4 · disp 独立硬件图层
 
 | 项 | 内容 |
 |---|---|
-| **能做什么** | 视频/摄像头画面走独立硬件图层，与 UI 层叠加（UI 与视频互不拖累） |
-| **明确不能做什么** | ① **不做 `releaseLayer` 会黑屏**（解码返回后必做）；② **fb 抓图看不到这一层** ⇒ 验收必须用截图工具的 **video layer 通道**（`device_screenshot(layer="video")`）；③ **视频图层尺寸不能超过屏幕区域**（全志平台唯一相关尺寸约束，定性口径） |
-| **生命周期** | 起播申请层 → 解码返回释放层；异常退出也要保证释放 |
-| **性能档位** | 硬件通路（与 UI 绘制开销无关）。★ **硬件合成不是图层专属**：canvas 内存→屏幕同样走硬件合成；图层多的只是"与 UI 并行不互拖" |
-| **最小示例** | `knowledge/v85x/display-layer-debug.md` |
-| **支持平台** | **V85X 专属**（disp 分层机制） |
+| **能做什么**| 视频/摄像头画面走独立硬件图层，与 UI 层叠加（UI 与视频互不拖累） |
+| **明确不能做什么**| ① **不做 `releaseLayer` 会黑屏**（解码返回后必做）；② **fb 抓图看不到这一层**⇒ 验收必须用截图工具的 **video layer 通道**（`device_screenshot(layer="video")`）；③ **视频图层尺寸不能超过屏幕区域**（全志平台唯一相关尺寸约束，定性口径） |
+| **生命周期**| 起播申请层 → 解码返回释放层；异常退出也要保证释放 |
+| **性能档位**| 硬件通路（与 UI 绘制开销无关）。★ **硬件合成不是图层专属**：canvas 内存→屏幕同样走硬件合成；图层多的只是"与 UI 并行不互拖" |
+| **最小示例**| `knowledge/v85x/display-layer-debug.md` |
+| **支持平台**| **V85X 专属**（disp 分层机制） |
 
 ## E5 · 系统窗口 / 全局弹框
 
 | 项 | 内容 |
 |---|---|
-| **能做什么** | 状态栏、导航栏、屏保、IME、全局弹层——均为**字段级已收录**的标准扩展位 |
-| **明确不能做什么** | ① 导航栏是 **480×52 常显**，内容要从 y≥52 放；**被它盖住不是 bug**；② 全局粘性标志（标题/视频页/屏保开关）跨 Activity 自愈，**用完必须复位** |
-| **最小示例** | `knowledge/uicontrols/system-windows.md` / `knowledge/uicontrols/global-popup-window.md`；本工程状态栏/屏保/音量 OSD 均有实现 |
-| **支持平台** | V85X / Z20 均验证过 |
+| **能做什么**| 状态栏、导航栏、屏保、IME、全局弹层——均为**字段级已收录**的标准扩展位 |
+| **明确不能做什么**| ① 导航栏是 **480×52 常显**，内容要从 y≥52 放；**被它盖住不是 bug**；② 全局粘性标志（标题/视频页/屏保开关）跨 Activity 自愈，**用完必须复位**|
+| **最小示例**| `knowledge/uicontrols/system-windows.md` / `knowledge/uicontrols/global-popup-window.md`；本工程状态栏/屏保/音量 OSD 均有实现 |
+| **支持平台**| V85X / Z20 均验证过 |
 
 ## E6 · 进程外渲染（⚠️ 未验证）
 
 | 项 | 内容 |
 |---|---|
-| **能做什么（理论）** | 另一个进程渲染 → 共享内存/文件传帧 → 主进程显示；得到崩溃隔离与"用外部渲染器（LVGL/cairo）干重活"的能力 |
-| **明确不能做什么** | **当前没有官方"外部渲染器占用图层"接入口** ⇒ 只能走"离屏成图再交框架"（有拷贝开销） |
-| **状态** | **未验证**：需先做 3 天原型（渲染进程 + 主进程），判据 = 渲染进程被 kill 后 UI 不受影响 |
-| **与"借 LVGL 做重活"的关系** | 若厂家开放该接入口，"FlyThings 管 UI + 外部渲染器管重活"才是官方两条腿；否则属绕路方案 |
+| **能做什么（理论）**| 另一个进程渲染 → 共享内存/文件传帧 → 主进程显示；得到崩溃隔离与"用外部渲染器（LVGL/cairo）干重活"的能力 |
+| **明确不能做什么**| **当前没有官方"外部渲染器占用图层"接入口**⇒ 只能走"离屏成图再交框架"（有拷贝开销） |
+| **状态**| **未验证**：需先做 3 天原型（渲染进程 + 主进程），判据 = 渲染进程被 kill 后 UI 不受影响 |
+| **与"借 LVGL 做重活"的关系**| 若厂家开放该接入口，"FlyThings 管 UI + 外部渲染器管重活"才是官方两条腿；否则属绕路方案 |
 
 ---
 

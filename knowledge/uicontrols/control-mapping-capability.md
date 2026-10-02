@@ -20,7 +20,7 @@ evidence: []
 > lv_tabview / swiper / CALENDAR / CDateTimeCtrl / 映射表 / control map / mcp_control_map.json /
 > 别的框架的控件对应我们哪个控件 / 有对应控件就直接用 / 命中不到怎么办 / 缺口五级。
 >
-> 建立：2026-09-16（v0.27.73-open，钟工口径：「有对应控件的走映射能力，不写散文说明」）｜
+> 建立：2026-09-16（v0.27.73-open，需求方口径：「有对应控件的走映射能力，不写散文说明」）｜
 > **机读数据**：仓库根目录 `mcp_control_map.json`（六个源框架 213 条）｜
 > **散文权威表**：`components/ui_v1/control-map.md`（级别判定与换算）＋ `components/ui_v1/gap-list.md`（缺口 G-01~G-36）
 
@@ -40,7 +40,7 @@ evidence: []
 
 ```
 flythings_map_control(query, source='')
-  query  源框架控件名或别名（忽略大小写与下划线/连字符）：lv_slider / RecyclerView /
+  query源框架控件名或别名（忽略大小写与下划线/连字符）：lv_slider / RecyclerView /
          QCalendarWidget / lv_tabview / swiper / CDateTimeCtrl / CALENDAR / lv_chart …
   source 可选：只在该框架内找 —— lvgl / qt / android / miniprogram / emwin / mfc
 ```
@@ -89,7 +89,7 @@ flythings_map_control(query, source='')
 2. **确认平台真缺 → 按「缺口处置五级」走**（`components/ui_v1/gap-list.md`）：
    - **L1 等价 / L2 组合**：**禁止建包**，用自带控件 + logic 侧聚合（可把接线放 `_mapping/`）。
    - **L3 自绘**：`ZKPainter` 自绘（文字一律 `textview` 叠加），**必须先在 `components/ui_v1/gap-list.md` 登记缺口编号**，
-     再落到 `components/ui_v1/<源控件名>/`（已实现的先看 `Chart/`）。
+再落到 `components/ui_v1/<源控件名>/`（已实现的先看 `Chart/`）。
    - **L4 降级**：保留语义、写明降级点后实现；真机证据里标注「降级实现」。
    - **L5 不支持**：**明说不支持**，给替代建议或书面理由，不假装能转。
 3. **别做的事**：不要拿别家框架的字段/API 套用到我们控件上（`android:hint`→`hintText`、
@@ -101,7 +101,7 @@ flythings_map_control(query, source='')
 | | 映射能力（本文件） | 自定义控件包（`components/ui_v1/<源控件名>/`） | 映射参考（`components/ui_v1/_mapping/`） |
 |---|---|---|---|
 | 放什么 | 源控件 → 我们控件的机读索引 + 可直接粘的片段 | **平台真缺的能力**的实现（四件套 + `example/` + 真机证据） | **有平台控件**但接线细节值得留档（手感参数/双向同步/验收判据） |
-| 典型 | `lv_slider`→`seekbar`（L1）、`lv_tabview`→`pagewindow`（L1）、**`picker-view`/`lv_roller`/`TimePicker`（含时钟盘）/`NumberPicker`→`listview` 组合（L2）** | `Chart/`（L3 自绘）、`Calendar/`（L4）、`RadButton/`（L3）、计划 `RichText/` | `_mapping/TabView/`（基于 `pagewindow`） |
+| 典型 | `lv_slider`→`seekbar`（L1）、`lv_tabview`→`pagewindow`（L1）、**`picker-view`/`lv_roller`/`TimePicker`（含时钟盘）/`NumberPicker`→`listview` 组合（L2）**| `Chart/`（L3 自绘）、`Calendar/`（L4）、`RadButton/`（L3）、计划 `RichText/` | `_mapping/TabView/`（基于 `pagewindow`） |
 | 不许 | 不许给「已有控件」再包一层当自定义控件 | 不许在无 L1/L2 判定前建包；不许文档先行（`example/` 必须真编译过） | 不许把「真缺能力」的实现塞这里（该进 `<源控件名>/`） |
 
 看板：`components/ui_v1/components.md`（三段状态表：**已实现自定义控件 / 映射项 / 计划中的自定义控件**）。

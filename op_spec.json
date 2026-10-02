@@ -1,0 +1,883 @@
+{
+  "schemaVersion": "1.0",
+  "updated": "2026-10-02",
+  "authority": "FlyThings MCP 的 **op 契约唯一机器可读真源**。每个 op 的描述（summary/触发别名/参数说明/返回要点/铁律/检索词/知识归属/风险/分类/阶段）以本表为准。派生产物：① kb_tools.py 里该 op 的 docstring（= MCP 工具 description，scripts/gen_op_docs.py 生成）② tools_manifest.json 的 brief/args/risk/category/stage ③ gate_catalog.json 的 brief/args/stage ④ op_seealso.json 的 seeAlso。**改契约 = 改本文件，禁止在消费方另抄一份**（与 ui_schema.json 同一条纪律：注册表拥有契约，knowledge/*.md 只留原理/流程/行为）。压缩 token 预算的正确动作是**裁本表的结构化字段**，不是打磨散文。",
+  "budget": {
+    "perOpMax": 900,
+    "totalMax": 12000,
+    "note": "口径 = **渲染产物**（AI 实际看到的工具 description）字符数，由 gen_op_docs.py 计算并进发布闸门。"
+  },
+  "renderOrder": [
+    "summary",
+    "triggers",
+    "flow",
+    "notes",
+    "params",
+    "returns",
+    "hardRules",
+    "rules",
+    "keywords"
+  ],
+  "renderSpec": {
+    "summary": "首行，唯一必填；同时是 tools_manifest / gate_catalog 的 brief 来源（取前 90 字），改它会连带派生文件失配",
+    "triggers": "渲染成「触发：a / b / c」——用户口语触发词，决定 AI 选不选这个工具",
+    "flow": "一段式流程/契约要点（可省）",
+    "notes": "**迁移兜底**：尚未归类进结构化字段的散文。目标是把 notes 拆空——拆进 flow/params/returns/rules/keywords，或（细节已被 knowledge 文档覆盖时）直接删。notes 非空 = 该 op 的结构化还没做完。",
+    "params": "只登记**需要额外说明**的参数；参数的存在与顺序一律以函数签名为准，本表不复制签名（渲染成紧凑单行）",
+    "returns": "返回体/产物的关键字段与判据（可省）",
+    "hardRules": "⚠️⚠️ 级铁律（违反会真机挂死/数据损坏/静默丢产物），逐条一行",
+    "rules": "⚠️ 级铁律与踩坑要点，逐条一行",
+    "keywords": "检索词，渲染成「检索词：a / b / c」",
+    "docRef": "长文细节所在 knowledge 文档。**不进渲染**（不在 renderOrder 里）：知识归属已由返回体的 seeAlso 字段注入（kb_tools._seealso_for ← op_seealso.json），写进描述就是跨层重复、白占 12000 字符的常驻预算。本字段仍供 seeAlso 派生与文档链消费。"
+  },
+  "migration": {
+    "state": "完成（45/45 已登记）",
+    "note": "全部 op 已进注册表，门禁 gen_op_docs --check --strict 生效：漏登记 / docstring 漂移 / 渲染超预算都算失败。下一步（内容瘦身）是**拆 notes**：把仍是散文的段落拆进 flow/params/returns/rules/keywords，或（细节已被 knowledge 文档覆盖时）直接删——这才是把总预算压到 ≤9600 的动作，且每次裁剪都是注册表里的一处 JSON diff。",
+    "done": [
+      "flythings_add_package",
+      "flythings_attach_cli_tools",
+      "flythings_bugreport",
+      "flythings_build_ui_flow",
+      "flythings_check_project_deps",
+      "flythings_create_bin_project",
+      "flythings_create_project",
+      "flythings_device_screenshot",
+      "flythings_edit_ftu",
+      "flythings_fui_pack",
+      "flythings_fui_unpack",
+      "flythings_gen_ui_test",
+      "flythings_generate_ui_assets",
+      "flythings_get_package_api",
+      "flythings_get_project_spec",
+      "flythings_get_version",
+      "flythings_hardware_info",
+      "flythings_html_to_json",
+      "flythings_i18n_add_language",
+      "flythings_i18n_export",
+      "flythings_i18n_import",
+      "flythings_i18n_refactor",
+      "flythings_i18n_scan",
+      "flythings_i18n_to_json",
+      "flythings_knowledge_capture",
+      "flythings_knowledge_export",
+      "flythings_knowledge_gaps",
+      "flythings_knowledge_search",
+      "flythings_layout_audit",
+      "flythings_list_packages",
+      "flythings_manifest",
+      "flythings_map_control",
+      "flythings_pack_upgrade",
+      "flythings_package_search",
+      "flythings_query_package",
+      "flythings_read_json",
+      "flythings_resolve_dependencies",
+      "flythings_selfcheck",
+      "flythings_test_run",
+      "flythings_translate_ui",
+      "flythings_ui_preview",
+      "flythings_ui_schema",
+      "flythings_ui_visual",
+      "flythings_validate_project",
+      "flythings_verify_assets"
+    ]
+  },
+  "ops": {
+    "flythings_create_project": {
+      "summary": "从 HelloWord 模板创建 FlyThings 项目，自动替换工程名/分辨率/平台。",
+      "risk": "write",
+      "category": "project",
+      "stage": "build",
+      "params": [
+        {
+          "name": "platform",
+          "desc": "必填，必须由用户明确提供；未指定先问，禁猜禁用默认值"
+        },
+        {
+          "name": "resolution",
+          "desc": "同上（如 800x480）"
+        }
+      ],
+      "hardRules": [
+        "src/activity/ 由 IDE 按 ftu 生成，禁止创建/修改/覆盖；业务只写 src/logic/*.cc"
+      ],
+      "rules": [
+        "页数：按设计稿屏数确认（多屏 = N 屏全落地）",
+        "新需求请先出设计稿/原型并确认（见 prototype-flow）再建工程"
+      ],
+      "keywords": [
+        "创建工程",
+        "建工程",
+        "HelloWord",
+        "分辨率"
+      ],
+      "docRef": "knowledge/devflow/prototype-flow.md",
+      "seeAlso": [
+        "knowledge/devflow/prototype-flow.md",
+        "knowledge/devflow/page-architecture-spec.md",
+        "knowledge/devflow/activity-code-skeleton.md"
+      ]
+    },
+    "flythings_pack_upgrade": {
+      "summary": "固化升级包（update.img）——交付/发布/量产走本条；与「调试推送到设备」不同（那是 build_ui_flow，掉电即失）。",
+      "risk": "write",
+      "category": "build",
+      "stage": "build",
+      "triggers": [
+        "打包升级包",
+        "出升级包",
+        "固化",
+        "刷进设备",
+        "出货版本",
+        "TF卡升级包"
+      ],
+      "flow": "fun install →（with_build）fun build → fun pack；产物 `.fsc/<平台>/update.img`。",
+      "params": [
+        {
+          "name": "out_path",
+          "desc": "产物路径 → fun pack -o"
+        },
+        {
+          "name": "ab",
+          "desc": "True → --ab OTA"
+        },
+        {
+          "name": "dry_run",
+          "desc": "True 只回命令计划"
+        }
+      ],
+      "rules": [
+        "`sign error 0xc0000135`=缺 32 位 VC++",
+        "`package not found in local`=先 fun install"
+      ],
+      "keywords": [
+        "固化",
+        "升级包",
+        "update.img",
+        "刷机"
+      ],
+      "docRef": "knowledge/devflow/upgrade-pack-image.md",
+      "seeAlso": [
+        "knowledge/devflow/upgrade-pack-image.md",
+        "knowledge/hardware/z20-86panel-upgrade.md"
+      ]
+    },
+    "flythings_device_screenshot": {
+      "summary": "从**设备真机**抓当前屏幕 → PNG / JPG / BMP（给视觉模型看，或给 ui_visual(action=\"diff\") 验收）。",
+      "risk": "device",
+      "category": "device",
+      "stage": "build",
+      "flow": "三段式验收第二步。",
+      "params": [
+        {
+          "name": "scale",
+          "desc": "0.5 省 token"
+        },
+        {
+          "name": "fmt",
+          "desc": "'jpg' 省 token"
+        },
+        {
+          "name": "rotate",
+          "desc": "'auto' 转正"
+        },
+        {
+          "name": "crop",
+          "desc": "'auto' 只要应用画面"
+        },
+        {
+          "name": "advanced",
+          "desc": "JSON：fb/pixel/flip/layer/vdec_chn 等进阶参数"
+        }
+      ],
+      "rules": [
+        "layer=\"video\"（仅 SigmaStar）抓视频层；多路/拼墙须给 vdec_chn（**拼墙在 chn 1**）",
+        "抓完把返回 path 交看图能力"
+      ],
+      "keywords": [
+        "抓屏",
+        "截图",
+        "screenshot",
+        "真机屏幕"
+      ],
+      "docRef": "knowledge/devflow/device-screenshot.md",
+      "seeAlso": [
+        "knowledge/devflow/device-screenshot.md",
+        "knowledge/devflow/pixel-analysis-ai.md"
+      ]
+    },
+    "flythings_verify_assets": {
+      "summary": "核对「json 声明 vs 磁盘产物」：图片引用是否存在 + PNG 尺寸是否 == 盒子。",
+      "risk": "read",
+      "category": "layout",
+      "stage": "build",
+      "flow": "盒子来源（铁律 #1）：控件 position + thumb 自有子盒 thumb.size；支持 ui/*.json 与 ui/<分辨率>/*.json。",
+      "returns": [
+        "missing / mismatch = 真问题",
+        "stretched 仅提示",
+        "与 check_all 第 11/17 项同一实现"
+      ],
+      "rules": [
+        "生成/改完图片后必跑（v0.27.30 阴影丢图事故 = 产物没人核对）"
+      ],
+      "keywords": [
+        "图片资源核对",
+        "尺寸不符",
+        "引用缺失"
+      ],
+      "docRef": "knowledge/devflow/ui-asset-rules.md",
+      "seeAlso": [
+        "knowledge/devflow/ui-asset-rules.md"
+      ]
+    },
+    "flythings_ui_schema": {
+      "summary": "UI 布局 json 规范查询（唯一真源 = ui_schema.json 注册表）：控件字段表/必填键/默认值/类型。",
+      "risk": "read",
+      "category": "layout",
+      "stage": "design",
+      "params": [
+        {
+          "name": "control_type",
+          "desc": "空=全部控件清单；指定（如 seekbar）=完整字段 schema"
+        },
+        {
+          "name": "include",
+          "desc": "all / fields / sharedTypes / valueRules"
+        }
+      ],
+      "rules": [
+        "改规范 = 改注册表，勿抄副本"
+      ],
+      "keywords": [
+        "json 规范",
+        "字段表",
+        "schema",
+        "控件字段",
+        "布局规范",
+        "thumb 子盒",
+        "colorTab 五槽"
+      ],
+      "docRef": "knowledge/uicontrols/json-field-mandatory.md",
+      "seeAlso": [
+        "knowledge/uicontrols/json-field-mandatory.md"
+      ]
+    },
+    "flythings_get_version": {
+      "summary": "返回 MCP 版本号、工具数量与近期关键特性。用户问「MCP 版本是多少 / 是不是最新的」时调用。",
+      "risk": "read",
+      "category": "kbase",
+      "stage": "other",
+      "notes": [
+        "compact=True（默认）只回版本摘要 + 近期 3 条（每条 ≤700 字，防 token 炸弹）；完整能力史传 compact=False。",
+        "另回 `binTools` 字段（设备端预编译工具：touch / busybox / ui_test / zkshot；mt_test 已移除），在 bin_tools/<平台>/ 下，**不是 op、不占名额**。"
+      ],
+      "noneReason": "工具元信息（版本/工具数/近期特性），无实践知识归属"
+    },
+    "flythings_knowledge_gaps": {
+      "summary": "查「知识缺口清单」：用户/AI 反复问但**检索不到**的主题（生长引擎的输入端）。",
+      "risk": "read",
+      "category": "kbase",
+      "stage": "other",
+      "notes": [
+        "数据来自本地层 `_logs/no_hit.jsonl`（不外发）。返回 top-N 问法 + 次数 + `nextActions`；",
+        "out 给路径则同时落 kb_gaps.md。周期看它 = 知道下一批该写什么（缺口驱动写作）。"
+      ],
+      "docRef": "knowledge/devflow/kb-growth.md",
+      "seeAlso": [
+        "knowledge/devflow/kb-growth.md"
+      ]
+    },
+    "flythings_knowledge_search": {
+      "summary": "在知识库（wiki 官方镜像 + knowledge 实践文档）检索片段（完全本地，零 Key）。",
+      "risk": "read",
+      "category": "kbase",
+      "stage": "design",
+      "notes": [
+        "遇到 FlyThings 开发问题（控件/API/布局/FTU/回调/编译/平台差异）时调用；query 用中文。",
+        "命中带 status/evidenceLevel/freshness（未验/过期会带 advisory）；未命中会记账（kb_gaps）。"
+      ],
+      "docRef": "knowledge/README.md",
+      "seeAlso": [
+        "knowledge/README.md",
+        "knowledge/uicontrols/retrieval-boundary.md"
+      ]
+    },
+    "flythings_knowledge_capture": {
+      "summary": "把一条现场结论落成知识候选（写**用户本地层/项目层**，绝不写 MCP 安装目录）。",
+      "risk": "write",
+      "category": "kbase",
+      "stage": "other",
+      "notes": [
+        "title 一句话说清现象/结论；evidence 传 JSON（[{\"kind\":\"real-device|offline|manual\",\"cmd\":\"...\",\"artifact\":\"...\"}]）或纯文本；layer=local（~/.flythings/kb_local/）| project。",
+        "命中同主题 → 回 duplicateOf，提示**合并**而非新建。之后：补 evidence → kb_verify → 签字才 verified。"
+      ],
+      "docRef": "knowledge/devflow/kb-growth.md",
+      "seeAlso": [
+        "knowledge/devflow/kb-growth.md"
+      ]
+    },
+    "flythings_knowledge_export": {
+      "summary": "导出**脱敏知识补丁包**（回流总账通道 A：kb-contrib-<时间>.json）。",
+      "risk": "read",
+      "category": "kbase",
+      "stage": "other",
+      "notes": [
+        "scope=inbox（缺省）/verified/all；**强制脱敏**（IP/本机路径/凭据/主机名 → 占位符），未脱敏须 internal=True（仅总账维护者自用）。交回：发回文件，或对 open 版仓提 PR（只改 knowledge/inbox/**）。",
+        "总账侧 去重 → 复验 → 问法登记 → 人工签字。"
+      ],
+      "docRef": "knowledge/devflow/kb-growth.md",
+      "seeAlso": [
+        "knowledge/devflow/kb-growth.md"
+      ]
+    },
+    "flythings_hardware_info": {
+      "summary": "查硬件型号库：按平台/型号拿到分辨率、按键值、接口规格与平台差异化。",
+      "risk": "read",
+      "category": "kbase",
+      "stage": "other",
+      "notes": [
+        "用户说「我这台是 PocketDisplay4 / SW80480070D_C」时先查这里，别按同系列型号外推。",
+        "**有型号 → 按返回 preset 直接开工**（平台/分辨率/方向/按键，不用再问）；**没型号 → 确认平台 +分辨率就能建工程**（缺参数不阻塞）。model 空=列平台+已登记型号（platform 可过滤）；给值回preset/screen/keys/specs/differences/source；未收录 MODEL_NOT_FOUND + fallback + 近似候选（型号表与回退口径 knowledge/hardware/hardware-models.md）。"
+      ],
+      "docRef": "knowledge/hardware/hardware-models.md",
+      "seeAlso": [
+        "knowledge/hardware/hardware-models.md"
+      ]
+    },
+    "flythings_map_control": {
+      "summary": "跨框架控件映射：输入源框架控件名 → 一次对上我们的控件（等价级别 + 可直接粘的 json 片段）。",
+      "risk": "read",
+      "category": "layout",
+      "stage": "design",
+      "notes": [
+        "什么时候用：拿到 LVGL/Qt/Android/小程序/emWin/MFC 工程或设计稿，要转到 FlyThings 时。"
+      ],
+      "params": [
+        {
+          "name": "query",
+          "desc": "源控件名（或别名），忽略大小写与下划线/连字符（如 lv_slider / QCalendarWidget）"
+        },
+        {
+          "name": "source",
+          "desc": "可选，只在指定框架内找（lvgl / qt / android / miniprogram / emwin / mfc）命中给等价级别 L1~L5 + 可直接粘的 json 片段；未命中回 NO_HIT + candidates。缺口处置见knowledge/uicontrols/control-mapping-capability.md（有控件用映射，平台真缺才做 ui_v1 包）。"
+        }
+      ],
+      "docRef": "knowledge/uicontrols/control-mapping-capability.md",
+      "seeAlso": [
+        "knowledge/uicontrols/control-mapping-capability.md",
+        "knowledge/uicontrols/framework-control-mapping.md"
+      ]
+    },
+    "flythings_translate_ui": {
+      "summary": "LVGL(v8/v9) C 源码 → FlyThings ui json 迁移翻译（v1，确定性，默认 dry_run 不落盘）。",
+      "risk": "write",
+      "category": "layout",
+      "stage": "design",
+      "notes": [
+        "拿到 LVGL 工程/片段要迁过来时用；单控件对应先查 flythings_map_control。"
+      ],
+      "params": [
+        {
+          "name": "source",
+          "desc": ".c 路径或内联源码；out：落盘路径（dry_run=False 必填）；res：分辨率（默认 1024x600）映射走 mcp_control_map.json（L1~L5）；未识别调用不静默丢、缺图与降级分级处置；识别形态与限制 knowledge/devflow/translate-ui-lvgl.md，换算铁律 platform-translate.md。"
+        }
+      ],
+      "docRef": "knowledge/devflow/translate-ui-lvgl.md",
+      "seeAlso": [
+        "knowledge/devflow/translate-ui-lvgl.md",
+        "knowledge/devflow/platform-translate.md"
+      ]
+    },
+    "flythings_read_json": {
+      "summary": "解析 .json 布局文件为 JSON（分辨率、控件列表、caption→id 映射）。传入 json 完整路径。",
+      "risk": "read",
+      "category": "layout",
+      "stage": "design",
+      "rules": [
+        "传入 .ftu 时不再当「加密无法解析」：先把 ftu 交给 flythings_fui_unpack 反解析成 json，再把返回的 jsonPath 传进来（本 op 只读 json）。"
+      ],
+      "docRef": "knowledge/devflow/ftu-json-pipeline.md",
+      "seeAlso": [
+        "knowledge/devflow/ftu-json-pipeline.md",
+        "knowledge/uicontrols/json-field-mandatory.md"
+      ]
+    },
+    "flythings_get_project_spec": {
+      "summary": "返回 FlyThings 项目结构化规范（目录规则、生成规则、注意事项）。编写/修改项目代码前调用。新需求先出设计稿/原型并确认。",
+      "risk": "read",
+      "category": "layout",
+      "stage": "design",
+      "docRef": "knowledge/devflow/page-architecture-spec.md",
+      "seeAlso": [
+        "knowledge/devflow/page-architecture-spec.md"
+      ]
+    },
+    "flythings_validate_project": {
+      "summary": "检查项目是否符合 FlyThings 规范，返回 errors/warnings。生成代码后调用。",
+      "risk": "read",
+      "category": "layout",
+      "stage": "design",
+      "notes": [
+        "空白项目判定：工作目录 ui/ 下无 .ftu 即视为空白（无需再去读 json），返回isEmptyProject=true；此时直接询问用户平台与分辨率（平台清单用 supported() 取，不要在文案里手写枚举）后调用 create_project，禁止去其他目录检索 json/ftu。"
+      ],
+      "rules": [
+        "若 projectInfo.platform/resolution 为 null，必须先向用户询问，禁止猜测。"
+      ],
+      "docRef": "knowledge/devflow/page-architecture-spec.md",
+      "seeAlso": [
+        "knowledge/devflow/page-architecture-spec.md",
+        "knowledge/uicontrols/json-field-mandatory.md"
+      ]
+    },
+    "flythings_layout_audit": {
+      "summary": "静态审计 UI 布局的层叠/遮挡/触摸穿透（**纯几何，0 token，先看 json 再截图**）。",
+      "risk": "read",
+      "category": "layout",
+      "stage": "design",
+      "notes": [
+        "kind：fullscreen_layer / touch_steal / covered_interactive / pass_through_missing / overlap。",
+        "视觉样式/像素仍走 device_screenshot + ui_visual(diff)。"
+      ],
+      "rules": [
+        "用户说「控件被盖住 / 点不到 / 位置不对 / 谁挡着谁」时**先调本 op**：json 就能判定谁压谁（z 序 = 书写顺序）、谁的触摸被抢、整屏层是否吞触摸；每条带 by + why + fix。"
+      ],
+      "docRef": "knowledge/uicontrols/layout-audit.md",
+      "seeAlso": [
+        "knowledge/uicontrols/layout-audit.md",
+        "knowledge/uicontrols/json-layer-rules.md"
+      ]
+    },
+    "flythings_fui_pack": {
+      "summary": "将 json 布局打包为 ftu（设备实际加载的是 ftu）。返回 ftu 路径、控件数、分辨率。",
+      "risk": "write",
+      "category": "layout",
+      "stage": "build",
+      "notes": [
+        "ftu 是 json 布局的**编译产物**：改布局一律改 json 后 pack，不要手写/手改 ftu（详见 knowledge/devflow/ftu-json-pipeline.md；返回体带 confirmNeeded 确认闸门）。"
+      ],
+      "docRef": "knowledge/devflow/ftu-json-pipeline.md",
+      "seeAlso": [
+        "knowledge/devflow/ftu-json-pipeline.md"
+      ]
+    },
+    "flythings_fui_unpack": {
+      "summary": "ftu → json 反解析（fui unpack；随包 fui 自 v0.27.91 起支持）。",
+      "risk": "write",
+      "category": "layout",
+      "stage": "build",
+      "notes": [
+        "改布局仍以 json 为源（细节见 knowledge/devflow/ftu-json-pipeline.md）。"
+      ],
+      "rules": [
+        "默认**覆盖**同目录同名 json（ftu 为真源）；要保留原 json 传 overwrite=False（写 <name>.unpacked.json），或 output_json 指定路径。用在：只有 ftu 没 json 的老工程 / 核对设备侧布局 / IDE 改过 ftu 要回写 json。"
+      ],
+      "docRef": "knowledge/devflow/ftu-json-pipeline.md",
+      "seeAlso": [
+        "knowledge/devflow/ftu-json-pipeline.md"
+      ]
+    },
+    "flythings_edit_ftu": {
+      "summary": "编辑 ftu 布局：自动应用编辑到 json 后 pack 回 ftu（json 是源，ftu 是编译产物）。",
+      "risk": "write",
+      "category": "layout",
+      "stage": "build",
+      "notes": [
+        "operations 为 JSON 数组（set/remove/add/set_root；逐字段见 ftu-json-pipeline.md）。客户说「往右移/改文本/换颜色/删控件/复制控件」时调用；无 json 源时自动 unpack 出编辑源。",
+        "确认后传 overwrite=True 覆盖（或 output_ftu 指定目标）；原 ftu 与 json 都留 .bak。"
+      ],
+      "rules": [
+        "默认 **不覆盖**原 ftu（overwrite=False）→ 生成同目录 <name>.edited.ftu 并还原原文件；"
+      ],
+      "docRef": "knowledge/devflow/ftu-json-pipeline.md",
+      "seeAlso": [
+        "knowledge/devflow/ftu-json-pipeline.md"
+      ]
+    },
+    "flythings_build_ui_flow": {
+      "summary": "⚠️ 场景别名（编译/部署类意图一律本工具，禁自造命令）：口语「编译/构建/调试/部署/推送到设备/跑一下」；固化升级（update.img）→ flythings_pack_upgrade（掉电保留）。",
+      "risk": "device",
+      "category": "build",
+      "stage": "build",
+      "flow": [
+        "流程：json↔ftu 时间戳检查 → fui pack → fun install → fun build → 设备探测 + fun launch（只编译传 with_launch=False）→ 字体体检 + 设备侧 md5 比对（staleOnDevice=true ⇒ 设备旧版）。"
+      ],
+      "notes": [
+        "探测不猜：0 台→needDeviceInput；多台→列 serial 要 device=。"
+      ],
+      "rules": [
+        "src/activity/ 由 IDE 生成（禁手改），业务只写 src/logic/*.cc；链库 src/dependencies/lib/，**libc 必须匹配**（Z20/Z21=glibc，其余=musl 系）。"
+      ],
+      "docRef": "knowledge/devflow/cli-fun-toolchain.md",
+      "seeAlso": [
+        "knowledge/devflow/cli-fun-toolchain.md",
+        "knowledge/devflow/deploy-scene-map.md"
+      ]
+    },
+    "flythings_ui_preview": {
+      "summary": "json 布局 / 整个项目 → HTML 预览稿（客户确认 UI 用；只交 html，不产图片/截图）。",
+      "risk": "write",
+      "category": "layout",
+      "stage": "design",
+      "notes": [
+        "target = 项目根目录（全部 ui/*.json）或单个 json 路径；for_customer=True → **客户确认稿**`<name>.confirm.html`（单文件、图内联、手机可转发、带「标注」开关与窄屏自适应；不动 json/ftu）。",
+        "口径 knowledge/devflow/ui-layout-verify.md §0。"
+      ],
+      "rules": [
+        "多整屏 window 工程自带「页面切换条」+ `#window__N`（简写 `#N`）直达 + 幽灵框看隐藏窗。",
+        "确认闸门：改完布局先出确认稿给需求方确认，OK 才 pack / 写逻辑 / 推真机。"
+      ],
+      "docRef": "knowledge/devflow/ui-layout-verify.md",
+      "seeAlso": [
+        "knowledge/devflow/ui-layout-verify.md",
+        "knowledge/devflow/ui-editor-usage.md"
+      ]
+    },
+    "flythings_html_to_json": {
+      "summary": "受限 HTML 交互原型 -> ui/*.json（CSS 效果自动转图；产物尺寸 == 控件盒）。",
+      "risk": "write",
+      "category": "layout",
+      "stage": "design",
+      "notes": [
+        "多屏（div.screen）：每屏一个 json = 一页 = 一个 Activity = 一个 ftu；同属一个 Activity 才用merge_windows 合成同 json 的 N 个整屏 window。返回 screensDetected/pagesProduced/pages[]，**不等一律 success:false**（不静默丢页）；红线/闸门 → html-subset-quickref.md。"
+      ],
+      "rules": [
+        "动手前先读《HTML_SUBSET 原型规范》（检索 HTML_SUBSET / data-icon / 自动转图清单）：控件映射表、data-* 属性、铁律都在那里。"
+      ],
+      "docRef": "knowledge/devflow/html-subset-quickref.md",
+      "seeAlso": [
+        "knowledge/devflow/html-subset-quickref.md",
+        "knowledge/devflow/prototype-flow.md"
+      ]
+    },
+    "flythings_list_packages": {
+      "summary": "列出依赖包生态（platform 如 F133/Z20，留空列全部），含功能描述与版本。写代码前调用。",
+      "risk": "read",
+      "category": "package",
+      "stage": "build",
+      "docRef": "knowledge/devflow/dependency-package-docs.md",
+      "seeAlso": [
+        "knowledge/devflow/dependency-package-docs.md"
+      ]
+    },
+    "flythings_query_package": {
+      "summary": "查询依赖包在指定平台的可用版本。传入包名（如 mqtt-cxx）与平台。",
+      "risk": "read",
+      "category": "package",
+      "stage": "build",
+      "docRef": "knowledge/devflow/dependency-package-docs.md",
+      "seeAlso": [
+        "knowledge/devflow/dependency-package-docs.md"
+      ]
+    },
+    "flythings_manifest": {
+      "summary": "按功能需求准备 Manifest.xml 依赖配置（**默认只推荐、不写盘**）。",
+      "risk": "write",
+      "category": "package",
+      "stage": "build",
+      "notes": [
+        "features 为逗号分隔关键词（如 'mqtt,json,蓝牙'）。",
+        "- dry_run=True（默认，= 原 recommend_manifest）：只回推荐与递归补齐建议，不动文件",
+        "- dry_run=False（= 原 generate_manifest）：写入 <project_root>/Manifest.xml（先备份 .bak，回 affectedFiles）",
+        "已知包名要直接加进项目时用 flythings_add_package。"
+      ],
+      "docRef": "knowledge/devflow/dependency-package-docs.md",
+      "seeAlso": [
+        "knowledge/devflow/dependency-package-docs.md",
+        "knowledge/devflow/cli-fun-toolchain.md"
+      ]
+    },
+    "flythings_add_package": {
+      "summary": "把 package 添加进项目 Manifest.xml 并执行 fun install 拉取依赖（添加包闭环流程）。",
+      "risk": "write",
+      "category": "package",
+      "stage": "build",
+      "notes": [
+        "- 版本解析顺序：本地 registry → 离线 catalog → 在线（semver 取最新，不依赖包实体是否存在）",
+        "- 已声明同包则更新版本；未声明则追加 <package id version/>；保留原 Manifest 格式",
+        "- with_install=True（默认）执行 fun install 同步依赖",
+        "用户说「给项目加个 XXX 包 / 要用 MQTT/JSON/蓝牙需要加依赖」时调用。"
+      ],
+      "docRef": "knowledge/devflow/cli-fun-toolchain.md",
+      "seeAlso": [
+        "knowledge/devflow/cli-fun-toolchain.md",
+        "knowledge/devflow/dependency-package-docs.md"
+      ]
+    },
+    "flythings_package_search": {
+      "summary": "按功能关键词搜索可用 package（mqtt/json/http/ssl/ble/ota/audio 等）。",
+      "risk": "read",
+      "category": "package",
+      "stage": "build",
+      "docRef": "knowledge/devflow/dependency-package-docs.md",
+      "seeAlso": [
+        "knowledge/devflow/dependency-package-docs.md"
+      ]
+    },
+    "flythings_get_package_api": {
+      "summary": "获取 package 的头文件路径、类方法签名、使用示例。传入包名与可选版本。",
+      "risk": "read",
+      "category": "package",
+      "stage": "build",
+      "notes": [
+        "注册表没有 ≠ 平台没有：设备 /lib 自带 nanovg/libpng12/freetype/jpeg/mad/zlib，可 dlopen 免编译；",
+        "清单与采集命令见 knowledge/devflow/device-preinstalled-libs.md（先 adb shell ls /lib）。"
+      ],
+      "docRef": "knowledge/devflow/dependency-package-docs.md",
+      "seeAlso": [
+        "knowledge/devflow/dependency-package-docs.md",
+        "knowledge/devflow/device-preinstalled-libs.md"
+      ]
+    },
+    "flythings_resolve_dependencies": {
+      "summary": "递归解析 package 依赖树并检测冲突。packages 为 JSON 数组字符串，如 '[{\"id\":\"mqtt-cxx\",\"version\":\"3.2.0\"}]'。返回依赖树、解析结果与冲突建议。",
+      "risk": "read",
+      "category": "package",
+      "stage": "build",
+      "docRef": "knowledge/devflow/dependency-package-docs.md",
+      "seeAlso": [
+        "knowledge/devflow/dependency-package-docs.md"
+      ]
+    },
+    "flythings_create_bin_project": {
+      "summary": "创建「可执行程序」项目（fun create --type bin）并编译为直接可运行的 ELF 二进制。",
+      "risk": "write",
+      "category": "project",
+      "stage": "build",
+      "notes": [
+        "项目类型 4 选 1：zkgui / bin / staticLibrary / sharedLibrary；bin 结构 = fun.json + src/main.cpp。",
+        "fun build 产物 .fun/{platform}/{项目名}（ELF 魔数验证），adb push + chmod +x 直接跑（无 UI 宿主）。",
+        "目录非空直接报错；非交互自动补 --app-version/--description。",
+        "用户要「编译可直接执行的二进制（非 UI 应用）」时调用；platform 默认 z21；project_name 缺省取目录名。"
+      ],
+      "noneReason": "MCU（FlyThings Lite）侧工程，按 MCU 口径单独维护，不进 open 版 knowledge/"
+    },
+    "flythings_gen_ui_test": {
+      "summary": "根据 UI json 布局生成自动化测试项目（纯代码，不依赖 AI，省 token）。",
+      "risk": "device",
+      "category": "device",
+      "stage": "build",
+      "notes": [
+        "ui/*.json 已含全部控件坐标与可交互信息（touchable/visible），直接解析生成可编译的 bin 测试项目：ask=问验收方式（默认）；traverse=遍历可交互控件+图片缺失检查；monkey=随机压测；custom=自定义。",
+        "用户提「自动化测试/验收/遍历控件/压测/Monkey」时调用；默认先问用户选哪种（省 token）。",
+        "写法 knowledge/devflow/touch-inject-autotest.md、device-test-run.md。"
+      ],
+      "docRef": "knowledge/devflow/device-test-run.md",
+      "seeAlso": [
+        "knowledge/devflow/device-test-run.md",
+        "knowledge/devflow/touch-inject-autotest.md"
+      ]
+    },
+    "flythings_test_run": {
+      "summary": "多设备**并行**跑一份 UI 用例（触摸注入+日志断言+像素基线），出 JSON + JUnit 报告。",
+      "risk": "device",
+      "category": "device",
+      "stage": "build",
+      "notes": [
+        "plan = 用例 JSON（文本或路径）：steps[].action ∈ tap/long/swipe/wait/monkey/run/shot/log，每步可带shot=<基线 key>/expectLog/expectNoLog/allowRegions/wait(ms)；devices=\"auto\"（**恰好 1 台才自动选**）/\"all\"/\"<IP>:5555,...\"；baseline=auto/compare/save/off；报告落 out（report.json + report.xml，可进 CI）。",
+        "**比不到基线记 no-baseline，不算通过**"
+      ],
+      "docRef": "knowledge/devflow/device-test-run.md",
+      "seeAlso": [
+        "knowledge/devflow/device-test-run.md"
+      ]
+    },
+    "flythings_attach_cli_tools": {
+      "summary": "复制 fui.exe（→项目 ui/）与 fun.exe（→项目根目录）到项目，随项目交付。",
+      "risk": "write",
+      "category": "project",
+      "stage": "build",
+      "notes": [
+        "生成后用 fun.exe build 编译、launch 推送，无需客户导入 IDE。",
+        "业务代码只写 src/logic/*.cc。"
+      ],
+      "hardRules": [
+        "src/activity/ 目录（mainActivity.cpp/h）由 IDE 编译时自动生成，禁止创建/修改；"
+      ],
+      "docRef": "knowledge/devflow/cli-fun-toolchain.md",
+      "seeAlso": [
+        "knowledge/devflow/cli-fun-toolchain.md",
+        "knowledge/devflow/adb-and-device-selection.md"
+      ]
+    },
+    "flythings_check_project_deps": {
+      "summary": "扫描项目 include 的三方库与 Manifest 声明对比，返回缺失依赖。",
+      "risk": "read",
+      "category": "project",
+      "stage": "build",
+      "notes": [
+        "需要三方能力（MQTT/HTTP/JSON/蓝牙/SSL 等）时先调用。",
+        "另含框架包体检（base 头文件↔base-utility）与字体体检（缺中文字库就报 fontIssues+一键修复；默认只报不投，font_apply=True 才投递；传 device= 才扫设备字体）。"
+      ],
+      "docRef": "knowledge/devflow/dependency-package-docs.md",
+      "seeAlso": [
+        "knowledge/devflow/dependency-package-docs.md",
+        "knowledge/devflow/cli-fun-toolchain.md"
+      ]
+    },
+    "flythings_generate_ui_assets": {
+      "summary": "生成 UI 图片资源（图标/牌面/按钮背景等）→ <项目>/resources/images/（json 引用写 images/xxx.png）。",
+      "risk": "write",
+      "category": "assets",
+      "stage": "design",
+      "notes": [
+        "assets 为 JSON 数组字符串，每项 {name,size,prompt,emoji,color,kind}；name 必填（自动补 .png）；",
+        "prompt 优先 AI 生图、失败用 emoji、再不行 color/kind 线条兜底；**返回体自动带 assetAudit**（抗锯齿/倒角/透明底审计，有 DEFECT 就修图重出）。"
+      ],
+      "rules": [
+        "铁律（尺寸==控件盒、四角 alpha=0、禁 1x 直画）与检索词（图片资源铁律/抗锯齿/走哪条路出图）见知识库「UI 图片资源铁律与 PNG 抗锯齿管线」。"
+      ],
+      "docRef": "knowledge/devflow/ui-asset-rules.md",
+      "seeAlso": [
+        "knowledge/devflow/ui-asset-rules.md",
+        "knowledge/devflow/icon-library.md"
+      ]
+    },
+    "flythings_i18n_scan": {
+      "summary": "诊断项目多语言（i18n）现状：i18n/*.tr 语言文件、key 对齐、布局 @key 引用完整性。",
+      "risk": "read",
+      "category": "i18n",
+      "stage": "build",
+      "notes": [
+        "项目做多语言时先调用；返回 JSON：languages/keysPerLanguage/缺失 key/引用缺失。",
+        "多语言机制：翻译文件 i18n/<语言>.tr（文件名三段式 xx_XX-语言名，Android strings.xml 同款），布局 text 写 @key，代码 setTextTr(\"key\") 或 LANGUAGEMANAGER->getValue(\"key\")。"
+      ],
+      "wiki": [
+        "i18n/i18n.md"
+      ],
+      "noneReason": "i18n 口径在官方文档站（developer.flythings.cn）与本地 wiki 镜像，open 版 knowledge/ 未收录"
+    },
+    "flythings_i18n_add_language": {
+      "summary": "添加新语言：从基础语言（缺省 zh_CN）复制 key 骨架，生成 i18n/<lang>-<lang_name>.tr 待翻译文件。",
+      "risk": "write",
+      "category": "i18n",
+      "stage": "build",
+      "notes": [
+        "lang 为语言代码（如 fr_FR），lang_name 为语言名（如 法语，显示在切换列表）。",
+        "返回待翻译清单（key→基础语言原文）+ 专业翻译提示（结合项目语境，如车载项目 CAN BUS 不译公共汽车）；",
+        "翻译后调用 flythings_i18n_import 写回。"
+      ],
+      "wiki": [
+        "i18n/i18n.md"
+      ],
+      "noneReason": "同 flythings_i18n_scan：口径在官方文档 / 本地 wiki 镜像"
+    },
+    "flythings_i18n_export": {
+      "summary": "导出指定语言（缺省 zh_CN）的 key→文本清单（JSON），供翻译后 import 写回。",
+      "risk": "write",
+      "category": "i18n",
+      "stage": "build",
+      "notes": [
+        "keys 可选：逗号分隔的 key 子集；缺省导出全部。context 可选：项目语境描述，返回 translationGuide 提示 AI 专业翻译（术语如 CAN BUS 保持行业译法）。"
+      ],
+      "wiki": [
+        "i18n/i18n.md"
+      ],
+      "noneReason": "同 flythings_i18n_scan：口径在官方文档 / 本地 wiki 镜像"
+    },
+    "flythings_i18n_import": {
+      "summary": "将翻译结果写回项目 i18n/<lang>.tr（生成新语言文件或更新已有）。",
+      "risk": "write",
+      "category": "i18n",
+      "stage": "build",
+      "notes": [
+        "translations 为 JSON 对象 {\"key\": \"翻译文本\"}；merge=True 与已有内容合并，False 整体覆盖。"
+      ],
+      "wiki": [
+        "i18n/i18n.md"
+      ],
+      "noneReason": "同 flythings_i18n_scan：口径在官方文档 / 本地 wiki 镜像"
+    },
+    "flythings_i18n_refactor": {
+      "summary": "把布局 json 里写死的非空文本控件替换为 @key 引用（多语言改造辅助）。",
+      "risk": "write",
+      "category": "i18n",
+      "stage": "build",
+      "notes": [
+        "dry_run=True 只预览不改文件；False 执行替换并写入指定语言 .tr。",
+        "纯数字/时间占位文本自动跳过。"
+      ],
+      "wiki": [
+        "i18n/i18n.md"
+      ],
+      "noneReason": "同 flythings_i18n_scan：口径在官方文档 / 本地 wiki 镜像"
+    },
+    "flythings_i18n_to_json": {
+      "summary": "把 i18n/*.tr 转为 i18n/*.json（设备 zkgui 实际加载格式），并可推送到设备 /tmp/tr/。",
+      "risk": "write",
+      "category": "i18n",
+      "stage": "build",
+      "notes": [
+        "生产固件翻译打包到 /res/，无需推送（push=False）。"
+      ],
+      "rules": [
+        "**fun launch 不推 i18n**（只推 ftu/images/font/lib/cfg）——改完翻译必须显式调本工具，否则设备仍跑旧翻译（logcat 刷 'not found value'）。生成 json 与设备端逐字节一致（tab 缩进+无空格冒号+末尾无换行），默认自动 adb push 到 /tmp/tr/；多设备传 device=IP。"
+      ],
+      "wiki": [
+        "i18n/i18n.md"
+      ],
+      "noneReason": "同 flythings_i18n_scan：口径在官方文档 / 本地 wiki 镜像"
+    },
+    "flythings_ui_visual": {
+      "summary": "UI 可视化/像素验收入口（action 选动作；旧编辑器三 op 已并入，action=list 看参数）。",
+      "risk": "write",
+      "category": "ui-visual",
+      "stage": "design",
+      "params": [
+        {
+          "name": "editor",
+          "desc": "ui/*.json → 可拖拽编辑器网页；edit_apply：变更 JSON 写回（dry_run 只预览，留 .bak）"
+        },
+        {
+          "name": "diff",
+          "desc": "两张同尺寸截图逐像素对比，出 0 token 差异清单"
+        },
+        {
+          "name": "baseline",
+          "desc": "像素基线库（<项目>/ui_baseline/），mode=save/compare/update/list"
+        },
+        {
+          "name": "render",
+          "desc": "json → 引擎等价 PNG；render_check：渲染图 vs 真机截图一致性判据渲染语义 knowledge/devflow/wysiwyg-render-spec.md。"
+        }
+      ],
+      "docRef": "knowledge/devflow/wysiwyg-render-spec.md",
+      "seeAlso": [
+        "knowledge/devflow/wysiwyg-render-spec.md",
+        "knowledge/devflow/ui-layout-verify.md",
+        "knowledge/devflow/ui-editor-usage.md"
+      ]
+    },
+    "flythings_selfcheck": {
+      "summary": "整机快照（十一个分区），每分区给 {ok, hint, data}；`ok=false` **不是错误而是结论**。",
+      "risk": "device",
+      "category": "device",
+      "stage": "build",
+      "notes": [
+        "分区：设备信息/应用状态/显示/存储/网络/蓝牙/输入/外设/时间/库清单/部署一致性（⑪区治「改了像没改」）。",
+        "采集容忍设备缺工具：优先随仓 bin_tools/<平台>/busybox（→设备 /tmp/busybox，缺则推），否则纯 adb shell。",
+        "device='<serial|IP>:5555'（可省；**多台在线不猜**→NO_DEVICE + 在线清单）；diff_against=<上次快照.json>出逐分区差异；out=<json> 落盘（可复用为基线）。检索词：整机自检/selfcheck/快照/与上次对比（knowledge/devflow/selfcheck-and-bugreport.md）。"
+      ],
+      "docRef": "knowledge/devflow/selfcheck-and-bugreport.md",
+      "seeAlso": [
+        "knowledge/devflow/selfcheck-and-bugreport.md",
+        "knowledge/devflow/device-preinstalled-libs.md"
+      ]
+    },
+    "flythings_bugreport": {
+      "summary": "缺陷单生成器：缺陷清单 + 真机判据 → 可提交 markdown（格式对齐 html2json A1~A8 那批）。",
+      "risk": "write",
+      "category": "device",
+      "stage": "build",
+      "notes": [
+        "只给 title 也能出框架稿；steps/evidence 支持 JSON 数组或换行/分号/逗号分隔。真机判据自动附：型号·固件·fingerprint·应用状态·`logcat -d -s zkgui` 末 40 行（采不到写明原因）。",
+        "默认落 <项目或仓库>/temp/bugreports/<yyyymmdd-HHMM>-<slug>.md；细节knowledge/devflow/selfcheck-and-bugreport.md。"
+      ],
+      "rules": [
+        "evidence 文件不存在 → 报 EVIDENCE_MISSING（不静默）。severity ∈ blocker…trivial。"
+      ],
+      "docRef": "knowledge/devflow/selfcheck-and-bugreport.md",
+      "seeAlso": [
+        "knowledge/devflow/selfcheck-and-bugreport.md"
+      ]
+    }
+  }
+}

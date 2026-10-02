@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """切图抗锯齿契约：FT-008 默认行为不变 + FT-010 强曲率必须明显更准 + 缩回算子/描边口径。
 
-为什么钉死（v0.27.75，钟工 2026-09-16 反馈「滑块圆钮 / 开关有锯齿，图片和控件尺寸对不上」）：
+为什么钉死（v0.27.75，2026-09-16 反馈「滑块圆钮 / 开关有锯齿，图片和控件尺寸对不上」）：
   - FT-008（1x 直画 + α 羽化 σ0.5）是**为了几何不漂**才选的（倒角宽度与 1x 直画一致），
-    不能改它的默认行为 —— 这里用「α>=128 的轮廓 == 1x 直画」把这条契约钉死；
+不能改它的默认行为 —— 这里用「α>=128 的轮廓 == 1x 直画」把这条契约钉死；
   - 但它的代价是**强曲率**（圆 / 圆钮 / 药丸 / 细圆条）边缘覆盖率误差大（mean 25~49/255），
-    真机上肉眼可见锯齿 → 这类形状必须走 rounded_rect_ss（≥4x SS + 面积平均缩回）。
-  参考真值 = 16x 超采样覆盖率（**Image.BOX 面积平均**缩回），只用 PIL，不需要 numpy。
+真机上肉眼可见锯齿 → 这类形状必须走 rounded_rect_ss（≥4x SS + 面积平均缩回）。
+参考真值 = 16x 超采样覆盖率（**Image.BOX 面积平均**缩回），只用 PIL，不需要 numpy。
 
-2026-09-19 新增（钟工 A1「出图核锯齿根因必查」/ A3「9-patch 描边改出图」）：
+2026-09-19 新增（A1「出图核锯齿根因必查」/ A3「9-patch 描边改出图」）：
   - `_ss_down`/`_ss_mask` 的缩回算子必须走 `Image.BOX`（带直通 α 的边界禁用 LANCZOS）；
   - 描边+填充必须走「整像素描边带」（`bordered_cov`），不得做描边↔填充的亚像素混合；
   - 无独立描边时 `gen_btn9` 的按下态描边必须跟随按下色。
@@ -39,8 +39,7 @@ def _ref_alpha(w, h, radius, ss=16):
     """理想覆盖率：16x 超采样二值 mask → **Image.BOX（面积平均）**缩回，返回 [(alpha, ...)] 扁平列表。
 
     2026-09-19：参考真值从 LANCZOS 改成 BOX —— 覆盖率就是面积平均，LANCZOS 的负瓣会把参考值
-    本身推出 [0,1]（clip 后偏锐），拿它当真值会低估 BOX 管线的准确度（见 temp/a1_remeasure.py：
-    细圆条 200x8 r4 的 ss=4 误差 LANCZOS 真值 11.7 → BOX 真值 5.6）。
+本身推出 [0,1]（clip 后偏锐），拿它当真值会低估 BOX 管线的准确度（见 temp/a1_remeasure.py：细圆条 200x8 r4 的 ss=4 误差 LANCZOS 真值 11.7 → BOX 真值 5.6）。
     """
     big = Image.new('L', (w * ss, h * ss), 0)
     ImageDraw.Draw(big).rounded_rectangle([0, 0, w * ss - 1, h * ss - 1],
@@ -117,16 +116,16 @@ class TestFt010StrongCurvature(unittest.TestCase):
 
 @unittest.skipUnless(HAS_PIL, 'needs Pillow')
 class TestStraightAlphaEdge(unittest.TestCase):
-    """直通 α 边界契约（2026-09-19 钟工：「选中条边界有锯齿」入规）。
+    """直通 α 边界契约（2026-09-19：「选中条边界有锯齿」入规）。
 
-    背景：浅色药丸/选中条（#F2F3FF）压浅底（#F3F3F3）时，边界只有 B 通道差 12 级；
-    只要边界 RGB 被污染（近黑=暗边 / 纯白=白点），8× 放大下就是「阶梯 + 脏边」。
+背景：浅色药丸/选中条（#F2F3FF）压浅底（#F3F3F3）时，边界只有 B 通道差 12 级；
+只要边界 RGB 被污染（近黑=暗边 / 纯白=白点），8× 放大下就是「阶梯 + 脏边」。
 
-    两条契约：
+两条契约：
       ① **覆盖率口径（SS 二值 + AREA/BOX 面积平均缩回）**：直通 α 边界的 RGB 必须 == 填充色；
       ② **`_ss_down` 不得用负瓣算子**：现状钉死 0 脏边（2026-09-19 A1 整改把 LANCZOS 换成
          `Image.BOX`；回退到 LANCZOS/BICUBIC/BILINEAR 本用例会红 —— 这就是故意的）。
-    参考：`tools/qa/aa_audit.py`（v2 判据与豁免口径）。
+参考：`tools/qa/aa_audit.py`（v2 判据与豁免口径）。
     """
 
     FILL = (242, 243, 255)
@@ -175,8 +174,8 @@ class TestStraightAlphaEdge(unittest.TestCase):
     def test_ss_down_no_dirty_edge(self):
         """② `_ss_down`（SS 缩回）必须走 Image.BOX → 直通 α 边界 0 脏边。
 
-        2026-09-19 整改前（LANCZOS）：本用例实测脏边 **96** 个 / 最大偏离 **13**；
-        改 `Image.BOX` 后 0 —— 这就是 A1「出图核锯齿根因」的契约。
+        2026-09-19 整改前（LANCZOS）：本用例实测脏边 **96**个 / 最大偏离 **13**；
+改 `Image.BOX` 后 0 —— 这就是 A1「出图核锯齿根因」的契约。
         """
         n, worst = self._dirty(GR.rounded_rect_ss(80, 40, 20, self.FILL + (255,), ss=8))
         self.assertEqual(n, 0, 'SS 缩回又出脏边（%d 个 / 最大偏离 %d）→ 查 _ss_down 的算子' % (n, worst))
@@ -185,8 +184,8 @@ class TestStraightAlphaEdge(unittest.TestCase):
     def test_wrong_operator_would_break_edge(self):
         """②-补：把缩回算子改回 LANCZOS（预乘 → uint8 落盘 → LANCZOS → 反预乘）确实会污染边界。
 
-        历史实测（2026-09-19 改前）：`rounded_rect_ss(80,40,20,FILL,ss=8)` → 脏边 **96** 个 /
-        最大偏离 **13**；本用例把那条旧路复现一遍当反面教材，并钉死「带 α 路径必须是 Image.BOX」。
+历史实测（2026-09-19 改前）：`rounded_rect_ss(80,40,20,FILL,ss=8)` → 脏边 **96**个 /
+最大偏离 **13**；本用例把那条旧路复现一遍当反面教材，并钉死「带 α 路径必须是 Image.BOX」。
         """
         self.assertIs(GR._DOWN_OP_ALPHA, Image.BOX, '_ss_down 的带 α 路径必须是 Image.BOX')
         try:
@@ -216,9 +215,9 @@ class TestStraightAlphaEdge(unittest.TestCase):
 class TestBorderIntegerBand(unittest.TestCase):
     """A3 契约：描边与填充不得做亚像素混合（「整像素描边带」口径）。
 
-    现象（2026-09-19 钟工：「19 张 .9.png 的 WARN 改出图」）：1px 描边 + 填充在圆角对角线
-    上按覆盖率混合 → 角上 1~4px 宽的「描边↔填充」混色带（aa_audit dirty/speck WARN）。
-    改法：描边落在**整数像素带**上（`bordered_cov`）。
+现象（2026-09-19：「19 张 .9.png 的 WARN 改出图」）：1px 描边 + 填充在圆角对角线
+上按覆盖率混合 → 角上 1~4px 宽的「描边↔填充」混色带（aa_audit dirty/speck WARN）。
+改法：描边落在**整数像素带**上（`bordered_cov`）。
     """
 
     FILL = (255, 255, 255)
@@ -236,7 +235,7 @@ class TestBorderIntegerBand(unittest.TestCase):
         self.assertEqual(mixed[:5], [], '出现描边/填充混色像素 %d 个' % len(mixed))
 
     def test_edge_pixels_are_pure_border(self):
-        """部分透明（边界）像素必须是**纯描边色** —— 这样合成到任何底色都不出脏边。"""
+        """部分透明（边界）像素必须是**纯描边色**—— 这样合成到任何底色都不出脏边。"""
         img = GR.rounded_rect_ss(20, 20, 8, self.FILL + (255,), border=self.LINE + (255,), ss=4)
         px = img.load()
         bad = [(x, y, px[x, y]) for x in range(20) for y in range(20)

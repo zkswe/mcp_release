@@ -45,7 +45,7 @@ def find_asset(pic, base_dir=''):
     """定位图片资源真实路径。按顺序找：<项目>/resources/<引用>、<项目>/resources/<basename>、
     <json同目录>[/images]/…、<项目>/<引用>；再退一步试 .9.png 九宫格变体。
     （2026-09-10 修：旧实现只按 basename 找 resources/images/，带子目录的引用
-      如 audio/horn.png、dvr/record.png 全部找不到 → 预览丢图、尺寸预检漏报）"""
+如 audio/horn.png、dvr/record.png 全部找不到 → 预览丢图、尺寸预检漏报）"""
     if not pic or str(pic).startswith(('http://', 'https://', 'data:')):
         return None
     rel = str(pic).replace('\\', '/').lstrip('/')
@@ -106,12 +106,12 @@ def _inline_image(pic, base_dir='', max_kb=600):
 def _align_class(alignment):
     """FlyThings alignment(int) → CSS 对齐类（水平和垂直都显式给，不靠 CSS 缺省）。
 
-    位定义（设备实测校准：references/kb/controls.md 2026-08-29 + 2026-09-12 复核）：
+位定义（设备实测校准：references/kb/controls.md 2026-08-29 + 2026-09-12 复核）：
       bit0-1 = 水平 0=左 1=中 2=右；bit2-3 = 垂直 0=顶 1=中 2=底；
       bit4/5（16/32）是引擎附加标志位，不影响对齐语义。
-    于是：36=左中 / 37=中中 / 38=右中 / 33=中顶 / 41=中底 / 40=左底 / 0=左顶。
+于是：36=左中 / 37=中中 / 38=右中 / 33=中顶 / 41=中底 / 40=左底 / 0=左顶。
     ⚠️ 旧实现把 bit0 当“靠左”、又忽略 bit2，导致 37（居中）被画成靠左、33/41 垂直方向丢失
-    ——2026-09-12 沛哥报的「edit.html 文字对齐显示不对」即此。
+    ——2026-09-12 需求方报的「edit.html 文字对齐显示不对」即此。
     """
     a = int(alignment or 0)
     h = {0: 'al-hl', 1: 'al-hc', 2: 'al-hr'}.get(a & 3, 'al-hl')
@@ -140,7 +140,7 @@ _SCREEN_TOL = 4          # 整屏判定容差（px）
 
 def _screen_windows(data, W, H):
     """顶层整屏 window 列表 → [(key, caption, visible)]，用于生成页面切换条。
-    非数值 width/height 直接跳过（不抛错也不静默吞异常，无 except 站点）。"""
+非数值 width/height 直接跳过（不抛错也不静默吞异常，无 except 站点）。"""
     out = []
     for k, v in data.items():
         if not (isinstance(v, dict) and '__' in k and k.split('__')[0] == 'window'):
@@ -589,7 +589,7 @@ def _json_to_html(json_path, html_path, edit=False, extra_css='', extra_js='',
   .button:hover {{ filter:brightness(1.3); }}
   .window {{ border:1px dashed rgba(255,255,255,.25); }}
   /* alignment 十进制位 → 对齐类：bit0-1 水平(0左1中2右) / bit2-3 垂直(0顶1中2底)；
-     写全 H+V 两类，避免 .button 的默认居中把 36/33/41 之类画错 */
+写全 H+V 两类，避免 .button 的默认居中把 36/33/41 之类画错 */
   .al-hl {{ justify-content:flex-start; text-align:left; }}
   .al-hc {{ justify-content:center; text-align:center; }}
   .al-hr {{ justify-content:flex-end; text-align:right; }}
@@ -641,9 +641,9 @@ def _siblings_of(ui_dir, out_dir, files):
 def _ui_json_pages(ui_dir):
     """ui 布局 json 清单：同时支持 ui/*.json 与 ui/<分辨率>/*.json（工程布局不一致）。
 
-    原实现只 listdir(ui) 顶层 → 分层工程（如基准 SampleUI-New 的 ui/1024x600/*.json）
-    会得到 0 页，预览静默出空列表（v0.27.36 修，与 check_all._ui_pages 同一口径）。
-    返回 [(相对路径, 绝对路径)]，按相对路径排序。
+原实现只 listdir(ui) 顶层 → 分层工程（如基准 SampleUI-New 的 ui/1024x600/*.json）
+会得到 0 页，预览静默出空列表（v0.27.36 修，与 check_all._ui_pages 同一口径）。
+返回 [(相对路径, 绝对路径)]，按相对路径排序。
     """
     out = []
     for name in sorted(os.listdir(ui_dir)):
@@ -660,7 +660,7 @@ def _ui_json_pages(ui_dir):
 
 def json2html(target, output_dir='', for_customer=False):
     """target 为项目根目录或单个 json 文件路径；for_customer=True 出「客户确认稿」（.confirm.html）。
-    返回 {"success", "files": [...]}。"""
+返回 {"success", "files": [...]}。"""
     suffix = '.confirm.html' if for_customer else '.preview.html'
     if os.path.isdir(target):
         ui_dir = os.path.join(target, 'ui')

@@ -7,7 +7,7 @@ confidence: manual
 verified_at: 2026-09-30
 stale_days: 180
 origin: partial
-source: 2026-09-27 SmartPanel_HA 设备倒装需求（钟工）+ Z20 真机取证（fb0 像素比对 + mi_disp rotatemode A/B）
+source: 2026-09-27 SmartPanel_HA 设备倒装需求（）+ Z20 真机取证（fb0 像素比对 + mi_disp rotatemode A/B）
 needs_evidence: true
 platforms: [Z20]
 tags: [倒装, 屏幕旋转, 触摸旋转, 视频层旋转, 屏幕方向, 180度, 安装方向]
@@ -39,9 +39,9 @@ CONFIGMANAGER->setTouchRotate(180);    // -> zk_event_set_touch_rotate(rot/90)�
 
 - 底层走系统 disp 驱动的 `set_rotate` 钩子；**只有 90/270 才交换宽高**，
   180/0 不交换 → **正方形面板（如 480×480）180° 不需要第二套布局**（老 easyui 也没有 `relayout`，
-  别为倒装去做两套 ftu）。
+别为倒装去做两套 ftu）。
 - **调用时机**：驱动初始化前的调用会被丢弃（fbdev 未 init 直接 return）→ 不要放
-  `Main.cpp:onEasyUIInit`，放在**首页（屏保页）`onUI_init`** 最稳（画面已起，重绘生效）。
+  `Main.cpp:onEasyUIInit`，放在**首页（屏保页）`onUI_init`**最稳（画面已起，重绘生效）。
 - 触摸：转屏后**注入坐标按物理屏坐标给**即可（同角度映射），不要手工换算。
 - 切换时**先停播放器 → 改旋转 → 再起播放器**；播放中改图层属性会踩坏 disp 通道。
 
@@ -73,10 +73,10 @@ MI_DISP_SetVideoLayerRotateMode(0, &cfg);    // 返回 0 = OK
 
 1. **fb0 是多缓冲**（本板 3 块），别只比一块面板就判“没反应”；块内容在缓冲间轮转。
 2. 改 `ui/*.json` 后**必须 `fui pack` 出 ftu 再编译**（`generated/ui_*.cpp` 由 ftu 生成，
-   只改 json 会报控件指针未声明）。
+只改 json 会报控件指针未声明）。
 3. **源码注释别用 emoji / 特殊字符**（`check_all` 的特殊字符项会把 `⚠️` 之类判 FAIL）。
 4. 拼墙 + 倒装同时开时，相位判据要**按同一时刻（now）配对**再比 pts（按 `(cyc,pts)` 配，
-   跨轮会出现“恰好差一个周期”的假差异）。
+跨轮会出现“恰好差一个周期”的假差异）。
 5. 倒装开关**要落 prefs**（掉电保持），设置页改完别忘了 `setInvalid` 触发重绘。
 
 ## 6. 相关

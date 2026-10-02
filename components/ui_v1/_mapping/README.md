@@ -1,6 +1,6 @@
 # components/ui_v1/_mapping/ —— 映射参考（**不是自定义控件包**）
 
-> **口径（2026-09-16 钟工）**：跨框架控件分两类处置——
+> **口径（2026-09-16）**：跨框架控件分两类处置——
 > 1. **有平台对应控件 → 走「映射能力」**：机读索引 `mcp_control_map.json` + MCP op
 >    `flythings_map_control(query, source)`，一次对上我们的控件（级别 + 缺口 + 可直接粘的 json 片段）。
 >    **不写散文说明**。
@@ -13,7 +13,7 @@
 
 | 目录 | 源控件（各家） | 平台对应控件 | 为什么留档（不是控件包） |
 |---|---|---|---|
-| [`TabView/`](TabView/README.md) | LVGL `lv_tabview`；Android `TabLayout`+`ViewPager`；小程序 `swiper`+`tab`；Qt `QTabWidget` | **`pagewindow`（ZKPageWindow）** —— 自带滑动切页 + `onPageChange` | 接线细节：页签高亮/下划线**双向同步**（真源 = `getCurrentPage()`，幂等）、手感参数默认值 `dragMaxDis=200 / edgeEffect=1 / rollSpeed=60 / orientation=0`（无运行时 setter → 默认值 + 自检）、`onPageChanged` 只在真变页时回调；含 Z21 真机证据（滑动切页 / 点页签 / 页内控件不被吃） |
+| [`TabView/`](TabView/README.md) | LVGL `lv_tabview`；Android `TabLayout`+`ViewPager`；小程序 `swiper`+`tab`；Qt `QTabWidget` | **`pagewindow`（ZKPageWindow）**—— 自带滑动切页 + `onPageChange` | 接线细节：页签高亮/下划线**双向同步**（真源 = `getCurrentPage()`，幂等）、手感参数默认值 `dragMaxDis=200 / edgeEffect=1 / rollSpeed=60 / orientation=0`（无运行时 setter → 默认值 + 自检）、`onPageChanged` 只在真变页时回调；含 Z21 真机证据（滑动切页 / 点页签 / 页内控件不被吃） |
 
 ## 怎么用
 

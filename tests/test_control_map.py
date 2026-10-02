@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-"""跨框架控件映射能力契约（v0.27.73）：
-
-口径（钟工 2026-09-16）：**有一一映射的控件走「映射能力」（机读索引 + op），不写散文；
+"""跨框架控件映射能力契约（v0.27.73）：口径（2026-09-16）：**有一一映射的控件走「映射能力」（机读索引 + op），不写散文；
 平台真缺的能力才做自定义控件包 components/ui_v1/<源控件名>/**。本文件钉住三件事：
   ① 数据文件 mcp_control_map.json 的完整性（六个源框架 / 条数 / 级别取值 / 片段可解析 / L3 必须给 ref）
   ② op flythings_map_control 的外部契约（命中形状 / 模糊匹配 / source 限定 / NO_HIT / BAD_SOURCE / BAD_PARAMS）
@@ -148,7 +146,7 @@ class TestMapControlOp(unittest.TestCase):
         cat = U.jcall('list')
         self.assertIn('flythings_map_control', [o['op'] for o in cat['ops']])
 
-    # ---- 滚轮选择器口径（v0.27.93，钟工 2026-09-19 12:40 拍板：A1 映射表 L5→L2 / A3 去掉自绘包）----
+    # ---- 滚轮选择器口径（v0.27.93，2026-09-19 12:40 拍板：A1 映射表 L5→L2 / A3 去掉自绘包）----
 
     def test_wheel_family_maps_to_listview_l2(self):
         """滚轮族必须回 target=listview + level=L2（由 L5 改判），片段可直接粘且带 listview__ 键。"""
@@ -195,13 +193,13 @@ class TestMapControlOp(unittest.TestCase):
         for s in ('机读映射口径', 'flythings_map_control', 'L2', 'wheelpicker', 'targets.wheelpicker'):
             self.assertIn(s, t, '文档缺 %s' % s)
 
-    # ---- TimePicker 全族统一 L2（v0.27.94，钟工 2026-09-19：「TimePicker 通过 listview 这个实现对应」）----
+    # ---- TimePicker 全族统一 L2（v0.27.94，2026-09-19：「TimePicker 通过 listview 这个实现对应」）----
 
     def test_timepicker_family_all_map_to_listview_l2(self):
         """TimePicker 全族（**含时钟盘形态**）必须回 target=listview + level=L2，片段可直接粘。
 
-        上一轮把时钟盘形态如实标成「仍无对应能力」；钟工拍板：TimePicker 走 listview 实现对应，
-        不再留例外 —— 时钟盘只存在「观感降级」，不存在「能力缺失」。
+上一轮把时钟盘形态如实标成「仍无对应能力」；需求方拍板：TimePicker 走 listview 实现对应，
+不再留例外 —— 时钟盘只存在「观感降级」，不存在「能力缺失」。
         """
         for q in ('TimePicker', 'timepickerdialog', 'TimePickerDialog', 'clock dial', '时钟盘',
                   'NumberPicker', 'numberpicker', 'QTimeEdit', 'timeedit', 'LISTWHEEL',

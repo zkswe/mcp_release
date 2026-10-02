@@ -3,8 +3,9 @@
 
 背景（v0.27.31）：catalog.json 原先是手工/临时脚本产物，工具名与参数一改就漂移。
 本脚本用 AST 离线生成（不导入 kb_tools，无需 mcp/onnx 依赖），并支持 --check 做漂移检测。
-流程阶段 stage（design/build/other）从 gen_manifest.py 的 STAGE 表（人工维护的唯一一处）AST 读出，
-供意图闸门按阶段分组注入（v0.27.101）。
+流程阶段 stage（design/build/other）与 brief、args 一样都是**派生**：stage ← op_spec.json 的
+stage 字段，brief ← 该 op 的 docstring 首行（= 注册表 summary），args ← 函数签名。
+（v0.27.174 前 stage 是从 gen_manifest.py 的 STAGE 表 AST 爬出来的，那是第二份事实来源，已收编。）
 
 用法（在 MCP 根目录或任意位置）：
     python scripts/gen_gate_catalog.py            # 写入 ../flythings_intent_gate/catalog.json
@@ -23,20 +24,15 @@ DEFAULT_OUT = os.path.join(os.path.dirname(BASE), 'flythings_intent_gate', 'cata
 
 
 def read_stage():
-    """从 gen_manifest.py 的 STAGE 表读出 {op: stage}（AST 离线，不导入）。
+    """从 op 契约注册表读出 {op: stage}（唯一真源 = op_spec.json）。
 
-    单一人工维护处在 gen_manifest.py；这里只读不重定义，避免两处表漂移。
+    v0.27.174 起 stage 不再手工维护在 gen_manifest.py 里（那是第二份事实来源），
+    本函数改为直接问注册表；未登记的 op 由调用方按「漏登记」报错。
     """
-    p = os.path.join(BASE, 'scripts', 'gen_manifest.py')
-    tree = ast.parse(io.open(p, encoding='utf-8').read())
-    for n in tree.body:
-        if isinstance(n, ast.Assign) and any(
-                isinstance(t, ast.Name) and t.id == 'STAGE' for t in n.targets):
-            try:
-                return {k: str(v) for k, v in ast.literal_eval(n.value).items()}
-            except (ValueError, SyntaxError):
-                return {}
-    return {}
+    if BASE not in sys.path:
+        sys.path.insert(0, BASE)
+    import op_spec_loader as _osl
+    return {op: str(_osl.stage(op) or '') for op in _osl.registered()}
 
 
 def collect():
@@ -65,7 +61,7 @@ def collect():
     STAGE = read_stage()
     unregistered = sorted(registered - set(STAGE))
     if unregistered:
-        raise SystemExit('gen_manifest.STAGE 未登记：%s' % unregistered)
+        raise SystemExit('op_spec.json 未登记 stage 的 op：%s' % unregistered)
     bad = sorted(v for v in STAGE.values() if v not in ('design', 'build', 'other'))
     if bad:
         raise SystemExit('gen_manifest.STAGE 取值非法（只能 design/build/other）：%s' % bad)

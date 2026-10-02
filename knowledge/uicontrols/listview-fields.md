@@ -17,25 +17,25 @@ evidence: []
 
 > 检索导引：问「列表怎么做 / listview 字段 / 三回调一刷新 / 点击拿到的是行号还是 subitem id / 每行都常显 ListItem / 刷新不跟最新行」→ 本文；滚轮选择器见 `knowledge/uicontrols/listview-wheel-picker.md`，封面卡顿见 `knowledge/uicontrols/listview-image-cache.md`。
 > 2026-09-07 git.com 全库学习 + basedemo/listViewDemo-New + f133 easyui 2.9.0 SDK 校准。
-> ⚠️ 沛哥 2026-09-07 确认：新版 SDK **已无 subitem 数量 5 个限制**（老 SDK S_MAX_SUB_ITEM_COUNT=5 已移除，可做更多）。
+> ⚠️ 2026-09-07 确认：新版 SDK **已无 subitem 数量 5 个限制**（老 SDK S_MAX_SUB_ITEM_COUNT=5 已移除，可做更多）。
 
 ## 核心铁律
 
 1. **三回调 + 一刷新**（老工程命名 / fun 新工程（原 fuse）同构）：
    - `getListItemCount_XXX(const ZKListView*)` → 返回总行数
    - `obtainListItemData_XXX(pListView, pListItem, index)` → 填第 index 行内容（**禁止耗时代码**，滚动逐行调）
-   - `onListItemClick_XXX(pListView, index, id)` → **id = 被点击 subitem 的控件 ID**（沛哥确认），用于区分同一行里点了标题/按钮/删除钮
+   - `onListItemClick_XXX(pListView, index, id)` → **id = 被点击 subitem 的控件 ID**（经需求方确认），用于区分同一行里点了标题/按钮/删除钮
    - 数据变更后 `mListPtr->refreshListView()`
 2. **行内子项用 ID 取**：`pListItem->findSubItemByID(ID_MAIN_SubItemText)`；subitem 本质是 ZKButton，可 setText/setSelected/setBackgroundPic/setVisible。
 3. **点击回调第三个参数是 subitem 的 id**（不是行号）：行号是 index；要区分行内不同可点区域就 switch(id)。
 4. 删除行套路：数据容器 erase → 更新计数 → refreshListView（listViewDemo 实测）。
 5. 资源路径用 `CONFIGMANAGER->getResFilePath("pic/xxx.jpg")` 拼（相对 resources）。
 6. 另一种编程式用法：`setListAdapter(AbsListAdapter)` + `setItemClickListener`（NetDemo/New 风格），与命名回调二选一。
-7. **`setSelection(idx)` 之后必须 `refreshListView()`**（沛哥 2026-09-10）：setSelection 只改选中态，
-   不重新拉行数据/不重绘，漏刷新 = 界面上看不到变化（高亮/滚动位置不更新）。改数据（erase/新增）同理，改完一律 refresh。
+7. **`setSelection(idx)` 之后必须 `refreshListView()`**（2026-09-10）：setSelection 只改选中态，
+不重新拉行数据/不重绘，漏刷新 = 界面上看不到变化（高亮/滚动位置不更新）。改数据（erase/新增）同理，改完一律 refresh。
 8. **刷完要主动决定「停在哪一行」**（2026-09-16 实测，**日志/监控列表必踩**）：`refreshListView()` 只让数据重排重绘，
    **滚动位置不变**。日志/进度这类「只看最新」的列表不主动跳行 → 屏幕上永远是最早的旧行，
-   看起来像"数据不更新"。顺序不能反：
+看起来像"数据不更新"。顺序不能反：
    ```cpp
    p->setSelection(count - 1);   // 先跳到最后一行
    p->refreshListView();         // 再刷新（顺序反了可能不重绘）
@@ -82,7 +82,7 @@ evidence: []
 | `hasScrollbar` | 滚动条显示 |
 | `item` | 行模板（内含各 subitem 定义）；**`item.text` 默认值必须写 `""`**（默认 `ListItem` 会每行常显，见「两个高频坑」） |
 
-## dragMaxDis 取值（越界拖拽上限，2026-09-12 沛哥定规）
+## dragMaxDis 取值（越界拖拽上限，2026-09-12 需求方定规）
 
 > `dragMaxDis` **不是**「列表能滚多远」，而是**手指越过内容边界后，内容还允许被继续拽出去的最大距离**。
 > 填成列表高度 → 一次拖拽把整屏列表拽出去，松手才回弹 → **交互不合格**。
@@ -90,9 +90,9 @@ evidence: []
 
 | 场景 | edgeEffect | dragMaxDis | autoRollback |
 |------|-----------|-----------|--------------|
-| 数据浏览列表（不用回弹） | 0 | **0** | false |
-| 菜单/设置列表、循环选择器 | 1 | **50** | true |
-| 长数据列表 | 0 或 1 | **0 或 50** | false |
+| 数据浏览列表（不用回弹） | 0 | **0**| false |
+| 菜单/设置列表、循环选择器 | 1 | **50**| true |
+| 长数据列表 | 0 或 1 | **0 或 50**| false |
 
 - **硬约束**：listview 的 `dragMaxDis` < 控件可视高（≥ 即不合格），基准 ≤ 一行高（50 @1024×600）。
 - `0` = 关闭越界拖出（配 `edgeEffect:0`）；`edgeEffect:1 + dragMaxDis:0` 是自相矛盾的配法。
@@ -107,12 +107,12 @@ evidence: []
 1. **引擎自己维护「当前项」选中态**：用户在列表上操作后，它把选中态打在**列表盒第 1 行**
    （= `getFirstVisibleItemIndex()`）上，**会盖掉 `obtainListItemData` 里的 `setSelected`**。
    -> 要自己做「正中行高亮」时，**别用引擎的态图**（`pic0/1/2` 留空、`color2/3` 置中色）；
-   选中感由宿主自画（选中条层次与文字色口径见 `knowledge/uicontrols/listview-wheel-picker.md` §3 坑 4）。
+选中感由宿主自画（选中条层次与文字色口径见 `knowledge/uicontrols/listview-wheel-picker.md` §3 坑 4）。
 2. **行属性不会因为「中心行变了」而自动重刷**：引擎只在行「进入可视区」或 `refreshListView()` 时调
    `obtainListItemData`。中心行一变就要 `refreshListView()`，否则会出现「滚完停住、高亮停在错行」。
 3. **`setSelection(i)` 把第 i 项摆到列表盒第 1 行（不是正中行），并且是带动画的**（调用后 `fi` 会连续跑好几帧）
    -> 程序化定位（复位/取消/步进）不要用「调 setSelection + 立即回读 + 再调」的迭代校正（会越推越远），
-   用**数据侧平移** + `refreshListView()`（写法见 `knowledge/uicontrols/listview-wheel-picker.md` §1）。
+用**数据侧平移**+ `refreshListView()`（写法见 `knowledge/uicontrols/listview-wheel-picker.md` §1）。
 
 其余**属于滚轮配法**的内容（中心行回读公式、选中条挂静态层、字段取值档、行数据数组取 2n、
 验收判据与像素数字）统一收在 **`knowledge/uicontrols/listview-wheel-picker.md`**（§0~§4），本文不再重复。

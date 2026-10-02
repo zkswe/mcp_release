@@ -42,7 +42,7 @@ evidence: []
 |------|------|
 | `fun install` | 安装配置里声明的**所有依赖**（`--project-dir` 可指项目；`-p` 指平台） |
 | `fun build -p F133` | 编译（`-p/--platform`、`-t/--target`、`-D` 预定义、`--cflags`、`--project-dir`、`--verbose`） |
-| `fun launch -p F133 [-s <serial\|IP>]` | 部署到设备并启动，**仅用于临时调试**（`-s/--device` 只收合法 serial/IP；**多设备在线时必 FAIL** → §6；MCP 侧失败自动重试 5 次） |
+| `fun launch -p F133 [-s <serial\|IP>]` | 部署到设备并启动，**仅用于临时调试**（`-s/--device` 只收合法 serial/IP；**多设备在线时必 FAIL**→ §6；MCP 侧失败自动重试 5 次） |
 | `fun sim` | **模拟器运行**（fuse 时代没有这条）。⚠️ **MCP 暂不提供/不代跑**（见 §5） |
 | `fun create [<starter>]` | 建工程（`--type bin` 出可执行程序工程） |
 | `fun add <package>` | 追加依赖包 |
@@ -74,9 +74,9 @@ INIT_UI_EVENT_BINDINGS
 
 | | IDE（Eclipse/CDT） | `fun build`（本仓库推荐的命令行体系） |
 |---|---|---|
-| 入口 | `src/activity/mainActivity.cpp` | `src/Main.cpp` + **fun 生成的** `generated/{event,event_dispatcher,ui_main}.cpp` |
+| 入口 | `src/activity/mainActivity.cpp` | `src/Main.cpp` + **fun 生成的**`generated/{event,event_dispatcher,ui_main}.cpp` |
 | `src/activity/*` | ✅ 参与编译 | ❌ **完全不参与编译**（该目录是 IDE 专用） |
-| `src/logic/*.cc` | 由 activity `#include` 进编译单元 | ✅ **直接当编译单元编译** |
+| `src/logic/*.cc` | 由 activity `#include` 进编译单元 | ✅ **直接当编译单元编译**|
 | 业务代码 `src/**/*.cpp` | 需在 IDE 工程里登记 | ✅ fun 扫描收进编译单元 |
 | 编译宏 | — | `FUN_BUILD=1`（写法与迁移见 §4） |
 
@@ -103,7 +103,7 @@ INIT_UI_EVENT_BINDINGS
 **现象**：老工程（源头 IDE 工程 / 用户自建工程）用 `fun build` 编不过，报的是**编译错误**（不是链接错误）：
 `In file included from generated/event_dispatcher.cpp:1: fatal error: base/functional.h: No such file or directory`。
 
-**根因**：`fun` 生成的 `generated/{event_dispatcher,event_app}.{h,cpp}`、`ui_main.*` 里**固定** `#include <base/functional.h>`
+**根因**：`fun` 生成的 `generated/{event_dispatcher,event_app}.{h,cpp}`、`ui_main.*` 里**固定**`#include <base/functional.h>`
 （还有 `base/base.h`/`base/defer.h`/`base/exception.h`），归**依赖包 `base-utility`**；而它不是模板/IDE 自动带的——
 `Manifest.xml` 不声明 → include 路径就不进 CMake（症状像「框架头文件不存在」，其实只是**包没声明/没装**）。
 
@@ -122,9 +122,9 @@ INIT_UI_EVENT_BINDINGS
 
 **工具侧防护（v0.27.83，别只靠人眼）**：
 - `flythings_check_project_deps` / `flythings_validate_project`：代码或 `generated/*.h` 出现 `#include <base/…>` 而 Manifest
-  未声明 base-utility（依赖锁也没解析到）→ 报 `missing_framework_dependency` + 可照做的 fix。
+未声明 base-utility（依赖锁也没解析到）→ 报 `missing_framework_dependency` + 可照做的 fix。
 - `flythings_build_ui_flow`：`fun install` 失败不再静默（返回体顶层 `warnings`）；build 前做框架基础头体检，缺包直接点明。
-  判定口径（避免误报）：**Manifest 已声明 或 依赖已解析（传递依赖也算）**即 OK（实测 `easyui` 有时会把 `base-utility` 带出来）；
+判定口径（避免误报）：**Manifest 已声明 或 依赖已解析（传递依赖也算）**即 OK（实测 `easyui` 有时会把 `base-utility` 带出来）；
   ⚠️ `base/` 前缀**不是 base-utility 独占**：`base-http-client`→`base/http_*.h`、`base-json`→`base/json_*.h`、`easyui 3.0.0(Z20)`→`base/fy_*.h`（本机注册表实扫），按「精确头名 + 前缀排除」判定。
 
 **同源现象（一起记）**：`fun build` 报 `找不到 base utils` / `base-utility 缺失` / `fun install 没生效` —— 同一条根因。
@@ -136,8 +136,8 @@ INIT_UI_EVENT_BINDINGS
 - 工具侧动作优先走 MCP（`flythings_build_ui_flow` / `flythings_add_package` / `flythings_pack_upgrade`），**禁止手搓 fun/adb 命令**（MCP 已处理 retry、设备选择、i18n 盲点等）
 - **改过 `Manifest.xml`（加包/改版本/改平台）→ 必须先 `fun install` 再 `fun build`**：根因、判据、工具侧防护见 §4.7
 - 调试 = `fun launch`（临时推送，掉电即失）；固化 = `fun pack` 出 `update.img`（掉电保留）——两者语义别混（见 `knowledge/devflow/deploy-scene-map.md`）；
-  抓帧/设备侧动作仍走 `flythings_device_screenshot`（内部已处理 rootfs 裁剪、pan 偏移、压缩链路）
-- ⚠️ **`fun sim` 不在 MCP 能力面内**（沛哥 2026-09-14 定「暂时发布的 mcp 不要支持 sim 功能」）：工具面不暴露该能力，`project_tools._run_fun` 也**显式拒绝 `cmd == 'sim'`** 并返回正解 hint（推真机→`flythings_build_ui_flow`；出图→`flythings_device_screenshot`；要跑模拟器自己去本地命令行）。**AI 不要拿 `flythings_*` 工具去实现模拟器运行，也不要因这条向用户承诺 MCP 能跑模拟器。**
+抓帧/设备侧动作仍走 `flythings_device_screenshot`（内部已处理 rootfs 裁剪、pan 偏移、压缩链路）
+- ⚠️ **`fun sim` 不在 MCP 能力面内**（2026-09-14 定「暂时发布的 mcp 不要支持 sim 功能」）：工具面不暴露该能力，`project_tools._run_fun` 也**显式拒绝 `cmd == 'sim'`**并返回正解 hint（推真机→`flythings_build_ui_flow`；出图→`flythings_device_screenshot`；要跑模拟器自己去本地命令行）。**AI 不要拿 `flythings_*` 工具去实现模拟器运行，也不要因这条向用户承诺 MCP 能跑模拟器。**
 
 ## 6. ⚠️ 多设备在线时「把工程推到指定设备」（2026-09-16 首测 / 09-17 复测 / **09-28 三测定稿**）
 
@@ -156,7 +156,7 @@ adb 按「多设备未指定」回 `more than one device/emulator`。裸 socket 
 | `host:transport 192.168.x.x:5555`（空格，fun 的写法） | `FAIL more than one device/emulator` |
 | `host:transport:192.168.x.x:5555`（冒号） | `OKAY` |
 
-fun launch 完整序列（伪 adb host server 抓包）：`host:version` → `host:devices` → **`host:transport <serial>`（空格）** →
+fun launch 完整序列（伪 adb host server 抓包）：`host:version` → `host:devices` → **`host:transport <serial>`（空格）**→
 `shell:getprop 'ro.product.model'`。`-s` 本身生效（解析 + 校验都有）：`-s <不存在的 serial/IP>` → `FATAL device "..." not found`；
 纯 IP 会自动 `adb connect`；**但不支持序号**（`-s 0/1/5` 均 not found）。单设备在线时能推（server 兜底），所以这个 bug 很容易被忽略。
 
@@ -181,7 +181,7 @@ fun launch -p <平台> -s <ip>:5555         # 多设备在线也能精确推到�
 应与本地 `ui/main.ftu` **字节 + md5 一致**；库取本地 `.fsc/<平台>/libzkgui.so`（09-28 版产物目录已换成 `.fsc/`，老 `.fun/` 不再更新）；设备侧 `ls` 不认 `head`。
 
 **其它**：唯一会拦下来的是**平台校验**（`shell:getprop 'ro.product.model'` 对比工程平台，不匹配 → `FATAL platform not match`，exit 1）；push 出错也 `FATAL` + exit 1。
-**WiFi adb**：`adb tcpip 5555` → `adb connect <ip>:5555`；掉线可随时重连（实测未重跑 `tcpip` 直接重连成功），设备重启前有效；**用完 `adb disconnect <ip>:5555`** 避免选错设备。
+**WiFi adb**：`adb tcpip 5555` → `adb connect <ip>:5555`；掉线可随时重连（实测未重跑 `tcpip` 直接重连成功），设备重启前有效；**用完 `adb disconnect <ip>:5555`**避免选错设备。
 
 ## 7. 未验证 / 边界
 

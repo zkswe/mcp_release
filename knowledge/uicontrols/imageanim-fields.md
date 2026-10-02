@@ -16,9 +16,9 @@ evidence: []
 # 🎞️ ImageAnim 动图控件 JSON 字段规范
 
 > 检索导引：问「动图控件 / GIF·WebP 播放 / playFile 不显示 / PNG 序列做动画 / 动图与文本帧动画选型」→ 本文。
-> 2026-09-02 沛哥定规 + 入库（ImageAnimDemo-New/main.json + UIlayoutDemo/imageanim.json 实测校准）。
+> 2026-09-02 需求方定规 + 入库（ImageAnimDemo-New/main.json + UIlayoutDemo/imageanim.json 实测校准）。
 
-## ⚠️ 核心铁律（沛哥 2026-09-02 定规）
+## ⚠️ 核心铁律（2026-09-02 定规）
 
 > **缺图不致命但属验收缺陷**：`playFile` 指向不存在的 GIF/WebP → 控件不可见
 > （framework 容错，不挂死）；文件没就位就不写引用，只写已落盘的文件。
@@ -42,7 +42,7 @@ evidence: []
 | 字段 | 类型/取值 | 说明 |
 |------|----------|------|
 | `caption` | string | 控件名（ImageAnim1…） |
-| `id` | int | 控件 id（html2json 从 **160000** 起；官方 demo 用 53xxx，IDE 版本不同段不同，html2json 固定 160000） |
+| `id` | int | 控件 id（html2json 从 **160000**起；官方 demo 用 53xxx，IDE 版本不同段不同，html2json 固定 160000） |
 | `loopCount` | int | 循环次数：**<=0 无限循环**；>0 播放 count 次后停止 |
 | `playFile` | string | 动图文件路径，**相对 resources 目录**（如 `image/test.gif`、`logo.gif`）；只支持 .gif/.webp |
 | `position` | {left,top,width,height} | 控件位置尺寸（动图按控件大小缩放显示） |
@@ -75,7 +75,7 @@ mImageAnim1Ptr->getImageHeight();        // 动图高
 
 ## 常见坑
 
-- **动图不显示** → ①格式不是 gif/webp ②playFile 路径不对（要相对 resources）③平台不支持（F133）
-- **只播一次就停** → loopCount 设了 >0；要循环设 <=0（如 0）
-- **需求是动图却建了 textview 切 PNG** → 实现方式错了，改 imageanim 控件 + playFile
-- **动图尺寸不对** → 控件 position 宽高决定显示大小，动图会缩放适配
+- **动图不显示**→ ①格式不是 gif/webp ②playFile 路径不对（要相对 resources）③平台不支持（F133）
+- **只播一次就停**→ loopCount 设了 >0；要循环设 <=0（如 0）
+- **需求是动图却建了 textview 切 PNG**→ 实现方式错了，改 imageanim 控件 + playFile
+- **动图尺寸不对**→ 控件 position 宽高决定显示大小，动图会缩放适配

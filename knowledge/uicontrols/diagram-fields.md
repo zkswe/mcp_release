@@ -21,7 +21,7 @@ evidence: []
 
 ## 核心铁律
 
-1. **坐标点统一用 SZKPoint**（沛哥 2026-09-07 纠正：不存在 MPPOINT 平台区分，全平台 SZKPoint，老 wiki 已过时）。
+1. **坐标点统一用 SZKPoint**（2026-09-07 纠正：不存在 MPPOINT 平台区分，全平台 SZKPoint，老 wiki 已过时）。
 2. **波形图控件含多个波形（wave）**：外层 diagram（xAxisRange/yAxisRange/region 绘制区域）+ infos[] 内每条波形独立样式。**内层波形不生成独立指针变量**，操作通过外层 diagram 指针 + index（从 0 起）。
 3. **两种刷数据方式（关键差异）**：
    - `setData(index, SZKPoint*, count)`：全量刷新整条波形。做移动动画需**手动数组整体偏移**（movePoints 把 y[i]=y[i+1]）+ 定时器驱动；大数据量会整图刷新，较慢。
@@ -33,7 +33,7 @@ evidence: []
 ### diagram 外层
 | 字段 | 说明 |
 |------|------|
-| `caption`/`id` | id 实测 **120001** 段 |
+| `caption`/`id` | id 实测 **120001**段 |
 | `xAxisRange` | {lower, upper} x 轴范围（颠倒会左右镜像+刷新方向颠倒） |
 | `yAxisRange` | {lower, upper} y 轴范围（颠倒上下镜像） |
 | `region` | {left,top,width,height} 波形绘制区域（相对控件） |

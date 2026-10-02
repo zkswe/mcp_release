@@ -13,7 +13,7 @@ HTML 是首版交互界面的最佳载体（浏览器直接看、客户确认快
 **HTML 原型允许任意展示效果**：emoji、iconfont、CSS 渐变/阴影/圆角、粒子、甚至 3D 动效（如
 loading 动画）都可以在 HTML 里做——浏览器能力强，原型就是要炫。
 
-**✅ JS 交互设计（2026-08-29 沛哥建议，强烈推荐）**：第一套 HTML 效果稿**建议直接写 JS 交互**——
+**✅ JS 交互设计（2026-08-29 需求方建议，强烈推荐）**：第一套 HTML 效果稿**建议直接写 JS 交互**——
 点击弹窗/页面切换/tab 切换/列表滚动/数据模拟/动效触发等，让客户在浏览器里直接"点得动"，
 前期效果确认和修改效率翻倍。转换器已自动忽略 `<script>` 标签和 onclick 等交互属性（实测验证），
 JS 只服务于浏览器预览确认，不转 json；FlyThings 端的交互逻辑由 logic.cc 实现（json 布局 + 回调）。
@@ -28,7 +28,7 @@ JS 只服务于浏览器预览确认，不转 json；FlyThings 端的交互逻�
 | 圆角 / 可拉伸背景（卡片/按钮/轨道/输入框） | 切图 → **.9.png 九宫格**（top/left 1px 黑线标拉伸区），`data-pic` 引用 |
 | emoji / iconfont / 特殊符号图标 | **转 PNG 图标**（设备字库裁剪不支持 emoji，图片不受字库限制），`data-pic`/`src` 引用 |
 | 阴影 / 描边 / 毛玻璃 | **`box-shadow` 自动转图**（2026-09-11 修复后可靠，见下）；描边/毛玻璃等复杂效果切图（效果画进图片），`data-pic` 引用 |
-| loading / 旋转 / 3D / 粒子动效 | **序列帧 PNG 或 GIF** → ZKImageView 动图控件（imageanim，支持 Z20/Z21/T113/V85X 等平台，循环次数 ≤0 无限循环）；静态图则用控件切换 |
+| loading / 旋转 / 3D / 粒子动效 | **序列帧 PNG 或 GIF**→ ZKImageView 动图控件（imageanim，支持 Z20/Z21/T113/V85X 等平台，循环次数 ≤0 无限循环）；静态图则用控件切换 |
 | 鼠标 hover / 点击态 | 两态图：normal + pressed（`_p` 后缀），按钮 `picTab{pic0,pic1}` |
 
 **转换器行为（2026-08-29 升级：自动转图）**：style 里出现 `linear-gradient/box-shadow/border-radius/animation` 等效果属性时，转换器**自动生成图片资源**（不再只 warning）：
@@ -39,11 +39,11 @@ JS 只服务于浏览器预览确认，不转 json；FlyThings 端的交互逻�
   - **阴影 alpha 必须与圆角 mask 相乘**（`ImageChops.multiply`，不能 `putalpha` 覆盖）：覆盖会把 10% 透明黑压成不透明 → 卡片四周一圈硬黑描边（2026-09-11 修正）
 - `border-radius` → 自动生成圆角图（四角真透明，可叠背景）
   - **写法容错（v0.27.76）**：`px` / 无单位 / **`%`**（`50%` → 正圆/药丸）均认，多值取第一段，
-    按 `min(w,h)/2` 钳制（旧实现只认「数字+px」→ `50%`/无单位会出方角）
+按 `min(w,h)/2` 钳制（旧实现只认「数字+px」→ `50%`/无单位会出方角）
   - **出图档位 = SS（v0.27.76）**：CSS 效果出图**一律走超采样 `ss=4`（每像素 16 子采样）**，
-    不再用「1x 直画 + α 羽化」（药丸/正圆这类强曲率旧路实测边界误差 mean 35.4/255 → 现 5.3）；
-    手写调 `gen_res` 时按形状选（强曲率 `rounded_rect_ss` / 大半径卡片 `rounded_rect`），
-    详见 `knowledge/devflow/ui-asset-rules.md` 铁律 #8
+不再用「1x 直画 + α 羽化」（药丸/正圆这类强曲率旧路实测边界误差 mean 35.4/255 → 现 5.3）；
+手写调 `gen_res` 时按形状选（强曲率 `rounded_rect_ss` / 大半径卡片 `rounded_rect`），
+详见 `knowledge/devflow/ui-asset-rules.md` 铁律 #8
 - 文本含 emoji → 自动转 emoji PNG 图标（`images/emoji_*.png`），控件变图标 textview（设备字库不支持 emoji）
 - `class="loading"/"spinner"` 或 `animation: spin` → 自动生成 loading GIF（`images/loading_*.gif`，12 帧循环）+ imageanim 控件；并在 warning 中提示 logic.cc 里 `mXXXPtr->play("images/loading_*.gif")`
 - 图片输出到 json 同目录 `images/`（即 ui/images/），json 引用 `images/xxx.png`；生成数量在返回的 `generatedAssets` 字段
@@ -52,7 +52,7 @@ JS 只服务于浏览器预览确认，不转 json；FlyThings 端的交互逻�
 **切图工具**：`tools/ui_tools/gen_res.py`（Pillow 脚本）可按 CSS 设计稿参数生成
 PNG/.9.png/序列帧；手工切图也可，输出到 `resources/images/`。
 
-## 🎯 图标优先（iconfont 矢量线框，沛哥 2026-09-03 定规）
+## 🎯 图标优先（iconfont 矢量线框，2026-09-03 定规）
 
 **生成 UI 时常用操作必须用图标表达，禁止用「按钮+文字」糊弄**。返回/播放/暂停/上一首/下一首/
 设置/搜索/删除/刷新/确认/关闭/加减/音量/主页/菜单等通用操作，HTML 里写 `data-icon`（或
@@ -77,7 +77,7 @@ iconfont class），转换器**自动生成 iconfont 风格矢量线框 PNG**（
 - **data-color**：线框颜色 `#RRGGBB`（默认 `#D8E2F0` 浅灰蓝，深色主题友好）；图标按钮按下态自动提亮。
 - **尺寸**：控件建议正方形（data-w == data-h）；PNG 与控件同尺寸、线框居中（非正方自动居中不变形）。
 - **caption**：图标按钮同样要 data-caption（回调命名用），不要往图标按钮里写文字；
-  需要文字说明 → 图标按钮旁另加 `div.text`。
+需要文字说明 → 图标按钮旁另加 `div.text`。
 - **覆盖**：若同时给了 data-pic/data-pic0 等显式图，以显式图为准（data-icon 忽略）。
 - 未收录的图标名 → warning 提示（列出可用名）；自备图仍用 data-pic 老办法。
 
@@ -128,8 +128,8 @@ iconfont class），转换器**自动生成 iconfont 风格矢量线框 PNG**（
 
 原型线框图/美化稿允许**一个 HTML 放多屏**（每屏一个并列 `div.screen`，`data-page` 区分，见
 `knowledge/devflow/prototype-flow.md` 的「分页落地清单（硬规则）」）。
-**缺省口径（钟工 2026-09-21）：一个 `.screen` = 一个页面 = 一个 Activity = 一个独立 json（-> 一个独立 ftu）；
-N 个 `.screen` 就产出 N 个 json。** 工具**不会**把多个 `.screen` 合成多窗口。
+**缺省口径（2026-09-21）：一个 `.screen` = 一个页面 = 一个 Activity = 一个独立 json（-> 一个独立 ftu）；
+N 个 `.screen` 就产出 N 个 json。**工具**不会**把多个 `.screen` 合成多窗口。
 **转换后 json 数必须等于屏数**，不少于。
 
 > 「哪些屏属于不同 Activity、哪些属于同一个 `.screen` 内部的 window/dialog」**由 AI 在设计阶段
@@ -145,7 +145,7 @@ N 个 `.screen` 就产出 N 个 json。** 工具**不会**把多个 `.screen` �
 ```
 
 - 每个 `.screen` = **一页**，必须**并列**（`.screen` 里不能再套 `.screen`；嵌套时按**最外层**算页、
-  内层容器被忽略，转换器给 warning 并点名，不静默）；
+内层容器被忽略，转换器给 warning 并点名，不静默）；
 - `data-page` = 页 id（缺省 `page_k`）：缺省口径下就是 **json 文件名**；`--merge-windows` 时作为该整屏 window 的 `caption`；**必须唯一**（重复 = 报错）；
 - 同一 `.screen` 内的 `div.window` / `div.modal`（弹窗）**不是页**：它们是这一页内部的显隐元素
   （json 里就是该页内的 window 控件），不占页数、也不会被拆成第二个 json；
@@ -156,8 +156,8 @@ N 个 `.screen` 就产出 N 个 json。** 工具**不会**把多个 `.screen` �
 
 | 形态 | 怎么转 | 产物 | 什么时候用 |
 |------|--------|------|------------|
-| **默认：每屏一个 json（独立 ftu / 独立 Activity）** | 直接转（不带参数） | **N 个 json**，文件名 = `<data-page>.json`（缺省 `page_k.json`），每份都是普通单屏 json（无整屏 window 包裹） | **常态**：每页一个 Activity 一个 ftu（`openActivity()` 跳转）；不同业务域、需独立返回栈、大页面一律走这条 |
-| **合并：同 json 多整屏 window** | `--merge-windows`（MCP：`merge_windows=true`） | **一个 json**：`window__1..window__N` 连续编号，首屏 `visible:true`、其余 `visible:false`，每个 window 的 `position` = 整屏，`caption` = `data-page`；屏内控件挂在对应 window 里（相对该窗口坐标） | **仅当 AI 判定这些屏同属一个 Activity**（同 ftu 内的多个整屏 window，代码里 `showWnd()/hideWnd()` 切页）；页签/设置二级页/遮挡页这类共享控件指针与状态的场景 |
+| **默认：每屏一个 json（独立 ftu / 独立 Activity）**| 直接转（不带参数） | **N 个 json**，文件名 = `<data-page>.json`（缺省 `page_k.json`），每份都是普通单屏 json（无整屏 window 包裹） | **常态**：每页一个 Activity 一个 ftu（`openActivity()` 跳转）；不同业务域、需独立返回栈、大页面一律走这条 |
+| **合并：同 json 多整屏 window**| `--merge-windows`（MCP：`merge_windows=true`） | **一个 json**：`window__1..window__N` 连续编号，首屏 `visible:true`、其余 `visible:false`，每个 window 的 `position` = 整屏，`caption` = `data-page`；屏内控件挂在对应 window 里（相对该窗口坐标） | **仅当 AI 判定这些屏同属一个 Activity**（同 ftu 内的多个整屏 window，代码里 `showWnd()/hideWnd()` 切页）；页签/设置二级页/遮挡页这类共享控件指针与状态的场景 |
 
 判据见 `knowledge/devflow/page-architecture-spec.md` §2 决策清单（缺省 = 每屏一个 json / 一个 Activity）。
 
@@ -165,8 +165,8 @@ N 个 `.screen` 就产出 N 个 json。** 工具**不会**把多个 `.screen` �
 
 - 单页：写 `output_json` 指定的那个文件（与旧版一致）；
 - 多页（缺省口径）：写 `<输出目录>/<data-page>.json`；`output_json` 写 `.json` = 取它的所在目录，
-  写成目录（不带 `.json`）= 直接用它，省略 = html 同目录；
-- `--merge-windows`：只写一个 json（`output_json` 指定的文件；只给目录时用**首屏 data-page** 命名）。
+写成目录（不带 `.json`）= 直接用它，省略 = html 同目录；
+- `--merge-windows`：只写一个 json（`output_json` 指定的文件；只给目录时用**首屏 data-page**命名）。
 
 ### 返回值与错误口径（不许静默丢页）
 
@@ -178,7 +178,7 @@ N 个 `.screen` 就产出 N 个 json。** 工具**不会**把多个 `.screen` �
   （缺省 = 每页自己的 json 文件名；`--merge-windows` = `第 k 屏 -> window__k`，并回显「本次按
   merge-windows 合成」）；
 - **两者不等 = `success:false` + `error`**（`data-page` 重复、某屏转换失败等）。
-  这是硬闸门：**交付前必做「屏数核对」**（设计稿 N 屏 <-> 产出 N 页 = N 个 json），不过不许交付。
+这是硬闸门：**交付前必做「屏数核对」**（设计稿 N 屏 <-> 产出 N 页 = N 个 json），不过不许交付。
 
 ### 最小 2 屏示例
 
@@ -226,7 +226,7 @@ python tools/ui_tools/html2json.py ui/wireframe.html ui/main.json --merge-window
 | `div.pointer` / `div.gauge` | ZKPointer 仪表盘指针 | data-pointer-pic 指针图、data-bgpic 表盘、data-pointer-w/h、data-start-angle（可负）、data-rotate-speed、data-clockwise、data-animatable |
 | `div.qrcode` / `div.qr` | ZKQRCode 二维码 | data-code 初始内容，代码 loadQRCode() 动态生成 |
 | `div.videoview` / `div.video` | ZKVideoView 视频播放 | data-volume 默认音量、data-loop 循环播放 |
-| `div.card` / `div.window` / `div.panel` | ZKWindow 容器 | 子控件嵌套其内（相对坐标）；data-pic 背景图、data-bg 纯色背景；**默认 visible:false（初始隐藏，代码 showWindow 弹出）** |
+| `div.card` / `div.window` / `div.panel` | ZKWindow 容器 | 子控件嵌套其内（相对坐标）；data-pic 背景图、data-bg 纯色背景；**默认 visible:false（初始隐藏，代码 showWindow 弹出）**|
 | `div.modal` / `div.dialog` | ZKWindow 弹窗 | 自动 modal:true + visible:false + 最后定义（最上层）；data-hide-timeout 自动隐藏秒数（模态 8 实测）；data-bg 纯色背景（无图时） |
 > ⚠️ **系统栏（navibar/statusbar）**：类似 Android 状态栏/导航栏的悬浮窗口，根节点加 `data-topmost="1"`（悬浮最上层）+
 > 不写 `data-bg`（背景透明）；statusbar 可用 `data-x/y/w/h` 指定局部悬浮块（如 100×41 电量显示），navibar 全屏叠弹窗。
@@ -243,7 +243,7 @@ python tools/ui_tools/html2json.py ui/wireframe.html ui/main.json --merge-window
 - 也支持 `style="left:10px;top:20px;width:100px;height:30px"`
 - 窗口内子控件坐标为**相对窗口**的坐标（自动嵌套进 window 键内）
 - `.screen` 根节点分辨率：`data-res="WxH"` > `data-width + data-height` > `style="width:..;height:.."` > 默认 480x272；
-  强烈建议显式写 data-res 或传 res 参数（默认 480x272 对多数屏是错的）
+强烈建议显式写 data-res 或传 res 参数（默认 480x272 对多数屏是错的）
 
 ## 属性速查
 | 属性 | 作用 | 示例 |
@@ -309,7 +309,7 @@ python tools/ui_tools/html2json.py ui/wireframe.html ui/main.json --merge-window
 </div>
 ```
 - 推荐用 `<div class="item">` 包裹每一行，行内再写多个子控件——转换器会**展开包裹层**、
-  逐个生成 subItem（不会吞掉内部控件）：
+逐个生成 subItem（不会吞掉内部控件）：
 ```html
 <div class="list" data-x="0" data-y="0" data-w="480" data-h="200">
   <div class="item">
@@ -323,7 +323,7 @@ python tools/ui_tools/html2json.py ui/wireframe.html ui/main.json --merge-window
 ```
 - ⚠️ 旧版本曾要求必须 class="subitem" 直挂、`.item` 包裹会被吞成单个空 subItem，已修复：现在两种写法都支持。
 - **subItem 也能带底色**（A3 修，2026-09-27）：`data-bg` → subItem 的 `bgColorTab.color0`（不写 = `-1`）；
-  但 subItem **仍不支持挂圆角九宫格图**（引擎侧限制，行内要做「带底色的块」用 `data-bg` 色块）。
+但 subItem **仍不支持挂圆角九宫格图**（引擎侧限制，行内要做「带底色的块」用 `data-bg` 色块）。
 
 ## 属性对照三表（直通 / 丢弃 / 默认值）—— A8 修（2026-09-27）
 
@@ -333,11 +333,11 @@ python tools/ui_tools/html2json.py ui/wireframe.html ui/main.json --merge-window
 
 | 类别 | 内容 | 与本文“属性速查”的关系 |
 |---|---|---|
-| **直通** | 写了就 1:1 落地（position/颜色/字号/picTab/backgroundPic/**visible**/charsetTab…） | 速查表的每一行都属此列 |
-| **丢弃** | `data-touchable`、emoji/黑名单字符、未知 class/style 声明、嵌套 `.screen` | 其中 emoji/黑名单字符会 `warn` 记账（A1） |
-| **默认值** | 不写时各字段取值（字号 16 / 文字色 `0xEEF2F6` / `touchable` 按类型 / 背景 `-1`…） | 铁律 9「字段全集显式化 v2」的取值依据 |
+| **直通**| 写了就 1:1 落地（position/颜色/字号/picTab/backgroundPic/**visible**/charsetTab…） | 速查表的每一行都属此列 |
+| **丢弃**| `data-touchable`、emoji/黑名单字符、未知 class/style 声明、嵌套 `.screen` | 其中 emoji/黑名单字符会 `warn` 记账（A1） |
+| **默认值**| 不写时各字段取值（字号 16 / 文字色 `0xEEF2F6` / `touchable` 按类型 / 背景 `-1`…） | 铁律 9「字段全集显式化 v2」的取值依据 |
 
-### 2026-09-27 一轮修正（钟工转发 PocketGame 清单后核实并修）
+### 2026-09-27 一轮修正（转发 PocketGame 清单后核实并修）
 
 | # | 修正 | 代码位置 |
 |---|---|---|
@@ -358,36 +358,35 @@ python tools/ui_tools/html2json.py ui/wireframe.html ui/main.json --merge-window
 5. 进度条用 `div.bar`（ZKSeekBar），**禁止用色块/字符模拟**。
 6. 输入框用 `div.input`（ZKEditText 系统键盘），不自绘键盘。
 7. 颜色一律 #RRGGBB 6 位十六进制（转十进制自动完成）。
-8. **文本支持 `\n` 换行**（沛哥 2026-09-03 纠正：此前 FT-024「textview 不渲染 \n」结论误判）：
+8. **文本支持 `\n` 换行**（2026-09-03 纠正：此前 FT-024「textview 不渲染 \n」结论误判）：
    textview/button 的 text 含 `\n` 可正常渲染多行（代码 setText 与 json 布局均支持）。HTML 里的 `<br>` 由转换器转成 `\n`（换行）；
    HTML 文本节点的普通换行/缩进仍折叠为单行（源码排版不产生意外换行，换行请用 `<br>` 显式写）。
-   长文本也可用多个 `div.text` 上下排列，或后续富文本控件自动折行。
-9. **输出字段全集显式化 v2（沛哥 2026-09-08）**：html2json 生成 json 时每个控件输出本类型**必写字段全集（含默认值）**，不做缺省省略——防版本不匹配。
+长文本也可用多个 `div.text` 上下排列，或后续富文本控件自动折行。
+9. **输出字段全集显式化 v2（2026-09-08）**：html2json 生成 json 时每个控件输出本类型**必写字段全集（含默认值）**，不做缺省省略——防版本不匹配。
    **基准 = `projects/SampleUI-New/ui/1024x600` 每类型 100% 交集**（模板见 `references/kb/controls.md`「字段全集显式化」表；check_all #14 验缺键）。
-   转换器已内建：textview 恒带 touchable/alignment/colorTab/fontSize；button 恒带 touchable:true/picTab/text；window 恒带
+转换器已内建：textview 恒带 touchable/alignment/colorTab/fontSize；button 恒带 touchable:true/picTab/text；window 恒带
    backgroundColor/hideTimeOut/modal/touchable/visible（不含 beepEnable）；edittext 恒带 bold/textType/text/fontSize（不含 beepEnable）；
    seekbar 恒带 backgroundColor/thumb/touchable/visible；qrcode 恒带 touchable:true/padding:10/visible；videoview 按 SampleUI
    （touchable:true 无 beepEnable）；listview 恒带 touchable:true/hasScrollbar/backgroundColor 等。
    ⚠️ beepEnable 不强制（交互控件默认支持）；交互控件 touchable 显式 true，容器/纯显示 false。
-10. **多屏 = 一个 `.screen` 一页一个 json（`screensDetected` == `pagesProduced` == `jsonsProduced`）**：
-   缺省每屏一个 json（= 一个 Activity 一个 ftu）；只有**同属一个 Activity 的多个整屏 window** 才用
+10. **多屏 = 一个 `.screen` 一页一个 json（`screensDetected` == `pagesProduced` == `jsonsProduced`）**：缺省每屏一个 json（= 一个 Activity 一个 ftu）；只有**同属一个 Activity 的多个整屏 window**才用
    `--merge-windows` 合成一个 json。两者不等即 `success:false`；交付前必做「屏数核对」——
    **设计稿 N 屏 <-> 产出 N 页（= N 个 json）**（详见上文「多屏」节 + `knowledge/devflow/page-architecture-spec.md`）。
-   页内弹窗（`div.window`/`div.modal`）不是页，写在该 `.screen` 内部即可。
+页内弹窗（`div.window`/`div.modal`）不是页，写在该 `.screen` 内部即可。
 
 ## ⚠️ 切图 / 图片资源铁律（2026-08-29 羊了个羊实战教训）
 1. **图片尺寸必须与 json 控件尺寸一致**（瓦片 76×76 控件 → 76×76 图；槽位 72×72 → 72×72 图），
-   不要生成大图让控件缩放，也不要小图拉伸。
+不要生成大图让控件缩放，也不要小图拉伸。
 2. **圆角卡片图四角必须真透明（alpha=0）**：渐变/填充底是整矩形画的，圆角只是描边轮廓，
-   所以渐变画完后必须用圆角 mask 裁剪清掉弧线外角落——**用 `ImageChops.multiply` 与已有 alpha 相乘**，
+所以渐变画完后必须用圆角 mask 裁剪清掉弧线外角落——**用 `ImageChops.multiply` 与已有 alpha 相乘**，
    ⚠️ **不能 `img.putalpha(mask)` 直接覆盖**（覆盖会把半透明阴影的 alpha 全压成 255 → 卡片四周一圈硬黑描边，
-   阴影柔化全丢；2026-09-11 实测踩坑）；
-   阴影模糊（GaussianBlur）会溢出到弧线外，最后整体再裁一次圆角清掉残影。
-   工具：`gen_res.rounded_card()` / `gen_gradient(..., radius=r)` 已内置裁剪。
+阴影柔化全丢；2026-09-11 实测踩坑）；
+阴影模糊（GaussianBlur）会溢出到弧线外，最后整体再裁一次圆角清掉残影。
+工具：`gen_res.rounded_card()` / `gen_gradient(..., radius=r)` 已内置裁剪。
 3. **用透明角图片的按钮不要设 `bgColorTab`**：透明角会透出按钮底色而不是窗口背景。
-   需要透背景的图片按钮（瓦片/槽位/图标钮）→ 不放 bgColorTab；纯文字按钮才用底色。
+需要透背景的图片按钮（瓦片/槽位/图标钮）→ 不放 bgColorTab；纯文字按钮才用底色。
 4. **功能按钮尽量用图片按钮**：`picTab{pic0: normal, pic1: pressed(_p 后缀)}` 两态图，
-   比纯色底色 + 文字更接近设计稿（2026-08-29：重开/撤回/洗牌/移出全部改图）。
+比纯色底色 + 文字更接近设计稿（2026-08-29：重开/撤回/洗牌/移出全部改图）。
 5. **textview 支持 `backgroundPic`**（json 字段）：标题背景条等直接配图，不用套 window。
 6. **居中 alignment 实测值（2026-08-29 设备验证，勿信旧文档）**：
    - `37` = 居中（水平+垂直居中，按钮/标题均实测）
@@ -395,17 +394,17 @@ python tools/ui_tools/html2json.py ui/wireframe.html ui/main.json --merge-window
    - `38` = 靠右垂直居中
    HTML 的 `data-align="center"` → 37（html2json 已正确映射，勿改）
 7. 渐变底 PNG 生成必须检查四角 alpha：`img.getpixel((2,2))[3] == 0` 才算合格。
-8. **PNG 生成管线铁律（2026-09-08 沛哥定规：新 AI 客户端按规范转 png 仍默认锯齿 → 规范显式约束）**：
+8. **PNG 生成管线铁律（2026-09-08 需求方定规：新 AI 客户端按规范转 png 仍默认锯齿 → 规范显式约束）**：
    AI 需要图片资源时**只能走三条路，禁止自创**：
    ① CSS 效果（渐变/圆角/阴影/emoji/图标/loading）→ 写进 HTML 由 html2json 自动转图（内置抗锯齿管线）；
    ② 图标资源 → `flythings_generate_ui_assets`（内置三级降级 + 超采样抗锯齿）；
    ③ 必须自绘的自定义图 → 用 gen_res.py 公开函数（rounded_card / gen_gradient / gen_shadow_card /
       emoji_icon_ss / glyph_icon_ex / line_icon / frames_loading_gif…，全部内置抗锯齿）。
    **禁止**：AI 用自身 image 生成能力直出小尺寸 png 交付（大图缩小边缘/斜线必锯齿）、
-   禁止自写 Pillow/绘图代码 1x 直画圆角/斜线/圆弧（1x 二值 alpha 无抗锯齿，PIL 默认 butt 线帽斜线端点出毛刺）。
+禁止自写 Pillow/绘图代码 1x 直画圆角/斜线/圆弧（1x 二值 alpha 无抗锯齿，PIL 默认 butt 线帽斜线端点出毛刺）。
 9. **PNG 防锯齿五要素（生成后逐条自查，任一不满足重新生成或换工具路径）**：
    ① 像素尺寸与控件 position 严格相等（**引擎会把图拉伸填充到盒子**（图 != 盒不报错）→ 非整数缩放必糊；
-      大图缩小必须交给工具 LANCZOS）；
+大图缩小必须交给工具 LANCZOS）；
    ② 斜线/曲线/圆角必须 ≥4x 超采样绘制后 LANCZOS 缩回，或 α 通道高斯羽化过渡（sigma≈0.5），禁止 1x 直画；
    ③ 线段端点加 round cap（PIL 默认 butt 平头 → 斜线端点毛刺缺口）；
    ④ 圆角/异形图弧线外角落 alpha 必须 =0（真透明），阴影模糊溢出须再裁一次圆角清残影；

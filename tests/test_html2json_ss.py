@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
-"""html2json CSS 出图口径：**一律走 SS**（v0.27.76，钟工 2026-09-16 拍板）。
+"""html2json CSS 出图口径：**一律走 SS**（v0.27.76，2026-09-16 拍板）。
 
 为什么钉死：
-  - 钟工拍板：html2json 处理 CSS 效果（渐变/圆角/阴影）出图**一律 SS**（ss=4 = 每像素 16 子采样），
+  - 需求方拍板：html2json 处理 CSS 效果（渐变/圆角/阴影）出图**一律 SS**（ss=4 = 每像素 16 子采样），
     **不再保留 1x + α 羽化那条路**（这是固定本地脚本的工作，不额外耗 token）；
-  - `gen_res.rounded_rect` 的默认行为（FT-008：1x 直画 + α 羽化）**保持不变** —— SS 只在
+  - `gen_res.rounded_rect` 的默认行为（FT-008：1x 直画 + α 羽化）**保持不变**—— SS 只在
     ①html2json 自动出图 ②调用方显式 `rounded_rect_ss` / `ss>0` 时生效；
   - 同批收口：旧 `border-radius` 解析只认「数字+px」→ `border-radius:50%` / 无单位认不出 →
-    该出圆的地方出方角（实测 corner alpha 255，而 `50%` 是设计稿最常见写法）。
-  参考真值 = 16x 超采样覆盖率（**Image.BOX 面积平均**缩回，与 `test_gen_res_aa.py` 同口径，只用 PIL）。
+该出圆的地方出方角（实测 corner alpha 255，而 `50%` 是设计稿最常见写法）。
+参考真值 = 16x 超采样覆盖率（**Image.BOX 面积平均**缩回，与 `test_gen_res_aa.py` 同口径，只用 PIL）。
 """
 import os
 import shutil
@@ -72,7 +72,7 @@ def _edge_err(path, w, h, radius):
 def _rgb_dark_max(path, w, h, radius):
     """边界像素的 RGB 必须等于同列内部（不透明）像素的 RGB。
 
-    渐变按列恒定 → 偏差只可能来自「边界被透明黑稀释」= 暗边（halo）。0~3 为正常。
+渐变按列恒定 → 偏差只可能来自「边界被透明黑稀释」= 暗边（halo）。0~3 为正常。
     """
     ref = _ref_alpha(w, h, radius)
     raw = _rgba_bytes(path)

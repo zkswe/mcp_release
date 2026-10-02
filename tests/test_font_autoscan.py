@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""字体自动扫描 + 缺中文自动投递契约（v0.27.86，钟工 2026-09-17「现在做」）。
+"""字体自动扫描 + 缺中文自动投递契约（v0.27.86，2026-09-17「现在做」）。
 
 为什么要有（事故背景）：
   `components/fonts/scripts/device_font_check.py` 2026-09-13 就实现了「扫设备字体 + 缺中文投递
-  思源黑体」，但**没有任何 op 包它、也没接进 build/deploy** → 等于没做：客户撞到「界面汉字全是
-  方块」时才知道要手动跑脚本。v0.27.86 把它接成**自动动作**。
+思源黑体」，但**没有任何 op 包它、也没接进 build/deploy**→ 等于没做：客户撞到「界面汉字全是
+方块」时才知道要手动跑脚本。v0.27.86 把它接成**自动动作**。
 
 钉住五件事：
   ① **默认自动投递**：判定缺中文（设备最大字体 < 200 KB / 设备没字体 / 工程侧也没字库）→
@@ -47,7 +47,7 @@ def _dfc():
 def _fake_pull_from(src_path, calls=None):
     """替掉 device_font_check.pull_font：把 `src_path` 当成「刚从设备拉回来的字体」。
 
-    只换 adb 那一步（网络边界），后面的 cmap 解析/判定/缓存/临时目录清理跑的是**真实现**。
+只换 adb 那一步（网络边界），后面的 cmap 解析/判定/缓存/临时目录清理跑的是**真实现**。
     """
     def f(adb, serial, remote_path, dest_path, timeout=180):
         if calls is not None:
@@ -140,9 +140,9 @@ def _fake_device(collect_fonts):
 
 
 def _fake_device_branch(testcase, src_font, name='fzcircle.ttf', dir_='/etc/font'):
-    """设备分支全套假体：探测 / collect / **拉取** —— 离线，但 cmap 判定链走真实现。
+    """设备分支全套假体：探测 / collect / **拉取**—— 离线，但 cmap 判定链走真实现。
 
-    返回 (calls, record)：calls = 拉取过的设备路径列表（用来证明缓存命中/超限不拉）。
+返回 (calls, record)：calls = 拉取过的设备路径列表（用来证明缓存命中/超限不拉）。
     """
     calls = []
     rec = _device_font_dict(src_font, name=name, dir_=dir_)
@@ -404,7 +404,7 @@ class TestBuildFlowFontStep(unittest.TestCase):
     def test_device_branch_uses_gate_device(self):
         """① 有设备（设备门已探到一台）→ 硬判据拉字体算覆盖率 → 在 build 前投递；不重复探 adb。
 
-        同时钉住 v0.27.87 的**部署后复查**口子：deviceAfterDeploy 回答「字库要不要固化」。
+同时钉住 v0.27.87 的**部署后复查**口子：deviceAfterDeploy 回答「字库要不要固化」。
         """
         _mk(self.tmp, prefs_font='/res/font/old.ttf', fonts=[('old.ttf', 20)])
         latin = _synth_font(os.path.join(self.tmp, 'latin_only.ttf'), 'ABCabc0123')
@@ -462,12 +462,12 @@ class TestBuildFlowFontStep(unittest.TestCase):
 
 
 class TestFontCmapHardProbe(unittest.TestCase):
-    """A. **硬判据（cmap 覆盖率）**（v0.27.87，钟工拍板：比体积判据好）
+    """A. **硬判据（cmap 覆盖率）**（v0.27.87，需求方拍板：比体积判据好）
 
-    钉住：① 基准集 = GB2312 一级 3755 字；② 三档阈值 90/50；③ 三条 verdict + 投递与否；
+钉住：① 基准集 = GB2312 一级 3755 字；② 三档阈值 90/50；③ 三条 verdict + 投递与否；
     ④ 缓存命中不重复拉；⑤ 超限 / fontTools 不可用 / 拉取失败 → **退回体积判据且写明原因**；
     ⑥ 临时文件用完即删；⑦ 部署后复查（consistent / 要固化）；⑧ 仓库自带字体当真机字体的证据。
-    全程离线（不联网、不连真机）：只把 adb pull 那一步换成拷贝。
+全程离线（不联网、不连真机）：只把 adb pull 那一步换成拷贝。
     """
 
     def setUp(self):
@@ -687,7 +687,7 @@ class TestFontCmapHardProbe(unittest.TestCase):
         """扫描结果为空时**不要把结论说得像板上真的没字库**（v0.27.87 真机实测补）。
 
         （实测背景：busybox 未就绪 + 设备自带 ls 解析不出来时，列表也是空的 → 会误报「无字库」
-        并触发投递；这里钉住「必须把存疑写进 scanNote/warnings」。）
+并触发投递；这里钉住「必须把存疑写进 scanNote/warnings」。）
         """
         _mk(self.tmp, prefs_font='/res/font/old.ttf')
         calls, _rec = _fake_device_branch(self, REPO_COMMON)

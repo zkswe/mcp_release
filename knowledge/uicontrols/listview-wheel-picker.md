@@ -110,7 +110,7 @@ int h   = lv->getPosition().mHeight;
 int A   = fi + (h / 2 - off) / ih;            // 盒中线落在哪一行（= 正中行）
 ```
 
-**`off` 的符号口径（真机实测，别猜）**：往前滚 -> `off` 从 0 递减到 −35 左右，然后 `fi` +1、`off` 归 0。轨迹样本：`fis=[2,2,3,3,4,4,5,5,6,6]` / `offs=[0,-20,0,-21,-1,-21,-1,-19,-3,-19]`。所以 `off<0` = 内容整体上移 |off| 像素 -> 公式里是 `(h/2 - off)`；写成 `(h/2 + off)` 会**差 1~2 行**，现象就是「拖动时底带明显飘在中线之上/之下」（案例里有像素断言：拖动中底带垂直重心与盒中线误差 ≤ 30px，公式对 = 实测 0.5~7px；公式错 ≥ 54px）。两条 API 在 easyui **2.6.0（Z21）/ 2.9.0（F133|F136）/ 2.10.0** 头文件里都有（`ZKListView.h`）。
+**`off` 的符号口径（真机实测，别猜）**：往前滚 -> `off` 从 0 递减到 −35 左右，然后 `fi` +1、`off` 归 0。轨迹样本：`fis=[2,2,3,3,4,4,5,5,6,6]` / `offs=[0,-20,0,-21,-1,-21,-1,-19,-3,-19]`。所以 `off<0` = 内容整体上移 |off| 像素 -> 公式里是 `(h/2 - off)`；写成 `(h/2 + off)` 会**差 1~2 行**，现象就是「拖动时底带明显飘在中线之上/之下」（案例里有像素断言：拖动中底带垂直重心与盒中线误差 ≤ 30px，公式对 = 实测 0.5~7px；公式错 ≥ 54px）。两条 API 在 easyui **2.6.0（Z21）/ 2.9.0（F133|F136）/ 2.10.0**头文件里都有（`ZKListView.h`）。
 
 ## 3. 四个真机坑（都不在官方文档里）
 
@@ -131,12 +131,12 @@ int A   = fi + (h / 2 - off) / ih;            // 盒中线落在哪一行（= �
 - **处置**：程序化定位改用 §1 的数据平移；确实要 `setSelection` 时，调用后**先等动画跑完再回读**（`fi` 连续 2~3 帧不变再判定），不要「调用+立即回读+再调用」。
 - 另注：`components/ui_v1/gap-list.md` G-32 旧口径写「`setSelection(index)` 直跳」（无平滑滚动）—— 本次实测**它是有滚动动画的**，缺的是「滚动到任意偏移 / 平滑滚到指定像素」（G-32 已同步修正）。
 
-### 坑 4：**选中条挂在行背景图上 -> 滚动时条跟着行走**（★2026-09-19 12:00 钟工口径：条要挂**静态背景层**）
-- **现象**（钟工原话「选中条放到背景图里面。这样子滚动以后选中条不会动」）：上一轮的实现是「正中行在 `obtainListItemData` 里 `item->setBackgroundPic(条图)`」——挑不出错，底带也确实只出现在正中行，但**手指一拖，条就跟着行跑**（整条跟着滚动位移，不是停在框的正中）。
+### 坑 4：**选中条挂在行背景图上 -> 滚动时条跟着行走**（★2026-09-19 12:00 需求方口径：条要挂**静态背景层**）
+- **现象**（经需求方原话「选中条放到背景图里面。这样子滚动以后选中条不会动」）：上一轮的实现是「正中行在 `obtainListItemData` 里 `item->setBackgroundPic(条图)`」——挑不出错，底带也确实只出现在正中行，但**手指一拖，条就跟着行跑**（整条跟着滚动位移，不是停在框的正中）。
 - **根因**：行背景图是**行自己的绘制内容**，行随滚动偏移 -> 条也随滚动偏移。listview 没有「固定叠层（sticky overlay）」概念，行模板能画的只有「行盒内、随行移动」的东西。
 - **处置（正确做法）**：把条做成页面里的**静态控件**（z 比 listview 低），行侧**不再挂任何背景图**：
   1. json 里给每列加一个装底图的 **装饰 `textview`**（`backgroundPic = images/xxx.png`，图 == 盒），`position` 就取该列**正中行**的盒（列盒 176×180 / 行高 36 -> 正中行 top = 列 top + 2×36）；
-  2. **必须写在 listview 之前**：json 书写顺序 = z 序（后定义在上层，见 `knowledge/uicontrols/json-layer-rules.md`）-> 条在下层；行的 `item` **无底图/无底色（透明）** -> 条从行下面透出来，**滚动时条一个像素不动**；
+  2. **必须写在 listview 之前**：json 书写顺序 = z 序（后定义在上层，见 `knowledge/uicontrols/json-layer-rules.md`）-> 条在下层；行的 `item` **无底图/无底色（透明）**-> 条从行下面透出来，**滚动时条一个像素不动**；
   3. 装饰件 `touchable:false`（json 显式写），运行期再 `setTouchable(false) + setTouchPass(true)`（`touchPass` **无 json 字段**，见 `knowledge/uicontrols/touch-events.md` §1；虽然条在下层、理论上抽不到触摸，但作为防线很便宜）；
   4. 选中感就只剩**正中行文字色**（`setTextStatusColor`），顶/底「渐隐」仍按行距给文字色插值。
 - **通栏 1px 分隔线归谁**：本案例判定归「**条**」——两条线正好落在条盒的上下边缘（旧自绘包里也是随条一起画的两条线）：不拆图、不拆层。若要把它当「框」看（不随条挪位），就拆成「框线层 + 条层」两个静态控件，都写在 listview 之前即可。
@@ -152,15 +152,15 @@ int A   = fi + (h / 2 - off) / ih;            // 盒中线落在哪一行（= �
 | 惯性存在 | 手势返回后**再采样**到状态变化（手指已抬起内容还在动） | post=(4,-19) -> final=(6,0) ✓ |
 | 拖动中行未对齐 + 松手对齐整行 | dtdiag 轨迹里出现 `off != 0` 的中间帧、末帧 `off == 0` | 6 帧 off≠0（-32…-19），末帧 off=0 ✓ |
 | **选中条静止 / 条跨越「停稳」也不动**（★本轮） | 同一次拖动里抓两帧 + 拖动帧 vs 停稳帧，对「纯条区」（文字到不了的侧带）逐像素比对 = **0**；同时列盒必须有差异 | band_diff=**0/3672 px**，col_diff=1653~2103/31680 px ✓ |
-| **改层不改观感**（★本轮） | 与「条挂行上」旧版同状态帧逐像素比（整条轮子带） | diff=**0/158400 px** ✓ |
+| **改层不改观感**（★本轮） | 与「条挂行上」旧版同状态帧逐像素比（整条轮子带） | diff=**0/158400 px**✓ |
 | 只有正中行有带 | 「正中行盒内浅品牌色像素」> 2000 且「其他行」< 60 | bands 4842…5034 / 其他行 0 ✓ |
 | 条不吞触摸（★本轮） | 从**条矩形内部**起手拖动 -> 列内容必须变 | col_chg=True ✓ |
 | 选中 = 正中行文字色 | 正中行品牌蓝像素 > 40；上下相邻行无品牌蓝 | blue 159/66/93/105/91；邻居 0 ✓ |
-| 相邻列不受影响 | 拖 A 列后，其余列正中行裁图 md5 **逐像素相同** | same=[True×4] ✓ |
+| 相邻列不受影响 | 拖 A 列后，其余列正中行裁图 md5 **逐像素相同**| same=[True×4] ✓ |
 
 ## 5. 机读映射口径（源控件 → `target` / `level` + 验证入口）
 
-滚轮族（含时间选择 / 时钟盘形态）在 `mcp_control_map.json` 里**一律** `target: listview` + `level: L2`，不再有 L5 例外：LVGL `lv_roller`（`wheel` / `滚轮` / `转盘`）/ Qt `QTimeEdit`·`QDateTimeEdit`（时间部分）/ Android `TimePicker`·`TimePickerDialog`（含**时钟盘**形态）/ Android `NumberPicker`·小程序 `picker-view`（`picker mode=time`）/ emWin `LISTWHEEL` → 全部 `listview` **L2**。
+滚轮族（含时间选择 / 时钟盘形态）在 `mcp_control_map.json` 里**一律**`target: listview` + `level: L2`，不再有 L5 例外：LVGL `lv_roller`（`wheel` / `滚轮` / `转盘`）/ Qt `QTimeEdit`·`QDateTimeEdit`（时间部分）/ Android `TimePicker`·`TimePickerDialog`（含**时钟盘**形态）/ Android `NumberPicker`·小程序 `picker-view`（`picker mode=time`）/ emWin `LISTWHEEL` → 全部 `listview` **L2**。
 
 **验证入口（可复现）**：
 ```python
@@ -171,11 +171,11 @@ flythings_map_control("wheel")          # -> 同上（中文/英文别名都认�
 
 **自绘包已移除**：`components/ui_v1/WheelPicker/` 已被 `listview` 组合方案取代（2026-09-19），`mcp_control_map.json` 里旧的 `targets.wheelpicker` 占位条目**同时删除**（5 条源条目已全部改指 `listview`，无悬空引用）；自绘轮曾用于的「逐像素 alpha 渐隐 / 行内非文字内容」已分别并入本文 §0 与行模板 `subItem`。
 
-## 6. 时间选择 / 时钟盘（`TimePicker` 全族；★2026-09-19 钟工口径「TimePicker 通过 listview 这个实现对应」）
+## 6. 时间选择 / 时钟盘（`TimePicker` 全族；★2026-09-19 需求方口径「TimePicker 通过 listview 这个实现对应」）
 
 ### 6.1 口径（先记住这条，别做反）
 
-- 以下源控件**一律** `target: listview` + `level: L2`：Android `TimePicker`（**滚轮形态** + **时钟盘 clock dial 形态**）/ `TimePickerDialog` / `NumberPicker`；Qt `QTimeEdit` / `QDateTimeEdit`（**时间部分**）；小程序 `picker mode=time`；emWin `LISTWHEEL`。
+- 以下源控件**一律**`target: listview` + `level: L2`：Android `TimePicker`（**滚轮形态**+ **时钟盘 clock dial 形态**）/ `TimePickerDialog` / `NumberPicker`；Qt `QTimeEdit` / `QDateTimeEdit`（**时间部分**）；小程序 `picker mode=time`；emWin `LISTWHEEL`。
 - **没有「时钟盘无对应能力」这种例外**（旧表述自 2026-09-19 起作废，`mcp_control_map.json` 表版本 3 已清理干净，无残留）。
 - 一句话：**取值与联动语义由 `listview` 列承载；“圆的观感”是另一回事**（§6.3 如实写清）。
 - **日期部分不在这里**：日历/日期选择仍是 `calendar` L4（已落地 `components/ui_v1/Calendar/`，见 `knowledge/../components/ui_v1/control-map.md` 2.15）。
@@ -195,8 +195,8 @@ flythings_map_control("wheel")          # -> 同上（中文/英文别名都认�
 - **能做的（语义）**：把 12 个方位值按一列（一列 = 一个 `listview__N`）排布，选中项 = 中心行；回读、惯性、回弹、选中条层与 §1/§2/§3 完全一致；**logic 层与滚轮形态零差别**（同一份代码可复用）。
 - **做不出（如实说）**：**圆周观感**——平台 listview 的行盒是**矩形等分行**，没有圆周布局/角度命中能力。
   - 观感路线 A（推荐，**零自绘**）：**12 方位按钮组**（`button__N` × 12 手工摆一圈）+ 中心 `textview` 显示当前时辰；点即选值，缺点是“转”的手感没了（但比拖手更准）。
-  - 观感路线 B（要“真圆周拖动”）：**ZKPainter 自绘** + 角度反算命中（宿主自己算 `atan2`）→ 属 **L3 自绘**，按 `knowledge/../components/ui_v1/gap-list.md` 编号立项 + 给真机证据，**不要临场造包**。
-- **定性**：这是**观感降级说明**（圆周排列需 12 方位按钮或自绘、观感有损），**不是“能力缺失 / 不支持”**；选型建议统一按钟工口径走 listview 组合（L2），除非产品硬要求“钟面转圈”。
+  - 观感路线 B（要“真圆周拖动”）：**ZKPainter 自绘**+ 角度反算命中（宿主自己算 `atan2`）→ 属 **L3 自绘**，按 `knowledge/../components/ui_v1/gap-list.md` 编号立项 + 给真机证据，**不要临场造包**。
+- **定性**：这是**观感降级说明**（圆周排列需 12 方位按钮或自绘、观感有损），**不是“能力缺失 / 不支持”**；选型建议统一按需求方口径走 listview 组合（L2），除非产品硬要求“钟面转圈”。
 
 ### 6.4 验证入口（可复现）
 

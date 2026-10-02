@@ -16,7 +16,7 @@ evidence: []
 # 📷 CameraView 相机预览控件 JSON 字段规范
 
 > 检索导引：问「实时摄像头预览用哪个控件 / cameraview 字段 / formatSize 是源分辨率不是控件大小 / 画面拉伸裁剪怎么处理 / 能不能和 videoview 混用」→ 本文。
-> 2026-09-03 沛哥指定 + 实测入库（LearningProject/mark_cv201 倒车影像工程，CV201_PND 1600×600 + CV201_PND_1024_600 双分辨率解包校准，平台 V85X/AW_V853）。
+> 2026-09-03 需求方指定 + 实测入库（LearningProject/mark_cv201 倒车影像工程，CV201_PND 1600×600 + CV201_PND_1024_600 双分辨率解包校准，平台 V85X/AW_V853）。
 > 来源可靠性：ftu 解包还原 json（fui unpack 实测字段，非猜测）。
 
 ## ⚠️ 核心铁律（先分清控件，再谈布局）
@@ -93,12 +93,11 @@ ptr->startPreview(); / stopPreview(); / isPreviewing();
 
 ## 常见坑
 
-- **实时预览黑屏/不出画** → ①布局忘了 `autoPreview: true` ②没 setDevPath/setFormatSize ③设备节点被占用（同时开了两个 cameraview 页面）
-- **画面拉伸变形** → 没做 setCropPosition 等比裁剪，或旋转 90/270 没 swap
-- **误用 videoview 做实时预览 / 误用 cameraview 播文件** → 都不出画面，先按铁律 1 分控件
-- **倒车切页卡死/黑屏** → 页面 hide 时预览没停干净，用 WAIT(!isPreviewing()) 防同开冲突
-- **平台**：实测 V85X（AW_V853）；F133/其他平台是否支持以官方文档为准，不确定先查知识库/问沛哥
-
+- **实时预览黑屏/不出画**→ ①布局忘了 `autoPreview: true` ②没 setDevPath/setFormatSize ③设备节点被占用（同时开了两个 cameraview 页面）
+- **画面拉伸变形**→ 没做 setCropPosition 等比裁剪，或旋转 90/270 没 swap
+- **误用 videoview 做实时预览 / 误用 cameraview 播文件**→ 都不出画面，先按铁律 1 分控件
+- **倒车切页卡死/黑屏**→ 页面 hide 时预览没停干净，用 WAIT(!isPreviewing()) 防同开冲突
+- **平台**：实测 V85X（AW_V853）；F133/其他平台是否支持以官方文档为准，不确定先查知识库/问
 ## 相关
 
 - V85X MPP 完整 API 汇总：`workspace/references/kb/v85x-mpp.md` §① ZKCameraView 控件用法

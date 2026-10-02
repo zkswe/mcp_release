@@ -1,21 +1,21 @@
 # -*- coding: utf-8 -*-
-"""多屏设计稿契约（v0.27.100，钟工 2026-09-21 口径）：**一个 .screen = 一个页面 = 一个 Activity
+"""多屏设计稿契约（v0.27.100，2026-09-21 口径）：**一个 .screen = 一个页面 = 一个 Activity
 = 一个 json（-> 一个 ftu）**；**页数 = 屏数，一屏不许丢**。
 
 口径沿革（防止再漂移）：
   - v0.27.99：多屏默认**合成同一个 json 的 N 个整屏 window**（只修掉「只落第一屏」的静默丢页）；
-  - v0.27.100：钟工纠正「不是的……按照客户的设计需求，其实目前已经可以准确的做好了不同的 html
-    页面分页了。哪些属于不同的 activity、哪些属于 windows/dialog 其实前期 AI 可以分清楚。分清楚的
-    情况下不同的 activity 做好不同的 json 布局就好了」-> **默认改成每屏一个 json**；
-    合成多整屏 window 变成**显式开关** `--merge-windows`（仅当这些屏同属一个 Activity 时用）；
-    嵌套 `.screen` 从 error 降为 warning（按最外层算页 + 点名），避免既有输入突然跑不过。
+  - v0.27.100：需求方纠正「不是的……按照客户的设计需求，其实目前已经可以准确的做好了不同的 html
+页面分页了。哪些属于不同的 activity、哪些属于 windows/dialog 其实前期 AI 可以分清楚。分清楚的
+情况下不同的 activity 做好不同的 json 布局就好了」-> **默认改成每屏一个 json**；
+合成多整屏 window 变成**显式开关**`--merge-windows`（仅当这些屏同属一个 Activity 时用）；
+嵌套 `.screen` 从 error 降为 warning（按最外层算页 + 点名），避免既有输入突然跑不过。
 
 本用例钉住六条行为（防回归）：
   1. 单屏 HTML：产物逐字段 + 键序与改动前黄金样例一致（回归），返回体 1/1 + jsonsProduced=1；
   2. 2 屏 HTML（缺省）：**产出 2 个 json**（文件名取 data-page），pagesProduced==2，pages 逐页列出，
-     且每份 json 与「把那一屏单独拿出来转」**逐字段一致**（页之间不串味）；
-  3. --merge-windows（MCP merge_windows=true）：**1 个 json** + 2 个整屏 window（首屏 visible:true、
-     其余 false、caption=data-page），pages 逐页列出且多页指向同一个 json，warnings 回显「本次按
+且每份 json 与「把那一屏单独拿出来转」**逐字段一致**（页之间不串味）；
+  3. --merge-windows（MCP merge_windows=true）：**1 个 json**+ 2 个整屏 window（首屏 visible:true、
+其余 false、caption=data-page），pages 逐页列出且多页指向同一个 json，warnings 回显「本次按
      merge-windows 合成」；
   4. 嵌套 `.screen`：**不失败**（warning + 只取最外层 + 点名嵌套屏）；
   5. 反例：屏数 != 产出页数（data-page 重复）**必须 success:false**（禁止静默丢页）；
@@ -346,7 +346,7 @@ class TestOpAndCliWiring(MultiScreenBase):
         self.assertEqual(p.returncode, 0, out)
         r = json.loads(out[out.find('{'):])
         self.assertEqual((r['screensDetected'], r['pagesProduced'], r['jsonsProduced']), (2, 2, 1), r)
-        # 只给目录：merge-windows 用**首屏 data-page** 命名（同一 json，不是多份）
+        # 只给目录：merge-windows 用**首屏 data-page**命名（同一 json，不是多份）
         self.assertEqual(os.listdir(outd), ['home.json'], os.listdir(outd))
 
     def test_cli_split_per_page_is_retired_with_clear_error(self):

@@ -26,7 +26,7 @@
 约定
 ----
 - key 缺省取图文件名（去扩展名）；**同一页面同一状态必须用同一个 key**，
-  否则等于绕过基线（比不到就报 no-baseline，不静默放行）。
+否则等于绕过基线（比不到就报 no-baseline，不静默放行）。
 - 尺寸不一致（resolution 改了）→ 明确报 `size-mismatch`，不硬比。
 - 比不到基线 → `no-baseline`（调用方决定当告警还是失败，绝不静默当通过）。
 """
@@ -54,7 +54,7 @@ INDEX_NAME = 'baseline.json'
 DIFF_DIR = '_diff'
 INDEX_VERSION = 1
 
-# 默认容差档案：与 ui_visual(action='diff') 的默认参数一致（沛哥 2026-09-10 定：±2 起步）
+# 默认容差档案：与 ui_visual(action='diff') 的默认参数一致（2026-09-10 定：±2 起步）
 DEFAULT_PROFILE = {'tolerance': 2, 'shift': 1, 'minArea': 4, 'blur': 0.7, 'noiseBbox': 10}
 _PROFILE_KEYS = tuple(DEFAULT_PROFILE)
 
@@ -206,7 +206,7 @@ def update(project_root, image, key='', name='', note='', profile=None, allow_re
 def compare(project_root, image, key='', out_png='', allow_regions=None, profile=None):
     """当前图 vs 基线图。
 
-    返回 status: pass | fail | no-baseline | size-mismatch | error。
+返回 status: pass | fail | no-baseline | size-mismatch | error。
     allow_regions 缺省用基线登记值；显式传入则覆盖（不改基线）。
     """
     res = {'success': False, 'op': 'ui_baseline.compare', 'status': 'error'}

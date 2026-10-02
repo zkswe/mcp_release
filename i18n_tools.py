@@ -10,19 +10,19 @@ add_language 添加新语言 / refactor 布局文本转 @key。
         <string name="about_me">关于我们</string>
     </resources>
 - 文件名三段式：xx_XX-语言名.tr（语言代号 2 小写 + 地区代号 2 大写 + 语言名显示在切换列表），
-  如 fr_FR-法语.tr / es_ES-西班牙语.tr / ru_RU-俄语.tr；默认四种语言 zh_CN/en_US/ja_JP/ko_KR
+如 fr_FR-法语.tr / es_ES-西班牙语.tr / ru_RU-俄语.tr；默认四种语言 zh_CN/en_US/ja_JP/ko_KR
 - 布局 json/ftu 文本控件 text 写 @key（如 "@about_me"），运行时按当前语言自动解析
 - 代码动态翻译：setTextTr("key")（不带@）；拼接取词：LANGUAGEMANAGER->getValue("key")
   （easyui 包 manager/LanguageManager.h）
 - 语言切换：EASYUICONTEXT->updateLocalesCode("zh_CN") 或 openActivity("LanguageSettingActivity")
   ⚠️ 只有 updateLocalesCode 会立即刷新**已打开页面**的文案
   （内部 = LanguageManager::setCurrentCode + 遍历 ActivityStack 调 BaseApp::updateLocales）。
-  只调 LANGUAGEMANAGER->setCurrentCode 不会刷新在屏控件文本，用户要「退出重进」才看到新语言。
+只调 LANGUAGEMANAGER->setCurrentCode 不会刷新在屏控件文本，用户要「退出重进」才看到新语言。
 - 换行转义：.tr 里写 `\n`（官方 i18n 文档），转 .json 时必须还原成**真实换行符**；
-  框架取值不做反斜杠还原，设备端 zk_gdi_draw_text 按 0x0A 切行。
-  多语言需字体支持（默认精简字体，建议 font_cut_tool 自定义字体）；
+框架取值不做反斜杠还原，设备端 zk_gdi_draw_text 按 0x0A 切行。
+多语言需字体支持（默认精简字体，建议 font_cut_tool 自定义字体）；
   ⚠️ 精简字库常缺 `&`、`@` 等 ASCII 符号 → 文案里禁用（用 "and" / 空格 代替），
-  否则设备上该字符空白或出乱码。改文案后建议核对字库 cmap 覆盖。
+否则设备上该字符空白或出乱码。改文案后建议核对字库 cmap 覆盖。
 
 本工具只做文件读写与诊断，翻译内容由调用方 AI 提供（MCP 零远程依赖）；
 翻译要求专业：结合项目语境（如车载项目 CAN BUS 保持行业术语，不直译公共汽车）。
@@ -30,9 +30,9 @@ add_language 添加新语言 / refactor 布局文本转 @key。
 设备端加载格式（2026-09-08 实测，V553 项目）：
 - zkgui 实际加载的是 i18n/<lang>.json（不是 .tr），路径 /tmp/tr/<lang>.json（DEBUG）。
 - fun launch 只推 ftu/images/font/lib/cfg，**不推 i18n 的 .tr/.json**（CHANGELOG 2026-09-02
-  沛哥定规"部署统一 fun launch"是针对代码+资源，i18n 仍需本工具显式推送）。
+需求方定规"部署统一 fun launch"是针对代码+资源，i18n 仍需本工具显式推送）。
 - 改完翻译（import / add_language / refactor 改 .tr）后必须调 flythings_i18n_to_json
-  转 json 并推送，否则设备仍跑旧翻译（logcat 刷 'not found value' 警告）。
+转 json 并推送，否则设备仍跑旧翻译（logcat 刷 'not found value' 警告）。
 - 生产固件把 json 打包到 /res/，不需要推送（无需调用本工具的 push 步骤）。
 """
 import io, os, re, glob, json, subprocess
@@ -51,9 +51,9 @@ def _i18n_dir(project_root):
 # .tr（源）按官方文档写 `\n`；.json（设备读）必须是真实换行符。
 # 实证（2026-09-10 反汇编 v85x easyui 2.9.0 libeasyui.so）：
 #   LanguageManager::getValue 直接 Json::Value::asString() 返回，不做反斜杠还原；
-#   分行发生在 zk_gdi_draw_text，按字节 0x0A(LF) 切行（strchr(p, '\n')）。
+#分行发生在 zk_gdi_draw_text，按字节 0x0A(LF) 切行（strchr(p, '\n')）。
 #   ⇒ .json 里留字面 `\n`（JSON 写作 \\n）设备会原样显示 "\n" 文字，不换行。
-#   本地同源脚本：<项目>/tools/tr2json.py。
+#本地同源脚本：<项目>/tools/tr2json.py。
 _ESCAPE_MAP = {'n': '\n', 'r': '\r', 't': '\t', '\\': '\\', '"': '"', "'": "'"}
 _UNESCAPE_MAP = {'\n': '\\n', '\r': '\\r', '\t': '\\t', '\\': '\\\\'}
 
@@ -166,8 +166,8 @@ def _collect_layout_keys(project_root):
 # ========== 1. scan：诊断 i18n 现状 ==========
 def flythings_i18n_scan(project_root: str) -> str:
     """诊断项目多语言（i18n）现状：语言文件、key 对齐、布局 @key 引用完整性。
-    项目根目录下应有 i18n/*.tr 翻译文件；布局文本控件用 text:"@key" 引用。
-    返回 JSON：languages/keysPerLanguage/对齐检查/布局引用检查/缺失建议。
+项目根目录下应有 i18n/*.tr 翻译文件；布局文本控件用 text:"@key" 引用。
+返回 JSON：languages/keysPerLanguage/对齐检查/布局引用检查/缺失建议。
     """
     try:
         files = _list_tr_files(project_root)
@@ -262,7 +262,7 @@ def _translation_guide(context: str) -> str:
 def flythings_i18n_add_language(project_root: str, lang: str, lang_name: str, base_lang: str = 'zh_CN', context: str = '') -> str:
     """添加新语言：从基础语言（缺省 zh_CN）复制 key 骨架，生成 i18n/<lang>-<lang_name>.tr 待翻译文件。
     lang 为语言代码（如 fr_FR，2 小写+2 大写），lang_name 为语言名（如 法语，显示在切换列表）。
-    返回待翻译清单（key→基础语言原文）+ 专业翻译提示；翻译后调用 flythings_i18n_import 写回。
+返回待翻译清单（key→基础语言原文）+ 专业翻译提示；翻译后调用 flythings_i18n_import 写回。
     ⚠️ 新语言文件名必须 xx_XX-语言名.tr 三段式（官方规范），勿用两段式。
     """
     try:
@@ -354,8 +354,8 @@ def flythings_i18n_import(project_root: str, lang: str, translations: str, merge
 # ========== 4. 布局文本 → @key 化（可选增强） ==========
 def flythings_i18n_refactor(project_root: str, lang: str = 'zh_CN', dry_run: bool = True) -> str:
     """把布局 json 里写死的非空文本控件替换为 @key 引用（多语言改造辅助）。
-    生成 key（caption 去空格或 text 前 4 字符）+ 写入指定语言 .tr；dry_run=True 只预览不改文件。
-    返回 JSON：改动清单（json 文件、caption、原文本、生成 key）。
+生成 key（caption 去空格或 text 前 4 字符）+ 写入指定语言 .tr；dry_run=True 只预览不改文件。
+返回 JSON：改动清单（json 文件、caption、原文本、生成 key）。
     ⚠️ 仅建议在确认布局文本均为界面文案时使用；纯数字/时间占位文本会跳过。
     """
     try:
@@ -422,12 +422,12 @@ def flythings_i18n_refactor(project_root: str, lang: str = 'zh_CN', dry_run: boo
 # 关键背景（2026-09-08 实测，V553 项目；详见模块顶部 docstring）：
 #   fun launch 只推 ftu/images/font/lib/cfg，不推 i18n。设备 zkgui 加载的是
 #   /tmp/tr/<lang>.json（不是 .tr）。改完翻译后必须显式调本工具把 .tr 转 .json
-#   并 adb push 到设备 /tmp/tr/，否则设备仍跑旧翻译。
-#   本地开发脚本版见 E:\AICODE\trae\V553\tools\tr2json.py（V553 项目），逻辑同源。
+#并 adb push 到设备 /tmp/tr/，否则设备仍跑旧翻译。
+#本地开发脚本版见 E:\AICODE\trae\V553\tools\tr2json.py（V553 项目），逻辑同源。
 
 def _tr_to_json(tr_path):
     """解析 .tr（XML）→ 有序 dict {key: value}。XML 实体由 ElementTree 自动解码；
-    之后把 `\\n` / `\\t` 等反斜杠转义还原为真实字符（设备端按 0x0A 切行）。"""
+之后把 `\\n` / `\\t` 等反斜杠转义还原为真实字符（设备端按 0x0A 切行）。"""
     tree = ET.parse(tr_path)
     root = tree.getroot()
     out = {}
@@ -479,15 +479,15 @@ def flythings_i18n_to_json(project_root: str, langs: str = '', push: bool = True
     """把 i18n/*.tr 转为 i18n/*.json（设备 zkgui 实际加载格式），并可推送到设备 /tmp/tr/。
 
     ⚠️ 关键背景：**fun launch 不推 i18n**（只推 ftu/images/font/lib/cfg）。
-       改完翻译（import / add_language / refactor）后必须显式调本工具，
-       否则设备仍跑旧翻译（logcat 刷 'not found value' 警告）。
-       本工具生成的 json 与设备端 zkgui 加载格式**逐字节一致**（tab 缩进+无空格冒号+末尾无换行）。
+改完翻译（import / add_language / refactor）后必须显式调本工具，
+否则设备仍跑旧翻译（logcat 刷 'not found value' 警告）。
+本工具生成的 json 与设备端 zkgui 加载格式**逐字节一致**（tab 缩进+无空格冒号+末尾无换行）。
 
     Args:
         project_root: 项目根目录（含 i18n/）
         langs: 逗号分隔的语言列表（如 'zh_CN,en_US'，默认全部 .tr）；支持三段式 'fr_FR-法语'
         push: True 转换后自动 adb push 到设备 /tmp/tr/（设备 DEBUG 模式 /tmp 路径；
-              生产固件把 json 打包到 /res/，设 False 只生成不推送）
+生产固件把 json 打包到 /res/，设 False 只生成不推送）
         device: 设备 IP/序列号（多设备时指定；不传则用 adb 唯一可见设备；多设备未指定则报错）
 
     Returns:

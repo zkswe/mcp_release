@@ -16,7 +16,7 @@ evidence: []
 # 🚗 T113 车载仪表盘 CAN 应用架构（DashBoard_T113 三套工程实测）
 
 > 检索导引：问「T113 仪表盘 CAN 怎么收 / 车速转速档位怎么解包 / SocketCAN can0 500k 配置 / 仪表指针动画几种做法 / 换车型改哪里」→ 本文（BMW/Comaro/Jeep 三套工程提炼）。
-> 2026-09-07 沛哥安排：学习整车代码后提炼入库（来源：`projects/LearningProject/DashBoard_T113/`，BMW/Comaro/Jeep(Pointer) 三套仪表工程，ZKSWE Develop Team 编写）。
+> 2026-09-07 需求方安排：学习整车代码后提炼入库（来源：`projects/LearningProject/DashBoard_T113/`，BMW/Comaro/Jeep(Pointer) 三套仪表工程，ZKSWE Develop Team 编写）。
 > 适用：T113 平台 CAN 仪表盘（车速/转速/档位/故障灯/保养），想抄架构先看这篇。
 > ⚠️ 本文只收录 CAN 应用架构；指针动画具体实现（BMW 预渲染帧序列等）属工程自有技术，细节未收录。
 
@@ -30,7 +30,7 @@ evidence: []
 |------|----------|---------|-------------|--------|------|
 | BMW | 宝马多模式(mode1-6)+HDMI | `can/socket_can.{h,cpp}` + `can/context.{h,cpp}`（新版） | 指针帧图驱动（预渲染方案，细节未收录） | 4 态：OFF/FLICKER_500/FLICKER_1000/ON | 最多，带多语言/zkota/HDMI 投屏/保养 8 组 |
 | Comaro | 科迈罗(?) | 同 BMW 新版 socket_can+context | **TweenCpp 缓动**（60fps 定时器步进 alpha/位移）+ CircleBar/刻度灯 | 3 态：OFF/ON/FLICKER | 灯分组与 BMW 不同（故障/警告/提示分开） |
-| Jeep/Pointer | 牧马人指针仪表 | 老版 `m_can/getcan` 全局单例回调 | **标准指针控件** `mPointXXXPtr->setTargetAngle(角度)` | — | ID 段 switch 分发，逻辑直接收 canData |
+| Jeep/Pointer | 牧马人指针仪表 | 老版 `m_can/getcan` 全局单例回调 | **标准指针控件**`mPointXXXPtr->setTargetAngle(角度)` | — | ID 段 switch 分发，逻辑直接收 canData |
 
 ## 1. CAN 收发封装（新版本：can/socket_can.cpp）
 
@@ -105,7 +105,7 @@ typedef enum { LIGHT_OFF=0, LIGHT_FLICKER_500, LIGHT_FLICKER_1000, LIGHT_ON } li
 
 ## 3. 业务值换算要点（常见陷阱）
 
-- 车速：`speed = MAKEWORD(d0,d1)`；**无效值 `0xFFFF` 判空** → 指针回零位角度（30）
+- 车速：`speed = MAKEWORD(d0,d1)`；**无效值 `0xFFFF` 判空**→ 指针回零位角度（30）
 - 转速：`rpm = MAKEWORD(d2,d3)/100`；无效 `==655` → 归零位
 - 瞬时油耗：`instanatFuel*0.1`；里程类（trip/odo）`*0.1` km
 - 温度：`0xFFFF` 无效 → 显示 `--`；**摄氏/华氏两套查表**（`water_temp[2][9]`，华氏档值 +80~等偏移），水温图按温度区间选 `SequenceDiagram/%d_%d.png`（9 段 × 每段内 6 级插值）

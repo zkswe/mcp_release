@@ -7,20 +7,20 @@
 **新增或调整平台，只改本文件**（模板目录 + bin_tools 目录 + 别名都从这里读）。
 
 约定：
-- 平台名统一 **大写** 为规范形式（`F133` / `F135` / `T113` / `V85X` / `Z20` / `Z21` / `Z235X`）；
+- 平台名统一 **大写**为规范形式（`F133` / `F135` / `T113` / `V85X` / `Z20` / `Z21` / `Z235X`）；
 - 入参一律过 `validate()`，大小写混写（`z21`）与历史别名（`F133EMMC`）自动归一；
 - 目录名才是小写（`templates/HelloWord_Z21` 用规范名、`bin_tools/z21` 用小写键），
-  分别用 `template_dir()` / `bin_tool_dir()` 取，**不要在业务代码里手写目录名**。
+分别用 `template_dir()` / `bin_tool_dir()` 取，**不要在业务代码里手写目录名**。
 
 ⚠️ 三层平台命名空间（v0.27.41 起在这里统一，别再各写一份）：
-1. **规范名** `PLATFORMS`：可建工程（有 IDE 模板 + bin_tools 预编译工具）。
-2. **包生态键** `PACKAGE_KEYS` / `PACKAGE_ALIASES`：依赖包注册表 /
+1. **规范名**`PLATFORMS`：可建工程（有 IDE 模板 + bin_tools 预编译工具）。
+2. **包生态键**`PACKAGE_KEYS` / `PACKAGE_ALIASES`：依赖包注册表 /
    `package_catalog.json` 用的键（按 SoC 变体分：`f133emmc` / `f136emmc` /
    `t113stdcxx` / `v85xemmc` / `v853`…）。**与规范名不是简单大小写关系**：
    `F135` 的包键是 `f136`，`V85X` 的包键是 `v85x`。
-3. **仅包生态平台** `PACKAGE_ONLY`：包生态里真实存在、但 MCP 没有模板/工具链
+3. **仅包生态平台**`PACKAGE_ONLY`：包生态里真实存在、但 MCP 没有模板/工具链
    （`z6s` / `z261` / `h500s` / `a33nor`）。查询要认，建工程要**说清原因地**拒绝，
-   不能当成「未知平台」（否则 AI/用户会以为平台不存在）。
+不能当成「未知平台」（否则 AI/用户会以为平台不存在）。
 
 旧写法「按平台名字符串白名单判定能力」是错的（同一个平台名，包查询认、建工程不认）；
 现在一律走 `resolve()` / `package_key()`，**按真实存在的名字与目录判定**。
@@ -29,12 +29,15 @@
 # 规范名 -> 属性。template/binTool 由 scripts/check_consistency.py 对着真实目录校验。
 PLATFORMS = {
     'F133': {
-        'arch': 'riscv32', 'template': 'HelloWord_F133', 'binTool': 'f133',
-        'alias': ('F133EMMC',), 'note': 'RISC-V，工具链与其他平台不可混用，严禁混入 glibc',
+        'arch': 'riscv64', 'template': 'HelloWord_F133', 'binTool': 'f133',
+        'alias': ('F133EMMC',),
+        'note': 'RISC-V64（C906 核，isa rv64imafdcvu）；工具链 riscv64-unknown-linux-musl-g++（musl），'
+                '与其他平台不可混用，严禁混入 glibc',
     },
     'F135': {
-        'arch': 'arm', 'template': 'HelloWord_F135', 'binTool': 'f135',
-        'alias': ('F136',), 'note': 'ARM',
+        'arch': 'riscv64', 'template': 'HelloWord_F135', 'binTool': 'f135',
+        'alias': ('F136',),
+        'note': 'RISC-V64（C906 核）—— 与 F133 同核，不是 ARM；工具链与 F133 同族不可混用（F136 归一为本平台）',
     },
     'T113': {
         'arch': 'arm', 'template': 'HelloWord_T113', 'binTool': 't113',
@@ -90,10 +93,10 @@ PACKAGE_KEY_ALIASES = {
 # 只作入参归一用、**不对应任何真实包键**的历史写法（V85x 家族旧名，
 # 直接拿去查包会查空，必须先归一到 v85x）。
 #
-# ⚠️ V85x 家族写法收齐（v0.27.87，钟工问「这几个你适配了吗」）：
-#   **V851 / V851S / V851S3 / V853 / V853S / V553 / V552** 一律归一到 **V85X** 平台；
-#   包键统一走 **`v85x`（SPINOR）或 `v85xemmc`（EMMC）**（两个键在 package_catalog.json /
-#   注册表里真实存在），**不要拿 `v851s` 这种芯片名当平台键去查包**（查不到任何包）。
+# ⚠️ V85x 家族写法收齐（v0.27.87，需求方问「这几个你适配了吗」）：
+#   **V851 / V851S / V851S3 / V853 / V853S / V553 / V552**一律归一到 **V85X**平台；
+#包键统一走 **`v85x`（SPINOR）或 `v85xemmc`（EMMC）**（两个键在 package_catalog.json /
+#注册表里真实存在），**不要拿 `v851s` 这种芯片名当平台键去查包**（查不到任何包）。
 PACKAGE_INPUT_ALIASES = {'v853': 'V85X', 'v552': 'V85X', 'v553': 'V85X',
                          'v851': 'V85X', 'v851s': 'V85X', 'v851s3': 'V85X',
                          'v853s': 'V85X'}
@@ -166,7 +169,7 @@ def normalize(name):
 def package_key(name) -> str:
     """平台名 → 包生态键（依赖包注册表 / package_catalog.json 用的键）。
 
-    入参可以是规范名（`F135`）、历史别名（`F133EMMC` / `V853`）、或已经是包键（`f136emmc`）。
+入参可以是规范名（`F135`）、历史别名（`F133EMMC` / `V853`）、或已经是包键（`f136emmc`）。
     - 已经是**真实包键**就原样返回（保真：emmc/stdcxx 变体各自有自己的包集）；
     - 否则先归一到规范名，再取该平台的主键（注意 F135 -> f136）。
     **不做白名单拦截**：认不出来就原样小写返回，让包查询层按真实键去查（查不到自然回空）。
@@ -181,11 +184,11 @@ def package_key(name) -> str:
 def resolve(name):
     """平台名 → 完整解析结果（按**真实能力**判定，不是字符串白名单）。
 
-    返回 None 表示与任何已知平台都不沾边。否则：
+返回 None 表示与任何已知平台都不沾边。否则：
       {input, canonical, packageKey, buildable, template, binTool,
        packageOnly, chips, note, known}
     `buildable=False`（仅包生态）时 `template`/`binTool` 为空，但 `packageOnly=True`
-    会说明它是真实平台、只是 MCP 没有模板/工具链。
+会说明它是真实平台、只是 MCP 没有模板/工具链。
     """
     if name is None or str(name).strip() == '':
         return None
@@ -210,7 +213,7 @@ def validate(name, default=None, allow_empty=False):
     """校验并归一平台名（**建工程口径**：只接受有模板/工具链的规范名）。
 
     - `name` 为空：`allow_empty=True` 时返回 ''（表示「全部平台」，如 list_packages）；
-      否则用 `default`（再没有就用 DEFAULT_PLATFORM）。
+否则用 `default`（再没有就用 DEFAULT_PLATFORM）。
     - 无法识别：抛 ValueError，消息里**列出全部支持项**（外部用户能直接改）。
     - 名字是真的、但只有包生态：抛 ValueError 并**说清是缺模板而不是平台不存在**
       （旧文案一律回「未知平台」，等于把真实平台判成不存在）。

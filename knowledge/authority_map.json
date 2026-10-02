@@ -1,0 +1,90 @@
+{
+  "schemaVersion": "1.0",
+  "updated": "2026-10-02",
+  "authority": "「概念 → 权威口径文档」唯一真源。解决的问题：一条铁律常被 10~30 篇文档各自复述（实测 2026-10-02：『图片尺寸==控件盒』出现在 26 处 / 14 篇、『UI 生命周期』34 处 / 22 篇），措辞各不相同、**没有真重复可删**——真正缺的是『哪一篇才算权威』。本表把每个概念指定到一个权威文档；kb_tools.knowledge_search 命中时把 authority 附在返回体里，AI 一步就知道该信谁、去哪核对。",
+  "rules": {
+    "canonical": "必须是**检索范围内**的真实文档（kb_index_roots 的 ROOTS），否则 AI 拿到指针也搜不到 —— 由 kb_authority.validate() 强制。",
+    "aliases": "用户/同事会真的说出口的问法片段（含口语与常见错说法）；查询词命中即附权威提示。同一别名不许被两个概念认领。",
+    "ops": "服务该概念的工具（必须存在于 kb_tools.OP_NAMES）。",
+    "不写在这里的": "具体字段/默认值/矩阵 → 归各自的注册表（ui_schema.json / platform_capabilities.json / package_catalog.json / op_spec.json）。本表只管『哪篇文档是权威』。"
+  },
+  "concepts": {
+    "image-box-size": {
+      "title": "图片尺寸必须与控件盒一致（图片铁律 #1）",
+      "canonical": "knowledge/devflow/ui-asset-rules.md",
+      "aliases": ["控件盒", "图片尺寸", "尺寸不一致", "图比盒子大", "切图尺寸", "verify_assets", "尺寸对不上"],
+      "rule": "尺寸==盒；图 != 盒时引擎拉伸填充、不报错（是质量纪律，不是「贴不上」）",
+      "ops": ["flythings_verify_assets", "flythings_generate_ui_assets"]
+    },
+    "activity-no-edit": {
+      "title": "src/activity 由 IDE 生成，禁止手改",
+      "canonical": "knowledge/devflow/activity-code-skeleton.md",
+      "aliases": ["mainActivity", "src/activity", "activity 禁手改", "activity 手改", "改 activity"],
+      "rule": "activity/*.cpp/h 由 IDE 按 ftu 生成，禁创建/修改/覆盖；业务只写 src/logic/*.cc",
+      "ops": ["flythings_create_project", "flythings_edit_ftu"]
+    },
+    "ui-lifecycle": {
+      "title": "UI 生命周期与回调注册（onUI_init / onUI_show …）",
+      "canonical": "knowledge/devflow/activity-code-skeleton.md",
+      "aliases": ["onUI_show", "onUI_init", "onUI_quit", "生命周期", "回调注册"],
+      "rule": "生命周期回调与控件指针都在生成的 activity 骨架里；业务逻辑挂 logic/*.cc",
+      "ops": ["flythings_create_project"]
+    },
+    "find-control-by-id": {
+      "title": "findControlByID 取控件指针",
+      "canonical": "knowledge/devflow/activity-code-skeleton.md",
+      "aliases": ["findControlByID", "取控件指针", "控件指针"],
+      "rule": "按 id 取控件：id 与 ui json 的 id 对齐；由 IDE 生成的骨架保证类型",
+      "ops": ["flythings_create_project", "flythings_edit_ftu"]
+    },
+    "upgrade-image": {
+      "title": "固化升级包 update.img（打包 / 刷机 / 分区 flag）",
+      "canonical": "knowledge/devflow/upgrade-pack-image.md",
+      "aliases": ["update.img", "升级包", "固化", "刷机", "TF卡升级", "sys.zkupgrade"],
+      "rule": "交付/量产走 fun pack → update.img；ADB 固化为 adb push 到 /tmp + setprop sys.zkupgrade.dir/flag",
+      "ops": ["flythings_pack_upgrade"]
+    },
+    "thumb-subbox": {
+      "title": "thumb 等子盒字段是对象，不是字符串",
+      "canonical": "knowledge/uicontrols/json-field-mandatory.md",
+      "aliases": ["thumb", "子盒", "thumb.size", "thumb 写成字符串"],
+      "rule": "position/colorTab/picTab/thumb 等子盒必须写成对象；写成字符串 → 真机 ftu 加载无声挂死",
+      "ops": ["flythings_ui_schema", "flythings_verify_assets"]
+    },
+    "libc-family": {
+      "title": "链库的 libc 家族必须匹配平台",
+      "canonical": "knowledge/devflow/open-source-stack-integration.md",
+      "aliases": ["glibc", "musl", "libc 不匹配", "undefined reference", "链接错误"],
+      "rule": "Z20/Z21=glibc，其余（F133/F135/T113/V85X）=musl；跨家族链库会 undefined reference",
+      "ops": ["flythings_check_project_deps"]
+    },
+    "color-contrast": {
+      "title": "配色与文字对比度标准",
+      "canonical": "knowledge/devflow/color-contrast-standard.md",
+      "aliases": ["对比度", "配色标准", "颜色看不清", "文字看不清", "配色调和"],
+      "rule": "文字与底色对比度有下限；改主题/换皮必须过对比度校验",
+      "ops": ["flythings_generate_ui_assets"]
+    },
+    "stale-on-device": {
+      "title": "设备上是旧版（staleOnDevice）与 adb 设备选择",
+      "canonical": "knowledge/devflow/adb-and-device-selection.md",
+      "aliases": ["staleOnDevice", "设备是旧版", "改了像没改", "跑的还是旧版本", "多台设备选哪台"],
+      "rule": "md5 比对 staleOnDevice=true ⇒ 设备跑的是旧版；多台在线不猜，必须显式指定 serial",
+      "ops": ["flythings_build_ui_flow", "flythings_selfcheck"]
+    },
+    "platform-capability": {
+      "title": "组件 × 平台 可用性（哪个组件能在哪台设备上跑）",
+      "canonical": "knowledge/devflow/platform-capability-matrix.md",
+      "aliases": ["哪个平台能用", "平台支持", "这组件", "能不能跑", "选型 平台", "能跑吗"],
+      "rule": "能力矩阵是派生页（真源 platform_capabilities.json）；组件专属细节看该组件的 components/*/platforms.md",
+      "ops": ["flythings_hardware_info"]
+    },
+    "builtin-packages": {
+      "title": "内置依赖包生态（有哪些包、什么版本）",
+      "canonical": "knowledge/devflow/builtin-packages.md",
+      "aliases": ["内置包", "有哪些包", "依赖包版本", "有没有现成的包", "现成包"],
+      "rule": "包名索引与通用包版本在本页；精确查询用 op（list_packages / query_package / get_package_api）",
+      "ops": ["flythings_list_packages", "flythings_query_package", "flythings_add_package"]
+    }
+  }
+}

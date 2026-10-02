@@ -1,6 +1,6 @@
 # CHANGELOG — FlyThings MCP Open
 
-> **本文件已冻结为历史归档：内容覆盖 ≤ v0.27.30-open（2026-09-11）**（2026-09-11 钟工定规「方案 B」）。
+> **本文件已冻结为历史归档：内容覆盖 ≤ v0.27.30-open（2026-09-11）**（2026-09-11 需求方定规「方案 B」）。
 > **此后（v0.27.31 → 今）的版本史唯一来源 = `kb_tools.py` 的 `MCP_FEATURES`**（`flythings_get_version(compact=False)` 取全量）
 > 与 `README.md` 的版本号；本文件不再新增章节、不进发布（审查报告 §2.2 口径定死）。
 
@@ -8,11 +8,11 @@
 
 ## v0.27.30-open (2026-09-11) — html2json 阴影转图：三个叠加真 bug 连修（「图==控件」1:1 达标）
 
-**背景**：沛哥用新 UI skill（`flythings-ui-dev`）做农历布局 demo，转 json 时弹出「含 CSS 效果（阴影、圆角）…请切图后用 data-pic 引用」，问「这是什么错误？」。表面是一句警告，实际是**三个叠加缺陷**，其中两个会把图默默丢掉。
+**背景**：需求方用新 UI skill（`flythings-ui-dev`）做农历布局 demo，转 json 时弹出「含 CSS 效果（阴影、圆角）…请切图后用 data-pic 引用」，问「这是什么错误？」。表面是一句警告，实际是**三个叠加缺陷**，其中两个会把图默默丢掉。
 
 ### ① box-shadow 单位解析失败 + 异常静默吞掉（真因）
-- `_effect_assets()` 阴影分支：`ox, oy, blur = int(float(parts[0])), int(float(parts[1]))...` **没去 px 单位** → `float('4px')` 抛 `ValueError: could not convert string to float: '4px'`
-- 外层 `except Exception: pass` **静默吞掉** → 阴影图一张不生成（`generatedAssets` 只剩图标），同时 `_warn_css_effects()` 照样输出「工具转不了，请自己切图」→ **误导用户以为要手工切图**
+- `_effect_assets()` 阴影分支：`ox, oy, blur = int(float(parts[0])), int(float(parts[1]))...` **没去 px 单位**→ `float('4px')` 抛 `ValueError: could not convert string to float: '4px'`
+- 外层 `except Exception: pass` **静默吞掉**→ 阴影图一张不生成（`generatedAssets` 只剩图标），同时 `_warn_css_effects()` 照样输出「工具转不了，请自己切图」→ **误导用户以为要手工切图**
 - 修：新增 `_px_num()`（px/em/rem/pt/%/无单位）+ `_shadow_spec()`（inset/outset 忽略、4 值 spread、色值写在任意位置）解析；失败改抛明确 warning（类型+原因），不再静默
 - 附带：`_warn_css_effects()` 有 `data-pic` 时直接返回；box-shadow 能成功转图时不再误报「阴影/圆角」
 
@@ -40,7 +40,7 @@
 
 ## v0.27.29-open (2026-09-10) — 抓帧读图/像素级坑补缺（外部 skill 比对后的“必要项”）
 
-**背景**：外部 skill `flythings-device-screenshot` 与知识库逐条比对结果 = **30 条：已覆盖 27 / 真缺 3 / 弱覆盖若干**。**沛哥 21:31**：“必要的做好入库就好了” → 只补必要项，不整篇搬。
+**背景**：外部 skill `flythings-device-screenshot` 与知识库逐条比对结果 = **30 条：已覆盖 27 / 真缺 3 / 弱覆盖若干**。**21:31**：“必要的做好入库就好了” → 只补必要项，不整篇搬。
 
 **新增 `knowledge/devflow/pixel-analysis-ai.md`**
 - **省 token 四层阶梯**：L1 结构化读数 → L2 程序化读图 → L3 `ui_diff` 像素 diff → L4 视觉模型（只给“差异区小图”，不给整屏）
@@ -51,11 +51,9 @@
 
 **`busybox-debug-library.md` 新增「设备端没有的常用命令 → 用 busybox applet」**
 - `grep / sed / head / tail / dd / md5sum / df / find / wc / xxd / vi` 不是“设备不支持”，是没装（push 一个 busybox 全有）
-- 抓帧三条纪律：① 抓前 `df -h /tmp`（**空间不足会静默截断**）② 图片是否部署用 `md5sum` 比对，不靠肉眼 ③ **`fun launch` 会清 `/tmp`**
-
-**`touch-inject-autotest.md` 新增「抓帧时机」**
+- 抓帧三条纪律：① 抓前 `df -h /tmp`（**空间不足会静默截断**）② 图片是否部署用 `md5sum` 比对，不靠肉眼 ③ **`fun launch` 会清 `/tmp``touch-inject-autotest.md` 新增「抓帧时机」**
 - **注入 + 抓帧放在同一次 adb 调用里**；**多档 sleep 差分**（0.15s / 0.4s / 1.0s）出“变化中的元素”
-- **`hasScrollbar` 滚动条约 0.6s 淡出、颜色逐帧变** → 过了窗口期整条消失，会误判“没生效”
+- **`hasScrollbar` 滚动条约 0.6s 淡出、颜色逐帧变**→ 过了窗口期整条消失，会误判“没生效”
 - 结论：单张静止帧不足以判定交互结果（要么多帧差分，要么以日志为主）
 
 **未入库（不属于必要项）**：V553 的设备专属几何（600×3200 BGRA / 页内 x119..599 / 25 转置+翻转）—— 已被 v0.27.28 的“读工程 `rotateScreen`、不猜”替代为通则；其余弱覆盖已有相应章节过。
@@ -64,7 +62,7 @@
 
 ## v0.27.28-open (2026-09-10) — 抓屏方向：按**项目工程**的 rotateScreen 取图（不猜）
 
-**背景**：外部 skill（`flythings-device-screenshot`，`agent_created`）的并入审阅中，其中「V553 几何 + 转置/翻转」一条，助手的初始方案是硬编设备几何 → **沛哥定规（2026-09-10 21:24）**：
+**背景**：外部 skill（`flythings-device-screenshot`，`agent_created`）的并入审阅中，其中「V553 几何 + 转置/翻转」一条，助手的初始方案是硬编设备几何 → **需求方定规（2026-09-10 21:24）**：
 
 > “入库的 B 方案根据实际项目旋转角度取图就可以了。不用猜。”
 
@@ -73,7 +71,7 @@
 **`ui_tools/device_screenshot.py`**
 - 新增 `_parse_easyui_cfg(text)`：解析 `rotateScreen` / `rotateTouch` / `resPath` / `startupLibPath` / `touchDev` / `languageCode` / `font`
 - `screen_info()`：cat 链读到 **10 段**（新增 `fb0/rotate` + `/sys/class/disp/disp/attr/sys` + `/res/etc/EasyUI.cfg` + `/etc/EasyUI.cfg`）；新增 `_parse_dispsys(text)`（图层 `fb/crop/frame` 几何；修了 `fb[480, 800; 240, 400; …]` 里**分号**导致匹配失败的 bug）；返回新增 `rotateScreen` / `rotateTouch` / `easyuiCfg` / `cfgSource` / `layers` / `uiLayer`
-- `capture()`：**`rotate` 缺省改为 `'auto'`** → 优先用 `rotateScreen`，拿不到才退化 `fb0/rotate`；新增 `crop='' | 'auto' | 'x,y,w,h'`（`auto` = 按 UI 图层 `frame` 裁逻辑分辨率；裁切在 flip/rotate **之前**，映射 `fx=frame_x+offsetX`、`fy=frame_y−pan_y`）；返回值新增 `rotateDeg` / **`rotateSource`** / `crop` / `uiLayer`
+- `capture()`：**`rotate` 缺省改为 `'auto'`**→ 优先用 `rotateScreen`，拿不到才退化 `fb0/rotate`；新增 `crop='' | 'auto' | 'x,y,w,h'`（`auto` = 按 UI 图层 `frame` 裁逻辑分辨率；裁切在 flip/rotate **之前**，映射 `fx=frame_x+offsetX`、`fy=frame_y−pan_y`）；返回值新增 `rotateDeg` / **`rotateSource`**/ `crop` / `uiLayer`
 - CLI：`--rotate` 接受 `auto`（缺省），新增 `--crop`
 - MCP 包装 `flythings_device_screenshot`：签名 `rotate: str = 'auto'` + 新增 `crop`，docstring 写明“**方向只认项目工程配置**”及三条❌反例
 
@@ -84,13 +82,13 @@
 | `rotate=0`（原样 fb） | 600×1600，文字**侧躺/倒立**（错） |
 | `rotate='auto'`（读工程 rotateScreen=270） | 1600×600，文字**正立**（✅ 与用户实际看到的一致） |
 
-**`knowledge/devflow/ui-layout-verify.md` §2-1** 新增 **§2-1-1 取图方向/角度：读项目工程的配置，不要猜**：工程内路径 / `rotateScreen` / `rotateTouch` 表 + 本机实测 + 三条❌反例（不拿 `fb0/rotate` 当首选，本机它=0 与工程角度不一致；不硬编某台设备的转置翻转组合；不从 disp 图层几何反推方向——本机那个 480×800 图层是**视频/DVR 层**不是应用 UI 层）；并链到 `package-properties-easyui-cfg.md`。
+**`knowledge/devflow/ui-layout-verify.md` §2-1**新增 **§2-1-1 取图方向/角度：读项目工程的配置，不要猜**：工程内路径 / `rotateScreen` / `rotateTouch` 表 + 本机实测 + 三条❌反例（不拿 `fb0/rotate` 当首选，本机它=0 与工程角度不一致；不硬编某台设备的转置翻转组合；不从 disp 图层几何反推方向——本机那个 480×800 图层是**视频/DVR 层**不是应用 UI 层）；并链到 `package-properties-easyui-cfg.md`。
 
 ---
 
 ## v0.27.27-open (2026-09-10) — check_all #15 新增「故意遮挡」评估
 
-**背景**：沛哥提醒「方案一（装饰件遮挡审计）也要评估一种可能就是故意遮挡」——蒙层/禁用态/防盗点本来就该吃掉触摸，不能无差别当成 bug 要求改代码。
+**背景**：需求方提醒「方案一（装饰件遮挡审计）也要评估一种可能就是故意遮挡」——蒙层/禁用态/防盗点本来就该吃掉触摸，不能无差别当成 bug 要求改代码。
 
 **`ui_tools/check_all.py`**
 - `_deco_blockers()` 改为返回 `(装饰件键, 装饰件控件, 被压控件键, 被压控件, 重叠面积)`（便于调用方做意图评估）
@@ -106,8 +104,8 @@
 **验证（fixture = listViewDemo-New 副本，三用例）**
 | 用例 | #15 | #16 | FAIL 数 |
 |------|-----|-----|--------|
-| pos：小装饰件 textview 压 listview（无 modal/非容器） | **[疑似误压]** ×1 | WARN ×1 | 2（未增加） |
-| mask：整屏 window 遮罩盖全页 | **[可能有意遮挡：window 容器、覆盖 100%、整屏尺寸]** | PASS | 2 |
+| pos：小装饰件 textview 压 listview（无 modal/非容器） | **[疑似误压]**×1 | WARN ×1 | 2（未增加） |
+| mask：整屏 window 遮罩盖全页 | **[可能有意遮挡：window 容器、覆盖 100%、整屏尺寸]**| PASS | 2 |
 | neg：装饰件移开 + 代码补 setTouchPass(true) | PASS | PASS | 2 |
 
 **真实项目分类实测**（175 个 json）：命中 14 文件 / 17 处 → **可能有意 7 处、疑似误压 10 处**。
@@ -120,13 +118,13 @@
 
 ## v0.27.26-open (2026-09-10) — WARN 升级为「可粘贴修复代码」
 
-**背景**：沛哥确认「扫描命中的遮挡确实存在，解决方案就是代码补 `setTouchPass`」——告警不该只报问题，应直接给出修复动作。
+**背景**：需求方确认「扫描命中的遮挡确实存在，解决方案就是代码补 `setTouchPass`」——告警不该只报问题，应直接给出修复动作。
 
 **`ui_tools/check_all.py`**
 - `_deco_blockers()` 返回值增加**装饰件 caption**（原来 `(键, 被压 caption, 面积, modal)` → 现为 `(键, 装饰件 caption, 被压 caption, 面积, modal)`）
-- **#15 WARN** 改为：`装饰件 textview__99(TextView1) 压在 CityListView 之上（重叠 4800px2，touchable=false）→ 修复：字段或 onUI_init 中 mTextView1Ptr->setTouchable(false); mTextView1Ptr->setTouchPass(true);`
+- **#15 WARN**改为：`装饰件 textview__99(TextView1) 压在 CityListView 之上（重叠 4800px2，touchable=false）→ 修复：字段或 onUI_init 中 mTextView1Ptr->setTouchable(false); mTextView1Ptr->setTouchPass(true);`
   （指针名由 caption 推导，可直接粘贴；modal 容器仍加注「拦截可能是有意的」）
-- **#16 WARN** 改为：`... 未见同对象 setTouchPass(true)：mTextView1Ptr → 修复：在该控件设置处补 mTextView1Ptr->setTouchPass(true);`
+- **#16 WARN**改为：`... 未见同对象 setTouchPass(true)：mTextView1Ptr → 修复：在该控件设置处补 mTextView1Ptr->setTouchPass(true);`
 - 仍为 WARN：不入 `failures`、不影响 PASS/FAIL 与退出码
 - 双份同步（MCP 内 + `tools/ui_tools/`）
 
@@ -140,12 +138,12 @@
 
 ## v0.27.25-open (2026-09-10) — 遮挡自动审计（check_all #15/#16，只报 WARN 交人工审批）
 
-**背景**：沛哥定规——touch-events.md 自检清单第五条「把装饰件压住可触摸控件的检查并入 check_all.py」，“报 warning 让用户审批”。
+**背景**：需求方定规——touch-events.md 自检清单第五条「把装饰件压住可触摸控件的检查并入 check_all.py」，“报 warning 让用户审批”。
 
 **`ui_tools/check_all.py` 新增两项检查（均只 WARN，不计入 failures、不影响 PASS/FAIL 与退出码）**
 - **#15 json 静态遮挡**：同层兄弟中「后定义（z 更高）且 `touchable=false`」的控件压在「`touchable=true`」控件之上 →
   WARN 提示装饰件需运行期 `setTouchable(false)+setTouchPass(true)`（touch-events.md §1）；
-  细节：仅统计双方 `visible`；重叠任一轴 <4px 不计（降噪，1px 条带点不到）；上层为 `modal` 容器时加注「拦截可能是有意的」；每页最多列 8 条，超出汇总
+细节：仅统计双方 `visible`；重叠任一轴 <4px 不计（降噪，1px 条带点不到）；上层为 `modal` 容器时加注「拦截可能是有意的」；每页最多列 8 条，超出汇总
 - **#16 代码静态**：`X->setTouchable(false)` 出现但同对象无 `setTouchPass(true)` → WARN
 - 新增 `warn()` 助手 + `warnings` 汇总，结尾打印「[!] N 条 WARN 需人工审批」且**不改变退出码**
 - 新增内部工具 `_rect` / `_overlap(min_axis=4)` / `_deco_blockers`
@@ -155,7 +153,7 @@
 | 用例 | #15 | #16 | FAIL 数 |
 |------|-----|-----|--------|
 | baseline | PASS | PASS | 2（该 demo 既有） |
-| positive（装饰件压 listview + 缺 setTouchPass） | WARN ×1 | WARN ×1 | **2（未增加）** |
+| positive（装饰件压 listview + 缺 setTouchPass） | WARN ×1 | WARN ×1 | **2（未增加）**|
 | negative（装饰件移开 + 补 setTouchPass） | PASS | PASS | 2 |
 
 **噪声实测**：175 个真实项目 json → 命中 14 文件 / 17 处（典型命中：textview 标签压在 button/pointer/listview 上）。
@@ -168,32 +166,31 @@
 
 ---
 
-## v0.27.24-open (2026-09-10) — 触摸/遮挡知识定稿（沛哥实机验证全文替换草稿）
+## v0.27.24-open (2026-09-10) — 触摸/遮挡知识定稿（实机验证全文替换草稿）
 
-**背景**：沛哥报障「控件点不动 / 列表拖不动 / 点了没选中」，V85X + EasyUI 2.9.0 实机逐条验证产出；
-沛哥直接把全文发来，替换早前墨羽按要点自拟的草稿（v0.27.23 新增）。
+**背景**：需求方报障「控件点不动 / 列表拖不动 / 点了没选中」，V85X + EasyUI 2.9.0 实机逐条验证产出；
+需求方直接把全文发来，替换早前墨羽按要点自拟的草稿（v0.27.23 新增）。
 
 **`knowledge/uicontrols/touch-events.md` 全文更新（触控事件与遮挡 / touchable / touchPass / 谁吃掉了我的点击）**
-1. **`touchable=false` 不等于触摸穿透（最容易搞错的一条）**：只表示「这个控件自己不响应点击」，**照样挡住矩形范围内的下层控件** →
-   下层收不到 `DOWN`，既不能拖动也不触发点击；症状=列表**能显示能看但拖不动**、点某行没反应；
-   最容易犯的是**压在可触摸控件之上的装饰件**（渐隐/渐变遮罩、选中高亮色带、徽标红点、纯图标层、半透明蒙层）
+1. **`touchable=false` 不等于触摸穿透（最容易搞错的一条）**：只表示「这个控件自己不响应点击」，**照样挡住矩形范围内的下层控件**→
+下层收不到 `DOWN`，既不能拖动也不触发点击；症状=列表**能显示能看但拖不动**、点某行没反应；
+最容易犯的是**压在可触摸控件之上的装饰件**（渐隐/渐变遮罩、选中高亮色带、徽标红点、纯图标层、半透明蒙层）
 2. **正解**：装饰件除 `touchable=false` 外，运行期还要 `pCtrl->setTouchable(false); pCtrl->setTouchPass(true);`
    （ZKBase 触摸穿透，事件落到下层），在 `onUI_init()` 对这批装饰件统一设置最省事；
    ⚠️ **touchPass 没有对应的 json 字段（不是 json 键），必须写代码**；
-   层叠顺序（json 后定义在上层）决定“渐隐层要盖住滚动文字”时它必在上层 → 必须穿透，否则列表就废了
+层叠顺序（json 后定义在上层）决定“渐隐层要盖住滚动文字”时它必在上层 → 必须穿透，否则列表就废了
 3. **交互容器（radiogroup 等）`touchable` 必须 true**：非触摸容器会把**整棵子树**从触摸分发里剪掉，子项写 true 也没用；
-   实测 radiogroup=false → radiobuttons 全部点不动（语言设置页完全无法选语言）
+实测 radiogroup=false → radiobuttons 全部点不动（语言设置页完全无法选语言）
 4. **`ZKListView::setSelection()` 之后必须 `refreshListView()`**：setSelection 只改**滚动位置**、不触发重排+重绘 →
    “行位置与选中样式错位”（中心行是新值、选中样式画到相邻行 = 像没选中）；
-   定位线索：进页面时对、交互后错 → 比对两条路径，通常一条带了 refresh 另一条漏了
+定位线索：进页面时对、交互后错 → 比对两条路径，通常一条带了 refresh 另一条漏了
 5. **排查顺序（别跳步）**：先看日志（事件到没到控件/回调进没进，只到“页面级全局触摸监听”不算）→ 再看像素
    （抓屏要按 `pan` 取当前显示的那页缓冲，读错帧会得出相反结论）→ 两者都可能骗人（日志只证明逻辑跑了、像素可能读错缓冲）
-6. **实测对照表**（同一固件，只开关 setTouchPass；控件=listview 顶/底各 42px 渐隐层）：
-   渐隐覆盖区拖动：穿透关 = 0% 像素变化 / 穿透开 = 正常滚动；渐隐覆盖区点行：无回调 / 正常触发；未覆盖中间条带：两者都正常
-7. **自检清单** 5 条：装饰件 setTouchPass(true) / 交互容器 touchable=true / setSelection 后跟 refreshListView /
+6. **实测对照表**（同一固件，只开关 setTouchPass；控件=listview 顶/底各 42px 渐隐层）：渐隐覆盖区拖动：穿透关 = 0% 像素变化 / 穿透开 = 正常滚动；渐隐覆盖区点行：无回调 / 正常触发；未覆盖中间条带：两者都正常
+7. **自检清单**5 条：装饰件 setTouchPass(true) / 交互容器 touchable=true / setSelection 后跟 refreshListView /
    **实机**逐项验证（边缘起手拖动、点首行、点末行、跳页返回再进）/ 有条件把“装饰件压住可触摸控件”并入 check_all.py
 
-**同时**：`knowledge/uicontrols/widget-code-api.md` 新增「ZKBase 通用」段（`setTouchable` / **`setTouchPass`** / `setTouchListener` / `setLongClickListener` 注册与注销时机 + 穿透必设提醒）。
+**同时**：`knowledge/uicontrols/widget-code-api.md` 新增「ZKBase 通用」段（`setTouchable` / **`setTouchPass`**/ `setTouchListener` / `setLongClickListener` 注册与注销时机 + 穿透必设提醒）。
 
 **索引**：`rebuild_index_local.py` 重建；`scripts/smoke.py` 自检全过。
 
@@ -207,13 +204,13 @@
 
 **① radiogroup `touchable` 必须 `true`（会产生错误代码）**
 - `knowledge/uicontrols/json-field-mandatory.md`：
-  - 「沛哥 5 条口径」第 2 条（touchable）补例外说明：**radiogroup 虽是容器也必须 true**，写 false 会让整组收不到触摸、点了没反应
+  - 「5 条口径」第 2 条（touchable）补例外说明：**radiogroup 虽是容器也必须 true**，写 false 会让整组收不到触摸、点了没反应
   - 每类型必写键表中 radiogroup 行：`touchable false` → **`touchable true`**，并标注这是「容器显式 false」通用口径的**例外**
 - `ui_tools/html2json.py`：`_open_radiogroup` 模板 `'touchable': False` → **`'touchable': True`**，加注释说明原因（双份同步：MCP 内 + `tools/ui_tools/`）
 
 **② 新增 `knowledge/uicontrols/touch-events.md`（触摸事件与 touchable 语义 ·「点了没反应」排查手册）**
 - 铁律：touchable ≠ 穿透开关（只管收不收触摸，不靠它实现穿透）；交互控件必须 true；**radiogroup 例外必须 true**；
-  容器/纯显示 false（window/painter/textview/cameraview/digitalclock），需拦截下层触摸的遮罩/弹窗才故意 true
+容器/纯显示 false（window/painter/textview/cameraview/digitalclock），需拦截下层触摸的遮罩/弹窗才故意 true
 - 六步排查顺序：touchable → 是否被上层遮挡（层叠）→ 是否在当前显示 window/Activity → 回调名是否匹配 caption → 状态类是否漏刷新 → 真机截图 + logcat
 - 自检清单 8 项（含 radiogroup 例外、setSelection→refresh、ID 宏不用序号）
 
@@ -247,12 +244,11 @@
 4. **双缓冲页翻转**：读 `/sys/class/graphics/fb0/pan`（如 `0,1600`）按 yoffset 抓，否则抓到的是**上一帧**；抓完二次确认 pan 未变，翻了自动重抓
 5. 32bpp 内存序 BGRA（小端 ARGB8888）：按 alpha 字节位置自动判通道序，颜色反了可传 `pixel='rgba'`
 
-**知识入库 / 行为修复（沛哥：AI 要截图却先自己探测一轮，能否修复）**
-- 新增规则 **「设备侧动作规则」**（`knowledge/uicontrols/retrieval-boundary.md`）：
-  要设备上的东西（画面/屏参/文件/触摸）**先查 MCP 工具，禁止现场手搓 adb/dd/sysfs 探测**；附能力对照表与执行顺序
+**知识入库 / 行为修复（现场反馈：AI 要截图却先自己探测一轮，能否修复）**
+- 新增规则 **「设备侧动作规则」**（`knowledge/uicontrols/retrieval-boundary.md`）：要设备上的东西（画面/屏参/文件/触摸）**先查 MCP 工具，禁止现场手搓 adb/dd/sysfs 探测**；附能力对照表与执行顺序
 - `knowledge/devflow/ui-layout-verify.md` 新增 **§2-1 真机截图怎么拿**：一行调用示例 + 回归验收流程 + 设备侧实现要点
 - 本地零成本意图闸门（flythings-intent-gate）注入内容新增 **「设备侧动作」段**（截图/触摸/编译/设备命令直接给工具名），
-  并新增截图/抓屏关键词规则；`catalog.json` 重新生成（35 ops）
+并新增截图/抓屏关键词规则；`catalog.json` 重新生成（35 ops）
 
 **配置一致性修复（自检发现漂移）**
 - `README.md`：31 个工具 / 0.27.2-open → **35 个工具 / 0.27.22-open**，工具表补 4 个新工具，FAQ 同步
@@ -288,7 +284,7 @@
 
 ---
 
-## v0.27.20-open (2026-09-10) — UI 可视化编辑 + 像素验收（沛哥：指哪打哪 + 属性可改 + 预览要出图）
+## v0.27.20-open (2026-09-10) — UI 可视化编辑 + 像素验收（现场反馈：指哪打哪 + 属性可改 + 预览要出图）
 
 **背景**：AI 做出来的 UI 布局有图标锯齿、位置不对、切图不对，靠嘴描述"往左一点"沟通成本高；
 且预览页图片全丢（资源路径解析 bug），无法用来确认效果。
@@ -305,7 +301,7 @@
 - `flythings_ui_edit_apply` — 变更 JSON（`changes` 几何 + `props` 属性）写回 ui/*.json，默认接着 `fui pack` 出 ftu
   - 安全：写回前自动备份 `<name>.json.bak`；格式一致性自检（原文件不能无损还原成标准 2 空格缩进则拒写，防整文件重排）；坐标取整 + 屏幕边界钳制
 - `flythings_ui_diff` — 像素 diff，**0 token 纯本地算法**：输出差异清单（区域坐标/尺寸/面积/最大色差）+ 可选标注图，
-  不把整屏图丢给视觉模型（整屏走模型是千级 token/次）
+不把整屏图丢给视觉模型（整屏走模型是千级 token/次）
   - 默认抑制假报警：容差 ±2、±1px 抖动补偿（邻域最优匹配）、对比前高斯模糊 0.7、面积/bbox 噪声块过滤
   - 主力用法 = 回归对比：改动前截图 vs 改动后截图，同渲染器零噪声，"改 A 碰坏 B"逐块列出
   - 需要语义判断时只把差异区域裁小图给模型，不要整屏
@@ -313,7 +309,7 @@
 **修 bug（影响所有预览/预览确认流程）**：`json2html` 图片路径解析
 - 旧实现只按 basename 找 `resources/images/`，而 FlyThings 引用是**相对 resources、可带子目录**的路径
   （`audio/horn.png`、`dvr/record.png`、`window/base_rectangle.png`）→ 预览大面积丢图，
-  且 ui_editor 的"图片尺寸≠控件尺寸"预检因找不到图而形同虚设
+且 ui_editor 的"图片尺寸≠控件尺寸"预检因找不到图而形同虚设
 - 新增 `find_asset()`：`<项目>/resources/<引用>` → `resources/images/…` → json 同目录 → 项目根，再退 `.9.png` 变体；
   data URI 按扩展名给 mime；按钮 picTab 缺 pic0 时回退取第一个有值的状态图（之前只填 pic2 的按钮预览全空白）
 
@@ -326,7 +322,7 @@
 
 ---
 
-## v0.27.19-open (2026-09-09) — package API 识别规则定规（沛哥 21:42：只从头文件识别，禁猜禁反编译，不会就是不会）
+## v0.27.19-open (2026-09-09) — package API 识别规则定规（21:42：只从头文件识别，禁猜禁反编译，不会就是不会）
 **定规**：AI 对 FlyThings 提供的 package（预编译闭源库）只允许通过**头文件**识别 API（官方接口声明）；不要猜也不要反编译二进制浪费时间；不会就是不会（标未收录问官方）。标准 C/C++/Linux 开发按标准来，可参考开源资料社区。
 **入库**（knowledge/uicontrols/retrieval-boundary.md 新增「Package API 识别规则」节）：
 - package C++ API（类/方法/枚举/注释）→ 只读包内头文件（aw-dvr mpi/*.h、easyui control/*.h）
@@ -337,8 +333,8 @@
 
 ---
 
-## v0.27.18-open (2026-09-09) — MCP 知识库结构化整理（沛哥确认：平台化治理消重复啰嗦）
-**背景**：沛哥指示整理 MCP 查重复啰嗦、平台化/结构化治理。审计发现：①knowledge ↔ wiki 双份 44 篇（28 字节相同 = rag 双命中、16 漂移不一致）②MCP_FEATURES 70 条 25.8KB 全史（违反"只留精华"约定）③工具 31 个无重复、CHANGELOG 长史为设计保留。
+## v0.27.18-open (2026-09-09) — MCP 知识库结构化整理（经需求方确认：平台化治理消重复啰嗦）
+**背景**：需求方指示整理 MCP 查重复啰嗦、平台化/结构化治理。审计发现：①knowledge ↔ wiki 双份 44 篇（28 字节相同 = rag 双命中、16 漂移不一致）②MCP_FEATURES 70 条 25.8KB 全史（违反"只留精华"约定）③工具 31 个无重复、CHANGELOG 长史为设计保留。
 **改动**：
 - **A 内容唯一化**：删除 wiki/flythings 下 44 篇 knowledge 实践文档副本（漂移 16 对核对均 knowledge 新）；实践知识唯一放 knowledge/（随 Gitee + AI 检索主源），wiki/flythings 只留官方镜像 129 篇；rag 去重重建
 - **B MCP_FEATURES 精简**：70 条 25.8KB → 27 条（0.27.18 + 0.27.10~0.27.17 近期 + 早期能力概括 2 条），完整史以 CHANGELOG 为准
@@ -348,7 +344,7 @@
 ---
 
 ## v0.27.17-open (2026-09-09) — 异步资源释放反模式入库（⑥，V553 实证：三处阻塞 sleep 空等永不释放的资源浪费 4 小时）
-**背景**：V553 踩坑意见⑥：UI 回调/页面切换里用固定 sleep 等媒体资源异步释放（播放器 stop 后 sleep 600-800ms 等 VO 让位）——资源不释放时 sleep 多久都白等，掩盖真问题带偏排查方向。沛哥建议三选一，先检讨后入库。
+**背景**：V553 踩坑意见⑥：UI 回调/页面切换里用固定 sleep 等媒体资源异步释放（播放器 stop 后 sleep 600-800ms 等 VO 让位）——资源不释放时 sleep 多久都白等，掩盖真问题带偏排查方向。需求方建议三选一，先检讨后入库。
 **结论（入库 uicontrols/cross-thread-ui-rule.md 新增「异步资源释放反模式」节）**：
 - **反模式**：UI 回调（onUI_quit/onUI_hide/onUI_Timer/按钮）固定 sleep 等媒体/硬件资源释放（卡 UI 线程 + 时序脆弱 + 空等永不释放资源）
 - **先确认"资源到底会不会释放、由谁释放"**，再选三选一：①官方回调/轮询确认（stop 完成回调/线程退出标志/资源可用轮询探测）②raw 层强制回收（AW_MPI_VO_Disable 拿返回码，见 v85x/display-layer-debug.md §4）③接受重建（确认不需要就重建通路，不空等）
@@ -359,18 +355,18 @@
 ---
 
 ## v0.27.16-open (2026-09-09) — 部署可靠性：fun launch 失败/超时自动重试 5 次（④，V553 实证）
-**背景**：V553 踩坑意见④（工具侧，无覆盖）：fun launch 网络超时静默、推送中断误推旧固件跑错版本；沛哥指示：timeout 就 retry 5 次，不要自写 push 脚本校验（fun 本身支持差分）。
+**背景**：V553 踩坑意见④（工具侧，无覆盖）：fun launch 网络超时静默、推送中断误推旧固件跑错版本；需求方指示：timeout 就 retry 5 次，不要自写 push 脚本校验（fun 本身支持差分）。
 **改动**（project_tools.py + kb_tools.py）：
 - `_run_fun` 加 `retries` 参数：失败（returncode≠0/超时）自动重试，间隔 2s，返回含 `retried` 次数；build 类本地命令 retries=1 不变
 - `flythings_build_ui_flow` fun launch 传 `retries=5`（网络抖动/推送中断自愈）；5 次仍失败才返回 needDeviceInput 询问设备接入，message 注明已重试
-- 信任 fun 差分推送能力，**未自写任何 push/产物校验脚本**（遵守沛哥定规）
+- 信任 fun 差分推送能力，**未自写任何 push/产物校验脚本**（遵守需求方定规）
 - kb_tools.py 工具描述同步（AI 可见：launch 自动重试 5 次）
 - 版本 0.27.15 → 0.27.16-open（工具代码同步进 release 需发布窗口，见 PUBLISH.md）
 
 ---
 
 ## v0.27.15-open (2026-09-09) — V553 踩坑入库 ②③：页面生命周期触发矩阵 + aw-dvr×runtime 兼容矩阵（含旧策略修正）
-**背景**：V553 UVC 相机项目（AI 通过 MCP 开发）基本功能验证，沛哥转来踩坑修改意见 ②③，并要求**先检讨正确性再入库**。检讨结果：②缺口属实（activity-code-skeleton 只有钩子列表无触发矩阵）；③主体属实且**揪出知识库旧策略误导**（v85x-mpp.md/dvr-recorder-guide 写"新工程直接用最新版 aw-dvr"→ V553 照此选 4.0.1 才踩 dlopen 坑）。
+**背景**：V553 UVC 相机项目（AI 通过 MCP 开发）基本功能验证，需求方转来踩坑修改意见 ②③，并要求**先检讨正确性再入库**。检讨结果：②缺口属实（activity-code-skeleton 只有钩子列表无触发矩阵）；③主体属实且**揪出知识库旧策略误导**（v85x-mpp.md/dvr-recorder-guide 写"新工程直接用最新版 aw-dvr"→ V553 照此选 4.0.1 才踩 dlopen 坑）。
 **② 页面生命周期触发矩阵（activity-code-skeleton.md 新增 §3-1）**：
 - 实证铁律：**goBack/返回销毁当前页只走 onUI_quit、不经 onUI_hide**（多工程日志实证）——释放放 onUI_hide = 永不执行（今天 VO 残留事故的代码根因）；openActivity 覆盖 → onUI_hide（会再 show 回来）；closeActivity/goHome 销毁 → onUI_quit
 - 铁律：媒体/硬件资源释放放 onUI_quit；onUI_hide 只做被覆盖场景的暂停/让位
@@ -387,9 +383,9 @@
 **背景**：V553 UVC 相机项目（AI 通过 MCP 开发）基本功能验证后总结踩坑：从独立播放页返回预览页图像出不来——logcat 反复 `0xa00f8042 AW_MPI_VO_Enable(id_) error`；排查发现该坑**全库 0 命中**（disp 层知识只覆盖到 layer 级，没到 VO dev 级），耗时最长失败尝试最多。
 **结论（入库）**：
 - 错误码实锤：`0xa00f8042` = **EN_ERR_VO_DEV_HAS_ENABLED**（aw-mpp mm_comm_vo.h，VO 设备已被 enable）；`0x41`=DEV_NOT_ENABLE（常态忽略）
-- **架构事实**：easyui ZKVideoView（zkmedia/CedarX 播放器）与 mpi 预览（aw-dvr RearCamera）**共用 VO dev0**，播放器退出/播放页销毁后 VO dev0 **不自动释放** → mpi 预览 enable 同一 dev 报 HAS_ENABLED
+- **架构事实**：easyui ZKVideoView（zkmedia/CedarX 播放器）与 mpi 预览（aw-dvr RearCamera）**共用 VO dev0**，播放器退出/播放页销毁后 VO dev0 **不自动释放**→ mpi 预览 enable 同一 dev 报 HAS_ENABLED
 - **触发条件**：播放页=独立 Activity 走销毁路径（onUI_quit/goBack）才触发；videoview 常驻同页（播放器实例不销毁）无此问题
-- **解法**：mpi 预览启动前 **raw `AW_MPI_VO_Disable(0)`** 强制让位并拿返回码（⚠️ mpi::VO 包装类 disable 可能吞异常/不返回真实码，必须 raw API）；Disable 失败（播放器异步释放 ~400ms）→ sleep 300-500ms 重试 2-3 次；预览 enable 失败兜底 Disable+延时重试循环
+- **解法**：mpi 预览启动前 **raw `AW_MPI_VO_Disable(0)`**强制让位并拿返回码（⚠️ mpi::VO 包装类 disable 可能吞异常/不返回真实码，必须 raw API）；Disable 失败（播放器异步释放 ~400ms）→ sleep 300-500ms 重试 2-3 次；预览 enable 失败兜底 Disable+延时重试循环
 - 排查顺序：disp 层(releaseLayer) → VO dev(0xa00f8042→raw Disable) → UI 透出(videoView visible)
 **改动**：
 - knowledge/v85x/display-layer-debug.md 新增「§4 VO dev0 抢占冲突」（错误码定位表/架构事实/解法/排查顺序，原 §4-7 顺延 §5-8）；wiki/flythings/v85x 同步
@@ -398,7 +394,7 @@
 ---
 
 ## v0.27.13-open (2026-09-09) — demos 案例库上线：DVR 录制功能参考工程（验证全功能 demo 带着走）
-**背景**：沛哥拍板方案 B——做验证全功能的 demo 案例带着走（代码+xml），方便 AI 快速参考开发避免踩坑反复 try 浪费 token；并定调后续可批量做类似 demo 案例。
+**背景**：需求方拍板方案 B——做验证全功能的 demo 案例带着走（代码+xml），方便 AI 快速参考开发避免踩坑反复 try 浪费 token；并定调后续可批量做类似 demo 案例。
 **改动**：
 - 新增 demos/ 案例库 + 规范（demos/README.md）：每个 demo = 已真机验证可编译可运行的功能闭环（源码级交付 <100KB）；命名 <功能>-<形态>-<平台>；必备 Manifest（accessKey 占位红线）/ui json+ftu/src 只写 logic/package.properties/README 三件套（三步跑起来/功能与预期表/关键坑位别回退）；红线：不提交 .fun/exe/.vscode、去工程化、跑得通的闭环宁缺毋滥；知识联动：knowledge 文档头部加 demo 指引
 - 新增 demos/dvr-uvc-recorder-v85x/（**首个案例**）：V85X + 1600×600 竖装屏(rotateScreen 270) + USB UVC(JPEG/MJPEG) 摄像头 DVR 全链路参考工程——ui/main.json（videoView 全屏可见透明窗 rotation:3）+ src/logic/mainLogic.cc（探测协商/预览/拍照/录像/停止/回放 + releaseLayer + UvcKeepAlive 保活）+ Manifest（aw-dvr accessKey 占位）+ package.properties；**真机全链路验证过**（绿屏/黑屏/图层/方向坑位均已修）；内置 AHD/TVI 双路改法见 README
@@ -408,7 +404,7 @@
 ---
 
 ## v0.27.12-open (2026-09-09) — DVR 录制功能端到端 Playbook + TF 录制卡格式化要求入库（解决碎片化漏环节）
-**背景**：沛哥提出「外部开发者同步 MCP 后要能准确无误开发类似 DVR 录制功能、AI 不走弯路」——盘点发现 open 库知识是碎片主题文档，缺**端到端功能链串联**；且 TF 卡格式化要求（FAT32+64KB 簇）只在本地未入 open 库。
+**背景**：需求方提出「外部开发者同步 MCP 后要能准确无误开发类似 DVR 录制功能、AI 不走弯路」——盘点发现 open 库知识是碎片主题文档，缺**端到端功能链串联**；且 TF 卡格式化要求（FAT32+64KB 簇）只在本地未入 open 库。
 **改动**：
 - 新增 knowledge/v85x/dvr-recorder-guide.md（**DVR 开发 Playbook**）：端到端 12 节——文档地图（防漏环节）/前置 4 问/Manifest 依赖（aw-dvr accessKey 私有包最新版策略）/三层架构/屏幕方向（rotateScreen 硬件适配）/UI（videoView 可见透明窗 + rotation 枚举）/摄像头（内置 mpi 双路 + UVC JPEG）/录像（产品级+UVC 简化两形态参数、frame_rate 15~60、尺寸对齐）/拍照回放（VO 延迟初始化）/存储 / 排障日志判据表（黑屏/绿屏/0 字节/一直提示格式化/回放方向）/8 项自检清单
 - 新增 knowledge/v85x/tfcard-format-requirement.md（**TF 录制卡格式化要求独立文档**）：FAT32+64KB 簇(65536)+OEM=zkswe（zkrecovery -F 32 -O zkswe -c 128 -b 65536）；校验 statfs f_bsize==65536，不符弹「SD卡文件系统不符合要求」；挂载失败 5 次自动强制重格；电脑 FAT32(簇≤32KB)/exFAT/NTFS 一律判不符；统一格式化流程 formatTfcardProcess（停录→umount→重格→重挂→可选续录）；常量/双介质探针/排障
@@ -446,50 +442,50 @@
 ---
 
 ## v0.27.9-open (2026-09-08) — UVC 知识分层：新增跨平台通用层（V85X 绑定实现分离）
-**沛哥定规**：V85X 平台 UVC/USB 摄像头统一按 v0.27.8 通用形态走；**通用 UVC 层沉淀为跨平台知识**，可适配 T113 / F133 / Z20 / Z21（平台无关逻辑直接复用，绑定层按各平台媒体栈实现）。
+**需求方定规**：V85X 平台 UVC/USB 摄像头统一按 v0.27.8 通用形态走；**通用 UVC 层沉淀为跨平台知识**，可适配 T113 / F133 / Z20 / Z21（平台无关逻辑直接复用，绑定层按各平台媒体栈实现）。
 **改动**：
 - **新增 knowledge/hardware/uvc-camera-generic.md（跨平台通用 UVC 层）**：检索导引=未指定平台的 UVC/USB 摄像头问题；
-  内容=前置条件（USB Host + uvcvideo 驱动）/ inotify 发现（uvcvideo 匹配）/ V4L2 打开与格式协商（ENUM_FMT+S_FMT，JPEG 必做）/
-  持续取流保活铁律 / 热插拔状态机 / JPEG(MJPEG) UVC 落地必查清单（绿屏黑屏防坑：格式协商/尺寸对齐/互斥顺序/保活/格式口径）/
+内容=前置条件（USB Host + uvcvideo 驱动）/ inotify 发现（uvcvideo 匹配）/ V4L2 打开与格式协商（ENUM_FMT+S_FMT，JPEG 必做）/
+持续取流保活铁律 / 热插拔状态机 / JPEG(MJPEG) UVC 落地必查清单（绿屏黑屏防坑：格式协商/尺寸对齐/互斥顺序/保活/格式口径）/
   **平台绑定对照表**（V85X=已收录 aw-dvr/mpi:: 绑定篇；T113/F133/Z20/Z21=通用层可用、绑定层未实测不编造，待补录）
 - knowledge/v85x/uvc-usb-camera.md：标题改「（V85X 平台绑定实现）」+ 头部加检索导引（未指定平台→先读硬件通用篇）与分层说明，
-  明确本文=V85X aw-dvr/mpi:: 绑定层，平台无关逻辑在 hardware/uvc-camera-generic.md
+明确本文=V85X aw-dvr/mpi:: 绑定层，平台无关逻辑在 hardware/uvc-camera-generic.md
 - knowledge/v85x/jpeg-decode-record.md：头部加硬件通用篇引用（JPEG/MJPEG 平台无关接入）
 - 版本 0.27.8 → 0.27.9-open
 
 ---
 
 ## v0.27.8-open (2026-09-08) — UVC 摄像头知识去工程化（纯通用形态）+ 通用 JPEG(MJPEG) UVC 落地必查清单
-**沛哥反馈**：MCP 能力被外部 AI 工具落地开发 JPEG UVC 摄像头时出现「录制文件播放绿屏」「录制中摄像头图像黑掉」两类异常。
-**定规（沛哥 2026-09-08）**：知识库更新后**不体现内部工程（CV201 类项目名/路径），只保留通用 UVC 摄像头知识**，供任意产品/外部工具直接复用。
+**需求方反馈**：MCP 能力被外部 AI 工具落地开发 JPEG UVC 摄像头时出现「录制文件播放绿屏」「录制中摄像头图像黑掉」两类异常。
+**定规（2026-09-08）**：知识库更新后**不体现内部工程（CV201 类项目名/路径），只保留通用 UVC 摄像头知识**，供任意产品/外部工具直接复用。
 **改动**：
 - knowledge/v85x/uvc-usb-camera.md：头部来源去工程化（改为「V85X 平台通用实测」）；坑 #5 改为「通用 JPEG UVC 必须显式协商格式（不能只 G_FMT 读宽高）」；
   **新增 §7 通用 JPEG(MJPEG) UVC 摄像头落地必查清单**（绿屏/黑屏防坑）：
   ① §7.1 格式协商——aw-dvr UVC 默认 capture_pixel_format=V4L2_PIX_FMT_MJPEG、内部 JPEG→NV21 解码 SDK 处理；
-     接入必须 ENUM_FMT 确认 MJPEG + S_FMT 锁定（摄像头默认可能 YUYV，不协商=绿屏），用 S_FMT 实际返回宽高 Init；
+接入必须 ENUM_FMT 确认 MJPEG + S_FMT 锁定（摄像头默认可能 YUYV，不协商=绿屏），用 S_FMT 实际返回宽高 Init；
   ② §7.2 录像分辨率对齐——RecordingSettings.size（REAR）必须=UVC 实际分辨率，不能照抄内置摄像头 1080P/720P 档（尺寸错配=绿屏）；
   ③ §7.3 录像与预览互斥顺序——**开始录像不要停预览/保活**（边录边看常态）；切流/拔插/进回放前才 Recorder::stop+RearCamera::stop（顺序反=黑屏）；
   ④ §7.4 UVC 保活——SharedVideoDevice(REAR) 持续读流任务录像期间也不能停（停了=黑屏）；
   ⑤ §7.5 格式口径——录像仅 mp4/ts（H.264），JPEG 仅用于照片（Snapshot→JpegViewer）；回放视频 ZKVideoView/照片 JpegViewer
 - knowledge/v85x/jpeg-decode-record.md：来源/标题/工程实测/代码位全部去 CV201 工程引用（DvrLogic/DvrPlayLogic/camera_helper/src 路径 →
-  职责描述），仅保留 API 用法与坑（JpegViewer 照片显示 / jpegdecode.h 取像素 / Recorder 录制 mp4-ts / Snapshot 拍照 / 回放分流）
+职责描述），仅保留 API 用法与坑（JpegViewer 照片显示 / jpegdecode.h 取像素 / Recorder 录制 mp4-ts / Snapshot 拍照 / 回放分流）
 - 版本 0.27.7 → 0.27.8-open
 
 ---
 
 ## v0.27.7-open (2026-09-08) — PNG 生成管线规范显式化（方案 A：只补铁律条目，不加新 tool）
-**沛哥反馈**：新 AI 客户端拿到 MCP 按规范转出的 png 默认仍有锯齿，问是规范没显式说明处理方式还是缺 tool。
+**需求方反馈**：新 AI 客户端拿到 MCP 按规范转出的 png 默认仍有锯齿，问是规范没显式说明处理方式还是缺 tool。
 **根因分析**：抗锯齿全部做在 gen_res.py 内部（圆角 α 羽化 sigma=0.5、图标/线条 4~8x 超采样 + LANCZOS、round cap），
 html2json 自动转图与 generate_ui_assets 走该管线无锯齿；但规范文档（HTML_SUBSET 切图铁律、工具描述）此前只显式写了
 尺寸 1:1、圆角四角 alpha=0、路径规范，**没有一句话说明「PNG 必须按什么管线生成、禁止什么做法」**——
 AI 客户端只要不乖乖走工具链（自写 1x 直画、用自身 image 能力直出小图），锯齿就进来了，规范拦不住。
-**定规（沛哥 2026-09-08）**：采用方案 A——只补规范铁律条目显式化，暂不做后处理 tool。
+**定规（2026-09-08）**：采用方案 A——只补规范铁律条目显式化，暂不做后处理 tool。
 **改动**：
 - HTML_SUBSET.md「切图 / 图片资源铁律」新增 #8 PNG 生成管线铁律（AI 需要图片只能走三条路：CSS 效果→html2json
-  自动转图 / 图标→generate_ui_assets / 自绘→gen_res 公开函数，全内置抗锯齿；禁止 AI 自绘 1x 直画圆角/斜线/圆弧、
-  禁止自身 image 能力直出小图交付）+ #9 PNG 防锯齿五要素（①尺寸==控件 position ②≥4x 超采样+LANCZOS 或 α 羽化
+自动转图 / 图标→generate_ui_assets / 自绘→gen_res 公开函数，全内置抗锯齿；禁止 AI 自绘 1x 直画圆角/斜线/圆弧、
+禁止自身 image 能力直出小图交付）+ #9 PNG 防锯齿五要素（①尺寸==控件 position ②≥4x 超采样+LANCZOS 或 α 羽化
   sigma≈0.5，禁 1x 直画 ③端点 round cap ④圆角四角 alpha=0、阴影溢出重裁 ⑤生成后跑 check_all #11+四角 alpha）；
-  同步到 workspace tools/ui_tools/HTML_SUBSET.md
+同步到 workspace tools/ui_tools/HTML_SUBSET.md
 - kb_tools.py flythings_generate_ui_assets 工具描述新增 ⑦ PNG 生成管线铁律（AI 直读入口同步）；
   flythings_html_to_json 描述 CSS 转图段加「禁止 AI 自绘 1x 直画/外部生图直出小图」警告
 - 版本 0.27.6 → 0.27.7-open
@@ -497,11 +493,11 @@ AI 客户端只要不乖乖走工具链（自写 1x 直画、用自身 image 能
 ---
 
 ## v0.27.6-open (2026-09-08) — 全控件深度阅读（35 官方 Demo 源码精读 → 代码 API 知识）
-**沛哥要求**：深度阅读基础 Demo，形成对 FlyThings OS 所有控件的深度理解。
+**需求方要求**：深度阅读基础 Demo，形成对 FlyThings OS 所有控件的深度理解。
 **执行**：basedemo-new_z20_1024_600 35 工程（~7200 行 logic）5 路并行逐源码精读，原始笔记 130KB 归档 workspace/references/demo-read-2026-09-08/group{A,B,C,D,E}.md（证据均引源码原文）。
 **新增知识 2 篇**：
 - devflow/activity-code-skeleton.md：生成器代码骨架——activity 壳（static mXXXPtr + #include logic.cc）/回调分发表语义 （**true=拦截 false=走默认，logic 模板注释写反**）/生命周期钩子/定时器（静态表 + registerUserTimer 动态起停改）/
-  串口协议模板（UartContext 读线程 16KB 拼接缓冲+帧头对齐粘包处理+registerProtocolDataUpdateListener 订阅；双串口=双实例+uart_from）/
+串口协议模板（UartContext 读线程 16KB 拼接缓冲+帧头对齐粘包处理+registerProtocolDataUpdateListener 订阅；双串口=双实例+uart_from）/
   SysApp 三槽位（REGISTER_SYSAPP STATUSBAR/SCREENSAVER/IME BaseApp 范式）/多语言 .tr+@key+setTextTr+updateLocalesCode/平台编译宏/常用能力速查
 - uicontrols/widget-code-api.md：21 控件代码 API 速查（回调签名/触发时机/实测坑）——
   seekbar 自定义 ISeekBarChangeListener 三回调拿拖拽起止（Activity 分发只有 onProgressChanged）、ZKVideoView(VIDEO_ 前缀) vs ZKMediaPlayer 两套消息枚举、videoview 轮播 _video_list.txt+off-by-one、camera 拍照四回调+jpg+sync、
@@ -512,7 +508,7 @@ AI 客户端只要不乖乖走工具链（自写 1x 直画、用自身 image 能
 ---
 
 ## v0.27.5-open (2026-09-08) — Button 长按/循环重复机制收录（长按时间/重复时间 UI 可配）
-**沛哥确认学习**：按键长按模式的时间、循环重复时间通过 UI（IDE 属性表）可配置。
+**需求方确认学习**：按键长按模式的时间、循环重复时间通过 UI（IDE 属性表）可配置。
 **机制（官方 wiki button.md + 真源实证）**：
 - IDE 属性表两属性（单位 ms）：「长按事件触发时间」→ json `longClickTimeOut`；「长按事件循环触发间隔时间」→ json `longClickIntervalTime`
 - 默认两键 -1（不启用长按）；>0 启用；interval >0 = 长按不松手时循环重复触发 onLongClick，-1 = 仅触发一次
@@ -524,7 +520,7 @@ AI 客户端只要不乖乖走工具链（自写 1x 直画、用自身 image 能
 ---
 
 ## v0.27.4-open (2026-09-08) — 控件层级检讨（容器→子内容矩阵，双源实证）
-**沛哥问「控件层级问题有检讨吗」**：此前只有零散结论（Z序=书写顺序/window 嵌套/pagewindow 叠放/listview 结构），缺系统矩阵与合法性校验。
+**需求方问「控件层级问题有检讨吗」**：此前只有零散结论（Z序=书写顺序/window 嵌套/pagewindow 叠放/listview 结构），缺系统矩阵与合法性校验。
 **矩阵实证**：扫描 86 json（SampleUI-New/ui/1024x600 42 + basedemo-new_z20_1024_600 35 demo/44 ftu 反解）容器→直接子内容分布，零越界：
 - 根层：全部 21 类控件均允许
 - window = 万能容器（textview 147/button 128/edittext 16/listview 8/seekbar 7/window 5 深嵌套/qrcode/digitalclock/slidetext/slidewindow）
@@ -534,18 +530,18 @@ AI 客户端只要不乖乖走工具链（自写 1x 直画、用自身 image 能
 **改动**：
 - 新增 knowledge/uicontrols/json-layer-rules.md（层级矩阵 + 6 条规则要点，检索词含 层级/嵌套/容器/父子/结构键）
 - ui_tools/check_all.py：#2「嵌套深度」升级为「层级合法性」（_layer_problems）：缺 window 子页/装非 window、结构容器平铺控件键、
-  叶子控件生子、数组子结构错位 4 类非法全部拦截；86 真实 json 全过 0 误报
+叶子控件生子、数组子结构错位 4 类非法全部拦截；86 真实 json 全过 0 误报
 - 回归：合法用例 PASS + 4 类非法用例 FAIL 正确
 
 ---
 
 ## v0.27.3-open (2026-09-08) — json 字段全集显式化 v2.1（SampleUI-New 双源基准，每控件必写字段）
-**沛哥定规**：json 布局字段做缺省省略 → 引擎版本默认漂移 → 版本不匹配异常；必须全集显式（-1/0/false/字号均写）。
+**需求方定规**：json 布局字段做缺省省略 → 引擎版本默认漂移 → 版本不匹配异常；必须全集显式（-1/0/false/字号均写）。
 **基准**：projects/SampleUI-New/ui/1024x600（42 json、新 IDE 全量序列化）每类型 100% 交集 = 必选；basedemo-new_z20_1024_600（35 demo/44 json ftu 反解）交叉复验 + 补齐 SampleUI 缺的类型（pagewindow/scrollwindow/checkbox/radiogroup/imageanim/slidetext）。
-**口径 5 条（沛哥）**：①beepEnable 不强制（废除恒带 true）②交互控件 touchable 显式 true、容器/纯显示 false ③qrcode 恒写 padding:10 ④videoview 按 SampleUI（无 beepEnable/loopPlayback false/touchable true）⑤-1=0xFFFFFFFF 有意义非噪音。
+**口径 5 条（）**：①beepEnable 不强制（废除恒带 true）②交互控件 touchable 显式 true、容器/纯显示 false ③qrcode 恒写 padding:10 ④videoview 按 SampleUI（无 beepEnable/loopPlayback false/touchable true）⑤-1=0xFFFFFFFF 有意义非噪音。
 **改动**：
 - 新增 knowledge/uicontrols/json-field-mandatory.md：21 类控件必写键全集表 + 子结构模板（listview.item 17 键含 position / subItem / diagram.infos 10 键含 visible / slidewindow.items / radiobuttons）+ 双源复验结论
-- ⚠️ listview.item.position 必写（沛哥）：行高公式 itemH=int(lv高/rows)-rowSpacing、itemW=lv宽（basedemo 验证：164/4-5=36、437/3-5≈140、424/5-0=84；SampleUI 216x275 rows5→55）
+- ⚠️ listview.item.position 必写（）：行高公式 itemH=int(lv高/rows)-rowSpacing、itemW=lv宽（basedemo 验证：164/4-5=36、437/3-5≈140、424/5-0=84；SampleUI 216x275 rows5→55）
 - ui_tools/html2json.py：全部控件按全集输出——去恒带 beepEnable；button touchable true+picTab{}+text""；textview/edittext fontSize 16；window 8 键（backgroundColor/hideTimeOut -1 等）；listview 17 键 + item.position 自动算；subItem 17 键；checkbox/radiogroup/radiobutton 按 basedemo 补齐；diagram.infos 补 visible:true；qrcode padding 10+touchable true；videoview 按 SampleUI；digitalclock/cameraview/painter/pointer 补齐
 - ui_tools/check_all.py：#14 模板 v2.1——listitem 含 position、checkbox/radiogroup/radiobutton/imageanim(playFile) 升级；子结构检查覆盖 item/subItem/infos[]/items[]/radiobuttons[]
 - ui_tools/HTML_SUBSET.md：铁律 #9 v2
@@ -554,7 +550,7 @@ AI 客户端只要不乖乖走工具链（自写 1x 直画、用自身 image 能
 ---
 
 ## v0.27.2-open (2026-09-08) — 补 MT Type-A 触摸注入工具 mt_test + 协议速判坑位
-**沛哥反馈**：V85X 项目调试时用现成 `ui_test` 注入触摸，FlyThings 收到坐标恒 0。
+**需求方反馈**：V85X 项目调试时用现成 `ui_test` 注入触摸，FlyThings 收到坐标恒 0。
 **根因（V85X gt9xx 实测）**：
 - 设备触摸屏 `/dev/input/event0` = gt9xx，**MT Type-A 协议**（MODALIAS `ra30,32,35,36,39` = ABS_MT_TOUCH_MAJOR/WIDTH_MAJOR/POSITION_X/POSITION_Y/TRACKING_ID），不订阅单点协议 ABS_X(0)/ABS_Y(1)
 - `ui_test` 是单点协议（ABS_X/ABS_Y + ABS_PRESSURE + BTN_TOUCH）→ 坐标被驱动丢弃 → FlyThings `x=0 y=0`
@@ -575,19 +571,19 @@ AI 客户端只要不乖乖走工具链（自写 1x 直画、用自身 image 能
 ---
 
 ## v0.27.1-open (2026-09-08) — 补触摸注入/UI 自动化测试检索缺口（AI 调试不会用现成工具）
-**沛哥反馈**：adb-input-autotest.md 是不是 MCP 检索不到？AI 工具调试时没调用现成 input/ui_test 工具干活。
+**需求方反馈**：adb-input-autotest.md 是不是 MCP 检索不到？AI 工具调试时没调用现成 input/ui_test 工具干活。
 
 **根因（检索链路排查）**：
 - MCP 检索范围 = wiki/flythings/ + knowledge/（open 版仓库内）；references/kb/ 是本地私有 KB，不在索引内
 - MCP 命中 wiki/test/adb-input-autotest.md 是 8-31 老版（86 行，只有 event.c 实现原理，开头标注「不是现成工具产物」）
-- 9-08 沛哥补充的「现成 input 命令行工具（bin/h500s/input、bin/z21/input 已编译，直接 push 用）」只写在 references 最新版（128 行）→ AI 检索不到 → 不知道有现成 ui_test / flythings_gen_ui_test → 调试不调用
+- 9-08 需求方补充的「现成 input 命令行工具（bin/h500s/input、bin/z21/input 已编译，直接 push 用）」只写在 references 最新版（128 行）→ AI 检索不到 → 不知道有现成 ui_test / flythings_gen_ui_test → 调试不调用
 
 **改动**：
 - 新增 knowledge/devflow/touch-inject-autotest.md：以「先调现成工具」为主线——首选 flythings_gen_ui_test（traverse/monkey/custom/ask）+ bin_tools/{平台}/ui_test ELF（tap/swipe/long/monkey/run + 部署命令 + 平台表）；event.c 原理降级为「定制/移植才需要」参考；协议铁律（EV_SYN 必发/滑动逐像素/时间戳必填）；自动化闭环判定优先级（logd > raw fb 抓屏）
 - wiki/test/adb-input-autotest.md 同步为 9-08 最新版（128 行，含现成工具说明），消除旧版「非现成工具」误导
 - 重建 rag_index + kb_tools.py → v0.27.1-open + MCP_FEATURES 头条
  (2026-09-08) — i18n 翻译推送工具入库（修 fun launch 盲点）
-**沛哥要求**：把"i18n/*.tr 转 *.json + 推送到设备"的能力整合进 MCP 流程；同时确认 fun launch 推送范围盲点（只推 ftu/images/font/lib/cfg，**不推 i18n**——CHANGELOG 2026-09-02 沛哥定规"部署统一 fun launch"是针对代码+资源，i18n 仍需显式推送），AI 改完翻译后必须调本工具。
+**需求方要求**：把"i18n/*.tr 转 *.json + 推送到设备"的能力整合进 MCP 流程；同时确认 fun launch 推送范围盲点（只推 ftu/images/font/lib/cfg，**不推 i18n**——CHANGELOG 2026-09-02 需求方定规"部署统一 fun launch"是针对代码+资源，i18n 仍需显式推送），AI 改完翻译后必须调本工具。
 
 **根因（V553 项目实测，2026-09-08）**：
 - 设备 zkgui 实际加载翻译是 `/tmp/tr/<lang>.json`（DEBUG 模式），不是 .tr（XML）
@@ -614,12 +610,12 @@ AI 客户端只要不乖乖走工具链（自写 1x 直画、用自身 image 能
 
 **V553 保留**：`tools/tr2json.py` 保留作为本地开发脚本（开发者手动用，逻辑同源）；MCP 工具给 AI 流程用。
 
-**发布修正（2026-09-08 下午，沛哥检讨确认）**：①MCP_VERSION 同步 0.27.0-open（010b4e4 提交漏递增，此前仍 0.26.0-open，客户端查版本会误判落后）；②MCP_FEATURES 顶部补 v0.27.0 摘要条目；③工具数口径核实为 30→31（实际注册 register_all 31 个；README/MCP_FEATURES 原写 32/33 均不符，已统一）；④`flythings_edit_json` 为 edit_ftu 内部辅助（从未注册），改名 `_edit_json` 去 `flythings_` 前缀消除歧义。
+**发布修正（2026-09-08 下午，需求方检讨确认）**：①MCP_VERSION 同步 0.27.0-open（010b4e4 提交漏递增，此前仍 0.26.0-open，客户端查版本会误判落后）；②MCP_FEATURES 顶部补 v0.27.0 摘要条目；③工具数口径核实为 30→31（实际注册 register_all 31 个；README/MCP_FEATURES 原写 32/33 均不符，已统一）；④`flythings_edit_json` 为 edit_ftu 内部辅助（从未注册），改名 `_edit_json` 去 `flythings_` 前缀消除歧义。
 
 ---
 
 ## v0.26.0-open (2026-09-08) — BusyBox 调试工具库入库 + 部署/调试场景别名映射
-**沛哥安排**：设备系统内没有 busybox / ifconfig 等调试工具，需要像 input（ui_test）一样电脑端预编译各平台静态 busybox，放 bin_tools/{平台}/ 随 MCP 分发，adb push 即用；后续调试工具直接从对应平台目录找。
+**需求方安排**：设备系统内没有 busybox / ifconfig 等调试工具，需要像 input（ui_test）一样电脑端预编译各平台静态 busybox，放 bin_tools/{平台}/ 随 MCP 分发，adb push 即用；后续调试工具直接从对应平台目录找。
 
 **改动（BusyBox 工具库）**：
 - 新增 bin_tools/{f133,f135,z20,z21,t113,v85x}/busybox：BusyBox v1.36.1 全静态 ELF（CONFIG_STATIC=y，零依赖 push 即用），网络工具全开（ifconfig/ip/ping/ping6/netstat/route/arp/telnet/telnetd/nc/wget/httpd/nslookup/hostname/udhcpc...）
@@ -628,7 +624,7 @@ AI 客户端只要不乖乖走工具链（自写 1x 直画、用自身 image 能
 - 新增 knowledge/devflow/busybox-debug-library.md（检索导引：搜「busybox/调试工具/设备没 ifconfig」命中）
 - 重编脚本与坑位（fun/toolchains 是 Windows exe 无法 WSL 派生 cc1、构建必须 WSL 原生盘）保留本地 tools/busybox/README.md，不入库
 
-**改动（部署场景别名，沛哥 09-08 反馈：客户端 AI 收「AI 应用调试全量推送」时自造 deploy_debug.sh）**：
+**改动（部署场景别名 09-08 反馈：客户端 AI 收「AI 应用调试全量推送」时自造 deploy_debug.sh）**：
 - flythings_build_ui_flow docstring 头部加「场景别名」段：编译/构建/调试/全量推送/部署/部署到设备/跑一下/AI 自定义编译/自主编译验证 → 一律本工具，禁止自创脚本路径
 - 新增 knowledge/devflow/deploy-scene-map.md（用户话语→唯一动作映射表 + 坑源 + 历史依据）
 - 重建 rag_index + kb_tools.py → v0.26.0-open + MCP_FEATURES 头条
@@ -636,7 +632,7 @@ AI 客户端只要不乖乖走工具链（自写 1x 直画、用自身 image 能
 ---
 
 ## v0.25.2-open (2026-09-07) — 自研帧动画知识移出 open 版（保留本地）
-**沛哥指示**：ImageAnimView/FrameImageView（ZKBIN+QOI+region 脏矩形机制）依赖自研 ZKBIN 打包工具链，open 用户缺失工具无法使用 → open 版 MCP 删除，知识保留本地（references/kb/frame-image-anim-bin.md，4 行说明头 + 125 行完整原版）。
+**需求方指示**：ImageAnimView/FrameImageView（ZKBIN+QOI+region 脏矩形机制）依赖自研 ZKBIN 打包工具链，open 用户缺失工具无法使用 → open 版 MCP 删除，知识保留本地（references/kb/frame-image-anim-bin.md，4 行说明头 + 125 行完整原版）。
 
 **改动**：
 - 删除 knowledge/devflow/frame-image-anim-bin.md（git 历史 v0.22.0 有完整原版可追溯）
@@ -646,7 +642,7 @@ AI 客户端只要不乖乖走工具链（自写 1x 直画、用自身 image 能
 ---
 
 ## v0.25.1-open (2026-09-07) — 清理 knowledge 与 wiki 重复副本（去冗余）
-**沛哥要求**：整理 open 版 MCP 多余反复内容。
+**需求方要求**：整理 open 版 MCP 多余反复内容。
 
 **冗余检测结论**：
 - knowledge/ 3 个文件与 wiki/flythings 字节完全相同（当初入库时直接复制）→ RAG 索引双份、检索重复命中：
@@ -663,7 +659,7 @@ AI 客户端只要不乖乖走工具链（自写 1x 直画、用自身 image 能
 ---
 
 ## v0.25.0-open (2026-09-07) — 冷门控件字段文档批量入库（git.com 全库学习产出）
-**背景**：沛哥要求拉取公司内网 git.com 全部代码学习，扫盲 FlyThings 控件盲区；本轮把实测字段/用法沉淀进 uicontrols。
+**背景**：需求方要求拉取公司内网 git.com 全部代码学习，扫盲 FlyThings 控件盲区；本轮把实测字段/用法沉淀进 uicontrols。
 
 **新增知识文档（knowledge/uicontrols/，全部 fui unpack 实测 + SDK 头文件校准，非猜测）**：
 - pointer-fields.md：指针控件（rotationPoint/fixedPoint 双坐标定圆心、animatable+rotateSpeed 自动动画 vs 线程驱动、clockDemo 表针换算）
@@ -675,67 +671,64 @@ AI 客户端只要不乖乖走工具链（自写 1x 直画、用自身 image 能
 - diagram-fields.md：波形图（统一 SZKPoint；setData 全量 vs addData 增量/step/eraseSpace 语义；style 0折线 1曲线）
 - videoview-fields.md：视频（轮播模式 loopPlayback=true 自动读 UI名_video_list.txt；API 模式 play/seek/setVolume/消息监听）
 - pagewindow-fields.md：多页窗口（onPageChange/turnToNextPage，与 slidewindow/scrollwindow 区分）
-- listview-fields.md：列表（三回调+id=被点 subitem ID（沛哥确认）；无 subitem 数量限制；删除行套路）
-- cross-thread-ui-rule.md：跨线程操作 UI 规则（沛哥确认：所有控件支持跨线程，框架内部处理）
-- slidewindow-fields.md 补充：宫格翻页语义（cols×rows=每页格数，11 项=1 页 8 + 3 翻页，沛哥确认）
+- listview-fields.md：列表（三回调+id=被点 subitem ID（经需求方确认）；无 subitem 数量限制；删除行套路）
+- cross-thread-ui-rule.md：跨线程操作 UI 规则（经需求方确认：所有控件支持跨线程，框架内部处理）
+- slidewindow-fields.md 补充：宫格翻页语义（cols×rows=每页格数，11 项=1 页 8 + 3 翻页，需求方确认）
 
 **代码操作汇总**：basedemo 35 个全控件 Demo（projects/basedemo-new_z20_1024_600/）逐个学习；KaiduZ9S 拼音输入法、Advertising 视频轮播、lib-ai 音频波形等产品实例验证。
 
 ---
 
 ## v0.24.1-open (2026-09-07) — 修复 search 首次调用 30s+ 超时（embedding 启动预热）
-**沛哥反馈**：提交给用户的 open 版 MCP search 全部失败（卡死/超时）。
+**需求方反馈**：提交给用户的 open 版 MCP search 全部失败（卡死/超时）。
 
 **根因**（协议层逐级打点 + 对照实验定位）：
 - `flythings_search` 在 stdio MCP server（mcp.run() 事件循环）内**首次**调用时，
   embed() 首次加载 onnxruntime session 实测耗时 **30.2s**（cos 排序/BM25/RRF 融合合计仅 0.07s），
-  超过客户端工具超时 → 每次新会话/新进程第一次 search 必失败。
+超过客户端工具超时 → 每次新会话/新进程第一次 search 必失败。
 - 排除项：索引/模型文件完好（922 chunks 正常中文）；独立进程直调、各 import 组合、
-  子线程首次加载全部 <0.3s；仅 mcp.run() 运行环境内首次加载异常慢。
+子线程首次加载全部 <0.3s；仅 mcp.run() 运行环境内首次加载异常慢。
 
 **改动**：
 - ★ mcp_server.py：mcp.run() 前预热 embedding（embed_local.embed 一次，~0.2s；
-  模型缺失/加载失败静默跳过，自动降级 BM25）——session 就绪后检索全程 0.07s 秒回
+模型缺失/加载失败静默跳过，自动降级 BM25）——session 就绪后检索全程 0.07s 秒回
 - kb_tools.py → v0.24.1-open + MCP_FEATURES 头条
 - 验证：真实 mcp_server.py stdio 协议层连续双调用均 0.07s 返回（修复前首次 30s+ 超时）
 
 ---
 
-## v0.24.0-open (2026-09-07) — 恢复 ImageAnimView 可复用知识 + 清理"不收录"声明（沛哥定规）
-**沛哥定规**（2026-09-07 21:59）：① 范围=**全部**——可复用能力知识不锁死，用户需要用到这些功能时都能开发；
+## v0.24.0-open (2026-09-07) — 恢复 ImageAnimView 可复用知识 + 清理"不收录"声明（经需求方定规）
+**需求方定规**（2026-09-07 21:59）：① 范围=**全部**——可复用能力知识不锁死，用户需要用到这些功能时都能开发；
 ② **不收录部分直接不体现即可**——不留"不收录/自有技术"声明字样，文档只保留可复用通用内容。
 
 **背景**：v0.22.1 曾按早期理解移除 ImageAnimView 帧动画知识，现恢复（该技术为 ZKSWE 自研通用能力，可跨项目复用）。
 
 **改动**：
-- ★ 恢复 **knowledge/devflow/frame-image-anim-bin.md**（v0.22.0 原版 125 行完整恢复）：
-  自研帧动画控件 ImageAnimView/FrameImageView 机制（ZKBIN=zlib+QOI 帧文件 / region.bin=ZKREG 相邻帧差异表 /
-  脏矩形局部 invalidate / 异步线程解码 / play(角度) 帧号即角度 + 开机扫针）+ 选型表 + 坑位 7 条；
-  与 IDE imageanim 动图控件(GIF/WebP) 区分说明保留
-- ★ knowledge/t113-car/dashboard-can-arch.md 还原 ImageAnimView 引用：
-  顶部"细节未收录"提示删除并指向 frame-image-anim-bin.md；表格 BMW 行恢复「自研 ImageAnimView 帧动画」；
+- ★ 恢复 **knowledge/devflow/frame-image-anim-bin.md**（v0.22.0 原版 125 行完整恢复）：自研帧动画控件 ImageAnimView/FrameImageView 机制（ZKBIN=zlib+QOI 帧文件 / region.bin=ZKREG 相邻帧差异表 /
+脏矩形局部 invalidate / 异步线程解码 / play(角度) 帧号即角度 + 开机扫针）+ 选型表 + 坑位 7 条；
+与 IDE imageanim 动图控件(GIF/WebP) 区分说明保留
+- ★ knowledge/t113-car/dashboard-can-arch.md 还原 ImageAnimView 引用：顶部"细节未收录"提示删除并指向 frame-image-anim-bin.md；表格 BMW 行恢复「自研 ImageAnimView 帧动画」；
   §3 帧号即角度补回说明；§5 差异表 BMW 行恢复；§6 参考文件索引补回帧动画文档
 - ★ knowledge/v85x/uvc-usb-camera.md 头部转正：去"草稿（待入库）"标记、
-  去"定制模块私有协议层…不收录"声明 → 改为「本文为通用 UVC 接入链路，任意 UVC 摄像头产品可复用」
+去"定制模块私有协议层…不收录"声明 → 改为「本文为通用 UVC 接入链路，任意 UVC 摄像头产品可复用」
 - 全库复查：无"不收录/不入库/待入库/自有技术"残留（仅保留 uicontrols/retrieval-boundary 的检索边界规则文档）
 - kb_tools.py → v0.24.0-open + MCP_FEATURES 头条
 - 索引重建验证：「帧动画 ImageAnimView」「UVC 接入 预览录像拍照」检索命中
 
- (2026-09-07) — V85X 显示分层权威口径补充（沛哥答疑三点）
-**沛哥答疑**（追问 CV201_PND UVC 流程"数据流如何放到图层"时确认）：
+ (2026-09-07) — V85X 显示分层权威口径补充（答疑三点）
+**需求方答疑**（追问 CV201_PND UVC 流程"数据流如何放到图层"时确认）：
 1. **VI→VO 是内部处理，不需要关心**——取流→VI→VO 视频层的数据搬运由 mpi/aw-dvr 内部完成，应用层只配置 CameraParam
-2. **UI 层在最顶上**，其下 disp 视频层按 **4、3、2、1** 顺序叠放
+2. **UI 层在最顶上**，其下 disp 视频层按 **4、3、2、1**顺序叠放
 3. **layer 编号 = disp 硬件层号**（不是 mpi 逻辑层）——工程绑定 FrontCamera→layer0、UVC RearCamera→layer4
 
 **改动**：
-- ★ `knowledge/v85x/videoview-transparent-window.md` 原理节重写为权威口径：
-  显示分层结构（UI 顶 + disp 视频层 4321 在下）+ VI→VO 内部处理说明 + 坑位补「layer 不要乱改」
+- ★ `knowledge/v85x/videoview-transparent-window.md` 原理节重写为权威口径：显示分层结构（UI 顶 + disp 视频层 4321 在下）+ VI→VO 内部处理说明 + 坑位补「layer 不要乱改」
 - ★ `knowledge/v85x/uvc-usb-camera.md` 头部补「显示分层权威口径」注释块（UI 顶 / layer=disp 硬件层 / VI→VO 内部）
 - kb_tools.py → v0.23.1-open + MCP_FEATURES 头条
 - 索引重建验证：「videoView 透明 视频层」「disp 硬件层」检索命中
 
- (2026-09-07) — V85X 摄像头自维护出图 → videoView 零代码透出视频层（沛哥知识补充）
-**沛哥知识补充**：V85X 类型的摄像头，如果显示内容由**用户自己打开摄像头并维护出图**（不走 FlyThings 预览/播放链路），
+ (2026-09-07) — V85X 摄像头自维护出图 → videoView 零代码透出视频层（知识补充）
+**需求方知识补充**：V85X 类型的摄像头，如果显示内容由**用户自己打开摄像头并维护出图**（不走 FlyThings 预览/播放链路），
 **UI 只需要添加一个 videoView 控件，不需要写任何关联代码**——只需在 UI 层开一个透明区域给 Video 层，画面即可透出。
 
 **改动**：
@@ -747,19 +740,19 @@ AI 客户端只要不乖乖走工具链（自写 1x 直画、用自身 image 能
   - 官方口径佐证：video 控件「轮播类型=否」= 仅创建视频渲染区域（wiki uicontrols/video.md）
 - 索引重建验证：「摄像头画面自己出图 videoView 透明」「videoView 不写代码显示摄像头」检索命中
 
- (2026-09-07) — 修正：移除 ImageAnimView 帧动画知识（沛哥：自有技术不入库）
-**沛哥指示**：v0.22.0 中新增的 `knowledge/devflow/frame-image-anim-bin.md`（自研 ImageAnimView/FrameImageView 帧序列控件详解，
+ (2026-09-07) — 修正：移除 ImageAnimView 帧动画知识（现场反馈：自有技术不入库）
+**需求方指示**：v0.22.0 中新增的 `knowledge/devflow/frame-image-anim-bin.md`（自研 ImageAnimView/FrameImageView 帧序列控件详解，
 ZKBIN/QOI/region.bin 内部格式与脏矩形机制）属工程自有技术，**不进 open 版知识库公开交付**。
 
 **改动**：
 - 删除 **knowledge/devflow/frame-image-anim-bin.md**（ImageAnimView 自研帧序列控件知识全部移除）
 - dashboard-can-arch.md 同步清理：BMW 指针方案改为中性表述「预渲染帧图驱动（细节未收录）」，
-  去掉 ImageAnimView/ZKBIN/帧动画扫针等实现细节引用，文档顶部加「只收录 CAN 架构，指针动画细节未收录」提示
+去掉 ImageAnimView/ZKBIN/帧动画扫针等实现细节引用，文档顶部加「只收录 CAN 架构，指针动画细节未收录」提示
 - kb_tools.py：v0.22.0 → **v0.22.1-open**，MCP_FEATURES 头条重写（只描述 CAN 架构入库 + 不入库说明）
 - 索引重建验证：「仪表盘 CAN」「车速转速指针」命中
 
- (2026-09-07) — T113 车载仪表 CAN 架构 + 自研帧动画控件入库（沛哥安排：学习 DashBoard_T113 整车代码提炼）
-**沛哥工作安排**：学习整车代码（BMW/Comaro/Jeep 三套 T113 仪表工程，ZKSWE Develop Team 编写）后提炼知识库交付 MCP。
+ (2026-09-07) — T113 车载仪表 CAN 架构 + 自研帧动画控件入库（安排：学习 DashBoard_T113 整车代码提炼）
+**需求方工作安排**：学习整车代码（BMW/Comaro/Jeep 三套 T113 仪表工程，ZKSWE Develop Team 编写）后提炼知识库交付 MCP。
 整车代码位置：`projects/LearningProject/DashBoard_T113/`（BMW 帧动画在 `BMW/jni/ui/ImageAnimView.{h,cpp}`，实测确认作者=ZKSWE Develop Team，自家技术可入库）。
 
 **改动**：
@@ -768,12 +761,12 @@ ZKBIN/QOI/region.bin 内部格式与脏矩形机制）属工程自有技术，**
   - 可抄模式：ProcFun 解析表驱动、CanDataCb 函数指针结构体 + 页面级 add_cb/remove_cb 订阅退订、回调内字段级 diff、灯 4 态(FLICKER_500/1000 定时器翻转)、方控边沿检测、故障码 0x1A52 加/0x1A55 删
   - 换算陷阱：speed 0xFFFF/rpm 655 无效值回零位、温度华氏/摄氏双查表、帧号即角度(speed+30 / rpm*2+30)
   - 三套工程差异对照表（BMW 预渲染帧图驱动 / Comaro TweenCpp+CircleBar / Jeep setTargetAngle + 老 m_can 回调 + ID 段 switch）
-- ⚠️ BMW 指针预渲染帧序列控件的内部实现（ZKBIN/QOI/region 格式）属工程自有技术，**不入库**（沛哥 2026-09-07 指示，frame-image-anim-bin.md 已移除）
+- ⚠️ BMW 指针预渲染帧序列控件的内部实现（ZKBIN/QOI/region 格式）属工程自有技术，**不入库**（2026-09-07 指示，frame-image-anim-bin.md 已移除）
 - 索引重建验证：「仪表盘 CAN」「车速转速指针」检索命中
 
 ---
 ## v0.21.0-open (2026-09-07) — V85X JPEG 解码 / 录像编码用法入库（编码解码两场景分开）
-**沛哥定规**：MJPEG 转码录制内部（aw-dvr 闭源）没有源码就不用管，**只记录怎么用**；
+**需求方定规**：MJPEG 转码录制内部（aw-dvr 闭源）没有源码就不用管，**只记录怎么用**；
 V85x 带编码器录制默认 **mp4/ts 两种格式**，客户要其他格式（如 AVI）提示大文件格式确认后再做；
 **编码、解码两个不同场景区分去处理**。
 
@@ -784,51 +777,50 @@ V85x 带编码器录制默认 **mp4/ts 两种格式**，客户要其他格式（
   - **② 编码（录制）场景**：`mpi::Recorder` 用法（RecordingSettings 字段 + start/stop/state/elapseTime/isLocked），
     UVC MJPEG 摄像头全链路（注册 REAR setUvc(true) → SharedVideoDevice 保活 → 双路 settings[FRONT]+[REAR] → USB 断开先 stop 再重建）；
     **格式口径：带编码器默认 mp4/ts 两档（FileFormat{JPEG,TS,MP4}），客户要 AVI 等 → 提示大文件格式，确认后再说**；
-    拍照走 `mpi::Snapshot`（非 Recorder::takePicture），闭环 Recorder(录)↔Snapshot(拍)↔JpegViewer(看)
+拍照走 `mpi::Snapshot`（非 Recorder::takePicture），闭环 Recorder(录)↔Snapshot(拍)↔JpegViewer(看)
   - 坑位：Recorder 与预览互斥（拔插/切流先 stop）、UVC 必须持续读流保活、显示照片先停视频、闭源转码内部不深挖
 - 索引重建：890 chunks（23 knowledge）验证——「V853 JPEG 硬件解码」「MJPEG 摄像头录制 mp4」「录像格式 mp4 ts avi」命中 top1-2
 
 ---
-## v0.20.0-open (2026-09-07) — USB HOST 外设接入客户场景入库（沛哥：USB HOST devices / 主从切换都参考跨平台对照回复）
-**沛哥补充**：客户问题涉及 **USB HOST 外设接入**（U盘/摄像头/键鼠读不到）与 **主从切换** 时，
+## v0.20.0-open (2026-09-07) — USB HOST 外设接入客户场景入库（现场反馈：USB HOST devices / 主从切换都参考跨平台对照回复）
+**需求方补充**：客户问题涉及 **USB HOST 外设接入**（U盘/摄像头/键鼠读不到）与 **主从切换**时，
 回复口径统一参考 `hardware/usb-otg-switch.md` 这份跨平台对照（不只是「怎么切」命令）。
 
 **改动**：
 - ★ usb-otg-switch.md 标题与检索导引扩展：纳入「USB HOST 外设接入」「U盘插上没反应」「USB host devices」等问法
 - ★ 新增 **「USB HOST 外设接入（客户场景）」节**：
   - U盘/TF 存储：官方口径（wiki tf_usb）插 TF→自动挂 `/mnt/extsd`、U盘→`/mnt/usb1|usb2|usb3`；
-    工程实测（CV201_PND / T113CarSystem_PND `media_context.cpp` 存储表）另有 OTG 口挂 `/mnt/usbotg`；
-    监听拔插：`base::MountNotification`（base-utility ≥9.0.0）/ `MediaMountListener : MountMonitor::IMountListener`，
-    查询 `MOUNTMONITOR->isMounted()`；客户「U盘读不到」排查顺序：①otg_role 确认 host ②ls 挂载点 ③确认哪个口 ④监听事件
+工程实测（CV201_PND / T113CarSystem_PND `media_context.cpp` 存储表）另有 OTG 口挂 `/mnt/usbotg`；
+监听拔插：`base::MountNotification`（base-utility ≥9.0.0）/ `MediaMountListener : MountMonitor::IMountListener`，
+查询 `MOUNTMONITOR->isMounted()`；客户「U盘读不到」排查顺序：①otg_role 确认 host ②ls 挂载点 ③确认哪个口 ④监听事件
   - USB 摄像头（UVC）→ 指向 `v85x/uvc-usb-camera.md`（V85X 完整接入知识）；T113/Z21 未收录不编造
-  - USB 键鼠（HID）→ **标「未收录」**，问沛哥/查官方文档，不猜
+  - USB 键鼠（HID）→ **标「未收录」**，问需求方/查官方文档，不猜
 - ★ kb-first-analysis 铁律 6 扩写：host 外设接入（U盘挂载/摄像头/键鼠）+ 主从切换同属跨平台问题，
-  未指定平台先给对照+问平台，禁止默认按命中第一平台答
+未指定平台先给对照+问平台，禁止默认按命中第一平台答
 - 索引重建：878 chunks（22 knowledge）验证——
   「U盘插上没反应」「/mnt/usb1 usbotg」「Z21 键鼠 USB 支持吗」「T113 U盘挂载」等客户问法全命中跨平台文档
 
 ---
 ## v0.19.0-open (2026-09-07) — 跨平台 USB OTG 切换对照：不带平台名提问不默认 V85X
-**沛哥追问**：「用户不指定 V85x 的时候能识别到这个 OTG 切换问题吗？还有 Z21、T113 平台」——
+**需求方追问**：「用户不指定 V85x 的时候能识别到这个 OTG 切换问题吗？还有 Z21、T113 平台」——
 只让 v85x 文档可命中不够：不带平台名提问时 AI 应意识到 OTG/ADB/U盘 切换是**跨平台共性操作**，
 V85X/T113/Z21 路径各不相同，答错平台就误导。
 
 **改动**：
-- ★ 新增 **knowledge/hardware/usb-otg-switch.md 跨平台对照**（新开 hardware 分类目录）：
-  三平台路径/节点/shell/代码/configfs 对照表 + 坑 + 来源标注；
-  首块植入高频问法检索导引（如何切换 USB OTG/怎么切 ADB/切 U盘/USB 连电脑拷文件…），
-  并写明「未指定平台 → 必须给三平台对照 + 请用户确认平台，禁止默认按某一平台答」。
+- ★ 新增 **knowledge/hardware/usb-otg-switch.md 跨平台对照**（新开 hardware 分类目录）：三平台路径/节点/shell/代码/configfs 对照表 + 坑 + 来源标注；
+首块植入高频问法检索导引（如何切换 USB OTG/怎么切 ADB/切 U盘/USB 连电脑拷文件…），
+并写明「未指定平台 → 必须给三平台对照 + 请用户确认平台，禁止默认按某一平台答」。
   - V85X：`/sys/devices/platform/soc/usbc0/`（CV201_PND/xdv23 实测，4 节点）
   - T113：`/sys/devices/platform/soc@3000000/soc@3000000:usbc0@0/`（⚠️ 带 reg 地址，T113CarSystem_PND 实测）
   - Z21：`/sys/devices/soc0/soc/soc:usbotg/`（wiki 官方文档，仅 usb_host/usb_device 两节点）
 - ★ kb-first-analysis.md 新增**铁律 6**：跨平台硬件操作（OTG/GPIO/串口/路径类）用户未指定平台时，
-  回答必须给多平台对照表 + 请用户确认平台；禁止默认按检索命中第一的平台答（v85x 文档块多常霸榜）。
+回答必须给多平台对照表 + 请用户确认平台；禁止默认按检索命中第一的平台答（v85x 文档块多常霸榜）。
 - 索引重建：874 chunks（21 knowledge）验证通过——不带平台名 OTG/ADB/U盘 问法跨平台文档进 top2-3，
   「怎么切到 ADB 模式」「usbotg 路径平台区别」跨平台文档 top1。
 
 ---
 ## v0.18.0-open (2026-09-07) — RAG 混合检索修复：V85X USB OTG 专项文档可检索命中
-**沛哥反馈**：搜「V85x 如何切换 USB OTG / V85x USB OTG 切换 host device」时纯向量检索
+**需求方反馈**：搜「V85x 如何切换 USB OTG / V85x USB OTG 切换 host device」时纯向量检索
 命中 Z21 通用文档（z210_core_board），`knowledge/v85x/usb-gadget-storage.md` 专项文档查不到
 （向量语义偏 + 文档标题/首块无 OTG/切换关键词）。
 
@@ -838,15 +830,14 @@ V85X/T113/Z21 路径各不相同，答错平台就误导。
   「V85x/USB/OTG/host/device」等混合查询命中率显著提升；BM25 兜底路径不变。
   by_id 映射模块级建一次，无每次检索重建开销。
 - ★ usb-gadget-storage.md 文档增强：标题改为「V85X USB OTG 切换与 Device 存储」；
-  首块加 🔍 检索导引（一句话：读 /sys/devices/platform/soc/usbc0/ 节点即切换 + cat 四条命令）；
+首块加 🔍 检索导引（一句话：读 /sys/devices/platform/soc/usbc0/ 节点即切换 + cat 四条命令）；
   §3 标题含 host/device 关键词。
-- ★ 新增 **knowledge/v85x/usb-otg-mode-switch.md** 直达速查（问答式）：
-  一句话结论 + 切 ADB/切 U盘/断开/查当前四种 cat 命令 + 代码切换（usb_monitor.cpp 同款）
+- ★ 新增 **knowledge/v85x/usb-otg-mode-switch.md**直达速查（问答式）：一句话结论 + 切 ADB/切 U盘/断开/查当前四种 cat 命令 + 代码切换（usb_monitor.cpp 同款）
   + V85X vs Z21 路径对照表；细节指向 usb-gadget-storage.md 避免双份维护。
-- ★ 新增 **knowledge/devflow/kb-first-analysis.md 开发先检索铁律**（沛哥 2026-09-07 定规）：
+- ★ 新增 **knowledge/devflow/kb-first-analysis.md 开发先检索铁律**（2026-09-07 定规）：
   AI 做 FlyThings 开发必须先用 MCP 知识库（flythings_search = wiki + knowledge）检索分析再动手；
-  禁止先试错后查（顺序反了浪费迭代）；查不到 ≠ 没收录（换词/读 knowledge 目录）；
-  禁止套其他 GUI 框架/解析 easyui 源码猜字段；检索接入异常先检查 MCP 连的是不是 open 版。
+禁止先试错后查（顺序反了浪费迭代）；查不到 ≠ 没收录（换词/读 knowledge 目录）；
+禁止套其他 GUI 框架/解析 easyui 源码猜字段；检索接入异常先检查 MCP 连的是不是 open 版。
 - 索引重建：863 chunks（20 knowledge）本地 bge 全量嵌入，4 组回归查询 v85x 文档均进前列。
 
 ---
@@ -860,16 +851,16 @@ V85X/T113/Z21 路径各不相同，答错平台就误导。
 
 ---
 
-## v0.16.0-open (2026-09-03) — 图标抗锯齿根治（沛哥反馈 png 仍有锯齿）
+## v0.16.0-open (2026-09-03) — 图标抗锯齿根治（经需求方反馈 png 仍有锯齿）
 **根因不是提示词约束，是渲染管线三处缺陷（程序化定位）**：
 - ① iconfont 图标超采样只有 4 倍：小尺寸（20-40px）斜线阶梯仍可见 → **提高到 8 倍**（SS 画布 + LANCZOS 缩回，A/B 实验 ss16 最优、ss8 已接近）
 - ② PIL line 端点是平头（butt cap），Feather 风格应为圆头 → 所有线段/折线/圆弧端点**补圆头 round cap**（斜线端点毛刺/缺口感的来源）
-- ③ assets 兜底图标 icon_circle/line_icon/frames_loading/frames_loading_gif **此前 1x 直画，0% 抗锯齿必锯齿** → 全部改为超采样渲染（量化：AA 占比 0%→39%）
+- ③ assets 兜底图标 icon_circle/line_icon/frames_loading/frames_loading_gif **此前 1x 直画，0% 抗锯齿必锯齿**→ 全部改为超采样渲染（量化：AA 占比 0%→39%）
 - 回归：46 图标 + 15 中文别名 + pressed 两态 + 非正方 canvas + 8 种线条兜底共 **115 项全过**；修复后 80px 平滑放大目检「斜线平滑无锯齿、端点圆润无毛刺、符合高清显示标准」
 
 ---
 ## v0.15.0-open (2026-09-03) — 图标优先规范落地：HTML 生成强制用 iconfont 矢量线框图标，禁止按钮+文字糊弄
-**沛哥定规：生成 UI 时常用操作（返回/播放/暂停/上一首/下一首/设置/搜索/删除/刷新/确认/关闭/加减/音量/主页/菜单等）必须用图标表达，禁止用「按钮+文字」！**
+**需求方定规：生成 UI 时常用操作（返回/播放/暂停/上一首/下一首/设置/搜索/删除/刷新/确认/关闭/加减/音量/主页/菜单等）必须用图标表达，禁止用「按钮+文字」！**
 - ★ gen_res.py 新增 **46 个 iconfont 风格矢量线框图标库**：back/forward/up/down/close/check/plus/minus/menu/more/search/home/list/play/pause/stop/prev/next/power/volume/mute/delete/edit/share/download/upload/user/lock/info/warning/camera/clock/calendar/bell/mic/location/mail/eye/video/phone/settings/refresh/wifi/bluetooth/heart/star（Feather 同款 24 网格坐标 + 数学采样抗锯齿 + 中文别名，形状程序化验证）；按钮自动 normal+pressed 两态（_p 提亮），非正方画布自动居中
 - ★ html2json.py 识别 `data-icon="play"` / `class="iconfont icon-play"` / `class="btn icon-play"` → 自动生成 PNG 落 json：图标按钮→picTab{pic0,pic1} 两态图，纯图标→textview backgroundPic；未收录名 warning 列出可用表
 - ★ json2html.py 预览图片 base64 内联（preview.html 单文件独立显示，ui/ 下不破图）
@@ -879,10 +870,10 @@ V85X/T113/Z21 路径各不相同，答错平台就误导。
 ---
 ## v0.14.0-open (2026-09-03) — 自定义字库修正：fun 流程权威规则（font/ + enable.font.location，非 .prefs）
 
-**重写 knowledge/devflow/custom-font-config.md（沛哥 20:51 纠正 v0.13 方向错误）**
+**重写 knowledge/devflow/custom-font-config.md（20:51 纠正 v0.13 方向错误）**
 ⚠️ v0.13.0 按 KlipperF133 写入的「改 .prefs font 字段」是 IDE 视角，**fun 流程不适用、不需要**。
 
-fun build/launch 流程换字库标准 4 步（沛哥定规，AI 引导「换库」直接照做，禁止绕 IDE 属性）：
+fun build/launch 流程换字库标准 4 步（经需求方定规，AI 引导「换库」直接照做，禁止绕 IDE 属性）：
 ① 项目根建 font/ 文件夹拷入 ttf（仅支持 ttf）② package.properties 加 enable.font.location=true
 （新模板已内置，没有才补）③ 单字体→自动全局默认、代码零改动；多字体按文件名 ASCII 排序最靠前为默认、
 个别控件 setFontFamily("文件名不含后缀") 指定（easyui≥2.2.0）④ 完成，不动 .prefs/IDE 属性。
@@ -898,18 +889,18 @@ fzcircle.ttf（思源黑体裁剪版），项目 font/ 存在字体后完全使�
 
 ## v0.13.0-open (2026-09-03) — 自定义字库配置入库（改 .prefs font 字段替换全局默认字库）
 
-**新建 knowledge/devflow/custom-font-config.md（沛哥 20:43 讲解 + KlipperF133 实测 + mark_cv201 对照）**
+**新建 knowledge/devflow/custom-font-config.md（20:43 讲解 + KlipperF133 实测 + mark_cv201 对照）**
 
 两条路先分清：
-- **全局默认字库替换（整 UI 换字体，不用代码）= 改 .prefs 的 font 字段**（沛哥定规）：
+- **全局默认字库替换（整 UI 换字体，不用代码）= 改 .prefs 的 font 字段**（经需求方定规）：
   `.settings/com.zksw.flythings.easyui.prefs` 里 easyui.cfg.debug 与 easyui.cfg.release 两份 JSON 都加
   "font" 字段指向自定义 ttf（实测 KlipperF133：debug=/mnt/extsd/ui/KaiTi.ttf、release=/res/ui/KaiTi.ttf，
-  与同 JSON resPath 对应）；ttf 放工程 resources/ 编译打包到设备 ui 目录；默认模板 .prefs 无 font 字段
+与同 JSON resPath 对应）；ttf 放工程 resources/ 编译打包到设备 ui 目录；默认模板 .prefs 无 font 字段
   = 用内置 fzcircle.ttf（思源黑体裁剪），写了 = 全系统换自定义字库；IDE 对应：项目属性→字体→取消默认
-  导入新 ttf（仅支持 ttf）
+导入新 ttf（仅支持 ttf）
 - **多字体混排（控件级指定）= enable.font.location=true + font/ 目录 + setFontFamily**（wiki font_setting.md，
   mark_cv201 font/sans.ttf 用此法；easyui 2.2.0+；setFontFamily 参数=文件名不带 .ttf；多字体按 ASCII 排序
-  最前作默认）
+最前作默认）
 
 补充：package.properties 覆盖层也可配 font（F133UhaleAlbum 实测冒号分隔 debug:release 两路径）。
 坑：全局换字体别写 setFontFamily；.prefs 改 font 不生效查 debug/release 双改 + ttf 打包路径。
@@ -920,20 +911,20 @@ fzcircle.ttf（思源黑体裁剪版），项目 font/ 存在字体后完全使�
 
 ## v0.12.0-open (2026-09-03) — package.properties / EasyUI.cfg 工程配置机制入库（屏幕旋转适配）
 
-**新建 knowledge/devflow/package-properties-easyui-cfg.md（沛哥讲解机制定规 + mark_cv201 双工程实测）**
+**新建 knowledge/devflow/package-properties-easyui-cfg.md（讲解机制定规 + mark_cv201 双工程实测）**
 来源：CV201_PND（1600×600，rotateScreen:270）vs CV201_PND_1024_600（1024×600，无 rotateScreen）对比 +
-沛哥提供 EasyUI.cfg 标准 JSON 格式；全 workspace 13 工程横向统计 + ConfigManager.h + 代码消费链查证。
+需求方提供 EasyUI.cfg 标准 JSON 格式；全 workspace 13 工程横向统计 + ConfigManager.h + 代码消费链查证。
 
-核心机制（沛哥 2026-09-03 定规）：
+核心机制（2026-09-03 定规）：
 - **编译工具自动生成完整 EasyUI.cfg**（默认 JSON：baud/defBrightness/font/languageCode/languagePath/
   resPath/rotateScreen/rotateTouch/screensaverTimeOut/startupLibPath/startupTouchCalib/touchDev/uart/
   zkdebug，debug=/mnt/extsd 与 release=/res 两套路径）
 - 工程根目录 package.properties 的 EasyUI.cfg={...} **是覆盖层**：写哪个字段优先采用哪个，
-  不需要特殊处理的字段不用写（不整段照抄）
+不需要特殊处理的字段不用写（不整段照抄）
 - 与 .settings/com.zksw.flythings.easyui.prefs（IDE 属性）并存时 **package.properties 优先**
 - enable.font.location=true 是独立开关（font/ 目录自定义字体，非 EasyUI.cfg 覆盖层）
 
-**何时用 package.properties 覆盖（沛哥 20:12 补充定规）**：正常情况（屏幕与触摸方向一致/都不转）
+**何时用 package.properties 覆盖（20:12 补充定规）**：正常情况（屏幕与触摸方向一致/都不转）
 **发 .prefs 配置即可**，不用写 package.properties；只有需要特殊处理覆盖时才用——典型场景 =
 **某些硬件屏幕需要旋转、触摸不需要旋转**（方向不一致），此时只覆盖 rotateScreen、rotateTouch 不写/
 保持默认（mark_cv201 CV201_PND 正例：只配 rotateScreen:270 不配 rotateTouch）；
@@ -953,7 +944,7 @@ V85X 摄像头 setRotation 跟随）；mark_cv201 倒车 get_camera_rot() 是摄
 
 ## v0.11.0-open (2026-09-03) — cameraview(ZKCameraView) 相机预览控件 ftu/json 字段规范入库
 
-**新建 knowledge/uicontrols/cameraview-fields.md（沛哥指定学习 LearningProject/mark_cv201 倒车影像工程）**
+**新建 knowledge/uicontrols/cameraview-fields.md（指定学习 LearningProject/mark_cv201 倒车影像工程）**
 来源：CV201_PND（1600×600）+ CV201_PND_1024_600（1024×600）双分辨率 fui unpack 实测校准（V85X/AW_V853）。
 
 核心铁律：
@@ -979,7 +970,7 @@ NO_SIGNAL/HAS_SIGNAL，计数≥2 才提示防抖) → setDevPath → setFormatS
 
 ## v0.10.0-open (2026-09-03) — 自定义控件实现方法入库 + GUI 差距盘点 + FT-024 纠正
 
-**① 新建 knowledge/devflow/custom-widget.md（自定义控件实现方法，沛哥要求先记录方法后续再实现）**
+**① 新建 knowledge/devflow/custom-widget.md（自定义控件实现方法，需求方要求先记录方法后续再实现）**
 来源：内部私有仓库 guoxs/lib-ext_widgets 拆解（F136/F133，8 个自研控件：AlbumListView/ImageBoxView/
 FrameImageView/ImageEditView/RotateImageView/SliceProgressBar/PullWidget + BaseView 基类）。
 
@@ -994,17 +985,16 @@ FrameImageView/ImageEditView/RotateImageView/SliceProgressBar/PullWidget + BaseV
 - 异步：解码/加载丢 MessageQueueThread；图片显示优先子按钮 setBackgroundBmp/Pic
 - 附 8 控件能力表（做新控件前先查可抄） + 新控件开发 10 步 checklist
 
-**② 新建 knowledge/devflow/gui-controls-gap.md（现代化 GUI 控件差距盘点，沛哥 19:14 要求）**
-现有家底：内置 21 控件 + 自研 8 控件。真缺（按优先级）：
-富文本 RichTextView（**最高优先**，缺自动折行/样式混排/嵌图/滚动）/ 通用图表 ChartView / 表格 TableView /
+**② 新建 knowledge/devflow/gui-controls-gap.md（现代化 GUI 控件差距盘点 19:14 要求）**
+现有家底：内置 21 控件 + 自研 8 控件。真缺（按优先级）：富文本 RichTextView（**最高优先**，缺自动折行/样式混排/嵌图/滚动）/ 通用图表 ChartView / 表格 TableView /
 下拉选择 ComboBox / 滚轮 WheelPicker / 轻提示-角标-菊花（Toast/Snackbar/Badge/Spinner）。
 可代不算缺：轮播（ImageBoxView）/跑马灯（SlideText）/下拉面板（PullWidget）/双指缩放（自研）/动图/弹窗等。
 
-**③ FT-024 纠正（沛哥 19:27-19:35 确认：textview 实际支持 \n 换行）**
+**③ FT-024 纠正（19:27-19:35 确认：textview 实际支持 \n 换行）**
 - 背景：v0.8.0 前 FT-024（2026-08-29）认定「textview 不渲染 \n、json 写换行异常」——**误判/误泛化**；
-  实际代码 setText 与 json/ftu 布局 text 写 \n 均正常多行渲染
+实际代码 setText 与 json/ftu 布局 text 写 \n 均正常多行渲染
 - html2json.py：`<br>` 折叠空格 → **转 '\n'**；handle_data 增加 HTML 文本节点空白折叠（源码换行缩进→单空格，
-  避免意外换行）；_clean_text 及两处 raw_text 只折叠空格类、保留 \n（冒烟：`第一行<br>第二行` → text=`第一行\n第二行` ✓）
+避免意外换行）；_clean_text 及两处 raw_text 只折叠空格类、保留 \n（冒烟：`第一行<br>第二行` → text=`第一行\n第二行` ✓）
 - check_all.py：**删除第 12 项「text 禁换行」误报检查**（13/14 重编号 12/13）
 - HTML_SUBSET.md 第 8 条改写：支持 \n，`<br>` 转 \n，源码缩进仍折叠，换行请显式写 `<br>`
 - knowledge/devflow/gui-controls-gap.md 富文本描述同步修正（缺口=折行/样式/嵌图/滚动，非换行）
@@ -1013,15 +1003,15 @@ FrameImageView/ImageEditView/RotateImageView/SliceProgressBar/PullWidget + BaseV
 
 ---
 
-## v0.9.0-open (2026-09-03) — V85X UVC 摄像头接入入库 + USB 存储双介质文档重构（沛哥指定）
+## v0.9.0-open (2026-09-03) — V85X UVC 摄像头接入入库 + USB 存储双介质文档重构（指定）
 
 **① 新建 knowledge/v85x/uvc-usb-camera.md（补「V85x USB 摄像头接入」空缺）**
-来源：沛哥指定 `LearningProject/mark_cv201` → CV201_PND（+CV201_PND_1024_600 同架构验证）
+来源：需求方指定 `LearningProject/mark_cv201` → CV201_PND（+CV201_PND_1024_600 同架构验证）
 （V85X/AW_V853 + aw-dvr 3.9.12）。场景：V85X 主机 USB 接入 UVC 摄像头，与内置 ISP 前摄双路并存。
 
-收录（**通用骨架，沛哥指示：模块私有协议层不入库**）：
+收录（**通用骨架，需求方指示：模块私有协议层不入库**）：
 1. UVC 设备发现：inotify /dev（IN_CREATE/IN_DELETE + video\d* 正则）→ 延时 ~3s 枚举 →
-   扫 /dev/video0..12 `VIDIOC_QUERYCAP` 且 `driver=="uvcvideo"` 命中；多节点防重、只认自己记录节点
+扫 /dev/video0..12 `VIDIOC_QUERYCAP` 且 `driver=="uvcvideo"` 命中；多节点防重、只认自己记录节点
 2. 打开初始化：`VIDIOC_G_FMT` 读默认分辨率 → CameraHelper.Init(w,h) 幂等；
    **MPP 注册关键**：FRONT setIsp(true) + REAR `setUvc(true).setId(DEVICE_ID_AUTO)`（UVC 走后路通道）
 3. fd 来源：`mpi::SharedVideoDevice(REAR).getFileDescriptor()`
@@ -1032,9 +1022,8 @@ FrameImageView/ImageEditView/RotateImageView/SliceProgressBar/PullWidget + BaseV
    （⚠️ 不是 Recorder::takePicture）
 8. 状态机通用设计：连接/断开/异常 + 50 帧防抖切换 + 回调集 + 恢复后 resetCameraPreview 重建预览
 
-**② knowledge/v85x/usb-gadget-storage.md 重构为「双介质」主线**（沛哥 2026-09-03 指示整合）
-把 v0.8.1（USB 双档）+ v0.8.2（xdv200300 TF 卡）合并成单一主线：
-介质（EMMC 分区 mmcblk0p1→/mnt/storage / TF 卡 mmcblk1→/mnt/extsd，探针 mmcblk0boot0）×
+**② knowledge/v85x/usb-gadget-storage.md 重构为「双介质」主线**（2026-09-03 指示整合）
+把 v0.8.1（USB 双档）+ v0.8.2（xdv200300 TF 卡）合并成单一主线：介质（EMMC 分区 mmcblk0p1→/mnt/storage / TF 卡 mmcblk1→/mnt/extsd，探针 mmcblk0boot0）×
 USB 档位（ADB / U盘 / NONE）两个正交维度；挂载（Main.cpp）与 UVC 档暴露源（lun.0/file）
 同一探针二选一；口径澄清：暴露的是块设备不是 /mnt/extsd 挂载点字符串。
 
@@ -1043,9 +1032,9 @@ USB 档位（ADB / U盘 / NONE）两个正交维度；挂载（Main.cpp）与 UV
 
 ---
 
-## v0.8.2-open (2026-09-03) — V85X USB 存储双介质差异补入（沛哥验证 xdv200300）
+## v0.8.2-open (2026-09-03) — V85X USB 存储双介质差异补入（验证 xdv200300）
 
-**沛哥提示**：兄弟项目 xdv200300 有新的暴露路径（应为 /mnt/extsd），验证是否存在。
+**需求方提示**：兄弟项目 xdv200300 有新的暴露路径（应为 /mnt/extsd），验证是否存在。
 
 **验证结论**：存在，且机制已完全摸清——xdv200300 新增 **TF 卡存储方案**：
 1. config.h 新增 `EMMC_BLOCK_BOOT=/dev/block/mmcblk0boot0`（EMMC 存在性探针）、
@@ -1065,10 +1054,10 @@ USB 档位（ADB / U盘 / NONE）两个正交维度；挂载（Main.cpp）与 UV
 **来源**：内网 git.com/AppGroup/xdv 仓库 xdv23（+兄弟项目 xdv200300 同源）实测
 （V85XEMMC 平台，AW_V853 芯片红外热像仪，usb_monitor.cpp，ZKSWE Develop Team 2023）。
 
-**背景**：沛哥提示该工程涉及 V85x 平台「MTP」功能；查知识库确认 USB device 存储模式未收录，学习入库。
+**背景**：需求方提示该工程涉及 V85x 平台「MTP」功能；查知识库确认 USB device 存储模式未收录，学习入库。
 
 **技术定界**：客户口径「MTP」在该工程 = USB 连电脑当存储设备（电脑读设备内照片/视频），
-实现是 **configfs usb_gadget + mass_storage（U盘/UMS 模式）**，与 **functionfs（ADB 调试）** 双档共用一套 gadget 配置器；
+实现是 **configfs usb_gadget + mass_storage（U盘/UMS 模式）**，与 **functionfs（ADB 调试）**双档共用一套 gadget 配置器；
 非 MTP 协议栈。
 
 **收录要点**（新建 knowledge/v85x/usb-gadget-storage.md）：
@@ -1083,7 +1072,7 @@ USB 档位（ADB / U盘 / NONE）两个正交维度；挂载（Main.cpp）与 UV
 
 ---
 
-## v0.8.0-open (2026-09-03) — 移除 fix_tools.py 独立修复工具，修复能力前移到创建功能点（沛哥定规）
+## v0.8.0-open (2026-09-03) — 移除 fix_tools.py 独立修复工具，修复能力前移到创建功能点（经需求方定规）
 
 **背景**：fix_tools.py（90KB，FT-001~FT-024 共 18 条 detect/fix/verify 规则）是历史遗留的「事后打补丁」工具——
 规则根源是各创建环节没做对。本次逐一审计规则 ↔ 源头功能点，已内化的保留，缺失的补进对应创建/校验功能点，
@@ -1108,7 +1097,7 @@ USB 档位（ADB / U盘 / NONE）两个正交维度；挂载（Main.cpp）与 UV
 
 ---
 
-## v0.7.15-open (2026-09-02) — FT-007 废弃：部署统一只用 fun launch（沛哥定规）
+## v0.7.15-open (2026-09-02) — FT-007 废弃：部署统一只用 fun launch（经需求方定规）
 
 **废弃 FT-007 手动部署顺序规则**：
 1. 删除 fix_tools.py 中 FT-007 检测/修复/验证（先 adb push images 再 kill zkgui + deploy_order.md 生成），修复规则 19→18 条
@@ -1117,7 +1106,7 @@ USB 档位（ADB / U盘 / NONE）两个正交维度；挂载（Main.cpp）与 UV
 
 ---
 
-## v0.7.14-open (2026-09-02) — T113 倒车摄像头格式参数表入库（沛哥要求）
+## v0.7.14-open (2026-09-02) — T113 倒车摄像头格式参数表入库（要求）
 
 **收录内容**（来源：git 收录工程 `temp_car/public/t113/T113CarSystem_PND/jni/logic/` 实测）：
 1. **完整格式参数表**：AHD/TVI 720P/1080P（分辨率+帧率）、CVBS PAL/NTSC、DM5885 逐行/隔行——12 种格式全表
@@ -1131,7 +1120,7 @@ USB 档位（ADB / U盘 / NONE）两个正交维度；挂载（Main.cpp）与 UV
 
 ---
 
-## v0.7.13-open (2026-09-02) — ImageAnim 动图控件字段规范入库（沛哥定规）
+## v0.7.13-open (2026-09-02) — ImageAnim 动图控件字段规范入库（经需求方定规）
 
 **两点定规**：
 1. **动图控件只支持 GIF 和 WebP 两种格式**——playFile 只能指 .gif/.webp，其他格式不显示（硬限制）
@@ -1145,16 +1134,15 @@ USB 档位（ADB / U盘 / NONE）两个正交维度；挂载（Main.cpp）与 UV
 
 ---
 
-## v0.7.12-open (2026-09-02) — 流程文档修正（沛哥补充）
+## v0.7.12-open (2026-09-02) — 流程文档修正（补充）
 
 **两点修正**：
 1. 医疗口腔内窥镜仅为示例，流程适用于**任何产品**（拆解维度按产品类型调整，不套模板）
-2. 美化风格**不套固定模板**——按实际产品行业/场景定制：
-   医疗/专业→科技蓝/纯净白/深色；消费电子→明亮暖色/圆润卡片；工业/车载→高对比大控件；智能家居→简约浅色等
+2. 美化风格**不套固定模板**——按实际产品行业/场景定制：医疗/专业→科技蓝/纯净白/深色；消费电子→明亮暖色/圆润卡片；工业/车载→高对比大控件；智能家居→简约浅色等
 
 ---
 
-## v0.7.11-open (2026-09-02) — 一句话需求→线框→美化流程入库（沛哥定规）
+## v0.7.11-open (2026-09-02) — 一句话需求→线框→美化流程入库（经需求方定规）
 
 **流程**：用户一句话产品需求（如「我想设计一个医疗口腔内窥镜」）→
 ① 功能拆解（功能清单 + 客户确认清单）→ ② 页面层级设计（页面树，page-id）→
@@ -1163,23 +1151,23 @@ USB 档位（ADB / U盘 / NONE）两个正交维度；挂载（Main.cpp）与 UV
 ⑤ UI 美化 3+ 套风格（医疗蓝/纯净白/深色/暖色）→ ⑥ 风格选择 → ⑦ 美化稿预览确认 →
 ⑧ html2json 按 data-page 分页 → preview → pack → build_ui_flow 交付。
 
-**沛哥决策**：① 需要确认清单 ② 文字输入（不做语音）③ 单 HTML 多页面 data-page 区分 ④ 3+ 套风格。
+**需求方决策**：① 需要确认清单 ② 文字输入（不做语音）③ 单 HTML 多页面 data-page 区分 ④ 3+ 套风格。
 
 **入库**：新建 `knowledge/devflow/prototype-flow.md`（完整流程 + 标注规范 + 风格方案表）；重建 rag_index。
 
 ---
 
-## v0.7.10-open (2026-09-01) — 检索边界补充：禁止解析 easyui 库源码（沛哥 22:09）
+## v0.7.10-open (2026-09-01) — 检索边界补充：禁止解析 easyui 库源码（22:09）
 
 **补充规则**：AI 分析控件用法时**禁止解析 easyui 库源码/头文件（ZKXXX 类实现）**——
 easyui 是预编译闭源库，源码解析拿不到控件 json 字段/回调语义，浪费时间绕路；
-直接参考 wiki 实现（knowledge/uicontrols/ 或 wiki/flythings/），文档没有标注「未收录」问沛哥。
+直接参考 wiki 实现（knowledge/uicontrols/ 或 wiki/flythings/），文档没有标注「未收录」问。
 
 **入库**：retrieval-boundary.md「禁止的行为」新增一条；MEMORY.md 铁律 1 同步；重建 rag_index。
 
 ---
 
-## v0.7.9-open (2026-09-01) — SlideWindow 布局定规修正（沛哥 21:59 纠正）
+## v0.7.9-open (2026-09-01) — SlideWindow 布局定规修正（21:59 纠正）
 
 **纠正 v0.7.8 的错误表述**：「绝对布局需按实际微调」是错的——
 - json 的 position（left/top/width/height）**直接来自 HTML 原型的 data-x/y/w/h**，本来就是绝对布局，坐标明确
@@ -1191,20 +1179,20 @@ easyui 是预编译闭源库，源码解析拿不到控件 json 字段/回调语
 
 ---
 
-## v0.7.8-open (2026-09-01) — SlideWindow 图标布局补充（沛哥 21:52 定规）
+## v0.7.8-open (2026-09-01) — SlideWindow 图标布局补充（21:52 定规）
 
 **两条补充定规**
 1. **同一 slidewindow 所有图标尺寸必须一致**：生成图标时统一尺寸（如全部 60×60），
-   不一致会导致位置错乱。html2json 已加 items 图片尺寸一致性检查——不一致 → warning 提示统一后重转
+不一致会导致位置错乱。html2json 已加 items 图片尺寸一致性检查——不一致 → warning 提示统一后重转
 2. **默认 padding 值没问题，但 FlyThings 绝对布局需按实际微调**：默认 paddingBottom=8 /
    iconTextPadding bottom=5 只是起点，绝对布局（left/top 像素定位）下必须根据实际显示效果
-   微调 padding / iconTextPadding / iconSize 使图标落在期望位置，改后重新 fui pack 看设备效果
+微调 padding / iconTextPadding / iconSize 使图标落在期望位置，改后重新 fui pack 看设备效果
 
 **验证**：尺寸一致回填 60×60 正常；尺寸不一致（60+80）warning 正确。文档 slidewindow-fields.md 同步补充。
 
 ---
 
-## v0.7.7-open (2026-09-01) — SlideWindow 图标布局铁律入库（沛哥定规）
+## v0.7.7-open (2026-09-01) — SlideWindow 图标布局铁律入库（经需求方定规）
 
 **定规**：SlideWindow 图标布局三要素——
 ① `iconSize` 必须按**实际图片尺寸**（非控件平分格子大小；默认 128 会导致图标位置不对/拉伸）
@@ -1218,7 +1206,7 @@ easyui 是预编译闭源库，源码解析拿不到控件 json 字段/回调语
 
 ---
 
-## v0.7.6-open (2026-09-01) — validate_project 去噪（沛哥确认）
+## v0.7.6-open (2026-09-01) — validate_project 去噪（经需求方确认）
 
 **清理 3 处冗余**
 1. 删 `src/activity 目录缺失` warning：新建模板项目未编译时 activity 不存在是正常状态，属误报
@@ -1229,10 +1217,10 @@ easyui 是预编译闭源库，源码解析拿不到控件 json 字段/回调语
 
 ---
 
-## v0.7.5-open (2026-09-01) — 移除 flythings_read_ftu（沛哥确认）
+## v0.7.5-open (2026-09-01) — 移除 flythings_read_ftu（经需求方确认）
 
 **背景**：新版 fui.exe 仅支持 pack（json→ftu）不支持 unpack，read_ftu 在无同目录 json 时必失败，
-实际只是 read_json 的包装。沛哥确认删除，只保留 read_json。
+实际只是 read_json 的包装。需求方确认删除，只保留 read_json。
 
 **改动**
 - 删除 `flythings_read_ftu` 工具（kb_tools 定义+注册 / project_tools 实现）
@@ -1241,7 +1229,7 @@ easyui 是预编译闭源库，源码解析拿不到控件 json 字段/回调语
 
 ---
 
-## v0.7.4-open (2026-09-01) — 控件用法检索边界定规（沛哥）
+## v0.7.4-open (2026-09-01) — 控件用法检索边界定规（）
 
 **定规**：AI 检索 FlyThings 控件用法/字段/API 时**只允许两个来源**：
 ① MCP 内置知识库（flythings_search / knowledge/uicontrols/ 文档）② 官方文档站 developer.flythings.cn。
@@ -1254,7 +1242,7 @@ easyui 是预编译闭源库，源码解析拿不到控件 json 字段/回调语
 
 ## v0.7.3-open (2026-09-01) — EditText JSON 字段规范入库
 
-**背景（沛哥要求）**：MCP 查询不到 EditText 字段规范——规范散在本地 references 与 layout-audit 里，knowledge 无专门文档。
+**背景（要求）**：MCP 查询不到 EditText 字段规范——规范散在本地 references 与 layout-audit 里，knowledge 无专门文档。
 
 **入库**
 - 新建 `knowledge/uicontrols/edittext-fields.md`：完整 JSON 字段表（text/hintText/hintTextColor/textType/isPassword/
@@ -1267,12 +1255,12 @@ easyui 是预编译闭源库，源码解析拿不到控件 json 字段/回调语
 
 ## v0.7.2-open (2026-09-01) — 圆角抗锯齿方案重做（弃超采样，改 1x 直画+α 羽化）
 
-**问题（沛哥反馈）**：v0.7.1 的超采样（SS2 + LANCZOS 缩回）带来**倒角宽度变宽**问题。
+**问题（经需求方反馈）**：v0.7.1 的超采样（SS2 + LANCZOS 缩回）带来**倒角宽度变宽**问题。
 实测量化：LANCZOS 缩回存在像素网格取整偏移（多数 r 差 1px，r=19/20 接近钳制上限时动态校准也救不回）——
 缩放本身必然引入几何偏移，radius 越大越接近 min(w,h)/2 越明显。
 
 **方案重做**：弃 SS 超采样，改 **1x 直画 + α 高斯羽化（sigma=0.5）**
-- 几何轮廓（α>=128）与 1x 直画**逐像素一致** → 倒角宽度 100% 不变
+- 几何轮廓（α>=128）与 1x 直画**逐像素一致**→ 倒角宽度 100% 不变
 - 弧线处 α 平滑过渡（3-4px）→ 抗锯齿保留；直线段保持硬边（直线不需要 AA）
 - 实验验证：r=2..20 × 4 组尺寸（32x16~100x50）几何全部一致；to_9patch 四边 marker 不受影响；五函数出图正常
 
@@ -1292,7 +1280,7 @@ MCP 自己的 gen_res.py 所有圆角绘制仍是 1x 二值 α 锯齿。
 
 ## v0.7.0-open (2026-09-01) — FT-009 .9.png 生成规则入库 + 修复
 
-**新规则入库（沛哥定）**
+**新规则入库（定）**
 - `knowledge/uicontrols/nine-patch-rule.md`：stretchable 圆角图片（.9.png）生成五条必守规则：
   ① marker 线纯黑不透明 `(0,0,0,255)` ② top/left 只画中间拉伸段（排除 radius 倒角区）
   ③ right/bottom 黑线宽度与拉伸区同宽 ④ 线宽 1px 紧贴边缘 ⑤ marker 最后绘制不被后续 alpha 覆盖。
@@ -1300,7 +1288,7 @@ MCP 自己的 gen_res.py 所有圆角绘制仍是 1x 二值 α 锯齿。
 
 **代码修复**
 - `ui_tools/gen_res.py` `to_9patch`：原实现只画 top/left（缺 right/bottom 内容区标记）→ 按规则补全四边 marker，
-  验证通过：四边起点/终点纯黑 (0,0,0,255)、倒角区无黑线、right/bottom 与 top/left 拉伸段同宽。
+验证通过：四边起点/终点纯黑 (0,0,0,255)、倒角区无黑线、right/bottom 与 top/left 拉伸段同宽。
 
 **发布**
 - 版本 0.6.9 → 0.7.0-open；MCP_FEATURES 新增条目；重建 rag_index。
@@ -1313,7 +1301,7 @@ MCP 自己的 gen_res.py 所有圆角绘制仍是 1x 二值 α 锯齿。
 - `project_tools.py` 缺失 3 个工具函数：`flythings_create_project` / `flythings_build_ui_flow` / `flythings_edit_ftu`
   （含依赖 `_find_control` / `_apply_edits` / `flythings_edit_json`），但 `kb_tools.py` 一直引用它们
   → 这三个 MCP 工具调用即崩（AttributeError）。已从 `tools/flythings-mcp-stdio/project_tools.py` 移植补齐，
-  按 open 版口径适配（布局以 json 为源；fun launch 不支持 -s）。
+按 open 版口径适配（布局以 json 为源；fun launch 不支持 -s）。
 - 冒烟验证：create_project 真实建 F133/800x480 项目成功（Manifest 平台 / 工程名替换 / ftu 生成全对）。
 
 **🟡 去重**
@@ -1332,7 +1320,7 @@ MCP 自己的 gen_res.py 所有圆角绘制仍是 1x 二值 α 锯齿。
 
 **✅ 验证**
 - 11 个模块全部导入 OK；32 个工具注册一致；无残留 ui_preview 引用。
-- knowledge/ 未变 → rag_index.json 无需重建；未 push Gitee（待沛哥确认）。
+- knowledge/ 未变 → rag_index.json 无需重建；未 push Gitee（待需求方确认）。
 
 ---
 
@@ -1372,13 +1360,13 @@ MCP 自己的 gen_res.py 所有圆角绘制仍是 1x 二值 α 锯齿。
 
 ## v0.6.1-open (2026-08-31)
 - 修复 .cc 误用规范：手写 .cc 不会被编译（Makefile 只编 %.cpp %.c，.cc 是 IDE 按页面生成的 logic 专属）；
-  新增业务代码一律 .cpp/.h；validate_project 新增 manual_cc_file 检查。
+新增业务代码一律 .cpp/.h；validate_project 新增 manual_cc_file 检查。
 
 ## v0.6.0-open (2026-08-31)
 - bin_tools 精简：删除 C 源码只留预编译 ELF + 调用方法 README；补编 v85x 平台 ui_test
   （现 5 平台：z21/z20/t113/f133/v85x）。
 - flythings_gen_ui_test 架构升级：通用触摸工具预编译各平台 ELF 存 `bin_tools/{platform}/ui_test`，
-  测试项目只生成数据脚本不再现场编译（traverse 脚本 + monkey 直接命令），tools 不膨胀。
+测试项目只生成数据脚本不再现场编译（traverse 脚本 + monkey 直接命令），tools 不膨胀。
 
 ## v0.5.9-open (2026-08-31)
 - iconPosition 铁律入库：控件尺寸与图片尺寸不匹配必须显式设 iconPosition，否则图片按 position 拉伸变形。

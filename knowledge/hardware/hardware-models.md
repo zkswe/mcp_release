@@ -19,7 +19,7 @@ evidence:
 
 > 检索导引：问「这块板什么分辨率/按键值/接口 / SW 型号怎么读（SW80480070D1 等）/ SV50PD·86 盒·价签规格 / 没给型号能不能开工」→ 本文（机读查询用 `flythings_hardware_info`；本页由生成器产出勿手改）。
 > 检索关键词：型号 / 硬件 / 平台型号 / 屏幕分辨率 / 按键值 / PocketDisplay4 / SW80480070D / SV50PD / 86盒 / 串口屏 / 价签 / 选型
-> 用法：**有具体型号** → 按该型号的预设参数开工（平台/分辨率/按键直接照抄）；**没有具体型号** → 确认平台 + 分辨率即可建工程，其余按需再问。
+> 用法：**有具体型号**→ 按该型号的预设参数开工（平台/分辨率/按键直接照抄）；**没有具体型号**→ 确认平台 + 分辨率即可建工程，其余按需再问。
 > 本文档由 `scripts/gen_hardware_doc.py` 从 `hardware_catalog.json` 生成，**勿手改**（改 json 后重跑生成器 + `rebuild_index_local.py`）。
 > 查询用工具：`flythings_hardware_info(model, platform)`；未收录型号会返回候选与「平台 + 分辨率即可」的开工建议，不猜规格。
 
@@ -27,24 +27,51 @@ evidence:
 
 - 结构：SW + 分辨率 + 尺寸 + 平台字母 + 选配位 + _后缀（依据 7 寸串口屏规格书 V1.0 第 4 节）
 - 示例：SW80480070A_CWM = 7 寸 800×480，电容触摸 + WIFI + 多媒体版（官方《产品规格型号说明》示例）
-- 平台/版本字母 D：Z20 平台（沛哥 2026-09-12 确认）
-- 平台/版本字母 E：Z21 平台（沛哥 2026-09-12 确认）
-- ⚠️ 适用范围：字母可跨产品线套用：4 寸 86 盒线 SW48480040B1=Z6 / D1=Z20 / E=Z21（86 盒规格书 V3.0）与 D=Z20、E=Z21 一致；其他字母（A/B/C 等）未确认，先问沛哥再入库。
+- 平台/版本字母 D：Z20 平台（2026-09-12 确认）
+- 平台/版本字母 E：Z21 平台（2026-09-12 确认）
+- ⚠️ 适用范围：字母可跨产品线套用：4 寸 86 盒线 SW48480040B1=Z6 / D1=Z20 / E=Z21（86 盒规格书 V3.0）与 D=Z20、E=Z21 一致；其他字母（A/B/C 等）未确认，先问需求方再入库。
+- 命名段解码·resolution：80480=800*480；10600=1024*600
+- 命名段解码·size：070=7 寸；050=5 寸
+- 命名段解码·option：M=多媒体功能；W=WiFi 功能
+- 命名段解码·suffix：C=电容触摸；R=电阻触摸；TC=电容触摸 + 铁框（整机型）
 - 使用边界：型号名只能看出平台/分辨率线索，**具体规格以规格书为准**（不要按命名外推接口、内存、容量）
+- ⚠️ 旧文档坑：旧文档/旧标签存在**历史写法错误**：7 寸串口屏规格书 V1.0 第 4 节写「D: Z21」、标题页写 SW10600070D_C，实为 E=Z21 / SW10600070E_C（2026-09-12：早期内部标签弄错的历史预留问题）。**以现行口径 D=Z20 / E=Z21 为准，不要据旧文档反推平台。**
 
 ## 平台总览
 
 | 平台 | 型号数 | 已登记型号 | 平台定位 |
 |------|-------|-----------|---------|
+| F133 | 0 | （暂未登记） | RISC-V64（C906 核，isa rv64imafdcvu）；工具链 riscv64-unknown-linux-musl-g++（musl）——与 F135/F136 同核 |
+| F135 | 0 | （暂未登记） | RISC-V64（C906 核）——与 F133 同核；工具链 riscv64-unknown-linux-musl-g++（musl） |
 | V85X | 1 | PocketDisplay4 | 全志 V85x 系列（A7，视频编码 1080p）——摄像头/DVR/手持便携类产品常用 |
 | Z20 | 4 | SW48480040D1 / SW8001280101D-JQ / SW8001280101D1-JQ / SW80480070D_C | A7 双核 1.2GHz + 内置 128MB DDR3——86 盒高配/语音面板/电子价签常用平台 |
 | Z21 | 4 | SV50PD / SW10600070E_C / SW48480040E / SW48854050E1 | A7 双核 1.0GHz + 内置 64MB DDR2——串口屏/广告机/86盒主力平台 |
+
+## F133
+
+- 平台定位：RISC-V64（C906 核，isa rv64imafdcvu）；工具链 riscv64-unknown-linux-musl-g++（musl）——与 F135/F136 同核
+- 常见主控：F133
+- 主控→平台/包键（写死口径）：C906 RISC-V64 单核；与 F135/F136 同核（F136 在 platforms.py 里归一为 F135）。芯片级规格待补。
+- 平台差异·与 ARM 平台不通用：Z20/Z21/V85X/T113 的 .so 加载不了（ELF32 ARM vs RISC-V64），要用 RISC-V64 musl 工具链重编
+- 平台差异·工具链：riscv64-unknown-linux-musl-g++（musl），严禁混入 glibc
+- 平台差异·包键：f133（F135 是 f136），见 package_catalog.json
+- 可选补充（非阻塞）：型号级规格（屏幕/按键/接口）待规格书入库；**不阻塞开工**：确认平台 + 分辨率即可建工程
+
+## F135
+
+- 平台定位：RISC-V64（C906 核）——与 F133 同核；工具链 riscv64-unknown-linux-musl-g++（musl）
+- 常见主控：F135
+- 主控→平台/包键（写死口径）：C906 RISC-V64 单核；与 F133 同核。**F136 是别名**（platforms.py 归一为 F135），包键 f136。规格待补。
+- 平台差异·与 ARM 平台不通用：Z20/Z21/V85X/T113 的 .so 加载不了（ELF32 ARM vs RISC-V64）
+- 平台差异·工具链：riscv64-unknown-linux-musl-g++（musl），严禁混入 glibc
+- 平台差异·包键：f136（F133 是 f133；F136 是别名，归一为 F135）
+- 可选补充（非阻塞）：型号级规格待规格书入库；不阻塞开工（平台 + 分辨率即可）
 
 ## V85X
 
 - 平台定位：全志 V85x 系列（A7，视频编码 1080p）——摄像头/DVR/手持便携类产品常用
 - 常见主控：V553 / V851 / V851S / V851S3 / V853 / V853S
-- 主控→平台/包键（写死口径）：V85x 家族（V553 / V851 / V851S / V851S3 / V853 / V853S）在 MCP 里**统一归一到 V85X 平台**（入参写 V851S/V853S 等也会 resolve 成 V85X）：包键走 `v85x`（SPINOR）/ `v85xemmc`（EMMC），**芯片名（如 v851s）不是平台键** —— 拿去查包会查空（v0.27.87 收拢）。
+- 主控→平台/包键（写死口径）：V85x 家族（V553 / V851 / V851S / V851S3 / V853 / V853S）在 MCP 里**统一归一到 V85X 平台**（入参写 V851S/V853S 等也会 resolve 成 V85X）：包键走 `v85x`（SPINOR）/ `v85xemmc`（EMMC），**芯片名（如 v851s）不是平台键**—— 拿去查包会查空（v0.27.87 收拢）。
 - 主控 V553：主控 SoC（全志 V85x 系列）；数据状态=partial。实测最多的一颗（触摸注入 touch（原 mt_test，2026-09-30 已移除）、UVC + aw-dvr 版本配套、i18n 推送 /tmp/tr、图层释放）；工程 Manifest 宏统一写 AWCHIP=AW_V853
   - 依据：仓库实测记录：knowledge/devflow/touch-inject-autotest.md、knowledge/v85x/aw-dvr-runtime-compat.md、knowledge/v85x/display-layer-debug.md
 - 主控 V851：主控 SoC（全志 V85x 系列）；数据状态=partial。真机实测（Zkswe_V85X_SPINOR，480×800 / 640×480）：图层释放判据按 ch/layer 跳 UI 层、硬件 H264 解码验收、触控轴待确认
@@ -58,7 +85,7 @@ evidence:
 - 主控 V853S：主控 SoC（全志 V85x 系列）；数据状态=pending。仅登记型号（package_catalog 的 v85x/v85xemmc chips）——**没有实测数据，所有规格待确认**（不按同系列外推）
   - 依据：package_catalog.json（v85x/v85xemmc chips）
 - 平台默认参数：tfcardFormat=FAT32 + 64KB 簇（OEM=zkswe）——录制类必查，电脑格的卡判不符；displayLayer=UI 层要留 visible:true 的 videoView 透明窗，视频层才透得出
-- 可选补充（非阻塞）：平台差异化说明（沛哥将补充：与 Z21/V853 等在屏幕方向、按键、TF 卡格式等方面的差异；有了就不用每次核查）
+- 可选补充（非阻塞）：平台差异化说明（将补充：与 Z21/V853 等在屏幕方向、按键、TF 卡格式等方面的差异；有了就不用每次核查）
 
 ### PocketDisplay4（V85X）
 
@@ -73,7 +100,7 @@ evidence:
 - 可选补充（非阻塞，按需补）：屏幕接口类型（RGB / MIPI）与触摸方式
 - 可选补充（非阻塞，按需补）：三个按键的物理位置与丝印
 - 可选补充（非阻塞，按需补）：V85X 平台差异化说明（屏幕方向 rotateScreen / TF 卡格式等）
-- 数据来源：沛哥 2026-09-12 口述
+- 数据来源：2026-09-12 口述
 - 数据状态：partial
 
 ## Z20
@@ -81,7 +108,7 @@ evidence:
 - 平台定位：A7 双核 1.2GHz + 内置 128MB DDR3——86 盒高配/语音面板/电子价签常用平台
 - 常见主控：SSD201 / SSD202 / SSD202D
 - 平台默认参数：uartDefaultBaud=115200；upgrade=U 盘 / TF 卡升级
-- 可选补充（非阻塞）：平台差异化说明（沛哥将补充；没有也不影响开工）
+- 可选补充（非阻塞）：平台差异化说明（将补充；没有也不影响开工）
 
 ### SW48480040D1（Z20）
 
@@ -100,7 +127,7 @@ evidence:
 - 资料：`knowledge/hardware/z20-86panel-upgrade.md`
 - 差异·同系列三平台差异：Z6 版 SW48480040B1（ARM9 600MHz，480×480，最低成本）/ Z20 版本型号（1.2GHz+128M DDR3，480×480 或 720×720，带在线语音）/ Z21 版 SW48480040E（1.0GHz，480×480）
 - 差异·固化/升级链路（真机实证 2026-09-23）：升级程序是**系统件**（/lib/libzkupgrade.so + libeasyui 的 UpgradeMonitor + libinternalapp 的 UpgradeActivity + /system/res/internal/zkupgrade.ftu），app 不用自己写升级逻辑。触发三条正路：① 卡/U 盘根目录放 update.img|extupdate.img + 重新上电（弹界面勾选）；② 同目录再放无后缀 zkautoupgrade（默认 2 s 后自动开升；配 zkrebootdelay，-1 = 升完不重启）；③ ADB：setprop sys.zkupgrade.dir <目录> + sys.zkupgrade.flag 255 + setprop ctl.restart zkswe。⚠️ 升级过程中会停 zkswe/wpa_supplicant 等 → 必然掉网；本机真机用 ③ 触发后板卡随即失联（见报告）→ 远程固化前必须先安排现场（能断电、能插卡）。升级库扫描目录：/mnt/usb、/mnt/usb1、/mnt/extsd、/mnt/mmc（另有 uboot 线 /mnt/storage/zkimg/update.img）；去重记录 /data/.zkugraderec。
-- 差异·包格式与机型绑定（官方 wiki 未收录 release.ext4）：包 = 572 字节头部 + payload；头部 0x00 起魔术 "ZKSWEV1.0-180127"，0x1C = payload 字节数，0x35 起 = **机型 magic**（Z20 = Zkswe_SSD20X_SPINOR = 0xaa550404；Z21 = 0xaa550606；V85X = 0xaa550a0a；F133 = 0xaa550707）→ 包不能跨机型刷（库内有 sys_upgrade_type_no_match_error）。payload = **/res 镜像**：默认 squashfs（hsqs 头，小）；工程根 package.properties 写 release.ext4=true 时变 **ext4 镜像**（体积 1 MiB 对齐，例 2~3 MiB；出包时自动安装 make-ext4fs），且**产物文件名变为 extupdate.img** —— 这就是「U 盘 extupdate.img / TF 卡 update.img」包名差异的真正来源。Z20 参考工程 PublicTuyaSwitch 开着 release.ext4 → 本平台按 ext4 出包。
+- 差异·包格式与机型绑定（官方 wiki 未收录 release.ext4）：包 = 572 字节头部 + payload；头部 0x00 起魔术 "ZKSWEV1.0-180127"，0x1C = payload 字节数，0x35 起 = **机型 magic**（Z20 = Zkswe_SSD20X_SPINOR = 0xaa550404；Z21 = 0xaa550606；V85X = 0xaa550a0a；F133 = 0xaa550707）→ 包不能跨机型刷（库内有 sys_upgrade_type_no_match_error）。payload = **/res 镜像**：默认 squashfs（hsqs 头，小）；工程根 package.properties 写 release.ext4=true 时变 **ext4 镜像**（体积 1 MiB 对齐，例 2~3 MiB；出包时自动安装 make-ext4fs），且**产物文件名变为 extupdate.img**—— 这就是「U 盘 extupdate.img / TF 卡 update.img」包名差异的真正来源。Z20 参考工程 PublicTuyaSwitch 开着 release.ext4 → 本平台按 ext4 出包。
 - 差异·数据面 ext4 分区与系统 res（危险链）：/dev/block/mmcblk0p2 → /mnt/sdnand（ext4，rw,dirsync,nosuid,nodev）由 **app 自己挂载**；挂载失败会 make_ext4fs **整盘重建**（无确认、无备份）→ 现场禁止手动 umount/mkfs/dd 写 p2，要取数据只用 adb pull /mnt/sdnand。mtd3 res（squashfs，本板仅 39 KB 空壳）与 mmcblk0p1 （/mnt/extsd ext4，app 资源/debug 落点）是两处不同的「res 形态」；LOGO/MISC = mtd5 = 128 KB。升级写哪个分区由设备端库内机型表决定：表形状分 3 种（纯 NOR 用 mtd 名 res/backup；纯 eMMC 全 mmcblk0*；NOR+SD NAND 混合型 = res → /dev/block/mmcblk0p1 + mmcblk0p2）。本型号是「16M Flash + 128M SD Nand」→ 属第三种，**推断写入面 = mmcblk0p1（+p2 第二目标）**；真机旁证：/mnt/extsd( = mmcblk0p1) 分区 52.5 MB 而文件系统只有 2.74 MB（df: 2804 个 1K 块）= 典型「小 ext4 镜像写进大分区」形态。⚠️ 仍未直接取证（本次触发后板卡失联）→ 复测后回填。
 - 可选补充（非阻塞，按需补）：固化写入目标分区的正式口径（强推断 = mmcblk0p1(+p2)，见 differences）：真机已触发但板卡失联，待复测钉死
 - 可选补充（非阻塞，按需补）：release.ext4=false（或不写）在本型号的真机后果（未做 true/false 对照）
@@ -150,16 +177,16 @@ evidence:
 
 - 形态：串口屏 / 工控整机（待确认）
 - 别名：SW80480070D-C / SW80480070D
-- 型号命名：字母 D = Z20 平台（沛哥 2026-09-12 确认：D=Z20、E=Z21）
+- 型号命名：字母 D = Z20 平台（2026-09-12 确认：D=Z20、E=Z21）
 - 摘要：7 寸 800x480 横屏；串口屏 / 工控整机（待确认）
 - 屏幕：尺寸(寸)=7，宽=800，高=480，分辨率=800x480，方向=landscape
-- 屏幕判定依据：按官方《产品规格型号说明》命名规则推导：SW+宽+高+尺寸+版本，SW80 480 070 D = 7 寸 800×480；型号字母 D = Z20 平台（沛哥确认）。同系列 SW80480070D-CK 规格书标 800×480 / 1024×600 可选
+- 屏幕判定依据：按官方《产品规格型号说明》命名规则推导：SW+宽+高+尺寸+版本，SW80 480 070 D = 7 寸 800×480；型号字母 D = Z20 平台（经需求方确认）。同系列 SW80480070D-CK 规格书标 800×480 / 1024×600 可选
 - **默认参数（开发直接照抄）**：uartDefaultBaud=115200；upgrade=U 盘 / TF 卡升级；resolution=800x480；orientation=landscape
 - 资料：`wiki/flythings/datasheet/board/SW80480070D-CK系列型.pdf`
 - 可选补充（非阻塞，按需补）：CPU/内存/接口配置（请提供规格书或确认）
 - 可选补充（非阻塞，按需补）：型号后缀 _C 的确切含义（电容触摸？版本？）
 - 可选补充（非阻塞，按需补）：与 SW80480070D-CK 系列是否同一产品
-- 数据来源：命名规则（官方《产品规格型号说明》）+ 平台字母 D=Z20（沛哥确认）+ hardwarespec/SW80480070D-CK系列型.pdf
+- 数据来源：命名规则（官方《产品规格型号说明》）+ 平台字母 D=Z20（经需求方确认）+ hardwarespec/SW80480070D-CK系列型.pdf
 - 数据状态：partial
 
 ## Z21
@@ -167,7 +194,7 @@ evidence:
 - 平台定位：A7 双核 1.0GHz + 内置 64MB DDR2——串口屏/广告机/86盒主力平台
 - 常见主控：SSD212 / SSD210 / T113-S3
 - 平台默认参数：uartDefaultBaud=115200；upgrade=TF 卡升级（FAT32）
-- 可选补充（非阻塞）：平台差异化说明（沛哥将补充；没有也不影响开工）
+- 可选补充（非阻塞）：平台差异化说明（将补充；没有也不影响开工）
 
 ### SV50PD（Z21）
 
@@ -310,7 +337,7 @@ evidence:
 
 - 形态：7 寸串口屏整机（高清 1024×600，电容触摸；与 SV50PD 同系列资料）
 - 别名：SW10600070E-C / SW10600070D_C / SW10600070D-C
-- 型号命名：字母 E = Z21 平台（沛哥 2026-09-12 确认：D=Z20、E=Z21）
+- 型号命名：字母 E = Z21 平台（2026-09-12 确认：D=Z20、E=Z21）
 - 摘要：7 寸 1024x600 横屏；7 寸串口屏整机（高清 1024×600，电容触摸；与 SV50PD 同系列资料）
 - 屏幕：尺寸(寸)=7，宽=1024，高=600，分辨率=1024x600，方向=landscape，触摸=GT911 电容触摸（P+G 材质）
 - 屏幕判定依据：规格书 V1.0 第 3 节：7 寸 1024*600 24bit 16.7M 色，亮度 250cd/m²，GT911 电容触摸 P+G
@@ -331,7 +358,7 @@ evidence:
 - 资料：`wiki/flythings/datasheet/board/SW10600070D_C(sv50pd).pdf`
 - 资料：`wiki/flythings/datasheet/board/SV50PD核心板规格书V3.0-20210813.pdf`
 - 可选补充（非阻塞，按需补）：同系列另一型号 SW10600070D_TC（7 寸高清电容屏带铁框）是否也入库
-- 数据来源：SW10600070E_C 规格书 V1.0（2021-03-20，文档内写作 D_C）+ 平台字母 E=Z21（沛哥确认）
+- 数据来源：SW10600070E_C 规格书 V1.0（2021-03-20，文档内写作 D_C）+ 平台字母 E=Z21（经需求方确认）
 - 数据状态：complete
 
 ### SW48480040E（Z21）

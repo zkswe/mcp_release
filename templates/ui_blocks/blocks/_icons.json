@@ -15,9 +15,9 @@
   },
   "_doc": "块库 `icon` 字段的**允许值清单**（从 components/icons/catalog.json 摘，v0.3.1）。`icon` 只写这里的短名（或全名，如 system.wifi）；库里没有的名字 → compose 回退 gen_res 线框并在输出里明说「回退线框」（目标 0 处）。",
   "_library": "components/icons（唯一图标源）；生成器 components/icons/scripts/gen_icons.py",
-  "_pitfall": "实测（2026-10-01）：`star` **描边态 @24px** 会被 tools/qa/aa_audit 判真缺陷（hard_diag=4 占斜线边界 67% ≥ 60%）→ 小盒上的 star 请用实心态（spec 里 `{\"icon\": \"star\", \"state\": \"on\"}`）或改 `heart`。其余 20+ 个常用名 @16/24/36px 均干净或只 WARN。",
+  "_pitfall": "实测（2026-10-01）：`star` **描边态 @24px**会被 tools/qa/aa_audit 判真缺陷（hard_diag=4 占斜线边界 67% ≥ 60%）→ 小盒上的 star 请用实心态（spec 里 `{\"icon\": \"star\", \"state\": \"on\"}`）或改 `heart`。其余 20+ 个常用名 @16/24/36px 均干净或只 WARN。",
   "_policy": {
-    "source": "块库图标唯一来源 = components/icons 资产库；**禁自绘、禁 emoji 字体兜底**（钟工 2026-10-01）",
+    "source": "块库图标唯一来源 = components/icons 资产库；**禁自绘、禁 emoji 字体兜底**（2026-10-01）",
     "size": "产物图严格 == 控件盒（工程铁律 #11/#17 —— 图 ≠ 盒时引擎是拉伸填充）",
     "tier": "按盒尺寸选档：盒 ≥44px → 56 档；≥26px → 24 档；否则 22 档；盒 == 档位（22/24/56）时直接取库里 out/<档>/ 那张（按 alpha 换色，与现出像素等价）；缺档（如 16 / 36）用 gen_icons.py 按**盒尺寸**现出——不放大控件盒去凑档",
     "state": "两态图标：off = 描边态（默认，行/宫格/空态用），on = 实心态（底导选中、grid 显式 state:'on'、checkbox 勾）。单态图标忽略 state",

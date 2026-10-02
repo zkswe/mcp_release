@@ -16,7 +16,7 @@ evidence: []
 # 🎨 UI 图标库（Tabler, MIT）— 权威规则
 
 > 检索导引：问「图标哪来 / 图标风格不统一 / 有没有语义名 / 图标库许可合规 / 小尺寸图标发糊 / 按控件盒尺寸出图」→ 本文；抗锯齿与透明底铁律见 `knowledge/devflow/ui-asset-rules.md`。
-> 2026-09-16 沛哥定规：**UI 图标不再"每个项目现画、现切"**。统一用随 MCP 发布的图标库
+> 2026-09-16 需求方定规：**UI 图标不再"每个项目现画、现切"**。统一用随 MCP 发布的图标库
 > `components/icons/`：矢量源存在 MCP 里，按控件盒尺寸一条命令烘成 PNG。
 > 起因：AI 生成的界面切图风格/比例反复不一致，每次都要人工回来确认 → 风格统一这件事必须由工具保证，不能靠"每次画一遍"。
 
@@ -33,12 +33,12 @@ evidence: []
 
 | 候选 | 许可 | 结论 |
 |---|---|---|
-| Apple **SF Symbols** | Apple 专属：**禁止再分发**，且限定 Apple 生态 UI | ❌ 不进 MCP/发布包（随包分发有法律风险）。只作观感参照 |
-| Google **Material Symbols** | Apache-2.0，可分发 | 🟡 可用，但笔画偏"谷歌"、拐角偏方，且没提供成对两态 |
-| **Tabler Icons** | **MIT**（可商用可再分发） | ✅ **选定**。24×24 网格 + 2px 圆头圆角线框 → 观感最接近 iOS；5900+ 图标；**每图带 `-filled` 成对变体 = 现成 on/off 两态**；天气/家居长尾齐全 |
+| Apple **SF Symbols**| Apple 专属：**禁止再分发**，且限定 Apple 生态 UI | ❌ 不进 MCP/发布包（随包分发有法律风险）。只作观感参照 |
+| Google **Material Symbols**| Apache-2.0，可分发 | 🟡 可用，但笔画偏"谷歌"、拐角偏方，且没提供成对两态 |
+| **Tabler Icons**| **MIT**（可商用可再分发） | ✅ **选定**。24×24 网格 + 2px 圆头圆角线框 → 观感最接近 iOS；5900+ 图标；**每图带 `-filled` 成对变体 = 现成 on/off 两态**；天气/家居长尾齐全 |
 
 - vendor 时**排除 376 个 `brand-*`**（Google/Apple/各家厂商 logo，商标风险，不进发布包）
-- 收录量：`icons/` **4754** outline + `icons-filled/` **1019** filled（解压 3.25 MB → 单归档
+- 收录量：`icons/` **4754**outline + `icons-filled/` **1019**filled（解压 3.25 MB → 单归档
   `vendor/tabler-3.46.0.pack.tgz` 455 KB，sha256 `a0ba69f2…1c95`）
 
 ---
@@ -69,7 +69,7 @@ python components/icons/scripts/gen_icons.py --vendor-set common --size 22 --out
 - 两态规则：**有 filled → `_on` 用 filled、`_off` 用 outline**；没有 filled 的语义只出 outline（例外清单见模块 README）
 - **矢量源在归档里，不在散件里**（v0.3.0 起）：vendor 的 5777 个 SVG 打包成
   `components/icons/vendor/tabler-3.46.0.pack.tgz`（455 KB），生成时**按需解出用到的几个**
-  到 `components/icons/out/.icons-cache/`。所以：
+到 `components/icons/out/.icons-cache/`。所以：
   - **不要再去 `grep`/浏览 `vendor/tabler/icons/*.svg`**（已不存在）；
   - 查名字用 `--list` / `--list-vendor <分类>` / `--list-tabler <子串>`，或读 `catalog.json`；
   - 查来源/缓存状态用 `--pack-info`；默认**完全离线**，不拉网。
@@ -96,8 +96,8 @@ alpha = BOX 面积平均出来的**真实覆盖率**（不做 α 对比度整形
 
 | 控件尺寸 | 用法 |
 |---|---|
-| **≥ 22px** | outline 即可（真实覆盖率抗锯齿，22px 不发虚、无硬阶梯） |
-| **≤ 20px** | 建议 filled（实心），密集图形（toggle/bell/bulb）更清楚 |
+| **≥ 22px**| outline 即可（真实覆盖率抗锯齿，22px 不发虚、无硬阶梯） |
+| **≤ 20px**| 建议 filled（实心），密集图形（toggle/bell/bulb）更清楚 |
 | ≤ 16px | 未纳入默认清单，需要时 `--size 16` 自行确认 |
 
 > ⚙️ **老口径已降为 opt-in**：v0.3.1 前默认的「α 对比度整形（<0.40/>0.60 推 0/255）」会把
@@ -139,4 +139,4 @@ alpha = BOX 面积平均出来的**真实覆盖率**（不做 α 对比度整形
 - 模块（随 MCP 发布）：`components/icons/`（`knowledge/README.md` 用法 / `components/icons/platforms.md` 平台与硬规则 / `components/icons/THIRD-PARTY.md` 合规 / `catalog.json` 清单）
 - 资产：`components/icons/vendor/tabler-3.46.0.pack.tgz`（Tabler 3.46.0，MIT，单归档按需解）
   + `components/icons/svg/`（自绘兜底）+ `vendor/tabler/{LICENSE,index.json,VERSION.txt}`（归档外）
-- 配套规范：`knowledge/devflow/ui-asset-rules.md`（图片路径与尺寸铁律）、`knowledge/devflow/design.md`（字库限制）
+- 配套规范：`knowledge/devflow/ui-asset-rules.md`（图片路径与尺寸铁律）、`knowledge/devflow/custom-font-config.md`（字库/字体限制）

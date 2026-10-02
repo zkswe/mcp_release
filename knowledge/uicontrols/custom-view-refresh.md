@@ -16,7 +16,7 @@ evidence: []
 # 自定义 view / 自绘帧的「刷新口径」（GameView 那一套）
 
 > 检索导引：问「自定义 view 每帧怎么刷新 / GameView 那套刷新口径 / setBackgroundBmp 不刷新 / 屏幕只刷一块 / setInvalid·invalidate 语义区别」→ 本文（这类刷新的唯一权威口径）。
-> 2026-09-22 钟工定规：「open mcp 优化指的是针对**自定义 view，类似 gameview 这个部分的刷新**的问题」
+> 2026-09-22 需求方定规：「open mcp 优化指的是针对**自定义 view，类似 gameview 这个部分的刷新**的问题」
 > → 本文是这类刷新的**唯一权威口径**，每条都有工程出处（可 grep 核对）。
 > 检索词：自定义控件刷新 / 自定义 view 刷新 / 自绘刷新 / 帧刷新 / 逐帧刷新 / 自绘帧 / 位图刷新 /
 > 视频帧控件 / GIF 控件 / 地图控件 / 游戏视图 / GameView / gameview / setInvalid / isInvalid /
@@ -33,15 +33,15 @@ ctrl->setInvalid(!ctrl->isInvalid());     // ✅ 平台惯例（gameview / GIF /
 
 **不要**用 `invalidate(&getAbsolutePosition())` 传绝对矩形去"脏化自己"：那个矩形是**控件本地坐标系**语义，
 传页面绝对坐标会被裁成"右下角一块"，导致屏上只有那块在动（2026-09-22 真机实测，见 §2）。
-**非必要也不要碰 `getAbsolutePosition()`**（钟工 2026-09-22 12:28）。
+**非必要也不要碰 `getAbsolutePosition()`**（2026-09-22 12:28）。
 
 ## 1. 四种"看着像重绘"的写法，语义完全不同
 
 | 写法 | 真实语义 | 该不该用 |
 |---|---|---|
 | `setInvalid(true)` | **把控件置为无效/禁用**（`ZK_CONTROL_STATUS_INVALID`）→ **会吃掉触摸**（可交互控件变点不动） | ❌ 除"真禁用"外不要用 |
-| **`setInvalid(!isInvalid())`** | 状态**交替变更** → 框架**按控件为单位重画一次** | ✅ 自定义 view 每帧刷新的惯例 |
-| `invalidate()` / `invalidate(&rect)` | 正式"重绘"API；**带脏区版本在旧设备可能未导出**（undefined symbol → 整屏黑）；`rect` 是**控件本地坐标系** | ⚠️ 慎用；传矩形极易只刷一块（§2） |
+| **`setInvalid(!isInvalid())`**| 状态**交替变更**→ 框架**按控件为单位重画一次**| ✅ 自定义 view 每帧刷新的惯例 |
+| `invalidate()` / `invalidate(&rect)` | 正式"重绘"API；**带脏区版本在旧设备可能未导出**（undefined symbol → 整屏黑）；`rect` 是**控件本地坐标系**| ⚠️ 慎用；传矩形极易只刷一块（§2） |
 | `setText` / `setBackgroundPic` / `setProgress` … | 内容变更，引擎本就会重画该控件 | ✅ 普通控件改内容**不需要**手动刷 |
 
 > 注意区分：`setInvalid(true)` 是"禁用"，`setInvalid(!isInvalid())` 是"刷新"——**别因为前者危险就把后者也禁掉**
@@ -53,17 +53,17 @@ ctrl->setInvalid(!ctrl->isInvalid());     // ✅ 平台惯例（gameview / GIF /
 现象：圆盘上只有**右下角一块**按 12fps 刷新，其余区域 ~1fps（用户原话「3~6 点方向每秒 12fps，剩下的 1fps」）。
 
 判据（**无参考、可复用**）：源图**半径 100 处放四个纯色方块**（并且先不裁圆），暂停后**静态**走 20° 再截图 ——
-理论位移 = `2 × r × sin(10°) = 34.7 px`；某色块**位移 0** = 那块**压根没被重画**。
+理论位移 = `2 × r × sin(10°) = 34.7 px`；某色块**位移 0**= 那块**压根没被重画**。
 
 | 刷新的矩形口径 | 色块位移（20°） | 判定 |
 |---|---|---|
-| `getAbsolutePosition()` = (100,166,320×320)（原口径） | **0 px** | ❌ 只剩本地 (100,166)-(320,320) 那块被刷 |
+| `getAbsolutePosition()` = (100,166,320×320)（原口径） | **0 px**| ❌ 只剩本地 (100,166)-(320,320) 那块被刷 |
 | `NULL` | 0 px | ❌ 等价"用控件自己的矩形" |
 | 面板系坐标（按 rotateScreen=270 换算） | 0 px | ❌ |
 | 控件矩形 + 父容器偏移 (184,316) | 0 px | ❌ |
 | 整页 (0,0,screenW,screenH) | 33~35 px | ✅ |
 | 本地矩形 (0,0,w,h) | 33~35 px | ✅ |
-| **`setInvalid(!isInvalid())` 翻转（gameview 口径）** | **35 px** | ✅ **推荐** |
+| **`setInvalid(!isInvalid())` 翻转（gameview 口径）**| **35 px**| ✅ **推荐**|
 
 **结论**：`invalidate(rect)` 的 rect 按**控件本地坐标**理解并裁到控件内 —— 传绝对矩形 = 只脏化"从 (100,166) 到右下角"那块。
 **要整块重画就别传坐标**：用 `setInvalid(!isInvalid())`（或传本地 `(0,0,w,h)`）。
@@ -96,7 +96,7 @@ ctrl->setInvalid(!ctrl->isInvalid());              // ✅ 整块重画
 - **省 CPU 的顺序**：① **降帧率**（最有效、线性，例如 12fps→8fps 观感差别不大）② 缩小真正要改的区域
   （自绘时用 `Region` 脏区 + `onDraw`，见 `knowledge/devflow/custom-widget.md` §6）③ 别每帧 `memset` 整块/整页。
 - **别每帧 `setBackgroundBmp(new bmp)`**：那会每帧新建位图（分配抖动、框架反复释放）。
-  正确形态是"只交一次 + 原地改像素 + `setInvalid` 翻转"。
+正确形态是"只交一次 + 原地改像素 + `setInvalid` 翻转"。
 
 ## 5. 反例（AI 常写错）
 

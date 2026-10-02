@@ -47,7 +47,7 @@ README 装到「3) 验证」（问 AI「MCP 版本是多少」返回 `flythings-
 | ③ | 迁移其他框架项目 | 源界面控件逐个过 `flythings_map_control`（命中 L1/L2 直接拿 json 片段），视觉换算与铁律先立规矩，再按四阶段路线推进 | `knowledge/devflow/platform-translate.md` |
 | ④ | 改已有工程 | 先 `flythings_validate_project(project_root)` 读工程 + 规范全检；改布局同样要出**确认稿**（`.confirm.html`）给需求方确认，别拿推真机当确认手段 | `knowledge/devflow/ui-layout-verify.md` §0 |
 
-四条路径共同的铁律：**平台 + 分辨率没确认，不许开始建工程 / 写逻辑**（钟工 2026-09-21 口径）。
+四条路径共同的铁律：**平台 + 分辨率没确认，不许开始建工程 / 写逻辑**（2026-09-21 口径）。
 
 ## 最小闭环示例（路径①，从零想法到真机验收）
 
@@ -69,15 +69,15 @@ README 装到「3) 验证」（问 AI「MCP 版本是多少」返回 `flythings-
 
 | # | 坑 | 怎么一眼发现自己在坑里 | 去哪看 |
 |---|----|------------------------|--------|
-| 1 | **手改 ftu / 拿 ftu 当源** | 你在用编辑器打开 `.ftu`，或改了 ftu 期望界面变 | json 是唯一真相源，ftu 是 pack 产物；`knowledge/devflow/ftu-json-pipeline.md` |
-| 2 | **改了 json 忘 pack** | 界面上看不到刚改的东西，先别怀疑代码——看 json/ftu 时间戳 | `flythings_build_ui_flow` 自带时间戳防呆；同上篇 |
-| 3 | **界面中文变方块/缺字** | 真机上英文正常、中文空白或豆腐块 | `flythings_build_ui_flow` 默认做字体体检 + 缺中文自动投递；`knowledge/devflow/custom-font-config.md` |
-| 4 | **设备上跑的还是旧版** | 推完了界面没变，`build_ui_flow` 返回体 `staleOnDevice=true` / `deviceSync` 不一致 | `knowledge/devflow/deploy-consistency-check.md`（新库旧界面对账） |
-| 5 | **以为模板工程没有 json 可改** | 想改 HelloWord 模板布局却找不到 json | 2026-10-02 起 7 个平台模板自带 `ui/main.json`（由模板 ftu 反解析入库），直接改 json 再 pack；`knowledge/devflow/ftu-json-pipeline.md` §1 |
+| 1 | **手改 ftu / 拿 ftu 当源**| 你在用编辑器打开 `.ftu`，或改了 ftu 期望界面变 | json 是唯一真相源，ftu 是 pack 产物；`knowledge/devflow/ftu-json-pipeline.md` |
+| 2 | **改了 json 忘 pack**| 界面上看不到刚改的东西，先别怀疑代码——看 json/ftu 时间戳 | `flythings_build_ui_flow` 自带时间戳防呆；同上篇 |
+| 3 | **界面中文变方块/缺字**| 真机上英文正常、中文空白或豆腐块 | `flythings_build_ui_flow` 默认做字体体检 + 缺中文自动投递；`knowledge/devflow/custom-font-config.md` |
+| 4 | **设备上跑的还是旧版**| 推完了界面没变，`build_ui_flow` 返回体 `staleOnDevice=true` / `deviceSync` 不一致 | `knowledge/devflow/deploy-consistency-check.md`（新库旧界面对账） |
+| 5 | **以为模板工程没有 json 可改**| 想改 HelloWord 模板布局却找不到 json | 2026-10-02 起 7 个平台模板自带 `ui/main.json`（由模板 ftu 反解析入库），直接改 json 再 pack；`knowledge/devflow/ftu-json-pipeline.md` §1 |
 
 ## 怎么一眼发现走错了路
 
-- AI 听完一句话需求**直接** `flythings_create_project` / 写业务代码，没出线框图 → 违反路径①硬规则，回到 prototype-flow。
+- AI 听完一句话需求**直接**`flythings_create_project` / 写业务代码，没出线框图 → 违反路径①硬规则，回到 prototype-flow。
 - 给了设计稿，AI 没确认平台和分辨率就动手 → 违反路径②硬规则，先停下来对齐。
 - 迁移时 AI 凭记忆背「某框架某控件对应某控件」→ 让它过 `flythings_map_control` 拿映射表，不背散文。
 - 改已有工程时 AI 反复「编译 → 推真机 → 你看下」→ 让它出 `.confirm.html` 确认稿，按标注指位沟通。

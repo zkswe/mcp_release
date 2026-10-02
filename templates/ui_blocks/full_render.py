@@ -4,15 +4,13 @@
 
 为什么需要它：`ui_tools/json2img.py` 出的是**真机同尺寸**渲染图（320×240 / 1024×600），
 滑动区外的内容被 scrollwindow 裁掉——看渲染图会觉得「下半页整块没了」。
-本脚本按**只动几何、不动口径**的方式展平一版 y 方向长图（供人工验收；**不参与 check_all**）：
-
-    整页高 = 标题带 + 内容总高 + 底部固定带
-    底部固定带 = 屏高 − min(top of 贴底固定的顶层节点)（底导 + 底栏；没有底导时就是底栏）
-    内容子节点上提（坐标 = 内层 window 局部 + scrollwindow.top）
+本脚本按**只动几何、不动口径**的方式展平一版 y 方向长图（供人工验收；**不参与 check_all**）：整页高 = 标题带 + 内容总高 + 底部固定带
+底部固定带 = 屏高 − min(top of 贴底固定的顶层节点)（底导 + 底栏；没有底导时就是底栏）
+内容子节点上提（坐标 = 内层 window 局部 + scrollwindow.top）
 
 ⚠️ **固定带让位（缺陷 A 修，2026-10-01）**：固定带（底导 / 底栏）**随内容一起下移到长图底部**
 （y = 整页高 − 固定带高）——旧口径「保持原屏 y 不变」会把底栏压在长图中段、盖住内容
-（钟工看图：「内容区伸进底部固定条，把最后一行盖住」：ButtonRowDeviceCard9 508..568 被
+（看图：「内容区伸进底部固定条，把最后一行盖住」：ButtonRowDeviceCard9 508..568 被
 FooterBg12 528..600 盖掉 40px）。让位后二者零相交；位移量 = 滑动行程（内容高 − 视口高）。
 让位前后都逐对判 rect 相交（固定带 × 实际渲染出的内容节点），相交 → 报错退出、不出图。
 
@@ -61,8 +59,8 @@ def _walk(node, ox, oy, band_keys=None, is_band=False, out=None):
 def assert_bands_clear(doc, meta):
     """自检（缺陷 A）：整合页后，固定带不得与内容节点相交（逐对判 rect，含最后一行/卡片底）。
 
-    相交 → 返回冲突清单（调用方报错退出、**不出图**）。
-    整屏浮层（弹窗 / 提示遮罩）不算内容：它们压在固定带上合法（它们本就该盖住一切）。
+相交 → 返回冲突清单（调用方报错退出、**不出图**）。
+整屏浮层（弹窗 / 提示遮罩）不算内容：它们压在固定带上合法（它们本就该盖住一切）。
     """
     W, H_orig = meta['screen_w'], meta['screen_h']
     full_h, band_keys = meta['full_h'], meta.get('band_keys') or []
@@ -174,10 +172,10 @@ def main():
             print('      - %s' % line)
         return 4
     if meta['band_h']:
-        print('  固定带让位：y %d → %d（%+d px = 滑动行程）｜ 带高 %d ｜ 整页 %d'
+        print('固定带让位：y %d → %d（%+d px = 滑动行程）｜ 带高 %d ｜ 整页 %d'
               % (meta['band_top'], meta['new_band_top'], meta['dy'], meta['band_h'], full_h))
     else:
-        print('  无滑动窗口：固定带保持原屏 y（本页内容不需要展平）')
+        print('无滑动窗口：固定带保持原屏 y（本页内容不需要展平）')
     # 展平 json 必须与 main.json 同目录：json2img 用相对路径解析 images/*.png，
     # 放到临时目录会让所有底图（卡片/图标/底栏）“缺失”，长图看上去一片灰。
     tmp_json = a.json_out is None
@@ -210,10 +208,10 @@ def main():
         return 3
     from PIL import Image
     im = Image.open(out)
-    print('  整页渲染 %s %dx%d（原屏 %dx%d；内容被 scrollwindow 裁掉的都分已展平）'
+    print('整页渲染 %s %dx%d（原屏 %dx%d；内容被 scrollwindow 裁掉的都分已展平）'
           % (os.path.basename(out), im.size[0], im.size[1],
              doc['resolution']['width'], doc['resolution']['height']))
-    print('  展平 json 临时落盘 → %s（已删）' % dst if tmp_json else '  展平 json → %s' % dst)
+    print('展平 json 临时落盘 → %s（已删）' % dst if tmp_json else '展平 json → %s' % dst)
     return 0
 
 

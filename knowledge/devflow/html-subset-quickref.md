@@ -61,7 +61,7 @@ evidence: []
 - **圆角外底色**（A6，2026-09-27 修）：有图控件（`data-pic`/`data-bgpic`/CSS 效果图/图标）的 **四角透出的是 `bgColorTab`**。旧版「有图一律 pop 底色」→ 四角露窗口黑底（坐卡片上就是「图标角落发黑」）。现口径：**`data-bg` 优先 > 最近祖先容器底色 > 引擎缺省（并在 warnings 里告警）**。⚠️ `bgColorTab` 只管**最外 1px**；圆角里侧 4~5px 那圈是图里的像素，补色救不回来 → 坐卡片的底板要么 1:1 普通 PNG + 圆角外烘容器色，要么整张图在出图侧就烘好底色。
 - ⚠️ **`data-touchable` 不解析**（2026-09-17 实测 + 代码核对）：转换器**根本没读**这个属性 —— `button` 恒 `touchable:true`、`textview` 恒 `false`、`window` 也不解析。想**真禁用**某个控件、或让容器按你要的语义「吸收 / 穿透」点击，只能落到 **json**：`patch_json` / `ui_edit_apply` 改 `touchable`，或运行期 `setTouchable()` / `setTouchPass()`（语义与坑见 `knowledge/uicontrols/touch-events.md`）。
 - **自备图**：`data-pic`（引用自己切好的 PNG / .9.png / 序列帧 GIF）
-- **静默提醒**（A1/A8，2026-09-27 修）：转换器**不再静默丢改动** —— 返回体 `warnings[]` 会给出「丢字符（emoji/黑名单字）」「有图控件无圆角外底色」「文本最小宽超出容器」等条目；`controls` / `controlsTopLevel` / `controlsNested` 三个计数**含嵌套控件**（A7 修）。
+- **静默提醒**（A1/A8，2026-09-27 修）：转换器**不再静默丢改动**—— 返回体 `warnings[]` 会给出「丢字符（emoji/黑名单字）」「有图控件无圆角外底色」「文本最小宽超出容器」等条目；`controls` / `controlsTopLevel` / `controlsNested` 三个计数**含嵌套控件**（A7 修）。
 
 ## 4.1 三张对照表（属性直通 / 丢弃 / 默认值）
 
@@ -80,7 +80,7 @@ evidence: []
 | `data-caption` | `caption` | 全部 | 非 C 标识符字符转 `_` |
 | `data-pic` / `data-pic0..pic4` | `picTab` | button/radiobutton/checkbox | 多态图 |
 | `data-bgpic` / `data-background-pic` | `backgroundPic` | textview/button/window | 有图后走「圆角外底色」口径 |
-| `data-visible` | `visible` | 全部（含 subItem/window） | **A5 新增** |
+| `data-visible` | `visible` | 全部（含 subItem/window） | **A5 新增**|
 | `data-text-bg` | `textBgColor` | slidetext | 纯黑现已正确（A2） |
 | `data-hint-color` / `data-hint` | `hintTextColor` / `hintText` | edittext | 同上 |
 | `data-password` / `data-password-char` / `data-num` | `isPassword` / `passwordChar` / `textType` | edittext | |
@@ -97,7 +97,7 @@ evidence: []
 | HTML 属性 / 内容 | 行为 | 替代写法 |
 |---|---|---|
 | `data-touchable` | **不解析**（转换器没读）→ 恒按类型默认 | 改 json 或运行期 `setTouchable/setTouchPass` |
-| emoji / 黑名单特殊字符（`⌫ ℃ ■ ● ‹ ＋ – … → ★ ◆ ▶ ▷ ①` 等） | **整字丢弃** → 现在 `warn` 记账（A1 修） | 改图片素材或换字符（铁律 1） |
+| emoji / 黑名单特殊字符（`⌫ ℃ ■ ● ‹ ＋ – … → ★ ◆ ▶ ▷ ①` 等） | **整字丢弃**→ 现在 `warn` 记账（A1 修） | 改图片素材或换字符（铁律 1） |
 | 字库缺字形的其它字符 | 字库层整字消失（转换器不拦） | 同上 |
 | 未知 `class` / 未知标签 | 兑底成 textview（`warn`） | 用 §2 映射表里的 class |
 | `style` 里除 left/top/width/height/font-size/background 外的声明 | 不解析 | 用 CSS 效果转图（渐变/阴影/圆角） |
@@ -111,17 +111,16 @@ evidence: []
 | `colorTab.color0` | `0xEEF2F6`（文字）/ edittext `0` | 浅色字 |
 | `bgColorTab.color0` | button：无 `data-bg` 且无文字时**不写**；有则 `0x374457`；window `-1`；subItem `-1` | 透明热区不铺底 |
 | `alignment` | textview 36（左）/ button・subItem 37（中） | |
-| `touchable` | button/subItem/可拖 seekbar/radiogroup/qrcode/videoview `true`；textview/window/seekbar `false`；**edittext `true`（A4 修，2026-09-27）** | 交互控件必须 true |
+| `touchable` | button/subItem/可拖 seekbar/radiogroup/qrcode/videoview `true`；textview/window/seekbar `false`；**edittext `true`（A4 修，2026-09-27）**| 交互控件必须 true |
 | `visible` | 全部 `true`；`modal` 窗口 `false` | A5 起可被 `data-visible` 覆盖 |
 | `backgroundColor` | `-1`（video/cameraview 为 0） | 0 = 不透明黑，别当透明用 |
 | `controls` 计数 | 含嵌套（A7 修）；另给 `controlsTopLevel` / `controlsNested` | |
   - ✅ **`div.text` 上的 `data-bgpic` 已原生支持**（**v0.27.90-open 起**）：转换器把 `data-bgpic`
-    正常落成该节点的 `backgroundPic`（与 button / window / seekbar / circlebar 等分支同口径：
-    裸文件名补 `images/` 前缀，相对 resources 目录；有图就**不再写背景色**，与 button 的
+正常落成该节点的 `backgroundPic`（与 button / window / seekbar / circlebar 等分支同口径：裸文件名补 `images/` 前缀，相对 resources 目录；有图就**不再写背景色**，与 button 的
     「图片按钮不放底色」同规则，避免透明角图透出底色）。
   - 注：`data-bg` / `data-background` 是**背景色**，不是图；要图不能用它们替代。
 
-## 5. 图标优先（沛哥 2026-09-03 定规，生成 UI 时必守）
+## 5. 图标优先（2026-09-03 定规，生成 UI 时必守）
 
 常用操作（返回 / 播放 / 暂停 / 上一首 / 下一首 / 设置 / 搜索 / 删除 / 刷新 / 确认 / 关闭 / 加减 / 音量 / 主页 / 菜单等）**必须用图标表达，禁止用「按钮 + 文字」糊弄**。写法（① 图标按钮：自动出 normal + pressed 两态 picTab；② 纯展示图标：自动出 backgroundPic）：
 
@@ -183,7 +182,7 @@ style 里出现 `linear-gradient` / `box-shadow` / `border-radius` / `animation`
 `radial-gradient` / `text-shadow` / `transform` / `filter` / `opacity` / `transition` 不会自动烘焙，
 warning 会要求切图后用 `data-pic` 引用。
 
-## 8. JS 交互稿（2026-08-29 沛哥建议）
+## 8. JS 交互稿（2026-08-29 需求方建议）
 
 第一套 HTML 效果稿建议直接写 JS 交互——点击弹窗 / 页面切换 / tab 切换 / 列表滚动 / 数据模拟 /
 动效触发等，让客户在浏览器里直接「点得动」，前期效果确认和修改效率翻倍。

@@ -1,24 +1,23 @@
 # -*- coding: utf-8 -*-
 """adb 单一入口（PC 端 adb 解析 + 设备探测 + 型号→平台匹配）——v0.27.84 起。
 
-为什么要单独一个文件（钟工 2026-09-17：「adb 工具随包入库，客户不必另装 SDK」）：
-  v0.27.83 之前，仓库里 **6 处各写一份** adb 定位逻辑（project_tools / ui_tools/
+为什么要单独一个文件（2026-09-17：「adb 工具随包入库，客户不必另装 SDK」）：
+  v0.27.83 之前，仓库里 **6 处各写一份**adb 定位逻辑（project_tools / ui_tools/
   device_screenshot / i18n_tools / components/fonts/scripts/device_font_check /
   components/ui_v1/WheelPicker/example/tools/deploy ——该自绘包 2026-09-19 已移除，
-  历史事实保留），且都写死 `'adb'` 字面量或
-  只认本机装 SDK 的路径 → 客户机没装 Android SDK 就「找不到 adb」，报错各写各的。
-  现在**只有这里**知道 adb 在哪，其余模块一律 `resolve_adb()`。
+历史事实保留），且都写死 `'adb'` 字面量或
+只认本机装 SDK 的路径 → 客户机没装 Android SDK 就「找不到 adb」，报错各写各的。
+现在**只有这里**知道 adb 在哪，其余模块一律 `resolve_adb()`。
 
 解析优先级（resolve_adb）：
   ① 环境变量 `ADB` / `FLYTHINGS_ADB`（兼容旧名 `ADB_PATH`）—— 显式指定永远优先
-  ② **随包** `tools/adb/adb.exe`（Windows）/ `tools/adb/adb`（非 Windows）
+  ② **随包**`tools/adb/adb.exe`（Windows）/ `tools/adb/adb`（非 Windows）
      —— 随 MCP 分发，客户开箱可用（含 AdbWinApi.dll / AdbWinUsbApi.dll）
   ③ PATH 里的 `adb`
 找不到回 `''`（调用方决定怎么提示；本模块给现成文案 `adb_missing_hint()`）。
 
 ⚠️ 不要把本机绝对路径写进本文件/任何文档（隐私闸门 scripts/smoke.py 会拦）。
-⚠️ 设备型号表只放**型号字符串**（`ro.product.model`），不放内网 IP：
-   数据在 `device_models.json`，来源=本仓实测记录；不确定的留空并标 `todo`。
+⚠️ 设备型号表只放**型号字符串**（`ro.product.model`），不放内网 IP：数据在 `device_models.json`，来源=本仓实测记录；不确定的留空并标 `todo`。
 
 CLI（排查用，零副作用）：
     python adb_tools.py              # 打印解析结果 + 设备列表
@@ -129,7 +128,7 @@ def shell_rc(adb, serial, cmd, timeout=DEFAULT_TIMEOUT):
     """`adb [-s serial] shell <cmd>`，返回 (rc, stdout, stderr)。
 
     `sh()` 只回文本（rc 非 0 时也回文本，调用方判不出失败）；
-    测试跑批这类**必须判 rc** 的场景用本函数。
+测试跑批这类**必须判 rc**的场景用本函数。
     """
     a = adb or resolve_adb()
     if not a:
@@ -166,19 +165,19 @@ def restart_app(adb, serial, name='zkgui', service='zkswe', extra_path='/tmp/bus
                 wait=6.0, poll_interval=0.5, allow_kill=False):
     """重启应用进程 —— **setprop 控制（框架口径），默认不 kill**。
 
-    框架事实（2026-09-28 钟工定：应用由类 init 服务托管，不允许 kill）：
+框架事实（2026-09-28 需求方定：应用由类 init 服务托管，不允许 kill）：
       · 应用进程不是普通进程，`kill` 它（哪怕 -TERM）都不是框架认可的重启方式；
-        正确姿势 = 让 init 回收再拉起 → `setprop ctl.restart zkswe`
+正确姿势 = 让 init 回收再拉起 → `setprop ctl.restart zkswe`
         （`/etc/init.rc`：`service zkswe /bin/zkgui`）。
       · 厂商 CLI `fun launch` 内部同样走 `ctl.restart`（二进制里可见 `ctl.restart`+`zkswe`
         +`setprop`，无 kill）；手动部署（推 `/tmp` + `EasyUI.cfg`）之后也用同一句让它生效。
       · 历史教训：脚本里反复 `kill -9 zkgui` / `busybox killall zkgui` 之后，现场出现过
         「触摸注入命令成功、应用不响应」「整板掉网」等现象（当时因果未确证，现按框架口径统一
-        不用 kill）→ 这也是本函数默认 `allow_kill=False` 的原因。
+不用 kill）→ 这也是本函数默认 `allow_kill=False` 的原因。
       · 仅当个别板子 `setprop` 静默失败、且调用方显式传 `allow_kill=True` 时，才回退
         `kill -TERM`（仍然不用 -9）。
 
-    返回可取证 dict：{found, oldPid, newPid, method, restarted, detail}
+返回可取证 dict：{found, oldPid, newPid, method, restarted, detail}
     method ∈ {'setprop', 'kill -TERM', 'none'}；restarted=True 表示 pid 确实换了。
     """
     res = {'found': False, 'oldPid': '', 'newPid': '', 'method': 'none',
@@ -236,7 +235,7 @@ def restart_app(adb, serial, name='zkgui', service='zkswe', extra_path='/tmp/bus
 def connect(target, adb='', timeout=DEFAULT_TIMEOUT):
     """`adb connect <host:port>`（网络接入）。返回 (ok, 输出文本)。
 
-    窄带设备走 WiFi 时不插 USB：先 connect 才进 devices 列表。
+窄带设备走 WiFi 时不插 USB：先 connect 才进 devices 列表。
     ⚠️ 不在这里 `adb reboot` / kill-server —— 现场板子多，动作只做必要的。
     """
     a = adb or resolve_adb()
@@ -252,8 +251,8 @@ def connect(target, adb='', timeout=DEFAULT_TIMEOUT):
 def parse_devices_l(text):
     """解析 `adb devices -l` 输出 → [{serial,state,model,product,device}]。
 
-    行形如：`192.168.x.x:5555  device product:swaio model:Zkswe_V85X_SPINOR device:swaio`
-    （网络设备常常**没有** -l 附加字段，此时 model/product 为空 → 需另问 getprop）
+行形如：`192.168.x.x:5555  device product:swaio model:Zkswe_V85X_SPINOR device:swaio`
+    （网络设备常常**没有**-l 附加字段，此时 model/product 为空 → 需另问 getprop）
     """
     out = []
     for line in (text or '').splitlines():
@@ -299,10 +298,10 @@ def getprop_model(adb, serial, timeout=DEFAULT_TIMEOUT):
 def probe_devices(adb='', timeout=DEFAULT_TIMEOUT, with_model=True):
     """设备探测（build_ui_flow / 部署类工具的**统一入口**）。
 
-    返回：
+返回：
       {'ok':bool, 'adb':路径, 'adbSource':env|bundled|path|none, 'adbVersion':...,
        'count':int, 'online':[dev...], 'offline':[...], 'error':''}
-    每个在线 dev 额外带：'platform'（型号表命中的平台规范名，未命中回 '')、
+每个在线 dev 额外带：'platform'（型号表命中的平台规范名，未命中回 '')、
       'modelSource'（devices-l / getprop / ''）、'modelConfidence'（confirmed/todo/unknown）
     """
     a = adb or resolve_adb()
@@ -374,7 +373,7 @@ def lookup_model(model):
     """型号字符串 → {'platform', 'confidence', 'note'}。
 
     confidence：confirmed（本仓实测记录）/ todo（登记但待确认）/ unknown（没登记）
-    匹配忽略大小写与首尾空白（不做模糊猜测——猜错会把工程推到别的机器上）。
+匹配忽略大小写与首尾空白（不做模糊猜测——猜错会把工程推到别的机器上）。
     """
     key = (model or '').strip()
     none = {'platform': '', 'confidence': 'unknown', 'note': '型号表未登记', 'source': ''}
@@ -400,8 +399,8 @@ def lookup_model(model):
 def match_platform(model, platform):
     """设备型号 vs 工程平台：返回 'match' / 'mismatch' / 'unknown'。
 
-    unknown（型号没登记 / 设备没回报）**不等于** mismatch：fun 自己会在 launch 时
-    做平台校验并 FATAL，所以这里不拦，只如实说明。
+    unknown（型号没登记 / 设备没回报）**不等于**mismatch：fun 自己会在 launch 时
+做平台校验并 FATAL，所以这里不拦，只如实说明。
     """
     hit = lookup_model(model)
     if not hit['platform']:
@@ -440,7 +439,7 @@ _BUSYBOX_PUSHED = set()
 def bundled_busybox(platform=''):
     """随仓的设备端 busybox（bin_tools/<平台小写键>/busybox）；没有回 ''。
 
-    设备 rootfs 是裁剪版（无 wc/md5sum/ls -l 不齐）→ 拿它当“取 md5”的兜底。
+设备 rootfs 是裁剪版（无 wc/md5sum/ls -l 不齐）→ 拿它当“取 md5”的兜底。
     """
     try:
         import platforms as pl
@@ -466,7 +465,7 @@ def bundled_busybox(platform=''):
 def ensure_busybox(adb, serial, platform='', timeout=DEFAULT_TIMEOUT):
     """把随仓 busybox 推到设备 `/tmp/busybox`（已推过/本来就有则直接复用）。
 
-    返回远端路径（'' = 不可用）。失败不抛（调用方降级为比字节数），但会带回来。
+返回远端路径（'' = 不可用）。失败不抛（调用方降级为比字节数），但会带回来。
     """
     a = adb or resolve_adb()
     if not a or not serial:
@@ -498,9 +497,9 @@ def remote_file_info(adb, serial, path, platform='', timeout=DEFAULT_TIMEOUT):
       ① `wc -c < file` 返回**空**（裁剪 rootfs 没 wc）→ 尺寸只能靠 `ls -l`；
       ② `md5sum` / `busybox md5sum` 都没有（busybox 不在 PATH）→ 用**随仓**
          `bin_tools/<平台>/busybox`（先试设备上已有的 `/tmp/busybox`）拿 md5；
-      ③ `ls -l` 的**第 1 个数字是硬链接数（1）不是字节数** → 必须按列取第 5 列，
-         旧写法取第一个数字会把每个文件都报成 1 字节（假 stale）。
-    拿不到就如实回 error（不静默）。
+      ③ `ls -l` 的**第 1 个数字是硬链接数（1）不是字节数**→ 必须按列取第 5 列，
+旧写法取第一个数字会把每个文件都报成 1 字节（假 stale）。
+拿不到就如实回 error（不静默）。
     """
     a = adb or resolve_adb()
     out = {'size': None, 'md5': '', 'error': '', 'busybox': ''}
@@ -555,7 +554,7 @@ def compare_with_device(adb, serial, local_path, remote_path, platform='',
     """本地文件 vs 设备侧文件：{'localBytes','deviceBytes','localMd5','deviceMd5','same','reason'}。
 
     `same=True` 判定口径：能拿到两边 md5 就比 md5；拿不到 md5 时退化成比字节数；
-    两边都拿不到 → same=False 且 reason 说明「无法判定」（不假装一致）。
+两边都拿不到 → same=False 且 reason 说明「无法判定」（不假装一致）。
     """
     r = {'localPath': local_path, 'devicePath': remote_path,
          'localBytes': local_size(local_path), 'deviceBytes': None,
@@ -579,7 +578,7 @@ def compare_with_device(adb, serial, local_path, remote_path, platform='',
 
 # ------------------------------------------------------------------ 提示文案
 def install_hint(platform='', devices=None, error=''):
-    """`needDeviceInput=true` 时给用户的**照做清单**（钟工 2026-09-17：运行后要提示是否需要安装）。"""
+    """`needDeviceInput=true` 时给用户的**照做清单**（2026-09-17：运行后要提示是否需要安装）。"""
     lines = ['未检测到可用的 FlyThings 设备（adb devices 里没有 state=device 的机器）。',
              '请按顺序自查（① 最容易漏 —— 很多机器根本没装 adb 驱动）：']
     lines.append('① **ADB 驱动**：Windows 上 USB 接入需要 adb 驱动（本包已带 adb 程序本身：'
@@ -603,17 +602,16 @@ def install_hint(platform='', devices=None, error=''):
 
 
 def multi_device_hint(devices, platform=''):
-    """多台在线设备：不猜，列清楚 + 要求显式 device=。（钟工 2026-09-17 口径）
+    """多台在线设备：不猜，列清楚 + 要求显式 device=。（2026-09-17 口径）
 
-    ⚠️ 实测（2026-09-17 首测 / 09-17 复测 / **2026-09-28 三测**，platform-tools 37.0.1 与 31.0.3 一样）：
-    多设备在线时 `fun launch` **不管有没有 `-s` 都直接 FATAL `more than one device/emulator`**
+    ⚠️ 实测（2026-09-17 首测 / 09-17 复测 / **2026-09-28 三测**，platform-tools 37.0.1 与 31.0.3 一样）：多设备在线时 `fun launch` **不管有没有 `-s` 都直接 FATAL `more than one device/emulator`**
     （fun 自带 Go adb 客户端发旧式 `host:transport <serial>`（空格分隔），adb 只认
     `host:transport:<serial>`（冒号）：裸 socket 实测空格形式回 FAIL、冒号形式 OKAY）——
     **09-28 版 fun（`v0.0.2+2609281006_e09dc96`）仍未修**。
-    两条路：① 垫片 `scripts/adb_transport_shim.py`（5037 上把空格改写成冒号再转发给另起端口的真 adb；
-    实测 5 台在线时 `fun launch -s <ip>` 精确推到指定设备，设备侧 md5 与本地一致、其它设备未动）；
+两条路：① 垫片 `scripts/adb_transport_shim.py`（5037 上把空格改写成冒号再转发给另起端口的真 adb；
+实测 5 台在线时 `fun launch -s <ip>` 精确推到指定设备，设备侧 md5 与本地一致、其它设备未动）；
     ② 先让其它机器从 adb 列表里消失（`adb disconnect`）。
-    这条修正了 `cli-fun-toolchain.md §6` 里「多设备时 fun 静默取列表第一个」的旧结论。
+这条修正了 `cli-fun-toolchain.md §6` 里「多设备时 fun 静默取列表第一个」的旧结论。
     """
     lines = ['检测到 %d 台在线设备，**不自动选择**（多设备下 fun launch 会 FATAL，见下）：'
              % len(devices)]

@@ -1,22 +1,22 @@
 # -*- coding: utf-8 -*-
 """alpha_bg_audit.py — 「该透明的图片做成了黑底 / 烘了底色」审计（2026-09-20 M5）
 
-钟工原话：「控件里面图片背景是黑色的，应该做成透明的，**这个设计不符合 flyThings OS 平台的能力**」。
+需求方原话：「控件里面图片背景是黑色的，应该做成透明的，**这个设计不符合 flyThings OS 平台的能力**」。
 
 平台口径（标准侧 ≠ Lite 侧，两套口径不能混）
 --------------------------------------------
-* **标准侧（Linux SoC：F133/Z20/Z21/T113/V85x）支持 PNG alpha** → 形状类资产必须是
+* **标准侧（Linux SoC：F133/Z20/Z21/T113/V85x）支持 PNG alpha**→ 形状类资产必须是
   **真透明底**（形状外 α=0）；**禁止**把页面底色/黑底烘进图里充当透明。
 * **Lite 侧（MCU，RGB565 + colorkey，无 α 混合）**才用「形状外填页面背景色 / 键色」的烘焙法
   （出处：`references/kb/lite-input-pipeline.md` §「平台画图硬约束：只支持 RGB565 + colorkey」）。
-  把 Lite 的做法带到标准侧 = 本审计要拦的缺陷。
+把 Lite 的做法带到标准侧 = 本审计要拦的缺陷。
 
 判据（`asset_audit_rules.json` 分类 + `defaults` 阈值，逐条追溯到标准 §7.1/§7.4）
 --------------------------------------------------------------------------
 | 指标 | 适用类 | 口径 | 级别 |
 |---|---|---|---|
-| `no_alpha` | rect/round/inscribed/icon | `min(α) >= min_alpha_max`(=250) → **整图没有透明像素** = 底色被烘进图（或根本没存 α 通道） | DEFECT |
-| `corner_opaque` | round/inscribed/icon | 四角角块（`corner_block`²）不透明率 ≥ `corner_opaque_max`(=0.5) → **形状外（角区）有不透明像素** | DEFECT |
+| `no_alpha` | rect/round/inscribed/icon | `min(α) >= min_alpha_max`(=250) → **整图没有透明像素**= 底色被烘进图（或根本没存 α 通道） | DEFECT |
+| `corner_opaque` | round/inscribed/icon | 四角角块（`corner_block`²）不透明率 ≥ `corner_opaque_max`(=0.5) → **形状外（角区）有不透明像素**| DEFECT |
 | `edge_bleed` | icon | 最外 1px 环不透明率 ≥ `edge_bleed_fail`(=0.25)，或任一条边 ≥ `edge_bleed_edge`(=0.9) → 图标贴死图边（标准 §2.3：图标四周须留 ≥1px 透明） | DEFECT |
 | `low_zero` | rect/round/inscribed/icon | 透明像素占比 < `zero_ratio_min`(=0.2%) → 疑似满幅烘底（需人确认/登记） | WARN |
 | — | fullbleed | 满幅/底图族（照片、壁纸、遮罩、1px 通栏线、软阴影）→ 按登记理由 `EXEMPT` | — |
@@ -27,7 +27,7 @@
     python tools/qa/alpha_bg_audit.py <目录|单图> [--recursive] [--rules ...]
             [--json out.json] [--evidence-dir dir] [--zoom 4] [--fail]
             [--exclude "sheet_*"] [--list-classes]
-  退出码：0 = 无缺陷；`--fail` 时「有真缺陷」→ 1（门禁用这个）。
+退出码：0 = 无缺陷；`--fail` 时「有真缺陷」→ 1（门禁用这个）。
 """
 import argparse
 import fnmatch
@@ -252,7 +252,7 @@ def main():
     note = [r for r in rows if r['verdict'] == 'NOTE']
     clean = [r for r in rows if r['verdict'] == 'CLEAN']
     err = [r for r in rows if r['verdict'] == 'ERROR']
-    print('== alpha_bg_audit（透明底 / 烘底色）  口径 %s ==' % rules_path)
+    print('== alpha_bg_audit（透明底 / 烘底色）口径 %s ==' % rules_path)
     print('扫 %d 张：真缺陷 %d / WARN %d / EXEMPT %d / NOTE %d / 干净 %d / 错误 %d'
           % (len(rows), len(defect), len(warn), len(exempt), len(note), len(clean), len(err)))
     if defect:
@@ -263,7 +263,7 @@ def main():
                   % (r['min_alpha'], r['zero_ratio'] * 100 if r['zero_ratio'] < 1 else r['zero_ratio'],
                      r['corners'], r['ring']))
             if r.get('evidence'):
-                print('     证据图 %s' % r['evidence'])
+                print('证据图 %s' % r['evidence'])
     if warn:
         print('--- [WARN] 需人工确认（不阻塞）---')
         for r in warn:

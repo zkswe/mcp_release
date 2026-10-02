@@ -30,7 +30,7 @@ evidence: []
 |------|------------------------|------|------|
 | **V85X / V85XEMMC**（AW_V853） | `/sys/devices/platform/soc/usbc0/` | `otg_role`(查) `usb_device`(切ADB) `usb_host`(切U盘) `usb_null`(断开) | CV201_PND / xdv23 / xdv200300 `usb_monitor.cpp` 实测 |
 | **T113**（车载 PND） | `/sys/devices/platform/soc@3000000/soc@3000000:usbc0@0/` | 同上 4 节点 | ⚠️ 带 reg 地址 `usbc0@0`，≠ V85X 的 `usbc0/`；T113CarSystem_PND `usb_monitor.cpp` 实测 |
-| **Z21 / Z210** | `/sys/devices/soc0/soc/soc:usbotg/` | `usb_host`(切U盘) `usb_device`(切ADB) | wiki z210_core_board 官方文档；未见 otg_role/usb_null/configfs 描述 |
+| **Z21 / Z210**| `/sys/devices/soc0/soc/soc:usbotg/` | `usb_host`(切U盘) `usb_device`(切ADB) | wiki z210_core_board 官方文档；未见 otg_role/usb_null/configfs 描述 |
 
 ## shell 一行切换
 
@@ -86,8 +86,7 @@ ADB 档还要 `/dev/usb-ffs/adb` 不存在时 mkdirs + `mount(..."functionfs", u
 
 ## U盘档暴露源（V85X/T113）
 
-`lun.0/file` 只接受**块设备/镜像文件**（不是挂载路径）。二选一由**介质探针** `/dev/block/mmcblk0boot0` 决定：
-存在 = 内置 EMMC → `mmcblk0p1`（设备内挂 `/mnt/storage`）；不存在 = TF 卡 → `mmcblk1`（挂 `/mnt/extsd`）。
+`lun.0/file` 只接受**块设备/镜像文件**（不是挂载路径）。二选一由**介质探针**`/dev/block/mmcblk0boot0` 决定：存在 = 内置 EMMC → `mmcblk0p1`（设备内挂 `/mnt/storage`）；不存在 = TF 卡 → `mmcblk1`（挂 `/mnt/extsd`）。
 ⚠️ 探针必须与启动挂载分支用**同一个**，两处不一致 = 「设备端写 A 介质、电脑读 B 介质」。
 
 ## USB HOST 外设接入（客户场景：U盘/摄像头/键鼠读不到）
@@ -109,7 +108,7 @@ V85X host 接入 UVC 摄像头（发现/取流/录像/拍照）→ 见 `knowledg
 
 ### 3. USB 键鼠（HID）→ 未收录
 
-知识库暂无 USB HID 键鼠接入文档（是否支持/如何读取未实测）。客户问到时标「未收录」，问沛哥或查官方文档，不猜。
+知识库暂无 USB HID 键鼠接入文档（是否支持/如何读取未实测）。客户问到时标「未收录」，问需求方或查官方文档，不猜。
 
 ## 坑
 
@@ -122,6 +121,6 @@ V85X host 接入 UVC 摄像头（发现/取流/录像/拍照）→ 见 `knowledg
 ## 来源
 
 - V85X：CV201_PND / xdv23 / xdv200300 `src/system/usb_monitor.cpp` + `src/media/media_context.cpp`（实测）
-- T113：`temp_car/public/t113/T113CarSystem_PND/jni/system/usb_monitor.cpp` + `jni/media/media_context.cpp`（实测，2026-09-07 沛哥提醒核对）
+- T113：`temp_car/public/t113/T113CarSystem_PND/jni/system/usb_monitor.cpp` + `jni/media/media_context.cpp`（实测，2026-09-07 需求方提醒核对）
 - Z21/Z210：官方 wiki `wiki/flythings/hardware/z210_core_board.md`「USB功能/切换USB模式」
 - U盘挂载/监听：官方 wiki `wiki/flythings/system/tf_usb.md`（TF→/mnt/extsd，U盘→/mnt/usb1|2|3，MountNotification/MountMonitor）

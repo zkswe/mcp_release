@@ -7,28 +7,26 @@
   "toolCount": 45,
   "cli": {
     "fun": "FlyThings 工程工具（create/install/build/launch，<项目>/.fsc/<平台>/ 下；09-28 前为 .fun/）",
-    "fui": "FTU 布局工具：pack（json → ftu）/ unpack（ftu → json）双向下；随包 fui 自 v0.27.91 起含 unpack（旧版只有 pack）",
-    "fyx": "旧版打包/发布 CLI 名（历史遗留，等价于 fun 的早期名）",
-    "fuse": "本机 workspace 的引擎 CLI（projects/fuse.exe，非本仓库内置）"
+    "fui": "FTU 布局工具：pack（json → ftu）/ unpack（ftu → json）双向下；随包 fui 自 v0.27.91 起含 unpack（旧版只有 pack）"
   },
   "platforms": [
     {
       "platform": "F133",
-      "arch": "riscv32",
+      "arch": "riscv64",
       "template": "HelloWord_F133",
       "binTool": "f133",
       "packageKey": "f133",
       "buildable": true,
-      "note": "RISC-V，工具链与其他平台不可混用，严禁混入 glibc"
+      "note": "RISC-V64（C906 核，isa rv64imafdcvu）；工具链 riscv64-unknown-linux-musl-g++（musl），与其他平台不可混用，严禁混入 glibc"
     },
     {
       "platform": "F135",
-      "arch": "arm",
+      "arch": "riscv64",
       "template": "HelloWord_F135",
       "binTool": "f135",
       "packageKey": "f136",
       "buildable": true,
-      "note": "ARM"
+      "note": "RISC-V64（C906 核）—— 与 F133 同核，不是 ARM；工具链与 F133 同族不可混用（F136 归一为本平台）"
     },
     {
       "platform": "T113",
@@ -131,8 +129,7 @@
       "op": "flythings_attach_cli_tools",
       "brief": "复制 fui.exe（→项目 ui/）与 fun.exe（→项目根目录）到项目，随项目交付。",
       "args": [
-        "project_root",
-        "with_fyx"
+        "project_root"
       ],
       "risk": "write",
       "category": "project",
@@ -159,7 +156,7 @@
     },
     {
       "op": "flythings_build_ui_flow",
-      "brief": "⚠️ 场景别名（编译/部署类意图一律本工具，禁自造命令）：口语「编译/构建/调试/部署/推送到",
+      "brief": "⚠️ 场景别名（编译/部署类意图一律本工具，禁自造命令）：口语「编译/构建/调试/部署/推送到设备/跑一下」；固化升级（update.img）→ flythings_pack_up",
       "args": [
         "project_root",
         "with_launch",
@@ -536,7 +533,7 @@
     },
     {
       "op": "flythings_pack_upgrade",
-      "brief": "固化升级包（update.img）——交付/发布/量产走本条：「打包升级包/出升级包/固化/刷进设备/",
+      "brief": "固化升级包（update.img）——交付/发布/量产走本条；与「调试推送到设备」不同（那是 build_ui_flow，掉电即失）。",
       "args": [
         "project_root",
         "out_path",
@@ -583,7 +580,7 @@
     },
     {
       "op": "flythings_resolve_dependencies",
-      "brief": "递归解析 package 依赖树并检测冲突。packages 为 JSON 数组字符串，",
+      "brief": "递归解析 package 依赖树并检测冲突。packages 为 JSON 数组字符串，如 '[{\"id\":\"mqtt-cxx\",\"version\":\"3.2.0\"}]'。返回依赖",
       "args": [
         "packages",
         "platform"
@@ -719,9 +716,9 @@
     }
   ],
   "docs": {
-    "knowledgeFiles": 104,
-    "wikiFiles": 0,
-    "ragChunks": 1338,
-    "ragPaths": 102
+    "knowledgeFiles": 106,
+    "wikiFiles": 16,
+    "ragChunks": 1584,
+    "ragPaths": 120
   }
 }

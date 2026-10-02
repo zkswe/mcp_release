@@ -11,7 +11,7 @@
          ``stroke-linejoin``；**根元素属性会被子元素继承**（Tabler 就是把
          ``stroke="currentColor" stroke-width="2"`` 写在 <svg> 上的）
   · 自动跳过不可见元素：``fill="none" stroke="none"``（Tabler 每个文件第一个 path
-    是 ``M0 0h24v24H0z`` 的透明包围盒，就是这个要被跳过）
+是 ``M0 0h24v24H0z`` 的透明包围盒，就是这个要被跳过）
   · 本模块扩展：``data-cut="1"`` → 该元素作为**挖空**（负空间），只减掉它**之前**画的内容
 
 **两种填充规则（都实现了）**：
@@ -19,12 +19,11 @@
     "同一 d 内多个子路径、反向绕序挖孔"的实心图标（Tabler filled 全是这个画法）能正确出孔；
   · ``fill-rule="evenodd"``：子路径异或（自绘图标的月牙/环用）。
 
-渲染管线（与 ``temp/gen_wx_icons2.py`` 同思路，但输入是矢量而非位图遮罩）：
-  设计网格用户单位 → 放大 ss 倍画布做**几何级**光栅化 → BOX 面积平均降采样（=精确覆盖率）
-  → 去孤立噪点 →（**可选** ``snap=True``：α 对比度整形）→ 按 ``--color`` 烘焙纯色
+渲染管线（与 ``temp/gen_wx_icons2.py`` 同思路，但输入是矢量而非位图遮罩）：设计网格用户单位 → 放大 ss 倍画布做**几何级**光栅化 → BOX 面积平均降采样（=精确覆盖率）
+  → 去孤立噪点 →（**可选**``snap=True``：α 对比度整形）→ 按 ``--color`` 烘焙纯色
   （RGB 恒等于该颜色，只有 alpha 变化）。
 
-**2026-09-17 口径修正（钟工拍板）**：默认**不再做 α 对比度整形**，用 BOX 面积平均出来的
+**2026-09-17 口径修正（拍板）**：默认**不再做 α 对比度整形**，用 BOX 面积平均出来的
 **真实覆盖率**当 alpha，只清「极小覆盖率 + 孤立」的噪点。原因：0.40/0.60 硬推虽然让
 「中间值像素占比」这个指标好看，代价是**小尺寸图标的边缘灰度被量化成个位数级**——实测
 48px 的 bell 只剩 9 级（中间 7 级），肉眼看就是硬阶梯锯齿；同一张图不做整形是 44 级
@@ -45,7 +44,7 @@ _QUAD_STEPS = 16
 _ARC_STEPS_PER_RAD = 16.0
 
 SNAP_LO, SNAP_HI = 0.40, 0.60     # α 对比度整形的过渡带（**仅 --snap 显式开启时**生效）
-NOISE_COVER = 0.08                # 默认路径：只清「覆盖率 < 该值 **且** 8 邻域无内容」的孤立点
+NOISE_COVER = 0.08                # 默认路径：只清「覆盖率 < 该值 **且**8 邻域无内容」的孤立点
 
 
 def _n_steps(pts, base):
@@ -62,8 +61,8 @@ def _cubic(p0, p1, p2, p3, n=None):
     for i in range(1, n + 1):
         t = i / n
         mt = 1 - t
-        x = (mt ** 3) * p0[0] + 3 * (mt ** 2) * t * p1[0] + 3 * mt * (t ** 2) * p2[0] + (t ** 3) * p3[0]
-        y = (mt ** 3) * p0[1] + 3 * (mt ** 2) * t * p1[1] + 3 * mt * (t ** 2) * p2[1] + (t ** 3) * p3[1]
+        x = (mt **3) * p0[0] + 3 * (mt **2) * t * p1[0] + 3 * mt * (t **2) * p2[0] + (t **3) * p3[0]
+        y = (mt **3) * p0[1] + 3 * (mt **2) * t * p1[1] + 3 * mt * (t **2) * p2[1] + (t **3) * p3[1]
         out.append((x, y))
     return out
 
@@ -74,8 +73,8 @@ def _quad(p0, p1, p2, n=None):
     for i in range(1, n + 1):
         t = i / n
         mt = 1 - t
-        x = (mt ** 2) * p0[0] + 2 * mt * t * p1[0] + (t ** 2) * p2[0]
-        y = (mt ** 2) * p0[1] + 2 * mt * t * p1[1] + (t ** 2) * p2[1]
+        x = (mt **2) * p0[0] + 2 * mt * t * p1[0] + (t **2) * p2[0]
+        y = (mt **2) * p0[1] + 2 * mt * t * p1[1] + (t **2) * p2[1]
         out.append((x, y))
     return out
 
@@ -92,7 +91,7 @@ def _arc(p0, rx, ry, phi_deg, large, sweep, p1):
     dx2, dy2 = (x1 - x2) / 2.0, (y1 - y2) / 2.0
     x1p = cosp * dx2 + sinp * dy2
     y1p = -sinp * dx2 + cosp * dy2
-    lam = (x1p / rx) ** 2 + (y1p / ry) ** 2
+    lam = (x1p / rx) **2 + (y1p / ry) **2
     if lam > 1:
         s = math.sqrt(lam)
         rx *= s
@@ -425,11 +424,11 @@ def _clean_noise(a, floor=NOISE_COVER):
 def _snap_alpha(a, lo=None, hi=None):
     """（**仅 --snap / snap=True**）把"覆盖率"整形成"接近二值、但保留亚像素位置"的 alpha。
 
-    历史口径（v0.3.0 及更早的默认值，2026-09-17 改为 opt-in）：把 [lo,hi] 之外的覆盖率推到
+历史口径（v0.3.0 及更早的默认值，2026-09-17 改为 opt-in）：把 [lo,hi] 之外的覆盖率推到
     0/255，[lo,hi] 内线性映射（0.5 → 0.5，边沿位置不失真），过渡带 ≈0.2 像素。
-    代价（实测）：小尺寸图标的边缘灰度被量化到个位数级（48px bell 9 级 / user 5 级），
-    肉眼可见硬阶梯 → 只在对"接近二值"有硬要求的场合（如二值化到设备单色屏）才开。
-    最后沿用老口径去雀斑（任何孤立半透明像素）。
+代价（实测）：小尺寸图标的边缘灰度被量化到个位数级（48px bell 9 级 / user 5 级），
+肉眼可见硬阶梯 → 只在对"接近二值"有硬要求的场合（如二值化到设备单色屏）才开。
+最后沿用老口径去雀斑（任何孤立半透明像素）。
     """
     c = np.asarray(a).astype(np.float32) / 255.0
     lo = SNAP_LO if lo is None else lo
@@ -455,7 +454,7 @@ def render_svg(svg_text, size, color=(255, 255, 255), ss=8, canvas=None, grid=No
               True = 老口径 α 对比度整形（0.40/0.60 硬推，边缘灰度会被量化）
     noise_floor: 默认路径的孤立噪点清理上限（覆盖率，0.08 = 只清极弱离群点）
     stroke_px: 直接指定基准线宽像素（不传则按基准单位换算 + 半像素对齐）
-    线宽规则：基准 = 根节点 data-base-stroke，缺省取根节点 stroke-width，再缺省 1.75；
+线宽规则：基准 = 根节点 data-base-stroke，缺省取根节点 stroke-width，再缺省 1.75；
               px = max(1, round(基准 × size / 网格 × 2) / 2)
     """
     root = ET.fromstring(svg_text)

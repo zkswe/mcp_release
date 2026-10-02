@@ -33,15 +33,15 @@ evidence: []
 
 | 维度 | 覆盖 |
 |------|------|
-| **平台** | F133 / F135 / T113 / V85X / Z20 / Z21 / Z235X（可建工程 + 编译 + 部署 + 设备端工具）；另 4 个**仅依赖包生态**平台（Z6S / Z261 / H500S / A33NOR，只能查包，不能建工程） |
-| **UI 全链路** | 原型 HTML → json（`html_to_json`）→ ftu（`fui_pack`）→ 工程（`create_project`）→ 编译部署（`build_ui_flow`）→ 真机截图（`device_screenshot`）→ 像素验收（`ui_visual` diff/baseline）→ 固化升级包（`pack_upgrade`） |
-| **控件知识** | `knowledge/uicontrols/` 34 篇：主流控件字段/回调/API + 层级与触摸规则 + 系统窗口（statusbar/navibar/screensaver/IME）+ 全局弹框 |
-| **流程/工程** | `knowledge/devflow/` 31 篇：依赖包与 Manifest、i18n、多设备部署、页面架构（单 Activity 多整屏 window）、原型先行流程、测试链路 |
-| **硬件事实** | `knowledge/hardware/`：型号库（主控 / 屏 / 联网 / 分区 / 升级通道 / 触点）+ 板级坑（继电器接线、背光、`EasyUI.cfg` 劫持、MIPS 分区上限…） |
-| **组件（随仓发布）** | `components/`：ble / fonts / icons / blur / imagecache / vinyl / mp_transfer / ui_v1（含 `_mapping`）——四件套规范，可直接拷进工程 |
-| **依赖包用法** | `packages/<包>/package.yaml`（机器可读卡 + 实测状态）+ README/platforms/example/evidence |
-| **设备端预编译工具** | `bin_tools/<平台>/`：`touch`（触摸注入，自动判协议）/ `busybox` / `ui_test`（兼容老屏）/ `zkshot` —— `mt_test` 已于 2026-09-30 移除（能力由 `touch` 自动判协议覆盖） |
-| **自动化测试** | `gen_ui_test`（从 json 生成用例）+ `test_run`（多设备并行 + 日志断言 + 像素基线 + JUnit 报告）+ `selfcheck`（整机快照 diff）+ `bugreport`（缺陷单） |
+| **平台**| F133 / F135 / T113 / V85X / Z20 / Z21 / Z235X（可建工程 + 编译 + 部署 + 设备端工具）；另 4 个**仅依赖包生态**平台（Z6S / Z261 / H500S / A33NOR，只能查包，不能建工程） |
+| **UI 全链路**| 原型 HTML → json（`html_to_json`）→ ftu（`fui_pack`）→ 工程（`create_project`）→ 编译部署（`build_ui_flow`）→ 真机截图（`device_screenshot`）→ 像素验收（`ui_visual` diff/baseline）→ 固化升级包（`pack_upgrade`） |
+| **控件知识**| `knowledge/uicontrols/` 34 篇：主流控件字段/回调/API + 层级与触摸规则 + 系统窗口（statusbar/navibar/screensaver/IME）+ 全局弹框 |
+| **流程/工程**| `knowledge/devflow/` 31 篇：依赖包与 Manifest、i18n、多设备部署、页面架构（单 Activity 多整屏 window）、原型先行流程、测试链路 |
+| **硬件事实**| `knowledge/hardware/`：型号库（主控 / 屏 / 联网 / 分区 / 升级通道 / 触点）+ 板级坑（继电器接线、背光、`EasyUI.cfg` 劫持、MIPS 分区上限…） |
+| **组件（随仓发布）**| `components/`：ble / fonts / icons / blur / imagecache / vinyl / mp_transfer / ui_v1（含 `_mapping`）——四件套规范，可直接拷进工程 |
+| **依赖包用法**| `packages/<包>/package.yaml`（机器可读卡 + 实测状态）+ README/platforms/example/evidence |
+| **设备端预编译工具**| `bin_tools/<平台>/`：`touch`（触摸注入，自动判协议）/ `busybox` / `ui_test`（兼容老屏）/ `zkshot` —— `mt_test` 已于 2026-09-30 移除（能力由 `touch` 自动判协议覆盖） |
+| **自动化测试**| `gen_ui_test`（从 json 生成用例）+ `test_run`（多设备并行 + 日志断言 + 像素基线 + JUnit 报告）+ `selfcheck`（整机快照 diff）+ `bugreport`（缺陷单） |
 
 ---
 
@@ -49,10 +49,10 @@ evidence: []
 
 | 主题 | 为什么不在 | 该怎么做 |
 |------|-----------|---------|
-| **自研帧动画（ZKBIN/QOI/region）** | 依赖内部工具链，open 用户拿不到工具 | 普通动效走 `imageanim` 控件；需要时问厂家 |
+| **自研帧动画（ZKBIN/QOI/region）**| 依赖内部工具链，open 用户拿不到工具 | 普通动效走 `imageanim` 控件；需要时问厂家 |
 | **V85X 深水区**（aw-dvr 版本兼容细则、VO/disp 层调优步骤、UVC JPEG 全链路） | 内部版专属 | 通用结论（UVC 接入、OTG 切换）open 版有；深的问厂家 |
 | **方案类知识**（车载互联 / 涂鸦 / SIP 对讲 / ESL 价签业务） | 涉及客户方案 | 按对应平台通用能力做，业务细节查厂家资料 |
-| **easyui 库源码/头文件语义** | 预编译闭源库；且本仓**明令禁止**解析源码推字段/回调（拿不到语义） | 走知识库 + 官方文档站 `developer.flythings.cn`；**不要**从其它 GUI 框架类推 |
+| **easyui 库源码/头文件语义**| 预编译闭源库；且本仓**明令禁止**解析源码推字段/回调（拿不到语义） | 走知识库 + 官方文档站 `developer.flythings.cn`；**不要**从其它 GUI 框架类推 |
 | **网络类非公开接口**（WiFi 嗅探 / monitor mode / 隐藏摄像头探测） | 未收录 | 未收录就标未收录，不要猜 API |
 
 ---
@@ -60,7 +60,7 @@ evidence: []
 ## 3. 知识库没收录 / 查不到怎么办 —— 规定动作
 
 1. 看 `flythings_knowledge_search` 的 `quality`：`low_confidence` / `no_hit` → **不许**拿沾边片段当依据。
-2. 只允许两个补充来源：**官方文档站** `developer.flythings.cn`、**问沛哥/厂家**。
+2. 只允许两个补充来源：**官方文档站**`developer.flythings.cn`、**问需求方/厂家**。
 3. **禁止**通用 web 搜索、Qt/Android/Flutter/emWin/AWTK/LVGL 等其它框架类推（口径见 `knowledge/uicontrols/retrieval-boundary.md`）。
 4. 真的反复踩同一个空白 → 记为「未收录项」，反馈入库（这是知识库长大的方式）。
 
@@ -70,7 +70,7 @@ evidence: []
 
 | 限制 | 现状 / 说明 |
 |------|------------|
-| 性能/内存/崩溃分析 | **无** profiler / heap / coredump 类能力；真机变慢变炸只能靠 `logcat` + `selfcheck` + 人 |
+| 性能/内存/崩溃分析 | **无**profiler / heap / coredump 类能力；真机变慢变炸只能靠 `logcat` + `selfcheck` + 人 |
 | 多设备**同时**跑 | `test_run` 支持并行注入（≤4 台建议）；但**产线级批量**（几十台）需外层编排 |
 | 业务断言 | 目前只有**日志断言 + 像素基线**；没有声明式「期望值 DSL」 |
 | 像素基线 | 有版本化基线 + 容差档案；**无**跨设备横向基线库比对报告（多机一致性需人工看 summary） |

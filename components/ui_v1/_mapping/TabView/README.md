@@ -1,15 +1,15 @@
 # components/ui_v1/_mapping/TabView —— 页签页容器 `zk::ui_v1::TabView`
 
 > ⚠️ **这不是自定义控件包**：此类**有平台对应控件（`pagewindow` / ZKPageWindow）**，按 ui_v1 口径
-> （2026-09-16 钟工：有对应控件的一律走「映射能力」）**只作映射参考** —— 提供「映射索引里的 json 片段 +
+> （2026-09-16：有对应控件的一律走「映射能力」）**只作映射参考**—— 提供「映射索引里的 json 片段 +
 > 手感参数 + 高亮同步」这套已验证接线，**不算平台缺能力**，因此从 `ui_v1/<源控件名>/` 移到 `ui_v1/_mapping/`。
 > 机读映射见 `mcp_control_map.json`（`lvgl.lv_tabview` / `android.ViewPager|TabLayout` /
 > `miniprogram.swiper+tab` / `qt.QTabWidget` 都指向 pagewindow），查法：
 > MCP op `flythings_map_control(query="lv_tabview")`。
 >
 > **替代哪个源控件**：LVGL `lv_tabview` ｜ Android `TabLayout + ViewPager` ｜ 微信小程序 `swiper + tab` ｜ Qt `QTabWidget`
-> **建立**：2026-09-16（钟工纠正口径：不做映射表，做成**能用的自定义控件包**，一个源控件一个目录）
-> **迁移**：2026-09-16（v0.27.73-open，钟工再修正：**有对应控件 → 映射项，不进 ui_v1 自定义控件包**）
+> **建立**：2026-09-16（经需求方纠正口径：不做映射表，做成**能用的自定义控件包**，一个源控件一个目录）
+> **迁移**：2026-09-16（v0.27.73-open，需求方再修正：**有对应控件 → 映射项，不进 ui_v1 自定义控件包**）
 > **版本**：0.1.0 ｜ **状态**：映射参考（含 Z21 真机证据）｜ **级别**：L1+L2（映射表 `control-map.md` §1.2/§1.3）
 > **缺口**：`gap-list.md` G-01（历史写法用「多个整屏 window 显隐」——**丢手势**，本包是修正版）
 
@@ -95,20 +95,20 @@ static void onUI_quit() { s_tab.detach(); }   // 摘监听，避免回调打到�
 ## 4. 依赖与线程模型
 
 - **依赖包（Z21/实测）**：`easyui`（`ZKPageWindow` / `ZKButton` / `ZKTextView`）+ 工程常规 `log / zkhardware / zknet / base-utility`。
-  见 `Manifest.xml`。
+见 `Manifest.xml`。
 - **线程模型**：**全部在 UI 线程**。`onPageChange` 由平台在 UI 线程回调；组件内无定时器、无锁、无阻塞调用。
-  业务回调里**不要**做长耗时操作（会卡翻页动画）。
+业务回调里**不要**做长耗时操作（会卡翻页动画）。
 - **内存**：组件自身只保存 5 个指针 + 少量状态，**无动态分配**（唯一 `new` 是 1 个监听桥对象，`attach` 时创建一次）。
 
 ## 5. 限制（写清楚，别让人猜）
 
 1. **手感参数改不了运行时**：`dragMaxDis / edgeEffect / rollSpeed / orientation` 是 `ZKPageWindow` 的**创建期属性**，
-   平台只从 json 读。要改 → 改原型 HTML 的 `data-*` → `html2json` → `fui pack` → 重新部署。
+平台只从 json 读。要改 → 改原型 HTML 的 `data-*` → `html2json` → `fui pack` → 重新部署。
 2. **下划线标记必须与页签按钮同父**：组件用「页签按钮的 `getPosition()`（相对父）± 高度」反算标记矩形，
-   两个控件不在同一父容器时坐标基准不同 → 标记会错位。这条是平台 `getPosition()` 只给父相对坐标导致的。
+两个控件不在同一父容器时坐标基准不同 → 标记会错位。这条是平台 `getPosition()` 只给父相对坐标导致的。
 3. **不接管触摸**：组件不拦截任何事件（不做手势判定），所以**页内控件的点击/拖动照常工作**；
-   代价是滑块这类「水平拖动」控件在 pagewindow 内会被父容器抢走 MOVE（平台固有手势冲突，见 `gap-list.md`，
-   本包不处理，需要时业务自行接管 `onmainActivityTouchEvent`）。
+代价是滑块这类「水平拖动」控件在 pagewindow 内会被父容器抢走 MOVE（平台固有手势冲突，见 `gap-list.md`，
+本包不处理，需要时业务自行接管 `onmainActivityTouchEvent`）。
 4. **页签个数 != 页数**时组件会返回 code=-3 并照常同步（不崩、不错位，但页签少的那些页没有高亮）。
 
 ## 6. 验收记录（Z21 1024×600 真机，2026-09-16）
@@ -117,8 +117,8 @@ static void onUI_quit() { s_tab.detach(); }   // 摘监听，避免回调打到�
 |---|---|---|---|
 | 编译 | `fun build -p Z21` | ✅ 无警告无错误 | — |
 | 初始帧 | 部署后抓屏 | ✅ 「第 0 页」+ Page 0 文字变蓝 + 下划线 x=20–199 | `example/evidence/01_page0_initial.png` |
-| **滑动切页** | `/tmp/touch swipe 900 300 150 300` | ✅ 切到「第 1 页」，状态行 `onPageChanged: page=1 (当前页=1 OK)`；Page 1 变蓝、下划线 x=212–391 | `02_swipe_page0_to_page1.png` |
-| **点页签切页** | `/tmp/touch tap 110 42`（点 Page 0） | ✅ 回到「第 0 页」，`page=0`，下划线回到 x=20–199 | `03_tap_tab0_back_to_page0.png` |
+| **滑动切页**| `/tmp/touch swipe 900 300 150 300` | ✅ 切到「第 1 页」，状态行 `onPageChanged: page=1 (当前页=1 OK)`；Page 1 变蓝、下划线 x=212–391 | `02_swipe_page0_to_page1.png` |
+| **点页签切页**| `/tmp/touch tap 110 42`（点 Page 0） | ✅ 回到「第 0 页」，`page=0`，下划线回到 x=20–199 | `03_tap_tab0_back_to_page0.png` |
 | 页内控件可用 | `tap 130 248` ×3 | ✅ 计数 0 → 3（手势没吃掉点击） | `04_page0_button_tapped_3x.png` |
 
 > 像素判据（脚本可复现）：下划线区 `y=58..59` 的蓝色（`#2196F3`）x 范围；

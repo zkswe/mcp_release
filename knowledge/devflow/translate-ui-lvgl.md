@@ -44,7 +44,7 @@ v1 是**确定性行/正则解析器**（不是 C 编译器）：同一份输入
 > 再用 A/B 对照（temp/abtest_a/b）钉死唯一变量：
 
 1. **`seekbar.thumb` 等子盒对象字段写成字符串 = ftu 加载无声挂死（唯一真凶，致命）**。
-   thumb 真 schema 是 `{size:{width,height}, normalPic, pressedPic}` 对象；
+   thumb 的规格（为何必须是对象、必填键、无图处置）见真源 `ui_schema.json` 的 `sharedTypes.thumb`；
    初版映射表片段的 `"thumb":"images/x.png"` 是类型违规。
    A/B 终裁：**thumb 对象 + 图不存在 → 正常加载；thumb 字符串 + 图存在 → 挂死**。
    （当日「缺图=死循环」的二分结论是错归因：剥图把写错类型的 thumb 一起剥掉了。）
@@ -58,8 +58,8 @@ v1 是**确定性行/正则解析器**（不是 C 编译器）：同一份输入
      `bold/italic/visible/rollEnable/rollDirection/rollIntervalTime/rollStep` 全写；
    - **button**：`text` **内联**（schema 本就支持，hw-relay ftu 真源）、`alignment: 5`（居中，
      位模型 ≡37）、`picTab/longClickTimeOut/longClickIntervalTime/visible` 全写；
-   - **seekbar.thumb 是子盒对象** `{size:{width,height}, normalPic, pressedPic}`，
-     **不是字符串**（映射表旧片段的 `"thumb":"images/x.png"` 是错误形态，发射层已纠正）；
+   - **seekbar.thumb 是子盒对象、不是字符串**（映射表旧片段的 `"thumb":"images/x.png"` 是错误形态，
+     发射层已纠正）——字段清单与必填键见 `ui_schema.json` 的 `sharedTypes.thumb`，本文不复述；
    - window/painter 等按发射层 `_SCHEMA_FILL` 补齐。
    真源：demos/hw-relay-verify-z20 ftu 反解 + templates/ui_blocks/examples。
 3. 根 window、textview、嵌套 window+textview、纯 button 在真机渲染均正常（已验证）。

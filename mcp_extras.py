@@ -6,16 +6,16 @@
 本模块把关键文档暴露成 resources、把常见流程做成 prompts，两种 server（默认入口 / flat）共用。
 
 resources：
-  flythings://catalog/knowledge     知识库目录（分类 → 文档清单 + 检索关键词提示）
-  flythings://knowledge/<分类>/<文件>.md   分类目录下的文档（如 devflow/device-screenshot.md）
+  flythings://catalog/knowledge知识库目录（分类 → 文档清单 + 检索关键词提示）
+  flythings://knowledge/<分类>/<文件>.md分类目录下的文档（如 devflow/device-screenshot.md）
   flythings://knowledge/<文件>.md          knowledge/ 根目录的文档（如 README.md）
-  flythings://tools                 工具清单（op / 风险分级 / 一句话简介；来自 tools_manifest.json）
+  flythings://tools工具清单（op / 风险分级 / 一句话简介；来自 tools_manifest.json）
                                     + 「设备端预编译工具」一节：bin_tools/<平台>/ 下的 touch / busybox /
                                     ui_test / zkshot（**不是 op**，数 op 看不到）
-  flythings://version               版本 / 构建日 / 工具数 / 近期特性
+  flythings://version版本 / 构建日 / 工具数 / 近期特性
 
   ⚠️ FastMCP 的 URI 模板参数只匹配单段路径（内部把 {x} 换成 [^/]+），所以分类文档与
-  根目录文档用两个模板，不能写 {path} 通吃多级；读文件前过白名单校验（仅 knowledge/ 下 .md，防穿越）。
+根目录文档用两个模板，不能写 {path} 通吃多级；读文件前过白名单校验（仅 knowledge/ 下 .md，防穿越）。
 
 prompts（模板只给流程与安全默认，不代替工具调用）：
   flythings-new-project(平台, 分辨率, 需求)
@@ -90,8 +90,8 @@ def _safe_knowledge_path(path):
 def _bin_tools_section():
     """「设备端预编译工具」一节（bin_tools/，**不是 op**）。
 
-    2026-09-14（钟工反馈）：外部 AI 数完 op 个数就断言「这版没有 touch 注入」——实际 touch
-    自 v0.27.40 起一直在 bin_tools/<平台>/ 下。工具清单只列 op，必须显式补这一节。
+    2026-09-14（经需求方反馈）：外部 AI 数完 op 个数就断言「这版没有 touch 注入」——实际 touch
+自 v0.27.40 起一直在 bin_tools/<平台>/ 下。工具清单只列 op，必须显式补这一节。
     """
     root = os.path.join(BASE, 'bin_tools')
     if not os.path.isdir(root):

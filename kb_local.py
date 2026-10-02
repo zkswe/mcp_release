@@ -1,28 +1,28 @@
 # -*- coding: utf-8 -*-
 """用户侧知识层（kb_local）：本地层 / 项目层 的存储、front-matter 读写、脱敏导出。
 
-铁律（钟工 2026-09-29 口径）
+铁律（2026-09-29 口径）
 ----------------------------
-**绝不写 MCP 安装目录** —— 那是版本物（升级会覆盖、可能只读、还会污染发布物）。
+**绝不写 MCP 安装目录**—— 那是版本物（升级会覆盖、可能只读、还会污染发布物）。
 用户生长出来的知识默认落 ① 本地层 / ② 项目层；要进总账只能走「脱敏补丁包」或
-「只动 knowledge/inbox/** 的 PR」，且必须过「去重 + 复验 + 问法登记」三关 + 人工签字。
+「只动 knowledge/inbox/**的 PR」，且必须过「去重 + 复验 + 问法登记」三关 + 人工签字。
 
 三层存储
 --------
   ① 本地层（用户私有，不提交）  `$FLYTHINGS_KB_DIR` 或 `~/.flythings/kb_local/`
-       inbox/<yyyymmdd-HHMM>-<slug>.md   候选条目（front-matter status=draft）
-       kb_candidates.jsonl               候选流水（机读）
-       _logs/no_hit.jsonl                检索未命中日志（生长燃料）
-       exports/                          脱敏补丁包
-       kb_index.local.json               本地清单（生成物）
+       inbox/<yyyymmdd-HHMM>-<slug>.md候选条目（front-matter status=draft）
+       kb_candidates.jsonl候选流水（机读）
+       _logs/no_hit.jsonl检索未命中日志（生长燃料）
+       exports/脱敏补丁包
+       kb_index.local.json本地清单（生成物）
   ② 项目层（随项目 git 走）      `<项目>/docs/kb/`（同结构，可提交）
   ③ 总账层（我方 open 版仓）     `<MCP 安装目录>/knowledge/`（**只读**，由维护者维护）
 
 状态机（写死）
 --------------
   status: draft → review → verified ；失败复验 → stale ；被取代 → deprecated
-  只有 `verified` 允许进检索索引与发布；`draft/review` 只在候选区可见、**不当依据**。
-  晋升只能由「机器复验通过」或「人工签字」触发 —— **AI 不能自评通过**。
+只有 `verified` 允许进检索索引与发布；`draft/review` 只在候选区可见、**不当依据**。
+晋升只能由「机器复验通过」或「人工签字」触发 —— **AI 不能自评通过**。
 """
 import hashlib
 import io
@@ -57,7 +57,7 @@ EVIDENCE_KEYS = ('kind', 'cmd', 'artifact', 'expect_rc', 'expect_contains', 'ran
 
 # tags 合规：**只允许检索词**（禁止反引号/星号/尖括号/分号等 markdown 碎片混入索引）
 # 背景（2026-09-29 提报发现）：P1 首轮抽取把正文碎片（`<包名`、`**`、`检索词：…`）当 tags 写进 33/85 篇。
-_TAG_BAD = re.compile(r'[`*<>{}|\\"\'’“”·→←;；:：,，。、（）()\[\]【】「」!！?？]')
+_TAG_BAD = re.compile(r'[`*<>{}|\\"\'’“”·→←;；:：，。、（）()\[\]【】「」!！?？]')
 _TAG_PREFIX = re.compile(r'^(检索词|检索导引|见|如)\s*[:：]?\s*')
 MAX_TAGS = 16
 MAX_TAG_LEN = 14
@@ -340,7 +340,7 @@ def validate_meta(meta, path=''):
 
 def indexable(meta):
     """能不能进检索索引：**无 front-matter 的（如 knowledge/README.md）照旧保留**；
-    只有显式写了非可索引状态（draft/deprecated）的才挡。"""
+只有显式写了非可索引状态（draft/deprecated）的才挡。"""
     if not meta:
         return True
     return (meta.get('status') or '') in INDEXABLE_STATUS
@@ -354,7 +354,7 @@ def evidence_level(meta):
 
 
 # ── 指纹（去重） ────────────────────────────────────────────────────────────
-_SYM = re.compile(r'[\s,，。;；:：!！?？"\'`、。]+')
+_SYM = re.compile(r'[\s，。;；:：!！?？"\'`、。]+')
 
 
 def normalize_symptom(text):
@@ -414,8 +414,8 @@ def capture(title, body='', category='devflow', platforms=(), tags=(), evidence=
             status='draft'):
     """把一条现场结论落成**候选条目**（默认写本地层，绝不写安装目录）。
 
-    返回 {success, id, path, fingerprint, duplicateOf, layer, ...}；
-    命中已有条目 → 报 duplicateOf 并提示"合并"而不是新建。
+返回 {success, id, path, fingerprint, duplicateOf, layer, ...}；
+命中已有条目 → 报 duplicateOf 并提示"合并"而不是新建。
     """
     res = {'success': False, 'op': 'flythings_knowledge_capture', 'warnings': []}
     notes = res['warnings']
@@ -556,7 +556,7 @@ def export_pack(out='', scope='inbox', layer='local', project_root='', kb_overri
     """导出**脱敏补丁包**（回流通道 A）。
 
     scope: inbox（候选）| verified（本地已晋升）| all
-    默认脱敏且不可关：要导出未脱敏内容必须 `internal=True`（仅供总账维护者自用）。
+默认脱敏且不可关：要导出未脱敏内容必须 `internal=True`（仅供总账维护者自用）。
     """
     res = {'success': False, 'op': 'flythings_knowledge_export'}
     d = layer_dir(layer, kb_override, project_root)
@@ -622,7 +622,7 @@ def export_pack(out='', scope='inbox', layer='local', project_root='', kb_overri
 def local_docs(kb_override='', project_root=''):
     """本地层/项目层里**可索引**的文档（P0-2：用户 capture 的知识必须自己能搜到）。
 
-    返回 [{path(带 kb_local/ 前缀), abs, meta, sha256, origin}]；draft/deprecated 不算。
+返回 [{path(带 kb_local/ 前缀), abs, meta, sha256, origin}]；draft/deprecated 不算。
     """
     out = []
     roots = [(kb_dir(kb_override), 'local')]

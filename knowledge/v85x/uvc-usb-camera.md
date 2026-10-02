@@ -15,9 +15,9 @@ evidence: []
 ---
 # V85X USB 摄像头（UVC）接入 + 预览/录像/拍照（V85X 平台绑定实现）
 
-> 🔍 **检索导引（命中条件）**：用户指定 **V85X 平台** + 「UVC / USB 摄像头接入 / 预览 / 拍照 / 录像 / 回放 / JPEG/MJPEG」→ 本篇为**平台绑定实现**；
-> **未指定平台 / 其他平台（T113/F133/Z20/Z21）问 UVC 接入** → 先读 `knowledge/hardware/uvc-camera-generic.md`（平台无关通用层：发现/协商/保活/状态机/JPEG 必查清单）。
-> 来源：V85X 平台通用 UVC 接入实测（2026-09-03 学习收录，沛哥 2026-09-07 转正；2026-09-08 去工程化，纯通用形态）。
+> 🔍 **检索导引（命中条件）**：用户指定 **V85X 平台**+ 「UVC / USB 摄像头接入 / 预览 / 拍照 / 录像 / 回放 / JPEG/MJPEG」→ 本篇为**平台绑定实现**；
+> **未指定平台 / 其他平台（T113/F133/Z20/Z21）问 UVC 接入**→ 先读 `knowledge/hardware/uvc-camera-generic.md`（平台无关通用层：发现/协商/保活/状态机/JPEG 必查清单）。
+> 来源：V85X 平台通用 UVC 接入实测（2026-09-03 学习收录，2026-09-07 转正；2026-09-08 去工程化，纯通用形态）。
 > 平台：V85X（AW_V853），aw-dvr 3.13.12 / aw-mpp 2.0.2。
 > 场景：**V85X 主机通过 USB 接入 UVC 摄像头**，与内置 ISP 前摄像头双路共存：预览/录像/拍照。
 > 本文为 V85X aw-dvr/mpi:: **绑定层**（MPP 注册/双路预览/Recorder/Snapshot）；平台无关的 UVC 通用逻辑（inotify 发现、
@@ -40,8 +40,8 @@ USB UVC 摄像头（免驱，uvcvideo 驱动）
 `VIDEO_DEVICE_REAR` = **UVC 外接**（setUvc(true)，layer4 半屏/叠加）——后路通道让给 UVC。
 `CameraHelper::isUvcCameraConnected()` 由状态机 NORMAL 决定（见 §5）。
 
-> 📐 显示分层权威口径（沛哥 2026-09-07 补充）：
-> ① **UI 层在最顶上**，disp 视频层按 **4、3、2、1** 叠在 UI 下方；
+> 📐 显示分层权威口径（2026-09-07 补充）：
+> ① **UI 层在最顶上**，disp 视频层按 **4、3、2、1**叠在 UI 下方；
 > ② **layer 编号 = disp 硬件层号**（不是 mpi 逻辑层）——FrontCamera→layer0、UVC RearCamera→layer4 是工程绑定；
 > ③ **VI→VO 是内部处理，不需要关心**：取流→VI→VO 视频层的数据搬运由 mpi/aw-dvr 内部完成，应用只配 CameraParam。
 
@@ -79,7 +79,7 @@ CameraHelper::Init(w, h) 关键（幂等，isInit 早退）：
    ```
 2. 需要逐帧业务（OSD/检测/取帧尾数据等）时挂
    `mpi::VideoFrameInterceptor::filter(REAR, [](const VIDEO_FRAME_S* raw){ ... return true; })`；
-   耗时不阻塞取流回调（handler/线程转发）
+耗时不阻塞取流回调（handler/线程转发）
 
 ## 3. 持续取流保活（关键）
 
@@ -102,7 +102,7 @@ class UvcCameraDetection: public mpi::Task<> {
 - 预览：FRONT（内置源，viewbox 平移缩放，display 全屏 layer0）与 UVC REAR（源=UVC 实际分辨率，
   display 半屏/右屏拉伸显示，layer4）按 VIEW_TYPE_FRONT/REAR/BOTH/UNVISIBLE 显隐组合
 - 录像：`RecorderParameters.settings[FRONT] + settings[REAR]`（有 UVC 才加 REAR 路），
-  分段 duration/audio/bitrate/25fps/720P 或 1080P——与内置摄像头同一套 Recorder
+分段 duration/audio/bitrate/25fps/720P 或 1080P——与内置摄像头同一套 Recorder
 - **拍照走 mpi::Snapshot**（不是 Recorder::takePicture）：
   ```cpp
   #include <mpi/case/snapshot.h>
@@ -121,7 +121,7 @@ class UvcCameraDetection: public mpi::Task<> {
 - 回调集 `uvc_add_camera_state_cb` 通知 UI；从异常恢复或断开重连后，若在预览页 →
   `runInUiThreadUniqueDelayed("resume_display", resetCameraPreview(false), ~200ms)` 重建预览
 - 开机流程：注册状态回调 → `uvc_video_detect_start()` → 初始 `setupCameraPreview(UNVISIBLE)`；
-  设置页可提供"重新探测"（open_uvc_camera）
+设置页可提供"重新探测"（open_uvc_camera）
 
 ## 6. 坑与注意
 
@@ -133,7 +133,7 @@ class UvcCameraDetection: public mpi::Task<> {
 4. **REAR 通道让给 UVC**：产品若还要后录/倒车摄像头（占 REAR）会冲突；倒车检测可挂
    RTSP 流状态监听联动（REAR 有流停检测、无流起检测）
 5. **通用 JPEG UVC 摄像头必须显式协商格式**（见 §7.1）：不能只 `VIDIOC_G_FMT` 读默认宽高就初始化；
-   摄像头默认格式未必是 MJPEG，格式错配 → 绿屏/花屏
+摄像头默认格式未必是 MJPEG，格式错配 → 绿屏/花屏
 6. **重新接入不同分辨率模块**：Init 幂等只跑一次，运行时换分辨率需进程级重建或显式 Deinit
 
 ## 7. 通用 JPEG(MJPEG) UVC 摄像头落地必查清单（绿屏/黑屏防坑）
@@ -145,7 +145,7 @@ class UvcCameraDetection: public mpi::Task<> {
 
 - aw-dvr UVC 通道**默认按 MJPEG 采集**：`VideoDeviceParameters.capture_pixel_format` 默认
   `V4L2_PIX_FMT_MJPEG`（可切 YUYV/YUV420），内部 JPEG→NV21 解码由 SDK 完成，应用层不碰解码；
-  输出 `pixel_format` 默认 NV21（MM_PIXEL_FORMAT_YVU_SEMIPLANAR_420）
+输出 `pixel_format` 默认 NV21（MM_PIXEL_FORMAT_YVU_SEMIPLANAR_420）
 - **通用 JPEG UVC 摄像头接入必须显式协商**，不能只 G_FMT 读宽高就 Init：
   ```cpp
   // 1. ENUM_FMT 确认支持 MJPEG（部分摄像头默认 YUYV 优先，不协商会按错格式采集）
@@ -174,12 +174,12 @@ class UvcCameraDetection: public mpi::Task<> {
 - **开始录像**：直接 `mpi::Recorder::instance().start(param)`，**不要**先停 RearCamera/取流保活
   （DVR 常态 = 边录边看，同开才正常）
 - **切流/拔插/进回放前**：先 `mpi::Recorder::instance().stop()` + `mpi::RearCamera::instance().stop()`
-  再重建（MPP 互斥）；顺序反了 → 录像中画面黑掉 / 断流后不恢复
+再重建（MPP 互斥）；顺序反了 → 录像中画面黑掉 / 断流后不恢复
 
 ### 7.4 UVC 保活（录制中黑屏另一高发）
 
 - UVC 必须有任务持续读流（SharedVideoDevice(REAR) 循环 wait()，见 §3），**录像期间也不能停**；
-  停了摄像头休眠/断流 → 录制中黑屏
+停了摄像头休眠/断流 → 录制中黑屏
 
 ### 7.5 录像/回放格式口径
 

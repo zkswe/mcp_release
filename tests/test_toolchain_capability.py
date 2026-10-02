@@ -3,9 +3,9 @@
 
 背景：
   - 随包 `toolchain/fui.exe` 自 v0.27.91 起**含 unpack**（`unpack <in.ftu> [out.json]`，传目录=批量解）；
-    旧版随包 fui 只有 pack、unpack 是空壳。project_tools._fui_supports_unpack() 用 `fui.exe help`
-    探测（help 里有没有 unpack 行），工具链据此决定「能否直接读/编辑 ftu」——探测错了就会要么白报错、
-    要么静默产空文件。下面用例同时钉住「能力声明=实际」与 `flythings_fui_unpack` 的默认不覆盖语义。
+旧版随包 fui 只有 pack、unpack 是空壳。project_tools._fui_supports_unpack() 用 `fui.exe help`
+探测（help 里有没有 unpack 行），工具链据此决定「能否直接读/编辑 ftu」——探测错了就会要么白报错、
+要么静默产空文件。下面用例同时钉住「能力声明=实际」与 `flythings_fui_unpack` 的默认不覆盖语义。
   - 检讨报告 §3.5 要求有 fui pack/unpack 往返用例（防「pack 出来的 ftu 解不回等价 json」）。
 """
 import io
@@ -38,7 +38,7 @@ class TestFuiCapability(unittest.TestCase):
         """按真实 CLI 形式解包，返回 (rc, 产出的 json 路径或 None)。
 
         fui unpack 的真实用法（--help 自述）：`unpack <input.ftu> [output.json]`；
-        只给 input 时解到同目录同名 json。⚠️ 传目录会 FATAL。
+只给 input 时解到同目录同名 json。⚠️ 传目录会 FATAL。
         """
         import project_tools as pt
         args = [pt.FUI_EXE, 'unpack', ftu] + ([out_json] if out_json else [])
@@ -198,7 +198,7 @@ class TestFuiUnpackOp(unittest.TestCase):
 class TestFtuJsonAutoSyncRules(unittest.TestCase):
     """2026-09-18 口径：ftu → json 只在两种情形自动做 ——
     ① 只有 ftu 没有 json → 直接转；② ftu 比 json 新「分钟级」(≥60s，用户/IDE 编辑过) → 转同步；
-    ③ 其余情况**不做** ftu→json（json 是布局源，只需 json→ftu）。"""
+    ③ 其余情况**不做**ftu→json（json 是布局源，只需 json→ftu）。"""
 
     def setUp(self):
         self.tmp = U.project()
@@ -274,7 +274,7 @@ class TestFtuJsonAutoSyncRules(unittest.TestCase):
         self.assertGreaterEqual(d, 60, 'ftu→json 的触发阈值必须是「分钟级」(≥60s)，当前 %s' % d)
 
     def test_rule1_broken_ftu_reports_error_to_user(self):
-        """异常 ftu（不是合法 ftu/已损坏）→ **必须报错并告知用户**（钟工 09:14），不静默跳过。"""
+        """异常 ftu（不是合法 ftu/已损坏）→ **必须报错并告知用户**（09:14），不静默跳过。"""
         import project_tools as pt
         os.remove(self.src)                       # 「只有 ftu 没有 json」场景
         with open(os.path.join(self.tmp, 'ui', 'main.ftu'), 'wb') as f:

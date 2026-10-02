@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """硬件型号库契约：hardware_catalog.json 是唯一事实来源，工具只读它，文档是它的派生。
 
-为什么要有（沛哥 2026-09-12 需求：硬件文档模块）：型号 → 分辨率/按键值 一旦查错，
+为什么要有（2026-09-12 需求：硬件文档模块）：型号 → 分辨率/按键值 一旦查错，
 建工程分辨率与按键分发会全线错；而「查不到就按同系列外推」是这类库最危险的失败模式。
 本用例钉住：命中/宽松匹配/别名、未收录只给候选不猜规格、未知平台报错、文档与 json 同步。
 """
@@ -98,7 +98,7 @@ class TestHardwareCatalog(unittest.TestCase):
         self.assertNotIn('hardware', r)
         self.assertIn('available', r)
         self.assertIn('Z21', r['available'])
-        # 定位（沛哥 2026-09-12）：没型号不卡流程——必须给「平台 + 分辨率就能开工」的 fallback
+        # 定位（2026-09-12）：没型号不卡流程——必须给「平台 + 分辨率就能开工」的 fallback
         self.assertEqual(r['fallback']['need'], ['平台', '分辨率'])
         self.assertTrue(r['fallback']['advice'])
 

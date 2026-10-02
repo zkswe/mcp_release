@@ -5,15 +5,15 @@
  *   projects/translate/lvgl-widgets-uiv1/  —— LVGL `lv_button` 主题倒角在迁移后丢失
  *     （案例 TRANSLATE.md 差异清单记为降级 B：`button__N` 只有纯色直角 / 圆角切图）
  *   tools/ui_tools/gen_res.py `rounded_rect_ss` —— 「切图路线」的抗锯齿口径（≥4x 超采样 + LANCZOS）
- *     解释器版本：本文件是它的**运行期等价物**（覆盖率 → 与底色混色），代价是任意尺寸/任意半径
+ *解释器版本：本文件是它的**运行期等价物**（覆盖率 → 与底色混色），代价是任意尺寸/任意半径
  *
  * 核心思路（为什么这样能抗锯齿）：
- *   平台 painter 只有不透明 fill（无 alpha），但**圆角弧带上的像素覆盖率是已知的几何量**：
+ *平台 painter 只有不透明 fill（无 alpha），但**圆角弧带上的像素覆盖率是已知的几何量**：
  *   · 直边与像素网格对齐 → 一整块 fillRect 就是精确的；
  *   · 只有 4 个圆角方块里的 ~r 个像素带（每角）落在弧线上 → 对它们做「超采样求覆盖率」，
- *     再拿覆盖率把前景色与**已知底色**（Style::bg）混出中间色，最后画 1x1 像素。
- *   于是边缘得到 ~65 档中间色（aaSamples=8），设备上不再是阶梯。
- *   代价：AA 只对「底色为纯色」的场景精确；底是图片/渐变时中间色会偏（见 README 限制）。
+ *再拿覆盖率把前景色与**已知底色**（Style::bg）混出中间色，最后画 1x1 像素。
+ *于是边缘得到 ~65 档中间色（aaSamples=8），设备上不再是阶梯。
+ *代价：AA 只对「底色为纯色」的场景精确；底是图片/渐变时中间色会偏（见 README 限制）。
  */
 #include "zk/zk_radbutton.h"
 
@@ -404,9 +404,9 @@ void RadButton::setAutoRefresh(bool on) { mAutoRefresh = on; }
 
 /*
  * 触摸状态机（一张表就能看完）：
- *   DOWN  界内 → 按下态（记住按下前状态）              | 界外 → 不消费
- *   MOVE  已在按下态且移出界 → 取消按下态；否则自家手势继续消费 | 没按下过 → 不消费（让别人滑动）
- *   UP    按下态 → 先回落，再（界内 + 开关模式）翻转 | 没按下过 → 界内 + 开关模式也兜底翻转一次
+ *   DOWN界内 → 按下态（记住按下前状态）              | 界外 → 不消费
+ *   MOVE已在按下态且移出界 → 取消按下态；否则自家手势继续消费 | 没按下过 → 不消费（让别人滑动）
+ *   UP按下态 → 先回落，再（界内 + 开关模式）翻转 | 没按下过 → 界内 + 开关模式也兜底翻转一次
  *   CANCEL 按下态 → 回落
  */
 bool RadButton::onTouch(int x, int y, int action) {
@@ -492,7 +492,7 @@ RadButton::Result RadButton::setShape(Shape s) {
 	}
 	mShape = s;
 	if (s == SHAPE_PILL) {
-		mSwitchable = true;					// 药丸 = 开关形态（钟工口径：倒角按钮当带倒角的开关用）
+		mSwitchable = true;					// 药丸 = 开关形态（经需求方口径：倒角按钮当带倒角的开关用）
 	}
 	return Result(0, "ok");
 }
@@ -566,9 +566,9 @@ RadButton::Result RadButton::drawRoundedRect(ZKPainter *painter, int left, int t
 
 	/* ⓪ 先把整个控件盒铺成底色（两张原因）：
 	 *   ① painter 的 `erase()` 在设备上是**不透明黑**（不是透明），AA 时跳过的圆角外像素
-	 *      就会留黑角（实测：Z21 上直接就是 4 个黑方块）；
+	 *就会留黑角（实测：Z21 上直接就是 4 个黑方块）；
 	 *   ② 底色铺实后，圆角外的像素 = 与 AA 混色基准同一颜色 → 边缘没有色差。
-	 *   所以 `Style::bg` 必须 = 按钮所在位置的真实底色（见 README 限制 1）。*/
+	 *所以 `Style::bg` 必须 = 按钮所在位置的真实底色（见 README 限制 1）。*/
 	painter->setSourceColor(bg);
 	painter->fillRect(left, top, width, height, 0);
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """把开机 logo（`boot_logo.JPG`）推到设备并触发升级 —— **默认 dry-run，只打印不动作**。
 
-机制（钟工 2026-09-17 口径，与 `update.img` **完全同一套**）：
+机制（2026-09-17 口径，与 `update.img` **完全同一套**）：
     adb push <jpg> <dir>/boot_logo.JPG
     setprop sys.zkupgrade.flag 255      # 该目录里有升级物
     setprop sys.zkupgrade.dir  <dir>    # 目录

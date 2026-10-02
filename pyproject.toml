@@ -32,15 +32,33 @@ mcp_version = "0.27.171-open"
 verified_python = "3.13.13"
 
 [tool.setuptools]
+# 根目录**所有** .py 都要登记（漏一个 = pip 装出来的包缺模块、运行时 ImportError）。
+# 清单不许靠人维护：scripts/check_consistency.py 的 stage_package_manifest 会比对
+# 「根目录 .py 集合 == py-modules」，漏了直接红。
 py-modules = [
-    "mcp_server",
-    "kb_tools",
-    "project_tools",
-    "package_tools",
-    "i18n_tools",
     "adb_tools",
-    "rag_search",
-    "embed_local",
     "configure",
+    "derived_md",
+    "embed_local",
+    "font_tools",
+    "hardware_tools",
+    "i18n_tools",
+    "kb_authority",
+    "kb_index_roots",
+    "kb_local",
+    "kb_tools",
+    "mcp_extras",
+    "mcp_server",
+    "mcp_server_flat",
+    "op_spec_loader",
+    "package_tools",
+    "platform_cap_loader",
+    "platforms",
+    "project_tools",
+    "rag_search",
+    "rebuild_index_local",
     "selfcheck_tools",
+    "test_tools",
+    "translate_tools",
+    "ui_baseline",
 ]

@@ -8,12 +8,12 @@
 用法：
     python html2json.py <input.html> [output.json|输出目录] [--res WxH] [--merge-windows]
 
-多屏（HTML 内多个 div.screen）默认口径（钟工 2026-09-21 口径，见 knowledge/devflow/page-architecture-spec.md）：
+多屏（HTML 内多个 div.screen）默认口径（2026-09-21 口径，见 knowledge/devflow/page-architecture-spec.md）：
 **一个 .screen = 一个页面 = 一个 Activity = 一个独立 json（-> 一个独立 ftu）**；
 N 屏 -> N 个 json，文件名取 data-page（缺省 page_k），输出目录 = 输出参数所写目录。
 同屏内部的 window / dialog（弹窗）不是页，直接写在 .screen 里（div.window / div.modal）。
 - --merge-windows：N 屏合成同一 json 内的 N 个整屏 window（键 window__1..window__N 连续编号，
-  首屏 visible:true、其余 visible:false，切页走 showWnd/hideWnd）—— **仅当这些屏同属一个 Activity
+首屏 visible:true、其余 visible:false，切页走 showWnd/hideWnd）—— **仅当这些屏同属一个 Activity
   （同 ftu 内整屏 window）**时才用。工具不主动把多个 .screen 合成多窗口。
 **页数 = 屏数**：screensDetected != pagesProduced 一律 success:false + error（不静默丢页）。
 
@@ -29,11 +29,10 @@ N 屏 -> N 个 json，文件名取 data-page（缺省 page_k），输出目录 =
   「纯黑写 #010101」的绕过写法继续有效（#010101 也是纯黑，不必回改）
 - ✅ 支持 `data-visible`（A5 修）：任意控件/容器（含 subItem、window）初始隐藏，直通 json 的 visible
 - ✅ 转换期静默改动一律进返回体 warnings（A1/A8 修）：丢字符（emoji/黑名单字）、有图控件
-  无圆角外底色、文本最小宽超出容器等不再靠真机反推
+无圆角外底色、文本最小宽超出容器等不再靠真机反推
 - ✅ 有图控件的圆角外底色（A6 修）：data-bg > 最近祖先容器底色 > 引擎缺省（无底色时告警）
 
-⚠️ 设备端渲染路径差异（不是转换器问题，见 references/kb/image-gen-standard.md）：
-  运行时 setBackgroundPic 不保留 alpha（透明底 PNG 会变白块）—— 运行时换图那套素材需烘不透明底。
+⚠️ 设备端渲染路径差异（不是转换器问题，见 references/kb/image-gen-standard.md）：运行时 setBackgroundPic 不保留 alpha（透明底 PNG 会变白块）—— 运行时换图那套素材需烘不透明底。
 """
 import html as html_lib
 import json
@@ -50,12 +49,12 @@ except Exception:
     gr = None
     _HAS_GEN_RES = False
 
-# CSS 效果自动出图档位（钟工 2026-09-16 拍板）：**一律走 SS**，不再保留 1x + α 羽化那条路。
+# CSS 效果自动出图档位（2026-09-16 拍板）：**一律走 SS**，不再保留 1x + α 羽化那条路。
 # SS_DEFAULT = 4 = 每像素 16 子采样（SS mask / SS 圆角 / SS 阴影层全部走这个档）。
 # 手写调用（gen_res.rounded_rect / ss=0 默认）行为不变 —— 这里只影响 html2json 出的图。
 _CSS_SS = getattr(gr, 'SS_DEFAULT', 4) if _HAS_GEN_RES else 4
 
-# ---------- ID 分区（SKILL §2.3 沛哥版） ----------
+# ---------- ID 分区（SKILL §2.3 需求方版） ----------
 ID_BASE = {
     'textview': 50000, 'button': 20000, 'edittext': 51000,
     'seekbar': 91000, 'window': 110000, 'listview': 80000,
@@ -166,15 +165,15 @@ def _classes(attrs):
     return set((_attr(attrs, 'class') or '').split())
 
 
-# iconfont 图标语义提取（2026-09-03 沛哥定规：图标优先）
+# iconfont 图标语义提取（2026-09-03 需求方定规：图标优先）
 # HTML 写法：data-icon="play" 或 class="iconfont icon-play" / class="icon icon-play"
 _ICON_CLASS_RE = re.compile(r'^icon-(.+)$')
 
 
 def _glyph_from_attrs(attrs):
     """从 data-icon 或 icon-xxx class 提取图标语义名；无则返回 None。
-    规范：返回/播放/暂停/设置/搜索/删除等常用操作必须用图标（data-icon），
-    禁止纯文字按钮糊弄；图标名与中文别名映射见 gen_res（back/返回/play/播放...）。"""
+规范：返回/播放/暂停/设置/搜索/删除等常用操作必须用图标（data-icon），
+禁止纯文字按钮糊弄；图标名与中文别名映射见 gen_res（back/返回/play/播放...）。"""
     v = _attr(attrs, 'data-icon')
     if v:
         v = str(v).strip()
@@ -190,14 +189,14 @@ def _glyph_from_attrs(attrs):
 def _px_num(v):
     """CSS 长度 → 数值：'4px'/'4'/'4.5em'/'50%' → float；非法返回 None。
     ⚠️ 2026-09-10 修 bug：原先 int(float('4px')) 抛 ValueError，被 except 静默吞掉，
-    导致「标准 CSS 写 px 的 box-shadow 一律转图失败、且报误导性提示」。"""
+导致「标准 CSS 写 px 的 box-shadow 一律转图失败、且报误导性提示」。"""
     m = re.match(r'^\s*(-?\d+(?:\.\d+)?)\s*(?:px|em|rem|pt|%)?\s*$', str(v))
     return float(m.group(1)) if m else None
 
 
 def _shadow_spec(style):
     """box-shadow → (ox, oy, blur, (r,g,b,a))；解析不了返回 None。
-    兼容 px/em/rem/%/无单位、inset/outset、4 值 spread、色值写在任意位置。"""
+兼容 px/em/rem/%/无单位、inset/outset、4 值 spread、色值写在任意位置。"""
     m = re.search(r'box-shadow\s*:\s*([^;]+)', style or '')
     if not m:
         return None
@@ -227,10 +226,10 @@ def _shadow_spec(style):
 def _radius_px(style, w, h, default=0):
     """CSS border-radius → 圆角像素（单一 radius，按 min(w,h)//2 钳制 → 药丸/正圆自动生效）。
 
-    支持 px / 无单位 / **%（50% → 正圆/药丸）**；`8px 8px 0 0` 这类多值取第一段；
-    解析不到返回 default（渐变分支 0 / 阴影分支 8，历史默认不变）。
+支持 px / 无单位 / **%（50% → 正圆/药丸）**；`8px 8px 0 0` 这类多值取第一段；
+解析不到返回 default（渐变分支 0 / 阴影分支 8，历史默认不变）。
     ⚠️ 2026-09-16（v0.27.76）：旧实现只认「数字+px」正则 → `border-radius:50%` / 无单位
-    一律认不出 → 该出圆的地方出方角（SS 也就无从生效）。与「CSS 效果出图一律 SS」同批收口。
+一律认不出 → 该出圆的地方出方角（SS 也就无从生效）。与「CSS 效果出图一律 SS」同批收口。
     """
     m = re.search(r'border-radius\s*:\s*([^;]+)', style or '')
     raw = m.group(1).strip().split()[0] if (m and m.group(1).strip()) else ''
@@ -254,7 +253,7 @@ def _shadow_pad(ox, oy, blur):
 
 def _grow(pos, pad):
     """控件盒按阴影溢出量 pad 外扩：left/top 前移、宽高各 +2*pad。
-    这样「图片尺寸 == 控件尺寸」（check_all #11），且可见卡片主体仍落在作者给定坐标。"""
+这样「图片尺寸 == 控件尺寸」（check_all #11），且可见卡片主体仍落在作者给定坐标。"""
     pad = int(pad)
     pos['left'] = pos.get('left', 0) - pad
     pos['top'] = pos.get('top', 0) - pad
@@ -278,7 +277,7 @@ def _color_int_rgba(cint, default=None):
 def _detect_type(tag, classes, attrs=None):
     """HTML 标签 + class → FlyThings 控件类型。
     2026-09-03 扩展：btn/button 类 + data-icon/iconfont → button（图标按钮，生成两态图）；
-    纯 iconfont/icon-xxx → icon（图标 textview）。"""
+纯 iconfont/icon-xxx → icon（图标 textview）。"""
     has_btn = bool(classes & set(CLASS_MAP['button'])) or tag == 'button'
     has_icon = bool(classes & set(CLASS_MAP['icon'])) or any(k.startswith('icon-') for k in classes)
     if attrs is not None and _glyph_from_attrs(attrs):
@@ -342,7 +341,7 @@ def _css_color(s):
 
 def _parse_gradient(expr):
     """linear-gradient(...) 内部表达式 → (horizontal, [(pos, color), ...])。
-    支持 to right/left/top/bottom、角度(0/90/180/270deg)、多色标（含百分比）。"""
+支持 to right/left/top/bottom、角度(0/90/180/270deg)、多色标（含百分比）。"""
     expr = (expr or '').strip()
     horizontal = False
     m = re.match(r'^\s*(to\s+\w+|\d+deg)\s*,\s*(.*)$', expr, re.S)
@@ -380,10 +379,9 @@ def _parse_gradient(expr):
 
 
 def _is_emoji(ch):
-    """判断字符是否 emoji/特殊符号（设备裁剪字库不支持，全范围覆盖）：
-    表情物品 1F000-1FAFF / 杂项符号 2600-27BF / 技术符号 2300-23FF /
-    箭头 2190-21FF / 几何图形 25A0-25FF / 带圈数字 2460-24FF /
-    字母符号 2100-214F / 杂项箭头 2B00-2BFF / 变体选择符 FE0F / ZWJ 200D"""
+    """判断字符是否 emoji/特殊符号（设备裁剪字库不支持，全范围覆盖）：表情物品 1F000-1FAFF / 杂项符号 2600-27BF / 技术符号 2300-23FF /
+箭头 2190-21FF / 几何图形 25A0-25FF / 带圈数字 2460-24FF /
+字母符号 2100-214F / 杂项箭头 2B00-2BFF / 变体选择符 FE0F / ZWJ 200D"""
     o = ord(ch)
     return (0x1F000 <= o <= 0x1FAFF) or (0x2600 <= o <= 0x27BF) or \
         (0x2300 <= o <= 0x23FF) or (0x2190 <= o <= 0x21FF) or \
@@ -400,7 +398,7 @@ def _clean_text(s, ctx=None, where=''):
     """剥离 emoji 与黑名单特殊符号，只保留汉字+ASCII+基础符号（/ % # - _ 空格）。
 
     A1 修（2026-09-27）：命中黑名单/emoji 的字符**必须记账**。旧版直接 `continue` 静默丢弃，
-    真机表现为「整字消失」（不是方框），调用方查无实据；现在统一写进 ctx.warnings。
+真机表现为「整字消失」（不是方框），调用方查无实据；现在统一写进 ctx.warnings。
     """
     if not s:
         return s
@@ -426,7 +424,7 @@ def _clean_text(s, ctx=None, where=''):
 def _color_explicit(attrs, names, default):
     """颜色取值（A2 修，2026-09-27）：**按「属性是否出现」判未设置**，不按「值是否为 0」。
 
-    纯黑 `#000000` 解析出来就是 0（合法颜色）；旧写法 `to_dec(...) or 默认` 把 0 当 falsy
+纯黑 `#000000` 解析出来就是 0（合法颜色）；旧写法 `to_dec(...) or 默认` 把 0 当 falsy
     → 纯黑被换成默认色（实测绿按钮落地成「绿底白字」，对比度 1.44:1）。
     names 可传单个属性名或候选列表，按顺序取第一个「出现且可解析」；都没有 → default。
     """
@@ -486,7 +484,7 @@ class _DomParser(HTMLParser):
         if tag not in VOID_TAGS:
             self.stack.append(node)
         elif tag == 'br' and self.stack:
-            # <br> → '\n' 换行（textview 支持 \n 多行，沛哥 2026-09-03 纠正 FT-024）
+            # <br> → '\n' 换行（textview 支持 \n 多行，2026-09-03 纠正 FT-024）
             self.stack[-1].text += '\n'
 
     def handle_startendtag(self, tag, attrs):
@@ -527,7 +525,7 @@ class _Ctx:
         """转换期警告统一入口（去重）。
 
         A8 修（2026-09-27）：「丢字符 / 纯黑被替默认值 / data-visible 无效 / 圆角无底色」
-        这类**静默失败**必须回传到返回体 warnings，不再靠真机反推。
+这类**静默失败**必须回传到返回体 warnings，不再靠真机反推。
         """
         k = key or msg[:80]
         if k in self.warned:
@@ -576,12 +574,12 @@ class HtmlToJson:
             self.ctx.warnings.append(f'自动转图失败: {e}')
             return None
 
-    # ---------- iconfont 图标自动落图（2026-09-03 沛哥定规：图标优先）----------
+    # ---------- iconfont 图标自动落图（2026-09-03 需求方定规：图标优先）----------
     def _icon_png(self, ctx, glyph, cw, ch, color_int=None, pressed=False):
         """data-icon 语义图标 → PNG（iconfont 风格矢量线框，居中于控件画布）。
         glyph: 英文/中文名（back/返回...）；cw/ch: 控件尺寸（PNG 同尺寸，图标居中不变形）；
         color_int: 十进制描边色或 None(默认浅色)；pressed=True 生成按下态（按钮 picTab pic1）。
-        未收录/不可用返回 None 并 warning。"""
+未收录/不可用返回 None 并 warning。"""
         cw, ch = max(1, int(cw or 0)), max(1, int(ch or 0))
         size = min(cw, ch)
         if not (_HAS_GEN_RES and self.asset_dir):
@@ -610,7 +608,7 @@ class HtmlToJson:
 
     def _effect_assets(self, ctx, node, w, h, cap):
         """检测 style/data 里的 CSS 效果并自动生成图片资源。
-        返回 {"backgroundPic": .., "picTab": {..}, "codeStr": .., "imageanim": bool, "use_emoji": ..}。"""
+返回 {"backgroundPic": .., "picTab": {..}, "codeStr": .., "imageanim": bool, "use_emoji": ..}。"""
         attrs = node.attrs
         style = _attr(attrs, 'style') or ''
         classes = _classes(attrs)
@@ -699,7 +697,7 @@ class HtmlToJson:
             emoji_ch = next((ch for ch in raw_text if _is_emoji(ch)), '\u2b50')
             name = f'emoji_{cap or ctx.n}_{self.gen_count}.png'
 
-            # [!] 2026-09-18：按**控件盒 (w,h)** 出图（不再 max(w,h) 出方图）——图 != 盒会把字形压扁/切掉
+            # [!] 2026-09-18：按**控件盒 (w,h)**出图（不再 max(w,h) 出方图）——图 != 盒会把字形压扁/切掉
             def _e(d, _n=name, _w=w, _h=h, _c=emoji_ch):
                 return gr.emoji_icon_box(d, _n, _w, _h, _c)
 
@@ -736,13 +734,13 @@ class HtmlToJson:
 
         pages = [(page_id, data), ...]（失败/屏数核对不过时为 None）：
           - 单屏（1 个 .screen）：len==1，产物与旧版逐字段一致（回归保护）；
-          - **缺省口径（钟工 2026-09-21）：每屏一个 json** —— 一个 .screen = 一个页面 =
-            一个 Activity = 一个独立 ftu；len==N，data 是普通单屏 json 的根
+          - **缺省口径（2026-09-21）：每屏一个 json**—— 一个 .screen = 一个页面 =
+一个 Activity = 一个独立 ftu；len==N，data 是普通单屏 json 的根
             （同屏内部的 window/dialog 不是页，写在 .screen 里即可）；
-          - merge_windows=True（CLI --merge-windows）：N 屏合成**同一 json** 内的 N 个整屏
+          - merge_windows=True（CLI --merge-windows）：N 屏合成**同一 json**内的 N 个整屏
             window（键 window__1..window__N 连续编号，首屏 visible:true、其余 visible:false，
-            切页走 showWnd/hideWnd）—— **仅当这些屏同属一个 Activity**时才用；
-            此时 len==N（逐页列出，都指向同一个 json），**页数 = 屏数，一屏不许丢**。
+切页走 showWnd/hideWnd）—— **仅当这些屏同属一个 Activity**时才用；
+此时 len==N（逐页列出，都指向同一个 json），**页数 = 屏数，一屏不许丢**。
         meta = {screensDetected, pagesProduced, mode, failed[], error?}；
         mode in (single-screen / per-screen / merge-windows)；
         screensDetected != pagesProduced 一律写 meta['error']（禁止再静默丢页）。
@@ -872,10 +870,10 @@ class HtmlToJson:
     def _compose_windows(self, screens, meta):
         """N 屏 -> 同一 json 内 N 个整屏 window（**merge-windows 口径**，页数 = 屏数）。
 
-        只在「这些屏同属一个 Activity（同 ftu 内整屏 window）」时用；缺省口径是每屏一个 json。
-        键先占号（window__1..window__N 连续），再逐屏把子控件写进对应 window，
-        避免页内嵌套 window 抢占页号。某屏转换失败 -> 记 failed 并跳过（上层据此报错，
-        不静默丢页）。返回 (data, warnings, made_ids)：made_ids = 成功合成的页 id 列表。
+只在「这些屏同属一个 Activity（同 ftu 内整屏 window）」时用；缺省口径是每屏一个 json。
+键先占号（window__1..window__N 连续），再逐屏把子控件写进对应 window，
+避免页内嵌套 window 抢占页号。某屏转换失败 -> 记 failed 并跳过（上层据此报错，
+不静默丢页）。返回 (data, warnings, made_ids)：made_ids = 成功合成的页 id 列表。
         """
         first = screens[0]
         W, H = self._screen_size(first)
@@ -929,10 +927,10 @@ class HtmlToJson:
         return ctx.root, ctx.warnings, made_ids
 
     def _fix_slidewindow_icon_size(self, root, recursive=False):
-        """SlideWindow 图标布局铁律（沛哥 2026-09-01）：iconSize 必须按实际图片尺寸，
-        不是控件平分格子大小（默认 128 会导致图标位置不对/拉伸）。
+        """SlideWindow 图标布局铁律（2026-09-01）：iconSize 必须按实际图片尺寸，
+不是控件平分格子大小（默认 128 会导致图标位置不对/拉伸）。
         HTML 未显式指定 data-icon-w/h 时，尝试从 items 首张图片读实际尺寸回填；
-        读不到则保留默认并 warning 提示。padding 语义：padding=图标相对平分格子边界，
+读不到则保留默认并 warning 提示。padding 语义：padding=图标相对平分格子边界，
         iconTextPadding=配套文字 padding（文档：knowledge/uicontrols/slidewindow-fields.md）。"""
         try:
             from PIL import Image as _PImage
@@ -966,7 +964,7 @@ class HtmlToJson:
             # 用户显式指定过 data-icon-w/h 则跳过
             if val.get('__icon_explicit'):
                 continue
-            # 读全部图标图实际尺寸（沛哥 2026-09-01：同一 slidewindow 所有图标尺寸必须一致）
+            # 读全部图标图实际尺寸（2026-09-01：同一 slidewindow 所有图标尺寸必须一致）
             sizes = []
             for it in items:
                 pt = it.get('picTab') or {}
@@ -1003,10 +1001,10 @@ class HtmlToJson:
     def _find_screens(cls, root):
         """收集全部 div.screen（文档顺序）。返回 (screens[], nested_nodes[])。
 
-        screens = **最外层** .screen（= 页）：嵌套在另一个 .screen 内部的**不计页**，
-        其容器被忽略、屏内控件仍按最外层页处理（v0.27.100 起嵌套由 error 降为 warning）。
+        screens = **最外层**.screen（= 页）：嵌套在另一个 .screen 内部的**不计页**，
+其容器被忽略、屏内控件仍按最外层页处理（v0.27.100 起嵌套由 error 降为 warning）。
         nested_nodes = 被忽略的嵌套 .screen 节点（上层在 warnings 里点名列出，不许静默）。
-        旧版 _find_screen() 只取第一个 .screen 就 return，多屏设计稿因此被静默压成一页
+旧版 _find_screen() 只取第一个 .screen 就 return，多屏设计稿因此被静默压成一页
         （2026-09-21 修：页数 = 屏数，一屏不许丢）。
         """
         screens, nested = [], []
@@ -1028,8 +1026,8 @@ class HtmlToJson:
     def _slidewindow_dicts(cls, d, out=None, recursive=True):
         """取 slidewindow 控件 dict（recursive=True 时递归到嵌套 window 内）。
 
-        单屏旧路径保持**不递归**（与改动前逐字段一致，不多出回填）；
-        多屏合成后 slidewindow 落在整屏 window 内，用 recursive=True 才不会漏回填 iconSize。
+单屏旧路径保持**不递归**（与改动前逐字段一致，不多出回填）；
+多屏合成后 slidewindow 落在整屏 window 内，用 recursive=True 才不会漏回填 iconSize。
         """
         if out is None:
             out = []
@@ -1053,9 +1051,9 @@ class HtmlToJson:
     def _convertible_effects(self, node, style, hit):
         """本次会被 gen_res 自动烘焙成图的效果名（与 _effect_assets 同一套条件）。
 
-        为什么要算（v0.27.33 修「误导提示」）：转图能力可用时，线性渐变/阴影+圆角/loading 动画
-        本来就会自动出图并写进 json（实测 grad_/shadow_/loading_*.png + backgroundPic/playFile），
-        旧文案却一律喊「无法硬转，请切图」——让 AI 以为转图失败了、白做一轮手工切图。
+为什么要算（v0.27.33 修「误导提示」）：转图能力可用时，线性渐变/阴影+圆角/loading 动画
+本来就会自动出图并写进 json（实测 grad_/shadow_/loading_*.png + backgroundPic/playFile），
+旧文案却一律喊「无法硬转，请切图」——让 AI 以为转图失败了、白做一轮手工切图。
         """
         if not (_HAS_GEN_RES and getattr(self, 'asset_dir', None)):
             return set()
@@ -1079,7 +1077,7 @@ class HtmlToJson:
     def _warn_css_effects(self, ctx, node):
         """检测 style 里的 CSS 效果属性：能自动转图的说明「已转图」，转不了的提示切图。
 
-        两类分开说：
+两类分开说：
           - 已转图（渐变/阴影+圆角/loading 动画）→ 信息提示，避免 AI 白做手工切图
           - 转不了（径向渐变/文字阴影/变换/滤镜/透明度/过渡）→ 保留「请切图 + data-pic」指引
         """
@@ -1274,7 +1272,7 @@ class HtmlToJson:
         cap = self._caption(ctx, 'window', attrs)
         pos = self._pos(attrs)
         # 字段全集 v2（SampleUI-New 基准 2026-09-08）：window 必写
-        #   backgroundColor/hideTimeOut/modal/touchable/visible 含默认也显式（-1/false）；beepEnable 不强制（沛哥）
+        #   backgroundColor/hideTimeOut/modal/touchable/visible 含默认也显式（-1/false）；beepEnable 不强制（）
         c = {'backgroundColor': -1, 'caption': cap,
              'hideTimeOut': -1, 'id': ctx.nid('window'),
              'modal': False,
@@ -1310,7 +1308,7 @@ class HtmlToJson:
                     # → 图==控件 1:1（check_all #11），可见卡片主体仍落在作者给定坐标
                     _grow(pos, eff['pad'])
                     c['__pad'] = eff['pad']
-                    # ⚠️ 2026-09-11：阴影图带透明外扩边，控件底色必须取**页面底色** ——
+                    # ⚠️ 2026-09-11：阴影图带透明外扩边，控件底色必须取**页面底色**——
                     # 否则整块外扩区被控件底色（本例白）填满 → 阴影渐变/圆角都看不出来。
                     # 卡体填充色已烘焙进阴影图，不需要控件再填一次。
                     root_bg = (ctx.root or {}).get('backgroundColor')
@@ -1328,7 +1326,7 @@ class HtmlToJson:
         attrs = node.attrs
         cap = self._caption(ctx, 'listview', attrs)
         # listview.item 子结构 v2.1（SampleUI item 17 键 100%，不含 id）：补安全默认键；
-        # ⚠️ position 必写（沛哥 2026-09-08）：行高 = lv高/rows - rowSpacing（公式见函数尾）；iconPosition/textPosition 布局键条件写
+        # ⚠️ position 必写（2026-09-08）：行高 = lv高/rows - rowSpacing（公式见函数尾）；iconPosition/textPosition 布局键条件写
         item = {'alignment': 37, 'backgroundColor': -1, 'bgColorTab': {'color0': -1},
                 'bold': False, 'caption': 'item',
                 'colorTab': {'color0': 16777215}, 'fontSize': 16,
@@ -1372,7 +1370,7 @@ class HtmlToJson:
         sb = _attr(attrs, 'data-scrollbar')
         if sb is not None:
             c['hasScrollbar'] = str(sb).strip() in ('1', 'true')
-        # ⚠️ item.position 必写（沛哥 2026-09-08）
+        # ⚠️ item.position 必写（2026-09-08）
         # 行高公式 = lv高/rows 均分 - rowSpacing（basedemo-new_z20_1024_600 验证：164/4-5=36✓ 437/3-5≈140✓ 424/5-0=84✓；
         # SampleUI 216x275 rows5→55 同吻合）；item 宽 = lv 宽
         _lvp = c['position']
@@ -1385,7 +1383,7 @@ class HtmlToJson:
 
     def _open_diagram(self, ctx, node):
         """波形图：backgroundPic 背景图 + xAxisRange/yAxisRange 坐标范围 + region 绘图区 + infos[] 波形配置。
-        子 div.wave 每条收进 infos（penColor/penWidth/step/style/antialias/eraseSpace/xScale/yScale）。
+子 div.wave 每条收进 infos（penColor/penWidth/step/style/antialias/eraseSpace/xScale/yScale）。
         style: 0=折线 1=曲线（UIlayoutDemo/diagram.ftu 校准）；eraseSpace=刷新间距。
         """
         attrs = node.attrs
@@ -1411,7 +1409,7 @@ class HtmlToJson:
         """滑动窗口（Android 主页式，UIlayoutDemo/main.ftu 校准）：
         cols/rows 每页行列 + iconSize 图标尺寸 + iconTextAlignment 文字对齐 + iconTextPadding/padding 间距 +
         dragMaxDis 最大拖动距离 + edgeEffect 边缘效果 + orientation 方向 + rollSpeed 滚动速度 + items[] 图标项数组。
-        子 div.item 每条收进 items（picTab 两态图 + text 文字）。
+子 div.item 每条收进 items（picTab 两态图 + text 文字）。
         """
         attrs = node.attrs
         cap = self._caption(ctx, 'slidewindow', attrs)
@@ -1454,8 +1452,8 @@ class HtmlToJson:
     def _open_scrollwindow(self, ctx, node):
         """滚动窗口（UIlayoutDemo/setting.ftu 校准）：
         dragMaxDis **越界拖拽上限**（overscroll，不是行程） + orientation 滑动方向（垂直/水平） + edgeEffect 边界效果（拖拽/无/循环）。
-        滚动内容 = 内嵌的普通 window（如 ScrollWin 2400）——**它的尺寸才是行程**（行程 = 内层 window 尺寸 − 视口）。
-        口径（2026-10-01 钟工修正）：别拿 dragMaxDis 算行程/判滚没滚到底，见 knowledge/uicontrols/scroll-drag-interaction-spec.md。
+滚动内容 = 内嵌的普通 window（如 ScrollWin 2400）——**它的尺寸才是行程**（行程 = 内层 window 尺寸 − 视口）。
+口径（2026-10-01 需求方修正）：别拿 dragMaxDis 算行程/判滚没滚到底，见 knowledge/uicontrols/scroll-drag-interaction-spec.md。
         """
         attrs = node.attrs
         cap = self._caption(ctx, 'scrollwindow', attrs)
@@ -1480,7 +1478,7 @@ class HtmlToJson:
     def _open_pagewindow(self, ctx, node):
         """翻页窗口（PageWindowDemo-New/main.ftu 校准）：
         dragMaxDis 最大拖动距离 + orientation 滑动方向 + edgeEffect 边界效果 + rollSpeed 滚动速度。
-        页面 = 多个同尺寸 window 叠放（Window1/2/3 各 400×260），代码 turnToNextPage/turnToPrevPage 翻页。
+页面 = 多个同尺寸 window 叠放（Window1/2/3 各 400×260），代码 turnToNextPage/turnToPrevPage 翻页。
         """
         attrs = node.attrs
         cap = self._caption(ctx, 'pagewindow', attrs)
@@ -1545,7 +1543,7 @@ class HtmlToJson:
         attrs = node.attrs
         cap = self._caption(ctx, 'radiogroup', attrs)
         # basedemo radiogroup 7 键 100%：backgroundColor/touchable/visible 含默认显式；radiobuttons[] 内嵌子项
-        # touchable 必须 True（沛哥 2026-09-10 修正）：radiogroup 是「容器显式 false」口径的例外——
+        # touchable 必须 True（2026-09-10 修正）：radiogroup 是「容器显式 false」口径的例外——
         # 写 False 会让整组收不到触摸、点了没反应（单选组点不动）。详见 knowledge/uicontrols/touch-events.md
         c = {'backgroundColor': -1, 'caption': cap, 'id': ctx.nid('radiogroup'),
              'position': self._pos(attrs),
@@ -1653,7 +1651,7 @@ class HtmlToJson:
                 c['bgColorTab'] = {'color0': bgc}
             # 静态底图 data-bgpic（v0.27.90）：textview 分支原**不读**该属性 → json 里没有
             #   backgroundPic = 「弹窗白卡/药丸/图标压根没画出来」，只能靠案例侧反查 HTML 兜底。
-            #   现与 button/window/seekbar/circlebar 等分支同口径落地；有图同样去底色（透明角会透底色）。
+            #现与 button/window/seekbar/circlebar 等分支同口径落地；有图同样去底色（透明角会透底色）。
             bgp = _attr(attrs, 'data-bgpic') or _attr(attrs, 'data-background-pic')
             if bgp and not str(bgp).startswith('#'):
                 c['backgroundPic'] = bgp if '/' in bgp else 'images/' + bgp
@@ -1700,15 +1698,15 @@ class HtmlToJson:
                 c['frameInterval'] = int(fi)
         elif typ == 'button':
             # 图片按钮铁律（UIlayoutDemo/button.ftu 校准）：有按键图片（picTab/backgroundPic）时不开背景色，
-            #  否则图片叠在颜色上效果与预想不同；仅纯文字按钮才用 bgColorTab/colorTab 多态色
+            #否则图片叠在颜色上效果与预想不同；仅纯文字按钮才用 bgColorTab/colorTab 多态色
             # ⚠️ 2026-09-05 修正：无底色且无文字的按钮（透明热区，覆盖卡片/图片上当点击区）不写 bgColorTab，
-            #    避免默认底色 0x374457 遮住下层内容；有 data-bg 或纯文字按钮才设底色（text 由 _leaf 预先解析）
+            #避免默认底色 0x374457 遮住下层内容；有 data-bg 或纯文字按钮才设底色（text 由 _leaf 预先解析）
             bgc = self._bg_color(attrs)
             c = {'alignment': ALIGN.get((_attr(attrs, 'data-align') or 'center').lower(), 37),
                  'caption': cap,
                  'colorTab': {'color0': _color_explicit(attrs, 'data-color', 0xEEF2F6)},
                  'id': ctx.nid('button'),
-                 'position': pos, 'touchable': True}   # SampleUI button touchable 恒 true（沛哥：交互控件显式 true）
+                 'position': pos, 'touchable': True}   # SampleUI button touchable 恒 true（现场反馈：交互控件显式 true）
             if bgc or text:
                 c['bgColorTab'] = {'color0': (bgc if bgc is not None else 0x374457)}
             fs = self._font_size(attrs)
@@ -1725,7 +1723,7 @@ class HtmlToJson:
                     pics[k] = v if '/' in v else 'images/' + v
             if pic0:
                 pics.setdefault('pic0', pic0 if '/' in pic0 else 'images/' + pic0)
-            # iconfont 图标按钮（2026-09-03 沛哥定规：图标优先）：
+            # iconfont 图标按钮（2026-09-03 需求方定规：图标优先）：
             # data-icon="play" / class="btn iconfont icon-play" / class="btn icon-play"
             # 无显式多态图时 → 自动生成 normal+pressed 两态 PNG 作 picTab（透明底线框图标按钮）
             glyph = _glyph_from_attrs(attrs)
@@ -1759,7 +1757,7 @@ class HtmlToJson:
             if 'picTab' in c or 'backgroundPic' in c:
                 # A6 修（2026-09-27）：有图控件的**圆角外四角**由 bgColorTab 决定，旧版一律 pop
                 #   → 四角取引擎缺省（窗口黑底），坐卡片上的圆角按钮/图标四角发黑（P4 报障）。
-                #   口径与工程侧 inject_rounded() 一致：data-bg 优先，否则取最近祖先容器底色。
+                #口径与工程侧 inject_rounded() 一致：data-bg 优先，否则取最近祖先容器底色。
                 self._corner_bg(ctx, c, attrs, bgc, cap)
             # 图标按钮 padding（Button1 demo）：data-icon-w/h 图标尺寸 + data-pad 间隙 → iconPosition
             if _attr(attrs, 'data-icon-w') or _attr(attrs, 'data-icon-h'):
@@ -1771,7 +1769,7 @@ class HtmlToJson:
             c.setdefault('text', '')     # SampleUI button 必写 text（空串合法）
             self._text_extra(c, attrs)
         elif typ == 'edittext':
-            c = {'alignment': 37, 'bold': False, 'caption': cap,   # SampleUI edittext 必写 bold（去 beepEnable，沛哥）
+            c = {'alignment': 37, 'bold': False, 'caption': cap,   # SampleUI edittext 必写 bold（去 beepEnable）
                  'bgColorTab': {'color0': self._bg_or(attrs, 0xFFFFFF)},
                  'colorTab': {'color0': _color_explicit(attrs, 'data-color', 0)},
                  'fontSize': self._font_size(attrs) or 16,   # SampleUI edittext fontSize 100% 必写（默认 16）
@@ -1830,8 +1828,8 @@ class HtmlToJson:
             # padding 配置（UIlayoutDemo/checkbox.ftu 校准）：
             #  iconPosition = 图标锚点（控件内 left:0 top:0，尺寸默认=控件高，可用 data-icon-w/h 指定）
             #  textPosition = 文本区（left = 图标宽 + padding(6~8)，top:0，宽=控件宽-图标宽-padding）
-            #  有图两态：picTab{pic0: 未选中, pic2: 选中}（注意选中是 pic2 不是 pic1！）
-            #  无图变色：bgColorTab{color0,color2} + colorTab{color0,color2}（color2=选中态）
+            #有图两态：picTab{pic0: 未选中, pic2: 选中}（注意选中是 pic2 不是 pic1！）
+            #无图变色：bgColorTab{color0,color2} + colorTab{color0,color2}（color2=选中态）
             cw, ch = pos.get('width', 100), pos.get('height', 40)
             iw = int(_attr(attrs, 'data-icon-w') or ch)
             ih = int(_attr(attrs, 'data-icon-h') or ch)
@@ -1866,7 +1864,7 @@ class HtmlToJson:
         elif typ == 'circlebar':
             # 圆形进度条（UIlayoutDemo/circlebar.ftu 校准）：backgroundPic 背景图（不裁剪）+
             #   progressPic 有效图（按进度裁剪扇形）+ progressPicPos 有效图位置 + max/maxAngle/startAngle + clockwise
-            # ⚠️ clockwise: false = 逆时针（demo 曾反，沛哥 17:17 确认）
+            # ⚠️ clockwise: false = 逆时针（demo 曾反 17:17 确认）
             cw, ch = pos.get('width', 200), pos.get('height', 200)
             # SampleUI circlebar 必写键（去 beepEnable）：backgroundColor/clockwise/startAngle/touchable/visible 含默认显式
             c = {'backgroundColor': -1, 'caption': cap,
@@ -2026,7 +2024,7 @@ class HtmlToJson:
                     c['rotationPoint'] = {'x': _num(parts[0]), 'y': _num(parts[1])}
         elif typ == 'qrcode':
             # 二维码（QRCodeDemo 校准）：codeStr 初始内容，代码 loadQRCode(text) 动态生成
-            # SampleUI qrcode touchable:true + 沛哥口径 padding 默认各边 10
+            # SampleUI qrcode touchable:true + 需求方口径 padding 默认各边 10
             c = {'backgroundColor': 16777215, 'caption': cap,
                  'id': ctx.nid('qrcode'), 'padding': 10,
                  'touchable': True, 'visible': True,
@@ -2062,7 +2060,7 @@ class HtmlToJson:
             if pic:
                 c['backgroundPic'] = pic if '/' in pic else 'images/' + pic
             else:
-                # iconfont 图标自动生成（2026-09-03 沛哥定规：图标优先）：
+                # iconfont 图标自动生成（2026-09-03 需求方定规：图标优先）：
                 # data-icon="play" / class="iconfont icon-play" / class="icon icon-play" → PNG 图标 textview
                 glyph = _glyph_from_attrs(attrs)
                 if glyph is not None:
@@ -2177,14 +2175,14 @@ class HtmlToJson:
     def _corner_bg(self, ctx, c, attrs, given, cap=''):
         """有图控件的**圆角外底色**归属（A6 修，2026-09-27）。
 
-        有图控件的四角透出的是 `bgColorTab`；旧版「有图一律 pop(bgColorTab)」
+有图控件的四角透出的是 `bgColorTab`；旧版「有图一律 pop(bgColorTab)」
         → 四角取引擎缺省（窗口黑底）→ 坐在卡片上的圆角按钮/图标四角发黑
         （P4 报障「图标角落都是黑的」，真机逐点：四角 (0,0,0) / 卡片 (28,28,30)）。
-        口径与工程侧 inject_rounded() 一致：
+口径与工程侧 inject_rounded() 一致：
           ① 作者显式写 data-bg/data-background/style.background → 用它（最高优先）；
           ② 没写 → 取**最近祖先容器底色**；
           ③ 都没有 → 保持 pop（退回引擎缺省），并提示补 data-bg。
-        注意：bgColorTab 只管最外 1px；圆角里侧 4~5px 是图里像素，补色救不回来。
+注意：bgColorTab 只管最外 1px；圆角里侧 4~5px 是图里像素，补色救不回来。
         """
         if given is not None:
             c['bgColorTab'] = {'color0': given}
@@ -2254,8 +2252,8 @@ def _finalize_layout(data, warnings):
     """生成收尾规范（fix.log 规则前移内化，2026-09-03）：
     - FT-009：textview/button 宽高自动扩到最小尺寸公式（超容器则告警不扩）
     - FT-006：顶层多个互盖的整屏 window -> 告警，按 page-architecture-spec.md 口径
-      说清「同业务域就该这样放，只有跨业务域/独立返回栈/超大页面才拆新 ftu」（不误判为错误）
-    原地修改 data，把需人工处理的问题追加到 warnings。
+说清「同业务域就该这样放，只有跨业务域/独立返回栈/超大页面才拆新 ftu」（不误判为错误）
+原地修改 data，把需人工处理的问题追加到 warnings。
     """
     res = data.get('resolution') or {}
     rw = res.get('width') or 0
@@ -2320,7 +2318,7 @@ def _finalize_layout(data, warnings):
 
     # ---- FT-006 顶层多个互盖整屏 window（merge-windows 形态的提醒）----
     # 口径来源：knowledge/devflow/page-architecture-spec.md §0/§2（两者文字互引用，禁止再漂移）。
-    # 钟工 2026-09-21 口径：缺省 = 一个 .screen = 一页 = 一个 Activity = 一个 json/ftu；
+    # 2026-09-21 口径：缺省 = 一个 .screen = 一页 = 一个 Activity = 一个 json/ftu；
     # 只有「同属一个 Activity 的多个整屏 window」才合成同一个 json（html2json --merge-windows）。
     # v0.27.100 起：本告警出现在 merge-windows 产物里（同 ftu 多整屏 window 就该这么放，
     # 但**不许**因此把跨业务域的多页硬塞进一个 ftu）。
@@ -2357,10 +2355,10 @@ def _finalize_layout(data, warnings):
 def html2json(input_html, output_json=None, res=None, asset_dir=None, merge_windows=False):
     """受限 HTML -> json 布局（缺省：每屏一个 json）。
 
-    返回 {success, jsonPath, jsonPaths, jsonsProduced, screensDetected, pagesProduced, mode,
+返回 {success, jsonPath, jsonPaths, jsonsProduced, screensDetected, pagesProduced, mode,
           pages[], resolution, controls, warnings, ...}（失败时 success:false + error）。
 
-    多屏（HTML 内多个 div.screen）默认口径（钟工 2026-09-21 口径，见
+多屏（HTML 内多个 div.screen）默认口径（2026-09-21 口径，见
     knowledge/devflow/page-architecture-spec.md）：**一个 .screen = 一个页面 = 一个 Activity
     = 一个独立 json（-> 一个独立 ftu）**；N 屏 -> N 个 json，文件名取 data-page
     （缺省 page_k）；同屏内部的 window / dialog（弹窗）不是页，直接写在 .screen 里
@@ -2369,21 +2367,21 @@ def html2json(input_html, output_json=None, res=None, asset_dir=None, merge_wind
     merge_windows=True（CLI --merge-windows）：N 屏合成同一个 json 内的 N 个整屏 window
     （window__1..window__N 连续编号，首屏 visible:true、其余 visible:false，切页走
     showWnd/hideWnd）—— **仅当 AI 判定这些屏同属一个 Activity（同 ftu 内整屏 window）**时用；
-    返回体 warnings 里回显「本次按 merge-windows 合成」。
+返回体 warnings 里回显「本次按 merge-windows 合成」。
 
     **屏数核对**：screensDetected != pagesProduced 一律 success:false + error（不静默丢页）；
     pages[] 逐页列出（页名 + 对应 json 路径；merge_windows 时多页指向同一个 json）。
     controls = 控件总数（**含嵌套**，A7 修 2026-09-27；旧版只数根层）；
     controlsTopLevel / controlsNested = 顶层与嵌套分项。
 
-    输出落点：output_json 写 .json = 具体文件；写成目录（不带 .json）= 该目录；省略 = html
-    同目录。单页时直接写 output_json 文件（与旧版一致）；多页时写 <目录>/<data-page>.json。
+输出落点：output_json 写 .json = 具体文件；写成目录（不带 .json）= 该目录；省略 = html
+同目录。单页时直接写 output_json 文件（与旧版一致）；多页时写 <目录>/<data-page>.json。
 
     asset_dir：CSS 效果（渐变/阴影/emoji/loading）自动转图输出目录；
-    缺省自动定位到项目 resources/images/（json 引用 images/xxx.png 相对 resources 目录，与设备加载一致）：
+缺省自动定位到项目 resources/images/（json 引用 images/xxx.png 相对 resources 目录，与设备加载一致）：
       - output_json 位于 <项目>/ui/ 下 -> asset_dir = <项目>/resources/images/
       - 其它位置 -> 回退 json 同目录 images/ 并警告（提示手动挪图或显式传 asset_dir）
-    不传 output_json 且不传 asset_dir 时不做自动转图（纯布局转换）。"""
+不传 output_json 且不传 asset_dir 时不做自动转图（纯布局转换）。"""
     if not os.path.isfile(input_html):
         return {'success': False, 'error': f'html 文件不存在: {input_html}'}
     with open(input_html, encoding='utf-8-sig') as f:
@@ -2445,7 +2443,7 @@ def html2json(input_html, output_json=None, res=None, asset_dir=None, merge_wind
     data = pages[0][1]
     resv = data.get('resolution', {})
     # A7 修（2026-09-27）：**嵌套控件也计入**（旧版只数根层 → 50 控件页面报 controls:1，
-    #   键盘页/弹窗页的控件全部漏计；controls 现在是全量，另附顶层/嵌套分项）
+    #键盘页/弹窗页的控件全部漏计；controls 现在是全量，另附顶层/嵌套分项）
     top_cnt = sum(1 for k, v in data.items() if isinstance(v, dict) and '__' in k)
     all_cnt = len(_walk_ctrls(data))
     count = all_cnt
@@ -2478,9 +2476,9 @@ if __name__ == '__main__':
     if len(args) < 1 or dead:
         print('用法: python html2json.py <input.html> [output.json|输出目录] [--res WxH] [--merge-windows]')
         print('  <input.html> 的每个 .screen = 一个页面 = 一个 Activity = 一个独立 json（缺省口径），')
-        print('  文件名取 data-page，输出目录 = output 所写目录 / html 同目录；')
+        print('文件名取 data-page，输出目录 = output 所写目录 / html 同目录；')
         print('  --merge-windows：N 屏合成同一 json 的 N 个整屏 window（首屏 visible:true 其余 false），')
-        print('    仅当这些屏同属一个 Activity 时才用；同屏内 window/dialog 直接写在 .screen 里。')
+        print('仅当这些屏同属一个 Activity 时才用；同屏内 window/dialog 直接写在 .screen 里。')
         if dead:
             print('  [X] --split-per-page 已退役（v0.27.100）：每屏一个 json 就是现在的缺省口径，去掉该参数即可。')
         sys.exit(2 if dead else 1)

@@ -16,7 +16,7 @@ evidence: []
 # 🔄 动态旋转屏幕 / 运行时切换布局（relayout）
 
 > 检索导引：问「运行时转屏 / 横竖屏切换不重启应用 / relayout 怎么用 / setScreenRotate·setTouchRotate / 两套 ftu 怎么切 / 某版本不支持某控件（scrollwindow 看不到）」→ 本文；静态方向配置（`rotateScreen` / `rotateTouch` / 取图角度口径）见 `knowledge/devflow/package-properties-easyui-cfg.md` §9。
-> 2026-09-14 沛哥指路 `projects/LearningProject/RelayoutDemo`（F133）→ 本机 easyui 逐版本实测校准（**需要较新的 EasyUI**：relayout 由 easyui 2.9.0 引入；现有公开包的 z20/z21/t113 均无 → 找 FlyThings 厂家支持）。
+> 2026-09-14 需求方指路 `projects/LearningProject/RelayoutDemo`（F133）→ 本机 easyui 逐版本实测校准（**需要较新的 EasyUI**：relayout 由 easyui 2.9.0 引入；现有公开包的 z20/z21/t113 均无 → 找 FlyThings 厂家支持）。
 > 检索词：动态旋转 / 运行时旋转 / 横竖屏切换 / 屏幕方向切换 / 两套 ftu / relayout / setScreenRotate / setTouchRotate / EasyUI 版本要求 /
 > **scrollwindow 不显示 / 控件看不到 / 控件没渲染 / 页面只有标题 / 某版本不支持某控件 / 编译期头版本 vs 设备运行库 / ro.easyui.version / strings libeasyui.so**。
 
@@ -54,8 +54,8 @@ static bool onButtonClick_Button1(ZKButton *pButton) {
 
 | 要求 | 说明 |
 |------|------|
-| **两套（或多套）ftu，同一个 Activity** | `ui/main.ftu`(800×1280) + `ui/main_p.ftu`(1280×800)，都是这个 `mainActivity` 的布局，`getAppName()` 仍返回主 `main.ftu` |
-| **控件 ID 必须完全一致** | 实测两版 json 里 Button1=20001、QRCode1=92001、DigitalClock1=93001、ListView1=80001、PageWindow1=31001… 一模一样 → relayout 后 Activity 里 `mXXXPtr` 仍有效，`onCreate` 里注册的 adapter/监听器/串口回调不用重来，只变布局 |
+| **两套（或多套）ftu，同一个 Activity**| `ui/main.ftu`(800×1280) + `ui/main_p.ftu`(1280×800)，都是这个 `mainActivity` 的布局，`getAppName()` 仍返回主 `main.ftu` |
+| **控件 ID 必须完全一致**| 实测两版 json 里 Button1=20001、QRCode1=92001、DigitalClock1=93001、ListView1=80001、PageWindow1=31001… 一模一样 → relayout 后 Activity 里 `mXXXPtr` 仍有效，`onCreate` 里注册的 adapter/监听器/串口回调不用重来，只变布局 |
 | `package.properties` | `ignore.ftu.regex=*_p.ftu`（`*_p.ftu` 是备方向布局，按此正则处理，不要被当成普通 UI 一起处理） |
 | 切完要做的收尾 | 布局变了 → 尺寸/坐标相关的东西（列表刷新、控件重排、状态恢复）放在 relayout 之后，或在 `onUI_show` 里按当前 `CONFIGMANAGER->getScreenRotate()` 判方向 |
 
@@ -87,20 +87,20 @@ static bool onButtonClick_Button1(ZKButton *pButton) {
 | 步 | 看什么 | 怎么做 |
 |---|---|---|
 | ① 工程**编译期**解析版本 | `Manifest.xml` 写的是范围（如 `easyui ^2.2.0`），真版本在锁文件 | `<工程>/.deps.lock` 的 `"revision"`；实用 include 路径见 `.fun/<平台>/build.ninja` 的 `-I.../registry/public/<平台>/easyui/<版本>/include` |
-| ② registry 里**有没有这个类** | 逐版本 grep `include/` | `grep -rl ZKScrollWindow <registry>/<平台>/easyui/*/include/` |
+| ② registry 里**有没有这个类**| 逐版本 grep `include/` | `grep -rl ZKScrollWindow <registry>/<平台>/easyui/*/include/` |
 | ③ 设备**运行库**有没有 | `getprop ro.easyui.version` + pull 运行库看符号 | `adb pull /lib/libeasyui.so` → 在 PC 上 `strings`/正则扫 `ZKScrollWindow` 与 `_ControlFactory_ZKScrollWindow::create` |
 
-**Z20 实测结果（2026-09-27）**：registry **2.6.0 / 3.0.0 都有** `window/ZKScrollWindow.h`
+**Z20 实测结果（2026-09-27）**：registry **2.6.0 / 3.0.0 都有**`window/ZKScrollWindow.h`
 （2.6.0 = 1317 B，API 更全：`setScrollbarColor`/`moveTo`/`setScrollStep`/`setMoveCheckTimeThreshold`；
 3.0.0 = 716 B 是**裁剪版**）；设备 `/lib/libeasyui.so`（822,656 B）含 **40 个 `ZKScrollWindow*` 符号**
 （含 `_ControlFactory_ZKScrollWindow::create`）→ 运行期真能创建。
 **⇒「某版本不支持 `scrollwindow`」不成立**，别往这个方向查。
 
-**反向交叉验证（证明这套判定有效）**：同一份设备库 **有** `ConfigManager::setScreenRotate/setTouchRotate/getScreenRotate`、
-**没有** `relayout` —— 与上表「`relayout` 需 ≥ 2.9.0，Z20 无」完全吻合。
+**反向交叉验证（证明这套判定有效）**：同一份设备库 **有**`ConfigManager::setScreenRotate/setTouchRotate/getScreenRotate`、
+**没有**`relayout` —— 与上表「`relayout` 需 ≥ 2.9.0，Z20 无」完全吻合。
 
 **「控件看不到 / 页面只有标题」排查顺序**（按命中率）：
-1. 设备加载的是**哪一份** lib/ui（`/tmp` > `/mnt/extsd` > `/res`，SD 卡可劫持）
+1. 设备加载的是**哪一份**lib/ui（`/tmp` > `/mnt/extsd` > `/res`，SD 卡可劫持）
    → `knowledge/devflow/package-properties-easyui-cfg.md` 的「查找优先级」节；
 2. 产物有没有同步（改 `ui/*.json` 必须立即 `fui pack` 出 ftu；`fun pack` 会把旧 ftu 回写成 json）
    → `knowledge/devflow/ftu-json-pipeline.md`；
@@ -114,9 +114,9 @@ static bool onButtonClick_Button1(ZKButton *pButton) {
 踩了两个坑，都不在旋转本身：
 
 1. **缺 `base-utility` 包**：新生成器产出的 `.fun/<平台>/generated/event_dispatcher.h` 里 `#include <base/functional.h>`，而 easyui 2.9.0 的依赖图里没有这个头 → 该头属于**独立包 `base-utility`**（`registry/public/{f133,v85x,z20}/base-utility/*/include/base/functional.h`）。
-   修法：`Manifest.xml` 追加 `<package id="base-utility" version="10.10.2"/>` → **`fun install`**（刷新 `.deps.lock`，**不 install 新包 include 路径不进生成的 CMake，加了也白加**）
-2. **构建宏改名**：老逻辑文件头写的是 `#ifdef FUSE_BUILD`，而 `fun build` 定义的宏是 **`FUN_BUILD`** → 那段被跳过 → `GENERATED_UI_DEFINITIONS`/`INIT_UI_EVENT_BINDINGS` 没进来 → 满屏 `'LOGD_TRACE' was not declared`、`'ZKButton' was not declared`、`'Intent' does not name a type`。
-   修法一行：`#ifdef FUSE_BUILD` → `#if defined(FUSE_BUILD) || defined(FUN_BUILD)`
+修法：`Manifest.xml` 追加 `<package id="base-utility" version="10.10.2"/>` → **`fun install`**（刷新 `.deps.lock`，**不 install 新包 include 路径不进生成的 CMake，加了也白加**）
+2. **构建宏改名**：老逻辑文件头写的是 `#ifdef FUSE_BUILD`，而 `fun build` 定义的宏是 **`FUN_BUILD`**→ 那段被跳过 → `GENERATED_UI_DEFINITIONS`/`INIT_UI_EVENT_BINDINGS` 没进来 → 满屏 `'LOGD_TRACE' was not declared`、`'ZKButton' was not declared`、`'Intent' does not name a type`。
+修法一行：`#ifdef FUSE_BUILD` → `#if defined(FUSE_BUILD) || defined(FUN_BUILD)`
 
 两处都改完：`fun build -p F133` 通过，产出 `libzkgui.so`（251KB，链接期 `relayout` 符号由 libeasyui.so 解析成功）。
 

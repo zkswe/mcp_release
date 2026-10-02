@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""ui-visual 三合一入口契约（v0.27.37，沛哥：ui-visual 做个 action 入口）。
+"""ui-visual 三合一入口契约（v0.27.37：ui-visual 做个 action 入口）。
 
 合并：flythings_ui_editor + flythings_ui_edit_apply + flythings_ui_diff → flythings_ui_visual(action)。
 2026-10-01 加两个 action：render（json → 引擎等价 PNG，离线所见即所得）/ render_check

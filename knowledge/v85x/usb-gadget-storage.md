@@ -22,14 +22,14 @@ evidence: []
 > 同款工程代码：CV201_PND / xdv23 / xdv200300 的 `usb_monitor.cpp`（`sys::change_usb_mode()`）。
 
 > 来源：xdv23 / xdv200300 项目实测（V85XEMMC 平台，AW_V853 芯片，ZKSWE Develop Team 2023 usb_monitor.cpp）。
-> 沛哥定界（2026-09-03）：客户/产品口径说的「MTP 功能」= **USB 连电脑当存储设备拷照片/视频**，
+> 需求方定界（2026-09-03）：客户/产品口径说的「MTP 功能」= **USB 连电脑当存储设备拷照片/视频**，
 > 实现是 Linux **configfs usb_gadget + mass_storage**（UMS/U 盘模式，非 MTP 协议栈）。
-> 本文把两条知识线统一成一条主线：**数据介质双选（EMMC 分区 / TF 卡）** × **USB 档位（ADB 调试 / U盘存储）**。
+> 本文把两条知识线统一成一条主线：**数据介质双选（EMMC 分区 / TF 卡）**× **USB 档位（ADB 调试 / U盘存储）**。
 
 ## 0. 概念框架：介质与档位是两个正交维度
 
 - **介质（数据放哪）**：内置 EMMC `mmcblk0p1` → 挂 `/mnt/storage`；TF 卡 `mmcblk1` → 挂 `/mnt/extsd`。
-  探针：`/dev/block/mmcblk0boot0` 是否存在。
+探针：`/dev/block/mmcblk0boot0` 是否存在。
 - **USB 档位（连电脑暴露成什么）**：ADB 调试（functionfs `ffs.adb`） / U盘存储（mass_storage） / NONE（仅充电）。
   U盘档要把「当前介质」的块设备写进 `lun.0/file`。
 
@@ -103,7 +103,7 @@ case E_USB_CONFIG_STORAGE:
 ```
 
 ⚠️ **口径**：`lun.0/file` 只接受**块设备/镜像文件**（不接受挂载路径），所以暴露的是
-`/dev/block/mmcblk0p1` 或 `/dev/block/mmcblk1`，**不是** `/mnt/extsd` 这个字符串；
+`/dev/block/mmcblk0p1` 或 `/dev/block/mmcblk1`，**不是**`/mnt/extsd` 这个字符串；
 `/mnt/extsd` 只是 TF 卡在设备内的挂载点。电脑端看到的是当前介质文件系统内容（照片/视频）。
 
 ### 2.3 档位选择与防重
@@ -178,11 +178,11 @@ FlyThings app 自己把介质块设备格式化为 FAT32 并挂载（EMMC 分区
 ## 7. 坑与注意
 
 1. **互斥 / configfs 未挂 / adbd uid-gid 与 `ctl.restart`**：与 `knowledge/hardware/usb-otg-switch.md` §坑 1–3 同源——
-   换档先 unlink 两个旧 symlink（残留→新档不生效）、先 `mount none configfs`，ADB 档 functionfs uid/gid=2000。
+换档先 unlink 两个旧 symlink（残留→新档不生效）、先 `mount none configfs`，ADB 档 functionfs uid/gid=2000。
 2. **暴露整分区 vs 设备端写入抢数据**：U盘档暴露的是整块介质（mmcblk0p1 / mmcblk1），
-   若设备端同时挂载读写相册会抢——量产取舍：默认 U盘模式但写入只在拍照/录像瞬间；
-   要更稳可切档前 umount（业务层控制）
+若设备端同时挂载读写相册会抢——量产取舍：默认 U盘模式但写入只在拍照/录像瞬间；
+要更稳可切档前 umount（业务层控制）
 3. **UDC 绑定时机**：function 挂好后必须写 `g1/UDC` 才被电脑枚举；枚举不到先看
    `/sys/class/udc` 是否有控制器（无 = 内核没开 gadget/驱动问题）
 4. **探针一致性**：Main.cpp 挂载与 usb_monitor 暴露源必须用同一探针（mmcblk0boot0），
-   两处不一致会出现「设备端写 A 介质、电脑读 B 介质」的错乱
+两处不一致会出现「设备端写 A 介质、电脑读 B 介质」的错乱

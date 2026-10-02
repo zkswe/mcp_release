@@ -7,7 +7,7 @@
   1. ui/<res>/<page>.json   （字段全集显式、id 连续编号、根节点 id:0）
   2. resources/images/*.png （只给需要的块出图；**图 == 控件盒**，走 ui_tools/gen_res.py）
   3. --render 时出渲染图（走 ui_tools/json2img.py）
-  4. --check  时跑全检（走 ui_tools/check_all.py）
+  4. --check时跑全检（走 ui_tools/check_all.py）
 
 设计铁律（照抄，不自创）：
   · 字段全集显式化  → knowledge/uicontrols/json-field-mandatory.md
@@ -16,9 +16,9 @@
   · 切图「图 == 盒」+ 抗锯齿/倒角口径 → knowledge/devflow/ui-asset-rules.md
   · **图标来源 = `components/icons` 图标资产库**（禁自绘/禁 emoji 字体兜底；按盒尺寸选档
     56/24/22，图严格 == 控件盒；库里没有该语义名才回退 gen_res 线框并**明说**）
-    → 钟工 2026-10-01；实现见同目录 `iconlib.py`
+    → 2026-10-01；实现见同目录 `iconlib.py`
   · 设计令牌/相对尺度 → projects/UISpec-Demo/docs/SPEC-CHECK.md §7/§8 + blocks/_tokens.json
-  · caption 全页唯一（块序号**全页全局递增** + 块类型前缀；同名 caption ⇒ onButtonClick_ 重定义 ⇒
+  · caption 全页唯一（块序号**全页全局递增**+ 块类型前缀；同名 caption ⇒ onButtonClick_ 重定义 ⇒
     C++ 编译失败）→ 见本文件 BLOCK_PREFIX / assert_caption_unique（修前按卡内序号分配 = 跨卡重名）
 
 用法：
@@ -38,8 +38,8 @@ REPO = os.path.dirname(os.path.dirname(HERE))                 # tools/FlyThings_
 UI_TOOLS = os.path.join(os.path.dirname(REPO), 'ui_tools')     # tools/ui_tools（现有工具的家）
 BLOCKS_DIR = os.path.join(HERE, 'blocks')
 sys.path.insert(0, UI_TOOLS)
-import gen_res                                                 # noqa: E402  唯一出图实现
-import iconlib                                                 # noqa: E402  图标唯一来源（components/icons）
+import gen_res                                                 # noqa: E402唯一出图实现
+import iconlib                                                 # noqa: E402图标唯一来源（components/icons）
 
 sys.stdout.reconfigure(encoding='utf-8')
 
@@ -48,7 +48,7 @@ sys.stdout.reconfigure(encoding='utf-8')
 #   ⇒ 同页出现 ButtonRowSettingRow1 / ImageRowSettingRow1Chevron / TextRowSettingRow1Label /
 #     TextRowSettingRow1Value / RowSep1 等重名 caption
 #   ⇒ 生成的 src/logic/<page>Logic.cc 里 onButtonClick_ButtonRowSettingRow1 **定义两次**（C++ 重定义，
-#     编译必失败；check_all #5 只查「回调是否存在」不查唯一，所以一路 PASS）。
+#编译必失败；check_all #5 只查「回调是否存在」不查唯一，所以一路 PASS）。
 # 口径（修后）：
 #   · 块序号 = **全页全局递增**（1,2,3…，跨卡不重置；卡内行接着本卡的序号往下数）
 #   · 块名   = <块类型前缀><序号>（setting_row→SettingRow4 / icon_row→IconRow5 /
@@ -104,9 +104,9 @@ STRUCT4_TYPES = ('chart_card', 'image_gallery', 'keypad', 'loading', 'form_secti
 ROW_CONTAINERS = ('card', 'form_section')
 
 # 控件 id 分区（与 tools/ui_tools/html2json.py 的 ID_BASE 同源，只有 checkbox/radiobutton 例外）
-#   · checkbox 本库取 **94500** 段（html2json 旧口径是 21000）：check_all #5 按「20000 ≤ id < 30000」
-#     推断「这是 button，必须有 onButtonClick_<caption>」——而 checkbox 的语义回调是 onCheckedChanged，
-#     给它编一个 onButtonClick 是错的。避开该段即可两不误（真机 id 段无语义，只要求页内唯一）。
+#   · checkbox 本库取 **94500**段（html2json 旧口径是 21000）：check_all #5 按「20000 ≤ id < 30000」
+#推断「这是 button，必须有 onButtonClick_<caption>」——而 checkbox 的语义回调是 onCheckedChanged，
+#给它编一个 onButtonClick 是错的。避开该段即可两不误（真机 id 段无语义，只要求页内唯一）。
 #   · radiobutton 取 94100 段（html2json 用 22000，会落进上面那段；且 radiobuttons 是数组子项，
 #     #5 的 by_caption 递归不到数组元素，这里取 94100 只为口径统一 + 与 radiogroup 94000 相邻）。
 #   · subitem 24000 段：同样是数组子项，与既有工程一致。
@@ -171,8 +171,8 @@ def duplicate_captions(doc):
 def assert_caption_unique(doc, page_name=''):
     """自检：任一 caption 重名 → 报错退出。
 
-    重名的直接后果：src/logic/<page>Logic.cc 会生成两份 onButtonClick_<caption> → C++ 重定义报错；
-    业务代码按 caption 取控件（m<caption>Ptr / getControl）也会取到错的那个。
+重名的直接后果：src/logic/<page>Logic.cc 会生成两份 onButtonClick_<caption> → C++ 重定义报错；
+业务代码按 caption 取控件（m<caption>Ptr / getControl）也会取到错的那个。
     """
     dups = duplicate_captions(doc)
     if not dups:
@@ -230,7 +230,7 @@ def rgba(s, default_a=255):
 
 def text_min_size(text, font_size, align):
     """FT-009 最小尺寸公式（防文本截断）——与 check_all #13 同一口径。
-    中文/全角=1.0，英数括号=0.55，其它符号=0.6；×1.1 余量 + 16；居中再 +8；高 = 字号×1.25。"""
+中文/全角=1.0，英数括号=0.55，其它符号=0.6；×1.1 余量 + 16；居中再 +8；高 = 字号×1.25。"""
     if not text:
         return 0, 0
     wsum = 0.0
@@ -253,8 +253,8 @@ def text_min_size(text, font_size, align):
 def chevron_image(w, h, color, ss=8):
     """箭头贴图：45° 圆头描边，笔画 ≈ 盒宽 12% 且 ≥2px，SS≥8 + 面积平均（Image.BOX）缩回。
 
-    口径来源：projects/UISpec-Demo/docs/SPEC-CHECK.md §7（箭头 glyph 规则）——
-    该口径是为「小盒（≥12×16）」现场定的；gen_res 的 iconfont 比例在 12px 盒上只有 1px 笔画。
+口径来源：projects/UISpec-Demo/docs/SPEC-CHECK.md §7（箭头 glyph 规则）——
+该口径是为「小盒（≥12×16）」现场定的；gen_res 的 iconfont 比例在 12px 盒上只有 1px 笔画。
     """
     from PIL import Image, ImageDraw
     ss = max(8, int(ss))
@@ -275,9 +275,9 @@ def chevron_image(w, h, color, ss=8):
 def mark_image(prm):
     """勾选/单选标记图（第 2 批交互块）：底形状（gen_res 覆盖率口径）+ 可选符号。
 
-    为什么要一个「合成」入口：checkbox 的选中态 = 品牌实底 + 白勾，单选选中态 = 品牌实圆 + 白内点。
-    底形状与符号都能用 gen_res 现成函数（bordered_cov / rounded_rect_cov / glyph_icon），
-    这里只做「同一张画布上叠一次」——不是重写画形状的逻辑。
+为什么要一个「合成」入口：checkbox 的选中态 = 品牌实底 + 白勾，单选选中态 = 品牌实圆 + 白内点。
+底形状与符号都能用 gen_res 现成函数（bordered_cov / rounded_rect_cov / glyph_icon），
+这里只做「同一张画布上叠一次」——不是重写画形状的逻辑。
     """
     from PIL import Image
     w, h = int(prm['w']), int(prm['h'])
@@ -313,13 +313,13 @@ def mark_image(prm):
 def chart_image(prm):
     """图表切图（第 4 批 chart_card）：折线 / 柱状 —— **图 == 盒**（铁律 #11/#17）。
 
-    与 mark_image 同一口径：**不重写画形状的逻辑**——
+与 mark_image 同一口径：**不重写画形状的逻辑**——
       · 基线（x 轴）= gen_res.rounded_rect_cov(radius=0) 的 1px 直角条；
       · 柱状条 = gen_res.rounded_rect_cov（实心圆角条，绝不空心/描边）；
       · 折线 = 8× 超采样画布 + 圆头折线（与 chevron_image 同一手法）+ BOX 面积平均缩回
         （带直通 α 的边界禁用负瓣算子）；数据点加圆头端点（避免尖角退成硬阶梯）。
 
-    为什么折线笔画有下限（≥3px）：细线在 aa_audit 里会退成硬阶梯（hard_diag）→ #21 真缺陷
+为什么折线笔画有下限（≥3px）：细线在 aa_audit 里会退成硬阶梯（hard_diag）→ #21 真缺陷
     （与块内 glyph 的 glyph_min_px=24 同一类口径）。
     """
     from PIL import Image, ImageDraw
@@ -487,7 +487,7 @@ def build_metrics(W, H, tok):
     m['btn_h'] = min(m['bar_bot'] - 2 * 12, r4(H * 0.07))
     m['btn_w'] = max(64, r4(W * 0.16))
     # 内容区下沿 = 底栏上沿 = 屏高 − 底栏高（**唯一算式**：底栏 y / 底导 y / 内容视口都由它派生）
-    # 缺陷 A（钟工 2026-10-01 看图）：原先底栏 y 用 H − bar_bot 定位、内容视口用另一套减法，
+    # 缺陷 A（2026-10-01 看图）：原先底栏 y 用 H − bar_bot 定位、内容视口用另一套减法，
     # 两处各算一套 → 内容流按错视口排，最后一行/卡片底落进底栏带被盖住。这里钉成同一令牌。
     m['content_bottom'] = H - m['bar_bot']
     # 内容视口高 = 屏高 − 标题带 − 底部条高（与上同一令牌派生，不再各算一套）
@@ -678,12 +678,12 @@ class Composer(object):
     def glyph(self, name, g, size, color, canvas=None, state=None):
         """块内图标：**唯一来源 = `components/icons` 图标资产库**（Tabler 单色烘焙图）。
 
-        钟工 2026-10-01：「这些网络/设备的 icon 来源？效果差异和实际差异太大」——
-        库里查得到该语义名 → 走 `iconlib`（按盒尺寸选档，产物图严格 == 控件盒）；
+需求方 2026-10-01：「这些网络/设备的 icon 来源？效果差异和实际差异太大」——
+库里查得到该语义名 → 走 `iconlib`（按盒尺寸选档，产物图严格 == 控件盒）；
         **库里确实没有**才回退 `gen_res` 线框，并在输出里**明说「回退线框」**（不静默）。
 
         state：库里的两态图标（_off 描边 / _on 实心）——底导的选中/未选中直接对上；
-        单态图标忽略该参数。
+单态图标忽略该参数。
         """
         size = int(size)
         info = iconlib.lookup(g) if iconlib.available() else None
@@ -706,7 +706,7 @@ class Composer(object):
     def chevron(self, name, w, h, color):
         """箭头（行尾 Chevron）：按 SPEC-CHECK §7 的箭头专属口径画。
 
-        为什么不直接用 gen_res.glyph_icon('forward')：iconfont 描边比例是「盒宽 2/24 ≈ 8%」
+为什么不直接用 gen_res.glyph_icon('forward')：iconfont 描边比例是「盒宽 2/24 ≈ 8%」
         → 在 12px 盒上退化成 1px 硬斜边（aa_audit 报 hard_diag）；§7 定的箭头规则是
         「45° + 圆头 + 笔画 ≈ 盒宽 12% 且 ≥2px」，小盒才立得住。这里按该口径实现。
         """
@@ -716,13 +716,13 @@ class Composer(object):
     def clip_shape(self, name, w, h, radius, fill, src_w, src_h, src_x, src_y, ss=8):
         """条内装饰件：从「整条的圆角形状」上裁一块（装饰件边缘与容器边缘严丝合缝）。
 
-        为什么不用普通 shape：整条底是**药丸**（半径 = 带高/2），条内装饰件若用自己那份
+为什么不用普通 shape：整条底是**药丸**（半径 = 带高/2），条内装饰件若用自己那份
         `shape(..., m['radius'])` 就会在条的两端露出「方角叠影」（选中项在最左/最右时
-        尤其明显 —— 同一根条的左端看起来比方，右端是圆的，钟工 2026-10-01 指的「左右倒角
-        不一样」）。这里改用**同一份形状覆盖率 mask** 裁切：装饰件的圆角 = 条本身的圆角，
-        像素级同缘；同一元素左右两端要么都跟条走、要么都是直角，绝不混。
+尤其明显 —— 同一根条的左端看起来比方，右端是圆的，2026-10-01 指的「左右倒角
+不一样」）。这里改用**同一份形状覆盖率 mask**裁切：装饰件的圆角 = 条本身的圆角，
+像素级同缘；同一元素左右两端要么都跟条走、要么都是直角，绝不混。
 
-        图 == 盒（铁律 #1）：裁出来的就是装饰件的控件盒尺寸。
+图 == 盒（铁律 #1）：裁出来的就是装饰件的控件盒尺寸。
         """
         self.assets[name] = ('clip', dict(w=int(w), h=int(h), radius=int(radius), fill=fill,
                                           src_w=int(src_w), src_h=int(src_h),
@@ -746,8 +746,8 @@ class Composer(object):
     def chart(self, name, w, h, kind, data, color, axis, base_h=1):
         """图表切图（第 4 批 chart_card）：折线/柱状合成图；**图 == 控件盒**（铁律 #11/#17）。
 
-        与 bar()/mark() 同一口径：本库只做「同一张画布上叠现成形状」，
-        不重写画形状的逻辑（柱条/基线都走 gen_res，折线走 chevron 那套超采样手法）。
+与 bar()/mark() 同一口径：本库只做「同一张画布上叠现成形状」，
+不重写画形状的逻辑（柱条/基线都走 gen_res，折线走 chevron 那套超采样手法）。
         """
         self.assets[name] = ('chart', dict(w=int(w), h=int(h), kind=str(kind),
                                            data=[float(v) for v in data],
@@ -830,8 +830,8 @@ class Composer(object):
     def name_tree(self, blocks):
         """按「页顺序」给块树命名：卡/表单分组 → 其内行（行接着本块的序号往下数，不再按内下标重数）。
 
-        第 4 批起递归目标是 ROW_CONTAINERS（card + form_section）——两容器内都是行集合，
-        行块的 _seq / _name 必须由这里统一分配（否则 form_section 里的行拿不到唯一 caption）。
+第 4 批起递归目标是 ROW_CONTAINERS（card + form_section）——两容器内都是行集合，
+行块的 _seq / _name 必须由这里统一分配（否则 form_section 里的行拿不到唯一 caption）。
         """
         for b in blocks or []:
             self.name_block(b)
@@ -888,7 +888,7 @@ class Composer(object):
         """1px 分割线（轴线，直线不需要 AA）→ 出图 + textview 装饰件。
 
         caption = RowSep<上一行块的全局序号>。旧实现用「当前控件数 + 1」计数 → 跨卡重数，
-        修前示例里 RowSep1 重复 5 次（5 张卡内分割线全叫 RowSep1）。
+修前示例里 RowSep1 重复 5 次（5 张卡内分割线全叫 RowSep1）。
         """
         m = self.m
         name = 'sep_%dx%d.png' % (w, 1)
@@ -909,7 +909,7 @@ class Composer(object):
 
     # ─────── 块 builder：行族（setting_row / icon_row / toggle_row / device_card / time_row）───────
     #   time_row（第 4 批）**就是一行**：与 setting_row 同一套行模板（标题 + 值 + 箭头），
-    #   只是语义上是「时间 / 日期」（块库不解析时间、不重造日历——日历是 components/ui_v1/Calendar 的活）。
+    #只是语义上是「时间 / 日期」（块库不解析时间、不重造日历——日历是 components/ui_v1/Calendar 的活）。
     ROW_TYPES = ('setting_row', 'icon_row', 'toggle_row', 'device_card', 'time_row')
     # 行族扫描范围 = 老行块 + 第 2 批字段行（字段行的文本带必须跟老行同一左缘/同宽）
     FAMILY_TYPES = ROW_TYPES + FIELD_TYPES
@@ -917,8 +917,8 @@ class Composer(object):
     def plan_row_reserve(self, rows):
         """一行族口径（同页全局，越卡也一致）：右端预留宽 + 是否给图标列留位。
 
-        为什么按「页」而不是按「卡」：check_all #27 按容器递归取族，跨卡的同行会互相比；
-        且 §2.1 要求“同一页里重复出现的行，其一切口径只能照抄”。所以全页取同一组值。
+为什么按「页」而不是按「卡」：check_all #27 按容器递归取族，跨卡的同行会互相比；
+且 §2.1 要求“同一页里重复出现的行，其一切口径只能照抄”。所以全页取同一组值。
         2026-10-01 第 2 批修正：文本盒宽也按这个**全页族预留**算（不再按「本行自己有什么右端控件」）
         —— 否则「只有箭头的行」与「有开关的行」文本盒宽不同，#27 会报「口径偏离同族」
         （旧两版示例各有 2 条 WARN 就是这么来的）。
@@ -938,11 +938,11 @@ class Composer(object):
         return reserve
 
     def assert_icon_uniform(self):
-        """自检（钟工 2026-10-01 口径「同一页面统一设计」）：同一页行族，图标要么都有、要么都没有。
+        """自检（2026-10-01 口径「同一页面统一设计」）：同一页行族，图标要么都有、要么都没有。
 
-        为什么：图标列一旦被某行占用，所有行的文本左缘都会右移一个列宽（全页对齐）；
-        此时只有个别行真画图标 → 观感上像「那几行多长了一块」，不统一（实测 1024 版只有
-        多屏拼接/客厅面板两行有图标）。
+为什么：图标列一旦被某行占用，所有行的文本左缘都会右移一个列宽（全页对齐）；
+此时只有个别行真画图标 → 观感上像「那几行多长了一块」，不统一（实测 1024 版只有
+多屏拼接/客厅面板两行有图标）。
         """
         m = self.m
         rows = []
@@ -960,8 +960,8 @@ class Composer(object):
         if with_icon and len(with_icon) != len(rows):
             raise SystemExit(
                 '[X] 同页行族图标不统一（%d/%d 行有图标）：%s\n'
-                '    口径：同一页面行族图标「要么都有、要么都没有」；'
-                '缺图标的行请补 icon，或去掉所有 icon（钟工 2026-10-01）'
+                '口径：同一页面行族图标「要么都有、要么都没有」；'
+                '缺图标的行请补 icon，或去掉所有 icon（2026-10-01）'
                 % (len(with_icon), len(rows),
                    '；'.join(b.get('label') or b.get('_name') for b in with_icon)))
 
@@ -984,10 +984,9 @@ class Composer(object):
     def row_boxes(self, x0, y0, w):
         """行族文本盒统一口径（全页一份）：(text_left, text_w, right_edge)。
 
-        右缘取 **全页族预留**（fam_reserve）而不是「本行自己有什么右端控件」：
-        同一页行族只能有一套口径（check_all #27 按族取众数比 left/width/height/alignment，
-        按「本行自己的右端控件」算会让只有箭头的行与有开关的行宽度不同 → 报「口径偏离同族」）。
-        代价：只有箭头的行会多留一段死区；文本左对齐且短，观感无影响。
+右缘取 **全页族预留**（fam_reserve）而不是「本行自己有什么右端控件」：同一页行族只能有一套口径（check_all #27 按族取众数比 left/width/height/alignment，
+按「本行自己的右端控件」算会让只有箭头的行与有开关的行宽度不同 → 报「口径偏离同族」）。
+代价：只有箭头的行会多留一段死区；文本左对齐且短，观感无影响。
         """
         m = self.m
         text_left = x0 + (m['icon_left'] + m['icon_bg'] + m['spacer']
@@ -1120,9 +1119,9 @@ class Composer(object):
     def assert_children_fit(self, win, cw, ch_, where):
         """自检：容器子节点盒必须落在容器盒内（子节点坐标是**相对父容器**的）。
 
-        为什么加（2026-10-01 实测缺陷）：卡底图节点误用「卡的绝对 x/y」当子节点坐标 →
-        父子双计 → 白框底色整体右下各偏一个 margin、右侧溢出屏外（症状=「白框底色与文本列表区错位」）。
-        同类事故在 SmartPanel 也出现过（卡片底图/装饰件用绝对坐标）。
+为什么加（2026-10-01 实测缺陷）：卡底图节点误用「卡的绝对 x/y」当子节点坐标 →
+父子双计 → 白框底色整体右下各偏一个 margin、右侧溢出屏外（症状=「白框底色与文本列表区错位」）。
+同类事故在 SmartPanel 也出现过（卡片底图/装饰件用绝对坐标）。
         """
         bad = []
         for c in getattr(win, 'children', []) or []:
@@ -1137,20 +1136,20 @@ class Composer(object):
             raise SystemExit('[X] %s 子节点越界（子节点坐标应为相对父容器）：%s' % (where, '；'.join(bad)))
 
     # ───────────── 自检：底部固定带 × 内容区（缺陷 A） ─────────────
-    #  背景（钟工 2026-10-01 看图）：「内容区伸进底部固定条，把最后一行盖住」。
-    #  根因：底栏 y 与内容视口各算一套（视口没同步扣掉底栏高）→ 内容流按错视口排。
-    #  修法：① 视口 = 屏高 − 标题带 − 底栏高（共用 m['bar_bot'] 一个令牌，见 build_metrics）；
+    #背景（2026-10-01 看图）：「内容区伸进底部固定条，把最后一行盖住」。
+    #根因：底栏 y 与内容视口各算一套（视口没同步扣掉底栏高）→ 内容流按错视口排。
+    #修法：① 视口 = 屏高 − 标题带 − 底栏高（共用 m['bar_bot'] 一个令牌，见 build_metrics）；
     #        ② 本自检把口径钉死：固定带（bottom_actions / bottom_nav）与实际渲染出的
-    #           内容节点逐对判 rect 相交，相交 → 报错退出、不出产物。
-    #  判交用**裁剪后的有效 rect**（= 设备实际渲染出来的那部分）：scrollwindow 视口外的
-    #  内容被引擎裁掉、不参与判交 —— 否则「滑动列表最后一行半露」这种正常滚动形态会误报。
+    #内容节点逐对判 rect 相交，相交 → 报错退出、不出产物。
+    #判交用**裁剪后的有效 rect**（= 设备实际渲染出来的那部分）：scrollwindow 视口外的
+    #内容被引擎裁掉、不参与判交 —— 否则「滑动列表最后一行半露」这种正常滚动形态会误报。
     CLIP_TYPES = ('scrollwindow', 'pagewindow', 'slidewindow')
 
     def _collect_rects(self, nodes, ox=0, oy=0, clip=None, out=None, path=()):
         """递归收集节点的「绝对有效矩形」：own rect ∩ 祖先裁剪容器 rect（裁剪容器 = 视口）。
 
-        返回 [{'rect':(l,t,r,b), 'caption':…, 'type':…, 'path':(…)}]；
-        完全被裁掉（有效面积 0）的节点不进结果（设备上根本画不出来，也不会被盖住）。
+返回 [{'rect':(l,t,r,b), 'caption':…, 'type':…, 'path':(…)}]；
+完全被裁掉（有效面积 0）的节点不进结果（设备上根本画不出来，也不会被盖住）。
         """
         out = [] if out is None else out
         for nd in nodes or []:
@@ -1231,7 +1230,7 @@ class Composer(object):
     def row_height(self, blk):
         """一行块占的高度（第 2 批）：字段行 = 文本带 + 控件带；列表/滚轮自带块高。
 
-        必须与各 builder 实际占的高度一致（卡容器高靠它先算出来，子控件坐标是卡局部坐标）。
+必须与各 builder 实际占的高度一致（卡容器高靠它先算出来，子控件坐标是卡局部坐标）。
         """
         m = self.m
         t = blk.get('type')
@@ -1331,7 +1330,7 @@ class Composer(object):
         s_ = blk['_seq']                                  # 空态块序号（多空态同页也不重名）
         # 块高必须**装得下**图标底 + 文案 + 副文案：极小屏上 H×0.30 会不够（320 屏实测 72 < 80）
         # → 子项溢出块高 → 内容实际底 > 声明内容高（滑动到底也滚不出来），
-        #   且展平长图里会压到底部固定带（被 full_render 的 assert_bands_clear 拓出）。
+        #且展平长图里会压到底部固定带（被 full_render 的 assert_bands_clear 拓出）。
         s = r4(m['icon_bg'] * 2)
         band = max(r4(self.H * 0.30), s + 2 * (m['spacer2'] + 4 + m['h_b2']))
         cx = x + (m['content_w'] - s) // 2
@@ -1458,7 +1457,7 @@ class Composer(object):
     def make_seekbar(self, caption, box, progress, readonly=False):
         """seekbar 控件：轨道/有效图 == 控件盒，thumb 子盒 == 滑块图（seekbar-fields.md）。
 
-        盒高 ≥ thumb.size.height 是硬要求：矮盒会真机把滑块压成扁椭圆（只改图/只改盒都没用）。
+盒高 ≥ thumb.size.height 是硬要求：矮盒会真机把滑块压成扁椭圆（只改图/只改盒都没用）。
         readonly=True（progress_row）：不给滑块图 + thumb.size 写 0（引擎不画滑块；给图会被当成可拖滑块）。
         """
         m = self.m
@@ -1561,11 +1560,11 @@ class Composer(object):
     def build_field_row(self, blk, parent, x0, y0, w):
         """字段行 = 文本带（行高，**逐字节照抄行族口径**）+ 控件带（控件单独占一带）。
 
-        为什么控件单独占一带（而不是塞进行条右端）：
+为什么控件单独占一带（而不是塞进行条右端）：
           · seekbar/edittext 需要「盒高 ≥ 滑块高 / 文本高」才不被压扁（seekbar-fields.md §2）；
           · 塞进行条右端会与值文本盒几何相交 → #27 文本×控件重叠 / 观感上文字外凸；
           · 独立带在极小屏（320×240）也放得下，不必另设一套形态。
-        返回本行占的高度（供卡容器 / 内容流累加）。
+返回本行占的高度（供卡容器 / 内容流累加）。
         """
         m = self.m
         col = {k: hex2int(v) for k, v in self.tok['color'].items() if v.startswith('#')}
@@ -1681,7 +1680,7 @@ class Composer(object):
         """逐行宽度核对（**每一行都要过**，不只模板行）——长文案在这里被点名。
 
         check_all 的 #13/#36 **covers 不到 subItem**（item/subItem 是数组子项，`_page_ctrls`
-        不遍历）→ 块库必须自己把「行文案装不装得下」核到位（否则运行期截断在静态审查里静默）。
+不遍历）→ 块库必须自己把「行文案装不装得下」核到位（否则运行期截断在静态审查里静默）。
         """
         m = self.m
         b = self.list_row_boxes(w, ih, row, chevron)
@@ -1775,14 +1774,14 @@ class Composer(object):
         """list_item：listview + subItem 行模板（**行内容由 items 给**）。
 
         itemH = int(lv高 / rows) − rowSpacing（引擎口径）——模板高必须 == 它（check_all #37）；
-        余数（= lv高 mod rows）**是有意的可滑动提示**（底部露出下一项一小块），不是缺陷。
+余数（= lv高 mod rows）**是有意的可滑动提示**（底部露出下一项一小块），不是缺陷。
 
         `items[]` = 行数据（{icon, title, value}）：
           · 模板行 = items[0]（引擎只有一份行模板 → 静态图/首次上屏所有行都是它，
-            逐行各异的文案是**运行期数据**，由 obtainListItemData 填，json 表达不了）；
+逐行各异的文案是**运行期数据**，由 obtainListItemData 填，json 表达不了）；
           · **列表高只由 rows 算**——items 给少了只在真机多出空行，不会把已有行挤在一起；
           · 每一行都过宽度自检（#13/#36 追不到 subItem，所以块库自己核）。
-        返回本块占的高度。
+返回本块占的高度。
         """
         m = self.m
         col = self.col_int()
@@ -1846,11 +1845,11 @@ class Composer(object):
     def build_wheel(self, blk, parent, x, y, w):
         """wheel_picker：一列 = 一个 listview；选中条挂**静态层**且写在 listview 之前。
 
-        口径（knowledge/uicontrols/listview-wheel-picker.md）：
+口径（knowledge/uicontrols/listview-wheel-picker.md）：
           · 正中行 = 选中行（rows 必须奇数；运行时用「数据侧平移」把值摆到正中）；
           · 选中条必须是**先定义的静态 textview**（z 更低）—— 挂行背景图会跟着行滚；
           · lv 高 = rows × 模板高（滚轮要刚好一屏窗口，不留余数）。
-        返回本块占的高度。
+返回本块占的高度。
         """
         m = self.m
         col = {k: hex2int(v) for k, v in self.tok['color'].items() if v.startswith('#')}
@@ -1898,16 +1897,16 @@ class Composer(object):
         return cur + lv_h - y
 
     # ─────── 第 3 批 builder：结构 / 导航 / 提示类 ───────
-    #   统一形态（照抄行族口径）：**装饰件先定义（z 低 + touchable 显式 false）→ 命中 button 最后定义（z 高）**；
-    #   容器一律过 assert_children_fit；文本一律过 check_text_fit（#13）；
+    #统一形态（照抄行族口径）：**装饰件先定义（z 低 + touchable 显式 false）→ 命中 button 最后定义（z 高）**；
+    #容器一律过 assert_children_fit；文本一律过 check_text_fit（#13）；
     #   「文本右缘 → 右端控件左缘」间隙过 note_row_gaps（同页一致 → assert_row_gaps）。
-    #   这批块都是**根层块**：卡内只收行块 / 列表块（build_card 的类型校验会拒绝，不静默兜底）。
+    #这批块都是**根层块**：卡内只收行块 / 列表块（build_card 的类型校验会拒绝，不静默兜底）。
 
     def text_box_w(self, txt, fs, align=37, slack=1.10):
         """文本盒宽 = FT-009 估算宽 × slack，再**向上**取 4px 栅格。
 
-        为什么向上取整：check_all #36 文本余量要求「盒宽 ≥ 估算宽 × 1.05」，
-        而 r4 是四舍五入（可能把余量吃掉）→ 这里用 r4up（例：42 → 44 而不是 40）。
+为什么向上取整：check_all #36 文本余量要求「盒宽 ≥ 估算宽 × 1.05」，
+而 r4 是四舍五入（可能把余量吃掉）→ 这里用 r4up（例：42 → 44 而不是 40）。
         """
         mw, _h = text_min_size(txt, fs, align)
         return r4up(max(4, mw) * slack)
@@ -1915,7 +1914,7 @@ class Composer(object):
     def sem_color(self, state):
         """语义状态 → (前景令牌名, 浅底令牌名)。状态非法 → 报错（不静默兜底）。
 
-        表里同时收 banner 的 4 态（info/success/warn/danger）与胶囊的 4 态（ok/warn/danger/off）。
+表里同时收 banner 的 4 态（info/success/warn/danger）与胶囊的 4 态（ok/warn/danger/off）。
         """
         table = {'info': ('info', 'info1'), 'success': ('success', 'success1'),
                  'warn': ('warn', 'warn1'), 'danger': ('danger', 'danger1'),
@@ -1932,15 +1931,15 @@ class Composer(object):
     def build_tabs(self, blk, parent, x, y):
         """顶部分段控件：容器（window）+ 指示条 + 选中底 + N 个 tab（透明 button 自带文字）。
 
-        z 顺序（本块内）：容器底 → **指示条（先于所有 tab 定义：静态件放最前）** → 选中底 → tab 按钮。
-        指示条与选中底**几何不重叠**（选中底高度让出 ind_h）→ 谁先定义都不互相遮挡；
-        两者都写在 tab 按钮之前（装饰件 z 低、touchable 显式 false）→ #15/#29 不误报。
+        z 顺序（本块内）：容器底 → **指示条（先于所有 tab 定义：静态件放最前）**→ 选中底 → tab 按钮。
+指示条与选中底**几何不重叠**（选中底高度让出 ind_h）→ 谁先定义都不互相遮挡；
+两者都写在 tab 按钮之前（装饰件 z 低、touchable 显式 false）→ #15/#29 不误报。
 
-        2026-10-01 修（钟工看图）：① 指示条曾「两侧内缩 m['radius']」→ 与 tab 项左右各差 6px；
-        现在 = **项盒本身**（同 left / 同 width）。② 选中底曾用自己的 `m['radius']`（6）叠在
-        药丸条（r = 带高/2）上 → 同一根条左端露方角、右端是圆的。现在选中底/指示条都从
+        2026-10-01 修（看图）：① 指示条曾「两侧内缩 m['radius']」→ 与 tab 项左右各差 6px；
+现在 = **项盒本身**（同 left / 同 width）。② 选中底曾用自己的 `m['radius']`（6）叠在
+药丸条（r = 带高/2）上 → 同一根条左端露方角、右端是圆的。现在选中底/指示条都从
         **整条的形状覆盖率mask 裁切**（`clip_shape`）：首/末项的圆角 == 条的圆角（像素同缘），
-        中间项是直角；半径只跟带高走，与宽度无关（图 == 盒，无拉伸）。
+中间项是直角；半径只跟带高走，与宽度无关（图 == 盒，无拉伸）。
         """
         m = self.m
         col = self.col_int()
@@ -1966,8 +1965,8 @@ class Composer(object):
             lefts.append(cur)
             cur += widths[i]
         # ① 指示条：静态件放最前；**与 tab 项同左缘、同宽**（2026-10-01 修缺陷 1：
-        #    旧口径「两侧内缩 m['radius']」= 与项左右各差 6px，钟工看图不齐）。
-        #    边缘不内缩也不出方角：图从「整条形状」裁切 → 首/末项处跟着条的圆角走（缺陷 2）。
+        #旧口径「两侧内缩 m['radius']」= 与项左右各差 6px，需求方看图不齐）。
+        #边缘不内缩也不出方角：图从「整条形状」裁切 → 首/末项处跟着条的圆角走（缺陷 2）。
         ind_w = widths[sel]
         p_ind = self.clip_shape('ind_%dx%d_l%d.png' % (ind_w, m['ind_h'], lefts[sel]),
                                 ind_w, m['ind_h'], r_bar, rgba(self.tok['color']['brand']),
@@ -1977,7 +1976,7 @@ class Composer(object):
                                                ind_w, m['ind_h']),
                                       m['fs']['b2'], col['brand'], '', bg=p_ind, align=37))
         # ② 选中 tab 的底色（高度让出指示条 → 与①不重叠）；同样从条形状裁切，
-        #    半径 == 条半径（按带高算），首/末项与条端圆角严丝合缝，其余边是直角。
+        #半径 == 条半径（按带高算），首/末项与条端圆角严丝合缝，其余边是直角。
         on_w, on_h = widths[sel], h - m['ind_h']
         p_on = self.clip_shape('tab_on_%dx%d_l%d.png' % (on_w, on_h, lefts[sel]),
                                on_w, on_h, r_bar, rgba(self.tok['color']['brand1']),
@@ -2000,8 +1999,8 @@ class Composer(object):
     def build_nav(self, blk, parent):
         """底部导航（固定带，贴底栏上沿）：满宽白面 + 每项 图标 + 文字 + 整项命中按钮。
 
-        与 bottom_actions 的区别：**固定高**（nav_h 只跟屏高/图标档有关，与项数无关）、**无主次按钮**。
-        底导带与底栏带**不重叠**（nav 贴 bar_bot 上沿），视口在 run() 里扣掉 nav_h。
+与 bottom_actions 的区别：**固定高**（nav_h 只跟屏高/图标档有关，与项数无关）、**无主次按钮**。
+底导带与底栏带**不重叠**（nav 贴 bar_bot 上沿），视口在 run() 里扣掉 nav_h。
         """
         m = self.m
         col = self.col_int()
@@ -2217,8 +2216,8 @@ class Composer(object):
     def build_toast(self, blk, parent):
         """浮层提示（根层整屏 window + 半透明圆角底 + 文案）：**visible=false 默认、最后定义 = 最上层**。
 
-        为什么根层整屏 window：与 dialog 同构（业务用 showWnd()/hideWnd() 控制），
-        但 modal=false + touchable=false（提示不该拦住操作）；visible=false 时 #15/#29 自然不报。
+为什么根层整屏 window：与 dialog 同构（业务用 showWnd()/hideWnd() 控制），
+但 modal=false + touchable=false（提示不该拦住操作）；visible=false 时 #15/#29 自然不报。
         """
         m = self.m
         col = self.col_int()
@@ -2244,17 +2243,17 @@ class Composer(object):
         return self.H
 
     # ─────── 第 4 批 builder：复杂块 ───────
-    #   图表卡 / 相册 / 键盘 / 时间行（并入行族）/ 加载态 / 表单分组 / 顶部工具条。
-    #   统一口径（与第 3 批一致）：**装饰件先定义（z 低 + touchable 显式 false）→ 命中 button 最后定义；
-    #   容器一律过 assert_children_fit；文本一律过 check_text_fit（#13）；图一律 == 盒（#11/#17）；
-    #   块内 glyph ≥ glyph_min_px（不降档，极小屏宁可省图标）。
+    #图表卡 / 相册 / 键盘 / 时间行（并入行族）/ 加载态 / 表单分组 / 顶部工具条。
+    #统一口径（与第 3 批一致）：**装饰件先定义（z 低 + touchable 显式 false）→ 命中 button 最后定义；
+    #容器一律过 assert_children_fit；文本一律过 check_text_fit（#13）；图一律 == 盒（#11/#17）；
+    #块内 glyph ≥ glyph_min_px（不降档，极小屏宁可省图标）。
 
     def build_toolbar(self, blk, parent):
         """顶部工具条（固定带）：左返回 + 标题 + 右侧动作图标。
 
-        它是**固定带**（占标题带位置，不进滑动区）：run() 里先把它算进 m['bar_top']，
-        再按新视口排内容 → 标题带以下才是内容区（与 bottom_actions 同源令牌 content_bottom）。
-        与 page_title 二选一（同页同时给 → run() 报错退出），因为两者争同一条带。
+它是**固定带**（占标题带位置，不进滑动区）：run() 里先把它算进 m['bar_top']，
+再按新视口排内容 → 标题带以下才是内容区（与 bottom_actions 同源令牌 content_bottom）。
+与 page_title 二选一（同页同时给 → run() 报错退出），因为两者争同一条带。
         """
         m = self.m
         col = self.col_int()
@@ -2315,7 +2314,7 @@ class Composer(object):
     def build_chart_card(self, blk, parent, x, y):
         """图表卡片：白卡 + 图表（折线 / 柱状）+ 标题 + x 轴刻度 + 轴注。
 
-        图 = **合成切图**（chart_image：柱条/基线走 gen_res，折线走超采样+圆头），**图 == 盒**；
+图 = **合成切图**（chart_image：柱条/基线走 gen_res，折线走超采样+圆头），**图 == 盒**；
         x 轴刻度 = 每个数据点所在槽宽的居中文案（槽宽 = 绘图区宽 / 点数）；轴注 = 单位/口径一行。
         """
         m = self.m
@@ -2398,8 +2397,8 @@ class Composer(object):
     def build_gallery(self, blk, parent, x, y):
         """缩略图相册（宫格）：标题 + 计数 + cols×rows 个格（格底 == 盒 + 占位缩略图）。
 
-        为什么用宫格而不是 listview：等距网格在 listview 里要靠 cols/colSpacing 反算（图 ≠ 盒风险高），
-        且宫格是**静态可画**的（首屏就能看到缩略图）——真图片由业务运行期 setBackgroundPic 换。
+为什么用宫格而不是 listview：等距网格在 listview 里要靠 cols/colSpacing 反算（图 ≠ 盒风险高），
+且宫格是**静态可画**的（首屏就能看到缩略图）——真图片由业务运行期 setBackgroundPic 换。
         """
         m = self.m
         col = self.col_int()
@@ -2476,9 +2475,9 @@ class Composer(object):
     def build_keypad(self, blk, parent, x, y):
         """数字键盘 3×4：键面（== 盒）+ 图标/文字 + 整键透明 button。
 
-        默认 12 键 = 1-9 / 退格 / 0 / 确认（末行 = 退格、数字 0、确认）；
+默认 12 键 = 1-9 / 退格 / 0 / 确认（末行 = 退格、数字 0、确认）；
         items 可覆盖（字符串 = 键面文字，对象 = text / icon），个数必须是 3 的倍数。
-        键面只是静态图：输入拼串在业务侧（onButtonClick_Keypad<n>Key<i>）。
+键面只是静态图：输入拼串在业务侧（onButtonClick_Keypad<n>Key<i>）。
         """
         m = self.m
         col = self.col_int()
@@ -2555,7 +2554,7 @@ class Composer(object):
     def build_loading(self, blk, parent, x, y):
         """加载态（静态可画）：spinner（转圈图标 + 文案）或 skeleton（文案 + N 条骨架条）。
 
-        转圈是**静态帧**（真机动画由业务换图/定时器驱动）；骨架条高 ≥10px（AA 硬口径）。
+转圈是**静态帧**（真机动画由业务换图/定时器驱动）；骨架条高 ≥10px（AA 硬口径）。
         """
         m = self.m
         col = self.col_int()
@@ -2616,9 +2615,9 @@ class Composer(object):
     def build_form_section(self, blk, parent, x, y):
         """表单分组：组标题 + 字段行集合（行一律复用行族/字段行同一套 builder）+ 组间距。
 
-        与 card 的唯一差别：① 默认**不给白卡底**（surface=false，行直接落在页面灰底上，
-        靠组间距分块）；② 组间距 = 块前后各一个 group_gap（run() 统一加，与 card 同口径）。
-        组内可收类型与 card 完全一致（字段行 / 行块 / list_item / wheel_picker）。
+与 card 的唯一差别：① 默认**不给白卡底**（surface=false，行直接落在页面灰底上，
+靠组间距分块）；② 组间距 = 块前后各一个 group_gap（run() 统一加，与 card 同口径）。
+组内可收类型与 card 完全一致（字段行 / 行块 / list_item / wheel_picker）。
         """
         m = self.m
         col = self.col_int()
@@ -3026,18 +3025,18 @@ def main():
         f.write(json.dumps(doc, ensure_ascii=False, indent=2) + '\n')
 
     print('== compose (%dx%d) ==' % (cmp_.W, cmp_.H))
-    print('  行高 %d ｜ 字号 %s ｜ 圆角 %d ｜ 图标底/图标 %d/%d ｜ 箭头 %dx%d ｜ 内容 %d → 视口 %d'
+    print('行高 %d ｜ 字号 %s ｜ 圆角 %d ｜ 图标底/图标 %d/%d ｜ 箭头 %dx%d ｜ 内容 %d → 视口 %d'
           % (cmp_.m['row_h'], cmp_.m['fs'], cmp_.m['radius'], cmp_.m['icon_bg'],
              cmp_.m['icon'], cmp_.m['chev_w'], cmp_.m['chev_h'], cmp_.content_h,
              cmp_.m['viewport']))
-    # 图标来源（钟工 2026-10-01：块库图标 = components/icons 资产库，不自绘、不走 emoji 兜底）
+    # 图标来源（2026-10-01：块库图标 = components/icons 资产库，不自绘、不走 emoji 兜底）
     if cmp_.icon_uses:
         tiers = defaultdict(int)
         for u in cmp_.icon_uses:
             tiers[u['tier']] += 1
         pairs = sorted({(u['token'], u['name'], u['size'], u['tier'], u['state'] or '-')
                         for u in cmp_.icon_uses})
-        print('  图标来源：components/icons（%d 处 ｜ 档位 %s ｜ %d 种 名×尺寸×态 组合）'
+        print('图标来源：components/icons（%d 处 ｜ 档位 %s ｜ %d 种 名×尺寸×态 组合）'
               % (len(cmp_.icon_uses), '、'.join('%d 档 ×%d' % (t, tiers[t])
                                                 for t in sorted(tiers)), len(pairs)))
         for tok, nm, sz, tr, st in pairs:
@@ -3047,19 +3046,19 @@ def main():
               % (len(cmp_.icon_fallbacks),
                  '、'.join('%s@%dpx' % (f['token'], f['size']) for f in cmp_.icon_fallbacks)))
     else:
-        print('  回退线框 0 处（全部图标来自 components/icons ✓）')
+        print('回退线框 0 处（全部图标来自 components/icons ✓）')
     for n in cmp_.notes:
         print('  [NOTE] %s' % n)
 
     if not a.json_only:
         made = cmp_.emit_assets(project)
-        print('  出图 %d 张 → %s' % (len(made), os.path.join(project, 'resources', 'images')))
+        print('出图 %d 张 → %s' % (len(made), os.path.join(project, 'resources', 'images')))
         if not a.no_logic:
             lp = emit_logic(project, a.page, doc)
             print('  logic 骨架 → %s（%d 个按钮回调 + %d 个输入框回调）'
                   % (lp, len(collect_button_caps(doc)), len(collect_edittext_caps(doc))))
     print('  → %s' % json_path)
-    print('  控件：顶层 %d 个键 ｜ 含嵌套共 %d 个控件'
+    print('控件：顶层 %d 个键 ｜ 含嵌套共 %d 个控件'
           % (len([k for k in doc if '__' in k]), cmp_.control_count))
     if cmp_.notes:
         bad = [n for n in cmp_.notes if '文案过长' in n]
@@ -3092,7 +3091,7 @@ def main():
                 from PIL import Image
                 im = Image.open(png)
                 ok = (im.size == (cmp_.W, cmp_.H))
-                print('  渲染图 %s %dx%d ｜ 尺寸 == resolution: %s' % (os.path.basename(png),
+                print('渲染图 %s %dx%d ｜ 尺寸 == resolution: %s' % (os.path.basename(png),
                                                                       im.size[0], im.size[1], ok))
             except Exception as e:                       # noqa: BLE001
                 print('  [WARN] 渲染图读取失败：%s' % e)

@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 """生成 tools_manifest.json（工具/平台/知识规模 的机器可读快照，单一事实来源的派生产物）。
 
-设计（v0.27.33，回应检讨报告 §2.1「工具信息散落在 6 处、全靠人肉同步」）：
-  事实来源只有 3 个，且都在代码里：
+设计（v0.27.33，回应检讨报告 §2.1「工具信息散落在 6 处、全靠人肉同步」）：事实来源只有 3 个，且都在代码里：
     ① 工具的存在 / 参数 = kb_tools.py 的 OP_NAMES + 函数签名 + docstring 首行
        （AST 离线解析，不导入 kb_tools，无需 mcp/onnx 依赖）
     ② 平台矩阵 = platforms.py（PLATFORMS）
     ③ 风险分级 / 分类 / 流程阶段 = **本文件顶部的 RISK / CATEGORY / STAGE 表**（人工维护，唯一一处）
-  产出：
+产出：
     tools_manifest.json = 上面三者的**只读快照**，给文档/外部客户端/检查脚本消费。
     ⚠️ 不要手改 tools_manifest.json；改代码或本文件的表，再重新生成。
 
@@ -27,174 +26,38 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BASE not in sys.path:
     sys.path.insert(0, BASE)
 DEFAULT_OUT = os.path.join(BASE, 'tools_manifest.json')
+import op_spec_loader as _osl                       # noqa: E402  op 契约唯一真源（stdlib only）
 
-# ---- 事实来源③：风险分级（read=只读；write=写本地文件；device=会碰真机）---------------
+# ---- 风险分级（read=只读；write=写本地文件；device=会碰真机）-----------------------------
+# ⚠️ 值不在这里维护：唯一真源 = op_spec.json（op 契约注册表）的 risk 字段，下面三行是派生。
 # 判定口径：默认参数下会不会动本机文件 / 会不会连真机。
 #  - read   ：不写盘、不连设备（检索、解析、校验、查询）
 #  - write  ：会生成/覆盖本机文件（json/ftu/图片/预览稿/Manifest）
 #  - device ：会连真机（adb push / launch / 注入触摸 / 抓屏）
-RISK = {
-    'flythings_get_version': 'read',
-    'flythings_knowledge_search': 'read',
-    'flythings_knowledge_capture': 'write',
-    'flythings_knowledge_export': 'read',
-    'flythings_knowledge_gaps': 'read',
-    'flythings_hardware_info': 'read',
-    'flythings_map_control': 'read',
-    'flythings_ui_schema': 'read',
-    'flythings_translate_ui': 'write',
-    'flythings_read_json': 'read',
-    'flythings_layout_audit': 'read',
-    'flythings_get_project_spec': 'read',
-    'flythings_validate_project': 'read',
-    'flythings_check_project_deps': 'read',
-    'flythings_verify_assets': 'read',
-    'flythings_list_packages': 'read',
-    'flythings_query_package': 'read',
-    'flythings_package_search': 'read',
-    'flythings_get_package_api': 'read',
-    'flythings_resolve_dependencies': 'read',
-    'flythings_i18n_scan': 'read',
-    'flythings_fui_pack': 'write',
-    'flythings_fui_unpack': 'write',
-    'flythings_edit_ftu': 'write',
-    'flythings_ui_preview': 'write',
-    'flythings_html_to_json': 'write',
-    'flythings_ui_visual': 'write',
-    'flythings_generate_ui_assets': 'write',
-    'flythings_attach_cli_tools': 'write',
-    'flythings_create_project': 'write',
-    'flythings_create_bin_project': 'write',
-    'flythings_i18n_add_language': 'write',
-    'flythings_i18n_export': 'write',
-    'flythings_i18n_import': 'write',
-    'flythings_i18n_refactor': 'write',
-    'flythings_i18n_to_json': 'write',
-    'flythings_add_package': 'write',
-    'flythings_manifest': 'write',
-    'flythings_build_ui_flow': 'device',
-    'flythings_pack_upgrade': 'write',
-    'flythings_device_screenshot': 'device',
-    'flythings_gen_ui_test': 'device',
-    'flythings_test_run': 'device',
-    'flythings_selfcheck': 'device',
-    'flythings_bugreport': 'write',
-}
+RISK = {op: _osl.risk(op) for op in _osl.registered()}
 
-# ---- 事实来源③：分类（给文档/AI 分组用）---------------------------------------------
-CATEGORY = {
-    'flythings_get_version': 'kbase',
-    'flythings_knowledge_search': 'kbase',
-    'flythings_knowledge_capture': 'kbase',
-    'flythings_knowledge_export': 'kbase',
-    'flythings_knowledge_gaps': 'kbase',
-    'flythings_hardware_info': 'kbase',
-    'flythings_map_control': 'layout',
-    'flythings_ui_schema': 'layout',
-    'flythings_translate_ui': 'layout',
-    'flythings_read_json': 'layout',
-    'flythings_layout_audit': 'layout',
-    'flythings_get_project_spec': 'layout',
-    'flythings_validate_project': 'layout',
-    'flythings_check_project_deps': 'project',
-    'flythings_verify_assets': 'layout',
-    'flythings_html_to_json': 'layout',
-    'flythings_ui_preview': 'layout',
-    'flythings_ui_visual': 'ui-visual',
-    'flythings_fui_pack': 'layout',
-    'flythings_fui_unpack': 'layout',
-    'flythings_edit_ftu': 'layout',
-    'flythings_create_project': 'project',
-    'flythings_create_bin_project': 'project',
-    'flythings_attach_cli_tools': 'project',
-    'flythings_build_ui_flow': 'build',
-    'flythings_pack_upgrade': 'build',
-    'flythings_generate_ui_assets': 'assets',
-    'flythings_i18n_scan': 'i18n',
-    'flythings_i18n_add_language': 'i18n',
-    'flythings_i18n_export': 'i18n',
-    'flythings_i18n_import': 'i18n',
-    'flythings_i18n_refactor': 'i18n',
-    'flythings_i18n_to_json': 'i18n',
-    'flythings_list_packages': 'package',
-    'flythings_query_package': 'package',
-    'flythings_package_search': 'package',
-    'flythings_get_package_api': 'package',
-    'flythings_resolve_dependencies': 'package',
-    'flythings_add_package': 'package',
-    'flythings_manifest': 'package',
-    'flythings_device_screenshot': 'device',
-    'flythings_gen_ui_test': 'device',
-    'flythings_test_run': 'device',
-    'flythings_selfcheck': 'device',
-    'flythings_bugreport': 'device',
-}
+# ---- 分类（给文档/AI 分组用）——派生自 op_spec.json 的 category 字段 --------------------
+CATEGORY = {op: _osl.category(op) for op in _osl.registered()}
 
-# ---- 事实来源③：流程阶段（给意图闸门分组用；人工维护，唯一一处）-------------------------
-# 目的（2026-09-21，钟工口径「A. 用户没给设计流程/界面，AI 必须先走原型设计、界面设计」）：
+# ---- 流程阶段（给意图闸门分组用）——派生自 op_spec.json 的 stage 字段 -------------------
+# 目的（2026-09-21，需求方口径「A. 用户没给设计流程/界面，AI 必须先走原型设计、界面设计」）：
 # 意图闸门注入的工具目录要**按阶段分组**，让模型看到「现在就该用哪些、哪些要等确认后」，
 # 而不是一张平铺清单（平铺时 AI 最自然的动作就是直接 create_project）。
 #   - design：设计阶段就该用（只读检索/解析/校验 + 设计产物生成：原型 -> json -> 确认稿）
 #   - build ：确认之后 / 建工程 / 编译部署 / 依赖 / 多语言 / 设备动作
 #   - other ：与流程阶段无关（版本、元信息、硬件查询）
 # 只影响闸门注入的分组文案，不影响任何 op 的行为。
-STAGE = {
-    # 设计阶段（现在就该用）
-    'flythings_knowledge_search': 'design',
-    'flythings_knowledge_capture': 'other',
-    'flythings_knowledge_export': 'other',
-    'flythings_knowledge_gaps': 'other',
-    'flythings_map_control': 'design',
-    'flythings_ui_schema': 'design',
-    'flythings_translate_ui': 'design',
-    'flythings_read_json': 'design',
-    'flythings_layout_audit': 'design',
-    'flythings_get_project_spec': 'design',
-    'flythings_validate_project': 'design',
-    'flythings_ui_preview': 'design',
-    'flythings_html_to_json': 'design',
-    'flythings_ui_visual': 'design',
-    'flythings_generate_ui_assets': 'design',
-    # 确认后才用（建工程 / 编译部署 / 依赖 / 设备）
-    'flythings_create_project': 'build',
-    'flythings_create_bin_project': 'build',
-    'flythings_attach_cli_tools': 'build',
-    'flythings_build_ui_flow': 'build',
-    'flythings_pack_upgrade': 'build',
-    'flythings_fui_pack': 'build',
-    'flythings_fui_unpack': 'build',
-    'flythings_edit_ftu': 'build',
-    'flythings_verify_assets': 'build',
-    'flythings_check_project_deps': 'build',
-    'flythings_manifest': 'build',
-    'flythings_add_package': 'build',
-    'flythings_list_packages': 'build',
-    'flythings_query_package': 'build',
-    'flythings_package_search': 'build',
-    'flythings_get_package_api': 'build',
-    'flythings_resolve_dependencies': 'build',
-    'flythings_i18n_scan': 'build',
-    'flythings_i18n_add_language': 'build',
-    'flythings_i18n_export': 'build',
-    'flythings_i18n_import': 'build',
-    'flythings_i18n_refactor': 'build',
-    'flythings_i18n_to_json': 'build',
-    'flythings_device_screenshot': 'build',
-    'flythings_gen_ui_test': 'build',
-    'flythings_test_run': 'build',
-    'flythings_selfcheck': 'build',
-    'flythings_bugreport': 'build',
-    # 与流程阶段无关
-    'flythings_get_version': 'other',
-    'flythings_hardware_info': 'other',
-}
+STAGE = {op: _osl.stage(op) for op in _osl.registered()}
 
-# 命令行名词表（回应检讨 §2.4：仓库里 fun / fui / fyx / fuse 四种提法容易混）
+# 命令行名词表（**只登记当前在用的命令**，旧名一律不登记）。
+# 为什么不登记 fyx / fuse：它们已不在当前工具链里，登记进常驻 manifest 只会让 AI
+# 以为还有这些命令可调（实测：本仓库找不到任何 fyx 实体）。老工程为什么仍带 fuse 痕迹
+# （`.fuse/` 产物目录、`FUSE_BUILD` 宏、`~/.fuse` 注册表路径）属**兼容识别知识**，
+# 见 knowledge/devflow/cli-fun-toolchain.md —— 那是「要认识的老形态」，不是「可调的命令」。
+# 已废弃 CLI 名清单见 check_consistency.stage_cli_names（再登记进来会红）。
 CLI_NAMES = {
     'fun': 'FlyThings 工程工具（create/install/build/launch，<项目>/.fsc/<平台>/ 下；09-28 前为 .fun/）',
     'fui': 'FTU 布局工具：pack（json → ftu）/ unpack（ftu → json）双向下；随包 fui 自 v0.27.91 起含 unpack（旧版只有 pack）',
-    'fyx': '旧版打包/发布 CLI 名（历史遗留，等价于 fun 的早期名）',
-    'fuse': '本机 workspace 的引擎 CLI（projects/fuse.exe，非本仓库内置）',
 }
 
 
@@ -229,7 +92,7 @@ def collect():
     unclassified = sorted(set(op_names) - set(RISK) | set(op_names) - set(CATEGORY)
                           | set(op_names) - set(STAGE))
     if unclassified:
-        raise SystemExit('以下 op 未登记 risk/category/stage（请在本脚本表里补）：%s' % unclassified)
+        raise SystemExit('以下 op 未登记进 op_spec.json 的 risk/category/stage（请改注册表）：%s' % unclassified)
 
     ops = []
     for name in op_names:

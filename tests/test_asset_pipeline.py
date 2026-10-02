@@ -3,8 +3,7 @@
 
 为什么要有（检讨报告 §3.5）：
   - v0.27.30 的三连 bug（box-shadow 单位解析静默失败 / 图未 1:1 / alpha 被 mask 覆盖）
-    靠人肉目测漏了整整一轮；这里把 ui_tools/examples/effects_test.html 当**黄金样例**钉死：
-    渐变/圆角/阴影/emoji/loading 六类效果必须真的出图、且 PNG 尺寸 == 控件盒。
+靠人肉目测漏了整整一轮；这里把 ui_tools/examples/effects_test.html 当**黄金样例**钉死：渐变/圆角/阴影/emoji/loading 六类效果必须真的出图、且 PNG 尺寸 == 控件盒。
   - verify_assets 是「产物核对」守则的机器化（铁律 #11）；本用例同时验证它能报出真问题
     （自动生成图尺寸不符 → mismatch），以及不误报（手绘图被引擎拉伸 → 只算 stretched）。
 """
@@ -95,8 +94,7 @@ class TestHtmlToJsonGolden(unittest.TestCase):
 class TestThumbBoxSize(unittest.TestCase):
     """thumb 子盒（滑块自有尺寸）：盒子 = thumb.size，铁律 #1 对它同样成立。
 
-    为什么钉死（v0.27.75，钟工 2026-09-16 反馈「滑块圆钮有锯齿、图片和控件尺寸对不上」）：
-    案例 projects/translate/lvgl-widgets-uiv1 的 sk_thumb.png 曾 31×31 而 json 写 thumb.size
+为什么钉死（v0.27.75，2026-09-16 反馈「滑块圆钮有锯齿、图片和控件尺寸对不上」）：案例 projects/translate/lvgl-widgets-uiv1 的 sk_thumb.png 曾 31×31 而 json 写 thumb.size
     30×30，verify_assets / check_all #11 #17 一律 PASS（thumb 是核对盲区）→ 真机上滑块错位。
     """
 
@@ -247,10 +245,10 @@ class TestVerifyAssetsSemantics(unittest.TestCase):
 class TestTextViewBgPic(unittest.TestCase):
     """`div.text` 上的 `data-bgpic` 必须落成该节点的 backgroundPic（v0.27.90）。
 
-    为什么钉死（2026-09-17 真机定位，案例 projects/translate/tdesign-miniprogram）：
-    textview 分支原**不读** data-bgpic → json 里没有 backgroundPic（弹窗白卡/药丸/图标
-    在真机上压根没画出来），案例只能用 patch_json 反查 HTML 兜底。
-    同时钉住「反例」：无 bgpic 的 text 产出不变（不许顺手给所有 textview 塞 backgroundPic）。
+为什么钉死（2026-09-17 真机定位，案例 projects/translate/tdesign-miniprogram）：
+    textview 分支原**不读**data-bgpic → json 里没有 backgroundPic（弹窗白卡/药丸/图标
+在真机上压根没画出来），案例只能用 patch_json 反查 HTML 兜底。
+同时钉住「反例」：无 bgpic 的 text 产出不变（不许顺手给所有 textview 塞 backgroundPic）。
     """
 
     def setUp(self):

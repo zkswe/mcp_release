@@ -21,7 +21,7 @@ evidence: []
 
 ## 核心铁律
 
-1. **两种播放模式（沛哥 2026-09-07 确认）**：
+1. **两种播放模式（2026-09-07 确认）**：
    - **自动轮播模式**：ftu 属性 `loopPlayback=true`（属性表"是否为轮播视频类型"）→ 进页面自动读取 **TF 卡根目录 `<UI文件名>_video_list.txt`**（如 main.ftu → `main_video_list.txt`，每行一个视频绝对路径，建议英文名），循环播放；退出页面自动停止。适合广告机、无人值守轮播，**零代码**。
    - **API 模式**：`loopPlayback=false` 只建渲染区域 → 代码 `play(path, msec)` 控制。
 2. 播放状态监听：`setVideoPlayerMessageListener` → `onVideoPlayerMessage(pVideoView, msg)`，msg 枚举 E_MSGTYPE_VIDEO_PLAY_STARTED / COMPLETED / ERROR。广告机表驱动切集/错误自愈都靠它。

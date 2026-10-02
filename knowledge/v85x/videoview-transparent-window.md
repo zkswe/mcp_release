@@ -16,7 +16,7 @@ evidence: []
 # 🖥️ V85X 摄像头自维护出图 → videoView 零代码透出视频层（透明渲染区域）
 
 > 检索导引：问「V85X 摄像头画面自己输出怎么显示 / videoView 当透明窗口 / 要不要写 startPreview·play / video 控件轮播=否是什么行为」→ 本文；图层释放与黑屏防御见 `knowledge/v85x/display-layer-debug.md`。
-> 2026-09-07 沛哥知识补充（来源：V85X 平台实测经验）。官方口径佐证：video 控件「轮播类型=否」时
+> 2026-09-07 需求方知识补充（来源：V85X 平台实测经验）。官方口径佐证：video 控件「轮播类型=否」时
 > **仅创建一个视频渲染区域，除此以外没有其他操作**（wiki `wiki/flythings/uicontrols/video.md`）。
 > 适用：**V85X**（V853/V553 等）摄像头画面由**用户自己打开并维护显示内容**的场景。
 
@@ -32,7 +32,7 @@ UI 上只需要添加一个 videoView 控件——不需要写任何关联代码
 |------|-------------|--------|------|
 | A. 倒车/实时预览（内置链路） | ZKCameraView（easyui 预览） | cameraview 控件 | setDevPath/setFormatSize/startPreview 等 |
 | B. 播放文件/回放/拉流 | ZKVideoView（easyui 播放器） | videoview 控件 | `play(path, 0)` / pause / resume / stop |
-| C. **摄像头自维护出图（本知识点）** | **用户/系统自己打开摄像头并把内容输出到 Video 层** | **videoview 控件（仅作透明渲染窗口）** | **零代码，不需要 play/关联** |
+| C. **摄像头自维护出图（本知识点）**| **用户/系统自己打开摄像头并把内容输出到 Video 层**| **videoview 控件（仅作透明渲染窗口）**| **零代码，不需要 play/关联**|
 
 ⚠️ A/B 的详细字段与坑位见 `knowledge/uicontrols/cameraview-fields.md`（实时预览/播放禁混用）；
 本文专讲 **C 场景**——videoView 不当播放器用，当"视频层窗口"用。
@@ -42,16 +42,16 @@ UI 上只需要添加一个 videoView 控件——不需要写任何关联代码
 1. UI 布局里放一个 **videoView 控件**（属性「轮播视频类型」= 否，即非轮播）
 2. **位置/尺寸即画面显示区域**：videoView 放哪、多大，视频层画面就从哪透出
    - ⚠️ **视频图层尺寸不能超过屏幕区域**（全志平台唯一相关限制；**定性口径、不挂具体数值**，
-     早年的具体数值系误测已撤回——钟工 2026-09-30 校准）。另外 **GUI 层缩放/绘制无限制**，
-     别把视频层的尺寸约束算到画布/文字缩放头上。边界口径总见 `knowledge/devflow/render-extension-boundary.md` §5
+早年的具体数值系误测已撤回——2026-09-30 校准）。另外 **GUI 层缩放/绘制无限制**，
+别把视频层的尺寸约束算到画布/文字缩放头上。边界口径总见 `knowledge/devflow/render-extension-boundary.md` §5
 3. 编译运行——**不需要在 logic.cc 里写任何关联代码**
    - 不调用 `play()` / `stop()` / `setVideoPath` 之类
    - 控件自动生成的 `onVideoViewPlayerMessageListener_XXX` 回调也可不填（没人播报不了状态，不影响透出）
 4. 摄像头画面由用户侧逻辑（V4L2/系统服务/第三方出图层等）打开维护，输出进 Video 层即可
 
-## 3. 原理与要点（沛哥 2026-09-07 补充权威口径）
+## 3. 原理与要点（2026-09-07 补充权威口径）
 
-**显示分层结构（沛哥 2026-09-07 权威口径）**：
+**显示分层结构（2026-09-07 权威口径）**：
 - **UI 层在最顶上**，其下为 disp 视频层，**底层按 4、3、2、1 顺序叠放**（layer 编号即 disp 硬件层号）
 - videoView 控件在 UI 层画的区域不填充不透明内容 → 透明 → 下层 disp 视频层画面从该区域透出显示
 - **VI→VO 是内部处理，不需要关心**：摄像头取流 → VI → VO 视频层的数据搬运由 mpi/aw-dvr 内部完成，应用层只配置 CameraParam{viewbox/display/layer/visible} 即可

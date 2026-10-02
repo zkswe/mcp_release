@@ -12,17 +12,17 @@
 > | 平台 | 后端 | 中心 | 外设 | 静态库 | 说明 |
 > |---|---|---|---|---|---|
 > | F133 | `btstack` 1.7.2 | ✅ | ❌ | `lib/f133/libzkble.a` | 串口 HCI（H5）；外设请走别的路线 |
-> | V85X | `btstack`（本地 1.7.2 构建） | ✅ | ❌ | `lib/v85x/libzkble.a` | 串口 HCI + 预初始化钩子；**外设/触摸上报用 `blehid` 包** |
-> | Z20 | **`gatt` 1.0.0** | ✅ | ✅ | `lib/z20/libzkble.a` | AIC USB 模组 + BlueZ 用户态 GATT，**主从双角色**（真机跑通） |
-> | Z21 | **`gatt` 1.0.0** | ✅ | ✅ | `lib/z21/libzkble.a` | 同上（真机跑通） |
-> | T113 / T113EMMC | `gatt` 1.0.0 | ⏳ | ⏳ | **待补** | 本机注册表没有该平台的 `gatt` 包 → 未构建（**不拿别的平台的头凑**，见 platforms.md §0.6） |
+> | V85X | `btstack`（本地 1.7.2 构建） | ✅ | ❌ | `lib/v85x/libzkble.a` | 串口 HCI + 预初始化钩子；**外设/触摸上报用 `blehid` 包**|
+> | Z20 | **`gatt` 1.0.0**| ✅ | ✅ | `lib/z20/libzkble.a` | AIC USB 模组 + BlueZ 用户态 GATT，**主从双角色**（真机跑通） |
+> | Z21 | **`gatt` 1.0.0**| ✅ | ✅ | `lib/z21/libzkble.a` | 同上（真机跑通） |
+> | T113 / T113EMMC | `gatt` 1.0.0 | ⏳ | ⏳ | **待补**| 本机注册表没有该平台的 `gatt` 包 → 未构建（**不拿别的平台的头凑**，见 platforms.md §0.6） |
 >
-> 立项：2026-09-13（沛哥：「模仿 Android 或微信的 API 封装一层，最终暴露给 AI 开发的就是 wxapi 这种」）；
-> 统一：2026-09-14（钟工：「蓝牙部分都统一按照昨天定义的新 API，参考微信的方式」→ 组件收口为一个 API 面 + 两个后端，Z20/Z21 从"只做外设"改成**双角色**）；
-> 转为二进制发布：2026-09-14（钟工：「验证好了后把你的程序做成静态库+头文件发布给到 open 版本 MCP 里面。不释放源码了」）。
+> 立项：2026-09-13（现场反馈：「模仿 Android 或微信的 API 封装一层，最终暴露给 AI 开发的就是 wxapi 这种」）；
+> 统一：2026-09-14（现场反馈：「蓝牙部分都统一按照昨天定义的新 API，参考微信的方式」→ 组件收口为一个 API 面 + 两个后端，Z20/Z21 从"只做外设"改成**双角色**）；
+> 转为二进制发布：2026-09-14（现场反馈：「验证好了后把你的程序做成静态库+头文件发布给到 open 版本 MCP 里面。不释放源码了」）。
 >
 > **版本记录**
-> - **v0.2.1（2026-09-14）** 发布形态改为「头 + 静态库」：新增 `lib/{f133,v85x,z20,z21}/libzkble.a` + `lib/BUILD_INFO.md`
+> - **v0.2.1（2026-09-14）**发布形态改为「头 + 静态库」：新增 `lib/{f133,v85x,z20,z21}/libzkble.a` + `lib/BUILD_INFO.md`
 >   （含每平台 sha256/符号数/工具链/依赖版本）；新增 `scripts/verify_lib_symbols.py`（纯 Python 解析 ELF，**不依赖 nm**：
 >   Windows 版 binutils 的 nm 缺 `liblto_plugin-0.dll` 会直接报错）；**移除源码**（`src/`、`zkble_*.h`、源码侧编译脚本）。
 > - v0.2.0（2026-09-14）统一 API 面 + 两个后端（gatt 后端 Z20/Z21 **主从双角色**），**组件级真机验证通过**（Z20 外设 × Z21 中心，五条验收全过）；含三个真机 bug 修复（uuid 取空 / 自建表拿不到 value_handle / 广播 status=12）。
@@ -36,12 +36,12 @@
 
 | 坑（全部来自真机记录） | 库里的处置 |
 |---|---|
-| V85X：`state_bt` 没上电（出厂 off） | `openAdapter()` 自动 写0→50ms→写1→300ms ×2 轮 + **回读确认** |
+| V85X：`state_bt` 没上电（出厂 off） | `openAdapter()` 自动 写0→50ms→写1→300ms ×2 轮 + **回读确认**|
 | V85X：Realtek 必须先 hciattach | 预留 `setPreinitHook()`，由项目侧挂 `rtk_init`（见 §6） |
 | Z20/Z21：BT 是 **AIC USB 模组**（`aic_btusb.ko`），不是串口 HCI | 自动 `insmod` / 拉 `hciattach` 服务 + `hciconfig hci0 up` |
 | Z20/Z21：`/res` 只读、**没有 `/res/bin`**（工具找不到） | 工具路径候选链 `/res/bin → /data/bin → /tmp/bin → /usr/bin → /bin` |
 | Z20/Z21：**断开后控制器残留链路**（`0x0B`/EIO），下一次连接必失败 | `connect()` 自动重试 + 重试前 `hciconfig hci0 reset`（`Config.connect_retry` / `reset_before_retry`） |
-| 外设：断开后重开广播失败却只打一行日志（**静默丢广播**） | `adv enable` 校验 HCI 状态 → 失败先 disable 再 enable → 仍失败**明确报错** |
+| 外设：断开后重开广播失败却只打一行日志（**静默丢广播**） | `adv enable` 校验 HCI 状态 → 失败先 disable 再 enable → 仍失败**明确报错**|
 | 外设：控制器已 enable 广播时改参数被拒（`status=12`） | 设参数前恒发一次 `LE Set Advertise Enable(0)`，被拒则复位 + 重试一次 |
 | 串口/波特率/校验写死 | 自动探测 `ttyS1`(F133)/`ttyS2`(V85X)+`Config` 可覆盖；H5+偶校验默认 |
 | 跨线程调协议栈 → 卡 `INITIALIZING` | 库内固定线程模型（run loop/mainloop 独占一线程 + 任务投递 + 条件变量等结果） |
@@ -153,7 +153,7 @@ components/ble/
 2. 拷目标平台的 `libzkble.a` 到工程（例：`src/dependencies/lib/`，或任意目录）；
 3. 工程 `Manifest.xml` 声明**该平台的底层包**（见 [`Manifest.xml`](Manifest.xml)）：
    - btstack 后端（F133/V85X）：`btstack` + `easyui` +（可选 `base-utility`/`log`/`zkhardware`）
-   - gatt 后端（Z20/Z21）：**只** `gatt 1.0.0`（另需运行期有 `hciconfig`/`hcitool`）
+   - gatt 后端（Z20/Z21）：**只**`gatt 1.0.0`（另需运行期有 `hciconfig`/`hcitool`）
 4. 构建里链接 `libzkble.a`（放在底层包之后，或用 `--start-group` 兜顺序）。
 
 **CMake 片段（fun/IDE 生成的构建里加）**
@@ -192,12 +192,12 @@ python components/ble/scripts/verify_lib_symbols.py
 - **外设/HID 侧**：btstack 后端不做；V85X 用 `blehid` 包（按键/触摸上报，开箱即用）、Z20/Z21 用本组件的 gatt 后端
   （`peripheral::*` 已实现；只要"开箱外设服务"也可直接用 `ble` 包）。
 - **Realtek 预初始化（下固件）不在库内**：用 `setPreinitHook()` 挂项目侧 `rtk_init`（工程里 `src/ble/rtk/`）；
-  模组是 8733bs 时若不挂 hook → `openAdapter` 直接返回 `ERR_UNSUPPORTED` 并说明原因（不静默失败）。
+模组是 8733bs 时若不挂 hook → `openAdapter` 直接返回 `ERR_UNSUPPORTED` 并说明原因（不静默失败）。
 - 单连接模型（v1）：`connect()` 前需先 `disconnect()`。
 - Z20/Z21 **无 TLV 落盘**：`getBondedDevices()` / `deleteBonding()` 返回 `ERR_UNSUPPORTED`（没假装返回空表）。
 - Z20/Z21 的 LE 建链受**控制器残留链路**影响：库里用"重试 + 复位"兜住，**根因在原厂固件**；产品侧仍建议加应用层保活/断链检测。
 - **T113 / T113EMMC 的库还没出**（本机没有该平台的 `gatt` 包）：**不要**拿 z20/z21 的头去凑（结构体 ABI 可能不同）——
-  内部装好该平台的 `gatt 1.0.0` 后重跑构建脚本即可产出（见 platforms.md §0.6）。
+内部装好该平台的 `gatt 1.0.0` 后重跑构建脚本即可产出（见 platforms.md §0.6）。
 
 ---
 
@@ -215,7 +215,7 @@ python components/ble/scripts/verify_lib_symbols.py
 ⑤ 通知不来    → subscribe() 返回 ok 吗？特征有 NOTIFY 属性吗？外设侧 notify() 要已订阅
 ⑥ 外设广播不上 → 看日志/Result（库不静默丢广播）；Z20/Z21 断开后可能需要复位再开
 ⑦ 链接报未定义 → 库的公开 API 是否全在（跑 scripts/verify_lib_symbols.py）；
-                 底层包是否声明（btstack+easyui / gatt）；工具链/libc 是否与库一致（见 §4）
+底层包是否声明（btstack+easyui / gatt）；工具链/libc 是否与库一致（见 §4）
 ```
 
 ---
@@ -247,7 +247,7 @@ python components/ble/scripts/verify_lib_symbols.py
 ## 8. 维护者须知（源码在哪里）
 
 - **源码不随本仓发布**，在内部私有目录：`<workspace>/private/components-ble/{include,src,example,scripts}`，
-  构建脚本 `scripts/build_libs.ps1`（一次出四平台 `libzkble.a` 并刷新 `lib/BUILD_INFO.md`）、
-  源码侧编译自检 `scripts/compile_check.sh`（f133/btstack）与 `scripts/compile_check_gatt.sh`（z20/z21/gatt）。
+构建脚本 `scripts/build_libs.ps1`（一次出四平台 `libzkble.a` 并刷新 `lib/BUILD_INFO.md`）、
+源码侧编译自检 `scripts/compile_check.sh`（f133/btstack）与 `scripts/compile_check_gatt.sh`（z20/z21/gatt）。
 - 改完源码 → 跑 `build_libs.ps1` 产出新库 → 更新 `lib/BUILD_INFO.md` → 提交（只提交 `include/` + `lib/` + 文档）。
 - 门面头 `include/zk/zk_ble.h` 属于**公开 API 契约**：改了要同步 README §3 表与 `verify_lib_symbols.py` 的 API 清单。

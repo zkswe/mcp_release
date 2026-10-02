@@ -2,21 +2,21 @@
  * VinylSpin.cpp - 黑胶唱片自转实现（见 VinylSpin.hpp 的分工说明）
  *
  * 两套后端（都是"把封面按角度画进一张 BGRA 内存位图"）：
- *   后端 0（定点映射，VS_BACKEND_SCALAR）：
+ *后端 0（定点映射，VS_BACKEND_SCALAR）：
  *     1) 源：封面 PNG --misc::image_load--> 缩放成 n x n（n = 控件边长 320）--> 我方 RGB 缓冲；
- *        圆边 alpha 由 **RoundImageView::makeCircleMask(n)** 给（SS=8 面积平均，与静态封面同源）。
+ *圆边 alpha 由 **RoundImageView::makeCircleMask(n)**给（SS=8 面积平均，与静态封面同源）。
  *     2) 每帧：角度 -> 1024 项 sin 表（Q16）拿 cos/sin；反向映射：每个目标像素求源坐标
  *        （Q16 定点），取整到像素中心 + **2x2 盒平均**采样 RGB；alpha 取圆覆盖率表。
- *   后端 1（nanovg，VS_BACKEND_NANOVG）：
+ *后端 1（nanovg，VS_BACKEND_NANOVG）：
  *     nanovg 的 AGG 软件光栅器后端：`nvgCreateAGG(w,h,stride,NVG_TEXTURE_BGRA,buf)` **直接渲染到我方位图缓冲**
  *     （不落盘、不进 GL、不开窗口）；每帧：清屏 -> nvgReinitAgge 换目标 -> 平移+旋转 -> 画圆
- *     并用 nvgImagePattern 贴封面纹理 -> nvgEndFrame。圆边抗锯齿走 **AGG 自带 edgeAntiAlias**。
- *     封面纹理 **必须用 NVG_TEXTURE_BGRA 建**（本包 AGG 后端只支持 BGRA：目标/纹理格式不一致会
- *     直接 `Assertion failed: "not supported format"`；nvgCreateImageRGBA 用不了）——源数据本就是
+ *并用 nvgImagePattern 贴封面纹理 -> nvgEndFrame。圆边抗锯齿走 **AGG 自带 edgeAntiAlias**。
+ *封面纹理 **必须用 NVG_TEXTURE_BGRA 建**（本包 AGG 后端只支持 BGRA：目标/纹理格式不一致会
+ *直接 `Assertion failed: "not supported format"`；nvgCreateImageRGBA 用不了）——源数据本就是
  *     BGRA，所以 **不用做任何通道交换**，直传。
- *   角度与时间口径、双缓冲/握手、上屏路径两套后端**完全共用**。
+ *角度与时间口径、双缓冲/握手、上屏路径两套后端**完全共用**。
  *   3) 上屏：模式 0 = 把像素拷进交给控件的那张位图 + invalidate（零分配）；
- *           模式 1 = 拿本帧缓冲新造一张 bitmap_t 交给 setBackgroundBmp（框架释放旧的）。
+ *模式 1 = 拿本帧缓冲新造一张 bitmap_t 交给 setBackgroundBmp（框架释放旧的）。
  */
 #include <zk/zk_vinyl.h>
 
@@ -53,7 +53,7 @@ namespace zk {
 #define VS_BACKEND_NANOVG  1
 #ifndef VS_BACKEND_DEFAULT
 /* 默认后端 = **定点映射**：真机 A/B（2026-09-21，12fps、同一封面同一首歌）
- *   定点：CPU 42.6% / 旋转 7~22ms（典型 7~11）/ 实测 12.3~12.6fps
+ *定点：CPU 42.6% / 旋转 7~22ms（典型 7~11）/ 实测 12.3~12.6fps
  *   nanovg：CPU 59.8% / 旋转 21~61ms（典型 25~42）/ 实测 11.1~11.7fps
  * -> 定点更快更省，作默认；nanovg 后端完整保留，改下面这一行即可切换（也支持运行期自动回退到 0）。
  * 数据与口径见 temp/mu_vinyl/REPORT_NANOVG.md。 */
@@ -81,14 +81,14 @@ static bool vsDumpOn(void) {
 }
 
 /* 测试图（真机查「局部刷新」用）：存在 /tmp/vinyl_testpat 时，把**合成图案**当封面写进 d->src：
- *  深灰圆盘 + 12 个扇形分隔线 + 一条 5px 亮线（= 当前角度）+ 红点（0° 参考）。
- *  于是每一步转动后，屏幕上应当只有一条亮线；若某块没被重画，那里就会留下**上一步的亮线**
+ *深灰圆盘 + 12 个扇形分隔线 + 一条 5px 亮线（= 当前角度）+ 红点（0° 参考）。
+ *于是每一步转动后，屏幕上应当只有一条亮线；若某块没被重画，那里就会留下**上一步的亮线**
  *  —— 不依赖封面内容、也不依赖图像拟合，肉眼都可直接判定。 */
 static bool vsTestPatOn(void) {
     return access("/tmp/vinyl_testpat", F_OK) == 0;
 }
 
-/* 钟工 2026-09-22 12:16：①**先不裁成圆**（排除圆形覆盖率表这个变量）②**图中间放方块标记**，
+/* 2026-09-22 12:16：①**先不裁成圆**（排除圆形覆盖率表这个变量）②**图中间放方块标记**，
  * 旋转一个角度后对比，就能看出「内容区域是不是没拷全」。两个独立 flag：
  *   /tmp/vinyl_nomask -> 圆内/圆外都写满（整幅方图都当有效内容）
  *   /tmp/vinyl_marker -> 在源图上叠**方块标记**：外框 + 中心实心方块 + 四角四色块 + 中心十字线 */
@@ -205,7 +205,7 @@ static void vsMakeTestPat(uint8_t *dst, int n) {
     }
 }
 
-/* 单步调试（钟工 2026-09-22 建议）：存在 /tmp/vinyl_step 时，读它里面的度数（一行整数，可负），
+/* 单步调试（2026-09-22 建议）：存在 /tmp/vinyl_step 时，读它里面的度数（一行整数，可负），
  * 把角度**静态地推进**这么多度并强制重画一帧，然后删掉该文件。
  * 用途：暂停后一步一步验证「每一步的屏幕内容是否全域都更新」——静止内容的截图不会跨帧。 */
 static bool vsStepTake(int *degOut) {
@@ -224,14 +224,14 @@ static bool vsStepTake(int *degOut) {
     return true;
 }
 
-/* 刷新口径（钟工 2026-09-22 12:28）：“非必要不要碰 getAbsolutePosition，直接参考我们以前 gameview 那套的
+/* 刷新口径（2026-09-22 12:28）：“非必要不要碰 getAbsolutePosition，直接参考我们以前 gameview 那套的
  * setInvalid 带个取反”——即翻转控件自身的 invalid 状态，由框架**按控件为单位**重画：
  *     host->setInvalid(!host->isInvalid());
  * 背景：原口径 `invalidate(getAbsolutePosition())` 传的是**页面绝对矩形**，而框架把该矩形按
  * **控件本地坐标系**理解并裁到控件内，于是只剩本地 (100,166)-(320,320) 那块（右下角）被重画
  * —— 屏上就是「3~6 点方向 12fps、其余 1fps」+ 切歌时的“块状错乱”。
  * 实测（源图 r=100 放四个纯色块，静态走 20°，理论位移 34.7px）：
- *   绝对矩形/NULL/面板系/控件矩形+父偏移 -> 位移 **0px**；整页 / 本地(0,0,w,h) / setInvalid 翻转 -> **33~35px** ✅
+ *绝对矩形/NULL/面板系/控件矩形+父偏移 -> 位移 **0px**；整页 / 本地(0,0,w,h) / setInvalid 翻转 -> **33~35px**✅
  * 现在默认走 **setInvalid 翻转**（gameview 口径，不碰坐标）；其余口径仅留作对照（flag /tmp/vinyl_inv）。 */
 static int vsInvMode(void) {
     FILE *f = fopen("/tmp/vinyl_inv", "rb");
@@ -305,9 +305,9 @@ static bitmap_t *vsBmpNew(int n) {
  * 采样口径（为什么不是双线性）：本机实测双线性 320x320 约 18~20ms/帧（整机 CPU 69%），
  * 太贵；改成「**取整到像素中心 + 2x2 盒平均**」：
  *   · 采样点四舍五入到像素中心（定点 +0.5），再做 2x2 均值 -> 相当于自带半像素低通，
- *     旋转时不会闪烁（比最近邻好很多），代价只有双线性的 1/2.5；
+ *旋转时不会闪烁（比最近邻好很多），代价只有双线性的 1/2.5；
  *   · **正好落在像素中心时（角度 0/90/180/270 度）走单抽头：逐像素与原图一致**，
- *     所以「静止/首帧」与静态封面口径完全对齐，一点不糊。
+ *所以「静止/首帧」与静态封面口径完全对齐，一点不糊。
  */
 static void vsRotate(uint8_t *dst, const uint8_t *src, const uint8_t *covTab, int n,
                      const int *rx0, const int *rx1, int32_t c16, int32_t s16) {
@@ -457,7 +457,7 @@ struct VinylSpin::Impl {
         wbuf[1] = NULL;
     }
 
-    /** 丢掉「算完但还没上屏」的那一帧。模式 0 的 pending 指向复用的 wbuf，**不能 free**。 */
+    /**丢掉「算完但还没上屏」的那一帧。模式 0 的 pending 指向复用的 wbuf，**不能 free**。 */
     void dropPending(void) {
         if (pending != NULL && VS_SWAP_BITMAP != 0) {
             free(pending);
@@ -513,11 +513,11 @@ struct VinylSpin::Impl {
         handed = false;
     }
 
-    /** 惰性建 nanovg(AGG) 上下文 + 封面纹理（绑 wbuf[0] / src）。
-     *  运行期切后端时用（原先只在 attach 时按 VS_BACKEND_DEFAULT 建一次）。
+    /**惰性建 nanovg(AGG) 上下文 + 封面纹理（绑 wbuf[0] / src）。
+     *运行期切后端时用（原先只在 attach 时按 VS_BACKEND_DEFAULT 建一次）。
      *  · 建不起来返回 false：调用方保持原后端，**不报错**（页面照常显示）。
      *  · 只建壳不承诺纹理内容：切换瞬间 src 可能正被后台解码更新 -> 交给 doRotate 按 srcVer
-     *    上传（与绘制同线程，不会打架）；所以这里把 nvgSrcVer 置 -1 强制传一次。 */
+     *上传（与绘制同线程，不会打架）；所以这里把 nvgSrcVer 置 -1 强制传一次。 */
     bool ensureNvg(void) {
         if (vg != NULL) {
             return true;
@@ -541,7 +541,7 @@ struct VinylSpin::Impl {
         return true;
     }
 
-    /** 造圆覆盖率表 + 每行扫描区间 */
+    /**造圆覆盖率表 + 每行扫描区间 */
     bool makeCov(int size) {
         cov = zk_vinyl_circle_mask(size);
         if (cov == NULL) {
@@ -629,9 +629,9 @@ bool VinylSpin::attach(ZKBase *host) {
      * **建不起来就自动回退定点后端**（只 warning，不让页面报错）。
      *
      * 格式口径（真机隔离探针实测，见 REPORT_NANOVG 与 temp/mu_vinyl/nanovg/）：
-     *   本包的 AGG 后端**只支持 NVG_TEXTURE_BGRA 目标**（其它目标格式在 nvgInitAGG 里直接
+     *本包的 AGG 后端**只支持 NVG_TEXTURE_BGRA 目标**（其它目标格式在 nvgInitAGG 里直接
      *   `Assertion failed: !"not supported format"`）；纹理格式必须与目标一致，否则 renderPaint 同样断言。
-     *   所以：目标 BGRA（= 我方位图字节序）+ 纹理也用 NVG_TEXTURE_BGRA，且源数据按 BGRA 传
+     *所以：目标 BGRA（= 我方位图字节序）+ 纹理也用 NVG_TEXTURE_BGRA，且源数据按 BGRA 传
      *   （实测字节原样进目标 -> 颜色正确），**不需要**再转 RGBA。nvgCreateImageRGBA 会断言，不能用。 */
     if (d->backend == VS_BACKEND_NANOVG) {
         d->vg = nvgCreateAGG((uint32_t) n, (uint32_t) n, (uint32_t) (n * 4), NVG_TEXTURE_BGRA,
@@ -818,7 +818,7 @@ void VinylSpin::setPlaying(bool playing) {
     pthread_mutex_unlock(&d->mx);
 }
 
-/** 后台旋转一帧；结果缓冲指针交到 pending，由上屏那次 tick 取走（由成员函数保证访问私有 Impl） */
+/**后台旋转一帧；结果缓冲指针交到 pending，由上屏那次 tick 取走（由成员函数保证访问私有 Impl） */
 void VinylSpin::doRotate(Impl *d, int srcVer, int idx, int n, uint8_t *buf) {
     const long long t0 = vsNowMs();
     uint8_t *src = NULL;
@@ -1005,7 +1005,7 @@ void VinylSpin::tick() {
             } else {
                 /* 只脏化**本控件自己的矩形**。
                  * ⚠️ 2026-09-22 真机发现：原口径 `getAbsolutePosition()` 下屏幕只有一块区域刷新
-                 * （钟工实测：3~6 点方向 12fps、其余 1fps）——怀疑该 API 把父容器偏移又叠了一次。
+                 * （实测：3~6 点方向 12fps、其余 1fps）——怀疑该 API 把父容器偏移又叠了一次。
                  * 故加运行期口径开关（/tmp/vinyl_inv），三种口径可现场对照（见 vsInvMode）。 */
                 /* ✅ 默认（gameview 口径，已修复）：翻 invalid 状态 → 框架按控件（整块）重画，
                  * 不再传任何坐标（getAbsolutePosition / 绝对矩形一律不用）。 */

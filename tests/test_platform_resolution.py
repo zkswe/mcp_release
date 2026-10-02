@@ -181,12 +181,12 @@ class TestToolsNowAgreeOnRealPlatforms(unittest.TestCase):
 
 
 class TestV85xFamilyAliases(unittest.TestCase):
-    """V85x 芯片别名补齐（v0.27.87，钟工问「这几个你适配了吗」）。
+    """V85x 芯片别名补齐（v0.27.87，需求方问「这几个你适配了吗」）。
 
-    实测当时：✅ V853/V553/V552/V85X → V85X；❌ **V851 / V851S / V851S3 / V853S → None**
+实测当时：✅ V853/V553/V552/V85X → V85X；❌ **V851 / V851S / V851S3 / V853S → None**
     （当未知平台），且 package_key() 会回 `v851s` 这种 catalog 里**不存在**的键 → 查包查空。
-    本用例钉死：这 6 个芯片名（含大小写混写）全部 → V85X 平台 + `v85x` 包键，
-    且 catalog 的 v85x/v85xemmc chips 已含这 5 个芯片（V851/V851S/V851S3/V853/V853S）。
+本用例钉死：这 6 个芯片名（含大小写混写）全部 → V85X 平台 + `v85x` 包键，
+且 catalog 的 v85x/v85xemmc chips 已含这 5 个芯片（V851/V851S/V851S3/V853/V853S）。
     """
 
     FAMILY = ('V851', 'V851S', 'V851S3', 'V853S')

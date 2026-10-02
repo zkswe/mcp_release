@@ -58,31 +58,31 @@ Z21 实测：`Mem total 36072 kB`（**36MB**）；`/tmp` = **tmpfs 13.6MB**（tm
 
 ## 4. 两条部署侧坑
 
-- `adb push` **不带执行位** → 推完必须 `chmod 777 /tmp/xxx`（否则 `can't execute: Permission denied`）。
+- `adb push` **不带执行位**→ 推完必须 `chmod 777 /tmp/xxx`（否则 `can't execute: Permission denied`）。
 - 设备**重启会清空 /tmp**（含 `EasyUI.cfg`）→ 必须用 `fun launch` **整套**重新部署；
   **只 push 单个文件会跑出厂 UI**（缺 `EasyUI.cfg` 时 zkgui 走默认资源路径，现象是"我的界面没出现"）。
 - `fun launch` 偶发 `FATAL read tcp 127.0.0.1:5037 i/o timeout` / `device offline`：重连（`adb connect <ip>:5555`）后重试即可，
-  压测类程序反复断电 WiFi 时网络 adb 必然抖。
+压测类程序反复断电 WiFi 时网络 adb 必然抖。
 
 ## 5. 重启应用进程：走 setprop 让 init 控制（**不要 kill**）
 
-**口径（2026-09-28 钟工定，替代 2026-09-17 的「温和终止优先」）**：
+**口径（2026-09-28 需求方定，替代 2026-09-17 的「温和终止优先」）**：
 
 - **框架设计是类 init 服务**：应用（`/etc/init.rc`：`service zkswe /bin/zkgui`）由 init 托管，
   **不能 kill 程序**；控制程序的唯一姿势是 **`setprop ctl.restart zkswe`**（init 回收 → 重新拉起）。
 - **厂商 CLI 也是这么做的**：`fun launch` 二进制里只用到 `ctl.restart` + `zkswe` + `setprop`（**没有 kill**）；
-  手动部署（推 `/tmp` + `/tmp/EasyUI.cfg`）之后同样一句 `setprop ctl.restart zkswe` 让新 lib/ftu 生效
+手动部署（推 `/tmp` + `/tmp/EasyUI.cfg`）之后同样一句 `setprop ctl.restart zkswe` 让新 lib/ftu 生效
   （实测新进程确实加载 `/tmp` 的 lib，`/proc/<pid>/maps` 可见）。
-  按框架口径，**任何 kill 都不该用**，统一 setprop。
+按框架口径，**任何 kill 都不该用**，统一 setprop。
 - **实现（单一来源）**：MCP 侧 `adb_tools.restart_app()` = `setprop ctl.restart zkswe` → 轮询等新 pid（约 6s）；
   `allow_kill=True` 才启用 `kill -TERM` 兜底（给个别 setprop 失效的老板子留口子，仍然不用 -9）。
-  返回体带 `oldPid/newPid/method/restarted`，可取证用了哪条、pid 是否真换了。
-- **实测验收（2026-09-28，Z20 `192.168.1.100`，480×480）**：`setprop ctl.restart zkswe` **连续 10 轮** ——
-  每轮 pid 都换新（1233→…→2332，每轮 ~0.7–0.8s），每轮重启后 `touch tap 240 240` 都把「时钟待机页」切到
-  「控制面板页」（帧差恒 **230400 px** = 480×480 整屏），**无一轮出现“命令成功、应用不响应”，也不需要重启板子**。
+返回体带 `oldPid/newPid/method/restarted`，可取证用了哪条、pid 是否真换了。
+- **实测验收（2026-09-28，Z20 `192.168.1.100`，480×480）**：`setprop ctl.restart zkswe` **连续 10 轮**——
+每轮 pid 都换新（1233→…→2332，每轮 ~0.7–0.8s），每轮重启后 `touch tap 240 240` 都把「时钟待机页」切到
+  「控制面板页」（帧差恒 **230400 px**= 480×480 整屏），**无一轮出现“命令成功、应用不响应”，也不需要重启板子**。
   → 由此**勘正**三个组件（Calendar / Chart / `_mapping`-TabView）`components/ui_v1/<组件>/platforms.md` 里那条
   「反复 `kill -9 zkgui` 后触摸注入不响应」的已知限制（那是 kill 的后果，不是设备/组件缺陷）。
-  脚本 `temp/setprop_accept.py`，证据 `temp/setprop_accept/`（含 `workspace/temp/setprop_accept/RESULT.md` 与 20 张逐轮截图）。
+脚本 `temp/setprop_accept.py`，证据 `temp/setprop_accept/`（含 `workspace/temp/setprop_accept/RESULT.md` 与 20 张逐轮截图）。
 - **遇到掉网怎么处理**：按**现场断电重启**处理（先看设备电源/网线/WiFi，再 `adb connect`）；
-  排查方向优先 setprop 通道（`setprop` 静默失败的板子才考虑 kill 兜底）。
+排查方向优先 setprop 通道（`setprop` 静默失败的板子才考虑 kill 兜底）。
 - 另：`adb reboot` 后 /tmp 是空的（tmpfs）→ 必须**整套重推**（见 §2/§4），且重启后要等网络 adb 重新上线。

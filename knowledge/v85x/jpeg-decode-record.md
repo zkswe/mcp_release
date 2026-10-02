@@ -17,15 +17,15 @@ evidence: []
 
 > 🔍 **检索导引**：V853/V85X「**JPEG 硬件解码**」「**MJPEG 摄像头转码录制 mp4**」「**UVC 摄像头录像**」「**照片显示**」「**录像格式 mp4/ts/avi**」「**DVR 录制/拍照**」问题。
 > 💡 JPEG/MJPEG UVC 摄像头**平台无关接入**（发现/格式协商/保活/防坑）见 `knowledge/hardware/uvc-camera-generic.md`；本篇为 V85X 平台绑定（解码/录制 API）。
-> 沛哥 2026-09-07 定规：**只记录怎么用**；aw-dvr/aw-mpp 预编译闭源内部（MJPEG→H264 转码实现）不解析不深挖。
+> 2026-09-07 定规：**只记录怎么用**；aw-dvr/aw-mpp 预编译闭源内部（MJPEG→H264 转码实现）不解析不深挖。
 > 来源：V85X 平台通用实测 + aw-dvr 3.13.12 / aw-mpp 2.0.2 头文件（2026-09-08 去工程化，纯通用形态）。
 
 ## 场景总览（两个方向分开处理）
 
 | 场景 | 方向 | 典型需求 | 用什么 |
 |------|------|---------|--------|
-| **① 解码** | JPEG/MJPEG → YUV/屏幕 | 看照片/相册、UVC 预览、取帧做算法 | `mpi::JpegViewer`（显示）/ `jpegdecode.h`（拿像素） |
-| **② 编码（录制）** | 摄像头流 → 文件 | DVR 录像（内置/UVC 摄像头）、循环录像 | `mpi::Recorder`（视频 mp4/ts 两档） |
+| **① 解码**| JPEG/MJPEG → YUV/屏幕 | 看照片/相册、UVC 预览、取帧做算法 | `mpi::JpegViewer`（显示）/ `jpegdecode.h`（拿像素） |
+| **② 编码（录制）**| 摄像头流 → 文件 | DVR 录像（内置/UVC 摄像头）、循环录像 | `mpi::Recorder`（视频 mp4/ts 两档） |
 
 **不要混**：显示照片走解码（JpegViewer），录像走编码（Recorder）；MJPEG 摄像头流录制 = 编码场景，走 Recorder，与单张 JPEG 解码无关。
 
@@ -73,12 +73,12 @@ void JpegDecoderDestory(JpegDecoder* v);
 
 ## ② 编码场景（录制）
 
-### 2.1 格式口径（沛哥 2026-09-07 定）
+### 2.1 格式口径（2026-09-07 定）
 
 - **V85X 带编码器，录制默认支持 `mp4` / `ts` 两种格式**（aw-dvr `FileFormat { JPEG, TS, MP4 }`，
   `recorder.h` 注明视频仅 TS/MP4；`MEDIA_FILE_FORMAT_E` 另有 mp3/aac/wav/raw 音频类）
 - **客户要其他格式（如 AVI）→ 提示客户**：默认只出 mp4/ts；AVI 属**大文件格式**（体积大），
-  确认客户是否接受再走 AVI 方案，不默认承诺
+确认客户是否接受再走 AVI 方案，不默认承诺
 - 设备端回放/取文件按格式类型筛：`Recorder::getFiles((mpi::FileFormat)type, view, lock, ...)`
 
 ### 2.2 mpi::Recorder 用法（录制页实测）
@@ -127,7 +127,7 @@ UVC MJPEG 摄像头 (/dev/videoX)
 
 ### 2.4 拍照（不属于录像，但同 MPP 体系）
 
-拍照走 `mpi::Snapshot::instance().takePicture(names, {})`（**不是** `Recorder::takePicture`），
+拍照走 `mpi::Snapshot::instance().takePicture(names, {})`（**不是**`Recorder::takePicture`），
 200ms 防抖 timer；产物 JPEG → 相册 → 解码场景 JpegViewer 回看。闭环：Recorder(录) ↔ Snapshot(拍) ↔ JpegViewer(看)。
 
 ---
@@ -143,8 +143,8 @@ UVC MJPEG 摄像头 (/dev/videoX)
 7. **`RecordingSettings.frame_rate` 必须在 15~60**（2026-09-08 实测，设 0 会抛
    `frame rate must be betwen 15 ~ 60`）：UVC 摄像头实际 25/30fps 就写 25/30，别写 0 表示不限
 8. **录像文件 0 字节 = 绿屏直接原因（实测实锤）**：取流断（日志 `get video frame timeout` /
-   `rear camera fps 0.2`）→ VENC 无数据（`VideoRecorder: VENC no stream`）→ 录出 **0 字节 mp4** →
-   播放器解不出画面 = 绿屏。排查录像问题先 `ls -la` 看文件大小：**0 字节 = 取流/保活断**，不是编码参数问题
+   `rear camera fps 0.2`）→ VENC 无数据（`VideoRecorder: VENC no stream`）→ 录出 **0 字节 mp4**→
+播放器解不出画面 = 绿屏。排查录像问题先 `ls -la` 看文件大小：**0 字节 = 取流/保活断**，不是编码参数问题
 9. **录像成功日志判读**（正常链路特征，2026-09-08 CV201PND 实测）：
    - `rear camera fps 29.3`（取流帧率正常，≈ 摄像头帧率）
    - `rear venc fps 25.0`（编码器持续出帧）

@@ -3,7 +3,7 @@
   "_source": [
     "TDesign v1.17.0 官方令牌（projects/UISpec-Demo/docs/tdesign-tokens-distilled.json + tdesign-tokens-v1.17.0.wxss），换算口径 rpx ÷ 2 = px",
     "组件级相对尺度：knowledge/uicontrols/scrollwindow-layout-checklist.md §2.1（基准屏 1024×600；行高 8%~10%；箭头宽 2.5%~4%；左内边距 2%~4%）",
-    "已验收定版参数：projects/UISpec-Demo/docs/SPEC-CHECK.md §7/§8（钟工 2026-10-01「这个效果比例可以」）"
+    "已验收定版参数：projects/UISpec-Demo/docs/SPEC-CHECK.md §7/§8（2026-10-01「这个效果比例可以」）"
   ],
   "base_screen": {
     "width": 1024,

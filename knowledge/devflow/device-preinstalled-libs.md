@@ -7,7 +7,7 @@ confidence: real-device
 verified_at: 2026-09-30
 stale_days: 180
 origin: partial
-source: 2026-09-30 钟工 Z21 真机盘点（Zkswe_SSD21X_SPINOR）+ 本机复核（adb ls 体积实测 + 注册表对照 + F133 引自 components/vinyl/platforms.md）
+source: 2026-09-30 Z21 真机盘点（Zkswe_SSD21X_SPINOR）+ 本机复核（adb ls 体积实测 + 注册表对照 + F133 引自 components/vinyl/platforms.md）
 needs_evidence: true
 platforms: [Z21, F133]
 tags: [libpng 在哪, freetype 有没有, 图片解码用什么, MP3 解码, zlib, dlopen 找不到库, 设备自带, so 清单, 免编译借用, 其中一批, 图形, 解码库, nanovg, libpng12, freetype, libjpeg]
@@ -21,7 +21,7 @@ evidence:
 > libpng 在哪 / freetype 有没有 / 图片解码用什么 / MP3 解码 / zlib /
 > dlopen 找不到库 / 注册表里没有这个包是不是就没有 / 设备自带 .so 清单 / 免编译借用。
 >
-> **一句话**：**"注册表里没有"≠"平台没有"** —— 设备 `/lib` 里躺着约 80 个库，其中一批
+> **一句话**：**"注册表里没有"≠"平台没有"**—— 设备 `/lib` 里躺着约 80 个库，其中一批
 > 图形/解码库（nanovg / libpng12 / freetype / libjpeg / libmad / zlib 等）**可直接 dlopen 或链接**。
 > **先查本表，再决定是否自己交叉编译。**
 > （另有 `libmi_*` 一整套 —— **框架/系统内部模块，应用不需要关注**，见 §2.2。）
@@ -40,7 +40,7 @@ arm-pc-linux-gnueabihf-readelf.exe --dyn-syms <lib>.so  # 导出符号（对照�
 
 ## 2. Z21（Zkswe_SSD21X_SPINOR）实测清单 —— 2026-09-30
 
-> 环境：easyui **2.2.0** / kernel 4.9.84 / **glibc 2.30**（`ld-2.30.so`）；
+> 环境：easyui **2.2.0**/ kernel 4.9.84 / **glibc 2.30**（`ld-2.30.so`）；
 > 通用库在 `/lib`（80 项），应用库在 `/res/lib`（本例只有 `libzkgui.so`）。
 > **体积为本机 adb `ls -l` 复核值**（与实际镜像一致）。
 
@@ -48,12 +48,12 @@ arm-pc-linux-gnueabihf-readelf.exe --dyn-syms <lib>.so  # 导出符号（对照�
 
 | 库 | 体积（实测） | 能干什么 | 链接属性 |
 |---|---|---|---|
-| **`libnanovg.so`** | **50,984 B** | **矢量绘制（AGG 后端）**：`nvgCreateAGG`/`nvgDeleteAGG`、`nvgBeginFrame`/`nvgEndFrame`、`nvgScale`、`nvgCreateImageRGBA`、`nvgImagePattern` | ELF32 ARM DYN；NEEDED=`libgcc_s.so.1,libc.so.6`；**无 SONAME**；~100 GLOBAL FUNC（符号级待复核） |
-| **`libpng12.so.0.56.0`** | 112 KB 级 | PNG 解码/编码 | SONAME=`libpng12.so.0`；NEEDED=`libz.so.1,libm.so.6,libc.so.6` |
-| `libfreetype.so.6.11.4` | **137,120 B** | 字体光栅化（TrueType） | 标准 SONAME 链 |
-| `libjpeg.so.9.1.0` | **177,488 B** | JPEG 解码 | — |
+| **`libnanovg.so`**| **50,984 B**| **矢量绘制（AGG 后端）**：`nvgCreateAGG`/`nvgDeleteAGG`、`nvgBeginFrame`/`nvgEndFrame`、`nvgScale`、`nvgCreateImageRGBA`、`nvgImagePattern` | ELF32 ARM DYN；NEEDED=`libgcc_s.so.1,libc.so.6`；**无 SONAME**；~100 GLOBAL FUNC（符号级待复核） |
+| **`libpng12.so.0.56.0`**| 112 KB 级 | PNG 解码/编码 | SONAME=`libpng12.so.0`；NEEDED=`libz.so.1,libm.so.6,libc.so.6` |
+| `libfreetype.so.6.11.4` | **137,120 B**| 字体光栅化（TrueType） | 标准 SONAME 链 |
+| `libjpeg.so.9.1.0` | **177,488 B**| JPEG 解码 | — |
 | `libz.so.1.2.8` | — | zlib（gzip/inflate） | — |
-| `libmad.so.0.2.1` | **83,224 B** | **MP3 解码** | — |
+| `libmad.so.0.2.1` | **83,224 B**| **MP3 解码**| — |
 
 **已验通道（F133 侧，`components/vinyl/platforms.md`）**：`/lib/libnanovg.so` 与注册表包
 **同为一份构建（符号逐条相同）**；nanovg 后端 320×320 **23~44ms/帧**（定点后端 6~12ms），
@@ -66,7 +66,7 @@ arm-pc-linux-gnueabihf-readelf.exe --dyn-syms <lib>.so  # 导出符号（对照�
 （显示、区域叠加、视频处理、音频输出等）：
 
 - ⛔ **应用层不需要关注、也不要去 dlopen/链接**（接口不对外、随固件变）；
-  （2026-09-30 钟工：「mi_gfx 不需要用户关注」）
+  （2026-09-30：「mi_gfx 不需要用户关注」）
 - ✅ 需要图层/合成能力时，走**框架提供的高层 API**（`videoview`/`cameraview`/disp 图层纪律、
   `setBackgroundBmp`+`setInvalid`、`button+picTab` 的 α 路径）——见 `knowledge/devflow/render-extension-boundary.md`。
 
@@ -79,25 +79,24 @@ arm-pc-linux-gnueabihf-readelf.exe --dyn-syms <lib>.so  # 导出符号（对照�
 ### 2.4 运行时基础（**决定"能不能借"的那一层**）
 
 `ld-2.30.so` / `libc-2.30.so` / `libstdc++.so.6.0.26` / `libgcc_s.so.1` /
-**`libgomp.so.1.0.0`（OpenMP，可做多线程加速）** / `libssp` / `libpthread` / `libdl` / `librt`。
+**`libgomp.so.1.0.0`（OpenMP，可做多线程加速）**/ `libssp` / `libpthread` / `libdl` / `librt`。
 
 ## 3. 三条使用纪律
 
 1. **注册表没有 ≠ 不能借**：设备 `/lib` 里有 nanovg、libpng12、freetype、libjpeg、libmad、libz 等，
    **走 dlopen（或自带头文件 + 链接设备上的 .so）即可，不必自己交叉编译**。
    ⚠️ **注册表侧的准确现状（2026-09-30 本机实测）**：`~/.fun/registry/public/` 里
-   **f133 有 `nanovg/1.0.0`**，**z20 / z21 / v85x / f136 没有** ——
-   即"**部分平台的注册表里有、设备侧也都有**"；别写成"四个平台都没有"。
+   **f133 有 `nanovg/1.0.0`**，**z20 / z21 / v85x / f136 没有**——
+即"**部分平台的注册表里有、设备侧也都有**"；别写成"四个平台都没有"。
 2. **头文件不在设备上**：设备只装 `.so`，**头文件要从 SDK/参考工程/组件里取**
    （如 `components/vinyl/include/`、registry 包的 `include/`）；
-   用 `readelf --dyn-syms` 的符号表**逐条对照头文件**确认签名（本仓纪律：不许凭记忆写 API）。
+用 `readelf --dyn-syms` 的符号表**逐条对照头文件**确认签名（本仓纪律：不许凭记忆写 API）。
 3. **libc 必须匹配**：Z20/Z21=glibc、V85X/T113=musl、F133=RISC-V64 musl；
-   跨平台复用同一份 `.so` **一定失败**。
+跨平台复用同一份 `.so` **一定失败**。
 
 ## 4. 本文明说的边界（待补）
 
-- Z21 的库目前是**静态验证（存在性 + 体积）**，**符号级与运行时均未验**：
-  升 `verified` 需 ① `readelf --dyn-syms` 对照头文件 ② Z21 上跑一次真实绘制
+- Z21 的库目前是**静态验证（存在性 + 体积）**，**符号级与运行时均未验**：升 `verified` 需 ① `readelf --dyn-syms` 对照头文件 ② Z21 上跑一次真实绘制
   （建议直接复用 `components/vinyl` 的 A/B 口径）；
 - 本清单是**Z21 单点**盘点：**换板必须重跑 §1 的两条命令**（不同平台库集合不同）。
 

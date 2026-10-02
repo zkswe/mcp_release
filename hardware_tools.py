@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """硬件型号库（平台 → 型号 → 规格 + 平台/型号差异化）。
 
-为什么需要（沛哥 2026-09-12）：客户/开发者手上是一台具体硬件，但 AI 只认平台名，
+为什么需要（2026-09-12）：客户/开发者手上是一台具体硬件，但 AI 只认平台名，
 型号里的分辨率/按键值/接口差异全靠人肉回忆 → 建工程分辨率选错、按键值靠试。
 本模块把「选硬件」变成一次查询：说型号（或只说平台）就能拿到分辨率、按键值、
 接口配置、平台差异化与待确认项。
 
 单一事实来源：**hardware_catalog.json**（人工维护；本模块只读，不写）
 派生文档：knowledge/hardware/hardware-models.md（由 scripts/gen_hardware_doc.py 生成，勿手改）
-          改完 json 必须重跑生成器 + rebuild_index_local.py，否则检索到的还是旧型号表。
+改完 json 必须重跑生成器 + rebuild_index_local.py，否则检索到的还是旧型号表。
 
 设计要点：
   - 型号匹配宽松：忽略大小写/空格/连字符/下划线（SW80480070D_C == sw80480070dc），别名可配
@@ -85,8 +85,8 @@ def _known_platform(name):
     """平台名是否符合 platforms.py 规范。
 
     True = 已知；False = 确定是未知名字；**None = 校验器不可用（未校验）**。
-    旧实现这里是 `except Exception: return True`——把「没校验」说成「通过」，
-    属于静默瞒报：平台模块一旦坏掉，脏平台名会被当成合法数据放行。
+旧实现这里是 `except Exception: return True`——把「没校验」说成「通过」，
+属于静默瞒报：平台模块一旦坏掉，脏平台名会被当成合法数据放行。
     """
     try:
         import platforms as pl
@@ -97,13 +97,13 @@ def _known_platform(name):
 
 def normalize_platform(name):
     """把用户给的平台名归一（z21 → Z21；**V851S/V853S 等芯片名 → V85X**）；空 = 全部平台；
-    无法识别返回 None。
+无法识别返回 None。
 
     ⚠️ v0.27.87：原先只走 `platforms.normalize`（只认规范名+少数历史别名）→ `hardware_info(platform='V851S')`
-    回 BAD_PLATFORM「未知平台」，而同一串拿去查包却是认的（V85x 芯片名 → v85x 包键）——
-    这正是 v0.27.41 检讨过的「同一个平台名，包查询认、另一个工具不认」。现在补一道
+回 BAD_PLATFORM「未知平台」，而同一串拿去查包却是认的（V85x 芯片名 → v85x 包键）——
+这正是 v0.27.41 检讨过的「同一个平台名，包查询认、另一个工具不认」。现在补一道
     `platforms.resolve`（认包生态变体 + 芯片名）作兑底。
-    仅包生态的平台（z6s/z261/h500s/a33nor）**仍回 None**：交给调用方的
+仅包生态的平台（z6s/z261/h500s/a33nor）**仍回 None**：交给调用方的
     PLATFORM_NOT_IN_HARDWARE_LIB 专用错误码说明「真平台、硬件库未登记」，不当未知平台。
     """
     if name is None or str(name).strip() == '':
@@ -208,6 +208,18 @@ def _suggest(cat, model):
     return hits[:_MAX_SUGGEST]
 
 
+# AI 需要的命名规则键（v0.27.178）：只留「用户报型号时要用」的。
+# 维护者口径（platformLetter / lettersNote / legacyLabelWarning）**不随每次调用返回**——
+# 它是给人看的（哪个字母是哪个平台、旧文档哪里写错过），只进知识页。
+AI_NAMING_KEYS = ('structure', 'example', 'decode', 'limit')
+
+
+def _ai_naming_rules(cat):
+    """命名规则里 AI 真正要用的那部分（结构/示例/命名段解码/使用边界）。"""
+    nr = cat.get('namingRules') or {}
+    return {k: nr[k] for k in AI_NAMING_KEYS if nr.get(k)}
+
+
 def _platform_overview(cat, platform=''):
     """按平台汇总（含平台级差异化与待补项）。"""
     out = []
@@ -258,7 +270,7 @@ def _next_steps(entry, platform):
 
 
 def _merged_defaults(entry, plat_meta=None):
-    """合并默认参数：平台级 defaults 打底，型号级覆盖（沛哥：「平台差异」= 型号默认参数，开箱可照抄）。"""
+    """合并默认参数：平台级 defaults 打底，型号级覆盖（现场反馈：「平台差异」= 型号默认参数，开箱可照抄）。"""
     d = {}
     for src in ((plat_meta or {}).get('defaults') or {}, entry.get('defaults') or {}):
         if isinstance(src, dict):
@@ -297,7 +309,7 @@ def query(model='', platform=''):
     """硬件库查询入口。
 
     model 为空 → 列平台与型号（platform 可过滤）；model 给了 → 返回该型号完整条目。
-    返回 dict（由调用方 json.dumps）：
+返回 dict（由调用方 json.dumps）：
       {ok, mode: overview|model|not_found, platforms/model/hardware/..., warnings}
     """
     cat, warn = load()
@@ -347,7 +359,7 @@ def query(model='', platform=''):
                 'fields': ('每个型号：model/summary/dataStatus/aliases；'
                            '取单型号规格传 model=<型号>'),
                 'whenNoModel': WHEN_UNKNOWN,
-                'namingRules': cat.get('namingRules') or {},
+                'namingRules': _ai_naming_rules(cat),
                 'note': ('平台差异化与可选补充分别在 platforms[].differences / optional[]；'
                          '型号详情含 screen/keys/specs/differences/optional/source，'
                          '并自带 preset（开工直接照抄的平台+分辨率(+按键)）'),
@@ -371,7 +383,6 @@ def query(model='', platform=''):
                 'model': mname,
                 'preset': _preset(entry, pname, meta),
                 'hardware': hw,
-                'namingRules': cat.get('namingRules') or {},
                 'platformSummary': meta.get('summary', ''),
                 'platformDefaults': meta.get('defaults') or {},
                 'platformDifferences': meta.get('differences') or [],
@@ -397,11 +408,12 @@ def query(model='', platform=''):
             'error': {'code': 'MODEL_NOT_FOUND',
                       'msg': '硬件库未收录型号 %r（不挡开发）' % model,
                       'hint': WHEN_UNKNOWN + ' 型号名可能有出入，先看 suggestions；'
-                              '确认要补这个型号时告诉沛哥加进 hardware_catalog.json',
+                              '确认要补这个型号时告诉需求方加进 hardware_catalog.json',
                       'retryable': True},
             'fallback': {'platform': plat or '',
                          'need': ['平台', '分辨率'],
                          'advice': '按平台 + 分辨率开工即可；不猜规格（避免同系列外推出错）'},
+            'namingRules': _ai_naming_rules(cat),
             'suggestions': sug,
             'available': avail,
             'warnings': warn}
@@ -419,8 +431,8 @@ def build_markdown(cat=None):
          '本页由生成器产出勿手改）。',
          '> 检索关键词：型号 / 硬件 / 平台型号 / 屏幕分辨率 / 按键值 / PocketDisplay4 / '
          'SW80480070D / SV50PD / 86盒 / 串口屏 / 价签 / 选型',
-         '> 用法：**有具体型号** → 按该型号的预设参数开工（平台/分辨率/按键直接照抄）；'
-         '**没有具体型号** → 确认平台 + 分辨率即可建工程，其余按需再问。',
+         '> 用法：**有具体型号**→ 按该型号的预设参数开工（平台/分辨率/按键直接照抄）；'
+         '**没有具体型号**→ 确认平台 + 分辨率即可建工程，其余按需再问。',
          '> 本文档由 `scripts/gen_hardware_doc.py` 从 `hardware_catalog.json` 生成，**勿手改**'
          '（改 json 后重跑生成器 + `rebuild_index_local.py`）。',
          '> 查询用工具：`flythings_hardware_info(model, platform)`；'
@@ -438,8 +450,13 @@ def build_markdown(cat=None):
             L.append('- 平台/版本字母 %s：%s' % (k, v))
         if nr.get('lettersNote'):
             L.append('- ⚠️ 适用范围：%s' % nr['lettersNote'])
+        for _dim, _m in (nr.get('decode') or {}).items():
+            L.append('- 命名段解码·%s：%s'
+                     % (_dim, '；'.join('%s=%s' % (a, b_) for a, b_ in _m.items())))
         if nr.get('limit'):
             L.append('- 使用边界：%s' % nr['limit'])
+        if nr.get('legacyLabelWarning'):
+            L.append('- ⚠️ 旧文档坑：%s' % nr['legacyLabelWarning'])
         L.append('')
     L.append('## 平台总览')
     L.append('')
