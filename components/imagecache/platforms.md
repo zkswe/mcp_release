@@ -22,7 +22,7 @@
 ## 2. F133 真机实测（iosstyle 音乐 App，2026-09-23）
 
 板子/形态：F133 真机（800×1280 面板 + rotate 270 → UI 1280×800；内网板，地址从略），整包跑在 `/tmp`，
-`/tmp/EasyUI.cfg`：`touchDev=/dev/input/event3`、`rotateScreen=270`、`resPath=/tmp/ui/`。
+`/tmp/EasyUI.cfg`：`rotateScreen=270`、`resPath=/tmp/ui/`。
 量法：在 `obtainListItemData_*` 里 `setBackgroundPic()` 前后加临时计时埋点（**验收后已从源码移除**），
 量的是**框架解这张 PNG 的 UI 线程耗时**。
 

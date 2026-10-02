@@ -12,12 +12,20 @@
 | **`touch`**⭐ | **统一触摸注入（推荐）**：自动扫描触摸节点 + 自动判协议（单点 / MT-A / MT-B），**部署命令不带 `/dev/input/eventN`**；命令 tap/swipe/long/monkey/run/record/play + list/info。2026-09-12 新增，源码 `tools/touch_inject/` | z21 / z20 / t113 / f133 / f135 / v85x |
 | `ui_test` | 触摸注入/自动化测试（tap/swipe/long/monkey/run 脚本，**单点协议**适配老屏）——**兼容保留**，需人工给节点 | z21 / z20 / t113 / f133 / v85x |
 | `busybox` | 设备调试工具箱（网络/系统/Shell 全开，2026-09-08 新增） | z21 / z20 / t113 / f133 / f135 / v85x |
+| `zkshot` | 设备端抓屏（**SigmaStar 视频层**；配合 `flythings_device_screenshot(layer="video")`） | z21 / z20 |
 
 > 📌 **`mt_test` 已于 2026-09-30 移除**（二进制归档到工作区 `archive/mcp_mt_test_20260930/`）：
 > `touch` 自动扫描触摸节点 + 自动判协议（单点 / MT-A / MT-B）已完整覆盖其能力，**MT 屏一律用 `touch`**。
 > `ui_test` 保留（体积小、兼容老屏，需人工给节点）。
 
 全部 ELF 已验证魔数 `7F 45 4C 46`，直接 `adb push` 即可运行（无需宿主 zkgui）。
+
+**平台匹配（唯一规则）**：二进制按**目标平台**放，架构不对会静默失败/打崩应用——
+所以**不许拿别平台的 ELF 顶替**。架构由 `scripts/check_consistency.py::stage_bin_tools()`
+读 ELF 头核（`arm`→ELF32/ARM、`riscv64`→ELF64/RISC-V），放错直接红。
+**不要**为此做「一份二进制 + 平台映射」的间接层：按平台各放一份是对的，重复副本也**不是**体积问题——
+相同内容的副本 git 只存一份 blob，只差构建时间戳的（如 f133/f135 的 busybox）git 会压成几十字节的 delta
+（实测：1101048 B 的两份，pack 里是 1 份全量 + 1 个 **53 字节** delta）。
 
 ## 🔧 触摸协议速判（**先用 `touch`，它会自己判**）
 

@@ -32,7 +32,7 @@
 | 6 | **fb0 抓屏陈旧帧检测**| 🤖+设备 | 应用不渲染时 fb0 显示旧帧（本次误诊元凶之一），截图带警告 |
 | 7 | easyui 包 vs 设备运行时同源对账（getprop 指纹） | 🤖+设备 | build_ui_flow 前置告警 |
 | 8 | 工程分辨率 vs 面板分辨率核对告警 | 🤖 | 480×480 灰窗事件防线，validate_project 加检查项 |
-| 9 | fun launch cfg 修正：touchDev=event1（出厂 event4）、/tmp/tr 不存在 | 👤 确认出厂口径 +🤖 | |
+| 9 | fun launch cfg 修正（**touchDev 半项已闭环**） | 👤+🤖 | touchDev：工程 cfg **不再写触摸节点**（系统自识别）→ 工程侧无 event1/event4 可对错，该项失效；剩 `/tmp/tr 不存在` 待确认出厂口径 |
 | 10 | translate_ui 交互：给了 out 默认落盘；res 默认跟随工程 | 🤖 | 契约测试同步 |
 
 ## 四、场景①④ 强化（推广 P0，细节见 SCENARIO_COVERAGE.md）

@@ -37,3 +37,17 @@ temp_*.log
 # 会话验证产物（真机截图/二分样本/报告，可随时重建）
 temp/
 err.log
+
+# ── IDE 本地状态 / 工具生成物（B6 出库）──────────────────────────────
+# 判据：带**本机信息**或**工具重新生成**，入库即噪音——
+#   language.settings.xml   → Eclipse CDT 的语言设置缓存，含本机 env-hash
+#   org.eclipse.core.runtime.prefs → line.separator（本机行尾习惯）
+#   .deps.lock              → fun install 解析出的版本锁（文件头自己写着「不适用于手动编辑」）
+# **不要**把下面三件也删了（工程必需，已保留在库）：
+#   .project / .cproject    → IDE 打开与编译必需（create_project 还要改里面的工程名）
+#   .settings/com.zksw.flythings.easyui.prefs → 承载 resolution=（op 读它取分辨率）
+#   .settings/org.eclipse.core.resources.prefs → encoding/<project>=UTF-8（中文注释保真）
+language.settings.xml
+org.eclipse.core.runtime.prefs
+.deps.lock
+

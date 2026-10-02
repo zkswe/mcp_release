@@ -78,9 +78,9 @@
 | **B1**| **平台能力收编**：27 篇 `platforms.md` 的「汇总/可用性」+ `hardware_catalog.json` + `platforms.py` + `capability-boundaries.md` → `platform_capabilities.json` + loader + `gen`（重写各 platforms.md 的汇总节，其余人工内容不动）+ 门禁 | ★★★★★ | 中（读路径要一起改） | 门禁全绿；「Z20 能不能用 BLE」1 次查询得答 |
 | **B2**| **知识散落收敛**：把 §1.2 的高散概念收敛为「真源节 + 其余改指针」 | ★★★★☆ | 中（改 md 正文） | `audit_baggage` 的 scatter 数下降；检索回归不变差 |
 | **B3**| **实例骨架唯一来源**：519 个自带拷贝 → 骨架 + 生成器 + `--check`（照 `sync_ui_tools.py` 模式） | ★★★☆☆ | 中高 | 新加 example 不再手抄 19 文件；门禁盯一致性 |
-| **B4**| `bin_tools/` 平台副本收编（5 组 / ~660KB）：一份二进制 + 平台映射 | ★★☆☆☆ | 低 | push 逻辑按映射取；真机验证 |
+| **B4**| ~~`bin_tools/` 平台副本收编：一份二进制 + 平台映射~~ **实测后否决**（§10）：660KB 是工作区口径，git 早已 delta/去重；改为「ELF 架构门禁 + 平台匹配规则」 | ★★☆☆☆ | 低 | 19/19 二进制架构匹配 + 门禁能抓错配 |
 | **B5**| **根目录归位 + 历史命名残留清空**：44 个根文件分层；`fyx`/`FYX_BUILD` 清空、`fuse` 分「命令名（清空）/老形态（保留）」、`RENAMED`/flat 双模式/legacy 逐项定去留；顺带修出打包清单漏 15 模块 | ★★★☆☆ | 高（import/打包/闸门连锁） | 打包与 `install.bat` 冒烟通过 |
-| **B6**| IDE 冗余出库（76 个 `.prefs`/`.log`）：先确认 IDE 是否必须 | ★★☆☆☆ | 低 | 模板仍能被 IDE 正常打开 |
+| **B6**| IDE 冗余出库 —— **已完成（§9）**：75 个里只有 28 个该出（本机状态 / 工具生成物），工程必需的三件保留 | ★★☆☆☆ | 低 | 门禁 `stage_no_ide_local_files` 全绿 |
 
 ## 4. 度量（包袱是否真的在减少）
 
@@ -290,3 +290,48 @@ ide_junk_files入库的 IDE 冗余                          （目标：0）
 2. 新增门禁 `stage_package_manifest`：**「根目录 .py 集合 == py-modules」**，漏一个直接红。
 
 **四、零风险清理**：根目录散落的 `err.log`（未入库、.gitignore 里已有）归档到 `temp/err.log.archived`。
+
+## 9. B6 落地记录（IDE 冗余出库，2026-10-02）—— 结论：75 个里只有 28 个该出
+
+原计划的验收点是「**先确认 IDE 是否必须**」。逐个查证后（`git ls-files` 全量分类）：
+
+| 文件 | 判定 | 依据 |
+|---|---|---|
+| `.project` / `.cproject` | **必需，留** | IDE 打开与编译必需；`project_tools` 还要改里面的工程名，`validate_project` 也会检查它们存在 |
+| `.settings/com.zksw.flythings.easyui.prefs` | **必需，留** | `resolution=` 是 op 取分辨率的来源（改了分辨率只改 prefs 不够，ftu 内嵌也要改）；`easyui.cfg.*` 是工程配置本体 |
+| `.settings/org.eclipse.core.resources.prefs` | **留** | `encoding/<project>=UTF-8`（中文注释保真） |
+| `.settings/language.settings.xml` | **出库 ×8** | Eclipse CDT 语言设置缓存，**含本机 `env-hash`**（每台机器不同）→ 入库即"错的" |
+| `.settings/org.eclipse.core.runtime.prefs` | **出库 ×8** | 只有 `line.separator`（本机行尾习惯），Eclipse 自动生成 |
+| `.deps.lock` | **出库 ×12** | 文件头自己写着「不适用于手动编辑」；`fun install` 重新解析。且 `demos/README` 早写明"不提交 `.deps.lock`"——demo 确实没有，**模板/示例才是异常** |
+| `evidence/*.log`、`ui_blocks/examples/*/{check_all,last-run}.log` | **留 ×18** | 被 README 明确引为**对外证据**（RadButton 修前/修后指标、六版 UI 块的 exit 0 记录）——不是垃圾 |
+
+**动作**（索引与磁盘各清 28 个）：
+1. `git rm --cached` + 删盘（都可重建：Eclipse 导入时重建 / `fun install` 重新解析）；
+2. `.gitignore` 加 `language.settings.xml` / `org.eclipse.core.runtime.prefs` / `.deps.lock`
+   —— **注意 pattern 不带路径锚**：含 `/` 的 pattern 只匹配 .gitignore 所在目录，写成
+   `.settings/language.settings.xml` 会匹配不到 `templates/*/.settings/...`（实测踩到）；
+3. 新增门禁 `stage_no_ide_local_files()`（`git ls-files` 里不得再有这三类）；
+4. `audit_baggage` 的 IDE 冗余口径同步改成"真正不该入库的三类"——原先把 `.project`/`.cproject`
+   也算进去，会误导（它们是被保留的工程必需件）。出库后该指标 **75 → 0**。
+
+## 10. B4 落地记录（bin_tools 平台副本，2026-10-02）—— 结论：**不收编，原计划的口径算错了**
+
+原计划：`bin_tools/` 5 组重复 / ~660KB → 「一份二进制 + 平台映射」。实测**推翻**：
+
+1. **重复副本在仓库里几乎不占空间。** `git verify-pack` 实测：
+   - 完全相同的（z20/z21 的 `touch`/`ui_test`/`zkshot`、f133/f135 的 `touch`、t113/v85x 的 `touch`）
+     —— **本来就是同一个 blob**（git 按内容寻址）；
+   - 只差 4 字节构建时间戳的（f133/f135 的 `busybox`，1101048 B ×2）—— pack 里是
+     **1 份全量 + 1 个 53 字节 delta**。
+   那个 660KB 是**工作区**字节数，不是仓库体积。git 早就收掉了。
+2. **按平台各放一份本来就是正确设计。** 各平台架构/ABI 不同，放错会**静默失败或打崩应用**
+   （`bin_tools/z235x/README.md` 早写着"禁止拿其它平台的 ELF 顶替"）。加一层映射只增加间接。
+3. **于是做了真正该做的**（按"匹配不同硬件平台"）：
+   - 实测全部二进制 + `platforms.py` 的 `arch`：**19/19 匹配**（`riscv64`→ELF64/RISC-V、`arm`→ELF32/ARM、小端）；
+   - 新增门禁 `stage_bin_tools()`：读 **ELF 头**核架构（不靠目录名）。**负向自测**：把 z20 的 ARM `touch`
+     放进 `f133/` → 立刻 `FAIL bin_tools/f133/...(ELF32/ARM，期望 ELF64/RISC-V)`；
+   - `bin_tools/README.md`：补上**漏登记**的 `zkshot` 行 + 写明「平台匹配（唯一规则）」及"为什么不需要映射层"；
+   - 一度做过的"统一三对 busybox 构建"**已回退**：既然没有体积收益，就不动已交付的二进制
+     （构建时间戳是构建溯源的一部分）。
+4. **没做的**：Z235X 设备端工具仍缺（需该平台工具链 + 样机，README 已如实登记，不伪造）；
+   f135 缺 `ui_test`（`touch` 是首选、已覆盖其能力；不塞未实测的二进制）。

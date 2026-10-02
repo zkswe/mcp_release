@@ -6,7 +6,8 @@
 
 指标：
   files / size       总文件数与体积（目标：减）
-  dup_groups / waste 完全重复的内容组数与冗余体积（目标：减）
+  dup_groups / waste 完全重复的内容组数与**工作区**冗余体积（注意：git 按内容/delta 去重，
+                 不等于仓库体积，也不都是可回收空间——例：bin_tools 按平台各放一份是设计）
   basename_ge3       同名文件散落处数（≥3 处的名字个数；目标：减）
   concept_scatter    同一概念出现在多少篇 md 里（目标：收敛到 1 篇真源 + 指针）
 
@@ -44,8 +45,10 @@ CONCEPTS = [
     ('配色/对比度', '对比度'),
 ]
 
-IDE_JUNK_SUFFIX = ('.prefs', '.log', '.pyc')
-IDE_JUNK_NAME = ('.cproject', '.project', '.deps.lock', '.settings')
+# IDE 冗余口径（B6 后）：只算**真正不该入库**的三类（本机状态 / 工具生成物）。
+# `.project`/`.cproject`/`.settings/*.prefs` 是工程必需（IDE 编译 + op 读 resolution），**不算冗余**。
+IDE_JUNK_SUFFIX = ('.pyc',)
+IDE_JUNK_NAME = ('language.settings.xml', 'org.eclipse.core.runtime.prefs', '.deps.lock')
 
 
 def walk():
@@ -151,7 +154,7 @@ def main():
           % (m['files'], m['size_mb'], m['md_total'], m['md_knowledge'], m['md_components']))
     print('完全重复：%d 组 / %d 个文件 / 冗余 %.2f MB（其中全在实例目录里的 %d 组）'
           % (m['dup_groups'], m['dup_files'], m['dup_waste_mb'], m['dup_instance_groups']))
-    print('同名散落（≥3 处）：%d 个名字        IDE 冗余文件（.prefs/.log/.cproject…）：%d'
+    print('同名散落（≥3 处）：%d 个名字        IDE 冗余文件（本机状态/工具生成物）：%d'
           % (m['basename_ge3'], m['ide_junk_files']))
     print('\n同一概念散落在多少篇 md：')
     for r in m['concept_scatter']:

@@ -231,7 +231,7 @@ def _parse_easyui_cfg(text):
       rotateTouch  : 触摸角度（**可以与之不同**，注入触摸测试时要按它换算）
     """
     out = {}
-    for k in ('rotateScreen', 'rotateTouch', 'resPath', 'startupLibPath', 'touchDev',
+    for k in ('rotateScreen', 'rotateTouch', 'resPath', 'startupLibPath',
               'languageCode', 'font'):
         m = re.search(r'"%s"\s*:\s*"([^"]*)"|\"%s\"\s*:\s*([-\w./]+)' % (k, k), text or '')
         if m:

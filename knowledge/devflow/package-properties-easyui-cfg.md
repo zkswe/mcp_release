@@ -74,7 +74,6 @@ adb shell "setprop ctl.restart zkswe"          # 重启应用生效
   "screensaverTimeOut": -1,
   "startupLibPath": "/mnt/extsd/lib/libzkgui.so",
   "startupTouchCalib": false,
-  "touchDev": "/dev/input/event0",
   "uart": "ttyS1",
   "zkdebug": true
 }
@@ -93,7 +92,6 @@ adb shell "setprop ctl.restart zkswe"          # 重启应用生效
 | `screensaverTimeOut` | int | 屏保超时秒，-1 = 禁止屏保 |
 | `startupLibPath` | string | GUI 运行库路径（libzkgui.so） |
 | `startupTouchCalib` | bool | 启动是否做触摸校准 |
-| `touchDev` | string | 触摸设备节点 |
 | `uart` | string | 串口设备名（ttyS1） |
 | `zkdebug` | bool | 调试开关 |
 | `watchDogEnable` | bool | 看门狗开关（F133 工程普遍 false，mark_cv201 也配 false）——完整默认以编译工具生成为准，需要改才在 package.properties 覆盖 |

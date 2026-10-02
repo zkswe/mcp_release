@@ -38,7 +38,7 @@ evidence:
 | ③ | `/res/etc/EasyUI.cfg` | 固化态（随 `update.img` 走，这才是量产口径） |
 
 字段对照：`startupLibPath` = 程序库（`.so`）；`resPath` = 界面资源目录（`*.ftu` + `images/`）；
-`font` / `languagePath` / `touchDev` / `rotateScreen` / `rotateTouch` 同理，**一次部署要成套**。
+`font` / `languagePath` / `rotateScreen` / `rotateTouch` 同理，**一次部署要成套**。
 
 ## 2. 四步部署后自检（照抄）
 

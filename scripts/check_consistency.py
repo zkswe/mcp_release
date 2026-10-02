@@ -35,6 +35,7 @@ import io
 import json
 import os
 import re
+import struct
 import subprocess
 import sys
 import time
@@ -303,6 +304,62 @@ def stage_platform_single_source():
           ','.join(sem) if sem else 'ok')
 
 
+# 架构 → ELF (class, e_machine) 期望值（v0.27.179，B4）。
+# 用 ELF 头判定「这个二进制是不是这个平台的」，而不是靠目录名或人记得。
+ELF_CLASS = {1: 'ELF32', 2: 'ELF64'}
+ELF_MACHINE = {40: 'ARM', 243: 'RISC-V', 183: 'AARCH64', 8: 'MIPS', 3: 'x86'}
+ARCH_ELF = {'arm': (1, 40), 'riscv64': (2, 243)}
+
+
+def _elf_head(path):
+    """读 ELF 头 → (class, e_machine, endian)；不是 ELF 回 None。"""
+    with open(path, 'rb') as fh:
+        b = fh.read(64)
+    if len(b) < 52 or b[:4] != b'\x7fELF':
+        return None
+    fmt = '<' if b[5] == 1 else '>'
+    return (b[4], struct.unpack(fmt + 'H', b[18:20])[0], b[5])
+
+
+def stage_bin_tools():
+    """`bin_tools/<平台>/<工具>` 必须是**该平台架构**的 ELF（B4 防错配）。
+
+    为什么：设备端 ELF 架构不对会**静默失败**（push 上去跑不起来、或打崩应用），
+    而目录名看不出来。`bin_tools/z235x/README.md` 早写着「禁止拿其它平台的 ELF 顶替」——
+    这道门就是那句话的机器化。同时钉住「按平台放二进制」这个设计：
+    相同内容由 git 天然去重（同一 blob），**不需要**再做一份「二进制 + 平台映射」的间接层。
+    """
+    import platforms as pl
+    root = os.path.join(BASE, 'bin_tools')
+    bad, checked = [], {}
+    for plat, meta in pl.PLATFORMS.items():
+        d = os.path.join(root, meta.get('binTool', ''))
+        if not os.path.isdir(d):
+            continue                                   # 目录缺失由 stage_platforms 管
+        want = ARCH_ELF.get(meta.get('arch'))
+        for f in sorted(os.listdir(d)):
+            fp = os.path.join(d, f)
+            if not os.path.isfile(fp) or f.endswith('.md'):
+                continue                               # 说明文件不算工具
+            head = _elf_head(fp)
+            rel = 'bin_tools/%s/%s' % (meta['binTool'], f)
+            if head is None:
+                bad.append('%s(非 ELF)' % rel)
+                continue
+            cls, mach, endian = head
+            checked.setdefault(meta['arch'], 0)
+            checked[meta['arch']] += 1
+            if want and (cls, mach) != want:
+                bad.append('%s(%s/%s，期望 %s/%s)' % (
+                    rel, ELF_CLASS.get(cls, cls), ELF_MACHINE.get(mach, mach),
+                    ELF_CLASS[want[0]], ELF_MACHINE[want[1]]))
+            if endian != 1:
+                bad.append('%s(非小端)' % rel)
+    check(not bad, 'bin_tools 各平台 ELF 架构匹配',
+          'ok（%s）' % '，'.join('%s×%d' % (k, v) for k, v in sorted(checked.items()))
+          if not bad else '；'.join(bad[:4]))
+
+
 # 平台 arch 白名单（v0.27.178）。新增架构必须显式加进来——这就是这道门的全部意义。
 PLATFORM_ARCHES = ('arm', 'riscv64')
 
@@ -359,6 +416,26 @@ def stage_no_people_names():
             if n:
                 hits.append('%s(%d)' % (rel, n))
     check(not hits, '资料不含内部人名',
+          'ok' if not hits else '；'.join(hits[:4]))
+
+
+# IDE 本地状态 / 工具生成物：不得入库（v0.27.179，B6 出库）。
+# 判据：带本机信息（language.settings.xml 的 env-hash、core.runtime.prefs 的 line.separator）
+# 或由工具重新生成（.deps.lock 由 fun install 解析）。工程必需的三件**保留**：
+# .project / .cproject（IDE 打开与编译）、.settings/{com.zksw.flythings.easyui.prefs,
+# org.eclipse.core.resources.prefs}（resolution 来源 / UTF-8 编码）。
+IDE_LOCAL_BASENAMES = ('language.settings.xml', 'org.eclipse.core.runtime.prefs', '.deps.lock')
+
+
+def stage_no_ide_local_files():
+    """IDE 本地状态与工具生成物不得入库（B6 出库后防回退）。"""
+    rc, out = _run(['git', 'ls-files'])
+    if rc != 0:
+        check(False, 'IDE 本地状态文件未入库', 'git ls-files 失败（rc=%d）' % rc)
+        return
+    hits = [f for f in out.splitlines()
+            if os.path.basename(f.strip()) in IDE_LOCAL_BASENAMES]
+    check(not hits, 'IDE 本地状态文件未入库（%s）' % '、'.join(IDE_LOCAL_BASENAMES),
           'ok' if not hits else '；'.join(hits[:4]))
 
 
@@ -692,6 +769,8 @@ def main():
     stage_platforms()
     stage_platform_single_source()
     stage_platform_arch()
+    stage_bin_tools()
+    stage_no_ide_local_files()
     stage_no_people_names()
     stage_index()
     stage_docstring_budget()

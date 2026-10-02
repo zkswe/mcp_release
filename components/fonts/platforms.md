@@ -39,7 +39,7 @@ adb shell "ls -l /etc/font /res/font; cat /res/etc/EasyUI.cfg"
 
 ## 2. T113 / Z20 / Z21 —— 未验证
 
-- 已知差异：`EasyUI.cfg` 的 `touchDev` 在 SSD/Z20/Z21 平台是 `/dev/input/event0`（V85X 是 event1），字体路径同理**必须实测**；
+- 已知差异：`/res/font` 与 `EasyUI.cfg` 的字体路径各平台不同，**必须实测**（`adb shell "ls -l /res/font"`）；
 - Z20/Z21 多为「电子价签/面板」类设备，界面文字量大（价格、单位、商品名），建议直接投 **`common`** 或 `full`；
 - 上线前请按 §1 的验证步骤补实测值到本文件。
 
