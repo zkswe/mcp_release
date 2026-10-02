@@ -83,13 +83,13 @@
   "seekbar": {
    "caption": "SkSpeed",
    "ptr": "mSkSpeedPtr (ZKSeekBar)",
-   "json": "{\"seekbar__1\":{\"id\":33001,\"caption\":\"SkSpeed\",\"position\":{\"left\":40,\"top\":200,\"width\":400,\"height\":40},\"backgroundColor\":-1,\"backgroundPic\":\"images/sk_track_400x40.png\",\"defProgress\":0,\"max\":100,\"orientation\":0,\"progressPic\":\"images/sk_fill_400x40.png\",\"thumb\":\"images/sk_thumb_24x24.png\",\"touchable\":true,\"visible\":true}}",
+   "json": "{\"seekbar__1\":{\"id\":33001,\"caption\":\"SkSpeed\",\"position\":{\"left\":40,\"top\":200,\"width\":400,\"height\":40},\"backgroundColor\":-1,\"backgroundPic\":\"images/sk_track_400x40.png\",\"defProgress\":0,\"max\":100,\"orientation\":0,\"progressPic\":\"images/sk_fill_400x40.png\",\"thumb\":{\"size\":{\"width\":24,\"height\":24},\"normalPic\":\"images/sk_thumb_24x24.png\",\"pressedPic\":\"images/sk_thumb_24x24.png\"},\"touchable\":true,\"visible\":true}}",
    "note": "回调 onProgressChanged_SkSpeed(ZKSeekBar*,int)；背景禁 .9.png、尺寸==position；拿拖拽起止要换 ISeekBarChangeListener"
   },
   "progressbar": {
    "caption": "SkProgress",
    "ptr": "mSkProgressPtr (ZKSeekBar)",
-   "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":\"\",\"touchable\":false,\"visible\":true}}",
+   "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":{\"size\":{\"width\":0,\"height\":0},\"normalPic\":\"\",\"pressedPic\":\"\"},\"touchable\":false,\"visible\":true}}",
    "note": "只读进度条 = seekbar + touchable:false；代码 setProgress(int)"
   },
   "radiogroup": {
@@ -131,7 +131,7 @@
   "circlebar": {
    "caption": "CbRing",
    "ptr": "mCbRingPtr (ZKCircleBar)",
-   "json": "{\"circlebar__1\":{\"id\":36001,\"caption\":\"CbRing\",\"position\":{\"left\":400,\"top\":140,\"width\":224,\"height\":224},\"backgroundColor\":-1,\"clockwise\":true,\"max\":100,\"maxAngle\":360,\"progressPic\":\"images/ring_220x220_2196F3.png\",\"progressPicPos\":0,\"startAngle\":0,\"textColor\":2171169,\"textSize\":24,\"textType\":0,\"thumb\":\"\",\"touchRange\":0,\"touchable\":false,\"unit\":\"%\",\"visible\":true}}",
+   "json": "{\"circlebar__1\":{\"id\":36001,\"caption\":\"CbRing\",\"position\":{\"left\":400,\"top\":140,\"width\":224,\"height\":224},\"backgroundColor\":-1,\"clockwise\":true,\"max\":100,\"maxAngle\":360,\"progressPic\":\"images/ring_220x220_2196F3.png\",\"progressPicPos\":0,\"startAngle\":0,\"textColor\":2171169,\"textSize\":24,\"textType\":0,\"thumb\":{\"size\":{\"width\":0,\"height\":0},\"normalPic\":\"\",\"pressedPic\":\"\"},\"touchRange\":0,\"touchable\":false,\"unit\":\"%\",\"visible\":true}}",
    "note": "单环进度：setProgress(0..max)；按进度裁有效图（每种色一份图）；无拖拽回调"
   },
   "pointer": {
@@ -359,7 +359,7 @@
     ],
     "target": "seekbar",
     "level": "L1",
-    "json": "{\"seekbar__1\":{\"id\":33001,\"caption\":\"SkSpeed\",\"position\":{\"left\":40,\"top\":200,\"width\":400,\"height\":40},\"backgroundColor\":-1,\"backgroundPic\":\"images/sk_track_400x40.png\",\"defProgress\":0,\"max\":100,\"orientation\":0,\"progressPic\":\"images/sk_fill_400x40.png\",\"thumb\":\"images/sk_thumb_24x24.png\",\"touchable\":true,\"visible\":true}}",
+    "json": "{\"seekbar__1\":{\"id\":33001,\"caption\":\"SkSpeed\",\"position\":{\"left\":40,\"top\":200,\"width\":400,\"height\":40},\"backgroundColor\":-1,\"backgroundPic\":\"images/sk_track_400x40.png\",\"defProgress\":0,\"max\":100,\"orientation\":0,\"progressPic\":\"images/sk_fill_400x40.png\",\"thumb\":{\"size\":{\"width\":24,\"height\":24},\"normalPic\":\"images/sk_thumb_24x24.png\",\"pressedPic\":\"images/sk_thumb_24x24.png\"},\"touchable\":true,\"visible\":true}}",
     "notes": "背景禁 .9.png；尺寸==position；背景拖拽会与父容器手势冲突",
     "ref": ""
    },
@@ -371,7 +371,7 @@
     ],
     "target": "progressbar",
     "level": "L2",
-    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":\"\",\"touchable\":false,\"visible\":true}}",
+    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":{\"size\":{\"width\":0,\"height\":0},\"normalPic\":\"\",\"pressedPic\":\"\"},\"touchable\":false,\"visible\":true}}",
     "notes": "平台无独立 progressbar → seekbar + touchable:false",
     "ref": ""
    },
@@ -382,7 +382,7 @@
     ],
     "target": "circlebar",
     "level": "L1",
-    "json": "{\"circlebar__1\":{\"id\":36001,\"caption\":\"CbRing\",\"position\":{\"left\":400,\"top\":140,\"width\":224,\"height\":224},\"backgroundColor\":-1,\"clockwise\":true,\"max\":100,\"maxAngle\":360,\"progressPic\":\"images/ring_220x220_2196F3.png\",\"progressPicPos\":0,\"startAngle\":0,\"textColor\":2171169,\"textSize\":24,\"textType\":0,\"thumb\":\"\",\"touchRange\":0,\"touchable\":false,\"unit\":\"%\",\"visible\":true}}",
+    "json": "{\"circlebar__1\":{\"id\":36001,\"caption\":\"CbRing\",\"position\":{\"left\":400,\"top\":140,\"width\":224,\"height\":224},\"backgroundColor\":-1,\"clockwise\":true,\"max\":100,\"maxAngle\":360,\"progressPic\":\"images/ring_220x220_2196F3.png\",\"progressPicPos\":0,\"startAngle\":0,\"textColor\":2171169,\"textSize\":24,\"textType\":0,\"thumb\":{\"size\":{\"width\":0,\"height\":0},\"normalPic\":\"\",\"pressedPic\":\"\"},\"touchRange\":0,\"touchable\":false,\"unit\":\"%\",\"visible\":true}}",
     "notes": "单值环形进度 = circlebar（按进度裁图，每种色一份有效图）",
     "ref": ""
    },
@@ -740,7 +740,7 @@
     ],
     "target": "seekbar",
     "level": "L1",
-    "json": "{\"seekbar__1\":{\"id\":33001,\"caption\":\"SkSpeed\",\"position\":{\"left\":40,\"top\":200,\"width\":400,\"height\":40},\"backgroundColor\":-1,\"backgroundPic\":\"images/sk_track_400x40.png\",\"defProgress\":0,\"max\":100,\"orientation\":0,\"progressPic\":\"images/sk_fill_400x40.png\",\"thumb\":\"images/sk_thumb_24x24.png\",\"touchable\":true,\"visible\":true}}",
+    "json": "{\"seekbar__1\":{\"id\":33001,\"caption\":\"SkSpeed\",\"position\":{\"left\":40,\"top\":200,\"width\":400,\"height\":40},\"backgroundColor\":-1,\"backgroundPic\":\"images/sk_track_400x40.png\",\"defProgress\":0,\"max\":100,\"orientation\":0,\"progressPic\":\"images/sk_fill_400x40.png\",\"thumb\":{\"size\":{\"width\":24,\"height\":24},\"normalPic\":\"images/sk_thumb_24x24.png\",\"pressedPic\":\"images/sk_thumb_24x24.png\"},\"touchable\":true,\"visible\":true}}",
     "notes": "背景禁 .9.png；尺寸==position",
     "ref": ""
    },
@@ -751,7 +751,7 @@
     ],
     "target": "progressbar",
     "level": "L2",
-    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":\"\",\"touchable\":false,\"visible\":true}}",
+    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":{\"size\":{\"width\":0,\"height\":0},\"normalPic\":\"\",\"pressedPic\":\"\"},\"touchable\":false,\"visible\":true}}",
     "notes": "seekbar + touchable:false",
     "ref": ""
    },
@@ -863,7 +863,7 @@
     ],
     "target": "progressbar",
     "level": "L4",
-    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":\"\",\"touchable\":false,\"visible\":true}}",
+    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":{\"size\":{\"width\":0,\"height\":0},\"normalPic\":\"\",\"pressedPic\":\"\"},\"touchable\":false,\"visible\":true}}",
     "notes": "无独立滚动条控件；用只读 seekbar 表达进度（交互靠容器自带滚动）",
     "ref": ""
    },
@@ -1199,7 +1199,7 @@
     ],
     "target": "seekbar",
     "level": "L1",
-    "json": "{\"seekbar__1\":{\"id\":33001,\"caption\":\"SkSpeed\",\"position\":{\"left\":40,\"top\":200,\"width\":400,\"height\":40},\"backgroundColor\":-1,\"backgroundPic\":\"images/sk_track_400x40.png\",\"defProgress\":0,\"max\":100,\"orientation\":0,\"progressPic\":\"images/sk_fill_400x40.png\",\"thumb\":\"images/sk_thumb_24x24.png\",\"touchable\":true,\"visible\":true}}",
+    "json": "{\"seekbar__1\":{\"id\":33001,\"caption\":\"SkSpeed\",\"position\":{\"left\":40,\"top\":200,\"width\":400,\"height\":40},\"backgroundColor\":-1,\"backgroundPic\":\"images/sk_track_400x40.png\",\"defProgress\":0,\"max\":100,\"orientation\":0,\"progressPic\":\"images/sk_fill_400x40.png\",\"thumb\":{\"size\":{\"width\":24,\"height\":24},\"normalPic\":\"images/sk_thumb_24x24.png\",\"pressedPic\":\"images/sk_thumb_24x24.png\"},\"touchable\":true,\"visible\":true}}",
     "notes": "背景禁 .9.png；尺寸==position",
     "ref": ""
    },
@@ -1210,7 +1210,7 @@
     ],
     "target": "progressbar",
     "level": "L2",
-    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":\"\",\"touchable\":false,\"visible\":true}}",
+    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":{\"size\":{\"width\":0,\"height\":0},\"normalPic\":\"\",\"pressedPic\":\"\"},\"touchable\":false,\"visible\":true}}",
     "notes": "seekbar + touchable:false",
     "ref": ""
    },
@@ -1222,7 +1222,7 @@
     ],
     "target": "circlebar",
     "level": "L2",
-    "json": "{\"circlebar__1\":{\"id\":36001,\"caption\":\"CbRing\",\"position\":{\"left\":400,\"top\":140,\"width\":224,\"height\":224},\"backgroundColor\":-1,\"clockwise\":true,\"max\":100,\"maxAngle\":360,\"progressPic\":\"images/ring_220x220_2196F3.png\",\"progressPicPos\":0,\"startAngle\":0,\"textColor\":2171169,\"textSize\":24,\"textType\":0,\"thumb\":\"\",\"touchRange\":0,\"touchable\":false,\"unit\":\"%\",\"visible\":true}}",
+    "json": "{\"circlebar__1\":{\"id\":36001,\"caption\":\"CbRing\",\"position\":{\"left\":400,\"top\":140,\"width\":224,\"height\":224},\"backgroundColor\":-1,\"clockwise\":true,\"max\":100,\"maxAngle\":360,\"progressPic\":\"images/ring_220x220_2196F3.png\",\"progressPicPos\":0,\"startAngle\":0,\"textColor\":2171169,\"textSize\":24,\"textType\":0,\"thumb\":{\"size\":{\"width\":0,\"height\":0},\"normalPic\":\"\",\"pressedPic\":\"\"},\"touchRange\":0,\"touchable\":false,\"unit\":\"%\",\"visible\":true}}",
     "notes": "圆环进度用 circlebar；旋转菊花用 imageanim 帧图（F133 不支持动图）",
     "ref": ""
    },
@@ -1824,7 +1824,7 @@
     ],
     "target": "seekbar",
     "level": "L1",
-    "json": "{\"seekbar__1\":{\"id\":33001,\"caption\":\"SkSpeed\",\"position\":{\"left\":40,\"top\":200,\"width\":400,\"height\":40},\"backgroundColor\":-1,\"backgroundPic\":\"images/sk_track_400x40.png\",\"defProgress\":0,\"max\":100,\"orientation\":0,\"progressPic\":\"images/sk_fill_400x40.png\",\"thumb\":\"images/sk_thumb_24x24.png\",\"touchable\":true,\"visible\":true}}",
+    "json": "{\"seekbar__1\":{\"id\":33001,\"caption\":\"SkSpeed\",\"position\":{\"left\":40,\"top\":200,\"width\":400,\"height\":40},\"backgroundColor\":-1,\"backgroundPic\":\"images/sk_track_400x40.png\",\"defProgress\":0,\"max\":100,\"orientation\":0,\"progressPic\":\"images/sk_fill_400x40.png\",\"thumb\":{\"size\":{\"width\":24,\"height\":24},\"normalPic\":\"images/sk_thumb_24x24.png\",\"pressedPic\":\"images/sk_thumb_24x24.png\"},\"touchable\":true,\"visible\":true}}",
     "notes": "show-value 数值气泡平台无 → 并列 textview 常驻数值",
     "ref": ""
    },
@@ -1835,7 +1835,7 @@
     ],
     "target": "progressbar",
     "level": "L2",
-    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":\"\",\"touchable\":false,\"visible\":true}}",
+    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":{\"size\":{\"width\":0,\"height\":0},\"normalPic\":\"\",\"pressedPic\":\"\"},\"touchable\":false,\"visible\":true}}",
     "notes": "seekbar + touchable:false",
     "ref": ""
    },
@@ -2131,7 +2131,7 @@
     ],
     "target": "seekbar",
     "level": "L1",
-    "json": "{\"seekbar__1\":{\"id\":33001,\"caption\":\"SkSpeed\",\"position\":{\"left\":40,\"top\":200,\"width\":400,\"height\":40},\"backgroundColor\":-1,\"backgroundPic\":\"images/sk_track_400x40.png\",\"defProgress\":0,\"max\":100,\"orientation\":0,\"progressPic\":\"images/sk_fill_400x40.png\",\"thumb\":\"images/sk_thumb_24x24.png\",\"touchable\":true,\"visible\":true}}",
+    "json": "{\"seekbar__1\":{\"id\":33001,\"caption\":\"SkSpeed\",\"position\":{\"left\":40,\"top\":200,\"width\":400,\"height\":40},\"backgroundColor\":-1,\"backgroundPic\":\"images/sk_track_400x40.png\",\"defProgress\":0,\"max\":100,\"orientation\":0,\"progressPic\":\"images/sk_fill_400x40.png\",\"thumb\":{\"size\":{\"width\":24,\"height\":24},\"normalPic\":\"images/sk_thumb_24x24.png\",\"pressedPic\":\"images/sk_thumb_24x24.png\"},\"touchable\":true,\"visible\":true}}",
     "notes": "背景禁 .9.png；尺寸==position",
     "ref": ""
    },
@@ -2143,7 +2143,7 @@
     ],
     "target": "progressbar",
     "level": "L2",
-    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":\"\",\"touchable\":false,\"visible\":true}}",
+    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":{\"size\":{\"width\":0,\"height\":0},\"normalPic\":\"\",\"pressedPic\":\"\"},\"touchable\":false,\"visible\":true}}",
     "notes": "seekbar + touchable:false",
     "ref": ""
    },
@@ -2154,7 +2154,7 @@
     ],
     "target": "progressbar",
     "level": "L4",
-    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":\"\",\"touchable\":false,\"visible\":true}}",
+    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":{\"size\":{\"width\":0,\"height\":0},\"normalPic\":\"\",\"pressedPic\":\"\"},\"touchable\":false,\"visible\":true}}",
     "notes": "无独立滚动条控件；容器自带滚动，进度可只读 seekbar 表达",
     "ref": ""
    },
@@ -2511,7 +2511,7 @@
     ],
     "target": "seekbar",
     "level": "L1",
-    "json": "{\"seekbar__1\":{\"id\":33001,\"caption\":\"SkSpeed\",\"position\":{\"left\":40,\"top\":200,\"width\":400,\"height\":40},\"backgroundColor\":-1,\"backgroundPic\":\"images/sk_track_400x40.png\",\"defProgress\":0,\"max\":100,\"orientation\":0,\"progressPic\":\"images/sk_fill_400x40.png\",\"thumb\":\"images/sk_thumb_24x24.png\",\"touchable\":true,\"visible\":true}}",
+    "json": "{\"seekbar__1\":{\"id\":33001,\"caption\":\"SkSpeed\",\"position\":{\"left\":40,\"top\":200,\"width\":400,\"height\":40},\"backgroundColor\":-1,\"backgroundPic\":\"images/sk_track_400x40.png\",\"defProgress\":0,\"max\":100,\"orientation\":0,\"progressPic\":\"images/sk_fill_400x40.png\",\"thumb\":{\"size\":{\"width\":24,\"height\":24},\"normalPic\":\"images/sk_thumb_24x24.png\",\"pressedPic\":\"images/sk_thumb_24x24.png\"},\"touchable\":true,\"visible\":true}}",
     "notes": "背景禁 .9.png；尺寸==position",
     "ref": ""
    },
@@ -2523,7 +2523,7 @@
     ],
     "target": "progressbar",
     "level": "L2",
-    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":\"\",\"touchable\":false,\"visible\":true}}",
+    "json": "{\"seekbar__2\":{\"id\":33002,\"caption\":\"SkProgress\",\"position\":{\"left\":40,\"top\":260,\"width\":400,\"height\":24},\"backgroundColor\":-1,\"backgroundPic\":\"images/bar_354x14_ro_track.png\",\"defProgress\":40,\"max\":100,\"orientation\":0,\"progressPic\":\"images/bar_354x14_ro_fill.png\",\"thumb\":{\"size\":{\"width\":0,\"height\":0},\"normalPic\":\"\",\"pressedPic\":\"\"},\"touchable\":false,\"visible\":true}}",
     "notes": "seekbar + touchable:false",
     "ref": ""
    },

@@ -63,9 +63,9 @@ _FONT_SIZE = re.compile(r'(\d+)\s*$')
 # 取值基准：demos ftu 反解的 IDE 全量序列化（hw-relay-verify-z20 等）+
 # templates/ui_blocks/examples 权威工程（seekbar.thumb 子盒结构）。
 # ⚠️ 映射表 mcp_control_map.json 的 json 片段是「最小示例」，不是完整 schema——
-#    textview 缺 bgColorTab/bold/italic/visible/roll*、button 缺 visible/longClick*、
-#    seekbar.thumb 误用字符串（真 schema 是 {size, normalPic, pressedPic} 子盒）。
+#    textview 缺 bgColorTab/bold/italic/visible/roll*、button 缺 visible/longClick*。
 #    发射层在此补齐，不动映射表（片段同时服务 map_control 的「最小可粘贴」口径）。
+#    （thumb 字符串形态曾是挂死真凶，2026-10-02 A/B 终裁后映射表已修为子盒对象。）
 # ---------------------------------------------------------------------------
 
 # ⚠️ A/B 终裁（2026-10-02，V85X iMirror 固件，temp/abtest_a/b 对照）：
