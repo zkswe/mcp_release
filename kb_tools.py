@@ -26,6 +26,7 @@ import json2html as j2h
 import gen_res as h2j_genres
 import i18n_tools as itx
 import test_tools as tt
+import logic_tools as lt
 import translate_tools as trt
 # 整机自检 + 缺陷单（2026-09-29）：实现层单列（采集/渲染长逻辑不在本文件），kb_tools 只做工具面封装
 try:
@@ -1164,6 +1165,22 @@ def flythings_create_bin_project(project_root: str, project_name: str = '', plat
         ensure_ascii=False)
 
 
+def flythings_gen_logic_stub(project_root: str, page: str = '', dry_run: bool = False) -> str:
+    """按 ui/*.json 的控件表补齐 logic 回调桩（只补不改，不写业务）。
+
+    读 ui/*.json 控件表（key=类型__序号，**回调名用 caption**）→ 查 ui_schema.json 的 controls.<类型>.callbacks → 把缺失的桩追加进 src/logic/<页>Logic.cc。
+    参数：project_root→工程根（含 ui/ 与 src/logic/）；page→只处理某页（如 main）；空=全部页；dry_run→true 只回清单不落盘
+    返回：p；a；g；e；s；[；]；.；g；e；n；e；r；a；t；e；d；/；s；k；i；p；p；e；d；+；g；e；n；e；r；a；t；e；d；C；o；u；n；t；/；w；r；i；t；t；e；n；C；o；u；n；t；。
+    ⚠️ 只补不改：已存在的同名函数一律跳过，不覆盖业务代码
+    ⚠️ listview 的 3 条回调（count / data / click）是一组，缺一列表就是空白
+    ⚠️ onButtonClick 返回值：true=吞事件（不再走系统默认）、false=放行
+    ⚠️ 回调名/签名真源 = ui_schema.json 的 controls.<类型>.callbacks
+    ⚠️ 生成物要过 check_all：注释里别写孤立括号
+    检索词：回调桩 / logic 骨架 / onButtonClick / listview 三回调 / 换皮改功能 / 写业务之前
+    """
+    return json.dumps(lt.gen_logic_stub(project_root, page, dry_run), ensure_ascii=False)
+
+
 def flythings_gen_ui_test(project_root: str, test_type: str = 'ask', output_dir: str = '',
                           platform: str = _platforms.DEFAULT_BIN_PLATFORM, with_build: bool = True,
                           monkey_count: int = 500) -> str:
@@ -2072,6 +2089,7 @@ OP_NAMES = (
     'flythings_attach_cli_tools',
     'flythings_create_project',
     'flythings_create_bin_project',
+    'flythings_gen_logic_stub',
     'flythings_gen_ui_test',
     'flythings_test_run',
     'flythings_check_project_deps',

@@ -138,6 +138,15 @@ def field_type(control_type, field):
     return spec.get('type') if spec else None
 
 
+def callbacks(control_type):
+    """该控件可生成的回调桩（schema `callbacks` 字段；没有则空表）。
+
+    每条 = {name, sig, when, stub, note}；`name`/`sig` 里的 `{Caption}` 是占位，
+    生成时替换为 json 里该控件的 `caption` 值（**不是** key 里的数字）。
+    """
+    return list(_entry(control_type).get('callbacks') or [])
+
+
 def field_spec(control_type, field):
     """字段完整声明（type/required/default/note/itemType）；未知字段返回 None。"""
     e = _entry(control_type)

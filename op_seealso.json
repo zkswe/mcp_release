@@ -62,6 +62,12 @@
         "knowledge/devflow/ftu-json-pipeline.md"
       ]
     },
+    "flythings_gen_logic_stub": {
+      "seeAlso": [
+        "knowledge/devflow/activity-code-skeleton.md",
+        "knowledge/uicontrols/widget-code-api.md"
+      ]
+    },
     "flythings_gen_ui_test": {
       "seeAlso": [
         "knowledge/devflow/device-test-run.md",

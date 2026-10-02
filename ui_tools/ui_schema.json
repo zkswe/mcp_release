@@ -2,6 +2,7 @@
   "schemaVersion": "1.0",
   "updated": "2026-10-02",
   "authority": "FlyThings UI json 布局规范的唯一机器可读真源。字段/类型/必填/默认值以本表为准；knowledge/*.md 只负责原理、流程与行为。基准：json-field-mandatory.md v2.1（SampleUI-New 42json + basedemo 44json 双源）+ V85X 真机 A/B 实测（2026-10-02）。消费方：check_all 校验 / translate_ui 发射层 / map_control 片段 / gen_ui_schema_docs.py 文档表。改规范 = 改本文件，禁止在消费方另抄一份。",
+  "logicCallbacksNote": "每控件可生成的回调桩（v0.27.178）。{Caption} = json 里控件 key 的 __ 后缀。来源：35 官方 Demo 源码逐条取证（knowledge/uicontrols/widget-code-api.md 是其讲解）；op flythings_gen_logic_stub 从这里读——不要在别处另写一份回调名表。listview 的 3 条是一组，缺一列表就是空白。",
   "valueRules": {
     "colorMinusOne": "-1 = 0xFFFFFFFF 是有意义的显式值（透明/未用），非噪音，必须显式写",
     "colorZero": "0 = 不透明黑。仅 videoview/cameraview 底色官方原值为 0（必须实黑底）；其他控件透明写 -1，写 0 就是黑块（M6 实测坑）",
@@ -57,6 +58,9 @@
     },
     "button": {
       "interactive": true,
+      "callbacks": [
+        {"name": "onButtonClick_{Caption}", "sig": "bool onButtonClick_{Caption}(ZKButton *pButton)", "when": "单击", "stub": "return false;", "note": "true=吞事件（不再走系统默认）；false=放行（ID=100 sys_back 的关闭依赖它）"}
+      ],
       "fields": {
         "id": {"type": "int", "required": true},
         "caption": {"type": "string", "required": true},
@@ -89,6 +93,9 @@
     },
     "edittext": {
       "interactive": true,
+      "callbacks": [
+        {"name": "onEditTextChanged_{Caption}", "sig": "void onEditTextChanged_{Caption}(const std::string &text)", "when": "每敲一键触发一次", "stub": "(void)text;", "note": "勿放重量级逻辑"}
+      ],
       "fields": {
         "id": {"type": "int", "required": true},
         "caption": {"type": "string", "required": true},
@@ -107,6 +114,9 @@
     },
     "seekbar": {
       "interactive": true,
+      "callbacks": [
+        {"name": "onProgressChanged_{Caption}", "sig": "void onProgressChanged_{Caption}(ZKSeekBar *pSeekBar, int progress)", "when": "拖动 / setProgress 连续触发", "stub": "(void)pSeekBar; (void)progress;", "note": "拿不到拖拽起止；要「松手才 seek」得换 ISeekBarChangeListener 自定义监听"}
+      ],
       "fields": {
         "id": {"type": "int", "required": true},
         "caption": {"type": "string", "required": true},
@@ -125,6 +135,11 @@
     },
     "listview": {
       "interactive": true,
+      "callbacks": [
+        {"name": "getListItemCount_{Caption}", "sig": "int getListItemCount_{Caption}(const ZKListView *pListView)", "when": "刷新时取条目总数", "stub": "return 0;", "note": "可顺带做空态提示"},
+        {"name": "obtainListItemData_{Caption}", "sig": "void obtainListItemData_{Caption}(ZKListView *pListView, ZKListView::ZKListItem *pItem, int index)", "when": "每行数据填充（模板行复用，必须全量覆盖）", "stub": "(void)pListView; (void)pItem; (void)index;", "note": "setText + findSubItemByID 取子项；改完数据要 refreshListView()"},
+        {"name": "onListItemClick_{Caption}", "sig": "void onListItemClick_{Caption}(ZKListView *pListView, int index, int id)", "when": "点条目", "stub": "(void)pListView; (void)index; (void)id;", "note": "id=被点子控件 ID（switch ID_MAIN_SubXxx 区分）；点主区时 id 非子项"}
+      ],
       "fields": {
         "id": {"type": "int", "required": true},
         "caption": {"type": "string", "required": true},
@@ -171,6 +186,9 @@
     },
     "slidewindow": {
       "interactive": true,
+      "callbacks": [
+        {"name": "onSlideItemClick_{Caption}", "sig": "void onSlideItemClick_{Caption}(ZKSlideWindow *pSlideWindow, int index)", "when": "点宫格项", "stub": "(void)pSlideWindow; (void)index;", "note": "index 是跨屏全局下标；内容静态配在 json items[]，代码不填充"}
+      ],
       "container": true,
       "fields": {
         "id": {"type": "int", "required": true},
@@ -318,6 +336,9 @@
     },
     "radiogroup": {
       "interactive": true,
+      "callbacks": [
+        {"name": "onCheckedChanged_{Caption}", "sig": "void onCheckedChanged_{Caption}(ZKRadioGroup *pGroup, int checkedID)", "when": "选中项变化", "stub": "(void)pGroup; (void)checkedID;", "note": "checkedID 是选中项控件 ID（非索引）→ switch ID_MAIN_RadioButtonX；初始全 unchecked 时首次点击才触发，默认值要在 onUI_init setCheckedID"}
+      ],
       "container": true,
       "fields": {
         "id": {"type": "int", "required": true},
@@ -350,6 +371,9 @@
     },
     "checkbox": {
       "interactive": true,
+      "callbacks": [
+        {"name": "onCheckedChanged_{Caption}", "sig": "void onCheckedChanged_{Caption}(ZKCheckBox *pCheckBox, bool isChecked)", "when": "勾选变化", "stub": "(void)pCheckBox; (void)isChecked;", "note": "setChecked() 也会触发回调；回调里无条件重发协议会回环"}
+      ],
       "fields": {
         "id": {"type": "int", "required": true},
         "caption": {"type": "string", "required": true},

@@ -650,6 +650,48 @@
       ],
       "noneReason": "MCU（FlyThings Lite）侧工程，按 MCU 口径单独维护，不进 open 版 knowledge/"
     },
+    "flythings_gen_logic_stub": {
+      "summary": "按 ui/*.json 的控件表补齐 logic 回调桩（只补不改，不写业务）。",
+      "risk": "write",
+      "category": "project",
+      "stage": "build",
+      "flow": "读 ui/*.json 控件表（key=类型__序号，**回调名用 caption**）→ 查 ui_schema.json 的 controls.<类型>.callbacks → 把缺失的桩追加进 src/logic/<页>Logic.cc。",
+      "params": [
+        {
+          "name": "project_root",
+          "desc": "工程根（含 ui/ 与 src/logic/）"
+        },
+        {
+          "name": "page",
+          "desc": "只处理某页（如 main）；空=全部页"
+        },
+        {
+          "name": "dry_run",
+          "desc": "true 只回清单不落盘"
+        }
+      ],
+      "returns": "pages[].generated/skipped + generatedCount/writtenCount。",
+      "rules": [
+        "只补不改：已存在的同名函数一律跳过，不覆盖业务代码",
+        "listview 的 3 条回调（count / data / click）是一组，缺一列表就是空白",
+        "onButtonClick 返回值：true=吞事件（不再走系统默认）、false=放行",
+        "回调名/签名真源 = ui_schema.json 的 controls.<类型>.callbacks",
+        "生成物要过 check_all：注释里别写孤立括号"
+      ],
+      "keywords": [
+        "回调桩",
+        "logic 骨架",
+        "onButtonClick",
+        "listview 三回调",
+        "换皮改功能",
+        "写业务之前"
+      ],
+      "docRef": "knowledge/devflow/activity-code-skeleton.md",
+      "seeAlso": [
+        "knowledge/devflow/activity-code-skeleton.md",
+        "knowledge/uicontrols/widget-code-api.md"
+      ]
+    },
     "flythings_gen_ui_test": {
       "summary": "根据 UI json 布局生成自动化测试项目（纯代码，不依赖 AI，省 token）。",
       "risk": "device",
