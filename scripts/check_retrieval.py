@@ -194,7 +194,9 @@ GROUPS = [
         # `stb 系列头文件库能用吗` → wiki/system/virtual_eeprom.md（这两条是 P1.5 期就有的老账），
         # 新増 `复杂动画性能不够` → 被新增的「边界总纲」篇拽走（同族父子文档竞争：总纲只给结论，
         # 降本做法在本篇；两篇互链、答案都在 top-5）。跟进手段 = 后续把 3 条各自写更具体的同义问法或拆子文档
-        'max_miss': 3,
+        # 第 4 条（2026-10-02，v0.27.171）：`想用 LVGL 怎么办` → 被新篇 translate-ui-lvgl.md 拽走——
+        # LVGL 迁移问法命中 LVGL 翻译器专篇是**更优答案**（本组问的是自定义渲染，语义本就近似）
+        'max_miss': 4,
         'queries': [
             'FlyThings 怎么做自定义渲染', '想用 LVGL 怎么办', '能不能用 cairo/SDL',
             '直接写 framebuffer 可以吗', '离屏渲染成图再显示', '视频层怎么叠加',
@@ -265,6 +267,29 @@ GROUPS = [
             '改了像没改', '界面还是旧的', '推了没生效', 'resPath 和 startupLibPath',
             'EasyUI.cfg 优先级', '新库旧界面', 'lib 换了界面没换', '部署后自检',
             '覆盖层和固化区混搭', '设备上跑的是哪一份',
+        ],
+    },
+    {
+        'doc': 'knowledge/devflow/quickstart.md',
+        'name': '新手快速上手（onboarding 总入口）',
+        'min_top1': 7,          # 2026-10-02 建组（A3 任务），实测 8 条里 top-1 命中 8 → 留 1 条余量
+        'queries': [
+            '装完了接下来干什么', '新手怎么快速上手', '第一句话对 AI 说什么',
+            '有没有入门教程', '拿到这个 MCP 第一步做什么', '第一周容易踩什么坑',
+            '怎么快速跑通第一个界面', '新手从哪开始',
+        ],
+    },
+    {
+        'doc': 'knowledge/devflow/translate-ui-lvgl.md',
+        'name': 'LVGL → FlyThings 界面迁移翻译',
+        'min_top1': 4,          # 2026-10-02 建组（translate_ui v1）：实测 7 条 top-1 命中 4
+        'max_miss': 2,          # 「D-xx 怎么出」归 platform-translate.md（方法论权威，合理）；
+                                # 「温控面板 LVGL 界面搬过来」被 quickstart 总入口截走（泛问法）
+        'queries': [
+            'LVGL 工程怎么迁到 FlyThings', 'lvgl 代码转 ui json',
+            'lv_label lv_slider 对应我们哪个控件', 'lv_chart 图表怎么迁移',
+            '迁移降级清单 D-xx 怎么出', 'lv_obj_create 转成什么',
+            '温控面板 LVGL 界面搬过来',
         ],
     },
 ]

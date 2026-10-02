@@ -25,6 +25,13 @@
     ask      - 询问用户三种验收方式（默认）
 """
 import json, os, re, subprocess, shutil
+import sys as _sys
+
+# test_run 的抓屏走 ui_tools/device_screenshot.py：自己把 ui_tools 挂进 sys.path，
+# 不依赖 kb_tools 的导入副作用（直接 import test_tools 时抓屏会 No module named）。
+_UI_TOOLS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ui_tools')
+if _UI_TOOLS not in _sys.path:
+    _sys.path.insert(0, _UI_TOOLS)
 
 import platforms as _platforms  # 平台名唯一来源（别在这里再抄一份白名单）
 import adb_tools as _adb
@@ -115,6 +122,7 @@ def _parse_ui_jsons(project_root):
                         'touchable': touchable, 'visible': visible,
                         'is_swipe': ctype in SWIPE_TYPES,
                         'picTab': v.get('picTab') or {},
+                        'picRefs': _pic_refs(v),
                         'nested': depth > 0,
                         'path': '/'.join(keys + (key,)),
                     }
@@ -129,16 +137,38 @@ def _parse_ui_jsons(project_root):
     return pages, None
 
 
+def _pic_refs(v):
+    """收集控件引用的全部图片路径：picTab 各槽 + *Pic 标量字段 + thumb 子对象的 *Pic。
+    （seekbar 的 backgroundPic/progressPic/thumb.normalPic 缺图会导致 ftu 加载挂死，
+    只查 picTab 会漏掉最危险的一类。）"""
+    refs = []
+    tab = v.get('picTab')
+    if isinstance(tab, dict):
+        refs.extend(x for x in tab.values() if isinstance(x, str) and x)
+    for k, val in v.items():
+        if k.endswith('Pic') and isinstance(val, str) and val:
+            refs.append(val)
+    thumb = v.get('thumb')
+    if isinstance(thumb, dict):
+        for k, val in thumb.items():
+            if k.endswith('Pic') and isinstance(val, str) and val:
+                refs.append(val)
+    return refs
+
+
 def _check_resources(project_root, pages):
     """遍历验收附带：检查控件引用的图片资源是否缺失。"""
     res_dir = os.path.join(project_root, 'resources')
+    ui_dir = os.path.join(project_root, 'ui')
     missing = []
     for pg in pages:
         for c in pg.get('controls', []):
-            for pic in (c.get('picTab') or {}).values():
+            for pic in c.get('picRefs') or []:
                 if not pic:
                     continue
                 candidates = [
+                    os.path.join(ui_dir, pic),              # 标准布局：ui/images/x.png
+                    os.path.join(ui_dir, 'images', pic),
                     os.path.join(res_dir, 'images', pic),
                     os.path.join(res_dir, pic),
                     os.path.join(res_dir, 'image', pic),

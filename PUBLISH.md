@@ -43,7 +43,7 @@
 | 私有/方案依赖包名 | package_catalog.json 剔除：aw-* / voip / tuyaoscxx / uvc-camera / lylink* / xunfei-aiui |
 | devflow 内部规范 | kb-first-analysis（内部检索铁律）、gui-controls-gap（内部盘点） |
 | CHANGELOG 完整内部迭代史 | release 不要带 CHANGELOG.md（自 v0.27.31 起冻结，内容不过发布；内部历史看 master git log） |
-| kb_tools.py MCP_FEATURES | 精简为公开能力摘要（内部条目只在 master） |
+| `features_recent.json`（原 kb_tools.py 内联 MCP_FEATURES，2026-10-01 起数据外置） | **必须随 release 走**（get_version 的用户面数据），但内容精简为公开能力摘要（内部条目只在 master） |
 | VERSION_HISTORY.md | release **不带**（MCP_FEATURES 的历史归档，含内部上下文） |
 | 内部工程名/路径 | CV201_PND/mark_cv201/UvcJpegTest/KlipperF133/xdv23/T113CarSystem_PND/guoxs/lib 等一律清除 |
 | accessKey 真实值 | 一律全 0 占位 `0000000000000000000000000000000000000000`（真实 key 只在本机/内部 Manifest） |
@@ -90,12 +90,12 @@ git ls-tree -r --name-only release/master | grep -E "knowledge/v85x|demos/|bin_t
 
 ## 5. 版本号与版本史
 
-- 版本号递增只发生在 master：`kb_tools.py` MCP_VERSION + `MCP_FEATURES` 顶部新条 + `README.md` 版本号 + `pyproject.toml`（`version` = 数字部分、`[tool.flythings].mcp_version` = 带 `-open`）
+- 版本号递增只发生在 master：`kb_tools.py` MCP_VERSION + `features_recent.json` 顶部新条（原内联 `MCP_FEATURES`，2026-10-01 起数据外置，kb_tools 惰性读取）+ `README.md` 版本号 + `pyproject.toml`（`version` = 数字部分、`[tool.flythings].mcp_version` = 带 `-open`）
   —— 四处必须一致，`scripts/check_consistency.py` 会卡住不一致的提交
 - 工具数也是机器校验项（`kb_tools.OP_NAMES` = mcp_server docstring = README 三处 = 闸门 catalog = `tools_manifest.json`）
   —— 新增/删除 op 后必须重跑 `gen_manifest.py` + `gen_gate_catalog.py`，否则闸门 FAIL
 - ⛔ **CHANGELOG.md 自 v0.27.31（2026-09-11）起冻结为历史归档**（沛哥：「changelog 不需要提交」）
-  —— 不再追加新节、不进任何提交/发布；版本史 = `MCP_FEATURES`（近期，`compact=False` 取近期全量）+ 仓库根 `VERSION_HISTORY.md`（更早归档）+ `README.md`
+  —— 不再追加新节、不进任何提交/发布；版本史 = `features_recent.json`（近期，`compact=False` 取近期全量；原内联 `MCP_FEATURES` 已数据外置）+ 仓库根 `VERSION_HISTORY.md`（更早归档）+ `README.md`
 - release 同步时：`kb_tools.py` 版本照 master（内容为裁剪版）；**CHANGELOG.md 不带**（历史留内部 git）
 - 自检 `scripts/smoke.py` 已不再校验 CHANGELOG（避免代码与冻结档案脱节）
 

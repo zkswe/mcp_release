@@ -2,9 +2,9 @@
   "schema": 1,
   "generatedBy": "scripts/gen_manifest.py",
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY/STAGE 表后重新生成，勿手改本文件",
-  "version": "0.27.170-open",
-  "build": "2026-10-01",
-  "toolCount": 43,
+  "version": "0.27.171-open",
+  "build": "2026-10-02",
+  "toolCount": 44,
   "cli": {
     "fun": "FlyThings 工程工具（create/install/build/launch，<项目>/.fsc/<平台>/ 下；09-28 前为 .fun/）",
     "fui": "FTU 布局工具：pack（json → ftu）/ unpack（ftu → json）双向下；随包 fui 自 v0.27.91 起含 unpack（旧版只有 pack）",
@@ -623,6 +623,20 @@
       "stage": "build"
     },
     {
+      "op": "flythings_translate_ui",
+      "brief": "LVGL(v8/v9) C 源码 → FlyThings ui json 迁移翻译（v1，确定性，默认 dry_run 不落盘）。",
+      "args": [
+        "source",
+        "out",
+        "res",
+        "dry_run",
+        "gen_placeholders"
+      ],
+      "risk": "write",
+      "category": "layout",
+      "stage": "design"
+    },
+    {
       "op": "flythings_ui_preview",
       "brief": "json 布局 / 整个项目 → HTML 预览稿（客户确认 UI 用；只交 html，不产图片/截图）。",
       "args": [
@@ -636,7 +650,7 @@
     },
     {
       "op": "flythings_ui_visual",
-      "brief": "UI 可视化/像素验收入口（action 选动作；旧编辑器三 op 已并入）。",
+      "brief": "UI 可视化/像素验收入口（action 选动作；旧编辑器三 op 已并入，action=list 看参数）。",
       "args": [
         "action",
         "project_root",
@@ -694,9 +708,9 @@
     }
   ],
   "docs": {
-    "knowledgeFiles": 103,
-    "wikiFiles": 128,
-    "ragChunks": 2005,
-    "ragPaths": 228
+    "knowledgeFiles": 104,
+    "wikiFiles": 0,
+    "ragChunks": 1338,
+    "ragPaths": 102
   }
 }

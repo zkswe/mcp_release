@@ -1,7 +1,7 @@
 # FlyThings MCP（open 版）版本史归档
 
-> 本文件是 **`kb_tools.MCP_FEATURES` 的历史归档**：主文件只保留近期条目（>= v0.27.121-open），更早的整段搬来这里，仅作查阅，不再随 `flythings_get_version` 返回。
-> 维护口径不变：新版本往 `kb_tools.MCP_FEATURES` **顶部**加一条摘要（`flythings_get_version(compact=False)` 返回近期全量）。
+> 本文件是 **近期特性史的历史归档**：近期条目（>= v0.27.121-open）原在 `kb_tools.MCP_FEATURES`，2026-10-01 起数据外置到仓库根 `features_recent.json`（kb_tools 惰性读取）；更早的整段搬来这里，仅作查阅，不再随 `flythings_get_version` 返回。
+> 维护口径不变：新版本往 `features_recent.json` **顶部**加一条摘要（`flythings_get_version(compact=False)` 返回近期全量）。
 
 ---
 

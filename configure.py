@@ -1,24 +1,41 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """FlyThings MCP 一键配置：自动检测运行方式（exe 优先），生成 AI 工具配置文件。
 用法：在任意目录运行  python 本文件路径/configure.py  （或双击 setup.bat）
 生成的 .mcp.json 等配置写入当前工作目录（建议在你的项目根目录运行）。
 """
-import json, os, re, sys
+import ast, json, os, sys
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 
 
+def _ast_const(src_path, name):
+    """不 import kb_tools（它会连带拉起 numpy/onnxruntime/mcp 等重依赖，
+    而本脚本要能在装依赖之前跑），用 ast 直接读出模块级常量——
+    与 scripts/check_consistency.py 同一手法。"""
+    tree = ast.parse(open(src_path, encoding='utf-8').read())
+    for n in tree.body:
+        if isinstance(n, ast.Assign) and any(
+                isinstance(t, ast.Name) and t.id == name for t in n.targets):
+            try:
+                return ast.literal_eval(n.value)
+            except (ValueError, SyntaxError):
+                return None
+    return None
+
+
 def tool_meta():
-    """从 kb_tools.py 直接读版本号与工具数（单一事实源，避免文档漂移）。"""
+    """从 kb_tools.py 读版本号与工具数（单一事实源 OP_NAMES，避免文档漂移）。"""
     ver, cnt = '?', '?'
+    p = os.path.join(BASE, 'kb_tools.py')
+    if not os.path.isfile(p):
+        return ver, cnt
     try:
-        src = open(os.path.join(BASE, 'kb_tools.py'), encoding='utf-8').read()
-        m = re.search(r"MCP_VERSION\s*=\s*['\"]([^'\"]+)", src)
-        if m:
-            ver = m.group(1)
-        cnt = len(re.findall(r'mcp\.tool\(\)\(', src))
-    except Exception:
-        pass
+        ver = _ast_const(p, 'MCP_VERSION') or '?'
+        names = _ast_const(p, 'OP_NAMES') or ()
+        cnt = len(names) if names else '?'
+    except Exception as e:
+        # 不静默吞（silent-except lint）：读失败时版本行显示 ? 并在此明示原因
+        print(f'  [!!] 读取 kb_tools.py 元数据失败: {e!r}')
     return ver, cnt
 
 

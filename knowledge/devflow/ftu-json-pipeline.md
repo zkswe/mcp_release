@@ -31,7 +31,7 @@ evidence: []
 | 谁读它 | 设备侧 zkgui 读 **ftu**，不读 json；`fun launch` 把 `ui/main.ftu` 推到设备 `/tmp/ui/main.ftu`（实测设备侧与本文件字节数 + md5 完全一致） |
 | 一个 ftu 顶什么 | **一个 ftu = 一个 Activity = 一个独立编译单元**（IDE 按 ftu 生成 `<name>Activity` + `<name>Logic.cc`）；但**页面 ≠ ftu**：一个 ftu 里通常放**多个整屏 window（= 多个页面）**，用 `showWnd()/hideWnd()` 切换。**默认单 Activity**（`main.ftu` + `mainActivity` + `mainLogic.cc`），只有跨业务域/需独立返回栈才拆新 ftu（口径见 `knowledge/devflow/page-architecture-spec.md` §0/§2） |
 | ftu 从哪来 | 由**同目录同名 json** `pack` 而来：`ui/main.json` --fui pack--> `ui/main.ftu` |
-| 模板里就有 json 吗 | **没有**。模板只带 IDE 产出的 `ui/main.ftu`（实测 162–164 B）；我们的工作流第一步是生成 `ui/main.json`（HTML 原型 → `flythings_html_to_json`），之后 json 才是源 |
+| 模板里就有 json 吗 | **有**（2026-10-02 起）。7 个平台模板 `templates/HelloWord_<平台>/ui/` 同时带 `main.json` 与 `main.ftu`：json 由随包 `fui unpack` 从模板 ftu 反解析入库（实测 round-trip：pack 回 ftu 再 unpack 与源 json 逐字段等价），改布局直接改 json 再 pack 即可；从零起新界面仍走 `flythings_html_to_json` 生成 json，之后 json 才是源 |
 
 ## 2. 生成链路（单向，不要反过来）
 

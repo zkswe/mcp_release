@@ -246,7 +246,8 @@ def _rewrite_ftu_resolution(project_root, resolution):
             shutil.copy2(ftu_path, tmp)
             # json 源：优先同目录已有 json；fui 无 unpack 时必需 json（有则直接改，省一步反向）
             src_json = os.path.join(ui_dir, base + '.json')
-            if os.path.isfile(src_json):
+            json_from_project = os.path.isfile(src_json)
+            if json_from_project:
                 shutil.copy2(src_json, tmp)
                 jf = os.path.join(tmp, base + '.json')
             elif not _fui_supports_unpack():
@@ -276,6 +277,10 @@ def _rewrite_ftu_resolution(project_root, resolution):
                 result["failed"].append({"ftu": fn, "error": (r2.get('stderr') or r2.get('stdout') or '')[-200:]})
                 continue
             shutil.copy2(os.path.join(tmp, fn), ftu_path)
+            # json 是布局真源：工程里自带的 json 要同步写回（否则 json 留旧分辨率，
+            # 下次 pack 把 ftu 打回旧值；且 ftu 新 json 旧会误报 devModified）
+            if json_from_project:
+                shutil.copy2(jf, src_json)
             result["updated"].append(fn)
         except Exception as e:
             result["failed"].append({"ftu": fn, "error": str(e)})
@@ -1154,13 +1159,32 @@ def flythings_attach_cli_tools(project_root, with_fyx=True):
 
 # ---------------- 工具 4.6: 编辑 json/ftu 布局 ----------------
 def _find_control(data, target):
-    """按 caption（优先）或控件 key 查找控件。返回 (key, value)。"""
+    """按 caption（优先）或控件 key 查找控件。返回 (key, value)。
+    递归进入嵌套容器（window 里的子控件），否则嵌套 caption 永远「未找到」。"""
     for key, val in data.items():
         if not isinstance(val, dict) or '__' not in key:
             continue
         if val.get('caption') == target or key == target:
             return key, val
+    for key, val in data.items():
+        if not isinstance(val, dict) or '__' not in key:
+            continue
+        sub_key, sub_val = _find_control(val, target)
+        if sub_val is not None:
+            return sub_key, sub_val
     return None, None
+
+
+def _find_parent(data, key):
+    """返回包含指定控件 key 的父 dict（递归），找不到返回 None。供嵌套 remove 用。"""
+    if key in data:
+        return data
+    for k, val in data.items():
+        if isinstance(val, dict) and '__' in k:
+            p = _find_parent(val, key)
+            if p is not None:
+                return p
+    return None
 
 
 def _apply_edits(data, ops):
@@ -1172,15 +1196,18 @@ def _apply_edits(data, ops):
       set_root {"op":"set_root", "props":{"backgroundColor":"#FFFFFF"}}  修改根属性（resolution/position/backgroundColor 等）
     """
     report = []
+    failures = 0
     for op in ops:
         if not isinstance(op, dict):
             report.append(f'[跳过] 非法操作: {op}')
+            failures += 1
             continue
         kind = op.get('op')
         if kind == 'set':
             key, val = _find_control(data, op.get('target', ''))
             if val is None:
                 report.append(f'[失败] 未找到控件: {op.get("target")}')
+                failures += 1
                 continue
             props = op.get('props') or {}
             changed = [p for p in props if val.get(p) != props[p]]
@@ -1190,20 +1217,25 @@ def _apply_edits(data, ops):
             key, _ = _find_control(data, op.get('target', ''))
             if key is None:
                 report.append(f'[失败] 未找到控件: {op.get("target")}')
+                failures += 1
                 continue
-            data.pop(key, None)
+            parent = _find_parent(data, key)
+            (parent if parent is not None else data).pop(key, None)
             report.append(f'[OK] 删除 {key}')
         elif kind == 'add':
             tkey, tval = _find_control(data, op.get('template', ''))
             if tval is None:
                 report.append(f'[失败] 模板控件不存在: {op.get("template")}')
+                failures += 1
                 continue
             new_key = op.get('newKey', '')
             if not new_key:
                 report.append('[失败] 缺少 newKey')
+                failures += 1
                 continue
             if new_key in data:
                 report.append(f'[失败] key 已存在: {new_key}')
+                failures += 1
                 continue
             import copy as _copy
             new_val = _copy.deepcopy(tval)
@@ -1217,7 +1249,8 @@ def _apply_edits(data, ops):
             report.append(f'[OK] 修改根节点: {changed if changed else "无变化"}')
         else:
             report.append(f'[跳过] 未知操作: {kind}')
-    return True, report
+            failures += 1
+    return failures == 0, report
 
 
 def _edit_json(json_path, operations):

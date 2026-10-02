@@ -57,9 +57,10 @@ import tempfile
 import time as _t
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-# fui.exe 优先用项目内（ui/fui.exe），否则 workspace/projects/fui.exe，否则 PATH
+# fui.exe 优先用项目内（ui/fui.exe），否则仓库 toolchain/，否则 workspace/projects/fui.exe，否则 PATH
 FUI = None
 for cand in (
+    os.path.join(BASE, '..', 'toolchain', 'fui.exe'),
     os.path.join(BASE, '..', '..', 'projects', 'fui.exe'),
     'fui',
 ):
@@ -2114,6 +2115,11 @@ def main(project_root):
     if not os.path.isdir(ui):
         print(f'[X] ui 目录不存在: {ui}')
         sys.exit(1)
+    # 项目内 ui/fui.exe 优先（与模块头注释的口径一致；v0.27.172 补回该优先级）
+    _pf = os.path.join(ui, 'fui.exe')
+    if os.path.isfile(_pf):
+        global FUI
+        FUI = _pf
 
     PAGES = sorted('ui/' + os.path.relpath(f, ui).replace('\\', '/')
                    for f in _ui_pages(root))
@@ -2174,7 +2180,8 @@ def main(project_root):
         bad = sorted(set(c for c in txt if _is_bad_char(c)))
         log(not bad, '%s 特殊字符 %s' % (f, bad if bad else '无'))
 
-    print('== 4. 图片引用（json + logic.cc 引用的图片必须存在）==')
+    print('== 4. 图片引用（json + logic.cc 引用的图片必须存在；缺图 = 真机 ftu 加载死循环/黑屏，\n'
+          '      实测 V85X iMirror 固件 2026-10-02，见 knowledge/devflow/translate-ui-lvgl.md）==')
     refs = set()
     for f in PAGES + LOGICS:
         txt = open(os.path.join(root, f), encoding='utf-8').read()
@@ -2188,9 +2195,12 @@ def main(project_root):
             if not glob.glob(os.path.join(root, 'resources', prefix + '*.png')):
                 missing.append(r + '（前缀无匹配文件）')
             continue
-        if not os.path.exists(os.path.join(root, 'resources', r)):
+        # resources/images 优先，ui/images 兜底（与 #11/_pic_path 同口径；v0.27.172 补）
+        if not os.path.exists(os.path.join(root, 'resources', r)) \
+                and not os.path.exists(os.path.join(root, 'ui', r)):
             missing.append(r)
-    log(not missing, '图片引用 %s' % (missing if missing else '全部存在'))
+    log(not missing, '图片引用 %s（缺图 = 真机 ftu 加载死循环/黑屏，不是「少张图」而已）'
+        % (missing if missing else '全部存在'))
 
     print('== 5. 回调核对（button → onButtonClick，edittext → onEditTextChanged）==')
     logic_map = {}
@@ -2256,7 +2266,10 @@ def main(project_root):
         if not logic_file:
             continue
         code = open(os.path.join(root, logic_file), encoding='utf-8').read()
-        code2 = re.sub(r'//[^\n]*', '', code)
+        # 块注释也要剥（模板 logic.cc 头部注释里有 mTextXXXPtr/mButton1Ptr 等示例名，
+        # 只剥 // 会把示例当真指针 → 误报 FAIL；v0.27.172 修复）
+        code2 = re.sub(r'/\*.*?\*/', '', code, flags=re.S)
+        code2 = re.sub(r'//[^\n]*', '', code2)
         used = set(re.findall(r'\bm([A-Za-z_]\w*)Ptr\b', code2))
         missing = [p for p in used if p not in ccaps]
         log(not missing, '%s 指针 %s' % (f, missing if missing else '全部有效'))
@@ -2292,13 +2305,25 @@ def main(project_root):
         log(bad == 0 and depth == 0, '%s 括号 %s' % (f, '平衡' if bad == 0 and depth == 0 else '不平衡'))
 
     print('== 9. ftu→json 自动同步（只两种情形）+ fui pack 成功生成 ftu ==')
+
+    def _run_fui(args):
+        """fui 子进程：fui.exe 缺失/不可执行时不再炸 traceback（v0.27.172 修复：
+        FUI 回退到 PATH 的 'fui' 而 PATH 没有 → CreateProcess WinError 2 裸抛）。
+        返回 (returncode, 输出)；异常归一为 rc=1 + 原因文本。"""
+        try:
+            r = subprocess.run(args, capture_output=True, text=True)
+            return r.returncode, (r.stderr or r.stdout or '')
+        except OSError as e:
+            return 1, 'fui 不可用（%s: %s）；确认 ui/fui.exe 或 toolchain/fui.exe 存在' \
+                      % (type(e).__name__, e)
+
     # ① 只有 ftu 没有 json → 直接 unpack 转出 json（老工程/纯 IDE 工程）
     for ftu_f in sorted(glob.glob(os.path.join(ui, '*.ftu'))):
         jp0 = os.path.splitext(ftu_f)[0] + '.json'
         if not os.path.isfile(jp0):
-            r0 = subprocess.run([FUI, 'unpack', ftu_f, jp0], capture_output=True, text=True)
-            log(r0.returncode == 0, '%s 只有 ftu → 自动转出 json' % os.path.basename(ftu_f))
-            if r0.returncode == 0:
+            rc0, _ = _run_fui([FUI, 'unpack', ftu_f, jp0])
+            log(rc0 == 0, '%s 只有 ftu → 自动转出 json' % os.path.basename(ftu_f))
+            if rc0 == 0:
                 ft0 = os.path.getmtime(ftu_f)
                 os.utime(jp0, (ft0, ft0))
     # ② ftu 比 json 新「分钟级」(≥60 秒) → 用户/IDE 编辑过 ftu → 先同步 json 再 pack；其余不做反向
@@ -2311,8 +2336,8 @@ def main(project_root):
             if ft > jt + 60:
                 print('  [WARN] %s ftu 比 json 新 %.0f 秒（开发者/IDE 改过 ftu，自动以 ftu 同步 json）'
                       % (os.path.basename(jf), ft - jt))
-                r = subprocess.run([FUI, 'unpack', ui], capture_output=True, text=True)
-                if r.returncode == 0:
+                rc1, _ = _run_fui([FUI, 'unpack', ui])
+                if rc1 == 0:
                     os.utime(jp, (ft, ft))  # json mtime 对齐 ftu（ftu 同步出的 json mtime 是 ftu 内嵌时间戳，需对齐避免误判）
                     print('  [PASS] %s ftu→json 同步 成功' % os.path.basename(jf))
                 else:
@@ -2320,9 +2345,9 @@ def main(project_root):
             else:
                 log(True, '%s ftu 与 json 时间戳正常' % os.path.basename(jf))
     # ② pack 生成 ftu（json→ftu 已验证无损）
-    r = subprocess.run([FUI, 'pack', ui], capture_output=True, text=True)
-    if r.returncode != 0:
-        log(False, 'fui pack 失败: %s' % ((r.stderr or r.stdout or '')[-200:]))
+    rc2, out2 = _run_fui([FUI, 'pack', ui])
+    if rc2 != 0:
+        log(False, 'fui pack 失败: %s' % out2[-200:])
     else:
         for jf in PAGES:
             ftu = os.path.join(ui, os.path.splitext(os.path.basename(jf))[0] + '.ftu')

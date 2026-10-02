@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
 
 # 🦅 FlyThings MCP Open
 
@@ -48,17 +48,23 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 > `python` 不在 PATH 时用完整路径（如 `C:/Users/<你>/AppData/Local/Programs/Python/Python313/python.exe`）。
 
 **3) 验证** —— 问 AI「**MCP 版本是多少？**」：
-应返回 `flythings-kb-open 0.27.170-open`，**43 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / zkshot，
+应返回 `flythings-kb-open 0.27.171-open`，**44 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / zkshot，
 在 `bin_tools/<平台>/` 下，**不是 op、不占 op 名额**）。
 
 > **工具面三模式（按客户端选一个，别同时配）**
 > | 模式 | 怎么配 | 客户端看到什么 |
 > |------|--------|----------------|
 > | `dispatcher`（默认） | 只指 `mcp_server.py` | 只暴露分发器 `flythings_kb`（`op="list"` 取目录）—— schema 开销最小 |
-> | `all` | `FLYTHINGS_MCP_MODE=all` | 分发器 + 43 个独立工具（旧配置兼容） |
-> | `flat` | 指 `mcp_server_flat.py`（或 `FLYTHINGS_MCP_MODE=flat`） | 43 个独立工具，无分发器（Trae / Cursor / Claude Desktop 需要独立 schema 时用；代价 ≈ 1 万 token/session） |
+> | `all` | `FLYTHINGS_MCP_MODE=all` | 分发器 + 44 个独立工具（旧配置兼容） |
+> | `flat` | 指 `mcp_server_flat.py`（或 `FLYTHINGS_MCP_MODE=flat`） | 44 个独立工具，无分发器（Trae / Cursor / Claude Desktop 需要独立 schema 时用；代价 ≈ 1 万 token/session） |
 >
 > 默认从「全注册」改为「只分发器」是 v0.27.34 的**行为变更**；受影响就设 `FLYTHINGS_MCP_MODE=all` 恢复。
+
+**装完后第一句说什么？** —— 按你的情况四选一：
+① 从零想法 →「**我想做一个 XXX 面板**」（触发线框确认流程）；② 有设计稿 →「**按这个设计稿帮我做界面**」；
+③ 迁移其他框架 →「**把这个小程序 / LVGL / Android 界面迁到 FlyThings**」；④ 已有工程 →「**帮我看看这个工程**」。
+完整引导（四条路径 + 最小闭环 + 第一周坑位）见 `knowledge/devflow/quickstart.md`；
+客户端支持 MCP prompt 的话，也可以直接唤起 `flythings-new-project`（另有 `ui-from-prototype` / `ui-verify` / `deploy-debug` / `package-deps`，见下文「MCP 原生原语」）。
 
 ---
 
@@ -70,6 +76,7 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 - 布局解析（`flythings_read_json`）、字段口径（`knowledge/uicontrols/`）
 - **可视化编辑**：可拖拽/缩放的编辑器 → 变更写回 json 并 pack（`flythings_ui_visual(action="editor"|"edit_apply")`）
 - **跨框架控件映射**：LVGL / Qt / Android / 小程序 / emWin / MFC 控件 → FlyThings 等价控件 + 可直接粘的 json 片段（`flythings_map_control`）
+- **LVGL 界面迁移翻译**：LVGL v8/v9 C 源码 → FlyThings ui json + D-xx 降级登记表（`flythings_translate_ui`，映射与上条同一张表；口径见 `knowledge/devflow/translate-ui-lvgl.md`）
 - **图片资源**：AI / emoji / 线条三级降级生成（`flythings_generate_ui_assets`）；尺寸与控件盒核对（`flythings_verify_assets`、`ui_tools/check_all.py`）
 
 ### 🔍 预览与像素验收
@@ -147,6 +154,6 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 
 ---
 
-当前版本 `0.27.170-open`（43 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
+当前版本 `0.27.171-open`（44 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
 
 MIT License · FlyThings Team · 深圳中科世为科技有限公司 · [developer.flythings.cn](https://developer.flythings.cn/)

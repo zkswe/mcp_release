@@ -12,9 +12,11 @@ screenshots/
 *.orig
 
 # 构建产物（fun build 生成，含本机绝对路径 → 隐私扫描会红）
-.fsc/            # 09-28 起（新版 fun/fsc）
+# ⚠️ gitignore 不支持行尾注释（注释文本会成为 pattern 一部分）——注释必须单独成行。
+#    下行依次是：.fsc/（09-28 起，新版 fun/fsc）、.fsc-lock.json、.fun/（09-28 前）、.fun-lock.json
+.fsc/
 .fsc-lock.json
-.fun/            # 09-28 前
+.fun/
 .fun-lock.json
 
 # example/ 里不放工具副本（用仓库 toolchain/ 或全局 fun.exe / fui.exe；否则整包多 38MB 冗余）

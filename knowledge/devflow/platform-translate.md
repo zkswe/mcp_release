@@ -22,7 +22,8 @@ evidence: []
 > 案例：`projects/translate/tdesign-miniprogram`（TDesign 小程序组件库 → FlyThings，2026-09-17 三阶段收口；
 > 口径总表 `projects/translate/<案例>/TRANSLATE.md`（案例侧口径总表），阶段 3 报告 `projects/translate/tdesign-miniprogram/STAGE3.md`）。
 > 本文是**方法论 + 口径**；具体控件的逐条对应**不在这里**（见 §1 的机读索引，避免双份漂移）。
-> ⚠️ **文末 §5 的 `flythings_translate_ui` op 只是规划，尚未实现**。
+> ✅ **文末 §5 的 `flythings_translate_ui` op 已实现**（v0.27.171-open，LVGL → ui json v1，
+> 识别形态/报告读法/已知限制见 `knowledge/devflow/translate-ui-lvgl.md`）。
 
 ## 1. 先查机读索引，别背散文映射表
 

@@ -21,6 +21,10 @@ evidence: []
 
 ## 核心铁律
 
+> ⛔ **缺图引用 = 真机 ftu 加载死循环/黑屏**（实测 V85X iMirror 固件， 2026-10-02）：
+> `backgroundPic/pointerPic` 指向不存在的文件 → runtime 在 ftu 加载阶段空转（不渲染、无日志）。
+> 图没出好就置 `''`，控件隐形但无害；只写已落盘的图。
+
 1. **指针控件 = 表盘指针/旋转图标专用**：做仪表、时钟指针、WiFi 扫描旋转图标等"绕固定圆心旋转"效果用 pointer，不要用 textview/button 拼旋转。
 2. **旋转圆心由两个坐标共同决定**：`rotationPoint`（旋转点，相对控件左上）+ `fixedPoint`（指针固定点，相对指针图）——两者配合指针才绕对圆心转。起始角度不准时先查这两个值。
 3. **fixedPoint 可超出图片范围**：把固定点设到图片外很远 + 调 rotationPoint，可做出"游标环"效果（PointerDemo/wiki 实测）。

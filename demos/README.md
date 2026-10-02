@@ -32,7 +32,7 @@
    - 不体现内部工程/客户名（知识库定规：open 版去工程化）
    - 不留半成品（每个 demo 是一个跑得通的闭环，宁缺毋滥）
 5. **知识联动**：每个 demo 在配套 knowledge 文档头部加"同仓 demos/xxx 参考工程"指引，AI 检索知识时能找到实现
-6. **登记**：本表加一行 + `MCP_FEATURES` 加一条摘要（更早条目归档在 `VERSION_HISTORY.md`；CHANGELOG 已冻结，不再记）
+6. **登记**：本表加一行 + `features_recent.json` 加一条摘要（原 kb_tools 内联 `MCP_FEATURES`，已数据外置；更早条目归档在 `VERSION_HISTORY.md`；CHANGELOG 已冻结，不再记）
 
 ## 🔍 AI/开发者使用方式
 

@@ -141,7 +141,7 @@ ui_v1 的包**依赖 easyui 控件面**，所以 `platforms.md` 必须写清 **e
    再补 `control-map.md` 行 + `gap-list.md` 编号；只写案例文档 = 下一个人重踩。
 3. **级别不许临时发明**：只用 L1~L5 五级口径（判定规则见 `control-map.md` §0），旧案例的 A/B/C/D 按 §0.1 换算。
 4. **不写"应该可以"**：未实测标 `未验证`；不确定的写进「待确认」并点名找谁确认。
-5. **改动要连动**：改本目录 → `kb_tools.py` 版本递增 + `MCP_FEATURES` 顶部加一条 + 重建 `rag_index.json`
+5. **改动要连动**：改本目录 → `kb_tools.py` 版本递增 + `features_recent.json` 顶部加一条（原内联 `MCP_FEATURES`）+ 重建 `rag_index.json`
    + 跑 `python scripts/check_consistency.py --with-tests`（全绿才算完）。
 6. **控件包不许“文档先行”**：`<源控件名>/` 目录**必须四件套齐 + `example/` 真的编译过**；
    能在真机跑的，`example/evidence/` 里必须有截图（拿不到设备的，在包 README 里写「待设备空闲补真机验收」）。

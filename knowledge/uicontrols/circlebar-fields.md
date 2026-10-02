@@ -20,6 +20,10 @@ evidence: []
 
 ## 核心铁律
 
+> ⛔ **缺图引用 = 真机 ftu 加载死循环/黑屏**（实测 V85X iMirror 固件， 2026-10-02）：
+> `progressPic/thumb.normalPic/pressedPic` 指向不存在的文件 → runtime 在 ftu 加载阶段空转
+> （不渲染、无日志）。图没出好就置 `''`，控件隐形但无害；只写已落盘的图。
+
 1. **圆形进度条 = 有效图按扇形裁剪显示进度**：进度值对应的扇形区域是从 `progressPic`（有效图）裁剪出来的；`backgroundPic` 背景图**不会被裁剪**（完整显示垫底）。进度=25/100 且 startAngle=0 顺时针 → 只显示右上 90° 扇形；进度=100 显示全部有效图。
 2. **支持触摸拖动**：SDK `ICircleBarChangeListener` 带 onProgressChanged / onStartTrackingTouch / onStopTrackingTouch（与 SeekBar 同构）——可做圆形调温/调光旋钮。但 git.com 产品 18 处 circlebar **全部 touchable=false 只读显示**（净饮机滤芯寿命、烤箱火力环等）；交互优先考虑 seekbar 或确认产品需求再开 touchable。
 3. **文本显示 textType**：0=不绘制文本；1=数字；2=数字+单位（`unit` 如 `%`）。实测产品用 textType=2 + unit。

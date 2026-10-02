@@ -25,6 +25,11 @@ evidence: []
 
 ## 0. 一句话口径
 
+> ⛔ **缺图引用 = 真机 ftu 加载死循环/黑屏**（实测 V85X iMirror 固件， 2026-10-02）：
+> `backgroundPic/progressPic/thumb.normalPic/pressedPic` 指向**不存在的文件**时，runtime 在
+> ftu 加载阶段 userspace 空转（不渲染、无日志）；同一 seekbar 摘掉图片引用即正常。
+> ⇒ json 里只写**已落盘**的图；图没出好就置 `''`（thumb 子盒同时 size 置 0），控件隐形但无害。
+
 **滑块（thumb）的形状 = 滑块图本身的形状 × 控件盒子高度**：
 
 - 形状**只由图片决定** —— json/html 里**没有任何「圆形/胶囊」关键词**；
