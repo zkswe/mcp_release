@@ -139,8 +139,8 @@ def _parse_ui_jsons(project_root):
 
 def _pic_refs(v):
     """收集控件引用的全部图片路径：picTab 各槽 + *Pic 标量字段 + thumb 子对象的 *Pic。
-    （seekbar 的 backgroundPic/progressPic/thumb.normalPic 缺图会导致 ftu 加载挂死，
-    只查 picTab 会漏掉最危险的一类。）"""
+    （seekbar 的 backgroundPic/progressPic/thumb.*Pic 缺图 = 控件不可见（不致命但属验收缺陷），
+    只查 picTab 会漏掉这一类。）"""
     refs = []
     tab = v.get('picTab')
     if isinstance(tab, dict):

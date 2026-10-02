@@ -25,10 +25,12 @@ evidence: []
 
 ## 0. 一句话口径
 
-> ⛔ **缺图引用 = 真机 ftu 加载死循环/黑屏**（实测 V85X iMirror 固件， 2026-10-02）：
-> `backgroundPic/progressPic/thumb.normalPic/pressedPic` 指向**不存在的文件**时，runtime 在
-> ftu 加载阶段 userspace 空转（不渲染、无日志）；同一 seekbar 摘掉图片引用即正常。
-> ⇒ json 里只写**已落盘**的图；图没出好就置 `''`（thumb 子盒同时 size 置 0），控件隐形但无害。
+> ⛔ **`thumb` 写成字符串 = 真机 ftu 加载无声挂死**（A/B 终裁，V85X iMirror 固件，2026-10-02）：
+> thumb 真 schema 是**子盒对象** `{size:{width,height}, normalPic, pressedPic}`；写成
+> `"thumb":"images/x.png"` 这类字符串 → runtime 在 ftu 加载阶段 userspace 空转
+> （无 onUI_init/onUI_show、无报错日志）。对照：thumb 对象+图不存在 = 正常；thumb 字符串+图存在 = 挂死。
+> **缺图不致命**：`backgroundPic/progressPic/thumb.*Pic` 指向不存在文件或置 `''` →
+> 控件只是不可见（framework 容错），但属验收缺陷；图没出好就置 `''`（thumb size 置 0）。
 
 **滑块（thumb）的形状 = 滑块图本身的形状 × 控件盒子高度**：
 

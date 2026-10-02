@@ -179,7 +179,7 @@ class TestTranslateIoContract(unittest.TestCase):
 class TestSchemaCompleteness(unittest.TestCase):
     """schema 全集显式化（v0.27.172 发射层重写；真源 = demos ftu 反解 +
     json-field-mandatory.md + ui_blocks/examples）：五槽色表 / thumb 子盒 /
-    按钮文本内联 / 缺图剥除，缺一会真机 ftu 加载死循环。"""
+    按钮文本内联 / 缺图剥除。thumb 写成字符串 = 真机 ftu 加载无声挂死（A/B 实测）。"""
 
     def test_textview_full_field_set(self):
         tv = json.loads(_run()['uiJson'])['textview__1']
@@ -202,7 +202,7 @@ class TestSchemaCompleteness(unittest.TestCase):
         acts = [(a['field'], a['action']) for a in r['imageActions']]
         self.assertIn(('backgroundPic', 'stripped'), acts)
         self.assertIn(('thumb.normalPic', 'stripped'), acts)
-        self.assertTrue(all('死循环' in r['imageRule'] for _ in (0,)))
+        self.assertTrue(all('挂死' in r['imageRule'] for _ in (0,)))
         self.assertGreater(r['summary']['imageStripped'], 0)
 
     def test_button_label_inlined_not_separate_textview(self):

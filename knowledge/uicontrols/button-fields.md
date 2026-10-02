@@ -65,9 +65,11 @@ static void onUI_quit() {
 **典型场景**：音量/亮度/温控连续加减（interval 循环连发）、键盘删除键长按（600ms 快启）、列表项长按菜单
 
 ## 图片按钮铁律（勿忘）
-- ⛔ **缺图引用 = 真机 ftu 加载死循环/黑屏**（实测 V85X iMirror 固件， 2026-10-02）：
-  `picTab.pic0~picN`/`backgroundPic` 指向不存在的文件 → runtime 在 ftu 加载阶段空转
-  （不渲染、无日志）。图没出好就删 picTab 条目/置 `''`（纯文字按钮可正常工作），只写已落盘的图
+- **缺图不致命但属验收缺陷**：`picTab.pic0~picN`/`backgroundPic` 指向不存在的文件 →
+  控件不可见/无图（framework 容错，不会挂死）；图没出好就删 picTab 条目/置 `''`
+  （纯文字按钮可正常工作），只写已落盘的图。
+  ⛔ 真正致命的是**子盒对象字段写成字符串**（如 seekbar.thumb，见 seekbar-fields.md §0）
+  = ftu 加载无声挂死（A/B 实测 V85X iMirror 固件 2026-10-02）
 - 有按键图片（picTab/backgroundPic）时**不开 bgColorTab**（图片叠底色效果错乱）；仅纯文字按钮用 bgColorTab/colorTab 多态色
 - 多态图 picTab：pic0 正常 / pic1 按下 / pic2 选中 / pic3 选中按下 / pic4 无效；两态开关 picTab{pic0:on, pic2:off}+setSelected()
 - 图标按钮 iconPosition 指定图标区（控件尺寸≠图片尺寸时必须显式）；控件尺寸与图片一致

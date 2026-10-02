@@ -68,9 +68,14 @@ _FONT_SIZE = re.compile(r'(\d+)\s*$')
 #    发射层在此补齐，不动映射表（片段同时服务 map_control 的「最小可粘贴」口径）。
 # ---------------------------------------------------------------------------
 
-# 缺图引用 = 设备 runtime 在 ftu 加载时死循环（无渲染无日志）——
-# 实测 V85X iMirror 固件 2026-10-02（temp/bisect 逐项二分：同一 seekbar 摘掉图片引用即正常渲染）。
-IMG_HANG_RULE = '缺图引用会让真机在 ftu 加载时死循环/黑屏（实测 V85X iMirror 固件 2026-10-02）'
+# ⚠️ A/B 终裁（2026-10-02，V85X iMirror 固件，temp/abtest_a/b 对照）：
+#    致命的是「子盒对象字段写成字符串」（典型 seekbar.thumb）→ ftu 加载无声挂死
+#    （无 onUI_init/onUI_show、无报错日志）。thumb 对象+缺图 = 正常；thumb 字符串+有图 = 挂死。
+#    缺图本身不致命：引用不存在文件或置 '' → 控件不可见（framework 容错），但属验收缺陷，
+#    故仍默认剥除/出占位图，保证「该显示的都能看到」。
+IMG_HANG_RULE = ('缺图不致命（控件不可见，framework 容错）但属验收缺陷，故剥除/出占位图；'
+                 '真正致命的是 thumb 等子盒字段写成字符串 = ftu 加载无声挂死'
+                 '（A/B 实测 V85X iMirror 固件 2026-10-02）')
 
 # 字符串图片字段（值为 '' 即无图）；picTab/thumb 子盒单独处理
 _PIC_STR_FIELDS = ('backgroundPic', 'progressPic', 'secondaryProgressPic',

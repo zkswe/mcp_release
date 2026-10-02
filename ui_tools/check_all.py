@@ -2180,8 +2180,8 @@ def main(project_root):
         bad = sorted(set(c for c in txt if _is_bad_char(c)))
         log(not bad, '%s 特殊字符 %s' % (f, bad if bad else '无'))
 
-    print('== 4. 图片引用（json + logic.cc 引用的图片必须存在；缺图 = 真机 ftu 加载死循环/黑屏，\n'
-          '      实测 V85X iMirror 固件 2026-10-02，见 knowledge/devflow/translate-ui-lvgl.md）==')
+    print('== 4. 图片引用（json + logic.cc 引用的图片必须存在；缺图 = 控件不可见（验收缺陷）。\n'
+          '      真正致命的是 thumb 等子盒字段写成字符串 = ftu 加载无声挂死，见 4b）==')
     refs = set()
     for f in PAGES + LOGICS:
         txt = open(os.path.join(root, f), encoding='utf-8').read()
@@ -2199,8 +2199,40 @@ def main(project_root):
         if not os.path.exists(os.path.join(root, 'resources', r)) \
                 and not os.path.exists(os.path.join(root, 'ui', r)):
             missing.append(r)
-    log(not missing, '图片引用 %s（缺图 = 真机 ftu 加载死循环/黑屏，不是「少张图」而已）'
+    log(not missing, '图片引用 %s（缺图 = 控件不可见：该显示的没显示，属验收缺陷，不是「少张图」而已）'
         % (missing if missing else '全部存在'))
+
+    # ---- 4b. 子盒对象字段类型（A/B 终裁 2026-10-02，V85X iMirror 固件）----
+    # thumb 写成字符串 = 真机 ftu 加载无声挂死（无 onUI_init/onUI_show、无报错日志）；
+    # thumb 对象+缺图 = 正常。这是当年「黑屏两小时」的唯一真凶，离线评审必须拦住。
+    print('== 4b. 子盒对象字段类型（seekbar.thumb 必须是 {size,normalPic,pressedPic} 对象，\n'
+          '      写成字符串 = 真机 ftu 加载无声挂死，A/B 实测 V85X iMirror 2026-10-02）==')
+    def _walk_controls(dd, path, out):
+        for k, v in dd.items():
+            if isinstance(v, dict):
+                if '__' in k:
+                    out.append((path + '/' + k, v))
+                _walk_controls(v, path + '/' + k, out)
+    bad_thumb = []
+    for f in PAGES:
+        try:
+            data = json.loads(open(os.path.join(root, f), encoding='utf-8').read())
+        except Exception as e:
+            print('    [4b 跳过] %s json 解析失败: %s' % (f, e))
+            continue
+        ctrls = []
+        _walk_controls(data, f, ctrls)
+        for path, c in ctrls:
+            if path.split('/')[-1].split('__')[0] != 'seekbar':
+                continue
+            t = c.get('thumb')
+            if t is not None and not isinstance(t, dict):
+                bad_thumb.append('%s: thumb 是%s（必须是对象）' % (path, type(t).__name__))
+            elif isinstance(t, dict):
+                for kk in ('size', 'normalPic', 'pressedPic'):
+                    if kk not in t:
+                        bad_thumb.append('%s: thumb 缺 %s' % (path, kk))
+    log(not bad_thumb, 'seekbar.thumb 子盒类型 %s' % (bad_thumb if bad_thumb else '全部合规'))
 
     print('== 5. 回调核对（button → onButtonClick，edittext → onEditTextChanged）==')
     logic_map = {}
