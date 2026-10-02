@@ -26,6 +26,12 @@ import zlib
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 _MAP_PATH = os.path.join(BASE, 'mcp_control_map.json')
+_UI_TOOLS = os.path.join(BASE, 'ui_tools')
+if getattr(sys, 'frozen', False):  # PyInstaller 打包：ui_tools 随包进 _MEIPASS
+    _UI_TOOLS = os.path.join(sys._MEIPASS, 'ui_tools')
+if _UI_TOOLS not in sys.path:
+    sys.path.insert(0, _UI_TOOLS)
+import ui_schema_loader as _uischema   # noqa: E402 字段/子盒结构唯一真源（ui_schema.json）
 if getattr(sys, 'frozen', False):  # PyInstaller 打包：随包进 _MEIPASS
     _MAP_PATH = os.path.join(sys._MEIPASS, 'mcp_control_map.json')
 
@@ -84,12 +90,16 @@ _SIZE_IN_NAME = re.compile(r'(\d{2,5})x(\d{2,5})')
 
 
 def _color_tab(c0, c1=-1):
-    """五色态表：未用色态恒写 -1（显式值，非噪音；json-field-mandatory.md）。"""
-    return {'color0': c0, 'color1': c1, 'color2': -1, 'color3': -1, 'color4': -1}
+    """五色态表：槽位结构与未用槽 -1 从注册表 sharedTypes.colorTab 派生（唯一真源），
+    这里只填业务色。未用色态恒写 -1（显式值，非噪音；json-field-mandatory.md）。"""
+    tab = _uischema.type_zero('colorTab')
+    tab['color0'] = c0
+    tab['color1'] = c1
+    return tab
 
 
 def _tab5(tab):
-    """任意 colorTab/bgColorTab → 五槽（已有值保留，缺槽 -1）。"""
+    """任意 colorTab/bgColorTab → 五槽（已有值保留，缺槽 -1；槽位来自注册表）。"""
     out = _color_tab(-1)
     for i in range(5):
         k = 'color%d' % i
@@ -98,9 +108,17 @@ def _tab5(tab):
     return out
 
 
-_THUMB_EMPTY = {'size': {'width': 0, 'height': 0}, 'normalPic': '', 'pressedPic': ''}
+# 子盒零值从注册表派生（唯一真源 ui_schema.json），不再手抄结构：
+_THUMB_EMPTY = _uischema.type_zero('thumb')   # {'size': {'width': 0, 'height': 0}, 'normalPic': '', 'pressedPic': ''}
+_POINT_ZERO = _uischema.type_zero('point')    # {'x': 0, 'y': 0}
+_SIZE_ZERO = _uischema.type_zero('size')      # {'width': 0, 'height': 0}
 
-# 每类型「缺键补齐」表（只补片段里没有的键；已有的键不动）
+# 每类型「缺键补齐」表（只补片段里没有的键；已有的键不动）。
+# 取值分两层（2026-10-02 注册表化）：
+#   · 子盒/色表结构（thumb/colorTab/bgColorTab/point/size）= 注册表派生（见上方 _color_tab/_THUMB_EMPTY）；
+#   · 标量 = 发射层口径（demos ftu 反解的 IDE 全量序列化 + hw-relay 真源），与注册表 default
+#     存在**刻意差异**的已逐条标注「发射层口径」（如 textview alignment 0 vs 注册表默认 36、
+#     button fontSize 18 vs 注册表 16 —— 差异清单见 ui_schema.json 维护记录，勿在此静默对齐）。
 _SCHEMA_FILL = {
     'textview': {'alignment': 0, 'colorTab': _color_tab(0xFFFFFF), 'fontSize': 16,
                  'touchable': False, 'bold': False, 'italic': False, 'visible': True,
@@ -125,9 +143,9 @@ _SCHEMA_FILL = {
                   'thumb': _THUMB_EMPTY, 'touchRange': 0, 'touchable': False,
                   'unit': '', 'visible': True},
     'pointer': {'animatable': True, 'backgroundColor': -1, 'backgroundPic': '',
-                'clockwise': True, 'fixedPoint': {'x': 0, 'y': 0}, 'pointerPic': '',
-                'pointerSize': {'width': 0, 'height': 0}, 'rotateSpeed': 1,
-                'rotationPoint': {'x': 0, 'y': 0}, 'startAngle': 0,
+                'clockwise': True, 'fixedPoint': copy.deepcopy(_POINT_ZERO), 'pointerPic': '',
+                'pointerSize': copy.deepcopy(_SIZE_ZERO), 'rotateSpeed': 1,
+                'rotationPoint': copy.deepcopy(_POINT_ZERO), 'startAngle': 0,
                 'touchable': False, 'visible': True},
     'qrcode': {'backgroundColor': 0xFFFFFF, 'padding': 10, 'touchable': True,
                'visible': True},

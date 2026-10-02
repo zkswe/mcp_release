@@ -4,7 +4,7 @@
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY/STAGE 表后重新生成，勿手改本文件",
   "version": "0.27.171-open",
   "build": "2026-10-02",
-  "toolCount": 44,
+  "toolCount": 45,
   "cli": {
     "fun": "FlyThings 工程工具（create/install/build/launch，<项目>/.fsc/<平台>/ 下；09-28 前为 .fun/）",
     "fui": "FTU 布局工具：pack（json → ftu）/ unpack（ftu → json）双向下；随包 fui 自 v0.27.91 起含 unpack（旧版只有 pack）",
@@ -645,6 +645,17 @@
         "for_customer"
       ],
       "risk": "write",
+      "category": "layout",
+      "stage": "design"
+    },
+    {
+      "op": "flythings_ui_schema",
+      "brief": "UI 布局 json 规范查询（唯一真源 = ui_schema.json 注册表）：控件字段表/必填键/默认值/类型。",
+      "args": [
+        "control_type",
+        "include"
+      ],
+      "risk": "read",
       "category": "layout",
       "stage": "design"
     },

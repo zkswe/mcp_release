@@ -32,31 +32,35 @@ evidence: []
    - ⚠️ 这里的 `backgroundColor: 0` 是**官方原值、表示不透明黑**（视频/摄像头面必须有实黑底，basedemo videoview 2/2、cameraview 1/1 = 0）。**别把这个 0 推广到别的控件**：其他控件的底色「透明」是 **-1**，写 0 就是黑块（2026-09-20 M6 实测坑：checkbox/listview/digitalclock/pointer/circlebar 写 0 → 真机黑底）。判据见 knowledge 与 `workspace/references/kb/image-gen-standard.md` §7.6，门禁 `check_all` #24（`tools/qa/zero_color_audit.py` + `zero_color_allow.json`）。
 5. **必选 = 扫描 SampleUI 每类型控件 100% 共有的字段（交集）**；值含默认全部显式
 
-## 每类型必写键（v2.1 最终表，与 check_all CTRL_FIELD_TEMPLATES 一致）
-| 类型 | 必写键 | 默认值要点 |
+## 每类型必写键（注册表 v1.0 @ 2026-10-02）
+
+⚠️ 本表由 scripts/gen_ui_schema_docs.py 从 ui_tools/ui_schema.json 生成，勿手改；改规范改注册表。
+（必写键口径 = check_all #14 同源：注册表 required ∪ #14 兼容垫片，见 check_all._required_keys）
+
+| 控件 | 必填键 | 默认值要点 |
 |------|--------|-----------|
-| textview | id/caption/position/alignment/colorTab/fontSize/touchable | fontSize 16；color0 16777215；alignment 36 主；touchable false 主；text 非空才写 |
-| button | id/caption/position/alignment/colorTab/picTab/text/touchable | touchable true；picTab {} / text "" 合法（无图无字也写键）；alignment 37 |
-| window | id/caption/position/backgroundColor/hideTimeOut/modal/touchable/visible | backgroundColor -1/hideTimeOut -1/modal false/touchable false/visible true（弹窗 modal true+visible false） |
-| edittext | id/caption/position/alignment/bgColorTab/bold/colorTab/fontSize/hintTextColor/text/textType | bold false；textType 0/1 恒写；text "" 合法；fontSize 16；无 beepEnable |
-| seekbar | id/caption/position/backgroundColor/backgroundPic/defProgress/max/orientation/progressPic/thumb/touchable/visible | max 100；defProgress 0；thumb 空 size 合法；可拖（有 thumb）touchable true、只读 false |
-| listview | id/caption/position/autoRollback/backgroundColor/cols/cycleEnable/dragMaxDis/edgeEffect/hasScrollbar/rows/touchable/visible/orientation/colSpacing/rowSpacing/item | touchable true；hasScrollbar true；backgroundColor -1；item 见子结构 |
-| circlebar | id/caption/position/backgroundColor/clockwise/max/maxAngle/progressPic/progressPicPos/startAngle/textColor/textSize/textType/thumb/touchRange/touchable/unit/visible | clockwise true；startAngle 0；backgroundPic/文本键按设计有才写 |
-| slidewindow | id/caption/position/backgroundColor/cols/fontSize/iconSize/items/padding/rollSpeed/rows/touchable/visible | touchable true |
-| digitalclock | id/caption/position/backgroundColor/beat/clockColor/fontSize/format/touchable/visible | beat false；clockColor 16777215；format "HH:MM" |
-| qrcode | id/caption/position/backgroundColor/codeStr/padding/touchable/visible | padding 10；touchable true；codeStr 有值才写 |
-| videoview | id/caption/position/backgroundColor/defaultVolume/loopPlayback/rotation/touchable/visible | 无 beepEnable；loopPlayback false；touchable true；defaultVolume 5 |
-| cameraview | id/caption/position/autoPreview/backgroundColor/cvbs/formatSize/mirror/touchable/visible | autoPreview 默认 true；mirror 0；formatSize 640x480；touchable false |
-| painter | id/caption/position/backgroundColor/touchable/visible | touchable false |
-| pointer | id/caption/position/animatable/backgroundColor/backgroundPic/clockwise/fixedPoint/pointerPic/pointerSize/rotateSpeed/rotationPoint/startAngle/touchable/visible | rotateSpeed 1；startAngle 0；clockwise/animatable true；图/点位按设计有才写 |
-| diagram | id/caption/position/backgroundColor/infos/region/touchable/visible/xAxisRange/yAxisRange | touchable true 主；region=position；infos[] 见子结构 |
-| checkbox | id/caption/position/alignment/checked/colorTab/bgColorTab/backgroundColor/bold/fontSize/iconPosition/italic/text/touchable/textPosition/visible | basedemo 23 键全字段折衷；text 恒写 |
-| radiogroup | id/caption/position/backgroundColor/touchable/visible/radiobuttons | **touchable true**（⚠️ 是「容器显式 false」通用口径的**例外**，2026-09-10 修正）；radiobuttons[] 子项见下 |
-| radiobutton | id/caption/position/alignment/checked/colorTab/bgColorTab/backgroundColor/bold/fontSize/italic/text/touchable/visible | basedemo 23 键全字段折衷；checked false |
-| pagewindow | id/caption/position/dragMaxDis/orientation/edgeEffect/rollSpeed | 200/0/1/60；SampleUI 无样例，basedemo+demo 验证（无 beepEnable） |
-| scrollwindow | id/caption/position/dragMaxDis/orientation/edgeEffect | 200/0/1；同上（无 beepEnable） |
-| imageanim | id/caption/position/loopCount/playFile | playFile 必写（无 GIF 动图无意义）；loopCount 0 无限 |
-| slidetext | id/caption/position/touchable | IME 候选条专用，从宽（basedemo 实为 19 键全字段） |
+| textview | id/caption/position/alignment/colorTab/fontSize/touchable | alignment 36；fontSize 16；touchable false；visible true；bold false；italic false；rollEnable false；rollDirection 1；rollIntervalTime 150；rollStep 5；fontFamily 0；alignment: 位模型：36=左中对齐常用；colorTab: color0 主文字色；text: 非空才写 |
+| button | id/caption/position/alignment/colorTab/picTab/text/touchable | alignment 37；touchable true；visible true；longClickTimeOut -1；longClickIntervalTime -1；alignment: 位模型居中；picTab: {} 合法（无图也写键）；text: 文本内联 button（schema 支持），不要再叠 textview |
+| window | id/caption/position/backgroundColor/hideTimeOut/modal/touchable/visible | backgroundColor -1；hideTimeOut -1；modal false；touchable false；visible true；modal: 弹窗 = modal true + visible false |
+| edittext | id/caption/position/alignment/bgColorTab/bold/colorTab/fontSize/hintTextColor/text/textType | bold false；fontSize 16；textType 0；visible true；italic false；text: "" 合法；textType: 0/1 恒写 |
+| seekbar | id/caption/position/backgroundColor/backgroundPic/defProgress/max/orientation/progressPic/thumb/touchable/visible | backgroundColor -1；defProgress 0；max 100；orientation 0；visible true；position: height 决定滑块渲染高度；backgroundPic: 轨道图；progressPic: 有效图 |
+| listview | id/caption/position/autoRollback/backgroundColor/cols/cycleEnable/dragMaxDis/edgeEffect/hasScrollbar/rows/touchable/visible/orientation/colSpacing/rowSpacing/item | backgroundColor -1；cols 1；dragMaxDis 200；edgeEffect 0；hasScrollbar true；touchable true；visible true；orientation 0 |
+| circlebar | id/caption/position/backgroundColor/clockwise/max/maxAngle/progressPic/progressPicPos/startAngle/textColor/textSize/textType/thumb/touchRange/touchable/unit/visible | backgroundColor -1；clockwise true；max 100；maxAngle 360；progressPicPos 0；startAngle 0；textType 0；touchRange 0；visible true；progressPic: 有效图按扇形裁剪显示进度；textType: 0 不绘制/1 数字/2 数字+unit；touchable: 产品 18 处全只读 false |
+| slidewindow | id/caption/position/backgroundColor/cols/fontSize/iconSize/items/padding/rollSpeed/rows/touchable/visible | rollSpeed 60；touchable true；visible true |
+| digitalclock | id/caption/position/backgroundColor/beat/clockColor/fontSize/format/touchable/visible | beat false；clockColor 16777215；format "HH:MM"；touchable false；visible true |
+| qrcode | id/caption/position/backgroundColor/padding/touchable/visible | padding 10；touchable true；visible true；codeStr: 有值才写；padding: 恒写 10（沛哥口径） |
+| videoview | id/caption/position/backgroundColor/defaultVolume/loopPlayback/rotation/touchable/visible | backgroundColor 0；defaultVolume 5；loopPlayback false；rotation 0；touchable true；visible true；backgroundColor: ⛔ 官方原值 0=不透明黑（视频面必须实黑底），勿推广到其他控件 |
+| cameraview | id/caption/position/autoPreview/backgroundColor/cvbs/formatSize/mirror/touchable/visible | autoPreview true；backgroundColor 0；formatSize "640x480"；mirror 0；touchable false；visible true；backgroundColor: ⛔ 同 videoview：官方原值 0=实黑底 |
+| painter | id/caption/position/backgroundColor/touchable/visible | touchable false；visible true |
+| pointer | id/caption/position/animatable/backgroundColor/backgroundPic/clockwise/fixedPoint/pointerPic/pointerSize/rotateSpeed/rotationPoint/startAngle/touchable/visible | animatable true；clockwise true；rotateSpeed 1；startAngle 0；touchable false；visible true；backgroundPic: 表盘底图，按设计有才写图；fixedPoint: 指针固定点（相对指针图，可超界做游标环）；rotateSpeed: 动画实测配 500 |
+| diagram | id/caption/position/backgroundColor/infos/region/touchable/visible/xAxisRange/yAxisRange | touchable true；visible true；region: 波形绘制区域（相对控件），通常=position；xAxisRange: 颠倒会左右镜像+刷新方向颠倒；yAxisRange: 颠倒上下镜像 |
+| checkbox | id/caption/position/alignment/checked/colorTab/bgColorTab/backgroundColor/bold/fontSize/iconPosition/italic/text/touchable/textPosition/visible | checked false；bold false；fontSize 16；italic false；touchable true；visible true；text: 恒写 |
+| radiogroup | id/caption/position/backgroundColor/touchable/visible/radiobuttons | touchable true；visible true |
+| radiobutton | id/caption/position/alignment/checked/colorTab/bgColorTab/backgroundColor/bold/fontSize/italic/text/touchable/visible | checked false；bold false；fontSize 16；italic false；touchable true；visible true |
+| pagewindow | id/caption/position/dragMaxDis/orientation/edgeEffect/rollSpeed | dragMaxDis 200；orientation 0；edgeEffect 1；rollSpeed 60 |
+| scrollwindow | id/caption/position/dragMaxDis/orientation/edgeEffect | dragMaxDis 200；orientation 0；edgeEffect 1 |
+| imageanim | id/caption/position/loopCount/playFile | loopCount 0；loopCount: 0=无限循环；playFile: 只支持 .gif/.webp |
+| slidetext | id/caption/position/touchable | touchable: IME 候选条专用 |
 
 ## 带子内容的子结构（SampleUI 1024x600 子结构 100% 键，双源验证）
 ### listview.item（SampleUI/basedemo 均 17 键 100%，无 id）

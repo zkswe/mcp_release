@@ -57,6 +57,9 @@ import tempfile
 import time as _t
 
 BASE = os.path.dirname(os.path.abspath(__file__))
+if BASE not in sys.path:
+    sys.path.insert(0, BASE)
+import ui_schema_loader as _uischema     # 字段/类型/必填/默认值的唯一真源（ui_schema.json）
 # fui.exe 优先用项目内（ui/fui.exe），否则仓库 toolchain/，否则 workspace/projects/fui.exe，否则 PATH
 FUI = None
 for cand in (
@@ -130,67 +133,25 @@ def _layer_problems(d):
 
 SEEKBAR_PIC_FIELDS = ('progressPic', 'secondaryProgressPic', 'backgroundPic', 'thumbPic')
 
-# ⚠️ 控件必写字段全集模板（沛哥 2026-09-08 定规 v2）
-# 口径：以 projects/SampleUI-New/ui/1024x600（42 json、新 IDE 全量序列化）为准——
+# ⚠️ 控件必写字段全集（沛哥 2026-09-08 定规 v2）——**已迁入注册表，禁止再内嵌一份模板**
+# 真源 = ui_tools/ui_schema.json（controls/subStructures 的 required 声明），经 ui_schema_loader 派生。
+# 口径（不变）：以 projects/SampleUI-New/ui/1024x600（42 json、新 IDE 全量序列化）为准——
 #   扫描每类型所有控件 100% 共有的字段 = 必选；值含默认(-1/0/false/字号16)也显式写，不做缺省省略（防版本漂移）。
 # 补充口径（沛哥）：beepEnable 不强制（交互控件默认支持）；交互控件 touchable 显式 true（button/listview/seekbar 可拖/
 #   qrcode/videoview/diagram/slidewindow/subitem），容器/纯显示显式 false（window/painter/cameraview）；qrcode 恒写 padding:10；
 #   videoview 按 SampleUI。生成器产出必须全部满足；手写 json 缺键时按模板补默认值。
 # ⚠️ 例外：条件字段 text/图片路径等按设计（无值可写空串/缺省）；SampleUI 无样例类型（pagewindow/scrollwindow/checkbox/
 #   radiogroup/slidetext/imageanim）暂沿用 demo 基准或从宽。
-CTRL_FIELD_TEMPLATES = {
-    'textview':     ['id', 'caption', 'position', 'alignment', 'colorTab', 'fontSize', 'touchable'],
-    'button':       ['id', 'caption', 'position', 'alignment', 'colorTab', 'picTab', 'text', 'touchable'],
-    'window':       ['id', 'caption', 'position', 'backgroundColor', 'hideTimeOut', 'modal', 'touchable', 'visible'],
-    'edittext':     ['id', 'caption', 'position', 'alignment', 'bgColorTab', 'bold', 'colorTab',
-                     'fontSize', 'hintTextColor', 'text', 'textType'],
-    'seekbar':      ['id', 'caption', 'position', 'backgroundColor', 'backgroundPic', 'defProgress', 'max',
-                     'orientation', 'progressPic', 'thumb', 'touchable', 'visible'],
-    'listview':     ['id', 'caption', 'position', 'autoRollback', 'backgroundColor', 'cols', 'cycleEnable',
-                     'dragMaxDis', 'edgeEffect', 'hasScrollbar', 'rows', 'touchable', 'visible',
-                     'orientation', 'colSpacing', 'rowSpacing', 'item'],
-    'circlebar':    ['id', 'caption', 'position', 'backgroundColor', 'clockwise', 'max', 'maxAngle',
-                     'progressPic', 'progressPicPos', 'startAngle', 'textColor', 'textSize', 'textType',
-                     'thumb', 'touchRange', 'touchable', 'unit', 'visible'],
-    'slidewindow':  ['id', 'caption', 'position', 'backgroundColor', 'cols', 'fontSize', 'iconSize', 'items',
-                     'padding', 'rollSpeed', 'rows', 'touchable', 'visible'],
-    'digitalclock': ['id', 'caption', 'position', 'backgroundColor', 'beat', 'clockColor', 'fontSize',
-                     'format', 'touchable', 'visible'],
-    'qrcode':       ['id', 'caption', 'position', 'backgroundColor', 'codeStr', 'touchable', 'visible', 'padding'],
-    'videoview':    ['id', 'caption', 'position', 'backgroundColor', 'defaultVolume', 'loopPlayback',
-                     'rotation', 'touchable', 'visible'],
-    'cameraview':   ['id', 'caption', 'position', 'autoPreview', 'backgroundColor', 'cvbs', 'formatSize',
-                     'mirror', 'touchable', 'visible'],
-    'painter':      ['id', 'caption', 'position', 'backgroundColor', 'touchable', 'visible'],
-    'pointer':      ['id', 'caption', 'position', 'animatable', 'backgroundColor', 'backgroundPic', 'clockwise',
-                     'fixedPoint', 'pointerPic', 'pointerSize', 'rotateSpeed', 'rotationPoint', 'startAngle',
-                     'touchable', 'visible'],
-    'diagram':      ['id', 'caption', 'position', 'backgroundColor', 'infos', 'touchable', 'visible',
-                     'xAxisRange', 'yAxisRange', 'region'],
-    'pagewindow':   ['id', 'caption', 'position', 'dragMaxDis', 'orientation', 'edgeEffect', 'rollSpeed'],
-    'scrollwindow': ['id', 'caption', 'position', 'dragMaxDis', 'orientation', 'edgeEffect'],
-    'radiogroup':   ['id', 'caption', 'position', 'backgroundColor', 'touchable', 'visible', 'radiobuttons'],
-    'radiobutton':  ['id', 'caption', 'position', 'alignment', 'checked', 'colorTab', 'bgColorTab',
-                     'backgroundColor', 'bold', 'fontSize', 'italic', 'text', 'touchable', 'visible'],
-    'checkbox':     ['id', 'caption', 'position', 'alignment', 'checked', 'colorTab', 'bgColorTab',
-                     'backgroundColor', 'bold', 'fontSize', 'iconPosition', 'italic', 'text',
-                     'touchable', 'textPosition', 'visible'],
-    'imageanim':    ['id', 'caption', 'position', 'loopCount', 'playFile'],
-    'slidetext':    ['id', 'caption', 'position', 'touchable'],
-    # ---- 带子内容的子结构模板（SampleUI + basedemo-new_z20_1024_600 双源验证，2026-09-08）----
-    # item.position 必写（沛哥）：行高 = lv高/rows - rowSpacing（html2json 已自动算）；iconPosition/textPosition 布局键条件写
-    'listitem':     ['caption', 'alignment', 'backgroundColor', 'bgColorTab', 'bold', 'colorTab',
-                     'fontSize', 'italic', 'longClickIntervalTime', 'longClickTimeOut', 'picTab',
-                     'position', 'text', 'touchable', 'visible', 'subItem'],
-    'subitem':      ['id', 'caption', 'position', 'alignment', 'backgroundColor', 'bgColorTab',
-                     'bold', 'colorTab', 'fontFamily', 'fontSize', 'italic',
-                     'longClickIntervalTime', 'longClickTimeOut', 'picTab', 'text',
-                     'touchable', 'visible'],
-    'wave':         ['caption', 'penColor', 'penWidth', 'step', 'style', 'eraseSpace',
-                     'antialias', 'visible', 'xScale', 'yScale'],
-    'slideitem':    ['colorTab', 'picTab', 'text'],
-}
-_CTRL_KEY_RE = re.compile(r'^([a-z]+)__\d+$')
+# qrcode.codeStr 裁决（2026-10-02）：注册表口径为准——optional「有值才写」
+# （json-field-mandatory.md v2.1 原文即此口径；旧 CTRL_FIELD_TEMPLATES 当必写是过度要求）。
+
+
+def _required_keys(tpl_key):
+    """#14 必写键 = 注册表 required_fields；注册表外类型（自定义控件）→ []（同旧 .get 口径）。"""
+    try:
+        return list(_uischema.required_fields(tpl_key))
+    except _uischema.SchemaRegistryError:
+        return []
 
 
 def _all_controls(d, out=None):
@@ -2202,18 +2163,19 @@ def main(project_root):
     log(not missing, '图片引用 %s（缺图 = 控件不可见：该显示的没显示，属验收缺陷，不是「少张图」而已）'
         % (missing if missing else '全部存在'))
 
-    # ---- 4b. 子盒对象字段类型（A/B 终裁 2026-10-02，V85X iMirror 固件）----
-    # thumb 写成字符串 = 真机 ftu 加载无声挂死（无 onUI_init/onUI_show、无报错日志）；
+    # ---- 4b. 控件字段类型（注册表驱动，ui_schema.json；A/B 终裁 2026-10-02，V85X iMirror 固件）----
+    # thumb 等子盒对象字段写成字符串 = 真机 ftu 加载无声挂死（无 onUI_init/onUI_show、无报错日志）；
     # thumb 对象+缺图 = 正常。这是当年「黑屏两小时」的唯一真凶，离线评审必须拦住。
-    print('== 4b. 子盒对象字段类型（seekbar.thumb 必须是 {size,normalPic,pressedPic} 对象，\n'
-          '      写成字符串 = 真机 ftu 加载无声挂死，A/B 实测 V85X iMirror 2026-10-02）==')
+    # 原 seekbar.thumb 专项检查（2026-10-01）已泛化：全控件 × 全字段按注册表 field_type 校验。
+    print('== 4b. 控件字段类型（注册表驱动：子盒对象必须是 dict 且 requiredKeys 齐全、标量类型匹配、\n'
+          '      数组必须是 list；thumb 写成字符串 = 真机 ftu 加载无声挂死（A/B 实测 V85X iMirror 2026-10-02））==')
+    _KNOWN_TYPES = set(_uischema.known_types())
     def _walk_controls(dd, path, out):
         for k, v in dd.items():
             if isinstance(v, dict):
                 if '__' in k:
                     out.append((path + '/' + k, v))
                 _walk_controls(v, path + '/' + k, out)
-    bad_thumb = []
     for f in PAGES:
         try:
             data = json.loads(open(os.path.join(root, f), encoding='utf-8').read())
@@ -2222,17 +2184,24 @@ def main(project_root):
             continue
         ctrls = []
         _walk_controls(data, f, ctrls)
+        bad, unknown, no_spec = [], [], []
         for path, c in ctrls:
-            if path.split('/')[-1].split('__')[0] != 'seekbar':
+            t = path.split('/')[-1].split('__')[0]
+            if t not in _KNOWN_TYPES:            # 注册表外类型（自定义控件）：无规范可查，不拦但记账
+                no_spec.append(path)
                 continue
-            t = c.get('thumb')
-            if t is not None and not isinstance(t, dict):
-                bad_thumb.append('%s: thumb 是%s（必须是对象）' % (path, type(t).__name__))
-            elif isinstance(t, dict):
-                for kk in ('size', 'normalPic', 'pressedPic'):
-                    if kk not in t:
-                        bad_thumb.append('%s: thumb 缺 %s' % (path, kk))
-    log(not bad_thumb, 'seekbar.thumb 子盒类型 %s' % (bad_thumb if bad_thumb else '全部合规'))
+            for vio in _uischema.type_check(t, c):
+                if vio['level'] == 'warn':
+                    unknown.append('%s.%s' % (path, vio['field']))
+                else:                          # fatal / error 都 FAIL（fatal = 真机无声挂死级）
+                    bad.append('%s: [%s] %s' % (path, vio['level'], vio['msg']))
+        log(not bad, '%s 字段类型 %s' % (f, '；'.join(bad[:10]) if bad else '全部合规'))
+        if unknown:
+            warn('%s 注册表外字段 %d 处（未知键不报错仅提示）：%s%s'
+                 % (f, len(unknown), ', '.join(unknown[:5]), '…' if len(unknown) > 5 else ''))
+        if no_spec:
+            warn('%s 注册表外控件类型 %d 处（无规范可查，未做类型校验）：%s%s'
+                 % (f, len(no_spec), ', '.join(no_spec[:5]), '…' if len(no_spec) > 5 else ''))
 
     print('== 5. 回调核对（button → onButtonClick，edittext → onEditTextChanged）==')
     logic_map = {}
@@ -2480,7 +2449,7 @@ def main(project_root):
         missing = []
 
         def chk(ctrl_key, c, tpl_key):
-            for fld in CTRL_FIELD_TEMPLATES.get(tpl_key, []):
+            for fld in _required_keys(tpl_key):
                 if fld not in c:
                     missing.append('%s.%s' % (ctrl_key, fld))
 

@@ -1,0 +1,460 @@
+{
+  "schemaVersion": "1.0",
+  "updated": "2026-10-02",
+  "authority": "FlyThings UI json 布局规范的唯一机器可读真源。字段/类型/必填/默认值以本表为准；knowledge/*.md 只负责原理、流程与行为。基准：json-field-mandatory.md v2.1（SampleUI-New 42json + basedemo 44json 双源）+ V85X 真机 A/B 实测（2026-10-02）。消费方：check_all 校验 / translate_ui 发射层 / map_control 片段 / gen_ui_schema_docs.py 文档表。改规范 = 改本文件，禁止在消费方另抄一份。",
+  "valueRules": {
+    "colorMinusOne": "-1 = 0xFFFFFFFF 是有意义的显式值（透明/未用），非噪音，必须显式写",
+    "colorZero": "0 = 不透明黑。仅 videoview/cameraview 底色官方原值为 0（必须实黑底）；其他控件透明写 -1，写 0 就是黑块（M6 实测坑）",
+    "missingImage": "图片字段指向不存在文件或置 '' → 控件不可见（framework 容错，不挂死），属验收缺陷",
+    "subboxType": "⛔ 子盒对象字段（thumb/position/colorTab/picTab/size/point/range）写成字符串或其他类型 = 真机 ftu 加载无声挂死（无 onUI_init/onUI_show、无报错日志）。A/B 实测 V85X iMirror 固件 2026-10-02：thumb 对象+缺图=正常，thumb 字符串+有图=挂死",
+    "fullFields": "生成 json 时每控件输出本类型必填字段全集（含默认值），不做缺省声明——不同 fui/easyui 版本默认处理可能不同（沛哥 2026-09-08）"
+  },
+  "page": {
+    "controlKeyPattern": "^[a-z]+__\\d+$",
+    "nesting": "window 类容器内嵌子控件（key 同为 <type>__N）；子控件 position 是父相对坐标，屏幕坐标 = 累加父偏移",
+    "rootFields": {
+      "id": {"type": "int", "required": true, "default": 0},
+      "resolution": {"type": "resolution", "required": true},
+      "position": {"type": "position", "required": true, "note": "整页通常 left0/top0/width=resolution.width/height=resolution.height"},
+      "backgroundColor": {"type": "color", "required": true, "default": -1},
+      "topmost": {"type": "bool", "required": false, "default": false},
+      "beepEnable": {"type": "bool", "required": false, "note": "不强制（沛哥 2026-09-08，两源证实非必写）"}
+    }
+  },
+  "sharedTypes": {
+    "position": {"shape": "object", "fields": {"left": "int", "top": "int", "width": "int", "height": "int"}},
+    "resolution": {"shape": "object", "fields": {"width": "int", "height": "int"}},
+    "size": {"shape": "object", "fields": {"width": "int", "height": "int"}},
+    "point": {"shape": "object", "fields": {"x": "int", "y": "int"}},
+    "range": {"shape": "object", "fields": {"lower": "int", "upper": "int"}},
+    "colorTab": {"shape": "object", "fields": {"color0": "color", "color1": "color", "color2": "color", "color3": "color", "color4": "color"}, "defaults": {"color1": -1, "color2": -1, "color3": -1, "color4": -1}, "note": "五槽色表，未用槽恒 -1"},
+    "picTab": {"shape": "object", "fields": {"pic0": "path", "pic1": "path", "pic2": "path", "pic3": "path", "pic4": "path"}, "note": "多态图：pic0 正常/pic1 按下/pic2 选中/pic3 选中按下/pic4 无效；键可不全、值 '' = 无图；{} 合法"},
+    "thumb": {"shape": "object", "fields": {"size": "size", "normalPic": "path", "pressedPic": "path"}, "requiredKeys": ["size", "normalPic", "pressedPic"], "fatal": "写成字符串 = ftu 加载无声挂死（A/B 实测 2026-10-02）；无图 = size 置 0 + 两 Pic 置 ''"},
+    "iconBox": {"shape": "object", "fields": {"left": "int", "top": "int", "width": "int", "height": "int"}, "note": "iconPosition/textPosition 用，条件写（有图标/图文混排设计时）"}
+  },
+  "controls": {
+    "textview": {
+      "interactive": false,
+      "fields": {
+        "id": {"type": "int", "required": true},
+        "caption": {"type": "string", "required": true},
+        "position": {"type": "position", "required": true},
+        "alignment": {"type": "int", "required": true, "default": 36, "note": "位模型：36=左中对齐常用；居中=5（≡37 位模型）"},
+        "colorTab": {"type": "colorTab", "required": true, "note": "color0 主文字色"},
+        "fontSize": {"type": "int", "required": true, "default": 16},
+        "touchable": {"type": "bool", "required": true, "default": false},
+        "text": {"type": "string", "required": false, "note": "非空才写"},
+        "visible": {"type": "bool", "required": false, "default": true},
+        "bold": {"type": "bool", "required": false, "default": false},
+        "italic": {"type": "bool", "required": false, "default": false},
+        "bgColorTab": {"type": "colorTab", "required": false},
+        "rollEnable": {"type": "bool", "required": false, "default": false},
+        "rollDirection": {"type": "int", "required": false, "default": 1},
+        "rollIntervalTime": {"type": "int", "required": false, "default": 150},
+        "rollStep": {"type": "int", "required": false, "default": 5},
+        "fontFamily": {"type": "int", "required": false, "default": 0}
+      }
+    },
+    "button": {
+      "interactive": true,
+      "fields": {
+        "id": {"type": "int", "required": true},
+        "caption": {"type": "string", "required": true},
+        "position": {"type": "position", "required": true},
+        "alignment": {"type": "int", "required": true, "default": 37, "note": "位模型居中"},
+        "colorTab": {"type": "colorTab", "required": true},
+        "picTab": {"type": "picTab", "required": true, "note": "{} 合法（无图也写键）；两态开关 picTab{pic0:on,pic2:off}+setSelected()"},
+        "text": {"type": "string", "required": true, "note": "文本内联 button（schema 支持），不要再叠 textview；\"\" 合法"},
+        "touchable": {"type": "bool", "required": true, "default": true},
+        "visible": {"type": "bool", "required": false, "default": true},
+        "bgColorTab": {"type": "colorTab", "required": false, "note": "有按键图片时不开（图叠底色错乱）；仅纯文字按钮用"},
+        "longClickTimeOut": {"type": "int", "required": false, "default": -1},
+        "longClickIntervalTime": {"type": "int", "required": false, "default": -1},
+        "iconPosition": {"type": "iconBox", "required": false, "note": "控件尺寸≠图片尺寸时必须显式"}
+      }
+    },
+    "window": {
+      "interactive": false,
+      "container": true,
+      "fields": {
+        "id": {"type": "int", "required": true},
+        "caption": {"type": "string", "required": true},
+        "position": {"type": "position", "required": true},
+        "backgroundColor": {"type": "color", "required": true, "default": -1},
+        "hideTimeOut": {"type": "int", "required": true, "default": -1},
+        "modal": {"type": "bool", "required": true, "default": false, "note": "弹窗 = modal true + visible false"},
+        "touchable": {"type": "bool", "required": true, "default": false},
+        "visible": {"type": "bool", "required": true, "default": true}
+      }
+    },
+    "edittext": {
+      "interactive": true,
+      "fields": {
+        "id": {"type": "int", "required": true},
+        "caption": {"type": "string", "required": true},
+        "position": {"type": "position", "required": true},
+        "alignment": {"type": "int", "required": true},
+        "bgColorTab": {"type": "colorTab", "required": true},
+        "bold": {"type": "bool", "required": true, "default": false},
+        "colorTab": {"type": "colorTab", "required": true},
+        "fontSize": {"type": "int", "required": true, "default": 16},
+        "hintTextColor": {"type": "color", "required": true},
+        "text": {"type": "string", "required": true, "note": "\"\" 合法"},
+        "textType": {"type": "int", "required": true, "default": 0, "note": "0/1 恒写"},
+        "visible": {"type": "bool", "required": false, "default": true},
+        "italic": {"type": "bool", "required": false, "default": false}
+      }
+    },
+    "seekbar": {
+      "interactive": true,
+      "fields": {
+        "id": {"type": "int", "required": true},
+        "caption": {"type": "string", "required": true},
+        "position": {"type": "position", "required": true, "note": "height 决定滑块渲染高度；要圆滑块 height ≥ thumb.size.height"},
+        "backgroundColor": {"type": "color", "required": true, "default": -1},
+        "backgroundPic": {"type": "path", "required": true, "note": "轨道图；无图置 ''"},
+        "defProgress": {"type": "int", "required": true, "default": 0},
+        "max": {"type": "int", "required": true, "default": 100},
+        "orientation": {"type": "int", "required": true, "default": 0},
+        "progressPic": {"type": "path", "required": true, "note": "有效图；无图置 ''"},
+        "thumb": {"type": "thumb", "required": true, "note": "可拖（有 thumb）touchable true、只读 false"},
+        "touchable": {"type": "bool", "required": true},
+        "visible": {"type": "bool", "required": true, "default": true},
+        "secondaryProgressPic": {"type": "path", "required": false}
+      }
+    },
+    "listview": {
+      "interactive": true,
+      "fields": {
+        "id": {"type": "int", "required": true},
+        "caption": {"type": "string", "required": true},
+        "position": {"type": "position", "required": true},
+        "autoRollback": {"type": "bool", "required": true},
+        "backgroundColor": {"type": "color", "required": true, "default": -1},
+        "cols": {"type": "int", "required": true, "default": 1},
+        "cycleEnable": {"type": "bool", "required": true},
+        "dragMaxDis": {"type": "int", "required": true, "default": 200},
+        "edgeEffect": {"type": "int", "required": true, "default": 0},
+        "hasScrollbar": {"type": "bool", "required": true, "default": true},
+        "rows": {"type": "int", "required": true},
+        "touchable": {"type": "bool", "required": true, "default": true},
+        "visible": {"type": "bool", "required": true, "default": true},
+        "orientation": {"type": "int", "required": true, "default": 0},
+        "colSpacing": {"type": "int", "required": true},
+        "rowSpacing": {"type": "int", "required": true},
+        "item": {"type": "listitem", "required": true}
+      }
+    },
+    "circlebar": {
+      "interactive": true,
+      "fields": {
+        "id": {"type": "int", "required": true},
+        "caption": {"type": "string", "required": true},
+        "position": {"type": "position", "required": true},
+        "backgroundColor": {"type": "color", "required": true, "default": -1},
+        "clockwise": {"type": "bool", "required": true, "default": true},
+        "max": {"type": "int", "required": true, "default": 100},
+        "maxAngle": {"type": "int", "required": true, "default": 360},
+        "progressPic": {"type": "path", "required": true, "note": "有效图按扇形裁剪显示进度"},
+        "progressPicPos": {"type": "int", "required": true, "default": 0},
+        "startAngle": {"type": "int", "required": true, "default": 0},
+        "textColor": {"type": "color", "required": true},
+        "textSize": {"type": "int", "required": true},
+        "textType": {"type": "int", "required": true, "default": 0, "note": "0 不绘制/1 数字/2 数字+unit"},
+        "thumb": {"type": "thumb", "required": true},
+        "touchRange": {"type": "int", "required": true, "default": 0},
+        "touchable": {"type": "bool", "required": true, "note": "产品 18 处全只读 false；交互优先 seekbar"},
+        "unit": {"type": "string", "required": true, "note": "如 \"%\"，textType=2 用"},
+        "visible": {"type": "bool", "required": true, "default": true},
+        "backgroundPic": {"type": "path", "required": false, "note": "背景图完整显示垫底，不裁剪"}
+      }
+    },
+    "slidewindow": {
+      "interactive": true,
+      "container": true,
+      "fields": {
+        "id": {"type": "int", "required": true},
+        "caption": {"type": "string", "required": true},
+        "position": {"type": "position", "required": true},
+        "backgroundColor": {"type": "color", "required": true},
+        "cols": {"type": "int", "required": true},
+        "fontSize": {"type": "int", "required": true},
+        "iconSize": {"type": "int", "required": true},
+        "items": {"type": "array", "required": true, "itemType": "slideitem"},
+        "padding": {"type": "int", "required": true},
+        "rollSpeed": {"type": "int", "required": true, "default": 60},
+        "rows": {"type": "int", "required": true},
+        "touchable": {"type": "bool", "required": true, "default": true},
+        "visible": {"type": "bool", "required": true, "default": true}
+      }
+    },
+    "digitalclock": {
+      "interactive": false,
+      "fields": {
+        "id": {"type": "int", "required": true},
+        "caption": {"type": "string", "required": true},
+        "position": {"type": "position", "required": true},
+        "backgroundColor": {"type": "color", "required": true},
+        "beat": {"type": "bool", "required": true, "default": false},
+        "clockColor": {"type": "color", "required": true, "default": 16777215},
+        "fontSize": {"type": "int", "required": true},
+        "format": {"type": "string", "required": true, "default": "HH:MM"},
+        "touchable": {"type": "bool", "required": true, "default": false},
+        "visible": {"type": "bool", "required": true, "default": true}
+      }
+    },
+    "qrcode": {
+      "interactive": true,
+      "fields": {
+        "id": {"type": "int", "required": true},
+        "caption": {"type": "string", "required": true},
+        "position": {"type": "position", "required": true},
+        "backgroundColor": {"type": "color", "required": true},
+        "codeStr": {"type": "string", "required": false, "note": "有值才写"},
+        "padding": {"type": "int", "required": true, "default": 10, "note": "恒写 10（沛哥口径）"},
+        "touchable": {"type": "bool", "required": true, "default": true},
+        "visible": {"type": "bool", "required": true, "default": true}
+      }
+    },
+    "videoview": {
+      "interactive": true,
+      "fields": {
+        "id": {"type": "int", "required": true},
+        "caption": {"type": "string", "required": true},
+        "position": {"type": "position", "required": true},
+        "backgroundColor": {"type": "color", "required": true, "default": 0, "note": "⛔ 官方原值 0=不透明黑（视频面必须实黑底），勿推广到其他控件"},
+        "defaultVolume": {"type": "int", "required": true, "default": 5},
+        "loopPlayback": {"type": "bool", "required": true, "default": false},
+        "rotation": {"type": "int", "required": true, "default": 0},
+        "touchable": {"type": "bool", "required": true, "default": true},
+        "visible": {"type": "bool", "required": true, "default": true}
+      }
+    },
+    "cameraview": {
+      "interactive": false,
+      "fields": {
+        "id": {"type": "int", "required": true},
+        "caption": {"type": "string", "required": true},
+        "position": {"type": "position", "required": true},
+        "autoPreview": {"type": "bool", "required": true, "default": true},
+        "backgroundColor": {"type": "color", "required": true, "default": 0, "note": "⛔ 同 videoview：官方原值 0=实黑底"},
+        "cvbs": {"type": "bool", "required": true},
+        "formatSize": {"type": "string", "required": true, "default": "640x480"},
+        "mirror": {"type": "int", "required": true, "default": 0},
+        "touchable": {"type": "bool", "required": true, "default": false},
+        "visible": {"type": "bool", "required": true, "default": true}
+      }
+    },
+    "painter": {
+      "interactive": false,
+      "fields": {
+        "id": {"type": "int", "required": true},
+        "caption": {"type": "string", "required": true},
+        "position": {"type": "position", "required": true},
+        "backgroundColor": {"type": "color", "required": true},
+        "touchable": {"type": "bool", "required": true, "default": false},
+        "visible": {"type": "bool", "required": true, "default": true}
+      }
+    },
+    "pointer": {
+      "interactive": false,
+      "fields": {
+        "id": {"type": "int", "required": true},
+        "caption": {"type": "string", "required": true},
+        "position": {"type": "position", "required": true},
+        "animatable": {"type": "bool", "required": true, "default": true},
+        "backgroundColor": {"type": "color", "required": true},
+        "backgroundPic": {"type": "path", "required": true, "note": "表盘底图，按设计有才写图"},
+        "clockwise": {"type": "bool", "required": true, "default": true},
+        "fixedPoint": {"type": "point", "required": true, "note": "指针固定点（相对指针图，可超界做游标环）"},
+        "pointerPic": {"type": "path", "required": true},
+        "pointerSize": {"type": "size", "required": true},
+        "rotateSpeed": {"type": "int", "required": true, "default": 1, "note": "动画实测配 500"},
+        "rotationPoint": {"type": "point", "required": true, "note": "旋转点（相对控件左上）；起始角不准先查本键与 fixedPoint"},
+        "startAngle": {"type": "int", "required": true, "default": 0},
+        "touchable": {"type": "bool", "required": true, "default": false},
+        "visible": {"type": "bool", "required": true, "default": true}
+      }
+    },
+    "diagram": {
+      "interactive": true,
+      "fields": {
+        "id": {"type": "int", "required": true},
+        "caption": {"type": "string", "required": true},
+        "position": {"type": "position", "required": true},
+        "backgroundColor": {"type": "color", "required": true},
+        "infos": {"type": "array", "required": true, "itemType": "wave"},
+        "region": {"type": "position", "required": true, "note": "波形绘制区域（相对控件），通常=position"},
+        "touchable": {"type": "bool", "required": true, "default": true},
+        "visible": {"type": "bool", "required": true, "default": true},
+        "xAxisRange": {"type": "range", "required": true, "note": "颠倒会左右镜像+刷新方向颠倒"},
+        "yAxisRange": {"type": "range", "required": true, "note": "颠倒上下镜像；超出自动截断"}
+      }
+    },
+    "pagewindow": {
+      "interactive": true,
+      "container": true,
+      "fields": {
+        "id": {"type": "int", "required": true},
+        "caption": {"type": "string", "required": true},
+        "position": {"type": "position", "required": true},
+        "dragMaxDis": {"type": "int", "required": true, "default": 200},
+        "orientation": {"type": "int", "required": true, "default": 0},
+        "edgeEffect": {"type": "int", "required": true, "default": 1},
+        "rollSpeed": {"type": "int", "required": true, "default": 60}
+      }
+    },
+    "scrollwindow": {
+      "interactive": true,
+      "container": true,
+      "fields": {
+        "id": {"type": "int", "required": true},
+        "caption": {"type": "string", "required": true},
+        "position": {"type": "position", "required": true},
+        "dragMaxDis": {"type": "int", "required": true, "default": 200},
+        "orientation": {"type": "int", "required": true, "default": 0},
+        "edgeEffect": {"type": "int", "required": true, "default": 1}
+      }
+    },
+    "radiogroup": {
+      "interactive": true,
+      "container": true,
+      "fields": {
+        "id": {"type": "int", "required": true},
+        "caption": {"type": "string", "required": true},
+        "position": {"type": "position", "required": true},
+        "backgroundColor": {"type": "color", "required": true},
+        "touchable": {"type": "bool", "required": true, "default": true, "note": "⛔ 容器例外必须 true：写 false 整组收不到触摸（2026-09-10 修正）"},
+        "visible": {"type": "bool", "required": true, "default": true},
+        "radiobuttons": {"type": "array", "required": true, "itemType": "radiobutton"}
+      }
+    },
+    "radiobutton": {
+      "interactive": true,
+      "fields": {
+        "id": {"type": "int", "required": true},
+        "caption": {"type": "string", "required": true},
+        "position": {"type": "position", "required": true},
+        "alignment": {"type": "int", "required": true},
+        "checked": {"type": "bool", "required": true, "default": false},
+        "colorTab": {"type": "colorTab", "required": true},
+        "bgColorTab": {"type": "colorTab", "required": true},
+        "backgroundColor": {"type": "color", "required": true},
+        "bold": {"type": "bool", "required": true, "default": false},
+        "fontSize": {"type": "int", "required": true, "default": 16},
+        "italic": {"type": "bool", "required": true, "default": false},
+        "text": {"type": "string", "required": true},
+        "touchable": {"type": "bool", "required": true, "default": true},
+        "visible": {"type": "bool", "required": true, "default": true}
+      }
+    },
+    "checkbox": {
+      "interactive": true,
+      "fields": {
+        "id": {"type": "int", "required": true},
+        "caption": {"type": "string", "required": true},
+        "position": {"type": "position", "required": true},
+        "alignment": {"type": "int", "required": true},
+        "checked": {"type": "bool", "required": true, "default": false},
+        "colorTab": {"type": "colorTab", "required": true},
+        "bgColorTab": {"type": "colorTab", "required": true},
+        "backgroundColor": {"type": "color", "required": true},
+        "bold": {"type": "bool", "required": true, "default": false},
+        "fontSize": {"type": "int", "required": true, "default": 16},
+        "iconPosition": {"type": "iconBox", "required": true},
+        "italic": {"type": "bool", "required": true, "default": false},
+        "text": {"type": "string", "required": true, "note": "恒写"},
+        "touchable": {"type": "bool", "required": true, "default": true},
+        "textPosition": {"type": "iconBox", "required": true},
+        "visible": {"type": "bool", "required": true, "default": true}
+      }
+    },
+    "imageanim": {
+      "interactive": false,
+      "fields": {
+        "id": {"type": "int", "required": true},
+        "caption": {"type": "string", "required": true},
+        "position": {"type": "position", "required": true},
+        "loopCount": {"type": "int", "required": true, "default": 0, "note": "0=无限循环"},
+        "playFile": {"type": "path", "required": true, "note": "只支持 .gif/.webp；无文件不写引用"}
+      }
+    },
+    "slidetext": {
+      "interactive": true,
+      "fields": {
+        "id": {"type": "int", "required": true},
+        "caption": {"type": "string", "required": true},
+        "position": {"type": "position", "required": true},
+        "touchable": {"type": "bool", "required": true, "note": "IME 候选条专用"}
+      }
+    }
+  },
+  "subStructures": {
+    "listitem": {
+      "note": "listview.item；无 id。⚠️ position 必写：itemH = int(lv高/rows) − rowSpacing、itemW = lv宽、left/top=0；除不尽的余数是故意的（露出下一项提示可滑，钟工 2026-10-01），itemH 比公式大会挤爆列表（check_all #37）",
+      "fields": {
+        "caption": {"type": "string", "required": true},
+        "alignment": {"type": "int", "required": true},
+        "backgroundColor": {"type": "color", "required": true},
+        "bgColorTab": {"type": "colorTab", "required": true},
+        "bold": {"type": "bool", "required": true, "default": false},
+        "colorTab": {"type": "colorTab", "required": true},
+        "fontSize": {"type": "int", "required": true, "default": 16},
+        "italic": {"type": "bool", "required": true, "default": false},
+        "longClickIntervalTime": {"type": "int", "required": true, "default": -1},
+        "longClickTimeOut": {"type": "int", "required": true, "default": -1},
+        "picTab": {"type": "picTab", "required": true},
+        "position": {"type": "position", "required": true},
+        "text": {"type": "string", "required": true},
+        "touchable": {"type": "bool", "required": true, "default": true},
+        "visible": {"type": "bool", "required": true, "default": true},
+        "subItem": {"type": "array", "required": false, "itemType": "subitem", "note": "真机 json 为数组；滚轮选择器行模板可不写（listview-wheel-picker）"}
+      }
+    },
+    "subitem": {
+      "note": "listview.item.subItem",
+      "fields": {
+        "id": {"type": "int", "required": true},
+        "caption": {"type": "string", "required": true},
+        "position": {"type": "position", "required": true},
+        "alignment": {"type": "int", "required": true},
+        "backgroundColor": {"type": "color", "required": true},
+        "bgColorTab": {"type": "colorTab", "required": true},
+        "bold": {"type": "bool", "required": true, "default": false},
+        "colorTab": {"type": "colorTab", "required": true},
+        "fontFamily": {"type": "int", "required": true, "default": 0},
+        "fontSize": {"type": "int", "required": true, "default": 16},
+        "italic": {"type": "bool", "required": true, "default": false},
+        "longClickIntervalTime": {"type": "int", "required": true, "default": -1},
+        "longClickTimeOut": {"type": "int", "required": true, "default": -1},
+        "picTab": {"type": "picTab", "required": true},
+        "text": {"type": "string", "required": true, "default": ""},
+        "touchable": {"type": "bool", "required": true, "default": true},
+        "visible": {"type": "bool", "required": true, "default": true}
+      }
+    },
+    "wave": {
+      "note": "diagram.infos[] 波形项；style 0=折线 1=曲线",
+      "fields": {
+        "caption": {"type": "string", "required": true},
+        "penColor": {"type": "color", "required": true},
+        "penWidth": {"type": "int", "required": true},
+        "step": {"type": "int", "required": true},
+        "style": {"type": "int", "required": true, "default": 0},
+        "eraseSpace": {"type": "int", "required": true},
+        "antialias": {"type": "bool", "required": true},
+        "visible": {"type": "bool", "required": true, "default": true},
+        "xScale": {"type": "int", "required": true},
+        "yScale": {"type": "int", "required": true}
+      }
+    },
+    "slideitem": {
+      "note": "slidewindow.items[]",
+      "fields": {
+        "colorTab": {"type": "colorTab", "required": true},
+        "picTab": {"type": "picTab", "required": true},
+        "text": {"type": "string", "required": true}
+      }
+    }
+  }
+}

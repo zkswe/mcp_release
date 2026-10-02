@@ -61,6 +61,14 @@ try:
 except Exception:
     dss = None
 
+try:
+    import ui_schema_loader as _uischema     # UI json 布局规范注册表（ui_schema.json 唯一真源）
+except Exception as _e:
+    _uischema = None
+    _USC_ERR = repr(_e)
+else:
+    _USC_ERR = ''
+
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
 MCP_VERSION = '0.27.171-open'
 MCP_BUILD = '2026-10-02'
@@ -657,6 +665,71 @@ def flythings_map_control(query: str, source: str = '') -> str:
     return json.dumps(out, ensure_ascii=False)
 
 
+def flythings_ui_schema(control_type: str = '', include: str = 'all') -> str:
+    """UI 布局 json 规范查询（唯一真源 = ui_schema.json 注册表）：控件字段表/必填键/默认值/类型。
+
+    检索词：json 规范 / 字段表 / schema / 控件字段 / 布局规范 / thumb 子盒 / colorTab 五槽。
+    control_type 空 = 全部控件类型清单（interactive/container 标记）；指定（如 seekbar）= 完整
+    schema（字段·类型·必填·默认值·note）+ 适用 sharedTypes + valueRules。
+    include: all/fields/sharedTypes/valueRules。改规范 = 改注册表，勿抄副本。
+    """
+    if _uischema is None:
+        return json.dumps({'ok': False, 'op': 'flythings_ui_schema',
+                           'error': _err_obj('MODULE_MISSING',
+                                             'ui_schema_loader 不可用: %s' % _USC_ERR,
+                                             '确认 ui_tools/ui_schema_loader.py 与 ui_schema.json 随包分发', False),
+                           'warnings': []}, ensure_ascii=False)
+    try:
+        reg = _uischema.load()
+    except _uischema.SchemaRegistryError as e:
+        return json.dumps({'ok': False, 'op': 'flythings_ui_schema',
+                           'error': _err_obj('DATA_MISSING', str(e),
+                                             '注册表真源 = ui_tools/ui_schema.json（与 loader 同目录）', False),
+                           'warnings': []}, ensure_ascii=False)
+    ct = (control_type or '').strip().lower()
+    if not ct:
+        return json.dumps({
+            'ok': True, 'op': 'flythings_ui_schema',
+            'schemaVersion': reg.get('schemaVersion'), 'updated': reg.get('updated'),
+            'controlTypes': [{'type': t, 'interactive': bool(m.get('interactive')),
+                              'container': bool(m.get('container'))}
+                             for t, m in sorted((reg.get('controls') or {}).items())],
+            'subStructures': sorted(reg.get('subStructures') or {}),
+            'sharedTypes': sorted(reg.get('sharedTypes') or {}),
+            'hint': '指定 control_type 取完整 schema（如 control_type="seekbar"）',
+            'warnings': []}, ensure_ascii=False)
+    entry = (reg.get('controls') or {}).get(ct) or (reg.get('subStructures') or {}).get(ct)
+    if entry is None:
+        cands = sorted(reg.get('controls') or {})
+        return json.dumps({'ok': False, 'op': 'flythings_ui_schema',
+                           'error': _err_obj('NO_HIT', '未知控件类型: %s' % control_type,
+                                             'control_type 取 ' + ' / '.join(cands)
+                                             + '（留空 = 全部类型清单）', True),
+                           'controlTypes': cands, 'warnings': []}, ensure_ascii=False)
+    used_shared = sorted({spec.get('type') for spec in (entry.get('fields') or {}).values()
+                          if spec.get('type') in (reg.get('sharedTypes') or {})})
+    out = {'ok': True, 'op': 'flythings_ui_schema', 'controlType': ct,
+           'interactive': bool(entry.get('interactive')),
+           'container': bool(entry.get('container')),
+           'note': entry.get('note', ''),
+           'fields': entry.get('fields') or {},
+           'requiredFields': _uischema.required_fields(ct),
+           'defaults': _uischema.defaults(ct),
+           'sharedTypes': {k: reg['sharedTypes'][k] for k in used_shared},
+           'valueRules': reg.get('valueRules') or {},
+           'warnings': []}
+    inc = (include or 'all').strip().lower()
+    if inc in ('fields', 'schema'):
+        keep = ('ok', 'op', 'controlType', 'interactive', 'container', 'note',
+                'fields', 'requiredFields', 'defaults', 'warnings')
+        out = {k: v for k, v in out.items() if k in keep}
+    elif inc in ('sharedtypes', 'types'):
+        out = {k: out[k] for k in ('ok', 'op', 'controlType', 'sharedTypes', 'warnings')}
+    elif inc in ('valuerules', 'rules'):
+        out = {k: out[k] for k in ('ok', 'op', 'controlType', 'valueRules', 'warnings')}
+    return json.dumps(out, ensure_ascii=False)
+
+
 def flythings_translate_ui(source: str, out: str = '', res: str = '1024x600',
                            dry_run: bool = True, gen_placeholders: bool = False) -> str:
     """LVGL(v8/v9) C 源码 → FlyThings ui json 迁移翻译（v1，确定性，默认 dry_run 不落盘）。
@@ -760,10 +833,10 @@ def flythings_build_ui_flow(project_root: str, with_launch: bool = True, device:
     """⚠️ 场景别名（编译/部署类意图一律本工具，禁自造命令）：口语「编译/构建/调试/部署/推送到
     设备/跑一下」；固化升级（update.img）→ flythings_pack_upgrade（掉电保留）。
     流程：json↔ftu 时间戳检查 → fui pack → fun install → fun build → **设备探测 + fun launch**
-    （只编译传 with_launch=False）→ 字体体检 + 设备侧 md5 比对
-    （staleOnDevice=true ⇒ 设备上还是旧版）。探测不猜：0 台→needDeviceInput；多台→列 serial 要 device=。
+    （只编译传 with_launch=False）→ 字体体检 + 设备侧 md5 比对（staleOnDevice=true ⇒ 设备是旧版）。
+    探测不猜：0 台→needDeviceInput；多台→列 serial 要 device=。
     ⚠️ src/activity/ 由 IDE 生成（禁手改），业务只写 src/logic/*.cc。
-    链库放 src/dependencies/lib/（fun 自动链接）；**libc 必须匹配**：Z20/Z21=glibc，其余=musl 系。
+    链库放 src/dependencies/lib/；**libc 必须匹配**：Z20/Z21=glibc，其余=musl 系。
     """
     return json.dumps(_with_design_warning(
         pt.flythings_build_ui_flow(project_root, with_launch, device,
@@ -968,11 +1041,11 @@ def flythings_html_to_json(input_html: str, output_json: str = '', res: str = ''
     """受限 HTML 交互原型 -> ui/*.json（CSS 效果自动转图；产物尺寸 == 控件盒）。
 
     ⚠️ 动手前先读《HTML_SUBSET 原型规范》（检索 HTML_SUBSET / data-icon / 自动转图清单）：
-    控件映射表、全部 data-* 属性、铁律都在那里，本 docstring 只留最低限度。
-    多屏（div.screen，data-page）：每屏一个 json = 一页 = 一个 Activity = 一个 ftu；
-    **仅当同属一个 Activity** 时才用 merge_windows 合成同 json 的 N 个整屏 window。
-    返回 screensDetected/pagesProduced/jsonsProduced/pages[]；**不等一律 success:false**（不静默丢页）。
-    红线 / 确认闸门 / 差异化三问 → knowledge/devflow/html-subset-quickref.md。
+    控件映射表、全部 data-* 属性、铁律都在那里。
+    多屏（div.screen）：每屏一个 json = 一页 = 一个 Activity = 一个 ftu；仅当同属一个
+    Activity 才用 merge_windows 合成同 json 的 N 个整屏 window。
+    返回 screensDetected/pagesProduced/pages[]；**不等一律 success:false**（不静默丢页）。
+    红线 / 确认闸门 → knowledge/devflow/html-subset-quickref.md。
     """
     out = h2j.html2json(input_html, output_json or None, res or None,
                         merge_windows=bool(merge_windows))
@@ -1091,14 +1164,10 @@ def flythings_create_bin_project(project_root: str, project_name: str = '', plat
     """
     创建「可执行程序」项目（fun create --type bin）并编译为直接可运行的 ELF 二进制。
 
-        - 项目类型 4 选 1：zkgui / bin（可执行程序）/ staticLibrary / sharedLibrary
-        - bin 结构极简：fun.json（"type": "executable"）+ src/main.cpp
-        - 编译 fun build → 产物 .fun/{platform}/{项目名}，ELF 魔数验证
-        - 部署 adb push + chmod +x 直接跑（无 zkgui 宿主，不能启 UI 应用）
-        - 非交互：自动传 --app-version/--description；目录非空直接报错
-        用户要「编译出可直接执行的二进制（非 UI 应用）」时调用；platform 默认 z21
-        （支持 z20/t113/f133 等）；project_name 缺省取目录名。
-        
+        项目类型 4 选 1：zkgui / bin / staticLibrary / sharedLibrary；bin 结构 = fun.json + src/main.cpp。
+        fun build 产物 .fun/{platform}/{项目名}（ELF 魔数验证）；adb push + chmod +x 直接跑（无 UI 宿主）。
+        非交互：自动传 --app-version/--description；目录非空直接报错。
+        用户要「编译可直接执行的二进制（非 UI 应用）」时调用；platform 默认 z21；project_name 缺省取目录名。
     """
     return json.dumps(pt.flythings_create_bin_project(
         project_root, project_name, platform, app_version, description, with_build),
@@ -1235,13 +1304,11 @@ def flythings_generate_ui_assets(project_root: str, assets: str) -> str:
     """
     生成 UI 图片资源（图标/牌面/按钮背景等）→ <项目>/resources/images/（json 引用写 images/xxx.png）。
 
-        assets 为 JSON 数组字符串，每项 {name,size,prompt,emoji,color,kind}；name 必填（自动补 .png），
-        prompt 优先 AI 生图、失败用 emoji、再不行用 color/kind 线条兜底；kind 取
-        check/charging/wifi/alert/circle/square/star/heart。
-        **返回体自动带 assetAudit**（抗锯齿/弧线过渡/倒角/透明底审计；有 DEFECT 就修图重出）。
-        ⚠️ 铁律（尺寸==控件盒、四角 alpha=0、禁 1x 直画）与三条合法出图路径见知识库
-        「UI 图片资源铁律与 PNG 抗锯齿管线」（检索：图片资源铁律 / 抗锯齿 / 走哪条路出图）。
-        
+        assets 为 JSON 数组字符串，每项 {name,size,prompt,emoji,color,kind}；name 必填（自动补 .png）；
+        prompt 优先 AI 生图、失败用 emoji、再不行 color/kind 线条兜底。
+        **返回体自动带 assetAudit**（抗锯齿/倒角/透明底审计；有 DEFECT 就修图重出）。
+        ⚠️ 铁律（尺寸==控件盒、四角 alpha=0、禁 1x 直画）见知识库「UI 图片资源铁律与 PNG 抗锯齿管线」
+        （检索：图片资源铁律 / 抗锯齿 / 走哪条路出图）。
     """
     res = h2j_genres.gen_ui_assets(project_root, assets)
     if isinstance(res, dict):
@@ -1883,12 +1950,9 @@ def flythings_bugreport(title: str = '', project_root: str = '', device: str = '
     缺陷单生成器：缺陷清单 + 真机判据 → 可提交 markdown（格式对齐 html2json A1~A8 那批）。
 
         只给 title 也能出框架稿；steps/evidence 支持 JSON 数组或换行/分号/逗号分隔。
-        真机判据自动附：型号·固件·fingerprint·应用状态（init.svc.zkswe / pid / uptime）·
-        `logcat -d -s zkgui` 末 40 行；采不到就写明原因。
-        ⚠️ evidence 文件不存在 → 直接报 EVIDENCE_MISSING（不静默）。severity ∈ blocker…trivial。
-        默认落 <项目或仓库>/temp/bugreports/<yyyymmdd-HHMM>-<slug>.md（返回 path + 前 20 行预览）。
-        细节见 knowledge/devflow/selfcheck-and-bugreport.md。
-        
+        真机判据自动附：型号·固件·fingerprint·应用状态·`logcat -d -s zkgui` 末 40 行；采不到写明原因。
+        ⚠️ evidence 文件不存在 → 报 EVIDENCE_MISSING（不静默）。severity ∈ blocker…trivial。
+        默认落 <项目或仓库>/temp/bugreports/<yyyymmdd-HHMM>-<slug>.md。细节见 knowledge/devflow/selfcheck-and-bugreport.md。
     """
     if sc is None:
         return json.dumps({'ok': False, 'op': 'flythings_bugreport',
@@ -2015,6 +2079,7 @@ OP_NAMES = (
     'flythings_knowledge_gaps',
     'flythings_hardware_info',
     'flythings_map_control',
+    'flythings_ui_schema',
     'flythings_translate_ui',
     'flythings_read_json',
     'flythings_layout_audit',

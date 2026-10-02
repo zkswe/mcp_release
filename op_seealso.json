@@ -24,6 +24,9 @@
       "seeAlso": ["knowledge/uicontrols/control-mapping-capability.md",
                   "knowledge/uicontrols/framework-control-mapping.md"]
     },
+    "flythings_ui_schema": {
+      "seeAlso": ["knowledge/uicontrols/json-field-mandatory.md"]
+    },
     "flythings_translate_ui": {
       "seeAlso": ["knowledge/devflow/translate-ui-lvgl.md",
                   "knowledge/devflow/platform-translate.md"]
