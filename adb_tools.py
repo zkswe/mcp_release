@@ -137,6 +137,18 @@ def shell_rc(adb, serial, cmd, timeout=DEFAULT_TIMEOUT):
     return _run(args, timeout=timeout)
 
 
+def raw(adb, serial, argv, timeout=DEFAULT_TIMEOUT):
+    """跑任意 adb 子命令（非 shell）→ (rc, stdout, stderr)。
+
+    给 `logcat -c` / `logcat -d` 这类**不是 shell 命令**的场景用；
+    返回值与 `shell_rc` 同形（超时 rc=124），避免调用方去碰私有的 `_run`。
+    """
+    a = adb or resolve_adb()
+    if not a:
+        return 1, '', 'adb 不可用'
+    return _run([a] + (['-s', serial] if serial else []) + list(argv), timeout=timeout)
+
+
 def push(adb, serial, local, remote, timeout=120):
     """`adb [-s serial] push <local> <remote>`，返回 (rc, stdout, stderr)。"""
     a = adb or resolve_adb()

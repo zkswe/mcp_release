@@ -687,6 +687,13 @@ def stage_delegated(skip_smoke, with_tests):
           (pc_tail[-1] if pc_tail else 'rc=%d' % rc)[:70])
     # v0.27.175：平台能力注册表 → 可检索知识页（knowledge/devflow/platform-capability-matrix.md）。
     # 该页让「某组件在某平台能不能用」进入检索范围（RAG 只覆盖 knowledge/，components/*.md 检索不到）。
+    # v0.27.179：生命周期与代码接口契约（lifecycle_spec.json）→ 知识页派生一致性，
+    # 顺带做「注册表钩子 == 模板骨架钩子」的交叉检查（注册表写错/模板掉钩子都会红）。
+    rc, out = _run([sys.executable, os.path.join(SUB, 'gen_lifecycle_doc.py'), '--check'])
+    lc_tail = [l for l in out.strip().splitlines()
+               if l.startswith('[PASS]') or l.startswith('[FAIL]')]
+    check(rc == 0, 'delegated: gen_lifecycle_doc --check (生命周期契约)',
+          (lc_tail[0] if lc_tail else 'rc=%d' % rc)[:70])
     rc, out = _run([sys.executable, os.path.join(SUB, 'gen_platform_cap_doc.py'), '--check'])
     pcd_tail = [l for l in out.strip().splitlines()
                 if l.startswith('[PASS]') or l.startswith('[FAIL]')]
@@ -694,6 +701,20 @@ def stage_delegated(skip_smoke, with_tests):
           (pcd_tail[-1] if pcd_tail else 'rc=%d' % rc)[:70])
     # v0.27.176：内置包注册表（package_catalog.json）→ 可检索知识页（builtin-packages.md）。
     # 「有哪些内置包 / 什么版本」原先只在 json 里，AI 检索不到，选型时不知道能直接用现成包。
+    # v0.27.180（B3）：工程骨架唯一来源 —— templates/HelloWord_Z20/src 为骨架真源，
+    # 各工程的副本（实测 18 份）必须与它一致；改骨架只需改一处 + --apply。
+    rc, out = _run([sys.executable, os.path.join(SUB, 'sync_project_skeleton.py'), '--check'])
+    sk_tail = [l for l in out.strip().splitlines()
+               if l.startswith('[PASS]') or l.startswith('[FAIL]')]
+    check(rc == 0, 'delegated: sync_project_skeleton --check (工程骨架唯一来源)',
+          (sk_tail[-1] if sk_tail else 'rc=%d' % rc)[:70])
+    # v0.27.180：多媒体能力注册表（media_capabilities.json）→ 派生页一致性 + 跨来源对账
+    # （docRef 必须真实存在、引用的包必须在 package_catalog 里）
+    rc, out = _run([sys.executable, os.path.join(SUB, 'gen_media_cap_doc.py'), '--check'])
+    mc_tail = [l for l in out.strip().splitlines()
+               if l.startswith('[PASS]') or l.startswith('[FAIL]')]
+    check(rc == 0, 'delegated: gen_media_cap_doc --check (多媒体能力知识页)',
+          (mc_tail[-1] if mc_tail else 'rc=%d' % rc)[:70])
     rc, out = _run([sys.executable, os.path.join(SUB, 'gen_package_catalog_doc.py'), '--check'])
     pk_tail = [l for l in out.strip().splitlines()
                if l.startswith('[PASS]') or l.startswith('[FAIL]')]

@@ -57,10 +57,10 @@
 | 域（=根因） | 唯一真源（机器可读） | 原理/流程文档（人写） | 消费方（派生，禁止另抄） | 状态 |
 |---|---|---|---|---|
 | ① UI 布局 ftu/json | `ui_tools/ui_schema.json` | `knowledge/uicontrols/*` | check_all / translate_ui / map_control / `flythings_ui_schema` | ✅ 已建 |
-| ② UI 引擎·生命周期·控件 API | **`lifecycle_spec.json`（待建）**| `knowledge/lifecycle/*` | `create_project` / `activity-code-skeleton.md` | ❌ 缺 |
+| ② UI 引擎·生命周期·控件 API | **`lifecycle_spec.json`（已建，见 §11）** | `knowledge/devflow/activity-lifecycle-spec.md`（派生） | `flythings_gen_logic_stub` / `activity-code-skeleton.md` | ✅ 已建 |
 | ③ OS·分区·img·升级 | `platform_capabilities.json` **（已建：能力矩阵层）**| `knowledge/devflow/{upgrade,deploy,platform}-*.md` | `build_ui_flow` / `pack_upgrade` / `selfcheck` / `gen_hardware_doc` | 🟡 B1 已落地能力矩阵 |
 | ④ 硬件外设 API（IIC/SPI/GPIO/ADC/PWM） | `hardware_catalog.json`（已有，待收编） | `knowledge/hardware/*` | `flythings_hardware_info` / 外设 demo | 🟡 半 |
-| ⑤ 多媒体 API（播放/录音/图层） | **`media_capabilities.json`（待建）**| `knowledge/media/*` | `device_screenshot(layer=video)` / demos | ❌ 缺 |
+| ⑤ 多媒体 API（播放/录音/图层） | **`media_capabilities.json`（已建，见 §12）** | `knowledge/media/media-capability-index.md`（派生） | `device_screenshot(layer=video)` / `list_packages` / demos | ✅ 已建 |
 | ⑥ 组件包 | `package_catalog.json`（已有） | `knowledge/devflow/dependency-package-docs.md` | `list_packages` / `add_package` / `manifest` | ✅ 有 |
 | ⑦ 可复用组件/样例 | `packages/` + ③ 的能力行 | `components/*/README.md`（仅原理/坑/验收） | `create_project` / `build_ui_flow` | 🟡 半 |
 | ⑧ MCP 工具契约 | `op_spec.json` | — | docstring / manifest / gate_catalog / seeAlso | ✅ 已建 |
@@ -77,7 +77,7 @@
 |---|---|---|---|---|
 | **B1**| **平台能力收编**：27 篇 `platforms.md` 的「汇总/可用性」+ `hardware_catalog.json` + `platforms.py` + `capability-boundaries.md` → `platform_capabilities.json` + loader + `gen`（重写各 platforms.md 的汇总节，其余人工内容不动）+ 门禁 | ★★★★★ | 中（读路径要一起改） | 门禁全绿；「Z20 能不能用 BLE」1 次查询得答 |
 | **B2**| **知识散落收敛**：把 §1.2 的高散概念收敛为「真源节 + 其余改指针」 | ★★★★☆ | 中（改 md 正文） | `audit_baggage` 的 scatter 数下降；检索回归不变差 |
-| **B3**| **实例骨架唯一来源**：519 个自带拷贝 → 骨架 + 生成器 + `--check`（照 `sync_ui_tools.py` 模式） | ★★★☆☆ | 中高 | 新加 example 不再手抄 19 文件；门禁盯一致性 |
+| **B3**| 实例骨架唯一来源 —— **已完成（§13）**：实测 20 个工程带骨架、171 份逐字节一致 → `templates/HelloWord_Z20/src` 为唯一来源 + `sync_project_skeleton.py --check` 进闸门 | ★★★☆☆ | 中高 | 新加 example 不再手抄 19 文件；门禁盯一致性 |
 | **B4**| ~~`bin_tools/` 平台副本收编：一份二进制 + 平台映射~~ **实测后否决**（§10）：660KB 是工作区口径，git 早已 delta/去重；改为「ELF 架构门禁 + 平台匹配规则」 | ★★☆☆☆ | 低 | 19/19 二进制架构匹配 + 门禁能抓错配 |
 | **B5**| **根目录归位 + 历史命名残留清空**：44 个根文件分层；`fyx`/`FYX_BUILD` 清空、`fuse` 分「命令名（清空）/老形态（保留）」、`RENAMED`/flat 双模式/legacy 逐项定去留；顺带修出打包清单漏 15 模块 | ★★★☆☆ | 高（import/打包/闸门连锁） | 打包与 `install.bat` 冒烟通过 |
 | **B6**| IDE 冗余出库 —— **已完成（§9）**：75 个里只有 28 个该出（本机状态 / 工具生成物），工程必需的三件保留 | ★★☆☆☆ | 低 | 门禁 `stage_no_ide_local_files` 全绿 |
@@ -335,3 +335,82 @@ ide_junk_files入库的 IDE 冗余                          （目标：0）
      （构建时间戳是构建溯源的一部分）。
 4. **没做的**：Z235X 设备端工具仍缺（需该平台工具链 + 样机，README 已如实登记，不伪造）；
    f135 缺 `ui_test`（`touch` 是首选、已覆盖其能力；不塞未实测的二进制）。
+
+## 11. 域② 落地记录（生命周期与代码接口契约，2026-10-02）
+
+照 ①③⑥⑧ 的同一套纪律（唯一真源 + 唯一消费入口 + 全派生 + `--check` 进闸门）：
+
+| 角色 | 文件 |
+|---|---|
+| 唯一真源 | `lifecycle_spec.json`：`activity`（钩子集合与语义）/ `navigation`（导航矩阵与可见性语义）/ `rules`（铁律）/ `checkAllGotchas`（check_all 误报口径）/ `controls`（控件 API 索引）/ `retrievalHints` |
+| 唯一消费入口 | `lifecycle_loader.py`（`hooks()` / `hook_names()` / `render_doc()` / `validate()`） |
+| 生成器 | `scripts/gen_lifecycle_doc.py`（派生 `knowledge/devflow/activity-lifecycle-spec.md`，`--check`） |
+| 契约用例 | `tests/test_device_probes.py` 之外的注册表自检（`validate()` + 模板交叉核对） |
+| 门禁 | 新增 `gen_lifecycle_doc --check` → 53 条 |
+
+**★ 这个域多了一道别人没有的交叉核对**：钩子名/签名的权威形态是
+`templates/HelloWord_*/src/logic/mainLogic.cc`（真机可编译）。`--hooks` 会把
+**注册表 vs 模板骨架**对账（注册表多一个钩子 / 模板少一个钩子都红）——比「只比自己生成的文档」强弱得多。
+本次实测**完全对齐**（`onUI_init` / `onUI_show` / `onUI_hide` / `onUI_quit` / `onUI_intent` /
+`onUI_Timer` / `onProtocolDataUpdate` / `onmainActivityTouchEvent` / `REGISTER_ACTIVITY_TIMER_TAB`）。
+
+**踩坑两条（都已修）**：
+1. **tags 有硬上限 16**（`kb_local.MAX_TAGS`）。生成器一开始写了 22 个 → 知识库门禁报
+   `tags 不合规: ['（共 22 个，超过 16）']`。**口语问法不该塞 tags**，它们走
+   `retrievalHints`（渲染成正文的「常见问法」节）；tags 只放检索词。
+2. 生成器里 `except OSError: continue` 被静默异常 lint 判红 → 改成显式 `[warn]`
+   （模板骨架读不了会让交叉核对变成**假通过**，必须可见）。
+
+**检索实测（如实登记，不调参）**：本页 9 条问法 top-1 **3/9**、全部 top-5 内。
+top-1 常被同内容的散文页 `activity-code-skeleton.md` / `widget-code-api.md` 拿走——那是
+**合法替代答案**（同一事实的两种载体），不是检索坏了 → `min_top1: 3` + `max_miss: 2`
+（两条口语问法被骨架散文页的上下文压到 4/5，答案仍完整可读）。
+
+## 12. 域⑤ 落地记录（多媒体能力，2026-10-03）
+
+| 角色 | 文件 |
+|---|---|
+| 唯一真源 | `media_capabilities.json`：15 条能力（播放 / 录像录音 / 抓帧 / 自绘图层 / 编解码 / 免编译库）+ 3 个图层（UI·OSD / 视频层 / 独立硬件图层） |
+| 唯一消费入口 | `media_cap_loader.py`（`capabilities` / `cap` / `availability` / `platforms_of` / `for_query` / `validate`） |
+| 生成器 | `scripts/gen_media_cap_doc.py` → `knowledge/media/media-capability-index.md`（231 行，`--check`） |
+| 契约用例 | `tests/test_media_cap.py`（11 条） |
+| 门禁 | 新增 `gen_media_cap_doc --check` |
+
+**★ 它解决了什么**：以前问「这块板能不能放视频 / 摄像头预览怎么做 / 对讲用什么」，
+答案散在 14 个包的描述与 5 篇文档里，得人肉拼；现在一次可查，且**出处可追**（每条能力带 `docRef`）。
+
+**它的两条对账**（这是本域的主要价值，不是"能加载"）：
+1. `docRef` 必须真实存在 —— 死指针会让 AI 去搜不存在的东西；
+2. `packages` 里的包必须在 `package_catalog.json` 里确有 —— 注册表说"用这个包"而包目录没有，
+   这条能力就落不了地。
+3. **包的可用性/版本不写在本表**（真源仍是 `package_catalog.json`），查询时由 loader 联接派生；
+   平台名走 `platforms.resolve()`（`f136`→`F135`，不养第二份词表）。
+
+**「口语问法」挂在每条能力上**（初版做成顶层一堆句子 + 启发式归属，判定太脆 → 改成显式归属、
+可 review，门禁要求每条能力至少 1 条）。实测 8 条问法 top-1 命中 6，另 2 条被更具体的细节页接走。
+
+## 13. B3 落地记录（工程骨架唯一来源，2026-10-03）—— 前提成立，且比原估计小得多
+
+原口径「519 个自带拷贝」是**全文件口径**。按骨架文件实测（逐字节哈希）：
+
+- 带这份 uart 骨架的工程 **20 个**（templates ×7 / demos ×8 / components/example ×5），
+  其中 **171 份逐字节一致** —— 即同一份 `Main.cpp` + `uart/*` 被复制了 18 遍；
+- **唯一一个自带骨架**的是 `demos/h264-player-v85x`（无 `uart/`，最小播放器）—— **报告出来但不动它**。
+
+动作：`templates/HelloWord_Z20/src` 作**唯一来源** + `scripts/sync_project_skeleton.py`
+（`--check` 进闸门 / `--apply` 同步）+ `tests/test_project_skeleton.py`（6 条）。
+
+**安全底线（用例钉住）**：同步范围只有 `src/Main.cpp` + `src/uart/*` ——
+**绝不碰** `src/logic/*`（各工程自己的业务）与 `src/activity/*`（IDE 生成、禁手改）。
+负向自测：往副本注入一行漂移 → `--check` 立刻报「与唯一来源不一致」；`--apply` 复原后退出码 0。
+
+**注**：与 B4 同样的口径修正 —— 逐字节相同的副本在 git 里本就是同一个 blob，**省不下仓库体积**；
+这里省的是**维护面**（骨架改一处 vs 改 18 处），所以不做"映射层"，只做"唯一来源 + 副本 + 门禁"。
+
+## 14. 顺带修掉的一处口径缺陷（derived_md.verified_day）
+
+派生页 front-matter 的 `verified_at` 原有两种坏写法：`date.today()`（每天 `--check` 都漂）
+与文件 `mtime`（**新克隆的仓库上 = 检出时间，CI 必红**）。
+统一到 `derived_md.verified_day()`：真源 `updated` → 该文件**最后一次 git 提交日** → mtime 兜底；
+每级回落原因收进可选 `why`（不静默）。同时清掉 `gen_hardware_doc` 里 `io.open('')` 那处死代码
+（它必然抛异常 → `verified_at` 长期固定成一个硬编码日期）。

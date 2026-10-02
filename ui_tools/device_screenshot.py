@@ -73,6 +73,111 @@ _ADB_CANDIDATES = [
 _ADB_TOOLS = None
 
 
+_MISSING = object()
+_DEVICE_PROBES = _MISSING
+
+
+def _repo_probes():
+    """向上逐级找仓库根的 device_probes.py（抓屏也用同一批判据，不另写一套）。"""
+    global _DEVICE_PROBES
+    if _DEVICE_PROBES is not _MISSING:
+        return _DEVICE_PROBES or None
+    cur = os.path.dirname(os.path.abspath(__file__))
+    for _ in range(4):
+        if os.path.isfile(os.path.join(cur, 'device_probes.py')):
+            if cur not in sys.path:
+                sys.path.insert(0, cur)
+            try:
+                import importlib
+                _DEVICE_PROBES = importlib.import_module('device_probes')
+            except Exception:
+                _DEVICE_PROBES = False
+            return _DEVICE_PROBES or None
+        parent = os.path.dirname(cur)
+        if parent == cur:
+            break
+        cur = parent
+    _DEVICE_PROBES = False
+    return None
+
+
+def fb_precheck(dev, fb, adb, timeout=None):
+    """**有界**预检 fb 是否可读 → {'ok','blocked','error','strays','hint'}。
+
+    为什么必须先探：fb 读取在异常情况下可能长时间不返回，直接 `dd|gzip` 会把时间全耗在等待上
+    （默认上限 180s），而且设备侧会留下没收敛的读取进程。所以先花 ≤8s 探一次，不通就立刻给结论。
+    """
+    out = {'ok': True, 'blocked': False, 'error': '', 'strays': [], 'hint': ''}
+    dp = _repo_probes()
+    if dp is None:
+        return out                                  # 探针缺失 → 不拦（保持旧行为）
+    try:
+        strays = dp.fb_strays(dev)
+    except Exception:
+        strays = []
+    out['strays'] = strays
+    pr = dp.fb_probe(dev, fb, timeout=timeout or 8)
+    out['ok'] = bool(pr.get('ok'))
+    out['blocked'] = bool(pr.get('blocked'))
+    out['error'] = pr.get('error') or ''
+    if not out['ok']:
+        out['hint'] = (
+            '设备端 %s **读不了**：%s。'
+            '处置建议：① 看有没有没收敛的读取进程（本次探到 %d 个仍在等 fb 的 dd）——'
+            '有的话先别反复重试；② 视频层抓帧可试 layer="video"（SigmaStar 专用，走 zkshot，不碰 fb）；'
+            '③ 需要继续排查时按现场设备情况定，别照搬历史结论。'
+            % (fb, out['error'] or '未知', len(strays)))
+    return out
+
+
+def stale_frame_info(dev, adb, screen, fb='/dev/fb0'):
+    """判断「这一屏可信吗」（任务 6）→ {'verdict','gui','dispIrqDelta','detail'}。
+
+    为什么要有：**应用不渲染时 fb 上留着上一帧**，看起来像正常运行 —— 这是黑屏事件里
+    误诊的元凶之一。判据（都走只读探针，不碰 fb 数据）：
+      ① GUI 进程不在 → 屏上就是**残留旧帧**（`stale-no-gui`，硬结论）
+      ② GUI 进程卡在 D 状态 → 大概率不渲染（`gui-blocked`）
+      ③ 显示中断计数在涨（SigmaStar MI）→ 显示通路在刷（`live`）——它**不等于**应用在画，
+         所以仍提示「要确认画面内容请在界面上做一次已知动作再抓」。
+    """
+    out = {'verdict': 'unknown', 'gui': '', 'dispIrqDelta': None, 'detail': ''}
+    dp = _repo_probes()
+    if dp is None:
+        return out
+    try:
+        lv = dp.gui_liveness(dev)
+    except Exception as e:
+        out['detail'] = '%s: %s' % (type(e).__name__, e)
+        return out
+    out['gui'] = lv.get('verdict') or 'unknown'
+    irq1 = (screen or {}).get('dispIrq')
+    if irq1 is None:
+        try:
+            irq1 = dp.panel_info(dev, fb).get('dispIrq')
+        except Exception:
+            irq1 = None
+    if out['gui'] == 'absent':
+        out['verdict'] = 'stale-no-gui'
+        out['detail'] = lv.get('detail') or 'GUI 进程不在'
+    elif out['gui'] == 'blocked':
+        out['verdict'] = 'gui-blocked'
+        out['detail'] = lv.get('detail') or 'GUI 进程处于 D 状态（很可能不渲染）'
+    elif irq1 is not None:
+        try:
+            time.sleep(0.4)
+            irq2 = dp.panel_info(dev, fb).get('dispIrq')
+        except Exception:
+            irq2 = None
+        if irq2 is not None:
+            out['dispIrqDelta'] = irq2 - irq1
+            out['verdict'] = 'live' if irq2 != irq1 else 'display-idle'
+            out['detail'] = ('显示中断计数 %s→%s（%+d）' % (irq1, irq2, irq2 - irq1))
+    else:
+        out['verdict'] = 'live'
+        out['detail'] = '无显示中断计数可读，仅凭 GUI 进程判定'
+    return out
+
+
 def _repo_adb_tools():
     """向上逐级找仓库根的 adb_tools.py（本文件在 <repo>/ui_tools/ 下）。"""
     global _ADB_TOOLS
@@ -773,6 +878,16 @@ def capture(device='', out='', fmt='png', scale=1.0, quality=90, fb='/dev/fb0',
         except Exception:
             rot, rot_src = 0, 'bad(%s)' % rotate
 
+    # ---- 0) fb **有界**预检（v0.27.179，任务 6）----
+    #  先花 ≤8s 定生死：读不通就立刻给结论，不让一次抓屏把时间耗在等待上（默认上限 180s）。
+    pre = fb_precheck(dev, fb, adb)
+    if not pre['ok']:
+        return {'success': False, 'device': dev, 'source': 'framebuffer(' + fb + ')',
+                'staleFrame': stale_frame_info(dev, adb, info, fb),
+                'blocked': pre['blocked'], 'fbStrays': pre['strays'],
+                'error': 'framebuffer 不可读（%s）：%s' % (fb, pre['error'] or '未知'),
+                'hint': pre['hint']}
+
     # ---- 1) 设备侧导出（必须压缩 + 必须按 pan 偏移读！实测裸 raw 7.7MB 经 WiFi pull 要 4 分钟+，
     #         busybox dd(skip=oy) + gzip 后只剩 ~37KB，0.3 秒传完）
     remote = '/tmp/.fyshot.bin'
@@ -900,6 +1015,18 @@ def capture(device='', out='', fmt='png', scale=1.0, quality=90, fb='/dev/fb0',
     else:
         img.save(path, 'PNG')
 
+    sf = stale_frame_info(dev, adb, info, fb)
+    warn = []
+    if sf['verdict'] == 'stale-no-gui':
+        warn.append('⚠️ 屏上很可能是**残留旧帧**：%s —— 画面不可信，别据此判断应用状态（黑屏事件同型）'
+                    % (sf.get('detail') or ''))
+    elif sf['verdict'] == 'gui-blocked':
+        warn.append('⚠️ GUI 进程处于 D 状态，大概率不渲染：%s' % (sf.get('detail') or ''))
+    elif sf['verdict'] == 'display-idle':
+        warn.append('显示中断计数没变（%s）：可能是静态界面，也可能应用没在画 —— '
+                    '要确认内容请在界面上做一次已知动作（点击/切页）再抓一张对比'
+                    % (sf.get('detail') or ''))
+
     return {
         'success': True,
         'path': os.path.abspath(path),
@@ -913,6 +1040,8 @@ def capture(device='', out='', fmt='png', scale=1.0, quality=90, fb='/dev/fb0',
         'pixelOrder': used_pixel,
         'rotateDeg': rot, 'rotateSource': rot_src, 'crop': crop_used,
         'scale': scale, 'elapsedSec': round(time.time() - t0, 2),
+        'staleFrame': sf,
+        'warnings': warn,
         'readHint': ('把该文件路径交给视觉模型/看图工具分析（不要把 raw 丢给模型）；'
                      '两张截图对比用 flythings_ui_visual(action="diff")（0 token 出差异清单）。'
                      '颜色红蓝互换 → 重抓时传 pixel=rgba（或 bgra）。'),

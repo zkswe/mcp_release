@@ -25,6 +25,8 @@ import platform_cap_loader as pc                   # noqa: E402
 import derived_md                                   # noqa: E402
 
 DOC = os.path.join(BASE, 'knowledge', 'devflow', 'platform-capability-matrix.md')
+SRC = os.path.join(BASE, 'platform_capabilities.json')
+
 
 PLATFORM_ORDER = ['Z20', 'Z21', 'F133', 'F135', 'T113', 'V85X', 'Z235X', 'ALL']
 
@@ -122,10 +124,8 @@ def howto():
 
 
 def build():
-    import datetime
     platforms = sorted({p for comp in pc.components() for p in pc.platforms_of(comp)} - {'ALL'})
-    parts = [FM.format(today=datetime.date.today().isoformat(),
-                       platforms=', '.join(platforms))]
+    parts = [FM.format(today=derived_md.verified_day(SRC), platforms=', '.join(platforms))]
     parts.append('\n'.join(platform_components_table()))
     parts.append('\n'.join(component_index_table()))
     parts.append('\n'.join(component_details()))

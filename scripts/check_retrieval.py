@@ -108,11 +108,23 @@ GROUPS = [
     },
     {
         'doc': 'knowledge/devflow/device-screenshot.md',
-        'name': '设备抓屏',
-        'min_top1': 2,
+        'name': '设备抓屏（工具与参数；「视频层该选哪个通道」归多媒体页）',
+        'min_top1': 2,          # 实测 2/5（Z20 屏幕截图怎么抓 / 抓屏 scale crop rotate 参数怎么用）
+        'max_miss': 3,          # 其余三条被同内容散文页或组件页接走（排 2 名内），答案仍完整
         'queries': [
             'Z20 屏幕截图怎么抓', '抓屏 双缓冲 pan 抓到旧画面', '真机截图颜色红蓝反了',
-            '抓视频层某一帧 vdec 通道', 'device_screenshot 抓不到图怎么办',
+            '抓屏 scale crop rotate 参数怎么用', 'device_screenshot 抓不到图怎么办',
+        ],
+    },
+    {
+        'doc': 'knowledge/media/media-capability-index.md',
+        'name': '多媒体能力（播放/录像/对讲/图层，唯一真源派生）',
+        'min_top1': 6,          # 实测 6/8
+        'max_miss': 1,          # 「拼墙抓不到画面」排 5 —— device-screenshot.md 有 vdec 通道细节，更具体
+        'queries': [
+            '视频播放用什么包', '摄像头预览怎么做', '录像怎么写进 TF 卡',
+            '对讲怎么实现 录音和播放', '全屏动画性能不够怎么办', 'ffmpeg 在这块板上能用吗',
+            '拼墙抓不到画面', '能不能不编译直接用设备上的库',
         ],
     },
     {
@@ -216,6 +228,25 @@ GROUPS = [
             '直接写 framebuffer 可以吗', '离屏渲染成图再显示', '视频层怎么叠加',
             'releaseLayer 是什么', '复杂动画性能不够', '自绘指针表怎么做',
             'stb 系列头文件库能用吗',
+        ],
+    },
+    {
+        'doc': 'knowledge/devflow/activity-lifecycle-spec.md',
+        'name': '生命周期与代码接口契约（钩子/导航/铁律/控件 API）',
+        # 派生物：源 lifecycle_spec.json（scripts/gen_lifecycle_doc.py）；
+        # ⚠️ 实测（2026-10-02，索引已把本页收进来）：top-1 **3/9**、9 条**全部 top-5 内**。
+        # top-1 常被同内容的散文页 activity-code-skeleton.md / widget-code-api.md 拿走 —— 那是
+        # **合法替代答案**（同一事实的两种载体，AI 拿到哪篇都能答对），不是检索坏了。
+        # 阈值**按实测登记、不调参凑数**：top-3 允许 2 条落外 ——
+        # 「空闲超时怎么判才准」「按钮回调返回 true 还是 false」被骨架散文页的上下文压过（排 4/5），
+        # 答案仍完整可读；若将来整体掉出 top-5，说明索引/内容真退化了。
+        'min_top1': 3,
+        'max_miss': 2,
+        'queries': [
+            'onUI_quit 里要做什么', '资源释放放 onUI_hide 还是 onUI_quit',
+            '切页后回调还触发吗', '隐藏页的定时器还在跑吗', '空闲超时怎么判才准',
+            '按钮回调返回 true 还是 false', 'onUI_init 什么时候调用',
+            'ZKListView 有哪三个回调', 'goBack 会走 onUI_hide 吗',
         ],
     },
     {

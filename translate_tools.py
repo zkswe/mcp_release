@@ -574,8 +574,29 @@ class _Widget(object):
         self.notes = []
 
 
-def translate(source, out='', res='1024x600', dry_run=True, gen_placeholders=False):
-    """LVGL C 源码 → FlyThings ui json。返回 envelope-ready dict（ok/…）。"""
+def _project_resolution(project_root):
+    """从工程推分辨率（迁移的默认基准屏）→ 'WxH' 或 ''。
+
+    **唯一实现在 `project_tools.read_resolution`**（prefs `resolution=` → ui/*.json）——
+    这里只是按需转调，不再维护第二套解析（复制两份必漂移）。
+    """
+    if not project_root:
+        return ''
+    try:
+        import project_tools as _pt
+        return _pt.read_resolution(project_root)
+    except Exception:
+        return ''
+
+
+def translate(source, out='', res='', dry_run=None, gen_placeholders=False):
+    """LVGL C 源码 → FlyThings ui json。返回 envelope-ready dict（ok/…）。
+
+    交互口径（2026-10-02）：
+      `out` 给了 **就默认落盘**（`dry_run` 缺省 = `not out`）——用户指明输出路径就是「要文件」，
+      再让他补一句 dry_run=False 是多余一步；只想预览就显式 dry_run=True。
+      `res` 缺省**跟随工程**（`out` 所属工程的 prefs / ui json），拿不到才退回 1024x600。
+    """
     data, merr = _control_map()
     if data is None:
         return _err('DATA_MISSING', merr, '确认 mcp_control_map.json 随包分发')
@@ -592,6 +613,19 @@ def translate(source, out='', res='1024x600', dry_run=True, gen_placeholders=Fal
     else:
         return _err('NO_SOURCE', 'source 不是已存在的文件，也不像 LVGL 源码',
                     '传 LVGL .c 文件路径，或直接传内联源码字符串', True)
+    # 项目根（out = <项目>/ui/main.json）：图片存在性核对与占位图落盘都按它定位
+    proj = ''
+    if out:
+        proj = os.path.dirname(os.path.dirname(os.path.abspath(out)))
+    # ---- 交互缺省（必须在解析 res 之前定：res 缺省要跟着工程走）----
+    res_src = 'explicit'
+    if not str(res or '').strip():
+        res = _project_resolution(proj)
+        res_src = 'project' if res else 'default'
+        if not res:
+            res = '1024x600'
+    if dry_run is None:
+        dry_run = not bool(out)
     # ---- 分辨率 ----
     m = re.match(r'^(\d{2,5})\s*[xX×*]\s*(\d{2,5})$', str(res or '').strip())
     if not m:
@@ -601,11 +635,6 @@ def translate(source, out='', res='1024x600', dry_run=True, gen_placeholders=Fal
 
     idx = _lvgl_index(data)
     targets = data.get('targets') or {}
-
-    # 项目根（out = <项目>/ui/main.json）：图片存在性核对与占位图落盘都按它定位
-    proj = ''
-    if out:
-        proj = os.path.dirname(os.path.dirname(os.path.abspath(out)))
 
     widgets = {}            # var → _Widget
     order = []              # 创建顺序（z 序 = 书写顺序，必须保序）
@@ -983,7 +1012,7 @@ def translate(source, out='', res='1024x600', dry_run=True, gen_placeholders=Fal
 
     ui_json = json.dumps(page, ensure_ascii=False, indent=2)
     result = {'ok': True, 'op': OP, 'source': src_name, 'res': '%dx%d' % (W, H),
-              'dryRun': bool(dry_run),
+              'resSource': res_src, 'dryRun': bool(dry_run),
               'summary': {'widgets': len([w for w in order if not w.is_screen]),
                           'screens': screens,
                           'byLevel': {lv: sum(1 for w in order if w.level == lv)
@@ -1004,7 +1033,9 @@ def translate(source, out='', res='1024x600', dry_run=True, gen_placeholders=Fal
               'doctrine': DOCTRINE_DOC, 'docs': KNOWLEDGE_DOC}
     if dry_run:
         result['uiJson'] = ui_json
-        result['hint'] = 'dry_run=True 未写盘；确认无误后 dry_run=False + out=<项目>/ui/main.json 落盘'
+        result['hint'] = ('dry_run=True 未写盘；给 out=<项目>/ui/main.json 即**默认落盘**（或显式 dry_run=False）'
+                          if not out else
+                          'dry_run=True 未写盘（本次显式指定预览）；确认无误后 dry_run=False 落盘')
         return result
     if not out:
         return _err('BAD_PARAMS', 'dry_run=False 时必须提供 out（输出 json 路径）',

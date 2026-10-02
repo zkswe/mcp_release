@@ -633,7 +633,7 @@
     },
     {
       "op": "flythings_translate_ui",
-      "brief": "LVGL(v8/v9) C 源码 → FlyThings ui json 迁移翻译（v1，确定性，默认 dry_run 不落盘）。",
+      "brief": "LVGL(v8/v9) C 源码 → FlyThings ui json 迁移翻译（v1，确定性；给 out 就落盘）。",
       "args": [
         "source",
         "out",
@@ -728,9 +728,9 @@
     }
   ],
   "docs": {
-    "knowledgeFiles": 106,
+    "knowledgeFiles": 108,
     "wikiFiles": 16,
-    "ragChunks": 1584,
-    "ragPaths": 120
+    "ragChunks": 1641,
+    "ragPaths": 122
   }
 }

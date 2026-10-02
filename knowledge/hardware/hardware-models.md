@@ -4,8 +4,8 @@ title: 硬件型号库（平台 → 型号 → 规格/预设参数）
 category: hardware
 status: verified
 confidence: offline
-verified_at: 2026-09-29
-machine_verified_at: 2026-09-29
+verified_at: 2026-10-02
+machine_verified_at: 2026-10-02
 stale_days: 365
 origin: total
 source: scripts/gen_hardware_doc.py（由 hardware_catalog.json 派生）

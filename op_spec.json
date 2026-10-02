@@ -368,7 +368,7 @@
       ]
     },
     "flythings_translate_ui": {
-      "summary": "LVGL(v8/v9) C 源码 → FlyThings ui json 迁移翻译（v1，确定性，默认 dry_run 不落盘）。",
+      "summary": "LVGL(v8/v9) C 源码 → FlyThings ui json 迁移翻译（v1，确定性；给 out 就落盘）。",
       "risk": "write",
       "category": "layout",
       "stage": "design",
@@ -378,14 +378,27 @@
       "params": [
         {
           "name": "source",
-          "desc": ".c 路径或内联源码；out：落盘路径（dry_run=False 必填）；res：分辨率（默认 1024x600）映射走 mcp_control_map.json（L1~L5）；未识别调用不静默丢、缺图与降级分级处置；识别形态与限制 knowledge/devflow/translate-ui-lvgl.md，换算铁律 platform-translate.md。"
+          "desc": ".c 路径或内联源码"
+        },
+        {
+          "name": "out",
+          "desc": "落盘路径（**给了 out 即默认落盘**，只预览才显式 dry_run=True）"
+        },
+        {
+          "name": "res",
+          "desc": "迁移基准屏（**缺省跟随 out 所属工程**的 prefs/ui json，拿不到才 1024x600）"
+        },
+        {
+          "name": "dry_run",
+          "desc": "缺省 = not out（给 out 就落盘）；要预览显式传 True"
         }
       ],
       "docRef": "knowledge/devflow/translate-ui-lvgl.md",
       "seeAlso": [
         "knowledge/devflow/translate-ui-lvgl.md",
         "knowledge/devflow/platform-translate.md"
-      ]
+      ],
+      "flow": "读源码 → 按 mcp_control_map.json 逐控件映射（L1~L5 等价级）→ 出 ui json；未识别调用不静默丢、缺图与降级分级处置；返回 resSource 说明基准屏来自哪。"
     },
     "flythings_read_json": {
       "summary": "解析 .json 布局文件为 JSON（分辨率、控件列表、caption→id 映射）。传入 json 完整路径。",

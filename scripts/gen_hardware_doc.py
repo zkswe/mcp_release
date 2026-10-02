@@ -27,15 +27,13 @@ HEADER_NOTE = '> 本文件由 scripts/gen_hardware_doc.py 生成'
 def front_matter():
     """派生文档的 front-matter（P1 起 knowledge 文档都要带元数据）。
 
-    verified_at 取 hardware_catalog.json 的 mtime（**不能用 today()**，否则每天 --check 都漂）。
+    verified_at = 真源的"最后变动日"（走 `derived_md.verified_day`：真源 `updated` → 该文件最后提交日
+    → mtime。**不能用 today()**（每天 --check 都漂），也**不能只用 mtime**（新克隆上是检出时间）。
     """
     import kb_local as kbl
+    import derived_md
     cat = os.path.join(BASE, 'hardware_catalog.json')
-    try:
-        day = io.open('') and __import__('time').strftime(
-            '%Y-%m-%d', __import__('time').localtime(os.path.getmtime(cat)))
-    except OSError:
-        day = '2026-09-29'
+    day = derived_md.verified_day(cat)
     return {'id': 'hardware-hardware-models',
             'title': '硬件型号库（平台 → 型号 → 规格/预设参数）',
             'category': 'hardware', 'platforms': [],

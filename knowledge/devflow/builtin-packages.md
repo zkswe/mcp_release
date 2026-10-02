@@ -4,7 +4,7 @@ title: 内置依赖包总览（包键 / 通用包 / 包名索引）
 category: devflow
 status: review
 confidence: manual
-verified_at: 2026-10-02
+verified_at: 2026-09-17
 stale_days: 180
 origin: derived
 source: 由 package_catalog.json 派生（scripts/gen_package_catalog_doc.py）；包名与版本逐字取自注册表

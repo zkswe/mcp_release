@@ -730,12 +730,13 @@ def flythings_ui_schema(control_type: str = '', include: str = 'all') -> str:
     return json.dumps(out, ensure_ascii=False)
 
 
-def flythings_translate_ui(source: str, out: str = '', res: str = '1024x600',
-                           dry_run: bool = True, gen_placeholders: bool = False) -> str:
-    """LVGL(v8/v9) C 源码 → FlyThings ui json 迁移翻译（v1，确定性，默认 dry_run 不落盘）。
+def flythings_translate_ui(source: str, out: str = '', res: str = '',
+                           dry_run: bool = None, gen_placeholders: bool = False) -> str:
+    """LVGL(v8/v9) C 源码 → FlyThings ui json 迁移翻译（v1，确定性；给 out 就落盘）。
 
+    读源码 → 按 mcp_control_map.json 逐控件映射（L1~L5 等价级）→ 出 ui json；未识别调用不静默丢、缺图与降级分级处置；返回 resSource 说明基准屏来自哪。
     拿到 LVGL 工程/片段要迁过来时用；单控件对应先查 flythings_map_control。
-    参数：source→.c 路径或内联源码；out：落盘路径（dry_run=False 必填）；res：分辨率（默认 1024x600）映射走 mcp_control_map.json（L1~L5）；未识别调用不静默丢、缺图与降级分级处置；识别形态与限制 knowledge/devflow/translate-ui-lvgl.md，换算铁律 platform-translate.md。
+    参数：source→.c 路径或内联源码；out→落盘路径（**给了 out 即默认落盘**，只预览才显式 dry_run=True）；res→迁移基准屏（**缺省跟随 out 所属工程**的 prefs/ui json，拿不到才 1024x600）；dry_run→缺省 = not out（给 out 就落盘）；要预览显式传 True
     """
     return json.dumps(trt.translate(source, out, res, dry_run, gen_placeholders),
                       ensure_ascii=False)

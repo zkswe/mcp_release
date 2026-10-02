@@ -13,6 +13,12 @@ except Exception as _e:   # 不阻断（无 adb 也能 build；launch 时才需�
     _ADB = None
     _ADB_ERR = repr(_e)
 
+try:                      # 设备侧只读探针（launch 活性 / 运行时指纹 / 面板信息）
+    import device_probes as _dprobe
+except Exception as _e2:  # 不阻断（探针缺失只影响「对账/活性」这两条检查）
+    _dprobe = None
+    _DPROBE_ERR = repr(_e2)
+
 # ---------- 工具链路径（可配置 + 自动探测）----------
 # 优先级：环境变量 FLYTHINGS_FUN_DIR（用户显式指定，最高）> 包内 toolchain（随包分发）> 标准安装目录
 _BASE = os.path.dirname(os.path.abspath(__file__))
@@ -489,16 +495,12 @@ def _detect_project_info(root):
         if m:
             info['platform'] = m.group(1)
             info['sources']['platform'] = 'Manifest.xml'
-    prefs = os.path.join(root, '.settings', 'com.zksw.flythings.easyui.prefs')
-    if os.path.isfile(prefs):
-        try:
-            ptext = open(prefs, encoding='utf-8', errors='replace').read()
-        except Exception:
-            ptext = ''
-        m = re.search(r'(?m)^resolution=([\w]+)$', ptext)
-        if m:
-            info['resolution'] = m.group(1)
-            info['sources']['resolution'] = '.settings prefs'
+    _r = read_resolution(root)
+    if _r:
+        info['resolution'] = _r.replace('x', 'x')
+        info['sources']['resolution'] = ('.settings prefs'
+                                        if os.path.isdir(os.path.join(root, '.settings'))
+                                        else 'ui json')
     if not info['resolution']:
         ui_dir = os.path.join(root, 'ui')
         if os.path.isdir(ui_dir):
@@ -566,6 +568,19 @@ def flythings_validate_project(root):
                          'msg': '无法确认硬件平台与屏幕分辨率（缺 Manifest 平台属性或 ui 布局/设置），'
                                 '需要向用户询问平台（%s）与分辨率（如 800x480）'
                                 % '/'.join(_platforms.supported())})
+
+    # 0.9 分辨率 vs 模板（480×480 灰窗事件防线的**离线半部**；在线半部在 build_ui_flow）：
+    #     工程分辨率与所用平台模板不一致 → 大概率是改错（也可能是刻意适配不同面板，所以要人确认）。
+    tpl_root = os.path.join(_BASE, 'templates')
+    tpl_res = ''
+    if project_info.get('platform'):
+        tpl_res = read_resolution(_template_dir(project_info['platform']) or '')
+    if tpl_res and project_info.get('resolution') and tpl_res != project_info['resolution']:
+        warnings.append({'file': 'ui', 'type': 'resolution_differs_from_template',
+                         'msg': '工程分辨率 %s 与 %s 模板的 %s 不同 —— 确认是**刻意适配另一块面板**'
+                                '（那就继续）还是改错；分辨率与面板不符会灰窗/黑屏，'
+                                '真机流程还会再核一次'
+                                % (project_info['resolution'], project_info['platform'], tpl_res)})
 
     # 1. logic 层
     logic_dir = os.path.join(src, 'logic')
@@ -1477,6 +1492,223 @@ def _device_sync_check(project_root, serial, platform):
     return out
 
 
+def read_resolution(path):
+    """从工程目录读屏幕分辨率 → 'WxH' 或 ''（**唯一实现**，别再写第二套）。
+
+    顺序：`.settings/*.prefs` 的 `resolution=` → `ui/*.json` 的 `resolution` 字段。
+    `_detect_project_info` 与 `translate_tools`（迁移基准屏缺省跟随工程）都用它。
+    """
+    if not path or not os.path.isdir(path):
+        return ''
+    _read_errors = []          # 读失败的文件（此处只作说明用，不阻断取分辨率）
+    st = os.path.join(path, '.settings')
+    if os.path.isdir(st):
+        for fn in sorted(os.listdir(st)):
+            if not fn.endswith('.prefs'):
+                continue
+            try:
+                with open(os.path.join(st, fn), encoding='utf-8', errors='replace') as fh:
+                    txt = fh.read()
+            except OSError as e:
+                # 读不了 = 这个文件给不出分辨率（不是错），继续看下一个；不静默跳过而不说明
+                txt = ''
+                _read_errors.append('%s（%s）' % (fn, type(e).__name__))
+            m = re.search(r'(?m)^resolution=(\d{2,5})x(\d{2,5})\s*$', txt)
+            if m:
+                return '%sx%s' % (m.group(1), m.group(2))
+    ui = os.path.join(path, 'ui')
+    if os.path.isdir(ui):
+        for fn in sorted(os.listdir(ui)):
+            if not fn.endswith('.json'):
+                continue
+            try:
+                with open(os.path.join(ui, fn), encoding='utf-8', errors='replace') as fh:
+                    d = json.loads(fh.read())
+            except Exception:
+                continue
+            r = d.get('resolution') or {}
+            if r.get('width') and r.get('height'):
+                return '%sx%s' % (r['width'], r['height'])
+    return ''
+
+
+def _project_easyui_revision(root):
+    """工程**解析到**的 easyui 版本 → (version, source)。
+
+    来源是工具生成物（非手写）：`.fsc-lock.json`（09-28 起）/ `.fun-lock.json`（旧名）/ `.deps.lock`。
+    取 `id=easyui` 那条的 `revision` —— Manifest 里写的是**范围**（如 `^2.2.0`），真版本在锁文件里
+    （见 knowledge/devflow/easyui-version-capability.md）。拿不到回 ('', '')，不猜。
+    """
+    for name in ('.fsc-lock.json', '.fun-lock.json'):
+        fp = os.path.join(root, name)
+        if not os.path.isfile(fp):
+            continue
+        try:
+            with open(fp, encoding='utf-8', errors='replace') as fh:
+                data = json.loads(fh.read())
+        except Exception:
+            continue
+        for _plat, items in (data.get('dependencies') or {}).items():
+            if isinstance(items, dict) and isinstance(items.get('easyui'), dict):
+                rev = items['easyui'].get('revision') or items['easyui'].get('version')
+                if rev:
+                    return str(rev), name
+    dp = os.path.join(root, '.deps.lock')
+    if os.path.isfile(dp):
+        try:
+            with open(dp, encoding='utf-8', errors='replace') as fh:
+                txt = fh.read()
+        except OSError:
+            txt = ''
+        m = re.search(r'"id"\s*:\s*"easyui".*?"revision"\s*:\s*"([^"]+)"', txt, re.S)
+        if m:
+            return m.group(1), '.deps.lock'
+    mf = os.path.join(root, 'Manifest.xml')
+    if os.path.isfile(mf):
+        try:
+            with open(mf, encoding='utf-8', errors='replace') as fh:
+                txt = fh.read()
+        except OSError:
+            txt = ''
+        m = re.search(r'<package\s+id="easyui"\s+version="([^"]+)"', txt)
+        if m:
+            return m.group(1), 'Manifest.xml(范围,非真版本)'
+    return '', ''
+
+
+def _device_runtime_pre_launch(serial, platform, project_info, root):
+    """launch **前**的设备侧核对 → {'step','warnings'}（任务 7 + 8）。
+
+    ① easyui 同源对账：工程解析到的 easyui 版本 vs **设备固件**的 `ro.easyui.version`。
+       编译期版本 ≠ 设备运行库版本（控件由运行库提供）；不一致时 AI 判「某控件存在」会判错。
+    ② 面板分辨率核对：工程分辨率 vs 设备面板（fb 可见宽 + 硬件层目标）→ 480×480 灰窗事件防线。
+    """
+    out = {'step': None, 'warnings': [], 'easyui': None, 'panel': None}
+    if _dprobe is None or not serial:
+        return out
+    easyui = {}
+    panel = {}
+    try:
+        easyui = _dprobe.easyui_runtime(serial, platform)
+    except Exception as e:
+        easyui = {'error': '%s: %s' % (type(e).__name__, e)}
+    try:
+        panel = _dprobe.panel_info(serial)
+        hw = _dprobe.hw_panel_target(serial, panel.get('visibleWidth'))
+        if hw.get('resolution'):
+            panel['panelResolution'] = hw['resolution']
+            panel['hwTarget'] = hw.get('raw')
+    except Exception as e:
+        panel = {'error': '%s: %s' % (type(e).__name__, e)}
+    out['easyui'] = easyui
+    out['panel'] = panel
+
+    # ① easyui 对账
+    local_rev, local_src = _project_easyui_revision(root)
+    fw = (easyui or {}).get('firmwareVersion') or ''
+    if fw and local_rev:
+        lv, fv = local_rev.lstrip('^~>=<v '), fw.strip()
+        if lv.split('.')[0] != fv.split('.')[0]:
+            out['warnings'].append(
+                '⚠️ easyui 版本不同源：工程解析到 %s（%s），而**设备固件**里是 %s —— '
+                '控件由设备运行库提供，主版本不一致时「某控件在不在」的判定会错'
+                '（见 knowledge/devflow/easyui-version-capability.md；'
+                'launch 推的是 app 侧库，不会改设备固件里的 easyui）'
+                % (local_rev, local_src or '来源未知', fw))
+    # ② 面板分辨率核对
+    proj_res = (project_info or {}).get('resolution') or ''
+    panel_res = (panel or {}).get('panelResolution') or ''
+    if not panel_res and (panel or {}).get('visibleWidth'):
+        panel_res = '%sx?' % panel['visibleWidth']
+    if proj_res and panel_res and not panel_res.endswith('x?'):
+        pw, ph = (panel_res.split('x') + ['', ''])[:2]
+        jw, jh = (proj_res.split('x') + ['', ''])[:2]
+        rotated = (jw, jh) == (ph, pw)          # 竖屏/横屏旋转是正常的
+        if (jw, jh) != (pw, ph) and not rotated:
+            out['warnings'].append(
+                '⚠️ 工程分辨率 %s 与设备面板 %s 不一致（面板来源：%s）——'
+                '尺寸不符会出现灰窗/黑屏或布局错位；确认是刻意适配再继续'
+                % (proj_res, panel_res,
+                   'fb 可见宽 + ' + ((panel or {}).get('hwTarget') or '硬件层目标')
+                   if (panel or {}).get('hwTarget') else 'fb 可见宽'))
+    elif proj_res and panel_res.endswith('x?'):
+        out['warnings'].append(
+            '设备面板宽度是 %s，与工程分辨率 %s 的宽不同 —— 面板高度没能自动判定，请人工核对'
+            % (panel_res[:-1], proj_res))
+    return out
+
+
+def _device_cfg_paths(serial):
+    """launch **后**核对设备 EasyUI.cfg 里的资源目录是否真的存在 → {'cfg','missing','paths'}。
+
+    `resPath` / `languagePath` / `font` 任一路径不存在 → 界面走 fallback（缺字/英文/空图），
+    而这类问题只看 logcat 是不报错的。历史坑：`/tmp/tr 不存在`（i18n 目录没推上去）。
+    """
+    out = {'cfg': '', 'missing': [], 'paths': {}}
+    if _dprobe is None or not serial:
+        return out
+    bb = _dprobe.busybox(serial) or 'busybox'
+    for cand in ('/tmp/EasyUI.cfg', '/res/etc/EasyUI.cfg', '/mnt/extsd/EasyUI.cfg'):
+        txt = _dprobe.sh(serial, 'cat %s 2>/dev/null' % cand, timeout=10)
+        if txt and '{' in txt:
+            out['cfg'] = cand
+            break
+    if not out['cfg']:
+        return out
+    for key in ('resPath', 'languagePath', 'font'):
+        m = re.search(r'"%s"\s*:\s*"([^"]+)"' % key, txt)
+        if not m:
+            continue
+        path = m.group(1)
+        out['paths'][key] = path
+        check = ('test -d %s' % path) if not path.lower().endswith(('.ttf', '.ttc')) \
+            else ('test -f %s' % path)
+        got = _dprobe.sh(serial, '%s %s && echo __yes__' % (bb, check), timeout=8)
+        if '__yes__' not in (got or ''):
+            out['missing'].append('%s=%s' % (key, path))
+    return out
+
+
+def _launch_liveness(serial):
+    """launch **后**验「界面真的起来了」→ {'verdict','evidence','liveness','detail'}（任务 5）。
+
+    verdict：
+      `confirmed`  —— 看到强证据（`registerActivity name:` / `onUI_show` / `onUI_init`），
+                      或弱证据 + GUI 进程活着
+      `suspicious` —— 只看到弱证据/什么都没有，且 GUI 进程**不在**或卡在 D 状态
+                      → 这就是黑屏事件同型（推送成功但界面没起来）
+      `unknown`    —— logcat 或进程表都拿不到（**不要据此断言**）
+    """
+    out = {'verdict': 'unknown', 'evidence': None, 'liveness': None, 'detail': ''}
+    if _dprobe is None or not serial:
+        out['detail'] = '设备探针不可用'
+        return out
+    ev = {}
+    lv = {}
+    try:
+        ev = _dprobe.launch_evidence(serial, wait=6)
+    except Exception as e:
+        ev = {'tier': 'none', 'error': '%s: %s' % (type(e).__name__, e)}
+    try:
+        lv = _dprobe.gui_liveness(serial)
+    except Exception as e:
+        lv = {'verdict': 'unknown', 'error': '%s: %s' % (type(e).__name__, e)}
+    out['evidence'] = ev
+    out['liveness'] = lv
+    tier = ev.get('tier') or 'none'
+    gui = lv.get('verdict') or 'unknown'
+    if tier == 'strong' or (tier == 'weak' and gui == 'alive'):
+        out['verdict'] = 'confirmed'
+        out['detail'] = 'logcat 见「%s」（%s），GUI 进程 %s' % (
+            ev.get('marker') or '?', ev.get('line') or '?', gui)
+    elif gui in ('absent', 'blocked'):
+        out['verdict'] = 'suspicious'
+        out['detail'] = '%s；logcat 证据=%s' % (lv.get('detail') or '', tier)
+    else:
+        out['detail'] = '证据不足（logcat tier=%s，GUI=%s）' % (tier, gui)
+    return out
+
+
 def flythings_build_ui_flow(project_root, with_launch=True, device='',
                            font_check='auto', font_tier=''):
     """FlyThings UI 构建流程（关键步骤，不可跳过）：
@@ -1669,6 +1901,9 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
     pushed = False
     devinfo = {'serial': '', 'model': '', 'platformMatch': '', 'adb': '', 'adbSource': '',
                'needDeviceInput': False, 'installHint': '', 'deviceSync': None}
+    runtime = {}          # launch 前核对（easyui 对账 / 面板分辨率）
+    liveness = {}         # launch 后活性（logcat 证据 + GUI 进程）
+    cfginfo = {}          # launch 后设备 EasyUI.cfg 资源目录核对
     if with_launch:
         gate = gate or _launch_gate(plat, device)
         devinfo['serial'] = gate['serial']
@@ -1701,6 +1936,17 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
                       "chosen": gate['serial'], "model": gate['model'],
                       "platformMatch": gate['platformMatch'],
                       "adbSource": gate['adbSource']})
+        # ①.5 设备运行时核对（v0.27.179，任务 7/8）：**launch 前**就能拦的两件事
+        #     easyui 同源对账（编译期版本 ≠ 设备运行库版本）+ 面板分辨率核对（灰窗事件防线）
+        runtime = _device_runtime_pre_launch(gate['serial'], plat, project_info, project_root)
+        if runtime.get('easyui') or runtime.get('panel'):
+            steps.append({"step": "check_device_runtime", "success": not runtime['warnings'],
+                          "easyui": runtime.get('easyui'), "panel": runtime.get('panel'),
+                          "detail": ('easyui 固件 %s / 工程 %s；面板 %s'
+                                     % ((runtime.get('easyui') or {}).get('firmwareVersion') or '?',
+                                        _project_easyui_revision(project_root)[0] or '?',
+                                        (runtime.get('panel') or {}).get('panelResolution') or '?'))})
+        warnings.extend(runtime['warnings'])
         if gate['platformMatch'] == 'unknown':
             warnings.append('设备型号无法比对平台（model=%s，%s）：'
                             'fun launch 自己会做平台校验（不匹配会 FATAL platform not match），'
@@ -1737,6 +1983,46 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
             return res
         launched = True
         pushed = True
+        # ⑤.1 launch 活性（v0.27.179，任务 5）：fun 返回 0 只说明**推送成功**，不说明界面起来了。
+        #      黑屏事件的形态就是「推送成功 + 面板黑着」却回了 launched=true —— 所以这里按
+        #      logcat 证据 + GUI 进程活性复核；**证据不足不报 launched=true**。
+        liveness = {}
+        if _dprobe is not None:
+            try:
+                liveness = _launch_liveness(gate['serial'])
+            except Exception as e:
+                liveness = {'verdict': 'unknown', 'detail': '%s: %s' % (type(e).__name__, e)}
+            steps.append({"step": "verify_launch_liveness", "success": liveness.get('verdict') == 'confirmed',
+                          "verdict": liveness.get('verdict'),
+                          "marker": (liveness.get('evidence') or {}).get('marker'),
+                          "guiProcess": (liveness.get('liveness') or {}).get('verdict'),
+                          "detail": liveness.get('detail')})
+            if liveness.get('verdict') == 'suspicious':
+                launched = False
+                warnings.append('⚠️ launch 推送成功，但**没看到界面起来的证据**：%s。'
+                                '三件事按序查：① logcat 有无异常/缺库；'
+                                '② flythings_device_screenshot 抓屏看实际画面（能抓但画面黑 = 应用没画）；'
+                                '③ 设备端进程是否卡在 D 状态（D 状态 kill 不掉，需断电重启）。'
+                                % (liveness.get('detail') or '证据不足'))
+            elif liveness.get('verdict') == 'unknown':
+                warnings.append('界面是否真的起来**无法确认**（%s）——不要仅凭 launched 下结论，'
+                                '建议抓屏复核。' % (liveness.get('detail') or '证据不足'))
+        # ⑤.2 设备 EasyUI.cfg 的资源目录核对（任务 9）：resPath/languagePath/font 不存在时
+        #      界面静默走 fallback（缺字/英文/空图），logcat 不报错 —— 历史坑 /tmp/tr 不存在。
+        cfginfo = {}
+        try:
+            cfginfo = _device_cfg_paths(gate['serial'])
+        except Exception as e:
+            cfginfo = {'error': '%s: %s' % (type(e).__name__, e)}
+        if cfginfo.get('missing'):
+            steps.append({"step": "check_device_cfg_paths", "success": False,
+                          "cfg": cfginfo.get('cfg'), "missing": cfginfo['missing'],
+                          "paths": cfginfo.get('paths'),
+                          "detail": '设备 EasyUI.cfg 里这些路径不存在 → 界面会走 fallback（缺字/英文/空图）'})
+            warnings.append('⚠️ 设备 %s 的资源路径不存在：%s —— launch 只推 app 与 %s，'
+                            '**i18n/字体目录要随包或手动补**（历史坑 /tmp/tr 不存在）'
+                            % (cfginfo.get('cfg'), '、'.join(cfginfo['missing']),
+                               cfginfo.get('paths', {}).get('resPath') or 'resPath'))
         sync = _device_sync_check(project_root, gate['serial'], plat)
         devinfo['deviceSync'] = sync
         # ⑤.5 字体部署后复查（v0.27.87）：本次投递过字体 → 回看设备侧字库现状
@@ -1781,6 +2067,12 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
            "staleOnDevice": bool(devinfo['deviceSync'] and devinfo['deviceSync']['stale'])
            if devinfo['deviceSync'] else False,
            "launchSkipped": (not with_launch)}
+    if with_launch:
+        res['launchLiveness'] = liveness.get('verdict') or 'unknown'
+        res['launchEvidence'] = liveness.get('evidence')
+        res['deviceRuntime'] = {'easyui': runtime.get('easyui'),
+                                'panel': runtime.get('panel'),
+                                'cfgPaths': cfginfo}
     if font_fields is not None:
         res['fontCheck'] = font_fields
     if devinfo['deviceSync']:

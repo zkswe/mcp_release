@@ -28,20 +28,20 @@
 
 | # | 任务 | 状态 | 说明 |
 |---|---|---|---|
-| 5 | **launch 活性检查**：logcat 无 onUI_show 不报 launched:true | 🤖+设备 | 黑屏事件核心教训落地 |
-| 6 | **fb0 抓屏陈旧帧检测**| 🤖+设备 | 应用不渲染时 fb0 显示旧帧（本次误诊元凶之一），截图带警告 |
-| 7 | easyui 包 vs 设备运行时同源对账（getprop 指纹） | 🤖+设备 | build_ui_flow 前置告警 |
-| 8 | 工程分辨率 vs 面板分辨率核对告警 | 🤖 | 480×480 灰窗事件防线，validate_project 加检查项 |
-| 9 | fun launch cfg 修正（**touchDev 半项已闭环**） | 👤+🤖 | touchDev：工程 cfg **不再写触摸节点**（系统自识别）→ 工程侧无 event1/event4 可对错，该项失效；剩 `/tmp/tr 不存在` 待确认出厂口径 |
-| 10 | translate_ui 交互：给了 out 默认落盘；res 默认跟随工程 | 🤖 | 契约测试同步 |
+| 5 | **launch 活性检查** ✅ | 已完成 | 实测框架**不打 onUI_show** → 强判据用 `registerActivity name:`；分强/弱两档 + 轮询 6s；suspicious ⇒ 不报 launched=true（`device_probes.launch_evidence` / `_launch_liveness`） |
+| 6 | **fb0 抓屏陈旧帧检测** ✅ | 已完成 | 返回体带 `staleFrame`（stale-no-gui / gui-blocked / display-idle / live）；抓屏前先做 ≤8s **有界预检**（读不通立刻给结论，不把时间耗在等待上） |
+| 7 | easyui 包 vs 设备运行时同源对账 ✅ | 已完成 | 新增 `check_device_runtime` step：工程锁文件的 revision vs `getprop ro.easyui.version`；固件版本与实际运行库**分开报** |
+| 8 | 工程分辨率 vs 面板分辨率核对 ✅ | 已完成 | 离线半部：validate_project 比模板分辨率；在线半部：build_ui_flow 比 fb 可见宽 + 硬件层目标（`RGB_LCD480480`） |
+| 9 | fun launch cfg 修正 ✅（两项都闭环） | 已完成 | ① touchDev：工程 cfg 不再写触摸节点；② `/tmp/tr 不存在` → 新增 `check_device_cfg_paths` step **自动检出**（实测报 `languagePath=/tmp/tr/` 缺失并给处置） |
+| 10 | translate_ui 交互 ✅ | 已完成 | `out` 给了即默认落盘（`dry_run` 缺省 = `not out`）；`res` 缺省跟随工程（复用 `project_tools.read_resolution` 唯一实现）；返回体加 `resSource` |
 
 ## 四、场景①④ 强化（推广 P0，细节见 SCENARIO_COVERAGE.md）
 
 | # | 任务 | 状态 | 说明 |
 |---|---|---|---|
-| 11 | **C++ 回调桩生成 op**（场景④ 换皮→换功能） | 🤖 | 从 json 控件表生成 logic/*.cc 骨架；编译断链实测踩过，价值最高 |
+| 11 | **C++ 回调桩生成 op**（场景④ 换皮→换功能）✅ | 已完成 | `flythings_gen_logic_stub`：读 ui/*.json 控件表 → 补 `src/logic/*.cc` 回调桩（只补不改）；回调表真源进 `ui_schema.json` 的 `callbacks` |
 | 12 | **页面模式库**knowledge/patterns/ ×6（仪表盘/温控/音乐/设置/摄像头/门禁） | 👤 选题确认 +🤖 制作 | 场景① 质量天花板；每模式 = md + 可 create 模板，各真机验证 1 个 |
-| 13 | **场景 Skill 四件套**（idea-to-app/figma-import/migrate/reskin） | 🤖 起草 +👤 审 | 最高杠杆推广物，纯文档，全 agent 可加载 |
+| 13 | **场景 Skill 四件套**（idea-to-app/figma-import/migrate/reskin）✅ | 已起草（待👤审） | 已落到用户级 skill，含「何时用 / 分步流程 / 铁律速查」+ 统一验收闭环 |
 
 ## 五、推广与生态（P1-P3，需团队排期）
 

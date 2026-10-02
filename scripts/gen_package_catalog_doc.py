@@ -28,6 +28,8 @@ import derived_md                                  # noqa: E402
 
 CATALOG = os.path.join(BASE, 'package_catalog.json')
 DOC = os.path.join(BASE, 'knowledge', 'devflow', 'builtin-packages.md')
+SRC = os.path.join(BASE, 'package_catalog.json')
+
 
 # 分层阈值：跨多少个包键算「通用 / 常见 / 个别」
 TIER_COMMON = 8
@@ -167,7 +169,7 @@ def build():
     ver, desc = aggregate(cat)
     import platforms as pl
     plats = sorted({pl.resolve(k).get('canonical') or k for k in cat if _resolvable(pl, k)})
-    parts = [FM.format(today=datetime.date.today().isoformat(), platforms=', '.join(plats)),
+    parts = [FM.format(today=derived_md.verified_day(SRC), platforms=', '.join(plats)),
              '\n'.join(keys_table(cat)),
              '\n'.join(common_table(cat, ver, desc)),
              '\n'.join(index_section(cat, ver, desc)),

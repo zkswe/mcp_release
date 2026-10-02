@@ -1,0 +1,391 @@
+{
+  "authority": {
+    "role": "多媒体能力（播放 / 录像 / 录音 / 图层 / 抓帧 / 可借库）的唯一真源",
+    "consumers": [
+      "media_cap_loader.py（唯一消费入口）",
+      "flythings_knowledge_search 的派生知识页 knowledge/media/media-capability-index.md",
+      "flythings_list_packages / flythings_query_package（包侧）",
+      "flythings_device_screenshot(layer=video)（抓帧侧）"
+    ],
+    "note": "**包的可用性与版本不写在本表**（唯一真源 = package_catalog.json）。本表只登记「能力 → 用哪个包/库/入口 + 限制 + 出处」；查询时由 loader 与 package_catalog 联接得到平台可用性，避免第二份清单。",
+    "changeHere": "改「某个多媒体能力用什么实现 / 有什么限制 / 出处是哪篇」= 改本文件；改「包在哪些平台可用 / 什么版本」= 改 package_catalog.json。"
+  },
+  "specVersion": "1.0.0",
+  "updated": "2026-10-03",
+  "sources": [
+    "package_catalog.json（包可用性/版本，唯一真源，本表只引用包名）",
+    "knowledge/devflow/device-preinstalled-libs.md（设备预装可借库，免编译）",
+    "knowledge/v85x/dvr-recorder-guide.md（DVR 端到端 Playbook）",
+    "knowledge/devflow/custom-render-paths.md（渲染/图层的五条路径）",
+    "knowledge/devflow/device-screenshot.md（视频层抓帧 / vdec 通道）"
+  ],
+  "kinds": {
+    "playback": "播放（视频/音频）",
+    "record": "录像 / 录音",
+    "capture": "抓帧 / 取图",
+    "render": "自绘 / 图层",
+    "decode": "编解码 / 图像",
+    "lib": "设备预装可借库（免编译）"
+  },
+  "platformKeys": {
+    "note": "本表出现的平台键来自 package_catalog.json 的包键（f133/f136/z20/z21/t113/t113emmc/t113stdcxx/v85x/v85xemmc/z261/z235x…）；跨平台语义见 platform_capabilities.json。"
+  },
+  "layers": [
+    {
+      "id": "ui-osd",
+      "title": "UI(OSD) 层",
+      "node": "/dev/fb0",
+      "note": "框架（zkgui）画的都在这层。抓 fb0 拿到的就是这层 —— 屏上放过视频时，这层可能是空的/黑的。",
+      "docRef": "knowledge/devflow/device-screenshot.md"
+    },
+    {
+      "id": "video",
+      "title": "视频层（MI 硬件图层）",
+      "platforms": [
+        "Z20",
+        "Z21"
+      ],
+      "entry": "flythings_device_screenshot(layer='video') → 设备端 zkshot 从 vdec 输出口取帧",
+      "note": "与 fb0 双缓冲无关；多路/拼墙要指定 vdec 通道（拼墙播放器在 chn 1，工具默认 chn 0）。",
+      "rules": [
+        "屏上在放视频而 fb0 抓出来是黑的 = 正常（视频在硬件图层，不在 OSD 层）",
+        "多路/拼墙抓帧必须给 vdec_chn，否则取帧失败或空帧",
+        "别把「屏保 = chn 0」当通则：屏保的软解路径与拼墙的硬解通道是两回事"
+      ],
+      "docRef": "knowledge/devflow/device-screenshot.md"
+    },
+    {
+      "id": "disp",
+      "title": "独立硬件图层（disp layer）",
+      "platforms": [
+        "V85X"
+      ],
+      "entry": "框架外的层，与 UI 并行；需自行管理顺序/裁剪/释放",
+      "note": "性能最好的一路；已验证但要守 releaseLayer 纪律（用完释放，否则层泄漏）。",
+      "rules": [
+        "画面是「视频/摄像头」类且要全屏高帧率 → 走本路，别用软件绘制硬拼",
+        "releaseLayer：离开页面/停止播放必须释放，参考 demos/dvr-uvc-recorder-v85x"
+      ],
+      "docRef": "knowledge/devflow/custom-render-paths.md"
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "dvr-camera-preview",
+      "title": "摄像头预览（DVR 主力：内置 AHD/TVI/CVBS 与 USB UVC）",
+      "kind": "render",
+      "hints": [
+        "摄像头预览怎么做",
+        "videoView 透明窗是什么",
+        "内置 AHD/TVI 摄像头怎么接",
+        "USB UVC 摄像头怎么显示"
+      ],
+      "summary": "把摄像头画面显示到屏上：UI 里用 videoView 当**透明窗口**（visible=true + rotation），画面由硬件层直接出。",
+      "packages": [
+        "aw-dvr",
+        "aw-mpp",
+        "aw-mpp-uvc",
+        "uvc-camera",
+        "ir-camera",
+        "uav-camera"
+      ],
+      "entry": "ui/*.json 的 videoView（透明窗）+ Manifest 依赖 aw-dvr",
+      "demo": "demos/dvr-uvc-recorder-v85x",
+      "rules": [
+        "videoView 是透明窗，不是普通显示控件：不要给它填背景图",
+        "屏幕方向错位先查 rotateScreen 与 videoView 的 rotation（竖装屏 = 270）",
+        "USB UVC 是 JPEG/MJPEG 流；AHD/TVI/CVBS 走内置通道，两者接入方式不同"
+      ],
+      "docRef": "knowledge/v85x/dvr-recorder-guide.md"
+    },
+    {
+      "id": "dvr-record",
+      "title": "录像（写入 TF/EMMC）",
+      "kind": "record",
+      "hints": [
+        "录像怎么写进 TF 卡",
+        "录像怎么启停",
+        "录出来的文件坏了"
+      ],
+      "summary": "mpi::Recorder 启停录像；录制参数有两种形态（见 Playbook §7-1）。",
+      "packages": [
+        "aw-dvr",
+        "aw-mpp",
+        "aw-cedarc"
+      ],
+      "entry": "src/logic/*.cc 里启停 Recorder",
+      "demo": "demos/dvr-uvc-recorder-v85x",
+      "rules": [
+        "录制目标盘必须先确认可写与剩余空间（TF 未挂载/写保护会静默失败）",
+        "停止录像后要等落盘再断电，否则文件尾损坏"
+      ],
+      "docRef": "knowledge/v85x/dvr-recorder-guide.md"
+    },
+    {
+      "id": "dvr-photo-playback",
+      "title": "拍照与回放",
+      "kind": "capture",
+      "hints": [
+        "拍照怎么存",
+        "怎么回放录像",
+        "JpegViewer 怎么用"
+      ],
+      "summary": "拍照走 mpi::VO 取帧；回放用 JpegViewer / videoView。",
+      "packages": [
+        "aw-dvr",
+        "awjpegdecoder",
+        "aw-mpp",
+        "display_utility"
+      ],
+      "entry": "src/logic/*.cc（拍照/回放按钮回调）",
+      "demo": "demos/dvr-uvc-recorder-v85x",
+      "docRef": "knowledge/v85x/dvr-recorder-guide.md"
+    },
+    {
+      "id": "video-h264-play",
+      "title": "播放 H.264 流 / 文件",
+      "kind": "playback",
+      "hints": [
+        "视频播放用什么包",
+        "H264 播放怎么做",
+        "这块板能放视频吗"
+      ],
+      "summary": "按平台选实现：全志系（V85X/T113）有硬解播放器；SigmaStar（Z20/Z261）走 h264-player；F133/F135 走 awh264player。",
+      "packages": [
+        "awh264player",
+        "h264-player",
+        "simple-player",
+        "ffmpeg",
+        "parsesps"
+      ],
+      "rules": [
+        "同一功能在不同平台是不同包 —— 先 flythings_query_package 确认目标平台有没有",
+        "要软解/容器解析兜底时才上 ffmpeg（体积大）",
+        "抽帧/取一帧参考「视频层抓帧」那条（硬解通道），别用软件逐帧解"
+      ],
+      "docRef": "knowledge/devflow/builtin-packages.md"
+    },
+    {
+      "id": "video-transcode-offline",
+      "title": "预烘帧序列（视频/动画转贴图）",
+      "kind": "render",
+      "hints": [
+        "视频转贴图",
+        "预烘帧序列怎么做",
+        "动画卡顿 用帧序列"
+      ],
+      "summary": "PC 侧离线渲好，运行时按序列换图 —— 视觉最好、运行时几乎零成本，只适合固定视角/固定逻辑。",
+      "entry": "resources/images/ 的帧序列 + 定时器切 visible",
+      "rules": [
+        "适合固定逻辑的动画/循环；需要实时交互的不要用",
+        "帧数 × 分辨率直接吃 flash 与内存，先算体积"
+      ],
+      "docRef": "knowledge/devflow/custom-render-paths.md"
+    },
+    {
+      "id": "disp-layer-custom",
+      "title": "自绘 / 离屏渲染（框架内 canvas、nanovg、cairo）",
+      "kind": "render",
+      "hints": [
+        "全屏动画性能不够怎么办",
+        "离屏渲染可行吗",
+        "nanovg 能不能用",
+        "cairo SDL LVGL 画东西"
+      ],
+      "summary": "五条渲染路径见 Playbook；面积小走框架内自绘，全屏动画才上独立图层。",
+      "libs": [
+        "libnanovg.so（矢量绘制，设备预装）"
+      ],
+      "packages": [
+        "nanovg",
+        "blend2d",
+        "mi_gfx",
+        "display_utility"
+      ],
+      "rules": [
+        "一帧绘制面积 < 屏幕 1/4 且非全屏动画 → 框架内自绘就够",
+        "画布方案：ZKTextView/ZKButton + setBackgroundBmp 挂内存位图，只调一次 + setInvalid 交替刷帧",
+        "离屏渲染（cairo/SDL/LVGL 渲到内存）在 FlyThings 上尚未验证，要做需自行自证"
+      ],
+      "docRef": "knowledge/devflow/custom-render-paths.md"
+    },
+    {
+      "id": "audio-play",
+      "title": "音频播放",
+      "kind": "playback",
+      "hints": [
+        "音频播放用什么",
+        "MP3 播放怎么做",
+        "怎么放声音"
+      ],
+      "summary": "通用播放用 audio-utility；容器/编码链路用 mp4v2 + faac。",
+      "packages": [
+        "audio-utility",
+        "faac",
+        "mp4v2",
+        "mad"
+      ],
+      "docRef": "knowledge/devflow/builtin-packages.md"
+    },
+    {
+      "id": "audio-duplex-talk",
+      "title": "对讲：录音 + 播放（双向）",
+      "kind": "record",
+      "hints": [
+        "对讲怎么实现 录音和播放",
+        "双向语音怎么做",
+        "回声很大"
+      ],
+      "summary": "zkaudio 提供对讲的录音与播放；互联类型走 lylink_cpaacfapwd。",
+      "packages": [
+        "zkaudio",
+        "lylink_cpaacfapwd"
+      ],
+      "rules": [
+        "对讲是「采 → 编码 → 传输 → 解码 → 播」全链路，任何一段平台不支持就整体不可用",
+        "回声问题先上 webrtc-audio-processing，别先改音量"
+      ],
+      "docRef": "knowledge/devflow/builtin-packages.md"
+    },
+    {
+      "id": "audio-multi-channel-record",
+      "title": "多路录音",
+      "kind": "record",
+      "hints": [
+        "多路录音怎么做",
+        "同时录多路音频"
+      ],
+      "summary": "multi-channel-audio-recorder（目前只在 z20 包键下）。",
+      "packages": [
+        "multi-channel-audio-recorder"
+      ],
+      "docRef": "knowledge/devflow/builtin-packages.md"
+    },
+    {
+      "id": "audio-processing-aec",
+      "title": "音频前处理（回声消除等）",
+      "kind": "decode",
+      "hints": [
+        "回声消除怎么做",
+        "webrtc 音频处理"
+      ],
+      "summary": "webrtc-audio-processing；另有 webrtc-aec 包键。",
+      "packages": [
+        "webrtc-audio-processing",
+        "webrtc-aec"
+      ],
+      "docRef": "knowledge/devflow/builtin-packages.md"
+    },
+    {
+      "id": "jpeg-decode",
+      "title": "JPEG / 图像解码",
+      "kind": "decode",
+      "hints": [
+        "JPEG 解码怎么做",
+        "图片解码用什么",
+        "gif 怎么显示"
+      ],
+      "summary": "硬件/专用解码用 awjpegdecoder（部分平台）；通用图像用 giflib/libjpeg；F133/F135 另有 zkmedia。",
+      "packages": [
+        "awjpegdecoder",
+        "zkmedia",
+        "giflib",
+        "gif"
+      ],
+      "libs": [
+        "libjpeg.so.9.1.0（设备预装）",
+        "libpng12.so.0.56.0（设备预装）"
+      ],
+      "rules": [
+        "设备预装库能借就借（免编译、免进 Manifest），但要在目标设备上确认存在且 ABI 匹配",
+        "借库前先读 device-preinstalled-libs.md 的三条使用纪律"
+      ],
+      "docRef": "knowledge/devflow/device-preinstalled-libs.md"
+    },
+    {
+      "id": "software-decode-ffmpeg",
+      "title": "软解兜底（ffmpeg）",
+      "kind": "decode",
+      "hints": [
+        "ffmpeg 在这块板上能用吗",
+        "软解兜底",
+        "非常规编码怎么解"
+      ],
+      "summary": "覆盖面最广（10 个包键），硬解不可用或要解非常规容器/编码时用它。",
+      "packages": [
+        "ffmpeg"
+      ],
+      "rules": [
+        "软解吃 CPU，全屏高码率视频会掉帧 —— 优先找硬解路径",
+        "引入 ffmpeg 会显著增大镜像体积，确认 flash 余量"
+      ],
+      "docRef": "knowledge/devflow/builtin-packages.md"
+    },
+    {
+      "id": "lib-preinstalled",
+      "title": "设备预装可借库（dlopen 即用，免编译）",
+      "kind": "lib",
+      "hints": [
+        "能不能不编译直接用设备上的库",
+        "预装库 dlopen",
+        "设备上有哪些 so"
+      ],
+      "summary": "设备上已有的 .so 可直接 dlopen，不必进 Manifest。",
+      "libs": [
+        "libmad.so.0.2.1（MP3 解码）",
+        "libjpeg.so.9.1.0（JPEG 解码）",
+        "libpng12.so.0.56.0（PNG 解码/编码）",
+        "libfreetype.so.6.11.4（字体光栅化）",
+        "libz.so.1.2.8（zlib）",
+        "libnanovg.so（矢量绘制）"
+      ],
+      "rules": [
+        "先按文档 §1 的两条命令在**目标设备**上确认库存在（不同固件清单不同）",
+        "确认 ABI/依赖/SONAME（readelf），否则 dlopen 失败或崩在符号解析",
+        "设备预装库不进 Manifest —— 别把它写成包依赖"
+      ],
+      "docRef": "knowledge/devflow/device-preinstalled-libs.md"
+    },
+    {
+      "id": "video-layer-capture",
+      "title": "抓帧：视频层（硬件 vdec 输出）",
+      "kind": "capture",
+      "hints": [
+        "拼墙抓不到画面",
+        "vdec 通道怎么选",
+        "抓屏是黑的 视频在哪一层",
+        "视频层抓帧怎么做"
+      ],
+      "summary": "屏上在放视频时，fb0 抓到的是 UI 层（可能全黑）；要画面得抓视频层。",
+      "platforms": [
+        "Z20",
+        "Z21"
+      ],
+      "entry": "flythings_device_screenshot(layer='video')（内部 zkshot + vdec 通道）",
+      "rules": [
+        "仅 SigmaStar（Z20/Z21）支持；其它平台该参数不适用",
+        "多路/拼墙必须给 vdec_chn（拼墙在 chn 1），否则取不到帧",
+        "取帧走 MI_SYS 输出口 + 物理地址映射（非文件读取），失败时先核对通道号"
+      ],
+      "docRef": "knowledge/devflow/device-screenshot.md"
+    },
+    {
+      "id": "fb-layer-capture",
+      "title": "抓帧：UI/OSD 层（framebuffer）",
+      "kind": "capture",
+      "hints": [
+        "抓屏是黑的",
+        "framebuffer 抓屏",
+        "怎么截屏"
+      ],
+      "summary": "默认抓屏路径：读 framebuffer（UI 层）。",
+      "entry": "flythings_device_screenshot(device=…) 默认路径",
+      "rules": [
+        "屏上放过视频时这层可能是空的 —— 那不是抓屏坏了，是画面不在这一层",
+        "双缓冲 pan 偏移、旋转、裁剪会影响取图，参数见文档",
+        "抓屏前应先做有界预检（读不通就立刻给结论，别把时间耗在等待上）"
+      ],
+      "docRef": "knowledge/devflow/device-screenshot.md"
+    }
+  ]
+}
