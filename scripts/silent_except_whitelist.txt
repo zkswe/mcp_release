@@ -13,4 +13,3 @@
 # 检测：python scripts/lint_silent_except.py
 mcp_server.py#b462cc14d4  ::  启动前预热本地 embedding：失败不影响启动，检索侧有显式 BM25 降级提示（返回体 warnings 里写明）
 components/mp_transfer/src/python/receiver.py#96d8cd8b4c  ::  components/mp_transfer 是**原样归档的第三方参考实现**（其他产品已验证的小程序传图接收端 + PC 模拟器），随仓库只作接入参考、不参与本仓库运行：accept() 的 socket.timeout 就是它自己的「0.5s 轮询等连接」主循环写法，吞掉即继续 accept（外层 try/finally 负责停广播与回收），属该实现的设计而非本仓库的静默失败。改归档源码会失去「与原工程一致」的对照价值。
-configure.py#b462cc14d4  ::  tool_meta() 尽力读版本号/工具数：configure.py 必须在**装依赖之前**能跑（docstring 明示），读不到时回退 "?/?" 写进生成配置的注释，失败代价=注释里显示问号，不影响任何主流程

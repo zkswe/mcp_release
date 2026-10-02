@@ -1221,7 +1221,13 @@ def main(argv=None):
     print('json2img v%s — 引擎等价离线渲染（PIL 像素级，静止态）' % __version__)
     print('=' * 72)
     for i in infos:
-        print('[render] page=%-10s json=%s' % (i['page'], os.path.relpath(i['json'])))
+        try:
+            json_disp = os.path.relpath(i['json'])
+        except ValueError:
+            # Windows 跨盘符（json 在 C:\ 而 cwd 在 D:\）时 relpath 抛错；
+            # 这里仅用于展示，退回绝对路径即可，不能让它成为致命错误。
+            json_disp = i['json']
+        print('[render] page=%-10s json=%s' % (i['page'], json_disp))
         print('          out=%s  size=%dx%d  resolution=%dx%d  scale=%d'
               % (i['out'], i['size'][0], i['size'][1], i['resolution'][0],
                  i['resolution'][1], i['scale']))
