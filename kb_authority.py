@@ -70,10 +70,9 @@ def _shingles(s, n=4):
     return {s[i:i + n] for i in range(max(0, len(s) - n + 1))}
 
 
-def _alias_hit(alias, query):
+def _hit_norm(a, query):
     """别名是否该算命中：子串命中，或 4 字滑窗覆盖率 ≥0.75（容忍中间插词，如
     『有没有现成的包』对上『有没有现成的 MQTT 包』）。返回命中强度（越大越具体），未命中 0。"""
-    a = _norm(alias)
     if not a or len(a) < 2:
         return 0
     if a in query:
@@ -85,6 +84,30 @@ def _alias_hit(alias, query):
     return int(len(a) * cover) if cover >= 0.75 else 0
 
 
+def alias_hit(alias, query):
+    """别名/触发词是否命中查询 → 命中强度（0 = 未命中）。**归一化在内部做**，调用方传原话即可。
+
+    两个消费方：① 知识权威归属（`for_query`，别名 → 权威文档）
+    ② 工具路由分级筛选（`mcp_server._find`，触发词 → 候选 op）。
+    两边都必须"容忍中间插词"（『有没有现成的包』要对上『有没有现成的 MQTT 包』）——
+    所以判据只有这一份，别再写第二个匹配器。
+    """
+    return _hit_norm(_norm(alias), _norm(query))
+
+
+def weak_chars_hit(alias, query):
+    """弱命中：别名的字**都出现**在查询里（不计顺序），且首字在 —— 容忍口语里的插词/改序。
+
+    为什么需要第三档：短触发词（『加包』『装个包』）够不着滑窗阈值，而用户会说
+    「加个 mqtt 包」——子串对不上、滑窗又不成立。弱命中只给 1 分（远低于子串/滑窗），
+    用来"别一条都不命中"，不是用来定胜负的。
+    """
+    a, q = _norm(alias), _norm(query)
+    if len(a) < 2 or a[0] not in q:
+        return 0
+    return 1 if all(c in q for c in set(a)) else 0
+
+
 def for_query(query):
     """查询命中若干概念的别名时，返回权威提示（最多 MAX_HITS 条；按命中强度降序）。"""
     q = _norm(query)
@@ -94,7 +117,7 @@ def for_query(query):
     for name, c in load()['concepts'].items():
         best = 0
         for alias in c.get('aliases') or []:
-            best = max(best, _alias_hit(alias, q))
+            best = max(best, _hit_norm(_norm(alias), q))
         if best:
             hits.append((best, name, c))
     hits.sort(key=lambda t: -t[0])

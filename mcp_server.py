@@ -59,6 +59,113 @@ def _catalog() -> str:
     return json.dumps({"count": len(ops), "ops": ops}, ensure_ascii=False)
 
 
+def _find(need: str, limit: int = 6) -> str:
+    """**分级筛选**：用户需求原话 → 候选 op + 关联知识指针（不谈参数、不拉契约）。
+
+    为什么要有它（2026-10-03 架构）：工具面分三层，但"选哪个 op"这一步原先只能让 AI
+    读 47 条 description 自己挑 —— 那是把上下文预算花在"选"上。这里按**触发词**先筛一道：
+
+      第一级 `stage` —— 这条需求落在哪个阶段（design/build/other），先缩小到一组；
+      第二级 `candidates` —— 组内按**用户会怎么说的触发词**打分排序，带命中理由；
+      第三级 `knowledge` —— 候选 op 关联的知识页（`docRef`），调用中要深入时直接去检索。
+
+    选中之后：`op="describe:<名>"` 拉完整契约（流程/铁律），再 `op=<名>` + args 调用。
+    """
+    q = (need or '').strip()
+    out = {"ok": True, "need": q, "count": 0, "stage": '', "candidates": [],
+           "hint": '选中后 op="describe:<名>" 拉完整契约；再 op=<名> + args 调用；'
+                   '要深入某条判据用 op="knowledge_search"。',
+           "knowledge": []}
+    if not q:
+        out["ok"] = False
+        out["hint"] = '把用户原话放进 op="find:<需求原话>"（例：op="find:把界面推到设备上跑一下"）'
+        return json.dumps(out, ensure_ascii=False)
+    try:
+        import op_spec_loader as osl
+        ops = osl.registered()
+        import kb_authority as ka          # 匹配器**唯一实现**（容忍中间插词，与知识权威归属同一份）
+    except Exception as e:                       # 注册表不可用 → 明说，别给空候选让人以为"没这个能力"
+        return json.dumps({"ok": False,
+                           "error": {"code": "CONTRACT_UNAVAILABLE",
+                                     "msg": "op 契约注册表不可用: %s: %s" % (type(e).__name__, e),
+                                     "retryable": False}}, ensure_ascii=False)
+    scored = []
+    # ② 语义补一路：走**已有的知识检索**（本地向量 + BM25，已评测、有回归），
+    #    命中文档 → 反查"哪些 op 以它为 docRef / seeAlso"（两跳，**不新造索引**）。
+    #    为什么需要它：「屏比设计小怎么办」这种口语，字面触发词一条都命中不了，
+    #    但知识库里就是那篇判据页（实测 top-1 = device-preflight-spec.md）。
+    doc2ops = {}
+    for op in ops:
+        s = osl.spec(op)
+        for d in ([s.get('docRef')] if s.get('docRef') else []) + list(s.get('seeAlso') or []):
+            doc2ops.setdefault(d, []).append(op)
+    sem_ops, sem_docs = {}, []
+    try:
+        import rag_search as _rs
+        for rank, item in enumerate(_rs.search(q, k=3) or []):
+            _sc, h = (item if isinstance(item, (list, tuple)) else (0, item))
+            p = (h or {}).get('path') or ''
+            if p and p not in sem_docs:
+                sem_docs.append(p)
+            if rank > 1:                          # 只认前两名（实测 0.027~0.033 同档，
+                continue                          # 分数分不出信号/噪声，靠**名次**而不是分数）
+            for op in doc2ops.get(p, []):
+                sem_ops[op] = max(sem_ops.get(op, 0), 6 - 3 * rank)
+    except Exception as e:                       # 检索不可用不阻断字面匹配，但如实回报
+        out['semanticError'] = '%s: %s' % (type(e).__name__, e)
+    for op in ops:
+        s = osl.spec(op)
+        score, hits = 0, []
+        for t in (s.get('triggers') or []):      # ① 触发词：子串/滑窗（权重最高）
+            h = ka.alias_hit(t, q) if t else 0
+            if h:
+                score += 2 * h
+                hits.append(t)
+            elif t and ka.weak_chars_hit(t, q):  # 弱命中：短词够不着滑窗阈值时的兜底
+                score += 1
+                hits.append(t)
+        for k in (s.get('keywords') or []):      # ①b 检索词：有人按术语问
+            h = ka.alias_hit(k, q) if k else 0
+            if h:
+                score += h
+                hits.append(k)
+        for frag in (op.replace('flythings_', '').split('_') +      # ①c op 名片段（弱信号）
+                     [w for w in (s.get('summary') or '').replace('（', ' ').split()[:6]]):
+            if len(frag) >= 2 and ka.alias_hit(frag, q):
+                score += 1
+                hits.append(frag)
+        if op in sem_ops:                        # ② 语义（知识检索命中它挂的文档）
+            score += sem_ops[op]
+            hits.append('语义')
+        if score:
+            scored.append((score, op, s, hits))
+    scored.sort(key=lambda r: (-r[0], r[1]))
+    from collections import Counter
+    st = Counter(s.get('stage') or 'other' for _sc, _op, s, _h in scored[:limit])
+    out['stage'] = (st.most_common(1)[0][0] if st else '')
+    docrefs = []
+    for score, op, s, hits in scored[:limit]:
+        args = [p.get('name') for p in (s.get('params') or [])]
+        out['candidates'].append({'op': op, 'brief': s.get('summary') or '',
+                                  'risk': s.get('risk'), 'stage': s.get('stage'),
+                                  'score': score, 'hit': list(dict.fromkeys(hits))[:6],
+                                  'params': args})
+        d = s.get('docRef')
+        if d and d not in docrefs:
+            docrefs.append(d)
+    out['count'] = len(out['candidates'])
+    # 第三级：候选相关的知识（语义命中的文档优先，再补候选的 docRef）——
+    # 这就是"调用过程中产生需要关联的知识再进知识库匹配"的入口：先给指针，要深了再 knowledge_search
+    for d in docrefs:
+        if d not in sem_docs:
+            sem_docs.append(d)
+    out['knowledge'] = sem_docs[:5]
+    if not out['candidates']:
+        out['hint'] = ('没有 op 命中这句需求 —— 先 op="list" 看全部能力；'
+                       '若确认该能力缺失，用 op="knowledge_gaps" / "knowledge_search" 查知识缺口')
+    return json.dumps(out, ensure_ascii=False)
+
+
 def _describe(name: str) -> str:
     """按需拉某个 op 的**完整契约**（常驻 description 只有 L0：选不选 + 怎么调）。
 
@@ -140,9 +247,10 @@ async def flythings_kb(op: str = "list", args: str = "{}") -> str:
 
     用法：先传 op="list" 取全部可用操作**及其参数名**（索引），再用 op=<操作名> + args='{"参数": 值}'
     （args 传 JSON 字符串；部分客户端只支持对象，也可直接传 dict）。
-    ⚠️ **每个 op 的 tool description 只是摘要**（"选不选 + 怎么调"）—— 选中后要看完整契约
-    （多步流程 / 踩坑铁律 / 相关知识），传 `op="describe:<op 名>"` 拉一次；批量看清单用
-    资源 `flythings://ops`。
+    **三步走（省上下文）**：① 需求进来先分级筛选 —— `op="find:<用户原话>"` 出候选 op
+    （按触发词打分 + 关联知识指针）；② 选中后 `op="describe:<op 名>"` 拉完整契约
+    （多步流程 / 踩坑铁律）；③ 调用中需要判据细节，按返回体的 seeAlso/docRef 走
+    `op="knowledge_search"` 检索（按需，不预加载）。
 
     ⚠️ 能力不止这 47 个 op：设备端预编译工具（touch 触摸注入 / busybox / ui_test /
     zkshot）在 `<MCP 安装目录>/bin_tools/<平台>/` 下，**不是 op、不占 op 名额**——
@@ -151,6 +259,15 @@ async def flythings_kb(op: str = "list", args: str = "{}") -> str:
     """
     if op in ("", "list", "help", "?"):
         return _catalog()
+    if op.startswith('find:'):
+        return _find(op.split(':', 1)[1])
+    if op == 'find':                             # 也认 args={"need": "..."} 这种写法
+        try:
+            need = (json.loads(args) or {}).get('need', '') if isinstance(args, str) \
+                else (args or {}).get('need', '')
+        except ValueError:
+            need = ''
+        return _find(need)
     if op.startswith('describe:'):
         return _describe(op.split(':', 1)[1])
     fn = OPS.get(op)

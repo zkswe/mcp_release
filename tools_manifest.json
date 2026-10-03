@@ -124,7 +124,14 @@
       "risk": "write",
       "category": "package",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "加包",
+        "装个包",
+        "引入依赖",
+        "这个包怎么加进工程",
+        "加个包",
+        "加个 mqtt 包"
+      ]
     },
     {
       "op": "flythings_attach_cli_tools",
@@ -135,7 +142,12 @@
       "risk": "write",
       "category": "project",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "装工具链",
+        "项目里没有 fun.exe",
+        "缺 fui.exe",
+        "交付要带编译工具"
+      ]
     },
     {
       "op": "flythings_bugreport",
@@ -155,7 +167,12 @@
       "risk": "write",
       "category": "device",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "提 bug",
+        "缺陷单",
+        "报个问题",
+        "写缺陷报告"
+      ]
     },
     {
       "op": "flythings_build_ui_flow",
@@ -178,7 +195,8 @@
         "推送到设备",
         "跑一下",
         "上机",
-        "传到设备"
+        "传到设备",
+        "烧上去"
       ]
     },
     {
@@ -195,7 +213,12 @@
       "risk": "read",
       "category": "project",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "依赖对不对",
+        "缺哪些库",
+        "include 找不到",
+        "查依赖"
+      ]
     },
     {
       "op": "flythings_create_bin_project",
@@ -211,7 +234,13 @@
       "risk": "write",
       "category": "project",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "做个小工具",
+        "命令行程序",
+        "不要界面",
+        "可执行文件",
+        "bin 工程"
+      ]
     },
     {
       "op": "flythings_create_project",
@@ -227,7 +256,14 @@
       "risk": "write",
       "category": "project",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "新建工程",
+        "建个项目",
+        "从零开始",
+        "起个新项目",
+        "建 FlyThings 工程",
+        "从头做"
+      ]
     },
     {
       "op": "flythings_device_preflight",
@@ -243,7 +279,17 @@
       "risk": "read",
       "category": "build",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "上机前检查",
+        "接上设备先看什么",
+        "这板子能不能跑",
+        "屏幕对不对",
+        "字库够不够",
+        "打包会不会超",
+        "屏比设计小",
+        "屏幕比设计小",
+        "分辨率不一样"
+      ]
     },
     {
       "op": "flythings_device_screenshot",
@@ -271,7 +317,12 @@
       "risk": "device",
       "category": "device",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "抓屏",
+        "截图",
+        "看看现在屏幕什么样",
+        "抓个图"
+      ]
     },
     {
       "op": "flythings_edit_ftu",
@@ -285,7 +336,14 @@
       "risk": "write",
       "category": "layout",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "改布局",
+        "按钮往右移",
+        "改个文字",
+        "换个颜色",
+        "删掉这个控件",
+        "复制控件"
+      ]
     },
     {
       "op": "flythings_fui_pack",
@@ -296,7 +354,11 @@
       "risk": "write",
       "category": "layout",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "打包界面",
+        "json 打成 ftu",
+        "改了 json 要生效"
+      ]
     },
     {
       "op": "flythings_fui_unpack",
@@ -309,7 +371,11 @@
       "risk": "write",
       "category": "layout",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "反解析",
+        "ftu 转 json",
+        "看看 ftu 里有什么"
+      ]
     },
     {
       "op": "flythings_gen_logic_stub",
@@ -322,7 +388,13 @@
       "risk": "write",
       "category": "project",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "补回调函数",
+        "按钮点击事件",
+        "写业务之前",
+        "生成骨架",
+        "回调桩"
+      ]
     },
     {
       "op": "flythings_gen_ui_test",
@@ -338,7 +410,12 @@
       "risk": "device",
       "category": "device",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "生成测试用例",
+        "自动测界面",
+        "UI 回归脚本",
+        "触摸测试"
+      ]
     },
     {
       "op": "flythings_generate_ui_assets",
@@ -350,7 +427,12 @@
       "risk": "write",
       "category": "assets",
       "stage": "design",
-      "triggers": []
+      "triggers": [
+        "生成图标",
+        "出图",
+        "做个按钮背景图",
+        "要一套图标"
+      ]
     },
     {
       "op": "flythings_get_package_api",
@@ -363,7 +445,12 @@
       "risk": "read",
       "category": "package",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "这个包怎么用",
+        "包的 API",
+        "有哪些方法",
+        "看头文件"
+      ]
     },
     {
       "op": "flythings_get_project_spec",
@@ -372,7 +459,13 @@
       "risk": "read",
       "category": "layout",
       "stage": "design",
-      "triggers": []
+      "triggers": [
+        "工程规范",
+        "目录怎么放",
+        "写代码前看什么",
+        "项目结构",
+        "注意事项"
+      ]
     },
     {
       "op": "flythings_get_version",
@@ -383,7 +476,11 @@
       "risk": "read",
       "category": "kbase",
       "stage": "other",
-      "triggers": []
+      "triggers": [
+        "MCP 版本",
+        "是不是最新版",
+        "装了哪个版本"
+      ]
     },
     {
       "op": "flythings_hardware_info",
@@ -395,7 +492,13 @@
       "risk": "read",
       "category": "kbase",
       "stage": "other",
-      "triggers": []
+      "triggers": [
+        "这块屏什么参数",
+        "板子规格",
+        "型号是多少",
+        "按键值",
+        "硬件差异"
+      ]
     },
     {
       "op": "flythings_html_to_json",
@@ -409,7 +512,14 @@
       "risk": "write",
       "category": "layout",
       "stage": "design",
-      "triggers": []
+      "triggers": [
+        "原型变界面",
+        "HTML 转 json",
+        "设计稿落地",
+        "网页稿转界面",
+        "把原型变成界面",
+        "设计稿转界面"
+      ]
     },
     {
       "op": "flythings_i18n_add_language",
@@ -424,7 +534,15 @@
       "risk": "write",
       "category": "i18n",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "加个语言",
+        "支持英文",
+        "多语言加一种",
+        "加英文",
+        "加一门语言",
+        "加个语种",
+        "要英文"
+      ]
     },
     {
       "op": "flythings_i18n_export",
@@ -438,7 +556,14 @@
       "risk": "write",
       "category": "i18n",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "导出翻译",
+        "把文案给翻译",
+        "导出语言包",
+        "导出给翻译",
+        "文案导出",
+        "导出文案"
+      ]
     },
     {
       "op": "flythings_i18n_import",
@@ -452,7 +577,11 @@
       "risk": "write",
       "category": "i18n",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "翻译好了",
+        "导入翻译",
+        "把译文写回去"
+      ]
     },
     {
       "op": "flythings_i18n_refactor",
@@ -465,7 +594,11 @@
       "risk": "write",
       "category": "i18n",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "多语言改造",
+        "写死的文字改成 key",
+        "文案抽出来"
+      ]
     },
     {
       "op": "flythings_i18n_scan",
@@ -476,7 +609,11 @@
       "risk": "read",
       "category": "i18n",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "多语言有没有问题",
+        "检查翻译",
+        "key 对不齐"
+      ]
     },
     {
       "op": "flythings_i18n_to_json",
@@ -490,7 +627,12 @@
       "risk": "write",
       "category": "i18n",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "推翻译",
+        "tr 转 json",
+        "翻译不生效",
+        "界面还是旧文案"
+      ]
     },
     {
       "op": "flythings_knowledge_capture",
@@ -510,7 +652,12 @@
       "risk": "write",
       "category": "kbase",
       "stage": "other",
-      "triggers": []
+      "triggers": [
+        "记条知识",
+        "这个坑记下来",
+        "沉淀一条经验",
+        "存进知识库"
+      ]
     },
     {
       "op": "flythings_knowledge_export",
@@ -525,7 +672,11 @@
       "risk": "read",
       "category": "kbase",
       "stage": "other",
-      "triggers": []
+      "triggers": [
+        "导出知识包",
+        "回流知识",
+        "分享经验"
+      ]
     },
     {
       "op": "flythings_knowledge_gaps",
@@ -538,7 +689,11 @@
       "risk": "read",
       "category": "kbase",
       "stage": "other",
-      "triggers": []
+      "triggers": [
+        "知识库缺什么",
+        "哪些问题搜不到",
+        "知识缺口"
+      ]
     },
     {
       "op": "flythings_knowledge_search",
@@ -550,7 +705,12 @@
       "risk": "read",
       "category": "kbase",
       "stage": "design",
-      "triggers": []
+      "triggers": [
+        "查知识库",
+        "搜一下资料",
+        "这个怎么做",
+        "有没有相关文档"
+      ]
     },
     {
       "op": "flythings_layout_audit",
@@ -562,7 +722,13 @@
       "risk": "read",
       "category": "layout",
       "stage": "design",
-      "triggers": []
+      "triggers": [
+        "布局有没有问题",
+        "控件被遮住",
+        "点不动",
+        "触摸穿透",
+        "越界"
+      ]
     },
     {
       "op": "flythings_list_packages",
@@ -573,7 +739,11 @@
       "risk": "read",
       "category": "package",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "有哪些包",
+        "内置包清单",
+        "能用什么库"
+      ]
     },
     {
       "op": "flythings_manifest",
@@ -587,7 +757,11 @@
       "risk": "write",
       "category": "package",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "依赖清单",
+        "Manifest 怎么写",
+        "要哪些包"
+      ]
     },
     {
       "op": "flythings_map_control",
@@ -599,7 +773,11 @@
       "risk": "read",
       "category": "layout",
       "stage": "design",
-      "triggers": []
+      "triggers": [
+        "这个控件对应哪个",
+        "LVGL 的按钮是什么",
+        "跨框架控件对照"
+      ]
     },
     {
       "op": "flythings_pack_upgrade",
@@ -621,7 +799,8 @@
         "固化",
         "刷进设备",
         "出货版本",
-        "TF卡升级包"
+        "TF卡升级包",
+        "刷机"
       ]
     },
     {
@@ -634,7 +813,13 @@
       "risk": "read",
       "category": "package",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "有没有现成的包",
+        "找库",
+        "支持 mqtt 的包",
+        "有没有 http 库",
+        "找个库"
+      ]
     },
     {
       "op": "flythings_query_package",
@@ -646,7 +831,11 @@
       "risk": "read",
       "category": "package",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "这个包什么版本",
+        "平台支不支持",
+        "版本号多少"
+      ]
     },
     {
       "op": "flythings_read_json",
@@ -657,7 +846,12 @@
       "risk": "read",
       "category": "layout",
       "stage": "design",
-      "triggers": []
+      "triggers": [
+        "界面结构",
+        "有哪些控件",
+        "读一下 json",
+        "控件列表"
+      ]
     },
     {
       "op": "flythings_resolve_dependencies",
@@ -669,7 +863,11 @@
       "risk": "read",
       "category": "package",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "依赖冲突",
+        "依赖树",
+        "循环依赖"
+      ]
     },
     {
       "op": "flythings_selfcheck",
@@ -682,7 +880,13 @@
       "risk": "device",
       "category": "device",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "整机体检",
+        "板子什么状态",
+        "网络通不通",
+        "分区挂载",
+        "把设备状态抓一遍"
+      ]
     },
     {
       "op": "flythings_test_run",
@@ -701,7 +905,12 @@
       "risk": "device",
       "category": "device",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "跑测试",
+        "自动化回归",
+        "并行测多台",
+        "UI 测试"
+      ]
     },
     {
       "op": "flythings_translate_ui",
@@ -716,7 +925,12 @@
       "risk": "write",
       "category": "layout",
       "stage": "design",
-      "triggers": []
+      "triggers": [
+        "LVGL 工程迁过来",
+        "代码转界面",
+        "迁移翻译",
+        "换个框架"
+      ]
     },
     {
       "op": "flythings_ui_preview",
@@ -729,7 +943,14 @@
       "risk": "write",
       "category": "layout",
       "stage": "design",
-      "triggers": []
+      "triggers": [
+        "出预览稿",
+        "给客户看效果",
+        "客户确认",
+        "预览页面",
+        "出个预览稿",
+        "客户确认稿"
+      ]
     },
     {
       "op": "flythings_ui_schema",
@@ -741,7 +962,12 @@
       "risk": "read",
       "category": "layout",
       "stage": "design",
-      "triggers": []
+      "triggers": [
+        "字段什么意思",
+        "json 有哪些字段",
+        "控件必填什么",
+        "布局规范查询"
+      ]
     },
     {
       "op": "flythings_ui_visual",
@@ -780,7 +1006,16 @@
       "risk": "write",
       "category": "ui-visual",
       "stage": "design",
-      "triggers": []
+      "triggers": [
+        "对比设计稿",
+        "还原度",
+        "像素验收",
+        "渲染出来看看",
+        "和截图像不像",
+        "和设计稿不像",
+        "跟设计稿不像",
+        "还原度多少"
+      ]
     },
     {
       "op": "flythings_validate_project",
@@ -791,7 +1026,12 @@
       "risk": "read",
       "category": "layout",
       "stage": "design",
-      "triggers": []
+      "triggers": [
+        "检查工程",
+        "项目有没有问题",
+        "规范体检",
+        "体检一下项目"
+      ]
     },
     {
       "op": "flythings_verify_assets",
@@ -802,7 +1042,15 @@
       "risk": "read",
       "category": "layout",
       "stage": "build",
-      "triggers": []
+      "triggers": [
+        "图片对不上",
+        "尺寸不符",
+        "图丢了",
+        "资源核对",
+        "图比控件盒大",
+        "图片比盒子大",
+        "图比盒子大"
+      ]
     }
   ],
   "docs": {
