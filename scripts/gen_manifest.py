@@ -102,7 +102,11 @@ def collect():
         args = [a.arg for a in node.args.args if a.arg not in ('ctx', 'self')]
         ops.append({'op': name, 'brief': brief, 'args': args,
                     'risk': RISK[name], 'category': CATEGORY[name],
-                    'stage': STAGE[name]})
+                    'stage': STAGE[name],
+                    # 触发词（用户会怎么说 → 选这个 op）：工具面**分层**后 description 只带常驻面，
+                    # 这份索引是「选哪个工具」的另一处入口（资源 flythings://tools / 意图闸门），
+                    # 两处都得能按口语选工具，否则 AI 只能靠 brief 猜。
+                    'triggers': list(_osl.spec(name).get('triggers') or [])})
     ops.sort(key=lambda o: o['op'])
 
     import platforms as _pl

@@ -3,20 +3,17 @@
   "updated": "2026-10-03",
   "authority": "FlyThings MCP 的 **op 契约唯一机器可读真源**。每个 op 的描述（summary/触发别名/参数说明/返回要点/铁律/检索词/知识归属/风险/分类/阶段）以本表为准。派生产物：① kb_tools.py 里该 op 的 docstring（= MCP 工具 description，scripts/gen_op_docs.py 生成）② tools_manifest.json 的 brief/args/risk/category/stage ③ gate_catalog.json 的 brief/args/stage ④ op_seealso.json 的 seeAlso。**改契约 = 改本文件，禁止在消费方另抄一份**（与 ui_schema.json 同一条纪律：注册表拥有契约，knowledge/*.md 只留原理/流程/行为）。压缩 token 预算的正确动作是**裁本表的结构化字段**，不是打磨散文。",
   "budget": {
-    "perOpMax": 900,
-    "totalMax": 12000,
-    "note": "口径 = **渲染产物**（AI 实际看到的工具 description）字符数，由 gen_op_docs.py 计算并进发布闸门。"
+    "perOpMax": 360,
+    "totalMax": 6000,
+    "contractPerOpMax": 900,
+    "basis": "实测（2026-10-03，47 op）：常驻合计 3921、单条最长 324（ui_visual）—— 阈值 = 实测 + 余量（单条 +11%、合计 +53%，够再加 ~25 个 op）。**口径 = 渲染产物字符数**，由 gen_op_docs 计算并进发布闸门。",
+    "note": "旧口径 totalMax=12000 是「完整契约全进常驻」时代的数；分层后它失去意义 —— 常驻面看本段，完整契约看 contractPerOpMax。"
   },
   "renderOrder": [
     "summary",
     "triggers",
-    "flow",
-    "notes",
     "params",
-    "returns",
-    "hardRules",
-    "rules",
-    "keywords"
+    "hardRules"
   ],
   "renderSpec": {
     "summary": "首行，唯一必填；同时是 tools_manifest / gate_catalog 的 brief 来源（取前 90 字），改它会连带派生文件失配",
@@ -25,7 +22,7 @@
     "notes": "**迁移兜底**：尚未归类进结构化字段的散文。目标是把 notes 拆空——拆进 flow/params/returns/rules/keywords，或（细节已被 knowledge 文档覆盖时）直接删。notes 非空 = 该 op 的结构化还没做完。",
     "params": "只登记**需要额外说明**的参数；参数的存在与顺序一律以函数签名为准，本表不复制签名（渲染成紧凑单行）",
     "returns": "返回体/产物的关键字段与判据（可省）",
-    "hardRules": "⚠️⚠️ 级铁律（违反会真机挂死/数据损坏/静默丢产物），逐条一行",
+    "hardRules": "⚠️⚠️ 级铁律（违反会真机挂死/数据损坏/静默丢产物/**返工**），含「调用前必须满足的流程闸门」（如\"先出设计稿确认再建工程\"）—— 这类必须在常驻面，AI 不主动拉契约也得看到",
     "rules": "⚠️ 级铁律与踩坑要点，逐条一行",
     "keywords": "检索词，渲染成「检索词：a / b / c」",
     "docRef": "长文细节所在 knowledge 文档。**不进渲染**（不在 renderOrder 里）：知识归属已由返回体的 seeAlso 字段注入（kb_tools._seealso_for ← op_seealso.json），写进描述就是跨层重复、白占 12000 字符的常驻预算。本字段仍供 seeAlso 派生与文档链消费。"
@@ -98,11 +95,11 @@
         }
       ],
       "hardRules": [
-        "src/activity/ 由 IDE 按 ftu 生成，禁止创建/修改/覆盖；业务只写 src/logic/*.cc"
+        "src/activity/ 由 IDE 按 ftu 生成，禁止创建/修改/覆盖；业务只写 src/logic/*.cc",
+        "新需求必须先出设计稿/原型并让用户确认（见 prototype-flow）再建工程 —— 跳过确认 = 返工"
       ],
       "rules": [
-        "页数：按设计稿屏数确认（多屏 = N 屏全落地）",
-        "新需求请先出设计稿/原型并确认（见 prototype-flow）再建工程"
+        "页数：按设计稿屏数确认（多屏 = N 屏全落地）"
       ],
       "keywords": [
         "创建工程",
@@ -531,7 +528,7 @@
       ]
     },
     "flythings_build_ui_flow": {
-      "summary": "⚠️ 场景别名（编译/部署类意图一律本工具，禁自造命令）：口语「编译/构建/调试/部署/推送到设备/跑一下」；固化升级（update.img）→ flythings_pack_upgrade（掉电保留）。",
+      "summary": "FlyThings UI 构建与部署全流程（pack → install → build → 设备探测 → launch）。",
       "risk": "device",
       "category": "build",
       "stage": "build",
@@ -548,6 +545,16 @@
       "seeAlso": [
         "knowledge/devflow/cli-fun-toolchain.md",
         "knowledge/devflow/deploy-scene-map.md"
+      ],
+      "triggers": [
+        "编译",
+        "构建",
+        "调试",
+        "部署",
+        "推送到设备",
+        "跑一下",
+        "上机",
+        "传到设备"
       ]
     },
     "flythings_ui_preview": {
@@ -958,6 +965,86 @@
       "seeAlso": [
         "knowledge/devflow/selfcheck-and-bugreport.md"
       ]
+    }
+  },
+  "contractOrder": [
+    "summary",
+    "triggers",
+    "params",
+    "hardRules",
+    "flow",
+    "returns",
+    "rules",
+    "keywords",
+    "notes"
+  ],
+  "tiers": {
+    "authority": "工具面三层：**常驻**（每次会话都在 AI 上下文里）/ **按需**（选中或要改契约时才拉）/ **深入**（知识页检索）。字段归属由本段 + renderOrder/contractOrder 决定；**常驻面只放「选不选 + 怎么调 + 安全铁律」**，散文与展开叙述一律下移（2026-10-03 定，起因：常驻 11943 里 46% 是 notes 兜底散文，而决定选不选的 triggers 只有 43 字符）。",
+    "resident": {
+      "what": "决定「选不选这个工具」+「怎么调」+ 违反会挂死/丢数据的铁律",
+      "fields": [
+        "summary",
+        "triggers",
+        "params",
+        "hardRules"
+      ],
+      "where": "tool description —— flat/all 模式下 47 条 description 之和 = 常驻面的全部开销",
+      "cap": "budget.perOpMax（单条）/ budget.totalMax（合计）",
+      "rule": "⚠️ 常驻面是**预算硬约束**：加 op = 加一行（约 90 字符），不再重排全局预算；要写细节请用下面的按需字段"
+    },
+    "onDemand": {
+      "what": "完整契约：调用流程、铁律展开、检索词、未归类的兜底散文 —— 选中之后才需要",
+      "fields": [
+        "flow",
+        "returns",
+        "rules",
+        "keywords",
+        "notes"
+      ],
+      "where": "flythings_kb(op='describe:<op 名>') / 资源 flythings://ops/<op 名>",
+      "cap": "budget.contractPerOpMax（单条上限；合计不设限，因为不进常驻）"
+    },
+    "deep": {
+      "what": "原理与实证（为什么这样、踩过什么）",
+      "where": "docRef / seeAlso → knowledge/ 检索（不在工具面里重复叙述）"
+    }
+  },
+  "notesDebt": {
+    "authority": "`notes` 是注册表里的**迁移兜底桶**（见 renderSpec.notes）：非空 = 该 op 的结构化还没做完。本段登记**存量基线**（2026-10-03）。门禁口径（op_spec_loader.validate）：① 不在名单里的 op **不许**有 notes（新增即红 —— 新字段请进 flow/params/rules/keywords）② 名单里的 notes **只许减**（字符数不得增加）；清零后从名单删除。",
+    "items": {
+      "flythings_add_package": 206,
+      "flythings_attach_cli_tools": 66,
+      "flythings_bugreport": 223,
+      "flythings_build_ui_flow": 47,
+      "flythings_check_project_deps": 142,
+      "flythings_create_bin_project": 278,
+      "flythings_edit_ftu": 189,
+      "flythings_fui_pack": 121,
+      "flythings_fui_unpack": 58,
+      "flythings_gen_ui_test": 243,
+      "flythings_generate_ui_assets": 175,
+      "flythings_get_package_api": 153,
+      "flythings_get_version": 185,
+      "flythings_hardware_info": 300,
+      "flythings_html_to_json": 210,
+      "flythings_i18n_add_language": 139,
+      "flythings_i18n_export": 97,
+      "flythings_i18n_import": 69,
+      "flythings_i18n_refactor": 59,
+      "flythings_i18n_scan": 193,
+      "flythings_i18n_to_json": 33,
+      "flythings_knowledge_capture": 229,
+      "flythings_knowledge_export": 162,
+      "flythings_knowledge_gaps": 116,
+      "flythings_knowledge_search": 127,
+      "flythings_layout_audit": 138,
+      "flythings_manifest": 228,
+      "flythings_map_control": 62,
+      "flythings_selfcheck": 317,
+      "flythings_test_run": 293,
+      "flythings_translate_ui": 50,
+      "flythings_ui_preview": 177,
+      "flythings_validate_project": 148
     }
   }
 }

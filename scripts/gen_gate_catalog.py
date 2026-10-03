@@ -41,6 +41,9 @@ def collect():
     v0.27.32 起 register_all 改为遍历 OP_NAMES（不再逐行 mcp.tool()(...)），
     所以清单从 OP_NAMES 常量读，且会校验「清单 vs 模块内 flythings_* 函数定义」一致。
     """
+    if BASE not in sys.path:
+        sys.path.insert(0, BASE)
+    import op_spec_loader as _osl        # 触发词的真源（brief 只能用 docstring，触发词只认注册表）
     src = io.open(os.path.join(BASE, 'kb_tools.py'), encoding='utf-8').read()
     tree = ast.parse(src)
     registered = set()
@@ -73,7 +76,10 @@ def collect():
         brief = (doc[0] if doc else '')[:90]
         args = [a.arg for a in n.args.args if a.arg not in ('ctx', 'self')]
         ops.append({'op': n.name, 'brief': brief, 'args': args,
-                    'stage': STAGE.get(n.name, 'other')})
+                    'stage': STAGE.get(n.name, 'other'),
+                    # 触发词：闸门判「用户这句话该走哪个 op」时，brief 只是"这是什么"，
+                    # 真正对得上口语的是 triggers（工具面分层后它成了常驻字段，真源仍在 op_spec.json）
+                    'triggers': list(_osl.spec(n.name).get('triggers') or [])})
     ops.sort(key=lambda o: o['op'])
     return {'count': len(ops), 'ops': ops}
 

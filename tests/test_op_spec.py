@@ -17,6 +17,7 @@ op_seealso / knowledge 文档里人肉同步。改成注册表单一真源后，
 """
 import ast
 import io
+import json
 import os
 import sys
 import unittest
@@ -88,10 +89,76 @@ class TestOpSpecRegistry(unittest.TestCase):
 
     def test_budget(self):
         rep = osl.budget_report()
-        self.assertEqual(rep['over'], [], '单条渲染超 %d 字符：%s'
+        self.assertEqual(rep['over'], [], '常驻面单条渲染超 %d 字符：%s'
                          % (rep['perOpMax'], rep['over']))
         self.assertLessEqual(rep['total'], rep['totalMax'],
-                             '已登记 op 渲染合计超 %d' % rep['totalMax'])
+                             '常驻面（tool description）合计超 %d' % rep['totalMax'])
+        # 完整契约不进常驻，但单条仍要有上限（否则 describe 一次就灌爆上下文）
+        self.assertEqual(rep['contract_over'], [], '完整契约单条超 %d 字符：%s'
+                         % (rep['contractPerOpMax'], rep['contract_over']))
+
+    def test_tool_face_tiers(self):
+        """工具面三层（2026-10-03 架构）：常驻只放「选不选 + 怎么调 + 安全铁律」，
+        其余（流程细节/铁律展开/检索词/兜底散文）走按需契约。
+
+        钉住不变量，防止有人把细节又塞回常驻面（那样每次会话都为它付上下文预算）：
+          ① renderOrder ⊆ contractOrder（常驻是契约的子集，不是另一套）
+          ② renderOrder 与 tiers.resident.fields 同源（归属只有一处口径）
+          ③ 常驻渲染里**不出现**按需字段的内容（notes / flow 之类）
+          ④ 契约包含常驻的全部内容（describe 拉得到，信息不丢）
+        """
+        reg = osl.load()
+        res_order = list(reg.get('renderOrder') or [])
+        con_order = list(reg.get('contractOrder') or [])
+        self.assertTrue(res_order, 'renderOrder 为空')
+        self.assertTrue(set(res_order) <= set(con_order), '常驻面必须是契约的子集')
+        self.assertEqual(res_order, list((reg.get('tiers') or {})
+                                         .get('resident', {}).get('fields') or []),
+                         'renderOrder 与 tiers.resident.fields 必须一致（同一处口径）')
+        on_demand = set(con_order) - set(res_order)
+        self.assertTrue(on_demand, '按需面不该为空（分层才有意义）')
+        for op in osl.registered():
+            l0, full = osl.render(op), osl.render_contract(op)
+            self.assertTrue(full.startswith(l0), '%s：契约必须以常驻面开头（信息只增不减）' % op)
+            s = osl.spec(op)
+            for key in ('notes', 'keywords'):
+                v = s.get(key)
+                if not v:
+                    continue
+                text = v if isinstance(v, str) else '\n'.join(str(x) for x in v)
+                self.assertNotIn(text.strip()[:40], l0,
+                                 '%s：%s 属于按需字段，不该出现在常驻渲染里' % (op, key))
+            self.assertLessEqual(len(osl.render(op)), reg['budget']['perOpMax'])
+
+    def test_on_demand_entry_points(self):
+        """按需面必须有入口：dispatcher 的 op='describe:<名>' + 资源 flythings://ops/<名>。"""
+        import mcp_server
+        r = json.loads(mcp_server._describe('flythings_build_ui_flow'))
+        self.assertTrue(r['ok'])
+        self.assertEqual(r['contract'], osl.render_contract('flythings_build_ui_flow'))
+        self.assertIn('流程', r['contract'])              # 按需字段确实在契约里
+        bad = json.loads(mcp_server._describe('flythings_not_an_op'))
+        self.assertFalse(bad['ok'])
+        self.assertEqual(bad['error']['code'], 'UNKNOWN_OP')
+        src = io.open(os.path.join(BASE, 'mcp_extras.py'), encoding='utf-8').read()
+        self.assertIn("flythings://ops/{name}", src)
+        self.assertIn("flythings://ops'", src)
+
+    def test_notes_debt_only_shrinks(self):
+        """notes 是迁移兜底桶：存量登记在册，**只减不增**（新增/变长直接红）。"""
+        reg = osl.load()
+        debt = (reg.get('notesDebt') or {}).get('items') or {}
+        with_notes = {}
+        for op in osl.registered():
+            v = osl.spec(op).get('notes')
+            if v:
+                with_notes[op] = len(v if isinstance(v, str) else '\n'.join(str(x) for x in v))
+        for op, n in with_notes.items():
+            self.assertIn(op, debt, '%s 新增了 notes —— 请写进 flow/params/rules/keywords' % op)
+            self.assertLessEqual(n, int(debt[op]),
+                                 '%s 的 notes 涨了（%d > 登记 %d）：这个桶只许减' % (op, n, debt[op]))
+        for op in debt:
+            self.assertIn(op, reg['ops'], 'notesDebt 登记了不存在的 op：%s' % op)
 
     def test_registry_selfcheck(self):
         self.assertEqual(osl.validate(), [], 'op_spec.json 自检不通过')

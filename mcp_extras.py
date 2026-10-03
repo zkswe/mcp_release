@@ -122,7 +122,11 @@ def _bin_tools_section():
 
 
 def _tools_doc():
-    """工具清单（来自 manifest；文件缺失/损坏时回退代码清单，并在文档里说明原因——不静默降级）。"""
+    """工具清单（来自 manifest；文件缺失/损坏时回退代码清单，并在文档里说明原因——不静默降级）。
+
+    这份清单是**常驻面的索引**：tool description 只带「选不选 + 怎么调」（见 `op_spec.json.tiers`），
+    要看某个 op 的完整契约（流程/铁律/检索词）挂 `flythings://ops/<op 名>` —— 那是按需面。
+    """
     note = ''
     if os.path.isfile(MANIFEST):
         data = None
@@ -134,7 +138,11 @@ def _tools_doc():
         if isinstance(ops, list) and ops:
             lines = ['# FlyThings MCP 工具清单（%s，%d 个）'
                      % (data.get('version'), data.get('toolCount') or len(ops)),
-                     '', '风险分级：read=只读 / write=写本地文件 / device=会连真机', '']
+                     '',
+                     '风险分级：read=只读 / write=写本地文件 / device=会连真机。',
+                     '这里是**索引**（一句话 + 参数名）；**完整契约**（流程/铁律坑）挂 '
+                     '`flythings://ops/<op 名>`，或用 `flythings_kb(op="describe:<op 名>")`。',
+                     '']
             for cat in sorted({o.get('category', 'other') for o in ops}):
                 lines.append('## %s' % cat)
                 for o in ops:
@@ -282,6 +290,64 @@ def register(mcp):
     def tool_catalog() -> str:
         """工具清单 + 风险分级（read/write/device）——写操作前先看这里。"""
         return _tools_doc()
+
+    @mcp.resource('flythings://ops', name='op-contract-index',
+                  title='FlyThings op 完整契约（索引）', mime_type='text/markdown')
+    def op_contract_index() -> str:
+        """47 个 op 的完整契约索引（一句话 + 触发词 + 参数名 + 去哪看细节）。
+
+        工具面分层（`op_spec.json.tiers`）：tool description 只是**常驻**的「选不选 + 怎么调」；
+        完整契约（流程/铁律/检索词）是**按需**的 —— 挂 `flythings://ops/<op 名>` 取单个。
+        """
+        import op_spec_loader as _osl
+        L = ['# FlyThings op 完整契约 · 索引',
+             '',
+             '> 常驻的 tool description 只带「选不选 + 怎么调」（省每次会话的上下文预算）；',
+             '> **完整契约**（调用流程 / 铁律 / 检索词）按需取：`flythings://ops/<op 名>`，'
+             '或 `flythings_kb(op="describe:<op 名>")`。',
+             '']
+        for op in _osl.registered():
+            s = _osl.spec(op)
+            trig = ' / '.join(s.get('triggers') or []) or '—'
+            args = '、'.join(p.get('name') for p in (s.get('params') or [])) or '（见函数签名）'
+            L.append('- **`%s`**（%s / %s）%s' % (op, s.get('risk'), s.get('category'),
+                                                 s.get('summary') or ''))
+            L.append('  - 何时用：%s ｜ 参数：%s' % (trig, args))
+            if s.get('docRef'):
+                L.append('  - 细节文档：`%s`' % s['docRef'])
+        return '\n'.join(L) + '\n'
+
+    @mcp.resource('flythings://ops/{name}', name='op-contract',
+                  title='FlyThings op 完整契约（单个）', mime_type='text/markdown')
+    def op_contract(name: str) -> str:
+        """单个 op 的完整契约（调用流程 / 铁律 / 检索词 / 未归类的兜底说明）。
+
+        什么时候挂：已经选中这个 op 但 description 里的摘要不够时（多步流程、踩坑铁律）。
+        """
+        import op_spec_loader as _osl
+        op = (name or '').strip()
+        try:
+            s = _osl.spec(op)
+        except Exception:
+            L = ['# 未登记的 op：%s' % op, '', '可用 op 清单见 `flythings://ops`。']
+            import difflib
+            near = difflib.get_close_matches(op, _osl.registered(), n=5, cutoff=0.4)
+            if near:
+                L += ['', '是不是想找：' + '、'.join('`%s`' % x for x in near)]
+            return '\n'.join(L) + '\n'
+        L = ['# %s' % op, '',
+             '风险 %s ｜ 分类 %s ｜ 阶段 %s' % (s.get('risk'), s.get('category'), s.get('stage')),
+             '', '---', '', _osl.render_contract(op), '']
+        if s.get('docRef'):
+            L += ['', '细节文档：`%s`' % s['docRef']]
+        try:
+            import kb_tools as _kb
+            sa = _kb._seealso_for(op) or []
+        except Exception:
+            sa = []
+        if sa:
+            L += ['', '相关知识：' + '、'.join('`%s`' % x for x in sa)]
+        return '\n'.join(L) + '\n'
 
     @mcp.resource('flythings://version', name='version',
                   title='FlyThings MCP 版本', mime_type='text/markdown')

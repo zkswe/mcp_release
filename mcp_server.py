@@ -59,6 +59,43 @@ def _catalog() -> str:
     return json.dumps({"count": len(ops), "ops": ops}, ensure_ascii=False)
 
 
+def _describe(name: str) -> str:
+    """按需拉某个 op 的**完整契约**（常驻 description 只有 L0：选不选 + 怎么调）。
+
+    工具面分层见 `op_spec.json.tiers`：常驻面省下的是每次会话的上下文预算，
+    代价是"细节要主动拉"—— 选中一个 op、准备调它之前，若摘要不够就调这里。
+    """
+    op = (name or '').strip()
+    if op not in OPS:
+        out = {"ok": False,
+               "error": {"code": "UNKNOWN_OP", "msg": "unknown op: %s" % op,
+                         "hint": "调 op='list' 取全部 op 与参数名",
+                         "retryable": False},
+               "candidates": _suggest(op)}
+        return json.dumps(out, ensure_ascii=False)
+    try:
+        import op_spec_loader as osl
+        out = {"ok": True, "op": op, "risk": osl.risk(op), "category": osl.category(op),
+               "stage": osl.stage(op), "docRef": osl.doc_ref(op) or '',
+               "contract": osl.render_contract(op)}
+    except Exception as e:                       # 注册表不可用 → 明说（不静默给空契约）
+        return json.dumps({"ok": False,
+                           "error": {"code": "CONTRACT_UNAVAILABLE",
+                                     "msg": "op 契约注册表不可用: %s: %s"
+                                            % (type(e).__name__, e),
+                                     "hint": "检查 op_spec.json / op_spec_loader.py 是否随包分发",
+                                     "retryable": False}},
+                          ensure_ascii=False)
+    try:
+        import kb_tools as _kb
+        sa = _kb._seealso_for(op) or []
+        if sa:
+            out['seeAlso'] = sa
+    except Exception as e:                       # seeAlso 是加分项（缺了不影响契约本身），但不静默
+        out['seeAlsoError'] = '%s: %s' % (type(e).__name__, e)
+    return json.dumps(out, ensure_ascii=False)
+
+
 def _suggest(op: str, limit: int = 5) -> list:
     """未知名 op 的可机读候选：①合并/改名的旧名 → 直接给新名 ②按名字片段打分排序。"""
     key = (op or '').lower()
@@ -101,8 +138,11 @@ async def flythings_kb(op: str = "list", args: str = "{}") -> str:
     工程创建与编译部署、依赖包/Manifest、多语言 i18n、知识库检索、UI 预览与像素验收、
     真机截图、资源生成、自动化测试。其他话题（闲聊、文档、其他产品）不要调用。
 
-    用法：先传 op="list" 取全部可用操作及其参数名，再用 op=<操作名> + args='{"参数": 值}'
+    用法：先传 op="list" 取全部可用操作**及其参数名**（索引），再用 op=<操作名> + args='{"参数": 值}'
     （args 传 JSON 字符串；部分客户端只支持对象，也可直接传 dict）。
+    ⚠️ **每个 op 的 tool description 只是摘要**（"选不选 + 怎么调"）—— 选中后要看完整契约
+    （多步流程 / 踩坑铁律 / 相关知识），传 `op="describe:<op 名>"` 拉一次；批量看清单用
+    资源 `flythings://ops`。
 
     ⚠️ 能力不止这 47 个 op：设备端预编译工具（touch 触摸注入 / busybox / ui_test /
     zkshot）在 `<MCP 安装目录>/bin_tools/<平台>/` 下，**不是 op、不占 op 名额**——
@@ -111,6 +151,8 @@ async def flythings_kb(op: str = "list", args: str = "{}") -> str:
     """
     if op in ("", "list", "help", "?"):
         return _catalog()
+    if op.startswith('describe:'):
+        return _describe(op.split(':', 1)[1])
     fn = OPS.get(op)
     if fn is None:
         try:

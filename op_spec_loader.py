@@ -147,15 +147,9 @@ def _lines_prefix(prefix, v):
     return '\n'.join('%s %s' % (prefix, str(x)) for x in (v or []) if str(x).strip())
 
 
-def render(op):
-    """把 spec 渲染成 description 文本（确定性；无尾随空白）。
-
-    版式：summary + 空行 + 各块（不空行）。块的顺序由注册表 renderOrder 决定。
-    """
+def _render_fields(op, order):
+    """按给定字段顺序渲染（`render` 与 `render_contract` 的唯一实现）。"""
     s = spec(op)
-    reg = load()
-    order = reg.get('renderOrder') or ['summary', 'triggers', 'flow', 'notes', 'params',
-                                      'returns', 'hardRules', 'rules', 'keywords', 'docRef']
     body = []
     for key in order:
         if key == 'summary':
@@ -186,20 +180,52 @@ def render(op):
     return (summary(op).strip() + '\n\n' + '\n'.join(body)).strip()
 
 
+def render(op):
+    """**常驻面**（tool description）文本：只渲染 `renderOrder` 里的字段。
+
+    工具面分三层（真源 `tiers`）：常驻 = 「选不选 + 怎么调 + 安全铁律」；
+    完整契约（flow/rules/keywords/notes…）走 `render_contract()` 按需拉。
+    所以本函数是**预算敏感**的 —— 加字段前先想清楚它属不属于常驻面。
+    """
+    order = load().get('renderOrder') or ['summary', 'triggers', 'params', 'hardRules']
+    return _render_fields(op, order)
+
+
+def render_contract(op):
+    """**完整契约**文本（按需：`op='describe:<名>'` / 资源 `flythings://ops/<名>`）。
+
+    比常驻面多出 flow / returns / rules / keywords / notes —— 这些**只在选中之后**才需要，
+    放进常驻面就是把每次会话的上下文预算花在"可能用不到"的细节上（2026-10-03 架构调整）。
+    """
+    order = load().get('contractOrder') or (
+        load().get('renderOrder') or ['summary', 'triggers', 'params', 'hardRules']
+    ) + ['flow', 'returns', 'rules', 'keywords', 'notes']
+    return _render_fields(op, order)
+
+
 # --------------------------------------------------------------------------
 # 预算与自检（供门禁消费）
 # --------------------------------------------------------------------------
 
 def budget_report():
-    """{per_op:[(op, chars)], total, over:[(op, chars)]}（口径 = 渲染产物）。"""
+    """常驻面预算 → {per_op, total, perOpMax, totalMax, over, contract_over, contractPerOpMax}。
+
+    `per_op` 量的是**常驻面**（`render` = tool description），不是完整契约 ——
+    完整契约走按需、不进常驻，只受 `contractPerOpMax` 单条约束（合计不设限）。
+    """
     b = load().get('budget') or {}
-    per_op_max = int(b.get('perOpMax', 900))
-    total_max = int(b.get('totalMax', 12000))
+    per_op_max = int(b.get('perOpMax', 360))
+    total_max = int(b.get('totalMax', 6000))
+    c_max = int(b.get('contractPerOpMax', 900))
     rows = [(op, len(render(op))) for op in registered()]
     rows.sort(key=lambda r: -r[1])
+    crows = [(op, len(render_contract(op))) for op in registered()]
+    crows.sort(key=lambda r: -r[1])
     return {'per_op': rows, 'total': sum(c for _, c in rows),
             'perOpMax': per_op_max, 'totalMax': total_max,
-            'over': [r for r in rows if r[1] > per_op_max]}
+            'over': [r for r in rows if r[1] > per_op_max],
+            'contract_per_op': crows, 'contractPerOpMax': c_max,
+            'contract_over': [r for r in crows if r[1] > c_max]}
 
 
 def validate():
@@ -228,6 +254,36 @@ def validate():
         d = s.get('docRef')
         if d and not os.path.isfile(os.path.join(BASE, str(d))):
             errs.append('%s: docRef 指向不存在的文件: %s' % (op, d))
+
+    # 三层架构（tiers）+ 预算口径必须齐备 —— 否则消费方会各写一份渲染顺序
+    tiers = reg.get('tiers') or {}
+    for seg in ('resident', 'onDemand', 'deep'):
+        if not (tiers.get(seg) or {}).get('what'):
+            errs.append('tiers.%s 缺说明（三层架构是渲染口径的来源）' % seg)
+    if list(reg.get('renderOrder') or []) != list((tiers.get('resident') or {}).get('fields') or []):
+        errs.append('renderOrder 与 tiers.resident.fields 不一致（常驻面归属只能有一处口径）')
+    if not set(reg.get('renderOrder') or []) <= set(reg.get('contractOrder') or []):
+        errs.append('renderOrder 必须是 contractOrder 的子集（常驻 ⊆ 完整契约）')
+    for k in ('perOpMax', 'totalMax', 'contractPerOpMax'):
+        if not (reg.get('budget') or {}).get(k):
+            errs.append('budget.%s 缺失' % k)
+
+    # notes 债基线：**只减不增**（见 op_spec.json.notesDebt 的口径）
+    debt = (reg.get('notesDebt') or {}).get('items') or {}
+    for op, s in sorted(reg['ops'].items()):
+        v = s.get('notes')
+        if not v:
+            continue
+        n = len(v if isinstance(v, str) else '\n'.join(str(x) for x in v))
+        if op not in debt:
+            errs.append('%s: 新增了 notes —— notes 是迁移兜底桶，请写进 flow/params/rules/keywords'
+                        '（常驻/按需字段），别往兜底桶里加' % op)
+        elif n > int(debt[op]):
+            errs.append('%s: notes 从登记的 %d 字符涨到 %d —— 这个桶只许减，请拆进结构化字段'
+                        % (op, int(debt[op]), n))
+    for op in debt:
+        if op not in reg['ops']:
+            errs.append('notesDebt 登记了不存在的 op: %s' % op)
     return errs
 
 

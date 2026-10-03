@@ -123,7 +123,8 @@
       ],
       "risk": "write",
       "category": "package",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_attach_cli_tools",
@@ -133,7 +134,8 @@
       ],
       "risk": "write",
       "category": "project",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_bugreport",
@@ -152,11 +154,12 @@
       ],
       "risk": "write",
       "category": "device",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_build_ui_flow",
-      "brief": "⚠️ 场景别名（编译/部署类意图一律本工具，禁自造命令）：口语「编译/构建/调试/部署/推送到设备/跑一下」；固化升级（update.img）→ flythings_pack_up",
+      "brief": "FlyThings UI 构建与部署全流程（pack → install → build → 设备探测 → launch）。",
       "args": [
         "project_root",
         "with_launch",
@@ -166,7 +169,17 @@
       ],
       "risk": "device",
       "category": "build",
-      "stage": "build"
+      "stage": "build",
+      "triggers": [
+        "编译",
+        "构建",
+        "调试",
+        "部署",
+        "推送到设备",
+        "跑一下",
+        "上机",
+        "传到设备"
+      ]
     },
     {
       "op": "flythings_check_project_deps",
@@ -181,7 +194,8 @@
       ],
       "risk": "read",
       "category": "project",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_create_bin_project",
@@ -196,7 +210,8 @@
       ],
       "risk": "write",
       "category": "project",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_create_project",
@@ -211,7 +226,8 @@
       ],
       "risk": "write",
       "category": "project",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_device_preflight",
@@ -226,7 +242,8 @@
       ],
       "risk": "read",
       "category": "build",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_device_screenshot",
@@ -253,7 +270,8 @@
       ],
       "risk": "device",
       "category": "device",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_edit_ftu",
@@ -266,7 +284,8 @@
       ],
       "risk": "write",
       "category": "layout",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_fui_pack",
@@ -276,7 +295,8 @@
       ],
       "risk": "write",
       "category": "layout",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_fui_unpack",
@@ -288,7 +308,8 @@
       ],
       "risk": "write",
       "category": "layout",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_gen_logic_stub",
@@ -300,7 +321,8 @@
       ],
       "risk": "write",
       "category": "project",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_gen_ui_test",
@@ -315,7 +337,8 @@
       ],
       "risk": "device",
       "category": "device",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_generate_ui_assets",
@@ -326,7 +349,8 @@
       ],
       "risk": "write",
       "category": "assets",
-      "stage": "design"
+      "stage": "design",
+      "triggers": []
     },
     {
       "op": "flythings_get_package_api",
@@ -338,7 +362,8 @@
       ],
       "risk": "read",
       "category": "package",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_get_project_spec",
@@ -346,7 +371,8 @@
       "args": [],
       "risk": "read",
       "category": "layout",
-      "stage": "design"
+      "stage": "design",
+      "triggers": []
     },
     {
       "op": "flythings_get_version",
@@ -356,7 +382,8 @@
       ],
       "risk": "read",
       "category": "kbase",
-      "stage": "other"
+      "stage": "other",
+      "triggers": []
     },
     {
       "op": "flythings_hardware_info",
@@ -367,7 +394,8 @@
       ],
       "risk": "read",
       "category": "kbase",
-      "stage": "other"
+      "stage": "other",
+      "triggers": []
     },
     {
       "op": "flythings_html_to_json",
@@ -380,7 +408,8 @@
       ],
       "risk": "write",
       "category": "layout",
-      "stage": "design"
+      "stage": "design",
+      "triggers": []
     },
     {
       "op": "flythings_i18n_add_language",
@@ -394,7 +423,8 @@
       ],
       "risk": "write",
       "category": "i18n",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_i18n_export",
@@ -407,7 +437,8 @@
       ],
       "risk": "write",
       "category": "i18n",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_i18n_import",
@@ -420,7 +451,8 @@
       ],
       "risk": "write",
       "category": "i18n",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_i18n_refactor",
@@ -432,7 +464,8 @@
       ],
       "risk": "write",
       "category": "i18n",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_i18n_scan",
@@ -442,7 +475,8 @@
       ],
       "risk": "read",
       "category": "i18n",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_i18n_to_json",
@@ -455,7 +489,8 @@
       ],
       "risk": "write",
       "category": "i18n",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_knowledge_capture",
@@ -474,7 +509,8 @@
       ],
       "risk": "write",
       "category": "kbase",
-      "stage": "other"
+      "stage": "other",
+      "triggers": []
     },
     {
       "op": "flythings_knowledge_export",
@@ -488,7 +524,8 @@
       ],
       "risk": "read",
       "category": "kbase",
-      "stage": "other"
+      "stage": "other",
+      "triggers": []
     },
     {
       "op": "flythings_knowledge_gaps",
@@ -500,7 +537,8 @@
       ],
       "risk": "read",
       "category": "kbase",
-      "stage": "other"
+      "stage": "other",
+      "triggers": []
     },
     {
       "op": "flythings_knowledge_search",
@@ -511,7 +549,8 @@
       ],
       "risk": "read",
       "category": "kbase",
-      "stage": "design"
+      "stage": "design",
+      "triggers": []
     },
     {
       "op": "flythings_layout_audit",
@@ -522,7 +561,8 @@
       ],
       "risk": "read",
       "category": "layout",
-      "stage": "design"
+      "stage": "design",
+      "triggers": []
     },
     {
       "op": "flythings_list_packages",
@@ -532,7 +572,8 @@
       ],
       "risk": "read",
       "category": "package",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_manifest",
@@ -545,7 +586,8 @@
       ],
       "risk": "write",
       "category": "package",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_map_control",
@@ -556,7 +598,8 @@
       ],
       "risk": "read",
       "category": "layout",
-      "stage": "design"
+      "stage": "design",
+      "triggers": []
     },
     {
       "op": "flythings_pack_upgrade",
@@ -571,7 +614,15 @@
       ],
       "risk": "write",
       "category": "build",
-      "stage": "build"
+      "stage": "build",
+      "triggers": [
+        "打包升级包",
+        "出升级包",
+        "固化",
+        "刷进设备",
+        "出货版本",
+        "TF卡升级包"
+      ]
     },
     {
       "op": "flythings_package_search",
@@ -582,7 +633,8 @@
       ],
       "risk": "read",
       "category": "package",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_query_package",
@@ -593,7 +645,8 @@
       ],
       "risk": "read",
       "category": "package",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_read_json",
@@ -603,7 +656,8 @@
       ],
       "risk": "read",
       "category": "layout",
-      "stage": "design"
+      "stage": "design",
+      "triggers": []
     },
     {
       "op": "flythings_resolve_dependencies",
@@ -614,7 +668,8 @@
       ],
       "risk": "read",
       "category": "package",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_selfcheck",
@@ -626,7 +681,8 @@
       ],
       "risk": "device",
       "category": "device",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_test_run",
@@ -644,7 +700,8 @@
       ],
       "risk": "device",
       "category": "device",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     },
     {
       "op": "flythings_translate_ui",
@@ -658,7 +715,8 @@
       ],
       "risk": "write",
       "category": "layout",
-      "stage": "design"
+      "stage": "design",
+      "triggers": []
     },
     {
       "op": "flythings_ui_preview",
@@ -670,7 +728,8 @@
       ],
       "risk": "write",
       "category": "layout",
-      "stage": "design"
+      "stage": "design",
+      "triggers": []
     },
     {
       "op": "flythings_ui_schema",
@@ -681,7 +740,8 @@
       ],
       "risk": "read",
       "category": "layout",
-      "stage": "design"
+      "stage": "design",
+      "triggers": []
     },
     {
       "op": "flythings_ui_visual",
@@ -719,7 +779,8 @@
       ],
       "risk": "write",
       "category": "ui-visual",
-      "stage": "design"
+      "stage": "design",
+      "triggers": []
     },
     {
       "op": "flythings_validate_project",
@@ -729,7 +790,8 @@
       ],
       "risk": "read",
       "category": "layout",
-      "stage": "design"
+      "stage": "design",
+      "triggers": []
     },
     {
       "op": "flythings_verify_assets",
@@ -739,7 +801,8 @@
       ],
       "risk": "read",
       "category": "layout",
-      "stage": "build"
+      "stage": "build",
+      "triggers": []
     }
   ],
   "docs": {
