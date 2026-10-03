@@ -71,7 +71,7 @@ else:
     _USC_ERR = ''
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.171-open'
+MCP_VERSION = '0.27.172-open'
 MCP_BUILD = '2026-10-02'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -490,6 +490,7 @@ def flythings_hardware_info(model: str = '', platform: str = '') -> str:
     """查硬件型号库：按平台/型号拿到分辨率、按键值、接口规格与平台差异化。
 
     触发：这块屏什么参数 / 板子规格 / 型号是多少 / 按键值 / 硬件差异
+    ⚠️⚠️ 平台/分辨率以**用户或型号库**为准；只说型号系列时不要外推（猜错 = 整份工程返工）。
     """
     return json.dumps(hw.query(model, platform), ensure_ascii=False)
 
@@ -746,6 +747,7 @@ def flythings_get_project_spec() -> str:
     """返回 FlyThings 项目结构化规范（目录规则、生成规则、注意事项）。编写/修改项目代码前调用。新需求先出设计稿/原型并确认。
 
     触发：工程规范 / 目录怎么放 / 写代码前看什么 / 项目结构 / 注意事项
+    ⚠️⚠️ **没读过规范不许开始写** `ui/*.json` 或业务代码 —— 目录规则/生成规则/注意事项都在这里。
     """
     return json.dumps(pt.flythings_get_project_spec(), ensure_ascii=False)
 

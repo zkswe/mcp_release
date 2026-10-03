@@ -28,6 +28,8 @@ prompts（模板只给流程与安全默认，不代替工具调用）：
 """
 import io
 import json
+
+import flow_loader
 import os
 
 BASE = os.path.dirname(os.path.abspath(__file__))
@@ -177,87 +179,21 @@ def _version_doc():
             % (kb_tools.MCP_VERSION, kb_tools.MCP_BUILD, len(kb_tools.OP_NAMES), f))
 
 
-# ---------------- prompts 模板 ----------------
-
-_SAFETY = ('安全默认：改布局先出预览稿给用户确认；`flythings_ui_visual(action="edit_apply")` 先 dry_run；'
-           '`flythings_fui_pack` / `flythings_build_ui_flow` 默认不 pack、不推真机，'
-           '要 pack / 要上设备必须显式确认后传参。')
-
-PROMPTS = {
-    'flythings-new-project': {
-        'title': '新建 FlyThings 工程',
-        'description': '从零建工程：确认平台/分辨率 → 建骨架 → 布局 → 预览 → 编译',
-        'args': ['platform', 'resolution', 'requirement'],
-        'body': ('用 FlyThings 新建工程：平台 {platform}、分辨率 {resolution}。需求：{requirement}\n\n'
-                 '步骤：\n'
-                 '1. `flythings_create_project`（platform/resolution 必须由用户明确给出，不要猜；'
-                 'with_cli=True 带上 fui/fun）\n'
-                 '2. 先看知识库 `flythings://knowledge/devflow/html-subset-quickref.md` 与'
-                 ' `knowledge/devflow/prototype-flow.md`（检索词：原型流程 / HTML_SUBSET），'
-                 '按受限 HTML 写原型稿（图标优先、禁 emoji 文本）\n'
-                 '3. `flythings_html_to_json` 转布局 → `flythings_ui_preview` 出预览稿给用户确认'
-                 '（未确认不要 pack、不要写逻辑）\n'
-                 '4. 确认后 `flythings_build_ui_flow` 编译（默认不推真机）\n\n' + _SAFETY),
-    },
-    'flythings-ui-from-prototype': {
-        'title': 'HTML 原型 → UI 布局',
-        'description': '原型稿转 json：效果转图、预览确认、产物核对',
-        'args': ['requirement'],
-        'body': ('按需求做 UI 原型转布局。需求：{requirement}\n\n'
-                 '1. 先检索「HTML_SUBSET 原型规范 / 控件映射 / data-icon 图标」'
-                 '（`flythings_knowledge_search`），必要时读 '
-                 '`flythings://knowledge/devflow/html-subset-quickref.md`\n'
-                 '2. 写受限 HTML（效果由转换器自动转图：渐变/阴影圆角/emoji/loading；'
-                 '禁自绘 1x png）\n'
-                 '3. `flythings_html_to_json` → `flythings_ui_preview` 出预览稿，'
-                 '**只把预览稿交给用户确认**\n'
-                 '4. 确认后 `flythings_verify_assets` 核对产物（图尺寸必须 == 控件盒）→ '
-                 '再 pack / 写 logic.cc\n\n' + _SAFETY),
-    },
-    'flythings-ui-verify': {
-        'title': 'UI 验收（预览 → 真机 → 像素）',
-        'description': '三段式验收 + 产物核对，改前改后对比',
-        'args': ['project_root'],
-        'body': ('验收工程 {project_root} 的界面。\n\n'
-                 '1. 静态：`flythings_validate_project` + `flythings_verify_assets`'
-                 '（引用存在 + 自动生成图尺寸 == 控件盒）\n'
-                 '2. 预览：`flythings_ui_preview`（零 token 看结构与相对关系；'
-                 '多整屏 window 工程自带页面切换条 + `#window__N` 直达）\n'
-                 '3. 真机像素真相：`flythings_device_screenshot`（方向 rotate=\'auto\'，'
-                 '按项目工程 rotateScreen；改前先抓一张）\n'
-                 '4. 对比：`flythings_ui_visual(action="diff")`（0 token 差异清单；只看差异区小图给视觉模型）\n'
-                 '5. 结论：给用户「改了什么/像素差异/是否可交付」，别把整屏原图丢给模型\n\n' + _SAFETY),
-    },
-    'flythings-deploy-debug': {
-        'title': '编译部署到真机调试',
-        'description': '编译 → 按需推真机 → 抓屏/日志排查',
-        'args': ['project_root', 'device'],
-        'body': ('把工程 {project_root} 编译并部署调试（设备：{device}）。\n\n'
-                 '1. `flythings_build_ui_flow`（默认**只编译不推真机**；用户明确要上设备才传 '
-                 'with_launch=True；fun launch 网络推送失败会自动重试 5 次，仍失败必须问用户接入方式，'
-                 '不要自写 push 脚本）\n'
-                 '2. 画面确认：`flythings_device_screenshot`（不要用 admin/其他设备的老截图）\n'
-                 '3. 无画面/黑屏排查顺序：先日志（事件到没到控件 / 回调进没进）再像素（抓帧要按 pan 取当前页）；'
-                 '设备缺命令就 push busybox（见 `flythings://knowledge/devflow/busybox-debug-library.md`）\n'
-                 '4. i18n 改动：`fun launch` 不推翻译，必须 `flythings_i18n_to_json` 补推\n\n' + _SAFETY),
-    },
-    'flythings-package-deps': {
-        'title': '依赖包与 Manifest',
-        'description': '检索现有 package、生成 Manifest、递归解析依赖',
-        'args': ['requirement', 'platform'],
-        'body': ('为功能「{requirement}」在平台 {platform} 上准备依赖。\n\n'
-                 '1. `flythings_package_search` 检索包生态（**有包用包，禁止手写协议栈/库**）\n'
-                 '2. `flythings_get_package_api` 看该包头文件级 API（只认头文件，禁猜、禁反编译）\n'
-                 '3. `flythings_manifest`（dry_run 先看推荐，确认后写 Manifest.xml）\n'
-                 '4. `flythings_resolve_dependencies` 递归解析 + 冲突检查\n'
-                 '5. `flythings_check_project_deps` 核对代码 include 与 Manifest 声明一致\n\n' + _SAFETY),
-    },
-}
+# ---------------- prompts（正文由 flow_spec.json 派生，本文件只留签名） ----------------
+#
+# FastMCP 靠**函数签名**生成参数 schema，所以每个 prompt 必须有显式参数名；
+# 而标题 / 说明 / 正文 / 参数表全部来自 `flow_spec.json` 的 action 流程（域⑩ 唯一真源）——
+# 改流程改注册表，不在本文件抄一份。签名与注册表 `inputs` 的一致性由 tests/test_flows.py 钉住。
 
 
-def _render(name, **kwargs):
-    """渲染 prompt 模板：未提供的参数留提示语（让 AI 先问用户而不是瞎猜）。"""
-    spec = PROMPTS[name]
+def _prompt_spec(flow_id):
+    """取动作流程渲染出的 prompt 规格 → {'title','description','args','body'}。"""
+    return flow_loader.render_prompt(flow_id)
+
+
+def _render(flow_id, **kwargs):
+    """渲染动作流程 → prompt 正文；未提供的参数留提示语（让 AI 先问用户而不是瞎猜）。"""
+    spec = _prompt_spec(flow_id)
     vals = {k: (kwargs.get(k) or '（未提供，先问用户）') for k in spec['args']}
     return spec['body'].format(**vals)
 
@@ -356,36 +292,36 @@ def register(mcp):
         return _version_doc()
 
     # prompts：每个都必须有**显式参数名**（FastMCP 靠签名生成参数 schema，**kwargs 会变成无参）
-    @mcp.prompt(name='flythings-new-project', title=PROMPTS['flythings-new-project']['title'],
-                description=PROMPTS['flythings-new-project']['description'])
+    @mcp.prompt(name='flythings-new-project', title=_prompt_spec('new-project')['title'],
+                description=_prompt_spec('new-project')['description'])
     def new_project(platform: str = '', resolution: str = '', requirement: str = '') -> str:
         """新建工程流程（平台/分辨率/需求）。"""
-        return _render('flythings-new-project', platform=platform, resolution=resolution,
+        return _render('new-project', platform=platform, resolution=resolution,
                        requirement=requirement)
 
     @mcp.prompt(name='flythings-ui-from-prototype',
-                title=PROMPTS['flythings-ui-from-prototype']['title'],
-                description=PROMPTS['flythings-ui-from-prototype']['description'])
+                title=_prompt_spec('ui-from-prototype')['title'],
+                description=_prompt_spec('ui-from-prototype')['description'])
     def ui_from_prototype(requirement: str = '') -> str:
         """HTML 原型 → json 布局流程。"""
-        return _render('flythings-ui-from-prototype', requirement=requirement)
+        return _render('ui-from-prototype', requirement=requirement)
 
-    @mcp.prompt(name='flythings-ui-verify', title=PROMPTS['flythings-ui-verify']['title'],
-                description=PROMPTS['flythings-ui-verify']['description'])
+    @mcp.prompt(name='flythings-ui-verify', title=_prompt_spec('ui-verify')['title'],
+                description=_prompt_spec('ui-verify')['description'])
     def ui_verify(project_root: str = '') -> str:
         """三段式 UI 验收 + 产物核对。"""
-        return _render('flythings-ui-verify', project_root=project_root)
+        return _render('ui-verify', project_root=project_root)
 
-    @mcp.prompt(name='flythings-deploy-debug', title=PROMPTS['flythings-deploy-debug']['title'],
-                description=PROMPTS['flythings-deploy-debug']['description'])
+    @mcp.prompt(name='flythings-deploy-debug', title=_prompt_spec('deploy-debug')['title'],
+                description=_prompt_spec('deploy-debug')['description'])
     def deploy_debug(project_root: str = '', device: str = '') -> str:
         """编译部署到真机调试（默认不推真机）。"""
-        return _render('flythings-deploy-debug', project_root=project_root, device=device)
+        return _render('deploy-debug', project_root=project_root, device=device)
 
-    @mcp.prompt(name='flythings-package-deps', title=PROMPTS['flythings-package-deps']['title'],
-                description=PROMPTS['flythings-package-deps']['description'])
+    @mcp.prompt(name='flythings-package-deps', title=_prompt_spec('package-deps')['title'],
+                description=_prompt_spec('package-deps')['description'])
     def package_deps(requirement: str = '', platform: str = '') -> str:
         """依赖包检索 + Manifest 生成。"""
-        return _render('flythings-package-deps', requirement=requirement, platform=platform)
+        return _render('package-deps', requirement=requirement, platform=platform)
 
     return mcp

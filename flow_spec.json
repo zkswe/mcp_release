@@ -1,0 +1,875 @@
+{
+  "authority": "「开发流程」的唯一真源（域⑩）。此前流程知识有三份副本：MCP prompts（mcp_extras.py::PROMPTS，按**动作**切）、用户级 skills（按**场景**切）、SCENARIO_COVERAGE.md（散文版），外加 op_spec.json 里 6 个 op 的 flow 字段。两条轴不是冗余、是**切片**——都穿过同一批步骤原子，所以真源的做法是：步骤提为原子（steps），两条轴各自引用（flows[].steps）。不变量同样在此去重（原来「图片尺寸 == 控件盒」在 3 个 skill + op hardRules 各写一遍）。派生：scenario → 用户级 SKILL.md（scripts/gen_flow_skills.py）；action → mcp_extras 的 prompts（运行时派生）；全部 → knowledge/devflow/flow-index.md。改流程 = 改本文件，禁止在派生物上手改。",
+  "updated": "2026-10-03",
+  "precedence": "两份副本冲突时**以 skill 为准**（它经真机打磨过）；prompt 是 skill 的「动作子集」视图。已知旧分歧：prompt 说 create_project 要 with_cli=True（skill 没提）、prompt 步骤读 html-subset-quickref.md（skill 走 knowledge_search）、skill 有平台分叉而 prompt 没有。",
+  "safety": "安全默认：改布局先出预览稿给用户确认；改盘类（edit_apply / 分辨率适配）先 dry_run；flythings_fui_pack / flythings_build_ui_flow 默认不 pack、不推真机，要 pack / 要上设备必须显式确认后传参。",
+  "retrievalHints": [
+    "从零做个界面 / 我想做个面板 / 怎么开始",
+    "设计稿怎么变界面 / 原型转 json / 还原度",
+    "LVGL 迁过来 / 换框架 / 控件对应关系",
+    "改已有工程 / 加个按钮 / 换个配色",
+    "适配面板分辨率该走什么流程 / 换块屏怎么改",
+    "编译部署流程 / 上机顺序 / 做完怎么验收"
+  ],
+  "invariants": {
+    "src-activity-readonly": {
+      "rule": "`src/activity/` 由 IDE 按 ftu 生成、**禁手改**；业务只写 `src/logic/*.cc`",
+      "why": "手改会在下次生成时被覆盖，白写"
+    },
+    "image-size-eq-box": {
+      "rule": "图片尺寸必须 == 控件盒；换图后必跑 `flythings_verify_assets`",
+      "why": "图 != 盒 时引擎拉伸填充且**不报错**，属静默质量缺陷"
+    },
+    "json-pack-then-launch": {
+      "rule": "改 json → 必 `flythings_fui_pack` → 再 launch → 再抓屏；四步不许跳",
+      "why": "设备加载的是 ftu 不是 json，不 pack 就是「改了像没改」"
+    },
+    "platform-consistency": {
+      "rule": "平台 / 架构 / libc / 包键**四者一致**（ARM 与 RISC-V64 二进制不通用；Z20/Z21=glibc，其余=musl）",
+      "why": "任一处错配 → 链接失败或运行时崩溃，且现象离根因很远"
+    },
+    "schema-before-write": {
+      "rule": "写 json 字段前查 `flythings_ui_schema`，**不凭记忆填**",
+      "why": "字段名/必填键/默认值以 schema 为唯一真源；错字段会加载异常"
+    },
+    "callback-name-by-caption": {
+      "rule": "回调名按 **caption** 拼（`on<Event>_<Caption>`）；`listview` 的 count/data/click **三条成组**",
+      "why": "caption 改了没补桩 → 点了没反应；三回调缺一条 → 列表空白"
+    },
+    "no-selfmade-commands": {
+      "rule": "口语「编译 / 构建 / 调试 / 部署 / 推设备 / 跑一下」**一律** `flythings_build_ui_flow`，不自造命令、不自写 push 脚本",
+      "why": "自造命令会绕过 pack / 设备探测 / 日志清理，产出的现象不可信"
+    },
+    "dry-run-and-confirm": {
+      "rule": "写操作默认 dry_run / 不推真机；pack 与推真机必须显式确认后传参",
+      "why": "误推会污染真机现场，且覆盖掉可用于对比的旧画面"
+    }
+  },
+  "steps": {
+    "clarify-params": {
+      "title": "先把三个参数定下来（别猜）",
+      "op": "flythings_hardware_info",
+      "how": [
+        "平台：用户说型号 → `flythings_hardware_info(model=…)` 拿 preset；只说平台 → `flythings_hardware_info(platform=…)`",
+        "分辨率：同上来；**拿不到就问**，不要按同系列外推",
+        "交互：有哪些控件要能点 / 能输 / 能滑？（决定回调桩与业务）"
+      ],
+      "gate": "precondition",
+      "gateHow": "平台与分辨率必须由用户/型号库给出；两者任一缺失就停下来问，不猜",
+      "setsState": [
+        "paramsDecided"
+      ],
+      "gotchas": [
+        "**平台是分叉点**：ARM（Z20/Z21/V85X/T113）与 RISC-V64（F133/F135）二进制不通用，包键也不同（`f133` / `f136`）；链库 `src/dependencies/lib/` 必须匹配平台 libc"
+      ]
+    },
+    "find-pattern": {
+      "title": "找相近模式（先查再画，省一轮返工）",
+      "op": "flythings_knowledge_search",
+      "how": [
+        "`flythings_knowledge_search(query=\"温控面板 布局\")`、`flythings_knowledge_search(query=\"仪表盘 控件\")`",
+        "知识库里已有控件的尺寸 / 对比度 / 字库口径 —— 先用现成结论再动手"
+      ]
+    },
+    "read-spec": {
+      "title": "写码前必读规范（不能跳）",
+      "op": "flythings_get_project_spec",
+      "how": [
+        "`flythings_get_project_spec()` —— 目录规则 + 生成规则 + 注意事项"
+      ],
+      "gate": "precondition",
+      "gateHow": "没读过规范不许开始写 json / 写业务代码",
+      "gotchas": [
+        "关键三条：`src/activity/` 由 IDE 生成、禁手改；业务只写 `src/logic/*.cc`；图片尺寸必须 == 控件盒"
+      ]
+    },
+    "judge-artifact": {
+      "title": "先判形态（决定走哪条路）",
+      "op": null,
+      "how": [
+        "**HTML 原型**（可交互、有 CSS）→ `flythings_html_to_json`，确定性转换，**首选**",
+        "Figma 设计稿（能导出 HTML）→ 先在 Figma 导出 HTML，再走上一行",
+        "**纯图片稿 / 截图** → 切图 → `flythings_generate_ui_assets` 或手工落图 → 按块搭 json",
+        "只是「参考风格」→ 按图搭 json，样式口径走 `flythings_ui_schema`"
+      ]
+    },
+    "html-to-json": {
+      "title": "HTML 原型 → ui json",
+      "op": "flythings_html_to_json",
+      "how": [
+        "`flythings_html_to_json(html=\"<文件路径>\", project_root=\"<目标工程>\")`",
+        "它做的事：受限 HTML/CSS → 逐控件映射；**CSS 视觉效果（阴影/渐变/圆角）自动转成图片**；产物图片尺寸 == 控件盒；返回控件清单 + 未识别项"
+      ],
+      "gate": "precondition",
+      "gateHow": "转换前先定目标工程（没有就先建），且工程分辨率要与设计稿一致 —— 否则坐标换算全偏",
+      "gotchas": [
+        "转换**不保证**可用，必须过「schema 核对 + layout_audit + verify_assets」三道",
+        "HTML 里没有的概念（`thumb` 子盒、`id` 约定、`@key` 多语言）要手工补"
+      ]
+    },
+    "create-project": {
+      "title": "建工程",
+      "op": "flythings_create_project",
+      "how": [
+        "`flythings_create_project(project_root=\"…\", platform=\"Z20\", resolution=\"1024x600\")`",
+        "自动替换工程名 / 分辨率 / 平台"
+      ],
+      "gate": "precondition",
+      "gateHow": "**设计先行**：新需求先出设计稿或原型并让用户确认，再建工程 —— 跳过确认就是返工",
+      "setsState": [
+        "projectCreated"
+      ]
+    },
+    "preview": {
+      "title": "先出预览稿让用户点头",
+      "op": "flythings_ui_preview",
+      "how": [
+        "排版稿：`flythings_ui_preview(project_root=…)` → HTML 预览（只交 html，不产图片）",
+        "组件 / 图片：`flythings_generate_ui_assets(...)` 生成到 `<项目>/resources/images/`"
+      ],
+      "gate": "user-confirm",
+      "gateHow": "把预览稿交给用户确认版式；**未确认不要 pack、不要写逻辑**（避免白写）",
+      "setsState": [
+        "designConfirmed"
+      ]
+    },
+    "write-ui-json": {
+      "title": "写 ui/*.json",
+      "op": "flythings_ui_schema",
+      "how": [
+        "字段 / 必填键 / 默认值：`flythings_ui_schema(control_type=\"seekbar\")` —— **唯一真源**，不要凭记忆写",
+        "加控件时先从 schema 拿必填键（漏必填键会加载异常）"
+      ],
+      "gotchas": [
+        "`thumb` 这类子结构必须是**对象**（写成字符串会让 ftu 加载无声挂死）",
+        "控件是根节点的**平铺键**（`textview__2`…），不是 `children` 数组"
+      ],
+      "setsState": [
+        "uiWritten"
+      ]
+    },
+    "audit-ui": {
+      "title": "三道核对（改完必跑）",
+      "op": "flythings_layout_audit",
+      "how": [
+        "`flythings_validate_project(project_root=…)` —— 规范体检 → errors / warnings",
+        "`flythings_layout_audit(project_root=…)` —— 层叠 / 遮挡 / 触摸穿透 / 越界（纯几何，0 token）",
+        "`flythings_verify_assets(project_root=…)` —— 引用是否存在 + PNG 尺寸是否 == 控件盒"
+      ],
+      "gate": "precondition",
+      "gateHow": "三道没过不许 pack —— 引擎对图片尺寸不匹配不报错，只能靠这一步抓"
+    },
+    "gen-logic-stub": {
+      "title": "补回调桩 → 再填业务",
+      "op": "flythings_gen_logic_stub",
+      "how": [
+        "`flythings_gen_logic_stub(project_root=…)` —— 读 `ui/*.json` 的控件表 → 补齐回调桩（**只补不改**，已有同名函数一律跳过）",
+        "桩生成完，再往 `src/logic/*.cc` 里填业务（桩只给骨架 + TODO）"
+      ],
+      "gotchas": [
+        "回调名按 **caption** 拼（`on<Event>_<Caption>`），改名后没补桩 = 点了没反应",
+        "`listview` 的 count / data / click **三条成组**，缺一条列表就是空白"
+      ],
+      "setsState": [
+        "stubsGenerated"
+      ]
+    },
+    "survey-project": {
+      "title": "先摸清现状（别凭文件名猜）",
+      "op": "flythings_read_json",
+      "how": [
+        "`flythings_read_json(path=\"<项目>/ui/main.json\")` —— 分辨率、控件列表、caption → id 映射",
+        "`flythings_get_project_spec()` —— 目录规则 / 生成规则 / 注意事项"
+      ],
+      "gotchas": [
+        "有哪些页 = `ui/*.json` 的文件名（每页一个 json）；分辨率在 `ui/*.json` 的 `resolution`",
+        "id 只在 json 内引用；**回调名按 caption 拼**"
+      ]
+    },
+    "edit-ui": {
+      "title": "改 UI",
+      "op": "flythings_edit_ftu",
+      "how": [
+        "控件属性 / 坐标（源码级）→ 直接改 `ui/*.json`，字段口径查 `flythings_ui_schema(control_type=…)`",
+        "已打包的 ftu 要小修 → `flythings_edit_ftu(...)`（自动改 json 再 pack 回 ftu；json 是源，ftu 是产物）",
+        "反向 ftu → json → `flythings_fui_unpack(...)`",
+        "换图 / 加图 → `flythings_generate_ui_assets(...)` 到 `resources/images/`，json 引用写 `images/xx`",
+        "整页版式重构 → 先 `flythings_ui_preview` 出稿让用户确认再改"
+      ]
+    },
+    "map-control": {
+      "title": "先查控件对应关系（别一边翻一边猜）",
+      "op": "flythings_map_control",
+      "how": [
+        "`flythings_map_control(query=\"lv_slider\")`；限定源框架 `flythings_map_control(query=\"QCalendarWidget\", source=\"qt\")`",
+        "返回：目标控件 + **等价级别 L1~L5** + 可直接粘的 json 片段 + 参考路径"
+      ],
+      "gotchas": [
+        "L1/L2 = 有对等控件直接换；L3/L4 = 能拼 / 要组合；L5 = 平台真缺 → 才考虑做 `components/ui_v1/` 包",
+        "未命中回 `NO_HIT` + 候选 + 缺口处置五级，**不会静默丢**",
+        "**先把整份清单过一遍再动手** —— 控件级映射错，后面全返工"
+      ]
+    },
+    "translate-ui": {
+      "title": "源码 → ui json（自动翻译）",
+      "op": "flythings_translate_ui",
+      "how": [
+        "`flythings_translate_ui(source=\"<.c 路径或内联源码>\", out=\"<项目>/ui/main.json\", res=\"<工程分辨率>\")`",
+        "映射走 `mcp_control_map.json`；给 `out` 就默认落盘（只想预览就显式 `dry_run=True`）",
+        "`res` 缺省跟随工程（读 prefs/ui json），拿不到才退回 1024x600"
+      ],
+      "gotchas": [
+        "返回体看三样：`downgrades`（D-xx 降级项，逐个处置）/ `unrecognized`（未识别调用，**不会被丢掉**，逐条决定）/ `imageActions`（缺图处置）",
+        "**只有 LVGL 有翻译器**（v1）；Qt QML / Android XML / 小程序 / emWin / MFC → 走 `flythings_map_control` 逐控件映射 + 手工搭 json"
+      ]
+    },
+    "package-search": {
+      "title": "检索包生态",
+      "op": "flythings_package_search",
+      "how": [
+        "`flythings_package_search(query=\"mqtt\")` —— **有包用包，禁止手写协议栈 / 库**"
+      ]
+    },
+    "package-api": {
+      "title": "看包内 API",
+      "op": "flythings_get_package_api",
+      "how": [
+        "`flythings_get_package_api(...)` —— 包头文件级 API（**只认头文件，禁猜、禁反编译**）"
+      ]
+    },
+    "manifest-write": {
+      "title": "写 Manifest",
+      "op": "flythings_manifest",
+      "how": [
+        "`flythings_manifest(project_root=…)` —— 默认**只推荐不写盘**（dry_run），确认后再写 Manifest.xml",
+        "`flythings_add_package(project_root=…, package=\"mqtt-cxx\")` —— 写 Manifest + `fun install`"
+      ],
+      "gotchas": [
+        "`fun install` 生成的 `generated/*.h` 固定 include `<base/functional.h>` → 缺 `base-utility` 会编译报错"
+      ]
+    },
+    "resolve-deps": {
+      "title": "解析依赖 + 核对声明",
+      "op": "flythings_resolve_dependencies",
+      "how": [
+        "`flythings_resolve_dependencies(project_root=…)` —— 递归解析 + 冲突 / 循环检查",
+        "`flythings_check_project_deps(project_root=…)` —— 源码 `include` 与 Manifest 声明是否一致"
+      ]
+    },
+    "preflight": {
+      "title": "先体检，拿判据（别先动手）",
+      "op": "flythings_device_preflight",
+      "how": [
+        "`flythings_device_preflight(project_root=\"<项目>\", device=\"<serial|IP>\")` —— 返回里直接给结论",
+        "`checks.resolution.decision.action = push` → 面板 ≥ 设计 → **什么都别改**（屏大是正常的）",
+        "`= warn`（屏比设计小）→ 把 `questions` 原样问用户：按面板重做，还是接受被裁",
+        "`= adapt_device`（读不出设计）→ 按面板重适配是**默认**动作",
+        "`aspect = same`（比例相同或接近，≤3%）→ 允许等比；`aspect = diff` → **只能重排**"
+      ],
+      "docRef": "knowledge/devflow/device-preflight-spec.md"
+    },
+    "adapt-scale": {
+      "title": "比例相同 / 接近 → 等比换算（机械活，别手工算）",
+      "op": "flythings_device_preflight",
+      "how": [
+        "`flythings_device_preflight(project_root=\"<项目>\", device=\"<serial>\", adapt=\"force\")` —— 用户已确认要按面板改",
+        "它一次落盘：口径（`.settings/*.prefs` + `ui/*.json` 的 `resolution`/`position` + ftu 内嵌）+ **控件盒与字号等比换算**",
+        "改完必须 `fui pack`（设备加载 ftu）→ 直接 `flythings_build_ui_flow` 即可（它会 pack）"
+      ],
+      "gate": "user-confirm",
+      "gateHow": "改盘前必须用户确认「按面板重做」；`adapt='force'` 才落盘，其余档只出 plan",
+      "gotchas": [
+        "换算按 `sx`/`sy` 分别处理 `left/width` 与 `top/height`；`fontSize` 跟 `sy`",
+        "缩放**自封闭**：改完 json 的 `resolution` 就是面板 → 再体检会落回 `push`，不会反复放大"
+      ]
+    },
+    "relayout": {
+      "title": "比例不同 → 重排布局（判断活）",
+      "op": "flythings_edit_ftu",
+      "how": [
+        "**算清两个比例差多少**：`sx = 面板宽/设计宽`、`sy = 面板高/设计高`；差距小（如 1280×750 → 1280×800）常只需**改画布高**（只改 `resolution.height` 与根 `position.height`，控件全绝对定位、位置不动）",
+        "**划区域**：按「上下 / 左右几段」重划（顶栏固定高 / 中部拉伸 / 底栏固定高），定出每段在新屏上的高度",
+        "**重排控件**：按区域把控件盒落位（`flythings_edit_ftu` 或直接改 `ui/*.json`）；列表类容器优先改**可视高度**而不是每行高度；字号最后调（按 `sy` 微调，再人工看一遍）",
+        "**该拆就拆**：原设计一屏塞不下的内容 → 拆页（新增 window/ftu），别硬压",
+        "**复核**：`flythings_layout_audit` + `flythings_ui_preview` 出稿给人确认 → 上机抓屏与设计稿比对"
+      ],
+      "gate": "user-confirm",
+      "gateHow": "比例不同时任何 adapt 档都**拒绝改盘**（只出 plan）—— 别绕过去手工乘系数，等比缩放会把界面拉变形",
+      "gotchas": [
+        "⚠️ **面板 ≥ 设计时不要动布局**：多出来的区域由根 `backgroundColor` 补，UI 完整可见",
+        "⚠️ 改分辨率**只改布局，不用重编 / 重推 `.so`**（省一轮编译）；但**必须出新的 ftu**",
+        "⚠️ 别拿 `virtual_size` 的高当屏高（双缓冲时 = 页数 × 屏高）；读不出就如实问，不要猜",
+        "⚠️ 动布局前先确认**改的是 json**（`ui/*.json` 是源，`*.ftu` 是产物）"
+      ]
+    },
+    "pack": {
+      "title": "打包",
+      "op": "flythings_fui_pack",
+      "how": [
+        "`flythings_fui_pack(project_root=…)` —— json → ftu（设备实际加载 ftu）",
+        "交付 / 量产固化（**掉电保留**）：`flythings_pack_upgrade` —— 与调试推送是两回事"
+      ],
+      "gotchas": [
+        "⚠️ **改了 json 必须重新 pack**，否则设备跑的还是旧布局"
+      ],
+      "setsState": [
+        "packed"
+      ]
+    },
+    "launch": {
+      "title": "编译部署到真机",
+      "op": "flythings_build_ui_flow",
+      "how": [
+        "`flythings_build_ui_flow(project_root=…, device=\"<IP>:5555\")` —— 编译 + 推送 + 运行",
+        "只编译不碰设备：`with_launch=False`"
+      ],
+      "gate": "irreversible",
+      "gateHow": "默认**只编译不推真机**；用户明确要上设备才传 `with_launch=True`",
+      "gotchas": [
+        "口语「编译 / 部署 / 推设备 / 跑一下」**一律**走它，别自造命令",
+        "`fun launch` 网络推送失败会自动重试 5 次；仍失败必须问用户接入方式，**不要自写 push 脚本**"
+      ],
+      "setsState": [
+        "launched"
+      ]
+    },
+    "screenshot": {
+      "title": "抓真机屏幕",
+      "op": "flythings_device_screenshot",
+      "how": [
+        "`flythings_device_screenshot(device=…)` —— 方向 `rotate='auto'`（按工程 `rotateScreen`）",
+        "改前先抓一张（作为对比基准）"
+      ],
+      "gotchas": [
+        "不要用 admin / 其他设备的老截图 —— 那不是这台机器的画面"
+      ],
+      "setsState": [
+        "screenshotTaken"
+      ]
+    },
+    "visual-diff": {
+      "title": "像素验收（还原度闭环）",
+      "op": "flythings_ui_visual",
+      "how": [
+        "`flythings_ui_visual(action=\"diff\", ...)` —— 0 token 差异清单；**只看差异区小图给视觉模型**，别丢整屏原图",
+        "差异分三类看：**错位**（坐标 / 尺寸）、**缺图**（引用或尺寸不对）、**配色 / 对比度**"
+      ],
+      "gotchas": [
+        "每轮改完 json 都要**重新 pack**，否则抓的还是旧版",
+        "`action=\"diff\"` 才是**验收**；其它 action 见 `flythings_ui_visual(action=\"list\")`"
+      ],
+      "setsState": [
+        "verified"
+      ]
+    },
+    "troubleshoot-device": {
+      "title": "无画面 / 黑屏排查",
+      "op": null,
+      "how": [
+        "顺序：**先日志**（事件到没到控件 / 回调进没进）**再像素**（抓帧要按 pan 取当前页）",
+        "设备缺命令 → push busybox（见 `flythings://knowledge/devflow/busybox-debug-library.md`）"
+      ]
+    },
+    "regress": {
+      "title": "自动化回归",
+      "op": "flythings_gen_ui_test",
+      "how": [
+        "`flythings_gen_ui_test(project_root=…)` 生成遍历 / 压测工程",
+        "`flythings_test_run(...)` 多机并行跑（触摸注入 + 日志断言）"
+      ]
+    },
+    "selfcheck": {
+      "title": "整机自检",
+      "op": "flythings_selfcheck",
+      "how": [
+        "`flythings_selfcheck(device=…)` —— 十一分区快照",
+        "`ok=false` 是**结论**不是错误（如实报告，不要当异常抛）"
+      ]
+    },
+    "bugreport": {
+      "title": "问题记录",
+      "op": "flythings_bugreport",
+      "how": [
+        "`flythings_bugreport(...)` —— 把现象 / 复现 / 证据整理成问题单"
+      ]
+    },
+    "attach-cli": {
+      "title": "交付随项目带工具",
+      "op": "flythings_attach_cli_tools",
+      "how": [
+        "`flythings_attach_cli_tools(project_root=…)` —— 复制 fui / fun 到项目（对方不装 MCP 也能编译）"
+      ]
+    },
+    "i18n": {
+      "title": "多语言",
+      "op": "flythings_i18n_refactor",
+      "how": [
+        "`flythings_i18n_refactor`（写死文案抽 @key）→ `flythings_i18n_export` → 翻译 → `flythings_i18n_import` → `flythings_i18n_to_json`",
+        "`fun launch` **不推翻译** —— i18n 改动必须 `flythings_i18n_to_json` 补推"
+      ]
+    }
+  },
+  "flows": {
+    "idea-to-app": {
+      "kind": "scenario",
+      "skillName": "flythings-idea-to-app",
+      "label": "场景①",
+      "title": "从想法到上机",
+      "desc": "场景①「从一句话到上机」——用户只有一个界面想法（智能开关/温控面板/仪表盘/门禁机…），没有现成工程。做需求澄清 → 建工程 → 设计稿确认 → 写 ui json → 补回调桩 → 打包 → 部署 → 视觉验收的完整闭环。用于「我想做个 XXX 屏/面板/界面」「帮我从零做个项目」。",
+      "when": "只有需求、还没有工程",
+      "audience": [
+        "用户给的是**需求**（不是文件）：「做个智能温控面板」「做个 7 寸仪表盘」「做个门禁界面」"
+      ],
+      "routing": "已有工程要改 → `flythings-reskin`；从别的框架搬 → `flythings-migrate`；有设计稿 → `flythings-figma-import`。",
+      "triggers": [
+        "做个界面",
+        "从零做个项目",
+        "我想做个面板",
+        "帮我起个新项目",
+        "做个智能开关"
+      ],
+      "steps": [
+        {
+          "id": "clarify-params",
+          "label": "第 0 步"
+        },
+        "find-pattern",
+        "read-spec",
+        "create-project",
+        "preview",
+        "write-ui-json",
+        "gen-logic-stub",
+        "pack",
+        "launch",
+        "screenshot",
+        "visual-diff"
+      ],
+      "wrapUp": {
+        "title": "收尾",
+        "steps": [
+          "selfcheck",
+          "bugreport",
+          "attach-cli",
+          "regress",
+          "i18n"
+        ]
+      },
+      "invariants": [
+        "src-activity-readonly",
+        "image-size-eq-box",
+        "json-pack-then-launch",
+        "platform-consistency",
+        "schema-before-write",
+        "callback-name-by-caption"
+      ],
+      "exit": "上机抓屏有内容、`launched=true`，且与预览稿 / 设计稿 diff 通过（验收三样：`launched` + logcat `onUI_show` + 抓屏 md5 与前次不同）"
+    },
+    "figma-import": {
+      "kind": "scenario",
+      "skillName": "flythings-figma-import",
+      "label": "场景②",
+      "title": "设计稿 → 工程 UI",
+      "desc": "场景②「设计稿/原型 → 工程 UI」——把 Figma 导出的 HTML 原型、HTML 交互稿、或纯图片设计稿变成 FlyThings 的 ui/*.json，并用像素 diff 做还原度验收。含 CSS 效果转图、尺寸==控件盒、还原度闭环与常见落差。用于「把这个原型/设计稿做成 FlyThings 界面」「还原这个稿子」。",
+      "when": "手上有原型 / 设计稿",
+      "audience": [
+        "手上有**稿子**：Figma 导出的 HTML、可交互 HTML 原型、设计切图"
+      ],
+      "routing": "只有需求没有稿 → `flythings-idea-to-app`。",
+      "triggers": [
+        "把这个原型做成界面",
+        "还原这个设计稿",
+        "设计稿转 json",
+        "Figma 稿子落地"
+      ],
+      "steps": [
+        "judge-artifact",
+        "create-project",
+        "html-to-json",
+        "write-ui-json",
+        "audit-ui",
+        "preview",
+        "pack",
+        "launch",
+        "screenshot",
+        "visual-diff"
+      ],
+      "checks": {
+        "title": "常见落差（照这个顺序查）",
+        "items": [
+          "**字体**：中文用系统字库，字库缺字 → 豆腐块；字号 / 字重与设计稿不同（先确认设备字库范围）",
+          "**图片尺寸**：设计稿给的图不是控件盒尺寸 → 引擎拉伸（不报错，属缺陷）→ 用 `flythings_verify_assets` 抓",
+          "**CSS 效果**：阴影 / 模糊 / 渐变在设备上是**位图**，缩放会糊 → 按目标分辨率出图",
+          "**触摸热区**：HTML 里靠 CSS 撑开的点击区，落到 json 要显式给控件 `position`",
+          "**多语言**：稿子里的文本先留，等版式确认后再 `flythings_i18n_refactor` 抽 @key"
+        ]
+      },
+      "invariants": [
+        "image-size-eq-box",
+        "json-pack-then-launch",
+        "schema-before-write",
+        "platform-consistency"
+      ],
+      "exit": "`ui_visual diff` 的差异清单收敛（或差异区已逐条解释），且改完重 pack 后抓屏确认"
+    },
+    "migrate": {
+      "kind": "scenario",
+      "skillName": "flythings-migrate",
+      "label": "场景③",
+      "title": "从别的框架迁移",
+      "desc": "场景③「从别的框架搬过来」——把 LVGL(v8/v9) C 源码、Qt/Android/小程序/emWin/MFC 的界面搬到 FlyThings：控件映射 → 自动翻译 → 降级/未识别处置 → 目标工程搭建 → 逻辑移植 → 依赖补齐 → 上机验收。用于「把这个 LVGL/Qt 工程迁到 FlyThings」「这个控件你们有没有对应」。",
+      "when": "源码来自别的框架",
+      "audience": [
+        "已有**别的框架**的源码 / 界面：LVGL、Qt(QML/Widgets)、Android XML、小程序 WXML、emWin、MFC"
+      ],
+      "routing": "已有 FlyThings 老工程要改造 → `flythings-reskin`。",
+      "triggers": [
+        "LVGL 工程迁过来",
+        "把这个控件对应过来",
+        "换个框架",
+        "从 Qt 搬过来"
+      ],
+      "steps": [
+        "map-control",
+        "translate-ui",
+        "read-spec",
+        "create-project",
+        "gen-logic-stub",
+        "package-search",
+        "manifest-write",
+        "pack",
+        "launch",
+        "screenshot",
+        "visual-diff",
+        "regress"
+      ],
+      "checks": {
+        "title": "迁移常见差异（先按这个清单自查）",
+        "items": [
+          "**控件模型不同**：源框架「一个控件带子项」（如 LVGL 的 slider 手柄）在 FlyThings 是**子盒**（`thumb` 有自有 `size`），图片要按子盒尺寸出",
+          "**坐标 / 对齐**：源用 flex/auto-layout，FlyThings 是**绝对定位** → 全部换算成像素",
+          "**字体**：源框架自带字体文件，FlyThings 用设备字库 → 缺字要换字或换字号",
+          "**动画 / 过渡**：源框架的 CSS 动画在 FlyThings 上是**帧序列或不做** → 与需求方确认取舍",
+          "**触摸事件语义**：返回值 / 冒泡规则不同（`onButtonClick` 返回 `true` = 吞事件）"
+        ]
+      },
+      "invariants": [
+        "src-activity-readonly",
+        "platform-consistency",
+        "json-pack-then-launch"
+      ],
+      "exit": "`downgrades` / `unrecognized` 全部逐条处置完毕，且上机抓屏与源界面结构一致"
+    },
+    "reskin": {
+      "kind": "scenario",
+      "skillName": "flythings-reskin",
+      "label": "场景④",
+      "title": "改已有工程（换皮 → 换功能）",
+      "desc": "场景④「改已有工程」——在现成 FlyThings 工程上换皮（改样式/图片/布局）、加页面、加控件、加功能：现状体检 → 改 json/ftu → 补回调桩填业务 → 资源核对 → 重打包 → 上机验收。用于「这个界面改一下」「加个页面/按钮」「客户要换个配色」「在现有项目上加功能」。",
+      "when": "已有 FlyThings 工程要改",
+      "audience": [
+        "有**现成 FlyThings 工程**，要改 UI / 加页面 / 加控件 / 加逻辑"
+      ],
+      "routing": "从零做 → `flythings-idea-to-app`；从别的框架搬 → `flythings-migrate`。",
+      "triggers": [
+        "这个界面改一下",
+        "加个按钮",
+        "客户要换个配色",
+        "加个页面",
+        "在现有项目上加功能"
+      ],
+      "steps": [
+        "survey-project",
+        "edit-ui",
+        "gen-logic-stub",
+        "audit-ui",
+        "pack",
+        "launch",
+        "screenshot",
+        "visual-diff"
+      ],
+      "wrapUp": {
+        "title": "回归与交付",
+        "steps": [
+          "regress",
+          "selfcheck",
+          "bugreport",
+          "i18n"
+        ]
+      },
+      "checks": {
+        "title": "换皮最容易漏的几处",
+        "items": [
+          "**只看 json 不看 ftu**：设备加载的是 ftu —— 改完 json 必须 pack，否则「改了像没改」",
+          "**回调名对不上**：改名了 caption 却没补桩 → 点了没反应（跑 `flythings_gen_logic_stub` 即可补全）",
+          "**图片尺寸变了**：换图后没跑 `flythings_verify_assets` → 引擎拉伸、不报错",
+          "**多页共用逻辑**：页与页之间的 static 缓存不会自动清 → 按生命周期口径处理（`flythings_knowledge_search(query=\"静态缓存 跨页面\")`）",
+          "**隐藏页的定时器还在跑**：切页不等于停 —— 需要显式停（`flythings_knowledge_search(query=\"隐藏页 定时器\")`）"
+        ]
+      },
+      "invariants": [
+        "src-activity-readonly",
+        "image-size-eq-box",
+        "callback-name-by-caption",
+        "json-pack-then-launch",
+        "platform-consistency"
+      ],
+      "exit": "改前 / 改后抓屏能看出预期变化，三道核对全过，且原有功能回归通过"
+    },
+    "resolution-adapt": {
+      "kind": "scenario",
+      "skillName": "flythings-resolution-adapt",
+      "label": "场景⑤",
+      "title": "分辨率适配（设计 ≠ 面板）",
+      "desc": "场景⑤「按面板重做布局」——设备面板分辨率与工程设计分辨率不一致时，判要不要改、改到什么程度：比例相同/接近就等比换算（可用 adapt='force' 一把落盘），比例不同必须重排布局（区域比例重划、控件重排、必要时拆并页），最后出图/上机验收。用于「屏和设计分辨率不一样」「屏比设计小，界面被裁」「这块屏要换个尺寸」「适配一下这块面板的分辨率」。",
+      "when": "面板与设计不一致",
+      "audience": [
+        "接上设备后 `flythings_device_preflight` 报分辨率不是 `push`（即 `warn` / `adapt_device`），用户确认要处理",
+        "用户说「屏比设计小」「界面显示不全」「换块屏」「按这块屏适配一下」"
+      ],
+      "routing": "只换皮 / 加控件 → `flythings-reskin`；从零做 → `flythings-idea-to-app`。",
+      "triggers": [
+        "屏和设计分辨率不一样",
+        "屏比设计小",
+        "界面显示不全",
+        "适配这块面板",
+        "换块屏"
+      ],
+      "steps": [
+        "preflight",
+        {
+          "id": "adapt-scale",
+          "label": "第 2 步 A"
+        },
+        {
+          "id": "relayout",
+          "label": "第 2 步 B"
+        },
+        {
+          "id": "pack",
+          "label": "第 3 步"
+        },
+        {
+          "id": "launch",
+          "label": "第 4 步"
+        },
+        {
+          "id": "screenshot",
+          "label": "第 5 步"
+        },
+        {
+          "id": "visual-diff",
+          "label": "第 6 步"
+        }
+      ],
+      "invariants": [
+        "json-pack-then-launch",
+        "image-size-eq-box"
+      ],
+      "exit": "再跑一次 `flythings_device_preflight` 落回 `push`（自封闭、不反复放大），且抓屏与设计稿比对通过"
+    },
+    "new-project": {
+      "kind": "action",
+      "promptName": "flythings-new-project",
+      "title": "新建 FlyThings 工程",
+      "desc": "从零建工程：确认平台/分辨率 → 建骨架 → 布局 → 预览 → 编译",
+      "inputs": [
+        "platform",
+        "resolution",
+        "requirement"
+      ],
+      "oneLine": "用 FlyThings 新建工程：平台 {platform}、分辨率 {resolution}。需求：{requirement}",
+      "steps": [
+        "create-project",
+        "find-pattern",
+        "html-to-json",
+        "preview",
+        "pack",
+        "launch"
+      ],
+      "invariants": [
+        "dry-run-and-confirm",
+        "json-pack-then-launch"
+      ],
+      "triggers": [
+        "新建工程",
+        "建个项目",
+        "从零做个工程",
+        "起个项目"
+      ]
+    },
+    "ui-from-prototype": {
+      "kind": "action",
+      "promptName": "flythings-ui-from-prototype",
+      "title": "HTML 原型 → UI 布局",
+      "desc": "原型稿转 json：效果转图、预览确认、产物核对",
+      "inputs": [
+        "requirement"
+      ],
+      "oneLine": "按需求做 UI 原型转布局。需求：{requirement}",
+      "steps": [
+        "find-pattern",
+        "html-to-json",
+        "preview",
+        "audit-ui",
+        "pack"
+      ],
+      "invariants": [
+        "image-size-eq-box",
+        "dry-run-and-confirm"
+      ],
+      "triggers": [
+        "原型转界面",
+        "设计稿转 json",
+        "HTML 转 json",
+        "把原型做成界面"
+      ]
+    },
+    "ui-verify": {
+      "kind": "action",
+      "promptName": "flythings-ui-verify",
+      "title": "UI 验收（预览 → 真机 → 像素）",
+      "desc": "三段式验收 + 产物核对，改前改后对比",
+      "inputs": [
+        "project_root"
+      ],
+      "oneLine": "验收工程 {project_root} 的界面",
+      "steps": [
+        "audit-ui",
+        "preview",
+        "screenshot",
+        "visual-diff"
+      ],
+      "invariants": [
+        "image-size-eq-box"
+      ],
+      "notes": [
+        "结论要给「改了什么 / 像素差异 / 是否可交付」，**别把整屏原图丢给模型**"
+      ],
+      "triggers": [
+        "验收界面",
+        "看看做得对不对",
+        "界面还原度",
+        "渲染和稿子像不像"
+      ]
+    },
+    "deploy-debug": {
+      "kind": "action",
+      "promptName": "flythings-deploy-debug",
+      "title": "编译部署到真机调试",
+      "desc": "编译 → 按需推真机 → 抓屏/日志排查",
+      "inputs": [
+        "project_root",
+        "device"
+      ],
+      "oneLine": "把工程 {project_root} 编译并部署调试（设备：{device}）",
+      "steps": [
+        "launch",
+        "screenshot",
+        "troubleshoot-device",
+        "i18n"
+      ],
+      "invariants": [
+        "no-selfmade-commands",
+        "dry-run-and-confirm"
+      ],
+      "triggers": [
+        "部署到设备",
+        "推到设备上跑",
+        "上机调试",
+        "黑屏没画面"
+      ]
+    },
+    "package-deps": {
+      "kind": "action",
+      "promptName": "flythings-package-deps",
+      "title": "依赖包与 Manifest",
+      "desc": "检索现有 package、生成 Manifest、递归解析依赖",
+      "inputs": [
+        "requirement",
+        "platform"
+      ],
+      "oneLine": "为功能「{requirement}」在平台 {platform} 上准备依赖",
+      "steps": [
+        "package-search",
+        "package-api",
+        "manifest-write",
+        "resolve-deps"
+      ],
+      "invariants": [
+        "dry-run-and-confirm"
+      ],
+      "triggers": [
+        "加个包",
+        "要个库",
+        "依赖怎么配",
+        "Manifest 怎么写"
+      ]
+    }
+  },
+  "stateSlots": {
+    "authority": "工程级「做到哪了」的状态位（跨会话连续性）。写入点 = 对应步骤成功后；读取点 = `flythings://project/state` 资源（**本期只声明 schema，Resource 与 progress.json 归下一条建议**）。每个 slot 的 `setBy` 必须指向 steps 里真实存在的步骤（门禁校验）。",
+    "slots": {
+      "paramsDecided": {
+        "setBy": "clarify-params",
+        "meaning": "平台 / 分辨率 / 交互三项已由用户明确",
+        "blocks": "create-project"
+      },
+      "projectCreated": {
+        "setBy": "create-project",
+        "meaning": "工程骨架已生成（含平台 / 分辨率替换）",
+        "blocks": "write-ui-json"
+      },
+      "designConfirmed": {
+        "setBy": "preview",
+        "meaning": "用户确认过版式预览稿",
+        "blocks": "gen-logic-stub"
+      },
+      "uiWritten": {
+        "setBy": "write-ui-json",
+        "meaning": "ui/*.json 已写完并通过三道核对",
+        "blocks": "pack"
+      },
+      "stubsGenerated": {
+        "setBy": "gen-logic-stub",
+        "meaning": "回调桩已补齐（只补不改，可反复跑）",
+        "blocks": null
+      },
+      "packed": {
+        "setBy": "pack",
+        "meaning": "ftu 已按当前 json 重新生成",
+        "blocks": "launch"
+      },
+      "launched": {
+        "setBy": "launch",
+        "meaning": "已推送到设备并成功启动",
+        "blocks": "screenshot"
+      },
+      "screenshotTaken": {
+        "setBy": "screenshot",
+        "meaning": "已有本机当次画面（不是旧图）",
+        "blocks": "visual-diff"
+      },
+      "verified": {
+        "setBy": "visual-diff",
+        "meaning": "像素验收通过（或差异已逐条解释）",
+        "blocks": null
+      }
+    }
+  },
+  "derivations": {
+    "scenario": {
+      "target": "~/.workbuddy/skills/<skillName>/SKILL.md",
+      "script": "scripts/gen_flow_skills.py",
+      "check": "scripts/gen_flow_skills.py --check"
+    },
+    "action": {
+      "target": "mcp_extras.py 的 PROMPTS（运行时由 flow_loader 派生，无中间文件）",
+      "script": "—"
+    },
+    "doc": {
+      "target": "knowledge/devflow/flow-index.md",
+      "script": "scripts/gen_flow_doc.py",
+      "check": "scripts/gen_flow_doc.py --check"
+    }
+  }
+}

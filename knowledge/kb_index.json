@@ -1,27 +1,27 @@
 {
  "meta": {
   "schema": 1,
-  "built_at": "2026-10-03 10:48:54",
-  "mcp_version": "0.27.171-open",
-  "doc_count": 105,
-  "source_hash": "a15ad1550d63f1f8b7311295f6a44c8d"
+  "built_at": "2026-10-03 11:49:10",
+  "mcp_version": "0.27.172-open",
+  "doc_count": 106,
+  "source_hash": "edb3007722e2d2c9d4f887d3ae69b37e"
  },
  "summary": {
-  "total": 105,
+  "total": 106,
   "byCategory": {
-   "devflow": 52,
+   "devflow": 53,
    "uicontrols": 36,
    "hardware": 5,
    "t113-car": 2,
    "v85x": 10
   },
   "byStatus": {
-   "review": 100,
+   "review": 101,
    "verified": 5
   },
-  "withEvidence": 21,
+  "withEvidence": 22,
   "needsEvidence": 93,
-  "noQueries": 78,
+  "noQueries": 79,
   "stale": 0,
   "inbox": 0,
   "aging": 0,
@@ -1024,6 +1024,49 @@
    "sha256": "9398bc2afd35f63c4de217893be2a48843a60ae2512caa96db9fbbe8ad3c6102",
    "fingerprint": "a974eb9472707851",
    "ageDays": 3,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
+   "frontMatterError": ""
+  },
+  {
+   "id": "devflow-flow-index",
+   "path": "knowledge/devflow/flow-index.md",
+   "title": "开发流程索引（场景 × 动作两条轴，由 flow_spec.json 派生）",
+   "category": "devflow",
+   "platforms": [],
+   "tags": [
+    "开发流程",
+    "场景",
+    "从零做界面",
+    "设计稿转界面",
+    "框架迁移",
+    "改已有工程",
+    "分辨率适配",
+    "编译部署",
+    "UI 验收",
+    "依赖包",
+    "步骤顺序",
+    "铁律"
+   ],
+   "status": "review",
+   "confidence": "manual",
+   "verified_at": "2026-10-03",
+   "stale_days": 180,
+   "origin": "derived",
+   "evidenceCount": 1,
+   "evidence": [
+    {
+     "cmd": "python scripts/gen_flow_doc.py --check"
+    }
+   ],
+   "evidenceLevel": "has-evidence",
+   "needsEvidence": false,
+   "hasQueries": false,
+   "bytes": 14296,
+   "sha256": "77dd225977fdab0c1932d0558dc7c6f21819a88ece77e5ca829215c6159fd72a",
+   "fingerprint": "3b9e0e20a665e006",
+   "ageDays": 0,
    "freshness": "fresh",
    "stale": false,
    "staleDays": 180,

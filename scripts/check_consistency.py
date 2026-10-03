@@ -724,6 +724,14 @@ def stage_delegated(skip_smoke, with_tests):
                if l.startswith('[PASS]') or l.startswith('[FAIL]')]
     check(rc == 0, 'delegated: gen_preflight_doc --check (上机前体检判据)',
           (pf_tail[-1] if pf_tail else 'rc=%d' % rc)[:70])
+    # v0.27.182（域⑩）：开发流程（flow_spec.json）—— 步骤原子 + 两条正交轴（场景 / 动作）；
+    # 该脚本内部跑 flow_loader.validate()，含**与 op 契约的跨来源对账**：
+    # 步骤引用的 op 必须存在；声明了闸门的步骤，其 op 契约里必须有铁律（否则闸门只活在流程页里）。
+    rc, out = _run([sys.executable, os.path.join(SUB, 'gen_flow_doc.py'), '--check'])
+    fl_tail = [l for l in out.strip().splitlines()
+               if l.startswith('[PASS]') or l.startswith('[FAIL]')]
+    check(rc == 0, 'delegated: gen_flow_doc --check (开发流程索引)',
+          (fl_tail[-1] if fl_tail else 'rc=%d' % rc)[:70])
     # v0.27.180（B3）：工程骨架唯一来源 —— templates/HelloWord_Z20/src 为骨架真源，
     # 各工程的副本（实测 18 份）必须与它一致；改骨架只需改一处 + --apply。
     rc, out = _run([sys.executable, os.path.join(SUB, 'sync_project_skeleton.py'), '--check'])
