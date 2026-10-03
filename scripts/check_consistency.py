@@ -717,6 +717,13 @@ def stage_delegated(skip_smoke, with_tests):
                if l.startswith('[PASS]') or l.startswith('[FAIL]')]
     check(rc == 0, 'delegated: gen_components_catalog --check (可复用组件目录)',
           (cc_tail[-1] if cc_tail else 'rc=%d' % rc)[:70])
+    # v0.27.181（域⑨）：上机前体检判据（preflight_spec.json）→ 可检索判据页；
+    # 顺带跨来源对账：字库体积阈值与档位必须与 components/fonts 的实现一致（分叉 = 判定与投递两套口径）。
+    rc, out = _run([sys.executable, os.path.join(SUB, 'gen_preflight_doc.py'), '--check'])
+    pf_tail = [l for l in out.strip().splitlines()
+               if l.startswith('[PASS]') or l.startswith('[FAIL]')]
+    check(rc == 0, 'delegated: gen_preflight_doc --check (上机前体检判据)',
+          (pf_tail[-1] if pf_tail else 'rc=%d' % rc)[:70])
     # v0.27.180（B3）：工程骨架唯一来源 —— templates/HelloWord_Z20/src 为骨架真源，
     # 各工程的副本（实测 18 份）必须与它一致；改骨架只需改一处 + --apply。
     rc, out = _run([sys.executable, os.path.join(SUB, 'sync_project_skeleton.py'), '--check'])

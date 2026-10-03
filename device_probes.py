@@ -222,7 +222,7 @@ def panel_info(serial, fb='/dev/fb0'):
     """
     out = {'nodes': [], 'fbName': '', 'virtualSize': '', 'virtualHeight': None,
            'stride': None, 'bpp': None, 'visibleWidth': None, 'dispIrq': None,
-           'errors': []}
+           'modes': '', 'pan': '', 'errors': []}
     bb = busybox(serial)
     names = sh(serial, '%s ls /dev' % bb) if bb else sh(serial, 'ls /dev')
     if names:
@@ -232,7 +232,9 @@ def panel_info(serial, fb='/dev/fb0'):
     for key, path, cast in (('fbName', '/sys/class/graphics/%s/name' % fbname, str),
                             ('virtualSize', '/sys/class/graphics/%s/virtual_size' % fbname, str),
                             ('stride', '/sys/class/graphics/%s/stride' % fbname, int),
-                            ('bpp', '/sys/class/graphics/%s/bits_per_pixel' % fbname, int)):
+                            ('bpp', '/sys/class/graphics/%s/bits_per_pixel' % fbname, int),
+                            ('modes', '/sys/class/graphics/%s/modes' % fbname, str),
+                            ('pan', '/sys/class/graphics/%s/pan' % fbname, str)):
         v = sh(serial, 'cat %s 2>/dev/null' % path, timeout=8).strip()
         if not v:
             out['errors'].append('%s 读不到' % path)
@@ -271,6 +273,92 @@ def panel_info(serial, fb='/dev/fb0'):
             if out['dispIrq'] is not None:
                 break
     return out
+
+
+_MODES_RE = re.compile(r'(\d+)\s*x\s*(\d+)')
+
+
+def parse_modes(text):
+    """`/sys/class/graphics/fb0/modes` 的原文 → (w, h)。
+
+    实测原文形如 `U:600x1600p-50`（前缀/后缀都是 fb 的模式描述，不是分辨率的一部分）。
+    解析不出回 (0, 0) —— 不猜。
+    """
+    m = _MODES_RE.search(text or '')
+    return (int(m.group(1)), int(m.group(2))) if m else (0, 0)
+
+
+def panel_resolution(serial, fb='/dev/fb0'):
+    """**设备面板可见分辨率**的唯一判据 → {'ok','width','height','source','raw','conflicts'}。
+
+    为什么要有它：分辨率体检（`preflight.py`）要拿一个数跟工程的设计分辨率比，
+    而这个数有**三条不同来源**、彼此会不一致，混用会得出相反的结论：
+
+      | 来源 | 取自 | 什么时候可信 |
+      |---|---|---|
+      | `fbmode` | `/sys/class/graphics/fb0/modes`（如 `U:600x1600p-50`） | fb 自己的显示模式，**首选** |
+      | `hwtarget` | logcat `zkhardware: para target: RGB_LCD4801600` | 面板目标；高度靠它才能切出来（原文无分隔符） |
+      | `stride` | `stride / (bpp/8)` | 只有**宽度**可信；高度可能含缓冲区（`virtual_size` 是页数×屏高） |
+
+    高度这一维只靠 `fbmode` 常有（`U:600x1600p-50` 带高度），拿不到才退 hwtarget；
+    **两者都有且不一致时如实进 `conflicts`**（不替调用方选，也不静默取其一）。
+    `virtual_size` 只回原值，绝不当事分辨率（双缓冲时它是 页数 × 屏高）。
+    """
+    out = {'ok': False, 'width': 0, 'height': 0, 'source': '', 'raw': {},
+           'pages': None, 'conflicts': [], 'errors': []}
+    if _adb() is None:
+        out['errors'].append('adb 子系统不可用')
+        return out
+    try:
+        info = panel_info(serial, fb)
+    except Exception as e:
+        out['errors'].append('panel_info 异常: %s: %s' % (type(e).__name__, e))
+        return out
+    out['raw'] = {k: info.get(k) for k in ('modes', 'virtualSize', 'stride', 'bpp', 'pan',
+                                           'visibleWidth', 'virtualHeight', 'fbName')}
+    for e in info.get('errors') or []:
+        out['errors'].append(e)
+    mw, mh = parse_modes(info.get('modes'))
+    hw = {'raw': '', 'resolution': ''}
+    try:
+        hw = hw_panel_target(serial, info.get('visibleWidth'))
+    except Exception as e:
+        out['errors'].append('hw_panel_target 异常: %s: %s' % (type(e).__name__, e))
+    out['raw']['hwTarget'] = hw.get('raw') or ''
+    hw_res = hw.get('resolution') or ''
+    hww, hwh = (0, 0)
+    if 'x' in hw_res:
+        try:
+            hww, hwh = (int(x) for x in hw_res.split('x')[:2])
+        except Exception:
+            hww, hwh = 0, 0
+
+    if mw and mh:
+        out.update(width=mw, height=mh, source='fb modes')
+    elif hww and hwh:
+        out.update(width=hww, height=hwh, source='logcat hw target')
+    elif info.get('visibleWidth') and info.get('virtualHeight'):
+        # 只有宽度可信 + virtual_height 可能是页数倍 → **不据此定高**，只报宽度
+        out.update(width=int(info['visibleWidth']), height=0,
+                   source='fb stride(仅宽度)')
+    if mw and mh and hww and hwh and (mw, mh) != (hww, hwh):
+        rot = (mw, mh) == (hwh, hww)
+        out['conflicts'].append(
+            'fb modes 报 %dx%d，而硬件层报 %dx%d%s —— 两者不一致，'
+            '按 fb modes 取（要精确到面板请人核一次）'
+            % (mw, mh, hww, hwh, '（互为转置，通常是转屏）' if rot else ''))
+    # 交叉自检：`virtual_size` 的高应当是可见高的**整数倍**（双/三缓冲。实测 480,1600 + modes
+    # 480x800 → 2 页）。不是整数倍说明"可见高"这一维可能读错（模态名里带缩放/裁切），如实报。
+    vh = info.get('virtualHeight')
+    if out['height'] and vh and vh % out['height'] == 0:
+        out['pages'] = vh // out['height']
+    elif out['height'] and vh:
+        out['conflicts'].append(
+            'virtual_size 高 %s 不是可见高 %s 的整数倍 → 可见高这一维存疑，请人工核一次'
+            % (vh, out['height']))
+    out['ok'] = bool(out['width'])
+    return out
+
 
 
 def fb_probe(serial, node='/dev/fb0', timeout=FB_OPEN_TIMEOUT):

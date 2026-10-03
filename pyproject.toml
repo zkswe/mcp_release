@@ -59,6 +59,8 @@ py-modules = [
     "package_tools",
     "platform_cap_loader",
     "platforms",
+    "preflight",
+    "preflight_loader",
     "project_tools",
     "rag_search",
     "rebuild_index_local",

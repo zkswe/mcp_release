@@ -41,6 +41,13 @@
         "knowledge/devflow/activity-code-skeleton.md"
       ]
     },
+    "flythings_device_preflight": {
+      "seeAlso": [
+        "knowledge/devflow/device-preflight-spec.md",
+        "knowledge/devflow/canvas-panel-coverage.md",
+        "knowledge/devflow/custom-font-config.md"
+      ]
+    },
     "flythings_device_screenshot": {
       "seeAlso": [
         "knowledge/devflow/device-screenshot.md",

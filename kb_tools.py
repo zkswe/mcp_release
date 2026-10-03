@@ -826,6 +826,21 @@ def flythings_edit_ftu(ftu_path: str, operations: str, output_ftu: str = '',
                       ensure_ascii=False)
 
 
+def flythings_device_preflight(project_root: str, device: str = '', adapt: str = 'ask',
+                               font_check: str = 'auto', font_tier: str = '',
+                               font_apply: bool = True) -> str:
+    """上机前体检：设备发现→型号/平台确认→分辨率/字库/体积三项判据（launch 前自动跑同一套）。
+
+    参数：adapt→off 只报 / ask 出方案（默认）/ auto 仅读不出设计时改盘 / force 用户已确认要适配；font_apply→True（默认）按工程用到的汉字集自动投字库
+    ⚠️ 比例不同（相对差 > 3%）时**任何档都不改盘**，只出 plan —— 等比缩放会把界面拉变形（重排走 skill flythings-resolution-adapt）。
+    """
+    r = pt.flythings_device_preflight(project_root, device, adapt, font_check, font_tier,
+                                      font_apply)
+    files = [os.path.join(project_root, f)
+             for f in ((r.get('adapted') or {}).get('files') or [])]
+    return json.dumps(_with_files(r, *files), ensure_ascii=False)
+
+
 def flythings_build_ui_flow(project_root: str, with_launch: bool = True, device: str = '',
                             font_check: str = 'auto', font_tier: str = '') -> str:
     """⚠️ 场景别名（编译/部署类意图一律本工具，禁自造命令）：口语「编译/构建/调试/部署/推送到设备/跑一下」；固化升级（update.img）→ flythings_pack_upgrade（掉电保留）。
@@ -2079,6 +2094,7 @@ OP_NAMES = (
     'flythings_fui_unpack',
     'flythings_edit_ftu',
     'flythings_build_ui_flow',
+    'flythings_device_preflight',
     'flythings_pack_upgrade',
     'flythings_ui_preview',
     'flythings_html_to_json',

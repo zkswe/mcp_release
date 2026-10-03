@@ -1,25 +1,25 @@
 {
  "meta": {
   "schema": 1,
-  "built_at": "2026-10-03 08:39:32",
+  "built_at": "2026-10-03 09:54:32",
   "mcp_version": "0.27.171-open",
-  "doc_count": 104,
-  "source_hash": "1cba92e7633425d719b814961f1182c3"
+  "doc_count": 105,
+  "source_hash": "39cef99947be8718db002dfb1ae8004e"
  },
  "summary": {
-  "total": 104,
+  "total": 105,
   "byCategory": {
-   "devflow": 51,
+   "devflow": 52,
    "uicontrols": 36,
    "hardware": 5,
    "t113-car": 2,
    "v85x": 10
   },
   "byStatus": {
-   "review": 99,
+   "review": 100,
    "verified": 5
   },
-  "withEvidence": 20,
+  "withEvidence": 21,
   "needsEvidence": 93,
   "noQueries": 78,
   "stale": 0,
@@ -709,6 +709,50 @@
    "sha256": "8409b4d073a65545e08d3b1a214ed3fac26c54a83057fc3727c075bbb7c09795",
    "fingerprint": "4f577c548e773334",
    "ageDays": 4,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
+   "frontMatterError": ""
+  },
+  {
+   "id": "devflow-device-preflight-spec",
+   "path": "knowledge/devflow/device-preflight-spec.md",
+   "title": "上机前体检判据（分辨率适配 / 字库 / res 体积预算，唯一真源派生）",
+   "category": "devflow",
+   "platforms": [],
+   "tags": [
+    "上机前体检",
+    "分辨率适配",
+    "设计分辨率",
+    "面板分辨率",
+    "fb0",
+    "等比缩放",
+    "重排布局",
+    "中文字库",
+    "fzcircle",
+    "字库档位",
+    "res 分区",
+    "体积预算",
+    "打包超限"
+   ],
+   "status": "review",
+   "confidence": "manual",
+   "verified_at": "2026-10-03",
+   "stale_days": 180,
+   "origin": "derived",
+   "evidenceCount": 1,
+   "evidence": [
+    {
+     "cmd": "python scripts/gen_preflight_doc.py --check"
+    }
+   ],
+   "evidenceLevel": "has-evidence",
+   "needsEvidence": false,
+   "hasQueries": true,
+   "bytes": 6724,
+   "sha256": "e9ff4b0bc952278b61fc922ce5901ef7707d304dec5207adf2b079e08a8ec212",
+   "fingerprint": "1749672f8a36c550",
+   "ageDays": 0,
    "freshness": "fresh",
    "stale": false,
    "staleDays": 180,
@@ -1652,7 +1696,7 @@
    "needsEvidence": true,
    "hasQueries": true,
    "bytes": 7318,
-   "sha256": "4f0ba74856eb566d41977e98f8976dc0a3a3792338c20d8246e25381779ba30c",
+   "sha256": "2272f2e840a651c1e4c188ba9c46bc3a4695a503fc0c7500e87f12f7dd3c8f0e",
    "fingerprint": "44e67da773c749a0",
    "ageDays": 1,
    "freshness": "fresh",

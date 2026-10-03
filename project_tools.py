@@ -19,6 +19,20 @@ except Exception as _e2:  # 不阻断（探针缺失只影响「对账/活性」
     _dprobe = None
     _DPROBE_ERR = repr(_e2)
 
+try:                      # 上机前体检判据（分辨率/字库/体积；规格真源 preflight_spec.json）
+    import preflight as _preflight
+    _PREFLIGHT_ERR = ''
+except Exception as _e3:
+    _preflight = None
+    _PREFLIGHT_ERR = repr(_e3)
+
+try:                      # 字体体检（设备侧扫描 + 投递；阈值/档位来自 components/fonts）
+    import font_tools as _ftools
+    _FTOOLS_ERR = ''
+except Exception as _e4:
+    _ftools = None
+    _FTOOLS_ERR = repr(_e4)
+
 # ---------- 工具链路径（可配置 + 自动探测）----------
 # 优先级：环境变量 FLYTHINGS_FUN_DIR（用户显式指定，最高）> 包内 toolchain（随包分发）> 标准安装目录
 _BASE = os.path.dirname(os.path.abspath(__file__))
@@ -223,6 +237,26 @@ def _run_fun(cmd, project_dir, device='', retries=1, timeout=600, extra=None):
     last['error'] = last.get('error') or (last.get('stderr') or last.get('stdout') or '')[-300:]
     last['message'] = "fun %s 失败，已自动重试 %d 次" % (cmd, max(1, retries))
     return last
+
+
+def _rewrite_prefs_resolution(project_root, resolution):
+    """把分辨率写进 `.settings/*.prefs` 的 `resolution=` 行 → True/False（**唯一实现**）。
+
+    IDE/preview/`_detect_project_info` 都从这里读分辨率；与 ftu 内嵌分辨率**成对**改
+    （见 `_rewrite_ftu_resolution`）。prefs 不存在或没有 resolution 行 → False（不新建）。
+    """
+    prefs = os.path.join(project_root, '.settings', 'com.zksw.flythings.easyui.prefs')
+    if not os.path.isfile(prefs):
+        return False
+    try:
+        txt = open(prefs, encoding='utf-8', errors='replace').read()
+        new = re.sub(r'(?m)^resolution=.*$', 'resolution=%s' % resolution, txt)
+        if new == txt:
+            return False
+        open(prefs, 'w', encoding='utf-8').write(new)
+    except OSError:
+        return False
+    return True
 
 
 def _rewrite_ftu_resolution(project_root, resolution):
@@ -1577,27 +1611,33 @@ def _project_easyui_revision(root):
 
 
 def _device_runtime_pre_launch(serial, platform, project_info, root):
-    """launch **前**的设备侧核对 → {'step','warnings'}（任务 7 + 8）。
+    """launch **前**的设备侧核对 → {'step','warnings','easyui','panel','resolution'}。
 
     ① easyui 同源对账：工程解析到的 easyui 版本 vs **设备固件**的 `ro.easyui.version`。
        编译期版本 ≠ 设备运行库版本（控件由运行库提供）；不一致时 AI 判「某控件存在」会判错。
-    ② 面板分辨率核对：工程分辨率 vs 设备面板（fb 可见宽 + 硬件层目标）→ 480×480 灰窗事件防线。
+    ② 面板分辨率核对：判据**不在这里** —— 走 `preflight.resolution_decision()`
+       （唯一真源 `preflight_spec.json.resolution.decisions`：屏 ≥ 设计 → 直接推 /
+        屏 < 设计 → 必须问用户 / 读不出设计 → 按面板重适配）。本函数只负责把读数取回来。
     """
-    out = {'step': None, 'warnings': [], 'easyui': None, 'panel': None}
+    out = {'step': None, 'warnings': [], 'easyui': None, 'panel': None, 'resolution': None}
     if _dprobe is None or not serial:
         return out
     easyui = {}
     panel = {}
+    pres = {}
     try:
         easyui = _dprobe.easyui_runtime(serial, platform)
     except Exception as e:
         easyui = {'error': '%s: %s' % (type(e).__name__, e)}
     try:
         panel = _dprobe.panel_info(serial)
-        hw = _dprobe.hw_panel_target(serial, panel.get('visibleWidth'))
-        if hw.get('resolution'):
-            panel['panelResolution'] = hw['resolution']
-            panel['hwTarget'] = hw.get('raw')
+        pres = _dprobe.panel_resolution(serial)
+        panel['resolutionProbe'] = pres
+        if pres.get('width'):
+            panel['panelResolution'] = (
+                _preflight.fmt_res(pres['width'], pres['height'])
+                if (_preflight is not None and pres.get('height'))
+                else '%sx?（高未判定）' % pres['width'])
     except Exception as e:
         panel = {'error': '%s: %s' % (type(e).__name__, e)}
     out['easyui'] = easyui
@@ -1615,26 +1655,20 @@ def _device_runtime_pre_launch(serial, platform, project_info, root):
                 '（见 knowledge/devflow/easyui-version-capability.md；'
                 'launch 推的是 app 侧库，不会改设备固件里的 easyui）'
                 % (local_rev, local_src or '来源未知', fw))
-    # ② 面板分辨率核对
+    # ② 面板分辨率核对（判据 = preflight 注册表，本处不另写一套）
     proj_res = (project_info or {}).get('resolution') or ''
     panel_res = (panel or {}).get('panelResolution') or ''
-    if not panel_res and (panel or {}).get('visibleWidth'):
-        panel_res = '%sx?' % panel['visibleWidth']
-    if proj_res and panel_res and not panel_res.endswith('x?'):
-        pw, ph = (panel_res.split('x') + ['', ''])[:2]
-        jw, jh = (proj_res.split('x') + ['', ''])[:2]
-        rotated = (jw, jh) == (ph, pw)          # 竖屏/横屏旋转是正常的
-        if (jw, jh) != (pw, ph) and not rotated:
-            out['warnings'].append(
-                '⚠️ 工程分辨率 %s 与设备面板 %s 不一致（面板来源：%s）——'
-                '尺寸不符会出现灰窗/黑屏或布局错位；确认是刻意适配再继续'
-                % (proj_res, panel_res,
-                   'fb 可见宽 + ' + ((panel or {}).get('hwTarget') or '硬件层目标')
-                   if (panel or {}).get('hwTarget') else 'fb 可见宽'))
-    elif proj_res and panel_res.endswith('x?'):
-        out['warnings'].append(
-            '设备面板宽度是 %s，与工程分辨率 %s 的宽不同 —— 面板高度没能自动判定，请人工核对'
-            % (panel_res[:-1], proj_res))
+    if _preflight is not None:
+        dec = _preflight.resolution_decision(proj_res, '工程分辨率', panel_res)
+        out['resolution'] = dec
+        if dec['level'] == 'warn':
+            out['warnings'].append('⚠️ %s' % dec['why'])
+    elif proj_res and panel_res:
+        out['warnings'].append('⚠️ 工程分辨率 %s 与设备面板 %s 不一致：体检判据不可用'
+                               '（preflight 导入失败 %s），请人工核对'
+                               % (proj_res, panel_res, _PREFLIGHT_ERR))
+    for c in (pres.get('conflicts') or []):
+        out['warnings'].append('⚠️ %s' % c)
     return out
 
 
@@ -1707,6 +1741,212 @@ def _launch_liveness(serial):
     else:
         out['detail'] = '证据不足（logcat tier=%s，GUI=%s）' % (tier, gui)
     return out
+
+
+def flythings_device_preflight(project_root, device='', adapt='ask', font_check='auto',
+                               font_tier='', font_apply=True):
+    """上机前体检：**设备发现 → 设备确认 → 分辨率 / 字库 / 体积**（三项，判据集中在一处）。
+
+    与 `flythings_build_ui_flow` 的关系：本工具是**只体检**的入口（不改盘、不编译、不推送，
+    除 `adapt='auto'|'force'` 时的布局换算）；launch 流程里会**自动**跑同一批判据。
+    判据真源 = `preflight_spec.json`（分辨率三分支 / 字库 200KB 与档位 / 体积预算），
+    派生判据页 `knowledge/devflow/device-preflight-spec.md`。
+
+    分辨率三分支（判据在注册表，别在这里另写一套）：
+      · 面板 ≥ 设计 → `push`（直接推，UI 可完整显示，不影响）
+      · 面板 < 设计 → `warn`（超出的部分在屏上看不到）→ 必须问用户
+      · 读不出设计（启动窗口判定不出来）→ `adapt_device`（默认按面板重适配 layout）
+
+    `adapt`：`off`=只报不改；`ask`（默认）=出适配方案不落盘；`auto`=**仅**"读不出设计"时
+      自动改盘；`force`=用户已确认要适配 → 也允许"屏 < 设计"时改盘。
+      ⚠️ 比例不同（相对差 > `aspectTolerancePct`）时**任何档都不改盘**，只出 plan —— 等比缩放
+      会把界面拉变形，重排布局走 skill `flythings-resolution-adapt`。
+    `font_apply`：True（默认）时按工程实际用到的汉字集**自动投递最小够用档**字库。
+    """
+    root = os.path.abspath(project_root or '')
+    res = {'success': False, 'projectRoot': root, 'steps': [], 'warnings': [],
+           'questions': [], 'actions': [], 'adapted': None, 'font': None,
+           'verdict': 'unknown'}
+    if not os.path.isdir(root):
+        res['error'] = '项目目录不存在: %s' % root
+        return res
+    if _preflight is None:
+        res['error'] = ('上机前体检判据不可用（preflight 导入失败：%s）—— '
+                        '检查 preflight.py / preflight_spec.json 是否随包分发' % _PREFLIGHT_ERR)
+        return res
+
+    info = _detect_project_info(root)
+    plat = info.get('platform') or ''
+    res['platform'] = plat
+    res['projectResolution'] = info.get('resolution') or ''
+
+    # ① 设备发现 + 选机（0 台 / 多台 / 型号与平台不符都不猜 —— 与 launch 同一道门）
+    gate = _launch_gate(plat, device)
+    res['device'] = {'count': gate['count'], 'devices': _devices_brief(gate['devices']),
+                     'chosen': gate['serial'], 'model': gate['model'],
+                     'platformMatch': gate['platformMatch'],
+                     'needDeviceInput': gate['needDeviceInput'],
+                     'connectNote': gate.get('connectNote') or '',
+                     'adbSource': gate['adbSource']}
+    res['steps'].append({'step': 'device_probe', 'success': not gate['needDeviceInput'],
+                         'count': gate['count'], 'chosen': gate['serial'],
+                         'model': gate['model'], 'platformMatch': gate['platformMatch']})
+    if gate['needDeviceInput']:
+        res['error'] = gate['message']
+        res['installHint'] = gate['installHint']
+        res['verdict'] = 'no_device'
+        return res
+    serial = gate['serial']
+
+    # ② 设备侧读数（面板分辨率 / 字体清单 —— 判据都在注册表里）
+    panel = {'ok': False, 'errors': []}
+    if _dprobe is not None:
+        try:
+            panel = _dprobe.panel_resolution(serial)
+        except Exception as e:
+            panel = {'ok': False, 'errors': ['panel_resolution 异常: %s: %s'
+                                             % (type(e).__name__, e)]}
+    else:
+        panel = {'ok': False, 'errors': ['设备探针不可用（device_probes 导入失败 %s）'
+                                         % _DPROBE_ERR]}
+    res['steps'].append({'step': 'panel_probe', 'success': bool(panel.get('ok')),
+                         'panel': _preflight.panel_label(panel),
+                         'source': panel.get('source') or '',
+                         'raw': panel.get('raw') or {}})
+
+    # ③ 字库体检（设备侧扫描 + 工程中文级别 → 档位匹配；投递动作沿用 font_tools 的实现）
+    device_fonts = None
+    if _ftools is not None and not _ftools.is_off(font_check):
+        fp = _ftools.font_preflight(root, plat, serial, font_check=font_check,
+                                    font_tier=font_tier, apply=False,
+                                    known_online=gate['devices'], probe=False)
+        device_fonts = fp.get('deviceFonts') or []
+        res['font'] = {k: fp.get(k) for k in
+                       ('enabled', 'mode', 'deviceFonts', 'deviceScanned', 'verdict',
+                        'missingChinese', 'maxFontKB', 'advisedTier', 'thresholdKB',
+                        'checkedFont')}
+        res['warnings'].extend(fp.get('warnings') or [])
+    elif _ftools is None:
+        res['warnings'].append('字库体检不可用（font_tools 导入失败：%s）' % _FTOOLS_ERR)
+
+    # ④ 三项体检合成（分辨率 / 字库 / 体积）
+    rep = _preflight.check(root, serial=serial, platform=plat,
+                           device_fonts=device_fonts, panel=panel, device_probes=_dprobe)
+    res['checks'] = rep['checks']
+    res['verdict'] = rep['verdict']
+    res['warnings'].extend(rep['warnings'])
+    res['questions'].extend(rep['questions'])
+    res['actions'].extend(rep['actions'])
+    rchk = rep['checks'].get('resolution') or {}
+    res['steps'].append({'step': 'resolution_check', 'success': rchk.get('decision', {}).get(
+        'level') != 'warn', 'design': rchk.get('design') or '(读不出)',
+        'designSource': rchk.get('designSource') or '',
+        'startupActivity': rchk.get('startupActivity') or '',
+        'panel': rchk.get('panel') or '', 'panelSource': rchk.get('panelSource') or '',
+        'decision': rchk.get('decision') or {}, 'aspect': rchk.get('aspect') or ''})
+    bchk = rep['checks'].get('budget') or {}
+    res['steps'].append({'step': 'budget_check', 'success': bchk.get('level') == 'ok',
+                         'usedMB': bchk.get('usedMB'), 'limitMB': bchk.get('limitMB'),
+                         'pct': bchk.get('pct'), 'level': bchk.get('level')})
+    tm = ((rep['checks'].get('font') or {}).get('tierMatch') or {})
+    res['steps'].append({'step': 'font_check',
+                         'success': (rep['checks'].get('font') or {}).get('builtin', {})
+                         .get('verdict') != 'no_cjk',
+                         'builtin': (rep['checks'].get('font') or {}).get('builtin'),
+                         'tierMatch': tm})
+
+    # ⑤ 字库投递（按**工程实际用到的汉字集**选最小够用档）
+    tier = font_tier or (tm.get('tier') if tm.get('tier') and tm['tier'] != 'none' else '')
+    if device_fonts is not None and font_apply and _ftools is not None \
+            and not _ftools.is_off(font_check):
+        fv = (rep['checks'].get('font') or {}).get('builtin') or {}
+        need = fv.get('verdict') == 'no_cjk' or not tier
+        dfc, dfc_err = _ftools.device_font_check()
+        if need and tier and dfc is not None:
+            d = _ftools.deliver(root, tier, dfc)
+            res['fontDelivery'] = {'tier': tier, 'bytes': tm.get('tierBytes'),
+                                   'why': tm.get('why') or '',
+                                   'applied': bool(d.get('applied')),
+                                   'files': d.get('files') or [], 'reason': d.get('reason') or ''}
+            if d.get('applied'):
+                res['warnings'].append(
+                    '已按工程中文级别投递字库：%s 档（%s）→ %s'
+                    % (tier, tm.get('why') or '', '、'.join(d.get('files') or [])))
+            else:
+                res['warnings'].append('字库投递未完成：%s' % (d.get('reason') or '原因未知'))
+
+    # ⑥ 适配处置（比例不同**一律不改盘**）
+    #    ⚠️ 分叉看 `decision.id`（design_unknown / screen_lt_design / screen_ge_design），
+    #    不是 `decision.action`（那是 push/warn/adapt_device 三档，screen_lt_design 的动作是 warn）。
+    dec = (rchk.get('decision') or {})
+    branch = dec.get('id') or ''
+    needs_adapt = branch in ('design_unknown', 'screen_lt_design')
+    want_apply = (adapt == 'auto' and branch == 'design_unknown') or \
+                 (adapt == 'force' and needs_adapt)
+    panel_res = rchk.get('panel') or ''
+    if adapt not in ('off', 'ask', 'auto', 'force'):
+        res['warnings'].append("adapt=%r 不是 off/ask/auto/force，按 'ask' 处理" % adapt)
+    if want_apply and panel_res and not str(panel_res).endswith('?'):
+        try:
+            sp = _preflight.scale_project(root, rchk.get('design') or '', panel_res)
+        except Exception as e:
+            sp = {'applied': False, 'skipped': '%s: %s' % (type(e).__name__, e), 'files': []}
+        res['adapted'] = {'plan': sp.get('plan'), 'applied': sp.get('applied'),
+                          'files': sp.get('files') or [], 'boxes': sp.get('boxes'),
+                          'fonts': sp.get('fonts'), 'skipped': sp.get('skipped') or ''}
+        if sp.get('applied'):
+            # 口径成对改：prefs（IDE/preview 读）+ ftu 内嵌（设备加载它）→ json 是布局真源会被回写
+            _rewrite_prefs_resolution(root, panel_res)
+            ftu = _rewrite_ftu_resolution(root, panel_res)
+            res['adapted']['prefsUpdated'] = True
+            res['adapted']['ftu'] = ftu
+            res['steps'].append({'step': 'adapt_layout', 'success': not ftu.get('failed'),
+                                 'target': panel_res, 'files': sp['files'],
+                                 'boxes': sp.get('boxes'), 'fonts': sp.get('fonts'),
+                                 'ftuFailed': ftu.get('failed') or []})
+            res['next'] = ('布局已按面板 %s 等比换算（口径 + 控件盒）；接着跑 '
+                           'flythings_build_ui_flow 出包/推设备，改完用 flythings_layout_audit 复核'
+                           % panel_res)
+        else:
+            res['warnings'].append('未落盘：%s' % (sp.get('skipped') or '未知原因'))
+    elif want_apply:
+        res['warnings'].append('未落盘：面板分辨率给不出可用的 WxH（拿到 %r）' % panel_res)
+    elif branch == 'design_unknown':
+        res['actions'].append({'kind': 'adapt_plan', 'panel': panel_res,
+                               'how': '按面板分辨率重适配 layout（口径 + 控件盒等比）',
+                               'next': "确认后传 adapt='auto'（读不出设计时的默认处置）"})
+    elif branch == 'screen_lt_design':
+        if rchk.get('aspect') == 'diff':
+            res['actions'].append({'kind': 'relayout',
+                                   'why': '设计 %s 与面板 %s **比例不同** → 等比缩放会变形'
+                                          % (rchk.get('design'), panel_res),
+                                   'skill': 'flythings-resolution-adapt',
+                                   'next': "用户确认要按面板重做后传 adapt='force'"
+                                           "（比例不同时 force 也只会出 plan，重排按 skill 做）"})
+        else:
+            res['actions'].append({'kind': 'scale',
+                                   'plan': dec.get('plan'),
+                                   'why': '设计 %s 与面板 %s 比例相同/接近，但屏比设计小'
+                                          % (rchk.get('design'), panel_res),
+                                   'next': "用户确认要按面板缩后传 adapt='force'（等比换算 + pack）"})
+    elif want_apply:
+        res['warnings'].append('未落盘：面板分辨率给不出可用的 WxH（拿到 %r）' % panel_res)
+    elif dec.get('action') == 'adapt_device':
+        res['actions'].append({'kind': 'adapt_plan', 'panel': panel_res,
+                               'how': '按面板分辨率重适配 layout（口径 + 控件盒等比）',
+                               'next': "确认后传 adapt='auto'（读不出设计时的默认处置）"})
+    elif dec.get('action') == 'warn' and rchk.get('aspect') == 'diff':
+        res['actions'].append({'kind': 'relayout',
+                               'why': '设计 %s 与面板 %s 比例不同 → 等比缩放会变形'
+                                      % (rchk.get('design'), panel_res),
+                               'skill': 'flythings-resolution-adapt',
+                               'next': "用户确认要按面板重做后传 adapt='force'（比例相同的会自动等比，"
+                                       "比例不同只出 plan）"})
+
+    res['summary'] = _preflight.compact(rep)
+    res['verdict'] = rep['verdict']
+    res['success'] = True
+    return res
 
 
 def flythings_build_ui_flow(project_root, with_launch=True, device='',
@@ -1873,6 +2113,7 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
             warnings.append(w)
     except Exception as e:                      # 字体体检出错不阻断构建（但明说）
         warnings.append('字体体检异常（不阻断构建）: %s: %s' % (type(e).__name__, e))
+        font_status = None                     # 显式置空：后面的上机前体检要判它有没有
         font_fields = {'enabled': False, 'mode': 'error',
                        'note': '字体体检异常，未见结论'}
 
@@ -1947,6 +2188,32 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
                                         _project_easyui_revision(project_root)[0] or '?',
                                         (runtime.get('panel') or {}).get('panelResolution') or '?'))})
         warnings.extend(runtime['warnings'])
+        # ①.5.1 上机前体检（域⑨，2026-10-03）：把「分辨率 / 字库 / 体积」三项判据在**推之前**
+        #      跑一遍（判据真源 preflight_spec.json）。分辨率判据已由 check_device_runtime 用过
+        #      同一份实现；这里补字库(内置字库体积)与体积预算，并把结构化结论放进 step 供 AI 决策。
+        #      屏 < 设计只**报**不拦（推上去至少能看到真实画面）；要不要重做布局由用户定。
+        if _preflight is not None:
+            try:
+                pf = _preflight.check(
+                    project_root, serial=gate['serial'], platform=plat,
+                    device_fonts=(font_status or {}).get('deviceFonts'),
+                    panel=(runtime.get('panel') or {}).get('resolutionProbe'),
+                    device_probes=_dprobe)
+            except Exception as e:                   # 体检出错不阻断（但明说）
+                pf = None
+                warnings.append('上机前体检异常（不阻断）: %s: %s' % (type(e).__name__, e))
+            if pf:
+                warnings.extend(pf['warnings'])
+                steps.append({"step": "device_preflight", "success": not pf['questions'],
+                              "verdict": pf['verdict'], "summary": _preflight.compact(pf),
+                              "resolution": (pf['checks'].get('resolution') or {}).get('decision'),
+                              "fontBuiltin": ((pf['checks'].get('font') or {})
+                                              .get('builtin')),
+                              "budget": {k: (pf['checks'].get('budget') or {}).get(k)
+                                         for k in ('usedMB', 'limitMB', 'pct', 'level')},
+                              "questions": pf['questions']})
+                for q in pf['questions']:
+                    warnings.append('⚠️ 需用户决定：%s' % q)
         # ①.6 证据窗口刷新（v0.27.180）：`logcat -d` 读的是**整个缓冲区**，含 launch 之前的旧行 ——
         #     不清缓冲就可能把上一轮的 `onUI_show` 当成本轮证据（假 confirmed）。
         #     清失败只记 warning（有些固件的 logd 不响应 -c，不该因此拦掉整条流程）。
@@ -2375,11 +2642,7 @@ def flythings_create_project(project_root, platform=None, resolution=None,
             txt = _repair_project_builders(txt, tpl_txt)
         open(p, 'w', encoding='utf-8').write(txt)
     # 3. 更新 .settings 分辨率
-    prefs = os.path.join(root, '.settings', 'com.zksw.flythings.easyui.prefs')
-    if os.path.isfile(prefs):
-        txt = open(prefs, encoding='utf-8', errors='replace').read()
-        txt = re.sub(r'(?m)^resolution=.*$', f'resolution={resolution}', txt)
-        open(prefs, 'w', encoding='utf-8').write(txt)
+    _rewrite_prefs_resolution(root, resolution)
     # 3.5 更新 ui/*.ftu 内嵌分辨率（ftu 里也含 resolution，必须 unpack→改 json→pack 回）
     ftu_res = _rewrite_ftu_resolution(root, resolution)
     res_norm = re.sub(r'\s*[xX]\s*', 'x', str(resolution).strip())

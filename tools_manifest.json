@@ -4,7 +4,7 @@
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY/STAGE 表后重新生成，勿手改本文件",
   "version": "0.27.171-open",
   "build": "2026-10-02",
-  "toolCount": 46,
+  "toolCount": 47,
   "cli": {
     "fun": "FlyThings 工程工具（create/install/build/launch，<项目>/.fsc/<平台>/ 下；09-28 前为 .fun/）",
     "fui": "FTU 布局工具：pack（json → ftu）/ unpack（ftu → json）双向下；随包 fui 自 v0.27.91 起含 unpack（旧版只有 pack）"
@@ -211,6 +211,21 @@
       ],
       "risk": "write",
       "category": "project",
+      "stage": "build"
+    },
+    {
+      "op": "flythings_device_preflight",
+      "brief": "上机前体检：设备发现→型号/平台确认→分辨率/字库/体积三项判据（launch 前自动跑同一套）。",
+      "args": [
+        "project_root",
+        "device",
+        "adapt",
+        "font_check",
+        "font_tier",
+        "font_apply"
+      ],
+      "risk": "read",
+      "category": "build",
       "stage": "build"
     },
     {
@@ -728,9 +743,9 @@
     }
   ],
   "docs": {
-    "knowledgeFiles": 109,
+    "knowledgeFiles": 110,
     "wikiFiles": 16,
-    "ragChunks": 1653,
-    "ragPaths": 123
+    "ragChunks": 1660,
+    "ragPaths": 124
   }
 }

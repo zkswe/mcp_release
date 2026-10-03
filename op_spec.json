@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0",
-  "updated": "2026-10-02",
+  "updated": "2026-10-03",
   "authority": "FlyThings MCP 的 **op 契约唯一机器可读真源**。每个 op 的描述（summary/触发别名/参数说明/返回要点/铁律/检索词/知识归属/风险/分类/阶段）以本表为准。派生产物：① kb_tools.py 里该 op 的 docstring（= MCP 工具 description，scripts/gen_op_docs.py 生成）② tools_manifest.json 的 brief/args/risk/category/stage ③ gate_catalog.json 的 brief/args/stage ④ op_seealso.json 的 seeAlso。**改契约 = 改本文件，禁止在消费方另抄一份**（与 ui_schema.json 同一条纪律：注册表拥有契约，knowledge/*.md 只留原理/流程/行为）。压缩 token 预算的正确动作是**裁本表的结构化字段**，不是打磨散文。",
   "budget": {
     "perOpMax": 900,
@@ -503,6 +503,31 @@
       "docRef": "knowledge/devflow/ftu-json-pipeline.md",
       "seeAlso": [
         "knowledge/devflow/ftu-json-pipeline.md"
+      ]
+    },
+    "flythings_device_preflight": {
+      "summary": "上机前体检：设备发现→型号/平台确认→分辨率/字库/体积三项判据（launch 前自动跑同一套）。",
+      "risk": "read",
+      "category": "build",
+      "stage": "build",
+      "params": [
+        {
+          "name": "adapt",
+          "desc": "off 只报 / ask 出方案（默认）/ auto 仅读不出设计时改盘 / force 用户已确认要适配"
+        },
+        {
+          "name": "font_apply",
+          "desc": "True（默认）按工程用到的汉字集自动投字库"
+        }
+      ],
+      "rules": [
+        "比例不同（相对差 > 3%）时**任何档都不改盘**，只出 plan —— 等比缩放会把界面拉变形（重排走 skill flythings-resolution-adapt）。"
+      ],
+      "docRef": "knowledge/devflow/device-preflight-spec.md",
+      "seeAlso": [
+        "knowledge/devflow/device-preflight-spec.md",
+        "knowledge/devflow/canvas-panel-coverage.md",
+        "knowledge/devflow/custom-font-config.md"
       ]
     },
     "flythings_build_ui_flow": {
