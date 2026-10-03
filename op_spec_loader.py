@@ -207,6 +207,16 @@ def render_contract(op):
 # 预算与自检（供门禁消费）
 # --------------------------------------------------------------------------
 
+def long_ops():
+    """长任务 op 清单（`op_spec.json.longOps`）。
+
+    分发器据此决定要不要把这个 op 放工作线程 + 上报进度。放注册表里而不是
+    写死在 mcp_server —— 否则「哪些 op 是长任务」又成了第二处口径。
+    缺字段回空列表（老注册表也能跑），由 validate 负责提醒。
+    """
+    return list(load().get('longOps') or [])
+
+
 def budget_report():
     """常驻面预算 → {per_op, total, perOpMax, totalMax, over, contract_over, contractPerOpMax}。
 
@@ -284,6 +294,12 @@ def validate():
     for op in debt:
         if op not in reg['ops']:
             errs.append('notesDebt 登记了不存在的 op: %s' % op)
+
+    # longOps：长任务清单必须都是真 op —— 多一个名字 = 分发器永远不生效（静默退化成阻塞调用）
+    registered = set(reg['ops'])
+    for op in long_ops():
+        if op not in registered:
+            errs.append('longOps 里的 %r 不是已登记的 op' % op)
     return errs
 
 

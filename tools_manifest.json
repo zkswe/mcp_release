@@ -2,9 +2,9 @@
   "schema": 1,
   "generatedBy": "scripts/gen_manifest.py",
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY/STAGE 表后重新生成，勿手改本文件",
-  "version": "0.27.172-open",
+  "version": "0.27.173-open",
   "build": "2026-10-02",
-  "toolCount": 47,
+  "toolCount": 48,
   "cli": {
     "fun": "FlyThings 工程工具（create/install/build/launch，<项目>/.fsc/<平台>/ 下；09-28 前为 .fun/）",
     "fui": "FTU 布局工具：pack（json → ftu）/ unpack（ftu → json）双向下；随包 fui 自 v0.27.91 起含 unpack（旧版只有 pack）"
@@ -819,6 +819,27 @@
         "支持 mqtt 的包",
         "有没有 http 库",
         "找个库"
+      ]
+    },
+    {
+      "op": "flythings_project_state",
+      "brief": "工程进度（跨会话「做到哪了」）：已过/未过的闸门 + 下一步做什么。",
+      "args": [
+        "project_root",
+        "action",
+        "slot",
+        "note"
+      ],
+      "risk": "write",
+      "category": "build",
+      "stage": "build",
+      "triggers": [
+        "做到哪了",
+        "上次做到哪",
+        "继续上次",
+        "下一步做什么",
+        "工程进度",
+        "做到哪一步了"
       ]
     },
     {

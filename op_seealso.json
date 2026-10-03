@@ -203,6 +203,11 @@
         "knowledge/devflow/dependency-package-docs.md"
       ]
     },
+    "flythings_project_state": {
+      "seeAlso": [
+        "knowledge/devflow/flow-index.md"
+      ]
+    },
     "flythings_query_package": {
       "seeAlso": [
         "knowledge/devflow/dependency-package-docs.md"

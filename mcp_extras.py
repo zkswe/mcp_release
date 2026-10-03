@@ -13,6 +13,9 @@ resources：
                                     + 「设备端预编译工具」一节：bin_tools/<平台>/ 下的 touch / busybox /
                                     ui_test / zkshot（**不是 op**，数 op 看不到）
   flythings://version版本 / 构建日 / 工具数 / 近期特性
+  flythings://errors错误码表（code → 什么意思 / 该谁动手 / 可否重试 / 下一步）—— 多数情况
+                                     **不用挂**：action 已自动补进每次失败的返回体
+  flythings://state最近工程的进度（跨会话「上次做到哪」）—— 新会话不用重摸工程
 
   ⚠️ FastMCP 的 URI 模板参数只匹配单段路径（内部把 {x} 换成 [^/]+），所以分类文档与
 根目录文档用两个模板，不能写 {path} 通吃多级；读文件前过白名单校验（仅 knowledge/ 下 .md，防穿越）。
@@ -290,6 +293,53 @@ def register(mcp):
     def version_doc() -> str:
         """版本 / 构建日 / 工具数 / 近期特性。"""
         return _version_doc()
+
+    @mcp.resource('flythings://errors', name='error-codes',
+                  title='FlyThings MCP 错误码表', mime_type='text/markdown')
+    def error_codes_doc() -> str:
+        """全部错误码 + 含义 + 该谁动手 + 能否重试（由 error_codes.json 派生）。
+
+        ⚠️ 多数情况**不用挂这个** —— `action` 与默认 `retryable` 已经自动补进每次失败的返回体了。
+        挂它是为了「先知道有哪些码」或排查反复出现的同一类错。
+        """
+        import error_codes_loader as _ec
+        return _ec.render_table()
+
+    @mcp.resource('flythings://state', name='project-state',
+                  title='最近工程的进度（跨会话）', mime_type='text/markdown')
+    def project_state_doc() -> str:
+        """最近活动过的工程 + 各自做到哪了 —— 新会话里「上次做到哪」不用重摸工程。
+
+        状态位口径来自 `flow_spec.json` 的 `stateSlots`；实例在 `<项目>/.flythings/state.json`。
+        要打点 / 清空用 op `flythings_project_state`（本资源只读）。
+        """
+        import project_state as _ps
+        L = ['# 最近工程的进度（跨会话「做到哪了」）', '',
+             '> 状态位口径来自 `flow_spec.json` 的 `stateSlots`；实例写 `<项目>/.flythings/state.json`。',
+             '> 打点 / 清空用 op `flythings_project_state`。', '']
+        rows = _ps.recent(5)
+        if not rows:
+            L.append('（还没有活动工程记录 —— 建工程或跑任意工程 op 后会自动登记。）')
+            return '\n'.join(L) + '\n'
+        for r in rows:
+            root = r.get('root') or ''
+            L.append('## %s' % (r.get('name') or root))
+            L.append('')
+            L.append('- 路径：`%s`' % root)
+            try:
+                v = _ps.show(root)
+            except Exception as e:                # 读不到就如实报，不假装没这个工程
+                L.append('- ⚠️ 读不到状态：%s: %s' % (type(e).__name__, e))
+                L.append('')
+                continue
+            L.append('- 已过闸门：%s' % ('、'.join(d['slot'] for d in v['done']) or '（无）'))
+            nxt = v.get('next')
+            L.append('- 下一步：%s' % (('%s（`%s`）' % (nxt['stepTitle'], nxt['op'] or '人判断'))
+                                    if nxt else '全部走完'))
+            if nxt and nxt.get('gate'):
+                L.append('- ⚠️ 该步是**%s**：%s' % (nxt['gate'], nxt.get('gateHow') or ''))
+            L.append('')
+        return '\n'.join(L) + '\n'
 
     # prompts：每个都必须有**显式参数名**（FastMCP 靠签名生成参数 schema，**kwargs 会变成无参）
     @mcp.prompt(name='flythings-new-project', title=_prompt_spec('new-project')['title'],

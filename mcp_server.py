@@ -9,15 +9,16 @@ OpenClaw 注册入口。工具定义见 kb_tools.py。
 工具面模式（v0.27.34，环境变量 FLYTHINGS_MCP_MODE，默认 dispatcher）：
   - `dispatcher`（默认）：**只暴露 1 个工具** flythings_kb（op="list" 取目录）——schema 开销最小，
     推荐所有客户端用（外部工具目录由意图闸门/README 提供）；
-  - `all`：1 个分发器 + 47 个独立工具（老配置兼容，客户端可直接调 `flythings_knowledge_search` 这类名字）；
-  - `flat`：只注册 47 个独立工具（等价 mcp_server_flat.py，给需要独立 schema 的客户端）。
+  - `all`：1 个分发器 + 48 个独立工具（老配置兼容，客户端可直接调 `flythings_knowledge_search` 这类名字）；
+  - `flat`：只注册 48 个独立工具（等价 mcp_server_flat.py，给需要独立 schema 的客户端）。
 ⚠️ 默认值从“全注册”改为“只分发器”是**行为变更**（v0.27.34）：如你的客户端/提示词直接调用
 flat 工具名，设 FLYTHINGS_MCP_MODE=all 即可恢复原行为。
 """
 import os, sys, json, inspect
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import Context, FastMCP
+import error_codes_loader as errcodes   # 错误码语义（域⑫）
 import kb_tools
 import mcp_extras
 
@@ -26,7 +27,7 @@ if MODE not in ('dispatcher', 'all', 'flat'):
     MODE = 'dispatcher'
 
 mcp = FastMCP("flythings-kb")
-# 'dispatcher'：不注册独立工具（只有下面的 flythings_kb）；'all' / 'flat'：注册 47 个独立工具
+# 'dispatcher'：不注册独立工具（只有下面的 flythings_kb）；'all' / 'flat'：注册 48 个独立工具
 if MODE in ('all', 'flat'):
     kb_tools.register_all(mcp)
 # resources + prompts（与工具面模式无关，两种 server 共用同一实现 mcp_extras）
@@ -85,10 +86,8 @@ def _find(need: str, limit: int = 6) -> str:
         ops = osl.registered()
         import kb_authority as ka          # 匹配器**唯一实现**（容忍中间插词，与知识权威归属同一份）
     except Exception as e:                       # 注册表不可用 → 明说，别给空候选让人以为"没这个能力"
-        return json.dumps({"ok": False,
-                           "error": {"code": "CONTRACT_UNAVAILABLE",
-                                     "msg": "op 契约注册表不可用: %s: %s" % (type(e).__name__, e),
-                                     "retryable": False}}, ensure_ascii=False)
+        return _err_json("CONTRACT_UNAVAILABLE",
+                         "op 契约注册表不可用: %s: %s" % (type(e).__name__, e))
     scored = []
     # ② 语义补一路：走**已有的知识检索**（本地向量 + BM25，已评测、有回归），
     #    命中文档 → 反查"哪些 op 以它为 docRef / seeAlso"（两跳，**不新造索引**）。
@@ -231,15 +230,89 @@ def _suggest(op: str, limit: int = 5) -> list:
     return out[:limit]
 
 
+def _err_json(code, msg, hint='', retryable=None, **extra) -> str:
+    """分发器侧的失败返回：统一 envelope + 错误码表补 action / who / 默认 retryable。
+
+    `retryable=None` = 未表态（由码表定）；显式 True 表示调用点更确定可重试。
+    这样分发器的错误体与工具内部的（kb_tools.normalize_result 那条路）形状一致。
+    """
+    err = {"code": code, "msg": msg, "hint": hint, "retryable": retryable}
+    errcodes.enrich(err)
+    if err.get("retryable") is None:
+        err["retryable"] = False
+    out = {"ok": False, "error": err, "warnings": []}
+    out.update(extra)
+    return json.dumps(out, ensure_ascii=False)
+
+
 def _env_err(code, msg, hint='', retryable=False) -> str:
-    return json.dumps({"ok": False,
-                       "error": {"code": code, "msg": msg, "hint": hint,
-                                 "retryable": bool(retryable)}},
-                      ensure_ascii=False)
+    return _err_json(code, msg, hint, retryable or None)
 
 
-async def flythings_kb(op: str = "list", args: str = "{}") -> str:
-    """FlyThings 开发能力统一入口（47 个能力合一的单入口）。
+# ── 长任务：进度上报 + 不阻塞事件循环 ────────────────────────────────
+# 为什么：构建 / 部署 / 刷机是**分钟级**；原来同步直调会把**事件循环**堵死 ——
+# 客户端连「取消」都发不进来，也收不到任何进度。改法：op 丢到工作线程跑，
+# 事件循环每秒轮询 `progress.current()`（阶段由 op 内部的 steps.append 打点）→ ctx.report_progress。
+# 长任务清单来自 `op_spec.json` 的 `longOps`（不在这里硬编码）。
+_LONG_OPS = None
+_PROGRESS_NOTE = ''
+
+
+def _long_ops():
+    global _LONG_OPS, _PROGRESS_NOTE
+    if _LONG_OPS is None:
+        try:
+            import op_spec_loader as _osl
+            _LONG_OPS = set(_osl.long_ops())
+        except Exception as e:          # 契约不可用 → 全部按普通 op 处理，但**记下原因**（不静默）
+            _LONG_OPS = set()
+            _PROGRESS_NOTE = '长任务清单不可用（%s: %s），本次不启用进度上报' % (type(e).__name__, e)
+    return _LONG_OPS
+
+
+def _progress_token_ok(ctx):
+    """客户端带 progressToken 了吗（没带就别白发通知）。"""
+    meta = getattr(getattr(ctx, 'request_context', None), 'meta', None)
+    return bool(getattr(meta, 'progressToken', None))
+
+
+async def _run_long(fn, kwargs, ctx):
+    """工作线程跑长任务；期间把阶段推给客户端（无 ctx / 客户端不支持也照跑，只是不上报）。"""
+    import anyio
+    import progress as _pg
+    _pg.begin()
+    box = {}
+    can_report = ctx is not None and _progress_token_ok(ctx)
+
+    async def _beat():
+        global _PROGRESS_NOTE
+        last = -1
+        while True:
+            await anyio.sleep(1.0)
+            snap = _pg.current()
+            if snap['seq'] == last or not can_report:
+                continue
+            last = snap['seq']
+            try:
+                await ctx.report_progress(progress=snap['elapsed'], total=None,
+                                          message=snap['stage'] or '运行中')
+            except Exception as e:      # 上报通路断了：停上报，任务继续（并如实记下）
+                _PROGRESS_NOTE = '进度上报中断（%s: %s），任务继续执行' % (type(e).__name__, e)
+                return
+
+    async with anyio.create_task_group() as tg:
+        tg.start_soon(_beat)
+        try:
+            box['v'] = await anyio.to_thread.run_sync(lambda: fn(**kwargs))
+        finally:
+            tg.cancel_scope.cancel()    # 任务结束就停心跳，别留一个永久 sleep 的任务
+    _pg.end()
+    return box['v']
+
+
+async def flythings_kb(op: str = "list", args: str = "{}",
+                        ctx: Context = None) -> str:
+    """FlyThings 开发能力统一入口（48 个能力合一的单入口）。
 
     ⚠️ 仅在用户意图属于「FlyThings 软件开发」时调用：UI 布局/控件/json/ftu、
     工程创建与编译部署、依赖包/Manifest、多语言 i18n、知识库检索、UI 预览与像素验收、
@@ -252,7 +325,7 @@ async def flythings_kb(op: str = "list", args: str = "{}") -> str:
     （多步流程 / 踩坑铁律）；③ 调用中需要判据细节，按返回体的 seeAlso/docRef 走
     `op="knowledge_search"` 检索（按需，不预加载）。
 
-    ⚠️ 能力不止这 47 个 op：设备端预编译工具（touch 触摸注入 / busybox / ui_test /
+    ⚠️ 能力不止这 48 个 op：设备端预编译工具（touch 触摸注入 / busybox / ui_test /
     zkshot）在 `<MCP 安装目录>/bin_tools/<平台>/` 下，**不是 op、不占 op 名额**——
     只数 op 会漏掉触摸注入这类能力；看 flythings_get_version 的 binTools 字段或
     flythings://tools 资源的「设备端预编译工具」一节。
@@ -285,18 +358,11 @@ async def flythings_kb(op: str = "list", args: str = "{}") -> str:
             hint = '直接改用 %s（旧名不再提供）' % renamed
             if extra:
                 hint += '；' + extra
-            return json.dumps({"ok": False,
-                               "error": {"code": "OP_RENAMED",
-                                         "msg": "op %s 已合并/改名为 %s" % (op, renamed),
-                                         "hint": hint,
-                                         "retryable": False}},
-                              ensure_ascii=False)
-        return json.dumps({"ok": False,
-                           "error": {"code": "UNKNOWN_OP",
-                                     "msg": "unknown op: %s" % op,
-                                     "hint": "调 op='list' 取全部 op 与参数名；或见 candidates",
-                                     "retryable": False},
-                           "candidates": _suggest(op)}, ensure_ascii=False)
+            return _err_json("OP_RENAMED",
+                             "op %s 已合并/改名为 %s" % (op, renamed), hint)
+        return _err_json("UNKNOWN_OP", "unknown op: %s" % op,
+                         "调 op='list' 取全部 op 与参数名；或见 candidates",
+                         candidates=_suggest(op))
     if isinstance(args, dict):
         kwargs = dict(args)
     else:
@@ -311,9 +377,12 @@ async def flythings_kb(op: str = "list", args: str = "{}") -> str:
                             "args 必须是 JSON 对象（当前是 %s）" % type(kwargs).__name__,
                             "参数名见 op='list'", True)
     try:
-        res = fn(**kwargs)
-        if inspect.isawaitable(res):
-            res = await res
+        if op in _long_ops():               # 长任务：线程 + 进度上报（普通 op 仍直调，省一次切换）
+            res = await _run_long(fn, kwargs, ctx)
+        else:
+            res = fn(**kwargs)
+            if inspect.isawaitable(res):
+                res = await res
         return res if isinstance(res, str) else json.dumps(res, ensure_ascii=False, default=str)
     except TypeError as e:
         # 参数名/个数不对 → 回正确签名，AI 可直接改
@@ -328,7 +397,7 @@ def main():
     mcp.run()
 
 
-# 注册分发器（MODE=flat 时不注册：那种模式语义 =「只要 47 个独立工具」，见 mcp_server_flat.py）
+# 注册分发器（MODE=flat 时不注册：那种模式语义 =「只要 48 个独立工具」，见 mcp_server_flat.py）
 if MODE != 'flat':
     mcp.tool()(flythings_kb)
 

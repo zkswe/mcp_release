@@ -25,6 +25,7 @@
     ask      - 询问用户三种验收方式（默认）
 """
 import json, os, re, subprocess, shutil
+import progress as _progress  # 长任务阶段打点
 import sys as _sys
 
 # test_run 的抓屏走 ui_tools/device_screenshot.py：自己把 ui_tools 挂进 sys.path，
@@ -641,7 +642,7 @@ def _run_on_device(dev, plan, adb, out_root, platform, baseline, allow, resoluti
     serial = dev.get('serial')
     t0 = time.time()
     notes, errors = [], []
-    res = {'serial': serial, 'model': dev.get('model', ''), 'ok': False, 'steps': [],
+    res = {'serial': serial, 'model': dev.get('model', ''), 'ok': False, 'steps': _progress.StageList(),
            'notes': notes, 'errors': errors, 'ms': 0}
     use, perr = _platform_of(dev, platform)
     res['platform'] = use

@@ -732,6 +732,24 @@ def stage_delegated(skip_smoke, with_tests):
                if l.startswith('[PASS]') or l.startswith('[FAIL]')]
     check(rc == 0, 'delegated: gen_flow_doc --check (开发流程索引)',
           (fl_tail[-1] if fl_tail else 'rc=%d' % rc)[:70])
+    # v0.27.173（域⑫）：错误码表 —— 源码里出现的 code 必须已登记（防漏登记），
+    # 登记的必须真有人抛（防孤儿码）；这直接决定失败返回里的 action 能不能补出来。
+    try:
+        import error_codes_loader as _ec
+        ec_errs = _ec.validate()
+    except Exception as e:                      # 模块缺失 = 对账无法进行（不静默）
+        ec_errs = ['error_codes_loader 不可用：%s: %s' % (type(e).__name__, e)]
+    check(not ec_errs, '错误码表（域⑫ error_codes.json）',
+          (ec_errs[0] if ec_errs else '已登记码与源码一一对应')[:70])
+    # 工程状态（域⑪）：状态位的 setBy/blocks 必须指向真实步骤 —— 否则「下一步」会算错
+    try:
+        import project_state as _ps
+        ps_bad = [n for n, v in _ps.slots().items()
+                  if v.get('setBy') not in _ps._flows_loader().steps()]
+    except Exception as e:
+        ps_bad = ['project_state 不可用：%s: %s' % (type(e).__name__, e)]
+    check(not ps_bad, '工程状态位（域⑪ 状态位 → 步骤）',
+          (str(ps_bad[0]) if ps_bad else '全部状态位都指向真实步骤')[:70])
     # v0.27.180（B3）：工程骨架唯一来源 —— templates/HelloWord_Z20/src 为骨架真源，
     # 各工程的副本（实测 18 份）必须与它一致；改骨架只需改一处 + --apply。
     rc, out = _run([sys.executable, os.path.join(SUB, 'sync_project_skeleton.py'), '--check'])

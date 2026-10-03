@@ -761,6 +761,38 @@
         "能用什么库"
       ]
     },
+    "flythings_project_state": {
+      "summary": "工程进度（跨会话「做到哪了」）：已过/未过的闸门 + 下一步做什么。",
+      "risk": "write",
+      "category": "build",
+      "stage": "build",
+      "triggers": [
+        "做到哪了",
+        "上次做到哪",
+        "继续上次",
+        "下一步做什么",
+        "工程进度",
+        "做到哪一步了"
+      ],
+      "params": [
+        {
+          "name": "action",
+          "desc": "show（默认，只读）/ mark（打状态位，须给 slot）/ reset（清空，不可逆）"
+        },
+        {
+          "name": "slot",
+          "desc": "mark 时要打的状态位名（可选值见返回体）"
+        }
+      ],
+      "rules": [
+        "⚠️ 状态位口径在 flow_spec.json 的 stateSlots —— 本 op 不新增口径，只读写。",
+        "⚠️ reset 会清空全部进度标记，且必须显式给 project_root（不给「最近工程」兜底）。"
+      ],
+      "docRef": "knowledge/devflow/flow-index.md",
+      "seeAlso": [
+        "knowledge/devflow/flow-index.md"
+      ]
+    },
     "flythings_query_package": {
       "summary": "查询依赖包在指定平台的可用版本。传入包名（如 mqtt-cxx）与平台。",
       "risk": "read",
@@ -1339,5 +1371,18 @@
       "flythings_ui_preview": 177,
       "flythings_validate_project": 148
     }
-  }
+  },
+  "longOps": [
+    "flythings_build_ui_flow",
+    "flythings_pack_upgrade",
+    "flythings_device_preflight",
+    "flythings_fui_pack",
+    "flythings_test_run",
+    "flythings_selfcheck",
+    "flythings_device_screenshot",
+    "flythings_generate_ui_assets",
+    "flythings_translate_ui",
+    "flythings_add_package"
+  ],
+  "longOpsNote": "这些 op 常跑 5 秒到几分钟（编译 / 刷机 / 抓屏 / 全盘自检）。分发器把它们放工作线程跑，并把 op 内部的阶段（`steps.append` 打点）转成 MCP progress notification 推给客户端 —— 顺带修掉「同步长任务堵死事件循环、客户端连取消都发不进来」。清单放这里，不在 mcp_server 硬编码。"
 }

@@ -12,6 +12,7 @@ import json, math, os, re, shutil, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import platforms as _platforms   # 平台唯一来源：默认值/平台清单/包生态键都从这里取
+import error_codes_loader as errcodes   # 错误码语义（域⑫）：normalize_result 补 action
 import rag_search as rs
 import project_tools as pt
 import package_tools as pkgtools
@@ -71,7 +72,7 @@ else:
     _USC_ERR = ''
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.172-open'
+MCP_VERSION = '0.27.173-open'
 MCP_BUILD = '2026-10-02'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
@@ -1922,14 +1923,58 @@ def flythings_bugreport(title: str = '', project_root: str = '', device: str = '
 
 
 
+def flythings_project_state(project_root: str = "", action: str = "show",
+                            slot: str = "", note: str = "") -> str:
+    """工程进度（跨会话「做到哪了」）：已过/未过的闸门 + 下一步做什么。
+
+    触发：做到哪了 / 上次做到哪 / 继续上次 / 下一步做什么 / 工程进度 / 做到哪一步了
+    参数：action→show（默认，只读）/ mark（打状态位，须给 slot）/ reset（清空，不可逆）；slot→mark 时要打的状态位名（可选值见返回体）
+    """
+    import project_state as _ps
+    act = (action or "show").strip().lower()
+    known = "、".join(sorted(_ps.slots()))
+    try:
+        if act == "show":
+            data = _ps.show(project_root)
+        elif act == "mark":
+            if not slot:
+                raise _ps.ProjectStateError("mark 必须给 slot（可选：%s）" % known)
+            root = _ps.resolve(project_root)
+            if not root:
+                raise _ps.ProjectStateError("没有活动工程：请传 project_root")
+            _ps.mark(root, slot, note=note, source="flythings_project_state")
+            data = _ps.show(root)
+        elif act == "reset":
+            if not project_root:            # 清空必须显式给路径（不给「最近工程」兜底）
+                raise _ps.ProjectStateError("reset 必须显式传 project_root")
+            if not _ps.reset(project_root):
+                raise _ps.ProjectStateError("清空失败：%s" % project_root)
+            data = _ps.show(project_root)
+        else:
+            raise _ps.ProjectStateError("未知 action=%r（可选 show / mark / reset）" % action)
+    except _ps.ProjectStateError as e:
+        return json.dumps({"success": False, "code": "BAD_PARAMS", "msg": str(e),
+                           "hint": "状态位口径见 flow_spec.json 的 stateSlots（可选：%s）；"
+                                   "show 不需要额外参数" % known}, ensure_ascii=False)
+    return json.dumps({"success": True, "op": "flythings_project_state",
+                       "action": act, **data}, ensure_ascii=False, default=str)
+
+
 # ===== 统一返回契约（v0.27.31）=====
 # 所有工具返回值统一为 {ok, op, warnings[], error{code,msg,hint,retryable}}；
 # 保留原有键（success / error 文本 / 业务字段）向后兼容，非 JSON 纯文本收进 data.text。
 # 目的：宿主 AI 能机读判定「成功/失败/是否可重试」，不再出现有的回 success、有的回 ok、
 # 错误只有一句字符串（MCP isError 永为 false）的情况。
 
-def _err_obj(code, msg, hint='', retryable=False):
-    return {'code': code or 'ERROR', 'msg': str(msg), 'hint': hint, 'retryable': bool(retryable)}
+def _err_obj(code, msg, hint='', retryable=None):
+    """统一错误对象。
+
+    `retryable=None` = **未表态**，留给错误码表（域⑫）按 code 的默认值填；
+    显式传 True/False 表示调用点有更强判断，码表不覆盖。
+    最终 `normalize_result` 会把 None 收敛成 False —— 对外契约里它必是布尔。
+    """
+    return {'code': code or 'ERROR', 'msg': str(msg), 'hint': hint,
+            'retryable': None if retryable is None else bool(retryable)}
 
 
 def normalize_result(op, raw):
@@ -1958,14 +2003,20 @@ def normalize_result(op, raw):
     if not ok:
         if isinstance(err, dict):
             out['error'] = _err_obj(err.get('code'), err.get('msg') or err.get('message') or err,
-                                    err.get('hint', ''), err.get('retryable', False))
+                                    err.get('hint', ''), err.get('retryable'))
         elif isinstance(err, str):
             out['error'] = _err_obj(out.get('code'), err, out.get('hint', ''),
-                                    out.get('retryable', False))
+                                    out.get('retryable'))
         elif err is None:
             out['error'] = _err_obj(out.get('code'),
                                     out.get('message') or out.get('msg') or 'unknown error',
-                                    out.get('hint', ''), out.get('retryable', False))
+                                    out.get('hint', ''), out.get('retryable'))
+        # 码表补语义（域⑫ error_codes.json）：调用点只写 code+msg，`action`（下一步该做什么）
+        # 与默认 `retryable` 在这里统一注入 —— 于是 48 个 op 的失败返回都自带处置建议。
+        # 显式写过的 retryable 优先；查不到的码原样放过（漏登记由门禁抓，不在运行时炸）。
+        errcodes.enrich(out['error'])
+        if out['error'].get('retryable') is None:   # 未表态 → 收敛成 False（契约里必是布尔）
+            out['error']['retryable'] = False
     elif isinstance(err, str):
         out.pop('error', None)  # ok=True 时的残留错误字符串清掉，避免误判
     out.setdefault('warnings', [])
@@ -1984,6 +2035,36 @@ def _sig_args(fn) -> list:
                 if p.name not in ('ctx', 'self')]
     except (TypeError, ValueError):
         return []
+
+
+def _state_auto_mark(op_name, kwargs, raw):
+    """op 成功后按**流程真源反查**的状态位就地回写（域⑪）。
+
+    为什么放在 `_envwrap`：这样 dispatcher / all / flat **三种模式都覆盖**；
+    放在分发器里只能覆盖 dispatcher 模式。
+    为什么能反查：`flow_spec.json` 的 steps 里写着「哪一步 setsState 哪些位」，
+    `project_state.slots_of_op()` 从它推出来 —— 所以**不需要另维护一张 op→状态位 映射表**。
+
+    失败不许影响主流程，但要**如实回报**（写进返回体的 warnings）。
+    """
+    try:
+        obj = json.loads(raw) if isinstance(raw, str) else raw
+    except ValueError:
+        return raw
+    if not isinstance(obj, dict) or not obj.get('ok'):
+        return raw                              # 只认成功：失败回写会把「跑过」当成「做成了」
+    try:
+        import project_state as _ps
+        marked, err = _ps.auto_mark(op_name, kwargs, obj)
+    except Exception as e:
+        marked, err = [], '%s: %s' % (type(e).__name__, e)
+    if not marked and not err:
+        return raw
+    if marked:
+        obj.setdefault('stateMarked', marked)
+    if err:
+        obj.setdefault('warnings', []).append('工程状态回写失败（不阻断本次调用）：%s' % err)
+    return json.dumps(obj, ensure_ascii=False)
 
 
 def _envwrap(name, fn):
@@ -2005,7 +2086,7 @@ def _envwrap(name, fn):
                                    % (name, ', '.join(_sig_args(fn))), True),
                  'warnings': []}, ensure_ascii=False)
         try:
-            return normalize_result(name, fn(*a, **kw))
+            return _state_auto_mark(name, kw, normalize_result(name, fn(*a, **kw)))
         except Exception as e:
             return json.dumps(
                 {'ok': False, 'op': name,
@@ -2067,6 +2148,7 @@ OP_NAMES = (
     'flythings_i18n_refactor',
     'flythings_i18n_to_json',
     'flythings_list_packages',
+    'flythings_project_state',
     'flythings_query_package',
     'flythings_manifest',
     'flythings_add_package',

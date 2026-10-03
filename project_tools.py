@@ -3,6 +3,7 @@
 import json, os, re, shutil, subprocess, tempfile, time
 
 import platforms as _platforms  # 平台矩阵唯一来源（新增/调整平台只改 platforms.py）
+import progress as _progress  # 长任务阶段打点（分发器转成 progress 通知）
 
 try:                      # adb 单一入口（v0.27.84）：PC 端 adb 解析 + 设备探测 + 型号→平台
     import adb_tools as _adb
@@ -456,12 +457,14 @@ def flythings_read_json(json_path):
     ⚠️ 传入 .ftu 时不再当「加密无法解析」：本 op 只读 json，请先用 flythings_fui_unpack 反解析。
     """
     if json_path.lower().endswith('.ftu'):
-        return {"success": False, "isFtu": True,
+        return {"success": False, "isFtu": True, "code": "BAD_SOURCE",
                 "error": "本 op 只解析 json；ftu 是二进制布局（设备实际加载的文件），先反解析再读。",
                 "hint": "调 flythings_fui_unpack(ftu_path=...) 得到 jsonPath（默认覆盖同目录同名 json；"
                         "要保留原 json 传 overwrite=false），再把 jsonPath 传给本 op"}
     if not os.path.isfile(json_path):
-        return {"success": False, "error": f"json 文件不存在: {json_path}"}
+        return {"success": False, "code": "DATA_MISSING",
+                "error": f"json 文件不存在: {json_path}",
+                "hint": "核对路径；ftu 反解析用 flythings_fui_unpack"}
     return _parse_ui_json(json_path)
 
 
@@ -1764,7 +1767,7 @@ def flythings_device_preflight(project_root, device='', adapt='ask', font_check=
     `font_apply`：True（默认）时按工程实际用到的汉字集**自动投递最小够用档**字库。
     """
     root = os.path.abspath(project_root or '')
-    res = {'success': False, 'projectRoot': root, 'steps': [], 'warnings': [],
+    res = {'success': False, 'projectRoot': root, 'steps': _progress.StageList(), 'warnings': [],
            'questions': [], 'actions': [], 'adapted': None, 'font': None,
            'verdict': 'unknown'}
     if not os.path.isdir(root):
