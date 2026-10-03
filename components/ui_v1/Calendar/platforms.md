@@ -1,6 +1,6 @@
 # platforms.md —— Calendar 逐平台说明
 
-> 口径：**没实测的一律写 `未验证`**。组件只用到 `easyui` 的 `ZKTextView + ZKButton + ZKBase::getPosition()`，
+> 口径：**没实测的一律写 `未验证`**。**本组件例外**：2026-10-03 口径「UI 控件只做 **V85X 单平台代表验收**」→ 其余平台标 `➖ 不逐平台验`（见 `platform_capabilities.json` 的 `verificationPolicy`）。组件只用到 `easyui` 的 `ZKTextView + ZKButton + ZKBase::getPosition()`，
 > 平台差异主要在 **① touch 事件怎么拿到绝对坐标**、**② textview 能不能画底色**。
 >
 > ⚠️ 文档里的设备地址是**通用示例**，不是真机 IP；真机清单在开发工作区（`references/kb/devices.md`），不进发布包。
@@ -27,7 +27,7 @@
 
 | 项 | 值 |
 |---|---|
-| 可用性 | ⚠️ **未验证（仅源码同口径可编译）** |
+| 可用性 | ➖ **不逐平台验**（仅源码同口径可编译）—— 2026-10-03 口径：UI 控件只做 V85X 单平台代表验收 |
 | 依据 | 同代 `easyui 2.9.0` 的 `ZKTextView/ZKButton` 公开面与 2.6.0 一致；组件无平台宏 |
 | 待实测 | ① `getParent/getAbsolutePosition` 是否导出（**上机前先 `readelf --dyn-syms /lib/libeasyui.so` 查**，别踩 Z21 那个坑）；② textview 底色是否同样画不出；③ 触摸事件坐标是否同为屏幕绝对 |
 | 前置条件 | `package.properties` 写 `{"rotateScreen":270,"rotateTouch":270}`；SD 部署 `/mnt/extsd/{lib,ui}` |
@@ -36,8 +36,8 @@
 
 | 平台 | 可用性 | 依据 | 上机前必查 |
 |---|---|---|---|
-| Z20 | ⚠️ **未验证** | registry `z20/easyui/2.6.0`、`3.0.0` 头文件面一致 | 同 F133 三条 |
-| T113 | ⚠️ **未验证** | registry `t113emmc/easyui/2.9.0` 一致 | 同 F133 三条 |
+| Z20 | ➖ 不逐平台验（口径：UI 控件只做 V85X 单平台代表验收，2026-10-03） | registry `z20/easyui/2.6.0`、`3.0.0` 头文件面一致 | 同 F133 三条 |
+| T113 | ➖ 不逐平台验（口径：UI 控件只做 V85X 单平台代表验收，2026-10-03） | registry `t113emmc/easyui/2.9.0` 一致 | 同 F133 三条 |
 | V85X | ✅ **可用（真机已验收 2026-10-03）** | registry `v85x/easyui/2.3.0`、`2.9.0` 一致；**V85X 实测（2026-10-03）**：`fun build` + `fun launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式 | 同 F133 三条；V85X 内存/带宽紧，长按翻月之类别做 |
 
 ## 跨平台注意事项（平台通用）

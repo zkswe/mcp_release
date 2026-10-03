@@ -460,6 +460,12 @@ top-1 常被同内容的散文页 `activity-code-skeleton.md` / `widget-code-api
 |---|---|---|
 | `ui_v1/Chart` / `Calendar` / `RadButton` / `_mapping/TabView` | 示例工程改平台为 V85X → **标准 fun 链路**（`fun install` → `fun build` → `fun launch`）→ 抓屏 | 4/4：编译通过、`launched=True`、logcat 见 `onUI_show`、抓屏有内容且**四张画面互不相同** |
 
+- 设备：USB `Zkswe_V85X_SPINOR`（easyui 2.4.0）。⚠️ 面板尺寸**两处读数不一致**、待现场确认：
+  上一轮记的是「480×1600」，而本轮 `device_probes.panel_resolution()` 读到
+  `/sys/class/graphics/fb0/modes = U:480x800p-60`、`virtual_size = 480,1600`（`pan=0,800` → **2 页缓冲**）
+  ⇒ **可见区 480×800**。（判据取 fb modes；1600 是缓冲区总高。可能是"面板物理 1600 / fb 只驱动 800"，
+  也可能是上一轮记错 —— 上机时用 `hw_panel_target` 的 `RGB_LCD…` 原文核一次。）
+
 - 设备：USB `Zkswe_V85X_SPINOR`（easyui 2.4.0，面板 480×1600）；**全程 `fun launch`，没有手工 adb push 部署**。
 - 注册表 4 个单元格改为「✅ 可用（真机已验收 2026-10-03）」并追加实测依据；4 篇 `platforms.md` 的矩阵表
   由 `gen_component_platforms` 自动重生成；**证据截图**按 ui_v1 约定存进各自 `example/evidence/v85x_20261003_full.png`。
@@ -468,5 +474,12 @@ top-1 常被同内容的散文页 `activity-code-skeleton.md` / `widget-code-api
 - 顺带修一处判据硬度问题：`logcat -d` 读的是整个缓冲区（含 launch**之前**的旧行），
   现在 **launch 前先 `clear_logcat`**，避免把上一轮的 `onUI_show` 当本轮证据（清失败只记 warning，不拦流程）。
 
-**仍未确认**：`ui_v1` 的 Z20 / T113 / F133 列；以及 blur / imagecache / vinyl / wall_sync / blend2d /
-ha_bridge / mp_transfer 的未验证平台 —— 都需要对应平台的设备（现场逐项对接）。
+**仍未确认**：blur / imagecache / vinyl / wall_sync / blend2d / ha_bridge / mp_transfer 的未验证平台
+—— 都需要对应平台的设备（现场逐项对接）。
+
+**`ui_v1` 的 Z20 / T113 / F133 列：需求方 2026-10-03 定「不逐平台验，V85X 单平台即代表」**，
+故这 10 个单元格已从「⚠️ 未验证」改成 `➖ 不逐平台验（口径：UI 控件只做 V85X 单平台代表验收，2026-10-03）`，
+并把这套口径登记进注册表 `verificationPolicy`（写清 rule/why/decidedAt/scope），由 `platform_cap_loader.validate()`
+**闸门化**：登记过的组件，非代表平台的行**不许再出现「未验证」**（改口径就得改单元格，不是留 TODO 挂着）。
+4 篇组件 `platforms.md` 的手写口径行（"没实测的一律写未验证"）也一并加上例外说明，避免正文与表分叉。
+—— 于是注册表里的「未验证」从 42 处降到 **32 处**（那 32 处要设备，才是真正的待办）。

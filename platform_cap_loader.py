@@ -202,6 +202,34 @@ def validate():
                 if p not in valid:
                     errs.append('%s: 行 %s 的平台键 %r 不在 platforms.py 口径里'
                                 % (comp, r.get('platform'), p))
+    # 验收口径（verificationPolicy）：**登记过的**组件可以「不逐平台验」，但必须：
+    #   ① 名单里的组件真实存在 ② verifiedOn 是它自己的一行 ③ 其余行**不许再出现「未验证」**
+    #      （改口径就得把那些单元格改成 ➖ 并写明口径；不是留一堆 TODO 让它一直挂着）
+    for pol in reg.get('verificationPolicy') or []:
+        pid = pol.get('id')
+        for key in ('id', 'components', 'verifiedOn', 'rule', 'why', 'decidedAt'):
+            if not pol.get(key):
+                errs.append('verificationPolicy[%s] 缺字段 %s' % (pid, key))
+        comps = pol.get('components') or []
+        if len(set(comps)) != len(comps):
+            errs.append('verificationPolicy[%s] 组件有重复' % pid)
+        for comp in comps:
+            if comp not in reg['components']:
+                errs.append('verificationPolicy[%s] 列了不存在的组件 %r' % (pid, comp))
+                continue
+            rows_ = rows(comp)
+            on = pol.get('verifiedOn')
+            if not any(on in _keys(r) for r in rows_):
+                errs.append('verificationPolicy[%s] 说在 %s 验过，但 %s 没有这个平台的行'
+                            % (pid, on, comp))
+            for r in rows_:
+                if on in _keys(r):
+                    continue
+                for cell in (r.get('cells') or []):
+                    if '未验证' in cell or '待测' in cell:
+                        errs.append('%s 行 %s 还写着「未验证」—— 该组件已在 verificationPolicy[%s] '
+                                    '登记「只在 %s 单平台验收」，其余平台请改 ➖ 并写明口径'
+                                    % (comp, r.get('platform'), pid, on))
     return errs
 
 

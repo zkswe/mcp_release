@@ -1,6 +1,6 @@
 # platforms.md —— Chart 逐平台说明
 
-> 口径：**没实测的一律写 `未验证`**。组件只用到 `easyui` 的 `ZKPainter + ZKTextView`，
+> 口径：**没实测的一律写 `未验证`**。**本组件例外**：2026-10-03 口径「UI 控件只做 **V85X 单平台代表验收**」→ 其余平台标 `➖ 不逐平台验`（见 `platform_capabilities.json` 的 `verificationPolicy`）。组件只用到 `easyui` 的 `ZKPainter + ZKTextView`，
 > 差异主要在 **painter 的绘制口径**（尤其 `drawArc` 的角度/顺逆）与**平台是否有 GPU**（影响重绘耗时）。
 >
 > ⚠️ 文档里的设备地址（`192.168.1.100:5555`）是**通用示例**，不是真机 IP；真机清单在开发工作区
@@ -27,7 +27,7 @@
 
 | 项 | 值 |
 |---|---|
-| 可用性 | ⚠️ **未验证（仅编译通过）** |
+| 可用性 | ➖ **不逐平台验**（仅编译通过）—— 2026-10-03 口径：UI 控件只做 V85X 单平台代表验收 |
 | 依据 | 同代 `easyui 2.9.0` 的 `ZKPainter.h` 公开面与 2.6.0 **完全一致**（`setLineWidth/setSourceColor/drawTriangle/drawRect/drawArc/fillTriangle/fillRect/fillArc/drawLines/drawCurve/erase`）；组件无平台宏 |
 | 前置条件 | `package.properties` 写 `{"rotateScreen":270,"rotateTouch":270}`；SD 部署 `/mnt/extsd/{lib,ui}` |
 | 未验证项 | 真机重绘耗时、`drawArc` 角度是否与 Z21 同口径（**同代 easyui，推断一致但未实测**） |
@@ -36,8 +36,8 @@
 
 | 平台 | 可用性 | 依据 |
 |---|---|---|
-| Z20 | ⚠️ **未验证** | registry `z20/easyui/2.6.0`、`3.0.0` 的 `ZKPainter.h` 公开面一致 |
-| T113 | ⚠️ **未验证** | registry `t113emmc/easyui/2.9.0` 一致 |
+| Z20 | ➖ 不逐平台验（口径：UI 控件只做 V85X 单平台代表验收，2026-10-03） | registry `z20/easyui/2.6.0`、`3.0.0` 的 `ZKPainter.h` 公开面一致 |
+| T113 | ➖ 不逐平台验（口径：UI 控件只做 V85X 单平台代表验收，2026-10-03） | registry `t113emmc/easyui/2.9.0` 一致 |
 | V85X | ✅ **可用（真机已验收 2026-10-03）** | registry `v85x/easyui/2.3.0`、`2.9.0` 一致；V85X 有较多内存/带宽限制，密集点阵（如 PRPS 那种每格一个 fillArc）**先在真机量一遍再上**；**V85X 实测（2026-10-03）**：`fun build` + `fun launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式 |
 
 ## 跨平台注意事项（平台通用）

@@ -121,6 +121,52 @@ class TestPlatformCapRegistry(unittest.TestCase):
         with self.assertRaises(pc.PlatformCapError):
             pc.spec('not_a_component')
 
+    def test_verification_policy_is_registered_and_enforced(self):
+        """「不逐平台验」必须是**登记过的口径**，不是留一堆 TODO 挂着（2026-10-03 定）。
+
+        需求方口径：UI 控件（`ui_v1/*`）的行为由 easyui 运行库提供、组件无平台分支
+        → 只做 **V85X 单平台代表验收**；其余平台标 ➖，不再逐台排期。
+        钉两件事：① 登记本身齐备（组件真实存在、verifiedOn 是它的一行）；
+        ② 登记过的组件，非代表平台的行里**不许再出现「未验证/待测」**（改口径就要改单元格）。
+        """
+        pols = pc.load().get('verificationPolicy') or []
+        self.assertTrue(pols, 'verificationPolicy 为空：口径没登记，等于又变回一堆未验证 TODO')
+        for pol in pols:
+            comps = pol.get('components') or []
+            self.assertTrue(comps, 'verificationPolicy[%s] 没列组件' % pol.get('id'))
+            on = pol.get('verifiedOn')
+            for comp in comps:
+                self.assertIn(comp, pc.components(), '%s 不在注册表里' % comp)
+                keys = set()
+                for r in pc.rows(comp):
+                    keys |= set(r.get('canonical') or []) | set(r.get('platforms') or [])
+                self.assertIn(on, keys, '%s 说在 %s 验过，但表里没有这个平台' % (comp, on))
+                for r in pc.rows(comp):
+                    if on in (r.get('canonical') or []):
+                        continue
+                    for cell in (r.get('cells') or []):
+                        self.assertNotIn(
+                            '未验证', cell,
+                            '%s 行 %s 还写着「未验证」—— 该组件已登记「只在 %s 单平台验收」，'
+                            '其余平台请改 ➖ 并写明口径' % (comp, r.get('platform'), on))
+
+    def test_ui_controls_verified_on_v85x_only(self):
+        """UI 控件的 V85X 行必须是「已验收」；其余平台是 ➖（不是空、也不是未验证）。"""
+        import json as _json
+        for comp in ('ui_v1/RadButton', 'ui_v1/Chart', 'ui_v1/Calendar', 'ui_v1/_mapping/TabView'):
+            row = pc.status_of(comp, 'V85X')
+            self.assertIsNotNone(row, '%s 没有 V85X 行' % comp)
+            self.assertIn('已验收', _json.dumps(row, ensure_ascii=False))
+            for r in pc.rows(comp):
+                if 'V85X' in (r.get('canonical') or []):
+                    continue
+                joined = _json.dumps(r.get('cells') or [], ensure_ascii=False)
+                self.assertNotIn('未验证', joined)
+                # Z21 那行是 2026-09-16 真机验过的历史事实，不该被这次口径改动抹掉
+                if 'Z21' in (r.get('canonical') or []):
+                    continue
+                self.assertIn('➖', joined, '%s 行 %s 应为 ➖ 口径' % (comp, r.get('platform')))
+
 
 if __name__ == '__main__':
     unittest.main()

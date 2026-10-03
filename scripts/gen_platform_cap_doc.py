@@ -74,6 +74,10 @@ def platform_components_table():
     if note:
         lines += ['', '> %s' % note]
     lines += ['', '> `ALL` = 该组件声明「全平台通用」（如图标库）。别名查询等价：查 `F136` = 查 `F135`。']
+    for pol in (pc.load().get('verificationPolicy') or []):
+        lines += ['>', '> **验收口径 · %s**：%s（%s 定）'
+                  % (pol.get('id'), pol.get('rule'), pol.get('decidedAt')),
+                  '> 为什么：%s' % pol.get('why'), '> 适用范围：%s' % pol.get('scope')]
     return lines
 
 
