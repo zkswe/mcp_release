@@ -159,6 +159,7 @@ def main(argv):
         return 1
     want = build()
     cur = io.open(DOC, encoding='utf-8').read() if os.path.isfile(DOC) else ''
+    want = derived_md.carry_day(cur, want)      # 真源是目录 → 日期只能退到 git，靠这个免掉"差一天"
     if derived_md.same(cur, want):
         print('[PASS] 已一致，无需更新')
         return 0

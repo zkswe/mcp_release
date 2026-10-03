@@ -193,6 +193,7 @@ def main():
         return 1
     want = build()
     cur = io.open(DOC, encoding='utf-8').read() if os.path.isfile(DOC) else ''
+    want = derived_md.carry_day(cur, want)      # 注册表无 updated 字段 → 日期只能退到 git，靠这个免掉"差一天"
     if a.check:
         if not derived_md.same(cur, want):
             print('[FAIL] builtin-packages.md 与 package_catalog.json 漂移'

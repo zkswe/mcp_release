@@ -36,6 +36,11 @@ def verified_day(src_path, key='updated', why=None):
     所以取值顺序：① 真源 JSON 里的 `updated` 字段（作者显式声明的口径日）
                  ② 该文件**最后一次 git 提交的日期**（跨克隆稳定）
                  ③ 兜底才用 mtime（不在 git 仓库里时）
+
+    ⚠️ 落到 ② 的真源（**目录型**如 `components/`、**无 `updated` 字段**的注册表）还有个坑：
+    "改真源"和"重生成派生页"通常是**同一笔提交**，而生成器在提交前跑 —— 算出来的是上一笔
+    提交的日期；一提交，真源的最后提交日就变成今天，`--check` 立刻报漂移，**永远差一天**。
+    这类真源要配 `carry_day()` 用（正文没变就沿用已落盘那份的日期），见其 docstring。
     """
     # `why`（可选）收集每级失败原因：不吞异常，排查时能看出实际落到哪一级
     def _note(msg):
@@ -62,6 +67,46 @@ def verified_day(src_path, key='updated', why=None):
         _note('git 调用失败（%s）→ 退到 mtime' % type(e).__name__)
     import datetime
     return datetime.date.fromtimestamp(os.path.getmtime(src_path)).isoformat()
+
+
+_FM_RE = re.compile(r'^---\r?\n(.*?)\r?\n---\r?\n', re.S)
+
+
+def split_fm(text):
+    """把 `---` front-matter 与正文分开。没有 front-matter 则返回 `('', 全文)`。"""
+    t = (text or '').lstrip('\ufeff')
+    m = _FM_RE.match(t)
+    if not m:
+        return '', t
+    return m.group(1), t[m.end():]
+
+
+def carry_day(cur, want, key='verified_at'):
+    """正文没变、只有日期在飘 → 沿用已落盘那份的 `key`。
+
+    为什么：`verified_day()` 落到 git 提交日时，"改真源"与"重生成派生页"往往是同一笔提交，
+    生成器跑在提交之前 —— 日期永远落后一笔（见 `verified_day()` 的说明）。口径改成：
+      · 正文**有**真变化 → 用本次算出的日期（门禁照旧会报红，真漂移不会被放过）；
+      · 正文一致     → 日期原样沿用，跨天 / 跨机器 / 新克隆都稳定。
+    调用位置：生成器 `main()` 里 `build()` 之后、比对之前，`want = carry_day(cur, want)`。
+    """
+    if not cur:
+        return want
+    cur_fm, cur_body = split_fm(cur)
+    want_fm, want_body = split_fm(want)
+    if not want_fm or normalize(cur_body) != normalize(want_body):
+        return want
+    day = None
+    for ln in cur_fm.splitlines():
+        if ln.strip().startswith(key + ':'):
+            day = ln.split(':', 1)[1].strip()
+            break
+    if not day:
+        return want
+    out = []
+    for ln in want_fm.splitlines():
+        out.append('%s: %s' % (key, day) if ln.strip().startswith(key + ':') else ln)
+    return '---\n' + '\n'.join(out) + '\n---\n' + want_body
 
 
 def normalize(text):
