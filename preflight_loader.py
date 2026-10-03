@@ -220,7 +220,13 @@ def _kb(n):
 
 
 def render_doc():
-    """把注册表渲染成可检索的知识页（markdown）。"""
+    """把注册表渲染成可检索的知识页（markdown）。
+
+    ⚠️ **读者是 AI，不是维护者**（口径见 skill `flythings-domain-registry` 的「注册表 ≠ 上下文」）：
+    只渲染 AI 干活/解释要用的 —— 判据（条件→动作）、症状、阈值、该传哪个参数。
+    真源里的 `impl`（哪个函数实现）、`tiersSource`（门禁怎么对账）**不渲染**：
+    那是维护者追溯用的，AI 看了只会多占上下文（真要核实现，页头 `source:` + 门禁已经在做）。
+    """
     spec = load()
     L = []
     L.append('---')
@@ -245,57 +251,47 @@ def render_doc():
     L.append('---')
     L.append('# 上机前体检判据（由 preflight_spec.json 派生）')
     L.append('')
-    L.append('> ⚙️ **本页是派生物**：内容由 `preflight_spec.json`（唯一真源）经 '
-             '`scripts/gen_preflight_doc.py` 生成，**不要手改**（改了下次生成会覆盖，'
-             '门禁 `gen_preflight_doc --check` 会红）。')
+    L.append('> ⚙️ **本页是派生物**，**不要手改**（改了会被下次生成覆盖，门禁 `gen_preflight_doc --check` 会红）。')
     hints = spec.get('retrievalHints') or []
     if hints:
-        L.append('> 检索导引（**口语问法直达**）：' + ' / '.join(hints) + ' → 本文。')
+        L.append('> 口语问法直达：' + ' / '.join(hints) + '。')
     L.append('')
-    L.append('上机前跑 `flythings_device_preflight`（launch 流程里也会自动跑一遍），'
-             '三项体检：**分辨率**、**字库**、**体积**。判据如下。')
+    L.append('上机前跑 `flythings_device_preflight`（launch 流程里自动跑同一套）：'
+             '**分辨率 / 字库 / 体积**三项判据如下。')
     L.append('')
 
     # 1. 分辨率
     r = spec['resolution']
     L.append('## 1. 分辨率：设计 vs 面板')
     L.append('')
-    L.append('- **面板分辨率**（设备侧真值）：%s —— 实现 `%s`。'
-             % (r['device'].get('how'), r['device'].get('impl')))
-    L.append('- **设计分辨率**（工程侧真值）：%s —— 实现 `%s`。'
-             % (r['design'].get('how'), r['design'].get('impl')))
+    L.append('- **面板分辨率** = %s' % r['device'].get('how'))
+    L.append('- **设计分辨率** = %s' % r['design'].get('how'))
     fb = r['design'].get('fallback') or []
     if fb:
-        L.append('- 设计分辨率读不到时的退路（按顺序）：%s' % '；'.join(fb))
-    L.append('- 转屏不算不一致：%s' % r.get('rotateIsSameScreen'))
-    L.append('- 比例"接近"的容差：相对差 ≤ **%s%%**（超过就按不同比例处理）'
+        L.append('  - 设计分辨率读不到时按序退：%s' % '；'.join(fb))
+    L.append('- %s' % r.get('rotateIsSameScreen'))
+    L.append('- 比例"接近"的容差：相对差 ≤ **%s%%**，超过就按不同比例处理'
              % r.get('aspectTolerancePct'))
     L.append('')
     L.append('### 1.1 三分支（按顺序命中即停）')
     L.append('')
-    L.append('| id | 条件 | 动作 | 级别 | 为什么 |')
-    L.append('|---|---|---|---|---|')
+    L.append('| 条件 | 动作 | 为什么 / 该做什么 |')
+    L.append('|---|---|---|')
     for d in decisions():
-        L.append('| `%s` | %s | `%s` | %s | %s |'
-                 % (d.get('id'), d.get('when'), d.get('action'),
-                    d.get('level'), d.get('why')))
+        L.append('| %s | `%s` | %s |' % (d.get('when'), d.get('action'), d.get('why')))
     L.append('')
-    L.append('### 1.2 需要适配时怎么改')
+    L.append('### 1.2 要适配时改到什么程度')
     L.append('')
-    A = r.get('adapt') or {}
-    for kind, label in (('sameAspect', '比例相同或接近'), ('diffAspect', '比例不同')):
-        a = A.get(kind) or {}
-        L.append('- **%s** → `%s`（%s）' % (label, a.get('action'), a.get('when')))
-        L.append('  - 怎么做：%s' % a.get('how'))
-        if a.get('skill'):
-            L.append('  - 工作流（重排这类需要判断的活）：skill `%s`' % a.get('skill'))
-        L.append('  - 工具：`%s`' % a.get('impl'))
-    inv = A.get('invariants') or []
+    L.append('| 两屏宽高比 | 动作 | 怎么做 | 怎么触发 |')
+    L.append('|---|---|---|---|')
+    for kind, label in (('sameAspect', '相同或接近'), ('diffAspect', '不同')):
+        a = adapt_rule(kind)
+        L.append('| %s | `%s` | %s | %s |'
+                 % (label, a.get('action'), a.get('how'), a.get('call') or '—'))
+    inv = adapt_invariants()
     if inv:
         L.append('')
-        L.append('**三条不变式**：')
-        for x in inv:
-            L.append('- %s' % x)
+        L.append('**三条不变式**：' + '；'.join(inv) + '。')
     L.append('')
 
     # 2. 字库
@@ -303,49 +299,43 @@ def render_doc():
     bf = f['builtinFont']
     L.append('## 2. 字库：设备认不认中文')
     L.append('')
-    L.append('- 系统内置字库：`%s`；**%s**。判定：%s'
-             % (bf.get('path'), _kb((bf.get('cjkMinKB') or 0) * 1024), bf.get('rule')))
-    if bf.get('impl'):
-        L.append('- 实现：`%s`' % bf.get('impl'))
-    L.append('- 档位清单与体积的真源：%s' % f.get('tiersSource'))
+    L.append('- 判据（设备内置字库 `%s`）：%s' % (bf.get('path'), bf.get('rule')))
     L.append('')
-    L.append('| 档位 | 文件 | 体积 | 级别 | 什么时候用 |')
-    L.append('|---|---|---|---|---|')
+    L.append('| 档位 | 文件 | 体积 | 什么时候用 |')
+    L.append('|---|---|---|---|')
     for name in tier_order():
         t = tier(name)
-        L.append('| `%s` | `%s` | %s | %s | %s |'
-                 % (name, t.get('file'), _kb(tier_bytes(name)), t.get('level'), t.get('when')))
+        L.append('| `%s` | `%s` | %s | %s |'
+                 % (name, t.get('file'), _kb(tier_bytes(name)), t.get('when')))
     L.append('')
     lm = f.get('levelMatch') or {}
-    L.append('**按工程中文级别选档**：%s' % lm.get('how'))
+    L.append('**按工程实际用到的汉字选最小够用档**：%s' % lm.get('how'))
     L.append('')
-    L.append('- 实现：`%s`；投递：`%s`' % (lm.get('impl'), lm.get('deliverImpl')))
     L.append('- %s' % lm.get('noCjk'))
+    if lm.get('call'):
+        L.append('- 投递：%s' % lm.get('call'))
     L.append('')
 
     # 3. 体积
     b = spec['budget']
     L.append('## 3. 体积：会不会撑爆 /res 分区')
     L.append('')
-    L.append('- 上限：**默认 %s MB**（`perPlatform` 可按平台覆盖）；接近阈值 = 用量的 %s%%。'
+    L.append('- 上限 **%s MB**（可按平台覆盖）；用到 %s%% 起提示、超了告警。'
              % (b.get('limitMB'), b.get('nearPct')))
-    L.append('- 计入体积的三部分：')
-    for p in budget_parts():
-        L.append('  - `%s` —— %s' % (p.get('path'), p.get('what')))
+    L.append('- 计入：%s。'
+             % '、'.join('`%s`' % p.get('path') for p in budget_parts()))
     ex = b.get('excluded') or []
     if ex:
-        L.append('- **不计入**（但会在报告里附参考字节数）：%s' % '、'.join('`%s`' % x for x in ex))
+        L.append('- 不计入（报告里另附参考字节数）：%s。'
+                 % '、'.join('`%s`' % x for x in ex))
     L.append('')
-    L.append('| 级别 | 触发 | 动作 | 为什么 |')
-    L.append('|---|---|---|---|')
+    L.append('| 级别 | 触发 | 为什么 |')
+    L.append('|---|---|---|')
     for lv in budget_levels():
-        L.append('| `%s` | %s | `%s` | %s |'
-                 % (lv.get('level'), lv.get('when'), lv.get('action'), lv.get('why')))
-    if b.get('note'):
-        L.append('')
-        L.append('> %s' % b['note'])
+        L.append('| `%s` | %s | %s |' % (lv.get('level'), lv.get('when'), lv.get('why')))
     L.append('')
     return '\n'.join(L) + '\n'
+
 
 
 def doc_path():
@@ -375,9 +365,20 @@ def validate(include_doc=True):
                     % sorted(acts))
     for kind in ('sameAspect', 'diffAspect'):
         a = adapt_rule(kind)
-        for k in ('action', 'when', 'how'):
+        for k in ('action', 'when', 'how', 'call', 'impl'):
             if not a.get(k):
                 errs.append('adapt.%s 缺字段 %s' % (kind, k))
+    # 「不渲染但必须在」的追溯字段：AI 看的是 how/rule，维护者靠 impl 找实现。
+    # 少了 impl 不会让页面变红，却会让"改口径该改哪段代码"失去指引 —— 所以门禁要求它们在。
+    for where, d, keys in (
+            ('resolution.device', load()['resolution'].get('device') or {}, ('how', 'impl')),
+            ('resolution.design', load()['resolution'].get('design') or {}, ('how', 'impl')),
+            ('font.builtinFont', builtin_font(), ('path', 'cjkMinKB', 'rule', 'impl')),
+            ('font.levelMatch', level_match(), ('how', 'impl', 'call')),
+    ):
+        for k in keys:
+            if not d.get(k):
+                errs.append('%s 缺字段 %s' % (where, k))
     if float(load()['resolution'].get('aspectTolerancePct') or 0) <= 0:
         errs.append('resolution.aspectTolerancePct 必须 > 0')
     if not builtin_font().get('path'):

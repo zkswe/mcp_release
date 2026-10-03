@@ -14,7 +14,6 @@
     "设备上中文显示不出来怎么办 / 要不要给工程放字库 / 放哪一档字库",
     "打包会不会超出 res 分区 / 体积是不是太大了"
   ],
-
   "resolution": {
     "device": {
       "how": "读 /dev/fb0 的**可见**分辨率：/sys/class/graphics/fb0/modes 优先，缺则退 virtual_size；双缓冲时 virtual_size 的高 = 页数 × 屏高，**不是**分辨率",
@@ -58,14 +57,16 @@
         "action": "scale",
         "when": "两屏宽高比相对差 ≤ aspectTolerancePct%",
         "how": "口径对齐（.settings/*.prefs / ui/*.json / ftu 内嵌的 resolution 与根 position）+ 控件盒与字号按 sx/sy 换算",
-        "impl": "flythings_device_preflight(adapt='auto')"
+        "impl": "preflight.scale_project()",
+        "call": "用户确认后 `flythings_device_preflight(adapt='force')` 一把落盘"
       },
       "diffAspect": {
         "action": "relayout",
         "when": "两屏宽高比相对差 > aspectTolerancePct%",
         "how": "比例不同 → 只做等比缩放会变形，必须重排布局（区域比例重划 / 控件重排 / 必要时拆并页）。工具只出 plan，不落盘",
         "skill": "flythings-resolution-adapt",
-        "impl": "flythings_device_preflight(adapt='ask'|'auto') → plan"
+        "impl": "flythings_device_preflight(adapt='ask'|'auto') → plan",
+        "call": "`flythings_device_preflight(adapt='force')` 也只出 plan（不改盘）"
       },
       "invariants": [
         "改完必须 fui pack 出 ftu（设备加载的是 ftu，不是 json）",
@@ -74,7 +75,6 @@
       ]
     }
   },
-
   "font": {
     "builtinFont": {
       "path": "/etc/font/fzcircle.ttf",
@@ -82,7 +82,7 @@
       "rule": "内置字库 < 200KB 判定为**不支持中文**（只带拉丁字形）→ 需要往工程投递裁剪字库",
       "impl": "preflight.font_verdict()"
     },
-    "tiersSource": "components/fonts/scripts/device_font_check.py::TIERS（门禁对账：档位键与文件名必须一致；档位体积按 components/fonts/fonts/ 实际文件算，不在这里抄一份）",
+    "tiersSource": "components/fonts/scripts/device_font_check.py::TIERS（门禁对账：档位键与文件名必须一致）",
     "tierOrder": [
       "common",
       "full",
@@ -109,10 +109,10 @@
       "how": "扫工程 UI 文案（ui/*.json 的 text/caption + tr/*.json）取**用到的 CJK 字集** → 从最小档起比对各档 cmap 覆盖率 → 选「够用的最小档」；fontTools 不可用时退**编解码器分级**（编得进 GB2312 → common / 仅 GBK → full / 更外 → multi）",
       "impl": "preflight.pick_font_tier()",
       "noCjk": "工程 0 个 CJK 字 → 不投递（设备内置拉丁字库够用）",
-      "deliverImpl": "font_tools.font_preflight()（投递 + 改 prefs）"
+      "deliverImpl": "font_tools.font_preflight()（投递 + 改 prefs）",
+      "call": "`flythings_device_preflight(font_apply=True)` 自动投最小够用档；要指定档位传 `font_tier=`"
     }
   },
-
   "budget": {
     "limitMB": 8,
     "nearPct": 90,

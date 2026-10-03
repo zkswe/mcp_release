@@ -258,5 +258,38 @@ class TestDerived(unittest.TestCase):
         self.assertTrue(callable(getattr(kb_tools, 'flythings_device_preflight', None)))
 
 
+class TestDocAudience(unittest.TestCase):
+    """判据页的读者是 **AI**：只放判据/阈值/该传什么参数；实现指针留给注册表。
+
+    这一组钉的是「页面别退化回维护者文档」——实测两处就是这么写错的：
+      · 同比例那支配的 `adapt` 参数写成 `auto`（与实现语义相反：auto 只在"读不出设计"时改盘，
+        同比例 + 屏小必须 `force`）→ AI 照着调用会拿到"什么都没改"却以为改了；
+      · 字库那句把**阈值** 200KB 渲染在路径后面（`/etc/font/fzcircle.ttf`；**200.0 KB**），
+        读起来像"这个字体 200KB"。
+    """
+    @classmethod
+    def setUpClass(cls):
+        cls.doc = io.open(os.path.join(BASE, P.doc_path()), encoding='utf-8').read()
+
+    def test_scale_branch_tells_the_right_flag(self):
+        self.assertIn("adapt='force'", self.doc)
+        # 同比例那支不许再指向 auto（auto 只管"读不出设计"）
+        for line in self.doc.splitlines():
+            if '口径对齐' in line:
+                self.assertIn("adapt='force'", line)
+
+    def test_cjk_threshold_is_a_criterion_not_a_size(self):
+        self.assertNotIn('`；**', self.doc)              # 「路径`；**200.0 KB**」这种错读
+        self.assertIn('200KB', self.doc)
+
+    def test_impl_pointers_stay_out_of_the_page(self):
+        """实现函数名 / 门禁对账口径只在注册表里，不占 AI 的上下文。"""
+        for leak in ('preflight.font_verdict()', 'preflight.startup_window()',
+                     'preflight.pick_font_tier()', '::TIERS', 'font_tools.font_preflight()'):
+            self.assertNotIn(leak, self.doc, '%r 不该出现在判据页（维护者信息）' % leak)
+        errors = P.validate(include_doc=False)
+        self.assertEqual(errors, [])
+
+
 if __name__ == '__main__':
     unittest.main()
