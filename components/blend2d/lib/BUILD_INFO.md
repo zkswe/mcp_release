@@ -156,3 +156,19 @@ python components/blend2d/scripts/verify_libs.py --fast     # 只查 ELF 属性 
 | `temp/blend2d_neon/upd_neon.img` | 含 NEON `.so` 的 `update.img`（1,262,120 B） |
 | `temp/b2d_dev/` | 上一轮「原厂库真机基线」工程与证据（`B2dBenchZ20/`、`evidence/`） |
 | `references/kb/blend2d-z20-assessment.md` | 可用性评估（包取证/能力缺口/平台矩阵/未取证清单） |
+
+---
+
+## 7. 第三档：lib/v85x/（V85X = ARMv7 musl，**本仓自编**，2026-10-03）
+
+> 需求（2026-10-03）：把 blend2d 编译一个 V85X 对应的版本放进 MCP。
+> 完整凭据：lib/v85x/BUILD.md；本档**与 z20 两档不同 ABI**（musl vs glibc），跨平台换库一定失败。
+
+| 档位 | 路径 | 来源 | 大小 | md5 |
+|---|---|---|---|---|
+| **v85x** | lib/v85x/libblend2d.so | **自编**：0.11.1 @ 7f9476 + V85X musl 工具链（Linaro GCC 6.4.1） | **1,846,636 B** | ED1569D41A8AD6346BED0D3FF6182D7C |
+
+- 构建开关：-DBLEND2D_NO_JIT=ON（ARM32 无 JIT） / -DBLEND2D_STATIC=OFF / -DBLEND2D_NO_STDCXX=0
+- ELF：ELF32 ARM EABI5 DYN；.comment = Linaro GCC 6.4.1；Tag_CPU 7-A / v7 / VFPv4 / NEONv1
+- NEEDED：libstdc++.so.6 / libc.so / libgcc_s.so.1（musl 口径）
+- 状态：✅ 编译+链接通过 ｜ ⚠️ **未上真机**（V85X 样机未接入，无上屏/性能/逐像素证据）

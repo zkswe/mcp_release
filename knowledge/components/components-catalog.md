@@ -60,7 +60,7 @@ evidence:
 - **用途**：离屏矢量出图 zk::b2d v0.1（头 + 门面源码 + 两个库档）
 - **平台**：F133、F135、T113、V85X、Z20、Z21
 - **依赖包**：`easyui`、`log`
-- **预编译库平台**：z20、z20-neon
+- **预编译库平台**：v85x、z20、z20-neon
 - **示例工程**：`components/blend2d/example`
 - **文档**：`components/blend2d/README.md`
 
