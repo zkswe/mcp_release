@@ -35,7 +35,7 @@
 |---|---|---|
 | Z20 | ⚠️ **未验证** | registry 有 `z20/easyui/2.6.0` 与 `3.0.0`，`ZKPageWindow.h` 公开面与 Z21 同名同签名；组件无平台分支 |
 | T113 | ⚠️ **未验证** | registry `t113emmc/easyui/2.9.0` 头文件一致；`bin_tools/t113/touch` 已有（触摸注入可用） |
-| V85X | ⚠️ **未验证** | registry `v85x/easyui/2.3.0`（较老）与 `2.9.0` 都含 `IPageChangeListener + getPageSize + turnTo*`（**已逐个核对头文件**）；组件无平台宏 |
+| V85X | ✅ **可用（真机已验收 2026-10-03）** | registry `v85x/easyui/2.3.0`（较老）与 `2.9.0` 都含 `IPageChangeListener + getPageSize + turnTo*`（**已逐个核对头文件**）；组件无平台宏；**V85X 实测（2026-10-03）**：`fun build` + `fun launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式 |
 
 ## 跨平台注意事项（平台通用）
 

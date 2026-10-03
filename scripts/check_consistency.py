@@ -425,18 +425,28 @@ def stage_no_people_names():
 # .project / .cproject（IDE 打开与编译）、.settings/{com.zksw.flythings.easyui.prefs,
 # org.eclipse.core.resources.prefs}（resolution 来源 / UTF-8 编码）。
 IDE_LOCAL_BASENAMES = ('language.settings.xml', 'org.eclipse.core.runtime.prefs', '.deps.lock')
+# 编辑器 / 本机产物（按**路径段或后缀**判，不按文件名）：这类不只是噪音 ——
+# 发布裁剪分支 `git rm` 目录时，已跟踪的隐藏文件会残留并跟着发布包走（PUBLISH.md §6.1）。
+IDE_LOCAL_DIRS = ('.vscode', '.idea', '__pycache__')
+IDE_LOCAL_SUFFIX = ('.pyc', '.swp', '.swo', '.iml')
 
 
 def stage_no_ide_local_files():
-    """IDE 本地状态与工具生成物不得入库（B6 出库后防回退）。"""
+    """IDE 本地状态、编辑器与本机产物不得入库（B6 出库后防回退）。"""
     rc, out = _run(['git', 'ls-files'])
     if rc != 0:
         check(False, 'IDE 本地状态文件未入库', 'git ls-files 失败（rc=%d）' % rc)
         return
-    hits = [f for f in out.splitlines()
-            if os.path.basename(f.strip()) in IDE_LOCAL_BASENAMES]
+    files = [f.strip() for f in out.splitlines() if f.strip()]
+    hits = [f for f in files if os.path.basename(f) in IDE_LOCAL_BASENAMES]
     check(not hits, 'IDE 本地状态文件未入库（%s）' % '、'.join(IDE_LOCAL_BASENAMES),
           'ok' if not hits else '；'.join(hits[:4]))
+    bad = [f for f in files
+           if any('/%s/' % d in '/' + f for d in IDE_LOCAL_DIRS)
+           or f.endswith(IDE_LOCAL_SUFFIX)]
+    check(not bad, '编辑器/本机产物未入库（%s）'
+          % '、'.join(['%s/' % d for d in IDE_LOCAL_DIRS] + list(IDE_LOCAL_SUFFIX)),
+          'ok（%d 文件已核）' % len(files) if not bad else '；'.join(bad[:4]))
 
 
 def _expected_md_sets():
@@ -701,6 +711,12 @@ def stage_delegated(skip_smoke, with_tests):
           (pcd_tail[-1] if pcd_tail else 'rc=%d' % rc)[:70])
     # v0.27.176：内置包注册表（package_catalog.json）→ 可检索知识页（builtin-packages.md）。
     # 「有哪些内置包 / 什么版本」原先只在 json 里，AI 检索不到，选型时不知道能直接用现成包。
+    # v0.27.180（域⑦）：可复用组件目录 —— 「四件套缺一不收」跑成可执行校验 + 派生页一致性
+    rc, out = _run([sys.executable, os.path.join(SUB, 'gen_components_catalog.py'), '--check'])
+    cc_tail = [l for l in out.strip().splitlines()
+               if l.startswith('[PASS]') or l.startswith('[FAIL]')]
+    check(rc == 0, 'delegated: gen_components_catalog --check (可复用组件目录)',
+          (cc_tail[-1] if cc_tail else 'rc=%d' % rc)[:70])
     # v0.27.180（B3）：工程骨架唯一来源 —— templates/HelloWord_Z20/src 为骨架真源，
     # 各工程的副本（实测 18 份）必须与它一致；改骨架只需改一处 + --apply。
     rc, out = _run([sys.executable, os.path.join(SUB, 'sync_project_skeleton.py'), '--check'])

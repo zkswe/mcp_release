@@ -1947,6 +1947,19 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
                                         _project_easyui_revision(project_root)[0] or '?',
                                         (runtime.get('panel') or {}).get('panelResolution') or '?'))})
         warnings.extend(runtime['warnings'])
+        # ①.6 证据窗口刷新（v0.27.180）：`logcat -d` 读的是**整个缓冲区**，含 launch 之前的旧行 ——
+        #     不清缓冲就可能把上一轮的 `onUI_show` 当成本轮证据（假 confirmed）。
+        #     清失败只记 warning（有些固件的 logd 不响应 -c，不该因此拦掉整条流程）。
+        if _dprobe is not None and gate['serial']:
+            try:
+                cleared = _dprobe.clear_logcat(gate['serial'])
+            except Exception as e:                       # noqa: BLE001
+                cleared, why = False, '%s: %s' % (type(e).__name__, e)
+            else:
+                why = ''
+            if not cleared:
+                warnings.append('清 logcat 缓冲失败（%s）：本轮「界面起来了吗」的证据可能含旧行'
+                                % (why or '设备未响应 logcat -c'))
         if gate['platformMatch'] == 'unknown':
             warnings.append('设备型号无法比对平台（model=%s，%s）：'
                             'fun launch 自己会做平台校验（不匹配会 FATAL platform not match），'

@@ -4,7 +4,7 @@ title: 平台能力矩阵（组件 × 平台 可用性，唯一真源派生）
 category: devflow
 status: review
 confidence: manual
-verified_at: 2026-10-02
+verified_at: 2026-10-03
 stale_days: 180
 origin: derived
 source: 由 platform_capabilities.json 派生（scripts/gen_platform_cap_doc.py）；表格内容与注册表逐字节一致
@@ -180,7 +180,7 @@ evidence:
 |---|---|---|---|
 | Z20 | ⚠️ **未验证** | registry `z20/easyui/2.6.0`、`3.0.0` 头文件面一致 | 同 F133 三条 |
 | T113 | ⚠️ **未验证** | registry `t113emmc/easyui/2.9.0` 一致 | 同 F133 三条 |
-| V85X | ⚠️ **未验证** | registry `v85x/easyui/2.3.0`、`2.9.0` 一致 | 同 F133 三条；V85X 内存/带宽紧，长按翻月之类别做 |
+| V85X | ✅ **可用（真机已验收 2026-10-03）** | registry `v85x/easyui/2.3.0`、`2.9.0` 一致；**V85X 实测（2026-10-03）**：`fun build` + `fun launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式 | 同 F133 三条；V85X 内存/带宽紧，长按翻月之类别做 |
 
 ### ui_v1/Chart
 
@@ -190,7 +190,7 @@ evidence:
 |---|---|---|
 | Z20 | ⚠️ **未验证** | registry `z20/easyui/2.6.0`、`3.0.0` 的 `ZKPainter.h` 公开面一致 |
 | T113 | ⚠️ **未验证** | registry `t113emmc/easyui/2.9.0` 一致 |
-| V85X | ⚠️ **未验证** | registry `v85x/easyui/2.3.0`、`2.9.0` 一致；V85X 有较多内存/带宽限制，密集点阵（如 PRPS 那种每格一个 fillArc）**先在真机量一遍再上** |
+| V85X | ✅ **可用（真机已验收 2026-10-03）** | registry `v85x/easyui/2.3.0`、`2.9.0` 一致；V85X 有较多内存/带宽限制，密集点阵（如 PRPS 那种每格一个 fillArc）**先在真机量一遍再上**；**V85X 实测（2026-10-03）**：`fun build` + `fun launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式 |
 
 ### ui_v1/RadButton
 
@@ -203,7 +203,7 @@ evidence:
 | F136 | — | ⚠️ 未验证 | 同上 |
 | Z20 | 3.0.0 | ⚠️ 未验证 | 头文件已核对 |
 | T113 / T113eMMC | 2.9.0 | ⚠️ 未验证 | 头文件已核对 |
-| V85X | 2.3.0 | ⚠️ 未验证 | 头文件已核对；注意 disp 分层平台的老问题与本包无关 |
+| V85X | 2.3.0 | ✅ **可用（真机已验收 2026-10-03）** | 头文件已核对；注意 disp 分层平台的老问题与本包无关；**V85X 实测（2026-10-03）**：`fun build` + `fun launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式 |
 
 ### ui_v1/_mapping/TabView
 
@@ -213,7 +213,7 @@ evidence:
 |---|---|---|
 | Z20 | ⚠️ **未验证** | registry 有 `z20/easyui/2.6.0` 与 `3.0.0`，`ZKPageWindow.h` 公开面与 Z21 同名同签名；组件无平台分支 |
 | T113 | ⚠️ **未验证** | registry `t113emmc/easyui/2.9.0` 头文件一致；`bin_tools/t113/touch` 已有（触摸注入可用） |
-| V85X | ⚠️ **未验证** | registry `v85x/easyui/2.3.0`（较老）与 `2.9.0` 都含 `IPageChangeListener + getPageSize + turnTo*`（**已逐个核对头文件**）；组件无平台宏 |
+| V85X | ✅ **可用（真机已验收 2026-10-03）** | registry `v85x/easyui/2.3.0`（较老）与 `2.9.0` 都含 `IPageChangeListener + getPageSize + turnTo*`（**已逐个核对头文件**）；组件无平台宏；**V85X 实测（2026-10-03）**：`fun build` + `fun launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式 |
 
 ### vinyl
 

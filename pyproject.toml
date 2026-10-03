@@ -46,6 +46,7 @@ py-modules = [
     "device_probes",
     "kb_authority",
     "lifecycle_loader",
+    "components_catalog",
     "logic_tools",
     "media_cap_loader",
     "kb_index_roots",

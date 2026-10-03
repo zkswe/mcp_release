@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0",
-  "updated": "2026-10-02",
+  "updated": "2026-10-03",
   "authority": "FlyThings 组件「平台能力矩阵」唯一机器可读真源。回答两件事：① 某组件在某平台能不能用、前置条件/实测值/限制是什么 ② 某平台上能跑哪些组件。派生产物：components/*/platforms.md 里那张矩阵表（scripts/gen_component_platforms.py 重写）。**改能力 = 改本文件，禁止在各篇 platforms.md 里另抄一份**；各篇 platforms.md 只保留原理、坑、验收方法、细节展开。平台清单不在这里重定义 —— 以 platforms.py 为准（identity 单一真源）。",
   "platforms": null,
   "components": {
@@ -600,8 +600,8 @@
             "V85X"
           ],
           "cells": [
-            "⚠️ **未验证**",
-            "registry `v85x/easyui/2.3.0`、`2.9.0` 一致",
+            "✅ **可用（真机已验收 2026-10-03）**",
+            "registry `v85x/easyui/2.3.0`、`2.9.0` 一致；**V85X 实测（2026-10-03）**：`fun build` + `fun launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式",
             "同 F133 三条；V85X 内存/带宽紧，长按翻月之类别做"
           ]
         }
@@ -649,8 +649,8 @@
             "V85X"
           ],
           "cells": [
-            "⚠️ **未验证**",
-            "registry `v85x/easyui/2.3.0`、`2.9.0` 一致；V85X 有较多内存/带宽限制，密集点阵（如 PRPS 那种每格一个 fillArc）**先在真机量一遍再上**"
+            "✅ **可用（真机已验收 2026-10-03）**",
+            "registry `v85x/easyui/2.3.0`、`2.9.0` 一致；V85X 有较多内存/带宽限制，密集点阵（如 PRPS 那种每格一个 fillArc）**先在真机量一遍再上**；**V85X 实测（2026-10-03）**：`fun build` + `fun launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式"
           ]
         }
       ]
@@ -743,8 +743,8 @@
           ],
           "cells": [
             "2.3.0",
-            "⚠️ 未验证",
-            "头文件已核对；注意 disp 分层平台的老问题与本包无关"
+            "✅ **可用（真机已验收 2026-10-03）**",
+            "头文件已核对；注意 disp 分层平台的老问题与本包无关；**V85X 实测（2026-10-03）**：`fun build` + `fun launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式"
           ]
         }
       ]
@@ -791,8 +791,8 @@
             "V85X"
           ],
           "cells": [
-            "⚠️ **未验证**",
-            "registry `v85x/easyui/2.3.0`（较老）与 `2.9.0` 都含 `IPageChangeListener + getPageSize + turnTo*`（**已逐个核对头文件**）；组件无平台宏"
+            "✅ **可用（真机已验收 2026-10-03）**",
+            "registry `v85x/easyui/2.3.0`（较老）与 `2.9.0` 都含 `IPageChangeListener + getPageSize + turnTo*`（**已逐个核对头文件**）；组件无平台宏；**V85X 实测（2026-10-03）**：`fun build` + `fun launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式"
           ]
         }
       ]

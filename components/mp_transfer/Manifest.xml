@@ -1,0 +1,67 @@
+<!--
+  components/mp_transfer —— 引用声明（**源码型模块，形态变体**）
+
+  本模块交付物：
+    src/mp_transfer/broadcast_task.{h,cpp}   UDP 广播任务（自动加 zkswe: 前缀）
+    src/mp_transfer/tcp_receive.{h,cpp}      TCP 接收核心（包头解析/落盘/ACK/OK）
+    src/mp_transfer/runtime_coordinator.h    服务启停（retain/release，owner 集合）
+    src/mp_transfer/mp_config.h              可改配置（接收目录等）
+    src/system/transfer_type_and_data.h      接收结果结构 TransferFileInfo
+    src/python/receiver.py                   PC 模拟设备端（纯标准库）
+    example/mp_transfer_min_example.cc       最小可跑示例
+    docs/miniprogram-transfer-guide.md       端到端指南
+
+  ── 怎么用（源码引入）────────────────────────────────────────────────────
+    1) 拷 src/mp_transfer/*.{h,cpp} + src/system/*.h 到工程能编到的目录（如 src/mp_transfer/），
+       两个 .cpp 加入编译；
+    2) 按下面的依赖在工程 Manifest.xml（或 fun.json，其优先级更高）声明；
+    3) 起服务：RuntimeCoordinator::retain(owner, name) / release(owner)；
+       收文件目录默认 /mnt/extsd/mp_transfer/（见 mp_config.h，移植时换成自己的可写目录，末尾带 /）。
+    ⚠️ 改完 Manifest/fun.json **必须重跑 fun install**（否则新包的 include 路径进不了 CMake）。
+
+  ── 为什么没有 include/ ──────────────────────────────────────────────────
+    本模块的用法是「拷源文件」（README §怎么用），对外面就是 src/mp_transfer/*.h，
+    没有做 include/ + lib/ 的库化封装。这是**已登记的形态变体**，不是漏件
+    （见 components_catalog.py 的 DECLARED_GAPS）。
+-->
+
+<manifest>
+
+  <!-- 依赖：base::Task 底座（base-utility）+ 日志（log，用 <android/log.h>）。
+       版本按目标工程实际组合为准（下为来源工程可用版本）。 -->
+  <platform name="F133">
+    <dependencies>
+      <package id="base-utility" version="^10.9.3"></package>
+      <package id="log" version="0.0.0"></package>
+    </dependencies>
+  </platform>
+
+  <platform name="Z20">
+    <dependencies>
+      <package id="base-utility" version="^10.9.3"></package>
+      <package id="log" version="0.0.0"></package>
+    </dependencies>
+  </platform>
+
+  <platform name="Z21">
+    <dependencies>
+      <package id="base-utility" version="^10.9.3"></package>
+      <package id="log" version="0.0.0"></package>
+    </dependencies>
+  </platform>
+
+  <platform name="T113">
+    <dependencies>
+      <package id="base-utility" version="^10.9.3"></package>
+      <package id="log" version="0.0.0"></package>
+    </dependencies>
+  </platform>
+
+  <platform name="V85X">
+    <dependencies>
+      <package id="base-utility" version="^10.9.3"></package>
+      <package id="log" version="0.0.0"></package>
+    </dependencies>
+  </platform>
+
+</manifest>

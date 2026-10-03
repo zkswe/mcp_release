@@ -117,6 +117,29 @@ GROUPS = [
         ],
     },
     {
+        'doc': 'knowledge/components/components-catalog.md',
+        'name': '可复用组件目录（有没有现成的 / 依赖 / 示例，树派生）',
+        'min_top1': 4,          # 实测 4/8 top-1，8 条全部 top-3 内
+        # 注：另测「有没有现成的字体组件」「蓝牙组件怎么用」落 top-5 外 —— 它们的 top-1 是
+        # 合法替代答案（字体 → custom-font-config.md；蓝牙跨平台 → platform-capability-matrix.md），
+        # 所以没放进本组；本组只收「清单/依赖/示例」这类该由目录页回答的问法。
+        'queries': [
+            '有没有现成的可复用组件', '组件要依赖哪些包', '复用组件在哪看',
+            '高斯模糊有现成的吗', '有没有现成的日历控件', '图表控件有吗',
+            '传图组件有没有', '图标组件有吗',
+        ],
+    },
+    {
+        'doc': 'knowledge/devflow/reusable-components.md',
+        'name': '组件化规范入口（规范在哪 / 四件套 / checklist）',
+        'min_top1': 4,          # 实测 4/5 top-1
+        'max_miss': 0,
+        'queries': [
+            '组件规范在哪看', '四件套是什么', '新增组件 checklist', '组件代码规范',
+            '组件 platforms.md 写什么',
+        ],
+    },
+    {
         'doc': 'knowledge/media/media-capability-index.md',
         'name': '多媒体能力（播放/录像/对讲/图层，唯一真源派生）',
         'min_top1': 6,          # 实测 6/8

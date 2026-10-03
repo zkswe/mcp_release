@@ -1,10 +1,10 @@
 {
  "meta": {
   "schema": 1,
-  "built_at": "2026-10-03 02:17:54",
+  "built_at": "2026-10-03 08:39:32",
   "mcp_version": "0.27.171-open",
   "doc_count": 104,
-  "source_hash": "7d637defab75a3f164d70b69c383528c"
+  "source_hash": "1cba92e7633425d719b814961f1182c3"
  },
  "summary": {
   "total": 104,
@@ -20,12 +20,12 @@
    "verified": 5
   },
   "withEvidence": 20,
-  "needsEvidence": 94,
-  "noQueries": 79,
+  "needsEvidence": 93,
+  "noQueries": 78,
   "stale": 0,
   "inbox": 0,
   "aging": 0,
-  "manualOnly": 84
+  "manualOnly": 83
  },
  "docs": [
   {
@@ -1510,7 +1510,7 @@
    ],
    "status": "review",
    "confidence": "manual",
-   "verified_at": "2026-10-02",
+   "verified_at": "2026-10-03",
    "stale_days": 180,
    "origin": "derived",
    "evidenceCount": 1,
@@ -1522,10 +1522,10 @@
    "evidenceLevel": "has-evidence",
    "needsEvidence": false,
    "hasQueries": true,
-   "bytes": 18562,
-   "sha256": "dcba61df70b34bf7aaa784d488a8cb29b38bcaecc9333e7d15d3a6edde4c5888",
+   "bytes": 19750,
+   "sha256": "5b196c15ba23d39615472c8ac0def326692d4a329ec4d9702ab9354758005b87",
    "fingerprint": "5ac8a3a3b4fd3e93",
-   "ageDays": 1,
+   "ageDays": 0,
    "freshness": "fresh",
    "stale": false,
    "staleDays": 180,
@@ -1706,34 +1706,34 @@
   {
    "id": "devflow-reusable-components",
    "path": "knowledge/devflow/reusable-components.md",
-   "title": "可复用组件（components）—— 组件化落地规范",
+   "title": "可复用组件（components）—— 入口：规范在哪、清单在哪",
    "category": "devflow",
-   "platforms": [
-    "F133"
-   ],
+   "platforms": [],
    "tags": [
-    "模块目录",
-    "资产型模块",
-    "组件 README",
-    "平台说明",
+    "组件规范",
+    "四件套规范",
+    "模块目录约定",
+    "组件怎么写",
+    "代码规范",
     "package 引用",
-    "模块",
-    "以后模块代码放这里"
+    "平台说明模板",
+    "新增模块",
+    "资产型模块"
    ],
    "status": "review",
    "confidence": "manual",
-   "verified_at": "2026-09-29",
+   "verified_at": "2026-10-03",
    "stale_days": 180,
    "origin": "total",
    "evidenceCount": 0,
    "evidence": [],
-   "evidenceLevel": "manual-only",
-   "needsEvidence": true,
-   "hasQueries": false,
-   "bytes": 17881,
-   "sha256": "184d18840db9cfd20a796a76250876081546f191f35b1fbdcf9785e2e22767b1",
-   "fingerprint": "cccf023d094984eb",
-   "ageDays": 4,
+   "evidenceLevel": "none",
+   "needsEvidence": false,
+   "hasQueries": true,
+   "bytes": 3499,
+   "sha256": "51c3486fac2139afcde54ecce8f338aa20586722aed832744c3806dcb523308d",
+   "fingerprint": "5cb0ec46f49d8891",
+   "ageDays": 0,
    "freshness": "fresh",
    "stale": false,
    "staleDays": 180,

@@ -414,3 +414,59 @@ top-1 常被同内容的散文页 `activity-code-skeleton.md` / `widget-code-api
 统一到 `derived_md.verified_day()`：真源 `updated` → 该文件**最后一次 git 提交日** → mtime 兜底；
 每级回落原因收进可选 `why`（不静默）。同时清掉 `gen_hardware_doc` 里 `io.open('')` 那处死代码
 （它必然抛异常 → `verified_at` 长期固定成一个硬编码日期）。
+
+## 15. 域⑦ 落地记录（可复用组件，2026-10-03）
+
+| 角色 | 文件 |
+|---|---|
+| 真源 | **`components/` 这棵树**（形状由目录结构决定）+ `components/README.md`（规范：四件套/形态/代码规范/checklist）+ `platform_capabilities.json`（平台可用性） |
+| 唯一消费入口 | `components_catalog.py`（`modules` / `get` / `by_platform` / `for_query` / `validate` / `declared_gaps`） |
+| 生成器 | `scripts/gen_components_catalog.py` → `knowledge/components/components-catalog.md`（196 行，`--check`） |
+| 契约用例 | `tests/test_components_catalog.py`（8 条） |
+| 门禁 | 新增 `gen_components_catalog --check` |
+
+**★ 没有新造一份组件 JSON**：形状/依赖/示例本来就在树里（依赖在各组件 `Manifest.xml`，机器可读），
+平台可用性已有真源。所以本域做的是**扫描 + 把那条人自觉的规则机器化**：
+`components/README.md` 的「**四件套缺一不收**」现在由 `validate()` 按形态核对（源码型/二进制型/资产型
+要求不同），门禁盯住。
+
+**两处真问题（都修了）**：
+1. `mp_transfer` 缺 `Manifest.xml`（依赖只写在 README 文字里）→ **补上**（`base-utility` + `log`）。
+2. `fonts` 不在 `platform_capabilities.json`（它的 `platforms.md` 是逐平台正文、没有"平台×能力"矩阵表，
+   B1 抽取时被跳过）→ 以**已登记缺口**放行（写清原因与日期，看得见，不静默）。
+
+**「已登记缺口」机制**（`DECLARED_GAPS`）：门禁只放行登记过的缺口；新增缺口直接红。
+另修：`_summary` 原来取 README 第一个正文段 → 抓到的是"第一条要点"（`fonts` 变成"构建前做字体体检"），
+改成**取 H1 标题的描述段**（作者本来就是那么写的）。
+
+## 16. 顺手收敛的一处「第二份规格」（域⑦ 的一部分）
+
+`knowledge/devflow/reusable-components.md`（230 行）把 `components/README.md` 的**规范整段抄了一遍**，
+而且**已经分叉**（它写"两种模块形态"，规范已是**三种**），还自带一份手维护的组件表与若干组件实测明细。
+
+处理：**独有内容搬进规范**（代码规范第 8 条"日志要能接出去"、`fun.json` 优先/`type:"executable"`、
+与知识库的分工定位），然后把该页瘦成**指针页**（230 → 54 行，id/title 保留 → 9 处引用不失效）。
+组件实测数字（blur 59~88ms / imagecall 315→1ms / vinyl 双后端 / wall_sync RTT/2…）**逐条核对过**
+——都已在各自组件 README 里，所以不再在总页重复。
+
+顺带把两页的**检索职责分开**（原来互相抢）：清单类问法归派生页（实测 top-1 4/8、8 条全在 top-3），
+"规范在哪/四件套"归指针页（实测 4/5）——两组都按实测登记进检索回归。
+
+## 17. UI 相关待确认项：V85X 列已真机确认（2026-10-03）
+
+`platform_capabilities.json` 里共 **44 处「未验证/待测」**，其中 UI 控件（`ui_v1`）的 **V85X 列**本轮确认：
+
+| 组件 | 方式 | 结果 |
+|---|---|---|
+| `ui_v1/Chart` / `Calendar` / `RadButton` / `_mapping/TabView` | 示例工程改平台为 V85X → **标准 fun 链路**（`fun install` → `fun build` → `fun launch`）→ 抓屏 | 4/4：编译通过、`launched=True`、logcat 见 `onUI_show`、抓屏有内容且**四张画面互不相同** |
+
+- 设备：USB `Zkswe_V85X_SPINOR`（easyui 2.4.0，面板 480×1600）；**全程 `fun launch`，没有手工 adb push 部署**。
+- 注册表 4 个单元格改为「✅ 可用（真机已验收 2026-10-03）」并追加实测依据；4 篇 `platforms.md` 的矩阵表
+  由 `gen_component_platforms` 自动重生成；**证据截图**按 ui_v1 约定存进各自 `example/evidence/v85x_20261003_full.png`。
+- **口径如实标注**：示例是 1024×600、面板 480×1600 → 验的是**组件在该平台可用**（编译/加载/绘制/起来），
+  **不是版式**（版式未适配这块面板）。
+- 顺带修一处判据硬度问题：`logcat -d` 读的是整个缓冲区（含 launch**之前**的旧行），
+  现在 **launch 前先 `clear_logcat`**，避免把上一轮的 `onUI_show` 当本轮证据（清失败只记 warning，不拦流程）。
+
+**仍未确认**：`ui_v1` 的 Z20 / T113 / F133 列；以及 blur / imagecache / vinyl / wall_sync / blend2d /
+ha_bridge / mp_transfer 的未验证平台 —— 都需要对应平台的设备（现场逐项对接）。
