@@ -129,10 +129,8 @@ def render_doc():
     L.append('---')
     L.append('# FlyThings 生命周期与代码接口契约（由 lifecycle_spec.json 派生）')
     L.append('')
-    L.append('> ⚙️ **本页是派生物**：内容由 `lifecycle_spec.json`（唯一真源）经 '
-             '`scripts/gen_lifecycle_doc.py` 生成，**不要手改**（改了下次生成会覆盖，'
-             '门禁 `gen_lifecycle_doc --check` 会红）。')
-    L.append('> 原理与实证过程见 `knowledge/devflow/activity-code-skeleton.md`；'
+    L.append('> ⚙️ **本页是派生物，不要手改**（由 `lifecycle_spec.json` 派生，`--check` 进闸门）。'
+             '原理与实证过程见 `knowledge/devflow/activity-code-skeleton.md`，'
              '控件逐个的代码接口详解见 `knowledge/uicontrols/widget-code-api.md`。')
     hints = spec.get('retrievalHints') or []
     if hints:

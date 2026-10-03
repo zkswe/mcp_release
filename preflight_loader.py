@@ -251,7 +251,7 @@ def render_doc():
     L.append('---')
     L.append('# 上机前体检判据（由 preflight_spec.json 派生）')
     L.append('')
-    L.append('> ⚙️ **本页是派生物**，**不要手改**（改了会被下次生成覆盖，门禁 `gen_preflight_doc --check` 会红）。')
+    L.append('> ⚙️ **本页是派生物，不要手改**（由 `preflight_spec.json` 派生，`--check` 进闸门）。')
     hints = spec.get('retrievalHints') or []
     if hints:
         L.append('> 口语问法直达：' + ' / '.join(hints) + '。')

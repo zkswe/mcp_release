@@ -17,8 +17,7 @@ evidence:
 ---
 # FlyThings 生命周期与代码接口契约（由 lifecycle_spec.json 派生）
 
-> ⚙️ **本页是派生物**：内容由 `lifecycle_spec.json`（唯一真源）经 `scripts/gen_lifecycle_doc.py` 生成，**不要手改**（改了下次生成会覆盖，门禁 `gen_lifecycle_doc --check` 会红）。
-> 原理与实证过程见 `knowledge/devflow/activity-code-skeleton.md`；控件逐个的代码接口详解见 `knowledge/uicontrols/widget-code-api.md`。
+> ⚙️ **本页是派生物，不要手改**（由 `lifecycle_spec.json` 派生，`--check` 进闸门）。原理与实证过程见 `knowledge/devflow/activity-code-skeleton.md`，控件逐个的代码接口详解见 `knowledge/uicontrols/widget-code-api.md`。
 > 检索导引（**口语问法直达**）：资源释放放 onUI_hide 还是 onUI_quit / 切页后回调还触发吗 / 隐藏页的定时器还在跑吗 / 空闲超时怎么判才准 / 操作到一半被屏保打断 / 子页待久了莫名跳屏保 / 按钮回调返回 true 还是 false / onUI_init 什么时候调用 / onUI_init 里能不能 findControlByID / goBack 会走 onUI_hide 吗 / 页面销毁要清什么 / 静态缓存跨页面怎么办 / ZKListView 有哪三个回调 / 控件有哪些 API / check_all 括号不平衡误报 → 本文。
 
 ## 1. 骨架与钩子

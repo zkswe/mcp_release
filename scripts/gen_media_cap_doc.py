@@ -56,9 +56,8 @@ def build():
     L = _fm()
     L.append('# 多媒体能力索引（播放 / 录像 / 录音 / 图层 / 抓帧）')
     L.append('')
-    L.append('> **唯一真源** = `media_capabilities.json`（本页是它的派生物，手改会被门禁抓）。')
-    L.append('> **包的可用性与版本不在这里**：真源 = `package_catalog.json`，本页的平台可用性列由它联接派生。')
-    L.append('> 改「用哪个包/库、有什么限制、出处哪篇」→ 改注册表；改「包在哪些平台」→ 改包目录。')
+    L.append('> ⚠️ **本页是派生物，不要手改**（由 `media_capabilities.json` 派生，`--check` 进闸门）。')
+    L.append('> 平台可用性那几列由包目录联接派生（"这块板能不能用某个包"看这里；包的版本/清单不在本页）。')
     L.append('')
 
     # ── 1. 能力总表 ──

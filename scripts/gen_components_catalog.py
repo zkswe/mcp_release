@@ -57,11 +57,14 @@ def build():
     ms = cc.modules()
     L.append('# 可复用组件目录')
     L.append('')
-    L.append('> **真源 = `components/` 这棵树**（形状由目录结构决定、依赖在各组件 `Manifest.xml`、'
-             '平台可用性在 `platform_capabilities.json`）。本页是派生索引，手改会被门禁抓。')
-    L.append('> 落地规范（四件套、模块形态、代码规范、新增模块 checklist）见 `components/README.md`；'
-             '里面 §7「现有模块」是**人写的详细索引**（含版本/验收到哪一步），本页是**树派生的卡片**'
-             '（形态/平台/依赖/示例/缺件）——两者互补，规范与详细索引都以那份为准。')
+    L.append('> 口语问法直达：有没有现成的组件 / 组件目录 / 「%s」这些有吗 /'
+             '这块平台能用哪些组件 / 怎么把组件接进工程。'
+             % '、'.join([t for t in TAGS if not t.isascii()][:8]))
+    L.append('>')
+    L.append('> ⚠️ **本页是派生物，不要手改**（由 `components/` 这棵树扫描派生，`--check` 进闸门）。'
+             '落地规范（四件套、模块形态、代码规范、新增模块 checklist）见 `components/README.md` 的 §7。')
+    L.append('> 依赖读各组件 `Manifest.xml`，平台可用性读 `platform_capabilities.json` —— '
+             '两处都不会在本页编一份。')
     L.append('')
 
     # 1. 总表

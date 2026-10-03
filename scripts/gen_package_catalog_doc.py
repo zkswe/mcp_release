@@ -60,12 +60,11 @@ evidence:
 > 这平台上能用哪些包 / 怎么加包」→ 本文（生态总览）；
 > 精确查询走 op：`flythings_list_packages`（列包）/ `flythings_query_package`（查单包版本）
 > / `flythings_get_package_api`（看包内 API）/ `flythings_add_package`（加进工程 Manifest）。
->
-> ⚠️ **本页是派生产物**：唯一真源 = `package_catalog.json`，由 `scripts/gen_package_catalog_doc.py`
-> 生成，`--check` 进发布闸门。包键口径（含别名，如 `f136`→F135、`v85xemmc`→V85X）以
-> `platforms.py` 的 `PACKAGE_KEYS` / `PACKAGE_KEY_ALIASES` 为准，本页不另立一套。
 > 用法与解析顺序（本地 registry → 离线 catalog → 在线 semver）见
 > `knowledge/devflow/dependency-package-docs.md`。
+>
+> ⚠️ **本页是派生物，不要手改**（由 `package_catalog.json` 派生，`--check` 进闸门）。
+> 包键含平台变体与别名（`f136`→F135、`v85xemmc`→V85X），查询时自动折算，不用自己换算。
 """
 
 

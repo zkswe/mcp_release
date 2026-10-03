@@ -24,11 +24,9 @@ evidence:
 > 检索词：平台支持 / 组件可用性 / 能不能用 / 选型 / Z20 / Z21 / F133 / F135 / T113 / V85X / Z235X /
 > 跨平台 / 能力矩阵 / capability matrix。
 >
-> ⚠️ **本页是派生产物**：唯一真源 = `platform_capabilities.json`，由 `scripts/gen_platform_cap_doc.py`
-> 生成，`--check` 进发布闸门。改能力请改注册表；各组件 `components/*/platforms.md` 那张矩阵表同样是
-> 派生的（`scripts/gen_component_platforms.py`），它们保留的是原理、坑与验收方法。
-> 平台**身份**（arch / 模板 / 包键）以 `platforms.py` 为准；平台别名（F136→F135、T113EMMC→T113）
-> 同样只在 `platforms.py` 登记，查询时自动折算。
+> ⚠️ **本页是派生物，不要手改**（由 `platform_capabilities.json` 派生，`--check` 进闸门）；
+> 要改能力请改注册表。各组件 `components/*/platforms.md` 里的矩阵表同源派生，那几页另有原理/坑/验收方法。
+> 平台别名（F136→F135、T113EMMC→T113）查询时自动折算，不用自己换算。
 
 ## 1. 平台 → 可用组件（答「这台设备上能跑什么」）
 

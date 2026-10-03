@@ -34,7 +34,7 @@ def main():
                 continue
             p = os.path.join(d, f)
             rel = os.path.relpath(p, BASE).replace(os.sep, '/')
-            meta, _b, ferr = kbl.parse_front_matter(io.open(p, encoding='utf-8').read())
+            meta, body, ferr = kbl.parse_front_matter(io.open(p, encoding='utf-8').read())
             total += 1
             if not meta:
                 fails.append('%s 缺 front-matter' % rel)
@@ -44,6 +44,33 @@ def main():
                 errs.append(ferr)
             if errs:
                 fails.append('%s → %s' % (rel, '；'.join(errs)))
+            # ⑥ 派生页的「本页是派生物」声明：读者是 AI，只留"别手改 + 从哪派生"这一句
+            #   （口径见 skill `flythings-domain-registry`「判据页是给 AI 的，不是给维护者的」）
+            #   实测踩过的写法：把生成器脚本、门禁对账口径（`::`）、真源路径全写进声明块，
+            #   正文一行没瘦、头部先胖了五行的都有 —— 那些信息页头 `source:` 与门禁本身已经承接。
+            if meta.get('origin') == 'derived':
+                # 声明块 = **从「派生物/不要手改」那行起**的连续引用行（空引用行 `>` 视为段落分隔）
+                head, started = [], False
+                for ln in body.splitlines():
+                    if not started:
+                        if ln.startswith('>') and ('派生物' in ln or '不要手改' in ln):
+                            started = True
+                            head.append(ln)
+                        continue
+                    if ln.startswith('>') and ln.strip() != '>':
+                        head.append(ln)
+                    else:
+                        break
+                if not head:
+                    fails.append('%s 是派生页但缺「本页是派生物」声明（读者会以为能手改）' % rel)
+                elif len(head) > 3:
+                    fails.append('%s 的派生物声明占了 %d 行（>3）—— 派生物读者是 AI，'
+                                 '一句「别手改 + 从哪派生」就够' % (rel, len(head)))
+                for ln in head:
+                    for bad in ('scripts/', '::'):
+                        if bad in ln:
+                            fails.append('%s 的派生物声明里出现 %r（生成器路径/对账口径是维护者信息，'
+                                         '别进 AI 语料）' % (rel, bad))
             if meta.get('status') == 'draft':
                 fails.append('%s 在分类目录下是 draft —— 候选请放 knowledge/inbox/'
                              '（draft 不进索引/检索）' % rel)
