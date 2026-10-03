@@ -1,0 +1,73 @@
+# nanovg 1.0.0 —— 矢量绘图库（AGG 软件光栅后端）
+#
+# 事实来源：① f133 注册表包的真实头文件（include/nanovg.h · nanovg_agg.h）
+#          ② 设备 / V85X 侧 .so 的 readelf --dyn-syms 实测（本目录 lib/v85x/）
+#          ③ 用法来自 components/vinyl（F133 真机跑过）
+# ⚠️ 本目录 = **自带包**（离线分发）：V85X 在 package.flythings.cn 上**没有**这个包，
+#    所以随仓带 include/ + lib/v85x/，供 V85X 工程直接取用。
+id: nanovg
+version: "1.0.0"
+platforms:
+  V85X:
+    registry: null                     # 服务端无此包（v85x/nanovg/1.0.0.zip → 404）
+    local: packages/nanovg/lib/v85x    # 随仓自带
+    libs: [libnanovg.so]
+    headers_count: 2
+    verified: null                     # 未上真机（无上屏 / 无逐像素证据）
+    status: unverified
+  F133:
+    registry: public/f133/nanovg/1.0.0
+    libs: [libnanovg.so]
+    headers_count: 2
+    verified: null                     # 借 vinyl 的 F133 真机证据（本包自身未单独跑）
+    status: borrowed-evidence
+  T113EMMC:
+    registry: public/t113emmc/nanovg/1.0.0
+    libs: [libnanovg.so]
+    headers_count: 2
+    verified: null
+    status: unverified
+  F136:
+    registry: public/f136/nanovg/1.0.0
+    libs: [libnanovg.so]
+    headers_count: 2
+    verified: null
+    status: unverified
+summary: >-
+  上游 nanovg（Mikko Mononen，zlib 许可）+ 厂家自研 AGG 2.7 软件光栅后端（`nvgCreateAGG` / `nvgReinitAgge`）。
+  直接渲染进**调用方的 BGRA 内存缓冲**（不落盘、不进 GL），再把缓冲交给 easyui 控件当背景图上屏。
+  无 JIT、无硬件合成；ARM32 走 C++ 参考管线。
+hardRules:
+  - 目标纹理**只支持 `NVG_TEXTURE_BGRA`**；用 `nvgCreateImageRGBA` 会 `Assertion failed` 直接 abort。
+  - 贴图格式必须与目标一致，且必须用 `nvgCreateImageRaw(...)` 直传 BGRA 字节（别换通道）。
+  - 渲染是逐帧软件光栅：整屏逐帧只适合静态/低频刷新；高频动画要小画布或降帧。
+  - 该构建**不含字体/文本 API**（头文件声明了、库里没有 → 见 lib/v85x/BUILD.md §4）。
+headers:
+  - path: include/nanovg.h
+    role: 上游 nanovg 公共 API（路径/状态/绘制/图像/渐变/裁剪/变换/合成）
+  - path: include/nanovg_agg.h
+    role: 厂家 AGG 后端入口（nvgCreateAGG / nvgReinitAgge / nvgDeleteAGG）
+api:
+  - symbol: NVGcontext* nvgCreateAGG(uint32_t w, uint32_t h, uint32_t stride, enum NVGtexture format, uint8_t* data)
+    header: include/nanovg_agg.h
+    role: 建上下文并绑定调用方缓冲（format 传 NVG_TEXTURE_BGRA）
+  - symbol: void nvgReinitAgge(NVGcontext*, uint32_t w, uint32_t h, uint32_t stride, enum NVGtexture, uint8_t* data)
+    header: include/nanovg_agg.h
+    role: 同一上下文换目标缓冲（双缓冲每帧用一次）
+  - symbol: void nvgDeleteAGG(NVGcontext*)
+    header: include/nanovg_agg.h
+    role: 释放（含光栅器缓冲）
+  - symbol: int nvgCreateImageRaw(NVGcontext*, int w, int h, int format, int imageFlags, const unsigned char* data)
+    header: include/nanovg.h
+    role: 建贴图（必须用这个；直传 BGRA）
+  - symbol: void nvgUpdateImage(NVGcontext*, int image, const unsigned char* data)
+    header: include/nanovg.h
+    role: 换图（不重建上下文/贴图）
+  - symbol: NVGpaint nvgImagePattern(NVGcontext*, float ox, float oy, float ex, float ey, float angle, int image, float alpha)
+    header: include/nanovg.h
+    role: 把贴图铺成 paint（配圆/方路径填充）
+runtime:
+  - name: libgcc_s.so.1
+    why: 设备侧需存在（V85X 实测 NEEDED）
+  - name: libc.so
+    why: musl libc（V85X 口径；glibc 平台装不了这份 .so）

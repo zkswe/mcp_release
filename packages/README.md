@@ -27,6 +27,7 @@ packages/<包名>/
 | zkhardware | ✅ 已验（2026-09-28） | Z20（SSD20X 480×480，easyui 2.6.0） | 蜂鸣器/亮度/ADC/GPIO/过零 IO |
 | zknet | ✅ 已验（2026-09-29） | Z20（SSD20X 480×480，86 面板） | WiFi 全流程 + 只读面；详见 `zknet/platforms.md` |
 | easyui | ⏳ 待验 | — | 计划：控件/回调/定时器/页面切换最小骨架 |
+| **nanovg** | ⚠️ 库已入库（V85X）· **未上真机** | — | 服务端**没有** v85x 包 → 本仓自带 `packages/nanovg/{include,lib/v85x}`；符号级已核（85 条 nvg*），20 条字体 API 未编。见 `nanovg/README.md` |
 
 ## 缺口背景（为什么要补）
 
