@@ -77,24 +77,24 @@ evidence:
 | 找相近模式（先查再画，省一轮返工） | `flythings_knowledge_search` | — | `flythings_knowledge_search(query="温控面板 布局")`、`flythings_knowledge_search(query="仪表盘 控件")` |
 | 写码前必读规范（不能跳） | `flythings_get_project_spec` | 前置条件 | `flythings_get_project_spec()` —— 目录规则 + 生成规则 + 注意事项 |
 | 先判形态（决定走哪条路） | （人判断） | — | **HTML 原型**（可交互、有 CSS）→ `flythings_html_to_json`，确定性转换，**首选** |
-| HTML 原型 → ui json | `flythings_html_to_json` | 前置条件 | `flythings_html_to_json(html="<文件路径>", project_root="<目标工程>")` |
+| HTML 原型 → ui json | `flythings_html_to_json` | 前置条件 | `flythings_html_to_json(input_html="<HTML 文件路径>", output_json="<目标工程>/ui/main.json")` |
 | 建工程 | `flythings_create_project` | 前置条件 | `flythings_create_project(project_root="…", platform="Z20", resolution="1024x600")` |
-| 先出预览稿让用户点头 | `flythings_ui_preview` | 需用户确认 | 排版稿：`flythings_ui_preview(project_root=…)` → HTML 预览（只交 html，不产图片） |
+| 先出预览稿让用户点头 | `flythings_ui_preview` | 需用户确认 | 排版稿：`flythings_ui_preview(target="<项目>")` → HTML 预览（只交 html，不产图片） |
 | 写 ui/*.json | `flythings_ui_schema` | — | 字段 / 必填键 / 默认值：`flythings_ui_schema(control_type="seekbar")` —— **唯一真源**，不要凭记忆写 |
 | 三道核对（改完必跑） | `flythings_layout_audit` | 前置条件 | `flythings_validate_project(project_root=…)` —— 规范体检 → errors / warnings |
 | 补回调桩 → 再填业务 | `flythings_gen_logic_stub` | — | `flythings_gen_logic_stub(project_root=…)` —— 读 `ui/*.json` 的控件表 → 补齐回调桩（**只补不改**，已有同名函数一律跳过） |
-| 先摸清现状（别凭文件名猜） | `flythings_read_json` | — | `flythings_read_json(path="<项目>/ui/main.json")` —— 分辨率、控件列表、caption → id 映射 |
+| 先摸清现状（别凭文件名猜） | `flythings_read_json` | — | `flythings_read_json(json_path="<项目>/ui/main.json")` —— 分辨率、控件列表、caption → id 映射 |
 | 改 UI | `flythings_edit_ftu` | — | 控件属性 / 坐标（源码级）→ 直接改 `ui/*.json`，字段口径查 `flythings_ui_schema(control_type=…)` |
 | 先查控件对应关系（别一边翻一边猜） | `flythings_map_control` | — | `flythings_map_control(query="lv_slider")`；限定源框架 `flythings_map_control(query="QCalendarWidget", source="qt")` |
 | 源码 → ui json（自动翻译） | `flythings_translate_ui` | — | `flythings_translate_ui(source="<.c 路径或内联源码>", out="<项目>/ui/main.json", res="<工程分辨率>")` |
-| 检索包生态 | `flythings_package_search` | — | `flythings_package_search(query="mqtt")` —— **有包用包，禁止手写协议栈 / 库** |
+| 检索包生态 | `flythings_package_search` | — | `flythings_package_search(keyword="mqtt")` —— **有包用包，禁止手写协议栈 / 库** |
 | 看包内 API | `flythings_get_package_api` | — | `flythings_get_package_api(...)` —— 包头文件级 API（**只认头文件，禁猜、禁反编译**） |
 | 写 Manifest | `flythings_manifest` | — | `flythings_manifest(project_root=…)` —— 默认**只推荐不写盘**（dry_run），确认后再写 Manifest.xml |
-| 解析依赖 + 核对声明 | `flythings_resolve_dependencies` | — | `flythings_resolve_dependencies(project_root=…)` —— 递归解析 + 冲突 / 循环检查 |
+| 解析依赖 + 核对声明 | `flythings_resolve_dependencies` | — | `flythings_resolve_dependencies(packages="<包名>", platform="<平台>")` —— 递归解析 + 冲突 / 循环检查 |
 | 先体检，拿判据（别先动手） | `flythings_device_preflight` | — | `flythings_device_preflight(project_root="<项目>", device="<serial|IP>")` —— 返回里直接给结论 |
 | 比例相同 / 接近 → 等比换算（机械活，别手工算） | `flythings_device_preflight` | 需用户确认 | `flythings_device_preflight(project_root="<项目>", device="<serial>", adapt="force")` —— 用户已确认要按面板改 |
 | 比例不同 → 重排布局（判断活） | `flythings_edit_ftu` | 需用户确认 | **算清两个比例差多少**：`sx = 面板宽/设计宽`、`sy = 面板高/设计高`；差距小（如 1280×750 → 1280×800）常只需**改画布高**（只改 `resolution.height` 与根 `position.height`，控件全绝对定位、位置不动） |
-| 打包 | `flythings_fui_pack` | — | `flythings_fui_pack(project_root=…)` —— json → ftu（设备实际加载 ftu） |
+| 打包 | `flythings_fui_pack` | — | `flythings_fui_pack(json_path="<项目>/ui/main.json")` —— json → ftu（设备实际加载 ftu） |
 | 编译部署到真机 | `flythings_build_ui_flow` | 不可逆操作 | `flythings_build_ui_flow(project_root=…, device="<IP>:5555")` —— 编译 + 推送 + 运行 |
 | 抓真机屏幕 | `flythings_device_screenshot` | — | `flythings_device_screenshot(device=…)` —— 方向 `rotate='auto'`（按工程 `rotateScreen`） |
 | 像素验收（还原度闭环） | `flythings_ui_visual` | — | `flythings_ui_visual(action="diff", ...)` —— 0 token 差异清单；**只看差异区小图给视觉模型**，别丢整屏原图 |

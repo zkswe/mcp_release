@@ -883,6 +883,7 @@ def capture(device='', out='', fmt='png', scale=1.0, quality=90, fb='/dev/fb0',
     pre = fb_precheck(dev, fb, adb)
     if not pre['ok']:
         return {'success': False, 'device': dev, 'source': 'framebuffer(' + fb + ')',
+                'code': 'FB_UNREADABLE',
                 'staleFrame': stale_frame_info(dev, adb, info, fb),
                 'blocked': pre['blocked'], 'fbStrays': pre['strays'],
                 'error': 'framebuffer 不可读（%s）：%s' % (fb, pre['error'] or '未知'),

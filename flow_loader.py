@@ -329,13 +329,54 @@ def doc_path():
 
 # ───────────────────────────── 与 op 契约对账 ─────────────────────────────
 
-def cross_check():
-    """与 `op_spec.json` 对账 → 错误列表（空 = 通过）。由门禁调用。
+_CALL_RE = re.compile(r'`(flythings_[a-z_]+)\(([^`]*)\)`')
+_KW_RE = re.compile(r'([a-z_][a-z0-9_]*)\s*=')
 
-    两件事：
+
+def _signatures():
+    """op 名 → 参数名集合，**从 kb_tools.py 源码 AST 取**（不导入 kb_tools：那会连带加载检索栈，
+    让门禁慢一大截）。取不到就返回空字典，由调用方跳过该条检查。
+    """
+    import ast
+    path = os.path.join(BASE, 'kb_tools.py')
+    try:
+        with io.open(path, encoding='utf-8') as fh:
+            tree = ast.parse(fh.read())
+    except (OSError, SyntaxError):
+        return {}
+    out = {}
+    for n in tree.body:
+        if isinstance(n, ast.FunctionDef) and n.name.startswith('flythings_'):
+            out[n.name] = [a.arg for a in n.args.args if a.arg not in ('self', 'ctx')]
+    return out
+
+
+def _check_calls(text, where, errs, known, sigs):
+    """文档里写的 op 调用，参数名必须与**真实签名**一致。
+
+    为什么值得查：`fui_pack` 的真实签名是 `json_path`，而流程页写的是 `project_root=`
+    —— AI 照文档调用会拿 BAD_PARAMS，而文档看起来"很权威"。这类错人眼扫不出来
+    （名字都合理），只有跟签名对账才现形。
+    """
+    if not text or not sigs:
+        return
+    for op, args in _CALL_RE.findall(text):
+        if op not in known or op not in sigs:
+            continue
+        for kw in _KW_RE.findall(args):
+            if kw not in sigs[op]:
+                errs.append('%s：写成 `%s(%s=…)`，但真实签名是 `%s(%s)`'
+                            % (where, op, kw, op, ', '.join(sigs[op]) or '无参数'))
+
+
+def cross_check():
+    """与 `op_spec.json` / `kb_tools` 真实签名对账 → 错误列表（空 = 通过）。由门禁调用。
+
+    三件事：
       ① 步骤引用的 op 必须存在（op 改名后流程会静默跑偏）
       ② 声明了闸门的步骤，其 op 契约里必须有铁律 —— 否则闸门只活在流程页里，
          AI 不主动拉契约就看不到（上一轮 `create_project` 的「设计先行」正是这类）
+      ③ 文档里写的调用**参数名**必须与真实签名一致（AI 照文档调错参数 = 白跑一轮）
     """
     errs = []
     try:
@@ -356,6 +397,13 @@ def cross_check():
                 errs.append('步骤 %s 声明了闸门（%s），但 op %s 的契约里没有任何铁律'
                             '（hardRules/rules）—— 闸门在常驻面不可见'
                             % (sid, s['gate'], op))
+    sigs = _signatures()
+    for sid, s in steps().items():
+        for line in (s.get('how') or []) + (s.get('gotchas') or []):
+            _check_calls(line, '步骤 %s' % sid, errs, known, sigs)
+    for fid, f in flows().items():
+        for key in ('desc', 'oneLine', 'routing', 'exit'):
+            _check_calls(f.get(key), '流程 %s 的 %s' % (fid, key), errs, known, sigs)
     return errs
 
 

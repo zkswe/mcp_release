@@ -8,15 +8,6 @@
     "framework": "框架兜底码（由 _err_obj 的 fallback 产生，不来自任何调用点）—— 对账时不查源码"
   },
   "codes": {
-    "BAD_PARAMS": {
-      "meaning": "调用参数名或个数不对（签名不匹配）",
-      "who": "caller",
-      "retryable": true,
-      "action": "按返回 hint 里的正确签名改参数名后重试",
-      "raisedBy": [
-        "kb_tools.py"
-      ]
-    },
     "BAD_ARGS": {
       "meaning": "args 不是合法 JSON 对象（分发器入口）",
       "who": "caller",
@@ -26,85 +17,13 @@
         "mcp_server.py"
       ]
     },
-    "UNKNOWN_OP": {
-      "meaning": "op 名不在册（可能拼错或已改名）",
+    "BAD_PARAMS": {
+      "meaning": "调用参数名或个数不对（签名不匹配）",
       "who": "caller",
-      "retryable": false,
-      "action": "调 op=\"list\" 取全部 op；返回体的 candidates 是相近名建议",
-      "raisedBy": [
-        "mcp_server.py"
-      ]
-    },
-    "OP_RENAMED": {
-      "meaning": "op 已合并/改名，旧名不再提供",
-      "who": "caller",
-      "retryable": false,
-      "action": "直接用返回 hint 里的新名字",
-      "raisedBy": [
-        "mcp_server.py"
-      ]
-    },
-    "CONTRACT_UNAVAILABLE": {
-      "meaning": "op 契约注册表（op_spec.json）不可用 —— 分级筛选/describe 拿不到契约",
-      "who": "env",
-      "retryable": false,
-      "action": "确认仓库里 op_spec.json 存在且是合法 JSON；若是打包版则重装 MCP",
-      "raisedBy": [
-        "mcp_server.py"
-      ]
-    },
-    "MODULE_MISSING": {
-      "meaning": "这个 op 依赖的组件/模块不在（缺依赖或文件被删）",
-      "who": "env",
-      "retryable": false,
-      "action": "按 hint 装缺的依赖（requirements.lock）或恢复仓库里的模块文件",
-      "raisedBy": [
-        "kb_tools.py"
-      ]
-    },
-    "DATA_MISSING": {
-      "meaning": "该 op 要的数据文件不存在（如工程里缺某个 json）",
-      "who": "env",
-      "retryable": false,
-      "action": "先补齐数据（多数情况是先跑上游 op 生成它），或核对路径",
-      "raisedBy": [
-        "kb_tools.py"
-      ]
-    },
-    "NO_PROJECT": {
-      "meaning": "路径不是 FlyThings 工程（没找到 ui/ 或 .settings/）",
-      "who": "env",
-      "retryable": false,
-      "action": "确认 project_root 指向工程根；没有工程就先 flythings_create_project",
-      "raisedBy": [
-        "kb_tools.py"
-      ]
-    },
-    "NO_PAGE": {
-      "meaning": "工程里没有这个页面（ui/*.json 不存在）",
-      "who": "caller",
-      "retryable": false,
-      "action": "用 flythings_read_json 看有哪些页（也就是有哪些 ui/*.json）",
-      "raisedBy": [
-        "kb_tools.py"
-      ]
-    },
-    "NO_DEVICE": {
-      "meaning": "没有可用设备 / 指定设备不在线",
-      "who": "device",
       "retryable": true,
-      "action": "确认设备已连（USB 或 adb connect），再用 flythings_device_preflight 看设备发现结果",
+      "action": "按返回 hint 里的正确签名改参数名后重试",
       "raisedBy": [
         "kb_tools.py"
-      ]
-    },
-    "NO_PLATFORM": {
-      "meaning": "没给平台，且无法推断",
-      "who": "caller",
-      "retryable": false,
-      "action": "显式传 platform（型号可用 flythings_hardware_info(model=…) 换）",
-      "raisedBy": [
-        "hardware_tools.py"
       ]
     },
     "BAD_PLATFORM": {
@@ -116,33 +35,6 @@
         "hardware_tools.py"
       ]
     },
-    "PLATFORM_NOT_IN_HARDWARE_LIB": {
-      "meaning": "平台没有对应的硬件资料条目",
-      "who": "env",
-      "retryable": false,
-      "action": "该平台的 hardware_catalog 条目还没收录 —— 先按通用平台处理，或反馈补录",
-      "raisedBy": [
-        "hardware_tools.py"
-      ]
-    },
-    "MODEL_NOT_FOUND": {
-      "meaning": "型号名查不到",
-      "who": "caller",
-      "retryable": false,
-      "action": "换个写法（型号/平台别名）再查，或用 platform= 直接指定平台",
-      "raisedBy": [
-        "hardware_tools.py"
-      ]
-    },
-    "NO_HIT": {
-      "meaning": "检索/映射命中为空（没找到对应项）",
-      "who": "caller",
-      "retryable": false,
-      "action": "换更通用的词再试；返回体里通常带 candidates（相近项）",
-      "raisedBy": [
-        "kb_tools.py"
-      ]
-    },
     "BAD_SOURCE": {
       "meaning": "传入的源码/文件不是支持的形态",
       "who": "caller",
@@ -152,38 +44,20 @@
         "kb_tools.py"
       ]
     },
-    "SEARCH_FAILED": {
-      "meaning": "检索后端出错（索引缺失 / embedding 不可用）",
+    "CONTRACT_UNAVAILABLE": {
+      "meaning": "op 契约注册表（op_spec.json）不可用 —— 分级筛选/describe 拿不到契约",
       "who": "env",
-      "retryable": true,
-      "action": "确认 rag_index.json 存在（跑 rebuild_index_local.py）；仍失败会降级 BM25",
+      "retryable": false,
+      "action": "确认仓库里 op_spec.json 存在且是合法 JSON；若是打包版则重装 MCP",
       "raisedBy": [
-        "kb_tools.py"
+        "mcp_server.py"
       ]
     },
-    "GENERATE_FAILED": {
-      "meaning": "资源生成失败（出图/出文件环节）",
+    "DATA_MISSING": {
+      "meaning": "该 op 要的数据文件不存在（如工程里缺某个 json）",
       "who": "env",
-      "retryable": true,
-      "action": "看 hint 里的具体原因（多为缺 Pillow/字体）；补齐依赖后重试",
-      "raisedBy": [
-        "kb_tools.py"
-      ]
-    },
-    "TOOL_RAISED": {
-      "meaning": "op 内部抛了未捕获异常 —— 本仓缺陷",
-      "who": "bug",
       "retryable": false,
-      "action": "把整条返回（含 op 名与 message）反馈给官方；这是没被兜住的异常，不是用法问题",
-      "raisedBy": [
-        "kb_tools.py"
-      ]
-    },
-    "DIFF_BASE_MISSING": {
-      "meaning": "像素对比没有基线（还没存过）",
-      "who": "caller",
-      "retryable": false,
-      "action": "先用 action=\"baseline\" mode=\"save\" 存一张基线，再 diff",
+      "action": "先补齐数据（多数情况是先跑上游 op 生成它），或核对路径",
       "raisedBy": [
         "kb_tools.py"
       ]
@@ -197,11 +71,11 @@
         "kb_tools.py"
       ]
     },
-    "EVIDENCE_MISSING": {
-      "meaning": "自检项缺证据（该有的日志/分区快照没取到）",
-      "who": "device",
-      "retryable": true,
-      "action": "确认设备在线且命令可用（缺命令先按 busybox 口径补）；再跑一次自检",
+    "DIFF_BASE_MISSING": {
+      "meaning": "像素对比没有基线（还没存过）",
+      "who": "caller",
+      "retryable": false,
+      "action": "先用 action=\"baseline\" mode=\"save\" 存一张基线，再 diff",
       "raisedBy": [
         "kb_tools.py"
       ]
@@ -215,6 +89,141 @@
         "kb_tools.py"
       ],
       "framework": true
+    },
+    "EVIDENCE_MISSING": {
+      "meaning": "自检项缺证据（该有的日志/分区快照没取到）",
+      "who": "device",
+      "retryable": true,
+      "action": "确认设备在线且命令可用（缺命令先按 busybox 口径补）；再跑一次自检",
+      "raisedBy": [
+        "kb_tools.py"
+      ]
+    },
+    "FB_UNREADABLE": {
+      "meaning": "设备 `/dev/fb0` 读不了（0 字节 / 无节点 / 权限）",
+      "who": "device",
+      "retryable": false,
+      "action": "先看有没有卡住的读取进程（返回体带 fbStrays）——有就先别反复重试；视频层改用 `layer=\"video\"`（走 zkshot，不碰 fb）；仍不行按现场设备情况排查",
+      "raisedBy": [
+        "ui_tools/device_screenshot.py"
+      ]
+    },
+    "GENERATE_FAILED": {
+      "meaning": "资源生成失败（出图/出文件环节）",
+      "who": "env",
+      "retryable": true,
+      "action": "看 hint 里的具体原因（多为缺 Pillow/字体）；补齐依赖后重试",
+      "raisedBy": [
+        "kb_tools.py"
+      ]
+    },
+    "MODEL_NOT_FOUND": {
+      "meaning": "型号名查不到",
+      "who": "caller",
+      "retryable": false,
+      "action": "换个写法（型号/平台别名）再查，或用 platform= 直接指定平台",
+      "raisedBy": [
+        "hardware_tools.py"
+      ]
+    },
+    "MODULE_MISSING": {
+      "meaning": "这个 op 依赖的组件/模块不在（缺依赖或文件被删）",
+      "who": "env",
+      "retryable": false,
+      "action": "按 hint 装缺的依赖（requirements.lock）或恢复仓库里的模块文件",
+      "raisedBy": [
+        "kb_tools.py"
+      ]
+    },
+    "NO_DEVICE": {
+      "meaning": "没有可用设备 / 指定设备不在线",
+      "who": "device",
+      "retryable": true,
+      "action": "确认设备已连（USB 或 adb connect），再用 flythings_device_preflight 看设备发现结果",
+      "raisedBy": [
+        "kb_tools.py"
+      ]
+    },
+    "NO_HIT": {
+      "meaning": "检索/映射命中为空（没找到对应项）",
+      "who": "caller",
+      "retryable": false,
+      "action": "换更通用的词再试；返回体里通常带 candidates（相近项）",
+      "raisedBy": [
+        "kb_tools.py"
+      ]
+    },
+    "NO_PAGE": {
+      "meaning": "工程里没有这个页面（ui/*.json 不存在）",
+      "who": "caller",
+      "retryable": false,
+      "action": "用 flythings_read_json 看有哪些页（也就是有哪些 ui/*.json）",
+      "raisedBy": [
+        "kb_tools.py"
+      ]
+    },
+    "NO_PLATFORM": {
+      "meaning": "没给平台，且无法推断",
+      "who": "caller",
+      "retryable": false,
+      "action": "显式传 platform（型号可用 flythings_hardware_info(model=…) 换）",
+      "raisedBy": [
+        "hardware_tools.py"
+      ]
+    },
+    "NO_PROJECT": {
+      "meaning": "路径不是 FlyThings 工程（没找到 ui/ 或 .settings/）",
+      "who": "env",
+      "retryable": false,
+      "action": "确认 project_root 指向工程根；没有工程就先 flythings_create_project",
+      "raisedBy": [
+        "kb_tools.py"
+      ]
+    },
+    "OP_RENAMED": {
+      "meaning": "op 已合并/改名，旧名不再提供",
+      "who": "caller",
+      "retryable": false,
+      "action": "直接用返回 hint 里的新名字",
+      "raisedBy": [
+        "mcp_server.py"
+      ]
+    },
+    "PLATFORM_NOT_IN_HARDWARE_LIB": {
+      "meaning": "平台没有对应的硬件资料条目",
+      "who": "env",
+      "retryable": false,
+      "action": "该平台的 hardware_catalog 条目还没收录 —— 先按通用平台处理，或反馈补录",
+      "raisedBy": [
+        "hardware_tools.py"
+      ]
+    },
+    "SEARCH_FAILED": {
+      "meaning": "检索后端出错（索引缺失 / embedding 不可用）",
+      "who": "env",
+      "retryable": true,
+      "action": "确认 rag_index.json 存在（跑 rebuild_index_local.py）；仍失败会降级 BM25",
+      "raisedBy": [
+        "kb_tools.py"
+      ]
+    },
+    "TOOL_RAISED": {
+      "meaning": "op 内部抛了未捕获异常 —— 本仓缺陷",
+      "who": "bug",
+      "retryable": false,
+      "action": "把整条返回（含 op 名与 message）反馈给官方；这是没被兜住的异常，不是用法问题",
+      "raisedBy": [
+        "kb_tools.py"
+      ]
+    },
+    "UNKNOWN_OP": {
+      "meaning": "op 名不在册（可能拼错或已改名）",
+      "who": "caller",
+      "retryable": false,
+      "action": "调 op=\"list\" 取全部 op；返回体的 candidates 是相近名建议",
+      "raisedBy": [
+        "mcp_server.py"
+      ]
     }
   },
   "derivations": {

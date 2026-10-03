@@ -162,6 +162,34 @@ class TestPromptDerivation(unittest.TestCase):
         self.assertNotIn('{resolution}', body)
 
 
+class TestCallParamsMatchSignature(unittest.TestCase):
+    """流程文档里写的 op 调用，参数名必须与真实签名一致。
+
+    真实踩到的：`fui_pack` 的真实签名是 `json_path`，而流程页写的是 `project_root=`
+    —— AI 照文档调用必吃 BAD_PARAMS，而文档看起来"很权威"。
+    """
+
+    def test_no_wrong_param_names_in_docs(self):
+        self.assertEqual(F.cross_check(), [])
+
+    def test_checker_itself_works(self):
+        """防『扫不到东西所以永远绿』：用已知的错例喂进去，必须报出来。"""
+        sigs = F._signatures()
+        self.assertTrue(sigs, '取不到 kb_tools 的函数签名 —— 该检查会静默失效')
+        self.assertIn('flythings_fui_pack', sigs)
+        errs = []
+        F._check_calls('`flythings_fui_pack(project_root="D:/p")`', 'X', errs, set(sigs), sigs)
+        self.assertEqual(len(errs), 1, '错的参数名没被抓出来')
+        self.assertIn('json_path', errs[0])
+
+    def test_checker_accepts_correct_call(self):
+        sigs = F._signatures()
+        errs = []
+        F._check_calls('`flythings_fui_pack(json_path="D:/p/ui/main.json")`', 'X',
+                       errs, set(sigs), sigs)
+        self.assertEqual(errs, [])
+
+
 class TestSkillDerivation(unittest.TestCase):
 
     def test_render_has_frontmatter_and_iron_rules(self):

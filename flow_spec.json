@@ -97,7 +97,7 @@
       "title": "HTML 原型 → ui json",
       "op": "flythings_html_to_json",
       "how": [
-        "`flythings_html_to_json(html=\"<文件路径>\", project_root=\"<目标工程>\")`",
+        "`flythings_html_to_json(input_html=\"<HTML 文件路径>\", output_json=\"<目标工程>/ui/main.json\")`",
         "它做的事：受限 HTML/CSS → 逐控件映射；**CSS 视觉效果（阴影/渐变/圆角）自动转成图片**；产物图片尺寸 == 控件盒；返回控件清单 + 未识别项"
       ],
       "gate": "precondition",
@@ -124,7 +124,7 @@
       "title": "先出预览稿让用户点头",
       "op": "flythings_ui_preview",
       "how": [
-        "排版稿：`flythings_ui_preview(project_root=…)` → HTML 预览（只交 html，不产图片）",
+        "排版稿：`flythings_ui_preview(target=\"<项目>\")` → HTML 预览（只交 html，不产图片）",
         "组件 / 图片：`flythings_generate_ui_assets(...)` 生成到 `<项目>/resources/images/`"
       ],
       "gate": "user-confirm",
@@ -178,7 +178,7 @@
       "title": "先摸清现状（别凭文件名猜）",
       "op": "flythings_read_json",
       "how": [
-        "`flythings_read_json(path=\"<项目>/ui/main.json\")` —— 分辨率、控件列表、caption → id 映射",
+        "`flythings_read_json(json_path=\"<项目>/ui/main.json\")` —— 分辨率、控件列表、caption → id 映射",
         "`flythings_get_project_spec()` —— 目录规则 / 生成规则 / 注意事项"
       ],
       "gotchas": [
@@ -227,7 +227,7 @@
       "title": "检索包生态",
       "op": "flythings_package_search",
       "how": [
-        "`flythings_package_search(query=\"mqtt\")` —— **有包用包，禁止手写协议栈 / 库**"
+        "`flythings_package_search(keyword=\"mqtt\")` —— **有包用包，禁止手写协议栈 / 库**"
       ]
     },
     "package-api": {
@@ -252,7 +252,7 @@
       "title": "解析依赖 + 核对声明",
       "op": "flythings_resolve_dependencies",
       "how": [
-        "`flythings_resolve_dependencies(project_root=…)` —— 递归解析 + 冲突 / 循环检查",
+        "`flythings_resolve_dependencies(packages=\"<包名>\", platform=\"<平台>\")` —— 递归解析 + 冲突 / 循环检查",
         "`flythings_check_project_deps(project_root=…)` —— 源码 `include` 与 Manifest 声明是否一致"
       ]
     },
@@ -306,7 +306,7 @@
       "title": "打包",
       "op": "flythings_fui_pack",
       "how": [
-        "`flythings_fui_pack(project_root=…)` —— json → ftu（设备实际加载 ftu）",
+        "`flythings_fui_pack(json_path=\"<项目>/ui/main.json\")` —— json → ftu（设备实际加载 ftu）",
         "交付 / 量产固化（**掉电保留**）：`flythings_pack_upgrade` —— 与调试推送是两回事"
       ],
       "gotchas": [
