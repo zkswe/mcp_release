@@ -483,3 +483,50 @@ top-1 常被同内容的散文页 `activity-code-skeleton.md` / `widget-code-api
 **闸门化**：登记过的组件，非代表平台的行**不许再出现「未验证」**（改口径就得改单元格，不是留 TODO 挂着）。
 4 篇组件 `platforms.md` 的手写口径行（"没实测的一律写未验证"）也一并加上例外说明，避免正文与表分叉。
 —— 于是注册表里的「未验证」从 42 处降到 **32 处**（那 32 处要设备，才是真正的待办）。
+
+---
+
+## 18. 组件在 V85X 的首次实编复验（2026-10-03）
+
+需求方口径：**UI 不需要逐平台验证，一个平台验好即可验收**；设备 USB V85X 已接入。
+ui_v1 四件上一轮已按单平台验收，故本轮转向**显示/媒体组件**。
+
+### 18.1 方法（可复现）
+
+```
+cp -r templates/HelloWord_V85X /tmp/v85x_base
+cp toolchain/fun.exe toolchain/fui.exe /tmp/v85x_base/
+cp -r components/<名>/include/* /tmp/v85x_base/src/      # include 根就是 src/（见 .fsc/v85x/CMakeLists.txt）
+mkdir -p /tmp/v85x_base/src/comp_<名>
+cp components/<名>/src/*.cpp /tmp/v85x_base/src/comp_<名>/
+cd /tmp/v85x_base && ./fun.exe build                     # fsc 自动扫 src/ 生成 CMakeLists
+```
+
+工具链 `arm-unknown-linux-musleabihf-gcc`（V85X = ARMv7 **musl**）。
+基准：未改动的模板本身 9/9 编过、链成 `libzkgui.so`。
+
+### 18.2 结果
+
+| 组件 | V85X | 证据 / 卡点 |
+|---|---|---|
+| **blur** | ✅ **可编译可链接** | 标量 `zk_blur.cpp` + RVV 桩 `zk_blur_rvv.cpp`（`#ifdef __riscv_vector` … `#else` 桩，**跨架构回退设计成立**）→ 12/12 编过并链成 `libzkgui.so` |
+| **imagecache** | ✅ **可编译可链接** | `zk_imagecache.cpp` 只依赖标准库 + pthread，无外部包 |
+| **vinyl** | ❌ **不可用（缺 nanovg 包）** | 核心 `zk_vinyl.cpp` 需 `<nanovg.h>`；V85X registry 只有 5 个包、**无 nanovg**，仓库离线 `packages/` 也没有 |
+| **wall_sync** | ❌ **不可用（缺 rapidjson 包）** | `zk_wall_sync.cpp` 需 `<rapidjson/document.h>`；声明 `rapidjson 1.1.0` 后 `fun install` 拉 `packages/v85x/rapidjson/1.1.0.zip` → **502 Bad Gateway** |
+| **blend2d** | ❌ 无库（**原本就已正确标注**） | 只有 `lib/z20/` 与 `z20-neon` 的 `.so`，其 `NEEDED` 是 glibc，musl 平台没有 |
+| **icons** | ➖ 平台无关（**原本就已正确标注**） | 纯 PNG 资源 + 三条硬规则，无平台分支 |
+
+### 18.3 一条比"未验证"更有用的结论
+
+**V85X 的包 registry 只有 5 个基础包**（base-utility / easyui / log / zkhardware / zknet），
+而 Z20 有 20+。所以"组件在 V85X 能不能用"的**主要卡点是包供给，不是组件代码** ——
+`vinyl` / `wall_sync` 属于这类，现在是明确的「❌ 不可用」而不是含糊的「未验证」。
+
+未验证单元格 **32 → 30**：blur/imagecache 的 V85X 格由「未验证」变「✅ 已实编」；
+vinyl/wall_sync 由「未验证」变「❌ 不可用」——后者其实是**更强的结论**（知道为什么不行）。
+
+### 18.4 单机验不了的那一类
+
+`wall_sync` 的核心是**拼墙相位对齐**，需要 ①可注入硬解引擎 ②各机可校时 ③MI 图层多实例
+—— **一台设备验不了**，必须多台同型号组墙。这类"未验证"不该被单平台口径消化掉，
+已在它的 `platforms.md §1` 里写明"这一条单机验不了"。

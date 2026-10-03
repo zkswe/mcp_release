@@ -74,7 +74,8 @@
 |---|---|
 | F133 / F135 / F136（C906，musl） | **已实测**（上表）；RVV 档可用但要整工程开关 |
 | Z20 / Z21（ARM glibc） | **未验证**（纯整数代码，无平台依赖；`down`/`radius` 口径通用） |
-| T113 / V85X（ARM musl） | **未验证** |
+| V85X（ARM musl） | ✅ **可实现**（2026-10-03 V85X 真机工具链实编）：标量 `zk_blur.cpp` + RVV 桩 `zk_blur_rvv.cpp`（`#ifdef __riscv_vector` 回退） 在 `arm-unknown-linux-musleabihf-gcc` 下编过并链成 `libzkgui.so` |
+| T113（ARM musl） | **未验证**（同为 ARM musl、同工具链，预期一致 —— 但未实测，不写「应该可以」） |
 
 ## 4. 已知限制
 

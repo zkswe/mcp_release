@@ -111,7 +111,8 @@ evidence:
 |---|---|
 | F133 / F135 / F136（C906，musl） | **已实测**（上表）；RVV 档可用但要整工程开关 |
 | Z20 / Z21（ARM glibc） | **未验证**（纯整数代码，无平台依赖；`down`/`radius` 口径通用） |
-| T113 / V85X（ARM musl） | **未验证** |
+| V85X（ARM musl） | ✅ **可实现**（2026-10-03 V85X 真机工具链实编）：标量 `zk_blur.cpp` + RVV 桩 `zk_blur_rvv.cpp`（`#ifdef __riscv_vector` 回退） 在 `arm-unknown-linux-musleabihf-gcc` 下编过并链成 `libzkgui.so` |
+| T113（ARM musl） | **未验证**（同为 ARM musl、同工具链，预期一致 —— 但未实测，不写「应该可以」） |
 
 ### ha_bridge
 
@@ -147,7 +148,8 @@ evidence:
 |---|---|
 | F133 / F135 / F136（C906，musl） | F133 **已实测**（规格同上，经工程内联版）；F135/F136 **未验证** |
 | Z20 / Z21（ARM glibc） | **未验证**。⚠️ 内存敏感：36~128 MB 板的 `capacity` 别按 128 抄，先按 §1 的公式算账 |
-| T113 / V85X（ARM musl） | **未验证** |
+| V85X（ARM musl） | ✅ **可实现**（2026-10-03 V85X 真机工具链实编）：`zk_imagecache.cpp`（仅标准库 + pthread） 在 `arm-unknown-linux-musleabihf-gcc` 下编过并链成 `libzkgui.so` |
+| T113（ARM musl） | **未验证**（同为 ARM musl、同工具链，预期一致 —— 但未实测，不写「应该可以」） |
 
 ### mp_transfer
 
@@ -227,7 +229,7 @@ evidence:
 | F135 | 未验证 | 未验证 | — | 与 F133 同核（C906 RISC-V），预期一致（待测） |
 | Z20 / Z21 | 未验证 | 未验证（注册表有 nanovg 包则可用） | — | 待测 |
 | T113 | 未验证 | 未验证 | — | 待测 |
-| V85X | 未验证 | 未验证 | — | 待测（若是 MCU Lite 平台，本组件**不适用**：那是 `.form`/`zkres.bin` 体系） |
+| V85X | ❌ **不可用**（缺 `nanovg` 包） | ❌ **不可用**（同上） | — | V85X registry 只有 base-utility/easyui/log/zkhardware/zknet，**无 `nanovg`**；仓库离线包也没有。核心 `zk_vinyl.cpp` 需要 `<nanovg.h>` —— 本组件在 V85X 上**编不过**（2026-10-03 V85X 真机工具链实编）。注：V85X（SPINOR）**不是** MCU Lite，不适用「本组件不适用」那条 |
 
 ### wall_sync
 
@@ -240,7 +242,7 @@ evidence:
 | F133 / F135 / F136 | `未验证` | 组件本身是纯 C++11 + POSIX（socket/pthread/clock_gettime）+ rapidjson，**编译大概率没问题**；但"拼墙相位对齐"链条依赖：① 平台有可注入的硬解引擎；② 各机墙钟可校时；③ MI/图层支持多实例。以上均**未在 F133 系上做过拼墙实测** |
 | Z21 | `未验证` | 同上；来源工程只在 Z20 上做拼墙 |
 | T113 / T113EMMC | `未验证` | 同上 |
-| V85X | `未验证` | 同上 |
+| V85X | ❌ **不可用**（缺 `rapidjson` 包） | 核心 `zk_wall_sync.cpp` 需要 `<rapidjson/document.h>`。声明 `rapidjson 1.1.0` 后 `fun install` 去拉 `packages/v85x/rapidjson/1.1.0.zip` → **502 Bad Gateway**（V85X 无此包）（2026-10-03 V85X 真机工具链实编） |
 
 ## 4. 怎么用 / 怎么改
 

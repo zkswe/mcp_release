@@ -268,17 +268,27 @@
           ]
         },
         {
-          "platform": "T113 / V85X（ARM musl）",
+          "platform": "V85X（ARM musl）",
           "platforms": [
-            "V85X",
-            "T113"
+            "V85X"
           ],
           "canonical": [
-            "T113",
             "V85X"
           ],
           "cells": [
-            "**未验证**"
+            "✅ **可实现**（2026-10-03 V85X 真机工具链实编）：标量 `zk_blur.cpp` + RVV 桩 `zk_blur_rvv.cpp`（`#ifdef __riscv_vector` 回退） 在 `arm-unknown-linux-musleabihf-gcc` 下编过并链成 `libzkgui.so`"
+          ]
+        },
+        {
+          "platform": "T113（ARM musl）",
+          "platforms": [
+            "T113"
+          ],
+          "canonical": [
+            "T113"
+          ],
+          "cells": [
+            "**未验证**（同为 ARM musl、同工具链，预期一致 —— 但未实测，不写「应该可以」）"
           ]
         }
       ]
@@ -469,17 +479,27 @@
           ]
         },
         {
-          "platform": "T113 / V85X（ARM musl）",
+          "platform": "V85X（ARM musl）",
           "platforms": [
-            "V85X",
-            "T113"
+            "V85X"
           ],
           "canonical": [
-            "T113",
             "V85X"
           ],
           "cells": [
-            "**未验证**"
+            "✅ **可实现**（2026-10-03 V85X 真机工具链实编）：`zk_imagecache.cpp`（仅标准库 + pthread） 在 `arm-unknown-linux-musleabihf-gcc` 下编过并链成 `libzkgui.so`"
+          ]
+        },
+        {
+          "platform": "T113（ARM musl）",
+          "platforms": [
+            "T113"
+          ],
+          "canonical": [
+            "T113"
+          ],
+          "cells": [
+            "**未验证**（同为 ARM musl、同工具链，预期一致 —— 但未实测，不写「应该可以」）"
           ]
         }
       ],
@@ -977,10 +997,10 @@
             "V85X"
           ],
           "cells": [
-            "未验证",
-            "未验证",
+            "❌ **不可用**（缺 `nanovg` 包）",
+            "❌ **不可用**（同上）",
             "—",
-            "待测（若是 MCU Lite 平台，本组件**不适用**：那是 `.form`/`zkres.bin` 体系）"
+            "V85X registry 只有 base-utility/easyui/log/zkhardware/zknet，**无 `nanovg`**；仓库离线包也没有。核心 `zk_vinyl.cpp` 需要 `<nanovg.h>` —— 本组件在 V85X 上**编不过**（2026-10-03 V85X 真机工具链实编）。注：V85X（SPINOR）**不是** MCU Lite，不适用「本组件不适用」那条"
           ]
         }
       ]
@@ -1057,8 +1077,8 @@
             "V85X"
           ],
           "cells": [
-            "`未验证`",
-            "同上"
+            "❌ **不可用**（缺 `rapidjson` 包）",
+            "核心 `zk_wall_sync.cpp` 需要 `<rapidjson/document.h>`。声明 `rapidjson 1.1.0` 后 `fun install` 去拉 `packages/v85x/rapidjson/1.1.0.zip` → **502 Bad Gateway**（V85X 无此包）（2026-10-03 V85X 真机工具链实编）"
           ]
         }
       ],

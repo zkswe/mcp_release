@@ -22,7 +22,7 @@
 | F135 | 未验证 | 未验证 | — | 与 F133 同核（C906 RISC-V），预期一致（待测） |
 | Z20 / Z21 | 未验证 | 未验证（注册表有 nanovg 包则可用） | — | 待测 |
 | T113 | 未验证 | 未验证 | — | 待测 |
-| V85X | 未验证 | 未验证 | — | 待测（若是 MCU Lite 平台，本组件**不适用**：那是 `.form`/`zkres.bin` 体系） |
+| V85X | ❌ **不可用**（缺 `nanovg` 包） | ❌ **不可用**（同上） | — | V85X registry 只有 base-utility/easyui/log/zkhardware/zknet，**无 `nanovg`**；仓库离线包也没有。核心 `zk_vinyl.cpp` 需要 `<nanovg.h>` —— 本组件在 V85X 上**编不过**（2026-10-03 V85X 真机工具链实编）。注：V85X（SPINOR）**不是** MCU Lite，不适用「本组件不适用」那条 |
 
 ## 刷新口径（各平台一致，务必照做）
 

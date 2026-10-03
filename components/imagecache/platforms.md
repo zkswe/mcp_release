@@ -15,7 +15,8 @@
 |---|---|
 | 平台依赖 | **零**（装载/释放由调用方回调注入；平台差异全在调用方那一层） |
 | 真机实测平台 | **F133**（C906，musl）—— 经 iOSStyle-F133 工程内联版 |
-| 其它平台 | Z20 / Z21 / T113 / V85X / F135 / F136：**未验证**（代码无平台分支，理论上通用） |
+| 其它平台 | Z20 / Z21 / T113 / F135 / F136：**未验证**（代码无平台分支，理论上通用） |
+| **V85X** | ✅ **可实现**（2026-10-03 V85X 真机工具链实编）：`zk_imagecache.cpp` 在 `arm-unknown-linux-musleabihf-gcc` 下编过并链成 `libzkgui.so` —— 见 §3 矩阵 |
 | PC | **已实测自测**（llvm-mingw g++ 与 Linux g++ 两套：29/29 PASS，见 §4） |
 | 内存口径 | 槽位是「内存换速度」：`capacity × 单图解码体积`；F133 实测 8~40 张时 `VmRSS ≈ 8964 kB` |
 
@@ -67,7 +68,8 @@ ImageCache 装载 /tmp/cm_riv_rec0_280x280_9.png 槽=9/128      ← 新一批（
 |---|---|
 | F133 / F135 / F136（C906，musl） | F133 **已实测**（规格同上，经工程内联版）；F135/F136 **未验证** |
 | Z20 / Z21（ARM glibc） | **未验证**。⚠️ 内存敏感：36~128 MB 板的 `capacity` 别按 128 抄，先按 §1 的公式算账 |
-| T113 / V85X（ARM musl） | **未验证** |
+| V85X（ARM musl） | ✅ **可实现**（2026-10-03 V85X 真机工具链实编）：`zk_imagecache.cpp`（仅标准库 + pthread） 在 `arm-unknown-linux-musleabihf-gcc` 下编过并链成 `libzkgui.so` |
+| T113（ARM musl） | **未验证**（同为 ARM musl、同工具链，预期一致 —— 但未实测，不写「应该可以」） |
 
 前置条件：无（不需要串口/属性门/固件版本）。**唯一前置 = 装载回调必须返回「框架资源表里被持有的位图」**
 （FlyThings = `BitmapHelper::loadBitmapFromFile`），否则缓存持有了别人随时会释放的指针。

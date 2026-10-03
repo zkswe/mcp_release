@@ -78,17 +78,19 @@
 代表平台 = **V85X**。ui_v1 四件（RadButton / Chart / Calendar / _mapping·TabView）上一轮已按
 标准 fun 链路（`fun install` → `fun build` → `fun launch`）真机验收，其余平台标 `➖ 不逐平台验`。
 
-**待你拍的一块**：另外 **8 个显示/媒体组件**（blur / imagecache / vinyl / wall_sync / blend2d /
-ha_bridge / mp_transfer / icons）在注册表里还挂着 **32 个「未验证」单元格**。它们与 ui_v1 性质不同 ——
-是**源码型**组件（`include/` + `src/` + `example/`，示例多是 PC 自测程序），"平台可用性"= 能不能在该平台编译跑通，
-且部分带**架构专属代码路径**（如 blur 有 RVV 版）。各自已有单平台实测：
+**已复验（2026-10-03，V85X 真机工具链实编）** —— 详见 `CONSOLIDATION.md §18`：
 
-| 组件 | 已在哪个平台实测 | 性质 |
-|---|---|---|
-| blur / imagecache / vinyl | **F133**（C906） | 显示/媒体 |
-| wall_sync / blend2d / ha_bridge | **Z20** | 显示/媒体（ha_bridge 为 HA 桥接，非 UI） |
-| icons | — | **平台无关**（纯 PNG 资源 + 三条硬规则） |
-| mp_transfer | **本仓未验**（文档自己写着「没有任何一格写已验证」） | 小程序传输，非 UI |
+| 组件 | V85X 结论 |
+|---|---|
+| blur / imagecache | ✅ **可编译可链接**（在 `arm-unknown-linux-musleabihf-gcc` 下编过并链成 `libzkgui.so`） |
+| vinyl | ❌ **不可用** —— 缺 `nanovg` 包（V85X registry 无、离线包也没有） |
+| wall_sync | ❌ **不可用** —— 缺 `rapidjson` 包（`fun install` 拉 v85x 源 → **502**） |
+| blend2d / icons | 原本就已正确标注（无 V85X 库 / 平台无关） |
+
+> 主要卡点是 **V85X 的包 registry 只有 5 个基础包**（Z20 有 20+）——
+> 这是包供给问题，不是组件代码问题。未验证单元格 32 → 30。
+>
+> `wall_sync` 的**拼墙相位对齐**单机验不了（需多台同型号组墙），属另一类，不并入单平台口径。
 
 ## 六、需要你给的输入
 
