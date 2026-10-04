@@ -29,7 +29,9 @@ _PATTERNS = (
     re.compile(r"_err_json\(\s*['\"]([A-Z][A-Z0-9_]{2,})['\"]"),
     re.compile(r"['\"]code['\"]\s*:\s*['\"]([A-Z][A-Z0-9_]{2,})['\"]"),
 )
-_SKIP_DIRS = {'.git', 'node_modules', '__pycache__', 'Release', '.fun', '.workbuddy',
+# 扫源码找错误码时的跳过目录：构建产物目录**两代都跳**（09-28 起 `.fun/` 改名 `.fsc/`；
+# 本扫描只看 .py，所以影响面小，但口径要与全仓一致 —— 别只认一代）。
+_SKIP_DIRS = {'.git', '.fsc', '.fun', 'node_modules', '__pycache__', 'Release', '.workbuddy',
               'tests', 'knowledge', 'demos', 'templates', 'components', 'bin_tools'}
 
 

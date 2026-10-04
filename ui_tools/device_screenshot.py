@@ -41,6 +41,7 @@ device_screenshot.py — 从设备真机抓屏，转成 PNG / JPG / BMP 交给 A
 import argparse
 import gzip
 import json
+import io
 import os
 import re
 import shutil
@@ -248,6 +249,23 @@ def adb_missing_msg():
 
 
 def _run(args, timeout=60, binary=False):
+    """跑 adb 子命令 → (rc, stdout, stderr)。
+
+    ⚠️ 全仓 adb **执行**的单一入口：转发到 `adb_tools._run`（与 `resolve_adb()` 同源）。
+    只有「本文件被单独拷走、脱离仓库」时才走下面的降级实现。
+
+    为什么要改（2026-10-03 评审实测）：此前 `resolve_adb` 是单一入口、**执行不是** ——
+    本模块自己写了一份 `subprocess`。后果是契约用例的离线守卫（tests/_util.py 只拦
+    `adb_tools._run`）漏了这个洞：截图/测试跑批类用例仍会去连真 adb，本机挂设备时全套
+    从文档宣称的 12s 涨到 >900s，把发布闸门自己的超时撞爆。
+    """
+    at = _repo_adb_tools()
+    if at is not None and getattr(at, '_run', None) is not None:
+        rc, out, err = at._run(args, timeout=timeout)
+        if binary:
+            return rc, (out or '').encode('utf-8', 'replace'), err
+        return rc, out or '', err
+    # ---- 降级路径（脱离仓库单独使用本文件时）----
     try:
         r = subprocess.run(args, capture_output=True, timeout=timeout)
         if binary:
@@ -330,7 +348,7 @@ def _parse_dispsys(text):
 def _parse_easyui_cfg(text):
     """解析**项目工程**的 EasyUI.cfg（设备上 /res/etc/EasyUI.cfg）。
 
-    工程内位置：<项目>/.fun/<平台>/launch/EasyUI.cfg —— 这是取图方向的
+    工程内位置：<项目>/.fsc/<平台>/launch/EasyUI.cfg（09-28 前为 .fun/）—— 这是取图方向的
     权威来源，**不用猜、不要从 fb0/rotate 或图层几何反推**：
       rotateScreen : 屏幕/取图角度（0/90/180/270）
       rotateTouch  : 触摸角度（**可以与之不同**，注入触摸测试时要按它换算）
@@ -542,8 +560,31 @@ MONTHS3 = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
 
 
-def _local_busybox_candidates():
-    """本仓自带的 busybox（随 MCP 发布在 bin_tools/；工作区另有一份 tools/busybox/bin/）"""
+def _device_platform(adb, dev):
+    """设备型号 → 平台（`device_models.json`）。拿不到就返回 ''（调用方保持原顺序）。"""
+    try:
+        import json
+        model = _sh(adb, dev, 'getprop ro.product.model').strip()
+        if not model:
+            return ''
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        p = os.path.join(root, 'device_models.json')
+        if not os.path.isfile(p):
+            return ''
+        entry = (json.load(io.open(p, encoding='utf-8')).get('models') or {}).get(model) or {}
+        return (entry.get('platform') or '').strip()
+    except Exception:
+        return ''
+
+
+def _local_busybox_candidates(prefer=''):
+    """本仓自带的 busybox（随 MCP 发布在 bin_tools/；工作区另有一份 tools/busybox/bin/）。
+
+    `prefer` = 本设备平台（如 'V85X'）：**把本平台那份排到最前**。
+    为什么（2026-10-03 V85X 真机实测）：候选表原先是 glob 顺序（f133→f135→t113→v85x→…），
+    在 V85X 上会先推**别的平台**的 ELF；选不中就没有可用 bb → 退到裸 `dd` → 而这台 rootfs
+    没有 dd（FB_UNREADABLE，读到 0 字节）。按平台排前后该链路一次通过。
+    """
     import glob
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # MCP 根
     pats = [os.path.join(root, 'bin_tools', '*', 'busybox'),
@@ -552,7 +593,12 @@ def _local_busybox_candidates():
     found = []
     for p in pats:
         found.extend(sorted(glob.glob(p)))
-    return [p for p in found if os.path.isfile(p)]
+    found = [p for p in found if os.path.isfile(p)]
+    if prefer:
+        key = os.sep + prefer.lower() + os.sep
+        head = [p for p in found if key in p.lower().replace('/', os.sep)]
+        found = head + [p for p in found if p not in head]
+    return found
 
 
 def _remote_size(adb, dev, path):
@@ -598,7 +644,10 @@ def _pick_busybox(adb, dev, notes):
         if _has_gzip(adb, dev, cand):
             return cand
     pushed = []
-    for local in _local_busybox_candidates():
+    _pref = _device_platform(adb, dev)
+    if _pref:
+        notes.append('按设备平台优先选 busybox：%s' % _pref)
+    for local in _local_busybox_candidates(_pref):
         a = [adb] + (['-s', dev] if dev else []) + ['push', local, '/tmp/busybox']
         rc, _, _ = _run(a, timeout=120)
         if rc != 0:

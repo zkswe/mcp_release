@@ -123,11 +123,21 @@ _SCHEMA_FILL = {
     'textview': {'alignment': 0, 'colorTab': _color_tab(0xFFFFFF), 'fontSize': 16,
                  'touchable': False, 'bold': False, 'italic': False, 'visible': True,
                  'rollEnable': False, 'rollDirection': 1, 'rollIntervalTime': 150,
-                 'rollStep': 5, 'bgColorTab': _color_tab(-1)},
+                 'rollStep': 5, 'bgColorTab': _color_tab(-1),
+                 # 2026-10-03 补齐（真源登记后对账发现 fill 落后；值取实测众数，与真源默认一致）
+                 # ⚠️ 故意**不补 backgroundPic**：valueRules.missingImage 说「图片字段置 '' → 控件不可见」，
+                 #    而真实 IDE 序列化里 backgroundPic 从不空（全仓 333 处只有 1 处空、且来自我们自己的产物）
+                 #    → 空串是否被容忍**未核**，不擅自往 fill 里加（见 CONSOLIDATION §30）。
+                 'backgroundColor': -1, 'fontFamily': 0},
     'button': {'alignment': 5, 'colorTab': _color_tab(0xFFFFFF), 'text': '',
                'touchable': True, 'visible': True, 'picTab': {},
                'longClickTimeOut': -1, 'longClickIntervalTime': -1,
-               'bgColorTab': _color_tab(-1), 'fontSize': 18},
+               'bgColorTab': _color_tab(-1), 'fontSize': 18,
+               # 2026-10-03 补齐（button-fields.md 实测这些键出现率 97.8%/89% —— 正是本表的同一来源）
+               # 同 textview：**不补 backgroundPic**（空串安全性未核）。
+               'backgroundColor': -1, 'bold': False, 'italic': False,
+               'fontFamily': 0, 'rollEnable': False, 'rollDirection': 1,
+               'rollIntervalTime': 150, 'rollStep': 5},
     'window': {'backgroundColor': -1, 'hideTimeOut': -1, 'modal': False,
                'touchable': False, 'visible': True},
     'seekbar': {'backgroundColor': -1, 'backgroundPic': '', 'defProgress': 0, 'max': 100,
@@ -136,11 +146,21 @@ _SCHEMA_FILL = {
     'painter': {'backgroundColor': 0xFFFFFF, 'touchable': False, 'visible': True},
     'edittext': {'alignment': 36, 'bgColorTab': _color_tab(0xFFFFFF), 'bold': False,
                  'colorTab': _color_tab(0x212121), 'fontSize': 16,
-                 'hintTextColor': 0x808080, 'text': '', 'textType': 0},
+                 'hintTextColor': 0x808080, 'text': '', 'textType': 0,
+                 # 2026-10-03 补齐：touchable=True 是硬要求（漏写则输入框点不动、IME 不弹）
+                 'touchable': True, 'visible': True, 'italic': False, 'fontFamily': 0,
+                 'hintText': '', 'isPassword': False, 'passwordChar': '*',
+                 'beepEnable': True, 'rollEnable': False, 'rollDirection': 1,
+                 'rollIntervalTime': 150, 'rollStep': 5},
     'circlebar': {'backgroundColor': -1, 'clockwise': True, 'max': 100, 'maxAngle': 360,
-                  'progressPic': '', 'progressPicPos': 0, 'startAngle': 0,
+                  # ⛔ progressPicPos / touchRange 必须是对象（子盒类型）：写成 int 会让真机
+                  #    页面构造时主线程 100% 空转、无日志（V85X 实测 2026-10-04；注册表 v1.1 已改类型）
+                  'progressPic': '',
+                  'progressPicPos': {'left': 0, 'top': 0, 'width': 0, 'height': 0},
+                  'startAngle': 0,
                   'textColor': 0x212121, 'textSize': 24, 'textType': 0,
-                  'thumb': _THUMB_EMPTY, 'touchRange': 0, 'touchable': False,
+                  'thumb': _THUMB_EMPTY, 'touchRange': {'lower': 0, 'upper': 100},
+                  'touchable': False,
                   'unit': '', 'visible': True},
     'pointer': {'animatable': True, 'backgroundColor': -1, 'backgroundPic': '',
                 'clockwise': True, 'fixedPoint': copy.deepcopy(_POINT_ZERO), 'pointerPic': '',

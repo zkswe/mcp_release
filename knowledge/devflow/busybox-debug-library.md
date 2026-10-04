@@ -52,8 +52,8 @@ adb shell /tmp/busybox telnet <ip> / nc -l -p 5555
 
 ## 重新编译
 
-源码/坑位在本地 `workspace/tools/busybox/README.md`（不入库）；MCP 侧只分发 ELF。
-重编：WSL 内 `wsl bash scripts/bb_build_all.sh all`（构建必须 WSL 原生盘，Windows exe 工具链无法派生 cc1）。
+源码与构建脚本在本地 `workspace/tools/busybox/README.md`（不入库）；MCP 侧只分发 ELF。
+重编：WSL 内跑 busybox 的构建脚本（`bb_build_all.sh all`）—— 该脚本与源码在**本地 workspace、不入库**（构建必须 WSL 原生盘，Windows exe 工具链无法派生 cc1）。
 
 ## 设备端没有的常用命令 → 用 busybox applet（别写“设备不支持”）
 

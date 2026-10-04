@@ -11,6 +11,7 @@
      temp/abtest_a（thumb 对象+缺图）类型检查通过
   ⑥ op flythings_ui_schema 走真实分发路径可路由（清单/指定控件/未知类型三形态）
 """
+import io
 import json
 import os
 import subprocess
@@ -166,6 +167,68 @@ class TestUiSchemaOp(unittest.TestCase):
         r3 = U.jcall('flythings_ui_schema', {'control_type': 'nope_zzz'})
         self.assertFalse(r3['ok'])
         self.assertEqual(r3['error']['code'], 'NO_HIT')
+
+
+class TestGeneratorFieldsAreRegistered(unittest.TestCase):
+    """**我们自己发出去的字段，注册表必须认识**（2026-10-03 全仓对账后钉住）。
+
+    背景：`ui_tools/html2json.py` 的 edittext 分支在 HTML 带 `data-password` /
+    `data-password-char` 时会写 `isPassword` / `passwordChar`，
+    `templates/ui_blocks/compose.py` 的 edittext 模板也恒写这两个；
+    **但注册表（字段唯一真源）当时完全没有它们** → 后果是"生成器写了真源不知道的字段"：
+    按需契约与派生表都不会提密码能力，AI 也就不知道 edittext 能配密码。
+
+    第二批：把**全仓 ui json 实测用到的字段**按控件类型汇总后与注册表对账，
+    又发现 22 个同样的缺口（`textview.backgroundColor` 实测 509 处、`button.fontSize` 290 处…），
+    且 `ui_tools/json2img.py`（与真机截图对齐过 100% 的离线渲染器）也在读它们。
+    这条用例把「生成器会写的键 ⊆ 注册表认识」钉住（同类缺口下次直接红）。
+    """
+
+    # 生成器会写、且必须被注册表认识的键 → {控件类型: {键: 值类型}}
+    # 2026-10-03 第二批：按**全仓 ui json 实测对账**（`temp` 探针扫 52 个 ui json，
+    # 按控件类型汇总"工程在用的字段"，与注册表比对）补进来的 22 个字段名 ——
+    # button 13→24、textview 17→20、edittext 16→23、scrollwindow 6→7。
+    EMITTED = {
+        'edittext': {'isPassword': bool, 'passwordChar': str, 'beepEnable': bool,
+                     'fontFamily': int, 'hintText': str, 'touchable': bool,
+                     'rollEnable': bool, 'rollDirection': int,
+                     'rollIntervalTime': int, 'rollStep': int},
+        'button': {'fontSize': int, 'backgroundColor': int, 'backgroundPic': str,
+                   'bold': bool, 'italic': bool, 'fontFamily': int,
+                   'rollEnable': bool, 'rollDirection': int, 'rollIntervalTime': int,
+                   'rollStep': int, 'textPosition': dict},
+        'textview': {'backgroundColor': int, 'backgroundPic': str, 'textPosition': dict},
+        'scrollwindow': {'touchable': bool},
+    }
+
+    def test_emitted_keys_exist_in_registry(self):
+        import ui_schema_loader as us
+        reg = us.load()
+        for ctype, keys in self.EMITTED.items():
+            fields = reg['controls'][ctype]['fields']
+            for k in keys:
+                self.assertIn(k, fields,
+                              '%s 的 %s 是生成器会写的键，但注册表没有它（生成器写了真源不知道的字段）'
+                              % (ctype, k))
+
+    def test_password_fields_shape(self):
+        import ui_schema_loader as us
+        f = us.load()['controls']['edittext']['fields']
+        self.assertEqual(f['isPassword']['type'], 'bool')
+        self.assertFalse(f['isPassword']['required'], '密码框是可选字段')
+        self.assertEqual(f['passwordChar']['type'], 'string')
+        self.assertFalse(f['passwordChar']['required'])
+        # 派生表要能带上它们：默认值要点列取自「显式 default 的标量字段」
+        self.assertIn('default', f['isPassword'])
+        self.assertIn('default', f['passwordChar'])
+
+    def test_derived_table_mentions_password(self):
+        """派生表（json-field-mandatory.md）必须把它们列出来 —— 否则 AI 读不到密码能力。"""
+        p = os.path.join(U.BASE, 'knowledge', 'uicontrols', 'json-field-mandatory.md')
+        txt = io.open(p, encoding='utf-8').read()
+        row = [ln for ln in txt.splitlines() if ln.startswith('| edittext ')][0]
+        self.assertIn('isPassword', row)
+        self.assertIn('passwordChar', row)
 
 
 if __name__ == '__main__':

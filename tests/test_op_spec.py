@@ -56,7 +56,8 @@ class TestOpSpecRegistry(unittest.TestCase):
         """未登记的 op 必须能被列出来（迁移进度可见 + 迁移完可收紧）。"""
         import subprocess
         p = subprocess.run([sys.executable, os.path.join(BASE, 'scripts', 'gen_op_docs.py'),
-                            '--check', '--strict'], capture_output=True, text=True)
+                            '--check', '--strict'], capture_output=True, text=True,
+                           encoding='utf-8', errors='replace')   # 见 test_platform_cap 同名注释：不给 encoding 会按 locale(GBK) 解码中文输出
         registered = set(osl.registered())
         docstrings = _source_docstrings()
         unregistered = [n for n in docstrings if n not in registered]
@@ -159,6 +160,19 @@ class TestOpSpecRegistry(unittest.TestCase):
                                  '%s 的 notes 涨了（%d > 登记 %d）：这个桶只许减' % (op, n, debt[op]))
         for op in debt:
             self.assertIn(op, reg['ops'], 'notesDebt 登记了不存在的 op：%s' % op)
+
+    def test_notes_migration_is_closed(self):
+        """`notes` 迁移**已收口**（2026-10-03 三批清零）→ 名单必须保持为空。
+
+        为什么单钉一条：上面那条用例只保证「有 notes 就必须在名单里」——
+        也就是说 **把 op 重新登记回名单** 就能合法地再写 notes，门禁拦不住。
+        这条把「迁移已结束」这个结论钉死：名单一旦非空、或又有 op 带 notes，即为回归。
+        """
+        reg = osl.load()
+        debt = (reg.get('notesDebt') or {}).get('items') or {}
+        self.assertEqual(debt, {}, 'notesDebt 又被填了（迁移已收口，别重开）：%s' % list(debt))
+        with_notes = [op for op, s in reg['ops'].items() if s.get('notes')]
+        self.assertEqual(with_notes, [], '这些 op 又有 notes 了：%s' % with_notes)
 
     def test_registry_selfcheck(self):
         self.assertEqual(osl.validate(), [], 'op_spec.json 自检不通过')

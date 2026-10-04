@@ -104,14 +104,14 @@ evidence: []
     - **不要求透明区（「形状外没有外面」，登记理由豁免）**：满幅底图・渐变壁纸・照片内容图・全屏遮罩・**1px 通栏线**（发丝线轴对齐）・软阴影翼；
     - **禁止**把页面底色/黑底烘进图当透明 —— 那是 **Lite（MCU）侧 RGB565 + colorkey**的做法（无 α 混合，见 `knowledge/mcu/*` 与 `workspace/references/kb/lite-input-pipeline.md`），**两套口径不能混**（MEMORY 铁律 #17：两侧严格隔离）；把 Lite 做法带到标准侧 = 整图没有透明像素 → 拦。
     - 图标类还要求**四周 ≥1px 透明**（不贴死图边）。
-    - **判定/门禁**（数字与几何都有出处，禁拍脑袋）：`tools/qa/alpha_bg_audit.py` —— 整图 `min(α) ≥ 250` = `no_alpha`、内切/图标族角块不透明率 ≥0.5 = `corner_opaque`、最外 1px 环不透明率 ≥0.25（或任一边 ≥0.9）= `edge_bleed` → **FAIL**；**已接进 `check_all` 第 23 项**。分类登记表 `tools/qa/asset_audit_rules.json`。
+    - **判定/门禁**（数字与几何都有出处，禁拍脑袋）：`ui_tools/alpha_bg_audit.py` —— 整图 `min(α) ≥ 250` = `no_alpha`、内切/图标族角块不透明率 ≥0.5 = `corner_opaque`、最外 1px 环不透明率 ≥0.25（或任一边 ≥0.9）= `edge_bleed` → **FAIL**；**已接进 `check_all` 第 23 项**。分类登记表 `ui_tools/asset_audit_rules.json`。
 
 12. **★ 矩形/卡片/磁贴/药丸必须有倒角（半径按 DESIGN.md 圆角令牌；禁直角）**（2026-09-20 需求方入规：「**主界面大量图片依旧存在切图缺倒角问题，这个问题三番五次提出来过的。必须给我从设计标准和拦截上处理好**」）：
-    - **半径令牌出处**= 工程 `<项目>/DESIGN.md` 的「圆角令牌」表（磁贴 squircle `n=5,r=30`、9-patch 卡片 14、面板 24、缩略图 16/12、药丸 = `min(w,h)/2`、圆/环 = `min(w,h)/2`）；`tools/qa/asset_audit_rules.json` 是机读副本（改令牌要同步改它）。
+    - **半径令牌出处**= 工程 `<项目>/DESIGN.md` 的「圆角令牌」表（磁贴 squircle `n=5,r=30`、9-patch 卡片 14、面板 24、缩略图 16/12、药丸 = `min(w,h)/2`、圆/环 = `min(w,h)/2`）；`ui_tools/asset_audit_rules.json` 是机读副本（改令牌要同步改它）。
     - **几何判据（可复算）**：沿圆角所在边界行/列量「边起跑距离」`d` = 从角点起第一个 α≥128 的像素位置；半径 r 满足 `d = r - sqrt(r - 0.25)` → 反解 `r_est = (0.5+sqrt(d))**2+0.25`。**直角残留 = `d ≤ 1`**（α 铺到角点）。
-    - **判定**：`r_est < 0.5×令牌` 或直角残留或四角极差 >4px 且 min/max <0.5 → **FAIL**；`< 0.8×令牌` → WARN。工具 `tools/qa/corner_audit.py`，**已接进 `check_all` 第 22 项**。
+    - **判定**：`r_est < 0.5×令牌` 或直角残留或四角极差 >4px 且 min/max <0.5 → **FAIL**；`< 0.8×令牌` → WARN。工具 `ui_tools/corner_audit.py`，**已接进 `check_all` 第 22 项**。
     - **反例（必须记住）**：**把不透明图形 `alpha_composite` 到圆角底图上 = 把下层圆角抹平**（`over` 的 α = `src_α + dst_α(1-src_α)`，`src_α=255` 处 α 恒为 1）。实测：主屏 `tile_photos.png`/`tile_place.png` 底边图形铺满 → 底部两角 `d=0`（r_est 0.5px）、上两角 `d=25`（r_est 30.5px）→ 真机就是两个「方角磁贴」。**修法（推荐 ①）**：① 渐变底 + 图形都画在 `size×SS` 画布，最后一次套形状遮罩、只缩回一次（同一轮廓一次成图，整图只有一条抗锯齿边）；② 内容先按形状 α 裁剪 → composite → 最后 `putalpha(形状 α)`（轮廓只由遮罩决定）。
-    - **出图验收命令**：`python tools/qa/corner_audit.py <工程>/resources/images --fail` + `python tools/qa/alpha_bg_audit.py <工程>/resources/images --fail`（证据图：`<name>.corner.png` 四角 8× 放大 + 违例角红框；`<name>.alpha.png` 违例角块/边环标红）。回归样本 `tools/qa/samples/` + `python tools/qa/run_samples.py`。真实口径文档：`workspace/references/kb/image-gen-standard.md` **§7（透明底与圆角）**。
+    - **出图验收命令**：`python ui_tools/corner_audit.py <工程>/resources/images --fail` + `python ui_tools/alpha_bg_audit.py <工程>/resources/images --fail`（证据图：`<name>.corner.png` 四角 8× 放大 + 违例角红框；`<name>.alpha.png` 违例角块/边环标红）。回归样本 `tools/qa/samples/` + `python tools/qa/run_samples.py`。真实口径文档：`workspace/references/kb/image-gen-standard.md` **§7（透明底与圆角）**。
 
 13. **★ 倒角/描边「变粗」与同族一致性（2026-09-27 需求方入规）**
 
@@ -136,10 +136,10 @@ evidence: []
 
     **自检命令（0 token，有退出码）**
     ```bash
-    python tools/qa/corner_audit.py <工程>/resources/images --arc-only --fail  # #25 弧线过渡硬阶跃
-    python tools/qa/corner_audit.py <工程>/resources/images --fail            # #22 倒角几何
+    python ui_tools/corner_audit.py <工程>/resources/images --arc-only --fail  # #25 弧线过渡硬阶跃
+    python ui_tools/corner_audit.py <工程>/resources/images --fail            # #22 倒角几何
     python tools/qa/aa_audit.py     <工程>/resources/images --fail            # #21 脏边/暗边/白点
-    python tools/ui_tools/check_all.py <工程>                                  # 21/22/23/25 一起跑
+    python ui_tools/check_all.py <工程>                                  # 21/22/23/25 一起跑
     ```
 
     ❗ **闸门盲区（必须知道）**：#21 量脏边/残差、#25 量「覆盖率是否真的从 0 渐变到满值」—— **两者都抓不到「弧上 2px 的描边观感」和「同族图口径不一致」**（本案 5 张图上述审计全 PASS）。所以这一条靠**出图时同族同口径**保证 + **人眼 8× 最近邻**复核。
@@ -174,10 +174,10 @@ evidence: []
 
 | 项 | 工具 | 判什么 | 免/降 |
 |----|------|--------|------|
-| **#22 缺倒角**| `tools/qa/corner_audit.py` | 直角残留（`d≤1`）/ `r_est < 0.5×` 圆角令牌 / 四角不一致 → FAIL | `< 0.8×令牌` = WARN；图标・内切族不适用；满幅族 EXEMPT |
-| **#23 透明底**| `tools/qa/alpha_bg_audit.py` | 整图无透明像素（`min α ≥ 250`）/ 内切・图标族角区不透明 / 图标贴边 → FAIL | 满幅族（底图・照片・遮罩・1px 线・软阴影）登记豁免 |
+| **#22 缺倒角**| `ui_tools/corner_audit.py` | 直角残留（`d≤1`）/ `r_est < 0.5×` 圆角令牌 / 四角不一致 → FAIL | `< 0.8×令牌` = WARN；图标・内切族不适用；满幅族 EXEMPT |
+| **#23 透明底**| `ui_tools/alpha_bg_audit.py` | 整图无透明像素（`min α ≥ 250`）/ 内切・图标族角区不透明 / 图标贴边 → FAIL | 满幅族（底图・照片・遮罩・1px 线・软阴影）登记豁免 |
 
-两项共用分类登记表 `tools/qa/asset_audit_rules.json`（kind / 圆角令牌 / 豁免理由）——**缺它工具直接报错退出**（不允许缺省拍脑袋）；回归样本 `tools/qa/samples/`（正例 + 反例，`python tools/qa/run_samples.py`）。
+两项共用分类登记表 `ui_tools/asset_audit_rules.json`（kind / 圆角令牌 / 豁免理由）——**缺它工具直接报错退出**（不允许缺省拍脑袋）；回归样本 `tools/qa/samples/`（正例 + 反例，`python tools/qa/run_samples.py`）。
 
 ## 5. 相关
 

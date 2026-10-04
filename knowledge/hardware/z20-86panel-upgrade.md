@@ -157,7 +157,7 @@ D/zkgui ( 928): Ext4Utils mount ret 0                             ← ext4 数�
 ```
 /dev/block/mmcblk0p1 /mnt/extsd  ext4 ro,relatime,...                 ← app 资源（52.5 M，debug 路线落这）
 /dev/block/mmcblk0p2 /mnt/sdnand ext4 rw,dirsync,nosuid,nodev,data=ordered  ← 数据面（64 M 分区 / 59 M fs）
-mtd3 "res" (0x720000) /res squashfs ro,noatime,nodiratime            ← 系统内置 res（本板仅 3 个文件/39 KB 空壳）
+mtd3 "res" (0x720000) /res squashfs ro,noatime,nodiratime            ← 系统内置 res（本板仅 3 个文件/39 KB 空壳）<!-- design-spec:evidence 历史实测记录（判据以设备实测为准，见 DESIGN_SPEC.md 第 2 条） -->
 ```
 
 - **挂载是 app 干的**，不是内核/init：`Ext4Utils::checkAndMount(SDNAND_MOUNT_POINT)`；
@@ -261,7 +261,7 @@ adb shell setprop ctl.restart zkswe
 | 变了（次要） | `mtd6(data)`（boot 后 libeasyui 写 `/data/preferences.json`）；`mmcblk0p2` 只是被我自己写的 logcat 日志动过 |
 | **网络为何没掉** | 该板 WiFi 是 **init 托管**：`init.svc.wpa_supplicant=running` + `/bin/wpa_supplicant -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf`、`init.svc.zkswe=running` → **不依赖业务 app**。⇒ **§6/§7 里「WiFi 由 app 带起来 → 换 res 必掉网」的归因在本板被证伪**，旧板那次永久失联要另找原因（别再当通论用） |
 | 去重 | 升级后 `/data/.zkugraderec`、`/data/.zkupgraderec` **都不存在** → **ADB 直触发这条链不写去重记录**（去重可能只在 `zkupgradetipbin` 界面链生效；同版本二刷是否被挡仍未测） |
-| 恢复手段 | 升级前把 `dd if=/dev/block/mtdblock3 of=/tmp/bk/mtd3_res.bin` 拉到本机（7,471,104 B）→ 需要时 `dd` 回 `mtdblock3` 即可复位 |
+| 恢复手段 | 升级前把 `dd if=/dev/block/mtdblock3 of=/tmp/bk/mtd3_res.bin` 拉到本机（该板 res 分区大小见 `knowledge/devflow/upgrade-pack-image.md` 的分区表，以设备实测为准）→ 需要时 `dd` 回 `mtdblock3` 即可复位 |
 
 > **铁律（本板实测得到）**：**走 ADB → `/res` 的路线，包名必须是 `update.img`（squashfs payload）**。
 > 把 `release.ext4=true` 出的 `extupdate.img`（payload = ext4 数据面树）拿来当 `update.img` 推，会把 `/res` 写成 ext4，

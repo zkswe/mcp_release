@@ -34,7 +34,7 @@ UI 上只需要添加一个 videoView 控件——不需要写任何关联代码
 | B. 播放文件/回放/拉流 | ZKVideoView（easyui 播放器） | videoview 控件 | `play(path, 0)` / pause / resume / stop |
 | C. **摄像头自维护出图（本知识点）**| **用户/系统自己打开摄像头并把内容输出到 Video 层**| **videoview 控件（仅作透明渲染窗口）**| **零代码，不需要 play/关联**|
 
-⚠️ A/B 的详细字段与坑位见 `knowledge/uicontrols/cameraview-fields.md`（实时预览/播放禁混用）；
+⚠️ A/B 的详细字段与约束见 `knowledge/uicontrols/cameraview-fields.md`（实时预览/播放禁混用）；
 本文专讲 **C 场景**——videoView 不当播放器用，当"视频层窗口"用。
 
 ## 2. 操作步骤（极简）
@@ -62,7 +62,7 @@ UI 上只需要添加一个 videoView 控件——不需要写任何关联代码
 - 用户自己的出图代码与 FlyThings UI **互不感知**：出图侧只需把帧送进 VI（mpi 内部送到 VO），UI 侧只需放透明 videoView
 - 想隐藏画面：把该 videoView `setVisible(false)` 或移出可视区即可（透出随控件显隐/位置走）
 
-## 4. 坑位清单
+## 4. 约束清单
 
 1. **别画不透明背景**：videoView 区域内不要放不透明的图片/底色覆盖，否则下层 disp 视频层被 UI 层挡住透不出来
 2. **别当场景 A/B 套代码**：这是"用户自维护出图"专用场景；若走 FlyThings 播放链路却只放控件不 play，画面也不会自己来

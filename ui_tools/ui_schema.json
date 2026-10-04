@@ -1,415 +1,1638 @@
 {
-  "schemaVersion": "1.0",
-  "updated": "2026-10-02",
-  "authority": "FlyThings UI json 布局规范的唯一机器可读真源。字段/类型/必填/默认值以本表为准；knowledge/*.md 只负责原理、流程与行为。基准：json-field-mandatory.md v2.1（SampleUI-New 42json + basedemo 44json 双源）+ V85X 真机 A/B 实测（2026-10-02）。消费方：check_all 校验 / translate_ui 发射层 / map_control 片段 / gen_ui_schema_docs.py 文档表。改规范 = 改本文件，禁止在消费方另抄一份。",
+  "schemaVersion": "1.1",
+  "updated": "2026-10-04",
+  "authority": "FlyThings UI json 布局规范的唯一机器可读真源。字段/类型/必填/默认值以本表为准；knowledge/*.md 只负责原理、流程与行为。基准：json-field-mandatory.md v2.1（SampleUI-New 42json + basedemo 44json 双源）+ V85X 真机 A/B 实测（2026-10-02 / 2026-10-04）。v1.1（2026-10-04）：circlebar.progressPicPos 由 int 改 position、touchRange 由 int 改 range —— 误声明成 int 时 defaults() 会发射 0，真机上页面构造即主线程 100% 空转、无日志（同 subboxType 那一类，只是类型声明错了导致校验漏网）。消费方：check_all 校验 / translate_ui 发射层 / map_control 片段 / gen_ui_schema_docs.py 文档表。改规范 = 改本文件，禁止在消费方另抄一份。",
   "logicCallbacksNote": "每控件可生成的回调桩（v0.27.178）。{Caption} = json 里控件 key 的 __ 后缀。来源：35 官方 Demo 源码逐条取证（knowledge/uicontrols/widget-code-api.md 是其讲解）；op flythings_gen_logic_stub 从这里读——不要在别处另写一份回调名表。listview 的 3 条是一组，缺一列表就是空白。",
   "valueRules": {
     "colorMinusOne": "-1 = 0xFFFFFFFF 是有意义的显式值（透明/未用），非噪音，必须显式写",
     "colorZero": "0 = 不透明黑。仅 videoview/cameraview 底色官方原值为 0（必须实黑底）；其他控件透明写 -1，写 0 就是黑块（M6 实测坑）",
-    "missingImage": "图片字段指向不存在文件或置 '' → 控件不可见（framework 容错，不挂死），属验收缺陷",
-    "subboxType": "⛔ 子盒对象字段（thumb/position/colorTab/picTab/size/point/range）写成字符串或其他类型 = 真机 ftu 加载无声挂死（无 onUI_init/onUI_show、无报错日志）。A/B 实测 V85X iMirror 固件 2026-10-02：thumb 对象+缺图=正常，thumb 字符串+有图=挂死",
-    "fullFields": "生成 json 时每控件输出本类型必填字段全集（含默认值），不做缺省声明——不同 fui/easyui 版本默认处理可能不同（2026-09-08）"
+    "missingImage": "图片字段**指向不存在的文件** → 该图不显示（框架容错、不挂死）；`\"\"` = 不设该图，**不影响控件可见性**",
+    "subboxType": "⛔ 子盒对象字段（thumb/position/colorTab/picTab/bgColorTab/iconPosition/textPosition/iconBox/size/point/range 等）写成字符串或其他类型 = 真机 ftu 加载无声挂死（无 onUI_init/onUI_show、无报错日志）。A/B 实测 V85X iMirror 固件 2026-10-02：thumb 对象+缺图=正常，thumb 字符串+有图=挂死",
+    "fullFields": "生成 json 时每控件输出本类型必填字段全集（含默认值），不做缺省声明——不同 fui/easyui 版本默认处理可能不同（2026-09-08）",
+    "zOrderFollowsJsonOrder": "**json 里控件的书写顺序 = 图层顺序**（后写的盖在前面）。用 `sort_keys=True` 之类整体重排会改变层叠（例：全屏铺底层被排到进度条之上 → 控件看不见）",
+    "textNewlineNotSupported": "**控件文本里不产生换行**：源文本的换行/空白折叠成单个空格；写 `\\n` 会被按**整串**算最小尺寸，触发 `check_all` 第 13 项（最小尺寸）判定。要多行文案 → 拆成多个控件",
+    "setInvalidIsDisable": "`setInvalid(true)` 是**禁用**（不响应触摸），**不是**\"强制重绘\"；要重绘用 `invalidate()`（2026-09-17 真机复核）",
+    "callbackStubRequired": "**桩禁手写；`<p>Logic.cc` 禁删除（有业务代码时）**：每个控件 `callbacks` 的名字要有同名 static 函数（`<回调名>_<caption>`），否则 `fun build` 报 `used but never defined`。**缺桩时**：让 `fun build` 先跑（工具链会把桩追加进该文件），**再把追加的桩移到文件作用域**（顶层，与参考工程 `controlsLogic.cc` 一致）——**非破坏**操作。⚠️ **`rm <p>Logic.cc` + 重建只允许用于首次构建/文件里尚无业务代码的场合**；**一旦有业务代码，删除重建 = 代码衰退，禁止**（本表 `callbacks[].stub` 只作形状参考，别粘）。",
+    "twoBuildPaths": "**Activity 的差异只在构建层，业务代码不分叉**（用户口径 2026-10-04）：fun 路径不生成 `<p>Activity.*`、IDE 路径会生成 —— 但**业务代码一律照常写** `EASYUICONTEXT->openActivity(\"<p>Activity\")` 跳转、`EASYUICONTEXT->goBack()` 返回，不因构建方式而改变。"
   },
   "page": {
     "controlKeyPattern": "^[a-z]+__\\d+$",
     "nesting": "window 类容器内嵌子控件（key 同为 <type>__N）；子控件 position 是父相对坐标，屏幕坐标 = 累加父偏移",
     "rootFields": {
-      "id": {"type": "int", "required": true, "default": 0},
-      "resolution": {"type": "resolution", "required": true},
-      "position": {"type": "position", "required": true, "note": "整页通常 left0/top0/width=resolution.width/height=resolution.height"},
-      "backgroundColor": {"type": "color", "required": true, "default": -1},
-      "topmost": {"type": "bool", "required": false, "default": false},
-      "beepEnable": {"type": "bool", "required": false, "note": "不强制（2026-09-08，两源证实非必写）"}
+      "id": {
+        "type": "int",
+        "required": true,
+        "default": 0
+      },
+      "resolution": {
+        "type": "resolution",
+        "required": true
+      },
+      "position": {
+        "type": "position",
+        "required": true,
+        "note": "整页通常 left0/top0/width=resolution.width/height=resolution.height"
+      },
+      "backgroundColor": {
+        "type": "color",
+        "required": true,
+        "default": -1
+      },
+      "topmost": {
+        "type": "bool",
+        "required": false,
+        "default": false
+      },
+      "beepEnable": {
+        "type": "bool",
+        "required": false,
+        "note": "不强制（2026-09-08，两源证实非必写）"
+      }
     }
   },
   "sharedTypes": {
-    "position": {"shape": "object", "fields": {"left": "int", "top": "int", "width": "int", "height": "int"}},
-    "resolution": {"shape": "object", "fields": {"width": "int", "height": "int"}},
-    "size": {"shape": "object", "fields": {"width": "int", "height": "int"}},
-    "point": {"shape": "object", "fields": {"x": "int", "y": "int"}},
-    "range": {"shape": "object", "fields": {"lower": "int", "upper": "int"}},
-    "colorTab": {"shape": "object", "fields": {"color0": "color", "color1": "color", "color2": "color", "color3": "color", "color4": "color"}, "defaults": {"color1": -1, "color2": -1, "color3": -1, "color4": -1}, "note": "五槽色表，未用槽恒 -1"},
-    "picTab": {"shape": "object", "fields": {"pic0": "path", "pic1": "path", "pic2": "path", "pic3": "path", "pic4": "path"}, "note": "多态图：pic0 正常/pic1 按下/pic2 选中/pic3 选中按下/pic4 无效；键可不全、值 '' = 无图；{} 合法"},
-    "thumb": {"shape": "object", "fields": {"size": "size", "normalPic": "path", "pressedPic": "path"}, "requiredKeys": ["size", "normalPic", "pressedPic"], "fatal": "写成字符串 = ftu 加载无声挂死（A/B 实测 2026-10-02）；无图 = size 置 0 + 两 Pic 置 ''"},
-    "iconBox": {"shape": "object", "fields": {"left": "int", "top": "int", "width": "int", "height": "int"}, "note": "iconPosition/textPosition 用，条件写（有图标/图文混排设计时）"}
+    "position": {
+      "shape": "object",
+      "fields": {
+        "left": "int",
+        "top": "int",
+        "width": "int",
+        "height": "int"
+      }
+    },
+    "resolution": {
+      "shape": "object",
+      "fields": {
+        "width": "int",
+        "height": "int"
+      }
+    },
+    "size": {
+      "shape": "object",
+      "fields": {
+        "width": "int",
+        "height": "int"
+      }
+    },
+    "point": {
+      "shape": "object",
+      "fields": {
+        "x": "int",
+        "y": "int"
+      }
+    },
+    "range": {
+      "shape": "object",
+      "fields": {
+        "lower": "int",
+        "upper": "int"
+      }
+    },
+    "padding": {
+      "shape": "object",
+      "fields": {
+        "paddingTop": "int",
+        "paddingBottom": "int",
+        "paddingLeft": "int",
+        "paddingRight": "int"
+      },
+      "requiredKeys": [
+        "paddingTop",
+        "paddingBottom",
+        "paddingLeft",
+        "paddingRight"
+      ],
+      "note": "slidewindow 内边距（IDE 真产物键名：paddingTop/Bottom/Left/Right）；写成标量 = 与 thumb/position 同类的无声挂死风险（2026-10-04 实测：circlebar 的同类字段写 0 会主线程 100% 空转）"
+    },
+    "colorTab": {
+      "shape": "object",
+      "fields": {
+        "color0": "color",
+        "color1": "color",
+        "color2": "color",
+        "color3": "color",
+        "color4": "color"
+      },
+      "defaults": {
+        "color1": -1,
+        "color2": -1,
+        "color3": -1,
+        "color4": -1
+      },
+      "note": "五槽色表，未用槽恒 -1"
+    },
+    "picTab": {
+      "shape": "object",
+      "fields": {
+        "pic0": "path",
+        "pic1": "path",
+        "pic2": "path",
+        "pic3": "path",
+        "pic4": "path"
+      },
+      "note": "多态图：pic0 正常/pic1 按下/pic2 选中/pic3 选中按下/pic4 无效；键可不全、值 '' = 无图；{} 合法"
+    },
+    "thumb": {
+      "shape": "object",
+      "fields": {
+        "size": "size",
+        "normalPic": "path",
+        "pressedPic": "path"
+      },
+      "requiredKeys": [
+        "size",
+        "normalPic",
+        "pressedPic"
+      ],
+      "fatal": "写成字符串 = ftu 加载无声挂死（A/B 实测 2026-10-02）；无图 = size 置 0 + 两 Pic 置 ''"
+    },
+    "iconBox": {
+      "shape": "object",
+      "fields": {
+        "left": "int",
+        "top": "int",
+        "width": "int",
+        "height": "int"
+      },
+      "note": "iconPosition/textPosition 用，条件写（有图标/图文混排设计时）"
+    }
   },
   "controls": {
     "textview": {
       "interactive": false,
       "fields": {
-        "id": {"type": "int", "required": true},
-        "caption": {"type": "string", "required": true},
-        "position": {"type": "position", "required": true},
-        "alignment": {"type": "int", "required": true, "default": 36, "note": "位模型：36=左中对齐常用；居中=5（≡37 位模型）"},
-        "colorTab": {"type": "colorTab", "required": true, "note": "color0 主文字色"},
-        "fontSize": {"type": "int", "required": true, "default": 16},
-        "touchable": {"type": "bool", "required": true, "default": false},
-        "text": {"type": "string", "required": false, "note": "非空才写"},
-        "visible": {"type": "bool", "required": false, "default": true},
-        "bold": {"type": "bool", "required": false, "default": false},
-        "italic": {"type": "bool", "required": false, "default": false},
-        "bgColorTab": {"type": "colorTab", "required": false},
-        "rollEnable": {"type": "bool", "required": false, "default": false},
-        "rollDirection": {"type": "int", "required": false, "default": 1},
-        "rollIntervalTime": {"type": "int", "required": false, "default": 150},
-        "rollStep": {"type": "int", "required": false, "default": 5},
-        "fontFamily": {"type": "int", "required": false, "default": 0}
+        "id": {
+          "type": "int",
+          "required": true
+        },
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "position": {
+          "type": "position",
+          "required": true
+        },
+        "alignment": {
+          "type": "int",
+          "required": true,
+          "default": 36,
+          "note": "位模型：36=左中对齐常用；居中=5（≡37 位模型）"
+        },
+        "colorTab": {
+          "type": "colorTab",
+          "required": true,
+          "note": "color0 主文字色"
+        },
+        "fontSize": {
+          "type": "int",
+          "required": true,
+          "default": 16
+        },
+        "touchable": {
+          "type": "bool",
+          "required": true,
+          "default": false
+        },
+        "text": {
+          "type": "string",
+          "required": false,
+          "note": "非空才写"
+        },
+        "visible": {
+          "type": "bool",
+          "required": false,
+          "default": true
+        },
+        "bold": {
+          "type": "bool",
+          "required": false,
+          "default": false
+        },
+        "italic": {
+          "type": "bool",
+          "required": false,
+          "default": false
+        },
+        "bgColorTab": {
+          "type": "colorTab",
+          "required": false
+        },
+        "rollEnable": {
+          "type": "bool",
+          "required": false,
+          "default": false,
+          "note": "开跑马灯滚动（文本超出控件宽度时横向滚动）"
+        },
+        "rollDirection": {
+          "type": "int",
+          "required": false,
+          "default": 1,
+          "note": "滚动方向（0/1）"
+        },
+        "rollIntervalTime": {
+          "type": "int",
+          "required": false,
+          "default": 150,
+          "note": "每步间隔毫秒"
+        },
+        "rollStep": {
+          "type": "int",
+          "required": false,
+          "default": 5,
+          "note": "**每步位移像素**（位移 = rollStep × 步数；步频 = rollIntervalTime）"
+        },
+        "fontFamily": {
+          "type": "int",
+          "required": false,
+          "default": 0
+        },
+        "backgroundColor": {
+          "type": "color",
+          "required": false,
+          "default": -1,
+          "note": "纯色底（不随状态）；透明写 -1，写 0 是黑块"
+        },
+        "backgroundPic": {
+          "type": "string",
+          "required": false,
+          "note": "背景图路径。规范：`\"\"` = 无背景图（**不影响控件可见性**）；指向不存在的文件才会导致异常显示"
+        },
+        "textPosition": {
+          "type": "iconBox",
+          "required": false,
+          "note": "文字在控件内的盒子（子盒对象，禁写成字符串；与 iconPosition 同型）"
+        }
       }
     },
     "button": {
       "interactive": true,
       "callbacks": [
-        {"name": "onButtonClick_{Caption}", "sig": "bool onButtonClick_{Caption}(ZKButton *pButton)", "when": "单击", "stub": "return false;", "note": "true=吞事件（不再走系统默认）；false=放行（ID=100 sys_back 的关闭依赖它）"}
+        {
+          "name": "onButtonClick_{Caption}",
+          "sig": "bool onButtonClick_{Caption}(ZKButton *pButton)",
+          "when": "单击",
+          "stub": "return false;",
+          "note": "true=吞事件（不再走系统默认）；false=放行（ID=100 sys_back 的关闭依赖它）"
+        }
       ],
       "fields": {
-        "id": {"type": "int", "required": true},
-        "caption": {"type": "string", "required": true},
-        "position": {"type": "position", "required": true},
-        "alignment": {"type": "int", "required": true, "default": 37, "note": "位模型居中"},
-        "colorTab": {"type": "colorTab", "required": true},
-        "picTab": {"type": "picTab", "required": true, "note": "{} 合法（无图也写键）；两态开关 picTab{pic0:on,pic2:off}+setSelected()"},
-        "text": {"type": "string", "required": true, "note": "文本内联 button（schema 支持），不要再叠 textview；\"\" 合法"},
-        "touchable": {"type": "bool", "required": true, "default": true},
-        "visible": {"type": "bool", "required": false, "default": true},
-        "bgColorTab": {"type": "colorTab", "required": false, "note": "有按键图片时不开（图叠底色错乱）；仅纯文字按钮用"},
-        "longClickTimeOut": {"type": "int", "required": false, "default": -1},
-        "longClickIntervalTime": {"type": "int", "required": false, "default": -1},
-        "iconPosition": {"type": "iconBox", "required": false, "note": "控件尺寸≠图片尺寸时必须显式"}
+        "id": {
+          "type": "int",
+          "required": true
+        },
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "position": {
+          "type": "position",
+          "required": true
+        },
+        "alignment": {
+          "type": "int",
+          "required": true,
+          "default": 37,
+          "note": "位模型居中"
+        },
+        "colorTab": {
+          "type": "colorTab",
+          "required": true
+        },
+        "picTab": {
+          "type": "picTab",
+          "required": true,
+          "note": "{} 合法（无图也写键）；两态开关 picTab{pic0:on,pic2:off}+setSelected()"
+        },
+        "text": {
+          "type": "string",
+          "required": true,
+          "note": "文本内联 button（schema 支持），不要再叠 textview；\"\" 合法"
+        },
+        "touchable": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        },
+        "visible": {
+          "type": "bool",
+          "required": false,
+          "default": true
+        },
+        "bgColorTab": {
+          "type": "colorTab",
+          "required": false,
+          "note": "有按键图片时不开（图叠底色错乱）；仅纯文字按钮用"
+        },
+        "longClickTimeOut": {
+          "type": "int",
+          "required": false,
+          "default": -1
+        },
+        "longClickIntervalTime": {
+          "type": "int",
+          "required": false,
+          "default": -1
+        },
+        "iconPosition": {
+          "type": "iconBox",
+          "required": false,
+          "note": "控件尺寸≠图片尺寸时必须显式"
+        },
+        "fontSize": {
+          "type": "int",
+          "required": false,
+          "note": "字号（实测值域 10~40）"
+        },
+        "bold": {
+          "type": "bool",
+          "required": false,
+          "default": false
+        },
+        "italic": {
+          "type": "bool",
+          "required": false,
+          "default": false
+        },
+        "fontFamily": {
+          "type": "int",
+          "required": false,
+          "default": 0
+        },
+        "backgroundColor": {
+          "type": "color",
+          "required": false,
+          "default": -1,
+          "note": "纯色底（不随状态）；透明写 -1"
+        },
+        "backgroundPic": {
+          "type": "string",
+          "required": false,
+          "note": "背景图路径。规范：`\"\"` = 无背景图（**不影响控件可见性**）；指向不存在的文件才会导致异常显示"
+        },
+        "textPosition": {
+          "type": "iconBox",
+          "required": false,
+          "note": "文字在控件内的盒子（子盒对象，禁写成字符串；与 iconPosition 同型）"
+        },
+        "rollEnable": {
+          "type": "bool",
+          "required": false,
+          "default": false,
+          "note": "开跑马灯滚动（文本超出控件宽度时横向滚动）"
+        },
+        "rollDirection": {
+          "type": "int",
+          "required": false,
+          "default": 1,
+          "note": "滚动方向（0/1）"
+        },
+        "rollIntervalTime": {
+          "type": "int",
+          "required": false,
+          "default": 150,
+          "note": "每步间隔毫秒"
+        },
+        "rollStep": {
+          "type": "int",
+          "required": false,
+          "default": 5,
+          "note": "**每步位移像素**（位移 = rollStep × 步数；步频 = rollIntervalTime）"
+        }
       }
     },
     "window": {
       "interactive": false,
       "container": true,
       "fields": {
-        "id": {"type": "int", "required": true},
-        "caption": {"type": "string", "required": true},
-        "position": {"type": "position", "required": true},
-        "backgroundColor": {"type": "color", "required": true, "default": -1},
-        "hideTimeOut": {"type": "int", "required": true, "default": -1},
-        "modal": {"type": "bool", "required": true, "default": false, "note": "弹窗 = modal true + visible false"},
-        "touchable": {"type": "bool", "required": true, "default": false},
-        "visible": {"type": "bool", "required": true, "default": true}
+        "id": {
+          "type": "int",
+          "required": true
+        },
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "position": {
+          "type": "position",
+          "required": true
+        },
+        "backgroundColor": {
+          "type": "color",
+          "required": true,
+          "default": -1
+        },
+        "hideTimeOut": {
+          "type": "int",
+          "required": true,
+          "default": -1
+        },
+        "modal": {
+          "type": "bool",
+          "required": true,
+          "default": false,
+          "note": "弹窗 = modal true + visible false"
+        },
+        "touchable": {
+          "type": "bool",
+          "required": true,
+          "default": false
+        },
+        "visible": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        }
       }
     },
     "edittext": {
       "interactive": true,
       "callbacks": [
-        {"name": "onEditTextChanged_{Caption}", "sig": "void onEditTextChanged_{Caption}(const std::string &text)", "when": "每敲一键触发一次", "stub": "(void)text;", "note": "勿放重量级逻辑"}
+        {
+          "name": "onEditTextChanged_{Caption}",
+          "sig": "void onEditTextChanged_{Caption}(const std::string &text)",
+          "when": "每敲一键触发一次",
+          "stub": "(void)text;",
+          "note": "勿放重量级逻辑"
+        }
       ],
       "fields": {
-        "id": {"type": "int", "required": true},
-        "caption": {"type": "string", "required": true},
-        "position": {"type": "position", "required": true},
-        "alignment": {"type": "int", "required": true},
-        "bgColorTab": {"type": "colorTab", "required": true},
-        "bold": {"type": "bool", "required": true, "default": false},
-        "colorTab": {"type": "colorTab", "required": true},
-        "fontSize": {"type": "int", "required": true, "default": 16},
-        "hintTextColor": {"type": "color", "required": true},
-        "text": {"type": "string", "required": true, "note": "\"\" 合法"},
-        "textType": {"type": "int", "required": true, "default": 0, "note": "0/1 恒写"},
-        "visible": {"type": "bool", "required": false, "default": true},
-        "italic": {"type": "bool", "required": false, "default": false}
+        "id": {
+          "type": "int",
+          "required": true
+        },
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "position": {
+          "type": "position",
+          "required": true
+        },
+        "alignment": {
+          "type": "int",
+          "required": true
+        },
+        "bgColorTab": {
+          "type": "colorTab",
+          "required": true
+        },
+        "bold": {
+          "type": "bool",
+          "required": true,
+          "default": false
+        },
+        "colorTab": {
+          "type": "colorTab",
+          "required": true
+        },
+        "fontSize": {
+          "type": "int",
+          "required": true,
+          "default": 16
+        },
+        "hintTextColor": {
+          "type": "color",
+          "required": true
+        },
+        "text": {
+          "type": "string",
+          "required": true,
+          "note": "\"\" 合法"
+        },
+        "textType": {
+          "type": "int",
+          "required": true,
+          "default": 0,
+          "note": "0/1 恒写"
+        },
+        "isPassword": {
+          "type": "bool",
+          "required": false,
+          "default": false,
+          "note": "密码框（html2json 由 data-password 触发；与 IME isPassword 联动）"
+        },
+        "passwordChar": {
+          "type": "string",
+          "required": false,
+          "default": "*",
+          "note": "密码回显字符（html2json 由 data-password-char 触发）"
+        },
+        "beepEnable": {
+          "type": "bool",
+          "required": false,
+          "default": true,
+          "note": "按键音（交互控件默认支持；不强制，check_all #14 不要求）"
+        },
+        "fontFamily": {
+          "type": "int",
+          "required": false,
+          "default": 0
+        },
+        "hintText": {
+          "type": "string",
+          "required": false,
+          "note": "空输入时的提示文字（html2json 由 data-hint 触发）"
+        },
+        "touchable": {
+          "type": "bool",
+          "required": false,
+          "default": true,
+          "note": "必须 true：漏写则输入框点不动、IME 不弹"
+        },
+        "rollEnable": {
+          "type": "bool",
+          "required": false,
+          "default": false,
+          "note": "开跑马灯滚动（文本超出控件宽度时横向滚动）"
+        },
+        "rollDirection": {
+          "type": "int",
+          "required": false,
+          "default": 1,
+          "note": "滚动方向（0/1）"
+        },
+        "rollIntervalTime": {
+          "type": "int",
+          "required": false,
+          "default": 150,
+          "note": "每步间隔毫秒"
+        },
+        "rollStep": {
+          "type": "int",
+          "required": false,
+          "default": 5,
+          "note": "**每步位移像素**（位移 = rollStep × 步数；步频 = rollIntervalTime）"
+        },
+        "visible": {
+          "type": "bool",
+          "required": false,
+          "default": true
+        },
+        "italic": {
+          "type": "bool",
+          "required": false,
+          "default": false
+        }
       }
     },
     "seekbar": {
       "interactive": true,
       "callbacks": [
-        {"name": "onProgressChanged_{Caption}", "sig": "void onProgressChanged_{Caption}(ZKSeekBar *pSeekBar, int progress)", "when": "拖动 / setProgress 连续触发", "stub": "(void)pSeekBar; (void)progress;", "note": "拿不到拖拽起止；要「松手才 seek」得换 ISeekBarChangeListener 自定义监听"}
+        {
+          "name": "onProgressChanged_{Caption}",
+          "sig": "void onProgressChanged_{Caption}(ZKSeekBar *pSeekBar, int progress)",
+          "when": "拖动 / setProgress 连续触发",
+          "stub": "(void)pSeekBar; (void)progress;",
+          "note": "拿不到拖拽起止；要「松手才 seek」得换 ISeekBarChangeListener 自定义监听"
+        }
       ],
       "fields": {
-        "id": {"type": "int", "required": true},
-        "caption": {"type": "string", "required": true},
-        "position": {"type": "position", "required": true, "note": "height 决定滑块渲染高度；要圆滑块 height ≥ thumb.size.height"},
-        "backgroundColor": {"type": "color", "required": true, "default": -1},
-        "backgroundPic": {"type": "path", "required": true, "note": "轨道图；无图置 ''"},
-        "defProgress": {"type": "int", "required": true, "default": 0},
-        "max": {"type": "int", "required": true, "default": 100},
-        "orientation": {"type": "int", "required": true, "default": 0},
-        "progressPic": {"type": "path", "required": true, "note": "有效图；无图置 ''"},
-        "thumb": {"type": "thumb", "required": true, "note": "可拖（有 thumb）touchable true、只读 false"},
-        "touchable": {"type": "bool", "required": true},
-        "visible": {"type": "bool", "required": true, "default": true},
-        "secondaryProgressPic": {"type": "path", "required": false}
+        "id": {
+          "type": "int",
+          "required": true
+        },
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "position": {
+          "type": "position",
+          "required": true,
+          "note": "height 决定滑块渲染高度；要圆滑块 height ≥ thumb.size.height"
+        },
+        "backgroundColor": {
+          "type": "color",
+          "required": true,
+          "default": -1
+        },
+        "backgroundPic": {
+          "type": "path",
+          "required": true,
+          "note": "背景图路径。规范：`\"\"` = 无背景图（**不影响控件可见性**）；指向不存在的文件才会导致异常显示"
+        },
+        "defProgress": {
+          "type": "int",
+          "required": true,
+          "default": 0
+        },
+        "max": {
+          "type": "int",
+          "required": true,
+          "default": 100
+        },
+        "orientation": {
+          "type": "int",
+          "required": true,
+          "default": 0
+        },
+        "progressPic": {
+          "type": "path",
+          "required": true,
+          "note": "有效图；无图置 ''"
+        },
+        "thumb": {
+          "type": "thumb",
+          "required": true,
+          "note": "可拖（有 thumb）touchable true、只读 false"
+        },
+        "touchable": {
+          "type": "bool",
+          "required": true
+        },
+        "visible": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        },
+        "secondaryProgressPic": {
+          "type": "path",
+          "required": false
+        }
       }
     },
     "listview": {
       "interactive": true,
       "callbacks": [
-        {"name": "getListItemCount_{Caption}", "sig": "int getListItemCount_{Caption}(const ZKListView *pListView)", "when": "刷新时取条目总数", "stub": "return 0;", "note": "可顺带做空态提示"},
-        {"name": "obtainListItemData_{Caption}", "sig": "void obtainListItemData_{Caption}(ZKListView *pListView, ZKListView::ZKListItem *pItem, int index)", "when": "每行数据填充（模板行复用，必须全量覆盖）", "stub": "(void)pListView; (void)pItem; (void)index;", "note": "setText + findSubItemByID 取子项；改完数据要 refreshListView()"},
-        {"name": "onListItemClick_{Caption}", "sig": "void onListItemClick_{Caption}(ZKListView *pListView, int index, int id)", "when": "点条目", "stub": "(void)pListView; (void)index; (void)id;", "note": "id=被点子控件 ID（switch ID_MAIN_SubXxx 区分）；点主区时 id 非子项"}
+        {
+          "name": "getListItemCount_{Caption}",
+          "sig": "int getListItemCount_{Caption}(const ZKListView *pListView)",
+          "when": "刷新时取条目总数",
+          "stub": "return 0;",
+          "note": "可顺带做空态提示"
+        },
+        {
+          "name": "obtainListItemData_{Caption}",
+          "sig": "void obtainListItemData_{Caption}(ZKListView *pListView, ZKListView::ZKListItem *pItem, int index)",
+          "when": "每行数据填充（模板行复用，必须全量覆盖）",
+          "stub": "(void)pListView; (void)pItem; (void)index;",
+          "note": "setText + findSubItemByID 取子项；改完数据要 refreshListView()"
+        },
+        {
+          "name": "onListItemClick_{Caption}",
+          "sig": "void onListItemClick_{Caption}(ZKListView *pListView, int index, int id)",
+          "when": "点条目",
+          "stub": "(void)pListView; (void)index; (void)id;",
+          "note": "id=被点子控件 ID（switch ID_MAIN_SubXxx 区分）；点主区时 id 非子项"
+        }
       ],
       "fields": {
-        "id": {"type": "int", "required": true},
-        "caption": {"type": "string", "required": true},
-        "position": {"type": "position", "required": true},
-        "autoRollback": {"type": "bool", "required": true},
-        "backgroundColor": {"type": "color", "required": true, "default": -1},
-        "cols": {"type": "int", "required": true, "default": 1},
-        "cycleEnable": {"type": "bool", "required": true},
-        "dragMaxDis": {"type": "int", "required": true, "default": 200},
-        "edgeEffect": {"type": "int", "required": true, "default": 0},
-        "hasScrollbar": {"type": "bool", "required": true, "default": true},
-        "rows": {"type": "int", "required": true},
-        "touchable": {"type": "bool", "required": true, "default": true},
-        "visible": {"type": "bool", "required": true, "default": true},
-        "orientation": {"type": "int", "required": true, "default": 0},
-        "colSpacing": {"type": "int", "required": true},
-        "rowSpacing": {"type": "int", "required": true},
-        "item": {"type": "listitem", "required": true}
+        "id": {
+          "type": "int",
+          "required": true
+        },
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "position": {
+          "type": "position",
+          "required": true
+        },
+        "autoRollback": {
+          "type": "bool",
+          "required": true
+        },
+        "backgroundColor": {
+          "type": "color",
+          "required": true,
+          "default": -1
+        },
+        "cols": {
+          "type": "int",
+          "required": true,
+          "default": 1
+        },
+        "cycleEnable": {
+          "type": "bool",
+          "required": true
+        },
+        "dragMaxDis": {
+          "type": "int",
+          "required": true,
+          "default": 200
+        },
+        "edgeEffect": {
+          "type": "int",
+          "required": true,
+          "default": 0
+        },
+        "hasScrollbar": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        },
+        "rows": {
+          "type": "int",
+          "required": true
+        },
+        "touchable": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        },
+        "visible": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        },
+        "orientation": {
+          "type": "int",
+          "required": true,
+          "default": 0
+        },
+        "colSpacing": {
+          "type": "int",
+          "required": true
+        },
+        "rowSpacing": {
+          "type": "int",
+          "required": true
+        },
+        "item": {
+          "type": "listitem",
+          "required": true
+        }
       }
     },
     "circlebar": {
       "interactive": true,
       "fields": {
-        "id": {"type": "int", "required": true},
-        "caption": {"type": "string", "required": true},
-        "position": {"type": "position", "required": true},
-        "backgroundColor": {"type": "color", "required": true, "default": -1},
-        "clockwise": {"type": "bool", "required": true, "default": true},
-        "max": {"type": "int", "required": true, "default": 100},
-        "maxAngle": {"type": "int", "required": true, "default": 360},
-        "progressPic": {"type": "path", "required": true, "note": "有效图按扇形裁剪显示进度"},
-        "progressPicPos": {"type": "int", "required": true, "default": 0},
-        "startAngle": {"type": "int", "required": true, "default": 0},
-        "textColor": {"type": "color", "required": true},
-        "textSize": {"type": "int", "required": true},
-        "textType": {"type": "int", "required": true, "default": 0, "note": "0 不绘制/1 数字/2 数字+unit"},
-        "thumb": {"type": "thumb", "required": true},
-        "touchRange": {"type": "int", "required": true, "default": 0},
-        "touchable": {"type": "bool", "required": true, "note": "产品 18 处全只读 false；交互优先 seekbar"},
-        "unit": {"type": "string", "required": true, "note": "如 \"%\"，textType=2 用"},
-        "visible": {"type": "bool", "required": true, "default": true},
-        "backgroundPic": {"type": "path", "required": false, "note": "背景图完整显示垫底，不裁剪"}
+        "id": {
+          "type": "int",
+          "required": true
+        },
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "position": {
+          "type": "position",
+          "required": true
+        },
+        "backgroundColor": {
+          "type": "color",
+          "required": true,
+          "default": -1
+        },
+        "clockwise": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        },
+        "max": {
+          "type": "int",
+          "required": true,
+          "default": 100
+        },
+        "maxAngle": {
+          "type": "int",
+          "required": true,
+          "default": 360
+        },
+        "progressPic": {
+          "type": "path",
+          "required": true,
+          "note": "有效图按扇形裁剪显示进度"
+        },
+        "progressPicPos": {
+          "type": "position",
+          "required": true,
+          "default": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "note": "有效图显示位置尺寸（可小于控件做内环效果）；⛔ 必须对象——写成 int（v1.0 曾误声明为 int/默认 0）= 真机页面构造时主线程 100% 空转、一条日志都不出（V85X 480×800 实测 2026-10-04，A/B：改成对象即恢复）"
+        },
+        "startAngle": {
+          "type": "int",
+          "required": true,
+          "default": 0
+        },
+        "textColor": {
+          "type": "color",
+          "required": true
+        },
+        "textSize": {
+          "type": "int",
+          "required": true
+        },
+        "textType": {
+          "type": "int",
+          "required": true,
+          "default": 0,
+          "note": "0 不绘制/1 数字/2 数字+unit"
+        },
+        "thumb": {
+          "type": "thumb",
+          "required": true
+        },
+        "touchRange": {
+          "type": "range",
+          "required": true,
+          "default": {
+            "lower": 0,
+            "upper": 100
+          },
+          "note": "触摸可调的进度范围（仅 touchable=true 有意义）；⛔ 必须对象——写成 int（v1.0 曾误声明为 int/默认 0）= 真机页面构造时主线程 100% 空转、一条日志都不出（V85X 实测 2026-10-04，A/B：改成对象即恢复）"
+        },
+        "touchable": {
+          "type": "bool",
+          "required": true,
+          "note": "产品 18 处全只读 false；交互优先 seekbar"
+        },
+        "unit": {
+          "type": "string",
+          "required": true,
+          "note": "如 \"%\"，textType=2 用"
+        },
+        "visible": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        },
+        "backgroundPic": {
+          "type": "path",
+          "required": false,
+          "note": "背景图路径。规范：`\"\"` = 无背景图（**不影响控件可见性**）；指向不存在的文件才会导致异常显示"
+        }
       }
     },
     "slidewindow": {
       "interactive": true,
       "callbacks": [
-        {"name": "onSlideItemClick_{Caption}", "sig": "void onSlideItemClick_{Caption}(ZKSlideWindow *pSlideWindow, int index)", "when": "点宫格项", "stub": "(void)pSlideWindow; (void)index;", "note": "index 是跨屏全局下标；内容静态配在 json items[]，代码不填充"}
+        {
+          "name": "onSlideItemClick_{Caption}",
+          "sig": "void onSlideItemClick_{Caption}(ZKSlideWindow *pSlideWindow, int index)",
+          "when": "点宫格项",
+          "stub": "(void)pSlideWindow; (void)index;",
+          "note": "index 是跨屏全局下标；内容静态配在 json items[]，代码不填充"
+        }
       ],
       "container": true,
       "fields": {
-        "id": {"type": "int", "required": true},
-        "caption": {"type": "string", "required": true},
-        "position": {"type": "position", "required": true},
-        "backgroundColor": {"type": "color", "required": true},
-        "cols": {"type": "int", "required": true},
-        "fontSize": {"type": "int", "required": true},
-        "iconSize": {"type": "int", "required": true},
-        "items": {"type": "array", "required": true, "itemType": "slideitem"},
-        "padding": {"type": "int", "required": true},
-        "rollSpeed": {"type": "int", "required": true, "default": 60},
-        "rows": {"type": "int", "required": true},
-        "touchable": {"type": "bool", "required": true, "default": true},
-        "visible": {"type": "bool", "required": true, "default": true}
+        "id": {
+          "type": "int",
+          "required": true
+        },
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "position": {
+          "type": "position",
+          "required": true
+        },
+        "backgroundColor": {
+          "type": "color",
+          "required": true
+        },
+        "cols": {
+          "type": "int",
+          "required": true
+        },
+        "fontSize": {
+          "type": "int",
+          "required": true
+        },
+        "iconSize": {
+          "type": "size",
+          "required": true,
+          "note": "图标尺寸 {width,height}；IDE 真产物为对象（controls.json: 40×40），v1.0 曾误声明为 int"
+        },
+        "items": {
+          "type": "array",
+          "required": true,
+          "itemType": "slideitem"
+        },
+        "padding": {
+          "type": "padding",
+          "required": true,
+          "note": "内边距 {paddingTop,paddingBottom,paddingLeft,paddingRight}；IDE 真产物为对象"
+        },
+        "rollSpeed": {
+          "type": "int",
+          "required": true,
+          "default": 60
+        },
+        "rows": {
+          "type": "int",
+          "required": true
+        },
+        "touchable": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        },
+        "visible": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        }
       }
     },
     "digitalclock": {
       "interactive": false,
       "fields": {
-        "id": {"type": "int", "required": true},
-        "caption": {"type": "string", "required": true},
-        "position": {"type": "position", "required": true},
-        "backgroundColor": {"type": "color", "required": true},
-        "beat": {"type": "bool", "required": true, "default": false},
-        "clockColor": {"type": "color", "required": true, "default": 16777215},
-        "fontSize": {"type": "int", "required": true},
-        "format": {"type": "string", "required": true, "default": "HH:MM"},
-        "touchable": {"type": "bool", "required": true, "default": false},
-        "visible": {"type": "bool", "required": true, "default": true}
+        "id": {
+          "type": "int",
+          "required": true
+        },
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "position": {
+          "type": "position",
+          "required": true
+        },
+        "backgroundColor": {
+          "type": "color",
+          "required": true
+        },
+        "beat": {
+          "type": "bool",
+          "required": true,
+          "default": false
+        },
+        "clockColor": {
+          "type": "color",
+          "required": true,
+          "default": 16777215
+        },
+        "fontSize": {
+          "type": "int",
+          "required": true
+        },
+        "format": {
+          "type": "string",
+          "required": true,
+          "default": "HH:MM"
+        },
+        "touchable": {
+          "type": "bool",
+          "required": true,
+          "default": false
+        },
+        "visible": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        }
       }
     },
     "qrcode": {
       "interactive": true,
       "fields": {
-        "id": {"type": "int", "required": true},
-        "caption": {"type": "string", "required": true},
-        "position": {"type": "position", "required": true},
-        "backgroundColor": {"type": "color", "required": true},
-        "codeStr": {"type": "string", "required": false, "note": "有值才写"},
-        "padding": {"type": "int", "required": true, "default": 10, "note": "恒写 10（经需求方口径）"},
-        "touchable": {"type": "bool", "required": true, "default": true},
-        "visible": {"type": "bool", "required": true, "default": true}
+        "id": {
+          "type": "int",
+          "required": true
+        },
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "position": {
+          "type": "position",
+          "required": true
+        },
+        "backgroundColor": {
+          "type": "color",
+          "required": true
+        },
+        "codeStr": {
+          "type": "string",
+          "required": false,
+          "note": "有值才写"
+        },
+        "padding": {
+          "type": "int",
+          "required": true,
+          "default": 10,
+          "note": "恒写 10（经需求方口径）"
+        },
+        "touchable": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        },
+        "visible": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        }
       }
     },
     "videoview": {
       "interactive": true,
       "fields": {
-        "id": {"type": "int", "required": true},
-        "caption": {"type": "string", "required": true},
-        "position": {"type": "position", "required": true},
-        "backgroundColor": {"type": "color", "required": true, "default": 0, "note": "⛔ 官方原值 0=不透明黑（视频面必须实黑底），勿推广到其他控件"},
-        "defaultVolume": {"type": "int", "required": true, "default": 5},
-        "loopPlayback": {"type": "bool", "required": true, "default": false},
-        "rotation": {"type": "int", "required": true, "default": 0},
-        "touchable": {"type": "bool", "required": true, "default": true},
-        "visible": {"type": "bool", "required": true, "default": true}
+        "id": {
+          "type": "int",
+          "required": true
+        },
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "position": {
+          "type": "position",
+          "required": true
+        },
+        "backgroundColor": {
+          "type": "color",
+          "required": true,
+          "default": 0,
+          "note": "⛔ 官方原值 0=不透明黑（视频面必须实黑底），勿推广到其他控件"
+        },
+        "defaultVolume": {
+          "type": "int",
+          "required": true,
+          "default": 5
+        },
+        "loopPlayback": {
+          "type": "bool",
+          "required": true,
+          "default": false
+        },
+        "rotation": {
+          "type": "int",
+          "required": true,
+          "default": 0
+        },
+        "touchable": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        },
+        "visible": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        }
       }
     },
     "cameraview": {
       "interactive": false,
       "fields": {
-        "id": {"type": "int", "required": true},
-        "caption": {"type": "string", "required": true},
-        "position": {"type": "position", "required": true},
-        "autoPreview": {"type": "bool", "required": true, "default": true},
-        "backgroundColor": {"type": "color", "required": true, "default": 0, "note": "⛔ 同 videoview：官方原值 0=实黑底"},
-        "cvbs": {"type": "bool", "required": true},
-        "formatSize": {"type": "string", "required": true, "default": "640x480"},
-        "mirror": {"type": "int", "required": true, "default": 0},
-        "touchable": {"type": "bool", "required": true, "default": false},
-        "visible": {"type": "bool", "required": true, "default": true}
+        "id": {
+          "type": "int",
+          "required": true
+        },
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "position": {
+          "type": "position",
+          "required": true
+        },
+        "autoPreview": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        },
+        "backgroundColor": {
+          "type": "color",
+          "required": true,
+          "default": 0,
+          "note": "⛔ 同 videoview：官方原值 0=实黑底"
+        },
+        "cvbs": {
+          "type": "bool",
+          "required": true
+        },
+        "formatSize": {
+          "type": "string",
+          "required": true,
+          "default": "640x480"
+        },
+        "mirror": {
+          "type": "int",
+          "required": true,
+          "default": 0
+        },
+        "touchable": {
+          "type": "bool",
+          "required": true,
+          "default": false
+        },
+        "visible": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        }
       }
     },
     "painter": {
       "interactive": false,
       "fields": {
-        "id": {"type": "int", "required": true},
-        "caption": {"type": "string", "required": true},
-        "position": {"type": "position", "required": true},
-        "backgroundColor": {"type": "color", "required": true},
-        "touchable": {"type": "bool", "required": true, "default": false},
-        "visible": {"type": "bool", "required": true, "default": true}
+        "id": {
+          "type": "int",
+          "required": true
+        },
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "position": {
+          "type": "position",
+          "required": true
+        },
+        "backgroundColor": {
+          "type": "color",
+          "required": true
+        },
+        "touchable": {
+          "type": "bool",
+          "required": true,
+          "default": false
+        },
+        "visible": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        }
       }
     },
     "pointer": {
       "interactive": false,
       "fields": {
-        "id": {"type": "int", "required": true},
-        "caption": {"type": "string", "required": true},
-        "position": {"type": "position", "required": true},
-        "animatable": {"type": "bool", "required": true, "default": true},
-        "backgroundColor": {"type": "color", "required": true},
-        "backgroundPic": {"type": "path", "required": true, "note": "表盘底图，按设计有才写图"},
-        "clockwise": {"type": "bool", "required": true, "default": true},
-        "fixedPoint": {"type": "point", "required": true, "note": "指针固定点（相对指针图，可超界做游标环）"},
-        "pointerPic": {"type": "path", "required": true},
-        "pointerSize": {"type": "size", "required": true},
-        "rotateSpeed": {"type": "int", "required": true, "default": 1, "note": "动画实测配 500"},
-        "rotationPoint": {"type": "point", "required": true, "note": "旋转点（相对控件左上）；起始角不准先查本键与 fixedPoint"},
-        "startAngle": {"type": "int", "required": true, "default": 0},
-        "touchable": {"type": "bool", "required": true, "default": false},
-        "visible": {"type": "bool", "required": true, "default": true}
+        "id": {
+          "type": "int",
+          "required": true
+        },
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "position": {
+          "type": "position",
+          "required": true
+        },
+        "animatable": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        },
+        "backgroundColor": {
+          "type": "color",
+          "required": true
+        },
+        "backgroundPic": {
+          "type": "path",
+          "required": true,
+          "note": "背景图路径。规范：`\"\"` = 无背景图（**不影响控件可见性**）；指向不存在的文件才会导致异常显示"
+        },
+        "clockwise": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        },
+        "fixedPoint": {
+          "type": "point",
+          "required": true,
+          "note": "指针固定点（相对指针图，可超界做游标环）"
+        },
+        "pointerPic": {
+          "type": "path",
+          "required": true
+        },
+        "pointerSize": {
+          "type": "size",
+          "required": true
+        },
+        "rotateSpeed": {
+          "type": "int",
+          "required": true,
+          "default": 1,
+          "note": "动画实测配 500"
+        },
+        "rotationPoint": {
+          "type": "point",
+          "required": true,
+          "note": "旋转点（相对控件左上）；起始角不准先查本键与 fixedPoint"
+        },
+        "startAngle": {
+          "type": "int",
+          "required": true,
+          "default": 0
+        },
+        "touchable": {
+          "type": "bool",
+          "required": true,
+          "default": false
+        },
+        "visible": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        }
       }
     },
     "diagram": {
       "interactive": true,
       "fields": {
-        "id": {"type": "int", "required": true},
-        "caption": {"type": "string", "required": true},
-        "position": {"type": "position", "required": true},
-        "backgroundColor": {"type": "color", "required": true},
-        "infos": {"type": "array", "required": true, "itemType": "wave"},
-        "region": {"type": "position", "required": true, "note": "波形绘制区域（相对控件），通常=position"},
-        "touchable": {"type": "bool", "required": true, "default": true},
-        "visible": {"type": "bool", "required": true, "default": true},
-        "xAxisRange": {"type": "range", "required": true, "note": "颠倒会左右镜像+刷新方向颠倒"},
-        "yAxisRange": {"type": "range", "required": true, "note": "颠倒上下镜像；超出自动截断"}
+        "id": {
+          "type": "int",
+          "required": true
+        },
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "position": {
+          "type": "position",
+          "required": true
+        },
+        "backgroundColor": {
+          "type": "color",
+          "required": true
+        },
+        "infos": {
+          "type": "array",
+          "required": true,
+          "itemType": "wave"
+        },
+        "region": {
+          "type": "position",
+          "required": true,
+          "note": "波形绘制区域（相对控件），通常=position"
+        },
+        "touchable": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        },
+        "visible": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        },
+        "xAxisRange": {
+          "type": "range",
+          "required": true,
+          "note": "颠倒会左右镜像+刷新方向颠倒"
+        },
+        "yAxisRange": {
+          "type": "range",
+          "required": true,
+          "note": "颠倒上下镜像；超出自动截断"
+        }
       }
     },
     "pagewindow": {
       "interactive": true,
       "container": true,
       "fields": {
-        "id": {"type": "int", "required": true},
-        "caption": {"type": "string", "required": true},
-        "position": {"type": "position", "required": true},
-        "dragMaxDis": {"type": "int", "required": true, "default": 200},
-        "orientation": {"type": "int", "required": true, "default": 0},
-        "edgeEffect": {"type": "int", "required": true, "default": 1},
-        "rollSpeed": {"type": "int", "required": true, "default": 60}
+        "id": {
+          "type": "int",
+          "required": true
+        },
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "position": {
+          "type": "position",
+          "required": true
+        },
+        "dragMaxDis": {
+          "type": "int",
+          "required": true,
+          "default": 200
+        },
+        "orientation": {
+          "type": "int",
+          "required": true,
+          "default": 0
+        },
+        "edgeEffect": {
+          "type": "int",
+          "required": true,
+          "default": 1
+        },
+        "rollSpeed": {
+          "type": "int",
+          "required": true,
+          "default": 60
+        }
       }
     },
     "scrollwindow": {
       "interactive": true,
       "container": true,
       "fields": {
-        "id": {"type": "int", "required": true},
-        "caption": {"type": "string", "required": true},
-        "position": {"type": "position", "required": true},
-        "dragMaxDis": {"type": "int", "required": true, "default": 200},
-        "orientation": {"type": "int", "required": true, "default": 0},
-        "edgeEffect": {"type": "int", "required": true, "default": 1}
+        "id": {
+          "type": "int",
+          "required": true
+        },
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "position": {
+          "type": "position",
+          "required": true
+        },
+        "dragMaxDis": {
+          "type": "int",
+          "required": true,
+          "default": 200
+        },
+        "orientation": {
+          "type": "int",
+          "required": true,
+          "default": 0
+        },
+        "edgeEffect": {
+          "type": "int",
+          "required": true,
+          "default": 1
+        },
+        "touchable": {
+          "type": "bool",
+          "required": false,
+          "default": true,
+          "note": "滚动容器要接收触摸（实测显式 true）"
+        }
       }
     },
     "radiogroup": {
       "interactive": true,
       "callbacks": [
-        {"name": "onCheckedChanged_{Caption}", "sig": "void onCheckedChanged_{Caption}(ZKRadioGroup *pGroup, int checkedID)", "when": "选中项变化", "stub": "(void)pGroup; (void)checkedID;", "note": "checkedID 是选中项控件 ID（非索引）→ switch ID_MAIN_RadioButtonX；初始全 unchecked 时首次点击才触发，默认值要在 onUI_init setCheckedID"}
+        {
+          "name": "onCheckedChanged_{Caption}",
+          "sig": "void onCheckedChanged_{Caption}(ZKRadioGroup *pGroup, int checkedID)",
+          "when": "选中项变化",
+          "stub": "(void)pGroup; (void)checkedID;",
+          "note": "checkedID 是选中项控件 ID（非索引）→ switch ID_MAIN_RadioButtonX；初始全 unchecked 时首次点击才触发，默认值要在 onUI_init setCheckedID"
+        }
       ],
       "container": true,
       "fields": {
-        "id": {"type": "int", "required": true},
-        "caption": {"type": "string", "required": true},
-        "position": {"type": "position", "required": true},
-        "backgroundColor": {"type": "color", "required": true},
-        "touchable": {"type": "bool", "required": true, "default": true, "note": "⛔ 容器例外必须 true：写 false 整组收不到触摸（2026-09-10 修正）"},
-        "visible": {"type": "bool", "required": true, "default": true},
-        "radiobuttons": {"type": "array", "required": true, "itemType": "radiobutton"}
+        "id": {
+          "type": "int",
+          "required": true
+        },
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "position": {
+          "type": "position",
+          "required": true
+        },
+        "backgroundColor": {
+          "type": "color",
+          "required": true
+        },
+        "touchable": {
+          "type": "bool",
+          "required": true,
+          "default": true,
+          "note": "⛔ 容器例外必须 true：写 false 整组收不到触摸（2026-09-10 修正）"
+        },
+        "visible": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        },
+        "radiobuttons": {
+          "type": "array",
+          "required": true,
+          "itemType": "radiobutton"
+        }
       }
     },
     "radiobutton": {
       "interactive": true,
       "fields": {
-        "id": {"type": "int", "required": true},
-        "caption": {"type": "string", "required": true},
-        "position": {"type": "position", "required": true},
-        "alignment": {"type": "int", "required": true},
-        "checked": {"type": "bool", "required": true, "default": false},
-        "colorTab": {"type": "colorTab", "required": true},
-        "bgColorTab": {"type": "colorTab", "required": true},
-        "backgroundColor": {"type": "color", "required": true},
-        "bold": {"type": "bool", "required": true, "default": false},
-        "fontSize": {"type": "int", "required": true, "default": 16},
-        "italic": {"type": "bool", "required": true, "default": false},
-        "text": {"type": "string", "required": true},
-        "touchable": {"type": "bool", "required": true, "default": true},
-        "visible": {"type": "bool", "required": true, "default": true}
+        "id": {
+          "type": "int",
+          "required": true
+        },
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "position": {
+          "type": "position",
+          "required": true
+        },
+        "alignment": {
+          "type": "int",
+          "required": true
+        },
+        "checked": {
+          "type": "bool",
+          "required": true,
+          "default": false
+        },
+        "colorTab": {
+          "type": "colorTab",
+          "required": true
+        },
+        "bgColorTab": {
+          "type": "colorTab",
+          "required": true
+        },
+        "backgroundColor": {
+          "type": "color",
+          "required": true
+        },
+        "bold": {
+          "type": "bool",
+          "required": true,
+          "default": false
+        },
+        "fontSize": {
+          "type": "int",
+          "required": true,
+          "default": 16
+        },
+        "italic": {
+          "type": "bool",
+          "required": true,
+          "default": false
+        },
+        "text": {
+          "type": "string",
+          "required": true
+        },
+        "touchable": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        },
+        "visible": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        }
       }
     },
     "checkbox": {
       "interactive": true,
       "callbacks": [
-        {"name": "onCheckedChanged_{Caption}", "sig": "void onCheckedChanged_{Caption}(ZKCheckBox *pCheckBox, bool isChecked)", "when": "勾选变化", "stub": "(void)pCheckBox; (void)isChecked;", "note": "setChecked() 也会触发回调；回调里无条件重发协议会回环"}
+        {
+          "name": "onCheckedChanged_{Caption}",
+          "sig": "void onCheckedChanged_{Caption}(ZKCheckBox *pCheckBox, bool isChecked)",
+          "when": "勾选变化",
+          "stub": "(void)pCheckBox; (void)isChecked;",
+          "note": "setChecked() 也会触发回调；回调里无条件重发协议会回环"
+        }
       ],
       "fields": {
-        "id": {"type": "int", "required": true},
-        "caption": {"type": "string", "required": true},
-        "position": {"type": "position", "required": true},
-        "alignment": {"type": "int", "required": true},
-        "checked": {"type": "bool", "required": true, "default": false},
-        "colorTab": {"type": "colorTab", "required": true},
-        "bgColorTab": {"type": "colorTab", "required": true},
-        "backgroundColor": {"type": "color", "required": true},
-        "bold": {"type": "bool", "required": true, "default": false},
-        "fontSize": {"type": "int", "required": true, "default": 16},
-        "iconPosition": {"type": "iconBox", "required": true},
-        "italic": {"type": "bool", "required": true, "default": false},
-        "text": {"type": "string", "required": true, "note": "恒写"},
-        "touchable": {"type": "bool", "required": true, "default": true},
-        "textPosition": {"type": "iconBox", "required": true},
-        "visible": {"type": "bool", "required": true, "default": true}
+        "id": {
+          "type": "int",
+          "required": true
+        },
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "position": {
+          "type": "position",
+          "required": true
+        },
+        "alignment": {
+          "type": "int",
+          "required": true
+        },
+        "checked": {
+          "type": "bool",
+          "required": true,
+          "default": false
+        },
+        "colorTab": {
+          "type": "colorTab",
+          "required": true
+        },
+        "bgColorTab": {
+          "type": "colorTab",
+          "required": true
+        },
+        "backgroundColor": {
+          "type": "color",
+          "required": true
+        },
+        "bold": {
+          "type": "bool",
+          "required": true,
+          "default": false
+        },
+        "fontSize": {
+          "type": "int",
+          "required": true,
+          "default": 16
+        },
+        "iconPosition": {
+          "type": "iconBox",
+          "required": true
+        },
+        "fontFamily": {
+          "type": "int",
+          "required": false,
+          "default": 0
+        },
+        "italic": {
+          "type": "bool",
+          "required": true,
+          "default": false
+        },
+        "text": {
+          "type": "string",
+          "required": true,
+          "note": "恒写"
+        },
+        "touchable": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        },
+        "textPosition": {
+          "type": "iconBox",
+          "required": true
+        },
+        "visible": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        }
       }
     },
     "imageanim": {
       "interactive": false,
       "fields": {
-        "id": {"type": "int", "required": true},
-        "caption": {"type": "string", "required": true},
-        "position": {"type": "position", "required": true},
-        "loopCount": {"type": "int", "required": true, "default": 0, "note": "0=无限循环"},
-        "playFile": {"type": "path", "required": true, "note": "只支持 .gif/.webp；无文件不写引用"}
+        "id": {
+          "type": "int",
+          "required": true
+        },
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "position": {
+          "type": "position",
+          "required": true
+        },
+        "loopCount": {
+          "type": "int",
+          "required": true,
+          "default": 0,
+          "note": "0=无限循环"
+        },
+        "playFile": {
+          "type": "path",
+          "required": true,
+          "note": "只支持 .gif/.webp；无文件不写引用"
+        }
       }
     },
     "slidetext": {
       "interactive": true,
       "fields": {
-        "id": {"type": "int", "required": true},
-        "caption": {"type": "string", "required": true},
-        "position": {"type": "position", "required": true},
-        "touchable": {"type": "bool", "required": true, "note": "IME 候选条专用"}
+        "id": {
+          "type": "int",
+          "required": true
+        },
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "position": {
+          "type": "position",
+          "required": true
+        },
+        "touchable": {
+          "type": "bool",
+          "required": true,
+          "note": "IME 候选条专用"
+        }
       }
     }
   },
@@ -417,67 +1640,228 @@
     "listitem": {
       "note": "listview.item；无 id。⚠️ position 必写：itemH = int(lv高/rows) − rowSpacing、itemW = lv宽、left/top=0；除不尽的余数是故意的（露出下一项提示可滑，2026-10-01），itemH 比公式大会挤爆列表（check_all #37）",
       "fields": {
-        "caption": {"type": "string", "required": true},
-        "alignment": {"type": "int", "required": true},
-        "backgroundColor": {"type": "color", "required": true},
-        "bgColorTab": {"type": "colorTab", "required": true},
-        "bold": {"type": "bool", "required": true, "default": false},
-        "colorTab": {"type": "colorTab", "required": true},
-        "fontSize": {"type": "int", "required": true, "default": 16},
-        "italic": {"type": "bool", "required": true, "default": false},
-        "longClickIntervalTime": {"type": "int", "required": true, "default": -1},
-        "longClickTimeOut": {"type": "int", "required": true, "default": -1},
-        "picTab": {"type": "picTab", "required": true},
-        "position": {"type": "position", "required": true},
-        "text": {"type": "string", "required": true},
-        "touchable": {"type": "bool", "required": true, "default": true},
-        "visible": {"type": "bool", "required": true, "default": true},
-        "subItem": {"type": "array", "required": false, "itemType": "subitem", "note": "真机 json 为数组；滚轮选择器行模板可不写（listview-wheel-picker）"}
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "alignment": {
+          "type": "int",
+          "required": true
+        },
+        "backgroundColor": {
+          "type": "color",
+          "required": true
+        },
+        "bgColorTab": {
+          "type": "colorTab",
+          "required": true
+        },
+        "bold": {
+          "type": "bool",
+          "required": true,
+          "default": false
+        },
+        "colorTab": {
+          "type": "colorTab",
+          "required": true
+        },
+        "fontSize": {
+          "type": "int",
+          "required": true,
+          "default": 16
+        },
+        "italic": {
+          "type": "bool",
+          "required": true,
+          "default": false
+        },
+        "longClickIntervalTime": {
+          "type": "int",
+          "required": true,
+          "default": -1
+        },
+        "longClickTimeOut": {
+          "type": "int",
+          "required": true,
+          "default": -1
+        },
+        "picTab": {
+          "type": "picTab",
+          "required": true
+        },
+        "position": {
+          "type": "position",
+          "required": true
+        },
+        "text": {
+          "type": "string",
+          "required": true
+        },
+        "touchable": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        },
+        "visible": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        },
+        "subItem": {
+          "type": "array",
+          "required": false,
+          "itemType": "subitem",
+          "note": "真机 json 为数组；滚轮选择器行模板可不写（listview-wheel-picker）"
+        }
       }
     },
     "subitem": {
       "note": "listview.item.subItem",
       "fields": {
-        "id": {"type": "int", "required": true},
-        "caption": {"type": "string", "required": true},
-        "position": {"type": "position", "required": true},
-        "alignment": {"type": "int", "required": true},
-        "backgroundColor": {"type": "color", "required": true},
-        "bgColorTab": {"type": "colorTab", "required": true},
-        "bold": {"type": "bool", "required": true, "default": false},
-        "colorTab": {"type": "colorTab", "required": true},
-        "fontFamily": {"type": "int", "required": true, "default": 0},
-        "fontSize": {"type": "int", "required": true, "default": 16},
-        "italic": {"type": "bool", "required": true, "default": false},
-        "longClickIntervalTime": {"type": "int", "required": true, "default": -1},
-        "longClickTimeOut": {"type": "int", "required": true, "default": -1},
-        "picTab": {"type": "picTab", "required": true},
-        "text": {"type": "string", "required": true, "default": ""},
-        "touchable": {"type": "bool", "required": true, "default": true},
-        "visible": {"type": "bool", "required": true, "default": true}
+        "id": {
+          "type": "int",
+          "required": true
+        },
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "position": {
+          "type": "position",
+          "required": true
+        },
+        "alignment": {
+          "type": "int",
+          "required": true
+        },
+        "backgroundColor": {
+          "type": "color",
+          "required": true
+        },
+        "bgColorTab": {
+          "type": "colorTab",
+          "required": true
+        },
+        "bold": {
+          "type": "bool",
+          "required": true,
+          "default": false
+        },
+        "colorTab": {
+          "type": "colorTab",
+          "required": true
+        },
+        "fontFamily": {
+          "type": "int",
+          "required": true,
+          "default": 0
+        },
+        "fontSize": {
+          "type": "int",
+          "required": true,
+          "default": 16
+        },
+        "italic": {
+          "type": "bool",
+          "required": true,
+          "default": false
+        },
+        "longClickIntervalTime": {
+          "type": "int",
+          "required": true,
+          "default": -1
+        },
+        "longClickTimeOut": {
+          "type": "int",
+          "required": true,
+          "default": -1
+        },
+        "picTab": {
+          "type": "picTab",
+          "required": true
+        },
+        "text": {
+          "type": "string",
+          "required": true,
+          "default": ""
+        },
+        "touchable": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        },
+        "visible": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        }
       }
     },
     "wave": {
       "note": "diagram.infos[] 波形项；style 0=折线 1=曲线",
       "fields": {
-        "caption": {"type": "string", "required": true},
-        "penColor": {"type": "color", "required": true},
-        "penWidth": {"type": "int", "required": true},
-        "step": {"type": "int", "required": true},
-        "style": {"type": "int", "required": true, "default": 0},
-        "eraseSpace": {"type": "int", "required": true},
-        "antialias": {"type": "bool", "required": true},
-        "visible": {"type": "bool", "required": true, "default": true},
-        "xScale": {"type": "int", "required": true},
-        "yScale": {"type": "int", "required": true}
+        "caption": {
+          "type": "string",
+          "required": true,
+          "note": "控件名（**同时是 C++ 标识符**：生成 `m<caption>Ptr` / `ID_MAIN_<caption>`）。规范：仅 ASCII 字母/数字/下划线；**显示文字写 `text`，不写这里**"
+        },
+        "penColor": {
+          "type": "color",
+          "required": true
+        },
+        "penWidth": {
+          "type": "int",
+          "required": true
+        },
+        "step": {
+          "type": "int",
+          "required": true
+        },
+        "style": {
+          "type": "int",
+          "required": true,
+          "default": 0
+        },
+        "eraseSpace": {
+          "type": "int",
+          "required": true
+        },
+        "antialias": {
+          "type": "bool",
+          "required": true
+        },
+        "visible": {
+          "type": "bool",
+          "required": true,
+          "default": true
+        },
+        "xScale": {
+          "type": "int",
+          "required": true
+        },
+        "yScale": {
+          "type": "int",
+          "required": true
+        }
       }
     },
     "slideitem": {
       "note": "slidewindow.items[]",
       "fields": {
-        "colorTab": {"type": "colorTab", "required": true},
-        "picTab": {"type": "picTab", "required": true},
-        "text": {"type": "string", "required": true}
+        "colorTab": {
+          "type": "colorTab",
+          "required": true
+        },
+        "picTab": {
+          "type": "picTab",
+          "required": true
+        },
+        "text": {
+          "type": "string",
+          "required": true
+        }
       }
     }
   }

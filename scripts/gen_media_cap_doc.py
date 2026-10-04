@@ -142,6 +142,18 @@ def build():
     L.append('`✓` = 该能力的**至少一个包**在这个平台可用（包级细节用 `flythings_query_package`）。'
              '只借免编译库的能力（%s）不在此表 —— 它不占包，按设备实有库确认。' % lib_only)
     L.append('')
+    L.append('## 5. 公开版边界（别把「没写」当成「没有」）')
+    L.append('')
+    ob = mc.load().get('openBoundary') or {}
+    if ob:
+        L.append('> %s' % ob.get('statement', ''))
+        L.append('')
+        for x in ob.get('notIncluded') or []:
+            L.append('- **未收录**：%s' % x)
+        L.append('')
+        L.append('- **为什么**：%s' % ob.get('because', ''))
+        L.append('- **那你该怎么做**：%s' % ob.get('whatToDo', ''))
+    L.append('')
     return '\n'.join(L)
 
 

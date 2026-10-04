@@ -115,9 +115,9 @@ flythings_ui_visual(action="baseline", project_root="<工程>", mode="update", i
 - 平台：显式 `platform=` 优先；否则按设备型号查 `device_models.json`（查不到 → 明确报错要求显式传，不猜）。
 - 注入工具：自动推 `bin_tools/<平台>/touch` 到 `/data/touch`（**touch 自动扫节点+判协议，不传 eventNo**）。
 
-**并发注意**（现场教训）：
+**并发注意**（硬约束）：
 
-0. **跨设备不要共用同一个基线 key**（真机实测教训 2026-09-29）：两台 Z20 用同一 key `panel`
+0. **跨设备不要共用同一个基线 key**（真源：`op_spec.json` 的 `flythings_test_run.rules`）（真机实测（2026-09-29））：两台 Z20 用同一 key `panel`
    跑同一用例，一台 pass、一台 fail（32 处差异）——因为**两台设备本来就不在同一页/同一内容**。
    基线是「**某台设备某个状态**该长什么样」，多机一致性验收请用**带设备标识的 key**
    （如 `panel@108`）或分设备建基线库；否则会把“两台机器内容不同”误报成回归。

@@ -111,7 +111,7 @@ static bool onButtonClick_Button1(ZKButton *pButton) {
 
 ## 5. 本机编译实测（RelayoutDemo + 当前 fun 工具链；CLI 更名见 `knowledge/devflow/cli-fun-toolchain.md`）
 
-踩了两个坑，都不在旋转本身：
+两条约束，都不在旋转本身：
 
 1. **缺 `base-utility` 包**：新生成器产出的 `.fun/<平台>/generated/event_dispatcher.h` 里 `#include <base/functional.h>`，而 easyui 2.9.0 的依赖图里没有这个头 → 该头属于**独立包 `base-utility`**（`registry/public/{f133,v85x,z20}/base-utility/*/include/base/functional.h`）。
 修法：`Manifest.xml` 追加 `<package id="base-utility" version="10.10.2"/>` → **`fun install`**（刷新 `.deps.lock`，**不 install 新包 include 路径不进生成的 CMake，加了也白加**）

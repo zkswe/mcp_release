@@ -30,12 +30,12 @@ evidence:
 adb shell "free; df -h /tmp; /tmp/busybox du -sk /tmp/* | sort -n"
 ```
 
-Z21 实测：`Mem total 36072 kB`（**36MB**）；`/tmp` = **tmpfs 13.6MB**（tmpfs 占的是 RAM，不是磁盘！）。
+Z21 实测：`Mem total 36072 kB`（**36MB**）；`/tmp` = **tmpfs 13.6MB（Z21 实测；V85X 实测 27M，另有 32MB 量级的板子 —— 容量随板子/固件差异大，别拿单个数字当通用值，部署前先 `df -k /tmp`）**（tmpfs 占的是 RAM，不是磁盘！）。
 
 ## 2. 铁律：`fun launch` 的产物全部落在 /tmp（= 吃内存）
 
 一次 `fun launch` 至少推：`/tmp/lib/libzkgui.so` + `/tmp/font/font.ttf` + `/tmp/ui/main.ftu` + `/tmp/EasyUI.cfg`。
-**字库是最大头**（思源黑体常用字 872KB，全量版 7.5MB / 多语言 10.7MB）——加上 tmpfs 里已有的调试工具（busybox 1.9MB 等），
+**字库是最大头**（实测字节数：常用字 `zkswe-hans-common.ttf` **892848 B**（872 KiB）；全量 `zkswe-hans-full.ttf` **7567300 B**（7.22 MiB）；多语言 `zkswe-hans-multi.ttf` **10742560 B**（10.24 MiB）—— 尺寸以 `components/fonts/fonts/*.ttf` 实际字节为准）——加上 tmpfs 里已有的调试工具（busybox 1.9MB 等），
 很容易把可用内存压到几百 KB → **OOM killer 杀 `zkgui` → 设备重启**。
 
 **症状对照**：内核日志出现
@@ -45,13 +45,13 @@ Z21 实测：`Mem total 36072 kB`（**36MB**）；`/tmp` = **tmpfs 13.6MB**（tm
 ## 3. 处置顺序（按性价比）
 
 1. **清 tmpfs 垃圾**：重复的 busybox、旧工程的 `ui/images`、`ui/fonts`、用不到的 `.ftu`。
-2. **字库按工程实际用字裁剪**（最有效，872KB → 数十 KB）：
+2. **字库按工程实际用字裁剪**（最有效，892848 B 的常用字库 → 数十 KB）：
    ```bash
-   python tools/ui_tools/font_subset_by_project.py <项目根> \
-       [--src tools/FlyThings_mcp_open/components/fonts/fonts/zkswe-hans-full.ttf]
+   python ui_tools/font_subset_by_project.py <项目根> \
+       [--src components/fonts/fonts/zkswe-hans-full.ttf]
    ```
    - 默认源 = `zkswe-hans-common.ttf`（GB2312 一级字）→ **只含一级字**，像「阈」这种二级字会缺字形（界面少一笔）。
-   - 需要覆盖更多字（如「阈」）时用 `--src` 指到 `zkswe-hans-full.ttf`（7.4MB 源，产出仍只有几十 KB）。
+   - 需要覆盖更多字（如「阈」）时用 `--src` 指到 `zkswe-hans-full.ttf`（**7567300 B = 7.22 MiB** 源，产出仍只有几十 KB）。
    - ⚠️ **改完 UI 文案要重跑**：新增的字若不在字库里会**静默缺字**（例如按钮「系统 WiFi 设置」少了个「系」）。
 3. 部署完复量：`free` 里 `available` 应回到 **10MB+**（Z21 清理后 17MB）。
 4. 长期方案：`update.img` 固化（程序进只读分区），不再吃 tmpfs。
@@ -82,7 +82,7 @@ Z21 实测：`Mem total 36072 kB`（**36MB**）；`/tmp` = **tmpfs 13.6MB**（tm
   「控制面板页」（帧差恒 **230400 px**= 480×480 整屏），**无一轮出现“命令成功、应用不响应”，也不需要重启板子**。
   → 由此**勘正**三个组件（Calendar / Chart / `_mapping`-TabView）`components/ui_v1/<组件>/platforms.md` 里那条
   「反复 `kill -9 zkgui` 后触摸注入不响应」的已知限制（那是 kill 的后果，不是设备/组件缺陷）。
-脚本 `temp/setprop_accept.py`，证据 `temp/setprop_accept/`（含 `workspace/temp/setprop_accept/RESULT.md` 与 20 张逐轮截图）。
+⚠️ 当时的脚本与证据（`temp/setprop_accept*`，含 20 张逐轮截图）**已不在仓内** —— `temp/` 是临时区、不随仓交付（项目对证据的纪律是"证据文件丢了就不算证据"）。结论本身有真机复现记录，但**要复验请按本节步骤重做一遍**。
 - **遇到掉网怎么处理**：按**现场断电重启**处理（先看设备电源/网线/WiFi，再 `adb connect`）；
 排查方向优先 setprop 通道（`setprop` 静默失败的板子才考虑 kill 兜底）。
 - 另：`adb reboot` 后 /tmp 是空的（tmpfs）→ 必须**整套重推**（见 §2/§4），且重启后要等网络 adb 重新上线。

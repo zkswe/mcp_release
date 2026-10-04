@@ -93,7 +93,8 @@ adb shell "ls -l /res/font /res/bin/firmware/rtlbt; cat /res/etc/EasyUI.cfg" # �
 | 分辨率 | 对应屏幕（Z21 = 1024×600） |
 | 生效时机 | **升级完成、重启后生效**|
 
-本板实测分区表（Z21，2026-09-17，`cat /proc/mtd`）：mtd0 BOOT0 `0x50000` / mtd1 KERNEL `0x680000` / mtd2 res `0x720000` / mtd3 config `0x110000` / **mtd4 MISC `0x80000` = 512 KB**/ mtd5 data `0x80000`。查法：`adb shell "cat /proc/mtd"` 找 MISC 那一行的 size（十六进制）。
+本板实测分区表（Z21，2026-09-17，`cat /proc/mtd`）：<!-- design-spec:evidence 历史实测记录（判据以设备实测为准，见 DESIGN_SPEC.md 第 2 条） -->
+  mtd0 BOOT0 `0x50000` / mtd1 KERNEL `0x680000` / mtd2 res `0x720000` / mtd3 config `0x110000` / **mtd4 MISC `0x80000` = 512 KB**/ mtd5 data `0x80000`。查法：`adb shell "cat /proc/mtd"` 找 MISC 那一行的 size（十六进制）。 <!-- design-spec:evidence 历史实测记录（判据以设备实测为准，见 DESIGN_SPEC.md 第 2 条） -->
 
 ⚠️ 本板 `/res` 里**没有**logo 文件 —— logo 不在应用资源里：别往 `resources/images/` 放，也别指望跟 `fun pack` 一起打进 `/res`（`/res` 是应用资源分区，见 §二 6)）。**其它平台/机型务必先量 MISC 分区大小**，512 KB 只对本板成立。
 
@@ -120,7 +121,8 @@ adb shell setprop ctl.restart zkswe
 | 说法 | 状态 |
 |------|------|
 | 只放 `boot_logo.JPG`（不放 `update.img`）时**只写 MISC、不替换 `/res`**| **待真机验证**（经需求方口径是「同 `update.img` 机制」，本条尚未实测） |
-| 其它平台（F133 / Z20 / T113 / V85X / Z235X）的 MISC 分区大小 / 升级界面里 logo 项与 app 项能否单独勾选 | **待确认**（本机只量到 Z21 = 512 KB） |
+| 其它平台（F133 / T113 / Z235X）的 MISC 分区大小 / 升级界面里 logo 项与 app 项能否单独勾选 | **待确认**。**复验方法**：拿到该板后 `adb shell cat /proc/mtd` 量分区字节数，并在升级界面截一张「勾选项」图，结果补进本表 |
+| **V85X**（2026-10-03 真机实测 `Zkswe_V85X_SPINOR`） | **分区名不叫 MISC，叫 `boot_logo`**（`mtd4 = 0x40000 = 256 KiB`）；同时 `res` = `mtd3 = 0x7A0000 = 7,995,392 B = 7.625 MiB`。⇒ 换平台时**连分区名一起量**，别只量大小（照抄 MISC 这个名字在 V85X 上找不到对应分区） |
 
 ### 5) 工具（本仓自带，可直接用）
 
@@ -194,8 +196,9 @@ adb shell ls -l /res/font                  # 本次：HanSans-Medium.ttf 1763788
 
 ### 6) 体积上限：`update.img` 必须 ≤ **res 分区**大小（出包前先对表）
 
-- `/proc/mtd`（`Zkswe_SSD20X_SPINOR` 实测）：mtd0 BOOT / mtd1 KERNEL / mtd2 rootfs / **mtd3 `res` = `0x720000` = 7,470,080 B**/ mtd4 config / mtd5 LOGO / mtd6 data。
-- `update.img` 的落点就是 **res**（`/res` = `/dev/block/mtdblock3` squashfs）→ **包体上限 = 该分区字节数**（本型号 7,470,080 B；本工程实测 5.85 MB）。换型号/换板先 `cat /proc/mtd` 对表，**别照抄**。
+- `/proc/mtd`（`Zkswe_SSD20X_SPINOR` 实测）：<!-- design-spec:evidence 历史实测记录（判据以设备实测为准，见 DESIGN_SPEC.md 第 2 条） -->
+  mtd0 BOOT / mtd1 KERNEL / mtd2 rootfs / **mtd3 `res` = `0x720000` = 7,471,104 B（7.12 MiB）**/ mtd4 config / mtd5 LOGO / mtd6 data。 <!-- design-spec:evidence 历史实测记录（判据以设备实测为准，见 DESIGN_SPEC.md 第 2 条） -->
+- `update.img` 的落点就是 **res**（`/res` = `/dev/block/mtdblock3` squashfs）→ **包体上限 = 该分区字节数**（本型号 7,471,104 B = 7.12 MiB<!-- design-spec:evidence 历史实测记录（判据以设备实测为准，见 DESIGN_SPEC.md 第 2 条） -->；本工程实测 5.85 MB）。换型号/换板先 `cat /proc/mtd` 对表，**别照抄**。
 - 无独立 `zkupgrade` 二进制（能力在 `/bin/zkgui` 内）→ 升级永远是「置属性 + `setprop ctl.restart zkswe`」。刷完的硬判据：`adb shell ls -l /res/lib/libzkgui.so` 的大小/md5 == 本地 `.fun/z20/libzkgui.so`（只比 `update.img` 体积不准：小改动下包体可能恰好不变）。
 - ⚠️ 刷前确认**设备真正加载的是哪一份**—— SD 卡 `/mnt/extsd/EasyUI.cfg` 可能把程序劫持到旧 lib：`knowledge/devflow/package-properties-easyui-cfg.md` 「查找优先级」节。
 

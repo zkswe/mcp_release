@@ -2,8 +2,8 @@
   "schema": 1,
   "generatedBy": "scripts/gen_manifest.py",
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY/STAGE 表后重新生成，勿手改本文件",
-  "version": "0.27.173-open",
-  "build": "2026-10-02",
+  "version": "0.27.195-open",
+  "build": "2026-10-03",
   "toolCount": 48,
   "cli": {
     "fun": "FlyThings 工程工具（create/install/build/launch，<项目>/.fsc/<平台>/ 下；09-28 前为 .fun/）",
@@ -1075,9 +1075,9 @@
     }
   ],
   "docs": {
-    "knowledgeFiles": 111,
-    "wikiFiles": 16,
-    "ragChunks": 1676,
-    "ragPaths": 125
+    "knowledgeFiles": 117,
+    "wikiFiles": 0,
+    "ragChunks": 1896,
+    "ragPaths": 154
   }
 }

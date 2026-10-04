@@ -212,7 +212,7 @@ class TestFont(unittest.TestCase):
 
 
 class TestBudget(unittest.TestCase):
-    def _proj(self, res_bytes=0, lib_bytes=0):
+    def _proj(self, res_bytes=0, lib_bytes=0, build_dir='.fun', lib_plat='v85x'):
         tmp = tempfile.mkdtemp(prefix='pfbud_')
         self.addCleanup(shutil.rmtree, tmp, True)
         if res_bytes:
@@ -220,13 +220,15 @@ class TestBudget(unittest.TestCase):
             with io.open(os.path.join(tmp, 'resources', 'blob.bin'), 'wb') as fh:
                 fh.write(b'\0' * res_bytes)
         if lib_bytes:
-            os.makedirs(os.path.join(tmp, '.fun', 'v85x'))
-            with io.open(os.path.join(tmp, '.fun', 'v85x', 'libzkgui.so'), 'wb') as fh:
+            os.makedirs(os.path.join(tmp, build_dir, lib_plat))
+            with io.open(os.path.join(tmp, build_dir, lib_plat, 'libzkgui.so'), 'wb') as fh:
                 fh.write(b'\0' * lib_bytes)
         return tmp
 
     def test_small_project_is_ok(self):
-        b = pf.budget_usage(self._proj(1024), 'V85X')
+        # 用**未实测**平台（F133）验证缺省口径仍是 8.0：V85X 已在 2026-10-03 真机量出 7.62，
+        # 不再是占位值（见下一条用例）。
+        b = pf.budget_usage(self._proj(1024), 'F133')
         self.assertEqual(b['level'], 'ok')
         self.assertEqual(b['limitMB'], 8.0)
 
@@ -237,10 +239,97 @@ class TestBudget(unittest.TestCase):
         self.assertEqual(over['level'], 'over')
         self.assertTrue(over['warnings'])
 
+    def test_res_partition_probed_from_device(self):
+        """容量判据**实测优先**：连着设备时用 `cat /proc/mtd` 的 res 分区，静态值退为兜底。
+
+        规范见 `preflight_spec.json` 的 `budget.limitPriority`（实测 > perPlatform > 缺省）。
+        这台 V85X 真机实测 res = `0x7A0000` = 7,995,392 B = 7.62 MiB（离线用例里用同样的文本）。
+        """
+        import adb_tools
+        sample = ('dev:    size   erasesize  name\n'
+                  'mtd0: 00040000 00010000 "uboot"\n'
+                  'mtd1: 00280000 00010000 "boot"\n'
+                  'mtd2: 00480000 00010000 "system"\n'
+                  'mtd3: 007a0000 00010000 "res"\n'
+                  'mtd4: 00040000 00010000 "boot_logo"\n')
+        orig = adb_tools.sh
+        adb_tools.sh = lambda adb, dev, cmd, *a, **k: sample
+        try:
+            b, why = pf.probe_res_partition('dev1')
+            self.assertEqual(b, 0x7A0000)
+            self.assertIn('device', why)
+            r = pf.budget_usage(self._proj(1024), 'V85X', device='dev1')
+            self.assertEqual(r['limitMB'], 7.62)
+            self.assertIn('device', r['limitSource'])
+        finally:
+            adb_tools.sh = orig
+        # 探不到 → 显式降级到静态值，且报告里写明来源（不静默）
+        adb_tools.sh = lambda adb, dev, cmd, *a, **k: ''
+        try:
+            b2, why2 = pf.probe_res_partition('dev1')
+            self.assertIsNone(b2)
+            r2 = pf.budget_usage(self._proj(1024), 'V85X', device='dev1')
+            self.assertEqual(r2['limitMB'], 7.62)          # perPlatform 兜底
+            self.assertIn('perPlatform', r2['limitSource'])
+        finally:
+            adb_tools.sh = orig
+
+    def test_measured_partition_caps_z20_z21(self):
+        """Z20/Z21 必须用**实测 res 分区**（7.12 MiB）当上限，而不是缺省 8 MiB（2026-10-03 审计）。
+
+        为什么钉：`preflight_spec.budget.limitMB=8` 是**未实测平台的圆整占位**，
+        而真机 `cat /proc/mtd` 实测 Z20/Z21 的 res = `0x720000` = 7,471,104 B = **7.12 MiB**。
+        改前实测：7.13 MiB 的工程在 Z20 上被判 **ok**（89.1% < nearPct 90）——
+        但它**根本刷不进 /res**（这条判据本来就是拦"升级失败/被截断"的）⇒ 典型的**假绿**。
+        """
+        b = pf.budget_usage(self._proj(int(7.13 * 1048576)), 'Z20')
+        self.assertEqual(b['limitMB'], 7.12)
+        self.assertEqual(b['level'], 'over', '超过实测分区必须判 over，不许假绿')
+        # 未实测平台仍走缺省 8.0 —— 这是**已知占位**（spec 的 note 已写明"别拿 8 当还能加的依据"），
+        # 不是漏改。若将来收紧缺省值，请连同这条断言一起更新。
+        # V85X 也在 2026-10-03 真机量出来了（`mtd3 = 0x7A0000 = 7,995,392 B = 7.62 MiB`）
+        v = pf.budget_usage(self._proj(int(7.9 * 1048576)), 'V85X')
+        self.assertEqual(v['limitMB'], 7.62)
+        self.assertEqual(v['level'], 'over', 'V85X 超过实测分区同样必须判 over')
+        # 仍未实测的平台继续走 8.0 占位（spec 的 note 已写明「别拿 8 当还能加的依据」）
+        f = pf.budget_usage(self._proj(int(7.13 * 1048576)), 'F133')
+        self.assertEqual(f['limitMB'], 8.0)
+
     def test_lib_counts_toward_budget(self):
         b = pf.budget_usage(self._proj(1024, 4 * 1048576), 'V85X')
         self.assertAlmostEqual(b['usedMB'], 4.0, places=1)
         self.assertTrue(any(p['path'].endswith('libzkgui.so') for p in b['parts']))
+
+    def test_lib_in_fsc_counts_toward_budget(self):
+        """09-28 起 `fun` 把产物从 `.fun/<平台>/` 改到 `.fsc/<平台>/`。
+
+        原口径只找 `.fun/` → **新工具链工程的 libzkgui.so 体积一律计 0**，usedMB 偏小、
+        level 可能假绿（2026-10-03 定位）。这条钉住「两代都认」不许被回退。
+        """
+        b = pf.budget_usage(self._proj(1024, 4 * 1048576, build_dir='.fsc'), 'V85X')
+        self.assertAlmostEqual(b['usedMB'], 4.0, places=1)
+        self.assertTrue(any(p.get('file', '').startswith('.fsc/') for p in b['parts']))
+
+    def test_fsc_preferred_over_fun_when_both(self):
+        """两代目录都在时取 `.fsc`（与 project_tools._find_build_artifact 同口径）。"""
+        tmp = self._proj(1024, 2 * 1048576, build_dir='.fsc')
+        os.makedirs(os.path.join(tmp, '.fun', 'v85x'))
+        with io.open(os.path.join(tmp, '.fun', 'v85x', 'libzkgui.so'), 'wb') as fh:
+            fh.write(b'\0' * (6 * 1048576))
+        b = pf.budget_usage(tmp, 'V85X')
+        self.assertAlmostEqual(b['usedMB'], 2.0, places=1)
+        self.assertTrue(any(p.get('file', '').startswith('.fsc/') for p in b['parts']))
+
+    def test_build_dir_contents_not_counted_as_project_font(self):
+        """构建产物目录**两代都不算**工程体积（原口径只排 `.fun`，改名后 `.fsc` 漏排）。"""
+        tmp = self._proj(build_dir='.fsc')
+        d = os.path.join(tmp, '.fsc', 'v85x', 'launch')
+        os.makedirs(d)
+        with io.open(os.path.join(d, 'staged.ttf'), 'wb') as fh:
+            fh.write(b'\0' * 300000)
+        b = pf.budget_usage(tmp, 'V85X')
+        self.assertEqual(b['fontFiles'], [], '构建产物目录里的字库不该算工程字体')
+        self.assertEqual(b['usedMB'], 0.0)
 
     def test_unknown_platform_falls_back_to_default(self):
         self.assertEqual(P.budget_limit_mb('不存在的平台'), 8.0)

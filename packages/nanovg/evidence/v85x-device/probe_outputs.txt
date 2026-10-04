@@ -1,0 +1,93 @@
+### 设备
+/bin/sh: sed: not found
+/bin/sh: uname: not found
+
+### 落盘探针重跑（V85X 真机）
+
+===== nvg_smoke =====
+== nanovg(AGG) V85X smoke ==
+canvas 320x240 BGRA stride=1280
+OK: nvgCreateAGG ctx=0x1b98f20
+frame[0] (cold) = 3.849 ms  VmRSS=1660 kB
+frame[1..200]: min=2.368 avg=2.483 max=3.244 ms  VmRSS=1668 kB
+px(80,120)   circle-center  = R255 G0 B0 (exp 255,0,0)
+px(80,60)    above-circle   = R32 G32 B32 (exp 32,32,32)
+px(161,80)   gradient-left  = R0 G255 B0 (exp ~0,255,0)
+px(232,80)   gradient-mid   = R0 G255 B0 (exp ~0,128,127)
+px(303,80)   gradient-right = R0 G255 B0 (exp ~0,0,255)
+px(150,80)   gap(bg)        = R32 G32 B32 (exp 32,32,32)
+px(162,142)  pattern-tile0  = R255 G255 B0 (exp 255,255,0)
+px(170,142)  pattern-tile1  = R0 G0 B255 (exp 0,0,255)
+wrote /tmp/nvg_out.bgra (307200 B)
+wrote /tmp/nvg_out.ppm
+OK: nvgDeleteAGG done
+
+===== nvg_feat =====
+  (nvgCreateImageRaw -> img=1)
+== nanovg(AGG) V85X 功能矩阵 ==
+[T1] 任意路径填充（三角形 不闭合边 AA）
+  [PASS] T1-inside                  px( 40, 25)=R255 G  0 B  0  期望(255,  0,  0) tol6  |Δ|=0
+  [PASS] T1-outside                 px( 12, 58)=R 32 G 32 B 32  期望( 32, 32, 32) tol6  |Δ|=0
+[T2] 描边 stroke（8px）
+  [PASS] T2-on-line                 px( 90, 40)=R255 G255 B255  期望(255,255,255) tol6  |Δ|=0
+  [PASS] T2-off-line                px(110, 40)=R 32 G 32 B 32  期望( 32, 32, 32) tol6  |Δ|=0
+[T3] 变换（绕原点转45°后画矩形）
+  [PASS] T3-rotated-on              px(174, 54)=R  0 G200 B255  期望(  0,200,255) tol8  |Δ|=0
+  [PASS] T3-rotated-off             px(142, 58)=R 32 G 32 B 32  期望( 32, 32, 32) tol8  |Δ|=0
+[T4] 裁剪 scissor
+  [PASS] T4-inside                  px(210, 20)=R  0 G255 B  0  期望(  0,255,  0) tol6  |Δ|=0
+  [PASS] T4-outside                 px(190, 20)=R 32 G 32 B 32  期望( 32, 32, 32) tol6  |Δ|=0
+[T5] alpha 合成（a=128 红 over bg）
+  [PASS] T5-blend                   px( 40,180)=R144 G 16 B 16  期望(144, 16, 16) tol8  |Δ|=0
+[T6] 贴图 pattern
+  [PASS] T6-tile0(黄)              px( 12,102)=R255 G255 B  0  期望(255,255,  0) tol6  |Δ|=0
+  [PASS] T6-tile1(蓝)              px( 22,102)=R  0 G  0 B255  期望(  0,  0,255) tol6  |Δ|=0
+[T7] 抗锯齿（白圆 center(250,180) r=30，统计包围盒内"部分覆盖"像素）
+  [PASS] T7-AA 过渡像素数=136（阈值>=20），过渡值范围 61..223
+---- 汇总: PASS=12 FAIL=0 ----
+
+===== nvg_probe2 =====
+== 渐变族探针 ==  内色=蓝(0,0,255) 外色=黄(255,255,0)
+[A] 水平线性 (期望 蓝->黄 横变)
+  A-left                 px( 22, 30) = R  0 G  0 B255
+  A-mid                  px(160, 30) = R  0 G  0 B255
+  A-right                px(298, 30) = R  0 G  0 B255
+[B] 垂直线性 (期望 上蓝->下黄)
+  B-top                  px(160, 62) = R  0 G  0 B255
+  B-mid                  px(160, 80) = R  0 G  0 B255
+  B-bot                  px(160, 98) = R  0 G  0 B255
+[C] 径向 (期望 中心蓝->外黄)
+  C-center               px(160,150) = R  0 G  0 B255
+  C-r30                  px(190,150) = R  0 G  0 B255
+  C-out                  px(230,150) = R  0 G  0 B255
+[D] 箱形 (期望 内蓝->外黄)
+  D-inside               px(160,210) = R  0 G  0 B255
+  D-left                 px( 22,210) = R  0 G  0 B255
+  D-out                  px( 10,210) = R 32 G 32 B 32
+done
+
+===== nvg_probe3 =====
+== A) API 返回的 NVGpaint 结构（内蓝外黄, 轴 (20,30)->(300,30)）==
+linear: xform=[0.00 -1.00 1.00 0.00 -99980.00 30.00] extent=[100000.00 100140.00] radius=0.00 feather=280.00
+       inner=(0.00,0.00,1.00,1.00) outer=(1.00,1.00,0.00,1.00) image=0
+radial: xform=[1.00 0.00 0.00 1.00 160.00 60.00] extent=[30.00 30.00] radius=30.00 feather=60.00
+       inner=(0.00,0.00,1.00,1.00) outer=(1.00,1.00,0.00,1.00) image=0
+box: xform=[1.00 0.00 0.00 1.00 160.00 120.00] extent=[140.00 20.00] radius=8.00 feather=12.00
+       inner=(0.00,0.00,1.00,1.00) outer=(1.00,1.00,0.00,1.00) image=0
+== B) 常规法（同一行从左到右应 蓝->黄）==
+  B y=25 x=22..298 step46: (0,0,255) (0,0,255) (0,0,255) (0,0,255) (0,0,255) (0,0,255) (0,0,255) 
+== C) 变异1 paint 先建 ==
+  C y=70 x=22..298 step46: (0,0,255) (0,0,255) (0,0,255) (0,0,255) (0,0,255) (0,0,255) (0,0,255) 
+== D) 变异2 alpha 渐变（红 a=0->255，应 背景->红）==
+  D y=115 x=22..298 step46: (32,32,32) (32,32,32) (32,32,32) (32,32,32) (32,32,32) (32,32,32) (32,32,32) 
+== E) 变异3 stroke+渐变 ==
+  E y=160 x=22..298 step46: (0,0,255) (0,0,255) (0,0,255) (0,0,255) (0,0,255) (0,0,255) (0,0,255) 
+
+===== nvg_probe4 =====
+img(flags=0)=1  img(REPEATXY)=2
+== flags=0 （y=18=short 贴图首行；每 8px 采样：应 红8 白8 然后回落到背景）==
+  (255,  0,  0) (255,255,255) ( 32, 32, 32) ( 32, 32, 32) ( 32, 32, 32) ( 32, 32, 32) ( 32, 32, 32) ( 32, 32, 32) ( 32, 32, 32) ( 32, 32, 32) ( 32, 32, 32) 
+== REPEATX|REPEATY （y=68）==
+  (255,  0,  0) (255,255,255) ( 32, 32, 32) ( 32, 32, 32) ( 32, 32, 32) ( 32, 32, 32) ( 32, 32, 32) ( 32, 32, 32) ( 32, 32, 32) ( 32, 32, 32) ( 32, 32, 32) 
+首格之外的非背景像素: flags=0 -> 0/235 ; REPEATXY -> 0/235
+结论: 需人工判读

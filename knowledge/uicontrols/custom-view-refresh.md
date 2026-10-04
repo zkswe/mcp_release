@@ -110,7 +110,7 @@ ctrl->setInvalid(!ctrl->isInvalid());              // ✅ 整块重画
 
 ## 6. 相关文档
 
-- 触摸/禁用语义与踩坑（`setInvalid(true)` 的现场）：本文 §1、§5 案例
+- 触摸/禁用语义与硬约束（`setInvalid(true)` 的现场）：本文 §1、§5 案例
 - 自定义控件整体做法（BaseView / onDraw / 适配器 / 脏区）：`knowledge/devflow/custom-widget.md`
 - 跨线程直接操作控件：`knowledge/uicontrols/cross-thread-ui-rule.md`
 - 抓帧与"别拿 setInvalid 当重绘"的误判记录：`knowledge/devflow/device-screenshot.md` §3.3-1

@@ -1,0 +1,28 @@
+### app 侧 logcat（pid 1033 那次，含离屏 buffer 落盘）
+10-03 12:04:37.422 D/zkgui   (  936): nanovg-ondev: nvgCreateAGG ok ctx=0x416c20
+10-03 12:04:37.432 D/zkgui   (  936): nanovg-ondev: px(110,110)=B32 G26 R24
+10-03 12:04:37.432 D/zkgui   (  936): nanovg-ondev: grad-left(20,280)=B255 G90 R0
+10-03 12:04:37.432 D/zkgui   (  936): nanovg-ondev: grad-mid(220,280)=B255 G90 R0
+10-03 12:04:37.432 D/zkgui   (  936): nanovg-ondev: grad-right(420,280)=B255 G90 R0
+10-03 12:04:37.432 D/zkgui   (  936): nanovg-ondev: setBackgroundBmp done, 440x440 -> ctrl50001
+10-03 12:07:30.752 D/zkgui   (  997): nanovg-ondev: nvgCreateAGG ok ctx=0x4e8c20
+10-03 12:07:30.772 D/zkgui   (  997): nanovg-ondev: tex img id=1
+10-03 12:07:30.772 D/zkgui   (  997): nanovg-ondev: px(110,110)=B0 G200 R255
+10-03 12:07:30.772 D/zkgui   (  997): nanovg-ondev: grad-left(20,280)=B255 G90 R0
+10-03 12:07:30.772 D/zkgui   (  997): nanovg-ondev: grad-mid(220,280)=B255 G90 R0
+10-03 12:07:30.772 D/zkgui   (  997): nanovg-ondev: grad-right(420,280)=B255 G90 R0
+10-03 12:07:30.772 D/zkgui   (  997): nanovg-ondev: setBackgroundBmp done, 440x440 -> ctrl50001
+10-03 12:09:13.122 D/zkgui   ( 1033): nanovg-ondev: nvgCreateAGG ok ctx=0x441c20
+10-03 12:09:13.142 D/zkgui   ( 1033): nanovg-ondev: tex img id=1
+10-03 12:09:13.142 D/zkgui   ( 1033): nanovg-ondev: px(110,110)=B0 G200 R255
+10-03 12:09:13.142 D/zkgui   ( 1033): nanovg-ondev: grad-left(20,280)=B255 G90 R0
+10-03 12:09:13.142 D/zkgui   ( 1033): nanovg-ondev: grad-mid(220,280)=B255 G90 R0
+10-03 12:09:13.142 D/zkgui   ( 1033): nanovg-ondev: grad-right(420,280)=B255 G90 R0
+10-03 12:09:13.142 D/zkgui   ( 1033): nanovg-ondev: setBackgroundBmp done, 440x440 -> ctrl50001
+10-03 12:09:13.142 D/zkgui   ( 1033): nanovg-ondev: dumped /tmp/nvg_ondev.bgra (774400 B)
+### ±2 逐像素比对结果
+活动半屏 OFF=0 (score=7666)
+像素总数 193600
+max |Δ|(R+G+B) = 0   超差(> 2) 像素 = 0  (0.0000%)
+Δ 分布(前 8 档): [(0, 193600)]
+结论: PASS —— 上屏与离屏出图逐像素一致（通道/stride/裁剪/上屏均无偏差）

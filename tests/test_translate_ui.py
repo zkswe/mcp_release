@@ -11,6 +11,7 @@
 import io
 import json
 import os
+import sys
 import tempfile
 import unittest
 
@@ -266,6 +267,45 @@ class TestSchemaCompleteness(unittest.TestCase):
         self.assertEqual(sk['backgroundPic'], 'images/sk_track_400x40.png')   # 已落盘 → 保留
         self.assertEqual(sk['progressPic'], '')                               # 未落盘 → 仍剥除
         U.cleanup(tmp)
+
+
+class TestSchemaFillDoesNotLagRegistry(unittest.TestCase):
+    """翻译层的「缺键补齐」表**不得落后于字段真源**（2026-10-03 对账后钉住）。
+
+    背景：`translate_tools._SCHEMA_FILL` 是**发射层口径**（从 demos ftu 反解出的 IDE 全量序列化），
+    它自己的注释就写着「与注册表 default 存在刻意差异……**勿在此静默对齐**」——
+    所以**值不能自动对齐**。但它的**键集**必须跟得上真源：真源登记了新字段而 fill 不知道，
+    翻译出来的控件就达不到「完整」，例如 `edittext.touchable` 漏了会让**输入框点不动、IME 不弹**。
+
+    2026-10-03 实测：真源补齐 button/textview/edittext 的字段后，fill 分别落后 14/8/15 个键，
+    一次补齐（见 CONSOLIDATION §30）。这条用例让同类滞后下次直接红。
+    """
+
+    # 允许不在 fill 里的键 —— 每条都有理由，**不是偷懒**：
+    EXEMPT = {
+        'id', 'caption', 'position',        # 片段自带（必填，来自源控件）
+        'colorTab', 'bgColorTab', 'picTab', 'thumb',   # 由 _schema_complete 归一为五槽/子盒
+        'text',            # textview「非空才写」，补了会被 _schema_complete pop 掉
+        'textPosition', 'iconPosition',                # 条件写的布局盒（零值盒无意义，见 iconBox note）
+        'backgroundPic',   # ⚠️ 未核：valueRules.missingImage 说置 '' 会让控件不可见（全仓 333 处只有 1 处空）
+        'playFile',        # imageanim：「无文件不写引用」
+        'codeStr',         # qrcode：「有值才写」
+    }
+
+    def test_fill_covers_registry_fields(self):
+        sys.path.insert(0, os.path.join(U.BASE, 'ui_tools'))
+        import translate_tools as tt
+        import ui_schema_loader as us
+        reg = us.load()
+        lag = {}
+        for tname, fill in tt._SCHEMA_FILL.items():
+            ent = reg['controls'].get(tname) or reg['subStructures'].get(tname)
+            self.assertIsNotNone(ent, '%s 不在注册表里（fill 表有它）' % tname)
+            missing = sorted(set(ent.get('fields') or {}) - set(fill) - self.EXEMPT)
+            if missing:
+                lag[tname] = missing
+        self.assertEqual(lag, {},
+                         '这些控件在真源里已有、而 _SCHEMA_FILL 没有（翻译产物会缺字段）：%s' % lag)
 
 
 if __name__ == '__main__':

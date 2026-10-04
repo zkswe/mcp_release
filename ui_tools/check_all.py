@@ -651,15 +651,15 @@ def verify_design_tokens(project_root):
     md = os.path.join(project_root, 'DESIGN.md')
     if not os.path.isfile(md):
         res['status'] = 'skip'
-        res['note'] = ('未见 DESIGN.md（新项目第一版视觉应当有：见 skill flythings-ui-dev / '
-                       'templates/DESIGN.md）；存量工程可忽略')
+        res['note'] = ('未见 DESIGN.md（新项目第一版视觉应当有：它放在**工程根**，'
+                       '内含色彩令牌与字号阶梯 —— 本仓不附带模板）；存量工程可忽略')
         return res
     text = open(md, encoding='utf-8').read()
     colors, fonts, spacing, _exempt = _parse_design_tokens(text)
     if len(colors) < 2 or not fonts:
         res['status'] = 'incomplete'
         res['note'] = ('DESIGN.md 令牌表未填全（解析到 颜色 %d 个 / 字号 %d 个），跳过漂移检测；'
-                       '按 templates/DESIGN.md 填「色彩令牌 + 字号阶梯」后再跑' % (len(colors), len(fonts)))
+                       '按工程根 DESIGN.md 的格式填「色彩令牌 + 字号阶梯」后再跑' % (len(colors), len(fonts)))
         return res
     allowed_c = colors | _STRUCT_COLORS
     ui = os.path.join(project_root, 'ui')
@@ -697,7 +697,10 @@ _LAYER_RELEASE_MARKERS = (
     'DISP_LAYER_SET_CONFIG', 'DISP_LAYER_GET_CONFIG', '/dev/disp',
     'release_layer', 'releaseLayer', 'ReleaseLayer', 'hwdisplay.h',
 )
-_SRC_SKIP_DIRS = ('dependencies', 'lib-no-link', '.fun', '.fuse', 'Release', 'build')
+# 扫源码时跳过的目录：构建产物目录**两代都跳**（09-28 起 `.fun/` 改名 `.fsc/`）。
+# 注：本扫描只走 `<项目>/src`，产物目录在工程根、通常不在 src 下 → 影响面小，
+# 但口径要与全仓一致（别只认一代），故一并登记。
+_SRC_SKIP_DIRS = ('dependencies', 'lib-no-link', '.fsc', '.fun', '.fuse', 'Release', 'build')
 
 
 def _manifest_platform(root):

@@ -21,8 +21,8 @@ packages/nanovg/
 |---|---|---|
 | 任意矢量路径（贝塞尔 / 多边形 / 描边 / 虚线） | ❌ 只有整数坐标的线/三角/矩形/弧 | ✅ `nvgBeginPath` 全族 |
 | 抗锯齿质量 | 靠切图 / 无 AA 保证 | ✅ AGG 扫描线覆盖 |
-| 渐变（线性 / 径向 / 箱形） | ❌ 仅单色 | ✅ |
-| 贴图 + 变换（旋转/缩放/倾斜） | 部分（90° 整数倍） | ✅ `nvgImagePattern` |
+| 渐变（线性 / 径向 / 箱形） | ❌ 仅单色 | ⛔ **本构建实测失效** —— 一律退化成纯内色（见 §3.7） |
+| 贴图 + 变换（旋转/缩放/倾斜） | 部分（90° 整数倍） | ✅ `nvgImagePattern`（但**不平铺**，须 1:1 覆盖，见 §3.8） |
 | 文本 / 字体 | 文本控件（档位预烘、不放大） | ⚠️ **本构建没有字体 API**（§4 缺口） |
 | 离屏合成再上屏 | ✅（`setBackgroundBmp`） | ✅ 天然离屏（渲进你的缓冲） |
 
@@ -74,6 +74,16 @@ hostCtrl->setInvalid(!hostCtrl->isInvalid());         // 之后每帧翻转刷�
 4. 软件光栅逐帧成本高：整屏逐帧动画不合适；要小画布 + 降帧。
 5. `setBackgroundBmp` **只挂一次**，之后靠 `setInvalid(!isInvalid())` 翻帧。
 6. 本档**没有字体/文本 API**（`nvgCreateFont*` / `nvgText*` / `nvgFont*` 都不导出）→ 想画字用 easyui 文本控件或自渲染，别链这些符号。
+7. ⛔ **渐变全族不生效（V85X 真机实测，2026-10-03）**：`nvgLinearGradient` / `nvgRadialGradient` /
+   `nvgBoxGradient` 全都会退化成**纯 `innerColor`**（4 类 × 4 种调用法 = 12 组全灭）。
+   **不是 API 问题**——`nvgLinearGradient` 返回的结构完全符合上游（`extent=[100000,100140] feather=280 radius=0`），
+   是**后端光栅器没实现 ramp**（斜率恒为 t=0）。
+   → 要渐变：**自己把色带烘成一张贴图**，用 `nvgImagePattern` 1:1 铺上去。
+8. ⚠️ **`nvgImagePattern` 不平铺（V85X 实测）**：只画**首个 tile extent**，之外一律透明；
+   加不加 `NVG_IMAGE_REPEATX | NVG_IMAGE_REPEATY` **都一样**。
+   → 贴图必须**按目标区域大小 1:1 映射**（`components/vinyl` 就是这么用的，所以一直没暴露）。
+9. **`lib/v85x/` 这份 `.so` 带 C++ 运行期 UND 符号**（`operator new` / `__cxa_*`）→
+   链接方（工程或探针）必须用 **g++** 链，从而依赖设备上的 `libstdc++.so.6`（V85X 固件里有 6.0.22）。
 
 ---
 
@@ -81,7 +91,7 @@ hostCtrl->setInvalid(!hostCtrl->isInvalid());         // 之后每帧翻转刷�
 
 | 平台 | 关键点 | 状态 |
 |---|---|---|
-| **V85X** | `lib/v85x/libnanovg.so`（本仓自带，ARMv7 **musl**，GCC 6.4.1） | ⚠️ **未上真机**（无上屏/性能/逐像素证据；符号级已核） |
+| **V85X** | `lib/v85x/libnanovg.so`（本仓自带，ARMv7 **musl**，GCC 6.4.1） | ✅ **已上真机**（2026-10-03）：功能 12/12、上屏±2 比对 max\|Δ\|=0、**2.48 ms/帧 @320×240**、VmRSS 1668 kB；⛔ 渐变失效 / 贴图不平铺 |
 | F133 | 注册表包；vinyl 的 nanovg 后端在 F133 真机跑过（23~44 ms/帧 @320×320） | ✅ 有真机证据（借组件证据） |
 | T113EMMC / F136 | 注册表包存在 | ⏳ 未验证 |
 | Z20 / Z21 / T113 | **注册表里没有这个包** | ❌ 不可用（别照抄） |

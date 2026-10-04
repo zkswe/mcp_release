@@ -94,4 +94,4 @@ int getBlockSize(mount_point) { return statfs(mount_point).f_bsize; }
 ## 5. 参考
 - `knowledge/v85x/dvr-recorder-guide.md`（DVR 录制功能开发 Playbook，存储章节引用本篇）
 - `knowledge/v85x/usb-gadget-storage.md`（EMMC/TF 双介质挂载与 USB 暴露）
-- `knowledge/devflow/package-properties-easyui-cfg.md`（EasyUI.cfg 配置机制，与格式化无关但同为工程级坑位）
+- `knowledge/devflow/package-properties-easyui-cfg.md`（EasyUI.cfg 配置机制，与格式化无关但同为工程级约束）

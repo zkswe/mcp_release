@@ -192,7 +192,7 @@ def _dev_from_target(t):
     return d
 
 
-# ────────────────────────────────────────────────────────── 九分区定义
+# ────────────────────────────────────────────────────────── 分区定义（SECTIONS）
 def _post_device(raw, dev):
     """设备信息：型号 / 平台（型号表反查）/ 内核 / EasyUI 版本。"""
     model = _first_line(raw.get('model'))
@@ -699,7 +699,7 @@ def _collect_section(dev, sec):
 
 
 def _snapshot(dev, target):
-    """十个分区快照（selfcheck 的正文）。"""
+    """分区快照（selfcheck 的正文；分区清单 = `SECTIONS`，**份数不在这里手写**）。"""
     sections = {}
     for sec in SECTIONS:
         try:
@@ -786,7 +786,7 @@ def _compute_diff(prev, cur):
 
 
 def run_selfcheck(device='', diff_against='', out=''):
-    """整机快照（十分区）+ 可选 diff + 可选落盘。返回 dict（kb_tools 只做 JSON 包装）。"""
+    """整机快照（`SECTIONS` 的全部 N 个分区，N 由 len(SECTIONS) 派生）+ 可选 diff + 可选落盘。返回 dict（kb_tools 只做 JSON 包装）。"""
     target = resolve_target(device)
     if not target['ok']:
         return {'ok': False, 'op': 'flythings_selfcheck',
@@ -799,8 +799,11 @@ def run_selfcheck(device='', diff_against='', out=''):
     if dev.busyboxNote:
         warnings.append(dev.busyboxNote)
     if snap['summary']['failed']:
-        warnings.append('九个分区里有 %d 个 ok=false（读不到本身是结论，逐区看 hint）：%s'
-                        % (snap['summary']['failed'],
+        # ⚠️ 分区数**从 summary.total 派生**，不许在文案里手写：这里原先把份数写死成「九」
+        # （当时确有其数），后来分区加到 11 而文案没跟上 —— 对外报错信息与文档都还写着 9。
+        # 同类口径：标题/表列数一律由 SECTIONS 决定（见 _snapshot 的 summary.total）。
+        warnings.append('%d 个分区里有 %d 个 ok=false（读不到本身是结论，逐区看 hint）：%s'
+                        % (snap['summary']['total'], snap['summary']['failed'],
                            ', '.join(snap['summary']['failedSections'])))
     out_path = ''
     if out:
@@ -956,7 +959,7 @@ def render_bugreport(title, symptom='', steps='', expected='', actual='', eviden
             lines += ['最近 logcat：%s' % (j.get('note') or '（无输出）'), '']
     else:
         lines += ['> 未采集到真机数据：%s' % (j.get('note') or '（未连设备 / 设备不可定位）'), '',
-                  '> 补采：连上设备后重跑 `flythings_bugreport`（或先 `flythings_selfcheck` 看九分区），',
+                  '> 补采：连上设备后重跑 `flythings_bugreport`（或先 `flythings_selfcheck` 把分区清单抓全），',
                   '> 采不到的分区在快照里是 `ok=false` + `hint`，不是没检查。', '']
     lines += ['## 证据', '']
     if ev_l:

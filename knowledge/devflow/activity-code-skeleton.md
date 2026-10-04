@@ -114,15 +114,20 @@ logic 钩子：onUI_init / onUI_show(≈onResume) / onUI_hide(≈onPause) / onUI
 - 回调 `onUI_Timer(id)`：return true 继续、false 停该 id；**回调在 UI 线程，禁止耗时操作**（长活/高频放 Thread）。
 - 用法边界：关动态定时器不影响静态表那条（独立链路）。
 
-## 5. 串口协议模板（UartContext + ProtocolParser/Sender，除双串口外 35 工程同款）
-- Main.cpp：onEasyUIInit `UARTCONTEXT->openUart(CONFIGMANAGER->getUartName(), CONFIGMANAGER->getUartBaudRate())`；deinit `closeUart()`；onStartupApp 返回 `"mainActivity"`。
-- UartContext 是 Thread 子类：openUart 配 termios（8N1 无流控）+ `fcntl(O_NONBLOCK)` + run("uart") 起读线程；send()=write 全量。
-- 读线程粘包处理：16KB 拼接缓冲 + 每轮 read 追加 → `parseProtocol(buf, len)` 返回消费字节数 → 残留半包 memcpy 到头部；无数据 `Thread::sleep(50)` 防忙等。天然解决拆包/粘包。
-- 帧格式（CommDef.h）：`FF 55 | CmdID(2B 高前) | DataLen(1B) | Data | [CheckSum 1B]`，最小帧 5/6；ProtocolParser 逐字节找帧头自动对齐乱序，数据不全 break 等下次（半包重组）。
-- 订阅：全局 `SProtocolData` + Mutex 保护的 listener 数组；activity onCreate `registerProtocolDataUpdateListener(onProtocolDataUpdate)`，析构反注册。收帧→`notifyProtocolDataUpdate`→业务 `static void onProtocolDataUpdate(const SProtocolData&)` 刷 UI（回调里别耗时）。
-- 发送：`sendProtocol(cmdID, data, len)`（ProtocolSender.h 组帧后 UARTCONTEXT->send）。
-- 校验：CommDef.h 默认 `//#define PRO_SUPPORT_CHECK_SUM`（关）；对端带校验需打开并改最小帧长，两端一致。
-- **双串口（DoubleUartDemo）**：单例→双实例 `UartContext::init()` new ttyS0/ttyS1（波特率写死 B9600）+ 各自读线程缓冲；`parseProtocol(uart,...)` 打 `uart_from` 标；`sendProtocolTo(uart, cmdID, ...)` 按口发。共享 SProtocolData/listener 高吞吐会字段覆盖/回调交错，多口业务建议 per-uart 数据。
+## 5. 串口协议模板（→ 已独立成权威页）
+
+`UartContext` 读线程 + `ProtocolParser/Sender` + `SProtocolData` 共享变量 + 帧格式/校验/粘包处理，
+**完整口径见 `knowledge/devflow/uart-protocol-framework.md`**（含 11 条从代码读出的铁律、
+"加一条协议只改三处"、以及 Modbus 等协议层交给 Linux/Arduino 生态的边界声明）。
+
+本节只留**与 activity 骨架直接相关**的钩子级事实：
+
+- **app 级**：`Main.cpp` 的 `onEasyUIInit` 开串口
+  （`UARTCONTEXT->openUart(CONFIGMANAGER->getUartName(), CONFIGMANAGER->getUartBaudRate())`）、
+  `onEasyUIDeinit` 关 —— 串口生存期 = 整个应用，页面切换不重开。
+- **page 级**：activity `onCreate` **注册** `registerProtocolDataUpdateListener(onProtocolDataUpdate)`、
+  **析构反注册**，**成对是铁律**（R6，漏了 = 页面销毁后收到数据即崩）；
+  回调 `static void onProtocolDataUpdate(const SProtocolData&)` **在串口线程**上被调 —— 别直接刷 UI。
 
 ## 6. 系统级界面 SysApp（非 Activity）
 注册宏：`REGISTER_SYSAPP(APP_TYPE_SYS_STATUSBAR/SCREENSAVER/IME, 类名)`；类继承 **BaseApp**（不是 Activity），onCreate 先 `BaseApp::onCreate()`；`getAppName()` 返回独立 ftu 文件名。

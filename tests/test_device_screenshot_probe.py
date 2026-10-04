@@ -36,7 +36,7 @@ class PickBusybox(unittest.TestCase):
 
     def test_skip_busybox_without_gzip(self):
         """系统 busybox 有 echo 没 gzip → 不能选中；没有候选就如实返回空 + 写明原因"""
-        ds._local_busybox_candidates = lambda: []      # 模拟「本仓 busybox 也推不上去」
+        ds._local_busybox_candidates = lambda prefer='': []   # 模拟「本仓 busybox 也推不上去」
         ds._sh = _fake_sh({'/tmp/busybox gzip': 'sh: not found',
                            'busybox gzip': 'gzip: applet not found'})
         notes = []

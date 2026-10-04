@@ -37,8 +37,11 @@ class TestFuiCapability(unittest.TestCase):
     def _try_unpack(self, ftu, out_json=None):
         """按真实 CLI 形式解包，返回 (rc, 产出的 json 路径或 None)。
 
-        fui unpack 的真实用法（--help 自述）：`unpack <input.ftu> [output.json]`；
-只给 input 时解到同目录同名 json。⚠️ 传目录会 FATAL。
+        fui unpack 的真实用法（`fui help` 自述）：`unpack <input> [<output>]`；
+只给 input 时解到同目录同名 json。**传目录也可以**（批量解该目录下的 .ftu）——
+2026-10-03 实测 `fui unpack <dir>` rc=0 且解出了 json；改前这里写「⚠️ 传目录会 FATAL」，
+与生产代码 3 处传目录（`project_tools._run_fui` / `_sync_ftu_to_json` / `check_all`）矛盾，
+是条**陈旧注释**（会误导后来者去"修"本来正常的代码）。
         """
         import project_tools as pt
         args = [pt.FUI_EXE, 'unpack', ftu] + ([out_json] if out_json else [])
@@ -67,6 +70,25 @@ class TestFuiCapability(unittest.TestCase):
                          % (claim, works, pt.FUI_EXE))
         if got:
             os.remove(got)
+
+    def test_probe_distinguishes_failure_from_capability_absence(self):
+        """「探测失败」≠「能力缺失」（2026-10-03 修）。
+
+        改前是 `except Exception: _cached = False` —— 文件找不到 / 不可执行 / 超时
+        全被报成「当前 fui.exe 不含 unpack」，**会把人送去换 fui（方向是错的）**；
+        而且**失败结论会被缓存**：一次 15s 超时就让整个进程从此认定不能 unpack。
+        现在：原因分类写清、失败不缓存（可重试）。
+        """
+        import project_tools as pt
+        ok, why = pt._fui_probe(os.path.join(self.tmp, 'no-such-fui.exe'))
+        self.assertFalse(ok)
+        self.assertTrue(why.startswith('探测失败'), '必须报「探测失败」而不是「不含 unpack」：%s' % why)
+        self.assertIn('找不到可执行文件', why)
+        # 关键：失败**不缓存** —— 随后真实 fui 的结论不受影响（否则会话被一次超时废掉）
+        self.assertTrue(pt._fui_supports_unpack(),
+                        '探测失败被缓存了：一次失败不该让整个进程认定不能 unpack')
+        # 统一文案要带实际二进制路径（工程带多份 fui 时才知道是哪个）
+        self.assertIn(pt.FUI_EXE, pt._fui_no_unpack_msg())
 
     def test_roundtrip_json_ftu_json(self):
         """json → ftu → json 语义等价（fui 不支持 unpack 的 build 上跳过）。"""

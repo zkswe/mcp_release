@@ -136,19 +136,62 @@ PLATFORM_ALIASES = {a: n for n, m in _platforms.PLATFORMS.items() for a in m.get
 
 
 # ---------------- fui 基础 ----------------
-def _fui_supports_unpack():
-    """检测当前 fui.exe 的能力（仅支持 pack json→ftu 时为 False，布局以 json 为源）。
-结果缓存，避免重复启动子进程。"""
-    if getattr(_fui_supports_unpack, '_cached', None) is not None:
-        return _fui_supports_unpack._cached
+# 探测缓存：按**二进制绝对路径**存「确定性结论 + 原因」。
+# ⚠️ 只缓存确定性结论：**探测失败（找不到/不可执行/超时）一律不缓存** ——
+# 一次 15s 超时不该让整个进程从此认定「这台机器不能 unpack」（2026-10-03 修）。
+_FUI_PROBE = {'key': None, 'ok': None, 'why': ''}
+
+
+def _fui_probe(path=None):
+    """探测 fui 的 `help` 输出里有没有 `unpack` → `(ok, why)`。
+
+    `why` 在 ok=False 时分**两类**，这个区分很重要（2026-10-03 修）：
+      · `help 输出里没有 unpack` / `help 返回码 N` → **真·能力缺失**（老 fui 只有 pack）→ 该换 fui；
+      · `探测失败：…`                            → **不是能力问题**（文件不在/不可执行/超时）→ 该修路径。
+    改前这两种都报成「当前 fui.exe 不含 unpack」，会把人送去换 fui（方向是错的）。
+    """
+    path = path or FUI_EXE
+    key = os.path.abspath(str(path))
+    if _FUI_PROBE['key'] == key:
+        return _FUI_PROBE['ok'], _FUI_PROBE['why']
+    if not (os.path.isfile(path) or shutil.which(path)):
+        return False, '探测失败：找不到可执行文件 %s' % path
     try:
-        r = subprocess.run([FUI_EXE, 'help'], capture_output=True, text=True, timeout=15,
+        r = subprocess.run([path, 'help'], capture_output=True, text=True, timeout=15,
                            stdin=subprocess.DEVNULL, encoding='utf-8', errors='replace')
-        out = ((r.stdout or '') + (r.stderr or '')).lower()
-        _fui_supports_unpack._cached = ('unpack' in out)
-    except Exception:
-        _fui_supports_unpack._cached = False
-    return _fui_supports_unpack._cached
+    except Exception as e:
+        return False, '探测失败：%s: %s' % (type(e).__name__, e)      # 不缓存 → 下次可重试
+    out = ((r.stdout or '') + (r.stderr or '')).lower()
+    if 'unpack' in out:
+        ok, why = True, ''
+    elif r.returncode == 0:
+        ok, why = False, 'help 输出里没有 unpack（老版 fui 只有 pack）'
+    else:
+        ok, why = False, 'help 返回码 %d：%s' % (r.returncode, out.strip()[:120] or '(无输出)')
+    _FUI_PROBE.update(key=key, ok=ok, why=why)                        # 确定性结论才缓存
+    return ok, why
+
+
+def _fui_supports_unpack():
+    """当前 fui 是否支持 unpack（兼容旧调用；**原因**用 `_fui_probe()` 取）。"""
+    ok = _fui_probe()[0]
+    _fui_supports_unpack._cached = ok       # 兼容旧的函数属性读法
+    return ok
+
+
+def _fui_no_unpack_msg():
+    """统一的「为什么不能用 unpack」文案：**带上实际二进制与探测原因**。
+
+    改前四处各写一句「当前 fui.exe 不含 unpack」：既不带路径（工程带多份 fui 时不知道是哪个），
+    也不区分「能力缺失」与「探测失败」。
+
+    ⚠️ 只在**探测为不支持**时调用；万一被误调用（探测其实是支持的），如实说明而不是
+    输出「未知原因」这种含糊文案（2026-10-03 自测时真的输出成那样，故加这条自证）。
+    """
+    ok, why = _fui_probe()
+    if ok:
+        return '（内部误用：当前 fui 探测是支持 unpack 的：%s）' % FUI_EXE
+    return '当前 fui 不能 unpack（%s；%s）' % (FUI_EXE, why or '未知原因')
 
 
 def _run_fui(cmd, target_dir):
@@ -293,8 +336,9 @@ def _rewrite_ftu_resolution(project_root, resolution):
                 jf = os.path.join(tmp, base + '.json')
             elif not _fui_supports_unpack():
                 result["failed"].append({"ftu": fn,
-                                          "error": f"当前 fui.exe 不含 unpack 且无 {base}.json 可改分辨率，"
-                                                   f"请换用支持 unpack 的 fui.exe 或手动修改 json"})
+                                          "error": f"{_fui_no_unpack_msg()}；且无 {base}.json 可改分辨率，"
+                                                   f"请照上面的原因处理（修 fui 路径或换支持 unpack 的 fui），"
+                                                   f"或手动修改 json"})
                 continue
             else:
                 r = _run_fui('unpack', tmp)
@@ -389,7 +433,7 @@ def _sync_ftu_to_json(project_root):
     if not _fui_supports_unpack():
         for t in todo:
             result["skipped"].append({"ftu": t['ftu'],
-                                       "reason": "当前 fui.exe 不含 unpack，无法从 ftu 反解析 json；"
+                                       "reason": _fui_no_unpack_msg() + "，无法从 ftu 反解析 json；"
                                                  "以 json 为源重新 pack（用户对 ftu 的编辑需手动同步到 json）"})
         return result
     for t in todo:
@@ -818,8 +862,8 @@ def flythings_validate_project(root):
                        f"build_ui_flow 会先 fui unpack 同步 json 再继续，避免覆盖编辑）")
             else:
                 msg = (f"{d['ftu']} 修改时间晚于 {d['json']} 分钟级（用户/IDE 编辑过 ftu；"
-                       f"当前 fui.exe 不含 unpack，无法从 ftu 反解析——"
-                       f"如需保留对 ftu 的编辑，请手动同步到 json，或换用支持 unpack 的 fui.exe）")
+                       f"{_fui_no_unpack_msg()}，无法从 ftu 反解析——"
+                       f"如需保留对 ftu 的编辑，请手动同步到 json）")
             warnings.append({'file': f"ui/{d['ftu']}", 'type': 'dev_modified_ftu', 'msg': msg})
         # 只有 ftu 没有同名 json（build_ui_flow 会自动转出 json）
         for f in ts.get('ftuOnly', []):
@@ -886,8 +930,10 @@ def flythings_fui_unpack(ftu_path, output_json='', overwrite=True):
         return {"success": False, "error": f"不是 .ftu 文件: {ftu_path}（json 直接读，无需 unpack）"}
     if not _fui_supports_unpack():
         return {"success": False, "fuiUnpackSupported": False,
-                "error": f"当前 fui.exe 不含 unpack，无法从 ftu 反解析（{FUI_EXE}）",
-                "hint": "换用支持 unpack 的 fui.exe（随包 toolchain/fui.exe 自 v0.27.91 起已支持）"}
+                "error": f"{_fui_no_unpack_msg()}，无法从 ftu 反解析",
+                "hint": ("上面写「探测失败」→ 先修 fui 路径（文件不在/不可执行/超时都算）；"
+                         "写「help 输出里没有 unpack」→ 换支持 unpack 的 fui"
+                         "（随包 toolchain/fui.exe 自 v0.27.91 起已支持）")}
     d = os.path.dirname(os.path.abspath(ftu_path)) or '.'
     base = os.path.splitext(os.path.basename(ftu_path))[0]
     src_json = os.path.join(d, base + '.json')

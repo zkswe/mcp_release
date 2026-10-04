@@ -106,7 +106,10 @@ ui/*.ftu  ← 设备实际加载的是它
 - 随包 `fui.exe` 自 **v0.27.91** 起**含 `unpack`**（`fui help` 里 pack/unpack 都在）：
   `fui unpack <in.ftu> [out.json]`（不给输出就解到同目录同名 json），也可以传**目录**批量解。
   工具代码按能力探测：`project_tools._fui_supports_unpack()` 跑 `fui help` 看有没有 `unpack`
-  —— 用旧版 fui（只含 pack）时会明确报「不含 unpack」，不会装做解开。
+  —— 用旧版 fui（只含 pack）时会明确报「不能 unpack」并**带上是哪个二进制 + 具体原因**；
+  ⚠️ **「探测失败」与「能力缺失」分开报**（2026-10-03 修）：找不到/不可执行/超时属于**探测失败**
+  （该修路径），不会被说成"版本不支持"（那会把人送去换 fui，方向是错的）；
+  且**探测失败不缓存**（一次超时不会让整个会话从此认定不能 unpack）。
 - **正道走 op**：`flythings_fui_unpack(ftu_path, output_json='', overwrite=True)`
   - 默认**覆盖**同目录同名 json（ftu 为真源）；要保留原 json 传 `overwrite=False` → 写 `<name>.unpacked.json`（已存在则追加序号）；
   - 也可以 `output_json` 指定别的落盘路径；
@@ -114,6 +117,31 @@ ui/*.ftu  ← 设备实际加载的是它
 - 用在：只有 ftu 没 json 的老工程接手 / 核对设备侧布局 / IDE 直接改过 ftu 要回写到 json。
 - ⚠️ **逆向不等于改法**：改布局仍以 json 为源（改 json → pack），别养成「改 ftu → unpack → pack」的循环。
 - `flythings_read_json` 读的是 **json**；只给 ftu 时它会明确指路 `flythings_fui_unpack`（不再说「加密无法解析」）。
+
+### 6.1 ⚠️ 谁在调**哪个** `fui.exe`（三处查找顺序不一致 —— 已知不一致，2026-10-03 逐份代码实测登记）
+
+工程里可能同时存在**两份 `fui.exe`**：随包 `toolchain/fui.exe`（MCP 用的），以及
+`flythings_attach_cli_tools` 复制进 `<项目>/ui/fui.exe` 的那份（**给客户脱离 MCP 独立用**）。
+三处代码的查找顺序**并不相同**：
+
+| 谁 | 查找顺序 | 实际用哪份 |
+|---|---|---|
+| **`project_tools`（MCP 的 op 走这条）** | `$FLYTHINGS_FUN_DIR` → 本包 `toolchain/` → 上级 `toolchain/` → `D:\zkswe\fun` → `C:\zkswe\fun` | **工具链那份**（**完全不看项目内**） |
+| `ui_tools/check_all.py` | 模块级 `toolchain/` → `../../projects/fui.exe` → PATH；**但 CLI 入口一旦发现 `<项目>/ui/fui.exe` 就用它覆盖**（v0.27.172 补回该优先级） | **项目那份优先** |
+| `ui_tools/ui_edit_apply.py` | `$FUI_EXE` → `<项目>/ui/fui.exe` → `<项目>/fui.exe` → `../../projects/fui.exe` → 本目录 → PATH | **项目那份优先** |
+
+**后果（什么时候会咬人）**：工程自带那份若与工具链**版本不同**（老工程 + 后来升级过 MCP，
+就会这样），用 `flythings_fui_pack`（工具链那份）与用 `check_all.py --pack`（项目那份）
+**产出的 ftu 可能不同** —— 「同一份 json → 同一份 ftu」这条确定性，只在**同一个 fui** 内成立。
+
+**为什么没有统一**（不是疏忽，是约束）：① `ui_tools/` 是**可整目录复制出去**的
+（`scripts/sync_ui_tools.py` 维护 `D:\flythings\ui_tools` 那份双份），那边取不到 `project_tools`，
+共享不了一份解析器；② `attach_cli_tools` **必须**用工具链那份（它就是"复制进项目"的来源），
+所以 `FUI_EXE` 也不能一律改成项目优先。
+→ 现状分工 = **MCP op 用工具链、独立 CLI 用项目**；**这条不一致是登记在案的**，不是没发现。
+
+**规避（发现两份不一致时）**：① 让它们一致 —— 删掉/替换 `<项目>/ui/fui.exe`；
+② 或者**全程只走一条路径**（都用 op，或都用 `check_all.py`）。**别一半一半。**
 
 ## 7. 和 resources / 图片资源的关系（哪个进 ftu，哪个不进）
 

@@ -35,49 +35,49 @@
   "button": {
    "caption": "BtnSubmit",
    "ptr": "mBtnSubmitPtr (ZKButton)",
-   "json": "{\"button__1\":{\"id\":20001,\"caption\":\"BtnSubmit\",\"position\":{\"left\":40,\"top\":400,\"width\":200,\"height\":56},\"alignment\":37,\"colorTab\":{\"color0\":16777215},\"bgColorTab\":{\"color0\":2201331},\"fontSize\":18,\"picTab\":{},\"text\":\"提交\",\"touchable\":true}}",
+   "json": "{\"button__1\":{\"id\":20001,\"caption\":\"BtnSubmit\",\"position\":{\"left\":40,\"top\":400,\"width\":200,\"height\":56},\"alignment\":37,\"colorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"bgColorTab\":{\"color0\":2201331,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":18,\"picTab\":{},\"text\":\"提交\",\"touchable\":true}}",
    "note": "回调 bool onButtonClick_BtnSubmit(ZKButton*)；长按另配 longClickTimeOut/longClickIntervalTime + setLongClickListener"
   },
   "button_pic": {
    "caption": "BtnIcon",
    "ptr": "mBtnIconPtr (ZKButton)",
-   "json": "{\"button__2\":{\"id\":20002,\"caption\":\"BtnIcon\",\"position\":{\"left\":40,\"top\":400,\"width\":72,\"height\":40},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"picTab\":{\"pic0\":\"images/btn_n.9.png\",\"pic1\":\"images/btn_p.9.png\"},\"text\":\"\",\"touchable\":true}}",
+   "json": "{\"button__2\":{\"id\":20002,\"caption\":\"BtnIcon\",\"position\":{\"left\":40,\"top\":400,\"width\":72,\"height\":40},\"alignment\":37,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":16,\"picTab\":{\"pic0\":\"images/btn_n.9.png\",\"pic1\":\"images/btn_p.9.png\"},\"text\":\"\",\"touchable\":true}}",
    "note": "两态/多态图 picTab{pic0..pic4}；透明角图不要写 bgColorTab"
   },
   "switch_button": {
    "caption": "BtnSwitch",
    "ptr": "mBtnSwitchPtr (ZKButton)",
-   "json": "{\"button__3\":{\"id\":20003,\"caption\":\"BtnSwitch\",\"position\":{\"left\":600,\"top\":120,\"width\":88,\"height\":48},\"alignment\":37,\"picTab\":{\"pic0\":\"images/sw_off.png\",\"pic1\":\"images/sw_off_p.png\",\"pic2\":\"images/sw_on.png\"},\"text\":\"\",\"touchable\":true}}",
+   "json": "{\"button__3\":{\"id\":20003,\"caption\":\"BtnSwitch\",\"position\":{\"left\":600,\"top\":120,\"width\":88,\"height\":48},\"alignment\":37,\"picTab\":{\"pic0\":\"images/sw_off.png\",\"pic1\":\"images/sw_off_p.png\",\"pic2\":\"images/sw_on.png\"},\"text\":\"\",\"touchable\":true,\"colorTab\":{\"color0\":-1,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1}}}",
    "note": "开关/复选：pic0 关 / pic1 按下 / pic2 开 + setSelected()；⚠️ fun 不为 checkbox__ 生成宏/指针/回调"
   },
   "textview": {
    "caption": "TvTitle",
    "ptr": "mTvTitlePtr (ZKTextView)",
-   "json": "{\"textview__1\":{\"id\":50001,\"caption\":\"TvTitle\",\"position\":{\"left\":40,\"top\":40,\"width\":400,\"height\":32},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"fontSize\":24,\"touchable\":false,\"text\":\"标题\"}}",
+   "json": "{\"textview__1\":{\"id\":50001,\"caption\":\"TvTitle\",\"position\":{\"left\":40,\"top\":40,\"width\":400,\"height\":32},\"alignment\":36,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":24,\"touchable\":false,\"text\":\"标题\"}}",
    "note": "setText 支持 \\n 多行；不自动折行；alignment 36 左中 37 居中"
   },
   "textview_icon": {
    "caption": "TvIconMail",
    "ptr": "mTvIconMailPtr (ZKTextView)",
-   "json": "{\"textview__2\":{\"id\":50002,\"caption\":\"TvIconMail\",\"position\":{\"left\":40,\"top\":40,\"width\":24,\"height\":24},\"alignment\":37,\"backgroundPic\":\"images/icon_mail_24x24_2196F3.png\",\"colorTab\":{\"color0\":16777215},\"fontSize\":16,\"touchable\":false,\"text\":\"\"}}",
+   "json": "{\"textview__2\":{\"id\":50002,\"caption\":\"TvIconMail\",\"position\":{\"left\":40,\"top\":40,\"width\":24,\"height\":24},\"alignment\":37,\"backgroundPic\":\"images/icon_mail_24x24_2196F3.png\",\"colorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":16,\"touchable\":false,\"text\":\"\"}}",
    "note": "图标=Solid 图标字体缺失 → 用 Tabler PNG（components/icons）；图尺寸必须 == 控件盒"
   },
   "image": {
    "caption": "TvPhoto",
    "ptr": "mTvPhotoPtr (ZKTextView)",
-   "json": "{\"textview__3\":{\"id\":50003,\"caption\":\"TvPhoto\",\"position\":{\"left\":40,\"top\":80,\"width\":320,\"height\":180},\"alignment\":37,\"backgroundPic\":\"images/photo_320x180.png\",\"colorTab\":{\"color0\":16777215},\"fontSize\":16,\"touchable\":false,\"text\":\"\"}}",
+   "json": "{\"textview__3\":{\"id\":50003,\"caption\":\"TvPhoto\",\"position\":{\"left\":40,\"top\":80,\"width\":320,\"height\":180},\"alignment\":37,\"backgroundPic\":\"images/photo_320x180.png\",\"colorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":16,\"touchable\":false,\"text\":\"\"}}",
    "note": "图片统一走 textview + backgroundPic；resources/images/ 自动生成图尺寸必须 == 控件盒"
   },
   "edittext": {
    "caption": "EtName",
    "ptr": "mEtNamePtr (ZKEditText)",
-   "json": "{\"edittext__1\":{\"id\":40001,\"caption\":\"EtName\",\"position\":{\"left\":40,\"top\":120,\"width\":320,\"height\":48},\"alignment\":36,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"hintTextColor\":8421504,\"text\":\"\",\"textType\":0}}",
+   "json": "{\"edittext__1\":{\"id\":40001,\"caption\":\"EtName\",\"position\":{\"left\":40,\"top\":120,\"width\":320,\"height\":48},\"alignment\":36,\"bgColorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"bold\":false,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":16,\"hintTextColor\":8421504,\"text\":\"\",\"textType\":0}}",
    "note": "系统内置键盘自动弹出（源自制键盘丢弃）；回调 onEditTextChanged_EtName(const std::string&) 每键一次"
   },
   "listview": {
    "caption": "LvFiles",
    "ptr": "mLvFilesPtr (ZKListView)",
-   "json": "{\"listview__1\":{\"id\":60001,\"caption\":\"LvFiles\",\"position\":{\"left\":20,\"top\":120,\"width\":984,\"height\":420},\"autoRollback\":false,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":false,\"dragMaxDis\":1,\"edgeEffect\":50,\"hasScrollbar\":true,\"orientation\":1,\"rows\":6,\"rowSpacing\":2,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"\",\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"position\":{\"left\":0,\"top\":0,\"width\":984,\"height\":68},\"text\":\"\",\"touchable\":true,\"visible\":true,\"subItem\":[{\"id\":61001,\"caption\":\"TvRowName\",\"position\":{\"left\":16,\"top\":16,\"width\":600,\"height\":36},\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontFamily\":0,\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"text\":\"\",\"touchable\":true,\"visible\":true}]}}}",
+   "json": "{\"listview__1\":{\"id\":60001,\"caption\":\"LvFiles\",\"position\":{\"left\":20,\"top\":120,\"width\":984,\"height\":420},\"autoRollback\":false,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":false,\"dragMaxDis\":1,\"edgeEffect\":50,\"hasScrollbar\":true,\"orientation\":1,\"rows\":6,\"rowSpacing\":2,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"\",\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"bold\":false,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"position\":{\"left\":0,\"top\":0,\"width\":984,\"height\":68},\"text\":\"\",\"touchable\":true,\"visible\":true,\"subItem\":[{\"id\":61001,\"caption\":\"TvRowName\",\"position\":{\"left\":16,\"top\":16,\"width\":600,\"height\":36},\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"bold\":false,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontFamily\":0,\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"text\":\"\",\"touchable\":true,\"visible\":true}]}}}",
    "note": "三回调：getListItemCount_/obtainListItemData_（禁耗时）/onListItemClick_；行自身 setText(\"\") 否则与 subItem 叠字；数据变了必须 refreshListView()；**滚轮选择器（时间/数值/多列联动）的用法**（循环列表 + 数据侧平移定正中行 + 选中条挂静态层）见 knowledge/uicontrols/listview-wheel-picker.md"
   },
   "seekbar": {
@@ -95,7 +95,7 @@
   "radiogroup": {
    "caption": "RgGender",
    "ptr": "mRgGenderPtr (ZKRadioGroup)",
-   "json": "{\"radiogroup__1\":{\"id\":70001,\"caption\":\"RgGender\",\"position\":{\"left\":40,\"top\":160,\"width\":400,\"height\":128},\"backgroundColor\":-1,\"touchable\":true,\"visible\":true,\"radiobuttons\":[{\"id\":71001,\"caption\":\"RbMale\",\"position\":{\"left\":16,\"top\":12,\"width\":180,\"height\":40},\"alignment\":36,\"checked\":false,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"backgroundColor\":-1,\"bold\":false,\"fontSize\":16,\"italic\":false,\"text\":\"男\",\"touchable\":true,\"visible\":true}]}}",
+   "json": "{\"radiogroup__1\":{\"id\":70001,\"caption\":\"RgGender\",\"position\":{\"left\":40,\"top\":160,\"width\":400,\"height\":128},\"backgroundColor\":-1,\"touchable\":true,\"visible\":true,\"radiobuttons\":[{\"id\":71001,\"caption\":\"RbMale\",\"position\":{\"left\":16,\"top\":12,\"width\":180,\"height\":40},\"alignment\":36,\"checked\":false,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"bgColorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"backgroundColor\":-1,\"bold\":false,\"fontSize\":16,\"italic\":false,\"text\":\"男\",\"touchable\":true,\"visible\":true}]}}",
    "note": "⚠️ touchable 必须 true（容器例外）；回调 onCheckedChanged_RgGender(ZKRadioGroup*,int checkedID) 给的是选中项控件 ID"
   },
   "scrollwindow": {
@@ -113,7 +113,7 @@
   "slidewindow": {
    "caption": "SlwLauncher",
    "ptr": "mSlwLauncherPtr (ZKSlideWindow)",
-   "json": "{\"slidewindow__1\":{\"id\":30001,\"caption\":\"SlwLauncher\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":480},\"backgroundColor\":-1,\"cols\":4,\"fontSize\":12,\"iconSize\":{\"width\":128,\"height\":128},\"items\":[{\"colorTab\":{\"color0\":2171169},\"picTab\":{\"pic0\":\"images/ic_app1.png\",\"pic1\":\"images/ic_app1_p.png\"},\"text\":\"应用一\"}],\"padding\":{\"bottom\":8},\"rollSpeed\":199,\"rows\":2,\"touchable\":true,\"visible\":true}}",
+   "json": "{\"slidewindow__1\":{\"id\":30001,\"caption\":\"SlwLauncher\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":480},\"backgroundColor\":-1,\"cols\":4,\"fontSize\":12,\"iconSize\":{\"width\":128,\"height\":128},\"items\":[{\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"picTab\":{\"pic0\":\"images/ic_app1.png\",\"pic1\":\"images/ic_app1_p.png\"},\"text\":\"应用一\"}],\"padding\":{\"bottom\":8,\"paddingTop\":0,\"paddingBottom\":0,\"paddingLeft\":0,\"paddingRight\":0},\"rollSpeed\":199,\"rows\":2,\"touchable\":true,\"visible\":true}}",
    "note": "宫格轮播；回调 onSlideItemClick_SlwLauncher(ZKSlideWindow*,int index)（跨屏全局下标）"
   },
   "painter": {
@@ -125,13 +125,13 @@
   "diagram": {
    "caption": "DgmWave",
    "ptr": "mDgmWavePtr (ZKDiagram)",
-   "json": "{\"diagram__1\":{\"id\":34001,\"caption\":\"DgmWave\",\"position\":{\"left\":40,\"top\":120,\"width\":944,\"height\":240},\"backgroundColor\":16777215,\"region\":{\"left\":0,\"top\":0,\"width\":944,\"height\":240},\"touchable\":true,\"visible\":true,\"xAxisRange\":100,\"yAxisRange\":100,\"infos\":[{\"caption\":\"Wave0\",\"penColor\":2201331,\"penWidth\":2,\"step\":2,\"style\":0,\"eraseSpace\":4,\"antialias\":true,\"visible\":true,\"xScale\":1,\"yScale\":1}]}}",
+   "json": "{\"diagram__1\":{\"id\":34001,\"caption\":\"DgmWave\",\"position\":{\"left\":40,\"top\":120,\"width\":944,\"height\":240},\"backgroundColor\":16777215,\"region\":{\"left\":0,\"top\":0,\"width\":944,\"height\":240},\"touchable\":true,\"visible\":true,\"xAxisRange\":{\"lower\":0,\"upper\":0},\"yAxisRange\":{\"lower\":0,\"upper\":0},\"infos\":[{\"caption\":\"Wave0\",\"penColor\":2201331,\"penWidth\":2,\"step\":2,\"style\":0,\"eraseSpace\":4,\"antialias\":true,\"visible\":true,\"xScale\":1,\"yScale\":1}]}}",
    "note": "实时波形专用（x 自动推进 + 单值追加）：addData(idx,y)/setData(idx,points,n)；数据坐标=轴范围逻辑值"
   },
   "circlebar": {
    "caption": "CbRing",
    "ptr": "mCbRingPtr (ZKCircleBar)",
-   "json": "{\"circlebar__1\":{\"id\":36001,\"caption\":\"CbRing\",\"position\":{\"left\":400,\"top\":140,\"width\":224,\"height\":224},\"backgroundColor\":-1,\"clockwise\":true,\"max\":100,\"maxAngle\":360,\"progressPic\":\"images/ring_220x220_2196F3.png\",\"progressPicPos\":0,\"startAngle\":0,\"textColor\":2171169,\"textSize\":24,\"textType\":0,\"thumb\":{\"size\":{\"width\":0,\"height\":0},\"normalPic\":\"\",\"pressedPic\":\"\"},\"touchRange\":0,\"touchable\":false,\"unit\":\"%\",\"visible\":true}}",
+   "json": "{\"circlebar__1\":{\"id\":36001,\"caption\":\"CbRing\",\"position\":{\"left\":400,\"top\":140,\"width\":224,\"height\":224},\"backgroundColor\":-1,\"clockwise\":true,\"max\":100,\"maxAngle\":360,\"progressPic\":\"images/ring_220x220_2196F3.png\",\"progressPicPos\":{\"left\":0,\"top\":0,\"width\":0,\"height\":0},\"startAngle\":0,\"textColor\":2171169,\"textSize\":24,\"textType\":0,\"thumb\":{\"size\":{\"width\":0,\"height\":0},\"normalPic\":\"\",\"pressedPic\":\"\"},\"touchRange\":{\"lower\":0,\"upper\":0},\"touchable\":false,\"unit\":\"%\",\"visible\":true}}",
    "note": "单环进度：setProgress(0..max)；按进度裁有效图（每种色一份图）；无拖拽回调"
   },
   "pointer": {
@@ -185,31 +185,31 @@
   "picker": {
    "caption": "BtnPicker",
    "ptr": "mBtnPickerPtr (ZKButton) + mWinPickerPtr",
-   "json": "{\"button__10\":{\"id\":20010,\"caption\":\"BtnPicker\",\"position\":{\"left\":40,\"top\":160,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":16,\"picTab\":{},\"text\":\"请选择\",\"touchable\":true},\"window__11\":{\"id\":110011,\"caption\":\"WinPicker\",\"position\":{\"left\":112,\"top\":200,\"width\":800,\"height\":300},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+   "json": "{\"button__10\":{\"id\":20010,\"caption\":\"BtnPicker\",\"position\":{\"left\":40,\"top\":160,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"bgColorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":16,\"picTab\":{},\"text\":\"请选择\",\"touchable\":true},\"window__11\":{\"id\":110011,\"caption\":\"WinPicker\",\"position\":{\"left\":112,\"top\":200,\"width\":800,\"height\":300},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
    "note": "下拉选择：按钮 + modal window（listview/按钮组）；降级点：无滚轮惯性、无多列联动、展开位变居中模态"
   },
   "calendar": {
    "caption": "BtnDate",
    "ptr": "mBtnDatePtr (ZKButton) + mWinCalendarPtr",
-   "json": "{\"button__20\":{\"id\":20020,\"caption\":\"BtnDate\",\"position\":{\"left\":40,\"top\":220,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":16,\"picTab\":{},\"text\":\"2026-09-16\",\"touchable\":true},\"window__21\":{\"id\":110021,\"caption\":\"WinCalendar\",\"position\":{\"left\":112,\"top\":60,\"width\":800,\"height\":480},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
+   "json": "{\"button__20\":{\"id\":20020,\"caption\":\"BtnDate\",\"position\":{\"left\":40,\"top\":220,\"width\":320,\"height\":48},\"alignment\":36,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"bgColorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":16,\"picTab\":{},\"text\":\"2026-09-16\",\"touchable\":true},\"window__21\":{\"id\":110021,\"caption\":\"WinCalendar\",\"position\":{\"left\":112,\"top\":60,\"width\":800,\"height\":480},\"backgroundColor\":16777215,\"hideTimeOut\":-1,\"modal\":true,\"touchable\":true,\"visible\":false}}",
    "note": "日期选择：按钮 + modal window（7×6=42 个 textview 承载日号 + 触摸反算命中格）；painter 无文字 API"
   },
   "stepper": {
    "caption": "BtnStepMinus/TvStepValue/BtnStepPlus",
    "ptr": "mBtnStepMinusPtr / mTvStepValuePtr / mBtnStepPlusPtr",
-   "json": "{\"button__30\":{\"id\":20030,\"caption\":\"BtnStepMinus\",\"position\":{\"left\":40,\"top\":280,\"width\":48,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":24,\"picTab\":{},\"text\":\"-\",\"touchable\":true},\"textview__31\":{\"id\":50031,\"caption\":\"TvStepValue\",\"position\":{\"left\":96,\"top\":280,\"width\":120,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"fontSize\":20,\"touchable\":false,\"text\":\"0\"},\"button__32\":{\"id\":20032,\"caption\":\"BtnStepPlus\",\"position\":{\"left\":224,\"top\":280,\"width\":48,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":16777215},\"fontSize\":24,\"picTab\":{},\"text\":\"+\",\"touchable\":true}}",
+   "json": "{\"button__30\":{\"id\":20030,\"caption\":\"BtnStepMinus\",\"position\":{\"left\":40,\"top\":280,\"width\":48,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"bgColorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":24,\"picTab\":{},\"text\":\"-\",\"touchable\":true},\"textview__31\":{\"id\":50031,\"caption\":\"TvStepValue\",\"position\":{\"left\":96,\"top\":280,\"width\":120,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":20,\"touchable\":false,\"text\":\"0\"},\"button__32\":{\"id\":20032,\"caption\":\"BtnStepPlus\",\"position\":{\"left\":224,\"top\":280,\"width\":48,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"bgColorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":24,\"picTab\":{},\"text\":\"+\",\"touchable\":true}}",
    "note": "数值步进：两个按钮 + 数值 textview"
   },
   "tablegrid": {
    "caption": "TvThName/TvThValue/LvTable",
    "ptr": "mTvThNamePtr / mLvTablePtr",
-   "json": "{\"textview__40\":{\"id\":50040,\"caption\":\"TvThName\",\"position\":{\"left\":20,\"top\":80,\"width\":400,\"height\":40},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":15790320},\"fontSize\":16,\"touchable\":false,\"text\":\"名称\"},\"textview__41\":{\"id\":50041,\"caption\":\"TvThValue\",\"position\":{\"left\":420,\"top\":80,\"width\":584,\"height\":40},\"alignment\":36,\"colorTab\":{\"color0\":2171169},\"bgColorTab\":{\"color0\":15790320},\"fontSize\":16,\"touchable\":false,\"text\":\"数值\"},\"listview__42\":{\"id\":60042,\"caption\":\"LvTable\",\"position\":{\"left\":20,\"top\":120,\"width\":984,\"height\":420},\"autoRollback\":false,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":false,\"dragMaxDis\":1,\"edgeEffect\":50,\"hasScrollbar\":true,\"orientation\":1,\"rows\":6,\"rowSpacing\":2,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"\",\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"position\":{\"left\":0,\"top\":0,\"width\":984,\"height\":68},\"text\":\"\",\"touchable\":true,\"visible\":true,\"subItem\":[{\"id\":61001,\"caption\":\"TvRowName\",\"position\":{\"left\":16,\"top\":16,\"width\":600,\"height\":36},\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215},\"bold\":false,\"colorTab\":{\"color0\":2171169},\"fontFamily\":0,\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"text\":\"\",\"touchable\":true,\"visible\":true}]}}}",
+   "json": "{\"textview__40\":{\"id\":50040,\"caption\":\"TvThName\",\"position\":{\"left\":20,\"top\":80,\"width\":400,\"height\":40},\"alignment\":36,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"bgColorTab\":{\"color0\":15790320,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":16,\"touchable\":false,\"text\":\"名称\"},\"textview__41\":{\"id\":50041,\"caption\":\"TvThValue\",\"position\":{\"left\":420,\"top\":80,\"width\":584,\"height\":40},\"alignment\":36,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"bgColorTab\":{\"color0\":15790320,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":16,\"touchable\":false,\"text\":\"数值\"},\"listview__42\":{\"id\":60042,\"caption\":\"LvTable\",\"position\":{\"left\":20,\"top\":120,\"width\":984,\"height\":420},\"autoRollback\":false,\"backgroundColor\":-1,\"cols\":1,\"colSpacing\":0,\"cycleEnable\":false,\"dragMaxDis\":1,\"edgeEffect\":50,\"hasScrollbar\":true,\"orientation\":1,\"rows\":6,\"rowSpacing\":2,\"touchable\":true,\"visible\":true,\"item\":{\"caption\":\"\",\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"bold\":false,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"position\":{\"left\":0,\"top\":0,\"width\":984,\"height\":68},\"text\":\"\",\"touchable\":true,\"visible\":true,\"subItem\":[{\"id\":61001,\"caption\":\"TvRowName\",\"position\":{\"left\":16,\"top\":16,\"width\":600,\"height\":36},\"alignment\":36,\"backgroundColor\":-1,\"bgColorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"bold\":false,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontFamily\":0,\"fontSize\":16,\"italic\":false,\"longClickIntervalTime\":-1,\"longClickTimeOut\":-1,\"picTab\":{},\"text\":\"\",\"touchable\":true,\"visible\":true}]}}}",
    "note": "表格：textview 表头 + listview 网格（列宽手工对齐）"
   },
   "refresher": {
    "caption": "BtnRefresh",
    "ptr": "mBtnRefreshPtr (ZKButton)",
-   "json": "{\"button__50\":{\"id\":20050,\"caption\":\"BtnRefresh\",\"position\":{\"left\":20,\"top\":80,\"width\":160,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":16777215},\"bgColorTab\":{\"color0\":2201331},\"fontSize\":16,\"picTab\":{},\"text\":\"刷新\",\"touchable\":true},\"textview__51\":{\"id\":50051,\"caption\":\"TvRefreshState\",\"position\":{\"left\":200,\"top\":92,\"width\":400,\"height\":24},\"alignment\":36,\"colorTab\":{\"color0\":8421504},\"fontSize\":14,\"touchable\":false,\"text\":\"\"}}",
+   "json": "{\"button__50\":{\"id\":20050,\"caption\":\"BtnRefresh\",\"position\":{\"left\":20,\"top\":80,\"width\":160,\"height\":48},\"alignment\":37,\"colorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"bgColorTab\":{\"color0\":2201331,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":16,\"picTab\":{},\"text\":\"刷新\",\"touchable\":true},\"textview__51\":{\"id\":50051,\"caption\":\"TvRefreshState\",\"position\":{\"left\":200,\"top\":92,\"width\":400,\"height\":24},\"alignment\":36,\"colorTab\":{\"color0\":8421504,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":14,\"touchable\":false,\"text\":\"\"}}",
    "note": "下拉刷新替代：按钮触发 + 定时器状态机 IDLE→PULLING→REFRESHING→DONE；手势/下拉动画丢弃"
   },
   "badge": {
@@ -221,19 +221,19 @@
   "pseudo3d": {
    "caption": "TvPseudo3D",
    "ptr": "mTvPseudo3DPtr (ZKTextView)",
-   "json": "{\"textview__70\":{\"id\":50070,\"caption\":\"TvPseudo3D\",\"position\":{\"left\":312,\"top\":120,\"width\":400,\"height\":400},\"alignment\":37,\"backgroundPic\":\"images/seq_frame_000.png\",\"colorTab\":{\"color0\":16777215},\"fontSize\":16,\"touchable\":false,\"text\":\"\"}}",
+   "json": "{\"textview__70\":{\"id\":50070,\"caption\":\"TvPseudo3D\",\"position\":{\"left\":312,\"top\":120,\"width\":400,\"height\":400},\"alignment\":37,\"backgroundPic\":\"images/seq_frame_000.png\",\"colorTab\":{\"color0\":16777215,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":16,\"touchable\":false,\"text\":\"\"}}",
    "note": "伪 3D：序列帧 PNG 定时器切 backgroundPic；图尺寸必须 == 控件盒"
   },
   "chart": {
    "caption": "PtChart",
    "ptr": "mPtChartPtr (ZKPainter)",
-   "json": "{\"painter__1\":{\"id\":35001,\"caption\":\"PtChart\",\"position\":{\"left\":40,\"top\":120,\"width\":944,\"height\":320},\"backgroundColor\":16777215,\"touchable\":false,\"visible\":true},\"textview__2\":{\"id\":50080,\"caption\":\"TvChartYMax\",\"position\":{\"left\":8,\"top\":112,\"width\":60,\"height\":20},\"alignment\":38,\"colorTab\":{\"color0\":8421504},\"fontSize\":12,\"touchable\":false,\"text\":\"100\"}}",
+   "json": "{\"painter__1\":{\"id\":35001,\"caption\":\"PtChart\",\"position\":{\"left\":40,\"top\":120,\"width\":944,\"height\":320},\"backgroundColor\":16777215,\"touchable\":false,\"visible\":true},\"textview__2\":{\"id\":50080,\"caption\":\"TvChartYMax\",\"position\":{\"left\":8,\"top\":112,\"width\":60,\"height\":20},\"alignment\":38,\"colorTab\":{\"color0\":8421504,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":12,\"touchable\":false,\"text\":\"100\"}}",
    "note": "图表：painter 自绘 + textview 刻度（painter 无文字 API）；改数据必须显式重绘"
   },
   "richtext": {
    "caption": "TvArticle",
    "ptr": "mTvArticlePtr (ZKTextView)",
-   "json": "{\"textview__1\":{\"id\":50090,\"caption\":\"TvArticle\",\"position\":{\"left\":40,\"top\":80,\"width\":944,\"height\":480},\"alignment\":33,\"colorTab\":{\"color0\":2171169},\"fontSize\":16,\"touchable\":false,\"text\":\"第一段（手动 \\n 换行）\\n第二段\"}}",
+   "json": "{\"textview__1\":{\"id\":50090,\"caption\":\"TvArticle\",\"position\":{\"left\":40,\"top\":80,\"width\":944,\"height\":480},\"alignment\":33,\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"fontSize\":16,\"touchable\":false,\"text\":\"第一段（手动 \\n 换行）\\n第二段\"}}",
    "note": "富文本替代：textview + 手动 \\n（无自动折行/段内样式/图文混排）"
   },
   "timer_anim": {
@@ -382,7 +382,7 @@
     ],
     "target": "circlebar",
     "level": "L1",
-    "json": "{\"circlebar__1\":{\"id\":36001,\"caption\":\"CbRing\",\"position\":{\"left\":400,\"top\":140,\"width\":224,\"height\":224},\"backgroundColor\":-1,\"clockwise\":true,\"max\":100,\"maxAngle\":360,\"progressPic\":\"images/ring_220x220_2196F3.png\",\"progressPicPos\":0,\"startAngle\":0,\"textColor\":2171169,\"textSize\":24,\"textType\":0,\"thumb\":{\"size\":{\"width\":0,\"height\":0},\"normalPic\":\"\",\"pressedPic\":\"\"},\"touchRange\":0,\"touchable\":false,\"unit\":\"%\",\"visible\":true}}",
+    "json": "{\"circlebar__1\":{\"id\":36001,\"caption\":\"CbRing\",\"position\":{\"left\":400,\"top\":140,\"width\":224,\"height\":224},\"backgroundColor\":-1,\"clockwise\":true,\"max\":100,\"maxAngle\":360,\"progressPic\":\"images/ring_220x220_2196F3.png\",\"progressPicPos\":{\"left\":0,\"top\":0,\"width\":0,\"height\":0},\"startAngle\":0,\"textColor\":2171169,\"textSize\":24,\"textType\":0,\"thumb\":{\"size\":{\"width\":0,\"height\":0},\"normalPic\":\"\",\"pressedPic\":\"\"},\"touchRange\":{\"lower\":0,\"upper\":0},\"touchable\":false,\"unit\":\"%\",\"visible\":true}}",
     "notes": "单值环形进度 = circlebar（按进度裁图，每种色一份有效图）",
     "ref": ""
    },
@@ -465,7 +465,7 @@
     ],
     "target": "slidewindow",
     "level": "L1",
-    "json": "{\"slidewindow__1\":{\"id\":30001,\"caption\":\"SlwLauncher\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":480},\"backgroundColor\":-1,\"cols\":4,\"fontSize\":12,\"iconSize\":0,\"items\":[{\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"picTab\":{\"pic0\":\"images/ic_app1.png\",\"pic1\":\"images/ic_app1_p.png\"},\"text\":\"应用一\"}],\"padding\":0,\"rollSpeed\":199,\"rows\":2,\"touchable\":true,\"visible\":true}}",
+    "json": "{\"slidewindow__1\":{\"id\":30001,\"caption\":\"SlwLauncher\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":480},\"backgroundColor\":-1,\"cols\":4,\"fontSize\":12,\"iconSize\":{\"width\":0,\"height\":0},\"items\":[{\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"picTab\":{\"pic0\":\"images/ic_app1.png\",\"pic1\":\"images/ic_app1_p.png\"},\"text\":\"应用一\"}],\"padding\":{\"paddingTop\":0,\"paddingBottom\":0,\"paddingLeft\":0,\"paddingRight\":0},\"rollSpeed\":199,\"rows\":2,\"touchable\":true,\"visible\":true}}",
     "notes": "宫格轮播；回调 index 是跨屏全局下标",
     "ref": ""
    },
@@ -1222,7 +1222,7 @@
     ],
     "target": "circlebar",
     "level": "L2",
-    "json": "{\"circlebar__1\":{\"id\":36001,\"caption\":\"CbRing\",\"position\":{\"left\":400,\"top\":140,\"width\":224,\"height\":224},\"backgroundColor\":-1,\"clockwise\":true,\"max\":100,\"maxAngle\":360,\"progressPic\":\"images/ring_220x220_2196F3.png\",\"progressPicPos\":0,\"startAngle\":0,\"textColor\":2171169,\"textSize\":24,\"textType\":0,\"thumb\":{\"size\":{\"width\":0,\"height\":0},\"normalPic\":\"\",\"pressedPic\":\"\"},\"touchRange\":0,\"touchable\":false,\"unit\":\"%\",\"visible\":true}}",
+    "json": "{\"circlebar__1\":{\"id\":36001,\"caption\":\"CbRing\",\"position\":{\"left\":400,\"top\":140,\"width\":224,\"height\":224},\"backgroundColor\":-1,\"clockwise\":true,\"max\":100,\"maxAngle\":360,\"progressPic\":\"images/ring_220x220_2196F3.png\",\"progressPicPos\":{\"left\":0,\"top\":0,\"width\":0,\"height\":0},\"startAngle\":0,\"textColor\":2171169,\"textSize\":24,\"textType\":0,\"thumb\":{\"size\":{\"width\":0,\"height\":0},\"normalPic\":\"\",\"pressedPic\":\"\"},\"touchRange\":{\"lower\":0,\"upper\":0},\"touchable\":false,\"unit\":\"%\",\"visible\":true}}",
     "notes": "圆环进度用 circlebar；旋转菊花用 imageanim 帧图（F133 不支持动图）",
     "ref": ""
    },
@@ -1719,7 +1719,7 @@
     ],
     "target": "slidewindow",
     "level": "L1",
-    "json": "{\"slidewindow__1\":{\"id\":30001,\"caption\":\"SlwLauncher\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":480},\"backgroundColor\":-1,\"cols\":4,\"fontSize\":12,\"iconSize\":0,\"items\":[{\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"picTab\":{\"pic0\":\"images/ic_app1.png\",\"pic1\":\"images/ic_app1_p.png\"},\"text\":\"应用一\"}],\"padding\":0,\"rollSpeed\":199,\"rows\":2,\"touchable\":true,\"visible\":true}}",
+    "json": "{\"slidewindow__1\":{\"id\":30001,\"caption\":\"SlwLauncher\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":480},\"backgroundColor\":-1,\"cols\":4,\"fontSize\":12,\"iconSize\":{\"width\":0,\"height\":0},\"items\":[{\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"picTab\":{\"pic0\":\"images/ic_app1.png\",\"pic1\":\"images/ic_app1_p.png\"},\"text\":\"应用一\"}],\"padding\":{\"paddingTop\":0,\"paddingBottom\":0,\"paddingLeft\":0,\"paddingRight\":0},\"rollSpeed\":199,\"rows\":2,\"touchable\":true,\"visible\":true}}",
     "notes": "宫格轮播；回调 index 跨屏全局下标",
     "ref": ""
    },
@@ -2231,7 +2231,7 @@
     ],
     "target": "slidewindow",
     "level": "L1",
-    "json": "{\"slidewindow__1\":{\"id\":30001,\"caption\":\"SlwLauncher\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":480},\"backgroundColor\":-1,\"cols\":4,\"fontSize\":12,\"iconSize\":0,\"items\":[{\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"picTab\":{\"pic0\":\"images/ic_app1.png\",\"pic1\":\"images/ic_app1_p.png\"},\"text\":\"应用一\"}],\"padding\":0,\"rollSpeed\":199,\"rows\":2,\"touchable\":true,\"visible\":true}}",
+    "json": "{\"slidewindow__1\":{\"id\":30001,\"caption\":\"SlwLauncher\",\"position\":{\"left\":0,\"top\":64,\"width\":1024,\"height\":480},\"backgroundColor\":-1,\"cols\":4,\"fontSize\":12,\"iconSize\":{\"width\":0,\"height\":0},\"items\":[{\"colorTab\":{\"color0\":2171169,\"color1\":-1,\"color2\":-1,\"color3\":-1,\"color4\":-1},\"picTab\":{\"pic0\":\"images/ic_app1.png\",\"pic1\":\"images/ic_app1_p.png\"},\"text\":\"应用一\"}],\"padding\":{\"paddingTop\":0,\"paddingBottom\":0,\"paddingLeft\":0,\"paddingRight\":0},\"rollSpeed\":199,\"rows\":2,\"touchable\":true,\"visible\":true}}",
     "notes": "宫格轮播；index 跨屏全局下标",
     "ref": ""
    },

@@ -48,7 +48,7 @@ evidence: []
 ## 设备字库自检 && 思源黑体三版（2026-09-13 新增，真机实测）
 
 > 背景：设备自带字库常是裁剪字库（甚至只有英文）→ **界面汉字全变方块**。
-> 特别是**固化/升级会整体替换目标机的 `/res`**，原 app 带的字体会一并消失（真机踩过）。
+> 特别是**固化/升级会整体替换目标机的 `/res`**，原 app 带的字体会一并消失（真机实测）。
 
 ### 0.1 机制澄清（重要，避免走弯路）
 
@@ -133,13 +133,13 @@ cmap 覆盖率 / GB2312 一级 / 硬判据 / font-probe 缓存。
 
 ### 0.3 思源黑体三个版本（已裁好，直接可用）
 
-| 文件 | 体积 | 覆盖 | 何时用 |
+| 文件 | 体积（**以实际字节为准**） | 覆盖 | 何时用 |
 |---|---|---|---|
-| `zkswe-hans-common.ttf` | 872 KB | GB2312 一级 3755 + 中文标点 + 全角 + ASCII | **默认**|
-| `zkswe-hans-full.ttf` | 7.39 MB | CJK 基本区 20902 + 扩展A 6582 | 需生僻字 |
-| `zkswe-hans-multi.ttf` | 10.5 MB | 全中文 + 扩展B + 拉丁/希腊/西里尔/假名/谚文 | 多国语言/日韩 |
+| `zkswe-hans-common.ttf` | **892848 B**（872 KiB） | GB2312 一级 3755 + 中文标点 + 全角 + ASCII | **默认**|
+| `zkswe-hans-full.ttf` | **7567300 B**（7.22 MiB） | CJK 基本区 20902 + 扩展A 6582 | 需生僻字 |
+| `zkswe-hans-multi.ttf` | **10742560 B**（10.24 MiB） | 全中文 + 扩展B + 拉丁/希腊/西里尔/假名/谚文 | 多国语言/日韩 |
 
-文件与重裁脚本：`components/fonts/`（`scripts/gen_font_subset.py`，可复现）。
+文件与重裁脚本：`components/fonts/`（`components/fonts/scripts/gen_font_subset.py`，可复现）。
 ⚠️ 重裁坑：**CN 变体思源黑体没有谚文**（谚文 0 个）→ 多国语言版必须用完整版源（`--src-multi`）。
 
 ### 0.2.2 真机实测（v0.27.87，V85X SPINOR 整机、网络 adb）
@@ -151,9 +151,9 @@ cmap 覆盖率 / GB2312 一级 / 硬判据 / font-probe 缓存。
 
 | 场景 | 关键字段（实测值） | 结果 |
 |---|---|---|
-| **设备字库够**（首次探测） | `mode=device`、`source=cmap`、`cmapCoverageGB2312L1=100.0`（3755/3755）、`verdict=ok`、`checkedFont=/res/font/pocketgame.ttf`（1,093,608 B = 1068 KB）、`missingChinese=false`、`delivered.applied=false`、`warnings=[]` | **未投递**；拉回 1 MB 字体耗时 **1294 ms**（`probe.elapsedMs`，正常） |
+| **设备字库够**（首次探测） | `mode=device`、`source=cmap`、`cmapCoverageGB2312L1=100.0`（3755/3755）、`verdict=ok`、`checkedFont=/res/font/pocketgame.ttf`（大小随设备字库而定）、`missingChinese=false`、`delivered.applied=false`、`warnings=[]` | **未投递**；拉回 1 MB 字体耗时 **1294 ms**（`probe.elapsedMs`，正常） |
 | **缓存命中**（同设备立即再跑） | `probe.cacheHit=true`、`elapsedMs=6`、`pulledBytes=0`、`probedAt=2026-09-17 20:21:32` | **没再拉**（缓存键=serial+文件+体积+ls 时间，落 `~/.fun/font-probe.json`） |
-| **设备字库只有零星中文**| `checkedFont=/res/font/game.ttf`（81,188 B = 79.3 KB）、`cmapCoverageGB2312L1=8.0`（302/3755）、`verdict=missing`、`missingChinese=true` | 投递 `common` 进工程 `font/`（81 KB 的字体里面**真只有 302 个一级汉字**——数字比体积说明问题） |
+| **设备字库只有零星中文**| `checkedFont=/res/font/game.ttf`（小字库，大小随设备而定）、`cmapCoverageGB2312L1=8.0`（302/3755）、`verdict=missing`、`missingChinese=true` | 投递 `common` 进工程 `font/`（81 KB 的字体里面**真只有 302 个一级汉字**——数字比体积说明问题） |
 | **完整构建流程**（build_ui_flow，单设备在线） | `ok=true`、`launched=true`、`pushed=true`、`staleOnDevice=false`；`check_font` step 带 `source=cmap`/`cmapCoverageGB2312L1=8.0`/`checkedFont`；`delivered=[font/zkswe-hans-common.ttf]`；`deviceAfterDeploy.consistent=false` + note「需 `pack_upgrade` 固化才生效」 | 字体投递在 `fun build` **之前**；launch 后 `deviceSync` ftu/so md5 与本地一致；**字库待固化**与应用陈旧分开报 |
 | **V851S 入参**| `platforms.resolve('V851S') → {canonical: V85X, packageKey: v85x, buildable: true, template: HelloWord_V85X}`（`v851s3`/`V853S`/`V851` 同） | 修前是 `None`（被当未知平台）且 `package_key` 回 `v851s`（catalog 里不存在 → 查包必空） |
 
@@ -189,7 +189,7 @@ cmap 覆盖率 / GB2312 一级 / 硬判据 / font-probe 缓存。
 3. `fun build -p <平台>` + `fun launch`（字库随资源推送，`/tmp/font/` 或 `/res/font/`）
 4. **真机截图 vs 设计图对照验收**（`flythings_device_screenshot` + 视觉对比）；不合就换字重再验
 
-### D. ⚠️ 多字体排序铁律（本机 2026-09-15 实测踩坑）
+### D. ⚠️ 多字体排序铁律（本机 2026-09-15 实测硬约束）
 - 多字体按**文件名 ASCII 升序，最靠前的 = 全局默认字体**。
 - **默认字体必须是含中文的那个**：把 2.5 MB 的纯中文名放前面没事，但若让 **Poppins 排在前面当默认 → 汉字全部变方框**；反过来若默认是 CJK 体，拉丁/数字也会用它（字形尚可，但不如几何体贴近设计稿）。
 - 想"中文用思源、数字用 Poppins"：**默认放大写靠前的含中文体**（如 `Han-Sans-common.ttf`），再对个别控件 `setFontFamily("Poppins-SemiBold")`（easyui ≥ 2.2.0，当前模板 2.6.0 支持；参数**不含 .ttf 后缀**）。

@@ -131,7 +131,8 @@ def _fix_control(tname, ctl, changes, loc, fill_missing=True):
 
 
 def regen(data):
-    """遍历映射表，重生成所有 json 片段。返回 (改动条目数, 改动说明列表)。"""
+    """遍历映射表（sources 片段列表 + targets 单控件片段），重生成所有 json 片段。
+    返回 (改动条目数, 改动说明列表)。"""
     n_entries, changes = 0, []
     for sname, arr in (data.get('sources') or {}).items():
         for e in arr or []:
@@ -153,6 +154,32 @@ def regen(data):
             if len(changes) > before:
                 e['json'] = json.dumps(obj, ensure_ascii=False, separators=(',', ':'))
                 n_entries += 1
+    # targets：每控件一条参考片段（同一口径：必填键全集 + 子盒对象类型）。
+    # 历史漏扫 → circlebar/diagram/slidewindow 三条一直带着 int 写法的子盒字段
+    # （circlebar 那两条正是 2026-10-04 真机「进进度条页主线程 100% 空转」的配方）。
+    for tname, e in (data.get('targets') or {}).items():
+        if not isinstance(e, dict):
+            continue
+        j = e.get('json')
+        if not j:
+            continue
+        try:
+            obj = json.loads(j)
+        except Exception as ex:
+            changes.append('targets/%s: 片段本身不是合法 json（%s），跳过' % (tname, ex))
+            continue
+        loc0 = 'targets/%s' % tname
+        before = len(changes)
+        for key, ctl in obj.items():
+            if not isinstance(ctl, dict):
+                continue
+            ct = key.split('__')[0]
+            if ct not in us.known_types() and e.get('target') in us.known_types():
+                ct = e['target']                   # 键名不是控件类型时用 target 字段兜底
+            _fix_control(ct, ctl, changes, '%s:%s' % (loc0, key))
+        if len(changes) > before:
+            e['json'] = json.dumps(obj, ensure_ascii=False, separators=(',', ':'))
+            n_entries += 1
     return n_entries, changes
 
 

@@ -61,7 +61,7 @@ adb shell /data/touch monkey 800 1280 500
 **能解决什么**：节点编号不同 → 自动扫，不用 getevent 猜；IC/协议不同（单点 / MT-A / MT-B）→ 自动判，**不会再有「坐标恒 0」死循环**；平台缺 ELF → 已全平台编好（f133/f135/z20/z21/t113/v85x）。
 
 **常用命令**：**先 `touch check [x y]`**（一条命令自检：节点/协议/量程落点结论，给坐标则再注一次 tap；退出码 **0=可用 / 3=无节点 / 4=有风险**）· `touch list` / `touch info` / `touch [-d /dev/input/eventN] tap x y`；触摸之外：`key <code> [ms]`（物理键，需 `-d`）· `sweep <from> <to> [ms]`（扫键码）· `raw t:c:v …`（原始事件）；选项 `--screen WxH`、`-v`（打印探测失败原因，`TOUCH_DEBUG=1` 同效）。
-源码/自测/重编：`tools/touch_inject/`（`wsl bash scripts/touch_build_all.sh all`；`list`/CLI/降级路径有 x86 自测，真机行为需设备验证）。更全的调试工具箱 → 同目录 `busybox`（见 busybox-debug-library.md）。
+源码/自测/重编：`tools/touch_inject/`（构建脚本 `touch_build_all.sh`（在**本地 workspace、不入库**）；`list`/CLI/降级路径有 x86 自测，真机行为需设备验证）。更全的调试工具箱 → 同目录 `busybox`（见 busybox-debug-library.md）。
 
 ### 3. 兼容保留：`ui_test`（单点，需人工给节点）
 
@@ -95,7 +95,7 @@ adb shell ui_test /dev/input/event0 tap 100 100   # 单点协议（需人工给�
 | Zkswe_V85X_SPINOR（480×800） | `/dev/input/event0` | gt9xx | **MT-A**（48/50/53/54/57，无 SLOT） | **不存在**| `ui_test` 完全点不动；`touch` 自动判 MT-A ✅ |
 | V851s（480×800，学习机 PocketGame） | `/dev/input/event4` | axs_ts | **MT-B**（有 SLOT+TRACKING_ID） | **范围 0..0**| MT-A 写法（老 `pginj`/`mt_test` 发 `SYN_MT_REPORT`；`mt_test` 2026-09-30 已移除）→ 整帧作废；按 2b 三条修后全通 |
 
-**三条必须知道的坑（都踩过）**：
+**三条硬约束**：
 1. **`ABS_X/Y` 可能压根不存在**（V85X 两块屏都这样）：单点轴工具在这类屏上不是"偏"，是**完全点不动**（写了也被钳成 0）。判据：`touch info` 看 `ABS_X=0 ABS_Y=0` + `MT_POSITION_X=1`。
 2. **声明的 MT 量程 ≠ 屏幕尺寸**：SPINOR 实测 `mtX=0..1024 mtY=0..600`、屏却 480×800；axs_ts 板 `mtX=0..480 mtY=0..960`、屏 480×800——**两块都实际 raw == 屏幕 1:1**（SPINOR 注 (437,32) 命中右上角按钮；axs_ts 注入日志回 `x=58 y=160` / `x=400 y=700` 逐点相符）。所以**别想当然加 `--scale`**：`touch check` 会直接给落点结论（量程≈屏 → 直接用；两轴比例一致且≠1 → 需换算；**两轴不一致 >5% → ⚠ 别用 --scale，先按 1:1 注一次看日志**），`--scale` 本身也会在同一口径下警告并取消换算；确需换算用 `--screen WxH`。
 3. **`EVIOCGBIT` 成功时不一定返回 0**：SPINOR 这颗内核返回**拷贝字节数（实测 4）**。写 `if (ioctl(...) == 0)` 会让能力探测永远失败 → `touch list` 报 "no input device found"（v0.27.61 修成 `>= 0`）。**移植任何 evdev 工具都按 `>= 0` 判成功。宿主侧小贴士**：USB 设备在 `adb devices` 里消失/`offline` 时，先清掉所有 adb 进程再起（Windows：`taskkill /IM adb.exe /F` → `adb start-server`）——IDE 自带 adb 会抢占 5037 并留陈旧状态，**不用拔插**。

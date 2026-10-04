@@ -64,7 +64,7 @@ evidence: []
 | 图 24×24 正圆 + 滑块图无 AA、控件 `height=12` | **24 × 12**（宽保留、高度被压到控件高） | ❌ 扁椭圆（用户看到的就是这个） |
 | 24×24 正圆图 + 控件 `height=28`（轨道图 28 高、可见条 12 居中） | **24 × 24**（逐行 4/16/20/22/24/22/20/14 = 标准圆） | ✅ 正圆 |
 
-⇒ **只改图不改控件盒没用**（这次就先踩了：把 `flat_rounded` 换成正圆图，屏幕上照样扁）；
+⇒ **只改图不改控件盒没用**（实测：把 `flat_rounded` 换成正圆图，屏幕上照样扁）；
 **只改控件盒不改图也没用**（方块还是方块）。两件事必须一起做。
 
 ## 3. 出图口径（要什么形状，就出什么图）
@@ -79,7 +79,7 @@ evidence: []
 
 ## 4. HTML（原型稿）→json 的关键词
 
-`tools/ui_tools/html2json.py:1732-1744`（SeekBar 分支，用 `SeekBarDemo` 校准）：
+`ui_tools/html2json.py:1732-1744`（SeekBar 分支，用 `SeekBarDemo` 校准）：
 `data-thumb`（滑块图，缺省不生成图）、`data-thumb-pressed`（按下图）、`data-thumb-size`（**px，缺省 24**）。
 → 所以原型稿里要圆滑块，写的是**"给一张圆的滑块图 + `data-thumb-size` 与图一致"**，
 并且**让该元素的盒子高度 ≥ 滑块直径**（否则照样被压扁）。
@@ -92,7 +92,7 @@ evidence: []
 | 控件 12 高 + `thumb.size` 24×24 | 屏幕上是 24×12 扁椭圆（§2 实测） |
 | `thumb.size` 与图尺寸不一致 | 真机滑块与轨道错位（`knowledge/devflow/ui-asset-rules.md` §thumb 子盒、`knowledge/devflow/ui-layout-verify.md`） |
 | 只想"看起来像 iOS"就把滑块做很大但不加高控件盒 | 一定被压扁 |
-| 改 json 时用 `sort_keys=True` 整体重排 | **控件顺序 = 图层顺序**，会把全屏铺底层排到进度条之上 → 进度条/滑块整条看不见（本次踩过，回滚重排才恢复） |
+| 改 json 时用 `sort_keys=True` 整体重排 | **控件顺序 = 图层顺序**，会把全屏铺底层排到进度条之上 → 进度条/滑块整条看不见（必须回滚重排才恢复）。真源：`ui_schema.json` 的 `valueRules.zOrderFollowsJsonOrder` |
 
 ## 6. 相关文档
 

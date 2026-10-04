@@ -60,6 +60,15 @@ class TestDesignArtifactDetection(unittest.TestCase):
         U.write(os.path.join(self.tmp, '.fun', 'z21', 'Release', 'x.html'), 'x')
         self.assertFalse(kb_tools._has_design_artifacts(self.tmp))
 
+    def test_build_output_ignored_fsc(self):
+        """同上，但**新一代产物目录** `.fsc/`（09-28 起 fun 的产物家）。
+
+        漏跳 `.fsc` 等于对新工具链工程完全没跳构建产物 → `.fsc/**` 里的 html 会被当成
+        设计产物 → 静默抑制设计先行提示（2026-10-03 定位）。
+        """
+        U.write(os.path.join(self.tmp, '.fsc', 'z21', 'Release', 'x.html'), 'x')
+        self.assertFalse(kb_tools._has_design_artifacts(self.tmp))
+
 
 class TestSoftGateOnOps(unittest.TestCase):
     """B：op 集成——只加 warnings，不改语义。"""

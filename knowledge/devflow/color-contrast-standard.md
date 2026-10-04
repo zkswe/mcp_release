@@ -73,7 +73,7 @@ evidence:
 ## 5. 工具
 
 ```bash
-python tools/ui_tools/check_all.py <项目根>        # 全检（第 34 项即本文判据）
+python ui_tools/check_all.py <项目根>        # 全检（第 34 项即本文判据）
 python tools/qa/contrast_check.py <项目根> --all --json temp/cc.json   # 单跑字底对比度
 ```
 

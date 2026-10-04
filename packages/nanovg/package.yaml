@@ -13,8 +13,8 @@ platforms:
     local: packages/nanovg/lib/v85x    # 随仓自带
     libs: [libnanovg.so]
     headers_count: 2
-    verified: null                     # 未上真机（无上屏 / 无逐像素证据）
-    status: unverified
+    verified: "2026-10-03"             # 真机 USB 20080411 = Zkswe_V85X_SPINOR（480x800）
+    status: verified                   # 但**渐变族失效 / 贴图不平铺**，见 evidence/v85x-device/
   F133:
     registry: public/f133/nanovg/1.0.0
     libs: [libnanovg.so]
@@ -40,6 +40,10 @@ summary: >-
 hardRules:
   - 目标纹理**只支持 `NVG_TEXTURE_BGRA`**；用 `nvgCreateImageRGBA` 会 `Assertion failed` 直接 abort。
   - 贴图格式必须与目标一致，且必须用 `nvgCreateImageRaw(...)` 直传 BGRA 字节（别换通道）。
+  - ⛔ **渐变全族不生效**：`nvgLinearGradient`/`nvgRadialGradient`/`nvgBoxGradient` 在真机上
+    一律退化成纯 `innerColor`（V85X 实测 12 组调用全灭）。**要渐变就自己把色带烘成贴图**。
+  - ⛔ **`nvgImagePattern` 不平铺**：只画首个 tile extent，之外透明；
+    `NVG_IMAGE_REPEATX|REPEATY` 也无效。贴图必须 **1:1** 覆盖目标区域（vinyl 就是这么用的）。
   - 渲染是逐帧软件光栅：整屏逐帧只适合静态/低频刷新；高频动画要小画布或降帧。
   - 该构建**不含字体/文本 API**（头文件声明了、库里没有 → 见 lib/v85x/BUILD.md §4）。
 headers:

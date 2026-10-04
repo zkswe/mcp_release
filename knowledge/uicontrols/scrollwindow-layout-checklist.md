@@ -7,7 +7,7 @@ confidence: manual
 verified_at: 2026-10-01
 stale_days: 180
 origin: partial
-source: 2026-09-20~10-01 SmartPanel_HA 现场反复返工 + 2026-10-01 真机交互复核（480×480 面板）
+source: 2026-09-20~10-01 SmartPanel_HA 现场反复返工 + 2026-10-01 真机交互复核<!-- design-spec:evidence 历史实测记录（判据以设备实测为准，见 DESIGN_SPEC.md 第 2 条） -->（480×480 面板）
 needs_evidence: true
 platforms: [Z20]
 tags: [scrollwindow异常, 滚动窗口显示不对, 加了一行滚不到, 末尾行看不到, 内容堆叠, 固定件跟着滚, 点了点不到, 图标被文字盖住, 改了像没改, 滑动窗口怎么做]
@@ -108,7 +108,7 @@ scrollwindow__N（视口：只决定「看多大」）
 2. **摆结构**：`scrollwindow`（视口 = 可用高）→ 内层 `window`（高 = 内容总高）→ 行控件；固定件外置。
 3. **一次改一处**：增删行时**同一脚本里**同步改三样 —— ① 行控件坐标 ② 内层 window 高 ③ 后续行整体平移量。
    （反例：SmartPanel_HA 设置页 `window` 高一路 720→776→832，每轮要平移 43~50 个控件 —— 手改必错。）
-4. **静态自检**：`python tools/ui_tools/check_all.py <项目根>`（重点 #2 / #14 / #15 / **#26**/ **#27**）。
+4. **静态自检**：`python ui_tools/check_all.py <项目根>`（重点 #2 / #14 / #15 / **#26**/ **#27**）。
 5. **出确认稿**给需求方看：`flythings_ui_preview(target, for_customer=True)`。
 6. **上机复核**（改完必做，判据见 §3）。
 

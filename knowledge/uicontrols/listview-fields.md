@@ -48,7 +48,7 @@ evidence: []
 - **现象**：列表每行末尾多一个英文 `ListItem`（跟数据无关、刷新不掉）。
 - **原因**：行模板（`item`）自带默认文本；`html2json` 老版本照抄控件默认值，写死 `"text": "ListItem"`。
 - **修法**：json 里 `item.text` 写 `""`；`html2json` 自 2026-09-16 起默认输出空串
-  （MCP 源 + `tools/ui_tools/` 两份已同步 `sync_ui_tools.py`）。
+  （MCP 源 + `ui_tools/` 两份已同步 `sync_ui_tools.py`）。
 - **手写 json 自检**：`grep '"text": "ListItem"' ui/*.json` 应为空。
 
 ### 坑 2：刷新后不跟最新行 → 一直显示旧数据
@@ -61,7 +61,7 @@ evidence: []
 
 > fill 里 `setBackgroundPic(path)` 会让框架**当场解这张图**（280×280 圆角封面真机 **26~65 ms/张**，
 > 64×64 小图 3~4 ms），全落在 UI 线程；item 一重建（回页/换页/刷新/控件回收）就**再解一遍**。
-> 完整口径（病症判据 / 机制 / 两件套修法 / 8 条踩坑 / 实测数字 / 验收怎么量）见
+> 完整口径（病症判据 / 机制 / 两件套修法 / 8 条硬约束 / 实测数字 / 验收怎么量）见
 > **`knowledge/uicontrols/listview-image-cache.md`**；可直接拷的代码在组件 **`components/imagecache/`**（`zk::ImageCache`）。
 > 一句话修法：**①先降尺寸（取图 == 显示盒）②再上 ImageCache（按路径缓存已解码位图）**，
 > 两件套缺一不可；真机回页重设同一批封面 315 ms → 1 ms。

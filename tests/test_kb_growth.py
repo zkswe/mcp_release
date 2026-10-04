@@ -89,6 +89,15 @@ class TestFrontMatter(_KBBase):
         self.assertEqual(kbl.evidence_level(
             {'evidence': [], 'needs_evidence': True}), 'manual-only')
         self.assertEqual(kbl.evidence_level({'evidence': []}), 'none')
+        # 三态自洽（2026-10-03 修）：**有证据条目但不可执行**应是 manual-only，不是 none
+        # （否则 advisory 里会对 AI 说"证据等级=none"，与文档自己声明的相反）
+        self.assertEqual(kbl.evidence_level(
+            {'evidence': [{'kind': 'manual', 'note': 'x'}]}), 'manual-only')
+        # 散文串形态的 evidence 也算「有证据条目」（实测 color-contrast-standard.md 就是这种）
+        self.assertEqual(kbl.evidence_level(
+            {'evidence': ['实测 FAIL 22 处 → 改后 0 处']}), 'manual-only')
+        self.assertEqual(kbl.evidence_level(
+            {'evidence': [{'artifact': 'a.png'}]}), 'has-evidence')
 
     def test_local_layer_docs_respect_status(self):
         import kb_local as _k

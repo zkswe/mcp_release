@@ -65,7 +65,7 @@ evidence:
 ## 3. 体积：会不会撑爆 /res 分区
 
 - 上限 **8 MB**（可按平台覆盖）；用到 90% 起提示、超了告警。
-- 计入：`resources/`、`**/*.ttf|*.ttc`、`.fun/<平台>/libzkgui.so`。
+- 计入：`resources/`、`**/*.ttf|*.ttc`、`.fsc|.fun/<平台>/libzkgui.so`。
 - 不计入（报告里另附参考字节数）：`ui/*.ftu`、`tr/`、`src/（编译进 .so）`。
 
 | 级别 | 触发 | 为什么 |

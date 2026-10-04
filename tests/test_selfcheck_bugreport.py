@@ -6,8 +6,8 @@
 本文件把人肉口径钉成机器判据（离线，不连真机：设备侧读数用假设备注入）。
 
 钉住的东西：
-  ① `selfcheck` 分区结构（九个分区、每区 ≥2 个采集项、`{ok,hint,data}` 齐备、
-     **读不到必须给 hint**）；
+  ① `selfcheck` 分区结构（**份数由 `SECTIONS` 派生、不在文档/文案里手写**、每区 ≥2 个采集项、
+     `{ok,hint,data}` 齐备、**读不到必须给 hint**）；
   ② 无设备时优雅报错（`NO_DEVICE` + hint，不抛栈）；
   ③ `diff_against` 分支（同快照 → 全 same；基线缺失 → `DIFF_BASE_MISSING` 且不丢本次快照）；
   ④ `bugreport` 产出文件 + 各段落齐备 + 真机判据自动附 + 落盘位置默认值；
@@ -336,7 +336,7 @@ class TestRegistrationAndDocs(unittest.TestCase):
     def test_knowledge_doc_has_retrieval_guide(self):
         p = os.path.join(U.BASE, 'knowledge', 'devflow', 'selfcheck-and-bugreport.md')
         head = io.open(p, encoding='utf-8').read()
-        for kw in ('检索导引', '整机自检', '缺陷单', '读不到', '九分区',
+        for kw in ('检索导引', '整机自检', '缺陷单', '读不到', '分区',
                    'EVIDENCE_MISSING', 'logcat'):
             self.assertIn(kw, head, '文档缺关键词：%s' % kw)
         self.assertIn('check_retrieval.py', head)

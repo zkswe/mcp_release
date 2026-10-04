@@ -16,6 +16,7 @@
 import io
 import json
 import os
+import sys
 import re
 
 import preflight_loader as P
@@ -519,13 +520,71 @@ def _tree_bytes(path, exts=None, unreadable=None):
     return total
 
 
-def budget_usage(root, platform=''):
+def _build_dir_names():
+    """构建产物目录名（**两代**）→ `(names, note)`；note 非空表示口径退化了，要如实上报。
+
+    唯一真源 = `project_tools.BUILD_DIR_NAMES`（`('.fsc', '.fun')`，`.fsc` 优先）。
+    ⚠️ 为什么必须两代都认：09-28 版 fun 起产物目录从 `.fun/<平台>/` 改名到 `.fsc/<平台>/`，
+    `project_tools._find_build_artifact` / `_find_update_img` 早已两代都认，**本模块漏改**：
+    只找 `.fun/` → **新工具链工程的 `libzkgui.so` 体积一律计 0** → `usedMB` 偏小、
+    `level` 可能假绿（2026-10-03 定位）。同一处漏改还让字体 walk 只排 `.fun`，
+    `.fsc/` 里的东西会被当成"工程内字体"重复计入。
+
+    `project_tools` 在模块级 `import preflight`（它要用 resolution_decision），
+    所以这里**只能函数内延迟导入**（模块级会成环）。导入失败**不静默**：退回两代硬编码口径，
+    并把原因交给调用方写进 `warnings`。
+    """
+    try:
+        import project_tools as _pt
+        names = tuple(_pt.BUILD_DIR_NAMES or ())
+        if names:
+            return names, ''
+        return ('.fsc', '.fun'), 'BUILD_DIR_NAMES 为空，体积口径已退回 .fsc/.fun 硬编码'
+    except Exception as e:
+        return ('.fsc', '.fun'), ('BUILD_DIR_NAMES 不可用（%s: %s），体积口径已退回 '
+                                 '.fsc/.fun 硬编码（构建产物体积可能不准）'
+                                 % (type(e).__name__, e))
+
+
+
+def probe_res_partition(device=''):
+    """实测连接设备的 `res` 分区容量（字节）。探不到返回 (None, 原因)。
+
+    复用 `tools/set_boot_logo.py::parse_mtd`（它已是"设备在线时读 /proc/mtd 真实上限"的同一套实现），
+    不另写解析器。规范优先级见 `preflight_spec.json` 的 `budget.limitPriority`。
+    """
+    try:
+        import adb_tools as _at
+        tools_dir = os.path.join(BASE, 'tools')
+        if tools_dir not in sys.path:
+            sys.path.insert(0, tools_dir)
+        import set_boot_logo as _sbl                     # 复用其 parse_mtd（唯一实现）
+    except Exception as e:                               # 依赖不可用 → 显式降级
+        return None, '解析器不可用(%s: %s)' % (type(e).__name__, e)
+    try:
+        adb = _at.find_adb() if hasattr(_at, 'find_adb') else 'adb'
+        out = _at.sh(adb, device, 'cat /proc/mtd')
+    except Exception as e:
+        return None, '设备读取失败(%s: %s)' % (type(e).__name__, e)
+    mtd = _sbl.parse_mtd(out or '')
+    if not mtd:
+        return None, '设备无 /proc/mtd 或解析为空'
+    # 名字归一后找 res：真机上可能是 'res'（V85X/Z20/Z21）；找不到就如实报
+    for name, kb in mtd.items():
+        if name.lower() == 'res':
+            return int(kb) * 1024, 'device:/proc/mtd res'
+    return None, '设备分区表里没有叫 res 的分区（有: %s）' % ', '.join(sorted(mtd))
+
+def budget_usage(root, platform='', device=''):
     """体积预算 → {'usedBytes','limitBytes','pct','level','parts','excluded','warnings'}。
 
     计入（口径见 `preflight_spec.json.budget.parts`）：`resources/` 全量 + 工程内字体
-    （`resources/` 之外的按绝对路径去重）+ `.fun/<平台>/libzkgui.so`。
+    （`resources/` 之外的按绝对路径去重）+ 构建产物 `libzkgui.so`
+    （**两代都认、`.fsc` 优先**：09-28 起 fun 把产物从 `.fun/<平台>/` 改到 `.fsc/<平台>/`，
+    目录名唯一真源 = `project_tools.BUILD_DIR_NAMES`，见 `_build_dir_names()`）。
     `ui/*.ftu` 与 `tr/` **不计入**，但会附在 `excluded` 里供参考（它们是同一个 /res 的邻居）。
     """
+    build_dirs, build_note = _build_dir_names()
     parts = []
     unreadable = []
     res_dir = os.path.join(root, 'resources')
@@ -536,7 +595,7 @@ def budget_usage(root, platform=''):
     font_files = []
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames
-                       if d not in ('.git', '.fun', 'Release') and
+                       if d not in build_dirs and d not in ('.git', 'Release') and
                        os.path.abspath(os.path.join(dirpath, d)) != os.path.abspath(res_dir)]
         for fn in filenames:
             if not fn.lower().endswith(_FONT_EXTS):
@@ -560,14 +619,16 @@ def budget_usage(root, platform=''):
     except Exception:
         key = ''
     cands = []
-    fun_dir = os.path.join(root, '.fun')
-    if key:
-        cands.append(os.path.join(fun_dir, key, 'libzkgui.so'))
-    if os.path.isdir(fun_dir):
-        for d in sorted(os.listdir(fun_dir)):
-            p = os.path.join(fun_dir, d, 'libzkgui.so')
-            if os.path.isfile(p) and p not in cands:
-                cands.append(p)
+    # 两代构建目录都找，`.fsc` 优先（与 project_tools._find_build_artifact 同口径）
+    for bd in build_dirs:
+        bd_abs = os.path.join(root, bd)
+        if key and os.path.join(bd_abs, key, 'libzkgui.so') not in cands:
+            cands.append(os.path.join(bd_abs, key, 'libzkgui.so'))
+        if os.path.isdir(bd_abs):
+            for d in sorted(os.listdir(bd_abs)):
+                p = os.path.join(bd_abs, d, 'libzkgui.so')
+                if p not in cands:
+                    cands.append(p)
     for p in cands:
         if os.path.isfile(p):
             try:
@@ -576,15 +637,28 @@ def budget_usage(root, platform=''):
                 lib_bytes = 0
             lib_path = os.path.relpath(p, root).replace('\\', '/')
             break
-    parts.append({'path': '.fun/<平台>/libzkgui.so', 'bytes': lib_bytes, 'file': lib_path})
+    parts.append({'path': '.fsc|.fun/<平台>/libzkgui.so', 'bytes': lib_bytes, 'file': lib_path,
+                  'buildDirs': list(build_dirs)})
 
     used = sum(p['bytes'] for p in parts)
-    limit_mb = P.budget_limit_mb(platform)
+    # 规范优先级：实测设备 res 分区 > perPlatform 静态值 > 缺省 limitMB
+    _res_bytes, _res_why = (None, '未探测（未给 device）')
+    if device:
+        _res_bytes, _res_why = probe_res_partition(device)
+    if _res_bytes:
+        limit_mb = round(_res_bytes / 1048576.0, 2)
+        _limit_src = _res_why
+    else:
+        limit_mb = P.budget_limit_mb(platform)
+        _limit_src = ('perPlatform' if (P.load().get('budget', {}).get('perPlatform') or {}).get(platform)
+                      else 'default') + ('（实测未取得：%s）' % _res_why if device else '')
     limit = int(limit_mb * 1024 * 1024)
     pct = (used / float(limit) * 100.0) if limit else 0.0
     near = P.budget_near_pct()
     level = 'over' if pct >= 100 else ('near' if pct >= near else 'ok')
     warnings = []
+    if build_note:                      # 口径退化不许静默（少算 = 预算体检假绿）
+        warnings.append(build_note)
     for lv in P.budget_levels():
         if lv.get('level') == level and lv.get('action') == 'warn':
             warnings.append('%s（用量 %.2f MB / 上限 %s MB = %.0f%%）'
@@ -598,6 +672,7 @@ def budget_usage(root, platform=''):
         excluded.append({'path': 'tr/', 'bytes': _tree_bytes(tr_dir)})
     return {'usedBytes': used, 'limitBytes': limit,
             'usedMB': round(used / 1048576.0, 2), 'limitMB': limit_mb,
+        'limitSource': _limit_src,
             'pct': round(pct, 1), 'level': level, 'parts': parts,
             'excluded': excluded, 'warnings': warnings,
             'platform': platform or '', 'fontFiles': font_files,
@@ -684,7 +759,7 @@ def check(root, serial='', platform='', device_fonts=None, panel=None, device_pr
     out['checks']['font'] = fchk
 
     # ③ 体积
-    bchk = budget_usage(root, platform)
+    bchk = budget_usage(root, platform, device=device)
     out['checks']['budget'] = bchk
     for u in (bchk.get('unreadable') or []):
         out['warnings'].append('字体体积算不出来 → 预算可能少算：%s' % u)

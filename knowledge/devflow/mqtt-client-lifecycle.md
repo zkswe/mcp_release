@@ -27,9 +27,9 @@ evidence:
   - "projects/SmartPanel_HA/src/logic/mainLogic.cc L872（1s 心跳调 MqttBridge.tick）、src/network/WebConfigServer.cpp L383-387（改配置后 stop+init）"
   - "projects/SmartPanel_HA/src/network/MqttBridge.h L95-108（mClient/mClientGen/mLastTryMono/mFailStreak/mReconnectCount）"
   - "~/.fun/registry/public/z20/mqtt-cxx/3.2.0/include/mqtt/mqtt_client.h L63-69（on_connected/on_disconnected 带 cause）、L72-86（publish/subscribe/isConnected）；Configuration 里**没有**关闭库自动重连的开关"
-  - "tools/FlyThings_mcp_open/packages/mqtt-cxx/platforms.md（Z20 实测：断网 90s → on_disconnected；复网再次 on_connected，cause=automatic reconnect，回连约 10.5s；同 client_id 互踢风暴实测 每分钟 143 connected / 123 disconnected，两条 disconnected 相隔 2 ms）"
+  - "packages/mqtt-cxx/platforms.md（Z20 实测：断网 90s → on_disconnected；复网再次 on_connected，cause=automatic reconnect，回连约 10.5s；同 client_id 互踢风暴实测 每分钟 143 connected / 123 disconnected，两条 disconnected 相隔 2 ms）"
   - "tools/FlyThings_mcp_open/packages/mqtt-cxx/package.yaml L84-88,117（gotchas：不 delete 旧 client 会被 broker 互踢；回调在库线程；evaluate 返回 true 不等于 broker 收到）"
-  - "tools/FlyThings_mcp_open/packages/mqtt-cxx/evidence/netstack2_20260929.txt、evidence/lwt_will_20260929.txt（真机日志；遗愿 kill -9 后代发约 2 s）"
+  - "packages/mqtt-cxx/evidence/netstack2_20260929.txt、evidence/lwt_will_20260929.txt（真机日志；遗愿 kill -9 后代发约 2 s）"
 ---
 
 # MQTT 客户端连接生命周期（重连真源 / 互踢 / retained 回放 / availability）

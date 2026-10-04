@@ -139,7 +139,7 @@ evidence: []
 
 ## 6. 本文明说未验证的边界
 
-- 第 3 节标"需自编/未验证"的库（sqlite3 / libmodbus / open62541 / protobuf-c …）**没有真机结论**；
+- 第 3 节标"需自编/未验证"的库（sqlite3 / libmodbus / open62541 / protobuf-c …）**没有真机结论**。**复验方法**：真机上交叉编译该库的最小用例并跑通；
 - 第 2 节的判据是**方法论**，已在本工程用过的只是其中一部分（strip/预算/路径/libilc 口径）；
 - 真机证据补齐后应把 `status` 从 `draft` 提升为 `verified` 并挂 `evidence`。
 

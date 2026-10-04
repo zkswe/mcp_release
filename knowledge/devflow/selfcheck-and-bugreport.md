@@ -59,6 +59,7 @@ selfcheck 只看"设备本身的状态读数"，不看画面内容。
 | ⑦ | 输入 | `ls /dev/input`（需 busybox）、`/proc/bus/input/devices`（触摸设备名） | 节点或设备表非空 | `/proc/bus/input/devices` 不依赖 busybox；注入测试用随仓 `bin_tools/<平台>/touch`（先 `touch list`） |
 | ⑧ | 外设 | `/data/preferences.json`（继电器/过零 IO 键） | 偏好文件是 JSON 且有 relay/zero/io 键 | 偏好文件**应用没写过就没有**，`ok=false` 属常态；继电器走 `zkhardware` 包（`zeroOutput`/背光） |
 | ⑨ | 时间 | `date`、`date +%s`、`persist.sys.timezone`、`ntpd/ntpdate` 是否存在 | date 或 epoch 有值 | 设备 `date` 被裁剪 → 自动退 `busybox date`；`driftSeconds` = 设备 − 宿主，**NTP 是否可用不替你判断**（本分区只给偏差）；偏差大时先让设备把时间对上再验需要时间正确的功能（相关坑见 `knowledge/devflow/package-verify-playbook.md`） |
+| ⑩ | 库清单 | `ls -l /lib`、`ls -l /res/lib`（需 busybox） | 至少读到 `/lib` 清单 | 要借哪个库先 `readelf -d <lib>` 看 NEEDED/SONAME，再 `--dyn-syms` 对照头文件核签名；**注册表没有 ≠ 平台没有**（设备 `/lib` 自带 nanovg/libpng/freetype/jpeg/mad/zlib，可 dlopen 免编译）；清单与三条纪律见 `knowledge/devflow/device-preinstalled-libs.md`（`libmi_*` 属框架内部，不要用） |
 | ⑪ | **部署一致性**| 三处 `EasyUI.cfg`（`/tmp` > `/mnt/extsd` > `/res/etc`）、`md5sum /tmp/lib/libzkgui.so /res/lib/libzkgui.so`、`md5sum /tmp/ui/*.ftu` 与 `/res/ui/*.ftu` | 读到生效 cfg **且 `resPath` 与 `startupLibPath` 同源**| **专治「改了像没改」**：`mixed=true` = 新库旧界面（或反之）→ 两条路径成对指到同一次部署的产物，或 `rm -rf /tmp/lib /tmp/EasyUI.cfg /tmp/ui` 退回固化态再 `setprop ctl.restart zkswe`；口径与四步自检见 `knowledge/devflow/deploy-consistency-check.md` |
 
 ### 2.1 采集的工程口径（为什么这么写）
@@ -78,7 +79,7 @@ selfcheck 只看"设备本身的状态读数"，不看画面内容。
 ```json
 {"ok": true, "op": "flythings_selfcheck", "device": {"serial": "...", "model": "...", "platform": "..."},
  "sections": {"device": {"ok": true, "hint": "", "data": {...}, "items": [...], "notes": [...]}, "...": {}},
- "summary": {"total": 9, "ok": 6, "failed": 3, "failedSections": ["bluetooth", "input", "peripheral"]},
+ "summary": {"total": 11, "ok": 8, "failed": 3, "failedSections": ["bluetooth", "input", "peripheral"]},
  "outPath": "<落盘路径，未传 out 时为空串>"}
 ```
 
@@ -146,7 +147,10 @@ selfcheck 只看"设备本身的状态读数"，不看画面内容。
 
 ## 6. 已知边界（哪些只有静态判据 / 未真机验证）
 
-本版（v0.27.123-open）**已在真机抽查**（SSD20X / Z20 面板，只读命令，未做任何设备侧写入）：九分区 **8/9 ok**（`bluetooth` ok=false 属正确结论——板上没插 BT 模组）；
+本版（v0.27.123-open）**已在真机抽查**（SSD20X / Z20 面板，只读命令，未做任何设备侧写入）：九分区 **8/9 ok**（`bluetooth` ok=false 属正确结论——板上没插 BT 模组）；<!-- 分区数豁免：v0.27.123 当时的实测真值就是 9，改它等于篡改证据 -->
+> ⚠️ 上面那条读数**是 v0.27.123-open 当时的实测记录**（分区数豁免：那时真值就是 9，改了等于篡改证据），
+> **不要当成现状**：⑩ 库清单（v0.27.134）与 ⑪ 部署一致性（v0.27.147）是之后加的，
+> **现在共 11 个分区**。分区份数以 `selfcheck_tools.SECTIONS` 为准（返回体 `summary.total` 由它派生）。
 `diff`（同设备连跑两次：**0 changed**+ 7 条 volatileItems）与 `bugreport` 端到端跑通
 （缺陷单里的真机判据、logcat 摘要都落到了文件里）。
 

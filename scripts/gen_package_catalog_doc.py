@@ -157,8 +157,8 @@ def howto():
         '4. **加进工程**：`flythings_add_package(project_root, id, version)`（自动改 Manifest + `fun install`）；'
         '只想要推荐清单不动盘就用 `flythings_manifest(features=...)`。',
         '',
-        '> ⚠️ 常见坑：Manifest 里漏声明传递依赖（例：用 `mqtt-cxx` 要连 `paho-mqtt3as` + `openssl` 一起声明，'
-        '否则链接报 `BIO_read / RAND_bytes / SHA1_*` undefined）。踩坑口径见 '
+        '> ⚠️ 约束：Manifest 必须声明传递依赖（例：用 `mqtt-cxx` 要连 `paho-mqtt3as` + `openssl` 一起声明，'
+        '否则链接报 `BIO_read / RAND_bytes / SHA1_*` undefined）。判据见 '
         '`knowledge/devflow/dependency-package-docs.md`。',
     ]
 

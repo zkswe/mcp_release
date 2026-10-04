@@ -24,7 +24,10 @@ def collect_chars(project_root):
     chars = set(ASCII) | EXTRA
     exts = ('.cc', '.cpp', '.h', '.hpp', '.html', '.json', '.tr', '.xml')
     for root, _dirs, files in os.walk(project_root):
-        if os.sep + '.fun' in root or os.sep + '.git' in root:
+        # 构建产物目录**两代都跳**（09-28 起 `.fun/` 改名 `.fsc/`）：产物是工程内容的副本，
+        # 不会带来新字符，跳过不丢字；只跳一代会让新一代工程多扫一遍副本。
+        if (os.sep + '.fun' in root or os.sep + '.fsc' in root
+                or os.sep + '.git' in root):
             continue
         for fn in files:
             if not fn.endswith(exts):

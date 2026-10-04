@@ -57,8 +57,8 @@ evidence:
 - **一致性校验**：`ui_tools/wysiwyg_diff.py` —— 渲染图 vs 真机截图 → 超容差像素占比 + **逐控件归因**+ 自动排除运行期文字盒
 - 用法：
   ```bash
-  python tools/ui_tools/json2img.py <项目根> --page wall --out wall.png --scale 2 --report
-  python tools/ui_tools/wysiwyg_diff.py wall.png <真机截图.png> <项目根>/ui/wall.json --tol 2
+  python ui_tools/json2img.py <项目根> --page wall --out wall.png --scale 2 --report
+  python ui_tools/wysiwyg_diff.py wall.png <真机截图.png> <项目根>/ui/wall.json --tol 2
   ```
 
 ## 4. 对齐位模型（2026-10-01 真机定案；旧口径只记了 36/37/38）
