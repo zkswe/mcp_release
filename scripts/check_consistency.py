@@ -495,25 +495,29 @@ def stage_no_ide_local_files():
 
 
 def _expected_md_sets():
-    """按 kb_index_roots.py（索引范围唯一真源）推导索引应包含的仓库内文档集合。
+    """按 `kb_index_roots.py`（索引范围唯一真源）推导索引应包含的**仓库真源**文档集合。
 
-这里**不再自己写遍历口径**——以前是照着 rebuild_index_local.py "同口径"抄一遍，
-给检索加一类文档要改两处、漏一处就漂移（2026-10-02 收编）。
+    这里**不再自己写遍历口径**——以前是照着 rebuild_index_local.py "同口径"抄一遍，
+    给检索加一类文档要改两处、漏一处就漂移（2026-10-02 收编）。
+
+    ⚠️ **wiki 不进这个集合**（2026-10-05 需求方口径）：wiki 是**维护期用的源数据**
+    （让 `knowledge/` 整理页有更精准的依据），**不是给 AI 检索的用户面**。它进了
+    `rag_index` 有两个后果，都已实测：
+      ① **污染检索回归这个量具**：语料里多出 122~129 篇镜像页后，全局 top-1 从 76.5%
+         掉到 ~69%，而且**不是排序退化** —— 把 wiki 裁掉重测仍是 69.4%（没回升）；
+      ② AI 拿到的是镜像页而非我们整理过的页（`multimedia/video.md` vs
+         `knowledge/media/media-capability-index.md`），与"整理页才是权威"相冲突。
+    所以本函数只返回**仓库真源**文档；`stage_index` 据此把"索引里混进 wiki 页"判成 stale。
     """
     sys.path.insert(0, BASE)
     import kb_index_roots as bir
     expected = set(bir.repo_rel_docs(BASE))
-    known = {rel.split('/', 1)[1] if '/' in rel else rel for rel in expected}
     wiki_count = 0
     if os.path.isdir(WIKI_ROOT) and not RELEASE_SCOPE:
         for r, _, fs in os.walk(WIKI_ROOT):
             for f in fs:
                 if f.endswith('.md'):
-                    rel = os.path.relpath(os.path.join(r, f), WIKI_ROOT).replace('\\', '/')
-                    if rel in known:
-                        continue
-                    expected.add(rel)
-                    wiki_count += 1
+                    wiki_count += 1          # 只统计篇数，**不并入 expected**（见函数说明）
     return expected, wiki_count, os.path.isdir(WIKI_ROOT) and not RELEASE_SCOPE
 
 
@@ -525,23 +529,17 @@ def stage_index():
     idx = json.loads(_read(idxp))
     have = {c.get('path', '').replace('\\', '/') for c in idx.get('chunks', [])}
     exp, wiki_count, has_wiki = _expected_md_sets()
-    if has_wiki:
-        missing = sorted(exp - have)
-        stale = sorted(have - exp)
-        detail = 'missing=%d stale=%d (rebuild: python rebuild_index_local.py)'
-        detail_args = (len(missing), len(stale))
-    else:
-        # 无本地完整 wiki 的机器（fresh clone / CI / 公开版）：只能验「仓库内 knowledge/ 都被索引到了」，
-        # 索引里多出来的 wiki 文档不当地漂移（那是发布时在本机建的）
-        kb_only = {p for p in exp if p.startswith('knowledge/')}
-        missing = sorted(kb_only - have)
-        stale = []
-        if RELEASE_SCOPE:
-            detail = 'missing=%d（公开版口径：索引只收 knowledge/，不含本机 wiki）'
-        else:
-            detail = 'missing=%d (wiki 不在本机，跳过 stale 对比)'
-        detail_args = (len(missing),)
-    check(not missing and not stale, 'rag index covers disk docs', detail % detail_args)
+    missing = sorted(exp - have)
+    # `stale` = 索引里有、但不在「仓库真源」里的东西。**wiki 页混进来也会落在这里** ——
+    # 那正是要拦的（镜像不该被索引，见 `_expected_md_sets` 的说明）。
+    stale = sorted(have - exp)
+    hint = ''
+    if has_wiki and any(not p.startswith(('knowledge/', 'components/', 'packages/', 'kb_local/'))
+                        for p in stale):
+        hint = '；**stale 里是 wiki 页 = 镜像被索引了 → 跑 `rebuild_index_local.py --repo-only`**'
+    check(not missing and not stale, 'rag index covers disk docs',
+          'missing=%d stale=%d (rebuild: python rebuild_index_local.py%s)'
+          % (len(missing), len(stale), hint))
     if missing:
         print('       missing: %s' % ', '.join(missing[:5]))
     if stale:
@@ -592,6 +590,7 @@ def stage_index():
 # 口径：单个 op ≤ 900 字符；全体合计 ≤ 12000 字符。长尾细节要求搬进 knowledge/（可检索）。
 DOC_PER_OP_MAX = 900
 DOC_TOTAL_MAX = 12000
+
 
 
 def stage_package_manifest():
@@ -931,6 +930,14 @@ def stage_referenced_files_tracked():
           '未登记进 git：%s —— 跑 git add（否则 fresh clone / CI 上会缺文件）' % '；'.join(missing[:3]))
     check(not unreadable, '扫描时无读不了的文件',
           'ok' if not unreadable else '读不了（已跳过，故本次扫描不完整）：%s' % '；'.join(unreadable[:3]))
+
+
+# docstring 预算（v0.27.34 起进门禁）：工具 schema 每次会话都进上下文，膨胀 = 持续燃烧 token。
+# 口径：单个 op ≤ 900 字符；全体合计 ≤ 12000 字符。长尾细节要求搬进 knowledge/（可检索）。
+# ⚠️ 这三个 900/360/900 是**三个不同的东西**，别混：本处 900 = 单个 op 的 **docstring** 上限；
+#   `op_spec.budget.perOpMax = 360` = 常驻面单条渲染上限；`contractPerOpMax = 900` = 按需契约单条上限。
+DOC_PER_OP_MAX = 900
+DOC_TOTAL_MAX = 12000
 
 
 def stage_docstring_budget():

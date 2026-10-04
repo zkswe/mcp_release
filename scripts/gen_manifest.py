@@ -143,16 +143,18 @@ def collect():
     # 那 16 篇是**仓库内**文档，却被算进 wikiFiles；本仓再加 packages/（2026-10-03）会变成 41。
     # 更硬的后果在门禁侧：check_consistency 的 `wiki page count` 拿 manifest.docs.wikiFiles
     # 与**真实 wiki 篇数**比，于是在有本机 wiki 的机器上（发布前必跑）必然对不上 = 假红。
-    # 现在改成从**索引范围唯一真源**派生：仓库真源声明的 + 本地层前缀 之外，才是 wiki。
-    try:
-        import kb_index_roots as _bir
-        declared = _bir.repo_rel_docs(BASE)
-    except Exception as e:            # 真源不可用不静默：退成空集并**说清原因**（wiki 数会偏大）
-        declared = set()
-        print('[warn] kb_index_roots 不可用（%s: %s），wikiFiles 只能按 knowledge/ 前缀粗算'
-              % (type(e).__name__, e))
-    wiki_paths = [p for p in rag_paths
-                  if p not in declared and not p.startswith('kb_local/')]
+    # wiki 篇数 = **从 wiki 根真源直接数**（2026-10-05 改口径）。
+    #
+    # 旧口径是「索引里既不在仓库真源声明里、也不是本地层的 chunk」—— 那在"wiki 不进索引"
+    # 之后会恒为 0（实测 manifest=0 而 real=122 → 门禁 `wiki page count` 假红）。
+    # 现在 wiki 已随 open 仓分发（`wiki/flythings/`），所以它该跟 `knowledge/` 一样按**磁盘真源**数：
+    # 门禁侧 `check_consistency` 比的是"真实 wiki 篇数"，两边同源才不会漂。
+    wiki_root = os.path.join(BASE, 'wiki', 'flythings')
+    wiki_files = 0
+    if os.path.isdir(wiki_root):
+        for r, ds, fs in os.walk(wiki_root):
+            ds[:] = [d for d in ds if not d.startswith('_')]
+            wiki_files += sum(1 for f in fs if f.endswith('.md'))
 
     return {
         'schema': 1,
@@ -166,7 +168,7 @@ def collect():
         'ops': ops,
         'docs': {
             'knowledgeFiles': len(kb_files),
-            'wikiFiles': len(wiki_paths),
+            'wikiFiles': wiki_files,
             'ragChunks': rag_chunks,
             'ragPaths': len(rag_paths),
         },
