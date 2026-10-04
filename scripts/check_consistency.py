@@ -46,7 +46,9 @@ if BASE not in sys.path:
     sys.path.insert(0, BASE)
 
 RESULT = []
-WIKI_ROOT = os.path.join(os.path.expanduser('~'), '.openclaw', 'workspace', 'wiki', 'flythings')
+WIKI_ROOT = (os.path.join(BASE, 'wiki', 'flythings')          # 随仓 wiki（open 版自带）
+             if os.path.isdir(os.path.join(BASE, 'wiki', 'flythings'))
+             else os.path.join(os.path.expanduser('~'), '.openclaw', 'workspace', 'wiki', 'flythings'))
 # 公开版口径（2026-09-15 起）：release 分支带 scripts/release_scope.json 与 release_gate.py，
 # 本闸门据此切两处口径（master 没有该文件 → 行为完全不变）：
 #   ① rag 索引只收 knowledge/（公开版不带本机 wiki）；
