@@ -1005,7 +1005,15 @@ def _test_hermetic_hits(path, base=None):
             cwd=base, timeout=120).stdout.decode('utf-8', 'replace').split())
     except Exception:
         tracked = set()
-    rel_self = os.path.relpath(path, base).replace(os.sep, '/')
+    try:
+        rel_self = os.path.relpath(path, base).replace(os.sep, '/')
+    except ValueError:
+        # Windows 跨盘（如用例用 tempfile 把合成样本建在 C: 而仓库在 D:）——
+        # relpath 会抛 ValueError，而本变量**只用于白名单前缀比较**（见下），
+        # 退成绝对路径即可：它不会匹配 `tests/…` 之类的相对前缀，等于「这个文件不在白名单里」，
+        # 正是跨盘样本该有的判定。别让门禁因为「文件不在同一个盘」而崩（2026-10-04 实测
+        # 两条用例因此报 ValueError: path is on mount 'C:', start on mount 'D:'）。
+        rel_self = os.path.normpath(path).replace(os.sep, '/')
 
     def _cands(s):
         """字面量可能指向的地方（根 / tests 下各试一次）。"""
@@ -1097,7 +1105,105 @@ def stage_deliverables(with_tests):
           'tests/ contract cases present', ','.join(checks[:6]))
 
 
+def _kb_report_normalize(gen, text):
+    """把派生报告的**稳定核**取出来做比对 —— 让"陈旧"只表示「与真源不一致」。
+
+    为什么必须归一（2026-10-04 实测）：这些报告里混了两类东西 ——
+      · **稳定核**（随仓真源决定）：源哈希、篇数、分类表、证据/时效、backlog、检索登记数；
+      · **本机态/时间戳**：`generatedAt`、`indexMeta.built_at`、`lastVerify`（本机复验轨迹）、
+        `gaps`（本机未命中日志，`kb_local.gaps()` 每次调用都在累加）、`localLayer.dir`（绝对路径）。
+    直接逐字节比 → 报告**永远**判陈旧（实测：同一份代码生成两次的 `gaps.totalLogged` 就不同），
+    也就是一条永远红的判据。归一后保留上面那半，它才真能抓到"知识页改了但看板没重生成"。
+    """
+    if gen.endswith('kb_health.json'):
+        try:
+            h = json.loads(text)
+        except ValueError:
+            return text
+        h.pop('generatedAt', None)
+        h.pop('lastVerify', None)
+        h.pop('gaps', None)
+        h['indexMeta'] = {k: v for k, v in (h.get('indexMeta') or {}).items() if k != 'built_at'}
+        if isinstance(h.get('localLayer'), dict):
+            h['localLayer'] = {k: v for k, v in h['localLayer'].items() if k != 'dir'}
+        return json.dumps(h, ensure_ascii=False, indent=1, sort_keys=True)
+    if gen.endswith('kb_health.md'):
+        keep, cut = [], False
+        for ln in text.splitlines():
+            if ln.startswith('> 生成时间：'):
+                continue
+            if ln.startswith('- 上次复验：') or ln.startswith('- 未命中累计 '):
+                continue
+            if ln.startswith('- 候选区（inbox）'):
+                # 该行的「本地层」是本机层统计（含绝对路径），只留随仓那半
+                ln = ln.split('｜ 本地层：')[0]
+            if ln.startswith('## 六、未命中缺口 top 10'):
+                cut = True                     # 本节完全来自本机未命中日志
+            if not cut:
+                keep.append(ln)
+        return '\n'.join(keep) + '\n'
+    return text
+
+
+def _bootstrap_kb_reports():
+    """知识类派生报告（`knowledge/_reports/`）：**内容比对**真源；缺失才生成。
+
+    为什么必须有这一步（2026-10-04 干净检出实测）：这些报告在 `.gitignore` 里（与 kb_index
+    同性质，属派生物），但门禁的 3 条委派项（kb_health / audit_design_spec /
+    gen_unverified_report）会拿**报告 vs 真源**比对 —— fresh clone 上报告根本不存在，
+    于是这 3 项**必然红**（实测：干净检出 74 项 / 5 红，其中 3 项是"缺报告"）。
+    这与本项目反复治的病同源：**门禁依赖一个未入库、又没人负责生成的产物**。
+
+    修法选"生成 + 比对"而不是"缺了就跳过"：
+      · 跳过 = 该判据在 CI 上永不生效（假绿）；
+      · 生成 + 比对 = CI 上照样能抓到"报告与真源不一致"（真漂移），"本机没生成过"不再是失败。
+    ⚠️ 必须**先生成到内存/临时、再与磁盘比**，不能"先重生成再让委派项比对"——那样委派项
+    永远比对的是刚生成的文件，陈旧永远查不出来（这是个假绿陷阱，故在此一处判完）。
+    生成器的输入只有仓内 `knowledge/`（实测三者互不依赖），所以这步确定、可重复。
+    """
+    for label, gen, outs in (
+            ('kb_health', 'kb_health.py', ('knowledge/_reports/kb_health.json',
+                                           'knowledge/_reports/kb_health.md')),
+            ('design_spec_audit', 'audit_design_spec.py',
+             ('knowledge/_reports/design_spec_audit.md',
+              'knowledge/_reports/design_spec_audit.json')),
+            ('unverified', 'gen_unverified_report.py',
+             ('knowledge/_reports/unverified.md',
+              'knowledge/_reports/unverified.json'))):
+        paths = [os.path.join(BASE, n.replace('/', os.sep)) for n in outs]
+        on_disk = {}
+        for p in paths:
+            try:
+                on_disk[p] = _kb_report_normalize(
+                    p.replace(os.sep, '/').split('/')[-1],
+                    io.open(p, encoding='utf-8', newline='').read())
+            except OSError:
+                on_disk[p] = None
+        if gen == 'kb_health.py':       # 看板依赖 kb_index.json（另一产物）：缺了先如实报，不代跑
+            if not os.path.isfile(os.path.join(BASE, 'knowledge', 'kb_index.json')):
+                check(False, 'kb 报告: %s' % label,
+                      '缺 knowledge/kb_index.json（先跑 python scripts/gen_kb_index.py）')
+                continue
+        rc, _out = _run([sys.executable, os.path.join(SUB, gen)])
+        if rc != 0:
+            check(False, 'kb 报告: %s' % label, '生成失败 rc=%d' % rc)
+            continue
+        missing = [os.path.basename(p) for p in paths if on_disk[p] is None]
+        if missing:
+            check(True, 'kb 报告: %s' % label,
+                  '本机无报告 → 已按需生成（%s）' % '、'.join(missing))
+            continue
+        diff = [os.path.basename(p) for p in paths
+                if _kb_report_normalize(p.replace(os.sep, '/').split('/')[-1],
+                                        io.open(p, encoding='utf-8', newline='').read())
+                != on_disk[p]]
+        check(not diff, 'kb 报告: %s' % label,
+              'ok（与真源一致）' if not diff else
+              '陈旧：%s 与真源不一致（已重生成，请复核差异）' % '、'.join(diff))
+
+
 def stage_delegated(skip_smoke, with_tests):
+    _bootstrap_kb_reports()
     gate = os.path.join(SUB, 'release_gate.py')
     if RELEASE_SCOPE and os.path.isfile(gate):
         rc, out = _run([sys.executable, gate])
@@ -1238,7 +1344,8 @@ def stage_delegated(skip_smoke, with_tests):
     check(rc == 0, 'delegated: kb_health --check (看板新鲜度)',
           (tail2[0] if tail2 else 'rc=%d' % rc)[:70])
     # 「未核 / 待验证」派生清单不许滞后：它是「哪些结论还没验」的唯一视图（内容真源仍在各页）。
-    # 注意 knowledge/_reports/ 是 .gitignore 的（与 kb_health 同性质）：本地跑门禁前先生成一次。
+    # 注意 knowledge/_reports/ 是 .gitignore 的（与 kb_health 同性质）：本函数开头的
+    # `_bootstrap_kb_reports()` 会在缺失时先按需生成，此处只判「报告 vs 真源」是否一致。
     # 设计规范全检（DESIGN_SPEC.md 第 0–4 条）不许滞后：它是「通用内容/踩坑叙述/静态值」的体检视图
     rc, out = _run([sys.executable, os.path.join(SUB, 'audit_design_spec.py'), '--check'])
     tail4 = [l for l in out.strip().splitlines()
