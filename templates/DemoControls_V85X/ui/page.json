@@ -1,205 +1,205 @@
 {
- "id": 0,
- "backgroundColor": 1053720,
- "beepEnable": true,
- "topmost": false,
- "resolution": {
-  "width": 480,
-  "height": 800
- },
- "position": {
-  "left": 0,
-  "top": 0,
-  "width": 480,
-  "height": 800
- },
- "textview__1": {
-  "id": 1,
-  "caption": "tvTitle",
-  "text": "翻页窗口（pagewindow）",
+  "id": 0,
+  "backgroundColor": 1053720,
+  "beepEnable": true,
+  "topmost": false,
+  "resolution": {
+    "width": 480,
+    "height": 800
+  },
   "position": {
-   "left": 16,
-   "top": 24,
-   "width": 448,
-   "height": 48
+    "left": 0,
+    "top": 0,
+    "width": 480,
+    "height": 800
   },
-  "alignment": 36,
-  "colorTab": {
-   "color0": 16777215,
-   "color1": -1,
-   "color2": -1,
-   "color3": -1,
-   "color4": -1
+  "textview__1": {
+    "id": 1,
+    "caption": "tvTitle",
+    "text": "翻页窗口（pagewindow）",
+    "position": {
+      "left": 16,
+      "top": 24,
+      "width": 448,
+      "height": 48
+    },
+    "alignment": 36,
+    "colorTab": {
+      "color0": 16777215,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 26,
+    "touchable": false
   },
-  "fontSize": 26,
-  "touchable": false
- },
- "button__2": {
-  "id": 2,
-  "caption": "BtnBack",
-  "text": "返回",
-  "position": {
-   "left": 16,
-   "top": 720,
-   "width": 120,
-   "height": 56
+  "button__2": {
+    "id": 2,
+    "caption": "BtnBack",
+    "text": "返回",
+    "position": {
+      "left": 16,
+      "top": 720,
+      "width": 120,
+      "height": 56
+    },
+    "alignment": 37,
+    "colorTab": {
+      "color0": 16777215,
+      "color1": 10274047,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "picTab": {
+      "pic0": "",
+      "pic1": "",
+      "pic2": "",
+      "pic3": "",
+      "pic4": ""
+    },
+    "touchable": true,
+    "bgColorTab": {
+      "color0": 2766160,
+      "color1": 3819376,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 20,
+    "textPosition": {
+      "left": 0,
+      "top": 14,
+      "width": 120,
+      "height": 30
+    }
   },
-  "alignment": 37,
-  "colorTab": {
-   "color0": 16777215,
-   "color1": 10274047,
-   "color2": -1,
-   "color3": -1,
-   "color4": -1
-  },
-  "picTab": {
-   "pic0": "",
-   "pic1": "",
-   "pic2": "",
-   "pic3": "",
-   "pic4": ""
-  },
-  "touchable": true,
-  "bgColorTab": {
-   "color0": 2766160,
-   "color1": 3819376,
-   "color2": -1,
-   "color3": -1,
-   "color4": -1
-  },
-  "fontSize": 20,
-  "textPosition": {
-   "left": 0,
-   "top": 14,
-   "width": 120,
-   "height": 30
+  "pagewindow__10": {
+    "id": 10,
+    "caption": "PwA",
+    "position": {
+      "left": 16,
+      "top": 100,
+      "width": 448,
+      "height": 500
+    },
+    "dragMaxDis": 200,
+    "orientation": 0,
+    "edgeEffect": 1,
+    "rollSpeed": 60,
+    "touchable": true,
+    "loop": true,
+    "window__200": {
+      "id": 200,
+      "caption": "Wnd0",
+      "text": "第 1 页",
+      "position": {
+        "left": 0,
+        "top": 0,
+        "width": 448,
+        "height": 500
+      },
+      "backgroundColor": 2109520,
+      "hideTimeOut": -1,
+      "modal": false,
+      "touchable": true,
+      "visible": true,
+      "textview__1": {
+        "id": 300,
+        "caption": "tvP0",
+        "text": "第 1 页",
+        "position": {
+          "left": 24,
+          "top": 200,
+          "width": 400,
+          "height": 80
+        },
+        "alignment": 36,
+        "colorTab": {
+          "color0": 16777215,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 32,
+        "touchable": false
+      }
+    },
+    "window__201": {
+      "id": 201,
+      "caption": "Wnd1",
+      "text": "第 2 页",
+      "position": {
+        "left": 0,
+        "top": 0,
+        "width": 448,
+        "height": 500
+      },
+      "backgroundColor": 2117696,
+      "hideTimeOut": -1,
+      "modal": false,
+      "touchable": true,
+      "visible": false,
+      "textview__1": {
+        "id": 301,
+        "caption": "tvP1",
+        "text": "第 2 页",
+        "position": {
+          "left": 24,
+          "top": 200,
+          "width": 400,
+          "height": 80
+        },
+        "alignment": 36,
+        "colorTab": {
+          "color0": 16777215,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 32,
+        "touchable": false
+      }
+    },
+    "window__202": {
+      "id": 202,
+      "caption": "Wnd2",
+      "text": "第 3 页",
+      "position": {
+        "left": 0,
+        "top": 0,
+        "width": 448,
+        "height": 500
+      },
+      "backgroundColor": 5255200,
+      "hideTimeOut": -1,
+      "modal": false,
+      "touchable": true,
+      "visible": false,
+      "textview__1": {
+        "id": 302,
+        "caption": "tvP2",
+        "text": "第 3 页",
+        "position": {
+          "left": 24,
+          "top": 200,
+          "width": 400,
+          "height": 80
+        },
+        "alignment": 36,
+        "colorTab": {
+          "color0": 16777215,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 32,
+        "touchable": false
+      }
+    }
   }
- },
- "pagewindow__10": {
-  "id": 10,
-  "caption": "PwA",
-  "position": {
-   "left": 16,
-   "top": 100,
-   "width": 448,
-   "height": 500
-  },
-  "dragMaxDis": 200,
-  "orientation": 0,
-  "edgeEffect": 1,
-  "rollSpeed": 60,
-  "touchable": true,
-  "loop": true,
-  "window__200": {
-   "id": 200,
-   "caption": "Wnd0",
-   "text": "第 1 页",
-   "position": {
-    "left": 0,
-    "top": 0,
-    "width": 448,
-    "height": 500
-   },
-   "backgroundColor": 2109520,
-   "hideTimeOut": -1,
-   "modal": false,
-   "touchable": true,
-   "visible": true,
-   "textview__1": {
-    "id": 300,
-    "caption": "tvP0",
-    "text": "第 1 页",
-    "position": {
-     "left": 24,
-     "top": 200,
-     "width": 400,
-     "height": 80
-    },
-    "alignment": 36,
-    "colorTab": {
-     "color0": 16777215,
-     "color1": -1,
-     "color2": -1,
-     "color3": -1,
-     "color4": -1
-    },
-    "fontSize": 32,
-    "touchable": false
-   }
-  },
-  "window__201": {
-   "id": 201,
-   "caption": "Wnd1",
-   "text": "第 2 页",
-   "position": {
-    "left": 0,
-    "top": 0,
-    "width": 448,
-    "height": 500
-   },
-   "backgroundColor": 2117696,
-   "hideTimeOut": -1,
-   "modal": false,
-   "touchable": true,
-   "visible": false,
-   "textview__1": {
-    "id": 301,
-    "caption": "tvP1",
-    "text": "第 2 页",
-    "position": {
-     "left": 24,
-     "top": 200,
-     "width": 400,
-     "height": 80
-    },
-    "alignment": 36,
-    "colorTab": {
-     "color0": 16777215,
-     "color1": -1,
-     "color2": -1,
-     "color3": -1,
-     "color4": -1
-    },
-    "fontSize": 32,
-    "touchable": false
-   }
-  },
-  "window__202": {
-   "id": 202,
-   "caption": "Wnd2",
-   "text": "第 3 页",
-   "position": {
-    "left": 0,
-    "top": 0,
-    "width": 448,
-    "height": 500
-   },
-   "backgroundColor": 5255200,
-   "hideTimeOut": -1,
-   "modal": false,
-   "touchable": true,
-   "visible": false,
-   "textview__1": {
-    "id": 302,
-    "caption": "tvP2",
-    "text": "第 3 页",
-    "position": {
-     "left": 24,
-     "top": 200,
-     "width": 400,
-     "height": 80
-    },
-    "alignment": 36,
-    "colorTab": {
-     "color0": 16777215,
-     "color1": -1,
-     "color2": -1,
-     "color3": -1,
-     "color4": -1
-    },
-    "fontSize": 32,
-    "touchable": false
-   }
-  }
- }
 }

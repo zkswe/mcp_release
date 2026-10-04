@@ -1,114 +1,114 @@
 {
- "id": 0,
- "backgroundColor": 1053720,
- "beepEnable": true,
- "topmost": false,
- "resolution": {
-  "width": 480,
-  "height": 800
- },
- "position": {
-  "left": 0,
-  "top": 0,
-  "width": 480,
-  "height": 800
- },
- "textview__1": {
-  "id": 1,
-  "caption": "tvTitle",
-  "text": "指针 / 表盘",
+  "id": 0,
+  "backgroundColor": 1053720,
+  "beepEnable": true,
+  "topmost": false,
+  "resolution": {
+    "width": 480,
+    "height": 800
+  },
   "position": {
-   "left": 16,
-   "top": 24,
-   "width": 448,
-   "height": 48
+    "left": 0,
+    "top": 0,
+    "width": 480,
+    "height": 800
   },
-  "alignment": 36,
-  "colorTab": {
-   "color0": 16777215,
-   "color1": -1,
-   "color2": -1,
-   "color3": -1,
-   "color4": -1
+  "textview__1": {
+    "id": 1,
+    "caption": "tvTitle",
+    "text": "指针 / 表盘",
+    "position": {
+      "left": 16,
+      "top": 24,
+      "width": 448,
+      "height": 48
+    },
+    "alignment": 36,
+    "colorTab": {
+      "color0": 16777215,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 26,
+    "touchable": false
   },
-  "fontSize": 26,
-  "touchable": false
- },
- "button__2": {
-  "id": 2,
-  "caption": "BtnBack",
-  "text": "返回",
-  "position": {
-   "left": 16,
-   "top": 720,
-   "width": 120,
-   "height": 56
+  "button__2": {
+    "id": 2,
+    "caption": "BtnBack",
+    "text": "返回",
+    "position": {
+      "left": 16,
+      "top": 720,
+      "width": 120,
+      "height": 56
+    },
+    "alignment": 37,
+    "colorTab": {
+      "color0": 16777215,
+      "color1": 10274047,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "picTab": {
+      "pic0": "",
+      "pic1": "",
+      "pic2": "",
+      "pic3": "",
+      "pic4": ""
+    },
+    "touchable": true,
+    "bgColorTab": {
+      "color0": 2766160,
+      "color1": 3819376,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 20,
+    "textPosition": {
+      "left": 0,
+      "top": 14,
+      "width": 120,
+      "height": 30
+    }
   },
-  "alignment": 37,
-  "colorTab": {
-   "color0": 16777215,
-   "color1": 10274047,
-   "color2": -1,
-   "color3": -1,
-   "color4": -1
-  },
-  "picTab": {
-   "pic0": "",
-   "pic1": "",
-   "pic2": "",
-   "pic3": "",
-   "pic4": ""
-  },
-  "touchable": true,
-  "bgColorTab": {
-   "color0": 2766160,
-   "color1": 3819376,
-   "color2": -1,
-   "color3": -1,
-   "color4": -1
-  },
-  "fontSize": 20,
-  "textPosition": {
-   "left": 0,
-   "top": 14,
-   "width": 120,
-   "height": 30
+  "pointer__1": {
+    "id": 10,
+    "caption": "PtA",
+    "position": {
+      "left": 90,
+      "top": 160,
+      "width": 300,
+      "height": 300
+    },
+    "animatable": true,
+    "backgroundColor": -1,
+    "backgroundPic": "",
+    "clockwise": true,
+    "fixedPoint": {
+      "x": 150,
+      "y": 150
+    },
+    "pointerPic": "",
+    "pointerSize": {
+      "width": 0,
+      "height": 0
+    },
+    "rotateSpeed": 1,
+    "rotationPoint": {
+      "x": 0,
+      "y": 0
+    },
+    "startAngle": 0,
+    "touchable": false,
+    "visible": true,
+    "pointerPicPos": 0,
+    "rotatingPoint": {
+      "x": 150,
+      "y": 150
+    }
   }
- },
- "pointer__1": {
-  "id": 10,
-  "caption": "PtA",
-  "position": {
-   "left": 90,
-   "top": 160,
-   "width": 300,
-   "height": 300
-  },
-  "animatable": true,
-  "backgroundColor": -1,
-  "backgroundPic": "",
-  "clockwise": true,
-  "fixedPoint": {
-   "x": 150,
-   "y": 150
-  },
-  "pointerPic": "",
-  "pointerSize": {
-   "width": 0,
-   "height": 0
-  },
-  "rotateSpeed": 1,
-  "rotationPoint": {
-   "x": 0,
-   "y": 0
-  },
-  "startAngle": 0,
-  "touchable": false,
-  "visible": true,
-  "pointerPicPos": 0,
-  "rotatingPoint": {
-   "x": 150,
-   "y": 150
-  }
- }
 }

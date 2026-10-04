@@ -1,159 +1,159 @@
 {
- "id": 0,
- "backgroundColor": 1053720,
- "beepEnable": true,
- "topmost": false,
- "resolution": {
-  "width": 480,
-  "height": 800
- },
- "position": {
-  "left": 0,
-  "top": 0,
-  "width": 480,
-  "height": 800
- },
- "textview__1": {
-  "id": 1,
-  "caption": "tvTitle",
-  "text": "进度条 / 滑条",
+  "id": 0,
+  "backgroundColor": 1053720,
+  "beepEnable": true,
+  "topmost": false,
+  "resolution": {
+    "width": 480,
+    "height": 800
+  },
   "position": {
-   "left": 16,
-   "top": 24,
-   "width": 448,
-   "height": 48
+    "left": 0,
+    "top": 0,
+    "width": 480,
+    "height": 800
   },
-  "alignment": 36,
-  "colorTab": {
-   "color0": 16777215,
-   "color1": -1,
-   "color2": -1,
-   "color3": -1,
-   "color4": -1
+  "textview__1": {
+    "id": 1,
+    "caption": "tvTitle",
+    "text": "进度条 / 滑条",
+    "position": {
+      "left": 16,
+      "top": 24,
+      "width": 448,
+      "height": 48
+    },
+    "alignment": 36,
+    "colorTab": {
+      "color0": 16777215,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 26,
+    "touchable": false
   },
-  "fontSize": 26,
-  "touchable": false
- },
- "button__2": {
-  "id": 2,
-  "caption": "BtnBack",
-  "text": "返回",
-  "position": {
-   "left": 16,
-   "top": 720,
-   "width": 120,
-   "height": 56
+  "button__2": {
+    "id": 2,
+    "caption": "BtnBack",
+    "text": "返回",
+    "position": {
+      "left": 16,
+      "top": 720,
+      "width": 120,
+      "height": 56
+    },
+    "alignment": 37,
+    "colorTab": {
+      "color0": 16777215,
+      "color1": 10274047,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "picTab": {
+      "pic0": "",
+      "pic1": "",
+      "pic2": "",
+      "pic3": "",
+      "pic4": ""
+    },
+    "touchable": true,
+    "bgColorTab": {
+      "color0": 2766160,
+      "color1": 3819376,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "fontSize": 20,
+    "textPosition": {
+      "left": 0,
+      "top": 14,
+      "width": 120,
+      "height": 30
+    }
   },
-  "alignment": 37,
-  "colorTab": {
-   "color0": 16777215,
-   "color1": 10274047,
-   "color2": -1,
-   "color3": -1,
-   "color4": -1
+  "seekbar__1": {
+    "id": 10,
+    "caption": "SkA",
+    "position": {
+      "left": 16,
+      "top": 120,
+      "width": 448,
+      "height": 64
+    },
+    "backgroundColor": 2371658,
+    "backgroundPic": "images/pb_track.png",
+    "defProgress": 0,
+    "max": 100,
+    "orientation": 0,
+    "progressPic": "images/pb_fill.png",
+    "thumb": {
+      "size": {
+        "width": 24,
+        "height": 24
+      },
+      "normalPic": "images/pb_thumb.png",
+      "pressedPic": ""
+    },
+    "touchable": true,
+    "visible": true,
+    "colorTab": {
+      "color0": 16777215,
+      "color1": 16777215,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    },
+    "bgColorTab": {
+      "color0": 2371658,
+      "color1": 2371658,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+    }
   },
-  "picTab": {
-   "pic0": "",
-   "pic1": "",
-   "pic2": "",
-   "pic3": "",
-   "pic4": ""
-  },
-  "touchable": true,
-  "bgColorTab": {
-   "color0": 2766160,
-   "color1": 3819376,
-   "color2": -1,
-   "color3": -1,
-   "color4": -1
-  },
-  "fontSize": 20,
-  "textPosition": {
-   "left": 0,
-   "top": 14,
-   "width": 120,
-   "height": 30
+  "circlebar__1": {
+    "id": 20,
+    "caption": "CbA",
+    "position": {
+      "left": 140,
+      "top": 240,
+      "width": 200,
+      "height": 200
+    },
+    "backgroundColor": -1,
+    "clockwise": true,
+    "max": 100,
+    "maxAngle": 360,
+    "progressPic": "images/pb_ring.png",
+    "progressPicPos": {
+      "left": 0,
+      "top": 0,
+      "width": 200,
+      "height": 200
+    },
+    "startAngle": 0,
+    "textColor": 16777215,
+    "textSize": 24,
+    "textType": 1,
+    "thumb": {
+      "size": {
+        "width": 0,
+        "height": 0
+      },
+      "normalPic": "",
+      "pressedPic": ""
+    },
+    "touchRange": {
+      "lower": 0,
+      "upper": 100
+    },
+    "touchable": true,
+    "unit": "%",
+    "visible": true,
+    "backgroundPic": "images/pb_ring_bg.png"
   }
- },
- "seekbar__1": {
-  "id": 10,
-  "caption": "SkA",
-  "position": {
-   "left": 16,
-   "top": 120,
-   "width": 448,
-   "height": 64
-  },
-  "backgroundColor": 2371658,
-  "backgroundPic": "images/pb_track.png",
-  "defProgress": 0,
-  "max": 100,
-  "orientation": 0,
-  "progressPic": "images/pb_fill.png",
-  "thumb": {
-   "size": {
-    "width": 24,
-    "height": 24
-   },
-   "normalPic": "images/pb_thumb.png",
-   "pressedPic": ""
-  },
-  "touchable": true,
-  "visible": true,
-  "colorTab": {
-   "color0": 16777215,
-   "color1": 16777215,
-   "color2": -1,
-   "color3": -1,
-   "color4": -1
-  },
-  "bgColorTab": {
-   "color0": 2371658,
-   "color1": 2371658,
-   "color2": -1,
-   "color3": -1,
-   "color4": -1
-  }
- },
- "circlebar__1": {
-  "id": 20,
-  "caption": "CbA",
-  "position": {
-   "left": 140,
-   "top": 240,
-   "width": 200,
-   "height": 200
-  },
-  "backgroundColor": -1,
-  "clockwise": true,
-  "max": 100,
-  "maxAngle": 360,
-  "progressPic": "images/pb_ring.png",
-  "progressPicPos": {
-   "left": 0,
-   "top": 0,
-   "width": 200,
-   "height": 200
-  },
-  "startAngle": 0,
-  "textColor": 16777215,
-  "textSize": 24,
-  "textType": 1,
-  "thumb": {
-   "size": {
-    "width": 0,
-    "height": 0
-   },
-   "normalPic": "",
-   "pressedPic": ""
-  },
-  "touchRange": {
-   "lower": 0,
-   "upper": 100
-  },
-  "touchable": true,
-  "unit": "%",
-  "visible": true,
-  "backgroundPic": "images/pb_ring_bg.png"
- }
 }
