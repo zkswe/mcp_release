@@ -281,6 +281,45 @@ class TestSeekbarCssAssets(SeekbarCssBase):
             self.assertGreater(sum(alpha[1:255]), 40,
                                '半透明像素太少 → 圆边没做抗锯齿')
 
+    def test_thumb_transparent_area_bleeds_border_colour(self):
+        """圆外**透明区的 RGB 必须是描边色**（alpha bleed）。
+
+        否则设备端按 α 合成时会把浅色（白芯色 #E8F1FF）带出来 = 滑块**倒角白边**
+        （2026-10-04 真机实测：改前该像素 (68,149,251) 里混了 ~12% 白，改后是描边色的正确混合）。
+        """
+        _, d = self.conv(PSEUDO_HTML)
+        th = self.seekbar(d)['thumb']
+        with Image.open(self.asset(th['normalPic'])).convert('RGBA') as im:
+            corner = im.getpixel((0, 0))
+            self.assertEqual(corner[3], 0, '滑块四角该是全透明')
+            self.assertEqual(corner[:3], (0x2A, 0x35, 0x50),
+                             '透明区 RGB 不是描边色 → 设备端会漏出浅色边（白边）')
+
+    def test_css_assets_are_8bit_indexed_png_and_lossless(self):
+        """CSS 导出的切图必须存成 **8bit 索引色 PNG**（省存储），且是**精确调色板 = 无损**。
+
+        为什么：需求方要求「这些 css 导出的 png 全部采用 8bit png 减少存储空间」；
+        但 PIL 保存 P 图会**固定写满 768B 调色板**，小图反而更大（实测 32x32 滑块
+        P8 1081B vs RGBA 842B）→ 必须把 PLTE/tRNS 裁到实际用色数（实测降到 ~400B，−44%）。
+        """
+        _, d = self.conv(PSEUDO_HTML)
+        sk = self.seekbar(d)
+        refs = [sk['backgroundPic'], sk['progressPic'], sk['thumb']['normalPic']]
+        for ref in refs:
+            p = self.asset(ref)
+            raw = open(p, 'rb').read()
+            self.assertEqual(raw[24], 8, '%s IHDR 位深不是 8bit' % ref)
+            with Image.open(p) as im:
+                self.assertEqual(im.mode, 'P', '%s 不是索引色 PNG' % ref)
+                n_used = len(im.convert('RGBA').getcolors(1 << 16) or [])
+            i = raw.find(b'PLTE')
+            self.assertGreater(i, 0, '%s 没有 PLTE' % ref)
+            plte_len = int.from_bytes(raw[i - 4:i], 'big')
+            self.assertEqual(plte_len, n_used * 3,
+                             '%s 调色板项数(%d) != 实际用色数(%d) → 有量化误差，不是无损'
+                             % (ref, plte_len // 3, n_used))
+            self.assertLess(plte_len, 768, '%s 调色板没裁剪（写满 768B 会更大）' % ref)
+
     def test_star_box_sizing_reset_is_honoured(self):
         """`* { box-sizing: border-box }` 这种 reset 必须认 —— 否则滑块外框会多算 2×border。"""
         html = THUMB_HTML.replace('<style>', '<style>\n  * { box-sizing: border-box; }')

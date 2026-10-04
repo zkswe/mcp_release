@@ -876,35 +876,154 @@ def _bar_pic(out_dir, name, w, h, style, default_color=None, band=None):
         from PIL import Image as _I
         im = _I.open(p).convert('RGBA')
         im.putalpha(_corners_mask(w, h, radii, band=band))
-        im.save(p)
-        return p
+        return _save_css_png(im, out_dir, name)
     fill = spec[1]
     from PIL import Image as _I
     im = _I.new('RGBA', (w, h), (fill[0], fill[1], fill[2], 255))
     im.putalpha(_corners_mask(w, h, radii, band=band))
-    return gr.save(im, out_dir, name)
+    return _save_css_png(im, out_dir, name)
+
+
+# css 导出切图的编码记录（`_save_css_png` 写、`convert()` 汇总成一条 warning 后清空）。
+_PNG_LOG = []
+
+
+def _trim_png_palette(path):
+    """把 PNG 的 PLTE / tRNS 裁到「实际用到的最大索引 + 1」项 —— 省存储的关键一步。
+
+    PNG 允许调色板短于 256 项（PLTE 长度只要是 3 的倍数且索引不越界即可），
+    但 PIL 保存 P 图时**固定写满 768B 调色板** → 小图索引化反而比 RGBA 更大
+    （实测 32x32 滑块：P8 1081B vs RGBA 842B）。裁掉未使用的尾部项后同一张图 ≈ 380B。
+    只重写 PLTE/tRNS 两块的字节与 CRC，IDAT 原样搬（索引没变，安全）。
+    返回裁掉多少字节（0 = 没裁/不适用）。
+    """
+    import struct
+    try:
+        with open(path, 'rb') as f:
+            raw = f.read()
+    except OSError:
+        return 0
+    if not raw.startswith(b'\x89PNG\r\n\x1a\n'):
+        return 0
+    from PIL import Image as _I
+    try:
+        with _I.open(path) as im:
+            if im.mode != 'P':
+                return 0
+            maxidx = max(im.tobytes()) if im.width * im.height else 0
+    except Exception:
+        return 0
+    keep = min(256, int(maxidx) + 1)
+    out, i, before, after = [raw[:8]], 8, len(raw), 0
+    while i + 8 <= len(raw):
+        ln = struct.unpack('>I', raw[i:i + 4])[0]
+        typ = raw[i + 4:i + 8]
+        data = raw[i + 8:i + 8 + ln]
+        if typ == b'PLTE' and ln > keep * 3:
+            data = data[:keep * 3]
+        elif typ == b'tRNS' and ln > keep:
+            data = data[:keep]
+        elif typ == b'IHDR':
+            if len(data) >= 9 and data[8] != 8:      # 非 8bit 位深不动（避免越界）
+                return 0
+        chunk = struct.pack('>I', len(data)) + typ + data
+        out.append(chunk + struct.pack('>I', __import__('zlib').crc32(typ + data) & 0xffffffff))
+        i += 12 + ln
+        if typ == b'IEND':
+            break
+    blob = b''.join(out)
+    if len(blob) >= before:
+        return 0
+    with open(path, 'wb') as f:
+        f.write(blob)
+    after = len(blob)
+    return before - after
+
+
+def _save_css_png(img, out_dir, name):
+    """把一张 RGBA 图存成 **8bit 索引色 PNG**（省存储）—— 精确调色板 + tRNS 逐档 alpha。
+
+    口径（2026-10-04 需求方要求「这些 css 导出的 png 全部采用 8bit png 减少存储空间」）：
+      - **索引色 = 8 bit/像素**（PIL mode `P`），用色数 ≤256 时按**实际颜色逐个建调色板 →
+        完全无损**（AA 的灰阶与 alpha 档一个字节都不丢）；
+      - 调色板按实际用色数写（PIL 默认固定 768B 表 + 256B tRNS，小图反而更大 ——
+        实测 448x32 纯色图：RGBA 607B → 全表 P8 **1293B**；裁剪后 **337B，−44%**）；
+        tRNS 尾部全不透明的项也裁掉；
+      - 用色数 > 256（真渐变）→ 只能量化，**与 RGBA 比体积谁小用谁**，并把数字记账回报（不静默）。
+        实测 448x32 两色渐变 170 色：P8 1016B > RGBA 688B → 保留 RGBA。
+
+    返回 PNG 绝对路径；过程写进 `_PNG_LOG` 供 `convert()` 汇总。
+    """
+    from PIL import Image as _I
+    os.makedirs(out_dir, exist_ok=True)
+    p8 = os.path.join(out_dir, name)
+    rgba_probe = os.path.join(out_dir, '.__rgba_probe_' + name)
+    img.save(rgba_probe, optimize=True)
+    n_rgba = os.path.getsize(rgba_probe)
+    n_p8 = 0
+    ndist = 0
+    try:
+        cols = img.getcolors(256)              # None = 用色数 >256（真渐变）
+        if cols:
+            ndist = len(cols)
+            cols.sort(key=lambda t: t[1])
+            idx = {c: i for i, (_, c) in enumerate(cols)}
+            pal, trns = [], []
+            for _, c in cols:
+                pal += [c[0], c[1], c[2]]
+                trns.append(c[3])
+            while len(trns) > 1 and trns[-1] == 255:
+                trns.pop()                     # 尾部不透明的项不必写进 tRNS
+            q = _I.new('P', img.size)
+            q.putpalette(pal + [0] * (768 - len(pal)))
+            src = img.load()
+            q.putdata([idx[src[x, y]] for y in range(img.height) for x in range(img.width)])
+            q.save(p8, optimize=True, transparency=bytes(trns))
+            _trim_png_palette(p8)              # PLTE/tRNS 裁到实际用色数（否则小图反而更大）
+            n_p8 = os.path.getsize(p8)
+    except Exception:
+        n_p8 = 0
+    if n_p8 and n_p8 <= n_rgba:
+        try:
+            os.remove(rgba_probe)
+        except OSError:
+            pass
+        _PNG_LOG.append((name, 'p8', n_rgba, n_p8, ndist))
+        return p8
+    # 索引化不可用 / 不划算 → 保留 RGBA（并记账，不静默）
+    os.replace(rgba_probe, p8)
+    _PNG_LOG.append((name, 'rgba', n_rgba, n_rgba, ndist))
+    return p8
 
 
 def _bordered_thumb(w, h, radius, fill, border, border_w):
-    """描边 + 填充的圆/圆角块 —— **覆盖率混合**口径（α = 覆盖率，描边↔填充按覆盖率线性混合）。
-
+    """描边 + 填充的圆/圆角块 —— 覆盖率抗锯齿 + **透明区颜色外溢（alpha bleed）**。
     为什么不用 `gen_res.bordered_cov`（2026-10-04 真机 + 浏览器对照实测）：
     那个用的是「整像素描边带」（阈值化 mask：`a_out≥1` 且 `a_in≤254`）→ 描边内边界是**硬边**。
     实测我生成的滑块 PNG 中行像素是 `#2A3550 ×4 → #E8F1FF`（**一个过渡像素都没有**），
-    而浏览器同一个滑块有 `(201,211,227)` / `(224,234,249)` 这类混合像素 → 真机上圆钮**明显锯齿**。
-    这里改成 `coverage(外) − coverage(内)` 的**连续**差值当描边覆盖率，再把描边色 paste 到纯填充色底上
-    （`paste(mask=ring)` 就是按覆盖率线性混合 = 预乘混合），两个边界自然抗锯齿，且与浏览器一致。
+    而浏览器同一个滑块有 `(224,234,249)` 这类混合像素 → 真机上圆钮**明显锯齿**。
+
+    为什么**底色铺描边色、只有内区填填充色**（2026-10-04 需求方报「设备端 thumb 倒角处有白边」）：
+    引擎贴图时 α 与 RGB **都**取自 PNG。若整幅铺填充色（本例是白 #E8F1FF）：
+      - 圆外透明区 RGB = 白 → 引擎合成不完美时**漏白边**；
+      - 更实质的是：圆外 AA 像素的 RGB 被算成 `描边×环覆盖率 + 白×(1−环覆盖率)`（偏亮），
+        而 α 只有一点点 → 实测真机该像素 = 填充色里混进 ~12% 白（`(68,149,251)` vs 填充 `(46,139,255)`），
+        肉眼就是**倒角白边**。
+    正确构造（直通 α 贴图的标准做法）：
+      - **RGB = 该像素「不透明时应有的颜色」**：描边区=描边色，内区=填充色（内边界仍按覆盖率在 RGB 里抗锯齿）；
+      - **α = 外轮廓覆盖率**（圆外 0、圆内 1）。
+      圆外底色即描边色 = **alpha bleed**：漏出来的是与描边同色的深色（看不出来），
+      外边缘像素 RGB=描边色 + α=覆盖率 → 引擎混合结果与浏览器一致。
     """
     from PIL import Image as _I
-    from PIL import ImageChops as _C
     outer = gr.coverage_mask(w, h, radius)
-    img = _I.new('RGBA', (w, h), (fill[0], fill[1], fill[2], 255))
     bw = int(border_w)
+    base = border if (bw > 0 and border is not None) else fill
+    img = _I.new('RGBA', (w, h), (base[0], base[1], base[2], 255))
     if bw > 0 and border is not None:
         inner = gr.coverage_mask(w, h, max(0.0, radius - bw),
                                  rect=(bw, bw, max(bw, w - 1 - bw), max(bw, h - 1 - bw)))
-        ring = _C.subtract(outer, inner)          # 连续值，不是 0/255 阈值
-        img.paste(_I.new('RGBA', (w, h), (border[0], border[1], border[2], 255)), (0, 0), ring)
+        img.paste(_I.new('RGBA', (w, h), (fill[0], fill[1], fill[2], 255)), (0, 0), inner)
     img.putalpha(outer)
     return img
 
@@ -936,7 +1055,7 @@ def _thumb_pic(out_dir, name, tw, th, style, default_box='border-box'):
         fill = (0xE8, 0xF1, 0xFF, 255)   # CSS 没给 background 时的默认浅色圆钮
     img = (_bordered_thumb(W, H, r, fill, bcol, bw) if bw
            else gr.rounded_rect_cov(W, H, r, fill))
-    return gr.save(img, out_dir, name)
+    return _save_css_png(img, out_dir, name)
 
 
 def _css_progress(style, maxv):
@@ -1689,6 +1808,22 @@ class HtmlToJson:
                 warnings += w
                 pages.append((pid, data))
             meta['pagesProduced'] = len(pages)
+        # CSS 导出切图的编码汇总（8bit 索引色 vs RGBA）——不静默：哪张用了哪种、省了多少
+        if _PNG_LOG:
+            p8 = [r for r in _PNG_LOG if r[1] == 'p8']
+            rg = [r for r in _PNG_LOG if r[1] != 'p8']
+            saved = sum(r[2] - r[3] for r in p8)
+            msg = ('CSS 导出切图编码：%d 张走 **8bit 索引色 PNG**（调色板裁剪 + tRNS 逐档 alpha，'
+                   '省 %d B%s）；%d 张保留 RGBA'
+                   % (len(p8), saved,
+                      ('，平均 −%.0f%%' % (100.0 * saved / max(1, sum(r[2] for r in p8))))
+                      if p8 else '', len(rg)))
+            if rg:
+                msg += ('（索引化不划算/掉色：%s —— 用色数 >256 的真渐变索引化后反而更大，'
+                        '需要更小请把渐变收敛成几个色标）'
+                        % '、'.join('%s %dB→%dB/%d色' % (r[0], r[2], r[3], r[4]) for r in rg[:4]))
+            warnings.append(msg)
+            del _PNG_LOG[:]
         if meta['pagesProduced'] != meta['screensDetected']:
             meta['error'] = ('屏数核对失败：识别到 %d 个 .screen，仅产出 %d 页%s。'
                              '禁止静默丢页 —— 请修正 HTML（每屏一个并列 .screen，'
