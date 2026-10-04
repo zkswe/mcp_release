@@ -759,7 +759,10 @@ def check(root, serial='', platform='', device_fonts=None, panel=None, device_pr
     out['checks']['font'] = fchk
 
     # ③ 体积
-    bchk = budget_usage(root, platform, device=device)
+    # 2026-10-04 修：这里原来写 `device=device`，而 `check()` 的形参叫 `serial` → 每次体检都
+    # NameError 被上层吞成「上机前体检异常（不阻断）」warning，**体积/分区判据整块没跑**
+    # （实测：V85X 部署时 warnings 里只有这一条，device_preflight step 也从不出现）。
+    bchk = budget_usage(root, platform, device=serial)
     out['checks']['budget'] = bchk
     for u in (bchk.get('unreadable') or []):
         out['warnings'].append('字体体积算不出来 → 预算可能少算：%s' % u)

@@ -27,6 +27,9 @@ FB_OPEN_TIMEOUT = 8
 # GUI（渲染进程）候选名。`zkgui` 是 FlyThings 运行时，`zkswe` 是 init 托管的服务名。
 GUI_PROC_NAMES = ('zkgui', 'zkswe')
 
+# 见到 D 状态后的复查间隔（秒）：覆盖「刚起读盘/等帧」那一段瞬时 D（2026-10-04 V85X 实测）。
+_D_RECHECK_DELAY = 0.6
+
 # launch 活性的 logcat 标记（**按实际日志原文**，2026-10-02 真机采样，Z20/SSD20X）：
 #
 #   强（= UI 真起来了）：
@@ -136,8 +139,27 @@ def gui_liveness(serial, extra_names=()):
                           % '/'.join(names)}
     d = [r for r in hit if r.get('state') == 'D']
     if d:
+        # D 状态可能是**瞬时**的（刚起读完 /tmp 与帧缓冲、内核 I/O 未回）——单次采样就判
+        # 「大概率不渲染」会把健康应用说成假死，上层还会附一句「D 状态 kill 不掉，需断电重启」
+        # （2026-10-04 实测 V85X：部署时如实报 D，两分钟后同一 pid 是 S，7 页演练全过）。
+        # 所以复查一次：仍 D 才判 blocked，恢复即按 alive 算（正常路径不付这次往返）。
+        time.sleep(_D_RECHECK_DELAY)
+        still = []
+        for r in d:
+            st = sh(serial, 'cat /proc/%s/stat 2>/dev/null' % r['pid'], timeout=6)
+            tail = st.split(') ', 1)
+            if len(tail) > 1 and tail[1].split():
+                r['state'] = tail[1].split()[0]
+            if r.get('state') == 'D':
+                still.append(r)
+        if not still:
+            return {'verdict': 'alive', 'procs': hit,
+                    'detail': 'GUI 进程曾瞬时处于 D 状态（pid %s），复查已恢复 → 按在跑算'
+                              % ','.join(r['pid'] for r in d)}
+        d = still
+    if d:
         return {'verdict': 'blocked', 'procs': hit,
-                'detail': 'GUI 进程处于 D 状态（pid %s）→ 大概率不渲染'
+                'detail': 'GUI 进程处于 D 状态（pid %s，复查仍 D）→ 大概率不渲染'
                           % ','.join(r['pid'] for r in d)}
     return {'verdict': 'alive', 'procs': hit, 'detail': 'GUI 进程在跑（%s）' % ', '.join(
         '%s:%s' % (r['name'] or '?', r['pid']) for r in hit)}
