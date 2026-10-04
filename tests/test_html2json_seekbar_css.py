@@ -249,10 +249,53 @@ class TestSeekbarCssAssets(SeekbarCssBase):
         th = sk['thumb']
         self.assertEqual(sorted(th), ['normalPic', 'pressedPic', 'size'],
                          'thumb 三键必须齐全（ui_schema requiredKeys）')
-        self.assertEqual((th['size']['width'], th['size']['height']), (32, 32))
-        self.assertEqual(self.png_size(th['normalPic']), (32, 32),
-                         'thumb.size 与 PNG 尺寸必须一致（check_all #11）')
+        # `.thumb` 是**普通元素** → CSS 默认 content-box：width:32px + border:3px 的外框是 38×38
+        # （Chrome 实测：38 外框 / 32 白芯；border-box 时才是 32 外框 / 26 白芯）
+        self.assertEqual((th['size']['width'], th['size']['height']), (38, 38),
+                         'CSS content-box 下 32 + 2×3px border 的外框应是 38')
+        self.assertEqual(self.png_size(th['normalPic']), (38, 38),
+                         'thumb.size 与 PNG 尺寸必须一致（check_all #11），且都按**外框**')
+        self.assertEqual(sk['position']['height'], 38, '控件盒要居中抬到滑块外框高（否则真机裁滑块）')
+        self.assertEqual(sk['position']['top'], 40 - 3, '抬高盒子要保持可见条中线不动')
         self.assertTrue(sk['touchable'], '有滑块 = 可拖')
+
+    def test_thumb_border_is_antialiased(self):
+        """描边边界必须有**过渡像素**（浏览器有 (201,211,227)/(224,234,249) 这类混合像素）。
+
+        用 `gen_res.bordered_cov` 的「整像素描边带」口径会得到纯硬边（无任何中间色）→
+        真机上滑块圆钮出现锯齿（2026-10-04 真机+浏览器对照实测）。
+        """
+        _, d = self.conv(PSEUDO_HTML)
+        th = self.seekbar(d)['thumb']
+        with Image.open(self.asset(th['normalPic'])).convert('RGBA') as im:
+            px = im.load()
+            core = (0xE8, 0xF1, 0xFF)
+            ring = (0x2A, 0x35, 0x50)
+            row = [px[x, im.height // 2][:3] for x in range(im.width)]
+            self.assertIn(core, row, '滑块白芯没画出来')
+            self.assertIn(ring, row, '滑块描边没画出来')
+            mix = [c for c in row if c != core and c != ring
+                   and max(abs(c[i] - core[i]) for i in range(3)) < 150]
+            self.assertTrue(mix, '描边边界一个过渡像素都没有 → 真机上会锯齿')
+            alpha = im.getchannel('A').histogram()
+            self.assertGreater(sum(alpha[1:255]), 40,
+                               '半透明像素太少 → 圆边没做抗锯齿')
+
+    def test_star_box_sizing_reset_is_honoured(self):
+        """`* { box-sizing: border-box }` 这种 reset 必须认 —— 否则滑块外框会多算 2×border。"""
+        html = THUMB_HTML.replace('<style>', '<style>\n  * { box-sizing: border-box; }')
+        _, d = self.conv(html)
+        th = self.seekbar(d)['thumb']
+        self.assertEqual((th['size']['width'], th['size']['height']), (32, 32))
+        self.assertEqual(self.png_size(th['normalPic']), (32, 32))
+
+    def test_slider_pseudo_thumb_defaults_to_border_box(self):
+        """`::-webkit-slider-thumb` 在 Chrome 里按 border-box 画（实测 32 外框 / 24 白芯）→
+        没写 box-sizing 时默认就该是 border-box。"""
+        _, d = self.conv(PSEUDO_HTML)
+        th = self.seekbar(d)['thumb']
+        self.assertEqual((th['size']['width'], th['size']['height']), (32, 32))
+        self.assertEqual(self.png_size(th['normalPic']), (32, 32))
 
     def test_pill_radius_baked_into_png(self):
         """border-radius:16px 必须烘进图（四角真透明）——这是 CSS 唯一能表达圆角的地方。"""

@@ -398,8 +398,8 @@ def _parse_gradient(expr):
 #（连"CSS 效果"检测也只读 style 属性）。本段把这层按最小层叠折进 style 属性，
 # 既有消费方（位置/渐变/阴影/圆角）无需改动即可生效。
 _CSS_COMMENT_RE = re.compile(r'/\*.*?\*/', re.S)
-_CSS_SEL_UNSUPPORTED_RE = re.compile(r'[\[\]>+~*]')
-_CSS_TOK_RE = re.compile(r'^([A-Za-z][\w-]*)?((?:[.#][\w-]+)*)((?:::{1,2}[\w-]+)*)$')
+_CSS_SEL_UNSUPPORTED_RE = re.compile(r'[\[\]>+~]')
+_CSS_TOK_RE = re.compile(r'^(\*|[A-Za-z][\w-]*)?((?:[.#][\w-]+)*)((?:::{1,2}[\w-]+)*)$')
 # 认得的**伪元素**（双冒号，或 CSS2.1 的单冒号 before/after 写法）。
 # `::-webkit-slider-thumb` 这类是「正常 HTML 滑条」的标准写法 —— 引擎没有伪元素，
 # 但它们承载的**信息**（滑块尺寸/底色/描边、轨道高度/底色）正是 seekbar 的三张切图，
@@ -417,10 +417,11 @@ def _parse_css_rules(css_text):
     parts = [(tag, frozenset(classes), id, pseudo), ...]（后代选择器链，由外到内；
     pseudo = 该段挂的伪元素名，普通段为 None）；
     spec  = (ids, classes, tags, order) —— 层叠排序用（order 保证同优先级时后写的胜）。
-    只支持：tag / .class / #id / tag.class / 多类 / 后代（空格）/ 逗号分组 / **伪元素**。
-    ⚠️ 伪元素段只取**最后一段**（`.range::-webkit-slider-thumb` → 声明归 `.range` 节点的
-    `webkit-slider-thumb` 伪元素桶）；带伪**类**（`:hover`/`:focus`/`:checked`/`:disabled`）的选择器
-    整条忽略 —— 那是运行期状态，FlyThings 靠 picTab 多态图表达，不是静态布局。
+    只支持：tag / `.class` / `#id` / `tag.class` / 多类 / 后代（空格）/ 逗号分组 / **伪元素** / `*`。
+    带伪**类**（`:hover`/`:focus`/`:checked`/`:disabled`）的选择器整条忽略 —— 那是运行期状态，
+    FlyThings 靠 picTab 多态图表达，不是静态布局。
+    `*` 认成通配段（层叠优先级 0）—— 因为 `* { box-sizing: border-box }` 这种 reset 极常见，
+    不认它就会把滑块的盒模型算错（2026-10-04 实测：content-box 与 border-box 的外框差 2×border）。
     """
     out = []
     if not css_text:
@@ -475,7 +476,7 @@ def _parse_css_rules(css_text):
 
 def _css_part_match(part, node):
     tag, classes, cid = part[0], part[1], part[2]
-    if tag and node.tag != tag:
+    if tag and tag != '*' and node.tag != tag:
         return False
     if classes and not classes <= _classes(node.attrs):
         return False
@@ -717,6 +718,31 @@ def _bg_spec(style):
     return None
 
 
+def _box_sizing(style, default):
+    """`box-sizing` → 'content-box' / 'border-box'；没写用 default。
+
+    ⚠️ 为什么必须读（2026-10-04 实测，Chrome 无头截图对照）：
+      - **普通元素**（`.thumb` div）CSS 默认 `content-box` → `width:32px;height:32px;border:3px`
+        的真实外框是 **38×38**、白芯 32（实测）；
+      - **滑条伪元素** `::-webkit-slider-thumb` Chrome 按 **border-box** 画 → 外框 32、白芯 24（实测）。
+    所以我按「来源」给不同默认值：伪元素 border-box、子元素 content-box；作者显式写了就以作者为准。
+    """
+    m = re.search(r'box-sizing\s*:\s*([a-z-]+)', style or '')
+    v = m.group(1).strip().lower() if m else ''
+    return v if v in ('content-box', 'border-box') else default
+
+
+def _thumb_outer_size(style, tw, th, default_box='border-box'):
+    """滑块**外框**（border box）尺寸 → (W, H, border_w)。
+
+    真机按 PNG 原尺寸画滑块，所以 PNG 就是这个外框；`thumb.size` 也要写这个值。
+    """
+    bw, _ = _border_spec(style) or (0, None)
+    if bw and _box_sizing(style, default_box) == 'content-box':
+        return tw + 2 * bw, th + 2 * bw, bw
+    return tw, th, bw
+
+
 def _border_spec(style):
     """`border: 3px solid #2A3550` → (3, (r,g,b,a))；没有宽度/颜色 → None。"""
     m = re.search(r'(?:^|;)\s*border\s*:\s*([^;]+)', style or '')
@@ -859,18 +885,47 @@ def _bar_pic(out_dir, name, w, h, style, default_color=None, band=None):
     return gr.save(im, out_dir, name)
 
 
-def _thumb_pic(out_dir, name, tw, th, style):
-    """CSS 滑块（`.thumb` 的 width/height/background/border/border-radius）→ 一张 **tw×th** 切图。
+def _bordered_thumb(w, h, radius, fill, border, border_w):
+    """描边 + 填充的圆/圆角块 —— **覆盖率混合**口径（α = 覆盖率，描边↔填充按覆盖率线性混合）。
 
-    ⚠️ 真机口径：滑块**按 PNG 原尺寸画**（`thumb.size` 实测被忽略：写 16/64、图 32×32 → 一律 32×32），
-    且控件盒高 < 图高时被**居中裁** → tw/th 必须等于 CSS 给的滑块尺寸，
-    同时控件的 `position.height` 必须 ≥ th（调用方负责告警）。
+    为什么不用 `gen_res.bordered_cov`（2026-10-04 真机 + 浏览器对照实测）：
+    那个用的是「整像素描边带」（阈值化 mask：`a_out≥1` 且 `a_in≤254`）→ 描边内边界是**硬边**。
+    实测我生成的滑块 PNG 中行像素是 `#2A3550 ×4 → #E8F1FF`（**一个过渡像素都没有**），
+    而浏览器同一个滑块有 `(201,211,227)` / `(224,234,249)` 这类混合像素 → 真机上圆钮**明显锯齿**。
+    这里改成 `coverage(外) − coverage(内)` 的**连续**差值当描边覆盖率，再把描边色 paste 到纯填充色底上
+    （`paste(mask=ring)` 就是按覆盖率线性混合 = 预乘混合），两个边界自然抗锯齿，且与浏览器一致。
+    """
+    from PIL import Image as _I
+    from PIL import ImageChops as _C
+    outer = gr.coverage_mask(w, h, radius)
+    img = _I.new('RGBA', (w, h), (fill[0], fill[1], fill[2], 255))
+    bw = int(border_w)
+    if bw > 0 and border is not None:
+        inner = gr.coverage_mask(w, h, max(0.0, radius - bw),
+                                 rect=(bw, bw, max(bw, w - 1 - bw), max(bw, h - 1 - bw)))
+        ring = _C.subtract(outer, inner)          # 连续值，不是 0/255 阈值
+        img.paste(_I.new('RGBA', (w, h), (border[0], border[1], border[2], 255)), (0, 0), ring)
+    img.putalpha(outer)
+    return img
+
+
+def _thumb_pic(out_dir, name, tw, th, style, default_box='border-box'):
+    """CSS 滑块 → 一张切图，尺寸 = **按 CSS 盒模型算出的外框**（真机按 PNG 原尺寸画）。
+
+    三条口径都按「HTML 实际情况」来（2026-10-04 实测对照）：
+      ① **盒模型**：`width/height` + `border` 的真实外框由 `box-sizing` 决定 ——
+         `content-box`（CSS 默认，普通元素）→ 外框 = w+2bw × h+2bw（实测 32+3px → **38×38**，白芯 32）；
+         `border-box` → 外框 = w×h（实测 Chrome 的 `::-webkit-slider-thumb` 就是这种：32 外框、白芯 24）。
+         默认值按来源给：**伪元素 = border-box、普通子元素 = content-box**；作者写了 `box-sizing` 以作者为准。
+      ② **描边抗锯齿**：走 `_bordered_thumb` 的覆盖率混合（`gen_res.bordered_cov` 的整像素带会出锯齿）。
+      ③ **圆角**：`border-radius:50%` 按**外框**取 `min(W,H)/2`（正圆）。
     """
     if not _HAS_GEN_RES:
         return None
-    radii = _radius_corners(style, tw, th)
+    W, H, bw = _thumb_outer_size(style, tw, th, default_box)
+    radii = _radius_corners(style, W, H)
     r = min(radii)                       # 滑块是强曲率形状；四角不同时取最小（保守，不出方角）
-    bw, bcol = _border_spec(style) or (0, None)
+    _, bcol = _border_spec(style) or (0, None)
     spec = _bg_spec(style)
     fill = None
     if spec and spec[0] == 'color':
@@ -879,8 +934,8 @@ def _thumb_pic(out_dir, name, tw, th, style):
         fill = spec[1][1][0][1]          # 渐变取首色标（圆钮上画渐变意义不大）
     if fill is None:
         fill = (0xE8, 0xF1, 0xFF, 255)   # CSS 没给 background 时的默认浅色圆钮
-    img = (gr.bordered_cov(tw, th, r, fill, bcol, border_w=int(bw)) if bw
-           else gr.rounded_rect_cov(tw, th, r, fill))
+    img = (_bordered_thumb(W, H, r, fill, bcol, bw) if bw
+           else gr.rounded_rect_cov(W, H, r, fill))
     return gr.save(img, out_dir, name)
 
 
@@ -1402,20 +1457,29 @@ class HtmlToJson:
                      '已拆成 填充图 + 轨道图 两张；要运行期改值用代码 setProgress()'
                      % (cap, frac * 100.0, c['defProgress'], mx), key='seekbar-hardstop')
 
-        # ② 滑块：伪元素优先，其次 .thumb 子元素（真机按 PNG 原尺寸画 → 图 == CSS 滑块尺寸）
+        # ② 滑块：伪元素优先，其次 .thumb 子元素（真机按 PNG 原尺寸画 → 图 == CSS 滑块**外框**）
         tstyle = ps_thumb if ps_thumb else (
             (_attr(thumb_node.attrs, 'style') or '') if thumb_node is not None else '')
         tsrc = '伪元素' if ps_thumb else ('.thumb 子元素' if thumb_node is not None else '')
+        # 盒模型默认值按来源：伪元素 = border-box（Chrome 实测）、子元素 = content-box（CSS 默认）
+        tbox = 'border-box' if ps_thumb else 'content-box'
         tw = th = None
         if tstyle:
             ts = parse_px(_attr(thumb_node.attrs, 'data-thumb-size')) if thumb_node is not None else None
-            tw = (_style_len(tstyle, 'width') or ts)
-            th = (_style_len(tstyle, 'height') or ts)
-            if not (tw and th):
+            cw = (_style_len(tstyle, 'width') or ts)
+            ch = (_style_len(tstyle, 'height') or ts)
+            if not (cw and ch):
                 ctx.warn('%s：%s 里读不到绝对像素宽高（缺 width/height 或写了 %% / auto）—— '
                          '滑块图未生成；请写 width:32px;height:32px（或 data-thumb-size="32"）'
                          % (cap, tsrc), key='seekbar-thumb-size')
-                tw = th = None
+            else:
+                # 外框（border box）= 真机实际画出来的尺寸；`thumb.size` 也写这个
+                tw, th, _bw = _thumb_outer_size(tstyle, cw, ch, tbox)
+                if tw != cw or th != ch:
+                    ctx.warn('%s：滑块 CSS 写的是 %dx%d + border %dpx，按 `box-sizing:%s` 的**外框**是 %dx%d '
+                             '（CSS 默认 content-box 时 border 加在尺寸之外）—— 切图与 thumb.size 都按外框 %dx%d 出'
+                             % (cap, cw, ch, _bw, _box_sizing(tstyle, tbox), tw, th, tw, th),
+                             key='seekbar-thumb-box')
 
         # ③ 真机按**盒高居中裁**滑块 → 盒高 < 图高时圆钮会被切掉上下（`seekbar-fields.md` §2 的
         #    「滑块被压扁」就是这个）。正常 HTML 常把 input 高度写成轨道高度、滑块更大 →
@@ -1467,7 +1531,9 @@ class HtmlToJson:
                              key='seekbar-value')
         if tw and th and not (c.get('thumb') or {}).get('normalPic'):
             pic = self._gen_asset(lambda d: _thumb_pic(d, 'bar_%s_thumb.png' % (cap or ctx.n),
-                                                       tw, th, tstyle))
+                                                       _style_len(tstyle, 'width') or tw,
+                                                       _style_len(tstyle, 'height') or th,
+                                                       tstyle, tbox))
             if pic:
                 c['thumb'] = {'size': {'width': tw, 'height': th},
                               'normalPic': pic, 'pressedPic': ''}
