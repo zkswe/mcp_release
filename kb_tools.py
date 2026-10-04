@@ -1206,7 +1206,7 @@ def flythings_create_bin_project(project_root: str, project_name: str = '', plat
 def flythings_gen_logic_stub(project_root: str, page: str = '', dry_run: bool = False) -> str:
     """按 ui/*.json 的控件表补齐 logic 回调桩（只补不改，不写业务）。
 
-    触发：补回调函数 / 按钮点击事件 / 写业务之前 / 生成骨架 / 回调桩
+    触发：补回调函数 / 按钮点击事件 / 写业务之前 / 生成骨架 / 回调桩 / 补上按钮点击回调 / 回调怎么补 / 补回调桩 / 缺回调怎么办 / 那个回调没生成
     """
     return json.dumps(lt.gen_logic_stub(project_root, page, dry_run), ensure_ascii=False)
 

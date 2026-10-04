@@ -18,7 +18,10 @@ import embed_local
 import kb_local as _kbl
 import kb_index_roots as bir
 
-WIKI_ROOT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.expanduser('~'), '.openclaw', 'workspace', 'wiki', 'flythings')
+WIKI_ROOT = sys.argv[1] if len(sys.argv) > 1 else (
+    os.path.join(BASE, 'wiki', 'flythings')            # 随仓 wiki（open 版自带）
+    if os.path.isdir(os.path.join(BASE, 'wiki', 'flythings'))
+    else os.path.join(os.path.expanduser('~'), '.openclaw', 'workspace', 'wiki', 'flythings'))
 OUT = sys.argv[2] if len(sys.argv) > 2 else os.path.join(BASE, 'rag_index.json')
 KNOWLEDGE_DIR = os.path.join(BASE, 'knowledge')  # 随仓库分发的实践知识文档（可公开部分）
 

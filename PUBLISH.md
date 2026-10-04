@@ -106,3 +106,6 @@ git ls-tree -r --name-only release/master | grep -E "knowledge/v85x|demos/|bin_t
 2. edit 含 emoji 的文档用 read 先拿精确文本（?/✅/⚠️ 控制台会乱码显示导致 oldText 不匹配）
 3. 发布前必扫真实 accessKey——open 库任何 Manifest/文档不得出现真实 key
 4. demos/README.md 等规范文档只在 master（release 无 demos 目录）
+
+- **`wiki/`（2026-10-04 起随 open 仓分发）**：官方文档镜像属**内部资料**，release 必须 `git rm -r wiki/`，并用 `python rebuild_index_local.py --repo-only` 重建索引（**勿把 wiki 编入 release 索引**）。
+- **两版语义（2026-10-04 明确）**：`open` = 内部 MCP **开发**版（含内部资料：wiki、内部页、证据）；`release` = 释放给开发者使用的版本（按本节剔除清单裁剪）。

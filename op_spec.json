@@ -6,8 +6,8 @@
     "perOpMax": 360,
     "totalMax": 6000,
     "contractPerOpMax": 900,
-    "basis": "实测（2026-10-03，48 op）：常驻合计 **5080**、单条最长 224（`create_project`）—— 上限 6000 留 15% 余量（按本轮实测单条均值 ≈ 再加 8 个 op，**不是**早先写的 14 个）。**2026-10-03 把 `params` 移出常驻**（省 1148 字符 / 19.5%：参数名 `list` 已回、语义 `describe` 按需给，常驻再写一遍是重复计费），常驻从 5878/6000=98% 降到 4730/6000=78.8%；同日三批 `notes` 清零 + 4 条新硬规则（`knowledge_export` 强制脱敏、`fui_pack` ftu 是编译产物、`test_run` no-baseline≠通过、`get_package_api` 注册表没有≠平台没有）又把常驻推到 5080/6000=84.7% —— 该常驻的判据（会让 AI 误判/泄露的那类）进常驻并**接受预算上涨**，这是分层的代价。**口径 = 渲染产物字符数**，由 gen_op_docs 计算并进发布闸门。⚠️ **本段的「常驻合计 N」由门禁对账**（check_consistency 的 `budget.basis 常驻数字`）—— 改 docstring 后忘了改这里会红，不会再漂。",
-    "note": "旧口径 totalMax=12000 是「完整契约全进常驻」时代的数；分层后它失去意义 —— 常驻面看本段，完整契约看 contractPerOpMax。⚠️ **按需面（`describe`）才是下一个会撞的墙**：`contractPerOpMax=900` 而最长 `flythings_build_ui_flow` 已 757/900（余 143 字符），把参数语义/返回体继续往按需面塞之前先改本口径。"
+    "basis": "实测（2026-10-03，48 op）：常驻合计 **5125**、单条最长 224（`create_project`）—— 上限 6000 留 15% 余量（按本轮实测单条均值 ≈ 再加 8 个 op，**不是**早先写的 14 个）。**2026-10-03 把 `params` 移出常驻**（省 1148 字符 / 19.5%：参数名 `list` 已回、语义 `describe` 按需给，常驻再写一遍是重复计费），常驻从 5878/6000=98% 降到 4730/6000=78.8%；同日三批 `notes` 清零 + 4 条新硬规则（`knowledge_export` 强制脱敏、`fui_pack` ftu 是编译产物、`test_run` no-baseline≠通过、`get_package_api` 注册表没有≠平台没有）又把常驻推到 5125/6000=84.7% —— 该常驻的判据（会让 AI 误判/泄露的那类）进常驻并**接受预算上涨**，这是分层的代价。**口径 = 渲染产物字符数**，由 gen_op_docs 计算并进发布闸门。⚠️ **本段的「常驻合计 N」由门禁对账**（check_consistency 的 `budget.basis 常驻数字`）—— 改 docstring 后忘了改这里会红，不会再漂。",
+    "note": "旧口径 totalMax=12000 是「完整契约全进常驻」时代的数；分层后它失去意义 —— 常驻面看本段，完整契约看 contractPerOpMax。⚠️ **按需面（`describe`）才是下一个会撞的墙**：`contractPerOpMax=900` 而最长 `flythings_i18n_to_json` 已 **805/900**（余 95；2026-10-05 实测，此处原写 build_ui_flow 757 属误记），把参数语义/返回体继续往按需面塞之前先改本口径。"
   },
   "renderOrder": [
     "summary",
@@ -28,8 +28,8 @@
     "excludes": "**出局词**（2026-10-04 新增）：问法里出现这些片段时，本 op 在 `op=\"find\"` 里**出局**（不是降权）——治「同名词不同动作」（如「给客户看下效果」要的是预览稿，不是建工程）。与 `triggers` 不许重叠、片段至少 2 字（`validate()` 会红）。**不进常驻面**：它属\"选中之后才需要\"的信息，只在 `describe`/契约里出现。"
   },
   "migration": {
-    "state": "完成（45/45 已登记）",
-    "note": "全部 op 已进注册表，门禁 gen_op_docs --check --strict 生效：漏登记 / docstring 漂移 / 渲染超预算都算失败。下一步（内容瘦身）是**拆 notes**：把仍是散文的段落拆进 flow/params/returns/rules/keywords，或（细节已被 knowledge 文档覆盖时）直接删——这才是把总预算压到 ≤9600 的动作，且每次裁剪都是注册表里的一处 JSON diff。",
+    "state": "完成（48/48 已登记）",
+    "note": "全部 op 已进注册表，门禁 gen_op_docs --check --strict 生效：漏登记 / docstring 漂移 / 渲染超预算都算失败。下一步（内容瘦身）是**拆 notes**：把仍是散文的段落拆进 flow/params/returns/rules/keywords，或（细节已被 knowledge 文档覆盖时）直接删——这才是把总预算压到 ≤9600 的动作，且每次裁剪都是注册表里的一处 JSON diff。 ⚠️ 2026-10-05 订正：state 原写「45/45」，与注册表实际条数脱节，已改为按 len(ops) 派生；notesDebt 早已清零（items 为空）。",
     "done": [
       "flythings_add_package",
       "flythings_attach_cli_tools",
@@ -1217,7 +1217,12 @@
         "按钮点击事件",
         "写业务之前",
         "生成骨架",
-        "回调桩"
+        "回调桩",
+        "补上按钮点击回调",
+        "回调怎么补",
+        "补回调桩",
+        "缺回调怎么办",
+        "那个回调没生成"
       ],
       "excludes": {
         "why": "带下列词尾的问法要的是**控件行为本身**（点不动/属性/字段/尺寸），不是补回调桩",
