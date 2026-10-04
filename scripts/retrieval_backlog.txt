@@ -5,5 +5,6 @@
 # AI-DEV-CAPABILITY-2026-10-04.md）。一篇文档没有登记问法 → 没人验证过"用户那么问能不能检到"
 # → 等于写完就近视。新文档**入库时就该带 ≥5 条问法**（GROUPS 或 scripts/retrieval_groups/*.json）。
 #
-# 补一篇 → 把 baseline 减 1；清空 → baseline=0。
-baseline=61
+# 2026-10-04：61 篇一次性补齐（scripts/retrieval_groups/ 下的 batchN.json，61 组 / 546 条问法），
+#   baseline 61 → 0。剩余未命中的 133 条"现场原话"记在各组对象的 `misses` 字段里，是下一轮的活。
+baseline=0

@@ -1,0 +1,226 @@
+[
+ {
+  "name": "工程代码骨架与生命周期",
+  "doc": "knowledge/devflow/activity-code-skeleton.md",
+  "queries": [
+   "页面被盖住以后定时器还在走吗",
+   "退出页面要清理哪些东西",
+   "按钮回调return true和false有什么区别",
+   "子页待久了莫名跳回主页屏保",
+   "check_all报括号不平衡但代码看着没错",
+   "空闲计时用系统时间算结果乱跳",
+   "静态缓存导致第二次进页面空白",
+   "activity.cpp改了怎么不生效",
+   "隐藏页面的超时判断怎么做才准",
+   "logic.cc和activity.cpp谁参与编译"
+  ],
+  "min_top1": 8,
+  "max_miss": 0,
+  "misses": [
+   "切页回来后界面不对 要切一下才显示",
+   "页面显示不对 切到别的页再切回来才对",
+   "返回再进页面内容就不对了",
+   "第二次进页面显示空白",
+   "界面要切一下才刷新",
+   "屏保是谁触发的怎么关掉"
+  ]
+ },
+ {
+  "name": "adb 与设备选择",
+  "doc": "knowledge/devflow/adb-and-device-selection.md",
+  "queries": [
+   "电脑上找不到adb命令",
+   "要不要装Android SDK",
+   "设备连不上电脑 adb里没有设备",
+   "接了好几台板子 推错机器了",
+   "怎么知道程序推上去跑起来了没",
+   "launch默认会推到设备上吗",
+   "设备上跑的还是旧版本",
+   "adb显示unauthorized怎么处理",
+   "板子用网线连 adb怎么连",
+   "只想编译不想推设备"
+  ],
+  "min_top1": 8,
+  "max_miss": 0,
+  "misses": [
+   "每次编译都会自动推设备吗 想只编译",
+   "板子插上电脑但adb看不到"
+  ]
+ },
+ {
+  "name": "设备上的 busybox 工具库",
+  "doc": "knowledge/devflow/busybox-debug-library.md",
+  "queries": [
+   "设备上没有ifconfig命令",
+   "想看设备的IP地址和网卡信息",
+   "设备缺grep/dd/md5sum怎么办",
+   "设备上ping一下网关通不通",
+   "把工具拷到设备上就能用的调试包",
+   "板子上查端口占用 netstat",
+   "设备上没有busybox",
+   "有没有能直接push到设备的调试工具集",
+   "设备上怎么查文件有没有推上去",
+   "adb shell里执行命令 设备缺工具"
+  ],
+  "min_top1": 6,
+  "max_miss": 0,
+  "misses": [
+   "板子上没有ps看不到进程",
+   "怎么确认图片到底推上设备了没",
+   "板子上想看看网络配置",
+   "板子上没有top命令"
+  ]
+ },
+ {
+  "name": "画布要盖满整块面板",
+  "doc": "knowledge/devflow/canvas-panel-coverage.md",
+  "queries": [
+   "屏幕底部有一条不属于我界面的东西",
+   "界面最下面残留上一款应用的画面",
+   "页签那里一直在闪 花屏",
+   "画布高度比屏幕小会怎样",
+   "屏幕底部露出一条旧的页面信息",
+   "怎么让画布铺满整个屏幕",
+   "全屏背景没盖住底部",
+   "抓两帧对比发现底部那块一直在变"
+  ],
+  "min_top1": 5,
+  "max_miss": 0,
+  "misses": []
+ },
+ {
+  "name": "fun 命令行工具链",
+  "doc": "knowledge/devflow/cli-fun-toolchain.md",
+  "queries": [
+   "fun和fuse是不是一个东西",
+   "编译产物在.fun还是.fsc目录",
+   "fun build报一堆未声明错误 老工程",
+   "Manifest改了包还是编不过",
+   "找不到base/functional.h头文件",
+   "多设备在线怎么推到指定那台",
+   "fun launch报more than one device",
+   "fun sim能跑模拟器吗",
+   "base-utility这个包是干嘛的 必须加吗",
+   "编译报toolchain url must not be empty"
+  ],
+  "min_top1": 8,
+  "max_miss": 0,
+  "misses": [
+   "依赖包下载到哪个目录",
+   "改了activity目录为什么编译没变化"
+  ]
+ },
+ {
+  "name": "配色对比度标准",
+  "doc": "knowledge/devflow/color-contrast-standard.md",
+  "queries": [
+   "字看不清 颜色太暗了",
+   "灰底白字行不行",
+   "深色界面里次要文字用什么颜色",
+   "对比度不够怎么判断",
+   "#5F5F68这个颜色能用吗",
+   "WCAG 4.5:1要求是什么",
+   "老工程要不要回头改颜色",
+   "浅色底上白字能看清吗",
+   "改完颜色怎么检查对比度",
+   "界面配色的标准是什么"
+  ],
+  "min_top1": 9,
+  "max_miss": 0,
+  "misses": [
+   "改完颜色怎么验证",
+   "按钮文字和背景怎么配色",
+   "文字和背景颜色搭配怎么做"
+  ]
+ },
+ {
+  "name": "Button 按钮字段与长按",
+  "doc": "knowledge/uicontrols/button-fields.md",
+  "queries": [
+   "按钮怎么设置长按触发",
+   "长按后连续重复触发怎么配",
+   "按钮的json字段都有哪些",
+   "按钮图标和文字怎么摆位置",
+   "按钮五态图怎么配",
+   "长按1秒才开始响应怎么弄",
+   "删除键长按连续删除怎么实现",
+   "按钮按下变色的图怎么设置",
+   "button长按和普通点击回调是同一个吗",
+   "onButtonClick怎么写"
+  ],
+  "min_top1": 7,
+  "max_miss": 0,
+  "misses": [
+   "按钮点击回调函数叫什么",
+   "按钮点击的回调函数名字"
+  ]
+ },
+ {
+  "name": "CameraView 相机预览",
+  "doc": "knowledge/uicontrols/cameraview-fields.md",
+  "queries": [
+   "摄像头实时预览用哪个控件",
+   "倒车影像的画面怎么做",
+   "formatSize到底是控件大小还是视频分辨率",
+   "cameraview和videoview能混用吗",
+   "预览黑屏不出画面",
+   "无信号检测怎么加提示",
+   "两个相机页面同时开画面打架",
+   "倒车轨迹线怎么叠在画面上",
+   "camera预览画面拉长了",
+   "摄像头预览区域怎么裁剪"
+  ],
+  "min_top1": 8,
+  "max_miss": 0,
+  "misses": [
+   "摄像头画面被拉伸变形了",
+   "摄像头画面比例不对 变形"
+  ]
+ },
+ {
+  "name": "CircleBar 圆形进度条",
+  "doc": "knowledge/uicontrols/circlebar-fields.md",
+  "queries": [
+   "圆形进度条怎么做",
+   "圆环旋钮怎么调温度",
+   "仪表盘那种环形进度",
+   "环形进度条只显示一段扇形",
+   "circlebar的进度图怎么裁剪",
+   "圆环中间显示百分比数字",
+   "圆环能拖动调节吗",
+   "滤芯寿命那种环形显示",
+   "环形进度条的开口角度",
+   "圆环起始位置怎么调"
+  ],
+  "min_top1": 9,
+  "max_miss": 0,
+  "misses": [
+   "开口的环怎么设置角度",
+   "半圆环怎么设置起始角度"
+  ]
+ },
+ {
+  "name": "跨框架控件映射能力",
+  "doc": "knowledge/uicontrols/control-mapping-capability.md",
+  "queries": [
+   "别的框架的控件对应我们哪个控件",
+   "lv_slider对应我们的什么",
+   "RecyclerView在我们平台上怎么实现",
+   "映射工具怎么调用",
+   "查不到对应的控件怎么办",
+   "swiper对应哪个控件",
+   "什么时候该做自定义控件包",
+   "android的SeekBar用什么替代",
+   "映射表在哪查"
+  ],
+  "min_top1": 3,
+  "max_miss": 0,
+  "misses": [
+   "lv_chart没有对应控件吗",
+   "Qt的日历控件对应我们哪个",
+   "我原来用Qt现在换FlyThings 控件怎么对应",
+   "小程序swiper转过来用什么",
+   "有没有对应的控件还是得自己写"
+  ]
+ }
+]
