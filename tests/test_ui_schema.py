@@ -127,14 +127,15 @@ class TestCheckAll4b(unittest.TestCase):
         return r.returncode, sec
 
     def test_abtest_b_thumb_string_fails(self):
-        rc, sec = self._run_4b('temp/abtest_b')
+        # 夹具必须随仓走（曾放在 gitignore 的 temp/，fresh clone 必挂 —— 违背 hermetic 判据）
+        rc, sec = self._run_4b('tests/fixtures/abtest_b')
         self.assertNotEqual(rc, 0, 'thumb 字符串必须让 check_all 整体 FAIL')
         self.assertIn('[FAIL]', sec)
         self.assertIn('thumb', sec)
         self.assertIn('fatal', sec)
 
     def test_abtest_a_thumb_object_passes(self):
-        rc, sec = self._run_4b('temp/abtest_a')
+        rc, sec = self._run_4b('tests/fixtures/abtest_a')
         self.assertIn('[PASS]', sec)
         self.assertNotIn('[FAIL]', sec, sec)
         self.assertIn('全部合规', sec)
