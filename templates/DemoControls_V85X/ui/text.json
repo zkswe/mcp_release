@@ -1,0 +1,504 @@
+{
+ "id": 0,
+ "backgroundColor": 921878,
+ "beepEnable": true,
+ "topmost": false,
+ "resolution": {
+  "width": 480,
+  "height": 800
+ },
+ "position": {
+  "left": 0,
+  "top": 0,
+  "width": 480,
+  "height": 800
+ },
+ "textview__1": {
+  "id": 1,
+  "caption": "tvTitle",
+  "text": "文本控件演示",
+  "position": {
+   "left": 16,
+   "top": 16,
+   "width": 448,
+   "height": 44
+  },
+  "alignment": 36,
+  "colorTab": {
+   "color0": 16777215,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 26,
+  "touchable": false,
+  "backgroundColor": -1
+ },
+ "textview__2": {
+  "id": 2,
+  "caption": "tvSec1",
+  "text": "① 字号 fontSize：14 / 20 / 32 / 44",
+  "position": {
+   "left": 16,
+   "top": 70,
+   "width": 448,
+   "height": 30
+  },
+  "alignment": 36,
+  "colorTab": {
+   "color0": 9417983,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 18,
+  "touchable": false,
+  "backgroundColor": -1
+ },
+ "textview__3": {
+  "id": 3,
+  "caption": "s14",
+  "text": "字号 14：小字正文",
+  "position": {
+   "left": 16,
+   "top": 104,
+   "width": 448,
+   "height": 34
+  },
+  "alignment": 36,
+  "colorTab": {
+   "color0": 16777215,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 14,
+  "touchable": false,
+  "backgroundColor": 1778224
+ },
+ "textview__4": {
+  "id": 4,
+  "caption": "s20",
+  "text": "字号 20：常规",
+  "position": {
+   "left": 16,
+   "top": 140,
+   "width": 448,
+   "height": 38
+  },
+  "alignment": 36,
+  "colorTab": {
+   "color0": 16777215,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 20,
+  "touchable": false,
+  "backgroundColor": 1778224
+ },
+ "textview__5": {
+  "id": 5,
+  "caption": "s32",
+  "text": "字号 32",
+  "position": {
+   "left": 16,
+   "top": 180,
+   "width": 448,
+   "height": 48
+  },
+  "alignment": 36,
+  "colorTab": {
+   "color0": 16777215,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 32,
+  "touchable": false,
+  "backgroundColor": 1778224
+ },
+ "textview__6": {
+  "id": 6,
+  "caption": "s44",
+  "text": "字号 44",
+  "position": {
+   "left": 16,
+   "top": 230,
+   "width": 448,
+   "height": 60
+  },
+  "alignment": 36,
+  "colorTab": {
+   "color0": 16766073,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 44,
+  "touchable": false,
+  "backgroundColor": 1778224
+ },
+ "textview__7": {
+  "id": 7,
+  "caption": "tvSec2",
+  "text": "② 对齐 alignment：0 左顶 / 36 左中 / 37 居中 / 38 右中",
+  "position": {
+   "left": 16,
+   "top": 300,
+   "width": 448,
+   "height": 30
+  },
+  "alignment": 36,
+  "colorTab": {
+   "color0": 9417983,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 15,
+  "touchable": false,
+  "backgroundColor": -1
+ },
+ "textview__8": {
+  "id": 8,
+  "caption": "al0",
+  "text": "0 左顶",
+  "position": {
+   "left": 16,
+   "top": 334,
+   "width": 448,
+   "height": 30
+  },
+  "alignment": 0,
+  "colorTab": {
+   "color0": 16777215,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 18,
+  "touchable": false,
+  "backgroundColor": 1778224
+ },
+ "textview__9": {
+  "id": 9,
+  "caption": "al36",
+  "text": "36 左中",
+  "position": {
+   "left": 16,
+   "top": 368,
+   "width": 448,
+   "height": 30
+  },
+  "alignment": 36,
+  "colorTab": {
+   "color0": 16777215,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 18,
+  "touchable": false,
+  "backgroundColor": 1778224
+ },
+ "textview__10": {
+  "id": 10,
+  "caption": "al37",
+  "text": "37 居中",
+  "position": {
+   "left": 16,
+   "top": 402,
+   "width": 448,
+   "height": 30
+  },
+  "alignment": 37,
+  "colorTab": {
+   "color0": 16777215,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 18,
+  "touchable": false,
+  "backgroundColor": 1778224
+ },
+ "textview__11": {
+  "id": 11,
+  "caption": "al38",
+  "text": "38 右中",
+  "position": {
+   "left": 16,
+   "top": 436,
+   "width": 448,
+   "height": 30
+  },
+  "alignment": 38,
+  "colorTab": {
+   "color0": 16777215,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 18,
+  "touchable": false,
+  "backgroundColor": 1778224
+ },
+ "textview__12": {
+  "id": 12,
+  "caption": "tvSec3",
+  "text": "③ 文字颜色 colorTab.color0",
+  "position": {
+   "left": 16,
+   "top": 478,
+   "width": 448,
+   "height": 30
+  },
+  "alignment": 36,
+  "colorTab": {
+   "color0": 9417983,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 15,
+  "touchable": false,
+  "backgroundColor": -1
+ },
+ "textview__13": {
+  "id": 13,
+  "caption": "c0",
+  "text": "颜色 #FF5555",
+  "position": {
+   "left": 16,
+   "top": 508,
+   "width": 106,
+   "height": 34
+  },
+  "alignment": 37,
+  "colorTab": {
+   "color0": 16733525,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 14,
+  "touchable": false,
+  "backgroundColor": 1778224
+ },
+ "textview__14": {
+  "id": 14,
+  "caption": "c1",
+  "text": "颜色 #55FF88",
+  "position": {
+   "left": 128,
+   "top": 508,
+   "width": 106,
+   "height": 34
+  },
+  "alignment": 37,
+  "colorTab": {
+   "color0": 5635976,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 14,
+  "touchable": false,
+  "backgroundColor": 1778224
+ },
+ "textview__15": {
+  "id": 15,
+  "caption": "c2",
+  "text": "颜色 #55AAFF",
+  "position": {
+   "left": 240,
+   "top": 508,
+   "width": 106,
+   "height": 34
+  },
+  "alignment": 37,
+  "colorTab": {
+   "color0": 5614335,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 14,
+  "touchable": false,
+  "backgroundColor": 1778224
+ },
+ "textview__16": {
+  "id": 16,
+  "caption": "c3",
+  "text": "颜色 #FFDD55",
+  "position": {
+   "left": 352,
+   "top": 508,
+   "width": 106,
+   "height": 34
+  },
+  "alignment": 37,
+  "colorTab": {
+   "color0": 16768341,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 14,
+  "touchable": false,
+  "backgroundColor": 1778224
+ },
+ "textview__17": {
+  "id": 17,
+  "caption": "tvSec4",
+  "text": "④ 跑马灯 roll（连拍两帧可见位移）",
+  "position": {
+   "left": 16,
+   "top": 556,
+   "width": 448,
+   "height": 30
+  },
+  "alignment": 36,
+  "colorTab": {
+   "color0": 9417983,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 15,
+  "touchable": false,
+  "backgroundColor": -1
+ },
+ "textview__18": {
+  "id": 18,
+  "caption": "rollA",
+  "text": "跑马灯：这一段很长的文本会横向滚动 —— rollEnable=true / rollStep=5 / rollIntervalTime=150",
+  "position": {
+   "left": 16,
+   "top": 590,
+   "width": 448,
+   "height": 40
+  },
+  "alignment": 36,
+  "colorTab": {
+   "color0": 16777215,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 18,
+  "touchable": false,
+  "backgroundColor": 2103344,
+  "rollEnable": true,
+  "rollDirection": 1,
+  "rollStep": 5,
+  "rollIntervalTime": 150
+ },
+ "textview__19": {
+  "id": 19,
+  "caption": "rollB",
+  "text": "跑马灯：这一段很长的文本会横向滚动 —— rollEnable=true / rollStep=5 / rollIntervalTime=150",
+  "position": {
+   "left": 16,
+   "top": 634,
+   "width": 448,
+   "height": 40
+  },
+  "alignment": 36,
+  "colorTab": {
+   "color0": 16777215,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 18,
+  "touchable": false,
+  "backgroundColor": 1581104,
+  "rollEnable": true,
+  "rollDirection": 0,
+  "rollStep": 5,
+  "rollIntervalTime": 150
+ },
+ "textview__20": {
+  "id": 20,
+  "caption": "BtnBackHolder",
+  "text": "长文本换行演示：多行文案请拆成多个 textview（本平台文本里换行会折叠成空格）",
+  "position": {
+   "left": 16,
+   "top": 686,
+   "width": 448,
+   "height": 44
+  },
+  "alignment": 0,
+  "colorTab": {
+   "color0": 12174552,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 15,
+  "touchable": false,
+  "backgroundColor": 1448742
+ },
+ "button__900": {
+  "id": 900,
+  "caption": "BtnBack",
+  "text": "返回",
+  "position": {
+   "left": 16,
+   "top": 742,
+   "width": 120,
+   "height": 46
+  },
+  "alignment": 37,
+  "colorTab": {
+   "color0": 16777215,
+   "color1": 10274047,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "picTab": {
+   "pic0": "",
+   "pic1": "",
+   "pic2": "",
+   "pic3": "",
+   "pic4": ""
+  },
+  "touchable": true,
+  "bgColorTab": {
+   "color0": 2766160,
+   "color1": 3819376,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "textPosition": {
+   "left": 0,
+   "top": 10,
+   "width": 120,
+   "height": 26
+  }
+ }
+}

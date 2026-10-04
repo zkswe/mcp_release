@@ -48,6 +48,31 @@ REQUIRED_FIELDS = ('id', 'title', 'category', 'status', 'confidence', 'verified_
 # 都不许改它（否则与生成器输出漂移 → --check 必红）
 DERIVED_DOCS = ('knowledge/hardware/hardware-models.md',)
 
+# knowledge/ 下的非分类目录（候选区 / 报告 / 日志）：**不进分类扫描**
+KB_SKIP_DIRS = ('inbox', '_reports', '_logs')
+
+
+def categories():
+    """knowledge/ 下的**分类目录**（排序）—— 类别名单的唯一真源。
+
+    为什么必须派生（2026-10-03）：这份名单原先被手抄在两处
+    （`scripts/gen_kb_index.py` 与 `scripts/kb_frontmatter.py`），写死为
+    `('devflow','uicontrols','hardware','esl','t113-car','v85x')`。后来新增的
+    `knowledge/media/` 与 `knowledge/components/` **两边都没补** → 那两篇派生页
+    「在磁盘上、也在 `rag_index.json` 里，却不在 `kb_index.json` 里」：
+    拿不到 `freshness/advisory` 标注（检索侧以为它们没元数据）、不受 front-matter 门禁约束，
+    `kb_index` 的 `doc_count` 与磁盘篇数出现**系统性缺口**（实测 106 vs 108）。
+
+    现在口径 = `knowledge/` 下的一级目录（跳过 `KB_SKIP_DIRS` 与隐藏/下划线目录）：
+    **加新分类不用改任何名单**，漏登记这一类问题从设计上消失。
+    """
+    if not os.path.isdir(TOTAL_KB):
+        return ()
+    return tuple(sorted(d for d in os.listdir(TOTAL_KB)
+                        if os.path.isdir(os.path.join(TOTAL_KB, d))
+                        and not d.startswith(('.', '_'))
+                        and d not in KB_SKIP_DIRS))
+
 # 可索引状态（draft = 候选区，不进索引/检索；review = 可检索但必带标注；verified = 已验证）
 INDEXABLE_STATUS = ('verified', 'review')
 # 证据字段：`ran_at` / `output_sha256` 由 kb_verify --apply 自动写；`artifact` = 证据文件
@@ -347,10 +372,27 @@ def indexable(meta):
 
 
 def evidence_level(meta):
-    ev = [e for e in (meta.get('evidence') or []) if isinstance(e, dict)]
+    """证据等级（**唯一口径**，三态自洽）：
+
+    - `has-evidence` —— evidence 里有 `cmd` / `artifact` 这类**可执行判据**；
+    - `manual-only` —— 有 evidence 条目但都不可执行（`kind: manual`，或直接写成散文串），
+      **或**显式登记了 `needs_evidence: true`（"在用但没有可执行判据"，见 kb_frontmatter 头部说明）；
+    - `none` —— 既没有 evidence 条目、也没登记 `needs_evidence`。
+
+    ⚠️ 2026-10-03 修正两处（都会原样出现在检索返回体的 `advisory`「证据等级=x」里，直接给 AI 看）：
+    ① 原先 `manual-only` 只在 `needs_evidence` 为真时给出 → 一篇**明确写了**
+       `evidence: [{kind: manual, …}]`、只是没写 `needs_evidence` 的文档被判成 `none`；
+    ② 判「有没有证据条目」用的是**过滤后的 dict 列表** → 把**散文串形态**的 evidence
+       （实测 `knowledge/devflow/color-contrast-standard.md`：4 条实测描述都是纯字符串）
+       也算成了「没有证据」。两处都等于对 AI 说「这篇没有证据」——与文档自己声明的相反。
+    """
+    raw = meta.get('evidence') or []
+    ev = [e for e in raw if isinstance(e, dict)]
     if any(e.get('cmd') or e.get('artifact') for e in ev):
         return 'has-evidence'
-    return 'manual-only' if meta.get('needs_evidence') else 'none'
+    if raw or meta.get('needs_evidence'):
+        return 'manual-only'
+    return 'none'
 
 
 # ── 指纹（去重） ────────────────────────────────────────────────────────────
@@ -527,7 +569,7 @@ def gaps_markdown(g, generated_at=''):
               '1. 挑一条缺口 → `flythings_knowledge_capture(...)` 落候选（本地层）；',
               '2. 补 `evidence`（可执行命令 + 期望）→ `python scripts/kb_verify.py` 复验；',
               '3. 登记 ≥5 条问法（含 ≥1 反例）到 `scripts/check_retrieval.py`；',
-              '4. `python scripts/kb_grow.py`（P2）或人工复核 → `status=verified` 才进检索。', '']
+              '4. 过知识门禁复核：`python scripts/check_kb.py` + `python scripts/kb_frontmatter.py --check`（+ `python scripts/kb_health.py` 刷看板）→ `status=verified` 才进检索。', '']
     return '\n'.join(lines)
 
 

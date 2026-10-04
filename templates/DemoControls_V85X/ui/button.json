@@ -1,0 +1,225 @@
+{
+ "id": 0,
+ "backgroundColor": 1053720,
+ "beepEnable": true,
+ "topmost": false,
+ "resolution": {
+  "width": 480,
+  "height": 800
+ },
+ "position": {
+  "left": 0,
+  "top": 0,
+  "width": 480,
+  "height": 800
+ },
+ "textview__1": {
+  "id": 1,
+  "caption": "tvTitle",
+  "text": "按键 / 输入",
+  "position": {
+   "left": 16,
+   "top": 24,
+   "width": 448,
+   "height": 48
+  },
+  "alignment": 36,
+  "colorTab": {
+   "color0": 16777215,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 26,
+  "touchable": false
+ },
+ "button__2": {
+  "id": 2,
+  "caption": "BtnBack",
+  "text": "返回",
+  "position": {
+   "left": 16,
+   "top": 720,
+   "width": 120,
+   "height": 56
+  },
+  "alignment": 37,
+  "colorTab": {
+   "color0": 16777215,
+   "color1": 10274047,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "picTab": {
+   "pic0": "",
+   "pic1": "",
+   "pic2": "",
+   "pic3": "",
+   "pic4": ""
+  },
+  "touchable": true,
+  "bgColorTab": {
+   "color0": 2766160,
+   "color1": 3819376,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 20,
+  "textPosition": {
+   "left": 0,
+   "top": 14,
+   "width": 120,
+   "height": 30
+  }
+ },
+ "button__10": {
+  "id": 10,
+  "caption": "BtnA",
+  "text": "普通按键",
+  "position": {
+   "left": 16,
+   "top": 100,
+   "width": 200,
+   "height": 64
+  },
+  "alignment": 37,
+  "colorTab": {
+   "color0": 16777215,
+   "color1": 10274047,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "picTab": {
+   "pic0": "",
+   "pic1": "",
+   "pic2": "",
+   "pic3": "",
+   "pic4": ""
+  },
+  "touchable": true,
+  "bgColorTab": {
+   "color0": 2766160,
+   "color1": 3819376,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 20
+ },
+ "button__11": {
+  "id": 11,
+  "caption": "BtnB",
+  "text": "带图标按键",
+  "position": {
+   "left": 248,
+   "top": 100,
+   "width": 216,
+   "height": 64
+  },
+  "alignment": 37,
+  "colorTab": {
+   "color0": 16777215,
+   "color1": 10274047,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "picTab": {
+   "pic0": "",
+   "pic1": "",
+   "pic2": "",
+   "pic3": "",
+   "pic4": ""
+  },
+  "touchable": true,
+  "bgColorTab": {
+   "color0": 2766160,
+   "color1": 3819376,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 20
+ },
+ "checkbox__1": {
+  "id": 20,
+  "caption": "CbA",
+  "text": "复选：已选",
+  "position": {
+   "left": 16,
+   "top": 190,
+   "width": 220,
+   "height": 48
+  },
+  "alignment": 0,
+  "checked": false,
+  "colorTab": {
+   "color0": 16777215,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "bgColorTab": {
+   "color0": -1,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "backgroundColor": -1,
+  "bold": false,
+  "fontSize": 16,
+  "iconPosition": {
+   "left": 0,
+   "top": 0,
+   "width": 0,
+   "height": 0
+  },
+  "italic": false,
+  "touchable": true,
+  "textPosition": {
+   "left": 0,
+   "top": 0,
+   "width": 0,
+   "height": 0
+  },
+  "visible": true
+ },
+ "edittext__1": {
+  "id": 30,
+  "caption": "EtA",
+  "text": "可编辑文本",
+  "position": {
+   "left": 16,
+   "top": 260,
+   "width": 448,
+   "height": 56
+  },
+  "alignment": 0,
+  "bgColorTab": {
+   "color0": -1,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "bold": false,
+  "colorTab": {
+   "color0": 16777215,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 20,
+  "hintTextColor": -1,
+  "textType": 0,
+  "touchable": true,
+  "hintText": "点我输入"
+ }
+}

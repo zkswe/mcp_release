@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0",
-  "updated": "2026-10-02",
+  "updated": "2026-10-03",
   "authority": "「概念 → 权威口径文档」唯一真源。解决的问题：一条铁律常被 10~30 篇文档各自复述（实测 2026-10-02：『图片尺寸==控件盒』出现在 26 处 / 14 篇、『UI 生命周期』34 处 / 22 篇），措辞各不相同、**没有真重复可删**——真正缺的是『哪一篇才算权威』。本表把每个概念指定到一个权威文档；kb_tools.knowledge_search 命中时把 authority 附在返回体里，AI 一步就知道该信谁、去哪核对。",
   "rules": {
     "canonical": "必须是**检索范围内**的真实文档（kb_index_roots 的 ROOTS），否则 AI 拿到指针也搜不到 —— 由 kb_authority.validate() 强制。",
@@ -85,6 +85,26 @@
       "aliases": ["内置包", "有哪些包", "依赖包版本", "有没有现成的包", "现成包"],
       "rule": "包名索引与通用包版本在本页；精确查询用 op（list_packages / query_package / get_package_api）",
       "ops": ["flythings_list_packages", "flythings_query_package", "flythings_add_package"]
+    },
+    "peripheral-api": {
+      "title": "硬件外设 API（GPIO / I2C / SPI / PWM / ADC / 背光 / 蜂鸣器 / 过零继电器）",
+      "canonical": "knowledge/hardware/peripheral-api-zkhardware.md",
+      "aliases": ["外设 API", "硬件接口", "外设接口", "GPIO", "I2C", "SPI", "PWM", "ADC",
+                  "背光", "蜂鸣器", "过零", "继电器", "引脚名", "引脚", "zkhardware",
+                  "GpioHelper", "AdcHelper", "I2CHelper", "SpiHelper", "PWMHelper",
+                  "BrightnessHelper", "HARDWAREMANAGER", "zeroOutput"],
+      "rule": "API 签名 / 平台变体（哪些平台有过零 IO、哪些有 setLuminance）/ 返回约定坑 → 以本页为准（抄自 zkhardware 包头）；真机实测与踩坑 → packages/zkhardware/{README,platforms}.md；板级接口数量与管脚表 → knowledge/hardware/hardware-models.md",
+      "ops": ["flythings_get_package_api", "flythings_hardware_info"]
+    },
+    "uart-protocol": {
+      "title": "串口通讯与协议对接（UartContext / SProtocolData / 帧解析 / UI 生命周期接线）",
+      "canonical": "knowledge/devflow/uart-protocol-framework.md",
+      "aliases": ["串口", "UART", "协议对接", "SProtocolData", "getProtocolData",
+                  "onProtocolDataUpdate", "registerProtocolDataUpdateListener",
+                  "帧头", "粘包", "半包", "校验和", "波特率", "ttyS", "uart_from",
+                  "485", "sendProtocol"],
+      "rule": "「怎么接进 FlyThings」的约定（开串口时机 / Activity 订阅成对 / 共享变量纪律 / 帧解析返回值契约）以本页为准；**协议层**（Modbus 等编解码）交给 Linux/Arduino 生态现成实现（见 open-source-stack-integration.md）；串口名与波特率取值见 package-properties-easyui-cfg.md 与 hardware-models.md",
+      "ops": ["flythings_get_project_spec", "flythings_gen_logic_stub"]
     }
   }
 }

@@ -5,9 +5,18 @@
 `knowledge/`，`scripts/check_consistency.py` 的 `_expected_md_sets()` 又照着"同口径"再走一遍。
 于是"给检索加一类文档"要改两处、漏一处就漂移。现在两处都从这里派生。
 
-同时它修掉一个**检索黑洞**：`components/*/platforms.md`（16 篇 / 1779 行：组件在各平台的
-可用性、前置条件、已知限制、真机验收方法）是 AI 选型与验收必须用的知识，但它在 `knowledge/`
-之外——**不索引就等于 AI 检索不到**（实测：问「Z20 上能跑哪些组件」返回全不相干文档）。
+同时它修掉**同类检索黑洞**（同一个成因：知识在 `knowledge/` 之外 → 不索引就等于 AI 检索不到）：
+
+1. `components/*/platforms.md`（16 篇 / 1779 行：组件在各平台的可用性、前置条件、已知限制、
+   真机验收方法）—— AI 选型与验收必须用（实测：问「Z20 上能跑哪些组件」返回全不相干文档）；
+2. `packages/**`（2026-10-03 修，第 3 例，**与第 1 例同构**）：厂家依赖包的**用法**知识
+   （`<包>/README.md` 的装法 / API 速查 / 最小示例 / 真机实测 / 坑 + `<包>/platforms.md` 的
+   逐平台结论）—— 这正是 plan.md 根因④「硬件外设 API」与根因⑥「组件包」要的答案载体。
+   实测（修前）：`rag_index.json` 里 `packages/` 的 chunk 数 = **0**（40 篇 md 一篇都搜不到），
+   问「zkhardware 怎么用 / 继电器怎么写」命中的全是别的文档。
+
+⚠️ 三个根的共同判据只有一条：**这份知识是不是 AI 干活时要用**。是 → 进索引；
+维护者视角（组件 README、example/evidence/lib）→ 不进。
 
 消费方：
   - `rebuild_index_local.py`          → 建 `rag_index.json`（真正被检索的东西）
@@ -22,7 +31,7 @@ import fnmatch
 import os
 
 SCHEMA_VERSION = '1.0'
-UPDATED = '2026-10-02'
+UPDATED = '2026-10-03'
 AUTHORITY = (
     '「哪些仓库内文档进检索索引」的唯一真源。rebuild_index_local.py 与 '
     'scripts/check_consistency.py 的覆盖度门禁都从这里派生——**不要在两处各写一遍遍历口径**。'
@@ -48,6 +57,18 @@ ROOTS = [
         'why': ('组件「平台可用性 / 前置条件 / 已知限制 / 真机验收」——AI 选型与验收必须用。'
                 '它原本只在 components/ 下，knowledge/ 之外检索不到 = 黑洞；'
                 '只收 platforms.md 这一个文件名（组件 README 等仍留给维护者，不进 AI 语料）。'),
+    },
+    {
+        'id': 'packages',
+        'dir': 'packages',
+        'include': ('README.md', 'platforms.md'),
+        'skipDirs': ('example', 'evidence', 'lib', '__pycache__'),
+        'why': ('厂家依赖包的**用法**：`<包>/README.md`（包信息 / 装法 / API 速查 / 最小示例 / '
+                '真机实测 / 坑）+ `<包>/platforms.md`（逐平台结论与证据）。'
+                'plan.md 根因④「硬件外设 API」与根因⑥「组件包」的答案就在这里'
+                '（实测：修前 packages/ 的 chunk 数 = 0，40 篇一篇都搜不到）。'
+                '只收这两个文件名：example/ 是示例工程自带件、evidence/ 是取证截图与日志、'
+                'lib/ 是构建凭据——都是维护者/工程视角，不进 AI 语料。'),
     },
 ]
 

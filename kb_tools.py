@@ -71,9 +71,52 @@ except Exception as _e:
 else:
     _USC_ERR = ''
 
+_KB_ROOT_LABELS = None      # 仓库内文档路径 → 源标签（进程内缓存，按索引根真源派生）
+_KB_ROOT_LABELS_ERR = []    # 真源不可用时的原因（不静默：检索返回体里带出来）
+
+
+def _kb_root_labels():
+    """仓库内文档路径 → 源标签（**按 kb_index_roots 的真源派生**，不是只判 `knowledge/` 前缀）。
+
+    修前的口径是二选一：
+        'knowledge（实践）' if path.startswith('knowledge/') else 'wiki（官方镜像）'
+    于是**仓库内**的 `components/**/platforms.md`（16 篇，2026-10-02 收编）与
+    `packages/**`（25 篇，2026-10-03 收编）全被标成「wiki（官方镜像）」——
+    等于告诉 AI「这是外部镜像、不是本仓实践知识」：**可信度判错、出处指错**，
+    而这正是它读检索结果时最先看到的字段之一。
+    """
+    global _KB_ROOT_LABELS
+    if _KB_ROOT_LABELS is not None:
+        return _KB_ROOT_LABELS
+    labels = {'knowledge': 'knowledge（实践）',
+              'components-platforms': 'components（组件平台页）',
+              'packages': 'packages（包用法）'}
+    out = {}
+    try:
+        import kb_index_roots as _bir
+        base = os.path.dirname(os.path.abspath(__file__))
+        for rel, _abs, spec in _bir.iter_repo_docs(base):
+            out[rel.replace('\\', '/')] = labels.get(spec['id'], spec['id'])
+    except Exception as e:                      # 真源不可用不静默：退回"全部按 wiki"并记原因
+        out = {}
+        del _KB_ROOT_LABELS_ERR[:]
+        _KB_ROOT_LABELS_ERR.append('%s: %s' % (type(e).__name__, e))
+    _KB_ROOT_LABELS = out
+    return out
+
+
+def _kb_source_label(path):
+    """命中的来源标签（消费侧据此判断"这是本仓实践知识 / 配套页 / 本地层 / 外部镜像"）。"""
+    p = str(path or '').replace('\\', '/')
+    if p.startswith('kb_local/'):
+        return 'kb_local（用户本地层）'
+    lab = _kb_root_labels().get(p)
+    return lab if lab else 'wiki（官方镜像）'
+
+
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.173-open'
-MCP_BUILD = '2026-10-02'
+MCP_VERSION = '0.27.195-open'
+MCP_BUILD = '2026-10-03'
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
 COMPACT_FEATURE_CHARS = 700
@@ -403,8 +446,7 @@ def flythings_knowledge_search(query: str, k: int = 3) -> str:
         top = sorted(top, key=_w, reverse=True)
     hits = _annotate_kb_hits([
         {'path': c['path'], 'score': round(float(s), 4), 'text': c['text'],
-         'source': 'knowledge（实践）' if (c.get('path') or '').startswith('knowledge/')
-                   else 'wiki（官方镜像）'}
+         'source': _kb_source_label(c.get('path'))}      # 按索引根真源派生（见 _kb_source_label）
         for s, c in top])
     cover = _best_coverage(query, [c['text'] for _, c in top])
     out = {'ok': True, 'op': 'flythings_knowledge_search', 'query': query, 'count': len(hits),
@@ -481,6 +523,7 @@ def flythings_knowledge_export(out: str = '', scope: str = 'inbox', layer: str =
     """导出**脱敏知识补丁包**（回流总账通道 A：kb-contrib-<时间>.json）。
 
     触发：导出知识包 / 回流知识 / 分享经验
+    ⚠️⚠️ **强制脱敏**（IP/本机路径/凭据/主机名 → 占位符）；未脱敏必须显式 internal=True（仅总账维护者自用）。
     """
     import kb_local as _kbl
     return json.dumps(_kbl.export_pack(out, scope, layer=layer, project_root=project_root,
@@ -590,7 +633,6 @@ def flythings_map_control(query: str, source: str = '') -> str:
     """跨框架控件映射：输入源框架控件名 → 一次对上我们的控件（等价级别 + 可直接粘的 json 片段）。
 
     触发：这个控件对应哪个 / LVGL 的按钮是什么 / 跨框架控件对照
-    参数：query→源控件名（或别名），忽略大小写与下划线/连字符（如 lv_slider / QCalendarWidget）；source→可选，只在指定框架内找（lvgl / qt / android / miniprogram / emwin / mfc）命中给等价级别 L1~L5 + 可直接粘的 json 片段；未命中回 NO_HIT + candidates。缺口处置见knowledge/uicontrols/control-mapping-capability.md（有控件用映射，平台真缺才做 ui_v1 包）。
     """
     data, err = _control_map()
     if data is None:
@@ -666,7 +708,6 @@ def flythings_ui_schema(control_type: str = '', include: str = 'all') -> str:
     """UI 布局 json 规范查询（唯一真源 = ui_schema.json 注册表）：控件字段表/必填键/默认值/类型。
 
     触发：字段什么意思 / json 有哪些字段 / 控件必填什么 / 布局规范查询
-    参数：control_type→空=全部控件清单；指定（如 seekbar）=完整字段 schema；include→all / fields / sharedTypes / valueRules
     """
     if _uischema is None:
         return json.dumps({'ok': False, 'op': 'flythings_ui_schema',
@@ -730,7 +771,6 @@ def flythings_translate_ui(source: str, out: str = '', res: str = '',
     """LVGL(v8/v9) C 源码 → FlyThings ui json 迁移翻译（v1，确定性；给 out 就落盘）。
 
     触发：LVGL 工程迁过来 / 代码转界面 / 迁移翻译 / 换个框架
-    参数：source→.c 路径或内联源码；out→落盘路径（**给了 out 即默认落盘**，只预览才显式 dry_run=True）；res→迁移基准屏（**缺省跟随 out 所属工程**的 prefs/ui json，拿不到才 1024x600）；dry_run→缺省 = not out（给 out 就落盘）；要预览显式传 True
     """
     return json.dumps(trt.translate(source, out, res, dry_run, gen_placeholders),
                       ensure_ascii=False)
@@ -788,6 +828,7 @@ def flythings_fui_pack(json_path: str) -> str:
     """将 json 布局打包为 ftu（设备实际加载的是 ftu）。返回 ftu 路径、控件数、分辨率。
 
     触发：打包界面 / json 打成 ftu / 改了 json 要生效
+    ⚠️⚠️ ftu 是 json 布局的**编译产物**：改布局一律改 json 后 pack，**不要手写/手改 ftu**（json 才是源）。
     """
     r = pt.flythings_fui_pack(json_path)
     if isinstance(r, dict):
@@ -823,7 +864,6 @@ def flythings_device_preflight(project_root: str, device: str = '', adapt: str =
     """上机前体检：设备发现→型号/平台确认→分辨率/字库/体积三项判据（launch 前自动跑同一套）。
 
     触发：上机前检查 / 接上设备先看什么 / 这板子能不能跑 / 屏幕对不对 / 字库够不够 / 打包会不会超 / 屏比设计小 / 屏幕比设计小 / 分辨率不一样
-    参数：adapt→off 只报 / ask 出方案（默认）/ auto 仅读不出设计时改盘 / force 用户已确认要适配；font_apply→True（默认）按工程用到的汉字集自动投字库
     """
     r = pt.flythings_device_preflight(project_root, device, adapt, font_check, font_tier,
                                       font_apply)
@@ -850,7 +890,6 @@ def flythings_pack_upgrade(project_root: str, out_path: str = '', release_versio
     """固化升级包（update.img）——交付/发布/量产走本条；与「调试推送到设备」不同（那是 build_ui_flow，掉电即失）。
 
     触发：打包升级包 / 出升级包 / 固化 / 刷进设备 / 出货版本 / TF卡升级包 / 刷机
-    参数：out_path→产物路径 → fun pack -o；ab→True → --ab OTA；dry_run→True 只回命令计划
     """
     return json.dumps(pt.flythings_pack_upgrade(project_root, out_path, release_version,
                                                 ab, with_build, dry_run),
@@ -1136,6 +1175,7 @@ def flythings_get_package_api(package_id: str, platform: str = _platforms.DEFAUL
     """获取 package 的头文件路径、类方法签名、使用示例。传入包名与可选版本。
 
     触发：这个包怎么用 / 包的 API / 有哪些方法 / 看头文件
+    ⚠️⚠️ **注册表没有 ≠ 平台没有**：设备 /lib 自带 nanovg / libpng12 / freetype / jpeg / mad / zlib，可 dlopen 免编译（先 `adb shell ls /lib` 核一遍）。
     """
     return json.dumps(pkgtools.flythings_get_package_api(package_id, platform, version or None), ensure_ascii=False)
 
@@ -1164,7 +1204,6 @@ def flythings_gen_logic_stub(project_root: str, page: str = '', dry_run: bool = 
     """按 ui/*.json 的控件表补齐 logic 回调桩（只补不改，不写业务）。
 
     触发：补回调函数 / 按钮点击事件 / 写业务之前 / 生成骨架 / 回调桩
-    参数：project_root→工程根（含 ui/ 与 src/logic/）；page→只处理某页（如 main）；空=全部页；dry_run→true 只回清单不落盘
     """
     return json.dumps(lt.gen_logic_stub(project_root, page, dry_run), ensure_ascii=False)
 
@@ -1188,6 +1227,7 @@ def flythings_test_run(plan: str = '', devices: str = 'auto', project_root: str 
     """多设备**并行**跑一份 UI 用例（触摸注入+日志断言+像素基线），出 JSON + JUnit 报告。
 
     触发：跑测试 / 自动化回归 / 并行测多台 / UI 测试
+    ⚠️⚠️ **比不到基线记 no-baseline，不算通过** —— 不许把 no-baseline 步骤报成「通过」。
     """
     return json.dumps(tt.flythings_test_run(plan, devices, project_root, out, platform,
                                             parallel, baseline, allow_regions,
@@ -1199,7 +1239,7 @@ def flythings_attach_cli_tools(project_root: str) -> str:
     """复制 fui.exe（→项目 ui/）与 fun.exe（→项目根目录）到项目，随项目交付。
 
     触发：装工具链 / 项目里没有 fun.exe / 缺 fui.exe / 交付要带编译工具
-    ⚠️⚠️ src/activity/ 目录（mainActivity.cpp/h）由 IDE 编译时自动生成，禁止创建/修改；
+    ⚠️⚠️ src/activity/ 目录（mainActivity.cpp/h）由 IDE 编译时自动生成，禁止创建/修改；业务代码只写 src/logic/*.cc。
     """
     return json.dumps(pt.flythings_attach_cli_tools(project_root), ensure_ascii=False)
 
@@ -1214,7 +1254,12 @@ _DESIGN_HINT = (
 )
 # 设计产物识别：design/ 等目录、任意 *.html（线框图/美化稿/确认稿）、*.preview.html 等
 _DESIGN_DIRS = ('design', 'designs', 'prototype', 'wireframe', 'mockup')
-_DESIGN_WALK_SKIP = {'.git', '.fun', 'Release', '__pycache__', 'node_modules', '.settings'}
+# ⚠️ 构建产物目录**两代都要跳**：09-28 版 fun 起产物由 `<项目>/.fun/` 改名 `.fsc/`
+# （唯一真源 = project_tools.BUILD_DIR_NAMES，这里用字面量是因为本判断要能在不 import
+#  project_tools 的前提下用）。只写 `.fun` = 对新工具链工程**等于完全没跳** ——
+#  `.fsc/**` 里任何 `.html`/preview 文件都会被当成设计产物，从而**静默抑制**设计先行提示
+# （2026-10-03 与 preflight 体积口径同一漏改一起修正）。
+_DESIGN_WALK_SKIP = {'.git', '.fsc', '.fun', 'Release', '__pycache__', 'node_modules', '.settings'}
 
 
 def _has_design_artifacts(root):
@@ -1262,7 +1307,6 @@ def flythings_create_project(project_root: str, platform: str, resolution: str,
     """从 HelloWord 模板创建 FlyThings 项目，自动替换工程名/分辨率/平台。
 
     触发：新建工程 / 建个项目 / 从零开始 / 起个新项目 / 建 FlyThings 工程 / 从头做
-    参数：platform→必填，必须由用户明确提供；未指定先问，禁猜禁用默认值；resolution→同上（如 800x480）
     ⚠️⚠️ src/activity/ 由 IDE 按 ftu 生成，禁止创建/修改/覆盖；业务只写 src/logic/*.cc
     ⚠️⚠️ 新需求必须先出设计稿/原型并让用户确认（见 prototype-flow）再建工程 —— 跳过确认 = 返工
     """
@@ -1765,7 +1809,6 @@ def flythings_ui_visual(action: str = 'list', project_root: str = '', output_dir
     """UI 可视化/像素验收入口（action 选动作；旧编辑器三 op 已并入，action=list 看参数）。
 
     触发：对比设计稿 / 还原度 / 像素验收 / 渲染出来看看 / 和截图像不像 / 和设计稿不像 / 跟设计稿不像 / 还原度多少
-    参数：action→editor / edit_apply / diff / baseline / render / render_check（传 list 看各动作用法）
     """
     act = str(action or '').strip().lower().replace('-', '_')
     if act in ('', 'list', 'help', '?'):
@@ -1848,7 +1891,6 @@ def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png
     """从**设备真机**抓当前屏幕 → PNG / JPG / BMP（给视觉模型看，或给 ui_visual(action="diff") 验收）。
 
     触发：抓屏 / 截图 / 看看现在屏幕什么样 / 抓个图
-    参数：scale→0.5 省 token；fmt→'jpg' 省 token；rotate→'auto' 转正；crop→'auto' 只要应用画面；advanced→JSON：fb/pixel/flip/layer/vdec_chn 等进阶参数
     """
     if dss is None:
         return json.dumps({'success': False, 'error': 'device_screenshot 不可用（缺 ui_tools/device_screenshot.py 或 Pillow）'},
@@ -1928,7 +1970,6 @@ def flythings_project_state(project_root: str = "", action: str = "show",
     """工程进度（跨会话「做到哪了」）：已过/未过的闸门 + 下一步做什么。
 
     触发：做到哪了 / 上次做到哪 / 继续上次 / 下一步做什么 / 工程进度 / 做到哪一步了
-    参数：action→show（默认，只读）/ mark（打状态位，须给 slot）/ reset（清空，不可逆）；slot→mark 时要打的状态位名（可选值见返回体）
     """
     import project_state as _ps
     act = (action or "show").strip().lower()

@@ -1,0 +1,335 @@
+{
+ "id": 0,
+ "backgroundColor": 1316383,
+ "beepEnable": true,
+ "topmost": false,
+ "resolution": {
+  "width": 480,
+  "height": 800
+ },
+ "position": {
+  "left": 0,
+  "top": 0,
+  "width": 480,
+  "height": 800
+ },
+ "textview__9": {
+  "id": 9,
+  "caption": "title",
+  "text": "常用功能演示",
+  "position": {
+   "left": 16,
+   "top": 24,
+   "width": 448,
+   "height": 56
+  },
+  "alignment": 36,
+  "colorTab": {
+   "color0": 16777215,
+   "color1": -1,
+   "color2": -1,
+   "color3": -1,
+   "color4": -1
+  },
+  "fontSize": 28,
+  "touchable": false,
+  "backgroundColor": -1
+ },
+ "slidewindow__1": {
+  "id": 1,
+  "caption": "menuSlide",
+  "position": {
+   "left": 0,
+   "top": 96,
+   "width": 240,
+   "height": 700
+  },
+  "backgroundColor": -1,
+  "cols": 0,
+  "fontSize": 0,
+  "iconSize": {
+   "width": 40,
+   "height": 40
+  },
+  "items": [],
+  "padding": {
+   "paddingTop": 8,
+   "paddingBottom": 6,
+   "paddingLeft": 6,
+   "paddingRight": 6
+  },
+  "rollSpeed": 60,
+  "rows": 0,
+  "touchable": true,
+  "visible": true,
+  "orientation": 0,
+  "dragMaxDis": 200,
+  "edgeEffect": 1,
+  "button__100": {
+   "id": 100,
+   "caption": "menuText",
+   "text": "文本控件",
+   "position": {
+    "left": 8,
+    "top": 8,
+    "width": 200,
+    "height": 96
+   },
+   "alignment": 37,
+   "colorTab": {
+    "color0": 16777215,
+    "color1": 13161727,
+    "color2": -1,
+    "color3": -1,
+    "color4": -1
+   },
+   "picTab": {
+    "pic0": "images/menu_text.png",
+    "pic1": "images/menu_text.png"
+   },
+   "touchable": true,
+   "bgColorTab": {
+    "color0": -1,
+    "color1": -1,
+    "color2": -1,
+    "color3": -1,
+    "color4": -1
+   },
+   "textPosition": {
+    "left": 96,
+    "top": 30,
+    "width": 108,
+    "height": 36
+   },
+   "fontSize": 20
+  },
+  "button__101": {
+   "id": 101,
+   "caption": "menuButton",
+   "text": "按键 / 输入",
+   "position": {
+    "left": 8,
+    "top": 108,
+    "width": 200,
+    "height": 96
+   },
+   "alignment": 37,
+   "colorTab": {
+    "color0": 16777215,
+    "color1": 13161727,
+    "color2": -1,
+    "color3": -1,
+    "color4": -1
+   },
+   "picTab": {
+    "pic0": "images/menu_button.png",
+    "pic1": "images/menu_button.png"
+   },
+   "touchable": true,
+   "bgColorTab": {
+    "color0": -1,
+    "color1": -1,
+    "color2": -1,
+    "color3": -1,
+    "color4": -1
+   },
+   "textPosition": {
+    "left": 96,
+    "top": 30,
+    "width": 108,
+    "height": 36
+   },
+   "fontSize": 20
+  },
+  "button__102": {
+   "id": 102,
+   "caption": "menuProgress",
+   "text": "进度条 / 滑条",
+   "position": {
+    "left": 8,
+    "top": 208,
+    "width": 200,
+    "height": 96
+   },
+   "alignment": 37,
+   "colorTab": {
+    "color0": 16777215,
+    "color1": 13161727,
+    "color2": -1,
+    "color3": -1,
+    "color4": -1
+   },
+   "picTab": {
+    "pic0": "images/menu_progress.png",
+    "pic1": "images/menu_progress.png"
+   },
+   "touchable": true,
+   "bgColorTab": {
+    "color0": -1,
+    "color1": -1,
+    "color2": -1,
+    "color3": -1,
+    "color4": -1
+   },
+   "textPosition": {
+    "left": 96,
+    "top": 30,
+    "width": 108,
+    "height": 36
+   },
+   "fontSize": 20
+  },
+  "button__103": {
+   "id": 103,
+   "caption": "menuPointer",
+   "text": "指针 / 表盘",
+   "position": {
+    "left": 8,
+    "top": 308,
+    "width": 200,
+    "height": 96
+   },
+   "alignment": 37,
+   "colorTab": {
+    "color0": 16777215,
+    "color1": 13161727,
+    "color2": -1,
+    "color3": -1,
+    "color4": -1
+   },
+   "picTab": {
+    "pic0": "images/menu_pointer.png",
+    "pic1": "images/menu_pointer.png"
+   },
+   "touchable": true,
+   "bgColorTab": {
+    "color0": -1,
+    "color1": -1,
+    "color2": -1,
+    "color3": -1,
+    "color4": -1
+   },
+   "textPosition": {
+    "left": 96,
+    "top": 30,
+    "width": 108,
+    "height": 36
+   },
+   "fontSize": 20
+  },
+  "button__104": {
+   "id": 104,
+   "caption": "menuCanvas",
+   "text": "画布绘制",
+   "position": {
+    "left": 8,
+    "top": 408,
+    "width": 200,
+    "height": 96
+   },
+   "alignment": 37,
+   "colorTab": {
+    "color0": 16777215,
+    "color1": 13161727,
+    "color2": -1,
+    "color3": -1,
+    "color4": -1
+   },
+   "picTab": {
+    "pic0": "images/menu_canvas.png",
+    "pic1": "images/menu_canvas.png"
+   },
+   "touchable": true,
+   "bgColorTab": {
+    "color0": -1,
+    "color1": -1,
+    "color2": -1,
+    "color3": -1,
+    "color4": -1
+   },
+   "textPosition": {
+    "left": 96,
+    "top": 30,
+    "width": 108,
+    "height": 36
+   },
+   "fontSize": 20
+  },
+  "button__105": {
+   "id": 105,
+   "caption": "menuScroll",
+   "text": "滚动窗口",
+   "position": {
+    "left": 8,
+    "top": 508,
+    "width": 200,
+    "height": 96
+   },
+   "alignment": 37,
+   "colorTab": {
+    "color0": 16777215,
+    "color1": 13161727,
+    "color2": -1,
+    "color3": -1,
+    "color4": -1
+   },
+   "picTab": {
+    "pic0": "images/menu_scroll.png",
+    "pic1": "images/menu_scroll.png"
+   },
+   "touchable": true,
+   "bgColorTab": {
+    "color0": -1,
+    "color1": -1,
+    "color2": -1,
+    "color3": -1,
+    "color4": -1
+   },
+   "textPosition": {
+    "left": 96,
+    "top": 30,
+    "width": 108,
+    "height": 36
+   },
+   "fontSize": 20
+  },
+  "button__106": {
+   "id": 106,
+   "caption": "menuPage",
+   "text": "翻页窗口",
+   "position": {
+    "left": 8,
+    "top": 608,
+    "width": 200,
+    "height": 96
+   },
+   "alignment": 37,
+   "colorTab": {
+    "color0": 16777215,
+    "color1": 13161727,
+    "color2": -1,
+    "color3": -1,
+    "color4": -1
+   },
+   "picTab": {
+    "pic0": "images/menu_page.png",
+    "pic1": "images/menu_page.png"
+   },
+   "touchable": true,
+   "bgColorTab": {
+    "color0": -1,
+    "color1": -1,
+    "color2": -1,
+    "color3": -1,
+    "color4": -1
+   },
+   "textPosition": {
+    "left": 96,
+    "top": 30,
+    "width": 108,
+    "height": 36
+   },
+   "fontSize": 20
+  }
+ }
+}
