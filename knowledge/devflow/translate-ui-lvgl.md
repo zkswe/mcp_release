@@ -37,17 +37,15 @@ evidence:
 v1 是**确定性行/正则解析器**（不是 C 编译器）：同一份输入永远产出同一份 json；
 **识别不了的一律进 `unrecognized` 清单，L3/L4/L5 一律进 `downgrades`（D-xx）登记，绝不静默丢**。
 
-## 1.5 ⛔ 真机实测硬规则（2026-10-02，V85X iMirror 固件，A/B 对照终裁）
+## 1.5 ⛔ 翻译器硬规则
 
-> 背景：翻译器初版产物 pack 成功但**真机 runtime 在 ftu 加载时无声挂死**（userspace 空转，
-> 无 onUI_init/onUI_show、无报错日志）。先经逐项二分（temp/bisect）缩小到 seekbar，
-> 再用 A/B 对照（temp/abtest_a/b）钉死唯一变量：
+翻译器产物曾 pack 成功但真机 runtime 在 ftu 加载时无声挂死（userspace 空转、无
+onUI_init/onUI_show、无报错日志）；定位方法与样本见 `CONSOLIDATION.md`。结论是下面两条规则：
 
-1. **`seekbar.thumb` 等子盒对象字段写成字符串 = ftu 加载无声挂死（唯一真凶，致命）**。
-   thumb 的规格（为何必须是对象、必填键、无图处置）见真源 `ui_schema.json` 的 `sharedTypes.thumb`；
-   初版映射表片段的 `"thumb":"images/x.png"` 是类型违规。
-   A/B 终裁：**thumb 对象 + 图不存在 → 正常加载；thumb 字符串 + 图存在 → 挂死**。
-   （当日「缺图=死循环」的二分结论是错归因：剥图把写错类型的 thumb 一起剥掉了。）
+1. **`seekbar.thumb` 等子盒对象字段必须是对象；写成字符串 = ftu 加载无声挂死（致命）**。
+   thumb 的规格（必填键、无图处置）见真源 `ui_schema.json` 的 `sharedTypes.thumb`；
+   映射表片段里的 `"thumb":"images/x.png"` 就是类型违规。离线拦它的是 `check_all.py` 第 4b 项。
+   （注：当时把「缺图」当成根因是错归因 —— 剥图会把写错类型的 thumb 一起剥掉，看起来"修好了"。）
 2. **缺图不致命，但属验收缺陷**。引用不存在的文件 → 控件不可见（framework 容错）。
    为保「该显示的都能看到」，翻译器**仍不 emit 指向不存在文件的图片路径**：默认**剥除**
    （字符串字段置 `''`、picTab 删条、thumb 子盒清空并 size 置 0 —— 控件隐形但合规），

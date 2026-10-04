@@ -23,8 +23,8 @@ evidence: []
 
 > **缺图不致命但属验收缺陷**：`backgroundPic/pointerPic` 指向不存在的文件 → 控件不可见
 > （framework 容错，不挂死）；图没出好就置 `''`，只写已落盘的图。
-> ⛔ 真正致命的是**子盒对象字段写成字符串**（见 seekbar-fields.md §0）
-> = ftu 加载无声挂死（A/B 实测 V85X iMirror 固件 2026-10-02）。
+> ⛔ 子盒对象字段（`position`/`size`/`colorTab`/`picTab` 等）**必须写成对象**，
+> 写成字符串或其他标量 = ftu 加载无声挂死（规格见 `seekbar-fields.md` §0）。
 
 1. **指针控件 = 表盘指针/旋转图标专用**：做仪表、时钟指针、WiFi 扫描旋转图标等"绕固定圆心旋转"效果用 pointer，不要用 textview/button 拼旋转。
 2. **旋转圆心由两个坐标共同决定**：`rotationPoint`（旋转点，相对控件左上）+ `fixedPoint`（指针固定点，相对指针图）——两者配合指针才绕对圆心转。起始角度不准时先查这两个值。

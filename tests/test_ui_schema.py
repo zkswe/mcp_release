@@ -5,10 +5,9 @@
   ① 注册表可加载；控件 + 4 子结构齐全（与 check_all #14 的 26 类型键集合一致）
   ② 每个控件都有 id/caption/position 必填（listitem 无 id 为例外）
   ③ 所有 thumb 字段类型都是 thumb（对象型）；全注册表不存在「子盒字段类型=string」
-     （thumb 写成字符串 = 真机 ftu 加载无声挂死，A/B 实测 V85X iMirror 2026-10-02）
+     （子盒字段写成字符串 = 真机 ftu 加载无声挂死）
   ④ defaults() 产物过 type_check 零违规（每个控件/子结构都测）
-  ⑤ check_all 4b：temp/abtest_b（thumb 字符串）报 FAIL 含 thumb；
-     temp/abtest_a（thumb 对象+缺图）类型检查通过
+  ⑤ check_all 4b：thumb 写成字符串必须 FAIL 且带 thumb；thumb 是对象但缺图必须通过
   ⑥ op flythings_ui_schema 走真实分发路径可路由（清单/指定控件/未知类型三形态）
 """
 import io

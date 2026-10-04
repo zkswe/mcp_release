@@ -1,14 +1,14 @@
 {
   "schemaVersion": "1.1",
   "updated": "2026-10-04",
-  "authority": "FlyThings UI json 布局规范的唯一机器可读真源。字段/类型/必填/默认值以本表为准；knowledge/*.md 只负责原理、流程与行为。基准：json-field-mandatory.md v2.1（SampleUI-New 42json + basedemo 44json 双源）+ V85X 真机 A/B 实测（2026-10-02 / 2026-10-04）。v1.1（2026-10-04）：circlebar.progressPicPos 由 int 改 position、touchRange 由 int 改 range —— 误声明成 int 时 defaults() 会发射 0，真机上页面构造即主线程 100% 空转、无日志（同 subboxType 那一类，只是类型声明错了导致校验漏网）。消费方：check_all 校验 / translate_ui 发射层 / map_control 片段 / gen_ui_schema_docs.py 文档表。改规范 = 改本文件，禁止在消费方另抄一份。",
+  "authority": "FlyThings UI json 布局规范的唯一机器可读真源。字段/类型/必填/默认值以本表为准；knowledge/*.md 只负责原理、流程与行为。基准：json-field-mandatory.md + SampleUI-New / basedemo 双源反解 + V85X 真机验收。⚠️ **子盒对象字段（thumb/position/size/point/range/colorTab/picTab/iconBox/progressPicPos/touchRange…）的类型声明必须与真机一致**：声明成 int 会让 defaults() 发射 0，真机页面构造即主线程 100% 空转、无日志（校验也会漏网）。消费方：check_all 校验 / translate_ui 发射层 / map_control 片段 / gen_ui_schema_docs.py 文档表。改规范 = 改本文件，禁止在消费方另抄一份。",
   "logicCallbacksNote": "每控件可生成的回调桩（v0.27.178）。{Caption} = json 里控件 key 的 __ 后缀。来源：35 官方 Demo 源码逐条取证（knowledge/uicontrols/widget-code-api.md 是其讲解）；op flythings_gen_logic_stub 从这里读——不要在别处另写一份回调名表。listview 的 3 条是一组，缺一列表就是空白。",
   "valueRules": {
     "colorMinusOne": "-1 = 0xFFFFFFFF 是有意义的显式值（透明/未用），非噪音，必须显式写",
-    "colorZero": "0 = 不透明黑。仅 videoview/cameraview 底色官方原值为 0（必须实黑底）；其他控件透明写 -1，写 0 就是黑块（M6 实测坑）",
+    "colorZero": "0 = 不透明黑。仅 videoview/cameraview 底色官方原值为 0（必须实黑底）；其他控件透明写 -1，写 0 就是黑块",
     "missingImage": "图片字段**指向不存在的文件** → 该图不显示（框架容错、不挂死）；`\"\"` = 不设该图，**不影响控件可见性**",
-    "subboxType": "⛔ 子盒对象字段（thumb/position/colorTab/picTab/bgColorTab/iconPosition/textPosition/iconBox/size/point/range 等）写成字符串或其他类型 = 真机 ftu 加载无声挂死（无 onUI_init/onUI_show、无报错日志）。A/B 实测 V85X iMirror 固件 2026-10-02：thumb 对象+缺图=正常，thumb 字符串+有图=挂死",
-    "fullFields": "生成 json 时每控件输出本类型必填字段全集（含默认值），不做缺省声明——不同 fui/easyui 版本默认处理可能不同（2026-09-08）",
+    "subboxType": "⛔ 子盒对象字段（thumb/position/colorTab/picTab/bgColorTab/iconPosition/textPosition/iconBox/size/point/range 等）**必须写成对象**，如 `thumb = {\"size\":{\"width\":24,\"height\":24},\"normalPic\":\"images/t.png\",\"pressedPic\":\"images/t.png\"}`；**写成字符串或其他标量 = 真机 ftu 加载无声挂死**（无 onUI_init/onUI_show、无报错日志，只能靠类型检查拦）。静态检查在 pack 前：`check_all.py` 第 4b 项",
+    "fullFields": "生成 json 时每控件输出本类型必填字段全集（含默认值），不做缺省声明——不同 fui/easyui 版本默认处理可能不同",
     "zOrderFollowsJsonOrder": "**json 里控件的书写顺序 = 图层顺序**（后写的盖在前面）。用 `sort_keys=True` 之类整体重排会改变层叠（例：全屏铺底层被排到进度条之上 → 控件看不见）",
     "textNewlineNotSupported": "**控件文本里不产生换行**：源文本的换行/空白折叠成单个空格；写 `\\n` 会被按**整串**算最小尺寸，触发 `check_all` 第 13 项（最小尺寸）判定。要多行文案 → 拆成多个控件",
     "setInvalidIsDisable": "`setInvalid(true)` 是**禁用**（不响应触摸），**不是**\"强制重绘\"；要重绘用 `invalidate()`（2026-09-17 真机复核）",
@@ -69,6 +69,7 @@
     },
     "size": {
       "shape": "object",
+      "note": "尺寸，必须是对象 `{\"width\":…,\"height\":…}`（写成字符串 = 与 thumb 同类的无声挂死）",
       "fields": {
         "width": "int",
         "height": "int"
@@ -102,7 +103,7 @@
         "paddingLeft",
         "paddingRight"
       ],
-      "note": "slidewindow 内边距（IDE 真产物键名：paddingTop/Bottom/Left/Right）；写成标量 = 与 thumb/position 同类的无声挂死风险（2026-10-04 实测：circlebar 的同类字段写 0 会主线程 100% 空转）"
+      "note": "slidewindow 内边距（IDE 真产物键名：paddingTop/Bottom/Left/Right）；**必须是对象**，写成标量 = 与 thumb/size 同类的无声挂死"
     },
     "colorTab": {
       "shape": "object",
@@ -144,7 +145,7 @@
         "normalPic",
         "pressedPic"
       ],
-      "fatal": "写成字符串 = ftu 加载无声挂死（A/B 实测 2026-10-02）；无图 = size 置 0 + 两 Pic 置 ''"
+      "fatal": "必须是对象（`{\"size\":{\"width\":…,\"height\":…},\"normalPic\":…,\"pressedPic\":…}`）；写成字符串 = ftu 加载无声挂死。无图时：`size` 置 `{\"width\":0,\"height\":0}`、两个 Pic 置 `\"\"`"
     },
     "iconBox": {
       "shape": "object",
@@ -811,7 +812,7 @@
             "width": 0,
             "height": 0
           },
-          "note": "有效图显示位置尺寸（可小于控件做内环效果）；⛔ 必须对象——写成 int（v1.0 曾误声明为 int/默认 0）= 真机页面构造时主线程 100% 空转、一条日志都不出（V85X 480×800 实测 2026-10-04，A/B：改成对象即恢复）"
+          "note": "有效图显示位置尺寸（可小于控件做内环效果），必须是对象 `{\"left\":…,\"top\":…,\"width\":…,\"height\":…}`；**写成 int = 真机页面构造阶段主线程 100% 空转、一条日志都不出**"
         },
         "startAngle": {
           "type": "int",
@@ -843,7 +844,7 @@
             "lower": 0,
             "upper": 100
           },
-          "note": "触摸可调的进度范围（仅 touchable=true 有意义）；⛔ 必须对象——写成 int（v1.0 曾误声明为 int/默认 0）= 真机页面构造时主线程 100% 空转、一条日志都不出（V85X 实测 2026-10-04，A/B：改成对象即恢复）"
+          "note": "触摸可调的进度范围（仅 touchable=true 有意义），必须是对象 `{\"lower\":…,\"upper\":…}`；**写成 int = 真机页面构造阶段主线程 100% 空转、一条日志都不出**"
         },
         "touchable": {
           "type": "bool",
@@ -908,7 +909,7 @@
         "iconSize": {
           "type": "size",
           "required": true,
-          "note": "图标尺寸 {width,height}；IDE 真产物为对象（controls.json: 40×40），v1.0 曾误声明为 int"
+          "note": "图标尺寸，必须是对象 {width,height}（IDE 真产物：controls.json 的 40×40）；写成 int = 与 progressPicPos/touchRange 同类的静默空转"
         },
         "items": {
           "type": "array",

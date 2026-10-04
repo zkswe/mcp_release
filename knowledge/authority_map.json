@@ -48,7 +48,7 @@
       "title": "thumb 等子盒字段是对象，不是字符串",
       "canonical": "knowledge/uicontrols/json-field-mandatory.md",
       "aliases": ["thumb", "子盒", "thumb.size", "thumb 写成字符串"],
-      "rule": "position/colorTab/picTab/thumb 等子盒必须写成对象；写成字符串 → 真机 ftu 加载无声挂死",
+      "rule": "子盒对象字段（position/colorTab/picTab/thumb/size/point/range/iconBox）**必须写成对象**；写成字符串或其他标量 → 真机 ftu 加载无声挂死",
       "ops": ["flythings_ui_schema", "flythings_verify_assets"]
     },
     "libc-family": {
@@ -93,7 +93,7 @@
                   "背光", "蜂鸣器", "过零", "继电器", "引脚名", "引脚", "zkhardware",
                   "GpioHelper", "AdcHelper", "I2CHelper", "SpiHelper", "PWMHelper",
                   "BrightnessHelper", "HARDWAREMANAGER", "zeroOutput"],
-      "rule": "API 签名 / 平台变体（哪些平台有过零 IO、哪些有 setLuminance）/ 返回约定坑 → 以本页为准（抄自 zkhardware 包头）；真机实测与踩坑 → packages/zkhardware/{README,platforms}.md；板级接口数量与管脚表 → knowledge/hardware/hardware-models.md",
+      "rule": "API 签名 / 平台变体（哪些平台有过零 IO、哪些有 setLuminance）/ 返回约定 → 以本页为准（抄自 zkhardware 包头）；真机实测与实现注意点 → packages/zkhardware/{README,platforms}.md；板级接口数量与管脚表 → knowledge/hardware/hardware-models.md",
       "ops": ["flythings_get_package_api", "flythings_hardware_info"]
     },
     "uart-protocol": {

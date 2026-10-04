@@ -2139,7 +2139,7 @@ def main(project_root):
         log(not bad, '%s 特殊字符 %s' % (f, bad if bad else '无'))
 
     print('== 4. 图片引用（json + logic.cc 引用的图片必须存在；缺图 = 控件不可见（验收缺陷）。\n'
-          '真正致命的是 thumb 等子盒字段写成字符串 = ftu 加载无声挂死，见 4b）==')
+          '子盒对象字段必须是对象，见 4b）==')
     refs = set()
     for f in PAGES + LOGICS:
         txt = open(os.path.join(root, f), encoding='utf-8').read()
@@ -2160,12 +2160,13 @@ def main(project_root):
     log(not missing, '图片引用 %s（缺图 = 控件不可见：该显示的没显示，属验收缺陷，不是「少张图」而已）'
         % (missing if missing else '全部存在'))
 
-    # ---- 4b. 控件字段类型（注册表驱动，ui_schema.json；A/B 终裁 2026-10-02，V85X iMirror 固件）----
-    # thumb 等子盒对象字段写成字符串 = 真机 ftu 加载无声挂死（无 onUI_init/onUI_show、无报错日志）；
-    # thumb 对象+缺图 = 正常。这是当年「黑屏两小时」的唯一真凶，离线评审必须拦住。
-    # 原 seekbar.thumb 专项检查（2026-10-01）已泛化：全控件 × 全字段按注册表 field_type 校验。
+    # ---- 4b. 控件字段类型（注册表驱动，ui_schema.json）----
+    # 子盒对象字段（thumb/size/position/colorTab/picTab…）写成字符串或其他标量
+    # = 真机 ftu 加载无声挂死（无 onUI_init/onUI_show、无报错日志）；缺图不致命（只是不可见）。
+    # 这一项是**离线拦它的唯一地方**（pack 会成功，问题只在真机暴露）。
+    # 全控件 × 全字段按注册表 field_type 校验（源自 seekbar.thumb 专项，已泛化）。
     print('== 4b. 控件字段类型（注册表驱动：子盒对象必须是 dict 且 requiredKeys 齐全、标量类型匹配、\n'
-          '数组必须是 list；thumb 写成字符串 = 真机 ftu 加载无声挂死（A/B 实测 V85X iMirror 2026-10-02））==')
+          '数组必须是 list；子盒字段写成字符串 = 真机 ftu 加载无声挂死）==')
     _KNOWN_TYPES = set(_uischema.known_types())
     def _walk_controls(dd, path, out):
         for k, v in dd.items():

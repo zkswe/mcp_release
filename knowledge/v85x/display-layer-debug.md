@@ -16,7 +16,7 @@ evidence: []
 # 🖥️ V85X 显示分层调试：releaseLayer 图层释放 / UI 透出 / 回放旋转
 
 > 检索导引：问「V85X 视频层黑屏 / 图层次残留 / releaseLayer 什么时候必做 / UI 层盖住视频 / 回放方向不对 / 竖装屏配横 UI 错屏」→ 本文；videoView 透出画面见 `knowledge/v85x/videoview-transparent-window.md`。
-> 2026-09-09 实战沉淀（来源：V85X 竖屏 600×1600 + 1600×600 横 UI 工程，UVC 摄像头预览/回放调试）；2026-09-14 需求方定规 + V85X 扩展屏（AP+P2P）工程校准：**视频解码返回后必须 releaseLayer，否则黑屏**。
+> **视频解码返回后必须 `releaseLayer()`，否则黑屏**（调试手法与样本见 `CONSOLIDATION.md`）。
 > 适用：**V85X（V853/V851/V553 等）**——竖装屏 + 横 UI + MPP 摄像头（aw-dvr/mpi::）场景；视频解码/播放链路同样适用。
 > ⚠️ 仅 V85X 平台生效（disp 分层机制是 V85X 特有）；T113/F133/Z20 按各自链路处理。
 > 检索词：releaseLayer / 释放图层 / 视频解码返回 / 解码结束 / 播放器退出 / 黑屏 / 黑屏防御 / disp 层 / /dev/disp / DISP_LAYER_SET_CONFIG / 必做动作 / 开发与验收必做 / 格式区间漏关 / RGB_888 / COLOR 模式 / fb0 抓图看不到黑屏。

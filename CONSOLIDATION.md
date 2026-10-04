@@ -1916,3 +1916,37 @@ AI 拉 `flythings_ui_schema` 就能看到），改页（`caption=tvA/tvB/rollC/r
 
 **方法教训（留决策记录，不进规范）**：我一度用 `difflib.SequenceMatcher` 把文件与自己的尾巴比，
 得出"整篇重复"的错误结论并**截坏了页面**（已从备份还原）；正确判据是"**两份 front-matter / 两个一级标题**"。
+
+## 31. 第 ④ 类体检：规范里不许再有「当初怎么发现的」（2026-10-04）
+
+**起因（需求方口径）**：注册表里写着「写成字符串 = ftu 加载无声挂死（**2026-10-02 A/B 实测**）」
+这类句子 —— 读的人要的是**该怎么干**，不是**当初怎么发现的**。
+
+**判据（三者齐备才算事故叙述，写进 `audit_design_spec.py` 第 ④ 类）**：
+症状词（挂死/黑屏/无声/空转/真凶/误声明…）× 归因标记（A/B/实测/对照/定位/终裁…）×
+日期或版本号（2026-/09-/v0.27…）。只要症状 = **规范，留**；只要日期 = **出处声明，留**；
+三者齐备 = 应归约。用**子串三连**而不是大正则（长行上回溯会炸，实测卡死过一次）。
+
+**扫描范围扩到注册表**：`knowledge/**/*.md` + `ui_tools/ui_schema.json`、
+`knowledge/authority_map.json`、根目录 `*_spec.json` —— 第 ④ 类恰恰重灾区在注册表的 `note` 里，
+而那里是**渲染给 AI 的原话**（`knowledge/` 之外，原先完全没扫）。
+
+**改了什么**（都改成"怎么写对 + 错了什么后果 + 谁在拦"）：
+`ui_schema.json` 的 `valueRules.subboxType` / `sharedTypes.thumb.fatal` / `sharedTypes.size.note` /
+`padding*.note` / `iconSize.note` / `progressPicPos.note` / `touchRange.note` / `authority`；
+`ui_schema_loader.py` 的 `_SUBBOX_FATAL` 与 `type_check` docstring；`flow_spec.json`；
+`authority_map.json`；`translate_tools.py` 的 `IMG_HANG_RULE`；`check_all.py` 的 4/4b 打印；
+`seekbar/circlebar/pointer/imageanim/button-fields.md`；`translate-ui-lvgl.md` §1.5；
+`display-layer-debug.md`；`DemoControls_V85X/README.md`；以及两处用例 docstring。
+**顺手补齐真源缺口**：`size`/`progressPicPos`/`touchRange`/`iconSize` 原来只写"必须对象"，
+现在把对象形状与真实取值写出来（如 `thumb = {"size":{"width":24,"height":24},…}`）。
+
+**假阳性两处，已收紧判据**（不是放宽白名单）：
+① `"rules": "…踩坑要点…"` 这类**注册表自描述**是在定义"这个域收什么"，跳过全部字段说明性键；
+② `tab 缩进` 是**字符名**不是"缩进规范" → ① 类改成只匹配 `缩进(规范|风格|规则|约定|要求)`。
+
+**结果**：`audit_design_spec.py` → **0 处命中**（含新增的 ④ 类）。
+
+**未纳入的**：代码注释（`#`/`//`）里的实现史（如 `translate_tools.py` 的"旧式"分支说明）
+**保持原样** —— 它们是开发者读物，不进 AI 的规范面；要清的是"渲染出去的原话"。
+

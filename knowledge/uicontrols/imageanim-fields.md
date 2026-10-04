@@ -22,8 +22,8 @@ evidence: []
 
 > **缺图不致命但属验收缺陷**：`playFile` 指向不存在的 GIF/WebP → 控件不可见
 > （framework 容错，不挂死）；文件没就位就不写引用，只写已落盘的文件。
-> ⛔ 真正致命的是**子盒对象字段写成字符串**（见 seekbar-fields.md §0）
-> = ftu 加载无声挂死（A/B 实测 V85X iMirror 固件 2026-10-02）。
+> ⛔ 子盒对象字段（`position`/`size`/`colorTab`/`picTab` 等）**必须写成对象**，
+> 写成字符串或其他标量 = ftu 加载无声挂死（规格见 `seekbar-fields.md` §0）。
 
 1. **动图控件只支持 GIF 和 WebP 两种格式**
    - `playFile` 字段只能指向 `.gif` 或 `.webp` 文件，其他格式（png 序列/apng 等）不显示

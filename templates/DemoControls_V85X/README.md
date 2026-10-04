@@ -74,7 +74,7 @@ fun build   --project-dir <新工程> -p v85x  # 编译
    写成 `0`（旧注册表把它们误声明成 `int`）→ 真机**进这一页时主线程 100% 空转、一条日志都不出**（假死，
    截图是冻结帧）。已修 `ui_schema.json` v1.1，`ui_schema_loader.type_check` 现在按 **fatal** 报。
 2. **所有子盒字段**（`thumb` / `position` / `range` / `padding` / `colorTab` / `size` / `point` …）写成标量 =
-   同类**无声挂死**（2026-10-02 iMirror 固件 A/B 实测；注册表 `valueRules.subboxType`）。
+   同类**无声挂死**（规则见注册表 `valueRules.subboxType`）。
 3. **截图会滞后一帧**（`/dev/fb` 抓到的是上一帧）：判「进没进页」**以 logcat 为准**，截图**连抓两帧取第二张**。
 
 ## 7. 真机验收口径（可复现，2026-10-04 记录）
@@ -94,12 +94,27 @@ adb shell /data/touch tap 76 748                 # 各页「返回」键中心
 
 7 页逐页结果（进页 ✓ / 返回 ✓ / 无假死 ✓）与截图见 `temp/acc_*.png`。
 
-## 8. 已知缺项（如实登记，尚未做）
+## 8. 本模板的 `check_all` 状态（13 项 FAIL → 3 项，其余全 PASS）
+
+`python ui_tools/check_all.py templates/DemoControls_V85X`（基线：`templates/HelloWord_V85X` 全 PASS）。
+已修的 10 项：8 个 Logic 缺 IDE 标准**注册定时器表**（生成的 `ui_*.h` 里 `INIT_UI_TIMERS` 本就引用
+`REGISTER_ACTIVITY_TIMER_TAB`，fun 生成的桩没给 → 已按 IDE 形态补上；注意该宏是**语句宏**，只能展开在
+函数体内，放文件作用域编译不过）、文本页特殊字符（①②③④ / ⚠）、文本页 7 处最小尺寸（色块标签缩成纯色号、长句缩短）。
+
+**剩余 3 项**（都是「真机可见可用、但与设计规范不一致」，未擅自改，改动会牵动已验证的布局/层级）：
+
+| FAIL | 现象 | 修法 |
+|---|---|---|
+| `ui/main.json`：`slidewindow` 平铺子控件（`button__100..106`） | 真机菜单正常、点击跳转正常 | 规范要求 slidewindow 子内容进 `items[]`（`slideItem`：colorTab / picTab / text），导航改走 `onSlideItemClick_menuSlide(pSlideWindow, index)`（`mainLogic.cc` 里桩已生成） |
+| `ui/scroll.json`：`scrollwindow` 缺 `window` 子内容 | 真机 12 行正常渲染并可滚 | 规范要求 pagewindow / scrollwindow 必须嵌套一层 `window`，把 12 行 textview 放进 `window__1` |
+| `ui/text.json`：`rollA/rollB` 最小尺寸（需 ≥964×22，盒 448×40） | **这是跑马灯的设计意图**（长串横向滚动；真机两行各停在同一长串的不同段 = 滚动生效） | ⚠️ `check_all` #13 没有 `rollEnable` 豁免 —— 跑马灯页**必然**红。要么给 checker 加「`rollEnable=true` 跳过 #13」的豁免，要么牺牲这页的跑马灯演示 |
+
+## 9. 其它已知缺项（如实登记，尚未做）
 
 - **`pointer` 指针页目前只有标题 + 返回**：`pointer__1` 的 `backgroundPic` / `pointerPic` 都是 `''`（无表盘、无指针图），
   也没有 `setTargetAngle()` 的定时驱动 → 页面上看不到控件。补齐需要：表盘底图 + 指针图
-  （`rotationPoint` = 控件系圆心、`fixedPoint` = 图系铰点、`pointerSize` == 指针图尺寸）+ 一个定时器。
-- **`text` 文本页的跑马灯两条**：长文本**溢出控件盒**（未水平滚动）；底部长文本行同样溢出。
-  需按「文本盒高/字号」口径重排，或把 roll 参数调对（`rollEnable/rollDirection/rollStep/rollIntervalTime`）。
+  （`rotationPoint` = 控件系圆心、`fixedPoint` = 图系铰点、`pointerSize` == 指针图尺寸）+ 一个定时器
+  （在 `REGISTER_ACTIVITY_TIMER_TAB` 里登记 `{id, ms}`，回调写 `onUI_Timer(int id)`）。
+  另：`ui/pointer.json` 里的 `rotatingPoint` / `pointerPicPos` 是注册表外键（应为 `rotationPoint`；`pointerPicPos` 未登记）。
 - 本模板**不含字体副本**（`font/` 未入库）：中文靠设备字体或 `flythings_device_preflight` 自动投递
   （见 `knowledge/devflow/custom-font-config.md`）。

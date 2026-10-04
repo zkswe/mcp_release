@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """mcp_control_map.json 的 json 片段重生成（注册表驱动，唯一真源 = ui_tools/ui_schema.json）。
 
-背景：映射表片段历史上手抄，thumb 曾写成字符串（真机 ftu 加载无声挂死的真凶形态）。
+背景：映射表片段曾手抄而与注册表分叉（子盒字段被写成字符串 = 真机 ftu 加载无声挂死）。
 本脚本把「片段字段/类型」对齐到注册表：
   · 缺**必填**字段 → 按注册表 defaults() 补（int 0 / bool false / string '' / color -1 /
     path '' / 对象类型按 sharedTypes 递归零值）；
   · 子盒对象字段（thumb/position/colorTab/picTab/size/point/range/iconBox）必须是 dict ——
-    thumb 字符串旧式 → 转 {size, normalPic, pressedPic}（尺寸从文件名 NxM 猜，猜不到 24）；
+    是字符串就按 {size, normalPic, pressedPic} 归一（尺寸从文件名 NxM 取，取不到 24）；
   · colorTab/bgColorTab 补足五槽（已有值保留，缺槽 -1）；thumb 缺 requiredKeys 补零值；
   · 标量类型不符 → 回退注册表默认值；array 必须是 list；
   · **不动业务值**：caption/position/图片路径/已有色值一律保留；未知键保留（注册表外字段不删）。

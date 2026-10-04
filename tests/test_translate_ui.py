@@ -180,7 +180,7 @@ class TestTranslateIoContract(unittest.TestCase):
 class TestSchemaCompleteness(unittest.TestCase):
     """schema 全集显式化（v0.27.172 发射层重写；真源 = demos ftu 反解 +
     json-field-mandatory.md + ui_blocks/examples）：五槽色表 / thumb 子盒 /
-    按钮文本内联 / 缺图剥除。thumb 写成字符串 = 真机 ftu 加载无声挂死（A/B 实测）。"""
+    按钮文本内联 / 缺图剥除。子盒字段写成字符串 = 真机 ftu 加载无声挂死。"""
 
     def test_textview_full_field_set(self):
         tv = json.loads(_run()['uiJson'])['textview__1']

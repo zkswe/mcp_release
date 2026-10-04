@@ -36,8 +36,8 @@ SCHEMA_PATH = os.path.join(BASE, 'ui_schema.json')
 # 标量类型零值（defaults() 对「无 default 的必填字段」用；type_check 的类型判据也在这）
 _SCALAR_ZERO = {'int': 0, 'bool': False, 'string': '', 'color': -1, 'path': '', 'array': []}
 # 子盒对象类型（sharedTypes 里 shape=object 的键；写成字符串 = 真机 ftu 无声挂死，见 valueRules.subboxType）
-_SUBBOX_FATAL = ('写成字符串（或其他非对象类型）= 真机 ftu 加载无声挂死'
-                 '（无 onUI_init/onUI_show、无报错日志；A/B 实测 V85X iMirror 2026-10-02）')
+_SUBBOX_FATAL = ('必须是对象（写成字符串或其他标量）= 真机 ftu 加载无声挂死'
+                 '（无 onUI_init/onUI_show、无报错日志）')
 
 _CACHE = None
 
@@ -215,7 +215,7 @@ def type_check(control_type, data, _path=''):
 
     level:
       - fatal：子盒对象字段（thumb/position/colorTab/picTab/size/point/range/iconBox 等
-        sharedTypes 对象型）写成字符串或其他非 dict —— 真机 ftu 加载无声挂死（A/B 实测）
+        sharedTypes 对象型）必须写成对象；写成字符串或其他标量 → 真机 ftu 加载无声挂死
       - error：标量类型不符 / array 不是 list / 对象缺 requiredKeys / 数组元素不是 dict
       - warn ：注册表外的未知键（不报错，只收集）
     只校验**存在**的字段；缺必填键是 check_all #14 的职责（required_fields）。
