@@ -115,6 +115,31 @@ class TestPackageApiSignatures(unittest.TestCase):
         # 内部类的方法不许出现在公共类名下
         self.assertNotIn('ZKPainterPrivate', [c['name'] for c in pt._parse_header_classes(inc)])
 
+    def test_uninstalled_platform_reports_explicitly(self):
+        """头文件不在本机时必须**显式报错 + 给 fix 命令**，不许返回空的类表。
+
+        为什么钉（2026-10-05 实测缺口）：`~/.fsc/registry/public/` 下**只有跑过 `fun install`
+        的平台**（本机实测只有 v85x / z20）。原实现在目录不存在时返回 `success: True` +
+        `headers: []` + `classes: []` —— 调用方分不清「这个平台没装包」（要装）与
+        「这个包没有可解析的类」（要换手段看 API），前者会导致"查不到就以为没有这个能力"。
+
+        判据用**真实未安装平台**而不是造目录：跑过 install 的平台集合随机器变，所以先探测
+        哪个平台已安装，若都装了则跳过（避免把"本机恰好都装了"变成假红）。
+        """
+        installed = [p for p in ('V85X', 'Z20', 'T113', 'F133', 'Z21')
+                     if os.path.isdir(pt._pkg_dir('easyui', p))]
+        not_installed = [p for p in ('V85X', 'Z20', 'T113', 'F133', 'Z21')
+                         if p not in installed]
+        if not not_installed:
+            self.skipTest('本机各平台都装过 easyui，无未安装平台可验')
+        plat = not_installed[0]
+        r = pt.flythings_get_package_api('easyui', plat)
+        self.assertFalse(r.get('success'), '%s 未装包却报 success' % plat)
+        self.assertIn('fun install', str(r.get('hint') or ''),
+                      '报错必须给出可执行的 fix 命令（fun install）')
+        self.assertIn('registry', str(r.get('error') or ''),
+                      '报错要说清"本机 registry 里没有"而不是"包不存在"')
+
     def test_all_cards_parse(self):
         bad = []
         for name in CARDS:

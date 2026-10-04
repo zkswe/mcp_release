@@ -1116,7 +1116,8 @@
         }
       ],
       "rules": [
-        "**签名唯一真源 = 本地 registry 头文件**：`~/.fsc/registry/public/<平台>/<包>/<版本>/include`（实测 v85x / z20 各有 62 个 easyui 头）。本节只回答\"签名是什么\"，**头文件原文才对得上编译器**；知识页里写的是用法与注意事项，参数名/默认值一律以本 op 返回的签名为准（例：`drawRect(..., int radius = 0)` 的 `= 0`、`drawArc(int centerX, int centerY, int radiusX, ...)` 的参数名）。"
+        "**签名唯一真源 = 本地 registry 头文件**：`~/.fsc/registry/public/<平台>/<包>/<版本>/include`（实测 v85x / z20 各有 62 个 easyui 头）。本节只回答\"签名是什么\"，**头文件原文才对得上编译器**；知识页里写的是用法与注意事项，参数名/默认值一律以本 op 返回的签名为准（例：`drawRect(..., int radius = 0)` 的 `= 0`、`drawArc(int centerX, int centerY, int radiusX, ...)` 的参数名）。",
+        "**本机 registry 由 `fun install` 落盘**（2026-10-05 口径）：头文件在 `~/.fsc/registry/public/<平台>/<包>/<版本>/include`，而 `registry/public/` 下**只有跑过 `fun install` 的平台**（本机实测只有 v85x / z20）。所以\"服务端有该包\"≠\"本机拿得到头文件\"：没装过的平台，本 op 会**明确报错并给 fix 命令**（`fun install --platform <平台>`），而不是返回空的类表让你误以为\"这个包没有 API\"。"
       ]
     },
     "flythings_resolve_dependencies": {

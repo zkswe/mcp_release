@@ -887,8 +887,10 @@ def flythings_get_package_api(package_id, platform='F133', version=None, focus='
     ① 问"`ZKPainter` 怎么画弧"是最高频用法，而要用的那个类**常排在 8 名之外**——
        原实现 `max_classes=8` 且按目录顺序取，easyui 永远只给前 8 个（app/ 与 Common.h），
        `ZKPainter` 根本不出现；② 顺带返回 8 个无关类既费 token 又误导。
-    签名一律来自**本地 registry 头文件**（`<注册表>/<平台>/<包>/<版本>/include`），
-    不是本仓抄的副本 —— 换平台/换版本自动跟着变。
+    签名一律来自**本地已安装的 registry 头文件**（`~/.fsc/registry/public/<平台>/<包>/<版本>/include`），
+    不是本仓抄的副本 —— 换平台/换版本自动跟着变。⚠️ **它由 `fun install` 落盘**（2026-10-05 用户口径）：
+    `registry/public/` 下**只有跑过 install 的平台**（本机实测只有 v85x / z20），没装过的平台
+    即使"服务端有该包"也拿不到头文件 —— 这种情况这里**明确报错并给 fix 命令**，不返回空的类表。
     """
     versions = _pkg_versions(package_id, platform)
     v = version or (versions[0] if versions else None)  # versions 降序，[0] 为最新
@@ -896,7 +898,19 @@ def flythings_get_package_api(package_id, platform='F133', version=None, focus='
         return {'success': False, 'error': f'平台 {platform} 未找到包 {package_id}',
                 'card': package_card(package_id)}
     inc = os.path.join(_pkg_dir(package_id, platform), v, 'include')
-    classes = _parse_header_classes(inc, focus=focus) if os.path.isdir(inc) else []
+    if not os.path.isdir(inc):
+        # ⚠️ **不静默**（2026-10-05 实测缺口）：目录不在时原实现返回 success=True + 空 headers/classes，
+        # 调用方分不清"这个平台没装包"与"这个包没有可解析的类" —— 前者要装、后者要用别的手段看 API。
+        # 报错文案必须给出**可执行**的下一步（DESIGN_SPEC 第 3 条：读不到要显式降级并说怎么复验）。
+        return {'success': False,
+                'error': (f'{platform} 的 {package_id} 头文件不在本机（{inc} 不存在）'
+                          f'—— 本机 registry/public/ 下只有**跑过 `fun install` 的平台**'),
+                'hint': (f'先在该平台工程里跑一次安装：`fun install --platform {str(platform).lower()}`'
+                         '（或 `flythings_add_package(project_root, "<包名>", with_install=True)`），'
+                         '然后重试本 op'),
+                'version': v, 'platform': platform, 'package': package_id,
+                'card': package_card(package_id)}
+    classes = _parse_header_classes(inc, focus=focus)
     readme = _pkg_readme(package_id, platform, v)
     examples = _extract_code_blocks(readme)
     if not examples:
