@@ -666,9 +666,59 @@ def run_control(k=TOPK):
     return rows
 
 
+def _load_extra_groups():
+    """外部分组文件：`scripts/retrieval_groups/*.json`。
+
+    为什么单开一路（2026-10-04）：61 篇文档没有登记问法，而"补问法"是**逐篇的内容活**
+    （要读那篇文档 → 写用户会真的说出口的话 → 实测是否命中）。全写进本文件 = 几份工作
+    并发改同一个 700 行脚本，必然冲突；分组进 JSON 后一篇一个文件、可并行、可单删，
+    脚本只做加载与判据（与 DESIGN_SPEC 第 4 条"只派生不拄"同一精神）。
+
+    文件格式：[{name, doc, queries[>=5], min_top1, max_miss}]；字段语义与 GROUPS 完全一致。
+    """
+    d = os.path.join(BASE, 'scripts', 'retrieval_groups')
+    if not os.path.isdir(d):
+        return []
+    out = []
+    for fn in sorted(os.listdir(d)):
+        if not fn.endswith('.json'):
+            continue
+        p = os.path.join(d, fn)
+        try:
+            data = json.load(io.open(p, encoding='utf-8'))
+        except Exception as e:
+            print('[WARN] 分组文件解析失败 %s: %s' % (fn, e))
+            continue
+        for g in (data if isinstance(data, list) else [data]):
+            g.setdefault('max_miss', 0)
+            out.append(g)
+    return out
+
+
+def _all_groups():
+    return GROUPS + _load_extra_groups()
+
+
+def _backlog_baseline():
+    """未登记问法的篇数基线（`scripts/retrieval_backlog.txt` 的 `baseline=N`）。
+
+    「不增长」本身就是一条判据：新文档**入库时就该带 ≥5 条问法**，否则检索不到 = 白写。
+    基线只许**往下调**（补一篇改一次），往上调要写理由。
+    """
+    p = os.path.join(BASE, 'scripts', 'retrieval_backlog.txt')
+    if not os.path.isfile(p):
+        return None
+    for line in io.open(p, encoding='utf-8'):
+        line = line.strip()
+        if line.startswith('baseline='):
+            v = line.split('=', 1)[1].strip()
+            return int(v) if v.isdigit() else None
+    return None
+
+
 def _unregistered_groups():
     """列出 knowledge/{devflow,uicontrols}/ 下没有登记问法的文档（只提示，不判失败）。"""
-    have = {g['doc'] for g in GROUPS}
+    have = {g['doc'] for g in _all_groups()}
     out = []
     for sub in ('devflow', 'uicontrols'):
         d = os.path.join(BASE, 'knowledge', sub)
@@ -691,11 +741,13 @@ def main():
         rag_search._get_embedder = lambda: None
         print('[degraded] 强制 BM25 模式（模拟模型不可用）')
 
+    groups = _all_groups()
     bad, summary = [], []
     print('=' * 78)
-    print('retrieval regression（按文档分组，共 %d 组）' % len(GROUPS))
+    print('retrieval regression（按文档分组，共 %d 组；内含外部分组文件 %d 组）'
+          % (len(groups), len(groups) - len(GROUPS)))
     print('=' * 78)
-    for g in GROUPS:
+    for g in groups:
         # 结构化断言：组的问法条数
         if len(g['queries']) < MIN_QUERIES_PER_GROUP:
             bad.append('组「%s」问法只有 %d 条 < %d（入库门禁：新文档必须附 ≥%d 条问法）'
@@ -734,6 +786,11 @@ def main():
         bad.append('对照组 top-3 命中 %d < 要求 %d（检索实现被调坏了）' % (c_ok, CONTROL_MIN))
 
     unr = _unregistered_groups()
+    bl = _backlog_baseline()
+    if bl is not None and len(unr) > bl:
+        bad.append('未登记问法的文档 %d 篇 > 基线 %d（新文档必须同时登记 ≥%d 条问法；'
+                   '确实要放宽就改 scripts/retrieval_backlog.txt 的 baseline=）'
+                   % (len(unr), bl, MIN_QUERIES_PER_GROUP))
     print('-' * 78)
     print('未登记问法的知识文档（提示，不算失败）：%d 篇（devflow/uicontrols）%s'
           % (len(unr), ('；例：' + ', '.join(os.path.basename(x) for x in unr[:6])) if unr else ''))

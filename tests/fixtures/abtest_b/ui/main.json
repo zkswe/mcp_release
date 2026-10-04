@@ -1,35 +1,35 @@
 {
- "backgroundColor": 8421504,
- "beepEnable": true,
- "id": 0,
- "position": {
-  "height": 480,
-  "left": 0,
-  "top": 0,
-  "width": 480
- },
- "resolution": {
-  "height": 480,
-  "width": 480
- },
- "topmost": false,
- "seekbar__1": {
-  "id": 1,
-  "caption": "SB1",
+  "backgroundColor": 8421504,
+  "beepEnable": true,
+  "id": 0,
   "position": {
-   "left": 20,
-   "top": 40,
-   "width": 300,
-   "height": 40
+    "height": 480,
+    "left": 0,
+    "top": 0,
+    "width": 480
   },
-  "backgroundColor": -1,
-  "backgroundPic": "",
-  "defProgress": 0,
-  "max": 100,
-  "orientation": 0,
-  "progressPic": "",
-  "thumb": "images/thumb.png",
-  "touchable": false,
-  "visible": true
- }
+  "resolution": {
+    "height": 480,
+    "width": 480
+  },
+  "topmost": false,
+  "seekbar__1": {
+    "id": 1,
+    "caption": "SB1",
+    "position": {
+      "left": 20,
+      "top": 40,
+      "width": 300,
+      "height": 40
+    },
+    "backgroundColor": -1,
+    "backgroundPic": "",
+    "defProgress": 0,
+    "max": 100,
+    "orientation": 0,
+    "progressPic": "",
+    "thumb": "images/thumb.png",
+    "touchable": false,
+    "visible": true
+  }
 }

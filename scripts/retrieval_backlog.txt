@@ -1,0 +1,9 @@
+# 未登记问法的知识文档 —— 基线（只许往下调，往上调要写理由）
+#
+# 判据：`scripts/check_retrieval.py` 里 `_unregistered_groups()` 报出的篇数 > baseline = FAIL。
+# 为什么要这条：FlyThings 的模型先验 ≈ 0，AI 的开发能力几乎完全由检索决定（详见
+# AI-DEV-CAPABILITY-2026-10-04.md）。一篇文档没有登记问法 → 没人验证过"用户那么问能不能检到"
+# → 等于写完就近视。新文档**入库时就该带 ≥5 条问法**（GROUPS 或 scripts/retrieval_groups/*.json）。
+#
+# 补一篇 → 把 baseline 减 1；清空 → baseline=0。
+baseline=61

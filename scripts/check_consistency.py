@@ -967,6 +967,125 @@ def stage_docstring_budget():
         check(False, 'budget.basis 常驻数字可解析', '%s: %s' % (type(e).__name__, e))
 
 
+# ⚠️ 白名单：确有必要引用仓外/临时路径的用例，在此登记并写理由（默认应为空）。
+# 格式：(相对路径前缀, 字面量片段, 理由)
+TEST_HERMETIC_ALLOW = [
+    ('tests/test_selfcheck_bugreport.py', 'temp/bugreports/',
+     'bugreport op 的**输出**目录（写到仓库根 temp，属于被测行为，不是夹具）'),
+]
+
+
+def _test_hermetic_hits(path, base=None):
+    """扫一个 .py 的**字符串字面量**（跳过 docstring），返回 [(行号, 片段, 类别)]。
+
+    只判「**会被当成路径去用**」的四种情形，不碰测试里用来断言行为的假值
+    （`C:/fake/adb.exe`、`/tmp/busybox`、`D:/nope.json` 这类**故意不存在**的串）：
+      ① `temp/…`       仓库根 temp 已 .gitignore（设计上不入库，fresh clone 必无）
+      ② 存在但**未入库**：字面量能落到仓内一个**真实存在**的路径，而 git 不跟踪它
+         —— 这正是 `temp/abtest_a` 那一类（本机有、别人没有）
+      ③ 存在但在**仓外**：解析后落在仓库之外（如 `../ui_tools`）—— 依赖作者的多仓布局
+      ④ 直接写死了本仓库绝对路径（换机器即无效）
+    抽成独立函数是为了**能被用例直接调**（否则「门禁没命中」无法与「门禁是空转」区分）。
+    """
+    base = base or BASE
+    try:
+        tree = ast.parse(io.open(path, encoding='utf-8', errors='replace').read())
+    except SyntaxError as e:
+        return [(e.lineno or 0, 'SyntaxError: %s' % e.msg, 'unparsable')]
+    doc = set()
+    for n in ast.walk(tree):
+        if isinstance(n, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)) \
+                and n.body and isinstance(n.body[0], ast.Expr) \
+                and isinstance(n.body[0].value, ast.Constant) \
+                and isinstance(n.body[0].value.value, str):
+            doc.add(id(n.body[0].value))
+    try:
+        tracked = set(l.replace('/', os.sep) for l in subprocess.run(
+            ['git', 'ls-files'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            cwd=base, timeout=120).stdout.decode('utf-8', 'replace').split())
+    except Exception:
+        tracked = set()
+    rel_self = os.path.relpath(path, base).replace(os.sep, '/')
+
+    def _cands(s):
+        """字面量可能指向的地方（根 / tests 下各试一次）。"""
+        out = []
+        if re.match(r'^[A-Za-z]:/', s) or s.startswith('/'):
+            out.append(os.path.normpath(s))
+        else:
+            out.append(os.path.normpath(os.path.join(base, s)))
+            out.append(os.path.normpath(os.path.join(base, 'tests', s)))
+        return out
+
+    lits = []
+    for n in ast.walk(tree):
+        if not isinstance(n, ast.Constant) or not isinstance(n.value, str) or id(n) in doc:
+            continue
+        s = n.value.replace('\\', '/')
+        if len(s) > 240 or '\n' in s:
+            continue                          # 散文/命令行串不判
+        lits.append((n.lineno, s))
+
+    # 「被 .gitignore 覆盖」用 git check-ignore 实测（而不是"未跟踪"）：
+    # 开发机上未跟踪的构建产物（toolchain/、tools/adb/）遍地都是，拿未跟踪当判据会满屏假红。
+    probe, ignored = [], set()
+    for ln, s in lits:
+        for c in _cands(s):
+            if os.path.exists(c):
+                probe.append(c)
+    if probe:
+        try:
+            r = subprocess.run(['git', 'check-ignore', '--stdin'], cwd=base, timeout=120,
+                               input=('\n'.join(probe)).encode('utf-8'),
+                               stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+            ignored = set(l.replace('/', os.sep) for l in
+                          r.stdout.decode('utf-8', 'replace').split('\n') if l.strip())
+        except Exception:
+            ignored = set()
+
+    hits = []
+    for ln, s in lits:
+        kind = None
+        if re.match(r'^temp/', s):
+            kind = 'repo-temp'                # 仓库根临时区：设计上不入库，fresh clone 必无
+        else:
+            for c in _cands(s):
+                if c in ignored and os.path.exists(c):
+                    kind = 'gitignored-path'  # 字面量落在 .gitignore 区（夹具放错地方）
+                    break
+        if not kind:
+            continue
+        if any(rel_self.startswith(a[0]) and a[1] in s for a in TEST_HERMETIC_ALLOW):
+            continue
+        hits.append((ln, s[:70], kind))
+    return hits
+
+
+def stage_test_hermetic():
+    """契约用例只许引用**仓内、已入库**的路径（hermetic 夹具）。
+
+    为什么单列（2026-10-04 实测）：`tests/test_ui_schema.py` 的两个 4b 用例读
+    `temp/abtest_a|b`，而仓库根 `temp/` 在 `.gitignore` 里 —— **fresh clone 上必挂**
+    （同步后实跑 failures=3，其中 2 条就是它）。同类还有绝对路径与 `../` 越界：
+    它们在作者机器上绿、在别人机器上红，属**验证层的不可复现**。
+    夹具要随仓走：放 `tests/fixtures/<名>/`（已入库）。
+    """
+    tdir = os.path.join(BASE, 'tests')
+    bad, scanned = [], 0
+    for root, dirs, files in os.walk(tdir):
+        dirs[:] = [d for d in dirs if d not in ('__pycache__',)]
+        for fn in sorted(files):
+            if not fn.endswith('.py'):
+                continue
+            p = os.path.join(root, fn)
+            rel = os.path.relpath(p, BASE).replace(os.sep, '/')
+            scanned += 1
+            for ln, frag, kind in _test_hermetic_hits(p):
+                bad.append('%s:%d [%s] %s' % (rel, ln, kind, frag))
+    check(not bad, 'tests/ 路径随仓（hermetic 夹具；扫 %d 个 .py）' % scanned,
+          '；'.join(bad[:3]) + (' …共 %d 处' % len(bad) if len(bad) > 3 else '') if bad else 'ok')
+
+
 def stage_deliverables(with_tests):
     for f in ('pyproject.toml', 'requirements.lock', 'install.bat', 'LICENSE',
               'scripts/smoke.py', 'scripts/sync_ui_tools.py', 'scripts/gen_manifest.py',
@@ -1209,6 +1328,7 @@ def main():
     stage_index()
     stage_json_registries()
     stage_referenced_files_tracked()
+    stage_test_hermetic()
     stage_font_sizes()
     stage_selfcheck_sections()
     stage_docstring_budget()
