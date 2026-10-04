@@ -975,6 +975,35 @@ def stage_docstring_budget():
     except Exception as e:                      # 注册表读不了 → 如实报，不静默
         check(False, 'budget.basis 常驻数字可解析', '%s: %s' % (type(e).__name__, e))
 
+    # 按需面的**口径文字**同样是数字载体：`budget.note` 里手写的「最长 `flythings_x` 已 N/上限」
+    # 必须 == 实测。加这条是因为它**真的漂过**（2026-10-05 实测）：note 写「最长 build_ui_flow 757」
+    # 而实际最长是 `i18n_to_json` 805 —— 错的数字活在 note / TODO / 评审报告三处，
+    # 于是"按需面还剩 143 字符"这个判断从一开始就是错的（实际余 95，分层做完只剩 8）。
+    # 口径：note 必须保持「最长 `<op 名>` 已 **N/上限**」这种**可解析**写法，否则闸门当场红。
+    try:
+        import op_spec_loader as _osl
+        b = (_osl.load().get('budget') or {})
+        note = str(b.get('note') or '')
+        m = re.search(r'最长\s*`?(flythings_\w+)`?\s*已\s*\**\s*(\d+)\s*/\s*(\d+)', note)
+        # ⚠️ 只按长度降序 —— 别用 `sorted((len, name))`：长度相同时会退化成**按名字**比较，
+        # 于是"最长"取到的是名字最大的那个（2026-10-05 实测：所有 op 都短于 337 时，
+        # 取到 `flythings_layout_audit` 而非真正的首条）。这条 bug 是判据自己抓出来的。
+        live = sorted(((len(_osl.render_contract(o)), o) for o in _osl.registered()),
+                      key=lambda t: -t[0])
+        top_n, top_op = live[0]
+        if not m:
+            check(False, 'budget.note 最长 op 数字可解析',
+                  'note 里没有「最长 `flythings_x` 已 N/上限」这种写法 → 闸门无法对账（请保持该写法）')
+        else:
+            said_op, said_n, said_cap = m.group(1), int(m.group(2)), int(m.group(3))
+            cap = int(b.get('contractPerOpMax', 900))
+            ok = (said_op == top_op and said_n == top_n and said_cap == cap)
+            check(ok, 'budget.note 最长 op 数字（op_spec.json）',
+                  '%s %d/%d vs 实测 %s %d/%d' % (said_op, said_n, said_cap, top_op, top_n, cap)
+                  if not ok else '%s %d/%d = 实测' % (top_op, top_n, cap))
+    except Exception as e:                      # 注册表读不了 → 如实报，不静默
+        check(False, 'budget.note 最长 op 数字可解析', '%s: %s' % (type(e).__name__, e))
+
 
 # ⚠️ 白名单：确有必要引用仓外/临时路径的用例，在此登记并写理由（默认应为空）。
 # 格式：(相对路径前缀, 字面量片段, 理由)

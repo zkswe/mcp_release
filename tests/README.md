@@ -43,7 +43,7 @@ python scripts/check_consistency.py --with-tests
 > —— "能不能跑完"取决于机器负载与文件系统，是环境属性。所以发布闸门**默认不给外层墙钟**：
 > 判"挂"靠看门狗，判"慢"不判。CI 想兜底可设 `FLYTHINGS_TEST_TIMEOUT=<秒>`。
 > 一句话：**慢没关系，挂必须被逮到并带栈。**
-当前规模：**773 项**（这个数由 `check_consistency.py --with-tests` 对着真实 `Ran N tests` 核对 —— 不许手写。
+当前规模：**788 项**（这个数由 `check_consistency.py --with-tests` 对着真实 `Ran N tests` 核对 —— 不许手写。
 2026-10-03 实测：本条此前写的是 443，而真实值是 676，**脱节 233 条**；这也是「易漂移的数字必须派生」的又一个例子）。
 
 > 2026-09-27（v0.27.115-open）：`test_device_screenshot_probe.py` 新增 7 项（+22 → 共 18）——

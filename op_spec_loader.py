@@ -199,42 +199,76 @@ def _lines_prefix(prefix, v):
     return '\n'.join('%s %s' % (prefix, str(x)) for x in (v or []) if str(x).strip())
 
 
-def _render_fields(op, order):
-    """按给定字段顺序渲染（`render` 与 `render_contract` 的唯一实现）。"""
+def _field_text(op, key):
+    """单个字段渲染成一行/一段文本（**唯一实现**，`render` 与 `render_section` 共用）。
+
+    ⚠️ 这段为什么被抽出来（2026-10-05 B1 分层）：分层要保证「各段按 contractOrder 顺序拼接
+    == 完整契约」**逐字节**成立。原来 `_render_fields` 是「summary + '\\n\\n' + '\\n'.join(正文)」，
+    分隔符绑在函数里 —— 一旦按段分别渲染，每段各带一个 summary、分隔符也对不上，等式就不成立。
+    拆成"逐字段渲染 + 统一的 `_render_parts` 拼接"之后，分段只是**取字段的子集**，拼接规则唯一。
+    """
     s = spec(op)
-    body = []
-    for key in order:
-        if key == 'summary':
-            continue
-        v = s.get(key)
-        if key == 'triggers':
-            t = _line_triggers(v)
-        elif key == 'params':
-            t = _line_params(v)
-        elif key == 'returns':
-            t = _line_list('返回', v)
-        elif key == 'hardRules':
-            t = _lines_prefix('\u26a0\ufe0f\u26a0\ufe0f', v)
-        elif key == 'rules':
-            t = _lines_prefix('\u26a0\ufe0f', v)
-        elif key == 'keywords':
-            t = _line_list('检索词', v, ' / ')
-        elif key == 'excludes':
-            # 出局词：渲染成一行「别把它用在这儿」，让 AI 在 describe 阶段就看得到
-            # 为什么"这句话不该找我"。空/未登记不渲染。
-            ph = excludes(op)['phrases']
-            t = ('不适用（问法里出现这些就先看别的 op）：%s' % ' / '.join(ph)) if ph else ''
-        elif key == 'docRef':
-            t = ('细节见 %s' % v) if v else ''
+    v = s.get(key)
+    if key == 'summary':
+        return summary(op).strip()
+    if key == 'triggers':
+        t = _line_triggers(v)
+    elif key == 'params':
+        t = _line_params(v)
+    elif key == 'returns':
+        t = _line_list('返回', v)
+    elif key == 'hardRules':
+        t = _lines_prefix('\u26a0\ufe0f\u26a0\ufe0f', v)
+    elif key == 'rules':
+        t = _lines_prefix('\u26a0\ufe0f', v)
+    elif key == 'keywords':
+        t = _line_list('检索词', v, ' / ')
+    elif key == 'excludes':
+        # 出局词：渲染成一行「别把它用在这儿」，让 AI 在 describe 阶段就看得到
+        # 为什么"这句话不该找我"。空/未登记不渲染。
+        ph = excludes(op)['phrases']
+        t = ('不适用（问法里出现这些就先看别的 op）：%s' % ' / '.join(ph)) if ph else ''
+    elif key == 'docRef':
+        t = ('细节见 %s' % v) if v else ''
+    else:
+        # flow / notes 允许是字符串或字符串数组（数组按行拼，便于注册表按段落维护）
+        if isinstance(v, list):
+            t = '\n'.join(str(x) for x in v if str(x).strip())
         else:
-            # flow / notes 允许是字符串或字符串数组（数组按行拼，便于注册表按段落维护）
-            if isinstance(v, list):
-                t = '\n'.join(str(x) for x in v if str(x).strip())
-            else:
-                t = (str(v) if v else '')
-        if t and t.strip():
-            body.append(t.strip())
-    return (summary(op).strip() + '\n\n' + '\n'.join(body)).strip()
+            t = (str(v) if v else '')
+    return t.strip() if t else ''
+
+
+def _render_parts(op, order):
+    """按给定字段顺序渲染成**非空片段列表**（拼接规则见函数尾，唯一）。
+
+    'summary' 是骨架里的第一段，且它与正文之间用空行 —— 这就是**分隔符的唯一归属**。
+    """
+    parts = []
+    for key in order:
+        t = _field_text(op, key)
+        if t:
+            parts.append(t)
+    return parts
+
+
+def _join_parts(parts):
+    """片段列表 → 最终文本。**分隔符只在这里定义一处**。
+
+    规则（必须与原实现逐字节一致，2026-10-05 重构时用 48/48 op 的快照比对验证过）：
+      · `summary` 与正文之间是**空行**（`'\\n\\n'`）；
+      · 正文各字段之间是**单换行**（`'\\n'`）—— 不是空行。
+    我第一次写成"所有片段都空行"就与旧输出差了 1 个字符，靠基线快照当场抓到。
+    """
+    if not parts:
+        return ''
+    head, body = parts[0], parts[1:]
+    return (head + '\n\n' + '\n'.join(body)) if body else head
+
+
+def _render_fields(op, order):
+    """按给定字段顺序渲染（`render` / `render_contract` / `render_section` 的唯一实现）。"""
+    return _join_parts(_render_parts(op, order))
 
 
 def render(op):
@@ -258,6 +292,70 @@ def render_contract(op):
         load().get('renderOrder') or ['summary', 'triggers', 'params', 'hardRules']
     ) + ['flow', 'returns', 'rules', 'keywords', 'notes']
     return _render_fields(op, order)
+
+
+# --------------------------------------------------------------------------
+# 按需面**分段取用**（`describe(section=…)` / 资源 `flythings://ops/<名>/<段>`）
+#
+# 为什么要它（2026-10-05 实测）：按需面单条上限 900 字符，而 `flythings_get_package_api`
+# 已到 **892（余 8）**、`i18n_to_json` 805、`build_ui_flow` 804 —— 「往契约里加东西」这条路
+# 事实上已经到顶（加 `excludes` 一次就吃掉 47 字符、加一条规则吃掉 411）。分层把计费单位
+# 从"整条 op"换成"一次取用"：实测单段最大 **645**（rules）、默认形态最大 = 全文 805。
+# 段划分是**对 contractOrder 的精确划分**（不重排、不新增字段），所以常驻面与全文逐字节不变。
+# --------------------------------------------------------------------------
+
+def sections():
+    """按需面的段划分 → `[{'id', 'fields', 'what'}]`（真源 `tiers.onDemand.sections`）。
+
+    老注册表没有该键时回落成单段 `all`（= contractOrder），所以本函数可以无条件调用。
+    """
+    secs = (load().get('tiers') or {}).get('onDemand', {}).get('sections') or []
+    out = []
+    for s in secs:
+        if isinstance(s, dict) and s.get('id') and s.get('fields'):
+            out.append({'id': str(s['id']), 'fields': [str(f) for f in s['fields']],
+                        'what': str(s.get('what') or '')})
+    if not out:
+        order = load().get('contractOrder') or (
+            load().get('renderOrder') or ['summary', 'triggers', 'params', 'hardRules'])
+        return [{'id': 'all', 'fields': list(order), 'what': '未分段注册表：整条契约'}]
+    return out
+
+
+def section_ids():
+    """合法段 id 列表（含 `all`）—— 报错文案与用例都从这里取，别再手写一份。"""
+    return [s['id'] for s in sections()] + ['all']
+
+
+def render_section(op, section):
+    """**单段**渲染（`section` 为段 id；`'all'` == `render_contract`，逐字节等价）。
+
+    未登记的段 → `OpSpecError`（消息里带合法段清单，**不静默回落**：让 AI 知道自己问错了，
+    而不是拿到一段它没要的内容）。
+    """
+    if section == 'all':
+        return render_contract(op)
+    for s in sections():
+        if s['id'] == section:
+            return _render_fields(op, s['fields'])
+    raise OpSpecError('未登记的段 %r（合法段：%s）' % (section, ' / '.join(section_ids())))
+
+
+def render_default(op):
+    """**默认形态**：`describe` 不传 `section` 时给什么。
+
+    规则（只加不破）：全文 ≤ `budget.contractPerOpMax` 时**逐字节等于 `render_contract`**
+    （今天 48/48 都如此，所以默认形态与改动前无差异）；一旦某条 op 涨过上限，就退化为
+    「skeleton + 段目录」——**自动软着陆**，不需要人工重排预算。
+    """
+    full = render_contract(op)
+    cap = int((load().get('budget') or {}).get('contractPerOpMax', 900))
+    if len(full) <= cap:
+        return full
+    sk = render_section(op, 'skeleton')
+    # 段目录：各段长度**由实测派生**（不手写），让 AI 自己决定下一跳取哪段
+    items = ['%s %d' % (s['id'], len(render_section(op, s['id']))) for s in sections()]
+    return '%s\n\n分段（args={"section":"段名"}）：%s / all %d' % (sk, ' / '.join(items), len(full))
 
 
 # --------------------------------------------------------------------------
@@ -288,11 +386,25 @@ def budget_report():
     rows.sort(key=lambda r: -r[1])
     crows = [(op, len(render_contract(op))) for op in registered()]
     crows.sort(key=lambda r: -r[1])
+    drows = [(op, len(render_default(op))) for op in registered()]
+    drows.sort(key=lambda r: -r[1])
+    srows = []
+    for sid in section_ids():
+        srows.extend((('%s:%s' % (op, sid)), len(render_section(op, sid))) for op in registered())
+    srows.sort(key=lambda r: -r[1])
     return {'per_op': rows, 'total': sum(c for _, c in rows),
             'perOpMax': per_op_max, 'totalMax': total_max,
             'over': [r for r in rows if r[1] > per_op_max],
             'contract_per_op': crows, 'contractPerOpMax': c_max,
-            'contract_over': [r for r in crows if r[1] > c_max]}
+            # `contract_over`：**全文**超上限。分层之后它降级为**告警**（不再硬失败）——
+            # "全文可以超 900"正是这个机制的目的（超了就默认退化成 skeleton + 段目录）。
+            'contract_over': [r for r in crows if r[1] > c_max],
+            # 真正的硬判据改为这两条（`tests/test_op_spec.py::test_budget` 消费）：
+            #   ① 默认形态（describe 不传 section 时实际给的东西）必须 ≤ 上限；
+            #   ② 任何**单段**必须 ≤ 上限（否则"取一段"也超）。
+            'default_per_op': drows, 'default_over': [r for r in drows if r[1] > c_max],
+            'section_per_op': srows, 'section_over': [r for r in srows if r[1] > c_max],
+            'section_ids': section_ids()}
 
 
 def validate():
@@ -355,6 +467,48 @@ def validate():
     for k in ('perOpMax', 'totalMax', 'contractPerOpMax'):
         if not (reg.get('budget') or {}).get(k):
             errs.append('budget.%s 缺失' % k)
+
+    # 按需面分段：必须是 contractOrder 的**精确划分**（不重排、不新增、不遗漏），
+    # 且 skeleton ⊇ renderOrder（三级包含链 常驻 ⊆ skeleton ⊆ 全文 —— 分层不许把常驻面拆散）。
+    secs = (tiers.get('onDemand') or {}).get('sections')
+    if secs is not None:
+        if not isinstance(secs, list) or not secs:
+            errs.append('tiers.onDemand.sections 必须是非空数组')
+        else:
+            ids, flat = [], []
+            for s in secs:
+                if not isinstance(s, dict) or not str(s.get('id') or '').strip():
+                    errs.append('tiers.onDemand.sections 每项必须含 id: %r' % (s,))
+                    continue
+                if not isinstance(s.get('fields'), list) or not s['fields']:
+                    errs.append('段 %s 必须含非空 fields' % s.get('id'))
+                    continue
+                ids.append(s['id'])
+                flat.extend(str(f) for f in s['fields'])
+            dup = sorted(set(x for x in ids if ids.count(x) > 1))
+            if dup:
+                errs.append('段 id 重复：%s' % '、'.join(dup))
+            known = set(reg.get('contractOrder') or [])
+            unknown = sorted(set(flat) - known)
+            if unknown:
+                errs.append('段里出现 contractOrder 之外的字段：%s' % '、'.join(unknown))
+            missing = sorted(known - set(flat))
+            if missing:
+                errs.append('有字段没被任何段覆盖（分段必须是精确划分）：%s' % '、'.join(missing))
+            twice = sorted(set(x for x in flat if flat.count(x) > 1))
+            if twice:
+                errs.append('同一字段被多个段覆盖：%s' % '、'.join(twice))
+            order = list(reg.get('contractOrder') or [])
+            for s in secs:
+                flds = [str(f) for f in (s.get('fields') or [])]
+                if [f for f in order if f in flds] != [f for f in flds if f in order]:
+                    errs.append('段 %s 的字段顺序与 contractOrder 不一致（分段只能划分、不能重排）'
+                                % s.get('id'))
+            sk = next((s for s in secs if s.get('id') == 'skeleton'), None)
+            if sk is None:
+                errs.append('缺少 skeleton 段（默认形态退化时给的就是它）')
+            elif not set(reg.get('renderOrder') or []) <= set(str(f) for f in sk['fields']):
+                errs.append('skeleton 必须覆盖 renderOrder 的全部字段（常驻 ⊆ skeleton ⊆ 全文）')
 
     # notes 债基线：**只减不增**（见 op_spec.json.notesDebt 的口径）
     debt = (reg.get('notesDebt') or {}).get('items') or {}

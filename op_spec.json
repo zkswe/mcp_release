@@ -7,7 +7,7 @@
     "totalMax": 6000,
     "contractPerOpMax": 900,
     "basis": "实测（2026-10-03，48 op）：常驻合计 **5125**、单条最长 224（`create_project`）—— 上限 6000 留 15% 余量（按本轮实测单条均值 ≈ 再加 8 个 op，**不是**早先写的 14 个）。**2026-10-03 把 `params` 移出常驻**（省 1148 字符 / 19.5%：参数名 `list` 已回、语义 `describe` 按需给，常驻再写一遍是重复计费），常驻从 5878/6000=98% 降到 4730/6000=78.8%；同日三批 `notes` 清零 + 4 条新硬规则（`knowledge_export` 强制脱敏、`fui_pack` ftu 是编译产物、`test_run` no-baseline≠通过、`get_package_api` 注册表没有≠平台没有）又把常驻推到 5125/6000=84.7% —— 该常驻的判据（会让 AI 误判/泄露的那类）进常驻并**接受预算上涨**，这是分层的代价。**口径 = 渲染产物字符数**，由 gen_op_docs 计算并进发布闸门。⚠️ **本段的「常驻合计 N」由门禁对账**（check_consistency 的 `budget.basis 常驻数字`）—— 改 docstring 后忘了改这里会红，不会再漂。",
-    "note": "旧口径 totalMax=12000 是「完整契约全进常驻」时代的数；分层后它失去意义 —— 常驻面看本段，完整契约看 contractPerOpMax。⚠️ **按需面（`describe`）才是下一个会撞的墙**：`contractPerOpMax=900` 而最长 `flythings_i18n_to_json` 已 **805/900**（余 95；2026-10-05 实测，此处原写 build_ui_flow 757 属误记），把参数语义/返回体继续往按需面塞之前先改本口径。"
+    "note": "旧口径 totalMax=12000 是「完整契约全进常驻」时代的数；分层后它失去意义 —— 常驻面看本段，完整契约看 contractPerOpMax。⚠️ **按需面已按段分层（2026-10-05）**：单条上限 900，最长 `flythings_get_package_api` 已 **892/900**。分层前这里写着「余量 143」（且把最长记成了 build_ui_flow 757，实为 i18n_to_json；那条错数字同时活在 TODO 与评审报告里）—— 实际余量一直更小，而\"往契约里加东西\"的代价实测很大（加一次 excludes 吃 47 字符、给 get_package_api 加一条规则吃 411）。现在计费单位是\"**一次取用**\"而非\"整条 op\"：`describe(section=…)` 按段取，默认形态在全文超限时自动退化成 skeleton + 段目录（不需要人工重排预算）。实测单段最大 645（flythings_i18n_to_json:rules）。加内容前先看段余量，别再往单条上堆。"
   },
   "renderOrder": [
     "summary",
@@ -1715,7 +1715,49 @@
         "keywords",
         "notes"
       ],
-      "where": "flythings_kb(op='describe:<op 名>') / 资源 flythings://ops/<op 名>",
+      "sections": [
+        {
+          "id": "skeleton",
+          "fields": [
+            "summary",
+            "triggers",
+            "hardRules",
+            "params"
+          ],
+          "what": "选不选 + 怎么调 + 安全铁律 + 参数语义 —— 只取这一段通常就够用"
+        },
+        {
+          "id": "flow",
+          "fields": [
+            "flow"
+          ],
+          "what": "多步流程（pack → install → build → launch 这类）"
+        },
+        {
+          "id": "returns",
+          "fields": [
+            "returns"
+          ],
+          "what": "返回体字段与判据"
+        },
+        {
+          "id": "rules",
+          "fields": [
+            "rules"
+          ],
+          "what": "⚠️ 级铁律与踩坑要点（为什么 / 坑在哪）—— 唯一的重量级段"
+        },
+        {
+          "id": "refs",
+          "fields": [
+            "keywords",
+            "excludes",
+            "notes"
+          ],
+          "what": "检索词 + 出局词（「别把它用在这儿」）+ 迁移兜底"
+        }
+      ],
+      "where": "flythings_kb(op='describe:<op 名>') / 资源 flythings://ops/<op 名>（默认形态）｜ 单段：args={\"section\":\"<段名>\"} / 资源 flythings://ops/<op 名>/<段名>｜ 全文：section=\"all\"",
       "cap": "budget.contractPerOpMax（单条上限；合计不设限，因为不进常驻）"
     },
     "deep": {

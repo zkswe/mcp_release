@@ -70,11 +70,11 @@ def _find(need: str, limit: int = 6) -> str:
       第二级 `candidates` —— 组内按**用户会怎么说的触发词**打分排序，带命中理由；
       第三级 `knowledge` —— 候选 op 关联的知识页（`docRef`），调用中要深入时直接去检索。
 
-    选中之后：`op="describe:<名>"` 拉完整契约（流程/铁律），再 `op=<名>` + args 调用。
+    选中之后：`op="describe:<名>"` 取契约（流程/铁律），再 `op=<名>` + args 调用；契约太长时可按段取：`args={"section":"rules"}`（段名见返回体或 `op="list"` 的说明）。
     """
     q = (need or '').strip()
     out = {"ok": True, "need": q, "count": 0, "stage": '', "candidates": [],
-           "hint": '选中后 op="describe:<名>" 拉完整契约；再 op=<名> + args 调用；'
+           "hint": '选中后 op="describe:<名>" 取契约（可按段：args={"section":"rules"}）；再 op=<名> + args 调用；'
                    '要深入某条判据用 op="knowledge_search"。',
            "knowledge": []}
     if not q:
@@ -179,11 +179,17 @@ def _find(need: str, limit: int = 6) -> str:
     return json.dumps(out, ensure_ascii=False)
 
 
-def _describe(name: str) -> str:
-    """按需拉某个 op 的**完整契约**（常驻 description 只有 L0：选不选 + 怎么调）。
+def _describe(name: str, section: str = '') -> str:
+    """按需拉某个 op 的契约（常驻 description 只有 L0：选不选 + 怎么调）。
 
     工具面分层见 `op_spec.json.tiers`：常驻面省下的是每次会话的上下文预算，
     代价是"细节要主动拉"—— 选中一个 op、准备调它之前，若摘要不够就调这里。
+
+    `section`（2026-10-05 加）：按需面**分段取用**。不传 = 默认形态（全文 ≤ 预算时就是全文，
+    逐字节等于旧行为；超预算才退化成 skeleton + 段目录）。传段名（`skeleton`/`flow`/`returns`/
+    `rules`/`refs`）只取那段，`all` = 全文。为什么要有它：单条上限 900 字符下，
+    `flythings_get_package_api` 已到 892（余 8）—— 分层把计费单位从"整条 op"换成"一次取用"，
+    实测单段最大 645。
     """
     op = (name or '').strip()
     if op not in OPS:
@@ -193,11 +199,26 @@ def _describe(name: str) -> str:
                          "retryable": False},
                "candidates": _suggest(op)}
         return json.dumps(out, ensure_ascii=False)
+    sec = (section or '').strip()
     try:
         import op_spec_loader as osl
+        if sec and sec not in osl.section_ids():
+            # 未知段**不静默回落**成整条契约：AI 得知道自己问错了，而不是拿到一段它没要的内容
+            return json.dumps({"ok": False,
+                               "error": {"code": "UNKNOWN_SECTION",
+                                         "msg": "unknown section: %s" % sec,
+                                         "hint": "可用段：%s" % ' / '.join(osl.section_ids()),
+                                         "retryable": False}},
+                              ensure_ascii=False)
+        text = osl.render_section(op, sec) if sec else osl.render_default(op)
         out = {"ok": True, "op": op, "risk": osl.risk(op), "category": osl.category(op),
                "stage": osl.stage(op), "docRef": osl.doc_ref(op) or '',
-               "contract": osl.render_contract(op)}
+               "section": sec, "chars": len(text),
+               "contract": text}
+        # 只在**默认形态已退化**（拿不到全文）时才附段目录，平时不占字符也不占注意力
+        if not sec and len(text) != len(osl.render_contract(op)):
+            out["sections"] = {s['id']: len(osl.render_section(op, s['id'])) for s in osl.sections()}
+            out["sections"]["all"] = len(osl.render_contract(op))
     except Exception as e:                       # 注册表不可用 → 明说（不静默给空契约）
         return json.dumps({"ok": False,
                            "error": {"code": "CONTRACT_UNAVAILABLE",
@@ -335,7 +356,7 @@ async def flythings_kb(op: str = "list", args: str = "{}",
     用法：先传 op="list" 取全部可用操作**及其参数名**（索引），再用 op=<操作名> + args='{"参数": 值}'
     （args 传 JSON 字符串；部分客户端只支持对象，也可直接传 dict）。
     **三步走（省上下文）**：① 需求进来先分级筛选 —— `op="find:<用户原话>"` 出候选 op
-    （按触发词打分 + 关联知识指针）；② 选中后 `op="describe:<op 名>"` 拉完整契约
+    （按触发词打分 + 关联知识指针）；② 选中后 `op="describe:<op 名>"` 取契约（超预算时退化为骨架 + 段目录，可按 `section=` 单取一段）
     （多步流程 / 踩坑铁律）；③ 调用中需要判据细节，按返回体的 seeAlso/docRef 走
     `op="knowledge_search"` 检索（按需，不预加载）。
 
@@ -356,7 +377,13 @@ async def flythings_kb(op: str = "list", args: str = "{}",
             need = ''
         return _find(need)
     if op.startswith('describe:'):
-        return _describe(op.split(':', 1)[1])
+        # `args={"section": "rules"}` 单取一段（与上面 op=='find' 读 need 同一写法，不新增语法）
+        try:
+            sec = (json.loads(args) or {}).get('section', '') if isinstance(args, str) \
+                else (args or {}).get('section', '')
+        except ValueError:
+            sec = ''
+        return _describe(op.split(':', 1)[1], sec or '')
     fn = OPS.get(op)
     if fn is None:
         try:

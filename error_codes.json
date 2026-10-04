@@ -224,6 +224,15 @@
       "raisedBy": [
         "mcp_server.py"
       ]
+    },
+    "UNKNOWN_SECTION": {
+      "meaning": "describe 的 section 名不在册（按需面分段取用时的段名）",
+      "who": "caller",
+      "retryable": false,
+      "action": "不传 section 取默认形态（超预算时自动退化成 skeleton + 段目录）；要单取一段用 hint 里列出的段名（skeleton / flow / returns / rules / refs），all = 全文",
+      "raisedBy": [
+        "mcp_server.py"
+      ]
     }
   },
   "derivations": {

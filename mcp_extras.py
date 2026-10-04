@@ -130,7 +130,7 @@ def _tools_doc():
     """工具清单（来自 manifest；文件缺失/损坏时回退代码清单，并在文档里说明原因——不静默降级）。
 
     这份清单是**常驻面的索引**：tool description 只带「选不选 + 怎么调」（见 `op_spec.json.tiers`），
-    要看某个 op 的完整契约（流程/铁律/检索词）挂 `flythings://ops/<op 名>` —— 那是按需面。
+    要看某个 op 的契约（流程/铁律/检索词）挂 `flythings://ops/<op 名>` —— 那是按需面；只想要某一段时挂 `flythings://ops/<op 名>/<段名>`。
     """
     note = ''
     if os.path.isfile(MANIFEST):
@@ -145,7 +145,7 @@ def _tools_doc():
                      % (data.get('version'), data.get('toolCount') or len(ops)),
                      '',
                      '风险分级：read=只读 / write=写本地文件 / device=会连真机。',
-                     '这里是**索引**（一句话 + 参数名）；**完整契约**（流程/铁律坑）挂 '
+                     '这里是**索引**（一句话 + 参数名）；**契约**（流程/铁律坑）挂 '
                      '`flythings://ops/<op 名>`，或用 `flythings_kb(op="describe:<op 名>")`。',
                      '']
             for cat in sorted({o.get('category', 'other') for o in ops}):
@@ -236,13 +236,14 @@ def register(mcp):
         """47 个 op 的完整契约索引（一句话 + 触发词 + 参数名 + 去哪看细节）。
 
         工具面分层（`op_spec.json.tiers`）：tool description 只是**常驻**的「选不选 + 怎么调」；
-        完整契约（流程/铁律/检索词）是**按需**的 —— 挂 `flythings://ops/<op 名>` 取单个。
+        契约（流程/铁律/检索词）是**按需**的 —— 挂 `flythings://ops/<op 名>` 取单个（默认形态）；要单段挂 `flythings://ops/<op 名>/<段名>`（`skeleton`/`flow`/`returns`/`rules`/`refs`，`all` = 全文）。
         """
         import op_spec_loader as _osl
         L = ['# FlyThings op 完整契约 · 索引',
              '',
              '> 常驻的 tool description 只带「选不选 + 怎么调」（省每次会话的上下文预算）；',
-             '> **完整契约**（调用流程 / 铁律 / 检索词）按需取：`flythings://ops/<op 名>`，'
+             '> 要某个 op 的**契约**（调用流程 / 铁律 / 检索词）按需取：挂 `flythings://ops/<op 名>`，'
+             '要单段挂 `flythings://ops/<op 名>/<段名>`（段名 skeleton/flow/returns/rules/refs，all=全文）'
              '或 `flythings_kb(op="describe:<op 名>")`。',
              '']
         for op in _osl.registered():
@@ -259,7 +260,7 @@ def register(mcp):
     @mcp.resource('flythings://ops/{name}', name='op-contract',
                   title='FlyThings op 完整契约（单个）', mime_type='text/markdown')
     def op_contract(name: str) -> str:
-        """单个 op 的完整契约（调用流程 / 铁律 / 检索词 / 未归类的兜底说明）。
+        """单个 op 的契约（调用流程 / 铁律 / 检索词 / 未归类的兜底说明）—— 默认形态；要单取一段挂 `flythings://ops/<op 名>/<段名>`。
 
         什么时候挂：已经选中这个 op 但 description 里的摘要不够时（多步流程、踩坑铁律）。
         """
@@ -276,7 +277,10 @@ def register(mcp):
             return '\n'.join(L) + '\n'
         L = ['# %s' % op, '',
              '风险 %s ｜ 分类 %s ｜ 阶段 %s' % (s.get('risk'), s.get('category'), s.get('stage')),
-             '', '---', '', _osl.render_contract(op), '']
+             '',
+             # 默认形态：全文 ≤ 预算时就是全文（与旧行为逐字节相同）；超预算才退化成
+             # skeleton + 段目录。要单取一段用 `flythings://ops/<名>/<段>`。
+             '---', '', _osl.render_default(op), '']
         if s.get('docRef'):
             L += ['', '细节文档：`%s`' % s['docRef']]
         try:
@@ -286,6 +290,31 @@ def register(mcp):
             sa = []
         if sa:
             L += ['', '相关知识：' + '、'.join('`%s`' % x for x in sa)]
+        return '\n'.join(L) + '\n'
+
+    @mcp.resource('flythings://ops/{name}/{section}', name='op-contract-section',
+                  title='FlyThings op 契约（单个 op 的某一段）', mime_type='text/markdown')
+    def op_contract_section(name: str, section: str) -> str:
+        """单取一个 op 的**某一段**契约（按需面分段取用）。
+
+        段名：`skeleton`（选不选+怎么调+铁律+参数）/ `flow` / `returns` / `rules` / `refs`；
+        `all` = 全文。为什么要分段：单条契约有 900 字符上限，而最长的一条已到 892 ——
+        分段把计费单位从"整条 op"换成"一次取用"（实测单段最大 645）。
+        """
+        import op_spec_loader as _osl
+        op = (name or '').strip()
+        sec = (section or '').strip()
+        try:
+            _osl.spec(op)
+        except Exception:
+            return '# 未登记的 op：%s\n\n可用 op 清单见 `flythings://ops`。\n' % op
+        if sec not in _osl.section_ids():
+            # 未知段**不静默回落**成整条契约（与 `_describe` 同口径）
+            return ('# 未登记的段：%s\n\n可用段：%s\n\n'
+                    '（`all` = 全文；不分段时挂 `flythings://ops/%s` 取默认形态）\n'
+                    % (sec, ' / '.join('`%s`' % x for x in _osl.section_ids()), op))
+        L = ['# %s ｜ %s' % (op, sec), '', _osl.render_section(op, sec), '',
+             '（段清单与全文：`flythings://ops/%s`）' % op]
         return '\n'.join(L) + '\n'
 
     @mcp.resource('flythings://version', name='version',
