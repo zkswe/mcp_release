@@ -888,6 +888,13 @@ def _bar_pic(out_dir, name, w, h, style, default_color=None, band=None):
 _PNG_LOG = []
 
 
+def _I_new_rgba(w, h, rgba):
+    """新建一张 RGBA 图（半透明热区切图用；RGB 写**背后底色**而不是黑，
+    这样万一设备端贴图把透明区的 RGB 带出来，漏出来的也是底色而不是黑边）。"""
+    from PIL import Image as _I
+    return _I.new('RGBA', (max(1, int(w)), max(1, int(h))), tuple(rgba))
+
+
 def _trim_png_palette(path):
     """把 PNG 的 PLTE / tRNS 裁到「实际用到的最大索引 + 1」项 —— 省存储的关键一步。
 
@@ -1741,6 +1748,7 @@ class HtmlToJson:
         # 伪元素声明单独收（不能并进节点 style：`::-webkit-slider-thumb{height:32}` 混进去
         # 会把控件本身写成 32 高）；由 `_seekbar_css_assets` 按名字取。
         self._pseudo_css = {}
+        self._rad_glue = []          # RadButton 胶水代码（纯色倒角按键；见 _try_radbutton）
         self._css_applied = _apply_css(p.root, self._css_text, self._pseudo_css)
         # CSS 背景传播：html/body 的 background 铺满画布（不写根底色 = 真机不擦屏、残留上一帧）
         self._page_bg = _canvas_bg(p.root)
@@ -2345,6 +2353,17 @@ class HtmlToJson:
         if bgc is not None:
             c['backgroundColor'] = bgc
         c['__bg'] = bgc          # A6：子控件圆角外底色取「最近祖先」（__ 前缀键在收尾时被剥离）
+        # ⭐ 2026-10-04：纯色 + 倒角的卡片 → window 没有 radius 字段（纯色倒角此前**静默丢失**），
+        #   按需求方口径「倒角交给 painter 自绘」：在 window 内塞一个 painter__N 画倒角底，
+        #   window 自己改成透明（否则方角底色会盖住画布）；子控件画在 painter 之上（key 顺序 = z 序）。
+        _pic_ahead = _attr(attrs, 'data-pic') or _attr(attrs, 'data-bgpic')
+        if not _pic_ahead and not re.search(r'linear-gradient|box-shadow', _attr(attrs, 'style') or ''):
+            _mk, _info, _pk = self._try_radbox(ctx, node, pos, cap, kind='window')
+            if _mk:
+                c[_pk] = _mk({'left': 0, 'top': 0,
+                              'width': pos.get('width', 100), 'height': pos.get('height', 40)})
+                c['backgroundColor'] = -1      # 倒角外要透出页面底
+                c['__bg'] = _info['fill']      # 但「最近祖先底色」对子控件而言仍是卡片色
         # A5 修：data-visible 直通（容器初始隐藏；模态默认 visible=false，作者显式写则以其为准）
         _dv = _bool_attr(attrs, 'data-visible')
         if _dv is not None:
@@ -2434,6 +2453,174 @@ class HtmlToJson:
                             'height': max(_ih, 1)}
         key = ctx.add('listview', c)   # 支持嵌套（listview 在 window 内）
         ctx.stack.append(c)
+
+    # ---------- 纯色倒角 → zk::ui_v1::RadButton（2026-10-04 需求方决策）----------
+    # 决策：**纯色 + border-radius 的普通按键 → RadButton**（painter 自绘 AA 倒角，无资产）；
+    #       **带渐变 / 背景图的 → ZKButton + 生成切图**（倒角烘进图）。二选一。
+    # 为什么必须出代码：RadButton 是「一个 painter + 一份代码」——json 里只是 `painter__N`，
+    #   真正的倒角由 `RadButton::attach/setStyle/refresh` 在设备上画（painter 不自动重绘，
+    #   不调 refresh 则**什么都不显示**）。所以本函数同时产出**可直接粘贴的胶水代码**，
+    #   放进返回体的 `radButtonGlue` 字段（不写工程里的 Logic.cc —— 那是业务文件，不许覆盖）。
+    _RAD_GLUE_TMPL = """/* ---- %(cap)s: zk::ui_v1::RadButton（由 html2json 生成，粘进 src/logic/<page>Logic.cc）----
+   组件源码：把 components/ui_v1/RadButton/src/zk/zk_radbutton.{h,cpp} 拷进工程 src/zk/（一次性）
+   必须 3 步：setStyle + attach + refresh；`st.bg` 必须是按钮背后的**真实底色**（AA 混色基准） */
+#include "zk/zk_radbutton.h"
+static zk::ui_v1::RadButton s_%(cap)s;
+
+/* onUI_init() 里： */
+    zk::ui_v1::RadButton::Style st_%(cap)s = zk::ui_v1::RadButton::defaultStyle();
+    st_%(cap)s.radius = %(radius)d;              /* CSS border-radius */
+    st_%(cap)s.bg     = %(bg)s;   /* ★ 按钮背后的真实底色（AA 混色基准，取自 CSS/祖先容器） */
+    st_%(cap)s.normal = %(normal)s;              /* CSS background-color */
+%(extra)s    s_%(cap)s.setStyle(st_%(cap)s);
+    s_%(cap)s.attach(m%(cap)sPtr);               /* json 里的 painter__N */
+    s_%(cap)s.refresh();                         /* ★ 不调什么都不显示；切页回来要再调一次 */
+"""
+
+    # 卡片/文本块的「纯色倒角底」只需要静态画法（没有四态/触摸语义），胶水更短
+    _RADBOX_GLUE_TMPL = """/* ---- %(cap)s: 纯色倒角底（由 html2json 生成，粘进 src/logic/<page>Logic.cc）----
+   组件源码：components/ui_v1/RadButton/src/zk/zk_radbutton.{h,cpp} → 工程 src/zk/（一次性）
+   卡片/文本块没有四态，直接用静态画法（AA 圆角矩形 + 与底色混色） */
+#include "zk/zk_radbutton.h"
+
+/* onUI_init() 里（painter 不自动重绘；切页回来要在 onUI_show() 里再调一次） */
+    zk::ui_v1::RadButton::drawRoundedRect(m%(cap)sPtr,
+                                          0, 0, %(w)d, %(h)d, %(radius)d,   /* 盒与半径 */
+                                          %(fill)s, 0, 0,                  /* 填充色 / 无边框 */
+                                          %(bg)s);                        /* ★ 背后的真实底色（AA 混色基准） */
+"""
+
+    def _rad_button_of(self, ctx, node, pos, cap, fill_int=None, behind=None):
+        """公共部分：算「纯色 + 倒角」判据、背后底色，并登记一段胶水。返回 dict 或 None。
+
+        判据（三条都满足才走 RadButton 路线，否则交回出图那套）：
+          ① `border-radius` > 0；
+          ② 背景是**纯色**（有 linear/radial-gradient、box-shadow、data-pic/data-bgpic 的一律不接）；
+          ③ 有底色可读（spec 的纯色 或 data-bg）。
+        """
+        attrs = node.attrs
+        style = _attr(attrs, 'style') or ''
+        radii = _radius_corners(style, pos.get('width', 100), pos.get('height', 40))
+        r = int(round(max(radii)))
+        if r <= 0:
+            return None
+        if (re.search(r'linear-gradient|radial-gradient|box-shadow', style)
+                or _attr(attrs, 'data-pic') or _attr(attrs, 'data-pic0')
+                or _attr(attrs, 'data-bgpic') or _attr(attrs, 'data-background-pic')
+                or _glyph_from_attrs(attrs)):
+            return None
+        spec = _bg_spec(style)
+        bgc_int = self._bg_color(attrs)
+        if not (spec and spec[0] == 'color') and bgc_int is None:
+            return None
+        fill = spec[1] if (spec and spec[0] == 'color') else None
+        fill_int = ((fill[0] << 16) | (fill[1] << 8) | fill[2]) if fill else bgc_int
+        if behind is None:
+            for v in reversed(list(ctx.stack)):
+                if isinstance(v, dict) and (v.get('__bg') is not None
+                                            or v.get('backgroundColor') not in (None, -1)):
+                    behind = v.get('__bg') if v.get('__bg') is not None else v.get('backgroundColor')
+                    break
+        if behind is None or behind < 0:
+            behind = (ctx.root or {}).get('backgroundColor')
+        if behind is None or behind < 0:
+            behind = 0xFFFFFF
+            ctx.warn('%s：走 RadButton（纯色倒角）路线，但**背后底色**取不到（祖先容器与页面根都没底色）'
+                     '→ 胶水里先按白 0xFFFFFF 兜底，请改成实际底色，否则倒角边缘会有一圈颜色不对的边'
+                     '（components/ui_v1/RadButton/README.md §8）' % cap, key='radbutton-bg')
+        return {'radius': r, 'radii': radii, 'fill': fill_int, 'behind': behind}
+
+    def _try_radbutton(self, ctx, node, pos, cap, text):
+        """纯色 + 倒角的普通按键 → `painter__N`(RadButton 画布) + 透明热区 `button__N` + 胶水代码。
+
+        2026-10-04 需求方决策：**纯色倒角走 zk::ui_v1::RadButton，带渐变/背景图的走 ZKButton+切图**。
+        背景：`button__N`/ZKButton 的 json 里**没有 radius 字段**（RadButton README §0），
+        所以纯色倒角若走 ZKButton 只能靠切图；RadButton 是「一个 painter + 一份代码」。
+        返回 True = 已产出（调用方直接 return）。
+        """
+        info = self._rad_button_of(ctx, node, pos, cap)
+        if not info:
+            return False
+        attrs = node.attrs
+        W = int(pos.get('width', 100) or 100)
+        H = int(pos.get('height', 40) or 40)
+        rcap = cap + 'Rad'
+        # ① painter（RadButton 画布）：z 更低，先加
+        pk = ctx.add('painter', {'backgroundColor': -1, 'caption': rcap,
+                                 'id': ctx.nid('painter'), 'position': pos,
+                                 'touchable': False, 'visible': True})
+        # ② 热区按钮（文字 + 触摸）：**不带底色**，用全透明切图保证不遮住下层 painter
+        c = {'alignment': ALIGN.get((_attr(attrs, 'data-align') or 'center').lower(), 37),
+             'caption': cap,
+             'colorTab': {'color0': _color_explicit(attrs, 'data-color', 0xEEF2F6)},
+             'id': ctx.nid('button'), 'position': pos, 'touchable': True}
+        hit = self._gen_asset(lambda d: _save_css_png(
+            _I_new_rgba(W, H, self._rgba_of(info['behind'])), d, 'btn_%s_hit.png' % cap))
+        c['picTab'] = {'pic0': hit or '', 'pic1': hit or ''}
+        fs = self._font_size(attrs)
+        if fs:
+            c['fontSize'] = fs
+        if text:
+            c['text'] = text
+        ctx.add('button', c)
+        extra = ''
+        if len(set(info['radii'])) > 1:
+            extra = ('    /* ⚠️ CSS 是四角不同半径（%s）；RadButton 只有单一半径，已取最大 %d */\n'
+                     % ('/'.join('%g' % v for v in info['radii']), info['radius']))
+        code = self._RAD_GLUE_TMPL % {'cap': rcap, 'radius': info['radius'],
+                                      'bg': '0x%06X' % info['behind'],
+                                      'normal': '0x%06X' % info['fill'], 'extra': extra}
+        self._rad_glue.append({'caption': rcap, 'kind': 'RadButton', 'radius': info['radius'],
+                               'bg': '0x%06X' % info['behind'], 'fill': '0x%06X' % info['fill'],
+                               'code': code})
+        ctx.warn('%s：纯色 + border-radius=%dpx → 按**需求方决策**走 `zk::ui_v1::RadButton`'
+                 '（painter 自绘 AA 倒角，不出切图）：json 已出 `%s`（RadButton 画布，z 更低）+ 透明热区 '
+                 '`button__N`（文字/触摸，picTab 是全透明图 → 不遮画布）。'
+                 '**倒角由代码画**：把返回体 radButtonGlue 里那段粘进 src/logic/<page>Logic.cc'
+                 '（setStyle+attach+refresh 三步；缺 refresh 什么都不显示），并把 '
+                 'components/ui_v1/RadButton/src/zk/zk_radbutton.{h,cpp} 拷进工程 src/zk/'
+                 % (cap, info['radius'], pk), key='radbutton:%s' % cap)
+        return True
+
+    def _try_radbox(self, ctx, node, pos, cap, kind):
+        """卡片(window) / 文本块(textview) 的**纯色 + 倒角底** → 返回 (painter 控件 dict, info) 或 (None, None)。
+
+        为什么也要管（2026-10-04 审计）：`window` / `textview` 同样**没有 radius 字段**，
+        而现有实现只在「渐变/阴影」分支出图 → 纯色 + border-radius 的卡片/标签**倒角静默丢失**
+        （审计实测：`.card{background:#1E2735;border-radius:10px}` → window 只有 backgroundColor，
+        一个像素的倒角都没有）。这里按同一条「倒角交给 painter 自绘」的口径补上。
+        调用方负责：① 把 painter **放在正确位置**（window 内 → 局部 (0,0,w,h)；同层 → 绝对 pos）
+        ② 把自己的底色去掉（window: backgroundColor=-1；textview: 不写 bgColorTab），否则方角会盖住画布。
+        """
+        info = self._rad_button_of(ctx, node, pos, cap)
+        if not info:
+            return None, None, None
+        W = int(pos.get('width', 100) or 100)
+        H = int(pos.get('height', 40) or 40)
+        rcap = cap + 'Rad'
+        pk = ctx.key('painter')          # 只占号，不插入（由调用方决定放哪）
+        code = self._RADBOX_GLUE_TMPL % {'cap': rcap, 'w': W, 'h': H, 'radius': info['radius'],
+                                         'fill': '0x%06X' % info['fill'],
+                                         'bg': '0x%06X' % info['behind']}
+        self._rad_glue.append({'caption': rcap, 'kind': 'roundedRect', 'radius': info['radius'],
+                               'bg': '0x%06X' % info['behind'], 'fill': '0x%06X' % info['fill'],
+                               'code': code})
+
+        def _mk(rect):
+            return {'backgroundColor': -1, 'caption': rcap, 'id': ctx.nid('painter'),
+                    'position': rect, 'touchable': False, 'visible': True}
+
+        ctx.warn('%s：纯色 + border-radius=%dpx 的%s → %s 没有 radius 字段（纯色倒角此前会静默丢失），'
+                 '已按「倒角交给 painter 自绘」的口径改走 `zk::ui_v1::RadButton::drawRoundedRect`：'
+                 'json 加了 `painter__%s` 画底、本控件的方角底色已去掉；'
+                 '**倒角由代码画** —— 把返回体 radButtonGlue 里那段粘进 src/logic/<page>Logic.cc'
+                 % (cap, info['radius'], '卡片' if kind == 'window' else '文本块',
+                    'window' if kind == 'window' else 'textview', pk.split('__')[-1]),
+                 key='radbox:%s' % cap)
+        return _mk, info, pk
+
+    def _rgba_of(self, cint):
+        return ((cint >> 16) & 0xFF, (cint >> 8) & 0xFF, cint & 0xFF, 0)
 
     def _open_diagram(self, ctx, node):
         """波形图：backgroundPic 背景图 + xAxisRange/yAxisRange 坐标范围 + region 绘图区 + infos[] 波形配置。
@@ -2703,6 +2890,15 @@ class HtmlToJson:
             bgc = self._bg_color(attrs)
             if bgc is not None:
                 c['bgColorTab'] = {'color0': bgc}
+            # ⭐ 2026-10-04：纯色 + 倒角的文本块（药丸标签/圆角底文本）→ textview 也没有 radius 字段，
+            #   纯色倒角此前**静默丢失**。按同一口径先放一个 painter 画倒角底、文本块自己去掉底色。
+            #   （有渐变/阴影/底图的仍走下面出图那条路 —— 倒角烘进图。）
+            if not _attr(attrs, 'data-bgpic') and not re.search(
+                    r'linear-gradient|radial-gradient|box-shadow', _attr(attrs, 'style') or ''):
+                _mk, _info, _pk = self._try_radbox(ctx, node, pos, cap, kind='textview')
+                if _mk:
+                    ctx.add('painter', _mk(pos))     # 同层、绝对坐标、z 更低（先加）
+                    c.pop('bgColorTab', None)        # 去掉方角底色，否则盖住画布
             # 静态底图 data-bgpic（v0.27.90）：textview 分支原**不读**该属性 → json 里没有
             #   backgroundPic = 「弹窗白卡/药丸/图标压根没画出来」，只能靠案例侧反查 HTML 兜底。
             #现与 button/window/seekbar/circlebar 等分支同口径落地；有图同样去底色（透明角会透底色）。
@@ -2755,6 +2951,13 @@ class HtmlToJson:
             #否则图片叠在颜色上效果与预想不同；仅纯文字按钮才用 bgColorTab/colorTab 多态色
             # ⚠️ 2026-09-05 修正：无底色且无文字的按钮（透明热区，覆盖卡片/图片上当点击区）不写 bgColorTab，
             #避免默认底色 0x374457 遮住下层内容；有 data-bg 或纯文字按钮才设底色（text 由 _leaf 预先解析）
+            #
+            # ⭐ 2026-10-04 需求方决策：**纯色 + 倒角 → `zk::ui_v1::RadButton`**（painter 自绘 AA 倒角，
+            #   无资产、半径/四态色可运行时改）；**带渐变 / 背景图 → 仍走 ZKButton + 生成切图**（倒角烘进图）。
+            #   背景：`button__N`/ZKButton 的 json 里**没有 radius 字段**（components/ui_v1/RadButton/README.md §0），
+            #   所以纯色倒角走 ZKButton 的话倒角只能靠切图；而 RadButton 是「一个 painter + 一份代码」。
+            if self._try_radbutton(ctx, node, pos, cap, text):
+                return
             bgc = self._bg_color(attrs)
             c = {'alignment': ALIGN.get((_attr(attrs, 'data-align') or 'center').lower(), 37),
                  'caption': cap,
@@ -3521,6 +3724,7 @@ def html2json(input_html, output_json=None, res=None, asset_dir=None, merge_wind
             'controls': count, 'controlsTopLevel': top_cnt,
             'controlsNested': max(all_cnt - top_cnt, 0), 'warnings': warnings,
             'generatedAssets': conv.gen_count,
+            'radButtonGlue': conv._rad_glue,
             'assetDir': asset_dir}
 
 
