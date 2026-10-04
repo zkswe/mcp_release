@@ -68,7 +68,7 @@ evidence: []
 - **预编译二进制必须与目标平台 libc 同源**。拿 glibc 版 `.so` 丢给 V85X = `not found`/段错误；
   反向同理。**同一份库，V85X 与 Z20 要分别编**。
 - 静态链接（`-static` + musl）是跨平台最稳的形态；本仓设备端工具就是这么发的
-  （历史实测 `mt_test`（2026-09-30 已移除，同族 `ui_test`/`touch` 同理）：ARMv7 musl 72KB / ARMv7 glibc 4.5MB——**同一份源码，体积差 60 倍**，
+  （同族 `ui_test`/`touch` 同理：ARMv7 musl 72KB / ARMv7 glibc 4.5MB——**同一份源码，体积差 60 倍**，
   静态带 glibc 会顺带把一堆东西拖进去）。
 - 判据命令：`file <lib>`（看 interpreter/架构）、`readelf -d <lib> | grep NEEDED`（看依赖的 libc）。
 
@@ -125,7 +125,7 @@ evidence: []
 
 ---
 
-## 5. 反模式（都是踩过的）
+## 5. 反模式
 
 | 反模式 | 症状 | 正解 |
 |---|---|---|

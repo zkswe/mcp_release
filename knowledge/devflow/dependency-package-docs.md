@@ -45,7 +45,7 @@ evidence: []
 - 判据：文件内有没有 `verified_<日期>` 块；`components/<模块>/platforms.md` 表里未测的平台一律写「未验证 + 需要什么条件」
 - 依赖版本按平台分叉，别照抄：**Z20 的 `openssl` = `1.1.1-w`（其他平台 `1.1.1-g`）**；**Z20/Z21 的 `curl` = `8.12.1-mbedtls`（其他平台 `8.12.1`）**；`paho-mqtt3as` / `mqtt-cxx` / `rapidjson` 本地 registry **只有 Z20 有**
 
-## 4. 红线（踩过的）
+## 4. 红线
 
 - **不要凭记忆写包内 API**：`api.methods` 里的签名必须能在该包头文件里 grep 到（AI 写文档时同理）
 - **`cacert.pem` 只认资源目录（resPath）下**：HTTPS 失败常见根因；报 `not correctly signed by the trusted CA` = CA 没找到

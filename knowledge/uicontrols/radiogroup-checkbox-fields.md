@@ -25,7 +25,7 @@ evidence: []
 2. **选中态图是 picTab.pic2（不是 pic1）**：radiobutton/checkbox 三态图 pic0=正常、pic2=选中（实测 key_comm_normal.9.png / key_comm_blue.9.png）。
 3. **代码用子项 ID 宏选中**：`setCheckedID(ID_MAIN_RadioButton1)`，回调拿 `checkedID` 反查是哪项（ID 宏 = UI 文件名_子项 caption 大写）。
 4. 一个 group 内每项 `checked` 字段决定初始选中（只能一项 true）。
-5. **⚠️ `touchable` 必须为 `true`**（2026-09-10 修正，实测出过错代码）：
+5. **⚠️ `touchable` 必须为 `true`**：
    radiogroup 虽然写的是「容器」结构（内含 radiobuttons[]），但**不适用**`knowledge/uicontrols/json-field-mandatory.md` 里「容器显式 false」的通用口径；
 写 `false` 时整组**收不到触摸**，表现：单选按钮点了没反应 / 选中态不切换。
    - 生成器（html2json.py `_open_radiogroup`）已修为 `'touchable': True`
@@ -41,7 +41,7 @@ evidence: []
 | `caption` | string | 控件名 |
 | `id` | int | 控件 id（实测 **94002**段） |
 | `radiobuttons` | array | 子项数组（见下） |
-| `touchable` | bool | **必须 `true`**（2026-09-10 修正；false = 整组点不动，见铁律 5） |
+| `touchable` | bool | **必须 `true`**（false = 整组点不动，见铁律 5） |
 | `visible`/`position` | | 通用 |
 
 ### radiobuttons[] 子项（实测结构）

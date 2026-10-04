@@ -33,7 +33,7 @@ evidence: []
    **不是独占的**⇒ 直接从别的线程往 fb 乱写会被框架重绘覆盖。
 2. **V85X 有 disp 多图层**：视频/摄像头走独立硬件图层，可与 UI 层叠加（实测：
    **视频解码返回后必须 `releaseLayer`，否则黑屏**）。
-3. **“软渲染”要说清是哪一段（2026-09-30 需求方更正；已按代码复核，含一处降级）**：
+3. **“软渲染”要说清是哪一段**：
    - **绘制进内存画布**那段是**软件实现**（我方 `src/core/PgCanvas.*` = 自研画布 + 自研多档字库，纯整数、自带 AA），代价取决于实现/面积；
    - **内存画布 → 屏幕**那段**有硬件参与**（我方实证：`src/platform/PgDisplay.cpp:59/77` 把像素缓冲挂给
      `ZKTextView::setBackgroundBmp()`，每帧 `setInvalid(!isInvalid())` 抖出）；**G2D 真实存在**：工程 deps 里带 `g2d_scale.h`/`EPIXELFORMAT_g2d_format_convert.h`（G2D 负责缩放/格式转换），

@@ -512,6 +512,12 @@ cd /tmp/v85x_base && ./fun.exe build                     # fsc 自动扫 src/ �
 | **blur** | ✅ **可编译可链接** | 标量 `zk_blur.cpp` + RVV 桩 `zk_blur_rvv.cpp`（`#ifdef __riscv_vector` … `#else` 桩，**跨架构回退设计成立**）→ 12/12 编过并链成 `libzkgui.so` |
 | **imagecache** | ✅ **可编译可链接** | `zk_imagecache.cpp` 只依赖标准库 + pthread，无外部包 |
 | **vinyl** | ❌ **不可用（缺 nanovg 包）** | 核心 `zk_vinyl.cpp` 需 `<nanovg.h>`；V85X registry 只有 5 个包、**无 nanovg**，仓库离线 `packages/` 也没有 |
+
+> ⚠️ **订正（2026-10-05）**：上表 vinyl 一行的依据是"仓库离线包也没有 nanovg"，而**同日 19:41**
+> `packages/nanovg/lib/v85x/libnanovg.so`（厂家构建）+ `include/nanovg.h` 已随仓（见
+> `packages/nanovg/lib/v85x/BUILD.md`）。`zk_vinyl.cpp:37-38` 无条件 include，所以**手动接**
+> 该 .so 与头文件即可编；`fun install` 走包 registry，**纯包管理器路径仍不可用**。实编 + 真机
+> 验收**待补**。本表当前值以注册表 `platform_capabilities.json` 为准（已同步）。
 | **wall_sync** | ❌ **不可用（缺 rapidjson 包）** | `zk_wall_sync.cpp` 需 `<rapidjson/document.h>`；声明 `rapidjson 1.1.0` 后 `fun install` 拉 `packages/v85x/rapidjson/1.1.0.zip` → **502 Bad Gateway** |
 | **blend2d** | ❌ 无库（**原本就已正确标注**） | 只有 `lib/z20/` 与 `z20-neon` 的 `.so`，其 `NEEDED` 是 glibc，musl 平台没有 |
 | **icons** | ➖ 平台无关（**原本就已正确标注**） | 纯 PNG 资源 + 三条硬规则，无平台分支 |

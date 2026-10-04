@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "updated": "2026-10-03",
-  "authority": "本文件是 FlyThings **op 契约与工具面分层**的机器可读唯一真源（域①）。派生：kb_tools 的 47 个 docstring（scripts/gen_op_docs.py）、tools_manifest.json、意图闸门 catalog、mcp_server 的 list/find/describe 三个入口。**工具面三层**（见 tiers）：常驻 = summary+triggers+params+hardRules（进 tool description）；按需 = flow/returns/rules/keywords/notes（op=\"describe:<名>\" / 资源 flythings://ops/<名>）；深入 = docRef/seeAlso → knowledge 检索。**分级筛选**：用户需求先经 `op=\"find:<原话>\"` 按 triggers 打分（字面/滑窗/弱命中 → 知识检索两跳）出候选 + 知识指针，再 describe 取契约，最后才调用 —— 判据与知识权威归属共用一份匹配器（kb_authority.alias_hit）。改契约 = 改本文件，禁止消费方另抄一份。",
+  "authority": "本文件是 FlyThings **op 契约与工具面分层**的机器可读唯一真源（域①）。派生：kb_tools 的 docstring（scripts/gen_op_docs.py）、tools_manifest.json、意图闸门 catalog、mcp_server 的 list/find/describe 三个入口。**工具面三层**（见 tiers）：常驻 = summary+triggers+hardRules（进 tool description）；按需 = params/flow/returns/rules/keywords/excludes/notes（op=\"describe:<名>\" / 资源 flythings://ops/<名>）；深入 = docRef/seeAlso → knowledge 检索。**分级筛选**：用户需求先经 `op=\"find:<原话>\"` 按 triggers 打分（字面/滑窗/弱命中 → 知识检索两跳）出候选 + 知识指针，再 describe 取契约，最后才调用 —— 判据与知识权威归属共用一份匹配器（kb_authority.alias_hit）。改契约 = 改本文件，禁止消费方另抄一份。",
   "budget": {
     "perOpMax": 360,
     "totalMax": 6000,
@@ -1705,7 +1705,7 @@
     }
   },
   "notesDebt": {
-    "authority": "`notes` 是注册表里的**迁移兜底桶**（见 renderSpec.notes）：非空 = 该 op 的结构化还没做完。本段登记**存量基线**（2026-10-03）。门禁口径（op_spec_loader.validate）：① 不在名单里的 op **不许**有 notes（新增即红 —— 新字段请进 flow/params/rules/keywords）② 名单里的 notes **只许减**（字符数不得增加）；清零后从名单删除。**状态：2026-10-03 三批清零完毕（原 33 个 op / 5233 字符 → 0），`items` 已空；此后任何 op 再写 notes 都是失败 —— 细节一律进 flow/params/returns/rules/keywords。**",
+    "authority": "`notes` 是注册表里的**迁移兜底桶**（见 renderSpec.notes）：非空 = 该 op 的结构化还没做完。本段登记**存量基线**。门禁口径（op_spec_loader.validate）：① 不在名单里的 op **不许**有 notes（新增即红 —— 新字段请进 flow/params/rules/keywords）② 名单里的 notes **只许减**（字符数不得增加）；清零后从名单删除。**当前基线为空**：此后任何 op 再写 notes 都是失败。",
     "items": {}
   },
   "longOps": [

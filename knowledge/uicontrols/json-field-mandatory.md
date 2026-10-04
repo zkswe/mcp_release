@@ -26,7 +26,7 @@ evidence: []
 ## 5 条口径（2026-09-08）
 1. **beepEnable 不强制**：交互控件默认支持，废除「恒带 beepEnable:true」规范（两源 edittext/window 均证实非必写）
 2. **touchable 交互控件显式 true**：button/listview/可拖 seekbar(有 thumb)/qrcode/videoview/diagram/subitem/slidewindow/circlebar；容器与纯显示显式 **false**（window/painter/textview/cameraview/digitalclock 主 false）
-   - ⚠️ **例外：radiogroup 虽是容器，也必须 `touchable: true`**（2026-09-10 修正）。写 false 会让整组**收不到触摸、点了没反应**（单选组点不动）；生成器/手写 json 均按 true。详见 `knowledge/uicontrols/touch-events.md`
+   - ⚠️ **例外：radiogroup 虽是容器，也必须 `touchable: true`**。写 false 会让整组**收不到触摸、点了没反应**（单选组点不动）；生成器/手写 json 均按 true。详见 `knowledge/uicontrols/touch-events.md`
 3. **qrcode 恒写 padding:10**（各边默认 10；SampleUI 无 padding 键、basedemo 亦无，按需求方口径写）
 4. **videoview 按 SampleUI**：无 beepEnable；键 backgroundColor 0/caption/defaultVolume 5/id/loopPlayback false/position/rotation 0/touchable true/visible true
    - ⚠️ 这里的 `backgroundColor: 0` 是**官方原值、表示不透明黑**（视频/摄像头面必须有实黑底，basedemo videoview 2/2、cameraview 1/1 = 0）。**别把这个 0 推广到别的控件**：其他控件的底色「透明」是 **-1**，写 0 就是黑块（2026-09-20 M6 实测坑：checkbox/listview/digitalclock/pointer/circlebar 写 0 → 真机黑底）。判据见 knowledge 与 `workspace/references/kb/image-gen-standard.md` §7.6，门禁 `check_all` #24（`ui_tools/zero_color_audit.py` + `zero_color_allow.json`）。

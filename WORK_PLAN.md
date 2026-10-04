@@ -91,7 +91,7 @@
 | 组件 | V85X 结论 |
 |---|---|
 | blur / imagecache | ✅ **可编译可链接**（在 `arm-unknown-linux-musleabihf-gcc` 下编过并链成 `libzkgui.so`） |
-| vinyl | ❌ **不可用** —— 缺 `nanovg` 包（V85X registry 无、离线包也没有） |
+| vinyl | ⚠️ **改为可编（有前提）** —— 原判「缺 `nanovg` 包（V85X registry 无、离线包也没有）」**已不成立**：`packages/nanovg/lib/v85x/libnanovg.so` + `include/nanovg.h` 已于 2026-10-03 随仓（同为 V85X 档）。`zk_vinyl.cpp` 无条件 `#include <nanovg.h>`，故**手动接**（include 路径 + 链接该 .so）即可编；但 `fun install` 走包 registry 仍拉不到 → **纯包管理器路径仍不可用**。实编与真机验收**待补** |
 | wall_sync | ❌ **不可用** —— 缺 `rapidjson` 包（`fun install` 拉 v85x 源 → **502**） |
 | blend2d / icons | 原本就已正确标注（无 V85X 库 / 平台无关） |
 

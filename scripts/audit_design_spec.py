@@ -43,7 +43,18 @@ CHECKS = [
 ]
 # ④ 是**子串三连**判定（症状 × 归因 × 日期/版本），不放这里：不适用正则（见下）
 KIND4 = '④ 事故句式（规范里混进了"当初怎么发现的"）'
-CHECKS_ALL = CHECKS + [(KIND4, None)]
+# ⑤⑥ 两条**结构性**判据（2026-10-05 新增，见 scan() 里的口径说明）：真实残留是"句子级沉积"，
+# 住在标题行与括号尾注里 —— 比扩词表有效得多，且不会误伤"只写症状 = 规范"的正文。
+KIND5 = '⑤ 标题后缀叙事（"（踩过）/（实测教训）/（返工反推）"这类后缀）'
+KIND6 = '⑥ 括号尾注来路（"（2026-xx-xx 更正/修正/推翻）"这类括号）'
+ID_SUFFIX = re.compile(r'^#{1,6}\s+.*[（(][^）)]*(踩过|踩坑|教训|复盘|返工|事故|血泪)[^）)]*[）)]\s*$')
+# ⚠️ 只认**修订动词**（更正/修正/勘正/订正/改判/复核/推翻/补录/收拢/移除/误写/失效），
+# **不认** `确认 / 实测 / 口径 / 拍板` —— 那三类是**正当的出处标注**（"2026-09-17 真机复核"
+# 是证据链，"2026-09-21 口径"是生效范围），第一版把它们也算上，48 处里大半是假阳性。
+ID_TAIL = re.compile(
+    r'[（(]\s*(?:19|20)\d\d[-/年.]\d{1,2}(?:[-/.]\d{1,2})?\s*[^）)]*'
+    r'(更正|修正|勘正|订正|改判|复核|推翻|补录|收拢|移除|误写|失效|误标)')
+CHECKS_ALL = CHECKS + [(KIND4, None), (KIND5, None), (KIND6, None)]
 
 # ④ 用子串而不是大正则：长行（rag_index 的 base64 blob）上正则回溯会炸（实测卡死）。
 # 判据 = 同时出现「症状词 + 归因标记 + 日期/版本号」。三者齐备才算"事故叙述"：
@@ -101,24 +112,34 @@ def scan():
             continue
         for i, ln in enumerate(lines, 1):
             s = ln.strip()
+            # ⑤⑥ 两条**结构性**判据先跑（2026-10-05 新增）：真实残留住在标题行、表格行、
+            # `（2026-xx-xx 更正）` 括号尾注里，而下面的 ①–④ 全都**跳过标题行**、④ 还要求
+            # "日期词+症状词+归因词"三连 —— 等于把重灾区整片划出扫描范围（实测：④ 原始命中
+            # 只有 2 处，而结构性两类各有十几个）。它测的是"行文风格"，不是"是否含历史"。
+            if not s or s.startswith('//') or 'design-spec:evidence' in s:
+                continue
+            if ID_SUFFIX.search(s):
+                out.append({'kind': KIND5, 'doc': rel, 'line': i, 'text': s[:200]})
+                continue
+            if s.startswith('#'):
+                continue              # 标题行：①–④ 不看（⑤ 已单独判过）
             if s.startswith('```'):
                 fenced = not fenced
                 continue
-            if s.startswith('#') or not s:
-                continue
-            if s.startswith(('//', '*')):
+            if s.startswith('*'):
                 continue              # 代码注释：开发者读物，不在"给 AI 的规范"范围
             if fenced and not is_json:
                 continue              # .md 的知识页：``` 内是**示例**，不是规范文本
             if len(s) > 400:
                 continue              # 派生数据行（base64 blob）不参与
+            if ID_TAIL.search(s):
+                out.append({'kind': KIND6, 'doc': rel, 'line': i, 'text': s[:200]})
+                continue
             # 注册表里描述**字段用途**的元数据（`"rules": "…踩坑要点…"`、`"what": "…踩过什么"`）
             # 是在定义这个域收什么，不是在写事故叙述 —— 实测会造出 3/5 的假阳性，故跳过。
             if re.match(r'^"(rules|what|note|gotchas|fields|renderSpec|renderOrder|tiers|'
                         r'contractOrder|authority|basis|migration|longOps|notesDebt)"\s*:', s):
                 continue
-            if 'design-spec:evidence' in s:
-                continue              # 已写明理由的历史实测记录（DESIGN_SPEC.md 第 5 条）
             hit = None
             for label, rx in CHECKS:
                 if rx.search(s):

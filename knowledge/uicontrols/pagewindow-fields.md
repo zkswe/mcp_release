@@ -33,7 +33,7 @@ evidence: []
 | `caption`/`id` | 控件名/id（实测 30000+ 段） |
 | 子 `window__N` | 每页一个子窗口（页内容），并排排布 |
 | `orientation` | 0 水平翻页 / 1 垂直（如支持） |
-| `dragMaxDis`/`edgeEffect`/`rollSpeed` | 滑动参数：`dragMaxDis` = **越界拖拽上限**（overscroll，不是行程；行程 = (页数−1)×页宽(高)，引擎自算）—— 取手感值 200（基准 1024×600），edgeEffect=1、rollSpeed=60；手感取值规范见 `knowledge/uicontrols/scroll-drag-interaction-spec.md`（2026-10-01 修正） |
+| `dragMaxDis`/`edgeEffect`/`rollSpeed` | 滑动参数：`dragMaxDis` = **越界拖拽上限**（overscroll，不是行程；行程 = (页数−1)×页宽(高)，引擎自算）—— 取手感值 200（基准 1024×600），edgeEffect=1、rollSpeed=60；手感取值规范见 `knowledge/uicontrols/scroll-drag-interaction-spec.md` |
 | 其余通用 | touchable/visible/position |
 
 ## 代码操作（PageWindowDemo 实测）

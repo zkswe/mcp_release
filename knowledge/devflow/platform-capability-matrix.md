@@ -229,7 +229,7 @@ evidence:
 | F135 | 未验证 | 未验证 | — | 与 F133 同核（C906 RISC-V），预期一致（待测） |
 | Z20 / Z21 | 未验证 | 未验证（注册表有 nanovg 包则可用） | — | 待测 |
 | T113 | 未验证 | 未验证 | — | 待测 |
-| V85X | ❌ **不可用**（缺 `nanovg` 包） | ❌ **不可用**（同上） | — | V85X registry 只有 base-utility/easyui/log/zkhardware/zknet，**无 `nanovg`**；仓库离线包也没有。核心 `zk_vinyl.cpp` 需要 `<nanovg.h>` —— 本组件在 V85X 上**编不过**（2026-10-03 V85X 真机工具链实编）。注：V85X（SPINOR）**不是** MCU Lite，不适用「本组件不适用」那条 |
+| V85X | ⚠️ **可编**（前提见备注）——实测待补 | ⚠️ 需手动接 nanovg；**包管理器路径仍不可用** | — | `zk_vinyl.cpp:37-38` **无条件** `#include <nanovg.h>` / `<nanovg_agg.h>`（无 `#ifdef` 开关），所以定点后端也要求头文件可解析 —— 原先判「编不过」的依据是 **V85X registry 无 nanovg 包、仓库也没有**；现已变化：`packages/nanovg/lib/v85x/libnanovg.so`（厂家构建，md5 F5F1157D…）与 `include/nanovg.h` 已随仓（2026-10-03），**手动接**（include 路径 + 链接该 .so）即可满足。但 `fun install` 走包 registry（V85X 只有 base-utility/easyui/log/zkhardware/zknet），**拉不到 nanovg** → 纯包管理器路径仍不可用。**待验**：用 V85X 工具链实编一次（本机无该工具链、设备未连，2026-10-05 未做）；V85X（SPINOR）**不是** MCU Lite，不适用「本组件不适用」那条 |
 
 ### wall_sync
 

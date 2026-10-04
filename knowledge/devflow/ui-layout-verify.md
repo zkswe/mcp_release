@@ -100,7 +100,7 @@ flythings_device_screenshot(crop='auto')           # 按 disp 图层 frame 裁�
 返回 `{success, path, width, height, format, sizeBytes, device, method, screenInfo{...offsetY,pan,rotate,rotateScreen,rotateTouch}, uiLayer, pixelOrder, rotateDeg, rotateSource, crop, readHint}`。
 调完把 **path**交给看图能力，**不要把 raw/整文件丢给模型**。
 
-### 2-1-1 取图方向/角度：读**项目工程**的配置，不要猜（❗踩过坑）
+### 2-1-1 取图方向/角度：读**项目工程**的配置，不要猜
 
 旋转/取图角度口径见 `knowledge/devflow/package-properties-easyui-cfg.md` §9（唯一来源 = 工程 `EasyUI.cfg` 的
 `rotateScreen` / `rotateTouch`；工具 `rotate='auto'`（缺省）读它，返回值 `rotateSource` 可自证）。
