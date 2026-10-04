@@ -17,6 +17,7 @@ evidence: []
 
 > 检索导引：问「多页窗口怎么做 / 左右滑动切页容器 / PageWindow 字段 / turnToNextPage 翻页 / 页变更回调 / 和 slidewindow·scrollwindow 区别」→ 本文。
 > 2026-09-07 basedemo/PageWindowDemo-New + f133 easyui 2.9.0 SDK（zk_pagewindow）实测。
+> 用户口语/别名：翻页的接口叫什么名字 / 怎么用代码切到下一页 / 页面切换的回调怎么写 / 翻页变化的监听接口怎么用 / 一个区域里放多页内容左右滑动切换。
 > 场景：同一区域多页内容左右滑动切换（引导页、分类页签内容区）。
 
 ## 核心铁律

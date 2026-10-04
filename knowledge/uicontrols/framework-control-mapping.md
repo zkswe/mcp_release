@@ -18,6 +18,7 @@ evidence: []
 > 检索导引：问「控件对照表在哪 / LVGL·Qt·Android·小程序控件对应我们什么 / 五级处置 L1~L5 / tab 页签怎么对应」→ 本文为摘要指针；机读权威表走 `flythings_map_control`（用法见 `knowledge/uicontrols/control-mapping-capability.md`）。
 > 检索词：跨框架 / 控件映射 / 翻译 / 转换 / LVGL 转 FlyThings / 小程序转 FlyThings / Qt / Android / emWin /
 > tabview / tab 页签 / pagewindow / 五级处置 / L1 L2 L3 L4 L5 / 缺口级别 / 3D 伪 3D / 控件对照表。
+> 用户口语补充：控件映射怎么查 / 控件映射规则 / tab 页签怎么做 / pagewindow 和 tabview 什么关系 / L1 L2 L3 是什么意思 / 缺口级别 L1 到 L5 / 3D 效果能实现吗 / 跨框架迁移控件怎么处理。
 >
 > **本文件只放摘要与关键口径**，避免与权威表两处漂移。**权威入口**：
 > - ★**机读映射（开发直接用这个）**：仓库根目录 `mcp_control_map.json`（六框架 213 条）+ MCP op

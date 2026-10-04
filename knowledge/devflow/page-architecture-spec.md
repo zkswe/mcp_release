@@ -16,6 +16,7 @@ evidence: []
 # 页面架构规范：ftu vs 同 ftu 内多窗口 + src 业务域目录命名
 
 > 检索导引：问「一个工程几个 ftu/Activity / 二级页·弹窗放同一 ftu 还是新页 / merge_windows 什么时候用 / showWnd 多窗口 / src 目录与文件怎么命名 / 多屏设计稿要落地几页」→ 本文（默认一屏一 Activity 一 json）；原型分页流程见 `knowledge/devflow/prototype-flow.md`。
+> 口语/错说法（用户原话）：merge-windows 什么时候该开 / 要不要把几屏合成一个窗口 / 什么情况才合并窗口 / 一个 ftu 里塞几个整屏行不行。
 > 检索词：页面架构/ftu 划分/多窗口/showWnd/整屏 window/二级页/弹窗/目录命名/业务域/src 目录/network media/.cpp .h/单 Activity/多 Activity/一个工程几个 Activity/一个工程几个 ftu/多个页面怎么放/页面放一个 ftu 还是多个。
 
 ## 0. 一句话口径

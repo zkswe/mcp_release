@@ -40,6 +40,7 @@ evidence:
 > 重连要不要自己 new client / 库自带自动重连还要不要看门狗 / 断网恢复要多久 /
 > 先发 availability 还是先发 discovery / 升级后 HA 里残留旧实体清不掉 /
 > 板内 broker 回退（MiniBroker）能干什么。
+> 用户口语补充：两个设备用同一个 client_id 互相踢下线 / client_id 冲突 / 重复登录被顶掉 / 谁把我踢了。
 
 ## 0. 一句话
 

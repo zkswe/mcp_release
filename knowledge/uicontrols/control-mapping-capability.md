@@ -19,6 +19,7 @@ evidence: []
 > 检索词：控件映射 / 映射能力 / 跨框架 / 源控件 / lv_slider / RecyclerView / QCalendarWidget /
 > lv_tabview / swiper / CALENDAR / CDateTimeCtrl / 映射表 / control map / mcp_control_map.json /
 > 别的框架的控件对应我们哪个控件 / 有对应控件就直接用 / 命中不到怎么办 / 缺口五级。
+> **口语问法直达**：lv_chart 没有对应控件吗 / Qt 的日历控件对应我们哪个 / 原来用 Qt 现在换 FlyThings 控件怎么对应 / 小程序 swiper 转过来用什么 / 有没有对应的控件还是得自己写（有控件走映射、真缺才建包，见 §1/§4）。
 >
 > 建立：2026-09-16（v0.27.73-open，需求方口径：「有对应控件的走映射能力，不写散文说明」）｜
 > **机读数据**：仓库根目录 `mcp_control_map.json`（六个源框架 213 条）｜

@@ -16,6 +16,7 @@ evidence: []
 # 跨框架 / 竞品 UI 迁移口径（映射表 + 四阶段路线 + 双平台）
 
 > 检索导引：问「竞品/别的框架界面搬过来 / 小程序·LVGL 转 FlyThings 怎么排期 / rpx 与视觉换算 / 差异降级清单 D-xx / 双分辨率同源怎么做」→ 本文（迁移方法论）；控件级对应走 `flythings_map_control`（见 `knowledge/uicontrols/control-mapping-capability.md`）。
+> 口语/错说法（用户原话）：双分辨率同时出一套怎么搞 / 一套设计稿要出两种分辨率怎么办 / Android 控件在我们平台怎么对应 / 安卓·别家的控件对应我们哪个控件。
 > 检索词：界面迁移 / 竞品样式对齐 / 跨框架移植 / 小程序转 FlyThings / LVGL 转 FlyThings /
 > Android 控件对应 / 组件库迁移 / TDesign 迁移 / 视觉还原 / 设计稿换算 rpx / 迁移工作量评估 /
 > 分阶段迁移 / 映射表 / 差异降级清单 D-xx。

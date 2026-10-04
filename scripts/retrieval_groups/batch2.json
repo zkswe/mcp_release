@@ -1,196 +1,194 @@
 [
-  {
-    "name": "自定义控件怎么写（继承/自绘）",
-    "doc": "knowledge/devflow/custom-widget.md",
-    "queries": [
-      "想加一个平台没有的控件",
-      "自己写一个控件",
-      "继承 ZKBase 写自定义控件",
-      "onDraw 自绘控件怎么写",
-      "控件里怎么处理触摸事件",
-      "有没有现成自定义控件能直接抄",
-      "怎么在页面里 new 一个控件挂上去",
-      "自定义控件的数据适配器回调怎么写",
-      "控件滚动惯性回弹怎么实现",
-      "自绘控件怎么拿到画布"
-    ],
-    "min_top1": 7,
-    "max_miss": 0,
-    "misses": []
-  },
-  {
-    "name": "部署调试该调哪个工具",
-    "doc": "knowledge/devflow/deploy-scene-map.md",
-    "queries": [
-      "调试怎么推送到设备",
-      "全量推送用什么工具",
-      "有没有 deploy_debug.sh",
-      "部署到设备该调哪个工具",
-      "编完代码自动编译验证调试",
-      "编译推送",
-      "有没有增量推送模式",
-      "AI应用调试全量推送"
-    ],
-    "min_top1": 6,
-    "max_miss": 0,
-    "misses": [
-      "跑一下看效果",
-      "更新到设备",
-      "推送到设备",
-      "怎么把程序推到板子上运行",
-      "把项目部署到真机调"
-    ]
-  },
-  {
-    "name": "小内存板部署体积与重启",
-    "doc": "knowledge/devflow/device-deploy-budget.md",
-    "queries": [
-      "部署完设备一直重启",
-      "板子掉网像WiFi坏了",
-      "/tmp 太小怎么办",
-      "部署体积怎么压",
-      "字库太大占内存",
-      "字体缺字少一笔",
-      "应用进程怎么重启 为什么不能kill",
-      "重启后界面变回出厂页"
-    ],
-    "min_top1": 4,
-    "max_miss": 0,
-    "misses": [
-      "OOM 杀 zkgui",
-      "kill -9 zkgui 会怎样"
-    ]
-  },
-  {
-    "name": "存储写满后工具落点回退",
-    "doc": "knowledge/devflow/device-storage-full-fallback.md",
-    "queries": [
-      "adb push 到 /data 失败",
-      "No space left on device",
-      "注入工具推不上去",
-      "设备存储满了 工具放哪",
-      "/tmp 能不能放工具",
-      "注入失败怎么办",
-      "设备磁盘写满了",
-      "工具推不上去 报 remote 错误"
-    ],
-    "min_top1": 7,
-    "max_miss": 0,
-    "misses": [
-      "touch 起不来"
-    ]
-  },
-  {
-    "name": "运行时转屏换布局 relayout",
-    "doc": "knowledge/devflow/dynamic-screen-rotation.md",
-    "queries": [
-      "运行时转屏 不重启应用",
-      "横竖屏切换怎么做",
-      "relayout 怎么用",
-      "setScreenRotate setTouchRotate",
-      "两套 ftu 怎么切",
-      "屏幕方向切换代码",
-      "转屏后控件布局怎么变",
-      "动态旋转屏幕",
-      "哪些平台不支持运行时换布局"
-    ],
-    "min_top1": 6,
-    "max_miss": 0,
-    "misses": []
-  },
-  {
-    "name": "easyui 版本与控件可用性",
-    "doc": "knowledge/devflow/easyui-version-capability.md",
-    "queries": [
-      "怎么知道某个控件在不在",
-      "控件看不到是不是版本问题",
-      "easyui 版本怎么看",
-      "编译期头版本和设备运行库不一致",
-      "ro.easyui.version 怎么查",
-      "页面只有标题 控件没渲染",
-      "控件不支持怎么排查"
-    ],
-    "min_top1": 5,
-    "max_miss": 0,
-    "misses": [
-      "scrollwindow 不显示",
-      "改了像没改"
-    ]
-  },
-  {
-    "name": "跨线程操作 UI 规则",
-    "doc": "knowledge/uicontrols/cross-thread-ui-rule.md",
-    "queries": [
-      "子线程能不能直接改控件内容",
-      "工作线程刷UI要不要post",
-      "跨线程操作控件安全吗",
-      "线程里 setText 行不行",
-      "UI回调里sleep等资源释放行不行",
-      "播放器退出怎么等资源释放",
-      "多线程刷新界面",
-      "定时器和线程刷UI怎么选",
-      "异步释放不了资源怎么办"
-    ],
-    "min_top1": 8,
-    "max_miss": 0,
-    "misses": []
-  },
-  {
-    "name": "自定义 view 刷帧口径",
-    "doc": "knowledge/uicontrols/custom-view-refresh.md",
-    "queries": [
-      "自定义view每帧怎么刷新",
-      "自绘控件刷新用哪个API",
-      "setBackgroundBmp之后不刷新",
-      "屏幕只刷右下角一块",
-      "setInvalid和invalidate区别",
-      "setInvalid(true)控件点不动",
-      "视频帧控件怎么刷新",
-      "GIF控件刷新口径",
-      "游戏视图刷新怎么写",
-      "每帧新建位图内存一直涨"
-    ],
-    "min_top1": 6,
-    "max_miss": 0,
-    "misses": []
-  },
-  {
-    "name": "Diagram 波形图字段",
-    "doc": "knowledge/uicontrols/diagram-fields.md",
-    "queries": [
-      "波形图控件怎么配置",
-      "实时曲线怎么画",
-      "diagram 字段有哪些",
-      "多条波形怎么配",
-      "setData和addData有什么区别",
-      "波形图刷新卡顿",
-      "音频频谱波形怎么做",
-      "心率曲线怎么显示",
-      "波形要移动动画怎么实现"
-    ],
-    "min_top1": 7,
-    "max_miss": 0,
-    "misses": [
-      "串口ADC曲线怎么画"
-    ]
-  },
-  {
-    "name": "DigitalClock 数字时钟字段",
-    "doc": "knowledge/uicontrols/digitalclock-fields.md",
-    "queries": [
-      "数字时钟控件怎么用",
-      "时间显示要不要写代码",
-      "冒号跳动怎么写",
-      "怎么改时钟显示的时间",
-      "时钟怎么显示秒",
-      "时钟颜色字号怎么改",
-      "屏保时钟怎么做",
-      "怎么改系统时间",
-      "时钟控件要不要定时器刷新",
-      "数字时钟走时不准"
-    ],
-    "min_top1": 9,
-    "max_miss": 0,
-    "misses": []
-  }
+ {
+  "name": "自定义控件怎么写（继承/自绘）",
+  "doc": "knowledge/devflow/custom-widget.md",
+  "queries": [
+   "想加一个平台没有的控件",
+   "自己写一个控件",
+   "继承 ZKBase 写自定义控件",
+   "onDraw 自绘控件怎么写",
+   "控件里怎么处理触摸事件",
+   "有没有现成自定义控件能直接抄",
+   "怎么在页面里 new 一个控件挂上去",
+   "自定义控件的数据适配器回调怎么写",
+   "控件滚动惯性回弹怎么实现",
+   "自绘控件怎么拿到画布"
+  ],
+  "min_top1": 7,
+  "max_miss": 0,
+  "misses": []
+ },
+ {
+  "name": "部署调试该调哪个工具",
+  "doc": "knowledge/devflow/deploy-scene-map.md",
+  "queries": [
+   "调试怎么推送到设备",
+   "全量推送用什么工具",
+   "有没有 deploy_debug.sh",
+   "部署到设备该调哪个工具",
+   "编完代码自动编译验证调试",
+   "编译推送",
+   "有没有增量推送模式",
+   "AI应用调试全量推送",
+   "怎么把程序推到板子上运行",
+   "把项目部署到真机调"
+  ],
+  "min_top1": 9,
+  "max_miss": 0,
+  "misses": [
+   "跑一下看效果",
+   "更新到设备",
+   "推送到设备"
+  ]
+ },
+ {
+  "name": "小内存板部署体积与重启",
+  "doc": "knowledge/devflow/device-deploy-budget.md",
+  "queries": [
+   "部署完设备一直重启",
+   "板子掉网像WiFi坏了",
+   "/tmp 太小怎么办",
+   "部署体积怎么压",
+   "字库太大占内存",
+   "字体缺字少一笔",
+   "应用进程怎么重启 为什么不能kill",
+   "重启后界面变回出厂页",
+   "kill -9 zkgui 会怎样"
+  ],
+  "min_top1": 5,
+  "max_miss": 0,
+  "misses": [
+   "OOM 杀 zkgui"
+  ]
+ },
+ {
+  "name": "存储写满后工具落点回退",
+  "doc": "knowledge/devflow/device-storage-full-fallback.md",
+  "queries": [
+   "adb push 到 /data 失败",
+   "No space left on device",
+   "注入工具推不上去",
+   "设备存储满了 工具放哪",
+   "/tmp 能不能放工具",
+   "注入失败怎么办",
+   "设备磁盘写满了",
+   "工具推不上去 报 remote 错误",
+   "touch 起不来"
+  ],
+  "min_top1": 7,
+  "max_miss": 0,
+  "misses": []
+ },
+ {
+  "name": "运行时转屏换布局 relayout",
+  "doc": "knowledge/devflow/dynamic-screen-rotation.md",
+  "queries": [
+   "运行时转屏 不重启应用",
+   "横竖屏切换怎么做",
+   "relayout 怎么用",
+   "setScreenRotate setTouchRotate",
+   "两套 ftu 怎么切",
+   "屏幕方向切换代码",
+   "转屏后控件布局怎么变",
+   "动态旋转屏幕",
+   "哪些平台不支持运行时换布局"
+  ],
+  "min_top1": 6,
+  "max_miss": 0,
+  "misses": []
+ },
+ {
+  "name": "easyui 版本与控件可用性",
+  "doc": "knowledge/devflow/easyui-version-capability.md",
+  "queries": [
+   "怎么知道某个控件在不在",
+   "控件看不到是不是版本问题",
+   "easyui 版本怎么看",
+   "编译期头版本和设备运行库不一致",
+   "ro.easyui.version 怎么查",
+   "页面只有标题 控件没渲染",
+   "控件不支持怎么排查",
+   "scrollwindow 不显示"
+  ],
+  "min_top1": 7,
+  "max_miss": 0,
+  "misses": [
+   "改了像没改"
+  ]
+ },
+ {
+  "name": "跨线程操作 UI 规则",
+  "doc": "knowledge/uicontrols/cross-thread-ui-rule.md",
+  "queries": [
+   "子线程能不能直接改控件内容",
+   "工作线程刷UI要不要post",
+   "跨线程操作控件安全吗",
+   "线程里 setText 行不行",
+   "UI回调里sleep等资源释放行不行",
+   "播放器退出怎么等资源释放",
+   "多线程刷新界面",
+   "定时器和线程刷UI怎么选",
+   "异步释放不了资源怎么办"
+  ],
+  "min_top1": 8,
+  "max_miss": 0,
+  "misses": []
+ },
+ {
+  "name": "自定义 view 刷帧口径",
+  "doc": "knowledge/uicontrols/custom-view-refresh.md",
+  "queries": [
+   "自定义view每帧怎么刷新",
+   "自绘控件刷新用哪个API",
+   "setBackgroundBmp之后不刷新",
+   "屏幕只刷右下角一块",
+   "setInvalid和invalidate区别",
+   "setInvalid(true)控件点不动",
+   "视频帧控件怎么刷新",
+   "GIF控件刷新口径",
+   "游戏视图刷新怎么写",
+   "每帧新建位图内存一直涨"
+  ],
+  "min_top1": 6,
+  "max_miss": 0,
+  "misses": []
+ },
+ {
+  "name": "Diagram 波形图字段",
+  "doc": "knowledge/uicontrols/diagram-fields.md",
+  "queries": [
+   "波形图控件怎么配置",
+   "实时曲线怎么画",
+   "diagram 字段有哪些",
+   "多条波形怎么配",
+   "setData和addData有什么区别",
+   "波形图刷新卡顿",
+   "音频频谱波形怎么做",
+   "心率曲线怎么显示",
+   "波形要移动动画怎么实现",
+   "串口ADC曲线怎么画"
+  ],
+  "min_top1": 9,
+  "max_miss": 0,
+  "misses": []
+ },
+ {
+  "name": "DigitalClock 数字时钟字段",
+  "doc": "knowledge/uicontrols/digitalclock-fields.md",
+  "queries": [
+   "数字时钟控件怎么用",
+   "时间显示要不要写代码",
+   "冒号跳动怎么写",
+   "怎么改时钟显示的时间",
+   "时钟怎么显示秒",
+   "时钟颜色字号怎么改",
+   "屏保时钟怎么做",
+   "怎么改系统时间",
+   "时钟控件要不要定时器刷新",
+   "数字时钟走时不准"
+  ],
+  "min_top1": 9,
+  "max_miss": 0,
+  "misses": []
+ }
 ]

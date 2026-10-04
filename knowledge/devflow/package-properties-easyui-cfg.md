@@ -16,6 +16,7 @@ evidence: []
 # ⚙️ package.properties / EasyUI.cfg 工程配置机制（屏幕旋转等）
 
 > 检索导引：问「EasyUI.cfg 怎么写 / package.properties 覆盖了哪份 cfg / rotateScreen 配在哪 / 推上去没效果（extsd 卡里的旧 cfg 劫持）/ 字体资源怎么真进 /res」→ 本文。
+> 口语/错说法（用户原话）：推了个新包上去屏幕还是旧的没变化 / 改了配置没生效 / 字体文件放在哪个目录才能打进包里生效 / 自定义字体设了没反应 / 改了 rotateScreen 编译却提示 no work to do（没事可做）/ 屏幕旋转的配置写在哪个文件里。
 > 2026-09-03 需求方讲解机制（定规）+ mark_cv201 实测校准（CV201_PND rotateScreen 270 / CV201_PND_1024_600 不转，同代码双屏方向适配案例）。
 
 ## 1. 核心机制（2026-09-03 定规）

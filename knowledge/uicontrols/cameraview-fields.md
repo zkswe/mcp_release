@@ -16,6 +16,7 @@ evidence: []
 # 📷 CameraView 相机预览控件 JSON 字段规范
 
 > 检索导引：问「实时摄像头预览用哪个控件 / cameraview 字段 / formatSize 是源分辨率不是控件大小 / 画面拉伸裁剪怎么处理 / 能不能和 videoview 混用」→ 本文。
+> **口语问法直达**：摄像头画面被拉伸变形了 / 摄像头画面比例不对·变形 → 看「常见坑」里的 `setCropPosition` 等比裁剪（旋转 90/270 记得 swap）。
 > 2026-09-03 需求方指定 + 实测入库（LearningProject/mark_cv201 倒车影像工程，CV201_PND 1600×600 + CV201_PND_1024_600 双分辨率解包校准，平台 V85X/AW_V853）。
 > 来源可靠性：ftu 解包还原 json（fui unpack 实测字段，非猜测）。
 

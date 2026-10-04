@@ -16,6 +16,8 @@ evidence: []
 # 控件代码 API 速查（35 官方 Demo 源码实证，2026-09-08）
 
 > 检索导引：问「控件代码接口怎么调 / 回调函数签名与触发时机 / setTouchPass 在哪设 / 监听器什么时候注册 / 哪个 Demo 有用法」→ 本文（代码侧速查）；工程骨架见 `knowledge/devflow/activity-code-skeleton.md`。
+> 用户口语（代码侧）："回调函数怎么写 / listview 的三个回调怎么写 / obtainListItemData 怎么写 / 列表行数据怎么填 / window 的 showWnd 怎么用 / play 接口怎么播视频"。
+> 用户口语（例子与绘制）："这个控件哪个 demo 有例子·哪个示例工程有" / "图表控件怎么画·波形图怎么灌数据" / "画布怎么画圆·画圆弧·画笔怎么用" / "二维码怎么生成" / "摄像头预览怎么做"。
 > 与 json 字段文档互补：本文聚焦**代码怎么驱动控件**（回调签名/触发时机/事件语义/实测坑），证据全部来自 basedemo-new_z20_1024_600 源码原文。
 > 通用骨架（activity 壳/回调表/返回值语义/生命周期/定时器/串口模板/SysApp）见 `knowledge/devflow/activity-code-skeleton.md`。
 > 检索词：onButtonClick/onProgressChanged/onEditTextChanged/onListItemClick/setTargetAngle/setData/loadQRCode/play/setCheckedID/showWnd。

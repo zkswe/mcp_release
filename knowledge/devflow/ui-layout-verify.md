@@ -23,6 +23,7 @@ evidence: []
 > **图片与控件尺寸对不上（含滑块 thumb.size）**。
 > 工具：`flythings_ui_visual(action="editor")`（出可拖拽编辑器）→ `flythings_ui_visual(action="edit_apply")`（写回 + pack ftu）→
 > `flythings_ui_visual(action="diff")`（像素 diff）。
+> 用户口语/别名：图标看着发糊 / 有锯齿 / 毛边 / 不清晰 / 预览里图片显示不出来是空白 / 切不了页只能看第一页 / 验收基线怎么存下来。
 
 ## 0. 确认闸门（改完布局 → 出确认稿 → 需求方确认 → 才 pack / 推真机）
 

@@ -21,6 +21,9 @@ evidence:
 
 # Z20 视频链路规格（素材编码 → 解码 → 上屏）
 
+> 检索导引：问「视频播放卡顿·不流畅·一顿一顿·掉帧 / 视频花屏（一块一块）/ 编码要加什么参数 / 去 B 帧 / H265 能不能播 / 素材像素格式」→ 本文。
+> 用户口语/别名：视频播放卡顿是什么原因 / 播放不流畅 / 一顿一顿的 / 掉帧 / 拼墙素材怎么编码。
+
 > 适用平台：**Z20**（SigmaStar 方案）。本条目是 MCP 侧速查；完整规格（含逐条出处、现象→根因→做法→判据、未取证清单 8 条）见工作区 `references/kb/z20-video-pipeline-spec.md`。
 > 同源：`knowledge/devflow/video-wall-sync.md`（起播/相位）、`knowledge/devflow/device-screenshot.md`（抓帧）、`knowledge/hardware/*`（分区与现场）。
 > 相关工具：`tools/video_wall/split_wall.py`（切段，已含 `bf=0`）、`tools/video_wall/README.md`（Z20 编码参数建议表）。

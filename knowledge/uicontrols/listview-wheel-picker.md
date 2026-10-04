@@ -15,7 +15,7 @@ evidence: []
 ---
 # listview 做滚轮选择器（WheelPicker）：字段配法 + 中心行对齐 + 三个真机坑
 
-> 检索导引：问「滚轮选择器怎么做 / 时间选择·时钟盘 / 选中条跟着行滚 / setSelection 带不带动画 / 中心行选中值怎么回读」→ 本文；基础字段见 `knowledge/uicontrols/listview-fields.md`。
+> 检索导引：问「滚轮选择器怎么做 / 时间选择·时钟盘 / 选中条跟着行滚 / setSelection 带不带动画 / 中心行选中值怎么回读 / picker-view 怎么实现·picker-view 怎么用」→ 本文；基础字段见 `knowledge/uicontrols/listview-fields.md`。
 > **检索命中条件（三类问法都命中本文）**：**① 滚轮族**（滚轮怎么做 / 滚轮选择器 / 转盘 / 循环列表做选择器 / 无限滚动列表 / picker 多列联动 / picker-view 怎么转 / lv_roller 怎么用 / NumberPicker 支持吗 / LISTWHEEL 对应哪个控件 / QTimeEdit 怎么做 / WheelPicker 有没有原生能力 / 那个自绘轮子包还在吗 / 滚轮改判 L2 了吗 / 滚轮机读映射 / wheel 别名 / 滚轮拖不动 / 滚轮惯性 / 惯性回弹 / 松手回弹对齐 / 拖动选择器怎么回读选中值 / 停下报事件 / 选中项变化回调）；**② 居中行 / 选中条族**（listview 居中选中 / 列表中行 / 行停在中行 / 中间行高亮 / 选中行高亮 / 选择条 / 高亮带 / 选中条（高亮带）跟着滚 / 滚动时高亮条跑了 / 选中条放背景图 / 高亮带挂哪层 / 条跟着行走 / 字色淡出 / 边缘渐隐）；**③ 时间 / 时钟盘族**（时间选择器怎么做 / 日期时间选择 / 时间滚轮 / 时·分·秒怎么拼 / 24 小时制选择 / TimePicker 怎么做 / TimePicker 时钟盘 / 时钟盘怎么实现 / clock dial / 圆形时间选择 / 时钟盘有没有对应能力）。
 > **检索词（同义/别名，降级 BM25 与人工核对都用）**：WheelPicker、wheel、roller、lv_roller、picker-view、picker-view-column、picker mode=time、NumberPicker、LISTWHEEL、QTimeEdit、TimePicker、TimePickerDialog、选择器、滚动选择、cycleEnable、autoRollback、edgeEffect。
 > **相关**：字段与回调全集 `knowledge/uicontrols/listview-fields.md`；滑动/惯性字段取值 `knowledge/uicontrols/scroll-drag-interaction-spec.md`；json 必写字段 `knowledge/uicontrols/json-field-mandatory.md`；装饰件吞触摸 `knowledge/uicontrols/touch-events.md`；跨框架映射 `knowledge/uicontrols/control-mapping-capability.md`。

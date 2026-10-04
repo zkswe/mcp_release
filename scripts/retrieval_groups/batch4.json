@@ -1,204 +1,200 @@
 [
-  {
-    "name": "工程配置与屏幕旋转",
-    "doc": "knowledge/devflow/package-properties-easyui-cfg.md",
-    "queries": [
-      "改了旋转方向重新编译了怎么还是老样子",
-      "EasyUI.cfg 被 SD 卡上那份顶掉了怎么办",
-      "rotateScreen 和 rotateTouch 要不要填一样的值",
-      "package.properties 覆盖的是哪一份配置",
-      "屏幕要转90度但触摸不要转怎么配",
-      "设备的加载库路径怎么指向了 SD 卡",
-      "取图角度按什么算的"
-    ],
-    "min_top1": 4,
-    "max_miss": 0,
-    "misses": [
-      "推了个新包上去屏幕还是旧的没变化",
-      "字体文件放哪才能打进包里生效",
-      "改了 rotateScreen 编译却提示 no work to do",
-      "屏幕旋转的配置写在哪个文件里"
-    ]
-  },
-  {
-    "name": "页面架构与目录命名",
-    "doc": "knowledge/devflow/page-architecture-spec.md",
-    "queries": [
-      "一个工程要做几个 ftu 怎么分",
-      "弹窗和二级页面是放同一个文件还是单独一页",
-      "多屏设计稿要落地成几个页面",
-      "src 下面目录怎么命名 要不要建 common 目录",
-      "多个页面怎么组织 一个 Activity 还是多个",
-      "showWnd 多窗口怎么切换",
-      "业务代码文件用 .cc 还是 .cpp",
-      "设置页和列表页能不能放一个 ftu 里",
-      "新增一个页面要建哪些文件",
-      "同一个 Activity 里的几个整屏怎么处理"
-    ],
-    "min_top1": 7,
-    "max_miss": 0,
-    "misses": [
-      "merge-windows 什么时候该开"
-    ]
-  },
-  {
-    "name": "像素分析与渲染坑",
-    "doc": "knowledge/devflow/pixel-analysis-ai.md",
-    "queries": [
-      "不花钱怎么看设备截图对不对",
-      "怎么用字符画看屏幕内容",
-      "文字有没有换行溢出怎么从图上判断",
-      "截图里的坐标要不要换算",
-      "圆角图四个角发黑是什么原因",
-      "滑块周围有一圈暗环",
-      "图标边缘发黑发脏怎么回事",
-      "省 token 读图有什么办法",
-      "半透明图贴在纯色底上发黑"
-    ],
-    "min_top1": 4,
-    "max_miss": 0,
-    "misses": [
-      "列表每行出现黑块怎么修"
-    ]
-  },
-  {
-    "name": "跨框架 UI 迁移",
-    "doc": "knowledge/devflow/platform-translate.md",
-    "queries": [
-      "别家框架的界面怎么搬过来",
-      "小程序项目转到 FlyThings 要多久",
-      "rpx 怎么换算成像素",
-      "TDesign 组件库怎么迁移",
-      "迁移里做不到的效果怎么记录",
-      "LVGL 界面转过来怎么排期",
-      "迁移工作量怎么评估",
-      "竞品界面照着做一个要分几步"
-    ],
-    "min_top1": 6,
-    "max_miss": 0,
-    "misses": [
-      "双分辨率同时出一套怎么搞",
-      "Android 控件在我们平台怎么对应"
-    ]
-  },
-  {
-    "name": "新需求原型流程",
-    "doc": "knowledge/devflow/prototype-flow.md",
-    "queries": [
-      "客户就说了一句话需求怎么开始做",
-      "新项目从哪一步开始",
-      "怎么给客户确认要做什么功能",
-      "线框图要出几套风格",
-      "用户没给设计图能直接建工程吗",
-      "做原型要先确认什么",
-      "客户看不懂截图 怎么让他确认布局",
-      "改现有工程的布局也要出确认稿吗",
-      "需求里带了设计稿先做什么",
-      "多屏原型怎么保证每页都做出来",
-      "页面树怎么设计"
-    ],
-    "min_top1": 6,
-    "max_miss": 0,
-    "misses": []
-  },
-  {
-    "name": "触摸注入与自动化测试",
-    "doc": "knowledge/devflow/touch-inject-autotest.md",
-    "queries": [
-      "怎么模拟手指点击屏幕",
-      "自动化测试怎么跑",
-      "压测点一千次怎么做",
-      "触摸节点和协议怎么确定",
-      "系统键盘把界面盖住测试全失败了",
-      "UI 遍历验收怎么做",
-      "滑动操作怎么模拟"
-    ],
-    "min_top1": 5,
-    "max_miss": 0,
-    "misses": [
-      "点了屏幕没反应坐标都是0",
-      "有没有现成的注入工具不用自己写",
-      "toast 抓不到怎么办"
-    ]
-  },
-  {
-    "name": "动图控件字段",
-    "doc": "knowledge/uicontrols/imageanim-fields.md",
-    "queries": [
-      "动图怎么在界面上播放",
-      "GIF 放了不显示",
-      "PNG 序列能不能做动画",
-      "动图只播一次就停了",
-      "WebP 支持吗",
-      "动图和文本帧动画有什么区别",
-      "哪个平台不支持动图控件",
-      "动图尺寸怎么控制",
-      "playFile 路径怎么写"
-    ],
-    "min_top1": 8,
-    "max_miss": 0,
-    "misses": [
-      "控件里放了几张图循环切换怎么做"
-    ]
-  },
-  {
-    "name": "控件层级与坐标",
-    "doc": "knowledge/uicontrols/json-layer-rules.md",
-    "queries": [
-      "控件能不能嵌套 什么能放什么里",
-      "重启之后控件位置跑到屏幕另一边了",
-      "坐标出现负值是什么原因",
-      "控件层级不合法怎么检查",
-      "谁挡住了谁点不到",
-      "拖动控件被夹到什么边界",
-      "listview 里直接放 window 行不行",
-      "控件被覆盖点不动怎么排查",
-      "window 里面能放哪些控件"
-    ],
-    "min_top1": 5,
-    "max_miss": 0,
-    "misses": [
-      "pagewindow 里能放文本框吗"
-    ]
-  },
-  {
-    "name": "控件字段全量对账",
-    "doc": "knowledge/uicontrols/layout-audit.md",
-    "queries": [
-      "21 个控件字段到底全不全",
-      "html2json 支持哪些字段",
-      "控件 id 从多少开始分配",
-      "有没有漏掉的控件没支持",
-      "官方 demo 的控件字段核对过吗",
-      "控件字段缺了怎么补",
-      "每个控件的 id 段怎么分"
-    ],
-    "min_top1": 6,
-    "max_miss": 0,
-    "misses": [
-      "seekbar 有哪些字段",
-      "circlebar 支持哪些属性",
-      "视频控件有哪些配置项"
-    ]
-  },
-  {
-    "name": "列表控件字段与回调",
-    "doc": "knowledge/uicontrols/listview-fields.md",
-    "queries": [
-      "列表怎么实现",
-      "listview 有哪些字段",
-      "点击列表拿到的是行号还是控件 id",
-      "每行总是显示 ListItem 是怎么回事",
-      "刷新之后列表不跟最新行",
-      "列表删除一行怎么做",
-      "dragMaxDis 填什么值",
-      "setSelection 之后列表没变化",
-      "列表行里的按钮怎么区分点的是哪个",
-      "封面图多了滑动很卡",
-      "列表点击回调怎么知道点的是哪个区域"
-    ],
-    "min_top1": 7,
-    "max_miss": 0,
-    "misses": []
-  }
+ {
+  "name": "工程配置与屏幕旋转",
+  "doc": "knowledge/devflow/package-properties-easyui-cfg.md",
+  "queries": [
+   "改了旋转方向重新编译了怎么还是老样子",
+   "EasyUI.cfg 被 SD 卡上那份顶掉了怎么办",
+   "rotateScreen 和 rotateTouch 要不要填一样的值",
+   "package.properties 覆盖的是哪一份配置",
+   "屏幕要转90度但触摸不要转怎么配",
+   "设备的加载库路径怎么指向了 SD 卡",
+   "取图角度按什么算的",
+   "改了 rotateScreen 编译却提示 no work to do",
+   "屏幕旋转的配置写在哪个文件里"
+  ],
+  "min_top1": 4,
+  "max_miss": 0,
+  "misses": [
+   "推了个新包上去屏幕还是旧的没变化",
+   "字体文件放哪才能打进包里生效"
+  ]
+ },
+ {
+  "name": "页面架构与目录命名",
+  "doc": "knowledge/devflow/page-architecture-spec.md",
+  "queries": [
+   "一个工程要做几个 ftu 怎么分",
+   "弹窗和二级页面是放同一个文件还是单独一页",
+   "多屏设计稿要落地成几个页面",
+   "src 下面目录怎么命名 要不要建 common 目录",
+   "多个页面怎么组织 一个 Activity 还是多个",
+   "showWnd 多窗口怎么切换",
+   "业务代码文件用 .cc 还是 .cpp",
+   "设置页和列表页能不能放一个 ftu 里",
+   "新增一个页面要建哪些文件",
+   "同一个 Activity 里的几个整屏怎么处理",
+   "merge-windows 什么时候该开"
+  ],
+  "min_top1": 8,
+  "max_miss": 0,
+  "misses": []
+ },
+ {
+  "name": "像素分析与渲染坑",
+  "doc": "knowledge/devflow/pixel-analysis-ai.md",
+  "queries": [
+   "不花钱怎么看设备截图对不对",
+   "怎么用字符画看屏幕内容",
+   "文字有没有换行溢出怎么从图上判断",
+   "截图里的坐标要不要换算",
+   "圆角图四个角发黑是什么原因",
+   "滑块周围有一圈暗环",
+   "图标边缘发黑发脏怎么回事",
+   "省 token 读图有什么办法",
+   "半透明图贴在纯色底上发黑",
+   "列表每行出现黑块怎么修"
+  ],
+  "min_top1": 4,
+  "max_miss": 0,
+  "misses": []
+ },
+ {
+  "name": "跨框架 UI 迁移",
+  "doc": "knowledge/devflow/platform-translate.md",
+  "queries": [
+   "别家框架的界面怎么搬过来",
+   "小程序项目转到 FlyThings 要多久",
+   "rpx 怎么换算成像素",
+   "TDesign 组件库怎么迁移",
+   "迁移里做不到的效果怎么记录",
+   "LVGL 界面转过来怎么排期",
+   "迁移工作量怎么评估",
+   "竞品界面照着做一个要分几步"
+  ],
+  "min_top1": 6,
+  "max_miss": 0,
+  "misses": [
+   "双分辨率同时出一套怎么搞",
+   "Android 控件在我们平台怎么对应"
+  ]
+ },
+ {
+  "name": "新需求原型流程",
+  "doc": "knowledge/devflow/prototype-flow.md",
+  "queries": [
+   "客户就说了一句话需求怎么开始做",
+   "新项目从哪一步开始",
+   "怎么给客户确认要做什么功能",
+   "线框图要出几套风格",
+   "用户没给设计图能直接建工程吗",
+   "做原型要先确认什么",
+   "客户看不懂截图 怎么让他确认布局",
+   "改现有工程的布局也要出确认稿吗",
+   "需求里带了设计稿先做什么",
+   "多屏原型怎么保证每页都做出来",
+   "页面树怎么设计"
+  ],
+  "min_top1": 6,
+  "max_miss": 0,
+  "misses": []
+ },
+ {
+  "name": "触摸注入与自动化测试",
+  "doc": "knowledge/devflow/touch-inject-autotest.md",
+  "queries": [
+   "怎么模拟手指点击屏幕",
+   "自动化测试怎么跑",
+   "压测点一千次怎么做",
+   "触摸节点和协议怎么确定",
+   "系统键盘把界面盖住测试全失败了",
+   "UI 遍历验收怎么做",
+   "滑动操作怎么模拟",
+   "有没有现成的注入工具不用自己写",
+   "toast 抓不到怎么办"
+  ],
+  "min_top1": 6,
+  "max_miss": 0,
+  "misses": [
+   "点了屏幕没反应坐标都是0"
+  ]
+ },
+ {
+  "name": "动图控件字段",
+  "doc": "knowledge/uicontrols/imageanim-fields.md",
+  "queries": [
+   "动图怎么在界面上播放",
+   "GIF 放了不显示",
+   "PNG 序列能不能做动画",
+   "动图只播一次就停了",
+   "WebP 支持吗",
+   "动图和文本帧动画有什么区别",
+   "哪个平台不支持动图控件",
+   "动图尺寸怎么控制",
+   "playFile 路径怎么写",
+   "控件里放了几张图循环切换怎么做"
+  ],
+  "min_top1": 9,
+  "max_miss": 0,
+  "misses": []
+ },
+ {
+  "name": "控件层级与坐标",
+  "doc": "knowledge/uicontrols/json-layer-rules.md",
+  "queries": [
+   "控件能不能嵌套 什么能放什么里",
+   "重启之后控件位置跑到屏幕另一边了",
+   "坐标出现负值是什么原因",
+   "控件层级不合法怎么检查",
+   "谁挡住了谁点不到",
+   "拖动控件被夹到什么边界",
+   "listview 里直接放 window 行不行",
+   "控件被覆盖点不动怎么排查",
+   "window 里面能放哪些控件",
+   "pagewindow 里能放文本框吗"
+  ],
+  "min_top1": 5,
+  "max_miss": 0,
+  "misses": []
+ },
+ {
+  "name": "控件字段全量对账",
+  "doc": "knowledge/uicontrols/layout-audit.md",
+  "queries": [
+   "21 个控件字段到底全不全",
+   "html2json 支持哪些字段",
+   "控件 id 从多少开始分配",
+   "有没有漏掉的控件没支持",
+   "官方 demo 的控件字段核对过吗",
+   "控件字段缺了怎么补",
+   "每个控件的 id 段怎么分"
+  ],
+  "min_top1": 6,
+  "max_miss": 0,
+  "misses": [
+   "seekbar 有哪些字段",
+   "circlebar 支持哪些属性",
+   "视频控件有哪些配置项"
+  ]
+ },
+ {
+  "name": "列表控件字段与回调",
+  "doc": "knowledge/uicontrols/listview-fields.md",
+  "queries": [
+   "列表怎么实现",
+   "listview 有哪些字段",
+   "点击列表拿到的是行号还是控件 id",
+   "每行总是显示 ListItem 是怎么回事",
+   "刷新之后列表不跟最新行",
+   "列表删除一行怎么做",
+   "dragMaxDis 填什么值",
+   "setSelection 之后列表没变化",
+   "列表行里的按钮怎么区分点的是哪个",
+   "封面图多了滑动很卡",
+   "列表点击回调怎么知道点的是哪个区域"
+  ],
+  "min_top1": 7,
+  "max_miss": 0,
+  "misses": []
+ }
 ]

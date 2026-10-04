@@ -16,6 +16,7 @@ evidence: []
 # BusyBox 调试工具库（bin_tools/{平台}/busybox，随 MCP 分发）
 
 > 检索导引：问「设备上没有 ifconfig / ping / ps / uname / 想看设备 IP·网卡·进程 / 设备缺命令怎么办」→ 本文（六平台静态 busybox，push 即用）；出包与部署动作用哪条见 `knowledge/devflow/deploy-scene-map.md`。
+> **口语问法直达**：板子上没有 ps 看不到进程 / 板子上没有 top 命令 / 板子上想看看网络配置 / 怎么确认图片到底推上设备了没（用 md5sum 比对，见下「抓帧三条纪律」）。
 > 2026-09-08 新增。背景：设备系统内没有 busybox / ifconfig / ping 等调试工具，
 > 需要查 IP/端口/进程/网络时无工具可用 → 电脑端预编译各平台静态 busybox，
 > adb push 即用（与 `touch`/`ui_test` 同架构，见 bin_tools/README.md）。

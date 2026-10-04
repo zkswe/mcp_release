@@ -38,19 +38,16 @@ def probe(doc, queries, k=5):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('doc', nargs='?', help='仓库相对路径（如 knowledge/devflow/cli-fun-toolchain.md）')
-    ap.add_argument('--doc', dest='doc2', default='', help='同上（显式写法）')
+    # ⚠️ `doc` 只做 `--doc` 选项（2026-10-04）：早先还挂了个同名位置参数，
+    # argparse 会把多出来的位置参数**先填给 doc**，导致 `--doc X "问法"` 里的问法被吃掉
+    # （子代理与本机各踩一次）。同一个东西只留一种写法。
+    ap.add_argument('--doc', dest='doc2', required=True, help='仓库相对路径（如 knowledge/devflow/cli-fun-toolchain.md）')
     ap.add_argument('--queries-file', default='', help='问法文件，一行一条')
     ap.add_argument('--k', type=int, default=5)
     ap.add_argument('queries', nargs='*')
     a = ap.parse_args()
-    # ⚠️ 位置参数 `doc` 会“吃掉”第一条位置问法（2026-10-04 子代理实测踩到两次）：
-    # 只有**看起来像文档路径**（.md 结尾）的第一个位置参数才算 doc，否则它本来就是一条问法。
-    pos = list(a.queries)
-    doc = a.doc2 or a.doc or ''
-    if not doc and pos and pos[0].endswith('.md'):
-        doc = pos.pop(0)
-    qs = pos
+    doc = a.doc2
+    qs = list(a.queries)
     if a.queries_file:
         qs += [l.strip() for l in io.open(a.queries_file, encoding='utf-8') if l.strip()]
     if not doc or not qs:

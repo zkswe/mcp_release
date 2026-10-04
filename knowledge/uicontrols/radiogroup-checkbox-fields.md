@@ -16,6 +16,7 @@ evidence: []
 # RadioGroup 单选组 / CheckBox 复选框 JSON 字段规范
 
 > 检索导引：问「单选组·复选框怎么做 / radiobuttons 子项字段 / 选中态用哪张图（pic2）/ setCheckedID 怎么用 / 单选点了没反应」→ 本文。
+> 用户口语："一组选项只能选一个怎么实现·互斥单选·是不是单选还是多选" / "代码怎么知道用户选了哪一项·取选中值·选中项回传" / "选项按钮三态图怎么配（正常·按下·选中）·状态图/切图" / "选中态图片不切换·点了图不变·切了没反应"。
 > 2026-09-07 git.com 全库学习 + basedemo/RadioGroupDemo-New、CheckBoxDemo-New 实测（leqinglingchuang 智能家居窗帘/场景开关等产品在用）。
 
 ## 核心铁律

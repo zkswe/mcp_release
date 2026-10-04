@@ -23,6 +23,7 @@ evidence:
 > 适用：**内存 ≤ 64MB 的真机**（Z20/Z21 这类 SigmaStar 板子尤甚）。
 > 检索词：部署体积 / 内存预算 / OOM 杀 zkgui / 设备重启 / 整板掉网 / 重启应用进程 /
 > setprop ctl.restart zkswe / init 托管 / 不能 kill 程序 / 温和终止 / kill -TERM / kill -9。
+> 口语别名（用户就这么说）：OOM 杀 zkgui / 内存不够把界面程序干掉了 / kill -9 zkgui 会怎样 / 杀了 zkgui 设备就重启 / 内存爆了 / 部署完一直重启变砖 / 字库太占内存 / 装完程序机器就不稳了。
 
 ## 1. 先量三个数
 

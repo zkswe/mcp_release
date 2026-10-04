@@ -17,6 +17,7 @@ evidence: []
 
 > 检索导引：问「拖动卡顿·滑动很卡 / 高频回调里顺手刷了整页 / 触摸事件被合并丢弃 / 掉帧怎么量化」→ 本文；列表封面类的另一路优化见 `knowledge/uicontrols/listview-image-cache.md`。
 > 检索词：滑动很卡 / 拖动卡顿 / 滑块拖不动 / 拖动掉帧 / 全量刷新 / updateUi 每次都调 / 高频回调 / setText 刷一整屏 / 运动事件被丢弃 / 触摸事件合并 / 事件被吞 / 回调太慢 / 优先级 / 拖动响应延迟 / CPU 占用高 / 掉帧 / 帧变化率 / A/B 量化口径。
+> 用户口语补充：seekbar 拖不动（进度条拉不动）/ 界面刷新太频繁 / CPU 占用高怎么排查 / 一拖就卡死。
 > 案例：`projects/translate/tdesign-miniprogram`（2026-09-17 真机实测；报告 `projects/translate/tdesign-miniprogram/SLIDER_PERF.md`）。设备条件：Z21 同型板 1024×600、**无 GPU / 纯软渲染**；设备 IP 用参数传入（`--dev <IP>:5555`）。
 > 适用：任何**高频回调**——`onProgressChanged_*`（拖动）、滑动/长按、逐帧定时器、以及被它们间接调用的「一次性刷全页」函数。
 

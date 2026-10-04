@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
 """用本地 bge-small-zh 模型重建 RAG 索引（离线，无需任何 API Key）。
 用法：python rebuild_index_local.py <wiki根目录> [输出路径]
+      python rebuild_index_local.py --repo-only [输出路径]   # 只索引随仓文档（≈发布用索引）
+
+`--repo-only`（2026-10-04 新增）：跳过**不在仓库里**的本地 wiki，只索引
+`kb_index_roots.iter_repo_docs()` 那套（knowledge/ + components/*/platforms.md + packages/**）。
+为什么要它：随仓的 `rag_index.json` 必须是**别人从干净 clone 就能复现**的东西 ——
+带 wiki 重建会把仓外内容写进随仓索引（10-03 已定不做）。有了这个开关，
+"改了 knowledge/ 就该重建索引"才有可执行的单一动作。
 """
 import base64, json, os, sys, time
 
@@ -128,14 +135,18 @@ def main():
               % (len(skipped), ', '.join(skipped[:5])))
     if bad:
         print('  ⚠️ 读不了的文档（已跳过，不静默）: %s' % '; '.join(bad[:3]))
-    for root in [rt for rt in collect_roots() if os.path.abspath(rt) != os.path.abspath(KNOWLEDGE_DIR)]:
-        for r, _, fnames in os.walk(root):
-            for fn in fnames:
-                if fn.endswith('.md'):
-                    rel = os.path.relpath(os.path.join(r, fn), root).replace('\\', '/')
-                    if rel in known:
-                        continue  # knowledge 发布版优先，跳过本地同名
-                    files.append((rel, os.path.join(r, fn)))
+    if '--repo-only' not in sys.argv:
+        for root in [rt for rt in collect_roots() if os.path.abspath(rt) != os.path.abspath(KNOWLEDGE_DIR)]:
+            for r, _, fnames in os.walk(root):
+                for fn in fnames:
+                    if fn.endswith('.md'):
+                        rel = os.path.relpath(os.path.join(r, fn), root).replace('\\', '/')
+                        if rel in known:
+                            continue  # knowledge 发布版优先，跳过本地同名
+                        files.append((rel, os.path.join(r, fn)))
+    else:
+        print('  --repo-only：只索引随仓文档（knowledge/ + components/*/platforms.md + packages/**），不含本地 wiki',
+              flush=True)
     print(f'{len(files)} md files ({len(known)} knowledge, deduped)', flush=True)
     chunks = []
     for rel, f in sorted(files):

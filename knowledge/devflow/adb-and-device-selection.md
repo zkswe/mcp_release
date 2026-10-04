@@ -20,6 +20,8 @@ evidence: []
 > 该推哪台设备 / 多设备推错 / needDeviceInput / installHint / staleOnDevice /
 > 设备上跑的还是旧版 / launch 默认推设备吗 / with_launch
 >
+> **口语问法直达**：每次编译都会自动推设备吗·想只编译（传 with_launch=False）/ 板子插上电脑但 adb 看不到（先查 ADB 驱动 + USB 调试授权，见 §3 installHint）。
+>
 > 适用范围：MCP 侧一切要连设备的动作（探测、推送、抓屏、i18n 推送）。CLI 侧的
 > `fun launch` 机制见 `knowledge/devflow/cli-fun-toolchain.md`（含 §7 多设备陷阱）。
 

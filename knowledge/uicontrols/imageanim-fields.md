@@ -16,6 +16,7 @@ evidence: []
 # 🎞️ ImageAnim 动图控件 JSON 字段规范
 
 > 检索导引：问「动图控件 / GIF·WebP 播放 / playFile 不显示 / PNG 序列做动画 / 动图与文本帧动画选型」→ 本文。
+> 口语/错说法（用户原话）：控件里放了几张图循环切换怎么做 / 图片轮播、多张图自动循环播放 / 帧图一张张切 / 放了图不会动。
 > 2026-09-02 需求方定规 + 入库（ImageAnimDemo-New/main.json + UIlayoutDemo/imageanim.json 实测校准）。
 
 ## ⚠️ 核心铁律（2026-09-02 定规）

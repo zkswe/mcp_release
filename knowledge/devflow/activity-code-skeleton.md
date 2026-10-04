@@ -17,6 +17,7 @@ evidence: [projects/SmartPanel_HA/src/logic/homeLogic.cc:49-63, projects/SmartPa
 
 > 检索导引：问「activity 骨架怎么写 / 回调分发表在哪 / onUI_init·onUI_quit 标准序列 / logic.cc 与 activity.cpp 谁参与编译 / 切页后回调还触发吗 / check_all 括号平衡误报」→ 本文（工程代码骨架总纲）；控件逐个的代码接口见 `knowledge/uicontrols/widget-code-api.md`。
 > **口语问法直达**：切页后显示不对 / 切一下才显示 / 二次进页就不对 / 子页待久了跳屏保 / 子页待久了被拽回主页 / 操作到一半被屏保打断 / 隐藏页的定时器还在跑吗 / 空闲超时怎么判才准 / 时间跳变导致计时错乱 → 见 §3-2~§3-4（生命周期三条硬经验，真工程实证）。
+> **同义说法**：切到别的页再切回来才对 / 返回再进页面内容就不对了 / 第二次进页面显示空白 / 界面要切一下才刷新 / 屏保是谁触发的怎么关掉 → 仍看 §3-1~§3-4。
 > 2026-09-08 basedemo-new_z20_1024_600（35 工程）逐源码深读。所有 Demo 共用同一套生成器骨架，理解它=理解一切控件如何被代码驱动。
 > 检索词：activity 骨架/回调表/生命周期/logic.cc/定时器/串口模板/SysApp/REGISTER_ACTIVITY/check_all 括号不平衡/全检误报/隐藏页定时器/可见性门控/心跳 tick 计时/static 缓存跨页面/onUI_quit 清理清单。
 
