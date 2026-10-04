@@ -160,52 +160,77 @@ class TestGradientOrImageKeepsZKButton(RadiusRoutingBase):
 
 
 class TestOtherBoxesRadius(RadiusRoutingBase):
-    """卡片(window) / 文本块(textview) 的纯色倒角 —— 同样没有 radius 字段，同样交给 painter。"""
+    """卡片(window) / 文本块(textview) 的纯色倒角 → **出 `.9.png` 背景图**（需求方口径）。
 
-    def test_card_gets_painter_child_and_transparent_window(self):
+    为什么不是 painter：卡片/文本块只是静态底，`.9.png` 一次出图就够（九宫格保证任意尺寸四角不变形），
+    还不用往 Logic.cc 粘胶水；painter 只留给需要四态/触摸语义的按键。
+    """
+
+    def test_card_gets_9patch_background(self):
         r, d = self.conv()
         ctrls = self.all_ctrls(d)
         wk, wv = ctrls['CardPlain']
         self.assertTrue(wk.startswith('window__'), wk)
-        self.assertEqual(wv.get('backgroundColor'), -1, 'window 必须改透明，否则方角盖住画布')
-        pk, pv = ctrls['CardPlainRad']
-        self.assertTrue(pk.startswith('painter__'), pk)
-        self.assertEqual(pv['position'], {'left': 0, 'top': 0, 'width': 448, 'height': 120},
-                         '窗口内 painter 用局部坐标铺满窗口')
-        self.assertIn(pk, wv, 'painter 必须是 window 的子控件（画在窗口内）')
-        self.assertEqual(wv.get('__bg'), None, '__bg 是内部键，收尾时会被剥掉')
+        self.assertTrue(str(wv.get('backgroundPic', '')).endswith('.9.png'),
+                        '卡片该出 .9.png 背景图，实际 %r' % wv.get('backgroundPic'))
+        # 圆角外不能露引擎缺省黑底 → 底色换成背后底色（页面底）
+        self.assertEqual(wv.get('backgroundColor'), 0x10151F,
+                         'window 的 backgroundColor 该改成背后底色（不是 -1、也不是卡片色）')
+        self.assertNotIn('CardPlainRad', ctrls, '卡片不该再多一个 painter')
+        self.assertIsNone(self.glue_of(r, 'CardPlainRad'))
+        self.assertEqual(r['radButtonGlue'], [g for g in r['radButtonGlue']
+                                              if g['caption'] == 'BtnSolidRad'],
+                         '卡片/文本块不该产出胶水（.9.png 不需要代码）')
 
-    def test_textview_pill_gets_painter_and_loses_bg(self):
+    def test_card_9patch_is_nine_patch_and_8bit(self):
+        try:
+            from PIL import Image
+        except Exception:
+            self.skipTest('needs Pillow')
         _, d = self.conv()
-        ctrls = self.all_ctrls(d)
-        tk, tv = ctrls['PillLabel']
-        self.assertNotIn('bgColorTab', tv, '文本块要让出底色给 painter')
-        pk, pv = ctrls['PillLabelRad']
-        self.assertEqual(pv['position']['width'], 160)
-        self.assertEqual(pv['position']['height'], 36)
+        ref = self.all_ctrls(d)['CardPlain'][1]['backgroundPic']
+        p = os.path.join(self.tmp, 'resources', 'images', os.path.basename(ref))
+        self.assertEqual(os.path.basename(ref), 'card_CardPlain.9.png')
+        raw = open(p, 'rb').read()
+        self.assertEqual(raw[24], 8, '9-patch 也走 8bit 索引色')
+        with Image.open(p) as im:
+            self.assertEqual(im.mode, 'P')
+            # 9-patch = 内容图四周各扩 1px 引导边
+            self.assertEqual(im.size, (448 + 2, 120 + 2), im.size)
+            px = im.convert('RGBA').load()
+            top = [x for x in range(im.width) if px[x, 0][:3] == (0, 0, 0) and px[x, 0][3] == 255]
+            left = [y for y in range(im.height) if px[0, y][:3] == (0, 0, 0) and px[0, y][3] == 255]
+            self.assertTrue(top, '缺顶边九宫格引导线')
+            self.assertTrue(left, '缺左边九宫格引导线')
+            # 引导线必须避开角切片（radius=10）
+            self.assertGreaterEqual(min(top), 11, '顶边黑线压到左上角切片')
+            self.assertLessEqual(max(top), 448 + 2 - 12, '顶边黑线压到右上角切片')
 
-    def test_card_glue_uses_static_draw(self):
-        r, _ = self.conv()
-        g = self.glue_of(r, 'CardPlainRad')
-        self.assertIsNotNone(g)
-        self.assertEqual(g['kind'], 'roundedRect')
-        self.assertIn('drawRoundedRect', g['code'])
-        self.assertIn('0, 0, 448, 120, 10', g['code'], '盒与半径要写进调用')
-
-    def test_shadow_card_unchanged(self):
-        """有 box-shadow 的卡片仍走出图那条路（倒角烘进阴影图），不该多出 painter。"""
+    def test_textview_pill_gets_9patch_and_corner_bg(self):
         r, d = self.conv()
         ctrls = self.all_ctrls(d)
-        _, v = ctrls['CardShadow']
-        self.assertTrue(v.get('backgroundPic'), v)
-        self.assertNotIn('CardShadowRad', ctrls)
-        self.assertIsNone(self.glue_of(r, 'CardShadowRad'))
+        tk, tv = ctrls['PillLabel']
+        self.assertTrue(str(tv.get('backgroundPic', '')).endswith('.9.png'), tv)
+        # 圆角外四角 = **背后底色**（页面底），不是药丸自己的填充色（A6 口径）
+        self.assertEqual((tv.get('bgColorTab') or {}).get('color0'), 0x10151F, tv.get('bgColorTab'))
+        self.assertNotEqual((tv.get('bgColorTab') or {}).get('color0'), 0x24304A,
+                            '四角不该用药丸自己的填充色')
+        self.assertNotIn('PillLabelRad', ctrls)
+        self.assertIsNone(self.glue_of(r, 'PillLabelRad'))
 
     def test_pill_radius_is_clamped_to_half_height(self):
         """`border-radius:999px` 是药丸写法 → 半径按 min(w,h)/2 夹取（36 高 → 18）。"""
         r, _ = self.conv()
-        g = self.glue_of(r, 'PillLabelRad')
-        self.assertEqual(g['radius'], 18, '药丸半径没夹到 min(w,h)/2')
+        joined = ' '.join(r['warnings'])
+        self.assertIn('border-radius=18px', joined, '药丸半径没夹到 min(w,h)/2')
+
+    def test_shadow_card_unchanged(self):
+        """有 box-shadow 的卡片仍走出图那条路（阴影图自带圆角），不该变成 .9.png。"""
+        r, d = self.conv()
+        ctrls = self.all_ctrls(d)
+        _, v = ctrls['CardShadow']
+        self.assertTrue(v.get('backgroundPic'), v)
+        self.assertFalse(str(v['backgroundPic']).endswith('.9.png'), v['backgroundPic'])
 
 
 if __name__ == '__main__':
