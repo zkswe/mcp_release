@@ -135,7 +135,7 @@ ERotation rot = (ERotation)(CONFIGMANAGER->getScreenRotate() / 90);          // 
 
 - **字体要放工程 `resources/`**（如 `resources/fzcircle.ttf`）→ 打出的包才有 `/res/ui/fzcircle.ttf`；
   **放 `ui/` 会被忽略**，`fun pack` 只会吐一句 `no any font`（无报错、无声失败）。
-- 实测判据：不带字体时 Z20 包 payload = **86,016 B**；把 1.9 MB 字体放进 `resources/` 后 payload = **1,236,992 B**（确实进包）。
+- 实测判据（真机）：不带字体时 Z20 包 payload = **86,016 B**<!-- design-spec:evidence 历史实测记录（判据以设备实测为准，见 DESIGN_SPEC.md 第 2 条） -->；把 1.9 MB 字体放进 `resources/` 后 payload = **1,236,992 B**（确实进包）。
 - EasyUI.cfg 里把字体指过去（覆盖层即可）：
 
 ```properties
@@ -178,7 +178,7 @@ EasyUI.cfg={"font":"/res/ui/fzcircle.ttf"}
 - ⚠️ **动态旋转 `setScreenRotate()` 只改进程内 `CONFIGMANAGER`，不回写工程 `EasyUI.cfg`**
   → 「取图 / 换算角度」的基准仍是工程 cfg（见 `knowledge/devflow/dynamic-screen-rotation.md` §1）。
 
-**❌ 不要做的事（跨篇踩过的坑统一归此，三条）**：
+**❌ 不要做的事（3 条）**：
 
 1. 不要拿 `/sys/class/graphics/fb0/rotate` 当首选 —— 本机它 = `0`，与工程角度**不一致**
    （看着像不用转，实际要转 270）；只在拿不到 EasyUI.cfg 时退化用。

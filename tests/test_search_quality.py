@@ -86,5 +86,40 @@ class TestSearchResultQuality(unittest.TestCase):
         self.assertLessEqual(len(r['hits']), 8)
 
 
+class TestSourceLabel(unittest.TestCase):
+    """`hits[].source` 必须按**索引根真源**派生（2026-10-03 修）。
+
+    修前的口径是 `path.startswith('knowledge/')` 二选一 → **仓库内**的
+    `components/**/platforms.md`（16 篇）与 `packages/**`（25 篇）全被标成
+    「wiki（官方镜像）」：AI 会以为那是外部镜像、不是本仓实践知识 —— 可信度判错、出处指错，
+    而这是它读检索结果时最先看到的字段之一。
+    """
+
+    def test_knowledge_and_packages_and_components_labels(self):
+        import kb_tools
+        self.assertEqual(kb_tools._kb_source_label('knowledge/devflow/ftu-json-pipeline.md'),
+                         'knowledge（实践）')
+        self.assertEqual(kb_tools._kb_source_label('packages/zkhardware/README.md'),
+                         'packages（包用法）')
+        self.assertEqual(kb_tools._kb_source_label('components/ble/platforms.md'),
+                         'components（组件平台页）')
+        self.assertEqual(kb_tools._kb_source_label('kb_local/local/x.md'),
+                         'kb_local（用户本地层）')
+
+    def test_wiki_path_still_labeled_as_mirror(self):
+        """真正的外部镜像（wiki 相对路径，不在任何仓库根里）仍应是「wiki（官方镜像）」。"""
+        import kb_tools
+        self.assertEqual(kb_tools._kb_source_label('devflow/some-official-page.md'),
+                         'wiki（官方镜像）')
+
+    def test_repo_roots_are_not_labeled_wiki(self):
+        """回归钉子：仓库真源声明的任何一篇，都不许再被判成 wiki。"""
+        import kb_index_roots as bir
+        import kb_tools
+        bad = [rel for rel in bir.repo_rel_docs(U.BASE)
+               if kb_tools._kb_source_label(rel) == 'wiki（官方镜像）']
+        self.assertEqual(bad, [], '仓库内文档被误标成 wiki：%s' % bad[:5])
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

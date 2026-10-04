@@ -1,19 +1,50 @@
 # tests/ — 契约用例（离线，零真机依赖）
 
 > 为什么有：35+ 个 op 此前**没有任何契约测试**，参数写错、envelope 变形、清单漂移、
-> 破坏性默认值被人改回去，都只能等用户在真机上撞到（见 `reports/flythings-mcp-review-2026-09-11.md` §3.5）。
+> 破坏性默认值被人改回去，都只能等用户在真机上撞到（见 `../REVIEW-2026-10-03.md` §1.2）。
 
 ## 跑法
 
 ```bash
-python -m unittest discover -s tests -q     # 全部（约 12 秒）
-python scripts/check_retrieval.py           # 检索回归（16 条真实问法 + 11 条对照组，~4 秒；模型缺失时自动降级 BM25）
-python scripts/ci.sh                        # CI 前置：compileall + 用例 + 一致性 + 冒烟 + 检索回归
+python scripts/run_tests.py                 # 推荐：带**逐用例看门狗**的全量运行
+python -m unittest discover -s tests -q     # 等价裸跑（无看门狗）
+python scripts/check_retrieval.py           # 检索回归（16 条真实问法 + 11 条对照组；模型缺失时自动降级 BM25）
+python scripts/ci.sh                        # CI 前置：compileall + 一致性 + 用例 + 冒烟 + 检索回归
 python scripts/check_consistency.py --with-tests
 ```
 
-依赖：只用标准库 + 仓库已有依赖（Pillow 缺失时图像相关用例自动 skip）。**不连真机**。
-当前规模：**443 项**（1 项按环境 skip；含 2026-09-29 新增 test_package_cards.py 7 项 + `test_selfcheck_bugreport.py` 13 项 + `test_baseline_testrun.py` 28 项 + 2026-09-30 新增 `test_seealso.py` 5 项 + 2026-10-01 新增 `test_ui_visual_merge.py` render/render_check 8 项 + 2026-10-02 新增 `test_translate_ui.py` 14 项）。
+> ⚠️ **「离线」是有守卫的，不是靠自觉**：`_util.py` 在 import 时把 `adb_tools._run`
+> （全部 adb 调用的唯一子进程出口）默认拦掉 —— 语义等价于「本机没有 adb」，
+> 于是任何漏了 mock 的设备调用都会**快速退化**而不是去连真机。
+> 确实要起真进程的用例，用 `with U.allow_subprocess():` 显式开口。
+>
+> 为什么加它（2026-10-03 实测）：以前是「按调用点逐个 mock」，`flythings_build_ui_flow`
+> 内部新加的 `device_probes.clear_logcat` 就漏了 mock —— fake 序列号被拿去**真 adb** 上跑，
+> 本机挂设备时直接阻塞：单模块 78s/91s，全套 >900s，把 `--with-tests` 自己的 900s 超时撞爆。
+
+> 依赖：只用标准库 + 仓库已有依赖（Pillow 缺失时图像相关用例自动 skip）。**不连真机**。
+>
+> **耗时画像（2026-10-03 实测，676 条）** —— 慢的不是"某个卡点"，是**一批真做事的用例**；
+> 且**总时长随机器负载/文件系统大幅漂移：实测同一份代码 1036s ~ 2192s（≈17~37 分钟）**。
+> 各模块：`test_ui_visual_merge`(83s) / `test_asset_pipeline`(78s) / `test_toolchain_capability`(68s) /
+> `test_deps_install_guard`(63s) / `test_project_state`(51s) / `test_runtime_setpic`(50s) /
+> `test_font_autoscan`(44s) / `test_preflight`(36s)。
+> 单条最贵的 8~11s（`render_check` 真渲染、`preflight --scale` 真缩图、字体 cmap 真扫描、真 `fui.exe`）。
+> 稳态单次 op 调用只要 **6ms**（实测），所以**不要**去优化分发器/`asyncio` —— 要压时间只能压这些真实工作。
+>
+> 因此**不要**用"一个全局墙钟超时"去守整套 —— 实测**同机同代码**，全套一次 1036s 跑完、
+> 一次 >1800s 未结束（随机器负载漂移）。紧超时会把"机器慢"误判成"挂死"，真挂死它又定位不到是哪条。
+>
+> 正确守法是 `scripts/run_tests.py` 的**逐用例看门狗**：每条用例起跑时重置计时，超过
+> `--per-test-timeout`（默认 120s，实测最贵一条 ~11s）就 dump 全线程栈并结束进程 ——
+> 于是"慢"和"挂"是两回事。
+>
+> **最终形态：不用墙钟当判据。** 实测同代码三次全量 = `1036s 通过` / `>1800s 超时` / `>2700s 超时`
+> —— "能不能跑完"取决于机器负载与文件系统，是环境属性。所以发布闸门**默认不给外层墙钟**：
+> 判"挂"靠看门狗，判"慢"不判。CI 想兜底可设 `FLYTHINGS_TEST_TIMEOUT=<秒>`。
+> 一句话：**慢没关系，挂必须被逮到并带栈。**
+当前规模：**707 项**（这个数由 `check_consistency.py --with-tests` 对着真实 `Ran N tests` 核对 —— 不许手写。
+2026-10-03 实测：本条此前写的是 443，而真实值是 676，**脱节 233 条**；这也是「易漂移的数字必须派生」的又一个例子）。
 
 > 2026-09-27（v0.27.115-open）：`test_device_screenshot_probe.py` 新增 7 项（+22 → 共 18）——
 > 视频层抓帧的 **vdec 通道口径**：默认必须是 chn 0（`zkshot ... vdec 0 0`，向后兼容）、
@@ -52,7 +83,7 @@ python scripts/check_consistency.py --with-tests
 | `test_runtime_setpic.py` | **`check_all` 第 20 项「运行期 set...Pic 的图 vs 控件盒」**（v0.27.90）：尺寸相等 → ok；`images/` 自动生成图不等 → `mismatch` FAIL（钉住真机事故：48×16 图进 48×26 盒 → 正圆变竖椭圆）；手绘图（`navi/fh.png` 44×26 进 72×40）→ 仅 `stretched`；`.9.png` 豁免；文件不存在 → `missing`；变量映射不到控件 → `unresolved`（不静默跳过）；`setBackgroundPic(path)` / `snprintf` 拼路径 → 只计 `dynamic`；注释里的调用不算；三元式两个字面量都比；同一 caption 多页且有任一盒子对应就不报 |
 | `test_font_autoscan.py` | **字体自动扫描接线 + 缺中文自动投递**（v0.27.86）+ **cmap 硬判据**（v0.27.87）：`flythings_build_ui_flow` **默认**（`font_check='auto'`）就扫字体并把 `common` 档投进工程 `font/`（step 必须在 `fun build` **之前**、返回体写清写入了哪些文件）；`font_check='off'` → **零字体 step 且不写盘**；无设备退化工程侧 self-scan（`note` 写清「未连设备，仅工程侧检查」、**不碰 adb**）；prefs 的 `font` 指向缺失文件 → 报「引用是断的」；`check_project_deps` 默认**只报不投**（`font_apply=True` 才投）+ `fontCheck` 字段（`missingChinese`/`maxFontBytes`/`advisedTier`/`delivered`/`deviceFonts`）+ `fontIssues` 带一键修复命令；阈值/三版清单/投递动作**单一来源**= `device_font_check`（改 `CJK_SIZE_MIN_KB` 结论跟着变）；设备分支（假设备）扫到 `deviceFonts` 并自动投递、且**不重复探 adb**。**硬判据部分**（离线：仓库自带 ttf + fontTools 现场造字体当假设备数据）：基准集 = GB2312 一级 **3755 字**、阈值 90/50 边界、三条 verdict（真字体 100%→`ok` 不投 / 53.3%→`low` 投 / 拉丁 0%→`missing` 投）+ warning 写明覆盖率、缓存命中不再拉（键随体积变即失效）、**超限 12MB / fontTools 不可用 / 拉取失败 → 退回体积判据且 warnings 写明原因**、只探最大字体、临时目录用完即删、部署后复查 `deviceAfterDeploy`（不一致 → 明说 `pack_upgrade` 才生效） |
 | `test_design_first_gate.py` | **设计先行软闸门**（v0.27.101）：设计产物检测口径（`design/` 目录 / `*.html` / `*.preview.html` 算设计产物，`.fun/Release` 构建产物不算，目录不存在不提示）、`create_project` / `build_ui_flow` 缺设计产物时**只加一条 warnings**（`未检测到设计确认稿…` 带 prototype-flow）且**不改 success / 不改其它键**、失败路径不加、有设计稿不加；`create_project` / `get_project_spec` docstring 必须含「先出设计稿」+ `prototype-flow`；docstring 预算（单 op ≤900 / 全体 ≤12000）仍守住；`tools_manifest.json` / 闸门 `catalog.json` 每个 op 的 `stage` 同步 |
-| `test_selfcheck_bugreport.py` | **整机自检 + 缺陷单**（v0.27.123）：`selfcheck` 九分区结构（每区 ≥2 采集项、`{ok,hint,data}` 齐备、**读不到必须给 hint**、缺 busybox 的采集项必须带 note）、无设备/多台在线**优雅报错 + hint 不猜机**（`NO_DEVICE`）、`diff_against`（同快照全 same / 改读数报 changed+before·after / 基线缺失 `DIFF_BASE_MISSING` 且**不丢本次快照**）；`bugreport` 段落齐备（标题·元信息·现象·复现步骤·期望 vs 实际·真机判据·证据·影响面）+ 真机判据含最近 logcat + 前 20 行预览、默认落 `<项目>/temp/bugreports/`、**evidence 不存在 → `EVIDENCE_MISSING`（不写单子）**、`title` 空 → `BAD_PARAMS`、采不到真机数据时写明原因不伪造；六方登记（manifest 的 risk=device/write + category + stage）+ `list` 签名 + 知识文档检索导引 |
+| `test_selfcheck_bugreport.py` | **整机自检 + 缺陷单**（v0.27.123）：`selfcheck` 十一分区结构（每区 ≥2 采集项、`{ok,hint,data}` 齐备、**读不到必须给 hint**、缺 busybox 的采集项必须带 note）、无设备/多台在线**优雅报错 + hint 不猜机**（`NO_DEVICE`）、`diff_against`（同快照全 same / 改读数报 changed+before·after / 基线缺失 `DIFF_BASE_MISSING` 且**不丢本次快照**）；`bugreport` 段落齐备（标题·元信息·现象·复现步骤·期望 vs 实际·真机判据·证据·影响面）+ 真机判据含最近 logcat + 前 20 行预览、默认落 `<项目>/temp/bugreports/`、**evidence 不存在 → `EVIDENCE_MISSING`（不写单子）**、`title` 空 → `BAD_PARAMS`、采不到真机数据时写明原因不伪造；六方登记（manifest 的 risk=device/write + category + stage）+ `list` 签名 + 知识文档检索导引 |
 
 > 工具 docstring 有字数预算（单 op ≤ 900 字符、全体 ≤ 12,000）——由 `scripts/check_consistency.py` 卡；
 > 长尾细节请写进 `knowledge/`（可检索），别塞回 docstring。

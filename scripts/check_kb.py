@@ -77,7 +77,10 @@ def main():
             st[meta.get('status') or '?'] = st.get(meta.get('status') or '?', 0) + 1
             if meta.get('status') == 'verified':
                 verified += 1
-            if meta.get('evidence'):
+            # 口径 = kbl.evidence_level（**可执行判据**才算 has-evidence）。
+            # 原先这里判"evidence 列表非空"，与 kb_index 的 withEvidence（同一行 [INFO] 里打印）
+            # 和打印标签「带可执行证据」都对不上 —— 同一概念三种口径（2026-10-03 统一）。
+            if kbl.evidence_level(meta) == 'has-evidence':
                 withev += 1
             if meta.get('needs_evidence'):
                 needsev += 1

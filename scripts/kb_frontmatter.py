@@ -21,7 +21,7 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE)
 import kb_local as kbl          # noqa: E402
 
-CATEGORIES = ('devflow', 'uicontrols', 'hardware', 'esl', 't113-car', 'v85x')
+CATEGORIES = kbl.categories()      # 唯一真源 = kb_local.categories()（原先在这里又手抄了一份）
 SKIP_FILES = ('README.md',)
 # 派生文档（生成物）：front-matter 由生成器（gen_hardware_doc.py 等）拥有 ——
 # --retags / --fix-states / kb_verify --apply 都不许改它（否则与生成器输出漂移）
@@ -136,7 +136,10 @@ def run(check=False, stats=False, retags=False, fix_states=False):
             bad.append((rel, errs))
         if meta.get('status') == 'verified':
             counts['verified'] += 1
-        if meta.get('evidence'):
+        # 口径 = kbl.evidence_level（has-evidence 要求 evidence 带 cmd/artifact 这类**可执行判据**）。
+        # 原先这里判的是"evidence 列表非空"，与打印标签「带可执行证据」不符 —— 只有人工判据
+        # （kind: manual）的文档也被算进去，数字偏大（2026-10-03 统一到 kb_local 唯一口径）。
+        if kbl.evidence_level(meta) == 'has-evidence':
             counts['withEvidence'] += 1
         if meta.get('needs_evidence'):
             counts['needsEvidence'] += 1

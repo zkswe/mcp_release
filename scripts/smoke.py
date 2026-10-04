@@ -28,7 +28,6 @@
 """
 import argparse
 import ast
-import hashlib
 import io
 import json
 import os
@@ -204,8 +203,17 @@ def main():
     check(ver in rd, 'README mentions current version', str(ver))
     # CHANGELOG.md 自 v0.27.31 起冻结为历史归档（不再维护/不提交），版本史 = MCP_FEATURES（近期）+ VERSION_HISTORY.md（归档）+ README
     feats = getattr(k, 'MCP_FEATURES', [])
-    check(bool(feats) and str(ver) in feats[0], 'MCP_FEATURES[0] mentions version',
-          feats[0][:40] if feats else 'empty')
+    # 失败原因要说清「是文件坏了还是版本没写」：features_recent.json 解析失败时 feats 会是空 list，
+    # 只打印 'empty' 会把「JSON 语法错误」误导成「忘了写版本」（2026-10-03 实测两次踩到）。
+    # kb_tools 已经把真因记在 _FEATURES_ERR（惰性加载器），这里直接透出。
+    _ferr = getattr(k, '_FEATURES_ERR', '') or ''
+    if feats:
+        _fdetail = feats[0][:40]
+    elif _ferr:
+        _fdetail = '读取失败：%s' % _ferr
+    else:
+        _fdetail = '空（features_recent.json 里没有条目）'
+    check(bool(feats) and str(ver) in feats[0], 'MCP_FEATURES[0] mentions version', _fdetail)
 
     # ---- 6) 意图闸门 catalog
     catp = os.path.join(os.path.dirname(BASE), 'flythings_intent_gate', 'catalog.json')
@@ -217,27 +225,16 @@ def main():
         check(True, 'gate catalog.json (未分发 → skip)',
               '%s 不存在；闸门不在本仓库内，跳过 count 校验（仅提示）' % catp)
 
-    # ---- 7) 双份 ui_tools 副本一致性（v0.27.31）
-    twin = os.path.join(os.path.dirname(BASE), 'ui_tools')
-    fdiff = []
-    mine = os.path.join(BASE, 'ui_tools')
-    if os.path.isdir(twin) and os.path.isdir(mine):
-        for f in sorted(os.listdir(mine)):
-            if not f.endswith(('.py', '.md')):
-                continue
-            p1, p2 = os.path.join(mine, f), os.path.join(twin, f)
-            if not os.path.isfile(p2):
-                fdiff.append(f + ':missing-in-tools/ui_tools')
-                continue
-            h1 = hashlib.sha256(io.open(p1, 'rb').read()).hexdigest()
-            h2 = hashlib.sha256(io.open(p2, 'rb').read()).hexdigest()
-            if h1 != h2:
-                fdiff.append(f + ':hash-mismatch')
-        check(not fdiff, 'ui_tools dual copy hash sync',
-              ','.join(fdiff) if fdiff else 'both copies identical')
-    else:
-        check(True, 'ui_tools dual copy hash sync (副本不在本机 → skip)',
-              'missing dir: %s（发布前的双份同步检查需要该副本目录，缺失不算失败）' % twin)
+    # ---- 7) 双份 ui_tools 副本一致性（v0.27.31；2026-10-03 改为**委派单一实现**）
+    # 以前这里自己写了一遍 sha256 遍历（且过滤口径与 sync_ui_tools 不同：只比 .py/.md，
+    # 而 sync_ui_tools 比全部非 .pyc/.log 文件）—— 同一件事两份实现 = 迟早分叉。
+    # 退出码：0=一致 / 2=本机无副本（skip，不是漂移）/ 1=真漂移。
+    SYNC_UI_TOOLS = os.path.join(BASE, 'scripts', 'sync_ui_tools.py')
+    rc = subprocess.call([sys.executable, SYNC_UI_TOOLS, '--check'],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    check(rc in (0, 2), 'ui_tools dual copy hash sync',
+          {0: 'both copies identical', 2: '本机无副本 → skip（不是漂移）'}.get(
+              rc, 'rc=%d（fix: python scripts/sync_ui_tools.py --apply）' % rc))
 
     # ---- 8) 隐私 / 路径泄露（v0.27.31）
     leaks = scan_leaks()

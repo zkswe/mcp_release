@@ -33,11 +33,12 @@
 | `rag_index.json` | 只索引 release 保留文档（重建：空目录技巧，勿把本地 wiki 编入） |
 | `mcp_control_map.json` | 跨框架控件映射机读数据（六框架 213 条）+ op `flythings_map_control`（随工具集保留；不依赖内部知识文档） |
 | `components/` | 可复用组件（ble 头+静态库 / fonts / icons / ui_v1：自定义控件包 + `_mapping` 映射参考） |
+| `packages/` | **厂家依赖包的用法文档**（12 个包的 `README.md` 用法 + `platforms.md` 逐平台真值 + `package.yaml` 包卡 + 真机证据）。⚠️ **必须随 release 走**：`package_tools.package_card()` 运行时要读 `packages/<包>/package.yaml`（`flythings_get_package_api` 的 `card` 字段靠它），保留篇 `knowledge/devflow/dependency-package-docs.md` 也引用这些路径；裁掉会让**包卡功能与文档指针同时坏**。2026-10-03 起它同时是**检索索引的一个根**（`kb_index_roots.ROOTS`），裁掉还会让 release 的 `rag index covers disk docs` 门禁红。 |
 
 ### ❌ 剔除（内部/方案/平台深度，绝不进 release）
 | 内容 | 理由 |
 |------|------|
-| `knowledge/v85x/`（8 篇） | **V85X 完全不开放**（MPP/DVR/UVC/图层调试/录制卡格式化等 aw-dvr 私有媒体栈深度） |
+| `knowledge/v85x/`（8 篇） | **V85X 完全不开放**（MPP/DVR/UVC/图层调试/录制卡格式化等 aw-dvr 私有媒体栈深度）；**但多媒体能力面仍开放** —— `knowledge/media/media-capability-index.md` 的「公开版边界」节显式写明未收录哪些、去哪要 |
 | `knowledge/t113-car/`、esl、方案类 | 客户/专用方案（车载互联/仪表 CAN 等）不开放 |
 | `demos/` | 参考工程依赖私有包（aw-dvr），不开放 |
 | 私有/方案依赖包名 | package_catalog.json 剔除：aw-* / voip / tuyaoscxx / uvc-camera / lylink* / xunfei-aiui |

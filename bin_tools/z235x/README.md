@@ -29,7 +29,7 @@
 ## 怎么补
 
 1. 拿到 Z235X 工具链与样机（找需求方/厂家）；
-2. 按仓库既有口径重编静态工具：busybox 见 `scripts/bb_build_all.sh`（输出 `tools/busybox/bin/<平台>/busybox`），
+2. 按仓库既有口径重编静态工具：busybox 的构建脚本在**本地 workspace（不入库）**（输出 `tools/busybox/bin/<平台>/busybox`），
    `touch` / `ui_test` / `zkshot` 见 `tools/touch_inject/`、`tools/zkshot/` 的构建脚本；
 3. 产物放进本目录 → 跑 `python scripts/gen_manifest.py`（刷新 `tools_manifest.json` 的平台/工具面）
    → 跑 `python scripts/check_consistency.py --with-tests` 确认门禁全绿。

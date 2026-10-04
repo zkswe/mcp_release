@@ -93,11 +93,15 @@ evidence: []
 - 数据坐标系=轴范围逻辑值（0..100 刻度非像素），越界裁剪；index 对应 json infos[] 顺序
 
 ## ZKPainter（PainterDemo）
-- 状态式画笔：`setLineWidth(px)/setSourceColor(0xRRGGBB)` 后画：`drawRect(x,y,w,h,r)/drawArc(...)/fillArc/drawTriangle/fillTriangle/drawLines(SZKPoint*,n)/drawCurve(SZKPoint*,n)`
+- 状态式画笔：`setLineWidth(px)/setSourceColor(0xRRGGBB)` 后画：`drawRect(x,y,w,h,r)/fillRect(x,y,w,h,r)/drawArc(cx,cy,rx,ry,start,sweep)/fillArc(同 drawArc)/drawTriangle(x0,y0,x1,y1,x2,y2)/fillTriangle(...)/drawLines(SZKPoint*,n)/drawCurve(SZKPoint*,n)`
+  （真源签名：`ZKPainter.h` v85x easyui 2.9.0 —— `void erase(int x,int y,int w,int h); void drawLines(const SZKPoint*,int); void drawCurve(const SZKPoint*,int);`）
+- ⛔ **没有 `drawLine(...)` 这个 API**（2026-10-04 V85X 复核）：单条直线要 `SZKPoint p[2]={{x0,y0},{x1,y1}}; pPainter->drawLines(p,2);`；写 `drawLine(a,b,c,d)` 直接**编译不过**（早期页面的错误写法来源见 temp/_demo_canvas*.py）。
+- ⛔ **`erase()` 不是无参清屏**（同上复核）：签名是 `erase(x,y,w,h)`，清整屏要 `erase(0,0,控件宽,控件高)`。无参 `erase();` 编译不过——本页旧文案「`erase` 清屏」已按真源签名改掉。
 - **`drawArc` 实参口径（Z21 easyui 2.6.0 真机实测）**：按 `(cx, cy, rx, ry, start, sweep)`（圆心 + 半径）写**渲染正确**
   （按格子填色，无残影）；可复现调用点：`projects/EasyDevice-Z21/src/logic/mainLogic.cc`。
-- **`fillRect` / `erase` 实测可用（Z21，同上调用点）**：`fillRect` 填矩形、`erase` 清屏
-  （清屏后无残影，适合做数据刷新前的整块重画）——官方 demo 未演示，故补记。
+  V85X 480×800 复现：`temp/demo_proj` 画布页用 `fillRect(24,24,180,90)/drawRect(230,24,200,90,18)/fillArc(130,250,90,90,0,270)/drawArc(330,250,90,90,0,360)` 出图正确（截 `temp/acc_canvas.png`）。
+- **`fillRect` / `erase` 实测可用（Z21，同上调用点）**：`fillRect` 填矩形、`erase(x,y,w,h)` 清指定矩形
+  （清后无残影，适合做数据刷新前的整块重画）——官方 demo 未演示，故补记。
 - **z 序（2026-09-16 Z21 真机实测，静态检查发现不了）**：json 里**后定义 = z 更高**。
   painter 自带不透明底（`erase()`/铺底色），所以**叠在它上面的刻度数字/文字必须写在 painter 之后**；
   写在前面会被整块盖住（图形正常、字全不见，`check_all`/本地预览都发现不了）。案例复现：

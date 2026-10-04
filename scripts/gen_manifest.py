@@ -126,7 +126,23 @@ def collect():
             rag_paths = sorted({c.get('path', '') for c in chunks if c.get('path')})
         except (ValueError, OSError):
             rag_paths, rag_chunks = [], 0
-    wiki_paths = [p for p in rag_paths if not p.startswith('knowledge/')]
+    # wiki = 「既不在仓库真源声明的索引范围里、也不是用户本地层」的那些 chunk 路径。
+    #
+    # ⚠️ 旧口径是 `not p.startswith('knowledge/')` —— 那是把「非 knowledge 前缀」当成了 wiki。
+    # 索引范围收编 components/platforms.md（2026-10-02 B1.3）之后这个口径就错了：
+    # 那 16 篇是**仓库内**文档，却被算进 wikiFiles；本仓再加 packages/（2026-10-03）会变成 41。
+    # 更硬的后果在门禁侧：check_consistency 的 `wiki page count` 拿 manifest.docs.wikiFiles
+    # 与**真实 wiki 篇数**比，于是在有本机 wiki 的机器上（发布前必跑）必然对不上 = 假红。
+    # 现在改成从**索引范围唯一真源**派生：仓库真源声明的 + 本地层前缀 之外，才是 wiki。
+    try:
+        import kb_index_roots as _bir
+        declared = _bir.repo_rel_docs(BASE)
+    except Exception as e:            # 真源不可用不静默：退成空集并**说清原因**（wiki 数会偏大）
+        declared = set()
+        print('[warn] kb_index_roots 不可用（%s: %s），wikiFiles 只能按 knowledge/ 前缀粗算'
+              % (type(e).__name__, e))
+    wiki_paths = [p for p in rag_paths
+                  if p not in declared and not p.startswith('kb_local/')]
 
     return {
         'schema': 1,

@@ -13,3 +13,4 @@
 # 检测：python scripts/lint_silent_except.py
 mcp_server.py#b462cc14d4  ::  启动前预热本地 embedding：失败不影响启动，检索侧有显式 BM25 降级提示（返回体 warnings 里写明）
 components/mp_transfer/src/python/receiver.py#96d8cd8b4c  ::  components/mp_transfer 是**原样归档的第三方参考实现**（其他产品已验证的小程序传图接收端 + PC 模拟器），随仓库只作接入参考、不参与本仓库运行：accept() 的 socket.timeout 就是它自己的「0.5s 轮询等连接」主循环写法，吞掉即继续 accept（外层 try/finally 负责停广播与回收），属该实现的设计而非本仓库的静默失败。改归档源码会失去「与原工程一致」的对照价值。
+tests/_util.py#b462cc14d4  ::  用例临时目录清理的 **Windows 快路径**（`cmd /c rmdir /s /q`，2026-10-03 为压全套墙钟引入）：吞掉的是「快路径自己失败」，紧接着就 `return` 之外的下一行用 `shutil.rmtree` **真删** —— 即**失败不影响删除结果、不静默丢产物**，只是一个会失败的优化。这条路径每次用例结束都跑（676 条 → 每秒数百次），把失败打出来只会淹没真正的信号。⚠️ 登记人是 2026-10-03 修 packages 检索黑洞时**顺带发现的既存失败**（该 except 由 REVIEW-2026-10-03 §6 整改引入、当时漏登记），非本次改动新增代码。

@@ -53,6 +53,13 @@ WIKI_ROOT = os.path.join(os.path.expanduser('~'), '.openclaw', 'workspace', 'wik
 #   ② 额外委派 release_gate.py 做公开边界校验（剔除路径 / demo 黑名单 / 词表 / 隐私）。
 RELEASE_SCOPE = os.path.isfile(os.path.join(SUB, 'release_scope.json'))
 
+# Windows 控制台默认 GBK：被委派脚本的回显里若带 GBK 编不出的字符（实测 U+022B，来自
+# 某处乱码文案），`print` 会抛 UnicodeEncodeError **把失败本身藏掉**（2026-10-04 实测：
+# 门禁在第一条 FAIL 处崩，后面 60+ 条判据一条都没跑到）。errors='replace' 保住报告，
+# 不改变其它平台行为（那里本来就编得出）。
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(errors='replace')
+
 
 def check(ok, name, detail=''):
     RESULT.append((bool(ok), name, detail))
@@ -91,13 +98,35 @@ def _pyproject():
         return (pv.group(1) if pv else ''), (mv.group(1) if mv else '')
 
 
-def _run(args):
+def _run(args, timeout=900):
     try:
         r = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                           cwd=BASE, timeout=900)
+                           cwd=BASE, timeout=timeout)
         return r.returncode, r.stdout.decode('utf-8', 'replace')
+    except subprocess.TimeoutExpired as e:      # 超时要说清"跑了多久"，否则只看到一句 TimeoutExpired
+        out = (e.stdout or b'').decode('utf-8', 'replace') if e.stdout else ''
+        return 124, '%s\n[TIMEOUT] %s 超过 %ss 未结束' % (out, ' '.join(args[:3]), timeout)
     except Exception as e:                      # 解释器/脚本缺失 → 视为失败并回显
         return 1, repr(e)
+
+
+def _git_tracked(relpath):
+    """`relpath` 是否已登记进 git 索引（= fresh clone / CI 上会不会有它）。
+
+    为什么门禁要问这个（2026-10-03 实测）：门禁与 CI 跑的是**公开仓库形态**。一个文件
+    只在工作区存在、没进 git，就等于"这套闸门只在这台机器上成立"——本轮
+    `scripts/run_tests.py` / `audit_design_spec.py` / `gen_unverified_report.py` /
+    `fun_capabilities.json` 都处于这个状态（被门禁调用/引用却没入库）。
+    查不到 git（无 git / 不是仓库 / 超时）时返回 None，调用方**跳过该判据**并提示，
+    不把"查不到版本控制"伪造成"没入库"。
+    """
+    try:
+        r = subprocess.run(['git', 'ls-files', '--error-unmatch', '--', relpath],
+                           stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                           cwd=BASE, timeout=20)
+        return r.returncode == 0
+    except Exception:
+        return None
 
 
 def stage_versions():
@@ -148,6 +177,20 @@ def stage_tool_count():
               'tools_manifest version', str(d.get('version')))
     else:
         check(False, 'tools_manifest.json exists', mp)
+
+    # pyproject.description 里的「N 个 op」也要机器化（v0.27.173 实测：它写着 44，而真值是 48）。
+    # 它是包元数据 / 市场首屏文案，漂移会直接被搜到 —— 属于「必须派生」的数字，不是文案自由。
+    pp = os.path.join(BASE, 'pyproject.toml')
+    desc = ''
+    try:
+        import tomllib
+        desc = tomllib.loads(_read(pp)).get('project', {}).get('description', '')
+    except Exception:
+        m2 = re.search(r'^description\s*=\s*"(.*?)"', _read(pp), re.M)
+        desc = m2.group(1) if m2 else ''
+    md = re.search(r'(\d+)\s*个\s*op', desc)
+    check(bool(md) and int(md.group(1)) == len(names), 'pyproject description op count',
+          '"%s 个 op" vs %d' % (md.group(1) if md else '未写', len(names)))
 
 
 def stage_platforms():
@@ -639,6 +682,255 @@ def stage_kb_authority():
           '%d 概念 ok' % n if not errs else '; '.join(errs[:3]))
 
 
+# ── selfcheck 分区份数必须**派生**（2026-10-03）──────────────────────────────
+# 为什么单列：分区从 9 加到 10、11，但 README / selfcheck_tools 的文案 / tests/README /
+# 知识页一直写「九分区」—— 根因是**没有一处派生**，加分区时没人会想起散文也要跟着改。
+# 手法与 stage_tool_count（工具数六方一致）相同：**只认数字与真源一致，不管措辞**。
+# 真源 = selfcheck_tools.SECTIONS（返回体 summary.total 也是由它派生）。
+_SELFCHECK_COUNT_FILES = (
+    'README.md',
+    'tests/README.md',
+    'selfcheck_tools.py',
+    'knowledge/devflow/selfcheck-and-bugreport.md',
+)
+# 命中行含本标记则跳过 —— 给「历史实测记录」留的出口（那时真值就是 9，改它等于篡改证据）。
+# 用 HTML 注释写在证据行上：人看不见，门禁看得见，grep 得到。
+_SELFCHECK_COUNT_EXEMPT = '分区数豁免'
+_CN_NUM = {'一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7,
+           '八': 8, '九': 9, '十': 10, '十一': 11, '十二': 12, '十三': 13}
+_SELFCHECK_COUNT_RE = re.compile(r'(\d+|[一二三四五六七八九十]+)\s*个?\s*分区')
+
+
+def stage_selfcheck_sections():
+    """活文档里的「N 个分区」必须等于 len(SECTIONS) —— 份数不许手写漂移。"""
+    try:
+        import selfcheck_tools as _sc
+        real = len(_sc.SECTIONS)
+    except Exception as e:                      # 真源不可用 = 这条对账做不了，不许静默放过
+        check(False, 'selfcheck 分区份数（SECTIONS 可加载）', '%s: %s' % (type(e).__name__, e))
+        return
+    bad, seen = [], 0
+    for rel in _SELFCHECK_COUNT_FILES:
+        p = os.path.join(BASE, rel)
+        if not os.path.isfile(p):
+            bad.append('%s(文件不存在)' % rel)
+            continue
+        for i, line in enumerate(_read(p).splitlines(), 1):
+            if _SELFCHECK_COUNT_EXEMPT in line:
+                continue
+            for m in _SELFCHECK_COUNT_RE.finditer(line):
+                tok = m.group(1)
+                n = int(tok) if tok.isdigit() else _CN_NUM.get(tok)
+                # 只认 ≥2：「(采集)一个分区」「下一个分区」这类是**单数习惯用法**，不是份数声明
+                # （selfcheck 只有一个分区也没有意义）。这条收窄写在门禁里，不靠人记。
+                if n is None or n < 2:
+                    continue
+                seen += 1
+                if n != real:
+                    bad.append('%s:%d 写「%s」而真值 %d' % (rel, i, m.group(0).strip(), real))
+    check(not bad,
+          'selfcheck 分区份数与 SECTIONS 一致（真值 %d / 命中 %d 处）' % (real, seen),
+          '；'.join(bad[:4]) if bad else 'ok')
+
+
+# 字库字节数的唯一真源 = 仓库里的字体文件本身；活文档里报的数必须等于它。
+# 为什么单独钉（2026-10-03 实测）：`device-deploy-budget.md` 把**同一个**
+# `zkswe-hans-full.ttf` 一处写 7.5MB、另一处写 7.4MB（真实 7,567,300 B），且 KB/MiB 单位混用 ——
+# 而"字库是不是最大头"正是这条部署预算结论的支点。数字漂了，结论看着还成立，最难发现。
+_FONT_FILES = ('zkswe-hans-common.ttf', 'zkswe-hans-full.ttf', 'zkswe-hans-multi.ttf')
+# 两处都声明字库体积（2026-10-03 实测两页各写一套、且其中一页是上一版字库的旧值）
+_FONT_DOCS = ('knowledge/devflow/device-deploy-budget.md',
+              'knowledge/devflow/custom-font-config.md')
+
+
+def stage_font_sizes():
+    """活文档里声明的字库字节数 == 字体文件实际大小。"""
+    bad, seen = [], 0
+    for name in _FONT_FILES:
+        fp = os.path.join(BASE, 'components', 'fonts', 'fonts', name)
+        if not os.path.isfile(fp):
+            bad.append('%s(字体文件不存在)' % name)
+            continue
+        real = os.path.getsize(fp)
+        hit = False
+        for rel in _FONT_DOCS:
+            p = os.path.join(BASE, rel)
+            if not os.path.isfile(p):
+                bad.append('%s(文件不存在)' % rel)
+                continue
+            # 允许「名字 → 数字」之间夹着表格分隔符/加粗/括号（正文式 `**N B**` 与
+            # 表格式 `| **N B**（…）` 都要能匹配）；惰性 + 上限，避免吃到后面别的数字。
+            m = re.search(r'`%s`[^0-9\n]{0,24}?(\d+)\s*B' % re.escape(name), _read(p))
+            if not m:
+                bad.append('%s 未在 %s 里给出字节数（改了措辞请同步本门禁的匹配式）' % (name, rel))
+                continue
+            hit = True
+            if int(m.group(1)) != real:
+                bad.append('%s 在 %s 写 %s B 而实际 %d B' % (name, rel, m.group(1), real))
+        if hit:
+            seen += 1
+    check(not bad, '字库字节数与字体文件一致（两页 / 命中 %d 处）' % seen,
+          '；'.join(bad[:3]) if bad else 'ok')
+
+
+def stage_json_registries():
+    """根目录所有 `*.json` 必须能解析 —— 报**文件 + 行列**，不报含糊的"空"。
+
+    为什么单列（2026-10-03）：`features_recent.json` 被写坏过**三次**（字符串里用了未转义的
+    ASCII 双引号），而每次都是在 smoke 的 `MCP_FEATURES[0] mentions version` 那条上暴露的 ——
+    那条检查的本意是"版本写没写"，只能间接看出"读取失败"，还得另写脚本定位。
+    根目录这些 .json 都是**唯一真源或派生快照**，坏一个就是某项能力静默失效
+    （`op_spec.json` 坏 → 契约全拉不到；`error_codes.json` 坏 → 失败返回体没有 action）。
+    一次把语法钉住，代价是几百毫秒。
+
+    2026-10-03 加两条**同源的性质**（都是本轮实测踩出来的，见 REVIEW-2026-10-03.md）：
+      ① **必须受版本控制**：门禁/CI 跑的是「fresh clone / checkout」形态，一个 untracked 的
+         注册表+只引用它的代码，等于**只在这台机器上成立**（本轮 `fun_capabilities.json`
+         被 `op_spec.json` 引用却没入库）。判据用 `git ls-files`，不靠人记。
+      ② **注册表里反引号引用的 .json 必须存在**（反引号包起来的 `x.json` 是**指针**，
+         删了文件就该红）——只认反引号，避免把散文里的泛称（"xxx.json"）误判成指针。
+    """
+    skip = ('rag_index.json',)          # 4MB 生成物（内容由 rebuild 保证），跳过省时间
+    bad, n, untracked, root_jsons = [], 0, [], []
+    try:
+        names = sorted(os.listdir(BASE))
+    except OSError as e:
+        check(False, 'root *.json registries parse', '列目录失败：%s' % e)
+        return
+    for f in names:
+        if not f.endswith('.json') or f in skip:
+            continue
+        p = os.path.join(BASE, f)
+        if not os.path.isfile(p):
+            continue
+        n += 1
+        root_jsons.append(f)
+        if not _git_tracked(f):
+            untracked.append(f)
+        try:
+            json.loads(_read(p))
+        except ValueError as e:                 # json.JSONDecodeError ⊂ ValueError
+            # 附修复提示：根目录这几个 JSON 里装的是中文散文，**最容易的错**是正文里混进
+            # ASCII 双引号（作者实测栽过 6 次）。只说 "Expecting ',' delimiter" 定位得到、
+            # 但不知道为什么，所以把处置写在这儿。
+            bad.append('%s → %s（提示：这些 JSON 里是中文散文，正文的引号要写「」而不是 ASCII 双引号；'
+                       '`` ` `` 里的英文键名不受影响）' % (f, e))
+        except Exception as e:
+            bad.append('%s → 读失败 %s: %s' % (f, type(e).__name__, e))
+    check(not bad, 'root *.json registries parse（%d 个）' % n,
+          '；'.join(bad[:3]) if bad else 'ok')
+    # ① 版本控制（fresh clone 上还在不在）
+    tstate = _git_tracked(root_jsons[0]) if root_jsons else False
+    if tstate is None:
+        print('       (git 不可用 → 跳过「注册表是否已入库」判据)')
+    else:
+        check(not untracked, 'root *.json registries 已入库（%d 个）' % len(root_jsons),
+              'ok' if not untracked else
+              '未登记进 git：%s（fresh clone / CI 上会缺失，跑 git add）' % '、'.join(untracked))
+    # ② 反引号指针：注册表里 `` `x.json` `` 必须指向真实文件。
+    # ⚠️ 只认**无歧义的指针写法**（2026-10-03 实测教训）：`features_recent.json` 是变更史，
+    # 满篇反引号里点的是**用户工程里的文件名**（`ui/main.json`、`SampleUI-New/…/ad.json`）与
+    # 仓内别处的文件（`authority_map.json` 真身是 `knowledge/authority_map.json`）——
+    # 一律当指针会造出十几条假红。所以判据收窄成两条：
+    #   · 含 `/` 的路径 → 按仓根相对解析；
+    #   · 不含 `/` 的裸文件名 → **只有当它是仓根注册表**时才判（写全路径是那条约定的写法）。
+    # 真正的护栏其实是上面那条"已入库"检查（本轮 `fun_capabilities.json` 正是被它抓到）。
+    # 另：变更史/流程里会出现**用户工程相对**的路径（`ui/main.json`、`SampleUI-New/…/ad.json`、
+    # `blocks/_tokens.json`）——它们不是仓内指针，按前缀放行（与 check_doc_refs 的 ALLOW 同性质，
+    # 都要写明理由；这里一次说清是"工程内相对路径"这一类）。
+    PROJ_REL = ('ui/', 'blocks/', 'SampleUI-New/', 'projects/', 'workspace/')
+    # 发布分支才带的文件：master 上本就没有，引用它是**对的**（拿 master 跑时不当死指针；
+    # 与 check_doc_refs 的 `scripts/release_scope.json` 白名单同一条理由）。
+    BRANCH_ONLY = ('scripts/release_scope.json',)
+    ref_missing = []
+    for f in root_jsons:
+        try:
+            refs = set(re.findall(r'`([A-Za-z0-9_][A-Za-z0-9_./-]*\.json)`', _read(os.path.join(BASE, f))))
+        except Exception as e:
+            ref_missing.append('%s 读失败 %s' % (f, type(e).__name__))
+            continue
+        for r in sorted(refs):
+            if r in root_jsons or '/' not in r or r in BRANCH_ONLY:
+                continue                        # 仓根注册表 / 裸文件名 / 发布分支专有 → 不当指针
+            if r.startswith(PROJ_REL):
+                continue                        # 工程内相对路径，不是仓内指针
+            if not os.path.isfile(os.path.join(BASE, r.replace('/', os.sep))):
+                ref_missing.append('%s 引用了不存在的 %s' % (f, r))
+    check(not ref_missing, 'root registries 的反引号路径指针可解析',
+          'ok' if not ref_missing else '；'.join(ref_missing[:3]))
+
+
+def stage_referenced_files_tracked():
+    """**被文字引用的仓内文件，必须已入库**（门禁/CI 跑的是 fresh clone / checkout 形态）。
+
+    为什么单列一条（2026-10-03 实测踩到）：本轮 `scripts/run_tests.py` /
+    `audit_design_spec.py` / `gen_unverified_report.py` / `fun_capabilities.json` 都
+    **被门禁调用或被注册表引用，却没进 git** —— 一旦按当时状态发布，
+    `check_consistency.py --with-tests` 在 fresh clone 上会一口气红 4 项
+    （`has scripts/run_tests.py`、`delegated: tests/ unittest` 脚本缺失、两条新委派项），
+    也就是"上一轮 P0-1 的成果只存在于作者机器上"。判据来自 `git ls-files`，不靠人记。
+
+    写法（与 DESIGN_SPEC 第 4 条同精神）：扫全仓文本里提到的 `*.json` 等文件名，
+    只对**真实存在**的那些问"入库了吗"；`.gitignore` 覆盖的派生目录（报告/临时/模型）
+    按设计就是不入库的，跳过。查不到 git 时**跳过并提示**，不伪造成失败。
+    """
+    skip_dirs = {'.git', '__pycache__', 'node_modules', 'temp', 'models', '.workbuddy'}
+    skip_prefix = ('knowledge/_reports/', 'knowledge/_logs/', 'temp/', 'models/', 'workspace/')
+    exts = ('.json', '.py', '.md')
+    try:
+        tracked = set(l.replace('/', os.sep) for l in subprocess.run(
+            ['git', 'ls-files'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            cwd=BASE, timeout=120).stdout.decode('utf-8', 'replace').split())
+    except Exception as e:
+        print('       (git 不可用 → 跳过「被引用的文件是否已入库」判据：%s)' % type(e).__name__)
+        return
+    # 大小写：Windows/macOS 文件系统不区分，git 索引区分（实测 `readme.md` 会解析到 `README.md`
+    # 而被误判成"未入库"）→ 在**不区分大小写**的平台上把索引也按小写比对，避免假红。
+    ci = os.path.normcase('A') == os.path.normcase('a')
+    tracked_ci = set(t.lower() for t in tracked) if ci else None
+    rx = re.compile(r'(?<![\w/.-])([A-Za-z0-9_][A-Za-z0-9_./-]*\.(?:%s))(?![\w-])'
+                    % '|'.join(x.lstrip('.') for x in exts))
+    hits, missing, seen, unreadable, scanned = 0, [], set(), [], 0
+    for root, dirs, files in os.walk(BASE):
+        dirs[:] = [d for d in dirs if d not in skip_dirs]
+        for fn in files:
+            if not fn.endswith(('.py', '.json', '.md', '.yml', '.sh', '.bat', '.txt')):
+                continue
+            p = os.path.join(root, fn)
+            rel = os.path.relpath(p, BASE).replace(os.sep, '/')
+            if rel.startswith(skip_prefix):
+                continue
+            try:
+                txt = io.open(p, encoding='utf-8', errors='replace').read()
+            except OSError as e:
+                # **不静默**（DESIGN_SPEC 第 3 条 / 静默 except lint 的要求）：读不了就记下来，
+                # 由下面一条 check 如实报出"少扫了哪些文件"，而不是当作它不存在。
+                unreadable.append('%s（%s）' % (rel, e.strerror or type(e).__name__))
+                continue
+            scanned += 1
+            for r in rx.findall(txt):
+                r = r.lstrip('./')
+                if '..' in r:                              # `knowledge/../components/x.md` 这类
+                    r = os.path.normpath(r).replace(os.sep, '/')   # 归一后再判（否则永远对不上）
+                if r.replace('/', os.sep) in tracked:      # 已入库 → 不是问题
+                    continue
+                if tracked_ci is not None and r.lower() in tracked_ci:
+                    continue                                # 已入库（仅大小写不同，见上）
+                if r.startswith(skip_prefix):
+                    continue                                # 派生/生成目录：按设计不入库
+                if not os.path.isfile(os.path.join(BASE, r.replace('/', os.sep))):
+                    continue                                # 不存在 → 归 check_doc_refs 管（这里只看"存在但没入库"）
+                hits += 1                                   # 存在但没入库 = 有问题
+                if r not in seen:
+                    seen.add(r)
+                    missing.append('%s（被 %s 引用）' % (r, rel))
+    check(not missing, '被引用的仓内文件都已入库（扫 %d 篇，%d 处未入库）' % (scanned, hits),
+          'ok' if not missing else
+          '未登记进 git：%s —— 跑 git add（否则 fresh clone / CI 上会缺文件）' % '；'.join(missing[:3]))
+    check(not unreadable, '扫描时无读不了的文件',
+          'ok' if not unreadable else '读不了（已跳过，故本次扫描不完整）：%s' % '；'.join(unreadable[:3]))
+
+
 def stage_docstring_budget():
     tree = ast.parse(_read(os.path.join(BASE, 'kb_tools.py')))
     sizes = []
@@ -655,12 +947,30 @@ def stage_docstring_budget():
     check(total <= DOC_TOTAL_MAX, 'docstring total <= %d chars' % DOC_TOTAL_MAX,
           '%d chars in %d ops' % (total, len(sizes)))
     print('       (长尾细节请放 knowledge/：docstring 只留要点 + 检索关键词)')
+    # 常驻预算的**口径文字**也是数字载体：`budget.basis` 手写的「常驻合计 N」必须 == 实测。
+    # 为什么必须进闸门（2026-10-03 实测）：`params` 移出常驻后 basis 写着 4730 / 78.8% / 余约 14 op，
+    # 而本轮改了几条 hardRules 后**实测已是 5080 / 84.7%** —— 于是 WORK_PLAN 与设计说明一起
+    # 拿"余量还够 14 个 op"去排期，实际只剩 8 个左右。**同一事实写两遍，第二遍必然漂**：
+    # 这里把"第二遍"钉成派生的（真值 = gen_op_docs 渲染产物，本函数刚算出的 total）。
+    try:
+        import op_spec_loader as _osl
+        b = (_osl.load().get('budget') or {})
+        m = re.search(r'常驻合计\s*\**\s*(\d+)', str(b.get('basis') or ''))
+        if b.get('basis') and not m:
+            check(False, 'budget.basis 常驻数字可解析',
+                  'basis 里没有「常驻合计 N」这种写法 → 闸门无法对账（请保持该写法）')
+        elif m:
+            said = int(m.group(1))
+            check(said == total, 'budget.basis 常驻数字（op_spec.json）',
+                  '%d vs 实测 %d' % (said, total) if said != total else '%d = 实测' % total)
+    except Exception as e:                      # 注册表读不了 → 如实报，不静默
+        check(False, 'budget.basis 常驻数字可解析', '%s: %s' % (type(e).__name__, e))
 
 
 def stage_deliverables(with_tests):
     for f in ('pyproject.toml', 'requirements.lock', 'install.bat', 'LICENSE',
               'scripts/smoke.py', 'scripts/sync_ui_tools.py', 'scripts/gen_manifest.py',
-              'scripts/lint_silent_except.py'):
+              'scripts/run_tests.py', 'scripts/lint_silent_except.py'):
         check(os.path.isfile(os.path.join(BASE, f)), 'has %s' % f, '')
     tdir = os.path.join(BASE, 'tests')
     checks = sorted(f for f in os.listdir(tdir)) if os.path.isdir(tdir) else []
@@ -676,8 +986,12 @@ def stage_delegated(skip_smoke, with_tests):
         check(rc == 0, 'delegated: release_gate.py (公开边界)',
               tail[0] if tail else 'rc=%d' % rc)
     rc, out = _run([sys.executable, os.path.join(SUB, 'sync_ui_tools.py'), '--check'])
-    check(rc == 0, 'delegated: sync_ui_tools --check',
-          'ok' if rc == 0 else out.strip().splitlines()[-1][:70])
+    # 退出码口径：0=一致 / 2=本机没有副本（skip，公开仓库与 CI 的正常形态）/ 1=真漂移。
+    # 以前只认 rc==0 → 从 fresh clone 跑必然红（副本目录在仓库之外），
+    # 而 smoke 对同一件事是容错 skip —— 同一口径两个消费方不一致（2026-10-03 评审）。
+    check(rc in (0, 2), 'delegated: sync_ui_tools --check',
+          {0: 'ok（双份一致）', 2: 'skip（本机无副本，非漂移）'}.get(
+              rc, out.strip().splitlines()[-1][:70] if out.strip() else 'rc=%d' % rc))
     rc, out = _run([sys.executable, os.path.join(SUB, 'gen_manifest.py'), '--check'])
     check(rc == 0, 'delegated: gen_manifest --check',
           'ok' if rc == 0 else out.strip().splitlines()[-1][:70])
@@ -795,6 +1109,19 @@ def stage_delegated(skip_smoke, with_tests):
              if l.startswith('[PASS]') or l.startswith('[FAIL]')]
     check(rc == 0, 'delegated: kb_health --check (看板新鲜度)',
           (tail2[0] if tail2 else 'rc=%d' % rc)[:70])
+    # 「未核 / 待验证」派生清单不许滞后：它是「哪些结论还没验」的唯一视图（内容真源仍在各页）。
+    # 注意 knowledge/_reports/ 是 .gitignore 的（与 kb_health 同性质）：本地跑门禁前先生成一次。
+    # 设计规范全检（DESIGN_SPEC.md 第 0–4 条）不许滞后：它是「通用内容/踩坑叙述/静态值」的体检视图
+    rc, out = _run([sys.executable, os.path.join(SUB, 'audit_design_spec.py'), '--check'])
+    tail4 = [l for l in out.strip().splitlines()
+             if l.startswith('[PASS]') or l.startswith('[FAIL]')]
+    check(rc == 0, 'delegated: audit_design_spec --check (设计规范全检)',
+          (tail4[0] if tail4 else 'rc=%d' % rc)[:70])
+    rc, out = _run([sys.executable, os.path.join(SUB, 'gen_unverified_report.py'), '--check'])
+    tail3 = [l for l in out.strip().splitlines()
+             if l.startswith('[PASS]') or l.startswith('[FAIL]')]
+    check(rc == 0, 'delegated: gen_unverified_report --check (未核清单新鲜度)',
+          (tail3[0] if tail3 else 'rc=%d' % rc)[:70])
     if not skip_smoke:
         rc, out = _run([sys.executable, os.path.join(SUB, 'smoke.py')])
         last = [l for l in out.strip().splitlines() if l.startswith('total=')]
@@ -807,7 +1134,18 @@ def stage_delegated(skip_smoke, with_tests):
     check(rc == 0, 'delegated: check_retrieval.py',
           (last[0] if last else 'rc=%d' % rc)[:70])
     if with_tests:
-        rc, out = _run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', '-q'])
+        # 守法（2026-10-03 第三次调整，最终形态）：**不用墙钟当判据**。
+        #
+        # 实测同机同代码，全套一次 1036s 跑完、一次 >2700s 未结束（随负载/文件系统显著漂移）——
+        # 于是"能不能跑完"取决于机器快慢，那是**环境属性，不是代码属性**。用它当判据必然假红。
+        #
+        # 现在判"挂"的责任全部交给 scripts/run_tests.py 的**逐用例看门狗**：
+        # 单条超 120s → dump 全线程栈并结束进程（退出码非 0）→ 这里如实报 FAIL 且带栈。
+        # 即：**慢没关系，挂必须被逮到**。默认不设外层墙钟；CI 想兜底可设
+        # FLYTHINGS_TEST_TIMEOUT（秒），例如 `FLYTHINGS_TEST_TIMEOUT=900`。
+        cap = (os.environ.get('FLYTHINGS_TEST_TIMEOUT') or '').strip()
+        rc, out = _run([sys.executable, os.path.join(SUB, 'run_tests.py')],
+                       timeout=int(cap) if cap.isdigit() else None)
         tail = [l for l in out.strip().splitlines() if l.strip()][-1:]
         check(rc == 0, 'delegated: tests/ unittest', (tail[0] if tail else 'rc=%d' % rc)[:70])
         # 用例数不许手写漂移（README 写 95 而实跳 122 过就不对了）
@@ -823,6 +1161,32 @@ def stage_delegated(skip_smoke, with_tests):
               'tests/README=%s README=%s real=%s'
               % (nt.group(1) if nt else '?', nr.group(1) if nr else '（未写）',
                  m.group(1) if m else '?'))
+        # ⚠️ 「当前数字」的**全部**载体都要对实测负责，不只 tests/README（2026-10-03 补）：
+        # 同一时刻仓库里曾同时存在 676 / 682 / 707 三个"用例数"（WORK_PLAN 与 tests/_util.py
+        # 的散文里各手写一份），而闸门只盯 tests/README 一处 → 另外两处随意漂。
+        # 判据用法：每条 (文件, 锚定正则, 该条量的是什么) —— 正则必须**恰好命中一次**。
+        # 正因如此，正文里"历史读数"要写成不带数字的叙述（否则正则会把历史值也抓来对账）：
+        # 这条约束本身是目的 —— **留在纸上的数只能是当前值**。
+        # 「门禁 N 项」的真值 = 本次 RESULT 的最终长度 = 现在已累计的 + 本处这 1 条。
+        cases = real
+        gates = len(RESULT) + 1
+        decl = [
+            ('WORK_PLAN.md', r'用例实测\s*\*\*(\d+)\s*项\*\*', cases, '用例数'),
+            ('WORK_PLAN.md', r'门禁\s*\*\*(\d+)\s*项\*\*', gates, '门禁条数'),
+            (os.path.join('tests', '_util.py'), r'全套\s*(\d+)\s*条用例', cases, '用例数'),
+        ]
+        badc, hits_ok = [], 0
+        for rel, rx, want, what in decl:
+            hit = re.findall(rx, _read(os.path.join(BASE, rel.replace('/', os.sep))))
+            if len(hit) != 1:
+                badc.append('%s 的「%s」命中 %d 次 /%s/（要恰好 1 次：0 次=措辞改了，>1 次=有第二处手写）'
+                            % (rel, what, len(hit), rx))
+                continue
+            hits_ok += 1
+            if int(hit[0]) != want:
+                badc.append('%s 的「%s」写 %s 而实测 %d' % (rel, what, hit[0], want))
+        check(not badc, '当前数字各处声明 == 实测（命中 %d 处）' % hits_ok,
+              '；'.join(badc[:3]) if badc else 'ok')
 
 
 def main():
@@ -843,6 +1207,10 @@ def main():
     stage_no_ide_local_files()
     stage_no_people_names()
     stage_index()
+    stage_json_registries()
+    stage_referenced_files_tracked()
+    stage_font_sizes()
+    stage_selfcheck_sections()
     stage_docstring_budget()
     stage_kb_authority()
     stage_package_manifest()

@@ -18,7 +18,14 @@ add_language 添加新语言 / refactor 布局文本转 @key。
   ⚠️ 只有 updateLocalesCode 会立即刷新**已打开页面**的文案
   （内部 = LanguageManager::setCurrentCode + 遍历 ActivityStack 调 BaseApp::updateLocales）。
 只调 LANGUAGEMANAGER->setCurrentCode 不会刷新在屏控件文本，用户要「退出重进」才看到新语言。
-- 换行转义：.tr 里写 `\n`（官方 i18n 文档），转 .json 时必须还原成**真实换行符**；
+- 换行转义：⚠️ **官方语法是 XML 字符引用 `&#x000A;`**（官方 i18n 文档原文：
+  `<string name="new_line_test">第一行&#x000A;第二行</string>`）。
+  本工具**额外容忍**字面 `\n`（两个字符）并在转 .json 时还原成**真实换行符**；
+  ⚠️ 归因修正（2026-10-03）：改前这里写「.tr 里写 `\n`（**官方 i18n 文档**）」—— **官方不是这么写的**。
+  风险：官方工作流是**编译器**把 .tr 转 json，若编译器不做反斜杠还原，
+  则本工具**写出**的字面 `\n`（见 `_escape_tr`）经编译器转出的 json 会把 `\n` 当普通字符。
+  ⇒ **建议一律写 `&#x000A;`**（任何 XML 解析器都会解开，对编译器与本工具都安全）。
+  设备侧硬要求不变：json 里必须是真实 `0x0A`；
 框架取值不做反斜杠还原，设备端 zk_gdi_draw_text 按 0x0A 切行。
 多语言需字体支持（默认精简字体，建议 font_cut_tool 自定义字体）；
   ⚠️ 精简字库常缺 `&`、`@` 等 ASCII 符号 → 文案里禁用（用 "and" / 空格 代替），
@@ -48,7 +55,14 @@ def _i18n_dir(project_root):
 
 
 # ---------------------------------------------------------------- 换行转义
-# .tr（源）按官方文档写 `\n`；.json（设备读）必须是真实换行符。
+# 官方语法 = XML 字符引用 `&#x000A;`（任何 XML 解析器都会解成真实 LF）。
+# 本模块**额外容忍**字面 `\n`：读(_unescape_tr) 会还原，写(_escape_tr) 也写字面 `\n`。
+# ⚠️ 归因修正（2026-10-03）：改前这里写「.tr（源）按官方文档写 `\n`」—— **官方文档写的是 `&#x000A;`**。
+#    风险：官方工作流由**编译器**把 .tr 转 json；若编译器不做反斜杠还原，
+#    本模块写出的字面 `\n` 经它转出的 json 会把 `\n` 当普通字符（设备显示「\n」文字）。
+#    ⇒ 写 .tr 一律用 `&#x000A;`；本模块写 `\n` 属**已知可移植性差异**（见
+#      knowledge/devflow/i18n-multilang.md §6，未擅自改行为）。
+# .json（设备读）必须是真实换行符。
 # 实证（2026-09-10 反汇编 v85x easyui 2.9.0 libeasyui.so）：
 #   LanguageManager::getValue 直接 Json::Value::asString() 返回，不做反斜杠还原；
 #分行发生在 zk_gdi_draw_text，按字节 0x0A(LF) 切行（strchr(p, '\n')）。

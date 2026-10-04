@@ -45,7 +45,7 @@ AI 会自动完成：克隆项目 → 按 `requirements.lock` 安装依赖（该
 Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude_desktop_config.json` 的 `mcpServers`。
 > `python` 不在 PATH 时用完整路径（如 `C:/Users/<你>/AppData/Local/Programs/Python/Python313/python.exe`）。
 
-**3) 验证**—— 问 AI「**MCP 版本是多少？**」：应返回 `flythings-kb-open 0.27.173-open`，**48 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / zkshot，
+**3) 验证**—— 问 AI「**MCP 版本是多少？**」：应返回 `flythings-kb-open 0.27.195-open`，**48 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / zkshot，
 在 `bin_tools/<平台>/` 下，**不是 op、不占 op 名额**）。
 
 > **工具面三模式（按客户端选一个，别同时配）**
@@ -118,7 +118,7 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
   `platform toolchain url must not be empty`——先放好再编译
 
 ### 🧪 整机自检与缺陷单
-- **整机快照**`flythings_selfcheck`：九个分区（设备信息 / 应用状态 / 显示 / 存储 / 网络 / 蓝牙 / 输入 / 外设 / 时间）
+- **整机快照**`flythings_selfcheck`：**11 个分区**（设备信息 / 应用状态 / 显示 / 存储 / 网络 / 蓝牙 / 输入 / 外设 / 时间 / 库清单 / 部署一致性）
 每区给 `{ok, hint, data}` —— **「读不到」本身是结论**（`ok=false` + hint 说清需要什么条件 / 去哪查），绝不静默吞掉；
 采集容忍设备缺工具（优先随仓 `bin_tools/<平台>/busybox`，否则纯 adb shell + getprop/cat）；
   `diff_against=<上次快照.json>` 逐分区逐项比对，`out=<json>` 落盘（可复用作基线）。
@@ -151,6 +151,8 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 
 ---
 
-当前版本 `0.27.173-open`（48 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
+**写知识/判据/op 契约前先读 [`DESIGN_SPEC.md`](DESIGN_SPEC.md)**（MCP 只讲"本平台与标准 Linux/rootfs/GUI/包组件的差异"；通用编程能力属 AI 原生，不入库；规范优先、实测优先、不静默、唯一真源）。
+
+当前版本 `0.27.195-open`（48 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
 
 MIT License · FlyThings Team · 深圳中科世为科技有限公司 · [developer.flythings.cn](https://developer.flythings.cn/)

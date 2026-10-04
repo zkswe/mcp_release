@@ -163,5 +163,72 @@ class TestIndexFreshnessFields(unittest.TestCase):
                       ('fresh', 'aging', 'stale', 'unknown'))
 
 
+class TestIndexCoverageAndEvidence(unittest.TestCase):
+    """kb_index 的**覆盖度**与**证据口径**（2026-10-03 修的两处系统性缺口）。
+
+    为什么要有：类别名单原先被手抄在两处（gen_kb_index / kb_frontmatter），新增
+    `knowledge/media`、`knowledge/components` 时两边都漏补 —— 那两篇派生页「在磁盘上、
+    也在 rag 索引里，却不在 kb_index 里」：拿不到 freshness/advisory 标注、不受 front-matter
+    门禁约束。同时 `evidenceLevel` 有两套口径（本文件与 kb_local），只有人工判据的文档
+    被算成「带可执行证据」，检索侧据此不再加 advisory。两条都用契约钉住。
+    """
+
+    def _disk_docs(self):
+        import kb_local as kbl
+        import os
+        out = set()
+        for cat in kbl.categories():
+            d = os.path.join(kbl.TOTAL_KB, cat)
+            if not os.path.isdir(d):
+                continue
+            for f in sorted(os.listdir(d)):
+                if f.endswith('.md') and f != 'README.md':
+                    out.add('knowledge/%s/%s' % (cat, f))
+        return out
+
+    def test_kb_index_covers_every_category_doc(self):
+        """磁盘上分类目录里的每篇 .md 都必须进 kb_index（不许再有"漏收一类"）。"""
+        import gen_kb_index as gki
+        have = {d['path'] for d in gki.build()['docs']}
+        missing = sorted(self._disk_docs() - have)
+        self.assertEqual(missing, [], '这些文档在磁盘上但不在 kb_index（漏收分类？）：%s'
+                         % missing[:5])
+
+    def test_categories_derived_from_disk(self):
+        """类别名单必须从磁盘派生 —— knowledge/ 下的每个一级目录（除候选区/报告/日志）都要在内。"""
+        import kb_local as kbl
+        import os
+        disk = {d for d in os.listdir(kbl.TOTAL_KB)
+                if os.path.isdir(os.path.join(kbl.TOTAL_KB, d))
+                and not d.startswith(('.', '_')) and d not in kbl.KB_SKIP_DIRS}
+        self.assertEqual(disk - set(kbl.categories()), set(),
+                         '有分类目录没被 categories() 覆盖（名单又被写死了？）')
+
+    def test_evidence_level_matches_kb_local(self):
+        """kb_index 的 `evidenceLevel` 必须等于 `kb_local.evidence_level()`（口径只许有一份）。"""
+        import io
+        import os
+        import gen_kb_index as gki
+        import kb_local as kbl
+        bad = []
+        for d in gki.build()['docs']:
+            p = os.path.join(BASE, d['path'])
+            meta, _b, _e = kbl.parse_front_matter(io.open(p, encoding='utf-8').read())
+            if d['evidenceLevel'] != kbl.evidence_level(meta):
+                bad.append('%s: %s ≠ %s' % (d['path'], d['evidenceLevel'],
+                                            kbl.evidence_level(meta)))
+        self.assertEqual(bad, [], 'kb_index 与 kb_local 的证据口径分叉：%s' % bad[:3])
+
+    def test_manual_only_evidence_is_not_has_evidence(self):
+        """只有人工判据（无 cmd/artifact）的 evidence **不算** has-evidence。"""
+        import kb_local as kbl
+        self.assertEqual(kbl.evidence_level({'evidence': [{'kind': 'manual', 'note': 'x'}]}),
+                         'manual-only')
+        self.assertEqual(kbl.evidence_level({'evidence': [{'cmd': 'echo hi'}]}),
+                         'has-evidence')
+        self.assertEqual(kbl.evidence_level({'evidence': [{'artifact': 'a.png'}]}),
+                         'has-evidence')
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

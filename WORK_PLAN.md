@@ -1,12 +1,18 @@
 # FlyThings MCP 后续工作安排计划
 
-> 整理：2026-10-03（第二轮刷新）· 基线 **v0.27.173-open**
-> 实测：**48 op** ｜ 一致性门禁 **61/61 全绿** ｜ 检索回归 **30 组 / 225 问法，top-1 172**，对照组 9/10
+> 整理：2026-10-03（第四轮刷新）
+> 实测数字**不写在这里**（本行原先手写「门禁 N 项 / 用例 N 项 / 检索 N 组…」，
+> 三轮里漂了两次 —— **正因为抄一份漂一份，这些数字一个都不留在这里**，连"最近一次读数"也不留：
+> 留在纸上的每个数都必须是**当前值**，而"当前值"只由下面两条命令产出）。
+> 要当前值就跑下面两条，它们**自己会打印**：
+> `python scripts/check_consistency.py --with-tests`（看 `total=… fail=…` 与
+> `test count matches real run` 两行）· `python scripts/check_retrieval.py`（看 `[PASS]` 行）
+> 工具数仍是 **48 op**（由 `stage_tool_count` 六方一致盯着，可放心引用）。
 > 状态：✅ 已完成 / 🤖 AI 可执行 / 👤 需需求方输入 / 🔌 需设备
 
-> ⚠️ 上一版（2026-10-02）的基线是「v0.27.173 / 门禁 39 / 44 ops」——**数字与内容都已脱节**，
-> 那张表已经不能当雷达用了（任务 1/5–11/13 当时标着"未开工"，其实早已完成）。
-> 本版按**实测**重写；以后每次大动作后同步刷新。
+> ⚠️ 上一版（2026-10-03 第二轮）写「门禁 61/61 全绿」—— **实为 63 项且 2 项红**（用例超时 + 门禁不可复现），
+> 已在「验证层体检」中修复（详见 `REVIEW-2026-10-03.md` §6）。**门禁条数与用例耗时不由人写**，
+> 每次大动作后按实跑刷新。
 
 ---
 
@@ -17,7 +23,7 @@
 
 | 域 | 真源 | 唯一消费入口 | 状态 |
 |---|---|---|---|
-| ① op 契约 + 工具面分层 | `op_spec.json` | `op_spec_loader.py` | ✅ 三层（常驻/按需/深入）；常驻 **5878/6000** |
+| ① op 契约 + 工具面分层 | `op_spec.json` | `op_spec_loader.py` | ✅ 三层（常驻/按需/深入）；常驻 **5080/6000**（84.7%，`params` 已移出常驻；数字由门禁对账，见 §二） |
 | ② 生命周期 / 代码接口 | `lifecycle_spec.json` | `lifecycle_loader.py` | ✅ |
 | ③ 平台能力矩阵 | `platform_capabilities.json` | `platform_cap_loader.py` | ✅ |
 | ④ 硬件外设 API | `hardware_catalog.json` | `hardware_tools.py` | 🟡 **仍半成品**（只收型号/坑，API 面未收编） |
@@ -38,7 +44,8 @@
 
 | 内容 | 说明 |
 |---|---|
-| ✅ 三层拆分 | 常驻（summary+triggers+params+hardRules）→ tool description；按需（flow/rules/notes…）→ `op="describe:<名>"` / 资源 `flythings://ops/<名>`；深入 → knowledge 检索。常驻从 11943 降到 5878 |
+| ✅ 三层拆分 | 常驻（summary+triggers+hardRules）→ tool description；按需（params/flow/rules/notes…）→ `op="describe:<名>"` / 资源 `flythings://ops/<名>`；深入 → knowledge 检索。常驻从 11943 → 5878 → **4730 → 5080**（`params` 移出后再进 4 条硬规则） |
+| ✅ 常驻再瘦身 | **`params` 移出常驻**（2026-10-03）：参数名 `op="list"` 已回、语义 `describe` 按需给，常驻再写一遍是重复计费（占 19.5%）。**5878 → 4730（78.8%）**；同日三批 `notes` 清零 + 4 条硬规则 → **5080/6000（84.7%）**，余量按实测均值 ≈ 再加 **8** 个 op |
 | ✅ 分级筛选 | 需求原话进来 → `op="find:<原话>"` 出候选（带命中理由 + 知识指针）→ describe 取契约 → 调用。**207 条口语触发词**，匹配器与知识权威归属**共用一份**（`kb_authority.alias_hit`） |
 | ✅ 路由回归 | `tests/test_op_routing.py`：27 组口语 → 期望 op top-3 命中（实测 27/27） |
 | ✅ 长任务进度 | 10 个长任务 op（清单在 `op_spec.json.longOps`）走工作线程 + `ctx.report_progress`；顺带修掉「同步长任务堵死事件循环」 |
@@ -49,8 +56,9 @@
 
 | 原 # | 任务 | 结论 |
 |---|---|---|
-| 1 | docstring 预算顶爆（11996/12000） | ✅ **改口径解决**：不是删字，是三层分层（常驻 5878/6000，加 op = 加一行） |
+| 1 | docstring 预算顶爆（11996/12000） | ✅ **改口径解决**：不是删字，是三层分层（常驻 5080/6000，加 op = 加一行） |
 | 2 | `test_font_autoscan` ×10 失败 | ✅ 按 `requirements.lock` 装 `fontTools==4.65.0` → 32 OK |
+| 14 | **验证层体检**（2026-10-03 二次评审）：用例非 hermetic（漏 mock → 真 adb，全套 >900s）、门禁依赖仓外目录不可复现、数字漂移（op 数/用例数/耗时） | ✅ 三件都修：`tests/_util.py` adb 离线守卫 + `sync_ui_tools` skip 码 2 对齐 + 数字进闸门；另把用例的守法改成**逐用例看门狗**（`scripts/run_tests.py`，慢不算错、挂才算）。用例实测 **707 项**，门禁 **76 项**（两处数字由 `check_consistency.py --with-tests` 的「当前数字各处声明 == 实测」对账，别再手写第三处） |
 | 5–10 | launch 活性 / 陈旧帧 / easyui 同源 / 分辨率核对 / cfg 修正 / translate_ui 交互 | ✅ 全部完成（真机闭环） |
 | 11 | C++ 回调桩 op | ✅ `flythings_gen_logic_stub`（只补不改、幂等） |
 | 13 | 场景 Skill 四件套 | ✅ 已落用户级 skill；**且已升级为「由 `flow_spec.json` 派生」**（5 篇正文不再手写） |

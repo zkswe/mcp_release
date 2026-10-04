@@ -1,0 +1,69 @@
+{
+ "_doc": "fun（FlyThings 工具链 CLI）能力登记表 —— 摸底快照，供 MCP 复用其子命令而不是自造流程。",
+ "_source": "实测 `toolchain/fun.exe --help` 与各子命令 `--help`（2026-10-03）；版本 v0.0.2+2609281006_e09dc96",
+ "_rule": "凡是 fun 已有的能力，MCP **只做编排与判据**，不重新实现（例：建项目=fun create；补桩=看一次 fun build 的行为）。注：`sim`（模拟器）**当前未释放**、`run`（脚本）**能力不明确**，均不登记、不使用。",
+ "version": "v0.0.2+2609281006_e09dc96",
+ "commands": {
+  "create": {
+   "usage": "fun create [--name --app-version --platform --type --description] <starter>",
+   "what": "创建新项目；`<starter>` 是项目路径（`.` = 当前目录）",
+   "flags": {
+    "--name": "项目名称",
+    "--app-version": "版本，默认 1.0.0",
+    "--platform": "目标平台（如 z21 / t113 / v85x）",
+    "--type": "zkgui | bin | staticLibrary | sharedLibrary",
+    "--description": "项目描述"
+   },
+   "note": "**交互式命令**（实测 2026-10-03：无 TTY/stdin 时**挂住等输入**、不落盘）——MCP 调用必须①给全 `--name/--platform/--type` 等参数，或②通过 stdin 喂答，或在终端里人工执行；**不要裸跑等它自己返回**"
+  },
+  "install": {
+   "usage": "fun install",
+   "what": "安装配置文件中声明的所有依赖"
+  },
+  "add": {
+   "usage": "fun add <package>",
+   "what": "添加依赖包"
+  },
+  "build": {
+   "usage": "fun build [--project-dir -p --platform -t --target --verbose -D --cflags]",
+   "what": "编译项目",
+   "note": "**没有\"生成回调桩\"开关**：缺失的桩由**首次编译失败的副作用**追加进 `src/logic/<page>Logic.cc`（2026-10-03 真机实测）→ 再跑一次即通过；**手写桩会与它重复定义（redefinition）**"
+  },
+  "launch": {
+   "usage": "fun launch",
+   "what": "部署到设备并启动（仅临时调试，掉电即失）"
+  },
+  "pack": {
+   "usage": "fun pack",
+   "what": "制作升级包（update.img）"
+  },
+  "test": {
+   "usage": "fun test",
+   "what": "编译并运行 `tests/` 下的测试"
+  },
+  "clean": {
+   "usage": "fun clean",
+   "what": "清理编译临时文件"
+  },
+  "migrate": {
+   "usage": "fun migrate --input=INPUT --output=OUTPUT",
+   "what": "迁移配置"
+  },
+  "publish": {
+   "usage": "fun publish",
+   "what": "发布依赖包"
+  },
+  "login": {
+   "usage": "fun login",
+   "what": "用户登录"
+  },
+  "register": {
+   "usage": "fun register",
+   "what": "用户注册"
+  },
+  "self-update": {
+   "usage": "fun self-update",
+   "what": "更新工具链自身"
+  }
+ }
+}

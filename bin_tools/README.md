@@ -105,7 +105,7 @@ adb shell /data/touch run /data/ui_test_script.txt
 # 运行同时 adb logcat 观察 [TOUCH] 与业务日志
 ```
 > 自动判协议：`ABS_MT_SLOT` → MT-B；`ABS_MT_POSITION_X` → MT-A；否则单点。
-> 源码/自测/重编：`tools/touch_inject/`（`wsl bash scripts/touch_build_all.sh all`）。
+> 源码/自测/重编：`tools/touch_inject/`（构建脚本 `touch_build_all.sh` 在**本地 workspace、不入库**）。
 
 ## 🎯 ui_test 调用方法（兼容保留，需人工给节点）
 

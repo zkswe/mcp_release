@@ -27,7 +27,9 @@ sys.path.insert(0, BASE)
 import kb_local as kbl          # noqa: E402
 
 INDEX_PATH = os.path.join(kbl.TOTAL_KB, 'kb_index.json')
-CATEGORIES = ('devflow', 'uicontrols', 'hardware', 'esl', 't113-car', 'v85x')
+# 类别名单**从 kb_local 派生**（原先在本文件与 kb_frontmatter.py 各手抄一份 →
+# 新增 knowledge/media、knowledge/components 时两边都漏了，那两页就不在 kb_index 里）。
+CATEGORIES = kbl.categories()
 
 
 def _queries_registered():
@@ -73,8 +75,11 @@ def build():
                     age = None
             fr, age = kbl.freshness(meta)
             ev = meta.get('evidence') or []
-            ev_level = ('has-evidence' if ev else
-                        ('manual-only' if meta.get('needs_evidence') else 'none'))
+            # `evidenceLevel` 的**唯一口径** = kb_local.evidence_level（has-evidence 要求
+            # evidence 里带 `cmd` 或 `artifact` 这些**可执行判据**）。原先本文件自己写了一遍
+            # 「列表非空即 has-evidence」→ 于是只有人工判据（kind: manual）的文档被标成
+            # has-evidence，KB 检索侧据此**不再加 advisory**（把"没验过"说成了"有判据"）。
+            ev_level = kbl.evidence_level(meta)
             row = {'id': meta.get('id'), 'path': rel, 'title': meta.get('title'),
                    'category': meta.get('category') or cat,
                    'platforms': meta.get('platforms') or [], 'tags': meta.get('tags') or [],
@@ -94,7 +99,7 @@ def build():
             counts['total'] += 1
             counts['byCategory'][cat] = counts['byCategory'].get(cat, 0) + 1
             counts['byStatus'][row['status']] = counts['byStatus'].get(row['status'], 0) + 1
-            if ev:
+            if ev_level == 'has-evidence':      # 口径同上：按**可执行判据**计，不按"列表非空"
                 counts['withEvidence'] += 1
             if ev_level == 'manual-only':
                 counts['manualOnly'] = counts.get('manualOnly', 0) + 1

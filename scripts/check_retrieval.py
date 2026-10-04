@@ -45,6 +45,21 @@ MIN_QUERIES_PER_GROUP = 5
 # 分组用例：doc = 期望权威文档（相对仓库根）；queries = 真实问法
 # --------------------------------------------------------------------------- #
 GROUPS = [
+    # 公开版能力边界（2026-10-03）：AI 读到能力表里满屏 aw-dvr / aw-mpp 会以为公开版能照做，
+    # 而「哪些知识不在 open 版」的真源是 capability-boundaries.md 第 2 节。
+    # 实测（登记时）：top-1 4/5、落外 1。
+    {'name': '能力边界（open 版不做什么）', 'doc': 'knowledge/devflow/capability-boundaries.md',
+     'queries': ['多媒体在公开版里哪些不做', 'open 版查不到某能力怎么办', '哪些知识不在 open 版',
+                 'open 版和内部版差别', 'V85X 深水区 open 版有吗'],
+     'min_top1': 4, 'max_miss': 1},
+    # 多媒体面自己的边界（派生页第 5 节；数据真源 = media_capabilities.json 的 openBoundary）
+    # 实测（登记时）：top-1 3/3、落外 0。
+    {'name': '多媒体公开版边界', 'doc': 'knowledge/media/media-capability-index.md',
+     'queries': ['公开版多媒体支持哪些', '多媒体能力在公开版缺了什么', 'V85X 多媒体在 open 版里有吗',
+                 '公开版多媒体边界在哪看', 'open 版多媒体深度资料没有怎么办',
+                 '能力表里的 aw-dvr 包在公开版能用吗'],
+     'min_top1': 6, 'max_miss': 0},        # 实测 6/6（2026-10-03 登记）
+
     {
         'doc': 'knowledge/uicontrols/listview-wheel-picker.md',
         'name': '滚轮 / 选择器',
@@ -70,12 +85,24 @@ GROUPS = [
     {
         'doc': 'knowledge/devflow/dependency-package-docs.md',
         'name': '依赖包用法文档（包卡）',
-        'min_top1': 5,
+        'min_top1': 4,          # 原 5；2026-10-03 把 packages/** 纳入检索后降到实测值 4
         # 第 1 条例外（2026-10-02，新增内置包总览页后被挤）：`Z20 的 openssl 和别的平台版本不一样`
         # → 现排 #4（本篇 0.0154 vs 榜首 builtin-packages.md 0.0262）。**榜首是更直接的答案**——
         # 那一页就是按包键列 openssl 等包的版本、并明说"同一包在不同包键上版本不同"；
         # 本篇管的是"包卡怎么读、Manifest 该声明哪些包"的口径。真记录，不调阈值。
-        'max_miss': 1,
+        #
+        # 2026-10-03 复核（packages/** 进索引）：那条问法的榜首**又前移**到
+        # `packages/openssl/platforms.md`（逐平台版本真值表）——比 builtin-packages 更具体，
+        # 是本篇之外的**更优答案**；代价是本篇少了一个 top-1（5→4），已按实测下调 min_top1。
+        # 另一条 `Manifest 里该写哪个包和版本` 掉到 #2（榜首 packages/nanovg/README.md，
+        # 仍是 top-3 内命中）。**不删问法、不调参凑绿。**
+        #
+        # 2026-10-03 再复核（硬件外设 API 权威页 + 串口权威页入库后）：该条又问到 **#4** ——
+        # 榜首变成 `knowledge/hardware/peripheral-api-zkhardware.md`（新页 §4 的
+        # `<package id="zkhardware" version="0.0.0">` 片段与这条**泛问法**撞词）。
+        # 这是**语料增长的代价**、也是「泛问法会被某个具体示例页接走」的典型；
+        # 权威口径仍在本页与 builtin-packages.md（#3）。按实测把允许落外放到 2 条。
+        'max_miss': 2,
         'queries': [
             '依赖包说明不全 怎么看怎么用', 'package.yaml 包卡怎么读', '包卡 package.yaml 里的 api 签名怎么看',
             'Manifest 里该写哪个包和版本', 'Z20 的 openssl 和别的平台版本不一样',
@@ -90,7 +117,15 @@ GROUPS = [
         # `setprop ctl.restart zkswe 连续重启 黑屏 进程 D 状态` → 现排 #4（本篇 0.0310 vs 榜首
         # z20-86panel-upgrade 0.0323，分差 <5%）。榜首几篇都在讲同一件事（zkswe 重启/部署预算/
         # 部署一致性），属"多篇都答得通"；权威套路仍在本篇 top-5 内。**不是阈值问题，是真记录**。
-        'max_miss': 1,
+        #
+        # 第 2 条例外（2026-10-03，packages/** 进索引后）：
+        # ① `setprop ctl.restart zkswe 连续重启 黑屏 进程 D 状态` 的榜首前移到
+        #    `packages/mqtt-cxx/platforms.md`——那页正是这条坑的**真源**（pkg_netstack 真机验证时
+        #    记下的"别连续快速 setprop ctl.restart"），属更优答案，本篇排到 top-5 外；
+        # ② `包验证工程 自检 AUTO 一键跑完` 落到 #5，榜首 `packages/zknet/platforms.md`
+        #    （真机验证记录：九分区快照 8/9、AUTO 一键跑）——同样是"真机证据"更贴近问法。
+        # 两条都是**合法/更优竞争者**，按实测登记 max_miss=2（不删问法、不调阈值）。
+        'max_miss': 2,
         'queries': [
             '依赖包怎么上真机验证', '包验证工程 自检 AUTO 一键跑完', '触摸注入 + logcat 取证 怎么组合',
             'setprop ctl.restart zkswe 连续重启 黑屏 进程 D 状态', 'Z21 上电 RTC 1970 HTTPS 证书失败',
@@ -133,7 +168,11 @@ GROUPS = [
         'doc': 'knowledge/devflow/reusable-components.md',
         'name': '组件化规范入口（规范在哪 / 四件套 / checklist）',
         'min_top1': 4,          # 实测 4/5 top-1
-        'max_miss': 0,
+        # 1 条落外（2026-10-03，语料增长后的**真实**挤出）：`组件 platforms.md 写什么` → 现排 #4，
+        # 榜首三条是 `components/ui_v1/{_mapping/TabView,Calendar,Chart}/platforms.md` ——
+        # 那是**真·platforms.md 实例**，对"这文件写什么"是**合法甚至更直观**的答案；
+        # 规范口径仍在本页（每条必写什么）。按实测登记，不删问法。
+        'max_miss': 1,
         'queries': [
             '组件规范在哪看', '四件套是什么', '新增组件 checklist', '组件代码规范',
             '组件 platforms.md 写什么',
@@ -185,6 +224,11 @@ GROUPS = [
         'doc': 'knowledge/devflow/custom-font-config.md',
         'name': '字库配置 / 缺字',
         'min_top1': 2,
+        # 1 条落外（2026-10-03，语料增长后的**真实**挤出）：`字库怎么加进工程` → 现排 #4，
+        # 榜首 `upgrade-pack-image.md`（固化会整体替换 /res → 字库必须随包）、
+        # #2 `device-preflight-spec.md`（体检含字库项）、#3 `open-source-stack-integration.md`。
+        # 三条都在讲"字库与部署"这个**相邻**话题，属合理竞争者；本页仍是"怎么加"的权威。
+        'max_miss': 1,
         'queries': [
             '字体不显示 缺字', '字库怎么加进工程', '设备字库裁剪了哪些字符',
             '设备字库不支持 emoji 显示空白', '字体 ttf 放 resources 还是 /res',
@@ -227,7 +271,17 @@ GROUPS = [
         # 第 1 条例外（2026-10-02，同上）：`第三方 .so 放哪` → 现排 #4。榜首是
         # `components/blend2d/platforms.md`——那篇的矩阵列就是「库从哪来 / 依据」，对"库放哪"
         # 是个**合理**答案（但权威口径仍在本文 top-5）。真记录，不调阈值。
-        'max_miss': 1,
+        #
+        # 第 2 条例外（2026-10-03，packages/** 进索引后）：`registry 里没有这个包` 的榜首变成
+        # `packages/nanovg/README.md`（#2 还是 `packages/README.md`）——**那是更优答案**：
+        # nanovg 正是"服务端注册表里没有、但本仓自带 include+lib"的典范案例，这篇问法问的就是它；
+        # 本文管的是"通用怎么接第三方库"的方法论。按实测登记 max_miss=2。
+        #
+        # 第 3 条例外（2026-10-03 同日，语料再增长后）：`undefined reference 链接错误` 掉到 #4，
+        # 榜首是 `knowledge/v85x/h264-player-usage.md`（**该文有真实的 undefined reference 实战**：
+        # 两套 h264 API 混用），#3 是 `packages/openssl/platforms.md`（缺 openssl 的真实符号冲突）。
+        # 都是**同类问题的真实案例**，属合理竞争者；本页仍是"为什么会 undefined reference"的通论。
+        'max_miss': 3,
         'queries': [
             '想用开源库怎么办', 'registry 里没有这个包', '自己编译的库怎么加进工程',
             'dlopen 找不到库', 'musl 和 glibc 有什么区别', '静态库太大怎么办',
@@ -263,8 +317,14 @@ GROUPS = [
         # 阈值**按实测登记、不调参凑数**：top-3 允许 2 条落外 ——
         # 「空闲超时怎么判才准」「按钮回调返回 true 还是 false」被骨架散文页的上下文压过（排 4/5），
         # 答案仍完整可读；若将来整体掉出 top-5，说明索引/内容真退化了。
+        #
+        # 2026-10-03 复核（packages/** 进索引后）：落外从 2 条变 3 条 ——
+        # `onUI_quit 里要做什么`（#5）/ `空闲超时怎么判才准`（#4）/ `按钮回调返回 true 还是 false`（#4）
+        # 的榜首**全部**是 `knowledge/devflow/activity-code-skeleton.md`，即上面那条已登记的
+        # **合法替代答案**（同一事实的两种载体：本页是注册表派生，那页是散文+实证）。
+        # 新增的只有第 3 条落外，成因同类；按实测登记 max_miss=3。
         'min_top1': 3,
-        'max_miss': 2,
+        'max_miss': 3,
         'queries': [
             'onUI_quit 里要做什么', '资源释放放 onUI_hide 还是 onUI_quit',
             '切页后回调还触发吗', '隐藏页的定时器还在跑吗', '空闲超时怎么判才准',
@@ -297,7 +357,16 @@ GROUPS = [
         # 选型时不知道能直接用现成包（2026-10-02 需求方指出）。
         'doc': 'knowledge/devflow/builtin-packages.md',
         'name': '内置依赖包总览（生态 / 版本 / 包名索引）',
-        'min_top1': 8,          # 实测 8/8 top-1
+        # 原 `min_top1: 8`（实测 8/8）。2026-10-03 把 packages/** 纳入检索后降到实测值 6：
+        # 两条问法的 top-1 前移到各自**包页的逐平台真值表**——`openssl 是什么版本` →
+        # `packages/openssl/platforms.md`；`有没有 curl 包` → `packages/curl/platforms.md`。
+        # 那比本页（由 package_catalog.json 派生的**总览**）更具体，属更优答案；两条仍在本页
+        # top-3 内（#3 / #2）。按实测下调，不删问法、不调参凑绿。
+        #
+        # 2026-10-03 再复核（设计规范第一批：措辞归约 后）：6 → 5。新落一条
+        # `怎么给工程加个包` → `devflow/flow-index.md`（讲流程，比"包总览"更贴题）。
+        # 三条落外**都是"更具体的页接走"**，仍按纪律：不删问法、不调参，只如实登记。
+        'min_top1': 5,
         'queries': [
             '有哪些内置包', '有没有 MQTT 包', 'openssl 是什么版本', '内置了哪些依赖包',
             '这个平台上能直接用哪些包', '怎么给工程加个包', 'zlib 版本', '有没有 curl 包',
@@ -320,6 +389,11 @@ GROUPS = [
         'doc': 'knowledge/devflow/device-preinstalled-libs.md',
         'name': '设备自带库（免编译借用）',
         'min_top1': 4,          # 实测 6 条里 top-1 命中 5（2026-09-30 建组 A1 稿）
+        # 第 1 条例外（2026-10-03，packages/** 进索引后）：`注册表里没有这个包是不是就没有`
+        # → 本页掉到 #4。榜首 `knowledge/devflow/builtin-packages.md`（讲注册表里**有**什么）、
+        # #2/#3 是 `packages/nanovg/{README,platforms}.md`（"注册表没有但本仓自带"的实例）。
+        # 三条榜首/次席都答得通同一个问题，本页仍在 top-5；按实测登记 max_miss=1。
+        'max_miss': 1,
         'queries': [
             '设备上有哪些库', '想用的库设备上有没有', '能不能直接用不用自己编译',
             'nanovg 设备上有吗', 'dlopen 找不到库', '注册表里没有这个包是不是就没有',
@@ -416,6 +490,135 @@ GROUPS = [
             '换个框架搬工程按什么顺序', '改已有工程的步骤顺序',
             '开发完了怎么走验收', '整个开发流程有几条路',
             '上机的步骤顺序', '界面做完到上机中间要做什么',
+        ],
+    },
+    {
+        'doc': 'packages/zkhardware/README.md',
+        'name': '包用法（怎么装怎么用 / 真机实测 / 坑）',
+        # 2026-10-03 建组（黑洞修复第 3 例：packages/** 进检索索引），同日二次划定边界。
+        #
+        # ⚠️ 同一天加了 `knowledge/hardware/peripheral-api-zkhardware.md`（域④ 的 API 权威页）后，
+        # 这一片知识变成**两页分工**，实测（见组注释下方的名次）：
+        #   本页   = 装法 / 怎么用 / **真机实测与踩坑** / 逐平台结论（+同包 platforms.md）
+        #   API 页 = **完整签名 / 平台变体矩阵 / 返回约定坑 / 引脚宏**
+        # 于是按语义把「问签名与接口面」的问法移交给 API 页组（`zkhardware 有哪些接口`、
+        # `GPIO 输入输出怎么写`），它们是**归属定错**而非被挤出 —— 问"接口/怎么写"本就该由
+        # API 契约页回答。本组只留**包用法/真机**口径的问法（≥5 条是组的下限）。
+        #
+        # 顺带记录一个**由新页修掉的真问题**：上一轮本组把 `背光亮度怎么调`、`ADC 读数怎么取`
+        # 登记为"措辞级召回限制"（当时命中 uicontrols 无关页）。新页给了背光/ADC 专门的 API 小节后，
+        # 这两条**都变成 API 页 top-1** —— 说明当时的诊断（措辞够不着、语料不够聚焦）是对的，
+        # 而**补一个聚焦页就是修法**。两条问法已随之上交给 API 页组。
+        'min_top1': 2,          # 实测 5 条里 top-1 命中 2（其余是 rank 2/3 命中 + 1 条挤出）
+        # 1 条落外：`zkhardware 蜂鸣器怎么响` → 现排 #4（榜首是 API 页）。这条问的是**行为**
+        # （面板上到底响不响），真机口径（86 面板没接蜂鸣器）在本页 §4 —— 所以它**留在本组**
+        # 并如实登记挤出，不因为"换到 API 页就能 top-1"而搬走。
+        'max_miss': 1,
+        'queries': [
+            'zkhardware 怎么用',
+            '过零 IO 怎么接', 'zkhardware PWM 怎么输出',
+            'zkhardware 蜂鸣器怎么响', '继电器怎么控制 三路',
+        ],
+    },
+    {
+        # 2026-10-03 建组（plan.md 根因④「硬件外设 API」的权威页）+ 同日接收上面移交的问法。
+        # 本页的**独有价值**是「完整签名 / 平台变体矩阵 / 返回约定坑」。
+        'doc': 'knowledge/hardware/peripheral-api-zkhardware.md',
+        'name': '硬件外设 API（签名 / 平台变体 / 返回约定；跨平台权威页）',
+        'min_top1': 11,         # 实测 16 条里 top-1 命中 12 → 留 1 条余量
+        # 1 条落外（**如实登记，不删问法、不改问法凑绿**）：`SPI 模式 0~3 怎么配` → 现排 #4，
+        # 榜首是 `knowledge/uicontrols/button-fields.md` —— 那是「模式」这个词被 UI 上下文抢走，
+        # 属**真·措辞歧义**（不是语料缺失：本页 §2.7 明写了 SPI_MODE_0..3）。
+        # 换更专的问法即可 top-1（实测 `SPI 全双工读写长度要一致吗` = top-1），
+        # 但这说明 SPI 的检索入口偏弱，留着让门禁看得见。
+        #
+        # 第 2 条例外（2026-10-03，媒体页加「公开版边界」节 → 索引多 1 个 chunk 后复核）：
+        # `setLuminance 哪些平台有` 也落到 #4，且**第 4 名与本页分数并列**（都是 0.0164，
+        # 榜首 platform-capability-matrix.md 0.0315）—— 这类平手顺序**加一个 chunk 就会翻**。
+        # 处置：**不改问法、不为绿色调参**，按实测把允许落外放到 2；
+        # 若日后本页补强平台变体表（让「哪些平台有」这类问法有更直接的入口），应把这 2 收回 1。
+        'max_miss': 2,
+        'queries': [
+            '硬件外设 API 在哪看', 'zkhardware 头文件有哪些类', 'zkhardware 有哪些接口',
+            'IGpioListener 怎么用', 'GPIO 边沿中断怎么注册', 'GPIO 输入输出怎么写',
+            'I2CHelper 构造函数参数', 'SPI 全双工读写长度要一致吗',
+            'PWMHelper 怎么设置占空比', '哪些平台有 zeroOutput 过零 IO',
+            'output 返回 0 是成功还是失败', 'setLuminance 哪些平台有',
+            '蜂鸣器 setBeepPWM 默认频率多少', 'SPI 模式 0~3 怎么配',
+            # 下面两条是上一轮登记在包组里的"措辞级召回限制"，新页把它们修成了 top-1：
+            '背光亮度怎么调', 'ADC 读数怎么取',
+        ],
+    },
+    {
+        # 2026-10-03 建组（plan.md 目标 1 明写的「通讯协议对接调试」；此前全表扫 协议/串口/UART
+        # 一条命中都没有，属**零 op 零权威页**的空白区，REVIEW-2026-10-03 §2.3 记过）。
+        # 本页的边界（需求方定）：MCP 只管「接进 FlyThings」的约定（生命周期接线 / SProtocolData
+        # 共享变量 / 帧解析契约 / listener 线程模型），**协议层**（Modbus 等）交给 Linux/Arduino 生态。
+        # 所以本组问法都落在「怎么接」而不是「Modbus CRC 怎么算」。
+        'doc': 'knowledge/devflow/uart-protocol-framework.md',
+        'name': '串口通讯与协议对接（框架接线 / 共享变量 / 帧解析契约）',
+        'min_top1': 12,         # 实测 16 条里 top-1 命中 13 → 留 1 条余量
+        # 2 条落外（**如实登记，不删问法、不改问法凑绿**）：
+        # ① `UART 怎么用` → 一条都进不了 top-5（coverage 0.618）。**"UART" 这个纯英文缩写
+        #    加泛问句检索偏弱**，是真实的入口弱点；换 `串口怎么通信`（coverage 1.0）即 top-1。
+        # ② `半包重组怎么做` → 落 top-5 外（coverage 0.272）。本页用的是「半包，等下次再拼」
+        #    这种口语写法，术语命中不足 —— 同①一样是**措辞级**问题，保留让门禁看得见。
+        # 注：原本还试过 `串口回调里能不能刷 UI`，它 top-1 是 `knowledge/uicontrols/cross-thread-ui-rule.md`
+        #    —— 那**本就是该问法的正解**（本页只是指向它），所以那条不该由本组认领，已移出。
+        'max_miss': 2,
+        'queries': [
+            '串口怎么通信', '收到串口数据怎么刷界面', '串口粘包拆包怎么处理',
+            'SProtocolData 是什么', 'getProtocolData 怎么用', 'onProtocolDataUpdate 怎么用',
+            '串口帧格式怎么定', '串口校验和怎么加', 'ttyS 怎么选',
+            '双串口怎么做', 'Modbus 能不能用', '485 怎么做',
+            '串口读线程 16KB 缓冲', 'registerProtocolDataUpdateListener 在哪调',
+            'UART 怎么用', '半包重组怎么做',
+        ],
+    },
+    {
+        # 2026-10-03 建组（补覆盖缺口：全仓此前**没有任何 i18n 知识页** —— 多语言机制只在
+        # activity-code-skeleton.md §7 有三行，6 个 i18n op 也既无 docRef 也无 seeAlso）。
+        # 建页时按需求方给的官方文档（developer.flythings.cn/zh-hans/i18n.html）对齐权威口径，
+        # 并如实登记一处**口径冲突**（换行写 `&#x000A;` 还是 `\n`，见该页 §6）。
+        'doc': 'knowledge/devflow/i18n-multilang.md',
+        'name': '多国语言（i18n：机制 / 部署链路 / 换行 / 字库）',
+        'min_top1': 13,         # 实测 17 条里 top-1 命中 14 → 留 1 条余量
+        # 2 条落外（**如实登记，不删问法、不改问法凑绿**）：
+        # ① `@key 是什么` → 现排 #4，榜首 `activity-code-skeleton.md` —— 那页 §7 确实写了 `@key`，
+        #    是**合法答案**（本页是它的展开与权威）；只能说这条问法的措辞更贴骨架页。
+        # ② `tr 和 json 什么关系` → 进不了 top-5，榜首 `ftu-json-pipeline.md` ——
+        #    **"json" 在本仓的默认语境是 ftu/json 那条链路**，属真·措辞歧义，不是语料缺失。
+        'max_miss': 2,
+        'queries': [
+            '怎么做多语言', '翻译文件放哪', '界面文案怎么跟着语言变',
+            '加了语言不生效', '切了语言界面没变', '设备显示 not found value',
+            '文案乱码 白块', '语言 key 对不齐', '缺翻译怎么找',
+            '@key 是什么', 'setTextTr 怎么用', '语言切换页在哪',
+            'tr 和 json 什么关系', 'updateLocalesCode 和 setCurrentCode 区别',
+            '多语言换行 不显示换行', 'i18n 目录', '中文字库 多语言',
+        ],
+    },
+    {
+        # 2026-10-03 建组（补 `knowledge/uicontrols/textview-fields.md` 这个名字空缺 ——
+        # 16 个控件有 *-fields.md 而文本控件没有，上一轮被 check_doc_refs 照出来的）。
+        # 本页**故意不含字段表**（字段真源 = ui_schema.json + 派生表 json-field-mandatory.md），
+        # 只讲行为与坑（特殊字符集 / 三态色 / 跑马灯 / 纯显示定位）。所以本组只收
+        # **行为与坑**类问法；API 类问法归 widget-code-api、字段类归派生表。
+        'doc': 'knowledge/uicontrols/textview-fields.md',
+        'name': '文本控件（行为/坑：特殊字符集 · 三态色 · 跑马灯 · 纯显示）',
+        'min_top1': 12,         # 实测 13 条里 top-1 命中 13 → 留 1 条余量
+        'max_miss': 0,
+        # 试过但**按归属剔除**的 3 条（不是被挤出，是答案本属别页，硬留在本组等于让判据失真）：
+        #   · `setTextColor 怎么用` / `setBackgroundPic 相对路径` → API 真源是
+        #     `knowledge/uicontrols/widget-code-api.md`（本页只讲"三态色何时生效"这类行为）
+        #   · `touchable 要不要写 true` → 真源是 `json-field-mandatory.md` §2 分组 +
+        #     `touch-events.md`（本页只有一句定位说明）
+        'queries': [
+            '文本控件怎么用', '文本有哪些属性', '特殊字符集怎么配',
+            '字符变图片', '文字颜色怎么改', '文字选中态颜色',
+            '跑马灯怎么滚', '文字能不能点击', '文字控件有回调吗',
+            '背景图做动画', '怎么显示小数', '文字不显示',
+            '文本控件 对齐',
         ],
     },
 ]

@@ -8,19 +8,20 @@
 # 可选：
 #   CI_DEVICE=<adb serial 或 ip:port>   → 追加真机抓屏冒烟（需要 adb 与设备，缺省不跑）
 #
+# ⚠️ 契约用例**只跑一遍**（2026-10-03）：以前这里先单独跑一次 unittest、`--with-tests` 里又跑一次，
+#    而全套是分钟级的真实离线工作（图像生成/构建编排类用例单条 5~10s）→ 白花一倍时间。
+#    用例的"是否通过 + 条数是否与 tests/README 一致"由 `--with-tests` 一并负责。
+#
 # 用法：sh scripts/ci.sh
 set -e
 cd "$(dirname "$0")/.."
 echo "=== python ==="
 python -V
 
-echo "=== 1/3 compileall ==="
+echo "=== 1/2 compileall ==="
 python -m compileall -q . >/dev/null
 
-echo "=== 2/3 tests ==="
-python -m unittest discover -s tests -q
-
-echo "=== 3/3 consistency + smoke ==="
+echo "=== 2/2 consistency + tests + smoke ==="
 python scripts/check_consistency.py --with-tests
 
 if [ -n "$CI_DEVICE" ]; then

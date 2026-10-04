@@ -10,13 +10,12 @@ cd /d "%~dp0.."
 echo === python ===
 python --version || (echo [X] 未检测到 python & exit /b 1)
 
-echo === 1/3 compileall ===
+echo === 1/2 compileall ===
 python -m compileall -q . >nul || (echo [X] 语法检查失败 & exit /b 1)
 
-echo === 2/3 tests ===
-python -m unittest discover -s tests -q || (echo [X] 契约用例失败 & exit /b 1)
-
-echo === 3/3 consistency + smoke ===
+rem 契约用例只跑一遍（2026-10-03）：--with-tests 内含全量用例 + 条数核对，
+rem 单独再跑一次等于把分钟级的离线用例白跑第二遍。
+echo === 2/2 consistency + tests + smoke ===
 python scripts\check_consistency.py --with-tests || (echo [X] 前置闸门失败 & exit /b 1)
 
 if not "%CI_DEVICE%"=="" (

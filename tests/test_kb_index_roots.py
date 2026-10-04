@@ -6,13 +6,15 @@
 漏一处就漂移。同时它承载一个**反黑洞**的显式决定：`components/*/platforms.md` 必须进检索
 （那 16 篇讲组件在各平台的可用性/前置/限制/验收，AI 选型与验收要用；不进索引就等于检索不到）。
 
-钉住六件事：
+钉住八件事：
   ① knowledge/**/*.md 进索引，但 inbox/_reports/_logs 不进
   ② components/**/platforms.md 进索引（黑洞修复不许被回退）
   ③ components 的其它 md（README 等）**不进**（那是维护者视角，不属于 AI 语料）
-  ④ 索引范围确定、去重、有 authority 声明（用 AST 取值，不依赖 import 副作用）
-  ⑤ rag_index.json 的实际 chunk 路径 ⊇ 真源声明的范围（切片覆盖，不是只看篇名）
-  ⑥ 两个消费方（rebuild_index_local / check_consistency）确实都从真源取，没有各写一遍
+  ④ packages/**/README.md 与 platforms.md 进索引（**第 3 例黑洞修复，同②同构，也不许被回退**）
+  ⑤ packages 的 example/evidence/lib 与其它 md **不进**（示例自带件/取证/构建凭据）
+  ⑥ 索引范围确定、去重、有 authority 声明（用 AST 取值，不依赖 import 副作用）
+  ⑦ rag_index.json 的实际 chunk 路径 ⊇ 真源声明的范围（切片覆盖，不是只看篇名）
+  ⑧ 两个消费方（rebuild_index_local / check_consistency）确实都从真源取，没有各写一遍
 """
 import ast
 import io
@@ -27,6 +29,23 @@ BASE = U.BASE
 if BASE not in sys.path:
     sys.path.insert(0, BASE)
 import kb_index_roots as bir                       # noqa: E402
+
+
+def _packages_expected():
+    """包级用法页的期望集合（**唯一口径**，下面两个用例共用，避免各写一遍）。
+
+    只收两层：`packages/README.md` 与 `packages/<包>/{README.md,platforms.md}`。
+    `example/`（最小示例工程自带件）、`evidence/`（截图与日志）、`lib/`（构建凭据）
+    是维护者/工程视角，不进 AI 语料。
+    """
+    import glob
+    out = set()
+    if os.path.isfile(os.path.join(BASE, 'packages', 'README.md')):
+        out.add('packages/README.md')
+    for name in ('README.md', 'platforms.md'):
+        for p in glob.glob(os.path.join(BASE, 'packages', '*', name)):
+            out.add(os.path.relpath(p, BASE).replace('\\', '/'))
+    return out
 
 
 class TestIndexRoots(unittest.TestCase):
@@ -58,6 +77,27 @@ class TestIndexRoots(unittest.TestCase):
         extra = [d for d in docs
                  if d.startswith('components/') and not d.endswith('/platforms.md')]
         self.assertEqual(extra, [], 'components 下只应收 platforms.md：%s' % extra[:5])
+
+    def test_packages_usage_docs_included(self):
+        """黑洞修复第 3 例（与 components/platforms.md 同构）：包用法页必须进检索。
+
+        为什么：`packages/<包>/README.md`（装法 / API 速查 / 最小示例 / 真机实测 / 坑）与
+        `platforms.md`（逐平台结论与证据）正是 plan.md 根因④「硬件外设 API」与
+        根因⑥「组件包」的答案载体。**修前 `rag_index.json` 里 `packages/` 的 chunk 数 = 0**
+        （40 篇 md 一篇都搜不到），问「zkhardware 怎么用 / 继电器怎么写」命中的全是别的文档。
+        """
+        docs = bir.repo_rel_docs(BASE)
+        want = _packages_expected()
+        self.assertTrue(want, '仓库里应有 packages 的包级 README.md / platforms.md')
+        self.assertTrue(want <= docs, '未进索引的包用法页：%s' % sorted(want - docs))
+
+    def test_packages_non_usage_docs_excluded(self):
+        """只收包级 README.md / platforms.md：example/ evidence/ lib/ 不进（维护者/工程视角）。"""
+        docs = bir.repo_rel_docs(BASE)
+        allowed = _packages_expected()
+        extra = sorted(d for d in docs if d.startswith('packages/') and d not in allowed)
+        self.assertEqual(extra, [],
+                         'packages 下只应收包级 README.md / platforms.md：%s' % extra[:5])
 
     def test_deterministic_and_unique(self):
         a = [r for r, _p, _s in bir.iter_repo_docs(BASE)]

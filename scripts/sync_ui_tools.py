@@ -79,8 +79,12 @@ def main():
         return 1
     dst = os.path.abspath(a.to)
     if not os.path.isdir(dst):
-        print('[FAIL] 副本目录不存在: %s（--to 指定）' % dst)
-        return 1
+        # 副本目录在**仓库之外**（workspace 布局：tools/FlyThings_mcp_open/ui_tools ↔ tools/ui_tools）。
+        # 公开仓库形态（fresh clone / CI 只 checkout 本仓库）下它必然不存在 —— 那是「本机没有副本」，
+        # 不是「双份漂移」。所以用**专用退出码 2 = skip**，让消费方（smoke / check_consistency）
+        # 统一按「跳过并提示」处理，而不是一个容错、一个硬红（2026-10-03 评审：同一口径两个消费方不一致）。
+        print('[SKIP] 副本目录不存在: %s（--to 指定）；本机无副本 → 跳过比对（不是漂移）' % dst)
+        return 2
 
     res = compare(dst)
     bad = {k: v for k, v in res.items() if v != 'same'}

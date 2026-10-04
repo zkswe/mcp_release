@@ -22,8 +22,9 @@ jobs:
         run: pip install -r requirements.lock
       - name: 语法检查
         run: python -m compileall -q . > /dev/null
-      - name: 契约用例
-        run: python -m unittest discover -s tests -q
-      - name: 一致性 + 冒烟（发布前置闸门）
+      # 契约用例只跑一遍（2026-10-03）：`--with-tests` 内含全量用例 + 条数核对，
+      # 单独再跑一次等于把分钟级的离线用例白跑第二遍。
+      - name: 一致性 + 用例 + 冒烟（发布前置闸门）
         run: python scripts/check_consistency.py --with-tests
-        # 真机相关用例自动跳过（CI 无设备；--screenshot 只在本地带设备时手动跑）
+        # 真机相关用例自动跳过（CI 无设备；--screenshot 只在本地带设备时手动跑）。
+        # 契约用例的离线由 tests/_util.py 的 adb 守卫保证（不需要设备也能稳定跑完）。

@@ -34,6 +34,10 @@ knowledge/_reports/
 # 本地临时日志（跑门禁/用例时的抓屏输出，不入库）
 temp_*.log
 
+# 本机探测产物（构建探针，如 nanovg 可用性探测编出来的 .so；不是随包资产）
+_nanovg_probe.so
+_*_probe.so
+
 # 会话验证产物（真机截图/二分样本/报告，可随时重建）
 temp/
 err.log

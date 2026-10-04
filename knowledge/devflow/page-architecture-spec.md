@@ -49,6 +49,23 @@ evidence: []
 | **B. 同 ftu 内多个整屏 window + `showWnd()/hideWnd()`**| 一个 ftu 内叠多个顶层整屏 window（`width/height ≥ resolution`），首屏 window `visible:true`、其余 `visible:false`，代码里切显隐 | 低（同一 Activity 内） | 共享同一份控件指针与状态 | **同一 Activity 内**：页签/设置二级页/弹窗/临时遮挡页（**前提是先按 §2 第 0 步判定为同一个 Activity**，否则回 A） |
 | **C. 容器内切换**（pagewindow / slidewindow / scrollwindow） | 一个容器控件内部翻页或滚动 | 最低 | 容器内子页共享 | 宫格翻页、引导页、分类内容区、内容超高的单页滚动 |
 
+## 1.5 新增页面的动作清单（缺一不可）
+
+1. `ui/<page>.json` + `ui/<page>.ftu`（缺省：一页一 json/ftu，见 §1）；
+2. `src/activity/<page>Activity.{h,cpp}` 并 `REGISTER_ACTIVITY`（IDE 加页时自动生成，手写照抄一页）；
+3. `src/logic/<page>Logic.cc`，含 `INIT_UI_EVENT_BINDINGS`；
+4. **回调桩**：页内每个带回调的控件都要有 `<回调名>_<caption>` 的 static 函数定义 ——**缺了 `fun build` 直接失败（`used but never defined`）**；桩体抄 `ui_tools/ui_schema.json` 的 `callbacks[].stub`（真源：`valueRules.callbackStubRequired`）。
+5. 跳转：`EASYUICONTEXT->openActivity("<page>Activity")` / 返回 `EASYUICONTEXT->goBack()`。
+
+
+**实测口径（2026-10-04）**：
+- 建工程：**拷贝 `templates/<平台>` 模板 + 重命名**；`fun create` 是**交互式**命令（无 TTY/stdin 会挂住等输入、不落盘）。
+- 加页：① 写 `ui/<p>.json`；② **`fui pack ui/<p>.json ui/<p>.ftu`**（只放 json 工具链不认）；③ `fun build` → 生成 `src/logic/<p>Logic.cc`（含 `onUI_init/show/hide/quit/Timer` 与全部回调桩）。
+- **已有 `<p>Logic.cc` 的页**：工具链只**追加**缺失桩、**位置不可控**（实测落进别的函数作用域 → 仍报 `used but never defined`）⇒ **把追加的桩移到文件作用域**（非破坏）。
+- ⛔ **`rm <p>Logic.cc` + 重建只允许首次构建/空文件**：文件一旦有业务代码，删除重建 = **代码衰退**（把人家写的逻辑删了），**禁止**。
+- **不要手写桩**（会与生成的重复定义）。
+- ✅ **不需要 Activity**：fun 路径下每页在 `.fsc/<平台>/generated/` 下生成一份胶水（本实测：`ui_main.*` + `ui_text.*`）挂该页 `logic.cc`；**Activity 是 FlyThings IDE 的产物**（IDE 导入本工程后会自行生成 `<p>Activity.*` 调 logic.cc）。两条路径都通、互兼容 —— 用 fun 时缺 Activity **不是缺陷**。⚠️ **业务代码不分叉**：跳转一律 `EASYUICONTEXT->openActivity("<p>Activity")`、返回 `goBack()`（Activity 差异只在构建层）。
+
 ## 2. 决策清单（按顺序问；**默认答案 = 一页一个 Activity/一个 json/ftu**，只有答"是"才合并）
 
 0. **先按设计稿分 Activity 归属**（第 ③ 步 HTML 原型阶段就定）：设计稿里每一屏（每个 `.screen`）先问

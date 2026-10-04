@@ -47,12 +47,19 @@ class TestPlatformCapRegistry(unittest.TestCase):
 
     def test_tables_are_derived_from_registry(self):
         """每篇的矩阵表必须是注册表渲染结果——手改 md 立刻红。"""
+        # ⚠️ 必须显式 encoding='utf-8'：被调脚本输出的是**中文 UTF-8**，而 `text=True` 不给
+        # encoding 时 Python 用本机 locale 解码（Windows 中文环境 = GBK）→ reader 线程抛
+        # UnicodeDecodeError → stdout 变 None、且管道破裂会把子进程逼成非 0 退出。
+        # 表现极具误导性：`gen_component_platforms.py --check` 手跑是 PASS，只有本用例红
+        # （2026-10-03 实测定位）。项目里已有正确写法先例：tests/test_kb_p2.py、
+        # tests/test_toolchain_capability.py 都带 encoding/errors。
         p = subprocess.run([sys.executable, os.path.join(BASE, 'scripts',
                                                          'gen_component_platforms.py'), '--check'],
-                           capture_output=True, text=True)
+                           capture_output=True, text=True,
+                           encoding='utf-8', errors='replace')
         self.assertEqual(p.returncode, 0,
                          'platforms.md 的矩阵表与注册表漂移：\n%s\n%s'
-                         % (p.stdout[-800:], p.stderr[-400:]))
+                         % ((p.stdout or '')[-800:], (p.stderr or '')[-400:]))
 
     def test_render_is_deterministic(self):
         for comp in pc.components():
