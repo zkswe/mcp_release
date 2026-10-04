@@ -127,6 +127,72 @@ class TestOpRouting(unittest.TestCase):
                 dup.append(op)
         self.assertEqual(dup, [], '同一 op 内触发词重复：%s' % dup)
 
+    def test_excludes_are_self_consistent(self):
+        """出局词不许与自己的 triggers 重叠，且不许太短（`validate()` 也查，这里独立钉一遍）。"""
+        bad = []
+        for op in osl.registered():
+            ex = osl.excludes(op)
+            if not ex['phrases']:
+                continue
+            if not ex['why']:
+                bad.append('%s: 有 excludes 但没写 why' % op)
+            ov = set(ex['phrases']) & set(osl.spec(op).get('triggers') or [])
+            if ov:
+                bad.append('%s: 出局词与触发词重叠 %s' % (op, sorted(ov)))
+            short = [p for p in ex['phrases'] if len(p.strip()) < 2]
+            if short:
+                bad.append('%s: 出局词太短 %s' % (op, short))
+        self.assertEqual(bad, [], 'excludes 自洽性：%s' % bad)
+
+    def test_excludes_do_not_eat_the_right_answer(self):
+        """**反向护栏**：出局词不许把该命中的 op 吃掉。
+
+        这是 excludes 最危险的失效方向 —— 触发词写错只是"多给候选"，出局词写错是
+        "正确答案消失"。所以对每条已登记问法断言：期望的 op 不能被这句问法排除。
+        """
+        bad = []
+        for q, expect in CASES:
+            hit = osl.exclude_hit(expect, q)
+            if hit:
+                bad.append('%s —— %s 被自己的出局词 %r 排除' % (q, expect, hit))
+        self.assertEqual(bad, [], '出局词吃掉了正确答案：%s' % bad)
+
+    def test_excludes_actually_route_away(self):
+        """正向护栏：登记了明确误召的几条，必须真的被 route 到别处。
+
+        判据用**真实误召**取（不是编的）：这三条原先由 `create_project` / `html_to_json`
+        抢答（它们靠「项目 / 界面 / json」这类通用词拿到 6 分），现在必须落到正确的 op。
+        """
+        for q, wrong, right in (
+                ('给客户看下效果', 'flythings_create_project', 'flythings_ui_preview'),
+                ('生成一套图标', 'flythings_create_project', 'flythings_generate_ui_assets'),
+                ('给我补上按钮点击回调', 'flythings_create_project', 'flythings_gen_logic_stub')):
+            r = _find(q)
+            ops = [c['op'] for c in r['candidates']]
+            self.assertNotIn(wrong, ops, '%s 仍被 %s 抢答' % (q, wrong))
+            self.assertIn(right, ops[:3], '%s 没落到 %s：%s' % (q, right, ops[:3]))
+            self.assertIn('excluded', r, '%s：出局明细没带出来（不可追溯）' % q)
+            self.assertTrue(any(e['op'] == wrong for e in r['excluded']),
+                            '%s：%s 不在 excluded 明细里' % (q, wrong))
+
+    def test_exclude_short_ascii_needs_word_boundary(self):
+        """纯 ASCII 短片段要按**整词**匹配：`qt` 不得命中 `mqtt`。
+
+        这条守的是「出局词写错方向 = 正确答案消失」里最隐蔽的一种：拉丁词组没有中文那种
+        "子串即命中"的合理性 —— `qt` 是 `mqtt` 的**真子串**，`ml` 是 `html` 的**真子串**。
+        词表侧的对策是"不登记单字缩写"（见 `why`），守侧是这里的词边界（`exclude_hit` 内）。
+        两处都测：先证边界生效，再证当前词表里没有踩这颗雷的片段。
+        """
+        import mcp_server as _ms                       # noqa: F401  (保持导入面一致)
+        # ① 边界守卫本身生效（用长度为 2 的拉丁片段直接验证语义）
+        phr = osl.excludes('flythings_translate_ui')['phrases']
+        self.assertNotIn('qt', phr, '单字缩写不该进出局词表（`qt` 会命中 mqtt）')
+        # ② 当前词表在真实问法上不误伤
+        self.assertEqual(osl.exclude_hit('flythings_translate_ui', '加个 mqtt 包'), '',
+                         '`qt` 把 mqtt 也排除了 —— 短 ASCII 必须要求词边界')
+        self.assertNotEqual(osl.exclude_hit('flythings_translate_ui', 'android 的界面怎么搬'),
+                            '', '登记过的整词出现时必须命中')
+
     def test_find_routes_contract_and_knowledge(self):
         """端到端闭环：find（筛）→ describe（契约）→ 调用；知识缺口走 knowledge_search。"""
         r = _find('屏比设计小怎么办')

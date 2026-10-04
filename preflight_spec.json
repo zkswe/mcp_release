@@ -1,164 +1,164 @@
 {
- "authority": "本文件是 FlyThings **上机前体检判据**的机器可读唯一真源（域⑨）：① 分辨率适配（设计 vs 面板的三分支）② 字库（内置字库判据 + 按工程中文级别选档）③ 体积预算（/res 分区）。派生：knowledge/devflow/device-preflight-spec.md（由 scripts/gen_preflight_doc.py 生成）。**判据/阈值只在这里**，代码里不许再写第二份（跨来源对账见 font.tiersSource 与 sources）。",
- "specVersion": "1.0.0",
- "updated": "2026-10-03",
- "sources": [
-  "device_probes.panel_resolution()（设备侧读数：/dev/fb0 modes 优先 → virtual_size 兜底）",
-  "components/fonts/scripts/device_font_check.py（字库档位与体积阈值的实现方；门禁做跨来源对账）",
-  "knowledge/devflow/canvas-panel-coverage.md（画布 < 面板时补齐区残留的成因与修法）",
-  "knowledge/devflow/custom-font-config.md（内置 fzcircle.ttf 与工程字体的优先级）"
- ],
- "retrievalHints": [
-  "上机之前要检查什么 / 接上设备先看哪些东西",
-  "屏幕分辨率和设计不一样怎么办 / 屏比设计大会怎样 / 屏比设计小会怎样",
-  "设备上中文显示不出来怎么办 / 要不要给工程放字库 / 放哪一档字库",
-  "打包会不会超出 res 分区 / 体积是不是太大了"
- ],
- "resolution": {
-  "device": {
-   "how": "读 /dev/fb0 的**可见**分辨率：/sys/class/graphics/fb0/modes 优先，缺则退 virtual_size；双缓冲时 virtual_size 的高 = 页数 × 屏高，**不是**分辨率",
-   "impl": "device_probes.panel_resolution()"
-  },
-  "design": {
-   "how": "**启动窗口**的宽高：src/Main.cpp 的 onStartupApp 返回 \"<name>Activity\" → ui/<name>.json 的 resolution（缺则退根节点 position）",
-   "impl": "preflight.startup_window()",
-   "fallback": [
-    "ui/main.json（启动窗口名解析不到时的约定名）",
-    ".settings/*.prefs 的 resolution=（再退）"
-   ]
-  },
-  "rotateIsSameScreen": "设计 W×H 与面板 H×W 视为同一块屏（转屏角度由工程 EasyUI.cfg 的 rotateScreen 决定），不算不一致",
-  "aspectTolerancePct": 3.0,
-  "decisions": [
-   {
-    "id": "screen_ge_design",
-    "when": "面板宽、高都 ≥ 设计",
-    "action": "push",
-    "level": "info",
-    "why": "屏幕大于设计分辨率时 UI 可以完整显示，不影响"
-   },
-   {
-    "id": "screen_lt_design",
-    "when": "面板任一维 < 设计",
-    "action": "warn",
-    "level": "warn",
-    "why": "屏比设计小 → 超出可视区的部分在屏上看不到（画面被裁）；尺寸不符还可能表现为灰窗/黑屏或布局错位（见 knowledge/devflow/canvas-panel-coverage.md）。必须让用户先决定：按面板重做布局，还是保持设计、接受画面被裁"
-   },
-   {
-    "id": "design_unknown",
-    "when": "工程读不出启动窗口尺寸",
-    "action": "adapt_device",
-    "level": "warn",
-    "why": "用户未指定设计分辨率 → 默认按设备面板分辨率重新适配 layout"
-   }
+  "authority": "本文件是 FlyThings **上机前体检判据**的机器可读唯一真源（域⑨）：① 分辨率适配（设计 vs 面板的三分支）② 字库（内置字库判据 + 按工程中文级别选档）③ 体积预算（/res 分区）。派生：knowledge/devflow/device-preflight-spec.md（由 scripts/gen_preflight_doc.py 生成）。**判据/阈值只在这里**，代码里不许再写第二份（跨来源对账见 font.tiersSource 与 sources）。",
+  "specVersion": "1.0.0",
+  "updated": "2026-10-03",
+  "sources": [
+    "device_probes.panel_resolution()（设备侧读数：/dev/fb0 modes 优先 → virtual_size 兜底）",
+    "components/fonts/scripts/device_font_check.py（字库档位与体积阈值的实现方；门禁做跨来源对账）",
+    "knowledge/devflow/canvas-panel-coverage.md（画布 < 面板时补齐区残留的成因与修法）",
+    "knowledge/devflow/custom-font-config.md（内置 fzcircle.ttf 与工程字体的优先级）"
   ],
-  "adapt": {
-   "sameAspect": {
-    "action": "scale",
-    "when": "两屏宽高比相对差 ≤ aspectTolerancePct%",
-    "how": "口径对齐（.settings/*.prefs / ui/*.json / ftu 内嵌的 resolution 与根 position）+ 控件盒与字号按 sx/sy 换算",
-    "impl": "preflight.scale_project()",
-    "call": "用户确认后 `flythings_device_preflight(adapt='force')` 一把落盘"
-   },
-   "diffAspect": {
-    "action": "relayout",
-    "when": "两屏宽高比相对差 > aspectTolerancePct%",
-    "how": "比例不同 → 只做等比缩放会变形，必须重排布局（区域比例重划 / 控件重排 / 必要时拆并页）。工具只出 plan，不落盘",
-    "skill": "flythings-resolution-adapt",
-    "impl": "flythings_device_preflight(adapt='ask'|'auto') → plan",
-    "call": "`flythings_device_preflight(adapt='force')` 也只出 plan（不改盘）"
-   },
-   "invariants": [
-    "改完必须 fui pack 出 ftu（设备加载的是 ftu，不是 json）",
-    "只改布局不用重编/重推 .so",
-    "改完跑 flythings_layout_audit 复核控件盒越界/遮挡，必要时 flythings_ui_preview 或抓屏复核"
-   ]
+  "retrievalHints": [
+    "上机之前要检查什么 / 接上设备先看哪些东西",
+    "屏幕分辨率和设计不一样怎么办 / 屏比设计大会怎样 / 屏比设计小会怎样",
+    "设备上中文显示不出来怎么办 / 要不要给工程放字库 / 放哪一档字库",
+    "打包会不会超出 res 分区 / 体积是不是太大了"
+  ],
+  "resolution": {
+    "device": {
+      "how": "读 /dev/fb0 的**可见**分辨率：/sys/class/graphics/fb0/modes 优先，缺则退 virtual_size；双缓冲时 virtual_size 的高 = 页数 × 屏高，**不是**分辨率",
+      "impl": "device_probes.panel_resolution()"
+    },
+    "design": {
+      "how": "**启动窗口**的宽高：src/Main.cpp 的 onStartupApp 返回 \"<name>Activity\" → ui/<name>.json 的 resolution（缺则退根节点 position）",
+      "impl": "preflight.startup_window()",
+      "fallback": [
+        "ui/main.json（启动窗口名解析不到时的约定名）",
+        ".settings/*.prefs 的 resolution=（再退）"
+      ]
+    },
+    "rotateIsSameScreen": "设计 W×H 与面板 H×W 视为同一块屏（转屏角度由工程 EasyUI.cfg 的 rotateScreen 决定），不算不一致",
+    "aspectTolerancePct": 3.0,
+    "decisions": [
+      {
+        "id": "screen_ge_design",
+        "when": "面板宽、高都 ≥ 设计",
+        "action": "push",
+        "level": "info",
+        "why": "屏幕大于设计分辨率时 UI 可以完整显示，不影响"
+      },
+      {
+        "id": "screen_lt_design",
+        "when": "面板任一维 < 设计",
+        "action": "warn",
+        "level": "warn",
+        "why": "屏比设计小 → 超出可视区的部分在屏上看不到（画面被裁）；尺寸不符还可能表现为灰窗/黑屏或布局错位（见 knowledge/devflow/canvas-panel-coverage.md）。必须让用户先决定：按面板重做布局，还是保持设计、接受画面被裁"
+      },
+      {
+        "id": "design_unknown",
+        "when": "工程读不出启动窗口尺寸",
+        "action": "adapt_device",
+        "level": "warn",
+        "why": "用户未指定设计分辨率 → 默认按设备面板分辨率重新适配 layout"
+      }
+    ],
+    "adapt": {
+      "sameAspect": {
+        "action": "scale",
+        "when": "两屏宽高比相对差 ≤ aspectTolerancePct%",
+        "how": "口径对齐（.settings/*.prefs / ui/*.json / ftu 内嵌的 resolution 与根 position）+ 控件盒与字号按 sx/sy 换算",
+        "impl": "preflight.scale_project()",
+        "call": "用户确认后 `flythings_device_preflight(adapt='force')` 一把落盘"
+      },
+      "diffAspect": {
+        "action": "relayout",
+        "when": "两屏宽高比相对差 > aspectTolerancePct%",
+        "how": "比例不同 → 只做等比缩放会变形，必须重排布局（区域比例重划 / 控件重排 / 必要时拆并页）。工具只出 plan，不落盘",
+        "skill": "flythings-resolution-adapt",
+        "impl": "flythings_device_preflight(adapt='ask'|'auto') → plan",
+        "call": "`flythings_device_preflight(adapt='force')` 也只出 plan（不改盘）"
+      },
+      "invariants": [
+        "改完必须 fui pack 出 ftu（设备加载的是 ftu，不是 json）",
+        "只改布局不用重编/重推 .so",
+        "改完跑 flythings_layout_audit 复核控件盒越界/遮挡，必要时 flythings_ui_preview 或抓屏复核"
+      ]
+    }
+  },
+  "font": {
+    "builtinFont": {
+      "path": "/etc/font/fzcircle.ttf",
+      "cjkMinKB": 200,
+      "rule": "内置字库 < 200KB 判定为**不支持中文**（只带拉丁字形）→ 需要往工程投递裁剪字库",
+      "impl": "preflight.font_verdict()"
+    },
+    "tiersSource": "components/fonts/scripts/device_font_check.py::TIERS（门禁对账：档位键与文件名必须一致）",
+    "tierOrder": [
+      "common",
+      "full",
+      "multi"
+    ],
+    "tiers": {
+      "common": {
+        "file": "zkswe-hans-common.ttf",
+        "level": "常用中文",
+        "when": "工程文案只用常用汉字（默认档）"
+      },
+      "full": {
+        "file": "zkswe-hans-full.ttf",
+        "level": "全中文",
+        "when": "工程文案含 GB2312 一级之外的生僻字"
+      },
+      "multi": {
+        "file": "zkswe-hans-multi.ttf",
+        "level": "多国语言",
+        "when": "工程要多语言（中 + 拉丁/其他语系）"
+      }
+    },
+    "levelMatch": {
+      "how": "扫工程 UI 文案（ui/*.json 的 text/caption + tr/*.json）取**用到的 CJK 字集** → 从最小档起比对各档 cmap 覆盖率 → 选「够用的最小档」；fontTools 不可用时退**编解码器分级**（编得进 GB2312 → common / 仅 GBK → full / 更外 → multi）",
+      "impl": "preflight.pick_font_tier()",
+      "noCjk": "工程 0 个 CJK 字 → 不投递（设备内置拉丁字库够用）",
+      "deliverImpl": "font_tools.font_preflight()（投递 + 改 prefs）",
+      "call": "`flythings_device_preflight(font_apply=True)` 自动投最小够用档；要指定档位传 `font_tier=`"
+    }
+  },
+  "budget": {
+    "limitMB": 8,
+    "nearPct": 90,
+    "perPlatform": {
+      "Z20": 7.12,
+      "Z21": 7.12,
+      "V85X": 7.62
+    },
+    "parts": [
+      {
+        "path": "resources/",
+        "what": "工程资源（图 / 字体 / 其他随包资源）"
+      },
+      {
+        "path": "**/*.ttf|*.ttc",
+        "what": "工程内字体（resources/ 之外单独放的也算，按绝对路径去重）"
+      },
+      {
+        "path": ".fsc|.fun/<平台>/libzkgui.so",
+        "what": "应用库（`fun build` 产物）。**两代目录都认、`.fsc` 优先**（09-28 版 fun 起产物目录由 `.fun/<平台>/` 改为 `.fsc/<平台>/`）；目录名的唯一真源 = `project_tools.BUILD_DIR_NAMES`，**只找其中一代就会少算体积、level 可能假绿**"
+      }
+    ],
+    "excluded": [
+      "ui/*.ftu",
+      "tr/",
+      "src/（编译进 .so）"
+    ],
+    "levels": [
+      {
+        "level": "over",
+        "when": "used ≥ limit",
+        "action": "warn",
+        "why": "打包文件可能大于 /res 分区大小 → 升级/固化会失败或被截断"
+      },
+      {
+        "level": "near",
+        "when": "used ≥ nearPct% × limit",
+        "action": "info",
+        "why": "已接近 /res 分区上限，再加资源要小心"
+      }
+    ],
+    "note": "容量判据一律**实测优先**（见 limitPriority）；探不到时在报告里带 `limitSource` 显式说明用了哪一级，不静默。静态值只作兜底（在案）。分区**名字**各平台可能不同（V85X 的开机图分区就叫 `boot_logo` 而非 MISC），所以判定要按名字找、找不到就如实报。",
+    "limitPriority": [
+      "① 实测连着的设备：`cat /proc/mtd` 里的 `res` 分区容量（最准，换板即自动跟上）",
+      "② `perPlatform[平台]`：拿不到设备时用（静态值，命名可能不同平台不一样）",
+      "③ `limitMB`：缺省兜底；**是未实测平台的圆整占位，别拿它当\"还能加\"的依据**"
+    ]
   }
- },
- "font": {
-  "builtinFont": {
-   "path": "/etc/font/fzcircle.ttf",
-   "cjkMinKB": 200,
-   "rule": "内置字库 < 200KB 判定为**不支持中文**（只带拉丁字形）→ 需要往工程投递裁剪字库",
-   "impl": "preflight.font_verdict()"
-  },
-  "tiersSource": "components/fonts/scripts/device_font_check.py::TIERS（门禁对账：档位键与文件名必须一致）",
-  "tierOrder": [
-   "common",
-   "full",
-   "multi"
-  ],
-  "tiers": {
-   "common": {
-    "file": "zkswe-hans-common.ttf",
-    "level": "常用中文",
-    "when": "工程文案只用常用汉字（默认档）"
-   },
-   "full": {
-    "file": "zkswe-hans-full.ttf",
-    "level": "全中文",
-    "when": "工程文案含 GB2312 一级之外的生僻字"
-   },
-   "multi": {
-    "file": "zkswe-hans-multi.ttf",
-    "level": "多国语言",
-    "when": "工程要多语言（中 + 拉丁/其他语系）"
-   }
-  },
-  "levelMatch": {
-   "how": "扫工程 UI 文案（ui/*.json 的 text/caption + tr/*.json）取**用到的 CJK 字集** → 从最小档起比对各档 cmap 覆盖率 → 选「够用的最小档」；fontTools 不可用时退**编解码器分级**（编得进 GB2312 → common / 仅 GBK → full / 更外 → multi）",
-   "impl": "preflight.pick_font_tier()",
-   "noCjk": "工程 0 个 CJK 字 → 不投递（设备内置拉丁字库够用）",
-   "deliverImpl": "font_tools.font_preflight()（投递 + 改 prefs）",
-   "call": "`flythings_device_preflight(font_apply=True)` 自动投最小够用档；要指定档位传 `font_tier=`"
-  }
- },
- "budget": {
-  "limitMB": 8,
-  "nearPct": 90,
-  "perPlatform": {
-   "Z20": 7.12,
-   "Z21": 7.12,
-   "V85X": 7.62
-  },
-  "parts": [
-   {
-    "path": "resources/",
-    "what": "工程资源（图 / 字体 / 其他随包资源）"
-   },
-   {
-    "path": "**/*.ttf|*.ttc",
-    "what": "工程内字体（resources/ 之外单独放的也算，按绝对路径去重）"
-   },
-   {
-    "path": ".fsc|.fun/<平台>/libzkgui.so",
-    "what": "应用库（fun build 产物）。**两代都认、`.fsc` 优先**：09-28 版 fun 起产物目录由 `.fun/<平台>/` 改为 `.fsc/<平台>/`；目录名唯一真源 = `project_tools.BUILD_DIR_NAMES`（原先本判据只找 `.fun/` → 新工具链工程的 lib 体积一律计 0、level 可能假绿，2026-10-03 修正）"
-   }
-  ],
-  "excluded": [
-   "ui/*.ftu",
-   "tr/",
-   "src/（编译进 .so）"
-  ],
-  "levels": [
-   {
-    "level": "over",
-    "when": "used ≥ limit",
-    "action": "warn",
-    "why": "打包文件可能大于 /res 分区大小 → 升级/固化会失败或被截断"
-   },
-   {
-    "level": "near",
-    "when": "used ≥ nearPct% × limit",
-    "action": "info",
-    "why": "已接近 /res 分区上限，再加资源要小心"
-   }
-  ],
-  "note": "容量判据一律**实测优先**（见 limitPriority）；探不到时在报告里带 `limitSource` 显式说明用了哪一级，不静默。静态值只作兜底（在案）。分区**名字**各平台可能不同（V85X 的开机图分区就叫 `boot_logo` 而非 MISC），所以判定要按名字找、找不到就如实报。",
-  "limitPriority": [
-   "① 实测连着的设备：`cat /proc/mtd` 里的 `res` 分区容量（最准，换板即自动跟上）",
-   "② `perPlatform[平台]`：拿不到设备时用（静态值，命名可能不同平台不一样）",
-   "③ `limitMB`：缺省兜底；**是未实测平台的圆整占位，别拿它当\"还能加\"的依据**"
-  ]
- }
 }

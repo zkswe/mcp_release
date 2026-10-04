@@ -69,7 +69,7 @@ MI_DISP_SetVideoLayerRotateMode(0, &cfg);    // 返回 0 = OK
 | 视频画面方向 | **只能相机拍屏**（或 `device_screenshot(layer='video')` 取 vdec 帧看画面） | fb0 抓不到合成后的视频层 |
 | 解码质量回归 | `zkshot <out.raw> vdec <chn> 0` → 算块度 | 判据 ≤1.2（源帧 1.05~1.25） |
 
-## 5. 坑清单（都踩过）
+## 5. 坑清单
 
 1. **fb0 是多缓冲**（本板 3 块），别只比一块面板就判“没反应”；块内容在缓冲间轮转。
 2. 改 `ui/*.json` 后**必须 `fui pack` 出 ftu 再编译**（`generated/ui_*.cpp` 由 ftu 生成，

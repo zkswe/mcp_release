@@ -514,6 +514,15 @@ cd /tmp/v85x_base && ./fun.exe build                     # fsc 自动扫 src/ �
 | **vinyl** | ❌ **不可用（缺 nanovg 包）** | 核心 `zk_vinyl.cpp` 需 `<nanovg.h>`；V85X registry 只有 5 个包、**无 nanovg**，仓库离线 `packages/` 也没有 |
 | **wall_sync** | ❌ **不可用（缺 rapidjson 包）** | `zk_wall_sync.cpp` 需 `<rapidjson/document.h>`；声明 `rapidjson 1.1.0` 后 `fun install` 拉 `packages/v85x/rapidjson/1.1.0.zip` → **502 Bad Gateway** |
 | **blend2d** | ❌ 无库（**原本就已正确标注**） | 只有 `lib/z20/` 与 `z20-neon` 的 `.so`，其 `NEEDED` 是 glibc，musl 平台没有 |
+
+> ⚠️ **订正（2026-10-05，两条都经真机/工具链实测）**
+> · **vinyl**：原判「缺 nanovg」**已不成立**（`packages/nanovg/lib/v85x/` 已随仓，且与设备 `/lib` 那份
+>   md5 逐字节相同），但**实编仍不过** —— 卡点是 `zk_vinyl.cpp:40` 的 `misc/image_utility.h`，
+>   该头不在任何 easyui 包、不在仓、设备 `libeasyui.so` 也无 `misc::*` 符号。**结论仍是「不可用」**，
+>   只是理由换了；出路见 `TODO.md` A1。
+> · **blend2d**：上表「不可用」对 V85X **已过期** —— 本仓自编档 `lib/v85x/` 实测 169/169 编过、
+>   链成 `libzkgui.so`，门面 `zk::b2d::Canvas` 真机跑通（480×480 avg 5.010 ms/帧）。V85X 改判 **✅ 可用**。
+> 本表当前值一律以注册表 `platform_capabilities.json` 为准（已同步）。
 | **icons** | ➖ 平台无关（**原本就已正确标注**） | 纯 PNG 资源 + 三条硬规则，无平台分支 |
 
 ### 18.3 一条比"未验证"更有用的结论

@@ -15,7 +15,7 @@
   - `<项目>/.settings/com.zksw.flythings.easyui.prefs` 的 `easyui.cfg.release/debug` 里加 `"font":"/res/font/<文件名>"`
     → 打包时写进 `/res/etc/EasyUI.cfg`
 - 判定阈值（`scripts/device_font_check.py`）：最大字体 **< 200 KB ⇒ 大概率只有英文**（几十K~100多K）；
-  200KB~1MB ⇒ 疑似只有常用字；>1MB ⇒ 认为带中文。**这是启发式，不是精确判定**——精确判定要读 cmap，见 §4 待办。
+  200KB~1MB ⇒ 疑似只有常用字；>1MB ⇒ 认为带中文。**这只是兜底**（`fontTools` 不可用 / cmap 解析失败 / 字体 > 12 MB 时才用）。**主判据 = cmap 覆盖率**：`device_font_check.py` 的 `CMAP_OK_MIN_PCT=90` / `CMAP_LOW_MIN_PCT=50`，按 GB2312 一级 3755 字算 —— 见 §4。
 
 ## 1. V85X（V851 系列）—— 已实测
 

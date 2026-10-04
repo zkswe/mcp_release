@@ -226,9 +226,36 @@ class TestDerivedDoc(unittest.TestCase):
         self.assertIn('## 1. 场景轴', md)
         self.assertIn('## 2. 动作轴', md)
         self.assertIn('## 3. 步骤库', md)
-        self.assertIn('## 4. 跨流程铁律', md)
+        self.assertIn('## 4. 验收判据', md)          # 2026-10-04 新增（step.verify 派生）
+        self.assertIn('## 5. 跨流程铁律', md)
         for fid, f in F.flows().items():
             self.assertIn(f['title'], md, '派生页漏了流程 %s' % fid)
+
+    def test_every_step_has_verification(self):
+        """每个 step 都必须有 `verify{ok,notOk,evidence}`，且三字段非空、无多余键。
+
+        为什么钉死"必须都有"（2026-10-04）：流程的每一步都要能回答"做完了算不算过" ——
+        可选就等于有人跳过，而跳过的恰是 AI 最容易含糊过去的步骤（`validate()` 同判）。
+        """
+        bad = []
+        for sid in F.steps():
+            try:
+                v = F.step_verify(sid)
+            except Exception as e:
+                bad.append('%s: %s' % (sid, e))
+                continue
+            if set(v) != set(F.VERIFY_FIELDS):
+                bad.append('%s: 字段集 %s' % (sid, sorted(v)))
+        self.assertEqual(bad, [], '步骤缺验收判据：%s' % bad)
+        line = F.verify_line('launch')
+        for tag in ('✅', '⛔', '证据：'):
+            self.assertIn(tag, line, '一行式判据缺 %s' % tag)
+
+    def test_verify_shows_up_in_skill(self):
+        """场景 skill 必须带上验收判据 —— 它才是 AI 真正加载进上下文的那份。"""
+        fid = next(f for f, v in F.flows().items() if v.get('kind') == 'scenario')
+        md = F.render_skill(fid)
+        self.assertIn('**验收判据**', md, 'skill 里没有验收判据行')
 
 
 if __name__ == '__main__':

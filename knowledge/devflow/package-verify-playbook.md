@@ -47,7 +47,7 @@ adb -s <IP>:5555 shell "/tmp/busybox dd if=/dev/fb0 of=/data/fb.raw bs=<stride> 
 ```
 Python/PIL 侧把 raw 按 `BGRA` 解成 PNG（stride = 宽×4）。比较两屏用 `flythings_ui_visual(action="diff")`。
 
-## 4. 部署纪律（**踩过大坑**）
+## 4. 部署纪律
 
 - 临时调试走 **/tmp 劫持**：push `libzkgui.so`→`/tmp/lib/`、`main.ftu`→`/tmp/ui/`、`cacert.pem`→`/tmp/ui/`，
   写 `/tmp/EasyUI.cfg`（`resPath=/tmp/ui/`、`startupLibPath=/tmp/lib/libzkgui.so`）→ `setprop ctl.restart zkswe`。
@@ -73,7 +73,7 @@ Python/PIL 侧把 raw 按 `BGRA` 解成 PNG（stride = 宽×4）。比较两屏�
   **没上真机的一律 `verified: null`**，不冒充实测。
 - 平台差异写进 `components/<模块>/platforms.md` 的实测表（没测的平台写「未验证 + 需要什么条件」）。
 
-## 7. 常见误判（都真踩过）
+## 7. 常见误判
 
 1. **「没日志」= 缓冲被刷屏冲掉**，不是程序没跑 → 用 `logcat -d -s zkgui` 复核。
 2. **黑屏不要先怀疑 UI/布局**：先看 `pidof zkgui` 有几个、进程状态（D = 卡内核）、`sys.zkapp.dbg` 停在哪一步。

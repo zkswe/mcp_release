@@ -43,7 +43,7 @@ evidence: []
 | **越界拖拽 overscroll**| 滑到两端后还能被手指拽出去多远 | **`dragMaxDis`**|
 | **停止位置 stop**| 松手后回弹/停靠到哪 | `edgeEffect`（0 无 / 1 拖拽回弹 / 2 渐隐）+ `autoRollback`（是否对齐整行/整页） |
 
-⚠️ **四个控件字段语义相同（2026-10-01 修正），别混的是「行程由谁决定」**：
+⚠️ **四个控件字段语义相同，别混的是「行程由谁决定」**：
 
 - `scrollwindow` / `pagewindow` / `slidewindow`：**填手感值**（基准 1024×600 取 50~200；demo 用 200）。
 行程由内层 window 尺寸（scrollwindow）或页数（pagewindow/slidewindow）决定，**不要拿内容尺寸往这个字段里写**。

@@ -35,7 +35,7 @@ evidence: []
 | `id` | int | 控件 id（实测 **51000** 段） |
 | `alignment` | int | 文本对齐 |
 | `fontSize` | int | 字号（实测 40，候选词大字体） |
-| `textBgColor` | int | 文本单元（高亮/按下）背景色。**透明必须写 -1**；`0` = **不透明黑**，不是透明（2026-09-20 M6 更正：旧文误写「0=透明」，实机按 0 会画出黑块）。官方 ImeDemo 用 `16777215`（白底+黑字）；深色卡片建议走 DESIGN.md 令牌（如 accent 689407）|
+| `textBgColor` | int | 文本单元（高亮/按下）背景色。**透明必须写 -1**；`0` = **不透明黑**，不是透明（实机按 0 会画出黑块）。官方 ImeDemo 用 `16777215`（白底+黑字）；深色卡片建议走 DESIGN.md 令牌（如 accent 689407）|
 | `colorTab` | {color0..4} | 文字颜色（color0=正常） |
 | `touchable` | bool | 必须 true 才能点选滑动 |
 | `text` | string | 初始单条文本 |

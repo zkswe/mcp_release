@@ -33,6 +33,7 @@ risk / category / stage）。
 import io
 import json
 import os
+import re
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 SPEC_PATH = os.path.join(BASE, 'op_spec.json')
@@ -111,6 +112,57 @@ def seealso(op):
     return [str(x) for x in v]
 
 
+def excludes(op):
+    """本 op 的**出局词** → {'why':…, 'phrases':[…]}；未登记 → {'why':'','phrases':[]}。
+
+    语义（2026-10-04，用户口径）：用户原话里出现 `phrases` 任一片段时，本 op 在 `_find`
+    里**直接出局**（不是降权）—— 用来治「同名词不同动作」：比如「给客户看下效果」里的
+    「看效果」说明要的是**预览稿**，`create_project` 就不该抢答（实测它靠「项目」这个词
+    拿到 6 分居首，把 ui_preview 压到第 3）。
+
+    与 `triggers` 的关系：triggers 是**选它**的正向词，excludes 是**排除它**的反向词。
+    两者不许重叠（`validate()` 会红）—— 同一句既触发又排除，行为就没法解释了。
+    """
+    v = _field(op, 'excludes') or {}
+    if not isinstance(v, dict):
+        return {'why': '', 'phrases': []}
+    return {'why': str(v.get('why') or ''),
+            'phrases': [str(x) for x in (v.get('phrases') or [])]}
+
+
+def exclude_hit(op, query):
+    """用户原话是否命中本 op 的出局词 → 命中的片段（'' = 没命中）。
+
+    匹配器复用 `kb_authority.alias_hit`（与 triggers/keywords 同一份实现）——
+    不另造第二套匹配，否则「什么算命中」会有两种口径。
+
+    ⚠️ 一个必须守的例外（2026-10-04 实测）：**纯 ASCII 短片段要求词边界**。
+    中文没有词边界，子串匹配是对的；但拉丁词有 —— `qt` 会命中 `mqtt`，
+    `xml` 会命中 `xmlhttp`。出局词写错方向的代价是「该出的候选被吃掉」，
+    比多给候选危险得多，所以这里收紧：`[a-z0-9_.]{1,3}` 的片段只有作为**整词**
+    出现才算命中（`加个 mqtt 包` → `qt` 不算；`qt 的按钮` → `qt` 算）。
+    """
+    q = (query or '').strip()
+    if not q:
+        return ''
+    try:
+        import kb_authority as ka
+    except Exception:                      # 匹配器不可用 → 不排除（宁可多给候选，不可错杀）
+        return ''
+    for ph in excludes(op)['phrases']:
+        ph = str(ph).strip()
+        if not ph:
+            continue
+        if re.fullmatch(r'[A-Za-z0-9_.]{1,3}', ph):
+            if re.search(r'(?<![A-Za-z0-9_.])%s(?![A-Za-z0-9_.])' % re.escape(ph),
+                         q, re.I):
+                return ph
+            continue
+        if ka.alias_hit(ph, q):
+            return ph
+    return ''
+
+
 def brief(op, limit=90):
     """工具目录用的一行摘要（与 tools_manifest / gate_catalog 同源）。"""
     return summary(op)[:limit]
@@ -167,6 +219,11 @@ def _render_fields(op, order):
             t = _lines_prefix('\u26a0\ufe0f', v)
         elif key == 'keywords':
             t = _line_list('检索词', v, ' / ')
+        elif key == 'excludes':
+            # 出局词：渲染成一行「别把它用在这儿」，让 AI 在 describe 阶段就看得到
+            # 为什么"这句话不该找我"。空/未登记不渲染。
+            ph = excludes(op)['phrases']
+            t = ('不适用（问法里出现这些就先看别的 op）：%s' % ' / '.join(ph)) if ph else ''
         elif key == 'docRef':
             t = ('细节见 %s' % v) if v else ''
         else:
@@ -264,6 +321,27 @@ def validate():
         d = s.get('docRef')
         if d and not os.path.isfile(os.path.join(BASE, str(d))):
             errs.append('%s: docRef 指向不存在的文件: %s' % (op, d))
+
+        # excludes（出局词）：结构与**自洽性**
+        ex = s.get('excludes')
+        if ex is not None:
+            if not isinstance(ex, dict):
+                errs.append('%s: excludes 必须是对象 {why, phrases}' % op)
+                continue
+            if not str(ex.get('why') or '').strip():
+                errs.append('%s: excludes 缺 why（要说清"问法里有这些词时该找谁"）' % op)
+            ph = ex.get('phrases')
+            if not isinstance(ph, list) or not [x for x in ph if str(x).strip()]:
+                errs.append('%s: excludes.phrases 必须是非空字符串数组' % op)
+                continue
+            tg = set(str(x) for x in (s.get('triggers') or []))
+            ov = sorted(set(str(x) for x in ph) & tg)
+            if ov:
+                # 自相矛盾：同一句既"选它"又"排除它" —— 行为无法解释，必须当场拦
+                errs.append('%s: excludes 与自己的 triggers 重叠：%s' % (op, '、'.join(ov)))
+            for x in ph:
+                if len(str(x).strip()) < 2:
+                    errs.append('%s: excludes 片段 %r 太短（会误伤，至少 2 字）' % (op, x))
 
     # 三层架构（tiers）+ 预算口径必须齐备 —— 否则消费方会各写一份渲染顺序
     tiers = reg.get('tiers') or {}

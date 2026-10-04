@@ -9,7 +9,7 @@
 
 用法：
     python scripts/sync_ui_tools.py --check     # 只比对（不一致退出码 1；smoke 第 8 项用它）
-    python scripts/sync_ui_tools.py --apply     # 源 -> 副本，逐文件字节级复制
+    python scripts/sync_ui_tools.py --apply     # 源 -> 副本，整文件复制（行尾随源；--check 比内容不比行尾）
     python scripts/sync_ui_tools.py --json      # 机器可读结果
     python scripts/sync_ui_tools.py --to <dir>  # 指定副本目录（默认 ../ui_tools）
 """
@@ -44,8 +44,36 @@ def sources():
     return out
 
 
+def _read(path):
+    with open(path, 'rb') as f:
+        return f.read()
+
+
+def _is_text(data):
+    """无 NUL 字节即按文本处理（与 git 的 `text` 判定同精神）。"""
+    return b'\0' not in data
+
+
+def _norm(data):
+    """文本 → 换行归一成 LF 再比；二进制 → 原样。
+
+    为什么必须归一（2026-10-04 实测）：本仓没有 `.gitattributes`，而本机 `core.autocrlf=true`
+    —— 同一个提交在不同检出里落盘换行可以不同（实测：主树 `ui_tools/*.py` 是 LF、另建的
+    `git worktree` 检出是 CRLF，同一文件 161531 vs 164496 字节）。按原始字节比哈希，于是
+    「同一份提交」在另一棵树里被判**双份漂移**（假红，且只在换行策略不同的机器/检出上出现）。
+    归一只影响**行尾**，内容差异照样抓得到。
+    """
+    if not _is_text(data):
+        return data
+    return data.replace(b'\r\n', b'\n').replace(b'\r', b'\n')
+
+
 def compare(dst):
-    """返回 {file: status}，status in (same, drift, missing_in_copy, extra_in_copy)。"""
+    """返回 {file: status}，status in (same, drift, missing_in_copy, extra_in_copy)。
+
+    「same」= **内容一致**（文本已按换行归一，见 `_norm`），不是字节一致 —— 跨检出/跨平台
+    的换行差异不是漂移。
+    """
     res = {}
     src_files = sources()
     for name in src_files:
@@ -53,7 +81,7 @@ def compare(dst):
         b = os.path.join(dst, name)
         if not os.path.isfile(b):
             res[name] = 'missing_in_copy'
-        elif sha256(a) != sha256(b):
+        elif _norm(_read(a)) != _norm(_read(b)):
             res[name] = 'drift'
         else:
             res[name] = 'same'
@@ -68,7 +96,7 @@ def compare(dst):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--check', action='store_true', help='只比对（不一致退出码 1）')
-    ap.add_argument('--apply', action='store_true', help='源 -> 副本，字节级复制')
+    ap.add_argument('--apply', action='store_true', help='源 -> 副本，整文件复制（行尾按源）')
     ap.add_argument('--to', default=DEFAULT_DST, help='副本目录（默认 ../ui_tools）')
     ap.add_argument('--json', action='store_true', help='输出 JSON')
     a = ap.parse_args()

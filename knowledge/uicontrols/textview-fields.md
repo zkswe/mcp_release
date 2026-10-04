@@ -83,8 +83,7 @@ mTextView1Ptr->setTextColor(0xFF0000);  // 直接给 RGB（16 进制）
 - 已知（注册表口径）：四个可选字段，默认 `false / 1 / 150 / 5`；
   语义是**单条文字滚动（跑马灯）**，文字控件通用（`edittext-fields.md` 也归为"文字滚动"）。
 - **规范**：`rollEnable` 开滚动；**`rollStep` = 每步位移像素**；`rollIntervalTime` = 每步间隔毫秒；`rollDirection` = 方向（0/1）。**仍未核**：`rollDirection` 0/1 与左右方向的对应、滚完一圈是否循环。（字段级规范的真源 = `ui_tools/ui_schema.json`；本节只说用法与约束）
-  `rollDirection` 的取值含义（1 到底是什么方向）、`rollStep` 的单位、`rollIntervalTime` 与
-  `rollStep` 的关系 —— **仓内与官方 textview 文档都没有写**。要用就先在真机上试。
+  （`rollStep` 的单位、`rollIntervalTime` 与它的关系**已定**于真源 `ui_schema.json`：位移 = `rollStep` × 步数、步频 = `rollIntervalTime`；不必再上机试。）
 - 另外两条**已知边界**（不是坑，是"别期待"）：
   ① 离线渲染器**不渲染滚动**（`json2img` 把它列进"未支持"：只画静止首屏）——
      所以**预览图里看不到跑马灯效果是正常的**，别据此判它没生效；
@@ -109,7 +108,7 @@ mTextView1Ptr->setTextColor(0xFF0000);  // 直接给 RGB（16 进制）
 | 项 | 状态 |
 |---|---|
 | 真机复验 | **未做**（本页无一条是我上机测的）：字段来自注册表、行为来自官方文档与仓内既有页，标 `needs_evidence: true` |
-| `roll*` 四个字段的**语义值域** | **未核**（仓内与官方文档都没有；要用先上机试） |
+| `roll*` 四个字段的**语义值域** | `rollEnable` / `rollStep`（每步位移像素）/ `rollIntervalTime`（每步毫秒）**已定**（真源 `ui_schema.json`）；**未核**：`rollDirection` 的 0/1 方向映射、滚完一圈是否循环 |
 | `charsetTab` 的 json 结构与 asc 码映射表 | 未核（官方只讲了 IDE 侧配法；json 侧字段形态待读源码/实测） |
 | `backgroundPic: ""` 的影响 | **规范**：`""` = 不设背景图，**不影响控件可见性**（照常画 `backgroundColor` 与文字）；只有**指向不存在的文件**才会异常。真源 = `ui_schema.json` 的 `valueRules.missingImage` |
 | 三态色在**各平台固件**上的差异 | 未核（官方口径未提平台差异）。**复验方法**：同一份 fui 在 F133 / V85X / Z20 上各推一次，用 `flythings_device_preflight` 或设备端 `zkshot` 抓**按下态**那一帧，比对三态色像素是否与 `colorTab` 声明一致 |

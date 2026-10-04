@@ -1,7 +1,7 @@
 {
  "schemaVersion": "1.0",
  "updated": "2026-10-03",
- "authority": "本文件是 FlyThings **op 契约与工具面分层**的机器可读唯一真源（域①）。派生：kb_tools 的 47 个 docstring（scripts/gen_op_docs.py）、tools_manifest.json、意图闸门 catalog、mcp_server 的 list/find/describe 三个入口。**工具面三层**（见 tiers）：常驻 = summary+triggers+params+hardRules（进 tool description）；按需 = flow/returns/rules/keywords/notes（op=\"describe:<名>\" / 资源 flythings://ops/<名>）；深入 = docRef/seeAlso → knowledge 检索。**分级筛选**：用户需求先经 `op=\"find:<原话>\"` 按 triggers 打分（字面/滑窗/弱命中 → 知识检索两跳）出候选 + 知识指针，再 describe 取契约，最后才调用 —— 判据与知识权威归属共用一份匹配器（kb_authority.alias_hit）。改契约 = 改本文件，禁止消费方另抄一份。",
+ "authority": "本文件是 FlyThings **op 契约与工具面分层**的机器可读唯一真源（域①）。派生：kb_tools 的 docstring（scripts/gen_op_docs.py）、tools_manifest.json、意图闸门 catalog、mcp_server 的 list/find/describe 三个入口。**工具面三层**（见 tiers）：常驻 = summary+triggers+hardRules（进 tool description）；按需 = params/flow/returns/rules/keywords/excludes/notes（op=\"describe:<名>\" / 资源 flythings://ops/<名>）；深入 = docRef/seeAlso → knowledge 检索。**分级筛选**：用户需求先经 `op=\"find:<原话>\"` 按 triggers 打分（字面/滑窗/弱命中 → 知识检索两跳）出候选 + 知识指针，再 describe 取契约，最后才调用 —— 判据与知识权威归属共用一份匹配器（kb_authority.alias_hit）。改契约 = 改本文件，禁止消费方另抄一份。",
  "budget": {
   "perOpMax": 360,
   "totalMax": 6000,
@@ -24,7 +24,8 @@
   "hardRules": "⚠️⚠️ 级铁律（违反会真机挂死/数据损坏/静默丢产物/**返工**），含「调用前必须满足的流程闸门」（如\"先出设计稿确认再建工程\"）—— 这类必须在常驻面，AI 不主动拉契约也得看到",
   "rules": "⚠️ 级铁律与踩坑要点，逐条一行",
   "keywords": "检索词，渲染成「检索词：a / b / c」",
-  "docRef": "长文细节所在 knowledge 文档。**不进渲染**（不在 renderOrder 里）：知识归属已由返回体的 seeAlso 字段注入（kb_tools._seealso_for ← op_seealso.json），写进描述就是跨层重复、白占 12000 字符的常驻预算。本字段仍供 seeAlso 派生与文档链消费。"
+  "docRef": "长文细节所在 knowledge 文档。**不进渲染**（不在 renderOrder 里）：知识归属已由返回体的 seeAlso 字段注入（kb_tools._seealso_for ← op_seealso.json），写进描述就是跨层重复、白占 12000 字符的常驻预算。本字段仍供 seeAlso 派生与文档链消费。",
+  "excludes": "**出局词**（2026-10-04 新增）：问法里出现这些片段时，本 op 在 `op=\"find\"` 里**出局**（不是降权）——治「同名词不同动作」（如「给客户看下效果」要的是预览稿，不是建工程）。与 `triggers` 不许重叠、片段至少 2 字（`validate()` 会红）。**不进常驻面**：它属\"选中之后才需要\"的信息，只在 `describe`/契约里出现。"
  },
  "migration": {
   "state": "完成（45/45 已登记）",
@@ -119,7 +120,22 @@
     "起个新项目",
     "建 FlyThings 工程",
     "从头做"
-   ]
+   ],
+   "excludes": {
+    "why": "「项目」是通用词：带下列词尾的问法要的是**别的动作**（预览 / 出图 / 扩图 / 加固），不是建工程 —— 命中的问法应当落到 ui_preview / generate_ui_assets / gen_logic_stub。",
+    "phrases": [
+     "预览",
+     "看下效果",
+     "出图",
+     "扩图",
+     "图标",
+     "控件盒",
+     "点不动",
+     "不生效",
+     "遮挡",
+     "回调"
+    ]
+   }
   },
   "flythings_pack_upgrade": {
    "summary": "固化升级包（update.img）——交付/发布/量产走本条；与「调试推送到设备」不同（那是 build_ui_flow，掉电即失）。",
@@ -222,7 +238,17 @@
     "截图",
     "看看现在屏幕什么样",
     "抓个图"
-   ]
+   ],
+   "excludes": {
+    "why": "带下列词尾的是**静默退出/OOM/自检**一类问题，抓屏不是第一手段",
+    "phrases": [
+     "oom",
+     "莫名退出",
+     "被杀",
+     "自检",
+     "体检"
+    ]
+   }
   },
   "flythings_verify_assets": {
    "summary": "核对「json 声明 vs 磁盘产物」：图片引用是否存在 + PNG 尺寸是否 == 盒子。",
@@ -293,7 +319,18 @@
     "json 有哪些字段",
     "控件必填什么",
     "布局规范查询"
-   ]
+   ],
+   "excludes": {
+    "why": "带下列词尾的是**改布局或查包 API**，不是问字段语义（「包」这类单字太泛会误伤，一律写两字以上的具体说法）",
+    "phrases": [
+     "被遮住",
+     "遮挡",
+     "重叠",
+     "越界",
+     "包 api",
+     "怎么用"
+    ]
+   }
   },
   "flythings_get_version": {
    "summary": "返回 MCP 版本号、工具数量与近期关键特性。用户问「MCP 版本是多少 / 是不是最新的」时调用。",
@@ -368,7 +405,16 @@
     "搜一下资料",
     "这个怎么做",
     "有没有相关文档"
-   ]
+   ],
+   "excludes": {
+    "why": "带下列词尾的是**要执行动作**（打包/部署/出图），不是查知识",
+    "phrases": [
+     "打包",
+     "推到设备",
+     "上设备",
+     "出一套图"
+    ]
+   }
   },
   "flythings_knowledge_capture": {
    "summary": "把一条现场结论落成知识候选（写**用户本地层/项目层**，绝不写 MCP 安装目录）。",
@@ -532,7 +578,21 @@
     "代码转界面",
     "迁移翻译",
     "换个框架"
-   ]
+   ],
+   "excludes": {
+    "why": "带下列词尾的是**别的源语言或别的动作**：翻译器目前只支持 LVGL(v8/v9)，多语言 i18n 与真机部署都另有 op",
+    "phrases": [
+     "android",
+     "安卓",
+     "xml",
+     "qml",
+     "多语言",
+     "翻译不生效",
+     "推到设备",
+     "上设备",
+     "打包"
+    ]
+   }
   },
   "flythings_read_json": {
    "summary": "解析 .json 布局文件为 JSON（分辨率、控件列表、caption→id 映射）。传入 json 完整路径。",
@@ -572,7 +632,16 @@
    ],
    "hardRules": [
     "**没读过规范不许开始写** `ui/*.json` 或业务代码 —— 目录规则/生成规则/注意事项都在这里。"
-   ]
+   ],
+   "excludes": {
+    "why": "带下列词尾的是**具体 op 的用法或字段语义**，不是工程目录规范",
+    "phrases": [
+     "这个包怎么用",
+     "api 签名",
+     "字段什么意思",
+     "必填键"
+    ]
+   }
   },
   "flythings_validate_project": {
    "summary": "检查项目是否符合 FlyThings 规范，返回 errors/warnings。生成代码后调用。",
@@ -620,7 +689,17 @@
     "点不动",
     "触摸穿透",
     "越界"
-   ]
+   ],
+   "excludes": {
+    "why": "带下列词尾的是**颜色/像素级差异**（走 ui_visual 的 diff）或外观规范，不是几何遮挡审计",
+    "phrases": [
+     "对比度",
+     "配色",
+     "颜色不对",
+     "像素",
+     "还原度"
+    ]
+   }
   },
   "flythings_fui_pack": {
    "summary": "将 json 布局打包为 ftu（设备实际加载的是 ftu）。返回 ftu 路径、控件数、分辨率。",
@@ -727,7 +806,16 @@
     "屏比设计小",
     "屏幕比设计小",
     "分辨率不一样"
-   ]
+   ],
+   "excludes": {
+    "why": "带下列词尾的是**发布固化/升级包**动作，不是上机前体检",
+    "phrases": [
+     "升级包",
+     "出货版本",
+     "固化了",
+     "ota"
+    ]
+   }
   },
   "flythings_build_ui_flow": {
    "summary": "FlyThings UI 构建与部署全流程（pack → install → build → 设备探测 → launch）。",
@@ -759,7 +847,17 @@
     "上机",
     "传到设备",
     "烧上去"
-   ]
+   ],
+   "excludes": {
+    "why": "带下列词尾的是**只要固化产物**（出货/量产），不是调试推送到设备",
+    "phrases": [
+     "出货",
+     "量产",
+     "升级包",
+     "固化了",
+     "ota"
+    ]
+   }
   },
   "flythings_ui_preview": {
    "summary": "json 布局 / 整个项目 → HTML 预览稿（客户确认 UI 用；只交 html，不产图片/截图）。",
@@ -792,7 +890,18 @@
     "预览页面",
     "出个预览稿",
     "客户确认稿"
-   ]
+   ],
+   "excludes": {
+    "why": "带下列词尾的是**上真机/打包**，不是要 HTML 预览稿",
+    "phrases": [
+     "推到设备",
+     "上设备",
+     "真机",
+     "打包",
+     "出货",
+     "升级包"
+    ]
+   }
   },
   "flythings_html_to_json": {
    "summary": "受限 HTML 交互原型 -> ui/*.json（CSS 效果自动转图；产物尺寸 == 控件盒）。",
@@ -818,7 +927,21 @@
     "网页稿转界面",
     "把原型变成界面",
     "设计稿转界面"
-   ]
+   ],
+   "excludes": {
+    "why": "「界面/json」是通用词：带下列词尾的是别的通路（源码翻译 / 改已有 / 只是看预览），不是 HTML 原型转换",
+    "phrases": [
+     "lvgl",
+     "lv_",
+     "迁移",
+     "搬过来",
+     "换框架",
+     "已有工程",
+     "加个按钮",
+     "预览",
+     "看下效果"
+    ]
+   }
   },
   "flythings_list_packages": {
    "summary": "列出依赖包生态（platform 如 F133/Z20，留空列全部），含功能描述与版本。写代码前调用。",
@@ -952,7 +1075,16 @@
     "支持 mqtt 的包",
     "有没有 http 库",
     "找个库"
-   ]
+   ],
+   "excludes": {
+    "why": "带下列词尾的是**依赖安装或版本查询**动作，不是生态检索",
+    "phrases": [
+     "装包",
+     "install",
+     "版本是多少",
+     "升级包"
+    ]
+   }
   },
   "flythings_get_package_api": {
    "summary": "获取 package 的头文件路径、类方法签名、使用示例。传入包名与可选版本。",
@@ -1078,7 +1210,18 @@
     "补回调桩",
     "缺回调怎么办",
     "那个回调没生成"
-   ]
+   ],
+   "excludes": {
+    "why": "带下列词尾的问法要的是**控件行为本身**（点不动/属性/字段/尺寸），不是补回调桩",
+    "phrases": [
+     "点不动",
+     "点不了",
+     "属性",
+     "标签",
+     "尺寸",
+     "位置"
+    ]
+   }
   },
   "flythings_gen_ui_test": {
    "summary": "根据 UI json 布局生成自动化测试项目（纯代码，不依赖 AI，省 token）。",
@@ -1227,7 +1370,18 @@
     "出图",
     "做个按钮背景图",
     "要一套图标"
-   ]
+   ],
+   "excludes": {
+    "why": "带下列词尾问的是**图与控件盒的关系**（改尺寸/清缓存/为什么糊），不是重新出图",
+    "phrases": [
+     "控件盒",
+     "尺寸不匹配",
+     "改尺寸",
+     "不更新",
+     "缓存",
+     "发糊"
+    ]
+   }
   },
   "flythings_i18n_scan": {
    "summary": "诊断项目多语言（i18n）现状：i18n/*.tr 语言文件、key 对齐、布局 @key 引用完整性。",
@@ -1472,7 +1626,16 @@
     "网络通不通",
     "分区挂载",
     "把设备状态抓一遍"
-   ]
+   ],
+   "excludes": {
+    "why": "带下列词尾的是**启动/生命周期机制问题**（另有权威页），不是整机分区自检",
+    "phrases": [
+     "启动不起来",
+     "主线程",
+     "空转",
+     "生命周期"
+    ]
+   }
   },
   "flythings_bugreport": {
    "summary": "缺陷单生成器：缺陷清单 + 真机判据 → 可提交 markdown（格式对齐 html2json A1~A8 那批）。",
@@ -1513,6 +1676,7 @@
   "returns",
   "rules",
   "keywords",
+  "excludes",
   "notes"
  ],
  "tiers": {
@@ -1546,7 +1710,7 @@
   }
  },
  "notesDebt": {
-  "authority": "`notes` 是注册表里的**迁移兜底桶**（见 renderSpec.notes）：非空 = 该 op 的结构化还没做完。本段登记**存量基线**（2026-10-03）。门禁口径（op_spec_loader.validate）：① 不在名单里的 op **不许**有 notes（新增即红 —— 新字段请进 flow/params/rules/keywords）② 名单里的 notes **只许减**（字符数不得增加）；清零后从名单删除。**状态：2026-10-03 三批清零完毕（原 33 个 op / 5233 字符 → 0），`items` 已空；此后任何 op 再写 notes 都是失败 —— 细节一律进 flow/params/returns/rules/keywords。**",
+  "authority": "`notes` 是注册表里的**迁移兜底桶**（见 renderSpec.notes）：非空 = 该 op 的结构化还没做完。本段登记**存量基线**。门禁口径（op_spec_loader.validate）：① 不在名单里的 op **不许**有 notes（新增即红 —— 新字段请进 flow/params/rules/keywords）② 名单里的 notes **只许减**（字符数不得增加）；清零后从名单删除。**当前基线为空**：此后任何 op 再写 notes 都是失败。",
   "items": {}
  },
  "longOps": [

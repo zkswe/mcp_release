@@ -27,7 +27,7 @@
 | 0.11.1 对应 commit | **`a7f9476`**（2024-05-31）—— 判据：加它的 commit 里 `src/blend2d/api.h` 有 `BL_MAKE_VERSION(0, 11, 1)`，下一个 commit `b6fb6c2` 才升到 0.11.2 |
 | 取源镜像 | **gitee 镜像** `https://gitee.com/mirrors/blend2d.git`（GitHub 直连不稳，ghfast.top 亦可） |
 | `master` 能不能用 | **不能**：`master` 已是 `BL_VERSION 0.21.3`，与注册表 0.11.1 不对版 |
-| 运行期自证 | 重编后 `blRuntimeQueryInfo(BUILD)` 报 `ver=0.11.1 buildType=1(RELEASE) cpuArch=0x2(ARM)`，与注册表包一致（旧库 `compiler=GCC 8.2`，新库 `GCC 8.3`） |
+| 运行期自证 | 重编后 `blRuntimeQueryInfo(BUILD)` 报 `ver=0.11.1 buildType=1(RELEASE) cpuArch=0x2(AArch64)`（⚠️ 语义更正：`0x2` = AArch64，**ARM 是 `0x1`**；本档实测 `supportedCpuFeatures=0x00000000`，正对「ARM32 走 C++ 参考管线、无 SIMD 路径」），与注册表包一致（旧库 `compiler=GCC 8.2`，新库 `GCC 8.3`） |
 | asmjit | **不需要**（`-DBLEND2D_NO_JIT=ON` 后 CMake 跳过 asmjit 查找） |
 
 ---

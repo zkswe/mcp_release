@@ -97,7 +97,7 @@ evidence: []
 ## ZKPainter（PainterDemo）
 - 状态式画笔：`setLineWidth(px)/setSourceColor(0xRRGGBB)` 后画：`drawRect(x,y,w,h,r)/fillRect(x,y,w,h,r)/drawArc(cx,cy,rx,ry,start,sweep)/fillArc(同 drawArc)/drawTriangle(x0,y0,x1,y1,x2,y2)/fillTriangle(...)/drawLines(SZKPoint*,n)/drawCurve(SZKPoint*,n)`
   （真源签名：`ZKPainter.h` v85x easyui 2.9.0 —— `void erase(int x,int y,int w,int h); void drawLines(const SZKPoint*,int); void drawCurve(const SZKPoint*,int);`）
-- ⛔ **没有 `drawLine(...)` 这个 API**（2026-10-04 V85X 复核）：单条直线要 `SZKPoint p[2]={{x0,y0},{x1,y1}}; pPainter->drawLines(p,2);`；写 `drawLine(a,b,c,d)` 直接**编译不过**（早期页面的错误写法来源见 temp/_demo_canvas*.py）。
+- ⛔ **没有 `drawLine(...)` 这个 API**：单条直线要 `SZKPoint p[2]={{x0,y0},{x1,y1}}; pPainter->drawLines(p,2);`；写 `drawLine(a,b,c,d)` 直接**编译不过**（早期页面的错误写法来源见 temp/_demo_canvas*.py）。
 - ⛔ **`erase()` 不是无参清屏**（同上复核）：签名是 `erase(x,y,w,h)`，清整屏要 `erase(0,0,控件宽,控件高)`。无参 `erase();` 编译不过——本页旧文案「`erase` 清屏」已按真源签名改掉。
 - **`drawArc` 实参口径（Z21 easyui 2.6.0 真机实测）**：按 `(cx, cy, rx, ry, start, sweep)`（圆心 + 半径）写**渲染正确**
   （按格子填色，无残影）；可复现调用点：`projects/EasyDevice-Z21/src/logic/mainLogic.cc`。

@@ -113,9 +113,19 @@ def collect():
     plats = _pl.describe()
 
     # 知识规模：knowledge/（随仓库分发）+ wiki（本地完整库，clone 后可能没有）
+    #
+    # ⚠️ 口径（2026-10-04 干净检出实测）：**跳过 `_` 前缀目录**（`_reports` / `_logs`）。
+    # 那些是 .gitignore 的派生产物（体检看板、全检报告、未核清单），**每台机器各不相同**：
+    # 记进 `knowledgeFiles` 会让这个字段随环境漂（实测同一提交：有报告的机器 119、
+    # 干净检出 115），而 `gen_manifest --check` 比的是"生成结果 vs 入库快照" →
+    # **在干净检出上必然红**（这正是本仓反复治的"门禁依赖未入库产物"同款病）。
+    # 只统计随仓分发的那些 md（下方 ragChunks/ragPaths 来自随仓 `rag_index.json`，同样可复现）。
     knowledge_dir = os.path.join(BASE, 'knowledge')
-    kb_files = [os.path.join(r, f) for r, _, fs in os.walk(knowledge_dir)
-                for f in fs if f.endswith('.md')] if os.path.isdir(knowledge_dir) else []
+    kb_files = []
+    if os.path.isdir(knowledge_dir):
+        for r, ds, fs in os.walk(knowledge_dir):
+            ds[:] = [d for d in ds if not d.startswith('_')]
+            kb_files += [os.path.join(r, f) for f in fs if f.endswith('.md')]
     rag_paths, rag_chunks = [], 0
     ragp = os.path.join(BASE, 'rag_index.json')
     if os.path.isfile(ragp):

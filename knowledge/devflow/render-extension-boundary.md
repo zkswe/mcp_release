@@ -69,7 +69,7 @@ mTextView->setInvalid(!mTextView->isInvalid());    // 自定义 view 的每帧�
    （`knowledge/devflow/custom-render-paths.md` §4 的禁忌同理：不要在框架进程里另起 GTK/Qt 主循环抢 fb）。
 平台现状：**F133 / Z21 无 GPU、无硬解 → 只能伪 3D / 软模拟**；**真 3D 目前仅 V85X**（disp 分层）验证过。
 
-> ⚠️ 性能不是边界，是**预算**，而且要说清**哪一段花钱**（2026-09-30 需求方/需求方口径；代码复核见 `knowledge/devflow/custom-render-paths.md` §0-3）：
+> ⚠️ 性能不是边界，是**预算**，而且要说清**哪一段花钱**（口径与代码复核见 `knowledge/devflow/custom-render-paths.md` §0-3）：
 > **绘制进内存画布**那段是**软件实现**（我方 `src/core/PgCanvas.*` = 自研画布 + 自研多档字库）；
 > **内存画布 → 屏幕**那段是**硬件合成**：**框架层与芯片侧提供 内存拷贝(bitblt) / 透明 α 混合 / 90° 旋转**
 > （口径来源：需求方 2026-09-30；我方实证：`src/platform/PgDisplay.h` 头注释「控件→屏幕走硬件加速」、
