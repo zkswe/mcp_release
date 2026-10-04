@@ -1280,6 +1280,29 @@ def stage_delegated(skip_smoke, with_tests):
                if l.startswith('[PASS]') or l.startswith('[FAIL]')]
     check(rc == 0, 'delegated: gen_symptom_doc --check (现场症状索引)',
           (sy_tail[-1] if sy_tail else 'rc=%d' % rc)[:70])
+    # 域③（2026-10-05 补）：**注册表里的"未验证"必须都能在派生页里核对到**。
+    # 为什么单列：全仓盘点（本轮）发现「已实测平台的组件形态未回归」「Z235X 工具全缺」
+    # 「6 个包 example 待补」这类**验证债**散在 components/*/platforms.md、packages/*/platforms.md
+    # 与注册表里，没有任何汇总通道 → 只能靠人记得（那 24 项漏项主要就是这么来的）。
+    # 判据取"计数对账"而不是"内容一致"（后者由 gen_component_platforms --check 负责）：
+    # 注册表里 cells 含「未验证/不可用/缺」的单元格数，必须 == 派生矩阵页里的出现次数。
+    # 它不会替你验，但**任何新的未验证格子都会被登记页如实呈现**，不会静默躺在注册表里。
+    try:
+        import platform_cap_loader as _pc
+        reg = _pc.load()
+        pend = sum(1 for c in (reg.get('components') or {}).values()
+                   for row in (c.get('rows') or [])
+                   for cell in (row.get('cells') or [])
+                   if isinstance(cell, str) and any(k in cell for k in ('未验证', '不可用', '缺')))
+        import io as _io
+        mp = os.path.join(BASE, 'knowledge', 'devflow', 'platform-capability-matrix.md')
+        txt = _io.open(mp, encoding='utf-8').read() if os.path.isfile(mp) else ''
+        seen = sum(txt.count(k) for k in ('未验证', '不可用', '缺'))
+        check(seen >= pend, '未验证单元格都进了派生矩阵页（注册表 %d / 页面 %d）' % (pend, seen),
+              'ok' if seen >= pend else
+              '派生页少 %d 处 → 跑 python scripts/gen_platform_cap_doc.py' % (pend - seen))
+    except Exception as e:                      # 注册表不可用不静默
+        check(False, '未验证单元格都进了派生矩阵页', '%s: %s' % (type(e).__name__, e))
     # v0.27.173（域⑫）：错误码表 —— 源码里出现的 code 必须已登记（防漏登记），
     # 登记的必须真有人抛（防孤儿码）；这直接决定失败返回里的 action 能不能补出来。
     try:
