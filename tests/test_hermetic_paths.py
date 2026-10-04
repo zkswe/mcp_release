@@ -73,6 +73,52 @@ class TestHermeticPaths(unittest.TestCase):
         finally:
             U.cleanup(tmp)
 
+    def test_scanner_survives_other_drive_path(self):
+        """扫描目标在**另一个盘**时不许崩（Windows 实测：relpath 抛 ValueError）。
+
+        2026-10-04 实测：用例用 `tempfile` 把合成样本建在 C:，而仓库在 D:，
+        `_test_hermetic_hits` 里的 `os.path.relpath(path, BASE)` 直接抛
+        `ValueError: path is on mount 'C:', start on mount 'D:'` —— 两条用例因此 ERROR。
+        """
+        import tempfile
+        tmp = tempfile.mkdtemp(prefix='mcp_hermetic_')
+        try:
+            p = os.path.join(tmp, 'fake_case3.py')
+            with open(p, 'w', encoding='utf-8') as f:
+                f.write("X = 1\n")
+            self.assertEqual(CC._test_hermetic_hits(p), [])
+        finally:
+            U.cleanup(tmp)
+
+
+class TestDualCopyCompare(unittest.TestCase):
+    """`sync_ui_tools.compare` 判「内容一致」而不是「字节一致」。
+
+    2026-10-04 实测的假红：同一份提交在两个 `git worktree` 里落盘换行可以不同
+    （本机 `core.autocrlf=true`，仓库又没有 `.gitattributes`）：主树 LF、另一棵 CRLF
+    —— 按原始字节比哈希就把「同一份提交」判成**双份漂移**。
+    """
+
+    def _load(self):
+        import importlib.util
+        path = os.path.join(BASE, 'scripts', 'sync_ui_tools.py')
+        spec = importlib.util.spec_from_file_location('sync_ui_for_test', path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+
+    def test_line_endings_are_not_drift(self):
+        mod = self._load()
+        self.assertEqual(mod._norm(b'a\r\nb\r\n'), mod._norm(b'a\nb\n'),
+                         'CRLF 与 LF 必须归一成同一份内容')
+        self.assertNotEqual(mod._norm(b'a\nb\n'), mod._norm(b'a\nc\n'),
+                            '归一化不得把真实内容差异也抹掉')
+
+    def test_binary_is_byte_compared(self):
+        mod = self._load()
+        png = b'\x89PNG\r\n\x1a\n\x00\x00'
+        self.assertEqual(mod._norm(png), png, '二进制必须原样比（含 NUL 则不归一）')
+
 
 if __name__ == '__main__':
     unittest.main()
