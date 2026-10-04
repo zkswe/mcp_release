@@ -25,24 +25,27 @@ evidence: []
 
 ## JSON 字段表
 
-| 字段 | 类型/取值 | 说明 |
-|------|----------|------|
-| `id` | int | **30000+**（html2json 起始 30000） |
-| `caption` | string | 控件名（SlideWindow1…） |
-| `position` | {left,top,width,height} | 控件位置尺寸（整个滑动窗口区域） |
-| `cols` / `rows` | int | 每页行列数（如 4×2，控件区域按 cols×rows **平分格子**） |
-| `iconSize` | {width,height} | **图标实际尺寸——必须按实际图片尺寸设置**，不一定等于平分格子大小！ |
-| `iconMaxSize` | {width,height} | 图标最大尺寸限制（可选） |
-| `padding` | {paddingTop/Bottom/Left/Right} | **图标相对平分格子的内边距**（图标在格子内的边界留白） |
-| `iconTextPadding` | {top/bottom/left/right} | **图标配套文字（caption 文本）的 padding 位置**（文字相对图标的位置） |
-| `iconTextAlignment` | int | 文字对齐（41 实测默认） |
-| `fontSize` | int | 图标文字字号 |
-| `dragMaxDis` | int | 最大拖动距离 = **越界拖拽上限**（overscroll，不是行程；行程 = (组数−1)×页宽，引擎自算）—— 实测 200（手感值）；手感取值规范见 `knowledge/uicontrols/scroll-drag-interaction-spec.md` |
-| `edgeEffect` | int | 边缘效果（1 实测） |
-| `orientation` | int | 0=水平滑动（默认）/ 1=垂直 |
-| `rollSpeed` | int | 滚动速度（999 实测） |
-| `backgroundPic` | string | 背景图 |
-| `items[]` | array | 图标项数组，每项 `{picTab{pic0,pic1} 两态图, text 文字, colorTab}` |
+> 字段 / 类型 / 默认值 / 必填以 `ui_tools/ui_schema.json` 为准（`flythings_ui_schema(control_type=slidewindow)` 取）；
+> 下表只留字段名与语义说明。
+
+| 字段 | 说明 |
+|------|------|
+| `id` | **30000+**（html2json 起始 30000） |
+| `caption` | 控件名（SlideWindow1…） |
+| `position` | 控件位置尺寸（整个滑动窗口区域；`{left,top,width,height}`） |
+| `cols` / `rows` | 每页行列数（如 4×2，控件区域按 cols×rows **平分格子**） |
+| `iconSize` | **图标实际尺寸——必须按实际图片尺寸设置**，不一定等于平分格子大小！（对象 `{width,height}`） |
+| `iconMaxSize` | 图标最大尺寸限制（可选；对象 `{width,height}`；注册表 slidewindow 未收录，属真缺口） |
+| `padding` | **图标相对平分格子的内边距**（图标在格子内的边界留白；`{paddingTop/Bottom/Left/Right}`） |
+| `iconTextPadding` | **图标配套文字（caption 文本）的 padding 位置**（文字相对图标的位置；`{top/bottom/left/right}`；注册表 slidewindow 未收录，属真缺口） |
+| `iconTextAlignment` | 文字对齐（41 实测默认；注册表 slidewindow 未收录，属真缺口） |
+| `fontSize` | 图标文字字号 |
+| `dragMaxDis` | 最大拖动距离 = **越界拖拽上限**（overscroll，不是行程；行程 = (组数−1)×页宽，引擎自算）—— 实测 200（手感值）；手感取值规范见 `knowledge/uicontrols/scroll-drag-interaction-spec.md` |
+| `edgeEffect` | 边缘效果（1 实测） |
+| `orientation` | 0=水平滑动（默认）/ 1=垂直 |
+| `rollSpeed` | 滚动速度（999 实测） |
+| `backgroundPic` | 背景图（注册表 slidewindow 未收录，属真缺口） |
+| `items[]` | 图标项数组，每项 `{picTab{pic0,pic1} 两态图, text 文字, colorTab}` |
 
 ## ⚠️ 布局铁律（2026-09-01 定规，图标位置不对的根因）
 

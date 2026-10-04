@@ -23,8 +23,7 @@ evidence: []
 
 > **缺图不致命但属验收缺陷**：`progressPic/thumb.normalPic/pressedPic` 指向不存在的文件 →
 > 控件不可见（framework 容错，不挂死）；图没出好就置 `''`，只写已落盘的图。
-> ⛔ 子盒对象字段（`thumb`/`position`/`size`/`progressPicPos`…）**必须写成对象**，
-> 写成字符串或其他标量 = ftu 加载无声挂死（规格见 `seekbar-fields.md` §0）。
+> ⛔ 子盒对象字段（`thumb`/`position`/`size`/`progressPicPos`…）**必须写成对象**——规格与症状见 `seekbar-fields.md` §0，本页不重复。
 
 1. **圆形进度条 = 有效图按扇形裁剪显示进度**：进度值对应的扇形区域是从 `progressPic`（有效图）裁剪出来的；`backgroundPic` 背景图**不会被裁剪**（完整显示垫底）。进度=25/100 且 startAngle=0 顺时针 → 只显示右上 90° 扇形；进度=100 显示全部有效图。
 2. **支持触摸拖动**：SDK `ICircleBarChangeListener` 带 onProgressChanged / onStartTrackingTouch / onStopTrackingTouch（与 SeekBar 同构）——可做圆形调温/调光旋钮。但 git.com 产品 18 处 circlebar **全部 touchable=false 只读显示**（净饮机滤芯寿命、烤箱火力环等）；交互优先考虑 seekbar 或确认产品需求再开 touchable。
@@ -33,23 +32,26 @@ evidence: []
 
 ## JSON 字段表（ftu 实测校准）
 
-| 字段 | 类型/取值 | 说明 |
-|------|----------|------|
-| `caption` | string | 控件名 |
-| `id` | int | 控件 id（实测 **130001** 段） |
-| `max` | int | 最大进度值（默认 100） |
-| `progressPic` | string | 有效图（被扇形裁剪显示进度） |
-| `backgroundPic` | string | 背景图（不裁剪，垫底） |
-| `progressPicPos` | {left,top,width,height} | 有效图显示位置尺寸（可小于控件做内环效果） |
-| `startAngle` | int | 起始角度（0=3 点钟方向起？实测 0） |
-| `maxAngle` | int | 最大扫过角度（360=整圆；<360 为开口环） |
-| `clockwise` | bool | true=顺时针 |
-| `unit` | string | 单位文本（textType=2 时显示，默认 %） |
-| `textType` | int | 0 无文本 / 1 数字 / 2 数字+单位 |
-| `textSize`/`textColor` | int | 中心文本字号/颜色 |
-| `touchRange` | {lower,upper} | 触摸调节范围 |
-| `touchable` | bool | 是否可触摸拖动（产品只读场景 false） |
-| `visible`/`backgroundColor`/`beepEnable` | | 通用 |
+> 字段 / 类型 / 默认值 / 必填以 `ui_tools/ui_schema.json` 为准（`flythings_ui_schema(control_type=circlebar)` 取）；
+> 下表只留字段名与语义说明。
+
+| 字段 | 说明 |
+|------|------|
+| `caption` | 控件名 |
+| `id` | 控件 id（实测 **130001** 段） |
+| `max` | 最大进度值（默认 100） |
+| `progressPic` | 有效图（被扇形裁剪显示进度） |
+| `backgroundPic` | 背景图（不裁剪，垫底） |
+| `progressPicPos` | 有效图显示位置尺寸（可小于控件做内环效果） |
+| `startAngle` | 起始角度（0=3 点钟方向起？实测 0） |
+| `maxAngle` | 最大扫过角度（360=整圆；<360 为开口环） |
+| `clockwise` | true=顺时针 |
+| `unit` | 单位文本（textType=2 时显示，默认 %） |
+| `textType` | 0 无文本 / 1 数字 / 2 数字+单位 |
+| `textSize`/`textColor` | 中心文本字号/颜色 |
+| `touchRange` | 触摸调节范围 `{lower,upper}` |
+| `touchable` | 是否可触摸拖动（产品只读场景 false） |
+| `visible`/`backgroundColor`/`beepEnable` | 通用（`beepEnable` 注册表 circlebar 未收录） |
 
 ## 代码操作（CircleBarDemo 实测）
 

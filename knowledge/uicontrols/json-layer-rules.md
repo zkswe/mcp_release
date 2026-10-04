@@ -99,6 +99,6 @@ evidence: []
 | `pass_through_missing` | 装饰件 `touchable:false` 但没 `touchPass:true`，与可点控件重叠 | 补 `touchPass:true` |
 | `overlap` | 同层两个盒子相交（后者在上层） | 确认是否故意叠放 |
 
-判据回顾：**z 序 = json 书写顺序（后定义在上层）**；**触摸按定义顺序先命中先定义的可点控件**（F133 实测：遮罩 button 压住卡片 window 时卡片内按钮点不动 → 卡片扁平化到控件层、排在遮罩之后）。
+判据回顾：**z 序 = json 书写顺序（后定义在上层）**；**触摸按定义顺序先命中先定义的可点控件**（遮罩 button 压住卡片 window 时卡片内按钮点不动 → 卡片扁平化到控件层、排在遮罩之后）。
 改动前后对比用 `flythings_ui_visual(action="diff")`；视觉样式（颜色/字体/切图）仍要截图。
 检索词：控件被遮挡 / 点不到 / 谁挡着谁 / 控件覆盖 / 重叠 / 层级 / z 序 / touchPass / layout_audit。

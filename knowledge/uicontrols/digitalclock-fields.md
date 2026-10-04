@@ -27,16 +27,19 @@ evidence: []
 
 ## JSON 字段表（ftu 实测校准）
 
-| 字段 | 类型/取值 | 说明 |
-|------|----------|------|
-| `caption` | string | 控件名 |
-| `id` | int | 控件 id（实测 **93001** 段） |
-| `format` | string | 时间格式，实测 `"HH:MM"`（12/24 小时制、是否带秒由内部解析） |
-| `beat` | bool | true=冒号跳动 |
-| `clockColor` | int | 时间颜色（16777215=白） |
-| `fontSize` | int | 字号 |
-| `backgroundColor` | int | 背景色 |
-| `touchable`/`visible`/`position` | | 通用 |
+> 字段 / 类型 / 默认值 / 必填以 `ui_tools/ui_schema.json` 为准（`flythings_ui_schema(control_type=digitalclock)` 取）；
+> 下表只留字段名与语义说明。
+
+| 字段 | 说明 |
+|------|------|
+| `caption` | 控件名 |
+| `id` | 控件 id（实测 **93001** 段） |
+| `format` | 时间格式，实测 `"HH:MM"`（12/24 小时制、是否带秒由内部解析） |
+| `beat` | true=冒号跳动 |
+| `clockColor` | 时间颜色（16777215=白） |
+| `fontSize` | 字号 |
+| `backgroundColor` | 背景色 |
+| `touchable`/`visible`/`position` | 通用 |
 
 ## 代码操作
 

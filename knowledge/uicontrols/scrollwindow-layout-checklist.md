@@ -9,7 +9,7 @@ stale_days: 180
 origin: partial
 source: 2026-09-20~10-01 SmartPanel_HA 现场反复返工 + 2026-10-01 真机交互复核<!-- design-spec:evidence 历史实测记录（判据以设备实测为准，见 DESIGN_SPEC.md 第 2 条） -->（480×480 面板）
 needs_evidence: true
-platforms: [Z20]
+platforms: []
 tags: [scrollwindow异常, 滚动窗口显示不对, 加了一行滚不到, 末尾行看不到, 内容堆叠, 固定件跟着滚, 点了点不到, 图标被文字盖住, 改了像没改, 滑动窗口怎么做]
 evidence:
   - "2026-10-01 真机复核（192.168.x.x / Z20 480×480）：settings 页视口 418 / 内层 window 832（行程 414，dragMaxDis=60）→ 滚到底后最底行完整出现在 y≈441，点它进入「多屏拼接」"

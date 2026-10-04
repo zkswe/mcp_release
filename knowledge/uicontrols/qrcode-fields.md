@@ -26,14 +26,17 @@ evidence: []
 
 ## JSON 字段表（ftu 实测校准）
 
-| 字段 | 类型/取值 | 说明 |
-|------|----------|------|
-| `caption` | string | 控件名 |
-| `id` | int | 控件 id（实测 **92001** 段） |
-| `codeStr` | string | IDE 预览用二维码内容（运行期由 loadQRCode 覆盖） |
-| `padding` | int | 码内边距（实测 1） |
-| `backgroundColor` | int | 背景色（16777215=白） |
-| `touchable`/`visible`/`position` | | 通用（通常不可触摸） |
+> 字段 / 类型 / 默认值 / 必填以 `ui_tools/ui_schema.json` 为准（`flythings_ui_schema(control_type=qrcode)` 取）；
+> 下表只留字段名与语义说明。
+
+| 字段 | 说明 |
+|------|------|
+| `caption` | 控件名 |
+| `id` | 控件 id（实测 **92001** 段） |
+| `codeStr` | IDE 预览用二维码内容（运行期由 loadQRCode 覆盖） |
+| `padding` | 码内边距（实测 1） |
+| `backgroundColor` | 背景色（16777215=白） |
+| `touchable`/`visible`/`position` | 通用（通常不可触摸） |
 
 ## 代码操作
 

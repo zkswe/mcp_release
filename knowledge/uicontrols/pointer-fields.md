@@ -24,8 +24,7 @@ evidence: []
 
 > **缺图不致命但属验收缺陷**：`backgroundPic/pointerPic` 指向不存在的文件 → 控件不可见
 > （framework 容错，不挂死）；图没出好就置 `''`，只写已落盘的图。
-> ⛔ 子盒对象字段（`position`/`size`/`colorTab`/`picTab` 等）**必须写成对象**，
-> 写成字符串或其他标量 = ftu 加载无声挂死（规格见 `seekbar-fields.md` §0）。
+> ⛔ 子盒对象字段（`position`/`size`/`colorTab`/`picTab` 等）**必须写成对象**——规格与症状见 `seekbar-fields.md` §0，本页不重复。
 
 1. **指针控件 = 表盘指针/旋转图标专用**：做仪表、时钟指针、WiFi 扫描旋转图标等"绕固定圆心旋转"效果用 pointer，不要用 textview/button 拼旋转。
 2. **旋转圆心由两个坐标共同决定**：`rotationPoint`（旋转点，相对控件左上）+ `fixedPoint`（指针固定点，相对指针图）——两者配合指针才绕对圆心转。起始角度不准时先查这两个值。
@@ -37,21 +36,24 @@ evidence: []
 
 ## JSON 字段表（ftu 实测校准）
 
-| 字段 | 类型/取值 | 说明 |
-|------|----------|------|
-| `caption` | string | 控件名（IDE 自动 m+Caption+Ptr） |
-| `id` | int | 控件 id（实测 **90001** 段） |
-| `pointerPic` | string | 指针图片路径（相对 resources，如 `wifi/SX.png`） |
-| `pointerSize` | {width,height} | 指针图显示尺寸（如 50×50） |
-| `rotationPoint` | {x,y} | 旋转点坐标（相对控件，控制绕哪转） |
-| `fixedPoint` | {x,y} | 指针固定点坐标（相对指针图，可超界做游标） |
-| `startAngle` | int | 起始角度（默认 0，可负） |
-| `clockwise` | bool | true=顺时针 |
-| `rotateSpeed` | int | 自动旋转速度（animatable=true 时生效，实测 500） |
-| `animatable` | bool | true=控件自动动画；false=调用方驱动（默认） |
-| `touchable` | bool | 通常 false |
-| `backgroundColor`/`backgroundPic` | | 背景（表盘图可放背景或放控件下层） |
-| `position` | {left,top,width,height} | 控件位置尺寸 |
+> 字段 / 类型 / 默认值 / 必填以 `ui_tools/ui_schema.json` 为准（`flythings_ui_schema(control_type=pointer)` 取）；
+> 下表只留字段名与语义说明。
+
+| 字段 | 说明 |
+|------|------|
+| `caption` | 控件名（IDE 自动 m+Caption+Ptr） |
+| `id` | 控件 id（实测 **90001** 段） |
+| `pointerPic` | 指针图片路径（相对 resources，如 `wifi/SX.png`） |
+| `pointerSize` | 指针图显示尺寸（如 50×50） |
+| `rotationPoint` | 旋转点坐标 `{x,y}`（相对控件，控制绕哪转） |
+| `fixedPoint` | 指针固定点坐标 `{x,y}`（相对指针图，可超界做游标） |
+| `startAngle` | 起始角度（默认 0，可负） |
+| `clockwise` | true=顺时针 |
+| `rotateSpeed` | 自动旋转速度（animatable=true 时生效，实测 500） |
+| `animatable` | true=控件自动动画；false=调用方驱动（默认） |
+| `touchable` | 通常 false |
+| `backgroundColor`/`backgroundPic` | 背景（表盘图可放背景或放控件下层） |
+| `position` | 控件位置尺寸 |
 
 ## 代码操作
 

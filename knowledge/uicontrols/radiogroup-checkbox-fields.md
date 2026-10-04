@@ -35,14 +35,17 @@ evidence: []
 
 ## JSON 字段表（ftu 实测校准）
 
+> 字段 / 类型 / 默认值 / 必填以 `ui_tools/ui_schema.json` 为准（`flythings_ui_schema(control_type=radiogroup)` 取）；
+> 下表只留字段名与语义说明。
+
 ### radiogroup
-| 字段 | 类型/取值 | 说明 |
-|------|----------|------|
-| `caption` | string | 控件名 |
-| `id` | int | 控件 id（实测 **94002**段） |
-| `radiobuttons` | array | 子项数组（见下） |
-| `touchable` | bool | **必须 `true`**（false = 整组点不动，见铁律 5） |
-| `visible`/`position` | | 通用 |
+| 字段 | 说明 |
+|------|------|
+| `caption` | 控件名 |
+| `id` | 控件 id（实测 **94002**段） |
+| `radiobuttons` | 子项数组（见下） |
+| `touchable` | **必须 `true`**（false = 整组点不动，见铁律 5） |
+| `visible`/`position` | 通用 |
 
 ### radiobuttons[] 子项（实测结构）
 ```json

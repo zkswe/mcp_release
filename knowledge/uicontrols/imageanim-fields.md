@@ -9,7 +9,7 @@ stale_days: 180
 origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
-platforms: [F133, T113]
+platforms: []
 tags: [main, imageanim, json 实测校准]
 evidence: []
 ---
@@ -23,8 +23,7 @@ evidence: []
 
 > **缺图不致命但属验收缺陷**：`playFile` 指向不存在的 GIF/WebP → 控件不可见
 > （framework 容错，不挂死）；文件没就位就不写引用，只写已落盘的文件。
-> ⛔ 子盒对象字段（`position`/`size`/`colorTab`/`picTab` 等）**必须写成对象**，
-> 写成字符串或其他标量 = ftu 加载无声挂死（规格见 `seekbar-fields.md` §0）。
+> ⛔ 子盒对象字段（`position`/`size`/`colorTab`/`picTab` 等）**必须写成对象**——规格与症状见 `seekbar-fields.md` §0，本页不重复。
 
 1. **动图控件只支持 GIF 和 WebP 两种格式**
    - `playFile` 字段只能指向 `.gif` 或 `.webp` 文件，其他格式（png 序列/apng 等）不显示
@@ -40,13 +39,16 @@ evidence: []
 
 ## JSON 字段表（实测，2 个 demo 校准）
 
-| 字段 | 类型/取值 | 说明 |
-|------|----------|------|
-| `caption` | string | 控件名（ImageAnim1…） |
-| `id` | int | 控件 id（html2json 从 **160000**起；官方 demo 用 53xxx，IDE 版本不同段不同，html2json 固定 160000） |
-| `loopCount` | int | 循环次数：**<=0 无限循环**；>0 播放 count 次后停止 |
-| `playFile` | string | 动图文件路径，**相对 resources 目录**（如 `image/test.gif`、`logo.gif`）；只支持 .gif/.webp |
-| `position` | {left,top,width,height} | 控件位置尺寸（动图按控件大小缩放显示） |
+> 字段 / 类型 / 默认值 / 必填以 `ui_tools/ui_schema.json` 为准（`flythings_ui_schema(control_type=imageanim)` 取）；
+> 下表只留字段名与语义说明。
+
+| 字段 | 说明 |
+|------|------|
+| `caption` | 控件名（ImageAnim1…） |
+| `id` | 控件 id（html2json 从 **160000**起；官方 demo 用 53xxx，IDE 版本不同段不同，html2json 固定 160000） |
+| `loopCount` | 循环次数：**<=0 无限循环**；>0 播放 count 次后停止 |
+| `playFile` | 动图文件路径，**相对 resources 目录**（如 `image/test.gif`、`logo.gif`）；只支持 .gif/.webp |
+| `position` | 控件位置尺寸（动图按控件大小缩放显示） |
 
 > ⚠️ 实测修正：layout-audit 之前写的 `frameInterval` **json 中不存在**（两个实测 demo json 均无此字段；html2json 虽支持 data-interval 写入但 demo 未出现，以实测为准，不用）
 

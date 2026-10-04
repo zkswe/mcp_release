@@ -16,7 +16,7 @@ evidence: []
 # 触摸事件与遮挡（touchable / touchPass / 谁吃掉了我的点击）
 
 > 检索导引：问「控件点不动 / 列表拖不动 / 点了没选中 / touchable 与 touchPass 怎么配 / 谁吃掉了我的点击」→ 本文。
-> 来源：2026-09-10 需求方报障「控件点不动 / 列表拖不动 / 点了没选中」定位产出（V85X + EasyUI 2.9.0 实机逐条验证）；2026-09-17 补 §6（嵌套 window 的卡片内部点不动，案例 `projects/translate/tdesign-miniprogram`）。
+> 来源：2026-09-10 需求方报障「控件点不动 / 列表拖不动 / 点了没选中」定位产出（EasyUI 2.9.0 实机逐条验证）；2026-09-17 补 §6（嵌套 window 的卡片内部点不动，案例 `projects/translate/tdesign-miniprogram`）。
 > 检索词：触摸/点击无效/点不动/拖不动/滑动/穿透/遮挡/touchable/touchPass/setTouchPass/单选点不了/嵌套 window/遮罩抢触摸/卡片里的按钮点不动/扁平化/data-touchable 不生效/真禁用只能改 json。
 
 ## 1. `touchable=false` **不等于**触摸穿透（最容易搞错的一条）

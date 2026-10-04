@@ -69,8 +69,7 @@ static void onUI_quit() {
 - **缺图不致命但属验收缺陷**：`picTab.pic0~picN`/`backgroundPic` 指向不存在的文件 →
 控件不可见/无图（framework 容错，不会挂死）；图没出好就删 picTab 条目/置 `''`
   （纯文字按钮可正常工作），只写已落盘的图。
-  ⛔ 子盒对象字段（如 `seekbar.thumb`）**必须写成对象**，写成字符串或其他标量
-  = ftu 加载无声挂死（规格见 `seekbar-fields.md` §0）
+  ⛔ 子盒对象字段（如 `seekbar.thumb`）**必须写成对象**——规格与症状见 `seekbar-fields.md` §0，本页不重复。
 - 有按键图片（picTab/backgroundPic）时**不开 bgColorTab**（图片叠底色效果错乱）；仅纯文字按钮用 bgColorTab/colorTab 多态色
 - 多态图 picTab：pic0 正常 / pic1 按下 / pic2 选中 / pic3 选中按下 / pic4 无效；两态开关 picTab{pic0:on, pic2:off}+setSelected()
 - 图标按钮 iconPosition 指定图标区（控件尺寸≠图片尺寸时必须显式）；控件尺寸与图片一致

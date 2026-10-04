@@ -9,7 +9,7 @@ stale_days: 180
 origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
-platforms: [V85X]
+platforms: []
 tags: [平台 V85X, AW_V853, 非猜测]
 evidence: []
 ---
@@ -17,7 +17,7 @@ evidence: []
 
 > 检索导引：问「实时摄像头预览用哪个控件 / cameraview 字段 / formatSize 是源分辨率不是控件大小 / 画面拉伸裁剪怎么处理 / 能不能和 videoview 混用」→ 本文。
 > **口语问法直达**：摄像头画面被拉伸变形了 / 摄像头画面比例不对·变形 → 看「常见坑」里的 `setCropPosition` 等比裁剪（旋转 90/270 记得 swap）。
-> 2026-09-03 需求方指定 + 实测入库（LearningProject/mark_cv201 倒车影像工程，CV201_PND 1600×600 + CV201_PND_1024_600 双分辨率解包校准，平台 V85X/AW_V853）。
+> 2026-09-03 需求方指定 + 实测入库（LearningProject/mark_cv201 倒车影像工程，CV201_PND 1600×600 + CV201_PND_1024_600 双分辨率解包校准）。
 > 来源可靠性：ftu 解包还原 json（fui unpack 实测字段，非猜测）。
 
 ## ⚠️ 核心铁律（先分清控件，再谈布局）
@@ -31,18 +31,21 @@ evidence: []
 
 ## JSON 字段表（mark_cv201 reverse.ftu 实测校准）
 
-| 字段 | 类型/取值 | 说明 |
-|------|----------|------|
-| `caption` | string | 控件名（实测 `CameraViewReverse`） |
-| `id` | int | 控件 id（实测 **97001**，cameraview 独立 id 段） |
-| `autoPreview` | bool | **true = 自动预览**（关键，布局打开即出画面）；false 需代码 startPreview |
-| `backgroundColor` | int | 背景色 0=透明/黑 |
-| `cvbs` | bool | 模拟视频源（CVBS）标志，数字摄像头 false |
-| `formatSize` | {height,width} | 视频源分辨率，如 640×480（**非控件尺寸**） |
-| `mirror` | int | EMirror 镜像（0 正常，实测倒车默认 0） |
-| `touchable` | bool | 是否响应触摸，预览层通常 false（实测 false） |
-| `position` | {left,top,width,height} | 控件位置尺寸（实测全屏铺满：0,0,1600×600 / 1024×600） |
-| `beepEnable` | bool | 按键音开关（1024×600 版根/窗口有 true，1600 版无——IDE 版本差异，非必需） |
+> 字段 / 类型 / 默认值 / 必填以 `ui_tools/ui_schema.json` 为准（`flythings_ui_schema(control_type=cameraview)` 取）；
+> 下表只留字段名与语义说明。
+
+| 字段 | 说明 |
+|------|------|
+| `caption` | 控件名（实测 `CameraViewReverse`） |
+| `id` | 控件 id（实测 **97001**，cameraview 独立 id 段） |
+| `autoPreview` | **true = 自动预览**（关键，布局打开即出画面）；false 需代码 startPreview |
+| `backgroundColor` | 背景色 0=透明/黑 |
+| `cvbs` | 模拟视频源（CVBS）标志，数字摄像头 false |
+| `formatSize` | 视频源分辨率，如 640×480（**非控件尺寸**）——真机 json 里写作对象 `{height,width}`，注册表登记为 `string`（默认 `"640x480"`），两侧形态不一致，待注册表侧裁决 |
+| `mirror` | EMirror 镜像（0 正常，实测倒车默认 0） |
+| `touchable` | 是否响应触摸，预览层通常 false（实测 false） |
+| `position` | 控件位置尺寸（实测全屏铺满：0,0,1600×600 / 1024×600） |
+| `beepEnable` | 按键音开关（1024×600 版根/窗口有 true，1600 版无——IDE 版本差异，非必需；注册表 cameraview 未收录，属真缺口） |
 
 完整嵌套结构（unpack 后 json）：
 ```json
@@ -98,7 +101,7 @@ ptr->startPreview(); / stopPreview(); / isPreviewing();
 - **画面拉伸变形**→ 没做 setCropPosition 等比裁剪，或旋转 90/270 没 swap
 - **误用 videoview 做实时预览 / 误用 cameraview 播文件**→ 都不出画面，先按铁律 1 分控件
 - **倒车切页卡死/黑屏**→ 页面 hide 时预览没停干净，用 WAIT(!isPreviewing()) 防同开冲突
-- **平台**：实测 V85X（AW_V853）；F133/其他平台是否支持以官方文档为准，不确定先查知识库/问
+- **平台**：cameraview 依赖板上的摄像头通路（非纯 easyui 绘制类控件），各平台是否支持以官方文档为准，不确定先查知识库/问
 ## 相关
 
 - V85X MPP 完整 API 汇总：`workspace/references/kb/v85x-mpp.md` §① ZKCameraView 控件用法

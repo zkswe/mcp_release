@@ -9,7 +9,7 @@ stale_days: 180
 origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
-platforms: [Z21]
+platforms: []
 tags: [回调签名, 触发时机, 事件语义, 实测坑, 通用骨架, activity 壳, 回调表, 返回值语义, 生命周期, 定时器, 串口模板, SysApp, md, onButtonClick, setTargetAngle, setData]
 evidence: []
 ---
@@ -21,11 +21,15 @@ evidence: []
 > 与 json 字段文档互补：本文聚焦**代码怎么驱动控件**（回调签名/触发时机/事件语义/实测坑），证据全部来自 basedemo-new_z20_1024_600 源码原文。
 > 通用骨架（activity 壳/回调表/返回值语义/生命周期/定时器/串口模板/SysApp）见 `knowledge/devflow/activity-code-skeleton.md`。
 > 检索词：onButtonClick/onProgressChanged/onEditTextChanged/onListItemClick/setTargetAngle/setData/loadQRCode/play/setCheckedID/showWnd。
+> **签名真源 = 本地 registry 头文件**（`~/.fsc/registry/public/<平台>/easyui/<版本>/include/{control,window}/*.h`，由 `fun install` 落盘）；
+> 本页已按 v85x easyui 2.9.0 与 z20 easyui 2.6.0 两份头文件逐条核对。取权威签名也可用
+> op `flythings_get_package_api(package_id='easyui', platform='V85X', focus='<类名>')` —— 但该 op 对**枚举/typedef 返回类型会丢前缀**
+> （`ECameraStatusCode startPreview()` 显示成 `startPreview()`），以头文件原文为准。
 
 ## ZKBase 通用（所有控件）
 - 触摸开关 / 穿透：`setTouchable(bool)` + **`setTouchPass(true)`**（ZKBase：本控件不响应触摸时把事件放行给下层控件）。
   ⚠️ `touchPass` **没有 json 字段**，只能代码设；压在可触摸控件上的装饰件（渐隐遮罩/高亮色带/徽标/半透明蒙层）必须
-  `setTouchable(false)+setTouchPass(true)`，否则下层列表拖不动、点行无回调（V85X + EasyUI 2.9.0 实测，见 `knowledge/uicontrols/touch-events.md` §1）。
+  `setTouchable(false)+setTouchPass(true)`，否则下层列表拖不动、点行无回调（EasyUI 2.9.0 实测，见 `knowledge/uicontrols/touch-events.md` §1）。
 - 监听器注册：`setTouchListener`(ITouchListener) / `setLongClickListener`(ILongClickListener)——onUI_init 注册、onUI_quit 置 NULL。
 
 ## ZKButton（ButtonDemo）
@@ -60,7 +64,7 @@ evidence: []
 ## ZKPageWindow / ZKScrollWindow（PageWindowDemo / ScrollWindowDemo）
 - 翻页监听：`setPageChangeListener(&l)`（ZKPageWindow::IPageChangeListener::onPageChange(pWin, page)，页 0 起，手势/按钮共用）
 - 翻页：`turnToNextPage(true)/turnToPrevPage(true)`（true=动画）；⚠️ Demo 按钮与函数映射是反的（NextPage 绑 turnToPrevPage），照抄会反向
-- 页 = 与容器等大的 window 子节点叠放；ScrollWindow 内容 window 可大于视口整体拖动，**本 demo 零代码**（纯结构用法，无 scroll API）
+- 页 = 与容器等大的 window 子节点叠放；ScrollWindow 内容 window 可大于视口整体拖动，**本 demo 零代码**（纯结构用法）；API 侧 ZKScrollWindow 有 `moveTo(int position)` / `setScrollStep(int step)` / `setScrollbarColor(uint32_t)` / `setMoveCheckTimeThreshold(int)`（头文件 `window/ZKScrollWindow.h`）
 
 ## ZKSlideWindow（SlideWindowDemo）
 - 点击：`void onSlideItemClick_Caption(ZKSlideWindow*, int index)`（**带 pSlideWindow 参数**；旧头注释签名已过时）
@@ -99,12 +103,12 @@ evidence: []
   （真源签名：`ZKPainter.h` v85x easyui 2.9.0 —— `void erase(int x,int y,int w,int h); void drawLines(const SZKPoint*,int); void drawCurve(const SZKPoint*,int);`）
 - ⛔ **没有 `drawLine(...)` 这个 API**：单条直线要 `SZKPoint p[2]={{x0,y0},{x1,y1}}; pPainter->drawLines(p,2);`；写 `drawLine(a,b,c,d)` 直接**编译不过**（早期页面的错误写法来源见 temp/_demo_canvas*.py）。
 - ⛔ **`erase()` 不是无参清屏**（同上复核）：签名是 `erase(x,y,w,h)`，清整屏要 `erase(0,0,控件宽,控件高)`。无参 `erase();` 编译不过——本页旧文案「`erase` 清屏」已按真源签名改掉。
-- **`drawArc` 实参口径（Z21 easyui 2.6.0 真机实测）**：按 `(cx, cy, rx, ry, start, sweep)`（圆心 + 半径）写**渲染正确**
+- **`drawArc` 实参口径（easyui 2.6.0 真机实测）**：按 `(cx, cy, rx, ry, start, sweep)`（圆心 + 半径）写**渲染正确**
   （按格子填色，无残影）；可复现调用点：`projects/EasyDevice-Z21/src/logic/mainLogic.cc`。
-  V85X 480×800 复现：`temp/demo_proj` 画布页用 `fillRect(24,24,180,90)/drawRect(230,24,200,90,18)/fillArc(130,250,90,90,0,270)/drawArc(330,250,90,90,0,360)` 出图正确（截 `temp/acc_canvas.png`）。
-- **`fillRect` / `erase` 实测可用（Z21，同上调用点）**：`fillRect` 填矩形、`erase(x,y,w,h)` 清指定矩形
+  复现（480×800 画布）：`temp/demo_proj` 画布页用 `fillRect(24,24,180,90)/drawRect(230,24,200,90,18)/fillArc(130,250,90,90,0,270)/drawArc(330,250,90,90,0,360)` 出图正确（截 `temp/acc_canvas.png`）。
+- **`fillRect` / `erase` 实测可用（同上调用点）**：`fillRect` 填矩形、`erase(x,y,w,h)` 清指定矩形
   （清后无残影，适合做数据刷新前的整块重画）——官方 demo 未演示，故补记。
-- **z 序（2026-09-16 Z21 真机实测，静态检查发现不了）**：json 里**后定义 = z 更高**。
+- **z 序（静态检查发现不了）**：json 里**后定义 = z 更高**。
   painter 自带不透明底（`erase()`/铺底色），所以**叠在它上面的刻度数字/文字必须写在 painter 之后**；
   写在前面会被整块盖住（图形正常、字全不见，`check_all`/本地预览都发现不了）。案例复现：
   `projects/translate/lvgl-widgets-uiv1/gen_html.py`（c4/c5 把 painter 挪到刻度 textview 之前修好）。
@@ -114,7 +118,7 @@ evidence: []
 - 纯配置即用：json playFile+loopCount(≤0 无限)；代码 API：`play(path)/stop()/pause()/resume()/setLoopCount(n)`（Demo 全未用=最小形态）；仅部分平台支持（Z20/Z21/T113/V85X…，F133 不支持）
 
 ## ZKQRCode（QRCodeDemo）
-- 唯一 API：`bool loadQRCode(const char* utf8)`（每次全量重生成）；EditText 每字符触发实时刷新、串口帧驱动同款；内容限 utf-8；长文本注意容量与性能
+- 加载 API：`bool loadQRCode(const char* utf8)`（每次全量重生成；另有 `void setForegroundColor(uint32_t color)`）；EditText 每字符触发实时刷新、串口帧驱动同款；内容限 utf-8；长文本注意容量与性能
 
 ## ZKVideoView（VideoViewDemo / VideoPlayerDemo）
 - 消息监听：`setVideoPlayerMessageListener(this)`；枚举 `E_MSGTYPE_VIDEO_PLAY_STARTED/COMPLETED/ERROR`；Activity 分发表第 2 字段 loop=true=内置轮播（读 `/mnt/extsd/<ftu名>_video_list.txt` 逐行播放，ERROR 自动跳下一首，⚠️ 首播从 index1 开始是 off-by-one）
@@ -123,8 +127,8 @@ evidence: []
 - 页面：onResume 起播 onPause stop（isPlaying 判断）；播放列表 read_dir("/mnt/extsd",true) 扫卡 + 后缀过滤
 
 ## ZKCameraView（CameraDemo）
-- `startPreview()/stopPreview()/isPreviewing()`（返回 ECameraStatusCode）；onResume/onPause 自动起停（模板）
-- 拍照异步四回调：`ZKCV::IPictureCallback{ onPictureTakenStarted(); onPictureTakenEnd(); onPictureTakenError(); const char* onPictureSavePath(); }`（纯虚必实现，**仅支持 jpg**）；`setPictureCallback(&static_obj)`（onUI_init）/ 置 NULL（onUI_quit）；End 后 `sync()` 落盘防 TF 断电丢数据
+- `ECameraStatusCode startPreview()` / `ECameraStatusCode stopPreview()`（返回状态码）/ `bool isPreviewing()`（**返回 bool，不是状态码**）；onResume/onPause 自动起停（模板）
+- 拍照异步四回调：`ZKCameraView::IPictureCallback{ onPictureTakenStarted(); onPictureTakenEnd(); onPictureTakenError(); const char* onPictureSavePath(); }`（**只有 `onPictureSavePath()` 是纯虚 `= 0`，必须实现**；另三个是空体虚函数，可选覆写。**仅支持 jpg**）；`setPictureCallback(&static_obj)`（onUI_init）/ 置 NULL（onUI_quit）；End 后 `sync()` 落盘防 TF 断电丢数据
 
 ## ZKMediaPlayer（MusicDemo，纯音频非控件）
 - `new ZKMediaPlayer(E_MEDIA_TYPE_AUDIO/VIDEO)`；消息枚举**无 VIDEO 前缀**：`E_MSGTYPE_PLAY_STARTED/COMPLETED/ERROR_MEDIA_ERROR/ERROR_INVALID_FILEPATH/...`；`setPlayerMessageListener(&static)`；控制同 videoview（play/pause/resume/stop/seekTo(ms)/isPlaying/setVolume/getDuration/getCurrentPosition）

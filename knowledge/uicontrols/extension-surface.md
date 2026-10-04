@@ -9,7 +9,7 @@ stale_days: 180
 origin: total
 source: 2026-09-30 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
-platforms: [V85X, Z20, F136, F133]
+platforms: []
 tags: [GameView, 自定义控件怎么写, 能扩展什么, 扩展点有哪些, 图层能不能自己用, 这个效果能不能实现, 别的框架能做到这里能吗, 该走哪条路, 自绘性能够吗, 再按各表指向进细节篇, md, 不许拿别的 GUI 框架类推, 能力边界, 能不能做, 非 3D GPU 皆可, 软模拟]
 evidence: []
 ---
@@ -53,7 +53,7 @@ evidence: []
 | **刷新口径（★易错）**| 自绘/帧渲染类每帧刷新用 `ctrl->setInvalid(!ctrl->isInvalid())`；**禁用 `invalidate(&getAbsolutePosition())`**（会被按控件本地坐标裁成"右下角一块"，屏上只刷一块）→ `knowledge/uicontrols/custom-view-refresh.md` |
 | **性能档位**| 组合式 ≈ 基础控件开销（拼接越多越贵）；自绘式取决于**重绘面积**—— **具体帧耗实测缺**|
 | **最小示例**| 库内 8 个成品 + 各自独立测试 Activity：AlbumListView（滚动/惯性/回弹/LRU 缓存）、ImageBoxView（双指缩放）、FrameImageView（帧播放）、SliceProgressBar（切片进度）、… |
-| **支持平台**| F136 / F133 实证（easyui ^2.3.0）；**V85X / Z20 待核**|
+| **支持平台**| 全平台（UI 控件不区分平台；需 easyui ^2.3.0）；库内成品组件逐平台可用性见 `knowledge/devflow/platform-capability-matrix.md`|
 
 ## E3 · canvas / GameView 画布
 
@@ -64,7 +64,7 @@ evidence: []
 | **生命周期/刷新**| 与 E2 同口径（`setInvalid(!isInvalid())`）；画布几何零位移改动优先 |
 | **性能档位**| 与帧耗直接挂钩的是**重绘面积**（全刷 vs 脏区）；**具体帧耗实测缺**。<br>★ **分层看**：**绘制进画布**= 应用实现（本工程 `src/core/PgCanvas.*`，软件）；**画布 → 屏幕**= 框架 + 芯片**硬件合成**（内存拷贝/blit、透明 α 混合、90° 旋转）——口径来源 2026-09-30；我方代码实证 `src/platform/PgDisplay.h` 头注释「控件→屏幕走硬件加速」+ `button+picTab` 的 α 路径。⚠️ **芯片侧通道名（MI_DISP / G2D 等）未取证**|
 | **最小示例**| `knowledge/devflow/custom-render-paths.md` ①；本工程 8 款画布游戏 + 4 款节奏游戏（**尚未入库**） |
-| **支持平台**| V85X 实证（本工程）；其余待核 |
+| **支持平台**| 全平台（UI 控件不区分平台）|
 
 ## E4 · disp 独立硬件图层
 
@@ -84,7 +84,7 @@ evidence: []
 | **能做什么**| 状态栏、导航栏、屏保、IME、全局弹层——均为**字段级已收录**的标准扩展位 |
 | **明确不能做什么**| ① 导航栏是 **480×52 常显**，内容要从 y≥52 放；**被它盖住不是 bug**；② 全局粘性标志（标题/视频页/屏保开关）跨 Activity 自愈，**用完必须复位**|
 | **最小示例**| `knowledge/uicontrols/system-windows.md` / `knowledge/uicontrols/global-popup-window.md`；本工程状态栏/屏保/音量 OSD 均有实现 |
-| **支持平台**| V85X / Z20 均验证过 |
+| **支持平台** | 全平台（UI 控件不区分平台；验收口径与依据见 `platform_capabilities.json`） |
 
 ## E6 · 进程外渲染（⚠️ 未验证）
 

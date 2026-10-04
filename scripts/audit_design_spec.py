@@ -47,6 +47,11 @@ KIND4 = '④ 事故句式（规范里混进了"当初怎么发现的"）'
 # 住在标题行与括号尾注里 —— 比扩词表有效得多，且不会误伤"只写症状 = 规范"的正文。
 KIND5 = '⑤ 标题后缀叙事（"（踩过）/（实测教训）/（返工反推）"这类后缀）'
 KIND6 = '⑥ 括号尾注来路（"（2026-xx-xx 更正/修正/推翻）"这类括号）'
+# ⑦ **只管 `knowledge/uicontrols/`**：平台证据标注（控件页不该记"在哪个平台测的"）
+KIND7 = '⑦ 控件页的平台证据标注（"（V85X 实测）"这类；UI 控件不区分平台）'
+PLATFORM_EVIDENCE = re.compile(
+    r'(?:V85X|Z20|Z21|T113|T113EMMC|F133|F135|F136|Z235X)'
+    r'[^，。；)）]{0,14}?(?:实测|验证|验收|复核)')
 ID_SUFFIX = re.compile(r'^#{1,6}\s+.*[（(][^）)]*(踩过|踩坑|教训|复盘|返工|事故|血泪)[^）)]*[）)]\s*$')
 # ⚠️ 只认**修订动词**（更正/修正/勘正/订正/改判/复核/推翻/补录/收拢/移除/误写/失效），
 # **不认** `确认 / 实测 / 口径 / 拍板` —— 那三类是**正当的出处标注**（"2026-09-17 真机复核"
@@ -54,7 +59,7 @@ ID_SUFFIX = re.compile(r'^#{1,6}\s+.*[（(][^）)]*(踩过|踩坑|教训|复盘|
 ID_TAIL = re.compile(
     r'[（(]\s*(?:19|20)\d\d[-/年.]\d{1,2}(?:[-/.]\d{1,2})?\s*[^）)]*'
     r'(更正|修正|勘正|订正|改判|复核|推翻|补录|收拢|移除|误写|失效|误标)')
-CHECKS_ALL = CHECKS + [(KIND4, None), (KIND5, None), (KIND6, None)]
+CHECKS_ALL = CHECKS + [(KIND4, None), (KIND5, None), (KIND6, None), (KIND7, None)]
 
 # ④ 用子串而不是大正则：长行（rag_index 的 base64 blob）上正则回溯会炸（实测卡死）。
 # 判据 = 同时出现「症状词 + 归因标记 + 日期/版本号」。三者齐备才算"事故叙述"：
@@ -103,6 +108,7 @@ def scan():
         p = os.path.join(BASE, rel.replace('/', os.sep))
         # 注册表 json（非 .md）不计代码围栏：它们的 note/rule 是**渲染给 AI 的原话**
         fenced, is_json = False, not rel.endswith('.md')
+        is_ui = rel.startswith('knowledge/uicontrols/')
         try:
             lines = io.open(p, encoding='utf-8', errors='replace').read().splitlines()
         except OSError as e:
@@ -120,6 +126,15 @@ def scan():
                 continue
             if ID_SUFFIX.search(s):
                 out.append({'kind': KIND5, 'doc': rel, 'line': i, 'text': s[:200]})
+                continue
+            # ⑦ 只适用于 uicontrols：**平台证据标注**（"（V85X 实测）""（Z21 真机实测）"）。
+            # 口径（需求方 2026-10-05）：**UI 控件不区分平台、可以直接通用**，且已验证一个平台
+            # 即可代表全体（`platform_capabilities.verificationPolicy` 的 ui-controls-single-platform）。
+            # 所以"在哪个平台测的"对控件页是**冗余证据标注** —— 证据该待在 evidence/ 或 platforms.md。
+            # ⚠️ 只抓"平台名 + 实测/验证"的**同句**组合：真正的平台差异（如"V85X 内存更紧"）
+            # 不带"实测/验证"字样，不会被误伤（实测样本：跨平台通用句、示例文件名都不命中）。
+            if is_ui and PLATFORM_EVIDENCE.search(s):
+                out.append({'kind': KIND7, 'doc': rel, 'line': i, 'text': s[:200]})
                 continue
             if s.startswith('#'):
                 continue              # 标题行：①–④ 不看（⑤ 已单独判过）

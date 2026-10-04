@@ -31,6 +31,15 @@ N 屏 -> N 个 json，文件名取 data-page（缺省 page_k），输出目录 =
 - ✅ 转换期静默改动一律进返回体 warnings（A1/A8 修）：丢字符（emoji/黑名单字）、有图控件
 无圆角外底色、文本最小宽超出容器等不再靠真机反推
 - ✅ 有图控件的圆角外底色（A6 修）：data-bg > 最近祖先容器底色 > 引擎缺省（无底色时告警）
+- ✅ **最小 CSS 层叠**（2026-10-04）：读 `<style>` 块的 tag/.class/#id/后代/逗号分组选择器，
+  按 inline > specificity > 靠后规则折进元素 style 属性 → 位置/渐变/圆角/阴影才有得读
+  （此前 CSS 写在 `<style>` 里一律读不到：控件位置全丢成 (0,0,100×40) 且**零警告**）
+- ✅ **进度条三件套自动出图**（2026-10-04，真机归因实测）：`.bar/.progress` + `.fill` 子元素 +
+  `.thumb` 子元素 → 轨道/有效/滑块三张切图，尺寸规则**各不相同**（详见 `_seekbar_css_assets` 注释）；
+  进度值可取自 CSS（`--value:60%` / `.fill` 的 `width:60%`）；`<input type=range>` 认成 seekbar；
+  `html/body` 的 background 传播到 json 根（不写根底色 = 真机不擦屏、残留上一帧）
+- ✅ 不可实现项一律点名（不许硬转、也不许假声明）：伪元素 `::-webkit-slider-thumb`、
+  有效图右端圆角（引擎硬切）、`.fill` 自身宽度的渐变、`inset` 内阴影、底色与轨道同色会把圆角补平
 
 ⚠️ 设备端渲染路径差异（不是转换器问题，见 references/kb/image-gen-standard.md）：运行时 setBackgroundPic 不保留 alpha（透明底 PNG 会变白块）—— 运行时换图那套素材需烘不透明底。
 """
@@ -71,7 +80,7 @@ CLASS_MAP = {
     'textview': ('text', 'tv', 'label', 'txt'),
     'button': ('btn', 'button', 'b'),
     'edittext': ('input', 'edit', 'edittext'),
-    'seekbar': ('bar', 'seekbar', 'progress'),
+    'seekbar': ('bar', 'seekbar', 'progress', 'slider', 'range'),
     'window': ('card', 'window', 'win', 'panel'),
     'modal': ('modal', 'dialog', 'popup'),
     'listview': ('list', 'listview', 'lv'),
@@ -277,7 +286,9 @@ def _color_int_rgba(cint, default=None):
 def _detect_type(tag, classes, attrs=None):
     """HTML 标签 + class → FlyThings 控件类型。
     2026-09-03 扩展：btn/button 类 + data-icon/iconfont → button（图标按钮，生成两态图）；
-纯 iconfont/icon-xxx → icon（图标 textview）。"""
+纯 iconfont/icon-xxx → icon（图标 textview）。
+    2026-10-04 扩展：`<input type="range">` → seekbar（AI 写滑条最常用的原生控件；
+此前一律当 edittext —— 那是个"点不动的输入框"，而且 `::-webkit-slider-thumb` 的样式全丢）。"""
     has_btn = bool(classes & set(CLASS_MAP['button'])) or tag == 'button'
     has_icon = bool(classes & set(CLASS_MAP['icon'])) or any(k.startswith('icon-') for k in classes)
     if attrs is not None and _glyph_from_attrs(attrs):
@@ -292,6 +303,8 @@ def _detect_type(tag, classes, attrs=None):
     if tag == 'button':
         return 'button'
     if tag == 'input':
+        if (_attr(attrs or [], 'type') or '').strip().lower() == 'range':
+            return 'seekbar'
         return 'edittext'
     if tag == 'img':
         return 'icon'
@@ -376,6 +389,547 @@ def _parse_gradient(expr):
         if all(p is None for p, _ in stops):
             return horizontal, [(i / (len(colors) - 1), c) for i, c in enumerate(colors)]
     return horizontal, stops
+
+
+# ---------- 最小 CSS 层叠（<style> 块 + 类选择器 → 元素 style 属性）----------
+# 为什么必须补（2026-10-04 真机归因实测）：`_style_pos` / `_effect_assets` / `_warn_css_effects`
+# **全部只读元素上的 style 属性**，而 AI 写的 HTML 常规是把布局与效果放在 <style> 块 + 类选择器里
+# → 转换器读不到：控件位置全丢成 (0,0,100×40)、渐变/圆角一个都不出图，而且**零警告**
+#（连"CSS 效果"检测也只读 style 属性）。本段把这层按最小层叠折进 style 属性，
+# 既有消费方（位置/渐变/阴影/圆角）无需改动即可生效。
+_CSS_COMMENT_RE = re.compile(r'/\*.*?\*/', re.S)
+_CSS_SEL_UNSUPPORTED_RE = re.compile(r'[\[\]>+~*]')
+_CSS_TOK_RE = re.compile(r'^([A-Za-z][\w-]*)?((?:[.#][\w-]+)*)((?:::{1,2}[\w-]+)*)$')
+# 认得的**伪元素**（双冒号，或 CSS2.1 的单冒号 before/after 写法）。
+# `::-webkit-slider-thumb` 这类是「正常 HTML 滑条」的标准写法 —— 引擎没有伪元素，
+# 但它们承载的**信息**（滑块尺寸/底色/描边、轨道高度/底色）正是 seekbar 的三张切图，
+# 所以必须解析出来交给 `_seekbar_css_assets` 消费，而不是像伪类那样直接丢掉。
+_CSS_PSEUDO_ELEMENTS = frozenset((
+    'before', 'after', 'marker', 'placeholder', 'selection', 'backdrop', 'file-selector-button',
+    'webkit-slider-thumb', 'webkit-slider-runnable-track', 'webkit-slider-container',
+    'moz-range-thumb', 'moz-range-track', 'moz-range-progress',
+))
+
+
+def _parse_css_rules(css_text):
+    """极简 CSS 解析 → [(parts, decls, spec)]。
+
+    parts = [(tag, frozenset(classes), id, pseudo), ...]（后代选择器链，由外到内；
+    pseudo = 该段挂的伪元素名，普通段为 None）；
+    spec  = (ids, classes, tags, order) —— 层叠排序用（order 保证同优先级时后写的胜）。
+    只支持：tag / .class / #id / tag.class / 多类 / 后代（空格）/ 逗号分组 / **伪元素**。
+    ⚠️ 伪元素段只取**最后一段**（`.range::-webkit-slider-thumb` → 声明归 `.range` 节点的
+    `webkit-slider-thumb` 伪元素桶）；带伪**类**（`:hover`/`:focus`/`:checked`/`:disabled`）的选择器
+    整条忽略 —— 那是运行期状态，FlyThings 靠 picTab 多态图表达，不是静态布局。
+    """
+    out = []
+    if not css_text:
+        return out
+    text = _CSS_COMMENT_RE.sub(' ', css_text)
+    order = 0
+    for m in re.finditer(r'([^{}]+)\{([^{}]*)\}', text):
+        sel_raw, body = m.group(1).strip(), m.group(2).strip()
+        if not body or not sel_raw or sel_raw.startswith('@'):
+            continue
+        order += 1
+        for sel in sel_raw.split(','):
+            if not sel.strip():
+                continue
+            parts, ok = [], True
+            for tok in sel.split():
+                if _CSS_SEL_UNSUPPORTED_RE.search(tok):
+                    ok = False
+                    break
+                mm = _CSS_TOK_RE.match(tok)
+                if not mm or not (mm.group(1) or mm.group(2)):
+                    ok = False
+                    break
+                pseudo = None
+                for piece in re.findall(r'::?[\w-]+', mm.group(3) or ''):
+                    # ⚠️ 必须同时去掉前导 `-`：`::-webkit-slider-thumb` 的名字是
+                    # `webkit-slider-thumb`，只 lstrip(':') 会留下 `-webkit-…`（对不上 _PS_* 候选表）。
+                    name = piece.lstrip(':-')
+                    if piece.startswith('::') or name in _CSS_PSEUDO_ELEMENTS:
+                        pseudo = name          # 取最后一个伪元素
+                    else:
+                        ok = False             # 单冒号伪类（:hover/:focus/:checked…）不支持
+                        break
+                if not ok:
+                    break
+                classes, cid = set(), ''
+                for piece in re.findall(r'[.#][\w-]+', mm.group(2) or ''):
+                    if piece[0] == '.':
+                        classes.add(piece[1:])
+                    else:
+                        cid = piece[1:]
+                parts.append(((mm.group(1) or '').lower(), frozenset(classes), cid, pseudo))
+            # 末段必须有 tag/class/id：否则 `::-webkit-slider-thumb{…}` 这种裸伪元素规则
+            # 会匹配到**所有**节点（把滑块样式糊到每个控件上）。
+            if ok and parts and (parts[-1][0] or parts[-1][1] or parts[-1][2]):
+                out.append((parts, body,
+                            (sum(1 for p in parts if p[2]),
+                             sum(len(p[1]) for p in parts),
+                             sum(1 for p in parts if p[0] or p[3]), order)))
+    return out
+
+
+def _css_part_match(part, node):
+    tag, classes, cid = part[0], part[1], part[2]
+    if tag and node.tag != tag:
+        return False
+    if classes and not classes <= _classes(node.attrs):
+        return False
+    if cid and (_attr(node.attrs, 'id') or '') != cid:
+        return False
+    return True
+
+
+def _css_matches(parts, node, ancestors):
+    """后代选择器匹配：node 合最后一段，ancestors（由外到内）依次合前面的段。"""
+    if not _css_part_match(parts[-1], node):
+        return False
+    need = list(parts[:-1])
+    i = len(ancestors) - 1
+    while need and i >= 0:
+        if _css_part_match(need[-1], ancestors[i]):
+            need.pop()
+        i -= 1
+    return not need
+
+
+def _set_style_attr(node, value):
+    """把合并后的声明写回 style 属性（替换第一个同名属性、丢弃多余的同名属性）。"""
+    out, done = [], False
+    for k, v in node.attrs:
+        if k.lower() == 'style':
+            if not done:
+                out.append((k, value))
+                done = True
+            continue
+        out.append((k, v))
+    if not done:
+        out.append(('style', value))
+    node.attrs = out
+
+
+def _apply_css(root, css_text, pseudo_out=None):
+    """把 <style> 声明按最小层叠折进各节点的 style 属性；返回写入的节点数。
+
+    排序口径：inline > specificity 高 > 靠后的规则。消费者（`_style_pos` / `_radius_px` /
+    `_shadow_spec` / 渐变与背景正则）一律用 `re.search` 取**第一个**匹配，所以优先级高的必须排在
+    **前面** → inline 声明排最前（原行为 = inline 生效，不许变）。
+
+    pseudo_out：可选 dict，收 `{id(node): {伪元素名: 声明串}}` —— 伪元素的声明**不能**并进节点的
+    style（`::-webkit-slider-thumb{height:32px}` 混进去会把控件本身写成 32 高），
+    必须单独存，由 `_seekbar_css_assets`（`_pseudo_style`）按名字取。
+    """
+    rules = _parse_css_rules(css_text)
+    if not rules:
+        return 0
+    n = 0
+
+    def walk(node, ancestors):
+        nonlocal n
+        hit, ps = [], {}
+        for parts, body, spec in rules:
+            if not _css_matches(parts, node, ancestors):
+                continue
+            name = parts[-1][3]
+            if name:
+                ps.setdefault(name, []).append((spec, body))
+            else:
+                hit.append((spec, body))
+        if hit:
+            hit.sort(key=lambda t: t[0], reverse=True)
+            merged = ';'.join(b.strip().rstrip(';') for _, b in hit if b.strip())
+            inline = (_attr(node.attrs, 'style') or '').strip().rstrip(';')
+            if merged:
+                _set_style_attr(node, (inline + ';' + merged) if inline else merged)
+                n += 1
+        if ps and pseudo_out is not None:
+            bucket = pseudo_out.setdefault(id(node), {})
+            for name, lst in ps.items():
+                lst.sort(key=lambda t: t[0], reverse=True)
+                txt = ';'.join(b.strip().rstrip(';') for _, b in lst if b.strip())
+                if txt:
+                    old = bucket.get(name) or ''
+                    bucket[name] = (old + ';' + txt) if old else txt
+        for ch in node.children:
+            walk(ch, ancestors + [node])
+
+    walk(root, [])
+    return n
+
+
+# ---------- CSS 背景 / 边框 / 圆角 / 进度值（进度条出图用）----------
+_COV_SS_LOCAL = getattr(gr, '_COV_SS', 16) if _HAS_GEN_RES else 16
+
+
+def _style_len(style, key):
+    """style 里 key 的**绝对像素**长度 → int 或 None。`%` / auto / inherit 一律 None
+    （引擎只吃绝对像素；`width:50%` 认成 50 会是灾难性误读）。"""
+    m = re.search(r'(?:^|;)\s*%s\s*:\s*([^;]+)' % key, style or '')
+    if not m:
+        return None
+    raw = m.group(1).strip()
+    if raw.endswith('%') or raw.lower() in ('auto', 'inherit', 'initial', 'unset'):
+        return None
+    v = _px_num(raw)
+    return int(round(v)) if v is not None else None
+
+
+def _style_len_ref(style, key, ref):
+    """同 `_style_len`，但 `%` 按 ref 解析 —— 进度条最常见的写法就是 `width:100%`。
+
+    没有布局引擎，只能拿**最近容器**（这里是 .screen 的分辨率）当参照，并按此告警说明。
+    """
+    m = re.search(r'(?:^|;)\s*%s\s*:\s*([^;]+)' % key, style or '')
+    if not m:
+        return None
+    raw = m.group(1).strip()
+    if raw.lower() in ('auto', 'inherit', 'initial', 'unset'):
+        return None
+    if raw.endswith('%'):
+        try:
+            return int(round(float(raw[:-1]) / 100.0 * ref))
+        except ValueError:
+            return None
+    v = _px_num(raw)
+    return int(round(v)) if v is not None else None
+
+
+def _parse_gradient_dual(expr):
+    """linear-gradient 内部表达式 → (horizontal, [(pos|None, rgba), ...])。
+
+    比 `_parse_gradient` 多认 **CSS Color 4 双位置色标**（`#F00 0 60%` = 两个色标），
+    这是「一条硬停靠渐变表达已有进度」的关键写法：
+        background: linear-gradient(to right, #2E8BFF 0 60%, #242F49 60% 100%);
+    逐个 part 展开，`color A% B%` → [(A, c), (B, c)]。
+    """
+    expr = (expr or '').strip()
+    horizontal = False
+    m = re.match(r'^\s*(to\s+\w+|\d+deg)\s*,\s*(.*)$', expr, re.S)
+    if m:
+        d, expr = m.group(1), m.group(2)
+        horizontal = ('right' in d) or ('left' in d) or d.startswith('90') or d.startswith('270')
+    stops = []
+    for part in re.split(r',(?![^(]*\))', expr):
+        part = part.strip()
+        if not part:
+            continue
+        nums = []
+        col = None
+        for tok in re.split(r'\s+', part):
+            if not tok:
+                continue
+            if col is None:
+                c = _css_color(tok)
+                if c is not None:
+                    col = c
+                    continue
+            m = re.match(r'^(-?\d+(?:\.\d+)?)\s*(%?)$', tok)
+            if m:
+                nums.append(float(m.group(1)) / 100.0 if m.group(2) else float(m.group(1)))
+        if not col:
+            continue
+        if len(nums) >= 2:
+            stops.append((nums[0], col))
+            stops.append((nums[1], col))
+        elif len(nums) == 1:
+            stops.append((nums[0], col))
+        else:
+            stops.append((None, col))
+    if stops and all(p is None for p, _ in stops) and len(stops) >= 2:
+        stops = [(i / (len(stops) - 1.0), c) for i, (_, c) in enumerate(stops)]
+    return horizontal, stops
+
+
+def _seg_style(stops, renorm):
+    """一段色标 → 可直接喂给 `_bar_pic` 的 style 串（同色 → 纯色；否则 linear-gradient）。
+
+    renorm=False 保留原位置：有效图会被引擎按进度裁剪，**保留原位置才对得上浏览器**
+    （浏览器里那段渐变就是画在 0..p 上的）。
+    renorm=True 归一化到 0..1：轨道图**不裁剪**，必须让整张图都是「停靠点之后」的颜色。
+    """
+    cols = {tuple(c[:3]) for _, c in stops}
+    if len(cols) == 1:
+        r, g, b = next(iter(cols))
+        return 'background:#%02X%02X%02X' % (r, g, b)
+    pos = [p for p, _ in stops if p is not None]
+    if renorm and pos:
+        lo, hi = min(pos), max(pos)
+        span = max(1e-6, hi - lo)
+        stops = [((p - lo) / span if p is not None else None, c) for p, c in stops]
+    body = ', '.join('#%02X%02X%02X%s' % (c[0], c[1], c[2],
+                                         (' %.4f' % p) if p is not None else '')
+                     for p, c in stops)
+    return 'background:linear-gradient(to right, %s)' % body
+
+
+def _replace_bg(style, bg):
+    """把 style 里的 `background`/`background-color`/`background-image` 换成 bg，**其余声明保留**
+    （圆角 / 高度 / 边框都在其余声明里 —— 早期版本直接拿拆分结果当整条 style，把 `border-radius`
+    丢了，真机上药丸轨道变成方头，2026-10-04 真机比对抓到）。"""
+    rest = re.sub(r'(?:^|;)\s*background(?:-color|-image)?\s*:\s*[^;]+', '', style or '')
+    rest = re.sub(r';{2,}', ';', rest).strip('; ')
+    return (bg + ';' + rest) if rest else bg
+
+
+def _split_fill_track(style):
+    """轨道上的**硬停靠渐变** → (fill_bg, track_bg, frac) 或 None（只回背景声明，不碰其它字段）。
+
+    为什么必须有（2026-10-04）：Chrome 里 `input[type=range]` **没有**填充伪元素
+    （那是 Firefox 的 `::-moz-range-progress`），所以「已有进度」的常规画法就是把填充做成
+    轨道背景上一段硬停靠渐变。不拆它，正常 HTML 转出来的进度条**只有轨道、没有填充**。
+    """
+    m = re.search(r'linear-gradient\(([^)]+)\)', style or '')
+    if not m:
+        return None
+    hz, stops = _parse_gradient_dual(m.group(1))
+    if len(stops) < 2 or not hz:
+        return None
+    for i in range(len(stops) - 1):
+        p0, c0 = stops[i]
+        p1, c1 = stops[i + 1]
+        if (p0 is not None and p1 is not None and abs(p0 - p1) < 1e-6
+                and tuple(c0[:3]) != tuple(c1[:3]) and 0.0 < p0 < 1.0):
+            return (_seg_style(stops[:i + 1], False),
+                    _seg_style(stops[i + 1:], True), p0)
+    return None
+
+
+def _bg_spec(style):
+    """style 的背景 → ('gradient', (horizontal, stops)) / ('color', (r,g,b,a)) / None。
+
+    优先级与 CSS 一致：能解析的 linear-gradient 优先，否则退回 background(-color) 的第一个颜色。
+    """
+    m = re.search(r'linear-gradient\(([^)]+)\)', style or '')
+    if m:
+        hz, stops = _parse_gradient(m.group(1))
+        if len(stops) >= 2:
+            return ('gradient', (hz, stops))
+    m = re.search(r'background(?:-color)?\s*:\s*([^;]+)', style or '')
+    if m:
+        for tok in m.group(1).strip().split():
+            c = _css_color(tok)
+            if c:
+                return ('color', c)
+    return None
+
+
+def _border_spec(style):
+    """`border: 3px solid #2A3550` → (3, (r,g,b,a))；没有宽度/颜色 → None。"""
+    m = re.search(r'(?:^|;)\s*border\s*:\s*([^;]+)', style or '')
+    if not m:
+        return None
+    w, col = None, None
+    for tok in m.group(1).split():
+        v = _px_num(tok)
+        if w is None and v is not None:
+            w = int(round(v))
+            continue
+        if col is None:
+            col = _css_color(tok)
+    if not w or w <= 0:
+        return None
+    return (w, col or (0, 0, 0, 255))
+
+
+def _radius_corners(style, w, h):
+    """`border-radius` → 四角像素 (tl, tr, br, bl)，按 CSS 语法展开（1/2/3/4 值，取斜杠前的水平半径）。
+
+    与 `_radius_px` 分开实现（那个只取第一段、返回单一半径，供渐变/阴影分支用，行为不许变）：
+    `border-radius: 8px 8px 0 0`（AI 写"只圆上面两角"的常态）在单一 radius 口径下会被误当成四角 8。
+    """
+    m = re.search(r'border-radius\s*:\s*([^;]+)', style or '')
+    if not m:
+        return (0.0, 0.0, 0.0, 0.0)
+    ref = min(w, h)
+
+    def one(t):
+        if t.endswith('%'):
+            try:
+                return float(t[:-1]) / 100.0 * ref
+            except ValueError:
+                return 0.0
+        v = _px_num(t)
+        return 0.0 if v is None else float(v)
+
+    vals = [one(t) for t in m.group(1).split('/')[0].split()] or [0.0]
+    if len(vals) == 1:
+        tl = tr = br = bl = vals[0]
+    elif len(vals) == 2:
+        tl = br = vals[0]
+        tr = bl = vals[1]
+    elif len(vals) == 3:
+        tl, tr, br, bl = vals[0], vals[1], vals[2], vals[1]
+    else:
+        tl, tr, br, bl = vals[:4]
+    lim = min(w, h) / 2.0
+    return tuple(max(0.0, min(v, lim)) for v in (tl, tr, br, bl))
+
+
+def _corners_mask_local(w, h, radii, ss=None):
+    """四角半径**各不相同**时的覆盖率 mask：SS 二值画布 → `Image.BOX` 面积平均缩回
+    （与 gen_res 覆盖率口径同一套，无负瓣）。
+
+    `gen_res.coverage_mask` / PIL 的 `rounded_rectangle` 都只吃**单一** radius，所以四角不同只能自己拼。
+    画法刻意与 PIL 的 `rounded_rectangle` 同构：每个角 = 「2r×2r 角方块清零 + **圆心在该方块中点**
+    的 1/4 圆盘（pieslice）填回」。
+    ⚠️ 圆心必须在内侧（方块中点），不是画布角点 —— 早期版本把圆心放在角点上，等于把「圆内」和
+    「圆外」画反，四角会变成全实心（测试 test_four_corner_radius_is_per_corner 抓到）。
+    """
+    from PIL import Image as _I
+    from PIL import ImageDraw as _D
+    ss = int(ss or _COV_SS_LOCAL) or 1
+    W, H = max(1, w * ss), max(1, h * ss)
+    m = _I.new('L', (W, H), 0)
+    d = _D.Draw(m)
+    d.rectangle([0, 0, W - 1, H - 1], fill=255)
+    corners = ((0, 0, 1, 1, 180, 270),            # 左上
+               (W - 1, 0, -1, 1, 270, 360),       # 右上
+               (W - 1, H - 1, -1, -1, 0, 90),     # 右下
+               (0, H - 1, 1, -1, 90, 180))        # 左下
+    for (ax, ay, sx, sy, a0, a1), r in zip(corners, radii):
+        rr = int(round(float(r) * ss))
+        if rr <= 0:
+            continue
+        x0, x1 = sorted((ax, ax + sx * 2 * rr))
+        y0, y1 = sorted((ay, ay + sy * 2 * rr))
+        box = [x0, y0, x1, y1]        # 2r×2r：圆心 = 方块中点
+        d.rectangle(box, fill=0)
+        d.pieslice(box, a0, a1, fill=255)
+    return m.resize((w, h), _I.BOX)
+
+
+def _corners_mask(w, h, radii, ss=None, band=None):
+    """四角半径统一 → 直接走 `gen_res.coverage_mask`（与全项目同一份 AA 口径）；否则自己拼。
+
+    band=(y0, bh)：**可见条只占盒子的一段高度**（`::-webkit-slider-runnable-track{height:12px}`
+    但控件盒 32 高 —— 正常 HTML 滑条就是这个形态）。此时先把条按 bh 做出来，再贴进
+    (w,h) 的透明画布，上下留真透明 —— 这正是 `seekbar-fields.md` §3 的「可见条居中、上下透明」口径。
+    """
+    y0, bh = band if band else (0, h)
+    if y0 == 0 and bh >= h:
+        lo, hi = min(radii), max(radii)
+        if hi - lo < 1e-6 and _HAS_GEN_RES:
+            return gr.coverage_mask(w, h, radii[0])
+        return _corners_mask_local(w, h, radii, ss)
+    from PIL import Image as _I
+    inner = (gr.coverage_mask(w, bh, radii[0]) if (_HAS_GEN_RES and max(radii) - min(radii) < 1e-6)
+             else _corners_mask_local(w, bh, radii, ss))
+    out = _I.new('L', (w, h), 0)
+    out.paste(inner, (0, max(0, min(int(y0), h - bh))))
+    return out
+
+
+def _bar_pic(out_dir, name, w, h, style, default_color=None, band=None):
+    """CSS 背景（纯色/linear-gradient）+ `border-radius` → 一张 **w×h** 切图。轨道图与有效图共用。
+
+    ⚠️ 尺寸为什么恒等于控件盒（2026-10-04 真机实测，两条引擎行为相反）：
+      - **轨道图** `backgroundPic`：引擎把它**拉伸填满控件盒**（实测 224×32 的图放进 448×32 盒 → 段宽 ×2）；
+      - **有效图** `progressPic`：引擎**1:1 原样贴 + 按进度横向裁剪，不缩放**（实测三色段图 100×32
+        在 60% 进度下只显示源图前 100 列，多出来的 168px 直接露轨道）。
+        → 所以有效图也必须出成控件盒宽，否则进度一超过图片宽度，那一段就是空的。
+    band=(y0, bh)：可见条居中那套（见 `_corners_mask`）。
+    """
+    if not _HAS_GEN_RES:
+        return None
+    spec = _bg_spec(style)
+    if spec is None:
+        if default_color is None:
+            return None
+        spec = ('color', default_color)
+    radii = _radius_corners(style, w, h if not band else band[1])
+    if spec[0] == 'gradient':
+        hz, stops = spec[1]
+        # 渐变 RGB 逐列插值直接复用 gen_res（同一份实现，别抄第二份）；只把 alpha 换成四角 mask
+        p = gr.gen_gradient_stops(out_dir, name, w, h, stops, horizontal=hz, radius=0, ss=_CSS_SS)
+        if not p:
+            return None
+        from PIL import Image as _I
+        im = _I.open(p).convert('RGBA')
+        im.putalpha(_corners_mask(w, h, radii, band=band))
+        im.save(p)
+        return p
+    fill = spec[1]
+    from PIL import Image as _I
+    im = _I.new('RGBA', (w, h), (fill[0], fill[1], fill[2], 255))
+    im.putalpha(_corners_mask(w, h, radii, band=band))
+    return gr.save(im, out_dir, name)
+
+
+def _thumb_pic(out_dir, name, tw, th, style):
+    """CSS 滑块（`.thumb` 的 width/height/background/border/border-radius）→ 一张 **tw×th** 切图。
+
+    ⚠️ 真机口径：滑块**按 PNG 原尺寸画**（`thumb.size` 实测被忽略：写 16/64、图 32×32 → 一律 32×32），
+    且控件盒高 < 图高时被**居中裁** → tw/th 必须等于 CSS 给的滑块尺寸，
+    同时控件的 `position.height` 必须 ≥ th（调用方负责告警）。
+    """
+    if not _HAS_GEN_RES:
+        return None
+    radii = _radius_corners(style, tw, th)
+    r = min(radii)                       # 滑块是强曲率形状；四角不同时取最小（保守，不出方角）
+    bw, bcol = _border_spec(style) or (0, None)
+    spec = _bg_spec(style)
+    fill = None
+    if spec and spec[0] == 'color':
+        fill = spec[1]
+    elif spec and spec[0] == 'gradient':
+        fill = spec[1][1][0][1]          # 渐变取首色标（圆钮上画渐变意义不大）
+    if fill is None:
+        fill = (0xE8, 0xF1, 0xFF, 255)   # CSS 没给 background 时的默认浅色圆钮
+    img = (gr.bordered_cov(tw, th, r, fill, bcol, border_w=int(bw)) if bw
+           else gr.rounded_rect_cov(tw, th, r, fill))
+    return gr.save(img, out_dir, name)
+
+
+def _css_progress(style, maxv):
+    """CSS 推断进度 → (defProgress, 来源说明) 或 (None, None)。
+
+    支持：`--value:60%` / `--value:60` > `width:60%`（填充元素自身的宽度百分比，进度条最自然的写法）。
+    """
+    m = re.search(r'--value\s*:\s*([\d.]+)\s*(%?)', style or '')
+    if m:
+        v = float(m.group(1))
+        if m.group(2) == '%':
+            return int(round(v / 100.0 * maxv)), '--value:%s%%' % m.group(1)
+        return int(round(v)), '--value:%s' % m.group(1)
+    m = re.search(r'(?:^|;)\s*width\s*:\s*([\d.]+)\s*%', style or '')
+    if m:
+        return int(round(float(m.group(1)) / 100.0 * maxv)), 'width:%s%%' % m.group(1)
+    return None, None
+
+
+def _canvas_bg(root):
+    """html/body 的 background → 十进制颜色（0xRRGGBB）或 None。
+
+    为什么需要（2026-10-04 真机实测）：CSS 的背景会从 `body`/`html` **传播到画布**，
+    而 AI 写的 HTML 正是把页面底色写在 `body` 上（`.screen`/容器自己不写）。
+    FlyThings 的 json 根**不继承任何东西** → 不写 `backgroundColor` 就是「透明、不擦屏」，
+    真机上会**残留上一页 / 屏保画面**（实测：CSS 里 `body{background:#10151F}` 时，
+    设备上整屏盖着上一帧的屏保）。这里按 CSS 传播语义把 body/html 的底色捞到根上。
+    """
+    def find(n, tag):
+        if n.tag == tag:
+            return n
+        for ch in n.children:
+            r = find(ch, tag)
+            if r is not None:
+                return r
+        return None
+
+    if root is None:
+        return None
+    for tag in ('body', 'html'):
+        n = find(root, tag)
+        if n is None:
+            continue
+        spec = _bg_spec(_attr(n.attrs, 'style') or '')
+        if spec and spec[0] == 'color' and spec[1][3] > 0:
+            c = spec[1]
+            return (c[0] << 16) | (c[1] << 8) | c[2]
+    return None
 
 
 def _is_emoji(ch):
@@ -474,6 +1028,7 @@ class _DomParser(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.root = None
         self.stack = []
+        self.css_chunks = []      # <style> 里的 CSS 原文（最小层叠用，见 _apply_css）
 
     def handle_starttag(self, tag, attrs):
         node = Node(tag, attrs)
@@ -505,7 +1060,14 @@ class _DomParser(HTMLParser):
             self.stack.pop()
 
     def handle_data(self, data):
-        if self.stack and self.stack[-1].tag not in ('style', 'script'):
+        if not self.stack:
+            return
+        if self.stack[-1].tag == 'style':
+            # <style> 里的 CSS 原文单独收集（最小层叠要读它）。
+            # 仍**不**写进节点 text：否则 <style> 落进 .screen 时会被当文本控件把 CSS 源码画上屏。
+            self.css_chunks.append(data)
+            return
+        if self.stack[-1].tag != 'script':
             # HTML 文本节点空白折叠（源码换行/缩进 → 单空格）；<br> 已在 handle_starttag 转 '\n'，不受影响
             self.stack[-1].text += re.sub(r'\s+', ' ', data)
 
@@ -729,6 +1291,244 @@ class HtmlToJson:
 
         return out
 
+    # ---------- 进度条（seekbar）：CSS 三件套 → 3 张切图 ----------
+    # 为什么单独一段（2026-10-04 真机归因实测）：进度条在引擎里是「3 张图 + 3 套不同的尺寸语义」，
+    # 而 `_effect_assets` 的模型是「一个控件 = 一张皮」，表达不了：
+    #   ① 轨道 backgroundPic：引擎**拉伸填满控件盒**                → 图 == 控件盒 (W×H)
+    #   ② 有效 progressPic  ：引擎**1:1 贴 + 按 floor(W·p/max) 裁剪**（不缩放）→ 图也必须 == 控件盒
+    #   ③ 滑块 thumb.normalPic：引擎**按 PNG 原尺寸画**（thumb.size 实测被忽略）→ 图 == CSS 滑块尺寸
+    # 另外引擎不认伪元素，AI 的 `::-webkit-slider-thumb` 必须落到 `.thumb` 子元素或 data-thumb。
+    _SEEKBAR_FILL_CLASSES = ('fill', 'progress', 'bar-fill', 'barfill', 'value',
+                             'bar-inner', 'barinner', 'inner', 'indicator')
+    _SEEKBAR_THUMB_CLASSES = ('thumb', 'knob', 'handle', 'slider-thumb', 'sliderthumb')
+    # 滑条伪元素（正常 HTML 的标准写法；`input[type=range]` 的滑块/轨道只能这么写）
+    _PS_TRACK = ('webkit-slider-runnable-track', 'moz-range-track')
+    _PS_THUMB = ('webkit-slider-thumb', 'moz-range-thumb')
+    _PS_FILL = ('moz-range-progress', 'webkit-slider-progress')
+    _css_text = ''        # <style> 原文（convert() 里填；供"伪元素写法"告警判断，缺省空串防 AttributeError）
+    _pseudo_css = None    # {id(node): {伪元素名: 声明串}}（convert() 里填）
+
+    @staticmethod
+    def _child_by_class(node, names):
+        """取第一个 class 命中 names 的直接子节点（进度条的 .fill / .thumb 子元素）。"""
+        for ch in node.children:
+            if _classes(ch.attrs) & set(names):
+                return ch
+        return None
+
+    def _pseudo_style(self, node, names):
+        """取节点某个**伪元素**的声明串（`::-webkit-slider-thumb` 等）；没有则 ''。
+
+        为什么要读伪元素（2026-10-04）：`<input type=range>` 的滑块/轨道在正常 HTML 里**只能**
+        用 `::-webkit-slider-thumb` / `::-webkit-slider-runnable-track` 写 —— 引擎与 json 都没有
+        伪元素，但它们承载的信息正好是 seekbar 的三张切图规格，所以必须翻译而不是丢掉。
+        """
+        bucket = (getattr(self, '_pseudo_css', None) or {}).get(id(node)) or {}
+        for n in names:
+            if bucket.get(n):
+                return bucket[n]
+        return ''
+
+    def _seekbar_css_assets(self, ctx, node, c, pos, cap):
+        """CSS 结构化的进度条 → 轨道/有效/滑块三张切图 + 进度值 + 不可实现项告警。
+
+    三套写法都认（优先级由高到低，作者显式给的永远优先）：
+      ① `data-track/data-fill/data-thumb*`（本函数不接管，行为与改动前一致）；
+      ② **伪元素**（正常 HTML 的标准写法）：
+         `::-webkit-slider-runnable-track` → 轨道；`::-webkit-slider-thumb` / `::-moz-range-thumb`
+         → 滑块；`::-moz-range-progress` → 填充；
+      ③ 真实子元素 `.fill` / `.thumb`。
+    Chrome 的 `input[type=range]` **没有**填充伪元素，所以「已有进度」的常规画法是把填充做成
+    轨道背景上的**硬停靠渐变** → 由 `_split_fill_track` 拆成填充 + 轨道 + 进度值。
+        返回 True = 本次确实产出了切图或进度值（调用方据此决定是否补引擎口径说明）。
+        """
+        if not (_HAS_GEN_RES and self.asset_dir):
+            return False
+        style = _attr(node.attrs, 'style') or ''
+        fill_node = self._child_by_class(node, self._SEEKBAR_FILL_CLASSES)
+        thumb_node = self._child_by_class(node, self._SEEKBAR_THUMB_CLASSES)
+        ps_track = self._pseudo_style(node, self._PS_TRACK)
+        ps_thumb = self._pseudo_style(node, self._PS_THUMB)
+        ps_fill = self._pseudo_style(node, self._PS_FILL)
+        has_radius = bool(re.search(r'border-radius\s*:', style))
+        pseudo_seen = bool(ps_track or ps_thumb or ps_fill)
+        if not (fill_node is not None or thumb_node is not None or pseudo_seen or
+                _bg_spec(style) or has_radius):
+            return False
+
+        # 盒子几何：先按 CSS 修正（`width:100%` 在 AI 写法里极常见 —— 没有布局引擎，
+        # 按最近容器（.screen 分辨率）解析，并在告警里说明这是近似）。
+        res = (ctx.root or {}).get('resolution') or {}
+        for key, ref in (('width', res.get('width', 480)), ('height', res.get('height', 800))):
+            v = _style_len_ref(style, key, ref)
+            if v and v != pos.get(key):
+                if re.search(r'(?:^|;)\s*%s\s*:\s*[\d.]+%%' % key, style):
+                    ctx.warn('%s：CSS 的 %s 是百分比 → 按最近容器（%s=%dpx）解析成 %dpx'
+                             '（没有布局引擎，百分比只能这样近似；建议改写成绝对像素）'
+                             % (cap, key, '屏幕宽' if key == 'width' else '屏幕高', ref, v),
+                             key='seekbar-pct-%s' % key)
+                pos[key] = v
+        W = int(pos.get('width', 100) or 100)
+        H = int(pos.get('height', 32) or 32)
+        made = []
+
+        # `--max:200` 这种 CSS 变量形式的量程（作者不写 data-max 时用）
+        if not _attr(node.attrs, 'data-max'):
+            mm = re.search(r'--max\s*:\s*([\d.]+)', style)
+            if mm:
+                c['max'] = max(1, int(round(float(mm.group(1)))))
+
+        # ① 轨道 / 有效 / 进度值：三条来源依次是 伪元素 → 子元素 → 轨道硬停靠渐变
+        track_style = ps_track if ps_track else style
+        fstyle, frac, from_grad = '', None, False
+        if ps_fill:
+            fstyle = ps_fill
+        elif fill_node is not None:
+            fstyle = _attr(fill_node.attrs, 'style') or ''
+        else:
+            split = _split_fill_track(track_style)
+            if split:
+                fbg, tbg, frac = split
+                # ⚠️ 只换背景声明：圆角/高度/边框必须留在各自 style 里（否则药丸轨道变方头）
+                fstyle = _replace_bg(track_style, fbg)
+                track_style = _replace_bg(track_style, tbg)
+                from_grad = True
+        if frac is not None and not _attr(node.attrs, 'data-value'):
+            mx = int(c.get('max') or 100)
+            c['defProgress'] = max(0, min(mx, int(round(frac * mx))))
+            made.append('value')
+            ctx.warn('%s：进度取自轨道背景的**硬停靠渐变**（停靠点 %.1f%% → defProgress=%d/max=%d）。'
+                     'Chrome 的 input[type=range] 没有填充伪元素，「已有进度」就是这么画的 —— '
+                     '已拆成 填充图 + 轨道图 两张；要运行期改值用代码 setProgress()'
+                     % (cap, frac * 100.0, c['defProgress'], mx), key='seekbar-hardstop')
+
+        # ② 滑块：伪元素优先，其次 .thumb 子元素（真机按 PNG 原尺寸画 → 图 == CSS 滑块尺寸）
+        tstyle = ps_thumb if ps_thumb else (
+            (_attr(thumb_node.attrs, 'style') or '') if thumb_node is not None else '')
+        tsrc = '伪元素' if ps_thumb else ('.thumb 子元素' if thumb_node is not None else '')
+        tw = th = None
+        if tstyle:
+            ts = parse_px(_attr(thumb_node.attrs, 'data-thumb-size')) if thumb_node is not None else None
+            tw = (_style_len(tstyle, 'width') or ts)
+            th = (_style_len(tstyle, 'height') or ts)
+            if not (tw and th):
+                ctx.warn('%s：%s 里读不到绝对像素宽高（缺 width/height 或写了 %% / auto）—— '
+                         '滑块图未生成；请写 width:32px;height:32px（或 data-thumb-size="32"）'
+                         % (cap, tsrc), key='seekbar-thumb-size')
+                tw = th = None
+
+        # ③ 真机按**盒高居中裁**滑块 → 盒高 < 图高时圆钮会被切掉上下（`seekbar-fields.md` §2 的
+        #    「滑块被压扁」就是这个）。正常 HTML 常把 input 高度写成轨道高度、滑块更大 →
+        #    这里把控件盒**居中抬到**滑块高度（可见条中线不变），并明确告警几何已改。
+        if th and th > H:
+            grow = th - H
+            pos['top'] = int(pos.get('top', 0)) - grow // 2
+            pos['height'] = H = th
+            c['position'] = pos
+            ctx.warn('%s：滑块 %dx%d 比控件盒高 %d 大 → 已把控件盒**居中抬到** %d 高'
+                     '（top %+d），否则真机按盒高居中裁、圆钮上下被切（实测：24×24 图 + 12 高盒 → '
+                     '24×12 扁椭圆）' % (cap, tw, th, int(pos.get('height', 0)), th, -grow // 2),
+                     key='seekbar-box-grown')
+
+        # ④ 可见条高度：CSS 轨道高度 < 盒高时，条**居中**画在盒里、上下真透明
+        #    （`::-webkit-slider-runnable-track{height:12px}` + input 32 高 = 正常 HTML 滑条形态）
+        band = None
+        bh = _style_len(track_style, 'height')
+        if bh and 0 < bh < H:
+            band = (max(0, (H - bh) // 2), bh)
+        elif bh and bh > H:
+            ctx.warn('%s：轨道高 %d 比控件盒高 %d 还大 → 真机会按盒裁掉上下；'
+                     '已把 position.height 抬到 %d' % (cap, bh, H, bh), key='seekbar-track-taller')
+            pos['height'] = H = bh
+            c['position'] = pos
+
+        # ⑤ 出图：轨道 / 有效（尺寸都 == 控件盒）
+        if not c.get('backgroundPic'):
+            pic = self._gen_asset(lambda d: _bar_pic(d, 'bar_%s_track.png' % (cap or ctx.n),
+                                                     W, H, track_style, band=band))
+            if pic:
+                c['backgroundPic'] = pic
+                made.append('track')
+        if fstyle and not c.get('progressPic'):
+            pic = self._gen_asset(lambda d: _bar_pic(d, 'bar_%s_fill.png' % (cap or ctx.n),
+                                                     W, H, fstyle, band=band))
+            if pic:
+                c['progressPic'] = pic
+                made.append('fill')
+        if fstyle and not _attr(node.attrs, 'data-value'):
+            val, how = _css_progress(fstyle, int(c.get('max') or 100))
+            if val is not None:
+                c['defProgress'] = max(0, min(int(c.get('max') or 100), val))
+                if 'value' not in made:
+                    made.append('value')
+                    ctx.warn('进度值取自 CSS（%s → defProgress=%d/max=%d）；'
+                             '要运行期改值用代码 setProgress()，json 字段只管初值'
+                             % (how, c['defProgress'], c.get('max') or 100),
+                             key='seekbar-value')
+        if tw and th and not (c.get('thumb') or {}).get('normalPic'):
+            pic = self._gen_asset(lambda d: _thumb_pic(d, 'bar_%s_thumb.png' % (cap or ctx.n),
+                                                       tw, th, tstyle))
+            if pic:
+                c['thumb'] = {'size': {'width': tw, 'height': th},
+                              'normalPic': pic, 'pressedPic': ''}
+                c['touchable'] = True
+                made.append('thumb')
+                if ps_thumb:
+                    ctx.warn('%s：滑块样式取自伪元素 `::-webkit-slider-thumb`（或 -moz-）—— '
+                             '已翻译成 thumb 切图 %dx%d（thumb.size 同步写 %d）；'
+                             '`margin-top` 之类的伪元素垂直微调无对应，真机一律**盒内居中**'
+                             % (cap, tw, th, tw), key='seekbar-pseudo-thumb-ok')
+
+        # ⑥ 伪元素写法残留（滑块尺寸读不出来）→ 点名，否则真机上没有滑块
+        if (not (c.get('thumb') or {}).get('normalPic')
+                and re.search(r'slider-(?:thumb|runnable)', self._css_text or '')):
+            ctx.warn('%s：文档里用了 `::-webkit-slider-thumb` / `::-webkit-slider-runnable-track`，'
+                     '但本节点没解析出可用的滑块尺寸（缺 width/height 或写了 %% / auto）→ '
+                     '真机上**没有滑块**；请给 `::-webkit-slider-thumb` 写绝对像素 width/height'
+                     % cap, key='seekbar-pseudo')
+
+        # ⑦ 真机口径下不可实现的部分：逐条说清，不让下一轮再靠真机反推
+        if 'progressPic' in c and re.search(r'border-radius\s*:', fstyle):
+            ctx.warn('%s：有效图带 border-radius，但引擎对有效图**只裁剪不缩放** → '
+                     '0<p<max 时右端永远是**硬切**（实测：药丸端头一点没被压，右端直接切断）；'
+                     '「按进度伸长的圆头填充」在真机上无法实现，圆头只能靠滑块盖住（需切图确认外观）'
+                     % cap, key='seekbar-fill-radius')
+        if (not from_grad) and re.search(r'linear-gradient', fstyle):
+            ctx.warn('%s：填充图的 linear-gradient 是按**填充自身宽度**定义的，而真机有效图宽度固定 '
+                     '== 控件盒、再按进度裁剪 → 进度越小看到的那段渐变越短（渐变被"压缩"）。'
+                     '要进度无关的固定配色，请把渐变定义在**轨道空间**（宽度 = 控件盒）'
+                     '（需切图确认外观）' % cap, key='seekbar-fill-gradient')
+        if re.search(r'box-shadow\s*:[^;]*inset', style):
+            ctx.warn('%s：轨道用了 `box-shadow: inset …`（内阴影）—— FlyThings 没有内阴影，'
+                     '转换器只识别**外**阴影（inset 会被当外阴影，方向相反）→ 想要凹陷感请把'
+                     '内阴影烘进轨道切图（需切图确认外观）' % cap, key='seekbar-inset')
+        if tstyle and re.search(r'box-shadow\s*:', tstyle):
+            ctx.warn('%s：滑块用了 box-shadow —— 引擎按 PNG 原尺寸贴图、没有阴影层 → '
+                     '请把投影烘进滑块切图（需切图确认外观）' % cap, key='seekbar-thumb-shadow')
+
+        # ⑧ 底色会把轨道图的圆角"补平"（实测：底色与轨道同色时 r=4 视觉上完全消失）
+        bgv = to_dec(_attr(node.attrs, 'data-bg'))
+        spec = _bg_spec(track_style)
+        if bgv is not None and spec and spec[0] == 'color' and bgv >= 0:
+            tr = spec[1]
+            if (bgv >> 16 & 255, bgv >> 8 & 255, bgv & 255) == (tr[0], tr[1], tr[2]):
+                ctx.warn('%s：seekbar 的 backgroundColor（data-bg）与轨道图**同色** —— '
+                         '真机先铺满底色再贴图，轨道图的透明圆角会被底色补满、视觉上变直角'
+                         '（2026-10-04 实测：同色时四角 = 轨道色，改成 -1 后四角 = 页面底色、圆角立刻可见）'
+                         '→ 去掉 data-bg（保持 backgroundColor:-1）或改成页面底色'
+                         % cap, key='seekbar-bg-erases-radius')
+
+        # ⑨ 引擎口径说明（一页一次，避免下一轮又靠真机反推）
+        if made:
+            ctx.warn('进度条真机口径（2026-10-04 实测，出图/改图前先看这条）：'
+                     '① 轨道图 backgroundPic 会被**拉伸填满控件盒**；'
+                     '② 有效图 progressPic 是**1:1 原样贴 + 按 floor(盒宽×进度/max) 横向裁剪**'
+                     '（不是拉伸！右端永远硬切）；'
+                     '③ 滑块按 **PNG 原尺寸**画（thumb.size 只作声明，实测真机忽略它），'
+                     '左沿 = position.left + floor((盒宽−图宽)×进度/max)，盒高 < 图高时滑块被居中裁。'
+                     '本次自动出图：%s' % '、'.join(made), key='seekbar-engine-model')
+        return bool(made)
+
     def convert(self, text, merge_windows=False):
         """受限 HTML -> (pages, warnings, meta)。
 
@@ -750,6 +1550,15 @@ class HtmlToJson:
         p.close()
         if p.root is None:
             return None, ['空 HTML'], None
+        # 最小 CSS 层叠（2026-10-04）：把 <style> 块的声明折进各节点的 style 属性，
+        # 位置/渐变/圆角/阴影才有得读。放在 _find_screens 之前 —— .screen 的 style 里可能写分辨率。
+        self._css_text = ' '.join(p.css_chunks)
+        # 伪元素声明单独收（不能并进节点 style：`::-webkit-slider-thumb{height:32}` 混进去
+        # 会把控件本身写成 32 高）；由 `_seekbar_css_assets` 按名字取。
+        self._pseudo_css = {}
+        self._css_applied = _apply_css(p.root, self._css_text, self._pseudo_css)
+        # CSS 背景传播：html/body 的 background 铺满画布（不写根底色 = 真机不擦屏、残留上一帧）
+        self._page_bg = _canvas_bg(p.root)
         screens, nested = self._find_screens(p.root)
         if not screens:
             return None, ['未找到 <div class="screen"> 根节点（受限 HTML 必须从 screen 容器开始）'], None
@@ -1047,18 +1856,39 @@ class HtmlToJson:
         ('border-radius', '圆角'), ('animation', '动画'), ('transition', '过渡'),
         ('transform', '变换/旋转'), ('filter', '滤镜'), ('opacity', '透明度'),
     )
+    # 真的会调 `_effect_assets` 出图的控件类型（2026-10-04 补，防"假声明"）：
+    #   window/modal → `_open_window`；textview/button → `_leaf` 对应分支；seekbar → `_seekbar_css_assets`
+    # 其余类型（icon/circlebar/checkbox/radiogroup/listview/…）的分支**从不**调 `_effect_assets`
+    # （icon 只走自己的 iconfont/emoji 出图）→ 不许再说「已自动转成图片」，一律走「请切图」那一条。
+    _EFFECT_CONSUMERS = ('window', 'modal', 'textview', 'button', 'seekbar')
 
-    def _convertible_effects(self, node, style, hit):
-        """本次会被 gen_res 自动烘焙成图的效果名（与 _effect_assets 同一套条件）。
+    def _convertible_effects(self, node, style, hit, typ=None):
+        """本次会被 gen_res 自动烘焙成图的效果名（与 `_effect_assets` 同一套条件 + **消费方口径**）。
 
 为什么要算（v0.27.33 修「误导提示」）：转图能力可用时，线性渐变/阴影+圆角/loading 动画
 本来就会自动出图并写进 json（实测 grad_/shadow_/loading_*.png + backgroundPic/playFile），
 旧文案却一律喊「无法硬转，请切图」——让 AI 以为转图失败了、白做一轮手工切图。
+
+⚠️ 2026-10-04 修**假声明**（实测）：本函数原先只看「效果种类」，不看**该控件类型的分支有没有
+调用 `_effect_assets`** → 对 seekbar/circlebar/checkbox… 这些分支从不调用它的类型，
+会输出「…的 CSS 效果**已自动转成图片**（json 已引用 images/*.png）」，而实际 `generatedAssets: 0`、
+输出目录连 images/ 都没有。现在按 `_EFFECT_CONSUMERS` 只在真有消费路径时才认。
         """
         if not (_HAS_GEN_RES and getattr(self, 'asset_dir', None)):
             return set()
+        if typ is not None and typ not in self._EFFECT_CONSUMERS:
+            return set()
         cls = _classes(node.attrs)
         out = set()
+        # seekbar 走 `_seekbar_css_assets`（把背景+圆角烘进轨道图），**不**走 _effect_assets：
+        # 只认「真的烘进轨道图」的那两项（圆角 / 轨道自身的渐变），阴影仍归"请切图"。
+        if typ == 'seekbar':
+            spec = _bg_spec(style)
+            if spec is not None:
+                out.add('圆角')
+                if spec[0] == 'gradient':
+                    out.add('线性渐变')
+            return {h for h in hit if h in out}
         # 线性渐变 → gen_res 渐变图（径向渐变不支持，实测不转）
         if 'linear-gradient' in style and 'radial-gradient' not in style:
             out.add('线性渐变')
@@ -1074,12 +1904,13 @@ class HtmlToJson:
             out.add('动画')
         return {h for h in hit if h in out}
 
-    def _warn_css_effects(self, ctx, node):
+    def _warn_css_effects(self, ctx, node, typ=None):
         """检测 style 里的 CSS 效果属性：能自动转图的说明「已转图」，转不了的提示切图。
 
 两类分开说：
           - 已转图（渐变/阴影+圆角/loading 动画）→ 信息提示，避免 AI 白做手工切图
           - 转不了（径向渐变/文字阴影/变换/滤镜/透明度/过渡）→ 保留「请切图 + data-pic」指引
+        typ：节点将被转成的控件类型（决定该类型的分支是否真的会出图，见 `_convertible_effects`）。
         """
         if _attr(node.attrs, 'data-pic'):
             return   # 作者已按规范切图（data-pic）引用，效果就在图里，不必再提示
@@ -1089,7 +1920,7 @@ class HtmlToJson:
         hit = [name for pat, name in self._CSS_EFFECT_PATTERNS if pat in style]
         if not hit:
             return
-        conv = self._convertible_effects(node, style, hit)
+        conv = self._convertible_effects(node, style, hit, typ)
         rest = [h for h in hit if h not in conv]
         cls = _attr(node.attrs, 'class') or ''
         if conv:
@@ -1108,8 +1939,12 @@ class HtmlToJson:
         classes = _classes(node.attrs)
         tag = node.tag
 
+        # 控件类型（提前算：CSS 效果告警要说清「这个类型到底会不会出图」，
+        # 免得对 seekbar/checkbox 之类从不调用 _effect_assets 的分支发假声明）
+        typ = _detect_type(tag, classes, node.attrs)
+
         # ⚠️ CSS 效果检测（不硬转，提示转图片）
-        self._warn_css_effects(ctx, node)
+        self._warn_css_effects(ctx, node, typ)
 
         # 弹窗（modal）
         if tag == 'div' and any(k in classes for k in CLASS_MAP['modal']):
@@ -1127,7 +1962,7 @@ class HtmlToJson:
             ctx.stack.pop()
             return
 
-        typ = _detect_type(tag, classes, node.attrs)
+        # typ 已在函数开头算过（供 CSS 效果告警判定消费方），这里不再重复 _detect_type
 
         # 在 radiogroup 容器内：子 div.radio 收进父容器 radiobuttons（RadioGroupDemo 校准）
         if ctx.stack and ctx.stack[-1].get('__radiogroup') and typ == 'radiogroup':
@@ -1244,6 +2079,16 @@ class HtmlToJson:
         bg = to_dec(_attr(attrs, 'data-background'))
         if bg is None:
             bg = to_dec(_attr(attrs, 'data-bg'))
+        if bg is None:
+            # CSS 背景传播（2026-10-04 真机实测补）：html/body 的 background 铺满画布。
+            # 不写根底色 = 真机**不擦屏** → 会残留上一页/屏保（实测：body 带 background 时整屏盖着屏保）。
+            bg = getattr(self, '_page_bg', None)
+            if bg is not None:
+                ctx.warn('页面底色取自 CSS 的 html/body background（#%06X）—— 已写进 json 根 '
+                         'backgroundColor（.screen 自己没有 data-bg）' % bg, key='screen-bg-from-body')
+        else:
+            # 纯黑也会走到这里：`_color_explicit` 那套"按属性出现性判定"在根上同样适用
+            pass
         root = {
             'beepEnable': True, 'id': 0,
             'resolution': {'height': H, 'width': W},
@@ -1251,15 +2096,23 @@ class HtmlToJson:
         }
         if bg is not None:
             root['backgroundColor'] = bg
+        else:
+            ctx.warn('页面根没有底色（.screen 无 data-bg，html/body 也没写 background）→ 真机**不擦屏**，'
+                     '会露出上一页/屏保的残留画面（2026-10-04 实机验证：CSS 的 background 只写在 body 上时'
+                     '整屏残留旧帧）→ 给 .screen 加 data-bg 或给 body 写 background'
+                     '（需切图确认外观）', key='screen-bg-missing')
         # 根 position：默认全屏；只有显式写 data-x/y/w/h（或 data-left/top/width/height / style 定位）
         # 才作为局部悬浮块（statusbar/navibar 校准），否则强制全屏（PageWindowDemo 回归验证）
+        # ⚠️ 2026-10-04：值必须是**可解析的绝对像素**才算"写定位"。最小 CSS 层叠上线后，
+        # `<style>` 里极常见的 `.screen{width:100%;height:100%}` 会进 style 属性 ——
+        # 若只按"键出现过"判定，整个屏会被缩成 100×40 的小块（`_pos` 解析不了 % → 落默认值）。
         def _has_pos_attr(a):
             for k in ('data-x', 'data-y', 'data-w', 'data-h',
                       'data-left', 'data-top', 'data-width', 'data-height'):
-                if _attr(a, k):
+                if parse_px(_attr(a, k)) is not None:
                     return True
             st = _attr(a, 'style') or ''
-            return bool(re.search(r'(?:^|;)\s*(left|top|width|height)\s*:', st))
+            return any(_style_len(st, k) is not None for k in ('left', 'top', 'width', 'height'))
         if _has_pos_attr(attrs):
             root['position'] = self._pos(attrs)
         else:
@@ -1823,7 +2676,14 @@ class HtmlToJson:
                 if tp:
                     thumb['pressedPic'] = tp if '/' in tp else 'images/' + tp
                 c['thumb'] = thumb
-            c.setdefault('thumb', {'size': {'width': 0, 'height': 0}})   # SampleUI seekbar 必写 thumb（空=无滑块）
+            # CSS 结构化的进度条（.bar/.progress + .fill 子元素 + .thumb 子元素）→ 自动出 3 张切图
+            # （2026-10-04 新增；只在没有 data-track/data-fill/data-thumb 时接管，data-* 行为不变）
+            self._seekbar_css_assets(ctx, node, c, pos, cap)
+            # SampleUI seekbar 必写 thumb（空=无滑块）。⚠️ 三键必须齐全：
+            #   ui_schema.json 的 sharedTypes.thumb.requiredKeys = [size, normalPic, pressedPic]
+            #   —— 旧写法只给 size，ui_schema_loader.type_check 会报 error（2026-10-04 实测）。
+            c.setdefault('thumb', {'size': {'width': 0, 'height': 0},
+                                   'normalPic': '', 'pressedPic': ''})
         elif typ == 'checkbox':
             # padding 配置（UIlayoutDemo/checkbox.ftu 校准）：
             #  iconPosition = 图标锚点（控件内 left:0 top:0，尺寸默认=控件高，可用 data-icon-w/h 指定）

@@ -29,17 +29,20 @@ evidence: []
 
 ## JSON 字段表（ImeDemo SLIDETEXT_HANZI 实测）
 
-| 字段 | 类型/取值 | 说明 |
-|------|----------|------|
-| `caption` | string | 控件名（实测 `SLIDETEXT_HANZI`） |
-| `id` | int | 控件 id（实测 **51000** 段） |
-| `alignment` | int | 文本对齐 |
-| `fontSize` | int | 字号（实测 40，候选词大字体） |
-| `textBgColor` | int | 文本单元（高亮/按下）背景色。**透明必须写 -1**；`0` = **不透明黑**，不是透明（实机按 0 会画出黑块）。官方 ImeDemo 用 `16777215`（白底+黑字）；深色卡片建议走 DESIGN.md 令牌（如 accent 689407）|
-| `colorTab` | {color0..4} | 文字颜色（color0=正常） |
-| `touchable` | bool | 必须 true 才能点选滑动 |
-| `text` | string | 初始单条文本 |
-| `position`/`textPosition` | | 位置 |
+> 字段 / 类型 / 默认值 / 必填以 `ui_tools/ui_schema.json` 为准（`flythings_ui_schema(control_type=slidetext)` 取）；
+> 下表只留字段名与语义说明。
+
+| 字段 | 说明 |
+|------|------|
+| `caption` | 控件名（实测 `SLIDETEXT_HANZI`） |
+| `id` | 控件 id（实测 **51000** 段） |
+| `alignment` | 文本对齐 |
+| `fontSize` | 字号（实测 40，候选词大字体） |
+| `textBgColor` | 文本单元（高亮/按下）背景色（`int`；注册表 slidetext 未收录，属真缺口）。**透明必须写 -1**；`0` = **不透明黑**，不是透明（实机按 0 会画出黑块）。官方 ImeDemo 用 `16777215`（白底+黑字）；深色卡片建议走 DESIGN.md 令牌（如 accent 689407）|
+| `colorTab` | 文字颜色（color0=正常） |
+| `touchable` | 必须 true 才能点选滑动 |
+| `text` | 初始单条文本 |
+| `position`/`textPosition` | 位置 |
 
 ## 代码操作（ImeDemo/KaiduZ9S 实测顺序）
 

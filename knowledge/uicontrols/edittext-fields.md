@@ -22,26 +22,29 @@ evidence: []
 
 ## JSON 字段表
 
-| 字段 | 类型/取值 | 说明 |
-|------|----------|------|
-| `id` | int | **51000+**（html2json 起始 51000，实际从 51001 分配） |
-| `caption` | string | 控件名（EditText1…），回调函数名由它生成 |
-| `position` | {left,top,width,height} | 控件位置尺寸 |
-| `text` | string | **预填内容**（初始显示文本，如 EtPre 预填 hello） |
-| `textType` | int | **0=全文本（中英文数字）/ 1=仅数字**（数字键盘，EtNumber 实测） |
-| `hintText` | string | **提示文本**（内容为空时显示，如 "请输入账号"） |
-| `hintTextColor` | int | 提示文本颜色（十进制 int，0x888888→8947848） |
-| `isPassword` | bool | **true=密码框**，输入字符显示为 passwordChar（EtPwd 实测） |
-| `passwordChar` | string | 密码掩码字符（如 "*"；须配合 isPassword=true 才生效） |
-| `fontSize` | int | 字号（20/24 实测） |
-| `colorTab` | {color0} | 文字颜色（十进制 int） |
-| `bgColorTab` | {color0} | 背景颜色（默认 0xFFFFFF 白底） |
-| `beepEnable` | bool | 按键音（true 默认） |
-| `alignment` | int | 对齐位标志（37=水平垂直居中） |
-| `visible` | bool | 可见性 |
-| `touchable` | bool | 可交互 |
-| `bold` / `italic` | bool | 粗体/斜体（文字控件通用，2026-09-01 校准） |
-| `rollEnable` / `rollDirection` / `rollStep` / `rollIntervalTime` | — | 文字滚动（文字控件通用） |
+> 字段 / 类型 / 默认值 / 必填以 `ui_tools/ui_schema.json` 为准（`flythings_ui_schema(control_type=edittext)` 取）；
+> 下表只留字段名与语义说明。
+
+| 字段 | 说明 |
+|------|------|
+| `id` | **51000+**（html2json 起始 51000，实际从 51001 分配） |
+| `caption` | 控件名（EditText1…），回调函数名由它生成 |
+| `position` | 控件位置尺寸 `{left,top,width,height}` |
+| `text` | **预填内容**（初始显示文本，如 EtPre 预填 hello） |
+| `textType` | **0=全文本（中英文数字）/ 1=仅数字**（数字键盘，EtNumber 实测） |
+| `hintText` | **提示文本**（内容为空时显示，如 "请输入账号"） |
+| `hintTextColor` | 提示文本颜色（十进制 int，0x888888→8947848） |
+| `isPassword` | **true=密码框**，输入字符显示为 passwordChar（EtPwd 实测） |
+| `passwordChar` | 密码掩码字符（如 "*"；须配合 isPassword=true 才生效） |
+| `fontSize` | 字号（20/24 实测） |
+| `colorTab` | 文字颜色（十进制 int；子盒 `{color0}`） |
+| `bgColorTab` | 背景颜色（默认 0xFFFFFF 白底；子盒 `{color0}`） |
+| `beepEnable` | 按键音（true 默认） |
+| `alignment` | 对齐位标志（37=水平垂直居中） |
+| `visible` | 可见性 |
+| `touchable` | 可交互 |
+| `bold` / `italic` | 粗体/斜体（文字控件通用，2026-09-01 校准） |
+| `rollEnable` / `rollDirection` / `rollStep` / `rollIntervalTime` | 文字滚动（文字控件通用） |
 
 ## 回调
 

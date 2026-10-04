@@ -9,7 +9,7 @@ stale_days: 180
 origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
-platforms: [Z21]
+platforms: []
 tags: [检索命中条件, 三类问法都命中本文, 滚轮怎么做, 滚轮选择器, 转盘, 循环列表做选择器, 无限滚动列表, picker 多列联动, lv_roller 怎么用, QTimeEdit 怎么做, 那个自绘轮子包还在吗, 滚轮改判 L2 了吗, 滚轮机读映射, wheel 别名, 滚轮拖不动, 滚轮惯性]
 evidence: []
 ---
@@ -19,7 +19,7 @@ evidence: []
 > **检索命中条件（三类问法都命中本文）**：**① 滚轮族**（滚轮怎么做 / 滚轮选择器 / 转盘 / 循环列表做选择器 / 无限滚动列表 / picker 多列联动 / picker-view 怎么转 / lv_roller 怎么用 / NumberPicker 支持吗 / LISTWHEEL 对应哪个控件 / QTimeEdit 怎么做 / WheelPicker 有没有原生能力 / 那个自绘轮子包还在吗 / 滚轮改判 L2 了吗 / 滚轮机读映射 / wheel 别名 / 滚轮拖不动 / 滚轮惯性 / 惯性回弹 / 松手回弹对齐 / 拖动选择器怎么回读选中值 / 停下报事件 / 选中项变化回调）；**② 居中行 / 选中条族**（listview 居中选中 / 列表中行 / 行停在中行 / 中间行高亮 / 选中行高亮 / 选择条 / 高亮带 / 选中条（高亮带）跟着滚 / 滚动时高亮条跑了 / 选中条放背景图 / 高亮带挂哪层 / 条跟着行走 / 字色淡出 / 边缘渐隐）；**③ 时间 / 时钟盘族**（时间选择器怎么做 / 日期时间选择 / 时间滚轮 / 时·分·秒怎么拼 / 24 小时制选择 / TimePicker 怎么做 / TimePicker 时钟盘 / 时钟盘怎么实现 / clock dial / 圆形时间选择 / 时钟盘有没有对应能力）。
 > **检索词（同义/别名，降级 BM25 与人工核对都用）**：WheelPicker、wheel、roller、lv_roller、picker-view、picker-view-column、picker mode=time、NumberPicker、LISTWHEEL、QTimeEdit、TimePicker、TimePickerDialog、选择器、滚动选择、cycleEnable、autoRollback、edgeEffect。
 > **相关**：字段与回调全集 `knowledge/uicontrols/listview-fields.md`；滑动/惯性字段取值 `knowledge/uicontrols/scroll-drag-interaction-spec.md`；json 必写字段 `knowledge/uicontrols/json-field-mandatory.md`；装饰件吞触摸 `knowledge/uicontrols/touch-events.md`；跨框架映射 `knowledge/uicontrols/control-mapping-capability.md`。
-> 案例 `projects/translate/tdesign-miniprogram`（Z21 1024×600 真机，`z21/evidence/s4b_*` + `s4b_test.log` 24 项全 PASS；`s4c_*` + `s4c_test.log` 30 项全 PASS = 条改静态层后的现役验收）。
+> 案例 `projects/translate/tdesign-miniprogram`（`z21/evidence/s4b_*` + `s4b_test.log` 24 项全 PASS；`s4c_*` + `s4c_test.log` 30 项全 PASS = 条改静态层后的现役验收）。
 > 结论一句话：**平台 listview 能把滚轮做出来（L2 组合），不用自绘**；但三件事要自己做：①「正中行 = 选中行」用**数据侧平移**摆；②**不能用引擎的选中态**（它会把选中态打在列表盒第 1 行，还会盖掉宿主的 `setSelected`）；③**选中条要挂「静态背景层」，不挂行背景图**（挂行 → 滚起来条跟着走）。
 > 缺口编号：`knowledge/../components/ui_v1/gap-list.md` G-23（由 L5「明说不支持」改判 **L2 组合**）、G-37、G-38。
 
@@ -110,7 +110,7 @@ int h   = lv->getPosition().mHeight;
 int A   = fi + (h / 2 - off) / ih;            // 盒中线落在哪一行（= 正中行）
 ```
 
-**`off` 的符号口径（真机实测，别猜）**：往前滚 -> `off` 从 0 递减到 −35 左右，然后 `fi` +1、`off` 归 0。轨迹样本：`fis=[2,2,3,3,4,4,5,5,6,6]` / `offs=[0,-20,0,-21,-1,-21,-1,-19,-3,-19]`。所以 `off<0` = 内容整体上移 |off| 像素 -> 公式里是 `(h/2 - off)`；写成 `(h/2 + off)` 会**差 1~2 行**，现象就是「拖动时底带明显飘在中线之上/之下」（案例里有像素断言：拖动中底带垂直重心与盒中线误差 ≤ 30px，公式对 = 实测 0.5~7px；公式错 ≥ 54px）。两条 API 在 easyui **2.6.0（Z21）/ 2.9.0（F133|F136）/ 2.10.0**头文件里都有（`ZKListView.h`）。
+**`off` 的符号口径（真机实测，别猜）**：往前滚 -> `off` 从 0 递减到 −35 左右，然后 `fi` +1、`off` 归 0。轨迹样本：`fis=[2,2,3,3,4,4,5,5,6,6]` / `offs=[0,-20,0,-21,-1,-21,-1,-19,-3,-19]`。所以 `off<0` = 内容整体上移 |off| 像素 -> 公式里是 `(h/2 - off)`；写成 `(h/2 + off)` 会**差 1~2 行**，现象就是「拖动时底带明显飘在中线之上/之下」（案例里有像素断言：拖动中底带垂直重心与盒中线误差 ≤ 30px，公式对 = 实测 0.5~7px；公式错 ≥ 54px）。两条 API 在 easyui **2.6.0 / 2.9.0 / 2.10.0** 头文件里都有（`ZKListView.h`）。
 
 ## 3. 四个真机坑（都不在官方文档里）
 
