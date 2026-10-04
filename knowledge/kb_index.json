@@ -1,10 +1,10 @@
 {
  "meta": {
   "schema": 1,
-  "built_at": "2026-10-04 20:18:01",
+  "built_at": "2026-10-04 20:27:13",
   "mcp_version": "0.27.195-open",
   "doc_count": 113,
-  "source_hash": "79f05e9b9daf9ec546094f014431a9e9"
+  "source_hash": "f894d507aecdd402321d45fe3c7bb81d"
  },
  "summary": {
   "total": 113,
@@ -1988,8 +1988,8 @@
     "半包重组",
     "第二次进页面空白",
     "改了没生效",
-    "返回再进页面就不对",
-    "改了数据界面没变"
+    "控件谁盖谁",
+    "有哪些字段"
    ],
    "status": "review",
    "confidence": "manual",
@@ -2005,8 +2005,8 @@
    "evidenceLevel": "has-evidence",
    "needsEvidence": false,
    "hasQueries": false,
-   "bytes": 5023,
-   "sha256": "1d6f264bbf4cd83ce573d5e22c8cb7a112cc83edbb3f2ca814ff5d89c4cd77d9",
+   "bytes": 13340,
+   "sha256": "4e5f358a3c24cbd5642afda981dc226385f9e7293fd55c57633a7ecbe26eb640",
    "fingerprint": "f6fe18fc8219eb25",
    "ageDays": 0,
    "freshness": "fresh",
