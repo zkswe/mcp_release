@@ -12,9 +12,9 @@
 
 | # | 状态 | 事项 | 依据 |
 |---|---|---|---|
-| A1 | ✅ | vinyl 在 V85X「缺 nanovg、编不过」已过期 → 订正为「可编（手动接 nanovg），**实编+真机待验**」 | `platform_capabilities.json` vinyl/V85X 行；`packages/nanovg/lib/v85x/BUILD.md`；订正见 `c9f425f` |
-| A2 | ⬜ | blend2d V85X 已自编成功（160/160、md5 `ED1569…`）但真源仍写「需 musl 重编（**未做**）」 | `components/blend2d/lib/v85x/BUILD.md:10-14,48-55` ←→ `blend2d/platforms.md:17,125`、注册表 |
-| A3 | ⬜ | 知识/派生页 5 处读数打架（nanovg「未上真机」vs 已上、i18n 页说没有 `textview-fields.md` 而该页已存在、fonts cmap 判据是否已替代体积判据、`textview-fields.md` 内部 roll* 前后不一致） | `packages/README.md:30`、`i18n-multilang.md:209-211`、`fonts/platforms.md:56`、`textview-fields.md:85/112` |
+| A1 | ⬜👤 | **vinyl 在 V85X 仍不可编，但卡点换了**（2026-10-05 真机工具链实编）：`nanovg.h` 那关**已过**（随仓 `.so` 与设备 `/lib` 那份 md5 逐字节相同），真正的卡点是 `zk_vinyl.cpp:40` 的 **`misc/image_utility.h`** —— 不在任何 easyui 包（V85X 2.9.0 / Z20 2.6.0 的 `include/` 都无 `misc/`）、不在仓、设备 `libeasyui.so` 也无 `misc::*` 符号。**出路（需拍板）**：① 厂商补该头（+实现）；② 把 `misc::image_load/bitmap_scale/bitmap_create/bitmap_destroy` 改写成 easyui 真有的 `utils/BitmapHelper.h`。另：`fun install` 仍拉不到 nanovg（`FATAL 未找到依赖包`） | 实测：`zk_vinyl.cpp:40` fatal error；`platform_capabilities.json` vinyl/V85X 行 |
+| A2 | ✅ | blend2d V85X **转正为「可用（已验）」**：本仓自编档 `lib/v85x/`（1,846,636 B / md5 `ED1569…`，NEEDED = `libstdc++.so.6` + `libc.so`(musl) + `libgcc_s.so.1`）→ `fun build` **169/169 → `libzkgui.so`** → 门面 `zk::b2d::Canvas` 真机跑通（480×480 **avg 5.010 ms/帧**、800×1280 avg 7.862 ms/帧，`savePng` 出图目检正确）。真源与 4 处文档已同步。⚠️ 该档**未 strip**；`blend2d.h` 不在仓 → 随仓可复现的是「链接 + 真机运行」 | 2026-10-05 实测；`components/blend2d/lib/v85x/BUILD.md` |
+| A3 | ✅ | 5 处读数打架全部判定并修正：① nanovg「未上真机」错（`platforms.md` 对）② i18n 页说没有 `textview-fields.md` 错（该页已存在）③ fonts 把 cmap 列为「待办」错（它早已是**主判据**，体积阈值只是兜底）④ `textview-fields.md` 两处自相矛盾（`rollStep` 单位已定于 `ui_schema.json` 真源）⑤ 顺带：`packages/README.md:30` 两处错（nanovg 状态 + 该包是唯一缺 `example/` 的） | 见本表 §C5 与各文件现值 |
 
 ## B. 报告里承诺但没进计划 —— 9 项
 
@@ -38,6 +38,8 @@
 | C2 | ⬜ | ble：gatt 后端未上机路径 + 缺 T113/T113EMMC 库 | `ble/platforms.md:253-256,286-287`；`ble/Manifest.xml:61` |
 | C3 | ⬜ | ha_bridge / mqtt 未取证清单 | `ha_bridge/platforms.md:143,152-153,163,167`；`mqtt-client-lifecycle.md:258,264` |
 | C4 | ⬜ | 字库 4 条：cmap 精确判定（**疑似已完成，需核对**）/多字体链/按平台自动选版本/T113·Z20·Z21 实测补录 | `fonts/platforms.md:54-59`；`vinyl/README.md:103` |
+| C5 | ⬜ | **`device_font_check.py` 在 V85X 上字体扫描直接失败**（2026-10-05 实测复现）：本机固件 `ls -l` 出 **ISO 日期**（`2026-09-18 06:51`），而 `:158` 拿**月份名**做锚点 → `size=None` → `collect() fonts=[]` → `verdict: "no_font"`。设备上**明明有** `/res/font/pocketgame.ttf`（1,094,104 B）。后果：**cmap 硬判据根本没跑**，还会误报「缺中文字库」触发无谓投递。修法：`:158` 改「ISO 日期 + 月名」双锚点 | 实测命令与输出在 `_a123_scratch/`；`components/fonts/scripts/device_font_check.py:158` |
+| C6 | ⬜ | **随仓 `bin_tools/v85x/busybox` 在该设备上不可用**：`/tmp/bb ls -l …` → `applet not found`（`ls/md5sum/sh/cat/find/du/echo` 全一样，无参也一样），而 strings 显示确实是 `BusyBox v1.36.1`。`device_font_check.py:48` 的 `BUSYBOX_LOCAL` 正指向它 → **兜底路径同样是坏的**。未深挖配置（疑 `FEATURE_INDIVIDUAL` 单 applet 构建） | 2026-10-05 实测；`bin_tools/v85x/busybox`、`device_font_check.py:48` |
 
 ## D. 能力与内容缺口 —— 5 项
 

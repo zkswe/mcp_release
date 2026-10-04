@@ -100,7 +100,8 @@ evidence:
 | **Z20**（SSD201/202D/203，ARMv7-A + NEON，glibc） | ✅ **可用（已验）** | 真机跑通 + 性能/效果复测两轮 | 原厂档：注册表 `blend2d 0.11.1`；性能档：`lib/z20-neon/` | 详见 §1 |
 | **Z21**（ARMv7，glibc，同族工具链） | ⚠️ **未验证** | 无实测 | 无注册表包；**理论上**可复用同一份 `.so` | 详见 §2 |
 | **T113EMMC**（ARMv7，glibc） | ⚠️ **未验证** | 无实测 | 同上 | 详见 §2 |
-| **V85X / T113（musl）** | ❌ **不可直接用** | `.so` 的 `NEEDED` 是 glibc + `libstdc++.so.6`；musl 平台没有 | 需 musl 重编（**未做**） | 详见 §3 |
+| **V85X**（ARMv7 **musl**） | ✅ **可用（已验）** | 2026-10-05 真机：门面 `zk::b2d::Canvas` 跑通，480×480 avg 5.010 ms/帧、800×1280 avg 7.862 ms/帧，`savePng` 出图目检正确 | 本仓自编档 `lib/v85x/`（1,846,636 B / md5 ED1569…，NEEDED = libstdc++.so.6 + libc.so(musl) + libgcc_s.so.1） | ⚠️ 该档未 strip（有 .symtab）；`blend2d.h` 不在仓，随仓可复现的是「链接 + 真机运行」 |
+| **T113**（musl 变体） | ⚠️ **未验证** | 无实测（V85X 已另置一行） | 可用 `lib/v85x/` 同款思路另编 | 详见 §3 |
 | **F133 / F135 / F136（RISC-V64 musl）** | ❌ **不可用** | 架构不同（ELF32 ARM vs RISC-V） | 需另编（**未做**） | 详见 §3 |
 
 ### blur
@@ -229,7 +230,7 @@ evidence:
 | F135 | 未验证 | 未验证 | — | 与 F133 同核（C906 RISC-V），预期一致（待测） |
 | Z20 / Z21 | 未验证 | 未验证（注册表有 nanovg 包则可用） | — | 待测 |
 | T113 | 未验证 | 未验证 | — | 待测 |
-| V85X | ⚠️ **可编**（前提见备注）——实测待补 | ⚠️ 需手动接 nanovg；**包管理器路径仍不可用** | — | `zk_vinyl.cpp:37-38` **无条件** `#include <nanovg.h>` / `<nanovg_agg.h>`（无 `#ifdef` 开关），所以定点后端也要求头文件可解析 —— 原先判「编不过」的依据是 **V85X registry 无 nanovg 包、仓库也没有**；现已变化：`packages/nanovg/lib/v85x/libnanovg.so`（厂家构建，md5 F5F1157D…）与 `include/nanovg.h` 已随仓（2026-10-03），**手动接**（include 路径 + 链接该 .so）即可满足。但 `fun install` 走包 registry（V85X 只有 base-utility/easyui/log/zkhardware/zknet），**拉不到 nanovg** → 纯包管理器路径仍不可用。**待验**：用 V85X 工具链实编一次（本机无该工具链、设备未连，2026-10-05 未做）；V85X（SPINOR）**不是** MCU Lite，不适用「本组件不适用」那条 |
+| V85X | ❌ **不可编**（2026-10-05 V85X 工具链实编） | ❌ 同上（编不过就谈不上后端） | — | 卡点**不是** nanovg（已解决：`nanovg.h` 那关过了，`packages/nanovg/lib/v85x/libnanovg.so` 与设备 `/lib` 那份 md5 逐字节相同 `F5F1157D…`），而是 `zk_vinyl.cpp:40` 的 **`misc/image_utility.h`**：它**不在任何 easyui 包内**（V85X 2.9.0 / Z20 2.6.0 的 `include/` 都无 `misc/`）、不在仓内、设备 `libeasyui.so` 也无 `misc::*` 符号 —— 那是 F133 **应用工程侧**的头。两条出路：① 厂商补该头（+实现）；② 拍板把 `misc::image_load/bitmap_scale/bitmap_create/bitmap_destroy` 改写成 easyui 真有的 `utils/BitmapHelper.h`。`fun install` 走 registry 仍拉不到 nanovg（复测 `FATAL 未找到依赖包`），纯包管理器路径同样不可用。V85X（SPINOR）**不是** MCU Lite，不适用「本组件不适用」那条 |
 
 ### wall_sync
 

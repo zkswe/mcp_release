@@ -97,7 +97,7 @@
 | 组件 | V85X 结论 |
 |---|---|
 | blur / imagecache | ✅ **可编译可链接**（在 `arm-unknown-linux-musleabihf-gcc` 下编过并链成 `libzkgui.so`） |
-| vinyl | ⚠️ **改为可编（有前提）** —— 原判「缺 `nanovg` 包（V85X registry 无、离线包也没有）」**已不成立**：`packages/nanovg/lib/v85x/libnanovg.so` + `include/nanovg.h` 已于 2026-10-03 随仓（同为 V85X 档）。`zk_vinyl.cpp` 无条件 `#include <nanovg.h>`，故**手动接**（include 路径 + 链接该 .so）即可编；但 `fun install` 走包 registry 仍拉不到 → **纯包管理器路径仍不可用**。实编与真机验收**待补** |
+| vinyl | ❌ **不可编**（2026-10-05 V85X 工具链实编）—— 卡点**不是** nanovg（`nanovg.h` 那关已过，随仓 `.so` 与设备 `/lib` 那份 md5 逐字节相同），而是 `zk_vinyl.cpp:40` 的 **`misc/image_utility.h`**：它不在任何 easyui 包内、不在仓内、设备 `libeasyui.so` 也无 `misc::*` 符号（那是 F133 应用工程侧的头）。出路：厂商补该头，或拍板改写成 easyui 真有的 `utils/BitmapHelper.h` |
 | wall_sync | ❌ **不可用** —— 缺 `rapidjson` 包（`fun install` 拉 v85x 源 → **502**） |
 | blend2d / icons | 原本就已正确标注（无 V85X 库 / 平台无关） |
 

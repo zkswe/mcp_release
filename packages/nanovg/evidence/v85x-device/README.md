@@ -97,5 +97,5 @@ python diff_screen.py                   # ±2 比对（本目录）
 | `onscreen_nanovg.png` | 从 fb0 抓屏裁出的**上屏像素**（同一区域） |
 | `diff_screen.py` | ±2 逐像素比对脚本 |
 
-`offscreen_nanovg.png` 与 `onscreen_nanovg.png` **应当完全一致**（实测文件同为 15,607 B，`max|Δ|=0`）——
+`offscreen_nanovg.png` 与 `onscreen_nanovg.png` **应当完全一致**（两张 PNG 是**同一次比对的两个导出物**（故 md5 必然相同），真正的两路采集是 `fb.raw`（抓屏）与 `nvg_ondev.bgra`（app 落盘）；原文件体积，`max|Δ|=0`）——
 不一致就说明通道顺序 / stride / 裁剪 / 上屏路径有偏差。

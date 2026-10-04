@@ -14,7 +14,8 @@
 | **Z20**（SSD201/202D/203，ARMv7-A + NEON，glibc） | ✅ **可用（已验）** | 真机跑通 + 性能/效果复测两轮 | 原厂档：注册表 `blend2d 0.11.1`；性能档：`lib/z20-neon/` | 详见 §1 |
 | **Z21**（ARMv7，glibc，同族工具链） | ⚠️ **未验证** | 无实测 | 无注册表包；**理论上**可复用同一份 `.so` | 详见 §2 |
 | **T113EMMC**（ARMv7，glibc） | ⚠️ **未验证** | 无实测 | 同上 | 详见 §2 |
-| **V85X / T113（musl）** | ❌ **不可直接用** | `.so` 的 `NEEDED` 是 glibc + `libstdc++.so.6`；musl 平台没有 | 需 musl 重编（**未做**） | 详见 §3 |
+| **V85X**（ARMv7 **musl**） | ✅ **可用（已验）** | 2026-10-05 真机：门面 `zk::b2d::Canvas` 跑通，480×480 avg 5.010 ms/帧、800×1280 avg 7.862 ms/帧，`savePng` 出图目检正确 | 本仓自编档 `lib/v85x/`（1,846,636 B / md5 ED1569…，NEEDED = libstdc++.so.6 + libc.so(musl) + libgcc_s.so.1） | ⚠️ 该档未 strip（有 .symtab）；`blend2d.h` 不在仓，随仓可复现的是「链接 + 真机运行」 |
+| **T113**（musl 变体） | ⚠️ **未验证** | 无实测（V85X 已另置一行） | 可用 `lib/v85x/` 同款思路另编 | 详见 §3 |
 | **F133 / F135 / F136（RISC-V64 musl）** | ❌ **不可用** | 架构不同（ELF32 ARM vs RISC-V） | 需另编（**未做**） | 详见 §3 |
 
 ---
@@ -122,7 +123,7 @@ adb shell setprop ctl.restart zkswe
 
 | 平台 | 为什么不行 | 想用得做什么 |
 |---|---|---|
-| **V85X**（ARMv7 **musl**） | 包内 `.so` 的 `NEEDED` = `libstdc++.so.6 / libm / libdl / libc(glibc) / ld-linux-armhf.so.3 / libpthread` —— **musl 平台没有这套** | 用 musl 工具链**重编** Blend2D（`-DBLEND2D_NO_JIT=ON`；musl 下还要注意 `libstdc++` 依赖）—— **未做** |
+| ~~**V85X**（ARMv7 **musl**）~~ | ✅ **可用（已验，2026-10-05 真机）** —— 库取自 `lib/v85x/`（本仓自编），不再需要重编 | 见 §1.3 |
 | **T113（musl 变体）** | 同 V85X（libc 不匹配） | 同上 —— **未做** |
 | **F133 / F135 / F136**（**RISC-V64 musl**） | 架构不同（本组件给的是 ELF32 ARM），根本加载不了 | 用 RISC-V musl 工具链重编（RISC-V 同样**无 JIT**，走参考管线；文本/路径性能同理）—— **未做** |
 

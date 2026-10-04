@@ -151,11 +151,17 @@ def collect(adb, serial, use_busybox):
                 continue
             if not re.search(r'\.(ttf|ttc|otf)$', name, re.I):
                 continue
-            # 设备自带 ls 与 busybox ls 字段数不同 → 用“月份”做锚点，体积=月份前一个字段
+            # 设备自带 ls 与 busybox ls 字段数不同 → 体积取**时间字段的前一个**。
+            # 两种时间格式都要认（2026-10-05 实测：同一台 V85X 上两种并存）：
+            #   · `/res/font` 出 **ISO**：`-rwxrwx--- 1000 1000 1094104 2026-09-18 06:51 pocketgame.ttf`
+            #   · `/etc/font` 出**月名**：`-rw-r--r-- 1 0 21192 Nov 10 2025 fzcircle.ttf`
+            # 原实现只认月名 → ISO 那批**整行被丢弃**（`size=None → continue`），
+            # 于是 collect() 拿到空字体表、verdict 误报 no_font、cmap 硬判据根本没跑。
             size = None
             si = None
             for i, t in enumerate(toks):
-                if t[:3] in MONTHS and i >= 1 and toks[i - 1].isdigit():
+                if i >= 1 and toks[i - 1].isdigit() and (
+                        t[:3] in MONTHS or re.match(r'^\d{4}-\d{2}-\d{2}$', t)):
                     size = int(toks[i - 1])
                     si = i - 1
                     break
