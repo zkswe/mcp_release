@@ -30,6 +30,12 @@ GATE_CN = {
     'irreversible': '不可逆操作',
 }
 
+# `step.verify` 的三个必填键：**通过判据 / 不通过判据 / 怎么验证**。
+# 为什么要有它（2026-10-04）：流程步骤此前只有 `how`（怎么做）与 `gate`（什么时候不许做），
+# **没有"做完了算不算过"** —— 于是 AI 只能凭感觉说"好了"，用户也拿不到可核对的判据。
+# 口径与 DESIGN_SPEC 一致：只写判据（ok/notOk/evidence），不写故事。
+VERIFY_FIELDS = ('ok', 'notOk', 'evidence')
+
 
 class FlowSpecError(RuntimeError):
     """注册表缺失/损坏/查不到时的显式错误（不静默降级）。"""
@@ -67,7 +73,31 @@ def step(sid):
     return dict(s)
 
 
+def step_verify(sid):
+    """步骤的**验收判据** → {'ok','notOk','evidence'}。
+
+    独立成函数（而不是让调用方 `s.get('verify')`）：注册表里"哪些 step 该有 verify"
+    由 `validate()` 保证，消费方拿到的一定是三字段齐全的对象 —— 缺了就在这里抛错，
+    不要静默退回空串（那样渲染出来是"✅ 通过： ｜ ⛔ 不通过： "，比不渲染更误导）。
+    """
+    s = step(sid)
+    v = s.get('verify')
+    if not isinstance(v, dict):
+        raise FlowSpecError('步骤 %s 缺 verify（验收判据）：%s' % (sid, SPEC))
+    miss = [f for f in VERIFY_FIELDS if not str(v.get(f) or '').strip()]
+    if miss:
+        raise FlowSpecError('步骤 %s 的 verify 缺 %s' % (sid, '、'.join(miss)))
+    return {f: v[f] for f in VERIFY_FIELDS}
+
+
+def verify_line(sid):
+    """一行式验收判据（给 skill / 派生页用）。"""
+    v = step_verify(sid)
+    return '✅ %s ｜ ⛔ %s ｜ 证据：%s' % (v['ok'], v['notOk'], v['evidence'])
+
+
 def flows():
+    """全部流程（scenario / action 两条轴）。"""
     return dict(load()['flows'])
 
 
@@ -211,6 +241,7 @@ def render_skill(fid):
         if s.get('gate'):
             L.append('- ⚠️ **%s**：%s' % (GATE_CN.get(s['gate'], s['gate']),
                                          s.get('gateHow') or '必须满足后再继续'))
+        L.append('- **验收判据**：%s' % verify_line(item['id']))
         if s.get('docRef'):
             L.append('- 细节：`%s`' % s['docRef'])
         L.append('')
@@ -292,17 +323,29 @@ def render_doc():
 
     L.append('## 3. 步骤库（两条轴共用）')
     L.append('')
-    L.append('| 步骤 | 主要 op | 闸门 | 做什么 |')
-    L.append('|---|---|---|---|')
+    L.append('| 步骤 | 主要 op | 闸门 | 做什么 | 通过判据 |')
+    L.append('|---|---|---|---|---|')
     for sid, s in steps().items():
         gate = GATE_CN.get(s['gate'], s['gate']) if s.get('gate') else '—'
-        L.append('| %s | %s | %s | %s |'
+        L.append('| %s | %s | %s | %s | %s |'
                  % (s.get('title') or sid,
                     ('`%s`' % s['op']) if s.get('op') else '（人判断）',
-                    gate, (s.get('how') or [''])[0]))
+                    gate, (s.get('how') or [''])[0],
+                    (s.get('verify') or {}).get('ok') or '—'))
     L.append('')
 
-    L.append('## 4. 跨流程铁律（去重后只此一份）')
+    L.append('## 4. 验收判据（每步「做完了算不算过」；`verify` 真源在 flow_spec.json）')
+    L.append('')
+    L.append('| 步骤 | ✅ 通过 | ⛔ 不通过（继续会返工/出错） | 证据 / 怎么验 |')
+    L.append('|---|---|---|---|')
+    for sid, s in steps().items():
+        v = s.get('verify') or {}
+        L.append('| %s | %s | %s | %s |'
+                 % (s.get('title') or sid, v.get('ok') or '—', v.get('notOk') or '—',
+                    v.get('evidence') or '—'))
+    L.append('')
+
+    L.append('## 5. 跨流程铁律（去重后只此一份）')
     L.append('')
     L.append('| 不变量 | 规则 | 违反的后果 |')
     L.append('|---|---|---|')
@@ -311,7 +354,7 @@ def render_doc():
     L.append('')
 
     sv = spec['stateSlots']
-    L.append('## 5. 工程状态位（跨会话「做到哪了」）')
+    L.append('## 6. 工程状态位（跨会话「做到哪了」）')
     L.append('')
     L.append('| 状态位 | 由哪步写入 | 挡住哪步 | 含义 |')
     L.append('|---|---|---|---|')
@@ -428,6 +471,20 @@ def validate(include_doc=True):
                             % (sid, s['gate'], '、'.join(sorted(GATE_CN))))
             if not s.get('gateHow'):
                 errs.append('步骤 %s 声明了闸门却没写 gateHow（闸门没法过 = 没闸门）' % sid)
+        # verify（验收判据）：**31 个 step 必须都有**，且三字段齐全。
+        # 为什么要求全覆盖而不是"可选"：流程的每一步都要能回答"做完了算不算过"——
+        # 可选就意味着有人会跳过，而跳过的那些恰恰是 AI 最容易含糊过去的步骤。
+        v = s.get('verify')
+        if not isinstance(v, dict):
+            errs.append('步骤 %s 缺 verify（验收判据：ok/notOk/evidence）' % sid)
+        else:
+            for f in VERIFY_FIELDS:
+                if not str(v.get(f) or '').strip():
+                    errs.append('步骤 %s 的 verify 缺 %s' % (sid, f))
+            for f in v:
+                if f not in VERIFY_FIELDS:
+                    errs.append('步骤 %s 的 verify 多了字段 %r（只许 %s）'
+                                % (sid, f, '/'.join(VERIFY_FIELDS)))
 
     # 流程
     for fid, f in flows().items():

@@ -61,7 +61,12 @@
       ],
       "gotchas": [
         "**平台是分叉点**：ARM（Z20/Z21/V85X/T113）与 RISC-V64（F133/F135）二进制不通用，包键也不同（`f133` / `f136`）；链库 `src/dependencies/lib/` 必须匹配平台 libc"
-      ]
+      ],
+      "verify": {
+        "ok": "平台与分辨率都来自用户原话或型号库查询结果",
+        "notOk": "按同系列型号外推，或分辨率留空就往下走",
+        "evidence": "返回体里 `model/platform` 与 `resolution` 都有确定值；缺任一项就停下问用户"
+      }
     },
     "find-pattern": {
       "title": "找相近模式（先查再画，省一轮返工）",
@@ -69,7 +74,12 @@
       "how": [
         "`flythings_knowledge_search(query=\"温控面板 布局\")`、`flythings_knowledge_search(query=\"仪表盘 控件\")`",
         "知识库里已有控件的尺寸 / 对比度 / 字库口径 —— 先用现成结论再动手"
-      ]
+      ],
+      "verify": {
+        "ok": "命中相近布局/控件的现成结论，并记下用了哪页",
+        "notOk": "跳过这步直接开画",
+        "evidence": "`knowledge_search` 返回的 path 为据；无命中可继续，但要在回复里写明「知识库无相近模式」"
+      }
     },
     "read-spec": {
       "title": "写码前必读规范（不能跳）",
@@ -81,7 +91,12 @@
       "gateHow": "没读过规范不许开始写 json / 写业务代码",
       "gotchas": [
         "关键三条：`src/activity/` 由 IDE 生成、禁手改；业务只写 `src/logic/*.cc`；图片尺寸必须 == 控件盒"
-      ]
+      ],
+      "verify": {
+        "ok": "拿全目录规则 + 生成规则 + 注意事项",
+        "notOk": "凭记忆写 ui json 的目录结构或业务代码位置",
+        "evidence": "`get_project_spec()` 返回非空，且已读过「目录规则」一节"
+      }
     },
     "judge-artifact": {
       "title": "先判形态（决定走哪条路）",
@@ -91,7 +106,12 @@
         "Figma 设计稿（能导出 HTML）→ 先在 Figma 导出 HTML，再走上一行",
         "**纯图片稿 / 截图** → 切图 → `flythings_generate_ui_assets` 或手工落图 → 按块搭 json",
         "只是「参考风格」→ 按图搭 json，样式口径走 `flythings_ui_schema`"
-      ]
+      ],
+      "verify": {
+        "ok": "四类形态之一被明确选中（HTML 原型 / Figma 导出的 HTML / 纯图片稿 / 仅参考风格）",
+        "notOk": "拿纯图片稿走 html_to_json（会得到空产物）",
+        "evidence": "回复里写出判定的形态与对应通路；纯图片稿要走切图通路"
+      }
     },
     "html-to-json": {
       "title": "HTML 原型 → ui json",
@@ -105,7 +125,12 @@
       "gotchas": [
         "转换**不保证**可用，必须过「schema 核对 + layout_audit + verify_assets」三道",
         "HTML 里没有的概念（`thumb` 子盒、`id` 约定、`@key` 多语言）要手工补"
-      ]
+      ],
+      "verify": {
+        "ok": "转换成功：控件数 > 0、产物图片都在 `<项目>/resources/images/`、未识别项已登记",
+        "notOk": "控件数为 0，或产物图片路径不存在",
+        "evidence": "返回体 `converted`/控件清单 + `unrecognized`；`flythings_verify_assets` 复核图片引用与尺寸"
+      }
     },
     "create-project": {
       "title": "建工程",
@@ -118,7 +143,12 @@
       "gateHow": "**设计先行**：新需求先出设计稿或原型并让用户确认，再建工程 —— 跳过确认就是返工",
       "setsState": [
         "projectCreated"
-      ]
+      ],
+      "verify": {
+        "ok": "工程骨架齐全（package.properties / ui/ / resources/images/ / src/），分辨率与平台已写入",
+        "notOk": "设计稿未经用户确认就建工程（返工），或分辨率与设计稿不一致（坐标全偏）",
+        "evidence": "`validate_project` 无 errors；`package.properties` 与 `ui/*.json` 的 resolution 一致"
+      }
     },
     "preview": {
       "title": "先出预览稿让用户点头",
@@ -131,7 +161,12 @@
       "gateHow": "把预览稿交给用户确认版式；**未确认不要 pack、不要写逻辑**（避免白写）",
       "setsState": [
         "designConfirmed"
-      ]
+      ],
+      "verify": {
+        "ok": "预览稿已交付且用户明确确认版式",
+        "notOk": "未确认就 pack 或写业务逻辑",
+        "evidence": "用户回复里出现确认（或改版意见已落回 json）；预览 html 路径存在"
+      }
     },
     "write-ui-json": {
       "title": "写 ui/*.json",
@@ -146,7 +181,12 @@
       ],
       "setsState": [
         "uiWritten"
-      ]
+      ],
+      "verify": {
+        "ok": "控件字段与必填键都来自 `ui_schema` 查询结果，json 可被 pack",
+        "notOk": "凭记忆写字段，或缺必填键（真机加载异常）",
+        "evidence": "`ui_schema(control_type=…)` 的返回为据；`layout_audit` 无 fatal"
+      }
     },
     "audit-ui": {
       "title": "三道核对（改完必跑）",
@@ -157,7 +197,12 @@
         "`flythings_verify_assets(project_root=…)` —— 引用是否存在 + PNG 尺寸是否 == 控件盒"
       ],
       "gate": "precondition",
-      "gateHow": "三道没过不许 pack —— 引擎对图片尺寸不匹配不报错，只能靠这一步抓"
+      "gateHow": "三道没过不许 pack —— 引擎对图片尺寸不匹配不报错，只能靠这一步抓",
+      "verify": {
+        "ok": "`validate_project` 无 errors 且 `layout_audit` 无遮挡/越界/触摸穿透",
+        "notOk": "只看 pack 成功就去推设备",
+        "evidence": "两个 op 的返回逐条为空或仅为 warnings；有 fatal 就必须改后重跑"
+      }
     },
     "gen-logic-stub": {
       "title": "补回调桩 → 再填业务",
@@ -172,7 +217,12 @@
       ],
       "setsState": [
         "stubsGenerated"
-      ]
+      ],
+      "verify": {
+        "ok": "桩与 `ui/*.json` 控件一一对应，无缺、无重复生成",
+        "notOk": "覆盖已有业务代码，或手写回调桩（绕过 op）",
+        "evidence": "`git diff` 只新增函数骨架；返回体的 affectedFiles 与控件数一致"
+      }
     },
     "survey-project": {
       "title": "先摸清现状（别凭文件名猜）",
@@ -184,7 +234,12 @@
       "gotchas": [
         "有哪些页 = `ui/*.json` 的文件名（每页一个 json）；分辨率在 `ui/*.json` 的 `resolution`",
         "id 只在 json 内引用；**回调名按 caption 拼**"
-      ]
+      ],
+      "verify": {
+        "ok": "分辨率、控件清单、caption→id 映射三者都拿到",
+        "notOk": "凭文件名猜页面结构",
+        "evidence": "`read_json` 返回含 caption/id 列表；`get_project_spec` 已读"
+      }
     },
     "edit-ui": {
       "title": "改 UI",
@@ -195,7 +250,12 @@
         "反向 ftu → json → `flythings_fui_unpack(...)`",
         "换图 / 加图 → `flythings_generate_ui_assets(...)` 到 `resources/images/`，json 引用写 `images/xx`",
         "整页版式重构 → 先 `flythings_ui_preview` 出稿让用户确认再改"
-      ]
+      ],
+      "verify": {
+        "ok": "改完 json 后 ftu 已重新 pack，两者内容一致",
+        "notOk": "手改 ftu（ftu 是产物，改了会被下次 pack 覆盖）",
+        "evidence": "`fui_unpack` 或 `read_json` 复核；`validate_project` 无 errors"
+      }
     },
     "map-control": {
       "title": "先查控件对应关系（别一边翻一边猜）",
@@ -208,7 +268,12 @@
         "L1/L2 = 有对等控件直接换；L3/L4 = 能拼 / 要组合；L5 = 平台真缺 → 才考虑做 `components/ui_v1/` 包",
         "未命中回 `NO_HIT` + 候选 + 缺口处置五级，**不会静默丢**",
         "**先把整份清单过一遍再动手** —— 控件级映射错，后面全返工"
-      ]
+      ],
+      "verify": {
+        "ok": "源控件对上目标控件，给出等价级别 L1~L5 与可粘贴片段",
+        "notOk": "未命中却自己造一个等价控件",
+        "evidence": "返回体 `level` + `snippet`；NO_HIT 时按 candidates 走人工确认"
+      }
     },
     "translate-ui": {
       "title": "源码 → ui json（自动翻译）",
@@ -221,21 +286,36 @@
       "gotchas": [
         "返回体看三样：`downgrades`（D-xx 降级项，逐个处置）/ `unrecognized`（未识别调用，**不会被丢掉**，逐条决定）/ `imageActions`（缺图处置）",
         "**只有 LVGL 有翻译器**（v1）；Qt QML / Android XML / 小程序 / emWin / MFC → 走 `flythings_map_control` 逐控件映射 + 手工搭 json"
-      ]
+      ],
+      "verify": {
+        "ok": "pack rc=0 且真机加载正常（无无声挂死）",
+        "notOk": "产物里控件字段写成字符串（子盒对象必须是对象），或整页无控件",
+        "evidence": "`fui_pack` rc=0 + 真机截图；`translate_ui` 返回的 `unrecognized`/`downgrades` 已登记"
+      }
     },
     "package-search": {
       "title": "检索包生态",
       "op": "flythings_package_search",
       "how": [
         "`flythings_package_search(keyword=\"mqtt\")` —— **有包用包，禁止手写协议栈 / 库**"
-      ]
+      ],
+      "verify": {
+        "ok": "命中时给出包名 + 平台可用性与依赖",
+        "notOk": "有现成包却手写协议栈/库",
+        "evidence": "`package_search` 返回体；未命中才考虑自实现并登记缺口"
+      }
     },
     "package-api": {
       "title": "看包内 API",
       "op": "flythings_get_package_api",
       "how": [
         "`flythings_get_package_api(...)` —— 包头文件级 API（**只认头文件，禁猜、禁反编译**）"
-      ]
+      ],
+      "verify": {
+        "ok": "API 清单来自包头文件",
+        "notOk": "猜 API 或反编译取签名",
+        "evidence": "返回体的头文件路径与签名列表；调用的每个方法都能在清单里找到"
+      }
     },
     "manifest-write": {
       "title": "写 Manifest",
@@ -246,7 +326,12 @@
       ],
       "gotchas": [
         "`fun install` 生成的 `generated/*.h` 固定 include `<base/functional.h>` → 缺 `base-utility` 会编译报错"
-      ]
+      ],
+      "verify": {
+        "ok": "Manifest 声明与源码 include 一致，`fun install` rc=0",
+        "notOk": "只写 Manifest 不 install（编译期缺库）",
+        "evidence": "`fun install` 输出 + `check_project_deps` 无 missing"
+      }
     },
     "resolve-deps": {
       "title": "解析依赖 + 核对声明",
@@ -254,7 +339,12 @@
       "how": [
         "`flythings_resolve_dependencies(packages=\"<包名>\", platform=\"<平台>\")` —— 递归解析 + 冲突 / 循环检查",
         "`flythings_check_project_deps(project_root=…)` —— 源码 `include` 与 Manifest 声明是否一致"
-      ]
+      ],
+      "verify": {
+        "ok": "递归依赖解析完成：无缺、无冲突、无循环；声明与 include 一致",
+        "notOk": "只看直接依赖，间接依赖留到编译期才炸",
+        "evidence": "`resolve_dependencies` 的 conflicts/cycles 为空 + `check_project_deps` 无 missing"
+      }
     },
     "preflight": {
       "title": "先体检，拿判据（别先动手）",
@@ -266,7 +356,12 @@
         "`= adapt_device`（读不出设计）→ 按面板重适配是**默认**动作",
         "`aspect = same`（比例相同或接近，≤3%）→ 允许等比；`aspect = diff` → **只能重排**"
       ],
-      "docRef": "knowledge/devflow/device-preflight-spec.md"
+      "docRef": "knowledge/devflow/device-preflight-spec.md",
+      "verify": {
+        "ok": "三项判据（分辨率/字库/体积）都有结论与来源",
+        "notOk": "跳过体检直接 build_ui_flow，或把 `decision.action=push` 当成要改盘",
+        "evidence": "返回体 `checks.*.decision`；面板 ≥ 设计时动作就是 push（什么都别改）"
+      }
     },
     "adapt-scale": {
       "title": "比例相同 / 接近 → 等比换算（机械活，别手工算）",
@@ -281,7 +376,12 @@
       "gotchas": [
         "换算按 `sx`/`sy` 分别处理 `left/width` 与 `top/height`；`fontSize` 跟 `sy`",
         "缩放**自封闭**：改完 json 的 `resolution` 就是面板 → 再体检会落回 `push`，不会反复放大"
-      ]
+      ],
+      "verify": {
+        "ok": "换算后：所有坐标/字号/画布尺寸严格等比，无越界",
+        "notOk": "手工拆项乘系数（漏项就错位），或用户没确认就落盘",
+        "evidence": "改盘前后各抓一张对比 + `layout_audit` 无越界；`adapt='force'` 才落盘"
+      }
     },
     "relayout": {
       "title": "比例不同 → 重排布局（判断活）",
@@ -300,7 +400,12 @@
         "⚠️ 改分辨率**只改布局，不用重编 / 重推 `.so`**（省一轮编译）；但**必须出新的 ftu**",
         "⚠️ 别拿 `virtual_size` 的高当屏高（双缓冲时 = 页数 × 屏高）；读不出就如实问，不要猜",
         "⚠️ 动布局前先确认**改的是 json**（`ui/*.json` 是源，`*.ftu` 是产物）"
-      ]
+      ],
+      "verify": {
+        "ok": "重排后各段高度累加 == 新画布高，无控件被截断或压扁",
+        "notOk": "比例不同还硬做等比缩放（界面变形）",
+        "evidence": "真机截图 + `layout_audit`；先出 plan 让用户确认分段再落盘"
+      }
     },
     "pack": {
       "title": "打包",
@@ -314,7 +419,12 @@
       ],
       "setsState": [
         "packed"
-      ]
+      ],
+      "verify": {
+        "ok": "ftu 生成、控件数与源 json 一致、分辨率一致",
+        "notOk": "改了 json 没重 pack（设备仍加载旧 ftu）",
+        "evidence": "`fui_pack` 返回的控件数/分辨率 + ftu 文件 mtime 晚于 json"
+      }
     },
     "launch": {
       "title": "编译部署到真机",
@@ -331,7 +441,12 @@
       ],
       "setsState": [
         "launched"
-      ]
+      ],
+      "verify": {
+        "ok": "应用在设备上跑起来：logcat 出现启动标记，抓屏是新帧",
+        "notOk": "进程 D 状态卡死，或抓到的是上一轮旧帧",
+        "evidence": "`build_ui_flow` 返回的 launch 活性结论 + `device_screenshot` 连抓两帧取第二张"
+      }
     },
     "screenshot": {
       "title": "抓真机屏幕",
@@ -345,7 +460,12 @@
       ],
       "setsState": [
         "screenshotTaken"
-      ]
+      ],
+      "verify": {
+        "ok": "抓到当前页、方向正确、内容非旧帧",
+        "notOk": "拿旧帧当结果（对比全错）",
+        "evidence": "连抓两帧看是否一致；`rotate` 与工程 `rotateScreen` 一致"
+      }
     },
     "visual-diff": {
       "title": "像素验收（还原度闭环）",
@@ -360,7 +480,12 @@
       ],
       "setsState": [
         "verified"
-      ]
+      ],
+      "verify": {
+        "ok": "差异清单为空，或每条差异都被判为可接受并写明理由",
+        "notOk": "只看整屏缩略图就说「还原了」",
+        "evidence": "`ui_visual(action='diff')` 的差异区清单（错位/缺图/配色三类）"
+      }
     },
     "troubleshoot-device": {
       "title": "无画面 / 黑屏排查",
@@ -368,7 +493,12 @@
       "how": [
         "顺序：**先日志**（事件到没到控件 / 回调进没进）**再像素**（抓帧要按 pan 取当前页）",
         "设备缺命令 → push busybox（见 `flythings://knowledge/devflow/busybox-debug-library.md`）"
-      ]
+      ],
+      "verify": {
+        "ok": "先日志（事件到没到、回调进没进）→ 再像素（按 pan 取当前帧），根因落到具体一环",
+        "notOk": "一上来就改布局/改代码（没定位就动手）",
+        "evidence": "logcat 片段 + 当前帧截图；设备缺命令时先 push busybox 再采"
+      }
     },
     "regress": {
       "title": "自动化回归",
@@ -376,7 +506,12 @@
       "how": [
         "`flythings_gen_ui_test(project_root=…)` 生成遍历 / 压测工程",
         "`flythings_test_run(...)` 多机并行跑（触摸注入 + 日志断言）"
-      ]
+      ],
+      "verify": {
+        "ok": "遍历/压测工程生成 + 用例跑完，基线比对通过",
+        "notOk": "把 no-baseline 的步骤报成「通过」",
+        "evidence": "`test_run` 的 JSON + JUnit 报告；no-baseline 必须如实列为 no-baseline"
+      }
     },
     "selfcheck": {
       "title": "整机自检",
@@ -384,21 +519,36 @@
       "how": [
         "`flythings_selfcheck(device=…)` —— 十一分区快照",
         "`ok=false` 是**结论**不是错误（如实报告，不要当异常抛）"
-      ]
+      ],
+      "verify": {
+        "ok": "分区快照全部执行，`ok=false` 的逐条给 hint 与结论",
+        "notOk": "把 `ok=false` 当异常抛掉，或只报总分",
+        "evidence": "返回体 `summary.total/failedSections`；读不到本身是结论，要如实报告"
+      }
     },
     "bugreport": {
       "title": "问题记录",
       "op": "flythings_bugreport",
       "how": [
         "`flythings_bugreport(...)` —— 把现象 / 复现 / 证据整理成问题单"
-      ]
+      ],
+      "verify": {
+        "ok": "问题单含现象/复现/期望/实际/证据，可直接转交",
+        "notOk": "只有一句描述、无复现与证据",
+        "evidence": "`bugreport` 渲染的文本；采不到真机数据时写明原因（未连设备/设备不可定位）"
+      }
     },
     "attach-cli": {
       "title": "交付随项目带工具",
       "op": "flythings_attach_cli_tools",
       "how": [
         "`flythings_attach_cli_tools(project_root=…)` —— 复制 fui / fun 到项目（对方不装 MCP 也能编译）"
-      ]
+      ],
+      "verify": {
+        "ok": "fui/fun 已复制到项目，交付后无需安装 MCP 即可编译",
+        "notOk": "只复制了一半（缺 fun 就无法 install/build）",
+        "evidence": "项目根有 `fun.exe`、`ui/` 下有 `fui.exe`；用项目自带工具链跑一次 build"
+      }
     },
     "i18n": {
       "title": "多语言",
@@ -406,7 +556,12 @@
       "how": [
         "`flythings_i18n_refactor`（写死文案抽 @key）→ `flythings_i18n_export` → 翻译 → `flythings_i18n_import` → `flythings_i18n_to_json`",
         "`fun launch` **不推翻译** —— i18n 改动必须 `flythings_i18n_to_json` 补推"
-      ]
+      ],
+      "verify": {
+        "ok": "文案全走 @key、翻译已 import 并 push，设备显示新语言",
+        "notOk": "改完 tr 不 push（设备仍跑旧翻译，logcat 刷 not found value）",
+        "evidence": "`i18n_to_json` 后设备文案变化；换行一律写 `&#x000A;`，json 里必须是真实 0x0A"
+      }
     }
   },
   "flows": {

@@ -89,6 +89,7 @@ def _find(need: str, limit: int = 6) -> str:
         return _err_json("CONTRACT_UNAVAILABLE",
                          "op 契约注册表不可用: %s: %s" % (type(e).__name__, e))
     scored = []
+    ex_hits = {}                                 # op → 出局词（命中即出局，见下 ①d）
     # ② 语义补一路：走**已有的知识检索**（本地向量 + BM25，已评测、有回归），
     #    命中文档 → 反查"哪些 op 以它为 docRef / seeAlso"（两跳，**不新造索引**）。
     #    为什么需要它：「屏比设计小怎么办」这种口语，字面触发词一条都命中不了，
@@ -115,6 +116,9 @@ def _find(need: str, limit: int = 6) -> str:
     for op in ops:
         s = osl.spec(op)
         score, hits = 0, []
+        ex = osl.exclude_hit(op, q)              # ①d 出局词（见下）
+        if ex:
+            ex_hits[op] = ex
         for t in (s.get('triggers') or []):      # ① 触发词：子串/滑窗（权重最高）
             h = ka.alias_hit(t, q) if t else 0
             if h:
@@ -136,6 +140,13 @@ def _find(need: str, limit: int = 6) -> str:
         if op in sem_ops:                        # ② 语义（知识检索命中它挂的文档）
             score += sem_ops[op]
             hits.append('语义')
+        if ex:
+            # ①d **出局制**（不是降权）：登记了 excludes 的 op，一旦命中就整个退出候选。
+            # 为什么出局而不是减分：减分只把它往后挪，而"同名词不同动作"的判断是**确定性的**
+            # ——「给客户看下效果」要的就是预览稿，此时把「建工程」留在候选里只会让 AI 犹豫
+            # （实测它靠「项目」这个词拿到 6 分居首，把 ui_preview 压到第 3）。
+            # 出局是**可追溯**的：命中的片段原样带出去（excluded），不静默吞掉。
+            continue
         if score:
             scored.append((score, op, s, hits))
     scored.sort(key=lambda r: (-r[0], r[1]))
@@ -153,6 +164,9 @@ def _find(need: str, limit: int = 6) -> str:
         if d and d not in docrefs:
             docrefs.append(d)
     out['count'] = len(out['candidates'])
+    # 出局明细（可追溯，不静默）：哪些 op 因为哪个词被排除。命中过的才列，避免噪声。
+    if ex_hits:
+        out['excluded'] = [{'op': op, 'by': ex_hits[op]} for op in sorted(ex_hits)]
     # 第三级：候选相关的知识（语义命中的文档优先，再补候选的 docRef）——
     # 这就是"调用过程中产生需要关联的知识再进知识库匹配"的入口：先给指针，要深了再 knowledge_search
     for d in docrefs:
