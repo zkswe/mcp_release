@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# 规格指针（DESIGN_SPEC 第 1.1 条）：本文件是**离线渲染器**，必须复现
+# `ui_schema.json.renderContract` 的引擎语义（`pic-scale` 拉伸填盒 / `progress-clip`
+# 1:1 贴 + `floor` 裁剪 / `thumb-size` 按 PNG 原尺寸 / `rounding` 用 floor）。
+# ⚠️ 已知未对齐：`draw_seekbar` 仍在用 `resize(..., NEAREST)` + `round`（= ⛔TWEAK 型偏差），
+# 会用 NEAREST 抽掉切图圆角、滑块位置与真机差 4px —— **不要用它的输出做视觉验收**。
 """
 json2img.py — FlyThings 布局 json → PNG 离线「引擎等价」渲染器（v0，PIL 像素级）
 

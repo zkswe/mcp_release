@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# 规格指针（DESIGN_SPEC 第 1.1 条）：本文件的合成口径实现 `ui_schema.json.renderContract` 的
+# `edge-aa` / `stroke-aa` / `nine-patch`（形状与符号一律走 gen_res 的覆盖率 API）。
 """界面块片段库组装器（MVP）——「选块 + 填值 + 排序」→ 可交付的 UI 产物。
 
 一句话：像用 Bootstrap 那样拼界面。输入一份 spec（分辨率 + 页面标题 + 块列表），

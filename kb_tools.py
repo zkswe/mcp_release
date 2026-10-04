@@ -732,7 +732,14 @@ def flythings_ui_schema(control_type: str = '', include: str = 'all') -> str:
                              for t, m in sorted((reg.get('controls') or {}).items())],
             'subStructures': sorted(reg.get('subStructures') or {}),
             'sharedTypes': sorted(reg.get('sharedTypes') or {}),
-            'hint': '指定 control_type 取完整 schema（如 control_type="seekbar"）',
+            # **视觉保真契约**跟着清单一起来（DESIGN_SPEC 第 1.1 条）：它必须是"设计前就能拿到"的规格，
+            # 否则 AI 只能等真机暴露再事后补特例 —— 那正是锯齿/白边这类问题复发 8 次的机制。
+            # 这里只带 id/rule/consequence（`scope` 留给按控件查询时带全，避免清单响应过大）。
+            'renderContract': [{'id': r.get('id'), 'rule': r.get('rule'),
+                                'consequence': r.get('consequence')}
+                               for r in (reg.get('renderContract') or {}).get('rows') or []],
+            'hint': '指定 control_type 取完整 schema（如 control_type="seekbar"）；'
+                    '视觉保真契约（renderContract）是**设计前必读**，判错会出什么缺陷见其 consequence',
             'warnings': []}, ensure_ascii=False)
     entry = (reg.get('controls') or {}).get(ct) or (reg.get('subStructures') or {}).get(ct)
     if entry is None:
@@ -753,6 +760,8 @@ def flythings_ui_schema(control_type: str = '', include: str = 'all') -> str:
            'defaults': _uischema.defaults(ct),
            'sharedTypes': {k: reg['sharedTypes'][k] for k in used_shared},
            'valueRules': reg.get('valueRules') or {},
+           # 按控件查询时带**全字段**（含 scope）：设计某个控件前要看的就是"哪几条管它"
+           'renderContract': (reg.get('renderContract') or {}).get('rows') or [],
            'warnings': []}
     inc = (include or 'all').strip().lower()
     if inc in ('fields', 'schema'):

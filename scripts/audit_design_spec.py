@@ -53,13 +53,33 @@ PLATFORM_EVIDENCE = re.compile(
     r'(?:V85X|Z20|Z21|T113|T113EMMC|F133|F135|F136|Z235X)'
     r'[^，。；)）]{0,14}?(?:实测|验证|验收|复核)')
 ID_SUFFIX = re.compile(r'^#{1,6}\s+.*[（(][^）)]*(踩过|踩坑|教训|复盘|返工|事故|血泪)[^）)]*[）)]\s*$')
+# ⑧ `⛔EXCUSE`（DESIGN_SPEC 第 1.2 条）：把**视觉/几何缺陷**登记成"已知代价/豁免"了事的话术。
+# 为什么单列一类：同一类症状（锯齿/硬阶梯/发虚/变粗/尺寸对不上）在 VERSION_HISTORY 里整改过 **8 次**，
+# 每次都在实现层被"消化"成一条豁免（"弧上 ~1.41px 属已知代价，不是 bug"），于是永远回不到规格。
+# 判据要求**同时**出现：豁免话术 + 视觉症状词 —— 只写"已知代价"不点症状（例如"这是浮点精度的已知代价"
+# 这类真陈述）不该被误伤。
+EXCUSE_PHRASE = re.compile(
+    r'(已知代价|已知偏差|已知差异|属正常(?:现象|行为)?|不是\s*bug|非\s*bug|不修|暂不修|'
+    r'接受该(?:代价|偏差)|白名单豁免|exempt|EXEMPT|忽略该|容忍该)')
+VISUAL_SYMPTOM = re.compile(
+    r'(锯齿|硬阶梯|硬边|发虚|发糊|模糊|漏白|白边|变粗|变形|椭圆|错位|偏差\s*\d+\s*px|'
+    r'抗锯齿|覆盖率|亚像素|重采样|缩回算子|插值)')
+KIND8 = '⑧ ⛔EXCUSE：把视觉缺陷登记成"已知代价/豁免"了事（应先归约为 renderContract 规格条目）'
+# ⑨ 改了**保真相关实现**却没带 `renderContract` 引用 —— 逼"先改规格、再改代码"。
+# 判据：文件里出现保真实现的关键符号（采样算子/AA 档位/取整/贴图语义），却一处都没提 renderContract。
+GUARD_SYMBOLS = ('bordered_cov', 'coverage_ring', 'coverage_mask', 'rounded_rect_cov',
+                 'Image.BOX', 'LANCZOS', 'NEAREST', 'antialias', 'box-sizing')
+KIND9 = '⑨ ⛔TWEAK：改了保真相关实现却没引用 renderContract（改算子/阈值前应先改规格）'
+GUARD_FILES = ('ui_tools/gen_res.py', 'ui_tools/html2json.py', 'ui_tools/json2img.py',
+               'ui_tools/check_all.py', 'templates/ui_blocks/compose.py')
 # ⚠️ 只认**修订动词**（更正/修正/勘正/订正/改判/复核/推翻/补录/收拢/移除/误写/失效），
 # **不认** `确认 / 实测 / 口径 / 拍板` —— 那三类是**正当的出处标注**（"2026-09-17 真机复核"
 # 是证据链，"2026-09-21 口径"是生效范围），第一版把它们也算上，48 处里大半是假阳性。
 ID_TAIL = re.compile(
     r'[（(]\s*(?:19|20)\d\d[-/年.]\d{1,2}(?:[-/.]\d{1,2})?\s*[^）)]*'
     r'(更正|修正|勘正|订正|改判|复核|推翻|补录|收拢|移除|误写|失效|误标)')
-CHECKS_ALL = CHECKS + [(KIND4, None), (KIND5, None), (KIND6, None), (KIND7, None)]
+CHECKS_ALL = CHECKS + [(KIND4, None), (KIND5, None), (KIND6, None), (KIND7, None), (KIND8, None),
+                       (KIND9, None)]
 
 # ④ 用子串而不是大正则：长行（rag_index 的 base64 blob）上正则回溯会炸（实测卡死）。
 # 判据 = 同时出现「症状词 + 归因标记 + 日期/版本号」。三者齐备才算"事故叙述"：
@@ -102,6 +122,32 @@ def _targets():
     return files
 
 
+def _guard_scan(out):
+    """⑨ ⛔TWEAK：保真相关实现文件里出现"采样算子/AA 口径"符号，却**一处都没引用** `renderContract`。
+
+    为什么单列一条（DESIGN_SPEC 第 1.2 条）：调算子/阈值/档位来"修"视觉问题，是这类问题
+    复发 8 次的直接机制 —— 改了实现、规格没动，下一个人（或下一个 AI）照旧踩。
+    这条不是判"不许改"，而是判"改了要**带规格引用**"（哪怕只写一句"照 renderContract.stroke-aa"）。
+    """
+    for rel in GUARD_FILES:
+        p = os.path.join(BASE, rel.replace('/', os.sep))
+        if not os.path.isfile(p):
+            continue
+        try:
+            txt = io.open(p, encoding='utf-8', errors='replace').read()
+        except OSError as e:
+            print('  [NOTE] 读不了，已跳过: %s（%s）' % (rel, e.strerror or type(e).__name__))
+            continue
+        if not any(sym in txt for sym in GUARD_SYMBOLS):
+            continue                      # 这文件不碰保真实现，不判
+        if 'renderContract' in txt:
+            continue                      # 已带规格引用
+        out.append({'kind': KIND9, 'doc': rel, 'line': 1,
+                    'text': '该文件改了保真相关实现（出现 %s）却未引用 `renderContract`；'
+                            '请在改动处注明依据的规格条目'
+                            % '、'.join(s for s in GUARD_SYMBOLS if s in txt)[:120]})
+
+
 def scan():
     out = []
     for rel in _targets():
@@ -136,6 +182,16 @@ def scan():
             if is_ui and PLATFORM_EVIDENCE.search(s):
                 out.append({'kind': KIND7, 'doc': rel, 'line': i, 'text': s[:200]})
                 continue
+            # ⑧ ⛔EXCUSE（DESIGN_SPEC 第 1.2 条）：**豁免话术 + 视觉症状词同句**才算。
+            # 单说"已知代价"不点症状的行（真陈述）不误伤；这条专抓"把视觉缺陷写成豁免"。
+            # 扫 md 与 json 都要（实测豁免话术主要住在知识页铁律里，不在注册表）。
+            # ⚠️ 自引用豁免：**规格本身**（renderContract 的 authority、op 契约里那条规则）
+            # 必然同时出现"豁免话术"与"症状词"（它就是在讲这件事）—— 实测会自命中 2 处。
+            # 判据是"实现里有没有把它写成豁免"，不是"规范里有没有提豁免这个词"。
+            if (EXCUSE_PHRASE.search(s) and VISUAL_SYMPTOM.search(s)
+                    and 'renderContract' not in s and 'DESIGN_SPEC' not in s):
+                out.append({'kind': KIND8, 'doc': rel, 'line': i, 'text': s[:200]})
+                continue
             if s.startswith('#'):
                 continue              # 标题行：①–④ 不看（⑤ 已单独判过）
             if s.startswith('```'):
@@ -166,6 +222,7 @@ def scan():
                 hit = KIND4
             if hit:
                 out.append({'kind': hit, 'doc': rel, 'line': i, 'text': s[:200]})
+    _guard_scan(out)                      # ⑨（文件级判据，不进逐行循环）
     return out
 
 

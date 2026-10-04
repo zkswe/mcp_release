@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# 规格指针（DESIGN_SPEC 第 1.1 条）：本文件的出图口径实现 `ui_schema.json.renderContract` 的
+# `edge-aa`（≥4× 超采样 + 面积平均，α = 覆盖率）、`stroke-aa`（整像素描边带的适用范围）、
+# `nine-patch`（扩边 + 引导线避开角切片）。改算子/档位前先看那三条。
 """CSS 效果 → PNG/.9.png 资源生成器（通用版，Pillow）
 
 用途：HTML 原型里的 CSS 效果（渐变/圆角/阴影/图标/loading 动效）FlyThings 不支持，

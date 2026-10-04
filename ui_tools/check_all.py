@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# 规格指针（DESIGN_SPEC 第 1.1 条）：本文件的判据实现 `ui_schema.json.renderContract` 的
+# `edge-aa` / `stroke-aa`（AA 审计项）。判据口径变更 = 规格变更，先改规格再改这里。
 """
 通用一键全检（通用工具 v1，不随项目复制）：python tools/ui_tools/check_all.py <项目根目录>
 依次执行：根节点 / 嵌套深度 / 特殊字符 / 图片引用 / 回调 / 指针 / 定时器表 / 括号 /

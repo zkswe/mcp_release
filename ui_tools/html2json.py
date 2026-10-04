@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# 规格指针（DESIGN_SPEC 第 1.1 条）：本文件的转换口径实现 `ui_schema.json.renderContract` 的
+# `pic-scale` / `progress-clip` / `thumb-size` / `alpha-compose` / `edge-aa` / `stroke-aa` /
+# `nine-patch` / `rounding` / `no-root-bg`。改贴图语义或 AA 口径前先看那几条。
 """受限 HTML → FlyThings JSON 布局转换器（通用工具 v1，不随项目复制）
 
 用途：HTML 交互原型（首版界面）→ 直接转成 ui/*.json 布局，
