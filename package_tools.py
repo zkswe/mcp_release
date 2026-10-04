@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """FlyThings package ecosystem tools: search, API docs, dependency resolution, manifest generation."""
+import io
 import json, os, re, sys, urllib.request, xml.etree.ElementTree as ET
 
 import platforms as _platforms  # 平台解析唯一来源（包生态键也在这里，别再各写一份）
@@ -327,37 +328,123 @@ def _extract_code_blocks(text, limit=5):
     return blocks[:limit]
 
 
-def _parse_header_classes(include_dir, max_classes=8):
-    """从头文件粗解析类与 public 方法签名"""
-    classes = []
+_TYPE_WORDS = ('bool', 'void', 'int', 'float', 'double', 'char', 'unsigned', 'long',
+               'short', 'size_t', 'uint8_t', 'uint16_t', 'uint32_t', 'uint64_t',
+               'int8_t', 'int16_t', 'int32_t', 'int64_t', 'std::', 'const', 'virtual',
+               'static', 'inline', 'explicit')
+
+# 头文件优先级：控件/应用层在前，内部实现与三方件在后。
+# 为什么要它（2026-10-05 实测）：原实现按 os.walk 顺序取，`max_classes` 一满就停，
+# 于是 easyui 只给出前 8 个（app/ 与 control/Common.h），**ZKPainter 这类真正要用的控件头拿不到**。
+_HEADER_PRIORITY = (
+    ('control/', 0), ('window/', 1), ('app/', 2), ('manager/', 3),
+    ('utils/', 4), ('media/', 5), ('json/', 6), ('os/', 7), ('system/', 8),
+    ('storage/', 9), ('security/', 10), ('entry/', 11), ('ime/', 12),
+)
+
+
+def _header_rank(rel):
+    for pre, rank in _HEADER_PRIORITY:
+        if rel.startswith(pre):
+            return rank
+    return 50
+
+
+def _iter_public_methods(lines):
+    """在一个类的 `public:` 区里取方法签名（**带上下文**，不是全文件瞎扫）。
+
+    原实现的两个错（2026-10-05 定位，正是「AI 写 painter 方法名不对」的机制）：
+      ① **类名张冠李戴**：`re.findall(r'class\\s+(\\w+)')` 取文件里前 3 个 class 字面量，
+         而真正导出的是 `class ZKPainter : public ZKBase`，被选中的却是 `class ZKPainterPrivate`
+         （内部 Pimpl）；方法还是**全文件**扫出来的，于是原样挂到 Private 名下 → AI 拿到的是
+         内部类的"方法表"。
+      ② **`max_classes=8` 就停**：走目录顺序，数满 8 个类直接 break → 后面的控件头永不出现。
+    另外**内部类名本身不该出现在给 AI 的 API 面上**（`*Private` / `*Impl` 是实现细节），
+    这里一并过滤；方法行也不再截断到 120 字符（参数默认值就在后半截）。
+    """
+    out, seen = [], set()
+    in_public = False
+    depth = 0
+    for raw in lines:
+        s = raw.strip()
+        if not s or s.startswith('//') or s.startswith('*') or s.startswith('/*'):
+            continue
+        if s.startswith('public:'):
+            in_public = True
+            depth = 0
+            continue
+        if s.startswith(('private:', 'protected:')):
+            in_public = False
+            continue
+        if not in_public:
+            continue
+        depth += s.count('{') - s.count('}')
+        if depth > 0:
+            continue                    # 内联函数体内部：跳过（签名行已过）
+        if ';' not in s or '{' in s:
+            continue
+        cand = s
+        if not s.startswith(_TYPE_WORDS):
+            m = re.search(r'\b([A-Za-z_]\w*)\s*\([^;]*\)\s*(?:const)?\s*;', s)
+            if not m:
+                continue
+            cand = s[m.start():]
+        if '`' in cand or ('"' in cand and 'return' in cand):
+            continue
+        if cand not in seen:
+            seen.add(cand)
+            out.append(cand)
+    return out
+
+
+def _parse_header_classes(include_dir, max_classes=8, focus=''):
+    """从头文件解析**公开类与 public 方法签名**（唯一实现，被 `flythings_get_package_api` 消费）。
+
+    `focus` 非空时只返回该类（大小写不敏感），且**不限数量**——"问一个类"是最高频用法，
+    返回 8 个无关类既费 token 又误导（`ZKPainter` 与 `ZKTextView` 的方法完全不可互换）。
+    """
     if not os.path.isdir(include_dir):
         return []
-    for root, _, files in os.walk(include_dir):
-        if len(classes) >= max_classes:
-            break
-        for fn in files:
-            if not fn.endswith(('.h', '.hpp')):
+    want = (focus or '').strip().lower()
+    files = []
+    for root, _, fs in os.walk(include_dir):
+        for fn in fs:
+            if fn.endswith(('.h', '.hpp')):
+                p = os.path.join(root, fn)
+                rel = os.path.relpath(p, include_dir).replace('\\', '/')
+                files.append((_header_rank(rel), rel, p))
+    files.sort(key=lambda t: (t[0], t[1]))
+
+    classes = []
+    for _rank, rel, path in files:
+        try:
+            lines = io.open(path, encoding='utf-8', errors='replace').read().splitlines()
+        except OSError as e:
+            # 不静默（DESIGN_SPEC 第 3 条 / 静默 except lint）：读不了的头文件要**报到 stderr**，
+            # 否则"少解析了几个类"看起来像"这个包就这些类"。
+            sys.stderr.write('[warn] 头文件读不了，已跳过: %s（%s）\n'
+                             % (rel, e.strerror or type(e).__name__))
+            continue
+        for m in re.finditer(r'^\s*class\s+(\w+)\s*(?::|\{|$)', '\n'.join(lines), re.M):
+            name = m.group(1)
+            if name.endswith(('Private', 'Impl')) or name in ('Class',):
                 continue
-            rel = os.path.relpath(os.path.join(root, fn), include_dir).replace('\\', '/')
-            try:
-                text = open(os.path.join(root, fn), encoding='utf-8', errors='replace').read()
-            except Exception:
+            if want and name.lower() != want:
                 continue
-            cls_names = re.findall(r'class\s+(\w+)', text)
-            methods = []
-            for line in text.split('\n'):
-                s = line.strip()
-                if re.match(r'^(bool|void|int|float|double|char|unsigned|long|std::|const|virtual|static)', s) \
-                        and '(' in s and ';' in s and not s.startswith(('if', 'for', 'while', 'return')):
-                    methods.append(s[:120])
-            if cls_names:
-                for cn in cls_names[:3]:
-                    entry = {'name': cn, 'header': rel}
-                    if methods:
-                        entry['methods'] = methods[:12]
-                    classes.append(entry)
-                    if len(classes) >= max_classes:
-                        break
+            start = '\n'.join(lines).count('\n', 0, m.start())
+            end = len(lines)
+            for j in range(start + 1, len(lines)):
+                if re.match(r'^\s*\}?\s*;\s*$', lines[j]):
+                    end = j
+                    break
+            methods = _iter_public_methods(lines[start:end])
+            if not methods:
+                continue                # 前向声明 / 无公开方法的类：不进 API 面
+            classes.append({'name': name, 'header': rel, 'methods': methods})
+            if want:
+                return classes         # focus：拿到就走
+            if len(classes) >= max_classes:
+                return classes
     return classes
 
 
@@ -793,15 +880,23 @@ def flythings_search_package(keyword, platform='F133'):
     return {'success': True, 'keyword': keyword, 'platform': platform, 'packages': results}
 
 
-def flythings_get_package_api(package_id, platform='F133', version=None):
-    """获取 package 的头文件路径、类方法签名、使用示例。"""
+def flythings_get_package_api(package_id, platform='F133', version=None, focus=''):
+    """获取 package 的头文件路径、类方法签名、使用示例。
+
+    `focus` = 只看某一个类（**不看**该包其它类）。为什么要有它（2026-10-05）：
+    ① 问"`ZKPainter` 怎么画弧"是最高频用法，而要用的那个类**常排在 8 名之外**——
+       原实现 `max_classes=8` 且按目录顺序取，easyui 永远只给前 8 个（app/ 与 Common.h），
+       `ZKPainter` 根本不出现；② 顺带返回 8 个无关类既费 token 又误导。
+    签名一律来自**本地 registry 头文件**（`<注册表>/<平台>/<包>/<版本>/include`），
+    不是本仓抄的副本 —— 换平台/换版本自动跟着变。
+    """
     versions = _pkg_versions(package_id, platform)
     v = version or (versions[0] if versions else None)  # versions 降序，[0] 为最新
     if not versions:
         return {'success': False, 'error': f'平台 {platform} 未找到包 {package_id}',
                 'card': package_card(package_id)}
     inc = os.path.join(_pkg_dir(package_id, platform), v, 'include')
-    classes = _parse_header_classes(inc) if os.path.isdir(inc) else []
+    classes = _parse_header_classes(inc, focus=focus) if os.path.isdir(inc) else []
     readme = _pkg_readme(package_id, platform, v)
     examples = _extract_code_blocks(readme)
     if not examples:

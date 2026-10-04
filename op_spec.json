@@ -1104,6 +1104,19 @@
         "包的 API",
         "有哪些方法",
         "看头文件"
+      ],
+      "params": [
+        {
+          "name": "package_id",
+          "desc": "包名（如 easyui / zkhardware / nanovg）"
+        },
+        {
+          "name": "focus",
+          "desc": "只看某一个类（大小写不敏感，如 `ZKPainter`）—— 问一个类时**必用**：不传它默认给前 8 个类，真正要用的控件类常排在 8 名之外"
+        }
+      ],
+      "rules": [
+        "**签名唯一真源 = 本地 registry 头文件**：`~/.fsc/registry/public/<平台>/<包>/<版本>/include`（实测 v85x / z20 各有 62 个 easyui 头）。本节只回答\"签名是什么\"，**头文件原文才对得上编译器**；知识页里写的是用法与注意事项，参数名/默认值一律以本 op 返回的签名为准（例：`drawRect(..., int radius = 0)` 的 `= 0`、`drawArc(int centerX, int centerY, int radiusX, ...)` 的参数名）。"
       ]
     },
     "flythings_resolve_dependencies": {

@@ -440,7 +440,8 @@
       "args": [
         "package_id",
         "platform",
-        "version"
+        "version",
+        "focus"
       ],
       "risk": "read",
       "category": "package",

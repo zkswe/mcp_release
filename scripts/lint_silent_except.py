@@ -35,7 +35,12 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASELINE = os.path.join(BASE, 'scripts', 'silent_except_baseline.txt')
 WHITELIST = os.path.join(BASE, 'scripts', 'silent_except_whitelist.txt')
 SKIP_DIRS = ('__pycache__', '.git', '.vscode', 'node_modules', 'build', 'dist',
-                  '.venv', 'venv', '.fsc', '.fun', 'toolchain')
+                  '.venv', 'venv', '.fsc', '.fun', 'toolchain',
+                  # `.gitignore` 覆盖的临时/派生区：里面的脚本是**一次性实验**（探针/测量/
+                  # 反例样本），本就不入库、也不受仓库代码标准约束。2026-10-05 实测：
+                  # 子任务把测量脚本写在 `temp/b6_scratch/` 下，lint 报了 3 处"新增静默 except"
+                  # —— 那不是仓库代码，是扫描范围错了（堵住"新增即红"这条判据的有效信号）。
+                  'temp', 'knowledge/_reports', 'knowledge/_logs', 'models', '.workbuddy')
 
 
 def sites(path):

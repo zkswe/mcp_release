@@ -73,6 +73,104 @@ class TestHermeticPaths(unittest.TestCase):
         finally:
             U.cleanup(tmp)
 
+    def test_path_fragments_are_not_flagged(self):
+        """当分隔符/相对前缀用的**路径片段**不许假红（`'/'`、`'..'`、`'C:'`、`'\\\\'`）。
+
+        2026-10-05 实测（TODO §B6 补 ②③④ 时踩到）：第一版把上面四个一律当"解析到仓外"
+        → 现有用例一口气**红 22 处** —— 它们是 `os.path.join(…, '..')`、`.replace('\\\\', '/')`、
+        `assertIn('C:', doc)` 里的字面量，`os.path.exists` 在 Windows 上都能解析到仓外/根目录。
+        判据只该判"指向某个**文件**的引用"，所以 ②③ 都要求 `isfile` + ③ 只认相对字面量。
+        """
+        import tempfile
+        tmp = tempfile.mkdtemp(prefix='mcp_hermetic_')
+        try:
+            p = os.path.join(tmp, 'frag_case.py')
+            with open(p, 'w', encoding='utf-8') as f:
+                f.write("SEP = '\\\\'\nUP = os.path.join(x, '..')\nDRV = 'C:'\nROOT = '/'\n")
+            hits = CC._test_hermetic_hits(p)
+            self.assertEqual(hits, [], '路径片段被当成夹具引用了：%s' % hits)
+        finally:
+            U.cleanup(tmp)
+
+    def test_scanner_flags_untracked_fixture_with_any_extension(self):
+        """合成样本：仓内**存在但没入 git** 的夹具必须被抓（docstring 的 ②）。
+
+        为什么单钉这一条：补之前 `_test_hermetic_hits` 里 `git ls-files` 的结果是**死代码**
+        —— 实测 `tests/fixtures/x.ftu`（存在、未入库）能静默通过两条判据（另一条
+        `stage_referenced_files_tracked` 只认 `.json/.py/.md` 文件名），fresh clone 上必挂。
+
+        用 `git init` 造一个**独立小仓**：判据按 `base` 解析与查索引，所以合成样本不必污染本仓。
+        """
+        import subprocess
+        import tempfile
+        tmp = tempfile.mkdtemp(prefix='mcp_hermetic_git_')
+        try:
+            r = subprocess.run(['git', 'init', '-q'], cwd=tmp,
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if r.returncode != 0:
+                self.skipTest('本机没有可用的 git → 该类判据按设计不判')
+            fx = os.path.join(tmp, 'tests', 'fixtures', 'zz', 'plain.ftu')
+            os.makedirs(os.path.dirname(fx))
+            with open(fx, 'w', encoding='utf-8') as f:
+                f.write('x\n')
+            p = os.path.join(tmp, 'case.py')
+            with open(p, 'w', encoding='utf-8') as f:
+                f.write("FIX = 'tests/fixtures/zz/plain.ftu'\n")
+            hits = CC._test_hermetic_hits(p, base=tmp)
+            self.assertEqual([h[2] for h in hits], ['untracked-path'],
+                             '未入库的夹具没被抓到：%s' % hits)
+            subprocess.run(['git', 'add', 'tests/fixtures/zz/plain.ftu'], cwd=tmp,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            self.assertEqual(CC._test_hermetic_hits(p, base=tmp), [],
+                             '入了库还报 → 判据只认"新建文件"，会恒红')
+        finally:
+            U.cleanup(tmp)
+
+    def test_scanner_flags_relative_sibling_file(self):
+        """合成样本：`../<兄弟目录>/x.py` 这类**仓外相对引用**必须被抓（docstring 的 ③）。
+
+        实测的现场形态是 `../ui_tools/check_all.py`（本机 `ui_tools` 是**仓外双份分发**的
+        另一份）—— 在作者机器上绿、在别人机器上红。同一类里只认**文件**：`'..'` 这种目录
+        片段不算（否则 `os.path.join(x, '..')` 会假红）。
+        """
+        import tempfile
+        tmp = tempfile.mkdtemp(prefix='mcp_hermetic_sib_')
+        try:
+            repo = os.path.join(tmp, 'repo')
+            sib = os.path.join(tmp, 'ui_tools')
+            os.makedirs(repo)
+            os.makedirs(sib)
+            with open(os.path.join(sib, 'check_all.py'), 'w', encoding='utf-8') as f:
+                f.write('x = 1\n')
+            p = os.path.join(repo, 'case.py')
+            with open(p, 'w', encoding='utf-8') as f:
+                f.write("P = '../ui_tools/check_all.py'\n")
+            self.assertEqual([h[2] for h in CC._test_hermetic_hits(p, base=repo)],
+                             ['outside-repo'])
+            with open(p, 'w', encoding='utf-8') as f:
+                f.write("P = os.path.join(here, '..')\n")     # 目录片段 → 不算
+            self.assertEqual(CC._test_hermetic_hits(p, base=repo), [])
+        finally:
+            U.cleanup(tmp)
+
+    def test_scanner_flags_hardcoded_repo_absolute_path(self):
+        """合成样本：写死**本仓**绝对路径必须被抓（docstring 的 ④，换机器即无效）。
+
+        不要求该路径存在：写死本身就是病（存在的那些由 ② 抓）。仓外绝对路径**不判**
+        —— `/tmp/busybox`、`C:/fake/adb.exe` 这类假值已被上一类用例钉成"不许假红"。
+        """
+        import tempfile
+        tmp = tempfile.mkdtemp(prefix='mcp_hermetic_abs_')
+        try:
+            p = os.path.join(tmp, 'abs_case.py')
+            mine = os.path.join(tmp, 'templates', 'Demo', 'ui', 'page.json').replace('\\', '/')
+            with open(p, 'w', encoding='utf-8') as f:
+                f.write("P = %r\n" % mine)
+            self.assertEqual([h[2] for h in CC._test_hermetic_hits(p, base=tmp)],
+                             ['repo-abs-path'])
+        finally:
+            U.cleanup(tmp)
+
     def test_scanner_survives_other_drive_path(self):
         """扫描目标在**另一个盘**时不许崩（Windows 实测：relpath 抛 ValueError）。
 

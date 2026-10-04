@@ -1171,13 +1171,16 @@ def flythings_package_search(keyword: str, platform: str = _platforms.DEFAULT_PL
     return json.dumps(pkgtools.flythings_search_package(keyword, platform), ensure_ascii=False)
 
 
-def flythings_get_package_api(package_id: str, platform: str = _platforms.DEFAULT_PLATFORM, version: str = '') -> str:
+def flythings_get_package_api(package_id: str, platform: str = _platforms.DEFAULT_PLATFORM,
+                              version: str = '', focus: str = '') -> str:
     """获取 package 的头文件路径、类方法签名、使用示例。传入包名与可选版本。
 
     触发：这个包怎么用 / 包的 API / 有哪些方法 / 看头文件
     ⚠️⚠️ **注册表没有 ≠ 平台没有**：设备 /lib 自带 nanovg / libpng12 / freetype / jpeg / mad / zlib，可 dlopen 免编译（先 `adb shell ls /lib` 核一遍）。
     """
-    return json.dumps(pkgtools.flythings_get_package_api(package_id, platform, version or None), ensure_ascii=False)
+    return json.dumps(pkgtools.flythings_get_package_api(package_id, platform,
+                                                         version or None, focus or ''),
+                      ensure_ascii=False)
 
 
 def flythings_resolve_dependencies(packages: str, platform: str = _platforms.DEFAULT_PLATFORM) -> str:
