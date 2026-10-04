@@ -39,6 +39,7 @@ py-modules = [
     "adb_tools",
     "configure",
     "derived_md",
+    "symptom_loader",
     "embed_local",
     "font_tools",
     "hardware_tools",

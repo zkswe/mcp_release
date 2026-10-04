@@ -1,16 +1,16 @@
 {
  "meta": {
   "schema": 1,
-  "built_at": "2026-10-04 19:59:46",
+  "built_at": "2026-10-04 20:18:01",
   "mcp_version": "0.27.195-open",
-  "doc_count": 112,
-  "source_hash": "60675aa83213a53ef951dfa9268e44bc"
+  "doc_count": 113,
+  "source_hash": "79f05e9b9daf9ec546094f014431a9e9"
  },
  "summary": {
-  "total": 112,
+  "total": 113,
   "byCategory": {
    "components": 1,
-   "devflow": 55,
+   "devflow": 56,
    "hardware": 6,
    "media": 1,
    "t113-car": 2,
@@ -18,12 +18,12 @@
    "v85x": 10
   },
   "byStatus": {
-   "review": 107,
+   "review": 108,
    "verified": 5
   },
-  "withEvidence": 15,
+  "withEvidence": 16,
   "needsEvidence": 97,
-  "noQueries": 78,
+  "noQueries": 79,
   "stale": 0,
   "inbox": 0,
   "aging": 0,
@@ -1029,8 +1029,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 11099,
-   "sha256": "a63ebc6367fb8c843f694b44c668c3328a9e10e5918fdb03b772de1fe638e2c9",
+   "bytes": 11220,
+   "sha256": "fc46dc99819c07795d9932e1017c7be69aac587d1b9327379cb0e100683ad211",
    "fingerprint": "a59b7a17a4e205ce",
    "ageDays": 5,
    "freshness": "fresh",
@@ -1968,6 +1968,53 @@
    "frontMatterError": ""
   },
   {
+   "id": "devflow-symptom-index",
+   "path": "knowledge/devflow/symptom-index.md",
+   "title": "现场症状索引（用户原话 → 机制/规范 → 权威文档，由 symptom_spec.json 派生）",
+   "category": "devflow",
+   "platforms": [],
+   "tags": [
+    "现场症状",
+    "症状索引",
+    "切一下才显示",
+    "拖不动",
+    "点了没反应",
+    "界面文件乱码",
+    "推上去没效果",
+    "图标发糊",
+    "图片有锯齿",
+    "client_id 互踢",
+    "串口收不全",
+    "半包重组",
+    "第二次进页面空白",
+    "改了没生效",
+    "返回再进页面就不对",
+    "改了数据界面没变"
+   ],
+   "status": "review",
+   "confidence": "manual",
+   "verified_at": "2026-10-04",
+   "stale_days": 180,
+   "origin": "derived",
+   "evidenceCount": 1,
+   "evidence": [
+    {
+     "cmd": "python scripts/gen_symptom_doc.py --check"
+    }
+   ],
+   "evidenceLevel": "has-evidence",
+   "needsEvidence": false,
+   "hasQueries": false,
+   "bytes": 5023,
+   "sha256": "1d6f264bbf4cd83ce573d5e22c8cb7a112cc83edbb3f2ca814ff5d89c4cd77d9",
+   "fingerprint": "f6fe18fc8219eb25",
+   "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 180,
+   "frontMatterError": ""
+  },
+  {
    "id": "devflow-touch-inject-autotest",
    "path": "knowledge/devflow/touch-inject-autotest.md",
    "title": "触摸注入/UI 自动化测试：先调现成 `touch` 工具（禁止先造轮子）",
@@ -2203,8 +2250,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 22952,
-   "sha256": "1622fea35995cf0ea45343fc5640141091f379c4f11fe69ec9b371be2d782922",
+   "bytes": 23063,
+   "sha256": "897db93f9ba113273b4e4a43b08fc38c841e3aab235aec45511bf7796e799f7a",
    "fingerprint": "3bba54108ad0943c",
    "ageDays": 5,
    "freshness": "fresh",
@@ -2250,8 +2297,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 18696,
-   "sha256": "ea774bebbf92861506eca1b26c8f2e608baa94ce1e8875bd23a97ab400c84055",
+   "bytes": 18816,
+   "sha256": "61031d64ca9d6fca85003274a167cf61795069edac91ab9ad54a21a949159a10",
    "fingerprint": "0cda50a289b48667",
    "ageDays": 5,
    "freshness": "fresh",

@@ -13,6 +13,7 @@ platforms: [F133, Z20, Z21, T113, V85X]
 tags: [RelayoutDemo, F133, 0 引入, 现有公开包的 z20, z21, 动态旋转, 运行时旋转, 横竖屏切换, 屏幕方向切换, 两套 ftu, relayout, setTouchRotate, EasyUI 版本要求, 控件看不到, 控件没渲染, 页面只有标题]
 evidence: []
 ---
+> 检索导引（补充真实问法）：改了 rotateScreen 编译却提示 no work to do / 改了旋转没重新编译
 # 🔄 动态旋转屏幕 / 运行时切换布局（relayout）
 
 > 检索导引：问「运行时转屏 / 横竖屏切换不重启应用 / relayout 怎么用 / setScreenRotate·setTouchRotate / 两套 ftu 怎么切 / 某版本不支持某控件（scrollwindow 看不到）」→ 本文；静态方向配置（`rotateScreen` / `rotateTouch` / 取图角度口径）见 `knowledge/devflow/package-properties-easyui-cfg.md` §9。

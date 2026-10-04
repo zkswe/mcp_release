@@ -1165,6 +1165,15 @@ def stage_delegated(skip_smoke, with_tests):
                if l.startswith('[PASS]') or l.startswith('[FAIL]')]
     check(rc == 0, 'delegated: gen_flow_doc --check (开发流程索引)',
           (fl_tail[-1] if fl_tail else 'rc=%d' % rc)[:70])
+    # 域①（2026-10-04）：现场症状注册表（symptom_spec.json）→ 可检索症状索引页。
+    # 口径：用户说的是**症状**（切一下才显示/拖不动），文档写的是**机制**；把症状单列一域
+    # （与人侧 error_codes.json 同构），口语只进注册表、不进正文散文（DESIGN_SPEC §1）。
+    # 本项同时跑 symptom_loader.validate()：doc 必须存在且不得指向派生页自己。
+    rc, out = _run([sys.executable, os.path.join(SUB, 'gen_symptom_doc.py'), '--check'])
+    sy_tail = [l for l in out.strip().splitlines()
+               if l.startswith('[PASS]') or l.startswith('[FAIL]')]
+    check(rc == 0, 'delegated: gen_symptom_doc --check (现场症状索引)',
+          (sy_tail[-1] if sy_tail else 'rc=%d' % rc)[:70])
     # v0.27.173（域⑫）：错误码表 —— 源码里出现的 code 必须已登记（防漏登记），
     # 登记的必须真有人抛（防孤儿码）；这直接决定失败返回里的 action 能不能补出来。
     try:
