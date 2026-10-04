@@ -988,6 +988,21 @@ def _test_hermetic_hits(path, base=None):
       ③ 存在但在**仓外**：解析后落在仓库之外（如 `../ui_tools`）—— 依赖作者的多仓布局
       ④ 直接写死了本仓库绝对路径（换机器即无效）
     抽成独立函数是为了**能被用例直接调**（否则「门禁没命中」无法与「门禁是空转」区分）。
+
+    判据边界（2026-10-05 补齐 ②③④ 时写清，避免"看起来扫了其实没扫"或"一口气假红"）：
+      · ②③ 要求目标**存在且是文件**才算 —— 不存在的串归 check_doc_refs（死指针），不是这里的事；
+        只判文件更关键：`'/'`、`'..'`、`'C:'` 这类**相对片段**在 Windows 上也能解析到仓外
+        目录（实测 `.replace('\\\\','/')` 里的 `'\\\\'`、`os.path.join(…,'..')` 里的 `'..'`
+        都会被解析出来），一律当引用判定会一口气假红 **22 处**（见 tests/test_hermetic_paths.py
+        的契约用例）；
+      · ③ 只判**相对**字面量（`../…`）：系统绝对路径（`/dev/null`、`/tmp/x`、`C:/Windows/…`）
+        不是"本仓夹具"问题，而且 `/tmp/busybox`、`C:/fake/adb.exe` 这类假值已被契约用例
+        钉成"不许假红"；
+      · ② 只判**未被 .gitignore 覆盖**的（ignore 区按设计不入库，由 ①/`gitignored-path` 表达）；
+        文件系统不区分大小写时按小写比对索引（实测 `readme.md` 会解析到 `README.md`）；
+      · ④ 只看**字面量形态**（绝对路径 + 落在仓内），不要求存在：写死本身就是病；
+      · git 索引取不到（git 不可用 / base 不是仓）时 ② **不判**，只报 ①③④ 与 ignore
+        —— 宁可不判，也不能把全部夹具判成"未入库"。
     """
     base = base or BASE
     try:
@@ -1002,11 +1017,21 @@ def _test_hermetic_hits(path, base=None):
                 and isinstance(n.body[0].value.value, str):
             doc.add(id(n.body[0].value))
     try:
-        tracked = set(l.replace('/', os.sep) for l in subprocess.run(
-            ['git', 'ls-files'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-            cwd=base, timeout=120).stdout.decode('utf-8', 'replace').split())
+        _ls = subprocess.run(['git', 'ls-files'], stdout=subprocess.PIPE,
+                             stderr=subprocess.DEVNULL, cwd=base, timeout=120)
+        tracked = set(l.replace('/', os.sep)
+                      for l in _ls.stdout.decode('utf-8', 'replace').split())
+        have_index = _ls.returncode == 0
     except Exception:
-        tracked = set()
+        tracked, have_index = set(), False
+    # 大小写：Windows/macOS 文件系统不区分、git 索引区分 → 在不区分大小写的平台上按小写比对
+    tracked_ci = (set(t.lower() for t in tracked)
+                  if os.path.normcase('A') == os.path.normcase('a') else None)
+
+    def _is_tracked(rel):
+        return (rel.replace('/', os.sep) in tracked
+                or (tracked_ci is not None and rel.lower() in tracked_ci))
+
     try:
         rel_self = os.path.relpath(path, base).replace(os.sep, '/')
     except ValueError:
@@ -1053,15 +1078,37 @@ def _test_hermetic_hits(path, base=None):
         except Exception:
             ignored = set()
 
+    def _inside(c):
+        """c 是否落在 base 之内（Windows 跨盘会抛 ValueError → 判"不在"）。"""
+        try:
+            return os.path.commonpath([os.path.abspath(c), base]) == base
+        except ValueError:
+            return False
+
     hits = []
     for ln, s in lits:
         kind = None
+        absolute = bool(re.match(r'^[A-Za-z]:/', s)) or s.startswith('/')
         if re.match(r'^temp/', s):
             kind = 'repo-temp'                # 仓库根临时区：设计上不入库，fresh clone 必无
+        elif absolute and _inside(_cands(s)[0]):
+            kind = 'repo-abs-path'            # ④ 写死本仓绝对路径（不判存在与否）
         else:
             for c in _cands(s):
-                if c in ignored and os.path.exists(c):
+                if not os.path.exists(c):
+                    continue                  # 不存在 → 归 check_doc_refs 管（死指针）
+                if c in ignored:
                     kind = 'gitignored-path'  # 字面量落在 .gitignore 区（夹具放错地方）
+                    break
+                if not _inside(c):
+                    # ③ 仓外依赖：只认**相对**字面量 + 真实文件（系统绝对路径/目录片段不算）
+                    if absolute or not os.path.isfile(c):
+                        continue
+                    kind = 'outside-repo'
+                    break
+                rel = os.path.relpath(os.path.abspath(c), base).replace(os.sep, '/')
+                if os.path.isfile(c) and have_index and not _is_tracked(rel):
+                    kind = 'untracked-path'   # ② 本机有、别人没有（fresh clone 上必缺）
                     break
         if not kind:
             continue
@@ -1079,6 +1126,13 @@ def stage_test_hermetic():
     （同步后实跑 failures=3，其中 2 条就是它）。同类还有绝对路径与 `../` 越界：
     它们在作者机器上绿、在别人机器上红，属**验证层的不可复现**。
     夹具要随仓走：放 `tests/fixtures/<名>/`（已入库）。
+
+    四类命中（细则见 `_test_hermetic_hits` 的 docstring）：`repo-temp`（`temp/…` 字面量）、
+    `gitignored-path`（落在 .gitignore 区）、`untracked-path`（存在但没 `git add`）、
+    `outside-repo`（解析到仓外）、`repo-abs-path`（写死本仓绝对路径）。
+    ②③④ 三类 2026-10-05 补齐：此前 docstring 承诺了、代码只实现了 ①+ignore，
+    `git ls-files` 的结果是**死代码** —— 实测当时"未入库的 .ftu 夹具 / `../ui_tools/x.py` /
+    写死本仓绝对路径"三种反例都能静默通过（TODO §B6）。
     """
     tdir = os.path.join(BASE, 'tests')
     bad, scanned = [], 0

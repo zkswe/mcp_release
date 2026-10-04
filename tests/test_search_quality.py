@@ -11,6 +11,42 @@ import unittest
 import _util as U
 
 
+def _load_check_retrieval():
+    """按路径加载检索回归脚本（它不是包成员），只取常量与判据函数。
+
+    脚本 import 时会 `sys.stdout.reconfigure(encoding='utf-8')`（CLI 需要，见该文件 :44）——
+    在测试进程里照做会改掉整个进程的 stdout 编码。这里用一次性 sink 顶掉，取完即还原：
+    不产生副作用，也不改被测脚本。
+    """
+    import importlib.util
+    import os
+    import sys
+
+    class _Sink(object):
+        def write(self, s):
+            return len(s)
+
+        def flush(self):
+            pass
+
+        def reconfigure(self, **kw):
+            pass
+
+    path = os.path.join(U.BASE, 'scripts', 'check_retrieval.py')
+    spec = importlib.util.spec_from_file_location('cr_for_test', path)
+    mod = importlib.util.module_from_spec(spec)
+    old = sys.stdout
+    try:
+        sys.stdout = _Sink()
+        spec.loader.exec_module(mod)
+    finally:
+        sys.stdout = old
+    return mod
+
+
+CR = _load_check_retrieval()
+
+
 class TestBM25Tokenizer(unittest.TestCase):
     def test_cjk_is_bigram_not_whole_run(self):
         import rag_search as rs
@@ -119,6 +155,96 @@ class TestSourceLabel(unittest.TestCase):
         bad = [rel for rel in bir.repo_rel_docs(U.BASE)
                if kb_tools._kb_source_label(rel) == 'wiki（官方镜像）']
         self.assertEqual(bad, [], '仓库内文档被误标成 wiki：%s' % bad[:5])
+
+
+class TestGlobalTop1Gate(unittest.TestCase):
+    """`scripts/check_retrieval.py` 的**全局 top-1 比例判据**（TODO §B2，2026-10-05 加）。
+
+    为什么需要它：每组的 `min_top1` 是按实测 −1 登记的，比对时又放宽 `DRIFT_SLACK_TOP1`
+    一条 —— 「单组不回退」有保证，**整体召回却能悄悄下滑**（很多组各掉一两条，全绿）。
+    本用例只钉**结构性质**，不钉任何数字（数字的真源是实跑结果，写进用例就是第二份真源）：
+      ① 判据存在、阈值已登记成模块常量且取值合理；
+      ② 默认走的就是那个常量（恰好在阈值上算通过，低一条就不通过）；
+      ③ 分子/分母**由传入的 summary 现算** —— 同一份 summary 拆分/合并比例不变、
+         命中数相同而分母翻倍时结论必须翻面（分母若被写死就翻不动）；
+      ④ 结论文本里必须打出分子/分母/百分比/组数（否则"整体滑坡"没法定位）；
+      ⑤ `main()` 真的调用它、失败真的进 `bad`（防"阈值在、判据空转"）。
+    """
+
+    def test_threshold_registered_and_sane(self):
+        r = CR.GLOBAL_TOP1_MIN_RATIO
+        self.assertIsInstance(r, float, '阈值要是浮点比例（不是百分数或字符串）')
+        self.assertGreater(r, 0.0, '阈值必须为正，否则判据恒绿')
+        self.assertLess(r, 1.0, '阈值必须严格小于 1，否则判据恒红')
+
+    def test_default_threshold_is_the_registered_constant(self):
+        """默认值 = 模块常量：恰好在阈值上通过（`>=`），低一条就必须失败。"""
+        import math
+        r = CR.GLOBAL_TOP1_MIN_RATIO
+        n = 10000
+        on = int(math.ceil(r * n))            # on/n >= r
+        ok, line = CR.global_top1_verdict([{'n': n, 'top1': on}])
+        self.assertTrue(ok, '恰好在登记阈值上必须算通过：%s' % line)
+        off = int(math.floor(r * n)) - 1      # off/n < r
+        ok2, line2 = CR.global_top1_verdict([{'n': n, 'top1': off}])
+        self.assertFalse(ok2, '低于登记阈值必须判失败：%s' % line2)
+
+    def test_numerator_and_denominator_are_computed_from_summary(self):
+        # 拆分/合并不改变结论：分母是现算的（不是写死的组数）
+        a = [{'n': 6, 'top1': 3}, {'n': 2, 'top1': 1}]      # 4/8 = 50%
+        b = [{'n': 8, 'top1': 4}]                           # 4/8 = 50%
+        oa, la = CR.global_top1_verdict(a, 0.72)
+        ob, lb = CR.global_top1_verdict(b, 0.72)
+        self.assertEqual((oa, ob), (False, False))
+        self.assertIn('4/8', la)
+        self.assertIn('4/8', lb)
+        # 命中数相同、分母翻倍 → 结论必须翻面（分母被写死就翻不动）
+        o1, _ = CR.global_top1_verdict([{'n': 4, 'top1': 3}], 0.72)   # 75%
+        o2, _ = CR.global_top1_verdict([{'n': 8, 'top1': 3}], 0.72)   # 37.5%
+        self.assertTrue(o1)
+        self.assertFalse(o2)
+
+    def test_line_prints_numbers_for_localization(self):
+        ok, line = CR.global_top1_verdict([{'n': 4, 'top1': 3}], 0.72)
+        self.assertTrue(ok)
+        for frag in ('3/4', '75.0%', '72%', '1 组'):
+            self.assertIn(frag, line, '判据行里缺 %r → 出问题无法定位：%s' % (frag, line))
+
+    def test_denominator_matches_real_groups(self):
+        """分母的来处：summary 的 `n` 必须是该组**真实问法数**（≥5），组数取自真实分组。"""
+        gs = CR._all_groups()
+        self.assertTrue(gs, '一组都没读到 → 后面的判据全是空转')
+        summary = [{'n': len(g['queries']), 'top1': 0} for g in gs]
+        num, den = CR.global_top1_counts(summary)
+        self.assertEqual(num, 0)
+        self.assertEqual(den, sum(len(g['queries']) for g in gs))
+        self.assertGreaterEqual(den, len(gs) * CR.MIN_QUERIES_PER_GROUP,
+                                '分母应 ≥ 组数 × 每组最小问法数（即分母是问法数，不是组数）')
+        ok, line = CR.global_top1_verdict(summary)
+        self.assertFalse(ok, '一条都没命中却判通过：%s' % line)
+        self.assertIn('%d 组' % len(gs), line)
+
+    def test_main_actually_gates_on_it(self):
+        """结构性质：`main()` 调用了判据，且失败进 `bad`（否则退出码仍 0 = 没判）。"""
+        import ast
+        import io
+        import os
+        with io.open(os.path.join(U.BASE, 'scripts', 'check_retrieval.py'),
+                     encoding='utf-8') as f:
+            src = f.read()
+        tree = ast.parse(src)
+        mains = [n for n in tree.body
+                 if isinstance(n, ast.FunctionDef) and n.name == 'main']
+        self.assertEqual(len(mains), 1, '没找到唯一的 main()')
+        calls = [n for n in ast.walk(mains[0]) if isinstance(n, ast.Call)
+                 and getattr(n.func, 'id', '') == 'global_top1_verdict']
+        self.assertTrue(calls, 'main() 没调用 global_top1_verdict → 判据空转（阈值在、没人用）')
+        guards = [n for n in ast.walk(mains[0]) if isinstance(n, ast.If)
+                  and isinstance(n.test, ast.Name) and n.test.id == 'ok_glob']
+        self.assertEqual(len(guards), 1, '没找到 `if ok_glob:` 这一处判据分支')
+        tail = '\n'.join(ast.get_source_segment(src, s) or '' for s in guards[0].orelse)
+        self.assertIn('bad.append', tail,
+                      '全局判据判失败时没进 bad → rc 仍为 0（等于没判）')
 
 
 if __name__ == '__main__':

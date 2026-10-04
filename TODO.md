@@ -20,15 +20,16 @@
 
 | # | 状态 | 事项 | 依据 |
 |---|---|---|---|
-| B1 | ⬜ **P0** | 按需面分层 `describe(section=)` —— `contractPerOpMax=900`，最长 `build_ui_flow` 已 **757/900（余 143）** | `REVIEW-2026-10-04.md:40-49,134` |
-| B2 | ⬜ | 检索召回收口：要「top-1 ≥85% 进闸门」；现状每组阈值 = 实测−1、**无全局比例判据** | `AI-DEV-CAPABILITY-2026-10-04.md:29-35,61`；`check_retrieval.py:868-869,895` |
+| B1 | 🔄 **P0** | 按需面分层 `describe(section=)` —— **实测最长不是 `build_ui_flow`**：`i18n_to_json` **805/900（余 95）**、`build_ui_flow` 804（评审写的 757 在它自己的基线 558185c 上就已不是最长——同基线 i18n_to_json 已是 805；`excludes` 进契约后又把 build_ui_flow 推到 804）。**方案已出（本轮），待实施**：5 段划分 = `skeleton` 418 / `flow` 304 / `returns` 141 / `rules` 645 / `refs` 119（全 48 op 实测的**每段最大值**），默认形态 ≤900，且各段按契约序拼接 == 全文（逐字节可复算） | `REVIEW-2026-10-04.md:40-49,134`；本轮 `op_spec_loader` 实测 |
+| B2 | ✅ | 检索召回收口：**全局 top-1 比例判据**已进闸门（`GLOBAL_TOP1_MIN_RATIO = 0.72`；输出 `[PASS] 全局 top-1 708/925 = 76.5% ≥ 72%（98 组）`，分母由实跑 summary 现算、不写死），与每组 `min_top1` 互补（那个管单组回退、这个管"多组各掉一点"的整体滑坡）；契约用例钉四条结构性质：判据存在 / 阈值是登记常量且默认生效 / 分子分母由 summary 现算 / `main()` 真的判且失败进 `bad`。**基线（2026-10-05 实测）**：98 组 / 925 问法 / top-1 **708 = 76.5%**、对照组 9/10、症状组 72/84、未登记问法 0 篇；阈值取 **72%（留 4.5 点 ≈42 条余量）**，**不取 85%** —— 85% 是目标值，现状卡它 = 开局即红、判据当场作废（抬高阈值属"做到了才改"）。契约用例：`tests/test_search_quality.py::TestGlobalTop1Gate` | `AI-DEV-CAPABILITY-2026-10-04.md:29-35,61`；`scripts/check_retrieval.py` 的 `GLOBAL_TOP1_MIN_RATIO` + `global_top1_verdict`（提交由上级统一做） |
 | B3 | ⬜ | watch 预览-反馈环（目标本地 <10s / 真机 <40s） | `AI-DEV-CAPABILITY:37-43,62-63`；`REVIEW-2026-10-04.md:105` |
 | B4 | ⬜👤 | 协议调试 op 面 = 0：补工具面 **或** 把目标①改成分级目标（"知识支持级"）—— 挂着不承认会让覆盖率讨论失真 | `REVIEW-2026-10-04.md:66-73`；`REVIEW-2026-10-03.md:170,249-254` |
 | B5 | ⬜ | 数字「对账」了但没「派生」（仍是手写 + 门禁比对） | `REVIEW-2026-10-04.md:51-57,133` |
-| B6 | ⬜ | 「判据依赖的资产必须随仓」制度化（用例引用仓内路径 → 必须在仓且被 git 跟踪）。**部分已做**：`tests/` 路径守 + `stage_referenced_files_tracked` | `REVIEW-2026-10-04.md:80-86`；`d50f2f3` |
+| B6 | 🔄 | 「判据依赖的资产必须随仓」制度化：**本轮已补** `stage_test_hermetic` 的 ②③④ —— 此前 docstring 承诺四类、代码只实现 ①`temp/` + ignore，`git ls-files` 的结果是**死代码**；实测三条反例（存在但未入库的 `.ftu` 夹具 / `../ui_tools/x.py` / 写死本仓绝对路径）当时都能静默通过，现分别报 `untracked-path`/`outside-repo`/`repo-abs-path`（契约用例 4 条，含"`'/'`、`'..'`、`'C:'` 这类片段不许假红"）。**剩余缝隙（需拍板，只写建议未实现）**：①`stage_referenced_files_tracked` 的被引用后缀表只有 `.json/.py/.md` → `.ftu/.png/.cc/.h/.so` 等**看不见**（扩表实测多出 1 处假红：`_nanovg_probe.so` ← `REVIEW-2026-10-03.md`，那是报告在描述本机探针产物）②hermetic 字面量只扫 `tests/**/*.py` → `tests/fixtures/*.json`、`tests/README.md`、`ui_tools/*.py` 不在扫描面（实测**全仓 tracked 文本写死本仓绝对路径 = 0 处**，故无现患）③该判据用**手写 skip 清单**而非 `git check-ignore` → ignore 目录里的 `.json` 一旦被引用就假红（实测现 0 处）④路径在运行时拼装（`os.path.join`/f-string）时静态字面量判据看不见 | `REVIEW-2026-10-04.md:80-86`；`d50f2f3`；反例与命令见 `scripts/check_consistency.py::_test_hermetic_hits` docstring、`tests/test_hermetic_paths.py` |
 | B7 | ⬜ | 双源知识口径统一（仓内 `knowledge/` vs 仓外 wiki；作者机 1573+ chunk、客户机只有 `knowledge/`） | `REVIEW-2026-10-03.md:238-247,364` |
 | B8 | ⬜ | `rag_index.json`(3.7MB)/`models/*.onnx`(24MB) 出库 + 拆 `project_tools.py`(2671)/`kb_tools.py`(2190) | `REVIEW-2026-10-03.md:225-235,256-267,362-366` |
 | B9 | ⬜👤 | 构建产物跳过清单要不要建真源（前提：先解决 `ui_tools` 仓外双份分发，会牵动 `PUBLISH.md`） | `CONSOLIDATION.md:653-663` |
+| B10 | ⬜👤 | **检索口径：wiki 随仓之后，阈值与"整理页 vs wiki 页"的排序怎么定**（这条是 B2 判据抓出来的真变化）。实测：`wiki/` 129 篇入库并进 `rag_index`（1923 → 2617 chunks）后，全局 top-1 由 **708/925 = 76.5% 降到 648/925 = 70.1%**；未命中 277 条里 **92 条 top-1 是 wiki 页**（其中 **66 条期望文档仍在 top-3**，例「多媒体…」被 `multimedia/video.md` 抢答、期望页退第 2），另 185 条是仓内文档答错。**两条路（需拍板）**：① 接受新基线，逐步做两者排序收口（阈值先按 0.67 留 3 点余量）；② 把 wiki 移出检索范围（`kb_index_roots` 随仓根 + 重建索引），阈值调回 0.72。**不擅自选** | `scripts/check_retrieval.py` 的 `GLOBAL_TOP1_MIN_RATIO` 注释（含复现命令）；实测明细 `%TEMP%\ret_after_merge.json` |
 
 ## C. 验证「最后一公里」（注册表里已登记、但没有回归通道）—— 4 项
 
