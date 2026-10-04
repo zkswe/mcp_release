@@ -5,14 +5,14 @@
 > 实测回填率 **2/13**（REVIEW-10-03 §6.4 的 0/4、REVIEW-10-04 §1.2 的 1/6、
 > AI 能力报告的 1/3），另有 15 项验证债散在 `components/*/platforms.md`、`packages/*/`。
 > 本表就是那两条通道的落点：**从报告与注册表反向汇总**，进表才算进计划。
-> 状态：⬜ 未开工 / 🔄 进行中 / ✅ 已完成 ｜ 👤 需需求方拍板 ｜ 🔌 需设备/样机
+> 状态：⬜ 未开工 / 🔄 进行中 / ✅ 已完成 / ⏸ **已决定缓办**（有明确理由压后，不阻塞当前计划；重启需需求方说一声）｜ 👤 需需求方拍板 ｜ 🔌 需设备/样机
 > 纪律：完成一项就在原处改 ✅ 并注明落在哪个提交；**不要另抄一张表**。
 
 ## A. 真源与知识页的自相矛盾（会直接误导 AI 选型）—— 3 项
 
 | # | 状态 | 事项 | 依据 |
 |---|---|---|---|
-| A1 | ⬜👤 | **vinyl 在 V85X 仍不可编，但卡点换了**（2026-10-05 真机工具链实编）：`nanovg.h` 那关**已过**（随仓 `.so` 与设备 `/lib` 那份 md5 逐字节相同），真正的卡点是 `zk_vinyl.cpp:40` 的 **`misc/image_utility.h`** —— 不在任何 easyui 包（V85X 2.9.0 / Z20 2.6.0 的 `include/` 都无 `misc/`）、不在仓、设备 `libeasyui.so` 也无 `misc::*` 符号。**出路（需拍板）**：① 厂商补该头（+实现）；② 把 `misc::image_load/bitmap_scale/bitmap_create/bitmap_destroy` 改写成 easyui 真有的 `utils/BitmapHelper.h`。另：`fun install` 仍拉不到 nanovg（`FATAL 未找到依赖包`） | 实测：`zk_vinyl.cpp:40` fatal error；`platform_capabilities.json` vinyl/V85X 行 |
+| A1 | ⏸👤 | **vinyl 在 V85X 仍不可编，但卡点换了**（2026-10-05 真机工具链实编）：`nanovg.h` 那关**已过**（随仓 `.so` 与设备 `/lib` 那份 md5 逐字节相同），真正的卡点是 `zk_vinyl.cpp:40` 的 **`misc/image_utility.h`** —— 不在任何 easyui 包（V85X 2.9.0 / Z20 2.6.0 的 `include/` 都无 `misc/`）、不在仓、设备 `libeasyui.so` 也无 `misc::*` 符号。**出路（两条都已记档、暂不选）**：① 厂商补该头（+实现）；② 把 `misc::image_load/bitmap_scale/bitmap_create/bitmap_destroy` 改写成 easyui 真有的 `utils/BitmapHelper.h`。另：`fun install` 仍拉不到 nanovg（`FATAL 未找到依赖包`）。**⏸ 决定（需求方 2026-10-05）：nanovg 这一路在 V85X 暂不处理、优先级放低，后期需要时再补** —— 所以本项**不阻塞任何当前计划**，两条出路保持记档、不排期；要重启时先看本节「依据」列的两条实测证据 | 实测：`zk_vinyl.cpp:40` fatal error；`platform_capabilities.json` vinyl/V85X 行 |
 | A2 | ✅ | blend2d V85X **转正为「可用（已验）」**：本仓自编档 `lib/v85x/`（1,846,636 B / md5 `ED1569…`，NEEDED = `libstdc++.so.6` + `libc.so`(musl) + `libgcc_s.so.1`）→ `fun build` **169/169 → `libzkgui.so`** → 门面 `zk::b2d::Canvas` 真机跑通（480×480 **avg 5.010 ms/帧**、800×1280 avg 7.862 ms/帧，`savePng` 出图目检正确）。真源与 4 处文档已同步。⚠️ 该档**未 strip**；`blend2d.h` 不在仓 → 随仓可复现的是「链接 + 真机运行」 | 2026-10-05 实测；`components/blend2d/lib/v85x/BUILD.md` |
 | A3 | ✅ | 5 处读数打架全部判定并修正：① nanovg「未上真机」错（`platforms.md` 对）② i18n 页说没有 `textview-fields.md` 错（该页已存在）③ fonts 把 cmap 列为「待办」错（它早已是**主判据**，体积阈值只是兜底）④ `textview-fields.md` 两处自相矛盾（`rollStep` 单位已定于 `ui_schema.json` 真源）⑤ 顺带：`packages/README.md:30` 两处错（nanovg 状态 + 该包是唯一缺 `example/` 的） | 见本表 §C5 与各文件现值 |
 
