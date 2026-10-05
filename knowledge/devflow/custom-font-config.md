@@ -30,13 +30,13 @@ evidence: []
 - **字库是运行时资源，不参与编译**，`fun launch` 随资源一起推送
 - 平台：**Z20 / Z21 / H500S / T113 / V85X 及后续平台系统内置 fzcircle.ttf**（思源黑体裁剪版）；**项目 font/ 存在字体后，完全使用项目字体**
 - 字库不含 emoji / 特殊符号（■ ● ⌫ ℃ ▲ ▼ 等）→ 布局文本只用**汉字 + ASCII + 基础符号**（/ % # - _ 空格），图标一律转 PNG
-- 实测样例：mark_cv201（CV201_PND / CV201_PND_1024_600）根目录 `font/sans.ttf` + package.properties `enable.font.location=true` = fun 流程标准用法
+- 实测样例：某车载 PND 工程（双分辨率）根目录 `font/sans.ttf` + package.properties `enable.font.location=true` = fun 流程标准用法
 
 ## ⚠️ AI 引导规则（2026-09-03 定规）
 
 - 用户说"换库" → **直接按上述 4 步执行**，不要先翻 IDE 项目属性那套
 - wiki `wiki/flythings/font/font_setting.md` 是 **IDE 视角**（单字体走项目属性导入、多字体 setFontFamily），fun 流程**以本条为准**
-- "改 .prefs font 字段"（v0.13 记录，KlipperF133 案例）属 IDE 工程做法，fun 流程项目不要用
+- "改 .prefs font 字段"（v0.13 记录，某内部工程案例）属 IDE 工程做法，fun 流程项目不要用
 
 ## 常见坑
 

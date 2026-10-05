@@ -115,6 +115,17 @@ def scan():
 
 
 def classify(hits):
+    # 发布/裁剪构建的边界：这些前缀的内容**按发布边界被有意剔除**（PUBLISH.md §3），
+    # 保留文档里指向它们的从句是"去哪要"的正当指针，不算死指针。
+    # ⚠️ 只在**构建里确实没有该目录**时才放行 —— 内部 master 有这些目录时照旧严格判红
+    #    （否则等于给自己开白名单，把真死指针也放过）。
+    pruned_ok = {'demos/': '发布边界：参考工程不随公开版（PUBLISH.md §3）',
+                 'knowledge/v85x/': '发布边界：V85X 深度不随公开版（PUBLISH.md §3）',
+                 'knowledge/t113-car/': '发布边界：方案类不随公开版（PUBLISH.md §3）',
+                 'knowledge/devflow/kb-first-analysis.md': '内部检索铁律，不随公开版',
+                 'knowledge/devflow/gui-controls-gap.md': '内部控件盘点，不随公开版'}
+    live_pruned = {k: v for k, v in pruned_ok.items()
+                   if not os.path.exists(os.path.join(BASE, k.replace('/', os.sep)))}
     real, allowed = [], []
     for ref, refs in sorted(hits.items()):
         why = None
@@ -122,6 +133,8 @@ def classify(hits):
             why = ALLOW_REF[ref]
         elif any(ref.startswith(p) for p in ALLOW_PATH_PREFIX):
             why = ALLOW_PATH_PREFIX[[p for p in ALLOW_PATH_PREFIX if ref.startswith(p)][0]]
+        elif any(ref.startswith(p) for p in live_pruned):
+            why = live_pruned[[p for p in live_pruned if ref.startswith(p)][0]]
         elif refs and all(f in ALLOW_FILE for f, _i, _t in refs):
             why = ALLOW_FILE[refs[0][0]]
         elif refs and all(any(f.startswith(p) for p in ALLOW_PREFIX) for f, _i, _t in refs):

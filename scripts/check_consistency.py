@@ -1558,7 +1558,13 @@ def stage_delegated(skip_smoke, with_tests):
         check(rc == 0, 'delegated: smoke.py', last[0] if last else 'rc=%d' % rc)
     # 检索质量回归（v0.27.94 起进门禁）：16 条真实问法必须一次命中权威文档 + 11 条对照组防调参副作用。
     # 无需向量模型也能跑（自动降级 BM25，实测同样 16/16），耗时 ~4s。
-    rc, out = _run([sys.executable, os.path.join(SUB, 'check_retrieval.py')])
+    # 发布/裁剪构建（如 release 分支，PUBLISH.md §3 剔了内部文档）里，指向被剔文档的**整组**
+    # 显式跳过并列名 —— 否则那几组问法全落空，会把"按发布边界剔除"误报成"检索滑坡"。
+    # 判据是**构建里有没有 PUBLISH.md**（内部版必有），不是环境变量：git 切分支即生效、不会忘传。
+    _rel_argv = []
+    if not os.path.isfile(os.path.join(BASE, 'PUBLISH.md')):
+        _rel_argv = ['--skip-missing-docs']
+    rc, out = _run([sys.executable, os.path.join(SUB, 'check_retrieval.py')] + _rel_argv)
     last = [l for l in out.strip().splitlines()
             if l.startswith('[PASS]') or l.startswith('[FAIL]')]
     check(rc == 0, 'delegated: check_retrieval.py',

@@ -121,6 +121,8 @@ class TestForbiddenMeansAudited(unittest.TestCase):
 
     def test_design_spec_states_the_rule(self):
         """设计源规范必须有第 1.1（规格先行）与 1.2（两类禁止手段）两节。"""
+        if not os.path.isfile(os.path.join(BASE, 'PUBLISH.md')):
+            self.skipTest('裁剪发布版（PUBLISH.md 不随包）：该内部件/私有包按发布边界剔除')
         t = io.open(os.path.join(BASE, 'DESIGN_SPEC.md'), encoding='utf-8').read()
         self.assertIn('## 1.1 规格先行', t)
         self.assertIn('## 1.2 禁止的两类', t)
@@ -140,6 +142,8 @@ class TestReviewRecordIsSeparate(unittest.TestCase):
     """④ 检讨记录与规范分开：复盘写进 `CONSOLIDATION_VISUAL.md`，**不进规范文本**。"""
 
     def test_review_doc_exists_and_is_marked_as_record(self):
+        if not os.path.isfile(os.path.join(BASE, 'PUBLISH.md')):
+            self.skipTest('裁剪发布版（PUBLISH.md 不随包）：该内部件/私有包按发布边界剔除')
         p = os.path.join(BASE, 'CONSOLIDATION_VISUAL.md')
         self.assertTrue(os.path.isfile(p), '缺复盘记录 CONSOLIDATION_VISUAL.md')
         t = io.open(p, encoding='utf-8').read()

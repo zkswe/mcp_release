@@ -233,6 +233,8 @@ class TestMisconceptionFrozen(unittest.TestCase):
 
     def test_allowlist_is_not_empty_and_points_to_real_files(self):
         """豁免名单本身要可核（防止「豁免一个不存在的文件」把门禁架空）。"""
+        if not os.path.isfile(os.path.join(U.BASE, 'PUBLISH.md')):
+            self.skipTest('裁剪发布版（PUBLISH.md 不随包）：该内部件/私有包按发布边界剔除')
         for rel in self.ALLOW_FILES:
             self.assertTrue(os.path.isfile(os.path.join(U.BASE, rel)), '豁免文件不存在: %s' % rel)
 

@@ -17,7 +17,7 @@
 
 ## 来源与版本
 
-- 来源：FlyThings IDE 自带的 `sdk/platform-tools/adb/`（与本包 `toolchain/fun.exe`、`fui.exe` 同源发布链）。
+- 来源：FlyThings IDE 自带的 `sdk/platform-tools/adb/`（与 `fun` / `fui` 同源发布链；`fun.exe` 由 IDE 工具链分发，不随本包）。
 - 实测版本（随包入库时用本目录的 adb 亲自跑）：
 
 ```

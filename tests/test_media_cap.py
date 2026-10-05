@@ -77,6 +77,8 @@ class TestMediaCapRegistry(unittest.TestCase):
 
     def test_06_可用性联接与平台归一(self):
         """⑥ availability 来自包目录；平台名走 platforms.py（f136/f136emmc → F135）。"""
+        if not os.path.isfile(os.path.join(BASE, 'PUBLISH.md')):
+            self.skipTest('裁剪发布版（PUBLISH.md 不随包）：该内部件/私有包按发布边界剔除')
         av = mc.availability('dvr-camera-preview')
         self.assertIn('V85X', av, 'DVR 预览应有 V85X')
         self.assertIn('aw-dvr', av['V85X'])
@@ -137,6 +139,8 @@ class TestMediaCapRegistry(unittest.TestCase):
 
     def test_11_反向索引(self):
         """⑪ 包 → 能力（换包时知道会影响哪些能力）。"""
+        if not os.path.isfile(os.path.join(BASE, 'PUBLISH.md')):
+            self.skipTest('裁剪发布版（PUBLISH.md 不随包）：该内部件/私有包按发布边界剔除')
         self.assertIn('dvr-camera-preview', mc.caps_for_package('aw-dvr'))
         self.assertEqual(mc.caps_for_package('不存在的包'), [])
 

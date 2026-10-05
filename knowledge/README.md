@@ -26,5 +26,5 @@
 - **近期特性史精简**：治理约定 = `features_recent.json` 只保留近期精华 + 能力概括（`compact=False` 取近期全量；原 kb_tools 内联 `MCP_FEATURES`，2026-10-01 起数据外置）；**更早版本史归档在仓库根 `VERSION_HISTORY.md`**（CHANGELOG.md 已冻结为历史归档）
 
 ## 4. 红线
-- 真实 accessKey / 内部工程名（CV201/mark_cv201/UvcJpegTest 等）不进 open 分发内容（master 内部版保留工程上下文，release 版去工程化）
+- 真实 accessKey / 内部工程名与本机路径不进 open 分发内容（内部版保留工程上下文，release 版去工程化）
 - v85x 深度、方案类（tuya/voip/lylink/车载）只进内部 master，不进 release（PUBLISH.md §3）

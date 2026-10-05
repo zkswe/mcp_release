@@ -145,6 +145,6 @@ p->refreshListView();
 listViewDemo-New（增删改查完整 demo：标题+选择钮+删除钮三 subitem）；NetDemo-New（setListAdapter 编程式）；git.com 各产品列表页（38+ 工程在用）。
 封面列表（带图片缓存）真机案例：**`projects/iOSStyle-F133`**（推荐/榜单/搜索结果三个封面列表，
 口径 `knowledge/uicontrols/listview-image-cache.md` + 组件 `components/imagecache/`）。
-滚轮选择器：`projects/SampleUI-New` 的 `ListviewTimePicker`（3 行循环列表 + 点行选中；口径 `knowledge/uicontrols/listview-wheel-picker.md`）+ 案例
+滚轮选择器：`<厂家基准工程>` 的 `ListviewTimePicker`（3 行循环列表 + 点行选中；口径 `knowledge/uicontrols/listview-wheel-picker.md`）+ 案例
 `projects/translate/tdesign-miniprogram`（5 列 176×180、可见 5 行、正中行 = 选中行 + **选中条挂静态背景层**，
 真机 `s4c_*` 30 项验收全 PASS）。

@@ -4,13 +4,36 @@
   "authority": "「现场症状 → 机制/规范 → 权威文档」的唯一真源。派生页 knowledge/devflow/symptom-index.md（gen_symptom_doc.py --check 进闸门）。设计口径见 DESIGN_SPEC.md §1：**不记录踩坑故事，只留规范**——症状词只进本表，不进正文散文。",
   "why": "FlyThings 的模型先验 ≈ 0，AI 全靠检索。而用户描述现场问题时用的是**症状语言**（'切一下才显示''拖不动'），与文档的**机制语言**天然错位。把症状单独立一个域（与人侧的错误码 error_codes.json 同构），检索就能从症状直接落到规范与权威页，不必把口语撒进每篇正文。",
   "rule": "新增一条现场症状 → 先问「能不能从设计端消灭」（判据/工具/模板）；消灭不了才登记本表，且必须写 机制 + 规范 + 复验方法 + 权威文档。禁止把症状口语写进正文文档充数。",
-  "tags": ["现场症状", "症状索引", "切一下才显示", "拖不动", "点了没反应", "界面文件乱码",
-           "推上去没效果", "图标发糊", "图片有锯齿", "client_id 互踢", "串口收不全",
-           "半包重组", "第二次进页面空白", "改了没生效", "控件谁盖谁", "有哪些字段"],
+  "tags": [
+    "现场症状",
+    "症状索引",
+    "切一下才显示",
+    "拖不动",
+    "点了没反应",
+    "界面文件乱码",
+    "推上去没效果",
+    "图标发糊",
+    "图片有锯齿",
+    "client_id 互踢",
+    "串口收不全",
+    "半包重组",
+    "第二次进页面空白",
+    "改了没生效",
+    "控件谁盖谁",
+    "有哪些字段"
+  ],
   "entries": [
     {
       "id": "no-refresh-after-return",
-      "symptom": ["切一下才显示", "切页回来后界面不对", "切到别的页再切回来才对", "返回再进页面内容就不对了", "第二次进页面显示空白", "界面要切一下才刷新", "改了数据界面没变"],
+      "symptom": [
+        "切一下才显示",
+        "切页回来后界面不对",
+        "切到别的页再切回来才对",
+        "返回再进页面内容就不对了",
+        "第二次进页面显示空白",
+        "界面要切一下才刷新",
+        "改了数据界面没变"
+      ],
       "mechanism": "整屏 window 切换走的是重绘而不是重建；控件值在进入前写、或没触发重绘，画面就停在旧帧。",
       "rule": "页面数据在 onUI_show() 里写，并显式触发重绘；不要只在构造/首次加载时写。",
       "doc": "knowledge/devflow/activity-code-skeleton.md",
@@ -19,7 +42,12 @@
     },
     {
       "id": "cannot-drag",
-      "symptom": ["拖不动", "点了没反应", "不跟手", "一拖就卡死"],
+      "symptom": [
+        "拖不动",
+        "点了没反应",
+        "不跟手",
+        "一拖就卡死"
+      ],
       "mechanism": "触摸分发只发给 touchable=true 的控件；可交互控件若没显式打开触摸，事件根本不进回调。另有回调里做耗时活（滚动时逐行调用）会表现为卡死。",
       "rule": "交互控件 json 必须显式 touchable=true；obtainListItemData_* 等高频回调里禁止耗时操作。",
       "doc": "knowledge/uicontrols/touch-events.md",
@@ -28,7 +56,10 @@
     },
     {
       "id": "touch-inject-zero-coord",
-      "symptom": ["点了屏幕没反应坐标都是0", "注入点击没反应"],
+      "symptom": [
+        "点了屏幕没反应坐标都是0",
+        "注入点击没反应"
+      ],
       "mechanism": "注入用的设备节点/协议与真机不匹配时，坐标回读为 0 —— 是**注入没生效**，不是界面没响应。",
       "rule": "坐标回读为 0 先判注入通道（bin_tools 的 touch 会自动判协议）；别据此断定控件问题。",
       "doc": "knowledge/devflow/touch-inject-autotest.md",
@@ -37,7 +68,12 @@
     },
     {
       "id": "ftu-binary-unreadable",
-      "symptom": ["界面文件打开是乱码", "界面文件看不懂", "界面文件是二进制看不懂怎么办", "json 和 ftu 什么关系"],
+      "symptom": [
+        "界面文件打开是乱码",
+        "界面文件看不懂",
+        "界面文件是二进制看不懂怎么办",
+        "json 和 ftu 什么关系"
+      ],
       "mechanism": "设备加载的是 .ftu（fui pack 的编译产物）；.json 才是可读布局源。",
       "rule": "改布局改 .json 再 pack；要读现有界面用 fui unpack（MCP op：flythings_fui_unpack）反解析成 json，不要直接编辑二进制。",
       "doc": "knowledge/devflow/ftu-json-pipeline.md",
@@ -46,7 +82,12 @@
     },
     {
       "id": "pushed-but-not-effective",
-      "symptom": ["推上去没效果", "设备上还是旧的", "改了像没改", "推了个新包上去屏幕还是旧的没变化"],
+      "symptom": [
+        "推上去没效果",
+        "设备上还是旧的",
+        "改了像没改",
+        "推了个新包上去屏幕还是旧的没变化"
+      ],
       "mechanism": "推送成功 ≠ 设备在跑新版：同名旧程序/旧库仍可被加载（如 SD 上的 EasyUI.cfg 劫持、名字相同覆盖失败）。",
       "rule": "推送后必须比对设备侧与本地产物（md5 或大小），staleOnDevice=true 即设备旧版，按升级/重推处理。",
       "doc": "knowledge/devflow/device-deploy-budget.md",
@@ -55,7 +96,10 @@
     },
     {
       "id": "oom-killed",
-      "symptom": ["OOM 杀 zkgui", "程序莫名退出/被杀"],
+      "symptom": [
+        "OOM 杀 zkgui",
+        "程序莫名退出/被杀"
+      ],
       "mechanism": "小内存板上资源（图/字体/视频缓冲）超预算时被内核 OOM 杀；进程名 zkgui 从 logcat 可见。",
       "rule": "先看体积预算（图/字体/包），再谈功能；上机前用 flythings_device_preflight 体检。",
       "doc": "knowledge/devflow/device-deploy-budget.md",
@@ -64,7 +108,14 @@
     },
     {
       "id": "image-blurry-stretched",
-      "symptom": ["图标发糊", "图标看着发糊有锯齿", "图片有锯齿", "图被拉长/变形", "弧线毛边", "半透明圆点被拉长"],
+      "symptom": [
+        "图标发糊",
+        "图标看着发糊有锯齿",
+        "图片有锯齿",
+        "图被拉长/变形",
+        "弧线毛边",
+        "半透明圆点被拉长"
+      ],
       "mechanism": "引擎对「图 ≠ 控件盒」是拉伸不报错；二值 mask 当 α 用会把圆弧过渡压成硬阶梯。",
       "rule": "自动生成切图尺寸必须严格等于控件盒（圆角/圆弧走超采样 + 面积平均），形状外真透明。",
       "doc": "knowledge/devflow/ui-layout-verify.md",
@@ -73,7 +124,11 @@
     },
     {
       "id": "preview-differs-from-device",
-      "symptom": ["预览的效果和真机对不上", "文字位置摆的不对", "预览只能看第一页"],
+      "symptom": [
+        "预览的效果和真机对不上",
+        "文字位置摆的不对",
+        "预览只能看第一页"
+      ],
       "mechanism": "预览分两档：HTML 预览稿（只谈布局意图）与**引擎等价渲染**（真机同口径）；拿前者当真机比必然对不上。",
       "rule": "要对齐真机就用 flythings_ui_visual 的 render/render_check（引擎等价 + 像素 diff），别用 HTML 稿验收。",
       "doc": "knowledge/devflow/wysiwyg-render-spec.md",
@@ -82,7 +137,12 @@
     },
     {
       "id": "zorder-and-overflow",
-      "symptom": ["控件谁盖谁是由什么决定的", "控件叠在一起的时候谁在上面", "图比控件大的时候是怎么画的", "分隔线压住了按钮点不动"],
+      "symptom": [
+        "控件谁盖谁是由什么决定的",
+        "控件叠在一起的时候谁在上面",
+        "图比控件大的时候是怎么画的",
+        "分隔线压住了按钮点不动"
+      ],
       "mechanism": "层序由 json 结构与声明顺序决定（后声明在上）；图大于控件盒时按控件盒裁/拉伸；上层控件会吃掉下层触摸。",
       "rule": "先声明在下层；装饰线不要盖在交互控件上（盖住 = 点不动）；图尺寸对齐控件盒。",
       "doc": "knowledge/uicontrols/json-layer-rules.md",
@@ -91,7 +151,11 @@
     },
     {
       "id": "scroll-cannot-reach-end",
-      "symptom": ["内容滚不到底最后一行看不到", "边缘效果怎么设置", "拖到头没有反馈"],
+      "symptom": [
+        "内容滚不到底最后一行看不到",
+        "边缘效果怎么设置",
+        "拖到头没有反馈"
+      ],
       "mechanism": "滚动范围/边缘效果由控件字段决定（而非内容自动）；字段没配到位就滚不到最后一行。",
       "rule": "按 scroll-drag-interaction-spec 的取值表配 dragMaxDis / edgeEffect / autoRollback / rollSpeed。",
       "doc": "knowledge/uicontrols/scroll-drag-interaction-spec.md",
@@ -100,7 +164,12 @@
     },
     {
       "id": "field-list-question",
-      "symptom": ["seekbar 有哪些字段", "circlebar 支持哪些属性", "视频控件有哪些配置项", "控件有哪些字段"],
+      "symptom": [
+        "seekbar 有哪些字段",
+        "circlebar 支持哪些属性",
+        "视频控件有哪些配置项",
+        "控件有哪些字段"
+      ],
       "mechanism": "字段真源是注册表 ui_schema.json（每类型 100% 交集 = 必写键），不是散文。",
       "rule": "问字段/类型/默认值 → 走 flythings_ui_schema（注册表）与派生字段表；别从散文里抄。",
       "doc": "knowledge/uicontrols/layout-audit.md",
@@ -109,7 +178,17 @@
     },
     {
       "id": "api-quickref-question",
-      "symptom": ["列表行数据怎么填", "listview 的三个回调怎么写", "window 的 showWnd 怎么用", "画布怎么画圆", "二维码怎么生成", "摄像头预览怎么做", "play 接口怎么播视频", "定时器怎么用", "选中某个词怎么取到"],
+      "symptom": [
+        "列表行数据怎么填",
+        "listview 的三个回调怎么写",
+        "window 的 showWnd 怎么用",
+        "画布怎么画圆",
+        "二维码怎么生成",
+        "摄像头预览怎么做",
+        "play 接口怎么播视频",
+        "定时器怎么用",
+        "选中某个词怎么取到"
+      ],
       "mechanism": "控件代码 API（回调名/签名）由注册表 callbacks 段定义；散文里只讲原理。容器/显示类控件（pagewindow、scrollwindow、textview…）没有回调桩，接口在代码侧。",
       "rule": "问 API/回调 → 走 widget-code-api 速查与 flythings_ui_schema 的 callbacks；桩由 `fun build` 生成（也可用 flythings_gen_logic_stub 体检），别手写重复定义；**页面逻辑写在 src/logic/<页>Logic.cc**（容器/显示类控件用 findControlByID + setXxxListener 接线）。",
       "doc": "knowledge/uicontrols/widget-code-api.md",
@@ -118,7 +197,15 @@
     },
     {
       "id": "stub-only-no-logic",
-      "symptom": ["桩补完了但点了没反应", "回调都在但没功能", "界面做完了没有功能", "只补了空桩没写逻辑", "逻辑写在哪个文件", "页面逻辑写在哪", "logic 里要写什么"],
+      "symptom": [
+        "桩补完了但点了没反应",
+        "回调都在但没功能",
+        "界面做完了没有功能",
+        "只补了空桩没写逻辑",
+        "逻辑写在哪个文件",
+        "页面逻辑写在哪",
+        "logic 里要写什么"
+      ],
       "mechanism": "回调桩只是骨架：桩体是 `(void)x;` / `return false;` 这类占位。桩齐 ≠ 有功能 —— 交互逻辑要写进同一个 `src/logic/<页>Logic.cc`，漏了这一步真机表现和「回调没生成」一模一样。",
       "rule": "桩补完就写页面逻辑：回调里做「控件 ↔ 业务」关联（setText / refreshListView / setXxxListener / 业务对象调用）；复杂功能写成 src/<业务域>/*.cpp（新增代码禁建 .cc）；容器/显示类控件没有桩 → onUI_init 里 findControlByID + setXxxListener 接线。",
       "doc": "knowledge/devflow/page-architecture-spec.md",
@@ -127,7 +214,13 @@
     },
     {
       "id": "cross-framework-mapping",
-      "symptom": ["android的SeekBar用什么替代", "我原来用Qt现在换FlyThings 控件怎么对应", "小程序控件能直接搬过来吗", "Android 控件在我们平台怎么对应", "有没有对应的控件还是得自己写"],
+      "symptom": [
+        "android的SeekBar用什么替代",
+        "我原来用Qt现在换FlyThings 控件怎么对应",
+        "小程序控件能直接搬过来吗",
+        "Android 控件在我们平台怎么对应",
+        "有没有对应的控件还是得自己写"
+      ],
       "mechanism": "跨框架控件是靠映射表（mcp_control_map.json，L1~L5 等价级）落的，不是凭名字猜。",
       "rule": "先走 flythings_map_control 查映射（有 L1/L2 就直接用）；平台真缺才做自定义控件包（components/ui_v1/<源控件名>/）。",
       "doc": "knowledge/uicontrols/control-mapping-capability.md",
@@ -136,7 +229,12 @@
     },
     {
       "id": "mapping-gap-levels",
-      "symptom": ["缺口级别 L1 到 L5", "控件映射规则", "3D 效果能实现吗", "tab 页签怎么做"],
+      "symptom": [
+        "缺口级别 L1 到 L5",
+        "控件映射规则",
+        "3D 效果能实现吗",
+        "tab 页签怎么做"
+      ],
       "mechanism": "L1~L5 是映射等价级（L1 直接对应 → L5 明说不支持）；缺口由 gap-list 编号管理。",
       "rule": "看控件映射速查表 + gap-list 缺口编号，别用「应该能」判断。",
       "doc": "knowledge/uicontrols/framework-control-mapping.md",
@@ -144,17 +242,13 @@
       "platforms": []
     },
     {
-      "id": "missing-modern-controls",
-      "symptom": ["下拉选择框怎么做", "标签页怎么做", "选择器弹出选择怎么做", "列表拖拽排序支持吗", "有没有图表控件"],
-      "mechanism": "部分现代控件平台没有原生件，但可用基础件组合（L2）或已有组件包。",
-      "rule": "先查 gui-controls-gap 的缺口表与 ui_v1 组件（Chart/Calendar/TabView）；写明是「组合实现」还是「真缺」。",
-      "doc": "knowledge/devflow/gui-controls-gap.md",
-      "verify": "op 查询无 L1/L2 命中 + gap-list.md 有缺口编号才算真缺。",
-      "platforms": []
-    },
-    {
       "id": "deploy-scene-words",
-      "symptom": ["跑一下看效果", "更新到设备", "推送到设备", "推到板子上跑"],
+      "symptom": [
+        "跑一下看效果",
+        "更新到设备",
+        "推送到设备",
+        "推到板子上跑"
+      ],
       "mechanism": "「跑一下」在嵌入式里对应多条不同链路：调试推送（launch）/ 固化升级（update.img）/ 出包，混起来就调错工具。",
       "rule": "先分清场景：临时调试 = build_ui_flow(launch)；要断电重启还在 = 固化升级（upgrade-pack-image）。",
       "doc": "knowledge/devflow/deploy-scene-map.md",
@@ -163,7 +257,10 @@
     },
     {
       "id": "font-pack-path",
-      "symptom": ["字体文件放哪才能打进包里生效", "换了字体没生效"],
+      "symptom": [
+        "字体文件放哪才能打进包里生效",
+        "换了字体没生效"
+      ],
       "mechanism": "字库有「打包内 / 设备侧」两条通路，放错位置就不生效；且设备字库是裁剪字库。",
       "rule": "按 custom-font-config 放字库并用 flythings_device_preflight 体检（字库覆盖/体积）。",
       "doc": "knowledge/devflow/package-properties-easyui-cfg.md",
@@ -172,7 +269,11 @@
     },
     {
       "id": "refresh-too-frequent",
-      "symptom": ["界面刷新太频繁", "CPU 占用高怎么排查", "主线程卡"],
+      "symptom": [
+        "界面刷新太频繁",
+        "CPU 占用高怎么排查",
+        "主线程卡"
+      ],
       "mechanism": "高频回调里做重活/全量刷新会把主线程占满（utime+stime 持续高、日志静止 = 假死）。",
       "rule": "高频回调只做轻量活；刷新走 setInvalid 而非重建；排查先看 /proc/<pid>/stat 增量。",
       "doc": "knowledge/uicontrols/high-frequency-callback-perf.md",
@@ -181,7 +282,10 @@
     },
     {
       "id": "screensaver-trigger",
-      "symptom": ["屏保是谁触发的怎么关掉", "屏幕自己黑了"],
+      "symptom": [
+        "屏保是谁触发的怎么关掉",
+        "屏幕自己黑了"
+      ],
       "mechanism": "系统级窗口（statusbar/navibar/screensaver/IME）由框架管理，不在业务页面里。",
       "rule": "按 system-windows 的开关口径配置/关闭，别在业务页里自绘。",
       "doc": "knowledge/uicontrols/system-windows.md",
@@ -190,7 +294,10 @@
     },
     {
       "id": "dual-resolution-one-design",
-      "symptom": ["双分辨率同时出一套怎么搞", "换面板分辨率怎么适配"],
+      "symptom": [
+        "双分辨率同时出一套怎么搞",
+        "换面板分辨率怎么适配"
+      ],
       "mechanism": "分辨率是工程属性；同一套设计稿要出两个分辨率需要布局分层（ui/<分辨率>/）或走适配流程。",
       "rule": "按 resolution-adapt 流程做，别手工缩放 json；改分辨率后跑 scale_audit。",
       "doc": "knowledge/devflow/platform-translate.md",
@@ -199,7 +306,11 @@
     },
     {
       "id": "copy-other-framework-usage",
-      "symptom": ["能不能照抄 Android 的控件用法", "反编译so拿接口行不行", "别的框架的写法能直接用吗"],
+      "symptom": [
+        "能不能照抄 Android 的控件用法",
+        "反编译so拿接口行不行",
+        "别的框架的写法能直接用吗"
+      ],
       "mechanism": "本平台是预编译闭源 UI 库，源码/头文件里没有字段与回调语义；跨框架类推会引入错误的字段用法。",
       "rule": "只允许两个来源：MCP 知识库 + 官方文档站；查不到就标「未收录」，不猜不类推、不反编译。",
       "doc": "knowledge/uicontrols/retrieval-boundary.md",
@@ -208,7 +319,10 @@
     },
     {
       "id": "editor-cannot-find-control",
-      "symptom": ["控件太多选不到，能不能按名字搜索控件", "编辑器找不到某个控件"],
+      "symptom": [
+        "控件太多选不到，能不能按名字搜索控件",
+        "编辑器找不到某个控件"
+      ],
       "mechanism": "页内控件多时，可视化编辑器（flythings_ui_visual action=editor）目前只能靠拖拽/看图找，没有按名字检索。",
       "rule": "暂时用 json 里控件键名（<类型>__<序号> / caption）定位；**已登记为工具改进项**（给编辑器加控件搜索）。",
       "doc": "knowledge/devflow/ui-editor-usage.md",

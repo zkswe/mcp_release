@@ -106,7 +106,7 @@ python components/fonts/scripts/gen_font_subset.py \
 - `--src-multi`：多国语言用，**必须含谚文/假名/扩展B 的完整版**（CN 变体会缺谚文，实测 0 个）
 - 手上可用的两份源（本机）：
   - CN 版：`tools/FlyThingsIDE/bin/configuration/org.eclipse.osgi/551/0/.cp/bundle/font/SourceHanSansCN-Normal.ttf`
-  - 完整版：`projects/LearningProject/DashBoard_T113/BMW/font/aaaSourceHanSansSC-Normal.ttf`
+  - 完整版：内部仪表工程 `font/aaaSourceHanSansSC-Normal.ttf`
 
 ---
 

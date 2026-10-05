@@ -52,6 +52,8 @@ class TestProjectSkeleton(unittest.TestCase):
 
     def test_05_覆盖度(self):
         """⑤ 覆盖到全部带骨架的工程（不静默漏），且自带骨架的工程被报出来。"""
+        if not os.path.isfile(os.path.join(BASE, 'PUBLISH.md')):
+            self.skipTest('裁剪发布版（PUBLISH.md 不随包）：该内部件/私有包按发布边界剔除')
         carried = [p for p in sps.projects() if p['carries']]
         self.assertGreaterEqual(len(carried), 15, '带骨架的工程数异常：%d' % len(carried))
         _bad, custom = sps.drift()

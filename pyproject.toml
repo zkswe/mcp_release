@@ -22,7 +22,7 @@ dependencies = [
 flythings-mcp = "mcp_server:main"
 
 [project.urls]
-Homepage = "https://gitee.com/Kwolve/fly-things-os_-mcp"
+Homepage = "https://gitee.com/Kwolve/flythingsmcp_release"
 Documentation = "https://developer.flythings.cn/"
 
 [tool.flythings]

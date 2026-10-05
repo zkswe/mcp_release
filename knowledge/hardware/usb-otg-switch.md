@@ -28,8 +28,8 @@ evidence: []
 
 | 平台 | OTG 根路径（实测/文档） | 节点 | 备注 |
 |------|------------------------|------|------|
-| **V85X / V85XEMMC**（AW_V853） | `/sys/devices/platform/soc/usbc0/` | `otg_role`(查) `usb_device`(切ADB) `usb_host`(切U盘) `usb_null`(断开) | CV201_PND / xdv23 / xdv200300 `usb_monitor.cpp` 实测 |
-| **T113**（车载 PND） | `/sys/devices/platform/soc@3000000/soc@3000000:usbc0@0/` | 同上 4 节点 | ⚠️ 带 reg 地址 `usbc0@0`，≠ V85X 的 `usbc0/`；T113CarSystem_PND `usb_monitor.cpp` 实测 |
+| **V85X / V85XEMMC**（AW_V853） | `/sys/devices/platform/soc/usbc0/` | `otg_role`(查) `usb_device`(切ADB) `usb_host`(切U盘) `usb_null`(断开) | 三个内部项目 `usb_monitor.cpp` 实测 |
+| **T113**（车载 PND） | `/sys/devices/platform/soc@3000000/soc@3000000:usbc0@0/` | 同上 4 节点 | ⚠️ 带 reg 地址 `usbc0@0`，≠ V85X 的 `usbc0/`；内部车载工程 `usb_monitor.cpp` 实测 |
 | **Z21 / Z210**| `/sys/devices/soc0/soc/soc:usbotg/` | `usb_host`(切U盘) `usb_device`(切ADB) | wiki z210_core_board 官方文档；未见 otg_role/usb_null/configfs 描述 |
 
 ## shell 一行切换
@@ -95,7 +95,7 @@ ADB 档还要 `/dev/usb-ffs/adb` 不存在时 mkdirs + `mount(..."functionfs", u
 
 ### 1. U盘/TF（存储外设）→ 自动挂载点 + MountMonitor 监听
 
-- 官方口径（wiki system/tf_usb.md）：插 **TF 卡自动挂 `/mnt/extsd`**；插 **U盘自动挂 `/mnt/usb1` / `/mnt/usb2` / `/mnt/usb3`**（按实际 USB 口）；工程实测（CV201_PND / T113CarSystem_PND `media_context.cpp` 存储表）：
+- 官方口径（wiki system/tf_usb.md）：插 **TF 卡自动挂 `/mnt/extsd`**；插 **U盘自动挂 `/mnt/usb1` / `/mnt/usb2` / `/mnt/usb3`**（按实际 USB 口）；工程实测（内部参考工程  `media_context.cpp` 存储表）：
   `E_STORAGE_TYPE_USB1 → "/mnt/usb1"`、`E_STORAGE_TYPE_USB2 → "/mnt/usbotg"`（OTG 口当 host 用时 U盘挂 `/mnt/usbotg`）
 - 文件路径 = 挂载目录 + 自身目录（如 `/mnt/usb1/test.txt`）；读写前先确认已挂载
 - **监听拔插**：`#include <base/base.h>`（Manifest 需 base-utility ≥9.0.0），
@@ -120,7 +120,7 @@ V85X host 接入 UVC 摄像头（发现/取流/录像/拍照）→ 见 `knowledg
 
 ## 来源
 
-- V85X：CV201_PND / xdv23 / xdv200300 `src/system/usb_monitor.cpp` + `src/media/media_context.cpp`（实测）
-- T113：`temp_car/public/t113/T113CarSystem_PND/jni/system/usb_monitor.cpp` + `jni/media/media_context.cpp`（实测，2026-09-07 需求方提醒核对）
+- V85X：三个内部项目实测 `src/system/usb_monitor.cpp` + `src/media/media_context.cpp`
+- T113：内部车载工程实测 `jni/system/usb_monitor.cpp` + `jni/media/media_context.cpp`（2026-09-07 需求方提醒核对）
 - Z21/Z210：官方 wiki `wiki/flythings/hardware/z210_core_board.md`「USB功能/切换USB模式」
 - U盘挂载/监听：官方 wiki `wiki/flythings/system/tf_usb.md`（TF→/mnt/extsd，U盘→/mnt/usb1|2|3，MountNotification/MountMonitor）

@@ -128,13 +128,6 @@ evidence:
 - **权威文档**：`knowledge/uicontrols/framework-control-mapping.md`
 - **怎么复验**：对照 mcp_control_map.json 的级别字段与 gap-list.md 编号。
 
-## 下拉选择框怎么做 / 标签页怎么做 / 选择器弹出选择怎么做 / 列表拖拽排序支持吗 / 有没有图表控件
-
-- **机制**：部分现代控件平台没有原生件，但可用基础件组合（L2）或已有组件包。
-- **规范**：先查 gui-controls-gap 的缺口表与 ui_v1 组件（Chart/Calendar/TabView）；写明是「组合实现」还是「真缺」。
-- **权威文档**：`knowledge/devflow/gui-controls-gap.md`
-- **怎么复验**：op 查询无 L1/L2 命中 + gap-list.md 有缺口编号才算真缺。
-
 ## 跑一下看效果 / 更新到设备 / 推送到设备 / 推到板子上跑
 
 - **机制**：「跑一下」在嵌入式里对应多条不同链路：调试推送（launch）/ 固化升级（update.img）/ 出包，混起来就调错工具。

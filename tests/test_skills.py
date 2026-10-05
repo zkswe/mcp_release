@@ -58,6 +58,8 @@ def _frontmatter(text):
 
 class TestSkillsExist(unittest.TestCase):
     def test_three_flow_skills_present(self):
+        if not os.path.isfile(os.path.join(REPO, 'PUBLISH.md')):
+            self.skipTest('裁剪发布版（PUBLISH.md 不随包）：该内部件/私有包按发布边界剔除')
         names = {n for n, _ in _skills()}
         for want in ('flythings-new-project', 'flythings-use-library',
                      'flythings-device-acceptance'):
@@ -151,6 +153,8 @@ class TestWorkspaceInstructions(unittest.TestCase):
     """
 
     def test_agents_md_exists_and_covers_invariants(self):
+        if not os.path.isfile(os.path.join(REPO, 'PUBLISH.md')):
+            self.skipTest('裁剪发布版（PUBLISH.md 不随包）：该内部件/私有包按发布边界剔除')
         p = os.path.join(REPO, 'AGENTS.md')
         self.assertTrue(os.path.isfile(p), '缺 AGENTS.md（AI 进仓没有基线指令）')
         t = io.open(p, encoding='utf-8').read()
@@ -160,12 +164,16 @@ class TestWorkspaceInstructions(unittest.TestCase):
 
     def test_agents_md_ops_exist(self):
         """AGENTS.md 里点名的 op 必须真实存在（否则 AI 一进仓就照着错名字调）。"""
+        if not os.path.isfile(os.path.join(REPO, 'PUBLISH.md')):
+            self.skipTest('裁剪发布版（PUBLISH.md 不随包）：该内部件/私有包按发布边界剔除')
         t = io.open(os.path.join(REPO, 'AGENTS.md'), encoding='utf-8').read()
         bad = [op for op in sorted(set(re.findall(r'flythings_[a-z_]+', t))) if op not in OPS]
         self.assertEqual(bad, [], 'AGENTS.md 引用了不存在的 op：%s' % bad)
 
     def test_agents_md_does_not_promise_fv(self):
         """范围口径要写清：提 fv 必须同时说明"本仓不服务"。"""
+        if not os.path.isfile(os.path.join(REPO, 'PUBLISH.md')):
+            self.skipTest('裁剪发布版（PUBLISH.md 不随包）：该内部件/私有包按发布边界剔除')
         t = io.open(os.path.join(REPO, 'AGENTS.md'), encoding='utf-8').read()
         if 'fv' in t:
             self.assertIn('不服务', t, 'AGENTS.md 提到 fv 却没说"不服务"')

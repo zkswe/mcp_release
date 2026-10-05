@@ -73,10 +73,10 @@ evidence: []
 
 | 事实 | 出处 |
 |---|---|
-| 官方可编样例工程 | `projects/basedemo-new_z20_1024_600/{StatusBarDemo-New,ScreensaverDemo-New,ImeDemo-New}` |
+| 官方可编样例工程 | `basedemo-new_z20_1024_600/{StatusBarDemo-New,ScreensaverDemo-New,ImeDemo-New}` |
 | 生成代码长什么样 | `projects/iOSStyle-F133/.fun/f133/generated/ui_statusbar.cpp:8` → `REGISTER_SYSAPP(APP_TYPE_SYS_STATUSBAR, statusbar)` |
 | 屏保逻辑文件与触摸回调名 | 内部 car/PND 工程 `src/logic/screensaver.cc:64 onscreensaverActivityTouchEvent`（回调命名同普通页面） |
-| 屏保与业务互斥（真实做法） | 内部 `mark_cv201/CV201_PND`：来电/通话 `mainLogic.cc:138-139 screensaverOff()`；倒车中不进屏保 `mainLogic.cc:393-395`；升级测试页 `TestLogic.cc:136-137 setScreensaverEnable(false)`；设置页改超时 `settingsLogic.cc:354-362 setScreensaverEnable/TimeOut` |
+| 屏保与业务互斥（真实做法） | 内部车载 PND 参考工程：来电/通话 `mainLogic.cc:138-139 screensaverOff()`；倒车中不进屏保 `mainLogic.cc:393-395`；升级测试页 `TestLogic.cc:136-137 setScreensaverEnable(false)`；设置页改超时 `settingsLogic.cc:354-362 setScreensaverEnable/TimeOut` |
 | 系统窗口里也能放业务 UI | 同工程状态栏页里放通话 window（见 `knowledge/uicontrols/global-popup-window.md` §4） |
 
 ## 5. 生命周期与层级（**只认这些，别自创**）

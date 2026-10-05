@@ -60,18 +60,18 @@ public:
 
 | 写法 | 出处 | 关键行 |
 |---|---|---|
-| 自定义编号 100/101 | 内部 car/PND 工程 `mark_cv201/CV201_PND` | `src/config.h:170-171` → `#define APP_TYPE_SYS_CTRLBAR 100` / `#define APP_TYPE_SYS_FLOATWND 101`；`src/logic/floatwndLogic.cc:40 REGISTER_SYSAPP(APP_TYPE_SYS_FLOATWND, floatwndActivity)`；`src/logic/ctrlbarLogic.cc:22 REGISTER_SYSAPP(APP_TYPE_SYS_CTRLBAR, ctrlbarActivity)` |
-| 直接给数字 1000 | 内部 `DashBoard_T113/BMW` | `jni/logic/camerawindowLogic.cc:47 REGISTER_SYSAPP(1000, camerawindowActivity)`（**编号纯约定，框架不校验含义**） |
+| 自定义编号 100/101 | 内部车载 PND 参考工程 | `src/config.h:170-171` → `#define APP_TYPE_SYS_CTRLBAR 100` / `#define APP_TYPE_SYS_FLOATWND 101`；`src/logic/floatwndLogic.cc:40 REGISTER_SYSAPP(APP_TYPE_SYS_FLOATWND, floatwndActivity)`；`src/logic/ctrlbarLogic.cc:22 REGISTER_SYSAPP(APP_TYPE_SYS_CTRLBAR, ctrlbarActivity)` |
+| 直接给数字 1000 | 内部仪表参考工程 | `jni/logic/camerawindowLogic.cc:47 REGISTER_SYSAPP(1000, camerawindowActivity)`（**编号纯约定，框架不校验含义**） |
 | 弹框页 POPUPWND=100 | `projects/CalendarAlbum-F133`、`projects/CycleComputer-F133` | `src/config.h:29 #define APP_TYPE_SYS_POPUPWND 100`；`src/logic/popupWndLogic.cc:46 REGISTER_SYSAPP(APP_TYPE_SYS_POPUPWND, popupWndActivity)` |
 | 创建 / 销毁 | `CalendarAlbum-F133/src/logic/sysapp_context.cpp:43` 与 `on_timer()` 内 | `_s_popup_wnd = SYSAPPFACTORY->create(APP_TYPE_SYS_POPUPWND);` / `delete _s_popup_wnd; _s_popup_wnd = nullptr;` |
-| 弹框页的 json 长什么样 | 内部 `mark_cv201/CV201_PND/ui/floatwnd.json` | 根节点 `"topmost": true`，内容 = 一个 `window__1`（`PopWindow`）控件；弹框本体就是 window |
-| 触摸命中判定 | `CV201_PND/src/logic/sysapp_context.cpp:96` + `src/logic/mainLogic.cc:836` | `app::is_hit_floatwnd(x,y)` / `app::is_hit_ctrlbar(x,y)` —— 弹框/浮窗是**独立一层，触摸不外传**|
+| 弹框页的 json 长什么样 | 内部 `内部参考工程/ui/floatwnd.json` | 根节点 `"topmost": true`，内容 = 一个 `window__1`（`PopWindow`）控件；弹框本体就是 window |
+| 触摸命中判定 | 内部工程 `src/logic/sysapp_context.cpp:96` + `src/logic/mainLogic.cc:836` | `app::is_hit_floatwnd(x,y)` / `app::is_hit_ctrlbar(x,y)` —— 弹框/浮窗是**独立一层，触摸不外传**|
 
 ## 3. 工程封装的固定套路（`src/logic/sysapp_context.{h,cpp}`，`namespace app`）
 
 - 对外接口名（两套真实例子）：
   - `show_popup_wnd()` / `hide_popup_wnd()`（CalendarAlbum-F133 / CycleComputer-F133）
-  - `show_floatwnd()` / `hide_floatwnd()` / `is_show_floatwnd()` / `is_hit_floatwnd()`（CV201_PND）
+  - `show_floatwnd()` / `hide_floatwnd()` / `is_show_floatwnd()` / `is_hit_floatwnd()`（内部参考工程）
   - `show_btcall_widget()` / `hide_btcall_widget()`（蓝牙来电弹框；声明见 `KaiduZ9S/src/logic/sysapp_context.h`）
 - 内部实现要点（**这是工程约定，不是框架规定**）：
   1. show/hide 不直接 `new/show`，而是 **注册到宿主页的一次性定时器**：
@@ -86,7 +86,7 @@ public:
 
 ## 4. 另一种真实做法：把通话 UI 放进已有系统窗口（同一页面内的 window）
 
-内部 car/PND 工程 `mark_cv201/CV201_PND/src/logic/statusbar.cc:38-76`：
+内部车载 PND 参考工程 `src/logic/statusbar.cc:38-76`：
 
 - 状态栏页里放两个 window 控件：去电 `mcallWindowPtr`、来电 `mincomingWindowPtr`；
 - 由蓝牙状态回调驱动：`_bt_call_cb(bt_call_state_e state)`（`E_BT_CALL_STATE_IDLE / OUTGOING / INCOMING / TALKING`）

@@ -91,21 +91,17 @@
       ],
       "summary": "把摄像头画面显示到屏上：UI 里用 videoView 当**透明窗口**（visible=true + rotation），画面由硬件层直接出。",
       "packages": [
-        "aw-dvr",
-        "aw-mpp",
-        "aw-mpp-uvc",
-        "uvc-camera",
         "ir-camera",
         "uav-camera"
       ],
       "entry": "ui/*.json 的 videoView（透明窗）+ Manifest 依赖 aw-dvr",
-      "demo": "demos/dvr-uvc-recorder-v85x",
       "rules": [
         "videoView 是透明窗，不是普通显示控件：不要给它填背景图",
         "屏幕方向错位先查 rotateScreen 与 videoView 的 rotation（竖装屏 = 270）",
         "USB UVC 是 JPEG/MJPEG 流；AHD/TVI/CVBS 走内置通道，两者接入方式不同"
       ],
-      "docRef": "knowledge/v85x/dvr-recorder-guide.md"
+      "releaseNote": "该能力的**深度实现与真机实测结论不在公开版**（V85X 私有媒体栈）；公开版给的是能力面、平台与包名 —— 要那层深度以平台方 SDK 为准。边界口径见本页「公开版边界」节与 knowledge/devflow/capability-boundaries.md",
+      "docRef": "knowledge/media/media-capability-index.md"
     },
     {
       "id": "dvr-record",
@@ -117,18 +113,14 @@
         "录出来的文件坏了"
       ],
       "summary": "mpi::Recorder 启停录像；录制参数有两种形态（见 Playbook §7-1）。",
-      "packages": [
-        "aw-dvr",
-        "aw-mpp",
-        "aw-cedarc"
-      ],
+      "packages": [],
       "entry": "src/logic/*.cc 里启停 Recorder",
-      "demo": "demos/dvr-uvc-recorder-v85x",
       "rules": [
         "录制目标盘必须先确认可写与剩余空间（TF 未挂载/写保护会静默失败）",
         "停止录像后要等落盘再断电，否则文件尾损坏"
       ],
-      "docRef": "knowledge/v85x/dvr-recorder-guide.md"
+      "docRef": "knowledge/media/media-capability-index.md",
+      "releaseNote": "该能力的**深度实现与真机实测结论不在公开版**（V85X 私有媒体栈）；公开版给的是能力面、平台与包名 —— 要那层深度以平台方 SDK 为准。边界口径见本页「公开版边界」节与 knowledge/devflow/capability-boundaries.md"
     },
     {
       "id": "dvr-photo-playback",
@@ -141,14 +133,12 @@
       ],
       "summary": "拍照走 mpi::VO 取帧；回放用 JpegViewer / videoView。",
       "packages": [
-        "aw-dvr",
         "awjpegdecoder",
-        "aw-mpp",
         "display_utility"
       ],
       "entry": "src/logic/*.cc（拍照/回放按钮回调）",
-      "demo": "demos/dvr-uvc-recorder-v85x",
-      "docRef": "knowledge/v85x/dvr-recorder-guide.md"
+      "releaseNote": "该能力的**深度实现与真机实测结论不在公开版**（V85X 私有媒体栈）；公开版给的是能力面、平台与包名 —— 要那层深度以平台方 SDK 为准。边界口径见本页「公开版边界」节与 knowledge/devflow/capability-boundaries.md",
+      "docRef": "knowledge/media/media-capability-index.md"
     },
     {
       "id": "video-h264-play",
@@ -247,8 +237,7 @@
       ],
       "summary": "zkaudio 提供对讲的录音与播放；互联类型走 lylink_cpaacfapwd。",
       "packages": [
-        "zkaudio",
-        "lylink_cpaacfapwd"
+        "zkaudio"
       ],
       "rules": [
         "对讲是「采 → 编码 → 传输 → 解码 → 播」全链路，任何一段平台不支持就整体不可用",

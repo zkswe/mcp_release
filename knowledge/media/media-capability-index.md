@@ -25,14 +25,14 @@ evidence:
 
 | 能力 | 大类 | 用什么（包 / 免编译库） | 覆盖平台 | 出处 |
 |---|---|---|---|---|
-| **摄像头预览（DVR 主力：内置 AHD/TVI/CVBS 与 USB UVC）** | 自绘 / 图层 | 包：`aw-dvr`、`aw-mpp`、`aw-mpp-uvc`、`uvc-camera`、`ir-camera`、`uav-camera` | V85X | `dvr-recorder-guide.md` |
-| **录像（写入 TF/EMMC）** | 录像 / 录音 | 包：`aw-dvr`、`aw-mpp`、`aw-cedarc` | V85X | `dvr-recorder-guide.md` |
-| **拍照与回放** | 抓帧 / 取图 | 包：`aw-dvr`、`awjpegdecoder`、`aw-mpp`、`display_utility` | F133、F135、T113、V85X、Z20、Z21 | `dvr-recorder-guide.md` |
+| **摄像头预览（DVR 主力：内置 AHD/TVI/CVBS 与 USB UVC）** | 自绘 / 图层 | 包：`ir-camera`、`uav-camera` | V85X | `media-capability-index.md` |
+| **录像（写入 TF/EMMC）** | 录像 / 录音 | — | 免编译库（不占包） | `media-capability-index.md` |
+| **拍照与回放** | 抓帧 / 取图 | 包：`awjpegdecoder`、`display_utility` | F133、F135、T113、Z20、Z21 | `media-capability-index.md` |
 | **播放 H.264 流 / 文件** | 播放（视频/音频） | 包：`awh264player`、`h264-player`、`simple-player`、`ffmpeg`、`parsesps` | F133、F135、T113、V85X、Z20、Z21、Z261 | `builtin-packages.md` |
 | **预烘帧序列（视频/动画转贴图）** | 自绘 / 图层 | — | 免编译库（不占包） | `custom-render-paths.md` |
 | **自绘 / 离屏渲染（框架内 canvas、nanovg、cairo）** | 自绘 / 图层 | 包：`nanovg`、`blend2d`、`mi_gfx`、`display_utility`<br>库：libnanovg.so | F133、F135、T113、Z20、Z21、Z235X | `custom-render-paths.md` |
 | **音频播放** | 播放（视频/音频） | 包：`audio-utility`、`faac`、`mp4v2`、`mad` | F133、T113、V85X、Z20、Z21、Z261 | `builtin-packages.md` |
-| **对讲：录音 + 播放（双向）** | 录像 / 录音 | 包：`zkaudio`、`lylink_cpaacfapwd` | F133、T113、Z20、Z21、Z261 | `builtin-packages.md` |
+| **对讲：录音 + 播放（双向）** | 录像 / 录音 | 包：`zkaudio` | Z20、Z21、Z261 | `builtin-packages.md` |
 | **多路录音** | 录像 / 录音 | 包：`multi-channel-audio-recorder` | Z20 | `builtin-packages.md` |
 | **音频前处理（回声消除等）** | 编解码 / 图像 | 包：`webrtc-audio-processing`、`webrtc-aec` | T113、V85X、Z20、Z21 | `builtin-packages.md` |
 | **JPEG / 图像解码** | 编解码 / 图像 | 包：`awjpegdecoder`、`zkmedia`、`giflib`、`gif`<br>库：libjpeg.so.9.1.0、libpng12.so.0.56.0 | F133、F135、T113、Z21 | `device-preinstalled-libs.md` |
@@ -67,18 +67,16 @@ evidence:
 #### 录像（写入 TF/EMMC）
 
 - **做什么**：mpi::Recorder 启停录像；录制参数有两种形态（见 Playbook §7-1）。
-- **用哪些包**：`aw-dvr`、`aw-mpp`、`aw-cedarc`
 - **入口**：src/logic/*.cc 里启停 Recorder
-- **参考工程**：`demos/dvr-uvc-recorder-v85x`
 - ⚠️ 录制目标盘必须先确认可写与剩余空间（TF 未挂载/写保护会静默失败）
 - ⚠️ 停止录像后要等落盘再断电，否则文件尾损坏
 - **常被问成**：「录像怎么写进 TF 卡」 / 「录像怎么启停」 / 「录出来的文件坏了」
-- **出处**：`knowledge/v85x/dvr-recorder-guide.md`
+- **出处**：`knowledge/media/media-capability-index.md`
 
 #### 对讲：录音 + 播放（双向）
 
 - **做什么**：zkaudio 提供对讲的录音与播放；互联类型走 lylink_cpaacfapwd。
-- **用哪些包**：`zkaudio`、`lylink_cpaacfapwd`
+- **用哪些包**：`zkaudio`
 - ⚠️ 对讲是「采 → 编码 → 传输 → 解码 → 播」全链路，任何一段平台不支持就整体不可用
 - ⚠️ 回声问题先上 webrtc-audio-processing，别先改音量
 - **常被问成**：「对讲怎么实现 录音和播放」 / 「双向语音怎么做」 / 「回声很大」
@@ -96,11 +94,10 @@ evidence:
 #### 拍照与回放
 
 - **做什么**：拍照走 mpi::VO 取帧；回放用 JpegViewer / videoView。
-- **用哪些包**：`aw-dvr`、`awjpegdecoder`、`aw-mpp`、`display_utility`
+- **用哪些包**：`awjpegdecoder`、`display_utility`
 - **入口**：src/logic/*.cc（拍照/回放按钮回调）
-- **参考工程**：`demos/dvr-uvc-recorder-v85x`
 - **常被问成**：「拍照怎么存」 / 「怎么回放录像」 / 「JpegViewer 怎么用」
-- **出处**：`knowledge/v85x/dvr-recorder-guide.md`
+- **出处**：`knowledge/media/media-capability-index.md`
 
 #### 抓帧：视频层（硬件 vdec 输出）
 
@@ -128,14 +125,13 @@ evidence:
 #### 摄像头预览（DVR 主力：内置 AHD/TVI/CVBS 与 USB UVC）
 
 - **做什么**：把摄像头画面显示到屏上：UI 里用 videoView 当**透明窗口**（visible=true + rotation），画面由硬件层直接出。
-- **用哪些包**：`aw-dvr`、`aw-mpp`、`aw-mpp-uvc`、`uvc-camera`、`ir-camera`、`uav-camera`
+- **用哪些包**：`ir-camera`、`uav-camera`
 - **入口**：ui/*.json 的 videoView（透明窗）+ Manifest 依赖 aw-dvr
-- **参考工程**：`demos/dvr-uvc-recorder-v85x`
 - ⚠️ videoView 是透明窗，不是普通显示控件：不要给它填背景图
 - ⚠️ 屏幕方向错位先查 rotateScreen 与 videoView 的 rotation（竖装屏 = 270）
 - ⚠️ USB UVC 是 JPEG/MJPEG 流；AHD/TVI/CVBS 走内置通道，两者接入方式不同
 - **常被问成**：「摄像头预览怎么做」 / 「videoView 透明窗是什么」 / 「内置 AHD/TVI 摄像头怎么接」 / 「USB UVC 摄像头怎么显示」
-- **出处**：`knowledge/v85x/dvr-recorder-guide.md`
+- **出处**：`knowledge/media/media-capability-index.md`
 
 #### 预烘帧序列（视频/动画转贴图）
 
@@ -216,18 +212,17 @@ evidence:
 | 能力 | Z20 | Z21 | F133 | F135 | T113 | V85X | Z235X | Z261 |
 |---|---|---|---|---|---|---|---|---||
 | 摄像头预览（DVR 主力：内置 AHD/TVI/CVBS 与 USB UVC） |  |  |  |  |  | ✓ |  |  |
-| 录像（写入 TF/EMMC） |  |  |  |  |  | ✓ |  |  |
-| 拍照与回放 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |  |  |
+| 拍照与回放 | ✓ | ✓ | ✓ | ✓ | ✓ |  |  |  |
 | 播放 H.264 流 / 文件 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |  | ✓ |
 | 自绘 / 离屏渲染（框架内 canvas、nanovg、cairo） | ✓ | ✓ | ✓ | ✓ | ✓ |  | ✓ |  |
 | 音频播放 | ✓ | ✓ | ✓ |  | ✓ | ✓ |  | ✓ |
-| 对讲：录音 + 播放（双向） | ✓ | ✓ | ✓ |  | ✓ |  |  | ✓ |
+| 对讲：录音 + 播放（双向） | ✓ | ✓ |  |  |  |  |  | ✓ |
 | 多路录音 | ✓ |  |  |  |  |  |  |  |
 | 音频前处理（回声消除等） | ✓ | ✓ |  |  | ✓ | ✓ |  |  |
 | JPEG / 图像解码 |  | ✓ | ✓ | ✓ | ✓ |  |  |  |
 | 软解兜底（ffmpeg） | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |  | ✓ |
 
-`✓` = 该能力的**至少一个包**在这个平台可用（包级细节用 `flythings_query_package`）。只借免编译库的能力（预烘帧序列（视频/动画转贴图）、设备预装可借库（dlopen 即用，免编译）、抓帧：视频层（硬件 vdec 输出）、抓帧：UI/OSD 层（framebuffer））不在此表 —— 它不占包，按设备实有库确认。
+`✓` = 该能力的**至少一个包**在这个平台可用（包级细节用 `flythings_query_package`）。只借免编译库的能力（录像（写入 TF/EMMC）、预烘帧序列（视频/动画转贴图）、设备预装可借库（dlopen 即用，免编译）、抓帧：视频层（硬件 vdec 输出）、抓帧：UI/OSD 层（framebuffer））不在此表 —— 它不占包，按设备实有库确认。
 
 ## 5. 公开版边界（别把「没写」当成「没有」）
 

@@ -165,7 +165,7 @@ zk::ImageCache::instance().cache(p.c_str());
 
 | 项 | 位置 | 说明 |
 |---|---|---|
-| 上游参考实现（指定） | `projects/LearningProject/HaishiM9/src/logicSelf/imageCache.h` | `CACHE_SIZE=128` + 权重 LRU + `BitmapHelper::loadBitmapFromFile/unloadBitmap`；用法见该工程 `src/logic/MenuLogic.cc:1151/1153`、`1219/1221`（`setBackgroundPic` 后紧跟 `cache`）与 `src/logic/HelpInterfaceLogic.cc:129/141/154`（先 `cache` 再 `setBackgroundPic`，两种顺序都成立）。⚠️ 其 `releaseAll()` 末尾的 `drop_caches` 别抄（坑 2）。 |
+| 上游参考实现（指定） | 内部参考工程 `src/logicSelf/imageCache.h` | `CACHE_SIZE=128` + 权重 LRU + `BitmapHelper::loadBitmapFromFile/unloadBitmap`；用法见该工程 `src/logic/MenuLogic.cc:1151/1153`、`1219/1221`（`setBackgroundPic` 后紧跟 `cache`）与 `src/logic/HelpInterfaceLogic.cc:129/141/154`（先 `cache` 再 `setBackgroundPic`，两种顺序都成立）。⚠️ 其 `releaseAll()` 末尾的 `drop_caches` 别抄（坑 2）。 |
 | 真机验证过的工程化版 | `projects/iOSStyle-F133/src/core/ImageCache.hpp` | 单例 + 引用计数 `acquire()/release()` + 内部加锁；**去掉**`drop_caches`。接线点 `src/logic/mu_mainLogic.cc:521/562`、`src/logic/mu_searchLogic.cc:313`；`onUI_init/onUI_quit` 配 `acquire()/release()`。 |
 | 可复用组件（本仓库） | `components/imagecache/` | 把上者的工程耦合摘掉（装载/释放**回调注入**），并补上「不静默的错误处理 + 日志钩子 + 诊断读数」；PC 自测 29 项含串图复现。 |
 | 原始实测报告 | `components/imagecache/platforms.md`（原始实测报告已归档） | 改前后数据、串图回归、像素 diff、未验证项。 |

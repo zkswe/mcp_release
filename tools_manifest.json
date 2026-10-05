@@ -1022,9 +1022,9 @@
     }
   ],
   "docs": {
-    "knowledgeFiles": 118,
-    "wikiFiles": 122,
-    "ragChunks": 1976,
-    "ragPaths": 158
+    "knowledgeFiles": 104,
+    "wikiFiles": 0,
+    "ragChunks": 1784,
+    "ragPaths": 144
   }
 }

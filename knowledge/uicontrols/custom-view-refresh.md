@@ -72,10 +72,10 @@ ctrl->setInvalid(!ctrl->isInvalid());     // ✅ 平台惯例（gameview / GIF /
 
 | 场景 | 出处 | 关键行 |
 |---|---|---|
-| 游戏帧视图 | `projects/LearningProject/Game640480_Retro/jni/game/GameView.cpp` | 120 `_this->setInvalid(!_this->isInvalid());` |
+| 游戏帧视图 | 内部参考工程 `jni/game/GameView.cpp` | 120 `_this->setInvalid(!_this->isInvalid());` |
 | 游戏帧视图（内部版） | `gitcom/AppGroup/Game_Retro/jni/game/GameView.cpp` | 159 同 |
 | GIF 播放控件 | `.../Game640480_Retro/jni/game/CGifPlayer.cpp:196`、`HaishiM9/src/gif/CGifPlayer.cpp:177`、`gitcom/AppGroup/oven_public*/src/gif/CGifPlayer.cpp:175` | 同款 |
-| 仪表自绘动画 | `projects/LearningProject/DashBoard_T113/BMW/jni/ui/ImageAnimView.cpp` | 437 `setInvalid(!isInvalid());` |
+| 仪表自绘动画 | 内部仪表工程 `jni/ui/ImageAnimView.cpp` | 437 `setInvalid(!isInvalid());` |
 | 地图自绘 | `projects/FlyMapDemo/src/logic/mainLogic.cc` | 218 |
 | WebView 容器 | `projects/WebViewDemo/src/logic/mainLogic.cc` | 88 |
 | 掌机平台显示层 | `projects/V851s/PocketGame/src/platform/PgDisplay.cpp:77`（头注释见 `PgDisplay.h:7`：「每帧 `setInvalid(!isInvalid())` 触发刷新（控件→屏幕走硬件加速）」） | 77 |

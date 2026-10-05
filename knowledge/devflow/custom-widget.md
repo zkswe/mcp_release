@@ -16,7 +16,7 @@ evidence: []
 # FlyThings 自定义控件方法（lib-ext_widgets 拆解）
 
 > 检索导引：问「想做一个平台没有的控件 / 自定义控件怎么写 / 继承 ZKBase / onDraw 自绘 / 控件触摸事件重写 / 有没有现成自创控件可抄」→ 本文；先看缺什么控件见 `knowledge/devflow/gui-controls-gap.md`，交付形态见 `knowledge/devflow/reusable-components.md`，**能力边界总纲见 `knowledge/devflow/render-extension-boundary.md`**。
-> 来源：内部私有仓库 `guoxs/lib-ext_widgets`（LearningProject 本地副本，F136/F133 + easyui ^2.3.0），
+> 来源：内部组件仓库的本地副本（F136/F133 + easyui ^2.3.0），
 > ZKSWE Develop Team 2024-2025 系列自研控件。2026-09-03 拆解，草稿待确认入库（无需复验方法：文档状态标记，非技术结论）
 > ⚠️ 内部代码，方法论文档只提炼模式与骨架，不整段复制实现；新控件做时按需回工程精读对应控件。
 

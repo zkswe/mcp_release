@@ -17,7 +17,7 @@ evidence: []
 
 > 检索导引：问「控件这样嵌套合不合法 / window 里能放什么 / pagewindow 为什么只装 window / 层级报错（check_all #2）/ 先看 json 做遮挡审计 / **重启后控件位置跑了 · 坐标出现负值 · 拖动夹到什么边界**」→ 本文。
 > 口语/错说法（用户原话）：pagewindow 里能放文本框吗 / 能不能往 pagewindow 里加按钮、文本 / pagewindow 里放别的为什么没反应 / 为什么只能塞窗口。
-> 2026-09-08 需求方要求「控件层级问题检讨」产出。**方法**：扫描 86 个真实 json（`projects/SampleUI-New/ui/1024x600` 42 + `projects/LearningProject/basedemo-new_z20_1024_600` 35 demo/44，ftu unpack 反解），统计每个容器类型的直接子内容分布——**零越界样例**，基线全绿。
+> 2026-09-08 需求方要求「控件层级问题检讨」产出。**方法**：扫描 86 个真实 json（`<厂家基准工程>/ui/1024x600` 42 + `<内部基准工程>/basedemo-new_z20_1024_600` 35 demo/44，ftu unpack 反解），统计每个容器类型的直接子内容分布——**零越界样例**，基线全绿。
 > **落地**（2026-10-05 改口径）：**唯一真源 = `ui_tools/ui_schema.json` 的 `controls[].children`**
 > （`{"mode": "controls"[, "only": [类型…]]}` 或 `{"mode": "substructure", "key": "<结构键>"}`；无声明 = 叶子），
 > 判据由**两个 checker 同源派生**：`check_all.py` #2（`_layer_problems`）与 `ui_compile.py` **TREE001-004**；

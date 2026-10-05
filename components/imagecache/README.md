@@ -129,7 +129,7 @@ components/imagecache/
 
 | 项 | 内容 |
 |---|---|
-| 上游参考实现 | `projects/LearningProject/HaishiM9/src/logicSelf/imageCache.h`（指定：`CACHE_SIZE=128` + 权重 LRU + `BitmapHelper`；用法见该工程 `src/logic/MenuLogic.cc`、`HelpInterfaceLogic.cc`） |
+| 上游参考实现 | 内部参考工程 `src/logicSelf/imageCache.h`（指定：`CACHE_SIZE=128` + 权重 LRU + `BitmapHelper`；用法见该工程 `src/logic/MenuLogic.cc`、`HelpInterfaceLogic.cc`） |
 | 真机验证过的工程化版 | `projects/iOSStyle-F133/src/core/ImageCache.hpp`（单例 + 引用计数 + 锁；去掉 `drop_caches`） |
 | 真机实测报告 | `temp/music_ui/REPORT.md`（改前后同操作数据、串图回归、像素 diff） |
 | 知识条目 | `knowledge/uicontrols/listview-image-cache.md`（病症/机制/修法/验收的口径） |

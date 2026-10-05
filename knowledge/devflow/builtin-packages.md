@@ -34,20 +34,20 @@ evidence:
 | 包键 | 芯片 | 平台（规范化） | 包数 |
 |---|---|---|---|
 | `a33nor` | — | A33NOR | 13 |
-| `f133` | F133-B / F133-MX | F133 | 50 |
+| `f133` | F133-B / F133-MX | F133 | 46 |
 | `f133emmc` | F133-B / F133-MX | F133 | 11 |
 | `f136` | F135 / F136 | F135 | 52 |
 | `f136emmc` | F135 / F136 | F135 | 49 |
 | `h500s` | — | H500S | 16 |
 | `t113` | T113 / T113-S3 / T113-S4 / T113-i | T113 | 41 |
 | `t113emmc` | T113 / T113-S3 / T113-S4 / T113-i | T113 | 71 |
-| `t113stdcxx` | T113 / T113-S3 / T113-S4 / T113-i | T113 | 50 |
-| `v85x` | V553 / V851 / V853 / V851S / V851S3 / V853S | V85X | 73 |
-| `v85xemmc` | V553 / V851 / V853 / V851S / V851S3 / V853S | V85X | 53 |
-| `z20` | SSD201 / SSD202D / SSD203 | Z20 | 95 |
-| `z21` | SSD210 / SSD212 / SSD222 / SSD222D | Z21 | 69 |
+| `t113stdcxx` | T113 / T113-S3 / T113-S4 / T113-i | T113 | 46 |
+| `v85x` | V553 / V851 / V853 / V851S / V851S3 / V853S | V85X | 62 |
+| `v85xemmc` | V553 / V851 / V853 / V851S / V851S3 / V853S | V85X | 48 |
+| `z20` | SSD201 / SSD202D / SSD203 | Z20 | 92 |
+| `z21` | SSD210 / SSD212 / SSD222 / SSD222D | Z21 | 67 |
 | `z235x` | SSD2355 | Z235X | 17 |
-| `z261` | SSD261Q | Z261 | 60 |
+| `z261` | SSD261Q | Z261 | 59 |
 | `z6s` | — | Z6S | 1 |
 
 > 包键按 SoC 变体分（`v85x` vs `v85xemmc`、`f133` vs `f133emmc`…），**与平台规范名不是简单大小写关系**；别名折算见 `platforms.py`。
@@ -85,15 +85,15 @@ evidence:
 
 > 版本逐字取自注册表；同一包在不同包键上版本可能不同（上表差异只列前 3 个键），**要精确版本请用 `flythings_query_package`**。
 
-## 3. 包名索引（全 182 个，按覆盖度分层）
+## 3. 包名索引（全 166 个，按覆盖度分层）
 
 **通用（≥8 键，26 个）**：`base-json`、`base-utility`、`cares`、`civetweb`、`civetweb-cxx`、`curl`、`curl-cxx`、`easyui`、`ffmpeg`、`freetype`、`ini`、`jpeg`、`log`、`ntp`、`openssl`、`paho-mqtt3as`、`png`、`rapidjson`、`sqlite3`、`transfer-protocols`、`utf8conv`、`watchdog`、`z`、`zkhardware`、`zknet`、`zkupgrade`
 
-**常见（3~7 键，72 个）**：`Poco`、`Poco-http`、`aec`、`animations`、`apc`、`audio-utility`、`av`、`awh264player`、`awjpegdecoder`、`awmetadataretriever`、`base-http-client`、`ble`、`blehid`、`boost`、`btstack`、`ext4`、`ext_widgets`、`fribidi`、`frpc`、`fvad`、`fx`、`gatt`、`gumbo`、`h264-player`、`hostapd-wpa_supplicant`、`html-builder`、`imageinfo`、`ktp`、`lrtp`、`lunasvg`、`lylink_cpaaapwd`、`lylinkui`、`mbedtls`、`mi_ai`、`mi_aio`、`mi_ao`、`mi_common`、`mi_disp`、`mi_panel`、`mi_sys`、`mp4v2`、`mqtt-cxx`、`nanovg`、`networking`、`openh264`、`opus`、`paho-mqtt3c`、`pinyin`、`plutovg`、`rapidxml`、`result`、`rtp`、`rtsp`、`srt`、`tag`、`uClibc++`、`uav-network`、`unibreak`、`usb`、`voip`、`webp`、`webpdemux`、`webrtc-audio-processing`、`webview`、`wise_enum`、`yuv`、`zint`、`zip`、`zkaudio`、`zkmbr`、`zkmedia`、`zkmisc`
+**常见（3~7 键，69 个）**：`Poco`、`Poco-http`、`aec`、`animations`、`apc`、`audio-utility`、`av`、`awh264player`、`awjpegdecoder`、`awmetadataretriever`、`base-http-client`、`ble`、`blehid`、`boost`、`btstack`、`ext4`、`ext_widgets`、`fribidi`、`frpc`、`fvad`、`fx`、`gatt`、`gumbo`、`h264-player`、`hostapd-wpa_supplicant`、`html-builder`、`imageinfo`、`ktp`、`lrtp`、`lunasvg`、`mbedtls`、`mi_ai`、`mi_aio`、`mi_ao`、`mi_common`、`mi_disp`、`mi_panel`、`mi_sys`、`mp4v2`、`mqtt-cxx`、`nanovg`、`networking`、`openh264`、`opus`、`paho-mqtt3c`、`pinyin`、`plutovg`、`rapidxml`、`result`、`rtp`、`rtsp`、`srt`、`tag`、`uClibc++`、`uav-network`、`unibreak`、`usb`、`webp`、`webpdemux`、`webrtc-audio-processing`、`webview`、`wise_enum`、`yuv`、`zint`、`zip`、`zkaudio`、`zkmbr`、`zkmedia`、`zkmisc`
 
-**个别包键独有（<3 键，84 个）**：`CTML`、`OutdoorExample`、`ad-mcu-proto`、`ai`、`amqpcpp`、`aw-cedarc`、`aw-dvr`、`aw-h265`、`aw-isp`、`aw-middleware`、`aw-mpp`、`aw-mpp-uvc`、`aw-system`、`awface`、`blend2d`、`cam_os_wrapper`、`cdx`、`cjson`、`cobs`、`cppzmq`、`cus3a`、`cutils`、`display_utility`、`e2fsprogs`、`eigen`、`ev`、`event`、`faac`、`face-manager`、`flatbuffers`、`gemmlowp`、`gif`、`giflib`、`glibcxx-headers`、`gnutls`、`hostapd`、`ir-camera`、`ispalgo`、`kcp`、`liteui`、`ltp`、`lylink_cpaacfapwd`、`lylink_cpaacfhcapwd`、`mad`、`md5`、`mi-module`、`mi_gfx`、`mi_hdmi`、`mi_isp`、`mi_jpd`、`mi_ldc`、`mi_scl`、`mi_sensor`、`mi_vdec`、`mi_vif`、`mosquitto`、`mpp-middleware`、`multi-channel-audio-recorder`、`nexus`、`npu`、`paho-mqtt3a`、`paho-mqtt3cs`、`parsesps`、`rabbitmq-c`、`reed-solomon`、`rtmp-cxx`、`ruy`、`sdk-tmp-20240221`、`sensor`、`simple-player`、`snappy`、`sodium`、`st_sensor`、`test`、`test-pkg`、`tinyxml2`、`tuyaoscxx`、`uav-camera`、`utf8sconv`、`uvc-camera`、`webrtc-aec`、`xunfei-aiui`、`zeromq`、`zkcarotp`
+**个别包键独有（<3 键，71 个）**：`CTML`、`OutdoorExample`、`ad-mcu-proto`、`ai`、`amqpcpp`、`awface`、`blend2d`、`cam_os_wrapper`、`cdx`、`cjson`、`cobs`、`cppzmq`、`cus3a`、`cutils`、`display_utility`、`e2fsprogs`、`eigen`、`ev`、`event`、`faac`、`face-manager`、`flatbuffers`、`gemmlowp`、`gif`、`giflib`、`glibcxx-headers`、`gnutls`、`hostapd`、`ir-camera`、`ispalgo`、`kcp`、`liteui`、`ltp`、`mad`、`md5`、`mi-module`、`mi_gfx`、`mi_hdmi`、`mi_isp`、`mi_jpd`、`mi_ldc`、`mi_scl`、`mi_sensor`、`mi_vdec`、`mi_vif`、`mosquitto`、`mpp-middleware`、`multi-channel-audio-recorder`、`nexus`、`npu`、`paho-mqtt3a`、`paho-mqtt3cs`、`parsesps`、`rabbitmq-c`、`reed-solomon`、`rtmp-cxx`、`ruy`、`sdk-tmp-20240221`、`sensor`、`simple-player`、`snappy`、`sodium`、`st_sensor`、`test`、`test-pkg`、`tinyxml2`、`uav-camera`、`utf8sconv`、`webrtc-aec`、`zeromq`、`zkcarotp`
 
-> 这批里 121 个包在注册表里**没有一句话说明**（多为示例工程/内部件）。要确认某个包能干什么，用 `flythings_get_package_api` 看它导出的 API。
+> 这批里 113 个包在注册表里**没有一句话说明**（多为示例工程/内部件）。要确认某个包能干什么，用 `flythings_get_package_api` 看它导出的 API。
 
 ## 4. 怎么用（选型 → 加包 → 看 API）
 

@@ -17,7 +17,7 @@ evidence: []
 
 > 检索导引：问「实时摄像头预览用哪个控件 / cameraview 字段 / formatSize 是源分辨率不是控件大小 / 画面拉伸裁剪怎么处理 / 能不能和 videoview 混用」→ 本文。
 > **口语问法直达**：摄像头画面被拉伸变形了 / 摄像头画面比例不对·变形 → 看「常见坑」里的 `setCropPosition` 等比裁剪（旋转 90/270 记得 swap）。
-> 2026-09-03 需求方指定 + 实测入库（LearningProject/mark_cv201 倒车影像工程，CV201_PND 1600×600 + CV201_PND_1024_600 双分辨率解包校准）。
+> 2026-09-03 需求方指定 + 实测入库（内部倒车影像参考工程，内部参考工程 1600×600 + 内部参考工程_1024_600 双分辨率解包校准）。
 > 来源可靠性：ftu 解包还原 json（fui unpack 实测字段，非猜测）。
 
 ## ⚠️ 核心铁律（先分清控件，再谈布局）
@@ -25,11 +25,11 @@ evidence: []
 1. **实时摄像头预览用 cameraview；播放文件/回放/拉流用 videoview —— 禁止混用**
    - `cameraview`（C++ 类 **ZKCameraView**，include `"control/ZKCameraView.h"`）→ 接 `/dev/video` 设备节点，实时预览/拍照/录像流，可多通道切换
    - `videoview`（ZKVideoView）→ 播放视频文件/URL，`loopPlayback`/`defaultVolume` 是它的字段（cameraview 没有）
-   - mark_cv201 实测分工：**reverse（倒车实时画面）= cameraview**；reverse2（回放）/Dvr/lylinkview = videoview。UI 布局阶段先定清楚用哪个
+   - 该工程 实测分工：**reverse（倒车实时画面）= cameraview**；reverse2（回放）/Dvr/lylinkview = videoview。UI 布局阶段先定清楚用哪个
 2. **cameraview 必须嵌在 window 容器内**（实测 reverse.ftu：window__1 → cameraview__2 + painter__3 overlay），不做顶层裸控件
 3. **`formatSize` 是视频源分辨率，不是控件大小**：控件铺满窗口（position 全屏），formatSize 写摄像头真实输出（如 640×480）；拉伸/裁剪适配在代码里用 setCropPosition 做（见下）
 
-## JSON 字段表（mark_cv201 reverse.ftu 实测校准）
+## JSON 字段表（reverse.ftu 实测校准）
 
 > 字段 / 类型 / 默认值 / 必填以 `ui_tools/ui_schema.json` 为准（`flythings_ui_schema(control_type=cameraview)` 取）；
 > 下表只留字段名与语义说明。
@@ -67,7 +67,7 @@ evidence: []
 - 同容器常配 `painter`（id 52001）画倒车轨迹线/警戒框 overlay，叠在 cameraview 上层
 - 不同分辨率工程（1600×600 vs 1024×600）**结构完全一致，只改 resolution + position**，可直接复用整套 json
 
-## 代码操作（mark_cv201 reverseLogic.cc onUI_init 实测顺序）
+## 代码操作（reverseLogic.cc onUI_init 实测顺序）
 
 ```cpp
 mCameraViewReversePtr->setErrorCodeCallback(&cb);  // 无信号检测（先注册）

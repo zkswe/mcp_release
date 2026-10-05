@@ -18,7 +18,7 @@
 **方式一：让 AI 帮你装（推荐）**—— 直接对你的 AI 说：
 
 ```
-帮我克隆并安装 https://gitee.com/Kwolve/fly-things-os_-mcp 项目
+帮我克隆并安装 https://gitee.com/Kwolve/flythingsmcp_release 项目
 ```
 
 AI 会自动完成：克隆项目 → 按 `requirements.lock` 安装依赖（该文件是已锁定、实测通过的版本组合）→ 引导配置 → 完成。

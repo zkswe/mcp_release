@@ -913,6 +913,11 @@ def main():
     ap.add_argument('--report', action='store_true', help='只打表格，不判失败')
     ap.add_argument('--json', default='', help='结果落 JSON')
     ap.add_argument('--bm25', action='store_true', help='强制降级 BM25（模拟无本地向量模型）')
+    # ⚠️ 只在「裁剪发布的构建」里用（如 release 分支：内部文档按发布边界被剔除）：
+    #    doc 不存在的组**显式跳过并列出**，不参与判红 —— 不静默（清单照样打印）。
+    #    master 不传这个开关 → 严格模式，仍会因缺 doc 判红。
+    ap.add_argument('--skip-missing-docs', action='store_true',
+                    help='doc 不存在的组：显式跳过并列出（发布/裁剪构建用；默认严格判红）')
     a = ap.parse_args()
     if a.bm25:
         import rag_search
@@ -920,10 +925,22 @@ def main():
         print('[degraded] 强制 BM25 模式（模拟模型不可用）')
 
     groups = _all_groups()
+    skipped = []
+    if a.skip_missing_docs:
+        keep = []
+        for g in groups:
+            if os.path.isfile(os.path.join(BASE, g['doc'])):
+                keep.append(g)
+            else:
+                skipped.append(g)
+        groups = keep
     bad, summary = [], []
     print('=' * 78)
     print('retrieval regression（按文档分组，共 %d 组；内含外部分组文件 %d 组）'
           % (len(groups), len(groups) - len(GROUPS)))
+    if skipped:
+        print('【本构建不随包，已显式跳过 %d 组】%s'
+              % (len(skipped), '；'.join('%s(%s)' % (g['name'], g['doc']) for g in skipped)))
     print('=' * 78)
     for g in groups:
         # 结构化断言：组的问法条数
@@ -932,6 +949,7 @@ def main():
                        % (g['name'], len(g['queries']), MIN_QUERIES_PER_GROUP, MIN_QUERIES_PER_GROUP))
         if not os.path.isfile(os.path.join(BASE, g['doc'])):
             bad.append('组「%s」的 doc 不存在: %s' % (g['name'], g['doc']))
+            continue          # ⚠️ 缺 doc 就**不再拿它跑问法**（问法全落空只会刷屏，真正的问题是缺 doc）
         rows = run_group(g)
         n = len(rows)
         top1 = sum(1 for r in rows if r['top1_ok'])
