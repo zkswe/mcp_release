@@ -58,7 +58,7 @@
 |---|---|---|
 | 1 | docstring 预算顶爆（11996/12000） | ✅ **改口径解决**：不是删字，是三层分层（常驻 5080/6000，加 op = 加一行） |
 | 2 | `test_font_autoscan` ×10 失败 | ✅ 按 `requirements.lock` 装 `fontTools==4.65.0` → 32 OK |
-| 14 | **验证层体检**（2026-10-03 二次评审）：用例非 hermetic（漏 mock → 真 adb，全套 >900s）、门禁依赖仓外目录不可复现、数字漂移（op 数/用例数/耗时） | ✅ 三件都修：`tests/_util.py` adb 离线守卫 + `sync_ui_tools` skip 码 2 对齐 + 数字进闸门；另把用例的守法改成**逐用例看门狗**（`scripts/run_tests.py`，慢不算错、挂才算）。用例实测 **866 项**，门禁 **85 项**（两处数字由 `check_consistency.py --with-tests` 的「当前数字各处声明 == 实测」对账，别再手写第三处） |
+| 14 | **验证层体检**（2026-10-03 二次评审）：用例非 hermetic（漏 mock → 真 adb，全套 >900s）、门禁依赖仓外目录不可复现、数字漂移（op 数/用例数/耗时） | ✅ 三件都修：`tests/_util.py` adb 离线守卫 + `sync_ui_tools` skip 码 2 对齐 + 数字进闸门；另把用例的守法改成**逐用例看门狗**（`scripts/run_tests.py`，慢不算错、挂才算）。用例实测 **873 项**，门禁 **85 项**（两处数字由 `check_consistency.py --with-tests` 的「当前数字各处声明 == 实测」对账，别再手写第三处） |
 | 5–10 | launch 活性 / 陈旧帧 / easyui 同源 / 分辨率核对 / cfg 修正 / translate_ui 交互 | ✅ 全部完成（真机闭环） |
 | 11 | C++ 回调桩 op | ✅ `flythings_gen_logic_stub`（只补不改、幂等） |
 | 13 | 场景 Skill 四件套 | ✅ 已落用户级 skill；**且已升级为「由 `flow_spec.json` 派生」**（5 篇正文不再手写） |
