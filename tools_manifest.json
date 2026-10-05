@@ -2,7 +2,7 @@
   "schema": 1,
   "generatedBy": "scripts/gen_manifest.py",
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY/STAGE 表后重新生成，勿手改本文件",
-  "version": "0.27.196-open",
+  "version": "0.27.197-open",
   "build": "2026-10-05",
   "toolCount": 42,
   "cli": {

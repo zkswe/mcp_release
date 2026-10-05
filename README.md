@@ -45,7 +45,7 @@ AI 会自动完成：克隆项目 → 按 `requirements.lock` 安装依赖（该
 Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude_desktop_config.json` 的 `mcpServers`。
 > `python` 不在 PATH 时用完整路径（如 `C:/Users/<你>/AppData/Local/Programs/Python/Python313/python.exe`）。
 
-**3) 验证**—— 问 AI「**MCP 版本是多少？**」：应返回 `flythings-kb-open 0.27.196-open`，**42 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / zkshot，
+**3) 验证**—— 问 AI「**MCP 版本是多少？**」：应返回 `flythings-kb-open 0.27.197-open`，**42 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / zkshot，
 在 `bin_tools/<平台>/` 下，**不是 op、不占 op 名额**；以及 `positioning` 字段：**平台定位**——FlyThings OS 是**基于 Linux 的操作系统**，
 能力判定基线**向 buildroot/OpenWrt 看齐**，GUI 是自研 EasyUI/FlyThings UI 与 LVGL 对标竞争，**不是**单片机/ESP32 式板级 SDK）。
 
@@ -161,6 +161,6 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 
 **写知识/判据/op 契约前先读 [`DESIGN_SPEC.md`](DESIGN_SPEC.md)**（MCP 只讲"本平台与标准 Linux/rootfs/GUI/包组件的差异"；通用编程能力属 AI 原生，不入库；规范优先、实测优先、不静默、唯一真源）。
 
-当前版本 `0.27.196-open`（42 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
+当前版本 `0.27.197-open`（42 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
 
 Apache License 2.0 · FlyThings Team · 深圳中科世为科技有限公司 · [developer.flythings.cn](https://developer.flythings.cn/)
