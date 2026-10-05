@@ -7,16 +7,25 @@
 
 ## 1. 里面有什么
 
-| 页（`ui/<p>.json` → `<p>Activity`） | 演示的控件 | 真机截图 |
-|---|---|---|
-| `main`（主界面：`window__1` 容器 + 7 个图标磁贴按钮；**2026-10-05 起不再用 slidewindow**） | window / button(picTab) / textview | `temp/fix_main.png` |
-| `text` 文本控件 | textview 字号 14/20/32/44、alignment 0/36/37/38、colorTab、跑马灯 roll | `temp/acc_text.png` |
-| `button` 按键 / 输入 | button、**带图标按键**（切图==控件盒，图标烘焙在图内）、checkbox、edittext | `temp/acc_button.png` |
-| `progress` 进度条 / 滑条 | seekbar（可拖，条 448×32 + 滑块 32×32）、circlebar（按进度裁图成扇形） | `temp/acc_progress.png` |
-| `pointer` 指针 / 表盘 | pointer：表盘底图 + 指针图 + **1s 定时器驱动 `setTargetAngle`**（真机可见转动） | `temp/v2_pointer.png` |
-| `canvas` 画布绘制 | painter：fillRect / drawRect / fillArc / drawArc / drawLines(线宽) | `temp/one_canvas.png` |
-| `scroll` 滚动窗口 | scrollwindow（`orientation:1` 竖向 + 内层 `window` 承内容，12 行） | `temp/v2_scroll_after.png` |
-| `page` 翻页窗口 | pagewindow（3 个 window **都 `visible:true`**，滑动翻页） | `temp/v2_page2.png` |
+> 截图列**已去掉**（2026-10-05）：真机验收截图是**会话产物**，落在被 `.gitignore` 的 `temp/` 下
+> （按需求方口径「temp 只是测试，可以全删」）—— 写进 README 等于指向不存在的文件。
+> 要复现验收：照 §7 的三条命令现场抓屏。
+
+| 页（`ui/<p>.json` → `<p>Activity`） | 演示的控件 |
+|---|---|
+| `main`（主界面：`window__1` 容器 + 7 个图标磁贴按钮；**2026-10-05 起不再用 slidewindow**） | window / button(picTab) / textview |
+| `text` 文本控件 | textview 字号 14/20/32/44、alignment 0/36/37/38、colorTab、跑马灯 roll |
+| `button` 按键 / 输入 | button、**带图标按键**（切图==控件盒，图标烘焙在图内）、checkbox、edittext |
+| `progress` 进度条 / 滑条 | seekbar（可拖，条 448×32 + 滑块 32×32）、circlebar（按进度裁图成扇形） |
+| `pointer` 指针 / 表盘 | pointer：表盘底图 + 指针图 + **1s 定时器驱动 `setTargetAngle`**（真机可见转动） |
+| `canvas` 画布绘制 | painter：fillRect / drawRect / fillArc / drawArc / drawLines(线宽) |
+| `scroll` 滚动窗口 | scrollwindow（`orientation:1` 竖向 + 内层 `window` 承内容，12 行） |
+| `page` 翻页窗口 | pagewindow（3 个 window **都 `visible:true`**，滑动翻页） |
+
+⛔ **新建页面之前先看 `.settings/com.zksw.flythings.easyui.prefs` 的 `resolution`**：
+IDE 新建页会**按它自动填分辨率**（2026-10-05 实测踩到：本模板工程是 480×800，而 prefs 里
+还是从 `HelloWord_V85X` 继承来的 `480x480` → 新建的页被自动写成 480×480）。现已改为 `480x800`。
+（`HelloWord_V85X` 本身就是 480×480，它写 480x480 是对的，别一起改。）
 
 `resources/images/`：8 张磁贴（`menu_*.png`，200×96）+ 进度页切图（`pb_*.png`）+ 表盘/指针（`pt_*.png`）
 + 图标钮切图（`bt_icon_toggle*.png`）。
@@ -52,18 +61,17 @@ fun build   --project-dir <新工程> -p v85x  # 编译
 | 用途 | 文件 | 尺寸口径 |
 |---|---|---|
 | 主界面磁贴 | `menu_<页名>.png` | **== 控件盒**（本模板 200×96） |
-| 进度条轨道 / 有效值 | `pb_track.png` / `pb_fill.png` | ⚠️ **实测 450×34**（盒是 448×32）→ 口径不一致，见下 |
+| 进度条轨道 / 有效值 | `pb_track.png` / `pb_fill.png` | == 控件盒（448×32）、小圆角 r=4（2026-10-05 重出：原先是 450×34 药丸形，见下） |
 | 圆环底 / 有效环 | `pb_ring_bg.png` / `pb_ring.png` | == 控件盒（200×200） |
 | 滑块 | `pb_thumb.png` | == `thumb.size`（32×32 == 条高；**不是**控件盒） |
 | 表盘 / 指针 | `pt_dial.png` / `pt_needle.png` | 表盘 == 控件盒（300×300）；指针 == `pointerSize`（16×140），铰点 = `fixedPoint`（8,134） |
 | 带图标按键 | `bt_icon_toggle(_p).png` | **== 控件盒**（216×64）：图标烘焙在图内、其余真透明（`iconPosition` 只是"位置"不是盒子，check_all #11 按控件盒核尺寸） |
 
 - 一律放 `resources/images/`，json 里写 `images/xxx.png`（**不带** `resources/` 前缀、不写绝对路径）。
-- ⚠️ **进度条两张图的口径不一致（2026-10-05 检讨实测，待需求方定）**：本节原写「== 控件盒（448×32）、r=4」，
-  而盘上两份是 **450×34 的药丸形**（r = 条高/2 = 17）——`check_all` #11「图片尺寸 == 盒子」因此判 FAIL
-  （`pb_track/pb_fill 450x34 != position 448x32`）。两种收口法二选一：**① 按本节口径重出 448×32 / r=4**
-  （出图走 op `flythings_generate_ui_assets` 或 `ui_tools/gen_res.py` 的公开函数，别 1x 直画）；
-  **② 认下 +1px 透明边 + 药丸形**，把本节与 §8 改成实测口径。未定之前 §8 把它记成已知 FAIL。
+- ✅ **进度条两张图已按本节口径重出（2026-10-05，需求方拍板）**：原来是 **450×34 药丸形**（r = 条高/2），
+  与「图 == 盒」冲突（`check_all` #11 报 `450x34 != 448x32`）；现用 `ui_tools/gen_res.py` 的
+  `rounded_rect_cov(448, 32, 4, …)`（α = 覆盖率口径，不是 1x 直画）重出为 **448×32 / r=4**，颜色沿用原图
+  （轨道 `#24304A` = 36,48,74；有效值 `#4DA6FF` = 77,166,255）。重出后 `check_all` 该项转 PASS。
 - `menu_back.png` 是**孤儿**（72×72、全仓没有任何 json 引用它，只有本节提过）——要么删，要么真接进主界面。
 - 出图优先 `op flythings_generate_ui_assets`（图标）或 `ui_tools/gen_res.py` 的公开函数；**禁止 1x 直画**。
 - ⚠️ **进度条的「有效图」会被平台按进度横向拉伸**（离线渲染器同口径：`resize((w*frac, h))`）——
@@ -109,31 +117,33 @@ adb shell /data/touch tap 76 748                 # 各页「返回」键中心
 | 主线程假死 | `/proc/<pid>/stat` 的 `utime+stime` 增量（100 ticks/s）> 50% 且日志静止 |
 | 应用起没起 | `/proc/<pid>/comm == zkgui_ui` 且 state 从 `D/R` 回到 `S`（启动瞬间的 `D` 是正常的，别急着断电） |
 
-7 页逐页结果（进页 ✓ / 返回 ✓ / 无假死 ✓）与截图见 `temp/acc_*.png`。
+7 页逐页结果（进页 ✓ / 返回 ✓ / 无假死 ✓）。抓屏产物落在 `temp/`（**不进库**，按需求方口径「temp 只是测试，可全删」）——
+要复现就照上面的命令现场抓。
 
 ## 8. 本模板的 `check_all` / `ui_compile` 状态（2026-10-05 检讨按实测重写）
 
 `python ui_tools/check_all.py templates/DemoControls_V85X`（基线：`templates/HelloWord_V85X` 全 PASS）
 ＋ `python ui_tools/ui_compile.py templates/DemoControls_V85X`。
 
-- **`ui_compile`（编译式验收）：`fatal=0 error=0` 通过**（9 页 / 75 控件；7 条 warn 是「注册表外字段」提示）。
-- `check_all`：已修 13 项里的 11 项（8 个 Logic 缺 `REGISTER_ACTIVITY_TIMER_TAB`、文本页特殊字符、
+- **`ui_compile`（编译式验收）：`fatal=0 error=0` 通过**（8 页 / 71 控件；5 条 warn 是「注册表外字段」提示）。
+- `check_all`：已修 13 项里的 12 项（8 个 Logic 缺 `REGISTER_ACTIVITY_TIMER_TAB`、文本页特殊字符、
   文本页 7 处最小尺寸、`scrollwindow` 补内层 `window`、图标钮 `picTab` 改控件盒尺寸、
-  **主界面 `slidewindow` → `window__1`**（层级规范）、**新页 `maintest` 补 9 个必填键**）。
+  **主界面 `slidewindow` → `window__1`**（层级规范）、**进度条切图 450×34 → 448×32**（见 §4））。
 
-**剩余 3 项**（都是"真机可见可用、但与判据不一致"，未擅自改）：
+**剩余 1 项**（"真机可见可用、但与判据不一致"，未擅自改）：
 
 | FAIL | 现象 | 收口法 |
 |---|---|---|
-| `ui/progress.json`：`pb_track`/`pb_fill` **450×34 ≠ 盒 448×32**（#11 + 「PNG 尺寸 == 盒子」两处报同一问题） | 真机进度条正常显示 | 见 §4 的两条路（重出 448×32/r=4，或改判据/文档口径）——**待需求方定** |
 | `ui/text.json`：`rollA/rollB` 最小尺寸（需 ≥964×22，盒 448×40） | **这是跑马灯的设计意图**（长串横向滚动；真机两行各停在同一长串的不同段 = 滚动生效） | ⚠️ `check_all` #13 没有 `rollEnable` 豁免 —— 跑马灯页**必然**红。要么给 checker 加「`rollEnable=true` 跳过 #13」的豁免，要么牺牲这页的跑马灯演示 |
 
 ## 9. 其它已知缺项（如实登记，尚未做）
 
-- **第 9 个页面 `maintest`（未接入导航）**：`ui/maintest.json` + `maintest.ftu` + `src/activity/maintestActivity.*`
-  + `src/logic/maintestLogic.cc` —— scrollwindow（内层 window）+ 2 个按钮的试验页，
-  **主界面没有它的磁贴、本 README 也没介绍它**，`ui_compile` 现在能过（必填键已补齐）。
-  ⚠️ 它的 `resolution` 写的是 **480×480**，与本工程其余 8 页的 480×800 不一致 ——
-  接入导航前必须先定：**留着（改 480×800 + 加磁贴 + 在 §1 登记）还是删掉**。
+- ~~第 9 个页面 `maintest`~~ → **已删（2026-10-05，需求方确认那是他做测试用的页）**：
+  `ui/maintest.{json,ftu}` + `src/activity/maintestActivity.*` + `src/logic/maintestLogic.cc` 全部移除，
+  IDE 构建残留（`Release/`）一并清掉。**它当年 resolution 写成 480×480 的根因已修**：
+  `.settings/com.zksw.flythings.easyui.prefs` 的 `resolution` 是 480x480（继承自 `HelloWord_V85X`），
+  而 IDE 新建页面按它自动填 → 见 §1 的提醒（现为 `480x800`）。
+- `menu_back.png` 仍是孤儿（见 §4）；`check_all` 对 `window` 里的子控件键会报「注册表外字段」WARN
+  （`ui_compile` 不报，属提示性噪音）。
 - 本模板**不含字体副本**（`font/` 未入库）：中文靠设备字体或 `flythings_device_preflight` 自动投递
   （见 `knowledge/devflow/custom-font-config.md`）。

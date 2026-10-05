@@ -1109,7 +1109,11 @@ def _newest(paths, errs=None):
     return mt, who
 
 
-CONFIRM_DRAFT_SUFFIXES = ('.confirm.html', '.preview.html', '.edit.html')
+# 确认稿后缀（2026-10-05 需求方口径订正）：`.confirm.html` = 客户确认稿（for_customer=True 出），
+# `.preview.html` = 预览稿（**同样是需求确认载体**，可转发给需求方看）；
+# ⛔ `.edit.html`（`ui_visual(action="editor")` 的在线编辑器）**不算确认稿** ——
+#    它是"用户自己改坐标/规格参数"的工具，不是确认动作；原先把它算进确认稿 = 拿工具当确认。
+CONFIRM_DRAFT_SUFFIXES = ('.confirm.html', '.preview.html')
 
 
 def _confirm_fingerprint_path(draft_html, project_root=''):
@@ -1188,7 +1192,8 @@ def _confirm_gate(project_root, json_path=''):
 
     判据两问：
       ① **有没有更新**的确认稿？—— 确认稿 = `flythings_ui_preview(for_customer=True)` 的
-         `.confirm.html`（或 `.preview.html` / `_edit/*.edit.html`）；
+         `.confirm.html`，或可转发的预览稿 `.preview.html`（**不算**：`_edit/*.edit.html`
+         —— 那是自用编辑器，不是确认动作，2026-10-05 需求方口径）；
       ② **确认的是不是这一版**？—— 有指纹副文件（`.fingerprint.json`）时按 **json 内容 sha256** 比；
          没副文件的历史稿如实标 `confirmLegacy`（不假装它验过）。
 

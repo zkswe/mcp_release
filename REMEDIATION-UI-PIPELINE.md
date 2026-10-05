@@ -75,7 +75,9 @@
 
 | ID | 任务 | 交付物 | 判据 | 状态 |
 |---|---|---|---|---|
-| T1.1 | `ui_compile`：parse → 类型 → 必填/全集 → 语义 → 引用/资产 → 诊断（规则 id + 路径 + 修法）+ exit code + `--json` | `ui_tools/ui_compile.py` | 对一个**合法**样例 rc=0；六类坏样例逐类 rc≠0 且报对规则 id | ✅ 2026-10-05（**22 条规则**：PARSE001/002、PAGE001、SCH001-004、NAME001/002、ID001/002、**TREE001-004**、ROOT001、CHAR001、ASSET001/002、GEOM001 + 附加 RES001/SCAN001；**2026-10-05 检讨重测**：`templates/` 全跑 8 个工程 —— `HelloWord_*` 7 个 `fatal=0 error=0` 通过，`DemoControls_V85X` `fatal=0 error=9`（9 条全在**未接入导航的新页** `ui/maintest.json`；原写"23 页实跑 22 ok / 1 红"不可复现，已按实测改写））。**2026-10-05 追加 TREE002/003/004**：结构容器平铺子控件 / 容器 `only` 子类型 / 数组子结构归属 —— 与 `check_all` #2 **同一真源**（`ui_schema.json#controls[].children`），修的是「同一份 json 一个红一个绿」的假绿（见 `tests/test_layer_rules.py`） |
+| T1.1 | `ui_compile`：parse → 类型 → 必填/全集 → 语义 → 引用/资产 → 诊断（规则 id + 路径 + 修法）+ exit code + `--json` | `ui_tools/ui_compile.py` | 对一个**合法**样例 rc=0；六类坏样例逐类 rc≠0 且报对规则 id | ✅ 2026-10-05（**22 条规则**：PARSE001/002、PAGE001、SCH001-004、NAME001/002、ID001/002、**TREE001-004**、ROOT001、CHAR001、ASSET001/002、GEOM001 + 附加 RES001/SCAN001；**2026-10-05 检讨重测**：`templates/` 全跑 —— `HelloWord_*` 7 个工程 `fatal=0 error=0`；
+`DemoControls_V85X` 也 `fatal=0 error=0`（8 页 / 71 控件）。原写"23 页实跑 22 ok / 1 红"不可复现，
+当时的"1 红"是**未接入导航的测试页** `ui/maintest.json`（9 条 SCH002），该页已按需求方口径删除，见下）。**2026-10-05 追加 TREE002/003/004**：结构容器平铺子控件 / 容器 `only` 子类型 / 数组子结构归属 —— 与 `check_all` #2 **同一真源**（`ui_schema.json#controls[].children`），修的是「同一份 json 一个红一个绿」的假绿（见 `tests/test_layer_rules.py`） |
 | T1.2 | 库化 API：`compile_json(...) -> report`（生成器出口可直接调） | 同上 | `tests/test_ui_compile.py` 覆盖 API | ✅ 2026-10-05（`compile_json` / `compile_project`；**57** 项用例 OK（2026-10-05 检讨按实测订正：原写 53），坏例一律「错法报该规则号 → 改回必须转绿」自证） |
 | T1.3 | 出口闸门：产 json 的路径落盘前调 T1.2；fatal/error → 拒绝落盘（`success:false` + 诊断）；`allow_unvalidated=True` 才放行且带标记 | `kb_tools.py`、`ui_edit_apply.py`、`project_tools.py` | 「坏产物被拒 / 好产物放行 / override 带标记」三向用例 | ✅ 2026-10-05（**两批全落**）：① 到设备的路 —— `fui_pack`/`build_ui_flow` 拦（`UI_JSON_INVALID`）；② 生成/落盘路 —— `html_to_json`（生成期写临时 json、图片照常落项目、不合格**撤回**）、`translate_ui`（写前备份、不合格**还原/删除**）、`ui_visual(edit_apply)`（不合格从 `.bak` **回滚**并重 pack）。fatal 一律拦；error 默认只记 `uiCheck.errorsNotBlocking`，`strict_ui=True` 加严。`tests/test_ui_compile_gate_paths.py` 10 项 OK；`test_translate_ui` / `test_html2json_*` 全绿 |
 | T1.4 | 去重：`check_all` 的 json 侧检查项改为调用 T1.2（唯一实现，不新增第三份） | `ui_tools/check_all.py` | check_all 行为不变（对既有样例结论一致） | 🟡 2026-10-05 部分完成：**判据数据已同源**（层级判据一律派生自 `ui_schema.json#controls[].children`，check_all #2 去掉四份硬编码表、ui_compile 有了 TREE001-004）；**代码尚未合并**（两份实现并存，ui_compile 报告 `delegated` 如实登记）。check_all 行为等价性有实测证据：`_layer_problems` 新旧实现跑遍全仓 93 份页面 json **逐条文本完全一致** |
@@ -157,6 +159,19 @@ python scripts/check_retrieval.py                    # 检索回归 PASS
 - ❌ 不为统一而改动 `fun`/`fui` 工具链行为（那是厂家工具，本仓只调用）。
 
 ## 9. 执行记录
+
+### 2026-10-05 · 检讨第二轮（需求方拍板三项，全部落地）
+
+| 项 | 需求方口径 | 落地与实测 |
+|---|---|---|
+| `ui/maintest.json` 那页 | 「是我做的测试，可以删掉」 | 页面/json/ftu/logic/activity + IDE 构建残留（`Release/`）**全部删除**；模板回到 8 页 —— `ui_compile` **8 页 / 71 控件 / fatal=0 error=0** |
+| 它为什么是 480×480 | 「`com.zksw.flythings.easyui.prefs` 的分辨率字段是 480×480，导致 IDE 新建页面自动匹配」 | 根因确认并修：`templates/DemoControls_V85X/.settings/com.zksw.flythings.easyui.prefs` → **`resolution=480x800`**（该值是工程 480×800 的真源；`HelloWord_V85X` 本身就是 480×480，**不动**）。README §1 加提醒（新建页前先看 prefs） |
+| 进度条两张切图（450×34 药丸 vs 盒 448×32） | 「**重出**」 | 用 `ui_tools/gen_res.py` 的 `rounded_rect_cov(448, 32, 4, …)`（α=覆盖率口径）重出 `pb_track`/`pb_fill`，颜色沿用原图（36,48,74 / 77,166,255）；`check_all` 该项转 PASS → 模板 FAIL **4 项 → 1 项**（只剩跑马灯最小尺寸这一条设计意图） |
+| `temp/` 与 README 的截图列 | 「temp 只是测试，可以全部删除」 | 模板 README 去掉「真机截图」列（指向 gitignored 的会话产物 = 指向不存在的文件），改为"要复现就照 §7 现场抓屏" |
+| `.preview.html` / `.edit.html` 的语义 | 「preview 是需求确认稿，edit 是用户自己编辑坐标规格参数的在线编辑工具」 | 确认闸门的 `CONFIRM_DRAFT_SUFFIXES` = **(`.confirm.html`, `.preview.html`)** —— **`_edit/*.edit.html` 不再算确认稿**（拿工具当确认）；`ui-layout-verify.md` §0 写明口径；`tests/test_confirm_gate.py` 加 2 条用例（preview 算 / edit 不算），14 → 16 项 |
+
+另：本文件 §1 表里 T1.1 的"1 红"已随上表一并订正（见该行）。
+
 
 > ⚠️ **读法（2026-10-05 检讨补）**：下面每一节都是**当时那一次**的实测快照 —— 其中的
 > 常驻字符数 / 门禁项数 / 用例数 / 检索命中率**都会随后续改动变**，别拿它们当"当前值"。

@@ -50,12 +50,15 @@ evidence: []
   - ⛔ 确认稿的**副文件（`.fingerprint.json`，机器读的那份）不能落在 `ui/` 下** —— `ui/*.json` 会被
     `fui pack` 与 `ui_compile` 当成页面 json（实测：一口气 4 条 error）；它由出稿侧自动写到
     `<项目>/temp/confirm/`，不用你操心。
-  - ⚠️ 而**确认稿本体（`.confirm.html` / `.preview.html` / `_edit/*.edit.html`）必须留在 `<项目>/ui/` 下**
+  - ⚠️ 而**确认稿本体（`.confirm.html` / `.preview.html`）必须留在 `<项目>/ui/` 下**
     —— 硬闸门就在 `<项目>/ui/**` 里扫稿子；`output_dir` 指到 `ui/` 之外时工具会回 `gateWarning`，
     此时闸门**看不到这份稿**，pack 仍会以 `no_draft` 拒绝（两条要求不能互相矛盾；2026-10-05 检讨修）。
+  - **哪些稿算"确认"（2026-10-05 需求方口径）**：`.confirm.html`（`for_customer=True` 出的客户确认稿）
+    与可转发的预览稿 `.preview.html` **算**；`_edit/*.edit.html`（在线编辑器）**不算** ——
+    那是"用户自己改坐标/规格参数"的工具，不是确认动作。
 - `flythings_ui_visual(action="edit_apply")` 与 `flythings_fui_pack` 的返回体带 **`confirmNeeded` /
   `confirmBlocked` / `confirmDraft` / `confirmHint`**：项目里没有比本次改动**更新**的确认稿（`.confirm.html` /
-  `.preview.html` / `_edit/*.edit.html`）时按上面的硬闸门处置。
+  `.preview.html`）时按上面的硬闸门处置。
 - **多轮沟通就用确认稿**：客户指着标注说「这个按钮往右 20px」→ 改完**重出确认稿**再确认；
 不要直接推真机让他看屏（一次推机 = 编译 + 推送 + 人工目视，成本高一个量级）。
 - 生成物是**近似渲染**（字体度量 / 9-patch 拉伸与设备有差）→ **最终验收仍需真机像素**。**复验方法**：§2 三段式 —— 预览 → `flythings_device_screenshot` 抓真机 → `ui_visual(action="diff")` 比对。

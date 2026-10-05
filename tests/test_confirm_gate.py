@@ -71,6 +71,30 @@ class _Base(unittest.TestCase):
         return K._confirm_gate(self.root)
 
 
+class TestDraftKinds(_Base):
+    """**哪些稿算「需求方确认」**（2026-10-05 需求方口径）：confirm / preview 算，edit **不算**。
+
+    `.preview.html` 是可转发的预览稿（需求确认载体）；`_edit/*.edit.html` 是"用户自己改坐标/规格参数"
+    的在线编辑器 —— 拿它当确认稿等于把工具当确认动作。
+    """
+
+    def test_preview_html_counts_as_confirmation(self):
+        self.draft = os.path.join(self.root, 'ui', 'main.preview.html')
+        self._write_draft(newer_than_json=True, fingerprint=True)
+        g = self._gate()
+        self.assertFalse(g['confirmBlocked'], '可转发的预览稿应算确认稿：%s' % g)
+        self.assertEqual(os.path.basename(g['confirmDraft']), 'main.preview.html')
+
+    def test_edit_html_does_not_count_as_confirmation(self):
+        ed = os.path.join(self.root, 'ui', '_edit', 'main.edit.html')
+        U.write(ed, '<html>editor</html>')
+        os.utime(ed, (T0 + 60,) * 2)
+        g = self._gate()
+        self.assertTrue(g['confirmBlocked'], '编辑器产物被当成确认稿了：%s' % g)
+        self.assertEqual(g['confirmReason'], 'no_draft')
+        self.assertNotIn('edit.html', g.get('confirmDraft') or '')
+
+
 class TestGateDecision(_Base):
 
     def test_no_draft_blocks(self):
