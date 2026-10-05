@@ -144,7 +144,9 @@ class TestScanAndToJson(unittest.TestCase):
             self.assertTrue(r['ok'], r)
             self.assertFalse(r['hasI18n'])
             self.assertEqual(r['languages'], [])
-            self.assertIn('i18n_export', json.dumps(r, ensure_ascii=False))
+            # 指路必须是**现存**的调用形态（2026-10-05 检讨：原来这里钉的是已收编的
+            # `flythings_i18n_export` —— 提示词与判据一起指向了不存在的 op）
+            self.assertIn('flythings_i18n(action="export")', r['message'])
         finally:
             U.cleanup(plain)
 

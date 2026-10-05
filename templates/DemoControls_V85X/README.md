@@ -9,7 +9,7 @@
 
 | 页（`ui/<p>.json` → `<p>Activity`） | 演示的控件 | 真机截图 |
 |---|---|---|
-| `main`（主界面：slidewindow + 7 个图标磁贴按钮） | slidewindow / button(picTab) / textview | `temp/fix_main.png` |
+| `main`（主界面：`window__1` 容器 + 7 个图标磁贴按钮；**2026-10-05 起不再用 slidewindow**） | window / button(picTab) / textview | `temp/fix_main.png` |
 | `text` 文本控件 | textview 字号 14/20/32/44、alignment 0/36/37/38、colorTab、跑马灯 roll | `temp/acc_text.png` |
 | `button` 按键 / 输入 | button、**带图标按键**（切图==控件盒，图标烘焙在图内）、checkbox、edittext | `temp/acc_button.png` |
 | `progress` 进度条 / 滑条 | seekbar（可拖，条 448×32 + 滑块 32×32）、circlebar（按进度裁图成扇形） | `temp/acc_progress.png` |
@@ -43,21 +43,28 @@ fun build   --project-dir <新工程> -p v85x  # 编译
 - ⛔ **不要删含业务代码的 `<p>Logic.cc`**（代码衰退）；只有首次构建/空文件才可删了重建。
 - 跳转/返回业务代码**不分叉**：`EASYUICONTEXT->openActivity("<p>Activity")` / `EASYUICONTEXT->goBack()`。
   （fun 构建不产出 `<p>Activity.*`，那是**构建层**差异，不是缺陷。）
-- 主界面新增磁贴 = 在 `ui/main.json` 的 `slidewindow__1` 里加一个 `button__<N>`（`left:8, top:8+i*100, 宽 200, 高 96`）
+- 主界面新增磁贴 = 在 `ui/main.json` 的 **`window__1`**（不能再用 slidewindow：平铺子控件不合层级规范，
+  见 §8）里加一个 `button__<N>`（`left:8, top:8+i*100, 宽 200, 高 96`）
   + 在 `mainLogic.cc` 加 `onButtonClick_menu<X>(ZKButton*)` 回调。
 
 ## 4. 换图标 / 换切图
 
 | 用途 | 文件 | 尺寸口径 |
 |---|---|---|
-| 主界面磁贴 | `menu_<页名>.png`（+ `menu_back.png`） | **== 控件盒**（本模板 200×96） |
-| 进度条轨道 / 有效值 | `pb_track.png` / `pb_fill.png` | == 控件盒（448×32）；⚠️ 只给小圆角（r=4），见下 |
+| 主界面磁贴 | `menu_<页名>.png` | **== 控件盒**（本模板 200×96） |
+| 进度条轨道 / 有效值 | `pb_track.png` / `pb_fill.png` | ⚠️ **实测 450×34**（盒是 448×32）→ 口径不一致，见下 |
 | 圆环底 / 有效环 | `pb_ring_bg.png` / `pb_ring.png` | == 控件盒（200×200） |
 | 滑块 | `pb_thumb.png` | == `thumb.size`（32×32 == 条高；**不是**控件盒） |
 | 表盘 / 指针 | `pt_dial.png` / `pt_needle.png` | 表盘 == 控件盒（300×300）；指针 == `pointerSize`（16×140），铰点 = `fixedPoint`（8,134） |
 | 带图标按键 | `bt_icon_toggle(_p).png` | **== 控件盒**（216×64）：图标烘焙在图内、其余真透明（`iconPosition` 只是"位置"不是盒子，check_all #11 按控件盒核尺寸） |
 
 - 一律放 `resources/images/`，json 里写 `images/xxx.png`（**不带** `resources/` 前缀、不写绝对路径）。
+- ⚠️ **进度条两张图的口径不一致（2026-10-05 检讨实测，待需求方定）**：本节原写「== 控件盒（448×32）、r=4」，
+  而盘上两份是 **450×34 的药丸形**（r = 条高/2 = 17）——`check_all` #11「图片尺寸 == 盒子」因此判 FAIL
+  （`pb_track/pb_fill 450x34 != position 448x32`）。两种收口法二选一：**① 按本节口径重出 448×32 / r=4**
+  （出图走 op `flythings_generate_ui_assets` 或 `ui_tools/gen_res.py` 的公开函数，别 1x 直画）；
+  **② 认下 +1px 透明边 + 药丸形**，把本节与 §8 改成实测口径。未定之前 §8 把它记成已知 FAIL。
+- `menu_back.png` 是**孤儿**（72×72、全仓没有任何 json 引用它，只有本节提过）——要么删，要么真接进主界面。
 - 出图优先 `op flythings_generate_ui_assets`（图标）或 `ui_tools/gen_res.py` 的公开函数；**禁止 1x 直画**。
 - ⚠️ **进度条的「有效图」会被平台按进度横向拉伸**（离线渲染器同口径：`resize((w*frac, h))`）——
   所以药丸形端头在低进度时圆角会被压小，轨道色从月牙处露出来（**参考工程同样是药丸形，同样躲不掉**）。
@@ -104,24 +111,29 @@ adb shell /data/touch tap 76 748                 # 各页「返回」键中心
 
 7 页逐页结果（进页 ✓ / 返回 ✓ / 无假死 ✓）与截图见 `temp/acc_*.png`。
 
-## 8. 本模板的 `check_all` 状态（13 项 FAIL → 2 项，其余全 PASS）
+## 8. 本模板的 `check_all` / `ui_compile` 状态（2026-10-05 检讨按实测重写）
 
-`python ui_tools/check_all.py templates/DemoControls_V85X`（基线：`templates/HelloWord_V85X` 全 PASS）。
-已修 11 项：8 个 Logic 缺 IDE 标准**注册定时器表**（生成的 `ui_*.h` 里 `INIT_UI_TIMERS` 本就引用
-`REGISTER_ACTIVITY_TIMER_TAB`，fun 生成的桩没给 → 已按 IDE 形态补上；注意该宏是**语句宏**，只能展开在
-函数体内，放文件作用域编译不过）、文本页特殊字符（①②③④ / ⚠）、文本页 7 处最小尺寸、
-`scrollwindow` 补内层 `window`（含必填键 `hideTimeOut`/`modal`）、图标钮 `picTab` 改成控件盒尺寸。
+`python ui_tools/check_all.py templates/DemoControls_V85X`（基线：`templates/HelloWord_V85X` 全 PASS）
+＋ `python ui_tools/ui_compile.py templates/DemoControls_V85X`。
 
-**剩余 2 项**：
+- **`ui_compile`（编译式验收）：`fatal=0 error=0` 通过**（9 页 / 75 控件；7 条 warn 是「注册表外字段」提示）。
+- `check_all`：已修 13 项里的 11 项（8 个 Logic 缺 `REGISTER_ACTIVITY_TIMER_TAB`、文本页特殊字符、
+  文本页 7 处最小尺寸、`scrollwindow` 补内层 `window`、图标钮 `picTab` 改控件盒尺寸、
+  **主界面 `slidewindow` → `window__1`**（层级规范）、**新页 `maintest` 补 9 个必填键**）。
 
-| FAIL | 现象 | 修法 |
+**剩余 3 项**（都是"真机可见可用、但与判据不一致"，未擅自改）：
+
+| FAIL | 现象 | 收口法 |
 |---|---|---|
-| `ui/main.json`：`slidewindow` 平铺子控件（`button__100..106`） | 真机菜单正常、点击跳转正常 | 规范要求 slidewindow 子内容进 `items[]`（`slideItem`：colorTab / picTab / text），导航改走 `onSlideItemClick_menuSlide(pSlideWindow, index)`（`mainLogic.cc` 里桩已生成） |
+| `ui/progress.json`：`pb_track`/`pb_fill` **450×34 ≠ 盒 448×32**（#11 + 「PNG 尺寸 == 盒子」两处报同一问题） | 真机进度条正常显示 | 见 §4 的两条路（重出 448×32/r=4，或改判据/文档口径）——**待需求方定** |
 | `ui/text.json`：`rollA/rollB` 最小尺寸（需 ≥964×22，盒 448×40） | **这是跑马灯的设计意图**（长串横向滚动；真机两行各停在同一长串的不同段 = 滚动生效） | ⚠️ `check_all` #13 没有 `rollEnable` 豁免 —— 跑马灯页**必然**红。要么给 checker 加「`rollEnable=true` 跳过 #13」的豁免，要么牺牲这页的跑马灯演示 |
 
 ## 9. 其它已知缺项（如实登记，尚未做）
 
-- **`main.json` 的 slidewindow 用子按钮而不是 `items[]`**（见 §8 第一条）：真机可用，但与规范不一致 ——
-  这是本模板唯一一处"能用但不合规范"的结构，改成 items 会牵动整个主界面导航。
+- **第 9 个页面 `maintest`（未接入导航）**：`ui/maintest.json` + `maintest.ftu` + `src/activity/maintestActivity.*`
+  + `src/logic/maintestLogic.cc` —— scrollwindow（内层 window）+ 2 个按钮的试验页，
+  **主界面没有它的磁贴、本 README 也没介绍它**，`ui_compile` 现在能过（必填键已补齐）。
+  ⚠️ 它的 `resolution` 写的是 **480×480**，与本工程其余 8 页的 480×800 不一致 ——
+  接入导航前必须先定：**留着（改 480×800 + 加磁贴 + 在 §1 登记）还是删掉**。
 - 本模板**不含字体副本**（`font/` 未入库）：中文靠设备字体或 `flythings_device_preflight` 自动投递
   （见 `knowledge/devflow/custom-font-config.md`）。

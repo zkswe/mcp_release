@@ -47,7 +47,7 @@ evidence: []
 | `qt-ui`（Qt .ui / Qt Widgets 迁移） | Qt .ui (XML) | migration（迁移） | planned（未实现） | `flythings_map_control` | — | — | 当前只能逐控件走 flythings_map_control + 手工搭 json（无前端转换器） |
 | `vue`（Vue（含 uni-app 类）迁移） | Vue SFC / 模板 | migration（迁移） | planned（未实现） | `flythings_map_control` | — | — | 当前只能逐控件走 flythings_map_control + 手工搭 json（无前端转换器） |
 
-> 校验链里的 `ui_compile`（编译式验收）**尚未实现**（见 `REMEDIATION-UI-PIPELINE.md` WS-1）：登记它表示"该入口的产物将来必须过它"，**现在还没过**。
+> 校验链里的 `ui_compile`（编译式验收）**已实现**：`ui_tools/ui_compile.py`（`python ui_tools/ui_compile.py <工程根>`；op `flythings_validate_project` 的 `ui_check` 也会跑它）。登记它 = 该入口的产物必须过它 —— **没跑过就不算验收**。
 
 ## 相关
 

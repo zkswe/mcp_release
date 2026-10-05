@@ -1040,13 +1040,15 @@ def stage_docstring_budget():
                   '%d vs 实测 %d（%s）' % (said, dflt[0][0], dflt[0][1]) if said != dflt[0][0]
                   else '%d（%s）= 实测' % (dflt[0][0], dflt[0][1]))
         best = ('', 0)
+        sec_err = []                            # 段渲染失败要能被看见（不静默吞）
         for o in reg:
             for s in _osl.section_ids():
                 if s == 'all':
                     continue
                 try:
                     n = len(_osl.render_section(o, s) or '')
-                except Exception:               # noqa: PERF203
+                except Exception as e:          # noqa: PERF203 —— 记进 sec_err，下面进 detail
+                    sec_err.append('%s:%s(%s)' % (o, s, type(e).__name__))
                     continue
                 if n > best[1]:
                     best = ('%s:%s' % (o, s), n)

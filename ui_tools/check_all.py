@@ -2366,12 +2366,16 @@ def main(project_root):
             if ft > jt + 60:
                 print('  [WARN] %s ftu 比 json 新 %.0f 秒（开发者/IDE 改过 ftu，自动以 ftu 同步 json）'
                       % (os.path.basename(jf), ft - jt))
-                rc1, _ = _run_fui([FUI, 'unpack', ui])
+                # ⛔ 只解**这一页**（2026-10-05 实测踩到）：原来跑的是 `fui unpack <ui 目录>` —— 目录级
+                # 反解会把**每一页**的 json 都按各自 ftu 重写，于是"B 页 ftu 新"会**连带覆盖 A 页
+                # 刚改完、还没 pack 的 json**（我自己的改动就这么被静默回滚了；对用户 = 丢在制品）。
+                # 这与本段的注释口径（"ftu 比 json 新的那一页才同步"）本来就不一致。
+                rc1, out1 = _run_fui([FUI, 'unpack', fp, jp])
                 if rc1 == 0:
                     os.utime(jp, (ft, ft))  # json mtime 对齐 ftu（ftu 同步出的 json mtime 是 ftu 内嵌时间戳，需对齐避免误判）
                     print('  [PASS] %s ftu→json 同步 成功' % os.path.basename(jf))
                 else:
-                    log(False, '%s ftu→json 同步 失败' % os.path.basename(jf))
+                    log(False, '%s ftu→json 同步 失败: %s' % (os.path.basename(jf), (out1 or '')[-120:]))
             else:
                 log(True, '%s ftu 与 json 时间戳正常' % os.path.basename(jf))
     # ② pack 生成 ftu（json→ftu 已验证无损）
