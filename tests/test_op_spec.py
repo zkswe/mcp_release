@@ -94,9 +94,19 @@ class TestOpSpecRegistry(unittest.TestCase):
                          % (rep['perOpMax'], rep['over']))
         self.assertLessEqual(rep['total'], rep['totalMax'],
                              '常驻面（tool description）合计超 %d' % rep['totalMax'])
-        # 完整契约不进常驻，但单条仍要有上限（否则 describe 一次就灌爆上下文）
-        self.assertEqual(rep['contract_over'], [], '完整契约单条超 %d 字符：%s'
-                         % (rep['contractPerOpMax'], rep['contract_over']))
+        # ⚠️ 2026-10-05 判据迁移（B1 按需面分层）：**全文允许超上限** —— 超了就由
+        # `render_default()` 退化成「skeleton + 段目录」，这正是分层机制的目的；
+        # 若仍拿"全文 ≤ 上限"当硬判据，新加一个长 op 就会红、机制等于白做。
+        # 实测触发过：`flythings_build_ui_flow` 加到 955（默认形态 362、最长单段 494，都合规）。
+        # 所以硬判据移到**实际会返回的东西**上：默认形态 + 除 `all` 之外的每一段
+        # （`all` 恒等于全文，把它算进"单段"等于换个名字判全文）。全文超限只告警。
+        self.assertEqual(rep['default_over'], [], '默认形态（describe 不传 section 时给的）超 %d：%s'
+                         % (rep['contractPerOpMax'], rep['default_over']))
+        self.assertEqual(rep['section_over'], [], '单段超 %d 字符（那样"取一段"也会爆）：%s'
+                         % (rep['contractPerOpMax'], rep['section_over'][:5]))
+        if rep['contract_over']:
+            print('       [warn] 全文超 %d 的 op（会走退化形态）：%s'
+                  % (rep['contractPerOpMax'], rep['contract_over']))
 
     def test_tool_face_tiers(self):
         """工具面三层（2026-10-03 架构）：常驻只放「选不选 + 怎么调 + 安全铁律」，
@@ -132,12 +142,25 @@ class TestOpSpecRegistry(unittest.TestCase):
             self.assertLessEqual(len(osl.render(op)), reg['budget']['perOpMax'])
 
     def test_on_demand_entry_points(self):
-        """按需面必须有入口：dispatcher 的 op='describe:<名>' + 资源 flythings://ops/<名>。"""
+        """按需面必须有入口：dispatcher 的 op='describe:<名>' + 资源 flythings://ops/<名>。
+
+        ⚠️ 2026-10-05 改口径（B1 按需面分层）：`describe` 不传 `section` 时给的是
+        **默认形态**（`render_default`）—— 全文 ≤ 上限时它**逐字节等于全文**，超限时退化成
+        `skeleton` + 段目录。这里原来钉的是 `== render_contract`（= 恒给全文），
+        那条断言在契约涨过 900 之后就会红，而"超限退化"恰恰是分层机制的目的。
+        所以改成钉**默认形态**，并额外钉"默认形态是骨架的延伸"。
+        """
         import mcp_server
         r = json.loads(mcp_server._describe('flythings_build_ui_flow'))
         self.assertTrue(r['ok'])
-        self.assertEqual(r['contract'], osl.render_contract('flythings_build_ui_flow'))
-        self.assertIn('流程', r['contract'])              # 按需字段确实在契约里
+        self.assertEqual(r['contract'], osl.render_default('flythings_build_ui_flow'))
+        self.assertTrue(r['contract'].startswith(osl.render_section('flythings_build_ui_flow',
+                                                                   'skeleton')),
+                        '默认形态必须以 skeleton 开头（三级包含链：常驻 ⊆ skeleton ⊆ 默认）')
+        # 按需字段确实能取到（全文走 section=all，逐字节等于 render_contract）
+        full = json.loads(mcp_server._describe('flythings_build_ui_flow', 'all'))['contract']
+        self.assertEqual(full, osl.render_contract('flythings_build_ui_flow'))
+        self.assertIn('流程', full)
         bad = json.loads(mcp_server._describe('flythings_not_an_op'))
         self.assertFalse(bad['ok'])
         self.assertEqual(bad['error']['code'], 'UNKNOWN_OP')

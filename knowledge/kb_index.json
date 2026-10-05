@@ -1,16 +1,16 @@
 {
  "meta": {
   "schema": 1,
-  "built_at": "2026-10-05 00:04:16",
-  "mcp_version": "0.27.195-open",
-  "doc_count": 113,
-  "source_hash": "1d2e240bc393cdeff764dafecd6e63a7"
+  "built_at": "2026-10-05 09:30:51",
+  "mcp_version": "0.27.196-open",
+  "doc_count": 114,
+  "source_hash": "4223d5d26ece9ee69c53a649d2e76b3d"
  },
  "summary": {
-  "total": 113,
+  "total": 114,
   "byCategory": {
    "components": 1,
-   "devflow": 56,
+   "devflow": 57,
    "hardware": 6,
    "media": 1,
    "t113-car": 2,
@@ -18,16 +18,16 @@
    "v85x": 10
   },
   "byStatus": {
-   "review": 108,
+   "review": 109,
    "verified": 5
   },
   "withEvidence": 16,
-  "needsEvidence": 97,
+  "needsEvidence": 98,
   "noQueries": 79,
   "stale": 0,
   "inbox": 0,
   "aging": 0,
-  "manualOnly": 96
+  "manualOnly": 97
  },
  "docs": [
   {
@@ -1122,6 +1122,47 @@
    "frontMatterError": ""
   },
   {
+   "id": "devflow-flythings-os-positioning",
+   "path": "knowledge/devflow/flythings-os-positioning.md",
+   "title": "平台定位（第一权威）：FlyThings OS = Linux 基座 + 自研框架；FlyThings UI ≠ LVGL",
+   "category": "devflow",
+   "platforms": [],
+   "tags": [
+    "FlyThings 是什么",
+    "FlyThings 系统",
+    "对标 buildroot",
+    "对标 openwrt",
+    "不是 ESP32",
+    "不是单片机",
+    "不是 RTOS",
+    "FlyThings UI",
+    "EasyUI",
+    "zkgui 是什么",
+    "zkgui 和 LVGL",
+    "平台能力基线",
+    "平台定位",
+    "系统框架"
+   ],
+   "status": "review",
+   "confidence": "manual",
+   "verified_at": "2026-10-05",
+   "stale_days": 365,
+   "origin": "total",
+   "evidenceCount": 0,
+   "evidence": [],
+   "evidenceLevel": "manual-only",
+   "needsEvidence": true,
+   "hasQueries": true,
+   "bytes": 12938,
+   "sha256": "bad05f36429df3927d2f63ff8aa3c776f0acf0d6539b3cf3c964cde9748f7a5b",
+   "fingerprint": "e3e049824aabb8d7",
+   "ageDays": 0,
+   "freshness": "fresh",
+   "stale": false,
+   "staleDays": 365,
+   "frontMatterError": ""
+  },
+  {
    "id": "devflow-ftu-json-pipeline",
    "path": "knowledge/devflow/ftu-json-pipeline.md",
    "title": "ftu 是什么：ftu 开发 / ftu 编辑 / ftu 修改 / ftu 格式 / ftu 逆向（ftu 转 json / unpack）（UI 文件 main.ftu 与 json 的关系）",
@@ -2190,8 +2231,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": true,
-   "bytes": 26130,
-   "sha256": "30b97247945e09834369330cb25e2ad574c01b6b7eb29409c7b1e9c06e80994d",
+   "bytes": 26909,
+   "sha256": "27f3e0a40f9343c488b09cc7bae081fcef5fb06eb0ff8e9128e2364086fc2114",
    "fingerprint": "200f1195e0882e08",
    "ageDays": 6,
    "freshness": "fresh",

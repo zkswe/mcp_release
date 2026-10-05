@@ -650,6 +650,43 @@ class Renderer:
                 d.text((x + lx, y + ly), ln, font=f, fill=rgba)
         img.alpha_composite(layer)
 
+    # ---------- 子盒（iconPosition / textPosition） ----------
+    def _pos_box(self, node, key, x, y, w, h, ctype='', caption=''):
+        """`iconPosition` / `textPosition` → 屏幕矩形（**相对控件盒**的坐标，规格见 `iconBox`）。
+
+        ⚠️ 为什么必须走子盒（2026-10-05 用户报「带图标按键的对齐不对」）：
+        `textPosition` 是**文字在控件内的盒子**，文字的 `alignment` 与居中都相对它算。
+        带图标的按钮靠 `textPosition.left` 让开图标区（例：控件 216 宽、`textPosition.left=68`），
+        改前渲染器整条忽略了这两个字段，把文字在**整控件盒**里居中 → 文字压在左侧图标区上。
+        缺 `width/height` 的容错：宽度取到控件右沿、高度取到控件下沿（比夹成 0 更接近意图），
+        并**如实记账**（规格要求"控件尺寸≠图片尺寸时必须显式"写全）。
+        """
+        box = node.get(key) if isinstance(node.get(key), dict) else None
+        if not box:
+            return None
+        bl = int(box.get('left') or 0)
+        bt = int(box.get('top') or 0)
+        bw = int(box.get('width') or 0)
+        bh = int(box.get('height') or 0)
+        if bw <= 0 or bh <= 0:
+            self.report.unsupported(
+                self.page, ctype, caption, key,
+                '子盒 %s 缺宽/高（规格要求显式写全）→ 按"到控件边缘"容错渲染' % key)
+            bw = bw if bw > 0 else max(1, w - bl)
+            bh = bh if bh > 0 else max(1, h - bt)
+        # ⚠️ **越界 = 写法可疑，如实报**（2026-10-05 实测）：`iconBox` 的坐标是**相对控件盒**的
+        # （规格 `sharedTypes.iconBox` 的口径）。实测仓内 33 处 `textPosition`：**9 处落在盒内**
+        # （相对写法 —— 手写模板全属此类，也就是本轮修好的那些），**24 处按相对解释会整体越出控件盒**
+        # —— 那些是把 `position` 逐字拷过来的绝对写法（生成物/示例）。引擎对越界值的处置**未实测**，
+        # 所以这里**只报不猜**：照相对画 + 记账，让人一眼看到"这个文件很可能写错了"。
+        if bl + bw > w + 1 or bt + bh > h + 1 or bl < 0 or bt < 0:
+            self.report.unsupported(
+                self.page, ctype, caption, key,
+                '%s 按「相对控件盒」解释会越界（控件盒 %dx%d，子盒 left=%d top=%d %dx%d）'
+                '—— 疑似把 position 逐字拷贝成了绝对坐标；引擎对越界值的处置未实测，'
+                '此处照相对画（要精确请给不越界的相对值）' % (key, w, h, bl, bt, bw, bh))
+        return (x + bl, y + bt, bw, bh)
+
     # ---------- 单节点 ----------
     def draw_self(self, img, node, x, y, w, h, ctype, caption):
         """底色 → 背景图 → 文字（+ 专有控件）。"""
@@ -703,9 +740,18 @@ class Renderer:
         elif ctype in ('painter', 'pointer', 'diagram', 'cameraview', 'slidetext'):
             self.report.unsupported(self.page, ctype, caption, ctype,
                                     'v0 未专有实现 → 通用兜底（底色+背景图+文字）')
-            self.draw_text(img, node, x, y, w, h, ctype, caption)
+            self._text_in_subbox(img, node, x, y, w, h, ctype, caption)
+        elif ctype == 'button' and self._pos_box(node, 'textPosition', x, y, w, h):
+            # 带图标按键：文字在 `textPosition` 子盒里排版（`alignment` 相对该盒）
+            self._text_in_subbox(img, node, x, y, w, h, ctype, caption)
         else:
             self.draw_text(img, node, x, y, w, h, ctype, caption)
+
+    def _text_in_subbox(self, img, node, x, y, w, h, ctype, caption):
+        """文字按 `textPosition` 子盒排版（缺该字段时退回整控件盒 → 与旧行为一致）。"""
+        box = self._pos_box(node, 'textPosition', x, y, w, h, ctype, caption)
+        bx, by, bw, bh = box if box else (x, y, w, h)
+        self._draw_label(img, node, node.get('text') or '', bx, by, bw, bh, ctype, caption)
 
     # ---------- 专有 ----------
     def draw_edittext(self, img, node, x, y, w, h, caption):

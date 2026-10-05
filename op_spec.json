@@ -6,8 +6,8 @@
     "perOpMax": 360,
     "totalMax": 6000,
     "contractPerOpMax": 900,
-    "basis": "实测（2026-10-03，48 op）：常驻合计 **5125**、单条最长 224（`create_project`）—— 上限 6000 留 15% 余量（按本轮实测单条均值 ≈ 再加 8 个 op，**不是**早先写的 14 个）。**2026-10-03 把 `params` 移出常驻**（省 1148 字符 / 19.5%：参数名 `list` 已回、语义 `describe` 按需给，常驻再写一遍是重复计费），常驻从 5878/6000=98% 降到 4730/6000=78.8%；同日三批 `notes` 清零 + 4 条新硬规则（`knowledge_export` 强制脱敏、`fui_pack` ftu 是编译产物、`test_run` no-baseline≠通过、`get_package_api` 注册表没有≠平台没有）又把常驻推到 5125/6000=84.7% —— 该常驻的判据（会让 AI 误判/泄露的那类）进常驻并**接受预算上涨**，这是分层的代价。**口径 = 渲染产物字符数**，由 gen_op_docs 计算并进发布闸门。⚠️ **本段的「常驻合计 N」由门禁对账**（check_consistency 的 `budget.basis 常驻数字`）—— 改 docstring 后忘了改这里会红，不会再漂。",
-    "note": "旧口径 totalMax=12000 是「完整契约全进常驻」时代的数；分层后它失去意义 —— 常驻面看本段，完整契约看 contractPerOpMax。⚠️ **按需面已按段分层（2026-10-05）**：单条上限 900，最长 `flythings_get_package_api` 已 **892/900**。分层前这里写着「余量 143」（且把最长记成了 build_ui_flow 757，实为 i18n_to_json；那条错数字同时活在 TODO 与评审报告里）—— 实际余量一直更小，而\"往契约里加东西\"的代价实测很大（加一次 excludes 吃 47 字符、给 get_package_api 加一条规则吃 411）。现在计费单位是\"**一次取用**\"而非\"整条 op\"：`describe(section=…)` 按段取，默认形态在全文超限时自动退化成 skeleton + 段目录（不需要人工重排预算）。实测单段最大 645（flythings_i18n_to_json:rules）。加内容前先看段余量，别再往单条上堆。"
+    "basis": "实测（2026-10-05，48 op）：常驻合计 **5925**、单条最长 332（`create_project`）—— 上限 6000，**余量只剩 75 字符 / ≈1 条 op**。历史：2026-10-03 把 `params` 移出常驻（省 1148 字符 / 19.5%：参数名 `list` 已回、语义 `describe` 按需给，常驻再写一遍是重复计费），常驻从 5878/6000=98% 降到 4730/6000=78.8%；同日三批 `notes` 清零 + 4 条新硬规则（`knowledge_export` 强制脱敏、`fui_pack` ftu 是编译产物、`test_run` no-baseline≠通过、`get_package_api` 注册表没有≠平台没有）把它推到 5125/6000=84.7% —— 该常驻的判据（会让 AI 误判/泄露的那类）进常驻并**接受预算上涨**，这是分层的代价。**2026-10-05 平台定位口径**（需求方定规）再加 5 条定位规则（`create_project` / `create_bin_project` / `build_ui_flow` / `list_packages` / `get_project_spec`：Linux 基座、非 MCU/ESP32 SDK、GUI 是自研 EasyUI≠LVGL），常驻到 **5925/6000=98.8%** —— 定位判错会让 AI 砍掉整层 Linux 能力、按 LVGL 类推 API，属「必须常驻」的判据；**下次要加常驻内容必须先腾地方（不要直接抬 totalMax）**。**口径 = 渲染产物字符数**，由 gen_op_docs 计算并进发布闸门。⚠️ **本段的「常驻合计 N」由门禁对账**（check_consistency 的 `budget.basis 常驻数字`）—— 改 docstring 后忘了改这里会红，不会再漂。",
+    "note": "预算口径（数字全部实测，勿手写第二份）：**常驻面**合计 5925/6000；**按需面**单条上限 900，最长 `flythings_build_ui_flow` 已 **895/900**。按需面已按段分层（2026-10-05）：计费单位是「一次取用」而非「整条 op」—— 全文超限时默认形态自动退化成 skeleton + 段目录（现测：默认形态最长 895（flythings_build_ui_flow）、除 all 外最长单段 645（flythings_i18n_to_json:rules））。all 恒等于全文、不参与单段判据（它是逃生门）。加内容前先看段余量，别再往单条上堆。"
   },
   "renderOrder": [
     "summary",
@@ -95,7 +95,8 @@
         }
       ],
       "hardRules": [
-        "src/activity/ 由 IDE 按 ftu 生成，禁止创建/修改/覆盖；业务只写 src/logic/*.cc",
+        "**平台定位**：Linux 基座（基线同 buildroot/OpenWrt，非 MCU/ESP32 SDK）；GUI 是自研 EasyUI（≠ LVGL）。见 `flythings-os-positioning.md`",
+        "src/activity/ 由 ftu 生成，禁建/改/覆盖；业务只写 src/logic/*.cc",
         "新需求必须先出设计稿/原型并让用户确认（见 prototype-flow）再建工程 —— 跳过确认 = 返工"
       ],
       "rules": [
@@ -632,7 +633,8 @@
         "注意事项"
       ],
       "hardRules": [
-        "**没读过规范不许开始写** `ui/*.json` 或业务代码 —— 目录规则/生成规则/注意事项都在这里。"
+        "**没读过规范不许开始写** `ui/*.json` 或业务代码 —— 目录规则/生成规则/注意事项都在这里。",
+        "**平台定位**：Linux 基座（判能力基线同 buildroot/OpenWrt），**不是** MCU/RTOS/ESP32 板级 SDK；GUI 是自研 EasyUI（≠ LVGL）。见 `knowledge/devflow/flythings-os-positioning.md`"
       ],
       "excludes": {
         "why": "带下列词尾的是**具体 op 的用法或字段语义**，不是工程目录规范",
@@ -826,8 +828,10 @@
       "flow": [
         "流程：json↔ftu 时间戳检查 → fui pack → fun install → fun build → 设备探测 + fun launch（只编译传 with_launch=False）→ 字体体检 + 设备侧 md5 比对（staleOnDevice=true ⇒ 设备旧版）。"
       ],
+      "hardRules": [
+        "**平台定位**：Linux 基座（判能力基线同 buildroot/OpenWrt），**不是** MCU/RTOS/ESP32 板级 SDK；GUI 是自研 EasyUI（≠ LVGL）。见 `knowledge/devflow/flythings-os-positioning.md`"
+      ],
       "rules": [
-        "建工程 = 拷贝 `templates/<平台>` 模板 + 重命名（`fun create` 交互式，不裸调）",
         "**桩禁手写**；缺桩 → 让 `fun build` 追加后**把桩移到文件作用域**（非破坏）。⛔ `rm <p>Logic.cc` + 重建**只允许首次构建/空文件**；有业务代码时删除 = **代码衰退，禁止**",
         "加页 = `fui pack ui/<p>.json ui/<p>.ftu` → `fun build`（生成 `src/logic/<p>Logic.cc` 与回调桩；细节见 `knowledge/devflow/page-architecture-spec.md` §1.5）",
         "fun 能力表见 `fun_capabilities.json`（`sim` 未释放、`run` 不明确，不用）",
@@ -952,6 +956,9 @@
       "docRef": "knowledge/devflow/dependency-package-docs.md",
       "seeAlso": [
         "knowledge/devflow/dependency-package-docs.md"
+      ],
+      "hardRules": [
+        "**平台定位**：Linux 基座（判能力基线同 buildroot/OpenWrt），**不是** MCU/RTOS/ESP32 板级 SDK；GUI 是自研 EasyUI（≠ LVGL）。见 `knowledge/devflow/flythings-os-positioning.md`"
       ],
       "triggers": [
         "有哪些包",
@@ -1163,6 +1170,10 @@
       ],
       "rules": [
         "目录非空直接报错；非交互时自动补 --app-version / --description"
+      ],
+      "hardRules": [
+        "**平台定位**：Linux 基座（判能力基线同 buildroot/OpenWrt），**不是** MCU/RTOS/ESP32 板级 SDK；GUI 是自研 EasyUI（≠ LVGL）。见 `knowledge/devflow/flythings-os-positioning.md`",
+        "bin 工程**只用于验证**（抢串口/裸逻辑），界面交付必须走 app 工程（`flythings_create_project`）——init 托管的是 app"
       ],
       "noneReason": "MCU（FlyThings Lite）侧工程，按 MCU 口径单独维护，不进 open 版 knowledge/",
       "triggers": [

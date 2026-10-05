@@ -253,5 +253,75 @@ class TestFontFallback(SeekbarRenderBase):
         self.assertIn('度量', notes, '记账要说明"字形度量不保证与设备一致"')
 
 
+class TestSubBoxTextLayout(SeekbarRenderBase):
+    """`iconPosition` / `textPosition` 子盒：文字必须按 `textPosition` 排版（2026-10-05 用户报告）。
+
+    现象：带图标按键的文字**压在图标上**。根因是渲染器整条忽略了 `textPosition`，
+    把文字在**整控件盒**里居中 —— 而带图标按键正是靠 `textPosition.left` 让开图标区。
+    坐标口径：`sharedTypes.iconBox` 明说 `iconPosition/textPosition` 用该结构，故为**相对控件盒**。
+    """
+
+    def _render_button(self, node_extra, box=(16, 100, 200, 48), rep=None):
+        left, top, w, h = box
+        node = {'text': 'ABCD', 'fontSize': 20, 'alignment': 36,          # 36 = 靠左+垂直居中
+                'colorTab': {'color0': 0xFFFFFF}, 'bgColorTab': {'color0': 0x203040}}
+        node.update(node_extra)
+        doc = {'resolution': {'width': 480, 'height': 800},
+               'position': {'left': 0, 'top': 0, 'width': 480, 'height': 800},
+               'backgroundColor': -16777216,
+               'button__1': dict(node, position={'left': left, 'top': top,
+                                                 'width': w, 'height': h})}
+        jp = os.path.join(self.tmp, 'ui', 'main.json')
+        os.makedirs(os.path.dirname(jp), exist_ok=True)
+        with io.open(jp, 'w', encoding='utf-8') as f:
+            json.dump(doc, f, ensure_ascii=False)
+        out = os.path.join(self.tmp, 'ui', 'main.render.png')
+        J.render_one(self.tmp, jp, out, report=rep or J.Report(), verbose=False)
+        with Image.open(out) as im:
+            return im.convert('RGBA')
+
+    def _text_cols(self, im, box):
+        """统计控件盒内「亮像素」（=文字）所在列区间。"""
+        left, top, w, h = box
+        cols = []
+        for cx in range(left, left + w):
+            for cy in range(top, top + h):
+                r, g, b, a = im.getpixel((cx, cy))
+                if r > 180 and g > 180 and b > 180:
+                    cols.append(cx - left)
+                    break
+        return (min(cols), max(cols)) if cols else None
+
+    def test_text_honours_text_position_offset(self):
+        """`textPosition.left=96` → 文字必须从 rel 96 之后开始（改前会从 rel 0 附近开始）。"""
+        box = (16, 100, 200, 48)
+        im = self._render_button({'textPosition': {'left': 96, 'top': 12,
+                                                   'width': 96, 'height': 24}}, box)
+        cols = self._text_cols(im, box)
+        self.assertIsNotNone(cols, '没找到文字像素')
+        self.assertGreaterEqual(cols[0], 94,
+                                '文字起点 %d 应 >= textPosition.left(96) 附近（被忽略时会是 ~2）'
+                                % cols[0])
+
+    def test_no_text_position_keeps_full_box_centring(self):
+        """没有 `textPosition` 时退回整控件盒（与旧行为一致，不回归普通按键）。"""
+        box = (16, 100, 200, 48)
+        im = self._render_button({}, box)
+        cols = self._text_cols(im, box)
+        self.assertIsNotNone(cols)
+        self.assertLess(cols[0], 60, '无 textPosition 时应仍在整盒居中（左起应靠前），实测 %d'
+                        % cols[0])
+
+    def test_out_of_box_text_position_is_reported(self):
+        """越界的 `textPosition`（= 把 position 逐字拷成绝对坐标）必须**如实报**，不许静默画错。"""
+        rep = J.Report()
+        box = (16, 100, 200, 48)
+        self._render_button({'textPosition': {'left': 168, 'top': 212,
+                                              'width': 64, 'height': 16}}, box, rep)
+        notes = json.dumps(rep.as_dict(), ensure_ascii=False)
+        self.assertIn('越界', notes, '越界写法必须被记账（它是可疑写法，不是正常输入）')
+        self.assertIn('textPosition', notes)
+
+
 if __name__ == '__main__':
     unittest.main()

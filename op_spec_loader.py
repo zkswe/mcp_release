@@ -389,8 +389,17 @@ def budget_report():
     drows = [(op, len(render_default(op))) for op in registered()]
     drows.sort(key=lambda r: -r[1])
     srows = []
-    for sid in section_ids():
-        srows.extend((('%s:%s' % (op, sid)), len(render_section(op, sid))) for op in registered())
+    for op in registered():
+        for sid in section_ids():
+            # ⚠️ **`all` 不参与硬判据**（2026-10-05 实测到的一次真实超限）：
+            # `all` 是逃生门，语义上**恒等于全文**（`render_section(op,'all') == render_contract(op)`），
+            # 所以把它算进"单段 ≤ 上限"等于换个名字判"全文 ≤ 上限" —— 而"全文可以超"正是本机制的目的。
+            # 实测例子：并发写者给 `flythings_build_ui_flow` 加了一条平台定位规则 → 全文 955，
+            # 默认形态自动退化成骨架(267)+段目录(362)，而 `all` 被判红。这不是缺陷，是机制在工作。
+            # 真正该守的是**除 `all` 之外的每一段**（它们才是"取一段"的实际单位）。
+            if sid == 'all':
+                continue
+            srows.append(('%s:%s' % (op, sid), len(render_section(op, sid))))
     srows.sort(key=lambda r: -r[1])
     return {'per_op': rows, 'total': sum(c for _, c in rows),
             'perOpMax': per_op_max, 'totalMax': total_max,

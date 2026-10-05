@@ -40,7 +40,8 @@ evidence: []
    |------|------|------|
    | 控件 position | `backgroundPic` / `picTab.picN` / `progressPic` / `secondaryProgressPic` / `thumbPic` | 主盒（默认） |
    | **`thumb.size`**| `thumb.normalPic` / `thumb.pressedPic`（SeekBar / CircleBar 滑块） | **自有尺寸**子盒，不是控件盒（v0.27.75 补） |
-   | `iconPosition` / `textPosition` | — | 是**位置**不是盒子（无 width/height），不参与 |
+   | `iconPosition` / `textPosition` | 按钮/复选框的图标与文字、`textview` 的文字盒 | **子盒**（`{left,top,width,height}`，规格 `sharedTypes.iconBox`）：坐标**相对控件盒**；有图标的按键靠 `textPosition.left` 让开图标区，文字的 `alignment` 也相对该盒算 |
+   ⚠️ **`textPosition` 实测有两种写法，只有一种是相对**（2026-10-05 实测 33 处）：**9 处落在控件盒内**（相对写法 —— 手写模板全属此类，是真口径）；**24 处按相对解释会整体越出控件盒**，那是把 `position` 逐字拷贝成绝对坐标（生成物/示例）。引擎对越界值的处置**未实测**，故离线渲染器照相对画 + 记账（`json2img --report` 报「按相对控件盒解释会越界」）；写新 json 一律给**不越界的相对值**，或干脆省掉该键（省 = 整控件盒）。
    ⚠️ **thumb 曾是核对盲区**（2026-09-16 案例）：`sk_thumb.png` 31×31 而 json 写 `thumb.size` 30×30，`check_all` 与 `verify_assets` 一路 PASS（两边都当「自有尺寸」跳过）→ 真机滑块圆钮与轨道对不上。现行口径：
    - **自动生成图**（`resources/images/`，铁律 #6/#9）thumb 图尺寸 != `thumb.size` → **FAIL**（`mismatch[]`）
    - **手绘 thumb**（`slider_/`、`navi/` 等）失配 → 仅 `stretched[]` 提示：官方基准工程 `SampleUI-New/ui/1024x600/testSlider.json` 本身就是 `slider_/jdt_ht.png` 35×34 配 `thumb.size` 33×35（引擎会拉伸），当 FAIL 会造假警报（基准工程零误报是校准目标）

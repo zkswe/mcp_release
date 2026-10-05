@@ -2,8 +2,8 @@
   "schema": 1,
   "generatedBy": "scripts/gen_manifest.py",
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY/STAGE 表后重新生成，勿手改本文件",
-  "version": "0.27.195-open",
-  "build": "2026-10-03",
+  "version": "0.27.196-open",
+  "build": "2026-10-05",
   "toolCount": 48,
   "cli": {
     "fun": "FlyThings 工程工具（create/install/build/launch，<项目>/.fsc/<平台>/ 下；09-28 前为 .fun/）",
@@ -12,6 +12,7 @@
   "platforms": [
     {
       "platform": "F133",
+      "os": "FlyThings OS（Linux 内核 + 自研系统框架 + 自研 GUI：EasyUI / FlyThings UI）",
       "arch": "riscv64",
       "template": "HelloWord_F133",
       "binTool": "f133",
@@ -21,6 +22,7 @@
     },
     {
       "platform": "F135",
+      "os": "FlyThings OS（Linux 内核 + 自研系统框架 + 自研 GUI：EasyUI / FlyThings UI）",
       "arch": "riscv64",
       "template": "HelloWord_F135",
       "binTool": "f135",
@@ -30,6 +32,7 @@
     },
     {
       "platform": "T113",
+      "os": "FlyThings OS（Linux 内核 + 自研系统框架 + 自研 GUI：EasyUI / FlyThings UI）",
       "arch": "arm",
       "template": "HelloWord_T113",
       "binTool": "t113",
@@ -39,15 +42,17 @@
     },
     {
       "platform": "V85X",
+      "os": "FlyThings OS（Linux 内核 + 自研系统框架 + 自研 GUI：EasyUI / FlyThings UI）",
       "arch": "arm",
       "template": "HelloWord_V85X",
       "binTool": "v85x",
       "packageKey": "v85x",
       "buildable": true,
-      "note": "ARM，摄像头/DVR 常用"
+      "note": "ARM（V851/V853 家族，musl 工具链）；摄像头/DVR 常用。**跑的是 FlyThings OS（Linux 基座）**—— 判能力按 Linux 走（基线同 buildroot/OpenWrt），别当板级 SDK，也别当成\"只是个 zkgui GUI 库\"；与 Z20/Z21（glibc）二进制不通用"
     },
     {
       "platform": "Z20",
+      "os": "FlyThings OS（Linux 内核 + 自研系统框架 + 自研 GUI：EasyUI / FlyThings UI）",
       "arch": "arm",
       "template": "HelloWord_Z20",
       "binTool": "z20",
@@ -57,6 +62,7 @@
     },
     {
       "platform": "Z21",
+      "os": "FlyThings OS（Linux 内核 + 自研系统框架 + 自研 GUI：EasyUI / FlyThings UI）",
       "arch": "arm",
       "template": "HelloWord_Z21",
       "binTool": "z21",
@@ -66,6 +72,7 @@
     },
     {
       "platform": "Z235X",
+      "os": "FlyThings OS（Linux 内核 + 自研系统框架 + 自研 GUI：EasyUI / FlyThings UI）",
       "arch": "arm",
       "template": "HelloWord_Z235X",
       "binTool": "z235x",
@@ -75,6 +82,7 @@
     },
     {
       "platform": "Z6S",
+      "os": "FlyThings OS（Linux 内核 + 自研系统框架 + 自研 GUI：EasyUI / FlyThings UI）",
       "arch": "",
       "template": "",
       "binTool": "",
@@ -84,6 +92,7 @@
     },
     {
       "platform": "Z261",
+      "os": "FlyThings OS（Linux 内核 + 自研系统框架 + 自研 GUI：EasyUI / FlyThings UI）",
       "arch": "",
       "template": "",
       "binTool": "",
@@ -93,6 +102,7 @@
     },
     {
       "platform": "H500S",
+      "os": "FlyThings OS（Linux 内核 + 自研系统框架 + 自研 GUI：EasyUI / FlyThings UI）",
       "arch": "",
       "template": "",
       "binTool": "",
@@ -102,6 +112,7 @@
     },
     {
       "platform": "A33NOR",
+      "os": "FlyThings OS（Linux 内核 + 自研系统框架 + 自研 GUI：EasyUI / FlyThings UI）",
       "arch": "",
       "template": "",
       "binTool": "",
@@ -1081,9 +1092,9 @@
     }
   ],
   "docs": {
-    "knowledgeFiles": 115,
+    "knowledgeFiles": 116,
     "wikiFiles": 122,
-    "ragChunks": 1931,
-    "ragPaths": 155
+    "ragChunks": 1945,
+    "ragPaths": 156
   }
 }
