@@ -902,14 +902,40 @@ def flythings_get_package_api(package_id, platform='F133', version=None, focus='
         # ⚠️ **不静默**（2026-10-05 实测缺口）：目录不在时原实现返回 success=True + 空 headers/classes，
         # 调用方分不清"这个平台没装包"与"这个包没有可解析的类" —— 前者要装、后者要用别的手段看 API。
         # 报错文案必须给出**可执行**的下一步（DESIGN_SPEC 第 3 条：读不到要显式降级并说怎么复验）。
+        #
+        # 2026-10-05 补（需求方口径「远端提供的这些库是否有对应材料让 AI 正确处理」）：
+        # `success` 仍为 False（"平台级精确签名没拿到"这个事实不能掩盖，有用例钉着），
+        # 但**必须把仓库包卡里的离线 API 面一并给出** —— `packages/<包>/package.yaml` 就是为 AI 写的
+        # （summary / entry / api 签名 / usage_cpp / 真机 verified / gotchas），它是**确定性、离线、可复现**的。
+        # 否则调用方看到 False 就止步，明明手里已经有一份能直接用的 API 资料。
+        card = package_card(package_id)
+        offline = None
+        if card:
+            offline = {
+                'source': card.get('cardPath'),
+                'kind': 'repo-card',
+                'summary': card.get('summary'),
+                'entry': card.get('entry'),
+                'headers': card.get('headers'),
+                'api': card.get('api'),
+                'usage': card.get('usage_cpp'),
+                'gotchas': card.get('gotchas'),
+                'verified': card.get('verified'),
+                'readme': card.get('readmePath'),
+            }
         return {'success': False,
                 'error': (f'{platform} 的 {package_id} 头文件不在本机（{inc} 不存在）'
                           f'—— 本机 registry/public/ 下只有**跑过 `fun install` 的平台**'),
                 'hint': (f'先在该平台工程里跑一次安装：`fun install --platform {str(platform).lower()}`'
                          '（或 `flythings_add_package(project_root, "<包名>", with_install=True)`），'
-                         '然后重试本 op'),
+                         '然后重试本 op；**只是想看 API 怎么用**则不必装 —— 直接用下面的 offlineApi'),
+                'offlineApi': offline,
+                'offlineNote': ('以上来自仓库包卡（packages/%s/package.yaml，头文件实读写成、含真机实测坑），'
+                                '**离线可用、可复现**；差异点：easyui 等库的**版本**在不同平台不同，'
+                                '若要逐字节的当平台签名，仍需 fun install 后重试' % package_id)
+                               if offline else ('仓库里没有 %s 的包卡，装好后重试' % package_id),
                 'version': v, 'platform': platform, 'package': package_id,
-                'card': package_card(package_id)}
+                'card': card}
     classes = _parse_header_classes(inc, focus=focus)
     readme = _pkg_readme(package_id, platform, v)
     examples = _extract_code_blocks(readme)

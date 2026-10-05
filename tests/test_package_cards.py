@@ -140,6 +140,43 @@ class TestPackageApiSignatures(unittest.TestCase):
         self.assertIn('registry', str(r.get('error') or ''),
                       '报错要说清"本机 registry 里没有"而不是"包不存在"')
 
+    def test_uninstalled_platform_still_serves_offline_api(self):
+        """未装平台时**除了报错，还要把包卡里的离线 API 面直接给出**（2026-10-05 需求方口径）。
+
+        为什么钉：需求方问「远端提供的这些库是否有对应材料让 AI 正确处理」——
+        `packages/<包>/package.yaml` 就是为 AI 写的（头文件实读、含真机实测坑），
+        它**离线、可复现**；而本机 registry 只覆盖跑过 `fun install` 的平台。
+        若未装时只回 `success: False` + "去装"，调用方会止步，手里明明有一份能用的 API 资料。
+
+        契约：`success` 仍为 False（"平台级精确签名没拿到"这个事实不许掩盖），
+        但 `offlineApi` / `offlineNote` 必须在，且 API 签名要有实质内容。
+        """
+        installed = [p for p in ('V85X', 'Z20', 'T113', 'F133', 'Z21')
+                     if os.path.isdir(pt._pkg_dir('zknet', p))]
+        not_installed = [p for p in ('V85X', 'Z20', 'T113', 'F133', 'Z21')
+                         if p not in installed]
+        if not not_installed:
+            self.skipTest('本机各平台都装过 zknet，无未安装平台可验')
+        r = pt.flythings_get_package_api('zknet', not_installed[0])
+        self.assertFalse(r.get('success'), '平台级签名没拿到时不许报 success')
+        off = r.get('offlineApi')
+        self.assertIsNotNone(off, '未装平台必须同时给出包卡离线面（否则调用方无法继续）')
+        self.assertEqual(off.get('source'), 'packages/zknet/package.yaml')
+        self.assertTrue(off.get('api'), 'offlineApi.api 应有签名清单')
+        self.assertTrue(off.get('usage'), 'offlineApi.usage 应给可直接粘的代码')
+        self.assertTrue(off.get('gotchas'), 'offlineApi.gotchas 应带真机实测的坑')
+        self.assertTrue(off.get('verified'), 'offlineApi.verified 应带真机验证块')
+        self.assertIn('offline', str(r.get('offlineNote') or '').lower()
+                      + str(r.get('hint') or '').lower(),
+                      '要明说"不装也能看 API"（否则调用方不会往下读）')
+
+    def test_offline_api_survives_callers_without_local_registry(self):
+        """包卡是**仓内文件**，与本地 registry 无关 —— 这是"可复现"的根据。"""
+        for pkg in ('zknet', 'zkhardware', 'mqtt-cxx', 'nanovg'):
+            card = pt.package_card(pkg)
+            self.assertIsNotNone(card, '%s 包卡读不到' % pkg)
+            self.assertTrue(card.get('api'), '%s 包卡没有 api 段' % pkg)
+
     def test_all_cards_parse(self):
         bad = []
         for name in CARDS:
