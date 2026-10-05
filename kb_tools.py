@@ -894,7 +894,7 @@ def flythings_get_project_spec() -> str:
     """返回 FlyThings 项目结构化规范（目录规则、生成规则、注意事项）。编写/修改项目代码前调用。新需求先出设计稿/原型并确认。
 
     ⚠️⚠️ **没读过规范不许开始写** `ui/*.json` 或业务代码 —— 目录规则/生成规则/注意事项都在这里。
-    ⚠️⚠️ **平台定位**：Linux 基座（同 buildroot/OpenWrt，非 MCU/ESP32 SDK）；GUI 是自研 EasyUI（≠ LVGL）——见 `knowledge/devflow/flythings-os-positioning.md`
+    ⚠️⚠️ **平台定位**：Linux 基座（同 buildroot/OpenWrt）；GUI 是自研 FlyThings UI（libEasyUI）——见 `knowledge/devflow/flythings-os-positioning.md`
     """
     return json.dumps(pt.flythings_get_project_spec(), ensure_ascii=False)
 
@@ -1018,7 +1018,7 @@ def flythings_build_ui_flow(project_root: str, with_launch: bool = True, device:
                             strict_ui: bool = False) -> str:
     """FlyThings UI 构建与部署全流程（pack → install → build → 设备探测 → launch）。
 
-    ⚠️⚠️ **平台定位**：Linux 基座（同 buildroot/OpenWrt，非 MCU/ESP32 SDK）；GUI 是自研 EasyUI（≠ LVGL）——见 `knowledge/devflow/flythings-os-positioning.md`
+    ⚠️⚠️ **平台定位**：Linux 基座（同 buildroot/OpenWrt）；GUI 是自研 FlyThings UI（libEasyUI）——见 `knowledge/devflow/flythings-os-positioning.md`
     """
     gate = _confirm_gate(project_root)
     changed, _jm, why = _layout_changed_since_pack(project_root)
@@ -1735,7 +1735,7 @@ def flythings_html_to_json(input_html: str, output_json: str = '', res: str = ''
 def flythings_list_packages(platform: str = '') -> str:
     """列出依赖包生态（platform 如 F133/Z20，留空列全部），含功能描述与版本。写代码前调用。
 
-    ⚠️⚠️ **平台定位**：Linux 基座（同 buildroot/OpenWrt，非 MCU/ESP32 SDK）；GUI 是自研 EasyUI（≠ LVGL）——见 `knowledge/devflow/flythings-os-positioning.md`
+    ⚠️⚠️ **平台定位**：Linux 基座（同 buildroot/OpenWrt）；GUI 是自研 FlyThings UI（libEasyUI）——见 `knowledge/devflow/flythings-os-positioning.md`
     """
     r = pkgtools.flythings_list_packages(platform or None)
     if platform and isinstance(r, dict):
@@ -1931,7 +1931,7 @@ def flythings_create_project(project_root: str, platform: str, resolution: str,
                              app_name: str = '', with_cli: bool = True, force: bool = False) -> str:
     """从 HelloWord 模板创建 FlyThings 项目，自动替换工程名/分辨率/平台。
 
-    ⚠️⚠️ **平台定位**：Linux 基座（同 buildroot/OpenWrt，非 MCU/ESP32 SDK）；GUI 是自研 EasyUI（≠ LVGL）——见 `knowledge/devflow/flythings-os-positioning.md`
+    ⚠️⚠️ **平台定位**：Linux 基座（同 buildroot/OpenWrt）；GUI 是自研 FlyThings UI（libEasyUI）——见 `knowledge/devflow/flythings-os-positioning.md`
     ⚠️⚠️ src/activity/ 由 ftu 生成，禁建/改/覆盖；业务只写 src/logic/*.cc
     ⚠️⚠️ 新需求必须先出设计稿/原型并让用户确认（见 prototype-flow）再建工程 —— 跳过确认 = 返工
     """

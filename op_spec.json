@@ -6,8 +6,8 @@
     "perOpMax": 320,
     "totalMax": 6000,
     "contractPerOpMax": 900,
-    "basis": "实测（2026-10-05，42 op）：常驻合计 **3783**、单条最长 296（`create_project`）—— 上限 6000，**余量 2217 字符 / ≈24 条 op**（2026-10-05 瘦身后复核：triggers 移出常驻 + 片段表 + seeAlso 去重）。历史：2026-10-03 把 `params` 移出常驻（省 1148 字符 / 19.5%：参数名 `list` 已回、语义 `describe` 按需给，常驻再写一遍是重复计费），常驻从 5878/6000=98% 降到 4730/6000=78.8%；同日三批 `notes` 清零 + 4 条新硬规则（`knowledge_export` 强制脱敏、`fui_pack` ftu 是编译产物、`test_run` no-baseline≠通过、`get_package_api` 注册表没有≠平台没有）把它推到 5125/6000=84.7% —— 该常驻的判据（会让 AI 误判/泄露的那类）进常驻并**接受预算上涨**，这是分层的代价。**2026-10-05 平台定位口径**（需求方定规）再加定位规则（`create_project` / `build_ui_flow` / `list_packages` / `get_project_spec`：Linux 基座、非 MCU/ESP32 SDK、GUI 是自研 EasyUI≠LVGL），常驻到 **5925/6000=98.8%** —— 定位判错会让 AI 砍掉整层 Linux 能力、按 LVGL 类推 API，属「必须常驻」的判据；**下次要加常驻内容必须先腾地方（不要直接抬 totalMax）**。**2026-10-05 瘦身**（用户指示）：① `triggers` 移出常驻面（路由/目录/manifest 直接读 op_spec 字段，功能不变）；② 新增 `fragments` 共享片段表（`@platform-positioning`：同一句原抄 5 份）；③ `seeAlso` 渲染时去掉与 `docRef` 重复的条目（40/47 op 重复，合计 1550 字符）。**口径 = 渲染产物字符数**，由 gen_op_docs 计算并进发布闸门。⚠️ **本段的「常驻合计 N」由门禁对账**（check_consistency 的 `budget.basis 常驻数字`）—— 改 docstring 后忘了改这里会红，不会再漂。",
-    "note": "预算口径（数字全部实测，勿手写第二份）：**常驻面**合计 3783/6000；**按需面**单条上限 900，最长 `flythings_i18n` 已 **1913/900**。按需面已按段分层（2026-10-05）：计费单位是「一次取用」而非「整条 op」—— 全文超限时默认形态自动退化成 skeleton + 段目录（现测：默认形态最长 892（flythings_get_package_api）、除 all 外最长单段 731（flythings_i18n:skeleton））。all 恒等于全文、不参与单段判据（它是逃生门）。加内容前先看段余量，别再往单条上堆。"
+    "basis": "实测（2026-10-05，42 op）：常驻合计 **3755**、单条最长 296（`create_project`）—— 上限 6000，**余量 2245 字符 / ≈25 条 op**（2026-10-05 瘦身后复核：triggers 移出常驻 + 片段表 + seeAlso 去重；同日需求方改 `platform-positioning` 片段与 `map_control.flow` 措辞后再复核）。历史：2026-10-03 把 `params` 移出常驻（省 1148 字符 / 19.5%：参数名 `list` 已回、语义 `describe` 按需给，常驻再写一遍是重复计费），常驻从 5878/6000=98% 降到 4730/6000=78.8%；同日三批 `notes` 清零 + 4 条新硬规则（`knowledge_export` 强制脱敏、`fui_pack` ftu 是编译产物、`test_run` no-baseline≠通过、`get_package_api` 注册表没有≠平台没有）把它推到 5125/6000=84.7% —— 该常驻的判据（会让 AI 误判/泄露的那类）进常驻并**接受预算上涨**，这是分层的代价。**2026-10-05 平台定位口径**（需求方定规）再加定位规则（`create_project` / `build_ui_flow` / `list_packages` / `get_project_spec`：Linux 基座、非 MCU/ESP32 SDK、GUI 是自研 EasyUI≠LVGL），常驻到 **5925/6000=98.8%** —— 定位判错会让 AI 砍掉整层 Linux 能力、按 LVGL 类推 API，属「必须常驻」的判据；**下次要加常驻内容必须先腾地方（不要直接抬 totalMax）**。**2026-10-05 瘦身**（用户指示）：① `triggers` 移出常驻面（路由/目录/manifest 直接读 op_spec 字段，功能不变）；② 新增 `fragments` 共享片段表（`@platform-positioning`：同一句原抄 5 份）；③ `seeAlso` 渲染时去掉与 `docRef` 重复的条目（40/47 op 重复，合计 1550 字符）。**口径 = 渲染产物字符数**，由 gen_op_docs 计算并进发布闸门。⚠️ **本段的「常驻合计 N」由门禁对账**（check_consistency 的 `budget.basis 常驻数字`）—— 改 docstring 后忘了改这里会红，不会再漂。",
+    "note": "预算口径（数字全部实测，勿手写第二份）：**常驻面**合计 3755/6000；**按需面**单条上限 900，最长 `flythings_i18n` 已 **1913/900**。按需面已按段分层（2026-10-05）：计费单位是「一次取用」而非「整条 op」—— 全文超限时默认形态自动退化成 skeleton + 段目录（现测：默认形态最长 892（flythings_get_package_api）、除 all 外最长单段 731（flythings_i18n:skeleton））。all 恒等于全文、不参与单段判据（它是逃生门）。加内容前先看段余量，别再往单条上堆。"
   },
   "renderOrder": [
     "summary",
@@ -517,7 +517,7 @@
       "risk": "read",
       "category": "layout",
       "stage": "design",
-      "flow": "什么时候用：拿到 LVGL / Qt / Android / 小程序 / emWin / MFC 工程或设计稿，要转到 FlyThings 时。",
+      "flow": "什么时候用：拿到其他界面UI工程或设计稿，要转到 FlyThings 时。",
       "params": [
         {
           "name": "query",
@@ -1750,6 +1750,6 @@
   ],
   "longOpsNote": "这些 op 常跑 5 秒到几分钟（编译 / 刷机 / 抓屏 / 全盘自检）。分发器把它们放工作线程跑，并把 op 内部的阶段（`steps.append` 打点）转成 MCP progress notification 推给客户端 —— 顺带修掉「同步长任务堵死事件循环、客户端连取消都发不进来」。清单放这里，不在 mcp_server 硬编码。",
   "fragments": {
-    "platform-positioning": "**平台定位**：Linux 基座（同 buildroot/OpenWrt，非 MCU/ESP32 SDK）；GUI 是自研 EasyUI（≠ LVGL）——见 `knowledge/devflow/flythings-os-positioning.md`"
+    "platform-positioning": "**平台定位**：Linux 基座（同 buildroot/OpenWrt）；GUI 是自研 FlyThings UI（libEasyUI）——见 `knowledge/devflow/flythings-os-positioning.md`"
   }
 }
