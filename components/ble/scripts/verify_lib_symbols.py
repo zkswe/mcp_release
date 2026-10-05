@@ -34,6 +34,19 @@ PUBLIC_API = [
     "getDiag", "version",
 ]
 PERIPHERAL_API = ["start", "stop", "setDeviceName", "notify", "isConnected"]
+# 透传管道（v0.3.0）：与后端无关，四平台都必须有
+PIPE_API = ["listen", "connect", "send", "isConnected", "disconnect", "stop", "onData", "onState"]
+
+
+def ns_api_hits(syms, ns, names):
+    """名字空间级核对：要求「同一个符号里同时含 ns 与函数名」（避开子串误命中）"""
+    hit = []
+    for a in names:
+        for s in syms:
+            if ns in s and a in s:
+                hit.append(a)
+                break
+    return hit
 
 
 def read_ar_members(path):
@@ -128,15 +141,16 @@ def check_one(path):
     syms = lib_symbols(path)
     allsym = " ".join(syms)
     missing = [a for a in PUBLIC_API if a not in allsym]
-    peri = [a for a in PERIPHERAL_API if ("peripheral" in allsym and a in allsym)]
-    return syms, missing, peri
+    peri = ns_api_hits(syms, "peripheral", PERIPHERAL_API)
+    pipe = ns_api_hits(syms, "pipe", PIPE_API)
+    return syms, missing, peri, pipe
 
 
 def main():
     here = os.path.dirname(os.path.abspath(__file__))
     comp = os.path.dirname(here)                      # components/ble
     if len(sys.argv) >= 3 and sys.argv[1] == "--count":
-        _, missing, _ = check_one(sys.argv[2])
+        _, missing, _, _ = check_one(sys.argv[2])
         print(max(0, len(PUBLIC_API) - len(missing)))
         return 0
 
@@ -158,14 +172,16 @@ def main():
             print("[FAIL] %-6s 缺 libzkble.a" % p)
             bad += 1
             continue
-        syms, missing, peri = check_one(lib)
-        ok = (not missing) and len(peri) == len(PERIPHERAL_API)
-        print("[%s] %-6s .a=%.0fKB 公开 API %d/%d%s%s" % (
+        syms, missing, peri, pipe = check_one(lib)
+        ok = (not missing) and len(peri) == len(PERIPHERAL_API) and len(pipe) == len(PIPE_API)
+        print("[%s] %-6s .a=%.0fKB 公开 API %d/%d%s%s%s" % (
             "PASS" if ok else "FAIL", p, os.path.getsize(lib) / 1024.0,
             len(PUBLIC_API) - len(missing), len(PUBLIC_API),
             "" if not missing else " 缺: " + ",".join(missing),
             "" if len(peri) == len(PERIPHERAL_API) else " 缺外设: " + ",".join(
-                set(PERIPHERAL_API) - set(peri))))
+                set(PERIPHERAL_API) - set(peri)),
+            "" if len(pipe) == len(PIPE_API) else " 缺pipe: " + ",".join(
+                set(PIPE_API) - set(pipe))))
         if not ok:
             bad += 1
 
