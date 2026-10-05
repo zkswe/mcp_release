@@ -4,7 +4,7 @@
 
 **让 AI 助手直接获得 FlyThings 完整开发能力：一句话安装，一句话开发 FlyThings OS 人机交互产品flythings-mcp | FlyThings MCP | FlyThings OS | FlyThings AI 助手 | 中科世为 MCP | FlyThings HMI**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-green.svg)](https://modelcontextprotocol.io/)
 [![FastMCP](https://img.shields.io/badge/FastMCP-Powered-orange.svg)](https://github.com/jlowin/fastmcp)
@@ -45,7 +45,7 @@ AI 会自动完成：克隆项目 → 按 `requirements.lock` 安装依赖（该
 Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude_desktop_config.json` 的 `mcpServers`。
 > `python` 不在 PATH 时用完整路径（如 `C:/Users/<你>/AppData/Local/Programs/Python/Python313/python.exe`）。
 
-**3) 验证**—— 问 AI「**MCP 版本是多少？**」：应返回 `flythings-kb-open 0.27.196-open`，**48 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / zkshot，
+**3) 验证**—— 问 AI「**MCP 版本是多少？**」：应返回 `flythings-kb-open 0.27.196-open`，**42 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / zkshot，
 在 `bin_tools/<平台>/` 下，**不是 op、不占 op 名额**；以及 `positioning` 字段：**平台定位**——FlyThings OS 是**基于 Linux 的操作系统**，
 能力判定基线**向 buildroot/OpenWrt 看齐**，GUI 是自研 EasyUI/FlyThings UI 与 LVGL 对标竞争，**不是**单片机/ESP32 式板级 SDK）。
 
@@ -53,8 +53,8 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 > | 模式 | 怎么配 | 客户端看到什么 |
 > |------|--------|----------------|
 > | `dispatcher`（默认） | 只指 `mcp_server.py` | 只暴露分发器 `flythings_kb`（`op="list"` 取目录）—— schema 开销最小 |
-> | `all` | `FLYTHINGS_MCP_MODE=all` | 分发器 + 48 个独立工具（旧配置兼容） |
-> | `flat` | 指 `mcp_server_flat.py`（或 `FLYTHINGS_MCP_MODE=flat`） | 48 个独立工具，无分发器（Trae / Cursor / Claude Desktop 需要独立 schema 时用；代价 ≈ 1 万 token/session） |
+> | `all` | `FLYTHINGS_MCP_MODE=all` | 分发器 + 42 个独立工具（旧配置兼容） |
+> | `flat` | 指 `mcp_server_flat.py`（或 `FLYTHINGS_MCP_MODE=flat`） | 42 个独立工具，无分发器（Trae / Cursor / Claude Desktop 需要独立 schema 时用；代价 ≈ 1 万 token/session） |
 >
 > 默认从「全注册」改为「只分发器」是 v0.27.34 的**行为变更**；受影响就设 `FLYTHINGS_MCP_MODE=all` 恢复。
 
@@ -113,7 +113,7 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 - **换开机 logo**：`boot_logo.JPG` → **MISC 分区**（跟 `update.img` **同一套升级机制与触发**；体积必须 ≤ MISC 分区大小 —— 本板 Z21 实测 512 KB，先量 `cat /proc/mtd`）→
   `python tools/make_boot_logo.py --size 1024x600 --out boot_logo.JPG`（生成 + 体积闸门）/ `python tools/set_boot_logo.py --image boot_logo.JPG --device <serial|IP:5555>`（**默认 dry-run**，`--yes` 才真触发）；
 细节与待验证项见 `knowledge/devflow/upgrade-pack-image.md` §三
-- `flythings_create_project` / `flythings_create_bin_project`：从内置模板建工程（F133/F135/Z21/Z20/T113/V85X/Z235X）
+- `flythings_create_project`：从内置模板建工程（F133/F135/Z21/Z20/T113/V85X/Z235X）
   - **ftu 能反解析回 json 了**（v0.27.91：「fui 的 unpack 能力释放出去」）：随包 `toolchain/fui.exe` 换成支持 `unpack` 的版本，
 新增 `flythings_fui_unpack`（**默认覆盖**同目录同名 json，ftu 为真源；要保留原 json 传 `overwrite=false`）；
     `read_json` 传 `.ftu` 不再报「加密无法解析」——先 unpack 再读。
@@ -161,6 +161,6 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 
 **写知识/判据/op 契约前先读 [`DESIGN_SPEC.md`](DESIGN_SPEC.md)**（MCP 只讲"本平台与标准 Linux/rootfs/GUI/包组件的差异"；通用编程能力属 AI 原生，不入库；规范优先、实测优先、不静默、唯一真源）。
 
-当前版本 `0.27.196-open`（48 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
+当前版本 `0.27.196-open`（42 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
 
-MIT License · FlyThings Team · 深圳中科世为科技有限公司 · [developer.flythings.cn](https://developer.flythings.cn/)
+Apache License 2.0 · FlyThings Team · 深圳中科世为科技有限公司 · [developer.flythings.cn](https://developer.flythings.cn/)
