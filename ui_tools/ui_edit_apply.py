@@ -153,18 +153,27 @@ def apply_changes(changes, project='', ui_dir='', dry_run=False, force=False):
     res = data.get('resolution', {}) if isinstance(data, dict) else {}
 
     applied, skipped = [], []
+    malformed = []                       # 几何字段名写错 → 一条都没落地，必须显式报（不静默）
     for path, g in body.items():
+        if not isinstance(g, dict):
+            skipped.append({'path': path, 'reason': 'changes 不是对象：%r' % (g,)})
+            continue
         try:
             ctrl = _node_by_path(data, path)
         except SystemExit as e:
             skipped.append({'path': path, 'reason': str(e)})
             continue
+        known = [f for f in ('left', 'top', 'width', 'height') if f in g]
+        if not known:
+            # 例如 {"x":999,"Left":999} —— 之前这里会 applied.fields={} 而 success=true + 照写盘
+            malformed.append(path)
+            skipped.append({'path': path,
+                            'reason': '几何字段名不认识（只认 left/top/width/height），'
+                                      '实际传入：%s' % sorted(g.keys())})
+            continue
         pos = ctrl.setdefault('position', {})
-        parent = ctrl.get('__parent_size')  # 由调用方注入（可选）
-        changes_made = {}
-        for f in ('left', 'top', 'width', 'height'):
-            if f not in g:
-                continue
+        changes_made, clamped = {}, {}
+        for f in known:
             v = int(round(float(g[f])))
             if f in ('width', 'height'):
                 v = max(1, v)
@@ -172,6 +181,7 @@ def apply_changes(changes, project='', ui_dir='', dry_run=False, force=False):
             pos[f] = v
         # 钳制：顶层控件不越出屏幕
         if path.count('/') == 0 and res:
+            before_clamp = dict(pos)
             w, h = res.get('width', 0), res.get('height', 0)
             if w and pos.get('left', 0) + pos.get('width', 1) > w:
                 pos['left'] = max(0, w - pos.get('width', 1))
@@ -179,7 +189,15 @@ def apply_changes(changes, project='', ui_dir='', dry_run=False, force=False):
                 pos['top'] = max(0, h - pos.get('height', 1))
             pos['left'] = max(0, pos.get('left', 0))
             pos['top'] = max(0, pos.get('top', 0))
-        applied.append({'path': path, 'caption': ctrl.get('caption', ''), 'fields': changes_made})
+            for f in known:
+                # ⚠️ `fields` 记的是**请求值**；被钳制时实际落盘值不同 → 单列 clamped，别让人以为落的是请求值
+                if f in before_clamp and pos.get(f) != before_clamp[f]:
+                    clamped[f] = [before_clamp[f], pos.get(f)]
+        row = {'path': path, 'caption': ctrl.get('caption', ''), 'fields': changes_made}
+        if clamped:
+            row['clamped'] = clamped
+            row['hint'] = '越界已按屏幕边界钳制：%s（fields 是请求值，实际落盘见 clamped）' % clamped
+        applied.append(row)
 
     applied_props = []
     for path, patch in (props or {}).items():
@@ -197,20 +215,32 @@ def apply_changes(changes, project='', ui_dir='', dry_run=False, force=False):
 
     out = {'success': True, 'json': jp, 'applied': applied, 'appliedProps': applied_props,
            'skipped': skipped, 'dryRun': dry_run}
-    # ⚠️ 路径写错 = 静默成功 → 一条都没落地时必须显式失败（硬纪律「不静默」）
+    if malformed:
+        out['malformed'] = malformed
+    # ⚠️ 路径写错 / 几何字段名写错 = 静默成功 → 一条都没落地时必须显式失败（硬纪律「不静默」）
     no_op = not applied and not applied_props
     if no_op and skipped:
         out['success'] = False
         out['partiallyApplied'] = False
-        out['error'] = ('没有任何变更被应用（%d 条路径找不到控件）—— 用 window__x/<key> 全路径重试；'
-                        '返回体里的 skipped 给了逐条原因' % len(skipped))
-        out['hint'] = '在变更 JSON 里把单段路径改成 `#window__N/<控件键>` 全路径（编辑器深链接可直接复制）'
+        if malformed:
+            out['error'] = ('没有任何变更被应用：%d 处 changes 的几何字段名不认识'
+                            '（只认 left/top/width/height），另有 %d 条路径问题 —— '
+                            '逐条原因见 skipped' % (len(malformed), len(skipped) - len(malformed)))
+            out['hint'] = ('把 {"x":..,"y":..} 改成 {"left":..,"top":..}；'
+                           '路径用 `#window__N/<控件键>` 全路径（编辑器深链接可直接复制）')
+        else:
+            out['error'] = ('没有任何变更被应用（%d 条路径找不到控件）—— 用 window__x/<key> 全路径重试；'
+                            '返回体里的 skipped 给了逐条原因' % len(skipped))
+            out['hint'] = '在变更 JSON 里把单段路径改成 `#window__N/<控件键>` 全路径（编辑器深链接可直接复制）'
     elif skipped:
         out['success'] = False
         out['partiallyApplied'] = True
-        out['error'] = ('部分变更未应用（%d 条路径找不到控件）—— 已应用 %d 条，'
-                        '请核对 skipped 后重发' % (len(skipped), len(applied) + len(applied_props)))
-    if dry_run:
+        out['error'] = ('部分变更未应用（%d 条）—— 已应用 %d 条，请核对 skipped 后重发'
+                        % (len(skipped), len(applied) + len(applied_props)))
+    if dry_run or no_op:
+        # no_op：一条都没落地 → **不写盘、不留 .bak**（否则"失败也改盘"会污染备份）
+        if no_op:
+            out['note'] = '没有任何变更落地，未写盘、未产生 .bak'
         return out
 
     shutil.copy2(jp, jp + '.bak')

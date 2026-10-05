@@ -197,6 +197,67 @@ class TestEditApplyWriteBack(VisualBase):
         self.assertEqual(d['textview__1']['position']['left'], 70, '成的那条要真落地')
 
 
+    def test_unknown_geometry_field_is_not_silent_success(self):
+        """几何字段名写错（`{"x":..}`）→ 必须失败并点名，不许 success:true + fields:{}。
+
+        旧行为（2026-10-05 实测）：`{"textview__1":{"x":999,"Left":999}}` → `success:true`、
+        `applied[0].fields={}`、**文件照写盘、.bak 照留** → 调用方以为改完了。
+        """
+        p = os.path.join(self.tmp, 'ui', 'badgeo.json')
+        U.write(p, json.dumps(MIN_JSON, ensure_ascii=False, indent=2))
+        before = open(p, 'rb').read()
+        r = U.jcall('flythings_ui_visual', {'action': 'edit_apply', 'project_root': self.tmp,
+                                            'changes': json.dumps(
+                                                {'file': 'badgeo.json',
+                                                 'changes': {'textview__1': {'x': 999, 'Left': 9}}},
+                                                ensure_ascii=False)})
+        self.assertFalse(r['ok'], r)
+        self.assertEqual(r.get('malformed'), ['textview__1'], r)
+        self.assertTrue(r.get('hint'), r)
+        self.assertEqual(open(p, 'rb').read(), before, '字段名不认识时不该写盘')
+        self.assertFalse(os.path.isfile(p + '.bak'), '不该产生 .bak')
+
+    def test_clamped_values_are_reported(self):
+        """越界被钳制时要单列 `clamped` —— `fields` 记的是**请求值**，别让人以为落的是它。
+
+        实测口径：480 宽的屏上把 left 设成 400（控件宽 100）→ 落盘 left 被钳到 480-100=380。
+        """
+        p = os.path.join(self.tmp, 'ui', 'clamp.json')
+        U.write(p, json.dumps(MIN_JSON, ensure_ascii=False, indent=2))
+        r = U.jcall('flythings_ui_visual', {'action': 'edit_apply', 'project_root': self.tmp,
+                                            'changes': json.dumps(
+                                                {'file': 'clamp.json',
+                                                 'changes': {'textview__1': {'left': 400}}},
+                                                ensure_ascii=False)})
+        self.assertTrue(r['ok'], r)
+        row = r['applied'][0]
+        self.assertEqual(row['fields']['left'][1], 400, 'fields 记请求值')
+        self.assertIn('clamped', row, '被钳制时必须单列 clamped：%s' % row)
+        self.assertEqual(row['clamped']['left'], [400, 380], row)
+        self.assertTrue(row.get('hint'))
+        d = json.loads(io.open(p, encoding='utf-8').read())
+        self.assertEqual(d['textview__1']['position']['left'], 380, '实际落盘值 = 钳后值')
+
+    def test_in_bounds_edit_has_no_clamped_key(self):
+        """没越界就不该出现 clamped（避免把正常改动也标成"被改过"）。"""
+        r = U.jcall('flythings_ui_visual', {'action': 'edit_apply', 'project_root': self.tmp,
+                                            'changes': self.changes})
+        self.assertTrue(r['ok'], r)
+        self.assertNotIn('clamped', r['applied'][0])
+
+    def test_non_dict_geometry_is_reported(self):
+        """`changes` 的值不是对象 → 进 skipped，不许抛栈。"""
+        p = os.path.join(self.tmp, 'ui', 'scalar.json')
+        U.write(p, json.dumps(MIN_JSON, ensure_ascii=False, indent=2))
+        r = U.jcall('flythings_ui_visual', {'action': 'edit_apply', 'project_root': self.tmp,
+                                            'changes': json.dumps(
+                                                {'file': 'scalar.json',
+                                                 'changes': {'textview__1': 42}},
+                                                ensure_ascii=False)})
+        self.assertFalse(r['ok'], r)
+        self.assertTrue(r.get('skipped'), r)
+
+
 class TestEditorAndApplyRouting(VisualBase):
     def test_editor_makes_edit_html(self):
         r = U.jcall('flythings_ui_visual', {'action': 'editor', 'project_root': self.tmp})
