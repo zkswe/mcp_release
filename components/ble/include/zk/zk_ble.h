@@ -11,8 +11,8 @@
  *   ┌──────────┬───────────────┬───────────────────────────────────────────────┐
  *   │ 平台     │ 后端          │ 说明                                          │
  *   ├──────────┼───────────────┼───────────────────────────────────────────────┤
- *   │ F133     │ btstack 1.7.2 │ 串口 HCI（H5），中心侧；外设请用别的路线      │
- *   │ V85X     │ btstack 1.8.0 │ 串口 HCI（H5）+ 预初始化钩子；外设用 blehid 包 │
+ *   │ F133     │ btstack 1.7.2 │ 串口 HCI（H5）；中心 + 外设（v0.3.0 起）      │
+ *   │ V85X     │ btstack 1.8.0 │ 串口 HCI（H5）+ 预初始化钩子；中心 + 外设    │
  *   │ Z20/Z21  │ gatt 1.0.0    │ AIC USB 模组 + BlueZ 用户态 GATT，**主从双角色** │
  *   │ T113(EMMC) │ gatt 1.0.0  │ 同 Z20/Z21                                    │
  *   └──────────┴───────────────┴───────────────────────────────────────────────┘
@@ -231,6 +231,31 @@ namespace peripheral {
     Result notify(const std::string& char_uuid, const std::string& data);  // 主动通知已订阅的中心
     Result isConnected(bool& out);
 }  // namespace peripheral
+
+// ================================================================ 透传管道（pipe）—— AI 最省事的入口
+// 90% 的活其实就是「发字节 / 收字节」：不想懂 GATT 的服务/特征/CCCD 时，直接用 pipe。
+// 形状参考 Nordic UART Service（NUS，事实标准，手机端有现成 App 可对接）：
+//   · 外设端：pipe::listen("名字") → pipe::onData(cb) → pipe::send(bytes)
+//   · 中心端：pipe::connect("名字") → pipe::onData(cb) → pipe::send(bytes)
+// 默认服务 UUID = NUS（6e400001-b5a3-f393-e0a9-e50e24dcca9e），可传自定义 service_uuid。
+// 注意：pipe 是便捷层，会占用 onWriteRequest / onConnectionChange / onValueChange 三个回调槽；
+//       要自己接管这些回调就别用 pipe（或改用 peripheral::* / 中心侧细粒度 API）。
+namespace pipe {
+    using OnData  = std::function<void(const std::string& data)>;                 // 收到字节
+    using OnState = std::function<void(bool connected, const std::string& peer)>; // 连接变化
+
+    Result listen(const std::string& device_name,                    // 外设端：起表 + 广播（内部 peripheral::start）
+                  const std::string& service_uuid = std::string());
+    Result connect(const std::string& device_name,                   // 中心端：扫描→连接→订阅（同步，带超时）
+                   int scan_timeout_ms = 8000);
+    Result send(const std::string& data);                            // 两端都能用
+    bool   isConnected();
+    Result disconnect();
+    Result stop();                                                   // 收摊（外设端停广播）
+
+    void onData(OnData cb);
+    void onState(OnState cb);
+}  // namespace pipe
 
 // ================================================================ 回调（wx 的 onXxx / offXxx）
 using OnAdapterStateChange = std::function<void(const AdapterState&)>;

@@ -179,7 +179,7 @@ Z21 整机（`<Z21-IP>`，`Zkswe_SSD21X_SPINOR`，做**中心**）。
 | HCI 通路 | 串口（H5 / H4，可配） | AIC USB 模组 + `hciconfig`/`hcitool` |
 | 上电 | `state_bt` sysfs + 预初始化 hook（Realtek） | `insmod aic_btusb.ko` 或 `ctl.start=hciattach` + `hciconfig hci0 up` |
 | 中心侧 | ✅ | ✅（真机跑通） |
-| 外设侧 | ❌ `ERR_UNSUPPORTED` + 指路 `blehid` | ✅（真机跑通） |
+| 外设侧 | ✅（v0.3.0 起：`att_db_util` 运行时建表 + 广告 + `notify`；缓冲忙自动排队） | ✅（真机跑通） |
 | 配对落盘 | ✅ TLV（`Config.tlv_path`） | ❌ `getBondedDevices` 返回 `ERR_UNSUPPORTED` |
 | 公共层 | `src/zkble_common.h`（inline）：日志/工具/AD 解析/扫描过滤/`DeviceCache`/回调/`Waiter` | 同左 |
 

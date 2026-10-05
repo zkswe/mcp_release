@@ -11,8 +11,8 @@
 >
 > | 平台 | 后端 | 中心 | 外设 | 静态库 | 说明 |
 > |---|---|---|---|---|---|
-> | F133 | `btstack` 1.7.2 | ✅ | ❌ | `lib/f133/libzkble.a` | 串口 HCI（H5）；外设请走别的路线 |
-> | V85X | `btstack`（本地 1.7.2 构建） | ✅ | ❌ | `lib/v85x/libzkble.a` | 串口 HCI + 预初始化钩子；**外设/触摸上报用 `blehid` 包**|
+> | F133 | `btstack` 1.7.2 | ✅ | ✅ | `lib/f133/libzkble.a` | 串口 HCI（H5）；**中心 + 外设**（v0.3.0 起） |
+> | V85X | `btstack`（本地 1.7.2 构建） | ✅ | ✅ | `lib/v85x/libzkble.a` | 串口 HCI + 预初始化钩子；**中心 + 外设**；HID 触摸上报仍建议 `blehid` 包 |
 > | Z20 | **`gatt` 1.0.0**| ✅ | ✅ | `lib/z20/libzkble.a` | AIC USB 模组 + BlueZ 用户态 GATT，**主从双角色**（真机跑通） |
 > | Z21 | **`gatt` 1.0.0**| ✅ | ✅ | `lib/z21/libzkble.a` | 同上（真机跑通） |
 > | T113 / T113EMMC | `gatt` 1.0.0 | ⏳ | ⏳ | **待补**| 本机注册表没有该平台的 `gatt` 包 → 未构建（**不拿别的平台的头凑**，见 platforms.md §0.6） |
@@ -22,6 +22,7 @@
 > 转为二进制发布：2026-09-14（现场反馈：「验证好了后把你的程序做成静态库+头文件发布给到 open 版本 MCP 里面。不释放源码了」）。
 >
 > **版本记录**
+> - **v0.3.0（2026-10-05）** ① btstack 后端**补上外设侧**（F133/V85X 通用）：`att_db_util` 运行时建表 + `att_server` + 广播（AD 放名字 / scan response 放服务 UUID）+ `notify`（缓冲忙自动排队，`ATT_EVENT_CAN_SEND_NOW` 回冲）；断开后自动重开广播；② 新增**透传管道 `zk::ble::pipe`**（NUS 形状，AI 最省事的入口：`listen/connect/send/onData`）；③ 新增示例 `example/pipe_example.cc`。四平台库已重建（符号自检 30/30）。
 > - **v0.2.1（2026-09-14）**发布形态改为「头 + 静态库」：新增 `lib/{f133,v85x,z20,z21}/libzkble.a` + `lib/BUILD_INFO.md`
 >   （含每平台 sha256/符号数/工具链/依赖版本）；新增 `scripts/verify_lib_symbols.py`（纯 Python 解析 ELF，**不依赖 nm**：
 >   Windows 版 binutils 的 nm 缺 `liblto_plugin-0.dll` 会直接报错）；**移除源码**（`src/`、`zkble_*.h`、源码侧编译脚本）。
@@ -105,6 +106,32 @@ zk::ble::peripheral::notify("fff1", std::string("\x01\x02", 2));   // 主动上�
 完整示例：[`example/peripheral_example.cc`](example/peripheral_example.cc)。
 **先查能力**：`zk::ble::getCapabilities(cap)` → 在 F133/V85X 上 `cap.peripheral == false`，
 `peripheral::start()` 返回 `ERR_UNSUPPORTED` 并在 msg 里指路（V85X 用 `blehid` 包），**不假装能用**。
+
+---
+
+### 2.3 透传管道（pipe，NUS 形状）—— AI 最省事的入口
+
+90% 的活其实就是「发字节 / 收字节」：不懂 GATT 的服务/特征/CCCD 时，直接 `pipe`（默认走 Nordic UART Service，手机端有现成 App 可对接）。
+
+```cpp
+#include "zk/zk_ble.h"
+
+zk::ble::pipe::onData([](const std::string& d){ /* 收到字节 */ });
+zk::ble::pipe::onState([](bool conn, const std::string& peer){ /* 连上/断开 */ });
+
+// 外设端（设备当从机）
+zk::ble::openAdapter();
+zk::ble::pipe::listen("zkswe-pipe");        // 建表 + 广播
+zk::ble::pipe::send("hello");               // → notify 给中心
+
+// 中心端（设备当主机）
+zk::ble::pipe::connect("zkswe-pipe", 10000); // 扫描 → 连接 → 订阅（同步，带超时）
+zk::ble::pipe::send("hi");                   // → 写对方 RX
+```
+
+- 自定义服务：`pipe::listen("名字", "fff0")` → 服务 `fff0`，管道 `fff1`(收) / `fff2`(发)
+- ⚠️ pipe 会占用 `onWriteRequest` / `onConnectionChange` / `onValueChange` 三个回调槽；要自己接管就别用 pipe
+- ⚠️ 单连接模型：`listen` 与 `connect` 不能在同一进程同时用
 
 ---
 
