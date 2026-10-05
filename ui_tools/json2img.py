@@ -80,6 +80,7 @@ from __future__ import annotations
 import argparse
 import glob
 import json
+import math
 import os
 import sys
 from collections import Counter, OrderedDict
@@ -448,7 +449,12 @@ class Renderer:
         return out
 
     def resolve_font(self):
-        """字体优先级：--font > EasyUI.cfg 顺序里第一个存在的 > font/ 里第一个 *.ttf。"""
+        """字体优先级：--font > EasyUI.cfg 顺序里第一个存在的 > font/ 里第一个 *.ttf > **系统中文兜底**。
+
+        ⚠️ 最后一档是 2026-10-05 加的：模板工程（`templates/DemoControls_*`）里**不带字体**，
+        于是整页中文渲染成方框 —— 离线图"结构对但读不出字"，等于没法验收文案。
+        兜底只保证**可读**，不保证与设备同度量，所以会如实记一条 unsupported（不静默）。
+        """
         if self.font_path:
             return os.path.abspath(self.font_path) if os.path.isfile(self.font_path) else None
         dirs = self._font_dirs()
@@ -458,7 +464,7 @@ class Renderer:
                 hits = [h for h in hits if os.sep + '.git' not in h][:50]
                 if hits:
                     return os.path.abspath(sorted(hits)[0])
-            return None
+            return self._system_font_fallback()
         for b in self._easyui_font_order():
             for d in dirs:
                 p = os.path.join(d, b)
@@ -472,6 +478,23 @@ class Renderer:
         cands = [c for c in cands if os.path.getsize(c) > 4096]
         if cands:
             return os.path.abspath(max(cands, key=os.path.getsize))
+        return self._system_font_fallback()
+
+    def _system_font_fallback(self):
+        """工程无字体时的**系统中文兜底**（只保证可读，并如实记账）。"""
+        for p in (r'C:\Windows\Fonts\msyh.ttc', r'C:\Windows\Fonts\simhei.ttf',
+                  r'C:\Windows\Fonts\simsun.ttc',
+                  '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
+                  '/System/Library/Fonts/PingFang.ttc'):
+            if os.path.isfile(p):
+                self.report.unsupported(
+                    self.page, 'font', os.path.basename(p), 'font',
+                    '工程内无字体 → 用**系统字体**兜底渲染（保证中文可读；'
+                    '字形度量不保证与设备一致，交付前请以真机为准）')
+                return os.path.abspath(p)
+        self.report.unsupported(
+            self.page, 'font', '', 'font',
+            '工程内无字体且本机找不到系统中文字体 → 中文会渲染成方框（结构仍可验收）')
         return None
 
     def _find_bold_variant(self):
@@ -735,6 +758,17 @@ class Renderer:
                                 'segno 现场生成（静区/白底口径未实测：按 padding 内缩、白底随图）')
 
     def draw_seekbar(self, img, node, x, y, w, h, caption):
+        """按 `ui_schema.json.renderContract` 的引擎语义渲染（2026-10-05 按规格重写）。
+
+        改前它用的是**与真机不符的模型**（实测归因，见 `CONSOLIDATION_VISUAL.md`）：
+          · 填充宽用 `round`，而引擎是 **`floor`** → 恒差 1px；
+          · 填充图走 `resize(..., NEAREST)`，而引擎是 **1:1 原样贴 + 裁剪** ——
+            NEAREST 会把切图圆角**抽掉**（10% 进度时圆角 100% 消失），即"离线看着对、真机不对"；
+          · 滑块用 `thumb.size` 缩放，而引擎**按 PNG 原尺寸**画（`thumb.size` 实测被忽略）；
+          · 滑块左沿用 `round(w·frac) − tw/2`，而引擎是 **`floor((w−tw)·frac)`**（三套约定里第三套）。
+        后果：拿它的输出做视觉验收会**掩盖真问题**（这也是它此前被列为"唯一会说谎的部件"的原因）。
+        现在四条一律照规格：`pic-scale` / `progress-clip` / `thumb-size` / `rounding`。
+        """
         mx = node.get('max') or 100
         prog = node.get('defProgress')
         if prog is None:
@@ -744,9 +778,12 @@ class Renderer:
         except Exception:
             frac = 0.0
         ori = node.get('orientation', 0)   # 0 = 水平（项目实测），1 = 垂直
+        # ① 轨道：引擎**拉伸填满控件盒**（renderContract.pic-scale）→ 直接按盒尺寸贴
         bgpic = node.get('backgroundPic')
         if bgpic:
             self.draw_pic(img, bgpic, x, y, w, h, 'seekbar', caption)
+        # ② 填充：1:1 原样贴 + 按 floor(盒宽×进度/max) 裁剪（renderContract.progress-clip）
+        #    ⚠️ 不 resize：图若比盒窄，引擎也是 1:1 贴（露轨道），不许缩放着把内容撑满
         ppic = node.get('progressPic')
         layer = Image.new('RGBA', img.size, (0, 0, 0, 0))
         if ppic:
@@ -755,38 +792,44 @@ class Renderer:
                 self.report.miss(self.page, ppic, caption)
             else:
                 if ori == 0:
-                    pw, ph = max(1, int(round(w * frac))), h
+                    cut_w, cut_h = int(math.floor(w * frac)), h
                 else:
-                    pw, ph = w, max(1, int(round(h * frac)))
-                if im.size != (pw, ph):
-                    self.report.stretch(self.page, 'seekbar', ppic, im.size, (pw, ph))
-                sub = (im if im.size == (pw, ph) else im.resize((pw, ph), NEAREST))
-                nn = nine_patch(im, pw, ph) if str(ppic).endswith('.9.png') else None
-                if nn is not None:
-                    sub = nn
-                paste_rgba(layer, sub, x, y)
+                    cut_w, cut_h = w, int(math.floor(h * frac))
+                iw, ih = im.size
+                if (iw, ih) != (w, h):
+                    # 图 != 控件盒 → 按规格这是**要求错**（引擎只裁剪不缩放）：如实记账，别悄悄缩放
+                    self.report.stretch(self.page, 'seekbar', ppic, im.size, (w, h))
+                if str(ppic).endswith('.9.png'):
+                    nn = nine_patch(im, min(iw, max(1, cut_w)), min(ih, max(1, cut_h)))
+                    if nn is not None:
+                        paste_rgba(layer, nn, x, y)
+                else:
+                    # 1:1 贴、按进度裁剪到左上角（引擎行为）；裁剪后不足盒宽的部分保持透明 = 露轨道
+                    cw, ch = min(iw, max(0, cut_w)), min(ih, max(0, cut_h))
+                    if cw > 0 and ch > 0:
+                        paste_rgba(layer, im.crop((0, 0, cw, ch)), x, y)
+        # ③ 滑块：按 **PNG 原尺寸**画（renderContract.thumb-size）；左沿 floor((盒宽−图宽)×进度/max)
         thumb = node.get('thumb') if isinstance(node.get('thumb'), dict) else None
         if thumb and (thumb.get('normalPic') or thumb.get('pressedPic')):
             tp = thumb.get('normalPic') or thumb.get('pressedPic')
             size = thumb.get('size') or {}
-            tw, th = int(size.get('width') or 0), int(size.get('height') or 0)
+            dw, dh = int(size.get('width') or 0), int(size.get('height') or 0)
             tim = self.load_pic(tp)
             if tim is None:
                 self.report.miss(self.page, tp, caption)
             else:
-                if not tw or not th:
-                    tw, th = tim.size
-                    self.report.unsupported(self.page, 'seekbar', caption, 'thumb.size',
-                                            '无 thumb.size → 用图片原尺寸 %dx%d' % (tw, th))
+                tw, th = tim.size                      # ★ 尺寸由 PNG 决定，不是 json
+                if dw and dh and (dw, dh) != (tw, th):
+                    self.report.unsupported(
+                        self.page, 'seekbar', caption, 'thumb.size',
+                        '声明 %dx%d 与 PNG %dx%d 不一致 → 真机按 **PNG** 画（thumb.size 被忽略）'
+                        % (dw, dh, tw, th))
                 if ori == 0:
-                    tx = int(round(w * frac)) - tw // 2
-                    ty = int(round((h - th) / 2.0))
+                    tx = int(math.floor((w - tw) * frac))
+                    ty = int((h - th) // 2)            # 盒高 < 图高 → 居中裁（负值即被裁）
                 else:
-                    tx = int(round((w - tw) / 2.0))
-                    ty = int(round(h * frac)) - th // 2
-                if tim.size != (tw, th):
-                    self.report.stretch(self.page, 'seekbar', tp, tim.size, (tw, th))
-                    tim = tim.resize((tw, th), NEAREST)
+                    tx = int((w - tw) // 2)
+                    ty = int(math.floor((h - th) * frac))
                 paste_rgba(layer, tim, x + tx, y + ty)
         img.alpha_composite(layer)
         self.report.unsupported(self.page, 'seekbar', caption, 'defProgress',
