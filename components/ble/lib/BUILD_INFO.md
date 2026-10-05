@@ -1,11 +1,11 @@
 # libzkble.a 构建信息（zk::ble 组件静态库）
 
-构建时间：2026-10-05 10:48
+构建时间：2026-10-05 11:23
 
 | 平台 | 后端 | 依赖包（工程侧还需声明） | 导出符号 | 大小 | SHA256(前16) | 说明 |
 |---|---|---|---|---|---|---|
-| f133 | btstack | btstack 1.7.2 + easyui 2.9.0 | 30 | 649404 B | `5EABEF65E51D9460` | F133 RISC-V musl；中心侧 |
-| v85x | btstack | btstack 1.7.2 + easyui 2.9.0 | 30 | 191790 B | `45CD887989675CE2` | V85X ARM musl；中心侧（本机注册表只有 btstack 1.7.2；包站 1.8.0 未本地安装，装了以后重跑本脚本即可） |
+| f133 | btstack | btstack 1.7.2 + easyui 2.9.0 | 30 | 650508 B | `E7A6DCC292778C2C` | F133 RISC-V musl；中心侧 |
+| v85x | btstack | btstack 1.7.2 + easyui 2.9.0 | 30 | 192146 B | `F426E64B384D3CB2` | V85X ARM musl；中心侧（本机注册表只有 btstack 1.7.2；包站 1.8.0 未本地安装，装了以后重跑本脚本即可） |
 | z20 | gatt | gatt 1.0.0 | 30 | 227520 B | `AB5B9B1F74EF439C` | Z20 ARM glibc；主从双角色（真机跑通） |
 | z21 | gatt | gatt 1.0.0 | 30 | 227520 B | `AB5B9B1F74EF439C` | Z21 ARM glibc；主从双角色（真机跑通） |
 
