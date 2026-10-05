@@ -242,4 +242,5 @@ def box2str(b):
     return 'bbox=%s' % (b,) if b else ''
 
 
-main()
+if __name__ == '__main__':
+    main()

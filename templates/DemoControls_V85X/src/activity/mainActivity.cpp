@@ -4,6 +4,15 @@
 #include "mainActivity.h"
 
 /*TAG:GlobalVariable全局变量*/
+static ZKButton* mmenuPagePtr;
+static ZKButton* mmenuScrollPtr;
+static ZKButton* mmenuCanvasPtr;
+static ZKButton* mmenuPointerPtr;
+static ZKButton* mmenuProgressPtr;
+static ZKButton* mmenuButtonPtr;
+static ZKButton* mmenuTextPtr;
+static ZKWindow* mmenuPanelPtr;
+static ZKTextView* mtitlePtr;
 static mainActivity* mActivityPtr;
 
 /*register activity*/
@@ -41,6 +50,13 @@ typedef struct {
 
 /*TAG:ButtonCallbackTab按键映射表*/
 static S_ButtonCallback sButtonCallbackTab[] = {
+    ID_MAIN_menuPage, onButtonClick_menuPage,
+    ID_MAIN_menuScroll, onButtonClick_menuScroll,
+    ID_MAIN_menuCanvas, onButtonClick_menuCanvas,
+    ID_MAIN_menuPointer, onButtonClick_menuPointer,
+    ID_MAIN_menuProgress, onButtonClick_menuProgress,
+    ID_MAIN_menuButton, onButtonClick_menuButton,
+    ID_MAIN_menuText, onButtonClick_menuText,
 };
 /***************/
 
@@ -113,6 +129,15 @@ mainActivity::~mainActivity() {
     unregisterProtocolDataUpdateListener(onProtocolDataUpdate);
     onUI_quit();
     mActivityPtr = NULL;
+    mmenuPagePtr = NULL;
+    mmenuScrollPtr = NULL;
+    mmenuCanvasPtr = NULL;
+    mmenuPointerPtr = NULL;
+    mmenuProgressPtr = NULL;
+    mmenuButtonPtr = NULL;
+    mmenuTextPtr = NULL;
+    mmenuPanelPtr = NULL;
+    mtitlePtr = NULL;
 }
 
 const char* mainActivity::getAppName() const{
@@ -122,6 +147,15 @@ const char* mainActivity::getAppName() const{
 //TAG:onCreate
 void mainActivity::onCreate() {
 	Activity::onCreate();
+    mmenuPagePtr = (ZKButton*)findControlByID(ID_MAIN_menuPage);
+    mmenuScrollPtr = (ZKButton*)findControlByID(ID_MAIN_menuScroll);
+    mmenuCanvasPtr = (ZKButton*)findControlByID(ID_MAIN_menuCanvas);
+    mmenuPointerPtr = (ZKButton*)findControlByID(ID_MAIN_menuPointer);
+    mmenuProgressPtr = (ZKButton*)findControlByID(ID_MAIN_menuProgress);
+    mmenuButtonPtr = (ZKButton*)findControlByID(ID_MAIN_menuButton);
+    mmenuTextPtr = (ZKButton*)findControlByID(ID_MAIN_menuText);
+    mmenuPanelPtr = (ZKWindow*)findControlByID(ID_MAIN_menuPanel);
+    mtitlePtr = (ZKTextView*)findControlByID(ID_MAIN_title);
 	mActivityPtr = this;
 	onUI_init();
   registerProtocolDataUpdateListener(onProtocolDataUpdate);

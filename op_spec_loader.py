@@ -50,6 +50,32 @@ class OpSpecError(RuntimeError):
     """注册表缺失 / 损坏 / 查询不存在的 op。消息里永远带路径或 op 名。"""
 
 
+
+_UNKNOWN_FRAGMENTS = []          # 载入时收集的"未定义片段引用"（validate() 报错用）
+
+
+def _expand_fragments(node, table, unknown):
+    """递归展开 `@片段名`（真源：注册表顶层 `fragments`）。
+
+    为什么在**载入后立即展开**、而不是每个渲染点各展开一次：消费者不止渲染器
+    （dispatcher 匹配、意图目录、manifest 都直接读字段值）—— 只在一处展开，所有人看到同一份
+    **展开后**文本，`@xxx` 对下游完全透明（也就不会有人"忘了展开"）。
+    未定义的片段名**原样保留**并记进 `unknown`（交给 `validate()` 报错，不静默）。
+    """
+    if isinstance(node, str):
+        if node.startswith('@') and len(node) > 1 and ' ' not in node and '\n' not in node:
+            name = node[1:]
+            if name in table:
+                return table[name]
+            if name not in unknown:
+                unknown.append(name)
+        return node
+    if isinstance(node, list):
+        return [_expand_fragments(x, table, unknown) for x in node]
+    if isinstance(node, dict):
+        return {k: _expand_fragments(v, table, unknown) for k, v in node.items()}
+    return node
+
 def load():
     """加载 op_spec.json（带缓存）。文件缺失/解析失败 → OpSpecError（含路径）。"""
     global _CACHE
@@ -65,6 +91,9 @@ def load():
                           % (SPEC_PATH, type(e).__name__, e))
     if not isinstance(reg.get('ops'), dict):
         raise OpSpecError('op 契约注册表缺少 ops 段: %s' % SPEC_PATH)
+    # 片段展开（**唯一时机**）：`@name` → `fragments[name]`；下游（渲染/目录/manifest）拿到的都是展开后文本
+    del _UNKNOWN_FRAGMENTS[:]
+    reg = _expand_fragments(reg, reg.get('fragments') or {}, _UNKNOWN_FRAGMENTS)
     _CACHE = reg
     return reg
 
@@ -230,6 +259,18 @@ def _field_text(op, key):
         t = ('不适用（问法里出现这些就先看别的 op）：%s' % ' / '.join(ph)) if ph else ''
     elif key == 'docRef':
         t = ('细节见 %s' % v) if v else ''
+    elif key == 'seeAlso':
+        # C（2026-10-05）：**不再重复渲染 docRef 已给过的路径**（40/47 op 都重复，合计 1550 字符）。
+        # 数据不动（`op_seealso.json` 等派生件仍以 op_spec 为准），只在**取用时**去重。
+        dr = s.get('docRef')
+        seen, items = set(), []
+        for x in (v or []):
+            x = str(x).strip()
+            if not x or x == dr or x in seen:
+                continue
+            seen.add(x)
+            items.append(x)
+        t = '\n'.join(items)
     else:
         # flow / notes 允许是字符串或字符串数组（数组按行拼，便于注册表按段落维护）
         if isinstance(v, list):
@@ -255,7 +296,7 @@ def _render_parts(op, order):
 def _join_parts(parts):
     """片段列表 → 最终文本。**分隔符只在这里定义一处**。
 
-    规则（必须与原实现逐字节一致，2026-10-05 重构时用 48/48 op 的快照比对验证过）：
+    规则（必须与原实现逐字节一致，2026-10-05 重构时用**当时全部 op**（48/48）的快照比对验证过）：
       · `summary` 与正文之间是**空行**（`'\\n\\n'`）；
       · 正文各字段之间是**单换行**（`'\\n'`）—— 不是空行。
     我第一次写成"所有片段都空行"就与旧输出差了 1 个字符，靠基线快照当场抓到。
@@ -298,9 +339,12 @@ def render_contract(op):
 # 按需面**分段取用**（`describe(section=…)` / 资源 `flythings://ops/<名>/<段>`）
 #
 # 为什么要它（2026-10-05 实测）：按需面单条上限 900 字符，而 `flythings_get_package_api`
-# 已到 **892（余 8）**、`i18n_to_json` 805、`build_ui_flow` 804 —— 「往契约里加东西」这条路
+# 已到 **892（余 8）**（当时另有 `i18n_to_json` 805、`build_ui_flow` 804 —— 前者本批已并入
+# `flythings_i18n`）—— 「往契约里加东西」这条路
 # 事实上已经到顶（加 `excludes` 一次就吃掉 47 字符、加一条规则吃掉 411）。分层把计费单位
-# 从"整条 op"换成"一次取用"：实测单段最大 **645**（rules）、默认形态最大 = 全文 805。
+# 从"整条 op"换成"一次取用"：实测单段最大 **731**（`flythings_i18n:skeleton`）、
+# 默认形态最大 **892**（`flythings_get_package_api`）—— 两处数字由
+# `scripts/check_consistency.py` 的 `budget.note` 判据对账（改完记得同步 op_spec.json）。
 # 段划分是**对 contractOrder 的精确划分**（不重排、不新增字段），所以常驻面与全文逐字节不变。
 # --------------------------------------------------------------------------
 
@@ -345,7 +389,7 @@ def render_default(op):
     """**默认形态**：`describe` 不传 `section` 时给什么。
 
     规则（只加不破）：全文 ≤ `budget.contractPerOpMax` 时**逐字节等于 `render_contract`**
-    （今天 48/48 都如此，所以默认形态与改动前无差异）；一旦某条 op 涨过上限，就退化为
+    （当时全部 op（48/48）都如此，所以默认形态与改动前无差异）；一旦某条 op 涨过上限，就退化为
     「skeleton + 段目录」——**自动软着陆**，不需要人工重排预算。
     """
     full = render_contract(op)
@@ -420,6 +464,14 @@ def validate():
     """注册表自检：返回问题列表（空 = 合规）。供 gen_op_docs.py --check 消费。"""
     errs = []
     reg = load()
+    frags = reg.get('fragments') or {}
+    for n in _UNKNOWN_FRAGMENTS:
+        errs.append('未定义的片段引用：@%s（真源 = op_spec.json 的 `fragments` 段）' % n)
+    if frags:
+        body = io.open(SPEC_PATH, encoding='utf-8').read()
+        for n in sorted(frags):
+            if ('"@%s"' % n) not in body:
+                errs.append('片段 `%s` 定义了但没人引用（抽了共享片段却没用 = 存量垃圾）' % n)
     if not str(reg.get('authority') or '').strip():
         errs.append('缺少 authority 声明（注册表必须声明唯一真源与消费方）')
     for op, s in sorted(reg['ops'].items()):

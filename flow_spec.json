@@ -205,23 +205,49 @@
       }
     },
     "gen-logic-stub": {
-      "title": "补回调桩 → 再填业务",
+      "title": "补回调桩（生成归 fun build，本 op 是体检 / 兜底）",
       "op": "flythings_gen_logic_stub",
       "how": [
-        "`flythings_gen_logic_stub(project_root=…)` —— 读 `ui/*.json` 的控件表 → 补齐回调桩（**只补不改**，已有同名函数一律跳过）",
-        "桩生成完，再往 `src/logic/*.cc` 里填业务（桩只给骨架 + TODO）"
+        "`flythings_gen_logic_stub(project_root=…, dry_run=true)` —— 按 `ui/*.json` 的控件表**核对**该有哪些桩、缺哪些（只补不改，已有同名函数一律跳过）",
+        "**首选路径是工具链**：`fui pack` 后 `fun build` 会为新页生成 `src/logic/<p>Logic.cc`（含 `INIT_UI_EVENT_BINDINGS` 与生命周期钩子）并追加缺失的桩；本 op 用在**还没打包、机器上没有工具链、或想先看清单**的场合",
+        "桩只是骨架（`(void)x;` / `return false;`）——**页面逻辑写在同一个文件里**，见下一步 write-logic"
       ],
       "gotchas": [
         "回调名按 **caption** 拼（`on<Event>_<Caption>`），改名后没补桩 = 点了没反应",
-        "`listview` 的 count / data / click **三条成组**，缺一条列表就是空白"
+        "`listview` 的 count / data / click **三条成组**，缺一条列表就是空白",
+        "容器 / 显示类控件（pagewindow、scrollwindow、textview…）**本来就没有回调桩**，它们的交互在代码侧接线，别当成「漏生成」"
       ],
       "setsState": [
         "stubsGenerated"
       ],
       "verify": {
         "ok": "桩与 `ui/*.json` 控件一一对应，无缺、无重复生成",
-        "notOk": "覆盖已有业务代码，或手写回调桩（绕过 op）",
-        "evidence": "`git diff` 只新增函数骨架；返回体的 affectedFiles 与控件数一致"
+        "notOk": "覆盖已有业务代码，或手写回调桩（绕过 op / 工具链）",
+        "evidence": "`git diff` 只新增函数骨架；返回体的 affectedFiles 与控件数一致；`fun build` 通过"
+      }
+    },
+    "write-logic": {
+      "title": "在 logic 里写页面逻辑",
+      "how": [
+        "`src/logic/<页>Logic.cc` 是**页面逻辑的唯一落点**：在回调桩里写「控件 ↔ 业务」的关联（取指针 / 取值 / `setText` / `refreshListView` / `setXxxListener`），别只留桩体占位",
+        "复杂功能写成 `src/<业务域>/*.cpp` + `.h`（如 `src/network/NetworkManager.cpp`），在 logic 里 include 调用；**新增代码禁建 .cc** —— `.cc` 是按页面生成的 logic 专属",
+        "容器 / 显示类控件（pagewindow / scrollwindow / textview / painter…）没有回调桩 → 在 `onUI_init` 里 `findControlByID` 取指针 + `setXxxListener` / `setPageChangeListener` 在代码侧接线（`flythings_knowledge_search(query=\"pagewindow\")`）",
+        "桩体不再是占位才算写完：`(void)x;` / `return false;` 是骨架，不是实现"
+      ],
+      "gotchas": [
+        "只补桩就打包上机 = 点上去没反应（真机表现和「回调没生成」一模一样）",
+        "回调名按 caption 拼：caption 改过名却没补桩，逻辑写了也不会被调用",
+        "`onUI_quit` 里要反注册监听 / 清页面级 static 缓存（否则二次进页面异常、资源残留）"
+      ],
+      "gate": "precondition",
+      "gateHow": "先把该页的桩补齐（`fun build` 生成，或 `flythings_gen_logic_stub` 体检）再往里写 —— 函数名 / 签名不对就是白写",
+      "setsState": [
+        "logicWritten"
+      ],
+      "verify": {
+        "ok": "该页交互控件在 `src/logic/<页>Logic.cc` 里有对应实现（桩体不再是占位）；容器 / 显示类控件已在代码侧接线",
+        "notOk": "只补了桩就打包上机；或把业务代码写进 `src/activity/`（下次 ftu 生成会覆盖）",
+        "evidence": "`git diff src/logic/*.cc` 里能看到函数体实现（setText / setXxxListener / refreshListView / 业务对象调用）；`fun build` 通过；真机点一下有反应（logcat 有回调日志）"
       }
     },
     "survey-project": {
@@ -552,10 +578,10 @@
     },
     "i18n": {
       "title": "多语言",
-      "op": "flythings_i18n_refactor",
+      "op": "flythings_i18n",
       "how": [
-        "`flythings_i18n_refactor`（写死文案抽 @key）→ `flythings_i18n_export` → 翻译 → `flythings_i18n_import` → `flythings_i18n_to_json`",
-        "`fun launch` **不推翻译** —— i18n 改动必须 `flythings_i18n_to_json` 补推"
+        "`flythings_i18n`（`action=refactor`）（写死文案抽 @key）→ `flythings_i18n`（`action=export`） → 翻译 → `flythings_i18n`（`action=import`） → `flythings_i18n`（`action=to_json`）",
+        "`fun launch` **不推翻译** —— i18n 改动必须 `flythings_i18n`（`action=to_json`） 补推"
       ],
       "verify": {
         "ok": "文案全走 @key、翻译已 import 并 push，设备显示新语言",
@@ -570,7 +596,7 @@
       "skillName": "flythings-idea-to-app",
       "label": "场景①",
       "title": "从想法到上机",
-      "desc": "场景①「从一句话到上机」——用户只有一个界面想法（智能开关/温控面板/仪表盘/门禁机…），没有现成工程。做需求澄清 → 建工程 → 设计稿确认 → 写 ui json → 补回调桩 → 打包 → 部署 → 视觉验收的完整闭环。用于「我想做个 XXX 屏/面板/界面」「帮我从零做个项目」。",
+      "desc": "场景①「从一句话到上机」——用户只有一个界面想法（智能开关/温控面板/仪表盘/门禁机…），没有现成工程。做需求澄清 → 建工程 → 设计稿确认 → 写 ui json → 补回调桩 → 写页面逻辑 → 打包 → 部署 → 视觉验收的完整闭环。用于「我想做个 XXX 屏/面板/界面」「帮我从零做个项目」。",
       "when": "只有需求、还没有工程",
       "audience": [
         "用户给的是**需求**（不是文件）：「做个智能温控面板」「做个 7 寸仪表盘」「做个门禁界面」"
@@ -594,6 +620,7 @@
         "preview",
         "write-ui-json",
         "gen-logic-stub",
+        "write-logic",
         "pack",
         "launch",
         "screenshot",
@@ -655,7 +682,7 @@
           "**图片尺寸**：设计稿给的图不是控件盒尺寸 → 引擎拉伸（不报错，属缺陷）→ 用 `flythings_verify_assets` 抓",
           "**CSS 效果**：阴影 / 模糊 / 渐变在设备上是**位图**，缩放会糊 → 按目标分辨率出图",
           "**触摸热区**：HTML 里靠 CSS 撑开的点击区，落到 json 要显式给控件 `position`",
-          "**多语言**：稿子里的文本先留，等版式确认后再 `flythings_i18n_refactor` 抽 @key"
+          "**多语言**：稿子里的文本先留，等版式确认后再 `flythings_i18n`（`action=refactor`） 抽 @key"
         ]
       },
       "invariants": [
@@ -689,6 +716,7 @@
         "read-spec",
         "create-project",
         "gen-logic-stub",
+        "write-logic",
         "package-search",
         "manifest-write",
         "pack",
@@ -719,7 +747,7 @@
       "skillName": "flythings-reskin",
       "label": "场景④",
       "title": "改已有工程（换皮 → 换功能）",
-      "desc": "场景④「改已有工程」——在现成 FlyThings 工程上换皮（改样式/图片/布局）、加页面、加控件、加功能：现状体检 → 改 json/ftu → 补回调桩填业务 → 资源核对 → 重打包 → 上机验收。用于「这个界面改一下」「加个页面/按钮」「客户要换个配色」「在现有项目上加功能」。",
+      "desc": "场景④「改已有工程」——在现成 FlyThings 工程上换皮（改样式/图片/布局）、加页面、加控件、加功能：现状体检 → 改 json/ftu → 补回调桩 → 在 logic 里写页面逻辑 → 资源核对 → 重打包 → 上机验收。用于「这个界面改一下」「加个页面/按钮」「客户要换个配色」「在现有项目上加功能」。",
       "when": "已有 FlyThings 工程要改",
       "audience": [
         "有**现成 FlyThings 工程**，要改 UI / 加页面 / 加控件 / 加逻辑"
@@ -736,6 +764,7 @@
         "survey-project",
         "edit-ui",
         "gen-logic-stub",
+        "write-logic",
         "audit-ui",
         "pack",
         "launch",
@@ -755,7 +784,7 @@
         "title": "换皮最容易漏的几处",
         "items": [
           "**只看 json 不看 ftu**：设备加载的是 ftu —— 改完 json 必须 pack，否则「改了像没改」",
-          "**回调名对不上**：改名了 caption 却没补桩 → 点了没反应（跑 `flythings_gen_logic_stub` 即可补全）",
+          "**回调名对不上**：改名了 caption 却没补桩 → 点了没反应（`fun build` 会补，也可先跑 `flythings_gen_logic_stub` 体检）",
           "**图片尺寸变了**：换图后没跑 `flythings_verify_assets` → 引擎拉伸、不报错",
           "**多页共用逻辑**：页与页之间的 static 缓存不会自动清 → 按生命周期口径处理（`flythings_knowledge_search(query=\"静态缓存 跨页面\")`）",
           "**隐藏页的定时器还在跑**：切页不等于停 —— 需要显式停（`flythings_knowledge_search(query=\"隐藏页 定时器\")`）"
@@ -838,6 +867,7 @@
         "find-pattern",
         "html-to-json",
         "preview",
+        "write-logic",
         "pack",
         "launch"
       ],
@@ -866,6 +896,7 @@
         "html-to-json",
         "preview",
         "audit-ui",
+        "write-logic",
         "pack"
       ],
       "invariants": [
@@ -988,6 +1019,11 @@
         "setBy": "gen-logic-stub",
         "meaning": "回调桩已补齐（只补不改，可反复跑）",
         "blocks": null
+      },
+      "logicWritten": {
+        "setBy": "write-logic",
+        "meaning": "页面逻辑已写进 src/logic/<页>Logic.cc（桩体不再是占位；容器/显示类控件已在代码侧接线）",
+        "blocks": "pack"
       },
       "packed": {
         "setBy": "pack",

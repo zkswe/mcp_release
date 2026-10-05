@@ -4,7 +4,7 @@
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY/STAGE 表后重新生成，勿手改本文件",
   "version": "0.27.196-open",
   "build": "2026-10-05",
-  "toolCount": 48,
+  "toolCount": 42,
   "cli": {
     "fun": "FlyThings 工程工具（create/install/build/launch，<项目>/.fsc/<平台>/ 下；09-28 前为 .fun/）",
     "fui": "FTU 布局工具：pack（json → ftu）/ unpack（ftu → json）双向下；随包 fui 自 v0.27.91 起含 unpack（旧版只有 pack）"
@@ -193,7 +193,10 @@
         "with_launch",
         "device",
         "font_check",
-        "font_tier"
+        "font_tier",
+        "force_confirm",
+        "allow_unvalidated",
+        "strict_ui"
       ],
       "risk": "device",
       "category": "build",
@@ -229,28 +232,6 @@
         "缺哪些库",
         "include 找不到",
         "查依赖"
-      ]
-    },
-    {
-      "op": "flythings_create_bin_project",
-      "brief": "创建「可执行程序」项目（fun create --type bin）并编译为直接可运行的 ELF 二进制。",
-      "args": [
-        "project_root",
-        "project_name",
-        "platform",
-        "app_version",
-        "description",
-        "with_build"
-      ],
-      "risk": "write",
-      "category": "project",
-      "stage": "build",
-      "triggers": [
-        "做个小工具",
-        "命令行程序",
-        "不要界面",
-        "可执行文件",
-        "bin 工程"
       ]
     },
     {
@@ -360,7 +341,10 @@
       "op": "flythings_fui_pack",
       "brief": "将 json 布局打包为 ftu（设备实际加载的是 ftu）。返回 ftu 路径、控件数、分辨率。",
       "args": [
-        "json_path"
+        "json_path",
+        "force_confirm",
+        "allow_unvalidated",
+        "strict_ui"
       ],
       "risk": "write",
       "category": "layout",
@@ -390,7 +374,7 @@
     },
     {
       "op": "flythings_gen_logic_stub",
-      "brief": "按 ui/*.json 的控件表补齐 logic 回调桩（只补不改，不写业务）。",
+      "brief": "回调桩体检/兜底（生成归 fun build）：页面逻辑写在 src/logic。",
       "args": [
         "project_root",
         "page",
@@ -524,7 +508,9 @@
         "input_html",
         "output_json",
         "res",
-        "merge_windows"
+        "merge_windows",
+        "allow_unvalidated",
+        "strict_ui"
       ],
       "risk": "write",
       "category": "layout",
@@ -539,104 +525,19 @@
       ]
     },
     {
-      "op": "flythings_i18n_add_language",
-      "brief": "添加新语言：从基础语言（缺省 zh_CN）复制 key 骨架，生成 i18n/<lang>-<lang_name>.tr 待翻译文件。",
+      "op": "flythings_i18n",
+      "brief": "多语言（i18n）唯一入口：一个 action 一步（诊断/抽 @key/加语种/导出/写回/转 json 并推送）。",
       "args": [
         "project_root",
+        "action",
         "lang",
         "lang_name",
         "base_lang",
-        "context"
-      ],
-      "risk": "write",
-      "category": "i18n",
-      "stage": "build",
-      "triggers": [
-        "加个语言",
-        "支持英文",
-        "多语言加一种",
-        "加英文",
-        "加一门语言",
-        "加个语种",
-        "要英文"
-      ]
-    },
-    {
-      "op": "flythings_i18n_export",
-      "brief": "导出指定语言（缺省 zh_CN）的 key→文本清单（JSON），供翻译后 import 写回。",
-      "args": [
-        "project_root",
-        "lang",
         "keys",
-        "context"
-      ],
-      "risk": "write",
-      "category": "i18n",
-      "stage": "build",
-      "triggers": [
-        "导出翻译",
-        "把文案给翻译",
-        "导出语言包",
-        "导出给翻译",
-        "文案导出",
-        "导出文案"
-      ]
-    },
-    {
-      "op": "flythings_i18n_import",
-      "brief": "将翻译结果写回项目 i18n/<lang>.tr（生成新语言文件或更新已有）。",
-      "args": [
-        "project_root",
-        "lang",
+        "context",
         "translations",
-        "merge"
-      ],
-      "risk": "write",
-      "category": "i18n",
-      "stage": "build",
-      "triggers": [
-        "翻译好了",
-        "导入翻译",
-        "把译文写回去"
-      ]
-    },
-    {
-      "op": "flythings_i18n_refactor",
-      "brief": "把布局 json 里写死的非空文本控件替换为 @key 引用（多语言改造辅助）。",
-      "args": [
-        "project_root",
-        "lang",
-        "dry_run"
-      ],
-      "risk": "write",
-      "category": "i18n",
-      "stage": "build",
-      "triggers": [
-        "多语言改造",
-        "写死的文字改成 key",
-        "文案抽出来"
-      ]
-    },
-    {
-      "op": "flythings_i18n_scan",
-      "brief": "诊断项目多语言（i18n）现状：i18n/*.tr 语言文件、key 对齐、布局 @key 引用完整性。",
-      "args": [
-        "project_root"
-      ],
-      "risk": "read",
-      "category": "i18n",
-      "stage": "build",
-      "triggers": [
-        "多语言有没有问题",
-        "检查翻译",
-        "key 对不齐"
-      ]
-    },
-    {
-      "op": "flythings_i18n_to_json",
-      "brief": "把 i18n/*.tr 转为 i18n/*.json（设备 zkgui 实际加载格式），并可推送到设备 /tmp/tr/。",
-      "args": [
-        "project_root",
+        "merge",
+        "dry_run",
         "langs",
         "push",
         "device"
@@ -645,6 +546,28 @@
       "category": "i18n",
       "stage": "build",
       "triggers": [
+        "多语言有没有问题",
+        "检查翻译",
+        "key 对不齐",
+        "加个语言",
+        "支持英文",
+        "多语言加一种",
+        "加英文",
+        "加一门语言",
+        "加个语种",
+        "要英文",
+        "导出翻译",
+        "把文案给翻译",
+        "导出语言包",
+        "导出给翻译",
+        "文案导出",
+        "导出文案",
+        "翻译好了",
+        "导入翻译",
+        "把译文写回去",
+        "多语言改造",
+        "写死的文字改成 key",
+        "文案抽出来",
         "推翻译",
         "tr 转 json",
         "翻译不生效",
@@ -958,7 +881,9 @@
         "out",
         "res",
         "dry_run",
-        "gen_placeholders"
+        "gen_placeholders",
+        "allow_unvalidated",
+        "strict_ui"
       ],
       "risk": "write",
       "category": "layout",
@@ -1039,7 +964,10 @@
         "device",
         "json",
         "tol",
-        "max_ratio"
+        "max_ratio",
+        "force_confirm",
+        "allow_unvalidated",
+        "strict_ui"
       ],
       "risk": "write",
       "category": "ui-visual",
@@ -1059,7 +987,8 @@
       "op": "flythings_validate_project",
       "brief": "检查项目是否符合 FlyThings 规范，返回 errors/warnings。生成代码后调用。",
       "args": [
-        "project_root"
+        "project_root",
+        "ui_check"
       ],
       "risk": "read",
       "category": "layout",
@@ -1092,9 +1021,9 @@
     }
   ],
   "docs": {
-    "knowledgeFiles": 116,
+    "knowledgeFiles": 118,
     "wikiFiles": 122,
-    "ragChunks": 1946,
-    "ragPaths": 156
+    "ragChunks": 1968,
+    "ragPaths": 158
   }
 }

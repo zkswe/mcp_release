@@ -1,10 +1,17 @@
 # -*- coding: utf-8 -*-
-"""logic 回调桩生成（op: `flythings_gen_logic_stub`）。
+"""logic 回调桩**体检 / 兜底**（op: `flythings_gen_logic_stub`）。
 
-为什么需要：FlyThings 控件回调是**按 caption 拼名**的（`onButtonClick_<Caption>`）——
+**定位（2026-10-05 起）**：桩的**生成**归工具链 —— `fui pack` 后 `fun build` 会为新页
+生成 `src/logic/<p>Logic.cc`（含 `INIT_UI_EVENT_BINDINGS`、生命周期/触摸钩子）并**追加**缺失的
+回调桩（2026-10-05 实测：新页自动建文件；已有文件追加的函数落在文件作用域 EOF，不覆盖原内容）。
+本模块只做**体检**：按 `ui/*.json` 的控件表算出「该有哪些桩、缺哪些」，用在**还没打包 /
+机器上没有工具链 / 想先看清单**的场合；缺文件时不代建（那是 fun build 的活）。
+
+为什么还要它：FlyThings 控件回调是**按 caption 拼名**的（`onButtonClick_<Caption>`）——
 漏写或拼错一个字 = 「点了没反应」；listview 的 3 条回调缺一条 = 列表永远空白。
-所以「换皮 → 换功能」的第一步就是**先知道该有哪些桩**。本模块从工程 `ui/*.json`
-的控件表推导出来，只生成**空桩 + TODO**，业务逻辑留给调用方。
+所以「换皮 → 换功能」的第一步就是**先知道该有哪些桩**。本模块只生成**空桩 +
+TODO 注释**（形状取自 ui_schema 的 `callbacks[].stub`），**业务逻辑由 AI 写在同一个文件里**
+（流程步骤 `write-logic`；容器/显示类控件没有桩，走 `findControlByID` + `setXxxListener` 接线）。
 
 回调名与签名**只在 `ui_tools/ui_schema.json` 的 `controls.<类型>.callbacks` 里**
 （本模块不另写一份表——照仓库「唯一真源 + 全派生」的纪律；讲解见
@@ -126,7 +133,9 @@ def gen_logic_stub(project_root, page='', dry_run=False):
         logic_path = os.path.join(project_root, 'src', 'logic', '%sLogic.cc' % pname)
         rec = {'page': pname, 'logic': logic_rel, 'generated': [], 'skipped': []}
         if not os.path.isfile(logic_path):
-            rec['error'] = '缺 %s —— 先 create_project 或手工建页' % logic_rel
+            rec['error'] = ('缺 %s —— 先 `fui pack` 该页再 `fun build`（工具链会自动建这个文件，'
+                            '含 INIT_UI_EVENT_BINDINGS 与生命周期钩子）；本 op 不代建文件'
+                            % logic_rel)
             out.append(rec)
             continue
         with io.open(logic_path, encoding='utf-8', errors='replace') as fh:
@@ -161,4 +170,7 @@ def gen_logic_stub(project_root, page='', dry_run=False):
                       'listview 的 3 条回调是一组（count/data/click），缺一列表就是空白',
                       '返回值语义：onButtonClick 的 true=吞事件、false=放行',
                       '生成物要过 check_all：注释里别写孤立括号',
-                      '回调名/签名真源 = ui_tools/ui_schema.json 的 controls.<类型>.callbacks']}
+                      '回调名/签名真源 = ui_tools/ui_schema.json 的 controls.<类型>.callbacks',
+                      '★ 桩只是骨架：**页面逻辑写在同一个 src/logic/<页>Logic.cc 里**（函数体留 (void)x; / return false; 就打包上机 = 点上去没反应）',
+                      '★ 容器/显示类控件（pagewindow、scrollwindow、textview、painter…）本来就没有回调桩：在 onUI_init 里 findControlByID 取指针 + setXxxListener/setPageChangeListener 接线',
+                      '★ 生成归工具链：fui pack 后 fun build 会为新页建 logic 文件（含 INIT_UI_EVENT_BINDINGS 与生命周期钩子）并追加缺失的桩；本 op 用于未打包/无工具链/先看清单']}

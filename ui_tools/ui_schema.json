@@ -407,6 +407,10 @@
     "window": {
       "interactive": false,
       "container": true,
+      "children": {
+        "mode": "controls",
+        "note": "万能容器：子控件键（<type>__N）可直接挂，21 类控件都允许（json-layer-rules 第 1 条；实证 textview 147 / button 128 / window 深嵌套 5）"
+      },
       "fields": {
         "id": {
           "type": "int",
@@ -659,6 +663,12 @@
     },
     "listview": {
       "interactive": true,
+      "container": true,
+      "children": {
+        "mode": "substructure",
+        "key": "item",
+        "note": "结构容器：行模板只能走 item（listitem），行内容在 item.subItem[]；直接平铺 <type>__N 控件键非法（json-layer-rules 第 3 条）"
+      },
       "callbacks": [
         {
           "name": "getListItemCount_{Caption}",
@@ -880,6 +890,11 @@
         }
       ],
       "container": true,
+      "children": {
+        "mode": "substructure",
+        "key": "items",
+        "note": "结构容器：图标项只能走 items[]（slideitem），直接平铺 <type>__N 控件键非法（json-layer-rules 第 3 条；判据 check_all #2 / ui_compile TREE002）"
+      },
       "fields": {
         "id": {
           "type": "int",
@@ -1248,6 +1263,12 @@
     },
     "diagram": {
       "interactive": true,
+      "container": true,
+      "children": {
+        "mode": "substructure",
+        "key": "infos",
+        "note": "结构容器：波形配置只能走 infos[]（wave），直接平铺 <type>__N 控件键非法（json-layer-rules 第 3 条）"
+      },
       "fields": {
         "id": {
           "type": "int",
@@ -1301,6 +1322,11 @@
     "pagewindow": {
       "interactive": true,
       "container": true,
+      "children": {
+        "mode": "controls",
+        "only": ["window"],
+        "note": "只装 window（整页叠放，翻页走 turnToNextPage/onPageChange）；装别的控件 = 该页不显示（json-layer-rules 第 4 条）"
+      },
       "fields": {
         "id": {
           "type": "int",
@@ -1340,6 +1366,11 @@
     "scrollwindow": {
       "interactive": true,
       "container": true,
+      "children": {
+        "mode": "controls",
+        "only": ["window"],
+        "note": "只装 window（滚动内容必须进内层 window，内层高度=滚动行程基准）；直接挂在 scrollwindow 下的控件整块不显示（json-layer-rules 第 4 条、scrollwindow-layout-checklist 第 2 条）"
+      },
       "fields": {
         "id": {
           "type": "int",
@@ -1389,6 +1420,11 @@
         }
       ],
       "container": true,
+      "children": {
+        "mode": "substructure",
+        "key": "radiobuttons",
+        "note": "结构容器：单选钮只能走 radiobuttons[]；直接平铺 <type>__N 控件键非法（json-layer-rules 第 3 条；注意 touchable 必须 true，见 json-field-mandatory 第 2 条例外）"
+      },
       "fields": {
         "id": {
           "type": "int",

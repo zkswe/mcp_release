@@ -10,7 +10,7 @@
 | `Manifest.xml` | 依赖声明（easyui ^2.2.0 + log/zkhardware/zknet/base-utility） |
 | `.deps.lock` | 依赖解析结果快照（实际落到 easyui 2.6.0） |
 | `.project` | IDE 工程描述（`fun build` 不需要） |
-| `ui/main.html` | **唯一手写源**：两排 painter（HARD / AA 各 r=4/8/14）、四个状态盒、四个交互按钮、探针、`.9.png` 按钮 |
+| `ui/main.html` | **本示例的手写源（原型稿）**：两排 painter（HARD / AA 各 r=4/8/14）、四个状态盒、四个交互按钮、探针、`.9.png` 按钮 |
 | `ui/main.json` / `ui/main.ftu` | `html2json` / `fui pack` 产物 |
 | `src/Main.cpp` | 应用入口 |
 | `src/logic/mainLogic.cc` | **示例逻辑**：10 个 painter 绑定 + 四态 + 按下/选中 + 换半径 + **自动演示定时器** |

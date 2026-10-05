@@ -83,19 +83,42 @@ except Exception:
 
 
 _CTRL_KEY_RE = re.compile(r'^([a-z]+)__\d+$')
-# 层级矩阵实证（SampleUI 1024x600 + basedemo-new_z20_1024_600，86 json 无越界）：
-# pagewindow/scrollwindow → 只装 window；window → 万能容器（可嵌 window 深嵌套，实证嵌 textview/button/
-# edittext/listview/seekbar/window/qrcode/digitalclock/slidetext/slidewindow）；叶子无子键；数组子结构归属固定
-_LEAF_CTRL = {'textview', 'button', 'edittext', 'seekbar', 'circlebar', 'checkbox', 'slidetext',
-              'cameraview', 'painter', 'pointer', 'digitalclock', 'qrcode', 'videoview', 'imageanim'}
-_ARR_OWNER = {'radiobuttons': 'radiogroup', 'items': 'slidewindow', 'infos': 'diagram', 'subItem': 'listview'}
-# 结构容器：子内容只能走结构键（item/radiobuttons/items/infos），禁止直接平铺 __N 控件键
-_STRUCT_ONLY = {'listview': 'item', 'radiogroup': 'radiobuttons', 'slidewindow': 'items', 'diagram': 'infos'}
+# 层级矩阵（容器 → 子内容）**唯一真源 = ui_tools/ui_schema.json 的 controls[].children**（经 ui_schema_loader）：
+#   · children.mode == "controls"     → 子控件键可挂；only 非空 = 只允许这些类型（pagewindow/scrollwindow 只装 window）
+#   · children.mode == "substructure" → 子内容只能走结构键（item/items/radiobuttons/infos），平铺控件键非法
+#   · 已注册控件且无 children 声明    → 叶子，不许有子控件键
+# 以前这里是四份硬编码表（_LEAF_CTRL(14) / _STRUCT_ONLY / _ARR_OWNER / ('pagewindow','scrollwindow') 字面量）。
+# 2026-10-05 实测教训：同一份「slidewindow 平铺子按钮」的 json，check_all 判 FAIL、ui_compile 判通过
+# （它按注册表的 container:true 放行）——两份说法各自维护就是这个后果。现一律派生，散文见
+# knowledge/uicontrols/json-layer-rules.md（实证：SampleUI 1024x600 + basedemo 86 json 零越界）。
+
+
+def _layer_rules():
+    """层级判据表，**每次从注册表现算**（注册表本身有缓存，代价可忽略；不另设副本以免与 reload 脱节）。
+
+    known  = 注册表控件类型（自研/未注册控件不做层级判据）
+    leaf   = 无 children 声明的已注册控件（不许有子控件键）
+    struct = {类型: 结构键}（子内容只能走结构键）
+    only   = {类型: 允许的子控件类型}（非空 = 只装这些；window 不限 → 不在表内）
+    arr    = {数组子结构键: 归属类型}（数组子结构归属固定）
+    """
+    known = set(_uischema.control_types())
+    only = {}
+    for t in known:
+        allowed = _uischema.child_control_types(t)
+        if allowed:
+            only[t] = tuple(allowed)
+    return {'known': known,
+            'leaf': set(_uischema.leaf_types()),
+            'struct': dict(_uischema.structural_containers()),
+            'only': only,
+            'arr': dict(_uischema.structural_array_keys())}
 
 
 def _layer_problems(d):
-    """控件层级合法性检查：返回问题列表（空=合法）。"""
+    """控件层级合法性检查：返回问题列表（空=合法）。判据全部派生自注册表 children 声明。"""
     problems = []
+    rules = _layer_rules()
 
     def scan(node, path=''):
         if not isinstance(node, dict):
@@ -108,19 +131,25 @@ def _layer_problems(d):
                 continue
             t = m.group(1)
             sub = [ck for ck in v if _CTRL_KEY_RE.match(ck)]
-            if t in ('pagewindow', 'scrollwindow'):
-                if not any(ck.startswith('window__') for ck in sub):
-                    problems.append('%s.%s 缺 window 子内容（pagewindow/scrollwindow 必须嵌套 window）' % (path, k))
-                elif any(not ck.startswith('window__') for ck in sub):
-                    problems.append('%s.%s 含非 window 子键（pagewindow/scrollwindow 只装 window）' % (path, k))
-            if t in _STRUCT_ONLY:
-                # listview/radiogroup/slidewindow/diagram 子内容只能走结构键，平铺控件键非法
-                if sub:
-                    problems.append('%s.%s 平铺子控件键 %s（%s 子内容只能放 %s 内）'
-                                    % (path, k, sub[:3], t, _STRUCT_ONLY[t]))
-            if t in _LEAF_CTRL and sub:
-                problems.append('%s.%s 叶子控件含子控件键 %s' % (path, k, sub[:3]))
-            for ak, owner in _ARR_OWNER.items():
+            if t in rules['known']:
+                allowed = rules['only'].get(t)
+                if allowed is not None:
+                    # 只装 allowed 里的类型（pagewindow/scrollwindow 只装 window）
+                    nested = '/'.join(allowed)
+                    if not any(ck.split('__')[0] in allowed for ck in sub):
+                        problems.append('%s.%s 缺 %s 子内容（%s 必须嵌套 %s）'
+                                        % (path, k, nested, t, nested))
+                    elif any(ck.split('__')[0] not in allowed for ck in sub):
+                        problems.append('%s.%s 含非 %s 子键（%s 只装 %s）'
+                                        % (path, k, nested, t, nested))
+                elif t in rules['struct']:
+                    # 结构容器：子内容只能走结构键，平铺控件键非法
+                    if sub:
+                        problems.append('%s.%s 平铺子控件键 %s（%s 子内容只能放 %s 内）'
+                                        % (path, k, sub[:3], t, rules['struct'][t]))
+                elif t in rules['leaf'] and sub:
+                    problems.append('%s.%s 叶子控件含子控件键 %s' % (path, k, sub[:3]))
+            for ak, owner in rules['arr'].items():
                 if ak in v and t != owner:
                     problems.append('%s.%s 数组 %s 只能出现在 %s 内' % (path, k, ak, owner))
             scan(v, path + '/' + k)
@@ -2123,8 +2152,8 @@ def main(project_root):
                 continue
         log(ok, '%s 根节点' % f)
 
-    print('== 2. 层级合法性（SampleUI+basedemo 双源矩阵实证，2026-09-08）==\n'
-          '      pagewindow/scrollwindow 只装 window；叶子无子键；数组子结构归属固定）')
+    print('== 2. 层级合法性（判据真源 = ui_schema.json 的 controls[].children；\n'
+          '      pagewindow/scrollwindow 只装 window；结构容器子内容只能走结构键；叶子无子键；数组子结构归属固定）==')
     for f in PAGES:
         d = json.load(open(os.path.join(root, f), encoding='utf-8'))
         problems = _layer_problems(d)

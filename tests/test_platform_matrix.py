@@ -2,7 +2,7 @@
 """平台矩阵契约：platforms.py 是平台名/模板/bin_tools 的唯一事实来源。
 
 为什么要有（检讨报告 §2.4）：默认平台/大小写/别名原先散在 6 处（12 处 'F133' vs
-create_bin_project 的 'z21'），外部用户照 README 走会踩空。
+gen_ui_test 的 'z21'），外部用户照 README 走会踩空。
 """
 import json
 import os

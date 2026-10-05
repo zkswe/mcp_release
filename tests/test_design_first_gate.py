@@ -113,7 +113,7 @@ class TestSoftGateOnOps(unittest.TestCase):
         with mock.patch.object(pt, 'flythings_build_ui_flow',
                                return_value={'success': True, 'steps': []}):
             r = U.jcall('flythings_build_ui_flow',
-                        {'project_root': self.tmp, 'with_launch': False})
+                        U.bypass_gates({'project_root': self.tmp, 'with_launch': False}))
         self.assertTrue(r['ok'], r)
         self.assertTrue(any(HINT_KEY in w for w in r['warnings']), r['warnings'])
 
@@ -122,7 +122,7 @@ class TestSoftGateOnOps(unittest.TestCase):
         with mock.patch.object(pt, 'flythings_build_ui_flow',
                                return_value={'success': True, 'steps': []}):
             r = U.jcall('flythings_build_ui_flow',
-                        {'project_root': self.tmp, 'with_launch': False})
+                        U.bypass_gates({'project_root': self.tmp, 'with_launch': False}))
         self.assertEqual([w for w in r['warnings'] if HINT_KEY in w], [], r['warnings'])
 
     def test_warning_does_not_change_success_or_other_keys(self):

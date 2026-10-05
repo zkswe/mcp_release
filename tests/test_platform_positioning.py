@@ -28,7 +28,7 @@ import platforms as pl
 POSITIONING_DOC = 'knowledge/devflow/flythings-os-positioning.md'
 
 # 判平台能力的 op：它们的常驻面（tool description）必须带定位规则
-POSITIONING_OPS = ('flythings_create_project', 'flythings_create_bin_project',
+POSITIONING_OPS = ('flythings_create_project',
                    'flythings_build_ui_flow', 'flythings_list_packages',
                    'flythings_get_project_spec')
 

@@ -55,9 +55,9 @@ CASES = [
     ('有没有 http 库', 'flythings_package_search'),
     ('缺哪些库', 'flythings_check_project_deps'),
     # 多语言
-    ('翻译不生效', 'flythings_i18n_to_json'),
-    ('要加英文', 'flythings_i18n_add_language'),
-    ('把文案导出给翻译', 'flythings_i18n_export'),
+    ('翻译不生效', 'flythings_i18n'),
+    ('要加英文', 'flythings_i18n'),
+    ('把文案导出给翻译', 'flythings_i18n'),
     # 元信息
     ('MCP 版本是多少', 'flythings_get_version'),
     ('这块屏什么参数', 'flythings_hardware_info'),

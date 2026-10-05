@@ -240,7 +240,9 @@ def show(root=''):
         s = steps.get(nxt['step']) or {}
         nxt['gate'] = s.get('gate') or ''
         nxt['gateHow'] = s.get('gateHow') or ''
-        nxt['how'] = (s.get('how') or [])[:1]
+        # how **全给**（2026-10-05 起）：只给 how[0] 会把「再往 logic 里填业务」这类
+        # 关键下一步吞掉 —— 工程状态是 AI 问「下一步做什么」时最常看的面。
+        nxt['how'] = list(s.get('how') or [])
 
     return {'projectRoot': root, 'exists': True,
             'stateFile': state_file(root), 'updated': st.get('updated') or '',

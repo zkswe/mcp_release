@@ -181,9 +181,10 @@ class TestBuildFlowInstallGuard(unittest.TestCase):
         ftu = os.path.join(self.tmp, 'ui', 'main.ftu')
         # ftu 比 json 新 1 秒（<30s）→ 不 pack、也不误判「开发者改过 ftu」
         os.utime(ftu, (os.path.getmtime(page) + 1,) * 2)
+        # 本用例测 install/依赖诊断，不走确认稿闸门（见 tests/_util.bypass_gates）
         return U.jcall('flythings_build_ui_flow',
-                       {'project_root': self.tmp, 'with_launch': False,
-                        'font_check': font_check})
+                       U.bypass_gates({'project_root': self.tmp, 'with_launch': False,
+                                       'font_check': font_check}))
 
     def test_clean_project_has_no_warnings(self):
         """正例（模板新工程口径）：声明齐全 + 流程成功 → 顶层不许有 warnings。
@@ -195,7 +196,11 @@ class TestBuildFlowInstallGuard(unittest.TestCase):
         with mock.patch.object(pt, '_run_fun', _fake_fun()):
             r = self._flow(MF_WITH_BASE, font_check='off')
         self.assertTrue(r['ok'], r)
-        noise = [w for w in (r.get('warnings') or []) if '未检测到设计确认稿' not in w]
+        # 排除两类**用例/流程本身**的提示（不是流程噪音）：设计先行软闸门 +
+        # 本用例显式旁路确认稿闸门的留痕（见 tests/_util.bypass_gates；留痕是生产行为，不去掉）
+        noise = [w for w in (r.get('warnings') or [])
+                 if '未检测到设计确认稿' not in w
+                 and '确认稿硬闸门被 force_confirm 跳过' not in w]
         self.assertFalse(noise, '正常路径出现噪音: %s' % noise)
         self.assertEqual([s for s in r['steps'] if s['step'] == 'check_framework_deps'], [],
                          '正常路径不该加体检 step')

@@ -168,6 +168,27 @@ class TestUiSchemaOp(unittest.TestCase):
         self.assertFalse(r3['ok'])
         self.assertEqual(r3['error']['code'], 'NO_HIT')
 
+    def test_child_rule_is_surfaced(self):
+        """容器「子内容走哪条路」必须由 op 回出去。
+
+        2026-10-05：本 op 以前只回 `container: true` —— 那半个真源正是「slidewindow 平铺子控件」
+        假绿的来源（check_all #2 判 FAIL 而 ui_compile 判通过）。AI 查 schema 时就该看到口径。
+        """
+        r = U.jcall('flythings_ui_schema', {})
+        types = {c['type']: c for c in r['controlTypes']}
+        self.assertIn('items', types['slidewindow']['childRule'])
+        self.assertIn('平铺', types['slidewindow']['childRule'])
+        self.assertIn('window', types['pagewindow']['childRule'])
+        self.assertIn('叶子', types['button']['childRule'])
+        self.assertIn('不限', types['window']['childRule'])
+        d = U.jcall('flythings_ui_schema', {'control_type': 'slidewindow'})
+        self.assertEqual(d['children']['mode'], 'substructure')
+        self.assertEqual(d['children']['key'], 'items')
+        # include='fields' 档（生成器出口按它取）也要带上，否则那档又只剩 container:true
+        f = U.jcall('flythings_ui_schema', {'control_type': 'slidewindow', 'include': 'fields'})
+        self.assertIn('childRule', f)
+        self.assertEqual(f['children']['key'], 'items')
+
 
 class TestGeneratorFieldsAreRegistered(unittest.TestCase):
     """**我们自己发出去的字段，注册表必须认识**（2026-10-03 全仓对账后钉住）。
@@ -229,6 +250,64 @@ class TestGeneratorFieldsAreRegistered(unittest.TestCase):
         row = [ln for ln in txt.splitlines() if ln.startswith('| edittext ')][0]
         self.assertIn('isPassword', row)
         self.assertIn('passwordChar', row)
+
+
+class TestChildrenSpec(unittest.TestCase):
+    """容器 → 子内容矩阵（`controls[].children`）：层级判据的唯一真源。
+
+    为什么单列一段（2026-10-05 实测）：`container: true` 只说「能装子内容」、没说「子内容走哪条路」。
+    check_all #2 与 ui_compile 曾据此各判一套 —— 同一份「slidewindow 平铺子按钮」的 json 一个红一个绿。
+    跨 checker 同判的契约用例见 `tests/test_layer_rules.py`。
+    """
+
+    def test_structural_key_only_for_substructure_containers(self):
+        self.assertEqual(us.structural_key('slidewindow'), 'items')
+        self.assertEqual(us.structural_key('listview'), 'item')
+        self.assertEqual(us.structural_key('radiogroup'), 'radiobuttons')
+        self.assertEqual(us.structural_key('diagram'), 'infos')
+        for t in ('window', 'pagewindow', 'scrollwindow', 'button', 'textview'):
+            self.assertIsNone(us.structural_key(t), t)
+
+    def test_child_control_types_three_states(self):
+        self.assertIsNone(us.child_control_types('window'))                   # 不限（万能容器）
+        self.assertEqual(us.child_control_types('pagewindow'), ('window',))   # 只装 window
+        self.assertEqual(us.child_control_types('scrollwindow'), ('window',))
+        for t in ('slidewindow', 'listview', 'radiogroup', 'diagram'):        # 结构容器：走结构键
+            self.assertEqual(us.child_control_types(t), (), t)
+        for t in ('button', 'textview', 'painter'):                           # 叶子
+            self.assertEqual(us.child_control_types(t), (), t)
+
+    def test_every_container_holds_a_children_spec(self):
+        """写了 `container: true` 就必须给 `children` 段（否则消费方只能自己猜）。"""
+        reg = us.load()['controls']
+        containers = [t for t, e in reg.items() if e.get('container')]
+        self.assertTrue(containers, '注册表里应当有容器')
+        for t in containers:
+            self.assertIsNotNone(us.children_spec(t),
+                                 '%s 声明了 container 却没有 children 段（层级判据只能靠猜）' % t)
+
+    def test_leaf_types_are_the_registry_remainder(self):
+        leaves = set(us.leaf_types())
+        reg = us.load()['controls']
+        self.assertEqual(leaves, {t for t, e in reg.items() if not e.get('children')})
+        self.assertIn('radiobutton', leaves)      # 单一 radiobutton 也不该有子控件
+
+    def test_unknown_type_has_no_spec_and_does_not_raise(self):
+        self.assertIsNone(us.children_spec('mywidget'))
+        self.assertIsNone(us.structural_key('mywidget'))
+        self.assertEqual(us.child_control_types('mywidget'), ())
+
+    def test_malformed_children_spec_raises(self):
+        """声明写坏了必须响（不许静默降级成叶子/不限 —— 那正是假绿的来源）。"""
+        reg = us.load()
+        saved = reg['controls']['window']['children']
+        try:
+            reg['controls']['window']['children'] = {'mode': 'bogus'}
+            self.assertRaises(us.SchemaRegistryError, us.children_spec, 'window')
+            reg['controls']['window']['children'] = {'mode': 'substructure'}
+            self.assertRaises(us.SchemaRegistryError, us.children_spec, 'window')
+        finally:
+            reg['controls']['window']['children'] = saved
 
 
 if __name__ == '__main__':

@@ -1,0 +1,11 @@
+{
+  "_doc": "json2img **渲染盲区豁免登记表**（判定模式 `--judge` 读取）：渲染时走到 `Report.unsupported(...)` 的项若在这里**没被 allow:true 精确匹配**，就计入盲区并让退出码变 1 —— 即「盲区不许当通过」。",
+  "_why_empty": "默认**刻意留空**：豁免是「这块没有渲染器覆盖，但我确认可以不覆盖」的显式声明，必须逐条带理由；留空 = 判定模式下任何盲区都判红（严格档）。要放行就在下面加条目。",
+  "_entry_shape": "{type: 控件类型(如 seekbar/textview/font，或 \"*\"), field: 字段名(如 defProgress/rollEnable，或 \"*\"), allow: true, reason: '为什么这块可以不覆盖（**必填**）', page?: '可选，精确匹配页名', caption?: '可选，精确匹配 caption', note?: '可选，精确匹配 note 全文'}",
+  "_matching": "精确匹配：type/field 必填（支持 \"*\"），page/caption/note 写了就按**全等**匹配（不写 = 不限定）；`allow: false` = 显式**拒绝**豁免（优先于 allow:true，用来防止 \"*\" 通配把某条悄悄吃掉）。",
+  "_examples": [
+    {"type": "font", "field": "font", "allow": true, "reason": "示例（不要照抄）：工程内无字体 → 用系统字体兜底渲染，度量不保证与设备一致；交付以真机为准"},
+    {"type": "seekbar", "field": "defProgress", "allow": true, "reason": "示例（不要照抄）：进度只画静止态，拖动/动画不还原，属已声明的静止态口径"}
+  ],
+  "entries": []
+}

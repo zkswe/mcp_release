@@ -30,23 +30,23 @@ class LayoutBase(unittest.TestCase):
 
 class TestFuiPack(LayoutBase):
     def test_pack_ok_and_deterministic(self):
-        r = U.jcall('flythings_fui_pack', {'json_path': self.json_path})
+        r = U.jcall('flythings_fui_pack', U.bypass_gates({'json_path': self.json_path}))
         self.assertTrue(r['ok'], r)
         ftu = os.path.join(self.res, 'main.ftu')
         self.assertTrue(os.path.isfile(ftu))
         first = io.open(ftu, 'rb').read()
-        r2 = U.jcall('flythings_fui_pack', {'json_path': self.json_path})
+        r2 = U.jcall('flythings_fui_pack', U.bypass_gates({'json_path': self.json_path}))
         self.assertTrue(r2['ok'])
         self.assertEqual(first, io.open(ftu, 'rb').read(), 'pack 不确定（同 json 出不同 ftu）')
 
     def test_pack_reports_affected_files(self):
-        r = U.jcall('flythings_fui_pack', {'json_path': self.json_path})
+        r = U.jcall('flythings_fui_pack', U.bypass_gates({'json_path': self.json_path}))
         self.assertTrue(any('main.ftu' in f for f in r.get('affectedFiles', [])), r.get('affectedFiles'))
 
 
 class TestEditFtuSafety(LayoutBase):
     def _packed(self):
-        r = U.jcall('flythings_fui_pack', {'json_path': self.json_path})
+        r = U.jcall('flythings_fui_pack', U.bypass_gates({'json_path': self.json_path}))
         self.assertTrue(r['ok'], r)
         ftu = os.path.join(self.res, 'main.ftu')
         return ftu, io.open(ftu, 'rb').read()

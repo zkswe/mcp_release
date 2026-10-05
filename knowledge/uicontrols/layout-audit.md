@@ -51,19 +51,31 @@ evidence: []
 - **scrollwindow/pagewindow**：容器嵌套结构 + dragMaxDis/orientation/edgeEffect/rollSpeed（16:37 入库）
 - **diagram/digitalclock/imageanim/seekbar**：字段与 demo 完全一致
 
-## 3. 控件 id 段（html2json NID 映射，与 IDE 一致）
+## 3. 控件 id 段（真源 = `ui_tools/html2json.py` 的 `ID_BASE`）
+
+> ⚠️ **两条硬约束带**（`ui_tools/check_all.py` #5 按 id 段推断该有哪些回调，不是口味问题）：
+> `20000 ≤ id < 30000` ⇒ 必须有 `onButtonClick_<caption>`；`51000 ≤ id < 52000` ⇒ 必须有 `onEditTextChanged_<caption>`。
+> **其它类型一律不许落在两条带里**（否则静态全检会要求一个语义错误的回调）。
+> 2026-10-05 修正（实测驱动，见 `tests/test_id_segments.py` 与 `temp/id_segment_audit.py` 口径）：
+> checkbox 21000→**94500**、radiobutton 22000→**94100**、slidetext 51000→**98000**；
+> 本表旧值 listview 70000→**80000**、radiogroup 81000→**94000**、checkbox 80000→**94500**（实测分别为 80001/94001/94502）。
 
 | 控件 | id 起始 | 控件 | id 起始 |
 |------|--------|------|--------|
-| button | 20000 | slidewindow | 30000 |
-| scrollwindow | 32000 | pagewindow | 31000 |
-| textview | 50000 | edittext | 51000 |
-| window | 110000 | listview | 70000 |
-| checkbox | 80000 | radiogroup | 81000 |
-| pointer | 90000 | circlebar | 130000 |
-| diagram | 140000 | digitalclock | 93000 |
-| imageanim | 94000 | videoview | 95000 |
-| qrcode | 92000 | cameraview | 97000 |
+| button | 20000 | subitem | 24000（数组子项，不进 #5） |
+| slidewindow | 30000 | pagewindow | 31000 |
+| scrollwindow | 32000 | textview | 50000 |
+| edittext | 51000 | painter | 52000 |
+| diagram | 60000 | listview | 80000 |
+| pointer | 90000 | seekbar | 91000 |
+| qrcode | 92000 | digitalclock | 93000 |
+| radiogroup | 94000 | radiobutton | 94100 |
+| checkbox | 94500 | videoview | 95000 |
+| cameraview | 97000 | slidetext | 98000 |
+| window | 110000 | circlebar | 130000 |
+| imageanim | 160000 | | |
+
+同一张表也是 `templates/ui_blocks/compose.py` 的取值（checkbox 94500 / radiobutton 94100 与它一致）。
 
 ## 4. 遗留说明（诚实标注）
 

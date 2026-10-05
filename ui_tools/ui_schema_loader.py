@@ -25,6 +25,10 @@ _SCHEMA_FILL 硬编码、mcp_control_map.json 片段旧式字符串 thumb）。
     us.type_zero('colorTab')              # 单个 sharedType 的零值对象
     us.is_interactive('seekbar')          # True
     us.type_check('seekbar', ctl_dict)    # 违规列表（fatal/error/warn）
+    us.children_spec('slidewindow')       # {'mode': 'substructure', 'key': 'items', ...}
+    us.structural_key('slidewindow')      # 'items'（非结构容器 → None）
+    us.child_control_types('pagewindow')  # ('window',)（None = 不限；() = 不许控件键）
+    us.structural_array_keys()            # {'items': 'slidewindow', ..., 'subItem': 'listview'}
 """
 import copy
 import json
@@ -115,6 +119,108 @@ def is_container(control_type):
     reg = load()
     e = reg['controls'].get(control_type)
     return bool(e and e.get('container'))
+
+
+# ---------------- 子内容声明（容器 → 子内容矩阵的唯一真源） ----------------
+# 为什么单列一段：`container: true` 只说「装子内容」，**没说子内容走哪条路**。缺了这半句，
+# 消费方只能自己猜——两个 checker 就曾据此各判一套（check_all #2 判 slidewindow 平铺子控件
+# 非法、ui_compile TREE001 却因为它 container=true 而放行，同一份 json 一个红一个绿）。
+# 真源 = 注册表 controls.<t>.children：{"mode": "controls", ["only": [类型…]]}
+#                                    | {"mode": "substructure", "key": "<结构键>"}
+# 叶子控件没有这段声明（= 不许有子控件键）。
+_CHILD_MODES = ('controls', 'substructure')
+
+
+def children_spec(control_type):
+    """该控件的子内容声明（注册表 controls.<t>.children）；叶子控件 / 未知类型 → None。
+
+    返回 {"mode": "controls"|"substructure", "key"?: str, "only"?: [类型]}。
+    声明本身损坏（mode 不认识 / substructure 缺 key）→ SchemaRegistryError（不静默降级）。
+    """
+    e = load()['controls'].get(control_type)
+    spec = (e or {}).get('children')
+    if spec is None:
+        return None
+    if not isinstance(spec, dict) or spec.get('mode') not in _CHILD_MODES:
+        raise SchemaRegistryError(
+            'controls.%s.children 声明非法（mode 必须是 %s）: %s'
+            % (control_type, '/'.join(_CHILD_MODES), SCHEMA_PATH))
+    if spec['mode'] == 'substructure' and not spec.get('key'):
+        raise SchemaRegistryError(
+            'controls.%s.children 声明非法（substructure 必须给 key）: %s'
+            % (control_type, SCHEMA_PATH))
+    return spec
+
+
+def structural_key(control_type):
+    """结构容器「子内容必须走哪个结构键」（listview→item / slidewindow→items /
+    radiogroup→radiobuttons / diagram→infos）；**非结构容器 → None**。
+
+    结构容器的直接子内容平铺成 <type>__N 控件键 = 非法（json-layer-rules 第 3 条：
+    子内容只能放结构键内）。判据：check_all #2 / ui_compile TREE002。
+    """
+    spec = children_spec(control_type)
+    return spec['key'] if spec and spec['mode'] == 'substructure' else None
+
+
+def child_control_types(control_type):
+    """该控件允许的**子控件键**类型：
+      None      = 不限制（万能容器，如 window）
+      (t1, t2)  = 只允许这些（如 pagewindow/scrollwindow 只装 window）
+      ()        = 一个都不许（结构容器：子内容走结构键；叶子控件：没有子内容）
+    """
+    spec = children_spec(control_type)
+    if spec is None or spec['mode'] == 'substructure':
+        return ()
+    only = spec.get('only')
+    return None if not only else tuple(only)
+
+
+def structural_containers():
+    """{控件类型: 结构键}（注册表 children.mode=='substructure' 的全部条目）。"""
+    reg = load()
+    return {t: e['children']['key'] for t, e in reg['controls'].items()
+            if (e.get('children') or {}).get('mode') == 'substructure'}
+
+
+def structural_array_keys():
+    """{数组子结构键: 归属控件}——「数组子结构归属固定」判据的唯一真源。
+
+    推导口径（不是猜的，见 json-layer-rules 第 2 条）：
+      · 容器自身结构键**声明为 array** → 它本身就是数组键（slidewindow.items /
+        diagram.infos / radiogroup.radiobuttons）；
+      · 容器自身结构键声明为**单个模板对象**（listview.item → listitem）→ 数组键在模板内部
+        （listitem.subItem；真机里 subItem 是数组，注册表按单结构声明、两种写法都收）。
+    """
+    reg = load()
+    subs = reg['subStructures']
+
+    def _holds_substructure(spec):
+        """字段装的是子结构（直接装，或装「子结构数组」——如 listitem.subItem = array of subitem）。"""
+        return (spec.get('type') in subs
+                or (spec.get('type') == 'array' and spec.get('itemType') in subs))
+
+    out = {}
+    for t, e in reg['controls'].items():
+        spec = e.get('children') or {}
+        if spec.get('mode') != 'substructure':
+            continue
+        key = spec['key']
+        fspec = (e.get('fields') or {}).get(key) or {}
+        if fspec.get('type') == 'array':
+            out[key] = t
+            continue
+        shape = fspec.get('type') if fspec.get('type') in subs else fspec.get('itemType')
+        for f, fs in ((subs.get(shape) or {}).get('fields') or {}).items():
+            if _holds_substructure(fs):
+                out[f] = t
+    return out
+
+
+def leaf_types():
+    """无子内容声明的**已注册控件**类型（= 不许装子控件键的叶子）。"""
+    reg = load()
+    return sorted(t for t, e in reg['controls'].items() if not e.get('children'))
 
 
 def is_interactive(control_type):

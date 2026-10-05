@@ -14,7 +14,7 @@
     "height": 800
   },
   "textview__1": {
-    "id": 1,
+    "id": 50001,
     "caption": "tvTitle",
     "text": "滚动窗口（scrollwindow）",
     "position": {
@@ -35,7 +35,7 @@
     "touchable": false
   },
   "button__2": {
-    "id": 2,
+    "id": 20001,
     "caption": "BtnBack",
     "text": "返回",
     "position": {
@@ -76,7 +76,7 @@
     }
   },
   "scrollwindow__10": {
-    "id": 10,
+    "id": 32001,
     "caption": "SwA",
     "position": {
       "left": 16,
@@ -85,260 +85,275 @@
       "height": 560
     },
     "dragMaxDis": 0,
-    "orientation": 0,
+    "orientation": 1,
     "edgeEffect": 1,
     "touchable": true,
-    "textview__100": {
-      "id": 100,
-      "caption": "tvRow0",
-      "text": "滚动内容第 01 行 —— 上下拖动试试",
+    "window__1": {
+      "id": 110001,
+      "caption": "SwContent",
       "position": {
-        "left": 8,
-        "top": 8,
-        "width": 424,
-        "height": 48
+        "left": 0,
+        "top": 0,
+        "width": 448,
+        "height": 700
       },
-      "alignment": 36,
-      "colorTab": {
-        "color0": 16777215,
-        "color1": -1,
-        "color2": -1,
-        "color3": -1,
-        "color4": -1
+      "backgroundColor": -1,
+      "touchable": false,
+      "visible": true,
+      "textview__100": {
+        "id": 50002,
+        "caption": "tvRow0",
+        "text": "滚动内容第 01 行 —— 上下拖动试试",
+        "position": {
+          "left": 8,
+          "top": 8,
+          "width": 424,
+          "height": 48
+        },
+        "alignment": 36,
+        "colorTab": {
+          "color0": 16777215,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 20,
+        "touchable": false
       },
-      "fontSize": 20,
-      "touchable": false
-    },
-    "textview__101": {
-      "id": 101,
-      "caption": "tvRow1",
-      "text": "滚动内容第 02 行 —— 上下拖动试试",
-      "position": {
-        "left": 8,
-        "top": 64,
-        "width": 424,
-        "height": 48
+      "textview__101": {
+        "id": 50003,
+        "caption": "tvRow1",
+        "text": "滚动内容第 02 行 —— 上下拖动试试",
+        "position": {
+          "left": 8,
+          "top": 64,
+          "width": 424,
+          "height": 48
+        },
+        "alignment": 36,
+        "colorTab": {
+          "color0": 16777215,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 20,
+        "touchable": false
       },
-      "alignment": 36,
-      "colorTab": {
-        "color0": 16777215,
-        "color1": -1,
-        "color2": -1,
-        "color3": -1,
-        "color4": -1
+      "textview__102": {
+        "id": 50004,
+        "caption": "tvRow2",
+        "text": "滚动内容第 03 行 —— 上下拖动试试",
+        "position": {
+          "left": 8,
+          "top": 120,
+          "width": 424,
+          "height": 48
+        },
+        "alignment": 36,
+        "colorTab": {
+          "color0": 16777215,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 20,
+        "touchable": false
       },
-      "fontSize": 20,
-      "touchable": false
-    },
-    "textview__102": {
-      "id": 102,
-      "caption": "tvRow2",
-      "text": "滚动内容第 03 行 —— 上下拖动试试",
-      "position": {
-        "left": 8,
-        "top": 120,
-        "width": 424,
-        "height": 48
+      "textview__103": {
+        "id": 50005,
+        "caption": "tvRow3",
+        "text": "滚动内容第 04 行 —— 上下拖动试试",
+        "position": {
+          "left": 8,
+          "top": 176,
+          "width": 424,
+          "height": 48
+        },
+        "alignment": 36,
+        "colorTab": {
+          "color0": 16777215,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 20,
+        "touchable": false
       },
-      "alignment": 36,
-      "colorTab": {
-        "color0": 16777215,
-        "color1": -1,
-        "color2": -1,
-        "color3": -1,
-        "color4": -1
+      "textview__104": {
+        "id": 50006,
+        "caption": "tvRow4",
+        "text": "滚动内容第 05 行 —— 上下拖动试试",
+        "position": {
+          "left": 8,
+          "top": 232,
+          "width": 424,
+          "height": 48
+        },
+        "alignment": 36,
+        "colorTab": {
+          "color0": 16777215,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 20,
+        "touchable": false
       },
-      "fontSize": 20,
-      "touchable": false
-    },
-    "textview__103": {
-      "id": 103,
-      "caption": "tvRow3",
-      "text": "滚动内容第 04 行 —— 上下拖动试试",
-      "position": {
-        "left": 8,
-        "top": 176,
-        "width": 424,
-        "height": 48
+      "textview__105": {
+        "id": 50007,
+        "caption": "tvRow5",
+        "text": "滚动内容第 06 行 —— 上下拖动试试",
+        "position": {
+          "left": 8,
+          "top": 288,
+          "width": 424,
+          "height": 48
+        },
+        "alignment": 36,
+        "colorTab": {
+          "color0": 16777215,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 20,
+        "touchable": false
       },
-      "alignment": 36,
-      "colorTab": {
-        "color0": 16777215,
-        "color1": -1,
-        "color2": -1,
-        "color3": -1,
-        "color4": -1
+      "textview__106": {
+        "id": 50008,
+        "caption": "tvRow6",
+        "text": "滚动内容第 07 行 —— 上下拖动试试",
+        "position": {
+          "left": 8,
+          "top": 344,
+          "width": 424,
+          "height": 48
+        },
+        "alignment": 36,
+        "colorTab": {
+          "color0": 16777215,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 20,
+        "touchable": false
       },
-      "fontSize": 20,
-      "touchable": false
-    },
-    "textview__104": {
-      "id": 104,
-      "caption": "tvRow4",
-      "text": "滚动内容第 05 行 —— 上下拖动试试",
-      "position": {
-        "left": 8,
-        "top": 232,
-        "width": 424,
-        "height": 48
+      "textview__107": {
+        "id": 50009,
+        "caption": "tvRow7",
+        "text": "滚动内容第 08 行 —— 上下拖动试试",
+        "position": {
+          "left": 8,
+          "top": 400,
+          "width": 424,
+          "height": 48
+        },
+        "alignment": 36,
+        "colorTab": {
+          "color0": 16777215,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 20,
+        "touchable": false
       },
-      "alignment": 36,
-      "colorTab": {
-        "color0": 16777215,
-        "color1": -1,
-        "color2": -1,
-        "color3": -1,
-        "color4": -1
+      "textview__108": {
+        "id": 50010,
+        "caption": "tvRow8",
+        "text": "滚动内容第 09 行 —— 上下拖动试试",
+        "position": {
+          "left": 8,
+          "top": 456,
+          "width": 424,
+          "height": 48
+        },
+        "alignment": 36,
+        "colorTab": {
+          "color0": 16777215,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 20,
+        "touchable": false
       },
-      "fontSize": 20,
-      "touchable": false
-    },
-    "textview__105": {
-      "id": 105,
-      "caption": "tvRow5",
-      "text": "滚动内容第 06 行 —— 上下拖动试试",
-      "position": {
-        "left": 8,
-        "top": 288,
-        "width": 424,
-        "height": 48
+      "textview__109": {
+        "id": 50011,
+        "caption": "tvRow9",
+        "text": "滚动内容第 10 行 —— 上下拖动试试",
+        "position": {
+          "left": 8,
+          "top": 512,
+          "width": 424,
+          "height": 48
+        },
+        "alignment": 36,
+        "colorTab": {
+          "color0": 16777215,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 20,
+        "touchable": false
       },
-      "alignment": 36,
-      "colorTab": {
-        "color0": 16777215,
-        "color1": -1,
-        "color2": -1,
-        "color3": -1,
-        "color4": -1
+      "textview__110": {
+        "id": 50012,
+        "caption": "tvRow10",
+        "text": "滚动内容第 11 行 —— 上下拖动试试",
+        "position": {
+          "left": 8,
+          "top": 568,
+          "width": 424,
+          "height": 48
+        },
+        "alignment": 36,
+        "colorTab": {
+          "color0": 16777215,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 20,
+        "touchable": false
       },
-      "fontSize": 20,
-      "touchable": false
-    },
-    "textview__106": {
-      "id": 106,
-      "caption": "tvRow6",
-      "text": "滚动内容第 07 行 —— 上下拖动试试",
-      "position": {
-        "left": 8,
-        "top": 344,
-        "width": 424,
-        "height": 48
+      "textview__111": {
+        "id": 50013,
+        "caption": "tvRow11",
+        "text": "滚动内容第 12 行 —— 上下拖动试试",
+        "position": {
+          "left": 8,
+          "top": 624,
+          "width": 424,
+          "height": 48
+        },
+        "alignment": 36,
+        "colorTab": {
+          "color0": 16777215,
+          "color1": -1,
+          "color2": -1,
+          "color3": -1,
+          "color4": -1
+        },
+        "fontSize": 20,
+        "touchable": false
       },
-      "alignment": 36,
-      "colorTab": {
-        "color0": 16777215,
-        "color1": -1,
-        "color2": -1,
-        "color3": -1,
-        "color4": -1
-      },
-      "fontSize": 20,
-      "touchable": false
-    },
-    "textview__107": {
-      "id": 107,
-      "caption": "tvRow7",
-      "text": "滚动内容第 08 行 —— 上下拖动试试",
-      "position": {
-        "left": 8,
-        "top": 400,
-        "width": 424,
-        "height": 48
-      },
-      "alignment": 36,
-      "colorTab": {
-        "color0": 16777215,
-        "color1": -1,
-        "color2": -1,
-        "color3": -1,
-        "color4": -1
-      },
-      "fontSize": 20,
-      "touchable": false
-    },
-    "textview__108": {
-      "id": 108,
-      "caption": "tvRow8",
-      "text": "滚动内容第 09 行 —— 上下拖动试试",
-      "position": {
-        "left": 8,
-        "top": 456,
-        "width": 424,
-        "height": 48
-      },
-      "alignment": 36,
-      "colorTab": {
-        "color0": 16777215,
-        "color1": -1,
-        "color2": -1,
-        "color3": -1,
-        "color4": -1
-      },
-      "fontSize": 20,
-      "touchable": false
-    },
-    "textview__109": {
-      "id": 109,
-      "caption": "tvRow9",
-      "text": "滚动内容第 10 行 —— 上下拖动试试",
-      "position": {
-        "left": 8,
-        "top": 512,
-        "width": 424,
-        "height": 48
-      },
-      "alignment": 36,
-      "colorTab": {
-        "color0": 16777215,
-        "color1": -1,
-        "color2": -1,
-        "color3": -1,
-        "color4": -1
-      },
-      "fontSize": 20,
-      "touchable": false
-    },
-    "textview__110": {
-      "id": 110,
-      "caption": "tvRow10",
-      "text": "滚动内容第 11 行 —— 上下拖动试试",
-      "position": {
-        "left": 8,
-        "top": 568,
-        "width": 424,
-        "height": 48
-      },
-      "alignment": 36,
-      "colorTab": {
-        "color0": 16777215,
-        "color1": -1,
-        "color2": -1,
-        "color3": -1,
-        "color4": -1
-      },
-      "fontSize": 20,
-      "touchable": false
-    },
-    "textview__111": {
-      "id": 111,
-      "caption": "tvRow11",
-      "text": "滚动内容第 12 行 —— 上下拖动试试",
-      "position": {
-        "left": 8,
-        "top": 624,
-        "width": 424,
-        "height": 48
-      },
-      "alignment": 36,
-      "colorTab": {
-        "color0": 16777215,
-        "color1": -1,
-        "color2": -1,
-        "color3": -1,
-        "color4": -1
-      },
-      "fontSize": 20,
-      "touchable": false
+      "hideTimeOut": -1,
+      "modal": false
     }
   }
 }

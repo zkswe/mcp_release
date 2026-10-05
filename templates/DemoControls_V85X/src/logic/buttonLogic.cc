@@ -114,3 +114,6 @@ static void onEditTextChanged_EtA(const std::string &text) {
 }
 
 
+static void onCheckedChanged_CbA(ZKCheckBox* pCheckBox, bool isChecked) {
+    LOGD(" Checkbox CbA checked %d", isChecked);
+}

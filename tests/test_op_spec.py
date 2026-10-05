@@ -227,5 +227,22 @@ class TestOpSpecRegistry(unittest.TestCase):
             osl.spec('flythings_not_an_op')
 
 
+    def test_registry_internal_op_lists_match_registry(self):
+        """`migration.done` / `longOps` 这类**注册表自带的 op 名清单**必须与 `registered()` 一致。
+
+        为什么加（2026-10-05 实测漏网）：i18n 六合一之后，`migration.done` 里还留着 6 个旧 op 名，
+        而当时所有门禁都绿 —— 因为没人在查 op_spec **内部**的这两张清单（只查了 kb_tools 的清单）。
+        是用户肉眼发现的。这条判据把它钉住。
+        """
+        reg = set(osl.registered())
+        for path in (('migration', 'done'), ('longOps',)):
+            node = osl.load()
+            for k in path:
+                node = (node or {}).get(k)
+            self.assertIsInstance(node, list, '%s 不是列表' % '.'.join(path))
+            bad = sorted(set(node) - reg)
+            self.assertEqual(bad, [], '%s 里有未登记的 op 名：%s' % ('.'.join(path), bad))
+
+
 if __name__ == '__main__':
     unittest.main()

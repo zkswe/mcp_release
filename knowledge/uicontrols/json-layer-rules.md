@@ -18,7 +18,15 @@ evidence: []
 > 检索导引：问「控件这样嵌套合不合法 / window 里能放什么 / pagewindow 为什么只装 window / 层级报错（check_all #2）/ 先看 json 做遮挡审计 / **重启后控件位置跑了 · 坐标出现负值 · 拖动夹到什么边界**」→ 本文。
 > 口语/错说法（用户原话）：pagewindow 里能放文本框吗 / 能不能往 pagewindow 里加按钮、文本 / pagewindow 里放别的为什么没反应 / 为什么只能塞窗口。
 > 2026-09-08 需求方要求「控件层级问题检讨」产出。**方法**：扫描 86 个真实 json（`projects/SampleUI-New/ui/1024x600` 42 + `projects/LearningProject/basedemo-new_z20_1024_600` 35 demo/44，ftu unpack 反解），统计每个容器类型的直接子内容分布——**零越界样例**，基线全绿。
-> **落地**：check_all.py #2 层级合法性检查（_layer_problems）自动校验；html2json 嵌套栈生成天然合规。
+> **落地**（2026-10-05 改口径）：**唯一真源 = `ui_tools/ui_schema.json` 的 `controls[].children`**
+> （`{"mode": "controls"[, "only": [类型…]]}` 或 `{"mode": "substructure", "key": "<结构键>"}`；无声明 = 叶子），
+> 判据由**两个 checker 同源派生**：`check_all.py` #2（`_layer_problems`）与 `ui_compile.py` **TREE001-004**；
+> `html2json` 嵌套栈生成天然合规（slidewindow 内的子 div 一律进 `items[]`）。
+> ⚠️ **事故记录（本次改口径的原因）**：此前 `check_all` 用四份硬编码表、`ui_compile` 只看 `container: true`
+> —— 同一份「slidewindow 平铺子按钮」的 json，一个判 **FAIL**、一个判 **「编译式验收通过」（假绿）**
+> （出处 `git show HEAD:templates/DemoControls_V85X/ui/main.json`；该页 2026-10-05 已改成 `window__1` +
+> 子按钮，**现行工作区里没有 slidewindow 了**，所以证据**必须指名版本**，别按工作区路径去翻）。
+> 跨 checker 同判的契约用例 = `tests/test_layer_rules.py`（含「把错法注回去必须变红」的自证）。
 > 检索词：控件层级/嵌套/容器/父子/结构键/subItem/radiobuttons/页面 window/坐标负值/重启跑位/从右下算/拖动夹取。
 
 ## 容器 → 直接子内容矩阵（实证次数）

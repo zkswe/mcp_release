@@ -50,7 +50,7 @@ evidence:
 | 界面文案怎么写 | 布局 json 的 `text` 写 **`"@key"`**（带 @） |
 | 代码里怎么写 | `setTextTr("key")`（**不带 @**）；拼接取词 `LANGUAGEMANAGER->getValue("key")` |
 | 怎么切语言 | `EASYUICONTEXT->updateLocalesCode("zh_CN")`；或跳系统页 `openActivity("LanguageSettingActivity")` |
-| 改完怎么让设备看到 | **必须 `flythings_i18n_to_json`**（默认带 push）—— **`fun launch` 不推 i18n** |
+| 改完怎么让设备看到 | **必须 `flythings_i18n`（`action=to_json`）**（默认带 push）—— **`fun launch` 不推 i18n** |
 | 默认有哪几种 | `zh_CN` / `en_US` / `ja_JP` / `ko_KR` |
 
 ## 2. 文件格式（`.tr`）
@@ -93,18 +93,18 @@ evidence:
 
 1. **设备端 zkgui 实际加载 `i18n/<lang>.json`**（不是 `.tr`），DEBUG 模式路径 **`/tmp/tr/<lang>.json`**（2026-09-08 真机记录）。
 2. **`fun launch` 只推 `ftu / images / font / lib / cfg`，不推 i18n 的 `.tr`/`.json`** →
-   **改完翻译（`import` / `add_language` / `refactor`）后必须调 `flythings_i18n_to_json`**，
+   **改完翻译（`import` / `add_language` / `refactor`）后必须调 `flythings_i18n`（`action=to_json`）**，
    否则设备仍跑**旧翻译**，现象是 logcat 刷 **`not found value`**。
 3. **生产固件**把 json 打包进 `/res/` → 这时用 `push=False` 只生成不推送。
 4. ⚠️ 生成的 `i18n/<lang>.json` 与设备端加载格式**逐字节一致**：
-   **tab 制表 + 冒号后无空格 + 文件末尾无空行**（`_dump_json` 的落盘格式，设备按此读）。真源：`op_spec.json` 的 `flythings_i18n_to_json.rules`
+   **tab 制表 + 冒号后无空格 + 文件末尾无空行**（`_dump_json` 的落盘格式，设备按此读）。真源：`op_spec.json` 的 `flythings_i18n（action=to_json）.rules`
    → **手改这个 json 就会破坏字节一致性**；要改文案改 `.tr` 再重新转，别改 json。
 5. ⚠️ **加了自定义语言，必须把「内置界面翻译」并进去**（**官方硬要求，容易漏**）：
    官方原文 ——「需将[内置界面翻译文本](https://docs.flythings.cn/src/zh_CN.tr)添加到自定义语言里边，
    并进行相应的翻译，当切换到对应的语言后**内置界面才能正常显示文本**」。
    → 少这一步的现象：**自己页面的文案正常，但系统内置界面（如语言设置页自身、提示框）文案异常**。
    MCP 侧的对应动作：把该文件的内容 `import` 进新语言（或先 `add_language` 再合并）。
-6. **两条工作流别混**：官方是 **IDE 编译**把 `.tr` 转 json；MCP 工作流用 `flythings_i18n_to_json`
+6. **两条工作流别混**：官方是 **IDE 编译**把 `.tr` 转 json；MCP 工作流用 `flythings_i18n`（`action=to_json`）
    转 + push。**只要你改了 `.tr`，就得有一步转 json**（走哪条都行，但别以为改了 `.tr` 就完事）。
 
 ## 6. ⚠️ 换行：官方写 `&#x000A;`，json 里必须是**真换行**（本节含一条**口径冲突**，如实并列）
@@ -149,16 +149,18 @@ evidence:
   否则设备上该字符**空白或乱码**。改完文案建议核对字库 `cmap` 覆盖。
 - 细化口径见 `knowledge/devflow/custom-font-config.md`、`components/fonts/platforms.md`。
 
-## 8. 六个 op（从零到上机的工具链）
+## 8. 一个入口六个动作（从零到上机的工具链）
+
+> 2026-10-05 起：原来的六个 op（scan / export / import / add_language / refactor / to_json）**收敛成单入口 `flythings_i18n`**，用 `action` 选一步 —— 认知面只留一个名字，细节按需拉契约（`describe section=…`）或读本页。下表即是 `action` 与用途的对应。
 
 | op | 干什么 | 关键返回/参数 |
 |---|---|---|
-| `flythings_i18n_scan` | **诊断现状**：语言清单、key 对齐、布局引用完整性 | `languages` / `languageDisplayNames` / `keysPerLanguage` / `keyAligned` / `missingKeysPerLanguage` / `layoutRefCount` / `layoutRefMissingInTr` / `trKeysUnusedByLayout`；无 i18n 时回 `hasI18n:false` + 指路 `export` |
-| `flythings_i18n_export` | 导出**待翻译清单**（key → 基础语言原文）+ 专业翻译提示 | `lang`（默认 `zh_CN`）/ `keys`（逗号分隔子集，缺省全部）/ `context`（项目语境描述）；回 `translationGuide` |
-| `flythings_i18n_add_language` | 加一种新语言 | `lang`（如 `fr_FR`）、`lang_name`（如 `法语`，显示在切换列表）、`base_lang`（默认 `zh_CN`）。官方做法是**拷贝现有 `.tr` 改名 `xx_XX-XXX.tr`**：语言/地区代号**可任取**（两个小写 + 两个大写），只要多个文件的前两段不冲突即可。⚠️ 加完还要并**内置界面翻译**（§5-5） |
-| `flythings_i18n_import` | 把译文**写回** `.tr` | `translations`（JSON 对象 `{key: 文本}`）、`merge`（True 合并 / False 整体覆盖） |
-| `flythings_i18n_refactor` | 把布局里**写死的中文**换成 `@key`（多语言改造） | `dry_run`（**默认 True 只预览**）；key 由 caption 生成（非 `[A-Za-z0-9_]` 换成 `_`），同名冲突自动加后缀；**纯数字/时间占位自动跳过**；⚠️ 只在确认布局文本都是界面文案时用 |
-| `flythings_i18n_to_json` | `.tr` → 设备格式 `.json` + 推送 | `langs`（逗号分隔，默认全部；支持三段式）/ `push`（默认 True）/ `device`（多设备必须指定）；回 `converted[] / pushed[] / skipped[] / adbStatus` |
+| `flythings_i18n`（`action=scan`） | **诊断现状**：语言清单、key 对齐、布局引用完整性 | `languages` / `languageDisplayNames` / `keysPerLanguage` / `keyAligned` / `missingKeysPerLanguage` / `layoutRefCount` / `layoutRefMissingInTr` / `trKeysUnusedByLayout`；无 i18n 时回 `hasI18n:false` + 指路 `export` |
+| `flythings_i18n`（`action=export`） | 导出**待翻译清单**（key → 基础语言原文）+ 专业翻译提示 | `lang`（默认 `zh_CN`）/ `keys`（逗号分隔子集，缺省全部）/ `context`（项目语境描述）；回 `translationGuide` |
+| `flythings_i18n`（`action=add_language`） | 加一种新语言 | `lang`（如 `fr_FR`）、`lang_name`（如 `法语`，显示在切换列表）、`base_lang`（默认 `zh_CN`）。官方做法是**拷贝现有 `.tr` 改名 `xx_XX-XXX.tr`**：语言/地区代号**可任取**（两个小写 + 两个大写），只要多个文件的前两段不冲突即可。⚠️ 加完还要并**内置界面翻译**（§5-5） |
+| `flythings_i18n`（`action=import`） | 把译文**写回** `.tr` | `translations`（JSON 对象 `{key: 文本}`）、`merge`（True 合并 / False 整体覆盖） |
+| `flythings_i18n`（`action=refactor`） | 把布局里**写死的中文**换成 `@key`（多语言改造） | `dry_run`（**默认 True 只预览**）；key 由 caption 生成（非 `[A-Za-z0-9_]` 换成 `_`），同名冲突自动加后缀；**纯数字/时间占位自动跳过**；⚠️ 只在确认布局文本都是界面文案时用 |
+| `flythings_i18n`（`action=to_json`） | `.tr` → 设备格式 `.json` + 推送 | `langs`（逗号分隔，默认全部；支持三段式）/ `push`（默认 True）/ `device`（多设备必须指定）；回 `converted[] / pushed[] / skipped[] / adbStatus` |
 
 **标准流程**：`refactor`（先 `dry_run` 预览）或手写 `@key` → `export` 拿待翻译清单 →
 （AI 结合语境专业翻译）→ `import` 写回 → `scan` 体检对齐 → `to_json`（带 push）→
@@ -168,7 +170,7 @@ evidence:
 
 1. ⚠️ **改完翻译不调 `i18n_to_json` = 设备跑旧翻译**（`fun launch` 不推 i18n）→ logcat `not found value`。
 2. ⚠️ **`setCurrentCode` 不刷新在屏文本** → 切语言要用 `updateLocalesCode`（否则"有些地方没变"）。
-3. ⚠️ **不要手改 `i18n/<lang>.json`**（必须是 tab 制表/无空格冒号/末尾无空行，设备才认）；改 `.tr` 再转。真源：`op_spec.json` 的 `flythings_i18n_to_json.rules`
+3. ⚠️ **不要手改 `i18n/<lang>.json`**（必须是 tab 制表/无空格冒号/末尾无空行，设备才认）；改 `.tr` 再转。真源：`op_spec.json` 的 `flythings_i18n（action=to_json）.rules`
 4. ⚠️ **布局写 `@key` 带 @，代码 `setTextTr` 不带 @** —— 混了就是"显示成 key 原文"或取不到值。
 5. ⚠️ **`.tr` 里换行写 `\n`**；json 里必须是真换行，否则设备**原样显示 `\n` 两个字**。
 6. ⚠️ **各语言的别名必须对齐**（用相同的 `name`）：漏一种语言 = 该语言下这些文案缺省

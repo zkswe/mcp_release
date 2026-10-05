@@ -1,0 +1,24 @@
+[
+ {
+  "name": "界面产物管线口径（唯一产物规范 / 多入口 / 三档判据）",
+  "doc": "knowledge/devflow/ui-pipeline-spec.md",
+  "queries": [
+   "HTML 是不是唯一源",
+   "不写 HTML 直接写 json 行不行",
+   "多个入口怎么选",
+   "json 怎么算合格",
+   "不上机能判定界面吗",
+   "预览和真机不一样改哪一层",
+   "Vue 工程能迁到 FlyThings 吗",
+   "小程序 WXML 能转过来吗",
+   "QML 能迁吗"
+  ],
+  "min_top1": 2,
+  "max_miss": 2,
+  "misses": [
+   "不写 HTML 直接写 json 行不行",
+   "Vue 工程能迁到 FlyThings 吗"
+  ],
+  "_note": "2026-10-05 建组（T0.4）实测：top1=2/9、miss=2 —— 按实测登记，不猜。两条 miss 的 top-3 都是合理竞争者，且 AI 顺着仍能走到本文：①「不写 HTML 直接写 json 行不行」被 knowledge/devflow/html-subset-quickref.md 连中三槽（那页讲 HTML 子集写法，只答了另一半，口径仍以本文为准）；②「Vue 工程能迁到 FlyThings 吗」被 knowledge/devflow/translate-ui-lvgl.md 与 knowledge/devflow/ui-entrypoints.md 占位 —— 入口登记页其实是「能不能迁」的更直接答案（本文讲判据，入口页讲 status），不是错答案。"
+ }
+]

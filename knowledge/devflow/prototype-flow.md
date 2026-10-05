@@ -18,6 +18,7 @@ evidence: []
 > 检索导引：问「新项目从哪开始 / 一句话需求怎么变成界面 / 线框图怎么给用户确认 / 要出几套风格 / 需求里带设计稿先做什么」→ 本文（原型确认流程总纲）；带稿后的分辨率对齐硬规则也在文末。
 > 检索词（用户问法与 AI 检索都命中这里）：新项目 / 新需求 / 开发一个 / 做一个 / 写一个 / 实现 / 需求拆解 / 功能拆解 / 原型设计 / 界面设计 / 设计稿 / 设计图 / 参考图 / 线框图 / wireframe / 流程图 / 确认稿 / HTML 原型 / 智能家居 / 面板 / 屏保 / 温湿度 / 天气 / MQTT / 情景联动 / 多页面 / 页面树 / 一页一 Activity。
 > ⚠️ 硬口径（2026-09-21 口径 A）：用户提「新项目/新需求」却**没给**流程图或 UI 设计图时，AI **必须先走本流程**（功能拆解 -> 页面树 -> 线框图 -> 确认稿 -> 用户确认），**禁止直接 flythings_create_project 或写业务代码**；请求里已带设计稿（设计图 / HTML 原型 / 布局 json / ftu）的，先按稿还原并出确认稿给用户确认，确认后再 pack / 写逻辑。用户一句话描述产品（示例：「我想设计一个医疗口腔内窥镜」——**仅为示例，流程适用于任何产品**）→ **自动拆解功能点 → HTML 线框图（单 HTML 多页面 + 标注）→ 用户确认 → 多套风格美化 → 确认 → 转换交付**。两段式：线框确认 = 确认「做什么」，美化 = 确认「长什么样」。
+> **口径边界（2026-10-05 补，唯一出处 = `knowledge/devflow/ui-pipeline-spec.md`）**：**线框/风格稿是"客户确认载体"，不是唯一入口** —— 落地前端**不排他**（HTML 原型 / 块库 spec / 按 schema 直写 json / LVGL·Qt·QML·小程序·Vue 迁移都行），**缺省仍是 HTML→json**；排他性在**输出端**：任何入口的产物必须过 `ui_compile` + `check_all` 才算成立。
 
 ## 总览
 
@@ -140,7 +141,13 @@ home（首页/主入口）
 ## 落地工具
 
 - 流程本文件入库：AI 检索 `prototype` / `线框` / `wireframe` / `功能拆解` / `页面层级` 关键词触发
+- **线框/风格稿的角色 = 客户确认载体**（确认"做什么/长什么样"），**落地前端不排他**：缺省走 HTML→json，也可按 schema 直写 json（`flythings_ui_schema` 查字段）或走块库 spec（`templates/ui_blocks/compose.py`）
 - 转换：`flythings_html_to_json`（美化稿：**缺省每屏一个 json = 一个页面一个 Activity 一个 ftu**；仅当几屏同属一个 Activity、要合成同 ftu 内多整屏 window 时才传 `merge_windows=true`）-> preview -> pack -> build_ui_flow
+- ⚠️ **落地不是「转完就推机」（2026-10-05 起两道硬闸门）**：`fui pack` / `build_ui_flow` 会先过
+  ① **编译式验收**（`ui_compile`：fatal 一律拦；error 默认只记 `uiCheck.errorsNotBlocking`，`strict_ui=True` 才拦）
+  ② **确认稿硬闸门**（布局比确认稿新、或确认稿与当前 json **指纹不符** → `CONFIRM_REQUIRED`）。
+  跳过开关 `allow_unvalidated` / `force_confirm`（都会留痕，不静默）；口径见 `knowledge/devflow/ui-pipeline-spec.md`。
+- **产物判据（入口无关）**：一律过 `ui_compile`（编译式验收，无 fatal/error）+ `check_all` 关键项 0 FAIL 才落盘/上机 → 口径与三档判据见 `knowledge/devflow/ui-pipeline-spec.md`，入口登记见 `knowledge/devflow/ui-entrypoints.md`
 - 口径：多屏落地形态判据 = `knowledge/devflow/page-architecture-spec.md`；屏数核对 = 本文件「分页落地清单」与 `ui_tools/HTML_SUBSET.md`「多屏」节
 
 ---

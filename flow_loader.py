@@ -182,7 +182,12 @@ def flow_items(fid):
 # ───────────────────────────── 渲染：动作流程 → prompt ─────────────────────────────
 
 def render_prompt(fid):
-    """动作流程 → {'title','description','args','body'}（`mcp_extras.PROMPTS` 的形状）。"""
+    """动作流程 → {'title','description','args','body'}（`mcp_extras.PROMPTS` 的形状）。
+
+    ⚠️ **`how` 全部渲染**（2026-10-05 起）：此前只渲染 `how[0]`，于是「桩生成完，再往
+    `src/logic/*.cc` 里填业务」这类**关键下一步**写在 `how[1]` 就永远进不了常驻面 ——
+    AI 只按 prompt 走时看不到「还要写页面逻辑」，交付就停在空桩上。
+    """
     f = flow(fid)
     if f.get('kind') != 'action':
         raise FlowSpecError('流程 %s 的 kind=%r 不是 action，不能渲染成 prompt'
@@ -194,10 +199,10 @@ def render_prompt(fid):
         seg = '%d. ' % i
         seg += ('`%s`（%s）' % (op, item['title'])) if op else item['title']
         if s.get('gate') and s.get('gateHow'):
-            seg += ' —— %s' % s['gateHow']
-        elif s.get('how'):
-            seg += ' —— %s' % s['how'][0]
+            seg += ' —— ⚠️ %s' % s['gateHow']
         lines.append(seg)
+        for h in (s.get('how') or []):
+            lines.append('   - %s' % h)
     for n in (f.get('notes') or []):
         lines.append('- %s' % n)
     body = '\n\n'.join(['\n'.join(lines[:1]) + '\n\n' + '\n'.join(lines[1:]), safety()]).strip()

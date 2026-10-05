@@ -3,8 +3,11 @@
 # 规格指针（DESIGN_SPEC 第 1.1 条）：本文件是**离线渲染器**，必须复现
 # `ui_schema.json.renderContract` 的引擎语义（`pic-scale` 拉伸填盒 / `progress-clip`
 # 1:1 贴 + `floor` 裁剪 / `thumb-size` 按 PNG 原尺寸 / `rounding` 用 floor）。
-# ⚠️ 已知未对齐：`draw_seekbar` 仍在用 `resize(..., NEAREST)` + `round`（= ⛔TWEAK 型偏差），
-# 会用 NEAREST 抽掉切图圆角、滑块位置与真机差 4px —— **不要用它的输出做视觉验收**。
+# 2026-10-05：`draw_seekbar` 那四条偏差已按规格重写（见该方法 docstring 与
+# `tests/test_json2img_engine_model.py`），此前"仍在用 NEAREST + round、不要用它的输出做
+# 视觉验收"那句已作废。**但近似点没有消失**，逐条记在 `ui_tools/json2img_coverage.json`
+# （`--coverage` 打印）：能画但语义近似的写 `approximate`，真没实现的写 `unsupported` 且
+# `blindSpot: true`；`--judge` 下未登记豁免的渲染盲区一律**判红**（盲区不许当通过）。
 """
 json2img.py — FlyThings 布局 json → PNG 离线「引擎等价」渲染器（v0，PIL 像素级）
 
@@ -73,6 +76,17 @@ CLI
      python tools/FlyThings_mcp_open/ui_tools/json2img.py <项目根或 json> \
          [--page main] [--out x.png] [--scale 2] [--font xxx.ttf] [--report]
 
+判定层（2026-10-05 加，T2.1/T2.2）：
+     python ui_tools/json2img.py --coverage                  # 人读覆盖矩阵（无须 target）
+     python ui_tools/json2img.py --coverage --check          # 校验矩阵：[PASS]/[FAIL] + 退出码
+     python ui_tools/json2img.py <项目根> --judge            # 判定模式：未豁免的渲染盲区 → rc=1
+     python ui_tools/json2img.py <项目根> --judge --coverage-json rep.json
+   · 「覆盖矩阵」= `ui_schema.json#renderContract.rows`（行集合唯一真源，10 条）× 实现状态，
+     状态数据住在 `ui_tools/json2img_coverage.json`；`--coverage` 只读不写。
+   · 「盲区」= 渲染时走到 `Report.unsupported(...)` 的项（**如实记账**的原始素材），
+     豁免登记表 = `ui_tools/json2img_blindspot_allow.json`（每条必须写 reason）。
+   · `--judge` **默认关闭**；不带它时输出与退出码与本层加入前一致（渲染行为零改动）。
+
 纪律：本文件是只读渲染器，不改任何工程文件（不 pack、不写 json）。
 """
 from __future__ import annotations
@@ -99,7 +113,7 @@ except Exception as exc:  # pragma: no cover
     print('[FATAL] 需要 Pillow：pip install pillow  (%s)' % exc)
     raise
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'      # 0.1.1（2026-10-05）：颜色语义修正 —— 只有 -1 是不填充，其它负数按 0xAARRGGBB
 
 NEAREST = Image.Resampling.NEAREST if hasattr(Image, 'Resampling') else Image.NEAREST
 
@@ -177,14 +191,24 @@ class AlignTable:
 # 颜色
 # ============================================================================
 def color_rgba(v, alpha=255):
-    """json 颜色 int → RGBA；`-1`(及 0xFFFFFFFF) = 不填充 → None；`0` = 不透明黑。"""
+    """json 颜色 int → RGBA。
+
+    语义（真源 = `ui_schema.json#valueRules.colorZero` + 本文件头「颜色约定」）：
+      · `-1` / `0xFFFFFFFF` = **未用 / 框架跳过该绘制** → `None`（唯一的不填充标记）；
+      · `0` = **不透明黑**（0xFF000000），**不是**"未设置"；
+      · 其它负数 = int32 补码写的 `0xAARRGGBB`（例：`-16777216` = 0xFF000000 = 不透明黑）
+        → `& 0xFFFFFF` 取 RGB；引擎不把高 8 位当该控件的透明度（透明度由 -1 或 PNG α 表达）。
+
+    ⚠️ 2026-10-05 修：旧实现是 `if v < 0`（**所有**负数都当不填充）—— 与真源冲突，
+    且让 `-16777216` 这类"不透明黑"完全不画（实测夹具踩到）。
+    """
     if v is None:
         return None
     try:
         v = int(v)
     except Exception:
         return None
-    if v < 0 or v == 0xFFFFFFFF:
+    if v in (-1, 0xFFFFFFFF):
         return None
     v &= 0xFFFFFF
     return ((v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF, alpha)
@@ -282,7 +306,7 @@ class Report:
     """unsupported / 降级 / 缺资源 / 拉伸 的如实记账（不静默跳过）。"""
 
     def __init__(self):
-        self.items = OrderedDict()      # (page,type,field,note) → {count, examples[]}
+        self.items = OrderedDict()      # (page,type,field,note) → {count, examples[], captions[]}
         self.missing = OrderedDict()    # (page,pic) → {count, examples[]}
         self.stretches = OrderedDict()  # (page,type,pic,size) → count
         self.nines = OrderedDict()      # 九宫格命中
@@ -296,6 +320,12 @@ class Report:
     def unsupported(self, page, ctype, caption, field, note):
         self._bump(self.items, (page, ctype, field, note),
                    '%s%s' % (ctype, ('/' + caption) if caption else ''))
+        # caption 单独留档（判定模式要按 **page/type/caption/field/note** 逐条报盲区）。
+        # ⚠️ 只进内部条目、**不进 `as_dict()`** —— `--json-report` 的字节必须与本层加入前一致。
+        if caption:
+            caps = self.items[(page, ctype, field, note)].setdefault('captions', [])
+            if caption not in caps and len(caps) < 4:
+                caps.append(str(caption))
 
     def miss(self, page, pic, caption):
         self._bump(self.missing, (page, pic), caption or '')
@@ -741,7 +771,7 @@ class Renderer:
             return
         # ① 底色
         bg = node.get('bgColorTab', {}).get('color0') if isinstance(node.get('bgColorTab'), dict) else None
-        if bg is None or int(bg) < 0:
+        if bg is None or int(bg) == -1:          # 只有 -1（未用）才回落到 backgroundColor
             bg = node.get('backgroundColor', -1)     # window/qrcode/videoview 用这个
         rgba = color_rgba(bg)
         if rgba:
@@ -1507,7 +1537,7 @@ class Renderer:
                                         '缺选中态图 pic2 → 选中项圆点与未选中同形（真机同）')
             col = rb.get('colorTab') if isinstance(rb.get('colorTab'), dict) else {}
             color = col.get('color2') if on else None
-            if color is None or int(color) < 0:
+            if color is None or int(color) == -1:
                 color = col.get('color0')
             tp = rb.get('textPosition') if isinstance(rb.get('textPosition'), dict) else None
             txt = rb.get('text') or ''
@@ -1753,10 +1783,376 @@ def render_one(project, json_path, out_path, scale=1, font=None, align_mode='mea
             'font': r.font_path, 'align_mode': align_mode, 'align': r.align}
 
 
+# ============================================================================
+# 判定层：覆盖矩阵（--coverage）与盲区判红（--judge）
+# ============================================================================
+# 定位（REMEDIATION-UI-PIPELINE.md §3 模块 E「渲染判定」）：
+#   渲染器只负责**如实记账**（Report.unsupported）；"这块算不算通过"是**判定**，住在这一节。
+#   两条判据：
+#     ① 覆盖矩阵：`ui_schema.json#renderContract.rows` 的**每一行**都要有实现状态
+#        （implemented / approximate / unsupported）与依据 —— 缺行、多行、状态非法、
+#        blindSpot 不带说明、evidence 指向不存在的文件 → `--coverage --check` 判红。
+#     ② 盲区判红：判定模式下，任何走到 `Report.unsupported(...)` 的项若未被豁免表登记
+#        → 计入 `blindSpots[]` 并让退出码变 1（**盲区不许当通过**）。
+#   ⚠️ 行集合的**唯一真源**是 `ui_schema.json`；本文件**不重抄**那 10 个 id，
+#      矩阵数据（`json2img_coverage.json`）也只填"状态"，id 与真源逐条对账。
+HERE = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(HERE)
+SCHEMA_PATH = os.path.join(HERE, 'ui_schema.json')
+COVERAGE_PATH = os.path.join(HERE, 'json2img_coverage.json')
+BLINDSPOT_ALLOW_PATH = os.path.join(HERE, 'json2img_blindspot_allow.json')
+
+STATUS_VALUES = ('implemented', 'approximate', 'unsupported')
+STATUS_MEANING = OrderedDict([
+    ('implemented', '按 renderContract 实现，且有判据（用例）钉住'),
+    ('approximate', '能画，但语义/度量与引擎**近似**（近似点写在 note 里）'),
+    ('unsupported', '渲染器**没有**实现这一条（判定不算通过）'),
+])
+
+
+def disp_path(p):
+    """展示用相对路径（跨盘符时退回绝对路径，不炸）。"""
+    try:
+        return os.path.relpath(p, BASE_DIR).replace(os.sep, '/')
+    except ValueError:
+        return p
+
+
+def load_contract_rows(schema_path=SCHEMA_PATH):
+    """行集合的**唯一真源**：`ui_schema.json#renderContract.rows`（返回 [{id,scope,rule}]）。
+
+    本函数是"哪 10 条"的唯一出处 —— 其它地方（含矩阵数据、用例、报告）一律引用它，
+    不许重抄 id 列表。
+    """
+    with io.open(schema_path, encoding='utf-8') as f:
+        doc = json.load(f)
+    rows = (doc.get('renderContract') or {}).get('rows') or []
+    out = []
+    for i, r in enumerate(rows, 1):
+        # 真源自身不合法就当场抛（不许"少一条就当没有"—— 那正好是这条判据要防的静默）
+        if not isinstance(r, dict) or not str(r.get('id') or '').strip():
+            raise ValueError('renderContract.rows[%d] 缺 id（真源 %s 自身不合法）'
+                             % (i, disp_path(schema_path)))
+        out.append({'id': str(r['id']), 'scope': str(r.get('scope') or ''),
+                    'rule': str(r.get('rule') or '')})
+    return out
+
+
+def load_coverage_matrix(path=COVERAGE_PATH):
+    """读覆盖矩阵数据 → (整个文档, rows)。读不了抛 OSError/ValueError（调用方记账）。
+
+    ⚠️ 用 `utf-8-sig` 读：矩阵/豁免表是**人手可能在 Windows 上编辑的数据文件**
+    （记事本 / PowerShell `Set-Content -Encoding utf8` 都会写 BOM），带 BOM 就报
+    "Unexpected UTF-8 BOM"等于把登记豁免的人挡在门外。判据不能因为编码细节变成假红。
+    """
+    with io.open(path, encoding='utf-8-sig') as f:
+        doc = json.load(f)
+    rows = doc.get('rows') if isinstance(doc, dict) else doc
+    return doc, rows
+
+
+def _entry_key(e):
+    return (e.get('page'), e.get('type'), e.get('field'), e.get('caption'), e.get('note'))
+
+
+def load_blindspot_allow(path=BLINDSPOT_ALLOW_PATH):
+    """读盲区豁免登记表 → (entries, fails)。
+
+    条目形状：`{type, field, allow, reason}`（`type`/`field` 必填，支持 `'*'`；
+    `page`/`caption`/`note` 可选，写上就是**精确匹配**；`allow: false` = 显式**拒绝**豁免
+    （优先于 allow 条目，防止通配把某条悄悄吃掉））。
+    `reason` **必填**（豁免必须写清"为什么这块可以不覆盖"）。
+    """
+    fails = []
+    if not os.path.isfile(path):
+        return [], ['豁免登记表不存在：%s' % disp_path(path)]
+    try:
+        # `utf-8-sig`：Windows 上手写/用 PowerShell 生成这个文件会带 BOM（见 load_coverage_matrix）
+        with io.open(path, encoding='utf-8-sig') as f:
+            doc = json.load(f)
+    except (OSError, ValueError) as e:
+        return [], ['豁免登记表读不了：%s（%s）' % (disp_path(path), e)]
+    entries = doc.get('entries') if isinstance(doc, dict) else doc
+    if not isinstance(entries, list):
+        return [], ['豁免登记表缺 entries 列表：%s' % disp_path(path)]
+    seen = set()
+    for i, e in enumerate(entries, 1):
+        label = '%s#entries[%d]' % (disp_path(path), i)
+        if not isinstance(e, dict):
+            fails.append('%s 不是对象' % label)
+            continue
+        if not str(e.get('type') or '').strip():
+            fails.append('%s 缺 type（精确匹配的控件类型，或 "*"）' % label)
+        if not str(e.get('field') or '').strip():
+            fails.append('%s 缺 field（精确匹配的字段，或 "*"）' % label)
+        if 'page' in e and not str(e.get('page') or '').strip():
+            fails.append('%s 的 page 写了空值（要么不写 = 不限定页，要么写页名）' % label)
+        if not isinstance(e.get('allow'), bool):
+            fails.append('%s 缺 allow（true=豁免 / false=显式拒绝）' % label)
+        if not str(e.get('reason') or '').strip():
+            fails.append('%s 缺 reason（豁免**必须**写理由）' % label)
+        k = _entry_key(e)
+        if k in seen:
+            fails.append('%s 与前面的条目重复（同一 type/field/caption/note）' % label)
+        seen.add(k)
+    return entries, fails
+
+
+def match_blindspot_allow(entries, page, ctype, caption, field, note):
+    """精确匹配豁免条目 → ('allow'|'deny', entry) 或 None（deny 优先于 allow）。
+
+    `page`/`caption`/`note` 只在条目**写了**的时候参与匹配（不写 = 不限定），
+    `type`/`field` 必填（`'*'` = 任意）。
+    """
+    hits = []
+    for e in entries:
+        if e.get('type') not in ('*', ctype):
+            continue
+        if e.get('field') not in ('*', field):
+            continue
+        if e.get('page') not in (None, '', page):
+            continue
+        if e.get('caption') not in (None, '', caption):
+            continue
+        if e.get('note') not in (None, '', note):
+            continue
+        hits.append(e)
+    for e in hits:
+        if e.get('allow') is False:
+            return 'deny', e
+    if hits:
+        return 'allow', hits[0]
+    return None
+
+
+def collect_blind_spots(rep, entries):
+    """`Report` 的 unsupported 项 → (未豁免盲区, 已豁免) 两组，逐条带 page/type/caption/field/note。
+
+    caption 取 `Report` 内部留档（`Report.unsupported` 里单独收的 captions）；
+    老的/外部构造的条目退回从 `examples`（`type/caption`）里拆，不静默丢字段。
+    """
+    unexempted, exempted = [], []
+    for (page, ctype, field, note), v in rep.items.items():
+        caps = [str(c) for c in (v.get('captions') or [])]
+        if not caps:
+            for ex in v.get('examples') or []:
+                caps.append(ex.split('/', 1)[1] if '/' in ex else '')
+        caption = caps[0] if caps else ''
+        item = OrderedDict([('page', page), ('type', ctype), ('caption', caption),
+                            ('captions', caps), ('field', field), ('note', note),
+                            ('count', v.get('count', 0))])
+        m = match_blindspot_allow(entries, page, ctype, caption, field, note)
+        if m and m[0] == 'allow':
+            item['exemptReason'] = str(m[1].get('reason') or '')
+            exempted.append(item)
+        else:
+            if m and m[0] == 'deny':
+                item['deniedReason'] = str(m[1].get('reason') or '')
+            unexempted.append(item)
+    return unexempted, exempted
+
+
+def check_coverage(matrix_path=COVERAGE_PATH, schema_path=SCHEMA_PATH,
+                   allow_path=BLINDSPOT_ALLOW_PATH, base_dir=BASE_DIR):
+    """校验覆盖矩阵 → 失败项列表（空 = 通过）。判据见文件头「判定层」注。
+
+    ① 每个 renderContract row id 在矩阵里**恰好出现一次**（缺/多/重复都红）；
+    ② `status` ∈ implemented / approximate / unsupported；
+    ③ `blindSpot: true` 必须带非空 `note`；
+    ④ `evidence.tests` 里的文件必须存在（相对仓根解析；绝对路径另算）；
+    ⑤ 豁免登记表结构合法（`reason` 必填、键不重复）—— 判定层的地基也是判据的一部分。
+    """
+    fails = []
+    try:
+        contract = load_contract_rows(schema_path)
+    except (OSError, ValueError) as e:
+        return ['renderContract 真源读不了：%s（%s）' % (disp_path(schema_path), e)]
+    if not contract:
+        return ['renderContract 真源里没有 rows：%s' % disp_path(schema_path)]
+    try:
+        _, rows = load_coverage_matrix(matrix_path)
+    except (OSError, ValueError) as e:
+        return ['覆盖矩阵读不了：%s（%s）' % (disp_path(matrix_path), e)]
+    if not isinstance(rows, list):
+        return ['覆盖矩阵缺 rows 列表：%s' % disp_path(matrix_path)]
+
+    contract_ids = [r['id'] for r in contract]
+    seen = OrderedDict()
+    for i, row in enumerate(rows, 1):
+        label = '矩阵第 %d 行' % i
+        if not isinstance(row, dict):
+            fails.append('%s 不是对象' % label)
+            continue
+        rid = str(row.get('id') or '').strip()
+        if rid:
+            label = rid
+            seen.setdefault(rid, 0)
+            seen[rid] += 1
+        else:
+            fails.append('%s 缺 id' % label)
+        note = str(row.get('note') or '').strip()
+        if not note:
+            fails.append('%s 缺 note（每条都要写清实现/近似点）' % label)
+        st = row.get('status')
+        if st not in STATUS_VALUES:
+            fails.append('%s status=%r 非法（合法值：%s）'
+                         % (label, st, ' / '.join(STATUS_VALUES)))
+        bs = row.get('blindSpot')
+        if not isinstance(bs, bool):
+            fails.append('%s 缺 blindSpot（bool：该条能否由离线渲染判定）' % label)
+        elif bs and not note:
+            fails.append('%s blindSpot=true 必须带非空 note（说清哪里没被覆盖）' % label)
+        ev = row.get('evidence')
+        if not isinstance(ev, dict):
+            fails.append('%s 缺 evidence{tests:[], device:[]}' % label)
+            continue
+        tests = ev.get('tests')
+        if not isinstance(tests, list):
+            fails.append('%s evidence.tests 不是列表' % label)
+        else:
+            for t in tests:
+                p = str(t)
+                fp = p if os.path.isabs(p) else os.path.join(base_dir, p.replace('/', os.sep))
+                if not os.path.isfile(fp):
+                    fails.append('%s evidence.tests 里的文件不存在：%s' % (label, t))
+        if not isinstance(ev.get('device'), list):
+            fails.append('%s evidence.device 不是列表' % label)
+
+    for rid in contract_ids:
+        if rid not in seen:
+            fails.append('矩阵缺 renderContract 行：%s（真源 %s）' % (rid, disp_path(schema_path)))
+    for rid, n in seen.items():
+        if n > 1:
+            fails.append('矩阵里 id 重复 %d 次：%s' % (n, rid))
+        if rid not in contract_ids:
+            fails.append('矩阵多出 renderContract 没有的 id：%s' % rid)
+
+    _, afails = load_blindspot_allow(allow_path)
+    for f in afails:
+        fails.append('豁免登记表：%s' % f)
+    return fails
+
+
+def render_coverage(contract, rows, matrix_path=COVERAGE_PATH, schema_path=SCHEMA_PATH):
+    """人读矩阵文本（表格 + 备注全文）；行序 = renderContract 行序。"""
+    by_id = {}
+    for r in rows or []:
+        if isinstance(r, dict) and r.get('id'):
+            by_id.setdefault(str(r['id']), r)
+    L = []
+    L.append('=' * 78)
+    L.append('json2img 覆盖矩阵 —— renderContract 十条 × 实现状态（渲染器 v%s）' % __version__)
+    L.append('=' * 78)
+    L.append('行集合真源：%s#renderContract.rows（%d 条，**不在别处重抄**）'
+             % (disp_path(schema_path), len(contract)))
+    L.append('状态数据：  %s' % disp_path(matrix_path))
+    L.append('状态口径：  ' + ' / '.join('%s=%s' % (k, v) for k, v in STATUS_MEANING.items()))
+    L.append('-' * 78)
+    L.append('%-20s %-13s %-9s %s' % ('id', 'status', 'blindSpot', 'note（摘要）'))
+    L.append('-' * 78)
+    for c in contract:
+        row = by_id.get(c['id']) or {}
+        note = str(row.get('note') or '（矩阵里缺这一行）')
+        st = str(row.get('status') or '-')
+        bs = row.get('blindSpot')
+        bs_disp = 'yes' if bs is True else ('no' if bs is False else '-')
+        head = '%-20s %-13s %-9s ' % (c['id'], st, bs_disp)
+        pad = ' ' * len(head)
+        for i, seg in enumerate(_wrap(note, 60)):
+            L.append((head if i == 0 else pad) + seg)
+    L.append('-' * 78)
+    counts = Counter(str((by_id.get(c['id']) or {}).get('status')) for c in contract)
+    blind = [c['id'] for c in contract if (by_id.get(c['id']) or {}).get('blindSpot') is True]
+    L.append('统计：' + ' / '.join('%s %d' % (s, counts.get(s, 0)) for s in STATUS_VALUES)
+             + '；blindSpot %d 条%s' % (len(blind), ('（%s）' % ', '.join(blind)) if blind else ''))
+    L.append('-' * 78)
+    for c in contract:
+        row = by_id.get(c['id']) or {}
+        L.append('%s' % c['id'])
+        L.append('    scope   : %s' % (c.get('scope') or ''))
+        L.append('    status  : %s — %s' % (row.get('status', '（缺）'),
+                                            STATUS_MEANING.get(row.get('status'), '非法值')))
+        L.append('    note    : %s' % (row.get('note') or '（缺）'))
+        ev = row.get('evidence') or {}
+        L.append('    tests   : %s' % (', '.join(ev.get('tests') or []) or '（无对应用例）'))
+        L.append('    device  : %s' % (', '.join(ev.get('device') or []) or '（无真机证据）'))
+    return '\n'.join(L)
+
+
+def _wrap(text, width):
+    """按字符数折行（中英混排的粗略折行；只影响人读输出，不参与判据）。"""
+    text = ' '.join(str(text).split())
+    return [text[i:i + width] for i in range(0, len(text), width)] or ['']
+
+
+def render_judgement(unexempted, exempted, allow_path, allow_existed, allow_count=0):
+    """判定模式的盲区报告文本（逐条给 page/type/caption/field/note；豁免逐条给理由）。"""
+    L = []
+    L.append('-' * 78)
+    L.append('[判定模式 --judge] 渲染盲区（未被渲染器覆盖的项 → 判定不算通过）')
+    L.append('-' * 78)
+    L.append('豁免登记表：%s（%s）'
+             % (disp_path(allow_path),
+                '文件里登记 %d 条' % allow_count if allow_existed
+                else '**文件不存在 → 视为 0 条豁免**（不静默）'))
+    if unexempted:
+        L.append('盲区 %d 条（**未豁免**）：' % len(unexempted))
+        for i, b in enumerate(unexempted, 1):
+            L.append('  %2d. page=%s type=%s caption=%s field=%s'
+                     % (i, b['page'], b['type'], b['caption'] or '(无 caption)', b['field']))
+            L.append('      note x%d: %s' % (b['count'], b['note']))
+            if b.get('deniedReason'):
+                L.append('      被 allow:false 规则显式拒绝：%s' % b['deniedReason'])
+    else:
+        L.append('盲区 0 条（未豁免）')
+    L.append('已豁免 %d 条：' % len(exempted))
+    if not exempted:
+        L.append('   （无）')
+    for b in exempted:
+        L.append('   - type=%s field=%s caption=%s  ← %s'
+                 % (b['type'], b['field'], b['caption'] or '(无 caption)', b['exemptReason']))
+    return '\n'.join(L)
+
+
+def write_coverage_json(path, cov, judge, check_ran, matrix_path):
+    """把覆盖矩阵 + 校验结论 + 判定结果写成**机读**产物（`--coverage-json`）。"""
+    by_id = {}
+    for r in cov['rows']:
+        if isinstance(r, dict) and r.get('id'):
+            by_id.setdefault(str(r['id']), r)
+    out = OrderedDict()
+    out['renderer'] = {'file': disp_path(os.path.abspath(__file__)), 'version': __version__}
+    out['contractSource'] = disp_path(SCHEMA_PATH)
+    out['matrixFile'] = disp_path(matrix_path)
+    out['coverage'] = []
+    for c in cov['contract']:
+        row = by_id.get(c['id']) or {}
+        out['coverage'].append(OrderedDict([
+            ('id', c['id']), ('scope', c['scope']),
+            ('status', row.get('status')), ('blindSpot', row.get('blindSpot')),
+            ('note', row.get('note')), ('evidence', row.get('evidence'))]))
+    out['check'] = {'ran': bool(check_ran), 'ok': cov['ok'] if cov['ran'] else None,
+                    'failures': cov['failures']}
+    out['judge'] = {'ran': judge['ran'], 'blindSpots': judge['blindSpots'],
+                    'exempted': judge['exempted'],
+                    'unexemptedCount': len(judge['blindSpots']),
+                    'exemptedCount': len(judge['exempted']),
+                    'allowFile': disp_path(judge['allowFile']),
+                    'allowExists': judge['allowExists'],
+                    'allowFails': judge.get('allowFails', [])}
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    with io.open(path, 'w', encoding='utf-8', newline='\n') as f:
+        json.dump(out, f, ensure_ascii=False, indent=1)
+    print('[覆盖矩阵已写] %s' % path)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(
         description='FlyThings json 布局 → PNG（引擎等价离线渲染 v0，PIL 像素级）')
-    ap.add_argument('target', help='项目根目录（含 ui/）或直接给 .json 文件')
+    # `nargs='?'`：`--coverage` 是**对渲染器自身**的判定，不需要 target。
+    # 不给 target 又不进覆盖模式时，仍按"缺 target"报错 + 退出码 2（与旧行为同码）。
+    ap.add_argument('target', nargs='?', default=None,
+                    help='项目根目录（含 ui/）或直接给 .json 文件（--coverage 时可不给）')
     ap.add_argument('--page', default='main', help='页面名（不含 .json，默认 main）')
     ap.add_argument('--out', default=None, help='输出 PNG（默认 <json目录>/<page>.render.png）')
     ap.add_argument('--scale', type=int, default=1, help='放大倍数（NEAREST，默认 1）')
@@ -1766,7 +2162,61 @@ def main(argv=None):
                     help='5/0/1/4/6/2 解码：measured=位模型(4≡36/5≡37/6≡38) / task36=一律当 36')
     ap.add_argument('--json-report', default=None, help='把清单同时写成 json')
     ap.add_argument('--all', action='store_true', help='渲染全部页面（--out 视作输出目录）')
+    # ---- 判定层（T2.1 覆盖矩阵 / T2.2 盲区判红）----
+    ap.add_argument('--coverage', action='store_true',
+                    help='打印 renderContract 覆盖矩阵（人读表格；无须 target）')
+    ap.add_argument('--check', action='store_true',
+                    help='与 --coverage 连用：校验矩阵，[PASS]/[FAIL] + 失败退出码 1')
+    ap.add_argument('--coverage-json', default=None,
+                    help='把覆盖矩阵（含 --check 结论、--judge 盲区）写成 json')
+    ap.add_argument('--coverage-matrix', default=COVERAGE_PATH,
+                    help='覆盖矩阵数据文件（默认 ui_tools/json2img_coverage.json）')
+    ap.add_argument('--judge', action='store_true',
+                    help='判定模式：未登记豁免的渲染盲区 → 报告列出并 rc=1（默认关闭）')
+    ap.add_argument('--blindspot-allow', default=BLINDSPOT_ALLOW_PATH,
+                    help='盲区豁免登记表（默认 ui_tools/json2img_blindspot_allow.json）')
     args = ap.parse_args(argv)
+
+    want_coverage = bool(args.coverage or args.check or args.coverage_json)
+    cov = {'ran': False, 'contract': [], 'rows': [], 'failures': [], 'ok': None}
+    # 判定结果容器**先建**：`--coverage-json` 在"只做覆盖、不渲染"那条出口也要能落盘。
+    judge = {'ran': False, 'blindSpots': [], 'exempted': [], 'allowFails': [],
+             'allowFile': args.blindspot_allow, 'allowExists': False}
+    if want_coverage:
+        try:
+            contract = load_contract_rows(SCHEMA_PATH)
+            _, rows = load_coverage_matrix(args.coverage_matrix)
+            rows = rows if isinstance(rows, list) else []
+        except (OSError, ValueError) as e:
+            print('[FAIL] 覆盖矩阵读不了：%s' % e)
+            return 1
+        cov.update({'ran': True, 'contract': contract, 'rows': rows})
+        print(render_coverage(contract, rows, args.coverage_matrix, SCHEMA_PATH))
+        print('-' * 78)
+        fails = check_coverage(args.coverage_matrix, SCHEMA_PATH, args.blindspot_allow)
+        cov['failures'] = fails
+        cov['ok'] = not fails
+        if fails:
+            for f in fails:
+                print('   - %s' % f)
+            if args.check:
+                print('[FAIL] 覆盖矩阵校验不通过：%d 处（见上）' % len(fails))
+            else:
+                print('[WARN] 覆盖矩阵校验有 %d 处问题（加 --check 才判红/给退出码 1）' % len(fails))
+        else:
+            print('[PASS] 覆盖矩阵 %d 行 == renderContract %d 行（id 恰好一次）；status 合法；'
+                  'blindSpot 带 note；evidence.tests 均存在；豁免登记表结构合法'
+                  % (len(cov['rows']), len(contract)))
+        if args.check and fails:
+            return 1
+
+    if args.target is None:
+        if want_coverage:
+            if args.coverage_json:
+                write_coverage_json(args.coverage_json, cov, judge, args.check,
+                                    args.coverage_matrix)
+            return 0
+        ap.error('the following arguments are required: target')
 
     project, single = resolve_project(args.target)
     if single is None and not project:
@@ -1888,7 +2338,32 @@ def main(argv=None):
         os.makedirs(os.path.dirname(os.path.abspath(args.json_report)), exist_ok=True)
         json.dump(d, open(args.json_report, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
         print('[清单已写] %s' % args.json_report)
-    return 0
+
+    # ---- 判定模式：未豁免的渲染盲区 → 判不通过（默认关闭，见 --judge）----
+    rc = 0
+    if args.judge:
+        entries, afails = load_blindspot_allow(args.blindspot_allow)
+        judge['allowExists'] = os.path.isfile(args.blindspot_allow)
+        unexempted, exempted = collect_blind_spots(rep, entries)
+        judge.update({'ran': True, 'blindSpots': unexempted, 'exempted': exempted,
+                      'allowFails': afails})
+        print(render_judgement(unexempted, exempted, args.blindspot_allow,
+                               judge['allowExists'], len(entries)))
+        if unexempted:
+            print('[FAIL] 判定不通过：%d 类渲染盲区**未被覆盖也未被登记豁免**'
+                  '（这几块离线渲染说了不算，不能当通过）' % len(unexempted))
+            rc = 1
+        else:
+            print('[PASS] 判定通过：无未豁免盲区（已豁免 %d 类，理由见上）' % len(exempted))
+        if afails:
+            for f in afails:
+                print('   [WARN] 豁免登记表：%s' % f)
+            print('[WARN] 豁免登记表有 %d 处结构问题（--coverage --check 判红；'
+                  '理由必填，否则豁免不算数）' % len(afails))
+
+    if args.coverage_json:
+        write_coverage_json(args.coverage_json, cov, judge, args.check, args.coverage_matrix)
+    return rc
 
 
 if __name__ == '__main__':

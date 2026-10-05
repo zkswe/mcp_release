@@ -1,0 +1,79 @@
+{
+  "backgroundColor": 8421504,
+  "beepEnable": true,
+  "id": 0,
+  "resolution": {
+    "height": 480,
+    "width": 480
+  },
+  "topmost": false,
+  "position": {
+    "height": 480,
+    "left": 0,
+    "top": 0,
+    "width": 480
+  },
+  "scrollwindow__1": {
+    "backgroundColor": 8405056,
+    "caption": "ScrollWindow1",
+    "dragMaxDis": 200,
+    "edgeEffect": 1,
+    "id": 32001,
+    "orientation": 0,
+    "position": {
+      "height": 473,
+      "left": 20,
+      "top": 7,
+      "width": 314
+    },
+    "window__2": {
+      "beepEnable": true,
+      "caption": "Window1",
+      "id": 110001,
+      "position": {
+        "height": 595,
+        "left": 0,
+        "top": 0,
+        "width": 314
+      },
+      "button__3": {
+        "alignment": 37,
+        "bgColorTab": {
+          "color0": 5601532,
+          "color1": 43764
+        },
+        "caption": "Button1",
+        "colorTab": {
+          "color0": 16777215
+        },
+        "id": 20001,
+        "text": "button",
+        "position": {
+          "height": 58,
+          "left": 27,
+          "top": 24,
+          "width": 164
+        }
+      },
+      "button__4": {
+        "alignment": 37,
+        "bgColorTab": {
+          "color0": 5601532,
+          "color1": 43764
+        },
+        "caption": "Button2",
+        "colorTab": {
+          "color0": 16777215
+        },
+        "id": 20002,
+        "text": "button",
+        "position": {
+          "height": 67,
+          "left": 27,
+          "top": 95,
+          "width": 164
+        }
+      }
+    }
+  }
+}

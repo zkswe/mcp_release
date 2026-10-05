@@ -14,7 +14,7 @@
     "height": 800
   },
   "textview__9": {
-    "id": 9,
+    "id": 50001,
     "caption": "title",
     "text": "常用功能演示",
     "position": {
@@ -35,38 +35,22 @@
     "touchable": false,
     "backgroundColor": -1
   },
-  "slidewindow__1": {
-    "id": 1,
-    "caption": "menuSlide",
+  "window__1": {
+    "id": 110001,
+    "caption": "menuPanel",
     "position": {
       "left": 0,
       "top": 96,
       "width": 240,
-      "height": 700
+      "height": 704
     },
     "backgroundColor": -1,
-    "cols": 0,
-    "fontSize": 0,
-    "iconSize": {
-      "width": 40,
-      "height": 40
-    },
-    "items": [],
-    "padding": {
-      "paddingTop": 8,
-      "paddingBottom": 6,
-      "paddingLeft": 6,
-      "paddingRight": 6
-    },
-    "rollSpeed": 60,
-    "rows": 0,
-    "touchable": true,
+    "hideTimeOut": -1,
+    "modal": false,
+    "touchable": false,
     "visible": true,
-    "orientation": 0,
-    "dragMaxDis": 200,
-    "edgeEffect": 1,
     "button__100": {
-      "id": 100,
+      "id": 20001,
       "caption": "menuText",
       "text": "文本控件",
       "position": {
@@ -104,7 +88,7 @@
       "fontSize": 20
     },
     "button__101": {
-      "id": 101,
+      "id": 20002,
       "caption": "menuButton",
       "text": "按键 / 输入",
       "position": {
@@ -142,7 +126,7 @@
       "fontSize": 20
     },
     "button__102": {
-      "id": 102,
+      "id": 20003,
       "caption": "menuProgress",
       "text": "进度条 / 滑条",
       "position": {
@@ -180,7 +164,7 @@
       "fontSize": 20
     },
     "button__103": {
-      "id": 103,
+      "id": 20004,
       "caption": "menuPointer",
       "text": "指针 / 表盘",
       "position": {
@@ -218,7 +202,7 @@
       "fontSize": 20
     },
     "button__104": {
-      "id": 104,
+      "id": 20005,
       "caption": "menuCanvas",
       "text": "画布绘制",
       "position": {
@@ -256,7 +240,7 @@
       "fontSize": 20
     },
     "button__105": {
-      "id": 105,
+      "id": 20006,
       "caption": "menuScroll",
       "text": "滚动窗口",
       "position": {
@@ -294,7 +278,7 @@
       "fontSize": 20
     },
     "button__106": {
-      "id": 106,
+      "id": 20007,
       "caption": "menuPage",
       "text": "翻页窗口",
       "position": {

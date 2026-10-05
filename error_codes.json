@@ -44,6 +44,24 @@
         "kb_tools.py"
       ]
     },
+    "CONFIRM_REQUIRED": {
+      "meaning": "确认稿硬闸门：布局比确认稿新（或确认稿与当前 json 指纹不符）→ pack / 推真机被拦下",
+      "who": "caller",
+      "retryable": true,
+      "action": "先出确认稿给需求方确认再重跑：flythings_ui_preview(target=\"<项目根>\", for_customer=True)；确需跳过传 force_confirm=True（会留痕）",
+      "raisedBy": [
+        "kb_tools.py"
+      ]
+    },
+    "UI_JSON_INVALID": {
+      "meaning": "产物 json 未通过编译式验收（ui_compile 报 fatal/error：类型/必填/语义/引用）",
+      "who": "caller",
+      "retryable": true,
+      "action": "按 uiDiagnostics 逐条修（规则号 + 路径 + 修法），重跑 python ui_tools/ui_compile.py <json>；确需强制继续传 allow_unvalidated=True（留痕）",
+      "raisedBy": [
+        "kb_tools.py"
+      ]
+    },
     "CONTRACT_UNAVAILABLE": {
       "meaning": "op 契约注册表（op_spec.json）不可用 —— 分级筛选/describe 拿不到契约",
       "who": "env",

@@ -57,8 +57,7 @@ class TestTrEscaping(unittest.TestCase):
                     '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n'
                     '  <string name="nl">第一行&#x000A;第二行</string>\n'
                     '</resources>\n')
-            r = _p('flythings_i18n_to_json',
-                   {'project_root': tmp, 'langs': 'zh_CN', 'push': False})
+            r = _p('flythings_i18n', {'action': 'to_json', 'project_root': tmp, 'langs': 'zh_CN', 'push': False})
             self.assertTrue(r['ok'], r)
             with io.open(os.path.join(tmp, 'i18n', 'zh_CN.json'),
                          encoding='utf-8', newline='') as f:
@@ -125,7 +124,7 @@ class TestScanAndToJson(unittest.TestCase):
         U.cleanup(self.tmp)
 
     def test_scan_reports_alignment_and_layout_refs(self):
-        r = _p('flythings_i18n_scan', {'project_root': self.tmp})
+        r = _p('flythings_i18n', {'action': 'scan', 'project_root': self.tmp})
         self.assertTrue(r['ok'], r)
         self.assertTrue(r['hasI18n'])
         self.assertEqual(sorted(r['languages']), ['en_US', 'zh_CN'])
@@ -141,7 +140,7 @@ class TestScanAndToJson(unittest.TestCase):
         """没有 i18n/ 时不许假装有：回 hasI18n=false + 指路 export。"""
         plain = U.project()
         try:
-            r = _p('flythings_i18n_scan', {'project_root': plain})
+            r = _p('flythings_i18n', {'action': 'scan', 'project_root': plain})
             self.assertTrue(r['ok'], r)
             self.assertFalse(r['hasI18n'])
             self.assertEqual(r['languages'], [])
@@ -150,8 +149,7 @@ class TestScanAndToJson(unittest.TestCase):
             U.cleanup(plain)
 
     def test_to_json_writes_device_format_with_real_newline(self):
-        r = _p('flythings_i18n_to_json',
-                    {'project_root': self.tmp, 'langs': 'zh_CN', 'push': False})
+        r = _p('flythings_i18n', {'action': 'to_json', 'project_root': self.tmp, 'langs': 'zh_CN', 'push': False})
         self.assertTrue(r['ok'], r)
         self.assertEqual([c['lang'] for c in r['converted']], ['zh_CN'])
         jp = os.path.join(self.tmp, 'i18n', 'zh_CN.json')
@@ -164,10 +162,67 @@ class TestScanAndToJson(unittest.TestCase):
                          '换行必须是真换行（设备按 0x0A 切行）')
 
     def test_to_json_unknown_lang_reports_not_silent(self):
-        r = _p('flythings_i18n_to_json',
-                    {'project_root': self.tmp, 'langs': 'de_DE', 'push': False})
+        r = _p('flythings_i18n', {'action': 'to_json', 'project_root': self.tmp, 'langs': 'de_DE', 'push': False})
         self.assertFalse(r['ok'], '指定了不存在的语言必须明确报错，不能静默成功')
         self.assertIn('de_DE', json.dumps(r, ensure_ascii=False))
+
+
+class TestMergedEntry(unittest.TestCase):
+    """2026-10-05：i18n 六个 op 收敛成一个入口 `flythings_i18n(action=…)`。"""
+
+    def setUp(self):
+        self.tmp = U.project()
+        self.addCleanup(U.cleanup, self.tmp)
+
+    def test_unknown_action_is_explicit(self):
+        """未知 action 不许静默：必须回错误码 + 合法值清单。"""
+        r = _p('flythings_i18n', {'project_root': self.tmp, 'action': 'nope'})
+        self.assertFalse(r.get('ok', True), r)
+        err = r.get('error') or {}
+        self.assertEqual(err.get('code'), 'BAD_PARAMS')   # 用仓内已登记的码（不自造）
+        self.assertIn('to_json', err.get('msg') or err.get('message') or '')
+
+    def test_every_action_routes_to_its_library_function(self):
+        """六个 action 都要**真的路由**到库层对应函数（运行期，不是查源码子串）。
+
+        2026-10-05 检讨修：原判据是 `assertIn(act, kb_tools.py 全文)` —— 那个断言只被
+        `I18N_ACTIONS` 元组本身就满足了，六个分支里**五个是没钉的**（只有 scan 做了真调用）；
+        把任意一个 `if action == 'export'` 分支删掉，用例照样绿。现在改成：把库函数换成探针，
+        逐个 action 断言「调到了哪个函数」。
+        """
+        import i18n_tools as IT
+        from unittest import mock
+
+        cases = (
+            ('scan', 'flythings_i18n_scan', {}),
+            ('export', 'flythings_i18n_export', {'lang': 'zh_CN'}),
+            ('import', 'flythings_i18n_import', {'lang': 'zh_CN', 'translations': '{}'}),
+            ('add_language', 'flythings_i18n_add_language',
+             {'lang': 'fr_FR', 'lang_name': '法语'}),
+            ('refactor', 'flythings_i18n_refactor', {'lang': 'zh_CN', 'dry_run': True}),
+            ('to_json', 'flythings_i18n_to_json', {'push': False}),
+        )
+        for act, fname, extra in cases:
+            calls = []
+
+            def spy(*a, **k):
+                calls.append(a)
+                return json.dumps({'ok': True})
+
+            args = {'project_root': self.tmp, 'action': act}
+            args.update(extra)
+            with mock.patch.object(IT, fname, spy):
+                r = _p('flythings_i18n', args)
+            self.assertTrue(calls, 'action=%s 没有路由到 %s（返回体：%s）' % (act, fname, r))
+            self.assertEqual(calls[0][0], self.tmp,
+                             'action=%s 传给 %s 的 project_root 不对：%s' % (act, fname, calls[0]))
+
+    def test_hardrule_says_json_not_tr(self):
+        """铁律必须常驻可见：设备读 json、fun launch 不推 i18n。"""
+        import op_spec_loader as osl
+        hr = ' '.join(osl.spec('flythings_i18n').get('hardRules') or [])
+        self.assertIn('to_json', hr)
+        self.assertIn('fun launch', hr)
 
 
 if __name__ == '__main__':

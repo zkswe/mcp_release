@@ -110,10 +110,19 @@
     {
       "id": "api-quickref-question",
       "symptom": ["列表行数据怎么填", "listview 的三个回调怎么写", "window 的 showWnd 怎么用", "画布怎么画圆", "二维码怎么生成", "摄像头预览怎么做", "play 接口怎么播视频", "定时器怎么用", "选中某个词怎么取到"],
-      "mechanism": "控件代码 API（回调名/签名）由注册表 callbacks 段定义；散文里只讲原理。",
-      "rule": "问 API/回调 → 走 widget-code-api 速查与 flythings_ui_schema 的 callbacks；桩由工具补（flythings_gen_logic_stub），别手写重复定义。",
+      "mechanism": "控件代码 API（回调名/签名）由注册表 callbacks 段定义；散文里只讲原理。容器/显示类控件（pagewindow、scrollwindow、textview…）没有回调桩，接口在代码侧。",
+      "rule": "问 API/回调 → 走 widget-code-api 速查与 flythings_ui_schema 的 callbacks；桩由 `fun build` 生成（也可用 flythings_gen_logic_stub 体检），别手写重复定义；**页面逻辑写在 src/logic/<页>Logic.cc**（容器/显示类控件用 findControlByID + setXxxListener 接线）。",
       "doc": "knowledge/uicontrols/widget-code-api.md",
-      "verify": "fun build 后 src/logic/<页>Logic.cc 里回调桩齐、无重复定义。",
+      "verify": "fun build 后 src/logic/<页>Logic.cc 里回调桩齐、无重复定义，且桩体已不是占位（真机点一下有反应）。",
+      "platforms": []
+    },
+    {
+      "id": "stub-only-no-logic",
+      "symptom": ["桩补完了但点了没反应", "回调都在但没功能", "界面做完了没有功能", "只补了空桩没写逻辑", "逻辑写在哪个文件", "页面逻辑写在哪", "logic 里要写什么"],
+      "mechanism": "回调桩只是骨架：桩体是 `(void)x;` / `return false;` 这类占位。桩齐 ≠ 有功能 —— 交互逻辑要写进同一个 `src/logic/<页>Logic.cc`，漏了这一步真机表现和「回调没生成」一模一样。",
+      "rule": "桩补完就写页面逻辑：回调里做「控件 ↔ 业务」关联（setText / refreshListView / setXxxListener / 业务对象调用）；复杂功能写成 src/<业务域>/*.cpp（新增代码禁建 .cc）；容器/显示类控件没有桩 → onUI_init 里 findControlByID + setXxxListener 接线。",
+      "doc": "knowledge/devflow/page-architecture-spec.md",
+      "verify": "`git diff src/logic/*.cc` 能看到函数体实现（不是空桩）；fun build 通过；真机点一下有反应（logcat 有对应回调日志）。",
       "platforms": []
     },
     {

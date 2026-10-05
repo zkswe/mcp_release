@@ -11,14 +11,15 @@
 |---|---|---|
 | `main`（主界面：slidewindow + 7 个图标磁贴按钮） | slidewindow / button(picTab) / textview | `temp/fix_main.png` |
 | `text` 文本控件 | textview 字号 14/20/32/44、alignment 0/36/37/38、colorTab、跑马灯 roll | `temp/acc_text.png` |
-| `button` 按键 / 输入 | button、checkbox、edittext | `temp/acc_button.png` |
-| `progress` 进度条 / 滑条 | seekbar（可拖）、circlebar（按进度裁图成扇形） | `temp/acc_progress.png` |
-| `pointer` 指针 / 表盘 | pointer（⚠️ 见 §8 已知缺项） | `temp/acc_pointer.png` |
+| `button` 按键 / 输入 | button、**带图标按键**（切图==控件盒，图标烘焙在图内）、checkbox、edittext | `temp/acc_button.png` |
+| `progress` 进度条 / 滑条 | seekbar（可拖，条 448×32 + 滑块 32×32）、circlebar（按进度裁图成扇形） | `temp/acc_progress.png` |
+| `pointer` 指针 / 表盘 | pointer：表盘底图 + 指针图 + **1s 定时器驱动 `setTargetAngle`**（真机可见转动） | `temp/v2_pointer.png` |
 | `canvas` 画布绘制 | painter：fillRect / drawRect / fillArc / drawArc / drawLines(线宽) | `temp/one_canvas.png` |
-| `scroll` 滚动窗口 | scrollwindow（12 行） | `temp/acc_scroll.png` |
-| `page` 翻页窗口 | pagewindow（3 窗） | `temp/acc_page.png` |
+| `scroll` 滚动窗口 | scrollwindow（`orientation:1` 竖向 + 内层 `window` 承内容，12 行） | `temp/v2_scroll_after.png` |
+| `page` 翻页窗口 | pagewindow（3 个 window **都 `visible:true`**，滑动翻页） | `temp/v2_page2.png` |
 
-`resources/images/`：8 张磁贴（`menu_*.png`，200×96）+ 5 张进度页切图（`pb_*.png`）。
+`resources/images/`：8 张磁贴（`menu_*.png`，200×96）+ 进度页切图（`pb_*.png`）+ 表盘/指针（`pt_*.png`）
++ 图标钮切图（`bt_icon_toggle*.png`）。
 
 ## 2. 怎么用它建新工程
 
@@ -50,12 +51,17 @@ fun build   --project-dir <新工程> -p v85x  # 编译
 | 用途 | 文件 | 尺寸口径 |
 |---|---|---|
 | 主界面磁贴 | `menu_<页名>.png`（+ `menu_back.png`） | **== 控件盒**（本模板 200×96） |
-| 进度条轨道 / 有效值 | `pb_track.png` / `pb_fill.png` | == 控件盒（448×64） |
+| 进度条轨道 / 有效值 | `pb_track.png` / `pb_fill.png` | == 控件盒（448×32）；⚠️ 只给小圆角（r=4），见下 |
 | 圆环底 / 有效环 | `pb_ring_bg.png` / `pb_ring.png` | == 控件盒（200×200） |
-| 滑块 | `pb_thumb.png` | == `thumb.size`（24×24，**不是**控件盒） |
+| 滑块 | `pb_thumb.png` | == `thumb.size`（32×32 == 条高；**不是**控件盒） |
+| 表盘 / 指针 | `pt_dial.png` / `pt_needle.png` | 表盘 == 控件盒（300×300）；指针 == `pointerSize`（16×140），铰点 = `fixedPoint`（8,134） |
+| 带图标按键 | `bt_icon_toggle(_p).png` | **== 控件盒**（216×64）：图标烘焙在图内、其余真透明（`iconPosition` 只是"位置"不是盒子，check_all #11 按控件盒核尺寸） |
 
 - 一律放 `resources/images/`，json 里写 `images/xxx.png`（**不带** `resources/` 前缀、不写绝对路径）。
 - 出图优先 `op flythings_generate_ui_assets`（图标）或 `ui_tools/gen_res.py` 的公开函数；**禁止 1x 直画**。
+- ⚠️ **进度条的「有效图」会被平台按进度横向拉伸**（离线渲染器同口径：`resize((w*frac, h))`）——
+  所以药丸形端头在低进度时圆角会被压小，轨道色从月牙处露出来（**参考工程同样是药丸形，同样躲不掉**）。
+  条族请用小圆角（本模板 r=4，缩放后错位 ≤1.6px）或纯直角，别用「条高/2」的大圆角。
 
 ## 5. 出图规范（抗锯齿五要素，真机见真章）
 
@@ -68,7 +74,7 @@ fun build   --project-dir <新工程> -p v85x  # 编译
 5. 文件名进 json 前先自检：`op flythings_verify_assets(project_root)` / `ui_tools/check_all.py` 的第 21/22/23 项
    （`aa_audit` 锯齿 / `corner_audit` 倒角 / `alpha_bg_audit` 底板）。
 
-## 6. ⛔ 三个真机坑（本模板实测踩过，别再犯）
+## 6. ⛔ 五个真机坑（本模板实测踩过，别再犯）
 
 1. **`circlebar` 的 `progressPicPos` / `touchRange` 必须是对象**（`{left,top,width,height}` / `{lower,upper}`）。
    写成 `0`（旧注册表把它们误声明成 `int`）→ 真机**进这一页时主线程 100% 空转、一条日志都不出**（假死，
@@ -76,6 +82,10 @@ fun build   --project-dir <新工程> -p v85x  # 编译
 2. **所有子盒字段**（`thumb` / `position` / `range` / `padding` / `colorTab` / `size` / `point` …）写成标量 =
    同类**无声挂死**（规则见注册表 `valueRules.subboxType`）。
 3. **截图会滞后一帧**（`/dev/fb` 抓到的是上一帧）：判「进没进页」**以 logcat 为准**，截图**连抓两帧取第二张**。
+4. **`pagewindow` 的子 `window` 必须都 `visible: true`**（真机实测）：把非首页设成 `visible:false` 后，
+   翻到那一页是**空白**（`pagewindow` 自己负责"显示哪一页"，不需要你用 visible 关）。
+5. **`scrollwindow` 的 `orientation`：0 = 横向、1 = 竖向**（真机实测）：竖排列表写成 0 时上下拖**毫无反应**；
+   且内容必须放进**内层 `window`**、内层高度要**大于视口**（本模板 700 > 560）才有可滚空间。
 
 ## 7. 真机验收口径（可复现，2026-10-04 记录）
 
@@ -94,27 +104,24 @@ adb shell /data/touch tap 76 748                 # 各页「返回」键中心
 
 7 页逐页结果（进页 ✓ / 返回 ✓ / 无假死 ✓）与截图见 `temp/acc_*.png`。
 
-## 8. 本模板的 `check_all` 状态（13 项 FAIL → 3 项，其余全 PASS）
+## 8. 本模板的 `check_all` 状态（13 项 FAIL → 2 项，其余全 PASS）
 
 `python ui_tools/check_all.py templates/DemoControls_V85X`（基线：`templates/HelloWord_V85X` 全 PASS）。
-已修的 10 项：8 个 Logic 缺 IDE 标准**注册定时器表**（生成的 `ui_*.h` 里 `INIT_UI_TIMERS` 本就引用
+已修 11 项：8 个 Logic 缺 IDE 标准**注册定时器表**（生成的 `ui_*.h` 里 `INIT_UI_TIMERS` 本就引用
 `REGISTER_ACTIVITY_TIMER_TAB`，fun 生成的桩没给 → 已按 IDE 形态补上；注意该宏是**语句宏**，只能展开在
-函数体内，放文件作用域编译不过）、文本页特殊字符（①②③④ / ⚠）、文本页 7 处最小尺寸（色块标签缩成纯色号、长句缩短）。
+函数体内，放文件作用域编译不过）、文本页特殊字符（①②③④ / ⚠）、文本页 7 处最小尺寸、
+`scrollwindow` 补内层 `window`（含必填键 `hideTimeOut`/`modal`）、图标钮 `picTab` 改成控件盒尺寸。
 
-**剩余 3 项**（都是「真机可见可用、但与设计规范不一致」，未擅自改，改动会牵动已验证的布局/层级）：
+**剩余 2 项**：
 
 | FAIL | 现象 | 修法 |
 |---|---|---|
 | `ui/main.json`：`slidewindow` 平铺子控件（`button__100..106`） | 真机菜单正常、点击跳转正常 | 规范要求 slidewindow 子内容进 `items[]`（`slideItem`：colorTab / picTab / text），导航改走 `onSlideItemClick_menuSlide(pSlideWindow, index)`（`mainLogic.cc` 里桩已生成） |
-| `ui/scroll.json`：`scrollwindow` 缺 `window` 子内容 | 真机 12 行正常渲染并可滚 | 规范要求 pagewindow / scrollwindow 必须嵌套一层 `window`，把 12 行 textview 放进 `window__1` |
 | `ui/text.json`：`rollA/rollB` 最小尺寸（需 ≥964×22，盒 448×40） | **这是跑马灯的设计意图**（长串横向滚动；真机两行各停在同一长串的不同段 = 滚动生效） | ⚠️ `check_all` #13 没有 `rollEnable` 豁免 —— 跑马灯页**必然**红。要么给 checker 加「`rollEnable=true` 跳过 #13」的豁免，要么牺牲这页的跑马灯演示 |
 
 ## 9. 其它已知缺项（如实登记，尚未做）
 
-- **`pointer` 指针页目前只有标题 + 返回**：`pointer__1` 的 `backgroundPic` / `pointerPic` 都是 `''`（无表盘、无指针图），
-  也没有 `setTargetAngle()` 的定时驱动 → 页面上看不到控件。补齐需要：表盘底图 + 指针图
-  （`rotationPoint` = 控件系圆心、`fixedPoint` = 图系铰点、`pointerSize` == 指针图尺寸）+ 一个定时器
-  （在 `REGISTER_ACTIVITY_TIMER_TAB` 里登记 `{id, ms}`，回调写 `onUI_Timer(int id)`）。
-  另：`ui/pointer.json` 里的 `rotatingPoint` / `pointerPicPos` 是注册表外键（应为 `rotationPoint`；`pointerPicPos` 未登记）。
+- **`main.json` 的 slidewindow 用子按钮而不是 `items[]`**（见 §8 第一条）：真机可用，但与规范不一致 ——
+  这是本模板唯一一处"能用但不合规范"的结构，改成 items 会牵动整个主界面导航。
 - 本模板**不含字体副本**（`font/` 未入库）：中文靠设备字体或 `flythings_device_preflight` 自动投递
   （见 `knowledge/devflow/custom-font-config.md`）。

@@ -1,0 +1,7 @@
+# 出图白名单扫描基线（生产者文件里自己画/合成形状的 PIL 原语命中数）。
+# 键 = 相对路径，值 = 命中数。文件不在基线里却有命中 → FAIL；命中数超过基线 → FAIL。
+# 格式：<相对路径>  hits=<命中数>  # 命中原语明细（人读；闸门只认 hits=<N>）。
+# 处置：把画图点改走唯一出图实现 ui_tools/gen_res.py，或在 scripts/draw_sites_whitelist.txt 登记并写理由。
+# 重建/下调：python scripts/lint_draw_sites.py --update（命中数上升会被拒绝）
+templates/ui_blocks/compose.py  hits=17  # ImageDraw=4 Image.new=6 alpha_composite=7
+ui_tools/html2json.py  hits=15  # ImageDraw=2 Image.new=8 ImageFilter=2 ImageChops=2 alpha_composite=1

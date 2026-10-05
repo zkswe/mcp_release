@@ -28,7 +28,7 @@ class TestFuiCapability(unittest.TestCase):
     def _pack(self):
         src = os.path.join(self.tmp, 'main.json')
         shutil.copy(U.fixture('main.json'), src)
-        r = U.jcall('flythings_fui_pack', {'json_path': src})
+        r = U.jcall('flythings_fui_pack', U.bypass_gates({'json_path': src}))
         self.assertTrue(r['ok'], r)
         ftu = os.path.join(self.tmp, 'main.ftu')
         self.assertTrue(os.path.isfile(ftu))
@@ -143,7 +143,7 @@ class TestFuiUnpackOp(unittest.TestCase):
         U.cleanup(self.tmp)
 
     def _pack(self):
-        r = U.jcall('flythings_fui_pack', {'json_path': self.src})
+        r = U.jcall('flythings_fui_pack', U.bypass_gates({'json_path': self.src}))
         self.assertTrue(r['ok'], r)
         return os.path.join(self.tmp, 'main.ftu')
 
@@ -231,7 +231,7 @@ class TestFtuJsonAutoSyncRules(unittest.TestCase):
         U.cleanup(self.tmp)
 
     def _pack(self):
-        r = U.jcall('flythings_fui_pack', {'json_path': self.src})
+        r = U.jcall('flythings_fui_pack', U.bypass_gates({'json_path': self.src}))
         self.assertTrue(r['ok'], r)
         return os.path.join(self.tmp, 'ui', 'main.ftu')
 
@@ -310,7 +310,8 @@ class TestFtuJsonAutoSyncRules(unittest.TestCase):
         self.assertIn('main.ftu', blob)
         self.assertIn('hint', blob)               # 必须带「怎么办」的指引
         # 端到端：build_ui_flow 在 ①.5 就应明确失败（不会走到 fun install/build）
-        b = U.jcall('flythings_build_ui_flow', {'project_root': self.tmp, 'with_launch': False})
+        b = U.jcall('flythings_build_ui_flow',
+                       U.bypass_gates({'project_root': self.tmp, 'with_launch': False}))
         self.assertFalse(b['ok'], b)
         self.assertIn('main.ftu', json.dumps(b, ensure_ascii=False))
 

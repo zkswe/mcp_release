@@ -2,7 +2,7 @@
 """平台唯一真相（single source of truth）。
 
 为什么单独一个文件：平台名原先散落在 6 个入口各自手写默认值，且大小写不一
-（`create_bin_project`/`gen_ui_test` 默认 `'z21'`，其余 12 处默认 `'F133'`），
+（`gen_ui_test` 默认 `'z21'`，其余 12 处默认 `'F133'`），
 模板/工具链/预编译工具的可用范围也没人集中声明 → 外部用户照 README 走容易踩空。
 **新增或调整平台，只改本文件**（模板目录 + bin_tools 目录 + 别名都从这里读）。
 
@@ -82,7 +82,7 @@ PLATFORMS = {
 DEFAULT_PLATFORM = 'F133'
 
 # 显式例外（历史行为，勿改）：只建 bin 工程 / UI 测试脚手架时的默认平台。
-# 以前它散在 create_bin_project / gen_ui_test 的签名里，看不出是「刻意」还是「漂移」，
+# 以前它散在各 op 的签名里，看不出是「刻意」还是「漂移」，
 # 现在登记在这里，与 DEFAULT_PLATFORM 的差异就是一处可见决定。
 DEFAULT_BIN_PLATFORM = 'Z21'
 

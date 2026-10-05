@@ -67,14 +67,24 @@ except Exception:
 _CSS_SS = getattr(gr, 'SS_DEFAULT', 4) if _HAS_GEN_RES else 4
 
 # ---------- ID 分区（SKILL §2.3 需求方版） ----------
+# ⚠️ **两条硬约束带**（`ui_tools/check_all.py` #5 是按 id 段推断回调的，不是口味问题）：
+#   · `20000 <= id < 30000` ⇒ 必须有 `onButtonClick_<caption>`；
+#   · `51000 <= id < 52000` ⇒ 必须有 `onEditTextChanged_<caption>`。
+# 所以**非 button / 非 edittext 类型一律不许落在上面两条带里** —— 否则静态全检会要求一个
+# 语义错误的回调（checkbox 的语义回调是 onCheckedChanged）。2026-10-05 修正三处（实测驱动）：
+#   · checkbox   21000 → **94500**（仓内实测 94502；`templates/ui_blocks/compose.py` 也取 94500）
+#   · radiobutton 22000 → **94100**（同上；落在 button 带里会被 #5 当成按钮）
+#   · slidetext   51000 → **98000**（落在 edittext 带里会被 #5 要求 onEditTextChanged）
+# `subitem = 24000` 虽在 button 带内但**无害**：check_all 的 `by_caption` 只递归 dict、不遍历数组，
+# 数组子项（subItem/radiobuttons）根本不进 #5。
 ID_BASE = {
     'textview': 50000, 'button': 20000, 'edittext': 51000,
     'seekbar': 91000, 'window': 110000, 'listview': 80000,
-    'checkbox': 21000, 'radiogroup': 94000, 'radiobutton': 22000,
+    'checkbox': 94500, 'radiogroup': 94000, 'radiobutton': 94100,
     'subitem': 24000, 'imageanim': 160000,
     'circlebar': 130000, 'diagram': 60000, 'digitalclock': 93000,
     'slidewindow': 30000, 'scrollwindow': 32000, 'pagewindow': 31000,
-    'slidetext': 51000, 'cameraview': 97000, 'painter': 52000,
+    'slidetext': 98000, 'cameraview': 97000, 'painter': 52000,
     'pointer': 90000, 'qrcode': 92000, 'videoview': 95000,
 }
 
@@ -104,6 +114,11 @@ CLASS_MAP = {
     'qrcode': ('qrcode', 'qr'),
     'videoview': ('videoview', 'video'),
 }
+
+# 全部「控件 class」的并集（判「这个 div 写的是控件还是图标项/纯装饰」用；见 slidewindow 子项判据）
+_CTRL_CLASSES = frozenset(c for keys in CLASS_MAP.values() for c in keys)
+# 绝对定位键（写了它 = 作者以为在摆控件；slidewindow 内会被丢弃 → 不静默）
+_POS_ATTRS = ('data-x', 'data-y', 'data-w', 'data-h')
 
 # 对齐：left/center/right → alignment（36 左中 / 37 居中 / 38 右中）
 ALIGN = {'left': 36, 'center': 37, 'right': 38, 'l': 36, 'c': 37, 'r': 38}
@@ -1298,7 +1313,25 @@ class _Ctx:
         return '%s%d' % (AUTO_NAME.get(typ, typ.capitalize()), self.counter[typ])
 
     def add(self, typ, ctrl):
-        """写入当前容器（有 window 嵌套则进栈顶），返回 key。"""
+        """写入当前容器（有 window 嵌套则进栈顶），返回 key。
+
+        T5.3（2026-10-05）：**字段补全走唯一发射层** `ui_emit.schema_complete(..., normalize=False)`
+        ——对账（`ui_tools/emit_conformance.json`）实测本前端原先的 seekbar 产物缺 2 个必填键
+        （backgroundPic/progressPic）、colorTab 只写单槽；这里统一补上。
+        `normalize=False`：**不动本前端自己的 alignment 编码**（36/37 vs 发射层 0/5 的等价性未真机核实，
+        差异仍登记在对账快照里，不擅自统一）。
+        """
+        try:
+            import ui_emit as _emit
+            # 只补**注册表必填键**（真缺口：对账实测 seekbar 缺 backgroundPic/progressPic）。
+            # 不整表补全：热区按钮等**有意省略**的可选字段（bgColorTab）补回去会盖住下层画布。
+            ctrl, _unfilled = _emit.fill_required(typ, ctrl)
+            if _unfilled:
+                self.warn('字段补全：%s 的必填键 %s 在发射层默认表里没有取值 → 未补（需在 '
+                          'ui_tools/ui_emit.py 登记）' % (typ, _unfilled), key='emit_unfilled')
+        except Exception as _e:                              # noqa: BLE001
+            self.warn('必填键补全未走共享发射层（ui_emit 不可用：%s）→ 本页可能缺必填键' % _e,
+                      key='emit_missing')
         key = self.key(typ)
         if self.stack:
             self.stack[-1][key] = ctrl
@@ -2194,6 +2227,17 @@ class HtmlToJson:
 
         # 在 slidewindow 容器内：子 div.item 收进父容器 items（每个图标项）
         if ctx.stack and ctx.stack[-1].get('__slidewindow') and tag == 'div':
+            # 不静默（2026-10-05）：slidewindow 的子内容**只能是图标项**。写了控件 class 或绝对定位时，
+            # 以前是静默当图标项（位置尺寸/控件行为全丢，warnings 里只有 iconSize 那条）——
+            # 生成侧的结构因此「安全但会吃掉意图」，必须说出来。
+            # 判据只认**显式控件 class** 或**定位键**：`div.item` 是合法写法（不能见 slidewindow 就报）。
+            matched = sorted(classes & _CTRL_CLASSES)
+            if matched or any(a in node.attrs for a in _POS_ATTRS):
+                ctx.warn('slidewindow 的子内容只能是图标项（div.item）：%s 已按图标项处理'
+                         '（只取 data-pic/data-pic1/text），data-x/y/w/h 与控件行为全部丢弃 —— '
+                         '要放真控件 / 要绝对定位请改用 window 容器（万能容器）；要图标宫格请写 div.item'
+                         % (('class="%s"' % matched[0]) if matched else '这个 div'),
+                         key='slidewindow-child-not-item')
             self._append_slideitem(ctx, node)
             return
 

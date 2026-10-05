@@ -54,7 +54,7 @@ evidence: []
 
 1. `ui/<page>.json` + `ui/<page>.ftu`（缺省：一页一 json/ftu，见 §1）；
 2. `src/activity/<page>Activity.{h,cpp}` 并 `REGISTER_ACTIVITY`（IDE 加页时自动生成，手写照抄一页）；
-3. `src/logic/<page>Logic.cc`，含 `INIT_UI_EVENT_BINDINGS`；
+3. `src/logic/<page>Logic.cc`，含 `INIT_UI_EVENT_BINDINGS`；**桩只是骨架 —— 页面交互逻辑写在同一个文件里**（控件↔业务关联；容器/显示类控件没有桩，走 `findControlByID` + `setXxxListener` 代码侧接线）。复杂功能写成 `src/<业务域>/*.cpp`，别塞进 logic。
 4. **回调桩**：页内每个带回调的控件都要有 `<回调名>_<caption>` 的 static 函数定义 ——**缺了 `fun build` 直接失败（`used but never defined`）**；桩体抄 `ui_tools/ui_schema.json` 的 `callbacks[].stub`（真源：`valueRules.callbackStubRequired`）。
 5. 跳转：`EASYUICONTEXT->openActivity("<page>Activity")` / 返回 `EASYUICONTEXT->goBack()`。
 
@@ -62,7 +62,7 @@ evidence: []
 **实测口径（2026-10-04）**：
 - 建工程：**拷贝 `templates/<平台>` 模板 + 重命名**；`fun create` 是**交互式**命令（无 TTY/stdin 会挂住等输入、不落盘）。
 - 加页：① 写 `ui/<p>.json`；② **`fui pack ui/<p>.json ui/<p>.ftu`**（只放 json 工具链不认）；③ `fun build` → 生成 `src/logic/<p>Logic.cc`（含 `onUI_init/show/hide/quit/Timer` 与全部回调桩）。
-- **已有 `<p>Logic.cc` 的页**：工具链只**追加**缺失桩、**位置不可控**（实测落进别的函数作用域 → 仍报 `used but never defined`）⇒ **把追加的桩移到文件作用域**（非破坏）。
+- **已有 `<p>Logic.cc` 的页**：工具链只**追加**缺失桩，**位置口径有两代实测**：早期遇到过落进别的函数作用域（→ 仍报 `used but never defined`，需把桩移到文件作用域，非破坏）；**2026-10-05 复测（fun `v0.0.2+2609281006_e09dc96`、v85x、新页 + 已有页各一轮）追加的桩都落在文件作用域 EOF，原文件内容逐字未改、编译链接通过**。所以按「追加后仍要 `fun build` 复核」执行；真落进别的作用域就手工移出来（非破坏）。
 - ⛔ **`rm <p>Logic.cc` + 重建只允许首次构建/空文件**：文件一旦有业务代码，删除重建 = **代码衰退**（把人家写的逻辑删了），**禁止**。
 - **不要手写桩**（会与生成的重复定义）。
 - ✅ **不需要 Activity**：fun 路径下每页在 `.fsc/<平台>/generated/` 下生成一份胶水（本实测：`ui_main.*` + `ui_text.*`）挂该页 `logic.cc`；**Activity 是 FlyThings IDE 的产物**（IDE 导入本工程后会自行生成 `<p>Activity.*` 调 logic.cc）。两条路径都通、互兼容 —— 用 fun 时缺 Activity **不是缺陷**。⚠️ **业务代码不分叉**：跳转一律 `EASYUICONTEXT->openActivity("<p>Activity")`、返回 `goBack()`（Activity 差异只在构建层）。

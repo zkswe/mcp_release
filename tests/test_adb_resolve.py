@@ -283,7 +283,7 @@ class TestBuildFlowLaunchDefault(unittest.TestCase):
         for p in patches:
             p.start()
             self.addCleanup(p.stop)
-        return U.jcall('flythings_build_ui_flow', args)
+        return U.jcall('flythings_build_ui_flow', U.bypass_gates(args))
 
     def test_default_is_true_in_both_signatures(self):
         """默认值口径：pt 与 kb 包装层都必须是 True（否则 AI 拿到的是旧行为）。"""
@@ -332,7 +332,8 @@ class TestBuildFlowLaunchDefault(unittest.TestCase):
         ftu = os.path.join(self.tmp, 'ui', 'main.ftu')
         open(ftu, 'wb').write(b'ZKSR')
         os.utime(ftu, (os.path.getmtime(page) + 1,) * 2)
-        return U.jcall('flythings_build_ui_flow', {'project_root': self.tmp})
+        return U.jcall('flythings_build_ui_flow',
+                       U.bypass_gates({'project_root': self.tmp}))
 
     def test_stale_on_device_flagged(self):
         """设备侧与本地不一致 → staleOnDevice=true + warnings 点明「设备上跑的还是旧版」。"""

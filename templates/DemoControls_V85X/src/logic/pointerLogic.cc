@@ -8,8 +8,7 @@ INIT_UI_EVENT_BINDINGS
  * 注意：id不能重复
  */
 static S_ACTIVITY_TIMEER REGISTER_ACTIVITY_TIMER_TAB[] = {
-  //{0,  6000}, //定时器id=0, 时间间隔6秒
-  //{1,  1000},
+  {0,  1000},   // 每秒驱动指针（onUI_Timer）
 };
 #endif // FUN_BUILD
 
@@ -66,9 +65,13 @@ static void onProtocolDataUpdate(const SProtocolData &data) {
  *         false 停止运行当前定时器
  */
 static bool onUI_Timer(int id) {
-  LOGD_TRACE("on timer %d", id);
   switch (id) {
-
+  case 0: {                       // 每秒 +45°（setTargetAngle 是目标角，animatable 平滑转过去）
+    static int angle = 135;
+    angle = (angle + 45) % 360;
+    if (mPtAPtr) mPtAPtr->setTargetAngle((float)angle);
+    break;
+  }
   default:
     break;
   }

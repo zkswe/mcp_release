@@ -14,7 +14,7 @@
     "height": 800
   },
   "textview__1": {
-    "id": 1,
+    "id": 50001,
     "caption": "tvTitle",
     "text": "文本控件演示",
     "position": {
@@ -36,7 +36,7 @@
     "backgroundColor": -1
   },
   "textview__2": {
-    "id": 2,
+    "id": 50002,
     "caption": "tvSec1",
     "text": "1) 字号 fontSize：14 / 20 / 32 / 44",
     "position": {
@@ -58,7 +58,7 @@
     "backgroundColor": -1
   },
   "textview__3": {
-    "id": 3,
+    "id": 50003,
     "caption": "s14",
     "text": "字号 14：小字正文",
     "position": {
@@ -80,7 +80,7 @@
     "backgroundColor": 1778224
   },
   "textview__4": {
-    "id": 4,
+    "id": 50004,
     "caption": "s20",
     "text": "字号 20：常规",
     "position": {
@@ -102,7 +102,7 @@
     "backgroundColor": 1778224
   },
   "textview__5": {
-    "id": 5,
+    "id": 50005,
     "caption": "s32",
     "text": "字号 32",
     "position": {
@@ -124,7 +124,7 @@
     "backgroundColor": 1778224
   },
   "textview__6": {
-    "id": 6,
+    "id": 50006,
     "caption": "s44",
     "text": "字号 44",
     "position": {
@@ -146,7 +146,7 @@
     "backgroundColor": 1778224
   },
   "textview__7": {
-    "id": 7,
+    "id": 50007,
     "caption": "tvSec2",
     "text": "2) 对齐 alignment：0 / 36 / 37 / 38",
     "position": {
@@ -168,7 +168,7 @@
     "backgroundColor": -1
   },
   "textview__8": {
-    "id": 8,
+    "id": 50008,
     "caption": "al0",
     "text": "0 左顶",
     "position": {
@@ -190,7 +190,7 @@
     "backgroundColor": 1778224
   },
   "textview__9": {
-    "id": 9,
+    "id": 50009,
     "caption": "al36",
     "text": "36 左中",
     "position": {
@@ -212,7 +212,7 @@
     "backgroundColor": 1778224
   },
   "textview__10": {
-    "id": 10,
+    "id": 50010,
     "caption": "al37",
     "text": "37 居中",
     "position": {
@@ -234,7 +234,7 @@
     "backgroundColor": 1778224
   },
   "textview__11": {
-    "id": 11,
+    "id": 50011,
     "caption": "al38",
     "text": "38 右中",
     "position": {
@@ -256,7 +256,7 @@
     "backgroundColor": 1778224
   },
   "textview__12": {
-    "id": 12,
+    "id": 50012,
     "caption": "tvSec3",
     "text": "3) 文字颜色 colorTab.color0",
     "position": {
@@ -278,7 +278,7 @@
     "backgroundColor": -1
   },
   "textview__13": {
-    "id": 13,
+    "id": 50013,
     "caption": "c0",
     "text": "#FF5555",
     "position": {
@@ -300,7 +300,7 @@
     "backgroundColor": 1778224
   },
   "textview__14": {
-    "id": 14,
+    "id": 50014,
     "caption": "c1",
     "text": "#55FF88",
     "position": {
@@ -322,7 +322,7 @@
     "backgroundColor": 1778224
   },
   "textview__15": {
-    "id": 15,
+    "id": 50015,
     "caption": "c2",
     "text": "#55AAFF",
     "position": {
@@ -344,7 +344,7 @@
     "backgroundColor": 1778224
   },
   "textview__16": {
-    "id": 16,
+    "id": 50016,
     "caption": "c3",
     "text": "#FFDD55",
     "position": {
@@ -366,7 +366,7 @@
     "backgroundColor": 1778224
   },
   "textview__17": {
-    "id": 17,
+    "id": 50017,
     "caption": "tvSec4",
     "text": "4) 跑马灯 roll（连拍两帧可见位移）",
     "position": {
@@ -388,7 +388,7 @@
     "backgroundColor": -1
   },
   "textview__18": {
-    "id": 18,
+    "id": 50018,
     "caption": "rollA",
     "text": "跑马灯：这一段很长的文本会横向滚动 —— rollEnable=true / rollStep=5 / rollIntervalTime=150",
     "position": {
@@ -414,7 +414,7 @@
     "rollIntervalTime": 150
   },
   "textview__19": {
-    "id": 19,
+    "id": 50019,
     "caption": "rollB",
     "text": "跑马灯：这一段很长的文本会横向滚动 —— rollEnable=true / rollStep=5 / rollIntervalTime=150",
     "position": {
@@ -440,7 +440,7 @@
     "rollIntervalTime": 150
   },
   "textview__20": {
-    "id": 20,
+    "id": 50020,
     "caption": "BtnBackHolder",
     "text": "多行文案请拆成多个 textview 控件",
     "position": {
@@ -462,7 +462,7 @@
     "backgroundColor": 1448742
   },
   "button__900": {
-    "id": 900,
+    "id": 20001,
     "caption": "BtnBack",
     "text": "返回",
     "position": {

@@ -14,7 +14,7 @@
     "height": 800
   },
   "textview__1": {
-    "id": 1,
+    "id": 50001,
     "caption": "tvTitle",
     "text": "翻页窗口（pagewindow）",
     "position": {
@@ -35,7 +35,7 @@
     "touchable": false
   },
   "button__2": {
-    "id": 2,
+    "id": 20001,
     "caption": "BtnBack",
     "text": "返回",
     "position": {
@@ -76,7 +76,7 @@
     }
   },
   "pagewindow__10": {
-    "id": 10,
+    "id": 31001,
     "caption": "PwA",
     "position": {
       "left": 16,
@@ -91,7 +91,7 @@
     "touchable": true,
     "loop": true,
     "window__200": {
-      "id": 200,
+      "id": 110001,
       "caption": "Wnd0",
       "text": "第 1 页",
       "position": {
@@ -106,7 +106,7 @@
       "touchable": true,
       "visible": true,
       "textview__1": {
-        "id": 300,
+        "id": 50002,
         "caption": "tvP0",
         "text": "第 1 页",
         "position": {
@@ -128,7 +128,7 @@
       }
     },
     "window__201": {
-      "id": 201,
+      "id": 110002,
       "caption": "Wnd1",
       "text": "第 2 页",
       "position": {
@@ -141,9 +141,9 @@
       "hideTimeOut": -1,
       "modal": false,
       "touchable": true,
-      "visible": false,
+      "visible": true,
       "textview__1": {
-        "id": 301,
+        "id": 50003,
         "caption": "tvP1",
         "text": "第 2 页",
         "position": {
@@ -165,7 +165,7 @@
       }
     },
     "window__202": {
-      "id": 202,
+      "id": 110003,
       "caption": "Wnd2",
       "text": "第 3 页",
       "position": {
@@ -178,9 +178,9 @@
       "hideTimeOut": -1,
       "modal": false,
       "touchable": true,
-      "visible": false,
+      "visible": true,
       "textview__1": {
-        "id": 302,
+        "id": 50004,
         "caption": "tvP2",
         "text": "第 3 页",
         "position": {

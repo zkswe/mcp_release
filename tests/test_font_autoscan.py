@@ -329,7 +329,7 @@ class TestBuildFlowFontStep(unittest.TestCase):
         args.update(extra or {})
         fn, seen = self._fake_fun()
         with mock.patch.object(pt, '_run_fun', fn):
-            r = U.jcall('flythings_build_ui_flow', args)
+            r = U.jcall('flythings_build_ui_flow', U.bypass_gates(args))
         return r, seen
 
     def test_off_switch_produces_no_font_step(self):
@@ -373,7 +373,7 @@ class TestBuildFlowFontStep(unittest.TestCase):
         fn, _ = self._fake_fun()
         with mock.patch.object(pt, '_run_fun', fn):
             r = U.jcall('flythings_build_ui_flow',
-                        {'project_root': self.tmp, 'with_launch': False})
+                        U.bypass_gates({'project_root': self.tmp, 'with_launch': False}))
         self.assertTrue(r['ok'], r)
         step = [s for s in r['steps'] if s['step'] == 'check_font'][0]
         self.assertFalse(step['success'], step)
@@ -389,7 +389,11 @@ class TestBuildFlowFontStep(unittest.TestCase):
         """
         r, _ = self._flow(fonts=[('big.ttf', 1536)])
         self.assertTrue(r['ok'], r)
-        noise = [w for w in (r.get('warnings') or []) if '未检测到设计确认稿' not in w]
+        # 排除两类**用例/流程本身**的提示（不是流程噪音）：设计先行软闸门 +
+        # 本用例显式旁路确认稿闸门的留痕（见 tests/_util.bypass_gates；留痕是生产行为，不去掉）
+        noise = [w for w in (r.get('warnings') or [])
+                 if '未检测到设计确认稿' not in w
+                 and '确认稿硬闸门被 force_confirm 跳过' not in w]
         self.assertFalse(noise, noise)
         self.assertFalse(r['fontCheck']['missingChinese'])
         step = [s for s in r['steps'] if s['step'] == 'check_font'][0]
@@ -436,7 +440,8 @@ class TestBuildFlowFontStep(unittest.TestCase):
         _locale_testcase(self)
         fn, seen = self._fake_fun()
         with mock.patch.object(pt, '_run_fun', fn):
-            r = U.jcall('flythings_build_ui_flow', {'project_root': self.tmp})
+            r = U.jcall('flythings_build_ui_flow',
+                        U.bypass_gates({'project_root': self.tmp}))
         self.assertTrue(r['ok'], r)
         fc = r['fontCheck']
         self.assertEqual(fc['mode'], 'device')

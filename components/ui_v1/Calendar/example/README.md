@@ -10,7 +10,7 @@
 | `Manifest.xml` | 依赖声明（easyui ^2.2.0 + log/zkhardware/zknet/base-utility） |
 | `.deps.lock` | 依赖解析结果快照（实际落到 easyui 2.6.0） |
 | `.project` | IDE 工程描述（`fun build` 不需要） |
-| `ui/main.html` | **唯一手写源**：顶栏 + 主页面（打开日历/输入框/跳到今天）+ 日历弹窗（42 个日号 textview） |
+| `ui/main.html` | **本示例的手写源（原型稿）**：顶栏 + 主页面（打开日历/输入框/跳到今天）+ 日历弹窗（42 个日号 textview） |
 | `ui/main.json` / `ui/main.ftu` | `html2json` / `fui pack` 产物 |
 | `src/Main.cpp` | 应用入口 |
 | `src/logic/mainLogic.cc` | **示例逻辑**：attach + 容器原点 + 命中反算 + 回填 + 翻月 + 跳到今天 |

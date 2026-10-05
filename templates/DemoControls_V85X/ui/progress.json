@@ -14,7 +14,7 @@
     "height": 800
   },
   "textview__1": {
-    "id": 1,
+    "id": 50001,
     "caption": "tvTitle",
     "text": "进度条 / 滑条",
     "position": {
@@ -35,7 +35,7 @@
     "touchable": false
   },
   "button__2": {
-    "id": 2,
+    "id": 20001,
     "caption": "BtnBack",
     "text": "返回",
     "position": {
@@ -76,7 +76,7 @@
     }
   },
   "seekbar__1": {
-    "id": 10,
+    "id": 91001,
     "caption": "SkA",
     "position": {
       "left": 16,
@@ -102,7 +102,7 @@
     "visible": true
   },
   "circlebar__1": {
-    "id": 20,
+    "id": 130001,
     "caption": "CbA",
     "position": {
       "left": 140,

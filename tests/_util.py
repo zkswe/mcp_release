@@ -84,6 +84,34 @@ def _install_adb_guard():
 _install_adb_guard()
 
 
+
+# ---------------------------------------------------------------------------
+# 工作流闸门的**显式**旁路（用例专用，2026-10-05）
+#
+# 背景：`flythings_fui_pack` / `flythings_build_ui_flow` 现在带两道**工作流**闸门 ——
+#   ① 确认稿硬闸门（T3.1）：布局比确认稿新 → 拒绝（CONFIRM_REQUIRED）
+#   ② 编译式验收闸门（T1.3）：json 有 fatal → 拒绝（UI_JSON_INVALID）
+# 多数既有用例测的是**别的机制**（pack 确定性 / 依赖诊断 / 字体自检 / adb 解析…），
+# 夹具工程里既没有确认稿、json 也不是按字段全集写的 —— 于是会被闸门拦下，看起来像回归。
+#
+# 口径（刻意不做隐式旁路）：**不在 `jcall` 里偷偷注入参数** —— 那会让"闸门被跳过"这件事
+# 在用例里看不见，将来也拦不住真正需要的用例。这里要求每个调用点显式写
+# `U.bypass_gates({...})`，一眼能搜出"哪些用例绕过了闸门"。
+# 生产代码里**没有**默认跳过：两个开关默认 False，必须调用方显式传。
+def bypass_gates(args=None, **extra):
+    """给 op 参数补上显式跳过工作流闸门的开关（用例专用）。
+
+    `force_confirm=True`   → 跳过确认稿硬闸门（返回体仍会带 confirmOverridden 留痕）
+    `allow_unvalidated=True` → 跳过编译式验收（返回体仍会带 uiUnvalidated 留痕）
+    已显式传过同名字段的调用方优先（`setdefault`）。
+    """
+    out = dict(args or {})
+    out.setdefault('force_confirm', True)
+    out.setdefault('allow_unvalidated', True)
+    out.update(extra)
+    return out
+
+
 def call(op, args=None):
     """走分发器（与客户端完全同一条路径），返回原始字符串。
 
@@ -178,7 +206,7 @@ def rm_in_temp(path, rel):
 
 # ⚠️ 某些环境里**删除**极慢：本机实测 `shutil.rmtree` ≈ 0.5~1.0 秒/条目
 #    （正常机器 <1ms；`python -S` 关掉 Python 侧 shim 也一样 → 拦截在更低层）。
-#    后果：全套 886 条用例 **85%~95% 的墙钟时间花在删临时目录上**，不是测试逻辑
+#    后果：全套 1123 条用例 **85%~95% 的墙钟时间花在删临时目录上**，不是测试逻辑
 #    （实测 test_deps_install_guard：61.6s 里 58.5s 是 rmtree，而它只删了 130 个条目；
 #    清理改 no-op 后 70.2s → 3.5s）。
 #    ⚠️ 这里的数字与 `WORK_PLAN.md` 的两处、`tests/README.md` 的一处一样，由

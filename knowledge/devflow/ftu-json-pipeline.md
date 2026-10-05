@@ -32,7 +32,7 @@ evidence: []
 | 谁读它 | 设备侧 zkgui 读 **ftu**，不读 json；`fun launch` 把 `ui/main.ftu` 推到设备 `/tmp/ui/main.ftu`（实测设备侧与本文件字节数 + md5 完全一致） |
 | 一个 ftu 顶什么 | **一个 ftu = 一个 Activity = 一个独立编译单元**（IDE 按 ftu 生成 `<name>Activity` + `<name>Logic.cc`）；但**页面 ≠ ftu**：一个 ftu 里通常放**多个整屏 window（= 多个页面）**，用 `showWnd()/hideWnd()` 切换。**默认单 Activity**（`main.ftu` + `mainActivity` + `mainLogic.cc`），只有跨业务域/需独立返回栈才拆新 ftu（口径见 `knowledge/devflow/page-architecture-spec.md` §0/§2） |
 | ftu 从哪来 | 由**同目录同名 json** `pack` 而来：`ui/main.json` --fui pack--> `ui/main.ftu` |
-| 模板里就有 json 吗 | **有**（2026-10-02 起）。7 个平台模板 `templates/HelloWord_<平台>/ui/` 同时带 `main.json` 与 `main.ftu`：json 由随包 `fui unpack` 从模板 ftu 反解析入库（实测 round-trip：pack 回 ftu 再 unpack 与源 json 逐字段等价），改布局直接改 json 再 pack 即可；从零起新界面仍走 `flythings_html_to_json` 生成 json，之后 json 才是源 |
+| 模板里就有 json 吗 | **有**（2026-10-02 起）。7 个平台模板 `templates/HelloWord_<平台>/ui/` 同时带 `main.json` 与 `main.ftu`：json 由随包 `fui unpack` 从模板 ftu 反解析入库（实测 round-trip：pack 回 ftu 再 unpack 与源 json 逐字段等价），改布局直接改 json 再 pack 即可；从零起新界面的**缺省前端**仍是 `flythings_html_to_json`（HTML 原型 → json），**但入口不排他**：也可按 schema 直写 json、或走块库 spec；无论从哪来，json 都是**唯一事实源**，产物一律过 `ui_compile` + `check_all`（口径见 `knowledge/devflow/ui-pipeline-spec.md`） |
 
 ## 2. 生成链路（单向，不要反过来）
 
@@ -67,7 +67,7 @@ ui/*.ftu  ← 设备实际加载的是它
 | 直接改 json / 批量改 | 改完 `flythings_fui_pack(json_path="<项目>/ui/main.json")`；要连编译部署一起走 → `flythings_build_ui_flow(project_root, with_launch=True)` |
 | 只改一个属性/文本（走 op） | `flythings_edit_ftu(ftu_path, operations=...)`：它**把变更应用到 json 再 pack 回 ftu**（见 §5） |
 | 客户不用 MCP、纯命令行 | `fui pack <项目>/ui` → `fun build -p <平台>` → `fun launch -p <平台> -s <设备>`（工具随项目：`<项目>/ui/fui.exe`、`<项目>/fun.exe`） |
-| 新界面从零开始 | 先 `flythings_html_to_json`（HTML 原型 → `ui/main.json`）→ pack → 预览 `flythings_ui_preview` → 真机验收 |
+| 新界面从零开始 | **缺省前端 = HTML 原型**（线框/风格稿，客户确认载体）：`flythings_html_to_json` → `ui/main.json`；**也可按 schema 直写 json（`flythings_ui_schema` 查字段）或走块库 spec（`templates/ui_blocks/compose.py`）**——入口不排他，但**产物一律过 `ui_compile` + `check_all`**（口径见 `knowledge/devflow/ui-pipeline-spec.md`）；随后 pack → 预览 `flythings_ui_preview` → 真机验收 |
 
 不要做的事：**不要绕过 pack 直接改设备上的 `/tmp/ui/*.ftu`**（下次 launch 全量推送就覆盖，且本地与设备对不上，
 见 `knowledge/devflow/ui-layout-verify.md` §9 红线）。
@@ -195,6 +195,7 @@ flythings_knowledge_search("main.ftu 是什么文件")
 
 ## 10. 相关文档
 
+- `knowledge/devflow/ui-pipeline-spec.md`：**界面产物管线口径唯一出处**（唯一产物规范 / 入口分级 / 三档判据 / 模块契约）
 - `knowledge/devflow/ui-layout-verify.md`：三段式验收、像素 diff、§9 红线（json 为源）
 - `knowledge/devflow/ui-editor-usage.md`：可视化编辑器（`ui_visual(action="editor")`）
 - `knowledge/devflow/cli-fun-toolchain.md`：fun / fui 命令表、多设备陷阱、`/tmp/ui` 核对判据

@@ -50,6 +50,7 @@ def check(ok, name, detail=''):
 
 
 SILENT_LINT = os.path.join(BASE, 'scripts', 'lint_silent_except.py')
+DRAW_LINT = os.path.join(BASE, 'scripts', 'lint_draw_sites.py')
 # 扫描范围：本仓库 .py/.md/.txt/.bat/.json（排除二进制；rag_index.json 单独提示）
 _SCAN_EXT = ('.py', '.md', '.txt', '.bat', '.json')
 _SCAN_SKIP_DIRS = ('__pycache__', '.git', '.vscode', 'node_modules')
@@ -260,6 +261,20 @@ def main():
             check(False, 'silent except lint', repr(e))
     else:
         check(False, 'silent except lint script', SILENT_LINT)
+
+    # ---- 9b) 出图白名单 lint（T4.2，2026-10-05）：生产者文件不许**新增**"自己画形状"的
+    # PIL 原语（形状/AA/倒角/透明底只有 gen_res 一个实现）—— 存量进基线，只拦新增。
+    if os.path.isfile(DRAW_LINT):
+        try:
+            rc = subprocess.call([sys.executable, DRAW_LINT, '--check'],
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            check(rc == 0, 'draw-site lint',
+                  'no new drawing site' if rc == 0
+                  else 'see: python scripts/lint_draw_sites.py --check')
+        except Exception as e:
+            check(False, 'draw-site lint', repr(e))
+    else:
+        check(False, 'draw-site lint script', DRAW_LINT)
 
     # ---- 10) 意图闸门 catalog 参数漂移（v0.27.31）
     gen = os.path.join(BASE, 'scripts', 'gen_gate_catalog.py')

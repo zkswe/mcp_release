@@ -17,6 +17,7 @@ evidence: []
 # UI 布局可视化编辑与像素验收（json 为源 · 拖拽微调 · 0 token 校验）
 
 > 检索导引：问「布局位置不对 / 想拖控件微调 / 图片与控件尺寸对不上（含 thumb.size）/ 要像素回归对比 / 多页工程预览怎么切页 / **改完布局怎么给客户（需求方）确认 / 客户确认稿 / 反复改布局浪费时间**」→ 本文（三段式验收总纲）；三个 action 的细节见 `knowledge/devflow/ui-editor-usage.md`。
+> **入口与判据分档（HTML 是不是唯一源 / 多入口怎么选 / json 怎么算合格 / 离线怎么判定界面）→ `knowledge/devflow/ui-pipeline-spec.md`（本文只保留验收专题，口径冲突以它为准）。**
 > ⚠️ v0.27.37 起三个 op 合并为 `flythings_ui_visual(action=...)`：`"editor"` / `"edit_apply"` / `"diff"`
 
 > 命中条件：UI 布局做完需要"看得见、拖得动、验得了"时——用户说布局位置不对 / 图标锯齿 /
@@ -38,9 +39,23 @@ evidence: []
 | 确认后 | 才 `fui pack` / `edit_apply(pack=True)` / 推真机 / 写逻辑 | — |
 | 回归 | 真机截图 + 像素 diff / 基线比对（**真机像素才是最终真相**） | `device_screenshot` + `ui_visual(diff/baseline)` |
 
+- ⚠️ **2026-10-05 起这条是硬闸门（不再是"只提醒"）**：`flythings_fui_pack` / `flythings_build_ui_flow` /
+  `flythings_ui_visual(action="edit_apply", pack=True)` 在**布局比确认稿新**或**确认稿与当前 json 指纹不符**
+  时**直接拒绝**，返回 `ok=false` + `error.code=CONFIRM_REQUIRED`（`error.action` 给出下一步：先出确认稿）。
+  - **指纹**：出稿时同时写 `<项目>/temp/confirm/<稿名>.fingerprint.json`（记录该稿对应 json 的内容 sha256）；
+    只按 mtime 判新旧会漏掉「确认的不是这一版」（实测：改了内容但把 mtime 压回旧值，仍被指纹拦下）。
+  - **历史稿**（没有指纹副文件的旧确认稿）：放行但返回体标 `confirmLegacy=true` 并在 `warnings` 里说清
+    「未核对内容版本」；重出一次确认稿即带上指纹。
+  - **确需跳过**：`force_confirm=True`（返回体带 `confirmOverridden=true` + warnings 留痕，不静默）。
+  - ⛔ 确认稿的**副文件（`.fingerprint.json`，机器读的那份）不能落在 `ui/` 下** —— `ui/*.json` 会被
+    `fui pack` 与 `ui_compile` 当成页面 json（实测：一口气 4 条 error）；它由出稿侧自动写到
+    `<项目>/temp/confirm/`，不用你操心。
+  - ⚠️ 而**确认稿本体（`.confirm.html` / `.preview.html` / `_edit/*.edit.html`）必须留在 `<项目>/ui/` 下**
+    —— 硬闸门就在 `<项目>/ui/**` 里扫稿子；`output_dir` 指到 `ui/` 之外时工具会回 `gateWarning`，
+    此时闸门**看不到这份稿**，pack 仍会以 `no_draft` 拒绝（两条要求不能互相矛盾；2026-10-05 检讨修）。
 - `flythings_ui_visual(action="edit_apply")` 与 `flythings_fui_pack` 的返回体带 **`confirmNeeded` /
-  `confirmHint`**：项目里没有比本次改动**更新**的确认稿（`.confirm.html` / `.preview.html` /
-  `_edit/*.edit.html`）时会提示先出确认稿（**只提醒、不阻塞**）。
+  `confirmBlocked` / `confirmDraft` / `confirmHint`**：项目里没有比本次改动**更新**的确认稿（`.confirm.html` /
+  `.preview.html` / `_edit/*.edit.html`）时按上面的硬闸门处置。
 - **多轮沟通就用确认稿**：客户指着标注说「这个按钮往右 20px」→ 改完**重出确认稿**再确认；
 不要直接推真机让他看屏（一次推机 = 编译 + 推送 + 人工目视，成本高一个量级）。
 - 生成物是**近似渲染**（字体度量 / 9-patch 拉伸与设备有差）→ **最终验收仍需真机像素**。**复验方法**：§2 三段式 —— 预览 → `flythings_device_screenshot` 抓真机 → `ui_visual(action="diff")` 比对。
@@ -48,16 +63,23 @@ evidence: []
 ## 1. 铁律：json 是唯一真相
 
 设备加载的是 **ftu**，而 ftu 由 **json**pack 出来 → **json 是唯一数据源**。
-所以预览与编辑器都必须**从 json 渲染**：手写 HTML 原型等于第二份真相，CSS 盒模型、字体度量、
-行内基线跟设备 Canvas 是两套规则，必然漂移。
+所以预览与编辑器必须**从 json 渲染**——**手写 HTML 原型不是"第二份真相"，它是入口之一，不是真相**：
+原型稿只提供设计意图，真相在 json；而 CSS 盒模型、字体度量、行内基线跟设备 Canvas 是两套规则，
+**拿原型 HTML 当验收依据必然漂移**（要判"像不像源设计"走 `knowledge/devflow/ui-pipeline-spec.md` §1 的第 ③ 档，人工、松判据）。
 
-单向链路（不要逆向）：
+单向链路（不要逆向）：**起点是"任一入口"，缺省是 HTML 原型**（入口分级与各自校验链见
+`knowledge/devflow/ui-pipeline-spec.md` §2、登记表 `knowledge/devflow/ui-entrypoints.md`）：
 
 ```
-HTML 交互原型 → flythings_html_to_json → ui/*.json（唯一源）
-                                        ├─ flythings_ui_preview / flythings_ui_visual(action="editor")（看/改）
-                                        └─ flythings_fui_pack → .ftu → 设备
+任一入口 ──→ 共享发射链 ──→ ui/*.json（唯一源）
+   │
+   ├─ 入口（不排他）：缺省 HTML 原型 / 块库 spec / 按 schema 直写 json / LVGL·Qt·QML·小程序·Vue 迁移
+   │
+   ├─ flythings_ui_preview / flythings_ui_visual(action="editor")   （看 / 改）
+   └─ flythings_fui_pack → ui/*.ftu → 设备                            （设备只认 ftu）
 ```
+
+> 入口不排他，**排他的是产物**：任何入口的产物都要过编译式验收（`ui_compile`）无 fatal/error 才算成立。
 
 ⚠️ **json2html 预览也只是"近似渲染"**（字体度量、裁剪字库、九宫格拉伸、换行都是模拟层）。
 **像素级真相只有一条路：pack 后在真机截图。**

@@ -14,7 +14,7 @@
     "height": 800
   },
   "textview__1": {
-    "id": 1,
+    "id": 50001,
     "caption": "tvTitle",
     "text": "指针 / 表盘",
     "position": {
@@ -35,7 +35,7 @@
     "touchable": false
   },
   "button__2": {
-    "id": 2,
+    "id": 20001,
     "caption": "BtnBack",
     "text": "返回",
     "position": {
@@ -76,7 +76,7 @@
     }
   },
   "pointer__1": {
-    "id": 10,
+    "id": 90001,
     "caption": "PtA",
     "position": {
       "left": 90,
@@ -86,29 +86,24 @@
     },
     "animatable": true,
     "backgroundColor": -1,
-    "backgroundPic": "",
+    "backgroundPic": "images/pt_dial.png",
     "clockwise": true,
     "fixedPoint": {
-      "x": 150,
-      "y": 150
+      "x": 8,
+      "y": 134
     },
-    "pointerPic": "",
+    "pointerPic": "images/pt_needle.png",
     "pointerSize": {
-      "width": 0,
-      "height": 0
+      "width": 16,
+      "height": 140
     },
     "rotateSpeed": 1,
     "rotationPoint": {
-      "x": 0,
-      "y": 0
+      "x": 150,
+      "y": 150
     },
     "startAngle": 0,
     "touchable": false,
-    "visible": true,
-    "pointerPicPos": 0,
-    "rotatingPoint": {
-      "x": 150,
-      "y": 150
-    }
+    "visible": true
   }
 }

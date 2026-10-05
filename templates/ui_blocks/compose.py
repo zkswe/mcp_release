@@ -621,6 +621,14 @@ def serialize(nodes):
         counts[n.type] += 1
         key = '%s__%d' % (n.type, counts[n.type])
         ctrl = n.to_ctrl(key, counts[n.type])
+        # T5.6：必填键补全走**唯一发射层**（只补注册表必填键；本库自己的可选字段与取值不动）
+        try:
+            import ui_emit as _emit
+            ctrl, _unfilled = _emit.fill_required(n.type, ctrl)
+            if _unfilled:
+                raise RuntimeError('发射层默认表缺 %s 的必填键取值：%s' % (n.type, _unfilled))
+        except ImportError as _e:               # 独立运行（无 ui_tools 在路径上）时不致命，但不静默
+            sys.stderr.write('[warn] 未走共享发射层（ui_emit 不可用：%s）→ 必填键可能缺\n' % _e)
         for ch in n.children:
             ck, cc = one(ch)
             ctrl[ck] = cc

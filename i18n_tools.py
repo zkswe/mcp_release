@@ -38,7 +38,7 @@ add_language 添加新语言 / refactor 布局文本转 @key。
 - zkgui 实际加载的是 i18n/<lang>.json（不是 .tr），路径 /tmp/tr/<lang>.json（DEBUG）。
 - fun launch 只推 ftu/images/font/lib/cfg，**不推 i18n 的 .tr/.json**（CHANGELOG 2026-09-02
 需求方定规"部署统一 fun launch"是针对代码+资源，i18n 仍需本工具显式推送）。
-- 改完翻译（import / add_language / refactor 改 .tr）后必须调 flythings_i18n_to_json
+- 改完翻译（import / add_language / refactor 改 .tr）后必须调 flythings_i18n(action="to_json")
 转 json 并推送，否则设备仍跑旧翻译（logcat 刷 'not found value' 警告）。
 - 生产固件把 json 打包到 /res/，不需要推送（无需调用本工具的 push 步骤）。
 """
@@ -189,7 +189,7 @@ def flythings_i18n_scan(project_root: str) -> str:
             return json.dumps({
                 'ok': True,
                 'hasI18n': False,
-                'message': '项目无 i18n/ 目录或 .tr 文件，尚未做多语言。可先 flythings_i18n_export 导出待翻译清单生成首个语言文件。',
+                'message': '项目无 i18n/ 目录或 .tr 文件，尚未做多语言。可先 flythings_i18n(action="export") 导出待翻译清单生成首个语言文件。',
                 'languages': [],
             }, ensure_ascii=False)
 
@@ -252,7 +252,7 @@ def flythings_i18n_export(project_root: str, lang: str = 'zh_CN', keys: str = ''
             'count': len(base),
             'entries': base,
             'translationGuide': guide,
-            'hint': '翻译 entries 的 value 后，调用 flythings_i18n_import 写回生成/更新 .tr 文件。',
+            'hint': '翻译 entries 的 value 后，调用 flythings_i18n(action="import", translations=<翻译结果JSON>) 写回生成/更新 .tr 文件。',
         }, ensure_ascii=False)
     except Exception as e:
         return json.dumps({'ok': False, 'error': str(e)}, ensure_ascii=False)
@@ -276,7 +276,7 @@ def _translation_guide(context: str) -> str:
 def flythings_i18n_add_language(project_root: str, lang: str, lang_name: str, base_lang: str = 'zh_CN', context: str = '') -> str:
     """添加新语言：从基础语言（缺省 zh_CN）复制 key 骨架，生成 i18n/<lang>-<lang_name>.tr 待翻译文件。
     lang 为语言代码（如 fr_FR，2 小写+2 大写），lang_name 为语言名（如 法语，显示在切换列表）。
-返回待翻译清单（key→基础语言原文）+ 专业翻译提示；翻译后调用 flythings_i18n_import 写回。
+返回待翻译清单（key→基础语言原文）+ 专业翻译提示；翻译后调用 flythings_i18n(action="import") 写回。
     ⚠️ 新语言文件名必须 xx_XX-语言名.tr 三段式（官方规范），勿用两段式。
     """
     try:
@@ -317,7 +317,7 @@ def flythings_i18n_add_language(project_root: str, lang: str, lang_name: str, ba
             'baseLang': base_lang,
             'entries': entries,
             'translationGuide': guide,
-            'nextHint': f'翻译 entries 的 value 为{lang_name.strip()}后，调用 flythings_i18n_import(project_root, "{lang}-{lang_name.strip()}", 翻译结果JSON) 写回；'
+            'nextHint': f'翻译 entries 的 value 为{lang_name.strip()}后，调用 flythings_i18n(action="import", lang="{lang}-{lang_name.strip()}", translations=翻译结果JSON) 写回；'
                         '注意：新语言需将内置界面翻译文本（docs.flythings.cn/src/zh_CN.tr）并入并翻译，内置界面才能正常显示。',
         }, ensure_ascii=False)
     except Exception as e:

@@ -14,7 +14,7 @@
     "height": 800
   },
   "textview__1": {
-    "id": 1,
+    "id": 50001,
     "caption": "tvTitle",
     "text": "按键 / 输入",
     "position": {
@@ -35,7 +35,7 @@
     "touchable": false
   },
   "button__2": {
-    "id": 2,
+    "id": 20001,
     "caption": "BtnBack",
     "text": "返回",
     "position": {
@@ -76,7 +76,7 @@
     }
   },
   "button__10": {
-    "id": 10,
+    "id": 20002,
     "caption": "BtnA",
     "text": "普通按键",
     "position": {
@@ -111,7 +111,7 @@
     "fontSize": 20
   },
   "button__11": {
-    "id": 11,
+    "id": 20003,
     "caption": "BtnB",
     "text": "带图标按键",
     "position": {
@@ -120,7 +120,7 @@
       "width": 216,
       "height": 64
     },
-    "alignment": 37,
+    "alignment": 36,
     "colorTab": {
       "color0": 16777215,
       "color1": 10274047,
@@ -129,24 +129,27 @@
       "color4": -1
     },
     "picTab": {
-      "pic0": "",
-      "pic1": "",
-      "pic2": "",
-      "pic3": "",
-      "pic4": ""
+      "pic0": "images/bt_icon_toggle.png",
+      "pic1": "images/bt_icon_toggle_p.png"
     },
     "touchable": true,
     "bgColorTab": {
-      "color0": 2766160,
-      "color1": 3819376,
+      "color0": -1,
+      "color1": -1,
       "color2": -1,
       "color3": -1,
       "color4": -1
     },
-    "fontSize": 20
+    "fontSize": 20,
+    "textPosition": {
+      "left": 68,
+      "top": 18,
+      "width": 132,
+      "height": 28
+    }
   },
   "checkbox__1": {
-    "id": 20,
+    "id": 94501,
     "caption": "CbA",
     "text": "复选：已选",
     "position": {
@@ -191,7 +194,7 @@
     "visible": true
   },
   "edittext__1": {
-    "id": 30,
+    "id": 51001,
     "caption": "EtA",
     "text": "可编辑文本",
     "position": {

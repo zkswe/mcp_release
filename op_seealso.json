@@ -31,9 +31,6 @@
         "knowledge/devflow/cli-fun-toolchain.md"
       ]
     },
-    "flythings_create_bin_project": {
-      "none": "MCU（FlyThings Lite）侧工程，按 MCU 口径单独维护，不进 open 版 knowledge/"
-    },
     "flythings_create_project": {
       "seeAlso": [
         "knowledge/devflow/prototype-flow.md",
@@ -71,8 +68,7 @@
     },
     "flythings_gen_logic_stub": {
       "seeAlso": [
-        "knowledge/devflow/activity-code-skeleton.md",
-        "knowledge/uicontrols/widget-code-api.md"
+        "knowledge/devflow/activity-code-skeleton.md"
       ]
     },
     "flythings_gen_ui_test": {
@@ -112,41 +108,11 @@
         "knowledge/devflow/prototype-flow.md"
       ]
     },
-    "flythings_i18n_add_language": {
-      "wiki": [
-        "i18n/i18n.md"
-      ],
-      "none": "同 flythings_i18n_scan：口径在官方文档 / 本地 wiki 镜像"
-    },
-    "flythings_i18n_export": {
-      "wiki": [
-        "i18n/i18n.md"
-      ],
-      "none": "同 flythings_i18n_scan：口径在官方文档 / 本地 wiki 镜像"
-    },
-    "flythings_i18n_import": {
-      "wiki": [
-        "i18n/i18n.md"
-      ],
-      "none": "同 flythings_i18n_scan：口径在官方文档 / 本地 wiki 镜像"
-    },
-    "flythings_i18n_refactor": {
-      "wiki": [
-        "i18n/i18n.md"
-      ],
-      "none": "同 flythings_i18n_scan：口径在官方文档 / 本地 wiki 镜像"
-    },
-    "flythings_i18n_scan": {
-      "wiki": [
-        "i18n/i18n.md"
-      ],
-      "none": "i18n 口径在官方文档站（developer.flythings.cn）与本地 wiki 镜像，open 版 knowledge/ 未收录"
-    },
-    "flythings_i18n_to_json": {
-      "wiki": [
-        "i18n/i18n.md"
-      ],
-      "none": "同 flythings_i18n_scan：口径在官方文档 / 本地 wiki 镜像"
+    "flythings_i18n": {
+      "seeAlso": [
+        "knowledge/devflow/activity-code-skeleton.md",
+        "knowledge/devflow/symptom-index.md"
+      ]
     },
     "flythings_knowledge_capture": {
       "seeAlso": [

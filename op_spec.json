@@ -3,15 +3,14 @@
   "updated": "2026-10-03",
   "authority": "本文件是 FlyThings **op 契约与工具面分层**的机器可读唯一真源（域①）。派生：kb_tools 的 docstring（scripts/gen_op_docs.py）、tools_manifest.json、意图闸门 catalog、mcp_server 的 list/find/describe 三个入口。**工具面三层**（见 tiers）：常驻 = summary+triggers+hardRules（进 tool description）；按需 = params/flow/returns/rules/keywords/excludes/notes（op=\"describe:<名>\" / 资源 flythings://ops/<名>）；深入 = docRef/seeAlso → knowledge 检索。**分级筛选**：用户需求先经 `op=\"find:<原话>\"` 按 triggers 打分（字面/滑窗/弱命中 → 知识检索两跳）出候选 + 知识指针，再 describe 取契约，最后才调用 —— 判据与知识权威归属共用一份匹配器（kb_authority.alias_hit）。改契约 = 改本文件，禁止消费方另抄一份。",
   "budget": {
-    "perOpMax": 360,
+    "perOpMax": 320,
     "totalMax": 6000,
     "contractPerOpMax": 900,
-    "basis": "实测（2026-10-05，48 op）：常驻合计 **5925**、单条最长 332（`create_project`）—— 上限 6000，**余量只剩 75 字符 / ≈1 条 op**。历史：2026-10-03 把 `params` 移出常驻（省 1148 字符 / 19.5%：参数名 `list` 已回、语义 `describe` 按需给，常驻再写一遍是重复计费），常驻从 5878/6000=98% 降到 4730/6000=78.8%；同日三批 `notes` 清零 + 4 条新硬规则（`knowledge_export` 强制脱敏、`fui_pack` ftu 是编译产物、`test_run` no-baseline≠通过、`get_package_api` 注册表没有≠平台没有）把它推到 5125/6000=84.7% —— 该常驻的判据（会让 AI 误判/泄露的那类）进常驻并**接受预算上涨**，这是分层的代价。**2026-10-05 平台定位口径**（需求方定规）再加 5 条定位规则（`create_project` / `create_bin_project` / `build_ui_flow` / `list_packages` / `get_project_spec`：Linux 基座、非 MCU/ESP32 SDK、GUI 是自研 EasyUI≠LVGL），常驻到 **5925/6000=98.8%** —— 定位判错会让 AI 砍掉整层 Linux 能力、按 LVGL 类推 API，属「必须常驻」的判据；**下次要加常驻内容必须先腾地方（不要直接抬 totalMax）**。**口径 = 渲染产物字符数**，由 gen_op_docs 计算并进发布闸门。⚠️ **本段的「常驻合计 N」由门禁对账**（check_consistency 的 `budget.basis 常驻数字`）—— 改 docstring 后忘了改这里会红，不会再漂。",
-    "note": "预算口径（数字全部实测，勿手写第二份）：**常驻面**合计 5925/6000；**按需面**单条上限 900，最长 `flythings_build_ui_flow` 已 **895/900**。按需面已按段分层（2026-10-05）：计费单位是「一次取用」而非「整条 op」—— 全文超限时默认形态自动退化成 skeleton + 段目录（现测：默认形态最长 895（flythings_build_ui_flow）、除 all 外最长单段 645（flythings_i18n_to_json:rules））。all 恒等于全文、不参与单段判据（它是逃生门）。加内容前先看段余量，别再往单条上堆。"
+    "basis": "实测（2026-10-05，42 op）：常驻合计 **3783**、单条最长 296（`create_project`）—— 上限 6000，**余量 2217 字符 / ≈24 条 op**（2026-10-05 瘦身后复核：triggers 移出常驻 + 片段表 + seeAlso 去重）。历史：2026-10-03 把 `params` 移出常驻（省 1148 字符 / 19.5%：参数名 `list` 已回、语义 `describe` 按需给，常驻再写一遍是重复计费），常驻从 5878/6000=98% 降到 4730/6000=78.8%；同日三批 `notes` 清零 + 4 条新硬规则（`knowledge_export` 强制脱敏、`fui_pack` ftu 是编译产物、`test_run` no-baseline≠通过、`get_package_api` 注册表没有≠平台没有）把它推到 5125/6000=84.7% —— 该常驻的判据（会让 AI 误判/泄露的那类）进常驻并**接受预算上涨**，这是分层的代价。**2026-10-05 平台定位口径**（需求方定规）再加定位规则（`create_project` / `build_ui_flow` / `list_packages` / `get_project_spec`：Linux 基座、非 MCU/ESP32 SDK、GUI 是自研 EasyUI≠LVGL），常驻到 **5925/6000=98.8%** —— 定位判错会让 AI 砍掉整层 Linux 能力、按 LVGL 类推 API，属「必须常驻」的判据；**下次要加常驻内容必须先腾地方（不要直接抬 totalMax）**。**2026-10-05 瘦身**（用户指示）：① `triggers` 移出常驻面（路由/目录/manifest 直接读 op_spec 字段，功能不变）；② 新增 `fragments` 共享片段表（`@platform-positioning`：同一句原抄 5 份）；③ `seeAlso` 渲染时去掉与 `docRef` 重复的条目（40/47 op 重复，合计 1550 字符）。**口径 = 渲染产物字符数**，由 gen_op_docs 计算并进发布闸门。⚠️ **本段的「常驻合计 N」由门禁对账**（check_consistency 的 `budget.basis 常驻数字`）—— 改 docstring 后忘了改这里会红，不会再漂。",
+    "note": "预算口径（数字全部实测，勿手写第二份）：**常驻面**合计 3783/6000；**按需面**单条上限 900，最长 `flythings_i18n` 已 **1913/900**。按需面已按段分层（2026-10-05）：计费单位是「一次取用」而非「整条 op」—— 全文超限时默认形态自动退化成 skeleton + 段目录（现测：默认形态最长 892（flythings_get_package_api）、除 all 外最长单段 731（flythings_i18n:skeleton））。all 恒等于全文、不参与单段判据（它是逃生门）。加内容前先看段余量，别再往单条上堆。"
   },
   "renderOrder": [
     "summary",
-    "triggers",
     "hardRules"
   ],
   "renderSpec": {
@@ -36,7 +35,6 @@
       "flythings_bugreport",
       "flythings_build_ui_flow",
       "flythings_check_project_deps",
-      "flythings_create_bin_project",
       "flythings_create_project",
       "flythings_device_screenshot",
       "flythings_edit_ftu",
@@ -49,12 +47,7 @@
       "flythings_get_version",
       "flythings_hardware_info",
       "flythings_html_to_json",
-      "flythings_i18n_add_language",
-      "flythings_i18n_export",
-      "flythings_i18n_import",
-      "flythings_i18n_refactor",
-      "flythings_i18n_scan",
-      "flythings_i18n_to_json",
+      "flythings_i18n",
       "flythings_knowledge_capture",
       "flythings_knowledge_export",
       "flythings_knowledge_gaps",
@@ -95,7 +88,7 @@
         }
       ],
       "hardRules": [
-        "**平台定位**：Linux 基座（基线同 buildroot/OpenWrt，非 MCU/ESP32 SDK）；GUI 是自研 EasyUI（≠ LVGL）。见 `flythings-os-positioning.md`",
+        "@platform-positioning",
         "src/activity/ 由 ftu 生成，禁建/改/覆盖；业务只写 src/logic/*.cc",
         "新需求必须先出设计稿/原型并让用户确认（见 prototype-flow）再建工程 —— 跳过确认 = 返工"
       ],
@@ -548,6 +541,7 @@
     },
     "flythings_translate_ui": {
       "summary": "LVGL(v8/v9) C 源码 → FlyThings ui json 迁移翻译（v1，确定性；给 out 就落盘）。",
+      "params_note": "落盘路径同样先过编译式验收（fatal 不落盘）；开关 strict_ui / allow_unvalidated。",
       "risk": "write",
       "category": "layout",
       "stage": "design",
@@ -634,7 +628,7 @@
       ],
       "hardRules": [
         "**没读过规范不许开始写** `ui/*.json` 或业务代码 —— 目录规则/生成规则/注意事项都在这里。",
-        "**平台定位**：Linux 基座（判能力基线同 buildroot/OpenWrt），**不是** MCU/RTOS/ESP32 板级 SDK；GUI 是自研 EasyUI（≠ LVGL）。见 `knowledge/devflow/flythings-os-positioning.md`"
+        "@platform-positioning"
       ],
       "excludes": {
         "why": "带下列词尾的是**具体 op 的用法或字段语义**，不是工程目录规范",
@@ -651,9 +645,23 @@
       "risk": "read",
       "category": "layout",
       "stage": "design",
+      "params": [
+        {
+          "name": "project_root",
+          "desc": "工程根目录"
+        },
+        {
+          "name": "ui_check",
+          "desc": "auto（默认）/ off：是否顺带做**编译式验收**（ui_compile 扫 ui/*.json，fatal/error 落进 errors[]，type=ui_compile_<规则号>，带修法 hint）"
+        }
+      ],
       "flow": "空白项目判定：工作目录 ui/ 下无 .ftu 即视为空白（无需再读 json），返回 isEmptyProject=true；此时问清平台与分辨率后调 flythings_create_project。",
+      "hardRules": [
+        "顺带做**编译式验收**（ui_compile）：fatal/error 落进 errors[]，修法在 hint。"
+      ],
       "rules": [
-        "若 projectInfo.platform/resolution 为 null，必须先向用户询问，禁止猜测。"
+        "若 projectInfo.platform/resolution 为 null，必须先向用户询问，禁止猜测。",
+        "**编译式验收**（2026-10-05 起）：本 op 是「json 合理吗 / 能不能加载」的**主入口** —— 它把 ui_compile 的诊断并进 errors/warnings；要完整报告就手跑 `python ui_tools/ui_compile.py <项目根>`。"
       ],
       "docRef": "knowledge/devflow/page-architecture-spec.md",
       "seeAlso": [
@@ -712,8 +720,30 @@
       "hardRules": [
         "ftu 是 json 布局的**编译产物**：改布局一律改 json 后 pack，**不要手写/手改 ftu**（json 才是源）。"
       ],
+      "params": [
+        {
+          "name": "json_path",
+          "desc": "要打包的 ui/*.json（fui pack 打包该目录下所有 json；ftu 与 json 同名同目录）"
+        },
+        {
+          "name": "force_confirm",
+          "desc": "True → **跳过确认稿硬闸门**（默认 False）；跳过时返回体带 confirmOverridden=true 且 warnings 记一条留痕"
+        },
+        {
+          "name": "allow_unvalidated",
+          "desc": "True → **跳过编译式验收**（默认 False）：json 有 fatal/error 也照样 pack；返回体带 uiUnvalidated=true 且 warnings 记一条留痕"
+        },
+        {
+          "name": "strict_ui",
+          "desc": "True → 编译式验收按**严格档**：fatal 与 error 都拦（默认只拦 fatal；error 只回 uiCheck.errorsNotBlocking + warning）"
+        }
+      ],
       "returns": [
-        "返回体带 confirmNeeded 确认闸门"
+        "确认闸门：confirmNeeded/Blocked/Draft/Hint",
+        "编译式验收：uiCheck{fatal,error,warn}；被拦 error.code=UI_JSON_INVALID + uiDiagnostics[]"
+      ],
+      "rules": [
+        "**确认稿硬闸门**（2026-10-05 需求方拍板）：布局比确认稿新、或确认稿与当前 json **指纹不符**（`<项目>/temp/confirm/<稿名>.fingerprint.json` 的内容 sha256 对不上）→ **拒绝 pack**；先 `flythings_ui_preview(target=\"<项目根>\", for_customer=True)` 出确认稿给需求方确认，再重跑。"
       ],
       "docRef": "knowledge/devflow/ftu-json-pipeline.md",
       "seeAlso": [
@@ -829,7 +859,7 @@
         "流程：json↔ftu 时间戳检查 → fui pack → fun install → fun build → 设备探测 + fun launch（只编译传 with_launch=False）→ 字体体检 + 设备侧 md5 比对（staleOnDevice=true ⇒ 设备旧版）。"
       ],
       "hardRules": [
-        "**平台定位**：Linux 基座（判能力基线同 buildroot/OpenWrt），**不是** MCU/RTOS/ESP32 板级 SDK；GUI 是自研 EasyUI（≠ LVGL）。见 `knowledge/devflow/flythings-os-positioning.md`"
+        "@platform-positioning"
       ],
       "rules": [
         "**桩禁手写**；缺桩 → 让 `fun build` 追加后**把桩移到文件作用域**（非破坏）。⛔ `rm <p>Logic.cc` + 重建**只允许首次构建/空文件**；有业务代码时删除 = **代码衰退，禁止**",
@@ -881,7 +911,9 @@
       ],
       "rules": [
         "多整屏 window 工程自带「页面切换条」+ `#window__N`（简写 `#N`）直达 + 幽灵框看隐藏窗。",
-        "确认闸门：改完布局先出确认稿给需求方确认，OK 才 pack / 写逻辑 / 推真机。"
+        "确认闸门：改完布局先出确认稿给需求方确认，OK 才 pack / 写逻辑 / 推真机。",
+        "出稿同时落**指纹副文件** `<项目>/temp/confirm/<稿名>.fingerprint.json`（记录该稿对应 json 的内容 sha256）—— `flythings_fui_pack` / `flythings_build_ui_flow` 的硬闸门据此判「确认的是不是这一版」。**不放 ui/ 下**：`ui/*.json` 会被 `fui pack` 与 `ui_compile` 当成页面 json。",
+        "`output_dir` 不在 `<项目>/ui` 下 → 返回体带 `gateWarning`（闸门扫不到这份稿，会判「没有确认稿」），把 output_dir 指回 ui/ 即可。"
       ],
       "docRef": "knowledge/devflow/ui-layout-verify.md",
       "seeAlso": [
@@ -913,12 +945,27 @@
       "risk": "write",
       "category": "layout",
       "stage": "design",
+      "params": [
+        {
+          "name": "input_html",
+          "desc": "受限 HTML 原型路径（多屏：每屏一个 div.screen）"
+        },
+        {
+          "name": "output_json",
+          "desc": "输出 json（缺省跟随 html 同目录同名）"
+        },
+        {
+          "name": "strict_ui / allow_unvalidated",
+          "desc": "编译式验收档位：缺省只拦 fatal（缺图那类 error 不拦）；strict_ui=True 连 error 一起拦；allow_unvalidated=True 强制落盘（留痕）"
+        }
+      ],
       "flow": "多屏（div.screen）：每屏一个 json = 一页 = 一个 Activity = 一个 ftu；同属一个 Activity 才用 merge_windows 合成同 json 的 N 个整屏 window。",
       "returns": [
         "screensDetected / pagesProduced / pages[]；**数量不等一律 success:false**（不静默丢页）"
       ],
       "rules": [
-        "动手前先读《HTML_SUBSET 原型规范》（检索 HTML_SUBSET / data-icon / 自动转图清单）：控件映射表、data-* 属性、铁律都在那里。"
+        "动手前先读《HTML_SUBSET 原型规范》（检索 HTML_SUBSET / data-icon / 自动转图清单）：控件映射表、data-* 属性、铁律都在那里。",
+        "**产物先过编译式验收再落盘**（2026-10-05）：生成到临时目录 → `ui_compile` → 通过才搬到目标位置；fatal 一律不落盘（`UI_JSON_INVALID` + `uiDiagnostics[]`）。"
       ],
       "docRef": "knowledge/devflow/html-subset-quickref.md",
       "seeAlso": [
@@ -958,7 +1005,7 @@
         "knowledge/devflow/dependency-package-docs.md"
       ],
       "hardRules": [
-        "**平台定位**：Linux 基座（判能力基线同 buildroot/OpenWrt），**不是** MCU/RTOS/ESP32 板级 SDK；GUI 是自研 EasyUI（≠ LVGL）。见 `knowledge/devflow/flythings-os-positioning.md`"
+        "@platform-positioning"
       ],
       "triggers": [
         "有哪些包",
@@ -1146,50 +1193,12 @@
         "**Manifest 必须声明传递依赖**：用 `mqtt-cxx` 要连 `paho-mqtt3as` + `openssl` 一起声明，否则链接报 `BIO_read / RAND_bytes / SHA1_*` undefined"
       ]
     },
-    "flythings_create_bin_project": {
-      "summary": "创建「可执行程序」项目（fun create --type bin）并编译为直接可运行的 ELF 二进制。",
-      "risk": "write",
-      "category": "project",
-      "stage": "build",
-      "params": [
-        {
-          "name": "project_type",
-          "desc": "4 选 1：zkgui / bin / staticLibrary / sharedLibrary；bin 结构 = fun.json + src/main.cpp"
-        },
-        {
-          "name": "platform",
-          "desc": "默认 z21"
-        },
-        {
-          "name": "project_name",
-          "desc": "缺省取目录名"
-        }
-      ],
-      "returns": [
-        "fun build 产物 .fun/{platform}/{项目名}（ELF 魔数验证）→ adb push + chmod +x 直接跑（无 UI 宿主）"
-      ],
-      "rules": [
-        "目录非空直接报错；非交互时自动补 --app-version / --description"
-      ],
-      "hardRules": [
-        "**平台定位**：Linux 基座（判能力基线同 buildroot/OpenWrt），**不是** MCU/RTOS/ESP32 板级 SDK；GUI 是自研 EasyUI（≠ LVGL）。见 `knowledge/devflow/flythings-os-positioning.md`",
-        "bin 工程**只用于验证**（抢串口/裸逻辑），界面交付必须走 app 工程（`flythings_create_project`）——init 托管的是 app"
-      ],
-      "noneReason": "MCU（FlyThings Lite）侧工程，按 MCU 口径单独维护，不进 open 版 knowledge/",
-      "triggers": [
-        "做个小工具",
-        "命令行程序",
-        "不要界面",
-        "可执行文件",
-        "bin 工程"
-      ]
-    },
     "flythings_gen_logic_stub": {
-      "summary": "按 ui/*.json 的控件表补齐 logic 回调桩（只补不改，不写业务）。",
+      "summary": "回调桩体检/兜底（生成归 fun build）：页面逻辑写在 src/logic。",
       "risk": "write",
       "category": "project",
       "stage": "build",
-      "flow": "读 ui/*.json 控件表（key=类型__序号，**回调名用 caption**）→ 查 ui_schema.json 的 controls.<类型>.callbacks → 把缺失的桩追加进 src/logic/<页>Logic.cc。",
+      "flow": "读 ui/*.json 控件表（回调名用 caption）→ 查 ui_schema.json 的 controls.<类型>.callbacks → 补缺失的桩进 src/logic/<页>Logic.cc。**生成首选走工具链**：fui pack 后 fun build 建缺失的 logic 文件 + 追加桩。",
       "params": [
         {
           "name": "project_root",
@@ -1204,26 +1213,20 @@
           "desc": "true 只回清单不落盘"
         }
       ],
-      "returns": "pages[].generated/skipped + generatedCount/writtenCount。",
+      "returns": "pages[].generated/skipped + generatedCount/writtenCount",
+      "hardRules": [
+        "**桩只是骨架**：业务写在同一个 `src/logic/<页>Logic.cc`"
+      ],
       "rules": [
         "只补不改：已存在的同名函数一律跳过，不覆盖业务代码",
-        "listview 的 3 条回调（count / data / click）是一组，缺一列表就是空白",
-        "onButtonClick 返回值：true=吞事件（不再走系统默认）、false=放行",
-        "回调名/签名真源 = ui_schema.json 的 controls.<类型>.callbacks",
-        "生成物要过 check_all：注释里别写孤立括号"
-      ],
-      "keywords": [
-        "回调桩",
-        "logic 骨架",
-        "onButtonClick",
-        "listview 三回调",
-        "换皮改功能",
-        "写业务之前"
+        "生成归工具链：fun build 建缺失 logic 文件并追加桩；本 op 是体检/兜底",
+        "桩只是骨架：页面逻辑写在同一个 logic 文件（见 flow 步骤 write-logic）；容器/显示类控件无桩，走 findControlByID + setXxxListener 接线",
+        "listview 的 count/data/click 三条成组；onButtonClick 的 true=吞事件、false=放行",
+        "回调名/签名真源 = ui_schema.json 的 controls.<类型>.callbacks"
       ],
       "docRef": "knowledge/devflow/activity-code-skeleton.md",
       "seeAlso": [
-        "knowledge/devflow/activity-code-skeleton.md",
-        "knowledge/uicontrols/widget-code-api.md"
+        "knowledge/devflow/activity-code-skeleton.md"
       ],
       "triggers": [
         "补回调函数",
@@ -1238,7 +1241,7 @@
         "那个回调没生成"
       ],
       "excludes": {
-        "why": "带下列词尾的问法要的是**控件行为本身**（点不动/属性/字段/尺寸），不是补回调桩",
+        "why": "带下列词尾的问法要的是**控件行为本身**，不是补回调桩",
         "phrases": [
           "点不动",
           "点不了",
@@ -1409,174 +1412,6 @@
         ]
       }
     },
-    "flythings_i18n_scan": {
-      "summary": "诊断项目多语言（i18n）现状：i18n/*.tr 语言文件、key 对齐、布局 @key 引用完整性。",
-      "risk": "read",
-      "category": "i18n",
-      "stage": "build",
-      "flow": "项目做多语言时**先调用**。机制：翻译文件 i18n/<语言>.tr（文件名三段式 xx_XX-语言名，Android strings.xml 同款）；布局 text 写 `@key`，代码 setTextTr(key) 或 LANGUAGEMANAGER->getValue(key)（**不带 @**）。",
-      "returns": [
-        "JSON：languages / keysPerLanguage / 缺失 key / 引用缺失"
-      ],
-      "keywords": [
-        "多语言",
-        "i18n",
-        "翻译文件",
-        "缺失 key"
-      ],
-      "wiki": [
-        "i18n/i18n.md"
-      ],
-      "noneReason": "i18n 口径在官方文档站（developer.flythings.cn）与本地 wiki 镜像，open 版 knowledge/ 未收录",
-      "triggers": [
-        "多语言有没有问题",
-        "检查翻译",
-        "key 对不齐"
-      ]
-    },
-    "flythings_i18n_add_language": {
-      "summary": "添加新语言：从基础语言（缺省 zh_CN）复制 key 骨架，生成 i18n/<lang>-<lang_name>.tr 待翻译文件。",
-      "risk": "write",
-      "category": "i18n",
-      "stage": "build",
-      "params": [
-        {
-          "name": "lang",
-          "desc": "语言代码（如 fr_FR）"
-        },
-        {
-          "name": "lang_name",
-          "desc": "语言名（如 法语，显示在切换列表）"
-        }
-      ],
-      "flow": "翻译后调用 flythings_i18n_import 写回。",
-      "returns": [
-        "待翻译清单（key → 基础语言原文）+ 专业翻译提示（要结合项目语境，如车载项目的 CAN BUS 不译成公共汽车）"
-      ],
-      "wiki": [
-        "i18n/i18n.md"
-      ],
-      "noneReason": "同 flythings_i18n_scan：口径在官方文档 / 本地 wiki 镜像",
-      "triggers": [
-        "加个语言",
-        "支持英文",
-        "多语言加一种",
-        "加英文",
-        "加一门语言",
-        "加个语种",
-        "要英文"
-      ]
-    },
-    "flythings_i18n_export": {
-      "summary": "导出指定语言（缺省 zh_CN）的 key→文本清单（JSON），供翻译后 import 写回。",
-      "risk": "write",
-      "category": "i18n",
-      "stage": "build",
-      "params": [
-        {
-          "name": "keys",
-          "desc": "可选：逗号分隔的 key 子集；缺省导出全部"
-        },
-        {
-          "name": "context",
-          "desc": "可选：项目语境描述"
-        }
-      ],
-      "returns": [
-        "translationGuide：提示 AI 做专业翻译（术语如 CAN BUS 保持行业译法）"
-      ],
-      "wiki": [
-        "i18n/i18n.md"
-      ],
-      "noneReason": "同 flythings_i18n_scan：口径在官方文档 / 本地 wiki 镜像",
-      "triggers": [
-        "导出翻译",
-        "把文案给翻译",
-        "导出语言包",
-        "导出给翻译",
-        "文案导出",
-        "导出文案"
-      ]
-    },
-    "flythings_i18n_import": {
-      "summary": "将翻译结果写回项目 i18n/<lang>.tr（生成新语言文件或更新已有）。",
-      "risk": "write",
-      "category": "i18n",
-      "stage": "build",
-      "params": [
-        {
-          "name": "translations",
-          "desc": "JSON 对象 {key: 翻译文本}"
-        },
-        {
-          "name": "merge",
-          "desc": "True 与已有内容合并；False 整体覆盖"
-        }
-      ],
-      "wiki": [
-        "i18n/i18n.md"
-      ],
-      "noneReason": "同 flythings_i18n_scan：口径在官方文档 / 本地 wiki 镜像",
-      "triggers": [
-        "翻译好了",
-        "导入翻译",
-        "把译文写回去"
-      ]
-    },
-    "flythings_i18n_refactor": {
-      "summary": "把布局 json 里写死的非空文本控件替换为 @key 引用（多语言改造辅助）。",
-      "risk": "write",
-      "category": "i18n",
-      "stage": "build",
-      "params": [
-        {
-          "name": "dry_run",
-          "desc": "True 只预览不改文件；False 执行替换并写入指定语言的 .tr"
-        }
-      ],
-      "rules": [
-        "纯数字/时间占位文本**自动跳过**（不当翻译内容）"
-      ],
-      "wiki": [
-        "i18n/i18n.md"
-      ],
-      "noneReason": "同 flythings_i18n_scan：口径在官方文档 / 本地 wiki 镜像",
-      "triggers": [
-        "多语言改造",
-        "写死的文字改成 key",
-        "文案抽出来"
-      ]
-    },
-    "flythings_i18n_to_json": {
-      "summary": "把 i18n/*.tr 转为 i18n/*.json（设备 zkgui 实际加载格式），并可推送到设备 /tmp/tr/。",
-      "risk": "write",
-      "category": "i18n",
-      "stage": "build",
-      "params": [
-        {
-          "name": "push",
-          "desc": "生产固件翻译已打包到 /res/，无需推送 → False"
-        }
-      ],
-      "returns": [
-        "生成的 json 与设备端逐字节一致"
-      ],
-      "rules": [
-        "**fun launch 不推 i18n**（只推 ftu/images/font/lib/cfg）——改完翻译必须显式调本工具，否则设备仍跑旧翻译（logcat 刷 'not found value'）。生成 json 与设备端逐字节一致（tab 缩进+无空格冒号+末尾无换行），默认自动 adb push 到 /tmp/tr/；多设备传 device=IP。",
-        "落盘的 `i18n/<lang>.json` 必须是 **tab 制表 + 冒号后无空格 + 文件末尾无空行**（设备按此读）；所以**不要手改 json**，改 `.tr` 再转",
-        "**换行转义**：官方 `.tr` 语法是 XML 字符引用 `&#x000A;`（官方 i18n 文档原文 `<string name=\"new_line_test\">第一行&#x000A;第二行</string>`）；本工具**额外容忍**字面 `\\n`（两个字符）并在转 json 时还原成真实换行。⇒ **一律写 `&#x000A;`**：任何 XML 解析器都会解开，对编译器与本工具都安全。⚠️ 本工具**写** `.tr` 时输出的是字面 `\\n`（见 `i18n_tools._escape_tr`）—— 若官方编译器不做反斜杠还原，那样转出的 json 会把 `\\n` 当普通字符（设备显示成 `\\n` 文字）：属**已知可移植性差异**，未擅自改行为。设备侧硬要求不变：json 里必须是真实 `0x0A`"
-      ],
-      "wiki": [
-        "i18n/i18n.md"
-      ],
-      "noneReason": "同 flythings_i18n_scan：口径在官方文档 / 本地 wiki 镜像",
-      "triggers": [
-        "推翻译",
-        "tr 转 json",
-        "翻译不生效",
-        "界面还是旧文案"
-      ]
-    },
     "flythings_ui_visual": {
       "summary": "UI 可视化/像素验收入口（action 选动作；旧编辑器三 op 已并入，action=list 看参数）。",
       "risk": "write",
@@ -1586,6 +1421,10 @@
         {
           "name": "action",
           "desc": "editor / edit_apply / diff / baseline / render / render_check（传 list 看各动作用法）"
+        },
+        {
+          "name": "force_confirm",
+          "desc": "仅 edit_apply 且 pack=True 时用：跳过确认稿硬闸门（默认 False）；单纯写 json（pack=False）不拦"
         }
       ],
       "docRef": "knowledge/devflow/wysiwyg-render-spec.md",
@@ -1691,11 +1530,127 @@
         "报个问题",
         "写缺陷报告"
       ]
+    },
+    "flythings_i18n": {
+      "summary": "多语言（i18n）唯一入口：一个 action 一步（诊断/抽 @key/加语种/导出/写回/转 json 并推送）。",
+      "risk": "write",
+      "category": "i18n",
+      "stage": "build",
+      "params": [
+        {
+          "name": "project_root",
+          "desc": "工程根"
+        },
+        {
+          "name": "action",
+          "desc": "scan（只读诊断）/ refactor（写死文本抽 @key，缺省 dry_run）/ add_language / export / import / to_json"
+        },
+        {
+          "name": "lang",
+          "desc": "语言代码（zh_CN / en …）；add_language/export/import/refactor 用"
+        },
+        {
+          "name": "lang_name",
+          "desc": "语言名（English…）；add_language 用，文件名第二段"
+        },
+        {
+          "name": "base_lang",
+          "desc": "复制 key 骨架的基础语言，缺省 zh_CN"
+        },
+        {
+          "name": "keys",
+          "desc": "export 只导这些 key（逗号分隔；空=全部）"
+        },
+        {
+          "name": "context",
+          "desc": "项目语境提示（专业翻译用，如车载 CAN BUS 不译成公共汽车）"
+        },
+        {
+          "name": "translations",
+          "desc": "import 的译文（JSON：key→译文）"
+        },
+        {
+          "name": "merge",
+          "desc": "import 是否与已有译文合并（缺省 true）"
+        },
+        {
+          "name": "dry_run",
+          "desc": "refactor 只回清单不落盘（缺省 true）"
+        },
+        {
+          "name": "langs",
+          "desc": "to_json 只处理这些语言（逗号分隔；空=全部）"
+        },
+        {
+          "name": "push",
+          "desc": "to_json 生成后是否 adb push 到设备 /tmp/tr/（缺省 true）"
+        },
+        {
+          "name": "device",
+          "desc": "多设备时指定 IP"
+        }
+      ],
+      "flow": "六个动作即一条链路 —— **scan**：诊断 i18n/<语言>.tr、key 对齐、布局 @key 引用完整性；**refactor**：把布局 json 里写死的非空文本换成 @key 引用（纯数字/时间占位自动跳过）；**add_language**：从基础语言复制 key 骨架生成 i18n/<lang>-<lang_name>.tr 待译文件；**export**：导出 key→原文清单给翻译（带专业翻译提示）；**import**：把译文写回 i18n/<lang>.tr（可 merge）；**to_json**：转成设备实际加载的 i18n/<lang>.json 并可推送到 /tmp/tr/。",
+      "returns": [
+        "scan：languages / keysPerLanguage / 缺失 key / 引用缺失",
+        "export：待翻译清单 + translationGuide",
+        "import：写回文件路径（含 _with_files 产物清单）",
+        "to_json：生成的 json 清单（与设备端逐字节一致）+ 推送结果"
+      ],
+      "rules": [
+        "**设备读 json 不是 .tr**：`fun launch` **不推 i18n**（只推 ftu/images/font/lib/cfg）→ 改完翻译必须 `action=\"to_json\"`（默认自动 push），否则设备仍跑旧翻译（logcat 刷 not found value）",
+        "落盘的 `i18n/<lang>.json` 必须是 **tab 制表 + 冒号后无空格 + 末尾无空行**（设备按此读）→ **不要手改 json**：改 `.tr` 再 to_json",
+        "换行转义：官方 `.tr` 写 `&#x000A;`，转出的 json 里必须是**真换行**（口径冲突已在知识页并列）",
+        "布局 text 带 `@key` 引用；代码里 `setTextTr(key)` / `LANGUAGEMANAGER->getValue(key)` **不带 @** （带不带 @ 是最常错的地方）",
+        "refactor 拆出的 key 要在所有语言文件里补齐；缺 key 由 scan 报\"缺失 key\""
+      ],
+      "hardRules": [
+        "**改完翻译必须 `action=\"to_json\"`**（`fun launch` 不推 i18n）—— 否则设备还是旧文案",
+        "`action=\"scan\"` 只读；`action=\"refactor\"` 缺省 `dry_run=true`，先看清单再落盘"
+      ],
+      "keywords": [
+        "多语言",
+        "i18n",
+        "翻译文件",
+        "缺失 key"
+      ],
+      "triggers": [
+        "多语言有没有问题",
+        "检查翻译",
+        "key 对不齐",
+        "加个语言",
+        "支持英文",
+        "多语言加一种",
+        "加英文",
+        "加一门语言",
+        "加个语种",
+        "要英文",
+        "导出翻译",
+        "把文案给翻译",
+        "导出语言包",
+        "导出给翻译",
+        "文案导出",
+        "导出文案",
+        "翻译好了",
+        "导入翻译",
+        "把译文写回去",
+        "多语言改造",
+        "写死的文字改成 key",
+        "文案抽出来",
+        "推翻译",
+        "tr 转 json",
+        "翻译不生效",
+        "界面还是旧文案"
+      ],
+      "docRef": "knowledge/devflow/i18n-multilang.md",
+      "seeAlso": [
+        "knowledge/devflow/activity-code-skeleton.md",
+        "knowledge/devflow/symptom-index.md"
+      ]
     }
   },
   "contractOrder": [
     "summary",
-    "triggers",
     "hardRules",
     "params",
     "flow",
@@ -1703,18 +1658,18 @@
     "rules",
     "keywords",
     "excludes",
-    "notes"
+    "notes",
+    "triggers"
   ],
   "tiers": {
     "authority": "工具面三层：**常驻**（每次会话都在 AI 上下文里）/ **按需**（选中或要改契约时才拉）/ **深入**（知识页检索）。字段归属由本段 + renderOrder/contractOrder 决定；**常驻面只放「选不选 + 怎么调 + 安全铁律」**，散文与展开叙述一律下移（2026-10-03 定，起因：常驻 11943 里 46% 是 notes 兜底散文，而决定选不选的 triggers 只有 43 字符）。",
     "resident": {
-      "what": "决定「选不选这个工具」+「怎么调」+ 违反会挂死/丢数据的铁律",
+      "what": "决定「选不选这个工具」+「怎么调」+ 违反会挂死/丢数据的铁律。⚠️ 2026-10-05：`triggers` **移出常驻**（它属\"选它\"的检索面 —— dispatcher `_find`、意图目录、manifest 都直接读 op_spec 字段，不依赖 docstring 渲染）",
       "fields": [
         "summary",
-        "triggers",
         "hardRules"
       ],
-      "where": "tool description —— flat/all 模式下 47 条 description 之和 = 常驻面的全部开销",
+      "where": "tool description —— flat/all 模式下 47 条 description 之和 = 常驻面的全部开销（2026-10-05 瘦身实测：**3783**（47 条 docstring 之和，含分发器），triggers 改按需取）",
       "cap": "budget.perOpMax（单条）/ budget.totalMax（合计）",
       "rule": "⚠️ 常驻面是**预算硬约束**：加 op = 加一行（约 90 字符），不再重排全局预算；要写细节请用下面的按需字段。**参数说明不进常驻**（2026-10-03）：参数名 `list` 已回、语义 `describe` 按需给，再写一遍是重复计费"
     },
@@ -1732,7 +1687,6 @@
           "id": "skeleton",
           "fields": [
             "summary",
-            "triggers",
             "hardRules",
             "params"
           ],
@@ -1764,9 +1718,10 @@
           "fields": [
             "keywords",
             "excludes",
-            "notes"
+            "notes",
+            "triggers"
           ],
-          "what": "检索词 + 出局词（「别把它用在这儿」）+ 迁移兜底"
+          "what": "检索词 + 出局词（「别把它用在这儿」）+ 迁移兜底；triggers（口语触发词，2026-10-05 从 skeleton 段挪来：它属检索面，不占\"怎么调\"的骨架）"
         }
       ],
       "where": "flythings_kb(op='describe:<op 名>') / 资源 flythings://ops/<op 名>（默认形态）｜ 单段：args={\"section\":\"<段名>\"} / 资源 flythings://ops/<op 名>/<段名>｜ 全文：section=\"all\"",
@@ -1793,5 +1748,8 @@
     "flythings_translate_ui",
     "flythings_add_package"
   ],
-  "longOpsNote": "这些 op 常跑 5 秒到几分钟（编译 / 刷机 / 抓屏 / 全盘自检）。分发器把它们放工作线程跑，并把 op 内部的阶段（`steps.append` 打点）转成 MCP progress notification 推给客户端 —— 顺带修掉「同步长任务堵死事件循环、客户端连取消都发不进来」。清单放这里，不在 mcp_server 硬编码。"
+  "longOpsNote": "这些 op 常跑 5 秒到几分钟（编译 / 刷机 / 抓屏 / 全盘自检）。分发器把它们放工作线程跑，并把 op 内部的阶段（`steps.append` 打点）转成 MCP progress notification 推给客户端 —— 顺带修掉「同步长任务堵死事件循环、客户端连取消都发不进来」。清单放这里，不在 mcp_server 硬编码。",
+  "fragments": {
+    "platform-positioning": "**平台定位**：Linux 基座（同 buildroot/OpenWrt，非 MCU/ESP32 SDK）；GUI 是自研 EasyUI（≠ LVGL）——见 `knowledge/devflow/flythings-os-positioning.md`"
+  }
 }

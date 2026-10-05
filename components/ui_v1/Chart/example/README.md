@@ -10,7 +10,7 @@
 | `Manifest.xml` | 依赖声明（easyui ^2.2.0 + log/zkhardware/zknet/base-utility） |
 | `.deps.lock` | 依赖解析结果快照（实际落到 easyui 2.6.0） |
 | `.project` | IDE 工程描述（`fun build` 不需要） |
-| `ui/main.html` | **唯一手写源**：五个 `div.painter`（折线/柱/三环/仪表/**分段环**）+ 刻度 `textview` + 两个按钮 |
+| `ui/main.html` | **本示例的手写源（原型稿）**：五个 `div.painter`（折线/柱/三环/仪表/**分段环**）+ 刻度 `textview` + 两个按钮 |
 | `ui/main.json` / `ui/main.ftu` | `html2json` / `fui pack` 产物 |
 | `src/Main.cpp` | 应用入口 |
 | `src/logic/mainLogic.cc` | **示例逻辑**：五个 Chart 实例（LINE/BAR/RING/GAUGE/**RING+setRingSegments**）+ 换数据/追加点 |

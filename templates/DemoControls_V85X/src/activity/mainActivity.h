@@ -26,6 +26,15 @@
 #include "window/ZKSlideWindow.h"
 
 /*TAG:Macro宏ID*/
+#define ID_MAIN_menuPage    20007
+#define ID_MAIN_menuScroll    20006
+#define ID_MAIN_menuCanvas    20005
+#define ID_MAIN_menuPointer    20004
+#define ID_MAIN_menuProgress    20003
+#define ID_MAIN_menuButton    20002
+#define ID_MAIN_menuText    20001
+#define ID_MAIN_menuPanel    110001
+#define ID_MAIN_title    50001
 /*TAG:Macro宏ID END*/
 
 class mainActivity : public Activity, 

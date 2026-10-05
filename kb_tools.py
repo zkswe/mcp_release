@@ -6,9 +6,10 @@
 不可用时自动降级 BM25），不依赖任何远程 MCP 服务。
 """
 import html.parser  # PyInstaller 打包需要（html2json 运行时导入，静态分析漏收）
+import hashlib
 import inspect
 import io
-import json, math, os, re, shutil, sys
+import json, math, os, re, shutil, sys, tempfile, time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import platforms as _platforms   # 平台唯一来源：默认值/平台清单/包生态键都从这里取
@@ -70,6 +71,14 @@ except Exception as _e:
     _USC_ERR = repr(_e)
 else:
     _USC_ERR = ''
+
+try:
+    import ui_compile as uic                 # 编译式验收（T1.1/T1.2；T1.3 出口闸门）
+except Exception as _e2:
+    uic = None
+    _UIC_ERR = repr(_e2)
+else:
+    _UIC_ERR = ''
 
 _KB_ROOT_LABELS = None      # 仓库内文档路径 → 源标签（进程内缓存，按索引根真源派生）
 _KB_ROOT_LABELS_ERR = []    # 真源不可用时的原因（不静默：检索返回体里带出来）
@@ -272,8 +281,6 @@ def _bin_tools_field() -> dict:
 
 def flythings_get_version(compact: bool = True) -> str:
     """返回 MCP 版本号、工具数量与近期关键特性。用户问「MCP 版本是多少 / 是不是最新的」时调用。
-
-    触发：MCP 版本 / 是不是最新版 / 装了哪个版本
     """
     tools = _tool_names()
     out = {
@@ -388,8 +395,6 @@ def _kb_index_entry(path):
 
 def flythings_knowledge_gaps(limit: int = 20, out: str = '', project_root: str = '') -> str:
     """查「知识缺口清单」：用户/AI 反复问但**检索不到**的主题（生长引擎的输入端）。
-
-    触发：知识库缺什么 / 哪些问题搜不到 / 知识缺口
     """
     import kb_local as _kbl
     g = _kbl.gaps(int(limit or 20), kb_override='')
@@ -446,8 +451,6 @@ def _annotate_kb_hits(hits):
 
 def flythings_knowledge_search(query: str, k: int = 3) -> str:
     """在知识库（wiki 官方镜像 + knowledge 实践文档）检索片段（完全本地，零 Key）。
-
-    触发：查知识库 / 搜一下资料 / 这个怎么做 / 有没有相关文档
     """
     kk = max(1, min(int(k), 8))
     warnings = []
@@ -536,8 +539,6 @@ def flythings_knowledge_capture(title: str, body: str = '', category: str = 'dev
                                 source: str = '', severity: str = 'normal',
                                 project_root: str = '', layer: str = 'local') -> str:
     """把一条现场结论落成知识候选（写**用户本地层/项目层**，绝不写 MCP 安装目录）。
-
-    触发：记条知识 / 这个坑记下来 / 沉淀一条经验 / 存进知识库
     """
     import kb_local as _kbl
     ev = []
@@ -560,7 +561,6 @@ def flythings_knowledge_export(out: str = '', scope: str = 'inbox', layer: str =
                                project_root: str = '', internal: bool = False) -> str:
     """导出**脱敏知识补丁包**（回流总账通道 A：kb-contrib-<时间>.json）。
 
-    触发：导出知识包 / 回流知识 / 分享经验
     ⚠️⚠️ **强制脱敏**（IP/本机路径/凭据/主机名 → 占位符）；未脱敏必须显式 internal=True（仅总账维护者自用）。
     """
     import kb_local as _kbl
@@ -571,7 +571,6 @@ def flythings_knowledge_export(out: str = '', scope: str = 'inbox', layer: str =
 def flythings_hardware_info(model: str = '', platform: str = '') -> str:
     """查硬件型号库：按平台/型号拿到分辨率、按键值、接口规格与平台差异化。
 
-    触发：这块屏什么参数 / 板子规格 / 型号是多少 / 按键值 / 硬件差异
     ⚠️⚠️ 平台/分辨率以**用户或型号库**为准；只说型号系列时不要外推（猜错 = 整份工程返工）。
     """
     return json.dumps(hw.query(model, platform), ensure_ascii=False)
@@ -669,8 +668,6 @@ def _cm_score(q, name, aliases):
 
 def flythings_map_control(query: str, source: str = '') -> str:
     """跨框架控件映射：输入源框架控件名 → 一次对上我们的控件（等价级别 + 可直接粘的 json 片段）。
-
-    触发：这个控件对应哪个 / LVGL 的按钮是什么 / 跨框架控件对照
     """
     data, err = _control_map()
     if data is None:
@@ -742,10 +739,24 @@ def flythings_map_control(query: str, source: str = '') -> str:
     return json.dumps(out, ensure_ascii=False)
 
 
+def _child_rule_text(t):
+    """容器「子内容走哪条路」的人话（唯一真源 = 注册表 `controls[].children`，经 loader 派生）。
+
+    2026-10-05：本 op 以前只回 `container: true` —— 那半个真源正是「slidewindow 平铺子控件」假绿的
+    来源（同一份 json，`check_all` #2 判 FAIL、`ui_compile` 判「编译式验收通过」）。现在把
+    「子内容走哪条路」一并回出去，AI 查 schema 时就能看到，而不是等真机/门禁来纠。
+    """
+    spec = _uischema.children_spec(t)
+    if spec is None:
+        return '叶子：不许有子控件键'
+    if spec['mode'] == 'substructure':
+        return '子内容只能走 %s（平铺 <type>__N 子控件键非法）' % spec['key']
+    only = spec.get('only')
+    return ('子控件键只允许 %s' % '/'.join(only)) if only else '子控件键不限（万能容器）'
+
+
 def flythings_ui_schema(control_type: str = '', include: str = 'all') -> str:
     """UI 布局 json 规范查询（唯一真源 = ui_schema.json 注册表）：控件字段表/必填键/默认值/类型。
-
-    触发：字段什么意思 / json 有哪些字段 / 控件必填什么 / 布局规范查询
     """
     if _uischema is None:
         return json.dumps({'ok': False, 'op': 'flythings_ui_schema',
@@ -766,7 +777,8 @@ def flythings_ui_schema(control_type: str = '', include: str = 'all') -> str:
             'ok': True, 'op': 'flythings_ui_schema',
             'schemaVersion': reg.get('schemaVersion'), 'updated': reg.get('updated'),
             'controlTypes': [{'type': t, 'interactive': bool(m.get('interactive')),
-                              'container': bool(m.get('container'))}
+                              'container': bool(m.get('container')),
+                              'childRule': _child_rule_text(t)}
                              for t, m in sorted((reg.get('controls') or {}).items())],
             'subStructures': sorted(reg.get('subStructures') or {}),
             'sharedTypes': sorted(reg.get('sharedTypes') or {}),
@@ -792,6 +804,8 @@ def flythings_ui_schema(control_type: str = '', include: str = 'all') -> str:
     out = {'ok': True, 'op': 'flythings_ui_schema', 'controlType': ct,
            'interactive': bool(entry.get('interactive')),
            'container': bool(entry.get('container')),
+           'children': entry.get('children') or None,
+           'childRule': _child_rule_text(ct),
            'note': entry.get('note', ''),
            'fields': entry.get('fields') or {},
            'requiredFields': _uischema.required_fields(ct),
@@ -803,8 +817,8 @@ def flythings_ui_schema(control_type: str = '', include: str = 'all') -> str:
            'warnings': []}
     inc = (include or 'all').strip().lower()
     if inc in ('fields', 'schema'):
-        keep = ('ok', 'op', 'controlType', 'interactive', 'container', 'note',
-                'fields', 'requiredFields', 'defaults', 'warnings')
+        keep = ('ok', 'op', 'controlType', 'interactive', 'container', 'children', 'childRule',
+                'note', 'fields', 'requiredFields', 'defaults', 'warnings')
         out = {k: v for k, v in out.items() if k in keep}
     elif inc in ('sharedtypes', 'types'):
         out = {k: out[k] for k in ('ok', 'op', 'controlType', 'sharedTypes', 'warnings')}
@@ -814,19 +828,64 @@ def flythings_ui_schema(control_type: str = '', include: str = 'all') -> str:
 
 
 def flythings_translate_ui(source: str, out: str = '', res: str = '',
-                           dry_run: bool = None, gen_placeholders: bool = False) -> str:
+                           dry_run: bool = None, gen_placeholders: bool = False,
+                           allow_unvalidated: bool = False,
+                           strict_ui: bool = False) -> str:
     """LVGL(v8/v9) C 源码 → FlyThings ui json 迁移翻译（v1，确定性；给 out 就落盘）。
-
-    触发：LVGL 工程迁过来 / 代码转界面 / 迁移翻译 / 换个框架
     """
-    return json.dumps(trt.translate(source, out, res, dry_run, gen_placeholders),
-                      ensure_ascii=False)
+    if dry_run or not out:
+        return json.dumps(trt.translate(source, out, res, dry_run, gen_placeholders),
+                          ensure_ascii=False)
+    # 按调用方给的真实 out 生成（图片策略/工程推断都依赖它）；验收不过就**撤回**
+    ap = os.path.abspath(out)
+    bak = ''
+    if os.path.isfile(ap):
+        bak = ap + '.gatebak'
+        try:
+            shutil.copy2(ap, bak)
+        except OSError as e:
+            return json.dumps(_ui_invalid_body(
+                'flythings_translate_ui',
+                {'ran': False, 'ok': True, 'hint': '', 'fatal': 0, 'error': 0, 'warn': 0,
+                 'diagnostics': [], 'errorsNotBlocking': 0},
+                {'error': '无法备份既有 json（%s）：%s' % (ap, e)}), ensure_ascii=False)
+    r = trt.translate(source, out, res, False, gen_placeholders)
+    # ⚠️ translate 成功时**没有** `success` 键（实测 2026-10-05）→ 缺键按成功算，只有显式 False 才算失败
+    if not isinstance(r, dict) or r.get('success') is False:
+        if bak:
+            os.remove(bak)
+        return json.dumps(r, ensure_ascii=False)
+    gate = _ui_compile_gate(_project_root_of(ap), r.get('jsonPath') or ap, strict_ui=strict_ui)
+    if gate.get('ran'):
+        r['uiCheck'] = {'fatal': gate.get('fatal'), 'error': gate.get('error'),
+                        'warn': gate.get('warn'), 'strictUi': bool(strict_ui),
+                        'errorsNotBlocking': int(gate.get('errorsNotBlocking') or 0)}
+    if not gate.get('ok', True) and not allow_unvalidated:
+        withdrawn = []
+        try:                                    # 撤回：还原既有 json，或删掉这次新写的
+            if bak:
+                shutil.move(bak, ap)
+                withdrawn.append('%s（已还原为改动前）' % ap)
+            elif os.path.isfile(ap):
+                os.remove(ap)
+                withdrawn.append('%s（已删除）' % ap)
+        except OSError as e:
+            withdrawn.append('撤回失败：%s' % e)
+        body = _ui_invalid_body('flythings_translate_ui', gate,
+                                {'jsonPath': None, 'withdrawn': withdrawn,
+                                 'note': '产物**没有落盘**（已撤回）；按诊断修完重跑'})
+        return json.dumps(body, ensure_ascii=False)
+    if bak:
+        os.remove(bak)
+    if gate.get('hint'):
+        r['warnings'] = list(r.get('warnings') or []) + [gate['hint']]
+    if not gate.get('ok', True) and allow_unvalidated:
+        r['uiUnvalidated'] = True
+    return json.dumps(r, ensure_ascii=False)
 
 
 def flythings_read_json(json_path: str) -> str:
     """解析 .json 布局文件为 JSON（分辨率、控件列表、caption→id 映射）。传入 json 完整路径。
-
-    触发：界面结构 / 有哪些控件 / 读一下 json / 控件列表
     """
     return json.dumps(pt.flythings_read_json(json_path), ensure_ascii=False)
 
@@ -834,19 +893,35 @@ def flythings_read_json(json_path: str) -> str:
 def flythings_get_project_spec() -> str:
     """返回 FlyThings 项目结构化规范（目录规则、生成规则、注意事项）。编写/修改项目代码前调用。新需求先出设计稿/原型并确认。
 
-    触发：工程规范 / 目录怎么放 / 写代码前看什么 / 项目结构 / 注意事项
     ⚠️⚠️ **没读过规范不许开始写** `ui/*.json` 或业务代码 —— 目录规则/生成规则/注意事项都在这里。
-    ⚠️⚠️ **平台定位**：Linux 基座（判能力基线同 buildroot/OpenWrt），**不是** MCU/RTOS/ESP32 板级 SDK；GUI 是自研 EasyUI（≠ LVGL）。见 `knowledge/devflow/flythings-os-positioning.md`
+    ⚠️⚠️ **平台定位**：Linux 基座（同 buildroot/OpenWrt，非 MCU/ESP32 SDK）；GUI 是自研 EasyUI（≠ LVGL）——见 `knowledge/devflow/flythings-os-positioning.md`
     """
     return json.dumps(pt.flythings_get_project_spec(), ensure_ascii=False)
 
 
-def flythings_validate_project(project_root: str) -> str:
+def flythings_validate_project(project_root: str, ui_check: str = 'auto') -> str:
     """检查项目是否符合 FlyThings 规范，返回 errors/warnings。生成代码后调用。
 
-    触发：检查工程 / 项目有没有问题 / 规范体检 / 体检一下项目
+    ⚠️⚠️ 顺带做**编译式验收**（ui_compile）：fatal/error 落进 errors[]，修法在 hint。
     """
-    return json.dumps(pt.flythings_validate_project(project_root), ensure_ascii=False)
+    r = pt.flythings_validate_project(project_root)
+    if isinstance(r, dict) and str(ui_check or 'auto').strip().lower() != 'off' \
+            and not r.get('isEmptyProject'):
+        gate = _ui_compile_gate(project_root)
+        if gate.get('ran'):
+            r['uiCheck'] = {'fatal': gate.get('fatal'), 'error': gate.get('error'),
+                            'warn': gate.get('warn')}
+            for d in (gate.get('diagnostics') or []):
+                item = {'file': d.get('file') or 'ui',
+                        'type': 'ui_compile_%s' % (d.get('rule') or '?'),
+                        'msg': '%s %s' % (d.get('path') or '', d.get('msg') or ''),
+                        'hint': d.get('hint') or ''}
+                key = 'errors' if d.get('severity') in ('fatal', 'error') else 'warnings'
+                r.setdefault(key, []).append(item)
+        elif gate.get('hint'):
+            r.setdefault('warnings', []).append(
+                {'file': 'ui', 'type': 'ui_check_unavailable', 'msg': gate['hint']})
+    return json.dumps(r, ensure_ascii=False)
 
 
 def _with_files(obj, *paths):
@@ -866,28 +941,48 @@ def _with_files(obj, *paths):
 
 def flythings_layout_audit(project_root: str, page: str = '') -> str:
     """静态审计 UI 布局的层叠/遮挡/触摸穿透（**纯几何，0 token，先看 json 再截图**）。
-
-    触发：布局有没有问题 / 控件被遮住 / 点不动 / 触摸穿透 / 越界
     """
     return json.dumps(pt.flythings_layout_audit(project_root, page), ensure_ascii=False)
 
 
-def flythings_fui_pack(json_path: str) -> str:
+def flythings_fui_pack(json_path: str, force_confirm: bool = False,
+                       allow_unvalidated: bool = False, strict_ui: bool = False) -> str:
     """将 json 布局打包为 ftu（设备实际加载的是 ftu）。返回 ftu 路径、控件数、分辨率。
 
-    触发：打包界面 / json 打成 ftu / 改了 json 要生效
     ⚠️⚠️ ftu 是 json 布局的**编译产物**：改布局一律改 json 后 pack，**不要手写/手改 ftu**（json 才是源）。
     """
+    _root = _project_root_of(json_path)
+    ugate = _ui_compile_gate(_root, json_path, strict_ui=strict_ui)
+    if not ugate.get('ok', True) and not allow_unvalidated:
+        return json.dumps(_ui_invalid_body('flythings_fui_pack', ugate,
+                                           {'jsonPath': json_path}), ensure_ascii=False)
+    gate = _confirm_gate(_root, json_path)
+    if gate.get('confirmBlocked') and not force_confirm:
+        return json.dumps(_with_files(
+            _confirm_block_body('flythings_fui_pack', gate,
+                                _ugate_extra(ugate, allow_unvalidated))),
+            ensure_ascii=False)
     r = pt.flythings_fui_pack(json_path)
     if isinstance(r, dict):
-        r.update(_confirm_gate(_project_root_of(json_path), json_path))
+        r.update(gate)
+        r.update(_ugate_extra(ugate, allow_unvalidated))
+        # hint 出现在三种情形：没跑成（工具缺失/异常）/ 被拦 / 有 error 但默认不阻断 —— 都要说出来
+        if ugate.get('hint') and (not ugate.get('ran') or not ugate.get('ok', True)
+                                  or ugate.get('errorsNotBlocking')):
+            r['warnings'] = list(r.get('warnings') or []) + [ugate['hint']]
+        if allow_unvalidated and not ugate.get('ok', True):
+            r['warnings'] = list(r.get('warnings') or []) + [
+                '⚠️ 编译式验收未通过但被 allow_unvalidated=True 放行：%s'
+                % (ugate.get('hint') or '')]
+        if force_confirm and gate.get('confirmBlocked'):
+            r['confirmOverridden'] = True
+            r['warnings'] = list(r.get('warnings') or []) + [
+                '⚠️ 确认稿硬闸门被 force_confirm 跳过：%s' % (gate.get('confirmHint') or '')]
     return json.dumps(_with_files(r, r.get('ftuPath')), ensure_ascii=False)
 
 
 def flythings_fui_unpack(ftu_path: str, output_json: str = '', overwrite: bool = True) -> str:
     """ftu → json 反解析（fui unpack；随包 fui 自 v0.27.91 起支持）。
-
-    触发：反解析 / ftu 转 json / 看看 ftu 里有什么
     """
     r = pt.flythings_fui_unpack(ftu_path, output_json, overwrite)
     return json.dumps(_with_files(r, r.get('jsonPath')), ensure_ascii=False)
@@ -898,8 +993,6 @@ def flythings_fui_unpack(ftu_path: str, output_json: str = '', overwrite: bool =
 def flythings_edit_ftu(ftu_path: str, operations: str, output_ftu: str = '',
                        overwrite: bool = False) -> str:
     """编辑 ftu 布局：自动应用编辑到 json 后 pack 回 ftu（json 是源，ftu 是编译产物）。
-
-    触发：改布局 / 按钮往右移 / 改个文字 / 换个颜色 / 删掉这个控件 / 复制控件
     """
     r = pt.flythings_edit_ftu(ftu_path, operations, output_ftu, overwrite)
     return json.dumps(_with_files(r, r.get('ftuPath'), r.get('jsonPath'), r.get('backup')),
@@ -910,8 +1003,6 @@ def flythings_device_preflight(project_root: str, device: str = '', adapt: str =
                                font_check: str = 'auto', font_tier: str = '',
                                font_apply: bool = True) -> str:
     """上机前体检：设备发现→型号/平台确认→分辨率/字库/体积三项判据（launch 前自动跑同一套）。
-
-    触发：上机前检查 / 接上设备先看什么 / 这板子能不能跑 / 屏幕对不对 / 字库够不够 / 打包会不会超 / 屏比设计小 / 屏幕比设计小 / 分辨率不一样
     """
     r = pt.flythings_device_preflight(project_root, device, adapt, font_check, font_tier,
                                       font_apply)
@@ -921,24 +1012,64 @@ def flythings_device_preflight(project_root: str, device: str = '', adapt: str =
 
 
 def flythings_build_ui_flow(project_root: str, with_launch: bool = True, device: str = '',
-                            font_check: str = 'auto', font_tier: str = '') -> str:
+                            font_check: str = 'auto', font_tier: str = '',
+                            force_confirm: bool = False,
+                            allow_unvalidated: bool = False,
+                            strict_ui: bool = False) -> str:
     """FlyThings UI 构建与部署全流程（pack → install → build → 设备探测 → launch）。
 
-    触发：编译 / 构建 / 调试 / 部署 / 推送到设备 / 跑一下 / 上机 / 传到设备 / 烧上去
-    ⚠️⚠️ **平台定位**：Linux 基座（判能力基线同 buildroot/OpenWrt），**不是** MCU/RTOS/ESP32 板级 SDK；GUI 是自研 EasyUI（≠ LVGL）。见 `knowledge/devflow/flythings-os-positioning.md`
+    ⚠️⚠️ **平台定位**：Linux 基座（同 buildroot/OpenWrt，非 MCU/ESP32 SDK）；GUI 是自研 EasyUI（≠ LVGL）——见 `knowledge/devflow/flythings-os-positioning.md`
     """
-    return json.dumps(_with_design_warning(
-        pt.flythings_build_ui_flow(project_root, with_launch, device,
-                                   font_check, font_tier), project_root),
-        ensure_ascii=False)
+    gate = _confirm_gate(project_root)
+    changed, _jm, why = _layout_changed_since_pack(project_root)
+    ugate = (_ui_compile_gate(project_root, strict_ui=strict_ui) if changed
+             else {'ok': True, 'ran': False})
+    if not ugate.get('ok', True) and not allow_unvalidated and changed:
+        return json.dumps(_ui_invalid_body('flythings_build_ui_flow', ugate,
+                                           {'layoutChanged': changed, 'layoutNote': why}),
+                          ensure_ascii=False)
+    # 确认稿硬闸门（T3.1/T3.2）：本 op 只在「这次真的会把新布局推上设备」时拦（台账 §T3.1 的口径）。
+    # ⚠️ 2026-10-05 检讨修：**指纹不匹配与 changed 无关，一律拦** —— 指纹存在的意义就是抓住
+    #    「json 内容变了、mtime 被压回旧值」这种**按时间判不出来**的情形（`fui_pack` 一直是这么拦的）；
+    #    只看 changed 会让同一份 json 在两条路径上一个拦一个放（两个权威）。
+    _creason = gate.get('confirmReason') or ''
+    if (gate.get('confirmBlocked') and not force_confirm
+            and (changed or not gate.get('confirmDraft')
+                 or _creason == 'fingerprint_mismatch')):
+        _extra = {'layoutChanged': changed, 'layoutNote': why}
+        _extra.update(_ugate_extra(ugate, allow_unvalidated))
+        return json.dumps(_confirm_block_body('flythings_build_ui_flow', gate, _extra),
+                          ensure_ascii=False)
+    r = pt.flythings_build_ui_flow(project_root, with_launch, device,
+                                   font_check, font_tier)
+    if isinstance(r, dict):
+        r.update(gate)
+        r.update(_ugate_extra(ugate, allow_unvalidated))
+        if ugate.get('hint') and (not ugate.get('ran') or not ugate.get('ok', True)
+                                  or ugate.get('errorsNotBlocking')):
+            r['warnings'] = list(r.get('warnings') or []) + [ugate['hint']]
+        if force_confirm and gate.get('confirmBlocked'):
+            r['confirmOverridden'] = True
+            r['warnings'] = list(r.get('warnings') or []) + [
+                '⚠️ 确认稿硬闸门被 force_confirm 跳过：%s' % (gate.get('confirmHint') or '')]
+        elif gate.get('confirmBlocked'):
+            # 命中闸门但本次不推新布局（台账 §T3.1 允许放行）→ 如实登记，不让它无声过去
+            r['confirmSkipped'] = True
+            r['warnings'] = list(r.get('warnings') or []) + [
+                '⚠️ 确认稿闸门命中（%s）但本次不推新布局（layoutChanged=false）→ 未拦截：%s'
+                % (_creason or '?', gate.get('confirmHint') or '')]
+        if allow_unvalidated and not ugate.get('ok', True):
+            r['uiUnvalidated'] = True
+            r['warnings'] = list(r.get('warnings') or []) + [
+                '⚠️ 编译式验收未通过但被 allow_unvalidated=True 放行：%s'
+                % (ugate.get('hint') or '')]
+    return json.dumps(_with_design_warning(r, project_root), ensure_ascii=False)
 
 
 def flythings_pack_upgrade(project_root: str, out_path: str = '', release_version: str = '',
                            ab: bool = False, with_build: bool = False,
                            dry_run: bool = False) -> str:
     """固化升级包（update.img）——交付/发布/量产走本条；与「调试推送到设备」不同（那是 build_ui_flow，掉电即失）。
-
-    触发：打包升级包 / 出升级包 / 固化 / 刷进设备 / 出货版本 / TF卡升级包 / 刷机
     """
     return json.dumps(pt.flythings_pack_upgrade(project_root, out_path, release_version,
                                                 ab, with_build, dry_run),
@@ -978,25 +1109,117 @@ def _newest(paths, errs=None):
     return mt, who
 
 
-def _confirm_gate(project_root, json_path=''):
-    """确认闸门（2026-09-30 SmartPanel 检讨）：布局改完 → 项目里有没有**更新**的确认稿？
+CONFIRM_DRAFT_SUFFIXES = ('.confirm.html', '.preview.html', '.edit.html')
 
-只提醒、不阻塞（与「写操作默认安全」同一纪律）：回 confirmNeeded + confirmHint。
-确认稿 = flythings_ui_preview(for_customer=True) 的 `.confirm.html`（或 .preview.html / _edit/*.edit.html）。
+
+def _confirm_fingerprint_path(draft_html, project_root=''):
+    """确认稿的「指纹副文件」路径：`<项目>/temp/confirm/<稿名>.fingerprint.json`。
+
+    ⛔ **绝不能放在 `ui/` 下**（2026-10-05 用例实测踩到）：`ui/*.json` 会被
+    `fui pack`（打包该目录下所有 json）与 `ui_compile`（扫 `ui/*.json` 当页面）当成页面 json ——
+    指纹副文件被当成页面后一口气报 4 条 error（缺 id/position/resolution + 未知键）。
+    同族先例：渲染清单也走 `<项目>/temp/render/`（`kb_tools._render_report_dir`）。
+
+    为什么指纹写在 op 层而不是 `ui_tools/json2html.py`：`ui_tools/` 有两份副本
+    （`scripts/sync_ui_tools.py` 维护），把判据塞进副本 = 多一处要同步的实现。
     """
-    out = {'confirmNeeded': None, 'confirmDraft': '', 'confirmHint': ''}
+    d = os.path.dirname(os.path.abspath(draft_html))
+    # ⚠️ 不能用 `os.path.abspath(project_root or '')`：`abspath('')` == **当前工作目录**（不是空），
+    #    于是"没传项目根"会被当成"项目根 = cwd"（实测：指纹写到 <仓库>/temp/confirm/）。
+    root = os.path.abspath(project_root) if str(project_root or '').strip() else ''
+    if not root and os.path.basename(d) == 'ui':        # 稿子通常就在 <项目>/ui/ 下
+        root = os.path.dirname(d)
+    base = os.path.basename(draft_html)
+    if root:
+        return os.path.join(root, 'temp', 'confirm', base + '.fingerprint.json')
+    return os.path.abspath(draft_html) + '.fingerprint.json'
+
+
+def _file_sha256(path):
+    h = hashlib.sha256()
+    with open(path, 'rb') as f:
+        for chunk in iter(lambda: f.read(1 << 20), b''):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def write_confirm_fingerprint(json_abs, draft_html, for_customer=True):
+    """出确认稿时落指纹：记录**这份稿子对应哪一版 json 的内容**（T3.2）。
+
+    为什么要内容哈希而不只看 mtime：mtime 会被复制/还原/回滚工程骗过去，
+    「确认的不是这一版」正是硬闸门要拦的事故。写失败**不静默**：返回错误文本。
+    """
     try:
-        root = os.path.abspath(project_root or '') or _project_root_of(json_path)
+        jp = os.path.abspath(json_abs)
+        if not os.path.isfile(jp):
+            return '确认稿指纹未写：json 不存在 %s' % jp
+        payload = {'schema': 1, 'draft': os.path.abspath(draft_html),
+                   'forCustomer': bool(for_customer),
+                   'at': time.strftime('%Y-%m-%d %H:%M:%S'),
+                   'jsons': [{'abs': jp,
+                              'sha256': _file_sha256(jp),
+                              'size': os.path.getsize(jp),
+                              'mtime': os.path.getmtime(jp)}]}
+        fp = _confirm_fingerprint_path(draft_html, _project_root_of(jp))
+        d = os.path.dirname(fp)
+        if d:
+            os.makedirs(d, exist_ok=True)
+        io.open(fp, 'w', encoding='utf-8', newline='\n').write(
+            json.dumps(payload, ensure_ascii=False, indent=1) + '\n')
+        return ''
+    except Exception as e:                                    # noqa: BLE001
+        return '确认稿指纹未写：%s: %s' % (type(e).__name__, e)
+
+
+def _read_confirm_fingerprint(draft_html, project_root=''):
+    """读确认稿指纹；返回 (payload, 错误文本)。没有副文件 → (None, '')（历史稿）。"""
+    fp = _confirm_fingerprint_path(draft_html, project_root)
+    if not os.path.isfile(fp):
+        return None, ''
+    try:
+        with io.open(fp, encoding='utf-8') as f:
+            return json.load(f), ''
+    except Exception as e:                                    # noqa: BLE001
+        return None, '确认稿指纹读不了（%s: %s）→ 按「未带指纹」处理' % (type(e).__name__, e)
+
+
+def _confirm_gate(project_root, json_path=''):
+    """确认闸门（2026-09-30 立；**2026-10-05 需求方拍板升级为硬闸门**）。
+
+    判据两问：
+      ① **有没有更新**的确认稿？—— 确认稿 = `flythings_ui_preview(for_customer=True)` 的
+         `.confirm.html`（或 `.preview.html` / `_edit/*.edit.html`）；
+      ② **确认的是不是这一版**？—— 有指纹副文件（`.fingerprint.json`）时按 **json 内容 sha256** 比；
+         没副文件的历史稿如实标 `confirmLegacy`（不假装它验过）。
+
+    返回键（`confirmNeeded` / `confirmDraft` / `confirmHint` 向后兼容）：
+      confirmBlocked / confirmReason（'' | no_draft | stale_draft | fingerprint_mismatch）
+      / confirmLegacy / confirmFingerprint{checked, mismatched} / confirmWarnings
+    """
+    out = {'confirmNeeded': None, 'confirmDraft': '', 'confirmHint': '',
+           'confirmBlocked': False, 'confirmReason': '', 'confirmLegacy': False,
+           'confirmFingerprint': {'checked': 0, 'mismatched': []}, 'confirmWarnings': []}
+    try:
+        # 2026-10-05 检讨修：原来是 `os.path.abspath(project_root or '') or _project_root_of(...)`
+        # —— `abspath('')` == cwd **恒真**，于是「传空 project_root」时闸门实际在扫 `<cwd>/ui`，
+        # 扫不到就 return 默认值（confirmBlocked=False）= **硬闸门无声失效**；`_project_root_of`
+        # 那条兜底永远走不到。现在：给了就用给的，没给就从 json 路径反推，两者都不成立就**明确说**。
+        root = (os.path.abspath(project_root) if str(project_root or '').strip()
+                else _project_root_of(json_path))
         uroot = os.path.join(root, 'ui')
         if not os.path.isdir(uroot):
+            out['confirmWarnings'].append(
+                '确认稿闸门没跑：%s 下没有 ui/ 目录（project_root=%r、json=%r）→ '
+                '传 project_root=<工程根> 后重试' % (root, project_root,
+                                             os.path.basename(json_path or '') or '?'))
             return out
         drafts, jsons, skipped = [], [], []
         for dp, _dn, fn in os.walk(uroot):
             for f in fn:
                 p = os.path.join(dp, f)
-                if f.endswith(('.confirm.html', '.preview.html', '.edit.html')):
+                if f.endswith(CONFIRM_DRAFT_SUFFIXES):
                     drafts.append(p)
-                elif f.endswith('.json'):
+                elif f.endswith('.json') and not f.endswith('.fingerprint.json'):
                     jsons.append(p)
         if json_path and os.path.isfile(json_path):
             jsons.append(os.path.abspath(json_path))
@@ -1004,20 +1227,299 @@ def _confirm_gate(project_root, json_path=''):
         t_draft, dm = _newest(drafts, skipped)
         out['confirmDraft'] = dm
         out['confirmNeeded'] = bool(t_json and (not dm or t_draft < t_json))
-        if out['confirmNeeded']:
+        # ---- ② 指纹核对（只认**最新那份**稿子：它才是这套 json 的确认依据）----
+        mismatched, legacy, fp_err = [], False, ''
+        if dm:
+            payload, fp_err = _read_confirm_fingerprint(dm, root)
+            if payload is None:
+                legacy = True
+            else:
+                for rec in (payload.get('jsons') or []):
+                    out['confirmFingerprint']['checked'] += 1
+                    ap = rec.get('abs') or ''
+                    want = rec.get('sha256') or ''
+                    if not ap or not os.path.isfile(ap):
+                        mismatched.append('%s（确认稿记录的 json 已不在）'
+                                          % (os.path.basename(ap) or '?'))
+                        continue
+                    if want and _file_sha256(ap) != want:
+                        mismatched.append('%s（内容与确认时不一致）' % os.path.basename(ap))
+        out['confirmLegacy'] = legacy
+        out['confirmFingerprint']['mismatched'] = mismatched
+        if mismatched:
+            out['confirmBlocked'], out['confirmReason'] = True, 'fingerprint_mismatch'
+        elif out['confirmNeeded']:
+            out['confirmBlocked'] = True
+            out['confirmReason'] = 'no_draft' if not dm else 'stale_draft'
+        # ---- 提示（不静默：每种拦截理由都要说清「怎么办」）----
+        preview_cmd = 'flythings_ui_preview(target="%s", for_customer=True)' % root
+        if out['confirmBlocked'] and out['confirmReason'] == 'fingerprint_mismatch':
+            out['confirmHint'] = (
+                '确认稿 %s 与当前 json **不是同一版**（%s）→ 布局在确认后又改过：'
+                '重出确认稿再确认（%s）；确需跳过传 force_confirm=True'
+                % (os.path.basename(dm), '；'.join(mismatched[:3]), preview_cmd))
+        elif out['confirmBlocked']:
             out['confirmHint'] = (
                 '布局已改（%s）但没有**更新**的确认稿 → 先出确认稿给需求方确认，再 pack / 推真机：'
-                'flythings_ui_preview(target="%s", for_customer=True)（单文件 .confirm.html，'
-                '手机可打开、带控件标注）；口径见 knowledge/devflow/ui-layout-verify.md §0'
-                % (os.path.basename(jm or ''), root))
-        else:
-            out['confirmHint'] = ('已有确认稿 %s，可直接 pack/推真机（再改布局记得重出确认稿）'
-                                  % os.path.basename(dm or ''))
+                '%s（单文件 .confirm.html，手机可打开、带控件标注）；'
+                '口径见 knowledge/devflow/ui-layout-verify.md §0；确需跳过传 force_confirm=True'
+                % (os.path.basename(jm or ''), preview_cmd))
+        elif dm:
+            out['confirmHint'] = ('已有确认稿 %s%s，可直接 pack/推真机（再改布局记得重出确认稿）'
+                                  % (os.path.basename(dm),
+                                     '（历史稿：未带指纹，无法核对「确认的是哪一版」）'
+                                     if legacy else ''))
+        elif fp_err:
+            out['confirmHint'] = fp_err
+        if legacy and dm:
+            out['confirmWarnings'].append(
+                '确认稿 %s 没有指纹副文件（历史稿）→ 只按时间判新旧，未核对内容版本；'
+                '重出一次确认稿即可带上指纹' % os.path.basename(dm))
+        if fp_err:
+            out['confirmWarnings'].append(fp_err)
         if skipped:
-            out['confirmWarnings'] = skipped
+            out['confirmWarnings'].extend(skipped)
     except Exception as e:                                # noqa: BLE001
         out['confirmHint'] = '确认闸门未跑成：%s' % e
+        out['confirmWarnings'].append('确认闸门未跑成：%s: %s' % (type(e).__name__, e))
     return out
+
+
+def _layout_changed_since_pack(project_root):
+    """(changed, newest_json, 说明)：json 比 ftu 新（或缺 ftu）→ 这次会真的把新布局推上设备。"""
+    uroot = os.path.join(os.path.abspath(project_root or ''), 'ui')
+    jsons, ftus, skipped = [], [], []
+    if os.path.isdir(uroot):
+        for dp, _dn, fn in os.walk(uroot):
+            for f in fn:
+                p = os.path.join(dp, f)
+                if f.endswith('.json') and not f.endswith('.fingerprint.json'):
+                    jsons.append(p)
+                elif f.endswith('.ftu'):
+                    ftus.append(p)
+    t_json, jm = _newest(jsons, skipped)
+    t_ftu, fm = _newest(ftus, skipped)
+    if not jsons:
+        return False, '', 'ui/ 下没有 json'
+    if not ftus:
+        return True, jm, 'ui/ 下没有 ftu（尚未 pack 过）'
+    return (t_json > t_ftu), jm, ('json=%s ftu=%s' % (os.path.basename(jm),
+                                                      os.path.basename(fm)))
+
+
+def _dump_json(obj):
+    """`json.dumps` 的模块级别名。
+
+    为什么需要：`flythings_ui_visual` 的形参名叫 `json`（遮蔽模块），在该函数作用域里
+    `json.dumps(...)` 会抛 `AttributeError: 'str' object has no attribute 'dumps'`（实测两次）。
+    """
+    import json as _jsonlib
+    return _jsonlib.dumps(obj, ensure_ascii=False)
+
+
+def _confirm_block_json(op, gate, extra=None):
+    """`_confirm_block_body` 的 JSON 串形式（给形参遮蔽了 `json` 模块的函数用）。"""
+    import json as _jsonlib
+    return _jsonlib.dumps(_confirm_block_body(op, gate, extra), ensure_ascii=False)
+
+
+def _ui_compile_gate(project_root, json_path='', strict_ui=False):
+    """**编译式验收闸门**（T1.3）：产物 json 能不能被设备正常加载 —— 有 fatal/error 就拦。
+
+    为什么必须做在这一层（2026-10-05）：`fui pack` **自己不校验字段**（实测 `project_tools.flythings_fui_pack`
+    直接跑 fui pack），字段/类型写错照样 pack 「成功」，直到真机加载时**无声挂死**才发现 ——
+    这正是「上机来回掰扯」的主因。所以把 `ui_compile` 提到 pack 之前。
+    拿不到 ui_compile 时**不静默**：返回体带 `hint` 说明"这次没做编译式验收"。
+    """
+    out = {'ok': True, 'ran': False, 'fatal': 0, 'error': 0, 'warn': 0,
+           'diagnostics': [], 'hint': '', 'strictUi': bool(strict_ui),
+           'errorsNotBlocking': 0}
+    if uic is None:
+        out['hint'] = ('ui_compile 不可用（%s）→ 本次**没做**编译式验收；'
+                       '手跑 python ui_tools/ui_compile.py <json>' % (_UIC_ERR or '未导入'))
+        return out
+    try:
+        rep = (uic.compile_json(json_path, project_root=project_root) if json_path
+               else uic.compile_project(project_root))
+    except Exception as e:                                # noqa: BLE001
+        out['hint'] = ('编译式验收没跑成：%s: %s → 本次未拦，请手跑 '
+                       'python ui_tools/ui_compile.py <json>' % (type(e).__name__, e))
+        return out
+    summ = rep.get('summary') or {}
+    fatal = int(summ.get('fatal') or 0)
+    error = int(summ.get('error') or 0)
+    # 两档（2026-10-05 实测口径，见本补丁头）：fatal 一律拦；error 只在 strict_ui 下拦。
+    out.update({'ran': True,
+                'fatal': fatal, 'error': error, 'warn': int(summ.get('warn') or 0),
+                'diagnostics': (rep.get('diagnostics') or [])[:40]})
+    out['ok'] = (fatal == 0) and (error == 0 or not strict_ui)
+    out['errorsNotBlocking'] = error if (error and not strict_ui) else 0
+    if not out['ok']:
+        out['hint'] = ('产物没通过编译式验收（fatal=%d error=%d）→ 按诊断逐条修，重跑 '
+                       'python ui_tools/ui_compile.py <json>；确需强制继续传 allow_unvalidated=True'
+                       % (fatal, error))
+    elif out['errorsNotBlocking']:
+        out['hint'] = ('编译式验收：fatal=0，但有 %d 条**必填/字段** error（默认不阻断 pack）'
+                       '→ 建议按诊断补齐（python ui_tools/ui_compile.py <json>）；'
+                       '要让它阻断传 strict_ui=True' % out['errorsNotBlocking'])
+    return out
+
+
+def _ugate_extra(ugate, allow_unvalidated):
+    """编译闸门结果 → 要并进返回体的字段（被确认闸门拦下时同样要带，别只在成功路径上带）。"""
+    ex = {}
+    if ugate.get('ran'):
+        ex['uiCheck'] = {'fatal': ugate.get('fatal'), 'error': ugate.get('error'),
+                         'warn': ugate.get('warn'), 'strictUi': bool(ugate.get('strictUi')),
+                         'errorsNotBlocking': int(ugate.get('errorsNotBlocking') or 0)}
+    if not ugate.get('ok', True):
+        ex['uiDiagnostics'] = ugate.get('diagnostics') or []
+        if allow_unvalidated:
+            ex['uiUnvalidated'] = True
+    return ex
+
+
+def _ui_invalid_body(op, gate, extra=None):
+    """编译式验收失败时的返回体（统一形状，可机读）。"""
+    body = {'ok': False, 'op': op,
+            'error': _err_obj('UI_JSON_INVALID',
+                              '编译式验收未通过：fatal=%d error=%d'
+                              % (gate.get('fatal') or 0, gate.get('error') or 0),
+                              gate.get('hint') or '', True),
+            'warnings': list(gate.get('warnings') or []),
+            'uiCheck': {'ran': gate.get('ran'), 'fatal': gate.get('fatal'),
+                        'error': gate.get('error'), 'warn': gate.get('warn')},
+            'uiDiagnostics': gate.get('diagnostics') or []}
+    if extra:
+        body.update(extra)
+    return body
+
+
+def _compile_pages(paths, project_root=None, strict_ui=False):
+    """生成路径出口：对刚生成的页面逐个跑编译式验收，汇总成一个 gate 结构。
+
+    `paths` 为空（没产出任何 json）→ 不拦（那是上游自己的错，由它的 success 字段报）。
+    """
+    agg = {'ok': True, 'ran': False, 'fatal': 0, 'error': 0, 'warn': 0,
+           'diagnostics': [], 'hint': '', 'strictUi': bool(strict_ui),
+           'errorsNotBlocking': 0, 'files': []}
+    if uic is None:
+        agg['hint'] = ('ui_compile 不可用（%s）→ 本次**没做**编译式验收'
+                       % (_UIC_ERR or '未导入'))
+        return agg
+    for p in paths:
+        g = _ui_compile_gate(project_root or _project_root_of(p), p, strict_ui=strict_ui)
+        if not g.get('ran'):
+            agg['hint'] = g.get('hint') or agg['hint']
+            continue
+        agg['ran'] = True
+        agg['fatal'] += int(g.get('fatal') or 0)
+        agg['error'] += int(g.get('error') or 0)
+        agg['warn'] += int(g.get('warn') or 0)
+        agg['errorsNotBlocking'] += int(g.get('errorsNotBlocking') or 0)
+        for d in (g.get('diagnostics') or []):
+            d = dict(d)
+            d.setdefault('file', os.path.relpath(p, os.path.dirname(p)))
+            agg['diagnostics'].append(d)
+        agg['files'].append(p)
+        if not g.get('ok', True):
+            agg['ok'] = False
+    if not agg['ok']:
+        agg['hint'] = ('生成物没通过编译式验收（fatal=%d error=%d）→ **没有落盘**；'
+                       '按诊断逐条修（重跑 python ui_tools/ui_compile.py <json>），'
+                       '或传 allow_unvalidated=True 强制落盘'
+                       % (agg['fatal'], agg['error']))
+    elif agg['errorsNotBlocking']:
+        agg['hint'] = ('编译式验收：fatal=0，但有 %d 条**必填/引用** error（默认不阻断落盘）→ '
+                       '建议按诊断补齐；要阻断传 strict_ui=True' % agg['errorsNotBlocking'])
+    return agg
+
+
+def _edit_apply_compile_gate(project_root, raw_json, pack, dry_run,
+                             allow_unvalidated=False, strict_ui=False):
+    """`ui_visual(action="edit_apply")` 的编译闸门：回 `(blocked, raw_json)`。
+
+    `blocked` 为 None = 放行（此时 `raw_json` 是**补了 uiCheck/uiUnvalidated 的**返回体串，调用方要用它）；
+    非 None = 失败返回体（已回滚，调用方直接回它）。
+
+    为什么能回滚：`ui_edit_apply` 写盘前必留 `<name>.json.bak`（它的既有安全设计）。
+    回滚后若本次已经 pack 过，**重 pack 一次**把 ftu 还原成"回滚后的 json"（设备侧与 json 保持一致）。
+    """
+    txt = raw_json if isinstance(raw_json, str) else json.dumps(raw_json or {}, ensure_ascii=False)
+    try:
+        res = json.loads(txt)
+    except ValueError:
+        return None, raw_json
+    if not isinstance(res, dict) or not res.get('success') or dry_run:
+        return None, raw_json
+    jp = res.get('json') or ''
+    if not jp or not os.path.isfile(jp):
+        return None, raw_json
+    gate = _ui_compile_gate(project_root, jp, strict_ui=strict_ui)
+    if gate.get('ran') and res is not None:
+        res['uiCheck'] = {'fatal': gate.get('fatal'), 'error': gate.get('error'),
+                          'warn': gate.get('warn'), 'strictUi': bool(strict_ui),
+                          'errorsNotBlocking': int(gate.get('errorsNotBlocking') or 0)}
+    if gate.get('ok', True):
+        # 不静默（2026-10-05 检讨修）：原来只在 `errorsNotBlocking` 时带 hint —— 于是
+        # 「编译器不可用 / 抛异常（ran=false、hint 非空、errorsNotBlocking=0）」这条被吞掉，
+        # 调用方看到成功却不知道**这次根本没验**。其余兄弟路径（fui_pack / build_ui_flow /
+        # html_to_json）都是 hint 非空就带。
+        if gate.get('hint'):
+            res['warnings'] = list(res.get('warnings') or []) + [gate['hint']]
+        return None, json.dumps(res, ensure_ascii=False)
+    if allow_unvalidated:
+        res['uiUnvalidated'] = True
+        res['warnings'] = list(res.get('warnings') or []) + [
+            '⚠️ 编译式验收未通过但被 allow_unvalidated=True 放行：%s' % (gate.get('hint') or '')]
+        return None, json.dumps(res, ensure_ascii=False)
+    # 回滚（有 .bak 才回滚；没有就如实说明"没能回滚"）
+    bak = res.get('backup') or (jp + '.bak')
+    rolled, repacked = False, False
+    if os.path.isfile(bak):
+        try:
+            shutil.copy2(bak, jp)
+            rolled = True
+            if pack and uia is not None:
+                uia.pack(jp, project_root)
+                repacked = True
+        except OSError as e:                                  # noqa: PERF203
+            res['rollbackError'] = '%s: %s' % (type(e).__name__, e)
+    body = _ui_invalid_body('flythings_ui_visual', gate,
+                            {'action': 'edit_apply', 'jsonPath': jp, 'backup': bak,
+                             'rolledBack': rolled, 'repacked': repacked,
+                             # ⚠️ 2026-10-05 检讨修：回滚成功但**重 pack 失败**时，ftu 里还是
+                             # 那份被拒的布局 → 不能说"产物没有生效"（原话把两种情况混成一句）。
+                             'note': (('已从 .bak 回滚该 json，并重 pack 还原 ftu；**产物没有生效**。'
+                                       if repacked else
+                                       '已从 .bak 回滚该 json；但**重 pack 没成功**（见 rollbackError）'
+                                       '→ 磁盘上的 .ftu 可能仍是这次被拒的布局，请手工 `fui pack` 复核。')
+                                      if rolled else
+                                      '没有 .bak 可回滚 → 请手工核对 %s' % jp)})
+    return body, None
+
+
+def _compile_pages_placeholder():
+    pass
+
+
+def _confirm_block_body(op, gate, extra=None):
+    """确认稿硬闸门的失败返回体（统一形状，可机读）。"""
+    body = {'ok': False, 'op': op,
+            'error': _err_obj('CONFIRM_REQUIRED',
+                              '确认稿硬闸门拦下：%s' % (gate.get('confirmReason') or 'stale'),
+                              gate.get('confirmHint') or '', True),
+            'warnings': list(gate.get('confirmWarnings') or []),
+            'confirmNeeded': gate.get('confirmNeeded'),
+            'confirmBlocked': True,
+            'confirmReason': gate.get('confirmReason') or '',
+            'confirmDraft': gate.get('confirmDraft') or '',
+            'confirmHint': gate.get('confirmHint') or '',
+            'confirmLegacy': gate.get('confirmLegacy'),
+            'confirmFingerprint': gate.get('confirmFingerprint')}
+    if extra:
+        body.update(extra)
+    return body
 
 
 def _asset_audit(project_root):
@@ -1061,23 +1563,45 @@ def _with_confirm_gate(r, json_path='', project_root=''):
     """把确认闸门结果合进返回体（解析不了/不是 dict 就原样回）。"""
     if not isinstance(r, dict):
         return r
-    if not project_root:
+    if not str(project_root or '').strip():
         p = os.path.abspath(json_path) if json_path else ''
-        if p and os.path.isdir(p):                    # 传的是项目根/目录
-            project_root = p
-        elif p and os.path.isdir(os.path.join(os.path.dirname(p), 'ui')):
-            project_root = os.path.dirname(p)
+        if p and os.path.isdir(p):
+            # 传目录：`<项目>/ui` 取上一级；其余当项目根
+            project_root = (os.path.dirname(p)
+                            if os.path.basename(os.path.normpath(p)) == 'ui' else p)
+        elif p:
+            # 传文件：从 ui/*.json 反推（2026-10-05 检讨修：原来只看 `<json 所在目录>/ui`，
+            # 而 json 就在 ui/ 里 → 恒假 → project_root 留空 → 闸门静默失效）
+            project_root = _project_root_of(p)
     r.update(_confirm_gate(project_root, json_path))
     return r
 
 
 def flythings_ui_preview(target: str, output_dir: str = '', for_customer: bool = False) -> str:
     """json 布局 / 整个项目 → HTML 预览稿（客户确认 UI 用；只交 html，不产图片/截图）。
-
-    触发：出预览稿 / 给客户看效果 / 客户确认 / 预览页面 / 出个预览稿 / 客户确认稿
     """
     is_dir = os.path.isdir(target)
     r = j2h.json2html(target, output_dir, for_customer=bool(for_customer))
+    # 确认稿指纹（T3.2）：记下这份稿子对应哪一版 json（内容 sha256）——硬闸门据此判「确认的是不是这一版」
+    if isinstance(r, dict):
+        _notes = []
+        for _f in (r.get('files') or []):
+            _hp = _f.get('html')
+            if not _hp:
+                continue
+            _jabs = (os.path.join(os.path.abspath(target), 'ui', _f.get('json') or '')
+                     if is_dir else os.path.abspath(target))
+            _err = write_confirm_fingerprint(_jabs, _hp, bool(for_customer))
+            if _err:
+                _notes.append(_err)
+        if _notes:
+            r['fingerprintWarnings'] = _notes
+        if output_dir:
+            _u = os.path.join(os.path.abspath(target), 'ui') if is_dir else ''
+            if not _u or not os.path.abspath(output_dir).startswith(_u):
+                r['gateWarning'] = ('确认稿落在 %s（不在 <项目>/ui 下）→ 确认稿硬闸门扫不到它，'
+                                    'pack/build_ui_flow 会判「没有确认稿」；把 output_dir 指回 ui/ 即可'
+                                    % output_dir)
     if is_dir and isinstance(r, dict) and r.get('success'):
         for f in r.get('files', []):
             jp = os.path.join(target, 'ui', f.get('json', ''))
@@ -1117,24 +1641,96 @@ def flythings_ui_preview(target: str, output_dir: str = '', for_customer: bool =
 
 
 def flythings_html_to_json(input_html: str, output_json: str = '', res: str = '',
-                           merge_windows: bool = False) -> str:
+                           merge_windows: bool = False, allow_unvalidated: bool = False,
+                           strict_ui: bool = False) -> str:
     """受限 HTML 交互原型 -> ui/*.json（CSS 效果自动转图；产物尺寸 == 控件盒）。
-
-    触发：原型变界面 / HTML 转 json / 设计稿落地 / 网页稿转界面 / 把原型变成界面 / 设计稿转界面
     """
-    out = h2j.html2json(input_html, output_json or None, res or None,
+    # 落点与 asset_dir 都按**调用方给的真实路径**算（与 html2json 内部规则同口径，2026-10-05）：
+    # 生成期间 json 写临时文件、图片照常落到项目 resources/images（否则 CSS 自动转图会落进临时目录被清掉）。
+    if output_json:
+        _oj = str(output_json)
+        _real_file = os.path.abspath(_oj) if _oj.lower().endswith('.json') else None
+        _real_dir = os.path.dirname(_real_file) if _real_file else os.path.abspath(_oj)
+        _asset_dir = (os.path.join(os.path.dirname(_real_dir), 'resources', 'images')
+                      if os.path.basename(_real_dir) == 'ui' else os.path.join(_real_dir, 'images'))
+        _base = os.path.basename(_real_file) if _real_file else 'main.json'
+        _ui_ok = os.path.basename(_real_dir) == 'ui'
+    else:
+        _real_file = None
+        _real_dir = os.path.dirname(os.path.abspath(str(input_html)))
+        _asset_dir = ''        # 与原行为一致：不传 output_json 时不做自动转图
+        _base = os.path.splitext(os.path.basename(str(input_html)))[0] + '.json'
+        _ui_ok = True
+    tmp = tempfile.mkdtemp(prefix='h2j_gate_')
+    tmp_out = os.path.join(tmp, _base)
+    out = h2j.html2json(input_html, tmp_out, res or None, asset_dir=_asset_dir,
                         merge_windows=bool(merge_windows))
     hint = _render_path_hint(input_html)
-    if hint and isinstance(out, dict):
+    if isinstance(out, dict) and hint:
         out['pathHint'] = hint
+    if isinstance(out, dict) and not _ui_ok:
+        out['warnings'] = list(out.get('warnings') or []) + [
+            'output_json 不在 <项目>/ui/ 目录下，自动转图输出到 json 同目录 images/；'
+            '建议把图片移到项目 resources/images/ 后 json 引用 images/xxx.png（相对 resources）']
+    if not isinstance(out, dict) or not out.get('success'):
+        return json.dumps(out, ensure_ascii=False)
+    produced = [p for p in (out.get('jsonPaths') or []) if p and os.path.isfile(p)]
+    if not produced and out.get('jsonPath') and os.path.isfile(out['jsonPath']):
+        produced = [out['jsonPath']]
+    proj = _project_root_of(output_json or input_html)
+    gate = _compile_pages(produced, proj, strict_ui=strict_ui)
+    if gate.get('ran'):
+        out['uiCheck'] = {'fatal': gate['fatal'], 'error': gate['error'], 'warn': gate['warn'],
+                          'strictUi': bool(strict_ui),
+                          'errorsNotBlocking': gate['errorsNotBlocking']}
+    if not gate.get('ok', True) and not allow_unvalidated:
+        body = _ui_invalid_body('flythings_html_to_json', gate,
+                                {'screensDetected': out.get('screensDetected'),
+                                 'pagesProduced': out.get('pagesProduced'),
+                                 'withdrawn': [], 'tempPath': tmp,
+                                 'note': ('产物**没有落盘**；生成期间写出的 json 已撤回'
+                                          '（自动转图若有）仍留在 resources/images，可复用')})
+        for p in produced:                       # 撤回：这份 json 只是"生成期间"的中间物
+            try:
+                os.remove(p)
+                body['withdrawn'].append(p)
+            except OSError as e:
+                body['warnings'] = list(body.get('warnings') or []) + [
+                    '撤回失败（%s）：%s' % (p, e)]
+        if hint:
+            body['pathHint'] = hint
+        return json.dumps(body, ensure_ascii=False)
+    if gate.get('hint') and not gate.get('ok', True):
+        out['uiUnvalidated'] = True
+    if gate.get('hint'):
+        out['warnings'] = list(out.get('warnings') or []) + [gate['hint']]
+    # 搬到最终位置（合并形态=单文件；每屏一页=按页名落盘）
+    final_dir = _real_dir
+    finals = []
+    for p in produced:
+        dst = (_real_file if (_real_file and out.get('mode') != 'per-screen')
+               else os.path.join(final_dir, os.path.basename(p)))
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.move(p, dst)
+        finals.append(dst)
+    if finals:
+        out['jsonPaths'] = finals
+        out['jsonPath'] = finals[0]
+        for pg in (out.get('pages') or []):
+            old = pg.get('json')
+            if old:
+                pg['json'] = os.path.join(final_dir, os.path.basename(old))
+    try:
+        shutil.rmtree(tmp, ignore_errors=True)
+    except OSError as e:
+        out['warnings'] = list(out.get('warnings') or []) + ['临时目录未清理：%s' % e]
     return json.dumps(out, ensure_ascii=False)
 
 
 def flythings_list_packages(platform: str = '') -> str:
     """列出依赖包生态（platform 如 F133/Z20，留空列全部），含功能描述与版本。写代码前调用。
 
-    触发：有哪些包 / 内置包清单 / 能用什么库
-    ⚠️⚠️ **平台定位**：Linux 基座（判能力基线同 buildroot/OpenWrt），**不是** MCU/RTOS/ESP32 板级 SDK；GUI 是自研 EasyUI（≠ LVGL）。见 `knowledge/devflow/flythings-os-positioning.md`
+    ⚠️⚠️ **平台定位**：Linux 基座（同 buildroot/OpenWrt，非 MCU/ESP32 SDK）；GUI 是自研 EasyUI（≠ LVGL）——见 `knowledge/devflow/flythings-os-positioning.md`
     """
     r = pkgtools.flythings_list_packages(platform or None)
     if platform and isinstance(r, dict):
@@ -1150,8 +1746,6 @@ def flythings_list_packages(platform: str = '') -> str:
 
 def flythings_query_package(package: str, platform: str = _platforms.DEFAULT_PLATFORM) -> str:
     """查询依赖包在指定平台的可用版本。传入包名（如 mqtt-cxx）与平台。
-
-    触发：这个包什么版本 / 平台支不支持 / 版本号多少
     """
     return json.dumps(pkgtools.flythings_query_package(package, platform), ensure_ascii=False)
 
@@ -1159,8 +1753,6 @@ def flythings_query_package(package: str, platform: str = _platforms.DEFAULT_PLA
 def flythings_manifest(features: str, platform: str = _platforms.DEFAULT_PLATFORM, project_root: str = '',
                        dry_run: bool = True) -> str:
     """按功能需求准备 Manifest.xml 依赖配置（**默认只推荐、不写盘**）。
-
-    触发：依赖清单 / Manifest 怎么写 / 要哪些包
     """
     flist = [f.strip() for f in str(features).split(',') if f.strip()]
     if dry_run:
@@ -1202,8 +1794,6 @@ def flythings_manifest(features: str, platform: str = _platforms.DEFAULT_PLATFOR
 def flythings_add_package(project_root: str, package: str, version: str = '',
                           platform: str = '', with_install: bool = True) -> str:
     """把 package 添加进项目 Manifest.xml 并执行 fun install 拉取依赖（添加包闭环流程）。
-
-    触发：加包 / 装个包 / 引入依赖 / 这个包怎么加进工程 / 加个包 / 加个 mqtt 包
     """
     return json.dumps(pkgtools.flythings_add_package(project_root, package,
                                                      version or None,
@@ -1215,8 +1805,6 @@ def flythings_add_package(project_root: str, package: str, version: str = '',
 
 def flythings_package_search(keyword: str, platform: str = _platforms.DEFAULT_PLATFORM) -> str:
     """按功能关键词搜索可用 package（mqtt/json/http/ssl/ble/ota/audio 等）。
-
-    触发：有没有现成的包 / 找库 / 支持 mqtt 的包 / 有没有 http 库 / 找个库
     """
     return json.dumps(pkgtools.flythings_search_package(keyword, platform), ensure_ascii=False)
 
@@ -1225,7 +1813,6 @@ def flythings_get_package_api(package_id: str, platform: str = _platforms.DEFAUL
                               version: str = '', focus: str = '') -> str:
     """获取 package 的头文件路径、类方法签名、使用示例。传入包名与可选版本。
 
-    触发：这个包怎么用 / 包的 API / 有哪些方法 / 看头文件
     ⚠️⚠️ **注册表没有 ≠ 平台没有**：设备 /lib 自带 nanovg / libpng12 / freetype / jpeg / mad / zlib，可 dlopen 免编译（先 `adb shell ls /lib` 核一遍）。
     """
     return json.dumps(pkgtools.flythings_get_package_api(package_id, platform,
@@ -1235,30 +1822,12 @@ def flythings_get_package_api(package_id: str, platform: str = _platforms.DEFAUL
 
 def flythings_resolve_dependencies(packages: str, platform: str = _platforms.DEFAULT_PLATFORM) -> str:
     """递归解析 package 依赖树并检测冲突。packages 为 JSON 数组字符串，如 '[{"id":"mqtt-cxx","version":"3.2.0"}]'。返回依赖树、解析结果与冲突建议。
-
-    触发：依赖冲突 / 依赖树 / 循环依赖
     """
     return json.dumps(pkgtools.flythings_resolve_dependencies(packages, platform), ensure_ascii=False)
-
-
-def flythings_create_bin_project(project_root: str, project_name: str = '', platform: str = _platforms.DEFAULT_BIN_PLATFORM,
-                                 app_version: str = '1.0.0', description: str = '',
-                                 with_build: bool = True) -> str:
-    """创建「可执行程序」项目（fun create --type bin）并编译为直接可运行的 ELF 二进制。
-
-    触发：做个小工具 / 命令行程序 / 不要界面 / 可执行文件 / bin 工程
-    ⚠️⚠️ **平台定位**：Linux 基座（判能力基线同 buildroot/OpenWrt），**不是** MCU/RTOS/ESP32 板级 SDK；GUI 是自研 EasyUI（≠ LVGL）。见 `knowledge/devflow/flythings-os-positioning.md`
-    ⚠️⚠️ bin 工程**只用于验证**（抢串口/裸逻辑），界面交付必须走 app 工程（`flythings_create_project`）——init 托管的是 app
-    """
-    return json.dumps(pt.flythings_create_bin_project(
-        project_root, project_name, platform, app_version, description, with_build),
-        ensure_ascii=False)
-
-
 def flythings_gen_logic_stub(project_root: str, page: str = '', dry_run: bool = False) -> str:
-    """按 ui/*.json 的控件表补齐 logic 回调桩（只补不改，不写业务）。
+    """回调桩体检/兜底（生成归 fun build）：页面逻辑写在 src/logic。
 
-    触发：补回调函数 / 按钮点击事件 / 写业务之前 / 生成骨架 / 回调桩 / 补上按钮点击回调 / 回调怎么补 / 补回调桩 / 缺回调怎么办 / 那个回调没生成
+    ⚠️⚠️ **桩只是骨架**：业务写在同一个 `src/logic/<页>Logic.cc`
     """
     return json.dumps(lt.gen_logic_stub(project_root, page, dry_run), ensure_ascii=False)
 
@@ -1267,8 +1836,6 @@ def flythings_gen_ui_test(project_root: str, test_type: str = 'ask', output_dir:
                           platform: str = _platforms.DEFAULT_BIN_PLATFORM, with_build: bool = True,
                           monkey_count: int = 500) -> str:
     """根据 UI json 布局生成自动化测试项目（纯代码，不依赖 AI，省 token）。
-
-    触发：生成测试用例 / 自动测界面 / UI 回归脚本 / 触摸测试
     """
     return json.dumps(tt.flythings_gen_ui_test(
         project_root, test_type, output_dir, platform, with_build, monkey_count),
@@ -1281,7 +1848,6 @@ def flythings_test_run(plan: str = '', devices: str = 'auto', project_root: str 
                        per_device_keys: str = 'auto') -> str:
     """多设备**并行**跑一份 UI 用例（触摸注入+日志断言+像素基线），出 JSON + JUnit 报告。
 
-    触发：跑测试 / 自动化回归 / 并行测多台 / UI 测试
     ⚠️⚠️ **比不到基线记 no-baseline，不算通过** —— 不许把 no-baseline 步骤报成「通过」。
     """
     return json.dumps(tt.flythings_test_run(plan, devices, project_root, out, platform,
@@ -1293,7 +1859,6 @@ def flythings_test_run(plan: str = '', devices: str = 'auto', project_root: str 
 def flythings_attach_cli_tools(project_root: str) -> str:
     """复制 fui.exe（→项目 ui/）与 fun.exe（→项目根目录）到项目，随项目交付。
 
-    触发：装工具链 / 项目里没有 fun.exe / 缺 fui.exe / 交付要带编译工具
     ⚠️⚠️ src/activity/ 目录（mainActivity.cpp/h）由 IDE 编译时自动生成，禁止创建/修改；业务代码只写 src/logic/*.cc。
     """
     return json.dumps(pt.flythings_attach_cli_tools(project_root), ensure_ascii=False)
@@ -1361,8 +1926,7 @@ def flythings_create_project(project_root: str, platform: str, resolution: str,
                              app_name: str = '', with_cli: bool = True, force: bool = False) -> str:
     """从 HelloWord 模板创建 FlyThings 项目，自动替换工程名/分辨率/平台。
 
-    触发：新建工程 / 建个项目 / 从零开始 / 起个新项目 / 建 FlyThings 工程 / 从头做
-    ⚠️⚠️ **平台定位**：Linux 基座（基线同 buildroot/OpenWrt，非 MCU/ESP32 SDK）；GUI 是自研 EasyUI（≠ LVGL）。见 `flythings-os-positioning.md`
+    ⚠️⚠️ **平台定位**：Linux 基座（同 buildroot/OpenWrt，非 MCU/ESP32 SDK）；GUI 是自研 EasyUI（≠ LVGL）——见 `knowledge/devflow/flythings-os-positioning.md`
     ⚠️⚠️ src/activity/ 由 ftu 生成，禁建/改/覆盖；业务只写 src/logic/*.cc
     ⚠️⚠️ 新需求必须先出设计稿/原型并让用户确认（见 prototype-flow）再建工程 —— 跳过确认 = 返工
     """
@@ -1376,8 +1940,6 @@ def flythings_check_project_deps(project_root: str, platform: str = _platforms.D
                                 device: str = '', font_check: str = 'auto', font_tier: str = '',
                                 font_apply: bool = False) -> str:
     """扫描项目 include 的三方库与 Manifest 声明对比，返回缺失依赖。
-
-    触发：依赖对不对 / 缺哪些库 / include 找不到 / 查依赖
     """
     return json.dumps(pkgtools.flythings_check_project_deps(
         project_root, platform, device, font_check, font_tier, font_apply), ensure_ascii=False)
@@ -1385,8 +1947,6 @@ def flythings_check_project_deps(project_root: str, platform: str = _platforms.D
 
 def flythings_generate_ui_assets(project_root: str, assets: str) -> str:
     """生成 UI 图片资源（图标/牌面/按钮背景等）→ <项目>/resources/images/（json 引用写 images/xxx.png）。
-
-    触发：生成图标 / 出图 / 做个按钮背景图 / 要一套图标
     """
     res = h2j_genres.gen_ui_assets(project_root, assets)
     if isinstance(res, dict):
@@ -1394,59 +1954,61 @@ def flythings_generate_ui_assets(project_root: str, assets: str) -> str:
     return json.dumps(res, ensure_ascii=False)
 
 
-def flythings_i18n_scan(project_root: str) -> str:
-    """诊断项目多语言（i18n）现状：i18n/*.tr 语言文件、key 对齐、布局 @key 引用完整性。
+I18N_ACTIONS = ('scan', 'export', 'import', 'add_language', 'refactor', 'to_json')
+I18N_ACTION_HINT = ('action 决定做哪一步（顺序即典型用法）：scan 诊断 → refactor 抽 @key → '
+                    'add_language 加语种 → export 导出待译 → import 写回译文 → to_json 转设备格式并推送')
 
-    触发：多语言有没有问题 / 检查翻译 / key 对不齐
+
+def _i18n_bad_action(action):
+    return json.dumps({'success': False,
+                       'error': {'code': 'BAD_PARAMS',
+                                 'message': '未知 action=%r；合法值：%s'
+                                            % (action, ' / '.join(I18N_ACTIONS)),
+                                 'action': '按上面合法值重试；' + I18N_ACTION_HINT}},
+                      ensure_ascii=False)
+
+
+def flythings_i18n(project_root: str, action: str, lang: str = 'zh_CN', lang_name: str = '',
+                   base_lang: str = 'zh_CN', keys: str = '', context: str = '',
+                   translations: str = '', merge: bool = True, dry_run: bool = True,
+                   langs: str = '', push: bool = True, device: str = '') -> str:
+    """多语言（i18n）唯一入口：一个 action 一步（诊断/抽 @key/加语种/导出/写回/转 json 并推送）。
+
+    ⚠️⚠️ **改完翻译必须 `action="to_json"`**（`fun launch` 不推 i18n）—— 否则设备还是旧文案
+    ⚠️⚠️ `action="scan"` 只读；`action="refactor"` 缺省 `dry_run=true`，先看清单再落盘
     """
-    return json.dumps(itx.flythings_i18n_scan(project_root), ensure_ascii=False)
-
-
-def flythings_i18n_add_language(project_root: str, lang: str, lang_name: str, base_lang: str = 'zh_CN', context: str = '') -> str:
-    """添加新语言：从基础语言（缺省 zh_CN）复制 key 骨架，生成 i18n/<lang>-<lang_name>.tr 待翻译文件。
-
-    触发：加个语言 / 支持英文 / 多语言加一种 / 加英文 / 加一门语言 / 加个语种 / 要英文
-    """
-    return json.dumps(itx.flythings_i18n_add_language(project_root, lang, lang_name, base_lang, context), ensure_ascii=False)
-
-
-def flythings_i18n_export(project_root: str, lang: str = 'zh_CN', keys: str = '', context: str = '') -> str:
-    """导出指定语言（缺省 zh_CN）的 key→文本清单（JSON），供翻译后 import 写回。
-
-    触发：导出翻译 / 把文案给翻译 / 导出语言包 / 导出给翻译 / 文案导出 / 导出文案
-    """
-    return json.dumps(itx.flythings_i18n_export(project_root, lang, keys, context), ensure_ascii=False)
-
-
-def flythings_i18n_import(project_root: str, lang: str, translations: str, merge: bool = True) -> str:
-    """将翻译结果写回项目 i18n/<lang>.tr（生成新语言文件或更新已有）。
-
-    触发：翻译好了 / 导入翻译 / 把译文写回去
-    """
-    r = itx.flythings_i18n_import(project_root, lang, translations, merge)
-    try:
-        r2 = json.loads(r) if isinstance(r, str) else r
-    except Exception:
-        return r if isinstance(r, str) else json.dumps(r, ensure_ascii=False)
-    if isinstance(r2, dict):
-        _with_files(r2, r2.get('path'), r2.get('trPath'))
-    return json.dumps(r2, ensure_ascii=False)
-
-
-def flythings_i18n_refactor(project_root: str, lang: str = 'zh_CN', dry_run: bool = True) -> str:
-    """把布局 json 里写死的非空文本控件替换为 @key 引用（多语言改造辅助）。
-
-    触发：多语言改造 / 写死的文字改成 key / 文案抽出来
-    """
-    return json.dumps(itx.flythings_i18n_refactor(project_root, lang, dry_run), ensure_ascii=False)
-
-
-def flythings_i18n_to_json(project_root: str, langs: str = '', push: bool = True, device: str = '') -> str:
-    """把 i18n/*.tr 转为 i18n/*.json（设备 zkgui 实际加载格式），并可推送到设备 /tmp/tr/。
-
-    触发：推翻译 / tr 转 json / 翻译不生效 / 界面还是旧文案
-    """
-    return json.dumps(itx.flythings_i18n_to_json(project_root, langs, push, device), ensure_ascii=False)
+    if action not in I18N_ACTIONS:
+        return _i18n_bad_action(action)
+    if action == 'scan':
+        return json.dumps(itx.flythings_i18n_scan(project_root), ensure_ascii=False)
+    if action == 'add_language':
+        if not str(lang or '').strip() or not str(lang_name or '').strip():
+            return json.dumps({'success': False,
+                               'error': {'code': 'BAD_PARAMS',
+                                         'message': 'action=add_language 需要 lang 与 lang_name',
+                                         'action': '例：action="add_language", lang="en", '
+                                                   'lang_name="English"'}},
+                              ensure_ascii=False)
+        return json.dumps(itx.flythings_i18n_add_language(project_root, lang, lang_name,
+                                                          base_lang, context),
+                          ensure_ascii=False)
+    if action == 'export':
+        return json.dumps(itx.flythings_i18n_export(project_root, lang, keys, context),
+                          ensure_ascii=False)
+    if action == 'import':
+        r = itx.flythings_i18n_import(project_root, lang, translations, merge)
+        try:
+            r2 = json.loads(r) if isinstance(r, str) else r
+        except Exception:
+            return r if isinstance(r, str) else json.dumps(r, ensure_ascii=False)
+        if isinstance(r2, dict):
+            _with_files(r2, r2.get('path'), r2.get('trPath'))
+        return json.dumps(r2, ensure_ascii=False)
+    if action == 'refactor':
+        return json.dumps(itx.flythings_i18n_refactor(project_root, lang, dry_run),
+                          ensure_ascii=False)
+    return json.dumps(itx.flythings_i18n_to_json(project_root, langs, push, device),
+                      ensure_ascii=False)
 
 
 # ── UI 可视化三合一（v0.27.37：ui-visual 组做成一个带 action 的入口）──────────────
@@ -1662,6 +2224,38 @@ def _ui_render(project_root, page='', scale=1, out='', all_pages=False):
                        'report': rj}, ensure_ascii=False)
 
 
+def _find_json2img_report(project_root, page_json, render_png):
+    """找 json2img 的 `--json-report` 产物（`region_attrib` 用它认"渲染器盲区"）。
+
+    在 `<项目>/temp/render/` 下扫 `*.report.json`，挑**内容里真的引用了这张渲染图**的那个；
+    找不到返回 None（调用方按"没有报告"处理 = 盲区信息缺失，不静默当成"没有盲区"）。
+    """
+    d = _render_report_dir(project_root, page_json)
+    if not os.path.isdir(d):
+        return None
+    target = os.path.abspath(render_png)
+    broken = []
+    for fn in sorted(os.listdir(d)):
+        if not fn.endswith('.report.json'):
+            continue
+        p = os.path.join(d, fn)
+        try:
+            with open(p, encoding='utf-8') as f:
+                data = json.load(f)
+        except (OSError, ValueError) as e:
+            # **不静默**（DESIGN_SPEC 第 3 条）：坏报告要留下来 —— 否则调用方会以为"这份工程没有盲区"
+            broken.append('%s（%s: %s）' % (fn, type(e).__name__, e))
+            continue
+        for r in (data.get('renders') or []):
+            if r.get('out') and os.path.abspath(r['out']) == target:
+                if broken:
+                    data.setdefault('_reportWarnings', []).extend(broken)
+                return data
+    if broken:
+        sys.stderr.write('[warn] json2img 报告读数失败 %d 份：%s\n' % (len(broken), '；'.join(broken)))
+    return None
+
+
 def _ui_render_check(render='', device='', page_json='', tol=2, max_ratio=1.0,
                      project_root='', page='', scale=1):
     """渲染图 vs 真机截图 → 一致性判据（子进程调 ui_tools/wysiwyg_diff.py）。
@@ -1733,6 +2327,28 @@ def _ui_render_check(render='', device='', page_json='', tol=2, max_ratio=1.0,
     base = ('非文字区超容差 %.2f%%（判据 ≤ %.2f%%），运行期文字区 %.2f%%，最大差异块 %sx%s'
             % (100.0 - float(pct or 0.0), mr, float(d.get('runtimeTextRatioPct') or 0.0),
                mb.get('w', 0), mb.get('h', 0)))
+    # ---- T2.4 区域级层归因（差异该谁修）：只**补充**信息，不改本 op 的 pass 判据 ----
+    try:
+        import region_attrib as _ra
+        _rep = _find_json2img_report(root, pj, rimg)
+        _lay = _ra.attribute(pj, rimg, dev, render_report=_rep, project_root=root,
+                             tol=t, max_ratio=mr)
+        if _lay.get('success'):
+            res['layerAttribution'] = {
+                'pass': _lay['pass'], 'eLayerSharePct': _lay['eLayerSharePct'],
+                'attributedPct': _lay['attributedPct'], 'layers': _lay['layers'],
+                'blocking': (_lay.get('blocking') or [])[:8], 'hint': _lay['hint'],
+                'regions': (_lay.get('regions') or [])[:12]}
+            if not _lay['pass'] and ok:
+                res.setdefault('warnings', []).append(
+                    'wysiwyg 判 PASS，但区域级归因发现 C 层/未归因的超阈值差异 %d 处'
+                    '（见 layerAttribution.blocking）—— 别当成"真机一致"就收工'
+                    % len(_lay.get('blocking') or []))
+        else:
+            res.setdefault('warnings', []).append('区域级归因未跑成：%s' % _lay.get('error'))
+    except Exception as _e:                                # noqa: BLE001
+        res.setdefault('warnings', []).append(
+            '区域级归因不可用（%s: %s）→ 本次只有逐控件像素归因' % (type(_e).__name__, _e))
     if ok:
         res['message'] = '一致（PASS）：' + base
     else:
@@ -1749,7 +2365,8 @@ def _ui_render_check(render='', device='', page_json='', tol=2, max_ratio=1.0,
 UI_VISUAL_ACTIONS = ('editor', 'edit_apply', 'diff', 'baseline', 'render', 'render_check')
 UI_VISUAL_ARGS = {
     'editor': ('project_root', 'output_dir'),
-    'edit_apply': ('project_root', 'changes', 'pack', 'dry_run'),
+    'edit_apply': ('project_root', 'changes', 'pack', 'dry_run', 'force_confirm',
+                   'allow_unvalidated', 'strict_ui'),
     'diff': ('image_a', 'image_b', 'tolerance', 'shift', 'min_area', 'blur',
              'noise_bbox', 'out_png', 'out_json', 'show_noise'),
     # baseline（2026-09-29）：像素基线库 —— 把「上一次验收通过的那张图」版本化存下来
@@ -1772,7 +2389,9 @@ _UI_VISUAL_DEFAULTS = {'project_root': '', 'output_dir': '', 'changes': '', 'pac
                        'out_png': '', 'out_json': '', 'show_noise': False,
                        'mode': '', 'baseline_key': '', 'name': '', 'allow_regions': 0,
                        'page': '', 'scale': 1, 'out': '', 'all': False, 'render': '',
-                       'device': '', 'json': '', 'tol': 2, 'max_ratio': 1.0}
+                       'device': '', 'json': '', 'tol': 2, 'max_ratio': 1.0,
+                       'force_confirm': False, 'allow_unvalidated': False,
+                       'strict_ui': False}
 
 
 def _ui_baseline(project_root, image, mode='', key='', name='', allow_regions=0,
@@ -1861,10 +2480,10 @@ def flythings_ui_visual(action: str = 'list', project_root: str = '', output_dir
                         name: str = '', allow_regions: int = 0,
                         page: str = '', scale: int = 1, out: str = '', all: bool = False,
                         render: str = '', device: str = '', json: str = '',
-                        tol: int = 2, max_ratio: float = 1.0) -> str:
+                        tol: int = 2, max_ratio: float = 1.0,
+                        force_confirm: bool = False, allow_unvalidated: bool = False,
+                        strict_ui: bool = False) -> str:
     """UI 可视化/像素验收入口（action 选动作；旧编辑器三 op 已并入，action=list 看参数）。
-
-    触发：对比设计稿 / 还原度 / 像素验收 / 渲染出来看看 / 和截图像不像 / 和设计稿不像 / 跟设计稿不像 / 还原度多少
     """
     act = str(action or '').strip().lower().replace('-', '_')
     if act in ('', 'list', 'help', '?'):
@@ -1885,7 +2504,9 @@ def flythings_ui_visual(action: str = 'list', project_root: str = '', output_dir
              'show_noise': show_noise, 'mode': mode, 'baseline_key': baseline_key,
              'name': name, 'allow_regions': allow_regions,
              'page': page, 'scale': scale, 'out': out, 'all': all, 'render': render,
-             'device': device, 'json': json, 'tol': tol, 'max_ratio': max_ratio}
+             'device': device, 'json': json, 'tol': tol, 'max_ratio': max_ratio,
+             'force_confirm': force_confirm, 'allow_unvalidated': allow_unvalidated,
+             'strict_ui': strict_ui}
     miss = [k for k in UI_VISUAL_REQUIRED[act] if not str(given[k] or '').strip()]
     if miss:
         return _ui_visual_bad('action=%s 缺必填参数: %s' % (act, ', '.join(miss)),
@@ -1898,8 +2519,30 @@ def flythings_ui_visual(action: str = 'list', project_root: str = '', output_dir
         return _ui_visual_hint(_ui_visual_note(_ui_editor(project_root, output_dir), note),
                               _render_path_hint(changes))
     if act == 'edit_apply':
-        return _ui_visual_hint(_ui_visual_note(_ui_edit_apply(project_root, changes, pack, dry_run), note),
-                              _render_path_hint(changes))
+        # 确认稿硬闸门：只有「写回 json 且接着 pack」才拦（单纯写 json 不推设备，不拦）
+        _gate = None
+        if pack and not dry_run:
+            _gate = _confirm_gate(project_root)
+            if _gate.get('confirmBlocked') and not force_confirm:
+                # ⚠️ 本函数形参里有 `json`（遮蔽模块）→ 走模块级 helper，别在本作用域 json.dumps
+                return _confirm_block_json('flythings_ui_visual', _gate, {'action': act})
+        _raw = _ui_edit_apply(project_root, changes, pack, dry_run)
+        # 编译式验收（T1.3）：写回后的 json 有 fatal → 从 .bak 回滚（并重 pack 还原 ftu）
+        _blocked, _raw2 = _edit_apply_compile_gate(project_root, _raw, pack, dry_run,
+                                                  allow_unvalidated, strict_ui)
+        if _blocked is not None:
+            return _dump_json(_blocked)
+        _final = _raw2 if _raw2 is not None else _raw
+        # force_confirm 留痕（T3.1）：与 fui_pack / build_ui_flow **同口径**。`error_codes.json` 的
+        # CONFIRM_REQUIRED 与 `tests/_util.py` 都承诺了 `confirmOverridden=true`，这条路径以前
+        # 只在正文里带 confirmBlocked、没有「被跳过」的记录（2026-10-05 检讨修）。
+        if force_confirm and isinstance(_final, dict) and (_gate or {}).get('confirmBlocked'):
+            _final['confirmOverridden'] = True
+            _final['warnings'] = list(_final.get('warnings') or []) + [
+                '⚠️ 确认稿硬闸门被 force_confirm 跳过：%s'
+                % ((_gate or {}).get('confirmHint') or '')]
+        return _ui_visual_hint(_ui_visual_note(_final, note),
+                               _render_path_hint(changes))
     if act == 'baseline':
         prof = {'tolerance': tolerance, 'shift': shift, 'minArea': min_area, 'blur': blur,
                 'noiseBbox': noise_bbox}
@@ -1916,8 +2559,6 @@ def flythings_ui_visual(action: str = 'list', project_root: str = '', output_dir
 
 def flythings_verify_assets(project_root: str) -> str:
     """核对「json 声明 vs 磁盘产物」：图片引用是否存在 + PNG 尺寸是否 == 盒子。
-
-    触发：图片对不上 / 尺寸不符 / 图丢了 / 资源核对 / 图比控件盒大 / 图片比盒子大 / 图比盒子大
     """
     if chk_all is None:
         return json.dumps({'ok': False, 'error': 'check_all 模块不可用（缺 ui_tools/check_all.py）'},
@@ -1945,8 +2586,6 @@ def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png
                                timeout: int = 180, advanced: str = '', layer: str = 'ui',
                                vdec_chn: int = 0) -> str:
     """从**设备真机**抓当前屏幕 → PNG / JPG / BMP（给视觉模型看，或给 ui_visual(action="diff") 验收）。
-
-    触发：抓屏 / 截图 / 看看现在屏幕什么样 / 抓个图
     """
     if dss is None:
         return json.dumps({'success': False, 'error': 'device_screenshot 不可用（缺 ui_tools/device_screenshot.py 或 Pillow）'},
@@ -1987,8 +2626,6 @@ def flythings_device_screenshot(device: str = '', out: str = '', fmt: str = 'png
 
 def flythings_selfcheck(device: str = '', diff_against: str = '', out: str = '') -> str:
     """整机快照（十一个分区），每分区给 {ok, hint, data}；`ok=false` **不是错误而是结论**。
-
-    触发：整机体检 / 板子什么状态 / 网络通不通 / 分区挂载 / 把设备状态抓一遍
     """
     if sc is None:
         return json.dumps({'ok': False, 'op': 'flythings_selfcheck',
@@ -2005,8 +2642,6 @@ def flythings_bugreport(title: str = '', project_root: str = '', device: str = '
                         actual: str = '', evidence: str = '', severity: str = '',
                         out: str = '') -> str:
     """缺陷单生成器：缺陷清单 + 真机判据 → 可提交 markdown（格式对齐 html2json A1~A8 那批）。
-
-    触发：提 bug / 缺陷单 / 报个问题 / 写缺陷报告
     """
     if sc is None:
         return json.dumps({'ok': False, 'op': 'flythings_bugreport',
@@ -2024,8 +2659,6 @@ def flythings_bugreport(title: str = '', project_root: str = '', device: str = '
 def flythings_project_state(project_root: str = "", action: str = "show",
                             slot: str = "", note: str = "") -> str:
     """工程进度（跨会话「做到哪了」）：已过/未过的闸门 + 下一步做什么。
-
-    触发：做到哪了 / 上次做到哪 / 继续上次 / 下一步做什么 / 工程进度 / 做到哪一步了
     """
     import project_state as _ps
     act = (action or "show").strip().lower()
@@ -2109,7 +2742,7 @@ def normalize_result(op, raw):
                                     out.get('message') or out.get('msg') or 'unknown error',
                                     out.get('hint', ''), out.get('retryable'))
         # 码表补语义（域⑫ error_codes.json）：调用点只写 code+msg，`action`（下一步该做什么）
-        # 与默认 `retryable` 在这里统一注入 —— 于是 48 个 op 的失败返回都自带处置建议。
+        # 与默认 `retryable` 在这里统一注入 —— 于是每个 op（现 42 个）的失败返回都自带处置建议。
         # 显式写过的 retryable 优先；查不到的码原样放过（漏登记由门禁抓，不在运行时炸）。
         errcodes.enrich(out['error'])
         if out['error'].get('retryable') is None:   # 未表态 → 收敛成 False（契约里必是布尔）
@@ -2232,18 +2865,12 @@ OP_NAMES = (
     'flythings_bugreport',
     'flythings_attach_cli_tools',
     'flythings_create_project',
-    'flythings_create_bin_project',
     'flythings_gen_logic_stub',
     'flythings_gen_ui_test',
     'flythings_test_run',
     'flythings_check_project_deps',
     'flythings_generate_ui_assets',
-    'flythings_i18n_scan',
-    'flythings_i18n_add_language',
-    'flythings_i18n_export',
-    'flythings_i18n_import',
-    'flythings_i18n_refactor',
-    'flythings_i18n_to_json',
+    'flythings_i18n',
     'flythings_list_packages',
     'flythings_project_state',
     'flythings_query_package',

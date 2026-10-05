@@ -64,9 +64,27 @@ flythings_create_project(project_root, platform, resolution, app_name='')
 3. **设备体检**：op `flythings_device_preflight`（字库覆盖 / 体积 / 能力）；
 4. 真机跑起来看界面 —— 判据见 skill `flythings-device-acceptance`。
 
+### ⑤ 在 `src/logic/<页>Logic.cc` 里写页面逻辑（**桩只是骨架**）
+
+`fun build` 生成的 logic 文件里带 `INIT_UI_EVENT_BINDINGS`、生命周期钩子与**空回调桩**；
+**交互逻辑写在同一个文件里**，这一步不做 = 界面在、点上去没反应：
+
+- 回调里做「控件 ↔ 业务」关联：`setText` / `refreshListView` / `setXxxListener` / 调业务对象。
+  桩体留着 `(void)x;` / `return false;` 就打包上机，**真机表现和「回调没生成」一模一样**。
+- 复杂功能写成 `src/<业务域>/*.cpp` + `.h`（如 `src/network/NetworkManager.cpp`），在 logic 里 include 调用；
+  **新增代码禁建 `.cc`** —— `.cc` 是按页面生成的 logic 专属（`src/logic/*.cc` 之外手写的 `.cc` 不被编译）。
+- 容器 / 显示类控件（pagewindow、scrollwindow、textview、painter…）**没有回调桩** → 在 `onUI_init` 里
+  `findControlByID` 取指针 + `setXxxListener` / `setPageChangeListener` 接线，别当成漏生成。
+- 回调名按 caption 拼（`on<事件>_<Caption>`）：caption 改过名要重跑 `fun build`（或 op `flythings_gen_logic_stub` 体检）。
+- 写完再打包上机：`fui pack` → `fun build` → `fun launch`。缺哪些桩可用
+  `flythings_gen_logic_stub(project_root=…, dry_run=true)` 先看清单。
+
+> 完整判据 / 反例在流程步骤 `write-logic`（真源 `flow_spec.json`）；`flythings_project_state` 会把它报成下一步。
+
 ## 产出后必须遵守的约定
 
-- `src/activity/` 由 ftu 生成，**禁建/禁改/禁覆盖**；业务只写 `src/logic/*.cc`。
+- `src/activity/` 由 ftu 生成，**禁建/禁改/禁覆盖**；页面逻辑写 `src/logic/<页>Logic.cc`，
+  复杂功能写成 `src/<业务域>/*.cpp` + `.h`（新增代码**禁建 `.cc`**）。
 - 控件指针/ID 宏由编译期生成，`logic.cc` 直接用 `mXXXPtr`，**禁止手写定义**。
 - `logic.cc` 必须保留 `REGISTER_ACTIVITY_TIMER_TAB`（空表也行）。
 - `src/uart/` 是系统模板：只改 `ProtocolData.h` / `ProtocolParser.cpp` 的协议解析。

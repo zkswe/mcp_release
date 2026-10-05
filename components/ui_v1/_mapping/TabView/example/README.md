@@ -10,7 +10,7 @@
 | `Manifest.xml` | 依赖声明（easyui ^2.2.0 + log/zkhardware/zknet/base-utility） |
 | `.deps.lock` | 依赖解析结果快照（`fun install` 生成；写清实际落到的 easyui 2.6.0） |
 | `.project` | IDE 工程描述（`fun build` 不需要，留给 FlyThings IDE 打开用） |
-| `ui/main.html` | **唯一手写源**：受限 HTML 原型（顶栏页签 + pagewindow 两页） |
+| `ui/main.html` | **本示例的手写源（原型稿）**：受限 HTML 原型（顶栏页签 + pagewindow 两页） |
 | `ui/main.json` | `html2json` 产物（布局真源） |
 | `ui/main.ftu` | `fui pack` 产物（设备端实际加载的布局） |
 | `src/Main.cpp` | 应用入口（`onStartupApp` → `mainActivity`） |

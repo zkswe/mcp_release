@@ -1,13 +1,14 @@
 # FlyThings MCP 后续工作安排计划
 
 > 整理：2026-10-03（第四轮刷新）
+> 进行中：界面产物管线整改（口径 + 编译器式验收 + 确认稿闸门）→ REMEDIATION-UI-PIPELINE.md
 > 实测数字**不写在这里**（本行原先手写「门禁 N 项 / 用例 N 项 / 检索 N 组…」，
 > 三轮里漂了两次 —— **正因为抄一份漂一份，这些数字一个都不留在这里**，连"最近一次读数"也不留：
 > 留在纸上的每个数都必须是**当前值**，而"当前值"只由下面两条命令产出）。
 > 要当前值就跑下面两条，它们**自己会打印**：
 > `python scripts/check_consistency.py --with-tests`（看 `total=… fail=…` 与
 > `test count matches real run` 两行）· `python scripts/check_retrieval.py`（看 `[PASS]` 行）
-> 工具数仍是 **48 op**（由 `stage_tool_count` 六方一致盯着，可放心引用）。
+> 工具数仍是 **42 op**（由 `stage_tool_count` 六方一致盯着，可放心引用）。
 > 状态：✅ 已完成 / 🤖 AI 可执行 / 👤 需需求方输入 / 🔌 需设备
 
 > ⚠️ 上一版（2026-10-03 第二轮）写「门禁 61/61 全绿」—— **实为 63 项且 2 项红**（用例超时 + 门禁不可复现），
@@ -23,7 +24,7 @@
 
 | 域 | 真源 | 唯一消费入口 | 状态 |
 |---|---|---|---|
-| ① op 契约 + 工具面分层 | `op_spec.json` | `op_spec_loader.py` | ✅ 三层（常驻/按需/深入）；常驻 **5080/6000**（84.7%，`params` 已移出常驻；数字由门禁对账，见 §二） |
+| ① op 契约 + 工具面分层 | `op_spec.json` | `op_spec_loader.py` | ✅ 三层（常驻/按需/深入）；2026-10-05 瘦身后（triggers 移出常驻 + `fragments` 共享片段表 + seeAlso 渲染去重）。**常驻/单条预算数字按本页纪律不手写**（原写 3638/65.3% 与残留的 84.7% 自相矛盾）：唯一出处 = `op_spec.json` 的 `budget.basis` / `budget.note`，由 `check_consistency.py` 对实测对账 |
 | ② 生命周期 / 代码接口 | `lifecycle_spec.json` | `lifecycle_loader.py` | ✅ |
 | ③ 平台能力矩阵 | `platform_capabilities.json` | `platform_cap_loader.py` | ✅ |
 | ④ 硬件外设 API | `hardware_catalog.json` | `hardware_tools.py` | 🟡 **仍半成品**（只收型号/坑，API 面未收编） |
@@ -32,7 +33,7 @@
 | ⑦ 可复用组件目录 | `components/` 这棵树 | `components_catalog.py` | ✅ |
 | ⑧ 知识权威归属 | `knowledge/authority_map.json` | `kb_authority.py` | ✅ |
 | ⑨ 上机前体检判据 | `preflight_spec.json` | `preflight_loader.py` | ✅ 分辨率/字库/体积三分支 |
-| ⑩ 开发流程 | `flow_spec.json` | `flow_loader.py` | ✅ 31 步骤原子 + 10 流程（场景×动作两条正交轴） |
+| ⑩ 开发流程 | `flow_spec.json` | `flow_loader.py` | ✅ 步骤原子化 + 10 流程（场景×动作两条正交轴）；**步骤数不手写**（原写 31，实测已 32：本批新增 `write-logic`）——数量真源 = `flow_spec.json.steps`，派生页由 `gen_flow_doc.py --check` 对账 |
 | ⑪ 工程状态（跨会话） | `flow_spec.json.stateSlots`（复用⑩） | `project_state.py` | ✅ 新 op `flythings_project_state` + 资源 |
 | ⑫ 错误码语义 | `error_codes.json` | `error_codes_loader.py` | ✅ 注入每次失败返回的 `error.action` |
 
@@ -50,15 +51,15 @@
 | ✅ 路由回归 | `tests/test_op_routing.py`：27 组口语 → 期望 op top-3 命中（实测 27/27） |
 | ✅ 长任务进度 | 10 个长任务 op（清单在 `op_spec.json.longOps`）走工作线程 + `ctx.report_progress`；顺带修掉「同步长任务堵死事件循环」 |
 | ✅ 跨会话状态 | `<项目>/.flythings/state.json`；`_envwrap` 一处回写覆盖三模式；资源 `flythings://state` 看「上次做到哪」 |
-| ✅ 错误码语义 | 22+1 个码登记（含义 / 该谁动手 / 默认可重试 / 下一步动作），自动注入失败返回 |
+| ✅ 错误码语义 | 码表登记（含义 / 该谁动手 / 默认可重试 / 下一步动作），自动注入失败返回；**码数不手写**（原写 22+1，实测 27：本批新增 `CONFIRM_REQUIRED` / `UI_JSON_INVALID`）——真源 = `error_codes.json.codes` |
 
 ## 三、已完成：早先计划里的技术债与真机加固
 
 | 原 # | 任务 | 结论 |
 |---|---|---|
-| 1 | docstring 预算顶爆（11996/12000） | ✅ **改口径解决**：不是删字，是三层分层（常驻 5080/6000，加 op = 加一行） |
+| 1 | docstring 预算顶爆（11996/12000） | ✅ **改口径解决**：不是删字，是三层分层（常驻数字见 `op_spec.json.budget.basis`，加 op = 加一行） |
 | 2 | `test_font_autoscan` ×10 失败 | ✅ 按 `requirements.lock` 装 `fontTools==4.65.0` → 32 OK |
-| 14 | **验证层体检**（2026-10-03 二次评审）：用例非 hermetic（漏 mock → 真 adb，全套 >900s）、门禁依赖仓外目录不可复现、数字漂移（op 数/用例数/耗时） | ✅ 三件都修：`tests/_util.py` adb 离线守卫 + `sync_ui_tools` skip 码 2 对齐 + 数字进闸门；另把用例的守法改成**逐用例看门狗**（`scripts/run_tests.py`，慢不算错、挂才算）。用例实测 **886 项**，门禁 **85 项**（两处数字由 `check_consistency.py --with-tests` 的「当前数字各处声明 == 实测」对账，别再手写第三处） |
+| 14 | **验证层体检**（2026-10-03 二次评审）：用例非 hermetic（漏 mock → 真 adb，全套 >900s）、门禁依赖仓外目录不可复现、数字漂移（op 数/用例数/耗时） | ✅ 三件都修：`tests/_util.py` adb 离线守卫 + `sync_ui_tools` skip 码 2 对齐 + 数字进闸门；另把用例的守法改成**逐用例看门狗**（`scripts/run_tests.py`，慢不算错、挂才算）。用例实测 **1123 项**，门禁 **88 项**（两处数字由 `check_consistency.py --with-tests` 的「当前数字各处声明 == 实测」对账，别再手写第三处） |
 | 5–10 | launch 活性 / 陈旧帧 / easyui 同源 / 分辨率核对 / cfg 修正 / translate_ui 交互 | ✅ 全部完成（真机闭环） |
 | 11 | C++ 回调桩 op | ✅ `flythings_gen_logic_stub`（只补不改、幂等） |
 | 13 | 场景 Skill 四件套 | ✅ 已落用户级 skill；**且已升级为「由 `flow_spec.json` 派生」**（5 篇正文不再手写） |

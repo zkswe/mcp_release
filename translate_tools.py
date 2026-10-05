@@ -88,144 +88,21 @@ _PIC_STR_FIELDS = ('backgroundPic', 'progressPic', 'secondaryProgressPic',
 _SIZE_IN_NAME = re.compile(r'(\d{2,5})x(\d{2,5})')
 
 
-def _color_tab(c0, c1=-1):
-    """五色态表：槽位结构与未用槽 -1 从注册表 sharedTypes.colorTab 派生（唯一真源），
-    这里只填业务色。未用色态恒写 -1（显式值，非噪音；json-field-mandatory.md）。"""
-    tab = _uischema.type_zero('colorTab')
-    tab['color0'] = c0
-    tab['color1'] = c1
-    return tab
-
-
-def _tab5(tab):
-    """任意 colorTab/bgColorTab → 五槽（已有值保留，缺槽 -1；槽位来自注册表）。"""
-    out = _color_tab(-1)
-    for i in range(5):
-        k = 'color%d' % i
-        if isinstance(tab, dict) and k in tab:
-            out[k] = tab[k]
-    return out
-
-
-# 子盒零值从注册表派生（唯一真源 ui_schema.json），不再手抄结构：
-_THUMB_EMPTY = _uischema.type_zero('thumb')   # {'size': {'width': 0, 'height': 0}, 'normalPic': '', 'pressedPic': ''}
-_POINT_ZERO = _uischema.type_zero('point')    # {'x': 0, 'y': 0}
-_SIZE_ZERO = _uischema.type_zero('size')      # {'width': 0, 'height': 0}
-
-# 每类型「缺键补齐」表（只补片段里没有的键；已有的键不动）。
-# 取值分两层（2026-10-02 注册表化）：
-#   · 子盒/色表结构（thumb/colorTab/bgColorTab/point/size）= 注册表派生（见上方 _color_tab/_THUMB_EMPTY）；
-#   · 标量 = 发射层口径（demos ftu 反解的 IDE 全量序列化 + hw-relay 真源），与注册表 default
-#     存在**刻意差异**的已逐条标注「发射层口径」（如 textview alignment 0 vs 注册表默认 36、
-#     button fontSize 18 vs 注册表 16 —— 差异清单见 ui_schema.json 维护记录，勿在此静默对齐）。
-_SCHEMA_FILL = {
-    'textview': {'alignment': 0, 'colorTab': _color_tab(0xFFFFFF), 'fontSize': 16,
-                 'touchable': False, 'bold': False, 'italic': False, 'visible': True,
-                 'rollEnable': False, 'rollDirection': 1, 'rollIntervalTime': 150,
-                 'rollStep': 5, 'bgColorTab': _color_tab(-1),
-                 # 2026-10-03 补齐（真源登记后对账发现 fill 落后；值取实测众数，与真源默认一致）
-                 # ⚠️ 故意**不补 backgroundPic**：valueRules.missingImage 说「图片字段置 '' → 控件不可见」，
-                 #    而真实 IDE 序列化里 backgroundPic 从不空（全仓 333 处只有 1 处空、且来自我们自己的产物）
-                 #    → 空串是否被容忍**未核**，不擅自往 fill 里加（见 CONSOLIDATION §30）。
-                 'backgroundColor': -1, 'fontFamily': 0},
-    'button': {'alignment': 5, 'colorTab': _color_tab(0xFFFFFF), 'text': '',
-               'touchable': True, 'visible': True, 'picTab': {},
-               'longClickTimeOut': -1, 'longClickIntervalTime': -1,
-               'bgColorTab': _color_tab(-1), 'fontSize': 18,
-               # 2026-10-03 补齐（button-fields.md 实测这些键出现率 97.8%/89% —— 正是本表的同一来源）
-               # 同 textview：**不补 backgroundPic**（空串安全性未核）。
-               'backgroundColor': -1, 'bold': False, 'italic': False,
-               'fontFamily': 0, 'rollEnable': False, 'rollDirection': 1,
-               'rollIntervalTime': 150, 'rollStep': 5},
-    'window': {'backgroundColor': -1, 'hideTimeOut': -1, 'modal': False,
-               'touchable': False, 'visible': True},
-    'seekbar': {'backgroundColor': -1, 'backgroundPic': '', 'defProgress': 0, 'max': 100,
-                'orientation': 0, 'progressPic': '', 'secondaryProgressPic': '',
-                'thumb': _THUMB_EMPTY, 'touchable': True, 'visible': True},
-    'painter': {'backgroundColor': 0xFFFFFF, 'touchable': False, 'visible': True},
-    'edittext': {'alignment': 36, 'bgColorTab': _color_tab(0xFFFFFF), 'bold': False,
-                 'colorTab': _color_tab(0x212121), 'fontSize': 16,
-                 'hintTextColor': 0x808080, 'text': '', 'textType': 0,
-                 # 2026-10-03 补齐：touchable=True 是硬要求（漏写则输入框点不动、IME 不弹）
-                 'touchable': True, 'visible': True, 'italic': False, 'fontFamily': 0,
-                 'hintText': '', 'isPassword': False, 'passwordChar': '*',
-                 'beepEnable': True, 'rollEnable': False, 'rollDirection': 1,
-                 'rollIntervalTime': 150, 'rollStep': 5},
-    'circlebar': {'backgroundColor': -1, 'clockwise': True, 'max': 100, 'maxAngle': 360,
-                  # ⛔ progressPicPos / touchRange 必须是对象（子盒类型）：写成 int 会让真机
-                  #    页面构造时主线程 100% 空转、无日志（V85X 实测 2026-10-04；注册表 v1.1 已改类型）
-                  'progressPic': '',
-                  'progressPicPos': {'left': 0, 'top': 0, 'width': 0, 'height': 0},
-                  'startAngle': 0,
-                  'textColor': 0x212121, 'textSize': 24, 'textType': 0,
-                  'thumb': _THUMB_EMPTY, 'touchRange': {'lower': 0, 'upper': 100},
-                  'touchable': False,
-                  'unit': '', 'visible': True},
-    'pointer': {'animatable': True, 'backgroundColor': -1, 'backgroundPic': '',
-                'clockwise': True, 'fixedPoint': copy.deepcopy(_POINT_ZERO), 'pointerPic': '',
-                'pointerSize': copy.deepcopy(_SIZE_ZERO), 'rotateSpeed': 1,
-                'rotationPoint': copy.deepcopy(_POINT_ZERO), 'startAngle': 0,
-                'touchable': False, 'visible': True},
-    'qrcode': {'backgroundColor': 0xFFFFFF, 'padding': 10, 'touchable': True,
-               'visible': True},
-    'imageanim': {'loopCount': 0},
-}
-
-# IDE 全量序列化的键序（textview/button 有 hw-relay-verify-z20 反解真源）
-_KEY_ORDER = {
-    'textview': ['id', 'caption', 'position', 'alignment', 'colorTab', 'fontSize',
-                 'touchable', 'bold', 'italic', 'text', 'visible', 'rollEnable',
-                 'rollDirection', 'rollIntervalTime', 'rollStep', 'bgColorTab'],
-    'button': ['id', 'caption', 'position', 'alignment', 'colorTab', 'text',
-               'touchable', 'visible', 'picTab', 'longClickTimeOut',
-               'longClickIntervalTime', 'bgColorTab', 'fontSize'],
-}
+# ---- 发射层（T5.2）：唯一实现搬到 `ui_tools/ui_emit.py`，这里只留别名（不要在本文件再改口径）----
+import ui_emit as _emit                                     # noqa: E402  （路径在 main 里已加 ui_tools）
+_color_tab = _emit.color_tab
+_tab5 = _emit.tab5
+_THUMB_EMPTY = _emit.THUMB_EMPTY
+_POINT_ZERO = _emit.POINT_ZERO
+_SIZE_ZERO = _emit.SIZE_ZERO
+_SCHEMA_FILL = _emit.DEFAULT_BY_TYPE
+_KEY_ORDER = _emit.KEY_ORDER
+_SIZE_IN_NAME = _emit.SIZE_IN_NAME
 
 
 def _schema_complete(tname, ctl):
-    """片段控件 → schema 完整字段集（缺键补默认、色表补五槽、thumb 转子盒）。
-
-    alignment 口径：button 恒 5（居中，IDE 新编码，位模型 ≡37）；textview 片段的
-    旧默认 36（靠左+垂直居中）归一到 0（靠左+顶，hw-relay IDE 真源），
-    其余值（33/37/38 等模板装饰件的刻意取值）不动。
-    """
-    fill = _SCHEMA_FILL.get(tname) or {}
-    for k, v in fill.items():
-        if k not in ctl:
-            ctl[k] = copy.deepcopy(v)
-    if isinstance(ctl.get('colorTab'), dict):
-        ctl['colorTab'] = _tab5(ctl['colorTab'])
-    if isinstance(ctl.get('bgColorTab'), dict):
-        ctl['bgColorTab'] = _tab5(ctl['bgColorTab'])
-    if tname == 'button':
-        # 按钮按下态（color1）无源信息 → 跟正常态同色（hw-relay 真源同口径）
-        for tab in ('colorTab', 'bgColorTab'):
-            t = ctl.get(tab)
-            if isinstance(t, dict) and t.get('color0', -1) != -1 and t.get('color1') == -1:
-                t['color1'] = t['color0']
-    if tname in ('seekbar', 'circlebar'):
-        th = ctl.get('thumb')
-        if isinstance(th, str):                      # 映射片段的字符串旧式 → 子盒
-            if th:
-                m = _SIZE_IN_NAME.search(os.path.basename(th))
-                s = int(m.group(1)) if m else 24
-                ctl['thumb'] = {'size': {'width': s, 'height': s},
-                                'normalPic': th, 'pressedPic': th}
-            else:
-                ctl['thumb'] = copy.deepcopy(_THUMB_EMPTY)
-        elif th is None:
-            ctl['thumb'] = copy.deepcopy(_THUMB_EMPTY)
-    if tname == 'button':
-        ctl['alignment'] = 5
-    elif tname == 'textview' and ctl.get('alignment') == 36:
-        ctl['alignment'] = 0
-    if tname == 'textview' and not ctl.get('text'):
-        ctl.pop('text', None)                        # textview：text 非空才写
-    order = _KEY_ORDER.get(tname)
-    if order:
-        ctl = {k: ctl[k] for k in order if k in ctl} | \
-              {k: v for k, v in ctl.items() if k not in order}
-    return ctl
+    """兼容壳：实现见 `ui_emit.schema_complete`（唯一发射层）。"""
+    return _emit.schema_complete(tname, ctl)
 
 
 def _solid_png(path, w, h, rgba):

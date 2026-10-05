@@ -47,7 +47,7 @@ evidence: []
 | **颜色** | 一律 `#RRGGBB`；⚠️ `#000000` 会被转换器当「未设置」，要纯黑写 `#010101` | `knowledge/devflow/html-subset-quickref.md` |
 | **圆角/药丸/描边/渐变/阴影/图标** | **一律出图**（SS 超采样），图尺寸**严格 == 控件盒** | `knowledge/uicontrols/nine-patch-rule.md`、`knowledge/devflow/ui-asset-rules.md` |
 | **零自绘** | 能用平台控件 + 出图表达的就不用 painter 自绘；自绘只在平台真缺能力时（并落到 `components/ui_v1/`） | `components/ui_v1/README.md` |
-| **单一手写源** | HTML 是**唯一手写源** → `html2json` → json（json 是事实来源）→ `fui pack` → ftu | `knowledge/devflow/ftu-json-pipeline.md` |
+| **手写入口不排他** | 缺省前端是 **HTML 原型**（线框/风格稿，客户确认载体）→ `html2json` → json；**也可按 schema 直写 json 或走块库 spec**；**json 是唯一事实源**（与入口无关），产物一律过 `ui_compile` + `check_all` → `fui pack` → ftu | 口径唯一出处 `knowledge/devflow/ui-pipeline-spec.md`（入口清单见 `knowledge/devflow/ui-entrypoints.md`） |
 | **「隐藏」怎么写** | 换**同尺寸透明占位图 + 文本置空**；不用 `setVisible(true)`（动态显示不重绘），**更不用 `setInvalid(true)`（那是禁用）** | `knowledge/uicontrols/custom-view-refresh.md` |
 | **高频回调** | 只刷变化的那一个控件，禁止全量刷新 | `knowledge/uicontrols/high-frequency-callback-perf.md` |
 
@@ -120,6 +120,7 @@ seekbar 7 · edittext 6 · radiogroup 3 · circlebar 1）/ **236 张图**，双�
 
 ## 相关
 
+- 界面产物管线口径（唯一产物规范 / 入口分级 / 三档判据 / 模块契约）→ `knowledge/devflow/ui-pipeline-spec.md`；入口登记 → `knowledge/devflow/ui-entrypoints.md`
 - 控件映射机读索引与 op → `knowledge/uicontrols/control-mapping-capability.md`、`knowledge/uicontrols/framework-control-mapping.md`
 - 缺口五级与自定义控件包 → `components/ui_v1/README.md`、`knowledge/devflow/gui-controls-gap.md`
 - 页面架构（单 Activity + 多 window） → `knowledge/devflow/page-architecture-spec.md`

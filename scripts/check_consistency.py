@@ -161,6 +161,25 @@ def stage_tool_count():
           'README=%s vs %d（%d 处提及）'
           % (','.join(str(b) for b in bad) if bad else (mentions[0] if mentions else '?'),
              len(names), len(mentions)))
+    # 2026-10-05（本批实测抓到）：`knowledge/**` 才是**用户与 AI 实际读的那一面**，却在
+    # 「N 个工具」这个数字上一直没人对账 —— 工具面本批 48 → 42，README / pyproject 描述 /
+    # manifest / 意图目录五方都改了，只有 `knowledge/devflow/quickstart.md` 还写着 48（已改）。
+    # 归档类（CHANGELOG / VERSION_HISTORY / features_recent / REVIEW-* / TODO）**不在 knowledge/ 下**，
+    # 它们是**带日期的历史快照**，保留旧数字是对的 → 本判据只扫 `knowledge/**/*.md`，不碰历史。
+    kb_bad = []
+    for root, dirs, files in os.walk(os.path.join(BASE, 'knowledge')):
+        dirs[:] = [d for d in dirs if not d.startswith('_')]
+        for fn in sorted(files):
+            if not fn.endswith('.md'):
+                continue
+            p = os.path.join(root, fn)
+            hit = sorted({int(x) for x in re.findall(r'(\d+)\s*个工具', _read(p))}
+                         - {len(names)})
+            if hit:
+                kb_bad.append('%s=%s' % (os.path.relpath(p, BASE).replace('\\', '/'),
+                                         ','.join(str(h) for h in hit)))
+    check(not kb_bad, 'knowledge 页工具数（所有「N 个工具」提法）',
+          'ok' if not kb_bad else ('%s vs %d' % ('; '.join(kb_bad), len(names))))
     gp = os.path.join(os.path.dirname(BASE), 'flythings_intent_gate', 'catalog.json')
     if os.path.isfile(gp):
         cnt = json.loads(_read(gp)).get('count')
@@ -1004,6 +1023,45 @@ def stage_docstring_budget():
     except Exception as e:                      # 注册表读不了 → 如实报，不静默
         check(False, 'budget.note 最长 op 数字可解析', '%s: %s' % (type(e).__name__, e))
 
+    # 2026-10-05 检讨补：note 里还有**两处**手写数字，此前没有任何判据盯着 —— 实测已经漂了：
+    # 原文写「除 all 外最长单段 645（`flythings_i18n_to_json:rules`）」，而 `flythings_i18n_to_json`
+    # 在本批已并入 `flythings_i18n`（**引用了不存在的 op**），实测最长单段是 731
+    # （`flythings_i18n:skeleton`）。同一句话里两个数字都错 = 典型的"第二遍必然漂"。
+    try:
+        import op_spec_loader as _osl
+        b = (_osl.load().get('budget') or {})
+        note = str(b.get('note') or '')
+        reg = list(_osl.registered())
+        dflt = sorted(((len(_osl.render_default(o)), o) for o in reg), key=lambda t: -t[0])
+        md = re.search(r'默认形态最长\s*\**\s*(\d+)', note)
+        if md:
+            said = int(md.group(1))
+            check(said == dflt[0][0], 'budget.note 默认形态最长（op_spec.json）',
+                  '%d vs 实测 %d（%s）' % (said, dflt[0][0], dflt[0][1]) if said != dflt[0][0]
+                  else '%d（%s）= 实测' % (dflt[0][0], dflt[0][1]))
+        best = ('', 0)
+        for o in reg:
+            for s in _osl.section_ids():
+                if s == 'all':
+                    continue
+                try:
+                    n = len(_osl.render_section(o, s) or '')
+                except Exception:               # noqa: PERF203
+                    continue
+                if n > best[1]:
+                    best = ('%s:%s' % (o, s), n)
+        ms = re.search(r'除\s*all\s*外最长单段\s*\**\s*(\d+)\s*[（(]\s*`?([\w:.]+)`?\s*[）)]', note)
+        if not ms:
+            check(False, 'budget.note 最长单段数字可解析',
+                  'note 里没有「除 all 外最长单段 N（<op>:<段>）」这种写法 → 闸门无法对账')
+        else:
+            ok = (int(ms.group(1)) == best[1] and ms.group(2) == best[0])
+            check(ok, 'budget.note 最长单段（op_spec.json）',
+                  '%s %s vs 实测 %s %d' % (ms.group(1), ms.group(2), best[0], best[1])
+                  if not ok else '%s %d = 实测' % (best[0], best[1]))
+    except Exception as e:                      # 注册表读不了 → 如实报，不静默
+        check(False, 'budget.note 单段/默认形态数字可解析', '%s: %s' % (type(e).__name__, e))
+
 
 # ⚠️ 白名单：确有必要引用仓外/临时路径的用例，在此登记并写理由（默认应为空）。
 # 格式：(相对路径前缀, 字面量片段, 理由)
@@ -1432,6 +1490,26 @@ def stage_delegated(skip_smoke, with_tests):
                if l.startswith('[PASS]') or l.startswith('[FAIL]')]
     check(rc == 0, 'delegated: gen_package_catalog_doc --check (内置包知识页)',
           (pk_tail[-1] if pk_tail else 'rc=%d' % rc)[:70])
+    # T5.1（2026-10-05）：**发射口径对账快照**不许过期 —— 三处发射实现（ui_emit / html2json /
+    # compose）之间一旦漂移，这里当场红（而不是等真机出问题）
+    rc, out = _run([sys.executable, os.path.join(SUB, 'gen_emit_conformance.py'), '--check'])
+    ec_tail = [l for l in out.strip().splitlines()
+               if l.startswith('[PASS]') or l.startswith('[FAIL]')]
+    check(rc == 0, 'delegated: gen_emit_conformance --check (发射口径对账)',
+          (ec_tail[-1] if ec_tail else 'rc=%d' % rc)[:70])
+    # T4.1（2026-10-05）：renderContract 的实现覆盖声明 —— 「哪条规格由谁实现/谁不实现」是数据，
+    # evidence 必须是代码里真实存在的函数/常量（AST 校验）；声明与代码漂移 = 红。
+    rc, out = _run([sys.executable, os.path.join(SUB, 'check_render_contract_coverage.py'), '--check'])
+    crc_tail = [l for l in out.strip().splitlines()
+                if l.startswith('[PASS]') or l.startswith('[FAIL]')]
+    check(rc == 0, 'delegated: check_render_contract_coverage --check (视觉口径实现覆盖声明)',
+          (crc_tail[-1] if crc_tail else 'rc=%d' % rc)[:70])
+    # T0.3（2026-10-05）：界面**入口登记表**的派生页不许滞后 —— 真源 = 仓库根 ui_entrypoints.json
+    rc, out = _run([sys.executable, os.path.join(SUB, 'gen_entrypoints_doc.py'), '--check'])
+    ep_tail = [l for l in out.strip().splitlines()
+               if l.startswith('[PASS]') or l.startswith('[FAIL]')]
+    check(rc == 0, 'delegated: gen_entrypoints_doc --check (界面入口登记派生页)',
+          (ep_tail[-1] if ep_tail else 'rc=%d' % rc)[:70])
     # v0.27.138：op → 知识「去哪找」（op_seealso.json）覆盖度 —— 每个 op 要么有 seeAlso、要么登记 none + 理由
     rc, out = _run([sys.executable, os.path.join(SUB, 'gen_seealso.py'), '--check'])
     check(rc == 0, 'delegated: gen_seealso --check',
