@@ -897,11 +897,12 @@
     },
     {
       "op": "flythings_ui_preview",
-      "brief": "json 布局 / 整个项目 → HTML 预览稿（客户确认 UI 用；只交 html，不产图片/截图）。",
+      "brief": "json / 整个项目 → HTML 预览稿（客户确认 UI 用）+ 可选**引擎等价 PNG 展示图**（`with_images`）。",
       "args": [
         "target",
         "output_dir",
-        "for_customer"
+        "for_customer",
+        "with_images"
       ],
       "risk": "write",
       "category": "layout",
@@ -1023,7 +1024,7 @@
   "docs": {
     "knowledgeFiles": 118,
     "wikiFiles": 122,
-    "ragChunks": 1970,
+    "ragChunks": 1976,
     "ragPaths": 158
   }
 }

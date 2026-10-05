@@ -42,15 +42,16 @@
 | C5 | ⬜ | **`device_font_check.py` 在 V85X 上字体扫描直接失败**（2026-10-05 实测复现）：本机固件 `ls -l` 出 **ISO 日期**（`2026-09-18 06:51`），而 `:158` 拿**月份名**做锚点 → `size=None` → `collect() fonts=[]` → `verdict: "no_font"`。设备上**明明有** `/res/font/pocketgame.ttf`（1,094,104 B）。后果：**cmap 硬判据根本没跑**，还会误报「缺中文字库」触发无谓投递。修法：`:158` 改「ISO 日期 + 月名」双锚点 | 实测命令与输出在 `_a123_scratch/`；`components/fonts/scripts/device_font_check.py:158` |
 | C6 | ⬜ | **随仓 `bin_tools/v85x/busybox` 在该设备上不可用**：`/tmp/bb ls -l …` → `applet not found`（`ls/md5sum/sh/cat/find/du/echo` 全一样，无参也一样），而 strings 显示确实是 `BusyBox v1.36.1`。`device_font_check.py:48` 的 `BUSYBOX_LOCAL` 正指向它 → **兜底路径同样是坏的**。未深挖配置（疑 `FEATURE_INDIVIDUAL` 单 applet 构建） | 2026-10-05 实测；`bin_tools/v85x/busybox`、`device_font_check.py:48` |
 
-## D. 能力与内容缺口 —— 5 项
+## D. 能力与内容缺口 —— 6 项
 
 | # | 状态 | 事项 | 依据 |
 |---|---|---|---|
 | D1 | ⬜👤 | ui_v1 计划控件 RichText/TableGrid/BadgeToast/Pseudo3D 排期（P1 = RichText/BadgeToast） | `components/ui_v1/components.md:65-88` |
 | D2 | ⬜ | `gap-list.md §5` 待确认 7 项：drawArc 实参口径待官方确认、checkbox__ 生成器待工具链修复、F133 真机验收待设备、relayout 依赖 easyui≥2.9.0… | `components/ui_v1/gap-list.md:133-144` |
 | D3 | ⬜ | easyui 版本与生成器是否官方配套 | `dynamic-screen-rotation.md:133-137` |
-| D4 | ⬜👤 | i18n 两处待定：MCP 写 `\n` vs 官方 `&#x000A;`（有让设备显示"\n"两字的风险）、真机复验未做 | `i18n-multilang.md:191-193` |
+| D4 | ⬜👤 | i18n：换行写法定案 **已落地**（2026-10-05 需求方拍板统一 `&#x000A;`：`_escape_tr`/`_write_tr` 改写字符引用、读侧保留历史字面 `\n` 兼容、知识页 §6 与用例同批改）；**仍待办 = 真机复验**（`/tmp/tr/` 与 `languagePath`、`fun launch` 不推、切语言刷新） | `i18n-multilang.md` §6/§10；`tests/test_i18n_tools.py::TestTrEscaping` |
 | D5 | ⬜ | `ui_blocks` 未覆盖块 + `DemoControls_V85X` 缺项；含**工具侧判据缺陷**：`check_all #13` 没有 rollEnable 豁免 → 跑马灯页必然红 | `templates/ui_blocks/README.md:509-511`；`DemoControls_V85X/README.md` |
+| D6 | ⬜👤 | **fun 工具链缺陷（待厂家修）：`fun build` / `fun pack` 不产出 i18n 的翻译 json** —— `.tr`（XML）→ 设备读的那份 json 这一跳**没有任何一步由 fun 完成**：实测 `fun.exe --help` 与全部 16 个子命令 help 无 i18n/tr/locale 选项；Go 包列表（`github.com/zkswe/fsc/internal/`）内无 i18n/lang/locale/tr 包；全二进制仅 1 处 `i18n` 字面量、0 处 `/res/tr`；`fui.exe` 只有 json↔ftu；`fun create` 内嵌模板（fv 新框架）不含 i18n 目录。而**设备侧只认 json**（反汇编 `LanguageManager::loadContent`：`ConfigManager::getLanguagePath()` 取目录 → `string::append` 拼语言代码 → 拼扩展名 → `JsonHelper::readJsonFile`；该文件缺失时回退「语言代码-显示名」那一份）。后果：改完 `.tr` 直接 build/pack 上机 = 翻译不生效（logcat 刷 `name: %s not found value !!!`）。MCP 现状由 `i18n_tools.py` 自己补这一跳（`action=to_json`）—— ⚠️ 顺带一条**我们的**隐患：它把推送目录写死 `/tmp/tr/`，而生效目录由设备 EasyUI.cfg 的 `languagePath` 决定（IDE 默认 debug=`/mnt/extsd/tr/`、release=`/res/tr/`）→ **推错目录同样静默不生效**。修完把 `fun_capabilities.json` 里 `bugs` 的 `no-i18n-json.status` 改 `fixed` 并注明 fun 版本 | 机读记录：`fun_capabilities.json`（新增 `bugs` 段，含 5 条静态证据）；既有旁证：`CHANGELOG.md:585`（V553 真机 2026-09-08：设备加载 json、`fun launch` 不推 i18n）。**未核**：真机实跑 `fun build`+`fun pack` 复核；官方 IDE 那条路是否转 json |
 
 ## E. 工具与发布面 —— 3 项
 

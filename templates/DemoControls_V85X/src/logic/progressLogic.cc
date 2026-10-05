@@ -17,6 +17,9 @@ static S_ACTIVITY_TIMEER REGISTER_ACTIVITY_TIMER_TAB[] = {
  * @brief 当界面构造时触发
  */
 static void onUI_init() {
+  #ifdef FUN_BUILD
+  INIT_UI_TIMERS
+  #endif // FUN_BUILD
     // [!] 本页曾真机卡死（进页即主线程 100% 空转、无日志）：根因是 ui/progress.json 的
     //    circlebar.progressPicPos / touchRange 写成了 int 0（子盒字段必须是对象）。
     //    修法见 ui_tools/ui_schema.json v1.1；与本函数里的 setProgress 无关。

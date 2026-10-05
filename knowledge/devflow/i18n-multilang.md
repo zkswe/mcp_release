@@ -4,13 +4,13 @@ title: 多国语言（i18n）机制与落地 —— .tr / @key / setTextTr / 切
 category: devflow
 status: review
 confidence: offline
-verified_at: 2026-10-03
+verified_at: 2026-10-05
 stale_days: 180
 origin: total
-source: 2026-10-03 收录：官方文档 developer.flythings.cn/zh-hans/i18n.html（权威口径）+ 逐行读 i18n_tools.py（30KB，6 个 op 的实现）+ 该模块自带的历史实测记录（2026-08-29 SampleUI-New / 2026-09-08 V553 真机 / 2026-09-10 反汇编 v85x easyui 2.9.0 libeasyui.so）
+source: 2026-10-03 收录：官方文档 developer.flythings.cn/zh-hans/i18n.html（权威口径）+ 逐行读 i18n_tools.py（30KB，6 个 op 的实现）+ 该模块自带的历史实测记录（2026-08-29 SampleUI-New / 2026-09-08 V553 真机 / 2026-09-10 反汇编 v85x easyui 2.9.0 libeasyui.so）；2026-10-05 补：需求方提供真实工程 3 个 `.tr`（`templates/DemoControls_V85X/i18n/`）后做的离线验收（三语对齐 + json 字节格式 + 非 ASCII 不转义）+ **换行写法统一为 `&#x000A;`**（需求方拍板：不要两个说法；代码/文档/用例同批改）+ `fun.exe`/`fui.exe` 命令面实测（官方工具链无 tr→json 能力面）
 needs_evidence: true
 platforms: []
-tags: [多语言, i18n, 翻译, 语言切换, tr 文件, key 对齐, 缺 key, 乱码, 字库, locales, 文案, setTextTr, getValue, 本地化, 内置界面, 换行]
+tags: [多国语言, i18n, 翻译, 语言切换, tr 文件, key 对齐, 缺 key, 乱码, 字库, locales, 文案, setTextTr, getValue, 本地化, 内置界面, 换行]
 evidence:
   - cmd: python -m unittest discover -s tests -p "test_i18n_tools.py"
     expect_rc: 0
@@ -39,7 +39,7 @@ evidence:
 能**离线**验的部分已经钉成可执行判据（见 front-matter 的 `evidence`：
 `.tr→json` 的换行还原、json 字节格式、`@key` 收集、scan 对齐检查）。
 **真机相关的那几条（`/tmp/tr/` 路径、`fun launch` 不推、not found value）沿用上表记录，本文不冒充实测。**
-⚠️ **本文与工具注释有一处口径冲突**（换行写 `&#x000A;` 还是 `\n`）—— 已在 §6 如实并列并给出建议。
+⚠️ **换行写法只有一条**（`&#x000A;`，见 §6）；此前"两种写法并列"的表述已作废。
 
 ## 1. 一分钟速查
 
@@ -52,6 +52,8 @@ evidence:
 | 怎么切语言 | `EASYUICONTEXT->updateLocalesCode("zh_CN")`；或跳系统页 `openActivity("LanguageSettingActivity")` |
 | 改完怎么让设备看到 | **必须 `flythings_i18n`（`action=to_json`）**（默认带 push）—— **`fun launch` 不推 i18n** |
 | 默认有哪几种 | `zh_CN` / `en_US` / `ja_JP` / `ko_KR` |
+| 换行怎么写 | **`.tr` 里写 XML 字符引用 `&#x000A;`**（唯一写法，2026-10-05 定案）；json 里必须是**真换行 `0x0A`**（§6） |
+| ⚠️ 文件名带显示名时要传全名 | 真实工程是 `zh_CN-简体中文.tr` 这种三段式 ⇒ 调 `add_language` / `export` 的 `lang`/`base_lang` **要传三段式全名**（`zh_CN-简体中文`），传 `zh_CN` 会失败或返回空（§10） |
 
 ## 2. 文件格式（`.tr`）
 
@@ -107,38 +109,43 @@ evidence:
 6. **两条工作流别混**：官方是 **IDE 编译**把 `.tr` 转 json；MCP 工作流用 `flythings_i18n`（`action=to_json`）
    转 + push。**只要你改了 `.tr`，就得有一步转 json**（走哪条都行，但别以为改了 `.tr` 就完事）。
 
-## 6. ⚠️ 换行：官方写 `&#x000A;`，json 里必须是**真换行**（本节含一条**口径冲突**，如实并列）
+## 6. 换行：**`.tr` 写 XML 字符引用 `&#x000A;`**（唯一写法），json 里必须是**真换行**
 
-**官方口径**（`developer.flythings.cn/zh-hans/i18n.html`）—— 用 **XML 字符引用**：
+**官方口径（唯一）**——`developer.flythings.cn/zh-hans/i18n.html` 原文：
+
+> 如果希望在字符串中换行，则用`&#x000A;`转义，如下：
 
 ```xml
-<string name="new_line_test">第一行&#x000A;第二行</string>
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="new_line_test">第一行&#x000A;第二行</string>
+</resources>
 ```
 
-`&#x000A;` 是 LF(`0x0A`) 的 XML 字符引用，**任何 XML 解析器都会把它解成一个真实换行**。
+**2026-10-05 需求方拍板：不要两个说法，全部统一 `&#x000A;`。** 代码（`i18n_tools.py`）、本页、用例**同批**改完 —— 本页此前"两种写法并列/待确认"的表述**全部作废**。
 
-**MCP 工具侧的实现**（`i18n_tools.py`）走的是**另一条**：它同时
+**读写行为（改后，实测）**：
 
-- **读**时容忍**字面 `\n`（反斜杠 + n，两个字符）**：`_unescape_tr` 把 `\n`→LF、`\t`→TAB、`\\`→反斜杠；
-- **写**时（`import` / `add_language` / `refactor` 落 `.tr`）**写的是字面 `\n`**（`_escape_tr`）。
+- **写**（`import` / `add_language` / `refactor` 落 `.tr`）：**一律写字符引用** —— `\n`→`&#x000A;`、`\t`→`&#x0009;`、`\r`→`&#x000D;`（`_escape_tr`）。
+  反斜杠**不再转义**（它在 XML 里就是普通字符，`C:\new` 能原样保留）。
+- **读**：字符引用由 XML 解析器解开；**额外容忍**历史字面 `\n`/`\t`/`\\`（旧版本工具写出的文件）→ **老工程零迁移**。
+  但**写回会把它们归一成字符引用** —— 这是有意的形式归一，不是两种写法并存。
+- **转 json**（`action="to_json"`）：两种来源落盘字节**完全一致**，均为真换行（见下）。⇒ **换写法不改变设备行为**。
 
-⚠️ **冲突点**：工具模块注释把这写成「`.tr` 里写 `\n`（**官方 i18n 文档**）」——
-**这个归因是错的**：官方文档写的是 `&#x000A;`，不是 `\n`。（已在本轮修正代码注释。）
-
-**两种写法在 MCP 自己的转换里都成立**（`&#x000A;` 由 XML 解析器解开；字面 `\n` 由 `_unescape_tr` 解开），
-但**风险在于"谁来转 json"**：官方工作流是**编译器**把 `.tr` 转 json（不是 MCP）。
-若编译器的转换**不做反斜杠还原**（与下面反汇编观察到的 `getValue` 一致），
-那么 **MCP 写出的字面 `\n` 经编译器转出的 json 会把 `\n` 当普通字符** → 设备显示「\n」两个字。
-
-**结论（建议按官方写）**：**`.tr` 里一律写 `&#x000A;`** —— 它不依赖任何一方的反斜杠还原逻辑，
-是唯一**对 IDE 编译器与 MCP 工具都安全**的写法。MCP 工具写出的字面 `\n` 属**已知可移植性差异**，
-已登记（见 §10），未擅自改行为（改动会影响所有生成/回写的 `.tr`，需你确认后再动）。
-
-**设备侧的硬要求（两种写法都必须满足）**：生成的 json 里必须是**真实换行符 `0x0A`**。
+**设备侧的硬要求**：生成的 json 里必须是**真实换行符 `0x0A`**。
 底层依据（2026-09-10 反汇编 v85x easyui 2.9.0 `libeasyui.so`）：
 `LanguageManager::getValue` 直接 `Json::Value::asString()` 返回，**不做反斜杠还原**；
 分行发生在 **`zk_gdi_draw_text`**，按字节 `0x0A` 切行（`strchr(p, '\n')`）。
 ⇒ **json 里留字面 `\n`（JSON 要写成 `\\n`），设备原样显示「\n」这几个字符，不换行。**
+
+**2026-10-05 真文件实测**（对象 = `templates/DemoControls_V85X/i18n/` 的 3 个真实 `.tr`）：
+
+| 观测 | 结果 |
+|---|---|
+| 三个语言解析 | `en_US-ENGLISH` / `ru_RU-Русский` / `zh_CN-简体中文`，各 1 个 key `hello_world`，`keyAligned=true` |
+| 落盘 json 字节 | `b'{\n\t"hello_world":"Hello world!"\n}'` —— **tab 制表 + 冒号后无空格 + 末尾无空行**，`0x0D` 一个都没有 |
+| 非 ASCII 是否被转义 | **不转义**：俄文 `Привет, мир!` 与中文 `你好,世界!` 均原样 UTF-8（`\xd0\x9f…` / `\xe4\xbd\xa0…`） |
+| 字符引用 → json | `&#x000A;` 经 to_json 落成 json 里的真 `0x0A`（`tests/test_i18n_tools.py::test_official_xml_char_reference_form`） |
 
 - 本地同源脚本（不依赖 MCP）：`<项目>/tools/tr2json.py`。
 
@@ -160,7 +167,7 @@ evidence:
 | `flythings_i18n`（`action=add_language`） | 加一种新语言 | `lang`（如 `fr_FR`）、`lang_name`（如 `法语`，显示在切换列表）、`base_lang`（默认 `zh_CN`）。官方做法是**拷贝现有 `.tr` 改名 `xx_XX-XXX.tr`**：语言/地区代号**可任取**（两个小写 + 两个大写），只要多个文件的前两段不冲突即可。⚠️ 加完还要并**内置界面翻译**（§5-5） |
 | `flythings_i18n`（`action=import`） | 把译文**写回** `.tr` | `translations`（JSON 对象 `{key: 文本}`）、`merge`（True 合并 / False 整体覆盖） |
 | `flythings_i18n`（`action=refactor`） | 把布局里**写死的中文**换成 `@key`（多语言改造） | `dry_run`（**默认 True 只预览**）；key 由 caption 生成（非 `[A-Za-z0-9_]` 换成 `_`），同名冲突自动加后缀；**纯数字/时间占位自动跳过**；⚠️ 只在确认布局文本都是界面文案时用 |
-| `flythings_i18n`（`action=to_json`） | `.tr` → 设备格式 `.json` + 推送 | `langs`（逗号分隔，默认全部；支持三段式）/ `push`（默认 True）/ `device`（多设备必须指定）；回 `converted[] / pushed[] / skipped[] / adbStatus` |
+| `flythings_i18n`（`action=to_json`） | `.tr` → 设备格式 `.json` + 推送 | `langs`（逗号分隔，默认全部；支持三段式）/ `push`（默认 True）/ `device`（多设备必须指定）；回 `converted[] / pushed[] / adbStatus / device / nextHint`（⚠️ **没有 `skipped[]`** —— 旧文档与 docstring 写错过，以实现为准） |
 
 **标准流程**：`refactor`（先 `dry_run` 预览）或手写 `@key` → `export` 拿待翻译清单 →
 （AI 结合语境专业翻译）→ `import` 写回 → `scan` 体检对齐 → `to_json`（带 push）→
@@ -172,7 +179,7 @@ evidence:
 2. ⚠️ **`setCurrentCode` 不刷新在屏文本** → 切语言要用 `updateLocalesCode`（否则"有些地方没变"）。
 3. ⚠️ **不要手改 `i18n/<lang>.json`**（必须是 tab 制表/无空格冒号/末尾无空行，设备才认）；改 `.tr` 再转。真源：`op_spec.json` 的 `flythings_i18n（action=to_json）.rules`
 4. ⚠️ **布局写 `@key` 带 @，代码 `setTextTr` 不带 @** —— 混了就是"显示成 key 原文"或取不到值。
-5. ⚠️ **`.tr` 里换行写 `\n`**；json 里必须是真换行，否则设备**原样显示 `\n` 两个字**。
+5. ⚠️ **`.tr` 里换行写 `&#x000A;`**（唯一写法，§6）；json 里必须是真换行，否则设备**原样显示 `\n` 两个字**。
 6. ⚠️ **各语言的别名必须对齐**（用相同的 `name`）：漏一种语言 = 该语言下这些文案缺省
    （`scan` 的 `keyAligned`/`missingKeysPerLanguage` 就是查这个）；
    另：**同一个 `.tr` 内别名不能重复**（官方明确）。
@@ -181,18 +188,23 @@ evidence:
 9. `refactor` 会**改写 ui/*.json**（`dry_run=False` 时）—— 先预览再执行；它只看
    `textview__*` / `button__*` 且跳过数字/时间占位。
 10. 翻译要**结合项目语境**（车载项目的 `CAN BUS` 保持行业术语，不直译成"公共汽车"）。
-11. ⚠️ **换行按官方写 `&#x000A;`**（XML 字符引用），别写 `\n` —— `\n` 是 MCP 工具的容忍写法，
-    不是官方语法；差别的风险见 §6。
+11. ⚠️ **换行一律写 `&#x000A;`**（2026-10-05 需求方拍板「不要两个说法，全部统一」）；代码/本页/用例同批已改。
+    历史字面 `\n` 仍**读得进**（老工程零迁移），但**写回会被归一成字符引用** —— 形式归一，不是两种写法并存。实测见 §6。
 12. ⚠️ **加自定义语言后必须并入「内置界面翻译」**（官方硬要求，见 §5-5）：漏了则自己页面正常、
-    **系统内置界面**文案不正常。
+    **系统内置界面**文案不正常。⚠️ 本模块**没有**取/合并它的动作（零远程依赖），这一步目前要人工取那个文件再 `import`。
 
 ## 10. 未收录 / 待补（**如实登记**）
 
 | 项 | 状态 |
 |---|---|
 | 真机复验（`/tmp/tr/` 路径、`fun launch` 不推、`not found value`、切语言刷新） | **未做**（本文转述 2026-09-08 的既有记录，标 `needs_evidence: true`） |
-| **仓内**没有带 i18n 的示例工程（全仓 0 个 `.tr`） | 官方样例是 **`TranslationDemo`**（在官网[样例代码包](https://developer.flythings.cn/zh-hans/demo_download.html)里，**不在本仓**）→ 需要可照抄的工程就从那里取；本文机制来自实现 + 官方文档 + 既有记录 |
-| ⚠️ **MCP 工具写 `.tr` 时用字面 `\n`（官方写 `&#x000A;`）** | **已知可移植性差异**（§6）：对 MCP 自己的转换无害，但对"编译器转 json"那条路有风险；**未擅自改行为**，等你确认后再动 |
+| 仓内**已提交树**里没有带 i18n 的示例工程（`git ls-files "*.tr"` = 空） | 但**工作树现有 3 个真实 `.tr`**（`templates/DemoControls_V85X/i18n/`：`zh_CN-简体中文` / `en_US-ENGLISH` / `ru_RU-Русский`，2026-10-05 由需求方提供，未纳管）→ **可做离线验收**：`scan`（三语对齐）/ `to_json --push=False`（对 json 字节格式）。⚠️ 它们各只有 1 个 key（`hello_world`），**不含换行/实体/注释/多行**这类边界写法，别当边界样本用。官方完整样例仍是 **`TranslationDemo`**（官网[样例代码包](https://developer.flythings.cn/zh-hans/demo_download.html)，**不在本仓**） |
+| ⚠️ **`.tr` 换行写法** | **已定案 = XML 字符引用 `&#x000A;`**（2026-10-05 需求方拍板「不要两个说法，全部统一」；代码/本页/用例同批改完，§6）；历史字面 `\n` 仅保留**读取**兼容 |
+| ⚠️ **`add_language` / `export` 的默认 `lang` / `base_lang`（`zh_CN`）在三段式文件名工程上取不到语言** | **实测缺陷（2026-10-05）**：`i18n_tools.py` 按**完整文件名标识**查语言，而真实工程文件是 `zh_CN-简体中文` ⇒ ① `add_language(base_lang='zh_CN')` **直接失败**（`"基础语言 zh_CN 不存在"`）；② `export(lang='zh_CN')` 返回 `ok:true` 但 `count=0`（**静默空**，与 `to_json` 对未知语言硬报错的口径不一致）。**绕过**：显式传三段式标识（`base_lang='zh_CN-简体中文'`）即可成功。**未修**，登记待办 |
+| ⚠️ `scan` 的「基准语言」不是 `zh_CN` | 实测：`layoutRefMissingInTr` / `trKeysUnusedByLayout` 按**文件名排序第一个**语言算（模板上 = `en_US-ENGLISH`），文档与用例都没声明这件事 |
+| ⚠️ 官方工作流里"**哪一步**把 `.tr` 转成 json" | **本仓无证据**（2026-10-05 实测）：`fun.exe` 16 个子命令**没有任何 i18n/locale/tr 开关**、Go 符号表无 i18n 包；`fui.exe` 只有 `pack`/`unpack`（json↔ftu）；隐藏命令 `fun convert` 只处理 `.fv/.ftu/.json`。⇒ 编译器侧转换这条链路**只能在 IDE 里**，本仓不可复现、不可判据化 |
+| 固件里 i18n json 的落点 | **部分证据**：IDE `.prefs` 给 `easyui.cfg.release.languagePath = /res/tr/`（debug = `/mnt/extsd/tr/`）；`fun.exe` 内嵌的设备侧 GUI 库里字符串写死 `.json` 后缀 + `internalLangPath = /system/res/internal/lang/`。**仍缺**：`fun pack` 是否把 `/res/tr/` 写进 `EasyUI.cfg`（`fun.exe` 里 `/res/tr` **0 命中**）—— 要真机 `cat` 三处 `EasyUI.cfg` + `ls -l /res/tr /system/res/internal/lang` 才能定案 |
+| ⚠️ `import` 可能**静默清库** | **实测缺陷（2026-10-05，见 `temp/` 侦察）**：`_parse_tr` 解析失败时返回 `{}`，`merge=True` 走 `merged.update(...)` 后**整文件覆盖**，只余传入的 key，返回体仍 `ok:true`；单引号属性 `name='k'`、非 UTF-8 文件是最容易触发的输入。**未修**，登记待办 |
 | `LanguageManager` 的头文件签名 | 未核（在 easyui **包内** `manager/LanguageManager.h`，不在本仓；官方示例里有 `#include "manager/LanguageManager.h"`） |
 | `LANGUAGEMANAGER->setCurrentCode` 不刷新在屏文本 | 来自工具自带的框架级观察（**官方文档未提该 API**）→ 属补充警示，非官方口径 |
 | 语言切换控件的 UI 做法（列表/图标） | 未收录（属控件层，见 `knowledge/uicontrols/`） |

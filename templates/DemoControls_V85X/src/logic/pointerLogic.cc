@@ -16,6 +16,9 @@ static S_ACTIVITY_TIMEER REGISTER_ACTIVITY_TIMER_TAB[] = {
  * @brief 当界面构造时触发
  */
 static void onUI_init() {
+  #ifdef FUN_BUILD
+  INIT_UI_TIMERS
+  #endif // FUN_BUILD
     if (mPtAPtr) mPtAPtr->setTargetAngle(135);      // 指针初值（标准指针控件用 setTargetAngle(角度)）
 
   LOGD_TRACE("");

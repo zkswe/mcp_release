@@ -6,8 +6,8 @@
     "perOpMax": 320,
     "totalMax": 6000,
     "contractPerOpMax": 900,
-    "basis": "实测（2026-10-05，42 op）：常驻合计 **3755**、单条最长 296（`create_project`）—— 上限 6000，**余量 2245 字符 / ≈25 条 op**（2026-10-05 瘦身后复核：triggers 移出常驻 + 片段表 + seeAlso 去重；同日需求方改 `platform-positioning` 片段与 `map_control.flow` 措辞后再复核）。历史：2026-10-03 把 `params` 移出常驻（省 1148 字符 / 19.5%：参数名 `list` 已回、语义 `describe` 按需给，常驻再写一遍是重复计费），常驻从 5878/6000=98% 降到 4730/6000=78.8%；同日三批 `notes` 清零 + 4 条新硬规则（`knowledge_export` 强制脱敏、`fui_pack` ftu 是编译产物、`test_run` no-baseline≠通过、`get_package_api` 注册表没有≠平台没有）把它推到 5125/6000=84.7% —— 该常驻的判据（会让 AI 误判/泄露的那类）进常驻并**接受预算上涨**，这是分层的代价。**2026-10-05 平台定位口径**（需求方定规）再加定位规则（`create_project` / `build_ui_flow` / `list_packages` / `get_project_spec`：Linux 基座、非 MCU/ESP32 SDK、GUI 是自研 EasyUI≠LVGL），常驻到 **5925/6000=98.8%** —— 定位判错会让 AI 砍掉整层 Linux 能力、按 LVGL 类推 API，属「必须常驻」的判据；**下次要加常驻内容必须先腾地方（不要直接抬 totalMax）**。**2026-10-05 瘦身**（用户指示）：① `triggers` 移出常驻面（路由/目录/manifest 直接读 op_spec 字段，功能不变）；② 新增 `fragments` 共享片段表（`@platform-positioning`：同一句原抄 5 份）；③ `seeAlso` 渲染时去掉与 `docRef` 重复的条目（40/47 op 重复，合计 1550 字符）。**口径 = 渲染产物字符数**，由 gen_op_docs 计算并进发布闸门。⚠️ **本段的「常驻合计 N」由门禁对账**（check_consistency 的 `budget.basis 常驻数字`）—— 改 docstring 后忘了改这里会红，不会再漂。",
-    "note": "预算口径（数字全部实测，勿手写第二份）：**常驻面**合计 3755/6000；**按需面**单条上限 900，最长 `flythings_i18n` 已 **1913/900**。按需面已按段分层（2026-10-05）：计费单位是「一次取用」而非「整条 op」—— 全文超限时默认形态自动退化成 skeleton + 段目录（现测：默认形态最长 892（flythings_get_package_api）、除 all 外最长单段 731（flythings_i18n:skeleton））。all 恒等于全文、不参与单段判据（它是逃生门）。加内容前先看段余量，别再往单条上堆。"
+    "basis": "实测（2026-10-05，42 op）：常驻合计 **3771**、单条最长 296（`create_project`）—— 上限 6000，**余量 2245 字符 / ≈25 条 op**（2026-10-05 瘦身后复核：triggers 移出常驻 + 片段表 + seeAlso 去重；同日需求方改 `platform-positioning` 片段与 `map_control.flow` 措辞后再复核）。历史：2026-10-03 把 `params` 移出常驻（省 1148 字符 / 19.5%：参数名 `list` 已回、语义 `describe` 按需给，常驻再写一遍是重复计费），常驻从 5878/6000=98% 降到 4730/6000=78.8%；同日三批 `notes` 清零 + 4 条新硬规则（`knowledge_export` 强制脱敏、`fui_pack` ftu 是编译产物、`test_run` no-baseline≠通过、`get_package_api` 注册表没有≠平台没有）把它推到 5125/6000=84.7% —— 该常驻的判据（会让 AI 误判/泄露的那类）进常驻并**接受预算上涨**，这是分层的代价。**2026-10-05 平台定位口径**（需求方定规）再加定位规则（`create_project` / `build_ui_flow` / `list_packages` / `get_project_spec`：Linux 基座、非 MCU/ESP32 SDK、GUI 是自研 EasyUI≠LVGL），常驻到 **5925/6000=98.8%** —— 定位判错会让 AI 砍掉整层 Linux 能力、按 LVGL 类推 API，属「必须常驻」的判据；**下次要加常驻内容必须先腾地方（不要直接抬 totalMax）**。**2026-10-05 瘦身**（用户指示）：① `triggers` 移出常驻面（路由/目录/manifest 直接读 op_spec 字段，功能不变）；② 新增 `fragments` 共享片段表（`@platform-positioning`：同一句原抄 5 份）；③ `seeAlso` 渲染时去掉与 `docRef` 重复的条目（40/47 op 重复，合计 1550 字符）。**口径 = 渲染产物字符数**，由 gen_op_docs 计算并进发布闸门。⚠️ **本段的「常驻合计 N」由门禁对账**（check_consistency 的 `budget.basis 常驻数字`）—— 改 docstring 后忘了改这里会红，不会再漂。",
+    "note": "预算口径（数字全部实测，勿手写第二份）：**常驻面**合计 3755/6000；**按需面**单条上限 900，最长 `flythings_i18n` 已 **1940/900**。按需面已按段分层（2026-10-05）：计费单位是「一次取用」而非「整条 op」—— 全文超限时默认形态自动退化成 skeleton + 段目录（现测：默认形态最长 892（flythings_get_package_api）、除 all 外最长单段 866（flythings_ui_preview:rules））。all 恒等于全文、不参与单段判据（它是逃生门）。加内容前先看段余量，别再往单条上堆。"
   },
   "renderOrder": [
     "summary",
@@ -895,7 +895,7 @@
       }
     },
     "flythings_ui_preview": {
-      "summary": "json 布局 / 整个项目 → HTML 预览稿（客户确认 UI 用；只交 html，不产图片/截图）。",
+      "summary": "json / 整个项目 → HTML 预览稿（客户确认 UI 用）+ 可选**引擎等价 PNG 展示图**（`with_images`）。",
       "risk": "write",
       "category": "layout",
       "stage": "design",
@@ -907,13 +907,20 @@
         {
           "name": "for_customer",
           "desc": "True → **客户确认稿** `<name>.confirm.html`：单文件、图内联、手机可转发、带「标注」开关与窄屏自适应；**不动 json/ftu**"
+        },
+        {
+          "name": "with_images",
+          "desc": "True → 同一批 json 再出**像素级展示图**（`json2img` 引擎等价渲染，比 HTML/CSS 近似更贴真机）到 `<项目>/ui/_preview/*.png`，返回体加 `images{dir,files[],unsupported[],unsupportedCount}`。**默认 False**（AI 自检不必付渲染成本）；要给人看效果时开。HTML 仍出——确认稿身份不变"
         }
       ],
       "rules": [
         "多整屏 window 工程自带「页面切换条」+ `#window__N`（简写 `#N`）直达 + 幽灵框看隐藏窗。",
+        "**展示效果以 `with_images=True` 的 PNG 为准**（同一个 `json2img` 渲染器 = 设备引擎语义）；HTML 稿负责**交互与标注**（切页/深链接/幽灵框/点「标注」看控件名尺寸），两者同源于 json，不互相替代。",
+        "`images` 只画**静止态**：滚动位置/动画/视频/运行期数据（listview 数据、radiogroup 联动、rollEnable、imageanim 首帧、videoview 色块…）不还原，逐条在 `unsupported[]`（已去重，`unsupportedCount` 是原始条数）——**别把展示图当验收结论**，像素真相仍要真机截图。",
         "确认闸门：改完布局先出确认稿给需求方确认，OK 才 pack / 写逻辑 / 推真机。",
         "出稿同时落**指纹副文件** `<项目>/temp/confirm/<稿名>.fingerprint.json`（记录该稿对应 json 的内容 sha256）—— `flythings_fui_pack` / `flythings_build_ui_flow` 的硬闸门据此判「确认的是不是这一版」。**不放 ui/ 下**：`ui/*.json` 会被 `fui pack` 与 `ui_compile` 当成页面 json。",
-        "`output_dir` 不在 `<项目>/ui` 下 → 返回体带 `gateWarning`（闸门扫不到这份稿，会判「没有确认稿」），把 output_dir 指回 ui/ 即可。"
+        "`output_dir` 不在 `<项目>/ui` 下 → 返回体带 `gateWarning`（闸门扫不到这份稿，会判「没有确认稿」），把 output_dir 指回 ui/ 即可。",
+        "展示图落点固定 `<项目>/ui/_preview/`（与 `ui_visual(action=\"render\")` 的 `ui/_render/` 分开）；渲染失败**如实回** `images.error` + `hint`，不静默返回空列表。"
       ],
       "docRef": "knowledge/devflow/ui-layout-verify.md",
       "seeAlso": [
@@ -1600,7 +1607,7 @@
       "rules": [
         "**设备读 json 不是 .tr**：`fun launch` **不推 i18n**（只推 ftu/images/font/lib/cfg）→ 改完翻译必须 `action=\"to_json\"`（默认自动 push），否则设备仍跑旧翻译（logcat 刷 not found value）",
         "落盘的 `i18n/<lang>.json` 必须是 **tab 制表 + 冒号后无空格 + 末尾无空行**（设备按此读）→ **不要手改 json**：改 `.tr` 再 to_json",
-        "换行转义：官方 `.tr` 写 `&#x000A;`，转出的 json 里必须是**真换行**（口径冲突已在知识页并列）",
+        "换行转义：`.tr` 写 `&#x000A;`（唯一写法，2026-10-05 需求方拍板统一；历史字面 `\\n` 仅保留读取兼容），转出的 json 里必须是**真换行**",
         "布局 text 带 `@key` 引用；代码里 `setTextTr(key)` / `LANGUAGEMANAGER->getValue(key)` **不带 @** （带不带 @ 是最常错的地方）",
         "refactor 拆出的 key 要在所有语言文件里补齐；缺 key 由 scan 报\"缺失 key\""
       ],

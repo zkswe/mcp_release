@@ -117,5 +117,71 @@ class TestEditorUnaffected(PreviewBase):
         self.assertIn('ed-ghost', html, '编辑器自带 ghost 行为')
 
 
+class TestPreviewImages(PreviewBase):
+    """`with_images=True`：同一批 json 出**引擎等价 PNG 展示图**（2026-10-05 加）。
+
+    口径：HTML 仍是**确认稿身份**（硬闸门只认 `.confirm.html`/`.preview.html`），
+    PNG 是"给人看效果"的展示层 —— 走同一个 `json2img` 渲染器（设备引擎语义），
+    比 HTML/CSS 近似渲染更贴真机。**默认关**（AI 自检不付渲染成本）。
+    """
+
+    def _mk(self):
+        return self.preview('main.json', {'window__1': win(1, '第一页'),
+                                          'window__2': win(2, '第二页', vis=False)})
+
+    def test_default_has_no_images_key(self):
+        """默认不产图：返回体不许出现 images 键（行为与加该参数之前逐字节一致）。"""
+        self._mk()
+        r = U.jcall('flythings_ui_preview', {'target': self.tmp})
+        self.assertTrue(r['ok'], r)
+        self.assertNotIn('images', r)
+        self.assertFalse(os.path.isdir(os.path.join(self.ui, '_preview')),
+                         '默认关时不该建展示图目录')
+
+    def test_with_images_renders_png_per_page(self):
+        """开 with_images：每页一张真 PNG，尺寸 = 工程分辨率。"""
+        self._mk()
+        r = U.jcall('flythings_ui_preview', {'target': self.tmp, 'with_images': True})
+        self.assertTrue(r['ok'], r)
+        img = r.get('images') or {}
+        self.assertIsNone(img.get('error'), img)
+        files = img.get('files') or []
+        self.assertEqual(len(files), 1, '只有 main.json 一页 → 一张图：%s' % files)
+        png = files[0]['png']
+        self.assertTrue(os.path.isfile(png), png)
+        self.assertEqual(files[0]['size'], [self.W, self.H])
+        with open(png, 'rb') as f:
+            self.assertEqual(f.read(8), b'\x89PNG\r\n\x1a\n', '不是有效 PNG')
+        self.assertIn(os.path.join('ui', '_preview'), img['dir'],
+                      '展示图落点应为 <项目>/ui/_preview（与 ui_visual render 的 _render 分开）')
+
+    def test_html_draft_identity_unchanged(self):
+        """开图不影响确认稿身份：HTML 照出、指纹照落、闸门判定不变。"""
+        self._mk()
+        r = U.jcall('flythings_ui_preview', {'target': self.tmp, 'for_customer': True,
+                                            'with_images': True})
+        self.assertTrue(r['ok'], r)
+        self.assertTrue(r.get('confirmDraft'), r)
+        self.assertEqual(r.get('confirmReason'), '', r)
+        self.assertTrue(os.path.isfile(r['confirmDraft']))
+        self.assertIn('.confirm.html', r['confirmDraft'])
+
+    def test_render_failure_is_not_silent(self):
+        """渲染失败要如实报（images.error + hint），不许返回空 files 当成功。"""
+        self._mk()
+        import kb_tools as K
+        orig = K._ui_render
+        try:
+            K._ui_render = lambda *a, **kw: json.dumps(
+                {'success': False, 'error': 'json2img 失败 rc=2', 'stdout': 'boom'})
+            r = U.jcall('flythings_ui_preview', {'target': self.tmp, 'with_images': True})
+            img = r.get('images') or {}
+            self.assertTrue(img.get('error'), '渲染失败必须带 error：%s' % r)
+            self.assertEqual(img.get('files'), [])
+            self.assertTrue(img.get('hint'), '失败要给可执行下一步')
+        finally:
+            K._ui_render = orig
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

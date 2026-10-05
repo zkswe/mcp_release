@@ -18,13 +18,11 @@ add_language 添加新语言 / refactor 布局文本转 @key。
   ⚠️ 只有 updateLocalesCode 会立即刷新**已打开页面**的文案
   （内部 = LanguageManager::setCurrentCode + 遍历 ActivityStack 调 BaseApp::updateLocales）。
 只调 LANGUAGEMANAGER->setCurrentCode 不会刷新在屏控件文本，用户要「退出重进」才看到新语言。
-- 换行转义：⚠️ **官方语法是 XML 字符引用 `&#x000A;`**（官方 i18n 文档原文：
+- 换行转义：**唯一写法 = XML 字符引用 `&#x000A;`**（官方 i18n 文档原文：
   `<string name="new_line_test">第一行&#x000A;第二行</string>`）。
-  本工具**额外容忍**字面 `\n`（两个字符）并在转 .json 时还原成**真实换行符**；
-  ⚠️ 归因修正（2026-10-03）：改前这里写「.tr 里写 `\n`（**官方 i18n 文档**）」—— **官方不是这么写的**。
-  风险：官方工作流是**编译器**把 .tr 转 json，若编译器不做反斜杠还原，
-  则本工具**写出**的字面 `\n`（见 `_escape_tr`）经编译器转出的 json 会把 `\n` 当普通字符。
-  ⇒ **建议一律写 `&#x000A;`**（任何 XML 解析器都会解开，对编译器与本工具都安全）。
+  **本工具写 `.tr` 一律写 `&#x000A;`**（制表 `&#x0009;`、回车 `&#x000D;` 同理）—— 单一口径，不存在第二种写法。
+  读时**额外容忍**历史字面 `\n` / `\t` / `\\`（旧版本工具写出的文件），保证老工程零迁移；
+  但**写回会归一成字符引用**（见 `_write_tr`）。
   设备侧硬要求不变：json 里必须是真实 `0x0A`；
 框架取值不做反斜杠还原，设备端 zk_gdi_draw_text 按 0x0A 切行。
 多语言需字体支持（默认精简字体，建议 font_cut_tool 自定义字体）；
@@ -54,26 +52,27 @@ def _i18n_dir(project_root):
     return os.path.join(project_root, 'i18n')
 
 
-# ---------------------------------------------------------------- 换行转义
-# 官方语法 = XML 字符引用 `&#x000A;`（任何 XML 解析器都会解成真实 LF）。
-# 本模块**额外容忍**字面 `\n`：读(_unescape_tr) 会还原，写(_escape_tr) 也写字面 `\n`。
-# ⚠️ 归因修正（2026-10-03）：改前这里写「.tr（源）按官方文档写 `\n`」—— **官方文档写的是 `&#x000A;`**。
-#    风险：官方工作流由**编译器**把 .tr 转 json；若编译器不做反斜杠还原，
-#    本模块写出的字面 `\n` 经它转出的 json 会把 `\n` 当普通字符（设备显示「\n」文字）。
-#    ⇒ 写 .tr 一律用 `&#x000A;`；本模块写 `\n` 属**已知可移植性差异**（见
-#      knowledge/devflow/i18n-multilang.md §6，未擅自改行为）。
+# ---------------------------------------------------------------- 换行/空白转义
+# 唯一写法 = **XML 字符引用**（官方 i18n 文档原文用 `&#x000A;`；任何 XML 解析器都会解成真实 LF）：
+#   写(_write_tr)：`\n`→`&#x000A;`、`\t`→`&#x0009;`、`\r`→`&#x000D;` —— 单一口径，不再有第二种写法。
+#   读(_unescape_tr)：字符引用由 XML 解析器解开；**额外**容忍历史字面 `\n`/`\t`/`\\`
+#     （旧版本工具写出过的文件）→ 老工程零迁移；但这只是向后兼容，不是鼓励写法。
 # .json（设备读）必须是真实换行符。
 # 实证（2026-09-10 反汇编 v85x easyui 2.9.0 libeasyui.so）：
 #   LanguageManager::getValue 直接 Json::Value::asString() 返回，不做反斜杠还原；
-#分行发生在 zk_gdi_draw_text，按字节 0x0A(LF) 切行（strchr(p, '\n')）。
+#   分行发生在 zk_gdi_draw_text，按字节 0x0A(LF) 切行（strchr(p, '\n')）。
 #   ⇒ .json 里留字面 `\n`（JSON 写作 \\n）设备会原样显示 "\n" 文字，不换行。
-#本地同源脚本：<项目>/tools/tr2json.py。
-_ESCAPE_MAP = {'n': '\n', 'r': '\r', 't': '\t', '\\': '\\', '"': '"', "'": "'"}
-_UNESCAPE_MAP = {'\n': '\\n', '\r': '\\r', '\t': '\\t', '\\': '\\\\'}
+# 本地同源脚本：<项目>/tools/tr2json.py。
+_ESCAPE_MAP = {'n': '\n', 'r': '\r', 't': '\t', '\\': '\\', '"': '"', "'": "'"}   # 仅用于“读”兼容
+_UNESCAPE_MAP = {'\n': '&#x000A;', '\r': '&#x000D;', '\t': '&#x0009;'}            # 写：XML 字符引用
 
 
 def _unescape_tr(text):
-    """`\\n`(2 字符) -> 真实换行;`\\t` -> TAB;`\\\\` -> 反斜杠。其余 `\\x` 原样保留。"""
+    """读兼容：历史字面 `\\n`(2 字符) -> 真实换行;`\\t` -> TAB;`\\\\` -> 反斜杠。其余 `\\x` 原样保留。
+
+    ⚠️ 字符引用（`&#x000A;`）不在这里处理 —— 它们由 XML 解析器（ElementTree）解开；
+    本函数只兜旧版本工具写出的字面反斜杠形式，写回时会被 `_write_tr` 归一成字符引用。
+    """
     if '\\' not in text:
         return text
     out, i, n = [], 0, len(text)
@@ -89,7 +88,10 @@ def _unescape_tr(text):
 
 
 def _escape_tr(text):
-    """真实换行/TAB/反斜杠 -> `\\n` / `\\t` / `\\\\`，保证 .tr 单行可读。"""
+    """真实换行/TAB/回车 -> XML 字符引用（`&#x000A;` / `&#x0009;` / `&#x000D;`），保证 .tr 单行可读。
+
+    反斜杠**不再转义**（它在 XML 里是普通字符），所以 `C:\\new` 这类字面内容能原样保留。
+    """
     return ''.join(_UNESCAPE_MAP.get(c, c) for c in text)
 
 
@@ -150,11 +152,11 @@ def _parse_tr(path):
 
 
 def _write_tr(path, entries):
-    """写 .tr 文件。entries: {key: text}，保持插入序；换行写 `\\n` 转义、XML 转义特殊字符。"""
+    """写 .tr 文件。entries: {key: text}，保持插入序；换行写 XML 字符引用 `&#x000A;`、XML 转义特殊字符。"""
     lines = [TR_HEADER]
     for k, v in entries.items():
         text = (v or '').replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-        # 真实换行 -> `\n` 转义（保证单行；设备端 .json 才用真实换行）
+        # 真实换行 -> `&#x000A;`（唯一写法；保证单行可读。设备端 .json 才用真实换行）
         text = _escape_tr(text)
         lines.append(f'\t<string name="{k}">{text}</string>\n')
     lines.append(TR_FOOTER)
@@ -440,8 +442,8 @@ def flythings_i18n_refactor(project_root: str, lang: str = 'zh_CN', dry_run: boo
 #本地开发脚本版见 E:\AICODE\trae\V553\tools\tr2json.py（V553 项目），逻辑同源。
 
 def _tr_to_json(tr_path):
-    """解析 .tr（XML）→ 有序 dict {key: value}。XML 实体由 ElementTree 自动解码；
-之后把 `\\n` / `\\t` 等反斜杠转义还原为真实字符（设备端按 0x0A 切行）。"""
+    """解析 .tr（XML）→ 有序 dict {key: value}。XML 实体与字符引用（含 `&#x000A;`）由 ElementTree 解码；
+    之后再把**历史**字面 `\\n` / `\\t` 兼容还原为真实字符（设备端按 0x0A 切行）。"""
     tree = ET.parse(tr_path)
     root = tree.getroot()
     out = {}

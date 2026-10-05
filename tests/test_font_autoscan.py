@@ -299,6 +299,114 @@ class TestCheckProjectDepsFontCheck(unittest.TestCase):
         self.assertIn('GB2312 一级覆盖率', msg)
 
 
+class TestCheckProjectDepsFontTiers(unittest.TestCase):
+    """④/⑤ **选字库**（2026-10-05）：`fontTiers` = 三档菜单 + 按工程字集的推荐档 + 现档位。
+
+    为什么钉：字库只该「先选档（换档不改代码、不裁字）、存储异常才裁剪」，但在此之前
+    「选档」只是一个参数，没有一处能把「能选什么 / 该选哪档 / 现在是什么」一次问出来 ——
+    `font_subset_by_project.py` 反而排在处置顺序第 1 位。本组用例钉住：
+
+    ① 菜单三档**顺序与体积都来自真源**（`preflight_spec.json` 的 tierOrder + 字体文件实际字节，
+       不是硬编码）；
+    ② 推荐档按工程实际字集算（含生僻字 → 升档，不能永远报 common）；
+    ③ 现工程档位从 `font/` 已投递文件**反查**真源档位表；现档 == 推荐档 → 明说无需动作；
+    ④ 显式传不存在的档位 → 报出来（不静默当成生效）；
+    ⑤ 裁剪是**事后口子**：口径写清「只在存储/内存异常时用」。
+    """
+
+    def setUp(self):
+        self.tmp = U.project()
+
+    def tearDown(self):
+        U.cleanup(self.tmp)
+
+    def _ui_text(self, text, name='main.json'):
+        U.write(os.path.join(self.tmp, 'ui', name),
+                json.dumps({'id': 0, 'resolution': {'width': 480, 'height': 480},
+                            'position': {'left': 0, 'top': 0, 'width': 480, 'height': 480},
+                            'textview__1': {'caption': 'T1', 'text': text,
+                                            'position': {'left': 0, 'top': 0,
+                                                         'width': 100, 'height': 30}}},
+                           ensure_ascii=False))
+
+    def test_tiers_menu_comes_from_truth_source_with_real_bytes(self):
+        """① 三档顺序/体积来自真源（preflight_spec tierOrder + 字体文件实际字节）。"""
+        _mk(self.tmp)
+        self._ui_text('系统设置')                    # 全部常用字 → 最小档
+        _no_adb_probe(self)
+        r = U.jcall('flythings_check_project_deps', {'project_root': self.tmp})
+        ft_ = r['fontTiers']
+        self.assertTrue(ft_['enabled'], ft_)
+        self.assertEqual([t['tier'] for t in ft_['tiers']], ['common', 'full', 'multi'])
+        for t in ft_['tiers']:
+            path = os.path.join(U.BASE, 'components', 'fonts', 'fonts', t['file'])
+            self.assertTrue(os.path.isfile(path), t)
+            # 体积 = 字体文件实际字节数（读不到才算错）
+            self.assertEqual(t['bytes'], os.path.getsize(path), t)
+            self.assertTrue(t['when'], '每档必须写清「什么时候用」: %s' % t)
+            self.assertIn(t['tier'], t['pick'])
+            self.assertIn('font_tier=', t['command'])
+
+    def test_recommend_upgrades_tier_for_rare_char(self):
+        """② 推荐档按工程实际字集算：常用字 → common；含生僻字（阈，非 GB2312 一级）→ 升档。
+
+        钉住的错法：推荐档写死成 common（那「该选哪档」就没答）。
+        """
+        _mk(self.tmp)
+        _no_adb_probe(self)
+        self._ui_text('系统设置')
+        r1 = U.jcall('flythings_check_project_deps', {'project_root': self.tmp})
+        self.assertEqual(r1['fontTiers']['recommend']['tier'], 'common')
+        # 同一个工程只改文案，加一个生僻字 → 必须升档
+        self._ui_text('阈值设置')
+        r2 = U.jcall('flythings_check_project_deps', {'project_root': self.tmp})
+        rec = r2['fontTiers']['recommend']
+        self.assertIn(rec['tier'], ('full', 'multi'), rec)
+        self.assertTrue(rec['why'], rec)
+
+    def test_current_tier_from_project_fonts_and_next_action(self):
+        """③ 现档位反查真源档位表；现档 == 推荐档 → 明说无需动作（不留空成功）。"""
+        _mk(self.tmp)
+        self._ui_text('系统设置')
+        dfc = _dfc()
+        name = dfc.TIERS['common']
+        os.makedirs(os.path.join(self.tmp, 'font'), exist_ok=True)
+        shutil.copyfile(os.path.join(REPO_FONT_DIR, name),
+                        os.path.join(self.tmp, 'font', name))
+        _no_adb_probe(self)
+        r = U.jcall('flythings_check_project_deps', {'project_root': self.tmp})
+        ft_ = r['fontTiers']
+        self.assertEqual(ft_['current']['tier'], 'common', ft_['current'])
+        self.assertTrue(ft_['current']['delivered'])
+        self.assertIn(name, ft_['current']['files'])
+        self.assertTrue(ft_['recommend']['matchesProject'], ft_['recommend'])
+        self.assertIn('无需动作', ft_['recommend']['nextAction'])
+
+    def test_unknown_tier_is_reported(self):
+        """④ 显式传不存在的档位 → 报出来（可选档位 + 推荐档指路），不静默忽略。"""
+        _mk(self.tmp)
+        self._ui_text('系统设置')
+        _no_adb_probe(self)
+        r = U.jcall('flythings_check_project_deps',
+                    {'project_root': self.tmp, 'font_tier': 'no-such-tier'})
+        self.assertFalse(r['fontTiers']['requested']['known'])
+        issues = [i for i in r['fontIssues'] if i.get('kind') == 'fontTier']
+        self.assertTrue(issues, r['fontIssues'])
+        self.assertIn('不存在', issues[0]['msg'])
+        self.assertIn('common', issues[0]['hint'])
+
+    def test_subset_is_storage_exception_only(self):
+        """⑤ 裁剪是事后口子：`fontTiers.subset.when` 必须写明「只在存储/内存异常时用」。"""
+        _mk(self.tmp)
+        self._ui_text('系统设置')
+        _no_adb_probe(self)
+        r = U.jcall('flythings_check_project_deps', {'project_root': self.tmp})
+        subset = r['fontTiers']['subset']
+        self.assertIn('存储', subset['when'])
+        self.assertIn('font_subset_by_project.py', subset['tool'])
+        self.assertIn('重跑', subset['warning'])     # 改文案要重跑（静默缺字）
+
+
 class TestBuildFlowFontStep(unittest.TestCase):
     """①②③ 构建流程接线：默认投递 / 可关 / 投递在 build 之前。"""
 

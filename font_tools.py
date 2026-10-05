@@ -641,6 +641,141 @@ def repair_command(project_root, tier='common'):
     return ('python %s --apply --project "%s" --tier %s' % (rel, project_root, tier or 'common'))
 
 
+def font_tier_menu(project_root, dfc=None):
+    """**选字库**：三档菜单 + 按本工程实际字集的推荐档 + 现工程档位 → dict。
+
+    为什么有（2026-10-05）：字库决定只有两个口子 —— 「选档」（`font_tier=`）与「自己裁字库」。
+    文档把裁剪写在处置第 1 位（`knowledge/devflow/device-deploy-budget.md` §3），实际它只该在
+    **存储/内存异常**时用；日常缺中文投现成三档即可。本函数把「选档」摆上台面，让调用方
+    （`flythings_check_project_deps` 的 `fontTiers` 字段）一次看到「能选什么 / 该选哪档 / 现在是什么」。
+
+    单一真源（本函数**不抄第二份阈值或档位名**）：
+      · 档位名/顺序/何时用 = `preflight_spec.json`（经 `preflight_loader`：`tier_order()` / `tier()`；
+        取不到 → 退 `device_font_check.TIERS`，两处都取不到才报 error，不猜）；
+      · 体积 = 字体文件**实际字节数**（`preflight_loader.tier_bytes()`，读不到回 None，不写死）；
+      · 推荐档 = `preflight.pick_font_tier()`（扫工程 UI 文案的 CJK 字集 → 够用的最小档）；
+      · 现工程档位 = 把工程 `font/` 里已投递的文件名**反查** `dfc.TIERS`（不硬编码文件名对照表）。
+
+    返回体的 `recommend` 带 `nextAction`：推荐档 == 现档 → 无需动作；否则给
+    `flythings_build_ui_flow(font_tier='X')` / 本 op `font_apply=True` 的**可执行下一步**；
+    两者都没有 → 给 `repair_command()`（不再返回空的成功）。
+    `subsetWhen` 写明「什么时候才该自己裁字库」（体积数字仍从真源文件读，不写死）。
+    """
+    if dfc is None:
+        dfc, err = device_font_check()
+        if dfc is None:
+            return {'enabled': False, 'error': 'device_font_check 不可用: %s' % err}
+
+    # ---- 档位菜单：顺序与元数据都从注册表读；注册表不可用才退组件实现 ----
+    order, tiers, spec_err = [], {}, ''
+    try:
+        import preflight_loader as P                          # 与 preflight.py 同一份真源读取器
+        order = list(P.tier_order())
+        tiers = P.tiers()
+    except Exception as e:                                    # noqa: BLE001
+        spec_err = '%s: %s' % (type(e).__name__, e)
+        order = list((dfc.TIERS or {}).keys())
+        tiers = {k: {'file': v} for k, v in (dfc.TIERS or {}).items()}
+    if not order:
+        return {'enabled': False, 'error': '字库档位取不到（preflight_spec.json.font.tierOrder '
+                                           '与 device_font_check.TIERS 都为空）'}
+    try:
+        import preflight as pf
+    except Exception as e:                                    # noqa: BLE001
+        pf = None
+        spec_err = (spec_err + '；' if spec_err else '') + 'preflight 导入失败: %s' % e
+
+    menu = []
+    by_name = {}
+    for pos, name in enumerate(order):
+        t = dict(tiers.get(name) or {})
+        fname = t.get('file') or (dfc.TIERS or {}).get(name) or ''
+        raw = None
+        if pf is not None:
+            try:
+                raw = pf.P.tier_bytes(name)                   # 字体文件实际字节（读不到 None）
+            except Exception:                                 # noqa: BLE001
+                raw = None
+        if raw is None:
+            try:
+                raw = os.path.getsize(os.path.join(
+                    os.path.dirname(DFC_PATH), '..', 'fonts', fname))
+            except OSError:
+                raw = None
+        row = {'tier': name, 'file': fname, 'bytes': raw,
+               'sizeKB': (round(raw / 1024.0, 1) if raw else None),
+               'level': t.get('level') or '', 'when': t.get('when') or '',
+               'pick': ("font_tier='%s'" % name),
+               'command': ('flythings_build_ui_flow(font_tier=%r)' % name)}
+        menu.append(row)
+        by_name[name] = row
+
+    # ---- 推荐档：扫工程实际字集选「够用的最小档」（唯一实现在 preflight）----
+    rec = {'tier': '', 'why': '', 'evidence': '',
+           'reason': 'preflight.pick_font_tier 不可用，未做推荐'}
+    if pf is not None:
+        try:
+            rec = pf.pick_font_tier(project_root)
+        except Exception as e:                                # noqa: BLE001
+            rec = {'tier': '', 'why': '', 'evidence': '',
+                   'reason': '推荐档计算失败: %s: %s' % (type(e).__name__, e)}
+
+    # ---- 现工程档位：已投递文件名反查真源档位表（不硬编码文件名）----
+    pfonts = project_fonts(project_root)
+    name2tier = {}
+    for _tn, _fn in (dfc.TIERS or {}).items():
+        if _fn:
+            name2tier[str(_fn).lower()] = _tn
+    cur_tier, cur_files = '', []
+    for f in pfonts:
+        t2 = name2tier.get(str(f.get('name') or '').lower())
+        if t2 and not cur_tier:
+            cur_tier = t2
+        cur_files.append(f.get('name'))
+    current = {'tier': cur_tier, 'files': cur_files,
+               'delivered': bool(cur_tier),
+               'note': ('工程 font/ 下已投递 %s 档' % cur_tier if cur_tier
+                        else ('工程 font/ 下有字体但不是三档之一' if cur_files
+                              else '工程 font/ 下没有字体（尚未投递任何档）'))}
+
+    # ---- 推荐档 vs 现档：给可执行下一步（不返回空的成功）----
+    want = rec.get('tier') if isinstance(rec, dict) else ''
+    if want == 'none':
+        next_action = '工程文案 0 个汉字 → 不需要投字库（设备内置拉丁字库够用）'
+    elif not want:
+        next_action = ('推荐档算不出（见 recommend.reason）；可显式选档：'
+                       + ' / '.join(r['command'] for r in menu))
+    elif cur_tier == want:
+        next_action = '已投递的档位与推荐档一致（%s）→ 无需动作' % want
+    else:
+        next_action = ('现工程档位 %s ≠ 推荐档 %s → 改用：%s（或本 op 传 font_apply=True；'
+                       '命令行：%s）'
+                       % (cur_tier or '未投递', want, by_name.get(want, {}).get('command') or want,
+                          repair_command(project_root, want)))
+    rec = dict(rec) if isinstance(rec, dict) else {}
+    rec['matchesProject'] = bool(want and cur_tier == want)
+    rec['nextAction'] = next_action
+
+    # ---- 自己裁字库的口径（**事后口子**）：只有存储/内存异常才用 ----
+    common_kb = (by_name.get('common') or {}).get('sizeKB')
+    subset_when = ('**只在存储/内存异常时用**（设备 tmpfs 装不下现成档：一次 fun launch 要推 '
+                   'libzkgui.so + font + ftu + EasyUI.cfg，字库是最大头）→ 先按现成档选型，'
+                   '仍超预算才裁字库；日常缺中文请直接选档，不要一上来就裁')
+    if common_kb:
+        subset_when += '（如 common 档 %.1f KB → 裁剪后可到数十 KB）' % common_kb
+
+    out = {'enabled': True, 'tierOrder': order, 'tiers': menu,
+           'recommend': rec, 'current': current,
+           'subset': {'tool': 'ui_tools/font_subset_by_project.py',
+                      'when': subset_when,
+                      'warning': '改完 UI 文案必须重跑：新增字不在字库里会**静默缺字**。'},
+           'default': (dfc.TIERS and order[0]) or ''}
+    if spec_err:
+        out['specWarning'] = ('档位元数据部分降级（%s）—— 档位名/体积仍来自真源，'
+                              '但 when/level 可能缺失' % spec_err)
+    return out
+
+
 def compact(status):
     """体检返回体里给 AI/客户看的精炼版（字段固定，防漂移）。"""
     if not status or not status.get('enabled'):

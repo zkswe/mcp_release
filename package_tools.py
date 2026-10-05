@@ -673,6 +673,47 @@ def framework_dep_status(project_root, platform=''):
             'hint': (missing[0]['hint'] if missing else '')}
 
 
+def _font_tiers(root, explicit_tier=''):
+    """**选字库**（唯一实现在 `font_tools.font_tier_menu`，本函数只做包装与错误兜底）。
+
+    返回 `(fontTiers, issues)`：`fontTiers` 给三档菜单 + 按本工程字集的推荐档 + 现工程档位；
+    `issues` 只在「显式指定的档位不存在」时给一条可执行提示（不静默忽略）。
+    菜单算不出来时**不静默**：`fontTiers` 带 `enabled:false` + `error`。
+    """
+    out, issues = {}, []
+    try:
+        import font_tools as ftools
+        out = ftools.font_tier_menu(root)
+    except Exception as e:                      # noqa: BLE001
+        return ({'enabled': False, 'error': '字库档位菜单不可用: %s: %s'
+                 % (type(e).__name__, e), 'hint': '见 font_tools.font_tier_menu'}, issues)
+    # 显式指定档位 → 与真源档位表对账（错了要说，不许当成生效）
+    if explicit_tier:
+        tiers = out.get('tierOrder') or []
+        if explicit_tier in tiers:
+            row = next((t for t in (out.get('tiers') or []) if t.get('tier') == explicit_tier), {})
+            out['requested'] = {'tier': explicit_tier, 'known': True,
+                                'bytes': row.get('bytes'), 'sizeKB': row.get('sizeKB'),
+                                'command': row.get('command')}
+        else:
+            out['requested'] = {'tier': explicit_tier, 'known': False}
+            issues.append({'kind': 'fontTier', 'tier': explicit_tier, 'known': False,
+                           'msg': '指定的字库档位不存在: %r' % explicit_tier,
+                           'hint': '可选档位: %s（按本工程字集的推荐档见 fontTiers.recommend）'
+                                   % ('、'.join(tiers) or '(取不到)')})
+    return out, issues
+
+
+def _font_tiers_only(root, error):
+    """src 缺失时的降级返回：依赖体检失败，但**选字库照常给**（各自独立，不互相拖累）。"""
+    font_tiers, tier_issues = _font_tiers(root)
+    out = {'success': False, 'error': error, 'projectRoot': root, 'depsOk': False,
+           'missingDependencies': [], 'fontTiers': font_tiers, 'fontIssues': tier_issues,
+           'hint': ('依赖体检需要 src/；选字库不依赖它 —— 见 fontTiers'
+                    '（菜单 + 按本工程字集的推荐档 + 现档位）')}
+    return out
+
+
 def flythings_check_project_deps(project_root, platform='F133', device='',
                                  font_check='auto', font_tier='', font_apply=False):
     """扫描项目代码 include 的三方库，与 Manifest.xml 已声明依赖对比，返回缺失依赖。
@@ -680,11 +721,18 @@ def flythings_check_project_deps(project_root, platform='F133', device='',
     另含**框架基础依赖**体检（v0.27.83）：base 头文件（含 fun 生成的 generated/*.h）→ 必须有 base-utility。
     另含**字体体检**（v0.27.86，`fontCheck` 字段）：缺中文字库 / prefs 引用断链 → `fontIssues` 给结论与
     一键修复命令；默认**只报不投**（`font_apply=True` 才真投递；`flythings_build_ui_flow` 默认自动投递）。
-    传 `device='<serial|IP:5555>'` 时额外扫设备字体；不传则只做工程侧检查（不碰 adb）。"""
+    传 `device='<serial|IP:5555>'` 时额外扫设备字体；不传则只做工程侧检查（不碰 adb）。
+
+    另含**选字库**（2026-10-05，`fontTiers` 字段）：三档菜单（体积读字体文件实际字节）+ 按本工程
+    实际字集算的**推荐档** + 现工程档位 → `recommend.nextAction` 直接给可执行下一步。
+    ⚠️ 优先用现成三档（`font_tier='common'|'full'|'multi'`）；**自己裁字库只在存储/内存异常时用**
+    （`fontTiers.subset.when`）—— 日常缺中文请选档，不要一上来就裁。"""
     root = os.path.abspath(project_root)
     src = os.path.join(root, 'src')
     if not os.path.isdir(src):
-        return {'success': False, 'error': f'src 目录不存在: {src}'}
+        # 依赖体检没法做，但**选字库是独立能力**（只看 ui/*.json 的文案字集）→ 照样返回，
+        # 不让调用方为了选档先造一个 src（不返回空的失败）。
+        return _font_tiers_only(root, f'src 目录不存在: {src}')
     # 1. 收集全部 include
     includes = set()
     for base, _, files in os.walk(src):
@@ -770,13 +818,19 @@ def flythings_check_project_deps(project_root, platform='F133', device='',
                 'error': '字体体检异常: %s: %s' % (type(e).__name__, e)}
         font_issues.append({'kind': 'font', 'enabled': False,
                             'msg': font['error'], 'hint': '见 font_tools.py'})
+    # 7. 选字库（2026-10-05）：三档菜单 + 按本工程字集的推荐档 + 现工程档位。
+    #    「选档」是日常口子，「自己裁字库」只在存储/内存异常时用（口径见 fontTiers.subset）。
+    #    与 #6 的 fontCheck 分工：fontCheck 答「设备/工程现在缺不缺中文」，fontTiers 答「该选哪档」。
+    font_tiers, tier_issues = _font_tiers(root, font_tier)
+    font_issues.extend(tier_issues)
     return {'success': True, 'projectRoot': root, 'platform': platform,
             'declaredPackages': sorted(declared),
             'detectedIncludes': sorted(detected.keys()),
             'missingDependencies': missing,
             'frameworkDeps': fw.get('deps', []),
             'fontCheck': font,
-            'fontIssues': font_issues}
+            'fontIssues': font_issues,
+            'fontTiers': font_tiers}
 
 
 def flythings_list_packages(platform=None):

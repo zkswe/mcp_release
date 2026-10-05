@@ -108,6 +108,95 @@ class TestRequiredArgs(VisualBase):
         self.assertIn('json', r['error']['msg'])
 
 
+class TestEditApplyWriteBack(VisualBase):
+    """「人用编辑器改完 → 写回 json」这条闭环的判据（2026-10-05 修）：
+
+    ① **格式自检是语义无损口径**：真实工程里大量 json 带 EOF 尾换行（仓库 blob 侧
+       31 份去重里 **24 份**如此），检出到 Windows 又普遍变 CRLF（本机 `core.autocrlf=true`
+       且仓内无 `.gitattributes`）—— 旧实现按字节比对 → 两类都拒写；
+    ② **写回要 byte 稳定**：行尾风格与 EOF 换行沿用源文件，diff 只落在改动的行上；
+    ③ **路径写错不许静默成功**（硬纪律「不静默」）。
+    """
+
+    def test_trailing_newline_file_is_writable(self):
+        """尾换行文件：能写 + 尾换行保住 + 除改动行外不变（旧实现直接拒写）。"""
+        p = os.path.join(self.tmp, 'ui', 'tn.json')
+        U.write(p, json.dumps(MIN_JSON, ensure_ascii=False, indent=2) + '\n')
+        raw0 = open(p, 'rb').read()
+        self.assertTrue(raw0.endswith(b'}\n'), '前置：夹具必须带尾换行')
+        r = U.jcall('flythings_ui_visual', {'action': 'edit_apply', 'project_root': self.tmp,
+                                            'changes': json.dumps(
+                                                {'file': 'tn.json',
+                                                 'changes': {'textview__1': {'left': 60}}},
+                                                ensure_ascii=False)})
+        self.assertTrue(r['ok'], r)
+        raw1 = open(p, 'rb').read()
+        self.assertTrue(raw1.endswith(b'}\n'), '写回把尾换行丢了（会造成整文件 diff）')
+        self.assertEqual(json.loads(raw1.decode('utf-8'))['textview__1']['position']['left'], 60)
+        l0 = raw0.decode('utf-8').splitlines()
+        l1 = raw1.decode('utf-8').splitlines()
+        self.assertEqual(len(l0), len(l1))
+        self.assertLessEqual(sum(1 for a, b in zip(l0, l1) if a != b), 4,
+                             '除改动行外不该有别的行变化')
+
+    def test_crlf_file_keeps_crlf(self):
+        """CRLF 文件：能写 + 行尾仍是 CRLF（旧实现拒写，且写回会整文件变 LF）。"""
+        p = os.path.join(self.tmp, 'ui', 'crlf.json')
+        U.write(p, json.dumps(MIN_JSON, ensure_ascii=False, indent=2).replace('\n', '\r\n'))
+        raw0 = open(p, 'rb').read()
+        self.assertIn(b'\r\n', raw0, '前置：夹具必须是 CRLF')
+        r = U.jcall('flythings_ui_visual', {'action': 'edit_apply', 'project_root': self.tmp,
+                                            'changes': json.dumps(
+                                                {'file': 'crlf.json',
+                                                 'changes': {'textview__1': {'top': 55}}},
+                                                ensure_ascii=False)})
+        self.assertTrue(r['ok'], r)
+        self.assertIn(b'\r\n', open(p, 'rb').read(), '写回把 CRLF 改成了 LF（整文件 diff）')
+
+    def test_real_reformat_is_still_refused(self):
+        """真重排（缩进改成 4 空格）仍要拒 —— 放宽的只是尾换行/行尾风格，不是所有格式。"""
+        p = os.path.join(self.tmp, 'ui', 'indent4.json')
+        U.write(p, json.dumps(MIN_JSON, ensure_ascii=False, indent=4))
+        r = U.jcall('flythings_ui_visual', {'action': 'edit_apply', 'project_root': self.tmp,
+                                            'changes': json.dumps(
+                                                {'file': 'indent4.json',
+                                                 'changes': {'textview__1': {'left': 5}}},
+                                                ensure_ascii=False)})
+        self.assertFalse(r['ok'], '缩进不符必须仍然拒写')
+        self.assertIn('--force', json.dumps(r, ensure_ascii=False))
+
+    def test_wrong_path_is_not_silent_success(self):
+        """路径全错：不许 success=true（旧实现回 success + skipped + exit 0）。"""
+        p = os.path.join(self.tmp, 'ui', 'ghost.json')
+        U.write(p, json.dumps(MIN_JSON, ensure_ascii=False, indent=2))
+        before = open(p, 'rb').read()
+        r = U.jcall('flythings_ui_visual', {'action': 'edit_apply', 'project_root': self.tmp,
+                                            'changes': json.dumps(
+                                                {'file': 'ghost.json',
+                                                 'changes': {'button__999': {'left': 5}}},
+                                                ensure_ascii=False)})
+        self.assertFalse(r['ok'], '一条都没落地却报成功 = 静默失败')
+        self.assertFalse(r.get('partiallyApplied'))
+        self.assertEqual(open(p, 'rb').read(), before, '全错时不该写盘')
+
+    def test_partial_apply_reports_partial(self):
+        """部分落地：success=false + partiallyApplied=true（落地的不回滚，人要看得见哪条没成）。"""
+        p = os.path.join(self.tmp, 'ui', 'part.json')
+        U.write(p, json.dumps(MIN_JSON, ensure_ascii=False, indent=2))
+        r = U.jcall('flythings_ui_visual', {'action': 'edit_apply', 'project_root': self.tmp,
+                                            'changes': json.dumps(
+                                                {'file': 'part.json',
+                                                 'changes': {'textview__1': {'left': 70},
+                                                             'button__999': {'left': 5}}},
+                                                ensure_ascii=False)})
+        self.assertFalse(r['ok'], r)
+        self.assertTrue(r.get('partiallyApplied'), r)
+        self.assertTrue(r.get('applied') or r.get('appliedProps'), r)
+        self.assertTrue(r.get('skipped'), r)
+        d = json.loads(io.open(p, encoding='utf-8').read())
+        self.assertEqual(d['textview__1']['position']['left'], 70, '成的那条要真落地')
+
+
 class TestEditorAndApplyRouting(VisualBase):
     def test_editor_makes_edit_html(self):
         r = U.jcall('flythings_ui_visual', {'action': 'editor', 'project_root': self.tmp})

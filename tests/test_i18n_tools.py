@@ -39,16 +39,64 @@ class TestTrEscaping(unittest.TestCase):
         self.assertEqual(it._unescape_tr('没有转义'), '没有转义')
 
     def test_escape_unescape_roundtrip(self):
+        """写用 XML 字符引用，读回要还原成真实字符 —— 两层合一才等价（引用由 XML 解析器解开）。
+
+        ⚠️ 别把 `_unescape_tr(_escape_tr(s))` 当往返：`_escape_tr` 产出的是**字符引用**
+        （`&#x000A;`），它由 ET 解开，不由 `_unescape_tr`（那层只兜历史字面 `\\n`）。
+        """
         import i18n_tools as it
+        from xml.etree import ElementTree as ET
         for s in ('普通文案', '两行\n文本', '带\tTAB', '反斜杠\\与引号"', ''):
-            self.assertEqual(it._unescape_tr(it._escape_tr(s)), s, repr(s))
+            esc = it._escape_tr(s)
+            self.assertNotIn('\n', esc, '写出的 .tr 内容不能含真实换行（要单行）')
+            self.assertNotIn('\t', esc, '写出的 .tr 内容不能含真实 TAB')
+            # 模拟 <string> 包裹后的 XML 解析 → 得回原串
+            got = ET.fromstring('<resources><s>%s</s></resources>' % esc).find('s').text or ''
+            self.assertEqual(got, s, repr(s))
+
+    def test_write_tr_uses_xml_char_reference(self):
+        """**唯一写法**：`_write_tr` 落盘的换行必须是 `&#x000A;`（不是字面 `\\n`）。"""
+        import i18n_tools as it
+        tmp = U.project()
+        try:
+            p = os.path.join(tmp, 'i18n', 'zh_CN.tr')
+            U.write(p, '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n</resources>\n')
+            it._write_tr(p, {'nl': '第一行\n第二行', 'tab': 'a\tb', 'bs': 'C:\\new'})
+            with io.open(p, encoding='utf-8', newline='') as f:
+                raw = f.read()
+            self.assertIn('&#x000A;', raw, '换行必须写 XML 字符引用')
+            self.assertIn('&#x0009;', raw, 'TAB 必须写 XML 字符引用')
+            # ⚠️ 断言只针对 `nl` 那条的**文本内容**：`bs` 那条本来就该含字面 `C:\new`
+            #   （反斜杠是普通字符，写 `'\\n' not in raw` 会被它误伤）
+            nl_line = [l for l in raw.splitlines() if 'name="nl"' in l][0]
+            self.assertNotIn('\\n', nl_line, '`nl` 的换行不许再写字面反斜杠 n')
+            self.assertIn('C:\\new', raw, '反斜杠是普通字符，应原样保留（不再被转义）')
+            # 写→读闭合：断言不是"写对但读不回"
+            self.assertEqual(it._parse_tr(p)['nl'], '第一行\n第二行')
+        finally:
+            U.cleanup(tmp)
+
+    def test_backslash_n_still_readable_for_legacy_files(self):
+        """向后兼容：旧版工具写过的字面 `\\n` 仍要能读（老工程零迁移）。"""
+        import i18n_tools as it
+        tmp = U.project()
+        try:
+            p = os.path.join(tmp, 'i18n', 'zh_CN.tr')
+            U.write(p, '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n'
+                       '\t<string name="nl">第一行\\n第二行</string>\n</resources>\n')
+            self.assertEqual(it._parse_tr(p)['nl'], '第一行\n第二行')
+            # 一旦写回，就归一成字符引用
+            it._write_tr(p, it._parse_tr(p))
+            with io.open(p, encoding='utf-8', newline='') as f:
+                self.assertIn('&#x000A;', f.read())
+        finally:
+            U.cleanup(tmp)
 
     def test_official_xml_char_reference_form(self):
-        """**官方写法** `&#x000A;` 也必须落到 json 里的真换行（对编译器与 MCP 都安全的那条路）。
+        """`&#x000A;` 必须落到 json 里的真换行（这是**唯一**写法，官方 i18n 文档口径）。
 
         官方 i18n 文档：`<string name="new_line_test">第一行&#x000A;第二行</string>`。
-        它与「字面 `\\n`」是**两条不同来源**：XML 字符引用由 XML 解析器解开，
-        字面 `\\n` 靠 `_unescape_tr`；两条都必须变成 json 里的真实 `0x0A`（设备按它切行）。
+        XML 字符引用由 XML 解析器解开 → json 里的真实 `0x0A`（设备按它切行）。
         """
         import i18n_tools as it
         tmp = U.project()

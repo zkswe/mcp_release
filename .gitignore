@@ -42,6 +42,9 @@ _*_probe.so
 temp/
 err.log
 
+# 沙箱文件权限诊断的一次性产物（备份 + 报告，可随时重跑；见 skill diagnose-windows-sandbox-acl）
+_acl_recovery/
+
 # ── IDE 本地状态 / 工具生成物（B6 出库）──────────────────────────────
 # 判据：带**本机信息**或**工具重新生成**，入库即噪音——
 #   language.settings.xml   → Eclipse CDT 的语言设置缓存，含本机 env-hash

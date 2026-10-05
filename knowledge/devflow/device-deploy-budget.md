@@ -45,8 +45,20 @@ Z21 实测：`Mem total 36072 kB`（**36MB**）；`/tmp` = **tmpfs 13.6MB（Z21 
 
 ## 3. 处置顺序（按性价比）
 
-1. **清 tmpfs 垃圾**：重复的 busybox、旧工程的 `ui/images`、`ui/fonts`、用不到的 `.ftu`。
-2. **字库按工程实际用字裁剪**（最有效，892848 B 的常用字库 → 数十 KB）：
+1. **先把字库档位选对**（最有效，且是**日常口子**：换档不改代码、不裁字）。
+   现成三档：`common` **892848 B**（872 KiB，默认）/ `full` **7567300 B**（7.22 MiB，生僻字）/
+   `multi` **10742560 B**（10.24 MiB，多语言·日韩）。
+   ```
+   flythings_build_ui_flow(font_tier='full')        # 换档就这么选
+   flythings_check_project_deps(...) → fontTiers    # 三档菜单 + 按本工程字集的推荐档 + 现档位
+   ```
+   - 不知道选哪档 → 看 `fontTiers.recommend`：它按**工程实际用到的汉字集**算「够用的最小档」，
+     并给 `nextAction`（现档 ≠ 推荐档时直接给可执行命令）。
+   - ⚠️ 档位**往上**换只是变大（`multi` 比 `common` 大 12 倍），要**更小**只能走第 4 条裁剪。
+2. **清 tmpfs 垃圾**：重复的 busybox、旧工程的 `ui/images`、`ui/fonts`、用不到的 `.ftu`。
+3. 部署完复量：`free` 里 `available` 应回到 **10MB+**（Z21 清理后 17MB）。
+4. **存储/内存异常专用**（选对档 + 清垃圾后**仍**装不下，或要自定义字符集 → 字库从 892848 B
+   压到数十 KB）：**这时才**按工程实际用字裁剪字库。
    ```bash
    python ui_tools/font_subset_by_project.py <项目根> \
        [--src components/fonts/fonts/zkswe-hans-full.ttf]
@@ -54,8 +66,9 @@ Z21 实测：`Mem total 36072 kB`（**36MB**）；`/tmp` = **tmpfs 13.6MB（Z21 
    - 默认源 = `zkswe-hans-common.ttf`（GB2312 一级字）→ **只含一级字**，像「阈」这种二级字会缺字形（界面少一笔）。
    - 需要覆盖更多字（如「阈」）时用 `--src` 指到 `zkswe-hans-full.ttf`（**7567300 B = 7.22 MiB** 源，产出仍只有几十 KB）。
    - ⚠️ **改完 UI 文案要重跑**：新增的字若不在字库里会**静默缺字**（例如按钮「系统 WiFi 设置」少了个「系」）。
-3. 部署完复量：`free` 里 `available` 应回到 **10MB+**（Z21 清理后 17MB）。
-4. 长期方案：`update.img` 固化（程序进只读分区），不再吃 tmpfs。
+   - ⛔ **不要一上来就裁**：裁剪会丢字形且每次改文案都要重跑；日常缺中文选档即可
+     （口径见 `components/fonts/README.md` §0 与 `knowledge/devflow/custom-font-config.md` §0.2）。
+5. 长期方案：`update.img` 固化（程序进只读分区），不再吃 tmpfs。
 
 ## 4. 两条部署侧坑
 

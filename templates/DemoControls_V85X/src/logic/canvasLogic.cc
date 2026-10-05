@@ -17,6 +17,9 @@ static S_ACTIVITY_TIMEER REGISTER_ACTIVITY_TIMER_TAB[] = {
  * @brief 当界面构造时触发
  */
 static void onUI_init() {
+  #ifdef FUN_BUILD
+  INIT_UI_TIMERS
+  #endif // FUN_BUILD
     if (mPaAPtr) {
         mPaAPtr->setSourceColor(0xFF4D4D);
         mPaAPtr->fillRect(24, 24, 180, 90);                 // 实心矩形

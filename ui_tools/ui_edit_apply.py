@@ -17,9 +17,15 @@
 
 安全措施：
     · 写回前自动备份 <name>.json.bak（同目录，覆盖式）
-    · 格式一致性自检：原文件能被 json.dumps(indent=2, ensure_ascii=False) 无损还原才写
-      （FlyThings json 就是这个格式；不一致时拒绝写入，加 --force 才继续）
-    · 坐标取整 + 边界钳制（不越出父容器 / 屏幕）
+    · 格式一致性自检（**语义无损**口径）：行尾归一并去掉 EOF 换行后逐字符相等就写 ——
+      **EOF 尾换行、CRLF/LF 行尾差异都不算不一致**（写回**沿用原文件行尾与尾换行**，不会整文件重排）。
+      实测口径（2026-10-05，`git ls-files "*.json"` 里路径含 /ui/ 的 50 份、按字节去重）：
+      仓库 blob 侧 31 份中 **24 份带 EOF 尾换行**、CRLF 0 份；工作区另见 31 份 CRLF ——
+      那是本机 `core.autocrlf=true` 且仓内无 `.gitattributes` 的**检出产物**，不是文件格式本身。
+      旧实现按字节比 → 这两类一律拒写；现版两份口径都通过。
+      只有真正的格式差异（缩进/键序/转义风格/BOM…）才拒绝写入，加 --force 才继续
+    · 坐标取整 + 边界钳制（顶层不越出屏幕）
+    · ⚠️ 路径写错不再静默：`applied` 与 `appliedProps` 都空却有 `skipped` → `success:false`（`partiallyApplied:false`）
 """
 import argparse
 import json
@@ -36,6 +42,28 @@ def _load_json(p):
 
 def _dump(data):
     return json.dumps(data, indent=2, ensure_ascii=False)
+
+
+def _line_ending(raw):
+    """探测原文件行尾风格 → 写回时沿用（避免把 CRLF 工程整文件改成 LF）。"""
+    if b'\r\n' in raw:
+        return '\r\n'
+    if b'\r' in raw and b'\n' not in raw:
+        return '\r'
+    return '\n'
+
+
+def _text_of(raw):
+    return raw.decode('utf-8', 'replace').replace('\r\n', '\n').replace('\r', '\n')
+
+
+def _format_is_rewrite_safe(raw, dump):
+    """格式自检（**语义无损**口径）：只有真正的重排才该拒写。
+
+    容忍（真实工程里很常见，且写回时能原样保住）：**EOF 处恰好一个换行**、CRLF↔LF 行尾差。
+    不容忍：缩进、键序、非 ASCII 转义风格等**会改变可读 diff** 的差异（仍要 --force）。
+    """
+    return _text_of(raw).rstrip('\n') == dump.rstrip('\n')
 
 
 def _find_json(ui_dir, name):
@@ -114,11 +142,14 @@ def apply_changes(changes, project='', ui_dir='', dry_run=False, force=False):
     raw = open(jp, 'rb').read()
     data = json.loads(raw.decode('utf-8-sig'))
 
-    if _dump(data).encode('utf-8') != raw:
-        if not force:
-            return {'success': False, 'error':
-                    f'{jp} 格式与标准缩进(2)/UTF-8 不一致，拒绝写入以免整文件重排；'
-                    f'确认可重排后加 --force'}
+    # ⚠️ 自检用的是**原文件内容**（round-trip 判据）；写盘时再重新 dump 改过的 data。
+    #    别把这两步合并成一个变量 —— 先 dump 再改会写出"没改动"的文件（踩过）。
+    if not _format_is_rewrite_safe(raw, _dump(data)) and not force:
+        return {'success': False, 'error':
+                f'{jp} 格式与标准缩进(2)/UTF-8 不一致，拒绝写入以免整文件重排；'
+                f'确认可重排后加 --force'}
+    eol = _line_ending(raw)
+    trailing_nl = _text_of(raw).endswith('\n')       # 源文件 EOF 有换行 → 写回也补上（byte 稳定）
     res = data.get('resolution', {}) if isinstance(data, dict) else {}
 
     applied, skipped = [], []
@@ -166,13 +197,30 @@ def apply_changes(changes, project='', ui_dir='', dry_run=False, force=False):
 
     out = {'success': True, 'json': jp, 'applied': applied, 'appliedProps': applied_props,
            'skipped': skipped, 'dryRun': dry_run}
+    # ⚠️ 路径写错 = 静默成功 → 一条都没落地时必须显式失败（硬纪律「不静默」）
+    no_op = not applied and not applied_props
+    if no_op and skipped:
+        out['success'] = False
+        out['partiallyApplied'] = False
+        out['error'] = ('没有任何变更被应用（%d 条路径找不到控件）—— 用 window__x/<key> 全路径重试；'
+                        '返回体里的 skipped 给了逐条原因' % len(skipped))
+        out['hint'] = '在变更 JSON 里把单段路径改成 `#window__N/<控件键>` 全路径（编辑器深链接可直接复制）'
+    elif skipped:
+        out['success'] = False
+        out['partiallyApplied'] = True
+        out['error'] = ('部分变更未应用（%d 条路径找不到控件）—— 已应用 %d 条，'
+                        '请核对 skipped 后重发' % (len(skipped), len(applied) + len(applied_props)))
     if dry_run:
         return out
 
     shutil.copy2(jp, jp + '.bak')
+    body_out = _dump(data).replace('\n', eol)        # ← 改完之后才 dump（见函数开头注释）
+    if trailing_nl:
+        body_out += eol
     with open(jp, 'w', encoding='utf-8', newline='') as f:
-        f.write(_dump(data))
+        f.write(body_out)
     out['backup'] = jp + '.bak'
+    out['lineEnding'] = 'CRLF' if eol == '\r\n' else 'LF'
     return out
 
 

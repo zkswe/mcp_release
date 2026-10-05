@@ -1582,8 +1582,9 @@ def _with_confirm_gate(r, json_path='', project_root=''):
     return r
 
 
-def flythings_ui_preview(target: str, output_dir: str = '', for_customer: bool = False) -> str:
-    """json 布局 / 整个项目 → HTML 预览稿（客户确认 UI 用；只交 html，不产图片/截图）。
+def flythings_ui_preview(target: str, output_dir: str = '', for_customer: bool = False,
+                         with_images: bool = False) -> str:
+    """json / 整个项目 → HTML 预览稿（客户确认 UI 用）+ 可选**引擎等价 PNG 展示图**（`with_images`）。
     """
     is_dir = os.path.isdir(target)
     r = j2h.json2html(target, output_dir, for_customer=bool(for_customer))
@@ -1642,7 +1643,57 @@ def flythings_ui_preview(target: str, output_dir: str = '', for_customer: bool =
         r['note'] = ('html 为客户预览稿；设备端仍用 fui pack 生成的 ftu，两者同源于 json' +
                      ('；**客户确认稿**：单文件可发微信/手机打开，点「标注」看控件名与尺寸'
                       if for_customer else ''))
+    # ── 引擎等价 PNG 展示图（可选）：json2img 走**同一个渲染器**，画出来的就是设备会画的那张 ──
+    if with_images and isinstance(r, dict) and r.get('success'):
+        r['images'] = _preview_images(target, r)
     return json.dumps(_with_confirm_gate(r, target), ensure_ascii=False)
+
+
+def _preview_images(target, preview_result):
+    """给 `ui_preview` 附上像素级展示图 → `{'dir', 'files':[{'json','png','size'}], ...}`。
+
+    铁律：**解析不到就如实报**（`error`/`hint` 进返回体），绝不静默返回空列表当成功。
+    落点 `<项目>/ui/_preview/` 与 `ui_visual(action="render")` 的 `ui/_render/` 分开 —— 那是
+    渲染调试清单，这是给人看的展示稿，混在一起会让"展示稿"与"渲染产物"互相覆盖。
+    """
+    is_dir = os.path.isdir(target)
+    root = os.path.abspath(target) if is_dir else os.path.dirname(os.path.dirname(os.path.abspath(target)))
+    if not os.path.isdir(os.path.join(root, 'ui')):
+        return {'error': '取不到工程根（没找到 <项目>/ui/），展示图未生成', 'files': []}
+    out_dir = os.path.join(root, 'ui', '_preview')
+    res = json.loads(_ui_render(root, scale=1, out=out_dir, all_pages=True))
+    if not res.get('success'):
+        # 不静默：把 json2img 的原话带出去（含 stdout 尾巴），并给可执行下一步
+        return {'dir': out_dir, 'files': [],
+                'error': res.get('error') or 'json2img 渲染失败',
+                'stdout': (res.get('stdout') or '')[-600:],
+                'hint': '先单独跑 flythings_ui_visual(action="render", project_root=..., all=True) 看逐页报错'}
+    want = {f.get('json') for f in (preview_result.get('files') or []) if f.get('json')}
+    files = []
+    for p in (res.get('pages') or []):
+        rel = os.path.basename(p.get('png') or '')
+        files.append({'json': (p.get('page') or '') + '.json', 'png': p.get('png'),
+                      'size': p.get('size'),
+                      'extra': bool(want) and ((p.get('page') or '') + '.json') not in want})
+    out = {'dir': out_dir, 'files': files,
+           'note': '引擎等价渲染（静止态）：动态效果/运行期数据不还原，逐条见 unsupported'}
+    # unsupported 会逐页重复（同一类降级每页都报）→ 去重 + 计数，别把 8 页 × 十几条全铺回去
+    unsp = res.get('unsupported') or []
+    if unsp:
+        seen, uniq = set(), []
+        for u in unsp:
+            key = json.dumps(u, ensure_ascii=False, sort_keys=True)
+            if key not in seen:
+                seen.add(key)
+                uniq.append(u)
+        out['unsupported'] = uniq
+        out['unsupportedCount'] = len(unsp)
+    for k in ('missingAssets', 'stretched'):
+        if res.get(k):
+            out[k] = res[k]
+    if not files:
+        out['error'] = 'json2img 报成功但没有产出任何 PNG（不静默）'
+    return out
 
 
 def flythings_html_to_json(input_html: str, output_json: str = '', res: str = '',

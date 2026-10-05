@@ -4,10 +4,10 @@ title: ftu 是什么：ftu 开发 / ftu 编辑 / ftu 修改 / ftu 格式 / ftu �
 category: devflow
 status: review
 confidence: manual
-verified_at: 2026-09-29
+verified_at: 2026-10-05
 stale_days: 180
 origin: total
-source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
+source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）；2026-10-05 补 §7/§8 的实测：同一个 `toolchain/fui.exe pack` 对"只加一条 `backgroundPic`"的 json 产出的 ftu md5 与原始不同、对"只换同尺寸图片文件"的 json 逐字节相同，且 pack 对指向不存在图片的 json 照样成功
 needs_evidence: true
 platforms: []
 tags: [ftu 能不能手写手改, main, 改了 json 设备上没变, 时命中, 不要手写, 手改 ftu, FlyThings IDE, 双击打开 ftu, 拖控件, 是另一套, 工作流, 两者不冲突但不能混用, §4]
@@ -151,8 +151,8 @@ ui/*.ftu  ← 设备实际加载的是它
 - `resources/` 目录**不是塞进 ftu**，而是**随程序一起打包/推送**；设备侧资源根 = `EasyUI.cfg` 的 `resPath`
   （launch 调试时为 `/tmp/ui/`），所以 `images/xxx.png` 落到设备 `/tmp/ui/images/xxx.png`
   （调试时可用 `adb shell /tmp/busybox ls -l /tmp/ui/images` 核对图有没有推上去，见 `knowledge/devflow/busybox-debug-library.md`）。
-- 因此**改图 ≠ 改 ftu**：图片换新只要资源推上去就生效；但**图片路径/尺寸写错**（含 `thumb.size` 与图不符）
-  会被 `flythings_verify_assets` / `check_all` 判 FAIL（`knowledge/devflow/ui-asset-rules.md` 铁律 #1）。
+- 因此**"改图"要分两种**（别再笼统说"改图 ≠ 改 ftu"）：① **纯替换图片文件**（路径不变、尺寸不变）→ 资源推上去就生效，**ftu 字节不变**（实测：同一个 `fui.exe pack` 对换图前后的 json 产出的 ftu 逐字节相同）；② **新增/改动 json 里的图片声明**（加 `backgroundPic` / 改 `picTab.pic0` 指向）→ **必须重 pack**（实测：只加一条 `backgroundPic`，pack 出来的 ftu md5 就变了）。
+  ⚠️ **`fui pack` 不校验图片资源**：把 `backgroundPic` 指向一个**不存在的图**，pack 照样成功并产出 ftu —— 所以图片的"存在性 + 尺寸==盒子"必须靠 pack **前后**的这组判据接住：`flythings_verify_assets` / `check_all`（含 `thumb.size` 与图不符），铁律见 `knowledge/devflow/ui-asset-rules.md` #1；`ui_compile` 也会靠 ASSET001/002 报（有 `project_root` 时）
 - 部署体积与内存预算（Z20/Z21 这类 36MB 内存板尤其看）见 `knowledge/devflow/device-deploy-budget.md`：launch 的产物全落
   `/tmp`（tmpfs = 吃内存），字库是最大头。
 
@@ -168,6 +168,7 @@ ui/*.ftu  ← 设备实际加载的是它
 | main.ftu 是什么文件 / UI 文件和 json 什么关系 | `main.ftu` = `main.json` 编译出来的界面文件，设备加载它；一对一同名（§1、§2） |
 | 改了 json 为什么设备上没变 | 三连查：**没 pack**（`fui pack`）→ **没推**（`build_ui_flow(with_launch=True)` / `fun launch`）→ **设备在读旧 ftu / 推错了设备**（多设备必传 `-s`，见 `knowledge/devflow/cli-fun-toolchain.md` §6） |
 | 我在 IDE 里直接改了 ftu，AI 再改 json 会不会冲突 | 不会丢：ftu 比 json 新「分钟级」时 build_ui_flow 会先 unpack 同步 json（以 ftu 为真源）；要么统一走 json，要么统一走 IDE（§4） |
+| 换张图要重新编译（pack）吗 | **看改的是文件还是 json 声明**：只把同一个路径下的 PNG 换成同尺寸新图 → **不用 pack**（推资源即生效）；改了 json 里任何图片字段（加 `backgroundPic`、改 `picTab`）→ **必须 pack**（实测加一条 `backgroundPic` 就会改变 ftu 字节）。⚠️ pack 不校验图是否存在/尺寸对不对，那两条由 `check_all` / `flythings_verify_assets` 兜（缺图与图≠盒都判 FAIL） |
 
 ## 9. 验证（实测记录）
 

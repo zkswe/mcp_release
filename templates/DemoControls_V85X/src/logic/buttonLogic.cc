@@ -2,6 +2,7 @@
 #include GENERATED_UI_DEFINITIONS
 INIT_UI_EVENT_BINDINGS
 
+#endif // FUN_BUILD
 /**
  * 注册定时器
  * 填充数组用于注册定时器
@@ -11,12 +12,15 @@ static S_ACTIVITY_TIMEER REGISTER_ACTIVITY_TIMER_TAB[] = {
   //{0,  6000}, //定时器id=0, 时间间隔6秒
   //{1,  1000},
 };
-#endif // FUN_BUILD
 
+#include "base/log.h"
 /**
  * @brief 当界面构造时触发
  */
 static void onUI_init() {
+  #ifdef FUN_BUILD
+  INIT_UI_TIMERS
+  #endif // FUN_BUILD
   LOGD_TRACE("");
 }
 
