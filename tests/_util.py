@@ -136,9 +136,49 @@ def project(tmp=None):
     return tmp
 
 
+_TMP_PREFIX = 'mcp_test_'
+
+
+def is_temp_project(path):
+    """该目录是不是**用例自建的夹具**（位于系统临时目录之下）。
+
+    判据刻意只用**一条**：`realpath` 必须在系统临时目录下。为什么不用"目录名前缀"当主判据 ——
+    实测用例里存在多个前缀（`mcp_test_*` 来自 `project()`，还有 `stub_test_*` 等自建夹具），
+    拿前缀当硬条件会**误伤合法夹具、逼人去放宽判据**；而"在系统临时目录下"这一条本身就挡住了
+    全部真工程（仓内、以及盘上任何真实项目都不在 %TEMP% 里）。
+    前缀只用来生成提示文案，不参与判定。
+    """
+    try:
+        p = os.path.realpath(str(path or ''))
+        if not p or p == os.sep:
+            return False
+        tmp = os.path.realpath(tempfile.gettempdir())
+        return p.startswith(tmp + os.sep)
+    except OSError:
+        return False
+
+
+def rm_in_temp(path, rel):
+    """**只允许**在系统临时目录下的工程内删文件：先校验目录，再删。
+
+    为什么必须封这道口（2026-10-05 需求方提醒）：用例为了造"缺文件"的场景会删夹具里的文件
+    （例：`src/logic/<页面>Logic.cc`）。这类删除一旦作用到**真工程**，就是**删掉历史业务代码**——
+    不可恢复。所以把"删"收进本函数：**目录不在系统临时目录下就直接 ValueError**，
+    绝不"先删再发现问题"。返回目标路径（便于调用方断言）。
+    """
+    if not is_temp_project(path):
+        raise ValueError(
+            '拒绝在非临时目录内删文件：%r（只允许系统临时目录 %r 下的用例夹具）'
+            % (path, tempfile.gettempdir()))
+    fp = os.path.join(path, rel)
+    if os.path.isfile(fp):
+        os.remove(fp)
+    return fp
+
+
 # ⚠️ 某些环境里**删除**极慢：本机实测 `shutil.rmtree` ≈ 0.5~1.0 秒/条目
 #    （正常机器 <1ms；`python -S` 关掉 Python 侧 shim 也一样 → 拦截在更低层）。
-#    后果：全套 828 条用例 **85%~95% 的墙钟时间花在删临时目录上**，不是测试逻辑
+#    后果：全套 866 条用例 **85%~95% 的墙钟时间花在删临时目录上**，不是测试逻辑
 #    （实测 test_deps_install_guard：61.6s 里 58.5s 是 rmtree，而它只删了 130 个条目；
 #    清理改 no-op 后 70.2s → 3.5s）。
 #    ⚠️ 这里的数字与 `WORK_PLAN.md` 的两处、`tests/README.md` 的一处一样，由

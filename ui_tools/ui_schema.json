@@ -4,7 +4,7 @@
   "authority": "FlyThings UI json 布局规范的唯一机器可读真源。字段/类型/必填/默认值以本表为准；knowledge/*.md 只负责原理、流程与行为。基准：json-field-mandatory.md + SampleUI-New / basedemo 双源反解 + V85X 真机验收。⚠️ **子盒对象字段（thumb/position/size/point/range/colorTab/picTab/iconBox/progressPicPos/touchRange…）的类型声明必须与真机一致**：声明成 int 会让 defaults() 发射 0，真机页面构造即主线程 100% 空转、无日志（校验也会漏网）。消费方：check_all 校验 / translate_ui 发射层 / map_control 片段 / gen_ui_schema_docs.py 文档表。改规范 = 改本文件，禁止在消费方另抄一份。",
   "logicCallbacksNote": "每控件可生成的回调桩（v0.27.178）。{Caption} = json 里控件 key 的 __ 后缀。来源：35 官方 Demo 源码逐条取证（knowledge/uicontrols/widget-code-api.md 是其讲解）；op flythings_gen_logic_stub 从这里读——不要在别处另写一份回调名表。listview 的 3 条是一组，缺一列表就是空白。",
   "valueRules": {
-    "colorMinusOne": "-1 = 0xFFFFFFFF 是有意义的显式值（透明/未用），非噪音，必须显式写",
+    "colorMinusOne": "-1 = 0xFFFFFFFF 是有意义的显式值（**未用/让框架跳过该绘制**），非噪音，必须显式写。⚠️ **`backgroundColor: -1` 的真实语义 = GUI 框架默认不渲染（跳过背景填充），不是\"一种透明色\"**（2026-10-05 口径）：它不铺任何底 → ① 控件的**透明区直接露出背后真正在显示的东西**（页面根底色 / 祖先 window / 下层控件），所以\"底色填成轨道主色会把切图圆角盖平、写 -1 才露圆角\"这类现象都能解释；② 贴图的**半透明像素会与下层合成**，而不是与某个固定底色合成 —— 若某处需要\"半透明按指定底色来算\"（如 AA 边缘的混色基准），**必须写具体颜色，不能靠 -1**。",
     "colorZero": "0 = 不透明黑。仅 videoview/cameraview 底色官方原值为 0（必须实黑底）；其他控件透明写 -1，写 0 就是黑块",
     "missingImage": "图片字段**指向不存在的文件** → 该图不显示（框架容错、不挂死）；`\"\"` = 不设该图，**不影响控件可见性**",
     "subboxType": "⛔ 子盒对象字段（thumb/position/colorTab/picTab/bgColorTab/iconPosition/textPosition/iconBox/size/point/range 等）**必须写成对象**，如 `thumb = {\"size\":{\"width\":24,\"height\":24},\"normalPic\":\"images/t.png\",\"pressedPic\":\"images/t.png\"}`；**写成字符串或其他标量 = 真机 ftu 加载无声挂死**（无 onUI_init/onUI_show、无报错日志，只能靠类型检查拦）。静态检查在 pack 前：`check_all.py` 第 4b 项",

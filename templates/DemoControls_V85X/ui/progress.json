@@ -82,9 +82,9 @@
       "left": 16,
       "top": 120,
       "width": 448,
-      "height": 64
+      "height": 32
     },
-    "backgroundColor": 2371658,
+    "backgroundColor": -1,
     "backgroundPic": "images/pb_track.png",
     "defProgress": 0,
     "max": 100,
@@ -92,28 +92,14 @@
     "progressPic": "images/pb_fill.png",
     "thumb": {
       "size": {
-        "width": 24,
-        "height": 24
+        "width": 32,
+        "height": 32
       },
       "normalPic": "images/pb_thumb.png",
       "pressedPic": ""
     },
     "touchable": true,
-    "visible": true,
-    "colorTab": {
-      "color0": 16777215,
-      "color1": 16777215,
-      "color2": -1,
-      "color3": -1,
-      "color4": -1
-    },
-    "bgColorTab": {
-      "color0": 2371658,
-      "color1": 2371658,
-      "color2": -1,
-      "color3": -1,
-      "color4": -1
-    }
+    "visible": true
   },
   "circlebar__1": {
     "id": 20,
@@ -135,10 +121,10 @@
       "width": 200,
       "height": 200
     },
-    "startAngle": 0,
+    "startAngle": -90,
     "textColor": 16777215,
     "textSize": 24,
-    "textType": 1,
+    "textType": 2,
     "thumb": {
       "size": {
         "width": 0,

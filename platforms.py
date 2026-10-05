@@ -24,7 +24,22 @@
 
 旧写法「按平台名字符串白名单判定能力」是错的（同一个平台名，包查询认、建工程不认）；
 现在一律走 `resolve()` / `package_key()`，**按真实存在的名字与目录判定**。
+
+⚠️ **平台定位（v0.27.196，2026-10-05 需求方定规）**：下面这些 SoC 平台**跑的都是同一套 FlyThings OS**
+——**基于 Linux 的操作系统**（内核 + 自研系统框架 + 自研 GUI 交互系统）。所以：
+  · 判「这平台有没有某能力」的基线**向 Linux buildroot / OpenWrt 看齐**（应用是普通 Linux 进程），
+    **不是**单片机/RTOS/ESP32 式板级 SDK；
+  · GUI 库是自研 **EasyUI**（产品名 FlyThings UI，设备侧产物 `zkgui` / `libzkgui.so`），
+    与 **LVGL 是对标竞争的两套独立 GUI 库**（不是封装关系）；
+  · `arch` 字段是 **CPU 架构**（编译/工具链判别用），**不是** OS 名 —— 别把 F133 的 `riscv64` 读成
+    「另一个操作系统」。
+长文与证据链（**第一权威**）：`knowledge/devflow/flythings-os-positioning.md`。
 """
+
+# 平台之上的操作系统身份（所有 SoC 平台共用一份；显示在 describe() 的 os 字段）。
+# 为什么单独一个常量：外部 AI 曾把这些平台读成「各自一套板级 SDK」，于是判能力时砍掉 Linux 层。
+TOP_OS = 'FlyThings OS（Linux 内核 + 自研系统框架 + 自研 GUI：EasyUI / FlyThings UI）'
+POSITIONING_DOC = 'knowledge/devflow/flythings-os-positioning.md'
 
 # 规范名 -> 属性。template/binTool 由 scripts/check_consistency.py 对着真实目录校验。
 PLATFORMS = {
@@ -45,7 +60,10 @@ PLATFORMS = {
     },
     'V85X': {
         'arch': 'arm', 'template': 'HelloWord_V85X', 'binTool': 'v85x',
-        'alias': ('V85XEMMC',), 'note': 'ARM，摄像头/DVR 常用',
+        'alias': ('V85XEMMC',),
+        'note': 'ARM（V851/V853 家族，musl 工具链）；摄像头/DVR 常用。**跑的是 FlyThings OS（Linux 基座）**'
+                '—— 判能力按 Linux 走（基线同 buildroot/OpenWrt），别当板级 SDK，也别当成"只是个 zkgui GUI 库"；'
+                '与 Z20/Z21（glibc）二进制不通用',
     },
     'Z20': {
         'arch': 'arm', 'template': 'HelloWord_Z20', 'binTool': 'z20',
@@ -259,13 +277,16 @@ def arch(name) -> str:
 
 
 def describe() -> list:
-    """给 AI/文档用的平台表：[{platform, arch, template, binTool, packageKey,
-    buildable, note}]；末尾再附「仅包生态」平台（buildable=false，无模板）。"""
-    out = [{'platform': n, 'arch': m['arch'], 'template': m['template'],
+    """给 AI/文档用的平台表：[{platform, os, arch, template, binTool, packageKey,
+    buildable, note}]；末尾再附「仅包生态」平台（buildable=false，无模板）。
+
+    `os` 一律是 `TOP_OS`（同一个操作系统，不同 SoC）——有它，AI 才不会把 `arch` 读成 OS 名。
+    """
+    out = [{'platform': n, 'os': TOP_OS, 'arch': m['arch'], 'template': m['template'],
             'binTool': m['binTool'], 'packageKey': PACKAGE_KEYS.get(n, ''),
             'buildable': True, 'note': m['note']}
            for n, m in PLATFORMS.items()]
-    out += [{'platform': n, 'arch': '', 'template': '', 'binTool': '',
+    out += [{'platform': n, 'os': TOP_OS, 'arch': '', 'template': '', 'binTool': '',
              'packageKey': PACKAGE_KEYS.get(n, ''), 'buildable': False,
              'note': m.get('note') or '仅依赖包生态'}
             for n, m in PACKAGE_ONLY.items()]

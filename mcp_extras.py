@@ -12,7 +12,8 @@ resources：
   flythings://tools工具清单（op / 风险分级 / 一句话简介；来自 tools_manifest.json）
                                     + 「设备端预编译工具」一节：bin_tools/<平台>/ 下的 touch / busybox /
                                     ui_test / zkshot（**不是 op**，数 op 看不到）
-  flythings://version版本 / 构建日 / 工具数 / 近期特性
+                                    + 「平台定位」一节（判平台能力前必读，v0.27.196）
+  flythings://version版本 / 构建日 / 工具数 / **平台定位** / 近期特性
   flythings://errors错误码表（code → 什么意思 / 该谁动手 / 可否重试 / 下一步）—— 多数情况
                                      **不用挂**：action 已自动补进每次失败的返回体
   flythings://state最近工程的进度（跨会话「上次做到哪」）—— 新会话不用重摸工程
@@ -126,6 +127,29 @@ def _bin_tools_section():
     return '\n'.join(lines)
 
 
+def _positioning_section():
+    """「平台定位」一节 —— 判平台能力之前必须先有的前提（v0.27.196）。
+
+    为什么进工具面（2026-10-05 需求方反馈）：外部 AI 调完 MCP 后把定位写错
+    （「FlyThings（zkgui/LVGL），不是 ESP32 也不是 Linux 用户空间」）→ 据此砍掉 Linux 层能力、
+    按 LVGL 类推控件 API。定位不是"某篇知识"，而是**每次判能力前**的前提，
+    所以常驻在：分发器 docstring / get_version.positioning / 本资源 / flythings://version。
+    长文与证据链仍是知识页（唯一权威）：`knowledge/devflow/flythings-os-positioning.md`。
+    """
+    try:
+        import kb_tools
+        p = kb_tools._positioning_field()
+    except Exception as e:                      # 真源不可用不静默（否则这一节会静默消失）
+        return '\n> ⚠️ 平台定位节渲染失败（%s: %s）——见 knowledge/devflow/flythings-os-positioning.md\n' \
+               % (type(e).__name__, e)
+    return ('\n## 平台定位（判平台能力前必读）\n\n'
+            '> %s\n'
+            '> %s\n'
+            '> %s\n'
+            '> 长文/证据链：`%s`（**第一权威**，与其它页冲突以它为准）\n'
+            % (p.get('oneLine', ''), p.get('baseline', ''), p.get('mustNotSay', ''), p.get('doc', '')))
+
+
 def _tools_doc():
     """工具清单（来自 manifest；文件缺失/损坏时回退代码清单，并在文档里说明原因——不静默降级）。
 
@@ -157,7 +181,7 @@ def _tools_doc():
                                  % (o.get('op'), o.get('risk'),
                                     ', '.join(o.get('args') or []) or '无参数', o.get('brief', '')))
                 lines.append('')
-            return '\n'.join(lines) + _bin_tools_section()
+            return '\n'.join(lines) + _bin_tools_section() + _positioning_section()
         if not note:
             note = 'tools_manifest.json 结构异常（缺 ops），已回退到代码清单。'
     else:
@@ -169,17 +193,21 @@ def _tools_doc():
         fn = getattr(kb_tools, n, None)
         brief = ((getattr(fn, '__doc__', '') or '').strip().splitlines() or [''])[0]
         lines.append('- `%s` — %s' % (n, brief[:80]))
-    return '\n'.join(lines) + _bin_tools_section()
+    return '\n'.join(lines) + _bin_tools_section() + _positioning_section()
 
 
 def _version_doc():
     import kb_tools
     f = (kb_tools.MCP_FEATURES or [''])[0]
+    p = kb_tools._positioning_field()
     return ('# FlyThings MCP 版本\n\n'
             '- version: `%s`\n- build: `%s`\n- toolCount: %d\n\n'
+            '## 平台定位（判平台能力前必读）\n\n'
+            '> %s\n> %s\n> %s\n> 长文：`%s`\n\n'
             '## 近期特性\n\n%s\n\n'
             '> 近期变更史：调用 `flythings_get_version(compact=False)`；更早版本史见仓库根 `VERSION_HISTORY.md`。\n'
-            % (kb_tools.MCP_VERSION, kb_tools.MCP_BUILD, len(kb_tools.OP_NAMES), f))
+            % (kb_tools.MCP_VERSION, kb_tools.MCP_BUILD, len(kb_tools.OP_NAMES),
+               p.get('oneLine', ''), p.get('baseline', ''), p.get('mustNotSay', ''), p.get('doc', ''), f))
 
 
 # ---------------- prompts（正文由 flow_spec.json 派生，本文件只留签名） ----------------

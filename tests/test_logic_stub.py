@@ -15,7 +15,7 @@ import shutil
 import sys
 import tempfile
 import unittest
-
+import _util as U
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 for p in (BASE, os.path.join(BASE, 'ui_tools')):
     if p not in sys.path:
@@ -137,7 +137,9 @@ class TestGenerate(unittest.TestCase):
 
     def test_missing_logic_file_reports_error(self):
         r = self._mk([('button', 'B')])
-        os.remove(os.path.join(r, 'src', 'logic', 'mainLogic.cc'))
+        # 删夹具文件**只走守卫**（先校验 r 确实是 `mcp_test_*` 临时工程；
+        # 误传真工程会当场 ValueError，而不是把业务代码删掉）
+        U.rm_in_temp(r, os.path.join('src', 'logic', 'mainLogic.cc'))
         out = lt.gen_logic_stub(r)
         self.assertTrue(out['ok'])
         self.assertIn('error', out['pages'][0])

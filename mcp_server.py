@@ -27,6 +27,13 @@ if MODE not in ('dispatcher', 'all', 'flat'):
     MODE = 'dispatcher'
 
 mcp = FastMCP("flythings-kb")
+# MCP initialize 的 instructions：客户端/模型在**会话开始**就能看到平台定位（不用先调工具）。
+# 2026-10-05 加：外部 AI 曾把定位判错（称「FlyThings 是 GUI 库 zkgui、与 LVGL 同层、不是 Linux 用户空间」）
+# 并据此判平台能力；定位属"判能力前的前提"，必须进会话起始面。文案单一来源 = kb_tools.PLATFORM_POSITIONING。
+try:
+    mcp = FastMCP("flythings-kb", instructions=kb_tools.positioning_instructions())
+except Exception:
+    mcp = FastMCP("flythings-kb")
 # 'dispatcher'：不注册独立工具（只有下面的 flythings_kb）；'all' / 'flat'：注册 48 个独立工具
 if MODE in ('all', 'flat'):
     kb_tools.register_all(mcp)
@@ -352,6 +359,16 @@ async def flythings_kb(op: str = "list", args: str = "{}",
     ⚠️ 仅在用户意图属于「FlyThings 软件开发」时调用：UI 布局/控件/json/ftu、
     工程创建与编译部署、依赖包/Manifest、多语言 i18n、知识库检索、UI 预览与像素验收、
     真机截图、资源生成、自动化测试。其他话题（闲聊、文档、其他产品）不要调用。
+
+    ⚠️ **平台定位（判能力前必读，2026-10-05 需求方定规）**：FlyThings OS 是**基于 Linux 的操作系统**
+    （内核 + 自研系统框架 + 自研 GUI 交互系统）—— 判定平台能力**向 Linux buildroot/OpenWrt 看齐**，
+    **不是**单片机/RTOS/ESP32 式板级 SDK。它的 GUI 库是**自研 EasyUI**（产品名 **FlyThings UI**，
+    设备侧产物 `zkgui` / `libzkgui.so`），与 **LVGL 是对标竞争的两套独立 GUI 库**（不是封装关系，
+    ❌ 不要写「FlyThings 用的是 LVGL」或「zkgui 就是 LVGL」）。应用是**普通 Linux 进程**
+    （init 托管：`/etc/init.rc: service zkswe /bin/zkgui`）；「不能直接套 SDK 固件」指的是
+    **要走 FlyThings 应用形态**（app 工程 → `fun`/`fui` → `libzkgui.so` + `ui/*.ftu`），
+    **不是**「它不在 Linux 上」。长文：`knowledge/devflow/flythings-os-positioning.md`；
+    也可调 op="get_version"（返回体带 positioning 字段）。
 
     用法：先传 op="list" 取全部可用操作**及其参数名**（索引），再用 op=<操作名> + args='{"参数": 值}'
     （args 传 JSON 字符串；部分客户端只支持对象，也可直接传 dict）。

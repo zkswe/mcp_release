@@ -16,6 +16,12 @@
 也支持环境变量开关：`FLYTHINGS_MCP_MODE=flat python mcp_server.py`（等价）。
 
 参数为对象（dict）时可直接传：flat 模式下每个工具就是普通函数，客户端按 schema 传参即可。
+
+⚠️ **平台定位（判平台能力前必读）**：FlyThings OS 是**基于 Linux 的操作系统**（内核 + 自研系统框架 +
+自研 GUI 交互系统），判平台能力**向 Linux buildroot/OpenWrt 看齐**，**不是**单片机/RTOS/ESP32 式板级 SDK；
+GUI 库是自研 **EasyUI**（产品名 FlyThings UI，设备侧产物 `zkgui`/`libzkgui.so`），与 **LVGL 是对标竞争**的
+两套独立 GUI 库（❌ 不要写「FlyThings 用的是 LVGL」）。长文：`knowledge/devflow/flythings-os-positioning.md`
+（同一文案也经 MCP `instructions` 下发，见下）。
 """
 import os
 import sys
@@ -25,7 +31,12 @@ from mcp.server.fastmcp import FastMCP
 import kb_tools
 import mcp_extras
 
-mcp = FastMCP("flythings-kb-flat")
+# 平台定位随 MCP initialize instructions 下发（与默认入口同一文案来源 = kb_tools.PLATFORM_POSITIONING）。
+# flat 模式没有分发器 docstring 这个常驻面，不补的话用 48 个独立工具的人看不到定位。
+try:
+    mcp = FastMCP("flythings-kb-flat", instructions=kb_tools.positioning_instructions())
+except Exception:
+    mcp = FastMCP("flythings-kb-flat")
 REGISTERED = kb_tools.register_all(mcp)     # 48 个独立工具（不含 flythings_kb 分发器）
 mcp_extras.register(mcp)                    # resources + prompts（与默认入口同一实现）
 

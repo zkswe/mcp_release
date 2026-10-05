@@ -82,6 +82,25 @@ GLOBAL_TOP1_MIN_RATIO = 0.72
 # 分组用例：doc = 期望权威文档（相对仓库根）；queries = 真实问法
 # --------------------------------------------------------------------------- #
 GROUPS = [
+    # 平台定位（2026-10-05 建组）：起因是**外部 AI 的真实事故** —— 调完 MCP 后写出
+    # 「V85X 跑的是 FlyThings（zkgui/LVGL），不是 ESP32 也不是 Linux 用户空间」，
+    # 两处错都会改判能力（砍掉整层 Linux 能力 / 按 LVGL 类推控件 API）。
+    # 需求方定规：判平台能力的基础架构**向 Linux buildroot/Openwrt 看齐**。
+    # 本组问法故意混入**错误说法本身**（"zkgui 和 LVGL 什么关系"这类），
+    # 因为 AI 真会这么问、用户真会这么说 —— 定位页必须能接住这些问法。
+    {'name': '平台定位（FlyThings 是什么 / 判能力基线）',
+     'doc': 'knowledge/devflow/flythings-os-positioning.md',
+     'min_top1': 16, 'max_miss': 0,      # 实测（2026-10-05 登记）：16/16 top-1、top-3 落外 0
+     'queries': [
+         'FlyThings 到底是什么', 'FlyThings 是操作系统还是 GUI 库',
+         'FlyThings 是不是 Linux', '判定平台能力的基础架构按什么算',
+         'FlyThings 和 buildroot 有什么关系', '和 openwrt 比呢',
+         '是不是 ESP32 那种单片机方案', '能不能直接套 SDK 固件',
+         '平台定位', 'V85X 上跑的是什么系统',
+         'zkgui 和 LVGL 什么关系', 'EasyUI 和 LVGL 哪个好',
+         'FlyThings UI 是什么', 'FlyThings 和 Android 什么关系',
+         '为什么不能当普通 GUI 库用', '这设备算 Linux 用户空间吗',
+     ]},
     # 公开版能力边界（2026-10-03）：AI 读到能力表里满屏 aw-dvr / aw-mpp 会以为公开版能照做，
     # 而「哪些知识不在 open 版」的真源是 capability-boundaries.md 第 2 节。
     # 实测（登记时）：top-1 4/5、落外 1。
@@ -672,6 +691,8 @@ CONTROL = [
     ('fui unpack 反解析 ftu', 'ftu-json-pipeline.md'),
     ('升级包 update.img 怎么做', 'upgrade-pack-image.md'),
     ('多设备在线推到指定设备', 'cli-fun-toolchain.md'),
+    ('FlyThings 是不是操作系统', 'flythings-os-positioning.md'),
+    ('判定平台能力基线看齐谁', 'flythings-os-positioning.md'),
 ]
 CONTROL_MIN = 6          # 实测 10 条里命中 ≥6（低于此说明调参伤了别的主题）
 

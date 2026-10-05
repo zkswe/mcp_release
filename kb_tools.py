@@ -115,8 +115,40 @@ def _kb_source_label(path):
 
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.195-open'
-MCP_BUILD = '2026-10-03'
+MCP_VERSION = '0.27.196-open'
+MCP_BUILD = '2026-10-05'
+
+# ========== 平台定位（第一权威口径，2026-10-05 需求方定规）==========
+# 为什么必须是**常驻字段**而不是只写进知识页：外部 AI 曾在调用本 MCP 后给出错误定位
+# （「FlyThings（zkgui/LVGL），不是 ESP32 也不是 Linux 用户空间」→ 据此砍掉 Linux 层能力、
+#  并按 LVGL 类推控件 API）。知识页要"检索得到"才起作用，而定位属于**每次判平台能力前**都要有的前提
+# —— 所以它同时出现在：开机工具描述（mcp_server.py）、get_version 的 positioning 字段、
+# flythings://tools 与 flythings://version 资源、以及 5 个判平台能力的 op 硬规则里。
+# 长文与证据链在知识页（**唯一权威**）：knowledge/devflow/flythings-os-positioning.md
+PLATFORM_POSITIONING = {
+    'oneLine': 'FlyThings OS = 基于 Linux 的操作系统（内核 + 自研系统框架 + 自研 GUI 交互系统）；'
+               'GUI 库是自研 **EasyUI**（产品名 FlyThings UI，设备侧产物 zkgui / libzkgui.so），'
+               '与 **LVGL 是对标竞争的两套独立 GUI 库**（不是封装关系）。',
+    'baseline': '判平台能力**向 Linux buildroot / OpenWrt 看齐**：应用是普通 Linux 进程，'
+                'POSIX/socket/pthread/文件系统/dlopen 等 Linux 标准能力默认可判"有"；'
+                '**不是**单片机/RTOS/ESP32 式板级 SDK。',
+    'mustNotSay': '❌「zkgui 就是 LVGL」❌「不是 Linux 用户空间」（应用就是普通 Linux 进程，'
+                  'init 托管 /etc/init.rc: service zkswe /bin/zkgui）；'
+                  '✅「不能直接套 SDK 固件」对——因为走 FlyThings 应用形态'
+                  '（app 工程 → fun/fui → libzkgui.so + ui/*.ftu），不是因为它不在 Linux 上。',
+    'doc': 'knowledge/devflow/flythings-os-positioning.md',
+}
+
+
+def _positioning_field() -> dict:
+    """get_version / 资源用的定位字段（单一实现，避免文案两处漂移）。"""
+    return dict(PLATFORM_POSITIONING)
+
+
+def positioning_instructions() -> str:
+    """MCP `instructions` 用的定位文案（mcp_server / mcp_server_flat 唯一来源）。"""
+    p = PLATFORM_POSITIONING
+    return '%s\n%s\n%s\n详见 %s' % (p['oneLine'], p['baseline'], p['mustNotSay'], p['doc'])
 # compact 模式下每条特性截断长度（v0.27.87）：条目越写越长，不截断就会把默认返回体撑成 token 炸弹
 # （契约用例 test_compact_default 盯 6000 字上限）；完整条目仍能通过 compact=False 拿到。
 COMPACT_FEATURE_CHARS = 700
@@ -250,6 +282,8 @@ def flythings_get_version(compact: bool = True) -> str:
         'build': MCP_BUILD,
         'toolCount': len(tools),
         'tools': tools,
+        # 平台定位（第一权威口径）：判平台能力/写方案**之前**就要有的前提，故随版本信息常驻返回
+        'positioning': _positioning_field(),
         'checkHint': 'version 即当前安装版本；与官方最新发布号 vX.Y.Z-open 比对即可确认是否最新',
     }
     bt = _bin_tools_field()
@@ -476,6 +510,10 @@ def flythings_knowledge_search(query: str, k: int = 3) -> str:
                          '请查官方文档 developer.flythings.cn 或转人工确认。' % cover)
     else:
         out['quality'] = 'ok'
+    if out['quality'] in ('no_hit', 'low_confidence'):
+        # 定位兜底（2026-10-05）：平台定位判错时 AI 会**检索出沾边但结论错**的片段
+        # （实测：把 FlyThings 当 GUI 库/当成非 Linux），故低置信一律附上第一权威定位指针。
+        out['positioning'] = _positioning_field()
     # 知识生长燃料（P1）：未命中/低置信落**用户本地层**日志（绝不写安装目录），
     # scripts/kb_gaps.py 聚合出「用户真的问不到什么」→ 驱动下一批写作。
     if out['quality'] in ('no_hit', 'low_confidence'):
@@ -798,6 +836,7 @@ def flythings_get_project_spec() -> str:
 
     触发：工程规范 / 目录怎么放 / 写代码前看什么 / 项目结构 / 注意事项
     ⚠️⚠️ **没读过规范不许开始写** `ui/*.json` 或业务代码 —— 目录规则/生成规则/注意事项都在这里。
+    ⚠️⚠️ **平台定位**：Linux 基座（判能力基线同 buildroot/OpenWrt），**不是** MCU/RTOS/ESP32 板级 SDK；GUI 是自研 EasyUI（≠ LVGL）。见 `knowledge/devflow/flythings-os-positioning.md`
     """
     return json.dumps(pt.flythings_get_project_spec(), ensure_ascii=False)
 
@@ -886,6 +925,7 @@ def flythings_build_ui_flow(project_root: str, with_launch: bool = True, device:
     """FlyThings UI 构建与部署全流程（pack → install → build → 设备探测 → launch）。
 
     触发：编译 / 构建 / 调试 / 部署 / 推送到设备 / 跑一下 / 上机 / 传到设备 / 烧上去
+    ⚠️⚠️ **平台定位**：Linux 基座（判能力基线同 buildroot/OpenWrt），**不是** MCU/RTOS/ESP32 板级 SDK；GUI 是自研 EasyUI（≠ LVGL）。见 `knowledge/devflow/flythings-os-positioning.md`
     """
     return json.dumps(_with_design_warning(
         pt.flythings_build_ui_flow(project_root, with_launch, device,
@@ -1094,6 +1134,7 @@ def flythings_list_packages(platform: str = '') -> str:
     """列出依赖包生态（platform 如 F133/Z20，留空列全部），含功能描述与版本。写代码前调用。
 
     触发：有哪些包 / 内置包清单 / 能用什么库
+    ⚠️⚠️ **平台定位**：Linux 基座（判能力基线同 buildroot/OpenWrt），**不是** MCU/RTOS/ESP32 板级 SDK；GUI 是自研 EasyUI（≠ LVGL）。见 `knowledge/devflow/flythings-os-positioning.md`
     """
     r = pkgtools.flythings_list_packages(platform or None)
     if platform and isinstance(r, dict):
@@ -1206,6 +1247,8 @@ def flythings_create_bin_project(project_root: str, project_name: str = '', plat
     """创建「可执行程序」项目（fun create --type bin）并编译为直接可运行的 ELF 二进制。
 
     触发：做个小工具 / 命令行程序 / 不要界面 / 可执行文件 / bin 工程
+    ⚠️⚠️ **平台定位**：Linux 基座（判能力基线同 buildroot/OpenWrt），**不是** MCU/RTOS/ESP32 板级 SDK；GUI 是自研 EasyUI（≠ LVGL）。见 `knowledge/devflow/flythings-os-positioning.md`
+    ⚠️⚠️ bin 工程**只用于验证**（抢串口/裸逻辑），界面交付必须走 app 工程（`flythings_create_project`）——init 托管的是 app
     """
     return json.dumps(pt.flythings_create_bin_project(
         project_root, project_name, platform, app_version, description, with_build),
@@ -1319,7 +1362,8 @@ def flythings_create_project(project_root: str, platform: str, resolution: str,
     """从 HelloWord 模板创建 FlyThings 项目，自动替换工程名/分辨率/平台。
 
     触发：新建工程 / 建个项目 / 从零开始 / 起个新项目 / 建 FlyThings 工程 / 从头做
-    ⚠️⚠️ src/activity/ 由 IDE 按 ftu 生成，禁止创建/修改/覆盖；业务只写 src/logic/*.cc
+    ⚠️⚠️ **平台定位**：Linux 基座（基线同 buildroot/OpenWrt，非 MCU/ESP32 SDK）；GUI 是自研 EasyUI（≠ LVGL）。见 `flythings-os-positioning.md`
+    ⚠️⚠️ src/activity/ 由 ftu 生成，禁建/改/覆盖；业务只写 src/logic/*.cc
     ⚠️⚠️ 新需求必须先出设计稿/原型并让用户确认（见 prototype-flow）再建工程 —— 跳过确认 = 返工
     """
     return json.dumps(_with_design_warning(

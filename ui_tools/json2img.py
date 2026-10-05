@@ -79,9 +79,11 @@ from __future__ import annotations
 
 import argparse
 import glob
+import io
 import json
 import math
 import os
+import re
 import sys
 from collections import Counter, OrderedDict
 
@@ -92,7 +94,7 @@ except Exception as ex:                     # 控制台重配失败不致命，�
     sys.stderr.write('[warn] stdout reconfigure failed: %s\n' % ex)
 
 try:
-    from PIL import Image, ImageDraw, ImageFont
+    from PIL import Image, ImageChops, ImageDraw, ImageFont
 except Exception as exc:  # pragma: no cover
     print('[FATAL] 需要 Pillow：pip install pillow  (%s)' % exc)
     raise
@@ -400,6 +402,49 @@ def children_of(node):
 
 def ctype_of(name):
     return name.split('__')[0] if '__' in name else name
+
+
+# C/C++ **数值字面量**（含后缀）：`42` / `42u` / `0x2E8BFF` / `24.0f` / `.5F` / `1e3` / `134`。
+# ⚠️ 后缀必须认（2026-10-05 实测）：`SZKPoint thinLine[2] = {{24.0f, 380.0f}, …}` 里的 `24.0f`
+# 曾被当成"变量实参"→ 整条 `drawLines` 被跳过 → **两条直线静默不画**（painter 页少了内容却没人知道）。
+# 加 `f/F/l/L/u/U` 与 C++14 的 `'` 分隔符（`1'000`）。
+_NUM_LITERAL = re.compile(
+    r"^[-+]?(?:0[xX][0-9a-fA-F']+|(?:\d[\d']*\.?[\d']*|\.\d[\d']*)(?:[eE][-+]?\d+)?)[fFlLuU]*$")
+
+
+def _split_c_args(txt):
+    """按**逗号**切 C 实参，但把 `{…}` 当成一个整体（支持嵌套一层，如 `{{a,b},{c,d}}`）。
+
+    ⚠️ 为什么不能用正则（2026-10-05 实测）：`{{24.0f, 380.0f}, {430.0f, 380.0f}}` 里
+    内层的 `,` 会被当成实参分隔符 → 切出 `{{24.0f` / `380.0f}` 这种碎片 → 判成变量实参 →
+    **整条 drawLines 被跳过、两条直线静默不画**。这里按花括号深度切，顶层逗号才算分隔。
+    """
+    out, buf, depth = [], '', 0
+    for ch in txt:
+        if ch == '{':
+            depth += 1
+            buf += ch
+        elif ch == '}':
+            depth = max(0, depth - 1)
+            buf += ch
+        elif ch == ',' and depth == 0:
+            if buf.strip():
+                out.append(buf)
+            buf = ''
+        else:
+            buf += ch
+    if buf.strip():
+        out.append(buf)
+    # C++11 的 `{{a,b},{c,d}}` 会被当成"一个带外层花括号的实参"：外层若是纯列表就展开成多个点
+    res = []
+    for item in out:
+        s = item.strip()
+        if s.startswith('{{') and s.endswith('}}'):
+            for inner in _split_c_args(s[1:-1]):
+                res.append(inner.strip())
+        else:
+            res.append(s)
+    return res
 
 
 class Renderer:
@@ -724,6 +769,12 @@ class Renderer:
             self.draw_seekbar(img, node, x, y, w, h, caption)
         elif ctype == 'circlebar':
             self.draw_circlebar(img, node, x, y, w, h, caption)
+        elif ctype == 'painter':
+            # painter 的绘制内容在 logic 代码里（json 只有底色）→ 必须重放它
+            self.draw_painter(img, node, x, y, w, h, caption)
+        elif ctype == 'pointer':
+            # 表盘 + 指针按 setTargetAngle 旋转（角度也在 logic 里）
+            self.draw_pointer(img, node, x, y, w, h, caption)
         elif ctype == 'videoview':
             self.report.unsupported(self.page, ctype, caption, 'videoview',
                                     '视频画面 → 静止态只铺底色（不渲染视频帧）')
@@ -737,7 +788,7 @@ class Renderer:
             self.draw_radiogroup(img, node, x, y, w, h, caption)
         elif ctype == 'checkbox':
             self.draw_checkbox(img, node, x, y, w, h, caption)
-        elif ctype in ('painter', 'pointer', 'diagram', 'cameraview', 'slidetext'):
+        elif ctype in ('diagram', 'cameraview', 'slidetext'):
             self.report.unsupported(self.page, ctype, caption, ctype,
                                     'v0 未专有实现 → 通用兜底（底色+背景图+文字）')
             self._text_in_subbox(img, node, x, y, w, h, ctype, caption)
@@ -816,7 +867,12 @@ class Renderer:
         现在四条一律照规格：`pic-scale` / `progress-clip` / `thumb-size` / `rounding`。
         """
         mx = node.get('max') or 100
-        prog = node.get('defProgress')
+        # ⚠️ 进度值优先取 **logic 的 setProgress()**（2026-10-05 实测）：json 的 `defProgress`
+        # 常是 0，真机初值由 `onUI_init()` 决定（模板 progress.json 写 0、代码写 60）。
+        # 不读它，离线图永远是空轨道 —— 与"painter 内容在代码里"是同一类问题。
+        prog = self.logic_progress(caption)
+        if prog is None:
+            prog = node.get('defProgress')
         if prog is None:
             prog = 0
         try:
@@ -830,6 +886,8 @@ class Renderer:
             self.draw_pic(img, bgpic, x, y, w, h, 'seekbar', caption)
         # ② 填充：1:1 原样贴 + 按 floor(盒宽×进度/max) 裁剪（renderContract.progress-clip）
         #    ⚠️ 不 resize：图若比盒窄，引擎也是 1:1 贴（露轨道），不许缩放着把内容撑满
+        #    ⚠️ `.9.png` 走九宫格：引擎对带引导线的图按 9-patch 拉伸/裁剪（引导线避开角切片），
+        #       所以这里先 nine_patch 到「盒尺寸」，再按进度裁 —— 与轨道同口径。
         ppic = node.get('progressPic')
         layer = Image.new('RGBA', img.size, (0, 0, 0, 0))
         if ppic:
@@ -842,18 +900,24 @@ class Renderer:
                 else:
                     cut_w, cut_h = w, int(math.floor(h * frac))
                 iw, ih = im.size
-                if (iw, ih) != (w, h):
-                    # 图 != 控件盒 → 按规格这是**要求错**（引擎只裁剪不缩放）：如实记账，别悄悄缩放
-                    self.report.stretch(self.page, 'seekbar', ppic, im.size, (w, h))
                 if str(ppic).endswith('.9.png'):
-                    nn = nine_patch(im, min(iw, max(1, cut_w)), min(ih, max(1, cut_h)))
+                    nn = nine_patch(im, w, h)
                     if nn is not None:
-                        paste_rgba(layer, nn, x, y)
+                        layer_src = nn
+                    else:
+                        self.report.unsupported(self.page, 'seekbar', caption, 'progressPic(.9)',
+                                                '九宫格引导线缺失 → 退化为整体拉伸')
+                        layer_src = im.resize((max(1, w), max(1, h)), NEAREST)
                 else:
-                    # 1:1 贴、按进度裁剪到左上角（引擎行为）；裁剪后不足盒宽的部分保持透明 = 露轨道
-                    cw, ch = min(iw, max(0, cut_w)), min(ih, max(0, cut_h))
-                    if cw > 0 and ch > 0:
-                        paste_rgba(layer, im.crop((0, 0, cw, ch)), x, y)
+                    if (iw, ih) != (w, h):
+                        # 图 != 控件盒 → 按规格这是**要求错**（引擎只裁剪不缩放）：如实记账，别悄悄缩放
+                        self.report.stretch(self.page, 'seekbar', ppic, im.size, (w, h))
+                    layer_src = im
+                # 1:1（或 9-patch 拉伸后）贴、按进度裁剪到左上角；裁剩部分透明 = 露轨道
+                cw = min(layer_src.width, max(0, cut_w))
+                ch = min(layer_src.height, max(0, cut_h))
+                if cw > 0 and ch > 0:
+                    paste_rgba(layer, layer_src.crop((0, 0, cw, ch)), x, y)
         # ③ 滑块：按 **PNG 原尺寸**画（renderContract.thumb-size）；左沿 floor((盒宽−图宽)×进度/max)
         thumb = node.get('thumb') if isinstance(node.get('thumb'), dict) else None
         if thumb and (thumb.get('normalPic') or thumb.get('pressedPic')):
@@ -881,29 +945,455 @@ class Renderer:
         self.report.unsupported(self.page, 'seekbar', caption, 'defProgress',
                                 '进度静止态（defProgress/max=%.0f%%），拖动/动画不还原' % (frac * 100))
 
+    def draw_painter(self, img, node, x, y, w, h, caption):
+        """`ZKPainter` 的绘制指令**在页面的 logic 代码里**（json 只有底色），所以必须读它。
+
+        为什么要做（2026-10-05 用户报「painter 没有绘制出来」）：painter 是**状态式画笔** ——
+        `setSourceColor/setLineWidth` 设状态，`fillRect/drawRect/fillArc/drawArc/drawLines/
+        fillTriangle/drawTriangle/erase` 按当前状态落笔。json 里没有任何绘制内容，
+        所以布局等价的离线渲染只能把 `<项目>/src/logic/<页面>Logic.cc` 的 `onUI_init()`/`onUI_show()`
+        里的调用按顺序重放。重放是**只读取值**，不执行任何代码。
+
+        AA 口径：形状先画在 `SS×` 画布上再用 `Image.BOX` 面积平均缩回 —— 与规格
+        `renderContract.edge-aa`「≥4× 超采样 + 面积平均，α = 覆盖率」同口径。
+        """
+        drawn = 0
+        SS = 4
+        layer = Image.new('RGBA', (max(1, w) * SS, max(1, h) * SS), (0, 0, 0, 0))
+        d = ImageDraw.Draw(layer)
+        color, lw = 0x000000, 1
+        for op, a in self.logic_cmds(caption):
+            def S(v):
+                # C 字面量后缀（`24.0f` / `42u` / `1'000`）先剥掉再转 —— `float('24.0f')` 会抛异常
+                s = str(v).strip().replace("'", '')
+                s = re.sub(r'[fFlLuU]+$', '', s)
+                return float(s) * SS
+            if op == 'setSourceColor':
+                color = int(a[0], 0)
+            elif op == 'setLineWidth':
+                lw = max(1, int(float(a[0])))
+            elif op in ('fillRect', 'drawRect'):
+                bx, by, bw, bh = (S(a[0]), S(a[1]), S(a[2]), S(a[3]))
+                rad = S(a[4]) if len(a) > 4 else 0
+                box = [bx, by, bx + bw - 1, by + bh - 1]
+                if op == 'fillRect':
+                    if rad > 0:
+                        d.rounded_rectangle(box, radius=rad, fill=color_rgba(color))
+                    else:
+                        d.rectangle(box, fill=color_rgba(color))
+                else:
+                    # 描边落在**形状内侧**（引擎口径）：圆角矩形同理用 width 由内缩
+                    if rad > 0:
+                        d.rounded_rectangle(box, radius=rad, outline=color_rgba(color),
+                                            width=max(1, int(round(lw * SS))))
+                    else:
+                        d.rectangle(box, outline=color_rgba(color),
+                                    width=max(1, int(round(lw * SS))))
+                drawn += 1
+            elif op in ('fillArc', 'drawArc'):
+                cx, cy, rx, ry = (S(a[0]), S(a[1]), S(a[2]), S(a[3]))
+                # ⚠️ **角度零位实测标定**（2026-10-05）：引擎的 0° 是**正上方**、顺时针为正
+                # （0=上 / 90=右 / 180=下 / 270=左）；PIL 的 0° 在右侧 —— 故 **PIL 角 = 引擎角 + 270**。
+                # 证据：同一调用点 `fillArc(130,250,90,90,0,270)`，用真机截图 `temp/acc_canvas.png`
+                # 逐角采样测缺口 = 屏幕 181°~270°（左上），而 PIL 偏移 0/90/180/270 各画一遍，
+                # **只有 270 命中**（0 → 271°~359° 右上、90 → 1°~89° 右下、180 → 91°~179° 左下）。
+                st = (float(a[4]) if len(a) > 4 else 0.0) + 270.0
+                sw = float(a[5]) if len(a) > 5 else 360.0
+                if op == 'fillArc' and abs(sw) >= 359.9:
+                    # 整圆走 ellipse 更准（PIL 的 pieslice 在 360° 上会留缝）
+                    d.ellipse([cx - rx, cy - ry, cx + rx, cy + ry], fill=color_rgba(color))
+                elif op == 'fillArc':
+                    d.pieslice([cx - rx, cy - ry, cx + rx, cy + ry], start=st,
+                               end=st + sw, fill=color_rgba(color))
+                else:
+                    d.arc([cx - rx, cy - ry, cx + rx, cy + ry], start=st, end=st + sw,
+                          fill=color_rgba(color), width=max(1, int(round(lw * SS))))
+                drawn += 1
+            elif op == 'drawLines':
+                vals = list(a)
+                # `drawLines(pts, n)` 的最后一个实参是**点数**，不是坐标 → 丢掉
+                if len(vals) % 2 == 1:
+                    vals = vals[:-1]
+                pts = [vals[i:i + 2] for i in range(0, len(vals) - 1, 2)]
+                if len(pts) >= 2:
+                    d.line([(S(px), S(py)) for px, py in pts],
+                           fill=color_rgba(color), width=max(1, int(round(lw * SS))),
+                           joint='curve')
+                    drawn += 1
+            elif op == 'drawCurve':
+                pts = [a[i:i + 2] for i in range(0, len(a) - 1, 2)]
+                if len(pts) >= 2:
+                    # 曲线 → 折线近似（如实记账，别假装还原了贝塞尔）
+                    self.report.unsupported(self.page, 'painter', caption, 'drawCurve',
+                                            '曲线按折线近似（控制点语义未实测）')
+                    d.line([(S(px), S(py)) for px, py in pts],
+                           fill=color_rgba(color), width=max(1, int(round(lw * SS))))
+                    drawn += 1
+            elif op in ('fillTriangle', 'drawTriangle') and len(a) >= 6:
+                tri = [(S(a[0]), S(a[1])), (S(a[2]), S(a[3])), (S(a[4]), S(a[5]))]
+                if op == 'fillTriangle':
+                    d.polygon(tri, fill=color_rgba(color))
+                else:
+                    d.line(tri + [tri[0]], fill=color_rgba(color),
+                           width=max(1, int(round(lw * SS))), joint='curve')
+                drawn += 1
+            elif op == 'erase':
+                # 擦成透明（露出 painter 自己的底色）
+                d.rectangle([S(a[0]), S(a[1]), S(a[0] + a[2]) * SS, S(a[1] + a[3]) * SS],
+                            fill=(0, 0, 0, 0))
+                drawn += 1
+        if not drawn:
+            self.report.unsupported(self.page, 'painter', caption, 'logic',
+                                    '未找到绘制指令（painter 内容在 src/logic/<页面>Logic.cc 里；'
+                                    '该文件缺失或本页确实没画）')
+            return
+        layer = layer.resize((max(1, w), max(1, h)), Image.BOX)     # 面积平均 = 覆盖率 α
+        paste_rgba(img, layer, x, y)
+
+    def draw_pointer(self, img, node, x, y, w, h, caption):
+        """`ZKPointer`：背景表盘 + 指针图按 `setTargetAngle()` 绕 `rotationPoint` 旋转。
+
+        字段口径（`ui_schema.json` + 知识页 `widget-code-api.md:95`）：
+          · `rotationPoint` = **控件系**圆心；
+          · `fixedPoint`    = **指针图系**铰点（针的转轴在图片上的位置）；
+          · 画法 = 把图片的 `fixedPoint` 对到 `rotationPoint` 上，再绕该点转
+            `setTargetAngle()` 的角度（`startAngle` 为表盘零位偏移，`clockwise` 定方向）。
+        角度取不到时的兜底：`logic` 里没有 `setTargetAngle` 就按 `startAngle` 画（并记账）。
+        """
+        # ① 表盘（背景图按控件盒贴）
+        bg = node.get('backgroundPic')
+        if bg:
+            self.draw_pic(img, bg, x, y, w, h, 'pointer', caption)
+        # ② 指针
+        pic = node.get('pointerPic')
+        if not pic:
+            self.report.unsupported(self.page, 'pointer', caption, 'pointerPic',
+                                    '未配置 pointerPic → 只画表盘')
+            return
+        im = self.load_pic(pic)
+        if im is None:
+            self.report.miss(self.page, pic, caption)
+            return
+        rp = node.get('rotationPoint') or {}
+        fp = node.get('fixedPoint') or {}
+        rpx, rpy = int(rp.get('x') or 0), int(rp.get('y') or 0)
+        fpx, fpy = int(fp.get('x') or 0), int(fp.get('y') or 0)
+        ang = self.logic_angle(caption)
+        if ang is None:
+            ang = float(node.get('startAngle') or 0)
+            self.report.unsupported(self.page, 'pointer', caption, 'setTargetAngle',
+                                    'logic 里没找到 setTargetAngle → 按 startAngle=%g 画'
+                                    '（真机初值由代码决定）' % ang)
+        else:
+            self.report.unsupported(self.page, 'pointer', caption, 'setTargetAngle',
+                                    '角度取自 logic 的 setTargetAngle(%g)——静止态首帧' % ang)
+        self.report.unsupported(self.page, 'pointer', caption, 'animatable',
+                                'rotateSpeed=%s 的**平滑动画**不还原（只画目标角静止态）'
+                                % node.get('rotateSpeed'))
+        # PIL `rotate(θ)` 逆时针为正；屏幕坐标里"顺时针"= 逆时针取负。
+        # `clockwise:true`（本例）→ 顺时针增角 → 传 `-ang`；`clockwise:false` → 传 `+ang`。
+        deg = -ang if node.get('clockwise', True) else ang
+        # 绕 fixedPoint 旋转：先铺一张与控件同大的画布，把 fixedPoint 对到 rotationPoint
+        canvas = Image.new('RGBA', (max(1, w), max(1, h)), (0, 0, 0, 0))
+        paste_rgba(canvas, im, rpx - fpx, rpy - fpy)
+        rot = canvas.rotate(deg, center=(rpx, rpy), resample=Image.BICUBIC)
+        paste_rgba(img, rot, x, y)
+
+    def _ring_geom(self, im):
+        """从中线水平扫描量环几何 → `(外半径, 环宽)`（像素）。
+
+        为什么要量（2026-10-05）：改前用"环宽 ≈ 4% 直径"近似画，而实测 `pb_ring.png`
+        （200×200）是**外半径 100 / 内半径 86 / 环宽 14**（= 7% 直径），差近一倍。
+        环图的外沿顶到图片边界（α[0]=255，无外侧留白），所以 arc 的 bbox 要顶满控件盒。
+
+        ⚠️ **形状定义只有一处**：环图的生成口径在 `ui_tools/gen_ring.py`（`outerRadius`/`ringWidth`
+        由 `--size`/`--width` 现算，带质量自检，**产出即最终资产**）。这里量到的值应与它一致
+        （`tests/test_gen_ring.py` 有用例对账）；"量"是为了兼容**第三方画的**环图，
+        不是另立一套口径 —— 改本函数前先看 gen_ring 的头注释。
+        """
+        W, H = im.size
+        a = im.convert('RGBA').getchannel('A')
+        y = H // 2
+        outer_l = next((x for x in range(W) if a.getpixel((x, y)) > 0), None)
+        inner_l = None
+        for x in range(0, W // 2):
+            if a.getpixel((x, y)) > 0:
+                inner_l = x
+        if outer_l is None or inner_l is None:
+            return None
+        r_out = (W / 2.0) - outer_l
+        r_in = (W / 2.0) - inner_l - 1
+        return max(1, int(round(r_out))), max(1, int(round(r_out - r_in)))
+
     def draw_circlebar(self, img, node, x, y, w, h, caption):
+        """`ZKCircleBar`：背景环整圈 + 有效环**按进度裁剪成扇形** + 中心文字（`textType`）。
+
+        字段口径（`ui_schema.json` + 知识页 `circlebar-fields.md`）：
+          · `backgroundPic` = 背景环，**不裁剪**、完整垫底；
+          · `progressPic`  = 有效环，按 `progress/max × maxAngle` **扇形裁剪**；
+          · `startAngle`   = 起始角（0 = 3 点钟方向），`maxAngle` = 最大扫过角（<360 = 开口环）；
+          · `textType` 0=不画 / 1=数字 / 2=数字+`unit`；`textSize`/`textColor` 定中心文字。
+        ⚠️ 改前只画整圈、且在尾部截断（实测 bbox 少了 1px → 左边多出一段实心），
+        中间文字完全没画、起始角写死 −90（没读 `startAngle`）—— 2026-10-05 需求方报「默认渲染要给角度 +
+        属性里带了中间显示的文字和单位」。
+        """
         mx = node.get('max') or 100
-        prog = node.get('progress')
+        # 同 seekbar：优先读 logic 的 setProgress()（json 常写 0，真机初值在代码里）
+        prog = self.logic_progress(caption)
+        if prog is None:
+            prog = node.get('progress')
         if prog is None:
             prog = node.get('defProgress') or 0
         try:
             frac = max(0.0, min(1.0, float(prog) / float(mx or 100)))
         except Exception:
             frac = 0.0
-        max_angle = node.get('maxAngle') or 360
-        ring = color_rgba(node.get('bgColorTab', {}).get('color0'))
-        fill = color_rgba(node.get('colorTab', {}).get('color0'))
-        d = ImageDraw.Draw(img)
-        pad = max(1, int(round(min(w, h) * 0.04)))     # 环宽近似：4% 直径
-        box = [x + pad, y + pad, x + w - 1 - pad, y + h - 1 - pad]
-        start = -90.0
-        if ring:
-            d.arc(box, start, start + max_angle, fill=ring, width=pad, )
-        if fill:
-            d.arc(box, start, start + max_angle * frac, fill=fill, width=pad)
+        max_angle = float(node.get('maxAngle') or 360)
+        # ① 背景环：完整显示（与 `progressPicPos` 的位置尺寸一起用）
+        pp = node.get('progressPicPos') or {}
+        bx, by = x + int(pp.get('left') or 0), y + int(pp.get('top') or 0)
+        bw = int(pp.get('width') or 0) or w
+        bh = int(pp.get('height') or 0) or h
+        bgpic = node.get('backgroundPic')
+        if bgpic:
+            self.draw_pic(img, bgpic, bx, by, bw, bh, 'circlebar', caption)
+        # ② 有效环：按进度扇形裁剪
+        ppic = node.get('progressPic')
+        if ppic:
+            im = self.load_pic(ppic)
+            if im is None:
+                self.report.miss(self.page, ppic, caption)
+            else:
+                geom = self._ring_geom(im)
+                sweep = max_angle * frac
+                # `startAngle` 直接用 PIL 角（0 = 3 点钟、顺时针为正）—— 与知识页口径一致
+                start = float(node.get('startAngle') or 0)
+                if not node.get('clockwise', True):
+                    start = start - sweep
+                layer = Image.new('RGBA', (max(1, bw), max(1, bh)), (0, 0, 0, 0))
+                if geom:
+                    r_out, rw = geom
+                    d = ImageDraw.Draw(layer)
+                    box = [0, 0, bw - 1, bh - 1]
+                    if sweep > 0:
+                        d.arc(box, start, start + sweep, fill=(255, 255, 255, 255), width=rw)
+                    mask = layer.getchannel('A')
+                else:
+                    self.report.unsupported(self.page, 'circlebar', caption, 'progressPic',
+                                            '量不到环几何 → 退化为整图贴（不裁剪）')
+                    mask = None
+                sub = im if im.size == (bw, bh) else im.resize((bw, bh), NEAREST)
+                if mask is not None:
+                    sub = sub.copy()
+                    sub.putalpha(ImageChops.multiply(sub.getchannel('A'), mask))
+                    # ⚠️ **合成必须分两步、落在干净层上**（2026-10-05 修「圆环内沿白锯齿」）：
+                    # 原写法是 `paste_rgba(layer, sub, 0, 0)` —— 让 layer **贴到它自己身上**，
+                    # 而 paste_rgba 又拿 layer 自身的 α 当遮罩 → 预乘被算两次 →
+                    # 内沿那排半透明像素（源图 α=48/64/92…）被推成接近纯白，肉眼就是**白锯齿**。
+                    # 正确：先把**遮罩后的有效环**贴进干净的 sub_layer，再把它合成到结果图上。
+                    sub_layer = Image.new('RGBA', (max(1, bw), max(1, bh)), (0, 0, 0, 0))
+                    paste_rgba(sub_layer, sub, 0, 0)
+                    paste_rgba(img, sub_layer, bx, by)
+                else:
+                    paste_rgba(img, sub, bx, by)
+        # ③ 中心文字：textType 0=不画 / 1=数字 / 2=数字+unit
+        tt = node.get('textType', 0)
+        if tt:
+            txt = str(int(round(prog)))
+            if int(tt) >= 2:
+                txt += str(node.get('unit') or '')
+            size = int(node.get('textSize') or 0) or max(10, int(min(bw, bh) * 0.12))
+            col = color_rgba(node.get('textColor'))
+            if col is None:
+                col = (255, 255, 255, 255)
+                self.report.unsupported(self.page, 'circlebar', caption, 'textColor',
+                                        'textColor 缺省/非法 → 用白色画中心文字')
+            cx, cy = bx + bw // 2, by + bh // 2
+            f = self.font(size)
+            try:
+                tw = f.getbbox(txt)[2] - f.getbbox(txt)[0]
+                asc, desc = f.getmetrics()
+            except Exception:
+                tw, asc, desc = len(txt) * size * 0.6, size, 0
+            lay = Image.new('RGBA', img.size, (0, 0, 0, 0))
+            ImageDraw.Draw(lay).text((cx - tw / 2.0, cy - (asc + desc) / 2.0 - desc / 2.0),
+                                     txt, font=f, fill=col)
+            img.alpha_composite(lay)
         self.report.unsupported(self.page, 'circlebar', caption, 'progress',
-                                '环宽/起始角为近似（4%%直径、-90° 起顺时针），角度按 %s*%.0f%%'
-                                % (max_angle, frac * 100))
+                                '扇形按 %s：进度 %s/%s → 扫过 %.0f°（起始角 %s°）；'
+                                '环几何由 progressPic 中线实测'
+                                % ('clockwise' if node.get('clockwise', True) else 'counter-clockwise',
+                                   int(round(prog)), mx, max_angle * frac,
+                                   node.get('startAngle') or 0))
+
+    # ---------- 页面 logic 代码（painter 的绘制内容 / 运行期初值都在这里） ----------
+    def _logic_file(self):
+        """找本页的 `<项目>/src/logic/<页面>Logic.cc`（页面名 = json 文件名）。"""
+        if not self.proj:
+            return None
+        page = self.page or 'main'
+        cands = [os.path.join(self.proj, 'src', 'logic', '%sLogic.cc' % page)]
+        if self.json_dir:
+            cands.append(os.path.join(self.json_dir, '..', 'src', 'logic', '%sLogic.cc' % page))
+        # 页面名大小写可能与文件名不一致（button vs Button）
+        d = os.path.join(self.proj, 'src', 'logic')
+        if os.path.isdir(d):
+            want = ('%slogic.cc' % page).lower()
+            for fn in os.listdir(d):
+                if fn.lower() == want:
+                    return os.path.join(d, fn)
+        for c in cands:
+            if os.path.isfile(c):
+                return c
+        return None
+
+    def _logic_text(self):
+        if getattr(self, '_logic_cache', None) is not None:
+            return self._logic_cache
+        p = self._logic_file()
+        txt = ''
+        if p:
+            try:
+                txt = io.open(p, encoding='utf-8', errors='replace').read()
+            except OSError as e:
+                self.report.unsupported(self.page, 'logic', os.path.basename(p), 'read',
+                                        '页面 logic 读不了（%s）' % (e.strerror or type(e).__name__))
+        self._logic_cache = txt
+        self._logic_path = p
+        return txt
+
+    @staticmethod
+    def _strip_comments(txt):
+        """去 `//` 行注释与 `/* */` 块注释 —— 注释里的调用**不算绘制**（否则会把说明当指令）。"""
+        txt = re.sub(r'/\*.*?\*/', '', txt, flags=re.S)
+        return '\n'.join(re.sub(r'//.*$', '', ln) for ln in txt.split('\n'))
+
+    def logic_cmds(self, caption):
+        """本页 `onUI_init()` + `onUI_show()` 里针对 `caption` 的绘制调用（按出现顺序）。
+
+        只匹配 `m<caption>Ptr->op(...)` 形态；**只取值、不执行代码**。参数只认字面量
+        （数字 / `0x…` / `{a,b}` / `{a,b},{c,d}`）—— 变量当参数时**跳过并记账**（不猜）。
+        """
+        txt = self._strip_comments(self._logic_text())
+        if not txt or not caption:
+            return []
+        # 切成函数体，只保留 onUI_init / onUI_show（其余回调是运行期事件，不是初值）
+        bodies = []
+        for fn in ('onUI_init', 'onUI_show'):
+            m = re.search(r'\b%s\s*\([^)]*\)\s*\{' % fn, txt)
+            if not m:
+                continue
+            i, depth = m.end(), 1
+            while i < len(txt) and depth:
+                if txt[i] == '{':
+                    depth += 1
+                elif txt[i] == '}':
+                    depth -= 1
+                i += 1
+            bodies.append(txt[m.end():i - 1])
+        out = []
+        # ⚠️ 实参必须按**括号平衡**取（2026-10-05 实测）：用 `\(([^;]*?)\)` 会在第一个 `)` 截断 ——
+        # `setSourceColor(0xFF4D4D);` 侥幸能过，但含花括号初始化列表的调用会被切碎判成变量实参。
+        # 另外 `drawLines(thinLine, 2)` 的实参是**局部数组**——数组就在同一函数体里、
+        # 初值全是字面量，所以先扫出 `T name[N] = {{…},{…}}` 的取值表再代入（不猜运行值，只读字面量）。
+        var_pts = {}
+        for vm in re.finditer(r'\b\w+\s+(\w+)\s*\[\s*\d*\s*\]\s*=\s*\{([^;]*?)\}\s*;', txt):
+            pts = []
+            for raw in _split_c_args('{%s}' % vm.group(2)):
+                s = raw.strip()
+                if s.startswith('{') and s.endswith('}'):
+                    vals = [x.strip() for x in s.strip('{}').split(',') if x.strip()]
+                    if all(_NUM_LITERAL.match(v) for v in vals) and len(vals) == 2:
+                        pts.append((vals[0], vals[1]))
+                    else:
+                        pts = []
+                        break
+                else:
+                    pts = []
+                    break
+            if pts:
+                var_pts[vm.group(1)] = pts
+        pat = re.compile(r'm%sPtr\s*->\s*(\w+)\s*\(' % re.escape(caption))
+        for body in bodies:
+            for m in pat.finditer(body):
+                op = m.group(1)
+                i, depth = m.end(), 1
+                while i < len(body) and depth:
+                    if body[i] == '(':
+                        depth += 1
+                    elif body[i] == ')':
+                        depth -= 1
+                    i += 1
+                argtxt = body[m.end():i - 1].strip()
+                # 局部数组实参 → 展开成「逐点字面量」，个数与调用里给的数量取小
+                parts = _split_c_args(argtxt)
+                expanded = []
+                for raw in parts:
+                    nm = raw.strip()
+                    if nm in var_pts:
+                        expanded.extend(var_pts[nm])
+                    else:
+                        expanded.append(raw)
+                if expanded != parts:
+                    argtxt = ', '.join('{%s, %s}' % p if isinstance(p, tuple) else p
+                                       for p in expanded)
+                if op == 'erase' and not argtxt:
+                    continue                      # erase() 无参不是真 API（规格已钉）
+                args, ok = [], True
+                if argtxt:
+                    for raw in _split_c_args(argtxt):
+                        raw = raw.strip()
+                        if raw.startswith('{'):
+                            vals = [x.strip() for x in raw.strip('{}').split(',') if x.strip()]
+                            if not all(_NUM_LITERAL.match(v) for v in vals):
+                                ok = False
+                                break
+                            args.extend(vals)
+                        elif _NUM_LITERAL.match(raw):
+                            args.append(raw)
+                        else:
+                            ok = False
+                            break
+                if not ok:
+                    self.report.unsupported(self.page, 'painter', caption, op,
+                                            '该调用含变量/表达式实参 → 未重放（静态渲染不猜运行值）')
+                    continue
+                out.append((op, args))
+        return out
+
+    def logic_angle(self, caption):
+        """本页 `m<caption>Ptr->setTargetAngle(N)` 的数值（pointer 的静止角）。取不到回 None。"""
+        txt = self._strip_comments(self._logic_text())
+        if not txt or not caption:
+            return None
+        m = re.search(r'm%sPtr\s*->\s*setTargetAngle\s*\(\s*([-+]?\d+\.?\d*)\s*\)'
+                      % re.escape(caption), txt)
+        return float(m.group(1)) if m else None
+
+    def logic_progress(self, caption):
+        """本页 `m<caption>Ptr->setProgress(N)` 的数值（seekbar/circlebar 的运行期初值）。
+
+        为什么必须读（2026-10-05）：json 的 `defProgress` 常是 0，真机初值由 `onUI_init()` 决定 ——
+        不读它，离线图就永远画成空轨道（实测模板 `progress.json`：json 写 0、代码写 60/70）。
+        ⚠️ 匹配靠 `caption`（= 引擎的控件名，生成 `m<caption>Ptr`）；`caption` 为空时**静默失效**过
+        （2026-10-05 调试用例时踩到：节点没写 caption → 逻辑明明有 setProgress 也读不到）→ 这里显式记账。
+        """
+        txt = self._strip_comments(self._logic_text())
+        if not caption:
+            if txt:
+                self.report.unsupported(self.page, 'progress', '(无 caption)', 'setProgress',
+                                        '控件没写 caption → 无法在 logic 里定位 `m<caption>Ptr`，'
+                                        '运行期初值读不到（真机 json 必写 caption）')
+            return None
+        if not txt:
+            return None
+        m = re.search(r'm%sPtr\s*->\s*setProgress\s*\(\s*([-+]?\d+)\s*\)' % re.escape(caption), txt)
+        if not m:
+            return None
+        self.report.unsupported(self.page, 'progress', caption, 'setProgress',
+                                '初值取自 logic 的 setProgress(%s)（json 的 defProgress 不是真机初值）'
+                                % m.group(1))
+        return int(m.group(1))
 
     # ---------- 状态化标记（checkbox / radiobutton 共用） ----------
     def _marker_box(self, node, x, y, w, h):

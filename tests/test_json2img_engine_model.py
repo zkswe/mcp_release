@@ -323,5 +323,46 @@ class TestSubBoxTextLayout(SeekbarRenderBase):
         self.assertIn('textPosition', notes)
 
 
+class TestBackgroundMinusOne(unittest.TestCase):
+    """`backgroundColor: -1` = **框架跳过该绘制（不渲染）**，不是"一种透明色"（2026-10-05 需求方口径）。
+
+    为什么钉：这条语义决定了两个高频现象 ——
+      ① 透明区露的是**背后真正在显示的东西**（页面根底色 / 祖先 window / 下层控件）：
+         所以"把 `backgroundColor` 填成贴图主色 → 切图圆角被盖平成直角，写 -1 才露圆角"；
+      ② 贴图的**半透明像素与下层合成**，需要"半透明按指定底色算"时必须写**具体颜色**。
+    判据：`-1` 不许被当成"涂一层全透明色"（那会让后续合成基准变成该层而不是下层）。
+    """
+
+    def test_minus_one_skips_the_fill(self):
+        import json2img as J
+        self.assertIsNone(J.color_rgba(-1), '-1 必须解析为"不绘制"，而不是某个 rgba')
+        self.assertIsNotNone(J.color_rgba(0), '0 = 不透明黑，是有意义的实色（videoview/cameraview 官方原值）')
+        self.assertEqual(J.color_rgba(0)[:3], (0, 0, 0))
+
+    def test_root_with_minus_one_leaves_the_page_unfilled(self):
+        """根底色 -1 → 整页不铺底（透明画布），并如实记账（"设备上为黑屏底"）。"""
+        import json2img as J
+        rep = J.Report()
+        r = J.Renderer(project=None, json_path=os.path.join(U.BASE, 'ui_tools', 'x.json'),
+                       align_mode='measured', report=rep, verbose=False)
+        r.font_path = None
+        doc = {'resolution': {'width': 64, 'height': 32},
+               'position': {'left': 0, 'top': 0, 'width': 64, 'height': 32},
+               'backgroundColor': -1}
+        page, _ = r.render(doc)
+        self.assertEqual(page.convert('RGBA').getpixel((5, 5))[3], 0,
+                         '-1 应让整页保持透明（不渲染），而不是被涂成某个颜色')
+        self.assertIn('backgroundColor', json.dumps(rep.as_dict(), ensure_ascii=False),
+                      '不铺底要如实记账，不静默')
+
+    def test_spec_states_the_semantics(self):
+        """规格里必须有这条口径（字段语义真源），且明确区分"不渲染"与"透明色"。"""
+        reg = json.load(io.open(os.path.join(U.BASE, 'ui_tools', 'ui_schema.json'),
+                                encoding='utf-8'))
+        rule = str((reg.get('valueRules') or {}).get('colorMinusOne') or '')
+        self.assertIn('跳过', rule, '口径要写"跳过该绘制/不渲染"')
+        self.assertIn('半透明', rule, '口径要提到半透明像素与下层的合成关系')
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -44,7 +44,7 @@ evidence:
 | R1 | **绘制顺序 = json 树序**：父先子后；同层按出现顺序，**后定义的画在上面**| 引擎行为；渲染器按 dict 写入顺序遍历（json 保序） |
 | R2 | 单节点顺序严格：**底色 → 背景图 → 文字 → 递归子控件**| 「箭头被文字盖住」实测解释（引擎先画背景图后画文字） |
 | R3 | **图 != 矩形 → 拉伸填充**（stretch-to-fill），不是原样贴、不是居中裁剪 | 2026-10-01 口径 + 官方 `SampleUI-New` `navi/fh.png` 44×26 放进 72×40 按钮 |
-| R4 | 颜色：`-1` = 不填充（透明）；`0` = 不透明黑；其它 `0xRRGGBB`。有 `backgroundPic` 时先铺底色再贴图（贴图透明区露底色） | 引擎字段语义；`window` 用 `backgroundColor`，文本/按钮用 `bgColorTab.color0` |
+| R4 | 颜色：**`-1` = 框架跳过该绘制（不渲染，不是"透明色"）**；`0` = 不透明黑；其它 `0xRRGGBB`。有 `backgroundPic` 时先铺底色再贴图 —— 于是**贴图的透明区露的是底色**：把 `backgroundColor` 填成贴图主色会把圆角/透明角**盖平成直角**（实测），写 `-1` 才露背后内容；反过来，需要"半透明按指定底色合成"时必须写**具体颜色** | 引擎字段语义；`window` 用 `backgroundColor`，文本/按钮用 `bgColorTab.color0` |
 | R5 | 子控件坐标**相对父矩形左上角**，无 flex / 无层叠 / 无继承 | 绝对布局模型 |
 | R6 | 滚动容器（`scrollwindow`/`pagewindow`/`slidewindow`）按自身 rect **裁剪**子内容 | 引擎视口语义 |
 | R7 | 文字：`fontSize`(px) + `colorTab.color0` + `bold`/`italic` + `\n` 多行（行距 `rowSpace`） | 见 `text-box-height-rule`（盒高/字号下限） |
