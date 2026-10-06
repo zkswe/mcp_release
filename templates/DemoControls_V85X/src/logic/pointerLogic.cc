@@ -2,6 +2,8 @@
 #include GENERATED_UI_DEFINITIONS
 INIT_UI_EVENT_BINDINGS
 
+#endif // FUN_BUILD
+
 /**
  * 注册定时器
  * 填充数组用于注册定时器
@@ -10,7 +12,8 @@ INIT_UI_EVENT_BINDINGS
 static S_ACTIVITY_TIMEER REGISTER_ACTIVITY_TIMER_TAB[] = {
   {0,  1000},   // 每秒驱动指针（onUI_Timer）
 };
-#endif // FUN_BUILD
+
+#include "base/log.h"
 
 /**
  * @brief 当界面构造时触发
