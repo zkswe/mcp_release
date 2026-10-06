@@ -14,6 +14,10 @@ import io
 import json
 import os
 import sys
+try:                       # Windows 控制台/重定向默认 GBK：报告里若有编不出的字符，
+    sys.stdout.reconfigure(encoding='utf-8')   # print 会抛 UnicodeEncodeError 把失败本身藏掉
+except Exception:          # （2026-10-06：门禁委派本脚本时正是这个崩法）
+    pass
 import tempfile
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
