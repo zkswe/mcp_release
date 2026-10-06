@@ -108,9 +108,9 @@ AI 的全流程：
 
 **智能家居面板** —— 多屏拼接 / 情景模式 / 屏保壁纸
 
-| 主界面 | 情景模式 | 屏保 |
-|---|---|---|
-| ![](docs/images/readme/panel-home.png) | ![](docs/images/readme/panel-scenes.png) | ![](docs/images/readme/panel-screensaver.jpg) |
+| 主界面 | 多屏拼接 | 情景模式 | 屏保 |
+|---|---|---|---|
+| ![](docs/images/readme/panel-home.png) | ![](docs/images/readme/panel-video-wall.png) | ![](docs/images/readme/panel-scenes.png) | ![](docs/images/readme/panel-screensaver.jpg) |
 
 **口袋游戏机** —— 2048 / 俄罗斯方块 / 打飞机 / 小鸟 / 贪吃蛇（含最高分持久化）
 
