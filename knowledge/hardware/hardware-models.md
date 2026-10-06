@@ -72,7 +72,7 @@ evidence:
 - 平台定位：全志 V85x 系列（A7，视频编码 1080p）——摄像头/DVR/手持便携类产品常用
 - 常见主控：V553 / V851 / V851S / V851S3 / V853 / V853S
 - 主控→平台/包键（写死口径）：V85x 家族（V553 / V851 / V851S / V851S3 / V853 / V853S）在 MCP 里**统一归一到 V85X 平台**（入参写 V851S/V853S 等也会 resolve 成 V85X）：包键走 `v85x`（SPINOR）/ `v85xemmc`（EMMC），**芯片名（如 v851s）不是平台键**—— 拿去查包会查空（v0.27.87 收拢）。
-- 主控 V553：主控 SoC（全志 V85x 系列）；数据状态=partial。实测最多的一颗（触摸注入 touch（原 mt_test，2026-09-30 已移除）、UVC + 平台方媒体包版本配套、i18n 推送 /tmp/tr、图层释放）；工程 Manifest 宏统一写 AWCHIP=AW_V853
+- 主控 V553：主控 SoC（全志 V85x 系列）；数据状态=partial。实测最多的一颗（触摸注入 touch（原 mt_test，2026-09-30 已移除）、UVC + aw-dvr 版本配套、i18n 推送 /tmp/tr、图层释放）；工程 Manifest 宏统一写 AWCHIP=AW_V853
   - 依据：仓库实测记录：knowledge/devflow/touch-inject-autotest.md（其余为平台方内部记录，未收录于公开版）
 - 主控 V851：主控 SoC（全志 V85x 系列）；数据状态=partial。真机实测（Zkswe_V85X_SPINOR，480×800 / 640×480）：图层释放判据按 ch/layer 跳 UI 层、硬件 H264 解码验收、触控轴待确认
   - 依据：仓库实测记录：knowledge/v85x/display-layer-debug.md §2-1-2、demos/h264-player-v85x/README.md
@@ -80,7 +80,7 @@ evidence:
   - 依据：仓库实测记录：knowledge/devflow/touch-inject-autotest.md §4、knowledge/v85x/h264-player-usage.md §5
 - 主控 V851S3：主控 SoC（全志 V85x 系列）；数据状态=pending。仅登记型号（package_catalog 的 v85x/v85xemmc chips + 官方系列名）——**没有实测数据，所有规格待确认**（不按同系列外推）
   - 依据：package_catalog.json（v85x/v85xemmc chips）
-- 主控 V853：主控 SoC（全志 V85x 系列）；数据状态=partial。工程侧证据：V85X 工程的 Manifest 宏固定 AWCHIP=AW_V853、平台方媒体包/mpi:: 仅 V85X（V853/V553）；现有记录多为 V85X 平台整体实测，**未单列 V853 真机结论（待确认）**
+- 主控 V853：主控 SoC（全志 V85x 系列）；数据状态=partial。工程侧证据：V85X 工程的 Manifest 宏固定 AWCHIP=AW_V853、aw-dvr/mpi:: 仅 V85X（V853/V553）；现有记录多为 V85X 平台整体实测，**未单列 V853 真机结论（待确认）**
   - 依据：仓库记录：knowledge/v85x/dvr-recorder-guide.md、demos/dvr-uvc-recorder-v85x/README.md
 - 主控 V853S：主控 SoC（全志 V85x 系列）；数据状态=pending。仅登记型号（package_catalog 的 v85x/v85xemmc chips）——**没有实测数据，所有规格待确认**（不按同系列外推）
   - 依据：package_catalog.json（v85x/v85xemmc chips）

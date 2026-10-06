@@ -1,10 +1,10 @@
 {
  "meta": {
   "schema": 1,
-  "built_at": "2026-10-06 18:24:17",
+  "built_at": "2026-10-06 18:50:41",
   "mcp_version": "0.27.199-open",
   "doc_count": 102,
-  "source_hash": "f2c8deef92c5e538fd1ef0485cf6ac98"
+  "source_hash": "4a4714d714c5d15378db43004031e613"
  },
  "summary": {
   "total": 102,
@@ -2521,8 +2521,8 @@
    "evidenceLevel": "has-evidence",
    "needsEvidence": false,
    "hasQueries": false,
-   "bytes": 29078,
-   "sha256": "f3140e9e5093da14c39f642ed7dd0878895d674d1bf82c3b38328ff84c6cde16",
+   "bytes": 29055,
+   "sha256": "26192559ada0cdb4e0a44cc01b237710c1cd91ffd721389a332b5dbf44a97405",
    "fingerprint": "a34c0184bb8551a4",
    "ageDays": 4,
    "freshness": "fresh",
@@ -2794,8 +2794,8 @@
    "evidenceLevel": "has-evidence",
    "needsEvidence": false,
    "hasQueries": true,
-   "bytes": 16567,
-   "sha256": "24bf07765316c663cf5c37c707f5d8052cfc8f09fe0116a69dfcd4b7c6c3230e",
+   "bytes": 16534,
+   "sha256": "6c00c06cd4726fa85be820283b1dee3c2c74e24ef4f9f335053e18f318976cbe",
    "fingerprint": "7350e702fbe23366",
    "ageDays": 3,
    "freshness": "fresh",

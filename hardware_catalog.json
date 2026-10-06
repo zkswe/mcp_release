@@ -73,7 +73,7 @@
           "kind": "主控 SoC（全志 V85x 系列）",
           "dataStatus": "partial",
           "aliases": [],
-          "note": "实测最多的一颗（触摸注入 touch（原 mt_test，2026-09-30 已移除）、UVC + 平台方媒体包版本配套、i18n 推送 /tmp/tr、图层释放）；工程 Manifest 宏统一写 AWCHIP=AW_V853",
+          "note": "实测最多的一颗（触摸注入 touch（原 mt_test，2026-09-30 已移除）、UVC + aw-dvr 版本配套、i18n 推送 /tmp/tr、图层释放）；工程 Manifest 宏统一写 AWCHIP=AW_V853",
           "source": "仓库实测记录：knowledge/devflow/touch-inject-autotest.md（其余为平台方内部记录，未收录于公开版）"
         },
         "V851": {
@@ -101,7 +101,7 @@
           "kind": "主控 SoC（全志 V85x 系列）",
           "dataStatus": "partial",
           "aliases": [],
-          "note": "工程侧证据：V85X 工程的 Manifest 宏固定 AWCHIP=AW_V853、平台方媒体包/mpi:: 仅 V85X（V853/V553）；现有记录多为 V85X 平台整体实测，**未单列 V853 真机结论（待确认）**",
+          "note": "工程侧证据：V85X 工程的 Manifest 宏固定 AWCHIP=AW_V853、aw-dvr/mpi:: 仅 V85X（V853/V553）；现有记录多为 V85X 平台整体实测，**未单列 V853 真机结论（待确认）**",
           "source": "仓库记录：knowledge/v85x/dvr-recorder-guide.md、demos/dvr-uvc-recorder-v85x/README.md"
         },
         "V853S": {

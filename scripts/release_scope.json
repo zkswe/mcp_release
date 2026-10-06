@@ -59,7 +59,24 @@
     "self\\.assertIn\\('aw-dvr', av\\['V85X'\\]\\)",
     "caps_for_package\\('aw-dvr'\\)"
   ],
-  "allowedWordsNote": "projects/ 只允许占位示例路径；uvc-camera-generic.md 是公开文档自身的文件名；zkmedia 是包仓库里的公开包名（媒体播放） ｜ 2026-09-17 新增：内部仓名/URL 不得出现在公开版（README 安装说明、pyproject Homepage 必须指向 gitee.com/Kwolve/flythingsmcp_release）。｜ 2026-10-06 新增最后两条：`tests/test_media_cap.py` 的内部件契约用例在**裁剪版 skip**（guard = 无 PUBLISH.md），里面那两行私有包名断言不构成公开暴露（用例本身不跑），按行豁免；其余用户可见文档/数据里的私有包名一律改中性表述（平台方媒体包 / 厂家私有互联服务）。",
+  "allowedWordsNote": "projects/ 只允许占位示例路径；uvc-camera-generic.md 是公开文档自身的文件名；zkmedia 是包仓库里的公开包名（媒体播放） ｜ 2026-09-17 新增：内部仓名/URL 不得出现在公开版（README 安装说明、pyproject Homepage 必须指向 gitee.com/Kwolve/flythingsmcp_release）。｜ 2026-10-06 新增最后两条：`tests/test_media_cap.py` 的内部件契约用例在**裁剪版 skip**（guard = 无 PUBLISH.md），里面那两行私有包名断言不构成公开暴露（用例本身不跑），按行豁免；其余用户可见**散文类**文档/摘要里的私有包名一律改中性表述（平台方媒体包 / 厂家私有互联服务）。",
+  "fileScopedWords": {
+    "media_capabilities.json": [
+      "aw-dvr",
+      "lylink"
+    ],
+    "knowledge/media/media-capability-index.md": [
+      "aw-dvr",
+      "lylink"
+    ],
+    "hardware_catalog.json": [
+      "aw-dvr"
+    ],
+    "knowledge/hardware/hardware-models.md": [
+      "aw-dvr"
+    ]
+  },
+  "fileScopedWordsWhy": "口径 C（2026-10-06 需求方定）：**机读能力表及其派生页**保留私有包名 —— 能力面/包名对客户可用（见 knowledge/devflow/capability-boundaries.md、PUBLISH.md §3 边界说明）；**散文类**（features_recent / knowledge/README / uicontrols / check_retrieval 问法等）保持中性表述，不把包名当宣传物料散播。命中计入 INFO（不判红），但数量与文件仍打印，不静默。",
   "packageCatalogExcluded": [
     "aw-cedarc",
     "aw-dvr",

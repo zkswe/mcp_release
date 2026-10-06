@@ -36,8 +36,15 @@ import sys
 from collections import defaultdict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.dirname(os.path.dirname(HERE))                 # tools/FlyThings_mcp_open
-UI_TOOLS = os.path.join(os.path.dirname(REPO), 'ui_tools')     # tools/ui_tools（现有工具的家）
+REPO = os.path.dirname(os.path.dirname(HERE))                 # 仓库根（如 tools/FlyThings_mcp_open）
+# 依赖目录解析：**仓库自带 ui_tools/ 优先**（clone 到任意目录都能跑），
+# 兼容老工作区布局（<工作区>/tools/{FlyThings_mcp_open, ui_tools} 各放一份）。
+# 2026-10-06 修：原先只认「仓库的兄弟目录 ui_tools」→ 干净 clone 到别处时
+# `import gen_res` 直接 ModuleNotFoundError（gen_emit_conformance/compose 测试与
+# blocks 工具体验一起坏）；仓库自己带的 ui_tools/ 反而是齐的。
+_REPO_UI = os.path.join(REPO, 'ui_tools')
+_WS_UI = os.path.join(os.path.dirname(REPO), 'ui_tools')
+UI_TOOLS = _REPO_UI if os.path.isdir(_REPO_UI) else _WS_UI
 BLOCKS_DIR = os.path.join(HERE, 'blocks')
 sys.path.insert(0, UI_TOOLS)
 import gen_res                                                 # noqa: E402唯一出图实现

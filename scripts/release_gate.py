@@ -55,7 +55,10 @@ def stage_paths(scope):
 def stage_words(scope):
     words = scope.get('forbiddenWords', [])
     allow = [re.compile(p) for p in scope.get('allowedPatterns', [])]
-    hits, unreadable = [], []
+    # 口径 C（2026-10-06）：**机读能力表及其派生页**特许保留私有包名（能力面/包名对客户可用），
+    # 命中计入 INFO 不判红；散文类文档一律中性表述。真源见 release_scope.fileScopedWordsWhy。
+    scoped = scope.get('fileScopedWords', {}) or {}
+    hits, unreadable, scoped_hits = [], [], []
     for root, dirs, files in os.walk(BASE):
         dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
         for f in files:
@@ -75,10 +78,17 @@ def stage_words(scope):
                     continue
                 for w in words:
                     if w in line:
+                        if w in scoped.get(rel, ()):
+                            scoped_hits.append('%s:%d %s' % (rel, i, w))
+                            continue
                         hits.append('%s:%d %s' % (rel, i, w))
     check(not hits, 'forbidden words absent', '0 命中' if not hits else '; '.join(hits[:6]))
     if hits:
         print('       (%d 处命中，全量见上；先清再发布)' % len(hits))
+    if scoped_hits:
+        print('       [INFO] 按文件特许的包名词命中 %d 处（口径 C，见 release_scope.fileScopedWords）：%s'
+              % (len(scoped_hits),
+                 ', '.join(sorted({h.split(' ')[0] for h in scoped_hits}))))
     if unreadable:
         print('       unreadable: %s' % ', '.join(unreadable[:3]))
 

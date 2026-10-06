@@ -72,7 +72,7 @@
   "openBoundary": {
     "statement": "公开版（open）保证的是**能力面与工具契约**：能做什么、在哪些平台、用哪个包、怎么调用。",
     "notIncluded": [
-      "V85X 绑定的私有媒体栈深度（MPP / DVR / UVC / 图层调试 / 录制卡格式化等平台方媒体包系）—— 本页的能力、平台、包名仍然可用，但那层的**实现细节与实测结论**不在公开版",
+      "V85X 绑定的私有媒体栈深度（MPP / DVR / UVC / 图层调试 / 录制卡格式化等 aw-dvr 系）—— 本页的能力、平台、包名仍然可用，但那层的**实现细节与实测结论**不在公开版",
       "`demos/` 参考工程（依赖私有包，release 不随包；见 PUBLISH.md 第 3 节）"
     ],
     "because": "那些深度结论依赖 V85X 真机实测与私有参考工程，公开版不带这些材料；写了也没有可复现的出处（本项目口径：未验证的一律显式写出、不静默）。",
@@ -94,7 +94,7 @@
         "ir-camera",
         "uav-camera"
       ],
-      "entry": "ui/*.json 的 videoView（透明窗）+ Manifest 依赖平台方媒体包",
+      "entry": "ui/*.json 的 videoView（透明窗）+ Manifest 依赖 aw-dvr",
       "rules": [
         "videoView 是透明窗，不是普通显示控件：不要给它填背景图",
         "屏幕方向错位先查 rotateScreen 与 videoView 的 rotation（竖装屏 = 270）",
@@ -235,7 +235,7 @@
         "双向语音怎么做",
         "回声很大"
       ],
-      "summary": "zkaudio 提供对讲的录音与播放；互联类型由厂家私有互联服务承载。",
+      "summary": "zkaudio 提供对讲的录音与播放；互联类型走 lylink_cpaacfapwd。",
       "packages": [
         "zkaudio"
       ],
