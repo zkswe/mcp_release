@@ -15,7 +15,7 @@ def verify_assets(project_root):
     return _rpc_call(MOD, 'verify_assets', project_root)
 
 def check_aa_assets(project_root, timeout=1800):
-    return _rpc_call(MOD, 'check_aa_assets', project_root, timeout)
+    return _rpc_call(MOD, 'check_aa_assets', project_root, timeout, _timeout=timeout + 30)
 
 def check_arc_quality(project_root):
     return _rpc_call(MOD, 'check_arc_quality', project_root)

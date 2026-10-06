@@ -15,6 +15,12 @@ import tempfile
 
 __all__ = ['exe_path', 'rpc', 'cli']
 
+# 默认超时（秒）：实测常规调用 0.2～0.7 s，60 s = 近百倍余量；
+# 真机拖帧 / 全量 AA 审计 / 批量出图 / 裁字库这类**本来就慢**的调用，
+# 由薄壳把它自带的 `timeout` 参数透传成 `_timeout=…`（见 scripts/gen_ui_tools_stubs.py），
+# 也可用环境变量 `ZKUITOOL_TIMEOUT` 全局覆盖。
+DEFAULT_TIMEOUT = 60
+
 _CACHE = {}
 
 
@@ -59,16 +65,17 @@ def _jsonable(v):
 def rpc(mod, func, *args, **kwargs):
     """把 `mod.func(*args, **kwargs)` 交给 exe 执行并取回返回值。
 
-    超时（默认 1800 s，可用环境变量 `ZKUITOOL_TIMEOUT` 覆盖）：引擎里有些操作本来就慢
-    （构建 42 页工程、打包、真机拉屏），所以默认给得宽；但**不允许无限等** ——
-    2026-10-06 实测过转发进程挂住把父进程一起拖死。超时按 `OSError` 报清原因，不静默。
+    超时顺序：`_timeout=` 关键字（函数级，薄壳对自带 timeout 的函数会自动传）
+    → 环境变量 `ZKUITOOL_TIMEOUT` → `DEFAULT_TIMEOUT`（60 s）。
+    **不允许无限等** —— 2026-10-06 实测过转发进程挂住把父进程一起拖死。
     """
     exe = exe_path()
+    per_call = kwargs.pop('_timeout', None)
+    raw = per_call if per_call else (os.environ.get('ZKUITOOL_TIMEOUT') or DEFAULT_TIMEOUT)
     try:
-        timeout = int(os.environ.get('ZKUITOOL_TIMEOUT') or 1800)
-    except ValueError:
-        raise RuntimeError('ZKUITOOL_TIMEOUT 需为整数（秒），当前=%r'
-                           % os.environ.get('ZKUITOOL_TIMEOUT'))
+        timeout = int(raw)
+    except (TypeError, ValueError):
+        raise RuntimeError('超时值需为整数秒，当前=%r' % (raw,))
     tmp = tempfile.mkdtemp(prefix='zkuitool-')
     a_path = os.path.join(tmp, 'args.json')
     o_path = os.path.join(tmp, 'out.json')
