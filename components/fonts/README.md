@@ -46,10 +46,10 @@ python components/fonts/scripts/device_font_check.py
 
 # ② 缺就投递（默认常用中文版；把字体塞进工程 font/ 并改 .settings 的 easyui prefs）
 python components/fonts/scripts/device_font_check.py --apply \
-       --project projects/ZkBlePanel --tier common
+       --project <项目目录> --tier common
 
 # ③ 重新出包（app 的升级包会整体替换 /res，字体必须随包走）
-cd projects/ZkBlePanel && ./fun.exe build      # 或 flythings_build_ui_flow
+cd <项目目录> && ./fun.exe build      # 或 flythings_build_ui_flow
 flythings_pack_upgrade(project_root=..., release_version=...)   # 出 update.img
 # ④ ADB 固化刷机（详见组件规范里的 platforms.md）
 ```
@@ -124,5 +124,5 @@ python components/fonts/scripts/gen_font_subset.py \
 | 三版本裁剪 | ✅ 已产出并逐版核验覆盖（ASCII/CJK/扩展A/扩展B/假名/谚文逐段计数；三版 GB2312 一级覆盖率实测均 100%） |
 | 设备自检脚本 | ✅ 真机跑通（V85X SPINOR：正确识别 20.7KB 无中文 / 2.5MB 有中文） |
 | **cmap 硬判据（v0.27.87）**| ✅ 离线用例覆盖（真字体 100% → `ok` / 53.3% → `low` / 拉丁 0% → `missing` / 缓存命中 / 超限退回 / fontTools 不可用 / 拉取失败 / 临时文件清理） |
-| 投递 + 固化 | ✅ 已在 app 工程 `projects/ZkBlePanel` 验证（汉字正常显示，见 platforms.md） |
+| 投递 + 固化 | ✅ 已在 app 工程验证（汉字正常显示，见 platforms.md） |
 | 非 V85X 平台 | ⏳ 仅在 V85X 实测；其它平台请按 platforms.md 补实测值 |

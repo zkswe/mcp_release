@@ -37,6 +37,24 @@ evidence: []
 
 `fun` 管**编译/依赖/部署/出包**；`fui` 管 **json ↔ ftu**（`pack` / `unpack` 都支持：随包 fui 自 v0.27.91 起含 `unpack`，旧版只有 `pack`）。
 
+### 2.1 工具不在（报「缺少 fun / fui」）怎么办
+
+MCP 找工具目录的唯一入口是 `project_tools._tool_dir()`，顺序：
+`FLYTHINGS_FUN_DIR` → **包内 `<MCP>/toolchain/`** → 父目录 `toolchain/` → `D:\zkswe\fun` → `C:\zkswe\fun`；
+目录里**有 `fui.exe` 或 `fun.exe` 任一即算命中**，但 `fun.exe` 单独缺失时 `_tool_path('fun.exe')`
+会退回裸名 `fun.exe`，构建流程直接回「**fun.exe 未找到（工具目录: …）**」。
+
+排查顺序：
+1. 确认是用**仓库/发布包路径**跑 `mcp_server.py`（`pip install` 的 wheel 只含 .py，不含 `toolchain/` 等数据文件）；
+2. 确认 `<MCP>/toolchain/fui.exe` 与 `<MCP>/toolchain/fun.exe` **两个都在**（公开版随包分发，缺一个就会报缺）；
+3. 要放别处就显式指定 `FLYTHINGS_FUN_DIR=<含 fun.exe/fui.exe 的目录>`；
+4. 编译还要各平台工具链：解到 `<fun 目录>/toolchains/<平台小写键>/`，缺了 `fun build` 报
+   `platform toolchain url must not be empty`（是工具链没装，不是工程问题）。
+
+> 二进制（`fun.exe` / `fui.exe` / `adb.exe` / `bin_tools/**`）**不做内容词表扫描**：它们含偶然字节
+> （实测 `fun.exe` 字节里命中了某个禁词），发布裁剪时只按「路径级存在性」检查——
+> **不要因为词表命中就删文件**（2026-10-06 公开版缺 `toolchain/fun.exe` 就是这么来的）。
+
 ## 3. 命令表（`fun.exe --help` 实测）
 
 | 命令 | 用途 |

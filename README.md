@@ -45,7 +45,7 @@ AI 会自动完成：克隆项目 → 按 `requirements.lock` 安装依赖（该
 Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude_desktop_config.json` 的 `mcpServers`。
 > `python` 不在 PATH 时用完整路径（如 `C:/Users/<你>/AppData/Local/Programs/Python/Python313/python.exe`）。
 
-**3) 验证**—— 问 AI「**MCP 版本是多少？**」：应返回 `flythings-kb-open 0.27.197-open`，**42 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / zkshot，
+**3) 验证**—— 问 AI「**MCP 版本是多少？**」：应返回 `flythings-kb-open 0.27.199-open`，**42 个工具**（另含 `binTools` 字段：设备端预编译工具 touch / busybox / ui_test / zkshot，
 在 `bin_tools/<平台>/` 下，**不是 op、不占 op 名额**；以及 `positioning` 字段：**平台定位**——FlyThings OS 是**基于 Linux 的操作系统**，
 能力判定基线**向 buildroot/OpenWrt 看齐**，GUI 是自研 EasyUI/FlyThings UI 与 LVGL 对标竞争，**不是**单片机/ESP32 式板级 SDK）。
 
@@ -57,6 +57,18 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 > | `flat` | 指 `mcp_server_flat.py`（或 `FLYTHINGS_MCP_MODE=flat`） | 42 个独立工具，无分发器（Trae / Cursor / Claude Desktop 需要独立 schema 时用；代价 ≈ 1 万 token/session） |
 >
 > 默认从「全注册」改为「只分发器」是 v0.27.34 的**行为变更**；受影响就设 `FLYTHINGS_MCP_MODE=all` 恢复。
+
+**4) 编译/部署前置条件（要编译才需要，只做布局可跳过）**—— 本仓自带 `toolchain/fui.exe`（json↔ftu）与
+`toolchain/fun.exe`（依赖/编译/推送/出包），克隆下来即可用；MCP 找工具目录的顺序是
+`FLYTHINGS_FUN_DIR` → 包内 `toolchain/` → `D:/C:\zkswe\fun`（`project_tools._tool_dir()`）。
+工具报「**缺少 fun / fui**」时按这个顺序查：
+① 用仓库路径跑 `mcp_server.py`，**不要 `pip install`**——wheel 只带 .py，不含
+`toolchain/`、`templates/`、`knowledge/`、`models/`、`rag_index.json` 这些数据文件；
+② `toolchain/fui.exe` 与 `toolchain/fun.exe` **两个都要在**（只剩一个就会报「fun.exe 未找到」）；
+③ 想放到别处就显式指定 `FLYTHINGS_FUN_DIR=<含 fun.exe/fui.exe 的目录>`；
+④ 各平台**编译器工具链不随包分发**，要解到 `<fun 目录>/toolchains/<平台小写键>/`
+（缺了 `fun build` 会报 `platform toolchain url must not be empty`）。
+细节：`knowledge/devflow/cli-fun-toolchain.md`（§2 工具在哪 / §3 命令表）。
 
 **装完后第一句说什么？**—— 按你的情况四选一：
 ① 从零想法 →「**我想做一个 XXX 面板**」（触发线框确认流程）；② 有设计稿 →「**按这个设计稿帮我做界面**」；
@@ -161,6 +173,6 @@ Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude
 
 **写知识/判据/op 契约前先读 [`DESIGN_SPEC.md`](DESIGN_SPEC.md)**（MCP 只讲"本平台与标准 Linux/rootfs/GUI/包组件的差异"；通用编程能力属 AI 原生，不入库；规范优先、实测优先、不静默、唯一真源）。
 
-当前版本 `0.27.197-open`（42 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
+当前版本 `0.27.199-open`（42 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`，自检闸门见 `scripts/check_consistency.py --with-tests`。
 
 Apache License 2.0 · FlyThings Team · 深圳中科世为科技有限公司 · [developer.flythings.cn](https://developer.flythings.cn/)

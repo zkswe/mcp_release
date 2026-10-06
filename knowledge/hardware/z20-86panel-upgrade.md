@@ -72,7 +72,7 @@ adb shell setprop ctl.restart zkswe            # 重启 app → 框架的 Upgrad
 - uboot 线：`/mnt/storage/zkimg/update.img` + `/mnt/storage/zkimg/.zkupgrade.cfg`（日志里会出现
   `Need to enter uboot upgrade` / `Try to enter uboot upgrade`）
 - 去重记录：**`/data/.zkupgraderec`**（与 fun.exe 里那串 `.zkugraderec` 差一个字母，以设备端库为准）
-- 升级时会被停掉的服务：`zkswe`（app）、`wpa_supplicant`、`blink`、`lylink`、`bt`、`link`
+- 升级时会被停掉的服务：`zkswe`（app）、`wpa_supplicant`、`blink`、`bt`、`link` 及厂家互联服务
   → **升级期间必然掉网，别在升级窗口里等 adb**
 
 **给 UI 的本地化文案键**（`libinternalapp.so`，可用来对日志）：

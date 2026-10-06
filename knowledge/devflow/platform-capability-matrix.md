@@ -86,7 +86,7 @@ evidence:
 
 | 平台 | 可用性 | BT 模组 | BT 串口 | 传输/校验 | 上电节点 | 预初始化 | 备注 |
 |---|---|---|---|---|---|---|---|
-| **F133**（RISC-V） | ✅ 可用（链路最干净） | 非 Realtek 类 | `/dev/ttyS1` | H5 + 无校验 | 无 | 不需要 | 扫描类场景首选；`projects/BTHomeTempHum-F133` 是范本 |
+| **F133**（RISC-V） | ✅ 可用（链路最干净） | 非 Realtek 类 | `/dev/ttyS1` | H5 + 无校验 | 无 | 不需要 | 扫描类场景首选（组件例程里有范本工程） |
 | **V85X**（V851 系列） | ✅ 可用（坑最多） | **RTL8733BS** | `/dev/ttyS2` | H5 + **偶校验 8E1**+ 无流控 | `state_bt`（出厂 off） | **必须**（Realtek 8733bs） | 需 `setPreinitHook()` 挂 rtk_init |
 | **Z20 / Z21** | 🟡 支持（**gatt 后端，主从双角色**，真机跑通） | AIC USB 模组（`aic_btusb.ko`） | 无串口（USB HCI） | 走 `gatt 1.0.0`（BlueZ 用户态，不经 H4/H5 参数） | hci0（`hciconfig hci0 up`） | 不需要（驱动 + hciconfig 拉起） | ⚠️ 中心+外设都真机跑过；见 §0.3 / §0.4 |
 | T113 | ❌ gatt 后端已就绪（**未真机**） | AIC USB 模组（同 Z20 族） | 无串口（USB HCI） | 走 `gatt 1.0.0` | hci0 | 不需要 | 包在（z20/z21/t113/t113emmc/v85x 均有）；额外要 `hcitool cmd 0x03 0x0003` 拉起 LE/BR-EDR |

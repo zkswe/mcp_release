@@ -52,18 +52,30 @@ in `claude_desktop_config.json`.
 > If `python` is not on PATH, use the full path (e.g. `C:/Users/<you>/AppData/Local/Programs/Python/Python313/python.exe`).
 
 **3) Verify** — ask your AI “**What is the MCP version?**”:
-it should answer `flythings-kb-open 0.27.197-open` with **42 tools** (plus a `binTools` field: pre-built device-side
+it should answer `flythings-kb-open 0.27.199-open` with **42 tools** (plus a `binTools` field: pre-built device-side
 tools touch / busybox / ui_test / mt_test / zkshot, under `bin_tools/<platform>/` — **not ops, not counted against the op budget**).
 
 > **Three tool-surface modes (pick one per client — don't configure several at once)**
 > | Mode | How to configure | What the client sees |
 > |------|------------------|----------------------|
 > | `dispatcher` (default) | point at `mcp_server.py` only | only the dispatcher `flythings_kb` (`op="list"` for the catalog) — smallest schema cost |
-> | `all` | `FLYTHINGS_MCP_MODE=all` | dispatcher + 43 standalone tools (backwards compatible) |
-> | `flat` | point at `mcp_server_flat.py` (or `FLYTHINGS_MCP_MODE=flat`) | 43 standalone tools, no dispatcher (for Trae / Cursor / Claude Desktop needing individual schemas; costs ≈ 10k tokens/session) |
+> | `all` | `FLYTHINGS_MCP_MODE=all` | dispatcher + 42 standalone tools (backwards compatible) |
+> | `flat` | point at `mcp_server_flat.py` (or `FLYTHINGS_MCP_MODE=flat`) | 42 standalone tools, no dispatcher (for Trae / Cursor / Claude Desktop needing individual schemas; costs ≈ 10k tokens/session) |
 >
 > Defaulting to “dispatcher only” instead of “register everything” is the **behavior change** of v0.27.34;
 > if that affects you, set `FLYTHINGS_MCP_MODE=all` to restore the old behavior.
+
+**4) Build/deploy prerequisites (only needed to build — layout work can skip this)** — the repo ships
+`toolchain/fui.exe` (json↔ftu) and `toolchain/fun.exe` (deps / build / push / pack); the MCP resolves the
+tool directory in this order: `FLYTHINGS_FUN_DIR` → bundled `toolchain/` → `D:/C:\zkswe\fun`
+(`project_tools._tool_dir()`). If a tool reports **missing fun / fui**:
+① run `mcp_server.py` from the cloned repo — **do not `pip install`** (the wheel ships only .py files:
+no `toolchain/`, `templates/`, `knowledge/`, `models/` or `rag_index.json`);
+② **both** `toolchain/fui.exe` and `toolchain/fun.exe` must exist (with only one, builds fail with
+“fun.exe not found”); ③ point elsewhere with `FLYTHINGS_FUN_DIR=<dir containing fun.exe/fui.exe>`;
+④ per-platform compiler toolchains are **not distributed with the package** — unpack them to
+`<fun dir>/toolchains/<lowercase platform key>/`, otherwise `fun build` fails with
+`platform toolchain url must not be empty`. Details: `knowledge/devflow/cli-fun-toolchain.md`.
 
 ---
 
@@ -177,7 +189,7 @@ tools touch / busybox / ui_test / mt_test / zkshot, under `bin_tools/<platform>/
 
 ---
 
-Current version `0.27.197-open` (42 tools); tool inventory / platform matrix / knowledge snapshot live in
+Current version `0.27.199-open` (42 tools); tool inventory / platform matrix / knowledge snapshot live in
 `tools_manifest.json`; the self-check gate is `scripts/check_consistency.py --with-tests`.
 
 Apache License 2.0 · FlyThings Team · Shenzhen ZKSWE Technology Co., Ltd. · [developer.flythings.cn](https://developer.flythings.cn/)

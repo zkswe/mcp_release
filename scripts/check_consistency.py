@@ -449,6 +449,42 @@ def stage_platform_arch():
           'ok（%d 平台）' % len(pl.PLATFORMS) if not bad else '异常值: %s' % '; '.join(bad))
 
 
+# MCP 依赖的外部 CLI 必须随包（v0.27.199）。
+# 起因（现场反馈 2026-10-06）：公开版把 `toolchain/fun.exe`（38 MB）当「二进制命中词表」删掉了。
+# 客户端机器上没有 `C:\zkswe\fun`、也没有 `FLYTHINGS_FUN_DIR`，`project_tools._tool_dir()`
+# 只能命中包内 `toolchain/`（只剩 fui.exe）→ `fun.exe` 退化成裸名 → 构建流程直接回
+# 「fun.exe 未找到」，AI 复述成「缺少 fun，编译不了」。
+# 判据：`toolchain/fui.exe`（json↔ftu）与 `toolchain/fun.exe`（依赖/编译/推送/出包）两者都要在，
+# 且**必须已入库**（只在工作树里 = 客户 clone 拿不到，等于没有）。
+# ⚠️ 二进制**不参与内容词表扫描**（偶然字节、不可编辑）——只做路径级存在性检查，
+#    遇到词表命中要豁免并登记理由，**不许再靠删文件过闸**（PUBLISH.md §5）。
+REQUIRED_CLI_PRODUCTS = (
+    ('toolchain/fui.exe', 'json↔ftu（fui pack / unpack）'),
+    ('toolchain/fun.exe', '依赖/编译/推送/出包（fun install|build|launch|pack）'),
+)
+
+
+def stage_cli_products():
+    """随包 CLI 产物存在且已入库（v0.27.199）。"""
+    missing, untracked = [], []
+    for rel, why in REQUIRED_CLI_PRODUCTS:
+        if not os.path.isfile(os.path.join(BASE, rel)):
+            missing.append('%s（%s）' % (rel, why))
+            continue
+        rc, _ = _run(['git', 'ls-files', '--error-unmatch', rel])
+        if rc != 0:
+            untracked.append(rel)
+    bad = missing or untracked
+    detail = []
+    if missing:
+        detail.append('缺失: %s' % '；'.join(missing))
+    if untracked:
+        detail.append('未入库（客户 clone 拿不到）: %s' % '、'.join(untracked))
+    check(not bad, '随包 CLI 产物齐备且已入库（%s）'
+          % '、'.join(r for r, _ in REQUIRED_CLI_PRODUCTS),
+          'ok' if not bad else '；'.join(detail) + ' —— 客户机会直接报「缺少 fun/fui，编译不了」')
+
+
 # 资料里不得出现的内部人名（v0.27.178）。
 # 口径（2026-10-02）：资料的价值是「结论 + 依据 + 日期」，不是「谁说的」——
 # 「<人名> 2026-09-12 确认」这类口语会让 AI 把口头确认当成权威依据，对外也不专业。
@@ -1640,6 +1676,7 @@ def main():
     stage_platform_single_source()
     stage_platform_arch()
     stage_bin_tools()
+    stage_cli_products()
     stage_no_ide_local_files()
     stage_no_people_names()
     stage_index()

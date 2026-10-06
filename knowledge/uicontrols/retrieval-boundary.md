@@ -43,9 +43,9 @@ evidence: []
   - 控件用法/字段/回调以 wiki + knowledge 文档为准，文档没有就标注「未收录」问
 ## Package API 识别规则（2026-09-09 定规，区别于控件 json 字段）
 
-- **FlyThings/依赖 package（预编译闭源 .so + include 头文件）的 C++ API**：**只通过包内头文件识别**——类/方法签名/枚举/常量/注释是官方接口声明，可信来源（如 aw-dvr 的 `mpi/*.h`、easyui 的 `control/ZKVideoView.h` 方法注释）
+- **FlyThings/依赖 package（预编译闭源 .so + include 头文件）的 C++ API**：**只通过包内头文件识别**——类/方法签名/枚举/常量/注释是官方接口声明，可信来源（如平台方媒体包的 `mpi/*.h`、easyui 的 `control/ZKVideoView.h` 方法注释）
 - **不要猜**：头文件读不出/不确定 → 如实标注「未收录/不确定」，问需求方或官方，**禁止编造 API**（不会就是不会）
-- **不要反编译/扒二进制**：禁止 objdump/反编译 .so 提取接口或语义（浪费时间且拿不到语义）；readelf 仅限**排障**用（查依赖/符号缺失，dlopen 失败 SOP 见 `knowledge/v85x/aw-dvr-runtime-compat.md`），不是 API 识别手段
+- **不要反编译/扒二进制**：禁止 objdump/反编译 .so 提取接口或语义（浪费时间且拿不到语义）；readelf 仅限**排障**用（查依赖/符号缺失，dlopen 失败 SOP 见平台方文档），不是 API 识别手段
 - **区分两层**（与上文 easyui 禁止条款不冲突）：
   - 头文件能确认的 = **API 签名/枚举/常量/注释**→ 读头文件（本条规则）
   - 头文件表达不了的 = **控件 json 字段/回调语义/内部实现**→ 走 wiki/knowledge（上文规则），没有就标未收录

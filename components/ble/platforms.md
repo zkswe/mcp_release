@@ -9,7 +9,7 @@
 
 | 平台 | 可用性 | BT 模组 | BT 串口 | 传输/校验 | 上电节点 | 预初始化 | 备注 |
 |---|---|---|---|---|---|---|---|
-| **F133**（RISC-V） | ✅ 可用（链路最干净） | 非 Realtek 类 | `/dev/ttyS1` | H5 + 无校验 | 无 | 不需要 | 扫描类场景首选；`projects/BTHomeTempHum-F133` 是范本 |
+| **F133**（RISC-V） | ✅ 可用（链路最干净） | 非 Realtek 类 | `/dev/ttyS1` | H5 + 无校验 | 无 | 不需要 | 扫描类场景首选（组件例程里有范本工程） |
 | **V85X**（V851 系列） | ✅ 可用（坑最多） | **RTL8733BS**| `/dev/ttyS2` | H5 + **偶校验 8E1**+ 无流控 | `state_bt`（出厂 off） | **必须**（Realtek 8733bs） | 需 `setPreinitHook()` 挂 rtk_init |
 | **Z20 / Z21**| 🟡 支持（**gatt 后端，主从双角色**，真机跑通） | AIC USB 模组（`aic_btusb.ko`） | 无串口（USB HCI） | 走 `gatt 1.0.0`（BlueZ 用户态，不经 H4/H5 参数） | hci0（`hciconfig hci0 up`） | 不需要（驱动 + hciconfig 拉起） | ⚠️ 中心+外设都真机跑过；见 §0.3 / §0.4 |
 | T113 | ❌ gatt 后端已就绪（**未真机**） | AIC USB 模组（同 Z20 族） | 无串口（USB HCI） | 走 `gatt 1.0.0` | hci0 | 不需要 | 包在（z20/z21/t113/t113emmc/v85x 均有）；额外要 `hcitool cmd 0x03 0x0003` 拉起 LE/BR-EDR |
@@ -121,7 +121,7 @@ Z21 整机（`<Z21-IP>`，`Zkswe_SSD21X_SPINOR`，做**中心**）。
 **跑法（重要，`fun launch` 在当前环境用不了时的替代）**
 - `fun launch` 在本机（同时挂着 USB V85X + 两台网络设备）会报 `"host:transport …" FAIL: more than one device/emulator`，`-s`（IP / IP:port）都一样 → 只能单设备时可用。
 - 替代：把 demo 的 ble 代码做成 **bin 工具**（`fun.json` 里 `"type": "executable"`）→ `fun build -p z20/z21` 出 ELF → `adb -s <serial> push … /tmp/ && chmod 777 && /tmp/xxx`。
-参考工程：`projects/zbble_srv`（Z20 外设）、`projects/zbble_cli`（Z21 中心）；两者用 `src/comp/zk_compat.h` 把 easyui/zknet/base-utility 垫掉（只依赖 `gatt`），否则可执行体链接会因 `-Wl,-z,defs` 报 `libeasyui.so: undefined reference to FT_*/png_*/nvg*/MI_SYS_*`。
+参考工程：Z20 外设 / Z21 中心各一；两者用 `src/comp/zk_compat.h` 把 easyui/zknet/base-utility 垫掉（只依赖 `gatt`），否则可执行体链接会因 `-Wl,-z,defs` 报 `libeasyui.so: undefined reference to FT_*/png_*/nvg*/MI_SYS_*`。
 - **Z21 整机 `/res` 是只读 squashfs且没有 `/res/bin`**（Z20 有）→ demo 里写死的 `system("/res/bin/hciconfig hci0 up")` 会直接失败；本次把工具路径改成兜底查找（`/res/bin` → `/data/bin` → `/tmp/bin` → `/usr/bin` → `/bin`），把 `hciconfig`/`hcitool`（来自 demo `tools/z20_z21/`）推到 `/data/bin` 即可。产品化还是要靠升级包把这两个工具放进 `/res/bin`。
 - AIC 模组：`/lib/modules/<ver>/aic_btusb.ko` 存在时由代码自行 `insmod`（Z20 本次就是这条路），否则回退 `hciattach` 服务；`hciconfig hci0 up` 后 `hci0` 就绪。
 
@@ -167,7 +167,7 @@ Z21 整机（`<Z21-IP>`，`Zkswe_SSD21X_SPINOR`，做**中心**）。
 
 ### 0.4 统一门面 `zk::ble` 与两个后端（2026-09-14 落地）
 
-> 注：本节提到的 `src/zk_ble.cpp` / `src/zk_ble_gatt.cpp` / `src/zkble_*.h` 自 v0.2.1 起**不再随本仓发布**，
+> 注：本节提到的组件内部实现与内部头文件自 v0.2.1 起**不再随本仓发布**，
 > 已移到内部私有目录（模块只发布 `include/` + `lib/`）；这里保留结构说明，因为**后端矩阵与行为口径照着它对**。
 
 需求方：「蓝牙部分都统一按照我们昨天定义的新 API，参考微信的方式」→ 组件收口成**一个 API 面 + 两个平台后端**：
@@ -181,9 +181,9 @@ Z21 整机（`<Z21-IP>`，`Zkswe_SSD21X_SPINOR`，做**中心**）。
 | 中心侧 | ✅ | ✅（真机跑通） |
 | 外设侧 | ✅（v0.3.0 起：`att_db_util` 运行时建表 + 广告 + `notify`；缓冲忙自动排队） | ✅（真机跑通） |
 | 配对落盘 | ✅ TLV（`Config.tlv_path`） | ❌ `getBondedDevices` 返回 `ERR_UNSUPPORTED` |
-| 公共层 | `src/zkble_common.h`（inline）：日志/工具/AD 解析/扫描过滤/`DeviceCache`/回调/`Waiter` | 同左 |
+| 公共层 | 公共层头文件（inline）：日志/工具/AD 解析/扫描过滤/`DeviceCache`/回调/`Waiter` | 同左 |
 
-**后端怎么选**（`src/zkble_backend.h`）：显式 `-DZKBLE_BACKEND_GATT=1` / `-DZKBLE_BACKEND_BTSTACK=1` 优先；
+**后端怎么选**（后端选择头文件）：显式 `-DZKBLE_BACKEND_GATT=1` / `-DZKBLE_BACKEND_BTSTACK=1` 优先；
 否则按 include 路径自动（有 `btstack/btstack.h` → btstack；否则有 `gatt/gatt-client.h` → gatt）。
 ⚠️ 两个 `.cpp` 都用 `#if` 互斥包住，**同一工程只会编进一个后端**（同时声明两个包时会自动选 btstack —— V85X 就是这个情况，要试 gatt 就显式传宏）。
 
@@ -212,7 +212,7 @@ Z21 整机（`<Z21-IP>`，`Zkswe_SSD21X_SPINOR`，做**中心**）。
   （`hci_send_req` 内部那部分看不到）；`transport_sent` 恒 0。
 
 #### 0.5.2 真机验证（组件级，2026-09-14）
-验证工程（**只用公开 API，不用 demo 代码**）：`projects/zkble_comp_srv`（Z20 外设）/ `projects/zkble_comp_cli`（Z21 中心），
+验证工程（**只用公开 API，不用 demo 代码**）：Z20 外设 / Z21 中心各一，
 两个工程的 `src/` 是组件源码的拷贝（`sync_and_build.sh` 同步）+ `fun build`（`-Werror=format/-Werror=array-bounds/...` 真实标志）。
 
 已跑通：`openAdapter`（hci0 已存在 → 短路）→ 扫描发现 `DC:84:03:A1:2D:84 name=zkswe ble rssi=-47`（Z20 的 BD 地址）
@@ -243,7 +243,7 @@ Z21 整机（`<Z21-IP>`，`Zkswe_SSD21X_SPINOR`，做**中心**）。
    `meta->data[0]` / `info->data[len]` 会直接编译失败（独立 `-c` 自检只开 `-Wall`，**看不出来**）→ 一律用指针解引用。
 9. ⚠️ **C++11 下带默认成员初值的结构体不是聚合体**：`PeripheralChar{"fff1", x, y}` 报
    `no matching function`（fun 固定 `-std=c++11`）→ 对外头里给这类结构体**显式构造函数**。
-10. **公共 API 必须单独一个 TU**（`src/zkble_public.cpp`）：若把 `onDeviceFound()` 这类写成内部头里的 `inline`，
+10. **公共 API 必须单独一个 TU**（公共 TU）：若把 `onDeviceFound()` 这类写成内部头里的 `inline`，
 只 include 公开头的应用 TU 会**链接不到**（应用看不到定义，编译器不发射符号）。
 11. **WSL 里调 Windows 交叉编译器是连环坑**（已写成结论，别改）：直接 exec `.exe` → `argv[0]` 变 POSIX 路径 →
 驱动推 libexec 前缀失败（`CreateProcess: No such file or directory`/`cc1plus` 找不到）；用 `-B` 硬指后又变成
@@ -259,7 +259,7 @@ Z21 整机（`<Z21-IP>`，`Zkswe_SSD21X_SPINOR`，做**中心**）。
 
 ### 0.5 组件级真机复验（2026-09-14 下午，Z20 × Z21 两台整机）
 
-**方法（关键：不用 demo 代码）**：`projects/zkble_comp_srv`（Z20 外设）、`projects/zkble_comp_cli`（Z21 中心）
+**方法（关键：不用 demo 代码）**：Z20 外设、Z21 中心两个验证工程
 ——两个工程的 `src/` 是**组件源码的拷贝**（`sync_and_build.sh` 负责同步），只用 `zk/zk_ble.h` 的公开 API；
 `fun build -p z20/z21` → `adb push /tmp/` → 前台跑（**不要 `> log 2>&1` 重定向**：printf 块缓冲，被 kill 会丢日志）。
 
@@ -276,7 +276,7 @@ Z21 整机（`<Z21-IP>`，`Zkswe_SSD21X_SPINOR`，做**中心**）。
 **这一轮真机拓出来的三个 bug（都值得记住，后面写 gatt 代码还会撞）**
 1. **`bt_uuid_to_string()` 成功时返回 0**（不是返回长度；失败才返回 `-EINVAL`）→ 写 `if (bt_uuid_to_string(...) <= 0) return "";` 会**把成功当失败**→ uuid 全空。
 而中心侧全量发现（`gatt-client.c`）把 uuid **一律按 128 位**塞进 gatt_db，所以必然踏中该分支。
-   （demo `projects/zbble_cli` 不看返回值，所以它当年"没练到"。）
+   （中心侧验证工程不看返回值，所以它当年"没练到"。）
 2. **`gatt_db_service_add_characteristic()` 返回的是「特征值属性」，不是「声明属性 (0x2803)」**→ 拿它去 `gatt_db_attribute_get_char_data()`
 必然回 false（那函数第一行就比对 0x2803）→ 自建表拿不到 value_handle。取 value_handle 用 `gatt_db_attribute_get_handle()`（值属性自己的 handle）。
 3. **控制器已在广播 enable 状态时改广播参数 → `status=12 (Command Disallowed)`**（触发现场：上一次进程在广播中被 `kill -9`）。
@@ -391,12 +391,12 @@ zk::ble::openAdapter();                     // 内部：上电 → preinit → b
 
 ## 4. 要支持新平台要改什么（**已按后端分层**）
 
-**先看后端**（`src/zkble_backend.h`）：串口 HCI 类平台（F133/V85X）→ btstack 后端（`src/zk_ble.cpp`）；
+**先看后端**（后端选择头文件）：串口 HCI 类平台（F133/V85X）→ btstack 后端；
 USB HCI 类平台（Z20/Z21/T113/T113EMMC）→ gatt 后端（`src/zk_ble_gatt.cpp`）。**两个后端共用接口面与公共层，接口不改。**
 
 ### 4.1 btstack 后端加平台（串口 HCI）
 只需动**平台适配层**（`src/zk_ble.cpp` 的 `kPowerNodes` / 公共层 `internal::defaultUart()` / chip 判定），不改接口面：
-1. 加串口候选（`zkble_common.h` 的 `defaultUart()`：`ttyS1`→`ttyS2`，新平台追加）；
+1. 加串口候选（公共层头文件的 `defaultUart()`：`ttyS1`→`ttyS2`，新平台追加）；
 2. 加上电节点候选（`kPowerNodes`，多个候选 + 存在性判断，别写死）；
 3. 确认芯片判定属性（`persist.wifi.module` 在该平台是否可用）与是否需要预初始化；
 4. 实测值补进本文件（含"未验证"标注）。
@@ -425,13 +425,13 @@ $ adb shell ls /res/bin                                 → firmware/ 存在
 ```
 → 这块板走的正是 **V85X + RTL8733BS**路径（H5 + 偶校验 + `state_bt` 上电 + rtk 预初始化）。
 
-### 5.1 真机跑测证据（2026-09-13，`projects/ZkBleScanTest`）
+### 5.1 真机跑测证据（2026-09-13，BLE 扫描验证工程）
 
-构建：`fun install` → `fun build` → **Linking CXX executable ZkBleScanTest**✅
+构建：`fun install` → `fun build` → **Linking CXX executable <验证工程>**✅
 （bin 工程要点：`fun.json` 优先于 `Manifest.xml`，依赖写 fun.json；type=executable 才出 ELF；
 rtk 移植件要 `utils/Log.h` → 本工程用 `src/utils/Log.h` 本地垫片顶掉 easyui 依赖，避免拖进 freetype/nanovg/png 一串）
 
-运行：`adb push … /tmp/ && ./ZkBleScanTest`
+运行：`adb push … /tmp/ && ./<验证工程>`
 ```
 [test] rtk_init(/dev/ttyS2) ...
 I/Realtek: Realtek hciattach version 3.1.3be84a4.20240130-154850
@@ -470,9 +470,9 @@ E/Realtek: Retransmission exhausts                    Retransmission exhausts
 **复现命令（本机）**
 ```bash
 wsl 无关；全程 Windows + fun + adb：
- cd projects/ZkBleScanTest && C:/zkswe/fun/fun.exe build
- adb push .fun/v85x/ZkBleScanTest /tmp/ && adb shell chmod 777 /tmp/ZkBleScanTest
- adb shell 'setprop ctl.stop zkswe; echo 0 > <state_bt>; sleep 3; echo 1 > <state_bt>; sleep 2; cd /tmp && ./ZkBleScanTest'
+ cd <验证工程> && fun.exe build
+ adb push .fun/v85x/<验证工程> /tmp/ && adb shell chmod 777 /tmp/<验证工程>
+ adb shell 'setprop ctl.stop zkswe; echo 0 > <state_bt>; sleep 3; echo 1 > <state_bt>; sleep 2; cd /tmp && ./<验证工程>'
  # 测完恢复：adb shell 'setprop ctl.start zkswe'
 ```
 

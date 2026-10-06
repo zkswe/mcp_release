@@ -101,7 +101,7 @@ GROUPS = [
          'FlyThings UI 是什么', 'FlyThings 和 Android 什么关系',
          '为什么不能当普通 GUI 库用', '这设备算 Linux 用户空间吗',
      ]},
-    # 公开版能力边界（2026-10-03）：AI 读到能力表里满屏 aw-dvr / aw-mpp 会以为公开版能照做，
+    # 公开版能力边界（2026-10-03）：AI 读到能力表里满屏私有包名会以为公开版能照做，
     # 而「哪些知识不在 open 版」的真源是 capability-boundaries.md 第 2 节。
     # 实测（登记时）：top-1 4/5、落外 1。
     {'name': '能力边界（open 版不做什么）', 'doc': 'knowledge/devflow/capability-boundaries.md',
@@ -113,7 +113,7 @@ GROUPS = [
     {'name': '多媒体公开版边界', 'doc': 'knowledge/media/media-capability-index.md',
      'queries': ['公开版多媒体支持哪些', '多媒体能力在公开版缺了什么', 'V85X 多媒体在 open 版里有吗',
                  '公开版多媒体边界在哪看', 'open 版多媒体深度资料没有怎么办',
-                 '能力表里的 aw-dvr 包在公开版能用吗'],
+                 '能力表里的私有多媒体包在公开版能用吗'],
      'min_top1': 6, 'max_miss': 0},        # 实测 6/6（2026-10-03 登记）
 
     {

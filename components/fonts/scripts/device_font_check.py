@@ -19,7 +19,7 @@ device_font_check.py —— 设备字体自检（判定是否有中文字库，�
   python components/fonts/scripts/device_font_check.py
   # 体检 + 自动把字体塞进项目（改 font/ 与 .settings 里的 easyui prefs）
   python components/fonts/scripts/device_font_check.py --apply \
-      --project projects/ZkBlePanel --tier common
+      --project <项目目录> --tier common
   # 机器可读
   python components/fonts/scripts/device_font_check.py --json
 

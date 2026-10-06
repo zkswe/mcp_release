@@ -25,7 +25,7 @@
 > - **v0.3.0（2026-10-05）** ① btstack 后端**补上外设侧**（F133/V85X 通用）：`att_db_util` 运行时建表 + `att_server` + 广播（AD 放名字 / scan response 放服务 UUID）+ `notify`（缓冲忙自动排队，`ATT_EVENT_CAN_SEND_NOW` 回冲）；断开后自动重开广播；② 新增**透传管道 `zk::ble::pipe`**（NUS 形状，AI 最省事的入口：`listen/connect/send/onData`）；③ 新增示例 `example/pipe_example.cc`。四平台库已重建（符号自检 30/30）。
 > - **v0.2.1（2026-09-14）**发布形态改为「头 + 静态库」：新增 `lib/{f133,v85x,z20,z21}/libzkble.a` + `lib/BUILD_INFO.md`
 >   （含每平台 sha256/符号数/工具链/依赖版本）；新增 `scripts/verify_lib_symbols.py`（纯 Python 解析 ELF，**不依赖 nm**：
->   Windows 版 binutils 的 nm 缺 `liblto_plugin-0.dll` 会直接报错）；**移除源码**（`src/`、`zkble_*.h`、源码侧编译脚本）。
+>   Windows 版 binutils 的 nm 缺 `liblto_plugin-0.dll` 会直接报错）；**移除源码**（`src/`、内部头文件、源码侧编译脚本）。
 > - v0.2.0（2026-09-14）统一 API 面 + 两个后端（gatt 后端 Z20/Z21 **主从双角色**），**组件级真机验证通过**（Z20 外设 × Z21 中心，五条验收全过）；含三个真机 bug 修复（uuid 取空 / 自建表拿不到 value_handle / 广播 status=12）。
 > - v0.1.0（2026-09-13）首版：btstack 后端（适配器/扫描/连接/GATT 读写订阅/诊断）；外设留口。
 
@@ -259,7 +259,7 @@ python components/ble/scripts/verify_lib_symbols.py
 | 真机：连接重试 + 复位 | ⏳ 待跑 | ✅ 第 1 次 ETIMEDOUT → 自动 `hciconfig hci0 reset` → 第 2 次成功 |
 | 真机：**组件级**（不用 demo 代码，只用公开 API） | — | ✅ 见下 |
 
-**真机证据（2026-09-14，组件级验证工程 `projects/zkble_comp_srv`(Z20 外设) / `zkble_comp_cli`(Z21 中心)）**
+**真机证据（2026-09-14，组件级验证工程（Z20 外设 / Z21 中心各一））**
 ```
 中心（Z21）：FOUND DC:84:03:A1:2D:84 name=zkswe ble → svc fff0 / chr fff1 props=0x09 handle=0x0003 /
              chr fff2 props=0x06 handle=0x0006 → subscribe ok → readValue len=5 → writeValue code=0 → notify_count=4

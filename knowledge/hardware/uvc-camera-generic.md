@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [F133, Z20, Z21, T113, V85X]
-tags: [JPEG, MJPEG 摄像头绿屏, 录制中黑屏, dev, video 热插拔检测, 摄像头格式协商, V4L2 采集, 平台无关通用层, 指定 V85X 且要预览, 录像, v85x, uvc-usb-camera, md, aw-dvr, JPEG 解码, MJPEG 录制]
+tags: [JPEG, MJPEG 摄像头绿屏, 录制中黑屏, dev, video 热插拔检测, 摄像头格式协商, V4L2 采集, 平台无关通用层, 指定 V85X 且要预览, 录像, v85x, uvc-usb-camera, md, JPEG 解码, MJPEG 录制]
 evidence: []
 ---
 # UVC / USB 摄像头通用接入（跨平台：V85X / T113 / F133 / Z20 / Z21）
@@ -18,7 +18,7 @@ evidence: []
 > 🔍 **检索导引（命中条件）**：用户问「**UVC 摄像头接入**」「**USB 摄像头预览/拍照/录像**」「**外接摄像头 / USB 摄像头没画面**」
 > 「**JPEG/MJPEG 摄像头绿屏 / 录制中黑屏**」「**/dev/video 热插拔检测**」「**摄像头格式协商 / V4L2 采集**」
 > **没有指定平台** → **先读本篇**（平台无关通用层）；**指定 V85X 且要预览/录像/拍照全套** → 读
-> `knowledge/v85x/uvc-usb-camera.md`（aw-dvr/mpi:: 绑定实现）+ `knowledge/v85x/jpeg-decode-record.md`（JPEG 解码/MJPEG 录制）。
+> 平台方媒体包（`mpi::`）的绑定实现、以及 JPEG 解码 / MJPEG 录制的深度文档**不在公开版**（以平台方 SDK 为准）。
 > ⚠️ **纪律**：T113 / F133 / Z20 / Z21 的**平台绑定层（预览显示/编码录制 API）未实测不编造**；
 > 本篇只给**平台无关通用层**（发现/协商/保活/状态机/JPEG 必查清单），绑定层按各平台媒体栈实现后补录。
 
@@ -88,7 +88,7 @@ V85X 对应的落地 API（`uvc_add_camera_state_cb` / `runInUiThreadUniqueDelay
 
 | 平台 | 通用层（本篇，平台无关） | 绑定层（预览/编码/录像 API） | 知识位置 |
 |------|------------------------|------------------------------|---------|
-| **V85X**（AW_V853） | ✅ 直接用 | aw-dvr/mpi::（FRONT 内置 ISP + REAR UVC 双路；Recorder 录 mp4/ts；Snapshot 拍照；JpegViewer 回看照片） | `knowledge/v85x/uvc-usb-camera.md` + `knowledge/v85x/jpeg-decode-record.md`（已实测收录） |
+| **V85X**（AW_V853） | ✅ 直接用 | 平台方媒体包 `mpi::`（FRONT 内置 ISP + REAR UVC 双路；Recorder 录 mp4/ts；Snapshot 拍照；JpegViewer 回看照片） | 内部实现文档，未收录于公开版（以平台方 SDK 为准） |
 | **T113**（车载 PND） | ✅ 直接用（需 USB Host，见 usb-otg-switch） | ⚠️ 未实测未收录；有 AHD 摄像头先例（`knowledge/t113-car/ahd-camera-format.md`，非 UVC） | 待实测补录 |
 | **F133 / Z20 / Z21** | ✅ 通用逻辑可用（需内核 uvcvideo + USB Host） | ⚠️ 未实测未收录，不编造 | 待实测补录 |
 
