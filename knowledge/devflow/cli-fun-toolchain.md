@@ -194,6 +194,22 @@ static S_ACTIVITY_TIMEER REGISTER_ACTIVITY_TIMER_TAB[] = {
   修了哪些文件写进返回体 `steps` + `warnings`（不静默）
 - 判据/验证（实测）：修完 `canvasLogic.cc` 头部与 `buttonLogic.cc` **逐行同构**；复跑 `--check` → 需修 0
 
+### AI 处置口径（2026-10-06 需求方定：确认即动手，不要只给建议）
+
+命中上面两条症状之一、且形态与你看到的一致（`REGISTER_ACTIVITY_TIMER_TAB` 在 `#ifdef FUN_BUILD` 里 / 缺
+`base/log.h`）时，**直接改代码**，不要停在"建议你改一下"：
+
+1. **直接跑修**：`python scripts/fix_fun_logic_cc.py <项目根>`（幂等；要只看不改用 `--check`）
+   —— 它会修项目里**所有** `src/logic/*.cc`（不只报错那一个页面），并把改动列出来
+2. **fun 侧复验**：重跑 `fun build`（`flythings_build_ui_flow` 已内置：build 前/后自动修 + 命中签名时自动重试一次）
+3. **必须提示用户**：`logic.cc` 修好后请**用 IDE 重新编译一次** —— IDE 的编译单元是
+   `src/activity/<page>Activity.cpp`（再由它 `#include` logic），`fun build` 不会重建 IDE 侧产物；
+   两边都重编过才算修完
+4. **诚实记账**：把「改了哪些文件 + 需要 IDE 重编」明确告诉用户（工具侧会写进返回体 `steps`/`warnings`）
+
+> 反例（不要这样做）：只回一句"你的 logic.cc 头部有问题，建议把定时器表移出 `#ifdef`" —— 需求方口径是
+> **能确定的就直接改**，改完把结果和后续动作（IDE 重编）交待清楚。
+
 ### 检索词
 
 `LOGD_TRACE 未声明` / `REGISTER_ACTIVITY_TIMER_TAB 未声明` / `sizeof(REGISTER_ACTIVITY_TIMER_TAB)` /

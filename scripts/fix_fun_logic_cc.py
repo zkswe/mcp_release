@@ -37,8 +37,8 @@ import sys
 if hasattr(sys.stdout, 'reconfigure'):
     try:
         sys.stdout.reconfigure(encoding='utf-8')
-    except Exception:                                # pragma: no cover
-        pass
+    except Exception as e:                            # noqa: BLE001 —— 不静默：说明控制台不支持重配
+        sys.stderr.write('[NOTE] stdout 不支持 UTF-8 重配（不影响修复结果）：%s\n' % e)
 
 GUARD_RE = re.compile(r'^[ \t]*#\s*ifdef[ \t]+(\w+_BUILD)\b')
 ENDIF_RE = re.compile(r'^[ \t]*#\s*endif\b[^\n]*')
