@@ -277,14 +277,21 @@ def main():
         check(False, 'draw-site lint script', DRAW_LINT)
 
     # ---- 10) 意图闸门 catalog 参数漂移（v0.27.31）
+    # 闸门本体在**仓库外**（<父目录>/flythings_intent_gate/）——cloned 到别处就没有。
+    # 与第 6 项同口径：不存在就**显式 skip**（2026-10-06：干净 clone 里这项会 FAIL、
+    # 让 smoke 假红，与第 6 项的「未分发 → skip」自相矛盾）。
     gen = os.path.join(BASE, 'scripts', 'gen_gate_catalog.py')
-    if os.path.isfile(gen):
+    catp2 = os.path.join(os.path.dirname(BASE), 'flythings_intent_gate', 'catalog.json')
+    if os.path.isfile(gen) and os.path.isfile(catp2):
         try:
             rc = subprocess.call([sys.executable, gen, '--check'],
                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             check(rc == 0, 'gate catalog args in sync', 'see gen_gate_catalog.py --check')
         except Exception as e:
             check(False, 'gate catalog args in sync', repr(e))
+    else:
+        check(True, 'gate catalog args in sync（闸门不在本构建 → skip）',
+              '%s 不存在；与第 6 项同口径，跳过参数漂移校验' % catp2)
 
     # ---- 11) 可选：真机抓屏冒烟
     if a.screenshot:
