@@ -123,6 +123,12 @@ def check():
 
 def main():
     argv = sys.argv[1:]
+    # 发布版形态（引擎收进 bin/zkuitool）：evidence 锚点要在实现源码里做 AST 校验，
+    # 薄壳形态下源码里只有签名 → 本校验**不适用**，统一 rc=2（发布门禁认 0/2）。
+    # 声明数据（render_contract_coverage.json / json2img_coverage.json）仍随包明文分发。
+    if os.path.isfile(os.path.join(BASE, 'ui_tools', '_zktool.py')):
+        print('[SKIP] 薄壳形态（发布版）：evidence 锚点的 AST 校验需要实现源码（已收进 bin/zkuitool）')
+        return 2
     errs = check()
     print('renderContract 覆盖声明（真源 = ui_tools/render_contract_coverage.json；'
           'row 集合真源 = ui_schema.json#renderContract.rows）')

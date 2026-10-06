@@ -137,19 +137,34 @@ def sites(path):
     return out
 
 
+def _stub_layout(root):
+    """发布形态（组装器收进 bin/zkuitool，ui_tools/*.py 只是转发薄壳）。"""
+    return os.path.isfile(os.path.join(root, 'ui_tools', '_zktool.py'))
+
+
 def scan(root):
     """扫 `PRODUCERS` → ({相对路径: [(行,原语,片段)]}, {相对路径: 错误说明})。"""
     found, errs = {}, {}
     for rel in PRODUCERS:
         p = os.path.join(root, rel.replace('/', os.sep))
         if not os.path.isfile(p):
-            errs[rel] = 'PRODUCERS 里的文件不存在'
+            # 发布形态（2026-10-06）：组装器实现收进 bin/zkuitool，源码不随包 ——
+            # 并非“漏扫”，但也不能静默（记进 skipped 里如实报告）。
+            if _stub_layout(root) and rel.startswith('templates/ui_blocks/'):
+                errs[rel] = 'SKIP：发布形态（组装器已在 bin/zkuitool 内，源码不随包）'
+            else:
+                errs[rel] = 'PRODUCERS 里的文件不存在'
             continue
         try:
             found[rel] = sites(p)
         except (OSError, UnicodeDecodeError) as e:
             errs[rel] = '读取失败：%s' % e
     return found, errs
+
+
+def _is_skip(note):
+    """发布形态下‘文件不在包里’不算错（组装器已在 bin/zkuitool 内）。"""
+    return str(note).startswith('SKIP：')
 
 
 def _breakdown(entries):
@@ -247,6 +262,13 @@ def _write_check_report(a, root, found, errs, base, bad_base, wl, wl_noreason):
     rows, total = {}, 0
     for rel in PRODUCERS:
         if rel in errs:
+            if _is_skip(errs[rel]):
+                # 发布形态（2026-10-06）：组装器实现已收进 bin/zkuitool，源码不随包
+                # → 不算“漏扫”，但也不静默（打 [SKIP] 并进 json 的 status）
+                rows[rel] = {'path': rel, 'hits': None, 'baseline': base.get(rel),
+                             'status': 'skipped'}
+                print('  [SKIP] %s  %s' % (rel, errs[rel]))
+                continue
             fails.append('%s：%s' % (rel, errs[rel]))
             rows[rel] = {'path': rel, 'hits': None, 'baseline': base.get(rel), 'status': 'missing'}
             print('  [FAIL] %s  %s（请更新 PRODUCERS 常量，别让闸门静默漏扫）' % (rel, errs[rel]))
@@ -345,7 +367,7 @@ def _run_update(a, root, found, errs, base, bad_base, wl):
     print('=' * 72)
     for rel in PRODUCERS:
         if rel in errs:
-            print('  [FAIL] %s  %s' % (rel, errs[rel]))
+            print('  [%s] %s  %s' % ('SKIP' if _is_skip(errs[rel]) else 'FAIL', rel, errs[rel]))
             continue
         n = len(found[rel])
         old = base.get(rel)

@@ -158,6 +158,11 @@ def validate():
     for name in sorted(set(known) - set(found)):
         if known[name].get('framework'):
             continue        # 框架兜底码：由 fallback 产生，不该在源码里被找到
+        if known[name].get('engine'):
+            # `engine: true` = 抛出的代码在**引擎实现体**里（发布版收进 bin/zkuitool，
+            # ui_tools/*.py 只剩转发薄壳）→ 源码扫描看不到它，不是孤儿。
+            # 本仓（源形态）里这些码仍会被扫到，两者都算通过。
+            continue
         errs.append('错误码 %s 登记了但源码里没人抛（孤儿）' % name)
     return errs
 

@@ -1,0 +1,165 @@
+{
+  "schema": 1,
+  "authority": "renderContract 的实现覆盖声明（谁实现哪条、哪条没人实现）。**row 集合的唯一真源 = ui_tools/ui_schema.json#renderContract.rows**（本文件不重抄定义，只声明归属）；json2img 的细粒度矩阵另有真源 ui_tools/json2img_coverage.json。校验器：scripts/check_render_contract_coverage.py（evidence 必须是该文件里**真实存在**的函数/常量名，AST 校验）。",
+  "updated": "2026-10-05",
+  "implementations": {
+    "ui_tools/gen_res.py": {
+      "role": "出图的唯一实现（形状/AA/倒角/透明底都走它）",
+      "rows": {
+        "edge-aa": {
+          "status": "implements",
+          "evidence": ["coverage_mask", "rounded_rect_cov", "rounded_rect_ss"],
+          "note": "覆盖率口径（α=覆盖率）+ ≥4× 超采样两条路都在：*_cov 家族与 *_ss 家族"
+        },
+        "stroke-aa": {
+          "status": "implements",
+          "evidence": ["bordered_cov", "coverage_ring", "recolor_ring"],
+          "note": "1px 描边走整像素带 + α 覆盖率（bordered_cov）；盒 ≤22px / 强曲率场景由调用方按 row 的禁用条件回避"
+        },
+        "nine-patch": {
+          "status": "implements",
+          "evidence": ["to_9patch", "card9_alpha", "translucent_card9"],
+          "note": "四周扩 1px + 黑引导线，引导线避开 radius 角切片"
+        },
+        "alpha-compose": {
+          "status": "partial",
+          "evidence": ["coverage_mask", "_feather_alpha"],
+          "note": "覆盖率 α 有了；**alpha bleed（透明区铺最近实色）在 html2json 侧做**（见 ui_tools/html2json.py 的 _bordered_thumb 注释），本文件不负责抠色"
+        },
+        "rounding": {
+          "status": "delegated",
+          "note": "floor 口径分散在调用方（html2json/json2img 的像素换算）；gen_res 只按整型入参出图 —— 该 row 的判据由渲染器与静态检查兜"
+        },
+        "pic-scale": {
+          "status": "partial",
+          "evidence": ["gen_ui_assets"],
+          "note": "按调用方给定的 w/h 出图（图==盒由调用方保证）；gen_res 不校验控件盒"
+        },
+        "progress-clip": {
+          "status": "partial",
+          "evidence": ["gen_gradient", "rounded_rect_ss"],
+          "note": "轨道/进度条图按盒宽出；「按进度横向裁剪」是引擎行为，由静态检查（check_all #11/#17）守"
+        },
+        "thumb-size": {
+          "status": "partial",
+          "evidence": ["gen_ui_assets"],
+          "note": "滑块圆钮按 PNG 原尺寸出；「盒高 < 图高会被居中裁」是引擎行为"
+        },
+        "no-root-bg": {
+          "status": "not-applicable",
+          "note": "根底色是 json 字段（不是图），由 html2json 写入 + check_all #1 校验"
+        },
+        "family-consistency": {
+          "status": "delegated",
+          "note": "同族口径一致属跨控件集合性质，由 check_all #27（同族离群）守"
+        }
+      }
+    },
+    "ui_tools/html2json.py": {
+      "role": "HTML→json 前端 + CSS 效果自动转图（出图一律调 gen_res）",
+      "rows": {
+        "pic-scale": {
+          "status": "implements",
+          "evidence": ["_save_css_png", "_finalize_layout"],
+          "note": "CSS 效果图按控件盒出（图==盒），并在收尾检查里对齐几何"
+        },
+        "progress-clip": {
+          "status": "implements",
+          "evidence": ["_bar_pic"],
+          "note": "进度条拆轨道/填充两张图，宽度按盒宽"
+        },
+        "thumb-size": {
+          "status": "implements",
+          "evidence": ["_thumb_pic"],
+          "note": "圆钮按盒高与 style 出图，并登记 thumb 子盒 size"
+        },
+        "alpha-compose": {
+          "status": "implements",
+          "evidence": ["_save_css_png"],
+          "note": "透明区铺最近实色（alpha bleed）在这里做（_bordered_thumb 的注释即口径）"
+        },
+        "no-root-bg": {
+          "status": "implements",
+          "evidence": ["_canvas_bg", "_finalize_layout"],
+          "note": "根 backgroundColor 取 html/body 背景（引擎靠它擦屏）"
+        },
+        "edge-aa": {
+          "status": "delegated",
+          "note": "AA 实现在 gen_res（本文件只调 *_ss/*_cov），不自己写亚像素公式"
+        },
+        "nine-patch": {
+          "status": "delegated",
+          "note": "9-patch 由 gen_res.to_9patch 出"
+        },
+        "stroke-aa": {
+          "status": "delegated",
+          "note": "描边走 gen_res.bordered_cov"
+        },
+        "rounding": {
+          "status": "partial",
+          "evidence": ["parse_px"],
+          "note": "像素换算处用 int()/parse_px；未逐项核对是否全为 floor（属 T5 发射层统一的范围）"
+        },
+        "family-consistency": {
+          "status": "not-applicable",
+          "note": "同族一致是验收期判据（check_all #27），不由生成器保证"
+        }
+      }
+    },
+    "ui_tools/check_all.py": {
+      "role": "交付前静态全检（把 row 变成可判红的检查项）",
+      "rows": {
+        "pic-scale": {
+          "status": "implements",
+          "evidence": ["verify_assets"],
+          "note": "#11/#17：图片尺寸必须 == 控件 position（自动生成图不等 = FAIL）"
+        },
+        "progress-clip": {
+          "status": "implements",
+          "evidence": ["verify_assets"],
+          "note": "#10 SeekBar 禁 9-patch（轨道会被 marker 画成黑框）+ #17 资源核对"
+        },
+        "thumb-size": {
+          "status": "implements",
+          "evidence": ["verify_assets"],
+          "note": "thumb 子盒 size vs PNG 实际尺寸"
+        },
+        "no-root-bg": {
+          "status": "implements",
+          "evidence": ["_layer_problems"],
+          "note": "#1 根节点字段（含 backgroundColor）"
+        },
+        "edge-aa": {
+          "status": "delegated",
+          "note": "#21 委派 tools/qa/aa_audit.py --fail"
+        },
+        "stroke-aa": {
+          "status": "delegated",
+          "note": "#22/#25 委派 tools/qa/corner_audit.py（倒角 / 弧线过渡）"
+        },
+        "nine-patch": {
+          "status": "delegated",
+          "note": ".9.png 的 marker 环与拉伸口径由 tools/qa 审计内置处理"
+        },
+        "alpha-compose": {
+          "status": "delegated",
+          "note": "#23 委派 tools/qa/alpha_bg_audit.py（真透明底 / 烘底色 / 图标贴边）"
+        },
+        "rounding": {
+          "status": "delegated",
+          "note": "floor 与像素差 1 的判据在渲染器与真机像素比对（ui_visual diff）"
+        },
+        "family-consistency": {
+          "status": "implements",
+          "evidence": ["check_type_scale"],
+          "note": "#27 同族控件口径离群检测（WARN）"
+        }
+      }
+    },
+    "ui_tools/json2img.py": {
+      "role": "离线渲染判定（自带 10 行细粒度矩阵）",
+      "matrix": "ui_tools/json2img_coverage.json",
+      "_note": "本文件不重复声明：json2img 更细（implemented / approximate / unsupported + blindSpot），真源在它自己的矩阵里；这里只校验两边 row 集合一致。"
+    }
+  }
+}

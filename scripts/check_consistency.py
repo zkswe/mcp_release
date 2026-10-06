@@ -769,6 +769,10 @@ def stage_selfcheck_sections():
     for rel in _SELFCHECK_COUNT_FILES:
         p = os.path.join(BASE, rel)
         if not os.path.isfile(p):
+            # 发布形态（2026-10-06）：`tests/` 不随发布版分发（客户只拿运行时）→ 该文档不存在是设计，
+            # 不是“活文档缺失”；其余文件缺失仍判红。
+            if rel.startswith('tests/'):
+                continue
             bad.append('%s(文件不存在)' % rel)
             continue
         for i, line in enumerate(_read(p).splitlines(), 1):
@@ -1218,8 +1222,15 @@ def _test_hermetic_hits(path, base=None):
             return False
 
     hits = []
+    # VCS/缓存目录名（测试里的「跳过集」字面量）不是「夹具引用」：
+    # 工作树/submodule 形态下 `.git` 是个**文件**，会被 ② untracked-path 误判成「本机有、别人没有」
+    # （2026-10-06 实测：release 工作副本上 `test_platform_positioning.py:199`、
+    # `test_ui_pipeline_spec.py:48` 的 SKIP_DIRS 字面量假红）。
+    SKIP_LITERALS = {'.git', '__pycache__', '.github'}
     for ln, s in lits:
         kind = None
+        if s.strip('/\\') in SKIP_LITERALS:
+            continue
         absolute = bool(re.match(r'^[A-Za-z]:/', s)) or s.startswith('/')
         if re.match(r'^temp/', s):
             kind = 'repo-temp'                # 仓库根临时区：设计上不入库，fresh clone 必无
@@ -1289,8 +1300,14 @@ def stage_deliverables(with_tests):
         check(os.path.isfile(os.path.join(BASE, f)), 'has %s' % f, '')
     tdir = os.path.join(BASE, 'tests')
     checks = sorted(f for f in os.listdir(tdir)) if os.path.isdir(tdir) else []
-    check(bool([f for f in checks if f.startswith('test_') and f.endswith('.py')]),
-          'tests/ contract cases present', ','.join(checks[:6]))
+    if not checks:
+        # 发布形态（2026-10-06 定）：客户拿的是**运行时**（MCP + 工具箱）。实测仓根运行时代码
+        # **0 处**引用 `tests/`（引用它的全是 `scripts/` 下的门禁/CI）→ 发布版不带 tests/ 是设计，
+        # 用例在源形态（内部 master）全量跑。
+        check(True, 'tests/ contract cases present', '发布形态：不带 tests（运行时不需要）')
+    else:
+        check(bool([f for f in checks if f.startswith('test_') and f.endswith('.py')]),
+              'tests/ contract cases present', ','.join(checks[:6]))
 
 
 def _kb_report_normalize(gen, text):
@@ -1403,8 +1420,18 @@ def stage_delegated(skip_smoke, with_tests):
     # 以前只认 rc==0 → 从 fresh clone 跑必然红（副本目录在仓库之外），
     # 而 smoke 对同一件事是容错 skip —— 同一口径两个消费方不一致（2026-10-03 评审）。
     check(rc in (0, 2), 'delegated: sync_ui_tools --check',
-          {0: 'ok（双份一致）', 2: 'skip（本机无副本，非漂移）'}.get(
+          {0: 'ok（双份一致）', 2: 'skip（本机无副本／薄壳形态，非漂移）'}.get(
               rc, out.strip().splitlines()[-1][:70] if out.strip() else 'rc=%d' % rc))
+    # 发布版形态（2026-10-06）：ui_tools 是薄壳 + 实现在 bin/zkuitool —— 补上本形态自己的判据
+    # （源形态/干净 clone 返回 2 = 不适用，与上面那条同口径）。
+    _stubgate = os.path.join(SUB, 'check_ui_tools_stubs.py')
+    if os.path.isfile(_stubgate):
+        rc, out = _run([sys.executable, _stubgate])
+        sg_tail = [l for l in out.strip().splitlines()
+                   if l.startswith('[PASS]') or l.startswith('[FAIL]') or l.startswith('[SKIP]')]
+        check(rc in (0, 2), 'delegated: check_ui_tools_stubs（发布形态：薄壳+工具箱）',
+              {0: (sg_tail[-1] if sg_tail else 'ok'),
+               2: 'skip（源形态，非发布形态）'}.get(rc, (sg_tail[-1] if sg_tail else 'rc=%d' % rc))[:70])
     rc, out = _run([sys.executable, os.path.join(SUB, 'gen_manifest.py'), '--check'])
     check(rc == 0, 'delegated: gen_manifest --check',
           'ok' if rc == 0 else out.strip().splitlines()[-1][:70])
@@ -1533,15 +1560,17 @@ def stage_delegated(skip_smoke, with_tests):
     rc, out = _run([sys.executable, os.path.join(SUB, 'gen_emit_conformance.py'), '--check'])
     ec_tail = [l for l in out.strip().splitlines()
                if l.startswith('[PASS]') or l.startswith('[FAIL]')]
-    check(rc == 0, 'delegated: gen_emit_conformance --check (发射口径对账)',
-          (ec_tail[-1] if ec_tail else 'rc=%d' % rc)[:70])
+    check(rc in (0, 2), 'delegated: gen_emit_conformance --check (发射口径对账)',
+          {0: 'ok', 2: 'skip（薄壳形态：compose 对账需 gen_res 实现体，已进 bin/zkuitool）'}.get(
+              rc, (ec_tail[-1] if ec_tail else 'rc=%d' % rc))[:70])
     # T4.1（2026-10-05）：renderContract 的实现覆盖声明 —— 「哪条规格由谁实现/谁不实现」是数据，
     # evidence 必须是代码里真实存在的函数/常量（AST 校验）；声明与代码漂移 = 红。
     rc, out = _run([sys.executable, os.path.join(SUB, 'check_render_contract_coverage.py'), '--check'])
     crc_tail = [l for l in out.strip().splitlines()
                 if l.startswith('[PASS]') or l.startswith('[FAIL]')]
-    check(rc == 0, 'delegated: check_render_contract_coverage --check (视觉口径实现覆盖声明)',
-          (crc_tail[-1] if crc_tail else 'rc=%d' % rc)[:70])
+    check(rc in (0, 2), 'delegated: check_render_contract_coverage --check (视觉口径实现覆盖声明)',
+          {0: 'ok', 2: 'skip（薄壳形态：evidence 锚点 AST 校验需实现源码，已进 bin/zkuitool）'}.get(
+              rc, (crc_tail[-1] if crc_tail else 'rc=%d' % rc))[:70])
     # T0.3（2026-10-05）：界面**入口登记表**的派生页不许滞后 —— 真源 = 仓库根 ui_entrypoints.json
     rc, out = _run([sys.executable, os.path.join(SUB, 'gen_entrypoints_doc.py'), '--check'])
     ep_tail = [l for l in out.strip().splitlines()
@@ -1594,8 +1623,9 @@ def stage_delegated(skip_smoke, with_tests):
         check(rc == 0, 'delegated: smoke.py', last[0] if last else 'rc=%d' % rc)
     # 检索质量回归（v0.27.94 起进门禁）：16 条真实问法必须一次命中权威文档 + 11 条对照组防调参副作用。
     # 无需向量模型也能跑（自动降级 BM25，实测同样 16/16），耗时 ~4s。
+    # 检索质量回归（v0.27.94 起进门禁）：真实问法必须命中权威文档 + 对照组防调参副作用。
     # 发布/裁剪构建（如 release 分支，PUBLISH.md §3 剔了内部文档）里，指向被剔文档的**整组**
-    # 显式跳过并列名 —— 否则那几组问法全落空，会把"按发布边界剔除"误报成"检索滑坡"。
+    # 显式跳过并列名 —— 否则那几组问法全落空，会把「按发布边界剔除」误报成「检索滑坡」。
     # 判据是**构建里有没有 PUBLISH.md**（内部版必有），不是环境变量：git 切分支即生效、不会忘传。
     _rel_argv = []
     if not os.path.isfile(os.path.join(BASE, 'PUBLISH.md')):
@@ -1605,6 +1635,12 @@ def stage_delegated(skip_smoke, with_tests):
             if l.startswith('[PASS]') or l.startswith('[FAIL]')]
     check(rc == 0, 'delegated: check_retrieval.py',
           (last[0] if last else 'rc=%d' % rc)[:70])
+    if with_tests and not os.path.isdir(os.path.join(BASE, 'tests')):
+        # 发布形态（2026-10-06）：不随包分发 tests/（客户只拿运行时）→ 用例阶段整体跳过，
+        # 明确记账（不静默）；用例在源形态（内部 master）全量跑。
+        check(True, 'delegated: tests/ unittest', '发布形态：不带 tests（用例在源形态跑）')
+        check(True, 'test count matches real run（tests/README.md）', '发布形态：跳过')
+        with_tests = False
     if with_tests:
         # 守法（2026-10-03 第三次调整，最终形态）：**不用墙钟当判据**。
         #
@@ -1670,6 +1706,97 @@ def stage_delegated(skip_smoke, with_tests):
                % '、'.join(sorted(set(skipped)))))
 
 
+# ── 已移除 op 名的反残留 + 增删登记（2026-10-06 检讨方案1 ④/⑤）────────────────
+# 为什么单列：op 删了以后，旧名**还会留在规范面文档里** —— AI 检索到就照着调，
+# 而该旧名已回 OP_REMOVED（白跑一轮）。实测（2026-10-06）：
+# `knowledge/devflow/i18n-multilang.md` 把旧名/内部名当入口写（`i18n_scan`）。
+# 判据一：REMOVED 的旧名（全名 + 去掉 `flythings_` 的短名）不得出现在「规范面」；
+# 判据二：**工作树里消失的 op 必须已登记**（对 HEAD 的 tools_manifest.json 取差集）——
+#          这才是「删 op 忘了登记」的真判据（用例遍历表本身是抓不到的）。
+REMOVED_RESIDUE_ROOTS = ('knowledge', 'wiki', 'templates', 'examples',
+                         'components', 'packages', 'demos', '.dsh')
+REMOVED_RESIDUE_FILES = ('README.md', 'AGENTS.md', 'DESIGN_SPEC.md',
+                         'MCP-MODULE-MAP.md', 'op_spec.json')
+REMOVED_RESIDUE_SKIP_DIRS = {'_reports', 'Release', '__pycache__', '.git'}
+# 历史归档（AGENTS.md §5：评估/计划/复盘，不算规范；里面的旧名是史实，不是指引）
+REMOVED_RESIDUE_SKIP_FILES = {'CHANGELOG.md', 'VERSION_HISTORY.md',
+                              'CONSOLIDATION.md', 'features_recent.json'}
+
+
+def stage_removed_ops():
+    try:
+        import kb_tools as _kb
+        removed = dict(getattr(_kb, 'REMOVED', {}) or {})
+        renamed = dict(getattr(_kb, 'RENAMED', {}) or {})
+        cur = list(_kb.OP_NAMES)
+    except Exception as e:                      # 读不到真源 → 如实报，不静默
+        check(False, '已移除 op 名的反残留扫描', '%s: %s' % (type(e).__name__, e))
+        return
+    # 旧名两种写法：全名 + 去掉 `flythings_` 的短名（短名只取带下划线的，避免 `search` 这类泛词假红）
+    needles = {}
+    for old in removed:
+        needles[old] = old
+        short = old[len('flythings_'):] if old.startswith('flythings_') else old
+        if '_' in short:
+            needles[short] = old
+    files = []
+    for root in REMOVED_RESIDUE_ROOTS:
+        d = os.path.join(BASE, root)
+        if not os.path.isdir(d):
+            continue
+        for dp, dns, fns in os.walk(d):
+            dns[:] = [x for x in dns if x not in REMOVED_RESIDUE_SKIP_DIRS]
+            for fn in fns:
+                if fn.endswith(('.md', '.json', '.txt')) and fn not in REMOVED_RESIDUE_SKIP_FILES:
+                    files.append(os.path.join(dp, fn))
+    for fn in REMOVED_RESIDUE_FILES:
+        p = os.path.join(BASE, fn)
+        if os.path.isfile(p):
+            files.append(p)
+    hits, unreadable = [], []
+    for p in files:
+        rel = os.path.relpath(p, BASE).replace(os.sep, '/')
+        try:
+            txt = _read(p)
+        except (OSError, ValueError) as e:
+            # 不静默跳过（同 error_codes_loader 的扫源口径）：少扫一个文件，
+            # 就可能有残留被漏报 —— 那是「看起来扫了其实没扫」的假绿。
+            unreadable.append('%s（%s）' % (rel, type(e).__name__))
+            continue
+        for need, old in needles.items():
+            if need in txt:
+                hits.append('%s（%s）' % (rel, old))
+    check(not hits and not unreadable,
+          '已移除 op 名不得残留在规范面（%d 名字 / %d 文件）' % (len(removed), len(files)),
+          ('残留：%s' % '；'.join(sorted(set(hits))[:3]) if hits
+           else '扫不到的规范面文件：%s' % '；'.join(unreadable[:3]) if unreadable
+           else 'ok'))
+    # 判据二：删 op 必须登记
+    try:
+        r = subprocess.run(['git', 'show', 'HEAD:tools_manifest.json'],
+                           cwd=BASE, capture_output=True, text=True, timeout=30,
+                           encoding='utf-8', errors='replace')
+    except Exception as e:
+        check(False, 'op 增删已登记（工作树 vs HEAD）', 'git 不可用：%s' % e)
+        return
+    if r.returncode != 0:
+        check(True, 'op 增删已登记（工作树 vs HEAD）',
+              'skip：读不到 HEAD 的 tools_manifest.json（非 git 检出？）')
+        return
+    try:
+        prev = {o['op'] for o in json.loads(r.stdout)['ops']}
+    except Exception as e:
+        check(False, 'op 增删已登记（工作树 vs HEAD）', 'HEAD manifest 解析失败：%s' % e)
+        return
+    gone = sorted(prev - set(cur))
+    unregistered = [o for o in gone if o not in removed and o not in renamed]
+    back = sorted(set(removed) & set(cur))
+    check(not unregistered and not back,
+          'op 增删已登记（HEAD %d → 现 %d）' % (len(prev), len(cur)),
+          ('未登记就删了：%s' % '、'.join(unregistered) if unregistered
+           else '已移除却又回到清单：%s' % '、'.join(back) if back else 'ok'))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--skip-smoke', action='store_true')
@@ -1698,6 +1825,7 @@ def main():
     stage_kb_authority()
     stage_package_manifest()
     stage_cli_names()
+    stage_removed_ops()
     stage_deliverables(a.with_tests)
     stage_delegated(a.skip_smoke, a.with_tests)
     fails = [r for r in RESULT if not r[0]]

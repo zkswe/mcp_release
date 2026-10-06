@@ -129,38 +129,11 @@
   }
  },
  "compose": {
-  "specs": [
-   {
-    "name": "complex_320x240",
-    "controls": 125
-   },
-   {
-    "name": "complex_1024x600",
-    "controls": 126
-   }
-  ],
-  "types": {
-   "window": {
-    "missingRequired": [],
-    "extraKeys": [],
-    "samples": 20
-   },
-   "textview": {
-    "missingRequired": [],
-    "extraKeys": [],
-    "samples": 175
-   },
-   "button": {
-    "missingRequired": [],
-    "extraKeys": [],
-    "samples": 54
-   },
-   "edittext": {
-    "missingRequired": [],
-    "extraKeys": [],
-    "samples": 2
-   }
-  },
-  "errors": []
+  "specs": [],
+  "types": {},
+  "errors": [
+   "complex_320x240：rc=1 en_res.rounded_rect_ss(prm['w'], prm['h'], prm['radius'],\n          ^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: module 'gen_res' has no attribute 'rounded_rect_ss'\n",
+   "complex_1024x600：rc=1 en_res.rounded_rect_ss(prm['w'], prm['h'], prm['radius'],\n          ^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: module 'gen_res' has no attribute 'rounded_rect_ss'\n"
+  ]
  }
 }

@@ -1,0 +1,131 @@
+{
+  "_doc": "json2img（离线渲染器）对 ui_schema.json#renderContract.rows 的实现状态矩阵 —— 判定层的数据文件（T2.1）。只填状态，不定义行集合：**行集合的唯一真源是 ui_tools/ui_schema.json 的 renderContract.rows，本文件不重抄那 10 个 id**，缺行/多行由 `python ui_tools/json2img.py --coverage --check` 判红。",
+  "_status_values": {
+    "implemented": "按 renderContract 实现，且有判据（用例）钉住",
+    "approximate": "能画，但语义/度量与引擎**近似**：近似点必须写在 note 里（json2img 是模拟层）",
+    "unsupported": "渲染器**没有**实现这一条或无法判定 → 判定模式下不能算通过"
+  },
+  "_blindSpot": "true = 该条**无法由 json2img 的渲染输出判定**（离线判定对它说了不算，必须显式挂起）；false = 能判，近似点写在 note 里。blindSpot=true 必须带非空 note。",
+  "_evidence": {
+    "tests": "真实存在的用例文件（相对仓根）；空数组 = **当前没有对应用例**，不编造。",
+    "device": "真机对照证据。**本仓全部为空**：tests/screenshots/ 里有无索引的真机截图（2026-10-02/03，480x800 与 240x240），但没有任何材料把某张图对应到某条规格，引用它等于猜 —— 需要真机对照时按 flythings-device-acceptance 流程重采并在这里登记文件名。"
+  },
+  "_howto": {
+    "人读": "python ui_tools/json2img.py --coverage",
+    "判红": "python ui_tools/json2img.py --coverage --check（缺行/多行/status 非法/blindSpot 无 note/evidence 文件不存在 → rc=1）",
+    "机读": "python ui_tools/json2img.py --coverage --check --coverage-json <path>"
+  },
+  "rows": [
+    {
+      "id": "pic-scale",
+      "status": "approximate",
+      "note": "「拉伸填满控件盒」的**几何**按规格实现：`draw_pic` 里图尺寸 != 盒就直接 resize 到盒（非等比、不居中、不留白），命中时如实记 `[拉伸填充]`；`.9.png` 走九宫格（`nine_patch`）而非整体拉伸。**近似点**：缩放算子是 `NEAREST`（设备端缩放器没有规格、未逐项核对）→ 图比盒小（放大）时出不来真机的插值过渡，图比盒大（缩小）时圆角/1px 描边被抽掉的形态可能与真机不同。",
+      "evidence": {
+        "tests": [],
+        "device": []
+      },
+      "blindSpot": false
+    },
+    {
+      "id": "progress-clip",
+      "status": "implemented",
+      "note": "`draw_seekbar` 按规格：有效图 **1:1 原样贴 + `floor(盒宽×进度/max)` 左端裁剪**（不缩放）；图窄于盒时 1:1 贴、露轨道并记 `[拉伸填充]`；`.9.png` 先九宫格拉伸再裁。判据 `tests/test_json2img_engine_model.py::TestProgressClip`（floor 边界、色带 1:1 未拉伸、10% 进度仍保留切图圆角、图窄不放大）。**边界**：`.9.png` 那支（先拉伸后裁）未做真机对照。",
+      "evidence": {
+        "tests": [
+          "tests/test_json2img_engine_model.py"
+        ],
+        "device": []
+      },
+      "blindSpot": false
+    },
+    {
+      "id": "thumb-size",
+      "status": "implemented",
+      "note": "滑块按 **PNG 原尺寸**画（`thumb.size` 只作声明；与 PNG 不一致时如实记账「真机按 PNG 画」）；左沿 `floor((盒宽−图宽)×进度/max)`；盒高 < 图高时**居中裁**（表现为扁）。判据 `tests/test_json2img_engine_model.py::TestThumbGeometry`（左沿 floor、0%/100% 不出界、声明与 PNG 不一致要记账、超出盒居中裁）。",
+      "evidence": {
+        "tests": [
+          "tests/test_json2img_engine_model.py"
+        ],
+        "device": []
+      },
+      "blindSpot": false
+    },
+    {
+      "id": "alpha-compose",
+      "status": "implemented",
+      "note": "合成取 PNG 的 **α 与 RGB 两者**（PIL 非预乘 source-over，走 `alpha_composite` / `paste_rgba`），半透明像素与下层真实混合。判据：`tests/test_json2img_circlebar.py`（「把图层贴到自己身上 → 预乘算两次 → 白锯齿」已修并钉住）、`tests/test_json2img_engine_model.py`（低进度时切图圆角透明区仍露轨道色）。**边界**：「透明区 RGB 铺最近的实色（alpha bleed）」是**出图侧**（gen_res）的责任，渲染器不检查资产是否满足、也无法从渲染结果反推。",
+      "evidence": {
+        "tests": [
+          "tests/test_json2img_circlebar.py",
+          "tests/test_json2img_engine_model.py"
+        ],
+        "device": []
+      },
+      "blindSpot": false
+    },
+    {
+      "id": "edge-aa",
+      "status": "approximate",
+      "note": "painter 路径按 `SS=4` 超采样 + `Image.BOX` 面积平均缩回（α=覆盖率，见 `draw_painter`）；其余图元的 AA 来自切图资产。**近似点（2026-10-05 探针实测）**：circlebar 的扇形切口是 `ImageDraw.arc` 生成的 **二值 α 遮罩** —— 实测该遮罩 α 只有 0/255、中间值 0 个像素，即**切口边缘没有覆盖率过渡**（圆环内外沿的 AA 由切图带过来，不受影响）。未逐项核对全部图元。",
+      "evidence": {
+        "tests": [],
+        "device": []
+      },
+      "blindSpot": false
+    },
+    {
+      "id": "stroke-aa",
+      "status": "unsupported",
+      "note": "这一条管的是**出图侧**（`gen_res.bordered_cov` 的整像素描边带 vs 覆盖率混合、小盒/强曲率禁用），`json2img` 里**没有**描边生成、也没有描边合规检查：它只贴图（1:1 时描边原样保留、被拉伸时按 NEAREST 变化）。所以离线渲染**无法**对「这条描边口径对不对」给出判定 —— 判定模式下必须显式挂起，不能算通过。",
+      "evidence": {
+        "tests": [],
+        "device": []
+      },
+      "blindSpot": true
+    },
+    {
+      "id": "nine-patch",
+      "status": "implemented",
+      "note": "`nine_patch()` 按 .9.png 规格解析 1px 黑引导线 → 九切片拉伸（角区不拉伸）；引导线缺失/尺寸不足 → 如实记账「九宫格边框线缺失 → 退化为整体拉伸」。**2026-10-05 探针实测**：12×12 的 .9.png 拉到 60×40 后四角颜色原样、中段被拉伸、`--report` 的 `[九宫格 .9.png]` 计数 +1。**无对应用例**（目前只有实现 + 人工探针，未进 unittest）。",
+      "evidence": {
+        "tests": [],
+        "device": []
+      },
+      "blindSpot": false
+    },
+    {
+      "id": "rounding",
+      "status": "approximate",
+      "note": "几何关键路径已用 `floor`：seekbar 填充宽 `floor(w×frac)`、滑块左沿 `floor((w−tw)×frac)`、circlebar 扇形扫过角按 `progress/max`（判据 `tests/test_json2img_engine_model.py::TestProgressClip::test_width_uses_floor_not_round` 与 `TestThumbGeometry`）。**近似点（2026-10-05 核代码）**：文字排版仍用 `round` —— 行高 `round(fs*1.2)`、水平居中 `round((w−lw)/2)`、垂直居中 `round((h−block_h)/2)`（`_draw_label`），环几何与 circlebar 中心文字也用 `round` → 这些位置与真机可能差 1px，未逐项核对。",
+      "evidence": {
+        "tests": [
+          "tests/test_json2img_engine_model.py"
+        ],
+        "device": []
+      },
+      "blindSpot": false
+    },
+    {
+      "id": "no-root-bg",
+      "status": "approximate",
+      "note": "缺少根底色（`-1`/缺省）时**如实记账**：`root/backgroundColor`「根背景 -1/缺省 → 透明（设备上为黑屏底）」，判据 `tests/test_json2img_engine_model.py::TestBackgroundMinusOne::test_root_with_minus_one_leaves_the_page_unfilled`（渲染结果保持透明 + 必须记账）。**近似点**：离线图是**透明画布**，真机是「不擦屏」（残留上一帧/屏保）—— 离线**不**复现残留。所以这条是「检测完整、渲染替换」：`--judge` 会把该 json 的这条列进盲区（除非登记豁免），不会静默放过。",
+      "evidence": {
+        "tests": [
+          "tests/test_json2img_engine_model.py"
+        ],
+        "device": []
+      },
+      "blindSpot": false
+    },
+    {
+      "id": "family-consistency",
+      "status": "unsupported",
+      "note": "「同族同口径」是**跨控件的集合性质**（一组卡片/一排按钮是否都带描边、半径与描边宽是否同一组令牌值），`json2img` 逐控件独立渲染、**没有任何跨元素一致性检查**，渲染图上也不存在「同族」这层关系 → 离线渲染无法判定。这类判据落在生成/审计侧（出图令牌与 `corner_audit` / `zero_color_audit` 等），判定模式下必须显式挂起。",
+      "evidence": {
+        "tests": [],
+        "device": []
+      },
+      "blindSpot": true
+    }
+  ]
+}

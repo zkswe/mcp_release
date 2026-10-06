@@ -160,6 +160,12 @@ def compose_report(specs=('complex_320x240', 'complex_1024x600')):
 
 
 def main():
+    # 发布版形态（引擎收进 bin/zkuitool，ui_tools/*.py 只是转发薄壳）：compose 对账
+    # 要拿 `gen_res` 的实现函数（按 spec 求值），薄壳下拿不到 → 本脚本在此形态**不适用**，
+    # 统一按 rc=2（skip，与 sync_ui_tools 的「本机无副本」同口径；发布门禁认 0/2）。
+    if os.path.isfile(os.path.join(BASE, 'ui_tools', '_zktool.py')):
+        print('[SKIP] 薄壳形态（发布版）：compose 对账需要 gen_res 实现体（已收进 bin/zkuitool）')
+        return 2
     rep = compare()
     rep['compose'] = compose_report()
     rep['_reasons']['composeValueDiffs'] = (

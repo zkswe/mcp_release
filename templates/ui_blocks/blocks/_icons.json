@@ -5,7 +5,7 @@
     "switch": "control.switch-3",
     "forward": "control.chevron-right (仅兜底；行尾箭头走 chevron_image，见 README §8-3)"
   },
-  "_aliases_doc": "块库给库外/歧义名的别名（实现在 templates/ui_blocks/iconlib.py 的 ALIASES）；其余名字一律由库自带 gen_icons.resolve_target 解析（语义短名/全名 system.wifi/Tabler 原生名/旧产物名 ic_system_wifi.png 都行）",
+  "_aliases_doc": "块库给库外/歧义名的别名（实现在 iconlib（随 exe） 的 ALIASES）；其余名字一律由库自带 gen_icons.resolve_target 解析（语义短名/全名 system.wifi/Tabler 原生名/旧产物名 ic_system_wifi.png 都行）",
   "_categories": {
     "control": "开关/选项",
     "device": "智能家居设备",

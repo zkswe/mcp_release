@@ -119,4 +119,4 @@ components/
 ---
 
 > **相关（不属本目录四件套体系）**：界面块片段库 + 组装器 → [`templates/ui_blocks/`](../templates/ui_blocks/README.md)
-> ——把 UI 从「手算坐标」变成「选块 + 填值 + 排序」：`python templates/ui_blocks/compose.py spec.json --project <工程> --render --check`（11 个块，出 json + 切图 + 渲染图 + 全检）。
+> ——把 UI 从「手算坐标」变成「选块 + 填值 + 排序」：`zkuitool compose spec.json --project <工程> --render --check`（11 个块，出 json + 切图 + 渲染图 + 全检）。

@@ -121,6 +121,7 @@
       "meaning": "设备 `/dev/fb0` 读不了（0 字节 / 无节点 / 权限）",
       "who": "device",
       "retryable": false,
+      "engine": true,
       "action": "先看有没有卡住的读取进程（返回体带 fbStrays）——有就先别反复重试；视频层改用 `layer=\"video\"`（走 zkshot，不碰 fb）；仍不行按现场设备情况排查",
       "raisedBy": [
         "ui_tools/device_screenshot.py"
@@ -203,6 +204,15 @@
       "who": "caller",
       "retryable": false,
       "action": "直接用返回 hint 里的新名字",
+      "raisedBy": [
+        "mcp_server.py"
+      ]
+    },
+    "OP_REMOVED": {
+      "meaning": "op 已被移除（入口没了，不是改名）：能力下线或并入别处；旧名不做兼容",
+      "who": "caller",
+      "retryable": false,
+      "action": "按返回 hint 里的去路改调用（返体也给了 op='list'）；不要拿相近名硬套，名字像 ≠ 语义等价",
       "raisedBy": [
         "mcp_server.py"
       ]

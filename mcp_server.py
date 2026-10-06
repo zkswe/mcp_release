@@ -250,6 +250,11 @@ def _suggest(op: str, limit: int = 5) -> list:
     out = []
     try:
         import kb_tools as _kb
+        if key in getattr(_kb, 'REMOVED', {}):
+            # 已移除：**不给相似名建议**（2026-10-06）。名字像 ≠ 语义等价 —— 实测
+            # `flythings_create_bin_project` 会被建议成 `flythings_create_project`，
+            # 那是「可执行程序」vs「UI 应用」两种东西；移除说明由 OP_REMOVED 那条路给。
+            return []
         if key in getattr(_kb, 'RENAMED', {}):
             out.append(_kb.RENAMED[key])
     except Exception:
@@ -405,19 +410,24 @@ async def flythings_kb(op: str = "list", args: str = "{}",
     if fn is None:
         try:
             import kb_tools as _kb
-            renamed = _kb.RENAMED.get(op)
         except Exception:
-            renamed = None
+            _kb = None
+        renamed = (getattr(_kb, 'RENAMED', {}) or {}).get(op) if _kb else None
         if renamed:
-            try:
-                extra = kb_tools.RENAMED_HINT.get(renamed, '')
-            except Exception:
-                extra = ''
+            extra = (getattr(_kb, 'RENAMED_HINT', {}) or {}).get(renamed, '')
             hint = '直接改用 %s（旧名不再提供）' % renamed
             if extra:
                 hint += '；' + extra
             return _err_json("OP_RENAMED",
                              "op %s 已合并/改名为 %s" % (op, renamed), hint)
+        # 已移除（入口没了，不是改名）：如实说「已移除 + 去路」，不给相似名候选（见 _suggest）。
+        removed = (getattr(_kb, 'REMOVED', {}) or {}).get(op) if _kb else None
+        if removed:
+            return _err_json("OP_REMOVED",
+                             "op %s 已移除（since %s）：%s"
+                             % (op, removed.get('since') or '?',
+                                removed.get('reason') or ''),
+                             removed.get('next') or '调 op="list" 取当前可用 op')
         return _err_json("UNKNOWN_OP", "unknown op: %s" % op,
                          "调 op='list' 取全部 op 与参数名；或见 candidates",
                          candidates=_suggest(op))

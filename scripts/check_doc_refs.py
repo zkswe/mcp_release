@@ -74,6 +74,10 @@ ALLOW_PATH_PREFIX = {
 }
 # 例外：个别"看着像路径、其实不是文件指针"的引用（逐条取证过）
 ALLOW_REF = {
+    'templates/ui_blocks/compose.py':
+        '发布形态（2026-10-06）：组装器实现收进 bin/zkuitool（源码不随包）；此处是'
+        '门禁自身的生产者登记（lint_draw_sites.py 的 PRODUCERS、draw_sites_baseline.txt）'
+        '与发布版历史记录（features_recent.json）里的引用，不是文档死指针。',
     'components/platforms.md':
         '集体引用（指 components/ 下那 16 篇 platforms.md），不是单个文件；'
         '出现在 gen_manifest 的注释与用例 docstring 里（2026-10-03 取证）',

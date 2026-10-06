@@ -1,6 +1,9 @@
 # 界面块片段库 + 组装器（ui_blocks）· MVP
 
 > **一句话**：让 AI（和人）做 FlyThings 界面时，从「手算坐标」变成「**选块 + 填值 + 排序**」——
+> **发布版说明**：组装器**实现**收在工具箱里（`bin/zkuitool/`），用 `zkuitool compose <spec.json> --project <工程根>` 调用（`--render` / `--check` 参数与源码版一致）；本目录只随包分发**块定义**（`blocks/`）、**示例**（`examples/`）与本文档 —— 都是 AI 需要读的明文。
+> 块定义目录可用环境变量 `ZKUITOOL_BLOCKS` 指向你自己的那份。
+
 > 像用 Bootstrap/组件库那样拼界面，并且**一次就出能过的产物**：json + 切图 + 渲染图 + 全检。
 >
 > 建立：2026-10-01（「按照你的建议做」）。第 2 批（交互类 7 块）：2026-10-01 同日追加。
@@ -44,7 +47,7 @@ templates/ui_blocks/
 ## 2. 用法（一条命令）
 
 ```bash
-python templates/ui_blocks/compose.py <spec.json> --project <工程根> [--page main] [--render] [--check]
+zkuitool compose <spec.json> --project <工程根> [--page main] [--render] [--check]
 ```
 
 | 参数 | 说明 |
@@ -62,17 +65,17 @@ python templates/ui_blocks/compose.py <spec.json> --project <工程根> [--page 
 
 ```bash
 cd tools/FlyThings_mcp_open
-python templates/ui_blocks/compose.py templates/ui_blocks/examples/settings_1024x600/spec.json \
+zkuitool compose templates/ui_blocks/examples/settings_1024x600/spec.json \
        --project templates/ui_blocks/examples/settings_1024x600/project --render --check
-python templates/ui_blocks/compose.py templates/ui_blocks/examples/settings_320x240/spec.json \
+zkuitool compose templates/ui_blocks/examples/settings_320x240/spec.json \
        --project templates/ui_blocks/examples/settings_320x240/project --render --check
-python templates/ui_blocks/compose.py templates/ui_blocks/examples/interactive_1024x600/spec.json \
+zkuitool compose templates/ui_blocks/examples/interactive_1024x600/spec.json \
        --project templates/ui_blocks/examples/interactive_1024x600/project --render --check
-python templates/ui_blocks/compose.py templates/ui_blocks/examples/interactive_320x240/spec.json \
+zkuitool compose templates/ui_blocks/examples/interactive_320x240/spec.json \
        --project templates/ui_blocks/examples/interactive_320x240/project --render --check
-python templates/ui_blocks/compose.py templates/ui_blocks/examples/nav_1024x600/spec.json \
+zkuitool compose templates/ui_blocks/examples/nav_1024x600/spec.json \
        --project templates/ui_blocks/examples/nav_1024x600/project --render --check
-python templates/ui_blocks/compose.py templates/ui_blocks/examples/nav_320x240/spec.json \
+zkuitool compose templates/ui_blocks/examples/nav_320x240/spec.json \
        --project templates/ui_blocks/examples/nav_320x240/project --render --check
 ```
 
@@ -80,7 +83,7 @@ python templates/ui_blocks/compose.py templates/ui_blocks/examples/nav_320x240/s
 
 ```bash
 cd tools/FlyThings_mcp_open
-python templates/ui_blocks/full_render.py templates/ui_blocks/examples/nav_1024x600/project \
+zkuitool full_render templates/ui_blocks/examples/nav_1024x600/project \
        --out templates/ui_blocks/examples/nav_1024x600/main.full.render.png
 ```
 
@@ -294,7 +297,7 @@ python templates/ui_blocks/full_render.py templates/ui_blocks/examples/nav_1024x
 
 ## 6. 自测结果（六版示例，全自动）
 
-> 命令：`python templates/ui_blocks/compose.py <示例>/spec.json --project <示例>/project --render --check`\
+> 命令：`zkuitool compose <示例>/spec.json --project <示例>/project --render --check`\
 > 再加一遍 `python tools/ui_tools/check_all.py <示例>/project`（存到 `check_all.log`）。**六版都是 compose exit 0 + check_all exit 0（0 FAIL / 0 需审批 WARN）**；
 > 第 3 批改完 `compose.py` 后，**旧四版全部重跑一遍（回归）仍是 exit 0**，且旧四版产物与上一版**逐字节一致**（`git status` 无改动 = 新代码对旧块零影响）。\
 > **图标来源改口径（§5.1）后六版又全部重跑一遍**：仍是 compose exit 0 + check_all exit 0（0 FAIL），

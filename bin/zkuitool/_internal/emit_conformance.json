@@ -1,0 +1,166 @@
+{
+ "schema": 1,
+ "authority": "发射口径对账快照：真源 = `ui_tools/ui_emit.py`（唯一发射层）；对照方 = `ui_tools/html2json.py` 的实际产物。由 `tests/test_emit_conformance.py` 重算对比，漂移即红。",
+ "updated": "2026-10-05",
+ "html2jsonError": "",
+ "_reasons": {
+  "alignment": "编码口径不同：html2json 写 36/37，发射层写 0/5（位模型 5≡37 已见于注册表；0 与 36 的**等价性未实测**）→ 待真机各出一张对齐样例核对，核完在此写结论",
+  "colorTab": "html2json 只写用到的槽（color0），发射层写五槽（未用恒 -1）——引擎按缺省补，语义等价；差异属**编码形态**，不是取值冲突",
+  "bgColorTab": "同 colorTab（编码形态）",
+  "hintTextColor": "默认值口径不同（html2json 0 = 黑 vs 发射层 0x808080 灰）→ 待确认哪个是 IDE 真源",
+  "touchable": "默认值口径不同（html2json seekbar 写 False；注册表/发射层 True——滑条不可触摸等于点不动，**倾向发射层对**）→ 待真机核",
+  "_missingRequired": "前端产物**缺注册表必填键** = 字段全集铁律的缺口（真缺陷，不是编码差异）；未修前由 `ui_compile` 报 SCH002（默认不阻断 pack，`strict_ui=True` 拦）",
+  "composeValueDiffs": "compose 的控件**取值**来自 `templates/ui_blocks/blocks/_tokens.json` + 块参数（按源稿而定），与\"发射层默认值\"对比没有意义 → 本段只比**字段完整性**（missingRequired / extraKeys）；compose 的 TD-5 段位口径另在同一份快照的 compose.types 里体现。"
+ },
+ "types": {
+  "button": {
+   "sample": "button__3",
+   "missingRequired": [],
+   "valueDiffs": {
+    "alignment": {
+     "html2json": 37,
+     "uiEmit": 5
+    },
+    "bgColorTab": {
+     "html2json": {
+      "color0": 3621975
+     },
+     "uiEmit": {
+      "color0": -1,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+     }
+    },
+    "colorTab": {
+     "html2json": {
+      "color0": 15659766
+     },
+     "uiEmit": {
+      "color0": 16777215,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+     }
+    }
+   },
+   "extraKeys": []
+  },
+  "edittext": {
+   "sample": "edittext__4",
+   "missingRequired": [],
+   "valueDiffs": {
+    "alignment": {
+     "html2json": 37,
+     "uiEmit": 36
+    },
+    "bgColorTab": {
+     "html2json": {
+      "color0": 16777215
+     },
+     "uiEmit": {
+      "color0": 16777215,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+     }
+    },
+    "colorTab": {
+     "html2json": {
+      "color0": 0
+     },
+     "uiEmit": {
+      "color0": 2171169,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+     }
+    },
+    "hintTextColor": {
+     "html2json": 0,
+     "uiEmit": 8421504
+    }
+   },
+   "extraKeys": []
+  },
+  "seekbar": {
+   "sample": "seekbar__5",
+   "missingRequired": [],
+   "valueDiffs": {
+    "touchable": {
+     "html2json": false,
+     "uiEmit": true
+    }
+   },
+   "extraKeys": []
+  },
+  "textview": {
+   "sample": "textview__2",
+   "missingRequired": [],
+   "valueDiffs": {
+    "alignment": {
+     "html2json": 36,
+     "uiEmit": 0
+    },
+    "colorTab": {
+     "html2json": {
+      "color0": 15659766
+     },
+     "uiEmit": {
+      "color0": 16777215,
+      "color1": -1,
+      "color2": -1,
+      "color3": -1,
+      "color4": -1
+     }
+    }
+   },
+   "extraKeys": []
+  },
+  "window": {
+   "sample": "window__1",
+   "missingRequired": [],
+   "valueDiffs": {},
+   "extraKeys": []
+  }
+ },
+ "compose": {
+  "specs": [
+   {
+    "name": "complex_320x240",
+    "controls": 125
+   },
+   {
+    "name": "complex_1024x600",
+    "controls": 126
+   }
+  ],
+  "types": {
+   "window": {
+    "missingRequired": [],
+    "extraKeys": [],
+    "samples": 20
+   },
+   "textview": {
+    "missingRequired": [],
+    "extraKeys": [],
+    "samples": 175
+   },
+   "button": {
+    "missingRequired": [],
+    "extraKeys": [],
+    "samples": 54
+   },
+   "edittext": {
+    "missingRequired": [],
+    "extraKeys": [],
+    "samples": 2
+   }
+  },
+  "errors": []
+ }
+}

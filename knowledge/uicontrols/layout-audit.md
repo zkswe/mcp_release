@@ -75,7 +75,7 @@ evidence: []
 | window | 110000 | circlebar | 130000 |
 | imageanim | 160000 | | |
 
-同一张表也是 `templates/ui_blocks/compose.py` 的取值（checkbox 94500 / radiobutton 94100 与它一致）。
+同一张表也是 `zkuitool compose` 的取值（checkbox 94500 / radiobutton 94100 与它一致）。
 
 ## 4. 遗留说明（诚实标注）
 

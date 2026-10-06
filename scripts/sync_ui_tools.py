@@ -114,6 +114,12 @@ def main():
         print('[SKIP] 副本目录不存在: %s（--to 指定）；本机无副本 → 跳过比对（不是漂移）' % dst)
         return 2
 
+    # 发布版形态（引擎收进 bin/zkuitool，ui_tools/*.py 是转发薄壳）：本脚本比的是
+    # 「两份源码副本」，薄壳 ≠ 源码是**设计如此**，不是漂移 → 统一 rc=2（skip）。
+    if os.path.isfile(os.path.join(SRC, '_zktool.py')):
+        print('[SKIP] 薄壳形态（发布版）：ui_tools/*.py 为实现体在 bin/zkuitool 的转发薄壳 → 不比对')
+        return 2
+
     res = compare(dst)
     bad = {k: v for k, v in res.items() if v != 'same'}
     if a.apply:

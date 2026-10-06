@@ -67,7 +67,7 @@ ui/*.ftu  ← 设备实际加载的是它
 | 直接改 json / 批量改 | 改完 `flythings_fui_pack(json_path="<项目>/ui/main.json")`；要连编译部署一起走 → `flythings_build_ui_flow(project_root, with_launch=True)` |
 | 只改一个属性/文本（走 op） | `flythings_edit_ftu(ftu_path, operations=...)`：它**把变更应用到 json 再 pack 回 ftu**（见 §5） |
 | 客户不用 MCP、纯命令行 | `fui pack <项目>/ui` → `fun build -p <平台>` → `fun launch -p <平台> -s <设备>`（工具随项目：`<项目>/ui/fui.exe`、`<项目>/fun.exe`） |
-| 新界面从零开始 | **缺省前端 = HTML 原型**（线框/风格稿，客户确认载体）：`flythings_html_to_json` → `ui/main.json`；**也可按 schema 直写 json（`flythings_ui_schema` 查字段）或走块库 spec（`templates/ui_blocks/compose.py`）**——入口不排他，但**产物一律过 `ui_compile` + `check_all`**（口径见 `knowledge/devflow/ui-pipeline-spec.md`）；随后 pack → 预览 `flythings_ui_preview` → 真机验收 |
+| 新界面从零开始 | **缺省前端 = HTML 原型**（线框/风格稿，客户确认载体）：`flythings_html_to_json` → `ui/main.json`；**也可按 schema 直写 json（`flythings_ui_schema` 查字段）或走块库 spec（组装器在工具箱里：`zkuitool compose`；块定义见 `templates/ui_blocks/blocks/`）**——入口不排他，但**产物一律过 `ui_compile` + `check_all`**（口径见 `knowledge/devflow/ui-pipeline-spec.md`）；随后 pack → 预览 `flythings_ui_preview` → 真机验收 |
 
 不要做的事：**不要绕过 pack 直接改设备上的 `/tmp/ui/*.ftu`**（下次 launch 全量推送就覆盖，且本地与设备对不上，
 见 `knowledge/devflow/ui-layout-verify.md` §9 红线）。
