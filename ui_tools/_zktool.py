@@ -57,8 +57,18 @@ def _jsonable(v):
 
 
 def rpc(mod, func, *args, **kwargs):
-    """把 `mod.func(*args, **kwargs)` 交给 exe 执行并取回返回值。"""
+    """把 `mod.func(*args, **kwargs)` 交给 exe 执行并取回返回值。
+
+    超时（默认 1800 s，可用环境变量 `ZKUITOOL_TIMEOUT` 覆盖）：引擎里有些操作本来就慢
+    （构建 42 页工程、打包、真机拉屏），所以默认给得宽；但**不允许无限等** ——
+    2026-10-06 实测过转发进程挂住把父进程一起拖死。超时按 `OSError` 报清原因，不静默。
+    """
     exe = exe_path()
+    try:
+        timeout = int(os.environ.get('ZKUITOOL_TIMEOUT') or 1800)
+    except ValueError:
+        raise RuntimeError('ZKUITOOL_TIMEOUT 需为整数（秒），当前=%r'
+                           % os.environ.get('ZKUITOOL_TIMEOUT'))
     tmp = tempfile.mkdtemp(prefix='zkuitool-')
     a_path = os.path.join(tmp, 'args.json')
     o_path = os.path.join(tmp, 'out.json')
@@ -68,7 +78,10 @@ def rpc(mod, func, *args, **kwargs):
     cmd = [exe, 'rpc', '%s.%s' % (mod, func), '--args', a_path, '--out', o_path]
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True,
-                              encoding='utf-8', errors='replace')
+                              encoding='utf-8', errors='replace', timeout=timeout)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError('zkuitool rpc 超时（%ds）：%s.%s —— 可用 ZKUITOOL_TIMEOUT 调大'
+                           % (timeout, mod, func))
     except OSError as e:
         raise RuntimeError('zkuitool.exe 执行失败: %s' % e)
     if not os.path.isfile(o_path):
