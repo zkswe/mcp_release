@@ -1,10 +1,10 @@
 {
  "meta": {
   "schema": 1,
-  "built_at": "2026-10-06 21:18:52",
+  "built_at": "2026-10-06 23:06:47",
   "mcp_version": "0.27.199-open",
   "doc_count": 102,
-  "source_hash": "04adcb5f3ec79ba3bcc29ab33a6e156b"
+  "source_hash": "ee912f7f5f71313da2b5abd29b737c24"
  },
  "summary": {
   "total": 102,
@@ -407,17 +407,17 @@
     "fsc",
     "fun-lock",
     "fsc-lock",
-    "json",
     "老工程不用改",
     "MCP 两代都认",
-    "产物",
     "注册表双向兼容",
-    "exe",
     "fuse",
     "FSC_HOME_PATH",
     "工具链",
     "编译命令",
-    "fun build"
+    "fun build",
+    "LOGD_TRACE",
+    "logic.cc",
+    "base/log.h"
    ],
    "status": "review",
    "confidence": "manual",
@@ -429,8 +429,8 @@
    "evidenceLevel": "manual-only",
    "needsEvidence": true,
    "hasQueries": false,
-   "bytes": 17020,
-   "sha256": "c61afb4ad4dee88b898cac333a569780a1e0ef6858713bd66ab8c50bf35b606f",
+   "bytes": 19537,
+   "sha256": "e349e0fddc950bead631ca2c8081c612ed654c5226fddf2522db663d862c2fce",
    "fingerprint": "dc2d31c007a46e7d",
    "ageDays": 7,
    "freshness": "fresh",

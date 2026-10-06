@@ -10,7 +10,7 @@ origin: total
 source: 2026-09-29 front-matter 迁移（P1：先显式登记"待补可执行判据"）
 needs_evidence: true
 platforms: [F133, Z20, Z235X]
-tags: [产物目录, fun, fsc, fun-lock, fsc-lock, json, 老工程不用改, MCP 两代都认, 产物, 注册表双向兼容, exe, fuse, FSC_HOME_PATH, 工具链, 编译命令, fun build]
+tags: [产物目录, fun, fsc, fun-lock, fsc-lock, 老工程不用改, MCP 两代都认, 注册表双向兼容, fuse, FSC_HOME_PATH, 工具链, 编译命令, fun build, LOGD_TRACE, logic.cc, base/log.h]
 evidence: []
 ---
 # 🧰 fun 命令行工具链（原 fuse 更名；2026-09-28 内部又改成 fsc、产物目录 `.fun/` → `.fsc/`）+ 宏/产物目录改名
@@ -147,6 +147,57 @@ INIT_UI_EVENT_BINDINGS
   ⚠️ `base/` 前缀**不是 base-utility 独占**：`base-http-client`→`base/http_*.h`、`base-json`→`base/json_*.h`、`easyui 3.0.0(Z20)`→`base/fy_*.h`（本机注册表实扫），按「精确头名 + 前缀排除」判定。
 
 **同源现象（一起记）**：`fun build` 报 `找不到 base utils` / `base-utility 缺失` / `fun install 没生效` —— 同一条根因。
+
+## 4.8 `<page>Logic.cc` 头部：IDE 编译 vs FUN 编译 的两处差异（2026-10-06 实测）
+
+**一句话**：`fun build`（以及 IDE 生成器）产出的 `<page>Logic.cc` 头部，把
+`REGISTER_ACTIVITY_TIMER_TAB` 写在 `#ifdef FUN_BUILD` **里面**、并且**不补** `#include "base/log.h"` ——
+这会让**两种编译各坏一种**。正确形态 = 两者都放在守卫**外面**。
+
+### 症状（对着报错直接定位）
+
+| 你看到的报错 | 哪个编译体系 | 根因 |
+|---|---|---|
+| `'REGISTER_ACTIVITY_TIMER_TAB' was not declared in this scope`（出现在 `src/activity/<page>Activity.cpp` 的 `sizeof(REGISTER_ACTIVITY_TIMER_TAB)/sizeof(S_ACTIVITY_TIMEER)`） | **IDE（Eclipse/CDT）** | 不定义 `FUN_BUILD` → 守卫块里的定时器表**整个消失** |
+| `'LOGD_TRACE' was not declared` / `'LOGD' was not declared` | **`fun build`** | 缺 `#include "base/log.h"` |
+
+### 两种形态（照 `templates/DemoControls_V85X/src/logic/` 对比）
+
+| | `buttonLogic.cc`（**正确**） | `canvasLogic.cc`（fun 生成，需修） |
+|---|---|---|
+| `REGISTER_ACTIVITY_TIMER_TAB` | 在 `#ifdef FUN_BUILD … #endif` **外面** | 在守卫**里面** |
+| `#include "base/log.h"` | **有** | **没有** |
+
+修完的目标形态（头部）：
+
+```c
+#ifdef FUN_BUILD
+#include GENERATED_UI_DEFINITIONS
+INIT_UI_EVENT_BINDINGS
+
+#endif // FUN_BUILD          // ← 守卫收口在表之前
+
+/** 注册定时器 … */
+static S_ACTIVITY_TIMEER REGISTER_ACTIVITY_TIMER_TAB[] = {
+  //{0,  6000}, //定时器id=0, 时间间隔6秒
+};
+
+#include "base/log.h"        // ← 必须有
+```
+
+### 修法（临时补丁，fun 侧修好生成器后可撤）
+
+- **脚本**：`python scripts/fix_fun_logic_cc.py <项目根|目录|单个 .cc>`
+  - 把定时器表（连同上方注释块）移出守卫；文件里真用了 `LOGD*`/`LOGI*` 时补 `base/log.h`
+  - **幂等**；`--check` 只报告（rc=1=有需修的）、`--dry-run`、`--quiet`
+- **自动**：`flythings_build_ui_flow` 在 **`fun build` 前 / 后各跑一次**（build 会重生成 `logic.cc`），
+  修了哪些文件写进返回体 `steps` + `warnings`（不静默）
+- 判据/验证（实测）：修完 `canvasLogic.cc` 头部与 `buttonLogic.cc` **逐行同构**；复跑 `--check` → 需修 0
+
+### 检索词
+
+`LOGD_TRACE 未声明` / `REGISTER_ACTIVITY_TIMER_TAB 未声明` / `sizeof(REGISTER_ACTIVITY_TIMER_TAB)` /
+`IDE 编译 定时器表 消失` / `logic.cc 头部` / `fun 生成 logic.cc 报错` / `FUN_BUILD 守卫`
 
 ---
 
