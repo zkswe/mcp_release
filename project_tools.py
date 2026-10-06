@@ -2210,21 +2210,13 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
     _fx_note2 = _fix_fun_logic_cc(project_root)
     if _fx_note2:
         steps.append({"step": "补丁: logic.cc 头部（build 后）", "success": True, "detail": _fx_note2})
+        # 需求方 2026-10-06 纠正：**fun build 本身不会因此失败** —— 这两处差异只在
+        # 「用 FlyThings IDE 编译 fun 生成的工程」时暴露。所以动作是：修好代码 +
+        # 明确让用户用 IDE 重编，而不是等 fun 报错（别把 fun 侧写成会失败）。
         warnings.append('已自动修 fun 生成的 logic.cc 头部（定时器表移出 FUN_BUILD 守卫 + 补 base/log.h）：'
-                        '%s；IDE 侧请**重新编译**一次即与 fun 产物一致（脚本 scripts/fix_fun_logic_cc.py）' % _fx_note2)
-    # ④.1 命中本 bug 签名且刚才真改了文件 → **直接重试一次 build**（2026-10-06 需求方口径：
-    #     确认即直接修代码，不只给建议；IDE 侧另提示重编）。
-    if not rb['success']:
-        _bout0 = (rb.get('stderr') or '') + (rb.get('stdout') or '') + (rb.get('error') or '')
-        _hit = any(k in _bout0 for k in ('LOGD_TRACE', 'LOGD', 'REGISTER_ACTIVITY_TIMER_TAB'))
-        if _fx_note2 and _hit:
-            rb2 = _run_fun('build', project_root)
-            steps.append({"step": "fun build（补丁后重试）", "success": rb2['success'],
-                          "detail": (rb2.get('stderr') or rb2.get('stdout') or rb2.get('error') or '')[-500:]})
-            if rb2['success']:
-                rb = rb2
-                warnings.append('logic.cc 头部修正后重新编译已通过；**IDE 侧请重新编译一次**'
-                                '（IDE 编译单元是 src/activity/*.cpp，fun build 不会重建它）')
+                        '%s；**请用 FlyThings IDE 重新编译一次**'
+                        '（IDE 编译单元是 src/activity/*.cpp，fun build 不会重建它； '
+                        'fun 侧未受影响，本次已通过）' % _fx_note2)
     if not rb['success']:
         err = rb.get('error') or "fun build 失败"
         bout = (rb.get('stderr') or '') + (rb.get('stdout') or '')

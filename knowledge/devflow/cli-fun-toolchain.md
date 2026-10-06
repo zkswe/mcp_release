@@ -150,16 +150,19 @@ INIT_UI_EVENT_BINDINGS
 
 ## 4.8 `<page>Logic.cc` 头部：IDE 编译 vs FUN 编译 的两处差异（2026-10-06 实测）
 
-**一句话**：`fun build`（以及 IDE 生成器）产出的 `<page>Logic.cc` 头部，把
-`REGISTER_ACTIVITY_TIMER_TAB` 写在 `#ifdef FUN_BUILD` **里面**、并且**不补** `#include "base/log.h"` ——
-这会让**两种编译各坏一种**。正确形态 = 两者都放在守卫**外面**。
+**一句话**：`fun build` 生成的 `<page>Logic.cc` 头部把 `REGISTER_ACTIVITY_TIMER_TAB` 写在 `#ifdef FUN_BUILD`
+**里面**、且**不补** `#include "base/log.h"` —— **`fun build` 自己不会失败**（生成侧口径是自洽的），
+**只有用 FlyThings IDE 编译这个工程时才会报错**。正确形态 = 两者都放在守卫**外面**（IDE 与 fun 都能过）。
 
-### 症状（对着报错直接定位）
+### 症状（**用 FlyThings IDE 编译**时报出来）
 
-| 你看到的报错 | 哪个编译体系 | 根因 |
-|---|---|---|
-| `'REGISTER_ACTIVITY_TIMER_TAB' was not declared in this scope`（出现在 `src/activity/<page>Activity.cpp` 的 `sizeof(REGISTER_ACTIVITY_TIMER_TAB)/sizeof(S_ACTIVITY_TIMEER)`） | **IDE（Eclipse/CDT）** | 不定义 `FUN_BUILD` → 守卫块里的定时器表**整个消失** |
-| `'LOGD_TRACE' was not declared` / `'LOGD' was not declared` | **`fun build`** | 缺 `#include "base/log.h"` |
+| 你看到的报错 | 根因 |
+|---|---|
+| `'REGISTER_ACTIVITY_TIMER_TAB' was not declared in this scope`（出现在 `src/activity/<page>Activity.cpp` 的 `sizeof(REGISTER_ACTIVITY_TIMER_TAB)/sizeof(S_ACTIVITY_TIMEER)`） | IDE 不定义 `FUN_BUILD` → 包在守卫里的定时器表**整个消失** |
+| `'LOGD_TRACE' was not declared` / `'LOGD' was not declared` | 缺 `#include "base/log.h"` |
+
+> ⚠️ **`fun build` 不会因此失败**（别等它报错，也别写成「fun 侧编译也不过」）—— 问题**只在 IDE 侧**暴露。
+> 判据：同一份 `src/logic/*.cc`，`fun build` 通过、IDE 报上面两条之一。
 
 ### 两种形态（照 `templates/DemoControls_V85X/src/logic/` 对比）
 
@@ -201,10 +204,9 @@ static S_ACTIVITY_TIMEER REGISTER_ACTIVITY_TIMER_TAB[] = {
 
 1. **直接跑修**：`python scripts/fix_fun_logic_cc.py <项目根>`（幂等；要只看不改用 `--check`）
    —— 它会修项目里**所有** `src/logic/*.cc`（不只报错那一个页面），并把改动列出来
-2. **fun 侧复验**：重跑 `fun build`（`flythings_build_ui_flow` 已内置：build 前/后自动修 + 命中签名时自动重试一次）
-3. **必须提示用户**：`logic.cc` 修好后请**用 IDE 重新编译一次** —— IDE 的编译单元是
+2. **必须提示用户**：改完后请**用 FlyThings IDE 重新编译一次** —— IDE 的编译单元是
    `src/activity/<page>Activity.cpp`（再由它 `#include` logic），`fun build` 不会重建 IDE 侧产物；
-   两边都重编过才算修完
+   **fun 侧无需处理**（本来就能过，改完仍然能过）
 4. **诚实记账**：把「改了哪些文件 + 需要 IDE 重编」明确告诉用户（工具侧会写进返回体 `steps`/`warnings`）
 
 > 反例（不要这样做）：只回一句"你的 logic.cc 头部有问题，建议把定时器表移出 `#ifdef`" —— 需求方口径是
