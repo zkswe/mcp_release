@@ -223,6 +223,37 @@ def _adb_online_devices():
     return [d['serial'] for d in devs if d.get('state') == 'device']
 
 
+def _fix_fun_logic_cc(project_root):
+    """跑 scripts/fix_fun_logic_cc.py 修 fun 生成的 `<page>Logic.cc` 头部（幂等）。
+
+    为什么需要（2026-10-06 需求方报，已对死两份模板文件）：`fun build` 生成的 logic.cc 把
+    `REGISTER_ACTIVITY_TIMER_TAB` 包在 `#ifdef FUN_BUILD` **里面**且不补 `#include "base/log.h"` →
+    IDE 编译（不定义 FUN_BUILD）时该表消失（Activity.cpp 里 sizeof(…)/sizeof(…) 报未声明）；
+    FUN 编译时 `LOGD_TRACE`/`LOGD` 未声明。正确形态 = 表与 log.h 都在守卫外。
+
+    返回：修了文件时的说明串（供 steps/warnings 记账）；无需修 / 脚本缺失 → 空串。
+    """
+    script = os.path.join(_BASE, 'scripts', 'fix_fun_logic_cc.py')
+    if not os.path.isfile(script):
+        return ''
+    import sys as _sys                         # 本模块没 import sys（只这里用）
+    try:
+        r = subprocess.run([_sys.executable, script, project_root, '--quiet'],
+                           capture_output=True, text=True, encoding='utf-8', errors='replace',
+                           timeout=300)
+    except Exception as e:                       # noqa: BLE001
+        return '补丁脚本执行失败：%s: %s' % (type(e).__name__, e)
+    out = ((r.stdout or '') + (r.stderr or '')).strip()
+    m = re.search(r'已修 (\d+) 个', out)
+    if m and int(m.group(1)) > 0:
+        names = [l.split(']', 1)[1].split('——')[0].strip()
+                 for l in out.splitlines() if l.startswith('[已修]')]
+        return '修 %d 个：%s' % (int(m.group(1)), '、'.join(names[:4]) or '（见脚本输出）')
+    if r.returncode not in (0, 1):
+        return '补丁脚本异常退出 rc=%d：%s' % (r.returncode, out[-200:])
+    return ''
+
+
 def _run_fun(cmd, project_dir, device='', retries=1, timeout=600, extra=None):
     """执行 fun.exe 命令（build/launch 等），在项目根目录运行。
     fun.exe 与 fui.exe 同目录（D:/zkswe/fun/ 或自动探测）。
@@ -2167,9 +2198,20 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
                        'note': '字体体检异常，未见结论'}
 
     # ④ fun build（编译）
+    # ④.0 前置补丁（2026-10-06 需求方报）：fun 生成的 `<page>Logic.cc` 头部有「IDE 编译 vs FUN 编译」
+    #     框架差异（定时器表被包进 `#ifdef FUN_BUILD` 里 + 缺 `base/log.h`），两种编译各坏一种。
+    #     补丁脚本幂等，build 前/后各跑一次（fun build 会重生成 logic.cc）。
+    _fx_note = _fix_fun_logic_cc(project_root)
+    if _fx_note:
+        steps.append({"step": "补丁: logic.cc 头部（build 前）", "success": True, "detail": _fx_note})
     rb = _run_fun('build', project_root)
     steps.append({"step": "fun build", "success": rb['success'],
                   "detail": (rb.get('stderr') or rb.get('stdout') or rb.get('error') or '')[-500:]})
+    _fx_note2 = _fix_fun_logic_cc(project_root)
+    if _fx_note2:
+        steps.append({"step": "补丁: logic.cc 头部（build 后）", "success": True, "detail": _fx_note2})
+        warnings.append('已自动修 fun 生成的 logic.cc 头部（定时器表移出 FUN_BUILD 守卫 + 补 base/log.h）：'
+                        '%s；IDE 侧重编即一致（脚本 scripts/fix_fun_logic_cc.py）' % _fx_note2)
     if not rb['success']:
         err = rb.get('error') or "fun build 失败"
         bout = (rb.get('stderr') or '') + (rb.get('stdout') or '')
