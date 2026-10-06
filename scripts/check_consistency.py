@@ -1647,9 +1647,16 @@ def stage_delegated(skip_smoke, with_tests):
             ('WORK_PLAN.md', r'门禁\s*\*\*(\d+)\s*项\*\*', gates, '门禁条数'),
             (os.path.join('tests', '_util.py'), r'全套\s*(\d+)\s*条用例', cases, '用例数'),
         ]
-        badc, hits_ok = [], 0
+        badc, hits_ok, skipped = [], 0, []
         for rel, rx, want, what in decl:
-            hit = re.findall(rx, _read(os.path.join(BASE, rel.replace('/', os.sep))))
+            fp = os.path.join(BASE, rel.replace('/', os.sep))
+            if not os.path.isfile(fp):
+                # 裁剪发布版（如 release 不带 WORK_PLAN.md）→ 该载体不存在，**显式跳过并列入**，
+                # 不静默、也不崩（2026-10-06：release 跑 --with-tests 时这里 FileNotFoundError，
+                # 把后面 30+ 条判据全带崩）。
+                skipped.append(rel)
+                continue
+            hit = re.findall(rx, _read(fp))
             if len(hit) != 1:
                 badc.append('%s 的「%s」命中 %d 次 /%s/（要恰好 1 次：0 次=措辞改了，>1 次=有第二处手写）'
                             % (rel, what, len(hit), rx))
@@ -1658,7 +1665,9 @@ def stage_delegated(skip_smoke, with_tests):
             if int(hit[0]) != want:
                 badc.append('%s 的「%s」写 %s 而实测 %d' % (rel, what, hit[0], want))
         check(not badc, '当前数字各处声明 == 实测（命中 %d 处）' % hits_ok,
-              '；'.join(badc[:3]) if badc else 'ok')
+              '；'.join(badc[:3]) if badc else
+              ('ok' if not skipped else 'ok（本构建无 %s，该载体显式跳过）'
+               % '、'.join(sorted(set(skipped)))))
 
 
 def main():
