@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""MCP server (stdio) — **flat 模式**：47 个 op 各自注册为独立工具（无分发器）。
+"""MCP server (stdio) — **flat 模式**：43 个 op 各自注册为独立工具（无分发器）。
 
 给哪类客户端用：Trae / Cursor / Claude Desktop 这类**需要每个工具独立 schema**、
 或者你不会（也不想）配置工具白名单的场景——它们能直接在工具面板里看到 `flythings_knowledge_search`
-`flythings_build_ui_flow` 等 47 个工具，参数提示由 schema 提供。
+`flythings_build_ui_flow` 等 43 个工具，参数提示由 schema 提供。
 
-代价：44 份 schema 常驻上下文（约 1 万 token/session）。想省 token 就用默认入口
+代价：43 份 schema 常驻上下文（约 1 万 token/session）。想省 token 就用默认入口
 `mcp_server.py`（只暴露 1 个 `flythings_kb`，op="list" 取目录）。
 
 配置（`.mcp.json`）：
@@ -32,12 +32,12 @@ import kb_tools
 import mcp_extras
 
 # 平台定位随 MCP initialize instructions 下发（与默认入口同一文案来源 = kb_tools.PLATFORM_POSITIONING）。
-# flat 模式没有分发器 docstring 这个常驻面，不补的话用 42 个独立工具的人看不到定位。
+# flat 模式没有分发器 docstring 这个常驻面，不补的话用 43 个独立工具的人看不到定位。
 try:
     mcp = FastMCP("flythings-kb-flat", instructions=kb_tools.positioning_instructions())
 except Exception:
     mcp = FastMCP("flythings-kb-flat")
-REGISTERED = kb_tools.register_all(mcp)     # 42 个独立工具（不含 flythings_kb 分发器）
+REGISTERED = kb_tools.register_all(mcp)     # 43 个独立工具（不含 flythings_kb 分发器）
 mcp_extras.register(mcp)                    # resources + prompts（与默认入口同一实现）
 
 

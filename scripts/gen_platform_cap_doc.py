@@ -43,7 +43,7 @@ source: 由 platform_capabilities.json 派生（scripts/gen_platform_cap_doc.py�
 needs_evidence: false
 platforms: [{platforms}]
 tags: [平台支持, 组件可用性, 能不能用, 选型, Z20, Z21, F133, F135, T113, V85X, Z235X, 跨平台移植,
-       蓝牙 BLE 平台, 图标库平台, 双缓冲 blend2d, 视频层, 组件矩阵, capability matrix]
+       平台矩阵, 图标库平台, 双缓冲 blend2d, 视频层, 组件矩阵, capability matrix]
 evidence:
   - cmd: python scripts/gen_platform_cap_doc.py --check
     expect: rc=0（本页与 platform_capabilities.json 一致）
@@ -110,8 +110,8 @@ def howto():
         '```python',
         'import platform_cap_loader as pc',
         "pc.components_for_platform('Z20')      # Z20 上声明支持的组件",
-        "pc.cell('ble', 'Z20', '可用性')         # ble 在 Z20 的可用性原话",
-        "pc.platforms_of('ble')                 # ble 覆盖哪些平台",
+        "pc.cell('blur', 'Z20', '状态')          # blur 在 Z20 的状态原话",
+        "pc.platforms_of('blur')                # blur 覆盖哪些平台",
         '```', '',
         '**改**：① 改 `platform_capabilities.json` 对应组件的行 ② 跑 '
         '`python scripts/gen_platform_cap_doc.py` 与本页同步 ③ 跑 '
@@ -122,6 +122,10 @@ def howto():
         '',
         '> 本页只覆盖「能力矩阵」这一层。各平台的前置条件、已知限制、真机验收命令在'
         '各组件的 `components/*/platforms.md` 正文里。',
+        '',
+        '> ⚠️ **BLE 不在本矩阵**（2026-10-07 需求方口径）：它是**组件包/依赖包**层级的能力，'
+        '与 `mqtt`（`mqtt-cxx`）同级 —— 平台可用性、前置条件、真机验收都在 '
+        '`components/ble/platforms.md` 正文，查它的包用 `list_packages` / `package_search`。',
     ]
 
 

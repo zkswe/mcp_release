@@ -261,7 +261,7 @@ def register(mcp):
     @mcp.resource('flythings://ops', name='op-contract-index',
                   title='FlyThings op 完整契约（索引）', mime_type='text/markdown')
     def op_contract_index() -> str:
-        """47 个 op 的完整契约索引（一句话 + 触发词 + 参数名 + 去哪看细节）。
+        """43 个 op 的完整契约索引（一句话 + 触发词 + 参数名 + 去哪看细节）。
 
         工具面分层（`op_spec.json.tiers`）：tool description 只是**常驻**的「选不选 + 怎么调」；
         契约（流程/铁律/检索词）是**按需**的 —— 挂 `flythings://ops/<op 名>` 取单个（默认形态）；要单段挂 `flythings://ops/<op 名>/<段名>`（`skeleton`/`flow`/`returns`/`rules`/`refs`，`all` = 全文）。

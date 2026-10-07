@@ -26,6 +26,15 @@
         "kb_tools.py"
       ]
     },
+    "BAD_QUESTION": {
+      "meaning": "必填的 question 为空（技术支持入口没拿到用户原话）",
+      "who": "caller",
+      "retryable": false,
+      "action": "把用户原话放进 question（例：{\"question\": \"按键长按怎么写\"}）",
+      "raisedBy": [
+        "help_tools.py"
+      ]
+    },
     "BAD_PLATFORM": {
       "meaning": "平台名不在册",
       "who": "caller",
@@ -232,7 +241,8 @@
       "retryable": true,
       "action": "确认 rag_index.json 存在（跑 rebuild_index_local.py）；仍失败会降级 BM25",
       "raisedBy": [
-        "kb_tools.py"
+        "kb_tools.py",
+        "help_tools.py"
       ]
     },
     "TOOL_RAISED": {

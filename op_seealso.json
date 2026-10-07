@@ -102,6 +102,13 @@
         "knowledge/hardware/hardware-models.md"
       ]
     },
+    "flythings_help": {
+      "seeAlso": [
+        "knowledge/devflow/kb-growth.md",
+        "knowledge/devflow/symptom-index.md",
+        "knowledge/README.md"
+      ]
+    },
     "flythings_html_to_json": {
       "seeAlso": [
         "knowledge/devflow/html-subset-quickref.md",

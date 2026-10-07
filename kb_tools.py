@@ -124,7 +124,7 @@ def _kb_source_label(path):
 
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.199-open'
+MCP_VERSION = '0.27.200-open'
 MCP_BUILD = '2026-10-05'
 
 # ========== 平台定位（第一权威口径，2026-10-05 需求方定规）==========
@@ -532,6 +532,17 @@ def flythings_knowledge_search(query: str, k: int = 3) -> str:
                           '要补这条知识：flythings_knowledge_capture(...) → 补 evidence → '
                           'scripts/kb_verify.py 复验 → 人工签字后才入库')
     return json.dumps(out, ensure_ascii=False)
+
+
+def flythings_help(question: str, k: int = 3, platform: str = '',
+                   project_root: str = '') -> str:
+    """技术支持入口：口语问法归一后多路检索（命中/低置信不记知识缺口）。
+
+    ⚠️⚠️ 支持类问法（「XX 怎么写/为什么不行」）先走本 op：口语→机制词的归一（ALIAS_RULES + 症状注册表）只在这里做
+    ⚠️⚠️ steps/code 逐字摘自命中片段，禁脑补 API；写代码前必须打开 path 原文核对
+    """
+    import help_tools as _help
+    return _help.run_json(question, k, platform, project_root)
 
 
 def flythings_knowledge_capture(title: str, body: str = '', category: str = 'devflow',
@@ -2895,6 +2906,7 @@ for _n in _tool_names():
 OP_NAMES = (
     'flythings_get_version',
     'flythings_knowledge_search',
+    'flythings_help',
     'flythings_knowledge_capture',
     'flythings_knowledge_export',
     'flythings_knowledge_gaps',

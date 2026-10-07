@@ -87,6 +87,10 @@ ALLOW_REF = {
     'scripts/release_scope.json':
         '**release 分支**才带的文件（拿 master 跑时本就没有）；check_consistency 的注释已写明这一点'
         '（2026-10-03 取证）',
+    'scripts/gen_ui_tools_stubs.py':
+        '发布形态（PUBLISH.md §7）：薄壳/转发层是**构建期产物**，生成器只存在于 open 侧、'
+        '不随发布版；`ui_tools/_zktool.py` 的注释引它只是写出处，不是文档指针'
+        '（2026-10-07 取证：release-base e63ce62 上本条已是死指针，属既有漂移，逐条补登记）。',
 }
 
 

@@ -106,11 +106,11 @@
 | 模式 | 怎么配 | 客户端看到什么 |
 |------|--------|----------------|
 | `dispatcher`（默认） | 只指 `mcp_server.py` | 只暴露分发器 `flythings_kb`（`op="list"` 取目录）—— schema 开销最小 |
-| `all` | `FLYTHINGS_MCP_MODE=all` | 分发器 + 42 个独立工具（旧配置兼容） |
-| `flat` | 指 `mcp_server_flat.py`（或 `FLYTHINGS_MCP_MODE=flat`） | 42 个独立工具，无分发器（需要独立 schema 时用；代价 ≈ 1 万 token/session） |
+| `all` | `FLYTHINGS_MCP_MODE=all` | 分发器 + 43 个独立工具（旧配置兼容） |
+| `flat` | 指 `mcp_server_flat.py`（或 `FLYTHINGS_MCP_MODE=flat`） | 43 个独立工具，无分发器（需要独立 schema 时用；代价 ≈ 1 万 token/session） |
 
 ---
 
 **写知识/判据/op 契约前先读 [`DESIGN_SPEC.md`](DESIGN_SPEC.md)**（MCP 只讲"本平台与标准 Linux/rootfs/GUI/包组件的差异"；通用编程能力属 AI 原生，不入库；规范优先、实测优先、不静默、唯一真源）。
 
-当前版本 `0.27.199-open`（42 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`。
+当前版本 `0.27.200-open`（43 个工具）；工具清单 / 平台矩阵 / 知识规模快照见 `tools_manifest.json`。

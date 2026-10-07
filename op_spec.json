@@ -6,8 +6,8 @@
     "perOpMax": 320,
     "totalMax": 6000,
     "contractPerOpMax": 900,
-    "basis": "实测（2026-10-05，42 op）：常驻合计 **3771**、单条最长 296（`create_project`）—— 上限 6000，**余量 2245 字符 / ≈25 条 op**（2026-10-05 瘦身后复核：triggers 移出常驻 + 片段表 + seeAlso 去重；同日需求方改 `platform-positioning` 片段与 `map_control.flow` 措辞后再复核）。历史：2026-10-03 把 `params` 移出常驻（省 1148 字符 / 19.5%：参数名 `list` 已回、语义 `describe` 按需给，常驻再写一遍是重复计费），常驻从 5878/6000=98% 降到 4730/6000=78.8%；同日三批 `notes` 清零 + 4 条新硬规则（`knowledge_export` 强制脱敏、`fui_pack` ftu 是编译产物、`test_run` no-baseline≠通过、`get_package_api` 注册表没有≠平台没有）把它推到 5125/6000=84.7% —— 该常驻的判据（会让 AI 误判/泄露的那类）进常驻并**接受预算上涨**，这是分层的代价。**2026-10-05 平台定位口径**（需求方定规）再加定位规则（`create_project` / `build_ui_flow` / `list_packages` / `get_project_spec`：Linux 基座、非 MCU/ESP32 SDK、GUI 是自研 EasyUI≠LVGL），常驻到 **5925/6000=98.8%** —— 定位判错会让 AI 砍掉整层 Linux 能力、按 LVGL 类推 API，属「必须常驻」的判据；**下次要加常驻内容必须先腾地方（不要直接抬 totalMax）**。**2026-10-05 瘦身**（用户指示）：① `triggers` 移出常驻面（路由/目录/manifest 直接读 op_spec 字段，功能不变）；② 新增 `fragments` 共享片段表（`@platform-positioning`：同一句原抄 5 份）；③ `seeAlso` 渲染时去掉与 `docRef` 重复的条目（40/47 op 重复，合计 1550 字符）。**口径 = 渲染产物字符数**，由 gen_op_docs 计算并进发布闸门。⚠️ **本段的「常驻合计 N」由门禁对账**（check_consistency 的 `budget.basis 常驻数字`）—— 改 docstring 后忘了改这里会红，不会再漂。",
-    "note": "预算口径（数字全部实测，勿手写第二份）：**常驻面**合计 3755/6000；**按需面**单条上限 900，最长 `flythings_i18n` 已 **1940/900**。按需面已按段分层（2026-10-05）：计费单位是「一次取用」而非「整条 op」—— 全文超限时默认形态自动退化成 skeleton + 段目录（现测：默认形态最长 892（flythings_get_package_api）、除 all 外最长单段 866（flythings_ui_preview:rules））。all 恒等于全文、不参与单段判据（它是逃生门）。加内容前先看段余量，别再往单条上堆。"
+    "basis": "实测（2026-10-07，43 op，含本批新增 `flythings_help`）：常驻合计 **3926**、单条最长 289（`create_project`）—— 上限 6000，**余量 2074 字符 / ≈23 条 op**（2026-10-05 瘦身后复核：triggers 移出常驻 + 片段表 + seeAlso 去重；同日需求方改 `platform-positioning` 片段与 `map_control.flow` 措辞后再复核）。历史：2026-10-03 把 `params` 移出常驻（省 1148 字符 / 19.5%：参数名 `list` 已回、语义 `describe` 按需给，常驻再写一遍是重复计费），常驻从 5878/6000=98% 降到 4730/6000=78.8%；同日三批 `notes` 清零 + 4 条新硬规则（`knowledge_export` 强制脱敏、`fui_pack` ftu 是编译产物、`test_run` no-baseline≠通过、`get_package_api` 注册表没有≠平台没有）把它推到 5125/6000=84.7% —— 该常驻的判据（会让 AI 误判/泄露的那类）进常驻并**接受预算上涨**，这是分层的代价。**2026-10-05 平台定位口径**（需求方定规）再加定位规则（`create_project` / `build_ui_flow` / `list_packages` / `get_project_spec`：Linux 基座、非 MCU/ESP32 SDK、GUI 是自研 EasyUI≠LVGL），**当日常驻到 5925/6000=98.8%**（该数字是当日读数，当前值见本段开头） —— 定位判错会让 AI 砍掉整层 Linux 能力、按 LVGL 类推 API，属「必须常驻」的判据；**下次要加常驻内容必须先腾地方（不要直接抬 totalMax）**。**2026-10-05 瘦身**（用户指示）：① `triggers` 移出常驻面（路由/目录/manifest 直接读 op_spec 字段，功能不变）；② 新增 `fragments` 共享片段表（`@platform-positioning`：同一句原抄 5 份）；③ `seeAlso` 渲染时去掉与 `docRef` 重复的条目（40/47 op 重复，合计 1550 字符）。**口径 = 渲染产物字符数**，由 gen_op_docs 计算并进发布闸门。⚠️ **本段的「常驻合计 N」由门禁对账**（check_consistency 的 `budget.basis 常驻数字`）—— 改 docstring 后忘了改这里会红，不会再漂。",
+    "note": "预算口径（数字全部实测，勿手写第二份）：**常驻面**合计 3926/6000；**按需面**单条上限 900，最长 `flythings_i18n` 已 **1940/900**。按需面已按段分层（2026-10-05）：计费单位是「一次取用」而非「整条 op」—— 全文超限时默认形态自动退化成 skeleton + 段目录（现测：默认形态最长 892（flythings_get_package_api）、除 all 外最长单段 866（flythings_ui_preview:rules））。all 恒等于全文、不参与单段判据（它是逃生门）。加内容前先看段余量，别再往单条上堆。"
   },
   "renderOrder": [
     "summary",
@@ -410,6 +410,66 @@
           "出一套图"
         ]
       }
+    },
+    "flythings_help": {
+      "summary": "技术支持入口：口语问法归一后多路检索（命中/低置信不记知识缺口）。",
+      "risk": "read",
+      "category": "kbase",
+      "stage": "design",
+      "hardRules": [
+        "支持类问法（「XX 怎么写/为什么不行」）先走本 op：口语→机制词的归一（ALIAS_RULES + 症状注册表）只在这里做",
+        "steps/code 逐字摘自命中片段，禁脑补 API；写代码前必须打开 path 原文核对"
+      ],
+      "params": [
+        {
+          "name": "question",
+          "desc": "必填，用户原话（中文口语即可，如「按键长按怎么写」）"
+        },
+        {
+          "name": "k",
+          "desc": "返回条数 1-8，缺省 3"
+        },
+        {
+          "name": "platform",
+          "desc": "平台名（可选；给了会多跑一路平台限定检索，并用它限定同机制词在平台间的文档）"
+        },
+        {
+          "name": "project_root",
+          "desc": "项目根（可选；项目层知识在索引里时回显路径，便于把结论回填）"
+        }
+      ],
+      "flow": "归一（别名表 + 症状注册表 → 多条检索串）→ 原问与每条归一串各检索一次（rag_search）→ 按 path 做 RRF 合并 + 标注命中来源 → 覆盖率取「原问 vs 原问命中」与「归一串 vs 它自己的命中」的最大值 → **只有 no_hit 才记知识缺口**。",
+      "returns": [
+        "quality（ok/low_confidence/no_hit，口径同 knowledge_search）+ coverage/coverageRaw/coverageNorm",
+        "hits 带 matchedBy（这段是由哪条问法检索来的）与 status/evidenceLevel/advisory",
+        "steps / code 逐字摘自命中片段；nextOps 给下一步该调的 op",
+        "gapLogged 只在 no_hit 出现（归一后命中/低置信一律不记）"
+      ],
+      "rules": [
+        "归一表条目都来自实测问法；加新问法先跑 tools/temp/help_v1_audit.py 看 ok 率与「误记」是否为 0",
+        "复用 knowledge_search 的检索实现与覆盖率口径，禁止另造第二套检索引擎"
+      ],
+      "keywords": [
+        "技术支持",
+        "怎么写",
+        "为什么不行",
+        "口语问法",
+        "症状",
+        "长按"
+      ],
+      "docRef": "knowledge/devflow/kb-growth.md",
+      "seeAlso": [
+        "knowledge/devflow/kb-growth.md",
+        "knowledge/devflow/symptom-index.md",
+        "knowledge/README.md"
+      ],
+      "triggers": [
+        "技术支持",
+        "这个怎么写",
+        "为什么不行",
+        "搞不定",
+        "跑不通"
+      ]
     },
     "flythings_knowledge_capture": {
       "summary": "把一条现场结论落成知识候选（写**用户本地层/项目层**，绝不写 MCP 安装目录）。",

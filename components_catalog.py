@@ -57,6 +57,16 @@ DECLARED_GAPS = {
                '用法是"一条命令体检/投递"）。',
         'date': '2026-10-03',
     },
+    'ble': {
+        'noPlatformRow': True,
+        'why': 'BLE 是**组件包/依赖包**层级的能力（与 `mqtt` 同级）：平台可用性写在 '
+               '`components/ble/platforms.md` 正文里（逐平台实测值/前置条件/坑都在那，'
+               '真机证据也在那），与 z20 `ble` / v85x `blehid`·`btstack` / 各平台 `gatt` '
+               '这些**包**同一层，不进「平台 × 能力」矩阵 —— 矩阵只收"以组件形式提供、'
+               '需要跨平台对照"的那批（2026-10-07 需求方口径：ble 从 op/能力矩阵层撤出，'
+               '只留在组件包/依赖包层级）。',
+        'date': '2026-10-07',
+    },
 }
 
 
@@ -265,7 +275,7 @@ def groups():
 
 
 def get(comp_id):
-    """按 id（如 `ble`、`ui_v1/Chart`）取组件；不存在 → 抛，并给相近 id。"""
+    """按 id（如 `ui_v1/Chart`、`blur`）取组件；不存在 → 抛，并给相近 id。"""
     for m in modules():
         if m['id'] == comp_id:
             return m

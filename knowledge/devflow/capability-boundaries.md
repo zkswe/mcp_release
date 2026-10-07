@@ -38,7 +38,7 @@ evidence: []
 | **控件知识**| `knowledge/uicontrols/` 34 篇：主流控件字段/回调/API + 层级与触摸规则 + 系统窗口（statusbar/navibar/screensaver/IME）+ 全局弹框 |
 | **流程/工程**| `knowledge/devflow/` 31 篇：依赖包与 Manifest、i18n、多设备部署、页面架构（单 Activity 多整屏 window）、原型先行流程、测试链路 |
 | **硬件事实**| `knowledge/hardware/`：型号库（主控 / 屏 / 联网 / 分区 / 升级通道 / 触点）+ 板级坑（继电器接线、背光、`EasyUI.cfg` 劫持、MIPS 分区上限…） |
-| **组件（随仓发布）**| `components/`：ble / fonts / icons / blur / imagecache / vinyl / mp_transfer / ui_v1（含 `_mapping`）——四件套规范，可直接拷进工程 |
+| **组件（随仓发布）**| `components/`：ble / fonts / icons / blur / imagecache / vinyl / mp_transfer / ui_v1（含 `_mapping`）——四件套规范，可直接拷进工程。⚠️ 组件里**平台专属**的那几个（如 `ble`）与 `mqtt` 同级：本行只说明“它在仓里”，**平台可用性看 `components/<组件>/platforms.md` 正文**，不进「平台 × 能力」矩阵（登记见 `components_catalog.DECLARED_GAPS`） |
 | **依赖包用法**| `packages/<包>/package.yaml`（机器可读卡 + 实测状态）+ README/platforms/example/evidence |
 | **设备端预编译工具**| `bin_tools/<平台>/`：`touch`（触摸注入，自动判协议）/ `busybox` / `ui_test`（兼容老屏）/ `zkshot` —— `mt_test` 已于 2026-09-30 移除（能力由 `touch` 自动判协议覆盖） |
 | **自动化测试**| `gen_ui_test`（从 json 生成用例）+ `test_run`（多设备并行 + 日志断言 + 像素基线 + JUnit 报告）+ `selfcheck`（整机快照 diff）+ `bugreport`（缺陷单） |

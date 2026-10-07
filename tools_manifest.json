@@ -2,9 +2,9 @@
   "schema": 1,
   "generatedBy": "scripts/gen_manifest.py",
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY/STAGE 表后重新生成，勿手改本文件",
-  "version": "0.27.199-open",
+  "version": "0.27.200-open",
   "build": "2026-10-05",
-  "toolCount": 42,
+  "toolCount": 43,
   "cli": {
     "fun": "FlyThings 工程工具（create/install/build/launch，<项目>/.fsc/<平台>/ 下；09-28 前为 .fun/）",
     "fui": "FTU 布局工具：pack（json → ftu）/ unpack（ftu → json）双向下；随包 fui 自 v0.27.91 起含 unpack（旧版只有 pack）"
@@ -499,6 +499,26 @@
         "型号是多少",
         "按键值",
         "硬件差异"
+      ]
+    },
+    {
+      "op": "flythings_help",
+      "brief": "技术支持入口：口语问法归一后多路检索（命中/低置信不记知识缺口）。",
+      "args": [
+        "question",
+        "k",
+        "platform",
+        "project_root"
+      ],
+      "risk": "read",
+      "category": "kbase",
+      "stage": "design",
+      "triggers": [
+        "技术支持",
+        "这个怎么写",
+        "为什么不行",
+        "搞不定",
+        "跑不通"
       ]
     },
     {
@@ -1024,7 +1044,7 @@
   "docs": {
     "knowledgeFiles": 104,
     "wikiFiles": 0,
-    "ragChunks": 1790,
+    "ragChunks": 1788,
     "ragPaths": 144
   }
 }

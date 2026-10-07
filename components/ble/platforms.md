@@ -7,6 +7,12 @@
 
 ## 0. 汇总
 
+> ⚠️ **本节是正文（手写）：真机实测值 + 包/源码逐条核对的结果，本文就是 BLE 平台可用性的权威处。**
+> BLE 属**组件包/依赖包**层级的能力（与 `mqtt` 同级）：它**不进** `platform_capabilities.json` 的
+> 「平台 × 能力」矩阵（登记见 `components_catalog.DECLARED_GAPS['ble']`，2026-10-07 需求方口径），
+> 所以下面这张表不是注册表派生物，改它不需要跑 `scripts/gen_component_platforms.py`；
+> 查 BLE 的包/版本用 `list_packages` / `package_search`。
+
 | 平台 | 可用性 | BT 模组 | BT 串口 | 传输/校验 | 上电节点 | 预初始化 | 备注 |
 |---|---|---|---|---|---|---|---|
 | **F133**（RISC-V） | ✅ 可用（链路最干净） | 非 Realtek 类 | `/dev/ttyS1` | H5 + 无校验 | 无 | 不需要 | 扫描类场景首选（组件例程里有范本工程） |

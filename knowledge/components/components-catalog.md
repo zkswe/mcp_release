@@ -4,7 +4,7 @@ title: 可复用组件目录（components/ 树派生：形态 / 四件套 / 平�
 category: components
 status: review
 confidence: manual
-verified_at: 2026-10-03
+verified_at: 2026-10-06
 stale_days: 180
 origin: derived
 source: 由 components/ 树扫描派生（scripts/gen_components_catalog.py）；平台可用性取自 platform_capabilities.json，依赖取自各组件 Manifest.xml
@@ -28,7 +28,7 @@ evidence:
 | 组件 | 形态 | 一句话 | 平台 | 依赖包 | 示例 |
 |---|---|---|---|---|---|
 | **album_upload** | 源码型 | 相册传图（手机 → 面板）业务接线层 zk::album | F135、T113、V85X、Z20、Z21 | `easyui`、`log`、`base-utility` | `components/album_upload/example` |
-| **ble** | 二进制型 | BLE 门面 zk::ble v0.2（头文件 + 静态库发布） | F133、T113、V85X、Z20、Z21 | `btstack`、`easyui`、`base-utility`、`log`、`zkhardware`、`gatt` | `components/ble/example` |
+| **ble** | 二进制型 | BLE 门面 zk::ble v0.2（头文件 + 静态库发布） | （见 platforms.md） | `btstack`、`easyui`、`base-utility`、`log`、`zkhardware`、`gatt` | `components/ble/example` |
 | **blend2d** | 源码型 | 离屏矢量出图 zk::b2d v0.1（头 + 门面源码 + 两个库档） | F133、F135、T113、V85X、Z20、Z21 | `easyui`、`log` | `components/blend2d/example` |
 | **blur** | 源码型 | 高斯模糊（铺底 / 封面背景）v0.1.0 | F133、F135、T113、V85X、Z20、Z21 | 无 | `components/blur/example` |
 | **fonts** | 资产/工具型 | 字库模块：思源黑体三版本 + 设备字体自检 | （见 platforms.md） | 无 | — |
@@ -149,7 +149,7 @@ evidence:
 #### ble
 
 - **用途**：BLE 门面 zk::ble v0.2（头文件 + 静态库发布）
-- **平台**：F133、T113、V85X、Z20、Z21
+- **平台**：见 `components/ble/platforms.md`
 - **依赖包**：`btstack`、`easyui`、`base-utility`、`log`、`zkhardware`、`gatt`
 - **预编译库平台**：f133、v85x、z20、z21
 - **示例工程**：`components/ble/example`
@@ -185,6 +185,7 @@ evidence:
 
 - **`mp_transfer`**（缺 include，登记于 2026-10-03）：公开头就在 src/mp_transfer/*.h —— 本模块的用法是「拷源文件」（README §怎么用、Manifest 注释），没有做 include/ + lib/ 的库化封装。属**已登记的形态变体**。
 - **`fonts`**（不进 platform_capabilities（无平台矩阵表），登记于 2026-10-03）：平台可用性写在 platforms.md 的逐平台正文里（V85X 已实测、其余未验证），没有「平台 × 能力」矩阵表，所以不进 platform_capabilities.json（资产/工具型，用法是"一条命令体检/投递"）。
+- **`ble`**（不进 platform_capabilities（无平台矩阵表），登记于 2026-10-07）：BLE 是**组件包/依赖包**层级的能力（与 `mqtt` 同级）：平台可用性写在 `components/ble/platforms.md` 正文里（逐平台实测值/前置条件/坑都在那，真机证据也在那），与 z20 `ble` / v85x `blehid`·`btstack` / 各平台 `gatt` 这些**包**同一层，不进「平台 × 能力」矩阵 —— 矩阵只收"以组件形式提供、需要跨平台对照"的那批（2026-10-07 需求方口径：ble 从 op/能力矩阵层撤出，只留在组件包/依赖包层级）。
 
 > 口径：新增缺口**不会**被自动放行 —— `components_catalog.validate()` 只认登记过的（`DECLARED_GAPS`，每条要写原因与日期），其余一律判失败。所以这份缺口清单是有账可查的，不是「坏了也不报」。
 

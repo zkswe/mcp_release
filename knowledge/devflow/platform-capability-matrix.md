@@ -4,14 +4,14 @@ title: 平台能力矩阵（组件 × 平台 可用性，唯一真源派生）
 category: devflow
 status: review
 confidence: manual
-verified_at: 2026-10-03
+verified_at: 2026-10-07
 stale_days: 180
 origin: derived
 source: 由 platform_capabilities.json 派生（scripts/gen_platform_cap_doc.py）；表格内容与注册表逐字节一致
 needs_evidence: false
 platforms: [F133, F135, T113, V85X, Z20, Z21]
 tags: [平台支持, 组件可用性, 能不能用, 选型, Z20, Z21, F133, F135, T113, V85X, Z235X, 跨平台移植,
-       蓝牙 BLE 平台, 图标库平台, 双缓冲 blend2d, 视频层, 组件矩阵, capability matrix]
+       平台矩阵, 图标库平台, 双缓冲 blend2d, 视频层, 组件矩阵, capability matrix]
 evidence:
   - cmd: python scripts/gen_platform_cap_doc.py --check
     expect: rc=0（本页与 platform_capabilities.json 一致）
@@ -32,12 +32,12 @@ evidence:
 
 | 平台 | 组件数 | 组件 |
 |---|---|---|
-| **Z20** | 15 | album_upload / ble / blend2d / blur / ha_bridge / icons / imagecache / mp_transfer / ui_v1 / ui_v1/Calendar / ui_v1/Chart / ui_v1/RadButton / ui_v1/_mapping/TabView / vinyl / wall_sync |
-| **Z21** | 12 | album_upload / ble / blend2d / blur / ha_bridge / icons / imagecache / mp_transfer / ui_v1 / ui_v1/RadButton / vinyl / wall_sync |
-| **F133** | 11 | ble / blend2d / blur / ha_bridge / icons / imagecache / mp_transfer / ui_v1 / ui_v1/RadButton / vinyl / wall_sync |
+| **Z20** | 14 | album_upload / blend2d / blur / ha_bridge / icons / imagecache / mp_transfer / ui_v1 / ui_v1/Calendar / ui_v1/Chart / ui_v1/RadButton / ui_v1/_mapping/TabView / vinyl / wall_sync |
+| **Z21** | 11 | album_upload / blend2d / blur / ha_bridge / icons / imagecache / mp_transfer / ui_v1 / ui_v1/RadButton / vinyl / wall_sync |
+| **F133** | 10 | blend2d / blur / ha_bridge / icons / imagecache / mp_transfer / ui_v1 / ui_v1/RadButton / vinyl / wall_sync |
 | **F135** | 9 | album_upload / blend2d / blur / ha_bridge / icons / imagecache / ui_v1/RadButton / vinyl / wall_sync |
-| **T113** | 15 | album_upload / ble / blend2d / blur / ha_bridge / icons / imagecache / mp_transfer / ui_v1 / ui_v1/Calendar / ui_v1/Chart / ui_v1/RadButton / ui_v1/_mapping/TabView / vinyl / wall_sync |
-| **V85X** | 15 | album_upload / ble / blend2d / blur / ha_bridge / icons / imagecache / mp_transfer / ui_v1 / ui_v1/Calendar / ui_v1/Chart / ui_v1/RadButton / ui_v1/_mapping/TabView / vinyl / wall_sync |
+| **T113** | 14 | album_upload / blend2d / blur / ha_bridge / icons / imagecache / mp_transfer / ui_v1 / ui_v1/Calendar / ui_v1/Chart / ui_v1/RadButton / ui_v1/_mapping/TabView / vinyl / wall_sync |
+| **V85X** | 14 | album_upload / blend2d / blur / ha_bridge / icons / imagecache / mp_transfer / ui_v1 / ui_v1/Calendar / ui_v1/Chart / ui_v1/RadButton / ui_v1/_mapping/TabView / vinyl / wall_sync |
 | **Z235X** | 1 | icons |
 | **ALL** | 1 | icons |
 
@@ -52,7 +52,6 @@ evidence:
 | 组件 | 覆盖平台 |
 |---|---|
 | `album_upload` | F135 / T113 / V85X / Z20 / Z21 |
-| `ble` | F133 / T113 / V85X / Z20 / Z21 |
 | `blend2d` | F133 / F135 / T113 / V85X / Z20 / Z21 |
 | `blur` | F133 / F135 / T113 / V85X / Z20 / Z21 |
 | `ha_bridge` | F133 / F135 / T113 / V85X / Z20 / Z21 |
@@ -78,18 +77,6 @@ evidence:
 |---|---|---|---|
 | **Z20** | ✅ **组件形态已在 Z20 真机跑通**（2026-09-30，<验收机IP>:5555，480×480 zkgui 工程）；来源工程 `SmartPanel_HA` 亦在 Z20 面板跑过 | 组件形态：`temp/verify71/album_zkgui` 真机验收（§1.6，4 条判据全过 + 还原复核）；来源工程：`fun build -p Z20` + 推真机（`11_相册上传.png`）；协议侧口径见 `components/mp_transfer/platforms.md` | **微信小程序真机扫码那一环仍无取证**（本机无手机/小程序）；用协议等价 PC 客户端代跑「发图→落盘→回调」（§1.6 判据 d） |
 | Z21 / T113 / T113EMMC / V85X / F135 / F136 | ❌ 未取证 | — | 先看 §3 前置条件；⚠️ **Z21 没有 `/mnt/sdnand`**（只有 `/mnt/extsd`、`/mnt/usb1`）→ 落盘目录必须换（该事实为 2026-09-29 Z21 实测记录） |
-
-### ble
-
-> 文件：`components/ble/platforms.md`
-> 口径：> 口径修正（2026-09-13）：Z20/Z21 **是支持 BLE 的**（但仅 AIC 8800DL 模组有 BLE），电子价签 tag 本就跑在 BLE 方案上。 > 模块侧已预留 **AIC 分支**（H4 + 流控 + 无校验，参数自动判定，`Config.flowcontrol/parity` 可覆盖）， > 剩余阻塞是 **该平台能否拿到 btstack 包**与 **串口/上电节点的实测值**。
-
-| 平台 | 可用性 | BT 模组 | BT 串口 | 传输/校验 | 上电节点 | 预初始化 | 备注 |
-|---|---|---|---|---|---|---|---|
-| **F133**（RISC-V） | ✅ 可用（链路最干净） | 非 Realtek 类 | `/dev/ttyS1` | H5 + 无校验 | 无 | 不需要 | 扫描类场景首选（组件例程里有范本工程） |
-| **V85X**（V851 系列） | ✅ 可用（坑最多） | **RTL8733BS** | `/dev/ttyS2` | H5 + **偶校验 8E1**+ 无流控 | `state_bt`（出厂 off） | **必须**（Realtek 8733bs） | 需 `setPreinitHook()` 挂 rtk_init |
-| **Z20 / Z21** | 🟡 支持（**gatt 后端，主从双角色**，真机跑通） | AIC USB 模组（`aic_btusb.ko`） | 无串口（USB HCI） | 走 `gatt 1.0.0`（BlueZ 用户态，不经 H4/H5 参数） | hci0（`hciconfig hci0 up`） | 不需要（驱动 + hciconfig 拉起） | ⚠️ 中心+外设都真机跑过；见 §0.3 / §0.4 |
-| T113 | ❌ gatt 后端已就绪（**未真机**） | AIC USB 模组（同 Z20 族） | 无串口（USB HCI） | 走 `gatt 1.0.0` | hci0 | 不需要 | 包在（z20/z21/t113/t113emmc/v85x 均有）；额外要 `hcitool cmd 0x03 0x0003` 拉起 LE/BR-EDR |
 
 ### blend2d
 
@@ -251,8 +238,8 @@ evidence:
 ```python
 import platform_cap_loader as pc
 pc.components_for_platform('Z20')      # Z20 上声明支持的组件
-pc.cell('ble', 'Z20', '可用性')         # ble 在 Z20 的可用性原话
-pc.platforms_of('ble')                 # ble 覆盖哪些平台
+pc.cell('blur', 'Z20', '状态')          # blur 在 Z20 的状态原话
+pc.platforms_of('blur')                # blur 覆盖哪些平台
 ```
 
 **改**：① 改 `platform_capabilities.json` 对应组件的行 ② 跑 `python scripts/gen_platform_cap_doc.py` 与本页同步 ③ 跑 `python scripts/gen_component_platforms.py` 与各组件 `platforms.md` 同步。
@@ -260,3 +247,5 @@ pc.platforms_of('ble')                 # ble 覆盖哪些平台
 **判定口径**：状态词沿用各组件原话（可用 / 支持 / 未验证 / 不可用），本页**不改写**结论；「未验证」就是没实测，选型前必须按该组件的 `platforms.md` §验收 真机跑一遍。
 
 > 本页只覆盖「能力矩阵」这一层。各平台的前置条件、已知限制、真机验收命令在各组件的 `components/*/platforms.md` 正文里。
+
+> ⚠️ **BLE 不在本矩阵**（2026-10-07 需求方口径）：它是**组件包/依赖包**层级的能力，与 `mqtt`（`mqtt-cxx`）同级 —— 平台可用性、前置条件、真机验收都在 `components/ble/platforms.md` 正文，查它的包用 `list_packages` / `package_search`。

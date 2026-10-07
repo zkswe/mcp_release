@@ -10,6 +10,10 @@
 各篇 `components/*/platforms.md` 里那张矩阵表是**派生产物**（scripts/gen_component_platforms.py
 重写），只保留原理、坑、验收方法与细节展开。
 
+⚠️ 口径（2026-10-07 需求方）：**BLE 不在本矩阵里** —— 它是**组件包/依赖包**层级的能力
+（与 `mqtt` 同级，见 `components_catalog.DECLARED_GAPS['ble']` 的登记），平台可用性以
+`components/ble/platforms.md` 正文为准。
+
 平台清单**不在这里重定义**：平台身份（arch/template/binTool/packageKey）以 `platforms.py` 为唯一真源，
 本注册表只存「组件 × 平台」的能力行。
 
@@ -18,11 +22,11 @@
 用法：
     import platform_cap_loader as pc
     pc.load()
-    pc.components()                       # ['album_upload', 'ble', ...]
-    pc.spec('ble')                        # 该组件的矩阵
-    pc.render_table('ble')                # 渲染成 markdown 行（唯一实现）
+    pc.components()                       # ['album_upload', 'blend2d', ...]（不含 ble：它是组件包层级，见 components_catalog.DECLARED_GAPS）
+    pc.spec('blur')                       # 该组件的矩阵
+    pc.render_table('blur')               # 渲染成 markdown 行（唯一实现）
     pc.rows_for_platform('Z20')           # [(组件, 行)] —— 「Z20 上能跑什么」
-    pc.status_of('ble', 'Z20')            # 该组件在该平台那一行（含原始标签与单元格）
+    pc.status_of('blur', 'Z20')           # 该组件在该平台那一行（含原始标签与单元格）
     pc.validate()                         # 自检问题列表（空 = 合规）
 """
 import io
@@ -112,7 +116,7 @@ def platforms_of(comp):
 
 
 def rows_for_platform(platform):
-    """「这台设备上能跑哪些组件」：[(组件, 行)]（可能同组件多行，如 ble 在 Z20 有两行）。"""
+    """「这台设备上能跑哪些组件」：[(组件, 行)]（同一组件可能有多个平台行）。"""
     key = _canon_query(platform)
     out = []
     for comp in components():

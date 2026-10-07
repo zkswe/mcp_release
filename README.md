@@ -60,7 +60,7 @@ AI 会：按 `requirements.lock` 装依赖（已锁定、实测通过的组合�
 Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude_desktop_config.json` 的 `mcpServers`。
 > `python` 不在 PATH 时用完整路径（如 `C:/Users/<你>/AppData/Local/Programs/Python/Python313/python.exe`）。
 
-**验证**—— 问 AI「**MCP 版本是多少？**」：应返回 `flythings-kb-open 0.27.199-open`（**42 个工具**）。
+**验证**—— 问 AI「**MCP 版本是多少？**」：应返回 `flythings-kb-open 0.27.200-open`（**43 个工具**）。
 
 ---
 
