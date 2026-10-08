@@ -29,7 +29,7 @@
 - 界面通道：受限 HTML → `html2json` → `ui/*.json` → `fui pack` → `*.ftu`
 - 程序通道：`src/logic/*Logic.cc`（回调表 / `mXXXPtr` / `REGISTER_ACTIVITY_TIMER_TAB` / `INIT_UI_TIMERS` /
   `EASYUICONTEXT` 导航）
-- 工具链：`fun` / `fui`（`fun build|install|launch|sim`）
+- 工具链：`fun` / `fui`（`fsc build|install|launch|sim`）
 - 平台：Z21 / F133 / Z20 / T113 / V85X（**无 GPU / 无硬解**→ 伪 3D 口径）
 
 **不属于 ui_v1**（不要写进本目录）：

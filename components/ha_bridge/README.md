@@ -16,7 +16,7 @@
   （数字出处逐条标注，未取证的写「未取证」）。
   **检查过什么**：`src/` 与 `example/` 已过 `g++ -fsyntax-only -std=c++11 -Wall -Wextra -D__PLATFORM_Z20__=1`
   （0 error / 0 warning，头文件用 Z20 registry 真实包）。
-  **2026-10-01 补验收**：组件形态已在 Z20 真机以 **zkgui 工程形态**落地跑通（`fun install && fun build -p Z20`
+  **2026-10-01 补验收**：组件形态已在 Z20 真机以 **zkgui 工程形态**落地跑通（`fsc install && fsc build -p Z20`
   真编译 + 真机 5 条判据：连上 broker / retained 上行 / 自动 discovery / 下行命令 → `onCommand` + 继电器真实动作 /
   `start()/stop()` + kick 重连），证据见 `platforms.md` §6；仍未取证的项见同节末尾清单。
 
@@ -183,7 +183,7 @@ static void onCardTouched(int ch) { zk::ha::Bridge::instance().relays().toggle(c
 | `easyui` | `^2.2.0` | **可选**：只为「没装日志钩子」时的 `LOGD/LOGW/LOGE` 兜底（`__has_include("utils/Log.h")` 自动探测）。用 `setLogHook()` 的工程不需要它 |
 | `rapidjson` | `1.1.0` | **可选**：工程侧解析 HA 回传 JSON 时用（本组件自身不依赖） |
 
-⚠️ **改过 Manifest 必须重跑 `fun install`**，否则新包的 include 路径不进 CMake。
+⚠️ **改过 Manifest 必须重跑 `fsc install`**，否则新包的 include 路径不进 CMake。
 详见 `Manifest.xml` 注释。
 
 ---

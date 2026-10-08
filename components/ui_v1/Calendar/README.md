@@ -179,7 +179,7 @@ static bool onButtonClick_BtnCalNext(ZKButton *p) { (void)p; s_cal.nextMonth(); 
 
 | 验收项 | 命令/判据 | 结论 | 证据 |
 |---|---|---|---|
-| 编译 | `fun build` | ✅ 无警告无错误 | — |
+| 编译 | `fsc build` | ✅ 无警告无错误 | — |
 | 静态全检 | `python tools/ui_tools/check_all.py <工程>` | ✅ 全部 PASS（9 条 WARN = 「卡片按钮当白底」被装饰件压住，**已人工确认无碍**：该按钮 `setTouchable(false)+setTouchPass(true)`，不需要收事件） | — |
 | 打开日历 / 当月网格 | `touch tap 180 208` | ✅ `2026-09`；2026-09-01 落在**周二**列（`weekdayOfFirst` 正确）；今天 16 浅灰；标记日 5/12/18/25 橙棕 | `evidence/01_initial.png` |
 | 翻月 | `touch tap 806 78`（`>`） | ✅ 标题变 `2026-10`；2026-10-01 落在**周四**列；标记日跟着移到 10 月（5/12/18/25）；状态行 `下一月：2026-10（未选日）` | `evidence/02_next_month.png` |
@@ -195,7 +195,7 @@ static bool onButtonClick_BtnCalNext(ZKButton *p) { (void)p; s_cal.nextMonth(); 
 | 验收项 | 判据 | 结论 | 证据 |
 |---|---|---|---|
 | 现象与根因 | 选中 30 号那格是**纯白块、数字不可见**| 业务设了「`selBg`=主色底 + `selText`=白」，但本代平台 textview **画不出底色**→ 白字落在白卡上 | `example/evidence/…`、案例 `z21/evidence/zzr_08c_calendar_day_selected.png`、`zzr_08k/08l_zoom_daycell_*.png` |
-| 包侧修复 | 新增 `setHighlightPainter()`（painter 自绘 AA 实心高亮）+ `setHighlightShape/Inset` + `selTextFallback` 兜底自检 | ✅ 编译通过（`fun build -p Z21`）；`check_all.py` 全 PASS | 本文件 §3/§4；实现 `src/zk_calendar.cpp` |
+| 包侧修复 | 新增 `setHighlightPainter()`（painter 自绘 AA 实心高亮）+ `setHighlightShape/Inset` + `selTextFallback` 兜底自检 | ✅ 编译通过（`fsc build -p Z21`）；`check_all.py` 全 PASS | 本文件 §3/§4；实现 `src/zk_calendar.cpp` |
 | 案例侧接线 | `gen_html.py` 在日历弹窗 42 格**之前**加 `painter__143`（caption `PtCalHl`，(16,94,364,212)）；`mainLogic.cc` 接 painter + `cellBg=0xFFFFFF` | ✅ json 里 `PtCalHl` 在 `TvCalD1` 之前（z 更低）；`.ftu` 重 pack 成功 | `z21/ui/main.json`、`f133/ui/main.json` |
 | **真机像素验收**| 选中格内出现 `#2196F3` 实心块（> 200 px）且**白色数字像素 > 20**；旧格无残留、无黑块 | ⏳ **待上机**（本地无设备；脚本与判据见下） | 复验清单：`temp/cal_hl/deploy_verify.md` |
 

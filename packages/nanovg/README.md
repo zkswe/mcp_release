@@ -45,7 +45,7 @@ cp packages/nanovg/lib/v85x/libnanovg.so  <工程>/src/dependencies/lib/libnanov
 
 - **别跨平台换库**：`lib/v85x/` 是 **ARMv7 musl**；z20 系是 glibc，装不上。
 - 设备侧需有 `libgcc_s.so.1`（本档 `NEEDED`）。
-- 调试期 `fun launch` **不推**第三方 `.so` → 手动 `adb push libnanovg.so /tmp/` + `setprop ctl.restart zkswe`（量产走 `src/dependencies/lib/` + `fun pack`）。
+- 调试期 `fsc launch` **不推**第三方 `.so` → 手动 `adb push libnanovg.so /tmp/` + `setprop ctl.restart zkswe`（量产走 `src/dependencies/lib/` + `fsc pack`）。
 
 最小用法（照 `components/vinyl` 的 backend=1，F133 真机跑过的那条路）：
 

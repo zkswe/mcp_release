@@ -52,7 +52,7 @@ curl -o btstack.zip  https://package.flythings.cn/packages/v85x/btstack/1.8.0.zi
 | Z20 | **`ble`**| 1.1.1 | **BLE 外设服务（BlueZ/libgatt）**：设备名 + GATT 服务 + 收包回调 | `ble/bluetooth_service.h` | `libble.a` + `libgatt-server.a` + `bin/{gattserverbin,hciattach,hciconfig,hcitool}` |
 | Z21 | **`ble`**| 2.1.0 | 同上 | 同上 | 同上 |
 | Z20 | **`gatt`**| 1.0.0 | **BlueZ 用户态 GATT 库（中心 + 外设双角色）**：`gatt-client` / `gatt-server` / `gatt-db` / `hci` / `hci_lib` / `l2cap` / `mainloop` / `uuid` | `gatt/*.h`（19 个头） | `libgatt.a`（静态库 target `gatt`） |
-| Z21 | **`gatt`**| 1.0.0 | 同上（实测 `fun install` 拉取成功） | 同上 | 同上 |
+| Z21 | **`gatt`**| 1.0.0 | 同上（实测 `fsc install` 拉取成功） | 同上 | 同上 |
 | T113 / T113EMMC | **`gatt`**| 1.0.0 | 同上（仓库元数据查到，未在本机安装） | 同上 | 同上 |
 | V85X | **`gatt`**| 1.0.0 | 同上（仓库元数据查到，未在本机安装） | 同上 | 同上 |
 
@@ -107,9 +107,9 @@ BluetoothService::instance().start(bp);   // 收包从 on_message 回调出
 3. 两 demo 都先碰 WiFi（`NETMANAGER->getWifiManager()`），与 `ble` 包"开蓝牙自动开 WiFi"同源。
 
 **实测（2026-09-14，本机 Z21 工具链）**
-- `gatt` 在 z20 / z21 / t113 / t113emmc / v85x 包仓库都有 `1.0.0`（`flythings_package_search` 查得）；本机 `fun install` 实测拉到
+- `gatt` 在 z20 / z21 / t113 / t113emmc / v85x 包仓库都有 `1.0.0`（`flythings_package_search` 查得）；本机 `fsc install` 实测拉到
   `~/.fun/registry/public/z21/gatt/1.0.0`，19 个头，`gatt-client.h` + `gatt-server.h` **双角色齐备**。
-- 两 demo 复制到 `temp/blecli_test`、`temp/blesrv_test`，`fun install` + `fun build`（-p Z21）**都出 libzkgui.so**✅。
+- 两 demo 复制到 `temp/blecli_test`、`temp/blesrv_test`，`fsc install` + `fsc build`（-p Z21）**都出 libzkgui.so**✅。
 唯一障碍：demo 里 `easyui 2.2.0` / `base-utility 10.1.3` **太老**（新生成模板要 `base::UiHandler::hasTimerRegistration`）
   → 提到 `easyui 2.6.0` + `base-utility 10.9.3`（z21 仓库现有版本）即编过。
 **真机验证（2026-09-14）—— 已用两台整机跑通「主从对传」**
@@ -124,9 +124,9 @@ Z21 整机（`<Z21-IP>`，`Zkswe_SSD21X_SPINOR`，做**中心**）。
 | Z20 侧同步看到 | `Connect from <Z21 的 BD 地址>` → `evt=2 CONNECT` → ATT 报文（Read By Grp Type / Read By Type / **Write Req handle 0x0004 = 订阅 CCCD**）→ 断开后 `adv enable ok` 自动恢复广播 |
 | 旁证 | Z21 侧 `hcitool lecc <Z20 的 BD 地址>` → `Connection handle 17`，`hcitool con` 为 `lm MASTER`（控制器层发起连接这条路也通） |
 
-**跑法（重要，`fun launch` 在当前环境用不了时的替代）**
-- `fun launch` 在本机（同时挂着 USB V85X + 两台网络设备）会报 `"host:transport …" FAIL: more than one device/emulator`，`-s`（IP / IP:port）都一样 → 只能单设备时可用。
-- 替代：把 demo 的 ble 代码做成 **bin 工具**（`fun.json` 里 `"type": "executable"`）→ `fun build -p z20/z21` 出 ELF → `adb -s <serial> push … /tmp/ && chmod 777 && /tmp/xxx`。
+**跑法（重要，`fsc launch` 在当前环境用不了时的替代）**
+- `fsc launch` 在本机（同时挂着 USB V85X + 两台网络设备）会报 `"host:transport …" FAIL: more than one device/emulator`，`-s`（IP / IP:port）都一样 → 只能单设备时可用。
+- 替代：把 demo 的 ble 代码做成 **bin 工具**（`fsc.json` 里 `"type": "executable"`）→ `fsc build -p z20/z21` 出 ELF → `adb -s <serial> push … /tmp/ && chmod 777 && /tmp/xxx`。
 参考工程：Z20 外设 / Z21 中心各一；两者用 `src/comp/zk_compat.h` 把 easyui/zknet/base-utility 垫掉（只依赖 `gatt`），否则可执行体链接会因 `-Wl,-z,defs` 报 `libeasyui.so: undefined reference to FT_*/png_*/nvg*/MI_SYS_*`。
 - **Z21 整机 `/res` 是只读 squashfs且没有 `/res/bin`**（Z20 有）→ demo 里写死的 `system("/res/bin/hciconfig hci0 up")` 会直接失败；本次把工具路径改成兜底查找（`/res/bin` → `/data/bin` → `/tmp/bin` → `/usr/bin` → `/bin`），把 `hciconfig`/`hcitool`（来自 demo `tools/z20_z21/`）推到 `/data/bin` 即可。产品化还是要靠升级包把这两个工具放进 `/res/bin`。
 - AIC 模组：`/lib/modules/<ver>/aic_btusb.ko` 存在时由代码自行 `insmod`（Z20 本次就是这条路），否则回退 `hciattach` 服务；`hciconfig hci0 up` 后 `hci0` 就绪。
@@ -137,13 +137,13 @@ Z21 整机（`<Z21-IP>`，`Zkswe_SSD21X_SPINOR`，做**中心**）。
 - 首次连接偶发失败（客户端 `Failed to connect`，服务端未收到连接），重跑即成功 → 已由 §0.3 末尾的**深度分析**定位（控制器残留链路状态，**与连接参数/间隔无关**），产品侧必须做「复位 + 重试」。
 
 **应用路径（zkgui 里跑 demo 本体）补充验证（2026-09-14 下午）**
-- 需求方提醒：`zkgui` 被 kill 后 init 会**自动拉起**—— 实测确认，且可用 `fun launch` 的同一机制手工部署：推 `/tmp/EasyUI.cfg`（`startupLibPath=/tmp/zkapp_lib.so`、`resPath=/tmp/zkapp_ui/`）+ 把应用 `libzkgui.so`、`ui/*.ftu` 推到 `/tmp` → `setprop ctl.restart zkswe` → 新 zkgui 进程确实加载 `/tmp` 的 lib（`/proc/<pid>/maps` 可见），无需 kill。
+- 需求方提醒：`zkgui` 被 kill 后 init 会**自动拉起**—— 实测确认，且可用 `fsc launch` 的同一机制手工部署：推 `/tmp/EasyUI.cfg`（`startupLibPath=/tmp/zkapp_lib.so`、`resPath=/tmp/zkapp_ui/`）+ 把应用 `libzkgui.so`、`ui/*.ftu` 推到 `/tmp` → `setprop ctl.restart zkswe` → 新 zkgui 进程确实加载 `/tmp` 的 lib（`/proc/<pid>/maps` 可见），无需 kill。
 - Z20 应用侧（服务端 demo）跑通：logcat `initEasyUICfg ok` → `[ble] hci up OK` → `Started listening on ATT channel` → `adv enable ok`（屏幕上是 demo 的「网络设置」界面）。
 - Z21 应用侧（客户端 demo）跑通，**应用 ↔ 应用主从对传成功**：客户端 `scan data addr=DC:84:03:A1:2D:84 name=zkswe ble` → `Connect done` → GATT 发现 `0xfff1/0xfff2` → `evt=4 INTERACT_READY`；服务端同步收到 `Connect from <Z21 的 BD>` + ATT 报文（Read By Grp/Type + **Write Req handle 0x0004 订阅**）。**两边屏幕都显示“已连接”**（客户端：`已连接：zkswe ble`；服务端：`已连接 38:54:39:DA:1…`）。
 - ✅ **文字显示/字库（校正口径 2026-09-14）**：**系统字库在 `/etc/font/`**（Z21 是 `/etc/font/fzcircle.ttf`）；**`/res` 是用户 `update.img` 的升级区，产品做好后是全覆盖的，不能当「系统资源」参考**。本次「全屏无文字只剩色块」的真实原因是 `/tmp/EasyUI.cfg` 的 `font` 指向了设备上不存在的路径，**改指 `/etc/font/fzcircle.ttf` 即恢复 → 不需要往机器里推字库**。
 - ⚠️ **`/tmp/EasyUI.cfg` 千万不能带 BOM**（PowerShell `Set-Content -Encoding UTF8` 会加 BOM）→ 解析失败时引擎会**静默回退**`/res/etc/EasyUI.cfg`（现象：跑的还是原应用、但字库正常），完全看不到报警。
 - ⚠️ **LE 连接不稳**：`connect()` 会得到 `Function not implemented (errno=38)` / `Transport endpoint is not connected (errno=107)`，`Failed to connect` 后重试常能成功 → **根因和处置见下方「稳定性深度分析」**。
-- 工具侧：`fun launch` 在**多于一台 adb 设备**时选不中（报 `more than one device/emulator`，`-s IP`/`-s IP:port` 均无效；`flythings_build_ui_flow` 同样卡此步）→ 跑应用路径部署前先只留一台设备（例：拔掉 USB 那台）。
+- 工具侧：`fsc launch` 在**多于一台 adb 设备**时选不中（报 `more than one device/emulator`，`-s IP`/`-s IP:port` 均无效；`flythings_build_ui_flow` 同样卡此步）→ 跑应用路径部署前先只留一台设备（例：拔掉 USB 那台）。
 
 **稳定性深度分析（2026-09-14，需求方要求：查是否蓝牙连接参数/间隔导致）结论：不是连接参数（scan interval/window、connection interval、supervision timeout）的问题**，而是**控制器/固件在「连接 → 断开」之间会残留链路状态**：残留期间 HCI 层面任何新建连接都被拒（`Connection Already Exists`），只能靠复位控制器恢复。
 
@@ -219,7 +219,7 @@ Z21 整机（`<Z21-IP>`，`Zkswe_SSD21X_SPINOR`，做**中心**）。
 
 #### 0.5.2 真机验证（组件级，2026-09-14）
 验证工程（**只用公开 API，不用 demo 代码**）：Z20 外设 / Z21 中心各一，
-两个工程的 `src/` 是组件源码的拷贝（`sync_and_build.sh` 同步）+ `fun build`（`-Werror=format/-Werror=array-bounds/...` 真实标志）。
+两个工程的 `src/` 是组件源码的拷贝（`sync_and_build.sh` 同步）+ `fsc build`（`-Werror=format/-Werror=array-bounds/...` 真实标志）。
 
 已跑通：`openAdapter`（hci0 已存在 → 短路）→ 扫描发现 `DC:84:03:A1:2D:84 name=zkswe ble rssi=-47`（Z20 的 BD 地址）
 → LE 连接 `handle=17` → L2CAP ATT → GATT 发现 → `getServices` → `subscribe` → `readValue`（读到 `hello` 5 字节）
@@ -245,7 +245,7 @@ Z21 整机（`<Z21-IP>`，`Zkswe_SSD21X_SPINOR`，做**中心**）。
 6. **广播上报两个细节**：`meta->data[0]` 是 `num_reports` 要先跳过；**RSSI 挂在 AD 数据后面的那一字节**
    （`info->data[info->length]`）。
 7. **要自己控制“重复上报”语义必须 `filter_dup=0`**（控制器去重开着的话 `allow_duplicates` 永远为假）。
-8. ⚠️ **零长柔性数组（`data[0]`）不能直接下标**：`fun build` 带 `-Werror=array-bounds`，
+8. ⚠️ **零长柔性数组（`data[0]`）不能直接下标**：`fsc build` 带 `-Werror=array-bounds`，
    `meta->data[0]` / `info->data[len]` 会直接编译失败（独立 `-c` 自检只开 `-Wall`，**看不出来**）→ 一律用指针解引用。
 9. ⚠️ **C++11 下带默认成员初值的结构体不是聚合体**：`PeripheralChar{"fff1", x, y}` 报
    `no matching function`（fun 固定 `-std=c++11`）→ 对外头里给这类结构体**显式构造函数**。
@@ -267,7 +267,7 @@ Z21 整机（`<Z21-IP>`，`Zkswe_SSD21X_SPINOR`，做**中心**）。
 
 **方法（关键：不用 demo 代码）**：Z20 外设、Z21 中心两个验证工程
 ——两个工程的 `src/` 是**组件源码的拷贝**（`sync_and_build.sh` 负责同步），只用 `zk/zk_ble.h` 的公开 API；
-`fun build -p z20/z21` → `adb push /tmp/` → 前台跑（**不要 `> log 2>&1` 重定向**：printf 块缓冲，被 kill 会丢日志）。
+`fsc build -p z20/z21` → `adb push /tmp/` → 前台跑（**不要 `> log 2>&1` 重定向**：printf 块缓冲，被 kill 会丢日志）。
 
 | 验收项 | 结果（我本人独立跑的那轮日志原话） |
 |---|---|
@@ -433,8 +433,8 @@ $ adb shell ls /res/bin                                 → firmware/ 存在
 
 ### 5.1 真机跑测证据（2026-09-13，BLE 扫描验证工程）
 
-构建：`fun install` → `fun build` → **Linking CXX executable <验证工程>**✅
-（bin 工程要点：`fun.json` 优先于 `Manifest.xml`，依赖写 fun.json；type=executable 才出 ELF；
+构建：`fsc install` → `fsc build` → **Linking CXX executable <验证工程>**✅
+（bin 工程要点：`fsc.json` 优先于 `Manifest.xml`，依赖写 fsc.json；type=executable 才出 ELF；
 rtk 移植件要 `utils/Log.h` → 本工程用 `src/utils/Log.h` 本地垫片顶掉 easyui 依赖，避免拖进 freetype/nanovg/png 一串）
 
 运行：`adb push … /tmp/ && ./<验证工程>`
@@ -476,19 +476,19 @@ E/Realtek: Retransmission exhausts                    Retransmission exhausts
 **复现命令（本机）**
 ```bash
 wsl 无关；全程 Windows + fun + adb：
- cd <验证工程> && fun.exe build
- adb push .fun/v85x/<验证工程> /tmp/ && adb shell chmod 777 /tmp/<验证工程>
+ cd <验证工程> && fsc.exe build
+ adb push .fsc/v85x/<验证工程> /tmp/ && adb shell chmod 777 /tmp/<验证工程>
  adb shell 'setprop ctl.stop zkswe; echo 0 > <state_bt>; sleep 3; echo 1 > <state_bt>; sleep 2; cd /tmp && ./<验证工程>'
  # 测完恢复：adb shell 'setprop ctl.start zkswe'
 ```
 
-**未完成（下一步）**：把我们的应用做**固化升级包**（`fun pack` → update.img → adb 固化），
+**未完成（下一步）**：把我们的应用做**固化升级包**（`fsc pack` → update.img → adb 固化），
 让设备上的 app 就是我们自己的，彻底消除抢串口冲突，而不是每次靠 `setprop ctl.stop zkswe` 临时停服。
 
 ### 5.3 ✅ 固化升级跑通（2026-09-13 11:2x，改成 app 工程）
 
 **做法**：按 FlyThings 流程建 **app 工程**（不是 bin！）——`flythings_create_project(platform=V85X, resolution=480x800)`
-→ 挂 `components/ble` 模块 + rtk 预初始化件 → UI（html→json→ftu）→ `fun build` → `flythings_pack_upgrade`
+→ 挂 `components/ble` 模块 + rtk 预初始化件 → UI（html→json→ftu）→ `fsc build` → `flythings_pack_upgrade`
 → ADB 固化（`setprop sys.zkupgrade.*` + `ctl.restart zkswe`）。
 
 **为什么必须做成 app**（指正）：**init 托管 zkgui，kill 掉只会被立刻重生**，抢窗口只能验证、不能交付；

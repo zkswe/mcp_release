@@ -239,14 +239,14 @@ python ui_tools/device_screenshot.py --layer video --vdec-chn 1         # CLI
 
 ## 4.4 launch 活性：`launched=true` 只代表「推送成功」，不代表界面起来了
 
-`fun launch` 返回 0 = 推送完成。**黑屏事件的形态就是「推送成功 + 面板黑着」却回了 `launched=true`。**
+`fsc launch` 返回 0 = 推送完成。**黑屏事件的形态就是「推送成功 + 面板黑着」却回了 `launched=true`。**
 所以 v0.27.179 起 `flythings_build_ui_flow` 会复核 logcat 证据 + GUI 进程活性
 （`device_probes.launch_evidence` / `_launch_liveness`）：
 
 - **强证据**：`registerActivity name: mainActivity OK!`（ftu/Activity 注册成功，实测框架会打）、
   `onUI_show` / `onUI_init`（框架**默认不打**，应用自己 LOGD 才有）
 - **弱证据**：`initEasyUICfg ok!`、`register control: zk_`（框架起来了，不等于界面出来了）
-- ⚠️ **必须等一会儿再读**：`fun launch` 刚返回时 logcat 里还没有 activity 注册（实测要再过数秒），
+- ⚠️ **必须等一会儿再读**：`fsc launch` 刚返回时 logcat 里还没有 activity 注册（实测要再过数秒），
   所以判据是**轮询 6 秒**，不是读一次就下结论
 - 判定：强证据 → `confirmed`；弱证据 + GUI 进程活着 → `confirmed`；
   进程不在/卡 D → **`suspicious` ⇒ 不报 `launched=true`** 并给告警；都拿不到 → `unknown` + 提示抓屏复核

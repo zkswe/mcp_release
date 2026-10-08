@@ -115,7 +115,7 @@ static void onUI_quit() { s_tab.detach(); }   // 摘监听，避免回调打到�
 
 | 验收项 | 命令 | 结论 | 证据 |
 |---|---|---|---|
-| 编译 | `fun build -p Z21` | ✅ 无警告无错误 | — |
+| 编译 | `fsc build -p Z21` | ✅ 无警告无错误 | — |
 | 初始帧 | 部署后抓屏 | ✅ 「第 0 页」+ Page 0 文字变蓝 + 下划线 x=20–199 | `example/evidence/01_page0_initial.png` |
 | **滑动切页**| `/tmp/touch swipe 900 300 150 300` | ✅ 切到「第 1 页」，状态行 `onPageChanged: page=1 (当前页=1 OK)`；Page 1 变蓝、下划线 x=212–391 | `02_swipe_page0_to_page1.png` |
 | **点页签切页**| `/tmp/touch tap 110 42`（点 Page 0） | ✅ 回到「第 0 页」，`page=0`，下划线回到 x=20–199 | `03_tap_tab0_back_to_page0.png` |

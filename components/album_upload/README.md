@@ -100,7 +100,7 @@ UI（`loadQRCode`）只能在 UI 线程，靠你的定时器消费标志。
 - **传输本体**：`components/mp_transfer/`（必须一起拷进工程；它依赖 `base::Task` = 包 `base-utility`）；
 - **接线层**：`easyui`（`ZKQRCode`、`StoragePreferences`、生成代码）、`log`（工程日志宏）。
   **不需要 `curl-cxx`**（二维码现场生成，不下载位图）。
-  各平台版本与声明见 `Manifest.xml`（**改完 Manifest 必须重跑 `fun install`**）。
+  各平台版本与声明见 `Manifest.xml`（**改完 Manifest 必须重跑 `fsc install`**）。
 
 ## 5. 限制（写需求时先看）
 
@@ -137,7 +137,7 @@ UI（`loadQRCode`）只能在 UI 线程，靠你的定时器消费标志。
 |---|---|---|
 | 组件本体（`src/zk_album.cpp` + `example/album_upload_example.cc`） | PC 侧语法自检：`-std=c++11 -fsyntax-only -Wall -Wextra`（用桩头模拟 mp_transfer 接口） | ✅ **通过（0 warning）** |
 | 解链接脚本（`scripts/decode_qr_url.py`） | 在码图上解出链接；`--expect` 核对通过；`--write` 产物与 `assets/qr_url.txt` **逐字节一致**（375 B） | ✅ **通过**（离线工具，运行时不依赖图片） |
-| 工程侧接线（`example/flythings_wiring.cc`） | 工程 `fun build` 通过 + 真机跑通 | ✅ **2026-09-30 已按本样板在 zkgui 工程重放并在 Z20 真机跑通**（二维码上屏/截图解码/9000 监听/发图落盘 + 回调 + 计数刷新，见 `platforms.md` §1.6）；原样板本身来自来源工程实跑代码 |
+| 工程侧接线（`example/flythings_wiring.cc`） | 工程 `fsc build` 通过 + 真机跑通 | ✅ **2026-09-30 已按本样板在 zkgui 工程重放并在 Z20 真机跑通**（二维码上屏/截图解码/9000 监听/发图落盘 + 回调 + 计数刷新，见 `platforms.md` §1.6）；原样板本身来自来源工程实跑代码 |
 | 真机（扫码传图端到端） | 扫码 → 传图 → 落盘 → 回调 | 🟡 **部分取证（2026-09-30）**：协议等价 PC 客户端发图 → 设备落盘（md5 一致、无 `.tmp`）+ `logcat -s zkgui` 出现 `album: onFileAdded …` + 页面计数刷新（`platforms.md` §1.6 判据 d）；**手机微信扫码那一环仍未取证**（无手机/小程序权限） |
 
 ## 8. 移植注意

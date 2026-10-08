@@ -6,7 +6,7 @@
 没有这个探针就只能"写完跑全量回归"（37 组跑一轮要分钟级），一篇一篇地迭代代价太高。
 
 用法：
-    python scripts/retrieval_probe.py knowledge/devflow/cli-fun-toolchain.md "fun 怎么编译" "依赖怎么装"
+    python scripts/retrieval_probe.py knowledge/devflow/cli-fsc-toolchain.md "fun 怎么编译" "依赖怎么装"
     python scripts/retrieval_probe.py --doc <路径> --queries-file q.txt     # 一行一条问法
     python scripts/retrieval_probe.py --doc <路径> --k 5 "问法1" "问法2"
 
@@ -41,7 +41,7 @@ def main():
     # ⚠️ `doc` 只做 `--doc` 选项（2026-10-04）：早先还挂了个同名位置参数，
     # argparse 会把多出来的位置参数**先填给 doc**，导致 `--doc X "问法"` 里的问法被吃掉
     # （子代理与本机各踩一次）。同一个东西只留一种写法。
-    ap.add_argument('--doc', dest='doc2', required=True, help='仓库相对路径（如 knowledge/devflow/cli-fun-toolchain.md）')
+    ap.add_argument('--doc', dest='doc2', required=True, help='仓库相对路径（如 knowledge/devflow/cli-fsc-toolchain.md）')
     ap.add_argument('--queries-file', default='', help='问法文件，一行一条')
     ap.add_argument('--k', type=int, default=5)
     ap.add_argument('queries', nargs='*')

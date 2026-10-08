@@ -8,7 +8,7 @@
 | `ui/main.json` | 页面：WiFi 开/关、扫描、连接、断开、读 IP·MAC、NetUtils 查询、热点状态、网络通道、自检 AUTO + 结果 textview。`cd ui && fui pack ./` |
 | `src/logic/mainLogic.cc` | 回调实现：`acquireWifi()`（惰性取 + 注册 IWifiListener）、`DemoWifiListener`、定时器状态机（`sWait` 人工步骤 / `sAuto` 自检 6 步）、各按钮回调 |
 | `mainActivity_button_tab.snippet.cpp` | **必须补**：activity 的 `sButtonCallbackTab` 注册（10 行） |
-| `Manifest.xml` | 依赖：easyui / log / zknet / base-utility，改完 `fun install` |
+| `Manifest.xml` | 依赖：easyui / log / zknet / base-utility，改完 `fsc install` |
 
 ## 关键口径（照抄这三条就不容易踩）
 
@@ -26,6 +26,6 @@ int cur = GpioHelper…                            // （无关）状态一律�
 
 1. `ui/main.json` → 工程 `ui/`，`cd ui && fui pack ./`
 2. `src/logic/mainLogic.cc` 并进工程 logic；`mainActivity_button_tab.snippet.cpp` 的 10 行填进 `sButtonCallbackTab[]`
-3. `fun install && fun build -p z20`，部署见 `../platforms.md`
+3. `fsc install && fsc build -p z20`，部署见 `../platforms.md`
 
 真机实测（Z20 86 面板，2026-09-29 全自动跑完 6 步）见 `../README.md` §4 与 `../evidence/`。

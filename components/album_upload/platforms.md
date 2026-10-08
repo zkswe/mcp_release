@@ -16,7 +16,7 @@
 
 | 平台 | 可用性 | 依据 | 备注 |
 |---|---|---|---|
-| **Z20** | ✅ **组件形态已在 Z20 真机跑通**（2026-09-30，<验收机IP>:5555，480×480 zkgui 工程）；来源工程 `SmartPanel_HA` 亦在 Z20 面板跑过 | 组件形态：`temp/verify71/album_zkgui` 真机验收（§1.6，4 条判据全过 + 还原复核）；来源工程：`fun build -p Z20` + 推真机（`11_相册上传.png`）；协议侧口径见 `components/mp_transfer/platforms.md` | **微信小程序真机扫码那一环仍无取证**（本机无手机/小程序）；用协议等价 PC 客户端代跑「发图→落盘→回调」（§1.6 判据 d） |
+| **Z20** | ✅ **组件形态已在 Z20 真机跑通**（2026-09-30，<验收机IP>:5555，480×480 zkgui 工程）；来源工程 `SmartPanel_HA` 亦在 Z20 面板跑过 | 组件形态：`temp/verify71/album_zkgui` 真机验收（§1.6，4 条判据全过 + 还原复核）；来源工程：`fsc build -p Z20` + 推真机（`11_相册上传.png`）；协议侧口径见 `components/mp_transfer/platforms.md` | **微信小程序真机扫码那一环仍无取证**（本机无手机/小程序）；用协议等价 PC 客户端代跑「发图→落盘→回调」（§1.6 判据 d） |
 | Z21 / T113 / T113EMMC / V85X / F135 / F136 | ❌ 未取证 | — | 先看 §3 前置条件；⚠️ **Z21 没有 `/mnt/sdnand`**（只有 `/mnt/extsd`、`/mnt/usb1`）→ 落盘目录必须换（该事实为 2026-09-29 Z21 实测记录） |
 
 > 「未取证」的准确含义：**没人按本模块 `example/` 的形态在目标机器上把对应环节跑过一遍**。
@@ -64,7 +64,7 @@
 
 | 项 | 状态 | 依据 |
 |---|---|---|
-| app 包在 Z20 上编译 + 推设备运行 | ✅ 有（组件形态 + 来源工程） | 组件形态（2026-09-30）：`fun build -p Z20` 通过（`.fun/z20/libzkgui.so`）→ 推 `/tmp/lib/` + `/tmp/ui/`，设备侧 md5 与本地一致（§1.6）；来源工程：`fun build -p Z20` + MCP 推包（lib md5 记录） |
+| app 包在 Z20 上编译 + 推设备运行 | ✅ 有（组件形态 + 来源工程） | 组件形态（2026-09-30）：`fsc build -p Z20` 通过（`.fsc/z20/libzkgui.so`）→ 推 `/tmp/lib/` + `/tmp/ui/`，设备侧 md5 与本地一致（§1.6）；来源工程：`fsc build -p Z20` + MCP 推包（lib md5 记录） |
 | 相册页上屏（状态卡/二维码/计数） | ✅ 有（组件形态另有本次独立截图） | 本次组件形态：qrcode 控件渲染 + 文案上屏，截图 `temp/verify71/shots/verify_a_qr.png`（`QR[fallback]: http://<验收机IP>:9000/upload`、`photos 4 / videos 3`）；来源工程：整机说明书 `manual_shots/11_相册上传.png` |
 | 面板侧二维码**能被手机扫到** | 🟡 **等价判据已过；手机实际扫仍未做** | 本次（2026-09-30）：真机截图 → zxing 解出 URL == `qrInfo().content`（§1.6 判据 b，相册码本身）；「手机微信实际扫到」仍无取证（本机无手机/小程序，来源工程说明书该图同样记 `图待补`） |
 | **扫码 → 传图 → 落盘 `/mnt/sdnand/album/` → 回调刷新** 端到端 | 🟡 **协议等价客户端已端到端取证（2026-09-30 组件形态）；微信小程序扫码那一环未取证** | 本次：PC 侧 `projects/SmartPanel_HA/tools/mp_send_test.py`（与 `mp_transfer` 同协议的假小程序）发 205 B 图 → 设备 `/mnt/sdnand/album/test_upload_71.png` 落盘（md5 `9847d78feaf1d39db7070c7306000700` 与 PC 侧一致、无 `.tmp` 残留）、`logcat -d -s zkgui` 出现 `album: onFileAdded path=… size=205 kind=0`、页面计数 `photos 4 → 5`（§1.6 判据 d）；**手机微信扫码未做** |
@@ -109,10 +109,10 @@
    判据必须换成**接收端抓广播**（同网段 PC `mp_send_test.py --discover`）。已同步进 §1.2 表。
 2. **配置分支未上机**：设备 prefs 里没有 `sp_qr_url` → 只走了兜底分支。两条分支上屏是同一个
    `loadQRCode(content)` 调用（组件 `qrInfo()` 只有一个出口），但按「不冒充实测」口径记为**未取证**。
-3. `fun launch` 在本机 6 台设备在线时**硬失败**（fun 自带 Go adb 发旧式 `host:transport <serial>`，
-   见 `knowledge/devflow/cli-fun-toolchain.md` §7）；文档里的垫片方案要 kill/重启共享 adb server（会影响
+3. `fsc launch` 在本机 6 台设备在线时**硬失败**（fun 自带 Go adb 发旧式 `host:transport <serial>`，
+   见 `knowledge/devflow/cli-fsc-toolchain.md` §7）；文档里的垫片方案要 kill/重启共享 adb server（会影响
    并行的其它设备会话），故本次部署改用 **MCP 自己的 adb 层**（`adb_tools.push` / `restart_app`，全部带 `-s`）
-   复刻 `fun launch` 的部署约定：`/tmp/ui/*.ftu` + `/tmp/lib/libzkgui.so` + `/tmp/EasyUI.cfg`（`resPath` 指
+   复刻 `fsc launch` 的部署约定：`/tmp/ui/*.ftu` + `/tmp/lib/libzkgui.so` + `/tmp/EasyUI.cfg`（`resPath` 指
    `/tmp/ui/`）+ `setprop ctl.restart zkswe`。
 4. 落盘目录 `/mnt/sdnand/album/` 在验收机上**已有 7 个旧文件**（4 图 3 视频，他人验收残留）→ 组件计数
    直接把它们算进去（`photos 4 / videos 3`），即 `refresh()` 是「扫目录」不是「本次会话」。属预期行为，
@@ -125,7 +125,7 @@
 | 平台 | 状态 | 需要先确认的事 |
 |---|---|---|
 | Z21 | ❌ 未取证 | **没有 `/mnt/sdnand`**（只有 `/mnt/extsd`、`/mnt/usb1`）→ `MP_PATH` 与 `Config::save_dir` 都要换；`base-utility`/`easyui` 版本以工程为准 |
-| T113 / T113EMMC | ❌ 未取证 | 外置卡路径与可写分区要实测；`fun install` 后确认 mp_transfer 能编（`base::Task`） |
+| T113 / T113EMMC | ❌ 未取证 | 外置卡路径与可写分区要实测；`fsc install` 后确认 mp_transfer 能编（`base::Task`） |
 | V85X / F135 / F136 | ❌ 未取证 | 同上；F135/F136 板子登录需口令（与本模块无关，但推包调试会撞到） |
 
 ---
@@ -140,7 +140,7 @@
 5. **落盘空间**：单文件上限 500 MiB、分块 32 KiB —— 传视频前先确认分区剩余空间。
 6. **端口可用**：9000/tcp 未被占用（同机还有 8080 板内网页 / 8084 zkmqtt 状态页）。
 7. **接线层依赖**：`easyui`（`ZKQRCode`、`StoragePreferences`）、`log`。
-   二维码现场生成、不下载位图 → **不需要 `curl-cxx`**（`Manifest.xml`）。**改完 Manifest 必须重跑 `fun install`**。
+   二维码现场生成、不下载位图 → **不需要 `curl-cxx`**（`Manifest.xml`）。**改完 Manifest 必须重跑 `fsc install`**。
 
 ---
 
@@ -162,7 +162,7 @@
 | 层 | 做法 | 期望 |
 |---|---|---|
 | ① PC 侧（不接设备） | 组件本体：`g++ -std=c++11 -fsyntax-only -Wall -Wextra`（桩头模拟 mp_transfer 接口，命令见 `README.md` §7）；链路侧：`components/mp_transfer/src/python/receiver.py` 用**上线小程序**发图 | 编译 0 warning；PC 收端文件长度与发送端一致、逐块 ACK、末块 `OK` |
-| ② 设备侧（不上屏） | 拷 mp_transfer + 本组件 → `fun build` → 推设备 → 看日志：广播启动、监听 9000、`start: ...期望落盘 ...` | 小程序能发现设备名；`onFileAdded` 被触发；落盘目录出现文件、无残留 `.tmp`。**2026-09-30 已有组件形态实跑记录（§1.6 判据 c/d）** |
+| ② 设备侧（不上屏） | 拷 mp_transfer + 本组件 → `fsc build` → 推设备 → 看日志：广播启动、监听 9000、`start: ...期望落盘 ...` | 小程序能发现设备名；`onFileAdded` 被触发；落盘目录出现文件、无残留 `.tmp`。**2026-09-30 已有组件形态实跑记录（§1.6 判据 c/d）** |
 | ③ 端到端 | 面板上屏二维码 → 手机微信扫码 → 小程序选图 → 传 | 文件出现在 `save_dir`，大小 == 协议声明；页面计数/缩略图刷新；**截图 + `ls` 双证**。2026-09-30：二维码上屏 + 截图解码 + 协议等价 PC 客户端发图（截图 + `ls` + `logcat` 三证）已过（§1.6）；**仅剩「手机微信真扫」这一环未取证** |
 
 排障顺序：设备不可见 → 网段/客户端隔离/相册模式是否开启；可见连不上 → 9000 占用与防火墙；

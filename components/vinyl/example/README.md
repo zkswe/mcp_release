@@ -27,7 +27,7 @@ cp components/vinyl/example/demo/src/vinyl_demoLogic.cc <工程>/src/logic/
 
 ```bash
 <工程>/ui/fui.exe pack <工程>/ui        # json -> ftu
-fun build -p <平台>                      # 例：-p F133 / -p Z36
+fsc build -p <平台>                      # 例：-p F133 / -p Z36
 ```
 
 > 说明：demo 里的封面路径是 `images/album_a.png` / `images/album_b.png`（相对工程 `resources/`），
@@ -59,5 +59,5 @@ static void onUI_quit() { zk::VinylSpin::instance().detach(); }                 
 ## 4) 真机载体（本组件的实际验证）
 
 组件的真编译 + 真机运行载体是 `projects/iOSStyle-F133`（播放页黑胶已切到组件副本
-`projects/iOSStyle-F133/src/zk_vinyl/`）：`fun build -p F133` → 0 error，部署后正常出帧。
+`projects/iOSStyle-F133/src/zk_vinyl/`）：`fsc build -p F133` → 0 error，部署后正常出帧。
 本 demo 页与它用的是同一套接口，只是把参数换成最简三个按钮，便于新工程直接照抄。

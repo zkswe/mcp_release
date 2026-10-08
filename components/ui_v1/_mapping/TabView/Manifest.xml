@@ -11,7 +11,7 @@
 
   A) 源码引入（推荐，改动最快）
      1) 拷 include/zk/*.h  → <工程>/src/zk/
-     2) 拷 src/*.cpp       → <工程>/src/zk/          （fun build 会自动把 src/** 加进编译单元，实测）
+     2) 拷 src/*.cpp       → <工程>/src/zk/          （fsc build 会自动把 src/** 加进编译单元，实测）
      3) 在 <工程>/Manifest.xml 里声明下面这份「本模块依赖的底层包」
 
   B) 依赖包引用（本模块定型后，注册进包仓库时）

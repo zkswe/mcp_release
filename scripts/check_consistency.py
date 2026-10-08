@@ -118,7 +118,7 @@ def _git_tracked(relpath):
     为什么门禁要问这个（2026-10-03 实测）：门禁与 CI 跑的是**公开仓库形态**。一个文件
     只在工作区存在、没进 git，就等于"这套闸门只在这台机器上成立"——本轮
     `scripts/run_tests.py` / `audit_design_spec.py` / `gen_unverified_report.py` /
-    `fun_capabilities.json` 都处于这个状态（被门禁调用/引用却没入库）。
+    `fsc_capabilities.json` 都处于这个状态（被门禁调用/引用却没入库）。
     查不到 git（无 git / 不是仓库 / 超时）时返回 None，调用方**跳过该判据**并提示，
     不把"查不到版本控制"伪造成"没入库"。
     """
@@ -450,17 +450,17 @@ def stage_platform_arch():
 
 
 # MCP 依赖的外部 CLI 必须随包（v0.27.199）。
-# 起因（现场反馈 2026-10-06）：公开版把 `toolchain/fun.exe`（38 MB）当「二进制命中词表」删掉了。
-# 客户端机器上没有 `C:\zkswe\fun`、也没有 `FLYTHINGS_FUN_DIR`，`project_tools._tool_dir()`
-# 只能命中包内 `toolchain/`（只剩 fui.exe）→ `fun.exe` 退化成裸名 → 构建流程直接回
-# 「fun.exe 未找到」，AI 复述成「缺少 fun，编译不了」。
-# 判据：`toolchain/fui.exe`（json↔ftu）与 `toolchain/fun.exe`（依赖/编译/推送/出包）两者都要在，
+# 起因（现场反馈 2026-10-06）：公开版把 `toolchain/fsc.exe`（38 MB）当「二进制命中词表」删掉了。
+# 客户端机器上没有 `C:\zkswe\fsc`、也没有 `FLYTHINGS_FSC_DIR`，`project_tools._tool_dir()`
+# 只能命中包内 `toolchain/`（只剩 fui.exe）→ `fsc.exe` 退化成裸名 → 构建流程直接回
+# 「fsc.exe 未找到」，AI 复述成「缺少 fun，编译不了」。
+# 判据：`toolchain/fui.exe`（json↔ftu）与 `toolchain/fsc.exe`（依赖/编译/推送/出包）两者都要在，
 # 且**必须已入库**（只在工作树里 = 客户 clone 拿不到，等于没有）。
 # ⚠️ 二进制**不参与内容词表扫描**（偶然字节、不可编辑）——只做路径级存在性检查，
 #    遇到词表命中要豁免并登记理由，**不许再靠删文件过闸**（PUBLISH.md §5）。
 REQUIRED_CLI_PRODUCTS = (
     ('toolchain/fui.exe', 'json↔ftu（fui pack / unpack）'),
-    ('toolchain/fun.exe', '依赖/编译/推送/出包（fun install|build|launch|pack）'),
+    ('toolchain/fsc.exe', '依赖/编译/推送/出包（fsc install|build|launch|pack）'),
 )
 
 
@@ -521,7 +521,7 @@ def stage_no_people_names():
 
 # IDE 本地状态 / 工具生成物：不得入库（v0.27.179，B6 出库）。
 # 判据：带本机信息（language.settings.xml 的 env-hash、core.runtime.prefs 的 line.separator）
-# 或由工具重新生成（.deps.lock 由 fun install 解析）。工程必需的三件**保留**：
+# 或由工具重新生成（.deps.lock 由 fsc install 解析）。工程必需的三件**保留**：
 # .project / .cproject（IDE 打开与编译）、.settings/{com.zksw.flythings.easyui.prefs,
 # org.eclipse.core.resources.prefs}（resolution 来源 / UTF-8 编码）。
 IDE_LOCAL_BASENAMES = ('language.settings.xml', 'org.eclipse.core.runtime.prefs', '.deps.lock')
@@ -689,7 +689,7 @@ def stage_cli_names():
     op 参数名 \u0060with_fyx\u0060——AI 读到会以为还有这条命令可调。
 
 范围只限「会被 AI 当命令用」的两处：manifest 名词表、op 签名参数名。**不含知识文档**——
-    \u0060knowledge/devflow/cli-fun-toolchain.md\u0060 里的 fuse 痕迹是**兼容识别知识**（老工程为什么
+    \u0060knowledge/devflow/cli-fsc-toolchain.md\u0060 里的 fuse 痕迹是**兼容识别知识**（老工程为什么
 带 \u0060.fuse/\u0060 产物目录、\u0060FUSE_BUILD\u0060 宏、\u0060~/.fuse\u0060 注册表），删了反而无法诊断。
 区别是：**要认识的老形态**保留，**可调的命令**清空。
     """
@@ -845,7 +845,7 @@ def stage_json_registries():
 
     2026-10-03 加两条**同源的性质**（都是本轮实测踩出来的，见 REVIEW-2026-10-03.md）：
       ① **必须受版本控制**：门禁/CI 跑的是「fresh clone / checkout」形态，一个 untracked 的
-         注册表+只引用它的代码，等于**只在这台机器上成立**（本轮 `fun_capabilities.json`
+         注册表+只引用它的代码，等于**只在这台机器上成立**（本轮 `fsc_capabilities.json`
          被 `op_spec.json` 引用却没入库）。判据用 `git ls-files`，不靠人记。
       ② **注册表里反引号引用的 .json 必须存在**（反引号包起来的 `x.json` 是**指针**，
          删了文件就该红）——只认反引号，避免把散文里的泛称（"xxx.json"）误判成指针。
@@ -894,7 +894,7 @@ def stage_json_registries():
     # 一律当指针会造出十几条假红。所以判据收窄成两条：
     #   · 含 `/` 的路径 → 按仓根相对解析；
     #   · 不含 `/` 的裸文件名 → **只有当它是仓根注册表**时才判（写全路径是那条约定的写法）。
-    # 真正的护栏其实是上面那条"已入库"检查（本轮 `fun_capabilities.json` 正是被它抓到）。
+    # 真正的护栏其实是上面那条"已入库"检查（本轮 `fsc_capabilities.json` 正是被它抓到）。
     # 另：变更史/流程里会出现**用户工程相对**的路径（`ui/main.json`、`SampleUI-New/…/ad.json`、
     # `blocks/_tokens.json`）——它们不是仓内指针，按前缀放行（与 check_doc_refs 的 ALLOW 同性质，
     # 都要写明理由；这里一次说清是"工程内相对路径"这一类）。
@@ -924,7 +924,7 @@ def stage_referenced_files_tracked():
     """**被文字引用的仓内文件，必须已入库**（门禁/CI 跑的是 fresh clone / checkout 形态）。
 
     为什么单列一条（2026-10-03 实测踩到）：本轮 `scripts/run_tests.py` /
-    `audit_design_spec.py` / `gen_unverified_report.py` / `fun_capabilities.json` 都
+    `audit_design_spec.py` / `gen_unverified_report.py` / `fsc_capabilities.json` 都
     **被门禁调用或被注册表引用，却没进 git** —— 一旦按当时状态发布，
     `check_consistency.py --with-tests` 在 fresh clone 上会一口气红 4 项
     （`has scripts/run_tests.py`、`delegated: tests/ unittest` 脚本缺失、两条新委派项），

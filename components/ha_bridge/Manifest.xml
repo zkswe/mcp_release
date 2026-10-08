@@ -9,7 +9,7 @@
 
   接入工程（源码引入，推荐起步）：
     1) 把 components/ha_bridge/{include,src} 拷进工程（如 src/zk/）；
-    2) 按下面 <platform name="Z20"> 声明底层包；**改完 Manifest 必须重跑 fun install**
+    2) 按下面 <platform name="Z20"> 声明底层包；**改完 Manifest 必须重跑 fsc install**
        （否则新包的 include 路径不进 CMake，编译期报找不到 mqtt/mqtt_client.h）；
     3) 页面 onUI_init 调 start()、1s 定时器调 tick()、onUI_quit 调 stop()。
 

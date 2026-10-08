@@ -1,6 +1,6 @@
 ---
 id: devflow-custom-font-config
-title: 🔤 自定义字库（fun build/launch 流程，非 IDE）— 权威规则
+title: 🔤 自定义字库（fsc build/launch 流程，非 IDE）— 权威规则
 category: devflow
 status: review
 confidence: manual
@@ -13,7 +13,7 @@ platforms: [Z21, V85X, V851S]
 tags: [fun 流程换字库以本条为准, font_setting, md 是 IDE 视角]
 evidence: []
 ---
-# 🔤 自定义字库（fun build/launch 流程，非 IDE）— 权威规则
+# 🔤 自定义字库（fsc build/launch 流程，非 IDE）— 权威规则
 
 > 检索导引：问「换字体 / 换字库 / ttf 放哪 / package.properties 的 enable.font.location / 多字体哪个当默认 / setFontFamily / 设备缺中文 / 照设计稿要换字体」→ 本文（fun 流程权威口径）；屏幕方向等 cfg 机制见 `knowledge/devflow/package-properties-easyui-cfg.md`。
 > 2026-09-03 需求方定规。**fun 流程换字库以本条为准**；font_setting.md 是 IDE 视角，AI 引导用户时禁止先去翻 IDE 项目属性那套。
@@ -27,7 +27,7 @@ evidence: []
 
 ## 机制要点
 
-- **字库是运行时资源，不参与编译**，`fun launch` 随资源一起推送
+- **字库是运行时资源，不参与编译**，`fsc launch` 随资源一起推送
 - 平台：**Z20 / Z21 / H500S / T113 / V85X 及后续平台系统内置 fzcircle.ttf**（思源黑体裁剪版）；**项目 font/ 存在字体后，完全使用项目字体**
 - 字库不含 emoji / 特殊符号（■ ● ⌫ ℃ ▲ ▼ 等）→ 布局文本只用**汉字 + ASCII + 基础符号**（/ % # - _ 空格），图标一律转 PNG
 - 实测样例：某车载 PND 工程（双分辨率）根目录 `font/sans.ttf` + package.properties `enable.font.location=true` = fun 流程标准用法
@@ -40,7 +40,7 @@ evidence: []
 
 ## 常见坑
 
-- 换 ttf 后不生效 → ①`font/` 目录建在**项目根**、文件名是否 .ttf ②package.properties 有没有 `enable.font.location=true` ③`fun launch` 是否重新推了资源（字库随资源推送）
+- 换 ttf 后不生效 → ①`font/` 目录建在**项目根**、文件名是否 .ttf ②package.properties 有没有 `enable.font.location=true` ③`fsc launch` 是否重新推了资源（字库随资源推送）
 - 多字体没按预期默认 → ASCII 排序理解错（排最前的是默认）；个别控件要显式 `setFontFamily`
 - `setFontFamily` 参数写 "xxx.ttf" → 错，**只要文件名、不含 .ttf 后缀**
 - 字库要带 emoji/特殊符号 → 做不到（裁剪字库），图标转 PNG、文本只用基础符号
@@ -52,7 +52,7 @@ evidence: []
 
 ### 0.1 机制澄清（重要，避免走弯路）
 
-- **项目 `font/` 里的字体会被工具链自动写进 `EasyUI.cfg` 的 `font` 键**（`fun launch` 与 `fun pack` 都做：
+- **项目 `font/` 里的字体会被工具链自动写进 `EasyUI.cfg` 的 `font` 键**（`fsc launch` 与 `fsc pack` 都做：
   `internal/launch/launcher.go` / `internal/packaging/packaging.go` 里 `cfg.Font = join(项目 font/*.ttf → /res/font/...)`）。
   → **不要为“让字体生效”去手改 `.settings/com.zksw.flythings.easyui.prefs` 的 `font` 键**（多余；实测去掉后照样正常）。
 - `package.properties: enable.font.location=true` = 启用工程内字库（配合多字体 `setFontFamily`）；单字体时就是全局默认字体。
@@ -82,7 +82,7 @@ evidence: []
 此时 `verdict` 用旧口径（`no_font`/`no_cjk`/`partial_cjk`/`has_cjk`）。
 - **成本控制**：结论按 `设备 serial + 目录/文件名 + 体积 + ls 时间` 缓存到 `~/.fun/font-probe.json`
   （`FLYTHINGS_FONT_CACHE` 可改），命中就不重复拉；返回体 `probe.cacheHit` 能看出是不是缓存。
-- **部署后复查**（v0.27.87）：`fun launch` 成功后且本次投递过字体 → `fontCheck.deviceAfterDeploy`
+- **部署后复查**（v0.27.87）：`fsc launch` 成功后且本次投递过字体 → `fontCheck.deviceAfterDeploy`
 回看「设备侧字库现状 + 与工程投递是否一致」；字库要 `fun pack_upgrade` 固化才变，
 所以这里如实说「需固化才生效」，**不白花一次拉取**（与应用侧 `staleOnDevice` 凑成一个闭环）。
 - **档位**：默认 **`common`**（872 KB，GB2312 一级 3755 + 中文标点 + ASCII）；
@@ -123,7 +123,7 @@ cmap 覆盖率 / GB2312 一级 / 硬判据 / font-probe 缓存。
 | **可关**| `font_check='off'` | steps 里**没有**`check_font`、`fontCheck.enabled=false`、`warnings=[]` | 建编译照常，零字体动作 |
 | **无设备/工程侧缺字体**| `device='192.0.2.9:5555'`（不存在的 serial） | `mode=project`、`note=未连设备，仅工程侧检查…`、`verdict=project_no_font`、`missingChinese=true`、`delivered.applied=true`、`files=['font/zkswe-hans-common.ttf']`；warning 两条（设备不在线→跳过设备侧 + 已自动投递） | **自动投递生效**；`/tmp/font/zkswe-hans-common.ttf` = 892,848 B 跟工程一致 |
 
-**投递真的生效的证据**（关键，防“投了个没用的字体”）：投递后跑 `fun launch`，设备侧
+**投递真的生效的证据**（关键，防“投了个没用的字体”）：投递后跑 `fsc launch`，设备侧
 `/tmp/EasyUI.cfg` 自动出现 `"font": "/tmp/font/zkswe-hans-common.ttf"`（**由工具链从工程 `font/*.ttf`
 生成**，不用手改 prefs），且 `/tmp/font/` 下的字体字节与工程一致。
 
@@ -144,8 +144,8 @@ cmap 覆盖率 / GB2312 一级 / 硬判据 / font-probe 缓存。
 
 ### 0.2.2 真机实测（v0.27.87，V85X SPINOR 整机、网络 adb）
 
-> 环境：本机 adb = 随包 `tools/adb/adb.exe`；**多设备在线时 `fun launch` 硬失败**（fun 的 Go adb 用旧式
-> `host:transport <serial>` 空格写——详见 `knowledge/devflow/cli-fun-toolchain.md` §6），本次实测前先 `adb disconnect` 另两台、
+> 环境：本机 adb = 随包 `tools/adb/adb.exe`；**多设备在线时 `fsc launch` 硬失败**（fun 的 Go adb 用旧式
+> `host:transport <serial>` 空格写——详见 `knowledge/devflow/cli-fsc-toolchain.md` §6），本次实测前先 `adb disconnect` 另两台、
 > 跑完再 `adb connect` 加回；设备报 `ro.product.model=Zkswe_V85X_SPINOR`（480×800）。
 > （本段不写具体内网地址：隐私扫描不允许——设备用 `device='<serial|IP:5555>'` 现查现传。）
 
@@ -154,12 +154,12 @@ cmap 覆盖率 / GB2312 一级 / 硬判据 / font-probe 缓存。
 | **设备字库够**（首次探测） | `mode=device`、`source=cmap`、`cmapCoverageGB2312L1=100.0`（3755/3755）、`verdict=ok`、`checkedFont=/res/font/pocketgame.ttf`（大小随设备字库而定）、`missingChinese=false`、`delivered.applied=false`、`warnings=[]` | **未投递**；拉回 1 MB 字体耗时 **1294 ms**（`probe.elapsedMs`，正常） |
 | **缓存命中**（同设备立即再跑） | `probe.cacheHit=true`、`elapsedMs=6`、`pulledBytes=0`、`probedAt=2026-09-17 20:21:32` | **没再拉**（缓存键=serial+文件+体积+ls 时间，落 `~/.fun/font-probe.json`） |
 | **设备字库只有零星中文**| `checkedFont=/res/font/game.ttf`（小字库，大小随设备而定）、`cmapCoverageGB2312L1=8.0`（302/3755）、`verdict=missing`、`missingChinese=true` | 投递 `common` 进工程 `font/`（81 KB 的字体里面**真只有 302 个一级汉字**——数字比体积说明问题） |
-| **完整构建流程**（build_ui_flow，单设备在线） | `ok=true`、`launched=true`、`pushed=true`、`staleOnDevice=false`；`check_font` step 带 `source=cmap`/`cmapCoverageGB2312L1=8.0`/`checkedFont`；`delivered=[font/zkswe-hans-common.ttf]`；`deviceAfterDeploy.consistent=false` + note「需 `pack_upgrade` 固化才生效」 | 字体投递在 `fun build` **之前**；launch 后 `deviceSync` ftu/so md5 与本地一致；**字库待固化**与应用陈旧分开报 |
+| **完整构建流程**（build_ui_flow，单设备在线） | `ok=true`、`launched=true`、`pushed=true`、`staleOnDevice=false`；`check_font` step 带 `source=cmap`/`cmapCoverageGB2312L1=8.0`/`checkedFont`；`delivered=[font/zkswe-hans-common.ttf]`；`deviceAfterDeploy.consistent=false` + note「需 `pack_upgrade` 固化才生效」 | 字体投递在 `fsc build` **之前**；launch 后 `deviceSync` ftu/so md5 与本地一致；**字库待固化**与应用陈旧分开报 |
 | **V851S 入参**| `platforms.resolve('V851S') → {canonical: V85X, packageKey: v85x, buildable: true, template: HelloWord_V85X}`（`v851s3`/`V853S`/`V851` 同） | 修前是 `None`（被当未知平台）且 `package_key` 回 `v851s`（catalog 里不存在 → 查包必空） |
 
 > ⚠️ 实测中发现的一个**不属本轮改动**的现场变化，记下来供排查：同一块 V85X 板子
 > `/res/font` 的内容在本次会话中从 `pocketgame.ttf`（1 MB）变成了 `game.ttf`（81 KB，一级汉字仅 302 个）。
-> 我们的流程只向 `/tmp/font` 推 app 资源（`fun launch` 不碰 `/res`），且本机与仓库内**没有**`game.ttf`
+> 我们的流程只向 `/tmp/font` 推 app 资源（`fsc launch` 不碰 `/res`），且本机与仓库内**没有**`game.ttf`
 > 这个文件 → 应是另一路会话/人推上去的；结论：**这块板子当前 /res/font 的中文覆盖只有 8%**，
 > 拿它当「设备字库够」基准之前先重跑一次体检（现在 `verdict` 就是 `missing`）。
 
@@ -186,7 +186,7 @@ cmap 覆盖率 / GB2312 一级 / 硬判据 / font-probe 缓存。
 ### C. 落地 4 步（fun 流程）
 1. `<项目>/font/` 放 ttf（**文件名决定默认**，见 §D）
 2. `package.properties`：`enable.font.location=true`
-3. `fun build -p <平台>` + `fun launch`（字库随资源推送，`/tmp/font/` 或 `/res/font/`）
+3. `fsc build -p <平台>` + `fsc launch`（字库随资源推送，`/tmp/font/` 或 `/res/font/`）
 4. **真机截图 vs 设计图对照验收**（`flythings_device_screenshot` + 视觉对比）；不合就换字重再验
 
 ### D. ⚠️ 多字体排序铁律（本机 2026-09-15 实测硬约束）
@@ -197,7 +197,7 @@ cmap 覆盖率 / GB2312 一级 / 硬判据 / font-probe 缓存。
 
 ### E. ⚠️ 低内存平台（Z21 36MB RAM / tmpfs 13.9MB）字体坑（实测）
 - 投 **2.5 MB 级中文字体**（如 HarmonyOS_Sans_SC_Medium）后应用**黑屏 + 反复重启**；换成 872 KB 的 `zkswe-hans-common.ttf` 立即恢复。→ **Z21/Z20 优先用 `common` 档思源黑体**，别上 MB 级大字体。
-- `fun launch` 每换一次字体就往 `/tmp/font/` 写一份，**旧字体不自动删**：堆到 tmpfs 使用率 ~72%（剩 3.9 MB）时应用起不来。→ 上传前 `adb shell rm -f /tmp/font/<旧字体>`，`df /tmp` 确认余量。
+- `fsc launch` 每换一次字体就往 `/tmp/font/` 写一份，**旧字体不自动删**：堆到 tmpfs 使用率 ~72%（剩 3.9 MB）时应用起不来。→ 上传前 `adb shell rm -f /tmp/font/<旧字体>`，`df /tmp` 确认余量。
 - 排查口径：屏幕全黑 + logcat 里 zkgui 反复换 pid（重启循环）= 资源/内存问题，先查 `/tmp` 余量与字体体积，别急着改 UI。
 
 ### F. 字号也要按设计稿给足

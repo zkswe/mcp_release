@@ -4,8 +4,8 @@
 依赖引入（`base::JSONObject` 的底座），也可单独声明后直接 `#include <rapidjson/document.h>`；Z20 在跑的写法见 `projects/SmartPanel_HA/src/network/LocalLink.cpp`。
 
 **怎么用**
-1. Manifest：`<package id="rapidjson" version="1.1.0"/>`（或走 base-json 间接引入）→ `fun install`
-   （**改完 Manifest 必须跑**，否则 include 路径不进 CMake）→ `fun build -p z20`。
+1. Manifest：`<package id="rapidjson" version="1.1.0"/>`（或走 base-json 间接引入）→ `fsc install`
+   （**改完 Manifest 必须跑**，否则 include 路径不进 CMake）→ `fsc build -p z20`。
 2. 关键 API：解析 `rapidjson::Document d; d.Parse(json.c_str())` → **必须** `HasParseError()` →
    `IsObject()/HasMember()/IsString()` 判定后再 `d["k"].GetString()/GetInt()/GetBool()`；生成
    `rapidjson::StringBuffer sb; Writer<rapidjson::StringBuffer> w(sb);` → `StartObject/Key/String/EndObject`

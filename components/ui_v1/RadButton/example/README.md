@@ -1,6 +1,6 @@
 # example —— RadButton 最小可跑示例（Z21 1024×600）
 
-> 这个目录就是一个**能编、能跑、能复现证据**的 FlyThings 工程（只留必要文件，没有 `fun.exe`/`fui.exe`/`.fun/` 产物）。
+> 这个目录就是一个**能编、能跑、能复现证据**的 FlyThings 工程（只留必要文件，没有 `fsc.exe`/`fui.exe`/`.fun/` 产物）。
 > 真机截图与数字在 `evidence/`，测量脚本在 `tools/aa_ideal.py` / `tools/aa_measure.py`。
 
 ## 文件清单
@@ -9,7 +9,7 @@
 |---|---|
 | `Manifest.xml` | 依赖声明（easyui ^2.2.0 + log/zkhardware/zknet/base-utility） |
 | `.deps.lock` | 依赖解析结果快照（实际落到 easyui 2.6.0） |
-| `.project` | IDE 工程描述（`fun build` 不需要） |
+| `.project` | IDE 工程描述（`fsc build` 不需要） |
 | `ui/main.html` | **本示例的手写源（原型稿）**：两排 painter（HARD / AA 各 r=4/8/14）、四个状态盒、四个交互按钮、探针、`.9.png` 按钮 |
 | `ui/main.json` / `ui/main.ftu` | `html2json` / `fui pack` 产物 |
 | `src/Main.cpp` | 应用入口 |
@@ -30,7 +30,7 @@ copy -r tools\FlyThings_mcp_open\components\ui_v1\RadButton\example\* C:\work\Ra
 python tools\ui_tools\html2json.py C:\work\RadButtonDemo\ui\main.html C:\work\RadButtonDemo\ui\main.json
 cd C:\work\RadButtonDemo\ui ; <fui.exe> pack .
 cd C:\work\RadButtonDemo
-fun build -p Z21
+fsc build -p Z21
 ```
 
 ## 屏上有什么（对着截图看）

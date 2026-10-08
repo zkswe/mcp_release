@@ -66,8 +66,8 @@ components/
 ```
 版本号**写死**，不用 `^` 浮动（底层 ABI 一变，编出来的东西就不可复现）。
 
-⚠️ 工程侧两个坑：`fun.json` **优先于** `Manifest.xml`（依赖写 `fun.json`）；
-`type:"executable"` 才出可执行 ELF（否则出 `libzkgui.so`）。改完 Manifest/fun.json **必须重跑 `fun install`**。
+⚠️ 工程侧两个坑：`fsc.json` **优先于** `Manifest.xml`（依赖写 `fsc.json`）；
+`type:"executable"` 才出可执行 ELF（否则出 `libzkgui.so`）。改完 Manifest/fsc.json **必须重跑 `fsc install`**。
 
 ---
 

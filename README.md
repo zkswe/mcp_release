@@ -39,7 +39,7 @@ git clone https://gitee.com/Kwolve/flythingsmcp_release.git
 ```
 
 AI 会：按 `requirements.lock` 装依赖（已锁定、实测通过的组合）→ 生成配置 → 跑一次离线自检。
-装完确认目录里有 `mcp_server.py`、`toolchain/`（`fun.exe` + `fui.exe`）、`knowledge/`、`models/`。
+装完确认目录里有 `mcp_server.py`、`toolchain/`（`fsc.exe` + `fui.exe`）、`knowledge/`、`models/`。
 
 **第 3 步：配置到 AI 工具（stdio）**—— 在**你的项目根目录**建 `.mcp.json`（Trae / Cursor / Kimi 均识别），
 `args` 填**你本机这份仓库的绝对路径**（就是你 clone 下来的那个目录，别写别处的路径）：
@@ -125,7 +125,7 @@ AI 的全流程：
 - **写知识 / 判据 / op 契约的规范** → [`DESIGN_SPEC.md`](DESIGN_SPEC.md)
 - 工具清单 / 平台矩阵 / 知识规模快照 → `tools_manifest.json`
 
-**注意**：编译与部署需要 `toolchain/fun.exe`（编译/推送/出包）与 `toolchain/fui.exe`（json↔ftu），**本仓自带**，克隆下来即可用；
+**注意**：编译与部署需要 `toolchain/fsc.exe`（编译/推送/出包）与 `toolchain/fui.exe`（json↔ftu），**本仓自带**，克隆下来即可用；
 各平台**编译器工具链不随包分发**，放到 `<本目录>/toolchain/toolchains/<平台小写键>/` 即可（详见 [`FEATURES.md`](FEATURES.md)）。
 
 ---

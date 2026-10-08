@@ -7,7 +7,7 @@
 | `ui/main.json` | 页面：握手（看 verify 结果）/ 握手 + HTTP GET / 自检 AUTO + 结果 textview。`cd ui && fui pack ./` |
 | `src/logic/mainLogic.cc` | 回调实现：`resolveCaPath()`（CA 候选链）、`reportSslError()`（打 ERR 栈）、`jobTls(bool doHttpGet)`（`SSL_CTX_new` → load CA → socket/connect → `SSL_new/set_fd/SSL_connect` → 可选 HTTP GET） |
 | `mainActivity_button_tab.snippet.cpp` | **必须补**：activity 的 `sButtonCallbackTab` 注册（3 行） |
-| `Manifest.xml` | 依赖：easyui / log / base-utility / **openssl 1.1.1-w**（Z20 专属版本名），改完 `fun install` |
+| `Manifest.xml` | 依赖：easyui / log / base-utility / **openssl 1.1.1-w**（Z20 专属版本名），改完 `fsc install` |
 
 **来源**：`demos/net-direct-tls-z20`（第 3 个按钮 = OpenSSL 直调握手 + HTTP GET）——真机验证 ✅（Z20）。
 
@@ -33,7 +33,7 @@ long vr = SSL_get_verify_result(ssl);                             // X509_V_OK =
 
 1. `ui/main.json` → 工程 `ui/`，`cd ui && fui pack ./`（出 `main.ftu`）
 2. `src/logic/mainLogic.cc` 并进工程 logic；把 `mainActivity_button_tab.snippet.cpp` 的 3 行填进 `src/activity/mainActivity.cpp` 的 `sButtonCallbackTab[]`
-3. `fun install && fun build -p z20` → 部署见 `../platforms.md`（**记得把 `cacert.pem` 推到 `/tmp/ui/cacert.pem`**）
+3. `fsc install && fsc build -p z20` → 部署见 `../platforms.md`（**记得把 `cacert.pem` 推到 `/tmp/ui/cacert.pem`**）
 
 ## 验证点（真机实测口径，见 `../evidence/netdir_20260929.txt`）
 

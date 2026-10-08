@@ -15,7 +15,7 @@
 
 ## 2. 工具链与构建命令（可复现）
 
-- 工具链：`C:\zkswe\fun\toolchains\v85x`（`arm-unknown-linux-musleabihf-{gcc,g++}` **Linaro GCC 6.4.1**）
+- 工具链：`C:\zkswe\fsc\toolchains\v85x`（`arm-unknown-linux-musleabihf-{gcc,g++}` **Linaro GCC 6.4.1**）
   —— 与 IDE 自带 `tools/FlyThingsIDE/sdk/toolchains/v85x` 同源。
 - 主机工具：cmake **4.3.3** + ninja **1.13.2**（**直接在 Windows 上用 PE 工具链构建**，
   不需要 z20 那套 WSL 包装器 —— 没有路径翻译问题）。
@@ -61,5 +61,5 @@ dynsym : 868 条
 
 - 同组件另两档构建凭据：`lib/BUILD_INFO.md`
 - 平台矩阵：`platforms.md`
-- V85X 侧依赖包现状（**registry 无 blend2d 包**，故只能走 `src/dependencies/lib/` + `fun pack` 手投）：
+- V85X 侧依赖包现状（**registry 无 blend2d 包**，故只能走 `src/dependencies/lib/` + `fsc pack` 手投）：
   `platforms.md` §3

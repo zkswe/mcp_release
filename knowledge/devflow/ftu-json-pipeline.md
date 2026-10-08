@@ -29,7 +29,7 @@ evidence: []
 |----|----|
 | ftu 是什么 | `<项目>/ui/*.ftu` = **设备实际加载的布局文件**（FlyThings 的 UI 二进制/打包格式） |
 | 能直接看吗 | **不能当文本看**：实测文件头带 `ZKSW` 标记、内容是二进制（`git diff`、文本编辑器都读不懂） |
-| 谁读它 | 设备侧 zkgui 读 **ftu**，不读 json；`fun launch` 把 `ui/main.ftu` 推到设备 `/tmp/ui/main.ftu`（实测设备侧与本文件字节数 + md5 完全一致） |
+| 谁读它 | 设备侧 zkgui 读 **ftu**，不读 json；`fsc launch` 把 `ui/main.ftu` 推到设备 `/tmp/ui/main.ftu`（实测设备侧与本文件字节数 + md5 完全一致） |
 | 一个 ftu 顶什么 | **一个 ftu = 一个 Activity = 一个独立编译单元**（IDE 按 ftu 生成 `<name>Activity` + `<name>Logic.cc`）；但**页面 ≠ ftu**：一个 ftu 里通常放**多个整屏 window（= 多个页面）**，用 `showWnd()/hideWnd()` 切换。**默认单 Activity**（`main.ftu` + `mainActivity` + `mainLogic.cc`），只有跨业务域/需独立返回栈才拆新 ftu（口径见 `knowledge/devflow/page-architecture-spec.md` §0/§2） |
 | ftu 从哪来 | 由**同目录同名 json** `pack` 而来：`ui/main.json` --fui pack--> `ui/main.ftu` |
 | 模板里就有 json 吗 | **有**（2026-10-02 起）。7 个平台模板 `templates/HelloWord_<平台>/ui/` 同时带 `main.json` 与 `main.ftu`：json 由随包 `fui unpack` 从模板 ftu 反解析入库（实测 round-trip：pack 回 ftu 再 unpack 与源 json 逐字段等价），改布局直接改 json 再 pack 即可；从零起新界面的**缺省前端**仍是 `flythings_html_to_json`（HTML 原型 → json），**但入口不排他**：也可按 schema 直写 json、或走块库 spec；无论从哪来，json 都是**唯一事实源**，产物一律过 `ui_compile` + `check_all`（口径见 `knowledge/devflow/ui-pipeline-spec.md`） |
@@ -43,17 +43,17 @@ ui/*.json  ← 唯一事实来源（唯一源）
    │  flythings_ui_visual(action="edit_apply")   # 改 json 后写回 + pack
    ▼
 ui/*.ftu  ← 设备实际加载的是它
-   │  fun launch -p <平台> [-s <设备>]   # 调试：推到 /tmp/ui/*.ftu（掉电即失）
-   │  fun pack                          # 固化：进 update.img（掉电保留）
+   │  fsc launch -p <平台> [-s <设备>]   # 调试：推到 /tmp/ui/*.ftu（掉电即失）
+   │  fsc pack                          # 固化：进 update.img（掉电保留）
    ▼
 设备（zkgui 读 /tmp/ui/*.ftu 或只读分区里的同一份）
 ```
 
 口径要点（别脑补）：
 
-- **`fun build` 自己不做 json→ftu**。它只编译 C++（出 `libzkgui.so`），json→ftu 是 `fui pack` 干的活；
+- **`fsc build` 自己不做 json→ftu**。它只编译 C++（出 `libzkgui.so`），json→ftu 是 `fui pack` 干的活；
   MCP 里 `flythings_build_ui_flow` 的顺序是 **① 时间戳检查 → ② fui pack（仅当 json 比 ftu 新/缺 ftu）→
-  ③ fun install → ④ fun build → ⑤ 默认到此为止**（`project_tools.flythings_build_ui_flow`）。
+  ③ fsc install → ④ fsc build → ⑤ 默认到此为止**（`project_tools.flythings_build_ui_flow`）。
 - **产物路径口径**：ftu 与 json **同目录同名**（`ui/main.json` → `ui/main.ftu`）；
   `fui pack <目录>` 会打包该目录下**所有** json。编译中间产物在 `<项目>/.fun/<平台>/`
   （`libzkgui.so`、生成的 UI 头、`launch/EasyUI.cfg` 等），**不是交付物，可以删**。
@@ -66,7 +66,7 @@ ui/*.ftu  ← 设备实际加载的是它
 | 让用户自己拖（可视化微调） | `flythings_ui_visual(action="editor")` 出可拖拽编辑器 → 用户点「复制变更 JSON」→ `flythings_ui_visual(action="edit_apply")`（**写回 json + pack ftu**） |
 | 直接改 json / 批量改 | 改完 `flythings_fui_pack(json_path="<项目>/ui/main.json")`；要连编译部署一起走 → `flythings_build_ui_flow(project_root, with_launch=True)` |
 | 只改一个属性/文本（走 op） | `flythings_edit_ftu(ftu_path, operations=...)`：它**把变更应用到 json 再 pack 回 ftu**（见 §5） |
-| 客户不用 MCP、纯命令行 | `fui pack <项目>/ui` → `fun build -p <平台>` → `fun launch -p <平台> -s <设备>`（工具随项目：`<项目>/ui/fui.exe`、`<项目>/fun.exe`） |
+| 客户不用 MCP、纯命令行 | `fui pack <项目>/ui` → `fsc build -p <平台>` → `fsc launch -p <平台> -s <设备>`（工具随项目：`<项目>/ui/fui.exe`、`<项目>/fsc.exe`） |
 | 新界面从零开始 | **缺省前端 = HTML 原型**（线框/风格稿，客户确认载体）：`flythings_html_to_json` → `ui/main.json`；**也可按 schema 直写 json（`flythings_ui_schema` 查字段）或走块库 spec（组装器在工具箱里：`zkuitool compose`；块定义见 `templates/ui_blocks/blocks/`）**——入口不排他，但**产物一律过 `ui_compile` + `check_all`**（口径见 `knowledge/devflow/ui-pipeline-spec.md`）；随后 pack → 预览 `flythings_ui_preview` → 真机验收 |
 
 不要做的事：**不要绕过 pack 直接改设备上的 `/tmp/ui/*.ftu`**（下次 launch 全量推送就覆盖，且本地与设备对不上，
@@ -127,7 +127,7 @@ ui/*.ftu  ← 设备实际加载的是它
 
 | 谁 | 查找顺序 | 实际用哪份 |
 |---|---|---|
-| **`project_tools`（MCP 的 op 走这条）** | `$FLYTHINGS_FUN_DIR` → 本包 `toolchain/` → 上级 `toolchain/` → `D:\zkswe\fun` → `C:\zkswe\fun` | **工具链那份**（**完全不看项目内**） |
+| **`project_tools`（MCP 的 op 走这条）** | `$FLYTHINGS_FSC_DIR` → 本包 `toolchain/` → 上级 `toolchain/` → `D:\zkswe\fsc` → `C:\zkswe\fsc` | **工具链那份**（**完全不看项目内**） |
 | `ui_tools/check_all.py` | 模块级 `toolchain/` → `../../projects/fui.exe` → PATH；**但 CLI 入口一旦发现 `<项目>/ui/fui.exe` 就用它覆盖**（v0.27.172 补回该优先级） | **项目那份优先** |
 | `ui_tools/ui_edit_apply.py` | `$FUI_EXE` → `<项目>/ui/fui.exe` → `<项目>/fui.exe` → `../../projects/fui.exe` → 本目录 → PATH | **项目那份优先** |
 
@@ -166,7 +166,7 @@ ui/*.ftu  ← 设备实际加载的是它
 | 能不能手写 ftu / 能不能直接改 ftu | **不能**。会被下次 pack 覆盖、无版本管理价值，见 §5 五条理由 |
 | ftu 能逆向成 json 吗 | **能**（v0.27.91 起）：`flythings_fui_unpack`（默认覆盖同目录同名 json，ftu 为真源），详见 §6 |
 | main.ftu 是什么文件 / UI 文件和 json 什么关系 | `main.ftu` = `main.json` 编译出来的界面文件，设备加载它；一对一同名（§1、§2） |
-| 改了 json 为什么设备上没变 | 三连查：**没 pack**（`fui pack`）→ **没推**（`build_ui_flow(with_launch=True)` / `fun launch`）→ **设备在读旧 ftu / 推错了设备**（多设备必传 `-s`，见 `knowledge/devflow/cli-fun-toolchain.md` §6） |
+| 改了 json 为什么设备上没变 | 三连查：**没 pack**（`fui pack`）→ **没推**（`build_ui_flow(with_launch=True)` / `fsc launch`）→ **设备在读旧 ftu / 推错了设备**（多设备必传 `-s`，见 `knowledge/devflow/cli-fsc-toolchain.md` §6） |
 | 我在 IDE 里直接改了 ftu，AI 再改 json 会不会冲突 | 不会丢：ftu 比 json 新「分钟级」时 build_ui_flow 会先 unpack 同步 json（以 ftu 为真源）；要么统一走 json，要么统一走 IDE（§4） |
 | 换张图要重新编译（pack）吗 | **看改的是文件还是 json 声明**：只把同一个路径下的 PNG 换成同尺寸新图 → **不用 pack**（推资源即生效）；改了 json 里任何图片字段（加 `backgroundPic`、改 `picTab`）→ **必须 pack**（实测加一条 `backgroundPic` 就会改变 ftu 字节）。⚠️ pack 不校验图是否存在/尺寸对不对，那两条由 `check_all` / `flythings_verify_assets` 兜（缺图与图≠盒都判 FAIL） |
 
@@ -199,7 +199,7 @@ flythings_knowledge_search("main.ftu 是什么文件")
 - `knowledge/devflow/ui-pipeline-spec.md`：**界面产物管线口径唯一出处**（唯一产物规范 / 入口分级 / 三档判据 / 模块契约）
 - `knowledge/devflow/ui-layout-verify.md`：三段式验收、像素 diff、§9 红线（json 为源）
 - `knowledge/devflow/ui-editor-usage.md`：可视化编辑器（`ui_visual(action="editor")`）
-- `knowledge/devflow/cli-fun-toolchain.md`：fun / fui 命令表、多设备陷阱、`/tmp/ui` 核对判据
+- `knowledge/devflow/cli-fsc-toolchain.md`：fun / fui 命令表、多设备陷阱、`/tmp/ui` 核对判据
 - `knowledge/devflow/page-architecture-spec.md`：一个界面该用独立 ftu 还是同 ftu 内多 window
 - `knowledge/devflow/ui-asset-rules.md`：图片资源铁律（路径、尺寸、`thumb.size`）
 - `knowledge/devflow/device-deploy-budget.md`：部署体积与内存预算（launch 产物落 `/tmp`）

@@ -205,11 +205,11 @@
       }
     },
     "gen-logic-stub": {
-      "title": "补回调桩（生成归 fun build，本 op 是体检 / 兜底）",
+      "title": "补回调桩（生成归 fsc build，本 op 是体检 / 兜底）",
       "op": "flythings_gen_logic_stub",
       "how": [
         "`flythings_gen_logic_stub(project_root=…, dry_run=true)` —— 按 `ui/*.json` 的控件表**核对**该有哪些桩、缺哪些（只补不改，已有同名函数一律跳过）",
-        "**首选路径是工具链**：`fui pack` 后 `fun build` 会为新页生成 `src/logic/<p>Logic.cc`（含 `INIT_UI_EVENT_BINDINGS` 与生命周期钩子）并追加缺失的桩；本 op 用在**还没打包、机器上没有工具链、或想先看清单**的场合",
+        "**首选路径是工具链**：`fui pack` 后 `fsc build` 会为新页生成 `src/logic/<p>Logic.cc`（含 `INIT_UI_EVENT_BINDINGS` 与生命周期钩子）并追加缺失的桩；本 op 用在**还没打包、机器上没有工具链、或想先看清单**的场合",
         "桩只是骨架（`(void)x;` / `return false;`）——**页面逻辑写在同一个文件里**，见下一步 write-logic"
       ],
       "gotchas": [
@@ -223,7 +223,7 @@
       "verify": {
         "ok": "桩与 `ui/*.json` 控件一一对应，无缺、无重复生成",
         "notOk": "覆盖已有业务代码，或手写回调桩（绕过 op / 工具链）",
-        "evidence": "`git diff` 只新增函数骨架；返回体的 affectedFiles 与控件数一致；`fun build` 通过"
+        "evidence": "`git diff` 只新增函数骨架；返回体的 affectedFiles 与控件数一致；`fsc build` 通过"
       }
     },
     "write-logic": {
@@ -240,14 +240,14 @@
         "`onUI_quit` 里要反注册监听 / 清页面级 static 缓存（否则二次进页面异常、资源残留）"
       ],
       "gate": "precondition",
-      "gateHow": "先把该页的桩补齐（`fun build` 生成，或 `flythings_gen_logic_stub` 体检）再往里写 —— 函数名 / 签名不对就是白写",
+      "gateHow": "先把该页的桩补齐（`fsc build` 生成，或 `flythings_gen_logic_stub` 体检）再往里写 —— 函数名 / 签名不对就是白写",
       "setsState": [
         "logicWritten"
       ],
       "verify": {
         "ok": "该页交互控件在 `src/logic/<页>Logic.cc` 里有对应实现（桩体不再是占位）；容器 / 显示类控件已在代码侧接线",
         "notOk": "只补了桩就打包上机；或把业务代码写进 `src/activity/`（下次 ftu 生成会覆盖）",
-        "evidence": "`git diff src/logic/*.cc` 里能看到函数体实现（setText / setXxxListener / refreshListView / 业务对象调用）；`fun build` 通过；真机点一下有反应（logcat 有回调日志）"
+        "evidence": "`git diff src/logic/*.cc` 里能看到函数体实现（setText / setXxxListener / refreshListView / 业务对象调用）；`fsc build` 通过；真机点一下有反应（logcat 有回调日志）"
       }
     },
     "survey-project": {
@@ -348,15 +348,15 @@
       "op": "flythings_manifest",
       "how": [
         "`flythings_manifest(project_root=…)` —— 默认**只推荐不写盘**（dry_run），确认后再写 Manifest.xml",
-        "`flythings_add_package(project_root=…, package=\"mqtt-cxx\")` —— 写 Manifest + `fun install`"
+        "`flythings_add_package(project_root=…, package=\"mqtt-cxx\")` —— 写 Manifest + `fsc install`"
       ],
       "gotchas": [
-        "`fun install` 生成的 `generated/*.h` 固定 include `<base/functional.h>` → 缺 `base-utility` 会编译报错"
+        "`fsc install` 生成的 `generated/*.h` 固定 include `<base/functional.h>` → 缺 `base-utility` 会编译报错"
       ],
       "verify": {
-        "ok": "Manifest 声明与源码 include 一致，`fun install` rc=0",
+        "ok": "Manifest 声明与源码 include 一致，`fsc install` rc=0",
         "notOk": "只写 Manifest 不 install（编译期缺库）",
-        "evidence": "`fun install` 输出 + `check_project_deps` 无 missing"
+        "evidence": "`fsc install` 输出 + `check_project_deps` 无 missing"
       }
     },
     "resolve-deps": {
@@ -463,7 +463,7 @@
       "gateHow": "默认**只编译不推真机**；用户明确要上设备才传 `with_launch=True`",
       "gotchas": [
         "口语「编译 / 部署 / 推设备 / 跑一下」**一律**走它，别自造命令",
-        "`fun launch` 网络推送失败会自动重试 5 次；仍失败必须问用户接入方式，**不要自写 push 脚本**"
+        "`fsc launch` 网络推送失败会自动重试 5 次；仍失败必须问用户接入方式，**不要自写 push 脚本**"
       ],
       "setsState": [
         "launched"
@@ -573,7 +573,7 @@
       "verify": {
         "ok": "fui/fun 已复制到项目，交付后无需安装 MCP 即可编译",
         "notOk": "只复制了一半（缺 fun 就无法 install/build）",
-        "evidence": "项目根有 `fun.exe`、`ui/` 下有 `fui.exe`；用项目自带工具链跑一次 build"
+        "evidence": "项目根有 `fsc.exe`、`ui/` 下有 `fui.exe`；用项目自带工具链跑一次 build"
       }
     },
     "i18n": {
@@ -581,7 +581,7 @@
       "op": "flythings_i18n",
       "how": [
         "`flythings_i18n`（`action=refactor`）（写死文案抽 @key）→ `flythings_i18n`（`action=export`） → 翻译 → `flythings_i18n`（`action=import`） → `flythings_i18n`（`action=to_json`）",
-        "`fun launch` **不推翻译** —— i18n 改动必须 `flythings_i18n`（`action=to_json`） 补推"
+        "`fsc launch` **不推翻译** —— i18n 改动必须 `flythings_i18n`（`action=to_json`） 补推"
       ],
       "verify": {
         "ok": "文案全走 @key、翻译已 import 并 push，设备显示新语言",
@@ -784,7 +784,7 @@
         "title": "换皮最容易漏的几处",
         "items": [
           "**只看 json 不看 ftu**：设备加载的是 ftu —— 改完 json 必须 pack，否则「改了像没改」",
-          "**回调名对不上**：改名了 caption 却没补桩 → 点了没反应（`fun build` 会补，也可先跑 `flythings_gen_logic_stub` 体检）",
+          "**回调名对不上**：改名了 caption 却没补桩 → 点了没反应（`fsc build` 会补，也可先跑 `flythings_gen_logic_stub` 体检）",
           "**图片尺寸变了**：换图后没跑 `flythings_verify_assets` → 引擎拉伸、不报错",
           "**多页共用逻辑**：页与页之间的 static 缓存不会自动清 → 按生命周期口径处理（`flythings_knowledge_search(query=\"静态缓存 跨页面\")`）",
           "**隐藏页的定时器还在跑**：切页不等于停 —— 需要显式停（`flythings_knowledge_search(query=\"隐藏页 定时器\")`）"

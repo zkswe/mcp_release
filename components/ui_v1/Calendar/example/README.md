@@ -1,6 +1,6 @@
 # example —— Calendar 最小可跑示例（Z21 1024×600）
 
-> 这个目录就是一个**能编、能跑的 FlyThings 工程**（只留必要文件，没有 `fun.exe`/`fui.exe`/`.fun/` 产物）。
+> 这个目录就是一个**能编、能跑的 FlyThings 工程**（只留必要文件，没有 `fsc.exe`/`fui.exe`/`.fun/` 产物）。
 > 真机验收证据在 `evidence/`。原样搬到开发工作区即可跑。
 
 ## 文件清单
@@ -9,7 +9,7 @@
 |---|---|
 | `Manifest.xml` | 依赖声明（easyui ^2.2.0 + log/zkhardware/zknet/base-utility） |
 | `.deps.lock` | 依赖解析结果快照（实际落到 easyui 2.6.0） |
-| `.project` | IDE 工程描述（`fun build` 不需要） |
+| `.project` | IDE 工程描述（`fsc build` 不需要） |
 | `ui/main.html` | **本示例的手写源（原型稿）**：顶栏 + 主页面（打开日历/输入框/跳到今天）+ 日历弹窗（42 个日号 textview） |
 | `ui/main.json` / `ui/main.ftu` | `html2json` / `fui pack` 产物 |
 | `src/Main.cpp` | 应用入口 |
@@ -39,9 +39,9 @@ copy -r tools\FlyThings_mcp_open\components\ui_v1\Calendar\example\* C:\work\Cal
 python tools\ui_tools\html2json.py C:\work\CalendarDemo\ui\main.html C:\work\CalendarDemo\ui\main.json
 cd C:\work\CalendarDemo\ui ; <fui.exe> pack .        # fui.exe 在工具箱/仓库 projects\fui.exe
 
-# 2) 编译（fun build 自动收 src\**\*.cpp）
+# 2) 编译（fsc build 自动收 src\**\*.cpp）
 cd C:\work\CalendarDemo
-fun build -p Z21
+fsc build -p Z21
 
 # 3) 全检（必须全 PASS）
 python tools\ui_tools\check_all.py C:\work\CalendarDemo

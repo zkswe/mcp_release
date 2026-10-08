@@ -47,7 +47,7 @@ evidence: []
 - ① 的判据：`packages/<包>/package.yaml` 里有 `verified_<日期>` 才算"在这块板上验过"；
   `verified: null` = **只有头文件层面说明，没上过真机**。
 - ② 的判据：`grep -c <库名> .fsc/<平台>/CMakeLists.txt`（09-28 前产物目录为 `.fun/`）。
-- ③ 的坑：`fun launch`（调试推送）**不推** `lib-no-link`，开发期要手动 push 到 `/data` 或 `/tmp`；
+- ③ 的坑：`fsc launch`（调试推送）**不推** `lib-no-link`，开发期要手动 push 到 `/data` 或 `/tmp`；
   **但 `/data` 在 ld 路径最前，会遮蔽 `/res/lib` 的固化版** ⇒ "升级了库却跑旧库，日志毫无异常"。
 - ④ 的风险：设备上的 `.so` 随固件走，**下个版本可能没有/签名变了** ⇒ 必须包一层失败回退；
   ⚠️ **别急着自编**：`ls /lib /res/lib` 先看设备自带（nanovg / libpng12 / freetype / libjpeg / libmad /
@@ -90,7 +90,7 @@ evidence: []
 - 设备 `/etc/init.rc` 的 `LD_LIBRARY_PATH` 实测含 `/data:/tmp:/res/lib:/res/zkswe:/lib:/lib/eyesee-mpp`
   ⇒ `/res/lib`（固化版）与 `/data`、`/tmp`（调试版）都在内，**顺序决定谁赢**。
 - 验收判据：`cat /proc/<pid>/maps` 必须指向 `/res/lib/...`（**不能是 `/tmp/lib/...`**）；
-  本板 `fun launch` 后 pid 常不变、跑的还是旧 so，**只看 pid 会被骗**。
+  本板 `fsc launch` 后 pid 常不变、跑的还是旧 so，**只看 pid 会被骗**。
 
 ---
 
@@ -114,8 +114,8 @@ evidence: []
 
 ## 4. 落地纪律（六条）
 
-1. 改 `Manifest.xml` 必须 `fun install`（否则头文件路径不进 CMake）——根因/判据/工具侧防护见
-   `knowledge/devflow/cli-fun-toolchain.md` §4.7（该口径唯一正文）；
+1. 改 `Manifest.xml` 必须 `fsc install`（否则头文件路径不进 CMake）——根因/判据/工具侧防护见
+   `knowledge/devflow/cli-fsc-toolchain.md` §4.7（该口径唯一正文）；
 2. 本地库放 `src/dependencies/lib/`，**不要手改生成的 `CMakeLists.txt`**；
 3. TLS 的 CA 证书只认**资源目录（resPath）**：放别处报
    `not correctly signed by the trusted CA`——**那是没找到 CA，不是证书坏**；

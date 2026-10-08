@@ -427,7 +427,7 @@ def apply_to_project(project, tier, font_name, dry_run=False):
     else:
         return False, '项目的 easyui prefs 不存在: %s' % prefs
 
-    return True, '已应用：' + '，'.join(changed) + '（之后 fun build → pack_upgrade → 固化）'
+    return True, '已应用：' + '，'.join(changed) + '（之后 fsc build → pack_upgrade → 固化）'
 
 
 def main():

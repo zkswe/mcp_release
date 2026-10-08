@@ -5,7 +5,7 @@ id: cares
 version: "1.17.2"
 platforms:
   Z20:
-    registry: C:\zkswe\fun\registry\public\z20\cares\1.17.2
+    registry: C:\zkswe\fsc\registry\public\z20\cares\1.17.2
     libs: [lib/libcares.a]
     headers_count: 5
     verified: "2026-09-29"

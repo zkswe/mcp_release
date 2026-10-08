@@ -5,7 +5,7 @@ Z20 上**一般不直接用**：它是 `libcurl` 的 DNS 后端（`curl 8.12.1-m
 
 **怎么用**
 1. Manifest：用 curl/curl-cxx（Z20 段会显式带 `cares ^1.17.2`）时自动引入；手工用：
-   `<package id="cares" version="1.17.2"/>` → `fun install` → `fun build -p z20`（只有 `.a`，静态链）。
+   `<package id="cares" version="1.17.2"/>` → `fsc install` → `fsc build -p z20`（只有 `.a`，静态链）。
 2. 关键 API：`ares_library_init(ARES_LIB_INIT_ALL)` → `ares_init_options(&ch, NULL, 0)` →
    `ares_gethostbyname(ch, "example.com", AF_INET, cb, NULL)` → 自己 `select` 驱动
    `ares_fds`/`ares_timeout`/`ares_process` → `ares_destroy(ch)` → `ares_library_cleanup()`。

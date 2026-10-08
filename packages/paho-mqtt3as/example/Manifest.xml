@@ -6,7 +6,7 @@
      二进制里引用 SSL_CTX_new/SSL_connect（as = async + SSL）→ 必须显式声明 openssl，否则链接失败
      （实测报 BIO_read / RAND_bytes / SHA1_Init/Update/Final undefined）。
   ⚠️ 本包只有 Z20 registry 有（z21/f133/f136/t113emmc/v85x 都不存在）。
-  改完 Manifest 必须 fun install。
+  改完 Manifest 必须 fsc install。
 -->
 <manifest platform="Z20">
     <dependencies enableOnPlatforms="Z20">

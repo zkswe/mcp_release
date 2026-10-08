@@ -209,7 +209,7 @@ struct PeripheralChar {
     std::string value;               // 初始值（可空）
 
     // ★显式构造函数：C++11 下带默认成员初值的结构体不是聚合体，不能 `PeripheralChar{"fff1",x,y}`
-    // （fun build 固定 -std=c++11 → 实测报 no matching function）
+    // （fsc build 固定 -std=c++11 → 实测报 no matching function）
     PeripheralChar() {}
     PeripheralChar(const std::string& u, int p = PROP_READ | PROP_NOTIFY,
                    const std::string& v = std::string())

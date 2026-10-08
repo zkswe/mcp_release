@@ -24,12 +24,12 @@
 #    components/album_upload/include/zk/zk_album.h  ->  <工程>/src/zk/zk_album.h
 #    components/album_upload/src/zk_album.cpp       ->  <工程>/src/zk/zk_album.cpp（并加进编译）
 
-# ③ 依赖：按 ../Manifest.xml 往工程 Manifest/fun.json 里加 easyui / log / base-utility
+# ③ 依赖：按 ../Manifest.xml 往工程 Manifest/fsc.json 里加 easyui / log / base-utility
 #    （二维码现场生成、不下载位图 → **不需要 curl-cxx**）
-#    ⚠️ 改完 Manifest 必须重跑：fun install      （否则新 include 路径不进 CMake）
+#    ⚠️ 改完 Manifest 必须重跑：fsc install      （否则新 include 路径不进 CMake）
 
 # ④ 编译
-fun build -p <平台>
+fsc build -p <平台>
 ```
 
 然后把 `flythings_wiring.cc` 里的 `albumPageInit/Show/Hide/Quit/Timer` 五段贴进你的
@@ -51,7 +51,7 @@ fun build -p <平台>
 | 层 | 命令/做法 | 期望 |
 |---|---|---|
 | ① PC（不接设备） | 组件：`g++ -std=c++11 -fsyntax-only -Wall -Wextra -Iinclude -I<桩头>` `src/zk_album.cpp example/album_upload_example.cc`；链路：`components/mp_transfer/src/python/receiver.py` | 0 warning；PC 收端文件长度一致、逐块 `ACK`、末块 `OK` |
-| ② 设备（不上屏） | `fun build -p <平台>` + 推设备 + 看日志 | 「广播 UDP 8899 + 监听 TCP 9000，期望落盘 …」；小程序能发现设备名（✅ 2026-09-30 组件形态实跑：`platforms.md` §1.6 判据 c） |
+| ② 设备（不上屏） | `fsc build -p <平台>` + 推设备 + 看日志 | 「广播 UDP 8899 + 监听 TCP 9000，期望落盘 …」；小程序能发现设备名（✅ 2026-09-30 组件形态实跑：`platforms.md` §1.6 判据 c） |
 | ③ 端到端 | 面板上屏二维码 → 手机微信扫码 → 选图传 | 文件出现在 `save_dir`（大小 == 协议声明、无 `.tmp` 残留）；`onFileAdded` 触发；页面计数刷新（🟡 2026-09-30 已用协议等价 PC 客户端代跑通过，见 `platforms.md` §1.6 判据 d；手机微信那一环未取证） |
 
 （②③ 的验收口径与"未取证清单"见 `../platforms.md` §5/§6。）

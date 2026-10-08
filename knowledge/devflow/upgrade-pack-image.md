@@ -18,30 +18,30 @@ evidence: []
 
 > 检索导引：问「出升级包 / 固化到设备 / OTA·TF 卡·ADB 升级各怎么做 / 换开机 logo / 升级后掉网 / update.img 体积上限 / 固化后 /res 变只读」→ 本文；Z20 86 面板升级链路与坑见 `knowledge/hardware/z20-86panel-upgrade.md`。
 > 铁律：**「调试/跑一下/推送到设备」≠「固化/升级/交付/量产」**。
-> - 调试 = `flythings_build_ui_flow`（内部 `fun launch`）→ 临时推送到设备运行，**掉电即失**；
-> - 固化 = `flythings_pack_upgrade`（内部 `fun pack`）→ 出 **update.img**，刷进设备后**掉电保留**。
+> - 调试 = `flythings_build_ui_flow`（内部 `fsc launch`）→ 临时推送到设备运行，**掉电即失**；
+> - 固化 = `flythings_pack_upgrade`（内部 `fsc pack`）→ 出 **update.img**，刷进设备后**掉电保留**。
 >
 > 用户说「把程序升级进去 / 固化到设备 / 出个升级包 / 出货版本 / 量产版本 / 烧到机器里 / TF卡升级包 / OTA 包 / 整机升级」→ 一律 `flythings_pack_upgrade`，**不是**launch。各入口（用户口语、客户端按钮、AI 自主决策）都按这条判；禁止自造脚本或命令路径。
 
-## 一、出包：fun pack（命令行）
+## 一、出包：fsc pack（命令行）
 
 ```bash
 # 在项目根目录（或 --project-dir 指定）
-fun install                      # ① 先同步依赖（缺依赖会报 package xxx not found in local）
-fun build                        # ② 编译（产物进 .fun/<平台>/imgout）
-fun pack                         # ③ 出包 → 默认 .fun/<平台>/update.img
+fsc install                      # ① 先同步依赖（缺依赖会报 package xxx not found in local）
+fsc build                        # ② 编译（产物进 .fun/<平台>/imgout）
+fsc pack                         # ③ 出包 → 默认 .fun/<平台>/update.img
 
 # 常用参数
-fun pack -o ./out/update.img            # 指定输出路径（默认 ./out/update.img 语义）
-fun pack --release-version 1.2.3        # 指定升级包版本号（批量升级工具按它比对）
-fun pack --ab                           # 制作适用于 AB 系统的 OTA 升级包
-fun pack --startup-dir /res             # 启动路径（默认 /res）
-fun pack -p v85x                        # 指定平台（否则取工程配置）
+fsc pack -o ./out/update.img            # 指定输出路径（默认 ./out/update.img 语义）
+fsc pack --release-version 1.2.3        # 指定升级包版本号（批量升级工具按它比对）
+fsc pack --ab                           # 制作适用于 AB 系统的 OTA 升级包
+fsc pack --startup-dir /res             # 启动路径（默认 /res）
+fsc pack -p v85x                        # 指定平台（否则取工程配置）
 ```
 
 对应到 MCP：`flythings_pack_upgrade(project_root, out_path, release_version, ab, with_build, dry_run)` —— 一条龙 install →（可选 build）→ pack，并返回产物路径/大小/时间与刷法说明；`dry_run=True` 只看命令计划不执行。
 
-> IDE 等价操作（官方文档「制作升级镜像文件」）：工具栏 → **路径配置**（选镜像输出目录）→ 点编译 → 生成 update.img 到该目录。命令行 `fun pack` 与之等价，便于自动化/CI。
+> IDE 等价操作（官方文档「制作升级镜像文件」）：工具栏 → **路径配置**（选镜像输出目录）→ 点编译 → 生成 update.img 到该目录。命令行 `fsc pack` 与之等价，便于自动化/CI。
 
 ## 二、刷进设备：四种落地方式
 
@@ -58,7 +58,7 @@ adb shell setprop sys.zkupgrade.flag 255
 adb shell setprop sys.zkupgrade.dir /tmp
 adb shell setprop ctl.restart zkswe
 ```
-> 与「ADB 下载调试」区分：调试（IDE 下载调试 / `fun launch`）不固化，重启后程序不保留。
+> 与「ADB 下载调试」区分：调试（IDE 下载调试 / `fsc launch`）不固化，重启后程序不保留。
 
 ### 3) 插卡自动升级（屏幕损坏或触摸不准）
 - 卡根目录放无后缀文件 `zkautoupgrade`，内容 = 延时秒数（不填默认 2s 后自动开始升级）；可选 `zkrebootdelay`（同样无后缀）：升级完再延时 N 秒重启，`-1` 表示不重启。
@@ -97,7 +97,7 @@ adb shell "ls -l /res/font /res/bin/firmware/rtlbt; cat /res/etc/EasyUI.cfg" # �
 本板实测分区表（Z21，2026-09-17，`cat /proc/mtd`）：<!-- design-spec:evidence 历史实测记录（判据以设备实测为准，见 DESIGN_SPEC.md 第 2 条） -->
   mtd0 BOOT0 `0x50000` / mtd1 KERNEL `0x680000` / mtd2 res `0x720000` / mtd3 config `0x110000` / **mtd4 MISC `0x80000` = 512 KB**/ mtd5 data `0x80000`。查法：`adb shell "cat /proc/mtd"` 找 MISC 那一行的 size（十六进制）。 <!-- design-spec:evidence 历史实测记录（判据以设备实测为准，见 DESIGN_SPEC.md 第 2 条） -->
 
-⚠️ 本板 `/res` 里**没有**logo 文件 —— logo 不在应用资源里：别往 `resources/images/` 放，也别指望跟 `fun pack` 一起打进 `/res`（`/res` 是应用资源分区，见 §二 6)）。**其它平台/机型务必先量 MISC 分区大小**，512 KB 只对本板成立。
+⚠️ 本板 `/res` 里**没有**logo 文件 —— logo 不在应用资源里：别往 `resources/images/` 放，也别指望跟 `fsc pack` 一起打进 `/res`（`/res` 是应用资源分区，见 §二 6)）。**其它平台/机型务必先量 MISC 分区大小**，512 KB 只对本板成立。
 
 ### 2) 两种触发方式（与 `update.img` **同机制**）
 
@@ -115,7 +115,7 @@ adb shell setprop ctl.restart zkswe
 
 ### 3) ⚠️ 本板实测坑：`adb reboot` 后整板掉网
 
-本板（Z21，2026-09-17 实测）：`adb reboot` 之后**整板掉网**（WiFi/adb 都回不来），只能**现场断电重启**。所以：换 logo 真正危险的是**最后那一步重启**→ 排好时机（现场有人能断电）再触发；平时**不要随手 `adb reboot`**；`fun launch` / `adb push` 不需要重启。
+本板（Z21，2026-09-17 实测）：`adb reboot` 之后**整板掉网**（WiFi/adb 都回不来），只能**现场断电重启**。所以：换 logo 真正危险的是**最后那一步重启**→ 排好时机（现场有人能断电）再触发；平时**不要随手 `adb reboot`**；`fsc launch` / `adb push` 不需要重启。
 
 ### 4) 边界与待验证（**不作为结论**）
 
@@ -140,33 +140,33 @@ python tools/set_boot_logo.py --image boot_logo.JPG --device <serial|IP:5555> [-
 
 ## 四、实测坑（本机 2026-09-12 复现 + 修复验证）
 
-> 2026-09-12 验证：装 **VC++ 2015-2022 Redistributable (x86)**后 `C:\zkswe\fun\tools\fsimg.exe` 可正常启动（该 exe 实为签名工具 `fssign`，用法 `fssign [-i <name:path>]... -p <platform> -o <file>`），端到端出包成功（`fun pack -p V85X` → `.fun/v85x/update.img`，84.6 KB）。结论：**Windows 上做固化升级，VC++ x86 运行库是硬前置**。
+> 2026-09-12 验证：装 **VC++ 2015-2022 Redistributable (x86)**后 `C:\zkswe\fsc\tools\fsimg.exe` 可正常启动（该 exe 实为签名工具 `fssign`，用法 `fssign [-i <name:path>]... -p <platform> -o <file>`），端到端出包成功（`fsc pack -p V85X` → `.fsc/v85x/update.img`，84.6 KB）。结论：**Windows 上做固化升级，VC++ x86 运行库是硬前置**。
 
 | 现象 | 根因 | 处理 |
 |---|---|---|
-| `FATAL sign error: exit status 0xc0000135`（或 `0xc000007b`） | 打包/签名用的 `fsimg.exe` 是 **32 位**程序，系统只装了 x64 VC++ 运行时（缺 32 位 `msvcp140.dll` / `vcruntime140.dll`）；0xc0000135=找不到 DLL，0xc000007b=位数不匹配 | **已修复**：装「Visual C++ 2015-2022 Redistributable **(x86)**」（需管理员，装完 `C:\Windows\SysWOW64\msvcp140.dll` 存在即 OK）；无管理员权限时退路是把 32 位这两个 dll 放到 `C:\zkswe\fun\tools\`（`fsimg.exe` 同级） |
-| `FATAL generate error: package ini@0.0.1 not found in local` | 工程依赖没装（`fun install` 未跑或没跑完） | 先 `fun install` 再 pack |
+| `FATAL sign error: exit status 0xc0000135`（或 `0xc000007b`） | 打包/签名用的 `fsimg.exe` 是 **32 位**程序，系统只装了 x64 VC++ 运行时（缺 32 位 `msvcp140.dll` / `vcruntime140.dll`）；0xc0000135=找不到 DLL，0xc000007b=位数不匹配 | **已修复**：装「Visual C++ 2015-2022 Redistributable **(x86)**」（需管理员，装完 `C:\Windows\SysWOW64\msvcp140.dll` 存在即 OK）；无管理员权限时退路是把 32 位这两个 dll 放到 `C:\zkswe\fsc\tools\`（`fsimg.exe` 同级） |
+| `FATAL generate error: package ini@0.0.1 not found in local` | 工程依赖没装（`fsc install` 未跑或没跑完） | 先 `fsc install` 再 pack |
 | 出包成功但设备没变化 | 把 update.img 放在了卡的非根目录，或卡不是 FAT32 | 卡格式化 FAT32，文件放根目录，插卡重上电 |
 
 > 工具侧已把前两条映射为可执行 `hint` 返回（`flythings_pack_upgrade` 的 `PACK_ERR_HINTS`）。
 
 ## 四点五、Z20 真机实操记录：一次「页面不对」引出的完整固化链路（2026-09-24，已端到端跑通）
 
-**场景/根因**：给 Z20（`Zkswe_SSD20X_SPINOR`，480×480）「升级进去」，`fun launch` 后 md5 全对、界面也对，但**设备重启后屏幕回到旧版**（用户反馈「页面不对」）。根因 = **Z20 的 `/res` 是只读 squashfs，`fun launch` 推的是 `/tmp` tmpfs**：
+**场景/根因**：给 Z20（`Zkswe_SSD20X_SPINOR`，480×480）「升级进去」，`fsc launch` 后 md5 全对、界面也对，但**设备重启后屏幕回到旧版**（用户反馈「页面不对」）。根因 = **Z20 的 `/res` 是只读 squashfs，`fsc launch` 推的是 `/tmp` tmpfs**：
 
 | 事实 | 证据 |
 |---|---|
 | `/res` 只读 | `mount` → `/dev/block/mtdblock3 on /res type squashfs (ro,...)`（`/res/ui` 里 `touch` 直接 `Read-only file system`） |
-| 调试推到哪 / `/tmp` 是内存 | `fun launch` → `/tmp/ui/{*.ftu,images,ime}` + `/tmp/font/*.ttf` + `/tmp/EasyUI.cfg`（`EasyUI.cfg.resPath = /tmp/ui`）；`tmpfs on /tmp type tmpfs (rw,...size=32368k)` ⇒ **重启即清空**|
+| 调试推到哪 / `/tmp` 是内存 | `fsc launch` → `/tmp/ui/{*.ftu,images,ime}` + `/tmp/font/*.ttf` + `/tmp/EasyUI.cfg`（`EasyUI.cfg.resPath = /tmp/ui`）；`tmpfs on /tmp type tmpfs (rw,...size=32368k)` ⇒ **重启即清空**|
 | 应用怎么起 / 事后怎么确认 | `/etc/init.rc`：`service zkswe /bin/zkgui` + `export LD_LIBRARY_PATH /tmp:/lib:/mnt/extsd/lib:/mnt/sdnand/lib`（库**优先 /tmp**，其次才有持久目录）；查 `cat /proc/uptime`（uptime 只有 31~49 s = 刚重启过）、`ls -l /tmp/ui`（空了） |
 
-**结论：Z20 上「升级进设备」必须走 `update.img`（固化），`fun launch` 只能看效果、掉电即失。**
+**结论：Z20 上「升级进设备」必须走 `update.img`（固化），`fsc launch` 只能看效果、掉电即失。**
 
 ### 2) 实测固化序列（Z20 / .177，2026-09-24，一次成功）
 
 ```bash
 # ① 出包（本机 Windows）——MCP 一条龙最省事：flythings_pack_upgrade(project_root, out_path, release_version)
-#等价命令行： fun install && fun build && fun pack -p Z20 --release-version 1.0.0 -o ./out/update.img
+#等价命令行： fsc install && fsc build && fsc pack -p Z20 --release-version 1.0.0 -o ./out/update.img
 #本次产物 out/update.img = 1,913,404 B（1.82 MB）；pack 日志打印带进包的字体：HanSans-Medium/HanSansLight
 
 # ② 推到设备并触发（同一串，顺序别改）
@@ -188,7 +188,7 @@ adb shell ls -l /res/font                  # 本次：HanSans-Medium.ttf 1763788
 
 ### 4) 字体要进包：`package.properties` 的 `enable.font.location`
 
-- 工程没有 `package.properties` 时，`fun launch` **只推 app 不推 `font/`**（工具会提示），于是「设备上没字库」；固化时也不想漏字库，就在工程根加 `{ "enable.font.location": true }` —— `fun build` 后 `font/*.ttf` 会被写进 `EasyUI.cfg` 的 `font` 键并打进 `update.img` → 设备侧落在 **`/res/font/`**。
+- 工程没有 `package.properties` 时，`fsc launch` **只推 app 不推 `font/`**（工具会提示），于是「设备上没字库」；固化时也不想漏字库，就在工程根加 `{ "enable.font.location": true }` —— `fsc build` 后 `font/*.ttf` 会被写进 `EasyUI.cfg` 的 `font` 键并打进 `update.img` → 设备侧落在 **`/res/font/`**。
 - 配套坑：工具在「设备无字库」时会**自动往工程投一份 `font/zkswe-hans-common.ttf`**（通用档）。若你自带字体，**用完记得删掉那份**，否则多 0.87MB 且字库优先级混乱。字库覆盖自查：本工程用 `ui/_gen/build_fonts.py` 出 **GB2312 全字库**（一级+二级 6903 字 / 1.76 MB），起因是「嫦娥.mp4」的 **`嫦`（二级字）**显示不出来 —— 只做一级（3755 字）会缺这类字。
 
 ### 5) 反面教材：`/mnt/sdnand/app/` 有一份旧版 ≠ 升级路径
@@ -200,10 +200,10 @@ adb shell ls -l /res/font                  # 本次：HanSans-Medium.ttf 1763788
 - `/proc/mtd`（`Zkswe_SSD20X_SPINOR` 实测）：<!-- design-spec:evidence 历史实测记录（判据以设备实测为准，见 DESIGN_SPEC.md 第 2 条） -->
   mtd0 BOOT / mtd1 KERNEL / mtd2 rootfs / **mtd3 `res` = `0x720000` = 7,471,104 B（7.12 MiB）**/ mtd4 config / mtd5 LOGO / mtd6 data。 <!-- design-spec:evidence 历史实测记录（判据以设备实测为准，见 DESIGN_SPEC.md 第 2 条） -->
 - `update.img` 的落点就是 **res**（`/res` = `/dev/block/mtdblock3` squashfs）→ **包体上限 = 该分区字节数**（本型号 7,471,104 B = 7.12 MiB<!-- design-spec:evidence 历史实测记录（判据以设备实测为准，见 DESIGN_SPEC.md 第 2 条） -->；本工程实测 5.85 MB）。换型号/换板先 `cat /proc/mtd` 对表，**别照抄**。
-- 无独立 `zkupgrade` 二进制（能力在 `/bin/zkgui` 内）→ 升级永远是「置属性 + `setprop ctl.restart zkswe`」。刷完的硬判据：`adb shell ls -l /res/lib/libzkgui.so` 的大小/md5 == 本地 `.fun/z20/libzkgui.so`（只比 `update.img` 体积不准：小改动下包体可能恰好不变）。
+- 无独立 `zkupgrade` 二进制（能力在 `/bin/zkgui` 内）→ 升级永远是「置属性 + `setprop ctl.restart zkswe`」。刷完的硬判据：`adb shell ls -l /res/lib/libzkgui.so` 的大小/md5 == 本地 `.fsc/z20/libzkgui.so`（只比 `update.img` 体积不准：小改动下包体可能恰好不变）。
 - ⚠️ 刷前确认**设备真正加载的是哪一份**—— SD 卡 `/mnt/extsd/EasyUI.cfg` 可能把程序劫持到旧 lib：`knowledge/devflow/package-properties-easyui-cfg.md` 「查找优先级」节。
 
 ## 五、排查用到的定位手法（可复用）
 
-- fun 的“家目录”由环境变量决定：本机 `FLYTHINGS_FUN_DIR` / `FUN_HOME_PATH` = `C:\zkswe\fun`，下载的打包工具落在 `C:\zkswe\fun\tools\`（`fsimg.exe`、`make-fs/make-fs.exe` 等）。判断某个 exe 是不是 32 位：读 PE 头 `Machine`（`0x14c`=x86，`0x8664`=x64）；进程起不来报 `0xC0000135` = DLL 找不到（缺 32 位 MSVC 运行时），`0xC000007B` = 镜像/位数不匹配（拿 x64 dll 喂 32 位程序）。历史产物长什么样：`.fun/<平台>/update.img`。
-- **分清「设备上跑的是哪一份」**：`fun launch` 后跑的是 `/tmp/ui`；固化后跑的是 `/res/ui`。查 `ls -l /tmp/ui`（有内容=调试态）、`ls -l /res/ui`（新工程页=固化态）、`cat /proc/uptime`（小=刚重启，调试态已被清）。
+- fun 的“家目录”由环境变量决定：本机 `FLYTHINGS_FSC_DIR` / `FUN_HOME_PATH` = `C:\zkswe\fsc`，下载的打包工具落在 `C:\zkswe\fsc\tools\`（`fsimg.exe`、`make-fs/make-fs.exe` 等）。判断某个 exe 是不是 32 位：读 PE 头 `Machine`（`0x14c`=x86，`0x8664`=x64）；进程起不来报 `0xC0000135` = DLL 找不到（缺 32 位 MSVC 运行时），`0xC000007B` = 镜像/位数不匹配（拿 x64 dll 喂 32 位程序）。历史产物长什么样：`.fun/<平台>/update.img`。
+- **分清「设备上跑的是哪一份」**：`fsc launch` 后跑的是 `/tmp/ui`；固化后跑的是 `/res/ui`。查 `ls -l /tmp/ui`（有内容=调试态）、`ls -l /res/ui`（新工程页=固化态）、`cat /proc/uptime`（小=刚重启，调试态已被清）。

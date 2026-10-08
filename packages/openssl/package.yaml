@@ -5,7 +5,7 @@ id: openssl
 version: "1.1.1-w"
 platforms:
   Z20:
-    registry: C:\zkswe\fun\registry\public\z20\openssl\1.1.1-w
+    registry: C:\zkswe\fsc\registry\public\z20\openssl\1.1.1-w
     libs: [lib/libssl.a, lib/libcrypto.a]
     headers_count: 104
     verified: "2026-09-29"
@@ -85,7 +85,7 @@ usage_cpp: |
     SSL_free(ssl); SSL_CTX_free(ctx); close(fd);
   }
 gotchas:
-  - "Z20 的版本号是 1.1.1-w（其它平台是 1.1.1-g）——同平台内别按别的平台照抄版本号，否则 fun install 解析不到。"
+  - "Z20 的版本号是 1.1.1-w（其它平台是 1.1.1-g）——同平台内别按别的平台照抄版本号，否则 fsc install 解析不到。"
   - "本包只有 .a（libssl.a/libcrypto.a），没有 .so → 必须静态链；链接顺序 libssl 在前 libcrypto 在后，顺序错会 undefined reference。"
   - "1.1.1 已是 EOL 版本（官方支持到 2023-09），新协议特性（TLS1.3 新扩展、ECH 等）别指望；Z20 上真要新 TLS 特性应看 mbedtls 3.6.5 那条路线。"
   - "本包是 Z20 上 paho-mqtt3as 的 TLS 后端（二进制符号 SSL_CTX_new/SSL_connect 为证）；用 mqtt-cxx + paho-mqtt3as 时 Manifest 里要显式带 openssl，否则链接期找不到符号。"

@@ -989,7 +989,7 @@
           "optional": [
             "固化写入目标分区的正式口径（强推断 = mmcblk0p1(+p2)，见 differences）：真机已触发但板卡失联，待复测钉死",
             "release.ext4=false（或不写）在本型号的真机后果（未做 true/false 对照）",
-            "release.ext4.size 是否生效（fun.exe 内只有 release.ext4 字面量）"
+            "release.ext4.size 是否生效（fsc.exe 内只有 release.ext4 字面量）"
           ],
           "docRefs": [
             "knowledge/hardware/z20-86panel-upgrade.md"

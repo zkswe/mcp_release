@@ -5,7 +5,7 @@ id: mbedtls
 version: "3.6.5"
 platforms:
   Z20:
-    registry: C:\zkswe\fun\registry\public\z20\mbedtls\3.6.5
+    registry: C:\zkswe\fsc\registry\public\z20\mbedtls\3.6.5
     libs: [lib/libmbedtls.a, lib/libmbedx509.a, lib/libmbedcrypto.a, lib/libeverest.a, lib/libp256m.a]
     headers_count: 133
     verified: "2026-09-29"

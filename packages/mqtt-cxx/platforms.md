@@ -34,9 +34,9 @@
 # 工程：demos/net-stack-verify-z20（明文 MQTT qos1 收发）
 #       demos/net-stack-advanced-z20（MQTTS(TLS) / LWT 遗嘱 / 异常断线重连）
 #       最小示例见 packages/mqtt-cxx/example/
-cd demos/net-stack-verify-z20 && fun install && fun build -p z20
+cd demos/net-stack-verify-z20 && fsc install && fsc build -p z20
 # 部署（/tmp 劫持调试，不动 /res）——⚠️ 单次 restart；先确认没有残留 zkgui 进程
-adb -s 192.168.x.x:5555 push .fun/z20/libzkgui.so /tmp/lib/libzkgui.so
+adb -s 192.168.x.x:5555 push .fsc/z20/libzkgui.so /tmp/lib/libzkgui.so
 adb -s 192.168.x.x:5555 push ui/main.ftu          /tmp/ui/main.ftu
 adb -s 192.168.x.x:5555 push EasyUI.cfg           /tmp/EasyUI.cfg   # startupLibPath=/tmp/lib/libzkgui.so, resPath=/tmp/ui/
 adb -s 192.168.x.x:5555 shell setprop ctl.restart zkswe

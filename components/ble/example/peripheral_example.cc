@@ -4,8 +4,8 @@
  * 平台：Z20 / Z21 / T113 / T113EMMC（gatt 后端）。
  * 在 btstack 后端（F133/V85X）上跑会得到 ERR_UNSUPPORTED + 指路 hint（V85X 用 blehid 包），这是**预期行为**。
  *
- * 真机跑法（本机验证过的套路，fun launch 在多设备下选不中时用）：
- *   fun build -p z20 → adb -s <设备> push .fun/z20/peripheral_example /tmp/ && chmod 777 /tmp/peripheral_example && /tmp/peripheral_example
+ * 真机跑法（本机验证过的套路，fsc launch 在多设备下选不中时用）：
+ *   fsc build -p z20 → adb -s <设备> push .fsc/z20/peripheral_example /tmp/ && chmod 777 /tmp/peripheral_example && /tmp/peripheral_example
  * 前置：设备上要有 hciconfig/hcitool（没放 /res/bin 时，推到 /data/bin 也能被候选链兜住）。
  */
 #include "zk/zk_ble.h"

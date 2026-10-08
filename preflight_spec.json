@@ -132,7 +132,7 @@
       },
       {
         "path": ".fsc|.fun/<平台>/libzkgui.so",
-        "what": "应用库（`fun build` 产物）。**两代目录都认、`.fsc` 优先**（09-28 版 fun 起产物目录由 `.fun/<平台>/` 改为 `.fsc/<平台>/`）；目录名的唯一真源 = `project_tools.BUILD_DIR_NAMES`，**只找其中一代就会少算体积、level 可能假绿**"
+        "what": "应用库（`fsc build` 产物）。**两代目录都认、`.fsc` 优先**（09-28 版 fun 起产物目录由 `.fun/<平台>/` 改为 `.fsc/<平台>/`）；目录名的唯一真源 = `project_tools.BUILD_DIR_NAMES`，**只找其中一代就会少算体积、level 可能假绿**"
       }
     ],
     "excluded": [

@@ -7,7 +7,7 @@ confidence: offline
 verified_at: 2026-10-05
 stale_days: 180
 origin: total
-source: 2026-10-03 收录：官方文档 developer.flythings.cn/zh-hans/i18n.html（权威口径）+ 逐行读 i18n_tools.py（30KB，6 个 op 的实现）+ 该模块自带的历史实测记录（2026-08-29 SampleUI-New / 2026-09-08 V553 真机 / 2026-09-10 反汇编 v85x easyui 2.9.0 libeasyui.so）；2026-10-05 补：需求方提供真实工程 3 个 `.tr`（`templates/DemoControls_V85X/i18n/`）后做的离线验收（三语对齐 + json 字节格式 + 非 ASCII 不转义）+ **换行写法统一为 `&#x000A;`**（需求方拍板：不要两个说法；代码/文档/用例同批改）+ `fun.exe`/`fui.exe` 命令面实测（官方工具链无 tr→json 能力面）
+source: 2026-10-03 收录：官方文档 developer.flythings.cn/zh-hans/i18n.html（权威口径）+ 逐行读 i18n_tools.py（30KB，6 个 op 的实现）+ 该模块自带的历史实测记录（2026-08-29 SampleUI-New / 2026-09-08 V553 真机 / 2026-09-10 反汇编 v85x easyui 2.9.0 libeasyui.so）；2026-10-05 补：需求方提供真实工程 3 个 `.tr`（`templates/DemoControls_V85X/i18n/`）后做的离线验收（三语对齐 + json 字节格式 + 非 ASCII 不转义）+ **换行写法统一为 `&#x000A;`**（需求方拍板：不要两个说法；代码/文档/用例同批改）+ `fsc.exe`/`fui.exe` 命令面实测（官方工具链无 tr→json 能力面）
 needs_evidence: true
 platforms: []
 tags: [多国语言, i18n, 翻译, 语言切换, tr 文件, key 对齐, 缺 key, 乱码, 字库, locales, 文案, setTextTr, getValue, 本地化, 内置界面, 换行]
@@ -32,13 +32,13 @@ evidence:
 |---|---|---|
 | **官方文档 `developer.flythings.cn/zh-hans/i18n.html`** | 2026-10-03 取回 | **权威口径**：`.tr` 是 XML、别名唯一、换行用 `&#x000A;`、加语言拷 `.tr` 改名、**内置界面翻译必须并入**、样例 = `TranslationDemo` |
 | 官方 i18n 文档 + SampleUI-New 实测 | 2026-08-29 | 机制口径（`.tr` 格式、三段式文件名、`@key`/`setTextTr`、切语言） |
-| V553 项目真机 | 2026-09-08 | 设备端**实际加载 `i18n/<lang>.json`**、`fun launch` **不推** i18n |
+| V553 项目真机 | 2026-09-08 | 设备端**实际加载 `i18n/<lang>.json`**、`fsc launch` **不推** i18n |
 | 反汇编 v85x easyui 2.9.0 `libeasyui.so` | 2026-09-10 | **换行转义**的底层依据（`getValue` 不还原反斜杠；`zk_gdi_draw_text` 按 `0x0A` 切行） |
 
 ⚠️ **我自己没有上机复验过** —— 所以 `confidence: offline`、`needs_evidence: true`。
 能**离线**验的部分已经钉成可执行判据（见 front-matter 的 `evidence`：
 `.tr→json` 的换行还原、json 字节格式、`@key` 收集、scan 对齐检查）。
-**真机相关的那几条（`/tmp/tr/` 路径、`fun launch` 不推、not found value）沿用上表记录，本文不冒充实测。**
+**真机相关的那几条（`/tmp/tr/` 路径、`fsc launch` 不推、not found value）沿用上表记录，本文不冒充实测。**
 ⚠️ **换行写法只有一条**（`&#x000A;`，见 §6）；此前"两种写法并列"的表述已作废。
 
 ## 1. 一分钟速查
@@ -50,7 +50,7 @@ evidence:
 | 界面文案怎么写 | 布局 json 的 `text` 写 **`"@key"`**（带 @） |
 | 代码里怎么写 | `setTextTr("key")`（**不带 @**）；拼接取词 `LANGUAGEMANAGER->getValue("key")` |
 | 怎么切语言 | `EASYUICONTEXT->updateLocalesCode("zh_CN")`；或跳系统页 `openActivity("LanguageSettingActivity")` |
-| 改完怎么让设备看到 | **必须 `flythings_i18n`（`action=to_json`）**（默认带 push）—— **`fun launch` 不推 i18n** |
+| 改完怎么让设备看到 | **必须 `flythings_i18n`（`action=to_json`）**（默认带 push）—— **`fsc launch` 不推 i18n** |
 | 默认有哪几种 | `zh_CN` / `en_US` / `ja_JP` / `ko_KR` |
 | 换行怎么写 | **`.tr` 里写 XML 字符引用 `&#x000A;`**（唯一写法，2026-10-05 定案）；json 里必须是**真换行 `0x0A`**（§6） |
 | ⚠️ 文件名带显示名时要传全名 | 真实工程是 `zh_CN-简体中文.tr` 这种三段式 ⇒ 调 `add_language` / `export` 的 `lang`/`base_lang` **要传三段式全名**（`zh_CN-简体中文`），传 `zh_CN` 会失败或返回空（§10） |
@@ -94,7 +94,7 @@ evidence:
 ## 5. ⚠️ 部署链路：设备读的是 **json**，不是 `.tr`（最容易踩的一环）
 
 1. **设备端 zkgui 实际加载 `i18n/<lang>.json`**（不是 `.tr`），DEBUG 模式路径 **`/tmp/tr/<lang>.json`**（2026-09-08 真机记录）。
-2. **`fun launch` 只推 `ftu / images / font / lib / cfg`，不推 i18n 的 `.tr`/`.json`** →
+2. **`fsc launch` 只推 `ftu / images / font / lib / cfg`，不推 i18n 的 `.tr`/`.json`** →
    **改完翻译（`import` / `add_language` / `refactor`）后必须调 `flythings_i18n`（`action=to_json`）**，
    否则设备仍跑**旧翻译**，现象是 logcat 刷 **`not found value`**。
 3. **生产固件**把 json 打包进 `/res/` → 这时用 `push=False` 只生成不推送。
@@ -175,7 +175,7 @@ evidence:
 
 ## 9. 硬约束与铁律
 
-1. ⚠️ **改完翻译不调 `i18n_to_json` = 设备跑旧翻译**（`fun launch` 不推 i18n）→ logcat `not found value`。
+1. ⚠️ **改完翻译不调 `i18n_to_json` = 设备跑旧翻译**（`fsc launch` 不推 i18n）→ logcat `not found value`。
 2. ⚠️ **`setCurrentCode` 不刷新在屏文本** → 切语言要用 `updateLocalesCode`（否则"有些地方没变"）。
 3. ⚠️ **不要手改 `i18n/<lang>.json`**（必须是 tab 制表/无空格冒号/末尾无空行，设备才认）；改 `.tr` 再转。真源：`op_spec.json` 的 `flythings_i18n（action=to_json）.rules`
 4. ⚠️ **布局写 `@key` 带 @，代码 `setTextTr` 不带 @** —— 混了就是"显示成 key 原文"或取不到值。
@@ -197,13 +197,13 @@ evidence:
 
 | 项 | 状态 |
 |---|---|
-| 真机复验（`/tmp/tr/` 路径、`fun launch` 不推、`not found value`、切语言刷新） | **未做**（本文转述 2026-09-08 的既有记录，标 `needs_evidence: true`） |
+| 真机复验（`/tmp/tr/` 路径、`fsc launch` 不推、`not found value`、切语言刷新） | **未做**（本文转述 2026-09-08 的既有记录，标 `needs_evidence: true`） |
 | 仓内**已提交树**里没有带 i18n 的示例工程（`git ls-files "*.tr"` = 空） | 但**工作树现有 3 个真实 `.tr`**（`templates/DemoControls_V85X/i18n/`：`zh_CN-简体中文` / `en_US-ENGLISH` / `ru_RU-Русский`，2026-10-05 由需求方提供，未纳管）→ **可做离线验收**：`scan`（三语对齐）/ `to_json --push=False`（对 json 字节格式）。⚠️ 它们各只有 1 个 key（`hello_world`），**不含换行/实体/注释/多行**这类边界写法，别当边界样本用。官方完整样例仍是 **`TranslationDemo`**（官网[样例代码包](https://developer.flythings.cn/zh-hans/demo_download.html)，**不在本仓**） |
 | ⚠️ **`.tr` 换行写法** | **已定案 = XML 字符引用 `&#x000A;`**（2026-10-05 需求方拍板「不要两个说法，全部统一」；代码/本页/用例同批改完，§6）；历史字面 `\n` 仅保留**读取**兼容 |
 | ⚠️ **`add_language` / `export` 的默认 `lang` / `base_lang`（`zh_CN`）在三段式文件名工程上取不到语言** | **实测缺陷（2026-10-05）**：`i18n_tools.py` 按**完整文件名标识**查语言，而真实工程文件是 `zh_CN-简体中文` ⇒ ① `add_language(base_lang='zh_CN')` **直接失败**（`"基础语言 zh_CN 不存在"`）；② `export(lang='zh_CN')` 返回 `ok:true` 但 `count=0`（**静默空**，与 `to_json` 对未知语言硬报错的口径不一致）。**绕过**：显式传三段式标识（`base_lang='zh_CN-简体中文'`）即可成功。**未修**，登记待办 |
 | ⚠️ `scan` 的「基准语言」不是 `zh_CN` | 实测：`layoutRefMissingInTr` / `trKeysUnusedByLayout` 按**文件名排序第一个**语言算（模板上 = `en_US-ENGLISH`），文档与用例都没声明这件事 |
-| ⚠️ 官方工作流里"**哪一步**把 `.tr` 转成 json" | **本仓无证据**（2026-10-05 实测）：`fun.exe` 16 个子命令**没有任何 i18n/locale/tr 开关**、Go 符号表无 i18n 包；`fui.exe` 只有 `pack`/`unpack`（json↔ftu）；隐藏命令 `fun convert` 只处理 `.fv/.ftu/.json`。⇒ 编译器侧转换这条链路**只能在 IDE 里**，本仓不可复现、不可判据化 |
-| 固件里 i18n json 的落点 | **部分证据**：IDE `.prefs` 给 `easyui.cfg.release.languagePath = /res/tr/`（debug = `/mnt/extsd/tr/`）；`fun.exe` 内嵌的设备侧 GUI 库里字符串写死 `.json` 后缀 + `internalLangPath = /system/res/internal/lang/`。**仍缺**：`fun pack` 是否把 `/res/tr/` 写进 `EasyUI.cfg`（`fun.exe` 里 `/res/tr` **0 命中**）—— 要真机 `cat` 三处 `EasyUI.cfg` + `ls -l /res/tr /system/res/internal/lang` 才能定案 |
+| ⚠️ 官方工作流里"**哪一步**把 `.tr` 转成 json" | **本仓无证据**（2026-10-05 实测）：`fsc.exe` 16 个子命令**没有任何 i18n/locale/tr 开关**、Go 符号表无 i18n 包；`fui.exe` 只有 `pack`/`unpack`（json↔ftu）；隐藏命令 `fsc convert` 只处理 `.fv/.ftu/.json`。⇒ 编译器侧转换这条链路**只能在 IDE 里**，本仓不可复现、不可判据化 |
+| 固件里 i18n json 的落点 | **部分证据**：IDE `.prefs` 给 `easyui.cfg.release.languagePath = /res/tr/`（debug = `/mnt/extsd/tr/`）；`fsc.exe` 内嵌的设备侧 GUI 库里字符串写死 `.json` 后缀 + `internalLangPath = /system/res/internal/lang/`。**仍缺**：`fsc pack` 是否把 `/res/tr/` 写进 `EasyUI.cfg`（`fsc.exe` 里 `/res/tr` **0 命中**）—— 要真机 `cat` 三处 `EasyUI.cfg` + `ls -l /res/tr /system/res/internal/lang` 才能定案 |
 | ⚠️ `import` 可能**静默清库** | **实测缺陷（2026-10-05，见 `temp/` 侦察）**：`_parse_tr` 解析失败时返回 `{}`，`merge=True` 走 `merged.update(...)` 后**整文件覆盖**，只余传入的 key，返回体仍 `ok:true`；单引号属性 `name='k'`、非 UTF-8 文件是最容易触发的输入。**未修**，登记待办 |
 | `LanguageManager` 的头文件签名 | 未核（在 easyui **包内** `manager/LanguageManager.h`，不在本仓；官方示例里有 `#include "manager/LanguageManager.h"`） |
 | `LANGUAGEMANAGER->setCurrentCode` 不刷新在屏文本 | 来自工具自带的框架级观察（**官方文档未提该 API**）→ 属补充警示，非官方口径 |
@@ -224,4 +224,4 @@ evidence:
   字段口径以 `ui_schema.json` 为准）—— 本条是 2026-10-03 被 `check_doc_refs` 抓出来的，
   已登记为缺口候选，别再往这里写指针。
 - `knowledge/devflow/package-properties-easyui-cfg.md`：EasyUI.cfg 里与语言/字库相关的键
-- `knowledge/devflow/device-deploy-budget.md`：`fun launch` 推什么（本文第 5 节的对照面）
+- `knowledge/devflow/device-deploy-budget.md`：`fsc launch` 推什么（本文第 5 节的对照面）

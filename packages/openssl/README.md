@@ -6,7 +6,7 @@ Z20 上这条 TLS 路线**主要给 MQTT 用**：`libpaho-mqtt3as.a` 二进制�
 
 **怎么用**
 1. Manifest：`<package id="openssl" version="1.1.1-w"/>`（**Z20 就是 `-w`，别的平台是 `1.1.1-g`**）
-   → `fun install` → `fun build -p z20`（链接顺序 `libssl.a` 在前、`libcrypto.a` 在后）。
+   → `fsc install` → `fsc build -p z20`（链接顺序 `libssl.a` 在前、`libcrypto.a` 在后）。
 2. 关键 API：`OPENSSL_init_ssl` → `SSL_CTX_new(TLS_client_method())` → `SSL_CTX_set_verify(SSL_VERIFY_PEER)`
    + `SSL_CTX_load_verify_locations(CA)` → `SSL_new` → `SSL_set_fd` → `SSL_connect` → `SSL_read`/`SSL_write`
    → `SSL_shutdown` → `SSL_free`/`SSL_CTX_free`；算法层用 `EVP_*`/`SHA256*`，排错看 `ERR_print_errors_fp`。

@@ -72,9 +72,9 @@ NEON  .so 进 update.img          1,262,120 B   → +614,400 B（比原厂多 +1
 
 | 通道 | 实测 | 适用 |
 |---|---|---|
-| `fun launch` | **不推**第三方包 `.so`（只推 `libzkgui.so`+`ftu`+`font`）；设备 `LD_LIBRARY_PATH` 含 `/tmp` 但**不含 `/tmp/lib`** | 只能当"推 App"用 |
+| `fsc launch` | **不推**第三方包 `.so`（只推 `libzkgui.so`+`ftu`+`font`）；设备 `LD_LIBRARY_PATH` 含 `/tmp` 但**不含 `/tmp/lib`** | 只能当"推 App"用 |
 | **手推 `/tmp`** | `adb push <so> /tmp/libblend2d.so` + `setprop ctl.restart zkswe` → 跑通（md5 两侧一致、无 `initLib error`） | **调试 / 换库 A-B 唯一干净通道** |
-| **`src/dependencies/lib/` + `fun pack`** | 实测出 `update.img`（见 §1.4） | **量产/交付必须走这条** |
+| **`src/dependencies/lib/` + `fsc pack`** | 实测出 `update.img`（见 §1.4） | **量产/交付必须走这条** |
 
 ### 1.6 已知限制（Z20）
 
@@ -90,10 +90,10 @@ NEON  .so 进 update.img          1,262,120 B   → +614,400 B（比原厂多 +1
 ```powershell
 # ① 建工程 + 加依赖 + 编（本组件的 example 就是现成的工程）
 copy -r tools\FlyThings_mcp_open\components\blend2d\example\* C:\work\B2dCardZ20\
-cd C:\work\B2dCardZ20 ; fun build -p Z20
+cd C:\work\B2dCardZ20 ; fsc build -p Z20
 
 # ② 推 App + 手推库（第三方包 .so 不会随 launch 走）
-fun launch -p Z20 -s <设备IP>:5555
+fsc launch -p Z20 -s <设备IP>:5555
 adb push src\dependencies\lib\libblend2d.so /tmp/libblend2d.so
 adb shell setprop ctl.restart zkswe
 

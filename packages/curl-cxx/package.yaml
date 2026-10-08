@@ -5,7 +5,7 @@ id: curl-cxx
 version: "10.0.3"
 platforms:
   Z20:
-    registry: C:\zkswe\fun\registry\public\z20\curl-cxx\10.0.3
+    registry: C:\zkswe\fsc\registry\public\z20\curl-cxx\10.0.3
     libs: [lib/libcurl-cxx.a]
     headers_count: 7
     verified: "2026-09-29"

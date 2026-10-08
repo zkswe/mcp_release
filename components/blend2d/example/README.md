@@ -1,7 +1,7 @@
 # example —— Blend2D 门面（`zk::b2d`）最小可编示例（Z20 480×480）
 
-> 这**就是一个能编的 FlyThings 工程**（只留必要文件，没有 `fun.exe`/`fui.exe`/`.fun/` 产物）。
-> 原样搬到开发工作区 → `fun build -p Z20` 即可（本轮**只编译验证，未上真机**）。
+> 这**就是一个能编的 FlyThings 工程**（只留必要文件，没有 `fsc.exe`/`fui.exe`/`.fun/` 产物）。
+> 原样搬到开发工作区 → `fsc build -p Z20` 即可（本轮**只编译验证，未上真机**）。
 > 真机性能/效果证据见组件 [README.md](../README.md) 的性能表与 [lib/BUILD_INFO.md](../lib/BUILD_INFO.md)。
 
 ## 它演示什么
@@ -17,7 +17,7 @@
 |---|---|
 | `Manifest.xml` | 依赖声明：**`blend2d 0.11.1`** + easyui/log/zkhardware/zknet/base-utility |
 | `.fun-lock.json` / `.deps.lock` | 依赖解析快照（实际落 `easyui 2.6.0` / `base-utility 10.12.4`） |
-| `.project` | IDE 工程描述（`fun build` 不需要） |
+| `.project` | IDE 工程描述（`fsc build` 不需要） |
 | `ui/main.json` / `ui/main.ftu` | 页面布局（json 是源，ftu 是产物） |
 | `src/Main.cpp` | 应用入口（模板自带） |
 | `src/logic/mainLogic.cc` | **示例逻辑本体**：open → setBackgroundBmp（只挂一次）→ 定时重绘 → setInvalid |
@@ -31,7 +31,7 @@
 mkdir C:\work\B2dCardZ20
 copy -r tools\FlyThings_mcp_open\components\blend2d\example\* C:\work\B2dCardZ20\
 cd C:\work\B2dCardZ20
-fun build -p Z20                     # ← 本轮实测通过（见下）
+fsc build -p Z20                     # ← 本轮实测通过（见下）
 ```
 
 **换性能档（NEON）**：把 `components/blend2d/lib/z20-neon/libblend2d.so` 覆盖到
@@ -41,24 +41,24 @@ fun build -p Z20                     # ← 本轮实测通过（见下）
 **上真机（本示例未做，但通道已验）**：
 
 ```powershell
-fun launch -p Z20 -s <设备IP:5555>                        # 推 App（⚠️ 不推第三方包 .so）
+fsc launch -p Z20 -s <设备IP:5555>                        # 推 App（⚠️ 不推第三方包 .so）
 adb push src\dependencies\lib\libblend2d.so /tmp/libblend2d.so   # ← 手推库，否则 initLib error
 adb shell setprop ctl.restart zkswe                      # 重启应用加载新库
 adb shell cat /tmp/b2d_card.png > card.png               # 取"离屏出图"证据（可选）
 ```
-> 量产不要手推：`fun pack` 会把 `src/dependencies/lib/*.so` 打进 `update.img`
+> 量产不要手推：`fsc pack` 会把 `src/dependencies/lib/*.so` 打进 `update.img`
 > （实测：原厂档 `update.img` 1,143,336 B / NEON 档 1,262,120 B / 无 blend2d 基线 647,720 B）。
 
 ## 本轮实测（编译验证）
 
 ```
-C:\work\B2dCardZ20> fun build -p Z20
+C:\work\B2dCardZ20> fsc build -p Z20
 ...
 [8/10] Building CXX object CMakeFiles/zkgui.dir/.../src/logic/mainLogic.cc.o
 .../src/logic/mainLogic.cc:26:9: warning: #pragma once in main file
 [9/10] Building CXX object CMakeFiles/zkgui.dir/generated/ui_main.cpp.o
 [10/10] Linking CXX shared library libzkgui.so
-exit=0    产物 .fun/z20/libzkgui.so = 301,892 B（NEEDED 含 libblend2d.so）
+exit=0    产物 .fsc/z20/libzkgui.so = 301,892 B（NEEDED 含 libblend2d.so）
 ```
 > 旁边那串 `vector.tcc: parameter passing ... changed in GCC 7.1` 是 GCC 8.3 的**note**（非错误、非 warning），
 > 由 `std::vector<std::pair<float, BLFont>>` 触发，可以无视。
@@ -67,5 +67,5 @@ exit=0    产物 .fun/z20/libzkgui.so = 301,892 B（NEEDED 含 libblend2d.so）
 
 1. **字体**：中文/文字 API 要 TTF。示例走候选链 `/res/font/zkswe-hans-common.ttf → /tmp/font/… → /mnt/extsd/font/…`；
    都没有时**文本会明确报 `ERR_FONT`**（不静默）——把 `components/fonts/` 的字体推上去即可。
-2. **`.so` 必须在设备上**：`fun launch` 不推第三方包 `.so`（只推 `libzkgui.so`+`ftu`+字体），按上面的 `adb push /tmp` 走。
+2. **`.so` 必须在设备上**：`fsc launch` 不推第三方包 `.so`（只推 `libzkgui.so`+`ftu`+字体），按上面的 `adb push /tmp` 走。
 3. **阴影层数**：示例用 2 层（推荐）。改成 8 层的话，480×480 一帧要多花 ~15 ms —— 实测 8 层阴影吃掉整帧 83%。

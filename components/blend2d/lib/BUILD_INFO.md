@@ -34,7 +34,7 @@
 
 ## 2. 性能档（NEON）完整构建口径
 
-**工具链**：`C:\zkswe\fun\toolchains\z21\bin\arm-pc-linux-gnueabihf-{gcc,g++}.exe`（**8.3.0**，Windows PE）→ 经 WSL 包装器驱动
+**工具链**：`C:\zkswe\fsc\toolchains\z21\bin\arm-pc-linux-gnueabihf-{gcc,g++}.exe`（**8.3.0**，Windows PE）→ 经 WSL 包装器驱动
 （沿用 `tools/e2fsprogs/build/toolchain/z21-gcc` 的做法：补 `-B`、`--sysroot`、`/mnt/*`→Windows 路径翻译、互操作故障自动重试）。
 
 **包装器必须补的三条 `-isystem`**（否则 CMake 的 C++ 编译直接报 `cmath: No such file or directory`——
@@ -44,7 +44,7 @@
 -isystem <Z>/arm-pc-linux-gnueabihf/include/c++/8.3.0/arm-pc-linux-gnueabihf
 -isystem <Z>/arm-pc-linux-gnueabihf/include/c++/8.3.0/backward
 ```
-（另需 `-isystem <Z>/lib/gcc/arm-pc-linux-gnueabihf/8.3.0/include` 与 `.../include-fixed`；`Z=C:\zkswe\fun\toolchains\z21`）
+（另需 `-isystem <Z>/lib/gcc/arm-pc-linux-gnueabihf/8.3.0/include` 与 `.../include-fixed`；`Z=C:\zkswe\fsc\toolchains\z21`）
 
 **CMake 命令（原文）**
 ```bash
@@ -138,7 +138,7 @@ python components/blend2d/scripts/verify_libs.py --fast     # 只查 ELF 属性 
 - **原厂档 `q` 命中 = 0，NEON 档 `q` 命中 > 0**；
 - NEON 档 `NEEDED` 含 `libgcc_s.so.1`，原厂档不含。
 
-> 脚本用厂家工具链自带的 `arm-pc-linux-gnueabihf-readelf/objdump.exe`（自动探测 `C:\zkswe\fun\toolchains\z2{0,1}\bin`，找不到就报"缺工具"并只做能做的项）。
+> 脚本用厂家工具链自带的 `arm-pc-linux-gnueabihf-readelf/objdump.exe`（自动探测 `C:\zkswe\fsc\toolchains\z2{0,1}\bin`，找不到就报"缺工具"并只做能做的项）。
 > 纯 Python 解析 ELF 的部分**不依赖 nm**（Windows 版 nm 缺 `liblto_plugin-0.dll` 会直接报错）。
 
 ---

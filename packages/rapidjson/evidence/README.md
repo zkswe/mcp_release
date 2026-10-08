@@ -11,7 +11,7 @@
 
 ## 怎么把它补成有证据
 
-1. 用 `packages/rapidjson/example/` 建最小工程（`fun install && fun build -p z20`）；
+1. 用 `packages/rapidjson/example/` 建最小工程（`fsc install && fsc build -p z20`）；
 2. `/tmp` 劫持部署（命令见 `../platforms.md` 的「复现方式」），用**真实报文**跑：`Document::Parse` → 类型判定取值 → `Writer` 生成 → 回读；
 3. 把 logcat 原文存成 `evidence/rapidjson_<日期>.txt`（tag = `rapidjson demo`），并同步更新 `../platforms.md` 的表格与 `package.yaml` 的 `verified_*`。
 

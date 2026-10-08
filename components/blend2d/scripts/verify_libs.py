@@ -35,9 +35,9 @@ TARGETS = [
 ]
 
 TOOL_CANDIDATES = [
-    r"C:\zkswe\fun\toolchains\z21\bin",
-    r"C:\zkswe\fun\toolchains\z20\bin",
-    r"C:\zkswe\fun\toolchains\z21\toolchain\bin",
+    r"C:\zkswe\fsc\toolchains\z21\bin",
+    r"C:\zkswe\fsc\toolchains\z20\bin",
+    r"C:\zkswe\fsc\toolchains\z21\toolchain\bin",
 ]
 TOOL_PREFIXES = ["arm-pc-linux-gnueabihf-", "arm-linux-gnueabihf-", ""]
 

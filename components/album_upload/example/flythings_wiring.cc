@@ -8,7 +8,7 @@
  *   ③ 生命周期：onUI_init / onUI_show / onUI_hide / onUI_quit / onUI_Timer + 上传完成刷新
  *
  * ⚠️ 本文件**不能单独编译**（要工程里的 easyui 头 + 生成代码 mXxxPtr）：
- *    它是接线形状，判据 = 工程 `fun build` 通过 + 真机扫码（见 ../platforms.md）。
+ *    它是接线形状，判据 = 工程 `fsc build` 通过 + 真机扫码（见 ../platforms.md）。
  *    组件本体（include/ + src/）的判据 = PC 侧语法自检（见 ../README.md「验证」）。
  */
 

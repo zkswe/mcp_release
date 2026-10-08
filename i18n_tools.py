@@ -34,8 +34,8 @@ add_language 添加新语言 / refactor 布局文本转 @key。
 
 设备端加载格式（2026-09-08 实测，V553 项目）：
 - zkgui 实际加载的是 i18n/<lang>.json（不是 .tr），路径 /tmp/tr/<lang>.json（DEBUG）。
-- fun launch 只推 ftu/images/font/lib/cfg，**不推 i18n 的 .tr/.json**（CHANGELOG 2026-09-02
-需求方定规"部署统一 fun launch"是针对代码+资源，i18n 仍需本工具显式推送）。
+- fsc launch 只推 ftu/images/font/lib/cfg，**不推 i18n 的 .tr/.json**（CHANGELOG 2026-09-02
+需求方定规"部署统一 fsc launch"是针对代码+资源，i18n 仍需本工具显式推送）。
 - 改完翻译（import / add_language / refactor 改 .tr）后必须调 flythings_i18n(action="to_json")
 转 json 并推送，否则设备仍跑旧翻译（logcat 刷 'not found value' 警告）。
 - 生产固件把 json 打包到 /res/，不需要推送（无需调用本工具的 push 步骤）。
@@ -436,7 +436,7 @@ def flythings_i18n_refactor(project_root: str, lang: str = 'zh_CN', dry_run: boo
 
 # ========== 6. to_json：tr → json 转换 + 推送设备 ==========
 # 关键背景（2026-09-08 实测，V553 项目；详见模块顶部 docstring）：
-#   fun launch 只推 ftu/images/font/lib/cfg，不推 i18n。设备 zkgui 加载的是
+#   fsc launch 只推 ftu/images/font/lib/cfg，不推 i18n。设备 zkgui 加载的是
 #   /tmp/tr/<lang>.json（不是 .tr）。改完翻译后必须显式调本工具把 .tr 转 .json
 #并 adb push 到设备 /tmp/tr/，否则设备仍跑旧翻译。
 #本地开发脚本版见 E:\AICODE\trae\V553\tools\tr2json.py（V553 项目），逻辑同源。
@@ -494,7 +494,7 @@ def _push_to_device(local_path, device, target_dir='/tmp/tr/'):
 def flythings_i18n_to_json(project_root: str, langs: str = '', push: bool = True, device: str = '') -> str:
     """把 i18n/*.tr 转为 i18n/*.json（设备 zkgui 实际加载格式），并可推送到设备 /tmp/tr/。
 
-    ⚠️ 关键背景：**fun launch 不推 i18n**（只推 ftu/images/font/lib/cfg）。
+    ⚠️ 关键背景：**fsc launch 不推 i18n**（只推 ftu/images/font/lib/cfg）。
 改完翻译（import / add_language / refactor）后必须显式调本工具，
 否则设备仍跑旧翻译（logcat 刷 'not found value' 警告）。
 本工具生成的 json 与设备端 zkgui 加载格式**逐字节一致**（tab 缩进+无空格冒号+末尾无换行）。

@@ -17,7 +17,7 @@ INIT_UI_EVENT_BINDINGS
  *   StringBuffer + Writer（生成 JSON）
  *
  * 关键口径（读包头实读出来的，别照最新官方文档抄）：
- *   ① **纯头文件**：没有 .a/.so，不要去找 librapidjson；改 Manifest 后**仍要 fun install**（让 include 路径进 CMake）；
+ *   ① **纯头文件**：没有 .a/.so，不要去找 librapidjson；改 Manifest 后**仍要 fsc install**（让 include 路径进 CMake）；
  *   ② `Parse` **不抛异常** → 必须查 `HasParseError()` / `GetParseError()` / `GetErrorOffset()`；
  *   ③ **取值前必须判类型**（`IsString/IsArray/HasMember`）→ 否则 debug 下 `RAPIDJSON_ASSERT` 直接 abort；
  *   ④ 带内嵌 `\0` 的二进制 payload 要用 `Parse(str, length)`；默认 `Parse(const Ch*)` 要求以 `\0` 结尾；

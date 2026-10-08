@@ -5,7 +5,7 @@ id: zkhardware
 version: "0.0.0"
 platforms:
   Z20:
-    registry: C:\zkswe\fun\registry\public\z20\zkhardware\0.0.0
+    registry: C:\zkswe\fsc\registry\public\z20\zkhardware\0.0.0
     libs: [lib/libzkhardware.so]
     headers_count: null
     verified: "2026-09-29"
@@ -67,7 +67,7 @@ gotchas:
   - "`zeroOutput()` 驱动交流电继电器（安全件）：示例 `onUI_init` 只读不写，动作一律由人点按钮触发。"
   - "Z20 86 面板：无蜂鸣器、无 ADC 接口；PWMHelper 可能与背光同路，动前确认。"
   - "按键回调必须注册进 activity 的 `sButtonCallbackTab`，否则按钮无反应。"
-  - "改 Manifest 后必须 `fun install`，否则包内头文件路径不进 CMake。"
+  - "改 Manifest 后必须 `fsc install`，否则包内头文件路径不进 CMake。"
 
 see_also:
   - "packages/zkhardware/README.md（实测表 + 7 条坑）、platforms.md（板级事实 + 部署纪律）"

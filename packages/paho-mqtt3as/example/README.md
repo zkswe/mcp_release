@@ -12,7 +12,7 @@
 | `ui/main.json` | 页面：连接 / 发布 / 订阅 / 异步连接 / 自检 AUTO + 结果 textview。`cd ui && fui pack ./` |
 | `src/logic/mainLogic.cc` | 回调实现：`onArrived`（同步回调，含必须的 `MQTTClient_freeMessage/free`）、`onConnLost`、`jobSync()`、`jobAsync()`（含异步回调） |
 | `mainActivity_button_tab.snippet.cpp` | **必须补**：activity 的 `sButtonCallbackTab` 注册（5 行） |
-| `Manifest.xml` | 依赖：easyui / log / base-utility / **paho-mqtt3as** / **openssl**（漏 openssl 链接必炸），改完 `fun install` |
+| `Manifest.xml` | 依赖：easyui / log / base-utility / **paho-mqtt3as** / **openssl**（漏 openssl 链接必炸），改完 `fsc install` |
 
 ## 关键口径（照抄这几条）
 
@@ -34,7 +34,7 @@ MQTTClient_subscribe / MQTTClient_publish / MQTTClient_waitForCompletion / MQTTC
 
 1. `ui/main.json` → 工程 `ui/`，`cd ui && fui pack ./`（出 `main.ftu`）
 2. `src/logic/mainLogic.cc` 并进工程 logic；把 `mainActivity_button_tab.snippet.cpp` 的 5 行填进 `src/activity/mainActivity.cpp` 的 `sButtonCallbackTab[]`
-3. 改掉 broker 占位（`192.168.x.x`）→ `fun install && fun build -p z20` → 部署见 `../platforms.md`
+3. 改掉 broker 占位（`192.168.x.x`）→ `fsc install && fsc build -p z20` → 部署见 `../platforms.md`
 
 ## 验证点
 

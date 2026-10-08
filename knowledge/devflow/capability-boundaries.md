@@ -76,7 +76,7 @@ evidence: []
 | 像素基线 | 有版本化基线 + 容差档案；**无**跨设备横向基线库比对报告（多机一致性需人工看 summary） |
 | 检索 | 按文档分组回归（每篇 ≥5 问法）；**未收录主题必然查不到**——这是设计，不是 bug |
 | 依赖包 `example/` | 部分包未附可直接编译的最小示例（见 `packages/README.md` 状态表） |
-| 平台工具链 | 不随包分发（需按 `knowledge/devflow/cli-fun-toolchain.md` 放置）；`Z235X` 设备端工具未预编译 |
+| 平台工具链 | 不随包分发（需按 `knowledge/devflow/cli-fsc-toolchain.md` 放置）；`Z235X` 设备端工具未预编译 |
 
 ---
 

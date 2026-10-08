@@ -12,7 +12,7 @@
 
 | 面 | 源写法（小程序 / LVGL / Qt / Android） | FlyThings 写法 | 落地要点 / 坑 |
 |---|---|---|---|
-| **事件绑定** | `bindtap`/`bindchange`/`catchsubmit`、`lv_obj_add_event_cb(obj,cb,LV_EVENT_CLICKED,ud)`、`connect(slot)`、`setOnClickListener` | **回调表分发**：`bool onButtonClick_<Caption>(ZKButton*)`（`REGISTER_ACTIVITY_BUTTON_TAB`） | `fun build` 扫 ftu 控件**自动生成**绑定；回调**逐个人工显式定义**（禁宏批量生成）。`true`=吞事件 / `false`=走系统默认（模板注释写反，别信） |
+| **事件绑定** | `bindtap`/`bindchange`/`catchsubmit`、`lv_obj_add_event_cb(obj,cb,LV_EVENT_CLICKED,ud)`、`connect(slot)`、`setOnClickListener` | **回调表分发**：`bool onButtonClick_<Caption>(ZKButton*)`（`REGISTER_ACTIVITY_BUTTON_TAB`） | `fsc build` 扫 ftu 控件**自动生成**绑定；回调**逐个人工显式定义**（禁宏批量生成）。`true`=吞事件 / `false`=走系统默认（模板注释写反，别信） |
 | **值变化（开关/复选）** | `lv_event_get_code()==LV_EVENT_VALUE_CHANGED`、`bindchange`、`OnCheckedChangeListener` | `void onCheckedChanged_<Caption>(ZKCheckBox*, bool)`（两态按钮则走 `onButtonClick_*` + `setSelected()/isSelected()`） | ⚠️ 事实 F1：`checkbox__` 无生成器支持 → 用两态按钮（状态存控件上）；`setChecked()` 也会触发回调 → 注意回环 |
 | **值变化（单选组）** | `radio-group bindchange`、`RadioGroup.setOnCheckedChangeListener` | `void onCheckedChanged_<Caption>(ZKRadioGroup*, int checkedID)` | 回调给的是**选中项控件 ID**（`switch ID_MAIN_RadioButtonX`），不是索引；程序选中用 `setCheckedID()` |
 | **值变化（滑块/进度）** | `slider bindchange`、`lv_slider` VALUE_CHANGED、`OnSeekBarChangeListener` | `void onProgressChanged_<Caption>(ZKSeekBar*, int progress)` | 拖拽中连续触发；**拿不到起止**（要起止换 `ZKSeekBar::ISeekBarChangeListener`，会顶掉 Activity 分发）；进度条量程 `setMax()` |
@@ -45,7 +45,7 @@
 | **重活（解码/IO）** | WebView 线程、`AsyncTask`、`QThread` | 自研控件用 `MessageQueueThread` 投递工作线程，完成后触发重绘 | 页面级也可用 `Thread::readyToRun/threadLoop`；析构要停线程 |
 | **多指缩放 / 手势** | `touchstart/move` 多点、`ScaleGestureDetector` | `event::multi_touch`（全局多点分发 `TouchPoint` 列表）+ 控件 `onTouchEvent` | 参考 `ImageBoxView`（prepareScale/processScale） |
 | **多语言** | `i18n @key`、`strings.xml`、`tr()` | `@key` + i18n 工具链（`i18n_tools`） | 案例本轮不做多语言（英文硬编码，与源一致） |
-| **页面注册 / 工程结构** | `app.json` `pages`/`subPackages`、AndroidManifest | `ui/*.ftu` → `fun build` 自动生成 `ui_<page>.h/.cpp` + `REGISTER_ACTIVITY`；`src/logic/<page>Logic.cc` 每页一个 | `manifest.xml` 的 `activities` 决定入口（`mainActivity`）；起始页 = `pages[0]` |
+| **页面注册 / 工程结构** | `app.json` `pages`/`subPackages`、AndroidManifest | `ui/*.ftu` → `fsc build` 自动生成 `ui_<page>.h/.cpp` + `REGISTER_ACTIVITY`；`src/logic/<page>Logic.cc` 每页一个 | `manifest.xml` 的 `activities` 决定入口（`mainActivity`）；起始页 = `pages[0]` |
 | **业务域目录** | 各框架自由 | `src/<业务域>/`（小写英文单数，如 `src/network/`、`src/media/`），**不设 core/modules 中间分层** | 见 `devflow/page-architecture-spec.md` |
 | **控件字段写法** | `android:hint`、`lv_label_set_text()`、`LV_EVENT_CLICKED`… | FlyThings 对照：`hintText`、`setText()`、`onButtonClick_XXX` | ⛔ **禁止套用别家控件字段/API**（`uicontrols/retrieval-boundary.md`）；业务逻辑随便参考，控件实现只查 MCP/官方 |
 | **缺失能力自检** | — | MCP op 候选 `translate_lint`：扫 logic/json 是否残留源框架专有概念（`setData`/`wx:`/`flex`/CSS 动画）+ 差异是否登记 | 防「假装能转」（候选组件，见 `components.md`） |

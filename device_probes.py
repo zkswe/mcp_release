@@ -8,7 +8,7 @@
 
 1. **GUI 进程名就是 `zkgui`**（comm `zkgui_ui`）。设备 shell 是裁剪版——**没有 grep / head / sleep**，
    所以一律把原文取回来**在 Python 侧过滤**，不在设备上跑管道（管道会 `sh: grep: not found`）。
-2. **`getprop ro.easyui.version` 是固化在固件里的版本**，而 `fun launch` 推的是
+2. **`getprop ro.easyui.version` 是固化在固件里的版本**，而 `fsc launch` 推的是
    `/tmp/lib/libzkgui.so`——两者**可以不同**，所以对账必须**分开报**，不能合成一个"版本"。
 3. **所有探针一律带硬超时**：设备读在异常情况下可能长时间不返回 → 超时即判「不可读」并
    立即放弃、不再重试（fb 相关动作的时间预算见 `FB_OPEN_TIMEOUT`）。
@@ -172,7 +172,7 @@ def easyui_runtime(serial, platform=''):
 
     **固件版本与运行库分开报**（见模块 docstring 第 2 条）：
       firmwareVersion ← `getprop ro.easyui.version`（固化在固件里）
-      runningLib      ← `/tmp/lib/libzkgui.so`（fun launch 推的**实际在跑**的那份）
+      runningLib      ← `/tmp/lib/libzkgui.so`（fsc launch 推的**实际在跑**的那份）
       factoryLib      ← `/lib/libeasyui.so`（出厂）
     对账要拿 runningLib（有）优先，其次 factoryLib。
     """
@@ -459,10 +459,10 @@ def clear_logcat(serial):
 def launch_evidence(serial, wait=6, poll=2, max_lines=800):
     """launch 后读 logcat，找「UI 真的起来了」的证据 → {'tier','ok','marker','line',...}。
 
-    **为什么要有这道检查**：`fun launch` 返回 0 只说明**推送成功**，不说明应用起来渲染了
+    **为什么要有这道检查**：`fsc launch` 返回 0 只说明**推送成功**，不说明应用起来渲染了
     （黑屏事件的教训：推送成功 → 面板黑着，却回了 launched=true）。
 
-    ⚠️ **必须等一会儿再读**：实测 `fun launch` 刚返回时 logcat 只有 24 行（控件注册 + 配置装载），
+    ⚠️ **必须等一会儿再读**：实测 `fsc launch` 刚返回时 logcat 只有 24 行（控件注册 + 配置装载），
     activity 注册要再过数秒才出现 —— 立刻判定会假红。所以这里**轮询等待** `wait` 秒。
 
     分档（见 STRONG/WEAK_LAUNCH_MARKERS）：

@@ -65,7 +65,7 @@ python scripts/gen_icons.py --set control --size 22 --color 255,255,255 \
 3) **打包/运行**：
 ```bash
 fui pack app/ui/main.json       # 或 flythings_fui_pack（设备实际加载 ftu）
-fun build -p F133 && fun launch -p F133    # 或 flythings_build_ui_flow
+fsc build -p F133 && fsc launch -p F133    # 或 flythings_build_ui_flow
 ```
 
 ## 两态切换要注意

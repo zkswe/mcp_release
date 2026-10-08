@@ -3,7 +3,7 @@
 <!--
   rapidjson 1.1.0 最小示例（Z20 86 面板 / 480x480）
   纯头文件包：libs 为空（没有 .a/.so）→ 关键是让 include 路径进 CMake：
-  ⚠️ 改完 Manifest 必须 fun install，否则 <rapidjson/...> 找不到。
+  ⚠️ 改完 Manifest 必须 fsc install，否则 <rapidjson/...> 找不到。
 -->
 <manifest platform="Z20">
     <dependencies enableOnPlatforms="Z20">

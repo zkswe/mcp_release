@@ -6,7 +6,7 @@ id: ntp
 version: "2.1.1"
 platforms:
   Z20:
-    registry: C:\zkswe\fun\registry\public\z20\ntp\2.1.1
+    registry: C:\zkswe\fsc\registry\public\z20\ntp\2.1.1
     libs: [lib/libntp.a]
     headers_count: 2
     verified: "2026-09-29"

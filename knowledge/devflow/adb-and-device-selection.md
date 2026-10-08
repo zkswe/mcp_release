@@ -15,7 +15,7 @@ evidence: []
 ---
 # ADB 随包 + 设备选择 + 「跑起来了没」（v0.27.84）
 
-> 检索导引：问「找不到 adb / 要不要装 Android SDK / 设备连不上 / 多台设备推错台 / 怎么知道程序跑起来了没 / launch 默认推哪台」→ 本文；多设备推送的 CLI 侧陷阱见 `knowledge/devflow/cli-fun-toolchain.md` §6。
+> 检索导引：问「找不到 adb / 要不要装 Android SDK / 设备连不上 / 多台设备推错台 / 怎么知道程序跑起来了没 / launch 默认推哪台」→ 本文；多设备推送的 CLI 侧陷阱见 `knowledge/devflow/cli-fsc-toolchain.md` §6。
 > 检索词：adb 在哪 / 找不到 adb / 要不要装 Android SDK / adb 驱动 / 设备连不上 /
 > 该推哪台设备 / 多设备推错 / needDeviceInput / installHint / staleOnDevice /
 > 设备上跑的还是旧版 / launch 默认推设备吗 / with_launch
@@ -23,7 +23,7 @@ evidence: []
 > **口语问法直达**：每次编译都会自动推设备吗·想只编译（传 with_launch=False）/ 板子插上电脑但 adb 看不到（先查 ADB 驱动 + USB 调试授权，见 §3 installHint）。
 >
 > 适用范围：MCP 侧一切要连设备的动作（探测、推送、抓屏、i18n 推送）。CLI 侧的
-> `fun launch` 机制见 `knowledge/devflow/cli-fun-toolchain.md`（含 §7 多设备陷阱）。
+> `fsc launch` 机制见 `knowledge/devflow/cli-fsc-toolchain.md`（含 §7 多设备陷阱）。
 
 ## 1. adb 从哪来（单一入口 `adb_tools.resolve_adb()`）
 
@@ -47,13 +47,13 @@ python adb_tools.py            # 解析来源 + 版本 + 设备列表（带型�
 python adb_tools.py devices    # 只列设备
 ```
 
-⚠️ `fun launch` **走的是 fun 自带的 Go adb 客户端**（直连 `127.0.0.1:5037`），
+⚠️ `fsc launch` **走的是 fun 自带的 Go adb 客户端**（直连 `127.0.0.1:5037`），
 不用这里的 adb 二进制；两者共用同一个 host server（所以启动 server 对双方都有利）。
 宿主 server 版本冲突/设备 `offline` 时先 `kill-server` 再 `devices`（比拔插有效）。
 
 ## 2. 型号 → 平台（`device_models.json`）
 
-设备与工程平台必须一致，否则 `fun launch` 直接 `FATAL platform not match`。
+设备与工程平台必须一致，否则 `fsc launch` 直接 `FATAL platform not match`。
 型号串取自设备 `ro.product.model`（`adb devices -l` 常常不带，要 `getprop` 问）：
 
 | `ro.product.model` | 平台 | 依据 |
@@ -79,14 +79,14 @@ build 通过 → 设备探测 → 推送/运行 → **比对设备侧产物**。
 |----------|------|
 | 0 台 device | `needDeviceInput=true` + `installHint`（见下）+ 失败原因 |
 | 多台 | 列 serial / model / 平台匹配情况，**要求显式 `device=`**（多设备下 fun 会硬失败，见 §5 报文证据） |
-| 1 台且平台匹配 | 自动 `fun launch -s <serial>` |
+| 1 台且平台匹配 | 自动 `fsc launch -s <serial>` |
 | 1 台但平台不一致 | 不推，报明原因（显式传 `device=` 才算「你知情」） |
 | 1 台但型号未知 | 照推 + `warnings`（fun 自己会做平台校验） |
 
 ⚠️ **`device=` 也救不了多设备**（2026-09-17 实测）：本机 platform-tools 1.0.41/31.0.3 下，
-只要 adb 列表不只一台，`fun launch`（带不带 `-s`）都 `FATAL more than one device/emulator`
+只要 adb 列表不只一台，`fsc launch`（带不带 `-s`）都 `FATAL more than one device/emulator`
 —— 因为 fun 的 adb 客户端发的是旧式 `host:transport <serial>`（空格分隔），现代 server 不认，
-serial 被当空气（报文级证据见 `knowledge/devflow/cli-fun-toolchain.md` §6）。处置：先把其它设备下线
+serial 被当空气（报文级证据见 `knowledge/devflow/cli-fsc-toolchain.md` §6）。处置：先把其它设备下线
 （`adb disconnect <其它serial>`，可逆）再推。
 
 `installHint`（0 台时给用户的照做清单）：① **ADB 驱动**（本包只带 adb 程序本身，
@@ -105,7 +105,7 @@ launch 成功后比对设备侧 `/tmp/ui/*.ftu`、`/tmp/lib/libzkgui.so` 与本�
   ② launch 推送没生效/掉线 → 确认 `device=` 选对了机器后重跑。
 - 设备侧文件读不到（缺 busybox、文件不存在）也会算 stale 并在 `reason` 说明，不假装一致。
 
-⚠️ 判定依据是 fun launch 的部署约定：UI 资源 → `/tmp/ui/`，库 → `/tmp/lib/`。
+⚠️ 判定依据是 fsc launch 的部署约定：UI 资源 → `/tmp/ui/`，库 → `/tmp/lib/`。
 设备重启会清空 `/tmp`，所以「重启后没推 = 一定不一致」是预期行为（不是 bug）。
 
 ## 4. 新板子入库流程（拿到样机 10 分钟）
@@ -148,7 +148,7 @@ python adb_tools.py                              # 确认判定与预期一致
 第 5 列才是字节数（旧写法把每个文件都报成 1 字节 = 假 stale，实测踩到）；
 2. 设备没有 `md5sum`、`busybox` 也不在 PATH → 用**随仓**`bin_tools/<平台>/busybox`
    （优先复用设备上已有的 `/tmp/busybox`）拿到 md5，才做到「比 md5」而不是「比字节」；
-3. 多设备下 `fun launch` 硬失败（机制与处置见 §3 与 `knowledge/devflow/cli-fun-toolchain.md` §6），
+3. 多设备下 `fsc launch` 硬失败（机制与处置见 §3 与 `knowledge/devflow/cli-fsc-toolchain.md` §6），
 所以单台推送验证需要先 `adb disconnect` 其它设备（本次实测即如此，推完已连回）。
 
 ## 6. 待确认 / 未覆盖（诚实标注）
@@ -159,7 +159,7 @@ python adb_tools.py                              # 确认判定与预期一致
 - USB 接入口的 `installHint` 里「驱动没装」的判定**目前只能靠人工**（设备管理器），
 工具无法从 adb 侧区分「没插」「驱动没装」「没授权」——三者都表现为 0 台或 unauthorized。
 - **fun 与 adb server 的兼容性只在本机 platform-tools 1.0.41/31.0.3 上验证过**：别的 adb server 版本（旧版 / 不同分发）报文解析可能不同，可能在多设备下行为不一样
-  —— 复测方法就写在 `knowledge/devflow/cli-fun-toolchain.md` §6（裸 socket 问 5037，看 `host:transport` 是否被认）。
+  —— 复测方法就写在 `knowledge/devflow/cli-fsc-toolchain.md` §6（裸 socket 问 5037，看 `host:transport` 是否被认）。
 - `deviceSync` 只比对 `ui/*.ftu`（最多 8 个）与 `libzkgui.so`：**图片/字体/i18n/配置没比**
   （那些不是 ftu 时代同一问题，且体积大）；需要时可后续扩。
-- 设备侧被 launch 覆盖前的旧文件无备份（`fun launch` 语义就是调试推送）→ 要保留请用 `fun pack` 出 update.img。
+- 设备侧被 launch 覆盖前的旧文件无备份（`fsc launch` 语义就是调试推送）→ 要保留请用 `fsc pack` 出 update.img。

@@ -27,7 +27,7 @@ evidence:
 ### 场景① 从想法到上机
 
 - **什么时候用**：只有需求、还没有工程
-- **走哪些步**：先把三个参数定下来（别猜） → 找相近模式（先查再画，省一轮返工） → 写码前必读规范（不能跳） → 建工程 → 先出预览稿让用户点头 → 写 ui/*.json → 补回调桩（生成归 fun build，本 op 是体检 / 兜底） → 在 logic 里写页面逻辑 → 打包 → 编译部署到真机 → 抓真机屏幕 → 像素验收（还原度闭环）
+- **走哪些步**：先把三个参数定下来（别猜） → 找相近模式（先查再画，省一轮返工） → 写码前必读规范（不能跳） → 建工程 → 先出预览稿让用户点头 → 写 ui/*.json → 补回调桩（生成归 fsc build，本 op 是体检 / 兜底） → 在 logic 里写页面逻辑 → 打包 → 编译部署到真机 → 抓真机屏幕 → 像素验收（还原度闭环）
 - **口语触发**：做个界面 / 从零做个项目 / 我想做个面板 / 帮我起个新项目 / 做个智能开关
 - **做完的标志**：上机抓屏有内容、`launched=true`，且与预览稿 / 设计稿 diff 通过（验收三样：`launched` + logcat `onUI_show` + 抓屏 md5 与前次不同）
 
@@ -41,14 +41,14 @@ evidence:
 ### 场景③ 从别的框架迁移
 
 - **什么时候用**：源码来自别的框架
-- **走哪些步**：先查控件对应关系（别一边翻一边猜） → 源码 → ui json（自动翻译） → 写码前必读规范（不能跳） → 建工程 → 补回调桩（生成归 fun build，本 op 是体检 / 兜底） → 在 logic 里写页面逻辑 → 检索包生态 → 写 Manifest → 打包 → 编译部署到真机 → 抓真机屏幕 → 像素验收（还原度闭环） → 自动化回归
+- **走哪些步**：先查控件对应关系（别一边翻一边猜） → 源码 → ui json（自动翻译） → 写码前必读规范（不能跳） → 建工程 → 补回调桩（生成归 fsc build，本 op 是体检 / 兜底） → 在 logic 里写页面逻辑 → 检索包生态 → 写 Manifest → 打包 → 编译部署到真机 → 抓真机屏幕 → 像素验收（还原度闭环） → 自动化回归
 - **口语触发**：LVGL 工程迁过来 / 把这个控件对应过来 / 换个框架 / 从 Qt 搬过来
 - **做完的标志**：`downgrades` / `unrecognized` 全部逐条处置完毕，且上机抓屏与源界面结构一致
 
 ### 场景④ 改已有工程（换皮 → 换功能）
 
 - **什么时候用**：已有 FlyThings 工程要改
-- **走哪些步**：先摸清现状（别凭文件名猜） → 改 UI → 补回调桩（生成归 fun build，本 op 是体检 / 兜底） → 在 logic 里写页面逻辑 → 三道核对（改完必跑） → 打包 → 编译部署到真机 → 抓真机屏幕 → 像素验收（还原度闭环）
+- **走哪些步**：先摸清现状（别凭文件名猜） → 改 UI → 补回调桩（生成归 fsc build，本 op 是体检 / 兜底） → 在 logic 里写页面逻辑 → 三道核对（改完必跑） → 打包 → 编译部署到真机 → 抓真机屏幕 → 像素验收（还原度闭环）
 - **口语触发**：这个界面改一下 / 加个按钮 / 客户要换个配色 / 加个页面 / 在现有项目上加功能
 - **做完的标志**：改前 / 改后抓屏能看出预期变化，三道核对全过，且原有功能回归通过
 
@@ -82,7 +82,7 @@ evidence:
 | 先出预览稿让用户点头 | `flythings_ui_preview` | 需用户确认 | 排版稿：`flythings_ui_preview(target="<项目>")` → HTML 预览（只交 html，不产图片） | 预览稿已交付且用户明确确认版式 |
 | 写 ui/*.json | `flythings_ui_schema` | — | 字段 / 必填键 / 默认值：`flythings_ui_schema(control_type="seekbar")` —— **唯一真源**，不要凭记忆写 | 控件字段与必填键都来自 `ui_schema` 查询结果，json 可被 pack |
 | 三道核对（改完必跑） | `flythings_layout_audit` | 前置条件 | `flythings_validate_project(project_root=…)` —— 规范体检 → errors / warnings | `validate_project` 无 errors 且 `layout_audit` 无遮挡/越界/触摸穿透 |
-| 补回调桩（生成归 fun build，本 op 是体检 / 兜底） | `flythings_gen_logic_stub` | — | `flythings_gen_logic_stub(project_root=…, dry_run=true)` —— 按 `ui/*.json` 的控件表**核对**该有哪些桩、缺哪些（只补不改，已有同名函数一律跳过） | 桩与 `ui/*.json` 控件一一对应，无缺、无重复生成 |
+| 补回调桩（生成归 fsc build，本 op 是体检 / 兜底） | `flythings_gen_logic_stub` | — | `flythings_gen_logic_stub(project_root=…, dry_run=true)` —— 按 `ui/*.json` 的控件表**核对**该有哪些桩、缺哪些（只补不改，已有同名函数一律跳过） | 桩与 `ui/*.json` 控件一一对应，无缺、无重复生成 |
 | 在 logic 里写页面逻辑 | （人判断） | 前置条件 | `src/logic/<页>Logic.cc` 是**页面逻辑的唯一落点**：在回调桩里写「控件 ↔ 业务」的关联（取指针 / 取值 / `setText` / `refreshListView` / `setXxxListener`），别只留桩体占位 | 该页交互控件在 `src/logic/<页>Logic.cc` 里有对应实现（桩体不再是占位）；容器 / 显示类控件已在代码侧接线 |
 | 先摸清现状（别凭文件名猜） | `flythings_read_json` | — | `flythings_read_json(json_path="<项目>/ui/main.json")` —— 分辨率、控件列表、caption → id 映射 | 分辨率、控件清单、caption→id 映射三者都拿到 |
 | 改 UI | `flythings_edit_ftu` | — | 控件属性 / 坐标（源码级）→ 直接改 `ui/*.json`，字段口径查 `flythings_ui_schema(control_type=…)` | 改完 json 后 ftu 已重新 pack，两者内容一致 |
@@ -90,7 +90,7 @@ evidence:
 | 源码 → ui json（自动翻译） | `flythings_translate_ui` | — | `flythings_translate_ui(source="<.c 路径或内联源码>", out="<项目>/ui/main.json", res="<工程分辨率>")` | pack rc=0 且真机加载正常（无无声挂死） |
 | 检索包生态 | `flythings_package_search` | — | `flythings_package_search(keyword="mqtt")` —— **有包用包，禁止手写协议栈 / 库** | 命中时给出包名 + 平台可用性与依赖 |
 | 看包内 API | `flythings_get_package_api` | — | `flythings_get_package_api(...)` —— 包头文件级 API（**只认头文件，禁猜、禁反编译**） | API 清单来自包头文件 |
-| 写 Manifest | `flythings_manifest` | — | `flythings_manifest(project_root=…)` —— 默认**只推荐不写盘**（dry_run），确认后再写 Manifest.xml | Manifest 声明与源码 include 一致，`fun install` rc=0 |
+| 写 Manifest | `flythings_manifest` | — | `flythings_manifest(project_root=…)` —— 默认**只推荐不写盘**（dry_run），确认后再写 Manifest.xml | Manifest 声明与源码 include 一致，`fsc install` rc=0 |
 | 解析依赖 + 核对声明 | `flythings_resolve_dependencies` | — | `flythings_resolve_dependencies(packages="<包名>", platform="<平台>")` —— 递归解析 + 冲突 / 循环检查 | 递归依赖解析完成：无缺、无冲突、无循环；声明与 include 一致 |
 | 先体检，拿判据（别先动手） | `flythings_device_preflight` | — | `flythings_device_preflight(project_root="<项目>", device="<serial|IP>")` —— 返回里直接给结论 | 三项判据（分辨率/字库/体积）都有结论与来源 |
 | 比例相同 / 接近 → 等比换算（机械活，别手工算） | `flythings_device_preflight` | 需用户确认 | `flythings_device_preflight(project_root="<项目>", device="<serial>", adapt="force")` —— 用户已确认要按面板改 | 换算后：所有坐标/字号/画布尺寸严格等比，无越界 |
@@ -119,15 +119,15 @@ evidence:
 | 先出预览稿让用户点头 | 预览稿已交付且用户明确确认版式 | 未确认就 pack 或写业务逻辑 | 用户回复里出现确认（或改版意见已落回 json）；预览 html 路径存在 |
 | 写 ui/*.json | 控件字段与必填键都来自 `ui_schema` 查询结果，json 可被 pack | 凭记忆写字段，或缺必填键（真机加载异常） | `ui_schema(control_type=…)` 的返回为据；`layout_audit` 无 fatal |
 | 三道核对（改完必跑） | `validate_project` 无 errors 且 `layout_audit` 无遮挡/越界/触摸穿透 | 只看 pack 成功就去推设备 | 两个 op 的返回逐条为空或仅为 warnings；有 fatal 就必须改后重跑 |
-| 补回调桩（生成归 fun build，本 op 是体检 / 兜底） | 桩与 `ui/*.json` 控件一一对应，无缺、无重复生成 | 覆盖已有业务代码，或手写回调桩（绕过 op / 工具链） | `git diff` 只新增函数骨架；返回体的 affectedFiles 与控件数一致；`fun build` 通过 |
-| 在 logic 里写页面逻辑 | 该页交互控件在 `src/logic/<页>Logic.cc` 里有对应实现（桩体不再是占位）；容器 / 显示类控件已在代码侧接线 | 只补了桩就打包上机；或把业务代码写进 `src/activity/`（下次 ftu 生成会覆盖） | `git diff src/logic/*.cc` 里能看到函数体实现（setText / setXxxListener / refreshListView / 业务对象调用）；`fun build` 通过；真机点一下有反应（logcat 有回调日志） |
+| 补回调桩（生成归 fsc build，本 op 是体检 / 兜底） | 桩与 `ui/*.json` 控件一一对应，无缺、无重复生成 | 覆盖已有业务代码，或手写回调桩（绕过 op / 工具链） | `git diff` 只新增函数骨架；返回体的 affectedFiles 与控件数一致；`fsc build` 通过 |
+| 在 logic 里写页面逻辑 | 该页交互控件在 `src/logic/<页>Logic.cc` 里有对应实现（桩体不再是占位）；容器 / 显示类控件已在代码侧接线 | 只补了桩就打包上机；或把业务代码写进 `src/activity/`（下次 ftu 生成会覆盖） | `git diff src/logic/*.cc` 里能看到函数体实现（setText / setXxxListener / refreshListView / 业务对象调用）；`fsc build` 通过；真机点一下有反应（logcat 有回调日志） |
 | 先摸清现状（别凭文件名猜） | 分辨率、控件清单、caption→id 映射三者都拿到 | 凭文件名猜页面结构 | `read_json` 返回含 caption/id 列表；`get_project_spec` 已读 |
 | 改 UI | 改完 json 后 ftu 已重新 pack，两者内容一致 | 手改 ftu（ftu 是产物，改了会被下次 pack 覆盖） | `fui_unpack` 或 `read_json` 复核；`validate_project` 无 errors |
 | 先查控件对应关系（别一边翻一边猜） | 源控件对上目标控件，给出等价级别 L1~L5 与可粘贴片段 | 未命中却自己造一个等价控件 | 返回体 `level` + `snippet`；NO_HIT 时按 candidates 走人工确认 |
 | 源码 → ui json（自动翻译） | pack rc=0 且真机加载正常（无无声挂死） | 产物里控件字段写成字符串（子盒对象必须是对象），或整页无控件 | `fui_pack` rc=0 + 真机截图；`translate_ui` 返回的 `unrecognized`/`downgrades` 已登记 |
 | 检索包生态 | 命中时给出包名 + 平台可用性与依赖 | 有现成包却手写协议栈/库 | `package_search` 返回体；未命中才考虑自实现并登记缺口 |
 | 看包内 API | API 清单来自包头文件 | 猜 API 或反编译取签名 | 返回体的头文件路径与签名列表；调用的每个方法都能在清单里找到 |
-| 写 Manifest | Manifest 声明与源码 include 一致，`fun install` rc=0 | 只写 Manifest 不 install（编译期缺库） | `fun install` 输出 + `check_project_deps` 无 missing |
+| 写 Manifest | Manifest 声明与源码 include 一致，`fsc install` rc=0 | 只写 Manifest 不 install（编译期缺库） | `fsc install` 输出 + `check_project_deps` 无 missing |
 | 解析依赖 + 核对声明 | 递归依赖解析完成：无缺、无冲突、无循环；声明与 include 一致 | 只看直接依赖，间接依赖留到编译期才炸 | `resolve_dependencies` 的 conflicts/cycles 为空 + `check_project_deps` 无 missing |
 | 先体检，拿判据（别先动手） | 三项判据（分辨率/字库/体积）都有结论与来源 | 跳过体检直接 build_ui_flow，或把 `decision.action=push` 当成要改盘 | 返回体 `checks.*.decision`；面板 ≥ 设计时动作就是 push（什么都别改） |
 | 比例相同 / 接近 → 等比换算（机械活，别手工算） | 换算后：所有坐标/字号/画布尺寸严格等比，无越界 | 手工拆项乘系数（漏项就错位），或用户没确认就落盘 | 改盘前后各抓一张对比 + `layout_audit` 无越界；`adapt='force'` 才落盘 |
@@ -140,7 +140,7 @@ evidence:
 | 自动化回归 | 遍历/压测工程生成 + 用例跑完，基线比对通过 | 把 no-baseline 的步骤报成「通过」 | `test_run` 的 JSON + JUnit 报告；no-baseline 必须如实列为 no-baseline |
 | 整机自检 | 分区快照全部执行，`ok=false` 的逐条给 hint 与结论 | 把 `ok=false` 当异常抛掉，或只报总分 | 返回体 `summary.total/failedSections`；读不到本身是结论，要如实报告 |
 | 问题记录 | 问题单含现象/复现/期望/实际/证据，可直接转交 | 只有一句描述、无复现与证据 | `bugreport` 渲染的文本；采不到真机数据时写明原因（未连设备/设备不可定位） |
-| 交付随项目带工具 | fui/fun 已复制到项目，交付后无需安装 MCP 即可编译 | 只复制了一半（缺 fun 就无法 install/build） | 项目根有 `fun.exe`、`ui/` 下有 `fui.exe`；用项目自带工具链跑一次 build |
+| 交付随项目带工具 | fui/fun 已复制到项目，交付后无需安装 MCP 即可编译 | 只复制了一半（缺 fun 就无法 install/build） | 项目根有 `fsc.exe`、`ui/` 下有 `fui.exe`；用项目自带工具链跑一次 build |
 | 多语言 | 文案全走 @key、翻译已 import 并 push，设备显示新语言 | 改完 tr 不 push（设备仍跑旧翻译，logcat 刷 not found value） | `i18n_to_json` 后设备文案变化；换行一律写 `&#x000A;`，json 里必须是真实 0x0A |
 
 ## 5. 跨流程铁律（去重后只此一份）

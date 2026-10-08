@@ -72,7 +72,7 @@ $A find / -name "*.ftu" 2>/dev/null | $A head
 ```
 
 - 抓帧三条纪律：① 抓前 `df -h /tmp`（**空间不足会静默截断**，图看着对其实少了一截）
-  ② 图片有没有部署用 `md5sum` 比对，不要靠肉眼 ③ **`fun launch` 会清 `/tmp`** → push 的工具/抓的帧要在同一次会话里用完。
+  ② 图片有没有部署用 `md5sum` 比对，不要靠肉眼 ③ **`fsc launch` 会清 `/tmp`** → push 的工具/抓的帧要在同一次会话里用完。
 - `cat` 是设备内置的（不需要 busybox）；`adb exec-out` 不可用（`error: closed`）→ 一律
   `adb shell "…" > 本地文件` 或 `adb pull`。
 - 设备上跑多步时把 `A=/tmp/busybox` 存成变量，命令短且不易敲错。

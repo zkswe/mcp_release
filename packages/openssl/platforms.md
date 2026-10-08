@@ -13,7 +13,7 @@
 
 ## Z20 板级事实（本轮实测 / 头文件核对）
 
-- **版本号是平台专属**：Z20 = `1.1.1-w`（其它平台是 `1.1.1-g`）——Manifest 里写错就在 `fun install` 阶段解析不到。
+- **版本号是平台专属**：Z20 = `1.1.1-w`（其它平台是 `1.1.1-g`）——Manifest 里写错就在 `fsc install` 阶段解析不到。
 - 头文件实测 `OPENSSL_VERSION_TEXT = "OpenSSL 1.1.1w  11 Sep 2023"`，`OPENSSL_VERSION_NUMBER = 0x1010117fL`。
 - **只发静态库**（`libssl.a` + `libcrypto.a`，无 `.so`）→ 必须静态链；**链接顺序 `libssl` 在前、`libcrypto` 在后**，顺序错 undefined reference。
 - **证书校验默认开（`VERIFY_PEER`）但 CA 必须自己给**：实测 CA = `/tmp/ui/cacert.pem`（211167 B，= 资源目录 resPath）；
@@ -29,9 +29,9 @@
 ```bash
 # 工程：demos/net-direct-tls-z20（第 3 个按钮 = OpenSSL(libssl) 直调握手 + HTTP GET）
 #       最小示例见 packages/openssl/example/
-cd demos/net-direct-tls-z20 && fun install && fun build -p z20
+cd demos/net-direct-tls-z20 && fsc install && fsc build -p z20
 # 部署（/tmp 劫持调试，不动 /res）——⚠️ 单次 restart；先确认没有残留 zkgui 进程
-adb -s 192.168.x.x:5555 push .fun/z20/libzkgui.so /tmp/lib/libzkgui.so
+adb -s 192.168.x.x:5555 push .fsc/z20/libzkgui.so /tmp/lib/libzkgui.so
 adb -s 192.168.x.x:5555 push ui/main.ftu          /tmp/ui/main.ftu
 adb -s 192.168.x.x:5555 push EasyUI.cfg           /tmp/EasyUI.cfg   # startupLibPath=/tmp/lib/libzkgui.so, resPath=/tmp/ui/
 adb -s 192.168.x.x:5555 push resources/cacert.pem /tmp/ui/cacert.pem # 必须：CA 只认资源目录

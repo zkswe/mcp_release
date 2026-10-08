@@ -80,7 +80,7 @@ evidence: []
 
 1. `fun` 不为 `checkbox__` 生成宏/指针/回调 → 用两态按钮。
 2. 设备侧 `libeasyui.so` **无 `getAbsolutePosition()`**→ 只用 `getPosition()`（否则 `dlopen` undefined symbol → **整屏黑**）。
-3. `fun launch`（Windows）把 `resources/<子目录>/*` 推成**平铺名**（`images\x.png`）→ 图片控件全空，需设备侧修复脚本。
+3. `fsc launch`（Windows）把 `resources/<子目录>/*` 推成**平铺名**（`images\x.png`）→ 图片控件全空，需设备侧修复脚本。
 4. `html2json` 把 **`#000000` 当「未设置」**→ 纯黑写 **`#010101`**。
 5. listview **行自身 `text` 会与 subItem 叠字**→ 显式 `setText("")`。
 6. `ZKListView::setSelection()` **只改滚动位置、不重绘**→ 数据变了必须 `refreshListView()`。

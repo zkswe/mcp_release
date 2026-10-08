@@ -3,7 +3,7 @@
 <!--
   curl-cxx 10.0.3 最小示例（Z20 86 面板 / 480x480）
   依赖 = curl-cxx 自身 Manifest 的 Z20 段那四件套（curl + mbedtls + cares + z）+ base-utility/easyui/log。
-  改完 Manifest 必须 fun install（否则头文件/库路径不进 CMake）。
+  改完 Manifest 必须 fsc install（否则头文件/库路径不进 CMake）。
 -->
 <manifest platform="Z20">
     <dependencies enableOnPlatforms="Z20">

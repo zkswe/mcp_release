@@ -11,14 +11,14 @@
 
 | 平台 | 面板 fb | UI resolution（json 写的） | EasyUI.cfg 旋转 | 部署路径 | 编译命令 | 内存/能力 |
 |---|---|---|---|---|---|---|
-| **Z21**| 1024×600 横 | **1024×600**| `rotateScreen/rotateTouch = 0/0` | `fun launch` → `/tmp/{lib,ui,font}` + `EasyUI.cfg` | `fun build -p Z21` | 36MB RAM，无 GPU / 无硬解 |
-| **F133**| 800×1280 竖 fb | **1280×800**| `{"rotateScreen":270,"rotateTouch":270}`（写进 `package.properties`） | SD：`/mnt/extsd/{lib,ui}` + 手写 `EasyUI.cfg` | **`fun build -p F136`**（Manifest `platform="F136"`） | 无 GPU / 无硬解 |
-| **Z20**| 800×1280 | 按工程 | 按工程 | 按工程 | `fun build -p Z20` | 视频走 MI 硬件图层（抓 fb0 是黑的） |
-| **T113 / T113EMMC**| 按工程 | 按工程 | 按工程 | 按工程 | `fun build -p T113` | easyui 2.6.0（无 `relayout`） |
-| **V85X（V851/V853/SPINOR/EMMC）**| 800×480 或 1600×600 | 按工程 | 按工程 | `update.img` / `/res` | `fun build -p v85x` | **有 disp 分层**（真 3D/图层合成仅此平台验证过） |
+| **Z21**| 1024×600 横 | **1024×600**| `rotateScreen/rotateTouch = 0/0` | `fsc launch` → `/tmp/{lib,ui,font}` + `EasyUI.cfg` | `fsc build -p Z21` | 36MB RAM，无 GPU / 无硬解 |
+| **F133**| 800×1280 竖 fb | **1280×800**| `{"rotateScreen":270,"rotateTouch":270}`（写进 `package.properties`） | SD：`/mnt/extsd/{lib,ui}` + 手写 `EasyUI.cfg` | **`fsc build -p F136`**（Manifest `platform="F136"`） | 无 GPU / 无硬解 |
+| **Z20**| 800×1280 | 按工程 | 按工程 | 按工程 | `fsc build -p Z20` | 视频走 MI 硬件图层（抓 fb0 是黑的） |
+| **T113 / T113EMMC**| 按工程 | 按工程 | 按工程 | 按工程 | `fsc build -p T113` | easyui 2.6.0（无 `relayout`） |
+| **V85X（V851/V853/SPINOR/EMMC）**| 800×480 或 1600×600 | 按工程 | 按工程 | `update.img` / `/res` | `fsc build -p v85x` | **有 disp 分层**（真 3D/图层合成仅此平台验证过） |
 
 > ⚠️ **F133 专项**：工具链**不接受 `F135`**，Manifest 必须写 `platform="F136"`；
-> 用 `fun build -p F133` 在本地注册表缺 easyui 包时会因 include 路径缺失而**编译失败**（案例 README §4）。
+> 用 `fsc build -p F133` 在本地注册表缺 easyui 包时会因 include 路径缺失而**编译失败**（案例 README §4）。
 >
 > ⚠️ **F133/横屏 fb**：面板 fb 是 800×1280 竖屏，UI 是 1280×800 横屏 → `EasyUI.cfg` **必须手写 rotate**，
 > 否则画面/触摸方向错（案例已固化口径）。
@@ -63,10 +63,10 @@
 
 ### 3.2 内存与存储（小内存设备铁律）
 - Z21 实测：`Mem total 36072 kB`（**36MB**）、`/tmp` = **tmpfs 13.6MB**（**tmpfs 吃的是 RAM**）。
-- `fun launch` 一次至少推 `libzkgui.so` + 字库 + `*.ftu` + `EasyUI.cfg` 到 `/tmp` → 字库是大头
+- `fsc launch` 一次至少推 `libzkgui.so` + 字库 + `*.ftu` + `EasyUI.cfg` 到 `/tmp` → 字库是大头
   （常用字 872KB / 全量 7.5MB / 多语言 10.7MB）→ 撑爆即 **OOM 杀 `zkgui` → 设备重启**（现象像"WiFi 坏了"）。
 - 处置：字库按工程用字裁剪（`tools/ui_tools/font_subset_by_project.py`，872KB → 数十 KB）；清了垃圾后 `available` 应回到 10MB+。
-- 设备**重启清空 `/tmp`**（含 `EasyUI.cfg`）→ 必须整套 `fun launch`；只 push 单文件会跑出厂 UI。
+- 设备**重启清空 `/tmp`**（含 `EasyUI.cfg`）→ 必须整套 `fsc launch`；只 push 单文件会跑出厂 UI。
 
 ### 3.3 抓屏（验收侧）
 - Z21 fb **双缓冲**：`virtualHeight = 2 × height`（1024×1200），`pan` 在 `0,0`/`0,600` 间跳 →

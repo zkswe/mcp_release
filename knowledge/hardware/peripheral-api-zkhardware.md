@@ -29,7 +29,7 @@ evidence: []
 
 | 项 | 说明 |
 |---|---|
-| **头文件在哪** | 包内 `include/utils/*.h` + `include/hw/HardwareManager.h`。**不在本仓库**：它随包注册表分发。按 `package_tools.REGISTRY_CANDIDATES` 的顺序找：`$FLYTHINGS_REGISTRY` → `~/.fsc/registry/public` → `~/.fun/registry/public` → `~/.fuse/registry/public` → `C:\zkswe\fun\registry\public`；包目录为 `<registry>/<平台小写>/zkhardware/<版本>/` |
+| **头文件在哪** | 包内 `include/utils/*.h` + `include/hw/HardwareManager.h`。**不在本仓库**：它随包注册表分发。按 `package_tools.REGISTRY_CANDIDATES` 的顺序找：`$FLYTHINGS_REGISTRY` → `~/.fsc/registry/public` → `~/.fun/registry/public` → `~/.fuse/registry/public` → `C:\zkswe\fsc\registry\public`；包目录为 `<registry>/<平台小写>/zkhardware/<版本>/` |
 | **为什么不是派生页** | 生成器要在 fresh clone / CI 上能跑才配当"派生"。头文件不在仓库里 → 生成器在别人的机器上必然失败。所以本页是**人工维护 + 标明出处 + 给出可复核的清单**（见下表），不是 `--check` 派生页。**改头文件版本后请按 §3 复核本页** |
 | **哪些是"契约"、哪些是"实测"** | 签名/默认值/枚举/返回约定 = **头文件契约**（离线可核，本页负责）；**行为与真机读数**（比如某块板没有 ADC 接口、继电器索引不是顺序映射）只在 **Z20 86 面板**实测过 → 一律指向 `packages/zkhardware/`，本文不复制 |
 
@@ -255,9 +255,9 @@ bool setEnable(bool isEnable);
 <package id="zkhardware" version="0.0.0"></package>   <!-- Z235X 上是 1.1.0，版本按平台写死 -->
 ```
 
-- 版本号**写死**、不要浮动（`components/README.md` §3 口径）；改完 Manifest **必须重跑 `fun install`**。
-- ⚠️ **`fun.json` 优先于 `Manifest.xml`**：依赖写 `fun.json` 的 `dependencies` 才生效，
-  只写 Manifest 时 `fun install` 可能"报成功但没装"（`knowledge/v85x/h264-player-usage.md` §2 有实测记录）。
+- 版本号**写死**、不要浮动（`components/README.md` §3 口径）；改完 Manifest **必须重跑 `fsc install`**。
+- ⚠️ **`fsc.json` 优先于 `Manifest.xml`**：依赖写 `fsc.json` 的 `dependencies` 才生效，
+  只写 Manifest 时 `fsc install` 可能"报成功但没装"（`knowledge/v85x/h264-player-usage.md` §2 有实测记录）。
 - 用哪个包/版本的查询与加包闭环：`flythings_query_package` / `flythings_add_package` /
   `flythings_get_package_api`（返回体带 `packages/zkhardware` 的包卡）。
 

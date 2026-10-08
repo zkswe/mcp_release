@@ -18,7 +18,7 @@
 | 触摸 | `/dev/input/event0` = `gt9xx`，**MT-B** 协议（`touch` 工具自动判协议，直接 `swipe/tap`） |
 | 实测值 | 滑动阈值 `dragMaxDis=200` 下，`swipe 900 300 150 300` 一次即翻页；下划线重算耗时不可测（同帧完成） |
 | 已知限制 | ① fb 双缓冲：`virtualHeight=1200 ≈ 2×600`；实测应用**固定渲染到 offsetY=600 那一半**（offsetY=0 那半是黑的、`pan` 恒为 `0,600`）→ 抓屏必须按读到的 `pan` 偏移取帧，否则拿到黑屏/旧帧；② `zkshot`（视频层抓帧）留在后台会**卡住 zkgui（D 状态）**，抓屏请只用 framebuffer 通道；③ **【已勘正 2026-09-28】�回重启后触摸不响应 = 当时 `kill -9 zkgui` 的后果** —— 改 `setprop ctl.restart zkswe`（框架口径：init 托管、不能 kill）后，**Z20 108 实测 10 轮重启：pid 每轮换新、触摸每轮都有响应（帧差 230400 px）**，不用重启板子，也不是组件问题（详见 `knowledge/devflow/device-deploy-budget.md` §5） |
-| 真机验收命令 | `fun build -p Z21` → `fun launch -p Z21 -s 192.168.1.100:5555` → `/tmp/touch swipe 900 300 150 300` → 抓屏对比 |
+| 真机验收命令 | `fsc build -p Z21` → `fsc launch -p Z21 -s 192.168.1.100:5555` → `/tmp/touch swipe 900 300 150 300` → 抓屏对比 |
 
 ## F133（1280×800，rotate 270/270）
 
@@ -35,7 +35,7 @@
 |---|---|---|
 | Z20 | ➖ 不逐平台验（口径：UI 控件只做 V85X 单平台代表验收，2026-10-03） | registry 有 `z20/easyui/2.6.0` 与 `3.0.0`，`ZKPageWindow.h` 公开面与 Z21 同名同签名；组件无平台分支 |
 | T113 | ➖ 不逐平台验（口径：UI 控件只做 V85X 单平台代表验收，2026-10-03） | registry `t113emmc/easyui/2.9.0` 头文件一致；`bin_tools/t113/touch` 已有（触摸注入可用） |
-| V85X | ✅ **可用（真机已验收 2026-10-03）** | registry `v85x/easyui/2.3.0`（较老）与 `2.9.0` 都含 `IPageChangeListener + getPageSize + turnTo*`（**已逐个核对头文件**）；组件无平台宏；**V85X 实测（2026-10-03）**：`fun build` + `fun launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式 |
+| V85X | ✅ **可用（真机已验收 2026-10-03）** | registry `v85x/easyui/2.3.0`（较老）与 `2.9.0` 都含 `IPageChangeListener + getPageSize + turnTo*`（**已逐个核对头文件**）；组件无平台宏；**V85X 实测（2026-10-03）**：`fsc build` + `fsc launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式 |
 
 ## 跨平台注意事项（平台通用）
 

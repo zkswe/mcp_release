@@ -86,8 +86,8 @@ ALIAS_RULES = (
     ('screensaver', ('屏保', '屏幕自己黑', '黑屏'),
      '屏保 触发 关闭 屏幕黑 system-windows'),
     # ---- C 部署 / 环境 ----
-    ('fun-not-found', ('找不到 fun', 'fun.exe 找不到', '没有 fun', 'fun 命令', '工具链', '命令找不到'),
-     'fun.exe fui.exe 命令行工具链 cli-fun 前置条件 环境变量 FLYTHINGS_FUN_DIR 注册表 找不到'),
+    ('fun-not-found', ('找不到 fun', 'fsc.exe 找不到', '没有 fun', 'fun 命令', '工具链', '命令找不到'),
+     'fsc.exe fui.exe 命令行工具链 cli-fun 前置条件 环境变量 FLYTHINGS_FSC_DIR 注册表 找不到'),
     ('resolution-scaling', ('分辨率', '换屏', '换面板', '缩放适配', '界面适配'),
      '分辨率 适配 resolution scaling 设计稿 面板 双分辨率 分层 platform-translate'),
     ('boot-autostart', ('开机自启', '开机启动', '自启动', '自动启动', '开机就跑', '上电启动'),

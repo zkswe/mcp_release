@@ -53,7 +53,7 @@ STAGE = {op: _osl.stage(op) for op in _osl.registered()}
 # 为什么不登记 fyx / fuse：它们已不在当前工具链里，登记进常驻 manifest 只会让 AI
 # 以为还有这些命令可调（实测：本仓库找不到任何 fyx 实体）。老工程为什么仍带 fuse 痕迹
 # （`.fuse/` 产物目录、`FUSE_BUILD` 宏、`~/.fuse` 注册表路径）属**兼容识别知识**，
-# 见 knowledge/devflow/cli-fun-toolchain.md —— 那是「要认识的老形态」，不是「可调的命令」。
+# 见 knowledge/devflow/cli-fsc-toolchain.md —— 那是「要认识的老形态」，不是「可调的命令」。
 # 已废弃 CLI 名清单见 check_consistency.stage_cli_names（再登记进来会红）。
 CLI_NAMES = {
     'fun': 'FlyThings 工程工具（create/install/build/launch，<项目>/.fsc/<平台>/ 下；09-28 前为 .fun/）',

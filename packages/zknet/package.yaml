@@ -6,7 +6,7 @@ id: zknet
 version: "0.0.0"
 platforms:
   Z20:
-    registry: C:\zkswe\fun\registry\public\z20\zknet\0.0.0
+    registry: C:\zkswe\fsc\registry\public\z20\zknet\0.0.0
     libs: [lib/libzknet.so]
     headers_count: 8
     verified: "2026-09-29"

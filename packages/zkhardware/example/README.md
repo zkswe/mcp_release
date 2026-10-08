@@ -7,7 +7,7 @@
 |---|---|
 | `ui/main.json` | 页面：标题 + 继电器 1/2/3 切换 + 读继电器状态 + 全部断开 + 蜂鸣器 + 背光± + 读 ADC + 结果 textview。`cd ui && fui pack ./` 出 `main.ftu` |
 | `src/logic/mainLogic.cc` | 回调实现（`relayToggle()` / `relayRead()` / `relayWrite()` / `relayStatusStr()` + `onButtonClick_ButtonXxx`）+ `setStatus()` + 空定时器表（框架要求保留） |
-| `Manifest.xml` | 依赖声明（easyui / log / zkhardware），改完 `fun install` |
+| `Manifest.xml` | 依赖声明（easyui / log / zkhardware），改完 `fsc install` |
 | `mainActivity_button_tab.snippet.cpp` | **必须补的一步**：activity 里 `sButtonCallbackTab` 按键注册片段（漏了按钮点了没反应） |
 
 ## 继电器三路怎么控（核心口径）
@@ -30,7 +30,7 @@ int cur = GpioHelper::getZeroIoStatus(kZeroIndexMap[ch - 1]);    // 回读真实
 1. `ui/main.json` 放进工程 `ui/`，`cd ui && fui pack ./`（生成 `main.ftu`）
 2. `src/logic/mainLogic.cc` 内容并进工程的 logic 文件；把 `mainActivity_button_tab.snippet.cpp` 的 9 行填进
    `src/activity/mainActivity.cpp` 的 `sButtonCallbackTab[]`
-3. `fun install && fun build -p z20`，部署（调试走 /tmp 劫持，见 `../platforms.md`）
+3. `fsc install && fsc build -p z20`，部署（调试走 /tmp 劫持，见 `../platforms.md`）
 
 > 控件指针 `mTextStatusPtr` 和 ID 宏 `ID_MAIN_ButtonRelay1` 由构建自动生成在
 > `.fun/<平台>/generated/ui_main.h`（logic 里 `#include GENERATED_UI_DEFINITIONS` 即可用）；

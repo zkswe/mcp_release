@@ -44,6 +44,6 @@
 
 - **修前帧不在本目录**：在案例工程 `projects/translate/lvgl-widgets-uiv1/z21/evidence/zzb_*`（`zzc_*` 全量 20 张 + `STATUS.md` §12 也在那里）；
 - `MODE_HARD` 路径**未修**（按要求保留对照）→ 13/14/15 里的 HARD 档仍会露方角，**这是有意为之**；
-- 设备 `main.ftu` 5858 → 5953 B 是 `fun build` 重打包所致，UI 内容未变；
+- 设备 `main.ftu` 5858 → 5953 B 是 `fsc build` 重打包所致，UI 内容未变；
 - 第一轮上机曾把钮写坏（SDF 末项 `max(...,0)` 写成 `min(...,0)`）→ 钮被侵蚀；**当时 PURE 也是 0**，
   靠与修前帧逐像素比（差 756 px）才发现。已改为「先本地桩 + 参考模型验证再上机」。

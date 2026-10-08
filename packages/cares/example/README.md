@@ -7,7 +7,7 @@
 | `ui/main.json` | 页面：解析 www.baidu.com / DNS 5 域名测速 / 自检 AUTO + 结果 textview。`cd ui && fui pack ./` |
 | `src/logic/mainLogic.cc` | 回调实现：`onDnsDone`（ares 回调，只记结果）+ `resolveOne()`（**ares_fds → select → ares_process_fd 事件循环**）+ `jobResolve()` / `jobDnsBench()` |
 | `mainActivity_button_tab.snippet.cpp` | **必须补**：activity 的 `sButtonCallbackTab` 注册（3 行） |
-| `Manifest.xml` | 依赖：easyui / log / base-utility / cares（本包无 Manifest，不会自动带进来），改完 `fun install` |
+| `Manifest.xml` | 依赖：easyui / log / base-utility / cares（本包无 Manifest，不会自动带进来），改完 `fsc install` |
 
 **来源**：`demos/net-direct-tls-z20`（第 1 个按钮 = 单域名直调解析，第 4 个 = 5 域名批量测速）——真机验证 ✅（Z20）。
 
@@ -30,7 +30,7 @@ while (!done) { nfds = ares_fds(ch,&rd,&wr); select(nfds,&rd,&wr,NULL,&tv); ares
 
 1. `ui/main.json` → 工程 `ui/`，`cd ui && fui pack ./`（出 `main.ftu`）
 2. `src/logic/mainLogic.cc` 并进工程 logic；把 `mainActivity_button_tab.snippet.cpp` 的 3 行填进 `src/activity/mainActivity.cpp` 的 `sButtonCallbackTab[]`
-3. `fun install && fun build -p z20` → 部署见 `../platforms.md`（`/tmp` 劫持 + 单次 `setprop ctl.restart zkswe`）
+3. `fsc install && fsc build -p z20` → 部署见 `../platforms.md`（`/tmp` 劫持 + 单次 `setprop ctl.restart zkswe`）
 
 ## 验证点（真机实测口径，见 `../evidence/netdir_20260929.txt`）
 

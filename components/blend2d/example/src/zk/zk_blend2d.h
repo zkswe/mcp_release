@@ -20,8 +20,8 @@
  *      `threadCount=2`、阴影 ≤2 层（或预烘成 PNG 贴图）、画布复用。
  *      ⚠️ 定位：**别指望 NEON/库加速救场** —— 真正的胜负手是上面这几条"零成本配方"。
  *   6) **部署通道写死两条**（少了它，设备上报 `initLib error`）：
- *      · 调试：`fun launch` **不推**第三方包 `.so` → 手动 `adb push libblend2d.so /tmp/`；
- *      · 量产：把 `.so` 放进 `<工程>/src/dependencies/lib/` → `fun pack`（进 `update.img`）。
+ *      · 调试：`fsc launch` **不推**第三方包 `.so` → 手动 `adb push libblend2d.so /tmp/`；
+ *      · 量产：把 `.so` 放进 `<工程>/src/dependencies/lib/` → `fsc pack`（进 `update.img`）。
  *
  * 详见同目录 README.md（用法/配方/性能表/部署）、platforms.md（平台矩阵）、lib/BUILD_INFO.md（两个库档来源）。
  *

@@ -131,7 +131,7 @@ evidence:
 - 差异·数据面 ext4 分区与系统 res（危险链）：/dev/block/mmcblk0p2 → /mnt/sdnand（ext4，rw,dirsync,nosuid,nodev）由 **app 自己挂载**；挂载失败会 make_ext4fs **整盘重建**（无确认、无备份）→ 现场禁止手动 umount/mkfs/dd 写 p2，要取数据只用 adb pull /mnt/sdnand。mtd3 res（squashfs，本板仅 39 KB 空壳）与 mmcblk0p1 （/mnt/extsd ext4，app 资源/debug 落点）是两处不同的「res 形态」；LOGO/MISC = mtd5 = 128 KB。升级写哪个分区由设备端库内机型表决定：表形状分 3 种（纯 NOR 用 mtd 名 res/backup；纯 eMMC 全 mmcblk0*；NOR+SD NAND 混合型 = res → /dev/block/mmcblk0p1 + mmcblk0p2）。本型号是「16M Flash + 128M SD Nand」→ 属第三种，**推断写入面 = mmcblk0p1（+p2 第二目标）**；真机旁证：/mnt/extsd( = mmcblk0p1) 分区 52.5 MB 而文件系统只有 2.74 MB（df: 2804 个 1K 块）= 典型「小 ext4 镜像写进大分区」形态。⚠️ 仍未直接取证（本次触发后板卡失联）→ 复测后回填。
 - 可选补充（非阻塞，按需补）：固化写入目标分区的正式口径（强推断 = mmcblk0p1(+p2)，见 differences）：真机已触发但板卡失联，待复测钉死
 - 可选补充（非阻塞，按需补）：release.ext4=false（或不写）在本型号的真机后果（未做 true/false 对照）
-- 可选补充（非阻塞，按需补）：release.ext4.size 是否生效（fun.exe 内只有 release.ext4 字面量）
+- 可选补充（非阻塞，按需补）：release.ext4.size 是否生效（fsc.exe 内只有 release.ext4 字面量）
 - 数据来源：4 寸 86 盒系列规格书 V3.0（2025-05-20）
 - 数据状态：complete
 

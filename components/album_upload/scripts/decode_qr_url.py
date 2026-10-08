@@ -8,7 +8,7 @@
     （如 prefs 键 `sp_qr_url`），或者写进 `assets/qr_url.txt`。
 
 什么时候跑：换小程序 / 换码 / 核对 existing 链接时**跑一次**；
-  组件本体、设备上屏、`fun build` 都**不需要**本脚本，也不读任何图片素材。
+  组件本体、设备上屏、`fsc build` 都**不需要**本脚本，也不读任何图片素材。
 
 用法：
   py scripts/decode_qr_url.py --src mp_qr.png                      # 只打印链接

@@ -16,7 +16,7 @@
   接进工程（源码引入，推荐起步）：
     1) 把 include/zk/zk_album.h → 工程 src/zk/zk_album.h；src/zk_album.cpp → 工程能编到的地方
     2) 把 mp_transfer 的 4 源 + 1 头拷进工程
-    3) 工程 Manifest/fun.json 声明下面这些底层包
+    3) 工程 Manifest/fsc.json 声明下面这些底层包
     4) 照 example/flythings_wiring.cc 接：configure → setQrUrl(prefs) → 回调 → start/stop
        → 二维码落 UI（`qrInfo().content` 交给 `ZKQRCode::loadQRCode`）
 
@@ -25,7 +25,7 @@
     · 下面列的是**接线层 + mp_transfer** 需要的：easyui（控件/StoragePreferences/生成代码）、
       log（工程日志宏）、base-utility（mp_transfer 的 base::Task）。
       二维码**现场生成**（不下载位图）→ 本组件不再需要 curl-cxx。
-      **改完 Manifest 必须重跑 fun install**，否则新的 include 路径不进 CMake。
+      **改完 Manifest 必须重跑 fsc install**，否则新的 include 路径不进 CMake。
 
   将来若注册进依赖包仓库，工程里一行（版本号写死，不用 ^ 浮动）：
     <package id="album_upload" version="0.1.0"></package>

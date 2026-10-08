@@ -11,7 +11,7 @@ screenshots/
 *.bak
 *.orig
 
-# 构建产物（fun build 生成，含本机绝对路径 → 隐私扫描会红）
+# 构建产物（fsc build 生成，含本机绝对路径 → 隐私扫描会红）
 # ⚠️ gitignore 不支持行尾注释（注释文本会成为 pattern 一部分）——注释必须单独成行。
 #    下行依次是：.fsc/（09-28 起，新版 fun/fsc）、.fsc-lock.json、.fun/（09-28 前）、.fun-lock.json
 .fsc/
@@ -19,8 +19,8 @@ screenshots/
 .fun/
 .fun-lock.json
 
-# example/ 里不放工具副本（用仓库 toolchain/ 或全局 fun.exe / fui.exe；否则整包多 38MB 冗余）
-**/example/fun.exe
+# example/ 里不放工具副本（用仓库 toolchain/ 或全局 fsc.exe / fui.exe；否则整包多 38MB 冗余）
+**/example/fsc.exe
 **/example/ui/fui.exe
 
 # 图标库生成物（可现场重建：components/icons/README.md §2/§6；
@@ -49,7 +49,7 @@ _acl_recovery/
 # 判据：带**本机信息**或**工具重新生成**，入库即噪音——
 #   language.settings.xml   → Eclipse CDT 的语言设置缓存，含本机 env-hash
 #   org.eclipse.core.runtime.prefs → line.separator（本机行尾习惯）
-#   .deps.lock              → fun install 解析出的版本锁（文件头自己写着「不适用于手动编辑」）
+#   .deps.lock              → fsc install 解析出的版本锁（文件头自己写着「不适用于手动编辑」）
 # **不要**把下面三件也删了（工程必需，已保留在库）：
 #   .project / .cproject    → IDE 打开与编译必需（create_project 还要改里面的工程名）
 #   .settings/com.zksw.flythings.easyui.prefs → 承载 resolution=（op 读它取分辨率）

@@ -22,7 +22,7 @@
           ],
           "cells": [
             "✅ **组件形态已在 Z20 真机跑通**（2026-09-30，<验收机IP>:5555，480×480 zkgui 工程）；来源工程 `SmartPanel_HA` 亦在 Z20 面板跑过",
-            "组件形态：`temp/verify71/album_zkgui` 真机验收（§1.6，4 条判据全过 + 还原复核）；来源工程：`fun build -p Z20` + 推真机（`11_相册上传.png`）；协议侧口径见 `components/mp_transfer/platforms.md`",
+            "组件形态：`temp/verify71/album_zkgui` 真机验收（§1.6，4 条判据全过 + 还原复核）；来源工程：`fsc build -p Z20` + 推真机（`11_相册上传.png`）；协议侧口径见 `components/mp_transfer/platforms.md`",
             "**微信小程序真机扫码那一环仍无取证**（本机无手机/小程序）；用协议等价 PC 客户端代跑「发图→落盘→回调」（§1.6 判据 d）"
           ]
         },
@@ -546,7 +546,7 @@
           ],
           "cells": [
             "✅ **可用（真机已验收 2026-10-03）**",
-            "registry `v85x/easyui/2.3.0`、`2.9.0` 一致；**V85X 实测（2026-10-03）**：`fun build` + `fun launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式",
+            "registry `v85x/easyui/2.3.0`、`2.9.0` 一致；**V85X 实测（2026-10-03）**：`fsc build` + `fsc launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式",
             "同 F133 三条；V85X 内存/带宽紧，长按翻月之类别做"
           ]
         }
@@ -595,7 +595,7 @@
           ],
           "cells": [
             "✅ **可用（真机已验收 2026-10-03）**",
-            "registry `v85x/easyui/2.3.0`、`2.9.0` 一致；V85X 有较多内存/带宽限制，密集点阵（如 PRPS 那种每格一个 fillArc）**先在真机量一遍再上**；**V85X 实测（2026-10-03）**：`fun build` + `fun launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式"
+            "registry `v85x/easyui/2.3.0`、`2.9.0` 一致；V85X 有较多内存/带宽限制，密集点阵（如 PRPS 那种每格一个 fillArc）**先在真机量一遍再上**；**V85X 实测（2026-10-03）**：`fsc build` + `fsc launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式"
           ]
         }
       ]
@@ -619,7 +619,7 @@
           "cells": [
             "2.6.0",
             "✅ **已真机验收**（§1；21:2x 复核证据归属无误）",
-            "1024×600；`fun build -p Z21` 通过、`check_all` 全 PASS（主代理实跑）"
+            "1024×600；`fsc build -p Z21` 通过、`check_all` 全 PASS（主代理实跑）"
           ]
         },
         {
@@ -689,7 +689,7 @@
           "cells": [
             "2.3.0",
             "✅ **可用（真机已验收 2026-10-03）**",
-            "头文件已核对；注意 disp 分层平台的老问题与本包无关；**V85X 实测（2026-10-03）**：`fun build` + `fun launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式"
+            "头文件已核对；注意 disp 分层平台的老问题与本包无关；**V85X 实测（2026-10-03）**：`fsc build` + `fsc launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式"
           ]
         }
       ]
@@ -737,7 +737,7 @@
           ],
           "cells": [
             "✅ **可用（真机已验收 2026-10-03）**",
-            "registry `v85x/easyui/2.3.0`（较老）与 `2.9.0` 都含 `IPageChangeListener + getPageSize + turnTo*`（**已逐个核对头文件**）；组件无平台宏；**V85X 实测（2026-10-03）**：`fun build` + `fun launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式"
+            "registry `v85x/easyui/2.3.0`（较老）与 `2.9.0` 都含 `IPageChangeListener + getPageSize + turnTo*`（**已逐个核对头文件**）；组件无平台宏；**V85X 实测（2026-10-03）**：`fsc build` + `fsc launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式"
           ]
         }
       ]
@@ -765,8 +765,8 @@
             "1024×600 横",
             "**1024×600**",
             "`rotateScreen/rotateTouch = 0/0`",
-            "`fun launch` → `/tmp/{lib,ui,font}` + `EasyUI.cfg`",
-            "`fun build -p Z21`",
+            "`fsc launch` → `/tmp/{lib,ui,font}` + `EasyUI.cfg`",
+            "`fsc build -p Z21`",
             "36MB RAM，无 GPU / 无硬解"
           ]
         },
@@ -783,7 +783,7 @@
             "**1280×800**",
             "`{\"rotateScreen\":270,\"rotateTouch\":270}`（写进 `package.properties`）",
             "SD：`/mnt/extsd/{lib,ui}` + 手写 `EasyUI.cfg`",
-            "**`fun build -p F136`**（Manifest `platform=\"F136\"`）",
+            "**`fsc build -p F136`**（Manifest `platform=\"F136\"`）",
             "无 GPU / 无硬解"
           ]
         },
@@ -800,7 +800,7 @@
             "按工程",
             "按工程",
             "按工程",
-            "`fun build -p Z20`",
+            "`fsc build -p Z20`",
             "视频走 MI 硬件图层（抓 fb0 是黑的）"
           ]
         },
@@ -818,7 +818,7 @@
             "按工程",
             "按工程",
             "按工程",
-            "`fun build -p T113`",
+            "`fsc build -p T113`",
             "easyui 2.6.0（无 `relayout`）"
           ]
         },
@@ -835,12 +835,12 @@
             "按工程",
             "按工程",
             "`update.img` / `/res`",
-            "`fun build -p v85x`",
+            "`fsc build -p v85x`",
             "**有 disp 分层**（真 3D/图层合成仅此平台验证过）"
           ]
         }
       ],
-      "note": "> ⚠️ **F133 专项**：工具链**不接受 `F135`**，Manifest 必须写 `platform=\"F136\"`； > 用 `fun build -p F133` 在本地注册表缺 easyui 包时会因 include 路径缺失而**编译失败**（案例 README §4）。 > > ⚠️ **F133/横屏 fb**：面板 fb 是 800×1280 竖屏，UI 是 1280×800 横屏 → `EasyUI.cfg` **必须手写 rotate**， > 否则画面/触摸方向错（案例已固化口径）。"
+      "note": "> ⚠️ **F133 专项**：工具链**不接受 `F135`**，Manifest 必须写 `platform=\"F136\"`； > 用 `fsc build -p F133` 在本地注册表缺 easyui 包时会因 include 路径缺失而**编译失败**（案例 README §4）。 > > ⚠️ **F133/横屏 fb**：面板 fb 是 800×1280 竖屏，UI 是 1280×800 横屏 → `EasyUI.cfg` **必须手写 rotate**， > 否则画面/触摸方向错（案例已固化口径）。"
     },
     "vinyl": {
       "file": "components/vinyl/platforms.md",
@@ -925,7 +925,7 @@
             "❌ **不可编**（2026-10-05 V85X 工具链实编）",
             "❌ 同上（编不过就谈不上后端）",
             "—",
-            "卡点**不是** nanovg（已解决：`nanovg.h` 那关过了，`packages/nanovg/lib/v85x/libnanovg.so` 与设备 `/lib` 那份 md5 逐字节相同 `F5F1157D…`），而是 `zk_vinyl.cpp:40` 的 **`misc/image_utility.h`**：它**不在任何 easyui 包内**（V85X 2.9.0 / Z20 2.6.0 的 `include/` 都无 `misc/`）、不在仓内、设备 `libeasyui.so` 也无 `misc::*` 符号 —— 那是 F133 **应用工程侧**的头。两条出路：① 厂商补该头（+实现）；② 拍板把 `misc::image_load/bitmap_scale/bitmap_create/bitmap_destroy` 改写成 easyui 真有的 `utils/BitmapHelper.h`。`fun install` 走 registry 仍拉不到 nanovg（复测 `FATAL 未找到依赖包`），纯包管理器路径同样不可用。V85X（SPINOR）**不是** MCU Lite，不适用「本组件不适用」那条 **处置（需求方 2026-10-05）：本项已决定缓办、优先级放低 —— nanovg 这一路在 V85X 暂不处理，后期需要时再补；两条出路（厂商补 `misc/image_utility.h` / 改写为 `utils/BitmapHelper.h`）保持记档、不排期。即读到这里时不要把它当作待修故障。**"
+            "卡点**不是** nanovg（已解决：`nanovg.h` 那关过了，`packages/nanovg/lib/v85x/libnanovg.so` 与设备 `/lib` 那份 md5 逐字节相同 `F5F1157D…`），而是 `zk_vinyl.cpp:40` 的 **`misc/image_utility.h`**：它**不在任何 easyui 包内**（V85X 2.9.0 / Z20 2.6.0 的 `include/` 都无 `misc/`）、不在仓内、设备 `libeasyui.so` 也无 `misc::*` 符号 —— 那是 F133 **应用工程侧**的头。两条出路：① 厂商补该头（+实现）；② 拍板把 `misc::image_load/bitmap_scale/bitmap_create/bitmap_destroy` 改写成 easyui 真有的 `utils/BitmapHelper.h`。`fsc install` 走 registry 仍拉不到 nanovg（复测 `FATAL 未找到依赖包`），纯包管理器路径同样不可用。V85X（SPINOR）**不是** MCU Lite，不适用「本组件不适用」那条 **处置（需求方 2026-10-05）：本项已决定缓办、优先级放低 —— nanovg 这一路在 V85X 暂不处理，后期需要时再补；两条出路（厂商补 `misc/image_utility.h` / 改写为 `utils/BitmapHelper.h`）保持记档、不排期。即读到这里时不要把它当作待修故障。**"
           ]
         }
       ]
@@ -1003,7 +1003,7 @@
           ],
           "cells": [
             "❌ **不可用**（缺 `rapidjson` 包）",
-            "核心 `zk_wall_sync.cpp` 需要 `<rapidjson/document.h>`。声明 `rapidjson 1.1.0` 后 `fun install` 去拉 `packages/v85x/rapidjson/1.1.0.zip` → **502 Bad Gateway**（V85X 无此包）（2026-10-03 V85X 真机工具链实编）"
+            "核心 `zk_wall_sync.cpp` 需要 `<rapidjson/document.h>`。声明 `rapidjson 1.1.0` 后 `fsc install` 去拉 `packages/v85x/rapidjson/1.1.0.zip` → **502 Bad Gateway**（V85X 无此包）（2026-10-03 V85X 真机工具链实编）"
           ]
         }
       ],

@@ -2,11 +2,11 @@
 """adb host-server 中转垫片：把 fun 发的旧式空格形式 transport 改写成冒号形式。
 
 问题（2026-09-28 复核，fun 新旧版都一样）：
-    fun launch 自带的 Go adb 客户端发的是 **`host:transport <serial>`（空格分隔）**，
+    fsc launch 自带的 Go adb 客户端发的是 **`host:transport <serial>`（空格分隔）**，
     而 platform-tools（实测 37.0.1）只认 **`host:transport:<serial>`（冒号分隔）**：
     空格形式下 serial 被丢弃 → 只要 adb 列表里不止一台设备，就
     `FATAL "host:transport <serial>" FAIL: more than one device/emulator`。
-    → 多设备在线时 `fun launch -s <IP>` 没法指定设备（单设备时靠 server 兜底才能过）。
+    → 多设备在线时 `fsc launch -s <IP>` 没法指定设备（单设备时靠 server 兜底才能过）。
 
 本垫片做什么：
     监听 127.0.0.1:5037（fun 硬编码找的 adb host server 端口），把请求转发给
@@ -18,12 +18,12 @@
     adb -P 5038 start-server
     adb -P 5038 connect <ip>:5555            # 按需把设备连到 5038 这个 server 上
     python adb_transport_shim.py 5037 5038   # 垫片占住 5037
-    fun launch -p <平台> -s <ip>:5555         # 现在多设备在线也能精确推到指定设备
+    fsc launch -p <平台> -s <ip>:5555         # 现在多设备在线也能精确推到指定设备
     # 收尾
     <Ctrl-C> 停垫片; adb -P 5038 kill-server; adb start-server; adb connect ... （连回 5037）
 
 实测（2026-09-28，本机 5 台 adb 在线；工程 DownloadTimerTest / Z20；设备 192.168.x.x）：
-    `fun launch -p z20 -s 192.168.x.x:5555` → 4.02 s 推完（main.ftu + images + libzkgui.so + EasyUI.cfg），
+    `fsc launch -p z20 -s 192.168.x.x:5555` → 4.02 s 推完（main.ftu + images + libzkgui.so + EasyUI.cfg），
     设备侧 md5 与本地构建产物逐一致（main.ftu = 本地 ui/main.ftu；libzkgui.so = 本地 .fsc/z20/libzkgui.so），
     另一台在线设备（192.168.x.x）**未被触碰**（无 /tmp/ui、lib 未变）。
     → 垫片是「多设备 + 指定设备推送」目前唯一不改厂家二进制就能走通的路子。

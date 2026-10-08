@@ -29,9 +29,9 @@
 ```bash
 # 工程：demos/net-direct-tls-z20（第 1 个按钮 = c-ares 直调 DNS，第 4 个 = 5 域名批量测速）
 #       最小示例见 packages/cares/example/
-cd demos/net-direct-tls-z20 && fun install && fun build -p z20
+cd demos/net-direct-tls-z20 && fsc install && fsc build -p z20
 # 部署（/tmp 劫持调试，不动 /res）——⚠️ 单次 restart；先确认没有残留 zkgui 进程
-adb -s 192.168.x.x:5555 push .fun/z20/libzkgui.so /tmp/lib/libzkgui.so
+adb -s 192.168.x.x:5555 push .fsc/z20/libzkgui.so /tmp/lib/libzkgui.so
 adb -s 192.168.x.x:5555 push ui/main.ftu          /tmp/ui/main.ftu
 adb -s 192.168.x.x:5555 push EasyUI.cfg           /tmp/EasyUI.cfg   # startupLibPath=/tmp/lib/libzkgui.so, resPath=/tmp/ui/
 adb -s 192.168.x.x:5555 shell setprop ctl.restart zkswe

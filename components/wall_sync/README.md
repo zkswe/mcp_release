@@ -207,7 +207,7 @@ public:
 
 **两种引入方式**：
 
-- **A) 源码引入（推荐起步）**：把 `include/zk/` 与 `src/` 拷进工程（如 `src/zk/`、`src/wall_sync/`），`#include "zk/zk_wall.h"`，在工程 `fun.json`/`Manifest.xml` 声明 §6 的包，**改完 Manifest 必须重跑 `fun install`**。
+- **A) 源码引入（推荐起步）**：把 `include/zk/` 与 `src/` 拷进工程（如 `src/zk/`、`src/wall_sync/`），`#include "zk/zk_wall.h"`，在工程 `fsc.json`/`Manifest.xml` 声明 §6 的包，**改完 Manifest 必须重跑 `fsc install`**。
 - **B) 依赖包引用（模块定型后）**：编成 `include/ + lib/<平台>/` 注册进包仓库，工程一行 `<package id="wall_sync" version="1.0.0"></package>`（版本写死，不用 `^`）。
 
 ---

@@ -117,7 +117,7 @@ discovery **不用改风格**就能被 Domoticz 吃下：
 ## 6. 组件形态真机验收记录（Z20 · 2026-10-01）
 
 **验收形态**：FlyThings **zkgui 工程**（不拿 bin 交付，遵需求方口径），真依赖真编译
-（`fun install` + `fun build -p Z20`），部署到 Z20 面板真机跑通。
+（`fsc install` + `fsc build -p Z20`），部署到 Z20 面板真机跑通。
 
 - 被测工程：`temp/verify71_ha/ha_zkgui`（Z20 / 480×480，9 个 TextView：连接态 / 三路开关态 /
 命令计数+最近命令 / 组件日志 / uid）；组件 `include/` + `src/` **原样拷入，零改动**。
@@ -154,7 +154,7 @@ discovery **不用改风格**就能被 Domoticz 吃下：
 
 ## 7. 未验证项与所需条件
 
-- **本组件的组件形态已在 Z20 真机上机验收（2026-10-01）**：`fun install && fun build -p Z20` **真编译通过**，
+- **本组件的组件形态已在 Z20 真机上机验收（2026-10-01）**：`fsc install && fsc build -p Z20` **真编译通过**，
   zkgui 工程真机跑通（连接 / retained 上行 / 自动 discovery / 下行命令 → `onCommand` + 继电器真实动作 /
   `start()/stop()` + kick 重连）。逐条证据见 §6。
   **已做的一致性检查（历史）**：`g++ -fsyntax-only -std=c++11 -Wall -Wextra -D__PLATFORM_Z20__=1`
@@ -173,9 +173,9 @@ discovery **不用改风格**就能被 Domoticz 吃下：
 
 ```bash
 # ① 编译部署（工程侧）
-fun install && fun build -p Z20
+fsc install && fsc build -p Z20
 # 部署：/tmp 劫持法（不动 /res）——⚠️ 单次 restart；先确认没有残留 zkgui 进程
-adb -s <设备IP>:5555 push .fun/z20/libzkgui.so /tmp/lib/libzkgui.so
+adb -s <设备IP>:5555 push .fsc/z20/libzkgui.so /tmp/lib/libzkgui.so
 adb -s <设备IP>:5555 push ui/main.ftu          /tmp/ui/main.ftu
 adb -s <设备IP>:5555 push EasyUI.cfg           /tmp/EasyUI.cfg
 adb -s <设备IP>:5555 shell setprop ctl.restart zkswe

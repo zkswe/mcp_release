@@ -69,7 +69,7 @@ evidence:
 
 ## 4. 修法 / 规避（工程纪律）
 
-- **要新 API**：`Manifest.xml` 改版本 → **`fun install`**（刷新 `.deps.lock` 与 include 路径；
+- **要新 API**：`Manifest.xml` 改版本 → **`fsc install`**（刷新 `.deps.lock` 与 include 路径；
 不 install 新包 include 不进 CMake = 加了也白加）→ 编译 → 再按 §1 步③确认**目标设备**运行库也有。
 - **设备库太老**：找 FlyThings 厂家（中科世为）要带该能力的新 easyui，**不要**在业务代码里模拟。
 - **写新页面要上 scrollwindow**：只有「内容总高 > 可视高」才上；先按 §3-4 把结构摆对，再去怀疑版本。

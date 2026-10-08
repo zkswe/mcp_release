@@ -214,7 +214,7 @@ AA：中间档像素 23 个 / 12 档色 / 占边界像素 26.1%。
 
 | 验收项 | 命令/判据 | 结论 | 证据 |
 |---|---|---|---|
-| 编译 | `fun build -p Z21` | ✅ 无警告无错误（`src/zk/*.cpp` 被 `fun build` 自动收编，**无需改构建**） | — |
+| 编译 | `fsc build -p Z21` | ✅ 无警告无错误（`src/zk/*.cpp` 被 `fsc build` 自动收编，**无需改构建**） | — |
 | 静态全检 | `python tools/ui_tools/check_all.py <example>` | ✅ 全部 PASS | — |
 | 首帧：三档半径 + 上下对照 | reboot → 部署一次 → 抓图 | ✅ HARD r=4/8/14 与 AA r=4/8/14 同尺寸同色上下两排；③ 四态四个盒子；④ 探针（圆环/圆角描边）；⑤ `.9.png` 拉伸按钮 | `evidence/01_initial_full.png` |
 | **圆角边缘不是阶梯（数字）**| `python example/aa_ideal.py …`（16×16 理想覆盖率） | ✅ AA：**平均 2.0 / p95 5 / 最大 5**（r=14）；HARD：平均 8.2 / 最大 14；**r=8 时 HARD 平均 19.6 / 最大 34 / 36% 超 30**→ AA 更平滑一个量级 | `evidence/06_zoom8x_r14_hard_vs_aa.png`、`07_zoom8x_r8_hard_vs_aa.png`、`08_zoom8x_three_routes.png` |
@@ -233,7 +233,7 @@ AA：中间档像素 23 个 / 12 档色 / 占边界像素 26.1%。
 > # ① 本机：json -> ftu -> 编译
 > python tools\ui_tools\html2json.py <example>\ui\main.html <example>\ui\main.json
 > cd <example>\ui ; fui pack .
-> cd <example> ; fun build -p Z21
+> cd <example> ; fsc build -p Z21
 > # ② 上机（Z21 同一时间只允许一个任务）
 > adb reboot ; 等 35s ; adb connect 192.168.1.100:5555
 > adb push tools\FlyThings_mcp_open\bin_tools\z21\touch /tmp/touch ; adb shell chmod 777 /tmp/touch

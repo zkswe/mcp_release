@@ -35,21 +35,21 @@ except Exception as _e4:
     _FTOOLS_ERR = repr(_e4)
 
 # ---------- 工具链路径（可配置 + 自动探测）----------
-# 优先级：环境变量 FLYTHINGS_FUN_DIR（用户显式指定，最高）> 包内 toolchain（随包分发）> 标准安装目录
+# 优先级：环境变量 FLYTHINGS_FSC_DIR（用户显式指定，最高）> 包内 toolchain（随包分发）> 标准安装目录
 _BASE = os.path.dirname(os.path.abspath(__file__))
 _FUN_DIR_CANDIDATES = [
-    os.environ.get('FLYTHINGS_FUN_DIR', ''),
+    os.environ.get('FLYTHINGS_FSC_DIR', ''),
     os.path.join(_BASE, 'toolchain'),                    # 分发包内置工具链（本包 toolchain/）
     os.path.join(os.path.dirname(_BASE), 'toolchain'),  # 原 tools/toolchain 结构
-    r'D:\zkswe\fun',          # 正式工具链安装目录（与 fun.exe 同目录）
-    r'C:\zkswe\fun',
+    r'D:\zkswe\fsc',          # 正式工具链安装目录（与 fsc.exe 同目录）
+    r'C:\zkswe\fsc',
 ]
 
 def _tool_dir():
-    """返回工具目录（第一个含 fui.exe 或 fun.exe 的候选）；找不到返回空串。
-工具链可能只含 fui.exe（仅布局转换）或只含 fun.exe（仅编译推送），任一存在即可。"""
+    """返回工具目录（第一个含 fui.exe 或 fsc.exe 的候选）；找不到返回空串。
+工具链可能只含 fui.exe（仅布局转换）或只含 fsc.exe（仅编译推送），任一存在即可。"""
     for d in _FUN_DIR_CANDIDATES:
-        if d and (os.path.isfile(os.path.join(d, 'fui.exe')) or os.path.isfile(os.path.join(d, 'fun.exe'))):
+        if d and (os.path.isfile(os.path.join(d, 'fui.exe')) or os.path.isfile(os.path.join(d, 'fsc.exe'))):
             return d
     return ''
 
@@ -62,7 +62,7 @@ def _tool_path(name):
     return p if os.path.isfile(p) else name
 
 FUI_EXE = _tool_path('fui.exe')
-FUN_EXE = _tool_path('fun.exe')
+FSC_EXE = _tool_path('fsc.exe')
 
 # ---------------- 构建产物目录（09-28 版 fun 起从 .fun/ 改名 .fsc/）----------------
 # 新版 fun（v0.0.2+2609281006_e09dc96 起，内部包名 fun→fsc）把产物目录从 `<项目>/.fun/<平台>/`
@@ -209,7 +209,7 @@ def _run_fui(cmd, target_dir):
         return {"success": False, "error": str(e)}
 
 
-# ---------------- fun.exe 基础（build/launch）----------------
+# ---------------- fsc.exe 基础（build/launch）----------------
 def _adb_online_devices():
     """列出「当前在线（state=device）」的 adb 设备 serial；adb 不可用/无设备回 []。
 仅用于多设备歧义提示（拉不到不报错，不阻断流程）。
@@ -223,62 +223,31 @@ def _adb_online_devices():
     return [d['serial'] for d in devs if d.get('state') == 'device']
 
 
-def _fix_fun_logic_cc(project_root):
-    """跑 scripts/fix_fun_logic_cc.py 修 fun 生成的 `<page>Logic.cc` 头部（幂等）。
-
-    为什么需要（2026-10-06 需求方报，已对死两份模板文件）：`fun build` 生成的 logic.cc 把
-    `REGISTER_ACTIVITY_TIMER_TAB` 包在 `#ifdef FUN_BUILD` **里面**且不补 `#include "base/log.h"` →
-    IDE 编译（不定义 FUN_BUILD）时该表消失（Activity.cpp 里 sizeof(…)/sizeof(…) 报未声明）；
-    FUN 编译时 `LOGD_TRACE`/`LOGD` 未声明。正确形态 = 表与 log.h 都在守卫外。
-
-    返回：修了文件时的说明串（供 steps/warnings 记账）；无需修 / 脚本缺失 → 空串。
-    """
-    script = os.path.join(_BASE, 'scripts', 'fix_fun_logic_cc.py')
-    if not os.path.isfile(script):
-        return ''
-    import sys as _sys                         # 本模块没 import sys（只这里用）
-    try:
-        r = subprocess.run([_sys.executable, script, project_root, '--quiet'],
-                           capture_output=True, text=True, encoding='utf-8', errors='replace',
-                           timeout=300)
-    except Exception as e:                       # noqa: BLE001
-        return '补丁脚本执行失败：%s: %s' % (type(e).__name__, e)
-    out = ((r.stdout or '') + (r.stderr or '')).strip()
-    m = re.search(r'已修 (\d+) 个', out)
-    if m and int(m.group(1)) > 0:
-        names = [l.split(']', 1)[1].split('——')[0].strip()
-                 for l in out.splitlines() if l.startswith('[已修]')]
-        return '修 %d 个：%s' % (int(m.group(1)), '、'.join(names[:4]) or '（见脚本输出）')
-    if r.returncode not in (0, 1):
-        return '补丁脚本异常退出 rc=%d：%s' % (r.returncode, out[-200:])
-    return ''
-
-
 def _run_fun(cmd, project_dir, device='', retries=1, timeout=600, extra=None):
-    """执行 fun.exe 命令（build/launch 等），在项目根目录运行。
-    fun.exe 与 fui.exe 同目录（D:/zkswe/fun/ 或自动探测）。
+    """执行 fsc.exe 命令（build/launch 等），在项目根目录运行。
+    fsc.exe 与 fui.exe 同目录（D:/zkswe/fsc/ 或自动探测）。
     launch 走网络推送（adb over wifi），网络抖动/推送中断会失败——retries>1 时
 自动重试（间隔 2s），覆盖「网络超时静默/误推旧固件」场景；信任 fun 差分能力，
 不自写 push 脚本校验产物。build 类本地命令 retries 保持 1（无需重试）。
-    ⚠️ fun launch **支持**`-s <serial|IP>`（2026-09-16 实测修正；旧注「不支持 -s」作废）：
+    ⚠️ fsc launch **支持**`-s <serial|IP>`（2026-09-16 实测修正；旧注「不支持 -s」作废）：
     device 非空时追加 `-s <device>`；device 为空且检测到多台在线设备时，回 warnings
     （多设备下 fun 静默取 adb 列表第一个 → 可能推错设备，症状是 launch 成功但界面不变）。
-    extra: 追加到命令后的参数列表（如 fun pack -o <path>），默认 None。"""
+    extra: 追加到命令后的参数列表（如 fsc pack -o <path>），默认 None。"""
     if not os.path.isdir(project_dir):
         return {"success": False, "error": "项目目录不存在: %s" % project_dir}
-    if not os.path.isfile(FUN_EXE):
-        return {"success": False, "error": "fun.exe 未找到（工具目录: %s）。"
-                "请设置环境变量 FLYTHINGS_FUN_DIR 指向含 fun.exe/fui.exe 的目录，"
+    if not os.path.isfile(FSC_EXE):
+        return {"success": False, "error": "fsc.exe 未找到（工具目录: %s）。"
+                "请设置环境变量 FLYTHINGS_FSC_DIR 指向含 fsc.exe/fui.exe 的目录，"
                 "或将其安装到 D:\\zkswe\\fun\\。" % _tool_dir()}
-    args = [FUN_EXE, cmd] + list(extra or [])
-    # ⚠️ 2026-09-14 定：暂时发布的 MCP 不支持 `fun sim`（模拟器运行）——
+    args = [FSC_EXE, cmd] + list(extra or [])
+    # ⚠️ 2026-09-14 定：暂时发布的 MCP 不支持 `fsc sim`（模拟器运行）——
     # 工具面不暴露该能力，这里再显式拦住，避免 AI 自行调用/文档误报“支持”。
     if cmd == 'sim':
         return {"success": False,
-                "error": "MCP 暂不支持 fun sim（模拟器运行）",
-                "hint": "要推真机调试用 flythings_build_ui_flow（fun launch）；"
+                "error": "MCP 暂不支持 fsc sim（模拟器运行）",
+                "hint": "要推真机调试用 flythings_build_ui_flow（fsc launch）；"
                         "要出图验证用 flythings_device_screenshot；"
-                        "模拟器请在本地命令行手动跑 fun sim。"}
+                        "模拟器请在本地命令行手动跑 fsc sim。"}
     warnings = []
     if cmd == 'launch':
         if device:
@@ -556,7 +525,7 @@ _PROJECT_SPEC = {
         "initSequence": "onCreate() → findControlByID() → mActivityPtr=this → onUI_init()"
     },
     "caveats": [
-        "编译体系有**两套**，别混（2026-09-17 需求方纠偏）：**IDE**编译 src/activity/*.cpp（再由它 #include logic.cc）；**fun build 直接把 src/logic/*.cc 当编译单元，src/activity/* 完全不参与编译**（fun 自动生成入口与分发：generated/{event,event_dispatcher,ui_main}.cpp；编译宏 FUN_BUILD=1）。实测：构建目录 <平台>/CMakeLists.txt 的 add_library 只有 Main.cpp + logic/mainLogic.cc + uart/*.cpp + generated/*.cpp",
+        "编译体系有**两套**，别混（2026-09-17 需求方纠偏）：**IDE**编译 src/activity/*.cpp（再由它 #include logic.cc）；**fsc build 直接把 src/logic/*.cc 当编译单元，src/activity/* 完全不参与编译**（fun 自动生成入口与分发：generated/{event,event_dispatcher,ui_main}.cpp；编译宏 FUN_BUILD=1）。实测：构建目录 <平台>/CMakeLists.txt 的 add_library 只有 Main.cpp + logic/mainLogic.cc + uart/*.cpp + generated/*.cpp",
         "控件指针 mXXXPtr / ID_MAIN_* 宏 / 回调表全部由 IDE 编译时根据 ftu 自动生成，用户禁止手写定义",
         "禁止在 logic.cc 中定义 ID_MAIN_* 宏、static ZKxxx* 指针、new ZKxxx、findControlByID 初始化",
         "onUI_init() 时所有控件指针已由 IDE 初始化完毕，直接使用即可",
@@ -567,15 +536,15 @@ _PROJECT_SPEC = {
         "新建项目应从 IDE 模板创建（flythings_create_project），勿手搭骨架",
         "工程文件 .project/.cproject/.settings 是 IDE 必需，缺失则项目无法编译",
         "Manifest 用新格式 <manifest platform=\"...\">（旧 <Manifest> 格式 IDE 不认）",
-        "代码层架构：logic/*.cc 只做 UI 与业务的关联操作（取控件指针/setText/调业务对象）；复杂功能开发成独立 C++ 类放**业务域目录**，在 logic include+调用；新增业务代码一律用 .cpp/.h（独立编译单元，fun build 自动编译），禁止新建 .cc 文件——.cc 是 IDE 按页面生成的 logic 专属（仅 mainLogic.cc 等），靠 mainActivity.cpp #include 进编译单元，手写 .cc 不会被编译——IDE 体系里 Makefile 只编 %.cpp %.c，fun 体系里只把 src/logic/*.cc 当编译单元；所以业务代码一律用 .cpp/.h",
+        "代码层架构：logic/*.cc 只做 UI 与业务的关联操作（取控件指针/setText/调业务对象）；复杂功能开发成独立 C++ 类放**业务域目录**，在 logic include+调用；新增业务代码一律用 .cpp/.h（独立编译单元，fsc build 自动编译），禁止新建 .cc 文件——.cc 是 IDE 按页面生成的 logic 专属（仅 mainLogic.cc 等），靠 mainActivity.cpp #include 进编译单元，手写 .cc 不会被编译——IDE 体系里 Makefile 只编 %.cpp %.c，fun 体系里只把 src/logic/*.cc 当编译单元；所以业务代码一律用 .cpp/.h",
         "src 目录命名（2026-09-13 需求方定规）：按业务域直接建在 src/ 下，不设 core/modules 中间分层——如 src/network/NetworkManager.cpp+.h、src/media/MediaPlayer.cpp+.h、src/storage/ConfigStore.cpp+.h；域名为小写英文单数名词，文件=域内一个职责类（大驼峰，与文件名一致）；include 用相对 src/ 路径（#include \"network/NetworkManager.h\"）",
         "页面架构（2026-09-13 定规；**默认口径先看这条**）：**一个工程默认只有一个 Activity**（ui/main.ftu + src/activity/mainActivity.* + src/logic/mainLogic.cc）——**多个页面不是多个 ftu/Activity**，同一业务域内的页面/页签/二级页/弹窗/整屏遮挡 → **同一个 ftu 里的多个整屏 window + showWnd/hideWnd 切换**；只有跨业务域、需独立生命周期或返回栈、超大页面才拆独立 ftu（openActivity）；并列内容区翻页 → pagewindow/slidewindow/scrollwindow 容器。底层关系：ftu=Activity=独立编译单元（独立生命周期/返回栈），window=同 Activity 内显隐（零切换成本/共享指针）。详见知识库 devflow/page-architecture-spec.md",
         "**不要改构建目录里的 <平台>/CMakeLists.txt**（09-28 起 `.fsc/<平台>/`，旧版 `.fun/<平台>/`；fun 自动生成，文件头写着 Don't edit this file manually，下次 build 会覆盖；改它没有意义也不会生效）：要加源文件就放到 src/ 下（业务代码一律 .cpp/.h），fun 会把 src/**/*.cpp 与 src/logic/*.cc 收进编译单元",
         "src/uart 为系统模板：UartContext/ProtocolSender 勿改，只改 ProtocolData.h 与 ProtocolParser.cpp 协议部分",
-        "布局遮挡/点不到/谁压谁 → flythings_layout_audit（纯几何静态判定，先看 json 再截图）；json 布局用 fui pack 生成 ftu（ui/ 下已附带 fui.exe）；编译推送用 fun.exe build / fun.exe launch（项目根目录已附带 fun.exe）",
-        "⚠️ 交付流程：项目生成后直接用 fun.exe build 编译、fun.exe launch 推送设备，无需客户手动导入 FlyThings IDE 编译烧录",
+        "布局遮挡/点不到/谁压谁 → flythings_layout_audit（纯几何静态判定，先看 json 再截图）；json 布局用 fui pack 生成 ftu（ui/ 下已附带 fui.exe）；编译推送用 fsc.exe build / fsc.exe launch（项目根目录已附带 fsc.exe）",
+        "⚠️ 交付流程：项目生成后直接用 fsc.exe build 编译、fsc.exe launch 推送设备，无需客户手动导入 FlyThings IDE 编译烧录",
         "需要三方能力（MQTT/HTTP/JSON/数据库/蓝牙/SSL/OTA/图片等）→ 先 flythings_package_search / flythings_manifest 检索现有 package，有包用包，禁止手写库或凭空 include",
-        "代码 include 了三方库头文件 → Manifest.xml 必须声明对应 package（validate_project 会检查缺失依赖）；**框架基础包 base-utility 同理且更容易被漏**：代码或 fun 生成的 generated/*.h 里出现 `#include <base/...>`（典型 base/functional.h）→ Manifest 必须有 `<package id=\"base-utility\" version=\"^10.0.0\"/>`，缺了 fun build 直接 `fatal error: base/functional.h: No such file or directory`（老工程/自建工程高发）；用 flythings_add_package 加包后**必须重跑 fun install**，否则 include 路径不进 CMake",
+        "代码 include 了三方库头文件 → Manifest.xml 必须声明对应 package（validate_project 会检查缺失依赖）；**框架基础包 base-utility 同理且更容易被漏**：代码或 fun 生成的 generated/*.h 里出现 `#include <base/...>`（典型 base/functional.h）→ Manifest 必须有 `<package id=\"base-utility\" version=\"^10.0.0\"/>`，缺了 fsc build 直接 `fatal error: base/functional.h: No such file or directory`（老工程/自建工程高发）；用 flythings_add_package 加包后**必须重跑 fsc install**，否则 include 路径不进 CMake",
         "GPIO 外设控制：代码能力非 UI 控件——#include \"utils/GpioHelper.h\"（zkhardware 包）；GpioHelper::input(pin) 读（1高/0低/-1失败）/ output(pin,val) 写（1高/0低）/ registerGpioListener 边沿监听；引脚名按平台不同（Z11:B_02/E_20、SV50PB:PIN7、SV50PC:PIN2、H500S:PG0、SV50PD:A0，头文件有宏）；模组需启用 gpio 功能并升级固件",
     ]
 }
@@ -727,12 +696,12 @@ def flythings_validate_project(root):
                 warnings.append({'file': f'src/logic/{fn}', 'type': 'bg_bmp_multi',
                                  'msg': 'setBackgroundBmp 多次调用（应只调一次；帧刷新用 setInvalid 交替——仅限只读 textview，交互控件会被禁用）'})
             # ⚠️ 宏批量生成回调（如 #define DEFINE_DAY_CB(i) void onButtonClick_BtnDay##i(...) 展开 42 个日期格）
-            #     → fun build 扫描 ftu 回调时识别不到宏展开 → 向 logic.cc 追加显式桩 → 与宏展开重定义冲突
+            #     → fsc build 扫描 ftu 回调时识别不到宏展开 → 向 logic.cc 追加显式桩 → 与宏展开重定义冲突
             # 检测：以 #define 开头（含 \ 续行）的宏体内含回调签名模式（onXxxClick/onXxxChanged/onXxxTouch/onXxxTimer）
             for m in re.finditer(r'#define\s+\w+\s*\([^)]*\)\s*[^\n]*(?:\\\n[^\n]*)*', text):
                 if re.search(r'(?:on\w*Click|on\w*Changed|on\w*Touch|on\w*Timer)', m.group(0)):
                     errors.append({'file': f'src/logic/{fn}', 'type': 'macro_generated_callback',
-                                   'msg': f'宏生成回调 {m.group(0)[:44].strip()}...：fun build 无法识别宏展开的回调，'
+                                   'msg': f'宏生成回调 {m.group(0)[:44].strip()}...：fsc build 无法识别宏展开的回调，'
                                           f'会向 logic.cc 追加同名桩导致重定义编译错误；请显式定义每个回调函数，禁止宏批量生成'})
                     break  # 每个文件只报一次
     else:
@@ -1174,7 +1143,7 @@ def flythings_layout_audit(project_root, page=''):
                     '视觉样式（颜色/字体/切图）仍需 device_screenshot；改动前后对比用 ui_visual(action="diff")。'}
 
 
-# ---------------- 工具 4.5: 创建可执行程序项目 (fun create --type bin) -------------
+# ---------------- 工具 4.5: 创建可执行程序项目 (fsc create --type bin) -------------
 def _is_elf(path):
     """检测文件是否为 ELF 可执行文件（魔数 \x7fELF）。"""
     try:
@@ -1187,11 +1156,11 @@ def _is_elf(path):
 def flythings_create_bin_project(project_root, project_name='',
                                  platform=_platforms.DEFAULT_BIN_PLATFORM,
                                  app_version='1.0.0', description='', with_build=True):
-    """创建「可执行程序」类型项目（fun create --type bin）并编译为直接可运行的 ELF 二进制。
+    """创建「可执行程序」类型项目（fsc create --type bin）并编译为直接可运行的 ELF 二进制。
 
     - 项目类型 4 选 1：zkgui（UI应用）/ bin（可执行程序）/ staticLibrary / sharedLibrary
-    - bin 项目结构极简：fun.json（"type": "executable"）+ src/main.cpp（标准 int main()）
-    - 编译：fun build → 产物 .fsc/{platform}/{项目名}（09-28 前为 .fun/），ELF 魔数验证
+    - bin 项目结构极简：fsc.json（"type": "executable"）+ src/main.cpp（标准 int main()）
+    - 编译：fsc build → 产物 .fsc/{platform}/{项目名}（09-28 前为 .fun/），ELF 魔数验证
     - 部署：adb push + chmod +x 直接跑（无 zkgui 宿主，不能启动 UI 应用）
     - 非交互：自动传 --app-version/--description 跳过向导；目录非空直接报错（防覆盖询问卡死）
 
@@ -1200,7 +1169,7 @@ def flythings_create_bin_project(project_root, project_name='',
 返回创建结果 + 编译日志 + 产物路径与 ELF 验证。
     """
     try:
-        # 出口统一小写（fun.exe / 产物目录 <小写平台> 的既有约定；09-28 起为 .fsc/<小写平台>/，旧版 .fun/）
+        # 出口统一小写（fsc.exe / 产物目录 <小写平台> 的既有约定；09-28 起为 .fsc/<小写平台>/，旧版 .fun/）
         platform = _platforms.bin_tool_dir(platform or _platforms.DEFAULT_BIN_PLATFORM)
     except ValueError as e:
         return {"success": False, "error": str(e)}
@@ -1214,7 +1183,7 @@ def flythings_create_bin_project(project_root, project_name='',
                 "error": f"目录非空: {root}（bin 项目需在空目录创建，防止覆盖询问卡死）"}
     os.makedirs(root, exist_ok=True)
     # 1. 创建（非交互：显式传 app-version/description 跳过向导）
-    args = [FUN_EXE, 'create', '--name', name, '--platform', platform,
+    args = [FSC_EXE, 'create', '--name', name, '--platform', platform,
             '--type', 'bin', '--app-version', app_version or '1.0.0']
     if description:
         args += ['--description', description]
@@ -1224,24 +1193,24 @@ def flythings_create_bin_project(project_root, project_name='',
                            stdin=subprocess.DEVNULL,  # ⚠️ 防继承 MCP stdio 管道挂起
                            encoding='utf-8', errors='replace')
     except Exception as e:
-        return {"success": False, "error": f"fun create 执行失败: {e}"}
+        return {"success": False, "error": f"fsc create 执行失败: {e}"}
     create_ok = r.returncode == 0
     create_log = ((r.stdout or '') + (r.stderr or ''))[-600:]
     result = {"success": create_ok, "projectRoot": root, "name": name,
               "platform": platform, "type": "bin", "createLog": create_log}
     if not create_ok:
-        result["error"] = f"fun create 失败(rc={r.returncode}): {create_log}"
+        result["error"] = f"fsc create 失败(rc={r.returncode}): {create_log}"
         return result
     # 2. 编译
     if with_build:
-        rb = subprocess.run([FUN_EXE, 'build'], cwd=root, capture_output=True, text=True,
+        rb = subprocess.run([FSC_EXE, 'build'], cwd=root, capture_output=True, text=True,
                             timeout=600, stdin=subprocess.DEVNULL,
                             encoding='utf-8', errors='replace')
         build_ok = rb.returncode == 0
         result["buildSuccess"] = build_ok
         result["buildLog"] = ((rb.stdout or '') + (rb.stderr or ''))[-800:]
         if not build_ok:
-            result["error"] = f"fun build 失败(rc={rb.returncode}): {result['buildLog']}"
+            result["error"] = f"fsc build 失败(rc={rb.returncode}): {result['buildLog']}"
             return result
     # 3. 产物定位 + ELF 验证
     out = _find_build_artifact(root, platform, name)
@@ -1257,9 +1226,9 @@ def flythings_create_bin_project(project_root, project_name='',
 
 # ---------------- 工具 5: 附带 CLI 工具到项目 -------------
 def flythings_attach_cli_tools(project_root):
-    """将 fui.exe（→ui/）和 fun.exe（→项目根）复制到新建项目目录，随项目分发给用户。
+    """将 fui.exe（→ui/）和 fsc.exe（→项目根）复制到新建项目目录，随项目分发给用户。
 传入项目根目录完整路径。返回复制结果。
-    ⚠️ 交付流程：fun.exe 用于 build 编译 + launch 推送，无需客户手动导入 IDE。"""
+    ⚠️ 交付流程：fsc.exe 用于 build 编译 + launch 推送，无需客户手动导入 IDE。"""
     if not os.path.isdir(project_root):
         return {"success": False, "error": f"项目目录不存在: {project_root}"}
     results = []
@@ -1274,13 +1243,13 @@ def flythings_attach_cli_tools(project_root):
             results.append({"file": "ui/fui.exe", "status": "failed", "error": str(e)})
     else:
         results.append({"file": "ui/fui.exe", "status": "skipped", "reason": "ui 目录不存在"})
-    # fun.exe → 项目根目录（build 编译 + launch 推送）
-    dst = os.path.join(project_root, 'fun.exe')
+    # fsc.exe → 项目根目录（build 编译 + launch 推送）
+    dst = os.path.join(project_root, 'fsc.exe')
     try:
-        shutil.copy2(FUN_EXE, dst)
-        results.append({"file": "fun.exe", "size": os.path.getsize(dst), "status": "copied"})
+        shutil.copy2(FSC_EXE, dst)
+        results.append({"file": "fsc.exe", "size": os.path.getsize(dst), "status": "copied"})
     except Exception as e:
-        results.append({"file": "fun.exe", "status": "failed", "error": str(e)})
+        results.append({"file": "fsc.exe", "status": "failed", "error": str(e)})
     ok = all(r.get('status') in ('copied', 'skipped') for r in results)
     return {"success": ok, "projectRoot": project_root, "files": results}
 
@@ -1558,7 +1527,7 @@ def _launch_gate(platform, device):
     if g['platformMatch'] == 'mismatch' and not g['explicit']:
         g['needDeviceInput'] = True
         g['message'] = ('唯一在线设备 %s（model=%s）与工程平台 %s **不一致**：'
-                        'fun launch 会直接 FATAL platform not match。'
+                        'fsc launch 会直接 FATAL platform not match。'
                         '确认要推这台就显式传 device=\'%s\'（显式指定=你知情）'
                         % (g['serial'], g['model'] or '未知', platform or '?', g['serial']))
         g['installHint'] = _adb.install_hint(platform, online)
@@ -1569,7 +1538,7 @@ def _launch_gate(platform, device):
 def _device_sync_check(project_root, serial, platform):
     """本地 vs 设备侧（/tmp）ftu / so 的字节与 md5 —— 判定 staleOnDevice。
 
-设备侧路径来自 fun launch 的部署约定：UI 资源 → `/tmp/ui/`，库 → `/tmp/lib/`。
+设备侧路径来自 fsc launch 的部署约定：UI 资源 → `/tmp/ui/`，库 → `/tmp/lib/`。
 返回 {'checked':bool,'ftu':[...],'so':[...],'stale':[...],'allMatch':bool,'reason':''}
     """
     out = {'checked': False, 'ftu': [], 'so': [], 'stale': [], 'allMatch': False, 'reason': ''}
@@ -2036,7 +2005,7 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
        - json 比 ftu 新 = 改过 json 没重新打包
        - ftu 比 json 新「分钟级」(≥60 秒) = 开发者/IDE 直接改过 ftu → 先 unpack 同步 json 再继续
     ② 有改动才 fui pack <ui目录>（设备实际加载的是 FTU 而非 JSON）
-    ③ fun install 同步 Manifest 依赖（每次 build 前执行，Manifest 变更自动拉取新依赖）
+    ③ fsc install 同步 Manifest 依赖（每次 build 前执行，Manifest 变更自动拉取新依赖）
        ⚠️ install 失败**不阻断**（离线/依赖已装场景），但会在返回体顶层给 `warnings` 明说原因
     ③.5 框架基础依赖体检（v0.27.83）：Manifest 未声明且未解析到 base-utility 时，在返回体点明
        「依赖未装/缺包」（fun 生成的 generated/*.h 固定 #include <base/functional.h>），
@@ -2044,8 +2013,8 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
     ③.6 字体体检（v0.27.86）：扫设备字体（连不上退化工程侧 self-scan），缺中文**默认自动投递**
        common 档思源黑体进工程 font/；font_check='off' 关，font_tier='full'/'multi' 换版；
 细节见 knowledge/devflow/custom-font-config.md §0.2
-    ④ fun build 编译 C++ 代码
-    ⑤ 设备探测（adb devices -l + getprop 型号）→ fun launch 推送并运行
+    ④ fsc build 编译 C++ 代码
+    ⑤ 设备探测（adb devices -l + getprop 型号）→ fsc launch 推送并运行
        —— **v0.27.84 起默认执行（with_launch=True）**，传 with_launch=False 可跳过（只编译不碰设备）。
 探测规则（不猜）：0 台 → needDeviceInput + installHint；多台 → 列 serial/model + 平台匹配，
 要求显式 device=；恰好 1 台且平台匹配 → 自动 launch。
@@ -2102,24 +2071,24 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
     else:
         steps.append({"step": "fui pack", "success": True, "skipped": "json 与 ftu 时间戳一致，无需重新打包"})
 
-    # ③ fun install（同步 Manifest 依赖，Manifest 变更后自动拉取新包）
+    # ③ fsc install（同步 Manifest 依赖，Manifest 变更后自动拉取新包）
     warnings = list(sync_warnings)   # ftu→json 的跳过/告警不静默
     ri = _run_fun('install', project_root)
     install_out = (ri.get('stderr') or ri.get('stdout') or ri.get('error') or '')
-    steps.append({"step": "fun install", "success": ri['success'],
+    steps.append({"step": "fsc install", "success": ri['success'],
                   "detail": install_out[-400:]})
     # ⚠️ install 失败**不阻断**（依赖可能已装过：离线/无变更场景），但**不再静默**：
     #必须在返回体顶层给 warnings —— 否则用户只看到 ninja 的 `fatal error: base/functional.h:
     #    No such file or directory`，会以为是代码问题，排查被带偏（2026-09-17 需求方反馈）。
     if not ri['success']:
-        steps[-1]['note'] = ('fun install 失败但继续 build（依赖可能已就绪）；'
+        steps[-1]['note'] = ('fsc install 失败但继续 build（依赖可能已就绪）；'
                              '若 build 报缺依赖请检查 Manifest/网络')
-        warnings.append('fun install 失败（%s）：常见于 Manifest 缺 base-utility（代码/生成的 '
+        warnings.append('fsc install 失败（%s）：常见于 Manifest 缺 base-utility（代码/生成的 '
                         'generated/*.h 引用 base 头文件）或改过 Manifest 未重装 → 请先 '
                         'flythings_add_package(project_root, "base-utility", with_install=True) / '
-                        'fun install 再 build；详见 knowledge/devflow/cli-fun-toolchain.md §4.7'
+                        'fsc install 再 build；详见 knowledge/devflow/cli-fsc-toolchain.md §4.7'
                         % ((install_out.strip().replace('\n', ' ')[:160])
-                           or '原因见 steps 里 fun install 的 detail'))
+                           or '原因见 steps 里 fsc install 的 detail'))
 
     # ③.5 前置体检（build 前）：框架基础头能不能解析（不可解析就直接点明「依赖未装/缺包」，
     #不把 ninja 的编译错误丢给用户）；已能解析时**不加 step/warning**，正常路径零噪音。
@@ -2197,35 +2166,22 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
         font_fields = {'enabled': False, 'mode': 'error',
                        'note': '字体体检异常，未见结论'}
 
-    # ④ fun build（编译）
-    # ④.0 前置补丁（2026-10-06 需求方报）：fun 生成的 `<page>Logic.cc` 头部有「IDE 编译 vs FUN 编译」
-    #     框架差异（定时器表被包进 `#ifdef FUN_BUILD` 里 + 缺 `base/log.h`），两种编译各坏一种。
-    #     补丁脚本幂等，build 前/后各跑一次（fun build 会重生成 logic.cc）。
-    _fx_note = _fix_fun_logic_cc(project_root)
-    if _fx_note:
-        steps.append({"step": "补丁: logic.cc 头部（build 前）", "success": True, "detail": _fx_note})
+    # ④ fsc build（编译）
+    # （2026-10-08：原「<page>Logic.cc 头部补丁」已移除 —— 新 fsc 生成的 logic.cc 形态已正确
+    #   （定时器表与 `#include <base/base.h>` 都在 `#ifdef FUN_BUILD` 守卫外），无需再打补丁，
+    #   补丁脚本（logic.cc 头部修复）同时退役。）
     rb = _run_fun('build', project_root)
-    steps.append({"step": "fun build", "success": rb['success'],
+    steps.append({"step": "fsc build", "success": rb['success'],
                   "detail": (rb.get('stderr') or rb.get('stdout') or rb.get('error') or '')[-500:]})
-    _fx_note2 = _fix_fun_logic_cc(project_root)
-    if _fx_note2:
-        steps.append({"step": "补丁: logic.cc 头部（build 后）", "success": True, "detail": _fx_note2})
-        # 需求方 2026-10-06 纠正：**fun build 本身不会因此失败** —— 这两处差异只在
-        # 「用 FlyThings IDE 编译 fun 生成的工程」时暴露。所以动作是：修好代码 +
-        # 明确让用户用 IDE 重编，而不是等 fun 报错（别把 fun 侧写成会失败）。
-        warnings.append('已自动修 fun 生成的 logic.cc 头部（定时器表移出 FUN_BUILD 守卫 + 补 base/log.h）：'
-                        '%s；**请用 FlyThings IDE 重新编译一次**'
-                        '（IDE 编译单元是 src/activity/*.cpp，fun build 不会重建它； '
-                        'fun 侧未受影响，本次已通过）' % _fx_note2)
     if not rb['success']:
-        err = rb.get('error') or "fun build 失败"
+        err = rb.get('error') or "fsc build 失败"
         bout = (rb.get('stderr') or '') + (rb.get('stdout') or '')
         # 缺基础头导致的编译失败 → 翻译成「依赖未装/缺包」，不要把 ninja 原文丢给用户
         if 'base/' in bout and 'No such file or directory' in bout:
             err += ('\n——这是**依赖未装/缺包**（不是代码错误）：fun 生成的 generated/*.h 固定 '
-                    '#include <base/...>，Manifest 必须有 base-utility 且重跑过 fun install '
+                    '#include <base/...>，Manifest 必须有 base-utility 且重跑过 fsc install '
                     '（flythings_add_package(project_root, "base-utility", with_install=True)）。'
-                    '详见 knowledge/devflow/cli-fun-toolchain.md §4.7')
+                    '详见 knowledge/devflow/cli-fsc-toolchain.md §4.7')
         res = {"success": False, "steps": steps, "error": err}
         if font_fields is not None:
             res['fontCheck'] = font_fields
@@ -2233,7 +2189,7 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
             res['warnings'] = warnings
         return res
 
-    # ⑤ 设备探测 + fun launch（v0.27.84：默认执行）
+    # ⑤ 设备探测 + fsc launch（v0.27.84：默认执行）
     launched = False
     pushed = False
     devinfo = {'serial': '', 'model': '', 'platformMatch': '', 'adb': '', 'adbSource': '',
@@ -2325,17 +2281,17 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
                                 % (why or '设备未响应 logcat -c'))
         if gate['platformMatch'] == 'unknown':
             warnings.append('设备型号无法比对平台（model=%s，%s）：'
-                            'fun launch 自己会做平台校验（不匹配会 FATAL platform not match），'
+                            'fsc launch 自己会做平台校验（不匹配会 FATAL platform not match），'
                             '推错机器时请显式传 device=。'
                             % (gate['model'] or '未知',
                                '型号表未登记' if gate['model'] else '设备未回报 ro.product.model'))
         # 平台：优先用接口给的；未指定时唯一设备也推（平台未知不拦，fun 自己校验）
         rl = _run_fun('launch', project_root, device=gate['serial'], retries=5)
-        steps.append({"step": "fun launch", "success": rl['success'],
+        steps.append({"step": "fsc launch", "success": rl['success'],
                       "device": gate['serial'],
                       "detail": (rl.get('stderr') or rl.get('stdout') or rl.get('error') or '')[-400:]})
         if not rl['success']:
-            fail_msg = ('fun launch 失败（已自动重试 5 次）：设备 %s 推送未生效。'
+            fail_msg = ('fsc launch 失败（已自动重试 5 次）：设备 %s 推送未生效。'
                         % (gate['serial'] or '?'))
             raw_out = (rl.get('stderr') or rl.get('stdout') or rl.get('error') or '')
             mechanism = _adb.fun_multi_device_error(raw_out) if _adb is not None else ''
@@ -2427,7 +2383,7 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
             warnings.append(_adb.stale_hint(sync['stale']) if _adb is not None
                             else '设备侧文件与本地不一致（adb 子系统不可用，未能给出明细）')
     else:
-        steps.append({"step": "fun launch", "success": True,
+        steps.append({"step": "fsc launch", "success": True,
                       "skipped": "with_launch=False：本次只编译不推设备（保守开关）"})
 
     # 最终时间戳校验（打包后 json 不应比 ftu 新）
@@ -2474,7 +2430,7 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
 #用户口语：「打包升级包 / 出升级包 / 生成 update.img / 固化 / 固化升级 / 刷进设备 /
 #出货版本 / 量产版本 / 发布版本 / 烧到机器里 / TF卡升级包 / OTA 包 / 整机升级」。
 #与「调试/跑一下/推送到设备」（build_ui_flow + with_launch）语义**不同**：
-#调试 = fun launch 临时推送（掉电即失）；固化 = fun pack 出 update.img（掉电保留）。
+#调试 = fsc launch 临时推送（掉电即失）；固化 = fsc pack 出 update.img（掉电保留）。
 #
 # 产物与落地（详见 knowledge/devflow/upgrade-pack-image.md）：
 #   ① TF 卡：FAT32 卡根目录放 update.img → 插卡上电 → 升级界面勾选升级
@@ -2488,7 +2444,7 @@ PACK_ERR_HINTS = (
      'Windows 装「Visual C++ 2015-2022 Redistributable (x86)」后重试；'
      '或把 32 位 msvcp140.dll + vcruntime140.dll 放到 fsimg.exe 同级目录。'),
     ('not found in local', '',
-     '依赖包未安装：先执行 fun install（本工具已默认先跑 install）后再 pack。'),
+     '依赖包未安装：先执行 fsc install（本工具已默认先跑 install）后再 pack。'),
 )
 
 
@@ -2527,14 +2483,14 @@ def flythings_pack_upgrade(project_root, out_path='', release_version='', ab=Fal
     """制作升级包 update.img（固化升级用，区别于调试推送）。
     ⚠️ 场景别名（固化升级类意图一律本工具，禁止自造脚本/命令）：用户口语：「打包升级包/出升级包/生成 update.img/固化/固化升级/刷进设备/出货版本/
 量产版本/发布版本/烧到机器里/TF卡升级包/OTA 包/整机升级」。
-    ⚠️ 与「调试/跑一下/推送到设备」语义不同：那是 build_ui_flow（fun launch 临时推送，
+    ⚠️ 与「调试/跑一下/推送到设备」语义不同：那是 build_ui_flow（fsc launch 临时推送，
 掉电即失，不固化）；要固化到设备、掉电保留，必须本工具出 update.img。
-流程：① fun install 同步依赖 → ②（可选 with_build=True）fun build →
-      ③ fun pack（-o 指定输出，--release-version 指定版本号，--ab 出 AB 系统 OTA 包）。
+流程：① fsc install 同步依赖 → ②（可选 with_build=True）fsc build →
+      ③ fsc pack（-o 指定输出，--release-version 指定版本号，--ab 出 AB 系统 OTA 包）。
 产物：默认 .fsc/<平台>/update.img（09-28 前为 .fun/；-o 可改）；返回路径/大小/时间与三种刷法说明。
     dry_run=True 只回命令计划不执行（写操作默认安全）。
     ⚠️ Windows 常见坑：`FATAL sign error: exit status 0xc0000135 / 0xc000007b` = 缺 32 位
-      VC++ 运行时（fsimg.exe 是 32 位）；`package xxx not found in local` = 先 fun install。
+      VC++ 运行时（fsimg.exe 是 32 位）；`package xxx not found in local` = 先 fsc install。
     """
     if not os.path.isdir(project_root):
         return {"success": False, "error": "项目目录不存在: %s" % project_root}
@@ -2554,32 +2510,32 @@ def flythings_pack_upgrade(project_root, out_path='', release_version='', ab=Fal
         extra.append('--ab')
     if out_path:
         extra += ['-o', out_path]
-    cmdline = 'fun pack' + ('' if not extra else ' ' + ' '.join(extra))
+    cmdline = 'fsc pack' + ('' if not extra else ' ' + ' '.join(extra))
 
     if dry_run:
         return {"success": True, "dryRun": True, "projectRoot": project_root,
                 "platform": platform, "command": cmdline,
-                "plan": ["fun install",
-                         ("fun build" if with_build else "fun build（跳过，with_build=False）"),
+                "plan": ["fsc install",
+                         ("fsc build" if with_build else "fsc build（跳过，with_build=False）"),
                          cmdline],
                 "output": out_path or ('.fsc/%s/update.img' % (platform or '<platform>')),
                 "note": "dry_run 只回计划不执行；确认后传 dry_run=False 出包"}
 
     steps = []
     ri = _run_fun('install', project_root, timeout=900)
-    steps.append({"step": "fun install", "success": ri['success'],
+    steps.append({"step": "fsc install", "success": ri['success'],
                   "detail": (ri.get('stderr') or ri.get('stdout') or ri.get('error') or '')[-400:]})
 
     if with_build:
         rb = _run_fun('build', project_root, timeout=1800)
-        steps.append({"step": "fun build", "success": rb['success'],
+        steps.append({"step": "fsc build", "success": rb['success'],
                       "detail": (rb.get('stderr') or rb.get('stdout') or rb.get('error') or '')[-500:]})
         if not rb['success']:
-            return {"success": False, "steps": steps, "error": rb.get('error') or "fun build 失败"}
+            return {"success": False, "steps": steps, "error": rb.get('error') or "fsc build 失败"}
 
     rp = _run_fun('pack', project_root, timeout=1800, extra=extra)
     out_text = (rp.get('stderr') or '') + (rp.get('stdout') or '')
-    steps.append({"step": "fun pack", "success": rp['success'], "command": cmdline,
+    steps.append({"step": "fsc pack", "success": rp['success'], "command": cmdline,
                   "detail": out_text[-500:]})
 
     img = _find_update_img(project_root, out_path, platform)
@@ -2613,7 +2569,7 @@ def flythings_pack_upgrade(project_root, out_path='', release_version='', ab=Fal
             "zkrebootdelay 控制升级完延时重启",
             "远程/批量：设备端 HTTP 下载 update.img 走 OTA；局域网批量升级工具（Z20/Z21/Z261）",
         ],
-        "note": "update.img 是固化升级包（掉电保留）；调试推送请用 build_ui_flow（fun launch）",
+        "note": "update.img 是固化升级包（掉电保留）；调试推送请用 build_ui_flow（fsc launch）",
     }
 
 # ---------------- 工具 7: 从 IDE 模板创建项目骨架 -------------
@@ -2672,7 +2628,7 @@ def flythings_create_project(project_root, platform=None, resolution=None,
     """从 HelloWord 基础 Demo 项目复制骨架创建完整 FlyThings 项目。
     - 模板源：包内 templates/HelloWord_<平台>（或 IDE 安装目录）
     - 自动替换：工程名 / 分辨率（.settings prefs + ftu 内嵌）/ 平台（Manifest.xml）
-    - 附带 fui.exe + fun.exe（with_cli=True），交付用 fun.exe build + launch，无需客户导入 IDE
+    - 附带 fui.exe + fsc.exe（with_cli=True），交付用 fsc.exe build + launch，无需客户导入 IDE
 传入目标项目根目录完整路径、平台（用 platforms.py 的 supported() 取，别手写枚举）
 与分辨率（如 800x480）。
 
@@ -2760,5 +2716,5 @@ def flythings_create_project(project_root, platform=None, resolution=None,
                 "src/uart 为系统模板：只改 ProtocolData.h / ProtocolParser.cpp 的协议解析",
                 "ui/ 下放 json+ftu，用 fui pack 生成 ftu（已附带 fui.exe）",
                 "logic.cc 必须保留 REGISTER_ACTIVITY_TIMER_TAB（空表也行）",
-                "⚠️ 交付：项目生成后直接用 fun.exe build 编译、fun.exe launch 推送设备，"
-                "无需客户手动导入 FlyThings IDE 编译烧录（fun.exe 已附带在项目根目录）"]}
+                "⚠️ 交付：项目生成后直接用 fsc.exe build 编译、fsc.exe launch 推送设备，"
+                "无需客户手动导入 FlyThings IDE 编译烧录（fsc.exe 已附带在项目根目录）"]}

@@ -1,6 +1,6 @@
 # packages/ —— 依赖包（registry）用法示例
 
-> 这里放的是**厂家依赖包**（`fun install` 从 registry 装的 `easyui / zkhardware / zknet / mqtt-cxx …`）的
+> 这里放的是**厂家依赖包**（`fsc install` 从 registry 装的 `easyui / zkhardware / zknet / mqtt-cxx …`）的
 > **可直接照抄的用法示例**，每个包一份，**示例都在真机上跑过**（有证据），不是纸面推断。
 
 ## 和 `components/` 的区别

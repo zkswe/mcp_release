@@ -67,7 +67,7 @@ nvgTextBox/nvgTextBreakLines/nvgTextMetrics/nvgTextLineHeight/nvgTextLetterSpaci
 ## 6. 复现命令（照抄可跑）
 
 ```powershell
-$re = "C:\zkswe\fun\toolchains\v85x\bin\arm-unknown-linux-musleabihf-readelf.exe"
+$re = "C:\zkswe\fsc\toolchains\v85x\bin\arm-unknown-linux-musleabihf-readelf.exe"
 & $re -h   packages\nanovg\lib\v85x\libnanovg.so        # 类/机器/类型
 & $re -A   packages\nanovg\lib\v85x\libnanovg.so        # ARM 属性（7-A / v7 / VFPv3 / NEONv1）
 & $re -d   packages\nanovg\lib\v85x\libnanovg.so        # NEEDED

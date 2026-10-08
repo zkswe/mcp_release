@@ -11,7 +11,7 @@ REGISTRY_CANDIDATES = [
     os.path.join(os.path.expanduser('~'), '.fsc', 'registry', 'public'),     # 09-28 版 fun 的新家（fsc）
     os.path.join(os.path.expanduser('~'), '.fun', 'registry', 'public'),     # 旧家（fun，历史包都在这里）
     os.path.join(os.path.expanduser('~'), '.fuse', 'registry', 'public'),    # 历史注册表（f133 全量 30+ 包：ntp/curl/mqtt-cxx 等）
-    r'C:\zkswe\fun\registry\public',             # fun.exe 工具链自带注册表
+    r'C:\zkswe\fsc\registry\public',             # fsc.exe 工具链自带注册表
 ]
 
 
@@ -491,7 +491,7 @@ FRAMEWORK_DEPS = [
      'suggestedVersion': '^10.0.0',
      'why': 'fun 生成的 generated/event_dispatcher.h 等固定 #include <base/functional.h>',
      'fix': 'flythings_add_package(project_root, "base-utility", with_install=True)'
-            '（等价：Manifest.xml 加 <package id="base-utility" version="^10.0.0"/> 后重跑 fun install；'
+            '（等价：Manifest.xml 加 <package id="base-utility" version="^10.0.0"/> 后重跑 fsc install；'
             '改过 Manifest 必须重装，否则新包的 include 路径不会进 CMake）'},
 ]
 
@@ -623,7 +623,7 @@ def framework_dep_status(project_root, platform=''):
 
     判定 `ok` = Manifest 已声明 **或** 依赖已解析（传递依赖装上也算 —— 不制造误报）。
     判定 `required` = 代码/fun 生成的 generated/*.h 已引用该包头文件，或工程本身是 fun 会生成
-                     这些代码的 UI 工程（有 ui/*.ftu 且 fun.json 不是 executable）。
+                     这些代码的 UI 工程（有 ui/*.ftu 且 fsc.json 不是 executable）。
     缺包时回 `missing[]`，每项带实测证据（file/include）、why 与可照做的 fix。
     返回 {success, projectRoot, platform, ok, deps[], missing[], hint}。"""
     root = os.path.abspath(project_root)
@@ -635,8 +635,8 @@ def framework_dep_status(project_root, platform=''):
     ui_dir = os.path.join(root, 'ui')
     has_ui = (os.path.isdir(ui_dir)
               and any(f.endswith('.ftu') for f in os.listdir(ui_dir)))
-    is_bin = False                                # fun create --type bin：不出 UI 生成代码，不适用
-    fj = os.path.join(root, 'fun.json')
+    is_bin = False                                # fsc create --type bin：不出 UI 生成代码，不适用
+    fj = os.path.join(root, 'fsc.json')
     if os.path.isfile(fj):
         try:
             is_bin = json.loads(_read_text(fj)).get('type') == 'executable'
@@ -662,7 +662,7 @@ def framework_dep_status(project_root, platform=''):
                      'fun 生成的 generated/*.h（%s）' % dep['headers'][0])
             d['include'] = inc
             d['msg'] = ('框架基础依赖缺失：%s引用了 base 头文件，但 Manifest 未声明 %s'
-                        '（%s）→ fun build 会 fatal error: base/functional.h: No such file or directory'
+                        '（%s）→ fsc build 会 fatal error: base/functional.h: No such file or directory'
                         % (where, pkg, dep['why']))
             d['hint'] = d['msg'] + '；修复：' + dep['fix']
             missing.append(d)
@@ -942,7 +942,7 @@ def flythings_get_package_api(package_id, platform='F133', version=None, focus='
        原实现 `max_classes=8` 且按目录顺序取，easyui 永远只给前 8 个（app/ 与 Common.h），
        `ZKPainter` 根本不出现；② 顺带返回 8 个无关类既费 token 又误导。
     签名一律来自**本地已安装的 registry 头文件**（`~/.fsc/registry/public/<平台>/<包>/<版本>/include`），
-    不是本仓抄的副本 —— 换平台/换版本自动跟着变。⚠️ **它由 `fun install` 落盘**（2026-10-05 用户口径）：
+    不是本仓抄的副本 —— 换平台/换版本自动跟着变。⚠️ **它由 `fsc install` 落盘**（2026-10-05 用户口径）：
     `registry/public/` 下**只有跑过 install 的平台**（本机实测只有 v85x / z20），没装过的平台
     即使"服务端有该包"也拿不到头文件 —— 这种情况这里**明确报错并给 fix 命令**，不返回空的类表。
     """
@@ -979,14 +979,14 @@ def flythings_get_package_api(package_id, platform='F133', version=None, focus='
             }
         return {'success': False,
                 'error': (f'{platform} 的 {package_id} 头文件不在本机（{inc} 不存在）'
-                          f'—— 本机 registry/public/ 下只有**跑过 `fun install` 的平台**'),
-                'hint': (f'先在该平台工程里跑一次安装：`fun install --platform {str(platform).lower()}`'
+                          f'—— 本机 registry/public/ 下只有**跑过 `fsc install` 的平台**'),
+                'hint': (f'先在该平台工程里跑一次安装：`fsc install --platform {str(platform).lower()}`'
                          '（或 `flythings_add_package(project_root, "<包名>", with_install=True)`），'
                          '然后重试本 op；**只是想看 API 怎么用**则不必装 —— 直接用下面的 offlineApi'),
                 'offlineApi': offline,
                 'offlineNote': ('以上来自仓库包卡（packages/%s/package.yaml，头文件实读写成、含真机实测坑），'
                                 '**离线可用、可复现**；差异点：easyui 等库的**版本**在不同平台不同，'
-                                '若要逐字节的当平台签名，仍需 fun install 后重试' % package_id)
+                                '若要逐字节的当平台签名，仍需 fsc install 后重试' % package_id)
                                if offline else ('仓库里没有 %s 的包卡，装好后重试' % package_id),
                 'version': v, 'platform': platform, 'package': package_id,
                 'card': card}
@@ -1103,7 +1103,7 @@ def flythings_generate_manifest(features, platform='F133'):
 
     # ⚠️ 只显式列出用户需求 + 基础依赖（explicit 集合）；传递依赖不写入 manifest：
     # 宿主包（如 curl-cxx）自带 Manifest.xml 声明了其依赖（如 curl@8.12.1-mbedtls 变体），
-    # fun install 会自动解析；显式再列一份 curl@8.12.1 反而与变体版本冲突导致安装失败。
+    # fsc install 会自动解析；显式再列一份 curl@8.12.1 反而与变体版本冲突导致安装失败。
     pkg_list = []
     for p in deps:
         if p not in explicit:
@@ -1123,7 +1123,7 @@ def flythings_generate_manifest(features, platform='F133'):
     if 'ssl_mqtt' in [str(x).lower() for x in features]:
         note = 'openssl 1.1.1-g 与 curl ABI 兼容；paho-mqtt3as 替代 paho-mqtt3a 避免 SHA1 冲突'
     if transitive:
-        note = (note + '；' if note else '') + f'以下传递依赖不显式列出（宿主包 Manifest 已声明，fun install 自动解析，避免版本冲突）：{", ".join(transitive)}'
+        note = (note + '；' if note else '') + f'以下传递依赖不显式列出（宿主包 Manifest 已声明，fsc install 自动解析，避免版本冲突）：{", ".join(transitive)}'
     if missing:
         note = (note + '；' if note else '') + f'以下包在 {platform} 平台未找到（版本不可用，需确认平台支持或包名）：{", ".join(missing)}'
     if system_deps:
@@ -1142,11 +1142,11 @@ def flythings_recommend_manifest(features, platform='F133'):
 
 
 def flythings_add_package(project_root, package, version=None, platform=None, with_install=True):
-    """把 package 添加进项目 Manifest.xml 并执行 fun install 拉取依赖（添加包闭环流程）。
+    """把 package 添加进项目 Manifest.xml 并执行 fsc install 拉取依赖（添加包闭环流程）。
 
     - 版本解析顺序：本地 registry → 离线 catalog → 在线（semver 取最新，不依赖包实体是否存在）
     - 已声明同包则更新版本；未声明则追加 <package id version/>
-    - with_install=True（默认）执行 fun install 同步依赖（Manifest 变更后自动拉取）
+    - with_install=True（默认）执行 fsc install 同步依赖（Manifest 变更后自动拉取）
     返回 {success, package, version, versionSource, manifestPath, install}。
     用户说「给项目加个 XXX 包 / 项目要用 MQTT 需要加依赖」时调用。
     """
@@ -1202,7 +1202,7 @@ def flythings_add_package(project_root, package, version=None, platform=None, wi
     except Exception as e:
         return {'success': False, 'error': f'写入 Manifest 失败: {e}'}
 
-    # 3. fun install 同步依赖（Manifest 变更后拉取新包）
+    # 3. fsc install 同步依赖（Manifest 变更后拉取新包）
     install = {'executed': False}
     if with_install:
         try:
@@ -1211,7 +1211,7 @@ def flythings_add_package(project_root, package, version=None, platform=None, wi
             install = {'executed': True, 'success': ri['success'],
                        'detail': (ri.get('stderr') or ri.get('stdout') or ri.get('error') or '')[-400:]}
             if not ri['success']:
-                install['note'] = 'fun install 失败（网络/工具链问题），Manifest 已更新；重试 flythings_build_ui_flow 或手动 fun install'
+                install['note'] = 'fsc install 失败（网络/工具链问题），Manifest 已更新；重试 flythings_build_ui_flow 或手动 fsc install'
         except Exception as e:
             install = {'executed': True, 'success': False, 'error': str(e)}
     return {'success': True, 'package': pkg, 'version': v, 'platform': platform,

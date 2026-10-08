@@ -52,7 +52,7 @@ evidence: []
 
 | 拿谁做基线 | 对不对 | 说明 |
 |---|---|---|
-| **Linux buildroot / OpenWrt 这类发行版** | ✅ **正确基线** | 有内核、有裁剪 rootfs、有 init、有包生态（`fun install` + registry 包）、应用是 Linux 进程 |
+| **Linux buildroot / OpenWrt 这类发行版** | ✅ **正确基线** | 有内核、有裁剪 rootfs、有 init、有包生态（`fsc install` + registry 包）、应用是 Linux 进程 |
 | 单片机 / RTOS / ESP32 形式的板级 SDK | ❌ 错 | 不是裸机 SDK；也不要按「SDK 固件直刷」的方式理解它 |
 | 单纯的 GUI 库（LVGL / emWin / AWTK 这种「一个库挂上去」） | ❌ 错 | FlyThings 是**系统级**的：GUI 只是它的其中一层 |
 
@@ -90,7 +90,7 @@ evidence: []
 | **应用层** | 应用 = **普通 Linux 进程**：自绘 framebuffer + 自己的消息循环；Activity/页面 + 逻辑 C++ | `knowledge/devflow/open-source-stack-integration.md` §0、`knowledge/devflow/custom-render-paths.md` §0、`knowledge/devflow/activity-code-skeleton.md` |
 | **启动/托管** | 类 **init 服务**托管应用（`/etc/init.rc`：`service zkswe /bin/zkgui`）→ 由 init 拉起、`setprop ctl.restart zkswe` 重启、**不允许 kill** | `knowledge/devflow/device-deploy-budget.md` §5、`knowledge/devflow/deploy-scene-map.md` |
 | **rootfs / 设备** | **裁剪 rootfs**（常缺 `grep/sed/dd/md5sum/screencap`）→ 随仓 `bin_tools/<平台>/busybox` 补齐；`/res` 多为只读、`/tmp` 是 tmpfs | `knowledge/devflow/busybox-debug-library.md`、`knowledge/devflow/device-storage-full-fallback.md` |
-| **包生态** | registry 依赖包 + `fun install` 落盘（`~/.fsc/registry/public/<平台>/<包>/<版本>`）；libc/ABI/体积/路径四判据 | `knowledge/devflow/open-source-stack-integration.md`、`knowledge/devflow/cli-fun-toolchain.md` |
+| **包生态** | registry 依赖包 + `fsc install` 落盘（`~/.fsc/registry/public/<平台>/<包>/<版本>`）；libc/ABI/体积/路径四判据 | `knowledge/devflow/open-source-stack-integration.md`、`knowledge/devflow/cli-fsc-toolchain.md` |
 
 **一句话**：`zkgui` / `libzkgui.so` 只是**这套 OS 上跑的 GUI 应用与它的库产物**，
 既不是整个系统的名字，也不是「Linux 用户空间之外的东西」。
@@ -150,9 +150,9 @@ evidence: []
 |---|---|---|
 | GUI 库 | **EasyUI**（产品名 FlyThings UI）；设备侧产物 `libzkgui.so` + `ui/*.ftu` | `knowledge/devflow/ftu-json-pipeline.md` |
 | 应用进程 | `/bin/zkgui`，由 `/etc/init.rc` 的 `service zkswe` 托管 | `knowledge/devflow/deploy-scene-map.md` |
-| 工程形态 | app（出 `libzkgui.so`）；bin 只用于验证，交付走 app | `knowledge/devflow/cli-fun-toolchain.md` |
-| 工具链 | IDE + `fun` / `fui` + 平台工具链目录；**不随包分发** | `knowledge/devflow/cli-fun-toolchain.md` |
-| 部署 | `fun launch`（调试）/ `update.img`（固化）；**不 kill 应用**，用 `setprop ctl.restart zkswe` | `knowledge/devflow/upgrade-pack-image.md`、`knowledge/devflow/deploy-scene-map.md` |
+| 工程形态 | app（出 `libzkgui.so`）；bin 只用于验证，交付走 app | `knowledge/devflow/cli-fsc-toolchain.md` |
+| 工具链 | IDE + `fun` / `fui` + 平台工具链目录；**不随包分发** | `knowledge/devflow/cli-fsc-toolchain.md` |
+| 部署 | `fsc launch`（调试）/ `update.img`（固化）；**不 kill 应用**，用 `setprop ctl.restart zkswe` | `knowledge/devflow/upgrade-pack-image.md`、`knowledge/devflow/deploy-scene-map.md` |
 | 平台身份 | 平台 = SoC 系列（F133/F135/T113/V85X/Z20/Z21/Z235X），**每个SoC 有独立架构/libc/工具链/包键** | `platforms.py`、`knowledge/devflow/platform-capability-matrix.md` |
 
 ---

@@ -152,7 +152,7 @@ nextBoundary = t0 + (floor((now-t0)/seg)+1)*seg   # 恒落绝对整边界
 | 想复现"进屏保直跳"复现不出来 | **屏保切主页不触发 `onUI_quit`**（easyui 保留活动）→ WallPlayer 不停、不会重新 join | 造 join 只能重启 app（或重启应用进程） |
 | 抓帧探针取不到播放进程的通道 | `/data/zkshot <out.raw> vdec <chn> <port>` 报 `GetBuf failed 0xa009200d`，`vdec 4 0` 直接 segfault；`disp` 模式要求该层当时确有帧 | 别把 zkshot 当 vdec 探针；改读 `/proc/mi_modules/mi_disp/mi_disp0` 的层状态 |
 | 链接失败：`__atomic_load_8` / `__atomic_store_8` 未定义 | 32 位 ARM 上 `std::atomic<long long>` 需要 `-latomic`，而工程链接行没有（`-z defs` 下直接失败） | 64 位诊断量改用 `std::mutex` 护 |
-| `fun add` 报找不到项目 | 工程只有 Manifest、没有 `fun.json` | 手改 Manifest 再 `fun install`（新增包改了 Manifest 必须重跑） |
+| `fsc add` 报找不到项目 | 工程只有 Manifest、没有 `fsc.json` | 手改 Manifest 再 `fsc install`（新增包改了 Manifest 必须重跑） |
 | 升级后像是没生效（体积没变） | `update.img` 在几 KB 级改动下体积可能**恰好不变**（压缩 + 4KB 对齐） | 别拿体积判断；比对 `.fun/<平台>/libzkgui.so` md5 与烧后回读 `/res/lib/libzkgui.so` 的 md5 |
 | 两台画面差一截（差几帧到十几帧） | 校时/钟差：面板 **RTC 是空的、掉电不保时**，开机不校时两台就会差 0~1s（旧版校时只到秒级，实测单台慢 643 / 1060ms、两台互差 416ms） | 等 NTP 同步再进屏保；看 `ClockManager: synced via …` 与 `skew` 中值（判据：单台绝对误差 ≤100ms、两台互差 ≤50ms —— **此判据的 v6 改后数字未取证**） |
 

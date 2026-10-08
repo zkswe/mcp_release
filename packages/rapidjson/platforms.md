@@ -23,7 +23,7 @@
 
 ## 要把它变成「已验证」需要什么
 
-1. 在 Z20 真机上跑一个最小工程（可直接用本包 `example/`）：`fun install && fun build -p z20` → `/tmp` 劫持部署（见下方复现方式）；
+1. 在 Z20 真机上跑一个最小工程（可直接用本包 `example/`）：`fsc install && fsc build -p z20` → `/tmp` 劫持部署（见下方复现方式）；
 2. 用**真实报文**（不是自造小 JSON）走一遍 `Document::Parse` → 取值 → `Writer` 生成 → 再解析回读，留 logcat 日志；
 3. 记录：解析耗时、报文大小、`HasParseError`/`GetParseError` 行为、大报文（>64 KB）时的内存表现；
 4. 把日志放进本目录 `evidence/`，才算验过。
@@ -33,9 +33,9 @@
 ```bash
 # 最小示例（纯头文件包 → 重点是"能编进工程 + 能解析真实报文"）
 #   packages/rapidjson/example/  ui/main.json + src/logic/mainLogic.cc + Manifest.xml
-fun install && fun build -p z20
+fsc install && fsc build -p z20
 # 部署（/tmp 劫持调试，不动 /res）——⚠️ 单次 restart；先确认没有残留 zkgui 进程
-adb -s 192.168.x.x:5555 push .fun/z20/libzkgui.so /tmp/lib/libzkgui.so
+adb -s 192.168.x.x:5555 push .fsc/z20/libzkgui.so /tmp/lib/libzkgui.so
 adb -s 192.168.x.x:5555 push ui/main.ftu          /tmp/ui/main.ftu
 adb -s 192.168.x.x:5555 push EasyUI.cfg           /tmp/EasyUI.cfg   # startupLibPath=/tmp/lib/libzkgui.so, resPath=/tmp/ui/
 adb -s 192.168.x.x:5555 shell setprop ctl.restart zkswe
@@ -46,7 +46,7 @@ adb -s 192.168.x.x:5555 shell "logcat -d | grep 'rapidjson demo'"
 
 ## 已知口径（来自包头实读，非实测）
 
-- **纯头文件**：`libs` 为空，没有 `.a`/`.so` → 不要去找 `librapidjson`；改 Manifest 后**仍要 `fun install`** 让 include 路径进 CMake。
+- **纯头文件**：`libs` 为空，没有 `.a`/`.so` → 不要去找 `librapidjson`；改 Manifest 后**仍要 `fsc install`** 让 include 路径进 CMake。
 - **`Document::Parse` 不抛异常**（失败返回自身，必须查 `HasParseError()` / `GetParseError()` / `GetErrorOffset()`）。
 - **取值前必须判类型**：debug 下 `RAPIDJSON_ASSERT` 会直接 abort（release 下是垃圾值）→ 一律先 `IsString/IsArray/HasMember`。
 - **带内嵌 `\0` 的二进制 payload** 要用 `Parse(str, length)`；默认 `Parse(const Ch*)` 要求以 `\0` 结尾。

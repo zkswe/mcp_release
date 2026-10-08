@@ -12,8 +12,8 @@
   接进工程（手工引入，推荐）：
     1) 拷 include/zk/ + src/zk_blend2d.cpp 到工程（如 src/zk/）；
     2) 选一档 .so → 放到 <工程>/src/dependencies/lib/libblend2d.so
-       （**这一步是"上屏/量产"的关键**：fun pack 会把它打进 update.img；
-        调试时 fun launch 不推第三方包 .so，要手动 adb push 到 /tmp）；
+       （**这一步是"上屏/量产"的关键**：fsc pack 会把它打进 update.img；
+        调试时 fsc launch 不推第三方包 .so，要手动 adb push 到 /tmp）；
     3) 工程 Manifest 声明底层包（见下）；
     4) 上屏：bitmap_t 指向 canvas.pixels()，setBackgroundBmp 挂一次，之后 setInvalid(!isInvalid()) 翻帧。
 

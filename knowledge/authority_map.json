@@ -41,7 +41,7 @@
       "title": "固化升级包 update.img（打包 / 刷机 / 分区 flag）",
       "canonical": "knowledge/devflow/upgrade-pack-image.md",
       "aliases": ["update.img", "升级包", "固化", "刷机", "TF卡升级", "sys.zkupgrade"],
-      "rule": "交付/量产走 fun pack → update.img；ADB 固化为 adb push 到 /tmp + setprop sys.zkupgrade.dir/flag",
+      "rule": "交付/量产走 fsc pack → update.img；ADB 固化为 adb push 到 /tmp + setprop sys.zkupgrade.dir/flag",
       "ops": ["flythings_pack_upgrade"]
     },
     "thumb-subbox": {

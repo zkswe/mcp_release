@@ -5,7 +5,7 @@ id: rapidjson
 version: "1.1.0"
 platforms:
   Z20:
-    registry: C:\zkswe\fun\registry\public\z20\rapidjson\1.1.0
+    registry: C:\zkswe\fsc\registry\public\z20\rapidjson\1.1.0
     libs: []
     headers_count: 36
     verified: null
@@ -86,7 +86,7 @@ usage_cpp: |
     (void)out;
   }
 gotchas:
-  - "纯头文件：libs 为空，没有 .a/.so → 只要 include 路径到位就能编（改 Manifest 后仍要 fun install 让 include 路径进 CMake）；不要去找 librapidjson。"
+  - "纯头文件：libs 为空，没有 .a/.so → 只要 include 路径到位就能编（改 Manifest 后仍要 fsc install 让 include 路径进 CMake）；不要去找 librapidjson。"
   - "本包在本地 registry 只有 z20 目录（rapidjson 1.1.0 在 z21/f133/f136/t113emmc/v85x 下都没有）→ 别的平台要用得自己确认官方仓库是否有，别照 Z20 的 Manifest 抄。"
   - "1.1.0 是上游老版本（2016 年线）：与 master/新文档有行为差异（如 kParseValidateEncodingFlag 默认值、schema.h 能力），照最新官方文档抄可能对不上。"
   - "Document::Parse 默认要求字符串以 \\0 结尾（c_str() 传法最稳）；带内嵌 \\0 的二进制 payload 要用 Parse(str, length)。"

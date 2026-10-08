@@ -167,7 +167,7 @@ adb shell /data/ui_test /dev/input/event1 monkey 1024 600 500
 `touch` 会自动判成单点 / MT-A / MT-B（`touch list` 一步核验），**不必再按屏型挑工具**；协议用错 → 驱动丢弃坐标 → FlyThings 收到恒 0（判定见上方"协议速判"）。
 
 ## 🔧 新增平台/工具流程
-1. 新平台：`fun create --type bin --platform <新平台>` + 放源码 `src/main.cpp`（ui_test 源码由工具链维护）
-   → `fun build` → 产物 `.fun/{平台}/ui_test` → 复制到本目录 `{平台}/ui_test` → 更新 `test_tools.py` 的 `SUPPORTED_PLATFORMS`
-2. 新工具（如 busybox）：同样 `fun create --type bin` 编译成 `{平台}/busybox`，MCP 工具直接引用
+1. 新平台：`fsc create --type bin --platform <新平台>` + 放源码 `src/main.cpp`（ui_test 源码由工具链维护）
+   → `fsc build` → 产物 `.fun/{平台}/ui_test` → 复制到本目录 `{平台}/ui_test` → 更新 `test_tools.py` 的 `SUPPORTED_PLATFORMS`
+2. 新工具（如 busybox）：同样 `fsc create --type bin` 编译成 `{平台}/busybox`，MCP 工具直接引用
 3. 交付客户：`adb push` 对应平台 ELF 即可，无需工具链/无需编译

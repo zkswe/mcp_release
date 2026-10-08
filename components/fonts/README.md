@@ -49,7 +49,7 @@ python components/fonts/scripts/device_font_check.py --apply \
        --project <项目目录> --tier common
 
 # ③ 重新出包（app 的升级包会整体替换 /res，字体必须随包走）
-cd <项目目录> && ./fun.exe build      # 或 flythings_build_ui_flow
+cd <项目目录> && ./fsc.exe build      # 或 flythings_build_ui_flow
 flythings_pack_upgrade(project_root=..., release_version=...)   # 出 update.img
 # ④ ADB 固化刷机（详见组件规范里的 platforms.md）
 ```

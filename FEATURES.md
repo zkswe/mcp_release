@@ -35,11 +35,11 @@
 
 ## 🏭 编译 / 部署 / 出包
 
-- `flythings_build_ui_flow`：json/ftu 时间戳检查 → fui pack → fun install → fun build → **设备探测 + fun launch 推送运行**
+- `flythings_build_ui_flow`：json/ftu 时间戳检查 → fui pack → fsc install → fsc build → **设备探测 + fsc launch 推送运行**
   > ⚠️ **默认会推设备**（`with_launch` 缺省 True）：build 后自动探测 `adb devices -l` ——
   > 0 台 → `needDeviceInput=true` + `installHint`（要不要装 **ADB 驱动** / 开 USB 调试并授权 / 改用 `device='<IP>:5555'` 网络接入）；
   > 多台 → 列出 serial+model+平台匹配情况，**不替你猜**，要求显式 `device=`；
-  > 恰好 1 台且平台匹配 → 自动 `fun launch -s <serial>`。
+  > 恰好 1 台且平台匹配 → 自动 `fsc launch -s <serial>`。
   > **不想推设备（只编译）就显式传 `with_launch=False`。**
 - **PC 端 adb 随包**：`tools/adb/adb.exe`（+ 两个 DLL），客户不必另装 Android SDK；全仓 adb 走单一入口 `adb_tools.resolve_adb()`
   （环境变量 `ADB`/`FLYTHINGS_ADB` → 随包 → PATH）；设备型号→平台对照见 `device_models.json`
@@ -55,17 +55,17 @@
 - `flythings_create_project`：从内置模板建工程（F133/F135/Z21/Z20/T113/V85X/Z235X）
   - **ftu 能反解析回 json**：随包 `toolchain/fui.exe` 支持 `unpack`，新增 `flythings_fui_unpack`（**默认覆盖**同目录同名 json）
   - **V85x 芯片名也能直接当平台入参**（`V851 / V851S / V851S3 / V853 / V853S / V553 / V552`）一律 resolve 成 **V85X**，包键走 `v85x`（SPINOR）/ `v85xemmc`（EMMC）
-- `flythings_attach_cli_tools`：把 `fui.exe`/`fun.exe` 复制进项目，客户不用装 IDE 也能编译部署
+- `flythings_attach_cli_tools`：把 `fui.exe`/`fsc.exe` 复制进项目，客户不用装 IDE 也能编译部署
 - `flythings_validate_project`：工程规范全检（依赖 / 框架约定 / 时间戳防呆）
 - **工具链安装（Z235X）**：放到 **`<fun 安装目录>/toolchains/z235x/`**（目录名 = 平台小写键）；工具链**不随本包分发**
 
 ### 编译/部署前置条件（要编译才需要，只做布局可跳过）
 
-- 本仓自带 `toolchain/fun.exe`（依赖/编译/推送/出包）与 `toolchain/fui.exe`（json↔ftu），克隆下来即可用
+- 本仓自带 `toolchain/fsc.exe`（依赖/编译/推送/出包）与 `toolchain/fui.exe`（json↔ftu），克隆下来即可用
 - 报「**缺少 fun / fui**」时按此查：① 用仓库路径跑 `mcp_server.py`（**不要 `pip install`**，wheel 不含
-  `toolchain/`、`templates/`、`knowledge/`、`models/` 等数据文件）；② `fun.exe` 与 `fui.exe` **两个都要在**；
-  ③ 想放到别处设 `FLYTHINGS_FUN_DIR=<含这两个 exe 的目录>`；④ 各平台**编译器工具链不随包分发**，
-  解到 `<本目录>/toolchain/toolchains/<平台小写键>/`（缺了 `fun build` 会报 `platform toolchain url must not be empty`）
+  `toolchain/`、`templates/`、`knowledge/`、`models/` 等数据文件）；② `fsc.exe` 与 `fui.exe` **两个都要在**；
+  ③ 想放到别处设 `FLYTHINGS_FSC_DIR=<含这两个 exe 的目录>`；④ 各平台**编译器工具链不随包分发**，
+  解到 `<本目录>/toolchain/toolchains/<平台小写键>/`（缺了 `fsc build` 会报 `platform toolchain url must not be empty`）
 
 ## 🧪 整机自检与缺陷单
 

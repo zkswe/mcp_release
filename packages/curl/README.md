@@ -6,7 +6,7 @@ Z20 专属构建：**SSL=mbedTLS、resolver=c-ares、zlib 开、IPv6 关、无�
 
 **怎么用**
 1. Manifest（**四件套缺一不可**，版本名要带 `-mbedtls`）：
-   `<package id="curl" version="8.12.1-mbedtls"/>` + `mbedtls ^3.6.5` + `cares ^1.17.2` + `z ^1.2.11`（或直接引 `curl-cxx ^10.0.3` 让它带）→ `fun install` → `fun build -p z20`。
+   `<package id="curl" version="8.12.1-mbedtls"/>` + `mbedtls ^3.6.5` + `cares ^1.17.2` + `z ^1.2.11`（或直接引 `curl-cxx ^10.0.3` 让它带）→ `fsc install` → `fsc build -p z20`。
 2. 关键 API：`curl_easy_init()` → `curl_easy_setopt(curl, CURLOPT_URL, url)` /
    `CURLOPT_WRITEFUNCTION`+`WRITEDATA` / `CURLOPT_FOLLOWLOCATION, 1L` / `CURLOPT_TIMEOUT, 10L` /
    **`CURLOPT_CAINFO, ".../resources/cacert.pem"`** → `curl_easy_perform` → `curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code)` → `curl_easy_cleanup`。

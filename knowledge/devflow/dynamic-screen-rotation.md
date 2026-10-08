@@ -103,27 +103,27 @@ static bool onButtonClick_Button1(ZKButton *pButton) {
 **「控件看不到 / 页面只有标题」排查顺序**（按命中率）：
 1. 设备加载的是**哪一份**lib/ui（`/tmp` > `/mnt/extsd` > `/res`，SD 卡可劫持）
    → `knowledge/devflow/package-properties-easyui-cfg.md` 的「查找优先级」节；
-2. 产物有没有同步（改 `ui/*.json` 必须立即 `fui pack` 出 ftu；`fun pack` 会把旧 ftu 回写成 json）
+2. 产物有没有同步（改 `ui/*.json` 必须立即 `fui pack` 出 ftu；`fsc pack` 会把旧 ftu 回写成 json）
    → `knowledge/devflow/ftu-json-pipeline.md`；
 3. 能力/类**存不存在**（上述三步，本例已证伪）；
 4. 控件结构与字段（`scrollwindow` 只装 `window`；内容高 > 视口才滚；固定件放外面；`touchable`）
    → `knowledge/uicontrols/scroll-drag-interaction-spec.md`；
 5. 可见性/启动态（`visible:false`、被上层装饰层盖住、`getprop sys.zkapp.state` 不是 `running`）。
 
-## 5. 本机编译实测（RelayoutDemo + 当前 fun 工具链；CLI 更名见 `knowledge/devflow/cli-fun-toolchain.md`）
+## 5. 本机编译实测（RelayoutDemo + 当前 fun 工具链；CLI 更名见 `knowledge/devflow/cli-fsc-toolchain.md`）
 
 两条约束，都不在旋转本身：
 
 1. **缺 `base-utility` 包**：新生成器产出的 `.fun/<平台>/generated/event_dispatcher.h` 里 `#include <base/functional.h>`，而 easyui 2.9.0 的依赖图里没有这个头 → 该头属于**独立包 `base-utility`**（`registry/public/{f133,v85x,z20}/base-utility/*/include/base/functional.h`）。
-修法：`Manifest.xml` 追加 `<package id="base-utility" version="10.10.2"/>` → **`fun install`**（刷新 `.deps.lock`，**不 install 新包 include 路径不进生成的 CMake，加了也白加**）
-2. **构建宏改名**：老逻辑文件头写的是 `#ifdef FUSE_BUILD`，而 `fun build` 定义的宏是 **`FUN_BUILD`**→ 那段被跳过 → `GENERATED_UI_DEFINITIONS`/`INIT_UI_EVENT_BINDINGS` 没进来 → 满屏 `'LOGD_TRACE' was not declared`、`'ZKButton' was not declared`、`'Intent' does not name a type`。
+修法：`Manifest.xml` 追加 `<package id="base-utility" version="10.10.2"/>` → **`fsc install`**（刷新 `.deps.lock`，**不 install 新包 include 路径不进生成的 CMake，加了也白加**）
+2. **构建宏改名**：老逻辑文件头写的是 `#ifdef FUSE_BUILD`，而 `fsc build` 定义的宏是 **`FUN_BUILD`**→ 那段被跳过 → `GENERATED_UI_DEFINITIONS`/`INIT_UI_EVENT_BINDINGS` 没进来 → 满屏 `'LOGD_TRACE' was not declared`、`'ZKButton' was not declared`、`'Intent' does not name a type`。
 修法一行：`#ifdef FUSE_BUILD` → `#if defined(FUSE_BUILD) || defined(FUN_BUILD)`
 
-两处都改完：`fun build -p F133` 通过，产出 `libzkgui.so`（251KB，链接期 `relayout` 符号由 libeasyui.so 解析成功）。
+两处都改完：`fsc build -p F133` 通过，产出 `libzkgui.so`（251KB，链接期 `relayout` 符号由 libeasyui.so 解析成功）。
 
 ## 6. 落地检查清单
 
-1. 目标平台 easyui ≥ 2.9.0（没有就找厂家要；Manifest 里改版本 → `fun install` 拉包）
+1. 目标平台 easyui ≥ 2.9.0（没有就找厂家要；Manifest 里改版本 → `fsc install` 拉包）
 2. 先做一版布局，另一方向**复制后只改布局，控件 ID 保持一一对应**（ID 变了 relayout 后指针失效，等于白切）
 3. `relayout` 参数是 **ftu 文件名**（含 `.ftu` 后缀），不是 json、不是 Activity 名
 4. 备方向 ftu 的工程约定（RelayoutDemo 用 `*_p.ftu` + `ignore.ftu.regex=*_p.ftu`）

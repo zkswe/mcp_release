@@ -21,7 +21,7 @@ evidence: []
 > 与 json 字段文档互补：本文聚焦**代码怎么驱动控件**（回调签名/触发时机/事件语义/实测坑），证据全部来自 basedemo-new_z20_1024_600 源码原文。
 > 通用骨架（activity 壳/回调表/返回值语义/生命周期/定时器/串口模板/SysApp）见 `knowledge/devflow/activity-code-skeleton.md`。
 > 检索词：onButtonClick/onProgressChanged/onEditTextChanged/onListItemClick/setTargetAngle/setData/loadQRCode/play/setCheckedID/showWnd。
-> **签名真源 = 本地 registry 头文件**（`~/.fsc/registry/public/<平台>/easyui/<版本>/include/{control,window}/*.h`，由 `fun install` 落盘）；
+> **签名真源 = 本地 registry 头文件**（`~/.fsc/registry/public/<平台>/easyui/<版本>/include/{control,window}/*.h`，由 `fsc install` 落盘）；
 > 本页已按 v85x easyui 2.9.0 与 z20 easyui 2.6.0 两份头文件逐条核对。取权威签名也可用
 > op `flythings_get_package_api(package_id='easyui', platform='V85X', focus='<类名>')` —— 但该 op 对**枚举/typedef 返回类型会丢前缀**
 > （`ECameraStatusCode startPreview()` 显示成 `startPreview()`），以头文件原文为准。

@@ -68,7 +68,7 @@ seekbar 7 · edittext 6 · radiogroup 3 · circlebar 1）/ **236 张图**，双�
 
 ### 每阶段的固定仪式
 
-1. **离线先做完**：出图 → 生成 HTML → `html2json` → `patch_json` 补漏 → `fui pack` → `check_all`（0 FAIL）→ 双平台 `fun build`。
+1. **离线先做完**：出图 → 生成 HTML → `html2json` → `patch_json` 补漏 → `fui pack` → `check_all`（0 FAIL）→ 双平台 `fsc build`。
 2. **再碰设备**：部署（**`--no-reboot`**；部分板子 `adb reboot` 后会整板掉网，**因果未证** → `knowledge/devflow/device-deploy-budget.md` §5）→ 同一 boot 内一口气跑完断言。
 3. **每套断言前清场**：重启应用进程（`kill -TERM` 优先，约 3s 内未退出才回退 `kill -KILL`）→ init 自动拉起
    （不是 reboot）；**输入类用例会弹系统键盘**，
@@ -99,7 +99,7 @@ seekbar 7 · edittext 6 · radiogroup 3 · circlebar 1）/ **236 张图**，双�
 - **一源双出**：同一份生成器/HTML 产出两个平台目录（案例：`z21/` 1024×600 与 `f133/` 1280×720 等比 1.25×）。
 - **图与盒 1:1 在两平台都必须成立**（不是只在主力平台对）。
 - ⚠️ **Manifest 声明的平台键可能与目录名不一致**：案例 `f133/` 目录的 Manifest 声明的是 **F136**，
-  用 `fun build -p F133` 会因 base-utility 版本不匹配失败 → **先看 Manifest 再选 `-p`**。
+  用 `fsc build -p F133` 会因 base-utility 版本不匹配失败 → **先看 Manifest 再选 `-p`**。
 - **只做静态全检的平台要如实标注**（案例：f133 无真机屏，只做静态全检 + 编译，几何按等比缩放）——
   **不要把「没验过」写成「已验过」**。
 - 两个平台的 `mainLogic.cc` **改动必须逐字节一致**（各自手改必漂移；案例用 diff 逐行核对）。

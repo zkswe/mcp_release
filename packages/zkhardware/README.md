@@ -7,7 +7,7 @@
 
 ## 1. 怎么装
 
-`Manifest.xml` 里声明依赖（**改完必须 `fun install`**，否则头文件路径不进 CMake）：
+`Manifest.xml` 里声明依赖（**改完必须 `fsc install`**，否则头文件路径不进 CMake）：
 
 ```xml
 <dependencies enableOnPlatforms="Z20">
@@ -18,8 +18,8 @@
 ```
 
 ```bash
-fun install      # 解析依赖（本机解析到 easyui 2.6.0 / zkhardware 0.0.0）
-fun build -p z20
+fsc install      # 解析依赖（本机解析到 easyui 2.6.0 / zkhardware 0.0.0）
+fsc build -p z20
 ```
 
 ## 2. API 速查（按头文件口径）
@@ -99,7 +99,7 @@ static S_ButtonCallback sButtonCallbackTab[] = {
 
 `ID_MAIN_<Caption>` 与 `mTextXxxPtr` 由构建生成在 `.fun/<平台>/generated/ui_main.h`（logic 里 `#include GENERATED_UI_DEFINITIONS`）。
 
-**三步跑起来**：把 `example/ui/main.json` 放进工程 `ui/` → `fui pack ./` → 把 `example/src/logic/mainLogic.cc` 的片段并进 logic、按上面填按键表 → `fun build -p z20`。
+**三步跑起来**：把 `example/ui/main.json` 放进工程 `ui/` → `fui pack ./` → 把 `example/src/logic/mainLogic.cc` 的片段并进 logic、按上面填按键表 → `fsc build -p z20`。
 
 ## 4. 真机实测（Z20 480×480 · 86 面板，2026-09-28 / 09-29，证据 `evidence/`）
 
@@ -119,7 +119,7 @@ static S_ButtonCallback sButtonCallbackTab[] = {
 2. **ADC 在 86 面板上无意义**：四通道 `ok=1` 且值会浮动（ch1≈41~43、ch2≈940~942、ch3≈608~611、ch0=0），但**该面板没有 ADC 接口**→ 是无效通道/噪声，**不要写阈值、不要拿它做产品逻辑**；换带 ADC 接口的板再验。
 3. **亮度范围是 1~100**，不是 0~100：传 0 不是「最暗」而是关屏语义，本示例做了下限 1。
 4. **按键回调要在 activity 的 `sButtonCallbackTab` 注册**，只在 logic 里写 `onButtonClick_Xxx` 不生效（点按钮无反应、无日志）。
-5. **改 Manifest 后必须 `fun install`**，否则 `utils/GpioHelper.h` 这类包内头文件找不到。
+5. **改 Manifest 后必须 `fsc install`**，否则 `utils/GpioHelper.h` 这类包内头文件找不到。
 6. `beep()` 是 **void 无返回**，调用成功≠一定响（要人耳/示波器确认）；本机 PWM 频率/占空比默认 2500/50。**Z20 86 面板没接蜂鸣器**→ 在这块板上永远听不到声，别当成 bug 查。
 7. `PWMHelper` 动 PWM 前先确认不占背光 PWM 通道（本示例**没有**演示 PWM 写入，只列 API）。
 8. **`zeroOutput()` 驱动的是交流电继电器（安全件）**：写 ON 前必须确认回路/负载已就位（空载台架也要确认），示例默认**上电不写状态**（`onUI_init` 只回读），切哪一路都由人点按钮才动。

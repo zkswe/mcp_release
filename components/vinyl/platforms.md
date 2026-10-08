@@ -23,7 +23,7 @@
 | F135 | 未验证 | 未验证 | — | 与 F133 同核（C906 RISC-V），预期一致（待测） |
 | Z20 / Z21 | 未验证 | 未验证（注册表有 nanovg 包则可用） | — | 待测 |
 | T113 | 未验证 | 未验证 | — | 待测 |
-| V85X | ❌ **不可编**（2026-10-05 V85X 工具链实编） | ❌ 同上（编不过就谈不上后端） | — | 卡点**不是** nanovg（已解决：`nanovg.h` 那关过了，`packages/nanovg/lib/v85x/libnanovg.so` 与设备 `/lib` 那份 md5 逐字节相同 `F5F1157D…`），而是 `zk_vinyl.cpp:40` 的 **`misc/image_utility.h`**：它**不在任何 easyui 包内**（V85X 2.9.0 / Z20 2.6.0 的 `include/` 都无 `misc/`）、不在仓内、设备 `libeasyui.so` 也无 `misc::*` 符号 —— 那是 F133 **应用工程侧**的头。两条出路：① 厂商补该头（+实现）；② 拍板把 `misc::image_load/bitmap_scale/bitmap_create/bitmap_destroy` 改写成 easyui 真有的 `utils/BitmapHelper.h`。`fun install` 走 registry 仍拉不到 nanovg（复测 `FATAL 未找到依赖包`），纯包管理器路径同样不可用。V85X（SPINOR）**不是** MCU Lite，不适用「本组件不适用」那条 **处置（需求方 2026-10-05）：本项已决定缓办、优先级放低 —— nanovg 这一路在 V85X 暂不处理，后期需要时再补；两条出路（厂商补 `misc/image_utility.h` / 改写为 `utils/BitmapHelper.h`）保持记档、不排期。即读到这里时不要把它当作待修故障。** |
+| V85X | ❌ **不可编**（2026-10-05 V85X 工具链实编） | ❌ 同上（编不过就谈不上后端） | — | 卡点**不是** nanovg（已解决：`nanovg.h` 那关过了，`packages/nanovg/lib/v85x/libnanovg.so` 与设备 `/lib` 那份 md5 逐字节相同 `F5F1157D…`），而是 `zk_vinyl.cpp:40` 的 **`misc/image_utility.h`**：它**不在任何 easyui 包内**（V85X 2.9.0 / Z20 2.6.0 的 `include/` 都无 `misc/`）、不在仓内、设备 `libeasyui.so` 也无 `misc::*` 符号 —— 那是 F133 **应用工程侧**的头。两条出路：① 厂商补该头（+实现）；② 拍板把 `misc::image_load/bitmap_scale/bitmap_create/bitmap_destroy` 改写成 easyui 真有的 `utils/BitmapHelper.h`。`fsc install` 走 registry 仍拉不到 nanovg（复测 `FATAL 未找到依赖包`），纯包管理器路径同样不可用。V85X（SPINOR）**不是** MCU Lite，不适用「本组件不适用」那条 **处置（需求方 2026-10-05）：本项已决定缓办、优先级放低 —— nanovg 这一路在 V85X 暂不处理，后期需要时再补；两条出路（厂商补 `misc/image_utility.h` / 改写为 `utils/BitmapHelper.h`）保持记档、不排期。即读到这里时不要把它当作待修故障。** |
 
 ## 刷新口径（各平台一致，务必照做）
 

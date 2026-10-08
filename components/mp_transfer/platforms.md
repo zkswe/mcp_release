@@ -53,7 +53,7 @@
 | 层 | 做法 | 期望 |
 |---|---|---|
 | ① PC 侧（不接设备） | `py ./src/python/receiver.py --name PythonFrame --output ./received`（纯标准库，Python ≥3.9；多网卡/VPN 加 `--bind/--broadcast --verbose`） | 手机小程序能发现该"设备"并传图；收到的文件完整（长度一致），逐块 ACK/末块 `OK` 正常 |
-| ② 设备侧（不上屏） | 把 `example/mp_transfer_min_example.cc` 的接线抄进工程 → `fun build` → 推设备跑 | logcat 看到广播任务启动 + 监听 9000；小程序能发现设备名 |
+| ② 设备侧（不上屏） | 把 `example/mp_transfer_min_example.cc` 的接线抄进工程 → `fsc build` → 推设备跑 | logcat 看到广播任务启动 + 监听 9000；小程序能发现设备名 |
 | ③ 端到端 | 小程序传图片/视频 → 设备落盘 | 文件出现在 `MP_PATH`，大小 == 协议声明 `fileLen`，无残留 `.tmp` |
 
 ⚠️ 本仓**没有** ①②③ 的设备侧记录（见 §0），所以上表第 ②/③ 层是「怎么验」而不是「已验结果」。

@@ -88,7 +88,7 @@
   },
   {
     "name": "fun 命令行工具链",
-    "doc": "knowledge/devflow/cli-fun-toolchain.md",
+    "doc": "knowledge/devflow/cli-fsc-toolchain.md",
     "queries": [
       "fun和fuse是不是一个东西",
       "编译产物在.fun还是.fsc目录",
@@ -103,7 +103,7 @@
       "依赖包下载到哪个目录",
       "改了activity目录为什么编译没变化",
       "IDE 编译报 REGISTER_ACTIVITY_TIMER_TAB 未声明怎么办",
-      "fun build 报 LOGD_TRACE 未声明 / logic.cc 缺 base_log.h",
+      "fsc build 报 LOGD_TRACE 未声明 / logic.cc 缺 base_log.h",
       "fun 生成的 logic.cc 头部定时器表被包在 FUN_BUILD 里编译不过"
     ],
     "min_top1": 10,

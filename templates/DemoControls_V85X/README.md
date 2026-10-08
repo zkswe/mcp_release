@@ -36,8 +36,8 @@ IDE 新建页会**按它自动填分辨率**（2026-10-05 实测踩到：本模�
 cp -r templates/DemoControls_V85X <新工程目录>
 # 改工程名：<新工程>/.project 的 <name>、.cproject 里的工作区路径（或直接走 op flythings_create_project
 # 建 HelloWord_V85X，再把本模板的 ui/ src/logic/ resources/ 覆盖过去）
-fun install --project-dir <新工程>          # 同步 Manifest 依赖（base-utility 必须有）
-fun build   --project-dir <新工程> -p v85x  # 编译
+fsc install --project-dir <新工程>          # 同步 Manifest 依赖（base-utility 必须有）
+fsc build   --project-dir <新工程> -p v85x  # 编译
 # 上机：op flythings_build_ui_flow(project_root=<新工程>, device=<serial>)
 ```
 
@@ -46,7 +46,7 @@ fun build   --project-dir <新工程> -p v85x  # 编译
 1. **写 json**：`ui/<p>.json`。控件键名 = `<类型>__<序号>`，字段按**必填键全集**写全
    （唯一真源 `ui_tools/ui_schema.json`；片段用 op `flythings_map_control`，字段问 op `flythings_ui_schema`）。
 2. **打包**：`fui pack ui/<p>.json ui/<p>.ftu`（设备实际加载的是 ftu，不是 json）。
-3. **构建**：`fun build --project-dir <工程> -p v85x` → 工具链生成 `src/logic/<p>Logic.cc` 与回调桩
+3. **构建**：`fsc build --project-dir <工程> -p v85x` → 工具链生成 `src/logic/<p>Logic.cc` 与回调桩
    （桩由工具链追加；若桩落在函数内，把它移到文件作用域）。
 
 - ⛔ **不要删含业务代码的 `<p>Logic.cc`**（代码衰退）；只有首次构建/空文件才可删了重建。

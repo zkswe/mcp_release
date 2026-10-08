@@ -5,7 +5,7 @@ id: paho-mqtt3as
 version: "1.3.13"
 platforms:
   Z20:
-    registry: C:\zkswe\fun\registry\public\z20\paho-mqtt3as\1.3.13
+    registry: C:\zkswe\fsc\registry\public\z20\paho-mqtt3as\1.3.13
     libs: [lib/libpaho-mqtt3as.a, lib/libpaho-mqtt3as.so]
     headers_count: 7
     verified: "2026-09-29"

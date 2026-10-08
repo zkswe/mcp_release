@@ -78,7 +78,7 @@
       "binTool": "z235x",
       "packageKey": "z235x",
       "buildable": true,
-      "note": "ARM（SSD2355）；模板已带 base-utility（缺它 fun build 会 fatal error: base/functional.h）；编译需本地把工具链放到 <fun 安装目录>/toolchains/z235x（未随包分发，见 cli-fun-toolchain.md §4.6）；设备端预编译工具待补（bin_tools/z235x 仅占位说明）"
+      "note": "ARM（SSD2355）；模板已带 base-utility（缺它 fsc build 会 fatal error: base/functional.h）；编译需本地把工具链放到 <fun 安装目录>/toolchains/z235x（未随包分发，见 cli-fsc-toolchain.md §4.6）；设备端预编译工具待补（bin_tools/z235x 仅占位说明）"
     },
     {
       "platform": "Z6S",
@@ -124,7 +124,7 @@
   "ops": [
     {
       "op": "flythings_add_package",
-      "brief": "把 package 添加进项目 Manifest.xml 并执行 fun install 拉取依赖（添加包闭环流程）。",
+      "brief": "把 package 添加进项目 Manifest.xml 并执行 fsc install 拉取依赖（添加包闭环流程）。",
       "args": [
         "project_root",
         "package",
@@ -146,7 +146,7 @@
     },
     {
       "op": "flythings_attach_cli_tools",
-      "brief": "复制 fui.exe（→项目 ui/）与 fun.exe（→项目根目录）到项目，随项目交付。",
+      "brief": "复制 fui.exe（→项目 ui/）与 fsc.exe（→项目根目录）到项目，随项目交付。",
       "args": [
         "project_root"
       ],
@@ -155,7 +155,7 @@
       "stage": "build",
       "triggers": [
         "装工具链",
-        "项目里没有 fun.exe",
+        "项目里没有 fsc.exe",
         "缺 fui.exe",
         "交付要带编译工具"
       ]
@@ -374,7 +374,7 @@
     },
     {
       "op": "flythings_gen_logic_stub",
-      "brief": "回调桩体检/兜底（生成归 fun build）：页面逻辑写在 src/logic。",
+      "brief": "回调桩体检/兜底（生成归 fsc build）：页面逻辑写在 src/logic。",
       "args": [
         "project_root",
         "page",
@@ -1044,7 +1044,7 @@
   "docs": {
     "knowledgeFiles": 104,
     "wikiFiles": 0,
-    "ragChunks": 1788,
+    "ragChunks": 1787,
     "ragPaths": 144
   }
 }

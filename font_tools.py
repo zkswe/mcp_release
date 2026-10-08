@@ -23,7 +23,7 @@
   ② **无设备**：退化为工程侧 self-scan（prefs 的 `font` 指向的文件在不在工程 `font/`；
 工程 `font/` 里有没有可用字体）→ 缺就同样投递，并在 `note` 写清「未连设备，仅工程侧检查」。
 
-部署后复查（v0.27.87）：`fun launch` 成功后且本次投递过字体 → `recheck_after_deploy()` 回看
+部署后复查（v0.27.87）：`fsc launch` 成功后且本次投递过字体 → `recheck_after_deploy()` 回看
 设备侧字体清单与工程投递是否一致，回答「设备侧中文字库现在可用吗 / 要不要固化」
   （与应用侧的 `staleOnDevice` 合成闭环：app 陈旧 vs 字库待固化分开报）。
 
@@ -406,9 +406,9 @@ def _adb_path():
 
 
 def recheck_after_deploy(serial, platform, project_root, delivered, dfc=None):
-    """部署后复查（v0.27.87）：fun launch 成功后，回看「设备侧现在中文字库可用性 + 与工程是否一致」。
+    """部署后复查（v0.27.87）：fsc launch 成功后，回看「设备侧现在中文字库可用性 + 与工程是否一致」。
 
-为什么**不**重算 cmap：字体是**资源/固件侧**的东西，`fun launch` 只推 app（`/tmp/lib`、`/tmp/ui`），
+为什么**不**重算 cmap：字体是**资源/固件侧**的东西，`fsc launch` 只推 app（`/tmp/lib`、`/tmp/ui`），
 设备侧字库在 `pack_upgrade` 固化前不会变 —— 再拉一次只会白花一次传输。故这里只做轻量核验：设备字体清单（体积判据）+ 投递文件的名字/体积是否已在设备上 ⇒ 给「需固化才生效」的实话。
 与已有 `staleOnDevice`（app 侧文件比对）凑成闭环：**app 陈旧**vs **字库待固化**分开报。
     """
@@ -441,7 +441,7 @@ def recheck_after_deploy(serial, platform, project_root, delivered, dfc=None):
                        % (name, round(out['projectFontSizeBytes'] / 1024.0, 1)))
     else:
         out['note'] = ('设备侧当前字库 %s（最大 %s KB，判定=%s）：投递进的是**工程**，'
-                       '`fun launch` 只推 app、不推 font/ ⇒ 需要 `fun pack_upgrade` 固化后设备才生效'
+                       '`fsc launch` 只推 app、不推 font/ ⇒ 需要 `fun pack_upgrade` 固化后设备才生效'
                        % ('、'.join(out['deviceFontNames']) or '无字体文件',
                           scan.get('maxFontKB'), scan.get('verdict')))
         out['warnings'].append(out['note'])
@@ -758,7 +758,7 @@ def font_tier_menu(project_root, dfc=None):
 
     # ---- 自己裁字库的口径（**事后口子**）：只有存储/内存异常才用 ----
     common_kb = (by_name.get('common') or {}).get('sizeKB')
-    subset_when = ('**只在存储/内存异常时用**（设备 tmpfs 装不下现成档：一次 fun launch 要推 '
+    subset_when = ('**只在存储/内存异常时用**（设备 tmpfs 装不下现成档：一次 fsc launch 要推 '
                    'libzkgui.so + font + ftu + EasyUI.cfg，字库是最大头）→ 先按现成档选型，'
                    '仍超预算才裁字库；日常缺中文请直接选档，不要一上来就裁')
     if common_kb:

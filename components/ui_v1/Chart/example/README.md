@@ -1,6 +1,6 @@
 # example —— Chart 最小可跑示例（Z21 1024×600）
 
-> 这个目录就是一个**能编、能跑的 FlyThings 工程**（只留必要文件，没有 `fun.exe`/`fui.exe`/`.fun/` 产物）。
+> 这个目录就是一个**能编、能跑的 FlyThings 工程**（只留必要文件，没有 `fsc.exe`/`fui.exe`/`.fun/` 产物）。
 > 真机验收证据在 `evidence/`。原样搬到开发工作区即可跑。
 
 ## 文件清单
@@ -9,7 +9,7 @@
 |---|---|
 | `Manifest.xml` | 依赖声明（easyui ^2.2.0 + log/zkhardware/zknet/base-utility） |
 | `.deps.lock` | 依赖解析结果快照（实际落到 easyui 2.6.0） |
-| `.project` | IDE 工程描述（`fun build` 不需要） |
+| `.project` | IDE 工程描述（`fsc build` 不需要） |
 | `ui/main.html` | **本示例的手写源（原型稿）**：五个 `div.painter`（折线/柱/三环/仪表/**分段环**）+ 刻度 `textview` + 两个按钮 |
 | `ui/main.json` / `ui/main.ftu` | `html2json` / `fui pack` 产物 |
 | `src/Main.cpp` | 应用入口 |
@@ -28,8 +28,8 @@ python tools\ui_tools\html2json.py C:\work\ChartDemo\ui\main.html C:\work\ChartD
 cd C:\work\ChartDemo\ui ; <fui.exe> pack .
 
 cd C:\work\ChartDemo
-fun build -p Z21
-fun launch -p Z21 -s 192.168.1.100:5555
+fsc build -p Z21
+fsc launch -p Z21 -s 192.168.1.100:5555
 ```
 
 > 关键布局约束：**刻度文字 `textview` 必须与 `painter` 同父**（组件给文字坐标时会加 painter 的左上角偏移）。

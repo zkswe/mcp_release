@@ -14,10 +14,10 @@
   ── 怎么用（源码引入）────────────────────────────────────────────────────
     1) 拷 src/mp_transfer/*.{h,cpp} + src/system/*.h 到工程能编到的目录（如 src/mp_transfer/），
        两个 .cpp 加入编译；
-    2) 按下面的依赖在工程 Manifest.xml（或 fun.json，其优先级更高）声明；
+    2) 按下面的依赖在工程 Manifest.xml（或 fsc.json，其优先级更高）声明；
     3) 起服务：RuntimeCoordinator::retain(owner, name) / release(owner)；
        收文件目录默认 /mnt/extsd/mp_transfer/（见 mp_config.h，移植时换成自己的可写目录，末尾带 /）。
-    ⚠️ 改完 Manifest/fun.json **必须重跑 fun install**（否则新包的 include 路径进不了 CMake）。
+    ⚠️ 改完 Manifest/fsc.json **必须重跑 fsc install**（否则新包的 include 路径进不了 CMake）。
 
   ── 为什么没有 include/ ──────────────────────────────────────────────────
     本模块的用法是「拷源文件」（README §怎么用），对外面就是 src/mp_transfer/*.h，

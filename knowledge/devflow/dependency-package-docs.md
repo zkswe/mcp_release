@@ -23,7 +23,7 @@ evidence: []
 | 文件 | 内容 | 给谁看 |
 |---|---|---|
 | `packages/<包>/package.yaml` | **机器可读**：`id/version/platforms`（含各平台 `registry` 路径与 `verified` 状态）、`summary`、`headers`（关键头文件+用途）、`api`（类/方法签名，**逐个能在头文件里 grep 到**）、`deps`（Manifest 依赖）、`usage_cpp`（≤25 行可粘贴示例）、`gotchas`（真坑）、`verified_*`（真机实测结果+证据文件） | AI 优先读这个 |
-| `packages/<包>/README.md` | 人读版：装法（Manifest 片段 + `fun install`）、API 速查表、最小示例、真机实测表、坑清单 | 人 |
+| `packages/<包>/README.md` | 人读版：装法（Manifest 片段 + `fsc install`）、API 速查表、最小示例、真机实测表、坑清单 | 人 |
 | `packages/<包>/platforms.md` | 平台实测表（**只写实测过的**，没测写「未验证 + 需要什么条件」）+ 板级事实 + 复现命令 | 人/AI |
 | `packages/<包>/example/` | 真机验证过的 `ui/*.json`、`src/logic/*.cc`、按键注册片段、Manifest | 直接拷 |
 | `packages/<包>/evidence/` | 设备日志（`logcat` 摘录）、真机截图 | 验收 |
@@ -50,5 +50,5 @@ evidence: []
 - **不要凭记忆写包内 API**：`api.methods` 里的签名必须能在该包头文件里 grep 到（AI 写文档时同理）
 - **`cacert.pem` 只认资源目录（resPath）下**：HTTPS 失败常见根因；报 `not correctly signed by the trusted CA` = CA 没找到
 - **Z20 的 `paho-mqtt3as` 必须一起声明 `openssl`**，否则链接报 `BIO_read / RAND_bytes / SHA1_*`
-- **改 Manifest 后必须 `fun install`**，否则包内头文件路径不进 CMake
+- **改 Manifest 后必须 `fsc install`**，否则包内头文件路径不进 CMake
 - **部署调试别连续快速 `setprop ctl.restart zkswe`**（MI 全局 init 锁被占 → 黑屏 + D 状态进程）

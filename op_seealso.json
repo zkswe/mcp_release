@@ -4,13 +4,13 @@
   "ops": {
     "flythings_add_package": {
       "seeAlso": [
-        "knowledge/devflow/cli-fun-toolchain.md",
+        "knowledge/devflow/cli-fsc-toolchain.md",
         "knowledge/devflow/dependency-package-docs.md"
       ]
     },
     "flythings_attach_cli_tools": {
       "seeAlso": [
-        "knowledge/devflow/cli-fun-toolchain.md",
+        "knowledge/devflow/cli-fsc-toolchain.md",
         "knowledge/devflow/adb-and-device-selection.md"
       ]
     },
@@ -21,14 +21,14 @@
     },
     "flythings_build_ui_flow": {
       "seeAlso": [
-        "knowledge/devflow/cli-fun-toolchain.md",
+        "knowledge/devflow/cli-fsc-toolchain.md",
         "knowledge/devflow/deploy-scene-map.md"
       ]
     },
     "flythings_check_project_deps": {
       "seeAlso": [
         "knowledge/devflow/dependency-package-docs.md",
-        "knowledge/devflow/cli-fun-toolchain.md"
+        "knowledge/devflow/cli-fsc-toolchain.md"
       ]
     },
     "flythings_create_project": {
@@ -156,7 +156,7 @@
     "flythings_manifest": {
       "seeAlso": [
         "knowledge/devflow/dependency-package-docs.md",
-        "knowledge/devflow/cli-fun-toolchain.md"
+        "knowledge/devflow/cli-fsc-toolchain.md"
       ]
     },
     "flythings_map_control": {

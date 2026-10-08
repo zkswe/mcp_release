@@ -34,7 +34,7 @@ evidence: []
 启动器按**优先级**加载 cfg（高 → 低）：
 
 ```
-/tmp/EasyUI.cfg        ← fun launch 的调试态（tmpfs，重启即清）
+/tmp/EasyUI.cfg        ← fsc launch 的调试态（tmpfs，重启即清）
 /mnt/extsd/EasyUI.cfg  ← SD 卡（厂商 App / SD 调试包路线）   ★ 现场最常见的“没效果”原因
 /res/etc/EasyUI.cfg    ← 内置固件（release 态）
 ```
@@ -135,7 +135,7 @@ ERotation rot = (ERotation)(CONFIGMANAGER->getScreenRotate() / 90);          // 
 ## 8. 字体/资源如何真的进 `/res`（2026-09-24 实测校准）
 
 - **字体要放工程 `resources/`**（如 `resources/fzcircle.ttf`）→ 打出的包才有 `/res/ui/fzcircle.ttf`；
-  **放 `ui/` 会被忽略**，`fun pack` 只会吐一句 `no any font`（无报错、无声失败）。
+  **放 `ui/` 会被忽略**，`fsc pack` 只会吐一句 `no any font`（无报错、无声失败）。
 - 实测判据（真机）：不带字体时 Z20 包 payload = **86,016 B**<!-- design-spec:evidence 历史实测记录（判据以设备实测为准，见 DESIGN_SPEC.md 第 2 条） -->；把 1.9 MB 字体放进 `resources/` 后 payload = **1,236,992 B**（确实进包）。
 - EasyUI.cfg 里把字体指过去（覆盖层即可）：
 
@@ -174,8 +174,8 @@ EasyUI.cfg={"font":"/res/ui/fzcircle.ttf"}
 触摸注入收到的是 **UI 逻辑坐标**→ 注入前按 `rotateTouch` 换算（`rotateTouch=0` 时不用换）。
 - 静态旋转**生效的硬指标**：`cat /sys/class/disp/disp/attr/sys` 里 UI 层 crop 由异常（如 `[0,1600,...]`）
 恢复为 `[0,0,600,1600]` 全屏正常值；设备端 `cat /tmp/EasyUI.cfg` 可核对 `rotateScreen: 270 / rotateTouch: 0`。
-- **时序铁律**：改完 `package.properties` 后 `fun build` 会 `ninja: no work to do` —— **必须 `fun clean` 全量重编**；
-  EasyUI.cfg 由 `fun launch` 本地准备阶段合并生成（`.fun/<平台>/launch/EasyUI.cfg`），launch 时随部署推送。
+- **时序铁律**：改完 `package.properties` 后 `fsc build` 会 `ninja: no work to do` —— **必须 `fsc clean` 全量重编**；
+  EasyUI.cfg 由 `fsc launch` 本地准备阶段合并生成（`.fun/<平台>/launch/EasyUI.cfg`），launch 时随部署推送。
 - ⚠️ **动态旋转 `setScreenRotate()` 只改进程内 `CONFIGMANAGER`，不回写工程 `EasyUI.cfg`**
   → 「取图 / 换算角度」的基准仍是工程 cfg（见 `knowledge/devflow/dynamic-screen-rotation.md` §1）。
 

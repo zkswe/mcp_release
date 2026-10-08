@@ -5,7 +5,7 @@
   ⚠️ TLS（mqtts）场景必须连带声明 paho-mqtt3as + openssl：
      paho-mqtt3as 的二进制引用 BIO_read/RAND_bytes/SHA1_* → 漏 openssl 会在链接阶段炸。
   ⚠️ Z20 registry 里没有 paho-mqtt3a（只有 paho-mqtt3as）→ 这里就用 as 版。
-  改完 Manifest 必须 fun install（否则头文件/库路径不进 CMake）。
+  改完 Manifest 必须 fsc install（否则头文件/库路径不进 CMake）。
 -->
 <manifest platform="Z20">
     <dependencies enableOnPlatforms="Z20">

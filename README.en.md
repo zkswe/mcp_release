@@ -66,16 +66,16 @@ tools touch / busybox / ui_test / mt_test / zkshot, under `bin_tools/<platform>/
 > if that affects you, set `FLYTHINGS_MCP_MODE=all` to restore the old behavior.
 
 **4) Build/deploy prerequisites (only needed to build — layout work can skip this)** — the repo ships
-`toolchain/fui.exe` (json↔ftu) and `toolchain/fun.exe` (deps / build / push / pack); the MCP resolves the
-tool directory in this order: `FLYTHINGS_FUN_DIR` → bundled `toolchain/` → `D:/C:\zkswe\fun`
+`toolchain/fui.exe` (json↔ftu) and `toolchain/fsc.exe` (deps / build / push / pack); the MCP resolves the
+tool directory in this order: `FLYTHINGS_FSC_DIR` → bundled `toolchain/` → `D:/C:\zkswe\fsc`
 (`project_tools._tool_dir()`). If a tool reports **missing fun / fui**:
 ① run `mcp_server.py` from the cloned repo — **do not `pip install`** (the wheel ships only .py files:
 no `toolchain/`, `templates/`, `knowledge/`, `models/` or `rag_index.json`);
-② **both** `toolchain/fui.exe` and `toolchain/fun.exe` must exist (with only one, builds fail with
-“fun.exe not found”); ③ point elsewhere with `FLYTHINGS_FUN_DIR=<dir containing fun.exe/fui.exe>`;
+② **both** `toolchain/fui.exe` and `toolchain/fsc.exe` must exist (with only one, builds fail with
+“fsc.exe not found”); ③ point elsewhere with `FLYTHINGS_FSC_DIR=<dir containing fsc.exe/fui.exe>`;
 ④ per-platform compiler toolchains are **not distributed with the package** — unpack them to
-`<fun dir>/toolchains/<lowercase platform key>/`, otherwise `fun build` fails with
-`platform toolchain url must not be empty`. Details: `knowledge/devflow/cli-fun-toolchain.md`.
+`<fun dir>/toolchains/<lowercase platform key>/`, otherwise `fsc build` fails with
+`platform toolchain url must not be empty`. Details: `knowledge/devflow/cli-fsc-toolchain.md`.
 
 ---
 
@@ -101,11 +101,11 @@ no `toolchain/`, `templates/`, `knowledge/`, `models/` or `rag_index.json`);
 - **Pixel diff** (`flythings_ui_visual(action="diff")`, ±2 tolerance) → 0-token regression acceptance
 
 ### 🏭 Build / deploy / package
-- `flythings_build_ui_flow`: json/ftu timestamp check → fui pack → fun install → fun build → **device detection + `fun launch` push-and-run**
+- `flythings_build_ui_flow`: json/ftu timestamp check → fui pack → fsc install → fsc build → **device detection + `fsc launch` push-and-run**
   > ⚠️ **It pushes to a device by default** (`with_launch` defaults to True since v0.27.84): after build it probes `adb devices -l` —
   > 0 devices → `needDeviceInput=true` + `installHint` (install the **ADB driver** / enable USB debugging and authorize / use `device='<IP>:5555'`);
   > multiple devices → lists serial+model+platform match, **never guesses**, requires an explicit `device=`;
-  > exactly 1 matching device → automatically runs `fun launch -s <serial>`.
+  > exactly 1 matching device → automatically runs `fsc launch -s <serial>`.
   > The response carries `launched`/`pushed`/`device`/`model`/`deviceSync` (device-side ftu/so bytes+md5 vs. local)
   > and `staleOnDevice` (true ⇒ the device is still running an old build).
   > **To compile only, pass `with_launch=False` explicitly.**
@@ -123,7 +123,7 @@ no `toolchain/`, `templates/`, `knowledge/`, `models/` or `rag_index.json`);
   measuring coverage of the **3755 GB2312 level-1 characters** —
   **≥90% `ok` (no delivery) / 50–90% `low` (deliver + report coverage) / <50% `missing` (deliver)**; fields
   `source`/`cmapCoverageGB2312L1`/`checkedFont`; over 12 MB or fontTools unavailable → **falls back to a size criterion**
-  (`source="size"`, reason in `warnings`); results cached in `~/.fun/font-probe.json`; after a successful `fun launch`
+  (`source="size"`, reason in `warnings`); results cached in `~/.fun/font-probe.json`; after a successful `fsc launch`
   with a recent delivery, `fontCheck.deviceAfterDeploy` reports device-side font status and consistency
   (**persisting the font requires flashing**, so it is not pulled in vain)
 - `flythings_pack_upgrade`: firmware upgrade image `update.img` (TF card / ADB setprop / zkautoupgrade / HTTP OTA)
@@ -141,11 +141,11 @@ no `toolchain/`, `templates/`, `knowledge/`, `models/` or `rag_index.json`);
   - **V85x chip names work as platform inputs** (v0.27.87): `V851 / V851S / V851S3 / V853 / V853S / V553 / V552`
     (any casing) all resolve to **V85X**, with package keys **`v85x` (SPINOR) / `v85xemmc` (EMMC)** —
     **chip names are not package keys** (querying packages with `v851s` returns nothing)
-- `flythings_attach_cli_tools`: copies `fui.exe`/`fun.exe` into the project so customers can build and deploy without an IDE
+- `flythings_attach_cli_tools`: copies `fui.exe`/`fsc.exe` into the project so customers can build and deploy without an IDE
 - `flythings_validate_project`: full project convention check (dependencies / framework rules / timestamp guards)
-- **Toolchain install (Z235X)**: place the `z235x` toolchain under **`<fun install dir>/toolchains/z235x/`**
+- **Toolchain install (Z235X)**: place the `z235x` toolchain under **`<fsc install dir>/toolchains/z235x/`**
   (directory name = lowercase platform key); toolchains are **not distributed** with this package — if it is missing,
-  `fun build -p Z235X` fails with `platform toolchain url must not be empty`.
+  `fsc build -p Z235X` fails with `platform toolchain url must not be empty`.
 
 ### 🧪 Whole-device self-check & bug reports
 - **Device snapshot** `flythings_selfcheck`: nine areas (device info / app status / display / storage / network /

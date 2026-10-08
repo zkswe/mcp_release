@@ -37,7 +37,7 @@ static void onProtocolDataUpdate(const SProtocolData &data) {
  *   ③ 首帧同时    ：savePng("/tmp/b2d_card.png") —— 同一份像素也能"离屏出图"
  *   ④ onUI_quit   ：close()
  *
- * 本示例只**编译验证**（fun build -p Z20），未上真机；真机性能/效果见组件
+ * 本示例只**编译验证**（fsc build -p Z20），未上真机；真机性能/效果见组件
  * README.md 的性能表与 lib/BUILD_INFO.md。
  */
 

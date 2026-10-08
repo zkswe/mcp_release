@@ -83,7 +83,7 @@ def adb_missing_hint():
     return ('找不到 adb：① 本包自带 tools/adb/adb.exe（Windows）应随包分发——'
             '若被删，从完整包拷回；② 或设环境变量 ADB=<adb 完整路径>；'
             '③ 或装 Android platform-tools 并放进 PATH。'
-            '（本机 adb 不可用时，fun launch/build 仍可工作：fun 自带 adb 客户端）')
+            '（本机 adb 不可用时，fsc launch/build 仍可工作：fun 自带 adb 客户端）')
 
 
 def adb_version(adb='', timeout=DEFAULT_TIMEOUT):
@@ -181,7 +181,7 @@ def restart_app(adb, serial, name='zkgui', service='zkswe', extra_path='/tmp/bus
       · 应用进程不是普通进程，`kill` 它（哪怕 -TERM）都不是框架认可的重启方式；
 正确姿势 = 让 init 回收再拉起 → `setprop ctl.restart zkswe`
         （`/etc/init.rc`：`service zkswe /bin/zkgui`）。
-      · 厂商 CLI `fun launch` 内部同样走 `ctl.restart`（二进制里可见 `ctl.restart`+`zkswe`
+      · 厂商 CLI `fsc launch` 内部同样走 `ctl.restart`（二进制里可见 `ctl.restart`+`zkswe`
         +`setprop`，无 kill）；手动部署（推 `/tmp` + `EasyUI.cfg`）之后也用同一句让它生效。
       · 历史教训：脚本里反复 `kill -9 zkgui` / `busybox killall zkgui` 之后，现场出现过
         「触摸注入命令成功、应用不响应」「整板掉网」等现象（当时因果未确证，现按框架口径统一
@@ -616,16 +616,16 @@ def install_hint(platform='', devices=None, error=''):
 def multi_device_hint(devices, platform=''):
     """多台在线设备：不猜，列清楚 + 要求显式 device=。（2026-09-17 口径）
 
-    ⚠️ 实测（2026-09-17 首测 / 09-17 复测 / **2026-09-28 三测**，platform-tools 37.0.1 与 31.0.3 一样）：多设备在线时 `fun launch` **不管有没有 `-s` 都直接 FATAL `more than one device/emulator`**
+    ⚠️ 实测（2026-09-17 首测 / 09-17 复测 / **2026-09-28 三测**，platform-tools 37.0.1 与 31.0.3 一样）：多设备在线时 `fsc launch` **不管有没有 `-s` 都直接 FATAL `more than one device/emulator`**
     （fun 自带 Go adb 客户端发旧式 `host:transport <serial>`（空格分隔），adb 只认
     `host:transport:<serial>`（冒号）：裸 socket 实测空格形式回 FAIL、冒号形式 OKAY）——
     **09-28 版 fun（`v0.0.2+2609281006_e09dc96`）仍未修**。
 两条路：① 垫片 `scripts/adb_transport_shim.py`（5037 上把空格改写成冒号再转发给另起端口的真 adb；
-实测 5 台在线时 `fun launch -s <ip>` 精确推到指定设备，设备侧 md5 与本地一致、其它设备未动）；
+实测 5 台在线时 `fsc launch -s <ip>` 精确推到指定设备，设备侧 md5 与本地一致、其它设备未动）；
     ② 先让其它机器从 adb 列表里消失（`adb disconnect`）。
-这条修正了 `cli-fun-toolchain.md §6` 里「多设备时 fun 静默取列表第一个」的旧结论。
+这条修正了 `cli-fsc-toolchain.md §6` 里「多设备时 fun 静默取列表第一个」的旧结论。
     """
-    lines = ['检测到 %d 台在线设备，**不自动选择**（多设备下 fun launch 会 FATAL，见下）：'
+    lines = ['检测到 %d 台在线设备，**不自动选择**（多设备下 fsc launch 会 FATAL，见下）：'
              % len(devices)]
     for d in devices:
         mp = match_platform(d.get('model'), platform) if platform else 'unknown'

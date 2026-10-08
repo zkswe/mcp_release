@@ -690,7 +690,7 @@ CONTROL = [
     ('系统键盘盖住界面 收键盘', 'touch-inject-autotest.md'),
     ('fui unpack 反解析 ftu', 'ftu-json-pipeline.md'),
     ('升级包 update.img 怎么做', 'upgrade-pack-image.md'),
-    ('多设备在线推到指定设备', 'cli-fun-toolchain.md'),
+    ('多设备在线推到指定设备', 'cli-fsc-toolchain.md'),
     ('FlyThings 是不是操作系统', 'flythings-os-positioning.md'),
     ('判定平台能力基线看齐谁', 'flythings-os-positioning.md'),
 ]
@@ -776,7 +776,7 @@ THRESHOLD_OVERRIDES = {
     'knowledge/devflow/activity-code-skeleton.md': (6, 0),   # 实测 top1=7 miss=0（原声明 8 / 0）
     'knowledge/devflow/adb-and-device-selection.md': (8, 1),   # 实测 top1=9 miss=1（原声明 10 / 0）
     'knowledge/devflow/busybox-debug-library.md': (9, 1),   # 实测 top1=9 miss=1（原声明 9 / 0）
-    'knowledge/devflow/cli-fun-toolchain.md': (8, 0),   # 实测 top1=9 miss=0（原声明 10 / 0）
+    'knowledge/devflow/cli-fsc-toolchain.md': (8, 0),   # 实测 top1=9 miss=0（原声明 10 / 0）
     'knowledge/uicontrols/button-fields.md': (5, 1),   # 实测 top1=6 miss=1（原声明 8 / 0）
     'knowledge/devflow/custom-widget.md': (4, 2),   # 实测 top1=5 miss=2（原声明 7 / 0）
     'knowledge/devflow/deploy-scene-map.md': (7, 0),   # 实测 top1=8 miss=0（原声明 9 / 0）

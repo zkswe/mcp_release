@@ -2,8 +2,8 @@
 """长任务阶段打点（给 MCP progress notification 用）。
 
 为什么需要：构建 / 部署 / 刷机是**分钟级**任务，客户端只能干等；而这些 op 内部其实
-已经有命名阶段（`build_ui_flow` 的 steps：device_probe → fui pack → fun install →
-fun build → fun launch）。本模块把这些阶段暴露成一个**跨线程可读**的当前值，
+已经有命名阶段（`build_ui_flow` 的 steps：device_probe → fui pack → fsc install →
+fsc build → fsc launch）。本模块把这些阶段暴露成一个**跨线程可读**的当前值，
 分发器在等结果的同时轮询它，转成 `ctx.report_progress(...)` 推给客户端。
 
 线程模型：op 在工作线程里跑（`anyio.to_thread`），事件循环线程读 `current()`。

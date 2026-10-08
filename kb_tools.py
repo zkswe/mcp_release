@@ -1827,7 +1827,7 @@ def flythings_manifest(features: str, platform: str = _platforms.DEFAULT_PLATFOR
         if isinstance(r, dict):
             r['dryRun'] = True
             r['hint'] = ('dry_run=True 只推荐不写盘；确认后用 dry_run=False + project_root 写入 Manifest.xml，'
-                         '或逐个用 flythings_add_package 追加并 fun install')
+                         '或逐个用 flythings_add_package 追加并 fsc install')
         return json.dumps(r, ensure_ascii=False)
     if not project_root:
         return json.dumps({'ok': False, 'op': 'flythings_manifest',
@@ -1856,11 +1856,11 @@ def flythings_manifest(features: str, platform: str = _platforms.DEFAULT_PLATFOR
     out.update({'dryRun': False, 'manifestPath': target, 'backup': backup,
                 'affectedFiles': [target] + ([backup] if backup else []),
                 'hint': 'Manifest 已写盘；依赖拉取请接着调 flythings_add_package（with_install=True）'
-                        '或项目内 fun install'})
+                        '或项目内 fsc install'})
     return json.dumps(out, ensure_ascii=False)
 def flythings_add_package(project_root: str, package: str, version: str = '',
                           platform: str = '', with_install: bool = True) -> str:
-    """把 package 添加进项目 Manifest.xml 并执行 fun install 拉取依赖（添加包闭环流程）。
+    """把 package 添加进项目 Manifest.xml 并执行 fsc install 拉取依赖（添加包闭环流程）。
     """
     return json.dumps(pkgtools.flythings_add_package(project_root, package,
                                                      version or None,
@@ -1892,7 +1892,7 @@ def flythings_resolve_dependencies(packages: str, platform: str = _platforms.DEF
     """
     return json.dumps(pkgtools.flythings_resolve_dependencies(packages, platform), ensure_ascii=False)
 def flythings_gen_logic_stub(project_root: str, page: str = '', dry_run: bool = False) -> str:
-    """回调桩体检/兜底（生成归 fun build）：页面逻辑写在 src/logic。
+    """回调桩体检/兜底（生成归 fsc build）：页面逻辑写在 src/logic。
 
     ⚠️⚠️ **桩只是骨架**：业务写在同一个 `src/logic/<页>Logic.cc`
     """
@@ -1924,7 +1924,7 @@ def flythings_test_run(plan: str = '', devices: str = 'auto', project_root: str 
 
 
 def flythings_attach_cli_tools(project_root: str) -> str:
-    """复制 fui.exe（→项目 ui/）与 fun.exe（→项目根目录）到项目，随项目交付。
+    """复制 fui.exe（→项目 ui/）与 fsc.exe（→项目根目录）到项目，随项目交付。
 
     ⚠️⚠️ src/activity/ 目录（mainActivity.cpp/h）由 IDE 编译时自动生成，禁止创建/修改；业务代码只写 src/logic/*.cc。
     """
@@ -2041,7 +2041,7 @@ def flythings_i18n(project_root: str, action: str, lang: str = 'zh_CN', lang_nam
                    langs: str = '', push: bool = True, device: str = '') -> str:
     """多语言（i18n）唯一入口：一个 action 一步（诊断/抽 @key/加语种/导出/写回/转 json 并推送）。
 
-    ⚠️⚠️ **改完翻译必须 `action="to_json"`**（`fun launch` 不推 i18n）—— 否则设备还是旧文案
+    ⚠️⚠️ **改完翻译必须 `action="to_json"`**（`fsc launch` 不推 i18n）—— 否则设备还是旧文案
     ⚠️⚠️ `action="scan"` 只读；`action="refactor"` 缺省 `dry_run=true`，先看清单再落盘
     """
     if action not in I18N_ACTIONS:

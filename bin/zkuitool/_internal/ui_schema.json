@@ -12,7 +12,7 @@
     "zOrderFollowsJsonOrder": "**json 里控件的书写顺序 = 图层顺序**（后写的盖在前面）。用 `sort_keys=True` 之类整体重排会改变层叠（例：全屏铺底层被排到进度条之上 → 控件看不见）",
     "textNewlineNotSupported": "**控件文本里不产生换行**：源文本的换行/空白折叠成单个空格；写 `\\n` 会被按**整串**算最小尺寸，触发 `check_all` 第 13 项（最小尺寸）判定。要多行文案 → 拆成多个控件",
     "setInvalidIsDisable": "`setInvalid(true)` 是**禁用**（不响应触摸），**不是**\"强制重绘\"；要重绘用 `invalidate()`",
-    "callbackStubRequired": "**桩禁手写；`<p>Logic.cc` 禁删除（有业务代码时）**：每个控件 `callbacks` 的名字要有同名 static 函数（`<回调名>_<caption>`），否则 `fun build` 报 `used but never defined`。**缺桩时**：让 `fun build` 先跑（工具链会把桩追加进该文件），**再把追加的桩移到文件作用域**（顶层，与参考工程 `controlsLogic.cc` 一致）——**非破坏**操作。⚠️ **`rm <p>Logic.cc` + 重建只允许用于首次构建/文件里尚无业务代码的场合**；**一旦有业务代码，删除重建 = 代码衰退，禁止**（本表 `callbacks[].stub` 只作形状参考，别粘）。",
+    "callbackStubRequired": "**桩禁手写；`<p>Logic.cc` 禁删除（有业务代码时）**：每个控件 `callbacks` 的名字要有同名 static 函数（`<回调名>_<caption>`），否则 `fsc build` 报 `used but never defined`。**缺桩时**：让 `fsc build` 先跑（工具链会把桩追加进该文件），**再把追加的桩移到文件作用域**（顶层，与参考工程 `controlsLogic.cc` 一致）——**非破坏**操作。⚠️ **`rm <p>Logic.cc` + 重建只允许用于首次构建/文件里尚无业务代码的场合**；**一旦有业务代码，删除重建 = 代码衰退，禁止**（本表 `callbacks[].stub` 只作形状参考，别粘）。",
     "twoBuildPaths": "**Activity 的差异只在构建层，业务代码不分叉**（用户口径 2026-10-04）：fun 路径不生成 `<p>Activity.*`、IDE 路径会生成 —— 但**业务代码一律照常写** `EASYUICONTEXT->openActivity(\"<p>Activity\")` 跳转、`EASYUICONTEXT->goBack()` 返回，不因构建方式而改变。"
   },
   "page": {

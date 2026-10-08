@@ -5,7 +5,7 @@
   ⚠️ 链接是一串：只声明 curl 会满屏 undefined reference（libcurl.a 里有 mbedtls_*/ares_*/inflate 符号）
      → 必须同时带 mbedtls + cares + z。
   ⚠️ Z20 的版本名是 8.12.1-mbedtls（其它平台可能是 8.12.1 = openssl 变体）。
-  改完 Manifest 必须 fun install。
+  改完 Manifest 必须 fsc install。
 -->
 <manifest platform="Z20">
     <dependencies enableOnPlatforms="Z20">

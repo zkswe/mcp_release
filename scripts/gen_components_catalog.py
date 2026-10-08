@@ -145,8 +145,8 @@ def build():
     L.append('2. **再看示例**：每个组件都有 `example/`（能拷进工程就跑）——先照示例跑通，再改。')
     L.append('3. **源码引入**：拷 `include/` + `src/` 进工程；**依赖包引用**（组件已注册进包仓库时）：'
              '一行 `<package id="<组件>" version="x.y.z"/>`。')
-    L.append('4. **声明依赖**：把本页「依赖包」那列写进工程 `Manifest.xml`（或 `fun.json`，其优先级更高），'
-             '**改完必须重跑 `fun install`**（否则新包的 include 路径进不了 CMake）。')
+    L.append('4. **声明依赖**：把本页「依赖包」那列写进工程 `Manifest.xml`（或 `fsc.json`，其优先级更高），'
+             '**改完必须重跑 `fsc install`**（否则新包的 include 路径进不了 CMake）。')
     L.append('5. **换平台先查 `platforms.md`**：没实测的写的就是 `未验证`，别当结论用。')
     L.append('')
     return '\n'.join(L)

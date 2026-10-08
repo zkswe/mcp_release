@@ -75,7 +75,7 @@ evidence:
 
 | 平台 | 可用性 | 依据 | 备注 |
 |---|---|---|---|
-| **Z20** | ✅ **组件形态已在 Z20 真机跑通**（2026-09-30，<验收机IP>:5555，480×480 zkgui 工程）；来源工程 `SmartPanel_HA` 亦在 Z20 面板跑过 | 组件形态：`temp/verify71/album_zkgui` 真机验收（§1.6，4 条判据全过 + 还原复核）；来源工程：`fun build -p Z20` + 推真机（`11_相册上传.png`）；协议侧口径见 `components/mp_transfer/platforms.md` | **微信小程序真机扫码那一环仍无取证**（本机无手机/小程序）；用协议等价 PC 客户端代跑「发图→落盘→回调」（§1.6 判据 d） |
+| **Z20** | ✅ **组件形态已在 Z20 真机跑通**（2026-09-30，<验收机IP>:5555，480×480 zkgui 工程）；来源工程 `SmartPanel_HA` 亦在 Z20 面板跑过 | 组件形态：`temp/verify71/album_zkgui` 真机验收（§1.6，4 条判据全过 + 还原复核）；来源工程：`fsc build -p Z20` + 推真机（`11_相册上传.png`）；协议侧口径见 `components/mp_transfer/platforms.md` | **微信小程序真机扫码那一环仍无取证**（本机无手机/小程序）；用协议等价 PC 客户端代跑「发图→落盘→回调」（§1.6 判据 d） |
 | Z21 / T113 / T113EMMC / V85X / F135 / F136 | ❌ 未取证 | — | 先看 §3 前置条件；⚠️ **Z21 没有 `/mnt/sdnand`**（只有 `/mnt/extsd`、`/mnt/usb1`）→ 落盘目录必须换（该事实为 2026-09-29 Z21 实测记录） |
 
 ### blend2d
@@ -154,15 +154,15 @@ evidence:
 ### ui_v1
 
 > 文件：`components/ui_v1/platforms.md`
-> 口径：> ⚠️ **F133 专项**：工具链**不接受 `F135`**，Manifest 必须写 `platform="F136"`； > 用 `fun build -p F133` 在本地注册表缺 easyui 包时会因 include 路径缺失而**编译失败**（案例 README §4）。 > > ⚠️ **F133/横屏 fb**：面板 fb 是 800×1280 竖屏，UI 是 1280×800 横屏 → `EasyUI.cfg` **必须手写 rotate**， > 否则画面/触摸方向错（案例已固化口径）。
+> 口径：> ⚠️ **F133 专项**：工具链**不接受 `F135`**，Manifest 必须写 `platform="F136"`； > 用 `fsc build -p F133` 在本地注册表缺 easyui 包时会因 include 路径缺失而**编译失败**（案例 README §4）。 > > ⚠️ **F133/横屏 fb**：面板 fb 是 800×1280 竖屏，UI 是 1280×800 横屏 → `EasyUI.cfg` **必须手写 rotate**， > 否则画面/触摸方向错（案例已固化口径）。
 
 | 平台 | 面板 fb | UI resolution（json 写的） | EasyUI.cfg 旋转 | 部署路径 | 编译命令 | 内存/能力 |
 |---|---|---|---|---|---|---|
-| **Z21** | 1024×600 横 | **1024×600** | `rotateScreen/rotateTouch = 0/0` | `fun launch` → `/tmp/{lib,ui,font}` + `EasyUI.cfg` | `fun build -p Z21` | 36MB RAM，无 GPU / 无硬解 |
-| **F133** | 800×1280 竖 fb | **1280×800** | `{"rotateScreen":270,"rotateTouch":270}`（写进 `package.properties`） | SD：`/mnt/extsd/{lib,ui}` + 手写 `EasyUI.cfg` | **`fun build -p F136`**（Manifest `platform="F136"`） | 无 GPU / 无硬解 |
-| **Z20** | 800×1280 | 按工程 | 按工程 | 按工程 | `fun build -p Z20` | 视频走 MI 硬件图层（抓 fb0 是黑的） |
-| **T113 / T113EMMC** | 按工程 | 按工程 | 按工程 | 按工程 | `fun build -p T113` | easyui 2.6.0（无 `relayout`） |
-| **V85X（V851/V853/SPINOR/EMMC）** | 800×480 或 1600×600 | 按工程 | 按工程 | `update.img` / `/res` | `fun build -p v85x` | **有 disp 分层**（真 3D/图层合成仅此平台验证过） |
+| **Z21** | 1024×600 横 | **1024×600** | `rotateScreen/rotateTouch = 0/0` | `fsc launch` → `/tmp/{lib,ui,font}` + `EasyUI.cfg` | `fsc build -p Z21` | 36MB RAM，无 GPU / 无硬解 |
+| **F133** | 800×1280 竖 fb | **1280×800** | `{"rotateScreen":270,"rotateTouch":270}`（写进 `package.properties`） | SD：`/mnt/extsd/{lib,ui}` + 手写 `EasyUI.cfg` | **`fsc build -p F136`**（Manifest `platform="F136"`） | 无 GPU / 无硬解 |
+| **Z20** | 800×1280 | 按工程 | 按工程 | 按工程 | `fsc build -p Z20` | 视频走 MI 硬件图层（抓 fb0 是黑的） |
+| **T113 / T113EMMC** | 按工程 | 按工程 | 按工程 | 按工程 | `fsc build -p T113` | easyui 2.6.0（无 `relayout`） |
+| **V85X（V851/V853/SPINOR/EMMC）** | 800×480 或 1600×600 | 按工程 | 按工程 | `update.img` / `/res` | `fsc build -p v85x` | **有 disp 分层**（真 3D/图层合成仅此平台验证过） |
 
 ### ui_v1/Calendar
 
@@ -172,7 +172,7 @@ evidence:
 |---|---|---|---|
 | Z20 | ➖ 不逐平台验（口径：UI 控件只做 V85X 单平台代表验收，2026-10-03） | registry `z20/easyui/2.6.0`、`3.0.0` 头文件面一致 | 同 F133 三条 |
 | T113 | ➖ 不逐平台验（口径：UI 控件只做 V85X 单平台代表验收，2026-10-03） | registry `t113emmc/easyui/2.9.0` 一致 | 同 F133 三条 |
-| V85X | ✅ **可用（真机已验收 2026-10-03）** | registry `v85x/easyui/2.3.0`、`2.9.0` 一致；**V85X 实测（2026-10-03）**：`fun build` + `fun launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式 | 同 F133 三条；V85X 内存/带宽紧，长按翻月之类别做 |
+| V85X | ✅ **可用（真机已验收 2026-10-03）** | registry `v85x/easyui/2.3.0`、`2.9.0` 一致；**V85X 实测（2026-10-03）**：`fsc build` + `fsc launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式 | 同 F133 三条；V85X 内存/带宽紧，长按翻月之类别做 |
 
 ### ui_v1/Chart
 
@@ -182,7 +182,7 @@ evidence:
 |---|---|---|
 | Z20 | ➖ 不逐平台验（口径：UI 控件只做 V85X 单平台代表验收，2026-10-03） | registry `z20/easyui/2.6.0`、`3.0.0` 的 `ZKPainter.h` 公开面一致 |
 | T113 | ➖ 不逐平台验（口径：UI 控件只做 V85X 单平台代表验收，2026-10-03） | registry `t113emmc/easyui/2.9.0` 一致 |
-| V85X | ✅ **可用（真机已验收 2026-10-03）** | registry `v85x/easyui/2.3.0`、`2.9.0` 一致；V85X 有较多内存/带宽限制，密集点阵（如 PRPS 那种每格一个 fillArc）**先在真机量一遍再上**；**V85X 实测（2026-10-03）**：`fun build` + `fun launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式 |
+| V85X | ✅ **可用（真机已验收 2026-10-03）** | registry `v85x/easyui/2.3.0`、`2.9.0` 一致；V85X 有较多内存/带宽限制，密集点阵（如 PRPS 那种每格一个 fillArc）**先在真机量一遍再上**；**V85X 实测（2026-10-03）**：`fsc build` + `fsc launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式 |
 
 ### ui_v1/RadButton
 
@@ -190,12 +190,12 @@ evidence:
 
 | 平台 | easyui | 状态 | 说明 |
 |---|---|---|---|
-| **Z21** | 2.6.0 | ✅ **已真机验收**（§1；21:2x 复核证据归属无误） | 1024×600；`fun build -p Z21` 通过、`check_all` 全 PASS（主代理实跑） |
+| **Z21** | 2.6.0 | ✅ **已真机验收**（§1；21:2x 复核证据归属无误） | 1024×600；`fsc build -p Z21` 通过、`check_all` 全 PASS（主代理实跑） |
 | F133 | 2.9.0 | ➖ 不逐平台验（口径：UI 控件只做 V85X 单平台代表验收，2026-10-03） | API 头文件已核对（§3） |
 | F136 | — | ➖ 不逐平台验（口径：UI 控件只做 V85X 单平台代表验收，2026-10-03） | 同上 |
 | Z20 | 3.0.0 | ➖ 不逐平台验（口径：UI 控件只做 V85X 单平台代表验收，2026-10-03） | 头文件已核对 |
 | T113 / T113eMMC | 2.9.0 | ➖ 不逐平台验（口径：UI 控件只做 V85X 单平台代表验收，2026-10-03） | 头文件已核对 |
-| V85X | 2.3.0 | ✅ **可用（真机已验收 2026-10-03）** | 头文件已核对；注意 disp 分层平台的老问题与本包无关；**V85X 实测（2026-10-03）**：`fun build` + `fun launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式 |
+| V85X | 2.3.0 | ✅ **可用（真机已验收 2026-10-03）** | 头文件已核对；注意 disp 分层平台的老问题与本包无关；**V85X 实测（2026-10-03）**：`fsc build` + `fsc launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式 |
 
 ### ui_v1/_mapping/TabView
 
@@ -205,7 +205,7 @@ evidence:
 |---|---|---|
 | Z20 | ➖ 不逐平台验（口径：UI 控件只做 V85X 单平台代表验收，2026-10-03） | registry 有 `z20/easyui/2.6.0` 与 `3.0.0`，`ZKPageWindow.h` 公开面与 Z21 同名同签名；组件无平台分支 |
 | T113 | ➖ 不逐平台验（口径：UI 控件只做 V85X 单平台代表验收，2026-10-03） | registry `t113emmc/easyui/2.9.0` 头文件一致；`bin_tools/t113/touch` 已有（触摸注入可用） |
-| V85X | ✅ **可用（真机已验收 2026-10-03）** | registry `v85x/easyui/2.3.0`（较老）与 `2.9.0` 都含 `IPageChangeListener + getPageSize + turnTo*`（**已逐个核对头文件**）；组件无平台宏；**V85X 实测（2026-10-03）**：`fun build` + `fun launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式 |
+| V85X | ✅ **可用（真机已验收 2026-10-03）** | registry `v85x/easyui/2.3.0`（较老）与 `2.9.0` 都含 `IPageChangeListener + getPageSize + turnTo*`（**已逐个核对头文件**）；组件无平台宏；**V85X 实测（2026-10-03）**：`fsc build` + `fsc launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式 |
 
 ### vinyl
 
@@ -217,7 +217,7 @@ evidence:
 | F135 | 未验证 | 未验证 | — | 与 F133 同核（C906 RISC-V），预期一致（待测） |
 | Z20 / Z21 | 未验证 | 未验证（注册表有 nanovg 包则可用） | — | 待测 |
 | T113 | 未验证 | 未验证 | — | 待测 |
-| V85X | ❌ **不可编**（2026-10-05 V85X 工具链实编） | ❌ 同上（编不过就谈不上后端） | — | 卡点**不是** nanovg（已解决：`nanovg.h` 那关过了，`packages/nanovg/lib/v85x/libnanovg.so` 与设备 `/lib` 那份 md5 逐字节相同 `F5F1157D…`），而是 `zk_vinyl.cpp:40` 的 **`misc/image_utility.h`**：它**不在任何 easyui 包内**（V85X 2.9.0 / Z20 2.6.0 的 `include/` 都无 `misc/`）、不在仓内、设备 `libeasyui.so` 也无 `misc::*` 符号 —— 那是 F133 **应用工程侧**的头。两条出路：① 厂商补该头（+实现）；② 拍板把 `misc::image_load/bitmap_scale/bitmap_create/bitmap_destroy` 改写成 easyui 真有的 `utils/BitmapHelper.h`。`fun install` 走 registry 仍拉不到 nanovg（复测 `FATAL 未找到依赖包`），纯包管理器路径同样不可用。V85X（SPINOR）**不是** MCU Lite，不适用「本组件不适用」那条 **处置（需求方 2026-10-05）：本项已决定缓办、优先级放低 —— nanovg 这一路在 V85X 暂不处理，后期需要时再补；两条出路（厂商补 `misc/image_utility.h` / 改写为 `utils/BitmapHelper.h`）保持记档、不排期。即读到这里时不要把它当作待修故障。** |
+| V85X | ❌ **不可编**（2026-10-05 V85X 工具链实编） | ❌ 同上（编不过就谈不上后端） | — | 卡点**不是** nanovg（已解决：`nanovg.h` 那关过了，`packages/nanovg/lib/v85x/libnanovg.so` 与设备 `/lib` 那份 md5 逐字节相同 `F5F1157D…`），而是 `zk_vinyl.cpp:40` 的 **`misc/image_utility.h`**：它**不在任何 easyui 包内**（V85X 2.9.0 / Z20 2.6.0 的 `include/` 都无 `misc/`）、不在仓内、设备 `libeasyui.so` 也无 `misc::*` 符号 —— 那是 F133 **应用工程侧**的头。两条出路：① 厂商补该头（+实现）；② 拍板把 `misc::image_load/bitmap_scale/bitmap_create/bitmap_destroy` 改写成 easyui 真有的 `utils/BitmapHelper.h`。`fsc install` 走 registry 仍拉不到 nanovg（复测 `FATAL 未找到依赖包`），纯包管理器路径同样不可用。V85X（SPINOR）**不是** MCU Lite，不适用「本组件不适用」那条 **处置（需求方 2026-10-05）：本项已决定缓办、优先级放低 —— nanovg 这一路在 V85X 暂不处理，后期需要时再补；两条出路（厂商补 `misc/image_utility.h` / 改写为 `utils/BitmapHelper.h`）保持记档、不排期。即读到这里时不要把它当作待修故障。** |
 
 ### wall_sync
 
@@ -230,7 +230,7 @@ evidence:
 | F133 / F135 / F136 | `未验证` | 组件本身是纯 C++11 + POSIX（socket/pthread/clock_gettime）+ rapidjson，**编译大概率没问题**；但"拼墙相位对齐"链条依赖：① 平台有可注入的硬解引擎；② 各机墙钟可校时；③ MI/图层支持多实例。以上均**未在 F133 系上做过拼墙实测** |
 | Z21 | `未验证` | 同上；来源工程只在 Z20 上做拼墙 |
 | T113 / T113EMMC | `未验证` | 同上 |
-| V85X | ❌ **不可用**（缺 `rapidjson` 包） | 核心 `zk_wall_sync.cpp` 需要 `<rapidjson/document.h>`。声明 `rapidjson 1.1.0` 后 `fun install` 去拉 `packages/v85x/rapidjson/1.1.0.zip` → **502 Bad Gateway**（V85X 无此包）（2026-10-03 V85X 真机工具链实编） |
+| V85X | ❌ **不可用**（缺 `rapidjson` 包） | 核心 `zk_wall_sync.cpp` 需要 `<rapidjson/document.h>`。声明 `rapidjson 1.1.0` 后 `fsc install` 去拉 `packages/v85x/rapidjson/1.1.0.zip` → **502 Bad Gateway**（V85X 无此包）（2026-10-03 V85X 真机工具链实编） |
 
 ## 4. 怎么用 / 怎么改
 

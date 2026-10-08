@@ -1,7 +1,7 @@
 # platforms.md —— icons 模块的平台说明
 
 > 结论先说：**本模块是全平台通用的纯资源库**。产物是标准 32-bit RGBA PNG（8bit/通道），
-> 图形源是 Tabler SVG（MIT）与少量自绘，**不含任何平台代码、不依赖任何底层包、不需要 `fun install`**。
+> 图形源是 Tabler SVG（MIT）与少量自绘，**不含任何平台代码、不依赖任何底层包、不需要 `fsc install`**。
 > 任何一个能跑 FlyThings/zkgui 的平台都能直接用它生成的图片。
 > 建立：2026-09-15｜更新：2026-09-17（v0.3.0：vendor SVG 收进单归档，按需解，离线优先）
 
@@ -65,7 +65,7 @@ zkgui 的图片控件默认按控件盒拉伸（不做等比 letterbox）。图�
 
 ## 3. 随包投递与升级
 
-- 图片资源放在工程 `<项目>/app/resources/images/`，`fun build` 时随 app 打进包里（设备上为 `/res/...`）。
+- 图片资源放在工程 `<项目>/app/resources/images/`，`fsc build` 时随 app 打进包里（设备上为 `/res/...`）。
 - **出升级包会整体替换目标机的 `/res`** → 图标必须随包走，不能只推单个文件到设备（推了也会被下次升级清掉）。
   与 `components/fonts/README.md` 第 5 节是同一个坑。
 - 只拷**用到的**图片。305 张全拷虽然也只有几十 KB，但会让 `verify_assets`/包清单变长，
@@ -82,9 +82,9 @@ zkgui 的图片控件默认按控件盒拉伸（不做等比 letterbox）。图�
 ```
 1) 生成到工程并编译：
    python scripts/gen_icons.py --set all --size 22 --out <项目>/app/resources/images
-   fun build -p <平台>          # 或 flythings_build_ui_flow
+   fsc build -p <平台>          # 或 flythings_build_ui_flow
 2) 推真机 + 抓屏：
-   fun launch -p <平台>         # 临时调试
+   fsc launch -p <平台>         # 临时调试
    flythings_device_screenshot()  # 直接抓画面
 3) 看三件事：
    · 图标是否被拉伸（对比 contact sheet 里的形状）

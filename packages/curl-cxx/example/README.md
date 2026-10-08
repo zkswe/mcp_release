@@ -8,7 +8,7 @@
 | `ui/main.json` | 页面：HTTP GET / POST / HTTPS / Downloader / WebSocket + 自检 AUTO + 结果 textview。`cd ui && fui pack ./` |
 | `src/logic/mainLogic.cc` | 回调实现：worker 线程 + 线程安全日志缓冲 + 各任务（`jobHttpGet` / `jobHttpPost` / `jobHttpsGet` / `jobDownload` / `jobWebSocket`） |
 | `mainActivity_button_tab.snippet.cpp` | **必须补**：activity 的 `sButtonCallbackTab` 注册（6 行） |
-| `Manifest.xml` | 依赖：easyui / log / base-utility / curl-cxx / curl / mbedtls / cares / z，改完 `fun install` |
+| `Manifest.xml` | 依赖：easyui / log / base-utility / curl-cxx / curl / mbedtls / cares / z，改完 `fsc install` |
 
 **来源**：`demos/net-stack-verify-z20`（GET/POST/HTTPS）+ `demos/net-stack-advanced-z20`（Downloader 双任务 + 进度回调、WebSocket 回显）——两轮都是真机验证过的。
 
@@ -30,7 +30,7 @@ http::WebSocket ws; ws.connect(url, cfg);          // 依赖 curl 的 ws 支持�
 
 1. `ui/main.json` → 工程 `ui/`，`cd ui && fui pack ./`（出 `main.ftu`）
 2. `src/logic/mainLogic.cc` 并进工程 logic；把 `mainActivity_button_tab.snippet.cpp` 的 6 行填进 `src/activity/mainActivity.cpp` 的 `sButtonCallbackTab[]`
-3. 改掉代码里的 IP 占位（`192.168.x.x` → 你的测试机）→ `fun install && fun build -p z20` → 部署见 `../platforms.md`（`/tmp` 劫持 + 单次 `setprop ctl.restart zkswe`）
+3. 改掉代码里的 IP 占位（`192.168.x.x` → 你的测试机）→ `fsc install && fsc build -p z20` → 部署见 `../platforms.md`（`/tmp` 劫持 + 单次 `setprop ctl.restart zkswe`）
 
 ## 验证点（真机实测口径，见 `../evidence/`）
 

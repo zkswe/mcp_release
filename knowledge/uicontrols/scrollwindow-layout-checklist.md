@@ -50,7 +50,7 @@ scrollwindow__N（视口：只决定「看多大」）
 | 6 | 行端**箭头/图标看不见**，或看着**和文本挤在一起**| 行内控件盒重叠：引擎**先画背景图、后画文字**，数值文字把图标盖住（某 480×480 项目实测重叠 22px 即必现）；更常见的根因是**该行被自创成“左标题+右值单行式”**，逼着文本与箭头抢同一行 | ① 优先把该行**按同页行模板摆回**（两行式：标题在上、值在下）→ 值与箭头天然相隔；② 真要拉开就调盒子，**禁止“挤文本去让位”**| `check_all` **#27**（文本盒 × 图标盒相交）；像素：行内墨迹列段互不重叠 |
 | 7 | 某几行**倒角线看着变粗**| 同一页混用两种切图口径（有描边带 vs 素面） | 同族图统一口径（素面 r=12 + 覆盖率高斯/BOX 面积平均） | `check_all` #22/#25 + `references/kb/image-gen-standard.md` §1.6 |
 | 8 | 控件**拖不动**| scrollwindow 缺 `touchable:true` | 补 `touchable:true` | `check_all` #14 字段全集 |
-| 9 | **改了像没改**（界面上还是旧布局） | ① 改 json 没立刻 `fui pack` → `fun pack` 的 ftu→json 自动同步把改动打回；② **部署层混搭**（新 lib + 旧 UI） | ① 改完 json 立刻 pack 出 ftu；② 部署后跑 `flythings_selfcheck` **第⑪区「部署一致性」**| 见 `knowledge/devflow/deploy-consistency-check.md` |
+| 9 | **改了像没改**（界面上还是旧布局） | ① 改 json 没立刻 `fui pack` → `fsc pack` 的 ftu→json 自动同步把改动打回；② **部署层混搭**（新 lib + 旧 UI） | ① 改完 json 立刻 pack 出 ftu；② 部署后跑 `flythings_selfcheck` **第⑪区「部署一致性」**| 见 `knowledge/devflow/deploy-consistency-check.md` |
 | 10 | 内容溢出屏幕 / 元素挤在一起 ("堆叠") | 设计期没算「内容总高 vs 可用高」，靠压行距/字号硬塞 | 设计阶段先算总高，超了就上滑动窗口（2026-09-26 口径） | 见本文 §row 对应行的判定与做法 |
 
 ## 2.1 ★ 设置行 = 相对约束 + 规则（**不订具体尺寸**；需求方 2026-10-01 定）

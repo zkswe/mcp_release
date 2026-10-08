@@ -22,14 +22,14 @@
    TcpReceiveTask::instance().addListener(&listener);                          // 收文件通知
    MpTransferRuntimeCoordinator::instance().release("my-project");             // 停（owner 全释放才真停）
    ```
-   然后 `fun build`（依赖 `base-utility`）。
+   然后 `fsc build`（依赖 `base-utility`）。
 
 ## 2. 验证点（三层，逐层加真）
 
 | 层 | 命令/做法 | 期望 |
 |---|---|---|
 | ① PC 侧（不接设备） | `py .\src\python\receiver.py --name PythonFrame --output .\received` | 小程序能发现 `PythonFrame` 并传图；文件长度与发送端一致；非末块 `ACK <累计字节>\n`、末块 `OK\n` |
-| ② 设备侧（不上屏） | `fun build` → 推设备跑 → 看 logcat | 广播任务启动、TCP 监听 9000；小程序能发现你的设备名 |
+| ② 设备侧（不上屏） | `fsc build` → 推设备跑 → 看 logcat | 广播任务启动、TCP 监听 9000；小程序能发现你的设备名 |
 | ③ 端到端 | 小程序传图片/视频 | 文件落在 `MP_PATH`，大小 == 协议声明的 `fileLen`，**无残留 `.tmp`**；`onFileAdded()` 回调被触发 |
 
 ## 3. 联调最容易踩的三件事（协议层面，来自指南）

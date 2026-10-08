@@ -4,7 +4,7 @@
   openssl 1.1.1-w 最小示例（Z20 86 面板 / 480x480）
   ⚠️ 版本名是 Z20 专属（其它平台是 1.1.1-g）→ 换平台要改这行。
   ⚠️ 跑之前把 resources/cacert.pem 推到设备资源目录（resPath）：自己不 load_verify_locations 就是连接失败。
-  改完 Manifest 必须 fun install。
+  改完 Manifest 必须 fsc install。
 -->
 <manifest platform="Z20">
     <dependencies enableOnPlatforms="Z20">

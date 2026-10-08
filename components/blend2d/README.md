@@ -76,7 +76,7 @@ static void renderFrame(int idx) {
 // 定时器里：renderFrame(++i); ctrl->setInvalid(!ctrl->isInvalid());   // ★ 平台唯一刷帧口径
 ```
 
-**完整可编示例** → [`example/`](example/)（Z20 480×480 工程，本轮 `fun build -p Z20` **实测通过**，见 `example/README.md`）。
+**完整可编示例** → [`example/`](example/)（Z20 480×480 工程，本轮 `fsc build -p Z20` **实测通过**，见 `example/README.md`）。
 **换性能档**：把 `lib/z20-neon/libblend2d.so` 覆盖到 `<工程>/src/dependencies/lib/libblend2d.so`，**代码一行不改**。
 
 ---
@@ -141,8 +141,8 @@ static void renderFrame(int idx) {
 
 | 通道 | 怎么做 | 实测 |
 |---|---|---|
-| 调试 | `fun launch` **不推**第三方包 `.so` → `adb push libblend2d.so /tmp/libblend2d.so` + `setprop ctl.restart zkswe` | ✅ 跑通（无 `initLib error`，md5 两侧一致） |
-| **量产/交付** | 把选定的 `.so` 放进 `<工程>/src/dependencies/lib/libblend2d.so` → `fun pack`（进 `update.img`） | ✅ 原厂档 `update.img` 1,143,336 B / NEON 档 1,262,120 B / 无 blend2d 基线 647,720 B |
+| 调试 | `fsc launch` **不推**第三方包 `.so` → `adb push libblend2d.so /tmp/libblend2d.so` + `setprop ctl.restart zkswe` | ✅ 跑通（无 `initLib error`，md5 两侧一致） |
+| **量产/交付** | 把选定的 `.so` 放进 `<工程>/src/dependencies/lib/libblend2d.so` → `fsc pack`（进 `update.img`） | ✅ 原厂档 `update.img` 1,143,336 B / NEON 档 1,262,120 B / 无 blend2d 基线 647,720 B |
 
 > Z20 `res` 分区上限 **7,470,080 B**，出包前先看余量；性能档额外依赖 **`libgcc_s.so.1`**（Z20 有，别板要先确认）。
 
@@ -165,7 +165,7 @@ static void renderFrame(int idx) {
 
 ```
 ① initLib error / 加载失败
-   → 检查 .so 是否在设备上：调试要 adb push 到 /tmp；量产要 src/dependencies/lib/ + fun pack
+   → 检查 .so 是否在设备上：调试要 adb push 到 /tmp；量产要 src/dependencies/lib/ + fsc pack
    → 性能档还要看 /lib/libgcc_s.so.1 是否存在
 ② open() 失败
    ERR_NO_MEM  → 画布太大（480×480=0.88 MB，800×1280=4.10 MB），减小尺寸
@@ -196,14 +196,14 @@ components/blend2d/
 ├─ lib/BUILD_INFO.md            ← 两个库档怎么来的（commit/命令/ABI/体积/libgcc_s）
 ├─ scripts/build-neon.sh        ← 从 gitee 镜像取源 + 锁 commit + cmake 原文（重编性能档）
 ├─ scripts/verify_libs.py       ← 两档自检（属性/符号 787:787/NEON 命中）
-└─ example/                     ← Z20 最小可编工程（本轮 fun build -p Z20 通过）
+└─ example/                     ← Z20 最小可编工程（本轮 fsc build -p Z20 通过）
 ```
 
 1. 工程 `Manifest.xml` 声明底层包：`<package id="blend2d" version="0.11.1"/>`（**版本写死，不用 `^`**）
    + 上屏用的 `easyui`（见本模块 [`Manifest.xml`](Manifest.xml)）；
-2. `fun install`（改过 Manifest 必须重跑，否则头文件路径不进 CMake）；
+2. `fsc install`（改过 Manifest 必须重跑，否则头文件路径不进 CMake）；
 3. 把选定的 `.so` 放到 `<工程>/src/dependencies/lib/libblend2d.so`（工具链会自动加 `-L` 与 rpath）；
-4. 编译时把 `src/zk/` 加进 include 路径（`fun build` 默认已含 `src/`）。
+4. 编译时把 `src/zk/` 加进 include 路径（`fsc build` 默认已含 `src/`）。
 
 **符号自检（拿到库先跑一次）**
 ```bash
@@ -221,7 +221,7 @@ python components/blend2d/scripts/verify_libs.py --fast     # 秒级（属性 + 
 | 门面 API（最小面） | ✅ 已实现（`include/` + `src/`） |
 | 两个库档 + 构建凭据 | ✅ 入库（md5 与 `temp/blend2d_neon/` 产物一致） |
 | 库自检脚本 | ✅ `scripts/verify_libs.py` 全 PASS（16 项，含 ABI 787:787 与 NEON 命中） |
-| 示例**编译** | ✅ `fun build -p Z20` 通过（本轮实测，产物 `libzkgui.so` 301,892 B，NEEDED 含 `libblend2d.so`） |
+| 示例**编译** | ✅ `fsc build -p Z20` 通过（本轮实测，产物 `libzkgui.so` 301,892 B，NEEDED 含 `libblend2d.so`） |
 | 示例**上真机** | ❌ **未做**（本轮纪律只编译不上机；真机通道已由前两轮基准工程验过） |
 | Z20 真机性能/效果 | ✅ 已验（**引用前两轮基准工程**的证据，见 `lib/BUILD_INFO.md` §4；本门面形态的真机回归待做） |
 | Z21 / T113EMMC / V85X / T113 / F13x | ⏳ / ❌ 未验证（见 `platforms.md` §2/§3） |

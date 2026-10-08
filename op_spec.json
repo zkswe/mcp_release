@@ -145,11 +145,11 @@
         "TF卡升级包",
         "刷机"
       ],
-      "flow": "fun install →（with_build）fun build → fun pack；产物 `.fsc/<平台>/update.img`。",
+      "flow": "fsc install →（with_build）fsc build → fsc pack；产物 `.fsc/<平台>/update.img`。",
       "params": [
         {
           "name": "out_path",
-          "desc": "产物路径 → fun pack -o"
+          "desc": "产物路径 → fsc pack -o"
         },
         {
           "name": "ab",
@@ -161,16 +161,16 @@
         },
         {
           "name": "release_version",
-          "desc": "传给 fun pack --release-version（发布版本号；留空则不带该参数）"
+          "desc": "传给 fsc pack --release-version（发布版本号；留空则不带该参数）"
         },
         {
           "name": "with_build",
-          "desc": "True 先跑 fun build 再 pack；默认 False 直接 pack 现有产物"
+          "desc": "True 先跑 fsc build 再 pack；默认 False 直接 pack 现有产物"
         }
       ],
       "rules": [
         "`sign error 0xc0000135`=缺 32 位 VC++",
-        "`package not found in local`=先 fun install"
+        "`package not found in local`=先 fsc install"
       ],
       "keywords": [
         "固化",
@@ -916,20 +916,20 @@
       "category": "build",
       "stage": "build",
       "flow": [
-        "流程：json↔ftu 时间戳检查 → fui pack → fun install → fun build → 设备探测 + fun launch（只编译传 with_launch=False）→ 字体体检 + 设备侧 md5 比对（staleOnDevice=true ⇒ 设备旧版）。"
+        "流程：json↔ftu 时间戳检查 → fui pack → fsc install → fsc build → 设备探测 + fsc launch（只编译传 with_launch=False）→ 字体体检 + 设备侧 md5 比对（staleOnDevice=true ⇒ 设备旧版）。"
       ],
       "hardRules": [
         "@platform-positioning"
       ],
       "rules": [
-        "**桩禁手写**；缺桩 → 让 `fun build` 追加后**把桩移到文件作用域**（非破坏）。⛔ `rm <p>Logic.cc` + 重建**只允许首次构建/空文件**；有业务代码时删除 = **代码衰退，禁止**",
-        "加页 = `fui pack ui/<p>.json ui/<p>.ftu` → `fun build`（生成 `src/logic/<p>Logic.cc` 与回调桩；细节见 `knowledge/devflow/page-architecture-spec.md` §1.5）",
-        "fun 能力表见 `fun_capabilities.json`（`sim` 未释放、`run` 不明确，不用）",
+        "**桩禁手写**；缺桩 → 让 `fsc build` 追加后**把桩移到文件作用域**（非破坏）。⛔ `rm <p>Logic.cc` + 重建**只允许首次构建/空文件**；有业务代码时删除 = **代码衰退，禁止**",
+        "加页 = `fui pack ui/<p>.json ui/<p>.ftu` → `fsc build`（生成 `src/logic/<p>Logic.cc` 与回调桩；细节见 `knowledge/devflow/page-architecture-spec.md` §1.5）",
+        "fun 能力表见 `fsc_capabilities.json`（`sim` 未释放、`run` 不明确，不用）",
         "src/activity/ 由 IDE 生成（禁手改），业务只写 src/logic/*.cc；链库 src/dependencies/lib/，**libc 必须匹配**（Z20/Z21=glibc，其余=musl 系）。"
       ],
-      "docRef": "knowledge/devflow/cli-fun-toolchain.md",
+      "docRef": "knowledge/devflow/cli-fsc-toolchain.md",
       "seeAlso": [
-        "knowledge/devflow/cli-fun-toolchain.md",
+        "knowledge/devflow/cli-fsc-toolchain.md",
         "knowledge/devflow/deploy-scene-map.md"
       ],
       "triggers": [
@@ -1148,7 +1148,7 @@
       "docRef": "knowledge/devflow/dependency-package-docs.md",
       "seeAlso": [
         "knowledge/devflow/dependency-package-docs.md",
-        "knowledge/devflow/cli-fun-toolchain.md"
+        "knowledge/devflow/cli-fsc-toolchain.md"
       ],
       "triggers": [
         "依赖清单",
@@ -1157,20 +1157,20 @@
       ]
     },
     "flythings_add_package": {
-      "summary": "把 package 添加进项目 Manifest.xml 并执行 fun install 拉取依赖（添加包闭环流程）。",
+      "summary": "把 package 添加进项目 Manifest.xml 并执行 fsc install 拉取依赖（添加包闭环流程）。",
       "risk": "write",
       "category": "package",
       "stage": "build",
       "params": [
         {
           "name": "with_install",
-          "desc": "默认 True：写进 Manifest.xml 后执行 fun install 同步依赖；False 只改清单不拉取"
+          "desc": "默认 True：写进 Manifest.xml 后执行 fsc install 同步依赖；False 只改清单不拉取"
         }
       ],
       "flow": "版本解析顺序：本地 registry → 离线 catalog → 在线（semver 取最新，不依赖包实体是否存在）；已声明同包则更新版本，未声明则追加 <package id version/>，保留原 Manifest 格式。",
-      "docRef": "knowledge/devflow/cli-fun-toolchain.md",
+      "docRef": "knowledge/devflow/cli-fsc-toolchain.md",
       "seeAlso": [
-        "knowledge/devflow/cli-fun-toolchain.md",
+        "knowledge/devflow/cli-fsc-toolchain.md",
         "knowledge/devflow/dependency-package-docs.md"
       ],
       "triggers": [
@@ -1239,7 +1239,7 @@
       ],
       "rules": [
         "**签名唯一真源 = 本地 registry 头文件**：`~/.fsc/registry/public/<平台>/<包>/<版本>/include`（实测 v85x / z20 各有 62 个 easyui 头）。本节只回答\"签名是什么\"，**头文件原文才对得上编译器**；知识页里写的是用法与注意事项，参数名/默认值一律以本 op 返回的签名为准（例：`drawRect(..., int radius = 0)` 的 `= 0`、`drawArc(int centerX, int centerY, int radiusX, ...)` 的参数名）。",
-        "**本机 registry 由 `fun install` 落盘**（2026-10-05 口径）：头文件在 `~/.fsc/registry/public/<平台>/<包>/<版本>/include`，而 `registry/public/` 下**只有跑过 `fun install` 的平台**（本机实测只有 v85x / z20）。所以\"服务端有该包\"≠\"本机拿得到头文件\"：没装过的平台，本 op 会**明确报错并给 fix 命令**（`fun install --platform <平台>`），而不是返回空的类表让你误以为\"这个包没有 API\"。"
+        "**本机 registry 由 `fsc install` 落盘**（2026-10-05 口径）：头文件在 `~/.fsc/registry/public/<平台>/<包>/<版本>/include`，而 `registry/public/` 下**只有跑过 `fsc install` 的平台**（本机实测只有 v85x / z20）。所以\"服务端有该包\"≠\"本机拿得到头文件\"：没装过的平台，本 op 会**明确报错并给 fix 命令**（`fsc install --platform <平台>`），而不是返回空的类表让你误以为\"这个包没有 API\"。"
       ]
     },
     "flythings_resolve_dependencies": {
@@ -1261,11 +1261,11 @@
       ]
     },
     "flythings_gen_logic_stub": {
-      "summary": "回调桩体检/兜底（生成归 fun build）：页面逻辑写在 src/logic。",
+      "summary": "回调桩体检/兜底（生成归 fsc build）：页面逻辑写在 src/logic。",
       "risk": "write",
       "category": "project",
       "stage": "build",
-      "flow": "读 ui/*.json 控件表（回调名用 caption）→ 查 ui_schema.json 的 controls.<类型>.callbacks → 补缺失的桩进 src/logic/<页>Logic.cc。**生成首选走工具链**：fui pack 后 fun build 建缺失的 logic 文件 + 追加桩。",
+      "flow": "读 ui/*.json 控件表（回调名用 caption）→ 查 ui_schema.json 的 controls.<类型>.callbacks → 补缺失的桩进 src/logic/<页>Logic.cc。**生成首选走工具链**：fui pack 后 fsc build 建缺失的 logic 文件 + 追加桩。",
       "params": [
         {
           "name": "project_root",
@@ -1286,7 +1286,7 @@
       ],
       "rules": [
         "只补不改：已存在的同名函数一律跳过，不覆盖业务代码",
-        "生成归工具链：fun build 建缺失 logic 文件并追加桩；本 op 是体检/兜底",
+        "生成归工具链：fsc build 建缺失 logic 文件并追加桩；本 op 是体检/兜底",
         "桩只是骨架：页面逻辑写在同一个 logic 文件（见 flow 步骤 write-logic）；容器/显示类控件无桩，走 findControlByID + setXxxListener 接线",
         "listview 的 count/data/click 三条成组；onButtonClick 的 true=吞事件、false=放行",
         "回调名/签名真源 = ui_schema.json 的 controls.<类型>.callbacks"
@@ -1387,22 +1387,22 @@
       ]
     },
     "flythings_attach_cli_tools": {
-      "summary": "复制 fui.exe（→项目 ui/）与 fun.exe（→项目根目录）到项目，随项目交付。",
+      "summary": "复制 fui.exe（→项目 ui/）与 fsc.exe（→项目根目录）到项目，随项目交付。",
       "risk": "write",
       "category": "project",
       "stage": "build",
-      "flow": "生成后用 fun.exe build 编译、launch 推送，**无需客户导入 IDE**。",
+      "flow": "生成后用 fsc.exe build 编译、launch 推送，**无需客户导入 IDE**。",
       "hardRules": [
         "src/activity/ 目录（mainActivity.cpp/h）由 IDE 编译时自动生成，禁止创建/修改；业务代码只写 src/logic/*.cc。"
       ],
-      "docRef": "knowledge/devflow/cli-fun-toolchain.md",
+      "docRef": "knowledge/devflow/cli-fsc-toolchain.md",
       "seeAlso": [
-        "knowledge/devflow/cli-fun-toolchain.md",
+        "knowledge/devflow/cli-fsc-toolchain.md",
         "knowledge/devflow/adb-and-device-selection.md"
       ],
       "triggers": [
         "装工具链",
-        "项目里没有 fun.exe",
+        "项目里没有 fsc.exe",
         "缺 fui.exe",
         "交付要带编译工具"
       ]
@@ -1429,7 +1429,7 @@
       "docRef": "knowledge/devflow/dependency-package-docs.md",
       "seeAlso": [
         "knowledge/devflow/dependency-package-docs.md",
-        "knowledge/devflow/cli-fun-toolchain.md"
+        "knowledge/devflow/cli-fsc-toolchain.md"
       ],
       "triggers": [
         "依赖对不对",
@@ -1665,14 +1665,14 @@
         "to_json：生成的 json 清单（与设备端逐字节一致）+ 推送结果"
       ],
       "rules": [
-        "**设备读 json 不是 .tr**：`fun launch` **不推 i18n**（只推 ftu/images/font/lib/cfg）→ 改完翻译必须 `action=\"to_json\"`（默认自动 push），否则设备仍跑旧翻译（logcat 刷 not found value）",
+        "**设备读 json 不是 .tr**：`fsc launch` **不推 i18n**（只推 ftu/images/font/lib/cfg）→ 改完翻译必须 `action=\"to_json\"`（默认自动 push），否则设备仍跑旧翻译（logcat 刷 not found value）",
         "落盘的 `i18n/<lang>.json` 必须是 **tab 制表 + 冒号后无空格 + 末尾无空行**（设备按此读）→ **不要手改 json**：改 `.tr` 再 to_json",
         "换行转义：`.tr` 写 `&#x000A;`（唯一写法，2026-10-05 需求方拍板统一；历史字面 `\\n` 仅保留读取兼容），转出的 json 里必须是**真换行**",
         "布局 text 带 `@key` 引用；代码里 `setTextTr(key)` / `LANGUAGEMANAGER->getValue(key)` **不带 @** （带不带 @ 是最常错的地方）",
         "refactor 拆出的 key 要在所有语言文件里补齐；缺 key 由 scan 报\"缺失 key\""
       ],
       "hardRules": [
-        "**改完翻译必须 `action=\"to_json\"`**（`fun launch` 不推 i18n）—— 否则设备还是旧文案",
+        "**改完翻译必须 `action=\"to_json\"`**（`fsc launch` 不推 i18n）—— 否则设备还是旧文案",
         "`action=\"scan\"` 只读；`action=\"refactor\"` 缺省 `dry_run=true`，先看清单再落盘"
       ],
       "keywords": [

@@ -5,8 +5,8 @@ Z20 的 **HTTP/HTTPS 走这条 TLS 路线**：`curl 8.12.1-mbedtls` 编的就是
 自研协议、私有 MQTT over TLS）才直接调 `mbedtls_*`。包内 133 个头、5 个 `.a`（无 .so）。
 
 **怎么用**
-1. Manifest：`<package id="mbedtls" version="^3.6.5"/>`（一般由 curl-cxx 传递引入）→ `fun install`
-   → `fun build -p z20`；**静态库链接顺序** mbedtls → mbedx509 → mbedcrypto（+p256m/everest）。
+1. Manifest：`<package id="mbedtls" version="^3.6.5"/>`（一般由 curl-cxx 传递引入）→ `fsc install`
+   → `fsc build -p z20`；**静态库链接顺序** mbedtls → mbedx509 → mbedcrypto（+p256m/everest）。
 2. 关键 API：`mbedtls_net_connect` → `mbedtls_ctr_drbg_seed`(+entropy) → `mbedtls_ssl_config_defaults`
    → `mbedtls_ssl_conf_rng/conf_authmode/conf_ca_chain` → `mbedtls_ssl_setup` → `mbedtls_ssl_set_bio`
    → `mbedtls_ssl_handshake` → `read`/`write`。

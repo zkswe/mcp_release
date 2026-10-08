@@ -17,7 +17,7 @@
 
 ## 来源与版本
 
-- 来源：FlyThings IDE 自带的 `sdk/platform-tools/adb/`（与 `fun` / `fui` 同源发布链；`fun.exe` 由 IDE 工具链分发，不随本包）。
+- 来源：FlyThings IDE 自带的 `sdk/platform-tools/adb/`（与 `fun` / `fui` 同源发布链；`fsc.exe` 由 IDE 工具链分发，不随本包）。
 - 实测版本（随包入库时用本目录的 adb 亲自跑）：
 
 ```
@@ -37,7 +37,7 @@ Version 31.0.3-7562133
 调用方（都走 `adb_tools.resolve_adb()`，不再各写一份）：
 
 - `project_tools.py`：`build_ui_flow` 的设备探测（`adb devices -l` + `getprop ro.product.model`）、
-  设备侧 ftu/so 比对（`staleOnDevice`）、`fun launch -s <serial>` 的选机；
+  设备侧 ftu/so 比对（`staleOnDevice`）、`fsc launch -s <serial>` 的选机；
 - `ui_tools/device_screenshot.py`：抓屏链路的 adb 定位；
 - `i18n_tools.py`：`i18n_to_json` 的 adb push；
 - `components/fonts/scripts/device_font_check.py`、案例侧 deploy 脚本（`projects/**/deploy*.py`）。
@@ -60,6 +60,6 @@ python adb_tools.py devices    # 只列设备
   若本机已有别的 adb（IDE 自带、其它平台的 platform-tools）在跑，可能出现
   `adb server version doesn't match this client` → adb 会杀掉旧 server 重起（正常，一次即可）。
   设备 `offline`/看不到时先 `kill-server` 再 `devices`（比拔插有效）。
-- **`fun` 不走这里的 adb**：`fun launch` 用自带的 Go adb 客户端直连 `127.0.0.1:5037`。
+- **`fun` 不走这里的 adb**：`fsc launch` 用自带的 Go adb 客户端直连 `127.0.0.1:5037`。
   所以本目录给的是 **MCP 侧探测/比对/抓屏/i18n 推送**用的 adb；两者共用同一个 host server。
 - 不要在设备上跑 `adb reboot` 做验证 —— 整机板子重启后可能掉网（现场踩过）。

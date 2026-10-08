@@ -170,7 +170,7 @@ def main(argv):
     print('      %s' % render_preview())
     print('\n下一步（在工程里）：')
     print('  fui pack app/ui/main.json        # 或 flythings_fui_pack，设备实际加载 ftu')
-    print('  fun build -p <平台> && fun launch -p <平台>   # 或 flythings_build_ui_flow')
+    print('  fsc build -p <平台> && fsc launch -p <平台>   # 或 flythings_build_ui_flow')
     return 0
 
 

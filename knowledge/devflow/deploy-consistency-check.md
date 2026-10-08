@@ -33,7 +33,7 @@ evidence:
 
 | 优先级 | 路径 | 说明 |
 |---|---|---|
-| ① | `/tmp/EasyUI.cfg` | 调试/覆盖态（tmpfs，**重启即空**）；`fun launch` 与手工部署都写这里 |
+| ① | `/tmp/EasyUI.cfg` | 调试/覆盖态（tmpfs，**重启即空**）；`fsc launch` 与手工部署都写这里 |
 | ② | `/mnt/extsd/EasyUI.cfg` | 外置卡覆盖（**历史事故源**：旧卡会把程序劫持到旧 lib/旧 ui） |
 | ③ | `/res/etc/EasyUI.cfg` | 固化态（随 `update.img` 走，这才是量产口径） |
 

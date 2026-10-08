@@ -17,7 +17,7 @@
 ```
 
 ```bash
-fun install && fun build -p z20
+fsc install && fsc build -p z20
 ```
 
 ## 2. 入口与 API 速查
@@ -63,7 +63,7 @@ static bool onButtonClick_ButtonScan(ZKButton *p) {
 }
 ```
 
-**三步跑起来**：`example/ui/main.json` → `ui/` + `fui pack ./` → logic/按键表（`example/mainActivity_button_tab.snippet.cpp`）→ `fun build -p z20` → 部署见 `platforms.md`。
+**三步跑起来**：`example/ui/main.json` → `ui/` + `fui pack ./` → logic/按键表（`example/mainActivity_button_tab.snippet.cpp`）→ `fsc build -p z20` → 部署见 `platforms.md`。
 
 ## 4. 真机实测（Z20 86 面板，2026-09-29，全自动「自检 AUTO」跑完 6 步）
 

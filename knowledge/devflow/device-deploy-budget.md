@@ -33,9 +33,9 @@ adb shell "free; df -h /tmp; /tmp/busybox du -sk /tmp/* | sort -n"
 
 Z21 实测：`Mem total 36072 kB`（**36MB**）；`/tmp` = **tmpfs 13.6MB（Z21 实测；V85X 实测 27M，另有 32MB 量级的板子 —— 容量随板子/固件差异大，别拿单个数字当通用值，部署前先 `df -k /tmp`）**（tmpfs 占的是 RAM，不是磁盘！）。
 
-## 2. 铁律：`fun launch` 的产物全部落在 /tmp（= 吃内存）
+## 2. 铁律：`fsc launch` 的产物全部落在 /tmp（= 吃内存）
 
-一次 `fun launch` 至少推：`/tmp/lib/libzkgui.so` + `/tmp/font/font.ttf` + `/tmp/ui/main.ftu` + `/tmp/EasyUI.cfg`。
+一次 `fsc launch` 至少推：`/tmp/lib/libzkgui.so` + `/tmp/font/font.ttf` + `/tmp/ui/main.ftu` + `/tmp/EasyUI.cfg`。
 **字库是最大头**（实测字节数：常用字 `zkswe-hans-common.ttf` **892848 B**（872 KiB）；全量 `zkswe-hans-full.ttf` **7567300 B**（7.22 MiB）；多语言 `zkswe-hans-multi.ttf` **10742560 B**（10.24 MiB）—— 尺寸以 `components/fonts/fonts/*.ttf` 实际字节为准）——加上 tmpfs 里已有的调试工具（busybox 1.9MB 等），
 很容易把可用内存压到几百 KB → **OOM killer 杀 `zkgui` → 设备重启**。
 
@@ -73,9 +73,9 @@ Z21 实测：`Mem total 36072 kB`（**36MB**）；`/tmp` = **tmpfs 13.6MB（Z21 
 ## 4. 两条部署侧坑
 
 - `adb push` **不带执行位**→ 推完必须 `chmod 777 /tmp/xxx`（否则 `can't execute: Permission denied`）。
-- 设备**重启会清空 /tmp**（含 `EasyUI.cfg`）→ 必须用 `fun launch` **整套**重新部署；
+- 设备**重启会清空 /tmp**（含 `EasyUI.cfg`）→ 必须用 `fsc launch` **整套**重新部署；
   **只 push 单个文件会跑出厂 UI**（缺 `EasyUI.cfg` 时 zkgui 走默认资源路径，现象是"我的界面没出现"）。
-- `fun launch` 偶发 `FATAL read tcp 127.0.0.1:5037 i/o timeout` / `device offline`：重连（`adb connect <ip>:5555`）后重试即可，
+- `fsc launch` 偶发 `FATAL read tcp 127.0.0.1:5037 i/o timeout` / `device offline`：重连（`adb connect <ip>:5555`）后重试即可，
 压测类程序反复断电 WiFi 时网络 adb 必然抖。
 
 ## 5. 重启应用进程：走 setprop 让 init 控制（**不要 kill**）
@@ -84,7 +84,7 @@ Z21 实测：`Mem total 36072 kB`（**36MB**）；`/tmp` = **tmpfs 13.6MB（Z21 
 
 - **框架设计是类 init 服务**：应用（`/etc/init.rc`：`service zkswe /bin/zkgui`）由 init 托管，
   **不能 kill 程序**；控制程序的唯一姿势是 **`setprop ctl.restart zkswe`**（init 回收 → 重新拉起）。
-- **厂商 CLI 也是这么做的**：`fun launch` 二进制里只用到 `ctl.restart` + `zkswe` + `setprop`（**没有 kill**）；
+- **厂商 CLI 也是这么做的**：`fsc launch` 二进制里只用到 `ctl.restart` + `zkswe` + `setprop`（**没有 kill**）；
 手动部署（推 `/tmp` + `/tmp/EasyUI.cfg`）之后同样一句 `setprop ctl.restart zkswe` 让新 lib/ftu 生效
   （实测新进程确实加载 `/tmp` 的 lib，`/proc/<pid>/maps` 可见）。
 按框架口径，**任何 kill 都不该用**，统一 setprop。

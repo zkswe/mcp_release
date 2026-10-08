@@ -116,7 +116,7 @@
 | # | 坑 | 症状 | 处置 | 出处 |
 |---|---|---|---|---|
 | T1 | `fun` 代码生成器不支持 `checkbox__`（无 ID 宏 / 指针 / 回调；ftu 本身正常、设备能显示） | 逻辑里拿不到 checkbox → 以为框架不支持该控件 | 改用两态 `button__N`（G-18）；建议反馈工具链 | D17 / 案例 README T1 |
-| T2 | `fun launch`（Windows）把 `resources/<子目录>/*` 推成**平铺文件名**（`images\x.png`） | 所有图片控件全空（按钮只剩文字） | 设备侧脚本搬回 `images/`（`fui unpack` 校验 ftu 内为正斜杠） | D21 / 案例 README T2 |
+| T2 | `fsc launch`（Windows）把 `resources/<子目录>/*` 推成**平铺文件名**（`images\x.png`） | 所有图片控件全空（按钮只剩文字） | 设备侧脚本搬回 `images/`（`fui unpack` 校验 ftu 内为正斜杠） | D21 / 案例 README T2 |
 | T3 | 设备侧 `libeasyui.so` **无 `ZKBase::getAbsolutePosition()`**| `dlopen: undefined symbol ...getAbsolutePositionEv` → **整屏黑**（形似布局/打包问题） | 只用 `getPosition()`（顶级控件即屏绝对坐标） | D20 / 案例 README T3 |
 | T4 | `check_all #10` 禁 `ZKSeekBar` 用 `.9.png`，而 `#11/#17` 又要求 `resources/images/` 图与控件盒 **1:1**| 轨道/填充图必须按控件盒尺寸出图 | 逐尺寸生成普通 PNG（`(w,h)` 参数化） | 案例 README T4 |
 | T5 | `check_all #6` 把框架名 `mActivityPtr` 误判为控件指针 | 想 `findControlByID` 取未生成指针的控件时 FAIL | 与 T1 同源，改用生成器支持的控件后自然规避 | 案例 README T5 |

@@ -18,7 +18,7 @@
 </dependencies>
 ```
 
-`fun install && fun build -p z20`
+`fsc install && fsc build -p z20`
 
 ## 最小用法
 

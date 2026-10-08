@@ -6,7 +6,7 @@ LWT 遗嘱 + SSL 配置项），底层是 paho 的**异步 API**。Z20 在跑的
 **怎么用**
 1. Manifest（**paho 不能漏**，TLS 还要 openssl）：`<package id="mqtt-cxx" version="^3.2.0"/>` +
    `<package id="paho-mqtt3as" version="^1.3.13"/>`（Z20 只有 `as` 变体，**没有 paho-mqtt3a**）+
-   `<package id="openssl" version="1.1.1-w"/>` → `fun install` → `fun build -p z20`。
+   `<package id="openssl" version="1.1.1-w"/>` → `fsc install` → `fsc build -p z20`。
 2. 关键 API：`mqtt::Client::Configuration conf;`（`server="mqtt://host:1883"`、`client_id/user/password`、
    `will.*`、`on_connected/on_disconnected`）→ `mqtt::Client client(conf);`（构造即连接，**要 try/catch**）
    → `subscribe(topic, mqtt::QOS_AT_LEAST_ONCE, handler)` / `publish(topic, payload, qos, retained)`。

@@ -21,7 +21,7 @@
 | modal 窗口里的绘制差异（附带发现） | `div.modal` 窗口**不画自己的底色**，里面**普通 window 的底色也不画**；但**按钮的底色会画**、textview 的**文字**会画。所以 example 里用一张铺满的「卡片按钮」当白底（`setTouchable(false)+setTouchPass(true)`，不抢事件） |
 | 前置条件 | `/tmp` 可写（`/res` 是 squashfs 只读）；⚠️ `/data` 已满，别推文件到 `/data` |
 | 已知限制 | ① fb 双缓冲（`virtualHeight=1200`）：抓屏必须按读到的 `pan` 取帧，否则比对的是黑屏/旧帧；② **【已勘正 2026-09-28】�回重复重启后触摸不响应 = 当时脚本用 `kill -9 zkgui` 的后果** —— 按框架口径（应用由类 init 服务托管，不能 kill）改成 `setprop ctl.restart zkswe` 后，**Z20 108 实测 10 轮重启：pid 每轮换新、触摸注入每轮都有响应（帧差 230400 px）**，不再需要重启板子（详见 `knowledge/devflow/device-deploy-budget.md` §5） |
-| 真机验收命令 | 见 `example/README.md`（`fun build` → 推 `/tmp` → `touch tap …` → 抓屏 + `ui_diff.py`） |
+| 真机验收命令 | 见 `example/README.md`（`fsc build` → 推 `/tmp` → `touch tap …` → 抓屏 + `ui_diff.py`） |
 
 ## F133（1280×800，rotate 270/270）
 
@@ -38,7 +38,7 @@
 |---|---|---|---|
 | Z20 | ➖ 不逐平台验（口径：UI 控件只做 V85X 单平台代表验收，2026-10-03） | registry `z20/easyui/2.6.0`、`3.0.0` 头文件面一致 | 同 F133 三条 |
 | T113 | ➖ 不逐平台验（口径：UI 控件只做 V85X 单平台代表验收，2026-10-03） | registry `t113emmc/easyui/2.9.0` 一致 | 同 F133 三条 |
-| V85X | ✅ **可用（真机已验收 2026-10-03）** | registry `v85x/easyui/2.3.0`、`2.9.0` 一致；**V85X 实测（2026-10-03）**：`fun build` + `fun launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式 | 同 F133 三条；V85X 内存/带宽紧，长按翻月之类别做 |
+| V85X | ✅ **可用（真机已验收 2026-10-03）** | registry `v85x/easyui/2.3.0`、`2.9.0` 一致；**V85X 实测（2026-10-03）**：`fsc build` + `fsc launch` 通过、launch 后 `onUI_show` 确认、抓屏有内容（证据 `example/evidence/v85x_20261003_full.png`）。口径：示例为 1024×600、面板 480×1600，验的是**组件可用性**，不是版式 | 同 F133 三条；V85X 内存/带宽紧，长按翻月之类别做 |
 
 ## 跨平台注意事项（平台通用）
 

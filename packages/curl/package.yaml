@@ -6,7 +6,7 @@ id: curl
 version: "8.12.1-mbedtls"
 platforms:
   Z20:
-    registry: C:\zkswe\fun\registry\public\z20\curl\8.12.1-mbedtls
+    registry: C:\zkswe\fsc\registry\public\z20\curl\8.12.1-mbedtls
     libs: [lib/libcurl.a]
     headers_count: 12
     verified: null

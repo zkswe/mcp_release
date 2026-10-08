@@ -5,7 +5,7 @@ id: mqtt-cxx
 version: "3.2.0"
 platforms:
   Z20:
-    registry: C:\zkswe\fun\registry\public\z20\mqtt-cxx\3.2.0
+    registry: C:\zkswe\fsc\registry\public\z20\mqtt-cxx\3.2.0
     libs: [lib/libmqtt-cxx.a]
     headers_count: 1
     verified: "2026-09-29"

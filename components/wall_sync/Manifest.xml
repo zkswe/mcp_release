@@ -10,11 +10,11 @@
 
   ── 怎么用（源码引入，推荐起步）────────────────────────────────────────────
     1) 把 include/zk/zk_wall.h → 工程 <src>/zk/zk_wall.h；src/*.cpp + src/zk_wall_internal.h → 工程能编到的目录；
-    2) 按下面 【组件核心依赖】 在工程 fun.json / Manifest.xml 声明；
+    2) 按下面 【组件核心依赖】 在工程 fsc.json / Manifest.xml 声明；
     3) 自己实现 zk::wall::Engine（Z20 参考 = 官方包 simple-player 的 SimplePlayer，见 example/flythings_wiring.cc）；
     4) 把 sp_wall_* 配置组装成 SyncConfig / PlayerConfig，屏保页 1s 定时器里调 Sync::tick() + Player::start/stop()。
-    ⚠️ 改完 Manifest/fun.json **必须重跑 fun install**（否则新包的 include 路径进不了 CMake）。
-    ⚠️ fun.json 优先于 Manifest.xml；依赖写 fun.json；type:"executable" 才出可执行 ELF。
+    ⚠️ 改完 Manifest/fsc.json **必须重跑 fsc install**（否则新包的 include 路径进不了 CMake）。
+    ⚠️ fsc.json 优先于 Manifest.xml；依赖写 fsc.json；type:"executable" 才出可执行 ELF。
 
   ── 怎么用（依赖包引用，模块定型后）────────────────────────────────────────
     模块按平台编出 include/ + lib/<平台>/ 注册进包仓库后，工程里一行（版本写死，不用 ^ 浮动）：

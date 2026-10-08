@@ -100,6 +100,6 @@ evidence:
 1. **先看有没有**：本页 §2/§3，或 `flythings_list_packages(platform=...)`（列该平台全部包）。
 2. **确认版本与依赖**：`flythings_query_package(name, platform)`；版本解析顺序 = 本地 registry → 离线 catalog → 在线 semver。
 3. **看包内 API**：`flythings_get_package_api(name)`——**不要凭记忆写包内 API**。
-4. **加进工程**：`flythings_add_package(project_root, id, version)`（自动改 Manifest + `fun install`）；只想要推荐清单不动盘就用 `flythings_manifest(features=...)`。
+4. **加进工程**：`flythings_add_package(project_root, id, version)`（自动改 Manifest + `fsc install`）；只想要推荐清单不动盘就用 `flythings_manifest(features=...)`。
 
 > ⚠️ 约束：Manifest 必须声明传递依赖（例：用 `mqtt-cxx` 要连 `paho-mqtt3as` + `openssl` 一起声明，否则链接报 `BIO_read / RAND_bytes / SHA1_*` undefined）。判据见 `knowledge/devflow/dependency-package-docs.md`。

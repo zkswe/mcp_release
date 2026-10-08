@@ -71,7 +71,7 @@ adb shell setprop ctl.restart zkswe            # 重启 app → 框架的 Upgrad
 - 目录：`/mnt/usb`、`/mnt/usb1`、`/mnt/extsd`（`/mnt/mmc` 也在表里）
 - uboot 线：`/mnt/storage/zkimg/update.img` + `/mnt/storage/zkimg/.zkupgrade.cfg`（日志里会出现
   `Need to enter uboot upgrade` / `Try to enter uboot upgrade`）
-- 去重记录：**`/data/.zkupgraderec`**（与 fun.exe 里那串 `.zkugraderec` 差一个字母，以设备端库为准）
+- 去重记录：**`/data/.zkupgraderec`**（与 fsc.exe 里那串 `.zkugraderec` 差一个字母，以设备端库为准）
 - 升级时会被停掉的服务：`zkswe`（app）、`wpa_supplicant`、`blink`、`bt`、`link` 及厂家互联服务
   → **升级期间必然掉网，别在升级窗口里等 adb**
 
@@ -146,7 +146,7 @@ D/zkgui ( 928): Ext4Utils mount ret 0                             ← ext4 数�
 
 → 这解释了「U 盘用 `extupdate.img`、TF 卡用 `update.img`」的**包名差异**：
 **不是介质决定的，是「包内 res 是不是 ext4」决定的**（`force` 出包侧跟着改名）。
-→ `release.ext4.size`（被注释的 32 MiB）**是否生效 = 未证实**（`fun.exe` 字符串表里只有 `release.ext4` 字面量）。
+→ `release.ext4.size`（被注释的 32 MiB）**是否生效 = 未证实**（`fsc.exe` 字符串表里只有 `release.ext4` 字面量）。
 
 ---
 
@@ -167,7 +167,7 @@ mtd3 "res" (0x720000) /res squashfs ro,noatime,nodiratime            ← 系统�
   → **现场永远不要**手动 `umount /mnt/sdnand` / `mkfs` / `dd` 写 p2；要取数据 → `adb pull /mnt/sdnand`。
 - 工程里数据面的落点：`TY_FS_PATH = "/mnt/sdnand/"`（涂鸦库/数据库）、`/mnt/sdnand/config.json`（版本标注）、
   `/mnt/sdnand/temp/`（升级包工作目录，见 `workspace/references/kb/z20-tuya86-upgrade-firstaid.md` §2 常量表）。
-- 依赖包侧旁证：`fun install` 解析 Z20 依赖时 base-utility 会带出 **`ext4 0.0.1`** 包
+- 依赖包侧旁证：`fsc install` 解析 Z20 依赖时 base-utility 会带出 **`ext4 0.0.1`** 包
   （内容 = `libext4.a` + `make_ext4fs.h`，暴露 `int make_ext4fs(const char *block, s64 len, const char *mountpoint, struct selabel_handle *sh)`）
   → 想自己格式化/建 ext4 镜像时用它，**别手搓 mkfs**。
 
@@ -198,7 +198,7 @@ mtd3 "res" (0x720000) /res squashfs ro,noatime,nodiratime            ← 系统�
 |---|---|---|---|
 | 1 | **ADB 触发升级后整板失联**（本机 2026-09-23 真机遭遇：三属性 + `ctl.restart zkswe` 后 ~40 s 掉 adb，25 min 未回，需现场断电/插卡救援） | 升级会把 app 资源写到 **eMMC app 分区**（本机 `mmcblk0p1` = `/mnt/extsd`，见 §6），并停掉 `zkswe`/`wpa_supplicant`…；这类板子的 WiFi 由 app 带起来 → app 一被换掉就**连网都没了** | 远程触发固化时**先排好现场**（有人能断电、能手插 TF 卡）；**优先用卡/U 盘路线**（不依赖网络） |
 | 2 | 包放对了、版本也对，就是不升级 | ①**去重**：`/data/.zkugraderec` 记版本（Z20 的 app 侧还会被 `/mnt/sdnand/config.json` 抬版本）②目录不在扫描表里 ③文件名不对（`update.img` vs `extupdate.img`） | 递增 `--release-version`；确认目录 ∈{`/mnt/usb*`,`/mnt/extsd`,`/mnt/storage/zkimg`}；必要时 `sys.zkupgrade.force` / `flag 255` |
-| 3 | 包与机型不匹配 | 包头机型 magic（§3）+ 库内 `type_no_match_error` | 别跨机型复用包；换型号重新 `fun pack -p <平台>` |
+| 3 | 包与机型不匹配 | 包头机型 magic（§3）+ 库内 `type_no_match_error` | 别跨机型复用包；换型号重新 `fsc pack -p <平台>` |
 | 4 | 固化后「汉字变方块 / 工具没了」 | `update.img` 装的是**你工程的 `/res`**，会把目标机 `/res` **整体替换** | 字库/EasyUI.cfg/必要 bin 全部随工程打进包（`knowledge/devflow/upgrade-pack-image.md` §二 6)） |
 | 5 | **数据面被整盘重建**（设备列表/场景全空） | p2 挂不上 → `make_ext4fs` 重建（§5，无确认环节） | 不手动动 p2；出包带数据面（`release.ext4=true`）；救数据先 `adb pull /mnt/sdnand` |
 | 6 | 升级窗口里网络/串口日志断 | 升级库会 stop `zkswe`/`wpa_supplicant`/`bt`…（§1） | 别把「升级期间没网」当故障 |
@@ -284,7 +284,7 @@ adb shell setprop ctl.restart zkswe
 | # | 事实 |
 |---|---|
 | **A** | **应用必须在启动后设 `sys.zkapp.state=running`**。这是系统级的「app 已起来」标记，不设 → 显示服务不把画面切给应用 → 永远停在开机 logo。 |
-| **B** | 更底层：**`fun create` 生成的 fv 骨架工程（只有 `ui/main.fv`、没有 `Manifest.xml`）在这类板子上第一个界面根本不创建** → 逻辑钩子 `onCreate/onUI_init` 从不执行 → 于是 A 必现。同一块板上换 **IDE 模板风工程**（`Manifest.xml` + `ui/main.ftu` + `src/Main.cpp` + `src/logic/mainLogic.cc`）立刻正常。 |
+| **B** | 更底层：**`fsc create` 生成的 fv 骨架工程（只有 `ui/main.fv`、没有 `Manifest.xml`）在这类板子上第一个界面根本不创建** → 逻辑钩子 `onCreate/onUI_init` 从不执行 → 于是 A 必现。同一块板上换 **IDE 模板风工程**（`Manifest.xml` + `ui/main.ftu` + `src/Main.cpp` + `src/logic/mainLogic.cc`）立刻正常。 |
 
 实测台账（同一块板，四个包）：
 
@@ -297,7 +297,7 @@ adb shell setprop ctl.restart zkswe
 
 ### 12.3 正解（可直接照抄）
 
-1. **Z20 出包/回归测试别用 `fun create` 的 fv 骨架**，用带 `Manifest.xml` 的模板风工程
+1. **Z20 出包/回归测试别用 `fsc create` 的 fv 骨架**，用带 `Manifest.xml` 的模板风工程
    （MCP：`flythings_create_project`）；
 2. `src/logic/mainLogic.cc` 顶部加 `#include "os/SystemProperties.h"`，在 `onUI_init()` 里：
 
@@ -307,7 +307,7 @@ static void onUI_init(){
 }
 ```
 
-3. 字体要随包进 `/res`：放**工程 `resources/`**（放 `ui/` 会被忽略，`fun pack` 只吐一句 `no any font`），
+3. 字体要随包进 `/res`：放**工程 `resources/`**（放 `ui/` 会被忽略，`fsc pack` 只吐一句 `no any font`），
    并用覆盖层 `package.properties` → `EasyUI.cfg={"font":"/res/ui/fzcircle.ttf"}`。详见
    `knowledge/devflow/package-properties-easyui-cfg.md`。
 

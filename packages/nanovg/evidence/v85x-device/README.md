@@ -60,7 +60,7 @@ cp ../../include/*.h <proj>/src/                                  # include 根�
 mkdir -p <proj>/src/dependencies/lib && cp ../../lib/v85x/libnanovg.so <proj>/src/dependencies/lib/
 mkdir -p <proj>/src/nanovg_demo && cp app_demo/zk_nanovg_ondev.cpp <proj>/src/nanovg_demo/
 # ui/main.json 加一个控件（id 50001 / textview），mainLogic.cc 的 onUI_init 里调 nvgOnDevEntry(mNvgViewPtr)
-cd <proj> && ./fui.exe pack ui/main.json ui/main.ftu && ./fun.exe build -p V85X && ./fun.exe launch -p V85X -s $D
+cd <proj> && ./fui.exe pack ui/main.json ui/main.ftu && ./fsc.exe build -p V85X && ./fsc.exe launch -p V85X -s $D
 # 抓屏：设备**没有 screencap**，只能 cat /dev/fb0（见 repo 的 ui_tools/device_screenshot.py）
 adb -s $D shell "cat /dev/fb0 > /tmp/fb.raw" && adb -s $D pull /tmp/fb.raw
 adb -s $D pull /tmp/nvg_ondev.bgra      # app 侧落盘的离屏 buffer
@@ -72,7 +72,7 @@ python diff_screen.py                   # ±2 比对（本目录）
 1. `src/dependencies/lib/*.so` 会被 `fsc` **自动加进链接**（生成 `CMakeLists.txt`），
    无需手改；而 `-Wl,-z,defs` 要求符号全解 → 这 `.so` 的 C++ 运行期符号要靠
    **g++ 链接**（`libstdc++.so.6`，设备上有 6.0.22）。
-2. **`fun build`(fsc) 管线里 `src/activity/mainActivity.*` 根本不参与编译**
+2. **`fsc build`(fsc) 管线里 `src/activity/mainActivity.*` 根本不参与编译**
    （那是 Eclipse 模板遗留）；真入口是 `src/logic/mainLogic.cc`，它展开
    `INIT_UI_EVENT_BINDINGS`，控件句柄走生成物 `m<Caption>Ptr` / `ID_MAIN_<Caption>`。
 3. **fb0 是双缓冲翻页的**（`virtual_size = 480,1600` = 2×800）。

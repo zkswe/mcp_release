@@ -160,13 +160,13 @@
 |---|---|---|---|
 | F1 | **`fun` 不给 `checkbox__` 生成宏/指针/回调**（生成的 `ui_<page>.h` 里 checkbox 全缺；ftu 本身正常、设备能显示） | 用 `ZKCheckbox` 就无法从 logic 侧读写状态 | 开关/复选一律用**两态 `button__N`**（`picTab{pic0,pic1,pic2}` + `setSelected()`）；建议反馈工具链（小程序 D17/T1） |
 | F2 | 设备侧 `libeasyui.so` **无 `ZKBase::getAbsolutePosition()`**（比本地包旧） | 用它 → `dlopen` undefined symbol → **整屏黑**（形似布局/打包问题，排查成本高） | 只用 `getPosition()`（顶级控件的坐标即屏绝对坐标）（小程序 D20） |
-| F3 | `fun launch`（Windows）把 `resources/<子目录>/*` 推成**字面平铺名**（`images\x.png`） | 设备端解析不到路径 → **所有图片控件全空**（按钮只剩文字） | 设备侧脚本把平铺文件搬回 `images/`（`fui unpack` 校验 ftu 内是正斜杠）；见案例 `z21/evidence/fix_res_paths_busybox.sh`（D21/T2） |
+| F3 | `fsc launch`（Windows）把 `resources/<子目录>/*` 推成**字面平铺名**（`images\x.png`） | 设备端解析不到路径 → **所有图片控件全空**（按钮只剩文字） | 设备侧脚本把平铺文件搬回 `images/`（`fui unpack` 校验 ftu 内是正斜杠）；见案例 `z21/evidence/fix_res_paths_busybox.sh`（D21/T2） |
 | F4 | listview **行自身**的 `text` 会铺满整行，与 subItem **叠字**| 行内文字重影 | `obtainListItemData_XXX` 里显式 `pListItem->setText("")`（D22/T6） |
 | F5 | `html2json` 把 **`#000000` 当「未设置」**（`data-color/data-bg` 走 `to_dec(...) or 默认值`，0 是 falsy） | 想写纯黑被换成默认色（文字 `0xEEF2F6`/按钮底 `0x374457`/窗口底 `0xFFFFFF`） | 要纯黑请写 **`#010101`**（深色底/黑字真踩到过） |
 | F6 | `check_all #10` 禁 `ZKSeekBar` 用 `.9.png`，而 `#11/#17` 要求 `resources/images/` 下自动生成的图与控件盒 **1:1**| 轨道/填充图必须按控件盒尺寸出**普通 PNG**| 按 `(w,h)` 逐尺寸生成（案例 T4/D19） |
 | F7 | `check_all #6` 把框架名 `mActivityPtr` 误判为控件指针 | 想用 `findControlByID` 取未生成指针的控件时会 FAIL | 与 F1 同源；改用生成器支持的控件后自然规避（T5） |
 | F8 | `check_all #14` 的字段全集（SampleUI 基准）要求 checkbox 恒有 `bgColorTab`，而 `html2json` 有图时会 `pop bgColorTab` | 工具链内部口径冲突 | 走 F1（两态按钮）后不再触发（D18） |
-| F9 | 编译平台口径：Manifest 写 `platform="F136"`（工具链**不接受 `F135`**） | `fun build -p F133` 在本地注册表缺 easyui 包时因 include 路径缺失而失败 | F133 工程用 `fun build -p F136`（同 RISC-V 工具链）（F133 案例 README §4） |
+| F9 | 编译平台口径：Manifest 写 `platform="F136"`（工具链**不接受 `F135`**） | `fsc build -p F133` 在本地注册表缺 easyui 包时因 include 路径缺失而失败 | F133 工程用 `fsc build -p F136`（同 RISC-V 工具链）（F133 案例 README §4） |
 | F10 | ZKPainter `drawArc` 实参口径**两套记录冲突**| 照抄可能画错 | 按 Z21(easyui 2.6.0) 实测 `(cx,cy,rx,ry,start,sweep)`；用前小图自证（`widget-code-api.md`） |
 | F11 | `ZKListView::setSelection()` **只改滚动位置、不触发重排+重绘**| 「行位置与选中样式错位」/看起来没刷新 | 数据变更后必须走 `refreshListView()`；刷完要定位末项则 `setSelection(count-1)`（顺序不能反） |
 | F12 | Z21 是**共用真机**，`/tmp/ui` 会被其它会话覆盖；`/tmp` 是 tmpfs（36MB 内存板） | 抓图/验收串场拿到别的工程；推大文件触发 OOM 杀 `zkgui` | 验收脚本「一条命令内做完部署→修复→重启→注入→抓图」；只推必需小工具、用完删 |
