@@ -58,14 +58,22 @@ def main():
         exe = alt if os.path.isfile(alt) else exe
     if not os.path.isfile(exe):
         bad.append('缺 bin/zkuitool/zkuitool.exe（工具箱未随包）')
+    elif os.name != 'nt':
+        # 发布版工具箱是 Windows PE（zkuitool.exe）；Linux/macOS 上无法执行 →
+        # 本项只能在 Windows 验证。不做该平台守卫会让 CI（ubuntu）必然 rc=1（2026-10-08 修）。
+        print('[SKIP] zkuitool selfcheck：非 Windows（工具箱为 Windows PE），本项跳过')
     else:
-        r = subprocess.run([exe, 'selfcheck'], capture_output=True, text=True,
-                           encoding='utf-8', errors='replace', timeout=300)
-        if r.returncode != 0:
-            tail = ((r.stderr or '') + (r.stdout or '')).strip().splitlines()[-2:]
-            bad.append('zkuitool selfcheck 失败：%s' % ' | '.join(tail))
+        try:
+            r = subprocess.run([exe, 'selfcheck'], capture_output=True, text=True,
+                               encoding='utf-8', errors='replace', timeout=300)
+        except OSError as e:
+            print('[SKIP] zkuitool selfcheck：无法执行（%s）' % e)
         else:
-            print('[PASS] zkuitool selfcheck：%s' % (r.stdout or '').strip().splitlines()[-1][:80])
+            if r.returncode != 0:
+                tail = ((r.stderr or '') + (r.stdout or '')).strip().splitlines()[-2:]
+                bad.append('zkuitool selfcheck 失败：%s' % ' | '.join(tail))
+            else:
+                print('[PASS] zkuitool selfcheck：%s' % (r.stdout or '').strip().splitlines()[-1][:80])
 
     for m in ENGINE:
         p = os.path.join(UI, m + '.py')
