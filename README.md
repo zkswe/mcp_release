@@ -28,7 +28,7 @@ flythings-mcp | FlyThings MCP | FlyThings OS | FlyThings AI 助手 | 中科世�
 **第 1 步：clone 到本地任意目录**
 
 ```bash
-git clone https://gitee.com/Kwolve/flythingsmcp_release.git
+git clone https://github.com/zkswe/mcp_release.git
 ```
 
 **第 2 步：把这个本地目录的路径交给你的 AI，让它装**
