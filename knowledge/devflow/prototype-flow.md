@@ -141,7 +141,7 @@ home（首页/主入口）
 ## 落地工具
 
 - 流程本文件入库：AI 检索 `prototype` / `线框` / `wireframe` / `功能拆解` / `页面层级` 关键词触发
-- **线框/风格稿的角色 = 客户确认载体**（确认"做什么/长什么样"），**落地前端不排他**：缺省走 HTML→json，也可按 schema 直写 json（`flythings_ui_schema` 查字段）或走块库 spec（组装器在工具箱里：`zkuitool compose`；块定义见 `templates/ui_blocks/blocks/`）
+- **线框/风格稿的角色 = 客户确认载体**（确认"做什么/长什么样"），**落地前端不排他**：缺省走 HTML→json，也可按 schema 直写 json（`flythings_ui_schema` 查字段）或走块库 spec（`templates/ui_blocks/compose.py`）
 - 转换：`flythings_html_to_json`（美化稿：**缺省每屏一个 json = 一个页面一个 Activity 一个 ftu**；仅当几屏同属一个 Activity、要合成同 ftu 内多整屏 window 时才传 `merge_windows=true`）-> preview -> pack -> build_ui_flow
 - ⚠️ **落地不是「转完就推机」（2026-10-05 起两道硬闸门）**：`fui pack` / `build_ui_flow` 会先过
   ① **编译式验收**（`ui_compile`：fatal 一律拦；error 默认只记 `uiCheck.errorsNotBlocking`，`strict_ui=True` 才拦）

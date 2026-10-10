@@ -2,7 +2,7 @@
   "schema": 1,
   "generatedBy": "scripts/gen_manifest.py",
   "note": "只读快照：改代码或 gen_manifest.py 的 RISK/CATEGORY/STAGE 表后重新生成，勿手改本文件",
-  "version": "0.27.200-open",
+  "version": "0.27.201-open",
   "build": "2026-10-05",
   "toolCount": 43,
   "cli": {
@@ -1044,7 +1044,7 @@
   "docs": {
     "knowledgeFiles": 104,
     "wikiFiles": 0,
-    "ragChunks": 1787,
+    "ragChunks": 1796,
     "ragPaths": 144
   }
 }

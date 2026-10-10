@@ -124,7 +124,7 @@ def _kb_source_label(path):
 
 
 # ========== MCP 版本号（每次发布递增，AI/用户可查询确认是否最新）==========
-MCP_VERSION = '0.27.200-open'
+MCP_VERSION = '0.27.201-open'
 MCP_BUILD = '2026-10-05'
 
 # ========== 平台定位（第一权威口径，2026-10-05 需求方定规）==========
@@ -1223,14 +1223,17 @@ def _confirm_gate(project_root, json_path=''):
         root = (os.path.abspath(project_root) if str(project_root or '').strip()
                 else _project_root_of(json_path))
         uroot = os.path.join(root, 'ui')
-        if not os.path.isdir(uroot):
+        devroot = os.path.join(root, pt.UI_DEV_DIRNAME)
+        _roots = [d for d in (uroot, devroot) if os.path.isdir(d)]
+        if not _roots:
             out['confirmWarnings'].append(
-                '确认稿闸门没跑：%s 下没有 ui/ 目录（project_root=%r、json=%r）→ '
+                '确认稿闸门没跑：%s 下没有 ui/ 或 ui_dev/ 目录（project_root=%r、json=%r）→ '
                 '传 project_root=<工程根> 后重试' % (root, project_root,
                                              os.path.basename(json_path or '') or '?'))
             return out
         drafts, jsons, skipped = [], [], []
-        for dp, _dn, fn in os.walk(uroot):
+        for _r in _roots:
+          for dp, _dn, fn in os.walk(_r):
             for f in fn:
                 p = os.path.join(dp, f)
                 if f.endswith(CONFIRM_DRAFT_SUFFIXES):
@@ -1606,7 +1609,8 @@ def flythings_ui_preview(target: str, output_dir: str = '', for_customer: bool =
             _hp = _f.get('html')
             if not _hp:
                 continue
-            _jabs = (os.path.join(os.path.abspath(target), 'ui', _f.get('json') or '')
+            _jroot = pt._page_json_dir(os.path.abspath(target)) if is_dir else ''
+            _jabs = (os.path.join(_jroot, _f.get('json') or '')
                      if is_dir else os.path.abspath(target))
             _err = write_confirm_fingerprint(_jabs, _hp, bool(for_customer))
             if _err:
@@ -1614,14 +1618,17 @@ def flythings_ui_preview(target: str, output_dir: str = '', for_customer: bool =
         if _notes:
             r['fingerprintWarnings'] = _notes
         if output_dir:
-            _u = os.path.join(os.path.abspath(target), 'ui') if is_dir else ''
-            if not _u or not os.path.abspath(output_dir).startswith(_u):
-                r['gateWarning'] = ('确认稿落在 %s（不在 <项目>/ui 下）→ 确认稿硬闸门扫不到它，'
-                                    'pack/build_ui_flow 会判「没有确认稿」；把 output_dir 指回 ui/ 即可'
-                                    % output_dir)
+            _u = ([os.path.join(os.path.abspath(target), 'ui'),
+                   os.path.join(os.path.abspath(target), pt.UI_DEV_DIRNAME)]
+                  if is_dir else [])
+            _od = os.path.abspath(output_dir)
+            if (not _u) or (not any(_od.startswith(x) for x in _u)):
+                r['gateWarning'] = ('确认稿落在 %s（不在 <项目>/ui 或 ui_dev 下）→ 确认稿硬闸门扫不到它，'
+                                    'pack/build_ui_flow 会判「没有确认稿」；把 output_dir 指回 <项目>/ui '
+                                    '（json 在 ui_dev/ 时稿子可放 ui/ 或 ui_dev/）即可' % output_dir)
     if is_dir and isinstance(r, dict) and r.get('success'):
         for f in r.get('files', []):
-            jp = os.path.join(target, 'ui', f.get('json', ''))
+            jp = os.path.join(pt._page_json_dir(target), f.get('json', ''))
             if os.path.isfile(jp):
                 try:
                     with open(jp, encoding='utf-8-sig') as fh:
@@ -1649,7 +1656,7 @@ def flythings_ui_preview(target: str, output_dir: str = '', for_customer: bool =
                 except Exception:
                     pass
         r['projectRoot'] = target
-        r['outputDir'] = output_dir or os.path.join(target, 'ui')
+        r['outputDir'] = output_dir or pt._page_json_dir(target)
         r['forCustomer'] = bool(for_customer)
         r['note'] = ('html 为客户预览稿；设备端仍用 fui pack 生成的 ftu，两者同源于 json' +
                      ('；**客户确认稿**：单文件可发微信/手机打开，点「标注」看控件名与尺寸'
@@ -2967,6 +2974,39 @@ RENAMED = {
 RENAMED_HINT = {
     'flythings_ui_visual': ('action 取 editor（原 ui_editor）/ edit_apply（原 ui_edit_apply）'
                             '/ diff（原 ui_diff）'),
+}
+
+# 已**移除**的 op 名（入口没了，不是改名；2026-10-06 检讨方案1 ③）——
+# 与 RENAMED 的区别：RENAMED 指个新名就完了；REMOVED 回 `OP_REMOVED` + 去路说明，
+# 且**不再参与 candidates 的相似名建议**（实测 `flythings_create_bin_project` 会被建议成
+# `flythings_create_project` —— 可执行程序 vs UI 应用，语义不同，「名字像」的建议比没建议更糟）。
+# 旧名**不做兼容**（不建别名、不隐式转发）：本表只负责「如实说明它没了、现在走哪条路」。
+# 登记纪律：op 从 OP_NAMES 里消失，就必须在这里（或 RENAMED）出现一个条目 ——
+# 由门禁「工作树删掉的 op 已登记」+ 用例「显式清单 == 本表」双向钉住。
+REMOVED = {
+    # v0.27.196 收口：i18n 六个动作入口合并为单一入口 flythings_i18n(action=...)
+    'flythings_i18n_scan': {
+        'since': '0.27.196', 'reason': 'i18n 六个动作入口合并为单入口 `flythings_i18n`',
+        'next': '用 flythings_i18n(action="scan")'},
+    'flythings_i18n_export': {
+        'since': '0.27.196', 'reason': 'i18n 六个动作入口合并为单入口 `flythings_i18n`',
+        'next': '用 flythings_i18n(action="export", lang="zh_CN")'},
+    'flythings_i18n_import': {
+        'since': '0.27.196', 'reason': 'i18n 六个动作入口合并为单入口 `flythings_i18n`',
+        'next': '用 flythings_i18n(action="import", lang="zh_CN", translations=...)'},
+    'flythings_i18n_refactor': {
+        'since': '0.27.196', 'reason': 'i18n 六个动作入口合并为单入口 `flythings_i18n`',
+        'next': '用 flythings_i18n(action="refactor")（缺省 dry_run）'},
+    'flythings_i18n_add_language': {
+        'since': '0.27.196', 'reason': 'i18n 六个动作入口合并为单入口 `flythings_i18n`',
+        'next': '用 flythings_i18n(action="add_language", lang="en", lang_name="English")'},
+    'flythings_i18n_to_json': {
+        'since': '0.27.196', 'reason': 'i18n 六个动作入口合并为单入口 `flythings_i18n`',
+        'next': '用 flythings_i18n(action="to_json")'},
+    # v0.27.196 收口：可执行程序（bin）类型工程入口下线（本仓只服务 UI 应用工程）
+    'flythings_create_bin_project': {
+        'since': '0.27.196', 'reason': '「可执行程序（bin）类型工程」入口下线（本仓只服务 UI 应用工程）',
+        'next': 'bin 类型工程用命令行 `fsc create --type bin`（不提供 op；UI 应用工程用 flythings_create_project）'},
 }
 
 

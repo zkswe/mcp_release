@@ -80,6 +80,118 @@ def _find_build_artifact(project_root, platform, *parts):
     return cands[0]
 
 
+# ---------------- UI dev 目录约定（2026-10-10 定规）----------------
+# `ui/`  = **只放设备要加载的东西**：`*.ftu` + `images/`（+ 运行期资源）。launch 会把 `<项目>/ui/`
+#          推到设备，所以**开发期产物不得留在 ui/**（老工程把 json/html/fui.exe 全推进去了）。
+# `ui_dev/` = **开发期目录**：`*.json`（布局源）、`*.confirm.html`/`*.preview.html`（预览稿）、`fui.exe`。
+# 兼容：老工程没有 `ui_dev/` 时一律按老口径（json 在 ui/）处理；迁移由 `migrate_ui_dev()` 完成，
+#        不静默搬用户文件（迁移只在 attach_cli_tools / 显式调用时发生，返回值逐条列出）。
+UI_DEV_DIRNAME = 'ui_dev'
+DEV_FILE_EXTS = ('.json', '.html')
+DEV_FILE_NAMES = ('fui.exe',)
+
+
+def _ui_deploy_dir(project_root):
+    """设备要加载的目录（ftu + images）。"""
+    return os.path.join(project_root, 'ui')
+
+
+def _ui_dev_dir(project_root):
+    """开发期目录（json/html/fui 工具）；老工程无 ui_dev/ 时回退 ui/。"""
+    dev = os.path.join(project_root, UI_DEV_DIRNAME)
+    return dev if os.path.isdir(dev) else os.path.join(project_root, 'ui')
+
+
+def _page_json_dir(project_root):
+    """页面 json 所在目录：优先 ui_dev/，其次 ui/。"""
+    dev = os.path.join(project_root, UI_DEV_DIRNAME)
+    if os.path.isdir(dev):
+        return dev
+    return os.path.join(project_root, 'ui')
+
+
+def _project_root_of_ui_dir(path):
+    """从某个 ui/ 或 ui_dev/ 目录反推项目根；不是这两个目录名时返回空串。"""
+    d = os.path.abspath(path)
+    if os.path.basename(d) in ('ui', UI_DEV_DIRNAME):
+        return os.path.dirname(d)
+    return ''
+
+
+def _is_dev_file(fn):
+    """是否是开发期产物（不进设备）。"""
+    low = fn.lower()
+    return low.endswith(DEV_FILE_EXTS) or low in DEV_FILE_NAMES
+
+
+def migrate_ui_dev(project_root, apply=True):
+    """把 `<项目>/ui/` 下的**开发期产物**（*.json / *.html / fui.exe）迁到 `<项目>/ui_dev/`。
+
+幂等；老工程一次性整理用。要迁：*.json / *.html / fui.exe；保留：*.ftu / images/ / 其它运行期资源。
+返回 {"created", "moved": [{from,to}], "kept": [fn], "failed": [{from,error}]}。
+    """
+    ui = _ui_deploy_dir(project_root)
+    dev = os.path.join(project_root, UI_DEV_DIRNAME)
+    res = {"created": False, "moved": [], "kept": [], "failed": []}
+    if not os.path.isdir(ui):
+        return res
+    if not os.path.isdir(dev):
+        if not apply:
+            res["created"] = True          # 计划态：不建目录，但继续扫出「将要搬什么」
+        else:
+            try:
+                os.makedirs(dev, exist_ok=True)
+                res["created"] = True
+            except OSError as e:
+                res["failed"].append({"from": dev, "error": str(e)})
+                return res
+    for fn in sorted(os.listdir(ui)):
+        p = os.path.join(ui, fn)
+        if not os.path.isfile(p) or not _is_dev_file(fn):
+            if os.path.isfile(p):
+                res["kept"].append(fn)
+            continue
+        dst = os.path.join(dev, fn)
+        if os.path.abspath(p) == os.path.abspath(dst):
+            continue
+        if not apply:
+            res["moved"].append({"from": f"ui/{fn}", "to": f"{UI_DEV_DIRNAME}/{fn}", "dryRun": True})
+            continue
+        try:
+            if os.path.isfile(dst):
+                os.remove(dst)
+            shutil.move(p, dst)
+            res["moved"].append({"from": f"ui/{fn}", "to": f"{UI_DEV_DIRNAME}/{fn}"})
+        except Exception as e:
+            res["failed"].append({"from": f"ui/{fn}", "error": str(e)})
+    return res
+
+
+def _pack_pages(project_root):
+    """打包所有页面：json 源在 `_page_json_dir`，**ftu 产物统一落 `ui/`（设备只加载这里）**。
+
+老工程（无 ui_dev/）时 json/ftu 同目录，行为与旧版一致。
+返回 `_run_fui` 的结果，并附 `moved` 列表。
+    """
+    jsondir = _page_json_dir(project_root)
+    uidir = _ui_deploy_dir(project_root)
+    r = _run_fui('pack', jsondir)
+    r = dict(r) if isinstance(r, dict) else {'success': False}
+    moved = []
+    if r.get('success') and os.path.abspath(jsondir) != os.path.abspath(uidir) and os.path.isdir(uidir):
+        for fn in sorted(os.listdir(jsondir)):
+            if not fn.lower().endswith('.ftu'):
+                continue
+            try:
+                shutil.move(os.path.join(jsondir, fn), os.path.join(uidir, fn))
+                moved.append(fn)
+            except Exception as e:
+                r['success'] = False
+                r.setdefault('moveErrors', []).append({'ftu': fn, 'error': str(e)})
+    r['moved'] = moved
+    return r
+
+
 # IDE 空白模板（新建项目骨架来源，保证框架约定天然正确）
 # 优先用包内 templates/（分发包内置，客户无需装 IDE）；其次 IDE 安装目录。
 # ⚠️ 下面只是「默认探测起点」，不是平台白名单：`_template_dir` 会先在包内 templates/
@@ -328,8 +440,8 @@ def _rewrite_ftu_resolution(project_root, resolution):
         tmp = tempfile.mkdtemp(prefix='ftu_res_')
         try:
             shutil.copy2(ftu_path, tmp)
-            # json 源：优先同目录已有 json；fui 无 unpack 时必需 json（有则直接改，省一步反向）
-            src_json = os.path.join(ui_dir, base + '.json')
+            # json 源：优先 ui_dev/（其次 ui/）已有 json；fui 无 unpack 时必需 json（有则直接改，省一步反向）
+            src_json = os.path.join(_page_json_dir(project_root), base + '.json')
             json_from_project = os.path.isfile(src_json)
             if json_from_project:
                 shutil.copy2(src_json, tmp)
@@ -382,15 +494,16 @@ def _ui_timestamp_check(project_root, dev_threshold=60):
     ftuOnly = 只有 ftu 没有同名 json（老工程/IDE 工程 → 直接 unpack 转出 json）；
     devModified = ftu 比 json 新超过 dev_threshold 秒（**分钟级**= 用户/IDE 直接用 IDE 编辑过 ftu，
 要先 unpack 同步；fui pack 生成时两者差 <1s，所以分钟级差异必是人为）。"""
-    ui_dir = os.path.join(project_root, 'ui')
+    ui_dir = _ui_deploy_dir(project_root)          # ftu 侧（设备加载）
+    json_dir = _page_json_dir(project_root)        # json 侧（源；优先 ui_dev/）
     result = {"stale": [], "missing": [], "devModified": [], "ftuOnly": [], "ok": []}
     if not os.path.isdir(ui_dir):
         return result
-    names = sorted(os.listdir(ui_dir))
+    names = sorted(os.listdir(json_dir)) if os.path.isdir(json_dir) else []
     for fn in names:
         if not fn.endswith('.json'):
             continue
-        jp = os.path.join(ui_dir, fn)
+        jp = os.path.join(json_dir, fn)
         fp = os.path.join(ui_dir, fn[:-5] + '.ftu')
         jt = os.path.getmtime(jp)
         if os.path.isfile(fp):
@@ -406,8 +519,8 @@ def _ui_timestamp_check(project_root, dev_threshold=60):
         else:
             result["missing"].append(fn)
     # 只有 ftu 没有同名 json（自动同步规则①：直接转出 json）
-    for fn in names:
-        if fn.endswith('.ftu') and not os.path.isfile(os.path.join(ui_dir, fn[:-4] + '.json')):
+    for fn in sorted(os.listdir(ui_dir)):
+        if fn.endswith('.ftu') and not os.path.isfile(os.path.join(json_dir, fn[:-4] + '.json')):
             result["ftuOnly"].append(fn)
     return result
 
@@ -457,7 +570,7 @@ def _sync_ftu_to_json(project_root):
                     "ftu": ftu_name, "why": t['why'], "error": 'unpack 返回成功但没产出 json',
                     "hint": f"ui/{ftu_name} 反解析未产出 json（文件异常）；请提供 {ftu_name[:-4]}.json 或重新导出该 ftu"})
                 continue
-            dst = os.path.join(ui_dir, ftu_name[:-4] + '.json')
+            dst = os.path.join(_page_json_dir(project_root), ftu_name[:-4] + '.json')
             shutil.copy2(jf, dst)  # ftu 为准，覆盖/创建同名 json
             # ⚠️ unpack 出的 json 的 mtime 是 ftu 内嵌的打包时间戳（旧），
             # 不调整会继续误判 devModified → 把 json mtime 对齐到 ftu 文件时间
@@ -583,7 +696,7 @@ def _detect_project_info(root):
                                         if os.path.isdir(os.path.join(root, '.settings'))
                                         else 'ui json')
     if not info['resolution']:
-        ui_dir = os.path.join(root, 'ui')
+        ui_dir = _page_json_dir(root)
         if os.path.isdir(ui_dir):
             for fn in sorted(os.listdir(ui_dir)):
                 if fn.endswith('.json'):
@@ -903,18 +1016,47 @@ def _count_controls(json_path):
 
 
 def flythings_fui_pack(json_path):
-    """将 json 布局打包为 ftu（在 json 所在目录执行 fui pack）。"""
+    """将 json 布局打包为 ftu。
+json 在 `ui_dev/`（开发期目录）时，**ftu 产物统一落 `<项目>/ui/`**（设备只加载 ui/）；
+json 已在 ui/（老工程）时行为不变（同目录产出）。
+    """
     if not os.path.isfile(json_path):
         return {"success": False, "error": f"json 文件不存在: {json_path}"}
     d = os.path.dirname(os.path.abspath(json_path)) or '.'
     r = _run_fui('pack', d)
     base = os.path.splitext(os.path.basename(json_path))[0]
     ftu_path = os.path.join(d, base + '.ftu')
+    moved = []
+    proj = _project_root_of_ui_dir(d)
+    if r['success'] and proj:
+        uidir = _ui_deploy_dir(proj)
+        if os.path.abspath(d) != os.path.abspath(uidir):
+            os.makedirs(uidir, exist_ok=True)
+            # fui pack 打的是**整个目录** → 产出该目录全部 *.ftu，逐个搬到 ui/
+            for fn in sorted(os.listdir(d)):
+                if not fn.lower().endswith('.ftu'):
+                    continue
+                src = os.path.join(d, fn)
+                dst = os.path.join(uidir, fn)
+                try:
+                    if os.path.isfile(dst):
+                        os.remove(dst)
+                    shutil.move(src, dst)
+                    moved.append(fn)
+                except Exception as e:
+                    return {"success": False, "ftuPath": None,
+                            "error": f"ftu 落位失败（{src} → {dst}）: {e}"}
+            ftu_path = os.path.join(uidir, base + '.ftu')
     count, res = _count_controls(json_path)
-    return {"success": r['success'],
-            "ftuPath": ftu_path if os.path.isfile(ftu_path) else None,
-            "controlsCount": count, "resolution": res,
-            "detail": (r.get('stderr') or r.get('stdout')) if not r['success'] else None}
+    out = {"success": r['success'],
+           "ftuPath": ftu_path if os.path.isfile(ftu_path) else None,
+           "controlsCount": count, "resolution": res,
+           "detail": (r.get('stderr') or r.get('stdout')) if not r['success'] else None}
+    if moved:
+        out["movedToDeploy"] = moved
+        out["note"] = ("json 属开发期目录 ui_dev/ → ftu 已落 <项目>/ui/（%s）"
+                       "（设备只加载 ui/；开发期文件不再随 launch 进设备）" % ', '.join(moved))
+    return out
 
 
 def flythings_fui_unpack(ftu_path, output_json='', overwrite=True):
@@ -937,6 +1079,8 @@ def flythings_fui_unpack(ftu_path, output_json='', overwrite=True):
     d = os.path.dirname(os.path.abspath(ftu_path)) or '.'
     base = os.path.splitext(os.path.basename(ftu_path))[0]
     src_json = os.path.join(d, base + '.json')
+    _proj = _project_root_of_ui_dir(d)
+    dev_json_dir = _page_json_dir(_proj) if _proj else d   # json 侧：优先 ui_dev/
     if output_json:
         target = os.path.abspath(output_json)
         _d = os.path.dirname(target)
@@ -946,7 +1090,8 @@ def flythings_fui_unpack(ftu_path, output_json='', overwrite=True):
             except OSError as e:
                 return {"success": False, "error": f"输出目录不可用: {_d}（{e}）"}
     elif overwrite:
-        target = src_json                        # 默认：覆盖对应 json（ftu 为真源）
+        # 默认：覆盖对应 json（ftu 为真源）；json 属开发期目录 ui_dev/ 时写那里
+        target = os.path.join(dev_json_dir, base + '.json')
     else:
         target = os.path.join(d, base + '.unpacked.json')
         i = 2
@@ -1109,9 +1254,9 @@ def flythings_layout_audit(project_root, page=''):
     """
     if not os.path.isdir(project_root):
         return {"success": False, "error": f"项目目录不存在: {project_root}"}
-    ui_dir = os.path.join(project_root, 'ui')
+    ui_dir = _page_json_dir(project_root)         # 标题 json 源：优先 ui_dev/
     if not os.path.isdir(ui_dir):
-        return {"success": False, "error": f"ui 目录不存在: {ui_dir}"}
+        return {"success": False, "error": f"json 目录不存在: {ui_dir}"}
     files = []
     for fn in sorted(os.listdir(ui_dir)):
         if fn.endswith('.json'):
@@ -1136,122 +1281,47 @@ def flythings_layout_audit(project_root, page=''):
         total += len(fs)
         pages.append({"file": os.path.relpath(fp, ui_dir).replace('\\', '/'), "findings": fs})
     if not pages:
-        return {"success": True, "hint": "没有扫到 ui/*.json 布局", "pages": [], "summary": {"pages": 0, "findings": 0}}
+        return {"success": True, "hint": "没有扫到页面 json（<项目>/ui_dev/ 或 ui/*.json）", "pages": [], "summary": {"pages": 0, "findings": 0}}
     return {"success": True, "pages": pages,
             "summary": {"pages": len(pages), "findings": total},
             "note": '纯几何静态判定（z 序=json 书写顺序；同层更早的 touchable 先拿触摸）。'
                     '视觉样式（颜色/字体/切图）仍需 device_screenshot；改动前后对比用 ui_visual(action="diff")。'}
 
 
-# ---------------- 工具 4.5: 创建可执行程序项目 (fsc create --type bin) -------------
-def _is_elf(path):
-    """检测文件是否为 ELF 可执行文件（魔数 \x7fELF）。"""
-    try:
-        with open(path, 'rb') as f:
-            return f.read(4) == b'\x7fELF'
-    except Exception:
-        return False
-
-
-def flythings_create_bin_project(project_root, project_name='',
-                                 platform=_platforms.DEFAULT_BIN_PLATFORM,
-                                 app_version='1.0.0', description='', with_build=True):
-    """创建「可执行程序」类型项目（fsc create --type bin）并编译为直接可运行的 ELF 二进制。
-
-    - 项目类型 4 选 1：zkgui（UI应用）/ bin（可执行程序）/ staticLibrary / sharedLibrary
-    - bin 项目结构极简：fsc.json（"type": "executable"）+ src/main.cpp（标准 int main()）
-    - 编译：fsc build → 产物 .fsc/{platform}/{项目名}（09-28 前为 .fun/），ELF 魔数验证
-    - 部署：adb push + chmod +x 直接跑（无 zkgui 宿主，不能启动 UI 应用）
-    - 非交互：自动传 --app-version/--description 跳过向导；目录非空直接报错（防覆盖询问卡死）
-
-传入项目根目录（可不存在，自动创建）、平台（默认同 `platforms.DEFAULT_BIN_PLATFORM`；
-大小写不敏感，别名可归一，未知平台会报错并列出支持项）、项目名（缺省取目录名）。
-返回创建结果 + 编译日志 + 产物路径与 ELF 验证。
-    """
-    try:
-        # 出口统一小写（fsc.exe / 产物目录 <小写平台> 的既有约定；09-28 起为 .fsc/<小写平台>/，旧版 .fun/）
-        platform = _platforms.bin_tool_dir(platform or _platforms.DEFAULT_BIN_PLATFORM)
-    except ValueError as e:
-        return {"success": False, "error": str(e)}
-    root = os.path.abspath(project_root)
-    name = (project_name or os.path.basename(root)).strip()
-    if not re.match(r'^[A-Za-z][A-Za-z0-9_]*$', name):
-        return {"success": False,
-                "error": f"项目名不合法: {name!r}（应字母开头，仅字母/数字/下划线）"}
-    if os.path.isdir(root) and os.listdir(root):
-        return {"success": False,
-                "error": f"目录非空: {root}（bin 项目需在空目录创建，防止覆盖询问卡死）"}
-    os.makedirs(root, exist_ok=True)
-    # 1. 创建（非交互：显式传 app-version/description 跳过向导）
-    args = [FSC_EXE, 'create', '--name', name, '--platform', platform,
-            '--type', 'bin', '--app-version', app_version or '1.0.0']
-    if description:
-        args += ['--description', description]
-    args += ['.']
-    try:
-        r = subprocess.run(args, cwd=root, capture_output=True, text=True, timeout=120,
-                           stdin=subprocess.DEVNULL,  # ⚠️ 防继承 MCP stdio 管道挂起
-                           encoding='utf-8', errors='replace')
-    except Exception as e:
-        return {"success": False, "error": f"fsc create 执行失败: {e}"}
-    create_ok = r.returncode == 0
-    create_log = ((r.stdout or '') + (r.stderr or ''))[-600:]
-    result = {"success": create_ok, "projectRoot": root, "name": name,
-              "platform": platform, "type": "bin", "createLog": create_log}
-    if not create_ok:
-        result["error"] = f"fsc create 失败(rc={r.returncode}): {create_log}"
-        return result
-    # 2. 编译
-    if with_build:
-        rb = subprocess.run([FSC_EXE, 'build'], cwd=root, capture_output=True, text=True,
-                            timeout=600, stdin=subprocess.DEVNULL,
-                            encoding='utf-8', errors='replace')
-        build_ok = rb.returncode == 0
-        result["buildSuccess"] = build_ok
-        result["buildLog"] = ((rb.stdout or '') + (rb.stderr or ''))[-800:]
-        if not build_ok:
-            result["error"] = f"fsc build 失败(rc={rb.returncode}): {result['buildLog']}"
-            return result
-    # 3. 产物定位 + ELF 验证
-    out = _find_build_artifact(root, platform, name)
-    exists = os.path.isfile(out)
-    result.update({
-        "outputPath": out if exists else None,
-        "outputSize": os.path.getsize(out) if exists else 0,
-        "isElfExecutable": _is_elf(out) if exists else False,
-        "deployHint": f"adb push {out} /tmp/ && adb shell chmod +x /tmp/{name} && adb shell /tmp/{name}",
-    })
-    return result
-
-
 # ---------------- 工具 5: 附带 CLI 工具到项目 -------------
 def flythings_attach_cli_tools(project_root):
-    """将 fui.exe（→ui/）和 fsc.exe（→项目根）复制到新建项目目录，随项目分发给用户。
-传入项目根目录完整路径。返回复制结果。
+    """附带 CLI 工具到项目 + **把开发期产物收拢到 `ui_dev/`**（2026-10-10 定规）。
+- fui.exe → `<项目>/ui_dev/`（开发期工具；不再放 ui/，避免被 launch 推到设备）
+- fsc.exe → `<项目>/`根目录
+- 顺带把 ui/ 下已有的 *.json / *.html / fui.exe 迁到 ui_dev/（幂等）
+传入项目根目录完整路径。返回复制与迁移结果。
     ⚠️ 交付流程：fsc.exe 用于 build 编译 + launch 推送，无需客户手动导入 IDE。"""
     if not os.path.isdir(project_root):
         return {"success": False, "error": f"项目目录不存在: {project_root}"}
     results = []
-    # fui.exe → ui/ 目录（pack/unpack 在 ui 目录执行）
-    ui_dir = os.path.join(project_root, 'ui')
-    if os.path.isdir(ui_dir):
-        dst = os.path.join(ui_dir, 'fui.exe')
-        try:
-            shutil.copy2(FUI_EXE, dst)
-            results.append({"file": "ui/fui.exe", "size": os.path.getsize(dst), "status": "copied"})
-        except Exception as e:
-            results.append({"file": "ui/fui.exe", "status": "failed", "error": str(e)})
-    else:
-        results.append({"file": "ui/fui.exe", "status": "skipped", "reason": "ui 目录不存在"})
-    # fsc.exe → 项目根目录（build 编译 + launch 推送）
-    dst = os.path.join(project_root, 'fsc.exe')
+    dev_dir = os.path.join(project_root, UI_DEV_DIRNAME)
+    try:
+        os.makedirs(dev_dir, exist_ok=True)
+    except OSError as e:
+        return {"success": False, "error": f"无法创建 {UI_DEV_DIRNAME}/: {e}"}
+    mig = migrate_ui_dev(project_root, apply=True)      # ① 迁移老工程的开发期产物
+    dst = os.path.join(dev_dir, 'fui.exe')              # ② fui.exe → ui_dev/
+    try:
+        shutil.copy2(FUI_EXE, dst)
+        results.append({"file": f"{UI_DEV_DIRNAME}/fui.exe", "size": os.path.getsize(dst), "status": "copied"})
+    except Exception as e:
+        results.append({"file": f"{UI_DEV_DIRNAME}/fui.exe", "status": "failed", "error": str(e)})
+    dst = os.path.join(project_root, 'fsc.exe')         # ③ fsc.exe → 项目根
     try:
         shutil.copy2(FSC_EXE, dst)
         results.append({"file": "fsc.exe", "size": os.path.getsize(dst), "status": "copied"})
     except Exception as e:
         results.append({"file": "fsc.exe", "status": "failed", "error": str(e)})
-    ok = all(r.get('status') in ('copied', 'skipped') for r in results)
-    return {"success": ok, "projectRoot": project_root, "files": results}
+    ok = all(r.get('status') in ('copied', 'skipped') for r in results) and not mig['failed']
+    return {"success": ok, "projectRoot": project_root, "files": results,
+            "uiDevDir": UI_DEV_DIRNAME, "migrated": mig,
+            "note": ("开发期产物（*.json/*.html/fui.exe）已归入 ui_dev/；ui/ 只保留 *.ftu 与 images/，"
+                     "launch 不会再把它们推到设备。")}
 
 
 # ---------------- 工具 4.6: 编辑 json/ftu 布局 ----------------
@@ -1284,14 +1354,47 @@ def _find_parent(data, key):
     return None
 
 
+def _find_chain(data, key, acc=None):
+    """返回从根到指定 key 的节点链 [(key,val), ...]（含自身）；找不到返回 None。"""
+    if acc is None:
+        acc = []
+    for k, v in data.items():
+        if k == key:
+            return acc + [(k, v)]
+        if isinstance(v, dict) and '__' in k:
+            r = _find_chain(v, key, acc + [(k, v)])
+            if r:
+                return r
+    return None
+
+
+def _abs_origin(data, key):
+    """节点的屏幕绝对原点 = 链上（含自身）各层 position.left/top 之和（相对坐标逐层累加）。
+    找不到返回 None。供 move 换父时把「相对旧父」的坐标重基成「相对新父」。"""
+    chain = _find_chain(data, key)
+    if not chain:
+        return None
+    lft = top = 0
+    for _k, v in chain:
+        pos = v.get('position') or {}
+        lft += int(pos.get('left', 0) or 0)
+        top += int(pos.get('top', 0) or 0)
+    return (lft, top)
+
+
 def _apply_edits(data, ops):
     """应用编辑操作到 json 布局。ops 为操作列表。返回 (success, report)。
 支持操作：
-      set      {"op":"set", "target":"caption或key", "props":{...}}修改控件属性
-      remove   {"op":"remove", "target":"caption或key"}删除控件
-      add      {"op":"add", "template":"caption或key", "newKey":"textview__4", "props":{...}}复制模板控件新增并改属性
-      set_root {"op":"set_root", "props":{"backgroundColor":"#FFFFFF"}}修改根属性（resolution/position/backgroundColor 等）
-    """
+  set      {"op":"set", "target":"caption或key", "props":{...}}修改控件属性（浅合并：嵌套对象整块给）
+  remove   {"op":"remove", "target":"caption或key"}删除控件
+  add      {"op":"add", "template":"caption或key", "newKey":"textview__4", "props":{...}[, "into":"父容器 caption或key"]}
+           复制模板控件新增并改属性；给了 `into` 就加进该容器（否则加到根层）
+  move     {"op":"move", "target":"caption或key", "into":"父容器 caption或key"[, "rebase":true]}
+           把控件移入容器（换父=改层级）；rebase 默认 true：按绝对坐标重基为相对新容器
+  order    {"op":"order", "target":"caption或key", "where":"top"|"bottom"}
+           同层 z 序（json 书写顺序，后定义在上层）；top=移到末尾（画最上），bottom=移到最前
+  set_root {"op":"set_root", "props":{"backgroundColor":"#FFFFFF"}}修改根属性（resolution/position/backgroundColor 等）
+"""
     report = []
     failures = 0
     for op in ops:
@@ -1337,8 +1440,73 @@ def _apply_edits(data, ops):
             import copy as _copy
             new_val = _copy.deepcopy(tval)
             new_val.update(op.get('props') or {})
-            data[new_key] = new_val
+            _dp = data
+            if op.get('into'):
+                _dk, _dv = _find_control(data, op['into'])
+                if _dv is None:
+                    report.append(f'[失败] into 父容器不存在: {op.get("into")}')
+                    failures += 1
+                    continue
+                _dp = _dv
+            _dp[new_key] = new_val
             report.append(f'[OK] 新增 {new_key}（基于 {tkey}）')
+        elif kind == 'move':
+            mkey, mval = _find_control(data, op.get('target', ''))
+            if mval is None:
+                report.append(f'[失败] 未找到控件: {op.get("target")}')
+                failures += 1
+                continue
+            dkey, dval = _find_control(data, op.get('into', ''))
+            if dval is None:
+                report.append(f'[失败] 目标容器不存在: {op.get("into")}')
+                failures += 1
+                continue
+            if dkey == mkey:
+                report.append('[失败] into 不能是控件自身')
+                failures += 1
+                continue
+            if any(kk == mkey for kk, _ in (_find_chain(data, dkey) or [])):
+                report.append(f'[失败] into({dkey}) 是 target({mkey}) 的子孙 → 会成环')
+                failures += 1
+                continue
+            if mkey in dval:
+                report.append(f'[失败] 目标容器已有同名键: {mkey}')
+                failures += 1
+                continue
+            abs_t = _abs_origin(data, mkey)
+            parent = _find_parent(data, mkey)
+            (parent if parent is not None else data).pop(mkey, None)
+            rebase = op.get('rebase', True)
+            if rebase and abs_t is not None:
+                abs_d = _abs_origin(data, dkey)
+                if abs_d is not None:
+                    pos = mval.setdefault('position', {})
+                    pos['left'] = abs_t[0] - abs_d[0]
+                    pos['top'] = abs_t[1] - abs_d[1]
+            dval[mkey] = mval
+            report.append('[OK] %s 移入 %s%s' % (mkey, dkey, '（已按相对坐标重基）' if rebase else '（保留原坐标）'))
+        elif kind == 'order':
+            okey, oval = _find_control(data, op.get('target', ''))
+            if oval is None:
+                report.append(f'[失败] 未找到控件: {op.get("target")}')
+                failures += 1
+                continue
+            parent = _find_parent(data, okey)
+            cont = parent if parent is not None else data
+            where = (op.get('where') or 'top').lower()
+            if where not in ('top', 'bottom'):
+                report.append(f'[失败] where 只认 top/bottom: {where}')
+                failures += 1
+                continue
+            item = cont.pop(okey)
+            if where == 'bottom':
+                rest = list(cont.items())
+                cont.clear()
+                cont[okey] = item
+                cont.update(rest)
+            else:
+                cont[okey] = item
+            report.append('[OK] %s z 序置%s' % (okey, '顶' if where == 'top' else '底'))
         elif kind == 'set_root':
             props = op.get('props') or {}
             changed = [p for p in props if data.get(p) != props[p]]
@@ -2061,9 +2229,11 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
                     "hint": f0.get('hint') or '请检查该 ftu 是否合法（或改提供同名 json）后重试'}
 
     # ② fui pack（有 stale/missing/ftuOnly/devModified 才执行；没有则跳过并说明）
+    #    json 源在 ui_dev/（若有）；**ftu 产物统一落 ui/**（设备只加载 ui/）
     if stale or dev_modified or ftu_only:
-        r = _run_fui('pack', ui_dir)
+        r = _pack_pages(project_root)
         steps.append({"step": "fui pack", "success": r['success'],
+                      "movedToDeploy": r.get('moved') or [],
                       "detail": (r.get('stderr') or r.get('stdout') or '')[-400:]})
         if not r['success']:
             return {"success": False, "steps": steps,
@@ -2169,7 +2339,7 @@ def flythings_build_ui_flow(project_root, with_launch=True, device='',
     # ④ fsc build（编译）
     # （2026-10-08：原「<page>Logic.cc 头部补丁」已移除 —— 新 fsc 生成的 logic.cc 形态已正确
     #   （定时器表与 `#include <base/base.h>` 都在 `#ifdef FUN_BUILD` 守卫外），无需再打补丁，
-    #   补丁脚本（logic.cc 头部修复）同时退役。）
+    #   补丁脚本（logic.cc 头部修复）同时退役。见 knowledge/devflow/cli-fsc-toolchain.md）
     rb = _run_fun('build', project_root)
     steps.append({"step": "fsc build", "success": rb['success'],
                   "detail": (rb.get('stderr') or rb.get('stdout') or rb.get('error') or '')[-500:]})
@@ -2697,6 +2867,8 @@ def flythings_create_project(project_root, platform=None, resolution=None,
     _rewrite_prefs_resolution(root, resolution)
     # 3.5 更新 ui/*.ftu 内嵌分辨率（ftu 里也含 resolution，必须 unpack→改 json→pack 回）
     ftu_res = _rewrite_ftu_resolution(root, resolution)
+    # 3.6 开发期产物归入 ui_dev/（*.json / *.html / fui.exe）；ui/ 只留 *.ftu 与 images/
+    ui_dev_mig = migrate_ui_dev(root, apply=True)
     res_norm = re.sub(r'\s*[xX]\s*', 'x', str(resolution).strip())
     # 4. 更新 Manifest 平台（新格式）
     mf = os.path.join(root, 'Manifest.xml')
@@ -2711,10 +2883,11 @@ def flythings_create_project(project_root, platform=None, resolution=None,
         cli = flythings_attach_cli_tools(root)
     return {"success": True, "projectRoot": root, "platform": plat,
             "resolution": res_norm, "fromTemplate": tpl,
-            "ftuResolution": ftu_res, "cliTools": cli, "notes": [
+            "ftuResolution": ftu_res, "cliTools": cli, "uiDev": ui_dev_mig, "notes": [
                 "控件指针/ID宏由 IDE 编译时自动生成，logic.cc 直接使用 mXXXPtr，禁止手写定义",
                 "src/uart 为系统模板：只改 ProtocolData.h / ProtocolParser.cpp 的协议解析",
-                "ui/ 下放 json+ftu，用 fui pack 生成 ftu（已附带 fui.exe）",
+                "目录约定：ui/ 只放设备加载的 *.ftu + images/；开发期产物（*.json 布局源 / *.confirm.html 预览稿 / fui.exe）在 ui_dev/——launch 不会把它们推到设备",
+                "改 json 后用 fui pack（fui.exe 在 ui_dev/）生成 ftu，产物统一落 ui/",
                 "logic.cc 必须保留 REGISTER_ACTIVITY_TIMER_TAB（空表也行）",
                 "⚠️ 交付：项目生成后直接用 fsc.exe build 编译、fsc.exe launch 推送设备，"
                 "无需客户手动导入 FlyThings IDE 编译烧录（fsc.exe 已附带在项目根目录）"]}

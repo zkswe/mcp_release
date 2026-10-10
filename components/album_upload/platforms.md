@@ -64,7 +64,7 @@
 
 | 项 | 状态 | 依据 |
 |---|---|---|
-| app 包在 Z20 上编译 + 推设备运行 | ✅ 有（组件形态 + 来源工程） | 组件形态（2026-09-30）：`fsc build -p Z20` 通过（`.fsc/z20/libzkgui.so`）→ 推 `/tmp/lib/` + `/tmp/ui/`，设备侧 md5 与本地一致（§1.6）；来源工程：`fsc build -p Z20` + MCP 推包（lib md5 记录） |
+| app 包在 Z20 上编译 + 推设备运行 | ✅ 有（组件形态 + 来源工程） | 组件形态（2026-09-30）：`fsc build -p Z20` 通过（`.fun/z20/libzkgui.so`）→ 推 `/tmp/lib/` + `/tmp/ui/`，设备侧 md5 与本地一致（§1.6）；来源工程：`fsc build -p Z20` + MCP 推包（lib md5 记录） |
 | 相册页上屏（状态卡/二维码/计数） | ✅ 有（组件形态另有本次独立截图） | 本次组件形态：qrcode 控件渲染 + 文案上屏，截图 `temp/verify71/shots/verify_a_qr.png`（`QR[fallback]: http://<验收机IP>:9000/upload`、`photos 4 / videos 3`）；来源工程：整机说明书 `manual_shots/11_相册上传.png` |
 | 面板侧二维码**能被手机扫到** | 🟡 **等价判据已过；手机实际扫仍未做** | 本次（2026-09-30）：真机截图 → zxing 解出 URL == `qrInfo().content`（§1.6 判据 b，相册码本身）；「手机微信实际扫到」仍无取证（本机无手机/小程序，来源工程说明书该图同样记 `图待补`） |
 | **扫码 → 传图 → 落盘 `/mnt/sdnand/album/` → 回调刷新** 端到端 | 🟡 **协议等价客户端已端到端取证（2026-09-30 组件形态）；微信小程序扫码那一环未取证** | 本次：PC 侧 `projects/SmartPanel_HA/tools/mp_send_test.py`（与 `mp_transfer` 同协议的假小程序）发 205 B 图 → 设备 `/mnt/sdnand/album/test_upload_71.png` 落盘（md5 `9847d78feaf1d39db7070c7306000700` 与 PC 侧一致、无 `.tmp` 残留）、`logcat -d -s zkgui` 出现 `album: onFileAdded path=… size=205 kind=0`、页面计数 `photos 4 → 5`（§1.6 判据 d）；**手机微信扫码未做** |

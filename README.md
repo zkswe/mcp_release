@@ -1,8 +1,8 @@
 <div align="center">
 
-# 🦅 FlyThings MCP
+# 🦅 FlyThings MCP（内部开发版）
 
-**让 AI 助手直接获得 FlyThings OS 的开发能力：克隆到本地 → 把路径交给你的 AI → 用中文说需求就行**
+**内部开发版（含内部知识/证据/流程）；对外发布版见 release 仓。让 AI 助手直接获得 FlyThings OS 的开发能力：克隆到本地 → 把路径交给你的 AI → 用中文说需求就行**
 
 flythings-mcp | FlyThings MCP | FlyThings OS | FlyThings AI 助手 | 中科世为 MCP | FlyThings HMI
 
@@ -60,7 +60,7 @@ AI 会：按 `requirements.lock` 装依赖（已锁定、实测通过的组合�
 Kimi → 项目根 `.mcp.json` 或 `.kimi/mcp.json`；Claude Desktop → `claude_desktop_config.json` 的 `mcpServers`。
 > `python` 不在 PATH 时用完整路径（如 `C:/Users/<你>/AppData/Local/Programs/Python/Python313/python.exe`）。
 
-**验证**—— 问 AI「**MCP 版本是多少？**」：应返回 `flythings-kb-open 0.27.200-open`（**43 个工具**）。
+**验证**—— 问 AI「**MCP 版本是多少？**」：应返回 `flythings-kb-open 0.27.201-open`（**43 个工具**）。
 
 ---
 

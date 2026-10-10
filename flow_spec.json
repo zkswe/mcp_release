@@ -586,7 +586,7 @@
       "verify": {
         "ok": "文案全走 @key、翻译已 import 并 push，设备显示新语言",
         "notOk": "改完 tr 不 push（设备仍跑旧翻译，logcat 刷 not found value）",
-        "evidence": "`i18n_to_json` 后设备文案变化；换行一律写 `&#x000A;`，json 里必须是真实 0x0A"
+        "evidence": "`flythings_i18n(action=\"to_json\")` 后设备文案变化；换行一律写 `&#x000A;`，json 里必须是真实 0x0A"
       }
     }
   },

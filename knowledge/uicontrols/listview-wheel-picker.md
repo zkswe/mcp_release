@@ -218,4 +218,4 @@ flythings_map_control("picker mode=time") # -> listview / L2（小程序）
 - 跨框架映射（`TimePicker` 全族 → `listview`）：`knowledge/uicontrols/control-mapping-capability.md` / `knowledge/uicontrols/framework-control-mapping.md` / `knowledge/../components/ui_v1/control-map.md` 2.24
 - 高频回调性能（`obtainListItemData` 里禁止耗时操作）：`knowledge/uicontrols/high-frequency-callback-perf.md`
 - 缺口编号与级别：`knowledge/../components/ui_v1/gap-list.md` G-22（日期部分）/ G-23（滚轮·时间·时钟盘）/ G-37 / G-38
-- 官方样例（3 行循环列表，点行选中）：`<厂家基准工程>/ui/1024x600/detail.json` `ListviewTimePicker`
+- 官方样例（3 行循环列表，点行选中）：`projects/SampleUI-New/ui/1024x600/detail.json` `ListviewTimePicker`

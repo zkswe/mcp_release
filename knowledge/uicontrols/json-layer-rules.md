@@ -17,7 +17,7 @@ evidence: []
 
 > 检索导引：问「控件这样嵌套合不合法 / window 里能放什么 / pagewindow 为什么只装 window / 层级报错（check_all #2）/ 先看 json 做遮挡审计 / **重启后控件位置跑了 · 坐标出现负值 · 拖动夹到什么边界**」→ 本文。
 > 口语/错说法（用户原话）：pagewindow 里能放文本框吗 / 能不能往 pagewindow 里加按钮、文本 / pagewindow 里放别的为什么没反应 / 为什么只能塞窗口。
-> 2026-09-08 需求方要求「控件层级问题检讨」产出。**方法**：扫描 86 个真实 json（`<厂家基准工程>/ui/1024x600` 42 + `<内部基准工程>/basedemo-new_z20_1024_600` 35 demo/44，ftu unpack 反解），统计每个容器类型的直接子内容分布——**零越界样例**，基线全绿。
+> 2026-09-08 需求方要求「控件层级问题检讨」产出。**方法**：扫描 86 个真实 json（`projects/SampleUI-New/ui/1024x600` 42 + `projects/LearningProject/basedemo-new_z20_1024_600` 35 demo/44，ftu unpack 反解），统计每个容器类型的直接子内容分布——**零越界样例**，基线全绿。
 > **落地**（2026-10-05 改口径）：**唯一真源 = `ui_tools/ui_schema.json` 的 `controls[].children`**
 > （`{"mode": "controls"[, "only": [类型…]]}` 或 `{"mode": "substructure", "key": "<结构键>"}`；无声明 = 叶子），
 > 判据由**两个 checker 同源派生**：`check_all.py` #2（`_layer_problems`）与 `ui_compile.py` **TREE001-004**；
@@ -110,3 +110,66 @@ evidence: []
 判据回顾：**z 序 = json 书写顺序（后定义在上层）**；**触摸按定义顺序先命中先定义的可点控件**（遮罩 button 压住卡片 window 时卡片内按钮点不动 → 卡片扁平化到控件层、排在遮罩之后）。
 改动前后对比用 `flythings_ui_visual(action="diff")`；视觉样式（颜色/字体/切图）仍要截图。
 检索词：控件被遮挡 / 点不到 / 谁挡着谁 / 控件覆盖 / 重叠 / 层级 / z 序 / touchPass / layout_audit。
+
+
+## 根节点（页面尺寸）= 页面的「命门」：写错 → 页面 0×0 → 画不出 + 接不到点击（2026-10-08 事故，MUST）
+
+**规则（违反 = `check_all` 第 1 项 FAIL）**：每个 `ui/*.json` 的**根节点**必须是
+`"id": 0` + `"position": {"left": 0, "top": 0, "width": W, "height": H}`，且 **W/H 必须等于 `resolution`**。
+例外：`"topmost": true`（系统栏 statusbar/navibar，官方「局部悬浮块」机制）不做全屏要求，
+只要求坐标全整数、块非空且完整落在 resolution 内。
+
+**为什么是命门**：引擎按**根节点**算页面尺寸。`position` 里没有 `width/height`
+（例如写成 `{"left":0,"top":0,"bottom":0,"right":0}` —— 那是**控件坐标**「从右/下算」的写法，
+被误用到根节点）→ 页面尺寸被算成 **0×0** → ① 画不出来（屏幕停在上一页，看着像「页面没打开」）；
+② 接不到任何点击（点击落在 0×0 命中区之外）。
+**最坑的是设备端完全静默**：不崩溃、不报错、app 日志无异常 —— 本次现场探针显示
+`onUI_init` / `onUI_show` / `netRefresh` **全部走完**、当前活动也已切到该页，
+但屏幕不重绘、点击零响应，极容易被误判成「死锁 / 视频图层争用 / 触摸驱动坏了」。
+
+**实例（2026-10-08，Z20 SmartPanel，现场面板）**：
+- `ui/network.json` / `ui/staticip.json` 由脚本 `gen_net_pages.py::head()` 生成，
+  根节点写成 `{'left':0,'top':0,'bottom':0,'right':0}` → 点「设置 → 网络设置」**必现**"卡死"。
+- 同批排查：`python tools/ui_tools/check_all.py <项目根>` **第 1 项直接就指出来了**
+  （`[FAIL] ui/network.json 根节点`），而 `ui/staticip.json` 同 FAIL。
+- 修法：根节点改成 `{'left':0,'top':0,'width':480,'height':480}`（== resolution）
+  → `fui pack` 重出 ftu → `fsc build` → 出包，问题消失（截图 + 点击回调双验证通过）。
+
+**防线（2026-10-08 已落地）**：
+1. `ui_tools/check_all.py::verify_assets()` **现在也核根节点**（新增返回字段 `badRoot[]` 并参与 `ok`）——
+   自动化链路（`flythings_verify_assets`）从此拦得住；判据函数 `_root_problem()` 与第 1 项同源。
+   （此前 `verify_assets` 只核图片存在/尺寸，而 `check_all` 第 1 项只是**人工全检**的一项 →
+   自动化跑不到，两个脚本生成的页面一路绿灯。）
+2. 脚本生成页时：**出图前自检**根节点（`gen_net_pages.py::check_root()`，不合规直接 `SystemExit`，不出坏包）。
+3. 排查口径：页面「打不开 / 点了没反应」且**设备端无任何报错** → **第一条先查根节点**，
+   然后才是层级（#2）/ 遮挡（#15·#16）/ 视频图层等。
+
+**另一条同源教训（部署侧）**：只改 `ui/*.json`（ftu）不改 C++ 时，`libzkgui.so` 不变 ——
+按 lib md5 判「已是最新」的部署脚本会**误判跳过**；必须同时按 **ftu / img md5** 校验。
+
+
+## 8. window 是容器：内容必须内嵌 + 相对坐标（2026-10-10）
+
+**规则（违反 = `check_all` 第 38 项 / `ui_compile` TREE005 报 WARN）**：带底图的 `window` 容器
+（`children.mode=controls`）要是**空壳**（无子控件），却有 **≥2 个同级控件整块落在它的 position 框内**
+—— 说明「卡片内容」被平铺成了**兄弟节点**（绝对坐标），没有内嵌。正确写法：内容作为该 window 的
+**子控件**、用**相对窗口的坐标**。
+
+**为什么是硬规则**（2026-10-10 UIShowcase-Z21 底部 NavBar 事故）：
+1. **位移/隐藏/动画不跟随**：对窗口做整体 `setPosition`（如载入/退出动画 `zk::PageAnim`）时，
+   **只有窗口自己动**，平铺在外面的图标/文字原地不动（先例：NavBar 背板滑入、图标文字不动）。
+   子控件随父容器移动，兄弟节点不会。
+2. **封装语义**：window 是万能容器，同页其它卡片（HeroCard 等）都是「卡片窗口 + 内嵌子控件」；
+   空壳窗口 + 外挂内容破坏了「window = 容器」的一致语义，也让后续改动（挪/换屏/z 序）成本翻倍。
+3. **坐标空间**：子控件坐标**相对父容器**（实证：HeroCard 子件 36,34 = 卡内偏移）；写绝对坐标当兄弟
+   就成了「几何巧合」，容器一挪就散。
+
+**与既有规则的关系**：TREE001-004 / #2 只管**非法嵌套**（叶子装子 / 结构容器平铺 / 只装 window）；
+本条管的是**合法但设计错**的空壳容器 —— 两者的 json 都合法、pack 都成功，只有本条能抓。
+
+**修法**：`flythings_read_json` 读出层级后，用 `flythings_edit_ftu(operations=[{"op":"move","target":"<子控件>","into":"<容器>"}])`
+把内容**移入容器**（自动按绝对坐标重基为相对坐标）；或直接改 `ui/*.json` 再 `fui pack`。
+层级/父子在 MCP 里**只能走 `move`**（`ui_visual(action=edit_apply)` 只改几何+字段，不改父子）。
+
+**判据口径**：带 `backgroundPic` + 无子控件键 + ≥2 同级控件「整块（含 1px 容差）落在窗口框内」→ 报。
+只报 WARN（可能是故意「框 + 悬浮件」），交人工判断。

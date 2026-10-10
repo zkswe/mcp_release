@@ -58,7 +58,7 @@ C:\work\B2dCardZ20> fsc build -p Z20
 .../src/logic/mainLogic.cc:26:9: warning: #pragma once in main file
 [9/10] Building CXX object CMakeFiles/zkgui.dir/generated/ui_main.cpp.o
 [10/10] Linking CXX shared library libzkgui.so
-exit=0    产物 .fsc/z20/libzkgui.so = 301,892 B（NEEDED 含 libblend2d.so）
+exit=0    产物 .fun/z20/libzkgui.so = 301,892 B（NEEDED 含 libblend2d.so）
 ```
 > 旁边那串 `vector.tcc: parameter passing ... changed in GCC 7.1` 是 GCC 8.3 的**note**（非错误、非 warning），
 > 由 `std::vector<std::pair<float, BLFont>>` 触发，可以无视。

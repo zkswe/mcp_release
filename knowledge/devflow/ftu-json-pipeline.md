@@ -67,7 +67,7 @@ ui/*.ftu  ← 设备实际加载的是它
 | 直接改 json / 批量改 | 改完 `flythings_fui_pack(json_path="<项目>/ui/main.json")`；要连编译部署一起走 → `flythings_build_ui_flow(project_root, with_launch=True)` |
 | 只改一个属性/文本（走 op） | `flythings_edit_ftu(ftu_path, operations=...)`：它**把变更应用到 json 再 pack 回 ftu**（见 §5） |
 | 客户不用 MCP、纯命令行 | `fui pack <项目>/ui` → `fsc build -p <平台>` → `fsc launch -p <平台> -s <设备>`（工具随项目：`<项目>/ui/fui.exe`、`<项目>/fsc.exe`） |
-| 新界面从零开始 | **缺省前端 = HTML 原型**（线框/风格稿，客户确认载体）：`flythings_html_to_json` → `ui/main.json`；**也可按 schema 直写 json（`flythings_ui_schema` 查字段）或走块库 spec（组装器在工具箱里：`zkuitool compose`；块定义见 `templates/ui_blocks/blocks/`）**——入口不排他，但**产物一律过 `ui_compile` + `check_all`**（口径见 `knowledge/devflow/ui-pipeline-spec.md`）；随后 pack → 预览 `flythings_ui_preview` → 真机验收 |
+| 新界面从零开始 | **缺省前端 = HTML 原型**（线框/风格稿，客户确认载体）：`flythings_html_to_json` → `ui/main.json`；**也可按 schema 直写 json（`flythings_ui_schema` 查字段）或走块库 spec（`templates/ui_blocks/compose.py`）**——入口不排他，但**产物一律过 `ui_compile` + `check_all`**（口径见 `knowledge/devflow/ui-pipeline-spec.md`）；随后 pack → 预览 `flythings_ui_preview` → 真机验收 |
 
 不要做的事：**不要绕过 pack 直接改设备上的 `/tmp/ui/*.ftu`**（下次 launch 全量推送就覆盖，且本地与设备对不上，
 见 `knowledge/devflow/ui-layout-verify.md` §9 红线）。
@@ -203,3 +203,21 @@ flythings_knowledge_search("main.ftu 是什么文件")
 - `knowledge/devflow/page-architecture-spec.md`：一个界面该用独立 ftu 还是同 ftu 内多 window
 - `knowledge/devflow/ui-asset-rules.md`：图片资源铁律（路径、尺寸、`thumb.size`）
 - `knowledge/devflow/device-deploy-budget.md`：部署体积与内存预算（launch 产物落 `/tmp`）
+
+## 11. 目录约定：`ui/`（设备） vs `ui_dev/`（开发期）—— 2026-10-10 定规
+
+**问题**：`ui/` 里同时放 `*.ftu`（设备加载）+ `*.json`（布局源）+ `*.html`（预览稿）+ `fui.exe`（工具），
+而 `fsc launch` 会把整个 `<项目>/ui/` 推到设备 → 开发期文件（含 ~4.9 MB 的 fui.exe）也进了设备。
+
+**约定**：
+- `<项目>/ui/`     = **只放设备要加载的东西**：`*.ftu` + `images/`
+- `<项目>/ui_dev/` = **开发期产物**：`*.json`（布局源）、`*.confirm.html` / `*.preview.html`、`fui.exe`
+
+**工具侧已按此实现**（向后兼容：无 `ui_dev/` 的老工程仍按 json 在 `ui/` 处理）：
+- `flythings_attach_cli_tools`：fui.exe → `ui_dev/`；并把 `ui/` 下已有的 json/html/fui.exe 迁到 `ui_dev/`（幂等）
+- `flythings_fui_pack` / `flythings_build_ui_flow`：json 源读 `ui_dev/`，**ftu 产物统一落 `ui/`**
+- `flythings_fui_unpack`：默认写回 `ui_dev/`
+- `flythings_ui_preview` / `json2html`：json 扫描与确认稿闸门同时认 `ui_dev/` 与 `ui/`
+- `flythings_create_project`：模板产出的开发期文件自动归入 `ui_dev/`
+
+**判据**：`ui/` 下不应出现 `*.json` / `*.html` / `fui.exe`；出现即说明没归位。

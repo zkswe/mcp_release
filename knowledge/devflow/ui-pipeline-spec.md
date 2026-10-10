@@ -54,7 +54,7 @@ evidence: []
 | 档 | 是什么 | 约束 |
 |---|---|---|
 | **default（缺省）** | 需求 → 线框/风格稿（HTML 受限子集）→ `flythings_html_to_json` → `ui/*.json` | 新需求没给稿时的**缺省走法**；线框/风格稿是**客户确认载体**（不 pack、不写逻辑，先确认）；产物一律过 §1 ①/② 才落盘 |
-| **allowed（允许）** | 直接按 schema 写 `ui/*.json`、块库 spec（组装器在工具箱里：`zkuitool compose`；块定义见 `templates/ui_blocks/blocks/`） | 不排他，但**产物必须等价**：字段来自 `flythings_ui_schema`（不许凭记忆）、过同一套校验链；**跳过 HTML 不等于跳过验收** |
+| **allowed（允许）** | 直接按 schema 写 `ui/*.json`、块库 spec（`templates/ui_blocks/compose.py`） | 不排他，但**产物必须等价**：字段来自 `flythings_ui_schema`（不许凭记忆）、过同一套校验链；**跳过 HTML 不等于跳过验收** |
 | **migration（迁移）** | LVGL → `flythings_translate_ui`；Qt / QML / Android XML / 小程序 WXML / Vue → 逐控件 `flythings_map_control` + 手工搭 json | 前端（A 层）只许产 IR/中间表示；**未实现的入口一律登记 status=planned**（不许把"能手工做"写成"入口已支持"）；L3 以上（自绘/降级/不支持）必须逐条登记 `downgrades` |
 
 **入口清单是登记制**：有哪些入口、各自 status（`active` / `planned` / `unsupported`）、校验链、证据、已知限制
@@ -71,7 +71,7 @@ evidence: []
 
 > **C 层发射（2026-10-05，T5.2 / T5.5 / T5.6）**：`ui_tools/ui_emit.py` 是**必填键补全**与 **`translate` 路径
 > 字段全集**的唯一实现 —— `translate_tools.py` 以别名调用它（抽取前后对同一批 LVGL 夹具产物**逐字节一致**）；
-> `html2json` 与 `zkuitool compose` 的 `serialize()` 走它的 `fill_required()`（**只补注册表必填键**，
+> `html2json` 与 `templates/ui_blocks/compose.py` 的 `serialize()` 走它的 `fill_required()`（**只补注册表必填键**，
 > 不碰各自有意省略的可选字段）。
 > ⚠️ **如实登记（别把"共用一条链"读成"只有一份实现"）**：**键序 / `tab5` 色表规范化只有 `schema_complete()` 一份**
 > （`translate` 路径用）；`html2json` / `compose` 仍各自持有**取值表**，差异逐条登记在

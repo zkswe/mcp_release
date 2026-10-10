@@ -21,9 +21,9 @@
 ```
 templates/ui_blocks/
 ├─ compose.py                 ← 组装器（唯一入口，CLI）
-├─ iconlib.py                 ← 图标解析层：语义名 → `components/icons` 资产库（档位 56/24/22、图 == 盒、
+├─ zkuitool（图标解析 iconlib）                 ← 图标解析层：语义名 → `components/icons` 资产库（档位 56/24/22、图 == 盒、
 │缺档按盒尺寸现出、查不到才回退线框并**明说**）
-├─ full_render.py             ← 整页渲染（展平 scrollwindow → y 方向长图，供人工验收；不参与 check_all）
+├─ zkuitool（整页渲染 full_render）             ← 整页渲染（展平 scrollwindow → y 方向长图，供人工验收；不参与 check_all）
 ├─ blocks/
 │  ├─ _tokens.json            ← 设计令牌 + 相对尺度体系的**唯一数值源**（比例/令牌，不写死某屏像素；含第 3 批语义色与 glyph 尺寸下限）
 │  ├─ _icons.json             ← `icon` 字段的**允许值清单**（从 components/icons/catalog.json 摘：203 语义名 / 5 分类 / 两态清单 / 档位与回退口径）
@@ -38,7 +38,7 @@ templates/ui_blocks/
    │                            + 复用 page_title/card/section_header/bottom_actions/dialog
    └─ nav_320x240/            ← 示例 F：与示例 E **同一份块清单**，只换分辨率与短文案（极小屏：视口 = 屏高 − 标题 − nav − 底栏）
 ```
-六版示例都带 `main.full.render.png` = 展平 scrollwindow 的**整页渲染**（由 `full_render.py` 产出，仅供人工验收，**不参与 check_all**）。
+六版示例都带 `main.full.render.png` = 展平 scrollwindow 的**整页渲染**（由 `zkuitool（整页渲染 full_render）` 产出，仅供人工验收，**不参与 check_all**）。
 口径：内容展平；**固定带（底导 / 底栏）让位到长图底部**（y = 整页高 − 固定带高，位移量 = 滑动行程）——
 旧口径「保持原屏 y 不变」会把底栏摆在长图中段、压住内容（2026-10-01 看图：「内容区伸进底部
 固定条，把最后一行盖住」）。整屏浮层（弹窗 / 提示）仍按原屏 y 画（它们是「浮层」不是贴底固定带）。
@@ -90,7 +90,7 @@ zkuitool full_render templates/ui_blocks/examples/nav_1024x600/project \
 产物清单（每页）：
 1. `<工程>/ui/[<W>x<H>/]main.json` —— 字段全集显式、`textview__N/button__N/window__N` **连续编号**、根节点 `id:0 + position + resolution`；
 2. `<工程>/resources/images/*.png` —— 只给用到的块出图，**图 == 控件盒**（形状/底图走 `gen_res.py`；**图标走 `components/icons` 资产库**，见 §5.1）；
-3. `<工程>/ui/main.render.png`（`--render`）、`<工程>/src/logic/mainLogic.cc`（骨架，按钮回调一个不缺）、`<示例>/main.full.render.png`（`full_render.py`，人工验收）；
+3. `<工程>/ui/main.render.png`（`--render`）、`<工程>/src/logic/mainLogic.cc`（骨架，按钮回调一个不缺）、`<示例>/main.full.render.png`（`zkuitool（整页渲染 full_render）`，人工验收）；
 4. `check_all` 全检结果（`--check`）。
 
 ## 3. spec 格式
@@ -256,7 +256,7 @@ zkuitool full_render templates/ui_blocks/examples/nav_1024x600/project \
 走 `ui_tools/gen_res.glyph_icon()` 的兜底（默认 style=emoji → 查 `_GLYPH_EMOJI` + 本地 emoji 字体，
 缺字体退简笔线框），与**真机/产品用的那套图标**不是同一套图形。
 现在块库图标**唯一来源 = `components/icons`**（v0.3.1 = Tabler Icons 3.46.0 单色烘焙 PNG；
-矢量源 `vendor/tabler/**`，生成器 `components/icons/scripts/gen_icons.py`），实现见同目录 **`iconlib.py`**。
+矢量源 `vendor/tabler/**`，生成器 `components/icons/scripts/gen_icons.py`），实现见同目录 **`zkuitool（图标解析 iconlib）`**。
 
 | 项 | 口径 |
 |---|---|
@@ -412,7 +412,7 @@ zkuitool full_render templates/ui_blocks/examples/nav_1024x600/project \
 > 旧清单里的 `checkbox v0 未专有实现 x2` / `checkbox picTab.pic0 x2` / `radiogroup v0 未专有实现 x1` /
 > `listview item/subItem x3` **已随缺陷 B 的修复去掉**（改成逐项 / 逐行真画）。
 >
-> 另：compose 打一行 `[NOTE] 固定带自检：…`（缺陷 A），`full_render.py` 打一行 `固定带让位：y A → B`——
+> 另：compose 打一行 `[NOTE] 固定带自检：…`（缺陷 A），`zkuitool（整页渲染 full_render）` 打一行 `固定带让位：y A → B`——
 > 六版数值：settings 1024 `528 → 792（+264）`；settings 320 `200 → 372（+236，整页 476）`；
 > interactive 1024 `528 → 1442（+914）`；interactive 320 `200 → 890（+690）`；
 > nav 1024 `464 → 992（+528，带高 136）`；nav 320 `140 → 692（+552，带高 100）`。
@@ -456,7 +456,7 @@ zkuitool full_render templates/ui_blocks/examples/nav_1024x600/project \
 | 27 | **块内 glyph 跟着小屏降档**（12/16px 图标） | `aa_audit` 真缺陷：`wifi@12` / `home@16` / `settings@16` / `bell@20` 实测 FAIL（图标笔画 <1px 退成硬阶梯） | 第 3 批引入 `glyph_min_px = 24`（块内图标尺寸**不随屏降**）；极小屏靠「省图标」降级，不靠缩小图标 |
 | 28 | **浮层（toast）写在普通层里**/ `visible` 写 true | 被内容/弹窗盖住（提示根本看不见）；或一进页就弹一层遮屏 | toast = 根层整屏 window（modal=false + touchable=false） + **最后定义 = 最上层**+ `visible:false` 默认 |
 | 29 | **底导与底栏两带叠在一起**（或 nav 放进滑动区） | 按钮被盖住/点不动（重叠）；上滑时 nav 跟着滚走（进滚动区） | nav 贴底栏上沿 + **视口扣除 nav 带高**（`compose` 日志会打 `[NOTE] bottom_nav … → 视口缩至 N`，看得见） |
-| 30 | **块内图标自绘 / 用 emoji 字体兜底**（`gen_res.glyph_icon` 默认 style=emoji） | 观感与真机/产品那套图标完全不同（2026-10-01：「效果差异和实际差异太大」） | 图标**唯一来源 = `components/icons`**（`iconlib.py`，见 §5.1）；库里没该语义名 → 回退线框**并在日志里明说**（不静默）；小盒上的 `star` **描边
+| 30 | **块内图标自绘 / 用 emoji 字体兜底**（`gen_res.glyph_icon` 默认 style=emoji） | 观感与真机/产品那套图标完全不同（2026-10-01：「效果差异和实际差异太大」） | 图标**唯一来源 = `components/icons`**（`zkuitool（图标解析 iconlib）`，见 §5.1）；库里没该语义名 → 回退线框**并在日志里明说**（不静默）；小盒上的 `star` **描边
 | 31 | **底栏 y 与内容视口各算一套**（底栏 `H − bar_bot`，视口忘了扣底栏高） | 内容流按错视口排 → **最后一行/卡片底落进底栏带被盖住**（2026-10-01 看图：「内容区伸进底部固定条，把最后一行盖住」；展平长图里 `ButtonRowDeviceCard9 508..568 ∩ FooterBg12 528..600 = 992×40 px`） | 视口与底栏**同源**（`m['content_bottom'] = H − bar_bot`）+ 自检 `assert_no_bar_overlap`（逐对判 rect、裁剪后有效矩形、相交报错退出；实测旧口径下能拓出上述 992×40）；展平长图里固定带**让位到长图底部**（`assert_bands_clear` 守） |
 | 32 | **块自己报的高度装不下子节点**（空态块 `H×0.30` 在 320×240 上 72 < 需要的 104） | 内容实际底 > 声明内容高 → 滑动窗行程不够，**最后一段永远滚不出来**（且展平长图里压到底栏） | 块高按内容反算（`band = max(H×0.30, 图标底 + 2×(间距+4+副文案高))`）+ 自检「内容实际底 ≤ 声明内容高」（320 屏实测被拓出来 → 已修） |
 | 33 | **数组子项（`radiobuttons[]` / `checkbox.checked` / `item.subItem[]`）只走通用兜底**| 渲染图里单选区 / 勾选态 / 列表行**是空的**，看图以为「列表没刷新出来」（2026-10-01） | 渲染器按引擎口径专有实现：逐项画圆点 + 选项文字（`pic0`/`pic2` 切态）、按 `checked` 切图（缺 `pic2` → `components/icons` 的 `control.check_on`）、按 `rows`/`rowSpacing`/`itemH` 逐行铺模板（行底 + 子项图/文本） |态**会被 `aa_audit` 判真缺陷 → 用 `state:"on"` 实心态或 `heart` |
@@ -490,7 +490,7 @@ zkuitool full_render templates/ui_blocks/examples/nav_1024x600/project \
    * **滚轮选中条用静态 textview**（写在 listview 之前、`touchable:false` 显式写），行模板透明、`picTab.pic0/1/2` 全空 + `color2/color3` 与常态同色（让引擎自带选中态看不见）—— 口径全部照 `knowledge/uicontrols/listview-wheel-picker.md`。
 
 8. **图标来源 = `components/icons` 资产库（2026-10-01 改口径，详见 §5.1）**：
-   * 原先走 `gen_res.glyph_icon()`（emoji 字体 / iconfont 线框兜底）→ 与真机/产品那套图标**不是同一套图形**（经需求方原话「效果差异和实际差异太大」）。现在实现是 `iconlib.py`：语义名 → 库条目（复用库自带 `resolve_target` 解析别名/全名/Tabler 名，**不另建名字表**，避免与库漂移）。
+   * 原先走 `gen_res.glyph_icon()`（emoji 字体 / iconfont 线框兜底）→ 与真机/产品那套图标**不是同一套图形**（经需求方原话「效果差异和实际差异太大」）。现在实现是 `zkuitool（图标解析 iconlib）`：语义名 → 库条目（复用库自带 `resolve_target` 解析别名/全名/Tabler 名，**不另建名字表**，避免与库漂移）。
    * **为什么不直接拷库里的 PNG**：① FlyThings 无 tint，块内图标各有颜色（brand / fg2 / 语义色）→ 颜色必须生成时烘焙；② 库预置档只有 22/24/56，而块内图标盒有 16/24/36px。所以口径定为「盒 == 档位 → 取库预置产物并按 alpha 换色（与现出**像素等价**，maxdiff = 0）；缺档 → 用库自带生成器按**盒尺寸**现出」。两条都不改盒尺寸（图 == 盒是硬口径）。
    * **箭头（chevron）刻意留在本库自绘**：库的 `control.chevron-right` 是 24 网格的细描边，在 12×16 盒上会退成 1px 硬斜边（`aa_audit` 报 `hard_diag`）——即本库 §8-3 已定的箭头专属口径；`checkbox` 勾选符号已改走库（`control.check` 的 `_on`）。
    * **实测坑**：`star` 描边态 @24px 被 `aa_audit` 判真缺陷（`hard_diag=4` / 斜线边界 67% ≥ 60%）→ 小盒上的 star 用 `state:"on"` 实心态或改 `heart`（已写进 `blocks/_icons.json` 的 `_pitfall`）。
@@ -507,7 +507,7 @@ zkuitool full_render templates/ui_blocks/examples/nav_1024x600/project \
   · 自检全部复用：`assert_caption_unique`（每次出产物前）/ `assert_icon_uniform`（行族）/ `assert_children_fit`（每个新容器）/ `assert_row_gaps`（banner 的「文案→关闭盒」与 divider_label 的「线→文字」都记入同一张间隙表）/ `next_seq` + `name_block`（caption 唯一性）；
   · **缺陷 A 新增自检 `assert_no_bar_overlap`**（2026-10-01）：① 不变式「标题带 + 内容视口 ≤ 屏高 − 底栏高」；② 底部固定带（`bottom_actions`/`bottom_nav`）与**实际渲染出的**内容节点逐对判 rect 相交（用裁剪后的有效矩形——滑动区外的内容被引擎裁掉，不参与判定），相交 → 报错退出、不出产物；③ 内容实际底 ≤ 声明内容高（越了 = 滑到底也看不到最后一段）。口径来源：底栏 y / 底导 y / 内容视口**都从 `m['content_bottom'] = H − bar_bot` 一个令牌派生**，不再两处各算一套。
   · `_tokens.json` 新增：语义色 9 个（`info/info1/success/success1/warn/warn1/danger/danger1` + `mask`，TDesign v1.17 档位）与比例 `tab_h_of_h/ind_h_of_h/pill_h_of_h/banner_h_of_h/divider_h_of_h/nav_h_of_h/toast_top_of_h` + `glyph_min_px`。
-* **图标来源（2026-10-01）新增文件**：`iconlib.py`（语义名 → `components/icons`；档位 56/24/22；盒 == 档位取库产物换色、缺档按盒尺寸现出；回退线框**明说**）、`blocks/_icons.json`（允许值清单：203 名 / 5 分类 / 两态）、`full_render.py`（整页渲染）；
+* **图标来源（2026-10-01）新增文件**：`zkuitool（图标解析 iconlib）`（语义名 → `components/icons`；档位 56/24/22；盒 == 档位取库产物换色、缺档按盒尺寸现出；回退线框**明说**）、`blocks/_icons.json`（允许值清单：203 名 / 5 分类 / 两态）、`zkuitool（整页渲染 full_render）`（整页渲染）；
   `compose.py` 新增出图 kind `libicon` + `glyph(state=…)` 参数（底导选中/未选中直接对上库两态）+ `grid_icons.items[].state`；`resources/images/` 里原来的 `ic_*` / `nav_*` 文件名不变（json 引用零改动）。
 * **未覆盖**：日期/日历块、图表块（可复用 `components/ui_v1/` 的自绘控件后再包成块）、`circlebar`/`slidetext`/`pagewindow`/`slidewindow`/`digitalclock` 等控件块（tab 页签已在第 3 批覆盖）。
 * **第 3 批遗留**：① 底部导航只有「图标 + 文字」两种呈现，没做「选中项突出/凸起」变体；② 宫格行数由 `cols` 与项数隐式决定，未支持跨列合并（`span`）；③ toast 是**单行**盒（多行需改 `toast_h` 公式）；④ 提示条的关闭动作只到回调骨架，关闭后重新弹出需业务自己记状态。

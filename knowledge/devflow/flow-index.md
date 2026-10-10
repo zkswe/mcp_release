@@ -141,7 +141,7 @@ evidence:
 | 整机自检 | 分区快照全部执行，`ok=false` 的逐条给 hint 与结论 | 把 `ok=false` 当异常抛掉，或只报总分 | 返回体 `summary.total/failedSections`；读不到本身是结论，要如实报告 |
 | 问题记录 | 问题单含现象/复现/期望/实际/证据，可直接转交 | 只有一句描述、无复现与证据 | `bugreport` 渲染的文本；采不到真机数据时写明原因（未连设备/设备不可定位） |
 | 交付随项目带工具 | fui/fun 已复制到项目，交付后无需安装 MCP 即可编译 | 只复制了一半（缺 fun 就无法 install/build） | 项目根有 `fsc.exe`、`ui/` 下有 `fui.exe`；用项目自带工具链跑一次 build |
-| 多语言 | 文案全走 @key、翻译已 import 并 push，设备显示新语言 | 改完 tr 不 push（设备仍跑旧翻译，logcat 刷 not found value） | `i18n_to_json` 后设备文案变化；换行一律写 `&#x000A;`，json 里必须是真实 0x0A |
+| 多语言 | 文案全走 @key、翻译已 import 并 push，设备显示新语言 | 改完 tr 不 push（设备仍跑旧翻译，logcat 刷 not found value） | `flythings_i18n(action="to_json")` 后设备文案变化；换行一律写 `&#x000A;`，json 里必须是真实 0x0A |
 
 ## 5. 跨流程铁律（去重后只此一份）
 

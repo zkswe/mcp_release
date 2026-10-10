@@ -175,7 +175,7 @@ discovery **不用改风格**就能被 Domoticz 吃下：
 # ① 编译部署（工程侧）
 fsc install && fsc build -p Z20
 # 部署：/tmp 劫持法（不动 /res）——⚠️ 单次 restart；先确认没有残留 zkgui 进程
-adb -s <设备IP>:5555 push .fsc/z20/libzkgui.so /tmp/lib/libzkgui.so
+adb -s <设备IP>:5555 push .fun/z20/libzkgui.so /tmp/lib/libzkgui.so
 adb -s <设备IP>:5555 push ui/main.ftu          /tmp/ui/main.ftu
 adb -s <设备IP>:5555 push EasyUI.cfg           /tmp/EasyUI.cfg
 adb -s <设备IP>:5555 shell setprop ctl.restart zkswe

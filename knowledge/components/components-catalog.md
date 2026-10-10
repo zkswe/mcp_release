@@ -4,7 +4,7 @@ title: 可复用组件目录（components/ 树派生：形态 / 四件套 / 平�
 category: components
 status: review
 confidence: manual
-verified_at: 2026-10-06
+verified_at: 2026-10-08
 stale_days: 180
 origin: derived
 source: 由 components/ 树扫描派生（scripts/gen_components_catalog.py）；平台可用性取自 platform_capabilities.json，依赖取自各组件 Manifest.xml

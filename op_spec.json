@@ -841,7 +841,7 @@
       "params": [
         {
           "name": "operations",
-          "desc": "JSON 数组（set/remove/add/set_root；逐字段见本 op 的长文口径）"
+          "desc": "JSON 数组（set/remove/add/move/order/set_root；逐字段见本 op 的长文口径）"
         },
         {
           "name": "output_ftu",

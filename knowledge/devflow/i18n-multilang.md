@@ -77,7 +77,7 @@ evidence:
 
 | 在哪 | 写法 | 说明 |
 |---|---|---|
-| 布局 `ui/*.json` | `"text": "@about_me"` | **带 `@`**；工具用正则 `"text"\s*:\s*"@([^"]+)"` 收集（`_collect_layout_keys`），`i18n_scan` 靠它算「布局引用了但 .tr 里没有」 |
+| 布局 `ui/*.json` | `"text": "@about_me"` | **带 `@`**；工具用正则 `"text"\s*:\s*"@([^"]+)"` 收集（`_collect_layout_keys`），`flythings_i18n(action="scan")` 靠它算「布局引用了但 .tr 里没有」 |
 | 代码 | `setTextTr("about_me")` | **不带 `@`** |
 | 代码拼接 | `LANGUAGEMANAGER->getValue("about_me")` | 来自 easyui 包 `manager/LanguageManager.h`；**运行时**取当前语言的值 |
 
@@ -175,7 +175,7 @@ evidence:
 
 ## 9. 硬约束与铁律
 
-1. ⚠️ **改完翻译不调 `i18n_to_json` = 设备跑旧翻译**（`fsc launch` 不推 i18n）→ logcat `not found value`。
+1. ⚠️ **改完翻译不调 `flythings_i18n(action="to_json")` = 设备跑旧翻译**（`fsc launch` 不推 i18n）→ logcat `not found value`。
 2. ⚠️ **`setCurrentCode` 不刷新在屏文本** → 切语言要用 `updateLocalesCode`（否则"有些地方没变"）。
 3. ⚠️ **不要手改 `i18n/<lang>.json`**（必须是 tab 制表/无空格冒号/末尾无空行，设备才认）；改 `.tr` 再转。真源：`op_spec.json` 的 `flythings_i18n（action=to_json）.rules`
 4. ⚠️ **布局写 `@key` 带 @，代码 `setTextTr` 不带 @** —— 混了就是"显示成 key 原文"或取不到值。
@@ -202,7 +202,7 @@ evidence:
 | ⚠️ **`.tr` 换行写法** | **已定案 = XML 字符引用 `&#x000A;`**（2026-10-05 需求方拍板「不要两个说法，全部统一」；代码/本页/用例同批改完，§6）；历史字面 `\n` 仅保留**读取**兼容 |
 | ⚠️ **`add_language` / `export` 的默认 `lang` / `base_lang`（`zh_CN`）在三段式文件名工程上取不到语言** | **实测缺陷（2026-10-05）**：`i18n_tools.py` 按**完整文件名标识**查语言，而真实工程文件是 `zh_CN-简体中文` ⇒ ① `add_language(base_lang='zh_CN')` **直接失败**（`"基础语言 zh_CN 不存在"`）；② `export(lang='zh_CN')` 返回 `ok:true` 但 `count=0`（**静默空**，与 `to_json` 对未知语言硬报错的口径不一致）。**绕过**：显式传三段式标识（`base_lang='zh_CN-简体中文'`）即可成功。**未修**，登记待办 |
 | ⚠️ `scan` 的「基准语言」不是 `zh_CN` | 实测：`layoutRefMissingInTr` / `trKeysUnusedByLayout` 按**文件名排序第一个**语言算（模板上 = `en_US-ENGLISH`），文档与用例都没声明这件事 |
-| ⚠️ 官方工作流里"**哪一步**把 `.tr` 转成 json" | **本仓无证据**（2026-10-05 实测）：`fsc.exe` 16 个子命令**没有任何 i18n/locale/tr 开关**、Go 符号表无 i18n 包；`fui.exe` 只有 `pack`/`unpack`（json↔ftu）；隐藏命令 `fsc convert` 只处理 `.fv/.ftu/.json`。⇒ 编译器侧转换这条链路**只能在 IDE 里**，本仓不可复现、不可判据化 |
+| ⚠️ 官方工作流里"**哪一步**把 `.tr` 转成 json" | **本仓无证据**（2026-10-05 实测）：`fsc.exe` 16 个子命令**没有任何 i18n/locale/tr 开关**、Go 符号表无 i18n 包；`fui.exe` 只有 `pack`/`unpack`（json↔ftu）；隐藏命令 `fun convert` 只处理 `.fv/.ftu/.json`。⇒ 编译器侧转换这条链路**只能在 IDE 里**，本仓不可复现、不可判据化 |
 | 固件里 i18n json 的落点 | **部分证据**：IDE `.prefs` 给 `easyui.cfg.release.languagePath = /res/tr/`（debug = `/mnt/extsd/tr/`）；`fsc.exe` 内嵌的设备侧 GUI 库里字符串写死 `.json` 后缀 + `internalLangPath = /system/res/internal/lang/`。**仍缺**：`fsc pack` 是否把 `/res/tr/` 写进 `EasyUI.cfg`（`fsc.exe` 里 `/res/tr` **0 命中**）—— 要真机 `cat` 三处 `EasyUI.cfg` + `ls -l /res/tr /system/res/internal/lang` 才能定案 |
 | ⚠️ `import` 可能**静默清库** | **实测缺陷（2026-10-05，见 `temp/` 侦察）**：`_parse_tr` 解析失败时返回 `{}`，`merge=True` 走 `merged.update(...)` 后**整文件覆盖**，只余传入的 key，返回体仍 `ok:true`；单引号属性 `name='k'`、非 UTF-8 文件是最容易触发的输入。**未修**，登记待办 |
 | `LanguageManager` 的头文件签名 | 未核（在 easyui **包内** `manager/LanguageManager.h`，不在本仓；官方示例里有 `#include "manager/LanguageManager.h"`） |

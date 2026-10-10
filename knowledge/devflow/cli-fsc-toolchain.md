@@ -26,12 +26,12 @@ evidence: []
 
 > ⚠️ 但**目录级老名字还在**：生成的 CMake 里依旧写 `$ENV{FUSE_HOME_PATH}/registry/public/<平台>/<包>/<版本>/include`。看到 `.fuse` / `FUSE_HOME_PATH` 不等于工具还是 fuse。
 
-## 2. fsc.exe / fui.exe / 注册表在哪
+## 2. fsc.exe / fsc.exe / 注册表在哪
 
 | 位置 | 说明 |
 |------|------|
-| `C:\zkswe\fsc\`（或 `D:\zkswe\fsc\`） | 官方工具链安装目录，`fsc.exe` + `fui.exe` 同目录 |
-| `<项目>\fsc.exe`、`<项目>\ui\fui.exe` | `flythings_attach_cli_tools` 复制过去，**随项目交付**（客户不用装 IDE） |
+| `C:\zkswe\fsc\`（或 `D:\zkswe\fsc\`） | 官方工具链安装目录，`fsc.exe` + `fsc.exe` 同目录 |
+| `<项目>\fsc.exe`、`<项目>\ui\fsc.exe` | `flythings_attach_cli_tools` 复制过去，**随项目交付**（客户不用装 IDE） |
 | 环境变量 `FLYTHINGS_FSC_DIR` | MCP 解析工具目录的候选之一（`project_tools._tool_dir()`） |
 | 依赖注册表 | 工具链自带 `C:\zkswe\fsc\registry\public\<平台小写键>\<包>\<版本>\`；用户级 `~/.fsc/registry/public/`（09-28 起），老 `~/.fun`、`~/.fuse` 并存；MCP `package_tools` 解析顺序 `~/.fsc` → `~/.fun` → `~/.fuse` → `C:\zkswe\fsc\registry` |
 
@@ -41,17 +41,17 @@ evidence: []
 
 MCP 找工具目录的唯一入口是 `project_tools._tool_dir()`，顺序：
 `FLYTHINGS_FSC_DIR` → **包内 `<MCP>/toolchain/`** → 父目录 `toolchain/` → `D:\zkswe\fsc` → `C:\zkswe\fsc`；
-目录里**有 `fui.exe` 或 `fsc.exe` 任一即算命中**，但 `fsc.exe` 单独缺失时 `_tool_path('fsc.exe')`
+目录里**有 `fsc.exe` 或 `fsc.exe` 任一即算命中**，但 `fsc.exe` 单独缺失时 `_tool_path('fsc.exe')`
 会退回裸名 `fsc.exe`，构建流程直接回「**fsc.exe 未找到（工具目录: …）**」。
 
 排查顺序：
 1. 确认是用**仓库/发布包路径**跑 `mcp_server.py`（`pip install` 的 wheel 只含 .py，不含 `toolchain/` 等数据文件）；
-2. 确认 `<MCP>/toolchain/fui.exe` 与 `<MCP>/toolchain/fsc.exe` **两个都在**（公开版随包分发，缺一个就会报缺）；
-3. 要放别处就显式指定 `FLYTHINGS_FSC_DIR=<含 fsc.exe/fui.exe 的目录>`；
+2. 确认 `<MCP>/toolchain/fsc.exe` 与 `<MCP>/toolchain/fsc.exe` **两个都在**（公开版随包分发，缺一个就会报缺）；
+3. 要放别处就显式指定 `FLYTHINGS_FSC_DIR=<含 fsc.exe/fsc.exe 的目录>`；
 4. 编译还要各平台工具链：解到 `<fun 目录>/toolchains/<平台小写键>/`，缺了 `fsc build` 报
    `platform toolchain url must not be empty`（是工具链没装，不是工程问题）。
 
-> 二进制（`fsc.exe` / `fui.exe` / `adb.exe` / `bin_tools/**`）**不做内容词表扫描**：它们含偶然字节
+> 二进制（`fsc.exe` / `fsc.exe` / `adb.exe` / `bin_tools/**`）**不做内容词表扫描**：它们含偶然字节
 > （实测 `fsc.exe` 字节里命中了某个禁词），发布裁剪时只按「路径级存在性」检查——
 > **不要因为词表命中就删文件**（2026-10-06 公开版缺 `toolchain/fsc.exe` 就是这么来的）。
 
@@ -68,7 +68,7 @@ MCP 找工具目录的唯一入口是 `project_tools._tool_dir()`，顺序：
 | `fsc pack` | 制作升级包 `update.img`（固化用，掉电保留）/ 依赖包 |
 | `fsc clean` | 清理中间产物（**改了 `package.properties` 必清再全量编**，ninja 不感知） |
 | `fsc migrate --input= --output=`、`fsc publish`、`fsc login` | 迁移配置 / 发布依赖包 / 登录 |
-| `fui pack <json>` / `fui unpack <ftu>` | json → ftu（设备实际加载 ftu）/ ftu → json |
+| `fsc convert <json>` / `fsc convert <ftu>` | json → ftu（设备实际加载 ftu）/ ftu → json |
 
 ## 4. 老工程用 fun 编译会挂 → 一行迁移
 

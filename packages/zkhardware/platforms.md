@@ -28,7 +28,7 @@
 # 工程：projects/pkg_zkhardware（Z20）
 fsc install && fsc build -p z20
 # 部署（/tmp 劫持调试，不动 /res）：
-adb push .fsc/z20/libzkgui.so /tmp/lib/libzkgui.so
+adb push .fun/z20/libzkgui.so /tmp/lib/libzkgui.so
 adb push ui/main.ftu /tmp/ui/main.ftu
 adb push EasyUI.cfg /tmp/EasyUI.cfg      # startupLibPath=/tmp/lib/libzkgui.so, resPath=/tmp/ui/
 adb shell setprop ctl.restart zkswe

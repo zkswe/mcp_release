@@ -35,7 +35,7 @@
 #   packages/rapidjson/example/  ui/main.json + src/logic/mainLogic.cc + Manifest.xml
 fsc install && fsc build -p z20
 # 部署（/tmp 劫持调试，不动 /res）——⚠️ 单次 restart；先确认没有残留 zkgui 进程
-adb -s 192.168.x.x:5555 push .fsc/z20/libzkgui.so /tmp/lib/libzkgui.so
+adb -s 192.168.x.x:5555 push .fun/z20/libzkgui.so /tmp/lib/libzkgui.so
 adb -s 192.168.x.x:5555 push ui/main.ftu          /tmp/ui/main.ftu
 adb -s 192.168.x.x:5555 push EasyUI.cfg           /tmp/EasyUI.cfg   # startupLibPath=/tmp/lib/libzkgui.so, resPath=/tmp/ui/
 adb -s 192.168.x.x:5555 shell setprop ctl.restart zkswe
